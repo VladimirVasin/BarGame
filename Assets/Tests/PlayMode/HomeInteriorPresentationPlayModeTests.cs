@@ -294,7 +294,9 @@ namespace BarPromenade.Tests.PlayMode
                 home.CameraFollow.FixedBaseRotation;
             float mainFov =
                 home.CameraFollow.FixedBaseFieldOfView;
-            Assert.That(mainFov, Is.EqualTo(68f).Within(0.001f));
+            Rect mainHold = home.FixedCamera.ActiveShot.HoldBounds;
+            Assert.That(mainFov, Is.EqualTo(56f).Within(0.001f));
+            Assert.That(mainPosition.y, Is.EqualTo(2.25f).Within(0.001f));
             Assert.That(
                 home.Layout.TryGetFurniture(
                     HomeFurnitureKind.Bookcase,
@@ -305,9 +307,8 @@ namespace BarPromenade.Tests.PlayMode
                     new Vector2(
                         mainPosition.x,
                         mainPosition.z)),
-                Is.True,
-                "The selected bed-side camera corner must be physically " +
-                "occupied by the relocated bookcase.");
+                Is.False,
+                "The lower entrance camera must stand clear of the bookcase.");
             Transform cornerBookcaseModel = AssertRequiredObject(
                 home.Room,
                 "Home Battered Cabinet");
@@ -326,9 +327,9 @@ namespace BarPromenade.Tests.PlayMode
                     playerController.skinWidth),
                 "The foreground bookcase must remain a real movement blocker.");
             Assert.That(
-                cornerBookcaseCollider.bounds.max.y,
-                Is.LessThan(mainPosition.y),
-                "The fixed camera must sit above the bookcase rather than inside it.");
+                cornerBookcaseCollider.bounds.Contains(mainPosition),
+                Is.False,
+                "The lower fixed camera must not sit inside the bookcase.");
             AssertPlayerVisible(camera, home.Player.GameObject.transform);
             AssertEmitterVisible(camera, mainEmitter);
             AssertEntryDoorLamp(
@@ -354,7 +355,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
             Assert.That(
                 home.FixedCamera.ActiveShotKind,
-                Is.EqualTo(HomeCameraShotKind.MainRoom));
+                Is.EqualTo(HomeCameraShotKind.HomeSofa));
             AssertPlayerVisible(
                 camera,
                 home.Player.GameObject.transform);
@@ -362,18 +363,18 @@ namespace BarPromenade.Tests.PlayMode
                 home,
                 cornerBookcaseCollider);
 
-            // Framing is proved where the shot is AUTHORED to hold him -
-            // the middle of its own hold rect - and not in the camera
-            // corner above. That corner is barely two metres from the lens
-            // and off at the edge of a 68-degree frame pitched steeply
-            // down: nothing standing there can be shown whole, which is
-            // where the bookcase now stands. The corner earns
-            // its own contract (visible, and occluded correctly) a few
-            // lines up; this is the one about composition.
+            AssertPlayerPresentationInFrame(camera, home.Player.Visual);
+            home.Player.Motor.Teleport(new Vector3(-4.85f, 0.12f, 1.80f));
+            yield return null;
             Assert.That(
                 home.FixedCamera.ActiveShotKind,
-                Is.EqualTo(HomeCameraShotKind.MainRoom));
-            Rect mainHold = home.FixedCamera.ActiveShot.HoldBounds;
+                Is.EqualTo(HomeCameraShotKind.HomeKitchen));
+            AssertPlayerPresentationInFrame(camera, home.Player.Visual);
+            Assert.That(Physics.CheckSphere(
+                    home.CameraFollow.FixedBasePosition, 0.08f, ~0,
+                    QueryTriggerInteraction.Ignore), Is.False,
+                "The kitchen camera must stand clear of the furniture.");
+
             home.Player.Motor.Teleport(
                 new Vector3(
                     mainHold.center.x,
@@ -388,6 +389,7 @@ namespace BarPromenade.Tests.PlayMode
                 camera,
                 home.Player.Visual);
 
+            Quaternion playerHeading = home.Player.GameObject.transform.rotation;
             home.Player.Motor.Teleport(
                 new Vector3(2.40f, 0.12f, 1.30f));
             yield return null;
@@ -412,11 +414,10 @@ namespace BarPromenade.Tests.PlayMode
             Quaternion bathroomRotation =
                 home.CameraFollow.FixedBaseRotation;
             Assert.That(
-                Vector3.Dot(
-                    PlanarForward(mainRotation),
-                    PlanarForward(bathroomRotation)),
-                Is.GreaterThan(0.95f),
-                "The bathroom cut must preserve the movement basis.");
+                Quaternion.Angle(playerHeading,
+                    home.Player.GameObject.transform.rotation),
+                Is.LessThan(0.01f),
+                "The bathroom cut must preserve the hero's tank-control heading.");
             Assert.That(
                 Physics.CheckSphere(
                     camera.transform.position,
@@ -1060,13 +1061,5 @@ namespace BarPromenade.Tests.PlayMode
                 Is.InRange(0.08f, 0.94f));
         }
 
-        private static Vector3 PlanarForward(
-            Quaternion rotation)
-        {
-            return Vector3.ProjectOnPlane(
-                    rotation * Vector3.forward,
-                    Vector3.up)
-                .normalized;
-        }
     }
 }

@@ -344,11 +344,11 @@ namespace BarPromenade
                 room,
                 new Vector3(
                     0f,
-                    3.02f,
+                    (plan.RoomHeight + 2.64f) * 0.5f,
                     -halfDepth),
                 new Vector3(
                     2.60f,
-                    0.76f,
+                    plan.RoomHeight - 2.64f,
                     wallThickness),
                 Trim,
                 HomeSurfaceKind.Wallpaper,
@@ -648,9 +648,9 @@ namespace BarPromenade
                 room,
                 new Vector3(
                     mainBulb.x,
-                    3.12f,
+                    HomeInteriorLayoutPlanner.RoomHeight - 0.105f,
                     mainBulb.z),
-                new Vector3(0.028f, 0.20f, 0.028f),
+                new Vector3(0.028f, 0.075f, 0.028f),
                 new Color(0.045f, 0.038f, 0.032f),
                 false);
             HomeAuthoredVisualFactory.CreateCylinder(
@@ -658,7 +658,7 @@ namespace BarPromenade
                 room,
                 new Vector3(
                     mainBulb.x,
-                    3.35f,
+                    HomeInteriorLayoutPlanner.RoomHeight - 0.05f,
                     mainBulb.z),
                 new Vector3(0.22f, 0.055f, 0.22f),
                 new Color(0.075f, 0.055f, 0.040f),

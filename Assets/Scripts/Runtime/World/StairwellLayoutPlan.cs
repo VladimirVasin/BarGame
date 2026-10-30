@@ -57,7 +57,9 @@ namespace BarPromenade
                 apartmentEntranceTriggerSize;
             UpperBlockerBounds = upperBlockerBounds;
             IsCorrupted = isCorrupted;
-            var walkable = new List<Rect>
+            var walkable = isCorrupted
+                ? new List<Rect> { apartmentLandingBounds, upperFlightBounds, UpperLandingBounds }
+                : new List<Rect>
                 {
                     streetLobbyBounds,
                     lowerFlightBounds,
@@ -66,7 +68,6 @@ namespace BarPromenade
                     apartmentLandingBounds,
                     upperFlightBounds
                 };
-            if (isCorrupted) walkable.Add(UpperLandingBounds);
             walkableRectangles = walkable.AsReadOnly();
         }
 
@@ -92,6 +93,9 @@ namespace BarPromenade
         public Vector3 ApartmentEntranceTriggerSize { get; }
         public Bounds UpperBlockerBounds { get; }
         public bool IsCorrupted { get; }
+        public const int CorruptedDistantModules = 3;
+        public static readonly Vector3 CatReliefPosition = new Vector3(1.45f, 4.65f, -3.135f);
+        public static readonly Vector3 CatReliefSize = new Vector3(.80f, .56f, .25f);
         public Rect UpperLandingBounds => new Rect(-2.225f, .8f, 1.55f, 1.45f);
         public Bounds DescentWallBounds => new Bounds(
             new Vector3(1.45f, 5.25f, -2.88f), new Vector3(2.05f, 4.10f, .30f));
@@ -128,7 +132,9 @@ namespace BarPromenade
             switch (arrival)
             {
                 case StairwellArrivalKind.StreetDoor:
-                    return StreetSpawn;
+                    // The lower stairwell remains visible but unreachable.
+                    // Debug/stale arrivals start beside the surviving Home door.
+                    return IsCorrupted ? ApartmentSpawn : StreetSpawn;
                 case StairwellArrivalKind.ApartmentDoor:
                     return ApartmentSpawn;
                 default:

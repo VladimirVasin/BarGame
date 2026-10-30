@@ -11,4 +11,6 @@ half4 _SurfaceDamageSoil;
 half4 _SurfaceDamageExpose;
 half4 _SurfaceDamageAccent;
 half4 _SurfaceDamageResponse;
+float4 _SurfaceHazePlane;
+half4 _SurfaceHazeColor;
 #endif

@@ -55,4 +55,13 @@ void ApplySurfaceDamage(float3 positionOS, float3 normalOS, inout SurfaceData su
     surface.smoothness *= lerp(1.0h, saturate(_SurfaceDamageResponse.x), masks.a);
     // Alpha, normals, metallic, emission and geometry retain their own owners.
 }
+
+half3 ApplySurfaceHaze(half3 color, float3 positionWS)
+{
+    // Opt-in finite atmospheric depth, authored by the owning scene. The
+    // zero default leaves every ordinary/damage receiver bit-for-bit alone.
+    half depth = saturate(dot(float4(positionWS, 1.0), _SurfaceHazePlane));
+    depth = depth * depth * (3.0h - 2.0h * depth);
+    return lerp(color, _SurfaceHazeColor.rgb, depth * _SurfaceHazeColor.a);
+}
 #endif

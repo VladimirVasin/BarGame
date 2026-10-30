@@ -161,7 +161,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Road, park and ground navigation | Masks follow physical bounds; exclusions retain corner overlap, safe eastern street margins stay open. | `RoadWalkableArea`, `CityGroundTraversalPlan{,ner}`, `CityRoadGroundBoundaryPlanner` | Current |
 | Player motor | Tank/aim walk;world-space air inertia/limited steering;ground/snow/context limits. | `PlayerMotor{,.TargetMovement,.Snow}`, `PlayerDirectionalInput` | Current |
 | Third-person chase camera | Orbit/RMB;.5m right/1.9m back/aim1.4;physical body follows;collision/dolly/fixed-modal. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
-| Home camera | Fixed shots/pan with explicit contextual ownership. | `HomeFixedCameraController`, `FixedCameraFocus` | Current |
+| Home camera | Entry/sofa/kitchen zones + bathroom/balcony; pan/hold and contextual ownership. | `HomeFixedCameraController`, `FixedCameraFocus` | Current |
 | Home player visibility | Grouped occluder dither and fixed-shot rules keep the hero visible without changing collision. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController` | Current |
 | Modular 3D hero presentation | V2/joint volume; seven drink-dose body/hair/wear forms; mirror/FP/portrait copies. | `Player3D*`, `PlayerCorruptionAppearance`, `HeroCorruptionRules` | Current |
 | Hero wardrobe | Atomic slot replacement and body coverage; one authored outfit. Gap: extra outfits, UI and persistence. | `PlayerWardrobe`, `Player3DBathingAppearance` | Partial |
@@ -202,15 +202,15 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Hero drunk muttering | A seeded stage-dependent clock drives short authored mutters, slurring and an owned speech bubble. | `HeroMutterModel`, `HeroMutterLines` | Current |
 | Hero nausea bouts | High intoxication drives the walking gauge, cancellation gates, vomiting relief and session mouth-soiling. | `HeroNauseaClock`, `HeroNauseaGaugeModel` | Current |
 | Bar interior and exterior | Hall/worn WC; solid shared door, exclusive hero/guest access and masked broken mirror. | `BarInteriorLayout*`, `BarWashroom*`, `InteriorHingedDoorInteraction` | Current |
-| Player home interior | 12×8m; sofa sleep/full kitchen/locked room; chair shared sit. | `HomeInteriorModelLibrary`, `HomeDiningSeatPlan` | Current |
+| Player home interior | 12×8×2.9m; stove meets wall; sofa/kitchen/locked room/shared sit. | `HomeInteriorModelLibrary`, `HomeDiningSeatPlan` | Current |
 | Apartment calendar appearance | Days1–7 neglect; heavier7/exact debug restore; sleep view7+hero7. | `HomeApartmentDressing`, `HomeApartmentDay{Rules,Controller}` | Current |
-| Player-home stairwell | Ordinary ramps/cat; post-sleep wall/upper grille/endless view/glow. | `StairwellLayout*`, `StairwellWorldBuilder`, `StairwellInteriorAtmosphere` | Current |
+| Player-home stairwell | Ordinary ramps/cat; post-sleep distorted shell/short ascent/glow/stone-head inspection. | `StairwellLayout*`, `StairwellWorldBuilder`, `StairwellInteriorAtmosphere` | Current |
 | City facade presentation | The legacy 4×4 path remains only for clipped Home crossings. | `CityFacade{Grid,Appearance}`, `CityBuilding{SurfaceAppearance,WindowSlotAppearance}` | Current |
 | City window presentation | Pure facade/window slots select bounded lit shares and preserve district palettes and daytime light floors. | `CityDistrict{ArtProfile,PresentationPlan,PresentationPlanner}`, `CityWindowAppearance` | Current |
 | Stairwell surface presentation | Cached textures and material property blocks apply measured stairwell surfaces without instance materials. | `StairwellSurfaceAppearance`, `SurfaceAppearanceCore` | Current |
 | Exterior ground response | Indexed MPBs share response maps/road masks/snow edges; ridge haze retained. | `GroundSurface{Appearance,Coordinates}`, `GroundSurfaceLit`, `*SurfaceAppearance` | Current |
 | Home/Stairwell surfaces | Original micro sheets/unique macro charts/shared variants; exact earlier-state restore. | `HomeSurfaceAppearance`, `HomeAuthoredVisualFactory`, `SurfaceDamageLibrary` | Current |
-| Stairwell cat | The perched cat supports talk/feed and the grin controller; the future story grin trigger remains unwired. | `StairwellCat*`, `StairwellCatInteraction` | Current |
+| Stairwell cat | Ordinary talk/feed; statue: silent camera cut/hero hidden only close-up; quest stays. | `StairwellCat*`, `StairwellCatInteraction` | Current |
 | Home exterior context | Same-seed64m city around Home, rear included; no collision. Balcony gates residents/atmosphere. | `HomeExteriorContext{Plan,Planner}`, `HomeExteriorViewBuilder`, `CityHomeGroundWorldBuilder` | Current |
 | Player home atmosphere | Clock drives six local lights; Balcony borrows/restores City. | `HomeInteriorAtmosphere`, `HomeDayNightController` | Current |
 | Mirror brushing | First-person X/Y brushing ends with a three-second close teeth inspection, then spit and faucet closure. | `HomeTeethBrushing*`, `HomeBrushingFirstPersonView`, `HomeSinkFaucet` | Current |

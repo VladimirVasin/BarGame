@@ -58,6 +58,17 @@ namespace BarPromenade.Tests.PlayMode
         }
     }
 
+    public sealed class HomeInteriorCaptureAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            Type.GetType("BarPromenade.Editor.HomeInteriorModelAssetSetup, BarPromenade.Editor", true)
+                .GetMethod("EnsureAssets", Type.EmptyTypes).Invoke(null, null);
+#endif
+        }
+    }
+
     public sealed partial class AreaCaptureFixture
     {
         private const int Width = 1280;
@@ -2761,11 +2772,110 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        [PrebuildSetup(typeof(HomeInteriorCaptureAssetsSetup))]
         [Explicit("Capture, not a test. Run one area at a time.")]
         public IEnumerator Home()
         {
-            yield return Capture(
-                SceneIds.HomeInterior, Root<HomeInteriorRoot>(), HeroShots());
+            GameSessionState.BeginNewGame("Home ceiling and camera compositions");
+            GameSessionState.TryStartGameTimeAt(12 * 60);
+            GameSessionState.PrepareHomeArrival(HomeArrivalKind.Normal);
+            GameSessionState.EnterHome();
+            yield return SceneManager.LoadSceneAsync(SceneIds.HomeInterior, LoadSceneMode.Single);
+            HomeInteriorRoot home = null;
+            yield return WaitHomeBalcony(() =>
+            {
+                home = Object.FindAnyObjectByType<HomeInteriorRoot>();
+                return home != null && home.IsInitialized && !SceneTransitionService.IsTransitioning;
+            }, "Home camera composition");
+            Camera camera = Camera.main;
+            Assert.That(camera, Is.Not.Null);
+            Vector3 initialPosition = home.Player.GameObject.transform.position;
+            Quaternion initialRotation = home.Player.GameObject.transform.rotation;
+            bool input = home.Player.Motor.InputEnabled;
+            home.Player.Motor.SetInputEnabled(false);
+            home.CameraFollow.SetCinematicMotionEnabled(false);
+            try
+            {
+                Bounds ceiling = home.Room.Find("Home Ceiling").GetComponent<Renderer>().bounds;
+                Assert.That(ceiling.min.y - home.Room.position.y, Is.EqualTo(2.86f).Within(.012f));
+                Bounds wall = home.Room.Find("Home Locked Room West Wall").GetComponent<Renderer>().bounds;
+                Assert.That(wall.min.x - home.Room.position.x, Is.EqualTo(-3.28f).Within(.012f),
+                    "The story-room wall must meet the existing stove cabinet edge.");
+                Assert.That(wall.max.y, Is.EqualTo(home.Room.position.y + 2.9f).Within(.012f));
+                foreach (string fixture in new[] { "Home Main Lamp Shade", "Home Kitchen Pot Lid", "Home Stove Hood Flue" })
+                    Assert.That(home.Room.Find(fixture).GetComponent<Renderer>().bounds.max.y,
+                        Is.LessThanOrEqualTo(ceiling.min.y + .015f), fixture);
+
+                // Walk across both overlap bands and back using the live
+                // selector: a small reverse step must retain the new shot.
+                var boundaryPoints = new[] { new Vector2(-1.27f, -.3f), new Vector2(-1.08f, -.3f),
+                    new Vector2(-.93f, -.3f), new Vector2(-1.12f, -.3f),
+                    new Vector2(-4.5f, .9f), new Vector2(-4.5f, 1.32f),
+                    new Vector2(-4.5f, 1.14f), new Vector2(-4.5f, .98f) };
+                var boundaryKinds = new[] { HomeCameraShotKind.HomeSofa, HomeCameraShotKind.HomeSofa,
+                    HomeCameraShotKind.MainRoom, HomeCameraShotKind.MainRoom,
+                    HomeCameraShotKind.HomeSofa, HomeCameraShotKind.HomeKitchen,
+                    HomeCameraShotKind.HomeKitchen, HomeCameraShotKind.HomeSofa };
+                for (int index = 0; index < boundaryPoints.Length; index++)
+                {
+                    Vector2 point = boundaryPoints[index];
+                    home.Player.Motor.Teleport(home.Room.TransformPoint(new Vector3(point.x, .12f, point.y)));
+                    home.FixedCamera.ReapplyActiveShot();
+                    Assert.That(home.FixedCamera.ActiveShotKind, Is.EqualTo(boundaryKinds[index]));
+                    Assert.That(home.Player.GameObject.transform.rotation, Is.EqualTo(initialRotation));
+                }
+
+                var positions = new[]
+                {
+                    new Vector3(0f, .12f, -2.15f),
+                    new Vector3(-4.65f, .12f, -.30f),
+                    new Vector3(-4.52f, .12f, 1.80f),
+                    new Vector3(-1.925f, .12f, -1.10f),
+                    new Vector3(3.2f, .12f, -1.50f)
+                };
+                var kinds = new[] { HomeCameraShotKind.MainRoom, HomeCameraShotKind.HomeSofa,
+                    HomeCameraShotKind.HomeKitchen, HomeCameraShotKind.HomeSofa, HomeCameraShotKind.MainRoom };
+                foreach (int day in new[] { 1, 7 })
+                {
+                    if (day != 1) Assert.That(GameSessionState.TrySetDebugGameDay(day), Is.True);
+                    for (int index = 0; index < positions.Length; index++)
+                    {
+                        home.Player.Motor.Teleport(home.Room.TransformPoint(positions[index]));
+                        home.Player.GameObject.transform.rotation = Quaternion.identity;
+                        home.FixedCamera.ReapplyActiveShot();
+                        home.CameraFollow.Snap();
+                        Physics.SyncTransforms();
+                        for (int frame = 0; frame < SettleFrames; frame++) yield return null;
+                        Assert.That(home.FixedCamera.ActiveShotKind, Is.EqualTo(kinds[index]));
+                        Assert.That(camera.transform.position.y, Is.LessThan(ceiling.min.y));
+                        Vector3 feet = camera.WorldToViewportPoint(home.Player.GameObject.transform.position);
+                        Vector3 head = camera.WorldToViewportPoint(home.Player.GameObject.transform.position + Vector3.up * 1.75f);
+                        Assert.That(feet.z, Is.GreaterThan(0f));
+                        Assert.That(feet.x, Is.InRange(.02f, .98f));
+                        Assert.That(head.x, Is.InRange(.02f, .98f));
+                        Assert.That(feet.y, Is.InRange(.02f, .98f));
+                        Assert.That(head.y, Is.InRange(.02f, .98f));
+                        CaptureCurrentCamera(camera, SceneIds.HomeInterior, $"day{day}-room-{index}-{kinds[index]}");
+                    }
+                }
+                // Read the authored seam and lowered storage without replacing
+                // the gameplay compositions above with an invented overview.
+                home.CameraFollow.enabled = false;
+                camera.transform.SetPositionAndRotation(home.Room.TransformPoint(new Vector3(-4.4f, 1.8f, 1.05f)),
+                    Quaternion.LookRotation(new Vector3(.8f, -.45f, 1.9f)));
+                camera.fieldOfView = 58f;
+                CaptureCurrentCamera(camera, SceneIds.HomeInterior, "stove-wall-contact");
+            }
+            finally
+            {
+                home.CameraFollow.enabled = true;
+                home.Player.Motor.Teleport(initialPosition);
+                home.Player.GameObject.transform.rotation = initialRotation;
+                home.Player.Motor.SetInputEnabled(input);
+                home.CameraFollow.SetCinematicMotionEnabled(true);
+                home.FixedCamera.ReapplyActiveShot();
+                GameSessionState.BeginNewGame();
+            }
         }
 
         /// <summary>
@@ -3046,6 +3156,11 @@ namespace BarPromenade.Tests.PlayMode
                     () => stairwell = Object.FindAnyObjectByType<StairwellInteriorRoot>(),
                     () => CorruptedStairwellShots(stairwell));
                 yield return VerifyCorruptedStairwellRoute(stairwell);
+                stairwell.Atmosphere.enabled = false;
+                Assert.That(RenderSettings.fog, Is.False, "The local void fog must release with its owner.");
+                stairwell.Atmosphere.enabled = true;
+                Assert.That(RenderSettings.fog, Is.True);
+                Assert.That(Camera.main.backgroundColor, Is.EqualTo(RenderSettings.fogColor));
             }
             finally { GameSessionState.BeginNewGame(); }
         }
@@ -5390,7 +5505,9 @@ namespace BarPromenade.Tests.PlayMode
         internal static void CaptureCurrentCamera(
             Camera camera,
             string sceneName,
-            string shotName)
+            string shotName,
+            int width = Width,
+            int height = Height)
         {
             string folder = Path.Combine(
                 Directory.GetCurrentDirectory(),
@@ -5398,10 +5515,10 @@ namespace BarPromenade.Tests.PlayMode
                 sceneName);
             Directory.CreateDirectory(folder);
 
-            var target = new RenderTexture(Width, Height, 24);
+            var target = new RenderTexture(width, height, 24);
             var frameBuffer = new Texture2D(
-                Width,
-                Height,
+                width,
+                height,
                 TextureFormat.RGB24,
                 false);
             RenderTexture previousTarget = camera.targetTexture;
@@ -5412,7 +5529,7 @@ namespace BarPromenade.Tests.PlayMode
                 camera.Render();
                 RenderTexture.active = target;
                 frameBuffer.ReadPixels(
-                    new Rect(0f, 0f, Width, Height),
+                    new Rect(0f, 0f, width, height),
                     0,
                     0);
                 frameBuffer.Apply();

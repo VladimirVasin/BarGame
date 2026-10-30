@@ -6,6 +6,7 @@ namespace BarPromenade
 {
     public enum NarrativePageKind { HeroThought, DocumentText }
     public enum NarrativeCameraMode { ObjectSide, DocumentCloseUp, ObjectCloseUp, WorkSurfaceCloseUp }
+    public enum NarrativeCameraTransition { Blend, Cut }
 
     /// <summary>Optional final-page choice, passive prop attempt and held text outcome.</summary>
     public sealed class NarrativeConfirmation
@@ -77,7 +78,7 @@ namespace BarPromenade
             PlayerAnimatedInteractionPose exit, Bounds focusBounds, Vector3 cameraSideHint,
             NarrativeCameraMode cameraMode = NarrativeCameraMode.ObjectSide, Vector3 cameraFront = default,
             float initialVerticalTolerance = .5f, float maximumCameraHeight = float.PositiveInfinity,
-            bool authoredFocusBoundsOnly = false)
+            bool authoredFocusBoundsOnly = false, NarrativeCameraTransition cameraTransition = NarrativeCameraTransition.Blend)
         {
             if (float.IsNaN(initialVerticalTolerance) || float.IsInfinity(initialVerticalTolerance) || initialVerticalTolerance < 0f)
                 throw new ArgumentOutOfRangeException(nameof(initialVerticalTolerance));
@@ -88,6 +89,7 @@ namespace BarPromenade
             CameraMode = cameraMode; CameraFront = cameraFront; InitialVerticalTolerance = initialVerticalTolerance;
             MaximumCameraHeight = maximumCameraHeight;
             AuthoredFocusBoundsOnly = authoredFocusBoundsOnly;
+            CameraTransition = cameraTransition;
         }
         public PlayerAnimatedInteractionPose Entry { get; }
         public Vector3 ActionHip { get; }
@@ -99,12 +101,15 @@ namespace BarPromenade
         public float InitialVerticalTolerance { get; }
         public float MaximumCameraHeight { get; }
         public bool AuthoredFocusBoundsOnly { get; }
+        /// <summary>Camera-only transition; the hero still reaches the authored dock continuously.</summary>
+        public NarrativeCameraTransition CameraTransition { get; }
 
         /// <summary>The floor is authored by the scene's walkable plan, never guessed from the trigger.</summary>
         public static NarrativeStagingPlan Standing(Vector3 groundedFloor, Quaternion facing,
             Bounds focusBounds, Vector3 cameraSideHint, NarrativeCameraMode cameraMode = NarrativeCameraMode.ObjectSide,
             Vector3 cameraFront = default, float initialVerticalTolerance = .5f,
-            float maximumCameraHeight = float.PositiveInfinity, bool authoredFocusBoundsOnly = false)
+            float maximumCameraHeight = float.PositiveInfinity, bool authoredFocusBoundsOnly = false,
+            NarrativeCameraTransition cameraTransition = NarrativeCameraTransition.Blend)
         {
             var entry = new PlayerAnimatedInteractionPose(
                 groundedFloor + facing * PlayerDialogueActions.EntryGroundOffset + Vector3.up * PlayerFactory.GroundedRootOffset,
@@ -113,7 +118,8 @@ namespace BarPromenade
                 groundedFloor + facing * PlayerDialogueActions.ExitGroundOffset + Vector3.up * PlayerFactory.GroundedRootOffset,
                 facing, groundedFloor + facing * PlayerDialogueActions.ExitPelvisFromGround);
             return new NarrativeStagingPlan(entry, groundedFloor + facing * PlayerDialogueActions.ActionPelvisFromGround,
-                exit, focusBounds, cameraSideHint, cameraMode, cameraFront, initialVerticalTolerance, maximumCameraHeight, authoredFocusBoundsOnly);
+                exit, focusBounds, cameraSideHint, cameraMode, cameraFront, initialVerticalTolerance, maximumCameraHeight,
+                authoredFocusBoundsOnly, cameraTransition);
         }
     }
 }

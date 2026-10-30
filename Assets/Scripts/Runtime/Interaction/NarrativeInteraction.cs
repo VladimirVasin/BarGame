@@ -18,6 +18,8 @@ namespace BarPromenade
         /// <summary>An optional world activity shares this inspection's approach, camera and cleanup.</summary>
         public INarrativeActivity Activity { get; set; }
         public Transform SubjectRoot { get; private set; }
+        /// <summary>Optional shared world-model visibility owner, only for an instant object close-up.</summary>
+        public PlayerPresentationVisibility PlayerToHide { get; set; }
         public string PromptKey => Definition?.PromptKey ?? string.Empty;
         public Vector3 InteractionPosition => interactionPosition;
         public bool IsPresenting => session != null && session.IsActive && session.Target == this;

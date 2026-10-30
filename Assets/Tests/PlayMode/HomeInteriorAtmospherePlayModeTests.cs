@@ -38,7 +38,7 @@ namespace BarPromenade.Tests.PlayMode
                 atmosphere.PracticalLights[1];
             AssertPracticalLight(
                 mainLight,
-                new Vector3(-2.35f, 2.60f, -1.10f),
+                new Vector3(-2.35f, 2.35f, -1.10f),
                 new Color(0.95f, 0.52f, 0.22f),
                 3.50f,
                 9.0f);

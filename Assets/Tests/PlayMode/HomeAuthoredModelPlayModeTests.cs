@@ -675,7 +675,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(home.AlarmClock.IsRinging, Is.False);
                 Assert.That(home.Player.Motor.InputEnabled, Is.True);
                 Assert.That(home.Player.Interactor.InputEnabled, Is.True);
-                Assert.That(home.FixedCamera.ActiveShotKind, Is.EqualTo(HomeCameraShotKind.MainRoom));
+                Assert.That(home.FixedCamera.ActiveShotKind, Is.EqualTo(HomeCameraShotKind.HomeSofa));
                 Assert.That(home.DebugWindow.Open(), Is.True);
                 Assert.That(home.DebugWindow.Close(), Is.True);
                 captures.Write("opening-03-awake");
@@ -832,7 +832,7 @@ namespace BarPromenade.Tests.PlayMode
             BoxCollider solid = root.Room.Find("Home Locked Room Collision").GetComponent<BoxCollider>();
             Assert.That(solid, Is.Not.Null);
             Assert.That(solid.isTrigger, Is.False);
-            Assert.That(solid.size.x, Is.EqualTo(room.width).Within(.001f));
+            Assert.That(solid.size.x, Is.EqualTo(HomeLockedRoomPlan.CollisionBounds.width).Within(.001f));
             Assert.That(solid.size.z, Is.EqualTo(room.height).Within(.001f));
             Assert.That(solid.bounds.Contains(new Vector3(room.center.x, 1f, room.center.y)), Is.True);
             Ray ray = new Ray(HomeLockedRoomPlan.DockPosition + Vector3.up, Vector3.forward);

@@ -21,7 +21,8 @@ namespace BarPromenade
             Bounds holdBounds,
             Vector3 position,
             Vector3 eulerAngles,
-            float fieldOfView)
+            float fieldOfView,
+            FixedCameraFocus focus = default)
         {
             if (!Enum.IsDefined(
                     typeof(StairwellCameraShotKind),
@@ -49,6 +50,7 @@ namespace BarPromenade
             Position = position;
             Rotation = Quaternion.Euler(eulerAngles);
             FieldOfView = fieldOfView;
+            Focus = focus;
         }
 
         public StairwellCameraShotKind Kind { get; }
@@ -57,6 +59,7 @@ namespace BarPromenade
         public Vector3 Position { get; }
         public Quaternion Rotation { get; }
         public float FieldOfView { get; }
+        public FixedCameraFocus Focus { get; }
 
         public bool IsInActivationArea(Vector3 position)
         {
@@ -202,6 +205,11 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(plan));
             }
 
+            if (plan.IsCorrupted)
+            {
+                return CreateCorruptedShots(plan);
+            }
+
             float roomHalfWidth = plan.RoomSize.x * 0.5f;
             float roomHalfDepth = plan.RoomSize.y * 0.5f;
             var shots = new List<StairwellCameraShot>
@@ -242,32 +250,51 @@ namespace BarPromenade
                         roomHalfWidth - 0.25f,
                         roomHalfDepth - 0.30f,
                         3.08f,
-                        plan.IsCorrupted ? 4.25f : 5.95f),
+                        5.95f),
                     CreateZone(
                         roomHalfWidth - 0.15f,
                         roomHalfDepth - 0.25f,
                         3.02f,
-                        plan.IsCorrupted ? 4.32f : 6.10f),
-                    new Vector3(-3.70f, plan.IsCorrupted ? 4.8f : 5.45f, -4.18f),
-                    plan.IsCorrupted ? new Vector3(-4f, 30f, 0f) : new Vector3(18f, 56f, 0f),
-                    plan.IsCorrupted ? 88f : 72f)
+                        6.10f),
+                    new Vector3(-3.70f, 5.45f, -4.18f),
+                    new Vector3(18f, 56f, 0f),
+                    72f)
             };
-            if (plan.IsCorrupted)
+            return shots;
+        }
+
+        private static IReadOnlyList<StairwellCameraShot> CreateCorruptedShots(
+            StairwellLayoutPlan plan)
+        {
+            float halfWidth = plan.RoomSize.x * 0.5f;
+            float halfDepth = plan.RoomSize.y * 0.5f;
+            Bounds flightActivation = CreateZone(halfWidth - .25f, halfDepth - .30f, 4.26f, 6.9f);
+            Bounds flightHold = CreateZone(halfWidth - .15f, halfDepth - .25f, 4.18f, 7.0f);
+            flightActivation.SetMinMax(flightActivation.min,
+                new Vector3(flightActivation.max.x, flightActivation.max.y, 1f));
+            flightHold.SetMinMax(flightHold.min,
+                new Vector3(flightHold.max.x, flightHold.max.y, 1.05f));
+
+            // The cameras stay inside the broken stairwell's west/central
+            // opening. The upper views look over the near handrail along the
+            // climb; the shared focus only turns at the edge of the frame.
+            return new[]
             {
-                Bounds activation = CreateZone(roomHalfWidth - .25f, roomHalfDepth - .30f, 4.26f, 6.9f);
-                Bounds hold = CreateZone(roomHalfWidth - .15f, roomHalfDepth - .25f, 4.18f, 7.0f);
-                activation.SetMinMax(activation.min, new Vector3(activation.max.x, activation.max.y, 1f));
-                hold.SetMinMax(hold.min, new Vector3(hold.max.x, hold.max.y, 1.05f));
-                shots.Add(new StairwellCameraShot(StairwellCameraShotKind.UpperFlight,
-                    activation, hold, new Vector3(-1.45f, 6.95f, 2.07f), new Vector3(51f, 180f, 0f), 78f));
-                // Above the short enclosed landing, a near-overhead view keeps
-                // the whole rig clear of the lens at its far solid end.
-                shots.Add(new StairwellCameraShot(StairwellCameraShotKind.UpperLanding,
+                new StairwellCameraShot(StairwellCameraShotKind.ApartmentLanding,
+                    CreateZone(halfWidth - .25f, halfDepth - .30f, 3.08f, 4.25f),
+                    CreateZone(halfWidth - .15f, halfDepth - .25f, 3.02f, 4.32f),
+                    new Vector3(-3.85f, 5.6f, -4.35f), new Vector3(20f, 56f, 0f), 64f,
+                    FixedCameraFocus.Bounded(22f, 18f)),
+                new StairwellCameraShot(StairwellCameraShotKind.UpperFlight,
+                    flightActivation, flightHold,
+                    new Vector3(-2.8f, 6.3f, -2.6f), new Vector3(18f, 25f, 0f), 62f,
+                    FixedCameraFocus.Bounded(14f, 12f)),
+                new StairwellCameraShot(StairwellCameraShotKind.UpperLanding,
                     new Bounds(new Vector3(-1.45f, 5.8f, 1.66f), new Vector3(3f, 2.4f, 1.6f)),
                     new Bounds(new Vector3(-1.45f, 5.8f, 1.65f), new Vector3(3.2f, 2.6f, 1.8f)),
-                    new Vector3(-1.45f, 7.15f, 2.07f), new Vector3(85f, 180f, 0f), 100f));
-            }
-            return shots;
+                    new Vector3(-2.55f, 6.8f, -1.2f), new Vector3(16f, 20f, 0f), 60f,
+                    FixedCameraFocus.Bounded(12f, 10f))
+            };
         }
 
         public void Initialize(
@@ -402,6 +429,10 @@ namespace BarPromenade
                 shot.Position,
                 shot.Rotation,
                 shot.FieldOfView);
+            if (shot.Focus.Enabled)
+            {
+                cameraFollow.SetFixedFocus(shot.Focus);
+            }
         }
 
         private void ReleaseCamera()

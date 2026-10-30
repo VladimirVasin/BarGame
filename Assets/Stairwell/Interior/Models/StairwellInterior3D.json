@@ -1,19 +1,20 @@
 {
   "schema_version": 1,
   "design_id": "stairwell_interior_v1",
-  "generator_version": "1.2.0",
-  "signature": "0501f811e8228eaa926f9f09f9c10440ce22f8fa313b95bca8b9262e8c7479ad",
+  "generator_version": "2.1.0",
+  "signature": "2060fbd4a706700a3b769f0d0ac85b914b169346797d354797723dab45152fe1",
   "report": {
-    "meshes": 116,
-    "triangles": 15988,
-    "bindings": 311,
+    "meshes": 114,
+    "triangles": 15964,
+    "bindings": 306,
     "maximum_meshes": 128,
     "maximum_triangles": 16000,
     "flight_support_necks": 192,
     "landing_cap_overlap_m": 0.05,
     "door_hardware_leaf_overlap_m": 0.002,
     "door_mount_contact_samples": 50,
-    "corrupted_upper_standing_clearance_m": 2.5,
+    "corrupted_broken_roof": true,
+    "corrupted_cat_relief_passive": true,
     "corrupted_descent_wall_floor_m": 3.2
   },
   "coordinates": "Unity metres; Blender Y/Z swap with outward winding",
@@ -114,6 +115,7 @@
   },
   "corrupted_prototype": {
     "room_height": 7.3,
+    "broken_roof": true,
     "upper_landing_bounds": [
       -2.225,
       0.8,
@@ -121,9 +123,27 @@
       2.25
     ],
     "upper_floor": 4.8,
-    "fixture_support_y": 7.17,
+    "playable_limit_z": 2.25,
+    "retained": [
+      "ground_floor",
+      "lower_flights",
+      "landings",
+      "front_left_right_walls",
+      "columns",
+      "pipes",
+      "electrical_cabinets",
+      "vents",
+      "radiator",
+      "trash"
+    ],
+    "removed": [
+      "solid_ceiling",
+      "street_exit",
+      "upper_debris",
+      "upper_grille"
+    ],
     "endless_flight": {
-      "alias": "Corrupted Endless Flight",
+      "alias": "Corrupted Endless Open Flight",
       "size": [
         2.03,
         4.34,
@@ -140,47 +160,45 @@
         1.92
       ],
       "bounds_min": [
-        -1.015,
-        -0.92,
+        -0.775,
+        -0.8,
         -1.92
       ],
       "bounds_max": [
-        1.015,
-        3.42,
+        0.775,
+        1.85,
         1.92
       ],
       "clear_width": 1.55,
       "rise": 1.6,
       "run": 3.84,
       "steps": 16,
-      "sloped_inner_headroom": 2.5,
       "render_only": true,
+      "modules": 3,
       "start_z": 2.25,
       "start_floor": 4.8,
-      "open_alias": "Corrupted Endless Open Flight",
-      "open_foreground_modules": 2,
-      "open_bounds_min": [
-        -0.775,
-        -0.8,
-        -1.92
+      "terminal_z": 13.77,
+      "terminal_floor": 9.6
+    },
+    "cat_relief": {
+      "source": "build-stairwell-cat-3d-model.py:head_geometry_parts/grin_geometry",
+      "size": [
+        0.8,
+        0.56,
+        0.25
       ],
-      "open_bounds_max": [
-        0.775,
-        1.85,
-        1.92
+      "center": [
+        1.45,
+        4.65,
+        -3.135
       ],
-      "ceiling_notch": [
-        -3.5,
-        2.25,
-        1.2,
-        4.8
-      ],
-      "back_opening": [
-        -1.45,
-        4.1,
-        5.7,
-        7.3
-      ]
+      "mount_overlap": 0.02,
+      "material": "stone",
+      "actor": false,
+      "body": false,
+      "animation": false,
+      "emission": false,
+      "teeth": 9
     },
     "placed_parts": [
       {
@@ -207,6 +225,71 @@
           -1.45,
           4.68,
           1.525
+        ]
+      },
+      {
+        "alias": "Corrupted Back Wall Base",
+        "size": [
+          8.6,
+          5.3,
+          0.24
+        ],
+        "center": [
+          0,
+          2.65,
+          4.8
+        ]
+      },
+      {
+        "alias": "Corrupted Back Wall Broken Left",
+        "size": [
+          1.9,
+          2.25,
+          0.3
+        ],
+        "center": [
+          -3.55,
+          6.225,
+          4.96
+        ]
+      },
+      {
+        "alias": "Corrupted Back Wall Broken Right",
+        "size": [
+          4.8,
+          2.75,
+          0.32
+        ],
+        "center": [
+          2.05,
+          6.575,
+          5.13
+        ]
+      },
+      {
+        "alias": "Corrupted Roof East",
+        "size": [
+          4.15,
+          0.74,
+          9.5
+        ],
+        "center": [
+          2.375,
+          6.47,
+          0
+        ]
+      },
+      {
+        "alias": "Corrupted Roof South",
+        "size": [
+          8.6,
+          0.24,
+          1.8
+        ],
+        "center": [
+          0,
+          6.18,
+          -3.9
         ]
       }
     ]
@@ -3437,157 +3520,6 @@
     {
       "name": "StairwellPart_101",
       "aliases": [
-        "Stairwell Back Wall"
-      ],
-      "size": [
-        8.6,
-        7.3,
-        0.24
-      ],
-      "kind": "Box",
-      "style": "box",
-      "projection": "BoxXY",
-      "bounds_min": [
-        -4.3,
-        -3.65,
-        -0.12
-      ],
-      "bounds_max": [
-        4.3,
-        3.65,
-        0.12
-      ],
-      "triangles": 28,
-      "position": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "name": "StairwellPart_102",
-      "aliases": [
-        "Stairwell Front Wall"
-      ],
-      "size": [
-        8.6,
-        7.3,
-        0.24
-      ],
-      "kind": "Box",
-      "style": "front-wall",
-      "projection": "BoxXY",
-      "bounds_min": [
-        -4.3,
-        -3.65,
-        -0.12
-      ],
-      "bounds_max": [
-        4.3,
-        3.65,
-        0.12
-      ],
-      "triangles": 84,
-      "position": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "name": "StairwellPart_103",
-      "aliases": [
-        "Stairwell Left Wall"
-      ],
-      "size": [
-        0.24,
-        7.3,
-        9.6
-      ],
-      "kind": "Box",
-      "style": "box",
-      "projection": "BoxXY",
-      "bounds_min": [
-        -0.12,
-        -3.65,
-        -4.8
-      ],
-      "bounds_max": [
-        0.12,
-        3.65,
-        4.8
-      ],
-      "triangles": 28,
-      "position": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "name": "StairwellPart_104",
-      "aliases": [
-        "Stairwell Right Wall"
-      ],
-      "size": [
-        0.24,
-        7.3,
-        9.6
-      ],
-      "kind": "Box",
-      "style": "right-wall",
-      "projection": "BoxXY",
-      "bounds_min": [
-        -0.12000000000000029,
-        -3.65,
-        -4.800000000000001
-      ],
-      "bounds_max": [
-        0.12000000000000029,
-        3.650000000000001,
-        4.8
-      ],
-      "triangles": 112,
-      "position": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "name": "StairwellPart_105",
-      "aliases": [
-        "Stairwell Column 1",
-        "Stairwell Column 2"
-      ],
-      "size": [
-        0.34,
-        7.3,
-        0.34
-      ],
-      "kind": "Box",
-      "style": "box",
-      "projection": "BoxXY",
-      "bounds_min": [
-        -0.17,
-        -3.65,
-        -0.17
-      ],
-      "bounds_max": [
-        0.17,
-        3.65,
-        0.17
-      ],
-      "triangles": 28,
-      "position": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "name": "StairwellPart_106",
-      "aliases": [
         "Corrupted Descent Wall"
       ],
       "size": [
@@ -3616,7 +3548,7 @@
       ]
     },
     {
-      "name": "StairwellPart_107",
+      "name": "StairwellPart_102",
       "aliases": [
         "Corrupted Upper Landing"
       ],
@@ -3646,59 +3578,29 @@
       ]
     },
     {
-      "name": "StairwellPart_108",
+      "name": "StairwellPart_103",
       "aliases": [
-        "Corrupted Upper Landing Side Wall"
+        "Corrupted Apartment Back Rail"
       ],
       "size": [
-        0.24,
-        2.5,
-        1.69
+        6.45,
+        1.16,
+        0.1
       ],
       "kind": "Box",
-      "style": "box",
-      "projection": "BoxZY",
-      "bounds_min": [
-        -0.12,
-        -1.25,
-        -0.845
-      ],
-      "bounds_max": [
-        0.12,
-        1.25,
-        0.845
-      ],
-      "triangles": 28,
-      "position": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "name": "StairwellPart_109",
-      "aliases": [
-        "Corrupted Upper Landing End Wall"
-      ],
-      "size": [
-        1.79,
-        2.5,
-        0.24
-      ],
-      "kind": "Box",
-      "style": "box",
+      "style": "open-guardrail",
       "projection": "BoxXY",
       "bounds_min": [
-        -0.895,
-        -1.25,
-        -0.12
+        -3.225,
+        -0.58,
+        -0.05
       ],
       "bounds_max": [
-        0.895,
-        1.25,
-        0.12
+        3.225,
+        0.58,
+        0.05
       ],
-      "triangles": 28,
+      "triangles": 72,
       "position": [
         0,
         0,
@@ -3706,151 +3608,29 @@
       ]
     },
     {
-      "name": "StairwellPart_110",
+      "name": "StairwellPart_104",
       "aliases": [
-        "Middle Fluorescent Suspension Left",
-        "Middle Fluorescent Suspension Right"
+        "Corrupted Apartment Back Rail Top"
       ],
       "size": [
-        0.035,
-        1.42,
-        0.035
-      ],
-      "kind": "Cylinder",
-      "style": "pipe",
-      "projection": "CylinderSide",
-      "bounds_min": [
-        -0.0175,
-        -1.42,
-        -0.0175
-      ],
-      "bounds_max": [
-        0.0175,
-        1.42,
-        0.0175
-      ],
-      "triangles": 92,
-      "position": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "name": "StairwellPart_111",
-      "aliases": [
-        "Apartment Fluorescent Suspension Left",
-        "Apartment Fluorescent Suspension Right"
-      ],
-      "size": [
-        0.035,
-        0.605,
-        0.035
-      ],
-      "kind": "Cylinder",
-      "style": "pipe",
-      "projection": "CylinderSide",
-      "bounds_min": [
-        -0.0175,
-        -0.605,
-        -0.0175
-      ],
-      "bounds_max": [
-        0.0175,
-        0.605,
-        0.0175
-      ],
-      "triangles": 92,
-      "position": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "name": "StairwellPart_112",
-      "aliases": [
-        "Corrupted Endless Flight"
-      ],
-      "size": [
-        2.03,
-        4.34,
-        3.84
-      ],
-      "kind": "Box",
-      "style": "endless-flight",
-      "projection": "BoxXY",
-      "bounds_min": [
-        -1.015,
-        -0.92,
-        -1.92
-      ],
-      "bounds_max": [
-        1.015,
-        3.42,
-        1.92
-      ],
-      "triangles": 252,
-      "position": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "name": "StairwellPart_113",
-      "aliases": [
-        "Stairwell Corrupted Ceiling"
-      ],
-      "size": [
-        8.6,
-        0.2,
-        9.6
-      ],
-      "kind": "Box",
-      "style": "endless-ceiling",
-      "projection": "BoxXZ",
-      "bounds_min": [
-        -4.3,
-        -0.1,
-        -4.8
-      ],
-      "bounds_max": [
-        4.3,
+        6.53,
         0.1,
-        4.8
-      ],
-      "triangles": 36,
-      "position": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "name": "StairwellPart_114",
-      "aliases": [
-        "Stairwell Corrupted Back Wall"
-      ],
-      "size": [
-        8.6,
-        7.3,
-        0.24
+        0.18
       ],
       "kind": "Box",
-      "style": "endless-back-wall",
+      "style": "box",
       "projection": "BoxXY",
       "bounds_min": [
-        -4.3,
-        -3.6500000000000004,
-        -0.12
+        -3.265,
+        -0.05,
+        -0.09
       ],
       "bounds_max": [
-        4.300000000000001,
-        3.65,
-        0.12
+        3.265,
+        0.05,
+        0.09
       ],
-      "triangles": 36,
+      "triangles": 28,
       "position": [
         0,
         0,
@@ -3858,7 +3638,97 @@
       ]
     },
     {
-      "name": "StairwellPart_115",
+      "name": "StairwellPart_105",
+      "aliases": [
+        "Corrupted Upper Limit Rail"
+      ],
+      "size": [
+        1.78,
+        1.16,
+        0.1
+      ],
+      "kind": "Box",
+      "style": "open-guardrail",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.89,
+        -0.58,
+        -0.05
+      ],
+      "bounds_max": [
+        0.89,
+        0.58,
+        0.05
+      ],
+      "triangles": 48,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_106",
+      "aliases": [
+        "Corrupted Upper Limit Rail Top"
+      ],
+      "size": [
+        1.86,
+        0.1,
+        0.18
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.93,
+        -0.05,
+        -0.09
+      ],
+      "bounds_max": [
+        0.93,
+        0.05,
+        0.09
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_107",
+      "aliases": [
+        "Corrupted Cat Stone Relief"
+      ],
+      "size": [
+        0.8,
+        0.56,
+        0.25
+      ],
+      "kind": "Box",
+      "style": "stone-cat-relief",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.39999999999999997,
+        -0.28,
+        -0.125
+      ],
+      "bounds_max": [
+        0.39999999999999997,
+        0.28,
+        0.125
+      ],
+      "triangles": 540,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_108",
       "aliases": [
         "Corrupted Endless Open Flight"
       ],
@@ -3881,6 +3751,156 @@
         1.92
       ],
       "triangles": 216,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_109",
+      "aliases": [
+        "Corrupted Back Wall Base"
+      ],
+      "size": [
+        8.6,
+        5.3,
+        0.24
+      ],
+      "kind": "Box",
+      "style": "box",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -4.3,
+        -2.65,
+        -0.12
+      ],
+      "bounds_max": [
+        4.3,
+        2.65,
+        0.12
+      ],
+      "triangles": 12,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_110",
+      "aliases": [
+        "Corrupted Back Wall Broken Left"
+      ],
+      "size": [
+        1.9,
+        2.25,
+        0.3
+      ],
+      "kind": "Box",
+      "style": "broken-wall",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -0.95,
+        -1.125,
+        -0.15
+      ],
+      "bounds_max": [
+        0.95,
+        1.125,
+        0.15
+      ],
+      "triangles": 20,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_111",
+      "aliases": [
+        "Corrupted Back Wall Broken Right"
+      ],
+      "size": [
+        4.8,
+        2.75,
+        0.32
+      ],
+      "kind": "Box",
+      "style": "broken-wall",
+      "projection": "BoxXY",
+      "bounds_min": [
+        -2.4,
+        -1.375,
+        -0.16
+      ],
+      "bounds_max": [
+        2.4,
+        1.375,
+        0.16
+      ],
+      "triangles": 28,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_112",
+      "aliases": [
+        "Corrupted Roof East"
+      ],
+      "size": [
+        4.15,
+        0.74,
+        9.5
+      ],
+      "kind": "Box",
+      "style": "broken-roof",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -2.075,
+        -0.37,
+        -4.75
+      ],
+      "bounds_max": [
+        2.075,
+        0.37,
+        4.75
+      ],
+      "triangles": 20,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "StairwellPart_113",
+      "aliases": [
+        "Corrupted Roof South"
+      ],
+      "size": [
+        8.6,
+        0.24,
+        1.8
+      ],
+      "kind": "Box",
+      "style": "broken-roof",
+      "projection": "BoxXZ",
+      "bounds_min": [
+        -4.3,
+        -0.12,
+        -0.9
+      ],
+      "bounds_max": [
+        4.3,
+        0.12,
+        0.9
+      ],
+      "triangles": 24,
       "position": [
         0,
         0,

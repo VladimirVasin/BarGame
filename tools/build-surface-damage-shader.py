@@ -24,6 +24,8 @@ PROPERTIES = '''
         _SurfaceDamageExpose("Linear substrate target", Color) = (0.25,0.25,0.25,1)
         _SurfaceDamageAccent("Linear accent target", Color) = (0.10,0.10,0.10,1)
         _SurfaceDamageResponse("Smoothness scale", Vector) = (0.66,0,0,0)
+        _SurfaceHazePlane("Local haze distance plane", Vector) = (0,0,0,0)
+        _SurfaceHazeColor("Local haze colour / enable", Vector) = (0,0,0,0)
         // _SurfaceDamageObjectToDomain is a matrix supplied by the owner MPB.
 '''
 
@@ -39,6 +41,8 @@ half4 _SurfaceDamageSoil;
 half4 _SurfaceDamageExpose;
 half4 _SurfaceDamageAccent;
 half4 _SurfaceDamageResponse;
+float4 _SurfaceHazePlane;
+half4 _SurfaceHazeColor;
 #endif
 '''
 
@@ -98,6 +102,15 @@ void ApplySurfaceDamage(float3 positionOS, float3 normalOS, inout SurfaceData su
     surface.smoothness *= lerp(1.0h, saturate(_SurfaceDamageResponse.x), masks.a);
     // Alpha, normals, metallic, emission and geometry retain their own owners.
 }
+
+half3 ApplySurfaceHaze(half3 color, float3 positionWS)
+{
+    // Opt-in finite atmospheric depth, authored by the owning scene. The
+    // zero default leaves every ordinary/damage receiver bit-for-bit alone.
+    half depth = saturate(dot(float4(positionWS, 1.0), _SurfaceHazePlane));
+    depth = depth * depth * (3.0h - 2.0h * depth);
+    return lerp(color, _SurfaceHazeColor.rgb, depth * _SurfaceHazeColor.a);
+}
 #endif
 '''
 
@@ -154,6 +167,9 @@ def outputs():
         '''    InitializeStandardLitSurfaceData(input.uv, surfaceData);
     ApplySurfaceDamage(TransformWorldToObject(input.positionWS),
         TransformWorldToObjectNormal(input.normalWS), surfaceData);''')
+    forward = once(forward, '    color.rgb = MixFog(color.rgb, inputData.fogCoord);',
+        '''    color.rgb = MixFog(color.rgb, inputData.fogCoord);
+    color.rgb = ApplySurfaceHaze(color.rgb, input.positionWS);''')
 
     gbuffer = (shaders / "LitGBufferPass.hlsl").read_text(encoding="utf-8")
     gbuffer = once(gbuffer,
@@ -223,6 +239,8 @@ def validate_contract(generated):
         if source.count("    ApplySurfaceDamage(") != 1:
             raise ValueError(name + " must apply the shared damage operation exactly once")
     common = generated[SHADERS / "SurfaceDamageCommon.hlsl"]
+    if generated[SHADERS / "SurfaceDamageForwardPass.hlsl"].count("    color.rgb = ApplySurfaceHaze(") != 1:
+        raise ValueError("Local atmospheric depth must apply once after forward lighting")
     if common.count("SAMPLE_TEXTURE2D(") != 1 or re.search(r"\bfrac\s*\(", common):
         raise ValueError("Damage requires one atlas sample and may never repeat macro UVs")
 

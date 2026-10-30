@@ -1,6 +1,20 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted exception 2026-10-30 — Home ceiling, stove wall and room shots:**
+  User: lower ceiling/three room views/close stove's side gap.
+  Shell `12×8×2.9 m`, clear ceiling `2.86 m`; sealed-room bounds/area stay.
+  West wall→`X=-3.28` meets the unchanged kitchen; front/skirting/collision agree.
+  Upper storage/utensils descend at original
+  scale; flue shortens, pendant/light share `Y=2.35`, dust stays below ceiling.
+  Entry/sofa/kitchen shots reuse activation/hold hysteresis and bounded pan;
+  bathroom/balcony/contextual ownership and tank movement stay.
+  All24 reviewed: ambient/SSAO/hard spots/grade, materials/water/bevels/
+  damage/rig/outline owners and Bloom/DOF/SMAA/vignette/grain/state lens stay;
+  no new GI/SSR/volume/fog/flare/blur provider. Six lights/particle cap unchanged,
+  bounded shot lookup; costs unmeasured. Art§7/story§6/§16/§21/nine checks;
+  fiction/text/actions/door contents stay.
+
 - **Accepted 2026-10-30 — surrounding Home city view:**
   User: extend the smoking view behind Home. Passive seeded64m ring pads48m
   camera; `ContextMinimumX` clips terrain/roads/buildings/props/wires/fixtures.
@@ -52,14 +66,36 @@
   existing actual-noon light/material/shadow/post coverage, only camera/DOF scope;
   no new light/render pass. Bounded prepared shots/leases, cost unmeasured.
 
-- **Accepted architecture exception 2026-10-30 — endless upper view/glow:**
-  User: upper stairs look endless from Home door; fixtureless pallid-green glow.
-  Story§6 source/early-form exception, not final-door light/otherworld.
-  Landing4.8/metal rails: visible grille1.78×1.84×.10,z2.25;12 shared open
-  stair/rail flights, no endcap. Roof/back notches have matching MeshColliders.
-  One steady shadowed Spot(24m/38°/35,bounce0)/2-particle CityLightHalo/
-  existing Bloom: direct light/halo, no volumetric GI/SSGI/SCGI/custom pass. Original3 practicals/other24-effect owners/assets/cleanup stay;
-  no scene/text/lore/act/finale; cost unmeasured.
+- **Accepted architecture exception 2026-10-30 — distorted Stairwell/short ascent:**
+  User: recognizable distorted Stairwell/short ascent.
+  Lower flights/landings/walls/columns/domestic traces/three fixtures stay.
+  Back-wall base/shifted fragments/torn east-south roof open asymmetrically
+  above three reused distant flights. Transverse rail ends the walkable landing.
+  Three interior shots frame the full hero at16:9/4:3.
+  White-yellow core/copper-red halo and scoped haze hide the last flight with
+  Bloom off; scene/owner-guarded disable/unload restore. Ordinary mode stays.
+  No actV/gates/portal/new scene/death/lore.
+  All24: cold-green ambient/grade, original practicals/dust/room sound/music;
+  corrupt middle fixture/light/supports/electrical cue shareX1.55. Apartment bounce2/range4;
+  upper hard Spot45/range18, two halo particles3.6/8m with depth/soft-intersection.
+  Per-renderer `SurfaceDamageLit` Forward haze z6→9.8;
+  defaults0/Home unchanged, hidden module casts no shadow. Secondary linear
+  fog9–32m/background(.13,.17,.14); `fogKeepLinear` retains player variants.
+  SSAO/maps/bevels/UVs/damage/native/SMAA/vignette/grain/state lens and shared
+  inspection DOF/outline stay. No GI/SSGI/SCGI/SSR/cubes/water/rim/flare/blur/
+  strobe/new post-feature; finite reused modules, costs unmeasured.
+
+- **Accepted architecture exception 2026-10-30 — stone Cat-head inspection:**
+  User: static stone Cat head in descent wall; ears/muzzle/carved grin, buried rear;
+  no body/neck/plinth/blood, living/second Cat, transformation/story grin.
+  No live Cat here; ordinary feeding/quest state stay; no food/grant.
+  Narrative/ObjectCloseUp: silent cancellable E «Осмотреть»; no lore/pages/speech/reward.
+  User: instant wide↔close `NarrativeCameraTransition.Cut`, camera/DOF together;
+  default Blend. User: model/contact-shadow hidden only in close-up:
+  shared `PlayerPresentationVisibility` lease hides on Cut and restores same-frame
+  on exit/cancel/disable/failed framing. Collider/rig/original approach stay;
+  no teleport/alignment masking. All24 owners stay; no SSR/SSGI history/new effect.
+  Story§6/§16/§21/nine checks; shared passive assets.
 
 - **Accepted 2026-10-29 — decay hair and clothing wear:**
   User: cropped first hair grows long/unkempt at maximum, replacing fixed medium
@@ -97,12 +133,9 @@
 - **Accepted architecture exception 2026-10-29 — post-sleep corruption route:**
   Opaque Home cut commits apartment7/hero dose floor7 atomically; higher dose
   stays, held-rig apply precedes wake. `HomeSleepAppearanceActive` selects
-  corrupted Stairwell: wall x1.45/z-2.88/y3.2–7.3 seals descent; upper flight
-  opens to landing4.8/rails.
-  Docks/ordinary layout stay. New Game/debug-day clears mode;
-  dose resets independently. No act/world0–5/finale/otherworld/scene/text/lore.
-  Ochre-gray walls/rust-brown metal: bounded construction/shared bindings;
-  later macro/glow decisions own their surface/light changes.
+  corrupted Stairwell; the dated distortion/statue decision owns its presentation.
+  New Game/debug-day clears mode; dose resets independently.
+  No act/world0–5/finale/otherworld/scene/lore change.
 
 - **Accepted architecture exception 2026-10-29 — technical Home sleep MVP:**
   Same positioned rig/sofa entry/settle/contacts/exit; push3/closed-eye hold3,
@@ -604,8 +637,8 @@
   Baked GI/APV Deferred: no offline bake geometry/stable bindings. Requires matching
   time/door scenarios, shader sampling/import proof, bounded loading/memory.
 - **Accepted exception 2026-10-21, Home remodel — explicit user decision:**
-  Apartment `12 x 8 x 3.4 m`, same locked room `13.04 m²`; art §7/story §6/§11
-  replace old dimensions/bed placement. Door/reply/contents/bathroom/balcony stay.
+  Apartment `12 x 8 m`, same locked room `13.04 m²`; art §7/story §6/§11.
+  Door/reply/contents/bathroom/balcony stay.
   Sofa `2.55 x 1.15 m`: back west, head/pillow/clock south, sleep frame `-90°`.
   Table flush to locked-room front, wholly inside its width; chair south/dock east.
   Corner junk/slippers/late junk are removed. Bookcase/radio move to
@@ -616,8 +649,7 @@
   deformation. `HomeDiningSeatPlan` reuses complete `ChessSeatEnter/PlayLoop/Exit`:
   side entry/rear aisle veto clear backrest/table; shared cleanup owns input/shadow.
   The owning seat filters world interaction until cleanup; seated handlers retain E.
-  Kitchen practical raises local lights to six without another shadow map;
-  bathroom/balcony lighting and default fixed shots stay. No plot/clue/speech;
+  Kitchen practical: six local lights, no new shadow map; bathroom/balcony light stays. No plot/clue/speech;
   story §16/§21 and all nine art §16 checks remain mandatory.
 - **Accepted 2026-10-21, Home wall painting — explicit user decision:**
   `TheWeaverandCrownedBirdTapestry.png` becomes one anonymous household painting
@@ -5268,15 +5300,11 @@
   can be driven into and only backed out of, because behind it stand the
   island's paving circle and its route mast, so the homecoming parks turned
   round and the canonical stance returns with the next city build.
-- **Accepted — Separate home interior:** `HomeInterior` owns the validated
-  `12 x 8 x 3.4 m` runtime-composed apartment with protected entry/main/bathroom
-  routes, a solid ajar bathroom door and unchanged toilet/shower/sink contacts.
-  It reuses the common player, HUD, interaction and door-transition contracts.
-  The single camera defaults to three authored shots with zone hysteresis;
-  the accepted `2026-10-21` global debug mode optionally flies freely. Exiting sends
-  the player from the apartment into `StairwellInterior`; only the stairwell's
-  street door sets the home return kind and restores the matching city
-  approach, without altering cash or drinking progress.
+- **Accepted — Separate home interior:** `HomeInterior`: validated routes,
+  solid ajar bathroom door/toilet/shower/sink contacts; shared player/HUD/
+  interactions/door transitions. Shots follow the dated Home decision; F4
+  remains global debug flight. Exit→`StairwellInterior`; only its street door
+  sets Home return/City approach, preserving cash/drinking progress.
 - **Accepted — Blender-authored starting apartment, 2026-09-05:**
   `home_interior_v1` is generated by `tools/build-home-interior-3d-model.py`
   into `Assets/Home/Interior/Models/HomeInterior3D.fbx` plus its JSON manifest.
@@ -5612,40 +5640,20 @@
   post-processing/bounded dust/ventilation/electrical/pipe audio and optional
   `stairwell_theme`. Post-sleep mode is the separate accepted exception above.
 - **Accepted — Perched interactive stairwell cat (3D Cheshire trickster):**
-  The last sprite conversion. One seated near-black low-poly 3D cat owns the
-  non-blocking authored perch on the top of the `Middle Landing Back Rail`
-  (its origin is the rail-contact point, `MiddleElevation + 1.16`) and the
-  same separate walkable interaction point. The model comes from the one-off
-  Blender generator `tools/build-stairwell-cat-3d-model.py` through the
-  cashier-shaped `StairwellCatAssetSetup` pipeline: passive prefab outside
-  Resources, one addressable `StairwellCatProvider`, and — a first — **no
-  armature at all**: articulation is pivot empties (`PIVOT_Chest`,
-  `PIVOT_Head`, `PIVOT_Ear.L/R`, `PIVOT_Tail.01..03`) exported flat beside
-  the meshes with every pivot-bound mesh's origin on its pivot; the actor
-  adopts and articulates them (the wheelchair mechanism pattern). The
-  untouched pure `StairwellCatIdleModel` timings drive breathing as chest
-  scale, tail flicks, ear twitches and grooming as pivot deltas; the discrete
-  look selector became the continuous hysteresis `StairwellCatHeadYawModel`
-  (`65°` tracking clamp). Pose deltas apply about the model's world axes over
-  rest poses cached at initialize; the geometry faces the negation of the
-  model root's axes (FBX `-Z` under the prefab's inner half turn).
-  Its trickster signature is `ACC_Grin`: a crescent of teeth wider than the
-  head, on its own `StairwellCatGrin.shader` material that reveals by arc
-  growth — the mesh bakes normalized arc length into UV x and the shader
-  clips on `abs(u-0.5) > 0.5 * _GrinProgress` with a feathered glowing
-  frontier, so the smile is drawn in from the center outward and un-drawn in
-  reverse (appear `0.4 s`, vanish `1.2 s`, pure `StairwellCatGrinTimeline`).
-  While the grin commits, the head swings over the shoulder toward the live
-  camera (up to `150°` — the MiddleFlight shot sits ~`137°` behind the
-  muzzle), one gesture with the reveal. **By default the grin does not
-  exist**: renderer disabled at progress zero and every fragment discarded.
-  There is deliberately no scheduler — `StairwellCatGrinController`
-  (`BeginGrin/EndGrin/SetGrinProgress`) is a public API for a future
-  trickster script, exposed as `StairwellInteriorRoot.CatGrin`.
-  `StairwellCatInteraction` is untouched: the actor kept its feeding API
-  verbatim, and the 16-step `6 fps` `StairwellCatFeedingTimeline` contract
-  the player `CatFeed*` clips pair to now poses a head-down eating dip with
-  chew alternation instead of an atlas swap.
+  Ordinary mode: one near-black 3D Cat on `Middle Landing Back Rail`, origin
+  `MiddleElevation + 1.16`; separate walkable interaction point/nonblocking perch.
+  `tools/build-stairwell-cat-3d-model.py`→`StairwellCatAssetSetup`: passive prefab
+  outside Resources, one addressable `StairwellCatProvider`. Pivot empties
+  chest/head/ears/tail, no armature; meshes keep pivot origins. Cached world-axis
+  rest deltas drive breathing/tail/ears/grooming; `StairwellCatHeadYawModel`
+  follows with65° clamp/hysteresis. Meshes face opposite model axes (FBX-Z/inner180°).
+  `ACC_Grin`/`StairwellCatGrin.shader`: arc-length UVx/feathered centre-out reveal,
+  `abs(u-0.5)>0.5*_GrinProgress`; appear.4s/vanish1.2s via `StairwellCatGrinTimeline`.
+  Head turns toward camera up to150° (MiddleFlight137°); renderer/fragment hidden
+  at0. No scheduler: `BeginGrin`/`EndGrin`/`SetGrinProgress` remain public through
+  `StairwellInteriorRoot.CatGrin`. `StairwellCatInteraction`/feeding API unchanged:
+  16-step6fps head-down dip/chew pairs with hero `CatFeed*` clips. Corrupted mode
+  uses the separately accepted passive sculpture, not this actor.
 - **Accepted — Same-scene third-floor Home balcony:** Window/glazed door/deck
   at4.7m; threshold shares `RoadWalkableArea`, rail safety collision retained.
   Home rebuilds seeded roads/lots/windows/lamps/signals, no collision/second
@@ -5685,21 +5693,13 @@
   leaving, eases in over `MusicMix.FadeInSeconds`, leaves over
   `MusicMix.FadeOutSeconds` and treats a missing clip as a silent no-op.
 - **Accepted — Diegetic Home practicals and 3D shots:** Three shadowless
-  practical pools follow the living pendant, kitchen fixture and bathroom tube.
-  The bathroom point pool, tube and halo share a deterministic
-  unscaled `6.4 s` cycle with a separate cold hard-shadow Spot staged just
-  inside the bathroom threshold; the group remains steady for most of the
-  cycle, then stutters together briefly while the Spot projects through the
-  ajar door toward the apartment exit. A separate warm shadowless Spot is
-  physically co-located with the compact emissive entrance lamp and illuminates
-  the door plus entry floor. One shadowed cookie Spot projects through the
-  window; only its color and intensity blend from the existing cold night
-  shaft to warm daylight under `HomeDayNightController`, while the room
-  practicals follow the clock. The atmosphere owns at most six
-  local realtime lights. Window/door panes reuse one shared transparent glass
-  shader/material. During Home fixed-camera
-  ownership, the same world-oriented modular 3D hero remains active in
-  MainRoom, Bathroom and Balcony; no player billboard-plane mode is required.
+  pools follow pendant/kitchen/tube. Bathroom pool/tube/halo and cold hard-shadow
+  threshold Spot share an unscaled `6.4 s` steady→stutter cycle; the Spot crosses
+  the ajar door toward the exit. Warm shadowless entrance Spot shares its
+  emissive lamp and lights door/floor. Hard-shadow window-cookie Spot changes
+  only colour/intensity, cold night→warm day; `HomeDayNightController` drives
+  practicals too. At most six local lights; panes share glass shader/material.
+  Every fixed shot retains the world-oriented modular 3D hero.
 - **Accepted — Explicit Home foreground cutaway:** Runtime Home builders
   register logical renderer groups for furniture and its attached dressing,
   bathroom and balcony doors, soft bathroom dressing and the visible balcony

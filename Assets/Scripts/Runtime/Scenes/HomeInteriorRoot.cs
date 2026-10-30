@@ -608,12 +608,9 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// How far the main-room shot may turn to keep the hero framed.
-        /// One aim from the corner it stands in cannot hold the whole
-        /// apartment - the west wall and the ground beside the camera
-        /// fall outside it - so the shot follows him by the least it can
-        /// and stops there. Everything else in the room stays put: the
-        /// pan is zero until he reaches the edge of the picture.
+        /// Each living-area shot holds its composition until the hero
+        /// reaches its edge. Separate activation and hold bounds keep
+        /// footsteps near a cut from repeatedly changing the view.
         /// </summary>
         private const float MainRoomFocusYawDegrees = 18f;
         private const float MainRoomFocusPitchDegrees = 9f;
@@ -625,20 +622,36 @@ namespace BarPromenade
         {
             Rect walkable = plan.WalkableBounds;
             Rect bathroom = plan.BathroomBounds;
+            const float livingDivisionX = -1.10f;
+            const float kitchenDivisionZ = 1.15f;
+            const float cutHoldMargin = 0.16f;
             var mainActivation = new Rect(
-                walkable.xMin,
+                livingDivisionX,
                 walkable.yMin,
-                walkable.width,
+                walkable.xMax - livingDivisionX,
                 bathroom.yMin -
                 walkable.yMin +
                 0.10f);
             var mainHold = new Rect(
-                walkable.xMin,
+                livingDivisionX - cutHoldMargin,
                 walkable.yMin,
-                walkable.width,
+                walkable.xMax - livingDivisionX + cutHoldMargin,
                 bathroom.yMin -
                 walkable.yMin +
                 0.18f);
+            Rect sofaActivation = Rect.MinMaxRect(
+                walkable.xMin, walkable.yMin,
+                livingDivisionX, kitchenDivisionZ);
+            Rect sofaHold = Rect.MinMaxRect(
+                walkable.xMin, walkable.yMin,
+                livingDivisionX + cutHoldMargin,
+                kitchenDivisionZ + cutHoldMargin);
+            Rect kitchenActivation = Rect.MinMaxRect(
+                walkable.xMin, kitchenDivisionZ,
+                livingDivisionX, walkable.yMax);
+            Rect kitchenHold = Rect.MinMaxRect(
+                walkable.xMin, kitchenDivisionZ - cutHoldMargin,
+                livingDivisionX + cutHoldMargin, walkable.yMax);
             var bathroomActivation = new Rect(
                 bathroom.xMin + 0.14f,
                 bathroom.yMin + 0.24f,
@@ -663,13 +676,31 @@ namespace BarPromenade
                     HomeCameraShotKind.MainRoom,
                     mainActivation,
                     mainHold,
-                    new Vector3(-6.48f, 3.05f, -3.25f),
-                    new Vector3(28f, 55f, 0f),
-                    68f)
+                    new Vector3(-4.35f, 2.25f, -1.95f),
+                    Quaternion.LookRotation(new Vector3(5.90f, -1.25f, 0.60f)),
+                    56f)
                     .WithFocus(
                         FixedCameraFocus.Bounded(
                             MainRoomFocusYawDegrees,
                             MainRoomFocusPitchDegrees)),
+                new HomeCameraShot(
+                    HomeCameraShotKind.HomeSofa,
+                    sofaActivation,
+                    sofaHold,
+                    new Vector3(1.05f, 2.25f, -3.45f),
+                    Quaternion.LookRotation(new Vector3(-5.05f, -1.30f, 3.20f)),
+                    60f)
+                    .WithFocus(FixedCameraFocus.Bounded(
+                        MainRoomFocusYawDegrees, MainRoomFocusPitchDegrees)),
+                new HomeCameraShot(
+                    HomeCameraShotKind.HomeKitchen,
+                    kitchenActivation,
+                    kitchenHold,
+                    new Vector3(-4.70f, 2.25f, -0.85f),
+                    Quaternion.LookRotation(new Vector3(0f, -1.10f, 3.40f)),
+                    58f)
+                    .WithFocus(FixedCameraFocus.Bounded(
+                        MainRoomFocusYawDegrees, MainRoomFocusPitchDegrees)),
                 new HomeCameraShot(
                     HomeCameraShotKind.Bathroom,
                     bathroomActivation,

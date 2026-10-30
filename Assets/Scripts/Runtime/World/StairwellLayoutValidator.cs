@@ -64,9 +64,9 @@ namespace BarPromenade
 
             var walkable =
                 new RoadWalkableArea(plan.WalkableRectangles);
-            if (!walkable.Contains(
+            if ((!plan.IsCorrupted && !walkable.Contains(
                     plan.StreetSpawn,
-                    PlayerRadius) ||
+                    PlayerRadius)) ||
                 !walkable.Contains(
                     plan.ApartmentSpawn,
                     PlayerRadius))
@@ -75,17 +75,15 @@ namespace BarPromenade
                     "Stairwell spawns must be safely walkable.");
             }
 
-            ValidateTrigger(
-                plan,
-                plan.StreetExitPosition,
-                plan.StreetExitTriggerSize,
-                "street exit");
+            if (!plan.IsCorrupted)
+                ValidateTrigger(plan, plan.StreetExitPosition, plan.StreetExitTriggerSize, "street exit");
             ValidateTrigger(
                 plan,
                 plan.ApartmentEntrancePosition,
                 plan.ApartmentEntranceTriggerSize,
                 "apartment entrance");
-            ValidateDoorDock(plan.StreetLobbyBounds, plan.StreetDoorActionRoot, plan.StreetElevation);
+            if (!plan.IsCorrupted)
+                ValidateDoorDock(plan.StreetLobbyBounds, plan.StreetDoorActionRoot, plan.StreetElevation);
             ValidateDoorDock(plan.ApartmentLandingBounds, plan.ApartmentDoorActionRoot, plan.ApartmentElevation);
             ValidateUpperBlocker(plan);
             if (plan.IsCorrupted)

@@ -32,6 +32,24 @@ namespace BarPromenade
             BuildPracticalFixtures(dressing, plan);
         }
 
+        public static void BuildCorrupted(Transform root, StairwellLayoutPlan plan)
+        {
+            Transform dressing = new GameObject("Stairwell Dressing").transform;
+            dressing.SetParent(root, false);
+            BuildPipes(dressing, plan);
+            BuildVentilation(dressing, plan);
+            BuildElectricalCabinets(dressing, plan);
+            BuildRadiator(dressing);
+            BuildWallDamage(dressing, plan);
+            BuildLooseTrash(dressing, plan);
+            BuildFluorescentFixture(dressing, "Ground", StairwellInteriorAtmosphere.GroundEmitterPosition,
+                3.12f, new Color(2.20f, 3.20f, 2.20f));
+            BuildFluorescentFixture(dressing, "Middle", StairwellInteriorAtmosphere.CorruptedMiddleEmitterPosition,
+                6.12f, new Color(1.65f, 2.85f, 2.35f));
+            BuildFluorescentFixture(dressing, "Apartment", StairwellInteriorAtmosphere.ApartmentEmitterPosition,
+                6.12f, new Color(3.40f, 2.15f, 0.72f));
+        }
+
         private static void BuildPipes(
             Transform root,
             StairwellLayoutPlan plan)
@@ -59,7 +77,7 @@ namespace BarPromenade
                 new Vector3(0.10f, 3.0f, 0.10f),
                 Quaternion.identity,
                 Pipe);
-            CreatePipe(
+            if (!plan.IsCorrupted) CreatePipe(
                 "Ceiling Main Pipe",
                 root,
                 new Vector3(0f, 5.73f, 4.52f),

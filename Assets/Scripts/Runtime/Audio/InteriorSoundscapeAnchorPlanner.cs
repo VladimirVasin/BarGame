@@ -19,7 +19,8 @@ namespace BarPromenade
                 plan.RoomSize.x * -0.5f + 0.19f;
             return new StairwellSoundscapeAnchors(
                 new Vector3(0.72f, 3.92f, backWall),
-                StairwellInteriorAtmosphere.MiddleEmitterPosition,
+                plan.IsCorrupted ? StairwellInteriorAtmosphere.CorruptedMiddleEmitterPosition :
+                    StairwellInteriorAtmosphere.MiddleEmitterPosition,
                 new Vector3(leftWall, 3.0f, 1.72f),
                 plan.UpperBlockerBounds.center,
                 new Vector3(-2.80f, 0.12f, -3.05f),

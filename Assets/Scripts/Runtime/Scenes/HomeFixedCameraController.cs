@@ -12,7 +12,9 @@ namespace BarPromenade
         StairAndUpperCorridor = 3,
         UpperSouthRoom = 4,
         UpperNorthRoom = 5,
-        UpperBathroom = 6
+        UpperBathroom = 6,
+        HomeSofa = 7,
+        HomeKitchen = 8
     }
 
     public readonly struct HomeCameraShot

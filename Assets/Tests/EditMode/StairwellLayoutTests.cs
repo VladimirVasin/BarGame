@@ -256,14 +256,30 @@ namespace BarPromenade.Tests.EditMode
                     (StairwellArrivalKind)99));
         }
 
-        [Test]
-        public void FixedCameraSelector_UsesHeightBandsWithHysteresis()
+        [TestCase(false)]
+        [TestCase(true)]
+        public void FixedCameraSelector_UsesHeightBandsWithHysteresis(bool corrupted)
         {
             StairwellLayoutPlan plan =
-                StairwellLayoutPlanner.Generate();
+                StairwellLayoutPlanner.Generate(corrupted);
             var selector = new StairwellCameraShotSelector(
                 StairwellFixedCameraController
                     .CreateDefaultShots(plan));
+
+            if (corrupted)
+            {
+                AssertShot(selector, plan.ApartmentSpawn, StairwellCameraShotKind.ApartmentLanding);
+                AssertShot(selector, new Vector3(-1.45f, 4.30f, -.5f), StairwellCameraShotKind.ApartmentLanding);
+                AssertShot(selector, new Vector3(-1.45f, 4.34f, -.4f), StairwellCameraShotKind.UpperFlight);
+                AssertShot(selector, new Vector3(-1.45f, 4.84f, 1.02f), StairwellCameraShotKind.UpperFlight);
+                AssertShot(selector, new Vector3(-1.45f, 4.84f, 1.10f), StairwellCameraShotKind.UpperLanding);
+                AssertShot(selector, new Vector3(-1.45f, 4.84f, .90f), StairwellCameraShotKind.UpperLanding);
+                AssertShot(selector, new Vector3(-1.45f, 4.80f, .72f), StairwellCameraShotKind.UpperFlight);
+                AssertShot(selector, new Vector3(-1.45f, 4.20f, -.74f), StairwellCameraShotKind.UpperFlight);
+                AssertShot(selector, new Vector3(-1.45f, 4.16f, -.83f), StairwellCameraShotKind.ApartmentLanding);
+                AssertShot(selector, plan.ApartmentDoorActionRoot, StairwellCameraShotKind.ApartmentLanding);
+                return;
+            }
 
             AssertShot(
                 selector,
@@ -301,6 +317,57 @@ namespace BarPromenade.Tests.EditMode
                 selector,
                 new Vector3(0f, 1.42f, 0f),
                 StairwellCameraShotKind.GroundFlight);
+        }
+
+        [TestCase(16f / 9f)]
+        [TestCase(4f / 3f)]
+        public void CorruptedFixedCameras_FrameDoorRouteAndUpperLanding(float aspect)
+        {
+            StairwellLayoutPlan plan = StairwellLayoutPlanner.Generate(true);
+            var selector = new StairwellCameraShotSelector(
+                StairwellFixedCameraController.CreateDefaultShots(plan));
+            var cameraObject = new GameObject("Corrupted Stairwell Framing Check");
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.enabled = false;
+            camera.aspect = aspect;
+            try
+            {
+                foreach (Vector3 root in new[]
+                {
+                    plan.ApartmentSpawn, plan.ApartmentDoorActionRoot,
+                    new Vector3(-2f, 3.24f, -4.2f),
+                    new Vector3(-1.45f, 4.30f, -.5f),
+                    new Vector3(-1.45f, 4.34f, -.4f),
+                    new Vector3(-1.45f, 4.84f, 1.02f),
+                    new Vector3(-1.90f, 4.84f, 1.10f),
+                    new Vector3(-1f, 4.84f, 1.87f),
+                    new Vector3(-1.45f, 4.80f, .72f),
+                    new Vector3(-1.45f, 4.16f, -.83f),
+                    plan.ApartmentDoorActionRoot
+                })
+                {
+                    StairwellCameraShot shot = selector.Select(root);
+                    Vector2 offset = shot.Focus.Resolve(shot.Position, shot.Rotation,
+                        shot.FieldOfView, aspect, root);
+                    camera.transform.SetPositionAndRotation(shot.Position,
+                        FixedCameraFocus.Compose(shot.Rotation, offset));
+                    camera.fieldOfView = shot.FieldOfView;
+                    foreach (Vector3 point in new[]
+                    {
+                        root + Vector3.up * FixedCameraFocus.BodyLowerHeight,
+                        root + Vector3.up * FixedCameraFocus.BodyUpperHeight,
+                        root + Vector3.up * FixedCameraFocus.BodyAimHeight + Vector3.right * .32f,
+                        root + Vector3.up * FixedCameraFocus.BodyAimHeight - Vector3.right * .32f
+                    })
+                    {
+                        Vector3 projected = camera.WorldToViewportPoint(point);
+                        Assert.That(projected.z, Is.GreaterThan(0f), $"{shot.Kind} at {root}");
+                        Assert.That(projected.x, Is.InRange(.03f, .97f), $"{shot.Kind} at {root}");
+                        Assert.That(projected.y, Is.InRange(.03f, .97f), $"{shot.Kind} at {root}");
+                    }
+                }
+            }
+            finally { Object.DestroyImmediate(cameraObject); }
         }
 
         private static void AssertShot(

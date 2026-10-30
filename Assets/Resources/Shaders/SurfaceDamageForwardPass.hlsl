@@ -271,6 +271,7 @@ void LitPassFragment(
 
     half4 color = UniversalFragmentPBR(inputData, surfaceData);
     color.rgb = MixFog(color.rgb, inputData.fogCoord);
+    color.rgb = ApplySurfaceHaze(color.rgb, input.positionWS);
     color.a = OutputAlpha(color.a, IsSurfaceTypeTransparent());
 
     outColor = color;

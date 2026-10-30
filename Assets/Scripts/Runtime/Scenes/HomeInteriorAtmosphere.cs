@@ -29,7 +29,7 @@ namespace BarPromenade
             new Color(0.43f, 0.58f, 0.84f);
 
         internal static readonly Vector3 MainEmitterPosition =
-            new Vector3(-2.35f, 2.60f, -1.10f);
+            new Vector3(-2.35f, 2.35f, -1.10f);
         internal static readonly Vector3 MainLightPosition =
             MainEmitterPosition;
         internal static readonly Vector3 KitchenEmitterPosition =
@@ -334,7 +334,7 @@ namespace BarPromenade
                 "Home Sparse Dust");
             dustObject.transform.SetParent(transform, false);
             dustObject.transform.localPosition =
-                new Vector3(0f, 1.9f, 0.35f);
+                new Vector3(0f, 1.3f, 0.35f);
             Dust = dustObject.AddComponent<ParticleSystem>();
 
             ParticleSystem.MainModule main = Dust.main;
@@ -358,7 +358,9 @@ namespace BarPromenade
 
             ParticleSystem.ShapeModule shape = Dust.shape;
             shape.shapeType = ParticleSystemShapeType.Box;
-            shape.scale = new Vector3(8.8f, 2.4f, 6.8f);
+            // Even the conservative full upward launch + lifetime drift and
+            // billboard radius stay below the 2.86 m ceiling underside.
+            shape.scale = new Vector3(8.8f, 1.4f, 6.8f);
 
             ParticleSystem.VelocityOverLifetimeModule velocity =
                 Dust.velocityOverLifetime;

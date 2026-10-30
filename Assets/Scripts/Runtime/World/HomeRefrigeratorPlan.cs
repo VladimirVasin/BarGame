@@ -584,7 +584,7 @@ namespace BarPromenade
                 Rect aisle = Rect.MinMaxRect(
                     Mathf.Min(a.x, b.x) - radius, Mathf.Min(a.z, b.z) - radius,
                     Mathf.Max(a.x, b.x) + radius, Mathf.Max(a.z, b.z) + radius);
-                if (OverlapsInterior(aisle, HomeLockedRoomPlan.Bounds))
+                if (OverlapsInterior(aisle, HomeLockedRoomPlan.CollisionBounds))
                     throw new InvalidOperationException("The kitchen route enters the locked room.");
                 foreach (HomeFurnitureFootprint item in layout.Furniture)
                     if (item.BlocksMovement && OverlapsInterior(aisle, item.Bounds))

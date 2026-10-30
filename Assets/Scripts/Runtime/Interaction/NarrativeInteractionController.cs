@@ -144,7 +144,8 @@ namespace BarPromenade
                     {
                         cameraStarted = director.BeginObject(follow, Target.SubjectRoot, Target.Staging.FocusBounds,
                             listener.transform, Target.Staging.CameraSideHint, Target.Staging.CameraMode,
-                            Target.Staging.CameraFront, Target.Staging.MaximumCameraHeight, Target.Staging.AuthoredFocusBoundsOnly);
+                            Target.Staging.CameraFront, Target.Staging.MaximumCameraHeight, Target.Staging.AuthoredFocusBoundsOnly,
+                            Target.Staging.CameraTransition, Target.PlayerToHide);
                         if (!cameraStarted)
                         { LastFailureReason = "Object framing rejected: " + director.LastRejectedShotReason; Cancel(); return; }
                         Phase = NarrativeInteractionPhase.Framing;

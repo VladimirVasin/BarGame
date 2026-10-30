@@ -185,6 +185,8 @@ namespace BarPromenade.Rendering
             blendOutSeconds = Mathf.Max(.01f, exitSeconds);
             smoothBlend = smooth;
             blendWeight = volume.weight;
+            // An explicit camera cut must arrive already focused on its subject.
+            if (entrySeconds <= 0f && IsEngaged) blendWeight = volume.weight = 1f;
         }
 
         public void SetFocusDistance(float meters)

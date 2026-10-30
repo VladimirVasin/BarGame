@@ -299,6 +299,25 @@ def grin_geometry():
     return vertices, faces, uv_by_vertex
 
 
+def head_geometry_parts():
+    """Pure authored head pieces, shared by the living rig and stone likeness."""
+    parts = [
+        ("GEO_Head", base.make_ellipsoid(HEAD_CENTER, HEAD_RADII, 12, 6),
+         "cat_head", "fur", PIVOT_HEAD),
+        ("GEO_Muzzle", base.make_ellipsoid((0.0, -0.125, 0.44), (0.035, 0.028, 0.024), 8, 4),
+         "cat_muzzle", "fur_light", PIVOT_HEAD),
+    ]
+    for side, sign in (("L", 1.0), ("R", -1.0)):
+        parts.append((f"FACE_Eye.{side}",
+            base.make_ellipsoid((sign * 0.036, -0.128, 0.478), (0.016, 0.008, 0.012), 8, 4),
+            "cheshire_eye", "eye_green", PIVOT_HEAD))
+        parts.append((f"GEO_Ear.{side}",
+            base.make_tapered_box((sign * 0.05, -0.045, 0.52), (sign * 0.06, -0.038, 0.585),
+                (0.055, 0.030, 0), (0.014, 0.008, 0)),
+            "cat_ear", "fur_dark", PIVOT_EAR_L if side == "L" else PIVOT_EAR_R))
+    return parts
+
+
 class StairwellCatBuilder:
     def __init__(self):
         self.result: CatBuildResult | None = None
@@ -572,49 +591,8 @@ class StairwellCatBuilder:
             )
 
     def build_head(self) -> None:
-        self.add_part(
-            "GEO_Head",
-            base.make_ellipsoid(HEAD_CENTER, HEAD_RADII, 12, 6),
-            "cat_head",
-            "fur",
-            pivot_name=PIVOT_HEAD,
-        )
-        self.add_part(
-            "GEO_Muzzle",
-            base.make_ellipsoid(
-                (0.0, -0.125, 0.44), (0.035, 0.028, 0.024), 8, 4
-            ),
-            "cat_muzzle",
-            "fur_light",
-            pivot_name=PIVOT_HEAD,
-        )
-        for side, sign in (("L", 1.0), ("R", -1.0)):
-            self.add_part(
-                f"FACE_Eye.{side}",
-                base.make_ellipsoid(
-                    (sign * 0.036, -0.128, 0.478),
-                    (0.016, 0.008, 0.012),
-                    8,
-                    4,
-                ),
-                "cheshire_eye",
-                "eye_green",
-                pivot_name=PIVOT_HEAD,
-            )
-            self.add_part(
-                f"GEO_Ear.{side}",
-                base.make_tapered_box(
-                    (sign * 0.05, -0.045, 0.52),
-                    (sign * 0.06, -0.038, 0.585),
-                    (0.055, 0.030, 0),
-                    (0.014, 0.008, 0),
-                ),
-                "cat_ear",
-                "fur_dark",
-                pivot_name=(
-                    PIVOT_EAR_L if side == "L" else PIVOT_EAR_R
-                ),
-            )
+        for name, geometry, role, palette, pivot in head_geometry_parts():
+            self.add_part(name, geometry, role, palette, pivot_name=pivot)
 
     def build_tail(self) -> None:
         self.add_part(

@@ -5,8 +5,14 @@ import math
 import interior_kit as kit
 import bar_parts as bp
 
+ROOM_HEIGHT = 2.9
+CEILING_UNDERSIDE = ROOM_HEIGHT - .04
 SHELL = (-7.0, -4.0, 5.0, 4.0)
 LOCKED = (-2.80, .82, 1.46, 3.88)
+# Thicken only the west wall to the existing kitchen run; the room stays shut.
+LOCKED_WALL_WEST = -3.28
+LOCKED_COLLISION = (LOCKED_WALL_WEST, *LOCKED[1:])
+UPPER_KITCHEN_DROP = .35
 SLEEP = (-6.86, -1.45, -5.71, 1.10)
 SOFA_DEPTH = 1.15
 SOFA_DEPTH_SCALE = SOFA_DEPTH / 1.75
@@ -167,9 +173,9 @@ def configure_fixed(fixed):
     for name, size, sheet in (
         ("Home Floor", (12,.16,8), "RoomPlanks"),
         ("Home Ceiling", (12.48,.16,8.48), "CeilingPlaster"),
-        ("Home Back Wall", (12,3.4,.24), "RoomWallpaper"),
-        ("Home Left Wall", (.24,3.4,8), "RoomWallpaper"),
-        ("Home Entry Wall Left", (5.70,3.4,.24), "RoomWallpaper"),
+        ("Home Back Wall", (12,ROOM_HEIGHT,.24), "RoomWallpaper"),
+        ("Home Left Wall", (.24,ROOM_HEIGHT,8), "RoomWallpaper"),
+        ("Home Entry Wall Left", (5.70,ROOM_HEIGHT,.24), "RoomWallpaper"),
         ("Home Scarred Table", (1.45,.10,1.20), "RoomLaminate"),
         ("Home Bed Frame", (2.55,.38,SOFA_DEPTH), "RoomUpholstery"),
         ("Home Bed Crooked Blanket", (1.1475,.12,.315*SOFA_DEPTH_SCALE), "RoomUpholstery"),
@@ -204,7 +210,7 @@ def add_bindings(b):
         n=(i+1)%32
         faces.append(((len(profile)-1)*32+i,(len(profile)-1)*32+n,n,i))
     b.add("Home Main Lamp Shade",(.58,.22,.58),"PaintedMetal",geometry=(vertices,faces),tint=(.25,.30,.27,1))
-    b.add("Home Main Lamp Wire",(.028,.40,.028),"PaintedMetal")
+    b.add("Home Main Lamp Wire",(.028,.15,.028),"PaintedMetal")
 
 
 def add_decor(b, cloth, dish, cylinder, irregular_patch):
@@ -224,23 +230,30 @@ def add_decor(b, cloth, dish, cylinder, irregular_patch):
             rotation=(rotation[0],rotation[1]-90,rotation[2])
         elif group == "home.furniture.table":
             position=(position[0]+.70,position[1],position[2]+.10)
+        # Keep the upper storage and the shelf contents together at their
+        # authored scale, with the pot below the lowered ceiling.
+        if name.startswith(("Home Kitchen Upper ", "Home Kitchen Wall Shelf",
+                            "Home Kitchen Shelf Bracket ", "Home Kitchen Unmarked Cup ",
+                            "Home Kitchen Kettle ", "Home Kitchen Stored Pot", "Home Kitchen Pot Lid")):
+            position=(position[0],position[1]-UPPER_KITCHEN_DROP,position[2])
         return b.add(name,size,sheet,role="decor",position=position,rotation=rotation,
                      min_day=day,max_day=last,geometry=geometry,tint=tint,
                      group=group,collider=collider)
 
     # One ordinary opaque story door; its room has no authored contents.
-    add("Home Locked Room West Wall",(.18,3.4,3.06),(-2.71,1.7,2.35),"RoomWallpaper",collider=True)
-    for suffix,x,width in (("Left",-1.3225,2.955),("Right",1.3325,.255)):
-        add("Home Locked Room Front "+suffix,(width,3.4,.18),(x,1.7,.91),"RoomWallpaper",collider=True)
-    add("Home Locked Room Lintel",(1.05,1.20,.18),(.68,2.8,.91),"RoomWallpaper",collider=True)
+    add("Home Locked Room West Wall",(-2.62-LOCKED_WALL_WEST,ROOM_HEIGHT,3.06),
+        ((LOCKED_WALL_WEST-2.62)*.5,ROOM_HEIGHT*.5,2.35),"RoomWallpaper",collider=True)
+    for suffix,x,width in (("Left",(LOCKED_WALL_WEST+.155)*.5,.155-LOCKED_WALL_WEST),("Right",1.3325,.255)):
+        add("Home Locked Room Front "+suffix,(width,ROOM_HEIGHT,.18),(x,ROOM_HEIGHT*.5,.91),"RoomWallpaper",collider=True)
+    add("Home Locked Room Lintel",(1.05,ROOM_HEIGHT-2.20,.18),(.68,(ROOM_HEIGHT+2.20)*.5,.91),"RoomWallpaper",collider=True)
     add("Home Locked Room Door",(1.05,2.20,.08),(.68,1.10,.855),"RoomWood",collider=True)
     # Thin routed trim and skirt carry the room's scale without creating clutter.
     for name, center, size in (
         ("Home West Skirting",(-6.855,.095,0),(.05,.19,7.72)),
-        ("Home North Skirting West",(-4.78,.095,3.855),(3.9,.19,.05)),
+        ("Home North Skirting West",((-6.73+LOCKED_WALL_WEST)*.5,.095,3.855),(LOCKED_WALL_WEST+6.73,.19,.05)),
         ("Home South Skirting West",(-4.13,.095,-3.855),(5.38,.19,.05)),
         ("Home South Skirting East",(3.10,.095,-3.855),(3.60,.19,.05)),
-        ("Home Locked Room Skirting",(-1.205,.095,.795),(2.98,.19,.05)),
+        ("Home Locked Room Skirting",((LOCKED_WALL_WEST+.285)*.5,.095,.795),(.285-LOCKED_WALL_WEST,.19,.05)),
     ):
         add(name,size,center,collider=True)
     for side,x in (("Left",.105),("Right",1.255)):
@@ -294,7 +307,7 @@ def add_decor(b, cloth, dish, cylinder, irregular_patch):
         size=(.045,.045,.035)
         add(f"Home Stove Control {i}",size,(-3.91+i*.15,.855,2.409),"Plain",tint=(.10,.11,.095,1),group="home.furniture.kitchen.right")
     add("Home Stove Hood Canopy",(.78,.14,.65),(-3.685,2.02,3.10),"PaintedMetal",tint=(.39,.41,.36,1))
-    add("Home Stove Hood Flue",(.28,.87,.28),(-3.685,2.525,3.48),"PaintedMetal",tint=(.39,.41,.36,1))
+    add("Home Stove Hood Flue",(.28,CEILING_UNDERSIDE-2.09,.28),(-3.685,(CEILING_UNDERSIDE+2.09)*.5,3.48),"PaintedMetal",tint=(.39,.41,.36,1))
     add("Home Stove Hood Filter",(.61,.014,.44),(-3.685,1.943,3.09),"PaintedMetal",tint=(.18,.21,.18,1))
     for i in range(9):
         add(f"Home Stove Hood Vent {i}",(.022,.003,.35),(-3.925+i*.060,1.934,3.09),"Plain",tint=(.075,.085,.07,1))
@@ -382,8 +395,8 @@ def add_decor(b, cloth, dish, cylinder, irregular_patch):
 
 
 def preview_poses():
-    poses={"Home Floor":(-1,-.08,0),"Home Back Wall":(-1,1.7,4),
-            "Home Left Wall":(-7,1.7,0),"Home Bed Frame":(-5.475,.22,-.375),
+    poses={"Home Floor":(-1,-.08,0),"Home Back Wall":(-1,ROOM_HEIGHT*.5,4),
+            "Home Left Wall":(-7,ROOM_HEIGHT*.5,0),"Home Bed Frame":(-5.475,.22,-.375),
             "Home Bed Mattress":(-5.475,.47,-.375),"Home Pillow":(-6.299,.6035,-.375),
             "Home Bed Crooked Blanket":(-5.025,.60,.17),
             "Home Sleeping Sofa Back":(-5.475,.80,.380),

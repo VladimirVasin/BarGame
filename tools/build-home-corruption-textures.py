@@ -245,7 +245,9 @@ def chart_size(size, projection, shell=False):
 
 
 def design():
-    home=json.loads(HOME.read_text())['parts']; stair=json.loads(STAIR.read_text())['parts']
+    home=json.loads(HOME.read_text())['parts']; stair_source=json.loads(STAIR.read_text())
+    stair=stair_source['parts']
+    home_height=next(p['size'][1] for p in home if p['name']=='Home Back Wall')
     charts={};entries={}
     def add(domain,key,family,part,group=None,projection=None,room_bounds=None,aliases=()):
         lo,hi=local_bounds(part);size=[b-a for a,b in zip(lo,hi)]
@@ -262,13 +264,13 @@ def design():
         for alias in aliases:
             aliasrow=dict(row);aliasrow['key']=domain+':'+alias;entries.setdefault(aliasrow['key'],aliasrow)
     shell={
-        'north':('XY',([-7,0,3.88],[5,3.4,4.12])),
-        'west':('ZY',([-7.12,0,-4],[-6.88,3.4,4])),
-        'east':('ZY',([4.88,0,-4],[5.12,3.4,4])),
-        'south':('XY',([-7,0,-4.12],[5,3.4,-3.88])),
-        'bathwest':('ZY',([1.46,0,.65],[1.64,3.4,3.866])),
-        'bathfront':('XY',([1.55,0,.56],[4.65,3.4,.74])),
-        'lockedfront':('XY',([-2.8,0,.82],[1.46,3.4,1.0])),
+        'north':('XY',([-7,0,3.88],[5,home_height,4.12])),
+        'west':('ZY',([-7.12,0,-4],[-6.88,home_height,4])),
+        'east':('ZY',([4.88,0,-4],[5.12,home_height,4])),
+        'south':('XY',([-7,0,-4.12],[5,home_height,-3.88])),
+        'bathwest':('ZY',([1.46,0,.65],[1.64,home_height,3.866])),
+        'bathfront':('XY',([1.55,0,.56],[4.65,home_height,.74])),
+        'lockedfront':('XY',([-3.28,0,.82],[1.46,home_height,1.0])),
     }
     for p in home:
         if p['sheet']=='Plain' or p['role'] not in ('binding','grid','decor'):continue
@@ -283,11 +285,14 @@ def design():
         aliases=list(p.get('aliases',[]))
         if p.get('semantic_name') and p['semantic_name']!=name:aliases.append(p['semantic_name'])
         if name in ('Home Floor','Home Ceiling'):
-            bounds=([-7,-.16,-4],[5,0,4]) if name=='Home Floor' else ([-7.24,3.36,-4.24],[5.24,3.52,4.24])
+            bounds=([-7,-.16,-4],[5,0,4]) if name=='Home Floor' else ([-7.24,home_height-.04,-4.24],[5.24,home_height+.12,4.24])
             add('home',name,family,p,projection='XZ',room_bounds=bounds,aliases=aliases)
         elif group:
             projection,bounds=shell[group]
             add('home',name,family,p,'home:shell:'+group,projection,bounds,aliases)
+            # The lower ceiling changes physical mapping, not the authored
+            # whole-wall motif or its previously accepted raster resolution.
+            if group in ('north','south'):charts['home:shell:'+group]['size']=(512,256)
         else:add('home',name,family,p,aliases=aliases)
     # All17 recipes are represented even if a layout currently overrides a
     # nominal binding. Runtime may fall back by the explicit family chart.
@@ -332,6 +337,8 @@ def design():
         charts['home:'+name]['size']=(64,64)
     stair_aliases={alias:p for p in stair for alias in p['aliases']}
     def stair_family(alias):
+        if alias=='Corrupted Cat Stone Relief':return 'Concrete'
+        if alias.startswith(('Corrupted Apartment Back Rail','Corrupted Upper Limit Rail')):return 'CorrodedMetal'
         if any(s in alias for s in ('Damp Wall','Peeling Paint')):return 'Damage'
         if 'Door Leaf' in alias:return 'DoorPaint'
         if any(s in alias for s in ('Wall','Dirty Wall Band','Column')):return 'WallPaint'
@@ -339,7 +346,7 @@ def design():
         if any(s in alias for s in ('Stair ', 'Landing','Flight')) and 'Rail' not in alias:return 'StairConcrete'
         if 'Wardrobe' in alias or 'Plank' in alias:return 'DirtyWood'
         if any(s in alias for s in ('Mattress','Paper','Sack','Bottle')):return 'Debris'
-        if any(s in alias for s in ('Floor','Ceiling','Threshold')):return 'Concrete'
+        if any(s in alias for s in ('Floor','Ceiling','Threshold','Roof')):return 'Concrete'
         return 'CorrodedMetal'
     room_planes={
       'back':('XY',([-4.3,0,4.66],[4.3,7.3,4.94])),
@@ -359,13 +366,11 @@ def design():
         else:add('stairwell',alias,family,p)
         if 'Ceiling' in alias:charts['stairwell:'+alias]['painter']='ceiling'
     # Merged repeats have unique masks per placed module, never a cyclic pool.
-    for index in range(12):
+    for index in range(stair_source['corrupted_prototype']['endless_flight']['modules']):
         add('stairwell','Distant Flight '+str(index+1),'StairConcrete',stair_aliases['Corrupted Endless Open Flight'])
     # The new upper route reuses authored mesh bindings but owns different
     # visible objects. Their masks must not copy the lower grille/landing.
-    upper_receivers=[('Corrupted Upper Temporary Grille',(1.78,1.84,.10))]
-    upper_receivers.extend(('Corrupted Upper Temporary Grille Bar '+str(i),(.045,1.84,.045))
-        for i in range(1,8))
+    upper_receivers=[]
     for side in ('Left','Right'):
         upper_receivers.append(('Corrupted Upper Landing '+side+' Rail',(1.2,1.16,.1)))
         upper_receivers.append(('Corrupted Upper Landing '+side+' Rail Top',(1.28,.1,.18)))
@@ -373,7 +378,7 @@ def design():
         p=dict(bounds_min=[-v*.5 for v in size],bounds_max=[v*.5 for v in size])
         add('stairwell',name,'CorrodedMetal',p,projection='Box3x2')
         entries['stairwell:'+name]['use_renderer_bounds']=True
-        charts['stairwell:'+name]['size']=(128,128) if name=='Corrupted Upper Temporary Grille' else (64,64)
+        charts['stairwell:'+name]['size']=(64,64)
     # Runtime-created mirror fill panels share their source's canonical field.
     for alias,source in (('Home Bathroom Mirror West Fill','Home Bathroom West Wall'),
             ('Home Bathroom Mirror East Wall','Home Right Wall North Pier'),
@@ -441,6 +446,31 @@ def validate_mapping(charts, entries):
             ('home:Home Right Wall South Pier','home:Home Right Wall North Pier'),
             ('stairwell:Stairwell Left Wall','stairwell:Left Dirty Wall Band')):
         if len({by_key[k]['chart_id'] for k in keys})!=1:raise RuntimeError('Continuous wall damage restarted')
+    # These receivers belong to the open corrupted composition, not to the
+    # retired shell/grille. Each retains its own complete physical surface.
+    for name,family in (
+            ('Corrupted Back Wall Base','WallPaint'),
+            ('Corrupted Back Wall Broken Left','WallPaint'),
+            ('Corrupted Back Wall Broken Right','WallPaint'),
+            ('Corrupted Roof East','Concrete'),
+            ('Corrupted Roof South','Concrete'),
+            ('Corrupted Apartment Back Rail','CorrodedMetal'),
+            ('Corrupted Apartment Back Rail Top','CorrodedMetal'),
+            ('Corrupted Upper Limit Rail','CorrodedMetal'),
+            ('Corrupted Upper Limit Rail Top','CorrodedMetal'),
+            ('Corrupted Cat Stone Relief','Concrete')):
+        key='stairwell:'+name
+        if key not in by_key or by_key[key]['family']!=family or by_key[key]['chart_id']!=key:
+            raise RuntimeError('Missing unique corrupted surface '+key)
+    if any('Corrupted Upper Temporary Grille' in key for key in by_key):
+        raise RuntimeError('Retired corrupted grille damage remains')
+    home_height=next(p['size'][1] for p in json.loads(HOME.read_text())['parts']
+        if p['name']=='Home Back Wall')
+    for row in entries:
+        if row['chart_id'].startswith('home:shell:') and row['bounds_max'][1]!=home_height:
+            raise RuntimeError('Home damage field exceeds current ceiling '+row['key'])
+    if by_key['home:Home Locked Room Front Left']['bounds_min'][0]!=-3.28:
+        raise RuntimeError('Home damage field omits stove-side wall extension')
     return sum(int(page.sum()) for page in occupied)
 
 

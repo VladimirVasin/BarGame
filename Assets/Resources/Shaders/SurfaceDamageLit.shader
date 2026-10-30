@@ -12,6 +12,8 @@ Shader "Bar Promenade/Surface Damage Lit"
         _SurfaceDamageExpose("Linear substrate target", Color) = (0.25,0.25,0.25,1)
         _SurfaceDamageAccent("Linear accent target", Color) = (0.10,0.10,0.10,1)
         _SurfaceDamageResponse("Smoothness scale", Vector) = (0.66,0,0,0)
+        _SurfaceHazePlane("Local haze distance plane", Vector) = (0,0,0,0)
+        _SurfaceHazeColor("Local haze colour / enable", Vector) = (0,0,0,0)
         // _SurfaceDamageObjectToDomain is a matrix supplied by the owner MPB.
         // Specular vs Metallic workflow
         _WorkflowMode("WorkflowMode", Float) = 1.0

@@ -41,6 +41,8 @@ namespace BarPromenade
         private NarrativeCameraMode objectMode;
         private float maximumObjectCameraHeight;
         private bool authoredObjectBoundsOnly;
+        private bool cutObjectTransitions;
+        private System.IDisposable hiddenObjectHero;
         private Vector3 documentFront, documentUp;
         private Vector3 closeUpCenter, closeUpExtents, closeUpUp;
         private readonly List<Vector3> closeUpCorners = new List<Vector3>();
@@ -108,36 +110,53 @@ namespace BarPromenade
         /// <summary>Fits a real object from the hero's accessible side; no invented speaker or head.</summary>
         public bool BeginObject(PlayerCameraFollow cameraFollow, Transform subject, Bounds bounds,
             Transform playerRoot, Vector3 preferredSide, NarrativeCameraMode mode = NarrativeCameraMode.ObjectSide,
-            Vector3 cameraFront = default, float maximumCameraHeight = float.PositiveInfinity, bool authoredFocusBoundsOnly = false)
+            Vector3 cameraFront = default, float maximumCameraHeight = float.PositiveInfinity, bool authoredFocusBoundsOnly = false,
+            NarrativeCameraTransition cameraTransition = NarrativeCameraTransition.Blend,
+            PlayerPresentationVisibility playerToHide = null)
         {
             LastRejectedShotReason = string.Empty;
             if (active || activeOwner != null || cameraFollow == null || !cameraFollow.isActiveAndEnabled || cameraFollow.Camera == null ||
                 subject == null || playerRoot == null || CinematicDepthOfField.IsActive || bounds.size.sqrMagnitude < .0001f)
             { LastRejectedShotReason = "Camera, subject or camera ownership unavailable"; return false; }
-            follow = cameraFollow; camera = cameraFollow.Camera;
-            npcRoot = subject; heroRoot = playerRoot; objectBounds = bounds; objectShot = true;
-            objectShotHeroBody = playerRoot.GetComponent<CharacterController>();
-            objectMode = mode;
-            maximumObjectCameraHeight = maximumCameraHeight;
-            authoredObjectBoundsOnly = authoredFocusBoundsOnly;
-            documentFront = (cameraFront.sqrMagnitude > .01f ? cameraFront : subject.forward).normalized;
-            documentUp = Vector3.ProjectOnPlane(Vector3.up, documentFront).normalized;
-            if (documentUp.sqrMagnitude < .01f) documentUp = subject.up;
-            if (objectMode == NarrativeCameraMode.ObjectCloseUp || IsSurfaceShot) MeasureObjectCloseUp(subject);
-            Vector3 towardHero = Vector3.ProjectOnPlane(playerRoot.position - bounds.center, Vector3.up);
-            axis = towardHero.sqrMagnitude > .01f ? towardHero.normalized : -subject.forward;
-            Vector3 naturalSide = Vector3.Cross(Vector3.up, axis);
-            if (Vector3.Dot(naturalSide, preferredSide) < 0f) naturalSide = -naturalSide;
-            bool found = false;
-            for (int variant = 0; variant < ShotVariantCount && !found; variant++)
-                for (int direction = 0; direction < (IsCloseUpShot ? 1 : 2) && !found; direction++)
-                {
-                    side = naturalSide * (direction == 0 ? 1f : -1f);
-                    found = TryResolveObjectShot(variant, out _, out _);
-                    if (found) preferredVariant = variant;
-                }
-            if (!found) { ClearReferences(); return false; }
-            return AcquireCamera();
+            if (playerToHide != null && (cameraTransition != NarrativeCameraTransition.Cut || mode != NarrativeCameraMode.ObjectCloseUp))
+            { LastRejectedShotReason = "Hiding the hero requires an instant object close-up"; return false; }
+            try
+            {
+                follow = cameraFollow; camera = cameraFollow.Camera;
+                npcRoot = subject; heroRoot = playerRoot; objectBounds = bounds; objectShot = true;
+                objectShotHeroBody = playerRoot.GetComponent<CharacterController>();
+                objectMode = mode;
+                maximumObjectCameraHeight = maximumCameraHeight;
+                authoredObjectBoundsOnly = authoredFocusBoundsOnly;
+                cutObjectTransitions = cameraTransition == NarrativeCameraTransition.Cut;
+                // Acquire and cut synchronously after the visible approach. Failed
+                // framing releases before this frame can render the gameplay view.
+                hiddenObjectHero = playerToHide?.AcquireHidden(this);
+                documentFront = (cameraFront.sqrMagnitude > .01f ? cameraFront : subject.forward).normalized;
+                documentUp = Vector3.ProjectOnPlane(Vector3.up, documentFront).normalized;
+                if (documentUp.sqrMagnitude < .01f) documentUp = subject.up;
+                if (objectMode == NarrativeCameraMode.ObjectCloseUp || IsSurfaceShot) MeasureObjectCloseUp(subject);
+                Vector3 towardHero = Vector3.ProjectOnPlane(playerRoot.position - bounds.center, Vector3.up);
+                axis = towardHero.sqrMagnitude > .01f ? towardHero.normalized : -subject.forward;
+                Vector3 naturalSide = Vector3.Cross(Vector3.up, axis);
+                if (Vector3.Dot(naturalSide, preferredSide) < 0f) naturalSide = -naturalSide;
+                bool found = false;
+                for (int variant = 0; variant < ShotVariantCount && !found; variant++)
+                    for (int direction = 0; direction < (IsCloseUpShot ? 1 : 2) && !found; direction++)
+                    {
+                        side = naturalSide * (direction == 0 ? 1f : -1f);
+                        found = TryResolveObjectShot(variant, out _, out _);
+                        if (found) preferredVariant = variant;
+                    }
+                if (!found) { ClearReferences(); return false; }
+                return AcquireCamera();
+            }
+            catch
+            {
+                if (active) RestoreImmediate();
+                else ClearReferences();
+                throw;
+            }
         }
 
         private bool AcquireCamera()
@@ -145,7 +164,7 @@ namespace BarPromenade
             CurrentSpeakerIsHero = false;
             if (!CinematicDepthOfField.TryBeginOwned(this, FocusDistance,
                 IsCloseUpShot ? 11f : 5.6f, 45f,
-                authoredShot ? authoredEntrySeconds : objectShot ? InspectionEntrySeconds : CinematicDepthOfField.BlendInSeconds,
+                cutObjectTransitions ? 0f : authoredShot ? authoredEntrySeconds : objectShot ? InspectionEntrySeconds : CinematicDepthOfField.BlendInSeconds,
                 authoredShot ? authoredExitSeconds : objectShot ? InspectionExitSeconds : CinematicDepthOfField.BlendOutSeconds,
                 objectShot || authoredShot && authoredSmoothTransitions))
             { ClearReferences(); return false; }
@@ -158,11 +177,19 @@ namespace BarPromenade
             blendStartFov = camera.fieldOfView;
             OriginalNearClipPlane = blendStartNearClipPlane = camera.nearClipPlane;
             CurrentSpeakerIsHero = false;
-            active = entering = true; returning = false; elapsed = 0f;
+            active = true; entering = !cutObjectTransitions; returning = false; elapsed = 0f;
             ResolveCurrentShot(out Pose shot, out float fov);
             CurrentShotPose = shot; CurrentShotFieldOfView = fov;
-            // Acquire at the exact live pose; the first Tick starts the move.
-            follow.SetFixedPose(blendStartPose.position, blendStartPose.rotation, blendStartFov);
+            if (cutObjectTransitions)
+            {
+                Apply(shot, fov);
+                UpdateFocusDistance();
+            }
+            else
+            {
+                // Acquire at the exact live pose; the first Tick starts the move.
+                follow.SetFixedPose(blendStartPose.position, blendStartPose.rotation, blendStartFov);
+            }
             return true;
         }
 
@@ -246,6 +273,7 @@ namespace BarPromenade
         public void BeginExit()
         {
             if (!active || returning) return;
+            if (cutObjectTransitions) { RestoreImmediate(); return; }
             if (!ParticipantsExist()) { RestoreImmediate(); return; }
             blendStartPose = new Pose(camera.transform.position, camera.transform.rotation);
             blendStartFov = camera.fieldOfView;
@@ -389,7 +417,7 @@ namespace BarPromenade
             if (IsSurfaceShot && position.y > maximumObjectCameraHeight)
             { LastRejectedShotReason = "Work-surface lens exceeds its authored height ceiling"; return false; }
             float capsulePlaneSupport = 0f;
-            if (!CloseUpCornersFit(pose, fov) ||
+            if (!CloseUpCornersFit(pose, fov) || hiddenObjectHero == null &&
                 !(IsSurfaceShot ? HeroLeavesObjectClear(pose, fov) : HeroOutsideCloseUpFrame(pose, fov, out capsulePlaneSupport)))
             {
                 Bounds hero = HeroBounds();
@@ -404,7 +432,7 @@ namespace BarPromenade
                 return false;
             }
             return CameraPositionClear(pose.position) && SightClear(closeUpCenter, pose.position) &&
-                HeroSightClear(pose.position, closeUpCenter);
+                (hiddenObjectHero != null || HeroSightClear(pose.position, closeUpCenter));
         }
 
         private bool CloseUpCornersFit(Pose pose, float fov)
@@ -720,7 +748,10 @@ namespace BarPromenade
 
         private void ClearReferences()
         {
+            hiddenObjectHero?.Dispose();
+            hiddenObjectHero = null;
             authoredShot = false;
+            cutObjectTransitions = false;
             follow = null; camera = null;
             npcRoot = npcHead = heroRoot = heroHead = null;
             objectShotHeroBody = null;

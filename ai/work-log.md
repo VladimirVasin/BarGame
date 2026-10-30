@@ -5,25 +5,28 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-30
 
-New Game: Home1/open balcony, stopped noon until E. Loading
-label/bar covers staged Home and its first frame; ready then acquires
-sleep. Views share camera/DOF; neutral wake/seated return/fresh-E stand.
-Debug retains time/place/tools; legacy alarm stays API-only. Passed:
-NewGame_LoadingScreenCoversCompositionUntilDestinationReady; frames reviewed.
+New Game: Home1/open balcony/noon until E. Loading label/bar covers staged
+Home/first frame, then sleep. Shared camera/DOF; neutral wake/seated return/
+fresh-E stand. Debug time/place/tools and legacy alarm API stay. Passed:
+NewGame_LoadingScreenCoversCompositionUntilDestinationReady.
 
-Technical sleep owns body-only nightmare/successive hero previews/covered
-maxima commit. Farther face framing and sustained nonverbal cue begin with
-transformation. Seated recovery/camera return lead to indefinite same-rig
-breath/head/shoulder idle+blink; fresh E releases slow stand, fixed palms/feet.
-Owned bed-only filter/motor/modal survive the wait; cleanup releases them.
-Native audio config loss invalidates cue banks; bounded lazy regeneration
-restores playable clips without replaying interrupted one-shots. Bathroom-tube
-crackle skips paused edges and restarts one owned voice, preventing accumulation.
-Calendar/quests/intoxication stay; precommit cancel restores the true form.
+Sleep: body-only nightmare/hero previews/covered maxima commit.
+Farther face frame/sustained nonverbal cue start with transformation.
+Seated recovery/camera return→same-rig breath/head/shoulder idle+blink;
+fresh E→slow stand, fixed palms/feet. Bed filter/motor/modal retain ownership
+through waiting; cleanup releases. Audio config loss invalidates cue banks;
+bounded lazy regeneration restores clips without replay. Bathroom crackle skips
+paused edges/restarts one voice. Calendar/quests/intoxication stay;
+precommit cancel restores true form.
 
-Home/corrupted Stairwell retain microtexture with unique whole-surface damage;
-room-plane shell charts/object aliases/mirrors share authored placement.
-Shared masks/materials replace tiled large motifs; exact earlier-state restore.
+Home: lower ceiling/entry-sofa-kitchen shots/stove-side wall contact.
+Fittings/light/dust fit; sealed room/contacts stay.
+HOME_INTERIOR_VALIDATED and AreaCaptureFixture.Home passed; frames reviewed.
+
+Home/Stairwell keep microtexture/unique damage; corrected Home shell bounds
+and new stairwell charts share aliases/mirrors. Atlas repack preserves Home
+pixels; shared masks/materials restore earlier states exactly.
+UNIQUE_SURFACE_DAMAGE_OK passed.
 Original Lit pass targets/per-draw uniforms preserve lighting without GPU
 instancing; neutral parity guards against the grid regression. Final Home clock
 shows impossible readings without changing time/audio; earlier states stay.
@@ -31,10 +34,11 @@ Garment thigh/shin/boot damage differs; forearms/patch/UV/alpha retain constrain
 Final balcony: closed folding assembly/collider/dark glass; ordinary states
 restore exactly, outdoor occupancy defers the seal without stranding.
 
-Stairwell seals apartment descent, opens upper flight/landing to a real grille;
-matching shell/collision notches reveal the endless-looking open-flight chain.
-Bounded fixtureless green Spot/CityLightHalo uses existing Bloom; practicals/
-effect owners/routes stay.
+Stairwell: distorted shell/short view/rail/full hero; haze hides end without Bloom.
+Stone head: silent camera/DOF cut; leased model/shadow hide fixes wide E.
+Approach/quest/ordinary mode stay; no live Cat.
+STAIRWELL_INTERIOR_ART_DETERMINISM_OK/AreaCaptureFixture.Stairwell passed;
+frames reviewed.
 
 Balcony: lip contact/right-hand pinch/thumb faceward; fingers clear full shaft.
 Shoulder/profile;64m City ring/rear, separate facade rain/NPC limits.
@@ -43,15 +47,15 @@ collision/seal; separated casing stops flicker. SMOKING_VALIDATED/SmokingGrip,
 balcony_four_leaf_fold_clearance_and_glazing_aperture and
 HomeBalconyShoulderOrbitAndFoldingDoor passed; frames reviewed.
 
-SleepMvp_AutomaticCutAndCleanup, AreaCaptureFixture.Stairwell,
-UNIQUE_SURFACE_DAMAGE_OK, SURFACE DAMAGE SHADER CONTRACT OK,
+SleepMvp_AutomaticCutAndCleanup,
+SURFACE DAMAGE SHADER CONTRACT OK,
 HERO CLOTHING WEAR CONTRACT OK,
 Home_BathroomCrackleFollowsAppliedFlickerTransitions,
 HomeOpeningPlayModeTests.NewGame_*, GameTimeStateTests.PreparedClock_*/PreparedSession_*,
 StartMenuModelTests.Navigation_SeparatesTheThreeTopRowsFromAllDebugTools,
 Confirm_DirectActionCommitsOnceWithoutChoosingALocation,
 RefusedDebugTrip_RearmsTheSelectedTimeInsideDebug and check-docs passed;
-montage/seated-default/sealed-balcony/clock/upstairs and new-game shots reviewed.
+montage/seated-default/sealed-balcony/clock and new-game shots reviewed.
 
 ## 2026-10-29
 

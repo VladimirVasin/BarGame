@@ -5,6 +5,7 @@ namespace BarPromenade
 {
     public static class HomeInteriorLayoutPlanner
     {
+        public const float RoomHeight = 2.9f;
         public static HomeInteriorLayoutPlan Generate()
         {
             Rect walkableBounds =
@@ -93,7 +94,7 @@ namespace BarPromenade
             };
             var plan = new HomeInteriorLayoutPlan(
                 new Vector2(12f, 8f),
-                3.4f,
+                RoomHeight,
                 walkableBounds,
                 new Vector3(0f, 0.12f, -2.15f),
                 new Vector3(0f, 1.05f, -3.48f),

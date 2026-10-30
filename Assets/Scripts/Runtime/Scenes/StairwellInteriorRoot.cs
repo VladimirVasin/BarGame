@@ -43,6 +43,7 @@ namespace BarPromenade
             private set;
         }
         public StairwellCatActor Cat { get; private set; }
+        public NarrativeInteraction CatReliefInspection { get; private set; }
 
         /// <summary>The Cheshire grin's public trigger API, for the
         /// future trickster script to drive.</summary>
@@ -115,7 +116,8 @@ namespace BarPromenade
             Atmosphere =
                 atmosphereObject.AddComponent<
                     StairwellInteriorAtmosphere>();
-            Atmosphere.Initialize(Layout.IsCorrupted);
+            Atmosphere.Initialize(Layout.IsCorrupted, camera);
+            if (Layout.IsCorrupted) Atmosphere.ConfigureCorruptedDepthHaze(World.Root);
 
             GameObject musicObject =
                 new GameObject("Stairwell Music");
@@ -152,6 +154,9 @@ namespace BarPromenade
 
             Arrival =
                 GameSessionState.ConsumeStairwellArrival();
+            // The corrupted composition has no lower compartment. A debug or
+            // stale street arrival uses the same supported return platform.
+            if (Layout.IsCorrupted) Arrival = StairwellArrivalKind.ApartmentDoor;
             Player = PlayerFactory.Create(
                 transform,
                 Layout.GetSpawn(Arrival),
@@ -196,7 +201,8 @@ namespace BarPromenade
                 IntoxicationHud);
             GameLogPhases.Report("stairwell", "player_and_camera", phaseTimer);
             phaseTimer.Restart();
-            BuildCat(camera);
+            if (Layout.IsCorrupted) BuildCatReliefInspection();
+            else BuildCat(camera);
             GameLogPhases.Report("stairwell", "cat", phaseTimer);
             phaseTimer.Restart();
             IntoxicationStatus =
@@ -206,17 +212,20 @@ namespace BarPromenade
                 CameraFollow,
                 IntoxicationHud);
             BuildExits();
-            GameObject blockerObject = new GameObject(
-                "Stairwell Quest Descent Blocker");
-            blockerObject.transform.SetParent(transform, false);
-            DescentBlocker =
-                blockerObject.AddComponent<
-                    StairwellQuestDescentBlocker>();
-            DescentBlocker.Initialize(
-                transform,
-                Player,
-                InteractionPrompt,
-                Layout);
+            if (!Layout.IsCorrupted)
+            {
+                GameObject blockerObject = new GameObject(
+                    "Stairwell Quest Descent Blocker");
+                blockerObject.transform.SetParent(transform, false);
+                DescentBlocker =
+                    blockerObject.AddComponent<
+                        StairwellQuestDescentBlocker>();
+                DescentBlocker.Initialize(
+                    transform,
+                    Player,
+                    InteractionPrompt,
+                    Layout);
+            }
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(
                 Player,
@@ -309,28 +318,49 @@ namespace BarPromenade
                 CatFeedingPlan);
         }
 
+        private void BuildCatReliefInspection()
+        {
+            Transform subject = World.CatRelief;
+            var staging = NarrativeStagingPlan.Standing(
+                transform.TransformPoint(new Vector3(2.45f, Layout.ApartmentElevation, -3.90f)),
+                transform.rotation * Quaternion.LookRotation(new Vector3(-1f, 0f, .8f)),
+                World.CatReliefBounds, transform.right,
+                NarrativeCameraMode.ObjectCloseUp,
+                transform.TransformDirection(new Vector3(-.24f, .02f, -1f).normalized),
+                authoredFocusBoundsOnly: true, cameraTransition: NarrativeCameraTransition.Cut);
+            var definition = new NarrativeInteractionDefinition("stairwell-cat-relief",
+                "interaction.inspect_cat_relief", System.Array.Empty<NarrativePage>(), silent: true);
+            CatReliefInspection = subject.gameObject.AddComponent<NarrativeInteraction>();
+            CatReliefInspection.PlayerToHide = Player.PresentationVisibility;
+            CatReliefInspection.Configure(definition, subject, staging,
+                transform.TransformPoint(new Vector3(1.45f, 4.12f, -3.68f)), interactionRadius: 1.25f);
+        }
+
         private void BuildExits()
         {
-            GameObject street =
-                new GameObject("Street Exit Interaction");
-            street.transform.SetParent(transform, false);
-            street.transform.localPosition =
-                Layout.StreetExitPosition;
-            BoxCollider streetTrigger =
-                street.AddComponent<BoxCollider>();
-            streetTrigger.isTrigger = true;
-            streetTrigger.size =
-                Layout.StreetExitTriggerSize;
-            StreetExit =
-                street.AddComponent<StairwellStreetExit>();
-            Vector3 streetDockLocal = Layout.StreetDoorActionRoot;
-            PlayerDoorActionTarget streetDoorAction =
-                street.AddComponent<PlayerDoorActionTarget>();
-            streetDoorAction.Configure(
-                PlayerDoorActionPlan.CreateStationary(
-                    street.transform.position,
-                    transform.TransformPoint(streetDockLocal),
-                    transform.TransformDirection(Vector3.back)));
+            if (!Layout.IsCorrupted)
+            {
+                GameObject street =
+                    new GameObject("Street Exit Interaction");
+                street.transform.SetParent(transform, false);
+                street.transform.localPosition =
+                    Layout.StreetExitPosition;
+                BoxCollider streetTrigger =
+                    street.AddComponent<BoxCollider>();
+                streetTrigger.isTrigger = true;
+                streetTrigger.size =
+                    Layout.StreetExitTriggerSize;
+                StreetExit =
+                    street.AddComponent<StairwellStreetExit>();
+                Vector3 streetDockLocal = Layout.StreetDoorActionRoot;
+                PlayerDoorActionTarget streetDoorAction =
+                    street.AddComponent<PlayerDoorActionTarget>();
+                streetDoorAction.Configure(
+                    PlayerDoorActionPlan.CreateStationary(
+                        street.transform.position,
+                        transform.TransformPoint(streetDockLocal),
+                        transform.TransformDirection(Vector3.back)));
+            }
 
             GameObject apartment =
                 new GameObject("Apartment Entrance Interaction");

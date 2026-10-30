@@ -385,7 +385,7 @@ namespace BarPromenade.Tests.EditMode
                 Throws.Nothing);
             Assert.That(plan.RoomSize, Is.EqualTo(new Vector2(12f, 8f)));
             Assert.That(plan.RoomBounds.center, Is.EqualTo(new Vector2(-1f, 0f)));
-            Assert.That(plan.RoomHeight, Is.EqualTo(3.4f));
+            Assert.That(plan.RoomHeight, Is.EqualTo(2.9f));
             Assert.That(
                 plan.Zones.Select(zone => zone.Kind),
                 Is.EquivalentTo(

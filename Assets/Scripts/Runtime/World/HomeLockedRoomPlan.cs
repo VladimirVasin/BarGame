@@ -7,6 +7,8 @@ namespace BarPromenade
     public static class HomeLockedRoomPlan
     {
         public static Rect Bounds => Rect.MinMaxRect(-2.80f, 0.82f, 1.46f, 3.88f);
+        // Only the west wall thickens toward the stove; the sealed room and door stay put.
+        public static Rect CollisionBounds => Rect.MinMaxRect(-3.28f, Bounds.yMin, Bounds.xMax, Bounds.yMax);
         public static Vector3 DoorPosition => new Vector3(0.68f, 1.05f, 0.815f);
         public static Vector3 DockPosition => new Vector3(0.68f, PlayerFactory.GroundedRootOffset, 0.30f);
         public static Vector3 TriggerPosition => new Vector3(0.68f, 1.0f, 0.28f);
@@ -15,10 +17,10 @@ namespace BarPromenade
         public static void ValidateOrThrow(HomeInteriorLayoutPlan plan)
         {
             foreach (HomeFurnitureFootprint furniture in plan.Furniture)
-                if (Overlaps(Bounds, furniture.Bounds))
+                if (Overlaps(CollisionBounds, furniture.Bounds))
                     throw new InvalidOperationException($"'{furniture.Id}' intrudes into the locked room.");
             foreach (HomeInteriorPath path in plan.Paths)
-                if (Overlaps(Bounds, path.Bounds))
+                if (Overlaps(CollisionBounds, path.Bounds))
                     throw new InvalidOperationException($"The locked room blocks '{path.Id}'.");
             if (!plan.WalkableBounds.Contains(new Vector2(DockPosition.x, DockPosition.z)))
                 throw new InvalidOperationException("The locked-room dock must be walkable.");
@@ -34,8 +36,9 @@ namespace BarPromenade
             var solid = new GameObject("Home Locked Room Collision");
             solid.transform.SetParent(room, false);
             BoxCollider collider = solid.AddComponent<BoxCollider>();
-            collider.center = new Vector3(Bounds.center.x, plan.RoomHeight * 0.5f, Bounds.center.y);
-            collider.size = new Vector3(Bounds.width, plan.RoomHeight, Bounds.height);
+            Rect bounds = CollisionBounds;
+            collider.center = new Vector3(bounds.center.x, plan.RoomHeight * 0.5f, bounds.center.y);
+            collider.size = new Vector3(bounds.width, plan.RoomHeight, bounds.height);
         }
     }
 }

@@ -12,7 +12,8 @@ namespace BarPromenade
             Transform streetDoor,
             Transform apartmentDoor,
             Collider descentWall = null,
-            Collider upperLanding = null)
+            Collider upperLanding = null,
+            Transform catRelief = null)
         {
             Root = root;
             StairColliders = stairColliders;
@@ -21,6 +22,8 @@ namespace BarPromenade
             ApartmentDoor = apartmentDoor;
             DescentWall = descentWall;
             UpperLanding = upperLanding;
+            CatRelief = catRelief;
+            CatReliefBounds = catRelief != null ? catRelief.GetComponent<Renderer>().bounds : default;
         }
 
         public Transform Root { get; }
@@ -30,5 +33,7 @@ namespace BarPromenade
         public Transform ApartmentDoor { get; }
         public Collider DescentWall { get; }
         public Collider UpperLanding { get; }
+        public Transform CatRelief { get; }
+        public Bounds CatReliefBounds { get; }
     }
 }

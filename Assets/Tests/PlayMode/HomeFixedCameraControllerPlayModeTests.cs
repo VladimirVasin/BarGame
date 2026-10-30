@@ -556,8 +556,8 @@ namespace BarPromenade.Tests.PlayMode
         private static readonly FixedCameraFocus MainRoomFocus =
             FixedCameraFocus.Bounded(18f, 9f);
 
-        /// <summary>The home shots as the apartment authors them, lifted
-        /// a hundred metres so the test rig cannot meet the world.</summary>
+        /// <summary>Synthetic corner shots retain the original edge-framing
+        /// regression, lifted clear of any loaded world geometry.</summary>
         private static IReadOnlyList<HomeCameraShot>
             CreateApartmentShots()
         {

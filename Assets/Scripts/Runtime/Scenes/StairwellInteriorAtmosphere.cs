@@ -5,6 +5,7 @@ using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace BarPromenade
@@ -16,6 +17,12 @@ namespace BarPromenade
         public const int MaximumDustParticles = 14;
         public const float FilmGrainIntensity = 0.05f;
         public const float VignetteIntensity = 0.23f;
+        public const float CorruptedFogStart = 9f;
+        public const float CorruptedFogEnd = 32f;
+        public const float CorruptedHazeStartZ = 6f;
+        public const float CorruptedHazeEndZ = 9.8f;
+        public static readonly Vector3 UpperGlowPosition = new Vector3(-1.45f, 8.7f, 9.45f);
+        public static readonly Color CorruptedFogColor = new Color(.13f, .17f, .14f);
 
         internal static readonly Vector3 GroundEmitterPosition =
             new Vector3(-1.45f, 2.70f, -3.40f);
@@ -25,6 +32,8 @@ namespace BarPromenade
         // inverse-square falloff left the landing unlit.
         internal static readonly Vector3 MiddleEmitterPosition =
             new Vector3(-0.45f, 4.15f, 1.62f);
+        internal static readonly Vector3 CorruptedMiddleEmitterPosition =
+            new Vector3(1.55f, 4.15f, 1.62f);
         internal static readonly Vector3 ApartmentEmitterPosition =
             new Vector3(2.48f, 5.78f, -3.20f);
 
@@ -32,6 +41,24 @@ namespace BarPromenade
             new List<Light>(MaximumPracticalLights);
         private ReadOnlyCollection<Light> readOnlyPracticalLights;
         private VolumeProfile runtimeProfile;
+        private Material distantGlowMaterial;
+        private Camera sceneCamera;
+        private bool corrupted;
+        private bool ownsEnvironment;
+        private bool previousFog;
+        private FogMode previousFogMode;
+        private Color previousFogColor, previousBackground, previousAmbient;
+        private float previousFogStart, previousFogEnd;
+        private Light sceneSun;
+        private Color previousSunColor;
+        private float previousSunIntensity;
+        private Quaternion previousSunRotation;
+        private Renderer[] hazeRenderers;
+        private Vector4[] previousHazePlanes, previousHazeColors;
+        private Vector4 hazePlane;
+        private MaterialPropertyBlock hazeProperties;
+        private static readonly int HazePlaneId = Shader.PropertyToID("_SurfaceHazePlane");
+        private static readonly int HazeColorId = Shader.PropertyToID("_SurfaceHazeColor");
 
         public bool IsInitialized { get; private set; }
         public IReadOnlyList<Light> PracticalLights =>
@@ -44,7 +71,7 @@ namespace BarPromenade
         public Light UpperGlow { get; private set; }
         public CityLightHalo UpperGlowHalo { get; private set; }
 
-        public void Initialize(bool corrupted = false)
+        public void Initialize(bool corrupted = false, Camera camera = null)
         {
             if (IsInitialized ||
                 practicalLights.Count > 0 ||
@@ -54,6 +81,19 @@ namespace BarPromenade
                     "The stairwell atmosphere is already initialized.");
             }
 
+            this.corrupted = corrupted;
+            sceneCamera = camera != null ? camera : Camera.main;
+            if (corrupted)
+            {
+                ApplyCorruptedEnvironment();
+                CreateUpperGlow();
+                // Finite reflected light from the surviving apartment fixture
+                // reaches the south-facing stone without a second visible lamp.
+                Light fill = CreatePracticalLight("Apartment Landing Bounce",
+                    new Vector3(1.4f, 5f, -4.05f), new Color(.79f, .65f, .46f),
+                    2f, 4f, 0f, false, flicker: false);
+                fill.bounceIntensity = 0f;
+            }
             practicalLights.Add(
                 CreatePracticalLight(
                     "Ground Entrance Light",
@@ -66,7 +106,7 @@ namespace BarPromenade
             practicalLights.Add(
                 CreatePracticalLight(
                     "Middle Flickering Light",
-                    MiddleEmitterPosition + Vector3.down * 0.16f,
+                    (corrupted ? CorruptedMiddleEmitterPosition : MiddleEmitterPosition) + Vector3.down * 0.16f,
                     new Color(0.46f, 0.67f, 0.59f),
                     10.00f,
                     9.5f,
@@ -81,25 +121,126 @@ namespace BarPromenade
                     7.0f,
                     3.1f,
                     false));
-            if (corrupted) CreateUpperGlow();
             CreatePostProcessVolume();
             CreateDust();
             IsInitialized = true;
         }
 
+        public void ConfigureCorruptedDepthHaze(Transform world)
+        {
+            if (!corrupted || hazeRenderers != null) return;
+            hazeProperties = new MaterialPropertyBlock();
+            hazeRenderers = world.GetComponentsInChildren<Renderer>();
+            previousHazePlanes = new Vector4[hazeRenderers.Length];
+            previousHazeColors = new Vector4[hazeRenderers.Length];
+            hazePlane = world.worldToLocalMatrix.GetRow(2);
+            hazePlane.w -= CorruptedHazeStartZ;
+            hazePlane /= CorruptedHazeEndZ - CorruptedHazeStartZ;
+            distantGlowMaterial.SetVector("_DepthHazePlane", hazePlane);
+            for (int i = 0; i < hazeRenderers.Length; i++)
+            {
+                Renderer receiver = hazeRenderers[i];
+                if (receiver.sharedMaterial == null || !receiver.sharedMaterial.HasProperty(HazePlaneId)) continue;
+                receiver.GetPropertyBlock(hazeProperties);
+                previousHazePlanes[i] = hazeProperties.GetVector(HazePlaneId);
+                previousHazeColors[i] = hazeProperties.GetVector(HazeColorId);
+            }
+            SetDepthHaze(true);
+        }
+
+        private void SetDepthHaze(bool active)
+        {
+            if (hazeRenderers == null) return;
+            Color tint = QualitySettings.activeColorSpace == ColorSpace.Linear ? CorruptedFogColor.linear : CorruptedFogColor;
+            var color = new Vector4(tint.r, tint.g, tint.b, 1f);
+            for (int i = 0; i < hazeRenderers.Length; i++)
+            {
+                Renderer receiver = hazeRenderers[i];
+                if (receiver == null || receiver.sharedMaterial == null || !receiver.sharedMaterial.HasProperty(HazePlaneId)) continue;
+                receiver.GetPropertyBlock(hazeProperties);
+                hazeProperties.SetVector(HazePlaneId, active ? hazePlane : previousHazePlanes[i]);
+                hazeProperties.SetVector(HazeColorId, active ? color : previousHazeColors[i]);
+                receiver.SetPropertyBlock(hazeProperties);
+            }
+        }
+
+        private void ApplyCorruptedEnvironment()
+        {
+            if (ownsEnvironment) return;
+            previousFog = RenderSettings.fog;
+            previousFogMode = RenderSettings.fogMode;
+            previousFogColor = RenderSettings.fogColor;
+            previousFogStart = RenderSettings.fogStartDistance;
+            previousFogEnd = RenderSettings.fogEndDistance;
+            previousAmbient = RenderSettings.ambientLight;
+            if (sceneCamera != null) previousBackground = sceneCamera.backgroundColor;
+            sceneSun = RenderSettings.sun;
+            if (sceneSun != null)
+            {
+                previousSunColor = sceneSun.color;
+                previousSunIntensity = sceneSun.intensity;
+                previousSunRotation = sceneSun.transform.rotation;
+                sceneSun.color = new Color(.61f, .70f, .57f);
+                sceneSun.intensity = .38f;
+                sceneSun.transform.rotation = Quaternion.LookRotation(new Vector3(.15f, -.55f, -1f));
+            }
+            RenderSettings.ambientLight = new Color(.13f, .16f, .13f);
+            RenderSettings.fog = true;
+            RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogColor = CorruptedFogColor;
+            RenderSettings.fogStartDistance = CorruptedFogStart;
+            RenderSettings.fogEndDistance = CorruptedFogEnd;
+            if (sceneCamera != null) sceneCamera.backgroundColor = CorruptedFogColor;
+            ownsEnvironment = true;
+        }
+
+        private void RestoreEnvironment()
+        {
+            if (!ownsEnvironment) return;
+            ownsEnvironment = false;
+            // A subsequent scene may already have installed its own state.
+            // Release only values still owned by this composition.
+            if (gameObject.scene == SceneManager.GetActiveScene() && RenderSettings.fog &&
+                RenderSettings.fogMode == FogMode.Linear && RenderSettings.fogColor == CorruptedFogColor &&
+                Mathf.Approximately(RenderSettings.fogEndDistance, CorruptedFogEnd))
+            {
+                RenderSettings.fog = previousFog;
+                RenderSettings.fogMode = previousFogMode;
+                RenderSettings.fogColor = previousFogColor;
+                RenderSettings.fogStartDistance = previousFogStart;
+                RenderSettings.fogEndDistance = previousFogEnd;
+                RenderSettings.ambientLight = previousAmbient;
+                if (sceneSun != null && RenderSettings.sun == sceneSun)
+                {
+                    sceneSun.color = previousSunColor;
+                    sceneSun.intensity = previousSunIntensity;
+                    sceneSun.transform.rotation = previousSunRotation;
+                }
+            }
+            if (sceneCamera != null && sceneCamera.backgroundColor == CorruptedFogColor)
+                sceneCamera.backgroundColor = previousBackground;
+        }
+
+        private void OnEnable()
+        {
+            if (IsInitialized && corrupted) { ApplyCorruptedEnvironment(); SetDepthHaze(true); }
+        }
+
+        private void OnDisable() { RestoreEnvironment(); SetDepthHaze(false); }
+
         private void CreateUpperGlow()
         {
             var source = new GameObject("Corrupted Upper Stair Glow");
             source.transform.SetParent(transform, false);
-            source.transform.localPosition = new Vector3(-1.45f, 9.5f, 10.5f);
+            source.transform.localPosition = UpperGlowPosition;
             source.transform.localRotation = Quaternion.LookRotation(new Vector3(0f, -1.6f, -3.84f));
             UpperGlow = source.AddComponent<Light>();
             UpperGlow.type = LightType.Spot;
-            UpperGlow.color = new Color(.54f, .86f, .66f);
-            UpperGlow.intensity = 35f;
-            UpperGlow.range = 24f;
-            UpperGlow.spotAngle = 38f;
-            UpperGlow.innerSpotAngle = 20f;
+            UpperGlow.color = new Color(1f, .79f, .43f);
+            UpperGlow.intensity = 45f;
+            UpperGlow.range = 18f;
+            UpperGlow.spotAngle = 55f;
+            UpperGlow.innerSpotAngle = 28f;
             UpperGlow.shadows = LightShadows.Hard;
             UpperGlow.shadowBias = .035f;
             UpperGlow.shadowNormalBias = .15f;
@@ -108,8 +249,12 @@ namespace BarPromenade
             var halo = new GameObject("Corrupted Upper Stair Glow Halo");
             halo.transform.SetParent(source.transform, false);
             UpperGlowHalo = halo.AddComponent<CityLightHalo>();
-            UpperGlowHalo.Initialize(CityNightResources.AtmosphereMaterial, 3f, 8f,
-                new Color(.86f, 1f, .87f, .90f), new Color(.45f, .86f, .60f, .24f));
+            Shader shader = Resources.Load<Shader>("Shaders/StairwellDistantGlow");
+            if (shader == null) throw new InvalidOperationException("The corrupted stairwell requires its distant glow shader.");
+            distantGlowMaterial = new Material(shader) { name = "Stairwell Distant Glow", hideFlags = HideFlags.HideAndDontSave };
+            UpperGlowHalo.Initialize(distantGlowMaterial, 3.6f, 8f,
+                new Color(1f, .94f, .64f, .96f), new Color(.67f, .22f, .075f, .40f));
+            UpperGlowHalo.HaloRenderer.maxParticleSize = 1f;
         }
 
         private Light CreatePracticalLight(
@@ -119,7 +264,8 @@ namespace BarPromenade
             float intensity,
             float range,
             float flickerPhase,
-            bool strongerFlicker)
+            bool strongerFlicker,
+            bool flicker = true)
         {
             GameObject lightObject = new GameObject(lightName);
             lightObject.transform.SetParent(transform, false);
@@ -133,12 +279,12 @@ namespace BarPromenade
             light.shadows = LightShadows.None;
             light.renderMode = LightRenderMode.ForcePixel;
             light.bounceIntensity = 0.06f;
-            StairwellLightFlicker flicker =
-                lightObject.AddComponent<StairwellLightFlicker>();
-            flicker.Initialize(
-                intensity,
-                flickerPhase,
-                strongerFlicker);
+            if (flicker)
+            {
+                StairwellLightFlicker controller =
+                    lightObject.AddComponent<StairwellLightFlicker>();
+                controller.Initialize(intensity, flickerPhase, strongerFlicker);
+            }
             return light;
         }
 
@@ -162,17 +308,17 @@ namespace BarPromenade
             PostProcessVolume.profile = runtimeProfile;
 
             Bloom bloom = runtimeProfile.Add<Bloom>(true);
-            bloom.intensity.Override(0.18f);
+            bloom.intensity.Override(corrupted ? .28f : .18f);
             bloom.threshold.Override(1.05f);
             bloom.scatter.Override(0.48f);
 
             ColorAdjustments color =
                 runtimeProfile.Add<ColorAdjustments>(true);
-            color.postExposure.Override(-0.12f);
+            color.postExposure.Override(corrupted ? -.04f : -.12f);
             color.contrast.Override(12f);
-            color.saturation.Override(-28f);
+            color.saturation.Override(corrupted ? -18f : -28f);
             color.colorFilter.Override(
-                new Color(0.72f, 0.82f, 0.71f, 1f));
+                corrupted ? new Color(.76f, .83f, .70f, 1f) : new Color(0.72f, 0.82f, 0.71f, 1f));
 
             Vignette vignette =
                 runtimeProfile.Add<Vignette>(true);
@@ -255,6 +401,14 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            RestoreEnvironment();
+            SetDepthHaze(false);
+            if (distantGlowMaterial != null)
+            {
+                if (Application.isPlaying) Object.Destroy(distantGlowMaterial);
+                else Object.DestroyImmediate(distantGlowMaterial);
+                distantGlowMaterial = null;
+            }
             if (runtimeProfile == null)
             {
                 return;

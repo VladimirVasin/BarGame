@@ -1681,7 +1681,7 @@ cemetery:own interiors/returns.
   needs fresh presses. Menus free cursor; focus return drops delta.
   `GameCursor` leases; authored cameras keep control. Fullscreen modals
   fade cinematics; balance keeps intoxication/falls;
-- Home keeps its three authored fixed shots and now protects the player from
+- Home's five authored fixed shots protect the player from
   foreground occlusion through one explicit registry of logical furniture,
   dressing, door and balcony-rail groups. Five 3D presentation samples cover
   the head, both sides of the chest, pelvis and feet; the first four drive
@@ -2006,14 +2006,21 @@ cemetery:own interiors/returns.
   the camera against a solid black doorway while the destination preloads,
   then activates only after the final blackout;
 - `StairwellInterior`: ordinary8.6×9.6×6.25m/3ramps/48steps; safe seams join
-  street/middle/apartment; upper debris blocks. Sleep mode: shell7.3m,
-  descent wall x1.45/z-2.88/y3.2–7.3;
-  upper debris gone, safe4.8m landing/rails/open grille atz2.25. Upper-
-  flight/overhead-landing shots/z hysteresis; suspensions7.17. Home uses its dock,
-  lower street entry keeps its street exit. Behind the grille: twelve shared
-  open stair/rail flights/no endcap; roof/back notches/matching MeshColliders.
-  Source-less pallid-green steady shadowed Spot/two-particle CityLightHalo/Bloom;
-  no new scene/text/finale/GI/custom pass, practicals unchanged;
+  street/middle/apartment; upper debris blocks. Sleep mode keeps recognizable
+  walls/lower flights/landings/columns/household traces/fixtures; shifted back-wall
+  fragments/torn east-south roof form an asymmetric upper opening. Descent wall
+  stays; transverse rail ends the walkable upper landing. Three view-only modules
+  extend upward; interior shots frame the full hero at16:9/4:3.
+  White-yellow glow/copper halo and opt-in Forward haze z6→9.8 conceal the final
+  module without Bloom; it casts no shadow. Haze defaults0/Home stays.
+  Linear fog/background restore on scene/owner-guarded disable/unload.
+  Cold-green ambient/grade, original practicals/dust/room sound/music;
+  middle fixture/light/supports/electrical cue shareX1.55; apartment bounce lights head.
+  Stone Cat head in wall: grin; no body/neck/plinth.
+  ObjectCloseUp: silent E «Осмотреть»/cancel; camera/DOF Cut both ways.
+  Model/shadow lease hides in close-up; exit/failure restores. Rig/collider/approach
+  stay; default Blend. No lore/pages/reward/live Cat/food;
+  ordinary feeding/quest stay;
 - the fixed-metre `interior_kit` shell/dressing has real openings, panelled leaves,
   steel necks/saddles meeting wooden rails and handles on doors/cabinet. Door
   docks align the right-hand clip with the lever, plates with the latch stile.
@@ -2036,20 +2043,14 @@ cemetery:own interiors/returns.
   bed, spatial ventilation and electrical layers, sparse positional industrial
   cues, a long dark reverb/moderate echo snapshot and the separate optional
   `stairwell_theme` music slot establish the atmosphere;
-- one clickable 3D near-black cat — the game's last sprite conversion — sits
-  with its back to the camera on the `Middle Landing Back Rail`. It has no
-  armature: the actor articulates authored pivot empties, so the untouched
-  deterministic idle timeline still breathes, flicks the tail, twitches an
-  ear and grooms roughly every 36 seconds, while a continuous hysteresis
-  head-yaw model (65° clamp) tracks the player. A default-hidden Cheshire
-  grin — a tooth crescent wider than the head on an arc-length reveal
-  shader — can draw itself in from the center outward while the head turns
-  over the shoulder to the live camera; only a future script triggers it
-  through `StairwellInteriorRoot.CatGrin`. The shared `IInteractable` menu opens
-  only for active day-two `FeedTheCat`: default-Talk, the existing silent cat
-  response, and default-No feeding confirmation or missing-item feedback.
-  `OpenStewCan` stays reserved until completion, including day one, so the
-  unique Home tin cannot be eaten before the quest;
+- ordinary mode's clickable 3D near-black cat sits
+  back-to-camera on `Middle Landing Back Rail`. Pivot empties/no armature;
+  deterministic breath/tail/ears/groom36s, head-yaw65°/hysteresis. Default-hidden
+  wide tooth crescent uses arc-length centre-out reveal with head turn;
+  `StairwellInteriorRoot.CatGrin` awaits a story trigger. Shared `IInteractable`
+  menu only for active day-two `FeedTheCat`: default-Talk/silent reply,
+  default-No feed confirmation/missing-item feedback. `OpenStewCan` remains
+  reserved until quest completion, including day one;
 - one reusable inventory-backed target-interaction model and controller own the
   pure item requirement, `Choice -> Confirmation -> Executing -> Closed`
   states, pointer/keyboard/gamepad choices, shared modal lock, temporary prompt
@@ -2173,17 +2174,19 @@ cemetery:own interiors/returns.
   Closed stew is
   a separate `ClosedStewCan` item from the refrigerator's `OpenStewCan` and
   therefore cannot satisfy the stairwell cat's feeding requirement;
-- Home `12 x 8 x 3.4 m`, `X[-7,5]`: clear routes, bathroom/ordinary balcony intact.
+- Home `12 x 8 x 2.9 m`, ceiling underside `2.86 m`, `X[-7,5]`: clear routes.
   Blender `home_interior_v1`/`interior_kit`: geometry; Unity: collision/actions/
   lights/cameras/live sleep deformation.
   `ApartmentEntranceDoor` shares aged timber/four recessed panels, deep frame,
   architraves/threshold/hardware with CombatTest; opening `1.32 m`.
   The same locked room is `13.04 m²`, `X[-2.80,1.46], Z[0.82,3.88]`;
-  its unchanged door reports the missing key without opening or consuming keys.
+  its west wall thickens to `X=-3.28`, meeting the stove without moving kitchen/inner bounds.
+  Its door reports the missing key without opening or consuming keys.
   Sleep is on the unfolded `2.55 x 1.15 m` west sofa, back west/head south.
   No corner junk/late decor; bookcase/radio face east from the south-west corner.
   A `3.37 m` full kitchen includes four burners/oven, hollow sink, storage,
-  worktop and utensils; cooking is visual only. Table top `0.83 m` is flush to
+  worktop/utensils; upper storage lowers at original scale, flue shortens.
+  Cooking is visual only. Table top `0.83 m` is flush to
   the locked-room front, wholly inside its width; table/chair share `X=-1.925`.
   Chair seat `0.48 m`; `HomeDiningSeatPlan` shares side-entry/rear approach;
   an owned filter retains seat E/prompt through cleanup.
@@ -2442,13 +2445,11 @@ cemetery:own interiors/returns.
   runtime volume, at most 12 sparse dust motes, a calm room bed, spatial
   refrigerator/balcony layers, sparse domestic details and a short damped
   reverb snapshot without echo;
-- one Main Camera defaults to three authored poses:
-  MainRoom at `(-6.48, 3.05, -3.25)`, Euler `(28°, 55°, 0°)`, `68°` FOV;
-  Bathroom at
-  `(1.82, 2.20, 0.86)`, Euler `(30°, 38°, 0°)` and `92°` FOV, and the Balcony
-  pose; separate activation and wider hold bounds provide threshold
-  hysteresis. Fixed positions ignore orbit and retain quarter-strength
-  intoxication/balance/fall rotation;
+- one Main Camera switches entry/sofa/kitchen shots with bounded pan and
+  activation/hold hysteresis; bathroom/balcony shots stay. Fixed positions
+  ignore orbit; tank movement/contextual ownership and quarter-strength
+  intoxication/balance/fall rotation stay. Pendant/light `Y=2.35`; bounded dust
+  stays below the lower ceiling. Existing light/post-processing budgets remain;
 - a lived-in bathroom: a rebuilt shower stall (hand-operated entrance curtain on an
   L-rail, mixer, rusty pipe, tilted head, soap shelf); the green hose segments
   alongside the pipe are removed. Its red/blue cross valves share the sink's

@@ -26,7 +26,7 @@ import interior_kit as kit
 import bar_parts as bp
 import home_interior_remodel as remodel
 
-VERSION = "2.1.0"
+VERSION = "2.2.0"
 SOURCE = ROOT / "ArtSource/Home/Interior"
 MODEL = ROOT / "Assets/Home/Interior/Models/HomeInterior3D.fbx"
 SHOWER_CURTAIN_FRONT_Z = 2.384
@@ -469,22 +469,22 @@ def add_bindings(b):
     fixed={
         "Home Floor":((10,.16,8),"PlankFloor"),
         "Home Ceiling":((10.48,.16,8.48),"CeilingPlaster"),
-        "Home Back Wall":((10,3.4,.24),"Wallpaper"),
-        "Home Left Wall":((.24,3.4,8),"Wallpaper"),
-        "Home Right Wall":((.24,3.4,8),"Wallpaper"),
-        "Home Entry Wall Left":((3.70,3.4,.24),"Wallpaper"),
-        "Home Entry Wall Right":((3.70,3.4,.24),"Wallpaper"),
-        "Home Entry Lintel":((2.60,.76,.24),"Wallpaper"),
+        "Home Back Wall":((10,remodel.ROOM_HEIGHT,.24),"Wallpaper"),
+        "Home Left Wall":((.24,remodel.ROOM_HEIGHT,8),"Wallpaper"),
+        "Home Right Wall":((.24,remodel.ROOM_HEIGHT,8),"Wallpaper"),
+        "Home Entry Wall Left":((3.70,remodel.ROOM_HEIGHT,.24),"Wallpaper"),
+        "Home Entry Wall Right":((3.70,remodel.ROOM_HEIGHT,.24),"Wallpaper"),
+        "Home Entry Lintel":((2.60,remodel.ROOM_HEIGHT-2.64,.24),"Wallpaper"),
         "Home Entry Wall Left Door Infill":((.64,2.64,.24),"Wallpaper"),
         "Home Entry Wall Right Door Infill":((.64,2.64,.24),"Wallpaper"),
         "Home Entry Door Transom Infill":((1.32,.34,.24),"Wallpaper"),
         "Home Entry Rug":((1.55,.03,1.35),"Rug"),
-        "Home Right Wall South Pier":((.24,3.4,.91),"Wallpaper"),
-        "Home Right Wall Middle Pier":((.24,3.4,.43),"Wallpaper"),
-        "Home Right Wall North Pier":((.24,3.4,3.82),"Wallpaper"),
+        "Home Right Wall South Pier":((.24,remodel.ROOM_HEIGHT,.91),"Wallpaper"),
+        "Home Right Wall Middle Pier":((.24,remodel.ROOM_HEIGHT,.43),"Wallpaper"),
+        "Home Right Wall North Pier":((.24,remodel.ROOM_HEIGHT,3.82),"Wallpaper"),
         "Home Right Wall Window Sill":((.24,1.53,1.48),"Wallpaper"),
-        "Home Right Wall Window Lintel":((.24,.77,1.48),"Wallpaper"),
-        "Home Right Wall Door Lintel":((.24,1.06,1.36),"Wallpaper"),
+        "Home Right Wall Window Lintel":((.24,remodel.ROOM_HEIGHT-2.63,1.48),"Wallpaper"),
+        "Home Right Wall Door Lintel":((.24,remodel.ROOM_HEIGHT-2.34,1.36),"Wallpaper"),
         "Home Bed Frame":((2.55,.38,1.75),"DarkWood"),
         "Home Bed Crooked Blanket":((1.1475,.12,.315),"Upholstery"),
         "Home Sofa Base":((1.50,.56,2.02),"Upholstery"),
@@ -504,10 +504,10 @@ def add_bindings(b):
         "Alarm Clock Body":((.276,.162,.144),"PaintedMetal"),
         "Alarm Clock Face":((.237,.105,.0108),"Plain"),
         "Alarm Clock Snooze":((.096,.021,.045),"Plain"),
-        "Home Bathroom West Wall":((.18,3.4,3),"Wallpaper"),
-        "Home Bathroom Front Wall Left":((.17,3.4,.18),"Wallpaper"),
-        "Home Bathroom Front Wall Right":((1.83,3.4,.18),"Wallpaper"),
-        "Home Bathroom Door Lintel":((1.10,1.15,.18),"Wallpaper"),
+        "Home Bathroom West Wall":((.18,remodel.ROOM_HEIGHT,3),"Wallpaper"),
+        "Home Bathroom Front Wall Left":((.17,remodel.ROOM_HEIGHT,.18),"Wallpaper"),
+        "Home Bathroom Front Wall Right":((1.83,remodel.ROOM_HEIGHT,.18),"Wallpaper"),
+        "Home Bathroom Door Lintel":((1.10,remodel.ROOM_HEIGHT-2.25,.18),"Wallpaper"),
         "Home Bathroom Door Ajar":((.748,2.12,.08),"DarkWood"),
         "Home Bathroom Tile Floor":((2.90,.024,2.80),"BathroomTile"),
         "Home Bathroom Back Tile":((2.98,1.70,.022),"BathroomTile"),
@@ -531,8 +531,8 @@ def add_bindings(b):
         "Home Refrigerator Cavity Right Liner":((.028,1.78,.50),"Enamel"),
         "Home Refrigerator Door Enamel":((1.00,2.08,.10),"Enamel"),
         "Home Refrigerator Door Inner Liner":((.88,1.8928,.025),"Enamel"),
-        "Home South Exterior Return Wall":((2.95,3.4,.24),"Concrete"),
-        "Home North Exterior Return Wall":((2.95,3.4,.24),"Concrete"),
+        "Home South Exterior Return Wall":((2.95,remodel.ROOM_HEIGHT,.24),"Concrete"),
+        "Home North Exterior Return Wall":((2.95,remodel.ROOM_HEIGHT,.24),"Concrete"),
         "Home Balcony Deck":((2.42,.18,3.90),"Concrete"),
         "Home Balcony Threshold":((.58,.09,1.26),"DarkWood"),
         "Home Balcony Outer Rail Cap":((.18,.07,3.96),"PaintedMetal"),
@@ -830,6 +830,13 @@ def validate(b):
               "home.furniture.bookcase":remodel.BOOKCASE,
               "home.furniture.kitchen.left":(-6.67,2.35,-5.2195,3.34)}
     placements={}
+    parts_by_name={part["name"]:part for part in b.parts}
+    west_wall=parts_by_name["Home Locked Room West Wall"]
+    kitchen_right=parts_by_name["Home Kitchen Counter Right"]
+    stove_side=remodel.preview_poses()["Home Kitchen Counter Right"][0]+kitchen_right["bounds_max"][0]
+    wall_side=west_wall["position"][0]+west_wall["bounds_min"][0]
+    if abs(wall_side-stove_side)>1e-5:
+        errors.append("locked-room west wall does not meet the stove cabinet side")
     for p in b.parts:
         geom=b.geometry[p["name"]];volume=bp.signed_volume(geom)
         triangles+=p["triangles"]
@@ -867,6 +874,9 @@ def validate(b):
             world=[tuple(a+c for a,c in zip(v,p["position"])) for v in turned]
             lo=[min(v[i] for v in world) for i in range(3)]
             hi=[max(v[i] for v in world) for i in range(3)]
+            upper_limit=remodel.ROOM_HEIGHT if p["sheet"]=="RoomWallpaper" else remodel.CEILING_UNDERSIDE
+            if hi[1]>upper_limit+.0001:
+                errors.append(p["name"]+": exceeds the lowered room ceiling")
             if p["group"] in supports:
                 xmin,zmin,xmax,zmax=supports[p["group"]]
                 if lo[0]<xmin-.035 or hi[0]>xmax+.035 or lo[2]<zmin-.035 or hi[2]>zmax+.035:
@@ -901,6 +911,7 @@ def validate(b):
             "kitchen_sink_hollow_and_counter_open":True,
             "dining_chair_measured_seat_contact":True,
             "painting_full_image_uv_and_open_frame":True,
+            "lowered_ceiling_clearance_and_stove_wall_contact":True,
             "no_coincident_cumulative_decor":True}
 
 
@@ -940,7 +951,7 @@ def compose_source_preview(b,render=False):
         "Home Refrigerator Cabinet Bottom":(-2.1845,.115,2.9),
         "Home Refrigerator Cabinet Back":(-2.1845,1.12,3.2025),
         "Home Refrigerator Door Enamel":(-2.1845,1.12,2.47),
-        "Home Bathroom West Wall":(1.55,1.70,2.15),
+        "Home Bathroom West Wall":(1.55,remodel.ROOM_HEIGHT*.5,2.15),
         "Home Bathroom Tile Floor":(3.10,.012,2.15),
         "Home Bathroom Back Tile":(3.10,.88,3.868),
         "Home Bathroom Toilet Footprint":(4.15,.24,1.40),
@@ -1050,7 +1061,10 @@ def main():
                         "EntryDoorFloor":[0,0,-4],
                         "LockedRoomDoor":[.68,1.1,.855],
                         "DiningChairSeat":list(remodel.SEAT_TOP)},
-             "remodel_contract":{"shell_bounds_xz":list(remodel.SHELL),"locked_bounds_xz":list(remodel.LOCKED),
+             "remodel_contract":{"shell_bounds_xz":list(remodel.SHELL),"room_height":remodel.ROOM_HEIGHT,
+                                  "ceiling_underside_y":remodel.CEILING_UNDERSIDE,
+                                  "locked_bounds_xz":list(remodel.LOCKED),
+                                  "locked_collision_bounds_xz":list(remodel.LOCKED_COLLISION),
                                   "sleep_bounds_xz":list(remodel.SLEEP),"table_bounds_xz":list(remodel.TABLE),
                                   "chair_position":list(remodel.CHAIR_POSITION),"sofa_support_heights_unchanged":True,
                                   "sofa_depth":remodel.SOFA_DEPTH,"sleep_cross_axis_scale":remodel.SOFA_DEPTH_SCALE,
