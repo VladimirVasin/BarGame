@@ -90,6 +90,7 @@ namespace BarPromenade
             {
                 ValidateConnection(plan.UpperFlightBounds, plan.UpperLandingBounds,
                     "opened upper flight to placeholder landing");
+                ValidateLabyrinth(plan);
                 Bounds wall = plan.DescentWallBounds;
                 if (wall.min.x > plan.ApartmentFlightBounds.xMin ||
                     wall.max.x < plan.ApartmentFlightBounds.xMax ||
@@ -98,6 +99,92 @@ namespace BarPromenade
                     wall.min.z > plan.ApartmentFlight.Start.y - plan.ApartmentFlight.RunLength + .03f ||
                     plan.RoomHeight - plan.UpperFlight.TopElevation < 2.2f)
                     throw new InvalidOperationException("Corrupted stairwell needs a sealed descent and standing upper route.");
+            }
+        }
+
+        private static void ValidateLabyrinth(StairwellLayoutPlan plan)
+        {
+            StairwellLabyrinthPlan labyrinth = plan.Labyrinth;
+            if (labyrinth == null || labyrinth.Flights.Count != 3 || labyrinth.Branches.Count != 9)
+                throw new InvalidOperationException("The labyrinth needs three main rises and two/three/four explorable branches.");
+            for (int i = 0; i < labyrinth.Flights.Count; i++)
+            {
+                StairwellFlightPlan flight = labyrinth.Flights[i];
+                ValidateFlight(flight, flight.BaseElevation, flight.TopElevation);
+                if (i > 0 && Mathf.Abs(labyrinth.Flights[i - 1].TopElevation - flight.BaseElevation) > Epsilon)
+                    throw new InvalidOperationException("The three principal rises must share continuous storeys.");
+            }
+            if (Mathf.Abs(labyrinth.Flights[0].BaseElevation - plan.UpperFlight.TopElevation) > Epsilon)
+                throw new InvalidOperationException("The labyrinth must start on the existing upper landing.");
+            var area = new StairwellWalkableArea(plan);
+            ValidateLabyrinthPath(area, labyrinth.RouteWaypoints, "main route");
+            float mainLength = 0f;
+            for (int i = 1; i < labyrinth.RouteWaypoints.Count; i++)
+                mainLength += Vector3.Distance(labyrinth.RouteWaypoints[i - 1], labyrinth.RouteWaypoints[i]);
+            if (mainLength < 160f || mainLength > 210f)
+                throw new InvalidOperationException("The enlarged main route must be approximately 160–200 metres.");
+            int[] branchesByStage = new int[3];
+            foreach (StairwellLabyrinthBranchPlan branch in labyrinth.Branches)
+            {
+                if (branch.Stage < 1 || branch.Stage > 3)
+                    throw new InvalidOperationException("A branch must belong to a labyrinth stage.");
+                branchesByStage[branch.Stage - 1]++;
+                ValidateLabyrinthPath(area, branch.Waypoints, branch.Id);
+                if (!IsMainWaypoint(labyrinth, branch.Waypoints[0]) ||
+                    (branch.IsLoop && !IsMainWaypoint(labyrinth, branch.Waypoints[branch.Waypoints.Count - 1])))
+                    throw new InvalidOperationException("Every branch must join the main route, including its loop return: " + branch.Id);
+            }
+            for (int stage = 0; stage < 3; stage++)
+                if (branchesByStage[stage] != stage + 2)
+                    throw new InvalidOperationException("Each successive stage needs another false route.");
+            if (!area.TryGetHeight(labyrinth.DoorActionRoot, out float doorFloor, PlayerRadius) ||
+                Mathf.Abs(doorFloor + PlayerFactory.GroundedRootOffset - labyrinth.DoorActionRoot.y) > Epsilon)
+                throw new InvalidOperationException("The warehouse gesture must stay supported on its own storey.");
+            bool[] reached = new bool[labyrinth.Supports.Count];
+            var pending = new System.Collections.Generic.Queue<int>();
+            if (reached.Length == 0) throw new InvalidOperationException("The labyrinth has no supporting floors.");
+            reached[0] = true; pending.Enqueue(0);
+            while (pending.Count > 0)
+            {
+                int index = pending.Dequeue();
+                StairwellLabyrinthSupportPlan support = labyrinth.Supports[index];
+                if (support.Width < MinimumFlightWidth || support.Stage < 1 || support.Stage > 3 ||
+                    !IsFinite(support.Start.y) || !IsFinite(support.End.y))
+                    throw new InvalidOperationException("Invalid labyrinth support: " + support.Id);
+                foreach (int neighbour in support.Connections)
+                {
+                    if (neighbour < 0 || neighbour >= reached.Length)
+                        throw new InvalidOperationException("Invalid labyrinth connection: " + support.Id);
+                    if (reached[neighbour]) continue;
+                    reached[neighbour] = true; pending.Enqueue(neighbour);
+                }
+            }
+            foreach (bool connected in reached)
+                if (!connected) throw new InvalidOperationException("A playable labyrinth branch is disconnected.");
+        }
+
+        private static bool IsMainWaypoint(StairwellLabyrinthPlan labyrinth, Vector3 point)
+        {
+            foreach (Vector3 waypoint in labyrinth.RouteWaypoints)
+                if ((waypoint - point).sqrMagnitude < .01f) return true;
+            return false;
+        }
+
+        private static void ValidateLabyrinthPath(StairwellWalkableArea area,
+            System.Collections.Generic.IReadOnlyList<Vector3> path, string label)
+        {
+            if (path.Count < 2) throw new InvalidOperationException("Empty labyrinth route: " + label);
+            for (int index = 0; index < path.Count; index++)
+            {
+                Vector3 start = index == 0 ? path[index] : path[index - 1];
+                Vector3 end = path[index];
+                int samples = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(start, end) / .25f));
+                for (int sample = 0; sample <= samples; sample++)
+                {
+                    Vector3 point = Vector3.Lerp(start, end, sample / (float)samples);
+                    if (!area.Contains(point, PlayerRadius))
+                        throw new InvalidOperationException("Labyrinth path lacks capsule support/headroom: " + label + " at " + point);
+                }
             }
         }
 

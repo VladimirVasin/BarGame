@@ -31,6 +31,7 @@ namespace BarPromenade
             private set;
         }
         public StairwellStreetExit StreetExit { get; private set; }
+        public StairwellWarehouseEntrance WarehouseEntrance { get; private set; }
         public StairwellApartmentEntrance ApartmentEntrance
         {
             get;
@@ -117,7 +118,6 @@ namespace BarPromenade
                 atmosphereObject.AddComponent<
                     StairwellInteriorAtmosphere>();
             Atmosphere.Initialize(Layout.IsCorrupted, camera);
-            if (Layout.IsCorrupted) Atmosphere.ConfigureCorruptedDepthHaze(World.Root);
 
             GameObject musicObject =
                 new GameObject("Stairwell Music");
@@ -161,8 +161,9 @@ namespace BarPromenade
                 transform,
                 Layout.GetSpawn(Arrival),
                 camera,
-                new RoadWalkableArea(
-                    Layout.WalkableRectangles),
+                Layout.IsCorrupted
+                    ? new StairwellWalkableArea(Layout, World.Root)
+                    : (IWalkableArea)new RoadWalkableArea(Layout.WalkableRectangles),
                 InteractionPrompt);
             CameraFollow =
                 camera.GetComponent<PlayerCameraFollow>();
@@ -188,6 +189,7 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 StairwellFixedCameraController
                     .CreateDefaultShots(Layout));
+            if (Layout.IsCorrupted) FixedCamera.ConfigureLabyrinth(World.Root, Layout.Labyrinth);
             AnimatedInteraction =
                 Player.GameObject.GetComponent<
                     PlayerAnimatedInteractionController>();
@@ -212,6 +214,11 @@ namespace BarPromenade
                 CameraFollow,
                 IntoxicationHud);
             BuildExits();
+            if (Layout.IsCorrupted)
+            {
+                BuildWarehouseEntrance();
+                Atmosphere.ConfigureLabyrinth(Layout.Labyrinth, World.Root, Player.GameObject.transform, Soundscape);
+            }
             if (!Layout.IsCorrupted)
             {
                 GameObject blockerObject = new GameObject(
@@ -334,6 +341,22 @@ namespace BarPromenade
             CatReliefInspection.PlayerToHide = Player.PresentationVisibility;
             CatReliefInspection.Configure(definition, subject, staging,
                 transform.TransformPoint(new Vector3(1.45f, 4.12f, -3.68f)), interactionRadius: 1.25f);
+        }
+
+        private void BuildWarehouseEntrance()
+        {
+            StairwellLabyrinthPlan route = Layout.Labyrinth;
+            var entrance = new GameObject("Warehouse Story Entrance");
+            entrance.transform.SetParent(World.Root, false);
+            entrance.transform.localPosition = route.DoorPosition + Vector3.up;
+            BoxCollider trigger = entrance.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.size = new Vector3(2.3f, 2.4f, 2.8f);
+            var action = entrance.AddComponent<PlayerDoorActionTarget>();
+            action.Configure(PlayerDoorActionPlan.CreateStationary(entrance.transform.position,
+                World.Root.TransformPoint(route.DoorActionRoot), World.Root.TransformDirection(route.DoorForward)));
+            WarehouseEntrance = entrance.AddComponent<StairwellWarehouseEntrance>();
+            WarehouseEntrance.Initialize(action);
         }
 
         private void BuildExits()

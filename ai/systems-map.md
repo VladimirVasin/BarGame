@@ -57,7 +57,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Combat | Warehouse:Crane/Room/Docker≤5;Lab6/1;livehero hold/deathdrop. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |
 | Crane | Hook6m/up2m/hold5/E6/hoist-haul/bodycam/fall;home10;fatal3→regen10/kill0. | `Combat*.Crane*`,`CombatActor.Restraint` | Current |
 | Authored enemies | Room:idle5s/jelly/bar/wet SFX;Lab:Imprint/LongExposure | `CombatActor`,`CombatTestRoot.Room*` | Current |
-| Warehouse | Fish3:regularfoes/spawn0;gate;ammo/bays;L3broken;dust→settle;A*/capsule. | `Warehouse*`,`CombatTestRoot.Navigation` | Current |
+| Warehouse | Story entry keeps session/seed;fish3→foes0;gate/ammo;L3broken;dust/A*. | `Warehouse*`,`CombatTestRoot` | Current |
 | Body destruction | Enemies:sever/crawl;hero:wounds/no detach;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatBodyAssetSetup` | Current |
 | New Game/Debug | Loading bar through staged Home/first frame; stopped12:00 until E. Debug time/starts/tools. | `StartMenu{Root,Model}`, `NewGameStartService`, `SceneTransitionService`, `AreaLoadingRoot` | Current |
 | Bar hours and crowd | Daily12-02, hourly3-8; real entry/exit, partial pairs, occupied docks; accepted service finishes. | `BarBusinessHours`, `BarCrowdController`, `BarInteriorRoot` | Current |
@@ -204,7 +204,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Bar interior and exterior | Hall/worn WC; solid shared door, exclusive hero/guest access and masked broken mirror. | `BarInteriorLayout*`, `BarWashroom*`, `InteriorHingedDoorInteraction` | Current |
 | Player home interior | 12×8×2.9m; stove meets wall; sofa/kitchen/locked room/shared sit. | `HomeInteriorModelLibrary`, `HomeDiningSeatPlan` | Current |
 | Apartment calendar appearance | Days1–7 neglect; heavier7/exact debug restore; sleep view7+hero7. | `HomeApartmentDressing`, `HomeApartmentDay{Rules,Controller}` | Current |
-| Player-home stairwell | Ordinary ramps/cat; post-sleep distorted shell/short ascent/glow/stone-head inspection. | `StairwellLayout*`, `StairwellWorldBuilder`, `StairwellInteriorAtmosphere` | Current |
+| Player-home stairwell | Sleep→branching Escher maze/third-person→warehouse; ordinary cat/statue stay. | `StairwellLayout*`, `StairwellWalkableArea`, `WarehouseStoryEntryService` | Current |
 | City facade presentation | The legacy 4×4 path remains only for clipped Home crossings. | `CityFacade{Grid,Appearance}`, `CityBuilding{SurfaceAppearance,WindowSlotAppearance}` | Current |
 | City window presentation | Pure facade/window slots select bounded lit shares and preserve district palettes and daytime light floors. | `CityDistrict{ArtProfile,PresentationPlan,PresentationPlanner}`, `CityWindowAppearance` | Current |
 | Stairwell surface presentation | Cached textures and material property blocks apply measured stairwell surfaces without instance materials. | `StairwellSurfaceAppearance`, `SurfaceAppearanceCore` | Current |

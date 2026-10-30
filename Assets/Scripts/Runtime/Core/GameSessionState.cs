@@ -123,6 +123,7 @@ namespace BarPromenade
         public static int CitySeed { get; private set; } = DefaultCitySeed;
         public static WarehouseFishAssemblyState WarehouseFishAssembly => warehouseFishAssembly;
         public static WarehouseGateState WarehouseGate => warehouseGate;
+        public static int? WarehouseStorySeed { get; private set; }
         public static bool WarehouseDoorAmbushPlayed { get; private set; }
         internal static void MarkWarehouseDoorAmbushPlayed() => WarehouseDoorAmbushPlayed = true;
         public static WarehouseFishLampState WarehouseFishLamp => warehouseFishLamp;
@@ -550,6 +551,8 @@ namespace BarPromenade
         private static void ResetToDefaults()
         {
             CityFishSupplySession.ResetForNewGame();
+            WarehouseStoryEntryService.ResetPending();
+            WarehouseStorySeed = null;
             sessionGeneration = sessionGeneration == int.MaxValue
                 ? 1
                 : sessionGeneration + 1;
@@ -1344,6 +1347,13 @@ namespace BarPromenade
         {
             return !string.IsNullOrWhiteSpace(sourceId) &&
                    collectedWorldItems.Contains(sourceId.Trim());
+        }
+
+        internal static int GetOrCreateWarehouseStorySeed()
+        {
+            // Pin the authored layout on first accepted arrival, including later retries/reloads.
+            if (!WarehouseStorySeed.HasValue) WarehouseStorySeed = CitySeed ^ 0x57415245;
+            return WarehouseStorySeed.Value;
         }
 
         public static void ResetInventoryState()

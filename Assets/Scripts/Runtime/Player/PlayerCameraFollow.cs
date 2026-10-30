@@ -447,6 +447,21 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>Return an authored world shot to ordinary mouse orbit without a framing cut.</summary>
+        public void ReleaseFixedPoseToOrbit()
+        {
+            if (!fixedPoseActive || controlledCamera == null || followTarget == null) return;
+            Pose accepted = new Pose(controlledCamera.transform.position, controlledCamera.transform.rotation);
+            float lens = controlledCamera.fieldOfView;
+            targetYaw = accepted.rotation.eulerAngles.y;
+            targetPitch = ClampOrbitPitch(Mathf.DeltaAngle(0f, accepted.rotation.eulerAngles.x));
+            ClearFixedPose();
+            controlledCamera.transform.SetPositionAndRotation(accepted.position, accepted.rotation);
+            controlledCamera.fieldOfView = lens;
+            BeginAimTransition(GetTargetFocusPoint());
+            mouseLookResetPending = true;
+        }
+
         public void ClearFixedPose()
         {
             if (!fixedPoseActive)

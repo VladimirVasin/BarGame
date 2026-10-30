@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
-    /// <summary>A bounded non-narrative session. Combat components are installed only here.</summary>
+    /// <summary>The bounded warehouse encounter, shared by the standalone test and the post-sleep route.</summary>
     [DefaultExecutionOrder(-40)]
     public sealed partial class CombatTestRoot : MonoBehaviour
     {
@@ -79,6 +79,8 @@ namespace BarPromenade
             return modeHudText;
         }
         public bool IsInitialized { get; private set; }
+        public bool IsStoryContinuation { get; private set; }
+        private int storyWarehouseSeed;
         public PlayerRuntime Player { get; private set; }
         public CombatActor Hero { get; private set; }
         public CombatActor Opponent { get; private set; }
@@ -130,11 +132,13 @@ namespace BarPromenade
         {
             GameLog.SetScene(gameObject.scene.name);
             CombatTestSelection selection = CombatTestStartService.ConsumeSelection();
+            IsStoryContinuation = WarehouseStoryEntryService.TryConsume(out storyWarehouseSeed);
+            if (IsStoryContinuation) selection = WarehouseStoryEntryService.Selection;
             Mode = selection.Mode;
             LaboratoryEnemy = laboratoryChoice = selection.LaboratoryEnemy;
             EncounterSettings = selection.EncounterSettings;
             Camera camera;
-            if (IsLaboratory || UseLegacyArenaForTests)
+            if (!IsStoryContinuation && (IsLaboratory || UseLegacyArenaForTests))
             {
                 camera = RuntimeSceneSetup.EnsureCityNight();
                 RuntimeSceneSetup.EnsureLighting(new Color(.34f, .37f, .35f));

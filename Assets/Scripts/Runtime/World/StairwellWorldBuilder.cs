@@ -77,7 +77,7 @@ namespace BarPromenade
             BuildCorruptedShell(root, plan);
             BuildLandings(root, plan);
             Transform apartmentDoor = BuildApartmentDoor(root, plan);
-            var stairColliders = new List<Collider>(3);
+            var stairColliders = new List<Collider>(6);
             BuildFlight(root, plan.LowerFlight, "Lower", stairColliders);
             BuildFlight(root, plan.ApartmentFlight, "Apartment", stairColliders);
             BuildFlight(root, plan.UpperFlight, "Upper", stairColliders);
@@ -92,8 +92,9 @@ namespace BarPromenade
                 StairwellSurfaceProjection.BoxXY, false).transform;
             StairwellDressingBuilder.BuildCorrupted(root, plan);
             ApplyCorruptedSurfaces(root);
+            Transform warehouseDoor = StairwellLabyrinthWorldBuilder.Build(root, plan.Labyrinth, stairColliders);
             return new StairwellWorldResult(root, stairColliders.AsReadOnly(), null,
-                null, apartmentDoor, descentWall, upperLanding, relief);
+                null, apartmentDoor, descentWall, upperLanding, relief, warehouseDoor);
         }
 
         private static void BuildCorruptedShell(Transform root, StairwellLayoutPlan plan)
@@ -160,30 +161,7 @@ namespace BarPromenade
                 rail.GetChild(0).name = "Corrupted Upper Landing " + side + " Rail";
                 rail.GetChild(1).name = "Corrupted Upper Landing " + side + " Rail Top";
             }
-            // A visible ordinary guardrail marks the present playable limit.
-            // Distant flights remain a view; passage is a separate future change.
-            BuildRailSegment(root, "Corrupted Upper Limit Rail",
-                new Vector3(floor.center.x, plan.UpperFlight.TopElevation + .58f, floor.yMax),
-                new Vector3(1.78f, 1.16f, .10f), StairwellSurfaceProjection.BoxXY);
-            Transform continuation = new GameObject("Corrupted Endless Staircase").transform;
-            continuation.SetParent(root, false);
-            for (int index = 0; index < StairwellLayoutPlan.CorruptedDistantModules; index++)
-            {
-                // Keep the distant run open above its rails: a low tunnel roof
-                // would become a false end wall from the apartment camera.
-                const string binding = "Corrupted Endless Open Flight";
-                GameObject flight = CreateSurfaceBox(binding, continuation,
-                    new Vector3(-1.45f, 5.6f + index * 1.6f, 4.17f + index * 3.84f),
-                    new Vector3(2.03f, 4.34f, 3.84f), new Color(.18f, .23f, .19f),
-                    StairwellSurfaceKind.StairConcrete, StairwellSurfaceProjection.BoxXZ, false);
-                flight.name = "Distant Flight " + (index + 1);
-                if (index == StairwellLayoutPlan.CorruptedDistantModules - 1)
-                {
-                    Renderer renderer = flight.GetComponent<Renderer>();
-                    renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                    renderer.receiveShadows = false;
-                }
-            }
+
         }
 
         // One construction pass over this room only. Reuse the authored damage

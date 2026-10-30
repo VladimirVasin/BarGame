@@ -57,6 +57,7 @@ namespace BarPromenade
                 apartmentEntranceTriggerSize;
             UpperBlockerBounds = upperBlockerBounds;
             IsCorrupted = isCorrupted;
+            Labyrinth = isCorrupted ? new StairwellLabyrinthPlan() : null;
             var walkable = isCorrupted
                 ? new List<Rect> { apartmentLandingBounds, upperFlightBounds, UpperLandingBounds }
                 : new List<Rect>
@@ -68,6 +69,11 @@ namespace BarPromenade
                     apartmentLandingBounds,
                     upperFlightBounds
                 };
+            if (Labyrinth != null)
+            {
+                foreach (StairwellLabyrinthSupportPlan surface in Labyrinth.Supports)
+                    walkable.Add(surface.Bounds);
+            }
             walkableRectangles = walkable.AsReadOnly();
         }
 
@@ -93,6 +99,7 @@ namespace BarPromenade
         public Vector3 ApartmentEntranceTriggerSize { get; }
         public Bounds UpperBlockerBounds { get; }
         public bool IsCorrupted { get; }
+        public StairwellLabyrinthPlan Labyrinth { get; }
         public const int CorruptedDistantModules = 3;
         public static readonly Vector3 CatReliefPosition = new Vector3(1.45f, 4.65f, -3.135f);
         public static readonly Vector3 CatReliefSize = new Vector3(.80f, .56f, .25f);

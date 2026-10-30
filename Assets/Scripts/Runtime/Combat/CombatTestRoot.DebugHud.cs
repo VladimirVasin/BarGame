@@ -9,7 +9,7 @@ namespace BarPromenade
         {
             RetroUiTheme.DrawPanel(ToolbarRect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
             if (DrawToolbarButton(canvas, new Rect(156, 12, 58, 18), "combat-weapons",
-                LocalizationService.Get("combat.weapons"))) ReturnToWeapons();
+                LocalizationService.Get("combat.weapons"), !IsStoryContinuation)) ReturnToWeapons();
             if (Opponent.IsZombie)
                 GUI.Label(new Rect(224, 12, WarehousePlan != null ? 94 : 166, 18),
                     LocalizationService.Get(Opponent.IsCrane ? "combat.mode.crane" : Opponent.IsRoom ? "combat.mode.room" :

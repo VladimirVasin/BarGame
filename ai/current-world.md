@@ -2005,22 +2005,22 @@ cemetery:own interiors/returns.
   an unscaled fixed-camera handle/door sequence opens the leaf outward toward
   the camera against a solid black doorway while the destination preloads,
   then activates only after the final blackout;
-- `StairwellInterior`: ordinary8.6×9.6×6.25m/3ramps/48steps; safe seams join
-  street/middle/apartment; upper debris blocks. Sleep mode keeps recognizable
-  walls/lower flights/landings/columns/household traces/fixtures; shifted back-wall
-  fragments/torn east-south roof form an asymmetric upper opening. Descent wall
-  stays; transverse rail ends the walkable upper landing. Three view-only modules
-  extend upward; interior shots frame the full hero at16:9/4:3.
-  White-yellow glow/copper halo and opt-in Forward haze z6→9.8 conceal the final
-  module without Bloom; it casts no shadow. Haze defaults0/Home stays.
-  Linear fog/background restore on scene/owner-guarded disable/unload.
-  Cold-green ambient/grade, original practicals/dust/room sound/music;
-  middle fixture/light/supports/electrical cue shareX1.55; apartment bounce lights head.
-  Stone Cat head in wall: grin; no body/neck/plinth.
-  ObjectCloseUp: silent E «Осмотреть»/cancel; camera/DOF Cut both ways.
-  Model/shadow lease hides in close-up; exit/failure restores. Rig/collider/approach
-  stay; default Blend. No lore/pages/reward/live Cat/food;
-  ordinary feeding/quest stay;
+- `StairwellInterior`: ordinary8.6×9.6×6.25m/3ramps/48steps; safe street/middle/
+  apartment seams/upper debris. Sleep retains recognizable lower walls/flights/
+  landings/columns/household traces/fixtures, broken back/roof and descent wall.
+  Escher:~200m/3stages/2-3-4 branches/4loops/3rises.
+  Enclosed shell; small sideways/inverted stairs/platforms; gravity stays.
+  Plaster/wood→warehouse concrete/steel/props/wear. Generated C# graph/
+  Blender chunks; feet-aware supports/ramps/headroom, physics Y.
+  Third-person/mouse through detours; fixed below.30 fixtures/≤8 active/≤2 Hard
+  shadows;10Hz/reused buffers/hero distance. Stage fog/grade/far DOF85–155m;
+  approach bands stay. Dust follows nearest lamp; ventilation/owned cleanup stay.
+  Silent stone-head E cuts camera/DOF; model/shadow leased only close-up.
+  No live Cat/grant; quest stays. Shared rig E-door/covered Single load
+  uses WarehouseStoryEntryService; session/calendar/inventory/quests/hero stay.
+  Session seed/Endless/full kit; entry seals; fish/key/gate/ambush stay.
+  Retry restores HP/ammo, not story; story blocks preparation/new-layout;
+  menu test starts stay;
 - the fixed-metre `interior_kit` shell/dressing has real openings, panelled leaves,
   steel necks/saddles meeting wooden rails and handles on doors/cabinet. Door
   docks align the right-hand clip with the lever, plates with the latch stile.
@@ -2859,7 +2859,7 @@ cemetery:own interiors/returns.
   action set.
 - Minimap, in-world GPS trail, route autopilot, and manual map zoom/pan.
 - Sobering mechanics, long-term save data/slots, income/jobs, a broader economy,
-  combat outside the isolated test, online features and other NPC/quest dialogue adapters.
+  combat beyond the connected warehouse, online features and other NPC/quest dialogue adapters.
   Dated quests, the journal, local exchanges and the foreman's player-chosen
   dialogue branches are implemented.
 - Final bespoke art and audio masters, accessibility and platform release work.

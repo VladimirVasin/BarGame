@@ -26,7 +26,7 @@
 | 9 | `ChurchInterior` | Gameplay |
 | 10 | `AlpineVillage` | Gameplay |
 | 11 | `MothersHouseInterior` | Gameplay |
-| 12 | `CombatTest` | Isolated weapon test |
+| 12 | `CombatTest` | Warehouse / weapon test |
 
 All ten gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
 one rig/wardrobe; seven drink-dose appearances share shape/hair/wear and
@@ -70,16 +70,16 @@ City ↔ MountainRoad ↔ AlpineVillage edge and a bottom bar; cross-area map tr
 uses its last leg. It adds no text, story fact or travel time; art-bible §15a
 and the accepted architecture decision define this bounded exception.
 
-Performance capture reports frame/GPU/GC, inclusive combat/NPC and fountain/probe
-work. Requested/actual targets and texture mode are recorded; mismatch rejects
-samples. Missing counters stay unavailable; Editor evidence is local.
+Performance captures retain targets/texture mode and frame/GPU/GC plus combat/
+NPC/fountain/probe work; mismatches reject samples. Missing counters stay unavailable.
 
 `PlayerBuildAssetValidation` gates packaging with read-only asset checks and
 repair commands. Generation/publication: [../tools/README.md](../tools/README.md).
 
 ## Implemented capabilities
 
-- CombatTest:warehouse/fish-key-gate;all3fish→power-music-spawn0.
+- Sleep→branching Escher labyrinth/third-person→warehouse; session retained.
+  CombatTest:fish-key-gate;all3fish→power-music-spawn0.
   Endless1–5/def3:Crane/Room/Docker;Crane last≤2.
   Refillrng;≤5active/≤6prepared;Lab:oldArena/6kinds/1target.
   HP2/head2/wounds;Room:head0→ret+2s/retlaugh5→idle5;simlive/otherAI0;3weapons/finiteammo.

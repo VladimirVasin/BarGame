@@ -191,6 +191,20 @@ namespace BarPromenade
         private PlayerCameraFollow cameraFollow;
         private Transform target;
         private StairwellCameraShotSelector selector;
+        private Transform labyrinthSpace;
+        private StairwellLabyrinthPlan labyrinthPlan;
+        private bool orbitInLabyrinth;
+        private bool returningToFixed;
+        private float fixedReturnElapsed, fixedReturnLens;
+        private Pose fixedReturnPose;
+
+        public bool IsLabyrinthOrbit => orbitInLabyrinth;
+
+        public void ConfigureLabyrinth(Transform worldSpace, StairwellLabyrinthPlan plan)
+        {
+            labyrinthSpace = worldSpace;
+            labyrinthPlan = plan;
+        }
 
         public bool IsInitialized { get; private set; }
         public StairwellCameraShot ActiveShot { get; private set; }
@@ -386,6 +400,30 @@ namespace BarPromenade
                 return;
             }
 
+            if (labyrinthSpace != null)
+            {
+                Vector3 local = labyrinthSpace.InverseTransformPoint(target.position);
+                bool nextOrbit = labyrinthPlan.ContainsPosition(local, orbitInLabyrinth ? .45f : .04f);
+                if (nextOrbit)
+                {
+                    if (!orbitInLabyrinth)
+                    {
+                        orbitInLabyrinth = true;
+                        returningToFixed = false;
+                        cameraFollow.ReleaseFixedPoseToOrbit();
+                    }
+                    return;
+                }
+                if (orbitInLabyrinth)
+                {
+                    orbitInLabyrinth = false;
+                    fixedReturnPose = new Pose(cameraFollow.Camera.transform.position, cameraFollow.Camera.transform.rotation);
+                    fixedReturnLens = cameraFollow.Camera.fieldOfView;
+                    fixedReturnElapsed = 0f;
+                    returningToFixed = true;
+                }
+            }
+
             StairwellCameraShot selected =
                 selector.Select(target.position);
             bool changed =
@@ -393,6 +431,17 @@ namespace BarPromenade
             StairwellCameraShotKind previousKind =
                 ActiveShot.Kind;
             ActiveShot = selected;
+            if (returningToFixed)
+            {
+                if (!GameTimeScaleRuntime.IsPaused) fixedReturnElapsed += Time.deltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, fixedReturnElapsed / .3f);
+                cameraFollow.SetFixedPose(Vector3.Lerp(fixedReturnPose.position, selected.Position, t),
+                    Quaternion.Slerp(fixedReturnPose.rotation, selected.Rotation, t),
+                    Mathf.Lerp(fixedReturnLens, selected.FieldOfView, t));
+                if (t < 1f) return;
+                returningToFixed = false;
+                forceApply = true;
+            }
             if (changed)
             {
                 GameLog.Info(

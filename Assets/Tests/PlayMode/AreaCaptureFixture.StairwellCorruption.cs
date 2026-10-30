@@ -7,6 +7,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace BarPromenade.Tests.PlayMode
@@ -32,7 +33,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(stairwell.World.ApartmentDoor, Is.Not.Null);
             Assert.That(stairwell.World.CatRelief, Is.Not.Null);
             Assert.That(stairwell.CatReliefInspection, Is.Not.Null);
-            Assert.That(stairwell.World.StairColliders, Has.Count.EqualTo(3));
+            Assert.That(stairwell.Layout.Labyrinth, Is.Not.Null);
+            Assert.That(stairwell.Layout.Labyrinth.Flights, Has.Count.EqualTo(3));
+            Assert.That(stairwell.World.StairColliders.Count, Is.GreaterThanOrEqualTo(6));
+            Assert.That(stairwell.WarehouseEntrance, Is.Not.Null);
             Transform room = stairwell.World.Root;
             foreach (string absent in new[] { "Stairwell Ceiling", "Stairwell Corrupted Ceiling",
                 "Stairwell Back Wall", "Stairwell Corrupted Back Wall", "Street Door", "Under Stair Grille",
@@ -43,7 +47,8 @@ namespace BarPromenade.Tests.PlayMode
                 "Corrupted Back Wall Base", "Corrupted Back Wall Broken Left", "Corrupted Back Wall Broken Right",
                 "Corrupted Roof East", "Corrupted Roof South", "Middle Landing" })
                 Assert.That(room.Find(required), Is.Not.Null, "The recognizable stairwell is missing " + required);
-            Assert.That(room.Find("Corrupted Endless Staircase").childCount, Is.EqualTo(3));
+            Assert.That(room.Find("Corrupted Upper Limit Rail"), Is.Null,
+                "The old view-only boundary must open onto the playable continuation.");
             Assert.That(RenderSettings.fog, Is.True);
             Assert.That(RenderSettings.fogMode, Is.EqualTo(FogMode.Linear));
             Assert.That(RenderSettings.fogStartDistance, Is.EqualTo(StairwellInteriorAtmosphere.CorruptedFogStart).Within(.001f));
@@ -51,9 +56,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(RenderSettings.fogColor, Is.EqualTo(StairwellInteriorAtmosphere.CorruptedFogColor));
             Assert.That(Camera.main.backgroundColor, Is.EqualTo(RenderSettings.fogColor));
             Assert.That(stairwell.Atmosphere.UpperGlow, Is.Not.Null);
-            Assert.That(stairwell.Atmosphere.UpperGlowHalo.IsVisible, Is.True);
-            Assert.That(room.InverseTransformPoint(stairwell.Atmosphere.UpperGlow.transform.position),
-                Is.EqualTo(StairwellInteriorAtmosphere.UpperGlowPosition));
+            Assert.That(stairwell.Atmosphere.UpperGlow.isActiveAndEnabled, Is.False);
+            Assert.That(stairwell.Atmosphere.LabyrinthLights, Has.Length.InRange(24, 30));
+            Assert.That(stairwell.Atmosphere.ActiveLabyrinthLightCount, Is.LessThanOrEqualTo(8));
+            Assert.That(stairwell.Atmosphere.ActiveLabyrinthShadowCount, Is.LessThanOrEqualTo(2));
+            AssertLabyrinthStoreySelection(stairwell.Layout);
             Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(7));
             var hero = (Player3DCharacterPresentation)stairwell.Player.Visual;
             Assert.That(hero.CorruptionAppearance.AppliedLevel, Is.EqualTo(7));
@@ -124,28 +131,31 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(stairwell.Layout.UpperFlight.TopElevation + PlayerFactory.GroundedRootOffset).Within(.03f));
                 Assert.That(stairwell.FixedCamera.ActiveShotKind, Is.EqualTo(StairwellCameraShotKind.UpperLanding));
                 yield return WalkStairwellWaypoint(stairwell, new Vector3(-1.45f, 4.94f, 1.78f));
-                yield return CaptureCorruptedGameplay(stairwell, "corrupted-03-upper-end");
-                Debug.Log("Corrupted stairwell proof: upper barrier and fog terminal");
+                yield return CaptureCorruptedGameplay(stairwell, "corrupted-03-labyrinth-threshold");
+                yield return WalkCorruptedLabyrinth(stairwell, capture: true);
                 Assert.That(stairwell.Atmosphere.RuntimeProfile.TryGet(out Bloom bloom), Is.True);
                 bool bloomActive = bloom.active;
                 try
                 {
                     bloom.active = false;
-                    yield return CaptureCorruptedGameplay(stairwell, "corrupted-04-bloom-off-end", proveFog: true);
-                    AssertCorruptedTerminalInvisible(stairwell);
+                    yield return CaptureCorruptedGameplay(stairwell, "corrupted-04-warehouse-door-bloom-off");
                 }
                 finally { bloom.active = bloomActive; }
-                Collider barrier = room.Find("Corrupted Upper Limit Rail").GetComponent<Collider>();
-                Assert.That(barrier, Is.Not.Null);
-                Assert.That(barrier.bounds.min.z, Is.EqualTo(2.2f).Within(.005f));
-                for (int frame = 0; frame < 60 && !motor.InteractionPoseMoveStalled; frame++)
+                Vector3 pausePosition = hero.position;
+                float pauseProgress = stairwell.Atmosphere.LabyrinthProgress;
+                using (GameTimeScaleRuntime.AcquirePause())
                 {
-                    motor.MoveTowardsApproachWaypoint(room.TransformPoint(new Vector3(-1.45f, 4.94f, 2.8f)), .025f, 1f / 60f);
-                    yield return null;
+                    for (int frame = 0; frame < 3; frame++) yield return null;
+                    Assert.That(hero.position, Is.EqualTo(pausePosition));
+                    Assert.That(stairwell.Atmosphere.LabyrinthProgress, Is.EqualTo(pauseProgress));
                 }
-                Assert.That(room.InverseTransformPoint(hero.position).z, Is.LessThan(2f),
-                "The visible crossbar must block the unsupported continuation.");
-                motor.CancelInteractionPoseMove();
+                Debug.Log("Corrupted stairwell proof: returning through all three flights");
+                IReadOnlyList<Vector3> route = stairwell.Layout.Labyrinth.RouteWaypoints;
+                for (int index = route.Count - 2; index >= 0; index--)
+                    yield return WalkStairwellWaypoint(stairwell, route[index]);
+                yield return WalkStairwellWaypoint(stairwell, new Vector3(-1.45f, 4.94f, 1.78f));
+                Assert.That(stairwell.FixedCamera.IsLabyrinthOrbit, Is.False);
+                Assert.That(stairwell.CameraFollow.FixedPoseActive, Is.True);
                 yield return WalkStairwellWaypoint(stairwell, new Vector3(-1.45f, 3.34f, -3.72f));
                 yield return WalkStairwellWaypoint(stairwell, stairwell.Layout.ApartmentDoorActionRoot);
                 Assert.That(stairwell.ApartmentEntrance.isActiveAndEnabled, Is.True);
@@ -174,6 +184,324 @@ namespace BarPromenade.Tests.PlayMode
                 stairwell.Player.Interactor.SetInputEnabled(previousInteractorInput);
                 Time.captureDeltaTime = previousDelta;
                 GameInput.HandleApplicationFocus(previousFocus);
+            }
+        }
+
+        private static IEnumerator WalkCorruptedLabyrinth(StairwellInteriorRoot stairwell, bool capture)
+        {
+            StairwellLabyrinthPlan labyrinth = stairwell.Layout.Labyrinth;
+            var captured = new bool[3];
+            var visited = new bool[labyrinth.Branches.Count];
+            for (int routeIndex = 0; routeIndex < labyrinth.RouteWaypoints.Count; routeIndex++)
+            {
+                Vector3 waypoint = labyrinth.RouteWaypoints[routeIndex];
+                yield return WalkStairwellWaypoint(stairwell, waypoint);
+                if (labyrinth.ContainsPosition(waypoint))
+                {
+                    Assert.That(stairwell.FixedCamera.IsLabyrinthOrbit, Is.True,
+                        "Every playable maze branch retains the ordinary orbit camera.");
+                    Assert.That(stairwell.CameraFollow.FixedPoseActive, Is.False);
+                }
+                if (!capture) continue;
+                for (int index = 0; index < labyrinth.Branches.Count; index++)
+                {
+                    StairwellLabyrinthBranchPlan branch = labyrinth.Branches[index];
+                    if (visited[index] || Vector3.Distance(waypoint, branch.Waypoints[0]) > .1f) continue;
+                    Debug.Log("Corrupted stairwell proof: branch " + branch.Id);
+                    for (int step = 1; step < branch.Waypoints.Count; step++)
+                    {
+                        yield return WalkStairwellWaypoint(stairwell, branch.Waypoints[step]);
+                        Assert.That(stairwell.FixedCamera.IsLabyrinthOrbit, Is.True,
+                            "An excursion must not re-enter a fixed camera: " + branch.Id);
+                        Assert.That(stairwell.CameraFollow.FixedPoseActive, Is.False);
+                    }
+                    if (branch.IsLoop)
+                    {
+                        int end = LabyrinthWaypointIndex(labyrinth.RouteWaypoints,
+                            branch.Waypoints[branch.Waypoints.Count - 1]);
+                        Assert.That(end, Is.GreaterThanOrEqualTo(0));
+                        int direction = end > routeIndex ? -1 : 1;
+                        for (int step = end + direction; step != routeIndex + direction; step += direction)
+                            yield return WalkStairwellWaypoint(stairwell, labyrinth.RouteWaypoints[step]);
+                    }
+                    else
+                    {
+                        for (int step = branch.Waypoints.Count - 2; step >= 0; step--)
+                            yield return WalkStairwellWaypoint(stairwell, branch.Waypoints[step]);
+                    }
+                    visited[index] = true;
+                }
+                for (int stage = 0; stage < 3; stage++)
+                {
+                    if (captured[stage] || Vector3.Distance(waypoint, labyrinth.CapturePositions[stage]) > .1f) continue;
+                    AimLabyrinthOrbit(stairwell, labyrinth.CaptureLookTargets[stage]);
+                    yield return new WaitForSecondsRealtime(.15f);
+                    Assert.That(labyrinth.StageAt(stairwell.World.Root.InverseTransformPoint(
+                        stairwell.Player.GameObject.transform.position)), Is.EqualTo(stage + 1));
+                    Assert.That(stairwell.Atmosphere.ActiveLabyrinthLightCount, Is.InRange(1, 8));
+                    Assert.That(stairwell.Atmosphere.ActiveLabyrinthShadowCount, Is.LessThanOrEqualTo(2));
+                    Debug.Log("Corrupted stairwell proof: large labyrinth stage " + (stage + 1));
+                    yield return CaptureCorruptedGameplay(stairwell, "labyrinth-0" + (stage + 1) + "-gameplay");
+                    yield return CaptureLabyrinthEnclosure(stairwell, stage + 1);
+                    captured[stage] = true;
+                }
+            }
+            if (capture)
+            {
+                foreach (bool value in captured) Assert.That(value, Is.True, "Each stage requires a real gameplay composition.");
+                foreach (bool value in visited) Assert.That(value, Is.True, "Each false route must be entered and returned from.");
+            }
+            AimLabyrinthOrbit(stairwell, labyrinth.DoorPosition + Vector3.up * 1.4f);
+            // The atmosphere is deliberately updated at 10 Hz of unscaled
+            // time; accelerated capture frames are not a real refresh period.
+            yield return new WaitForSecondsRealtime(.15f);
+            Assert.That(stairwell.Atmosphere.LabyrinthProgress, Is.GreaterThan(.97f));
+            Assert.That(RenderSettings.fog, Is.False, "The warehouse threshold must remain readable without the former terminal haze.");
+            Assert.That(stairwell.World.Root.InverseTransformPoint(stairwell.Player.GameObject.transform.position).y,
+                Is.EqualTo(labyrinth.DoorPosition.y + PlayerFactory.GroundedRootOffset).Within(.04f));
+        }
+
+        private static IEnumerator CaptureLabyrinthEnclosure(StairwellInteriorRoot stairwell, int stage)
+        {
+            // Diagnostic eye-level views complement the real third-person
+            // frames. Every axis shows actual geometry from the same supported
+            // position, including the ceiling and the floor beneath the route.
+            Camera camera = stairwell.CameraFollow.Camera;
+            Transform hero = stairwell.Player.GameObject.transform;
+            Vector3 forward = Vector3.ProjectOnPlane(hero.forward, Vector3.up).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            Vector3[] directions = { forward, right, -forward, -right, Vector3.up, Vector3.down };
+            Vector3 origin = hero.position + Vector3.up * 1.5f;
+            const int width = 640, height = 360;
+            var target = new RenderTexture(width, height, 24);
+            var sheet = new Texture2D(width * 3, height * 2, TextureFormat.RGB24, false);
+            RenderTexture previousTarget = camera.targetTexture;
+            Pose previousPose = new Pose(camera.transform.position, camera.transform.rotation);
+            float previousAspect = camera.aspect, previousLens = camera.fieldOfView;
+            target.Create();
+            using (stairwell.CameraFollow.SuspendPresentation())
+            using (stairwell.Player.PresentationVisibility.AcquireHidden(new object()))
+            {
+                try
+                {
+                    camera.targetTexture = target;
+                    camera.aspect = width / (float)height;
+                    camera.fieldOfView = 90f;
+                    for (int view = 0; view < directions.Length; view++)
+                    {
+                        int tile = view;
+                        camera.transform.SetPositionAndRotation(origin, Quaternion.LookRotation(directions[view],
+                            view >= 4 ? forward : Vector3.up));
+                        yield return new WaitForSecondsRealtime(.15f);
+                        yield return ScarfRenderedFrame(camera, () =>
+                        {
+                            RenderTexture previousActive = RenderTexture.active;
+                            try
+                            {
+                                RenderTexture.active = target;
+                                sheet.ReadPixels(new Rect(0, 0, width, height),
+                                    (tile % 3) * width, (1 - tile / 3) * height, false);
+                            }
+                            finally { RenderTexture.active = previousActive; }
+                        });
+                    }
+                    sheet.Apply();
+                    string folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", SceneIds.StairwellInterior);
+                    Directory.CreateDirectory(folder);
+                    string path = Path.Combine(folder, "labyrinth-0" + stage +
+                        "-enclosure-forward-right-back__left-up-down.png");
+                    File.WriteAllBytes(path, sheet.EncodeToPNG());
+                    Debug.Log("Area enclosure capture wrote " + path + "; top: forward/right/back; bottom: left/up/down");
+                    Assert.That(IsBlank(sheet), Is.False);
+                }
+                finally
+                {
+                    camera.targetTexture = previousTarget;
+                    camera.aspect = previousAspect;
+                    camera.fieldOfView = previousLens;
+                    camera.transform.SetPositionAndRotation(previousPose.position, previousPose.rotation);
+                    target.Release();
+                    Object.DestroyImmediate(target);
+                    Object.DestroyImmediate(sheet);
+                }
+            }
+            stairwell.CameraFollow.Snap();
+        }
+
+        private static int LabyrinthWaypointIndex(IReadOnlyList<Vector3> route, Vector3 point)
+        {
+            for (int i = 0; i < route.Count; i++)
+                if (Vector3.Distance(route[i], point) < .1f) return i;
+            return -1;
+        }
+
+        private static void AimLabyrinthOrbit(StairwellInteriorRoot stairwell, Vector3 localTarget)
+        {
+            PlayerCameraFollow follow = stairwell.CameraFollow;
+            follow.Snap();
+            Vector3 direction = stairwell.World.Root.TransformPoint(localTarget) -
+                (stairwell.Player.GameObject.transform.position + Vector3.up * 1.4f);
+            float yaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            float pitch = -Mathf.Atan2(direction.y, new Vector2(direction.x, direction.z).magnitude) * Mathf.Rad2Deg;
+            follow.RotateYaw(Mathf.DeltaAngle(follow.Camera.transform.eulerAngles.y, yaw));
+            follow.RotatePitch(pitch - follow.TargetOrbitPitch);
+            follow.Snap();
+        }
+
+        private static void AssertLabyrinthStoreySelection(StairwellLayoutPlan plan)
+        {
+            var area = new StairwellWalkableArea(plan);
+            bool crossing = false;
+            foreach (StairwellLabyrinthSupportPlan upper in plan.Labyrinth.Supports)
+            foreach (StairwellLabyrinthSupportPlan lower in plan.Labyrinth.Supports)
+            {
+                if (upper.IsRamp || lower.IsRamp || upper.Start.y - lower.Start.y < 2.3f || upper.Start.y - lower.Start.y > 4.5f ||
+                    !upper.Bounds.Overlaps(lower.Bounds)) continue;
+                Rect overlap = Rect.MinMaxRect(Mathf.Max(upper.Bounds.xMin, lower.Bounds.xMin),
+                    Mathf.Max(upper.Bounds.yMin, lower.Bounds.yMin), Mathf.Min(upper.Bounds.xMax, lower.Bounds.xMax),
+                    Mathf.Min(upper.Bounds.yMax, lower.Bounds.yMax));
+                if (overlap.width < .7f || overlap.height < .7f) continue;
+                Vector3 onUpper = new Vector3(overlap.center.x, upper.Start.y + PlayerFactory.GroundedRootOffset, overlap.center.y);
+                Vector3 onLower = new Vector3(overlap.center.x, lower.Start.y + PlayerFactory.GroundedRootOffset, overlap.center.y);
+                if (!area.TryGetHeight(onUpper, out float upperFloor, .32f) ||
+                    !area.TryGetHeight(onLower, out float lowerFloor, .32f)) continue;
+                Assert.That(upperFloor, Is.EqualTo(upper.Start.y).Within(.01f));
+                Assert.That(lowerFloor, Is.EqualTo(lower.Start.y).Within(.01f));
+                Vector3 between = new Vector3(overlap.center.x, (upper.Start.y + lower.Start.y) * .5f, overlap.center.y);
+                Assert.That(area.Contains(between, .32f), Is.False,
+                    "A lower storey cannot grant support to a capsule in the shaft above it.");
+                crossing = true;
+                break;
+            }
+            Assert.That(crossing, Is.True, "The larger maze needs a real playable crossing with sufficient headroom.");
+        }
+
+        private static IEnumerator VerifyStairwellWarehouseTransfer(StairwellInteriorRoot stairwell)
+        {
+            PlayerMotor motor = stairwell.Player.Motor;
+            bool previousMotorInput = motor.InputEnabled;
+            bool previousInteractorInput = stairwell.Player.Interactor.InputEnabled;
+            bool previousFocus = GameInput.MovementFocused;
+            float previousDelta = Time.captureDeltaTime;
+            var input = new InputTestFixture();
+            input.Setup();
+            Keyboard keyboard = InputSystem.AddDevice<Keyboard>();
+            try
+            {
+                Time.captureDeltaTime = 1f / 30f;
+                GameInput.HandleApplicationFocus(true);
+                motor.SetInputEnabled(false);
+                yield return WalkStairwellWaypoint(stairwell, new Vector3(-1.45f, 3.34f, -3.72f));
+                yield return WalkStairwellWaypoint(stairwell, new Vector3(-1.45f, 4.94f, 1.78f));
+                yield return WalkCorruptedLabyrinth(stairwell, capture: false);
+                var door = stairwell.WarehouseEntrance;
+                PlayerDoorActionTarget target = door.GetComponent<PlayerDoorActionTarget>();
+                Assert.That(target, Is.Not.Null);
+                yield return WalkStairwellWaypoint(stairwell,
+                    stairwell.World.Root.InverseTransformPoint(target.Plan.EntryRootPosition));
+                motor.SetInputEnabled(true);
+                stairwell.Player.Interactor.SetInputEnabled(true);
+                Physics.SyncTransforms();
+                yield return WaitForCorruptedStairwell(() =>
+                    ReferenceEquals(stairwell.Player.Interactor.ActiveInteractable, door),
+                    "The final warehouse door did not offer its real E interaction.");
+
+                const string continuityItem = "test.stairwell-warehouse.continuity";
+                Assert.That(GameSessionState.TryCollectWorldItem(continuityItem, InventoryItemId.VodkaBottle), Is.True);
+                var inventory = new List<InventoryItemStack>(GameSessionState.InventoryItems);
+                var quests = new List<QuestLogEntry>(GameSessionState.Quests);
+                int day = GameSessionState.GameDayNumber, dose = GameSessionState.HeroCorruptionDose;
+                double minutes = GameSessionState.GameTimeOfDayMinutes;
+                Assert.That(GameSessionState.IsGameTimeRunning, Is.True);
+                Debug.Log("Corrupted stairwell proof: shared door gesture and story warehouse transfer");
+                input.Press(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                input.Release(keyboard.eKey, queueEventOnly: true);
+                Assert.That(stairwell.AnimatedInteraction.IsActive, Is.True,
+                    "Entering the warehouse must begin the shared door rig action.");
+                yield return WaitForCorruptedStairwell(() => stairwell.AnimatedInteraction.Phase == PlayerAnimatedInteractionPhase.Looping,
+                    "The warehouse entrance never reached its shared DoorUseLoop.");
+                var contactProbe = stairwell.gameObject.AddComponent<WarehouseRefrigeratorPresentationProbe>();
+                yield return AtWarehouseFridgePresentation(contactProbe, () =>
+                {
+                    var presentation = (Player3DCharacterPresentation)stairwell.Player.Visual;
+                    Assert.That(presentation.ActiveClipName, Is.EqualTo("DoorUseLoop"));
+                    MeshRenderer lever = stairwell.World.WarehouseDoor.Find("Home Entry Door Levers").GetComponent<MeshRenderer>();
+                    Vector3 grip = presentation.Registry.Anchors.RightGrip.position;
+                    float gap = Vector3.Distance(grip, lever.bounds.ClosestPoint(grip));
+                    Debug.Log("STAIRWELL_LABYRINTH_DOOR_GRIP gap=" + gap.ToString("F5", System.Globalization.CultureInfo.InvariantCulture));
+                    Assert.That(gap, Is.LessThanOrEqualTo(.025f),
+                        "The guided world-rig door action must reach the actual imported lever.");
+                    CaptureCurrentCamera(Camera.main, SceneIds.StairwellInterior, "labyrinth-04-warehouse-door-contact");
+                });
+
+                CombatTestRoot warehouse = null;
+                float deadline = Time.realtimeSinceStartup + 30f;
+                while (Time.realtimeSinceStartup < deadline)
+                {
+                    if (SceneManager.GetActiveScene().name == SceneIds.CombatTest)
+                        warehouse = Object.FindAnyObjectByType<CombatTestRoot>();
+                    if (warehouse != null && warehouse.IsInitialized && !SceneTransitionService.IsTransitioning) break;
+                    yield return null;
+                }
+                if (warehouse == null && SceneManager.GetActiveScene().name == SceneIds.CombatTest)
+                    warehouse = Object.FindAnyObjectByType<CombatTestRoot>();
+                Assert.That(warehouse, Is.Not.Null, "The warehouse did not load through the shared door transition.");
+                Assert.That(warehouse.IsInitialized, Is.True);
+                Assert.That(SceneTransitionService.IsTransitioning, Is.False);
+                warehouse.AutomaticOpponentDecisions = false;
+                Assert.That(warehouse.IsStoryContinuation, Is.True);
+                Assert.That(warehouse.Mode, Is.EqualTo(CombatTestMode.Endless));
+                Assert.That(warehouse.EncounterSettings, Is.EqualTo(CombatEncounterSettings.Default));
+                Assert.That(warehouse.LoadoutSelection, Is.EqualTo(CombatLoadoutSelection.Default));
+                Assert.That(GameSessionState.WarehouseStorySeed.HasValue, Is.True);
+                Assert.That(warehouse.WarehousePlan.Seed, Is.EqualTo(GameSessionState.WarehouseStorySeed.Value));
+                Assert.That(GameSessionState.HomeSleepAppearanceActive, Is.True);
+                Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(dose));
+                Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(day));
+                Assert.That(GameSessionState.GameTimeOfDayMinutes, Is.GreaterThanOrEqualTo(minutes));
+                Assert.That(GameSessionState.IsGameTimeRunning, Is.True);
+                Assert.That(GameSessionState.IsWorldItemCollected(continuityItem), Is.True);
+                CollectionAssert.AreEqual(inventory, GameSessionState.InventoryItems);
+                CollectionAssert.AreEqual(quests, GameSessionState.Quests);
+                Assert.That(Object.FindObjectsByType<PlayerMotor>(FindObjectsSortMode.None), Has.Length.EqualTo(1));
+                Assert.That(Object.FindAnyObjectByType<StairwellInteriorRoot>(), Is.Null);
+                Assert.That(warehouse.Player.Motor.InputEnabled && warehouse.Player.Interactor.InputEnabled, Is.True);
+                Assert.That(warehouse.CameraFollow.FixedPoseActive, Is.False);
+                Assert.That(warehouse.DoorAmbush.IsActive, Is.False);
+                Assert.That(GameSessionState.WarehouseDoorAmbushPlayed, Is.False);
+                Assert.That(Vector3.Distance(warehouse.Player.GameObject.transform.position,
+                    warehouse.WarehousePlan.HeroSpawn + Vector3.up * PlayerFactory.GroundedRootOffset), Is.LessThan(.15f));
+                GameObject entrance = GameObject.Find("Warehouse Entrance Door");
+                Assert.That(entrance, Is.Not.Null);
+                Assert.That(entrance.GetComponent<BoxCollider>().enabled, Is.True);
+                Assert.That(warehouse.NewWarehouseLayout(warehouse.WarehousePlan.Seed + 1), Is.False);
+                Assert.That(warehouse.ReturnToWeapons(), Is.False);
+                var arrivalProbe = warehouse.gameObject.AddComponent<WarehouseRefrigeratorPresentationProbe>();
+                try
+                {
+                    yield return AtWarehouseFridgePresentation(arrivalProbe, () =>
+                    {
+                        Assert.That(warehouse.CameraFollow.Camera, Is.Not.Null);
+                        CaptureCurrentCamera(warehouse.CameraFollow.Camera, SceneIds.StairwellInterior,
+                            "labyrinth-04-warehouse-arrival");
+                    });
+                }
+                finally { arrivalProbe.CancelPending(); Object.Destroy(arrivalProbe); }
+                Debug.Log("Corrupted stairwell proof: warehouse arrival preserves the active session");
+            }
+            finally
+            {
+                // The successful transition destroys the source scene; never restore its old leases afterward.
+                if (stairwell != null)
+                {
+                    motor.CancelInteractionPoseMove();
+                    motor.SetInputEnabled(previousMotorInput);
+                    stairwell.Player.Interactor.SetInputEnabled(previousInteractorInput);
+                }
+                Time.captureDeltaTime = previousDelta;
+                GameInput.HandleApplicationFocus(previousFocus);
+                input.TearDown();
             }
         }
 
@@ -405,7 +733,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static IEnumerator CaptureCorruptedGameplay(StairwellInteriorRoot stairwell,
-            string name, bool proveFog = false)
+            string name)
         {
             Camera camera = Camera.main;
             RenderTexture oldTarget = camera.targetTexture;
@@ -422,10 +750,13 @@ namespace BarPromenade.Tests.PlayMode
                     stairwell.CameraFollow.Snap();
                     try
                     {
+                        // The bounded local/far light selection runs at 10 Hz.
+                        // A fast batch frame can precede its response to an
+                        // orbit/aspect change; capture the settled live view.
+                        if (stairwell.FixedCamera.IsLabyrinthOrbit)
+                            yield return new WaitForSecondsRealtime(.15f);
                         yield return ScarfRenderedFrame(camera, () =>
                         {
-                            AssertCorruptedHeroInFrame(stairwell, camera);
-                            if (proveFog) AssertStairwellTerminalBeyondFog(stairwell);
                             var pixels = new Texture2D(width, height, TextureFormat.RGB24, false);
                             RenderTexture previous = RenderTexture.active;
                             try
@@ -433,12 +764,13 @@ namespace BarPromenade.Tests.PlayMode
                                 RenderTexture.active = target;
                                 pixels.ReadPixels(new Rect(0f, 0f, width, height), 0, 0);
                                 pixels.Apply();
-                                Assert.That(IsBlank(pixels), Is.False);
                                 string folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", SceneIds.StairwellInterior);
                                 Directory.CreateDirectory(folder);
                                 string path = Path.Combine(folder, name + (width == 960 ? "-4x3.png" : "-16x9.png"));
                                 File.WriteAllBytes(path, pixels.EncodeToPNG());
                                 Debug.Log("Area capture wrote " + path);
+                                Assert.That(IsBlank(pixels), Is.False);
+                                AssertCorruptedHeroInFrame(stairwell, camera);
                             }
                             finally { RenderTexture.active = previous; Object.DestroyImmediate(pixels); }
                         });
@@ -462,82 +794,33 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertCorruptedHeroInFrame(StairwellInteriorRoot stairwell, Camera camera)
         {
             Vector3 root = stairwell.Player.GameObject.transform.position;
-            foreach (Vector3 point in new[]
+            bool orbit = stairwell.FixedCamera.IsLabyrinthOrbit;
+            // Ordinary close orbit keeps its actual upper-body focus while a
+            // rail can shorten the lens distance. Authored fixed shots retain
+            // their full feet-to-head contract.
+            float focusHeight = orbit ? 1.5f : FixedCameraFocus.BodyAimHeight;
+            Vector3[] points =
             {
-                root + Vector3.up * FixedCameraFocus.BodyLowerHeight,
+                root + Vector3.up * (orbit ? focusHeight : FixedCameraFocus.BodyLowerHeight),
                 root + Vector3.up * FixedCameraFocus.BodyUpperHeight,
-                root + Vector3.up * FixedCameraFocus.BodyAimHeight + Vector3.right * .32f,
-                root + Vector3.up * FixedCameraFocus.BodyAimHeight - Vector3.right * .32f
-            })
+                root + Vector3.up * focusHeight + Vector3.right * .32f,
+                root + Vector3.up * focusHeight - Vector3.right * .32f
+            };
+            string[] names = { orbit ? "orbit focus" : "feet", "head", "right shoulder", "left shoulder" };
+            for (int i = 0; i < points.Length; i++)
             {
-                Vector3 view = camera.WorldToViewportPoint(point);
-                Assert.That(view.z, Is.GreaterThan(0f));
-                Assert.That(view.x, Is.InRange(.02f, .98f), stairwell.FixedCamera.ActiveShotKind + " horizontal body framing");
-                Assert.That(view.y, Is.InRange(.02f, .98f), stairwell.FixedCamera.ActiveShotKind + " vertical body framing");
+                Vector3 view = camera.WorldToViewportPoint(points[i]);
+                string label = (orbit ? "Labyrinth orbit" : stairwell.FixedCamera.ActiveShotKind.ToString()) +
+                    " " + names[i] + " viewport=" + view;
+                Assert.That(view.z, Is.GreaterThan(0f), label + " is behind the camera");
+                Assert.That(view.x, Is.InRange(.02f, .98f), label + " horizontal body framing");
+                Assert.That(view.y, Is.InRange(.02f, .98f), label + " vertical body framing");
             }
             if (Physics.Linecast(camera.transform.position, root + Vector3.up * 1.2f,
                     out RaycastHit hit, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
                 Assert.That(hit.transform == stairwell.Player.GameObject.transform ||
                     hit.transform.IsChildOf(stairwell.Player.GameObject.transform), Is.True,
                     "The gameplay camera cannot look through a wall or column at the hero: " + hit.collider.name);
-        }
-
-        private static void AssertStairwellTerminalBeyondFog(StairwellInteriorRoot stairwell)
-        {
-            Transform terminal = stairwell.World.Root.Find("Corrupted Endless Staircase/Distant Flight 3");
-            Bounds bounds = terminal.GetComponent<Renderer>().bounds;
-            Assert.That(bounds.min.z, Is.GreaterThan(StairwellInteriorAtmosphere.CorruptedHazeEndZ),
-                "The entire third flight must lie beyond the local stair haze even with Bloom disabled.");
-        }
-
-        private static void AssertCorruptedTerminalInvisible(StairwellInteriorRoot stairwell)
-        {
-            // Inspect actual pixels, not only the configured fog numbers. A
-            // hidden finite end must make no silhouette against the luminous air.
-            Camera camera = Camera.main;
-            Renderer terminal = stairwell.World.Root.Find("Corrupted Endless Staircase/Distant Flight 3").GetComponent<Renderer>();
-            Pose pose = new Pose(camera.transform.position, camera.transform.rotation);
-            float fov = camera.fieldOfView;
-            RenderTexture savedTarget = camera.targetTexture, savedActive = RenderTexture.active;
-            var target = new RenderTexture(640, 360, 24);
-            var image = new Texture2D(640, 360, TextureFormat.RGB24, false);
-            stairwell.Atmosphere.RuntimeProfile.TryGet(out FilmGrain grain);
-            bool grainActive = grain.active;
-            try
-            {
-                grain.active = false;
-                camera.transform.position = stairwell.World.Root.TransformPoint(new Vector3(-1.45f, 6.6f, 1.7f));
-                camera.transform.LookAt(terminal.bounds.center);
-                camera.fieldOfView = 48f;
-                camera.targetTexture = target;
-                Color32[] Pixels()
-                {
-                    camera.Render(); RenderTexture.active = target;
-                    image.ReadPixels(new Rect(0, 0, 640, 360), 0, 0); image.Apply();
-                    return image.GetPixels32();
-                }
-                Color32[] shown = Pixels();
-                terminal.enabled = false;
-                Color32[] absent = Pixels();
-                long sum = 0;
-                int peak = 0;
-                for (int i = 0; i < shown.Length; i++)
-                {
-                    int error = Math.Abs(shown[i].r - absent[i].r) + Math.Abs(shown[i].g - absent[i].g) +
-                        Math.Abs(shown[i].b - absent[i].b);
-                    sum += error; peak = Math.Max(peak, error);
-                }
-                Debug.Log($"Corrupted terminal pixel difference: mean={sum / (shown.Length * 3d):F3}, peak={peak}");
-                Assert.That(sum / (shown.Length * 3d), Is.LessThan(.4d));
-                Assert.That(peak, Is.LessThanOrEqualTo(12), "The finite terminal still leaves a visible edge with Bloom off.");
-            }
-            finally
-            {
-                terminal.enabled = true; grain.active = grainActive;
-                camera.targetTexture = savedTarget; RenderTexture.active = savedActive;
-                camera.transform.SetPositionAndRotation(pose.position, pose.rotation); camera.fieldOfView = fov;
-                target.Release(); Object.DestroyImmediate(target); Object.DestroyImmediate(image);
-            }
         }
 
         private static IEnumerator WaitForCorruptedStairwell(Func<bool> ready, string failure)
@@ -552,9 +835,9 @@ namespace BarPromenade.Tests.PlayMode
             PlayerMotor motor = stairwell.Player.Motor;
             Vector3 target = stairwell.World.Root.TransformPoint(local);
             bool reached = false;
-            for (int frame = 0; frame < 600 && !reached; frame++)
+            for (int frame = 0; frame < 1200 && !reached; frame++)
             {
-                reached = motor.MoveTowardsApproachWaypoint(target, .025f, 1f / 60f);
+                reached = motor.MoveTowardsApproachWaypoint(target, .025f, 1f / 30f);
                 Assert.That(motor.InteractionPoseMoveStalled, Is.False,
                     "The real stairwell capsule must reach " + local + "; stopped at " + motor.transform.position);
                 yield return null;

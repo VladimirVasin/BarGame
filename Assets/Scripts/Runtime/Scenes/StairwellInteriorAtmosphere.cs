@@ -15,6 +15,8 @@ namespace BarPromenade
     {
         public const int MaximumPracticalLights = 3;
         public const int MaximumDustParticles = 14;
+        public const int MaximumActiveLabyrinthLights = 8;
+        public const int MaximumLabyrinthShadowLights = 2;
         public const float FilmGrainIntensity = 0.05f;
         public const float VignetteIntensity = 0.23f;
         public const float CorruptedFogStart = 9f;
@@ -57,6 +59,16 @@ namespace BarPromenade
         private Vector4[] previousHazePlanes, previousHazeColors;
         private Vector4 hazePlane;
         private MaterialPropertyBlock hazeProperties;
+        private Transform labyrinthTarget, labyrinthSpace;
+        private StairwellLabyrinthPlan labyrinthPlan;
+        private float[] labyrinthLightIntensities;
+        private readonly int[] nearestLights = new int[MaximumActiveLabyrinthLights];
+        private readonly float[] nearestLightDistances = new float[MaximumActiveLabyrinthLights];
+        private float nextLabyrinthUpdate;
+        public float LabyrinthProgress { get; private set; }
+        public Light[] LabyrinthLights { get; private set; }
+        public int ActiveLabyrinthLightCount { get; private set; }
+        public int ActiveLabyrinthShadowCount { get; private set; }
         private static readonly int HazePlaneId = Shader.PropertyToID("_SurfaceHazePlane");
         private static readonly int HazeColorId = Shader.PropertyToID("_SurfaceHazeColor");
 
@@ -70,6 +82,171 @@ namespace BarPromenade
         public ParticleSystem Dust { get; private set; }
         public Light UpperGlow { get; private set; }
         public CityLightHalo UpperGlowHalo { get; private set; }
+
+        public void ConfigureLabyrinth(StairwellLabyrinthPlan route, Transform space, Transform hero,
+            StairwellSoundscape soundscape)
+        {
+            labyrinthPlan = route;
+            labyrinthSpace = space;
+            labyrinthTarget = hero;
+            // The former luminous dead end now contains an actual route.
+            if (UpperGlow != null) UpperGlow.gameObject.SetActive(false);
+            LabyrinthLights = new Light[route.LightPositions.Count];
+            labyrinthLightIntensities = new float[LabyrinthLights.Length];
+            for (int i = 0; i < LabyrinthLights.Length; i++)
+            {
+                StairwellLabyrinthLightPlan fixture = route.LightDescriptors[i];
+                Color tint = fixture.Stage == 1 ? new Color(.54f, .72f, .61f) :
+                    fixture.Stage == 2 ? new Color(.83f, .70f, .44f) : new Color(.80f, .28f, .13f);
+                if (fixture.IsScenery) tint = Color.Lerp(tint, new Color(.72f, .75f, .67f), .25f);
+                float intensity = fixture.IsScenery ? 125f : fixture.Stage == 3 ? 20f : 24f;
+                Light light = CreatePracticalLight("Labyrinth Practical " + (i + 1),
+                    Vector3.zero, tint, intensity, fixture.IsScenery ? 32f : 17f, 0f, false, flicker: false);
+                light.transform.position = space.TransformPoint(fixture.Position);
+                Vector3 direction = space.TransformDirection(fixture.Direction);
+                light.transform.rotation = Quaternion.LookRotation(direction,
+                    Mathf.Abs(Vector3.Dot(direction, Vector3.up)) > .95f ? Vector3.forward : Vector3.up);
+                if (fixture.CastsShadows)
+                {
+                    light.type = LightType.Spot;
+                    light.spotAngle = 115f;
+                    light.innerSpotAngle = 70f;
+                    light.shadowBias = .035f;
+                    light.shadowNormalBias = .16f;
+                    UniversalAdditionalLightData data = light.GetUniversalAdditionalLightData();
+                    data.usePipelineSettings = false;
+                    if (Application.isPlaying)
+                        data.additionalLightsShadowResolutionTier = UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow;
+                }
+                light.bounceIntensity = 0f;
+                light.enabled = false;
+                labyrinthLightIntensities[i] = intensity;
+                LabyrinthLights[i] = light;
+            }
+            // The warehouse uses this same ventilation synthesis. A fixed source
+            // at the final machinery becomes nearer as the player climbs.
+            AudioSource ventilation = soundscape.VentilationSource;
+            ventilation.transform.position = space.TransformPoint(route.DoorPosition + Vector3.up * 2f);
+            ventilation.maxDistance = 52f;
+            ventilation.pitch = .7f;
+            UpdateLabyrinth();
+        }
+
+        private void Update()
+        {
+            if (labyrinthTarget == null || GameTimeScaleRuntime.IsPaused || Time.unscaledTime < nextLabyrinthUpdate) return;
+            nextLabyrinthUpdate = Time.unscaledTime + .1f;
+            UpdateLabyrinth();
+        }
+
+        private void UpdateLabyrinth()
+        {
+            if (labyrinthTarget == null) return;
+            Vector3 local = labyrinthSpace.InverseTransformPoint(labyrinthTarget.position);
+            LabyrinthProgress = labyrinthPlan.ProgressAt(local);
+            float t = LabyrinthProgress;
+            float opening = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t * 14f));
+            float warehouseThreshold = Mathf.InverseLerp(6f, 1f,
+                Vector3.Distance(local, labyrinthPlan.DoorPosition));
+            RenderSettings.fog = warehouseThreshold < .98f;
+            RenderSettings.fogColor = Color.Lerp(CorruptedFogColor, new Color(.042f, .052f, .045f), t);
+            RenderSettings.fogStartDistance = Mathf.Lerp(CorruptedFogStart, Mathf.Lerp(26f, 42f, t), opening);
+            RenderSettings.fogEndDistance = Mathf.Lerp(CorruptedFogEnd, Mathf.Lerp(100f, 140f, t), opening);
+            // The closed interior must retain readable floors/walls/ceilings
+            // between practical pools, including when Bloom is disabled.
+            Color interiorAmbient = Color.Lerp(new Color(.17f, .19f, .16f), new Color(.13f, .145f, .125f), t);
+            RenderSettings.ambientLight = Color.Lerp(new Color(.13f, .16f, .13f), interiorAmbient, opening);
+            if (sceneSun != null) sceneSun.intensity = Mathf.Lerp(Mathf.Lerp(.38f, .14f, t), 0f, warehouseThreshold);
+            if (sceneCamera != null) sceneCamera.backgroundColor = RenderSettings.fogColor;
+            if (runtimeProfile.TryGet(out ColorAdjustments grade))
+            {
+                grade.colorFilter.value = Color.Lerp(new Color(.76f, .83f, .70f), Color.white, t);
+                grade.saturation.value = Mathf.Lerp(-18f, -12f, t);
+            }
+            if (runtimeProfile.TryGet(out DepthOfField depth))
+            {
+                depth.gaussianStart.value = Mathf.Lerp(5f, 85f, opening);
+                depth.gaussianEnd.value = Mathf.Lerp(16f, 155f, opening);
+            }
+            UpdateLabyrinthLights();
+        }
+
+        private void UpdateLabyrinthLights()
+        {
+            // A stable, fixed-size nearest list avoids allocations/sorts and
+            // bounds realtime lighting independently of the authored fixtures.
+            for (int slot = 0; slot < nearestLights.Length; slot++)
+            {
+                nearestLights[slot] = -1;
+                nearestLightDistances[slot] = float.PositiveInfinity;
+            }
+            for (int i = 0; i < LabyrinthLights.Length; i++)
+            {
+                Light light = LabyrinthLights[i];
+                bool scenery = labyrinthPlan.LightDescriptors[i].IsScenery;
+                float distance = (light.transform.position - labyrinthTarget.position).sqrMagnitude;
+                if (distance > (scenery ? 140f * 140f : 34f * 34f)) continue;
+                if (light.enabled) distance -= 4f;
+                // Six local lamps and two upper interior fixtures share one
+                // budget. Selection follows the hero, so looking around does
+                // not switch the room's illumination on and off.
+                int first = scenery ? MaximumActiveLabyrinthLights - 2 : 0;
+                int limit = scenery ? MaximumActiveLabyrinthLights : MaximumActiveLabyrinthLights - 2;
+                for (int slot = first; slot < limit; slot++)
+                {
+                    if (distance >= nearestLightDistances[slot]) continue;
+                    for (int next = limit - 1; next > slot; next--)
+                    {
+                        nearestLights[next] = nearestLights[next - 1];
+                        nearestLightDistances[next] = nearestLightDistances[next - 1];
+                    }
+                    nearestLights[slot] = i;
+                    nearestLightDistances[slot] = distance;
+                    break;
+                }
+            }
+            ActiveLabyrinthLightCount = 0;
+            ActiveLabyrinthShadowCount = 0;
+            for (int i = 0; i < LabyrinthLights.Length; i++)
+            {
+                if (Array.IndexOf(nearestLights, i) >= 0) continue;
+                LabyrinthLights[i].enabled = false;
+                LabyrinthLights[i].shadows = LightShadows.None;
+            }
+            for (int slot = 0; slot < nearestLights.Length; slot++)
+            {
+                int i = nearestLights[slot];
+                if (i < 0) continue;
+                Light light = LabyrinthLights[i];
+                float distance = Vector3.Distance(light.transform.position, labyrinthTarget.position);
+                bool scenery = labyrinthPlan.LightDescriptors[i].IsScenery;
+                float fade = 1f - Mathf.SmoothStep(0f, 1f,
+                    scenery ? Mathf.InverseLerp(115f, 140f, distance) : Mathf.InverseLerp(25f, 34f, distance));
+                light.intensity = labyrinthLightIntensities[i] * fade;
+                light.enabled = fade > .001f;
+                if (!light.enabled) continue;
+                ActiveLabyrinthLightCount++;
+                LightShadows shadows = LightShadows.None;
+                if (labyrinthPlan.LightDescriptors[i].CastsShadows &&
+                    ActiveLabyrinthShadowCount < MaximumLabyrinthShadowLights && distance < 24f)
+                {
+                    shadows = LightShadows.Hard;
+                    ActiveLabyrinthShadowCount++;
+                }
+                if (light.shadows != shadows) light.shadows = shadows;
+            }
+            if (Dust != null)
+            {
+                Vector3 position = labyrinthPlan.StageAt(labyrinthSpace.InverseTransformPoint(labyrinthTarget.position)) == 0 || nearestLights[0] < 0
+                    ? transform.TransformPoint(new Vector3(0f, 3f, -.4f))
+                    : LabyrinthLights[nearestLights[0]].transform.position + Vector3.down;
+                if ((Dust.transform.position - position).sqrMagnitude > 12f * 12f)
+                {
+                    Dust.Clear();
+                    Dust.transform.position = position;
+                }
+            }
+        }
 
         public void Initialize(bool corrupted = false, Camera camera = null)
         {
@@ -200,9 +377,9 @@ namespace BarPromenade
             ownsEnvironment = false;
             // A subsequent scene may already have installed its own state.
             // Release only values still owned by this composition.
-            if (gameObject.scene == SceneManager.GetActiveScene() && RenderSettings.fog &&
+            if (gameObject.scene == SceneManager.GetActiveScene() && (labyrinthTarget != null || (RenderSettings.fog &&
                 RenderSettings.fogMode == FogMode.Linear && RenderSettings.fogColor == CorruptedFogColor &&
-                Mathf.Approximately(RenderSettings.fogEndDistance, CorruptedFogEnd))
+                Mathf.Approximately(RenderSettings.fogEndDistance, CorruptedFogEnd))))
             {
                 RenderSettings.fog = previousFog;
                 RenderSettings.fogMode = previousFogMode;
@@ -217,16 +394,23 @@ namespace BarPromenade
                     sceneSun.transform.rotation = previousSunRotation;
                 }
             }
-            if (sceneCamera != null && sceneCamera.backgroundColor == CorruptedFogColor)
+            if (sceneCamera != null && (labyrinthTarget != null || sceneCamera.backgroundColor == CorruptedFogColor))
                 sceneCamera.backgroundColor = previousBackground;
         }
 
         private void OnEnable()
         {
-            if (IsInitialized && corrupted) { ApplyCorruptedEnvironment(); SetDepthHaze(true); }
+            if (IsInitialized && corrupted) { ApplyCorruptedEnvironment(); SetDepthHaze(true); UpdateLabyrinth(); }
         }
 
-        private void OnDisable() { RestoreEnvironment(); SetDepthHaze(false); }
+        private void OnDisable()
+        {
+            RestoreEnvironment();
+            SetDepthHaze(false);
+            if (LabyrinthLights == null) return;
+            foreach (Light light in LabyrinthLights) if (light != null) light.enabled = false;
+            ActiveLabyrinthLightCount = ActiveLabyrinthShadowCount = 0;
+        }
 
         private void CreateUpperGlow()
         {

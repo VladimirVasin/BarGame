@@ -66,24 +66,24 @@
   existing actual-noon light/material/shadow/post coverage, only camera/DOF scope;
   no new light/render pass. Bounded prepared shots/leases, cost unmeasured.
 
+- **Accepted architecture exception 2026-10-30 — post-sleep labyrinth to warehouse:**
+  User: upper→3 stages/branches/loops→CombatTest. Escher means space/look up,
+  not copied forms: many small stairs/platforms/bridges/rectangular openings
+  sideways/inverted inside walls/ceiling/floors; no void/cloned facades.
+  Plaster/wood→wet concrete/steel/red lamps; ordinary gravity.
+  Third-person/mouse inside; fixed below.
+  Rig door/Single load keeps session/calendar/inventory/quests/hero/seed;
+  no BeginNewGame. Endless/default density/full kit; retry keeps story.
+  Entry seals; fish/key/gate/ambush stay. Combat/loss/creature/gore/owned-lock
+  exceptions only inside warehouse; stairs borrow materials/audio, no finale/lore.
+  ≤8 lamps/≤2 Hard shadows; stage fog/grade/far DOF; SSAO/SMAA/lens stay.
+  No new GI/SSGI/SCGI/SSR/water/wind/rim/flare/blur/strobe.
+  Feet-aware support; Blender chunks/shared surfaces/cleanup; cost unmeasured.
+
 - **Accepted architecture exception 2026-10-30 — distorted Stairwell/short ascent:**
-  User: recognizable distorted Stairwell/short ascent.
-  Lower flights/landings/walls/columns/domestic traces/three fixtures stay.
-  Back-wall base/shifted fragments/torn east-south roof open asymmetrically
-  above three reused distant flights. Transverse rail ends the walkable landing.
-  Three interior shots frame the full hero at16:9/4:3.
-  White-yellow core/copper-red halo and scoped haze hide the last flight with
-  Bloom off; scene/owner-guarded disable/unload restore. Ordinary mode stays.
-  No actV/gates/portal/new scene/death/lore.
-  All24: cold-green ambient/grade, original practicals/dust/room sound/music;
-  corrupt middle fixture/light/supports/electrical cue shareX1.55. Apartment bounce2/range4;
-  upper hard Spot45/range18, two halo particles3.6/8m with depth/soft-intersection.
-  Per-renderer `SurfaceDamageLit` Forward haze z6→9.8;
-  defaults0/Home unchanged, hidden module casts no shadow. Secondary linear
-  fog9–32m/background(.13,.17,.14); `fogKeepLinear` retains player variants.
-  SSAO/maps/bevels/UVs/damage/native/SMAA/vignette/grain/state lens and shared
-  inspection DOF/outline stay. No GI/SSGI/SCGI/SSR/cubes/water/rim/flare/blur/
-  strobe/new post-feature; finite reused modules, costs unmeasured.
+  Lower walls/columns/household/fixtures stay; broken back/east-south roof.
+  Cold-green grade/shared damage/dust/audio; middle fixture/light/support/cue
+  X1.55; apartment bounce lights stone. Ordinary mode stays; upper:labyrinth.
 
 - **Accepted architecture exception 2026-10-30 — stone Cat-head inspection:**
   User: static stone Cat head in descent wall; ears/muzzle/carved grin, buried rear;
@@ -135,7 +135,8 @@
   stays, held-rig apply precedes wake. `HomeSleepAppearanceActive` selects
   corrupted Stairwell; the dated distortion/statue decision owns its presentation.
   New Game/debug-day clears mode; dose resets independently.
-  No act/world0–5/finale/otherworld/scene/lore change.
+  Sleep itself changes no act/world0–5/finale/lore; the separate labyrinth
+  decision owns its outgoing route.
 
 - **Accepted architecture exception 2026-10-29 — technical Home sleep MVP:**
   Same positioned rig/sofa entry/settle/contacts/exit; push3/closed-eye hold3,

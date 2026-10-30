@@ -38,7 +38,7 @@ namespace BarPromenade
 
         private void CreateCombatLocation()
         {
-            if (IsLaboratory || UseLegacyArenaForTests)
+            if (!IsStoryContinuation && (IsLaboratory || UseLegacyArenaForTests))
             {
                 combatLocation = CombatAssetProvider.CreateArena(transform);
                 heroSpawn = CombatAssetProvider.FindAnchor(combatLocation, "HeroSpawn").position + Vector3.up * PlayerFactory.GroundedRootOffset;
@@ -46,7 +46,7 @@ namespace BarPromenade
                 arenaBounds = new ArenaBounds();
                 return;
             }
-            int seed = WarehouseSeedForTests ?? ReadWarehouseSeed();
+            int seed = IsStoryContinuation ? storyWarehouseSeed : WarehouseSeedForTests ?? ReadWarehouseSeed();
             WarehouseSeedForTests = null;
             WarehousePlan = WarehouseArenaPlanner.Create(seed);
             combatLocation = WarehouseArenaBuilder.Create(WarehousePlan, transform);
@@ -79,7 +79,7 @@ namespace BarPromenade
         /// <summary>Replace the layout only by an explicit action; ordinary resets retain it.</summary>
         public bool NewWarehouseLayout(int seed)
         {
-            if (!IsInitialized || WarehousePlan == null || !GameInput.CanRead(GameInputContext.Gameplay) ||
+            if (!IsInitialized || IsStoryContinuation || WarehousePlan == null || !GameInput.CanRead(GameInputContext.Gameplay) ||
                 (Taunt != null && Taunt.IsActive)) return false;
             DoorAmbush?.ResetEpisode();
             WarehouseArenaPlan nextPlan = WarehouseArenaPlanner.Create(seed);
@@ -99,7 +99,7 @@ namespace BarPromenade
 
         private void DrawWarehouseButton(RetroUiCanvas canvas)
         {
-            if (WarehousePlan == null) return;
+            if (WarehousePlan == null || IsStoryContinuation) return;
             if (DrawToolbarButton(canvas, WarehouseButtonRect, "warehouse-new",
                 LocalizationService.Get("combat.warehouse.new"))) NewWarehouseLayout(RandomWarehouseSeed());
         }

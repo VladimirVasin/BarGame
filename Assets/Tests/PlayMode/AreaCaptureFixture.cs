@@ -3161,6 +3161,7 @@ namespace BarPromenade.Tests.PlayMode
                 stairwell.Atmosphere.enabled = true;
                 Assert.That(RenderSettings.fog, Is.True);
                 Assert.That(Camera.main.backgroundColor, Is.EqualTo(RenderSettings.fogColor));
+                yield return VerifyStairwellWarehouseTransfer(stairwell);
             }
             finally { GameSessionState.BeginNewGame(); }
         }

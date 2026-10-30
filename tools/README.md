@@ -1,5 +1,6 @@
 # Art/native tools
 
+`build-stairwell-labyrinth-3d-model.py`:`--validate-only`;graph/C#data/metres/winding.
 Home:`build-home-{interior-3d-model,textures,corruption-textures}.py`;
 macro shader:`build-surface-damage-shader.py --check`.
 Bar:`build-bar-3d-model.py`/`bar_interior_unique_surfaces.py`: `--validate-only`;
@@ -162,7 +163,6 @@ See [audio-vhs/README.md](audio-vhs/README.md).
 `build-player-bar-repeat-actions.py`:wave/wrist;`validate`.
 `build-player-karaoke-actions-3d-model.py`:43-bone Enter/Loop/Exit, planted feet,
 neutral/seam/determinism checks; `PlayerKaraokeActionAssetSetup` checks imports.
-`run-blender.py`: Python pin by host; installed Blender, no version/hash pin.
 
 `build-combat-{test,blood,pistol,shotgun,gore,body,skull,zombie,crane}-3d-model.py`:
 test:--simple-strike-only/--actions-only+--kick-only/--recovery-only/--footwork-only;
