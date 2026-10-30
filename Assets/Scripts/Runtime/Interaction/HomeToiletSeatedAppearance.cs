@@ -100,6 +100,8 @@ namespace BarPromenade
             }
             GameObject template = Resources.Load<GameObject>(ModelResourcePath);
             Texture2D skinAtlas = Player3DBathingAppearance.BareSkinAtlas;
+            if (registry != null)
+                skinAtlas = PlayerCorruptionAppearance.Ensure(registry).BareSkinTexture ?? skinAtlas;
             if (template == null || skinAtlas == null) return false;
             var sources = new Dictionary<string, Player3DMeshBinding>(StringComparer.Ordinal);
             var actualBones = new Dictionary<string, Transform>(StringComparer.Ordinal);
@@ -244,6 +246,8 @@ namespace BarPromenade
                         int marker = shapeName.IndexOf("JointVolume.", StringComparison.Ordinal);
                         if (marker < 0 || marker > 0 && shapeName[marker - 1] != '.')
                             marker = shapeName.IndexOf("TrouserKneeFold.", StringComparison.Ordinal);
+                        if (marker < 0 || marker > 0 && shapeName[marker - 1] != '.')
+                            marker = shapeName.IndexOf(PlayerCorruptionAppearance.ShapeName, StringComparison.Ordinal);
                         if (marker < 0 || marker > 0 && shapeName[marker - 1] != '.') continue;
                         shapeName = shapeName.Substring(marker);
                         int sourceShape = CharacterJointDeformation.FindShape(sourceSkin.sharedMesh, shapeName);

@@ -3,8 +3,8 @@
 ## Current production lock
 
 - Silhouette: weary lean adult man; torso widens toward shoulders, male hips/glutes,
-  slim arms; near-black medium-length
-  parted curtains, full temples/ears and a covered nape, without a ponytail;
+  slim arms; near-black parted hair, cropped initially and long/unkempt at
+  maximum decay, without a ponytail;
   articulated hands and heavy work boots. Hand reach/width is 20% larger,
   with slimmer palm depth/finger girth (user decision, 2026-09-15).
   Original wrist joins, rig and grip sockets remain.
@@ -43,6 +43,15 @@
 All ten gameplay roots, prefab-derived first-person subsets and inventory
 portrait use the sole `Player3DV2` through `Player3DResources`/`PlayerFactory`.
 
+- Accepted `2026-10-29`: seven irreversible drink-dose appearances on this rig.
+  `HeroCorruption` narrows the head/neck/trunk and changes garment drape;
+  source-derived face/skin/dialogue atlases retain expressions and soil.
+  Clothing stains/abrasion/fraying/closed stitched tears differ per thigh/shin/
+  boot; right patch/paired forearms/alpha/normal-response maps stay.
+  Maximum is an emaciated human; M-65/right patch/boots remain recognizable.
+  Contact-aware hunch/tremor yield to owned actions. Mirror/first-person copies
+  share the applied state; inventory portrait follows the stage.
+  Calendar/sobriety never drive it; technical sleep raises to7 (§6).
 - Same lean `1.75 m` man/face/six sockets, shaped hands and work boots.
   `2026-10-10`: continuous broad shoulders;
   waist/ribcage widths `26.6/38 cm`. Matching tapered neck follows the jaw:
@@ -75,10 +84,10 @@ portrait use the sole `Player3DV2` through `Player3DResources`/`PlayerFactory`.
   lock edits; restoration retains independent head/hand ownership. Catalogs
   admit alternatives; only the original outfit ships. New outfits/UI/acquisition/
   persistence are Deferred.
-- The haircut is medium-length parted curtains. Fuller side hair covers the
-  temples and ears; side and rear ends share the same jaw/upper-neck length,
-  forming a continuous silhouette. The rear does not hang lower than the sides.
-  There is no ponytail. A fixed cap and three weighted regions
+- The source Basis is medium parted curtains. Accepted `2026-10-29`:
+  `HeroHairShort/Long` progress from cropped to long/unkempt, without a ponytail;
+  link rest lengths share the authored `.55–1.8` scale and compensated shapes.
+  A fixed cap and three weighted regions
   each use three joints and a terminal point. `PlayerHair` replays physical bones;
   pose/gear mismatch→live inertia/gravity/wind/bends after final body pose.
   Hair:≤`17` posed skin/clothing envelopes;scarf ellipsoids.
@@ -99,8 +108,8 @@ portrait use the sole `Player3DV2` through `Player3DResources`/`PlayerFactory`.
   punctuation/tail close the mouth, independent blink continues, pause freezes.
   UV/property-block switching preserves shared materials and existing expressions.
 - Outside dialogue the curved head uses an `8 x 4` face atlas (`512 x 256`) with
-  twenty-six cells: thirteen expressions in columns `c0..c3` and their
-  thirteen soiled twins at column `+4`. The five sober faces `Neutral`, `HalfBlink`,
+  twenty-eight cells: fourteen expressions in columns `c0..c3` and their
+  fourteen soiled twins at column `+4`. The five sober faces `Neutral`, `HalfBlink`,
   `ClosedBlink`, `Watchful` and `Tense`
   (Unity cells `c0r3`, `c1r3`, `c2r3`, `c0r2`, `c1r2`) remain readable without
   separate 3D features, and the drink's four sit beside them: `Drowsy` (`c2r2`,
@@ -113,7 +122,8 @@ portrait use the sole `Player3DV2` through `Player3DResources`/`PlayerFactory`.
   inspection adds `TeethInspectHalf` (`c0r0`, opening lips) and `TeethInspect`
   (`c1r0`, an open dark mouth with distinct upper and lower muted cream
   `(210, 204, 181)` tooth rows and sparse tooth divisions). The brighter
-  inspection colour leaves the existing `TeethDisplay` unchanged.
+  inspection colour leaves `TeethDisplay` unchanged.
+  `Horror` (`c2r0`, twin `c6r0`) opens eyes/mouth only for technical sleep startle.
   Straight mouth corners and the weary eyes
   and brows keep their identity; the inspection is not a smile. Both new
   expressions use the existing curved face surface. Over `3 s`, the actual
@@ -132,10 +142,8 @@ portrait use the sole `Player3DV2` through `Player3DResources`/`PlayerFactory`.
   grey against skin at `150` in the monochrome print. The runtime asks for
   the twin by an `(expression, soiled)` pair and falls back to the clean
   cell when a twin is missing, so an atlas without them still draws every
-  face. The remaining six cells are free. Neutral is weary, flat and
-  predominantly depressive, never guilty, tearful or theatrical; the smaller
-  cranium preserves extra vertical room for the existing nose, mouth, jaw
-  and chin identity.
+  face. Four cells remain free. Neutral stays weary/depressive, never guilty/
+  tearful/theatrical; smaller cranium retains nose/mouth/jaw/chin space.
   The authoring preview's `UVNeutral` selects exactly one neutral cell:
   width `1/8`, height `1/4`, top row. Preview and runtime must not combine
   two expressions into a duplicated face.
@@ -304,10 +312,11 @@ This opt-in applies only during the interaction handoff without an active clip.
 - Bed uses a `3.75 s` `BedEnter` and a `6.0 s` `BedExit` around the persistent
   `BedSleepLoop`. The hero sits on the long edge nearest the apartment door,
   swings both legs onto the mattress and lowers through a supported side pose
-  with his head toward the pillow. Waking is a sit-up rather than a roll and
-  has four separate beats: he curls onto his elbows and pushes up into a
-  half-crouch on the mattress with both boots drawn under him, drops the right
-  leg over the near edge, then the left, and only then stands. The door-side right leg leads; the left stays on bedding until the right boot lands. Because runtime pins these clips by the pelvis bone and grounds
+  with his head toward the pillow. Wake curls onto elbows into a half-crouch,
+  boots under him; door-side right leg lowers while the left stays on bedding
+  until that boot lands, then left leg, then stand. Calm startup/technical sleep hold Exit.87:
+  owned breath/head/shoulder idle, palms IK/feet/pelvis fixed; fresh E stands.
+  Because runtime pins these clips by the pelvis bone and grounds
   nothing while they play, the generator measures how far his back, the back of
   his lifted head and his seated weight hang below that bone, and
   `PlayerCharacterDimensions` mirrors those three numbers. The mattress is the

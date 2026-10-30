@@ -46,6 +46,7 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void HeroPortrait_UsesDedicatedFull3DTexture()
         {
+            GameSessionState.BeginNewGame();
             Texture2D portrait = Resources.Load<Texture2D>(
                 InventoryIconLibrary.HeroPortraitResourcePath);
 
@@ -65,7 +66,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 assetPath,
                 Is.EqualTo(
-                    "Assets/Resources/Player/Player3DV2Portrait.png"));
+                    "Assets/Resources/Player/Corruption/Portrait1.png"));
             TextureImporter importer =
                 AssetImporter.GetAtPath(assetPath) as TextureImporter;
             Assert.That(importer, Is.Not.Null);

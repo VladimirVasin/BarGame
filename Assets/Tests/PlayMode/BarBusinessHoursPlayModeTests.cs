@@ -74,6 +74,7 @@ namespace BarPromenade.Tests.PlayMode
 
             var menu = new StartMenuModel();
             menu.Open();
+            Assert.That(menu.OpenDebugMenu(), Is.True);
             Assert.That(menu.Confirm(), Is.EqualTo(StartMenuAction.ChooseStartTime));
             Assert.That(menu.IsChoosingStartTime, Is.True);
             Assert.That(menu.IsChoosingLocation, Is.False);
@@ -113,6 +114,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             StartMenuRoot menu = Object.FindAnyObjectByType<StartMenuRoot>();
             Assert.That(menu, Is.Not.Null);
+            Assert.That(menu.OpenDebugMenu(), Is.True);
             Assert.That(menu.ConfirmSelection(), Is.True);
             Assert.That(menu.IsChoosingStartTime, Is.True);
             Assert.That(menu.IsChoosingLocation, Is.False);

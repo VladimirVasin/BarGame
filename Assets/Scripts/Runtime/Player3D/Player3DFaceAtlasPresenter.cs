@@ -45,7 +45,7 @@ namespace BarPromenade
         /// every step; the binding itself drops to the clean cell when an
         /// atlas has no twin for that face.
         /// </summary>
-        public bool Apply(PlayerFacialExpression expression, bool soiled = false)
+        public bool Apply(PlayerFacialExpression expression, bool soiled = false, Texture2D textureOverride = null)
         {
             if (!IsConfigured)
             {
@@ -71,9 +71,10 @@ namespace BarPromenade
 
             properties ??= new MaterialPropertyBlock();
             binding.Renderer.GetPropertyBlock(properties);
-            properties.SetTexture(BaseMapId, binding.Texture);
+            Texture2D texture = textureOverride != null ? textureOverride : binding.Texture;
+            properties.SetTexture(BaseMapId, texture);
             properties.SetVector(BaseMapTransformId, textureTransform);
-            properties.SetTexture(LegacyMapId, binding.Texture);
+            properties.SetTexture(LegacyMapId, texture);
             properties.SetVector(LegacyMapTransformId, textureTransform);
             binding.Renderer.SetPropertyBlock(properties);
             properties.Clear();

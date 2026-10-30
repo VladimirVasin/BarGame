@@ -18,6 +18,7 @@ namespace BarPromenade
                 case PlayerFacialExpression.Drowsy:
                     return PlayerFacialExpression.HalfBlink;
                 case PlayerFacialExpression.Grimace:
+                case PlayerFacialExpression.Horror:
                     return PlayerFacialExpression.Tense;
                 case PlayerFacialExpression.Glazed:
                 case PlayerFacialExpression.Slack:

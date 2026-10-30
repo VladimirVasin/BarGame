@@ -313,34 +313,70 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Retimes two contiguous portions of one authored exit. Clip and pelvis
-    /// sample the same progress, preserving every contact and both endpoints.
+    /// Retimes two contiguous portions of one authored exit, with an optional
+    /// held landmark and independently timed motion after it. An explicit
+    /// release may retain that landmark beyond its minimum hold. Clip and
+    /// pelvis sample the same progress, preserving contacts and both endpoints.
     /// </summary>
     public readonly struct PlayerAnimatedInteractionExitTiming
     {
         public PlayerAnimatedInteractionExitTiming(
             float splitClipProgress,
             float firstSegmentSeconds,
-            float remainingSegmentSeconds)
+            float remainingSegmentSeconds,
+            float holdClipProgress = 0f,
+            float holdSeconds = 0f,
+            float postHoldSeconds = 0f,
+            bool waitForHoldRelease = false)
         {
             SplitClipProgress = splitClipProgress;
             FirstSegmentSeconds = firstSegmentSeconds;
             RemainingSegmentSeconds = remainingSegmentSeconds;
+            HoldClipProgress = holdClipProgress;
+            HoldSeconds = holdSeconds;
+            PostHoldSeconds = postHoldSeconds;
+            WaitForHoldRelease = waitForHoldRelease;
             Validate();
         }
 
         public float SplitClipProgress { get; }
         public float FirstSegmentSeconds { get; }
         public float RemainingSegmentSeconds { get; }
-        public double DurationSeconds =>
-            (double)FirstSegmentSeconds + RemainingSegmentSeconds;
+        public float HoldClipProgress { get; }
+        public float HoldSeconds { get; }
+        public float PostHoldSeconds { get; }
+        public bool WaitForHoldRelease { get; }
+        public double HoldStartSeconds => FirstSegmentSeconds +
+            RemainingSegmentSeconds * (double)(HoldClipProgress - SplitClipProgress) /
+            (1f - SplitClipProgress);
+        /// <summary>Scheduled motion and minimum hold, excluding any explicit-release wait.</summary>
+        public double DurationSeconds => PostHoldSeconds > 0f
+            ? HoldStartSeconds + HoldSeconds + PostHoldSeconds
+            : (double)FirstSegmentSeconds + RemainingSegmentSeconds + HoldSeconds;
+
+        public bool IsHolding(double elapsedSeconds) => HoldSeconds > 0f &&
+            elapsedSeconds >= HoldStartSeconds && elapsedSeconds < HoldStartSeconds + HoldSeconds;
+
+        public float HoldProgress(double elapsedSeconds) => HoldSeconds > 0f
+            ? Mathf.Clamp01((float)((elapsedSeconds - HoldStartSeconds) / HoldSeconds)) : 0f;
 
         public float Evaluate(double elapsedSeconds)
         {
             if (elapsedSeconds <= 0d) return 0f;
+            if (HoldSeconds > 0f)
+            {
+                if (IsHolding(elapsedSeconds)) return HoldClipProgress;
+                if (elapsedSeconds >= HoldStartSeconds + HoldSeconds)
+                {
+                    if (PostHoldSeconds > 0f)
+                        return Mathf.Lerp(HoldClipProgress, 1f,
+                            (float)((elapsedSeconds - HoldStartSeconds - HoldSeconds) / PostHoldSeconds));
+                    elapsedSeconds -= HoldSeconds;
+                }
+            }
             if (elapsedSeconds < FirstSegmentSeconds)
                 return (float)(elapsedSeconds / FirstSegmentSeconds) * SplitClipProgress;
-            if (elapsedSeconds >= DurationSeconds) return 1f;
+            if (elapsedSeconds >= (double)FirstSegmentSeconds + RemainingSegmentSeconds) return 1f;
             return SplitClipProgress +
                 (float)((elapsedSeconds - FirstSegmentSeconds) / RemainingSegmentSeconds) *
                 (1f - SplitClipProgress);
@@ -353,9 +389,15 @@ namespace BarPromenade
                 float.IsNaN(FirstSegmentSeconds) || float.IsInfinity(FirstSegmentSeconds) ||
                 FirstSegmentSeconds <= 0f ||
                 float.IsNaN(RemainingSegmentSeconds) || float.IsInfinity(RemainingSegmentSeconds) ||
-                RemainingSegmentSeconds <= 0f)
+                RemainingSegmentSeconds <= 0f ||
+                float.IsNaN(HoldSeconds) || float.IsInfinity(HoldSeconds) || HoldSeconds < 0f ||
+                float.IsNaN(PostHoldSeconds) || float.IsInfinity(PostHoldSeconds) || PostHoldSeconds < 0f ||
+                (PostHoldSeconds > 0f && HoldSeconds <= 0f) ||
+                (WaitForHoldRelease && HoldSeconds <= 0f) ||
+                (HoldSeconds > 0f && (float.IsNaN(HoldClipProgress) ||
+                    HoldClipProgress < SplitClipProgress || HoldClipProgress >= 1f)))
                 throw new ArgumentOutOfRangeException(nameof(PlayerAnimatedInteractionExitTiming),
-                    "Exit timing requires an interior clip split and two finite positive durations.");
+                    "Exit timing requires positive finite motion durations and an optional finite second-segment hold.");
         }
     }
 
@@ -371,6 +413,8 @@ namespace BarPromenade
         private float exitDurationMultiplier = 1f;
         private PlayerAnimatedInteractionExitTiming? exitTiming;
         private bool exitEndpointPresented;
+        private bool exitHoldPresented;
+        private bool exitHoldReleased;
         private bool exitAtLoopBoundaryRequested;
 
         public PlayerAnimatedInteractionTimeline(
@@ -396,6 +440,12 @@ namespace BarPromenade
             exitTiming?.DurationSeconds ?? definition.ExitFrameCount /
             (double)definition.ExitFramesPerSecond *
             exitDurationMultiplier;
+        public bool IsExitHoldActive => Phase == PlayerAnimatedInteractionPhase.Exiting &&
+            exitTiming.HasValue && (exitTiming.Value.IsHolding(phaseElapsedSeconds) ||
+                exitTiming.Value.WaitForHoldRelease && !exitHoldReleased &&
+                phaseElapsedSeconds >= exitTiming.Value.HoldStartSeconds);
+        public float ExitHoldProgress => Phase == PlayerAnimatedInteractionPhase.Exiting && exitTiming.HasValue
+            ? exitTiming.Value.HoldProgress(phaseElapsedSeconds) : 0f;
         public float PhaseProgress
         {
             get
@@ -420,7 +470,9 @@ namespace BarPromenade
             Phase == PlayerAnimatedInteractionPhase.Looping
                 ? GetLoopClipProgress()
                 : Phase == PlayerAnimatedInteractionPhase.Exiting && exitTiming.HasValue
-                    ? exitTiming.Value.Evaluate(phaseElapsedSeconds)
+                    ? IsExitHoldActive && exitTiming.Value.WaitForHoldRelease
+                        ? exitTiming.Value.HoldClipProgress
+                        : exitTiming.Value.Evaluate(phaseElapsedSeconds)
                     : PhaseProgress;
 
         public bool Begin()
@@ -431,6 +483,7 @@ namespace BarPromenade
             }
 
             Phase = PlayerAnimatedInteractionPhase.Entering;
+            exitHoldReleased = false;
             phaseElapsedSeconds = 0d;
             FrameIndex = definition.EnterStartFrame;
             return true;
@@ -444,6 +497,7 @@ namespace BarPromenade
             }
 
             Phase = PlayerAnimatedInteractionPhase.Looping;
+            exitHoldReleased = false;
             phaseElapsedSeconds = 0d;
             FrameIndex = definition.LoopStartFrame;
             return true;
@@ -519,6 +573,8 @@ namespace BarPromenade
             exitDurationMultiplier = durationMultiplier;
             exitTiming = null;
             exitEndpointPresented = false;
+            exitHoldPresented = false;
+            exitHoldReleased = false;
             exitAtLoopBoundaryRequested = false;
             Phase = PlayerAnimatedInteractionPhase.Exiting;
             phaseElapsedSeconds = 0d;
@@ -533,6 +589,22 @@ namespace BarPromenade
             exitTiming = timing;
             exitDurationMultiplier = (float)(timing.DurationSeconds /
                 GetDuration(definition.ExitFrameCount, definition.ExitFramesPerSecond));
+            return true;
+        }
+
+        /// <summary>
+        /// Releases an explicitly held exit only after its complete minimum
+        /// hold. Waiting never accumulates motion time; the next Advance starts
+        /// the remaining path from the same exact authored landmark.
+        /// </summary>
+        public bool ReleaseExitHold()
+        {
+            if (Phase != PlayerAnimatedInteractionPhase.Exiting || !exitTiming.HasValue ||
+                !exitTiming.Value.WaitForHoldRelease || exitHoldReleased || !exitHoldPresented ||
+                phaseElapsedSeconds < exitTiming.Value.HoldStartSeconds + exitTiming.Value.HoldSeconds)
+                return false;
+
+            exitHoldReleased = true;
             return true;
         }
 
@@ -561,6 +633,8 @@ namespace BarPromenade
             exitDurationMultiplier = 1f;
             exitTiming = null;
             exitEndpointPresented = false;
+            exitHoldPresented = false;
+            exitHoldReleased = false;
             exitAtLoopBoundaryRequested = false;
         }
 
@@ -620,6 +694,22 @@ namespace BarPromenade
 
         private void AdvanceExiting()
         {
+            if (exitTiming.HasValue && exitTiming.Value.HoldSeconds > 0f &&
+                !exitHoldPresented && phaseElapsedSeconds >= exitTiming.Value.HoldStartSeconds)
+            {
+                // A hitch must present the held contact landmark before its
+                // complete hold starts, just as the terminal pose owns a frame.
+                phaseElapsedSeconds = exitTiming.Value.HoldStartSeconds;
+                exitHoldPresented = true;
+            }
+            if (exitTiming.HasValue && exitTiming.Value.WaitForHoldRelease && !exitHoldReleased)
+            {
+                double holdEnd = exitTiming.Value.HoldStartSeconds + exitTiming.Value.HoldSeconds;
+                // An arbitrarily long wait contributes no post-hold motion.
+                // The preceding landmark gate still presents the exact first
+                // held frame before counting its finite minimum duration.
+                if (phaseElapsedSeconds > holdEnd) phaseElapsedSeconds = holdEnd;
+            }
             double duration = ExitDurationSeconds;
             int lastFrame = definition.ExitStartFrame +
                 definition.ExitFrameCount - 1;

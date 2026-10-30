@@ -23,6 +23,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return WaitFor(() => GameInput.CanRead(GameInputContext.Menu), "The launch card did not release its input gate.");
             StartMenuRoot menu = Object.FindAnyObjectByType<StartMenuRoot>();
             Assert.That(menu, Is.Not.Null);
+            Assert.That(menu.OpenDebugMenu(), Is.True);
             yield return CaptureEndlessGameView("Test old arena - Main menu Russian", "ru", true);
             yield return CaptureEndlessGameView("Test old arena - Main menu English", "en", true);
             Assert.That(menu.SelectOption(StartMenuOption.Laboratory), Is.True);

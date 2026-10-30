@@ -208,6 +208,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
                 var menu = Object.FindAnyObjectByType<StartMenuRoot>();
                 Assert.That(menu, Is.Not.Null);
+                Assert.That(menu.OpenDebugMenu(), Is.True);
                 Assert.That(menu.SelectOption(StartMenuOption.CombatTest), Is.True);
                 Assert.That(menu.ConfirmSelection(), Is.True);
                 Assert.That(menu.SelectCombatOption(CombatPreparationOption.Shotgun), Is.True);

@@ -828,14 +828,19 @@ namespace BarPromenade
         {
             if (!IsInitialized ||
                 !isActiveAndEnabled ||
+                AudioListener.pause || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused ||
                 bathroomLightCrackleSource == null ||
                 bathroomLightCrackleClip == null)
             {
                 return;
             }
 
-            bathroomLightCrackleSource.PlayOneShot(
-                bathroomLightCrackleClip);
+            // Unscaled flicker continues behind pause. A single owned voice
+            // replaces its previous transient instead of queuing sub-voices
+            // whose DSP time cannot advance while the listener is paused.
+            bathroomLightCrackleSource.Stop();
+            bathroomLightCrackleSource.clip = bathroomLightCrackleClip;
+            bathroomLightCrackleSource.Play();
             BathroomLightCracklePlayCount++;
         }
 

@@ -17,6 +17,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
             StartMenuRoot menu = Object.FindAnyObjectByType<StartMenuRoot>();
             Assert.That(menu, Is.Not.Null);
+            Assert.That(menu.OpenDebugMenu(), Is.True);
             string captureDirectory = Path.Combine(Application.dataPath, "../Captures/vocalizer");
             bool capture = System.Environment.GetEnvironmentVariable("BAR_VOCALIZER_CAPTURE") == "1";
             var exportedWaves = capture ? new List<string>(12) : null;

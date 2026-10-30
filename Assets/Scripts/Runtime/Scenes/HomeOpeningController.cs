@@ -49,6 +49,7 @@ namespace BarPromenade
         private GUIStyle optionStyle;
         private bool initialClockFramePending;
         private bool restored;
+        private bool newGamePending;
         private Vector3 wakeCameraStartPosition;
         private Quaternion wakeCameraStartRotation;
         private float wakeCameraStartFieldOfView;
@@ -62,9 +63,13 @@ namespace BarPromenade
         private float wakeCameraMotionDurationSeconds;
 
         public bool IsInitialized { get; private set; }
+        public bool IsNewGameProfile { get; private set; }
+        public int CurrentShotIndex => IsNewGameProfile && home != null ? home.Sleep.OpeningShotIndex : -1;
+        public int ShotCount => IsNewGameProfile && home != null ? home.Sleep.OpeningShotCount : 0;
         public bool QuitRequested { get; private set; }
         public HomeOpeningTimeline Timeline => timeline;
         public HomeOpeningPhase Phase =>
+            IsNewGameProfile ? NewGamePhase :
             timeline != null
                 ? timeline.Phase
                 : HomeOpeningPhase.NotStarted;
@@ -74,12 +79,39 @@ namespace BarPromenade
             private set;
         } = HomeOpeningMenuOption.WakeUp;
         public bool IsCameraTransitioning =>
+            IsNewGameProfile ? home != null && home.Sleep.IsCameraReturning :
             timeline != null &&
             timeline.Phase == HomeOpeningPhase.Waking &&
             timeline.PhaseElapsedSeconds <
             wakeCameraMotionDurationSeconds;
         public Vector3 WakeCameraTargetPosition =>
             wakeCameraTargetPosition;
+
+        private HomeOpeningPhase NewGamePhase
+        {
+            get
+            {
+                if (home == null || restored || !home.Sleep.IsNormalOpening || !home.Sleep.IsActive)
+                    return newGamePending ? HomeOpeningPhase.NotStarted : HomeOpeningPhase.Complete;
+                if (home.Sleep.WaitingForWake) return HomeOpeningPhase.AwaitingWake;
+                return home.Sleep.WaitingForStandUp ? HomeOpeningPhase.AwaitingStand : HomeOpeningPhase.Waking;
+            }
+        }
+
+        public bool ApplyNewGameShot(int index, float progress) => IsNewGameProfile && !restored &&
+            home != null && home.Sleep.ApplyOpeningShot(index, progress);
+        public bool TryStand() => IsNewGameProfile && !restored && home != null && home.Sleep.TryStandUp();
+        public void Cancel()
+        {
+            if (IsNewGameProfile)
+            {
+                SceneTransitionService.DestinationReady -= HandleDestinationReady;
+                newGamePending = false;
+                home?.Sleep?.CancelOpening();
+                restored = true;
+            }
+            else AbortOpening();
+        }
 
         public void Initialize(HomeInteriorRoot homeRoot)
         {
@@ -106,6 +138,17 @@ namespace BarPromenade
             }
 
             home = homeRoot;
+            if (home.Arrival == HomeArrivalKind.NewGameSleep)
+            {
+                IsNewGameProfile = true;
+                if (SceneTransitionService.IsTransitioning)
+                {
+                    newGamePending = true;
+                    SceneTransitionService.DestinationReady += HandleDestinationReady;
+                }
+                else BeginNewGameOpening();
+                return;
+            }
             if (!modalLock.TryCaptureAndDisable(
                     home.Player.Interactor,
                     home.CameraFollow,
@@ -148,6 +191,7 @@ namespace BarPromenade
 
         public bool TryWake()
         {
+            if (IsNewGameProfile) return IsInitialized && !restored && home != null && home.Sleep.TryWakeOpening();
             if (!IsInitialized ||
                 restored ||
                 QuitRequested ||
@@ -171,6 +215,21 @@ namespace BarPromenade
             home.AlarmClock.FollowSessionTime();
             home.AlarmClock.StartRinging();
             return true;
+        }
+
+        private void HandleDestinationReady(string scene)
+        {
+            if (home == null || scene != home.gameObject.scene.name || !isActiveAndEnabled) return;
+            SceneTransitionService.DestinationReady -= HandleDestinationReady;
+            newGamePending = false;
+            BeginNewGameOpening();
+        }
+
+        private void BeginNewGameOpening()
+        {
+            if (home.Sleep == null || !home.Sleep.TryBeginOpening())
+                throw new InvalidOperationException("The new game could not acquire its normal sleeping presentation.");
+            IsInitialized = true;
         }
 
         public bool TryQuit()
@@ -200,6 +259,12 @@ namespace BarPromenade
 
         private void Update()
         {
+            if (IsNewGameProfile)
+            {
+                if (!newGamePending && IsInitialized &&
+                    (home == null || !home.Sleep.IsNormalOpening || !home.Sleep.IsActive)) restored = true;
+                return;
+            }
             if (!IsInitialized ||
                 timeline == null ||
                 timeline.Phase ==
@@ -602,6 +667,11 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            if (IsNewGameProfile)
+            {
+                if (!restored) Cancel();
+                return;
+            }
             if (!IsInitialized || restored)
             {
                 return;
@@ -646,6 +716,7 @@ namespace BarPromenade
 
         private void OnGUI()
         {
+            if (IsNewGameProfile) return;
             using var input = RetroUiInput.Begin();
             if (!IsInitialized ||
                 restored ||

@@ -14,7 +14,7 @@
 
 | Index | Scene | Role |
 | --- | --- | --- |
-| 0 | `MainMenu` | Start menu / combat / vocalizer |
+| 0 | `MainMenu` | New Game / Debug / Quit |
 | 1 | `City` | Gameplay |
 | 2 | `DoorTransition` | Door presentation |
 | 3 | `BarInterior` | Gameplay |
@@ -29,9 +29,9 @@
 | 12 | `CombatTest` | Isolated weapon test |
 
 All ten gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
-one rig/skin/volume/wardrobe; recorded hair/world-jacket,live fallback.
-CombatTest jacket/scarf/sling follow rig/anchors without physics; hair kept.
-Near-empty scenes compose validated plans. Geometry: Blender/canon in [../AI.md](../AI.md).
+one rig/wardrobe; seven drink-dose appearances share shape/hair/wear and
+mirror/FP/portrait state. Hair retained; jacket rig-only, CombatTest scarf/sling too.
+Near-empty scenes compose validated plans. Blender/canon: [../AI.md](../AI.md).
 
 ## Technical ownership
 

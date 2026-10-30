@@ -19,6 +19,7 @@ namespace BarPromenade
         public const int DisplaySegmentCount =
             DisplayDigitCount * SegmentsPerDigit;
         public const int DisplayPunctuationCount = 2;
+        public const float SurrealDisplayDwellSeconds = 1.25f;
 
         private const float OutputVolume = 0.24f;
         private const float MinimumDistance = 0.7f;
@@ -33,6 +34,10 @@ namespace BarPromenade
         private Quaternion restLocalRotation;
         private float rattleElapsedSeconds;
         private bool restPoseCaptured;
+        private float surrealDisplayElapsed;
+        private int surrealDisplayIndex;
+        // Finite impossible readings, not a second clock or a story message.
+        private static readonly int[] SurrealReadings = { 2579, 8888, 3182 };
 
         private static readonly bool[,] DigitSegments =
         {
@@ -51,6 +56,7 @@ namespace BarPromenade
         public bool IsInitialized { get; private set; }
         public bool IsRinging { get; private set; }
         public bool IsFollowingSessionTime { get; private set; }
+        public bool IsSurrealDisplayActive { get; private set; }
         public AudioSource Source => ringSource;
         public AudioClip ActiveClip => generatedClip;
         public Vector3 RestLocalPosition => restLocalPosition;
@@ -108,7 +114,7 @@ namespace BarPromenade
         {
             if (IsFollowingSessionTime)
             {
-                SyncSessionTime();
+                RefreshDisplayPresentation();
             }
 
             if (IsRinging &&
@@ -123,7 +129,7 @@ namespace BarPromenade
         {
             if (IsFollowingSessionTime)
             {
-                SyncSessionTime();
+                RefreshDisplayPresentation(Time.unscaledDeltaTime);
             }
 
             AdvanceRattle(Time.unscaledDeltaTime);
@@ -209,6 +215,11 @@ namespace BarPromenade
                     "Alarm-clock minute must be between 0 and 59.");
             }
 
+            SetDisplayDigits(hour, minute);
+        }
+
+        private void SetDisplayDigits(int hour, int minute)
+        {
             if (DisplayedHour == hour &&
                 DisplayedMinute == minute)
             {
@@ -224,12 +235,15 @@ namespace BarPromenade
         {
             IsFollowingSessionTime = true;
             SetDisplayVisible(true);
-            SyncSessionTime();
+            RefreshDisplayPresentation();
         }
 
         public void StopFollowingSessionTime()
         {
             IsFollowingSessionTime = false;
+            IsSurrealDisplayActive = false;
+            surrealDisplayElapsed = 0f;
+            surrealDisplayIndex = 0;
         }
 
         public void SetDisplayVisible(bool visible)
@@ -430,17 +444,13 @@ namespace BarPromenade
                 return;
             }
 
-            int[] digits =
-            {
-                DisplayedHour / 10,
-                DisplayedHour % 10,
-                DisplayedMinute / 10,
-                DisplayedMinute % 10
-            };
             for (int digit = 0;
                  digit < DisplayDigitCount;
                  digit++)
             {
+                int value = digit == 0 ? DisplayedHour / 10 :
+                    digit == 1 ? DisplayedHour % 10 :
+                    digit == 2 ? DisplayedMinute / 10 : DisplayedMinute % 10;
                 for (int segment = 0;
                      segment < SegmentsPerDigit;
                      segment++)
@@ -449,18 +459,50 @@ namespace BarPromenade
                         digit * SegmentsPerDigit + segment]
                         .gameObject.SetActive(
                             DigitSegments[
-                                digits[digit],
+                                value,
                                 segment]);
                 }
             }
         }
 
-        private void SyncSessionTime()
+        /// <summary>
+        /// Only the final apartment appearance presents impossible digits. The
+        /// ordinary clock, opening sequence and alarm retain their real owners;
+        /// this bounded visual pattern never writes session/calendar state.
+        /// </summary>
+        public void RefreshDisplayPresentation(float unscaledDeltaTime = 0f)
         {
+            if (!IsFollowingSessionTime) return;
             SetDisplayVisible(true);
-            SetDisplayTime(
-                GameSessionState.GameHour,
-                GameSessionState.GameMinute);
+            if (GameSessionState.HomeAppearanceDayNumber != HomeApartmentDayRules.LastDayNumber)
+            {
+                IsSurrealDisplayActive = false;
+                surrealDisplayElapsed = 0f;
+                surrealDisplayIndex = 0;
+                SetDisplayTime(GameSessionState.GameHour, GameSessionState.GameMinute);
+                return;
+            }
+
+            if (!IsSurrealDisplayActive)
+            {
+                IsSurrealDisplayActive = true;
+                surrealDisplayElapsed = 0f;
+                surrealDisplayIndex = 0;
+            }
+            else if (!GameTimeScaleRuntime.IsPaused &&
+                float.IsFinite(unscaledDeltaTime) && unscaledDeltaTime > 0f)
+            {
+                surrealDisplayElapsed += unscaledDeltaTime;
+                if (surrealDisplayElapsed >= SurrealDisplayDwellSeconds)
+                {
+                    // A hitch advances one visible reading, never a burst of
+                    // changes. Sampling remains below two changes per second.
+                    surrealDisplayElapsed = 0f;
+                    surrealDisplayIndex = (surrealDisplayIndex + 1) % SurrealReadings.Length;
+                }
+            }
+            int reading = SurrealReadings[surrealDisplayIndex];
+            SetDisplayDigits(reading / 100, reading % 100);
         }
 
         private void ApplyDisplayVisibility()

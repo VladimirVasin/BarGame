@@ -153,6 +153,8 @@ namespace BarPromenade
 
         private Player3DAssetRegistry registry;
         private PlayerBootDeformation bootDeformation;
+        private PlayerCorruptionAppearance corruptionAppearance;
+        public PlayerCorruptionAppearance CorruptionAppearance => corruptionAppearance;
         private Transform actorFacingTransform;
         private PlayableGraph graph;
         private AnimationMixerPlayable locomotionMixer;
@@ -387,6 +389,8 @@ namespace BarPromenade
             ClearSpeechFace();
             ClearContextualFacialExpression();
             registry = assetRegistry;
+            corruptionAppearance = PlayerCorruptionAppearance.Ensure(registry);
+            corruptionAppearance.ApplyLevel(GameSessionState.HeroCorruptionLevel);
             faceAtlasPresenter.Configure(registry.FaceAtlas);
             actorFacingTransform = facingTransform != null
                 ? facingTransform
@@ -1002,6 +1006,11 @@ namespace BarPromenade
             }
 
             float deltaTime = Mathf.Max(0f, PresentationDeltaTime);
+            if (!scopedPresentationFrozen && !IsClipActive && !interactionHandoffLocked &&
+                !ragdollPoseActive && !risePose.Active && fallAmount <= .001f &&
+                !SceneTransitionService.IsTransitioning && deltaTime > 0f &&
+                corruptionAppearance != null && corruptionAppearance.AppliedLevel != GameSessionState.HeroCorruptionLevel)
+                corruptionAppearance.ApplyLevel(GameSessionState.HeroCorruptionLevel);
             intoxicationAmount = Mathf.MoveTowards(
                 intoxicationAmount,
                 intoxicationTarget,
@@ -1058,6 +1067,7 @@ namespace BarPromenade
             if (!ragdollPoseActive)
             {
                 ApplyAttentionPose(deltaTime);
+                ApplySleepBodyPresentation();
                 ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
                 ApplyCombatFootwork();
@@ -1181,6 +1191,7 @@ namespace BarPromenade
                 ApplyLatePose(0f);
                 ReapplyFacialPose();
                 ApplyAttentionPose(0f);
+                ApplySleepBodyPresentation();
                 ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
                 ApplyCombatFootwork();
@@ -1257,6 +1268,7 @@ namespace BarPromenade
                 ApplyLatePose(Mathf.Max(0f, seconds));
                 ReapplyFacialPose();
                 ApplyAttentionPose(0f);
+                ApplySleepBodyPresentation();
                 ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
                 ApplyCombatFootwork();
@@ -2022,6 +2034,12 @@ namespace BarPromenade
             float stagger = Mathf.Cos(statusSwayPhase * 0.73f) *
                             intoxicationAmount;
             float lean = balanceLean * 13f;
+            // Irreversible illness uses the same contact-aware body solve as the drink.
+            // Cold sleeves, protected reaches and owned clips retain their hand targets.
+            float decay = corruptionAppearance != null ? corruptionAppearance.Severity : 0f;
+            float decayPose = decay * decay * (1f - fallAmount) *
+                (1f - Mathf.Clamp01(balancePose.BraceWeight * balancePose.Weight));
+            float decayTremor = Mathf.Sin(statusSwayPhase * 18.7f) * decayPose;
 
             // The balance model's lean lands on top: the pelvis rolls
             // toward the capture point, the chest counters a little so
@@ -2087,6 +2105,8 @@ namespace BarPromenade
                 MaximumArmOutwardDegrees);
             float leftArmForward = armForward + armHunt;
             float rightArmForward = armForward - armHunt;
+            leftArmForward += decayTremor * 1.4f * (1f - coldArmWeight);
+            rightArmForward -= decayTremor * 1.1f * (1f - coldArmWeight);
             PlayerWallReachPose wallReach = balancePose.WallReach;
             if (wallReach.Active && modelWeight > 0f)
             {
@@ -2191,7 +2211,7 @@ namespace BarPromenade
                     lean + sway + modelRoll + gait.PelvisRollDegrees * modelWeight,
                     (lean * -0.42f) + (sway * 0.55f) +
                     (modelRoll * BalanceChestCounterRoll) +
-                    torsoRoll,
+                    torsoRoll + decayPose * 2f + decayTremor * .22f,
                     modelPitch,
                     leftArmOutward,
                     leftArmForward,
@@ -2208,7 +2228,7 @@ namespace BarPromenade
                     // pitch on top of the hip strategy's own. The bout
                     // folds it FORWARD: doubled over, and jerked further
                     // with every heave and every push of the pump.
-                    torsoPitch -
+                    torsoPitch + decayPose * 24f -
                     nauseaPose.HiccupAmount *
                     PlayerNauseaRules.HiccupChestPitchDegrees +
                     vomitPose.TorsoPitchDegrees,
@@ -3091,14 +3111,21 @@ namespace BarPromenade
             {
                 expression = contextualFaceExpression;
             }
+            else if (!IsClipActive && corruptionAppearance != null && corruptionAppearance.AppliedLevel >= 4 &&
+                (expression == PlayerFacialExpression.Neutral || expression == PlayerFacialExpression.HalfBlink))
+            {
+                expression = corruptionAppearance.AppliedLevel >= 6
+                    ? PlayerFacialExpression.Tense : PlayerFacialExpression.Watchful;
+            }
 
             visibleFacialExpression = expression;
             // The soiled twin rides every atlas face the same way; the
             // binding falls back to the clean cell where an atlas has no
             // twin, so an older atlas simply never shows the mess.
             // Clip expression keys cannot overwrite a dialogue's mouth/brow frame.
-            if (HasSpeechFace && speechFacePresenter.Apply(speechFacePose, IsMouthSoiledVisible)) return;
-            if (faceAtlasPresenter.Apply(expression, IsMouthSoiledVisible))
+            if (HasSpeechFace && speechFacePresenter.Apply(speechFacePose, IsMouthSoiledVisible,
+                    corruptionAppearance?.SpeechTexture)) return;
+            if (faceAtlasPresenter.Apply(expression, IsMouthSoiledVisible, corruptionAppearance?.FaceTexture))
             {
                 return;
             }
@@ -3218,6 +3245,7 @@ namespace BarPromenade
 
         private void EvaluateGraph(float deltaTime)
         {
+            RestoreSleepBodyPresentation();
             RestoreCorpseStepPose();
             RestoreCombatFirearm();
             RestoreCombatSupportGrip();

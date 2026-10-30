@@ -152,8 +152,9 @@ namespace BarPromenade.Tests.EditMode
                     (StairwellArrivalKind)99));
         }
 
-        [Test]
-        public void HomeArrival_IsConsumedAndResetsToNormal()
+        [TestCase(HomeArrivalKind.OpeningSleep)]
+        [TestCase(HomeArrivalKind.NewGameSleep)]
+        public void HomeArrival_IsConsumedAndResetsToNormal(HomeArrivalKind arrival)
         {
             Assert.That(
                 GameSessionState.HomeArrival,
@@ -163,14 +164,14 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(HomeArrivalKind.Normal));
 
             GameSessionState.PrepareHomeArrival(
-                HomeArrivalKind.OpeningSleep);
+                arrival);
 
             Assert.That(
                 GameSessionState.HomeArrival,
-                Is.EqualTo(HomeArrivalKind.OpeningSleep));
+                Is.EqualTo(arrival));
             Assert.That(
                 GameSessionState.ConsumeHomeArrival(),
-                Is.EqualTo(HomeArrivalKind.OpeningSleep));
+                Is.EqualTo(arrival));
             Assert.That(
                 GameSessionState.HomeArrival,
                 Is.EqualTo(HomeArrivalKind.Normal));
@@ -821,6 +822,7 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.LastAlcoholicDrink,
                 Is.EqualTo(DrinkId.Vodka));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(4));
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(72));
             Assert.That(
                 GameSessionState.GetInventoryItemCount(
                     InventoryItemId.VodkaBottle),
@@ -852,6 +854,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(60));
             Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(100));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(2));
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.Zero);
             Assert.That(
                 GameSessionState.GetInventoryItemCount(
                     InventoryItemId.VodkaBottle),
@@ -885,6 +888,7 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.LastAlcoholicDrink,
                 Is.EqualTo(DrinkId.LightBeer));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(1));
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(8));
         }
 
         [Test]
@@ -907,6 +911,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(result.Succeeded, Is.True);
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(12));
             Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(72));
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(72),
+                "Consumed inventory servings retain their dose even when the legacy counter saturates.");
             Assert.That(
                 GameSessionState.LastAlcoholicDrink,
                 Is.EqualTo(DrinkId.Vodka));
@@ -1058,6 +1064,8 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(DrinkId.DarkBeer));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(4));
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(6));
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(18),
+                "Both full authored doses count, including nine dark-beer points beyond the live cap.");
         }
 
         [Test]
@@ -1080,6 +1088,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(40));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(2));
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(20));
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.Zero);
 
             // Consumption uses the current state, not the stale order-time
             // snapshot, because a full served drink may wait on the counter.
@@ -1103,6 +1112,64 @@ namespace BarPromenade.Tests.EditMode
                 Is.False);
             Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(47));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(3));
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(8));
+        }
+
+        [TestCase(-1, 1)]
+        [TestCase(0, 1)]
+        [TestCase(119, 1)]
+        [TestCase(120, 2)]
+        [TestCase(299, 2)]
+        [TestCase(300, 3)]
+        [TestCase(539, 3)]
+        [TestCase(540, 4)]
+        [TestCase(839, 4)]
+        [TestCase(840, 5)]
+        [TestCase(1199, 5)]
+        [TestCase(1200, 6)]
+        [TestCase(1619, 6)]
+        [TestCase(1620, 7)]
+        [TestCase(int.MaxValue, 7)]
+        public void HeroCorruption_UsesSevenBoundedDoseSteps(int dose, int expectedLevel)
+        {
+            Assert.That(HeroCorruptionRules.ResolveLevel(dose), Is.EqualTo(expectedLevel));
+            Assert.That(HeroCorruptionRules.AddDose(dose, -1), Is.EqualTo(System.Math.Max(0, dose)));
+            Assert.That(HeroCorruptionRules.AddDose(int.MaxValue - 2, 3), Is.EqualTo(int.MaxValue));
+            Assert.That(HeroCorruptionRules.Severity(expectedLevel), Is.InRange(0f, 1f));
+        }
+
+        [Test]
+        public void HeroCorruption_SurvivesRecoveryHouseholdAndTravelWithExactDebugPreview()
+        {
+            Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(1));
+            GameSessionState.CommitDrinkingProgress(100, DrinkId.Vodka, 30, 0);
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(540));
+            Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(4));
+
+            GameSessionState.RelieveIntoxication(20, "corruption_regression");
+            GameSessionState.AdvanceIntoxicationRecovery(100000f);
+            GameSessionState.ResetFatigueAfterSleep();
+            GameSessionState.SetHeroMouthSoiled(false, "corruption_regression");
+            GameSessionState.TrySetDebugGameDay(7);
+            GameSessionState.EnterHome();
+            GameSessionState.PrepareHomeReturn();
+            GameSessionState.CompleteCityReturn();
+            GameSessionState.ResetDrinkingState();
+            Assert.That(GameSessionState.IntoxicationLevel, Is.Zero);
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(540));
+            Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(4));
+
+            Assert.That(GameSessionState.TrySetDebugHeroCorruptionLevel(7), Is.True);
+            Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(7));
+            Assert.That(GameSessionState.TrySetDebugHeroCorruptionLevel(1), Is.True);
+            Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(1));
+            Assert.That(GameSessionState.TrySetDebugHeroCorruptionLevel(0), Is.False);
+            Assert.That(GameSessionState.TrySetDebugHeroCorruptionLevel(8), Is.False);
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.Zero);
+            GameSessionState.TrySetDebugHeroCorruptionLevel(7);
+            GameSessionState.BeginNewGame();
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.Zero);
+            Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(1));
         }
 
         [Test]
@@ -1346,6 +1413,8 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(DrinkId.CognacVsop));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(8));
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(30));
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.Zero,
+                "Water must not add the preserved LastAlcoholicDrink's dose.");
         }
 
         [Test]

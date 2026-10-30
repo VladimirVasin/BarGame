@@ -26,10 +26,12 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     definition.Category,
                     Is.Not.EqualTo(RetroSfxCategory.None));
-                // Short one-shots, not music. Most sit under half a
-                // second; the toilet flush is the one long world
-                // effect and still has to stay a sound, not a track.
-                Assert.That(definition.Duration, Is.InRange(0.04f, 3f));
+                // The finite technical-sleep transformation is the sole
+                // cinematic-length cue; ordinary effects keep their cap.
+                if (id == RetroSfxId.HomeSleepStartle)
+                    Assert.That(definition.Duration, Is.EqualTo(RetroSfxLibrary.HomeSleepStartleDurationSeconds));
+                else
+                    Assert.That(definition.Duration, Is.InRange(0.04f, 3f));
                 Assert.That(definition.Volume, Is.InRange(0.01f, 1f));
                 Assert.That(definition.MaxVoices, Is.InRange(1, 3));
                 Assert.That(definition.VariantCount, Is.InRange(1, 4));

@@ -441,7 +441,7 @@ namespace BarPromenade
             Color color,
             bool bold = true)
         {
-            var style = new GUIStyle(GUI.skin.button);
+            var style = new GUIStyle();
             ConfigureButtonStyle(
                 style,
                 fontSize,
@@ -463,6 +463,12 @@ namespace BarPromenade
                 throw new System.ArgumentNullException(nameof(style));
             }
 
+            // A copied built-in "button" name also activates the Editor's
+            // native style painter, which can draw a background independently
+            // of GUIStyleState textures. This control is text over our own panel.
+            style.name = "BarPromenadeButton";
+            style.padding = new RectOffset(6, 6, 0, 0);
+            style.border = new RectOffset();
             style.alignment = alignment;
             style.fontSize = Mathf.Max(1, fontSize);
             style.fontStyle = bold
@@ -479,6 +485,18 @@ namespace BarPromenade
             style.onHover.background = null;
             style.onActive.background = null;
             style.onFocused.background = null;
+#if UNITY_EDITOR
+            // The Editor's Retina skin can draw these even when background is null.
+            Texture2D[] noScaledBackgrounds = System.Array.Empty<Texture2D>();
+            style.normal.scaledBackgrounds = noScaledBackgrounds;
+            style.hover.scaledBackgrounds = noScaledBackgrounds;
+            style.active.scaledBackgrounds = noScaledBackgrounds;
+            style.focused.scaledBackgrounds = noScaledBackgrounds;
+            style.onNormal.scaledBackgrounds = noScaledBackgrounds;
+            style.onHover.scaledBackgrounds = noScaledBackgrounds;
+            style.onActive.scaledBackgrounds = noScaledBackgrounds;
+            style.onFocused.scaledBackgrounds = noScaledBackgrounds;
+#endif
             SetInteractiveTextColors(style, color);
         }
 

@@ -49,16 +49,23 @@ namespace BarPromenade
         /// </summary>
         public bool TryStartAt(int minuteOfDay)
         {
-            if (IsRunning ||
-                minuteOfDay < 0 ||
-                minuteOfDay >= MinutesPerDay)
-            {
-                return false;
-            }
+            return TryPrepareAt(minuteOfDay) && TryStartPrepared();
+        }
 
-            IsRunning = true;
+        /// <summary>Sets a stopped day-one clock without elapsing time or starting simulation.</summary>
+        public bool TryPrepareAt(int minuteOfDay)
+        {
+            if (IsRunning || minuteOfDay < 0 || minuteOfDay >= MinutesPerDay) return false;
             DayIndex = 0;
             timeOfDayMinutes = minuteOfDay;
+            return true;
+        }
+
+        /// <summary>Starts the stopped clock at its already prepared minute.</summary>
+        public bool TryStartPrepared()
+        {
+            if (IsRunning) return false;
+            IsRunning = true;
             return true;
         }
 

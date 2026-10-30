@@ -88,6 +88,19 @@ namespace BarPromenade
             ValidateDoorDock(plan.StreetLobbyBounds, plan.StreetDoorActionRoot, plan.StreetElevation);
             ValidateDoorDock(plan.ApartmentLandingBounds, plan.ApartmentDoorActionRoot, plan.ApartmentElevation);
             ValidateUpperBlocker(plan);
+            if (plan.IsCorrupted)
+            {
+                ValidateConnection(plan.UpperFlightBounds, plan.UpperLandingBounds,
+                    "opened upper flight to placeholder landing");
+                Bounds wall = plan.DescentWallBounds;
+                if (wall.min.x > plan.ApartmentFlightBounds.xMin ||
+                    wall.max.x < plan.ApartmentFlightBounds.xMax ||
+                    wall.min.y > plan.ApartmentElevation + Epsilon ||
+                    wall.max.y < plan.RoomHeight - Epsilon ||
+                    wall.min.z > plan.ApartmentFlight.Start.y - plan.ApartmentFlight.RunLength + .03f ||
+                    plan.RoomHeight - plan.UpperFlight.TopElevation < 2.2f)
+                    throw new InvalidOperationException("Corrupted stairwell needs a sealed descent and standing upper route.");
+            }
         }
 
         private static void ValidateDoorDock(Rect floor, Vector3 dock, float elevation)

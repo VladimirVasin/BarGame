@@ -210,31 +210,53 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void InteractiveStyle_UsesTypefaceAndGrayscaleSafeFocus()
         {
-            var style = new GUIStyle();
-            RetroUiTheme.ConfigureButtonStyle(
-                style,
-                12,
-                TextAnchor.MiddleLeft,
-                RetroUiTheme.Muted,
-                false);
+            var style = new GUIStyle { name = "button" };
+            var inheritedBackground = new Texture2D(2, 2);
+            var inheritedRetinaBackground = new Texture2D(4, 4);
+            GUIStyleState[] states = { style.normal, style.hover, style.active, style.focused,
+                style.onNormal, style.onHover, style.onActive, style.onFocused };
+            try
+            {
+                foreach (GUIStyleState state in states)
+                {
+                    state.background = inheritedBackground;
+                    state.scaledBackgrounds = new[] { inheritedRetinaBackground };
+                }
+                RetroUiTheme.ConfigureButtonStyle(
+                    style,
+                    12,
+                    TextAnchor.MiddleLeft,
+                    RetroUiTheme.Muted,
+                    false);
 
-            Assert.That(RetroUiTheme.InterfaceFont, Is.Not.Null);
-            Assert.That(style.font, Is.SameAs(RetroUiTheme.InterfaceFont));
-            Assert.That(style.fontStyle, Is.EqualTo(FontStyle.Normal));
-            Assert.That(style.richText, Is.False);
-            Assert.That(style.normal.background, Is.Null);
-            Assert.That(style.hover.background, Is.Null);
-            Assert.That(style.focused.background, Is.Null);
-            Assert.That(
-                Luminance(style.focused.textColor),
-                Is.GreaterThan(
-                    Luminance(style.normal.textColor) + 0.30f));
-            Assert.That(
-                style.focused.textColor,
-                Is.EqualTo(RetroUiTheme.ToGuiColor(RetroUiTheme.SelectionText)));
-            Assert.That(
-                style.onNormal.textColor,
-                Is.EqualTo(RetroUiTheme.ToGuiColor(RetroUiTheme.SelectionText)));
+                Assert.That(RetroUiTheme.InterfaceFont, Is.Not.Null);
+                Assert.That(style.font, Is.SameAs(RetroUiTheme.InterfaceFont));
+                Assert.That(style.fontStyle, Is.EqualTo(FontStyle.Normal));
+                Assert.That(style.richText, Is.False);
+                Assert.That(style.name, Is.EqualTo("BarPromenadeButton"),
+                    "The Editor must not select its native button painter by an inherited skin name.");
+                foreach (GUIStyleState state in states)
+                {
+                    Assert.That(state.background, Is.Null);
+                    Assert.That(state.scaledBackgrounds ?? System.Array.Empty<Texture2D>(), Is.Empty,
+                        "Native high-DPI backgrounds must not cover the authored charcoal panels.");
+                }
+                Assert.That(
+                    Luminance(style.focused.textColor),
+                    Is.GreaterThan(
+                        Luminance(style.normal.textColor) + 0.30f));
+                Assert.That(
+                    style.focused.textColor,
+                    Is.EqualTo(RetroUiTheme.ToGuiColor(RetroUiTheme.SelectionText)));
+                Assert.That(
+                    style.onNormal.textColor,
+                    Is.EqualTo(RetroUiTheme.ToGuiColor(RetroUiTheme.SelectionText)));
+            }
+            finally
+            {
+                Object.DestroyImmediate(inheritedBackground);
+                Object.DestroyImmediate(inheritedRetinaBackground);
+            }
         }
 
         [Test]

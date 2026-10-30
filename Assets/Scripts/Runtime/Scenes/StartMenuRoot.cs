@@ -3,7 +3,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// The launch card, narrative destination picker and isolated combat preparation.
+    /// The story launch card and its separate Debug destination/combat/tool pages.
     /// Each flow loads its scene only after the player's explicit confirmation.
     /// </summary>
     [DisallowMultipleComponent]
@@ -18,8 +18,16 @@ namespace BarPromenade
         // Keep these logical rects together so drawing and pointer hitboxes
         // cannot drift apart when the canvas is scaled.
         internal static Rect MenuPanelRect =>
-            new Rect(206f, 108f, 228f, 144f);
+            new Rect(206f, 132f, 228f, 92f);
         internal static Rect MenuNewGameRect =>
+            new Rect(218f, 141f, 204f, 22f);
+        internal static Rect MenuDebugRect =>
+            new Rect(218f, 167f, 204f, 22f);
+        internal static Rect MenuQuitRect =>
+            new Rect(218f, 193f, 204f, 22f);
+        internal static Rect DebugMenuPanelRect =>
+            new Rect(206f, 108f, 228f, 144f);
+        internal static Rect DebugNewGameRect =>
             new Rect(218f, 117f, 204f, 22f);
         internal static Rect MenuCombatTestRect =>
             new Rect(218f, 143f, 204f, 22f);
@@ -27,7 +35,7 @@ namespace BarPromenade
             new Rect(218f, 169f, 204f, 22f);
         internal static Rect MenuVocalizerRect =>
             new Rect(218f, 195f, 204f, 22f);
-        internal static Rect MenuQuitRect =>
+        internal static Rect DebugBackRect =>
             new Rect(218f, 221f, 204f, 22f);
         internal static Rect LocationPanelRect => new Rect(166f, 18f, 308f, 324f);
         internal static Rect LocationOptionRect(int index) => new Rect(178f, 54f + index * 20f, 284f, 18f);
@@ -59,6 +67,7 @@ namespace BarPromenade
         public bool IsStartingCombatTest { get; private set; }
         public bool QuitRequested { get; private set; }
         public StartMenuOption SelectedOption => model.SelectedOption;
+        public bool IsDebugMenu => model.IsDebugMenu;
         public bool IsChoosingLocation => model.IsChoosingLocation;
         public bool IsChoosingStartTime => model.IsChoosingStartTime;
         public int SelectedStartMinuteOfDay => model.SelectedStartMinuteOfDay;
@@ -121,6 +130,13 @@ namespace BarPromenade
             return true;
         }
 
+        public bool OpenDebugMenu()
+        {
+            if (IsBusy || !model.OpenDebugMenu()) return false;
+            RetroAudio.Play(RetroSfxId.UiConfirm);
+            return true;
+        }
+
         public bool ConfirmSelection()
         {
             if (IsBusy)
@@ -135,6 +151,7 @@ namespace BarPromenade
                 case StartMenuAction.ChooseStartTime:
                 case StartMenuAction.ChooseCombatWeapon:
                 case StartMenuAction.ChooseLaboratoryEnemy:
+                case StartMenuAction.OpenDebug:
                     RetroAudio.Play(RetroSfxId.UiConfirm);
                     return true;
                 case StartMenuAction.LocationUnavailable:
@@ -151,6 +168,9 @@ namespace BarPromenade
                 case StartMenuAction.NewGame:
                     RetroAudio.Play(RetroSfxId.UiConfirm);
                     return BeginNewGame();
+                case StartMenuAction.StoryNewGame:
+                    RetroAudio.Play(RetroSfxId.UiConfirm);
+                    return BeginStoryNewGame();
                 case StartMenuAction.CombatTest:
                     RetroAudio.Play(RetroSfxId.UiConfirm);
                     return BeginCombatTest();
@@ -254,9 +274,7 @@ namespace BarPromenade
 
             // Keep the selected destination available when loading is refused.
             IsStartingNewGame = false;
-            model.Open();
-            model.Confirm();
-            model.SelectStartTime(minuteOfDay);
+            model.OpenDebugStartTime(minuteOfDay);
             model.Confirm();
             model.SelectLocation(location);
             GameLog.Warning(
@@ -265,6 +283,16 @@ namespace BarPromenade
                 GameLog.Field(
                     "destination_location",
                     location.ToString()));
+            return false;
+        }
+
+        private bool BeginStoryNewGame()
+        {
+            IsStartingNewGame = true;
+            if (NewGameStartService.TryStartStory()) return true;
+            IsStartingNewGame = false;
+            model.Open();
+            GameLog.Warning("menu", "story_start_refused");
             return false;
         }
 
@@ -307,6 +335,7 @@ namespace BarPromenade
                 if (model.IsChoosingLaboratoryEnemy) ReturnToCombatPreparation();
                 else if (model.IsChoosingLocation) ReturnToStartTime();
                 else if (model.IsChoosingStartTime || model.IsChoosingCombatWeapon) ReturnToMainMenu();
+                else if (model.IsDebugMenu) ReturnToMainMenu();
                 else SelectOption(StartMenuOption.Quit);
                 return;
             }
@@ -392,6 +421,11 @@ namespace BarPromenade
                     DrawCombatPreparation(canvas);
                     return;
                 }
+                if (model.IsDebugMenu)
+                {
+                    DrawDebugMenu(canvas);
+                    return;
+                }
                 RetroUiTheme.DrawPanel(
                     MenuPanelRect,
                     RetroUiTheme.PanelInset,
@@ -406,20 +440,9 @@ namespace BarPromenade
                     "opening.new_game");
                 DrawOption(
                     canvas,
-                    MenuCombatTestRect,
-                    StartMenuOption.CombatTest,
-                    "combat.title");
-                DrawOption(
-                    canvas,
-                    MenuLaboratoryRect,
-                    StartMenuOption.Laboratory,
-                    "combat.laboratory.menu");
-                DrawOption(
-                    canvas,
-                    MenuVocalizerRect,
-                    StartMenuOption.Vocalizer,
-                    "Вокализатор",
-                    true);
+                    MenuDebugRect,
+                    StartMenuOption.Debug,
+                    "opening.debug");
                 DrawOption(
                     canvas,
                     MenuQuitRect,
@@ -430,6 +453,17 @@ namespace BarPromenade
             {
                 RetroUiTheme.EndCanvas(previousMatrix);
             }
+        }
+
+        private void DrawDebugMenu(RetroUiCanvas canvas)
+        {
+            RetroUiTheme.DrawPanel(DebugMenuPanelRect, RetroUiTheme.PanelInset,
+                RetroUiTheme.FrameOuter, false, 0f, 1f);
+            DrawOption(canvas, DebugNewGameRect, StartMenuOption.NewGame, "opening.debug_location_start");
+            DrawOption(canvas, MenuCombatTestRect, StartMenuOption.CombatTest, "combat.title");
+            DrawOption(canvas, MenuLaboratoryRect, StartMenuOption.Laboratory, "combat.laboratory.menu");
+            DrawOption(canvas, MenuVocalizerRect, StartMenuOption.Vocalizer, "Вокализатор", true);
+            DrawOption(canvas, DebugBackRect, StartMenuOption.Back, "opening.back");
         }
 
         private void DrawLocations(RetroUiCanvas canvas)

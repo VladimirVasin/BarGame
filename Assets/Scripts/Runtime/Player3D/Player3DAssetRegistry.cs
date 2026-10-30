@@ -623,6 +623,7 @@ namespace BarPromenade
             }
 
             ApplyNeutralFaceAtlas(properties);
+            GetComponent<PlayerCorruptionAppearance>()?.RefreshPalette();
         }
 
         [SerializeField] private Texture2D bareSkinAtlas;

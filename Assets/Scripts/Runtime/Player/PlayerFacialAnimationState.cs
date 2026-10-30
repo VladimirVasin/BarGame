@@ -32,7 +32,10 @@ namespace BarPromenade
         TeethInspectHalf = 11,
 
         /// <summary>Both tooth rows exposed for inspection, with the same weary eyes.</summary>
-        TeethInspect = 12
+        TeethInspect = 12,
+
+        /// <summary>A brief, startled waking face: wide eyes and an involuntary open mouth.</summary>
+        Horror = 13
     }
 
     /// <summary>

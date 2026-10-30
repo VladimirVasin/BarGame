@@ -393,6 +393,14 @@
       "value": "НОВАЯ ИГРА"
     },
     {
+      "key": "opening.debug",
+      "value": "Debug"
+    },
+    {
+      "key": "opening.debug_location_start",
+      "value": "Запуск мира"
+    },
+    {
       "key": "opening.choose_location",
       "value": "Выберите локацию"
     },
@@ -2035,6 +2043,10 @@
     {
       "key": "debug.day",
       "value": "ДЕНЬ"
+    },
+    {
+      "key": "debug.hero_corruption",
+      "value": "Вид героя"
     },
     {
       "key": "debug.speed_selection",

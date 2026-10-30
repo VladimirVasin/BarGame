@@ -24,6 +24,7 @@ namespace BarPromenade
         private Player3DAssetRegistry registry;
         private Player3DAssetRegistry sourceRegistry;
         private CharacterJointDeformation jointDeformation;
+        private PlayerCorruptionAppearance sourceCorruption, corruption;
         private readonly List<Player3DMeshBinding> armBindings = new List<Player3DMeshBinding>();
         private readonly Dictionary<string, Player3DMeshBinding> sourceBindings =
             new Dictionary<string, Player3DMeshBinding>(StringComparer.Ordinal);
@@ -57,6 +58,8 @@ namespace BarPromenade
                 subset.registry = Player3DResources.Instantiate(parent);
                 subset.registry.gameObject.name = instanceName;
                 subset.sourceRegistry = source;
+                subset.corruption = PlayerCorruptionAppearance.Ensure(subset.registry);
+                subset.sourceCorruption = source != null ? PlayerCorruptionAppearance.Ensure(source) : null;
                 subset.jointDeformation = subset.registry.GetComponent<CharacterJointDeformation>();
                 if (source != null)
                     foreach (Player3DMeshBinding binding in source.MeshBindings)
@@ -79,6 +82,7 @@ namespace BarPromenade
             sourceBindings.Clear();
             sourceRegistry = null;
             jointDeformation = null;
+            sourceCorruption = corruption = null;
             SourceGrip = null;
             SourceUpperArm = null;
             if (registry == null)
@@ -222,6 +226,7 @@ namespace BarPromenade
             }
 
             if (jointDeformation != null) jointDeformation.ApplyPose();
+            sourceCorruption?.CopyAppearanceTo(corruption);
             if (sourceRegistry != null && registry != null)
                 sourceRegistry.GetComponent<PlayerJacketCloth>()?.CopyPoseTo(registry.GetComponent<PlayerJacketCloth>());
             PlayerWardrobe sourceWardrobe = sourceRegistry != null ? sourceRegistry.GetComponent<PlayerWardrobe>() : null;

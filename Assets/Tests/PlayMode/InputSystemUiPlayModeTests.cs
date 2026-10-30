@@ -18,6 +18,8 @@ namespace BarPromenade.Tests.PlayMode
         private Keyboard keyboard;
         private GameObject probeObject, playerObject, pauseObject;
         private InputSystemUiProbe probe;
+        private StartMenuRoot disabledPointerMenu;
+        private bool pointerMenuWasEnabled;
         private float previousCaptureDelta;
         private string previousClipboard;
 #if UNITY_EDITOR
@@ -66,6 +68,9 @@ namespace BarPromenade.Tests.PlayMode
         {
             if (pauseObject != null) Object.Destroy(pauseObject);
             if (playerObject != null) Object.Destroy(playerObject);
+            if (probe != null) GameCursor.Release(probe);
+            if (disabledPointerMenu != null) disabledPointerMenu.enabled = pointerMenuWasEnabled;
+            disabledPointerMenu = null;
             if (probeObject != null) Object.Destroy(probeObject);
             yield return null;
             GameInput.HandleApplicationFocus(true);
@@ -82,8 +87,13 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Pointer_UsesScaledGroupsSingleReleaseScrollAndFocusCleanup()
         {
+            disabledPointerMenu = Object.FindAnyObjectByType<StartMenuRoot>();
+            Assert.That(disabledPointerMenu, Is.Not.Null);
+            pointerMenuWasEnabled = disabledPointerMenu.enabled;
+            disabledPointerMenu.enabled = false;
             probeObject = new GameObject("Input System repaint probe");
             probe = probeObject.AddComponent<InputSystemUiProbe>();
+            GameCursor.Capture(probe, CursorLockMode.None, true);
             yield return Frames();
             Assert.That(probe.Paints, Is.GreaterThan(0), "A headless stand-in cannot prove GUI input.");
             Vector2 inside = InputSystemUiProbe.WindowPoint(InputSystemUiProbe.ButtonRect.center);
@@ -120,6 +130,28 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(probe.Clicks, Is.EqualTo(1), "Focus loss discards capture and a delayed release.");
             yield return Click(inside);
             Assert.That(probe.Clicks, Is.EqualTo(2));
+
+            yield return Pointer(inside, 1);
+            probe.SkipPointerPass = true;
+            yield return Pointer(inside, 1);
+            yield return Frames();
+            probe.SkipPointerPass = false;
+            yield return Pointer(inside);
+            Assert.That(probe.Clicks, Is.EqualTo(3),
+                "A held press survives skipped pointer UI repaints and completes on release.");
+
+            probe.SkipPointerPass = true;
+            yield return Pointer(inside, 1);
+            yield return Pointer(inside);
+            yield return Frames();
+            Assert.That(probe.Clicks, Is.EqualTo(3));
+            probe.SkipPointerPass = false;
+            yield return Frames();
+            Assert.That(probe.Clicks, Is.EqualTo(4),
+                "A complete click between pointer UI repaints is retained until the same rendered control consumes it.");
+            yield return Frames();
+            Assert.That(probe.Clicks, Is.EqualTo(4), "A buffered release activates only once.");
+            Assert.That(probe.CoveredClicks, Is.Zero);
         }
 
         [UnityTest]
@@ -148,6 +180,8 @@ namespace BarPromenade.Tests.PlayMode
         {
             StartMenuRoot menu = Object.FindAnyObjectByType<StartMenuRoot>();
             Assert.That(menu, Is.Not.Null);
+            yield return Click(LogicalWindowPoint(StartMenuRoot.MenuDebugRect.center));
+            Assert.That(menu.IsDebugMenu, Is.True);
             yield return KeyPress(Key.Enter);
             Assert.That(menu.IsChoosingStartTime, Is.True);
             int before = menu.SelectedStartMinuteOfDay;
@@ -155,7 +189,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(menu.SelectedStartMinuteOfDay, Is.EqualTo((before + 23 * 60) % (24 * 60)));
             yield return Click(LogicalWindowPoint(StartMenuRoot.StartTimeOptionRect(StartTimeOption.Continue).center));
             Assert.That(menu.IsChoosingLocation, Is.True);
-            yield return KeyPress(Key.Escape);
+            yield return Capture("main-menu-start-locations");
+            AssertLocationRowUsesAuthoredCharcoal("main-menu-start-locations");
+            yield return Click(LogicalWindowPoint(StartMenuRoot.LocationOptionRect(NewGameLocationCatalog.Count).center));
             Assert.That(menu.IsChoosingStartTime, Is.True);
             yield return KeyPress(Key.Escape);
             yield return KeyPress(Key.DownArrow);
@@ -235,8 +271,39 @@ namespace BarPromenade.Tests.PlayMode
         {
             string directory = Path.Combine(Application.dataPath, "../Captures/InputSystemUi");
             Directory.CreateDirectory(directory);
-            ScreenCapture.CaptureScreenshot(Path.Combine(directory, name + ".png"));
+            string path = Path.Combine(directory, name + ".png");
+            if (File.Exists(path)) File.Delete(path);
+            ScreenCapture.CaptureScreenshot(path);
+            float deadline = Time.realtimeSinceStartup + 5f;
+            do
+            {
+                yield return Frames();
+            }
+            while ((!File.Exists(path) || new FileInfo(path).Length == 0) &&
+                Time.realtimeSinceStartup < deadline);
+            Assert.That(File.Exists(path), Is.True, "The current menu frame must produce a fresh capture: " + path);
+            Assert.That(new FileInfo(path).Length, Is.GreaterThan(0));
             yield return Frames();
+        }
+
+        private static void AssertLocationRowUsesAuthoredCharcoal(string name)
+        {
+            string path = Path.Combine(Application.dataPath, "../Captures/InputSystemUi", name + ".png");
+            var capture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            try
+            {
+                Assert.That(capture.LoadImage(File.ReadAllBytes(path)), Is.True,
+                    "The fresh capture must contain a complete PNG.");
+                Rect row = StartMenuRoot.LocationOptionRect(1);
+                Vector2 screenPoint = LogicalWindowPoint(new Vector2(row.xMax - 12f, row.center.y));
+                int x = Mathf.Clamp(Mathf.FloorToInt(screenPoint.x * capture.width / Screen.width), 0, capture.width - 1);
+                int y = Mathf.Clamp(capture.height - 1 - Mathf.FloorToInt(screenPoint.y * capture.height / Screen.height),
+                    0, capture.height - 1);
+                Color pixel = capture.GetPixel(x, y);
+                Assert.That(Mathf.Max(pixel.r, pixel.g, pixel.b) * 255f, Is.LessThan(80f),
+                    "An unselected location row must retain its charcoal panel; a native grey button covers the text.");
+            }
+            finally { Object.Destroy(capture); }
         }
     }
 
@@ -245,12 +312,14 @@ namespace BarPromenade.Tests.PlayMode
         internal static readonly Rect ButtonRect = new Rect(24f, 18f, 90f, 24f);
         private static readonly Vector2 Offset = new Vector2(13f, 27f), Group = new Vector2(90f, 60f);
         internal int Paints, Clicks, CoveredClicks, RightDrags;
+        internal bool SkipPointerPass;
         internal Vector2 LocalPointer, LastScroll, ScrollAfterConsume;
         internal bool DragAfterConsume;
         internal static Vector2 WindowPoint(Vector2 local) => Offset + (Group + local) * 1.5f;
 
         private void OnGUI()
         {
+            if (SkipPointerPass && Event.current.type == EventType.Repaint) return;
             using var input = RetroUiInput.Begin();
             Matrix4x4 matrix = GUI.matrix;
             GUI.matrix = Matrix4x4.TRS(Offset, Quaternion.identity, new Vector3(1.5f, 1.5f, 1f));
@@ -279,5 +348,7 @@ namespace BarPromenade.Tests.PlayMode
             }
             finally { GUI.EndGroup(); GUI.matrix = matrix; }
         }
+
+        private void OnDestroy() => GameCursor.Release(this);
     }
 }

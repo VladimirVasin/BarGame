@@ -21,6 +21,7 @@ namespace BarPromenade
         private static bool activeResident;
 
         private static bool isSceneTransitioning;
+        public static event Action<string> DestinationReady;
         private AsyncOperation activeLoadOperation;
         private bool acceptingComposition;
         private CompositionDriver doorComposition;
@@ -51,11 +52,21 @@ namespace BarPromenade
             IsTransitioning = false;
             operationSequence = 0L;
             ClearActiveOperation();
+            DestinationReady = null;
         }
 
         public static bool RequestLoad(string sceneName)
         {
             return RequestLoad(sceneName, out _);
+        }
+
+        /// <summary>A startup composition can prepare its first visible pose under the shared cover.</summary>
+        public static bool RequestCoveredLoad(string sceneName)
+        {
+            string operationId = CreateOperationId();
+            if (!TryReserveTransition(sceneName, operationId, "direct", string.Empty)) return false;
+            instance.StartCoroutine(instance.ExecuteSafely(instance.LoadDirect(sceneName, true)));
+            return true;
         }
 
         public static bool RequestLoad(
@@ -246,8 +257,9 @@ namespace BarPromenade
             DontDestroyOnLoad(service);
         }
 
-        private IEnumerator LoadDirect(string sceneName)
+        private IEnumerator LoadDirect(string sceneName, bool cover = false)
         {
+            if (cover) blackout = TransitionBlackoutOverlay.Create();
             yield return null;
             yield return ResidentExteriorPolicy.DiscardDormantExterior();
             AsyncOperation operation = TryStartLoad(sceneName);
@@ -1136,8 +1148,10 @@ namespace BarPromenade
                     fields.ToArray());
             }
 
+            string readyScene = activeTargetScene;
             IsTransitioning = false;
             ClearActiveOperation();
+            if (succeeded) DestinationReady?.Invoke(readyScene);
         }
 
         /// <summary>

@@ -988,9 +988,10 @@ namespace BarPromenade
             Vector3 size = plan.DoorSize;
             float frameDepth = size.x + 0.10f;
             const float frameWidth = 0.10f;
+            var frameRenderers = new List<Renderer>(3);
             for (int side = -1; side <= 1; side += 2)
             {
-                CreateExteriorSurfaceBox(
+                frameRenderers.Add(CreateExteriorSurfaceBox(
                     "Home Balcony Door Jamb",
                     parent,
                     new Vector3(
@@ -1006,10 +1007,10 @@ namespace BarPromenade
                         frameWidth),
                     PlayerHomeExteriorSurfaceKind.PaintedWood,
                     SurfaceProjection.BoxZY,
-                    false);
+                    false).GetComponent<Renderer>());
             }
 
-            CreateExteriorSurfaceBox(
+            frameRenderers.Add(CreateExteriorSurfaceBox(
                 "Home Balcony Door Header",
                 parent,
                 new Vector3(
@@ -1022,7 +1023,7 @@ namespace BarPromenade
                     size.z + frameWidth * 2f),
                 PlayerHomeExteriorSurfaceKind.PaintedWood,
                 SurfaceProjection.BoxZY,
-                false);
+                false).GetComponent<Renderer>());
 
             Transform pivot =
                 new GameObject(
@@ -1039,6 +1040,8 @@ namespace BarPromenade
                 pivot,
                 size,
                 occlusionRegistry);
+            parent.gameObject.AddComponent<HomeBalconyCorruptionBarrier>().Initialize(
+                pivot, frameRenderers.ToArray(), size);
         }
 
         private static void BuildDoorLeaf(

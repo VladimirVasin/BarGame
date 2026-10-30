@@ -6,7 +6,7 @@ namespace BarPromenade
     /// <summary>
     /// The F9 debug window. The bar minigames it once launched are cut
     /// from the project; what remains is the debug surface itself:
-    /// intoxication adjustment, game-day selection, the City map's
+    /// intoxication adjustment, game-day/hero-appearance selection, the City map's
     /// test-teleport toggle, loaded cannery truck and F8 diagnostics, under the same
     /// modal lock.
     /// </summary>
@@ -41,6 +41,8 @@ namespace BarPromenade
             cityMap != null && cityMap.DebugTeleportEnabled;
         public int CurrentGameDayNumber =>
             GameSessionState.GameDayNumber;
+        public int CurrentHeroCorruptionLevel =>
+            GameSessionState.HeroCorruptionLevel;
         public bool CanSpawnLoadedCanneryTruck =>
             cannery != null && cannery.IsInitialized && cannery.isActiveAndEnabled;
 
@@ -166,6 +168,15 @@ namespace BarPromenade
             }
 
             homeDayController?.RefreshImmediate();
+            RetroAudio.Play(RetroSfxId.UiMove);
+            return true;
+        }
+
+        public bool TrySetHeroCorruptionLevel(int level)
+        {
+            if (!IsOpen || HomeApartmentDayController.IsHomeBusy(home) ||
+                !GameSessionState.TrySetDebugHeroCorruptionLevel(level))
+                return false;
             RetroAudio.Play(RetroSfxId.UiMove);
             return true;
         }
@@ -402,7 +413,7 @@ namespace BarPromenade
                     RetroUiTheme.Backdrop,
                     0.92f));
 
-            Rect panel = new Rect(112f, 24f, 416f, 262f);
+            Rect panel = new Rect(112f, 24f, 416f, 292f);
             RetroUiTheme.DrawPanel(
                 panel,
                 RetroUiTheme.Panel,
@@ -434,12 +445,13 @@ namespace BarPromenade
             DrawNauseaControl();
             DrawVomitControl();
             DrawSpeedSelectionControl();
+            DrawHeroCorruptionControls();
             if (cannery != null) DrawCanneryTruckControl();
 
             if (!string.IsNullOrEmpty(LastLaunchErrorKey))
             {
                 GUI.Label(
-                    new Rect(132f, 253f, 376f, 20f),
+                    new Rect(132f, 283f, 376f, 20f),
                     LocalizationService.Get(LastLaunchErrorKey),
                     footerStyle);
             }
@@ -599,6 +611,26 @@ namespace BarPromenade
                     TrySetGameDayNumber(dayNumber);
                 }
 
+                GUI.enabled = previousEnabled;
+            }
+        }
+
+        private void DrawHeroCorruptionControls()
+        {
+            GUI.Label(new Rect(132f, 246f, 78f, 24f),
+                LocalizationService.Get("debug.hero_corruption"), hintStyle);
+            for (int level = HeroCorruptionRules.FirstLevel;
+                 level <= HeroCorruptionRules.LastLevel; level++)
+            {
+                Rect button = new Rect(214f + (level - HeroCorruptionRules.FirstLevel) * 42f,
+                    246f, 39f, 24f);
+                bool selected = level == CurrentHeroCorruptionLevel;
+                RetroUiTheme.DrawPanel(button, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted);
+                RetroUiTheme.DrawSelection(button, selected);
+                bool previousEnabled = GUI.enabled;
+                GUI.enabled = previousEnabled && !selected;
+                if (RetroUiInput.Button(button, level.ToString(), rowStyle))
+                    TrySetHeroCorruptionLevel(level);
                 GUI.enabled = previousEnabled;
             }
         }

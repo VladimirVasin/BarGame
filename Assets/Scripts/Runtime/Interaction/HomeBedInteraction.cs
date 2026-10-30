@@ -10,6 +10,7 @@ namespace BarPromenade
     {
         public const string SleepPromptKey = "interaction.sleep";
         public const string WakePromptKey = "interaction.wake";
+        public const string StandPromptKey = "interaction.stand_up";
         public const string SurfaceClutterName =
             "Home Bed Crumpled Shirt";
         public const int SleepLoopFrameCount = 16;
@@ -26,6 +27,10 @@ namespace BarPromenade
         public const float AbruptWakeClipSplit = 0.3f;
         public const float AbruptWakeStartSeconds = 0.35f;
         public const float AbruptWakeRemainingSeconds = 4.2f;
+        public const float WakeRecoveryClipProgress = .87f;
+        public const float WakeRecoveryHoldSeconds = 3f;
+        public const float WakeStandSeconds = 2.8f;
+        public const float NormalWakeStartSeconds = 1.4f;
 
         private PlayerAnimatedInteractionController controller;
         private PlayerMotor motor;
@@ -39,8 +44,12 @@ namespace BarPromenade
         private Player3DCharacterPresentation heroPresentation;
         private bool ownsWakeFace;
         private bool wakeFaceSettled;
+        private bool startledWake;
 
         public string PromptKey =>
+            sleepPresentation != null && sleepPresentation.WaitingForWake ? WakePromptKey :
+            sleepPresentation != null && sleepPresentation.WaitingForStandUp
+                ? StandPromptKey :
             ownsActiveInteraction &&
             controller != null &&
             controller.Phase ==
@@ -61,6 +70,10 @@ namespace BarPromenade
         /// smoking on the balcony cannot dent the bed.
         /// </summary>
         public bool OwnsActiveInteraction => ownsActiveInteraction;
+        public bool WakeRecoveryActive => startledWake && ownsActiveInteraction &&
+            controller != null && controller.IsExitHoldActive;
+        public float WakeRecoveryProgress => startledWake && controller != null
+            ? controller.ExitHoldProgress : 0f;
 
         public void Initialize(
             PlayerRuntime player,
@@ -123,7 +136,6 @@ namespace BarPromenade
         public bool CanInteract(PlayerInteractor interactor)
         {
             if (interactor == null ||
-                (sleepPresentation != null && sleepPresentation.IsActive) ||
                 !isActiveAndEnabled ||
                 controller == null ||
                 !controller.IsInitialized ||
@@ -136,6 +148,11 @@ namespace BarPromenade
             {
                 return false;
             }
+
+            if (sleepPresentation != null && sleepPresentation.IsActive)
+                return (sleepPresentation.WaitingForWake && ownsActiveInteraction &&
+                    controller.Phase == PlayerAnimatedInteractionPhase.Looping) ||
+                    sleepPresentation.WaitingForStandUp && WakeRecoveryActive;
 
             PlayerAnimatedInteractionPhase phase =
                 controller.Phase;
@@ -150,6 +167,17 @@ namespace BarPromenade
         {
             if (!CanInteract(interactor))
             {
+                return;
+            }
+
+            if (sleepPresentation != null && sleepPresentation.WaitingForStandUp)
+            {
+                sleepPresentation.TryStandUp();
+                return;
+            }
+            if (sleepPresentation != null && sleepPresentation.WaitingForWake)
+            {
+                sleepPresentation.TryWakeOpening();
                 return;
             }
 
@@ -203,18 +231,47 @@ namespace BarPromenade
 
         public bool RequestAbruptWake()
         {
+            return BeginWake(PlayerFacialExpression.Watchful,
+                new PlayerAnimatedInteractionExitTiming(AbruptWakeClipSplit,
+                    AbruptWakeStartSeconds, AbruptWakeRemainingSeconds));
+        }
+
+        /// <summary>The same authored wake pauses at its supported, feet-down seated landmark.</summary>
+        public bool RequestStartledWake() => RequestSeatedWake(true);
+
+        public bool RequestSeatedWake(bool startled)
+        {
+            if (!ownsActiveInteraction || controller == null ||
+                controller.Phase != PlayerAnimatedInteractionPhase.Looping)
+                return false;
+            // The technical sleep director owns its face and additive body
+            // performance throughout; this method owns only the shared clip.
+            bool accepted = controller.RequestExitWithTiming(
+                new PlayerAnimatedInteractionExitTiming(AbruptWakeClipSplit,
+                    startled ? AbruptWakeStartSeconds : NormalWakeStartSeconds, AbruptWakeRemainingSeconds,
+                    WakeRecoveryClipProgress, WakeRecoveryHoldSeconds, WakeStandSeconds,
+                    waitForHoldRelease: true));
+            if (accepted) startledWake = true;
+            return accepted;
+        }
+
+        public bool RequestStandUpFromRecovery() => startledWake && ownsActiveInteraction &&
+            controller != null && controller.ReleaseExitHold();
+
+        private bool BeginWake(PlayerFacialExpression expression,
+            PlayerAnimatedInteractionExitTiming timing)
+        {
             if (!ownsActiveInteraction || controller == null ||
                 controller.Phase != PlayerAnimatedInteractionPhase.Looping ||
                 heroPresentation == null ||
                 !heroPresentation.TrySetContextualFacialExpression(
-                    this, PlayerFacialExpression.Watchful))
+                    this, expression))
                 return false;
 
             ownsWakeFace = true;
             wakeFaceSettled = false;
-            bool accepted = controller.RequestExitWithTiming(
-                new PlayerAnimatedInteractionExitTiming(AbruptWakeClipSplit,
-                    AbruptWakeStartSeconds, AbruptWakeRemainingSeconds));
+            startledWake = false;
+            bool accepted = controller.RequestExitWithTiming(timing);
             if (!accepted) ReleaseWakeFace();
             return accepted;
         }
@@ -382,10 +439,10 @@ namespace BarPromenade
 
         private void ReleaseWakeFace()
         {
-            if (!ownsWakeFace) return;
-            heroPresentation?.ReleaseContextualFacialExpression(this);
+            if (ownsWakeFace) heroPresentation?.ReleaseContextualFacialExpression(this);
             ownsWakeFace = false;
             wakeFaceSettled = false;
+            startledWake = false;
         }
 
         private void RestoreSurfaceClutter()

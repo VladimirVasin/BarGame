@@ -1,37 +1,114 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted architecture exception 2026-10-30 — calm Home new-game launch:**
+  User: top New Game/Debug/Quit. New Game prepares fresh Home/day1, hero/home1,
+  open balcony and actual12:00 before composition; clock/needs wait for E.
+  Covered ready callback acquires sleep after guard clears, before first frame.
+  `HomeOpeningCameraSequence`: five6s room/sleeper shots, mild dolly/shared
+  `ContextualCameraDirector`/saved DOF, outside the locked room. E starts the
+  prepared clock and normal same-rig seated wake; shared recovery/return/idle
+  hold awaits fresh E Stand, then slow exit. No startup nightmare/decay/Horror/
+  stinger or new prologue/act/lore. Debug keeps time07:40→twelve places, combat/
+  lab/vocalizer/back; legacy05:59 remains API-only. All24 effects retain owners:
+  existing actual-noon light/material/shadow/post coverage, only camera/DOF scope;
+  no new light/render pass. Bounded prepared shots/leases, cost unmeasured.
+
+- **Accepted architecture exception 2026-10-30 — endless upper view/glow:**
+  User: upper stairs look endless from Home door; fixtureless pallid-green glow.
+  Story§6 source/early-form exception, not final-door light/otherworld.
+  Landing4.8/metal rails: visible grille1.78×1.84×.10,z2.25;12 shared open
+  stair/rail flights, no endcap. Roof/back notches have matching MeshColliders.
+  One steady shadowed Spot(24m/38°/35,bounce0)/2-particle CityLightHalo/
+  existing Bloom: direct light/halo, no volumetric GI/SSGI/SCGI/custom pass. Original3 practicals/other24-effect owners/assets/cleanup stay;
+  no scene/text/lore/act/finale; cost unmeasured.
+
+- **Accepted 2026-10-29 — decay hair and clothing wear:**
+  User: cropped first hair grows long/unkempt at maximum, replacing fixed medium
+  length. `HeroHairShort/Long` share bones, compensated link lengths and contacts.
+  Clothing gains stains/abrasion/fraying/closed stitched tears; thigh/shin/boot
+  damage differs per piece;
+  right patch/paired forearms/alpha/normal-response maps stay.
+
+- **Accepted 2026-10-29 — seven hero decay appearances:**
+  User approved seven increasingly emaciated human forms, maximum strongly
+  changing head/body/garment silhouette on the sole Hero V2. `HeroCorruptionRules`
+  maps confirmed swallowed dose to 1–7:0/120/300/540/840/1200/1620;
+  authored intoxication gains count beyond the current cap. Stale/duplicate
+  commits and water add nothing. Session dose survives sobriety/washing/travel; New Game clears it. Calendar,
+  acts and world0–5 stay separate; exact reverse selection is developer-only.
+  Blender's additive `HeroCorruption` retains Basis/rig/weights/UVs/actions and
+  contacts; prepared face/bare-skin/dialogue variants retain speech/blinks/soil.
+  `PlayerCorruptionAppearance` owns stage writes; world, passive mirror and FP
+  use the same applied state; inventory selects its authored portrait.
+  Shared contact-aware hunch/asymmetry/tremor yield
+  to contextual poses, falls and protected grips. No gait-speed/balance/access/
+  needs change, NPC reaction, fiction line or player meter. Sources/materials
+  stay shared; bounded prepared state/contact buffers, no world rebuild.
+  Original export triangulation is baked before the first morph; the focused
+  `check-hero-corruption-export.py` compares original vertex/triangle/UV/weight/
+  existing-shape contracts. The seated lower-body module retains support/outlet
+  anchors and shares the decay shape.
+  Effects: GI/SSAO/fog/volumetrics/shadows/grade retain scene owners; deformation
+  reaches ordinary mesh passes. Home has no SSGI/SCGI/interior SSR provider.
+  Probes/SSR/water/wetness/bevels/COLOR/wind/decals/particles/rim/outlines retain
+  scope; authored normals/roughness/palette carry illness without new emitters.
+  Bloom/DOF/AA/vignette/grain/flares/blur/lens retain shared settings. No new
+  render pass, light, atmosphere, sound or camera scene; cost unmeasured.
+
+- **Accepted architecture exception 2026-10-29 — post-sleep corruption route:**
+  Opaque Home cut commits apartment7/hero dose floor7 atomically; higher dose
+  stays, held-rig apply precedes wake. `HomeSleepAppearanceActive` selects
+  corrupted Stairwell: wall x1.45/z-2.88/y3.2–7.3 seals descent; upper flight
+  opens to landing4.8/rails.
+  Docks/ordinary layout stay. New Game/debug-day clears mode;
+  dose resets independently. No act/world0–5/finale/otherworld/scene/text/lore.
+  Ochre-gray walls/rust-brown metal: bounded construction/shared bindings;
+  later macro/glow decisions own their surface/light changes.
+
 - **Accepted architecture exception 2026-10-29 — technical Home sleep MVP:**
-  User: sleep on the existing sofa, slow push into the sleeping face, hold
-  three seconds after the push, finite blinking montage, abrupt wake in the
-  most neglected existing apartment and cut to its normal fixed camera.
-  Story §6 records this narrow exception to held-face, before/after montage
-  and rapid blinking restrictions; no dream content, woman, clue, text,
-  self-awareness, new story level or supernatural room is introduced.
-  The production rig retains positioned entry, neutral settle, sleep/contact
-  and authored exit. Closed eyes reuse the registered face; wake opens them
-  sharply on the same rig. The camera loan/focus and input/HUD cleanup use
-  shared ownership. This cut changes presentation, never hides a mismatched
-  body endpoint or teleports the hero.
-  Home's existing day-seven dressing is a session presentation override,
-  independent of calendar, quests, acts, decay and intoxication. Commit once
-  under the opaque cut; retain on Home re-entry, clear with a new session or
-  explicit debug day selection. Interrupted pre-cut sleep commits nothing;
-  ordinary completed exit keeps the existing fatigue transaction.
-  `HomeSleepController` stages push3/hold3/cut0.44 s. The first wake frame
-  uses the main-room
-  fixed pose and ordinary lens. The existing `BedExit` reaches sample .3
-  in .35 s, then finishes its remaining authored path over 4.2 s; the owned
-  face changes ClosedBlink→Watchful→Neutral without a new FBX/clip.
-  Pause freezes staging; cancel, disable,
-  transition and destroy release camera/DOF/input/HUD/face/overlay ownership.
-  Reuse prepared dressing, materials and buffers; no scene reload or
-  recurring world reconstruction. Cost is unmeasured.
-  Effects: existing GI/SSAO/fog/volumetrics/shadows/grade remain; Home has no
-  SSGI/SCGI/interior SSR provider. Probes/water/roughness/bevels/vertex colour/
-  wind/decals/dust/rim/outlines keep their current scope. Bloom/AA/vignette/
-  grain/flares/blur/lens settings remain; only owned face DOF and the finite
-  montage are added, respecting the saved DOF switch. No new light/GI pass.
+  Same positioned rig/sofa entry/settle/contacts/exit; push3/closed-eye hold3,
+  Story§6 face/montage/strobe scope. Pre-cut cancel commits nothing; completed
+  stand resets fatigue. Pause/cleanup own camera/DOF/input/HUD/face/overlay;
+  prepared assets/buffers, no reload/hidden endpoint mismatch.
+
+- **Accepted architecture exception 2026-10-30 — technical sleep fright/recovery:**
+  User: body-only nightmare/progressive previews→7/Horror/sustained cue/seated
+  recovery. Story§6/§16.16 allow longer ownership/startle only here. Previews
+  never drop below start; final opaque commit changes session, cancel restores
+  true form. No dream content/woman/clue/text/self-awareness.
+  Same rig/head/neck/chest/atlas. Seated.87 stays through recovery/camera return,
+  then breath/shoulder/head idle+blink await fresh E.
+  Palms IK/feet/pelvis hold; shared release plays slow stand in default camera.
+  Motor/modal/filter persist through stand; owned cleanup removes the filter.
+  Cut entry `HomeSleepStartle`:5.2s/2D Gameplay SFX voice/pause/cancel.
+  All24 owners retain coverage above; Home has no SSGI/SCGI/interior SSR.
+  Only owned DOF/overlay; no new light/GI/pass, cost unmeasured.
+
+- **Accepted architecture exception 2026-10-30 — final balcony seal:**
+  User: Home7 balcony inaccessible: existing swollen closed leaf/dark glazing/
+  solid collider, no reopening. `HomeBalconyCorruptionBarrier` restores1–6
+  exactly; outside/threshold occupancy defers closure until the capsule is fully
+  inside. No snap/stranding/new light/audio/text/lore; shared worn surfaces.
+
+- **Accepted 2026-10-30 — nonrepeating corruption surfaces:**
+  User: Home/corrupted Stairwell objects retain micro BaseMaps; large causal
+  wear uses unique whole-wall/object charts in≤2 shared2048 linearRGBA masks,
+  covering Home17/Stairwell8 micro families. Room-plane charts span shell
+  pieces; objects/aliases get local charts, mirrors inherit source. Manifest/
+  pages: `Resources/SurfaceDamage`; no macro frac/repeat. Both use Lit/dither
+  full-URP routes, cached MPB/material bindings and exact earlier-state restore;
+  original Lit pass targets; chart/matrix uniforms disable GPU instancing.
+  days1–6 stay. No per-renderer image/material. Geometry/UV0/lights/contacts/
+  routes/all24 effect providers stay; no scene/text/lore/occult/blood. Surfaces:
+  damp/peeling plaster, ceiling water damage, floor soil/abrasion, stained/frayed
+  textiles, furniture edge wear/bathroom grime. Source-derived/no runtime paint;
+  cost unmeasured.
+
+- **Accepted architecture exception 2026-10-30 — final Home clock:**
+  User: final7 only, impossible/nonchronological display at≤2Hz on the same
+  clock. Story§6 scopes this visual exception; actual calendar/opening05:59/
+  earlier states/audio stay. Bounded readout/pause/reset; no clue/new text/lore.
 
 - **Accepted 2026-10-29 — City resident life:**
   User:more simultaneous street people by hour, prototype daily life.
@@ -279,14 +356,12 @@
   No player transaction, text, speech, model, material or new effect provider;
   existing scene lighting, material/accent effects and post-processing stay.
   This ordinary work changes no story state; story §16/21 and art §16 remain.
-- **Accepted 2026-10-25 — choose new-game time before location:** The user
-  requested a time picker before the existing location page. `07:40` remains
-  its initial selection; the chosen valid minute starts day one without elapsed
-  needs. Back retains that choice. Closed Bar is labelled/refused with a silent
-  message before commitment, reset, clock mutation or scene loading; availability
-  uses `BarBusinessHours`. `StartMenuModel`, `NewGameLocationCatalog` and
-  `NewGameStartService` share the selection/admission contract. No forced evening
-  override, new journey, gamepad requirement, spoken line/pool or story event.
+- **Accepted 2026-10-25 — choose new-game time before location:** Debug retains
+  time-before-place, initially07:40; selected day1 minute has no elapsed needs.
+  Back retains selection. Closed Bar is silently refused before session/clock/
+  load mutation through `BarBusinessHours`; `StartMenuModel`,
+  `NewGameLocationCatalog`/`NewGameStartService` share admission. No journey,
+  forced evening, new binding/speech/story event.
 - **Accepted 2026-10-24 — translucent dialogue panels:** The user requested
   translucent dialogue windows. `RetroUiTheme.DialoguePanelOpacity` shares `72%`
   across overhead speech panels/tails and the dialogue choice panel/selection.
@@ -1269,19 +1344,14 @@
   «Отгрузка» scales. Release/settle→nod approves→put-away stores→clear permits
   loading; traffic free. `CityCanneryInspectionPlan`/`CityFishSupplyCycle`.
 
-- **Accepted architecture exception — 2026-09-11, selectable new-game start:**
-  Location page: twelve starts, nine roots + City docks/cannery + ski lodge;
-  village first/default. Back returns to card; mouse/keyboard/gamepad select.
-  Confirm resets session at the selected minute of day `1`, without elapsed
-  needs, then loads the area/scene; time selection and admission follow the
-  accepted `2026-10-25` contract.
-  No prologue/ride/arrival/lore/new route. §6 revises `2026-09-09` fixed-village
-  start only; §16/§21/nine art checks/legacy waking stay.
-  `NewGameLocationCatalog`/`NewGameStartService`: selection/bootstrap; City/Bar/
-  lodge arrival markers consumed once per load. City: home's return point;
-  docks/cannery: clear pedestrian docks; lodge: 3 m outside entrance facing door.
-  Six interiors load without door travel; Home Normal/Stairwell StreetDoor,
-  real bar context keeps exit. Starting inside Mother's house closes its quest.
+- **Accepted architecture exception — 2026-09-11, selectable Debug start:**
+  Twelve starts: nine roots+City docks/cannery+lodge; village default. Back keeps
+  time; mouse/keyboard/existing pad. Admission starts selected day1 minute
+  without needs aging, per2026-10-25. No prologue/ride/arrival/lore/new route;
+  §6/16/21/art§16/legacy waking stay. `NewGameLocationCatalog`/`NewGameStartService`
+  consume City/Bar/lodge arrival markers once: home return/clear docks/cannery/
+  lodge3m before door. Six interiors load directly; Home Normal/Stair StreetDoor,
+  real Bar exit context. Mother's-house start closes its quest.
 
 - **Accepted architecture exception — 2026-09-11, cannery shift life:**
   §6/§21/art §8: four/shared speech/no-repeat/free gestures; no hero/job/lore/illness.
@@ -2314,7 +2384,11 @@
   blockers. This supersedes earlier scaled-calendar/unscaled physical
   bar/refrigerator descriptions below.
 - **Accepted:** Unity `6000.6.7f1`, AI Navigation `2.0.16`, Input System `1.20.1` (settings, 2026-10-23), URP `17.6.0`; test framework `1.8.0`, Timeline `6.6.0`, uGUI `2.6.0`.
-- **Accepted:** New Input System is enabled.
+- **Accepted — New Input System:** `RetroUiInput` retains bounded button
+  edges/scroll via `onAfterUpdate` until first readable Repaint; fixed press/
+  release coordinates. Held capture survives repaint gaps. Focus/scene/device/
+  context/locked-cursor cleanup requires neutral; mouse replacement rebinds
+  listener. IMGUI paints; no legacy input.
 - **Corrected — balcony smokers are a local population, not a city-load
   tableau:** a production-seed walk exposed the failure of selecting one or two
   fixed Residential buildings for the whole map: the only actor could live in
@@ -4368,29 +4442,23 @@
   `StairwellInterior` install their matching roots. Directly opening
   `DoorTransition` installs an idle presentation root; only the transition
   service initializes and plays it.
-- **Accepted architecture exception — 2026-09-09, explicit user request — the
-  alpine village default, and the Home waking opening leaves the
-  launch path:** One §6 registry row lifts four rules together: story bible
-  §15 «Пролог», §20 «Время», §2 «Дорога наверх собрана целиком» and art bible
-  §10g «Порог и ориентиры». `MainMenu` remains index `0`, black field/card.
-  Village is the default place: `GameTimeState.TryStartAt` sets day `1` at the
-  menu's selected minute (time selection/admission: `2026-10-25`),
-  never advances needs; `AreaLoading` Single-loads without a directed travel
-  illustration. `AreaArrivalToken.Default` uses `lane_foot`, two metres up the
-  lane facing the mother's house, without cabin/ride/arrival.
-  Prologue/Cat/dinner/news/mother's event remain unwritten; the choice is a start,
-  not another route. `HomeArrivalKind.OpeningSleep`, `HomeOpening{Controller,Timeline}`
-  retain the `05:59` waking flow. Only explicit `MainMenuRoot.RequestLegacyOpening()`
-  before launch requests that boundary; no shipped path does. Editor Play pins
-  `MainMenu`; test `InitTestScene{GUID}` temporarily suppresses that override.
+- **Accepted architecture exception — 2026-09-09, explicit user request — Debug
+  village-first starts and retained legacy waking:** Story§6 covers place/time/
+  village-threshold exceptions (§15/20/2, art§10g). Debug defaults to village;
+  `GameTimeState.TryStartAt` starts day1 at selected time without needs aging.
+  `AreaLoading` Single-loads without travel art; `lane_foot` is2m up the street,
+  facing mother's house, no cabin/ride/arrival/new route. Prologue/Cat/dinner/
+  news/mother event remain unwritten. Legacy `HomeArrivalKind.OpeningSleep`/
+  `HomeOpening{Controller,Timeline}` keep05:59 only via explicit
+  `MainMenuRoot.RequestLegacyOpening()`. Editor Play pins MainMenu; test
+  `InitTestScene{GUID}` suppresses it.
 - **Accepted architecture exception — 2026-09-09, explicit user request — day
   one carries one quest, and the journal becomes a page:** A §6 registry row
   lifts story bible §12 «Форма» «ни указателя» for the map schematic only, and
   §25's reading of the mother's house as a place the game never points at.
   `QuestId.ReachMothersHouse` is dated to day `1` by a `GameDaySchedule` row,
   so it is raised by the same calendar that raises everything else and appears
-  inside `BeginNewGame` — in the village start and in the retained Home
-  opening alike. It closes in `GameSessionState.EnterMothersHouse()`, the one
+  inside `BeginNewGame`, including prepared Home and Debug starts. It closes in `GameSessionState.EnterMothersHouse()`, the one
   choke point both `MothersHouseEntrance` and the map's own door entry already
   pass through, so the door and the chart cannot disagree. **The village gets
   no signpost:** the mark is drawn by `CityMapAreaView` on the village chart
@@ -4466,7 +4534,7 @@
   waits for transition and outgoing `BarMinigameModalLock` release. Success
   consumes the request once; timeout consumes it and logs final lock/transition/
   attempt state, preventing later-load leakage. Fresh seed/cash/needs/starter
-  inventory and ordinary Wake/Quit or Home -> Stairwell -> City remain unchanged.
+  inventory, legacy Wake/Quit and Home -> Stairwell -> City stay.
 - **Accepted — Persistent transition context:** Static subsystem-reset session
   state carries the seed, active bar context, explicit
   bar/home/supermarket city return kind, the next stairwell arrival side and
@@ -4475,9 +4543,9 @@
   between Single-mode scene loads. `BeginNewGame` restores all of those values
   together with wallet, drinking and balance state.
 - **Accepted — Wake-started scaled session clock:** `GameTimeState` resets to
-  frozen `05:59`. A successful startup Wake or accepted Home debug city-map skip
-  atomically moves it to `06:00` and starts it; later bed interactions do not
-  reset or pause it.
+  legacy frozen05:59; prepared New Game exposes stopped12:00 without aging.
+  E starts prepared time; Debug starts its chosen minute. Legacy Wake/debug map
+  skip starts06:00. Later bed interactions do not reset/pause the clock.
   `GameTimeRuntime` persists across Single-mode loads and advances through
   `CalendarDeltaTime` at `0.5` game minute/real second: `2880 s` (`48 min`)/day
   at ×1. Midnight increments the zero-based index; UI exposes one-based
@@ -5217,21 +5285,12 @@
   story §6 replaces the earlier door-count acceptance check with a test that
   the interaction reveals no fact about the room's contents.
 - **Accepted architecture exception — 2026-09-05, explicit user request —
-  seven calendar appearances of the apartment:** day `1` reads as a modest,
-  old but relatively kept home; days `2–7` accumulate specific everyday
-  neglect, reaching extreme filth and clutter on day `7` and retaining that
-  appearance afterwards. This is a separate presentation of domestic decline,
-  not the story's act-driven `0–5` level, current intoxication, or the future
-  irreversible decay quantity that grows from drinking. It does not advance
-  acts, end the game, disable household interactions or alter cat feeding.
-  Day selection resolves the exact clamped calendar state: debug `7 -> 1`
-  restores the day-one presentation, while ordinary days progress forward.
-  No high-water mark may prevent that explicit debug inspection. Sleep,
-  sobering and a scene round trip do not clean the apartment. Light sources,
-  protected circulation, interaction contacts and fixed-camera readability
-  remain valid in every state; no guests, readable clues, flies, blood or new
-  supernatural effects are introduced. The corresponding story §6 row and
-  art §7 define the accepted scope.
+  seven calendar appearances of the apartment:** day1 modest/kept;2–7 ordinary
+  neglect, maximum retained. Separate from acts/world0–5/intoxication; sleep's
+  maximum coupling/final balcony seal have their own exceptions. No act/finale/
+  cat-feeding change. Exact clamped debug7→1 restores day1; ordinary days progress forward.
+  Sleep/sobering/reentry never clean it. Light/circulation/contacts/fixed-camera
+  readability stay; no guests/clues/flies/blood/supernatural effects. Story§6/art§7.
 - **Accepted — Data-first interactive Home refrigerator:**
   Validated counter split `1.08 x 0.76 m`, independent four-waypoint aisle approach/trigger.
   Worn hollow cabinet/three shelves/drawer/two bins/six cavity+two door slots;
@@ -5520,24 +5579,16 @@
   with no roll, his weight stays on the bed until the first boot leaves it, so
   every sample of it is asserted, and the leg order is stated as its own
   measurement rather than left to survive by accident.
-- **Accepted — Separate vertical home stairwell:** The exterior home door and
-  apartment door connect through `StairwellInterior`, a deterministic
-  `8.6 x 9.6 x 6.25 m` runtime-composed space with street, middle and apartment
-  elevations. Three continuous physical ramps support 48 collider-free visible
-  steps, while overlapping navigation corridors remain wider than the
-  controller diameter at every floor/flight seam; this keeps the real
-  `PlayerMotor` route continuous without changing the staircase silhouette.
-  A full-width, full-standing-height invisible safety collider backed by
-  visible furniture, mesh, planks and sacks seals the upward flight above the
-  hero's floor. Side-aware arrival state chooses the correct spawn; only the
-  street exit prepares the City home-return point. A separate 3D selector
-  hard-cuts the shared camera between lower-flight, middle-flight and
-  apartment-landing poses with vertical hold-zone hysteresis because the
-  lower and upper flights overlap in XZ. Each pose keeps its exposed suspended
-  HDR fluorescent tube and halo in frame; stronger co-located flickering
-  practicals, post-processing, bounded dust, ventilation/electrical/pipe
-  ambience and an optional scene-local `stairwell_theme` slot remain
-  scene-owned.
+- **Accepted — Separate vertical home stairwell:** Ordinary `StairwellInterior`
+  connects exterior/apartment doors in8.6×9.6×6.25m, street/middle/apartment
+  elevations. Three physical ramps/48 collider-free steps and radius-safe
+  overlapping corridors preserve real `PlayerMotor` seams/silhouette. Visible
+  furniture/mesh/planks/sacks back a full standing-height upper safety blocker.
+  Side-aware arrivals keep door docks; only street exit sets City home-return.
+  Three fixed shots retain vertical hysteresis where flights overlap in XZ,
+  exposed suspended HDR tubes/halos, co-located flickering practicals, original
+  post-processing/bounded dust/ventilation/electrical/pipe audio and optional
+  `stairwell_theme`. Post-sleep mode is the separate accepted exception above.
 - **Accepted — Perched interactive stairwell cat (3D Cheshire trickster):**
   The last sprite conversion. One seated near-black low-poly 3D cat owns the
   non-blocking authored perch on the top of the `Middle Landing Back Rail`
@@ -5573,16 +5624,12 @@
   verbatim, and the 16-step `6 fps` `StairwellCatFeedingTimeline` contract
   the player `CatFeed*` clips pair to now poses a head-down eating dip with
   chew alternation instead of an atlas swap.
-- **Accepted — Same-scene third-floor Home balcony:** The Home right wall owns
-  a real window and open glazed door connected to a walkable balcony at
-  `4.7 m` street elevation. The room threshold and deck extend the same
-  `RoadWalkableArea`; open-looking rails retain invisible safety colliders.
-  `HomeInterior` does not additively load `City`: it regenerates the city plan
-  from the preserved seed, transforms only a bounded slice of the player-home
-  street into Home-local coordinates and renders nearby roads, lots, stable
-  windows, lamps and signals without collision, a second City root, player,
-  camera or realtime street-light pool. One shared geometry contract keeps
-  the Home opening and default `8.8 m` City facade balcony aligned.
+- **Accepted — Same-scene third-floor Home balcony:** Ordinary Home has a real
+  window/open glazed leaf/walkable4.7m balcony; threshold/deck share
+  `RoadWalkableArea`, rails retain invisible safety colliders. Home regenerates
+  a bounded seeded City street slice: roads/lots/stable windows/lamps/signals,
+  without collision/additive City/second root/player/camera/street-light pool.
+  Shared geometry aligns the Home opening/default8.8m City facade balcony.
 - **Accepted — Modal city-facing balcony-smoking vignette:** A data-first
   `HomeBalconySmokingPlan` derives one walkable Home-local dock around
   `(6.60, 0.04, -1.45)` from the balcony bounds. On the first `E`, modal
@@ -5833,26 +5880,20 @@
   warp/chromatic sampling/warmth/exposure/vignette, optional halation and SMAA.
   `ScenePresentationExclusion` keeps preview/reflection cameras outside shared
   lens/post effects. No low-resolution presentation profile remains.
-- **Accepted — Crisp UI after the composite:** Runtime IMGUI follows the world
-  composite. `RetroUi{Theme,Texture}` decode Editor colours/textures once;
-  clipping/matrices and builds stay intact.
-  Prompts, menus, modal inspectors, shops, journal, HUD, balance gauge, loading
-  and map use one logical `640x360` canvas and the shared `RetroUiTheme`.
-  Corner intoxication/journal HUDs use its full-screen logical bounds at the
-  shared scale; centering does not inset them on other aspect ratios.
-  Soot/charcoal/dirty-bone uses flat panels, thin nested frames, deterministic
+- **Accepted — Crisp UI after the composite:** IMGUI follows the world composite.
+  `RetroUi{Theme,Texture}` decode Editor colours/textures once; clipping/matrices
+  and builds stay intact. Buttons use blank `BarPromenadeButton` styles, avoiding
+  native skin painting; regular/Retina state backgrounds stay empty.
+  Prompts/menus/inspectors/shops/journal/HUD/balance/loading/map share the
+  `640x360` canvas/theme. Corner HUDs use full-screen bounds at shared scale;
+  aspect centering adds no inset.
+  Soot/charcoal/dirty-bone: flat panels, thin nested frames, deterministic
   texture, printed typography and grayscale-safe value-plus-frame focus.
-  Packaged `Fonts/Roboto-Regular` is the RU/EN face; OS fonts are never requested
-  because Unity 6.5 legacy IMGUI cannot reliably repaint them. Unity's legacy
-  face is emergency fallback only. The
-  former plum/orange cards, cut corners, bevel highlights and glow are not part
-  of the language. World rendering/camera/aspect/composite/audio/gameplay/copy
-  stay unchanged. Menus, modal
-  inspectors and the map omit persistent key-binding guides and control-hint
-  footers.
-  Clickable modal actions keep action-only labels; every active contextual
-  prompt is also a full pointer target and invokes the exact same guarded action
-  path as E, Enter or gamepad South instead of duplicating interaction logic.
+  `Fonts/Roboto-Regular`: RU/EN; no OS fonts (Unity 6.5 repaint faults);
+  legacy face is emergency-only. World light/material/post/camera/aspect/audio/
+  gameplay/copy retain their scopes. Menus/inspectors/map omit persistent binding guides/footers.
+  Modal actions use action-only labels; every contextual prompt is a full
+  pointer target invoking the same guarded E/Enter/gamepad-South action path.
 - **Accepted — Shared low-poly cylinder:** Runtime cylinder requests replace
   the stock visual mesh with one cached flat-shaded 8-sided mesh while
   preserving the primitive collider contract. No per-instance mesh or
@@ -6149,33 +6190,25 @@
 - **Accepted — Generated retro SFX:** `RetroSfx` deterministically synthesizes
   the mono `22050 Hz` UI, footstep, door latch and sustained hinge creak
   clips in memory.
-  `RetroAudioService` persists across scene loads, reuses bounded UI/world/bar
-  source pools, routes them to dry UI, world SFX or gameplay SFX, and applies
-  per-effect cooldown and concurrent-voice limits.
-- **Accepted — Diegetic opening alarm:** Home always builds one validated
-  bed-relative nightstand and collider-free low-poly alarm clock. The clock
-  owns one reusable four-digit, 28-segment display that keeps briefly
-  flickering `05:59` before and after the five-second menu boundary, then
-  switches to solid `06:00` only when Wake Up is chosen without rebuilding
-  geometry, plus one generated looping mono `22050 Hz` mechanical ring on a fully
-  spatial `SFX/World` source and applies a bounded visual rattle while active.
-  The menu remains silent; choosing Wake Up starts the ring together with
-  `06:00` and the session clock, keeps the clock shot and sleeping loop for
-  exactly three unscaled seconds, then stops the ring before camera motion and
-  the wake animation begin. The display follows current session hours/minutes
-  thereafter and on later Home visits while remaining silent.
-  The `2026-09-05` waking-scene refinement reduces the authored clock and
-  display to `60%` (`0.276 x 0.162 x 0.144 m` body), preserves the nightstand,
-  and brings the opening camera closer for readable digits. Translation
-  rattle scales with the clock; opening timing and the time/audio handoff stay
-  unchanged (`6 s` BedExit, `1.15` opening duration multiplier).
+  `RetroAudioService`: persistent UI/world/bar pools; dry UI/world/Gameplay SFX,
+  bounded voices/cooldowns. Config invalidates native banks; lazy regeneration
+  validates samples/length/retry bounds; interrupted one-shots stay stopped.
+- **Accepted — Diegetic opening alarm:** Home builds one validated nightstand/
+  collider-free clock. Prepared startup reads actual12:00 silently; legacy only: Reusable four-digit/28-segment
+  display flickers05:59 across the silent five-second menu boundary; Wake Up
+  sets solid06:00/session time and a spatial22050Hz mono mechanical SFX/World
+  ring/bounded rattle. Clock/sleep shot holds3 unscaled seconds, then ring stops
+  before camera/wake. Later visits read session time silently except final7.
+  The2026-09-05 refinement scales body/display to60%(.276×.162×.144m), retains
+  nightstand and readable closer shot; rattle scales, timing/audio handoff stay
+  (6s BedExit/1.15 opening multiplier).
 - **Accepted — Layered scene-local procedural ambience:** Every playable root
   owns one quiet deterministic `22050 Hz` ambience bed and tone filter routed
   to `Ambience/Beds`. Home additionally owns five spatial
   `Ambience/Details` sources and eight runtime clips: distinct closed/open
   refrigerator loops, a balcony loop, four sparse cue types and one dedicated
-  bathroom-tube crackle. The crackle source is co-located with the visible
-  tube and reacts in the same frame to every applied flicker-factor change.
+  bathroom-tube crackle. Its co-located voice restarts on unpaused applied
+  flicker-factor changes; paused edges are never queued.
   The two refrigerator layers are raised by `4 dB`; their sources remain
   co-located, scheduled at the same DSP time and
   mixed from door openness with clamped cosine/sine equal-power gains; closed
@@ -6683,9 +6716,8 @@
   rays, three incoming rays and FBX round trips validate the authored opening.
 
   The face atlas originally added `TeethDisplay` and `Spit` plus their soiled
-  twins. The `2026-09-08` inspection adds two more expressions and their twins:
-  thirteen expressions, `26` occupied cells and six free cells in the unchanged
-  `8 x 4` layout. A contextual expression owner prevents ordinary mood/blink
+  twins. The `2026-09-08` inspection adds two more expressions and their twins;
+  the `8 x 4` layout stays. A contextual expression owner prevents mood/blink
   updates from overwriting the gesture and releases it on every exit. The
   finished teeth preview uses the clean face locally; persistent mouth
   cleaning occurs only when the whole scene completes.

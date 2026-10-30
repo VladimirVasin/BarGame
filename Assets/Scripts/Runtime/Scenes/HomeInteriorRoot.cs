@@ -464,6 +464,7 @@ namespace BarPromenade
                 Player,
                 CameraFollow,
                 IntoxicationHud);
+            if (Arrival == HomeArrivalKind.NewGameSleep) BuildOpening();
             GameLogPhases.Report("home", "ui_controllers", phaseTimer);
 
             IsInitialized = true;

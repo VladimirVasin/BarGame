@@ -33,27 +33,36 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Navigation_WrapsBetweenTheFiveOptions()
+        public void Navigation_SeparatesTheThreeTopRowsFromAllDebugTools()
         {
             var model = new StartMenuModel();
             model.Open();
-
+            Assert.That(model.IsDebugMenu, Is.False);
             Assert.That(model.MoveSelection(-1), Is.True);
-            Assert.That(
-                model.SelectedOption,
-                Is.EqualTo(StartMenuOption.Quit));
-            Assert.That(model.MoveSelection(1), Is.True);
-            Assert.That(
-                model.SelectedOption,
-                Is.EqualTo(StartMenuOption.NewGame));
-            Assert.That(model.MoveSelection(1), Is.True);
-            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.CombatTest));
-            Assert.That(model.MoveSelection(1), Is.True);
-            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.Laboratory));
-            Assert.That(model.MoveSelection(1), Is.True);
-            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.Vocalizer));
-            Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.Quit));
+            Assert.That(model.MoveSelection(1), Is.True);
+            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.NewGame));
+            Assert.That(model.SelectOption(StartMenuOption.CombatTest), Is.False);
+            Assert.That(model.SelectOption(StartMenuOption.Laboratory), Is.False);
+            Assert.That(model.SelectOption(StartMenuOption.Vocalizer), Is.False);
+            Assert.That(model.MoveSelection(1), Is.True);
+            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.Debug));
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.OpenDebug));
+            Assert.That(model.IsDebugMenu, Is.True);
+            Assert.That(model.IsCommitted, Is.False);
+            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.NewGame));
+            foreach (StartMenuOption option in new[] { StartMenuOption.CombatTest, StartMenuOption.Laboratory,
+                         StartMenuOption.Vocalizer, StartMenuOption.Back, StartMenuOption.NewGame })
+            {
+                Assert.That(model.MoveSelection(1), Is.True);
+                Assert.That(model.SelectedOption, Is.EqualTo(option));
+            }
+            Assert.That(model.SelectOption(StartMenuOption.Quit), Is.False);
+            Assert.That(model.SelectOption(StartMenuOption.Back), Is.True);
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.Back));
+            Assert.That(model.IsDebugMenu, Is.False);
+            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.Debug));
+            Assert.That(model.IsCommitted, Is.False);
             Assert.That(model.MoveSelection(0), Is.False);
         }
 
@@ -62,6 +71,7 @@ namespace BarPromenade.Tests.EditMode
         {
             var model = new StartMenuModel();
             model.Open();
+            Assert.That(model.OpenDebugMenu(), Is.True);
             model.SelectOption(StartMenuOption.Vocalizer);
 
             Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.OpenVocalizer));
@@ -82,10 +92,11 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Confirm_ChoosesTimeAndLocationBeforeStartingTheRunOnce()
+        public void DebugWorldStart_ChoosesTimeAndLocationBeforeStartingTheRunOnce()
         {
             var model = new StartMenuModel();
             model.Open();
+            Assert.That(model.OpenDebugMenu(), Is.True);
 
             Assert.That(
                 model.Confirm(),
@@ -129,6 +140,7 @@ namespace BarPromenade.Tests.EditMode
         {
             var model = new StartMenuModel();
             model.Open();
+            Assert.That(model.OpenDebugMenu(), Is.True);
             model.Confirm();
             model.Confirm();
             Assert.That(model.MoveSelection(-1), Is.True);
@@ -220,6 +232,7 @@ namespace BarPromenade.Tests.EditMode
         {
             var model = new StartMenuModel();
             model.Open();
+            Assert.That(model.OpenDebugMenu(), Is.True);
             model.Confirm();
             Assert.That(model.SelectedStartTimeOption, Is.EqualTo(StartTimeOption.Continue));
             Assert.That(model.SelectStartTime(0), Is.True);
@@ -242,15 +255,15 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [TestCase(StartMenuOption.Quit, StartMenuAction.Quit)]
+        [TestCase(StartMenuOption.NewGame, StartMenuAction.StoryNewGame)]
         public void Confirm_DirectActionCommitsOnceWithoutChoosingALocation(
             StartMenuOption option, StartMenuAction action)
         {
             var model = new StartMenuModel();
             model.Open();
 
-            Assert.That(
-                model.SelectOption(option),
-                Is.True);
+            if (model.SelectedOption != option)
+                Assert.That(model.SelectOption(option), Is.True);
             Assert.That(
                 model.Confirm(),
                 Is.EqualTo(action));
@@ -267,6 +280,7 @@ namespace BarPromenade.Tests.EditMode
         {
             var model = new StartMenuModel();
             model.Open();
+            Assert.That(model.OpenDebugMenu(), Is.True);
             model.SelectOption(StartMenuOption.CombatTest);
             Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.ChooseCombatWeapon));
             Assert.That(model.IsChoosingCombatWeapon, Is.True);
@@ -476,18 +490,35 @@ namespace BarPromenade.Tests.EditMode
         {
             var model = new StartMenuModel();
             model.Open();
-            model.Confirm();
-            model.Confirm();
-
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.StoryNewGame));
+            Assert.That(model.IsCommitted, Is.True);
             model.Open();
-
             Assert.That(model.IsCommitted, Is.False);
-            Assert.That(
-                model.SelectedOption,
-                Is.EqualTo(StartMenuOption.NewGame));
-            Assert.That(
-                model.Confirm(),
-                Is.EqualTo(StartMenuAction.ChooseStartTime));
+            Assert.That(model.IsDebugMenu, Is.False);
+            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.NewGame));
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.StoryNewGame));
+        }
+
+        [Test]
+        public void RefusedDebugTrip_RearmsTheSelectedTimeInsideDebug()
+        {
+            var model = new StartMenuModel();
+            model.OpenDebugStartTime(17 * 60 + 12);
+            Assert.That(model.IsDebugMenu, Is.True);
+            Assert.That(model.IsChoosingStartTime, Is.True);
+            Assert.That(model.IsCommitted, Is.False);
+            Assert.That(model.SelectedStartMinuteOfDay, Is.EqualTo(1032));
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.ChooseLocation));
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.NewGame));
+            model.OpenDebugStartTime(1032);
+            Assert.That(model.IsCommitted, Is.False);
+            Assert.That(model.IsChoosingStartTime, Is.True);
+            Assert.That(model.SelectedStartMinuteOfDay, Is.EqualTo(1032));
+            Assert.That(model.ReturnToMainMenu(), Is.True);
+            Assert.That(model.IsDebugMenu, Is.True);
+            Assert.That(model.ReturnToMainMenu(), Is.True);
+            Assert.That(model.IsDebugMenu, Is.False);
+            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.Debug));
         }
 
         [Serializable]

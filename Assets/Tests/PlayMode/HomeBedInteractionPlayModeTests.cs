@@ -39,6 +39,7 @@ namespace BarPromenade.Tests.PlayMode
             keyboard = InputSystem.AddDevice<Keyboard>();
             GameSessionState.EnterHome();
             GameSessionState.ResetDrinkingState();
+            GameSessionState.TrySetDebugHeroCorruptionLevel(1);
             GameSessionState.ResetEconomyState();
             GameSessionState.TrySetDebugGameDay(1);
             GameSessionState.UpdateFatigue(
@@ -84,6 +85,7 @@ namespace BarPromenade.Tests.PlayMode
                 bodyProbeMesh = null;
             }
             GameSessionState.ResetDrinkingState();
+            GameSessionState.TrySetDebugHeroCorruptionLevel(1);
             GameSessionState.ResetEconomyState();
             GameSessionState.TrySetDebugGameDay(1);
             GameSessionState.UpdateFatigue(
@@ -92,6 +94,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        [PrebuildSetup(typeof(HeroAppearanceAssetsSetup))]
         public IEnumerator
             SleepMvp_AutomaticCutAndCleanup()
         {
@@ -114,11 +117,71 @@ namespace BarPromenade.Tests.PlayMode
             timingTimeline.Advance(.01f);
             Assert.That(timingTimeline.Phase, Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
 
+            var waitingTiming = new PlayerAnimatedInteractionExitTiming(.3f, .35f, 4.2f,
+                .87f, 3f, 2.8f, waitForHoldRelease: true);
+            Assert.That(timingTimeline.BeginLooping(), Is.True);
+            Assert.That(timingTimeline.RequestExitWithTiming(waitingTiming), Is.True);
+            timingTimeline.Advance(50f);
+            Assert.That(timingTimeline.ReleaseExitHold(), Is.False, "The minimum recovery cannot be skipped.");
+            timingTimeline.Advance(3f);
+            timingTimeline.Advance(50f);
+            Assert.That(timingTimeline.IsExitHoldActive, Is.True);
+            Assert.That(timingTimeline.ClipProgress, Is.EqualTo(.87f).Within(.0001f));
+            Assert.That(timingTimeline.ExitHoldProgress, Is.EqualTo(1f));
+            Assert.That(timingTimeline.ReleaseExitHold(), Is.True);
+            Assert.That(timingTimeline.ReleaseExitHold(), Is.False);
+            Assert.That(timingTimeline.ClipProgress, Is.EqualTo(.87f).Within(.0001f));
+            timingTimeline.Advance(1.4f);
+            Assert.That(timingTimeline.ClipProgress, Is.EqualTo(.935f).Within(.0001f),
+                "An indefinite wait must not consume or accelerate the later standing action.");
+            timingTimeline.Advance(10f);
+            timingTimeline.Advance(.01f);
+            Assert.That(timingTimeline.Phase, Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
+            var heldTiming = new PlayerAnimatedInteractionExitTiming(.3f, .35f, 4.2f, .87f, 3f, 2.8f);
+            Assert.That(timingTimeline.BeginLooping(), Is.True);
+            Assert.That(timingTimeline.RequestExitWithTiming(heldTiming), Is.True);
+            timingTimeline.Advance(50f);
+            Assert.That(timingTimeline.IsExitHoldActive, Is.True,
+                "A hitch must expose the seated landmark before counting its hold.");
+            Assert.That(timingTimeline.ClipProgress, Is.EqualTo(.87f).Within(.0001f));
+            Assert.That(timingTimeline.ExitHoldProgress, Is.Zero.Within(.0001f));
+            timingTimeline.Advance(1.5f);
+            Assert.That(timingTimeline.ExitHoldProgress, Is.EqualTo(.5f).Within(.0001f));
+            Assert.That(timingTimeline.ClipProgress, Is.EqualTo(.87f).Within(.0001f));
+            timingTimeline.Advance(1.5f);
+            Assert.That(timingTimeline.IsExitHoldActive, Is.False);
+            timingTimeline.Advance(1.4f);
+            Assert.That(timingTimeline.ClipProgress, Is.EqualTo(.935f).Within(.0001f),
+                "The final standing motion has its own slower clock after the seated hold.");
+            timingTimeline.Advance(10f);
+            Assert.That(timingTimeline.ClipProgress, Is.EqualTo(1f));
+            timingTimeline.Advance(.01f);
+            Assert.That(timingTimeline.Phase, Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
+
             GameSessionState.TrySetDebugGameDay(1);
             Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(1));
             yield return LoadHome();
+            AudioClip staleSleepCue = home.Audio.GetClip(RetroSfxId.HomeSleepStartle);
+            if (staleSleepCue != null) Object.DestroyImmediate(staleSleepCue);
+            var originalHomeSurfaces = new Dictionary<Renderer, MaterialPropertyBlock>();
+            var originalHomeMaterials = new Dictionary<Renderer, Material>();
+            foreach (MeshRenderer renderer in home.Room.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                var state = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(state);
+                Texture original = state.GetTexture("_BaseMap");
+                if (original != null && original.name.StartsWith("Home", System.StringComparison.Ordinal))
+                {
+                    originalHomeSurfaces.Add(renderer, state);
+                    originalHomeMaterials.Add(renderer, renderer.sharedMaterial);
+                }
+            }
             Assert.That(home.Sleep, Is.Not.Null);
             Assert.That(home.ApartmentDays.AppliedDayNumber, Is.EqualTo(1));
+            Assert.That(home.ApartmentDays.BalconyBarrier.IsSealed, Is.False);
+            AssertBalconyCrossing(false);
+            Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(1));
+            GameObject initialHero = home.Player.GameObject;
             GameSessionState.UpdateFatigue(67);
             double clockBefore = GameSessionState.GameTimeOfDayMinutes;
             bool hudBefore = home.IntoxicationHud.Visible;
@@ -330,50 +393,243 @@ namespace BarPromenade.Tests.PlayMode
                 CaptureSleepFrame("01-sleeping-face");
             }
             Time.timeScale = 1f;
+            yield return WaitForSleepPhase(HomeSleepPhase.Nightmare);
+            Assert.That(Time.time - holdStarted,
+                Is.GreaterThanOrEqualTo(HomeSleepController.FaceHoldSeconds - .03f));
+            float nightmarePitchMinimum = hero.DebugHeadPitchDownDegrees;
+            float nightmarePitchMaximum = nightmarePitchMinimum;
+            bool capturedNightmare = false;
+            while (home.Sleep.Phase == HomeSleepPhase.Nightmare)
+            {
+                hero.ReapplyLatePresentationPose();
+                nightmarePitchMinimum = Mathf.Min(nightmarePitchMinimum, hero.DebugHeadPitchDownDegrees);
+                nightmarePitchMaximum = Mathf.Max(nightmarePitchMaximum, hero.DebugHeadPitchDownDegrees);
+                if (!capturedNightmare && home.Sleep.PhaseElapsedSeconds > .45f)
+                {
+                    capturedNightmare = true;
+                    CaptureSleepFrame("01b-nightmare-tension");
+                }
+                yield return null;
+            }
+            Assert.That(nightmarePitchMaximum - nightmarePitchMinimum, Is.GreaterThan(.7f),
+                "The bad dream must visibly animate the held production head before the montage.");
             yield return WaitForSleepPhase(HomeSleepPhase.Cut);
             Assert.That(Time.time - holdStarted,
                 Is.GreaterThanOrEqualTo(HomeSleepController.FaceHoldSeconds - .03f),
                 "The settled face must remain visible for three scaled seconds.");
             Assert.That(home.Sleep.IsScreenDark, Is.True);
+            AudioClip accent = home.Audio.GetClip(RetroSfxId.HomeSleepStartle);
+            Assert.That(accent, Is.Not.Null);
+            Assert.That(accent, Is.Not.SameAs(staleSleepCue),
+                "A lost generated bank entry must recover before the actual transformation request.");
+            Assert.That(accent.length, Is.InRange(5f, 6f),
+                "The transformation needs a sustained cue across the montage, not a momentary reveal tick.");
+            AudioSource accentVoice = null;
+            foreach (AudioSource source in home.Audio.GetComponentsInChildren<AudioSource>())
+                if (source.clip == accent && source.isPlaying) accentVoice = source;
+            Assert.That(accentVoice, Is.Not.Null,
+                "The transformation sound must already play at the first covered montage frame.");
+            Assert.That(accentVoice.spatialBlend, Is.Zero);
+            Assert.That(accentVoice.volume, Is.GreaterThan(.5f));
+            AssertSleepTransformationSignal(accent);
             Assert.That(GameSessionState.HomeSleepAppearanceActive, Is.False);
+            Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(1),
+                "Closing the eyes and starting the cut must not commit decay before the covered handoff.");
             bool sawCoveredCommit = false;
-            float cutDeadline = Time.realtimeSinceStartup + 3f;
+            var montageLevels = new HashSet<int>();
+            int previousMontageLevel = 1;
+            float cutDeadline = Time.realtimeSinceStartup + 6f;
             while (home.Sleep.Phase == HomeSleepPhase.Cut &&
                    Time.realtimeSinceStartup < cutDeadline)
             {
+                int visibleLevel = hero.CorruptionAppearance.AppliedLevel;
+                Assert.That(visibleLevel, Is.GreaterThanOrEqualTo(previousMontageLevel),
+                    "Montage previews only move toward the final form.");
+                previousMontageLevel = visibleLevel;
+                if (!home.Sleep.IsScreenDark && montageLevels.Add(visibleLevel))
+                {
+                    Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(1),
+                        "Intermediate visible forms do not commit session decay ahead of the final covered handoff.");
+                    hero.ReapplyLatePresentationPose();
+                    CaptureSleepFrame("01c-montage-stage-" + visibleLevel);
+                }
                 if (!sawCoveredCommit && home.ApartmentDays.AppliedDayNumber == 7)
                 {
                     sawCoveredCommit = true;
                     Assert.That(home.Sleep.IsScreenDark, Is.True,
                         "The maximum apartment dressing must commit under the dark cut.");
+                    AssertSleepHeroCorruption(hero, initialHero);
                     Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(1));
                     Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(67));
                     Assert.That(home.AnimatedInteraction.Phase,
-                        Is.EqualTo(PlayerAnimatedInteractionPhase.Exiting));
+                        Is.EqualTo(PlayerAnimatedInteractionPhase.Looping));
                     Assert.That(hero.CurrentFacialExpression,
-                        Is.EqualTo(PlayerFacialExpression.Watchful));
-                    AssertSleepGameplayCamera();
+                        Is.EqualTo(PlayerFacialExpression.ClosedBlink));
+                    Assert.That(home.CameraFollow.FixedBaseFieldOfView, Is.LessThan(40f),
+                        "The covered commit retains the face camera until the startled reveal.");
                 }
                 yield return null;
             }
             Assert.That(sawCoveredCommit, Is.True);
-            Assert.That(home.Sleep.Phase, Is.EqualTo(HomeSleepPhase.Waking));
+            Assert.That(montageLevels, Is.EquivalentTo(new[] { 2, 3, 4, 5, 6, 7 }),
+                "Each intermediate form must be visible within the finite montage, including clothing and hair changes.");
+            Assert.That(home.Sleep.Phase, Is.EqualTo(HomeSleepPhase.Startle));
             Assert.That(home.Sleep.IsScreenDark, Is.False);
             Assert.That(home.ApartmentDays.AppliedDayNumber, Is.EqualTo(7));
             Assert.That(GameSessionState.HomeAppearanceDayNumber, Is.EqualTo(7));
+            AssertSleepHeroCorruption(hero, initialHero);
             Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(1));
             Assert.That(GameSessionState.GameTimeOfDayMinutes - clockBefore,
                 Is.InRange(0d, 15d), "Sleep changes apartment appearance without skipping the calendar.");
             Assert.That(home.Player.Motor.InputEnabled, Is.False);
             Assert.That(home.Player.Interactor.InputEnabled, Is.False);
+            AssertContinuous3DPresentation(home, "BedSleepLoop");
+            Assert.That(hero.CurrentFacialExpression, Is.EqualTo(PlayerFacialExpression.Horror));
+            Assert.That(home.CameraFollow.FixedBaseFieldOfView, Is.EqualTo(38f).Within(.01f));
+            Assert.That(accentVoice.isPlaying, Is.True,
+                "The same continuous transformation cue must reach the corrupted-face reveal.");
+            Assert.That(accentVoice.timeSamples, Is.GreaterThan(accent.frequency),
+                "The reveal must not restart the cue after its montage lead-in.");
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                yield return null;
+                float heldElapsed = home.Sleep.PhaseElapsedSeconds;
+                int heldSamples = accentVoice.timeSamples;
+                yield return new WaitForSecondsRealtime(.08f);
+                Assert.That(home.Sleep.PhaseElapsedSeconds, Is.EqualTo(heldElapsed));
+                Assert.That(accentVoice.isPlaying, Is.False);
+                Assert.That(accentVoice.timeSamples, Is.EqualTo(heldSamples).Within(512));
+                // Paused capture preserves the owned playback position.
+                CaptureSleepFrame("02-startled-corrupted-face");
+            }
+            yield return WaitForSleepPhase(HomeSleepPhase.Waking);
             AssertContinuous3DPresentation(home, "BedExit");
-            AssertSleepGameplayCamera();
-            CaptureSleepFrame("02-corrupted-wake");
+            Assert.That(home.Sleep.IsCameraReturning, Is.False);
+            AssertSleepFaceCameraHeld(hero);
+            yield return WaitForSleepPhase(HomeSleepPhase.Recovering);
+            AssertSleepFaceCameraHeld(hero);
+            AssertSeatedOnDoorSideEdge(home);
+            float recoveryStarted = Time.time - home.Bed.WakeRecoveryProgress * 3f;
+            hero.ReapplyLatePresentationPose();
+            float seatedPitch = hero.DebugHeadPitchDownDegrees;
+            bool capturedRecovery = false;
+            Vector3 previousCamera = home.CameraFollow.FixedBasePosition;
+            float previousCameraStep = Time.deltaTime;
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                yield return null;
+                float heldProgress = home.Bed.WakeRecoveryProgress;
+                yield return new WaitForSecondsRealtime(.08f);
+                Assert.That(home.Bed.WakeRecoveryProgress, Is.EqualTo(heldProgress));
+                Assert.That(home.CameraFollow.FixedBasePosition, Is.EqualTo(previousCamera));
+            }
+            while (home.Sleep.Phase == HomeSleepPhase.Recovering)
+            {
+                hero.ReapplyLatePresentationPose();
+                Assert.That(home.AnimatedInteraction.ClipProgress,
+                    Is.EqualTo(HomeBedInteraction.WakeRecoveryClipProgress).Within(.0001f));
+                AssertSleepFaceCameraHeld(hero);
+                Assert.That(home.Player.Motor.InputEnabled, Is.False);
+                Assert.That(Vector3.Distance(previousCamera, home.CameraFollow.FixedBasePosition),
+                    Is.LessThan(.1f + Mathf.Max(previousCameraStep, Time.deltaTime) * 10f),
+                    "Face tracking must remain continuous during the seated recovery.");
+                previousCamera = home.CameraFollow.FixedBasePosition;
+                previousCameraStep = Time.deltaTime;
+                if (!capturedRecovery && home.Bed.WakeRecoveryProgress > .40f)
+                {
+                    capturedRecovery = true;
+                    Assert.That(hero.DebugHeadPitchDownDegrees - seatedPitch, Is.GreaterThan(14f),
+                        "The seated recovery bows the head on the same held pose.");
+                    AssertSeatedOnDoorSideEdge(home);
+                    CaptureSleepFrame("02b-seated-recovery-gameplay");
+                    AreaCaptureFixture.CaptureHomeBedFrame(home, "30-BedExit-recovery");
+                }
+                yield return null;
+            }
+            Assert.That(capturedRecovery, Is.True);
+            Assert.That(Time.time - recoveryStarted, Is.GreaterThanOrEqualTo(2.95f));
 
+            Assert.That(home.Sleep.Phase, Is.EqualTo(HomeSleepPhase.Returning));
+            Assert.That(home.Sleep.IsCameraReturning, Is.True);
+            Assert.That(home.AnimatedInteraction.IsActive, Is.True);
+            AssertSeatedOnDoorSideEdge(home);
+            Assert.That(home.Player.Motor.InputEnabled, Is.False,
+                "Camera return must preserve the supported seat and its movement lock.");
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                yield return null;
+                float heldElapsed = home.Sleep.PhaseElapsedSeconds;
+                Vector3 heldCamera = home.CameraFollow.FixedBasePosition;
+                yield return new WaitForSecondsRealtime(.08f);
+                Assert.That(home.Sleep.PhaseElapsedSeconds, Is.EqualTo(heldElapsed));
+                Assert.That(home.CameraFollow.FixedBasePosition, Is.EqualTo(heldCamera));
+            }
+
+            inputFixture.Press(keyboard.eKey, queueEventOnly: true);
             Time.timeScale = FastTimeScale;
-            yield return WaitForSleepPhase(HomeSleepPhase.Idle);
-            Time.timeScale = 1f;
+            float returnDeadline = Time.realtimeSinceStartup + 5f;
+            while (home.Sleep.Phase == HomeSleepPhase.Returning && Time.realtimeSinceStartup < returnDeadline)
+            {
+                Assert.That(home.Bed.WakeRecoveryActive, Is.True);
+                Assert.That(home.AnimatedInteraction.ClipProgress,
+                    Is.EqualTo(HomeBedInteraction.WakeRecoveryClipProgress).Within(.0001f));
+                yield return null;
+            }
+            Assert.That(home.Sleep.Phase, Is.EqualTo(HomeSleepPhase.AwaitingStandUp));
             yield return null;
+            yield return null;
+            Assert.That(home.Player.Interactor.ActiveInteractable, Is.SameAs(home.Bed));
+            Assert.That(home.Player.Interactor.PromptView.PromptKey, Is.EqualTo(HomeBedInteraction.StandPromptKey));
+            Assert.That(home.Player.Motor.InputEnabled, Is.False);
+            AssertSleepGameplayCamera();
+            AssertSeatedOnDoorSideEdge(home);
+            CaptureSleepFrame("02c-seated-default-await-E");
+            hero.ReapplyLatePresentationPose();
+            Player3DBoneAnchors idleAnchors = hero.Registry.Anchors;
+            Vector3 idleLeftHand = idleAnchors.LeftGrip.position, idleRightHand = idleAnchors.RightGrip.position;
+            Vector3 idleLeftFoot = idleAnchors.LeftFoot.position, idleRightFoot = idleAnchors.RightFoot.position;
+            float idlePitchMinimum = hero.DebugHeadPitchDownDegrees, idlePitchMaximum = idlePitchMinimum;
+            float idleWaitUntil = Time.time + 30f;
+            while (Time.time < idleWaitUntil)
+            {
+                hero.ReapplyLatePresentationPose();
+                idlePitchMinimum = Mathf.Min(idlePitchMinimum, hero.DebugHeadPitchDownDegrees);
+                idlePitchMaximum = Mathf.Max(idlePitchMaximum, hero.DebugHeadPitchDownDegrees);
+                Assert.That(Vector3.Distance(idleAnchors.LeftGrip.position, idleLeftHand), Is.LessThan(.015f));
+                Assert.That(Vector3.Distance(idleAnchors.RightGrip.position, idleRightHand), Is.LessThan(.015f));
+                Assert.That(Vector3.Distance(idleAnchors.LeftFoot.position, idleLeftFoot), Is.LessThan(.005f));
+                Assert.That(Vector3.Distance(idleAnchors.RightFoot.position, idleRightFoot), Is.LessThan(.005f));
+                yield return null;
+            }
+            Assert.That(idlePitchMaximum - idlePitchMinimum, Is.GreaterThan(.7f),
+                "Waiting for E must retain a visible breathing/head idle without moving support contacts.");
+            Assert.That(home.Sleep.WaitingForStandUp, Is.True,
+                "Neither elapsed time nor E held from before the prompt may stand the hero up.");
+            Assert.That(home.AnimatedInteraction.ClipProgress,
+                Is.EqualTo(HomeBedInteraction.WakeRecoveryClipProgress).Within(.0001f));
+            inputFixture.Release(keyboard.eKey, queueEventOnly: true);
+            yield return null;
+            Time.timeScale = 1f;
+            float standStarted = Time.time;
+            inputFixture.Press(keyboard.eKey, queueEventOnly: true);
+            yield return null;
+            Assert.That(home.Sleep.Phase, Is.EqualTo(HomeSleepPhase.Waking));
+            inputFixture.Release(keyboard.eKey, queueEventOnly: true);
+            bool sawStandingTerminal = false;
+            float standDeadline = Time.realtimeSinceStartup + 5f;
+            while (home.Sleep.IsActive && Time.realtimeSinceStartup < standDeadline)
+            {
+                AssertSleepGameplayCamera();
+                if (home.AnimatedInteraction.ClipProgress >= 1f)
+                {
+                    sawStandingTerminal = true;
+                    CaptureSleepFrame("02d-standing-default");
+                }
+                yield return null;
+            }
+            Assert.That(sawStandingTerminal, Is.True);
+            Assert.That(Time.time - standStarted, Is.GreaterThanOrEqualTo(HomeBedInteraction.WakeStandSeconds - .1f));
+            Assert.That(home.Sleep.Phase, Is.EqualTo(HomeSleepPhase.Idle));
             Assert.That(home.AnimatedInteraction.IsActive, Is.False);
             Assert.That(home.Bed.OwnsActiveInteraction, Is.False);
             Assert.That(home.Player.Motor.InputEnabled, Is.True);
@@ -384,6 +640,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
             Assert.That(hero.HasContextualFacialExpression, Is.False);
             Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(GameSessionState.DefaultFatigue));
+            AssertSleepHeroCorruption(hero, initialHero);
             Assert.That(surfaceClutter.gameObject.activeSelf, Is.True);
             Assert.That(home.Player.ContactShadow.enabled, Is.True);
             AssertRigRendererState(home, true);
@@ -391,6 +648,42 @@ namespace BarPromenade.Tests.PlayMode
                 home.BedInteractionPlan.ExitRootPosition, home.BedInteractionPlan.ExitRotation);
             AssertSleepGameplayCamera();
             CaptureSleepFrame("03-corrupted-room");
+            Assert.That(home.ApartmentDays.BalconyBarrier.IsSealed, Is.True);
+            Assert.That(home.ApartmentDays.BalconyBarrier.DoorCollider.enabled, Is.True);
+            AssertBalconyCrossing(true);
+            CaptureBalconyBarrier();
+            int replacedHomeSurfaces = 0;
+            var uniqueDamageCharts = new HashSet<Vector4>();
+            foreach (var entry in originalHomeSurfaces)
+            {
+                if (!entry.Key.gameObject.activeInHierarchy) continue;
+                Texture original = entry.Value.GetTexture("_BaseMap");
+                var actual = new MaterialPropertyBlock();
+                entry.Key.GetPropertyBlock(actual);
+                if (actual.GetVector("_SurfaceDamageMode").x <= 0f) continue;
+                Assert.That(actual.GetTexture("_BaseMap"), Is.SameAs(original),
+                    "The original repeatable microtexture must retain its UV scale; large damage uses an independent chart.");
+                Assert.That(actual.GetVector("_BaseMap_ST"), Is.EqualTo(entry.Value.GetVector("_BaseMap_ST")));
+                Assert.That(actual.GetTexture("_SurfaceDamageAtlas"), Is.Not.Null);
+                Vector4 chart = actual.GetVector("_SurfaceDamageRect");
+                Assert.That(chart.z, Is.GreaterThan(0f));
+                Assert.That(chart.w, Is.GreaterThan(0f));
+                uniqueDamageCharts.Add(chart);
+                replacedHomeSurfaces++;
+            }
+            Assert.That(replacedHomeSurfaces, Is.GreaterThan(10),
+                "Final Home deterioration must cover the room surfaces, not only loose clutter.");
+            Assert.That(uniqueDamageCharts.Count, Is.GreaterThan(10),
+                "Furniture and room planes must not all repeat one macro motif.");
+            home.AlarmClock.RefreshDisplayPresentation();
+            Assert.That(home.AlarmClock.IsSurrealDisplayActive, Is.True);
+            Assert.That(home.AlarmClock.DisplayedHour > 23 || home.AlarmClock.DisplayedMinute > 59, Is.True);
+            string impossibleReading = home.AlarmClock.DisplayedTime;
+            double realClockBefore = GameSessionState.GameTimeOfDayMinutes;
+            home.AlarmClock.RefreshDisplayPresentation(HomeAlarmClock.SurrealDisplayDwellSeconds + .01f);
+            Assert.That(home.AlarmClock.DisplayedTime, Is.Not.EqualTo(impossibleReading));
+            Assert.That(GameSessionState.GameTimeOfDayMinutes, Is.EqualTo(realClockBefore));
+            CaptureSurrealClock();
             GameSessionState.UpdateFatigue(23);
             yield return null;
             yield return null;
@@ -400,6 +693,30 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.TrySetDebugGameDay(1), Is.True);
             Assert.That(home.ApartmentDays.RefreshImmediate(), Is.True);
             Assert.That(home.ApartmentDays.AppliedDayNumber, Is.EqualTo(1));
+            Assert.That(home.ApartmentDays.BalconyBarrier.IsSealed, Is.False);
+            Assert.That(home.ApartmentDays.BalconyBarrier.DoorCollider.enabled, Is.False);
+            Assert.That(Quaternion.Angle(home.ApartmentDays.BalconyBarrier.DoorPivot.localRotation,
+                Quaternion.Euler(0f, 76f, 0f)), Is.LessThan(.01f));
+            AssertBalconyCrossing(false);
+            AssertBalconySealWaitsForSafeReturn();
+            foreach (var entry in originalHomeSurfaces)
+            {
+                var restored = new MaterialPropertyBlock();
+                entry.Key.GetPropertyBlock(restored);
+                Assert.That(restored.GetTexture("_BaseMap"), Is.SameAs(entry.Value.GetTexture("_BaseMap")));
+                Assert.That(restored.GetColor("_BaseColor"), Is.EqualTo(entry.Value.GetColor("_BaseColor")));
+                Assert.That(restored.GetFloat("_Smoothness"), Is.EqualTo(entry.Value.GetFloat("_Smoothness")));
+                Assert.That(restored.GetVector("_SurfaceDamageMode").x, Is.Zero);
+                Assert.That(entry.Key.sharedMaterial, Is.SameAs(originalHomeMaterials[entry.Key]));
+            }
+            home.AlarmClock.RefreshDisplayPresentation();
+            Assert.That(home.AlarmClock.IsSurrealDisplayActive, Is.False);
+            Assert.That(home.AlarmClock.DisplayedHour, Is.EqualTo(GameSessionState.GameHour));
+            Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(7),
+                "Selecting the apartment day must not lower the hero's committed decay.");
+            Assert.That(GameSessionState.TrySetDebugHeroCorruptionLevel(1), Is.True);
+            yield return null;
+            Assert.That(hero.CorruptionAppearance.AppliedLevel, Is.EqualTo(1));
             GameSessionState.UpdateFatigue(83);
             home.Player.Motor.Teleport(entryPosition);
             home.Player.GameObject.transform.rotation = entryRotation;
@@ -410,12 +727,25 @@ namespace BarPromenade.Tests.PlayMode
             Time.timeScale = FastTimeScale;
             yield return WaitForSleepPhase(HomeSleepPhase.FaceHold);
             Time.timeScale = 1f;
+            yield return WaitForSleepPhase(HomeSleepPhase.Cut);
+            float previewDeadline = Time.realtimeSinceStartup + 3f;
+            while (hero.CorruptionAppearance.AppliedLevel < 3 && Time.realtimeSinceStartup < previewDeadline)
+                yield return null;
+            Assert.That(hero.CorruptionAppearance.AppliedLevel, Is.GreaterThanOrEqualTo(3));
+            Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(1));
             home.Sleep.enabled = false;
             yield return null;
+            foreach (AudioSource source in home.Audio.GetComponentsInChildren<AudioSource>())
+                if (source.clip == accent)
+                    Assert.That(source.isPlaying, Is.False,
+                        "Cancelling the montage must stop its sustained transformation cue.");
             Assert.That(home.Sleep.IsActive, Is.False);
             Assert.That(home.Sleep.IsScreenDark, Is.False);
             Assert.That(home.AnimatedInteraction.IsActive, Is.False);
             Assert.That(GameSessionState.HomeSleepAppearanceActive, Is.False);
+            Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(1),
+                "Interrupted sleep before the covered cut must not change the hero.");
+            Assert.That(hero.CorruptionAppearance.AppliedLevel, Is.EqualTo(1));
             Assert.That(home.ApartmentDays.AppliedDayNumber, Is.EqualTo(1));
             Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(1));
             Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(83));
@@ -1304,10 +1634,169 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(home.FixedCamera.ZoomFieldOfView).Within(.001f));
         }
 
+        private void AssertSleepFaceCameraHeld(Player3DCharacterPresentation hero)
+        {
+            Assert.That(home.Sleep.IsCameraReturning, Is.False,
+                "The first supported recovery stays focused before the camera returns while seated.");
+            Assert.That(home.CameraFollow.FixedBaseFieldOfView, Is.EqualTo(38f).Within(.01f));
+            Vector3 toHead = hero.Registry.Anchors.Head.position - home.CameraFollow.FixedBasePosition;
+            Assert.That(toHead.magnitude, Is.InRange(.65f, 1.15f),
+                "Face focus must give the head and shoulders breathing room while tracking their movement.");
+            Assert.That(Vector3.Angle(home.CameraFollow.FixedBaseRotation * Vector3.forward, toHead),
+                Is.LessThan(15f), "The face stays near frame centre throughout the wake.");
+            Vector3 toMouth = hero.Registry.Anchors.Mouth.position - home.CameraFollow.FixedBasePosition;
+            Assert.That(Vector3.Angle(home.CameraFollow.FixedBaseRotation * Vector3.forward, toMouth),
+                Is.LessThan(15f), "The registered face remains inside the close-up as the head rises.");
+        }
+
+        private static void AssertSleepTransformationSignal(AudioClip clip)
+        {
+            var samples = new float[clip.samples * clip.channels];
+            Assert.That(clip.GetData(samples, 0), Is.True);
+            // Separate late windows catch a long file with only an audible
+            // first transient followed by a nearly silent exponential tail.
+            foreach (float start in new[] { .2f, 1.2f, 2.2f, 3.2f })
+            {
+                int begin = Mathf.FloorToInt(start * clip.frequency) * clip.channels;
+                int end = Mathf.Min(samples.Length, begin + clip.frequency * clip.channels / 2);
+                double energy = 0d;
+                for (int i = begin; i < end; i++) energy += samples[i] * samples[i];
+                Assert.That(System.Math.Sqrt(energy / (end - begin)), Is.GreaterThan(.06d),
+                    "The ominous texture must remain audible after " + start + " seconds.");
+            }
+        }
+
+        private void AssertBalconyCrossing(bool blocked)
+        {
+            Transform actor = home.Player.GameObject.transform;
+            Vector3 saved = actor.position;
+            Quaternion facing = actor.rotation;
+            try
+            {
+                home.Player.Motor.Teleport(home.Room.TransformPoint(new Vector3(
+                    4.25f, PlayerFactory.GroundedRootOffset, -.5f)));
+                Physics.SyncTransforms();
+                actor.GetComponent<CharacterController>().Move(home.Room.TransformDirection(Vector3.right * 1.4f));
+                float localX = home.Room.InverseTransformPoint(actor.position).x;
+                if (blocked)
+                    Assert.That(localX, Is.LessThan(4.85f), "The real hero capsule must stop at the sealed balcony leaf.");
+                else
+                    Assert.That(localX, Is.GreaterThan(5.3f), "The ordinary open balcony route must remain traversable.");
+            }
+            finally
+            {
+                home.Player.Motor.Teleport(saved);
+                actor.rotation = facing;
+                Physics.SyncTransforms();
+            }
+        }
+
+        private void AssertBalconySealWaitsForSafeReturn()
+        {
+            HomeBalconyCorruptionBarrier barrier = home.ApartmentDays.BalconyBarrier;
+            Vector3 saved = home.Player.GameObject.transform.position;
+            try
+            {
+                home.Player.Motor.Teleport(home.Room.TransformPoint(new Vector3(
+                    5.6f, PlayerFactory.GroundedRootOffset, -.5f)));
+                barrier.RefreshAppearance(7);
+                Assert.That(barrier.IsSealPending, Is.True);
+                Assert.That(barrier.IsSealed, Is.False, "A debug change cannot strand the hero outdoors.");
+                Assert.That(barrier.DoorCollider.enabled, Is.False);
+                home.Player.Motor.Teleport(home.Room.TransformPoint(new Vector3(
+                    4.25f, PlayerFactory.GroundedRootOffset, -.5f)));
+                barrier.RefreshAppearance(7);
+                Assert.That(barrier.IsSealed, Is.True);
+            }
+            finally
+            {
+                barrier.RefreshAppearance(1);
+                home.Player.Motor.Teleport(saved);
+                Physics.SyncTransforms();
+            }
+        }
+
+        private void CaptureBalconyBarrier()
+        {
+            if (!AreaCaptureFixture.CaptureHomeBedEnabled) return;
+            Camera camera = Camera.main;
+            Pose saved = new Pose(camera.transform.position, camera.transform.rotation);
+            float fov = camera.fieldOfView;
+            try
+            {
+                camera.transform.position = home.Room.TransformPoint(new Vector3(2.25f, 1.8f, -2.3f));
+                Vector3 focus = home.Room.TransformPoint(new Vector3(4.98f, 1.18f, -.5f));
+                camera.transform.rotation = Quaternion.LookRotation(focus - camera.transform.position);
+                camera.fieldOfView = 58f;
+                CaptureSleepFrame("03b-sealed-balcony");
+            }
+            finally { camera.transform.SetPositionAndRotation(saved.position, saved.rotation); camera.fieldOfView = fov; }
+        }
+
+        private void AssertSleepHeroCorruption(Player3DCharacterPresentation hero, GameObject initialHero)
+        {
+            Assert.That(home.Player.GameObject, Is.SameAs(initialHero),
+                "The covered swap changes the same production hero, never a replacement body.");
+            Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(7));
+            Assert.That(GameSessionState.HeroCorruptionDose,
+                Is.GreaterThanOrEqualTo(HeroCorruptionRules.MinimumDoseForLevel(7)));
+            Assert.That(hero.CorruptionAppearance.AppliedLevel, Is.EqualTo(7),
+                "The maximum must already be applied while the contextual wake clip still owns the rig.");
+            int changedSurfaces = 0;
+            int longHairSurfaces = 0;
+            var properties = new MaterialPropertyBlock();
+            foreach (Player3DMeshBinding binding in hero.Registry.MeshBindings)
+            {
+                if (binding.Renderer is SkinnedMeshRenderer skin)
+                {
+                    int shape = CharacterJointDeformation.FindShape(skin.sharedMesh, "HeroCorruption");
+                    if (shape >= 0)
+                    {
+                        Assert.That(skin.GetBlendShapeWeight(shape), Is.EqualTo(100f).Within(.01f),
+                            binding.MeshName + " must use the maximum body shape before wake.");
+                        changedSurfaces++;
+                    }
+                    int hairShape = CharacterJointDeformation.FindShape(skin.sharedMesh, "HeroHairLong");
+                    if (hairShape >= 0)
+                    {
+                        Assert.That(skin.GetBlendShapeWeight(hairShape), Is.EqualTo(100f).Within(.01f));
+                        longHairSurfaces++;
+                    }
+                }
+                if (binding.MeshName == "CLO_JacketBody")
+                {
+                    binding.Renderer.GetPropertyBlock(properties);
+                    Assert.That(properties.GetTexture("_BaseMap"), Is.SameAs(
+                        Resources.Load<Texture2D>("Player/Corruption/Clothing7")),
+                        "The waking hero must already wear the maximum authored grime/fraying atlas.");
+                }
+            }
+            Assert.That(changedSurfaces, Is.GreaterThan(0));
+            Assert.That(longHairSurfaces, Is.GreaterThan(0));
+        }
+
         private static void CaptureSleepFrame(string name)
         {
             if (AreaCaptureFixture.CaptureHomeBedEnabled)
                 AreaCaptureFixture.CaptureCurrentCamera(Camera.main, "HomeSleep", name);
+        }
+
+        private void CaptureSurrealClock()
+        {
+            if (!AreaCaptureFixture.CaptureHomeBedEnabled) return;
+            Camera camera = Camera.main;
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            float fov = camera.fieldOfView;
+            try
+            {
+                Transform clock = home.AlarmClock.transform;
+                camera.transform.position = clock.TransformPoint(new Vector3(0f, .10f, -.6f));
+                camera.transform.rotation = Quaternion.LookRotation(clock.position - camera.transform.position);
+                camera.fieldOfView = 40f;
+                CaptureSleepFrame("03a-surreal-clock");
+            }
+            finally { camera.transform.SetPositionAndRotation(position, rotation); camera.fieldOfView = fov; }
         }
 
         private IEnumerator LoadHome()

@@ -3,6 +3,49 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-30
+
+New Game starts normal Home/hero/room with an open balcony and real stopped
+noon; no needs age until E. Covered readiness makes the first visible rig
+already asleep. Quiet bounded room views reuse camera/DOF/noon light; normal
+wake shares seated recovery/return/idle/fresh-E stand. Debug retains the old
+time/place catalog and tools. Legacy alarm opening stays API-only, no prologue.
+
+Technical sleep owns body-only nightmare/successive hero previews/covered
+maxima commit. Farther face framing and sustained nonverbal cue begin with
+transformation. Seated recovery/camera return lead to indefinite same-rig
+breath/head/shoulder idle+blink; fresh E releases slow stand, fixed palms/feet.
+Owned bed-only filter/motor/modal survive the wait; cleanup releases them.
+Native audio config loss invalidates cue banks; bounded lazy regeneration
+restores playable clips without replaying interrupted one-shots. Bathroom-tube
+crackle skips paused edges and restarts one owned voice, preventing accumulation.
+Calendar/quests/intoxication stay; precommit cancel restores the true form.
+
+Home/corrupted Stairwell retain microtexture with unique whole-surface damage;
+room-plane shell charts/object aliases/mirrors share authored placement.
+Shared masks/materials replace tiled large motifs; exact earlier-state restore.
+Original Lit pass targets/per-draw uniforms preserve lighting without GPU
+instancing; neutral parity guards against the grid regression. Final Home clock
+shows impossible readings without changing time/audio; earlier states stay.
+Garment thigh/shin/boot damage differs; forearms/patch/UV/alpha retain constraints.
+Final balcony uses a real closed leaf/collider/dark glass; ordinary states
+restore exactly, outdoor occupancy defers the seal without stranding.
+
+Stairwell seals apartment descent, opens upper flight/landing to a real grille;
+matching shell/collision notches reveal the endless-looking open-flight chain.
+Bounded fixtureless green Spot/CityLightHalo uses existing Bloom; practicals/
+effect owners/routes stay.
+
+SleepMvp_AutomaticCutAndCleanup, AreaCaptureFixture.Stairwell,
+UNIQUE_SURFACE_DAMAGE_OK, SURFACE DAMAGE SHADER CONTRACT OK,
+HERO CLOTHING WEAR CONTRACT OK,
+Home_BathroomCrackleFollowsAppliedFlickerTransitions,
+HomeOpeningPlayModeTests.NewGame_*, GameTimeStateTests.PreparedClock_*/PreparedSession_*,
+StartMenuModelTests.Navigation_SeparatesTheThreeTopRowsFromAllDebugTools,
+Confirm_DirectActionCommitsOnceWithoutChoosingALocation,
+RefusedDebugTrip_RearmsTheSelectedTimeInsideDebug and check-docs passed;
+montage/seated-default/sealed-balcony/clock/upstairs and new-game shots reviewed.
+
 ## 2026-10-29
 
 City residents follow calendar destinations/hour caps; routes survive body
@@ -14,9 +57,10 @@ gardens/weather/steps/Home. Lodge repaint survives grave changes; low grass
 excluded. CityBuildingPerimeters passed; City/Home reviewed. CityGroundSurface
 retains unrelated frontage sampler/support-seam mismatch.
 
-HUD/map gamma lift fixed at shared Editor colour/texture boundaries; clipping/
-matrices retained. HudOverlay_PreservesAuthoredGammaColors and
-ImageGenCityMap_PreservesPlanAndLivePlaces passed; native UI reviewed.
+UI keeps gamma/clip/matrices; native/Retina button painting bypassed. Pointer
+edges/scroll survive repaint gaps. HudOverlay_PreservesAuthoredGammaColors,
+ImageGenCityMap_PreservesPlanAndLivePlaces/InputSystemUiPlayModeTests passed;
+UI reviewed.
 
 City gets the whole diner/cast/seat/menu/lot/threshold/shelter/map/light;
 MountainRoad keeps LastRoute/cableway/brink. Exception keeps placeholder/open
@@ -48,6 +92,11 @@ session view7 avoids advancing calendar/quests, fixed camera and owned cleanup.
 Narrow canon exception/effects audit recorded.
 HomeBedInteractionPlayModeTests.SleepMvp_AutomaticCutAndCleanup passed;
 closed-eye close-up/day-seven wake/fixed-room views reviewed.
+
+Hero decay adds wear/short-to-long hair; world/mirror/FP/portrait share dose.
+Sleep/calendar separate; seated contacts retained. HeroCorruptionAppearance,
+check-hero-corruption-export, check-hero-corruption-clearance, atlas contracts
+and check-docs passed; views reviewed.
 
 ## 2026-10-28
 

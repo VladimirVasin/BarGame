@@ -40,11 +40,11 @@ namespace BarPromenade
             return false;
         }
 
-        public bool Apply(SpeechFacePose pose, bool soiled = false)
-            => ApplyCell(pose.AtlasCell + (soiled && rows == 8 ? SpeechFaceAtlasResources.SoiledOffset : 0));
+        public bool Apply(SpeechFacePose pose, bool soiled = false, Texture2D textureOverride = null)
+            => ApplyCell(pose.AtlasCell + (soiled && rows == 8 ? SpeechFaceAtlasResources.SoiledOffset : 0), textureOverride);
 
         /// <summary>Optional authored quiet expressions use spare cells in the same atlas.</summary>
-        public bool ApplyCell(int cell)
+        public bool ApplyCell(int cell, Texture2D textureOverride = null)
         {
             if (!IsConfigured || cell < 0 || cell >= rows * 8) return false;
             properties ??= new MaterialPropertyBlock();
@@ -52,7 +52,8 @@ namespace BarPromenade
             Vector4 transform = new Vector4(1f / 8f, 1f / rows,
                 (cell % 8) / 8f, (rows - 1 - cell / 8) / (float)rows);
             renderer.GetPropertyBlock(properties);
-            properties.SetTexture(BaseMap, texture); properties.SetTexture(MainTex, texture);
+            Texture2D selected = textureOverride != null ? textureOverride : texture;
+            properties.SetTexture(BaseMap, selected); properties.SetTexture(MainTex, selected);
             properties.SetVector(BaseMapST, transform); properties.SetVector(MainTexST, transform);
             renderer.SetPropertyBlock(properties);
             properties.Clear();

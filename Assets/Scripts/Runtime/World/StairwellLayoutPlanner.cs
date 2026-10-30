@@ -9,7 +9,7 @@ namespace BarPromenade
         public const float StepDepth = 0.24f;
         public const float FlightWidth = 1.55f;
 
-        public static StairwellLayoutPlan Generate()
+        public static StairwellLayoutPlan Generate(bool isCorrupted = false)
         {
             const float street = 0f;
             const float middle = 1.6f;
@@ -51,7 +51,7 @@ namespace BarPromenade
                 StepDepth,
                 FlightWidth);
             var upper = new StairwellFlightPlan(
-                "blocked-upper-flight",
+                isCorrupted ? "opened-upper-flight" : "blocked-upper-flight",
                 new Vector2(leftFlightX, flightStartZ),
                 Vector2.up,
                 apartment,
@@ -62,7 +62,7 @@ namespace BarPromenade
 
             var plan = new StairwellLayoutPlan(
                 new Vector2(8.6f, 9.6f),
-                6.25f,
+                isCorrupted ? 7.30f : 6.25f,
                 street,
                 middle,
                 apartment,
@@ -96,7 +96,8 @@ namespace BarPromenade
                 // the middle landing is trimmed.
                 new Bounds(
                     new Vector3(-1.45f, 4.20f, -0.75f),
-                    new Vector3(1.72f, 2.0f, 0.70f)));
+                    new Vector3(1.72f, 2.0f, 0.70f)),
+                isCorrupted);
             StairwellLayoutValidator.ValidateOrThrow(plan);
             return plan;
         }

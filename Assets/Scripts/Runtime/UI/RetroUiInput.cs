@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 
 namespace BarPromenade
@@ -13,11 +14,14 @@ namespace BarPromenade
     {
         private const int ButtonHint = 0x52455452;
         private static readonly GUIContent ButtonContent = new GUIContent();
-        private static int sampledFrame = -1, pressed, released, held;
+        private static int sampledFrame = -1, sampledPaintFrame = -1, pressed, released, held;
+        private static int pendingPress, pendingRelease;
         private static int consumedPress, consumedRelease, consumedDrag;
-        private static int capturedButton, captureSeenFrame = -1;
+        private static int capturedButton;
         private static bool hasPosition, moved, neutralRequired, scrollConsumed;
         private static Vector2 screenPosition, previousPosition, scroll, rootScreenOrigin;
+        private static Vector2 pendingScroll, pendingPressPosition, pressPosition;
+        private static Vector2 pendingReleasePosition, releasePosition;
         private static Mouse sampledMouse;
         private static GameInputContext context = GameInputContext.Menu, captureContext;
 
@@ -29,6 +33,8 @@ namespace BarPromenade
             Application.focusChanged += OnFocusChanged;
             SceneManager.activeSceneChanged -= OnSceneChanged;
             SceneManager.activeSceneChanged += OnSceneChanged;
+            InputSystem.onAfterUpdate -= CollectPointer;
+            InputSystem.onAfterUpdate += CollectPointer;
         }
 
         private static void OnFocusChanged(bool focused) { Reset(); neutralRequired = true; }
@@ -36,11 +42,12 @@ namespace BarPromenade
 
         internal static void Reset()
         {
-            sampledFrame = -1;
+            sampledFrame = sampledPaintFrame = -1;
             capturedButton = 0;
-            captureSeenFrame = -1;
             pressed = released = held = consumedPress = consumedRelease = consumedDrag = 0;
             scroll = Vector2.zero;
+            pendingScroll = Vector2.zero;
+            pendingPress = pendingRelease = 0;
             hasPosition = moved = scrollConsumed = false;
             sampledMouse = null;
         }
@@ -141,13 +148,12 @@ namespace BarPromenade
             int id = GUIUtility.GetControlID(ButtonHint, FocusType.Passive, rect);
             if (Event.current.type != EventType.Repaint) return false;
             Sample();
-            if (capturedButton == id) captureSeenFrame = Time.frameCount;
             bool hover = CanRead && rect.Contains(MousePosition);
-            if (GUI.enabled && hover && GetPointerPressed(0))
+            if (GUI.enabled && CanRead && GetPointerPressed(0) &&
+                rect.Contains(GUIUtility.ScreenToGUIPoint(rootScreenOrigin + pressPosition)))
             {
                 capturedButton = id;
                 captureContext = context;
-                captureSeenFrame = Time.frameCount;
                 ConsumePointerPress();
             }
             bool clicked = false;
@@ -155,7 +161,8 @@ namespace BarPromenade
             {
                 capturedButton = 0;
                 ConsumePointerRelease();
-                clicked = GUI.enabled && hover;
+                clicked = GUI.enabled && CanRead &&
+                    rect.Contains(GUIUtility.ScreenToGUIPoint(rootScreenOrigin + releasePosition));
                 if (clicked) GUI.changed = true;
             }
             style.Draw(rect, content, GUI.enabled && hover,
@@ -165,15 +172,12 @@ namespace BarPromenade
 
         private static int Bit(int button) => button >= 0 && button < 3 ? 1 << button : 0;
 
-        private static void Sample()
+        // Input updates and Editor GUI repaints have independent cadence. Retain
+        // one bounded set of edges until a readable pointer repaint sees it.
+        private static void CollectPointer()
         {
-            if (sampledFrame == Time.frameCount) return;
-            sampledFrame = Time.frameCount;
-            consumedPress = consumedRelease = consumedDrag = 0;
-            scrollConsumed = false;
-            pressed = released = held = 0;
-            scroll = Vector2.zero;
-            moved = false;
+            if (InputState.currentUpdateType == InputUpdateType.BeforeRender ||
+                InputState.currentUpdateType == InputUpdateType.Editor) return;
             Mouse mouse = Mouse.current;
             if (mouse != sampledMouse)
             {
@@ -181,20 +185,19 @@ namespace BarPromenade
                 hasPosition = false;
                 capturedButton = 0;
                 neutralRequired = true;
+                pendingPress = pendingRelease = 0;
+                pendingScroll = Vector2.zero;
             }
-            if (!GameCursor.ApplicationFocused || mouse == null)
+            if (!GameCursor.ApplicationFocused || mouse == null || Cursor.lockState == CursorLockMode.Locked)
             {
                 capturedButton = 0;
                 hasPosition = false;
                 neutralRequired = true;
+                pendingPress = pendingRelease = held = 0;
+                pendingScroll = Vector2.zero;
                 return;
             }
-            if (capturedButton != 0 && !GameInput.CanRead(captureContext)) capturedButton = 0;
-            screenPosition = mouse.position.ReadValue();
-            screenPosition.y = Screen.height - screenPosition.y;
-            moved = hasPosition && (screenPosition - previousPosition).sqrMagnitude >= .25f;
-            if (!hasPosition || moved) previousPosition = screenPosition;
-            hasPosition = true;
+            held = 0;
             if (mouse.leftButton.isPressed) held |= 1;
             if (mouse.rightButton.isPressed) held |= 2;
             if (mouse.middleButton.isPressed) held |= 4;
@@ -203,18 +206,73 @@ namespace BarPromenade
                 neutralRequired = held != 0;
                 return;
             }
-            if (mouse.leftButton.wasPressedThisFrame) pressed |= 1;
-            if (mouse.rightButton.wasPressedThisFrame) pressed |= 2;
-            if (mouse.middleButton.wasPressedThisFrame) pressed |= 4;
-            if (mouse.leftButton.wasReleasedThisFrame) released |= 1;
-            if (mouse.rightButton.wasReleasedThisFrame) released |= 2;
-            if (mouse.middleButton.wasReleasedThisFrame) released |= 4;
+            if (mouse.leftButton.wasPressedThisFrame)
+            {
+                if ((pendingPress & 1) == 0)
+                {
+                    pendingPressPosition = mouse.position.ReadValue();
+                    pendingPressPosition.y = Screen.height - pendingPressPosition.y;
+                }
+                pendingPress |= 1;
+            }
+            if (mouse.rightButton.wasPressedThisFrame) pendingPress |= 2;
+            if (mouse.middleButton.wasPressedThisFrame) pendingPress |= 4;
+            if (mouse.leftButton.wasReleasedThisFrame)
+            {
+                pendingRelease |= 1;
+                pendingReleasePosition = mouse.position.ReadValue();
+                pendingReleasePosition.y = Screen.height - pendingReleasePosition.y;
+            }
+            if (mouse.rightButton.wasReleasedThisFrame) pendingRelease |= 2;
+            if (mouse.middleButton.wasReleasedThisFrame) pendingRelease |= 4;
             // Input System wheel ticks are +120 upwards; IMGUI used +3 downwards.
-            scroll = -mouse.scroll.ReadValue() * (3f / 120f);
-            if (capturedButton != 0 && Time.frameCount > captureSeenFrame + 1)
+            pendingScroll -= mouse.scroll.ReadValue() * (3f / 120f);
+            pendingScroll.x = Mathf.Clamp(pendingScroll.x, -300f, 300f);
+            pendingScroll.y = Mathf.Clamp(pendingScroll.y, -300f, 300f);
+        }
+
+        private static void Sample()
+        {
+            if (sampledMouse != Mouse.current)
+            {
+                // Device replacement can also replace the Input System backend
+                // (the isolated device harness does so). Rebind on this cold path.
+                InputSystem.onAfterUpdate -= CollectPointer;
+                InputSystem.onAfterUpdate += CollectPointer;
+                CollectPointer();
+            }
+            if (sampledFrame != Time.frameCount)
+            {
+                sampledFrame = Time.frameCount;
+                consumedPress = consumedRelease = consumedDrag = 0;
+                scrollConsumed = false;
+                pressed = released = 0;
+                scroll = Vector2.zero;
+                moved = false;
+                if (GameCursor.ApplicationFocused && sampledMouse != null)
+                {
+                    screenPosition = sampledMouse.position.ReadValue();
+                    screenPosition.y = Screen.height - screenPosition.y;
+                    moved = hasPosition && (screenPosition - previousPosition).sqrMagnitude >= .25f;
+                    if (!hasPosition || moved) previousPosition = screenPosition;
+                    hasPosition = true;
+                }
+                if (capturedButton != 0 && !GameInput.CanRead(captureContext)) capturedButton = 0;
+            }
+            if (!IsPointerPass || sampledPaintFrame == Time.frameCount) return;
+            sampledPaintFrame = Time.frameCount;
+            pressed = pendingPress;
+            released = pendingRelease;
+            pressPosition = pendingPressPosition;
+            releasePosition = pendingReleasePosition;
+            scroll = pendingScroll;
+            pendingPress = pendingRelease = 0;
+            pendingScroll = Vector2.zero;
+            // Missing repaints cannot expire a held capture. A vanished
+            // control is discarded once its release has had a paint to finish.
+            if (capturedButton != 0 && held == 0 && (released & 1) == 0)
             {
                 capturedButton = 0;
-                consumedRelease |= released & 1;
             }
         }
     }

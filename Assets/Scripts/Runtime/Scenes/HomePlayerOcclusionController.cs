@@ -615,8 +615,10 @@ namespace BarPromenade
                         state.Renderer.sharedMaterial ==
                         ditherMaterial)
                     {
-                        state.Renderer.sharedMaterial =
-                            state.OriginalMaterial;
+                        propertyBlock ??= new MaterialPropertyBlock();
+                        state.Renderer.GetPropertyBlock(propertyBlock);
+                        state.Renderer.sharedMaterial = SurfaceDamageLibrary.RestoreOccluderMaterial(
+                            state.OriginalMaterial, propertyBlock);
                     }
                 }
             }

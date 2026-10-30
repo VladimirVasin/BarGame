@@ -244,6 +244,66 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(state.MinuteOfDay, Is.EqualTo(359));
         }
 
+        [TestCase(0)]
+        [TestCase(720)]
+        [TestCase(1439)]
+        public void PreparedClock_HoldsTheChosenMinuteUntilStartedOnce(int minuteOfDay)
+        {
+            var state = new GameTimeState();
+            Assert.That(state.TryPrepareAt(minuteOfDay), Is.True);
+            Assert.That(state.Advance(GameTimeState.RealSecondsPerGameDay), Is.Zero);
+            Assert.That(state.IsRunning, Is.False);
+            Assert.That(state.DayNumber, Is.EqualTo(1));
+            Assert.That(state.TimeOfDayMinutes, Is.EqualTo((double)minuteOfDay));
+            Assert.That(state.TryStartPrepared(), Is.True);
+            Assert.That(state.TimeOfDayMinutes, Is.EqualTo((double)minuteOfDay),
+                "Starting a prepared clock must not apply the legacy 06:00 wake snap.");
+            state.Advance(2f);
+            double advanced = state.TimeOfDayMinutes;
+            int day = state.DayNumber;
+            Assert.That(state.TryStartPrepared(), Is.False);
+            Assert.That(state.TryPrepareAt(359), Is.False);
+            Assert.That(state.TimeOfDayMinutes, Is.EqualTo(advanced));
+            Assert.That(state.DayNumber, Is.EqualTo(day));
+            state.Reset();
+            Assert.That(state.IsRunning, Is.False);
+            Assert.That(state.MinuteOfDay, Is.EqualTo(359));
+        }
+
+        [TestCase(-1)]
+        [TestCase(1440)]
+        [TestCase(int.MaxValue)]
+        public void PreparedClock_InvalidMinuteKeepsThePriorFrozenNoon(int invalid)
+        {
+            var state = new GameTimeState();
+            state.TryPrepareAt(NewGameStartService.StoryStartMinuteOfDay);
+            Assert.That(state.TryPrepareAt(invalid), Is.False);
+            Assert.That(state.IsRunning, Is.False);
+            Assert.That(state.MinuteOfDay, Is.EqualTo(720));
+        }
+
+        [Test]
+        public void PreparedSession_NoonIntroDoesNotAgeNeedsOrTheFreshApartment()
+        {
+            int hunger = GameSessionState.HungerLevel;
+            int fatigue = GameSessionState.FatigueLevel;
+            Assert.That(GameSessionState.TryPrepareGameTimeAt(NewGameStartService.StoryStartMinuteOfDay), Is.True);
+            GameSessionState.AdvanceGameTime(GameTimeState.RealSecondsPerGameDay);
+            Assert.That(GameSessionState.IsGameTimeRunning, Is.False);
+            Assert.That(GameSessionState.GameTimeOfDayMinutes, Is.EqualTo(720d));
+            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(hunger));
+            Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(fatigue));
+            Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(1));
+            Assert.That(GameSessionState.HomeAppearanceDayNumber, Is.EqualTo(1));
+            Assert.That(GameSessionState.HeroCorruptionLevel, Is.EqualTo(1));
+            Assert.That(GameSessionState.TryStartPreparedGameTime(), Is.True);
+            Assert.That(GameSessionState.GameTimeOfDayMinutes, Is.EqualTo(720d));
+            Assert.That(GameSessionState.TryStartPreparedGameTime(), Is.False);
+            GameSessionState.BeginNewGame();
+            Assert.That(GameSessionState.IsGameTimeRunning, Is.False);
+            Assert.That(GameSessionState.GameTimeOfDayMinutes, Is.EqualTo(359d));
+        }
+
         [Test]
         public void Exactly2880RealSeconds_AdvancesOneCompleteGameDay()
         {

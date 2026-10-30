@@ -139,6 +139,7 @@ namespace BarPromenade.Tests.PlayMode
                 LoadSceneMode.Single);
             StartMenuRoot menu = UnityEngine.Object.FindAnyObjectByType<StartMenuRoot>();
             Assert.That(menu, Is.Not.Null);
+            Assert.That(menu.OpenDebugMenu(), Is.True);
             Assert.That(menu.ConfirmSelection(), Is.True);
             Assert.That(menu.IsChoosingStartTime, Is.True);
             Assert.That(menu.ConfirmSelection(), Is.True);

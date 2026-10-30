@@ -33,6 +33,9 @@ namespace BarPromenade
         [SerializeField] private Vector3[] headLocalRest = Array.Empty<Vector3>();
         [SerializeField] private Vector3[] hangingOffsets = Array.Empty<Vector3>();
         [SerializeField] private Quaternion headBindRotation;
+        [SerializeField] private float shortestLengthScale = .55f;
+        [SerializeField] private float longestLengthScale = 1.8f;
+        private float lengthScale = 1f;
 
         private readonly Vector3[] points = new Vector3[PointCount];
         private readonly Vector3[] velocities = new Vector3[PointCount];
@@ -63,6 +66,7 @@ namespace BarPromenade
         public bool IsInitialized => initialized;
         public bool IsRuntimeDriven => driven;
         public int JointCount => joints.Length;
+        public float LengthScale => lengthScale;
         public int ResetCount { get; private set; }
         public int LastContactCount { get; private set; }
         public float LastStepSeconds { get; private set; }
@@ -91,7 +95,12 @@ namespace BarPromenade
         }
         public Vector3 WorldPoint(int index) => points[index];
         public Vector3 RestWorldPoint(int index) => targets[index];
-        internal Vector3 AuthoredWorldPoint(int index) => head.TransformPoint(headLocalRest[index]);
+        internal Vector3 AuthoredWorldPoint(int index)
+        {
+            int root = index / PointsPerChain * PointsPerChain;
+            return head.TransformPoint(headLocalRest[root] +
+                (headLocalRest[index] - headLocalRest[root]) * lengthScale);
+        }
         internal void CaptureBakedPose(float[] values)
         {
             if (!HasAuthoredBindings || !initialized || LastPoseWasBaked)
@@ -149,6 +158,9 @@ namespace BarPromenade
                 AddVector(headLocalRest[i]); AddVector(hangingOffsets[i]);
             }
             AddQuaternion(headBindRotation);
+            // Medium-length recordings remain valid only for their original
+            // rest geometry. Every changed length has its own bounded cache key.
+            if (lengthScale != 1f) AddFloat(lengthScale);
             return registry.BuildSignature + ":hair-bones-v1:" + hash.ToString("x16", CultureInfo.InvariantCulture);
 
             void Add(uint value) { unchecked { hash = (hash ^ value) * 1099511628211UL; } }
@@ -170,12 +182,19 @@ namespace BarPromenade
         }
 
         /// <summary>Editor binds ordered Back/Left/Right .00/.01/.02/.Tip chains in the imported rest pose.</summary>
-        public void Configure(Player3DAssetRegistry owner, Transform[] orderedJoints)
+        public void Configure(Player3DAssetRegistry owner, Transform[] orderedJoints,
+            float configuredShortestScale = .55f, float configuredLongestScale = 1.8f)
         {
             if (owner == null) throw new ArgumentNullException(nameof(owner));
             if (orderedJoints == null || orderedJoints.Length != PointCount)
                 throw new ArgumentException("Hero hair requires three four-point chains.", nameof(orderedJoints));
             registry = owner;
+            if (configuredShortestScale <= 0f || configuredShortestScale >= 1f ||
+                configuredLongestScale <= 1f || configuredLongestScale > 3f)
+                throw new ArgumentOutOfRangeException(nameof(configuredShortestScale),
+                    "Hair length profiles require a shorter and a bounded longer rest shape.");
+            shortestLengthScale = configuredShortestScale;
+            longestLengthScale = configuredLongestScale;
             bakedPoseSignature = null;
             head = registry.Anchors.Head;
             if (head == null) throw new InvalidOperationException("Hero hair requires the registered head.");
@@ -197,6 +216,19 @@ namespace BarPromenade
             contacts?.Dispose(); contacts = null;
             initialized = false;
             RequestReset();
+        }
+
+        /// <summary>Changes free-link rest lengths; scalp roots, bones and bind arrays stay authored.</summary>
+        public void ApplyCorruptionLevel(int level)
+        {
+            float next = 1f + (shortestLengthScale - 1f) * HeroCorruptionRules.ShortHairWeight(level) +
+                (longestLengthScale - 1f) * HeroCorruptionRules.LongHairWeight(level);
+            if (Mathf.Abs(next - lengthScale) < .00001f) return;
+            lengthScale = next;
+            bakedPoseSignature = null;
+            bakedPlaybackActive = bakedEntryActive = false;
+            RequestReset();
+            if (HasAuthoredBindings) RestoreBindPose();
         }
 
         /// <summary>Only the actual player drives a simulation. Prefab-derived subsets and mirrors stay passive.</summary>
@@ -443,7 +475,8 @@ namespace BarPromenade
                 for (int point = 1; point < PointsPerChain; point++)
                 {
                     int i = root + point;
-                    Vector3 direction = twist * actorToWorld.MultiplyVector(hangingOffsets[i] - hangingOffsets[i - 1]);
+                    Vector3 direction = twist * actorToWorld.MultiplyVector(
+                        (hangingOffsets[i] - hangingOffsets[i - 1]) * lengthScale);
                     Vector3 reference = point == 1 ? rootDirections[chain] : targets[i - 1] - targets[i - 2];
                     targets[i] = targets[i - 1] + ClampBend(direction, reference, point - 1) * direction.magnitude;
                 }
@@ -527,6 +560,8 @@ namespace BarPromenade
         {
             if (target == null || target == this || !HasAuthoredBindings || !target.HasAuthoredBindings) return;
             target.driven = false;
+            target.lengthScale = lengthScale;
+            target.bakedPoseSignature = null;
             for (int i = 0; i < PointCount; i++)
             {
                 target.joints[i].localPosition = joints[i].localPosition;
@@ -544,7 +579,10 @@ namespace BarPromenade
         private void RestoreBindPose()
         {
             for (int i = 0; i < joints.Length; i++)
-            { joints[i].localPosition = bindPositions[i]; joints[i].localRotation = bindRotations[i]; }
+            {
+                joints[i].localPosition = bindPositions[i] * (i % PointsPerChain == 0 ? 1f : lengthScale);
+                joints[i].localRotation = bindRotations[i];
+            }
         }
         private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
         private void OnEnable() => RequestReset();

@@ -39,6 +39,7 @@ namespace BarPromenade
                 // canonical Neutral face-atlas state as reliably as
                 // PlayerFactory users.
                 registry.ApplyPalette();
+                PlayerCorruptionAppearance.Ensure(registry).ApplyLevel(GameSessionState.HeroCorruptionLevel);
                 return true;
             }
 

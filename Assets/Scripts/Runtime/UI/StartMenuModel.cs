@@ -9,7 +9,9 @@ namespace BarPromenade
         Laboratory = 2,
         Vocalizer = 3,
         Quit = 4,
-        Count = 5
+        Debug = 5,
+        Back = 6,
+        Count = 7
     }
 
     public enum StartMenuAction
@@ -24,7 +26,9 @@ namespace BarPromenade
         ChooseLaboratoryEnemy = 7,
         OpenVocalizer = 8,
         ChooseStartTime = 9,
-        LocationUnavailable = 10
+        LocationUnavailable = 10,
+        StoryNewGame = 11,
+        OpenDebug = 12
     }
 
     public enum StartTimeOption { Hour, Minute, Continue, Back, Count }
@@ -42,6 +46,11 @@ namespace BarPromenade
     /// </summary>
     public sealed class StartMenuModel
     {
+        private static readonly StartMenuOption[] MainOptions =
+            { StartMenuOption.NewGame, StartMenuOption.Debug, StartMenuOption.Quit };
+        private static readonly StartMenuOption[] DebugOptions =
+            { StartMenuOption.NewGame, StartMenuOption.CombatTest, StartMenuOption.Laboratory,
+                StartMenuOption.Vocalizer, StartMenuOption.Back };
         private static readonly CombatPreparationOption[] WarehouseOptions =
         {
             CombatPreparationOption.Crowbar, CombatPreparationOption.Shotgun, CombatPreparationOption.Pistol,
@@ -58,6 +67,8 @@ namespace BarPromenade
 
         public StartMenuOption SelectedOption { get; private set; }
         public bool IsCommitted { get; private set; }
+        /// <summary>Debug owns its root card and all nested launch/tool selectors.</summary>
+        public bool IsDebugMenu { get; private set; }
         public bool IsChoosingStartTime { get; private set; }
         public int SelectedStartMinuteOfDay { get; private set; }
         public StartTimeOption SelectedStartTimeOption { get; private set; }
@@ -78,7 +89,9 @@ namespace BarPromenade
         public bool IsBackSelected => IsChoosingStartTime ? SelectedStartTimeOption == StartTimeOption.Back :
             IsChoosingLaboratoryEnemy ? laboratoryEnemyBackSelected :
             IsChoosingLocation && SelectedLocation == NewGameLocation.Count ||
-            IsChoosingCombatWeapon && SelectedCombatOption == CombatPreparationOption.Back;
+            IsChoosingCombatWeapon && SelectedCombatOption == CombatPreparationOption.Back ||
+            IsDebugMenu && SelectedOption == StartMenuOption.Back;
+        private StartMenuOption[] MenuOptions => IsDebugMenu ? DebugOptions : MainOptions;
         public int CombatOptionCount => CombatOptions.Length;
         private CombatPreparationOption[] CombatOptions =>
             SelectedCombatMode == CombatTestMode.Laboratory ? LaboratoryOptions : WarehouseOptions;
@@ -100,6 +113,7 @@ namespace BarPromenade
         {
             SelectedOption = StartMenuOption.NewGame;
             IsCommitted = false;
+            IsDebugMenu = false;
             IsChoosingStartTime = false;
             SelectedStartMinuteOfDay = NewGameStartService.MorningMinuteOfDay;
             SelectedStartTimeOption = StartTimeOption.Continue;
@@ -118,6 +132,25 @@ namespace BarPromenade
             SelectedCombatOption = CombatPreparationOption.Crowbar;
         }
 
+        public bool OpenDebugMenu()
+        {
+            if (IsCommitted || IsDebugMenu) return false;
+            IsDebugMenu = true;
+            SelectedOption = StartMenuOption.NewGame;
+            return true;
+        }
+
+        /// <summary>Explicitly rearms a refused Debug trip without confirming the story launch.</summary>
+        public void OpenDebugStartTime(int minuteOfDay)
+        {
+            if (minuteOfDay < 0 || minuteOfDay >= 24 * 60)
+                throw new ArgumentOutOfRangeException(nameof(minuteOfDay));
+            Open();
+            IsDebugMenu = true;
+            IsChoosingStartTime = true;
+            SelectedStartMinuteOfDay = minuteOfDay;
+        }
+
         public void OpenCombatPreparation(CombatWeaponId weapon)
             => OpenCombatPreparation(CombatLoadoutSelection.FromLegacyWeapon(weapon));
 
@@ -128,6 +161,7 @@ namespace BarPromenade
         {
             CombatTestMode previousWarehouseMode = warehouseMode;
             Open();
+            IsDebugMenu = true;
             warehouseMode = previousWarehouseMode;
             SelectedOption = selection.Mode == CombatTestMode.Laboratory ?
                 StartMenuOption.Laboratory : StartMenuOption.CombatTest;
@@ -155,11 +189,12 @@ namespace BarPromenade
             int count = IsChoosingStartTime ? (int)StartTimeOption.Count :
                 IsChoosingLaboratoryEnemy ? LaboratoryEnemyCount + 1 :
                 IsChoosingLocation ? (int)NewGameLocation.Count + 1 :
-                IsChoosingCombatWeapon ? CombatOptionCount : (int)StartMenuOption.Count;
+                IsChoosingCombatWeapon ? CombatOptionCount : MenuOptions.Length;
             int selected = IsChoosingStartTime ? (int)SelectedStartTimeOption : IsChoosingLaboratoryEnemy ?
                 laboratoryEnemyBackSelected ? LaboratoryEnemyCount : (int)SelectedLaboratoryEnemy :
                 IsChoosingLocation ? (int)SelectedLocation :
-                IsChoosingCombatWeapon ? Array.IndexOf(CombatOptions, SelectedCombatOption) : (int)SelectedOption;
+                IsChoosingCombatWeapon ? Array.IndexOf(CombatOptions, SelectedCombatOption) :
+                Array.IndexOf(MenuOptions, SelectedOption);
             int next = (selected + Math.Sign(delta)) % count;
             if (next < 0)
             {
@@ -178,15 +213,14 @@ namespace BarPromenade
                 AvailabilityMessageKey = string.Empty;
             }
             else if (IsChoosingCombatWeapon) FocusCombatOption(CombatOptionAt(next));
-            else SelectedOption = (StartMenuOption)next;
+            else SelectedOption = MenuOptions[next];
             return true;
         }
 
         public bool SelectOption(StartMenuOption option)
         {
             if (IsCommitted || IsVocalizerActive || IsChoosingStartTime || IsChoosingLocation || IsChoosingCombatWeapon ||
-                option < StartMenuOption.NewGame ||
-                option >= StartMenuOption.Count ||
+                Array.IndexOf(MenuOptions, option) < 0 ||
                 SelectedOption == option)
             {
                 return false;
@@ -253,6 +287,7 @@ namespace BarPromenade
                 return true;
             }
             if (IsChoosingCombatWeapon) return SelectCombatOption(CombatPreparationOption.Back);
+            if (IsDebugMenu && !IsChoosingLocation) return SelectOption(StartMenuOption.Back);
             if (IsCommitted || !IsChoosingLocation || IsBackSelected) return false;
             SelectedLocation = NewGameLocation.Count;
             return true;
@@ -295,7 +330,14 @@ namespace BarPromenade
 
         public bool ReturnToMainMenu()
         {
-            if (IsCommitted || (!IsChoosingStartTime && !IsChoosingLocation && !IsChoosingCombatWeapon && !IsVocalizerActive)) return false;
+            if (IsCommitted) return false;
+            if (!IsChoosingStartTime && !IsChoosingLocation && !IsChoosingCombatWeapon && !IsVocalizerActive)
+            {
+                if (!IsDebugMenu) return false;
+                IsDebugMenu = false;
+                SelectedOption = StartMenuOption.Debug;
+                return true;
+            }
             SelectedOption = IsVocalizerActive ? StartMenuOption.Vocalizer :
                 IsChoosingCombatWeapon ? SelectedCombatMode == CombatTestMode.Laboratory ?
                 StartMenuOption.Laboratory : StartMenuOption.CombatTest : StartMenuOption.NewGame;
@@ -305,6 +347,7 @@ namespace BarPromenade
             IsChoosingCombatWeapon = false;
             IsChoosingLaboratoryEnemy = false;
             IsVocalizerActive = false;
+            IsDebugMenu = true;
             SelectedLocation = NewGameLocation.AlpineVillage;
             return true;
         }
@@ -401,10 +444,21 @@ namespace BarPromenade
             switch (SelectedOption)
             {
                 case StartMenuOption.NewGame:
+                    if (!IsDebugMenu)
+                    {
+                        IsCommitted = true;
+                        return StartMenuAction.StoryNewGame;
+                    }
                     IsChoosingStartTime = true;
                     SelectedStartTimeOption = StartTimeOption.Continue;
                     SelectedLocation = NewGameLocation.AlpineVillage;
                     return StartMenuAction.ChooseStartTime;
+                case StartMenuOption.Debug:
+                    OpenDebugMenu();
+                    return StartMenuAction.OpenDebug;
+                case StartMenuOption.Back:
+                    ReturnToMainMenu();
+                    return StartMenuAction.Back;
                 case StartMenuOption.CombatTest:
                     OpenCombatPreparation(new CombatTestSelection(SelectedCombatLoadout, warehouseMode,
                         SelectedCombatEncounterSettings, SelectedLaboratoryEnemy));

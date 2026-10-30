@@ -28,8 +28,8 @@ namespace BarPromenade
             BuildRadiator(dressing);
             BuildWallDamage(dressing, plan);
             BuildLooseTrash(dressing, plan);
-            BuildUpperDebris(dressing, plan);
-            BuildPracticalFixtures(dressing);
+            if (!plan.IsCorrupted) BuildUpperDebris(dressing, plan);
+            BuildPracticalFixtures(dressing, plan);
         }
 
         private static void BuildPipes(
@@ -451,7 +451,7 @@ namespace BarPromenade
         }
 
         private static void BuildPracticalFixtures(
-            Transform root)
+            Transform root, StairwellLayoutPlan plan)
         {
             BuildFluorescentFixture(
                 root,
@@ -463,13 +463,13 @@ namespace BarPromenade
                 root,
                 "Middle",
                 StairwellInteriorAtmosphere.MiddleEmitterPosition,
-                6.12f,
+                plan.RoomHeight - .13f,
                 new Color(1.65f, 2.85f, 2.35f));
             BuildFluorescentFixture(
                 root,
                 "Apartment",
                 StairwellInteriorAtmosphere.ApartmentEmitterPosition,
-                6.12f,
+                plan.RoomHeight - .13f,
                 new Color(3.40f, 2.15f, 0.72f));
         }
 

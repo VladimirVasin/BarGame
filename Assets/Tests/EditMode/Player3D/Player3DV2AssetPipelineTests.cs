@@ -410,7 +410,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(registry.FaceAtlas.Texture, Is.SameAs(atlas));
                 Assert.That(registry.FaceAtlas.Columns, Is.EqualTo(8));
                 Assert.That(registry.FaceAtlas.Rows, Is.EqualTo(4));
-                Assert.That(registry.FaceAtlas.Cells.Count, Is.EqualTo(26));
+                Assert.That(registry.FaceAtlas.Cells.Count, Is.EqualTo(28));
                 Assert.That(registry.Anchors.LeftVessel, Is.Not.Null);
                 Assert.That(
                     registry.Anchors.LeftVessel.name,
@@ -732,7 +732,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.face_atlas.cell_size_px, Is.EqualTo(64));
             Assert.That(manifest.face_atlas.uv_origin, Is.EqualTo("bottom_left"));
             Assert.That(manifest.face_atlas.filter_mode, Is.EqualTo("Point"));
-            Assert.That(manifest.face_atlas.cells, Has.Length.EqualTo(26));
+            Assert.That(manifest.face_atlas.cells, Has.Length.EqualTo(28));
             Assert.That(manifest.design_metrics, Is.Not.Null);
             Assert.That(
                 manifest.design_metrics.pelvis_height_m,

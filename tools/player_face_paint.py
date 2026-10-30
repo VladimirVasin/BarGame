@@ -87,6 +87,9 @@ def draw_upper_face(canvas: PixelCanvas, expression="Neutral", ox=0, oy=0):
         elif expression == "Emphasis":
             by, inner_y = (18, 19) if side == 0 else (19, 18)
             height = 3
+        elif expression == "Horror":
+            by, inner_y = (17, 15) if side == 0 else (18, 15)
+            height = 5
         outer, inner = (center - 7, center + 6) if side == 0 else (center + 7, center - 6)
         canvas.line(ox + outer, oy + by + 1, ox + center, oy + by, brow_soft)
         canvas.line(ox + outer + (1 if side == 0 else -1), oy + by,
@@ -106,10 +109,16 @@ def draw_upper_face(canvas: PixelCanvas, expression="Neutral", ox=0, oy=0):
         pupil = center + (1 if side == 0 else 0) + (1 if expression == "Watchful" else 0)
         if expression == "Glazed":
             pupil += -2 if side == 0 else 2
-        canvas.ellipse(ox + pupil, oy + ey, 2, height, (95, 92, 83, 255))
-        canvas.line(ox + pupil, oy + ey - height + 1, ox + pupil, oy + ey + height, (41, 39, 39, 255))
-        if height > 1:
+        if expression == "Horror":
+            # Open lids reveal the white around a small, centred human pupil.
+            # This is a startled gasp, never the drink's unfocused eye drift.
+            canvas.ellipse(ox + pupil, oy + ey, 2, 2, (41, 39, 39, 255))
             canvas.put(ox + pupil - 1, oy + ey - 1, (146, 137, 122, 255))
+        else:
+            canvas.ellipse(ox + pupil, oy + ey, 2, height, (95, 92, 83, 255))
+            canvas.line(ox + pupil, oy + ey - height + 1, ox + pupil, oy + ey + height, (41, 39, 39, 255))
+            if height > 1:
+                canvas.put(ox + pupil - 1, oy + ey - 1, (146, 137, 122, 255))
         # The heavy upper lid tapers at both corners; the lower lid has no black outline.
         canvas.line(ox + center - 6, oy + ey - height + 1, ox + center - 2, oy + ey - height, lid)
         canvas.line(ox + center - 2, oy + ey - height, ox + center + 5, oy + ey - height, lid)
@@ -147,14 +156,19 @@ def draw_face_tile(canvas: PixelCanvas, column: int, top_row: int,
 
 
 def draw_expression_mouth(canvas, ox, oy, column, expression, soiled):
-    inspection = expression in ("TeethInspectHalf", "TeethInspect")
+    inspection = expression in ("TeethInspectHalf", "TeethInspect", "Horror")
     if soiled and inspection:
         # These lips open below the soil band's y=50 edge. Paint the
         # surrounding chin/cheek traces first so neither row nor the gap is
         # mistaken for grime on the teeth.
         draw_mouth_soil(canvas, ox, oy, column)
     mouth_y = 47
-    if expression == "Tense":
+    if expression == "Horror":
+        canvas.ellipse(ox + 32, oy + 51, 10, 8, LIP)
+        canvas.ellipse(ox + 32, oy + 51, 8, 7, SKIN_DARK)
+        canvas.line(ox + 24, oy + 44, ox + 39, oy + 44, LIP)
+        canvas.line(ox + 25, oy + 59, ox + 39, oy + 59, SKIN_SHADOW)
+    elif expression == "Tense":
         canvas.line(ox + 23, oy + mouth_y, ox + 41, oy + mouth_y, LIP, 2)
     elif expression == "Grimace":
         # The corners pulled down, the middle up: a wince.

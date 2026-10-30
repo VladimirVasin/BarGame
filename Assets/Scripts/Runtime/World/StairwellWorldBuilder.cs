@@ -58,14 +58,100 @@ namespace BarPromenade
             Transform streetDoor = BuildStreetDoor(root, plan);
             Transform apartmentDoor =
                 BuildApartmentDoor(root, plan);
-            Collider blocker = BuildUpperBlocker(root, plan);
+            Collider blocker = plan.IsCorrupted ? null : BuildUpperBlocker(root, plan);
+            Collider descentWall = null, upperLanding = null;
+            if (plan.IsCorrupted)
+                BuildCorruptedRoute(root, plan, out descentWall, out upperLanding);
             StairwellDressingBuilder.Build(root, plan);
+            if (plan.IsCorrupted) ApplyCorruptedSurfaces(root);
             return new StairwellWorldResult(
                 root,
                 stairColliders.AsReadOnly(),
                 blocker,
                 streetDoor,
-                apartmentDoor);
+                apartmentDoor,
+                descentWall,
+                upperLanding);
+        }
+
+        private static void BuildCorruptedRoute(Transform root, StairwellLayoutPlan plan,
+            out Collider descentWall, out Collider upperLanding)
+        {
+            Bounds wall = plan.DescentWallBounds;
+            descentWall = CreateSurfaceBox("Corrupted Descent Wall", root,
+                wall.center, wall.size, Wall, StairwellSurfaceKind.WallPaint,
+                StairwellSurfaceProjection.BoxXY).GetComponent<Collider>();
+            Rect floor = plan.UpperLandingBounds;
+            upperLanding = CreateSurfaceBox("Corrupted Upper Landing", root,
+                new Vector3(floor.center.x, plan.UpperFlight.TopElevation - .12f, floor.center.y),
+                new Vector3(floor.width, .24f, floor.height), Stair,
+                StairwellSurfaceKind.StairConcrete, StairwellSurfaceProjection.BoxXZ)
+                .GetComponent<Collider>();
+            foreach (float x in new[] { floor.xMin - .055f, floor.xMax + .055f })
+            {
+                string side = x < floor.center.x ? "Left" : "Right";
+                Transform rail = new GameObject("Corrupted Upper Landing " + side).transform;
+                rail.SetParent(root, false);
+                rail.localPosition = new Vector3(x, 5.38f, floor.center.y);
+                rail.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                BuildRailSegment(rail, "Apartment Landing Center Rail", Vector3.zero,
+                    new Vector3(1.2f, 1.16f, .10f), StairwellSurfaceProjection.BoxXY);
+                rail.GetChild(0).name = "Corrupted Upper Landing " + side + " Rail";
+                rail.GetChild(1).name = "Corrupted Upper Landing " + side + " Rail Top";
+            }
+            // A real open grille is the temporary playable boundary. The
+            // perspective continues through it; no wall closes the upper view.
+            GameObject grille = CreateSurfaceBox("Under Stair Grille Blocker", root,
+                new Vector3(floor.center.x, 5.72f, floor.yMax), new Vector3(1.78f, 1.84f, .10f),
+                Metal, StairwellSurfaceKind.CorrodedMetal, StairwellSurfaceProjection.BoxXY);
+            grille.name = "Corrupted Upper Temporary Grille";
+            for (int index = 0; index < 7; index++)
+            {
+                GameObject bar = CreateSurfaceBox("Under Stair Grille Bar " + (index + 1), root,
+                    new Vector3(floor.center.x - .78f + index * .26f, 5.72f, floor.yMax - .06f),
+                    new Vector3(.045f, 1.84f, .045f), Rust,
+                    StairwellSurfaceKind.CorrodedMetal, StairwellSurfaceProjection.BoxXY, false);
+                bar.name = "Corrupted Upper Temporary Grille Bar " + (index + 1);
+            }
+            Transform continuation = new GameObject("Corrupted Endless Staircase").transform;
+            continuation.SetParent(root, false);
+            const int modules = 12;
+            for (int index = 0; index < modules; index++)
+            {
+                // Keep the distant run open above its rails: a low tunnel roof
+                // would become a false end wall from the apartment camera.
+                const string binding = "Corrupted Endless Open Flight";
+                GameObject flight = CreateSurfaceBox(binding, continuation,
+                    new Vector3(-1.45f, 5.6f + index * 1.6f, 4.17f + index * 3.84f),
+                    new Vector3(2.03f, 4.34f, 3.84f), new Color(.18f, .23f, .19f),
+                    StairwellSurfaceKind.StairConcrete, StairwellSurfaceProjection.BoxXZ, false);
+                flight.name = "Distant Flight " + (index + 1);
+            }
+        }
+
+        // One construction pass over this room only. Reuse the authored damage
+        // and rust families; no material instances or recurring scene scans.
+        private static void ApplyCorruptedSurfaces(Transform root)
+        {
+            var kinds = (StairwellSurfaceKind[])System.Enum.GetValues(typeof(StairwellSurfaceKind));
+            var properties = new MaterialPropertyBlock();
+            foreach (MeshRenderer renderer in root.GetComponentsInChildren<MeshRenderer>())
+            {
+                properties.Clear();
+                renderer.GetPropertyBlock(properties);
+                Texture texture = properties.GetTexture("_BaseMap");
+                foreach (StairwellSurfaceKind kind in kinds)
+                {
+                    if (texture != StairwellSurfaceAppearance.GetTexture(kind)) continue;
+                    // Keep repeatable fine material detail; the large damage
+                    // chart covers this complete wall/object exactly once.
+                    SurfaceDamageLibrary.Entry entry = SurfaceDamageLibrary.Resolve(
+                        "stairwell", null, renderer.name, kind.ToString());
+                    SurfaceDamageLibrary.Apply(renderer, properties, entry, root, 1f);
+                    renderer.SetPropertyBlock(properties);
+                    break;
+                }
+            }
         }
 
         private static void BuildShell(
@@ -86,21 +172,32 @@ namespace BarPromenade
                 StairwellSurfaceKind.Concrete,
                 StairwellSurfaceProjection.BoxXZ);
             CreateSurfaceBox(
-                "Stairwell Ceiling",
+                plan.IsCorrupted ? "Stairwell Corrupted Ceiling" : "Stairwell Ceiling",
                 root,
                 new Vector3(0f, height + 0.10f, 0f),
                 new Vector3(width, 0.20f, depth),
                 new Color(0.075f, 0.085f, 0.077f),
                 StairwellSurfaceKind.Concrete,
-                StairwellSurfaceProjection.BoxXZ);
+                StairwellSurfaceProjection.BoxXZ, !plan.IsCorrupted);
+            if (plan.IsCorrupted)
+            {
+                // Collision follows the authored notch instead of filling it.
+                Transform ceiling = root.Find("Stairwell Corrupted Ceiling");
+                ceiling.gameObject.AddComponent<MeshCollider>().sharedMesh = ceiling.GetComponent<MeshFilter>().sharedMesh;
+            }
             CreateSurfaceBox(
-                "Stairwell Back Wall",
+                plan.IsCorrupted ? "Stairwell Corrupted Back Wall" : "Stairwell Back Wall",
                 root,
                 new Vector3(0f, height * 0.5f, depth * 0.5f),
                 new Vector3(width, height, wallThickness),
                 Wall,
                 StairwellSurfaceKind.WallPaint,
-                StairwellSurfaceProjection.BoxXY);
+                StairwellSurfaceProjection.BoxXY, !plan.IsCorrupted);
+            if (plan.IsCorrupted)
+            {
+                Transform back = root.Find("Stairwell Corrupted Back Wall");
+                back.gameObject.AddComponent<MeshCollider>().sharedMesh = back.GetComponent<MeshFilter>().sharedMesh;
+            }
             CreateSurfaceBox(
                 "Stairwell Front Wall",
                 root,

@@ -8,6 +8,7 @@ namespace BarPromenade
     public static class NewGameStartService
     {
         public const int MorningMinuteOfDay = (7 * 60) + 40;
+        public const int StoryStartMinuteOfDay = 12 * 60;
 
         private static NewGameLocation pendingLocation = NewGameLocation.Count;
         private static string pendingOperationId = string.Empty;
@@ -20,6 +21,30 @@ namespace BarPromenade
         }
 
         public static bool TryStart(NewGameLocation location) => TryStart(location, MorningMinuteOfDay);
+
+        /// <summary>The ordinary new game begins asleep in the clean Home at a frozen noon.</summary>
+        public static bool TryStartStory()
+        {
+            if (SceneTransitionService.IsTransitioning ||
+                SceneManager.GetActiveScene().name != SceneIds.MainMenu ||
+                !Application.CanStreamedLevelBeLoaded(SceneIds.HomeInterior)) return false;
+
+            ResetStatics();
+            GameSessionState.BeginNewGame();
+            GameSessionState.EnterHome();
+            GameSessionState.PrepareHomeArrival(HomeArrivalKind.NewGameSleep);
+            if (!GameSessionState.TryPrepareGameTimeAt(StoryStartMinuteOfDay) ||
+                !SceneTransitionService.RequestCoveredLoad(SceneIds.HomeInterior))
+            {
+                GameSessionState.BeginNewGame("story_start_rejected");
+                return false;
+            }
+
+            GameLog.Info("session", "new_game_story_selected",
+                GameLog.Field("scene", SceneIds.HomeInterior),
+                GameLog.Field("operation_id", SceneTransitionService.CurrentOperationId));
+            return true;
+        }
 
         public static bool TryStart(NewGameLocation location, int minuteOfDay)
         {

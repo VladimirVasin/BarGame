@@ -31,7 +31,8 @@ namespace BarPromenade
             Vector3 streetExitTriggerSize,
             Vector3 apartmentEntrancePosition,
             Vector3 apartmentEntranceTriggerSize,
-            Bounds upperBlockerBounds)
+            Bounds upperBlockerBounds,
+            bool isCorrupted = false)
         {
             RoomSize = roomSize;
             RoomHeight = roomHeight;
@@ -55,8 +56,8 @@ namespace BarPromenade
             ApartmentEntranceTriggerSize =
                 apartmentEntranceTriggerSize;
             UpperBlockerBounds = upperBlockerBounds;
-            walkableRectangles =
-                new List<Rect>
+            IsCorrupted = isCorrupted;
+            var walkable = new List<Rect>
                 {
                     streetLobbyBounds,
                     lowerFlightBounds,
@@ -64,7 +65,9 @@ namespace BarPromenade
                     apartmentFlightBounds,
                     apartmentLandingBounds,
                     upperFlightBounds
-                }.AsReadOnly();
+                };
+            if (isCorrupted) walkable.Add(UpperLandingBounds);
+            walkableRectangles = walkable.AsReadOnly();
         }
 
         public Vector2 RoomSize { get; }
@@ -88,6 +91,10 @@ namespace BarPromenade
         public Vector3 ApartmentEntrancePosition { get; }
         public Vector3 ApartmentEntranceTriggerSize { get; }
         public Bounds UpperBlockerBounds { get; }
+        public bool IsCorrupted { get; }
+        public Rect UpperLandingBounds => new Rect(-2.225f, .8f, 1.55f, 1.45f);
+        public Bounds DescentWallBounds => new Bounds(
+            new Vector3(1.45f, 5.25f, -2.88f), new Vector3(2.05f, 4.10f, .30f));
         public IReadOnlyList<Rect> WalkableRectangles =>
             walkableRectangles;
 

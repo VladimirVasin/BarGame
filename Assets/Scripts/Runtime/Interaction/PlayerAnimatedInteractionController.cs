@@ -303,6 +303,9 @@ namespace BarPromenade
         public float PhaseProgress => !isPositioning && timeline != null
             ? timeline.PhaseProgress
             : 0f;
+        public float ClipProgress => !isPositioning && timeline != null ? timeline.ClipProgress : 0f;
+        public bool IsExitHoldActive => !isPositioning && timeline != null && timeline.IsExitHoldActive;
+        public float ExitHoldProgress => !isPositioning && timeline != null ? timeline.ExitHoldProgress : 0f;
         public bool IsNestedLoopActionActive =>
             nestedLoopAction != null && nestedLoopAction.IsActive;
         public PlayerAnimatedInteractionPhase NestedLoopActionPhase =>
@@ -848,6 +851,10 @@ namespace BarPromenade
             PhaseChanged?.Invoke(timeline.Phase);
             return true;
         }
+
+        /// <summary>Resumes the same exit after its explicitly released minimum hold.</summary>
+        public bool ReleaseExitHold() => !isPositioning && !IsNestedLoopActionActive &&
+            timeline != null && timeline.ReleaseExitHold();
 
         /// <summary>
         /// Opt-in for stationary actions with matching lower-body samples. Settle

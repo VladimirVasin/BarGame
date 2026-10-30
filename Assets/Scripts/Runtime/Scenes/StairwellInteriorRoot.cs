@@ -102,7 +102,7 @@ namespace BarPromenade
             Audio = RetroAudioService.EnsureInstalled();
             GameLogPhases.Report("stairwell", "runtime_setup", phaseTimer);
             phaseTimer.Restart();
-            Layout = StairwellLayoutPlanner.Generate();
+            Layout = StairwellLayoutPlanner.Generate(GameSessionState.HomeSleepAppearanceActive);
             GameLogPhases.Report("stairwell", "layout", phaseTimer);
             phaseTimer.Restart();
             World = StairwellWorldBuilder.Build(transform, Layout);
@@ -115,7 +115,7 @@ namespace BarPromenade
             Atmosphere =
                 atmosphereObject.AddComponent<
                     StairwellInteriorAtmosphere>();
-            Atmosphere.Initialize();
+            Atmosphere.Initialize(Layout.IsCorrupted);
 
             GameObject musicObject =
                 new GameObject("Stairwell Music");

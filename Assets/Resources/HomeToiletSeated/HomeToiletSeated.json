@@ -1,7 +1,105 @@
 {
   "schema_version": 1,
   "generator_version": "1.4.0",
-  "source_hero_sha256": "c1b9b754e28da0dc2c2fac184718101fc9b6a2c854c6a1719a5e024bc8933e66",
+  "source_hero_sha256": "db35a0d328d8dd4126bfba9e06f479e7e9166fb636e065fc7cd2d3bc6c8d9050",
+  "hero_corruption": {
+    "schema": "hero_corruption_v1",
+    "shape_name": "HeroCorruption",
+    "stage_weights": [
+      0.0,
+      10.0,
+      23.0,
+      40.0,
+      60.0,
+      80.0,
+      100.0
+    ],
+    "original_rig_weights_uvs_actions": true,
+    "shared_position_field": true,
+    "original_export_triangulation_preserved": true,
+    "mesh_names": [
+      "Bare_Pelvis",
+      "Bare_Thigh.L",
+      "Bare_Thigh.R",
+      "Trousers_Belt",
+      "Trousers_BeltBuckle",
+      "Trousers_Pelvis",
+      "Trousers_Thigh.L",
+      "Trousers_Thigh.R"
+    ],
+    "surfaces": [
+      {
+        "renderer": "Bare_Pelvis",
+        "vertex_count": 481,
+        "maximum_displacement_m": 0.030437
+      },
+      {
+        "renderer": "Bare_Thigh.L",
+        "vertex_count": 40,
+        "maximum_displacement_m": 0.0223856
+      },
+      {
+        "renderer": "Bare_Thigh.R",
+        "vertex_count": 40,
+        "maximum_displacement_m": 0.0228045
+      },
+      {
+        "renderer": "Trousers_Belt",
+        "vertex_count": 64,
+        "maximum_displacement_m": 0.0374356
+      },
+      {
+        "renderer": "Trousers_BeltBuckle",
+        "vertex_count": 8,
+        "maximum_displacement_m": 0.0231532
+      },
+      {
+        "renderer": "Trousers_Pelvis",
+        "vertex_count": 120,
+        "maximum_displacement_m": 0.0356861
+      },
+      {
+        "renderer": "Trousers_Thigh.L",
+        "vertex_count": 84,
+        "maximum_displacement_m": 0.0256303
+      },
+      {
+        "renderer": "Trousers_Thigh.R",
+        "vertex_count": 84,
+        "maximum_displacement_m": 0.0258653
+      }
+    ],
+    "geometry_sha256": "b91321a36e664905c51a3992794cacec7f7927c53f2a0441c2695bae49c96772",
+    "hair_lengths": {
+      "contract": "hero_hair_length_v1",
+      "short_shape": "HeroHairShort",
+      "long_shape": "HeroHairLong",
+      "shortest_scale": 0.55,
+      "longest_scale": 1.8,
+      "short_stage_weights": [
+        100.0,
+        65.0,
+        25.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "long_stage_weights": [
+        0.0,
+        0.0,
+        0.0,
+        20.0,
+        45.0,
+        70.0,
+        100.0
+      ],
+      "rest_translation_compensated": true,
+      "root_pins_and_original_bones": true,
+      "surfaces": [],
+      "geometry_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
   "joint_surfaces": {
     "contract": "character_joint_surfaces_v1",
     "source_space": "blender_z_up_minus_y_forward",
@@ -1061,7 +1159,7 @@
       "garment_id": "hero_belt"
     }
   },
-  "geometry_sha256": "242d08cb3db2e1337e8b34fc68c67e8e55e3c0f2690a57d8f1c8280c46e6336f",
+  "geometry_sha256": "c0a038a973e6f4c5880330fd7a99548d1b7fe9b016da49b061ca8baaed96a4cd",
   "trousers_contract": "Exact production source position/UV at Basis; Lowered shape gathers at knee via actual-bone presentation proxies",
   "stools": [
     {
@@ -1075,5 +1173,5 @@
       "diameter": 0.034
     }
   ],
-  "signature": "9fc4df24749f08cd9aead0c8d7940e33260559799af5ce7cfcc4d81e02e24f40"
+  "signature": "f7a7197ea6c98858897014c3e466224b884f163005c592e50e1e47f33c836f74"
 }

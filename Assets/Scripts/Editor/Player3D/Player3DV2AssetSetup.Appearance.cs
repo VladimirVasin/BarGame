@@ -94,7 +94,12 @@ namespace BarPromenade.Editor
                     parent = joint;
                 }
             }
-            prefabRoot.AddComponent<PlayerHair>().Configure(registry, joints.ToArray());
+            if (manifest.hair.lengths?.contract != "hero_hair_length_v1" ||
+                manifest.hair.lengths.shortest_scale <= 0f || manifest.hair.lengths.shortest_scale >= 1f ||
+                manifest.hair.lengths.longest_scale <= 1f || manifest.hair.lengths.longest_scale > 3f)
+                throw new InvalidOperationException("Hero hair requires the authored short/long rest-length contract.");
+            prefabRoot.AddComponent<PlayerHair>().Configure(registry, joints.ToArray(),
+                manifest.hair.lengths.shortest_scale, manifest.hair.lengths.longest_scale);
             ConfigureJacketCloth(prefabRoot, registry, manifest.jacket_cloth, renderers);
             int visibleTriangles = renderers.Values.Where(renderer => renderer.enabled).Sum(RendererTriangles);
             if (visibleTriangles != manifest.quality.worn_triangle_count)
@@ -191,7 +196,17 @@ namespace BarPromenade.Editor
             public string id, slot;
             public string[] renderers, covered_body_renderers;
         }
-        [Serializable] private sealed class PlayerHairManifest { public string contract; public PlayerHairChain[] chains; }
+        [Serializable] private sealed class PlayerHairManifest
+        {
+            public string contract;
+            public PlayerHairChain[] chains;
+            public PlayerHairLengthManifest lengths;
+        }
+        [Serializable] private sealed class PlayerHairLengthManifest
+        {
+            public string contract;
+            public float shortest_scale, longest_scale;
+        }
         [Serializable] private sealed class PlayerHairChain { public string name; public string[] bones, renderers; }
         [Serializable] private sealed class PlayerAppearanceQuality { public int worn_triangle_count, hidden_body_triangle_count; }
         [Serializable] private sealed class PlayerJacketClothManifest

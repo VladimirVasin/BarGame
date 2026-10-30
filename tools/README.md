@@ -1,7 +1,7 @@
 # Art/native tools
 
-Home:`build-home-interior-3d-model.py`+`home_interior_remodel.py`/`interior_kit`;
-`--validate-only`; maps `build-home-textures.py --room-only`.
+Home:`build-home-{interior-3d-model,textures,corruption-textures}.py`;
+macro shader:`build-surface-damage-shader.py --check`.
 Bar:`build-bar-3d-model.py`/`bar_interior_unique_surfaces.py`: `--validate-only`;
 `check-bar-interior-surfaces.py --validate-only`:FBX UV0/1.
 Church:`build-church-3d-model.py`+`church_metric_geometry.py`/kit:
@@ -156,9 +156,9 @@ VHS:Windows `tools/audio-vhs/build.ps1`;Mac `tools/audio-vhs/build-macos.py`.
 Both validate ABI/DSP;compile-only retains temporary output.
 See [audio-vhs/README.md](audio-vhs/README.md).
 
-`build-player-3d-model-v2.py`:31core+12hair;`--surfaces-only`:UV
-`--hand-grip-only --skip-animation-export --no-previews`:grips/`hand_grip.gestures`;
-`player_hand_gestures.validate`:shapes/FBX.
+`build-player-3d-model-v2.py`: `--{surfaces,hand-grip,corruption}-only`;
+`--skip-animation-export --no-previews`;`player_hand_gestures.validate`:FBX.
+`build-player-corruption-portraits.py`:views.
 `build-player-bar-repeat-actions.py`:wave/wrist;`validate`.
 `build-player-karaoke-actions-3d-model.py`:43-bone Enter/Loop/Exit, planted feet,
 neutral/seam/determinism checks; `PlayerKaraokeActionAssetSetup` checks imports.

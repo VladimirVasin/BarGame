@@ -10,13 +10,17 @@ namespace BarPromenade
             IReadOnlyList<Collider> stairColliders,
             Collider upperBlocker,
             Transform streetDoor,
-            Transform apartmentDoor)
+            Transform apartmentDoor,
+            Collider descentWall = null,
+            Collider upperLanding = null)
         {
             Root = root;
             StairColliders = stairColliders;
             UpperBlocker = upperBlocker;
             StreetDoor = streetDoor;
             ApartmentDoor = apartmentDoor;
+            DescentWall = descentWall;
+            UpperLanding = upperLanding;
         }
 
         public Transform Root { get; }
@@ -24,5 +28,7 @@ namespace BarPromenade
         public Collider UpperBlocker { get; }
         public Transform StreetDoor { get; }
         public Transform ApartmentDoor { get; }
+        public Collider DescentWall { get; }
+        public Collider UpperLanding { get; }
     }
 }

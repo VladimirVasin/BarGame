@@ -638,6 +638,12 @@ namespace BarPromenade
                         marker = name.IndexOf("BootToeRoll", StringComparison.Ordinal);
                     if (marker < 0 || marker > 0 && name[marker - 1] != '.')
                         marker = name.IndexOf("BootAnkle", StringComparison.Ordinal);
+                    if (marker < 0 || marker > 0 && name[marker - 1] != '.')
+                        marker = name.IndexOf(PlayerCorruptionAppearance.ShapeName, StringComparison.Ordinal);
+                    if (marker < 0 || marker > 0 && name[marker - 1] != '.')
+                        marker = name.IndexOf("HeroHairShort", StringComparison.Ordinal);
+                    if (marker < 0 || marker > 0 && name[marker - 1] != '.')
+                        marker = name.IndexOf("HeroHairLong", StringComparison.Ordinal);
                     if (marker < 0 || marker > 0 && name[marker - 1] != '.') continue;
                     int frame = mesh.GetBlendShapeFrameCount(i) - 1;
                     var delta = new Vector3[vertices.Length];

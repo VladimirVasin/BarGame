@@ -9,7 +9,8 @@ namespace BarPromenade
         AwaitingWake = 2,
         AlarmRinging = 3,
         Waking = 4,
-        Complete = 5
+        Complete = 5,
+        AwaitingStand = 6
     }
 
     /// <summary>

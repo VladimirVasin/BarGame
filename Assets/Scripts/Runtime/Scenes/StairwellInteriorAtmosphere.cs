@@ -41,8 +41,10 @@ namespace BarPromenade
         public Volume PostProcessVolume { get; private set; }
         public VolumeProfile RuntimeProfile => runtimeProfile;
         public ParticleSystem Dust { get; private set; }
+        public Light UpperGlow { get; private set; }
+        public CityLightHalo UpperGlowHalo { get; private set; }
 
-        public void Initialize()
+        public void Initialize(bool corrupted = false)
         {
             if (IsInitialized ||
                 practicalLights.Count > 0 ||
@@ -79,9 +81,35 @@ namespace BarPromenade
                     7.0f,
                     3.1f,
                     false));
+            if (corrupted) CreateUpperGlow();
             CreatePostProcessVolume();
             CreateDust();
             IsInitialized = true;
+        }
+
+        private void CreateUpperGlow()
+        {
+            var source = new GameObject("Corrupted Upper Stair Glow");
+            source.transform.SetParent(transform, false);
+            source.transform.localPosition = new Vector3(-1.45f, 9.5f, 10.5f);
+            source.transform.localRotation = Quaternion.LookRotation(new Vector3(0f, -1.6f, -3.84f));
+            UpperGlow = source.AddComponent<Light>();
+            UpperGlow.type = LightType.Spot;
+            UpperGlow.color = new Color(.54f, .86f, .66f);
+            UpperGlow.intensity = 35f;
+            UpperGlow.range = 24f;
+            UpperGlow.spotAngle = 38f;
+            UpperGlow.innerSpotAngle = 20f;
+            UpperGlow.shadows = LightShadows.Hard;
+            UpperGlow.shadowBias = .035f;
+            UpperGlow.shadowNormalBias = .15f;
+            UpperGlow.bounceIntensity = 0f;
+            UpperGlow.renderMode = LightRenderMode.ForcePixel;
+            var halo = new GameObject("Corrupted Upper Stair Glow Halo");
+            halo.transform.SetParent(source.transform, false);
+            UpperGlowHalo = halo.AddComponent<CityLightHalo>();
+            UpperGlowHalo.Initialize(CityNightResources.AtmosphereMaterial, 3f, 8f,
+                new Color(.86f, 1f, .87f, .90f), new Color(.45f, .86f, .60f, .24f));
         }
 
         private Light CreatePracticalLight(

@@ -546,6 +546,35 @@ namespace BarPromenade.Tests.PlayMode
                 soundscape.BathroomLightCrackleSource;
             AudioClip crackleClip =
                 soundscape.BathroomLightCrackleClip;
+            Assert.That(crackleSource.clip, Is.SameAs(crackleClip),
+                "Flicker edges must retrigger one owned voice, not stack PlayOneShot sub-voices.");
+            int acceptedCrackles = soundscape.BathroomLightCracklePlayCount;
+            bool previousListenerPause = AudioListener.pause;
+            try
+            {
+                AudioListener.pause = true;
+                // More callbacks than the project's virtual-voice budget:
+                // paused DSP must never accumulate pending crackles.
+                for (int edge = 0; edge < 1024; edge++)
+                    flicker.ApplyAtElapsedSeconds((edge & 1) == 0 ? 4.82f : 4.72f);
+                Assert.That(soundscape.BathroomLightCracklePlayCount, Is.EqualTo(acceptedCrackles));
+            }
+            finally { AudioListener.pause = previousListenerPause; }
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                flicker.ApplyAtElapsedSeconds(4.82f);
+                flicker.ApplyAtElapsedSeconds(4.72f);
+                Assert.That(soundscape.BathroomLightCracklePlayCount, Is.EqualTo(acceptedCrackles));
+            }
+            flicker.ApplyAtElapsedSeconds(4.82f);
+            Assert.That(soundscape.BathroomLightCracklePlayCount, Is.EqualTo(acceptedCrackles + 1),
+                "Resume accepts the next real edge without replaying a paused backlog.");
+            Assert.That(soundscape.GetComponentsInChildren<AudioSource>(true),
+                Has.Length.EqualTo(HomeSoundscape.OwnedSourceCount));
+            soundscape.enabled = false;
+            Assert.That(crackleSource.isPlaying, Is.False);
+            flicker.ApplyAtElapsedSeconds(4.72f);
+            Assert.That(soundscape.BathroomLightCracklePlayCount, Is.EqualTo(acceptedCrackles + 1));
             Object.Destroy(soundscape);
             yield return null;
             yield return null;

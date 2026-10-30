@@ -16,10 +16,12 @@ namespace BarPromenade
         private HomeInteriorRoot home;
         private MinigameDebugWindow debugWindow;
         private Action<int> applyDay;
+        private HomeBalconyCorruptionBarrier balconyBarrier;
 
         public bool IsInitialized { get; private set; }
         public int AppliedDayNumber { get; private set; }
         public int PendingDayNumber => GameSessionState.HomeAppearanceDayNumber;
+        public HomeBalconyCorruptionBarrier BalconyBarrier => balconyBarrier;
 
         public void Initialize(HomeInteriorRoot homeRoot, Action<int> apply)
         {
@@ -33,6 +35,11 @@ namespace BarPromenade
                 ? homeRoot
                 : throw new ArgumentNullException(nameof(homeRoot));
             applyDay = apply;
+            balconyBarrier = home.Balcony != null
+                ? home.Balcony.GetComponent<HomeBalconyCorruptionBarrier>() : null;
+            if (balconyBarrier == null)
+                throw new InvalidOperationException("The apartment needs its authored balcony door barrier.");
+            balconyBarrier.BindPlayer(home.Player);
             IsInitialized = true;
             // Construction must start with the right visual state even
             // when the opening immediately takes the interaction lock.
@@ -96,8 +103,8 @@ namespace BarPromenade
 
         /// <summary>
         /// The sleep presentation calls this while its cut fully covers the
-        /// room. Only that bed's held sleep pose permits the mid-action swap;
-        /// ordinary calendar refreshes still wait for a safe boundary.
+        /// room. Only that bed's held sleep pose permits the mid-action room
+        /// and hero swap; ordinary refreshes still wait for a safe boundary.
         /// </summary>
         public bool CommitSleepAppearance(HomeBedInteraction owner)
         {
@@ -117,7 +124,16 @@ namespace BarPromenade
                 return false;
             }
 
+            if (!(home.Player.Visual is Player3DCharacterPresentation hero) ||
+                hero.CorruptionAppearance == null)
+                return false;
+
             GameSessionState.CommitHomeSleepAppearance();
+            // Normal hero updates deliberately defer an appearance change
+            // throughout contextual clips. This covered, validated sleep
+            // handoff applies the same shared owner before the first wake
+            // frame, without replacing the rig or altering its held pose.
+            hero.CorruptionAppearance.ApplyLevel(GameSessionState.HeroCorruptionLevel);
             Apply(PendingDayNumber);
             return true;
         }
@@ -160,6 +176,7 @@ namespace BarPromenade
             }
 
             applyDay?.Invoke(dayNumber);
+            balconyBarrier.RefreshAppearance(dayNumber);
             AppliedDayNumber = dayNumber;
         }
 

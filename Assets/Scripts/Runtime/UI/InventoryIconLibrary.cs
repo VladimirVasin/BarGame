@@ -8,9 +8,11 @@ namespace BarPromenade
         private static readonly Dictionary<InventoryItemId, Texture2D> Icons =
             new Dictionary<InventoryItemId, Texture2D>();
         private static Texture2D heroPortrait;
+        private static readonly Texture2D[] corruptionPortraits = new Texture2D[7];
+        private static readonly bool[] corruptionPortraitResolved = new bool[7];
 
         internal const string HeroPortraitResourcePath =
-            "Player/Player3DV2Portrait";
+            "Player/Corruption/Portrait1";
 
         internal static readonly Rect HeroPortraitUv =
             new Rect(0f, 0f, 1f, 1f);
@@ -42,6 +44,17 @@ namespace BarPromenade
                 }
             }
 
+            int level = GameSessionState.HeroCorruptionLevel;
+            int index = level - HeroCorruptionRules.FirstLevel;
+            if (level >= HeroCorruptionRules.FirstLevel)
+            {
+                if (!corruptionPortraitResolved[index])
+                {
+                    corruptionPortraitResolved[index] = true;
+                    corruptionPortraits[index] = Resources.Load<Texture2D>("Player/Corruption/Portrait" + level);
+                }
+                if (corruptionPortraits[index] != null) return corruptionPortraits[index];
+            }
             return heroPortrait;
         }
 

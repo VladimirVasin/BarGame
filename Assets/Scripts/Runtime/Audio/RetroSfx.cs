@@ -86,6 +86,7 @@ namespace BarPromenade
         ShotgunClose,
         FootstepMetal,
         Payment,
+        HomeSleepStartle,
         Count
     }
 
@@ -146,6 +147,8 @@ namespace BarPromenade
     public static class RetroSfxLibrary
     {
         public const int SampleRate = 22050;
+        public const float HomeSleepStartleDurationSeconds = 5.2f;
+        public const float HomeSleepStartleTailSeconds = 1.3f;
         public const float WarehouseFootstepPitchScale = 0.84f;
         public const float WarehouseGunshotPitchScale = 0.88f;
 
@@ -900,7 +903,11 @@ namespace BarPromenade
             new RetroSfxDefinition(RetroSfxId.FootstepMetal, RetroSfxCategory.World,
                 .28f, .25f, 1f, 2, .075f, 2, 1024, 6400f, .05f, 139, 3),
             new RetroSfxDefinition(RetroSfxId.Payment, RetroSfxCategory.Ui,
-                .24f, .40f, 0f, 2, .05f, 1, 2048, 4600f, 0f, 44)
+                .24f, .40f, 0f, 2, .05f, 1, 2048, 4600f, 0f, 44),
+            // One owned, finite nonverbal transformation, including its tail.
+            // Gameplay routes it through the existing SFX gain and perception bus.
+            new RetroSfxDefinition(RetroSfxId.HomeSleepStartle, RetroSfxCategory.Bar,
+                HomeSleepStartleDurationSeconds, .86f, 0f, 1, .5f, 1, 4096, 8500f, 0f, 30)
         };
 
         public static int Count => definitions.Length - 1;
@@ -1172,6 +1179,8 @@ namespace BarPromenade
                     return GenerateUiConfirm(time, duration);
                 case RetroSfxId.Payment:
                     return GeneratePayment(time, ref noiseState);
+                case RetroSfxId.HomeSleepStartle:
+                    return GenerateHomeSleepStartle(time, duration, ref noiseState);
                 case RetroSfxId.UiCancel:
                     return GenerateUiCancel(time, duration);
                 case RetroSfxId.MapOpen:
@@ -1477,6 +1486,40 @@ namespace BarPromenade
                     noise * Mathf.Exp(-local * 180f) * .12f;
             }
             return sample;
+        }
+
+        private static float GenerateHomeSleepStartle(float time, float duration, ref uint noiseState)
+        {
+            float noise = NextNoise(ref noiseState);
+            const float tau = 2f * Mathf.PI;
+            // The onset is dry and sharp, but it is not the master envelope.
+            // A transient-only exponential made the previous long buffer go
+            // effectively silent after its first tenth of a second.
+            float onset = (noise * .59f +
+                Mathf.Sin(tau * 1187f * time) * .18f) *
+                Mathf.Exp(-time * 47f) * Mathf.Clamp01(time / .0007f);
+
+            float low = GlideSine(time, duration, 96f, 64f) * .19f +
+                GlideSine(time, duration, 153f, 121f) * .12f;
+            // These inharmonic, slowly bending bands remain audible on normal
+            // speakers; there is no pitched melody, vocal formant or voice.
+            float mid = Mathf.Sin(tau * (271f * time +
+                6f * Mathf.Sin(tau * .21f * time))) * .14f +
+                Mathf.Sin(tau * (389f * time +
+                9f * Mathf.Sin(tau * .17f * time + .7f))) * .105f;
+            float metal = Mathf.Sin(tau * 517f * time +
+                2.4f * Mathf.Sin(tau * 139.7f * time)) * .095f +
+                Mathf.Sin(tau * 743f * time +
+                1.8f * Mathf.Sin(tau * 181.3f * time)) * .065f;
+            float pulse = .80f + .13f * Mathf.Sin(tau *
+                (1.1f * time + .16f * time * time)) +
+                .07f * Mathf.Sin(tau * 3.73f * time);
+            float grain = noise * (.052f + .022f *
+                Mathf.Sin(tau * (29f * time + 1.4f * time * time)));
+            float sustainAttack = Mathf.Clamp01(time / .045f);
+            float tail = Mathf.Clamp01((duration - time) / HomeSleepStartleTailSeconds);
+            tail = tail * tail * (3f - 2f * tail);
+            return (onset + ((low + mid + metal) * pulse + grain) * sustainAttack) * tail;
         }
 
         private static float GeneratePistolMechanic(RetroSfxId id, float time, float duration, ref uint noiseState, float detune)

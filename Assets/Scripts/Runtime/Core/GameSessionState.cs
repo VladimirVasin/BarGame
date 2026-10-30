@@ -7,7 +7,8 @@ namespace BarPromenade
     public enum HomeArrivalKind
     {
         Normal = 0,
-        OpeningSleep = 1
+        OpeningSleep = 1,
+        NewGameSleep = 2
     }
 
     public enum AlpineVillageArrivalKind
@@ -167,6 +168,20 @@ namespace BarPromenade
             private set;
         } = AlpineVillageArrivalKind.Default;
         public static int IntoxicationLevel { get; private set; }
+
+        /// <summary>Retained decay dose; drinking and the technical sleep cut raise it, recovery never lowers it.</summary>
+        public static int HeroCorruptionDose { get; private set; }
+        public static int HeroCorruptionLevel =>
+            HeroCorruptionRules.ResolveLevel(HeroCorruptionDose);
+
+        /// <summary>Exact developer preview, independent of calendar and current intoxication.</summary>
+        public static bool TrySetDebugHeroCorruptionLevel(int level)
+        {
+            if (level < HeroCorruptionRules.FirstLevel || level > HeroCorruptionRules.LastLevel)
+                return false;
+            HeroCorruptionDose = HeroCorruptionRules.MinimumDoseForLevel(level);
+            return true;
+        }
 
         /// <summary>
         /// The hero threw up and has not washed since: the face wears
@@ -389,6 +404,9 @@ namespace BarPromenade
             return gameTime.TryStartAt(minuteOfDay);
         }
 
+        public static bool TryPrepareGameTimeAt(int minuteOfDay) => gameTime.TryPrepareAt(minuteOfDay);
+        public static bool TryStartPreparedGameTime() => gameTime.TryStartPrepared();
+
         public static bool TrySetDebugGameDay(int dayNumber)
         {
             if (dayNumber < FirstDebugGameDayNumber ||
@@ -424,7 +442,12 @@ namespace BarPromenade
 
         internal static void CommitHomeSleepAppearance()
         {
+            // The technical sleep cut commits the two maximum appearances
+            // together. It may raise accumulated decay, never erase a dose
+            // already beyond the last presentation threshold.
             HomeSleepAppearanceActive = true;
+            HeroCorruptionDose = Math.Max(HeroCorruptionDose,
+                HeroCorruptionRules.MinimumDoseForLevel(HeroCorruptionRules.LastLevel));
         }
 
         public static void AdvanceGameTime(float scaledDelta)
@@ -555,6 +578,7 @@ namespace BarPromenade
             AlpineVillageArrival = AlpineVillageArrivalKind.Default;
             DebugCityMapOnArrivalRequested = false;
             IntoxicationLevel = 0;
+            HeroCorruptionDose = 0;
             // A new game starts with a clean face; assigned directly
             // because nothing here is a change worth a log line.
             HeroMouthSoiled = false;
@@ -1222,7 +1246,10 @@ namespace BarPromenade
                     result.IntoxicationAfter,
                     definition.DrinkId,
                     result.DrinksConsumedAfter,
-                    result.RequestedStressRelief);
+                    result.RequestedStressRelief,
+                    PlayerNeedsRules.ScaleRelief(
+                        DrinkRules.GetIntoxicationGain(definition.DrinkId),
+                        definition.Servings));
             }
 
             LogInventoryItemUse(result);
@@ -1631,7 +1658,8 @@ namespace BarPromenade
             HomeArrivalKind arrival)
         {
             if (arrival != HomeArrivalKind.Normal &&
-                arrival != HomeArrivalKind.OpeningSleep)
+                arrival != HomeArrivalKind.OpeningSleep &&
+                arrival != HomeArrivalKind.NewGameSleep)
             {
                 throw new ArgumentOutOfRangeException(nameof(arrival));
             }
@@ -1809,20 +1837,26 @@ namespace BarPromenade
                 intoxication,
                 lastDrink,
                 normalizedDrinksConsumed,
-                requestedStressRelief);
+                requestedStressRelief,
+                (int)Math.Min(int.MaxValue,
+                    (long)DrinkRules.GetIntoxicationGain(lastDrink) *
+                    (normalizedDrinksConsumed - DrinksConsumed)));
         }
 
         private static void CommitAcceptedDrinkingProgress(
             int intoxication,
             DrinkId lastDrink,
             int drinksConsumed,
-            int requestedStressRelief)
+            int requestedStressRelief,
+            int swallowedAlcoholDose)
         {
             int previousDrinksConsumed = DrinksConsumed;
             UpdateDrinkingProgress(
                 intoxication,
                 lastDrink,
                 drinksConsumed);
+            HeroCorruptionDose = HeroCorruptionRules.AddDose(
+                HeroCorruptionDose, swallowedAlcoholDose);
             int normalizedRelief = Math.Max(0, requestedStressRelief);
             PlayerNeedReliefResult relief =
                 PlayerNeedsRules.ApplyStressRelief(
@@ -2052,7 +2086,8 @@ namespace BarPromenade
                 intoxication,
                 lastDrink,
                 DrinksConsumed + 1,
-                DrinkRules.GetStressRelief(order.DrinkId));
+                DrinkRules.GetStressRelief(order.DrinkId),
+                DrinkRules.GetIntoxicationGain(order.DrinkId));
             GameLog.Info(
                 "session",
                 "paid_drink_consumed",

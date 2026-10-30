@@ -12,8 +12,26 @@ namespace BarPromenade
             new List<(HomeAuthoredPart, GameObject)>();
         private readonly List<(HomeAuthoredPart part, GameObject root)> decoration =
             new List<(HomeAuthoredPart, GameObject)>();
-        private readonly Dictionary<Renderer, (HomeSurfaceKind kind, Color tint)> surfaces =
-            new Dictionary<Renderer, (HomeSurfaceKind, Color)>();
+        private readonly Dictionary<Renderer, SurfaceState> surfaces = new Dictionary<Renderer, SurfaceState>();
+        private MaterialPropertyBlock surfaceProperties;
+        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId = Shader.PropertyToID("_Color");
+        private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
+        private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
+
+        private readonly struct SurfaceState
+        {
+            internal SurfaceState(HomeSurfaceKind kind, Color tint, Texture texture, float smoothness,
+                bool ageAcrossDays, SurfaceDamageLibrary.Entry damage, Material material)
+            { Kind = kind; Tint = tint; Texture = texture; Smoothness = smoothness; AgeAcrossDays = ageAcrossDays; Damage = damage; Material = material; }
+            internal HomeSurfaceKind Kind { get; }
+            internal Color Tint { get; }
+            internal Texture Texture { get; }
+            internal float Smoothness { get; }
+            internal bool AgeAcrossDays { get; }
+            internal SurfaceDamageLibrary.Entry Damage { get; }
+            internal Material Material { get; }
+        }
         public int AppliedDayNumber { get; private set; } = 1;
         public int VisiblePartCount
         {
@@ -34,12 +52,24 @@ namespace BarPromenade
             root.SetActive(AppliedDayNumber >= part.min_day && AppliedDayNumber <= part.max_day);
         }
 
-        internal void RegisterSurface(Renderer renderer, HomeSurfaceKind kind)
+        internal void RegisterSurface(Renderer renderer, HomeSurfaceKind kind, bool ageAcrossDays = true,
+            string damageKey = null)
         {
-            var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
-            surfaces[renderer] = (kind, properties.GetColor("_BaseColor"));
-            ApplySurfaceDay(renderer, kind, surfaces[renderer].tint);
+            if (renderer == null) return;
+            surfaceProperties ??= new MaterialPropertyBlock();
+            // A repeated appearance binding must retain its original clean
+            // source rather than capturing a previously applied day tint/map.
+            if (!surfaces.TryGetValue(renderer, out SurfaceState source))
+            {
+                surfaceProperties.Clear();
+                renderer.GetPropertyBlock(surfaceProperties);
+                source = new SurfaceState(kind, surfaceProperties.GetColor(BaseColorId),
+                    surfaceProperties.GetTexture(BaseMapId) ?? HomeSurfaceAppearance.GetTexture(kind),
+                    surfaceProperties.GetFloat(SmoothnessId), ageAcrossDays,
+                    SurfaceDamageLibrary.Resolve("home", damageKey, renderer.name, kind.ToString()), renderer.sharedMaterial);
+                surfaces.Add(renderer, source);
+            }
+            ApplySurfaceDay(renderer, source);
         }
 
         internal void Build(HomeInteriorLayoutPlan plan, HomeBalconyLayoutPlan balcony,
@@ -72,12 +102,17 @@ namespace BarPromenade
                 if (item.root != null) item.root.SetActive(
                     AppliedDayNumber >= item.part.min_day && AppliedDayNumber <= item.part.max_day);
             foreach (var entry in surfaces)
-                if (entry.Key != null) ApplySurfaceDay(entry.Key, entry.Value.kind, entry.Value.tint);
+                if (entry.Key != null) ApplySurfaceDay(entry.Key, entry.Value);
         }
 
-        private void ApplySurfaceDay(Renderer renderer, HomeSurfaceKind kind, Color original)
+        private void ApplySurfaceDay(Renderer renderer, SurfaceState source)
         {
-            float amount = (AppliedDayNumber - 1) / 6f;
+            HomeSurfaceKind kind = source.Kind;
+            Color original = source.Tint;
+            bool final = AppliedDayNumber == HomeApartmentDayRules.LastDayNumber;
+            // Calendar decor already carries authored wear and staging. Its
+            // earlier appearances stay exact; only the final view adds decay.
+            float amount = source.AgeAcrossDays ? (AppliedDayNumber - 1) / 6f : final ? 1f : 0f;
             Color lastDay;
             switch (kind)
             {
@@ -95,11 +130,15 @@ namespace BarPromenade
             }
             Color tint = original * Color.Lerp(Color.white, lastDay, amount);
             tint.a = original.a;
-            var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
-            properties.SetColor("_BaseColor", tint);
-            properties.SetColor("_Color", tint);
-            renderer.SetPropertyBlock(properties);
+            surfaceProperties ??= new MaterialPropertyBlock();
+            surfaceProperties.Clear();
+            renderer.GetPropertyBlock(surfaceProperties);
+            surfaceProperties.SetColor(BaseColorId, tint);
+            surfaceProperties.SetColor(ColorId, tint);
+            surfaceProperties.SetTexture(BaseMapId, source.Texture);
+            surfaceProperties.SetFloat(SmoothnessId, source.Smoothness);
+            SurfaceDamageLibrary.Apply(renderer, surfaceProperties, source.Damage, transform, final ? 1f : 0f, source.Material);
+            renderer.SetPropertyBlock(surfaceProperties);
         }
 
         public void ValidateOrThrow(HomeInteriorLayoutPlan plan, HomeBalconyLayoutPlan balcony)

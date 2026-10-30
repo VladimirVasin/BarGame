@@ -199,6 +199,7 @@ namespace BarPromenade.Editor
             new CanonicalFaceCell(PlayerFacialExpression.Spit, 3, 1),
             new CanonicalFaceCell(PlayerFacialExpression.TeethInspectHalf, 0, 0),
             new CanonicalFaceCell(PlayerFacialExpression.TeethInspect, 1, 0),
+            new CanonicalFaceCell(PlayerFacialExpression.Horror, 2, 0),
             new CanonicalFaceCell(
                 PlayerFacialExpression.Neutral, SoiledAtlasColumnOffset + 0, 3, true),
             new CanonicalFaceCell(
@@ -224,7 +225,9 @@ namespace BarPromenade.Editor
             new CanonicalFaceCell(
                 PlayerFacialExpression.TeethInspectHalf, SoiledAtlasColumnOffset + 0, 0, true),
             new CanonicalFaceCell(
-                PlayerFacialExpression.TeethInspect, SoiledAtlasColumnOffset + 1, 0, true)
+                PlayerFacialExpression.TeethInspect, SoiledAtlasColumnOffset + 1, 0, true),
+            new CanonicalFaceCell(
+                PlayerFacialExpression.Horror, SoiledAtlasColumnOffset + 2, 0, true)
         };
 
         private static bool isBuilding;
@@ -266,7 +269,20 @@ namespace BarPromenade.Editor
                    File.Exists(ClothingAtlasPath) &&
                    Player3DV2CharacterSurfaces.SourcesExist() &&
                    File.Exists(BareSkinAtlasPath) &&
-                   File.Exists(PortraitPath);
+                   File.Exists(PortraitPath) && CorruptionSourcesExist();
+        }
+
+        private static bool CorruptionSourcesExist()
+        {
+            const string folder = "Assets/Resources/Player/Corruption/";
+            for (int level = HeroCorruptionRules.FirstLevel; level <= HeroCorruptionRules.LastLevel; level++)
+            {
+                if (!File.Exists(folder + "Portrait" + level + ".png")) return false;
+                if (level == HeroCorruptionRules.FirstLevel) continue;
+                foreach (string kind in new[] { "Face", "BareSkin", "Dialogue", "Clothing" })
+                    if (!File.Exists(folder + kind + level + ".png")) return false;
+            }
+            return true;
         }
 
         public static void QueueBuildWhenSourcesExist()
@@ -293,7 +309,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "All Hero V2 model, manifest, animation, face/clothing " +
-                    "atlas and portrait sources must exist before the preview " +
+                    "atlas, portraits and seven corruption profiles must exist before the preview " +
                     "prefab is built.");
             }
 

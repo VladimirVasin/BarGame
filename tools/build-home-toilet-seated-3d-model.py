@@ -14,6 +14,9 @@ import bmesh
 from mathutils import Matrix, Vector
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(ROOT / "tools"))
+import player_corruption
 SOURCE = ROOT / "ArtSource/HomeToiletSeated"
 RESOURCES = ROOT / "Assets/Resources/HomeToiletSeated"
 HERO_SOURCE = ROOT / "ArtSource/PlayerV2/Blender/PlayerCharacter3DV2.blend"
@@ -251,6 +254,12 @@ def make_module(rig, originals):
         accessory = make_copy(originals[source_name], module_name, rig)
         lower_shape(accessory, rig, "pelvis")
         models.append(accessory)
+    # The bare pelvis is rebuilt above, so its source shape keys no longer
+    # exist. Re-author the identical spatial field for it and the UV-identical
+    # clothes; support height, outlet and existing Lowered keys stay unchanged.
+    corruption_parts = [SimpleNamespace(obj=obj, bone=("pelvis" if obj.name in GARMENT_ACCESSORIES.values()
+        else PARTS["GEO_" + obj.name.split("_", 1)[1]])) for obj in models]
+    player_corruption.author(SimpleNamespace(parts=corruption_parts, rig=rig))
     anchor=bpy.data.objects.new("ToiletOutlet",None)
     bpy.context.scene.collection.objects.link(anchor)
     anchor.parent=root
@@ -571,6 +580,7 @@ def main():
     for stool_root,objects in stools:
         expected[objects[0].name]=export_record(objects,[o for o in stool_root.children if o.type=="EMPTY"])
     payload={"schema_version":1,"generator_version":VERSION,"source_hero_sha256":hashlib.sha256(HERO_SOURCE.read_bytes()).hexdigest(),
+        "hero_corruption":player_corruption.manifest(SimpleNamespace(parts=[SimpleNamespace(obj=obj) for obj in models])),
         "joint_surfaces":joint_surfaces,
         "coordinates":"Same FBX axis/unit/import contract as production Hero V2; stool localY up",
         "report":report,"models":["SeatedLowerBody","Stool01","Stool02"],

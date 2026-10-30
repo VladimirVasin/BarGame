@@ -193,6 +193,24 @@ namespace BarPromenade
                     voices[index] = default;
                 }
             }
+
+            public void StopCueBank(RetroSfxId id, AudioClip canonical, AudioClip[] bank)
+            {
+                for (int index = 0; index < sources.Length; index++)
+                {
+                    if (voices[index].Id != id) continue;
+                    AudioClip playing = sources[index].clip;
+                    bool belongs = !NativeClipReady(playing) || playing == canonical;
+                    if (!belongs && bank != null)
+                        for (int variant = 0; variant < bank.Length && !belongs; variant++)
+                            belongs = playing == bank[variant];
+                    if (!belongs) continue;
+                    sources[index].Stop();
+                    RestorePresentationSource(index);
+                    sources[index].clip = null;
+                    voices[index] = default;
+                }
+            }
         }
 
         public const int UiPoolSize = 4;
@@ -200,6 +218,7 @@ namespace BarPromenade
         public const int BarPoolSize = 5;
         public const int TotalPoolSize =
             UiPoolSize + WorldPoolSize + BarPoolSize;
+        private const double InvalidClipRetrySeconds = 1d;
 
         private static RetroAudioService instance;
 
@@ -213,6 +232,11 @@ namespace BarPromenade
         private SourcePool[] pools;
         private double[] nextAllowedTimes;
         private double[] presentationNextAllowedTimes;
+        private uint[] clipRevisions, clipRepairRevisions;
+        private uint[] warehouseClipRevisions, warehouseRepairRevisions;
+        private double[] clipRepairAfter, warehouseRepairAfter;
+        private uint audioConfigurationRevision = 1;
+        private bool audioConfigurationSubscribed;
         private uint playSequence;
         private bool initialized;
 
@@ -265,11 +289,9 @@ namespace BarPromenade
         public AudioClip GetClip(RetroSfxId id)
         {
             int index = (int)id;
-            return clips != null &&
-                   index > 0 &&
-                   index < clips.Length
-                ? clips[index]
-                : null;
+            if (clips == null || index <= 0 || index >= clips.Length) return null;
+            EnsureCueBank(index, false);
+            return clips[index];
         }
 
         /// <summary>
@@ -294,12 +316,13 @@ namespace BarPromenade
                 return null;
             }
 
+            EnsureCueBank(index, false);
             return variantClips[index][variant];
         }
 
         /// <summary>
-        /// A warehouse-only dry impact; this read does not allocate or change
-        /// the canonical clip accessors used elsewhere in the world.
+        /// A warehouse-only dry impact. A stale native bank is repaired lazily;
+        /// the canonical clip accessors used elsewhere remain independent.
         /// </summary>
         public AudioClip GetWarehouseClip(RetroSfxId id, int variant = 0)
         {
@@ -308,6 +331,7 @@ namespace BarPromenade
                 warehouseClips[index] == null || variant < 0 ||
                 variant >= warehouseClips[index].Length)
                 return null;
+            EnsureCueBank(index, true);
             return warehouseClips[index][variant];
         }
 
@@ -320,12 +344,16 @@ namespace BarPromenade
             Initialize();
             if (warehouseClips != null) return;
             warehouseClips = new AudioClip[clips.Length][];
+            warehouseClipRevisions = new uint[clips.Length];
+            warehouseRepairRevisions = new uint[clips.Length];
+            warehouseRepairAfter = new double[clips.Length];
             for (int index = 1; index < clips.Length; index++)
             {
                 var id = (RetroSfxId)index;
                 if (!RetroSfxLibrary.HasWarehouseTreatment(id)) continue;
                 int variantCount = RetroSfxLibrary.GetDefinition(id).VariantCount;
                 var bank = new AudioClip[variantCount];
+                warehouseClipRevisions[index] = audioConfigurationRevision;
                 for (int variant = 0; variant < variantCount; variant++)
                 {
                     bank[variant] = RetroSfxLibrary.CreateWarehouseRuntimeClip(id, variant);
@@ -365,14 +393,19 @@ namespace BarPromenade
             Initialize();
             int index = (int)id;
             if (index <= 0 ||
-                index >= clips.Length ||
-                clips[index] == null)
+                index >= clips.Length)
             {
                 return false;
             }
 
             RetroSfxDefinition definition =
                 RetroSfxLibrary.GetDefinition(id);
+            bool warehouseTreatment = GameAudioMixer.CurrentProfile == GameAudioProfile.CombatWarehouse &&
+                RetroSfxLibrary.HasWarehouseTreatment(id);
+            if (warehouseTreatment) WarmWarehouseClips();
+            // A configuration reset discards script-created native clip data
+            // and DSP play state. Repair only the bank this caller needs.
+            if (!EnsureCueBank(index, warehouseTreatment)) return false;
             double dspTime = AudioSettings.dspTime;
             bool presentationCue = RetroAudio.PresentationCueOwner != null;
             double cueTime = presentationCue ? Time.realtimeSinceStartupAsDouble : dspTime;
@@ -385,13 +418,8 @@ namespace BarPromenade
             SourcePool pool = pools[(int)definition.Category];
             AudioClip clip = clips[index];
             AudioClip[] bank = variantClips[index];
-            bool warehouseTreatment = GameAudioMixer.CurrentProfile == GameAudioProfile.CombatWarehouse &&
-                RetroSfxLibrary.HasWarehouseTreatment(id);
             if (warehouseTreatment)
             {
-                // Defensive fallback for direct callers; production warms the
-                // finite bank when composing the warehouse, before gameplay.
-                WarmWarehouseClips();
                 bank = warehouseClips[index];
                 clip = bank[0];
             }
@@ -421,6 +449,86 @@ namespace BarPromenade
 
             cueCooldowns[index] = cueTime + definition.CooldownSeconds;
             return true;
+        }
+
+        private bool EnsureCueBank(int index, bool warehouse)
+        {
+            uint[] revisions = warehouse ? warehouseClipRevisions : clipRevisions;
+            uint[] repairRevisions = warehouse ? warehouseRepairRevisions : clipRepairRevisions;
+            double[] repairAfter = warehouse ? warehouseRepairAfter : clipRepairAfter;
+            AudioClip[] bank = warehouse ? warehouseClips[index] : variantClips[index];
+            AudioClip canonical = warehouse ? bank[0] : clips[index];
+            if (revisions[index] == audioConfigurationRevision && NativeBankReady(canonical, bank))
+                return true;
+
+            double now = Time.realtimeSinceStartupAsDouble;
+            if (repairRevisions[index] == audioConfigurationRevision && now < repairAfter[index])
+                return false;
+            uint revision = audioConfigurationRevision;
+            repairRevisions[index] = revision;
+            repairAfter[index] = now + InvalidClipRetrySeconds;
+            var id = (RetroSfxId)index;
+            pools?[(int)RetroSfxLibrary.GetDefinition(id).Category]?.StopCueBank(id, canonical, bank);
+            nextAllowedTimes[index] = presentationNextAllowedTimes[index] = 0d;
+
+            if (bank == null)
+            {
+                AudioClip previous = clips[index];
+                clips[index] = RetroSfxLibrary.CreateRuntimeClip(id);
+                DestroyClip(previous);
+                canonical = clips[index];
+            }
+            else
+            {
+                for (int variant = 0; variant < bank.Length; variant++)
+                {
+                    AudioClip previous = bank[variant];
+                    bank[variant] = warehouse
+                        ? RetroSfxLibrary.CreateWarehouseRuntimeClip(id, variant)
+                        : RetroSfxLibrary.CreateRuntimeClip(id, variant);
+                    DestroyClip(previous);
+                }
+                canonical = bank[0];
+                if (!warehouse) clips[index] = canonical;
+            }
+            // Counts describe bounded cache slots, not cumulative rebuilds.
+            // Keep the variant history and all routing/source instances intact.
+            if (revision != audioConfigurationRevision || !NativeBankReady(canonical, bank)) return false;
+            revisions[index] = revision;
+            return true;
+        }
+
+        private static bool NativeBankReady(AudioClip canonical, AudioClip[] bank)
+        {
+            if (!NativeClipReady(canonical)) return false;
+            if (bank != null)
+                for (int variant = 1; variant < bank.Length; variant++)
+                    if (!NativeClipReady(bank[variant])) return false;
+            return true;
+        }
+
+        private static bool NativeClipReady(AudioClip clip) => clip != null &&
+            clip.samples > 0 && clip.frequency > 0 && clip.channels > 0 && clip.length > 0f;
+
+        private void HandleAudioConfigurationChanged(bool deviceWasChanged)
+        {
+            // The callback never rebuilds the world bank, resumes a lost cue,
+            // or retries an unavailable host device from the frame loop.
+            audioConfigurationRevision = unchecked(audioConfigurationRevision + 1);
+        }
+
+        private void SubscribeAudioConfiguration()
+        {
+            if (audioConfigurationSubscribed || instance != this) return;
+            AudioSettings.OnAudioConfigurationChanged += HandleAudioConfigurationChanged;
+            audioConfigurationSubscribed = true;
+        }
+
+        private void UnsubscribeAudioConfiguration()
+        {
+            if (!audioConfigurationSubscribed) return;
+            AudioSettings.OnAudioConfigurationChanged -= HandleAudioConfigurationChanged;
+            audioConfigurationSubscribed = false;
         }
 
         internal void SetPresentationPaused(object owner, bool paused)
@@ -475,11 +583,16 @@ namespace BarPromenade
 
             instance = this;
             DontDestroyOnLoad(gameObject);
+            SubscribeAudioConfiguration();
             Initialize();
         }
 
+        private void OnEnable() => SubscribeAudioConfiguration();
+        private void OnDisable() => UnsubscribeAudioConfiguration();
+
         private void OnDestroy()
         {
+            UnsubscribeAudioConfiguration();
             if (instance != this)
             {
                 return;
@@ -502,9 +615,13 @@ namespace BarPromenade
             lastVariants = new int[clips.Length];
             nextAllowedTimes = new double[clips.Length];
             presentationNextAllowedTimes = new double[clips.Length];
+            clipRevisions = new uint[clips.Length];
+            clipRepairRevisions = new uint[clips.Length];
+            clipRepairAfter = new double[clips.Length];
             for (int index = 1; index < clips.Length; index++)
             {
                 var id = (RetroSfxId)index;
+                clipRevisions[index] = audioConfigurationRevision;
                 clips[index] = RetroSfxLibrary.CreateRuntimeClip(id);
                 GeneratedClipCount++;
 
@@ -597,6 +714,9 @@ namespace BarPromenade
                 }
             }
             warehouseClips = null;
+            clipRevisions = clipRepairRevisions = null;
+            warehouseClipRevisions = warehouseRepairRevisions = null;
+            clipRepairAfter = warehouseRepairAfter = null;
             lastVariants = null;
             GeneratedClipCount = 0;
             GeneratedVariantClipCount = 0;

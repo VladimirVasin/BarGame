@@ -2608,7 +2608,7 @@
     "cell_size_px": 64,
     "uv_origin": "bottom_left",
     "filter_mode": "Point",
-    "sha256": "308ae66a0a2f01bb8705ce3dcd66e25e393b4a4c041b27ecaaaa6f6484f15bc0",
+    "sha256": "1b1d55a54867c6eb02cbff42f9c6eed8b6719ff7dc89a4517224e513412d234b",
     "cells": [
       {
         "expression": "Neutral",
@@ -2689,6 +2689,12 @@
         "soiled": false
       },
       {
+        "expression": "Horror",
+        "column": 2,
+        "row": 0,
+        "soiled": false
+      },
+      {
         "expression": "Neutral",
         "column": 4,
         "row": 3,
@@ -2763,6 +2769,12 @@
       {
         "expression": "TeethInspect",
         "column": 5,
+        "row": 0,
+        "soiled": true
+      },
+      {
+        "expression": "Horror",
+        "column": 6,
         "row": 0,
         "soiled": true
       }
@@ -6038,7 +6050,129 @@
         ],
         "contact_radius_m": 0.012
       }
-    ]
+    ],
+    "lengths": {
+      "contract": "hero_hair_length_v1",
+      "short_shape": "HeroHairShort",
+      "long_shape": "HeroHairLong",
+      "shortest_scale": 0.55,
+      "longest_scale": 1.8,
+      "short_stage_weights": [
+        100.0,
+        65.0,
+        25.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "long_stage_weights": [
+        0.0,
+        0.0,
+        0.0,
+        20.0,
+        45.0,
+        70.0,
+        100.0
+      ],
+      "rest_translation_compensated": true,
+      "root_pins_and_original_bones": true,
+      "surfaces": [
+        {
+          "renderer": "GEO_HairBack",
+          "vertex_count": 32
+        },
+        {
+          "renderer": "GEO_HairBackLength",
+          "vertex_count": 140
+        },
+        {
+          "renderer": "GEO_HairBackStrand0",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairBackStrand1",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairBackStrand2",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairCap",
+          "vertex_count": 62
+        },
+        {
+          "renderer": "GEO_HairCrownStrand0.L",
+          "vertex_count": 24
+        },
+        {
+          "renderer": "GEO_HairCrownStrand0.R",
+          "vertex_count": 24
+        },
+        {
+          "renderer": "GEO_HairCrownStrand1.L",
+          "vertex_count": 24
+        },
+        {
+          "renderer": "GEO_HairCrownStrand1.R",
+          "vertex_count": 24
+        },
+        {
+          "renderer": "GEO_HairCurtain.L",
+          "vertex_count": 72
+        },
+        {
+          "renderer": "GEO_HairCurtain.R",
+          "vertex_count": 72
+        },
+        {
+          "renderer": "GEO_HairLeftLength",
+          "vertex_count": 182
+        },
+        {
+          "renderer": "GEO_HairLeftStrand0",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairLeftStrand1",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairLeftStrand2",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairNape",
+          "vertex_count": 250
+        },
+        {
+          "renderer": "GEO_HairRightLength",
+          "vertex_count": 182
+        },
+        {
+          "renderer": "GEO_HairRightStrand0",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairRightStrand1",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairRightStrand2",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairTemple.L",
+          "vertex_count": 18
+        },
+        {
+          "renderer": "GEO_HairTemple.R",
+          "vertex_count": 18
+        }
+      ],
+      "geometry_sha256": "f004c1d3db4f2b01191ee4052986409ef82c7fe5889f7f9782c141edd5b6909f"
+    }
   },
   "quality": {
     "worn_triangle_count": 7948,
@@ -7136,5 +7270,755 @@
     "loop": "CounterSeatLoop",
     "unchanged_bus_cafe": true
   },
-  "counter_seat_authoring_sha256": "f84d253aa6072cd034550e48419c19b3fb2c19047ad0f7b8e3da487f109275c5"
+  "counter_seat_authoring_sha256": "f84d253aa6072cd034550e48419c19b3fb2c19047ad0f7b8e3da487f109275c5",
+  "hero_corruption": {
+    "schema": "hero_corruption_v1",
+    "shape_name": "HeroCorruption",
+    "stage_weights": [
+      0.0,
+      10.0,
+      23.0,
+      40.0,
+      60.0,
+      80.0,
+      100.0
+    ],
+    "original_rig_weights_uvs_actions": true,
+    "shared_position_field": true,
+    "original_export_triangulation_preserved": true,
+    "mesh_names": [
+      "CLO_Belt",
+      "CLO_BeltBuckle",
+      "CLO_JacketBody",
+      "CLO_JacketCollar.L",
+      "CLO_JacketCollar.R",
+      "CLO_JacketFlapChest.L",
+      "CLO_JacketFlapChest.R",
+      "CLO_JacketFlapHip.L",
+      "CLO_JacketFlapHip.R",
+      "CLO_JacketPlacket.L",
+      "CLO_JacketPlacket.R",
+      "CLO_JacketPocketChest.L",
+      "CLO_JacketPocketChest.R",
+      "CLO_JacketPocketHip.L",
+      "CLO_JacketPocketHip.R",
+      "CLO_JacketSleeve.L",
+      "CLO_JacketSleeve.R",
+      "CLO_ShirtBody",
+      "CLO_TrousersPelvis",
+      "CLO_TrousersThigh.L",
+      "CLO_TrousersThigh.R",
+      "GEO_Ear.L",
+      "GEO_Ear.R",
+      "GEO_FaceSurface",
+      "GEO_HairBack",
+      "GEO_HairBackLength",
+      "GEO_HairBackStrand0",
+      "GEO_HairBackStrand1",
+      "GEO_HairBackStrand2",
+      "GEO_HairCap",
+      "GEO_HairCrownStrand0.L",
+      "GEO_HairCrownStrand0.R",
+      "GEO_HairCrownStrand1.L",
+      "GEO_HairCrownStrand1.R",
+      "GEO_HairCurtain.L",
+      "GEO_HairCurtain.R",
+      "GEO_HairLeftLength",
+      "GEO_HairLeftStrand0",
+      "GEO_HairLeftStrand1",
+      "GEO_HairLeftStrand2",
+      "GEO_HairNape",
+      "GEO_HairRightLength",
+      "GEO_HairRightStrand0",
+      "GEO_HairRightStrand1",
+      "GEO_HairRightStrand2",
+      "GEO_HairTemple.L",
+      "GEO_HairTemple.R",
+      "GEO_Hand.L",
+      "GEO_Hand.R",
+      "GEO_Head",
+      "GEO_Neck",
+      "GEO_Pelvis",
+      "GEO_Shoulder.L",
+      "GEO_Shoulder.R",
+      "GEO_Thigh.L",
+      "GEO_Thigh.R",
+      "GEO_Torso",
+      "GEO_UpperArm.L",
+      "GEO_UpperArm.R"
+    ],
+    "surfaces": [
+      {
+        "renderer": "CLO_Belt",
+        "vertex_count": 64,
+        "maximum_displacement_m": 0.0374356
+      },
+      {
+        "renderer": "CLO_BeltBuckle",
+        "vertex_count": 8,
+        "maximum_displacement_m": 0.0231532
+      },
+      {
+        "renderer": "CLO_JacketBody",
+        "vertex_count": 634,
+        "maximum_displacement_m": 0.0532061
+      },
+      {
+        "renderer": "CLO_JacketCollar.L",
+        "vertex_count": 10,
+        "maximum_displacement_m": 0.0120822
+      },
+      {
+        "renderer": "CLO_JacketCollar.R",
+        "vertex_count": 10,
+        "maximum_displacement_m": 0.0120822
+      },
+      {
+        "renderer": "CLO_JacketFlapChest.L",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0401542
+      },
+      {
+        "renderer": "CLO_JacketFlapChest.R",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0401542
+      },
+      {
+        "renderer": "CLO_JacketFlapHip.L",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0494006
+      },
+      {
+        "renderer": "CLO_JacketFlapHip.R",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0494006
+      },
+      {
+        "renderer": "CLO_JacketPlacket.L",
+        "vertex_count": 52,
+        "maximum_displacement_m": 0.0389711
+      },
+      {
+        "renderer": "CLO_JacketPlacket.R",
+        "vertex_count": 52,
+        "maximum_displacement_m": 0.0389711
+      },
+      {
+        "renderer": "CLO_JacketPocketChest.L",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0436195
+      },
+      {
+        "renderer": "CLO_JacketPocketChest.R",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0436195
+      },
+      {
+        "renderer": "CLO_JacketPocketHip.L",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0476124
+      },
+      {
+        "renderer": "CLO_JacketPocketHip.R",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0476124
+      },
+      {
+        "renderer": "CLO_JacketSleeve.L",
+        "vertex_count": 84,
+        "maximum_displacement_m": 0.0416937
+      },
+      {
+        "renderer": "CLO_JacketSleeve.R",
+        "vertex_count": 84,
+        "maximum_displacement_m": 0.0416937
+      },
+      {
+        "renderer": "CLO_ShirtBody",
+        "vertex_count": 142,
+        "maximum_displacement_m": 0.0427342
+      },
+      {
+        "renderer": "CLO_TrousersPelvis",
+        "vertex_count": 120,
+        "maximum_displacement_m": 0.0356861
+      },
+      {
+        "renderer": "CLO_TrousersThigh.L",
+        "vertex_count": 84,
+        "maximum_displacement_m": 0.0256303
+      },
+      {
+        "renderer": "CLO_TrousersThigh.R",
+        "vertex_count": 84,
+        "maximum_displacement_m": 0.0258653
+      },
+      {
+        "renderer": "GEO_Ear.L",
+        "vertex_count": 14,
+        "maximum_displacement_m": 0.0238397
+      },
+      {
+        "renderer": "GEO_Ear.R",
+        "vertex_count": 14,
+        "maximum_displacement_m": 0.0238397
+      },
+      {
+        "renderer": "GEO_FaceSurface",
+        "vertex_count": 49,
+        "maximum_displacement_m": 0.022268
+      },
+      {
+        "renderer": "GEO_HairBack",
+        "vertex_count": 32,
+        "maximum_displacement_m": 0.0109328
+      },
+      {
+        "renderer": "GEO_HairBackLength",
+        "vertex_count": 140,
+        "maximum_displacement_m": 0.0220428
+      },
+      {
+        "renderer": "GEO_HairBackStrand0",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0170738
+      },
+      {
+        "renderer": "GEO_HairBackStrand1",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0049212
+      },
+      {
+        "renderer": "GEO_HairBackStrand2",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0166363
+      },
+      {
+        "renderer": "GEO_HairCap",
+        "vertex_count": 62,
+        "maximum_displacement_m": 0.0066632
+      },
+      {
+        "renderer": "GEO_HairCrownStrand0.L",
+        "vertex_count": 24,
+        "maximum_displacement_m": 0.017134
+      },
+      {
+        "renderer": "GEO_HairCrownStrand0.R",
+        "vertex_count": 24,
+        "maximum_displacement_m": 0.017134
+      },
+      {
+        "renderer": "GEO_HairCrownStrand1.L",
+        "vertex_count": 24,
+        "maximum_displacement_m": 0.0177419
+      },
+      {
+        "renderer": "GEO_HairCrownStrand1.R",
+        "vertex_count": 24,
+        "maximum_displacement_m": 0.0177419
+      },
+      {
+        "renderer": "GEO_HairCurtain.L",
+        "vertex_count": 72,
+        "maximum_displacement_m": 0.01864
+      },
+      {
+        "renderer": "GEO_HairCurtain.R",
+        "vertex_count": 72,
+        "maximum_displacement_m": 0.01864
+      },
+      {
+        "renderer": "GEO_HairLeftLength",
+        "vertex_count": 182,
+        "maximum_displacement_m": 0.0293905
+      },
+      {
+        "renderer": "GEO_HairLeftStrand0",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.026425
+      },
+      {
+        "renderer": "GEO_HairLeftStrand1",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0297283
+      },
+      {
+        "renderer": "GEO_HairLeftStrand2",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0261007
+      },
+      {
+        "renderer": "GEO_HairNape",
+        "vertex_count": 250,
+        "maximum_displacement_m": 0.0241003
+      },
+      {
+        "renderer": "GEO_HairRightLength",
+        "vertex_count": 182,
+        "maximum_displacement_m": 0.0294147
+      },
+      {
+        "renderer": "GEO_HairRightStrand0",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0262822
+      },
+      {
+        "renderer": "GEO_HairRightStrand1",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0295926
+      },
+      {
+        "renderer": "GEO_HairRightStrand2",
+        "vertex_count": 16,
+        "maximum_displacement_m": 0.0259158
+      },
+      {
+        "renderer": "GEO_HairTemple.L",
+        "vertex_count": 18,
+        "maximum_displacement_m": 0.0157373
+      },
+      {
+        "renderer": "GEO_HairTemple.R",
+        "vertex_count": 18,
+        "maximum_displacement_m": 0.0157373
+      },
+      {
+        "renderer": "GEO_Hand.L",
+        "vertex_count": 40,
+        "maximum_displacement_m": 0.006912
+      },
+      {
+        "renderer": "GEO_Hand.R",
+        "vertex_count": 40,
+        "maximum_displacement_m": 0.006912
+      },
+      {
+        "renderer": "GEO_Head",
+        "vertex_count": 98,
+        "maximum_displacement_m": 0.0252484
+      },
+      {
+        "renderer": "GEO_Neck",
+        "vertex_count": 48,
+        "maximum_displacement_m": 0.0140842
+      },
+      {
+        "renderer": "GEO_Pelvis",
+        "vertex_count": 144,
+        "maximum_displacement_m": 0.0311898
+      },
+      {
+        "renderer": "GEO_Shoulder.L",
+        "vertex_count": 30,
+        "maximum_displacement_m": 0.020984
+      },
+      {
+        "renderer": "GEO_Shoulder.R",
+        "vertex_count": 30,
+        "maximum_displacement_m": 0.0236637
+      },
+      {
+        "renderer": "GEO_Thigh.L",
+        "vertex_count": 40,
+        "maximum_displacement_m": 0.0231975
+      },
+      {
+        "renderer": "GEO_Thigh.R",
+        "vertex_count": 40,
+        "maximum_displacement_m": 0.0236317
+      },
+      {
+        "renderer": "GEO_Torso",
+        "vertex_count": 314,
+        "maximum_displacement_m": 0.0416524
+      },
+      {
+        "renderer": "GEO_UpperArm.L",
+        "vertex_count": 50,
+        "maximum_displacement_m": 0.0215237
+      },
+      {
+        "renderer": "GEO_UpperArm.R",
+        "vertex_count": 50,
+        "maximum_displacement_m": 0.0236637
+      }
+    ],
+    "geometry_sha256": "9fd0f84de66683d9220dd5040fb48110095fe5f5bdcbe6b1c4eeb4128831aef1",
+    "hair_lengths": {
+      "contract": "hero_hair_length_v1",
+      "short_shape": "HeroHairShort",
+      "long_shape": "HeroHairLong",
+      "shortest_scale": 0.55,
+      "longest_scale": 1.8,
+      "short_stage_weights": [
+        100.0,
+        65.0,
+        25.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "long_stage_weights": [
+        0.0,
+        0.0,
+        0.0,
+        20.0,
+        45.0,
+        70.0,
+        100.0
+      ],
+      "rest_translation_compensated": true,
+      "root_pins_and_original_bones": true,
+      "surfaces": [
+        {
+          "renderer": "GEO_HairBack",
+          "vertex_count": 32
+        },
+        {
+          "renderer": "GEO_HairBackLength",
+          "vertex_count": 140
+        },
+        {
+          "renderer": "GEO_HairBackStrand0",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairBackStrand1",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairBackStrand2",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairCap",
+          "vertex_count": 62
+        },
+        {
+          "renderer": "GEO_HairCrownStrand0.L",
+          "vertex_count": 24
+        },
+        {
+          "renderer": "GEO_HairCrownStrand0.R",
+          "vertex_count": 24
+        },
+        {
+          "renderer": "GEO_HairCrownStrand1.L",
+          "vertex_count": 24
+        },
+        {
+          "renderer": "GEO_HairCrownStrand1.R",
+          "vertex_count": 24
+        },
+        {
+          "renderer": "GEO_HairCurtain.L",
+          "vertex_count": 72
+        },
+        {
+          "renderer": "GEO_HairCurtain.R",
+          "vertex_count": 72
+        },
+        {
+          "renderer": "GEO_HairLeftLength",
+          "vertex_count": 182
+        },
+        {
+          "renderer": "GEO_HairLeftStrand0",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairLeftStrand1",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairLeftStrand2",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairNape",
+          "vertex_count": 250
+        },
+        {
+          "renderer": "GEO_HairRightLength",
+          "vertex_count": 182
+        },
+        {
+          "renderer": "GEO_HairRightStrand0",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairRightStrand1",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairRightStrand2",
+          "vertex_count": 16
+        },
+        {
+          "renderer": "GEO_HairTemple.L",
+          "vertex_count": 18
+        },
+        {
+          "renderer": "GEO_HairTemple.R",
+          "vertex_count": 18
+        }
+      ],
+      "geometry_sha256": "f004c1d3db4f2b01191ee4052986409ef82c7fe5889f7f9782c141edd5b6909f"
+    },
+    "source_derived": true,
+    "preserve_expression_soil_alpha": true,
+    "textures": [
+      {
+        "kind": "Face",
+        "stage": 2,
+        "resource": "Player/Corruption/Face2",
+        "source_sha256": "1b1d55a54867c6eb02cbff42f9c6eed8b6719ff7dc89a4517224e513412d234b",
+        "sha256": "86a15868d8329fa36543013b2d33217d7e431a6cbcee2e64c05eb7ba2301f758",
+        "width": 512,
+        "height": 256
+      },
+      {
+        "kind": "Face",
+        "stage": 3,
+        "resource": "Player/Corruption/Face3",
+        "source_sha256": "1b1d55a54867c6eb02cbff42f9c6eed8b6719ff7dc89a4517224e513412d234b",
+        "sha256": "cc83178c4e6f855d26cb9c286d5cc8d58ff900a9ed0852687748dedaaa697f5f",
+        "width": 512,
+        "height": 256
+      },
+      {
+        "kind": "Face",
+        "stage": 4,
+        "resource": "Player/Corruption/Face4",
+        "source_sha256": "1b1d55a54867c6eb02cbff42f9c6eed8b6719ff7dc89a4517224e513412d234b",
+        "sha256": "0baf129fd8b109f58e6cb84c6fb7f5a3cafdfd4f741c7f8ecd3a0558d0c652c2",
+        "width": 512,
+        "height": 256
+      },
+      {
+        "kind": "Face",
+        "stage": 5,
+        "resource": "Player/Corruption/Face5",
+        "source_sha256": "1b1d55a54867c6eb02cbff42f9c6eed8b6719ff7dc89a4517224e513412d234b",
+        "sha256": "73c58977ad3a20082b191b2eb833e06e00773505f0116ad029074b7d06b1451c",
+        "width": 512,
+        "height": 256
+      },
+      {
+        "kind": "Face",
+        "stage": 6,
+        "resource": "Player/Corruption/Face6",
+        "source_sha256": "1b1d55a54867c6eb02cbff42f9c6eed8b6719ff7dc89a4517224e513412d234b",
+        "sha256": "e315031d3a8d0a1a02f723f4c62164b34a3cb25ed8788df9f8a25b6d2005df66",
+        "width": 512,
+        "height": 256
+      },
+      {
+        "kind": "Face",
+        "stage": 7,
+        "resource": "Player/Corruption/Face7",
+        "source_sha256": "1b1d55a54867c6eb02cbff42f9c6eed8b6719ff7dc89a4517224e513412d234b",
+        "sha256": "9ce6c73160484c093b1b3a0128dc5fe99a13827b91bcc2834ca7b24b8569c05f",
+        "width": 512,
+        "height": 256
+      },
+      {
+        "kind": "BareSkin",
+        "stage": 2,
+        "resource": "Player/Corruption/BareSkin2",
+        "source_sha256": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c",
+        "sha256": "a97ab6a6096882a79621477c73c4cdeeb6439245c76539ebd1742e9e8863ec88",
+        "width": 256,
+        "height": 256
+      },
+      {
+        "kind": "BareSkin",
+        "stage": 3,
+        "resource": "Player/Corruption/BareSkin3",
+        "source_sha256": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c",
+        "sha256": "fbe28735262af59734001e60b4906c489287e4d8bb824978f6fe92f66c330ba7",
+        "width": 256,
+        "height": 256
+      },
+      {
+        "kind": "BareSkin",
+        "stage": 4,
+        "resource": "Player/Corruption/BareSkin4",
+        "source_sha256": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c",
+        "sha256": "95ddd4a72f608c4245b8ae730425b06abe76b869a06f04d04c76c13ae6d31e62",
+        "width": 256,
+        "height": 256
+      },
+      {
+        "kind": "BareSkin",
+        "stage": 5,
+        "resource": "Player/Corruption/BareSkin5",
+        "source_sha256": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c",
+        "sha256": "396cce14a0b6746aaf009cfea75b5e6dd4449c185585de999582c566a921a6b5",
+        "width": 256,
+        "height": 256
+      },
+      {
+        "kind": "BareSkin",
+        "stage": 6,
+        "resource": "Player/Corruption/BareSkin6",
+        "source_sha256": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c",
+        "sha256": "bcc7821f171447fac356061f3fe5fff4f0c8652e5741cd96f7a5de3a51f2a5b0",
+        "width": 256,
+        "height": 256
+      },
+      {
+        "kind": "BareSkin",
+        "stage": 7,
+        "resource": "Player/Corruption/BareSkin7",
+        "source_sha256": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c",
+        "sha256": "7ec1f5b413787d6d538e4a30438cbc7e7fec3d0afa6061c2855f22dfaa2e5047",
+        "width": 256,
+        "height": 256
+      },
+      {
+        "kind": "Dialogue",
+        "stage": 2,
+        "resource": "Player/Corruption/Dialogue2",
+        "source_sha256": "fd581db321627d9ec26943629963e18b56a7cd78b491fb8585adeb12e7789878",
+        "sha256": "a3a89f6417006faa0893dac883a94c95771110625437a8a2fc9431b92d975677",
+        "width": 512,
+        "height": 512
+      },
+      {
+        "kind": "Dialogue",
+        "stage": 3,
+        "resource": "Player/Corruption/Dialogue3",
+        "source_sha256": "fd581db321627d9ec26943629963e18b56a7cd78b491fb8585adeb12e7789878",
+        "sha256": "0c28a946d16f83698abac29bc5edafe872ed5b15f7cf9a6c0899cabcb018e3ac",
+        "width": 512,
+        "height": 512
+      },
+      {
+        "kind": "Dialogue",
+        "stage": 4,
+        "resource": "Player/Corruption/Dialogue4",
+        "source_sha256": "fd581db321627d9ec26943629963e18b56a7cd78b491fb8585adeb12e7789878",
+        "sha256": "ba314b4a6c458c940c10c4b116800bd4186a4299098b547028db3b15978a73e1",
+        "width": 512,
+        "height": 512
+      },
+      {
+        "kind": "Dialogue",
+        "stage": 5,
+        "resource": "Player/Corruption/Dialogue5",
+        "source_sha256": "fd581db321627d9ec26943629963e18b56a7cd78b491fb8585adeb12e7789878",
+        "sha256": "67501c3cfa583a5c26387647f3ef89b8a4517621ff2b4d9d1a07a30635337769",
+        "width": 512,
+        "height": 512
+      },
+      {
+        "kind": "Dialogue",
+        "stage": 6,
+        "resource": "Player/Corruption/Dialogue6",
+        "source_sha256": "fd581db321627d9ec26943629963e18b56a7cd78b491fb8585adeb12e7789878",
+        "sha256": "a88a564306a2af9889f236e4e55e77f2a8d26eec0209ca43bf24e41d61770da7",
+        "width": 512,
+        "height": 512
+      },
+      {
+        "kind": "Dialogue",
+        "stage": 7,
+        "resource": "Player/Corruption/Dialogue7",
+        "source_sha256": "fd581db321627d9ec26943629963e18b56a7cd78b491fb8585adeb12e7789878",
+        "sha256": "a17518e07d175425198ea40bf33a8338a1103e18844be766b2fa28d61ff70a06",
+        "width": 512,
+        "height": 512
+      },
+      {
+        "kind": "Clothing",
+        "stage": 2,
+        "resource": "Player/Corruption/Clothing2",
+        "source_sha256": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
+        "sha256": "5268c39ad632cc9ec2c2b2a197a19abe11560549586f68e549357735f7a01a01",
+        "width": 256,
+        "height": 256,
+        "authoring": "hero_corruption_clothing_v2",
+        "uv_layout": "original_clothing_regions",
+        "preserve_patch_forearm_alpha": true,
+        "unique_limb_macro_damage": true,
+        "paired_forearm_cuff_only": true
+      },
+      {
+        "kind": "Clothing",
+        "stage": 3,
+        "resource": "Player/Corruption/Clothing3",
+        "source_sha256": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
+        "sha256": "ebd4361b43c007a6ac64ca1cb6c650544f7f1a57150f2ba8885750bc2497e207",
+        "width": 256,
+        "height": 256,
+        "authoring": "hero_corruption_clothing_v2",
+        "uv_layout": "original_clothing_regions",
+        "preserve_patch_forearm_alpha": true,
+        "unique_limb_macro_damage": true,
+        "paired_forearm_cuff_only": true
+      },
+      {
+        "kind": "Clothing",
+        "stage": 4,
+        "resource": "Player/Corruption/Clothing4",
+        "source_sha256": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
+        "sha256": "006f047b2fc1bdfbf8a69485c722d066cb9cbf0a981a54952979d9436a823a4d",
+        "width": 256,
+        "height": 256,
+        "authoring": "hero_corruption_clothing_v2",
+        "uv_layout": "original_clothing_regions",
+        "preserve_patch_forearm_alpha": true,
+        "unique_limb_macro_damage": true,
+        "paired_forearm_cuff_only": true
+      },
+      {
+        "kind": "Clothing",
+        "stage": 5,
+        "resource": "Player/Corruption/Clothing5",
+        "source_sha256": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
+        "sha256": "5dd5eeb5d6844da9b83472dcb0fac6c25d019b217cafddcd06c7798f6761afc8",
+        "width": 256,
+        "height": 256,
+        "authoring": "hero_corruption_clothing_v2",
+        "uv_layout": "original_clothing_regions",
+        "preserve_patch_forearm_alpha": true,
+        "unique_limb_macro_damage": true,
+        "paired_forearm_cuff_only": true
+      },
+      {
+        "kind": "Clothing",
+        "stage": 6,
+        "resource": "Player/Corruption/Clothing6",
+        "source_sha256": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
+        "sha256": "8154ecdeba90ff07267869bbd1d24a2ae57a13fcd3ff10f1ae65251284ce68d1",
+        "width": 256,
+        "height": 256,
+        "authoring": "hero_corruption_clothing_v2",
+        "uv_layout": "original_clothing_regions",
+        "preserve_patch_forearm_alpha": true,
+        "unique_limb_macro_damage": true,
+        "paired_forearm_cuff_only": true
+      },
+      {
+        "kind": "Clothing",
+        "stage": 7,
+        "resource": "Player/Corruption/Clothing7",
+        "source_sha256": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
+        "sha256": "834b0cd29c1025f6aa4a4d30cccf031873c08798bbacafa3d13ac875ddf5e3c3",
+        "width": 256,
+        "height": 256,
+        "authoring": "hero_corruption_clothing_v2",
+        "uv_layout": "original_clothing_regions",
+        "preserve_patch_forearm_alpha": true,
+        "unique_limb_macro_damage": true,
+        "paired_forearm_cuff_only": true
+      }
+    ],
+    "preserved_source_sha256": "d9b360580c5263394eb70d5b6d6c19289b68a8aeeecfe23e1329dcdf09ec3f87",
+    "authoring_sha256": "b50e999914954beefa522cb3fd250c8c8968b907b3e72b7b0cf6341d1f92d530"
+  },
+  "content_signature_scope": "last_full_model_export; current_face_pixels_use_face_atlas.sha256"
 }

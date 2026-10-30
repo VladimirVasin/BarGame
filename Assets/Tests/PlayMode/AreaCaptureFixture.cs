@@ -3030,10 +3030,24 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator Stairwell()
         {
             StairwellInteriorRoot stairwell = null;
-            yield return Capture(
-                SceneIds.StairwellInterior,
-                () => stairwell = Object.FindAnyObjectByType<StairwellInteriorRoot>(),
-                () => StairwellAuthoredShots(stairwell));
+            GameSessionState.BeginNewGame();
+            try
+            {
+                yield return Capture(
+                    SceneIds.StairwellInterior,
+                    () => stairwell = Object.FindAnyObjectByType<StairwellInteriorRoot>(),
+                    () => StairwellAuthoredShots(stairwell));
+                Assert.That(stairwell.Layout.IsCorrupted, Is.False);
+                Assert.That(stairwell.World.UpperBlocker, Is.Not.Null);
+                Assert.That(stairwell.World.DescentWall, Is.Null);
+                GameSessionState.CommitHomeSleepAppearance();
+                GameSessionState.PrepareStairwellArrival(StairwellArrivalKind.ApartmentDoor);
+                yield return Capture(SceneIds.StairwellInterior,
+                    () => stairwell = Object.FindAnyObjectByType<StairwellInteriorRoot>(),
+                    () => CorruptedStairwellShots(stairwell));
+                yield return VerifyCorruptedStairwellRoute(stairwell);
+            }
+            finally { GameSessionState.BeginNewGame(); }
         }
 
         private static Shot[] StairwellAuthoredShots(StairwellInteriorRoot stairwell)

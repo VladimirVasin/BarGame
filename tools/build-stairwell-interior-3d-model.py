@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / 'tools'))
 import interior_kit as kit
 import bar_parts as bp
 
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 DESIGN = 'stairwell_interior_v1'
 MODEL_DIR = ROOT / 'Assets/Stairwell/Interior/Models'
 SOURCE_DIR = ROOT / 'ArtSource/Stairwell/Interior'
@@ -223,6 +223,51 @@ def cabinet_pull(size):
         box((.080,.018,.014),(0,.016,.0105),.005)])
 
 
+def endless_flight(open_sides=False):
+    """One closed-component, metric flight for a bounded repeated visual chain.
+
+    Local Unity entry is (0,-.8,-1.92), exit (0,.8,1.92).
+    Its origin is the middle stair rise, not the bounding-box centre.
+    """
+    pieces=[]
+    for step in range(16):
+        top=-.8+(step+1)*.1
+        pieces.append(kit.box((0,-1.92+(step+.5)*.24,top-.05),(1.55,.24,.10)))
+    def sloped_box(x0,x1,lower,upper):
+        # Source Z is Unity Y. All six faces are exact planar quads.
+        vertices=[(x,z,-.8+(z+1.92)*(1.6/3.84)+offset)
+                  for offset in (lower,upper) for z in (-1.92,1.92) for x in (x0,x1)]
+        faces=[(0,2,3,1),(4,5,7,6),(0,1,5,4),(2,6,7,3),(0,4,6,2),(1,3,7,5)]
+        return vertices,faces
+    if not open_sides:
+        for side in (-1,1):
+            x0,x1=sorted((side*.775,side*1.015))
+            pieces.append(sloped_box(x0,x1,-.12,2.62))
+        pieces.append(sloped_box(-1.015,1.015,2.50,2.62))
+    for side in (-1,1):
+        # A continuous simple rectangular grip, without per-module fixtures.
+        x=side*.725
+        pieces.append(sloped_box(x-.025,x+.025,1.00,1.05))
+    return merged(pieces)
+
+
+def endless_ceiling():
+    # Rear-open notch, exactly over the repeated flight's exterior walls.
+    return merged([
+        box((.80,.20,9.6),(-3.90,0,0),0),
+        box((3.10,.20,9.6),(2.75,0,0),0),
+        box((4.70,.20,7.05),(-1.15,0,-1.275),0)])
+
+
+def endless_back_wall():
+    # The upper opening has no lintel: it meets the notched ceiling. The
+    # ordinary lower wall and both exterior corners remain closed solids.
+    return merged([
+        box((.80,7.3,.24),(-3.90,0,0),0),
+        box((3.70,7.3,.24),(2.45,0,0),0),
+        box((4.10,5.7,.24),(-1.45,-.8,0),0)])
+
+
 def design():
     parts=[]
     def add(names,size,style='box',kind='Box',projection='BoxXY',geometry=None,position=None):
@@ -299,6 +344,29 @@ def design():
     add(['Street Door Hardware','Apartment Door Hardware'],(.240,.240,.075),'door-hardware',
         geometry=door_hardware((.240,.240,.075)))
     add('Electrical Cabinet Pull',(.080,.120,.035),'cabinet-pull',geometry=cabinet_pull((.080,.120,.035)))
+    # The sleep prototype reuses this bounded library. Original indices,
+    # dimensions and bindings above stay fixed; only the new plan chooses
+    # these structural variants and the already authored upper flight.
+    add('Stairwell Back Wall',(8.6,7.30,.24))
+    add('Stairwell Front Wall',(8.6,7.30,.24),'front-wall')
+    add('Stairwell Left Wall',(.24,7.30,9.6))
+    add('Stairwell Right Wall',(.24,7.30,9.6),'right-wall')
+    add(['Stairwell Column 1','Stairwell Column 2'],(.34,7.30,.34))
+    add('Corrupted Descent Wall',(2.05,4.10,.30))
+    add('Corrupted Upper Landing',(1.55,.24,1.45),'tread',projection='BoxXZ')
+    add('Corrupted Upper Landing Side Wall',(.24,2.50,1.69),projection='BoxZY')
+    add('Corrupted Upper Landing End Wall',(1.79,2.50,.24))
+    for label,half in (('Middle',1.42),('Apartment',.605)):
+        add([label+' Fluorescent Suspension '+side for side in ('Left','Right')],
+            (.035,half,.035),'pipe','Cylinder','CylinderSide')
+    add('Corrupted Endless Flight',(2.03,4.34,3.84),'endless-flight',
+        geometry=endless_flight())
+    add('Stairwell Corrupted Ceiling',(8.6,.20,9.6),'endless-ceiling',
+        geometry=endless_ceiling(),projection='BoxXZ')
+    add('Stairwell Corrupted Back Wall',(8.6,7.30,.24),'endless-back-wall',
+        geometry=endless_back_wall())
+    add('Corrupted Endless Open Flight',(2.03,4.34,3.84),'endless-open-flight',
+        geometry=endless_flight(open_sides=True))
     return parts
 
 
@@ -405,7 +473,13 @@ def validate(parts):
             raise ValueError('Inward solid '+p['name'])
         full=[v*(2 if p['kind']=='Cylinder' and i==1 else 1) for i,v in enumerate(p['size'])]
         lo,hi=p['bounds_min'],p['bounds_max']
-        if max(abs((b-a)-v) for a,b,v in zip(lo,hi,full))>.00002: raise ValueError('Envelope mismatch '+p['name']+' '+str(p['aliases'])+' '+str((lo,hi,full)))
+        if p['style']=='endless-open-flight':
+            # Shared nominal placement envelope; this intentionally omits the
+            # closed module's walls and roof so door views retain the far shaft.
+            if max(abs(a-b) for a,b in zip(lo,(-.775,-.8,-1.92)))>.00002 or \
+               max(abs(a-b) for a,b in zip(hi,(.775,1.85,1.92)))>.00002:
+                raise ValueError('Open endless flight escaped its measured subset envelope')
+        elif max(abs((b-a)-v) for a,b,v in zip(lo,hi,full))>.00002: raise ValueError('Envelope mismatch '+p['name']+' '+str(p['aliases'])+' '+str((lo,hi,full)))
         for name in p['aliases']:
             key=(name,tuple(p['size']))
             if key in bindings: raise ValueError('Duplicate binding '+name)
@@ -443,8 +517,50 @@ def validate(parts):
         if abs(assembly_centre-assembly_depth/2-leaf_half+.002)>1e-9:
             raise ValueError('Door hardware disconnected')
     validate_door_contacts()
+    prototype=corrupted_prototype_contract()
+    for entry in prototype['placed_parts']:
+        part=by_name[entry['alias']]
+        if any(abs(a-b)>1e-9 for a,b in zip(part['size'],entry['size'])):
+            raise ValueError('Corrupted structure differs from its fixed binding: '+entry['alias'])
+    wall=next(row for row in prototype['placed_parts'] if row['alias']=='Corrupted Descent Wall')
+    if abs(wall['center'][1]-wall['size'][1]/2-3.2)>1e-9:
+        raise ValueError('Corrupted descent wall must seat on the apartment floor')
+    landing=next(row for row in prototype['placed_parts'] if row['alias']=='Corrupted Upper Landing')
+    if abs(landing['center'][1]+landing['size'][1]/2-4.8)>1e-9:
+        raise ValueError('Corrupted upper landing must meet the last upper tread')
+    if abs(7.3-4.8-2.5)>1e-9:
+        raise ValueError('Corrupted upper landing lost standing clearance')
+    flight=by_name['Corrupted Endless Flight']['geometry']
+    for step in range(16):
+        z=-1.92+(step+.5)*.24;top=-.8+(step+1)*.1
+        if not contains_geometry(flight,(0,top-.01,z)) or contains_geometry(flight,(0,top+.9,z)):
+            raise ValueError('Endless flight lost a tread or gained a blocked centre passage')
+    if contains_geometry(endless_ceiling(),(-1.45,0,3.0)) or \
+       contains_geometry(endless_back_wall(),(-1.45,2.8,0)):
+        raise ValueError('Old shell blocks the endless continuation')
+    if contains_geometry(endless_ceiling(),(1.04,0,3.70)):
+        raise ValueError('Corrupted ceiling clips the literal apartment-door sightline')
+    if contains_geometry(endless_flight(open_sides=True),(.90,.4,0)) or \
+       contains_geometry(endless_flight(open_sides=True),(0,2.5,0)):
+        raise ValueError('Open foreground flight regained an occluding wall or roof')
     if canonical(parts)!=canonical(design()): raise ValueError('Nondeterministic design')
-    return dict(meshes=len(parts),triangles=count,bindings=len(bindings),maximum_meshes=128,maximum_triangles=16000,flight_support_necks=192,landing_cap_overlap_m=.05,door_hardware_leaf_overlap_m=.002,door_mount_contact_samples=50)
+    return dict(meshes=len(parts),triangles=count,bindings=len(bindings),maximum_meshes=128,maximum_triangles=16000,flight_support_necks=192,landing_cap_overlap_m=.05,door_hardware_leaf_overlap_m=.002,door_mount_contact_samples=50,corrupted_upper_standing_clearance_m=2.5,corrupted_descent_wall_floor_m=3.2)
+
+
+def corrupted_prototype_contract():
+    return dict(room_height=7.30,upper_landing_bounds=[-2.225,.80,-.675,2.25],
+        upper_floor=4.8,fixture_support_y=7.17,
+        endless_flight=dict(alias='Corrupted Endless Flight',size=[2.03,4.34,3.84],
+            local_entry=[0,-.8,-1.92],local_exit=[0,.8,1.92],
+            bounds_min=[-1.015,-.92,-1.92],bounds_max=[1.015,3.42,1.92],
+            clear_width=1.55,rise=1.6,run=3.84,steps=16,
+            sloped_inner_headroom=2.5,render_only=True,start_z=2.25,start_floor=4.8,
+            open_alias='Corrupted Endless Open Flight',open_foreground_modules=2,
+            open_bounds_min=[-.775,-.8,-1.92],open_bounds_max=[.775,1.85,1.92],
+            ceiling_notch=[-3.50,2.25,1.20,4.8],back_opening=[-1.45,4.10,5.7,7.3]),
+        placed_parts=[
+            dict(alias='Corrupted Descent Wall',size=[2.05,4.10,.30],center=[1.45,5.25,-2.88]),
+            dict(alias='Corrupted Upper Landing',size=[1.55,.24,1.45],center=[-1.45,4.68,1.525])])
 
 
 def main():
@@ -482,6 +598,7 @@ def main():
             effects='retain all existing light/SSAO/grade/particles/post owners; no SSR/GI rollout',
             rail_supports=dict(flights=3,sides=2,necks_per_side=32,post_foot_overlap=.010,wood_head_overlap=.006),
             door_hardware=door_contact_contract()),
+        corrupted_prototype=corrupted_prototype_contract(),
         parts=[{k:v for k,v in p.items() if k!='geometry'} for p in parts])
     args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
     manifest=json.dumps(payload,indent=2)+'\n'

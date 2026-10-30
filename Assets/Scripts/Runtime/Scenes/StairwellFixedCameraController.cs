@@ -8,7 +8,9 @@ namespace BarPromenade
     {
         GroundFlight = 0,
         MiddleFlight = 1,
-        ApartmentLanding = 2
+        ApartmentLanding = 2,
+        UpperFlight = 3,
+        UpperLanding = 4
     }
 
     public readonly struct StairwellCameraShot
@@ -202,7 +204,7 @@ namespace BarPromenade
 
             float roomHalfWidth = plan.RoomSize.x * 0.5f;
             float roomHalfDepth = plan.RoomSize.y * 0.5f;
-            return new[]
+            var shots = new List<StairwellCameraShot>
             {
                 new StairwellCameraShot(
                     StairwellCameraShotKind.GroundFlight,
@@ -240,16 +242,32 @@ namespace BarPromenade
                         roomHalfWidth - 0.25f,
                         roomHalfDepth - 0.30f,
                         3.08f,
-                        5.95f),
+                        plan.IsCorrupted ? 4.25f : 5.95f),
                     CreateZone(
                         roomHalfWidth - 0.15f,
                         roomHalfDepth - 0.25f,
                         3.02f,
-                        6.10f),
-                    new Vector3(-3.70f, 5.45f, -4.18f),
-                    new Vector3(18f, 56f, 0f),
-                    72f)
+                        plan.IsCorrupted ? 4.32f : 6.10f),
+                    new Vector3(-3.70f, plan.IsCorrupted ? 4.8f : 5.45f, -4.18f),
+                    plan.IsCorrupted ? new Vector3(-4f, 30f, 0f) : new Vector3(18f, 56f, 0f),
+                    plan.IsCorrupted ? 88f : 72f)
             };
+            if (plan.IsCorrupted)
+            {
+                Bounds activation = CreateZone(roomHalfWidth - .25f, roomHalfDepth - .30f, 4.26f, 6.9f);
+                Bounds hold = CreateZone(roomHalfWidth - .15f, roomHalfDepth - .25f, 4.18f, 7.0f);
+                activation.SetMinMax(activation.min, new Vector3(activation.max.x, activation.max.y, 1f));
+                hold.SetMinMax(hold.min, new Vector3(hold.max.x, hold.max.y, 1.05f));
+                shots.Add(new StairwellCameraShot(StairwellCameraShotKind.UpperFlight,
+                    activation, hold, new Vector3(-1.45f, 6.95f, 2.07f), new Vector3(51f, 180f, 0f), 78f));
+                // Above the short enclosed landing, a near-overhead view keeps
+                // the whole rig clear of the lens at its far solid end.
+                shots.Add(new StairwellCameraShot(StairwellCameraShotKind.UpperLanding,
+                    new Bounds(new Vector3(-1.45f, 5.8f, 1.66f), new Vector3(3f, 2.4f, 1.6f)),
+                    new Bounds(new Vector3(-1.45f, 5.8f, 1.65f), new Vector3(3.2f, 2.6f, 1.8f)),
+                    new Vector3(-1.45f, 7.15f, 2.07f), new Vector3(85f, 180f, 0f), 100f));
+            }
+            return shots;
         }
 
         public void Initialize(

@@ -583,11 +583,8 @@ namespace BarPromenade
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
                 false);
-            transparentButtonStyle = new GUIStyle(GUI.skin.button);
-            transparentButtonStyle.normal.background = null;
-            transparentButtonStyle.hover.background = null;
-            transparentButtonStyle.active.background = null;
-            transparentButtonStyle.focused.background = null;
+            transparentButtonStyle = RetroUiTheme.CreateButtonStyle(
+                10, TextAnchor.MiddleCenter, RetroUiTheme.Text, false);
             emptyStyle = RetroUiTheme.CreateLabelStyle(
                 12,
                 TextAnchor.MiddleCenter,

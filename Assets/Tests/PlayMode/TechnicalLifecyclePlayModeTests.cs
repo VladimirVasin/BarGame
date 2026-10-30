@@ -38,13 +38,13 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator NewGame_FromStartMenuLandsAtTheVillageLaneFootWithARunningClock()
+        public IEnumerator DebugWorldStart_FromStartMenuLandsAtTheVillageLaneFootWithARunningClock()
         {
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             StartMenuRoot menu = Object.FindAnyObjectByType<StartMenuRoot>();
             Assert.That(menu, Is.Not.Null, "The launch scene must install the start card.");
             Assert.That(Object.FindAnyObjectByType<MainMenuRoot>(), Is.Null,
-                "The retained Home opening must not be reached without a request.");
+                "The launch card must await an explicit story or Debug selection.");
             Assert.That(menu.BackdropCamera, Is.Not.Null);
             Assert.That(menu.SelectedOption, Is.EqualTo(StartMenuOption.NewGame));
             // A missing key renders as itself and nothing else notices.
@@ -53,6 +53,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(LocalizationService.Get("opening.quit"), Is.Not.EqualTo("opening.quit"));
 
             yield return CaptureStartMenuPages(menu);
+            Assert.That(menu.OpenDebugMenu(), Is.True);
             Assert.That(menu.ConfirmSelection(), Is.True);
             Assert.That(menu.IsChoosingStartTime, Is.True);
             Assert.That(menu.ConfirmSelection(), Is.True);
@@ -104,7 +105,7 @@ namespace BarPromenade.Tests.PlayMode
             { NewGameLocation.Cannery, NewGameLocation.Home, NewGameLocation.SkiLodge };
 
         [UnityTest]
-        public IEnumerator NewGame_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(
+        public IEnumerator DebugWorldStart_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(
             [ValueSource(nameof(SelectedStarts))] NewGameLocation location)
         {
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
@@ -112,6 +113,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(menu, Is.Not.Null);
             if (location == NewGameLocation.SkiLodge)
                 yield return CaptureStartMenuPages(menu, location);
+            Assert.That(menu.OpenDebugMenu(), Is.True);
             Assert.That(menu.ConfirmSelection(), Is.True);
             Assert.That(menu.IsChoosingStartTime, Is.True);
             Assert.That(menu.ConfirmSelection(), Is.True);
@@ -190,7 +192,8 @@ namespace BarPromenade.Tests.PlayMode
                     "The lodge selection must not survive its launch.");
                 yield return null;
                 Assert.That(Object.FindAnyObjectByType<AreaLoadingRoot>(), Is.Null);
-                if (!Application.isBatchMode) yield return CaptureStartMenuFrame("ski-lodge-start");
+                if (!Application.isBatchMode && Environment.GetEnvironmentVariable("BARGAME_CAPTURE_START_MENU") == "1")
+                    yield return CaptureStartMenuFrame("ski-lodge-start");
             }
             else
             {
@@ -225,7 +228,7 @@ namespace BarPromenade.Tests.PlayMode
         private static IEnumerator CaptureStartMenuPages(StartMenuRoot menu,
             NewGameLocation selectedLocation = NewGameLocation.AlpineVillage)
         {
-            if (Application.isBatchMode) yield break;
+            if (Application.isBatchMode || Environment.GetEnvironmentVariable("BARGAME_CAPTURE_START_MENU") != "1") yield break;
 #if UNITY_EDITOR
             Type gameViewType = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.GameView");
             UnityEditor.EditorWindow gameView = UnityEditor.EditorWindow.GetWindow(gameViewType);
@@ -238,6 +241,8 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     Assert.That(menu.IsChoosingLocation, Is.False);
                     yield return CaptureStartMenuFrame("main-" + language);
+                    Assert.That(menu.OpenDebugMenu(), Is.True);
+                    yield return CaptureStartMenuFrame("debug-" + language);
                     Assert.That(menu.ConfirmSelection(), Is.True);
                     Assert.That(menu.IsChoosingStartTime, Is.True);
                     yield return CaptureStartMenuFrame("time-" + language);
@@ -251,6 +256,10 @@ namespace BarPromenade.Tests.PlayMode
                     yield return CaptureStartMenuFrame(selectedLocation == NewGameLocation.SkiLodge
                         ? "locations-ski-lodge-" + language : "locations-" + language);
                     Assert.That(menu.ReturnToMainMenu(), Is.True);
+                    Assert.That(menu.IsDebugMenu, Is.True);
+                    Assert.That(menu.ReturnToMainMenu(), Is.True);
+                    Assert.That(menu.IsDebugMenu, Is.False);
+                    Assert.That(menu.SelectOption(StartMenuOption.NewGame), Is.True);
                 }
             }
         }

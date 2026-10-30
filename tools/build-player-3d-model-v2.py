@@ -46,6 +46,7 @@ import player_jacket_cloth  # noqa: E402
 import player_hand_grip  # noqa: E402
 import player_snow_actions  # noqa: E402
 import player_counter_seat_actions  # noqa: E402
+import player_corruption  # noqa: E402
 
 PUBLISHED_PATHS: dict[Path, Path] = {}
 
@@ -301,7 +302,7 @@ def resolve_path(path: Path) -> Path:
     return path.resolve()
 
 
-def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, Path, bool, bool, bool, bool, bool, bool]:
+def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, Path, bool, bool, bool, bool, bool, bool, bool]:
     user_args: list[str] = []
     if "--" in sys.argv:
         user_args = sys.argv[sys.argv.index("--") + 1 :]
@@ -330,6 +331,8 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
                         help="Refresh hand contact shapes in the verified production source without rebuilding actions.")
     parser.add_argument("--counter-seat-only", action="store_true",
                         help="Refresh only the bar's measured side-entry/exit bone actions on the verified Hero V2 source.")
+    parser.add_argument("--corruption-only", action="store_true",
+                        help="Add the shared emaciation shape to the verified source without rebuilding rig or actions.")
     parser.add_argument("--surfaces-only", action="store_true",
                         help="Author skin/hair UVs in the verified production source without changing geometry or actions.")
     parser.add_argument("--joint-surfaces-only", action="store_true",
@@ -433,6 +436,7 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         args.surfaces_only,
         args.joint_surfaces_only,
         args.counter_seat_only,
+        args.corruption_only,
     )
 
 
@@ -488,6 +492,7 @@ FACE_ATLAS_CLEAN_CELLS = (
     ("Spit", 3, 2),
     ("TeethInspectHalf", 0, 3),
     ("TeethInspect", 1, 3),
+    ("Horror", 2, 3),
 )
 FACE_ATLAS_CELLS = tuple(
     (expression, column, row, False) for expression, column, row in FACE_ATLAS_CLEAN_CELLS
@@ -529,7 +534,7 @@ def draw_face_atlas() -> PixelCanvas:
 def validate_face_atlas(canvas: PixelCanvas) -> None:
     pairs = {(expression, soiled) for expression, _, _, soiled in FACE_ATLAS_CELLS}
     positions = {(column, row) for _, column, row, _ in FACE_ATLAS_CELLS}
-    assert len(pairs) == len(positions) == 26, "Face cells must have unique pairs and positions"
+    assert len(pairs) == len(positions) == 28, "Face cells must have unique pairs and positions"
     assert all(0 <= c < ATLAS_COLUMNS and 0 <= r < ATLAS_ROWS
                for _, c, r, _ in FACE_ATLAS_CELLS), "Face cell outside atlas"
     assert all(alpha == 255 for alpha in canvas.pixels[3::4]), "Opaque facial atlas required"
@@ -1322,6 +1327,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         player_body_hair_surfaces.author(self.result, [
             {"renderer": renderer} for renderer in BARE_SKIN_RENDERER_REGIONS
         ])
+        player_corruption.author(self.result, self.config.height / 1.75)
         appearance_errors = []
         validate_appearance_contracts(self.config, self.result, appearance_errors)
         if appearance_errors:
@@ -3126,6 +3132,9 @@ def write_v2_manifest(
     payload["hand_grip"] = {**player_hand_grip.manifest(result, config.height / 1.75),
                             "validation": player_hand_grip.validate(result, config.height / 1.75)}
     payload["hand_grip_authoring_sha256"] = hashlib.sha256(Path(player_hand_grip.__file__).read_bytes()).hexdigest()
+    payload["hero_corruption"] = {**player_corruption.manifest(result),
+        **player_corruption.textures(),
+        "authoring_sha256": hashlib.sha256(Path(player_corruption.__file__).read_bytes()).hexdigest()}
     records = {record.obj.name: record for record in result.parts}
     head_min, head_max = common.mesh_bounds_world(records["GEO_Head"].obj)
     head_height = head_max.z - head_min.z
@@ -3342,6 +3351,7 @@ def write_v2_manifest(
         }
     )
     payload.update(player_detailed_model.manifest(result))
+    payload["hair"]["lengths"] = player_corruption.player_corruption_hair.manifest(result)
     for part in payload["parts"]:
         obj = records[part["name"]].obj
         part["default_visible"] = bool(obj.get("bp_default_visible", True))
@@ -3506,7 +3516,11 @@ def main() -> None:
         surfaces_only,
         joint_surfaces_only,
         counter_seat_only,
+        corruption_only,
     ) = parse_args()
+    if corruption_only:
+        player_corruption.refresh(sys.modules[__name__], config)
+        return
     if counter_seat_only:
         player_counter_seat_actions.refresh(sys.modules[__name__], config)
         return
@@ -3524,6 +3538,7 @@ def main() -> None:
     face_atlas_sha256 = build_face_atlas(face_atlas_path, expression_sheet_path)
     if face_atlas_only:
         update_face_atlas_manifest(config.manifest, face_atlas_path, face_atlas_sha256)
+        player_corruption.refresh_face_atlases(config.manifest)
         print(f"Face atlas validated: {len(FACE_ATLAS_CELLS)} cells, deterministic opaque pixels; {face_atlas_sha256}")
         print("Updated face atlas, expression sheet and facial manifest only; model/rig/animations unchanged.")
         return

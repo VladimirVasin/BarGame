@@ -29,6 +29,12 @@ namespace BarPromenade.Editor
             {
                 Player3DV2CharacterSurfaces.ConfigureImport(importer);
             }
+            else if (assetPath.StartsWith("Assets/Resources/Player/Corruption/", StringComparison.OrdinalIgnoreCase))
+            {
+                if (System.IO.Path.GetFileName(assetPath).StartsWith("Portrait", StringComparison.Ordinal))
+                    ConfigurePortrait(importer);
+                else ConfigureAtlas(importer, FaceAtlasMaxTextureSize);
+            }
             else if (string.Equals(
                     assetPath,
                     Player3DV2AssetSetup.AtlasPath,

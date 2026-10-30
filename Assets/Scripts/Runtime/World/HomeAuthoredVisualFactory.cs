@@ -76,8 +76,8 @@ namespace BarPromenade
                 properties.SetVector("_BaseMap_ST", new Vector4(1f, 1f, 0f, 0f));
                 renderer.SetPropertyBlock(properties);
             }
-            if (part.role != "decor")
-                renderer.GetComponentInParent<HomeApartmentDressing>()?.RegisterSurface(renderer, kind);
+            renderer.GetComponentInParent<HomeApartmentDressing>()?.RegisterSurface(
+                renderer, kind, ageAcrossDays: part.role != "decor", damageKey: part.name);
         }
 
         private static Vector3 Divide(Vector3 value, Vector3 divisor) => new Vector3(

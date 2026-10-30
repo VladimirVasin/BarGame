@@ -2,6 +2,15 @@ Shader "Bar Promenade/Home Occluder Dither"
 {
     Properties
     {
+        [NoScaleOffset] _SurfaceDamageAtlas("Unique object damage masks", 2D) = "black" {}
+        _SurfaceDamageRect("Damage chart x/y/width/height", Vector) = (0,0,1,1)
+        _SurfaceDamageBoundsMin("Damage domain minimum", Vector) = (0,0,0,0)
+        _SurfaceDamageInvSize("Damage domain inverse size", Vector) = (1,1,1,0)
+        _SurfaceDamageMode("Strength / projection", Vector) = (0,0,0,0)
+        _SurfaceDamageSoil("Linear soil multiplier", Color) = (1,1,1,1)
+        _SurfaceDamageExpose("Linear substrate target", Color) = (0.25,0.25,0.25,1)
+        _SurfaceDamageAccent("Linear accent target", Color) = (0.10,0.10,0.10,1)
+        _SurfaceDamageResponse("Smoothness scale", Vector) = (0.66,0,0,0)
         // Defaults to white so an occluder without a packaged surface
         // renders exactly as it did before the home albedos existed. The
         // textured furniture carries _BaseMap and its ST/smoothness values
@@ -35,6 +44,7 @@ Shader "Bar Promenade/Home Occluder Dither"
             float _Smoothness;
             float _Metallic;
             float _HomeOcclusionVisibility;
+            #include "SurfaceDamageFields.hlsl"
         CBUFFER_END
 
         TEXTURE2D(_BaseMap);
@@ -106,6 +116,7 @@ Shader "Bar Promenade/Home Occluder Dither"
             #pragma instancing_options renderinglayer
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "SurfaceDamageCommon.hlsl"
 
             struct Attributes
             {
@@ -182,6 +193,8 @@ Shader "Bar Promenade/Home Occluder Dither"
                 surfaceData.emission = half3(0.0h, 0.0h, 0.0h);
                 surfaceData.occlusion = 1.0h;
                 surfaceData.alpha = 1.0h;
+                ApplySurfaceDamage(TransformWorldToObject(input.positionWS),
+                    TransformWorldToObjectNormal(input.normalWS), surfaceData);
 
                 half4 color = UniversalFragmentPBR(
                     inputData,
