@@ -68,6 +68,123 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator NewGame_LoadingScreenCoversCompositionUntilDestinationReady()
+        {
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            StartMenuRoot menu = Object.FindAnyObjectByType<StartMenuRoot>();
+            Assert.That(menu, Is.Not.Null);
+            bool previousAudioPause = AudioListener.pause;
+            int previousRenderInterval = UnityEngine.Rendering.OnDemandRendering.renderFrameInterval;
+            bool ready = false;
+            HomeInteriorRoot readyHome = null;
+            System.Action<string> onReady = scene =>
+            {
+                if (scene != SceneIds.HomeInterior) return;
+                ready = true;
+                readyHome = Object.FindAnyObjectByType<HomeInteriorRoot>();
+                Assert.That(readyHome, Is.Not.Null);
+                Assert.That(readyHome.IsInitialized, Is.True,
+                    "DestinationReady must not expose a partially composed Home.");
+                Assert.That(SceneTransitionService.IsTransitioning, Is.False);
+                Assert.That(GameTimeScaleRuntime.IsPaused, Is.False);
+                Assert.That(AudioListener.pause, Is.EqualTo(previousAudioPause));
+                Assert.That(GameSessionState.IsGameTimeRunning, Is.False);
+                Assert.That(GameSessionState.GameTimeOfDayMinutes, Is.EqualTo(720d));
+            };
+            SceneTransitionService.DestinationReady += onReady;
+            try
+            {
+                Assert.That(menu.ConfirmSelection(), Is.True);
+                Assert.That(menu.ConfirmSelection(), Is.False,
+                    "Repeated confirmation must not start a second loading transaction.");
+                Assert.That(SceneTransitionService.IsTransitioning, Is.True);
+                AreaLoadingRoot overlay = Object.FindAnyObjectByType<AreaLoadingRoot>();
+                Assert.That(overlay, Is.Not.Null,
+                    "The loading screen must exist in the same frame as the New Game click.");
+                Assert.That(overlay.IsBound && overlay.IsNewGameLoading, Is.True);
+                Assert.That(overlay.DisplayedProgress, Is.Zero);
+                Assert.That(overlay.Camera, Is.Null);
+                Assert.That(overlay.HasArtwork, Is.False);
+                string loadingCapture = CaptureNewGameLoadingFrame("loading-start");
+                string readyCapture = null;
+                float lastProgress = 0f;
+                bool sawCompleteCover = false;
+                float deadline = Time.realtimeSinceStartup + 60f;
+                while (SceneTransitionService.IsTransitioning && Time.realtimeSinceStartup < deadline)
+                {
+                    Assert.That(overlay, Is.Not.Null,
+                        "The loading screen must survive scene activation and world composition.");
+                    Assert.That(overlay.isActiveAndEnabled, Is.True);
+                    Assert.That(overlay.DisplayedProgress, Is.InRange(lastProgress, 1f));
+                    lastProgress = overlay.DisplayedProgress;
+                    HomeInteriorRoot composingHome = Object.FindAnyObjectByType<HomeInteriorRoot>();
+                    if (composingHome != null && !composingHome.IsInitialized)
+                        Assert.That(lastProgress, Is.LessThan(1f));
+                    if (CompositionDriver.IsComposing)
+                    {
+                        Assert.That(GameTimeScaleRuntime.IsPaused, Is.True);
+                        Assert.That(AudioListener.pause, Is.True);
+                    }
+                    if (!sawCompleteCover && lastProgress == 1f)
+                    {
+                        sawCompleteCover = true;
+                        Assert.That(composingHome, Is.Not.Null);
+                        Assert.That(composingHome.IsInitialized, Is.True);
+                        readyCapture = CaptureNewGameLoadingFrame("loading-ready");
+                    }
+                    Assert.That(ready, Is.False);
+                    yield return null;
+                }
+                Assert.That(SceneTransitionService.IsTransitioning, Is.False,
+                    "The loading transaction did not finish.");
+                Assert.That(ready, Is.True);
+                Assert.That(sawCompleteCover, Is.True,
+                    "The finished destination needs one rendered frame beneath the completed loading screen.");
+                Assert.That(readyHome.Arrival, Is.EqualTo(HomeArrivalKind.NewGameSleep));
+                Assert.That(readyHome.Opening.IsNewGameProfile, Is.True);
+                Assert.That(readyHome.Sleep.WaitingForWake, Is.True);
+                Assert.That(readyHome.Player.Interactor.InputEnabled, Is.True,
+                    "The sleeping introduction must accept its fresh wake input after loading.");
+                Assert.That(readyHome.Player.Motor.InputEnabled, Is.False);
+                Assert.That(readyHome.AlarmClock.DisplayedTime, Is.EqualTo("12:00"));
+                Assert.That(GameTimeScaleRuntime.IsPaused, Is.False);
+                Assert.That(AudioListener.pause, Is.EqualTo(previousAudioPause));
+                Assert.That(UnityEngine.Rendering.OnDemandRendering.renderFrameInterval,
+                    Is.EqualTo(previousRenderInterval));
+                yield return null;
+                Assert.That(Object.FindAnyObjectByType<AreaLoadingRoot>(), Is.Null);
+                if (loadingCapture != null)
+                {
+                    deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+                    while ((!System.IO.File.Exists(loadingCapture) || !System.IO.File.Exists(readyCapture)) &&
+                           Time.realtimeSinceStartup < deadline)
+                        yield return null;
+                    Assert.That(System.IO.File.Exists(loadingCapture), Is.True, loadingCapture);
+                    Assert.That(System.IO.File.Exists(readyCapture), Is.True, readyCapture);
+                }
+            }
+            finally
+            {
+                SceneTransitionService.DestinationReady -= onReady;
+            }
+        }
+
+        private static string CaptureNewGameLoadingFrame(string name)
+        {
+            string folder = System.Environment.GetEnvironmentVariable("BARGAME_CAPTURE_NEW_GAME_LOADING_DIR");
+            if (string.IsNullOrEmpty(folder)) return null;
+            Assert.That(Application.isBatchMode, Is.False,
+                "IMGUI loading captures need a graphics-enabled Editor with visible Game View.");
+            Assert.That(SystemInfo.graphicsDeviceType,
+                Is.Not.EqualTo(UnityEngine.Rendering.GraphicsDeviceType.Null));
+            System.IO.Directory.CreateDirectory(folder);
+            string path = System.IO.Path.GetFullPath(System.IO.Path.Combine(folder,
+                name + "-" + System.Guid.NewGuid().ToString("N") + ".png"));
+            ScreenCapture.CaptureScreenshot(path);
+            return path;
+        }
+
+        [UnityTest]
         public IEnumerator NewGame_MenuToNoonIntroRequiresFreshWakeAndStand()
         {
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
@@ -337,8 +454,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.ApartmentDays.AppliedDayNumber, Is.EqualTo(1));
             Assert.That(home.ApartmentDays.BalconyBarrier.IsSealed, Is.False);
             Assert.That(home.ApartmentDays.BalconyBarrier.DoorCollider.enabled, Is.False);
-            Assert.That(Quaternion.Angle(home.ApartmentDays.BalconyBarrier.DoorPivot.localRotation,
-                Quaternion.Euler(0, 76f, 0)), Is.LessThan(.001f));
+            Assert.That(home.BalconyDoor.IsOpen, Is.True);
+            Assert.That(home.BalconyDoor.Panels, Has.Length.EqualTo(4));
+            foreach (BoxCollider panel in home.BalconyDoor.PanelColliders)
+                Assert.That(home.Room.InverseTransformPoint(panel.bounds.max).x,
+                    Is.LessThan(PlayerHomeBalconyGeometry.HomeFacadeX + .10f));
         }
 
         private static void AssertInsideNewGameFrame(Camera camera, Vector3 point, float margin, string label)

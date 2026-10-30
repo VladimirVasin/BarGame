@@ -59,7 +59,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Authored enemies | Room:idle5s/jelly/bar/wet SFX;Lab:Imprint/LongExposure | `CombatActor`,`CombatTestRoot.Room*` | Current |
 | Warehouse | Fish3:regularfoes/spawn0;gate;ammo/bays;L3broken;dust→settle;A*/capsule. | `Warehouse*`,`CombatTestRoot.Navigation` | Current |
 | Body destruction | Enemies:sever/crawl;hero:wounds/no detach;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatBodyAssetSetup` | Current |
-| New Game/Debug | Home1/stopped12:00 until E; Debug time/12 starts/tools, closed Bar guarded. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
+| New Game/Debug | Loading bar through staged Home/first frame; stopped12:00 until E. Debug time/starts/tools. | `StartMenu{Root,Model}`, `NewGameStartService`, `SceneTransitionService`, `AreaLoadingRoot` | Current |
 | Bar hours and crowd | Daily12-02, hourly3-8; real entry/exit, partial pairs, occupied docks; accepted service finishes. | `BarBusinessHours`, `BarCrowdController`, `BarInteriorRoot` | Current |
 | Russian vocalizer | Twelve M/F styles; menu A/B/free/window; shared phonetic text/face timing, bounded workers/PCM. | `RussianVocalizer{Lab,Synthesis,Voice,Plan}`, `RussianSpeechPhonetics` | Current |
 | Free karaoke | LMB/mouse, drunk DSP drift; silent hall gaze, dynamic hero/guest shots, rare WC; cleanup. | `BarKaraoke*`, `KaraokeVoice{,Output}`, `RussianVocalizerSustainOutput` | Current |
@@ -179,7 +179,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Ferryman coin | One authored coin supplies the toss and contained glovebox pile; shared material, no pickups. | `LastRouteCoinAsset`, `LastRouteGloveboxCoins` | Current |
 | The last route | Journey stages coordinate Ferryman dialogue, car legs, blackouts and arrivals; the ride is refused when very drunk. | `LastRouteRideController`, `LastRouteFerrymanRideRules`, `LastRouteCar{DrivePath,DriveModel,Driver,GiveWay*}` | Current |
 | Home sofa sleep | Cut:forms→7/sustained SFX; seated idle/camera return→fresh E stand; fixed contacts. | `HomeBedInteraction`, `HomeSleep{Controller,AudioCue}` | Current |
-| Home balcony | Modal smoke/prop/sound/camera/completion relief; final7 seal waits safely if outside. | `HomeBalconySmoking*`, `HomeBalconyWorldBuilder`, `HomeBalconyCorruptionBarrier` | Current |
+| Home balcony | Mouth-contact smoke/right orbit; E folding door; final7 seal waits if outside. | `HomeBalconySmoking*`, `HomeBalconyWorldBuilder`, `HomeBalcony{FoldingDoorInteraction,CorruptionBarrier}` | Current |
 | Shared refrigerator | Hand-free Home/warehouse;entry/chest aim;atomic Take/Back. Gap: `Use` hidden/unimplemented. | `HomeRefrigerator*`, `RefrigeratorInteractionContext`, `WorldItemInspectionPresenter` | Partial |
 | Player shadows | Real mesh shadows and an analytic contact patch follow hero/contextual visibility ownership. | `Player3DCharacterPresentation`, `Player3DRagdollController` | Current |
 | Interaction/UI | Prompts/input; nearest family;locker Take > open > close > distance; look/debug local. | `PlayerInteractor`, `IPrioritizedInteractable`, `InteractionPromptView` | Current |
@@ -211,7 +211,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Exterior ground response | Indexed MPBs share response maps/road masks/snow edges; ridge haze retained. | `GroundSurface{Appearance,Coordinates}`, `GroundSurfaceLit`, `*SurfaceAppearance` | Current |
 | Home/Stairwell surfaces | Original micro sheets/unique macro charts/shared variants; exact earlier-state restore. | `HomeSurfaceAppearance`, `HomeAuthoredVisualFactory`, `SurfaceDamageLibrary` | Current |
 | Stairwell cat | The perched cat supports talk/feed and the grin controller; the future story grin trigger remains unwired. | `StairwellCat*`, `StairwellCatInteraction` | Current |
-| Home exterior context | Bounded same-seed streets and actual terrain; no collision. Balcony gates residents/atmosphere. | `HomeExteriorContext{Plan,Planner}`, `HomeExteriorViewBuilder`, `CityHomeGroundWorldBuilder` | Current |
+| Home exterior context | Same-seed64m city around Home, rear included; no collision. Balcony gates residents/atmosphere. | `HomeExteriorContext{Plan,Planner}`, `HomeExteriorViewBuilder`, `CityHomeGroundWorldBuilder` | Current |
 | Player home atmosphere | Clock drives six local lights; Balcony borrows/restores City. | `HomeInteriorAtmosphere`, `HomeDayNightController` | Current |
 | Mirror brushing | First-person X/Y brushing ends with a three-second close teeth inspection, then spit and faucet closure. | `HomeTeethBrushing*`, `HomeBrushingFirstPersonView`, `HomeSinkFaucet` | Current |
 | Toilet choice and seated action | Shared real-hand lid actions; large branch seats, inspects and flushes. Dressing overlaps camera return; no relief. | `HomeToiletChoiceInteraction`, `HomeToilet{PlungeInteraction,SeatedTimeline,ActorPresentation}` | Current |

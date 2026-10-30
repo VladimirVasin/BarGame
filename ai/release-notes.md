@@ -8,9 +8,9 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-10-30
 
-- Новая игра: спящий герой дома, полдень стоит до E; спокойные виды комнаты.
-  E будит, камера возвращается сидя, затем E «Встать». Прежний выбор места/
-  времени, тесты и вокализатор — в Debug.
+- Новая игра: экран загрузки с процентом/полосой до готовой квартиры,
+  затем сон/полдень до E. E будит, возврат сидя, затем E «Встать».
+  Выбор места/часа, тесты и вокализатор — Debug.
 - Повторный сон: распад под долгий звук, живое ожидание сидя/медленное E-вставание.
   Звук восстанавливается после сброса аудио; треск не копится в паузе.
 - Квартира/подъезд: уникальный износ/микрофактура, без полос; ранние виды
@@ -19,11 +19,12 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   ботинок, парные предплечья сохранены.
 - Подъезд: вниз стена/вверх решётка; дальше бесконечный вид маршей/свечение,
   прежние светильники/проходы.
-- SleepMvp_AutomaticCutAndCleanup, AreaCaptureFixture.Stairwell,
-  UNIQUE_SURFACE_DAMAGE_OK, Home_BathroomCrackleFollowsAppliedFlickerTransitions
-  HomeOpeningPlayModeTests.NewGame_*, GameTimeStateTests.PreparedClock_*/PreparedSession_*,
-  StartMenuModelTests (навигация/однократный запуск/отказ загрузки)
-  и check-docs пройдены; виды, включая ракурсы новой игры, просмотрены.
+- Балкон: хват у губ/большой палец к лицу, правый облёт до профиля.
+  Вид города расширен за дом; балок/экрана нет. E-гармошка внутрь,
+  ручки на дереве; наличники без мерцания, запечатывание безопасно.
+  HomeBalconyShoulderOrbitAndFoldingDoor/Blender checks пройдены; кадры просмотрены.
+- HomeOpeningPlayModeTests.NewGame_*, SleepMvp_AutomaticCutAndCleanup,
+  AreaCaptureFixture.Stairwell и check-docs пройдены; кадры просмотрены.
 
 ### 2026-10-29
 

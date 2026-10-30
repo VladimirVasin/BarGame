@@ -26,7 +26,7 @@ import interior_kit as kit
 import bar_parts as bp
 import home_interior_remodel as remodel
 
-VERSION = "2.0.0"
+VERSION = "2.1.0"
 SOURCE = ROOT / "ArtSource/Home/Interior"
 MODEL = ROOT / "Assets/Home/Interior/Models/HomeInterior3D.fbx"
 SHOWER_CURTAIN_FRONT_Z = 2.384
@@ -443,6 +443,26 @@ def add_entry_door(b):
     placed("Home Entry Door Edge Wear",kit.merge_all(wear),"DarkWood",(.31,.205,.118,1))
 
 
+def add_balcony_folding_door(b):
+    # Fixed-metre hollow glazed joinery; Unity drives only the four hinges.
+    width, height, depth = .31, 2.22, .045
+    stile, rail = .042, .07
+    pieces = []
+    for side in (-1, 1):
+        pieces.append(kit.translated(box((depth,height,stile),.004),
+            swap((0,0,side*(width-stile)*.5))))
+    for y in (-height*.5+rail*.5, .86-height*.5, height*.5-rail*.5):
+        pieces.append(kit.translated(box((depth,rail,width-2*stile),.004),swap((0,y,0))))
+    pieces.append(kit.translated(box((depth-.014,.72,width-2*stile),.004),
+        swap((0,.44-height*.5,0))))
+    b.add("Home Balcony Folding Wood",(depth,height,width),"RoomWood",geometry=kit.merge_all(pieces))
+    b.add("Home Balcony Folding Glass",(.014,1.20,width-2*stile),"Plain",geometry=box((.014,1.20,width-2*stile),.002))
+    handle = kit.merge_all([box((.028,.15,.028),.004),
+        kit.translated(box((.07,.024,.028),.003),swap((-.021,.063,0))),
+        kit.translated(box((.07,.024,.028),.003),swap((-.021,-.063,0)))])
+    b.add("Home Balcony Folding Handle",(.07,.15,.028),"PaintedMetal",geometry=fit_geometry(handle,(.07,.15,.028)))
+
+
 def add_bindings(b):
     # Broad structural masses and furniture are fixed-metre meshes. Chamfers
     # are authored in metres and never inflated by a GameObject size scale.
@@ -539,6 +559,7 @@ def add_bindings(b):
     remodel.add_bindings(b)
     b.add("Home Sink",(.85,.18,.55),"Enamel",geometry=remodel.sink_bowl())
     add_entry_door(b)
+    add_balcony_folding_door(b)
     b.add("Home Bathroom Shower Drain",(.15,.012,.15),"PaintedMetal",
           position=SHOWER_DRAIN_POSITION,tint=(.38,.39,.34,1),geometry=shower_drain_grille())
     b.add("Home Bathroom Shower Drain Well",(.12,.030,.12),"Plain",
@@ -654,6 +675,31 @@ def add_decor(b):
 
 def validate(b):
     errors=[];triangles=0
+    # A folded door must retain an actual aperture rather than four opaque
+    # slabs. Measure the imported section and the clear folded passage.
+    folding = {p["name"]: p for p in b.parts if p["name"].startswith("Home Balcony Folding ")}
+    required = {"Home Balcony Folding Wood", "Home Balcony Folding Glass", "Home Balcony Folding Handle"}
+    if set(folding) != required:
+        errors.append("folding balcony door lost its fixed joinery/glass/handle bindings")
+    if "Home Balcony Folding Wood" in folding:
+        vertices, faces = b.geometry["Home Balcony Folding Wood"]
+        for face in faces:
+            polygon = [swap(vertices[i]) for i in face]
+            for i in range(1, len(polygon)-1):
+                a, c, d = polygon[0], polygon[i], polygon[i+1]
+                dy, dz = c[1]-a[1], c[2]-a[2]
+                ey, ez = d[1]-a[1], d[2]-a[2]
+                determinant = dy*ez-dz*ey
+                if abs(determinant)<1e-12: continue
+                # Upper glazing centre in the centred mesh, not its world pivot.
+                py, pz = 1.52-2.22*.5, 0.0
+                u=((py-a[1])*ez-(pz-a[2])*ey)/determinant
+                v=(-(py-a[1])*dz+(pz-a[2])*dy)/determinant
+                if u>=-1e-8 and v>=-1e-8 and u+v<=1+1e-8:
+                    errors.append("folding balcony wood fills its glazing aperture")
+        folded_width=1.24*math.cos(math.radians(80))+.045
+        if 1.36-folded_width < .90 or .10 <= .09:
+            errors.append("folded balcony panels do not clear capsule route/threshold")
     # Inspect the actual exported front surfaces. A full flat slab behind
     # applique trim would pass bounds/count checks while losing the recess.
     def door_depths(x,y):
@@ -850,6 +896,7 @@ def validate(b):
             "shower_drain_open_grate_and_recess":True,
             "shower_basin_and_water_drain_apertures":True,
             "entry_door_real_panels_and_leaf_clearance":True,
+            "balcony_four_leaf_fold_clearance_and_glazing_aperture":True,
             "entry_door_joinery_closed":True,
             "kitchen_sink_hollow_and_counter_open":True,
             "dining_chair_measured_seat_contact":True,

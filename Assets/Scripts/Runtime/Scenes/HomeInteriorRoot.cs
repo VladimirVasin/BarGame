@@ -22,6 +22,7 @@ namespace BarPromenade
         }
         public Transform Room { get; private set; }
         public Transform Balcony { get; private set; }
+        public HomeBalconyFoldingDoorInteraction BalconyDoor { get; private set; }
         public Transform ExteriorView { get; private set; }
         public CityNightWorldResult ExteriorNight { get; private set; }
         public CityLightingPresentation ExteriorLighting { get; private set; }
@@ -171,10 +172,8 @@ namespace BarPromenade
 
         /// <summary>
         /// Behind a door (Stairwell -> Home) the build is pumped a frame at
-        /// a time under the transition's black; the main menu's direct load
-        /// and the tests have no pump and build here, in this frame. Home is
-        /// never an area-travel destination, so the loading bar's path is
-        /// not offered the steps.
+        /// a time under black; New Game pumps the same steps under the shared
+        /// loading screen. Standalone scenes/tests build synchronously.
         /// </summary>
         private void Initialize()
         {
@@ -316,6 +315,8 @@ namespace BarPromenade
                 Player.GameObject.GetComponent<
                     PlayerAnimatedInteractionController>();
             AnimatedInteraction.Initialize(Player, camera);
+            BalconyDoor = Balcony.GetComponentInChildren<HomeBalconyFoldingDoorInteraction>();
+            BalconyDoor.BindPlayer(Player, AnimatedInteraction);
 
             CameraFollow =
                 camera.GetComponent<PlayerCameraFollow>();

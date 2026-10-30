@@ -176,15 +176,10 @@ namespace BarPromenade.Tests.PlayMode
                 AssertRequiredObject(
                     home.Room,
                     "Home South Exterior Return Wall");
-            Transform northReturn =
-                AssertRequiredObject(
-                    home.Room,
-                    "Home North Exterior Return Wall");
+            Assert.That(home.Room.Find("Home North Exterior Return Wall"), Is.Null,
+                "The optional north screen must not hide the city during the right orbit.");
             AssertExteriorReturnSealsCorner(
                 southReturn,
-                home.Layout);
-            AssertExteriorReturnSealsCorner(
-                northReturn,
                 home.Layout);
 
             AssertPhysicalSurface(
@@ -215,19 +210,26 @@ namespace BarPromenade.Tests.PlayMode
                 Is.SameAs(
                     HomeBalconyResources
                         .GlassMaterial));
-            Transform doorGlass = AssertRequiredObject(
-                home.Balcony,
-                "Home Balcony Ajar Door Pivot/" +
-                "Home Balcony Door Glass");
-            Assert.That(
-                doorGlass.GetComponent<Collider>(),
-                Is.Null);
+            Assert.That(home.BalconyDoor, Is.Not.Null);
+            Assert.That(home.BalconyDoor.IsOpen, Is.True);
+            Assert.That(home.BalconyDoor.Panels, Has.Length.EqualTo(4));
+            Assert.That(home.BalconyDoor.PanelColliders, Has.Length.EqualTo(4));
+            foreach (Transform panel in home.BalconyDoor.Panels)
+            {
+                Transform doorGlass = AssertRequiredObject(panel, "Home Balcony Folding Glass");
+                Assert.That(doorGlass.GetComponent<Collider>(), Is.Null,
+                    "The imported glass follows its panel's shared solid collision proxy.");
+                Assert.That(doorGlass.GetComponent<Renderer>().sharedMaterial,
+                    Is.SameAs(HomeBalconyResources.GlassMaterial));
+                Assert.That(panel.GetComponent<BoxCollider>().enabled, Is.True);
+            }
+            Assert.That(home.Balcony.Find("Player Home Front Roof Eave"), Is.Null);
             Assert.That(
                 home.ExteriorView
                     .GetComponentsInChildren<Collider>(
                         true),
                 Is.Empty);
-            AssertExteriorStaysBeyondFacade(
+            AssertExteriorStaysWithinContext(
                 home.Room,
                 home.ExteriorView);
 
@@ -1434,11 +1436,12 @@ namespace BarPromenade.Tests.PlayMode
                     activation.xMin + 1.10f,
                     PlayerHomeBalconyGeometry.DoorCenterZ)
             };
-            bool fadedDoorFound = false;
-            for (int sampleIndex = 0;
-                 sampleIndex < samples.Length &&
-                 !fadedDoorFound;
-                 sampleIndex++)
+            Assert.That(home.BalconyDoor.IsOpen, Is.True);
+            foreach (BoxCollider panel in home.BalconyDoor.PanelColliders)
+                Assert.That(home.Room.InverseTransformPoint(panel.bounds.max).x,
+                    Is.LessThan(PlayerHomeBalconyGeometry.HomeFacadeX + .10f),
+                    "The folded solid sections must stay on the room side of the balcony shot.");
+            for (int sampleIndex = 0; sampleIndex < samples.Length; sampleIndex++)
             {
                 home.Player.Motor.Teleport(
                     new Vector3(
@@ -1447,15 +1450,11 @@ namespace BarPromenade.Tests.PlayMode
                         samples[sampleIndex].y));
                 yield return null;
                 home.PlayerOcclusion.RefreshImmediate();
-                fadedDoorFound =
-                    home.PlayerOcclusion.GetVisibility(
-                        doorGroup) < 0.999f;
+                Assert.That(home.PlayerOcclusion.GetVisibility(doorGroup),
+                    Is.EqualTo(1f).Within(.001f),
+                    "The folded door must leave the balcony view clear without fading its joinery.");
             }
 
-            Assert.That(
-                fadedDoorFound,
-                Is.True,
-                "The balcony shot must reveal the player through the open door leaf near the doorway.");
 
             home.Player.Motor.Teleport(
                 new Vector3(
@@ -1506,15 +1505,11 @@ namespace BarPromenade.Tests.PlayMode
                 Is.Null);
         }
 
-        private static void AssertExteriorStaysBeyondFacade(
+        private static void AssertExteriorStaysWithinContext(
             Transform room,
             Transform exterior)
         {
-            float localMinimum =
-                PlayerHomeBalconyGeometry.HomeFacadeX +
-                PlayerHomeBalconyGeometry.WallThickness *
-                0.5f +
-                0.01f;
+            float localMinimum = HomeExteriorViewBuilder.ContextMinimumX;
             float worldMinimum =
                 room.TransformPoint(
                     new Vector3(
@@ -1525,10 +1520,9 @@ namespace BarPromenade.Tests.PlayMode
                 exterior.GetComponentsInChildren<Renderer>(
                     true);
             Assert.That(renderers, Is.Not.Empty);
-            bool foundGround = false;
-            bool foundStreet = false;
-            bool foundSidewalk = false;
-            bool foundBuilding = false;
+            float worldFacade = room.TransformPoint(new Vector3(
+                PlayerHomeBalconyGeometry.HomeFacadeX, 0f, 0f)).x;
+            bool foundRearBuilding = false;
             for (int index = 0;
                  index < renderers.Length;
                  index++)
@@ -1544,28 +1538,15 @@ namespace BarPromenade.Tests.PlayMode
                     renderer.bounds.min.x,
                     Is.GreaterThanOrEqualTo(
                         worldMinimum - 0.02f),
-                    $"'{renderer.name}' must stay outside the apartment facade.");
-                foundGround |=
-                    renderer.name ==
-                    "Home Exterior Ground";
-                foundStreet |=
-                    renderer.name ==
-                    "Home Exterior Street Surfaces";
-                foundSidewalk |=
-                    renderer.name ==
-                    "Home Exterior Sidewalk Surfaces";
-                foundBuilding |=
-                    renderer.name ==
-                    "Exterior Building Mass";
+                    $"'{renderer.name}' must stay inside the bounded city context.");
+                foundRearBuilding |= renderer.bounds.max.x < worldFacade &&
+                    renderer.GetComponentInParent<CityBuildingAssetRegistry>() != null;
             }
 
-            Assert.That(foundGround, Is.True);
-            Assert.That(foundStreet, Is.True);
-            Assert.That(foundSidewalk, Is.True);
             Assert.That(
-                foundBuilding,
+                foundRearBuilding,
                 Is.True,
-                "Half-space clipping must preserve the street view outside.");
+                "The passive city must contain real imported buildings behind the facade.");
         }
 
         private static void AssertPlayerVisible(
@@ -1656,7 +1637,7 @@ namespace BarPromenade.Tests.PlayMode
                         context.PlayerHome,
                         descriptor.PublicBounds);
                 if (bounds.xMin <
-                    HomeExteriorViewBuilder.ExteriorMinimumX)
+                    HomeExteriorViewBuilder.ContextMinimumX)
                 {
                     continue;
                 }

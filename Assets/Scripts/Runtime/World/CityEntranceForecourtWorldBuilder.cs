@@ -128,11 +128,11 @@ namespace BarPromenade
                         for(int i=0;i<3;i++)
                         {
                             var a=original[i];var b=original[(i+1)%3];
-                            bool inside=a.point.x>=HomeExteriorViewBuilder.ExteriorMinimumX;
-                            bool nextInside=b.point.x>=HomeExteriorViewBuilder.ExteriorMinimumX;
+                            bool inside=a.point.x>=HomeExteriorViewBuilder.ContextMinimumX;
+                            bool nextInside=b.point.x>=HomeExteriorViewBuilder.ContextMinimumX;
                             if(inside)clipped.Add(a);
                             if(inside==nextInside)continue;
-                            float t=(HomeExteriorViewBuilder.ExteriorMinimumX-a.point.x)/(b.point.x-a.point.x);
+                            float t=(HomeExteriorViewBuilder.ContextMinimumX-a.point.x)/(b.point.x-a.point.x);
                             clipped.Add((Vector3.Lerp(a.point,b.point,t),Vector2.Lerp(a.uv,b.uv,t)));
                         }
                         AppendFace(clipped);

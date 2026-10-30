@@ -1,7 +1,7 @@
 {
   "generator": "tools/build-player-home-exterior-3d-model.py",
-  "generator_version": "1.1.0",
-  "blender_version": "5.0.1",
+  "generator_version": "1.2.0",
+  "blender_version": "5.2.3 LTS",
   "design_id": "player_home_exterior_v1",
   "display_name": "Bar Promenade Player Home Exterior",
   "dimensions_m": {
@@ -169,7 +169,7 @@
     8.8
   ],
   "mesh_count": 47,
-  "triangle_count": 7776,
+  "triangle_count": 8392,
   "anchors": [
     {
       "name": "ExteriorDoor",
@@ -1770,17 +1770,17 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 80,
-      "triangles": 140,
+      "vertices": 384,
+      "triangles": 672,
       "bounds_min": [
-        -1.18,
-        6.015,
-        4.7
+        -1.12,
+        6.0775,
+        4.8
       ],
       "bounds_max": [
-        0.18,
-        6.14,
-        7.04
+        0.12,
+        6.1225,
+        7.02
       ]
     },
     {
@@ -1808,17 +1808,17 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 64,
+      "triangles": 112,
       "bounds_min": [
-        -1.04,
-        6.058,
-        5.41
+        -1.078,
+        6.093,
+        5.72
       ],
       "bounds_max": [
-        0.04,
-        6.086,
-        6.85
+        0.078,
+        6.107,
+        6.92
       ]
     },
     {
@@ -1974,5 +1974,5 @@
       ]
     }
   ],
-  "build_signature": "91cb3cc200abbf5dfc83891e04fa9ae493ca4d252e9b00d3c9317c6cc5a30790"
+  "build_signature": "b4b799a3015c9bfcea24b599f80c4503ee5b1a46e53c7fbfb069c0fc351fe9b9"
 }

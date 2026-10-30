@@ -106,7 +106,7 @@ namespace BarPromenade
         public static CityBuildingExteriorFit ClassifyHomeBounds(
             Bounds homeLocalBounds)
         {
-            float minimum = HomeExteriorViewBuilder.ExteriorMinimumX;
+            float minimum = HomeExteriorViewBuilder.ContextMinimumX;
             if (homeLocalBounds.max.x <= minimum + BoundsTolerance)
             {
                 return CityBuildingExteriorFit.Hidden;

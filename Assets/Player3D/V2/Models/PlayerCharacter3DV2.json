@@ -2584,7 +2584,7 @@
     "action_count": 55,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "26098ac7f22648c3bb8a6e2081450c4cd6774575aac56dba8f9f1381eee7cac7",
+  "content_signature_sha256": "65c959880cadfbe2ab0014046569bd89e09788d621823c598e4a907fac71caed",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -8020,5 +8020,216 @@
     "preserved_source_sha256": "d9b360580c5263394eb70d5b6d6c19289b68a8aeeecfe23e1329dcdf09ec3f87",
     "authoring_sha256": "b50e999914954beefa522cb3fd250c8c8968b907b3e72b7b0cf6341d1f92d530"
   },
-  "content_signature_scope": "last_full_model_export; current_face_pixels_use_face_atlas.sha256"
+  "content_signature_scope": "current_source_model_rig_actions; current_face_pixels_use_face_atlas.sha256",
+  "smoking": {
+    "contact_limit_m": 0.025,
+    "minimum_outward_dot": 0.85,
+    "maximum_wrist_bend_degrees": 35.0,
+    "maximum_wrist_twist_degrees": 35.0,
+    "contacts": [
+      {
+        "action": "SmokeEnter",
+        "progress": 0.68,
+        "wrist_bend_degrees": 18.4469,
+        "wrist_twist_degrees": 2.8979,
+        "forearm_twist_degrees": 53.3364,
+        "distance_m": 1e-07,
+        "vertical_error_m": 1e-07,
+        "outward_dot": 0.9999999
+      },
+      {
+        "action": "SmokeEnter",
+        "progress": 0.76,
+        "wrist_bend_degrees": 18.4468,
+        "wrist_twist_degrees": 2.8979,
+        "forearm_twist_degrees": 53.3364,
+        "distance_m": 2e-07,
+        "vertical_error_m": 1e-07,
+        "outward_dot": 0.9999999
+      },
+      {
+        "action": "SmokeEnter",
+        "progress": 0.84,
+        "wrist_bend_degrees": 18.5796,
+        "wrist_twist_degrees": 2.9388,
+        "forearm_twist_degrees": 52.9881,
+        "distance_m": 1e-07,
+        "vertical_error_m": 1e-07,
+        "outward_dot": 0.9999999
+      },
+      {
+        "action": "SmokeLoop",
+        "progress": 0.42,
+        "wrist_bend_degrees": 18.4469,
+        "wrist_twist_degrees": 2.8979,
+        "forearm_twist_degrees": 53.3364,
+        "distance_m": 2e-07,
+        "vertical_error_m": 1e-07,
+        "outward_dot": 0.9999999
+      },
+      {
+        "action": "SmokeLoop",
+        "progress": 0.5,
+        "wrist_bend_degrees": 18.5796,
+        "wrist_twist_degrees": 2.9388,
+        "forearm_twist_degrees": 52.9881,
+        "distance_m": 2e-07,
+        "vertical_error_m": 1e-07,
+        "outward_dot": 0.9999999
+      },
+      {
+        "action": "SmokeLoop",
+        "progress": 0.625,
+        "wrist_bend_degrees": 18.5503,
+        "wrist_twist_degrees": 2.8847,
+        "forearm_twist_degrees": 53.1197,
+        "distance_m": 1e-07,
+        "vertical_error_m": 0.0,
+        "outward_dot": 0.9999999
+      }
+    ],
+    "fixed_root": true,
+    "exact_loop_seam": true,
+    "preserved_other_content": true
+  },
+  "smoking_authoring_sha256": "a9c4dd02fe625ae182de676af6af41c8d457e406464b409211931e93524aaaee",
+  "smoking_grip": {
+    "shape_name": "SmokingGrip",
+    "side": "R",
+    "renderers": [
+      "GEO_Hand.R",
+      "GEO_Thumb.R",
+      "GEO_Finger0.R",
+      "GEO_Finger1.R",
+      "GEO_Finger2.R",
+      "GEO_Finger3.R"
+    ],
+    "radius_m": 0.00325,
+    "filter_to_grip_m": 0.0225,
+    "contacts": {
+      "GEO_Finger0.R": {
+        "joint_angles_degrees": [
+          45.0,
+          80.0,
+          40.0
+        ],
+        "surface_gap_m": 0.0005324264721957967,
+        "contact_palm_m": -0.002041271422058344,
+        "contact_radial_m": [
+          -0.0031843306496739388,
+          -0.002041271422058344
+        ]
+      },
+      "GEO_Finger1.R": {
+        "joint_angles_degrees": [
+          10.0,
+          40.0,
+          80.0
+        ],
+        "surface_gap_m": 0.0008993199589937893,
+        "contact_palm_m": 0.00223877327516675,
+        "contact_radial_m": [
+          0.003493530210107565,
+          0.00223877327516675
+        ]
+      }
+    },
+    "pad_opposition_dot": -0.9999999403953552,
+    "pad_opposition_degrees": 179.98021765897056,
+    "minimum_pad_opposition_degrees": 150.0,
+    "thumb_face_side_margin_m": 0.010340905224438757,
+    "full_shaft_clearances": {
+      "GEO_Hand.R": {
+        "paper": {
+          "minimum_axis_distance_m": 0.01052089328947003,
+          "surface_clearance_m": 0.00727089328947003
+        },
+        "ember": {
+          "minimum_axis_distance_m": 0.013754202343637379,
+          "surface_clearance_m": 0.01025420234363738
+        },
+        "conservative_full_shaft": {
+          "minimum_axis_distance_m": 0.01052088991467806,
+          "surface_clearance_m": 0.00727088991467806
+        }
+      },
+      "GEO_Thumb.R": {
+        "paper": {
+          "minimum_axis_distance_m": 0.028023312495866856,
+          "surface_clearance_m": 0.024773312495866857
+        },
+        "ember": {
+          "minimum_axis_distance_m": 0.06763446977824342,
+          "surface_clearance_m": 0.06413446977824341
+        },
+        "conservative_full_shaft": {
+          "minimum_axis_distance_m": 0.028751256359070578,
+          "surface_clearance_m": 0.02550125635907058
+        }
+      },
+      "GEO_Finger0.R": {
+        "paper": {
+          "minimum_axis_distance_m": 0.0037824084029766994,
+          "surface_clearance_m": 0.0005324084029766996
+        },
+        "ember": {
+          "minimum_axis_distance_m": 0.04576482922462591,
+          "surface_clearance_m": 0.042264829224625905
+        },
+        "conservative_full_shaft": {
+          "minimum_axis_distance_m": 0.0037824174542690917,
+          "surface_clearance_m": 0.0005324174542690918
+        }
+      },
+      "GEO_Finger1.R": {
+        "paper": {
+          "minimum_axis_distance_m": 0.004149324706708179,
+          "surface_clearance_m": 0.0008993247067081793
+        },
+        "ember": {
+          "minimum_axis_distance_m": 0.027942259788938127,
+          "surface_clearance_m": 0.024442259788938128
+        },
+        "conservative_full_shaft": {
+          "minimum_axis_distance_m": 0.004149321000366234,
+          "surface_clearance_m": 0.0008993210003662342
+        }
+      },
+      "GEO_Finger2.R": {
+        "paper": {
+          "minimum_axis_distance_m": 0.0077142138725058845,
+          "surface_clearance_m": 0.004464213872505885
+        },
+        "ember": {
+          "minimum_axis_distance_m": 0.013192843436415785,
+          "surface_clearance_m": 0.009692843436415785
+        },
+        "conservative_full_shaft": {
+          "minimum_axis_distance_m": 0.007714182591559864,
+          "surface_clearance_m": 0.004464182591559864
+        }
+      },
+      "GEO_Finger3.R": {
+        "paper": {
+          "minimum_axis_distance_m": 0.011240343038716785,
+          "surface_clearance_m": 0.007990343038716785
+        },
+        "ember": {
+          "minimum_axis_distance_m": 0.010999429666474518,
+          "surface_clearance_m": 0.007499429666474518
+        },
+        "conservative_full_shaft": {
+          "minimum_axis_distance_m": 0.010849519977845374,
+          "surface_clearance_m": 0.007599519977845375
+        }
+      }
+    },
+    "maximum_link_length_error_m": 8.001304655641528e-08,
+    "palm_wrist_unchanged": true,
+    "closed_positive_volumes": true,
+    "socket_rest_unchanged": true,
+    "socket_delta_in_smoking_clips": true,
+    "shape_signature": "d93e202ab708f3b96c510e372ed27436bf19d4a28cebf72e26c03ffd8a7c1002",
+    "authoring_sha256": "5d3ba57db00e55fd0e916f43b73acb17bdc29c80e98503938b9f748da4e59c47"
+  }
 }

@@ -516,14 +516,9 @@ namespace BarPromenade
                 plan.RoomHeight,
                 exteriorReturnDepth,
                 wallThickness);
-            CreateExteriorReturnWall(
-                "Home North Exterior Return Wall",
-                room,
-                facadeX,
-                halfDepth,
-                plan.RoomHeight,
-                exteriorReturnDepth,
-                wallThickness);
+            // The north return was only a visual screen outside the actual
+            // apartment shell. It blocked the right-side city view; the real
+            // north wall, deck and safety guards retain their own geometry.
         }
 
         private static void CreateExteriorReturnWall(

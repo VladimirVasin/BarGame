@@ -12,6 +12,7 @@ import json
 import math
 import os
 import random
+import sys
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -1014,7 +1015,7 @@ class ProductionPlayerBuilderBase:
         if self.result is None:
             raise RuntimeError("BuildResult has not been initialized")
         rig = self.result.rig
-        for bone_name in (*REQUIRED_BONES, *REQUIRED_FACE_BONES):
+        for bone_name in (*REQUIRED_BONES, *REQUIRED_FACE_BONES, *REQUIRED_SOCKET_BONES):
             transform = pose.get(bone_name)
             if transform is None:
                 continue
@@ -1088,6 +1089,7 @@ class ProductionPlayerBuilderBase:
         interpolation: str = "LINEAR",
         armature_sweep: bool = False,
         sweep_stops: tuple[float, ...] = (0.0, 1.0),
+        extra_keyed_bones: tuple[str, ...] = (),
     ) -> None:
         if self.result is None:
             raise RuntimeError("BuildResult has not been initialized")
@@ -1117,7 +1119,9 @@ class ProductionPlayerBuilderBase:
         rig = self.result.rig
         animation_data = rig.animation_data_create()
         animation_data.action = action
-        keyed_bones = (*REQUIRED_BONES, *REQUIRED_FACE_BONES)
+        if any(name not in REQUIRED_SOCKET_BONES for name in extra_keyed_bones):
+            raise ValueError("Extra action tracks must name registered sockets")
+        keyed_bones = (*REQUIRED_BONES, *REQUIRED_FACE_BONES, *extra_keyed_bones)
         previous_quaternions: dict[str, Quaternion] = {}
         for key in keys:
             normalized_time, pose = key[0], key[1]
@@ -3304,208 +3308,8 @@ class ProductionPlayerBuilderBase:
             interpolation="BEZIER",
         )
 
-        smoke_rest = self.merge_pose(
-            relaxed,
-            {
-                "pelvis": BonePose(rotation_degrees=(0.8, -0.4, -1.6)),
-                "spine": BonePose(rotation_degrees=(-2.8, 0.0, 1.8)),
-                "chest": BonePose(rotation_degrees=(3.2, 0.0, -1.8)),
-                "neck": BonePose(rotation_degrees=(-1.5, 0.0, 1.0)),
-                "head": BonePose(rotation_degrees=(1.0, 0.0, -0.8)),
-            },
-        )
-        smoke_settle = self.merge_pose(
-            smoke_rest,
-            {
-                "pelvis": BonePose(rotation_degrees=(1.2, -0.6, -2.2)),
-                "spine": BonePose(rotation_degrees=(-3.4, 0.0, 2.4)),
-                "head": BonePose(rotation_degrees=(2.0, 0.0, -1.4)),
-            },
-        )
-        smoke_reach = self.merge_pose(
-            smoke_settle,
-            {
-                "upper_arm.R": BonePose(target_direction=(0.03, -0.12, -0.22)),
-                "forearm.R": BonePose(rotation_degrees=(-48.0, 10.0, -24.0)),
-                "hand.R": BonePose(rotation_degrees=(14.0, -8.0, 6.0)),
-                "head": BonePose(rotation_degrees=(5.0, 0.0, 1.8)),
-            },
-        )
-        smoke_draw_low = self.merge_pose(
-            smoke_settle,
-            {
-                "upper_arm.R": BonePose(target_direction=(-0.03, -0.12, -0.24)),
-                "forearm.R": BonePose(rotation_degrees=(-38.0, 5.0, -18.0)),
-                "hand.R": BonePose(rotation_degrees=(12.0, -12.0, 8.0)),
-                "head": BonePose(rotation_degrees=(2.5, 0.0, 0.5)),
-            },
-        )
-        smoke_lift = self.merge_pose(
-            relaxed,
-            {
-                "upper_arm.R": BonePose(rotation_degrees=(8.0, -8.0, 48.0)),
-                "forearm.R": BonePose(rotation_degrees=(5.0, -28.0, 60.0)),
-                "hand.R": BonePose(rotation_degrees=(0.0, -28.0, 10.0)),
-                "chest": BonePose(rotation_degrees=(3.2, 0.0, -1.4)),
-                "head": BonePose(rotation_degrees=(0.5, 0.0, -0.6)),
-            },
-        )
-        smoke_mouth = self.merge_pose(
-            relaxed,
-            {
-                # These local rotations put the cigarette socket head at the
-                # mouth while keeping its head-to-tail +Y axis pointing out.
-                "upper_arm.R": BonePose(
-                    rotation_degrees=(15.96, -13.89, 84.82),
-                ),
-                "forearm.R": BonePose(
-                    rotation_degrees=(11.05, -47.61, 104.20),
-                ),
-                "hand.R": BonePose(
-                    rotation_degrees=(-8.73, -50.19, 13.66),
-                ),
-            },
-        )
-        smoke_light = self.merge_pose(
-            smoke_mouth,
-            {
-                "upper_arm.L": BonePose(
-                    rotation_degrees=(10.0, 10.0, -70.0),
-                ),
-                "forearm.L": BonePose(
-                    rotation_degrees=(5.0, 38.0, -88.0),
-                ),
-                "hand.L": BonePose(rotation_degrees=(-5.0, 35.0, -10.0)),
-            },
-        )
-        smoke_first_inhale = self.merge_pose(
-            smoke_light,
-            {
-                "spine": BonePose(rotation_degrees=(-2.4, 0.0, 1.2)),
-                "chest": BonePose(rotation_degrees=(4.4, 0.0, -1.4)),
-                "upper_arm.L": BonePose(
-                    rotation_degrees=(8.0, 8.0, -62.0),
-                ),
-                "forearm.L": BonePose(
-                    rotation_degrees=(4.0, 32.0, -78.0),
-                ),
-            },
-        )
-        smoke_inhale = self.merge_pose(
-            smoke_mouth,
-            {
-                "spine": BonePose(rotation_degrees=(-2.4, 0.0, 1.2)),
-                "chest": BonePose(rotation_degrees=(4.4, 0.0, -1.4)),
-            },
-        )
-        smoke_breath_hold = self.merge_pose(
-            smoke_mouth,
-            {
-                "spine": BonePose(rotation_degrees=(-2.1, 0.0, 1.0)),
-                "chest": BonePose(rotation_degrees=(4.0, 0.0, -1.3)),
-            },
-        )
-        smoke_lower = self.merge_pose(
-            relaxed,
-            {
-                "upper_arm.R": BonePose(rotation_degrees=(7.0, -7.0, 42.0)),
-                "forearm.R": BonePose(rotation_degrees=(2.0, -22.0, 52.0)),
-                "hand.R": BonePose(rotation_degrees=(2.0, -20.0, 8.0)),
-                "chest": BonePose(rotation_degrees=(3.4, 0.0, -1.5)),
-            },
-        )
-        smoke_exhale = self.merge_pose(
-            smoke_rest,
-            {
-                "chest": BonePose(rotation_degrees=(2.2, 0.0, -1.6)),
-                "neck": BonePose(rotation_degrees=(-0.5, 0.0, 2.0)),
-                "head": BonePose(rotation_degrees=(2.8, 0.0, 3.8)),
-            },
-        )
-        smoke_inspect = self.merge_pose(
-            smoke_draw_low,
-            {
-                "forearm.R": BonePose(rotation_degrees=(-24.0, 2.0, -12.0)),
-                "hand.R": BonePose(rotation_degrees=(8.0, -16.0, 12.0)),
-                "head": BonePose(rotation_degrees=(7.0, 0.0, 4.0)),
-            },
-        )
-        smoke_extend = self.merge_pose(
-            smoke_settle,
-            {
-                "upper_arm.R": BonePose(target_direction=(-0.08, -0.26, -0.04)),
-                "forearm.R": BonePose(rotation_degrees=(-12.0, -8.0, 12.0)),
-                "hand.R": BonePose(rotation_degrees=(8.0, -12.0, 14.0)),
-                "head": BonePose(rotation_degrees=(2.0, 0.0, -1.0)),
-            },
-        )
-        smoke_flick = self.merge_pose(
-            smoke_extend,
-            {
-                "hand.R": BonePose(rotation_degrees=(28.0, -12.0, 24.0)),
-                "head": BonePose(rotation_degrees=(4.0, 0.0, -0.5)),
-            },
-        )
-        smoke_gaze_follow = self.merge_pose(
-            smoke_settle,
-            {
-                "upper_arm.R": BonePose(target_direction=(-0.06, -0.24, -0.10)),
-                "forearm.R": BonePose(rotation_degrees=(-8.0, -6.0, 8.0)),
-                "hand.R": BonePose(rotation_degrees=(12.0, -8.0, 10.0)),
-                "neck": BonePose(rotation_degrees=(-1.0, 0.0, 2.0)),
-                "head": BonePose(rotation_degrees=(8.0, 0.0, 5.0)),
-            },
-        )
-        smoke_return = self.merge_pose(
-            smoke_rest,
-            {
-                "upper_arm.R": BonePose(rotation_degrees=(3.0, -3.0, 18.0)),
-                "forearm.R": BonePose(rotation_degrees=(-2.0, -8.0, 18.0)),
-                "hand.R": BonePose(rotation_degrees=(5.0, -8.0, 6.0)),
-            },
-        )
-        self._create_action(
-            "SmokeEnter", "smoking", 4.0, False, 48, 12,
-            (
-                (0.0, relaxed),
-                (0.16, smoke_settle),
-                (0.30, smoke_reach),
-                (0.40, smoke_draw_low),
-                (0.55, smoke_lift),
-                (0.68, smoke_mouth),
-                (0.76, smoke_light),
-                (0.84, smoke_first_inhale),
-                (0.92, smoke_lower),
-                (1.0, smoke_rest),
-            ),
-        )
-        self._create_action(
-            "SmokeLoop", "smoking", 4.0, True, 24, 6,
-            (
-                (0.0, smoke_rest),
-                (1.0 / 6.0, smoke_rest),
-                (0.29, smoke_lift),
-                (0.42, smoke_mouth),
-                (0.50, smoke_inhale),
-                (0.625, smoke_breath_hold),
-                (0.70, smoke_lower),
-                (0.83, smoke_exhale),
-                (0.875, smoke_rest),
-                (1.0, smoke_rest),
-            ),
-        )
-        self._create_action(
-            "SmokeExit", "smoking", 2.0, False, 24, 12,
-            (
-                (0.0, smoke_rest),
-                (0.20, smoke_inspect),
-                (0.38, smoke_extend),
-                (0.50, smoke_flick),
-                (0.66, smoke_gaze_follow),
-                (0.82, smoke_return),
-                (1.0, relaxed),
-            ),
-        )
+        import player_smoking_actions
+        player_smoking_actions.build(self, sys.modules[__name__])
 
         # Cat feeding is staged against the MiddleFlight rail cat, whose
         # authored feeding dip bottoms the muzzle out ~0.29 m above its
@@ -5162,6 +4966,7 @@ def validate_smoking_pose(
     if record is None or any(value is None for value in smoking_records):
         return
 
+    import player_smoking_actions
     rig = result.rig
     scene = bpy.context.scene
     animation_data = rig.animation_data_create()
@@ -5173,7 +4978,12 @@ def validate_smoking_pose(
     }
 
     def sample(action_record: ActionRecord, normalized_time: float) -> None:
+        # Legacy ordinary actions do not key sockets. Sample their real bind
+        # basis instead of retaining the last smoking-only socket delta.
+        rig.pose.bones["SOCKET_Cigarette.R"].matrix_basis = Matrix.Identity(4)
         animation_data.action = action_record.action
+        if len(action_record.action.slots):
+            animation_data.action_slot = action_record.action.slots[0]
         frame = round(action_record.action.frame_end * normalized_time)
         scene.frame_set(frame)
         bpy.context.view_layer.update()
@@ -5261,9 +5071,12 @@ def validate_smoking_pose(
                     )
                     break
 
-        contact_samples = (
-            (result.actions["SmokeEnter"], (0.68, 0.76, 0.84)),
-            (record, (0.50, 0.625)),
+        # Cover the complete drag, including interpolation between landmarks.
+        contact_samples = tuple(
+            (result.actions[name], tuple(frame / result.actions[name].action.frame_end
+                for frame in range(round(start * result.actions[name].action.frame_end),
+                                   round(end * result.actions[name].action.frame_end) + 1)))
+            for name, start, end in (("SmokeEnter", .68, .84), ("SmokeLoop", .42, .625))
         )
         for contact_record, normalized_times in contact_samples:
             for normalized_time in normalized_times:
@@ -5278,6 +5091,13 @@ def validate_smoking_pose(
                         f"(got {mouth_distance:.4f} m at "
                         f"t={normalized_time:.3f})"
                     )
+
+                wrist_bend, wrist_twist = player_smoking_actions.wrist_angles(
+                    rig.pose.bones["hand.R"].rotation_quaternion)
+                if (wrist_bend > player_smoking_actions.MAXIMUM_WRIST_BEND_DEGREES or
+                        wrist_twist > player_smoking_actions.MAXIMUM_WRIST_TWIST_DEGREES):
+                    errors.append(f"{contact_record.action.name} inhale needs a natural wrist "
+                        f"(bend {wrist_bend:.2f} / twist {wrist_twist:.2f} degrees at t={normalized_time:.3f})")
 
                 cigarette_axis = armature_axis("SOCKET_Cigarette.R")
                 mouth_axis = armature_axis("SOCKET_Mouth")
@@ -5309,6 +5129,20 @@ def validate_smoking_pose(
                     f"({bone_name} differs by {seam_error:.7f})"
                 )
                 break
+        # Every visible full-rig handoff retains its ordinary endpoint.
+        for first_name, first_time, next_name, next_time in (
+                ("Relaxed", 0., "SmokeEnter", 0.),
+                ("SmokeEnter", 1., "SmokeLoop", 0.),
+                ("SmokeLoop", 1., "SmokeExit", 0.),
+                ("SmokeExit", 1., "Relaxed", 0.)):
+            if first_name not in result.actions or next_name not in result.actions:
+                continue
+            sample(result.actions[first_name], first_time)
+            first_pose = {bone.name: bone.matrix.copy() for bone in rig.pose.bones}
+            sample(result.actions[next_name], next_time)
+            if any(matrix_error(first_pose[bone.name], bone.matrix) > 1e-5 for bone in rig.pose.bones):
+                errors.append(f"Smoking handoff {first_name} -> {next_name} must match the full rig")
+
     finally:
         animation_data.action = previous_action
         scene.frame_set(previous_frame)

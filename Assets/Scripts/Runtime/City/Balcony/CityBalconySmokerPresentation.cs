@@ -25,9 +25,9 @@ namespace BarPromenade
 
         /// <summary>
         /// The socket the cigarette hand prop is attached to. The hero's
-        /// SmokeLoop never keys sockets, so the transferred delta on it is
-        /// zero and the prop sits exactly where the skinned cigarette used
-        /// to.
+        /// SmokeLoop keys this socket's filter offset and axis for the
+        /// authored finger grip. The canonical rest transform stays shared;
+        /// ordinary pose transfer applies those same deltas to the prop.
         /// </summary>
         public const string CigaretteSocketName =
             CityPedestrianHandProps.CigaretteRightSocketName;

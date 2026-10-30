@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>The existing household leaf becomes a fitted, solid final-view barrier.</summary>
+    /// <summary>The same folding leaves become the fitted, solid final-view barrier.</summary>
     [DisallowMultipleComponent]
     public sealed class HomeBalconyCorruptionBarrier : MonoBehaviour
     {
@@ -19,6 +19,8 @@ namespace BarPromenade
         private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
         private static readonly int MetallicId = Shader.PropertyToID("_Metallic");
         private Transform pivot, room, player;
+        private HomeBalconyFoldingDoorInteraction door;
+        private Vector3 originalPosition;
         private CharacterController capsule;
         private BoxCollider solidLeaf;
         private Quaternion originalRotation;
@@ -44,46 +46,37 @@ namespace BarPromenade
         public Transform DoorPivot => pivot;
         public BoxCollider DoorCollider => solidLeaf;
 
-        internal void Initialize(Transform leafPivot, Renderer[] frame, Vector3 openingSize)
+        internal void Initialize(HomeBalconyFoldingDoorInteraction foldingDoor, Renderer[] frame, Vector3 openingSize)
         {
-            if (leafPivot == null || frame == null || frame.Length != 3 || leafPivot.parent == null)
-                throw new ArgumentException("The balcony barrier requires its existing leaf and measured frame.");
-            pivot = leafPivot;
+            if (foldingDoor == null || frame == null || frame.Length != 3)
+                throw new ArgumentException("The balcony barrier requires its existing folding leaves and measured frame.");
+            door = foldingDoor;
+            pivot = door.transform;
             scratch = new MaterialPropertyBlock();
             room = transform.parent;
+            originalPosition = pivot.localPosition;
             originalRotation = pivot.localRotation;
             originalScale = pivot.localScale;
             originalWidth = openingSize.z - .12f;
-            originalHeight = openingSize.y - .08f;
-            // This is a collision proxy for the assembled imported leaf. It
-            // adds no rendered geometry and always follows that same leaf.
+            originalHeight = door.LeafHeight;
+            // Only the sealed state fills the complete frame. Ordinary solid
+            // collision remains on the individual visible folding sections.
             solidLeaf = pivot.gameObject.AddComponent<BoxCollider>();
             solidLeaf.center = new Vector3(0f, originalHeight * .5f, originalWidth * .5f);
             solidLeaf.size = new Vector3(.10f, originalHeight, originalWidth);
             solidLeaf.enabled = false;
-            var cache = new List<Surface>(11);
+            var cache = new List<Surface>(13);
             Cache(cache, frame[0], "frame-south");
             Cache(cache, frame[1], "frame-north");
             Cache(cache, frame[2], "header");
-            int stile = 0;
-            foreach (Renderer renderer in pivot.GetComponentsInChildren<Renderer>(true))
+            for (int index = 0; index < door.Panels.Length; index++)
             {
-                string suffix;
-                switch (renderer.name)
-                {
-                    case "Home Balcony Door Leaf Stile": suffix = stile++ == 0 ? "hinge-stile" : "latch-stile"; break;
-                    case "Home Balcony Door Leaf Bottom Rail": suffix = "bottom-rail"; break;
-                    case "Home Balcony Door Leaf Middle Rail": suffix = "middle-rail"; break;
-                    case "Home Balcony Door Leaf Top Rail": suffix = "top-rail"; break;
-                    case "Home Balcony Door Lower Panel": suffix = "lower-panel"; break;
-                    case "Home Balcony Door Handle": suffix = "handle"; break;
-                    case "Home Balcony Door Glass": suffix = "glass"; break;
-                    default: throw new InvalidOperationException("Unexpected balcony leaf part: " + renderer.name);
-                }
-                Cache(cache, renderer, suffix);
+                Transform panel = door.Panels[index];
+                Cache(cache, panel.Find("Home Balcony Folding Wood").GetComponent<Renderer>(), new[] { "hinge-stile", "latch-stile", "lower-panel", "middle-rail" }[index]);
+                Cache(cache, panel.Find("Home Balcony Folding Glass").GetComponent<Renderer>(), "glass-" + index);
             }
-            if (cache.Count != 11 || stile != 2)
-                throw new InvalidOperationException("The balcony barrier lost an assembled door surface.");
+            Cache(cache, door.InsideHandle.GetComponent<Renderer>(), "handle");
+            Cache(cache, door.OutsideHandle.GetComponent<Renderer>(), "handle");
             surfaces = cache.ToArray();
         }
 
@@ -92,8 +85,8 @@ namespace BarPromenade
             if (renderer == null) throw new InvalidOperationException("Missing balcony door surface.");
             var properties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(properties);
-            bool glass = suffix == "glass";
-            HomeSurfaceKind kind = suffix == "handle" ? HomeSurfaceKind.PaintedMetal : HomeSurfaceKind.RoomWood;
+            bool glass = suffix.StartsWith("glass", StringComparison.Ordinal);
+            HomeSurfaceKind kind = suffix.StartsWith("handle", StringComparison.Ordinal) ? HomeSurfaceKind.PaintedMetal : HomeSurfaceKind.RoomWood;
             cache.Add(new Surface { Renderer = renderer, Material = renderer.sharedMaterial, Original = properties,
                 Glass = glass, Kind = kind, Damage = glass ? null : SurfaceDamageLibrary.Resolve(
                     "home", null, "barrier:balcony:" + suffix, kind.ToString()) });
@@ -143,9 +136,11 @@ namespace BarPromenade
 
         private void Seal()
         {
+            if (!door.TrySeal()) return;
+            pivot.localPosition = new Vector3(originalPosition.x, .005f,
+                originalPosition.z - .055f);
             pivot.localRotation = Quaternion.identity;
-            // The old door has generous ajar clearances. Swollen final-view
-            // wood seats within its existing jamb/header, leaving1cm reveals.
+            // The four closed sections swell together within the same jamb/header.
             pivot.localScale = Vector3.Scale(originalScale,
                 new Vector3(1f, ClosedHeight / originalHeight, ClosedWidth / originalWidth));
             foreach (Surface surface in surfaces)
@@ -181,8 +176,10 @@ namespace BarPromenade
         {
             if (!IsInitialized || pivot == null || solidLeaf == null) return;
             solidLeaf.enabled = false;
+            pivot.localPosition = originalPosition;
             pivot.localRotation = originalRotation;
             pivot.localScale = originalScale;
+            if (IsSealed || IsSealPending) door.RestoreOrdinary();
             if (IsSealed)
                 foreach (Surface surface in surfaces)
                 {

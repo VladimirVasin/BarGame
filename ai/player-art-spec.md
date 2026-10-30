@@ -327,9 +327,9 @@ This opt-in applies only during the interaction handoff without an active clip.
   `HomeInteriorWorldBuilder.BedSleeperSinkDepth` so he lies in that dent, and
   the dent slowly refills after he rises. The bedside seat takes no dent —
   it is pinned by both boots on the floor. Balcony smoking uses `SmokeEnter`, `SmokeLoop`, `SmokeExit`: the
-  right hand retrieves a socket-bound cigarette, brings its mouth end to the
-  lips for a held inhale, lowers for an outward exhale and discards it before
-  returning to `Relaxed`. Cat feeding uses `CatFeedEnter`, `CatFeedLoop`,
+  right hand draws the cigarette, holds its filter at the lips, lowers/exhales
+  and discards before Relaxed. SmokingGrip uses the original right-hand meshes:
+  index/middle pinch, thumb faceward; the canonical socket rest stays. Cat feeding uses `CatFeedEnter`, `CatFeedLoop`,
   `CatFeedExit`. Ordinary location doors use the planted
   `DoorUseEnter`, `DoorUseLoop`, `DoorUseExit` trio: the chest inclines toward
   the door while the physical right hand makes one short press, both feet stay

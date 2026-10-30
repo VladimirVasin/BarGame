@@ -40,8 +40,8 @@ namespace BarPromenade
             {
                 Vector3 local = PlayerHomeBalconyGeometry.ToHomeLocal(home.PlayerHome, prop.Position);
                 float radius = new Vector2(prop.Bounds.extents.x, prop.Bounds.extents.z).magnitude;
-                if (local.x - radius < HomeExteriorViewBuilder.ExteriorMinimumX ||
-                    new Vector2(local.x, local.z).magnitude - radius > 48f) continue;
+                if (local.x - radius < HomeExteriorViewBuilder.ContextMinimumX ||
+                    new Vector2(local.x - PlayerHomeBalconyGeometry.HomeFacadeX, local.z).magnitude - radius > HomeExteriorContextPlanner.ViewRadius) continue;
                 // The provider returns passive geometry. Home neither copies
                 // the physical obstacles nor runs the court population.
                 GameObject model = CityResidentialCourtyardAssetProvider.Create(root.transform,

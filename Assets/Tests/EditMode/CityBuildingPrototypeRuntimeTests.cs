@@ -772,6 +772,7 @@ namespace BarPromenade.Tests.EditMode
             AssertSpecialHomeExterior(buildings, context);
 
             int expectedFull = 0;
+            int expectedRearFull = 0;
             int expectedCrossing = 0;
             int expectedHidden = 0;
             int actualFull = 0;
@@ -796,6 +797,8 @@ namespace BarPromenade.Tests.EditMode
                 {
                     case CityBuildingExteriorFit.Full:
                         expectedFull++;
+                        if (PlayerHomeBalconyGeometry.ToHomeLocal(context.PlayerHome, lot.Center).x < 0f)
+                            expectedRearFull++;
                         Assert.That(building, Is.Not.Null, lot.Cell.ToString());
                         CityBuildingAssetRegistry[] registries = building
                             .GetComponentsInChildren<
@@ -858,7 +861,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(actualCrossing, Is.EqualTo(expectedCrossing));
             Assert.That(actualHidden, Is.EqualTo(expectedHidden));
             Assert.That(expectedFull, Is.GreaterThan(0));
-            Assert.That(expectedHidden, Is.GreaterThan(0));
+            Assert.That(expectedRearFull, Is.GreaterThan(0),
+                "The Home context must retain imported city buildings behind the apartment.");
             Assert.That(
                 expectedFull + expectedCrossing + expectedHidden,
                 Is.EqualTo(
@@ -873,14 +877,14 @@ namespace BarPromenade.Tests.EditMode
                 exterior.GetComponentsInChildren<Renderer>(true);
             Assert.That(renderers, Is.Not.Empty);
             float minimumX =
-                HomeExteriorViewBuilder.ExteriorMinimumX -
+                HomeExteriorViewBuilder.ContextMinimumX -
                 CityBuildingPrototypePlacement.BoundsTolerance;
             for (int index = 0; index < renderers.Length; index++)
             {
                 Assert.That(
                     renderers[index].bounds.min.x,
                     Is.GreaterThanOrEqualTo(minimumX),
-                    $"'{renderers[index].name}' crosses the Home facade.");
+                    $"'{renderers[index].name}' crosses the bounded Home context.");
             }
         }
 

@@ -27,8 +27,8 @@ namespace BarPromenade
             Vector3 local = PlayerHomeBalconyGeometry.ToHomeLocal(context.PlayerHome, plan.Position);
             float radius = Mathf.Sqrt(CityLaundryPlan.Width * CityLaundryPlan.Width +
                 CityLaundryPlan.Depth * CityLaundryPlan.Depth) * .5f;
-            if (local.x - radius < HomeExteriorViewBuilder.ExteriorMinimumX ||
-                new Vector2(local.x, local.z).magnitude + radius > 48f) return null;
+            if (local.x - radius < HomeExteriorViewBuilder.ContextMinimumX ||
+                new Vector2(local.x - PlayerHomeBalconyGeometry.HomeFacadeX, local.z).magnitude + radius > HomeExteriorContextPlanner.ViewRadius) return null;
             GameObject model = CityLaundryAssetProvider.CreateStatic(parent);
             model.name = "Home Residential Laundry";
             model.transform.localPosition = local;

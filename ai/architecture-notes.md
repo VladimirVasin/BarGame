@@ -1,6 +1,44 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-30 — surrounding Home city view:**
+  User: extend the smoking view behind Home. Passive seeded64m ring pads48m
+  camera; `ContextMinimumX` clips terrain/roads/buildings/props/wires/fixtures.
+  Facade rain/stop/pedestrian/light-support bounds stay. All24: shared GI/SSAO/
+  fog/volume/Soft/grade, ten material/motion categories and eight post owners
+  unchanged. Assets reused;64m build, NPC/light caps retained;
+  CPU/GPU/memory cost unmeasured.
+
+- **Accepted 2026-10-30 — New Game loading screen:**
+  User: show loading after New Game. `AreaLoadingRoot`: charcoal/RU label/
+  percent/shared bottom bar, no journey art. `CompositionDriver`:20% load/80%
+  staged Home, first draw covered, then DestinationReady→sleep. No timer;
+  shutdown releases UI/load/pauses. All24 retain world GI/SSAO/fog/volume/
+  shadow/grade, ten material/motion and eight post owners; flat crisp UI only.
+  Cached styles/percent-on-change/no art load; cost unmeasured.
+
+- **Accepted 2026-10-30 — balcony contacts, shoulder orbit and folding door:**
+  User: cigarette at lips; close right-shoulder city view/slow right-side face
+  reveal; no beam/north screen; inward folding door/wood-mounted latch pulls.
+  Production clips bake mouth/socket contacts. SmokingGrip morphs only the six
+  original right-hand meshes: index/middle pinch, thumb faceward, other fingers
+  curled; palm/wrist/canonical socket rest stay. Socket delta is Smoke-only.
+  Shared NpcHandPose reapplies after clip samples; reveal/flick blend and owned
+  completion/cancel/disable cleanup restore the preceding grip. No hand/rig swap.
+  Camera48°:37°/radius1.16m/height1.64m→125°/1m/1.70m;38s continuous clock:
+  6s shoulder/12s outward/2s profile/12s return/6s shoulder. Profile meets exhale;
+  city bias1.05→.20m; existing drift/entry/2s return share ownership.
+  Home omits eave/fascia/north visual return; real shell/City roof/rain shelter/
+  guards stay. Door casings clear structural reveals/header31mm and stand31mm
+  proud of facade skin. Four imported wood/glass panels fold room-side; shared
+  DoorUse/hand contacts, solid collision/obstruction checks own E. Initial open;
+  final7 locks closed after safe indoor return; debug1–6 restores ordinary use.
+  All24: existing finite GI/SSAO/fog/volume/Soft/grade; probes/SSR/water/wetness/
+  bevels/COLOR/wind/wear/particles/rim/outlines keep scope (Home SSR/SSGI/SCGI
+  absent). Bloom/DOF/SMAA/vignette/grain/dither/flares/blur/lens retain settings.
+  No new light/pass/lore. Panel updates only while moving; shared meshes/
+  materials, cached grip indices/bounded obstacle buffers; cost unmeasured.
+
 - **Accepted architecture exception 2026-10-30 — calm Home new-game launch:**
   User: top New Game/Debug/Quit. New Game prepares fresh Home/day1, hero/home1,
   open balcony and actual12:00 before composition; clock/needs wait for E.
@@ -2197,29 +2235,19 @@
   narrow stain; it has no channel and is not another walking route.
 
 - **Accepted exception — Directed loading illustrations (2026-09-06):**
-  The user explicitly requested illustrated loading screens with the progress
-  bar at the bottom and approved four static painterly images based on the
-  existing game. This narrowly replaces the empty black `AreaLoading`
-  presentation and art-bible §15a's empty-loading treatment:
-  the paintings retain their painterly detail and fill the actual viewport
-  with aspect-preserving cropping rather than the centered logical canvas;
-  the surrounding UI and the
-  gameplay world's native composite keep their existing contracts.
-  `City -> MountainRoad`, `MountainRoad -> City`, `MountainRoad -> AlpineVillage`
-  and `AlpineVillage -> MountainRoad` each own one fixed image under
-  `Assets/Resources/UI/Loading/`: `city-to-mountain`, `mountain-to-city`,
-  `mountain-to-village` and `village-to-mountain` respectively. A map transfer
-  that skips the middle area uses the last directed leg: `City -> AlpineVillage`
-  uses `mountain-to-village`; `AlpineVillage -> City` uses `mountain-to-city`.
-  One image holds through the existing scene-load and construction boundary;
-  this adds no intermediate trip, slideshow or artificial reading delay.
-  The mood is melancholic, with the village's existing warm inhabited light
-  contrasting against the colder lower places. Only existing places and their
-  established forms may be depicted: no hero portrait, spoiler, new lore,
-  tourist panorama or additional in-fiction text. Story-bible §§12, 16 and 21
-  remain binding; there is no new story fact, dialogue, hint or sound.
-  The bottom bar retains the existing 20% scene-load / 80% construction
-  progress and lifetime, pause and transition ownership.
+  User approved four static painterly `AreaLoading` images with a bottom bar,
+  replacing black under art-bible §15a. Aspect-preserving crop fills the real
+  viewport; UI/native world composite keep their contracts.
+  `Assets/Resources/UI/Loading/` owns one image per directed edge:
+  City→MountainRoad `city-to-mountain`; MountainRoad→City `mountain-to-city`;
+  MountainRoad→AlpineVillage `mountain-to-village`;
+  AlpineVillage→MountainRoad `village-to-mountain`. Map jumps use their last leg:
+  City→AlpineVillage `mountain-to-village`, reverse `mountain-to-city`.
+  The same image holds through load/construction: no trip/slideshow/timed delay.
+  Melancholic existing places/forms; village warm/inhabited against cold lower
+  areas. No hero portrait/spoiler/lore/tourist panorama/in-fiction text/hint/
+  dialogue/sound. Story §§12/16/21 bind. Bottom bar keeps 20% load/80% construction,
+  lifetime, pause and transition ownership.
 
 - **Current — Runtime reliability and tooling (2026-09-06):**
   `BarPromenade.Rules` is an engine-free assembly holding the calendar/day
@@ -4369,7 +4397,7 @@
   use the shared material through property blocks. Home transforms this same
   graph and navigation mask through `PlayerHomeBalconyGeometry`, filters spawn
   anchors to a bounded `100 m` fog-hidden approach context wholly beyond the
-  facade while retaining the existing `48 m` rendered street slice, and enables
+  facade; passive scenery has its separate64m surrounding bound, and enables
   the director only for the Balcony shot as a Home scene-composition boundary.
   The director itself has no camera dependency, while vertical capsule overlap
   keeps the player four storeys above from blocking walkers on the street below.
@@ -5012,12 +5040,6 @@
   scene keeps its existing physical deck/guards/camera/smoking contract and
   rebuilds the same materials, exact visible window positions and recessed
   entry around it, so City and Home no longer draw competing balcony shells.
-- **Accepted camera-specific omission, 2026-09-02:** the bounded Home view does
-  not rebuild the authored model's narrow `Front Eave Fascia`. At Home-local
-  `y = 2.19 m` it crossed both the fixed balcony and smoking shots as a long
-  foreground beam. The City asset retains its street-scale fascia, while Home
-  retains the pitched roof slab; collision, shelter and the exterior
-  silhouette contract are unchanged.
 - **Accepted — Ordinary buildings use semantic fixed-metre district prototypes:**
   `city_buildings_coastal_v4`:compact/long/L/passage/wing per district plus
   three Industrial IDs; measured meshes/triangles/windows follow the manifest.
@@ -5624,12 +5646,10 @@
   verbatim, and the 16-step `6 fps` `StairwellCatFeedingTimeline` contract
   the player `CatFeed*` clips pair to now poses a head-down eating dip with
   chew alternation instead of an atlas swap.
-- **Accepted — Same-scene third-floor Home balcony:** Ordinary Home has a real
-  window/open glazed leaf/walkable4.7m balcony; threshold/deck share
-  `RoadWalkableArea`, rails retain invisible safety colliders. Home regenerates
-  a bounded seeded City street slice: roads/lots/stable windows/lamps/signals,
-  without collision/additive City/second root/player/camera/street-light pool.
-  Shared geometry aligns the Home opening/default8.8m City facade balcony.
+- **Accepted — Same-scene third-floor Home balcony:** Window/glazed door/deck
+  at4.7m; threshold shares `RoadWalkableArea`, rail safety collision retained.
+  Home rebuilds seeded roads/lots/windows/lamps/signals, no collision/second
+  City/root/player/camera. Shared opening aligns default8.8m City facade.
 - **Accepted — Modal city-facing balcony-smoking vignette:** A data-first
   `HomeBalconySmokingPlan` derives one walkable Home-local dock around
   `(6.60, 0.04, -1.45)` from the balcony bounds. On the first `E`, modal
@@ -5657,27 +5677,8 @@
   cityward and finish fading before the next loop. Exit stops new emission but
   lets the detached plume dissipate until owned cleanup. A second `E` queues
   immediately but reaches the exit sequence only at calm loop-local frames
-  `0-3` or `21-23`, so no active drag or smoke plume is cut. The camera holds
-  for `0.35 s` and follows a smooth quadratic push-in to `38°` FOV. Its close
-  look target uses a `0.33 m` Home-local `+X` cityward offset: the resulting
-  target yaw is about `13.12°`, the hero remains at about `0.37` viewport X
-  at `16:9` and inside the `0.28-0.43` safety band across supported desktop
-  aspects, and a point `1 m` farther toward the city stays visible to his
-  screen-right. The close-camera forward direction's dot with Home-local `+X`
-  stays above `0.19`, proving a material cityward component. This framing
-  changes only the look target; camera position and FOV remain unchanged. A
-  smoking-local
-  deterministic drift is layered over that base path with
-  local position amplitudes of `0.016 / 0.007 / 0.005 m` on X/Y/Z and
-  pitch/yaw/roll amplitudes of `0.12° / 0.20° / 0.08°`. Each channel combines
-  paired harmonics with periods from `13-23 s`, while one presentation clock
-  stays continuous across Entering, Looping and Exiting so phase changes never
-  restart or snap the motion. The existing camera blend is also the drift
-  envelope: it brings the offset in with the push and returns it exactly to
-  zero while the captured Balcony shot restores over the `2 s` exit. FOV keeps
-  the original interpolation and receives no pulse. This overlay is owned by
-  the smoking interaction and does not change generic `PlayerCameraFollow`
-  behavior. A separate non-spatial
+  `0-3` or `21-23`, so no active drag or smoke plume is cut. Camera staging is owned by the accepted
+  2026-10-30 balcony decision above. A separate non-spatial
   `HomeSmokingMusicPlayer` loads only the optional user-supplied
   `Resources/Audio/SmokingMusic/smoking_theme`. It obeys the shared mixing
   rule rather than the timeline: it waits for the apartment theme to finish

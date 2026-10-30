@@ -238,12 +238,25 @@ namespace BarPromenade.Tests.EditMode
                 Transform deck =
                     balcony.Find("Home Balcony Deck");
                 Transform door =
-                    balcony.Find("Home Balcony Ajar Door Pivot");
+                    balcony.Find("Home Balcony Folding Door");
                 Transform window =
                     balcony.Find("Home Balcony Window Glass");
                 Assert.That(deck, Is.Not.Null);
                 Assert.That(door, Is.Not.Null);
                 Assert.That(window, Is.Not.Null);
+                HomeBalconyFoldingDoorInteraction folding = door.GetComponent<HomeBalconyFoldingDoorInteraction>();
+                Assert.That(folding, Is.Not.Null);
+                Assert.That(folding.IsOpen, Is.True);
+                Assert.That(folding.Panels, Has.Length.EqualTo(4));
+                Assert.That(folding.PanelColliders, Has.Length.EqualTo(4));
+                foreach (Transform panel in folding.Panels)
+                {
+                    Assert.That(panel.Find("Home Balcony Folding Wood").GetComponent<MeshFilter>().sharedMesh, Is.Not.Null);
+                    Assert.That(panel.Find("Home Balcony Folding Glass").GetComponent<MeshFilter>().sharedMesh, Is.Not.Null);
+                    Assert.That(panel.GetComponent<BoxCollider>().enabled, Is.True);
+                }
+                Assert.That(balcony.Find("Player Home Front Roof Eave"), Is.Null,
+                    "The overhead roof-edge beam must not obstruct either balcony camera.");
                 Assert.That(
                     balcony.Find("Home Balcony Outer Guard"),
                     Is.Not.Null);
@@ -257,7 +270,6 @@ namespace BarPromenade.Tests.EditMode
                 string[] authoredFacadeParts =
                 {
                     "Player Home Brick Plinth",
-                    "Player Home Front Roof Eave",
                     "Player Home Recessed Entrance Door"
                 };
                 for (int index = 0;

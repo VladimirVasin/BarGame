@@ -47,6 +47,8 @@ import player_hand_grip  # noqa: E402
 import player_snow_actions  # noqa: E402
 import player_counter_seat_actions  # noqa: E402
 import player_corruption  # noqa: E402
+import player_smoking_actions  # noqa: E402
+import player_smoking_grip  # noqa: E402
 
 PUBLISHED_PATHS: dict[Path, Path] = {}
 
@@ -302,7 +304,7 @@ def resolve_path(path: Path) -> Path:
     return path.resolve()
 
 
-def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, Path, bool, bool, bool, bool, bool, bool, bool]:
+def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, Path, bool, bool, bool, bool, bool, bool, bool, bool]:
     user_args: list[str] = []
     if "--" in sys.argv:
         user_args = sys.argv[sys.argv.index("--") + 1 :]
@@ -329,6 +331,8 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
                         help="Keep the existing animation FBX when only model geometry changes.")
     parser.add_argument("--hand-grip-only", action="store_true",
                         help="Refresh hand contact shapes in the verified production source without rebuilding actions.")
+    parser.add_argument("--smoking-only", action="store_true",
+                        help="Refresh only the three mouth-contact smoking takes on the verified production source.")
     parser.add_argument("--counter-seat-only", action="store_true",
                         help="Refresh only the bar's measured side-entry/exit bone actions on the verified Hero V2 source.")
     parser.add_argument("--corruption-only", action="store_true",
@@ -437,6 +441,7 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         args.joint_surfaces_only,
         args.counter_seat_only,
         args.corruption_only,
+        args.smoking_only,
     )
 
 
@@ -2459,6 +2464,7 @@ def validate_v2_result(
     bpy.context.view_layer.update()
     errors: list[str] = []
     if config.animation_fbx is not None:
+        common.validate_smoking_pose(result, errors)
         common.validate_bed_support_contract(result, errors)
         common.validate_bed_sleep_pose(result, errors)
         # Exporting animation retains the complete authored motion contract.
@@ -3374,6 +3380,7 @@ def write_v2_manifest(
         if keys:
             action["face_keys"] = keys
     player_snow_actions.attach_metadata(payload, result)
+    payload["smoking_grip"] = player_smoking_grip.manifest(result, config.height / 1.75, player_hand_grip)
     payload["counter_seat"] = player_counter_seat_actions.contract()
     payload["counter_seat_authoring_sha256"] = hashlib.sha256(
         Path(player_counter_seat_actions.__file__).read_bytes()).hexdigest()
@@ -3517,7 +3524,11 @@ def main() -> None:
         joint_surfaces_only,
         counter_seat_only,
         corruption_only,
+        smoking_only,
     ) = parse_args()
+    if smoking_only:
+        player_smoking_actions.refresh(sys.modules[__name__], config)
+        return
     if corruption_only:
         player_corruption.refresh(sys.modules[__name__], config)
         return

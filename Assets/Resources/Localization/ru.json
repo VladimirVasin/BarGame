@@ -1,5 +1,6 @@
 {
   "entries": [
+    {"key":"loading.progress","value":"Загрузка"},
     {"key":"interaction.karaoke","value":"E — петь"},
     {"key":"karaoke.title","value":"Караоке"},
     {"key":"karaoke.controls","value":"ЛКМ — петь    Мышь ↑↓ — высота    E — закончить    Esc — пауза"},

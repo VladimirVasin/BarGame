@@ -4,10 +4,25 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Stable staging data for the balcony smoking interaction. Positions are
-    /// expressed in Home-local space and are derived from the generated
-    /// balcony rather than from a serialized scene object.
+    /// One Home-local sample of the slow shoulder-to-profile camera orbit.
     /// </summary>
+    public readonly struct HomeBalconySmokingCameraPose
+    {
+        public HomeBalconySmokingCameraPose(Vector3 position, Vector3 lookAt, float orbitFraction)
+        {
+            Position = position;
+            LookAt = lookAt;
+            Rotation = Quaternion.LookRotation(lookAt - position, Vector3.up);
+            OrbitFraction = orbitFraction;
+        }
+
+        public Vector3 Position { get; }
+        public Vector3 LookAt { get; }
+        public Quaternion Rotation { get; }
+        public float OrbitFraction { get; }
+    }
+
+    /// <summary>Balcony-derived grounded action endpoints and city-facing camera staging.</summary>
     public sealed class HomeBalconySmokingPlan
     {
         public const int EnterFrameCount = 24;
@@ -36,10 +51,19 @@ namespace BarPromenade
             PlayerMotor.InteractionVerticalTolerance;
         public const float UprightVisualOffset = 0.005f;
 
-        public const float CameraFieldOfView = 38f;
-        public const float CameraCityLookOffset = 0.33f;
-        public static readonly Vector3 CameraPosition =
-            new Vector3(6.55f, 2.25f, -3.08f);
+        public const float CameraFieldOfView = 48f;
+        public const float CameraCityLookOffset = 1.05f;
+        public const float CameraHeight = 1.64f;
+        public const float CameraLookHeight = 1.60f;
+        public const float CameraRadius = 1.16f;
+        public const float CameraFaceRadius = 1f;
+        public const float CameraFaceHeight = 1.70f;
+        public const float CameraFaceLookOffset = .20f;
+        public const float CameraShoulderAngle = 37f;
+        public const float CameraFaceAngle = 125f;
+        // Four smoke loops: the near-profile hold meets the calm exhale,
+        // rather than allowing the raised smoking hand to cover his face.
+        public const double CameraOrbitPeriodSeconds = 38d;
         public static readonly Vector3 FacingDirection =
             Vector3.right;
 
@@ -100,6 +124,30 @@ namespace BarPromenade
         public Vector3 CameraLookAt { get; }
         public Quaternion FacingRotation => EntryFacingRotation;
 
+        public HomeBalconySmokingCameraPose EvaluateCamera(double presentationElapsedSeconds)
+        {
+            if (double.IsNaN(presentationElapsedSeconds) ||
+                double.IsInfinity(presentationElapsedSeconds) || presentationElapsedSeconds < 0d)
+                throw new ArgumentOutOfRangeException(nameof(presentationElapsedSeconds));
+
+            double elapsed = Math.Max(0d,
+                presentationElapsedSeconds - HomeBalconySmokingTimeline.EnterDurationSeconds);
+            double phase = elapsed % CameraOrbitPeriodSeconds;
+            float orbit = phase < 6d || phase >= 32d ? 0f :
+                phase < 18d ? SmoothOrbit((float)((phase - 6d) / 12d)) :
+                phase < 20d ? 1f : 1f - SmoothOrbit((float)((phase - 20d) / 12d));
+            float angle = Mathf.Lerp(CameraShoulderAngle, CameraFaceAngle, orbit) * Mathf.Deg2Rad;
+            float radius = Mathf.Lerp(CameraRadius, CameraFaceRadius, orbit);
+            Vector3 position = EntryRootPosition + new Vector3(
+                -Mathf.Cos(angle) * radius, Mathf.Lerp(CameraHeight, CameraFaceHeight, orbit),
+                -Mathf.Sin(angle) * radius);
+            Vector3 lookAt = EntryRootPosition + new Vector3(
+                Mathf.Lerp(CameraCityLookOffset, CameraFaceLookOffset, orbit), CameraLookHeight, 0f);
+            return new HomeBalconySmokingCameraPose(position, lookAt, orbit);
+        }
+
+        private static float SmoothOrbit(float value) => value * value * (3f - 2f * value);
+
         public static HomeBalconySmokingPlan Create(
             HomeInteriorLayoutPlan interior,
             HomeBalconyLayoutPlan balcony)
@@ -152,9 +200,8 @@ namespace BarPromenade
                 entryRoot.x - TriggerRearOffset,
                 TriggerHeight * 0.5f,
                 entryRoot.z);
-            Vector3 cameraLookAt =
-                actionHip +
-                new Vector3(CameraCityLookOffset, 0.50f, 0f);
+            Vector3 cameraLookAt = entryRoot +
+                new Vector3(CameraCityLookOffset, CameraLookHeight, 0f);
             Vector3 ashtrayPosition =
                 ResolveAshtrayPosition(balcony);
 

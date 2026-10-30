@@ -26,6 +26,7 @@ namespace BarPromenade
         private bool acceptingComposition;
         private CompositionDriver doorComposition;
         private TransitionBlackoutOverlay blackout;
+        private AreaLoadingRoot startupLoading;
 
         // The resident chains are built from shared steps that cannot
         // return a value through the coroutine driver, so each step leaves
@@ -60,7 +61,7 @@ namespace BarPromenade
             return RequestLoad(sceneName, out _);
         }
 
-        /// <summary>A startup composition can prepare its first visible pose under the shared cover.</summary>
+        /// <summary>Shows loading progress until startup composition and its first frame are ready.</summary>
         public static bool RequestCoveredLoad(string sceneName)
         {
             string operationId = CreateOperationId();
@@ -149,8 +150,8 @@ namespace BarPromenade
         /// Accepts a destination's construction iterator only in the window
         /// between the door path releasing its held activation and seeing
         /// the load done - the frames in which the destination root awakes.
-        /// Direct and fallback loads reach destinations too, but nothing
-        /// pumps there, so outside that window the root builds itself.
+        /// Covered startup loads use the same registration window. Outside
+        /// a pumped transition the root builds itself synchronously.
         /// </summary>
         internal static bool TryScheduleComposition(
             MonoBehaviour owner, IEnumerator steps)
@@ -259,7 +260,7 @@ namespace BarPromenade
 
         private IEnumerator LoadDirect(string sceneName, bool cover = false)
         {
-            if (cover) blackout = TransitionBlackoutOverlay.Create();
+            if (cover) startupLoading = AreaLoadingRoot.CreateForNewGame();
             yield return null;
             yield return ResidentExteriorPolicy.DiscardDormantExterior();
             AsyncOperation operation = TryStartLoad(sceneName);
@@ -273,14 +274,53 @@ namespace BarPromenade
 
             operation.allowSceneActivation = false;
             RequestOutgoingMusicFade();
-            yield return WaitForActivationReady(operation);
-            operation.allowSceneActivation = true;
-            while (!operation.isDone)
+            while (operation.progress < 0.9f)
             {
+                startupLoading?.SetProgress(AreaTravelService.EvaluateDisplayedProgress(operation.progress));
+                yield return null;
+            }
+
+            if (cover)
+            {
+                startupLoading.SetProgress(AreaTravelService.SceneLoadProgressShare);
+                doorComposition = new CompositionDriver("startup", sceneName);
+                acceptingComposition = true;
+            }
+
+            try
+            {
+                operation.allowSceneActivation = true;
+                while (!operation.isDone) yield return null;
+            }
+            finally
+            {
+                acceptingComposition = false;
+            }
+
+            if (cover)
+            {
+                while (doorComposition.AdvanceFrame(ReportStartupCompositionStep)) yield return null;
+                if (doorComposition.Failure != null)
+                {
+                    FinishTransition("destination_composition_failed", false);
+                    yield break;
+                }
+
+                startupLoading.SetProgress(1f);
+                // Render the finished destination once under the overlay,
+                // including first-use shaders, before starting the opening.
                 yield return null;
             }
 
             FinishTransition("completed", true);
+        }
+
+        private void ReportStartupCompositionStep(CompositionStep step)
+        {
+            if (startupLoading == null) return;
+            float progress = AreaTravelService.SceneLoadProgressShare +
+                (1f - AreaTravelService.SceneLoadProgressShare) * step.Progress;
+            startupLoading.SetProgress(Mathf.Max(startupLoading.DisplayedProgress, Mathf.Min(.99f, progress)));
         }
 
         private IEnumerator LoadThroughDoor(
@@ -1182,6 +1222,12 @@ namespace BarPromenade
             {
                 Destroy(blackout.gameObject);
                 blackout = null;
+            }
+
+            if (startupLoading != null)
+            {
+                startupLoading.Dismiss();
+                startupLoading = null;
             }
 
             return frames;

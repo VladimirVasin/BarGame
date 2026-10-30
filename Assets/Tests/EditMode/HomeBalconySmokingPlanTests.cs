@@ -81,14 +81,14 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 plan.CameraLookAt,
                 Is.EqualTo(
-                    plan.ActionHipPosition +
+                    plan.EntryRootPosition +
                     new Vector3(
                         HomeBalconySmokingPlan.CameraCityLookOffset,
-                        0.50f,
+                        HomeBalconySmokingPlan.CameraLookHeight,
                         0f)));
             Assert.That(
                 Vector3.Dot(
-                    plan.CameraLookAt - plan.ActionHipPosition,
+                    plan.CameraLookAt - plan.EntryRootPosition,
                     HomeBalconySmokingPlan.FacingDirection),
                 Is.EqualTo(
                         HomeBalconySmokingPlan.CameraCityLookOffset)
@@ -143,6 +143,31 @@ namespace BarPromenade.Tests.EditMode
                     (PlayerMotor.InteractionVerticalTolerance +
                      0.001f)),
                 Is.False);
+
+            HomeBalconySmokingCameraPose shoulder = plan.EvaluateCamera(4d);
+            HomeBalconySmokingCameraPose face = plan.EvaluateCamera(22d);
+            Assert.That(shoulder.Position.x, Is.LessThan(plan.EntryRootPosition.x));
+            Assert.That(shoulder.Position.z, Is.LessThan(plan.EntryRootPosition.z));
+            Assert.That(Vector3.Dot(shoulder.Rotation * Vector3.forward, Vector3.right),
+                Is.GreaterThan(.9f));
+            Assert.That(face.Position.x, Is.GreaterThan(plan.EntryRootPosition.x));
+            Assert.That(face.Position.z, Is.LessThan(plan.EntryRootPosition.z));
+            Assert.That(face.OrbitFraction, Is.EqualTo(1f));
+            Assert.That(Vector2.Distance(new Vector2(face.Position.x, face.Position.z),
+                new Vector2(plan.EntryRootPosition.x, plan.EntryRootPosition.z)),
+                Is.EqualTo(HomeBalconySmokingPlan.CameraFaceRadius).Within(.0001f));
+            Assert.That(plan.EvaluateCamera(42d).Position, Is.EqualTo(shoulder.Position));
+            Assert.That(() => plan.EvaluateCamera(double.NaN),
+                Throws.TypeOf<System.ArgumentOutOfRangeException>());
+            Vector3 previous = shoulder.Position;
+            for (int sample = 1; sample <= 38 * 60; sample++)
+            {
+                HomeBalconySmokingCameraPose pose = plan.EvaluateCamera(4d + sample / 60d);
+                Assert.That(pose.Position.z, Is.LessThan(plan.EntryRootPosition.z));
+                Assert.That(pose.Position.x, Is.InRange(5.2f, 7.23f));
+                Assert.That(Vector3.Distance(previous, pose.Position), Is.LessThan(.004f));
+                previous = pose.Position;
+            }
         }
 
         [Test]

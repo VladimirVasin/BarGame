@@ -1119,7 +1119,7 @@ namespace BarPromenade
                     context.PlayerHome,
                     descriptor.PublicBounds);
             if (localBounds.xMin <
-                HomeExteriorViewBuilder.ExteriorMinimumX)
+                HomeExteriorViewBuilder.ContextMinimumX)
             {
                 return;
             }

@@ -22,6 +22,7 @@ namespace BarPromenade
 
         public const int CigaretteRevealEnterLocalFrame = 10;
         public const int CigaretteHideExitLocalFrame = 8;
+        public const float CigaretteGripBlendFrames = 3f;
         public static readonly Vector3 CigarettePaperLocalPosition =
             new Vector3(0f, 0.030f, 0f);
         public static readonly Vector3 CigarettePaperLocalScale =
@@ -45,8 +46,6 @@ namespace BarPromenade
         private Quaternion cameraStartRotation;
         private float cameraStartFieldOfView;
         private Vector3 cameraControlPosition;
-        private Vector3 cameraTargetPosition;
-        private Quaternion cameraTargetRotation;
         private bool ownsInteraction;
         private bool exitQueued;
         private bool exitInputArmed;
@@ -55,6 +54,9 @@ namespace BarPromenade
         private Func<bool> exitPromptAction;
         private GameObject cigaretteProp;
         private HomeBalconySmokingExhaleEffect exhaleEffect;
+        private NpcHandPose handPose;
+        private bool ownsSmokingGrip;
+        private float cigaretteGripWeight;
 
         public bool IsInitialized { get; private set; }
         public bool OwnsInteraction => ownsInteraction;
@@ -64,6 +66,8 @@ namespace BarPromenade
         public PlayerAnimatedInteractionDefinition Definition =>
             definition;
         public GameObject CigaretteProp => cigaretteProp;
+        public NpcHandPose HandPose => handPose;
+        public float CigaretteGripWeight => cigaretteGripWeight;
         public HomeBalconySmokingExhaleEffect ExhaleEffect =>
             exhaleEffect;
         public string PromptKey
@@ -145,7 +149,9 @@ namespace BarPromenade
                 exhaleEffect == null ||
                 !exhaleEffect.IsInitialized ||
                 !exhaleEffect.isActiveAndEnabled ||
-                playerRoot == null)
+                playerRoot == null ||
+                handPose == null ||
+                !handPose.isActiveAndEnabled)
             {
                 return false;
             }
@@ -182,6 +188,13 @@ namespace BarPromenade
             Quaternion previousRotation = playerRoot.rotation;
             try
             {
+                if (!handPose.TryCaptureGrip(this, false, NpcHandGripKind.Cigarette))
+                {
+                    RestoreFailedBegin(previousPosition, previousRotation);
+                    return false;
+                }
+                ownsSmokingGrip = true;
+                cigaretteGripWeight = 0f;
                 Vector3 entryRootWorldPosition =
                     home.transform.TransformPoint(
                         plan.EntryRootPosition);
@@ -275,6 +288,7 @@ namespace BarPromenade
 
             TryBeginSafeExit();
             RefreshCigaretteVisibility();
+            RefreshSmokingGrip();
             timeline.Advance(controller != null && controller.IsWaitingForMouthAccess ? 0f : Time.deltaTime);
             ApplyPresentation();
         }
@@ -283,6 +297,7 @@ namespace BarPromenade
         {
             if (ownsInteraction)
             {
+                RefreshSmokingGrip();
                 ApplyCamera(timeline.CameraBlend);
             }
         }
@@ -290,6 +305,7 @@ namespace BarPromenade
         private void OnDisable()
         {
             CancelOwnedInteraction();
+            ReleaseSmokingGrip();
             exhaleEffect?.StopAndClear();
         }
 
@@ -315,24 +331,7 @@ namespace BarPromenade
                 cameraFollow.FixedBaseRotation;
             cameraStartFieldOfView =
                 cameraFollow.FixedBaseFieldOfView;
-            cameraTargetPosition =
-                home.transform.TransformPoint(
-                    HomeBalconySmokingPlan.CameraPosition);
-            Vector3 lookAt =
-                home.transform.TransformPoint(
-                    plan.CameraLookAt);
-            Vector3 forward =
-                lookAt - cameraTargetPosition;
-            if (forward.sqrMagnitude <= 0.000001f)
-            {
-                throw new InvalidOperationException(
-                    "The smoking camera must not coincide with its " +
-                    "look-at point.");
-            }
-
-            cameraTargetRotation = Quaternion.LookRotation(
-                forward.normalized,
-                home.transform.up);
+            Vector3 cameraTargetPosition = home.transform.TransformPoint(plan.EvaluateCamera(0d).Position);
             cameraControlPosition = Vector3.Lerp(
                     cameraStartPosition,
                     cameraTargetPosition,
@@ -377,6 +376,9 @@ namespace BarPromenade
 
             float amount = Mathf.Clamp01(blend);
             float remaining = 1f - amount;
+            HomeBalconySmokingCameraPose shot = plan.EvaluateCamera(timeline.PresentationElapsedSeconds);
+            Vector3 cameraTargetPosition = home.transform.TransformPoint(shot.Position);
+            Quaternion cameraTargetRotation = home.transform.rotation * shot.Rotation;
             Vector3 basePosition =
                 remaining * remaining * cameraStartPosition +
                 2f * remaining * amount * cameraControlPosition +
@@ -540,7 +542,7 @@ namespace BarPromenade
         private void CancelOwnedInteraction()
         {
             bool hadOwnership =
-                ownsInteraction || modalLock.IsLocked;
+                ownsInteraction || modalLock.IsLocked || ownsSmokingGrip;
             if (!hadOwnership)
             {
                 return;
@@ -558,6 +560,7 @@ namespace BarPromenade
             cameraPathCaptured = false;
             timeline?.Reset();
             SetCigaretteVisible(false);
+            ReleaseSmokingGrip();
             exhaleEffect?.StopAndClear();
             music?.BeginRuleFadeOut();
             home?.InteractionPrompt?.SetPrompt(string.Empty);
@@ -572,6 +575,7 @@ namespace BarPromenade
             ownsInteraction = false;
             cameraPathCaptured = false;
             SetCigaretteVisible(false);
+            ReleaseSmokingGrip();
             exhaleEffect?.StopAndClear();
             if (home?.Player.Motor != null)
             {
@@ -621,6 +625,7 @@ namespace BarPromenade
         private void RebuildSmokingPresentation()
         {
             ReleaseCigaretteProp();
+            handPose = null;
             exhaleEffect =
                 GetComponent<HomeBalconySmokingExhaleEffect>();
             exhaleEffect?.StopAndClear();
@@ -633,6 +638,13 @@ namespace BarPromenade
             {
                 return;
             }
+
+            handPose = visual.Registry != null ? visual.Registry.GetComponent<NpcHandPose>() : null;
+            if (handPose == null)
+                throw new InvalidOperationException("Balcony smoking requires the shared authored hand-pose catalog.");
+            // Resolve six right-hand shape indices once before taking input or
+            // showing the cigarette. Other variants and the left hand stay lazy.
+            handPose.PrepareGrip(false, NpcHandGripKind.Cigarette);
 
             Transform socket = visual.Registry != null
                 ? visual.Registry.Anchors.RightCigarette
@@ -743,6 +755,51 @@ namespace BarPromenade
             SetCigaretteVisible(visible);
         }
 
+        /// <summary>Reconcile the owned authored finger shape after the shared body-clip sampling.</summary>
+        public void RefreshSmokingGrip()
+        {
+            if (!ownsInteraction || !ownsSmokingGrip || handPose == null || controller == null || definition == null) return;
+            float weight = 0f;
+            switch (controller.Phase)
+            {
+                case PlayerAnimatedInteractionPhase.Entering:
+                    float enterFrame = controller.ClipProgress * definition.EnterFrameCount;
+                    weight = SmoothGrip(Mathf.InverseLerp(CigaretteRevealEnterLocalFrame - CigaretteGripBlendFrames,
+                        CigaretteRevealEnterLocalFrame, enterFrame));
+                    break;
+                case PlayerAnimatedInteractionPhase.Looping:
+                    weight = 1f;
+                    break;
+                case PlayerAnimatedInteractionPhase.Exiting:
+                    float exitFrame = controller.ClipProgress * definition.ExitFrameCount;
+                    weight = 1f - SmoothGrip(Mathf.InverseLerp(CigaretteHideExitLocalFrame,
+                        CigaretteHideExitLocalFrame + CigaretteGripBlendFrames, exitFrame));
+                    // Keep the released shape at zero until clip teardown.
+                    // Restoring a captured nonzero prior grip here would let
+                    // the remaining exit samples erase it before cleanup.
+                    break;
+            }
+            if (!handPose.SetOwnedGrip(this, false, weight))
+            {
+                // Another explicit contact took the hand; cleanup must not
+                // restore over that owner's selected shape or weight.
+                ownsSmokingGrip = false;
+                cigaretteGripWeight = 0f;
+                CancelOwnedInteraction();
+                return;
+            }
+            cigaretteGripWeight = weight;
+        }
+
+        private void ReleaseSmokingGrip()
+        {
+            if (ownsSmokingGrip && handPose != null) handPose.ReleaseGrip(this, false);
+            ownsSmokingGrip = false;
+            cigaretteGripWeight = 0f;
+        }
+
+        private static float SmoothGrip(float value) => value * value * (3f - 2f * value);
+
         private void SetCigaretteVisible(bool visible)
         {
             if (cigaretteProp != null &&
@@ -754,6 +811,7 @@ namespace BarPromenade
 
         private void ReleaseCigaretteProp()
         {
+            ReleaseSmokingGrip();
             if (cigaretteProp == null)
             {
                 return;

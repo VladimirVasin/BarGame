@@ -23,7 +23,6 @@ namespace BarPromenade
             new Color(0.62f, 0.60f, 0.52f);
         private const float ExteriorSkinThickness = 0.03f;
         private const float ExteriorSkinClearance = 0.031f;
-        private const float FrontEaveHeight = 2.30f;
         private const float BalconyWallTop = 2.74f;
         private static readonly int BaseMapId =
             Shader.PropertyToID("_BaseMap");
@@ -110,11 +109,6 @@ namespace BarPromenade
                 interior,
                 plan,
                 skinX);
-            BuildFrontEave(
-                parent,
-                facadeX,
-                facadeDepth);
-
             BuildLowerFacadeWindows(
                 parent,
                 facadeX);
@@ -310,37 +304,6 @@ namespace BarPromenade
                 surface,
                 SurfaceProjection.BoxZY,
                 false);
-        }
-
-        private static void BuildFrontEave(
-            Transform parent,
-            float facadeX,
-            float facadeDepth)
-        {
-            float outerEave =
-                facadeX + PlayerHomeBalconyGeometry.BalconyDepth;
-            GameObject roof = CreateExteriorSurfaceBox(
-                "Player Home Front Roof Eave",
-                parent,
-                new Vector3(
-                    outerEave - 0.26f,
-                    FrontEaveHeight,
-                    0f),
-                new Vector3(
-                    0.52f,
-                    0.10f,
-                    facadeDepth + 0.36f),
-                PlayerHomeExteriorSurfaceKind.RoofSlate,
-                SurfaceProjection.BoxXZ,
-                false);
-            roof.transform.localRotation =
-                Quaternion.Euler(0f, 0f, -12f);
-
-            // The street model keeps a narrow fascia at the roof edge, but
-            // rebuilding it in Home puts a long foreground beam directly
-            // across the fixed balcony shot. The roof slab already closes
-            // the silhouette, so the bounded reconstruction omits the
-            // camera-obstructing duplicate.
         }
 
         private static void BuildLowerFacadeWindows(
@@ -988,6 +951,15 @@ namespace BarPromenade
             Vector3 size = plan.DoorSize;
             float frameDepth = size.x + 0.10f;
             const float frameWidth = 0.10f;
+            // These pieces are casings over the wall, not a second coplanar
+            // lining of the plaster reveal. Bury their inner edges in the
+            // solid wall and keep their front clear of the exterior skin.
+            // The actual aperture, leaf and collision remain plan-owned.
+            float casingHeight = size.y + ExteriorSkinClearance;
+            float casingOpeningWidth = size.z + ExteriorSkinClearance * 2f;
+            float skinFront = center.x + PlayerHomeBalconyGeometry.WallThickness * .5f +
+                ExteriorSkinClearance + ExteriorSkinThickness;
+            float frameX = skinFront + ExteriorSkinClearance - frameDepth * .5f;
             var frameRenderers = new List<Renderer>(3);
             for (int side = -1; side <= 1; side += 2)
             {
@@ -995,15 +967,15 @@ namespace BarPromenade
                     "Home Balcony Door Jamb",
                     parent,
                     new Vector3(
-                        center.x,
-                        size.y * 0.5f,
+                        frameX,
+                        casingHeight * 0.5f,
                         center.z +
                         side *
-                        (size.z * 0.5f +
+                        (casingOpeningWidth * 0.5f +
                          frameWidth * 0.5f)),
                     new Vector3(
                         frameDepth,
-                        size.y,
+                        casingHeight,
                         frameWidth),
                     PlayerHomeExteriorSurfaceKind.PaintedWood,
                     SurfaceProjection.BoxZY,
@@ -1014,171 +986,69 @@ namespace BarPromenade
                 "Home Balcony Door Header",
                 parent,
                 new Vector3(
-                    center.x,
-                    size.y + frameWidth * 0.5f,
+                    frameX,
+                    casingHeight + frameWidth * 0.5f,
                     center.z),
                 new Vector3(
                     frameDepth,
                     frameWidth,
-                    size.z + frameWidth * 2f),
+                    casingOpeningWidth + frameWidth * 2f),
                 PlayerHomeExteriorSurfaceKind.PaintedWood,
                 SurfaceProjection.BoxZY,
                 false).GetComponent<Renderer>());
 
-            Transform pivot =
-                new GameObject(
-                    "Home Balcony Ajar Door Pivot")
-                    .transform;
+            Transform pivot = new GameObject("Home Balcony Folding Door").transform;
             pivot.SetParent(parent, false);
-            pivot.localPosition = new Vector3(
-                center.x - 0.02f,
-                0f,
-                center.z - size.z * 0.5f);
-            pivot.localRotation =
-                Quaternion.Euler(0f, 76f, 0f);
-            BuildDoorLeaf(
-                pivot,
-                size,
-                occlusionRegistry);
-            parent.gameObject.AddComponent<HomeBalconyCorruptionBarrier>().Initialize(
-                pivot, frameRenderers.ToArray(), size);
-        }
-
-        private static void BuildDoorLeaf(
-            Transform pivot,
-            Vector3 openingSize,
-            HomeOcclusionRegistry occlusionRegistry)
-        {
-            float width = openingSize.z - 0.12f;
-            float height = openingSize.y - 0.08f;
-            const float frameWidth = 0.105f;
-            const float leafDepth = 0.075f;
-            float centerZ = width * 0.5f;
-            var cutawayParts = new List<GameObject>();
-
-            for (int side = 0; side < 2; side++)
+            pivot.localPosition = new Vector3(center.x - .02f, .10f, center.z - size.z * .5f + .06f);
+            const float width = 1.24f, height = 2.22f, panelWidth = width / 4f;
+            var panels = new Transform[HomeBalconyFoldingDoorInteraction.PanelCount];
+            var colliders = new BoxCollider[panels.Length];
+            var cutawayParts = new List<GameObject>(panels.Length + 2);
+            for (int index = 0; index < panels.Length; index++)
             {
-                cutawayParts.Add(CreateExteriorSurfaceBox(
-                    "Home Balcony Door Leaf Stile",
-                    pivot,
-                    new Vector3(
-                        0f,
-                        height * 0.5f,
-                        side == 0
-                            ? frameWidth * 0.5f
-                            : width -
-                              frameWidth * 0.5f),
-                    new Vector3(
-                        leafDepth,
-                        height,
-                        frameWidth),
-                    PlayerHomeExteriorSurfaceKind.PaintedWood,
-                    SurfaceProjection.BoxZY,
-                    false));
+                Transform panel = new GameObject("Home Balcony Folding Panel " + (index + 1)).transform;
+                panel.SetParent(pivot, false);
+                panels[index] = panel;
+                GameObject wood = HomeAuthoredVisualFactory.CreateBox("Home Balcony Folding Wood", panel,
+                    new Vector3(0f, height * .5f, panelWidth * .5f), new Vector3(.045f, height, panelWidth), Color.white, false);
+                PlayerHomeExteriorSurfaceAppearance.ApplyProjected(wood.GetComponent<Renderer>(),
+                    PlayerHomeExteriorSurfaceKind.PaintedWood, SurfaceProjection.BoxZY);
+                GameObject glass = HomeAuthoredVisualFactory.CreateBox("Home Balcony Folding Glass", panel,
+                    new Vector3(0f, 1.52f, panelWidth * .5f), new Vector3(.014f, 1.20f, panelWidth - .084f), Color.white, false);
+                ApplyHomeBalconyGlass(glass.GetComponent<Renderer>());
+                // Transparent panes keep their shared glass shader; only opaque
+                // joinery may take the structural cutaway material.
+                cutawayParts.Add(wood);
+                colliders[index] = panel.gameObject.AddComponent<BoxCollider>();
+                colliders[index].center = new Vector3(0f, height * .5f, panelWidth * .5f);
+                colliders[index].size = new Vector3(.045f, height, panelWidth);
             }
-
-            cutawayParts.Add(CreateDoorLeafRail(
-                pivot,
-                "Home Balcony Door Leaf Bottom Rail",
-                0.10f,
-                width,
-                leafDepth,
-                frameWidth));
-            cutawayParts.Add(CreateDoorLeafRail(
-                pivot,
-                "Home Balcony Door Leaf Middle Rail",
-                0.86f,
-                width,
-                leafDepth,
-                frameWidth));
-            cutawayParts.Add(CreateDoorLeafRail(
-                pivot,
-                "Home Balcony Door Leaf Top Rail",
-                height - frameWidth * 0.5f,
-                width,
-                leafDepth,
-                frameWidth));
-
-            cutawayParts.Add(CreateExteriorSurfaceBox(
-                "Home Balcony Door Lower Panel",
-                pivot,
-                new Vector3(
-                    0f,
-                    0.45f,
-                    centerZ),
-                new Vector3(
-                    leafDepth - 0.012f,
-                    0.62f,
-                    width - frameWidth * 2f),
-                PlayerHomeExteriorSurfaceKind.PaintedWood,
-                SurfaceProjection.BoxZY,
-                false));
-            GameObject doorGlass = HomeAuthoredVisualFactory.CreateBox(
-                "Home Balcony Door Glass",
-                pivot,
-                new Vector3(
-                    0f,
-                    1.56f,
-                    centerZ),
-                new Vector3(
-                    0.028f,
-                    height - 1.12f,
-                    width - frameWidth * 2f),
-                Color.white,
-                false);
-            ApplyHomeBalconyGlass(doorGlass.GetComponent<Renderer>());
-
-            GameObject handle =
-                HomeAuthoredVisualFactory.CreateCylinder(
-                    "Home Balcony Door Handle",
-                    pivot,
-                    new Vector3(
-                        -0.075f,
-                        1.04f,
-                        width - 0.21f),
-                    new Vector3(
-                        0.055f,
-                        0.15f,
-                        0.055f),
-                    Rail,
-                    false);
-            handle.transform.localRotation =
-                Quaternion.Euler(0f, 0f, 90f);
-            PlayerHomeExteriorSurfaceAppearance.ApplyProjected(
-                handle.GetComponent<Renderer>(),
-                PlayerHomeExteriorSurfaceKind.PaintedMetal,
-                SurfaceProjection.BoxZY);
-            cutawayParts.Add(handle);
-
-            occlusionRegistry?.Register(
-                "home.balcony.ajar-door",
-                HomeOccluderKind.StructuralCutaway,
-                StructuralMinimumVisibility,
-                cutawayParts.ToArray());
+            // The free latch stile belongs to the final section. Both pulls mount
+            // on its 42mm wooden face, clear of the glazing aperture.
+            Transform insideHandle = CreateFoldingHandle(panels[panels.Length - 1], -.0575f, panelWidth - .021f, true);
+            Transform outsideHandle = CreateFoldingHandle(panels[panels.Length - 1], .0575f, panelWidth - .021f, false);
+            cutawayParts.Add(insideHandle.gameObject); cutawayParts.Add(outsideHandle.gameObject);
+            var interaction = pivot.gameObject.AddComponent<HomeBalconyFoldingDoorInteraction>();
+            interaction.Initialize(panels, colliders, insideHandle, outsideHandle, width, height);
+            // A trigger is an eligibility volume, never an action destination.
+            BoxCollider trigger = pivot.gameObject.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.center = new Vector3(0f, .9f, width * .5f);
+            trigger.size = new Vector3(1.8f, 1.8f, width + .45f);
+            occlusionRegistry?.Register("home.balcony.ajar-door", HomeOccluderKind.StructuralCutaway,
+                StructuralMinimumVisibility, cutawayParts.ToArray());
+            parent.gameObject.AddComponent<HomeBalconyCorruptionBarrier>().Initialize(
+                interaction, frameRenderers.ToArray(), size);
         }
 
-        private static GameObject CreateDoorLeafRail(
-            Transform pivot,
-            string name,
-            float y,
-            float width,
-            float depth,
-            float frameWidth)
+        private static Transform CreateFoldingHandle(Transform panel, float x, float z, bool inside)
         {
-            return CreateExteriorSurfaceBox(
-                name,
-                pivot,
-                new Vector3(
-                    0f,
-                    y,
-                    width * 0.5f),
-                new Vector3(
-                    depth,
-                    frameWidth,
-                    width),
-                PlayerHomeExteriorSurfaceKind.PaintedWood,
-                SurfaceProjection.BoxZY,
-                false);
+            GameObject handle = HomeAuthoredVisualFactory.CreateBox("Home Balcony Folding Handle", panel,
+                new Vector3(x, 1.04f, z), new Vector3(.07f, .15f, .028f), Rail, false);
+            if (inside) handle.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            PlayerHomeExteriorSurfaceAppearance.ApplyProjected(handle.GetComponent<Renderer>(),
+                PlayerHomeExteriorSurfaceKind.PaintedMetal, SurfaceProjection.BoxZY);
+            return handle.transform;
         }
     }
 }

@@ -5,11 +5,11 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-30
 
-New Game starts normal Home/hero/room with an open balcony and real stopped
-noon; no needs age until E. Covered readiness makes the first visible rig
-already asleep. Quiet bounded room views reuse camera/DOF/noon light; normal
-wake shares seated recovery/return/idle/fresh-E stand. Debug retains the old
-time/place catalog and tools. Legacy alarm opening stays API-only, no prologue.
+New Game: Home1/open balcony, stopped noon until E. Loading
+label/bar covers staged Home and its first frame; ready then acquires
+sleep. Views share camera/DOF; neutral wake/seated return/fresh-E stand.
+Debug retains time/place/tools; legacy alarm stays API-only. Passed:
+NewGame_LoadingScreenCoversCompositionUntilDestinationReady; frames reviewed.
 
 Technical sleep owns body-only nightmare/successive hero previews/covered
 maxima commit. Farther face framing and sustained nonverbal cue begin with
@@ -28,13 +28,20 @@ Original Lit pass targets/per-draw uniforms preserve lighting without GPU
 instancing; neutral parity guards against the grid regression. Final Home clock
 shows impossible readings without changing time/audio; earlier states stay.
 Garment thigh/shin/boot damage differs; forearms/patch/UV/alpha retain constraints.
-Final balcony uses a real closed leaf/collider/dark glass; ordinary states
+Final balcony: closed folding assembly/collider/dark glass; ordinary states
 restore exactly, outdoor occupancy defers the seal without stranding.
 
 Stairwell seals apartment descent, opens upper flight/landing to a real grille;
 matching shell/collision notches reveal the endless-looking open-flight chain.
 Bounded fixtureless green Spot/CityLightHalo uses existing Bloom; practicals/
 effect owners/routes stay.
+
+Balcony: lip contact/right-hand pinch/thumb faceward; fingers clear full shaft.
+Shoulder/profile;64m City ring/rear, separate facade rain/NPC limits.
+No beam/north screen. E leaves/pulls keep safe
+collision/seal; separated casing stops flicker. SMOKING_VALIDATED/SmokingGrip,
+balcony_four_leaf_fold_clearance_and_glazing_aperture and
+HomeBalconyShoulderOrbitAndFoldingDoor passed; frames reviewed.
 
 SleepMvp_AutomaticCutAndCleanup, AreaCaptureFixture.Stairwell,
 UNIQUE_SURFACE_DAMAGE_OK, SURFACE DAMAGE SHADER CONTRACT OK,

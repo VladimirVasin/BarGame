@@ -438,22 +438,23 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void ExteriorHalfSpace_RejectsInteriorAndClipsCrossingBounds()
+        public void ExteriorHalfSpace_RetainsRearCityAndClipsContextBoundary()
         {
-            var interiorOnly =
+            float minimumX = HomeExteriorViewBuilder.ContextMinimumX;
+            var beyondContext =
                 new Bounds(
-                    Vector3.zero,
+                    new Vector3(minimumX - 2f, 0f, 0f),
                     new Vector3(2f, 3f, 4f));
             Assert.That(
                 HomeExteriorViewBuilder
                     .TryClipToExteriorHalfSpace(
-                        interiorOnly,
+                        beyondContext,
                         out _),
                 Is.False);
 
             var crossing =
                 new Bounds(
-                    new Vector3(5f, 1f, -2f),
+                    new Vector3(minimumX, 1f, -2f),
                     new Vector3(4f, 2f, 6f));
             Assert.That(
                 HomeExteriorViewBuilder
@@ -465,7 +466,7 @@ namespace BarPromenade.Tests.EditMode
                 clipped.min.x,
                 Is.EqualTo(
                         HomeExteriorViewBuilder
-                            .ExteriorMinimumX)
+                            .ContextMinimumX)
                     .Within(0.001f));
             Assert.That(
                 clipped.max.x,
@@ -480,22 +481,23 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(crossing.max.z)
                     .Within(0.001f));
 
-            var exteriorOnly =
+            var rearCity =
                 new Bounds(
-                    new Vector3(12f, 1f, 3f),
+                    new Vector3(PlayerHomeBalconyGeometry.HomeFacadeX - 16f, 1f, 3f),
                     new Vector3(2f, 2f, 2f));
+            Assert.That(rearCity.max.x, Is.LessThan(HomeExteriorViewBuilder.ExteriorMinimumX));
             Assert.That(
                 HomeExteriorViewBuilder
                     .TryClipToExteriorHalfSpace(
-                        exteriorOnly,
+                        rearCity,
                         out Bounds unchanged),
                 Is.True);
             Assert.That(
                 unchanged.center,
-                Is.EqualTo(exteriorOnly.center));
+                Is.EqualTo(rearCity.center));
             Assert.That(
                 unchanged.size,
-                Is.EqualTo(exteriorOnly.size));
+                Is.EqualTo(rearCity.size));
         }
 
         private static bool Contains(Rect bounds, Vector3 position)

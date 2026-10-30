@@ -79,7 +79,9 @@ namespace BarPromenade
 
     public static class HomeExteriorContextPlanner
     {
-        public const float ViewRadius = 48f;
+        // Keep the passive scenery outside the 48 m camera range even when
+        // the balcony camera moves away from the door or looks behind home.
+        public const float ViewRadius = 64f;
 
         public static HomeExteriorContextPlan Generate(int citySeed)
         {

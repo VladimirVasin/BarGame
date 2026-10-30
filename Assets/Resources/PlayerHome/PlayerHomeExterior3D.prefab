@@ -387,10 +387,10 @@ MonoBehaviour:
     width: 13
     depth: 12
     height: 8.8
-  sourceTriangleCount: 7776
-  sourceGeneratorVersion: 1.1.0
+  sourceTriangleCount: 8392
+  sourceGeneratorVersion: 1.2.0
   designId: player_home_exterior_v1
-  buildSignature: 91cb3cc200abbf5dfc83891e04fa9ae493ca4d252e9b00d3c9317c6cc5a30790
+  buildSignature: b4b799a3015c9bfcea24b599f80c4503ee5b1a46e53c7fbfb069c0fc351fe9b9
 --- !u!1001 &5488859530019327196
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -94,20 +94,21 @@ namespace BarPromenade
         }
 
         private static bool InsideExterior(Vector3 position,float radius) =>
-            position.x-radius>=HomeExteriorViewBuilder.ExteriorMinimumX &&
-            new Vector2(position.x,position.z).magnitude+radius<=48f;
+            position.x-radius>=HomeExteriorViewBuilder.ContextMinimumX &&
+            new Vector2(position.x-PlayerHomeBalconyGeometry.HomeFacadeX,position.z).magnitude+radius<=HomeExteriorContextPlanner.ViewRadius;
 
         private static bool ClipExterior(CityCoastalCableSpan source,out CityCoastalCableSpan clipped)
         {
             clipped=default;
             Vector3 delta=source.End-source.Start;
             float start=0f,end=1f;
-            float minimum=HomeExteriorViewBuilder.ExteriorMinimumX+WireRadius;
+            float minimum=HomeExteriorViewBuilder.ContextMinimumX+WireRadius;
             if(Mathf.Abs(delta.x)<.0001f) { if(source.Start.x<minimum)return false; }
             else if(delta.x>0f)start=Mathf.Max(start,(minimum-source.Start.x)/delta.x);
             else end=Mathf.Min(end,(minimum-source.Start.x)/delta.x);
-            Vector2 a=new Vector2(source.Start.x,source.Start.z),d=new Vector2(delta.x,delta.z);
-            float aa=d.sqrMagnitude,bb=2f*Vector2.Dot(a,d),cc=a.sqrMagnitude-47.95f*47.95f;
+            Vector2 a=new Vector2(source.Start.x-PlayerHomeBalconyGeometry.HomeFacadeX,source.Start.z),d=new Vector2(delta.x,delta.z);
+            float radius=HomeExteriorContextPlanner.ViewRadius-.05f;
+            float aa=d.sqrMagnitude,bb=2f*Vector2.Dot(a,d),cc=a.sqrMagnitude-radius*radius;
             if(aa<.000001f) { if(cc>0f)return false; }
             else
             {

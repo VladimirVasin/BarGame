@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public enum NpcHandGripKind { Cylindrical = 0, WineBowl = 1, SnifterBowl = 2 }
+    public enum NpcHandGripKind { Cylindrical = 0, WineBowl = 1, SnifterBowl = 2, Cigarette = 3 }
 
     /// <summary>Neutral hand anatomy measured in rotation-only hand space, in metres.</summary>
     public readonly struct AnatomicalHandFrame
@@ -104,6 +104,7 @@ namespace BarPromenade
             NpcHandGripKind.Cylindrical => cylinderRadius,
             NpcHandGripKind.WineBowl => .037f,
             NpcHandGripKind.SnifterBowl => .046f,
+            NpcHandGripKind.Cigarette => .00325f,
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
 
@@ -165,14 +166,33 @@ namespace BarPromenade
         public void SetGrip(bool isLeft, float weight, NpcHandGripKind kind)
         {
             if (!Finite(weight)) throw new ArgumentOutOfRangeException(nameof(weight));
-            Hand(isLeft).SetWeight(Mathf.Clamp01(weight), kind);
+            Hand(isLeft).SetManualWeight(Mathf.Clamp01(weight), kind);
         }
+
+        /// <summary>Resolve a finite authored variant once, without changing either hand.</summary>
+        public void PrepareGrip(bool isLeft, NpcHandGripKind kind) => Hand(isLeft).Prepare(kind);
+
+        /// <summary>A temporary contact restores only the hand it captured, with its exact prior variant/weight.</summary>
+        public bool TryCaptureGrip(UnityEngine.Object owner, bool isLeft, NpcHandGripKind kind)
+        {
+            if (owner == null) throw new ArgumentNullException(nameof(owner));
+            return Hand(isLeft).TryCapture(owner, kind);
+        }
+
+        public bool SetOwnedGrip(UnityEngine.Object owner, bool isLeft, float weight)
+        {
+            if (!Finite(weight)) throw new ArgumentOutOfRangeException(nameof(weight));
+            return Hand(isLeft).SetOwned(owner, Mathf.Clamp01(weight));
+        }
+
+        public bool ReleaseGrip(UnityEngine.Object owner, bool isLeft) => Hand(isLeft).Release(owner);
 
         public void ResetGrip()
         {
             if (hands == null || hands.Length == 0) return;
             EnsureBindings();
-            left.SetWeight(0f); right.SetWeight(0f);
+            left.SetManualWeight(0f, NpcHandGripKind.Cylindrical);
+            right.SetManualWeight(0f, NpcHandGripKind.Cylindrical);
         }
 
         public Vector3 CylinderCentre(bool isLeft) => Hand(isLeft).Binding.CentreAnchor.position;
@@ -239,6 +259,10 @@ namespace BarPromenade
             public float Weight { get; private set; } = -1f;
             public NpcHandGripKind Kind { get; private set; }
             private readonly int[] shapes;
+            private UnityEngine.Object gripOwner;
+            private NpcHandGripKind ownedKind, previousKind;
+            private float previousWeight;
+            private Transform cigaretteSocket;
             private readonly Dictionary<NpcHandGripKind, int[]> variantShapes = new();
             private readonly Dictionary<NpcHandGripKind, AnatomicalHandFrame> variantFrames = new();
             private AnatomicalHandFrame anatomicalFrame;
@@ -293,6 +317,43 @@ namespace BarPromenade
                 }
             }
 
+            public void Prepare(NpcHandGripKind kind) => GetVariantShapes(kind);
+
+            public void SetManualWeight(float weight, NpcHandGripKind kind)
+            {
+                GetVariantShapes(kind);
+                // An explicit presentation write takes this hand over. A stale
+                // scoped contact may no longer restore over that new owner.
+                gripOwner = null;
+                SetWeight(weight, kind);
+            }
+
+            public bool TryCapture(UnityEngine.Object owner, NpcHandGripKind kind)
+            {
+                if (!ReferenceEquals(gripOwner, null))
+                    return ReferenceEquals(gripOwner, owner) && ownedKind == kind;
+                GetVariantShapes(kind);
+                previousKind = Kind; previousWeight = Mathf.Max(0f, Weight);
+                ownedKind = kind; gripOwner = owner;
+                SetWeight(0f, kind);
+                return true;
+            }
+
+            public bool SetOwned(UnityEngine.Object owner, float weight)
+            {
+                if (ReferenceEquals(gripOwner, null) || !ReferenceEquals(gripOwner, owner)) return false;
+                SetWeight(weight, ownedKind);
+                return true;
+            }
+
+            public bool Release(UnityEngine.Object owner)
+            {
+                if (ReferenceEquals(gripOwner, null) || !ReferenceEquals(gripOwner, owner)) return false;
+                gripOwner = null;
+                SetWeight(previousWeight, previousKind);
+                return true;
+            }
+
             public void SetWeight(float weight, NpcHandGripKind kind = NpcHandGripKind.Cylindrical)
             {
                 GetVariantShapes(kind);
@@ -316,6 +377,12 @@ namespace BarPromenade
             private int[] GetVariantShapes(NpcHandGripKind kind)
             {
                 if (kind == NpcHandGripKind.Cylindrical) return shapes;
+                if (kind == NpcHandGripKind.Cigarette)
+                {
+                    if (Binding.IsLeft) throw new InvalidOperationException("SmokingGrip is authored only for the physical right hand.");
+                    if (cigaretteSocket == null) cigaretteSocket = FindAnchor(Binding.Hand, "SOCKET_Cigarette.R");
+                    if (cigaretteSocket == null) throw new InvalidOperationException("SmokingGrip requires the original right cigarette socket.");
+                }
                 if (variantShapes.TryGetValue(kind, out int[] found)) return found;
                 string shape = VariantName(kind);
                 found = new int[Binding.Renderers.Count];
@@ -332,6 +399,18 @@ namespace BarPromenade
             public AnatomicalHandFrame GetVariantFrame(NpcHandGripKind kind)
             {
                 if (kind == NpcHandGripKind.Cylindrical) return AnatomicalFrame;
+                if (kind == NpcHandGripKind.Cigarette)
+                {
+                    GetVariantShapes(kind);
+                    AnatomicalHandFrame neutral = AnatomicalFrame;
+                    // Smoking animates the existing filter socket. Its pinch
+                    // centre is 22.5 mm outward along the live cigarette axis;
+                    // unlike vessel anchors, that offset must not be cached.
+                    Vector3 pinch = cigaretteSocket.position + cigaretteSocket.up * .0225f;
+                    Vector3 liveOffset = Quaternion.Inverse(Binding.Hand.rotation) * (pinch - Binding.Hand.position);
+                    return new AnatomicalHandFrame(neutral.PalmCentreInHand, neutral.FingerDirectionInHand,
+                        neutral.ThumbDirectionInHand, neutral.PalmNormalInHand, liveOffset);
+                }
                 if (variantFrames.TryGetValue(kind, out AnatomicalHandFrame frame)) return frame;
                 GetVariantShapes(kind);
                 string prefix = "ANCHOR_" + VariantName(kind);
@@ -353,6 +432,7 @@ namespace BarPromenade
             {
                 NpcHandGripKind.WineBowl => "WineBowlGrip",
                 NpcHandGripKind.SnifterBowl => "SnifterBowlGrip",
+                NpcHandGripKind.Cigarette => "SmokingGrip",
                 _ => throw new ArgumentOutOfRangeException(nameof(kind))
             };
 

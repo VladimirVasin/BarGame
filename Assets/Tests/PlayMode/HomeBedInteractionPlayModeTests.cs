@@ -695,8 +695,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.ApartmentDays.AppliedDayNumber, Is.EqualTo(1));
             Assert.That(home.ApartmentDays.BalconyBarrier.IsSealed, Is.False);
             Assert.That(home.ApartmentDays.BalconyBarrier.DoorCollider.enabled, Is.False);
-            Assert.That(Quaternion.Angle(home.ApartmentDays.BalconyBarrier.DoorPivot.localRotation,
-                Quaternion.Euler(0f, 76f, 0f)), Is.LessThan(.01f));
+            Assert.That(home.BalconyDoor.IsSealed, Is.False);
+            Assert.That(home.BalconyDoor.IsOpen, Is.True);
+            Assert.That(home.BalconyDoor.Panels, Has.Length.EqualTo(4));
             AssertBalconyCrossing(false);
             AssertBalconySealWaitsForSafeReturn();
             foreach (var entry in originalHomeSurfaces)

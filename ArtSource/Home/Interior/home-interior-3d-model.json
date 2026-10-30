@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "design_id": "home_interior_v1",
-  "generator_version": "2.0.0",
-  "signature": "880cfb5a51df872a16e10f4b183151c387246ef2ac571f884987ef19f60d1d99",
+  "generator_version": "2.1.0",
+  "signature": "14244c410b10d61e3e20f7bbfd58a8092c20e36d004078b06e2883f1955eb9b5",
   "coordinates": "Unity local metres +X east +Y up +Z north",
   "source_conversion": "Y/Z swap and face rewinding; FBX -Z forward Y up",
   "report": {
-    "part_count": 389,
-    "triangle_count": 35072,
+    "part_count": 392,
+    "triangle_count": 35352,
     "day_decor_counts": [
       127,
       133,
@@ -29,6 +29,7 @@
     "shower_drain_open_grate_and_recess": true,
     "shower_basin_and_water_drain_apertures": true,
     "entry_door_real_panels_and_leaf_clearance": true,
+    "balcony_four_leaf_fold_clearance_and_glazing_aperture": true,
     "entry_door_joinery_closed": true,
     "kitchen_sink_hollow_and_counter_open": true,
     "dining_chair_measured_seat_contact": true,
@@ -4888,6 +4889,156 @@
       "grid_bottom_heights": []
     },
     {
+      "name": "Home Balcony Folding Wood",
+      "semantic_name": "Home Balcony Folding Wood",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "RoomWood",
+      "tint": [
+        0.27,
+        0.185,
+        0.11,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.045,
+        2.22,
+        0.31
+      ],
+      "bounds_min": [
+        -0.0225,
+        -1.11,
+        -0.155
+      ],
+      "bounds_max": [
+        0.0225,
+        1.11,
+        0.155
+      ],
+      "triangles": 168,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Balcony Folding Glass",
+      "semantic_name": "Home Balcony Folding Glass",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "Plain",
+      "tint": [
+        0.3,
+        0.27,
+        0.21,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.014,
+        1.2,
+        0.22599999999999998
+      ],
+      "bounds_min": [
+        -0.007,
+        -0.6,
+        -0.11299999999999999
+      ],
+      "bounds_max": [
+        0.007,
+        0.6,
+        0.11299999999999999
+      ],
+      "triangles": 28,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Balcony Folding Handle",
+      "semantic_name": "Home Balcony Folding Handle",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "PaintedMetal",
+      "tint": [
+        0.24,
+        0.29,
+        0.27,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.07,
+        0.15,
+        0.028
+      ],
+      "bounds_min": [
+        -0.035,
+        -0.075,
+        -0.014
+      ],
+      "bounds_max": [
+        0.035,
+        0.075,
+        0.014
+      ],
+      "triangles": 84,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
       "name": "Home Bathroom Shower Drain",
       "semantic_name": "Home Bathroom Shower Drain",
       "aliases": [],
@@ -5414,7 +5565,7 @@
         -0.008699999997922817,
         -0.0087,
         0.022306988775242304,
-        0.03751458570030964,
+        0.037514585700309626,
         0.046287476263380783,
         0.04919136805252501,
         0.046287476263380783,
@@ -5423,7 +5574,7 @@
         -0.008699999997370816,
         -0.0087,
         0.02722063968662445,
-        0.04483817145033221,
+        0.044838171450332205,
         0.0550012944549718,
         0.05836536348479271,
         0.0550012944549718,
@@ -5432,7 +5583,7 @@
         -0.008699999996954172,
         -0.0087,
         0.030689627313961333,
-        0.05000854859204553,
+        0.05000854859204552,
         0.061153161577536586,
         0.06484211106449203,
         0.061153161577536586,
@@ -5468,7 +5619,7 @@
         -0.008699999996484282,
         -0.0087,
         0.030689627313961333,
-        0.05000854859204553,
+        0.05000854859204552,
         0.061153161577536586,
         0.06484211106449203,
         0.061153161577536586,
@@ -5486,7 +5637,7 @@
         -0.008699999996954172,
         -0.0087,
         0.02230698877524232,
-        0.037514585700309654,
+        0.03751458570030965,
         0.04628747626338081,
         0.04919136805252504,
         0.04628747626338081,
@@ -5504,7 +5655,7 @@
         -0.008699999997922817,
         -0.0087,
         0.007171266346191925,
-        0.014955441166675982,
+        0.014955441166675978,
         0.019445941155622676,
         0.02093232992946025,
         0.019445941155622676,
@@ -5641,7 +5792,7 @@
         -0.011700000001538749,
         -0.011699999999999999,
         -0.023457240508043063,
-        -0.029223662261972167,
+        -0.029223662261972164,
         -0.032550169877672196,
         -0.03365126855003218,
         -0.032550169877672196,
@@ -6572,19 +6723,13 @@
         "Home Alarm Clock",
         "Home Alarm Clock Nightstand Handle",
         "Home Balcony",
-        "Home Balcony Ajar Door Pivot",
         "Home Balcony Ashtray",
-        "Home Balcony Door Glass",
-        "Home Balcony Door Handle",
         "Home Balcony Door Header",
         "Home Balcony Door Jamb",
-        "Home Balcony Door Leaf Bottom Rail",
-        "Home Balcony Door Leaf Middle Rail",
-        "Home Balcony Door Leaf Stile",
-        "Home Balcony Door Leaf Top Rail",
-        "Home Balcony Door Lower Panel",
         "Home Balcony Drain",
         "Home Balcony Exterior Sill",
+        "Home Balcony Folding Door",
+        "Home Balcony Folding Panel ",
         "Home Balcony North Guard",
         "Home Balcony North Post",
         "Home Balcony Outer Guard",
@@ -6668,7 +6813,6 @@
         "Home Sofa Tear",
         "Player Home Authored Front Window Glass ",
         "Player Home Brick Plinth",
-        "Player Home Front Roof Eave",
         "Player Home Frontage Door Lintel",
         "Player Home Frontage North Pier",
         "Player Home Frontage Repair Pier",
@@ -6762,19 +6906,13 @@
         "Home Alarm Clock",
         "Home Alarm Clock Nightstand Handle",
         "Home Balcony",
-        "Home Balcony Ajar Door Pivot",
         "Home Balcony Ashtray",
-        "Home Balcony Door Glass",
-        "Home Balcony Door Handle",
         "Home Balcony Door Header",
         "Home Balcony Door Jamb",
-        "Home Balcony Door Leaf Bottom Rail",
-        "Home Balcony Door Leaf Middle Rail",
-        "Home Balcony Door Leaf Stile",
-        "Home Balcony Door Leaf Top Rail",
-        "Home Balcony Door Lower Panel",
         "Home Balcony Drain",
         "Home Balcony Exterior Sill",
+        "Home Balcony Folding Door",
+        "Home Balcony Folding Panel ",
         "Home Balcony North Guard",
         "Home Balcony North Post",
         "Home Balcony Outer Guard",
@@ -6858,7 +6996,6 @@
         "Home Sofa Tear",
         "Player Home Authored Front Window Glass ",
         "Player Home Brick Plinth",
-        "Player Home Front Roof Eave",
         "Player Home Frontage Door Lintel",
         "Player Home Frontage North Pier",
         "Player Home Frontage Repair Pier",
@@ -18820,7 +18957,7 @@
       "position": [
         -2.3717652396014577,
         0.92,
-        0.3838246961643036
+        0.3838246961643035
       ],
       "rotation": [
         0,

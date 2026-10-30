@@ -62,7 +62,10 @@ cemetery:own interiors/returns.
   retires request, reload keeps bag. Empty hands/silent hero/no choice;
   Cat/dinner/news remain outside this MVP.
 - `MainMenu`:index0/EditorPlay; New Game/Debug/Quit. New Game directly loads
-  fresh Home/day1/hero1/home1/open balcony at actual stopped12:00. Covered load
+  fresh Home/day1/hero1/home1/open balcony at actual stopped12:00. Shared neutral
+  loading screen: charcoal/«Загрузка»/percentage/bottom bar, 20% scene load and
+  80% staged Home composition; held through the first rendered frame, no timer.
+  Covered load
   clears transition guard before ready/neutral acquisition; first visible hero
   is already asleep. Five6s medium/wide room shots use mild dolly/shared camera/
   DOF, outside the locked room. Fresh E starts prepared time and ordinary seated
@@ -2299,57 +2302,51 @@ cemetery:own interiors/returns.
   the inventory vodka bottle commits four servings atomically while maximum
   intoxication leaves it untouched. Use appears only for consumables/equipment;
   temporarily blocked actions stay disabled;
-- ordinary Home window/open glazed leaf/walkable third-floor balcony at4.7m,
-  same scene; open-looking rails retain invisible safety colliders. Final7's
-  `HomeBalconyCorruptionBarrier` closes/swells the real leaf/dark glass with a
-  solid collider;1–6 restore76°/scale/materials/no collider exactly. Outside/
-  threshold occupancy defers the seal until the capsule is fully inside.
-  The view rebuilds a bounded actual-street slice from the same blueprint/seed:
-  asphalt/sidewalks/markings/lots/windows/lamps/signals. City/Home share ground
-  compositor/street/facade/window/passive pub-exterior recipes. The target-derived
-  blue01 stop pole is Home-local/collider-free. Balcony shot borrows City's Exp2
-  fog/background/48m cap/current time lighting/grade/local fog/12-light street-bar
-  pool; MainRoom/Bathroom/disable/destroy restore captured Home visibility/light.
+- Home window/four-section glazed folding door/walkable balcony at4.7m in one
+  scene; rails retain safety colliders. E uses shared hero actions/hand contacts;
+  wood-mounted free-edge pulls and solid panels fold apartment-side, clear of
+  the deck. Casings clear structural reveals/header31mm and sit31mm proud of
+  facade skin. Initially open; ordinary collision rejects obstructed movement.
+  Final7's `HomeBalconyCorruptionBarrier` locks the closed dark-glass assembly;
+  outside/threshold occupancy waits for the capsule fully inside. Debug1–6
+  restores ordinary use/materials. Home omits eave/north screen; real shell/
+  City roof/rain shelter stay. Passive City scenery spans64m around the door,
+  including behind Home; the48m camera has margin for its orbit. Facade rain/
+  stop/pedestrian limits stay separate. Same seed/ground/street/facade/pub recipes:
+  asphalt/sidewalks/markings/lots/windows/lamps/signals; target-derived blue01
+  stop pole is Home-local/collider-free. Balcony borrows City's Exp2 fog/
+  background/48m cap/current lighting/grade/local fog/12-light street-bar pool;
+  MainRoom/Bathroom/disable/destroy restore captured Home visibility/light.
   Only that shot runs5day/2night distance-managed pedestrians in the fog band;
-  leaving pools them. Static stop activates no bus/director: no complete-body,
-  two-ended fog-hidden passage. Fog/City grade match every hour; no second City
-  root/player/camera;
-- one modal balcony-smoking vignette at the Home-local dock around
-  `(6.60, 0.04, -1.45)`: the first `E` locks manual input while the ordinary 3D
-  rig walks to entry and turns toward the city along `+X`; exact alignment
-  holds one neutral rendered frame, then the same visible rig samples
-  `SmokeEnter`, `SmokeLoop` and `SmokeExit`. The authored motion settles the
-  hero toward the outer rail, draws the right hand from his coat, brings the
-  cigarette to his lips for a held inhale, lowers it for an outward exhale and
-  returns through a deliberate discard. Once per `9.5 s` loop, local frame
-  `16` emits a bounded gray-green world-space plume from the registered mouth
-  socket; it travels toward the city, grows and fades before the next loop,
-  while queued exit stops new emission and lets the detached smoke dissipate.
-  The approximately `74 mm` cigarette
-  follows the registered right-hand socket along its outward local axis; it is
-  revealed only after leaving the coat and hidden on the exit flick. A
-  permanent worn enamel ashtray rests on the outer rail at Home-local
-  `(7.25, 1.12, -1.67)`, directly below that authored flick, and remains
-  visible independently of the smoking lifecycle. The
-  deterministic timeline retains its melancholic `9.5 s` loop; a second `E`
-  queues until a calm low-hand boundary, preventing a raised-hand or inhale
-  cut. No renderer swap, sprite fade or shadow handoff is needed;
-  the camera holds briefly and eases along a quadratic push-in to `38°` FOV.
-  Its close look target is biased `0.33 m` toward the city along Home-local
-  `+X`, turning the target yaw to about `13.12°`: the hero stays prominent at
-  about `0.37` viewport X while a point `1 m` cityward remains visible to his
-  right. Camera position and FOV are unchanged. A smoking-local deterministic
-  drift overlays that path with restrained
-  X/Y/Z position amplitudes of `0.016 / 0.007 / 0.005 m` and pitch/yaw/roll
-  amplitudes of `0.12° / 0.20° / 0.08°`. Paired `13-23 s` harmonics share one
-  clock across every interaction phase, while the camera blend fades their
-  envelope in and back to exactly zero during the smooth `2 s` Balcony-shot
-  restoration. FOV has no extra pulse and generic `PlayerCameraFollow` remains
-  unchanged. The
-  separate optional `smoking_theme` music starts from silence once the
-  mixing rule clears the apartment theme, and leaves through the same shared
-  `4 s` fade-out rather than the camera ramp; without a supplied clip, the
-  complete interaction remains playable and silent;
+  leaving pools them. The static stop activates no bus/director: no complete-body,
+  two-ended fog-hidden passage. Fog/grade agree every hour; no second City root/
+  player/camera;
+- modal balcony smoking docks at Home-local `(6.60, 0.04, -1.45)`. First E locks
+  manual input while the ordinary visible rig walks to entry/faces city+X;
+  exact alignment holds a neutral rendered frame, then samples SmokeEnter/
+  SmokeLoop/SmokeExit. He settles toward the rail, retrieves the cigarette from
+  his coat, holds it at his lips, lowers it for outward exhale and discards it.
+  Each9.5s loop, frame16 emits one bounded gray-green world-space mouth plume:
+  cityward drift/growth/fade before the next cycle. Queued exit stops emission
+  and lets detached smoke dissipate. The74mm cigarette follows the animated
+  right socket; canonical socket rest stays. SmokingGrip morphs only the six
+  original right-hand meshes: index/middle pinch, thumb faceward, other fingers
+  curled; palm/wrist stay. Shared NpcHandPose reapplies after clip sampling;
+  reveal/flick blends and owned finish/cancel/disable restore the preceding
+  grip. The prop appears after leaving the coat and hides at the flick.
+  Permanent worn enamel ashtray at`(7.25, 1.12, -1.67)` rests on the outer rail
+  below that flick, independent of smoking ownership. The deterministic9.5s
+  cadence waits for a calm low-hand boundary after second E: no inhale/raised
+  hand cut, renderer swap, sprite fade or shadow handoff. Camera48° starts
+  behind/right at37°/radius1.16m/root+1.64m; a38s cycle reaches125°/radius1m/
+  root+1.70m for partial profile during calm exhale, then returns. Cityward look
+  bias1.05→.20m keeps city beside the face. Tiny drift shares the continuous
+  clock; pause freezes it, exit restores Balcony over2s and cleanup releases
+  ownership. Validators cover source/imported mouth and finger contacts.
+  Optional smoking_theme waits for the mixing rule to clear Home music; it
+  exits through the shared4s fade, separately from camera return. With no
+  supplied clip the full interaction remains playable and silent;
+
 - one reusable animated-interaction timeline and player controller with a
   visible `Positioning` pre-phase followed by
   `Entering -> Looping -> Exiting`; each interaction supplies separate entry

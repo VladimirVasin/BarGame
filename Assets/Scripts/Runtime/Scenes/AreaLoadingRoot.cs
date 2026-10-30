@@ -3,8 +3,8 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Locale-neutral loading presentation. It intentionally draws no words:
-    /// the one progress bar has the same meaning in every supported locale.
+    /// Shared loading cover. Area journeys keep their wordless illustration;
+    /// a new game uses the neutral interface with a loading label and progress.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class AreaLoadingRoot : MonoBehaviour
@@ -14,6 +14,13 @@ namespace BarPromenade
         internal const float BottomMargin = 22f;
 
         private AreaLoadingArtworkCache.Lease artwork;
+        private GUIStyle loadingStyle;
+        private GUIStyle captionStyle;
+        private GUIStyle percentageStyle;
+        private string loadingLabel;
+        private string newGameLabel;
+        private string percentageLabel = "0 %";
+        private int displayedPercentage;
 
         public Camera Camera { get; private set; }
         public bool IsBound { get; private set; }
@@ -23,9 +30,25 @@ namespace BarPromenade
         public GameAreaId? SourceArea { get; private set; }
         public string ArtResourcePath { get; private set; } = string.Empty;
         public bool HasArtwork => artwork?.Texture != null;
+        public bool IsNewGameLoading { get; private set; }
+
+        internal static AreaLoadingRoot CreateForNewGame()
+        {
+            // Bind before Awake: this overlay must not adopt/reconfigure the
+            // menu camera or create a camera in the destination's place.
+            var host = new GameObject("[Bar Promenade] New Game Loading");
+            host.SetActive(false);
+            AreaLoadingRoot root = host.AddComponent<AreaLoadingRoot>();
+            root.IsNewGameLoading = true;
+            root.IsBound = true;
+            root.KeepDuringComposition();
+            host.SetActive(true);
+            return root;
+        }
 
         private void Awake()
         {
+            if (IsNewGameLoading) return;
             GameLog.SetScene(gameObject.scene.name);
             Camera = RuntimeSceneSetup.EnsureAreaLoading();
             DisplayedProgress = Mathf.Clamp01(
@@ -63,6 +86,11 @@ namespace BarPromenade
         internal void SetProgress(float progress)
         {
             DisplayedProgress = Mathf.Clamp01(progress);
+            if (!IsNewGameLoading) return;
+            int percentage = Mathf.FloorToInt(DisplayedProgress * 100f);
+            if (percentage == displayedPercentage) return;
+            displayedPercentage = percentage;
+            percentageLabel = percentage.ToString() + " %";
         }
 
         internal void SetFailed()
@@ -135,13 +163,43 @@ namespace BarPromenade
                         ScaleMode.ScaleAndCrop, false);
                 }
 
-                DrawProgressBar(CalculateTrackRect(Screen.width, Screen.height));
+                Rect track = CalculateTrackRect(Screen.width, Screen.height);
+                if (IsNewGameLoading) DrawNewGamePresentation(track);
+                DrawProgressBar(track);
             }
             finally
             {
                 GUI.matrix = previousMatrix;
                 GUI.color = previousColor;
                 GUI.depth = previousDepth;
+            }
+        }
+
+        private void DrawNewGamePresentation(Rect track)
+        {
+            if (loadingStyle == null)
+            {
+                loadingStyle = RetroUiTheme.CreateLabelStyle(18, TextAnchor.MiddleCenter, RetroUiTheme.Text);
+                captionStyle = RetroUiTheme.CreateLabelStyle(10, TextAnchor.MiddleCenter, RetroUiTheme.Muted);
+                percentageStyle = RetroUiTheme.CreateLabelStyle(10, TextAnchor.LowerRight, RetroUiTheme.Muted);
+                loadingLabel = LocalizationService.Get("loading.progress");
+                newGameLabel = LocalizationService.Get("opening.new_game");
+            }
+
+            RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
+            Matrix4x4 previous = RetroUiTheme.BeginCanvas(canvas);
+            try
+            {
+                GUI.Label(new Rect(178f, 142f, TrackWidth, 20f), newGameLabel, captionStyle);
+                GUI.Label(new Rect(178f, 166f, TrackWidth, 30f), loadingLabel, loadingStyle);
+                RetroUiTheme.FillRect(new Rect(288f, 216f, 64f, 1f), RetroUiTheme.BorderMuted);
+                Rect logicalTrack = new Rect(canvas.ScreenToLogical(track.position), track.size / canvas.Scale);
+                GUI.Label(new Rect(logicalTrack.x, logicalTrack.y - 23f, logicalTrack.width, 18f),
+                    percentageLabel, percentageStyle);
+            }
+            finally
+            {
+                GUI.matrix = previous;
             }
         }
 

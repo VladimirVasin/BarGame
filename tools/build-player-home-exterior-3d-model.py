@@ -54,7 +54,7 @@ from city_building_coplanarity import (  # noqa: E402
     validate_coplanarity_audit_contract,
 )
 
-GENERATOR_VERSION = "1.1.0"
+GENERATOR_VERSION = "1.2.0"
 DESIGN_ID = "player_home_exterior_v1"
 DISPLAY_NAME = "Bar Promenade Player Home Exterior"
 ROOT_OBJECT_NAME = DESIGN_ID
@@ -995,40 +995,32 @@ def build_balcony(
     )
 
     door_outer_y = BALCONY_BACK_Y + 0.06
-    door_glass_height = 1.44
-    door_glass_center = BALCONY_FLOOR + 1.43
-    door_wood = (
-        ((BALCONY_DOOR_CENTER_X, BALCONY_FLOOR + 0.38, door_outer_y),
-         (BALCONY_DOOR_WIDTH - 0.28, 0.76, 0.09)),
-        ((BALCONY_DOOR_CENTER_X - BALCONY_DOOR_WIDTH * 0.5 + 0.07,
-          BALCONY_FLOOR + BALCONY_DOOR_HEIGHT * 0.5, door_outer_y + 0.04),
-         (0.14, BALCONY_DOOR_HEIGHT, 0.08)),
-        ((BALCONY_DOOR_CENTER_X + BALCONY_DOOR_WIDTH * 0.5 - 0.07,
-          BALCONY_FLOOR + BALCONY_DOOR_HEIGHT * 0.5, door_outer_y + 0.04),
-         (0.14, BALCONY_DOOR_HEIGHT, 0.08)),
-        ((BALCONY_DOOR_CENTER_X,
-          BALCONY_FLOOR + BALCONY_DOOR_HEIGHT - 0.07,
-          door_outer_y + 0.04),
-         (BALCONY_DOOR_WIDTH - 0.28, 0.14, 0.08)),
-        ((BALCONY_DOOR_CENTER_X, BALCONY_FLOOR + 0.82,
-          door_outer_y + 0.04),
-         (BALCONY_DOOR_WIDTH - 0.28, 0.14, 0.08)),
-    )
+    # Same four glazed sections as the physical Home door, shown closed in
+    # this passive street model. The opening, facade and palette are unchanged.
+    door_wood = []
+    door_glass = []
+    panel_width, leaf_height = .31, 2.22
+    for index in range(4):
+        x = BALCONY_DOOR_CENTER_X - .62 + (index + .5) * panel_width
+        bottom = BALCONY_FLOOR + .10
+        for side in (-1, 1):
+            door_wood.append(((x + side * (panel_width-.042)*.5,
+                bottom + leaf_height*.5, door_outer_y + .04), (.042,leaf_height,.045)))
+        for y in (.035,.86,leaf_height-.035):
+            door_wood.append(((x,bottom+y,door_outer_y+.04), (panel_width-.084,.07,.045)))
+        door_wood.append(((x,bottom+.44,door_outer_y+.04),(panel_width-.084,.72,.031)))
+        door_glass.append(bp.u_box((x,bottom+1.52,door_outer_y+.04),
+            (panel_width-.084,1.20,.014),.002))
     add_part(
         asset, materials, "Balcony Painted Wood Door",
-        merged(bp.u_box(center, size, 0.005) for center, size in door_wood),
+        merged(bp.u_box(center,size,.004) for center,size in door_wood),
         "exterior_balcony_door", "PaintedWood",
-        bp.rgb(0.22, 0.32, 0.28), group="balcony",
+        bp.rgb(.22,.32,.28), group="balcony",
     )
     add_part(
-        asset, materials, "Balcony Door Glass",
-        bp.u_box((BALCONY_DOOR_CENTER_X, door_glass_center,
-                  door_outer_y + 0.012),
-                 (BALCONY_DOOR_WIDTH - 0.28,
-                  door_glass_height, 0.028), 0.002),
+        asset, materials, "Balcony Door Glass", merged(door_glass),
         "exterior_glass", "WindowGlass",
-        bp.rgb(0.14, 0.23, 0.25), group="balcony",
-        casts_shadows=False,
+        bp.rgb(.14,.23,.25), group="balcony", casts_shadows=False,
     )
 
     gallery_y = BALCONY_OUTER_Y - 0.26

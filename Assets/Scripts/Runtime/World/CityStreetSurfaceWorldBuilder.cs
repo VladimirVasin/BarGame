@@ -92,11 +92,11 @@ namespace BarPromenade
                     {
                         float ax = PlayerHomeBalconyGeometry.ToHomeLocal(home.PlayerHome, a).x;
                         float bx = PlayerHomeBalconyGeometry.ToHomeLocal(home.PlayerHome, b).x;
-                        if (ax < HomeExteriorViewBuilder.ExteriorMinimumX && bx < HomeExteriorViewBuilder.ExteriorMinimumX) return;
-                        if ((ax < HomeExteriorViewBuilder.ExteriorMinimumX) != (bx < HomeExteriorViewBuilder.ExteriorMinimumX))
+                        if (ax < HomeExteriorViewBuilder.ContextMinimumX && bx < HomeExteriorViewBuilder.ContextMinimumX) return;
+                        if ((ax < HomeExteriorViewBuilder.ContextMinimumX) != (bx < HomeExteriorViewBuilder.ContextMinimumX))
                         {
-                            Vector3 intersection = Vector3.Lerp(a, b, (HomeExteriorViewBuilder.ExteriorMinimumX - ax) / (bx - ax));
-                            if (ax < HomeExteriorViewBuilder.ExteriorMinimumX) a = intersection; else b = intersection;
+                            Vector3 intersection = Vector3.Lerp(a, b, (HomeExteriorViewBuilder.ContextMinimumX - ax) / (bx - ax));
+                            if (ax < HomeExteriorViewBuilder.ContextMinimumX) a = intersection; else b = intersection;
                         }
                     }
                     Vector3 normal = Vector3.Cross(b - a, Vector3.down).normalized;
@@ -162,10 +162,10 @@ namespace BarPromenade
         {
             var result = new List<Vector3>();
             Vector3 previous = polygon[polygon.Count - 1];
-            float previousDistance = PlayerHomeBalconyGeometry.ToHomeLocal(home.PlayerHome, previous).x - HomeExteriorViewBuilder.ExteriorMinimumX;
+            float previousDistance = PlayerHomeBalconyGeometry.ToHomeLocal(home.PlayerHome, previous).x - HomeExteriorViewBuilder.ContextMinimumX;
             foreach (Vector3 current in polygon)
             {
-                float distance = PlayerHomeBalconyGeometry.ToHomeLocal(home.PlayerHome, current).x - HomeExteriorViewBuilder.ExteriorMinimumX;
+                float distance = PlayerHomeBalconyGeometry.ToHomeLocal(home.PlayerHome, current).x - HomeExteriorViewBuilder.ContextMinimumX;
                 if ((distance >= 0f) != (previousDistance >= 0f))
                     result.Add(Vector3.Lerp(previous, current, previousDistance / (previousDistance - distance)));
                 if (distance >= 0f) result.Add(current);

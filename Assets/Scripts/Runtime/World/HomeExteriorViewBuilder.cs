@@ -16,6 +16,10 @@ namespace BarPromenade
             PlayerHomeBalconyGeometry.WallThickness *
             0.5f +
             0.01f;
+        // Scenery surrounds the house; the facade plane above still owns
+        // indoor rain protection, the stop and live pedestrian eligibility.
+        public const float ContextMinimumX = PlayerHomeBalconyGeometry.HomeFacadeX -
+            HomeExteriorContextPlanner.ViewRadius;
         private const float StreetLampExteriorClearance =
             0.90f;
         private const float TrafficSignalExteriorClearance =
@@ -158,11 +162,11 @@ namespace BarPromenade
                 parent,
                 new Bounds(
                     new Vector3(
-                        facadeX + radius * 0.45f,
+                        facadeX,
                         horizonY,
                         -groundWidth * 0.5f),
                     new Vector3(
-                        radius * 1.55f,
+                        (radius + 22f) * 2f,
                         horizonHeight,
                         0.75f)),
                 TerminalHazeSide,
@@ -172,11 +176,11 @@ namespace BarPromenade
                 parent,
                 new Bounds(
                     new Vector3(
-                        facadeX + radius * 0.45f,
+                        facadeX,
                         horizonY,
                         groundWidth * 0.5f),
                     new Vector3(
-                        radius * 1.55f,
+                        (radius + 22f) * 2f,
                         horizonHeight,
                         0.75f)),
                 TerminalHazeSide,
@@ -362,7 +366,7 @@ namespace BarPromenade
 
                     // Crossing special shells retain the clipped legacy
                     // silhouette below. A non-readable imported mesh must
-                    // never be sheared at the apartment facade.
+                    // never be sheared at the retained context boundary.
                 }
 
                 if (lot.IsOrdinaryBuilding)
@@ -394,7 +398,7 @@ namespace BarPromenade
                     }
 
                     // A fixed-metre, non-readable Blender mesh is never
-                    // sheared at the apartment wall. Only this rare crossing
+                    // sheared at the context boundary. Only this rare crossing
                     // case retains the existing bounds-clipped silhouette.
                 }
 
@@ -512,7 +516,7 @@ namespace BarPromenade
                 }
                 // A crossing pub keeps this clipped legacy silhouette only.
                 // Stretch-clipping a pitched authored roof or chimney would
-                // visibly deform it at the apartment facade.
+                // visibly deform it at the retained context boundary.
             }
         }
 
@@ -786,7 +790,7 @@ namespace BarPromenade
                             source.Position);
                 if (localPosition.x -
                     StreetLampExteriorClearance <
-                    ExteriorMinimumX)
+                    ContextMinimumX)
                 {
                     continue;
                 }
@@ -819,7 +823,7 @@ namespace BarPromenade
                             source.Position);
                 if (localPosition.x -
                     TrafficSignalExteriorClearance <
-                    ExteriorMinimumX)
+                    ContextMinimumX)
                 {
                     continue;
                 }
@@ -844,11 +848,8 @@ namespace BarPromenade
                     parent,
                     fixturePlan,
                     Array.Empty<BarEntrance>(),
-                    // No collision out here. Everything in this view is on
-                    // the far side of the facade, so a lamp's blocking box
-                    // can only ever cost physics for nothing - or, worse,
-                    // fence off part of the balcony the player IS standing
-                    // on.
+                    // Passive scenery never participates in Home physics;
+                    // fixture blockers must not obstruct balcony movement.
                     buildCollision: false);
             result.Root.name =
                 "Home Exterior Night Fixtures";
@@ -870,10 +871,8 @@ namespace BarPromenade
         /// but the stop that belongs to the home can sit against the
         /// block's own footprint, and converted into the flat's local
         /// frame it then lands behind the facade. Drawn there it is a bus
-        /// shelter inside the bedroom. Everything else in this diorama is
-        /// clipped to the half-space past the wall already; the stop is
-        /// clipped the same way rather than dropped, because a balcony
-        /// with no stop in sight loses something the view is for.
+        /// shelter inside the bedroom. The home stop retains its facade
+        /// clearance independently of the scenery that surrounds the house.
         /// </summary>
         public static Vector3 ClipStopToExterior(Vector3 localShelter)
         {
@@ -888,7 +887,7 @@ namespace BarPromenade
             out Bounds clipped)
         {
             Vector3 maximum = source.max;
-            if (maximum.x <= ExteriorMinimumX)
+            if (maximum.x <= ContextMinimumX)
             {
                 clipped = default;
                 return false;
@@ -898,7 +897,7 @@ namespace BarPromenade
             minimum.x =
                 Mathf.Max(
                     minimum.x,
-                    ExteriorMinimumX);
+                    ContextMinimumX);
             clipped = new Bounds();
             clipped.SetMinMax(
                 minimum,

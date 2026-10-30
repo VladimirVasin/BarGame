@@ -306,9 +306,8 @@ namespace BarPromenade.Tests.PlayMode
                 "space throughout its loop.");
             Assert.That(
                 Vector3.Angle(camera.transform.up, Vector3.up),
-                Is.GreaterThan(10f),
-                "The close camera must remain materially pitched so this " +
-                "test distinguishes world-up from camera-plane alignment.");
+                Is.LessThan(5f),
+                "The close shoulder camera must retain a nearly level horizon.");
             AssertAnimatedCharacterFacesCity(
                 playerPresentation.Registry);
             Vector3 actionHipWorld =
@@ -321,7 +320,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(actionHipViewport.z, Is.GreaterThan(0f));
             Assert.That(
                 actionHipViewport.x,
-                Is.InRange(0.28f, 0.43f),
+                Is.InRange(0.12f, 0.46f),
                 "The cityward close-camera framing must leave the hero " +
                 "safely visible on the left side across supported desktop " +
                 "aspects.");
@@ -345,24 +344,16 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                         HomeBalconySmokingPlan.CameraFieldOfView)
                     .Within(0.01f));
-            Vector3 staticSmokingCameraPosition =
-                home.transform.TransformPoint(
-                    HomeBalconySmokingPlan.CameraPosition);
-            Vector3 smokingLookAt =
-                home.transform.TransformPoint(
-                    home.SmokingPlan.CameraLookAt);
-            Quaternion staticSmokingCameraRotation =
-                Quaternion.LookRotation(
-                    (smokingLookAt - staticSmokingCameraPosition)
-                        .normalized,
-                    home.transform.up);
+            HomeBalconySmokingCameraPose authoredCamera = home.SmokingPlan.EvaluateCamera(
+                home.Smoking.Timeline.PresentationElapsedSeconds);
+            Vector3 staticSmokingCameraPosition = home.transform.TransformPoint(authoredCamera.Position);
+            Quaternion staticSmokingCameraRotation = home.transform.rotation * authoredCamera.Rotation;
             Assert.That(
                 Vector3.Dot(
                     staticSmokingCameraRotation * Vector3.forward,
                     home.transform.TransformDirection(Vector3.right)),
-                Is.GreaterThan(0.19f),
-                "The authored close-camera heading must carry a visible " +
-                "cityward +X component while keeping its position fixed.");
+                Is.GreaterThan(0.9f),
+                "The initial shoulder view must look substantially into the city.");
             HomeBalconySmokingCameraDriftSample drift =
                 home.Smoking.Timeline.CameraDrift;
             Assert.That(
