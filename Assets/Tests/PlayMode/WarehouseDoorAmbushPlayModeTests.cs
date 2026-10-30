@@ -509,7 +509,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(valveLight.color, Is.EqualTo(valveLightColor));
             Assert.That(valveLight.innerSpotAngle, Is.EqualTo(valveLightInnerAngle).Within(.001f));
             Assert.That(valveLight.spotAngle, Is.EqualTo(valveLightOuterAngle).Within(.001f));
-            Assert.That(valveLight.intensity, Is.EqualTo(9f * valveLamp.CurrentFactor).Within(.001f));
+            Assert.That(valveLight.intensity, Is.EqualTo(WarehouseArenaPlan.GoalLampIntensity * valveLamp.CurrentFactor).Within(.001f));
         }
 
         private IEnumerator AwaitInteractive()

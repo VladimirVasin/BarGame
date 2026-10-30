@@ -75,6 +75,63 @@ def wall(item, length, position, turn, openings, group, height=10.2, thickness=.
     duplicate_collision(item, geometry, group)
 
 
+def goal_wall_geometry():
+    """One closed wall, with relieved real edges rather than joined bevelled piers."""
+    half, height, depth, cut = 15.3, 10.2, .15, .012
+    outline = [(-half, 0), (-2., 0), (-2., 3.), (2., 3.),
+               (2., 0), (half, 0), (half, height), (-half, height)]
+    inset = [(-half + cut, cut), (-2. - cut, cut), (-2. - cut, 3. + cut),
+             (2. + cut, 3. + cut), (2. + cut, cut), (half - cut, cut),
+             (half - cut, height - cut), (-half + cut, height - cut)]
+    vertices = [(x, y, z + 12.15)
+                for z, profile in ((-depth, inset), (-depth + cut, outline),
+                                   (depth - cut, outline), (depth, inset))
+                for x, y in profile]
+    count = len(outline)
+    faces = [tuple(reversed(range(count))), tuple(range(count * 3, count * 4))]
+    for ring in range(3):
+        for index in range(count):
+            following = (index + 1) % count
+            faces.append((ring * count + index, ring * count + following,
+                          (ring + 1) * count + following, (ring + 1) * count + index))
+    geometry = vertices, faces
+    validate_goal_wall(geometry)
+    return geometry
+
+
+def validate_goal_wall(geometry):
+    """Keep the slab connected, watertight and opaque outside its sole doorway."""
+    from mathutils import Vector
+    from mathutils.bvhtree import BVHTree
+    vertices, faces = geometry
+    edges = {}
+    neighbours = {index: set() for index in range(len(vertices))}
+    for face in faces:
+        for first, second in zip(face, face[1:] + face[:1]):
+            edge = tuple(sorted((first, second)))
+            edges[edge] = edges.get(edge, 0) + 1
+            neighbours[first].add(second)
+            neighbours[second].add(first)
+    reached, pending = set(), [0]
+    while pending:
+        index = pending.pop()
+        if index in reached:
+            continue
+        reached.add(index)
+        pending.extend(neighbours[index] - reached)
+    if len(reached) != len(vertices) or any(uses != 2 for uses in edges.values()):
+        raise RuntimeError("Goal wall must be one closed connected solid")
+    tree = BVHTree.FromPolygons(vertices, faces, all_triangles=False)
+    for x, y in ((-14., 1.), (-2.1, 1.5), (-2., 5.), (0., 3.1),
+                 (0., 9.5), (2., 5.), (2.1, 1.5), (14., 1.)):
+        if tree.ray_cast(Vector((x, y, 11.5)), Vector((0, 0, 1)), 1.)[0] is None:
+            raise RuntimeError("Goal wall has a gap outside the doorway")
+    for x in (-1.99, 0., 1.99):
+        for y in (.01, 1.5, 2.99):
+            if tree.ray_cast(Vector((x, y, 11.5)), Vector((0, 0, 1)), 1.)[0] is not None:
+                raise RuntimeError("Goal wall blocks its four-by-three-metre doorway")
+
+
 def flange(item, center, axis=(1, 0, 0), radius=.15, group="Body"):
     a = tuple(p - v * .025 for p, v in zip(center, axis))
     b = tuple(p + v * .025 for p, v in zip(center, axis))
@@ -119,7 +176,9 @@ def wear_decal(item, p, width, height, normal, cell):
 def make_shell():
     item = Item("Shell")
     box(item, "Concrete", (0, -.12, 0), (30.6, .24, 24.6), "Floor", collision=True)
-    wall(item, 30.6, (0, 0, 12.15), 0, [interior.Opening(0, 4., 3.)], "GoalWall")
+    goal_wall = goal_wall_geometry()
+    item.add("Concrete", goal_wall, "GoalWall")
+    duplicate_collision(item, goal_wall, "GoalWall")
     wall(item, 30.6, (0, 0, -12.15), 0, [], "LoadingWall")
     for sign in (-1, 1):
         wall(item, 24., (sign * 15.15, 0, 0), 90, [], "SideWall" + str(sign))
@@ -944,6 +1003,9 @@ def manifest(items, checksum):
         "room_door_width": 2.4, "room_door_height": 2.55,
         "room_door_local_direction": "+X", "room_floor_owned_by_deck": True,
         "main_door_size": [4, 3], "gate_size": [4, 3],
+        "goal_wall": {"size": [30.6, 10.2, .30], "door_opening": [4, 3],
+                      "connected_solids": 1, "perimeter_bevel": .012,
+                      "collision_matches_surface": True},
         "goal_visual_only": True, "gate_control_position": [-2.75, 0, 11.5],
         "gate_control_wheel": [0, 1.36, -.335], "gate_control_lock": [.23, 1.015, -.465],
         "emergency_light_anchor": [0, -.10, -.29],

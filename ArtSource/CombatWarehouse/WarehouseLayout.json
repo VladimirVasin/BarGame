@@ -2,9 +2,9 @@
   "schema_version": 1,
   "authority": {
     "source": "Assets/Scripts/Runtime/Combat/WarehouseArenaPlan.cs",
-    "source_sha256": "e0885f0426b330efa3057c55ded7c128ee8b7ae25df95f851c9695e97455e32c",
-    "projection_sha256": "b706f7fa4a7a9ec6c6f36dda2cbe804b62e003e40515dfc6b3f60f3b3cd86448",
-    "unity_version": "6000.6.4f1",
+    "source_sha256": "e1e79f4c72d95979b4e69ee2c3df7fe89f17f6e8ace200eecc39bd679c3b28e4",
+    "projection_sha256": "85e55eb90ac40e7ccff03fdcfb4b0a3b812a3fe0fc822dc48d7869cad8cb44bd",
+    "unity_version": "6000.6.7f1",
     "scope": "placement-only; native lamp rotations, navigation and runtime validation are omitted",
     "omissions": [
       {
@@ -33,7 +33,15 @@
       },
       {
         "anchor": "private static void BuildNavigation(WarehouseArenaPlan plan)",
-        "sha256": "aa898c58a126b76bc5d907fdffc338eca5055c0c0068949c81a8d50a8e798a97"
+        "sha256": "03a3b1da9c6145a32198306cea628b7628c032382e3dc20d78d040d3b38b790d"
+      },
+      {
+        "anchor": "private static void AddRailCornerNodes(",
+        "sha256": "5b9964cbafcf440eaf9e6fb66c8ec852618bebb1cae99226fe20fbca2e76d385"
+      },
+      {
+        "anchor": "private static void AddSupportedNode(",
+        "sha256": "e7d3d4de962763dcf308104a3df2d61d9f6b62278f5de0c43808810543ac1ee2"
       },
       {
         "anchor": "public static class WarehouseArenaValidator",

@@ -168,9 +168,9 @@ neutral/seam/determinism checks; `PlayerKaraokeActionAssetSetup` checks imports.
 test:--simple-strike-only/--actions-only+--kick-only/--recovery-only/--footwork-only;
 --refresh-published-contracts/--reuse-unchanged-actions/--resume-npc-bank file.blend;
 blood:--texture-only;all:--validate-only;gore:hero/NPC body-skull.
-Pistol: `run-blender.py tools/build-combat-pistol-3d-model.py --validate-only -- --normal-pilot-only`;
-`Slide__Steel` normals only;geometry/UV/contacts/action bank kept.
-`build-combat-crane-surfaces.py`:sculpt/2K+1K.
+`build-combat-pistol-3d-model.py`:launcher `--validate-only -- --normal-pilot-only`;
+`Slide__Steel` normals;geometry/UV/contacts/actions kept.
+`build-combat-crane-surfaces.py`:2K+1K.
 `build-combat-{room,imprint,long-exposure}-{3d-model,damage-3d-model}.py`:body/surfaces/damage.
 `build-combat-room-attack-3d-model.py`:clips/tableau.
 `--pointing-only`/`--npc-only`/`--tableau-only`/`--validate-only`;after body rebuild.
@@ -178,8 +178,9 @@ Pistol: `run-blender.py tools/build-combat-pistol-3d-model.py --validate-only --
 `build-combat-{firearm-walk,weapon-carry}-3d-model.py`→`Combat{FirearmWalk,WeaponCarry}`;
 8gaits/1.6m/C2feet/pelvis/200Hz;holster-belt-sling/6draw-stow.
 `build-combat-warehouse-*`/`build-warehouse-*-3d-model.py`:kit/fish/key-chain/glass/locker.
-`python -B tools/warehouse-layout-export/export.py`→kit→maps→shader;
-`--prepare-signs`;`--validate-only`/`--check`;4K+2K/BC7mips<28MiB;world-metrejoins.
+`warehouse-layout-export/export.py`→kit→maps→shader;Mac/Win;
+`--target-framework net8.0`:SDK8(defaultnet10.0).
+`--prepare-signs`/`--validate-only`/`--check`;4K+2K/BC7mips<28MiB/metrejoins.
 `build-player-flashlight-3d-model.py`:clip/lens/metres;
 `CombatFlashlight{AssetSetup,AssetProvider}`;CombatTest Lchest.
 

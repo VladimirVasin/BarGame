@@ -219,8 +219,9 @@ namespace BarPromenade
             if (Layout.IsCorrupted)
             {
                 BuildWarehouseEntrance();
-                Atmosphere.ConfigureLabyrinth(Layout.Labyrinth, World.Root, Player.GameObject.transform, Soundscape);
                 LabyrinthPresentation = World.Root.Find("Stairwell Labyrinth").GetComponent<StairwellLabyrinthPresentation>();
+                Atmosphere.ConfigureLabyrinth(Layout.Labyrinth, World.Root, Player.GameObject.transform, Soundscape,
+                    LabyrinthPresentation.Rooms);
                 LabyrinthPresentation.Initialize(Player, AnimatedInteraction, Atmosphere, Soundscape);
                 LabyrinthPuzzles = LabyrinthPresentation.GetComponent<StairwellLabyrinthPuzzles>();
                 LabyrinthPuzzles.Initialize(Player, AnimatedInteraction, Atmosphere, Soundscape);

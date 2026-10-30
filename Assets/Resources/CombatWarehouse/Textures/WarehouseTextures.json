@@ -7,8 +7,8 @@
   "sheets": [
     {
       "name": "WarehouseMasterAtlas",
-      "sha256": "84f66ec1cb75c59d6ee16cf556e9e31468b9e89ef0bcb4ca2fa6e7520a3b103c",
-      "source_sha256": "f00f6bac5d1a362506677ae1e9bff913df0e2015ffb1fef61570ec5c602ff0bf",
+      "sha256": "60e13e70277d9205236024b7d1fdcb018b7809f53737084ffa6cdda2083979da",
+      "source_sha256": "bd7d082a5abf7ca46e471ecae8fa1c65d2d4d5d854d893fda55c34a3e0da24c7",
       "size": 4096,
       "mode": "RGB",
       "sRGB": true,
@@ -22,8 +22,8 @@
     },
     {
       "name": "WarehouseMaterialResponse",
-      "sha256": "da709c591da03ddd7408224da50c8921fb7d632fc2298cdf43fb7cc9371a7cef",
-      "source_sha256": "8938e8a1ef75ff3ec0674d4d3fba1c107ae8c5c96f77a3898783718d6a9da7e8",
+      "sha256": "e8c0d08b37f4b28fca937bbfebf1a26d4a53fa50f080c49c051741fc8ce2b63f",
+      "source_sha256": "7c8cad316e67c16dc0a8a31b701915386da3650448c62c73aea9342025bae408",
       "size": 2048,
       "mode": "RGBA",
       "sRGB": false,

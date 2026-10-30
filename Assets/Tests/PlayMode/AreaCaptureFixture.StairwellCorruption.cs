@@ -238,8 +238,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(stairwell.Atmosphere.ActiveLabyrinthLightCount, Is.EqualTo(2));
                 Assert.That(stairwell.Atmosphere.ActiveLabyrinthShadowCount, Is.EqualTo(2));
                 Assert.That(stairwell.Atmosphere.LabyrinthLights[3].enabled, Is.True);
-                Assert.That(stairwell.Atmosphere.LabyrinthLights[4].enabled, Is.True,
-                    "The next lamp must switch on before the hero reaches its pool.");
+                Assert.That(stairwell.Atmosphere.ActivePuzzleGuideStage, Is.EqualTo(1),
+                    "The next unsolved room keeps one source within the existing two-light budget.");
                 var powered = new bool[stairwell.Atmosphere.LabyrinthLights.Length];
                 float farthest = 0f;
                 for (int index = 0; index < powered.Length; index++)
@@ -249,7 +249,7 @@ namespace BarPromenade.Tests.PlayMode
                     if (!lamp.enabled) continue;
                     Assert.That(lamp.shadows, Is.EqualTo(LightShadows.Hard));
                     float distance = Vector3.Distance(lamp.transform.position, stairwell.Player.GameObject.transform.position);
-                    Assert.That(distance, Is.LessThanOrEqualTo(StairwellInteriorAtmosphere.LabyrinthActivationRadius));
+                    Assert.That(distance, Is.LessThanOrEqualTo(StairwellInteriorAtmosphere.LabyrinthDeactivationRadius));
                     farthest = Mathf.Max(farthest, distance);
                 }
                 Assert.That(farthest, Is.GreaterThan(10f), "A second lamp must already light the distant part of the landing.");
@@ -259,6 +259,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return new WaitForSecondsRealtime(.15f);
                 for (int index = 0; index < powered.Length; index++)
                     Assert.That(stairwell.Atmosphere.LabyrinthLights[index].enabled, Is.EqualTo(powered[index]));
+                yield return VerifyPuzzleRoomEntranceGuides(stairwell);
                 yield return VerifyDepartedLabyrinthRoomDarkness(stairwell);
                 yield return WalkStairwellWaypoint(stairwell, route[observation]);
                 for (int step = observation - 1; step >= 0; step--) yield return WalkStairwellWaypoint(stairwell, route[step]);
@@ -275,6 +276,96 @@ namespace BarPromenade.Tests.PlayMode
                 GameInput.HandleApplicationFocus(previousFocus);
                 GameSessionState.BeginNewGame();
             }
+        }
+
+        private static IEnumerator VerifyPuzzleRoomEntranceGuides(StairwellInteriorRoot stairwell)
+        {
+            var atmosphere = stairwell.Atmosphere;
+            var state = GameSessionState.StairwellLabyrinthPuzzles;
+            Vector3 rest = stairwell.Player.GameObject.transform.position;
+            Transform space = stairwell.World.Root;
+            Camera camera = stairwell.CameraFollow.Camera;
+            Pose restCamera = new Pose(camera.transform.position, camera.transform.rotation);
+            float restFov = camera.fieldOfView;
+            bool halation = GraphicsEffectsSettings.CleanHalationEnabled;
+            bool post = camera.GetUniversalAdditionalCameraData().renderPostProcessing;
+            var actions = new[] {
+                new[] { StairwellLabyrinthPuzzleAction.Roll0, StairwellLabyrinthPuzzleAction.Roll0,
+                    StairwellLabyrinthPuzzleAction.Roll1, StairwellLabyrinthPuzzleAction.Roll2,
+                    StairwellLabyrinthPuzzleAction.Roll2, StairwellLabyrinthPuzzleAction.ClothBolt },
+                new[] { StairwellLabyrinthPuzzleAction.Shutter, StairwellLabyrinthPuzzleAction.ShutterStop,
+                    StairwellLabyrinthPuzzleAction.WeightSwitch, StairwellLabyrinthPuzzleAction.CarriageSend },
+                new[] { StairwellLabyrinthPuzzleAction.Bird0, StairwellLabyrinthPuzzleAction.Bird0,
+                    StairwellLabyrinthPuzzleAction.Bird1, StairwellLabyrinthPuzzleAction.Bird2,
+                    StairwellLabyrinthPuzzleAction.Bird2, StairwellLabyrinthPuzzleAction.BirdLift }
+            };
+            using (stairwell.CameraFollow.SuspendPresentation())
+            using (stairwell.Player.PresentationVisibility.AcquireHidden(new object()))
+            {
+                try
+                {
+                    for (int index = 0; index < stairwell.LabyrinthPresentation.Rooms.Count; index++)
+                    {
+                        var room = stairwell.LabyrinthPresentation.Rooms[index];
+                        Vector3 stand = room.DoorCenter + room.Outward * 3f;
+                        stand.y = room.OutsideDock.y;
+                        stairwell.Player.Motor.Teleport(space.TransformPoint(stand));
+                        yield return new WaitForSecondsRealtime(.15f);
+                        Assert.That(stairwell.LabyrinthPresentation.Doors[index].IsClosed, Is.True);
+                        Assert.That(atmosphere.ActivePuzzleGuideStage, Is.EqualTo(room.Stage));
+                        Assert.That(atmosphere.ActiveLabyrinthLightCount, Is.LessThanOrEqualTo(2));
+                        Assert.That(atmosphere.ActiveLabyrinthShadowCount, Is.EqualTo(atmosphere.ActiveLabyrinthLightCount));
+                        int guideStart = stairwell.Layout.Labyrinth.LightDescriptors.Count;
+                        for (int other = 0; other < 3; other++)
+                            Assert.That(atmosphere.LabyrinthLights[guideStart + other].enabled, Is.EqualTo(other == index));
+                        camera.transform.SetPositionAndRotation(space.TransformPoint(stand + Vector3.up * 1.65f),
+                            Quaternion.LookRotation(space.TransformPoint(room.DoorCenter) -
+                                space.TransformPoint(stand + Vector3.up * 1.65f)));
+                        camera.fieldOfView = 60f;
+                        CaptureCurrentCamera(camera, SceneIds.StairwellInterior, "puzzle-room-" + room.Stage + "-entrance-guide");
+                        GraphicsEffectsSettings.CleanHalationEnabled = false;
+                        camera.GetUniversalAdditionalCameraData().renderPostProcessing = false;
+                        CaptureCurrentCamera(camera, SceneIds.StairwellInterior, "puzzle-room-" + room.Stage + "-guide-without-post");
+                        GraphicsEffectsSettings.CleanHalationEnabled = halation;
+                        camera.GetUniversalAdditionalCameraData().renderPostProcessing = post;
+                        using (GameTimeScaleRuntime.AcquirePause())
+                        {
+                            yield return new WaitForSecondsRealtime(.15f);
+                            Assert.That(atmosphere.ActivePuzzleGuideStage, Is.EqualTo(room.Stage));
+                        }
+                        if (index == 0)
+                        {
+                            atmosphere.enabled = false;
+                            Assert.That(atmosphere.ActivePuzzleGuideStage, Is.Zero);
+                            Assert.That(atmosphere.ActiveLabyrinthLightCount, Is.Zero);
+                            atmosphere.enabled = true;
+                            yield return new WaitForSecondsRealtime(.15f);
+                            Assert.That(atmosphere.ActivePuzzleGuideStage, Is.EqualTo(1));
+                        }
+                        foreach (var action in actions[index]) Assert.That(state.TryApply(action), Is.True);
+                        yield return new WaitForSecondsRealtime(.15f);
+                        Assert.That(atmosphere.ActivePuzzleGuideStage, Is.Zero, "The solved room must lose its guidance source.");
+                        Assert.That(atmosphere.LabyrinthLights[guideStart + index].enabled, Is.False);
+                    }
+                    Assert.That(state.AllSolved, Is.True);
+                }
+                finally
+                {
+                    GraphicsEffectsSettings.CleanHalationEnabled = halation;
+                    camera.GetUniversalAdditionalCameraData().renderPostProcessing = post;
+                    camera.transform.SetPositionAndRotation(restCamera.position, restCamera.rotation);
+                    camera.fieldOfView = restFov;
+                    state.Reset();
+                    var first = stairwell.LabyrinthPresentation.Rooms[0];
+                    Vector3 resetStand = first.DoorCenter + first.Outward * 3f;
+                    resetStand.y = first.OutsideDock.y;
+                    stairwell.Player.Motor.Teleport(space.TransformPoint(resetStand));
+                }
+            }
+            yield return new WaitForSecondsRealtime(.15f);
+            Assert.That(atmosphere.ActivePuzzleGuideStage, Is.EqualTo(1), "Reset restores the first room guide.");
+            stairwell.Player.Motor.Teleport(rest);
+            yield return new WaitForSecondsRealtime(.15f);
         }
 
         private static Shot[] CorruptedStairwellShots(StairwellInteriorRoot stairwell)
@@ -318,7 +409,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(stairwell.Atmosphere.UpperGlow, Is.Not.Null);
             Assert.That(stairwell.Atmosphere.UpperGlow.isActiveAndEnabled, Is.False);
             Assert.That(stairwell.Atmosphere.LabyrinthLights,
-                Has.Length.EqualTo(stairwell.Layout.Labyrinth.LightPositions.Count));
+                Has.Length.EqualTo(stairwell.Layout.Labyrinth.LightPositions.Count + 3));
             Assert.That(stairwell.Atmosphere.ActiveLabyrinthLightCount, Is.LessThanOrEqualTo(8));
             Assert.That(stairwell.Atmosphere.ActiveLabyrinthShadowCount, Is.LessThanOrEqualTo(2));
             StairwellLabyrinthPresentation presentation = RequireLabyrinthPresentation(stairwell);

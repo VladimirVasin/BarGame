@@ -77,6 +77,10 @@ namespace BarPromenade
             InsideDock = StairwellLabyrinthManifest.Vector(door.inside_dock);
             InteriorPoint = StairwellLabyrinthManifest.Vector(door.interior_point);
             PassagePoint = StairwellLabyrinthManifest.Vector(door.passage_point);
+            Quaternion rotation = Quaternion.Euler(0f, door.yaw, 0f);
+            DoorCenter = StairwellLabyrinthManifest.Vector(door.hinge) +
+                rotation * StairwellLabyrinthManifest.Vector(door.leaf_center);
+            Outward = rotation * Vector3.back;
         }
         public int Stage { get; }
         public string BranchId { get; }
@@ -84,6 +88,8 @@ namespace BarPromenade
         public Vector3 InsideDock { get; }
         public Vector3 InteriorPoint { get; }
         public Vector3 PassagePoint { get; }
+        public Vector3 DoorCenter { get; }
+        public Vector3 Outward { get; }
     }
 
     /// <summary>Three real local doors and a finite set of authored, non-traversable mechanisms.</summary>

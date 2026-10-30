@@ -1,25 +1,44 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-31 — labyrinth room light, user:**
+  3×EmergencyRoomLamp/stage palette;outside→next unsolved door/
+  samefloor22/24m/1of2Hard slots;inside room light stays;solve→next/after3none.
+  All24:GI/SSAO/fog/volume/shadows/grade stay;SSGI/SCGI/SSR0;probes/water/wetness/
+  bevels/COLOR/wind/decals/dust/rim/outlines stay;eight post owners/settings
+  stay,optionaloff:readable. Shared material/pass;text-input-lore+0;
+  pause/reset/disable/cleanup;cost unmeasured;story§16/21/art§16/nine checks.
+
+- **Accepted 2026-10-31 — warehouse goal light, user:**
+  GoalWall:closed U-profile, `30.6×10.2×.30 m`/sole `4×3 m` opening;
+  Blender/COL share shape. Shared worn Concrete/metre UVs; door/gate/valve
+  contacts stay. Red lamp:`24`, `6 m`, `155/140°`→door/valve;
+  soft dips stay≥`.45`. Door ambush owns absolute `36` with `.85` floor.
+  All24:GI/SSAO/fog/volume/shadows/grade keep blackout;SSGI/SCGI0.
+  probes/SSR, water, wetness, bevels, COLOR, wind, decals, dust, rim and
+  outlines retain scope. Bloom/DOF/SMAA/vignette/grain-dither/flares/blur/lens
+  keep settings; optional FX off:readable.
+  Light/pass/material-clone/lore/text/input+0; caches/pause/reset/
+  reconstruction/cleanup stay;cost unmeasured. Story§16/21/art§16/nine checks;
+  no forbidden detail/§6 waiver.
+
 - **Accepted architecture exception 2026-10-30 — myth puzzles/presence light:**
-  Home painting:Philomela/Procne/Tereus→weave,shutter-stop-weight delivery,
+  Home painting:Philomela/Procne/Tereus→weave/shutter-stop-weight delivery/
   shadow-read birds;shared positioned rig/grips/RU. Enclosed/guarded domestic→
-  shaft→machines/branches/loops;normal gravity/third-person traversal/fixed below.
-  Three gates/reversible attempts/monotonic solutions/New Game reset→Single-load
-  warehouse/session/fish/key/ambush/retry. Anonymous/silent;no hero/woman/crime
-  clue/voice/apparition/loss/timer. Statue/initial light stays;first flight→two
-  shadowed lamps on22m/off24m,same-floor/room;power→lens/hum/contactor;return
-  restores. Black beyond;Blender lower stairs/supports/cables vanish before
-  finite ends/floor unseen. Bounded lights/shadows/caches/pause/cleanup.
+  shaft→machines/branches/loops;normalgravity/thirdperson/fixed below.
+  Three gates/reversible attempts/monotonic solutions/NewGame reset→Single-load
+  warehouse/session/fish/key/ambush/retry. Anonymous/silent;hero/woman/crime clue/
+  voice/apparition/loss/timer0. Statue/initial light stay;flight1→two Hard lamps
+  on22m/off24m/samefloor-room;power→lens/hum/contactor;return restores.
+  Black beyond;Blender lower stairs/supports/cables vanish before finite ends/
+  unseen floor. Bounded lights/shadows/caches/pause/cleanup.
 
 - **Accepted exception 2026-10-30 — puzzle mode/chest lamp:**
-  User visibility exception:E→FP/whole hero hidden;←→/E/Q;scoped lease.
-  rig/grips live;exit/cancel restore exact state;no alternate geometry.
-  Solved1→cabinet→shared take1x→ChestFlashlight/equip/session/reset;
-  story grant0/debug kit kept.
-  PlayerFactory:event/lazy;warehouse-only ambient. All24:
-  outline/lamp+spill;bird shadows/black retained.
-  No new GI/SSGI/SCGI/SSR/volume/water/rim/flare/blur/fog/post;
+  User:E→FP/wholehero hidden/←→/E/Q;scoped lease/rig-grips live;
+  exit-cancel restores exact state/alternategeometry0. Solved1→cabinet/shared
+  take1x→ChestFlashlight/equip/session/reset;storygrant0/debugkit kept.
+  PlayerFactory:event/lazy/warehouse-only ambient. All24:outline/lamp-spill/
+  birdshadows-black retained;GI/SSGI/SCGI/SSR/volume/water/rim/flare/blur/fog/post+0;
   cost unmeasured;§6/16/21/art9.
 
 - **Accepted exception 2026-10-30 — Home ceiling, stove wall and room shots:**
@@ -93,16 +112,15 @@
   X1.55; apartment bounce lights stone. Ordinary mode stays; upper:labyrinth.
 
 - **Accepted architecture exception 2026-10-30 — stone Cat-head inspection:**
-  User: static stone Cat head in descent wall; ears/muzzle/carved grin, buried rear;
-  no body/neck/plinth/blood, living/second Cat, transformation/story grin.
-  No live Cat here; ordinary feeding/quest state stay; no food/grant.
-  Narrative/ObjectCloseUp: silent cancellable E «Осмотреть»; no lore/pages/speech/reward.
-  User: instant wide↔close `NarrativeCameraTransition.Cut`, camera/DOF together;
-  default Blend. User: model/contact-shadow hidden only in close-up:
-  shared `PlayerPresentationVisibility` lease hides on Cut and restores same-frame
-  on exit/cancel/disable/failed framing. Collider/rig/original approach stay;
-  no teleport/alignment masking. All24 owners stay; no SSR/SSGI history/new effect.
-  Story§6/§16/§21/nine checks; shared passive assets.
+  Static stone Cat head/descent wall/ears-muzzle-carvedgrin/buried rear;
+  body/neck/plinth/blood/live-secondCat/transformation/storygrin0.
+  Feeding/quest stay;food/grant0. Narrative/ObjectCloseUp:silent
+  cancel E «Осмотреть»/lore-pages-speech-reward0. User:wide↔close instant
+  `NarrativeCameraTransition.Cut`/camera+DOF;defaultBlend. Close only:model/contact
+  shadow:`PlayerPresentationVisibility` lease hides on Cut;same-frame restore
+  exit/cancel/disable/failedframing. Collider/rig/originalapproach stay;
+  teleport/alignmentmask0. All24 shared/SSR-SSGIhistory-newFX0;
+  story§6/16/21/nine checks/shared passive assets.
 
 - **Accepted 2026-10-29 — decay hair and clothing wear:**
   User: cropped first hair grows long/unkempt at maximum, replacing fixed medium
@@ -854,51 +872,40 @@
   Dormancy releases capture resources/bindings; return restores scene ownership.
   The same-scene lodge retains its profile; separate `MothersHouseInterior`
   keeps its own presentation. Local effect costs remain unmeasured.
-- **Accepted exception 2026-10-20, native-only presentation — explicit user decision:**
-  Art §4/§15a; story §6. The scene uses its native source resolution only;
-  style/low-resolution selection, colour quantization, output dither, scanlines
-  and vertex snapping are removed. Saved `graphics.clean_aa` SMAA High defaults
-  on; nine flags stay independent, 4:3 optional, retired keys ignored.
-  Three RenderGraph SMAA passes follow native/intoxication; bars follow AA,
-  then UI/nameplates. Preview/reflection exclusions stay.
-  Shared lighting/fog/SSAO/bloom/DoF/intoxication/4:3/gameplay stay.
-  Clean warehouse enhancements are independently saved/default-on:
+- **Accepted exception 2026-10-20, native-only presentation — user:**
+  Art§4/§15a;story§6.Native only;style/low-res/quantization/output dither/
+  scanlines/vertex snapping removed. Saved
+  `graphics.clean_aa`:SMAA High/default-on; nine independent flags/optional4:3,
+  retired keys ignored. Three RenderGraph SMAA passes:native/intoxication→AA→
+  bars→UI/nameplates. Preview/reflection exclusions and shared lighting/
+  fog/SSAO/bloom/DoF/intoxication/4:3/gameplay stay. Saved/default-on:
   `graphics.clean_reflections`, `graphics.clean_volume`, `graphics.clean_halation`,
   `graphics.clean_directional_highlights`, `graphics.clean_bounce`.
-  One reused prefiltered 256 cube uses a capture-only probe: zero intensity/tiny
-  influence avoid automatic lighting. A ref-counted quality lease enables realtime
-  probes only during capture/convolution, restores the flag on completion/cleanup.
-  Watchdog starts after RenderProbe returns: ten seconds/at least sixteen frames,
-  capped at thirty seconds for sparse frames; completion polled first. Expiry
-  destroys the stalled probe/clears result-gain/releases lease. Two attempts per
-  source generation; new state or setting re-enable rearms. CPU submit/poll and wall
-  latency stay separate; no permanent global probe enablement.
-  WornSteel receives directional highlights; bounce uses two validated floor
-  patches after ambient fade. Its visibility rays use authored physics colliders;
-  decorative rotor/motor meshes have none, so bounce does not promise their exact
-  occlusion. Direct light and the fan volume use the real shadow maps.
-  Source-masked halation follows native/intoxication before SMAA: at most 24
-  sources projected once/camera on CPU with actual GPU projection/target Y;
-  blur/HDR-headroom composite stay. Fan volume: at most 320x180 RGBA16F,
-  twelve steps/density `.0035`, real URP shadow atlas. Full-volume strata/depth-clipped
-  segments retain quadrature; exactly zero optical depth skips light/shadow fetches.
-  Padded projected bounds skip unsupported regions; near crossings use full screen.
-  Resolve adds RGB to existing ReadWrite colour, preserves alpha, no full-res copy;
-  diagnostics separate. Fan shadow slice remains fully allocated at 1024 pixels.
-  `GameCamera_NativeEffectsAndWarehouseLightingRemainStable`
-  verifies the optimized path, source/exclusion gates, probe timeout/lease-release/
-  recovery and idle-liquid regression. No CS0618 or C#/shader errors remain.
-  Upscale tries four depth-compatible taps and a bounded twelve-site neighbour ring. With
-  no safe prefix, that unsupported native pixel integrates an exact ray: up to
-  twelve extra shadow samples there. This rare fallback adds no target, pass
-  or history; its worst-case native-pixel cost remains part of the renderer.
-  Thin-feature shadow aliasing can remain.
-  Explicit art exception: this local lit beam/glow is allowed; global fog stays,
-  no new physical Light, world geometry, story or gameplay. Excluded cameras
-  retain exclusions through `ScenePresentationExclusion`.
-  Shared passes/retained targets, no world copies. Focused, unpaused Editor combat
-  frame/GPU timings are measured with verified camera content. Static differences
-  are noisy: no isolated effect-cost claim, player frame-rate or target-FPS guarantee.
+  Reused filtered256 cube/capture-only probe: intensity0/tiny influence.
+  Ref-counted realtime-probe quality lease only during capture/convolution;
+  restores on completion/cleanup. After RenderProbe: watchdog10s/≥16frames,
+  sparse-frame cap30s/poll completion first. Expiry:destroy stalled probe/
+  clear result-gain/release lease. Two attempts/source generation;new state/
+  re-enable rearms. CPU submit/poll≠wall latency/global flag temporary.
+  WornSteel directional highlights; two validated floor bounce patches follow
+  ambient fade. Occlusion uses authored colliders: decorative rotor/motor have
+  none; direct/fan-volume shadows use real maps. Halation: native/intoxication→
+  source mask→blur/HDR-headroom composite→SMAA;≤24sources projected once/camera
+  on CPU with actual GPU projection/targetY. Fan volume≤320×180 RGBA16F,
+  12steps/density`.0035`/URP shadow atlas; full strata/depth-clipped quadrature,
+  zero optical depth skips light/shadow reads. Padded projected bounds skip
+  unsupported regions; near crossings fullscreen. Resolve adds RGB to existing
+  ReadWrite colour/preserves alpha/no full-res copy; separate diagnostics.
+  Fan shadow slice stays1024. Upscale:4depth-compatible taps/12-site neighbour
+  ring; no safe prefix→exact native ray/≤12extra shadow reads, no extra target/
+  pass/history. Worst-case native-pixel cost and thin-feature aliasing remain.
+  `GameCamera_NativeEffectsAndWarehouseLightingRemainStable`:optimized path,
+  source/exclusion gates, probe timeout/lease release/recovery, idle liquid;
+  CS0618/C#-shader errors0. Local beam/glow exception;global
+  fog stays; no new Light/geometry/story/gameplay. `ScenePresentationExclusion`
+  retains excluded cameras; shared passes/targets/no world copies. Verified
+  unpaused Editor combat frame/GPU samples; noisy static differences prove no
+  isolated effect cost, player frame-rate or target-FPS guarantee.
 - **Accepted 2026-10-19, scene cinematography:** FOV, Dutch angles and horizon
   rolls follow action;review framing/contacts.
 - **Accepted exception 2026-10-19, warehouse door ambush:**
@@ -5634,16 +5641,14 @@
   with no roll, his weight stays on the bed until the first boot leaves it, so
   every sample of it is asserted, and the leg order is stated as its own
   measurement rather than left to survive by accident.
-- **Accepted — Separate vertical home stairwell:** Ordinary `StairwellInterior`
-  connects exterior/apartment doors in8.6×9.6×6.25m, street/middle/apartment
-  elevations. Three physical ramps/48 collider-free steps and radius-safe
-  overlapping corridors preserve real `PlayerMotor` seams/silhouette. Visible
-  furniture/mesh/planks/sacks back a full standing-height upper safety blocker.
-  Side-aware arrivals keep door docks; only street exit sets City home-return.
-  Three fixed shots retain vertical hysteresis where flights overlap in XZ,
-  exposed suspended HDR tubes/halos, co-located flickering practicals, original
-  post-processing/bounded dust/ventilation/electrical/pipe audio and optional
-  `stairwell_theme`. Post-sleep mode is the separate accepted exception above.
+- **Accepted — Separate vertical home stairwell:** `StairwellInterior`:
+  exterior↔apartment/8.6×9.6×6.25m/street-middle-apartment;
+  3ramps/48noncollider steps/radius-safe corridors overlap→`PlayerMotor`seams/
+  silhouette. Furniture/mesh/planks/sacks back standing-height upper blocker;
+  side-aware arrivals/docks;street exit→City home-return only. 3fixedshots/
+  vertical hysteresis-XZ overlaps;exposed suspended HDR tubes/halos/co-located
+  flicker/originalpost/bounded dust/ventilation-electrical-pipe audio/optional
+  `stairwell_theme`;post-sleep exception above.
 - **Accepted — Perched interactive stairwell cat (3D Cheshire trickster):**
   Ordinary mode: one near-black 3D Cat on `Middle Landing Back Rail`, origin
   `MiddleElevation + 1.16`; separate walkable interaction point/nonblocking perch.

@@ -63,6 +63,7 @@ namespace BarPromenade
         private MaterialPropertyBlock hazeProperties;
         private Transform labyrinthTarget, labyrinthSpace;
         private StairwellLabyrinthPlan labyrinthPlan;
+        private IReadOnlyList<StairwellLabyrinthRoom> puzzleRooms;
         private Renderer[] labyrinthLenses, lowerEmitters;
         private Color[] labyrinthEmission;
         private bool[] labyrinthRoomLamps;
@@ -88,6 +89,7 @@ namespace BarPromenade
         public int ActiveLabyrinthShadowCount { get; private set; }
         public int ActiveLabyrinthLightIndex => activeLabyrinthLight;
         public bool IsLabyrinthDarkness => labyrinthDarkness;
+        public int ActivePuzzleGuideStage { get; private set; }
         private static readonly int HazePlaneId = Shader.PropertyToID("_SurfaceHazePlane");
         private static readonly int HazeColorId = Shader.PropertyToID("_SurfaceHazeColor");
 
@@ -103,20 +105,22 @@ namespace BarPromenade
         public CityLightHalo UpperGlowHalo { get; private set; }
 
         public void ConfigureLabyrinth(StairwellLabyrinthPlan route, Transform space, Transform hero,
-            StairwellSoundscape soundscape)
+            StairwellSoundscape soundscape, IReadOnlyList<StairwellLabyrinthRoom> rooms)
         {
+            if (rooms == null || rooms.Count != 3) throw new ArgumentException("Three puzzle rooms are required.", nameof(rooms));
             labyrinthPlan = route;
+            puzzleRooms = rooms;
             labyrinthSpace = space;
             labyrinthTarget = hero;
             labyrinthSoundscape = soundscape;
             // The former luminous dead end now contains an actual route.
             if (UpperGlow != null) UpperGlow.gameObject.SetActive(false);
-            LabyrinthLights = new Light[route.LightPositions.Count];
+            LabyrinthLights = new Light[route.LightPositions.Count + rooms.Count];
             labyrinthLenses = new Renderer[LabyrinthLights.Length];
             labyrinthEmission = new Color[LabyrinthLights.Length];
             labyrinthRoomLamps = new bool[LabyrinthLights.Length];
             lampProperties = new MaterialPropertyBlock();
-            for (int i = 0; i < LabyrinthLights.Length; i++)
+            for (int i = 0; i < route.LightDescriptors.Count; i++)
             {
                 StairwellLabyrinthLightPlan fixture = route.LightDescriptors[i];
                 foreach (var support in route.Supports)
@@ -155,6 +159,7 @@ namespace BarPromenade
                 light.enabled = false;
                 LabyrinthLights[i] = light;
             }
+            CreatePuzzleGuides(space);
             CacheFixturePresentation(space);
             soundscape.PrepareLabyrinthLighting();
             // The warehouse uses this same ventilation synthesis. A fixed source
@@ -164,6 +169,42 @@ namespace BarPromenade
             ventilation.maxDistance = 52f;
             ventilation.pitch = .7f;
             UpdateLabyrinth();
+        }
+
+        private void CreatePuzzleGuides(Transform space)
+        {
+            for (int roomIndex = 0; roomIndex < puzzleRooms.Count; roomIndex++)
+            {
+                StairwellLabyrinthRoom room = puzzleRooms[roomIndex];
+                int index = labyrinthPlan.LightDescriptors.Count + roomIndex;
+                Color tint = room.Stage == 1 ? new Color(.54f, .72f, .61f) :
+                    room.Stage == 2 ? new Color(.83f, .70f, .44f) : new Color(.80f, .28f, .13f);
+                // The imported caged fixture sits on the outside lintel. Its real
+                // anchor lights the closed leaf, unlike the lamp inside the room.
+                Vector3 position = room.DoorCenter + room.Outward * .14f + Vector3.up * 1.45f;
+                GameObject fixture = WarehouseArenaAssetProvider.Create("EmergencyRoomLamp", space, position,
+                    Quaternion.LookRotation(-room.Outward, Vector3.up));
+                fixture.name = "Puzzle Room " + room.Stage + " Entrance Lamp";
+                Transform anchor = WarehouseArenaAssetProvider.FindAnchor(fixture, "Light");
+                Vector3 focus = space.TransformPoint(room.DoorCenter + room.Outward * .04f);
+                var plan = new WarehouseArenaLamp(Vector3.zero, focus - anchor.position, 5f, 24f,
+                    color: tint, outerAngle: 140f, innerAngle: 100f);
+                Light light = WarehouseArenaLighting.CreatePractical(plan, anchor, fixture.transform);
+                light.name = "Puzzle Room " + room.Stage + " Entrance Light";
+                light.shadowBias = .015f;
+                light.shadowNormalBias = .04f;
+                light.bounceIntensity = 0f;
+                light.enabled = false;
+                LabyrinthLights[index] = light;
+                foreach (Renderer renderer in fixture.GetComponentsInChildren<Renderer>())
+                    if (renderer.name.EndsWith("__SignalRed", StringComparison.Ordinal)) labyrinthLenses[index] = renderer;
+                if (labyrinthLenses[index] == null) throw new InvalidOperationException("Puzzle entrance lamp lacks its lens.");
+                labyrinthEmission[index] = tint * 2f;
+                labyrinthLenses[index].GetPropertyBlock(lampProperties);
+                lampProperties.SetColor("_BaseColor", tint * .5f);
+                labyrinthLenses[index].SetPropertyBlock(lampProperties);
+                SetLens(index, false);
+            }
         }
 
         private void Update()
@@ -296,6 +337,8 @@ namespace BarPromenade
 
         private void UpdateLabyrinthLights(Vector3 local, bool inside)
         {
+            int guide = -1;
+            ActivePuzzleGuideStage = 0;
             for (int slot = 0; slot < nearbyLabyrinthLights.Length; slot++)
             {
                 nearbyLabyrinthLights[slot] = -1;
@@ -327,6 +370,15 @@ namespace BarPromenade
                     var support = labyrinthPlan.Supports[supportIndex];
                     bool room = support.Id.StartsWith("room-", StringComparison.Ordinal) &&
                         !support.Id.EndsWith("-approach", StringComparison.Ordinal);
+                    int nextStage = GameSessionState.StairwellLabyrinthPuzzles.SolvedStages + 1;
+                    if (!room && nextStage <= puzzleRooms.Count && support.Stage == nextStage)
+                    {
+                        int candidate = labyrinthPlan.LightDescriptors.Count + nextStage - 1;
+                        float radius = LabyrinthLights[candidate].enabled ? LabyrinthDeactivationRadius : LabyrinthActivationRadius;
+                        if ((LabyrinthLights[candidate].transform.position - labyrinthTarget.position).sqrMagnitude <= radius * radius)
+                            guide = candidate;
+                    }
+                    int ordinarySlots = nearbyLabyrinthLights.Length - (guide >= 0 ? 1 : 0);
                     for (int i = 0; i < labyrinthPlan.LightDescriptors.Count; i++)
                     {
                         var fixture = labyrinthPlan.LightDescriptors[i];
@@ -338,10 +390,10 @@ namespace BarPromenade
                         float radius = LabyrinthLights[i].enabled ? LabyrinthDeactivationRadius : LabyrinthActivationRadius;
                         if (distance > radius * radius) continue;
                         float score = distance - (LabyrinthLights[i].enabled ? 4f : 0f);
-                        for (int slot = 0; slot < nearbyLabyrinthLights.Length; slot++)
+                        for (int slot = 0; slot < ordinarySlots; slot++)
                         {
                             if (score >= nearbyLabyrinthScores[slot]) continue;
-                            for (int next = nearbyLabyrinthLights.Length - 1; next > slot; next--)
+                            for (int next = ordinarySlots - 1; next > slot; next--)
                             {
                                 nearbyLabyrinthLights[next] = nearbyLabyrinthLights[next - 1];
                                 nearbyLabyrinthScores[next] = nearbyLabyrinthScores[next - 1];
@@ -352,6 +404,17 @@ namespace BarPromenade
                         }
                     }
                 }
+            }
+            if (guide >= 0)
+            {
+                nearbyLabyrinthLights[1] = guide;
+                float distance = (LabyrinthLights[guide].transform.position - labyrinthTarget.position).sqrMagnitude;
+                if (distance < nearbyLabyrinthScores[0])
+                {
+                    nearbyLabyrinthLights[1] = nearbyLabyrinthLights[0];
+                    nearbyLabyrinthLights[0] = guide;
+                }
+                ActivePuzzleGuideStage = guide - labyrinthPlan.LightDescriptors.Count + 1;
             }
             int selected = nearbyLabyrinthLights[0];
             int switchedOn = -1, switchedOff = -1;
@@ -598,6 +661,7 @@ namespace BarPromenade
             foreach (CityLightHalo halo in lowerHalos) if (halo != null) halo.HaloRenderer.enabled = false;
             if (labyrinthSoundscape != null) labyrinthSoundscape.SetLabyrinthLighting(true, null, false);
             ActiveLabyrinthLightCount = ActiveLabyrinthShadowCount = 0;
+            ActivePuzzleGuideStage = 0;
         }
 
         private void CreateUpperGlow()

@@ -88,7 +88,9 @@ def project_source(text):
         once(text, call)
         omissions.append({"anchor": call, "sha256": digest(call)})
         text = text.replace(call, "// Omitted by placement-only exporter.")
-    omit_block("private static void BuildNavigation(WarehouseArenaPlan plan)", "aa898c58a126b76bc5d907fdffc338eca5055c0c0068949c81a8d50a8e798a97")
+    omit_block("private static void BuildNavigation(WarehouseArenaPlan plan)", "03a3b1da9c6145a32198306cea628b7628c032382e3dc20d78d040d3b38b790d")
+    omit_block("private static void AddRailCornerNodes(", "5b9964cbafcf440eaf9e6fb66c8ec852618bebb1cae99226fe20fbca2e76d385")
+    omit_block("private static void AddSupportedNode(", "e7d3d4de962763dcf308104a3df2d61d9f6b62278f5de0c43808810543ac1ee2")
     omit_block("public static class WarehouseArenaValidator", "852a2832b88dc8cd8f7a292600d43696ab03faaa3ab6ee8199dd4bade8b7c06b")
     return text, omissions
 
@@ -96,13 +98,16 @@ def project_source(text):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--unity-editor", type=Path, help="Pinned Unity executable; editor is never started")
+    parser.add_argument("--target-framework", default="net10.0",
+                        help="Installed .NET target for the placement-only helper (for example net8.0)")
     parser.add_argument("--output", type=Path, default=ROOT / "ArtSource/CombatWarehouse/WarehouseLayout.json")
     args = parser.parse_args()
 
     version_text = (ROOT / "ProjectSettings/ProjectVersion.txt").read_text(encoding="utf-8")
     version = re.search(r"^m_EditorVersion: (\S+)", version_text, re.MULTILINE).group(1)
     unity = args.unity_editor or Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "Unity/Hub/Editor" / version / "Editor/Unity.exe"
-    managed = unity.parent / "Data/Managed/UnityEngine"
+    managed = (unity.parent.parent / "Resources/Scripting/Managed/UnityEngine"
+               if sys.platform == "darwin" else unity.parent / "Data/Managed/UnityEngine")
     if not (managed / "UnityEngine.CoreModule.dll").is_file():
         raise RuntimeError(f"Pinned Unity {version} managed DLL not found: {managed}")
 
@@ -121,9 +126,12 @@ def main():
         "omissions": omissions,
     }, indent=2) + "\n", encoding="utf-8", newline="\n")
     command = ["dotnet", "run", "--project", str(Path(__file__).with_name("WarehouseLayoutExport.csproj")),
-               "--configuration", "Release", f"-p:UnityManagedDir={managed}",
+               "--configuration", "Release", "--framework", args.target_framework,
+               f"-p:UnityManagedDir={managed}",
+               f"-p:TargetFramework={args.target_framework}",
                "--", str(metadata), str(args.output.resolve())]
-    subprocess.run(command, cwd=ROOT, check=True)
+    environment = dict(os.environ, WarehouseLayoutTargetFramework=args.target_framework)
+    subprocess.run(command, cwd=ROOT, env=environment, check=True)
 
 
 if __name__ == "__main__":

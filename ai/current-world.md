@@ -80,15 +80,15 @@ cemetery:own interiors/returns.
   City-Bar-lodge arrival1x/laterspawns kept;day1 mother quest-mapmarker;
   door-map-start inside closes/no village signpost;
 - CombatTest:3floors/9rooms/4flights:L3gap/R3only/fanwell/9sets-signs;ground:A*/partial/gate;
-  Midforms/4K+2Kresp/uniqueUV/metrewearjoins/clones0.
+  Forms/4K+2Kresp/uniqueUV/wearjoins/clones0;GoalWall solid.
   valve/PusherL;nokeyE2pulls1.2s;keykept→gCOLchainsettle;holdE6s/3turns/leafCOL3.05m/creak;release-pause-Esckeep/maxlatch→heavySFX1@valve/activityexittail/fullstop0.
   Home↔gate/E/back-travel-speech0/stub/gallery2/upper;fridges3/labels-scraps/Take1x/fullkeep/redfade-humclick.
   3src→flickercrackle/mech-music-foes-corpses-spawn0;fan0:6cables snapvalvewell/windcreak.
   toprear/playfill<bulb1.8;pourcans0→flatphys/drag-turn/seams→spasmSFX/die-key1/receipt;keyUIend+stairs↓:heat2s/riseSFX→popglass8phys.
-  bulb0/socketcord/restL-lens-amb0/gateRedsoftflicker>0+chest/silent;Escpause/Reset-Newkeep/newgame-inv0.
+  socket/restL-lens-amb0;red24→door/valve/dip≥.45+chest/silent;Escpause/Reset-Newkeep/Newinv0.
   D7fan/redshadows/deckblock/guards;M65Spot+weakbodyPoint/bounce/look/black12m/fog-sky0/warmhalo.
   Dust192+32/fan→settle/seed.
-  SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync/stop/noreplay/exitfade.
+  SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync/stop/replay0/exitfade.
   Fan0:2mono3D/clicks-whisper/.3/.15/.8/LP2800/Worldwet;EOF12–25|25–50/startsame;newfixed3–7m;pause-ownerhold/ResetNewkeep/empty0/clear;§6/art15a.
   StdDocker;Endless1–5/def3:Room,Docker,Crane(last≤2);seedstart-reset-refill/≤5warm/≤2corpses/roleIDs.
   Lab:Arena/6warm/1target/Zombie/reset-prepkept.
@@ -2009,18 +2009,19 @@ cemetery:own interiors/returns.
   apartment seams/upper debris. Sleep retains lower walls/flights/columns,
   breaks back/roof/seals descent. Enclosed/guarded normal-gravity Escher paths:
   domestic→shaft→machines/branches/loops/sideways scenery over black abyss.
-  E→first-person puzzle;←/→ selects outlined lever/E operates/Q returns to
-  third-person traversal;lower stairs fixed. Shared rig/grips:weave,delivery,
-  shadow-read birds. Gates block onward routes;reversible attempts/monotonic
-  session solutions;all three→warehouse. First opens cabinet→shared item
-  pickup/confirm→inventory lamp/equip. Lamp/fan/weight/vent/cloth:causal audio/
+  E→FP puzzle;←/→outlined lever/E operates/Q→third-person;lower stairs fixed.
+  Shared rig/grips:weave,delivery,shadow-read birds. Gates block onward;
+  reversible attempts/monotonic session solutions;all3→warehouse.
+  First→cabinet/shared pickup/confirm→inventory lamp/equip. Lamp/fan/weight/vent/cloth:audio/
   pause/cleanup. Plaster/wood→concrete/steel/red. Statue/initial light stays;
-  first flight:2shadowed lamps22/24m/lens-hum-contactor;return restores.
+  flight1:2Hard lamps22/24m/lens-hum-contactor;return restores.
+  Next unsolved door:stage lamp/outside/samefloor22/24m/1of2Hard slots;
+  solve→next/3→none;room lights stay.
   Outside:black ambient/sun/fog/reflection/grain. Lower supports vanish before
   finite ends;floor unseen;equipped chest beam preserves bird projections.
-  Stone-head E Cut leases hero/shadow; live Cat/grant/quest unchanged.
-  Covered Single load retains session;Endless/weapon kit/entry seal/fish/key/ambush.
-  Story keeps lamp ownership/equip;direct Debug alone seeds it.
+  Stone-head E Cut leases hero/shadow;liveCat/grant/quest stay.
+  Single load keeps session/Endless/weapon kit/entry seal/fish/key/ambush.
+  Story keeps lamp/equip;Debug alone seeds it.
   Retry restores HP/ammo; story blocks preparation/new layout; menu tests stay;
 - the fixed-metre `interior_kit` shell/dressing has real openings, panelled leaves,
   steel necks/saddles meeting wooden rails and handles on doors/cabinet. Door

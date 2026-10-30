@@ -8,7 +8,8 @@ namespace BarPromenade
     public sealed class WarehouseValveLampFlicker : MonoBehaviour
     {
         internal const float MinimumFactor = .45f, CycleSeconds = 11.8f;
-        internal const float DoorAmbushIntensityScale = 4f, DoorAmbushMinimumFactor = .85f;
+        internal const float DoorAmbushIntensity = 36f, DoorAmbushMinimumFactor = .85f;
+        private const float DoorAmbushEmissionScale = 4f;
         private static readonly Color DoorAmbushColor = new Color(1f, .24f, .14f);
         private const float SampleInterval = .05f;
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -108,8 +109,9 @@ namespace BarPromenade
             CurrentFactor = factor;
             float visibleFactor = DoorAmbushLightingActive
                 ? Mathf.Lerp(DoorAmbushMinimumFactor, 1f, Mathf.InverseLerp(MinimumFactor, 1f, factor)) : factor;
-            float gain = DoorAmbushLightingActive ? DoorAmbushIntensityScale : 1f;
-            Source.intensity = baseIntensity * visibleFactor * gain;
+            // The door tableau owns an absolute level, independent of the route's practical tuning.
+            Source.intensity = (DoorAmbushLightingActive ? DoorAmbushIntensity : baseIntensity) * visibleFactor;
+            float gain = DoorAmbushLightingActive ? DoorAmbushEmissionScale : 1f;
             lens.GetPropertyBlock(properties);
             properties.SetColor(BaseColorId, new Color(baseColor.r * visibleFactor, baseColor.g * visibleFactor,
                 baseColor.b * visibleFactor, baseColor.a));

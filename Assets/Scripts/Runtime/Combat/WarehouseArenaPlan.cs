@@ -154,6 +154,7 @@ namespace BarPromenade
         public const string GeneratorVersion = "warehouse-v5";
         public const float LevelRise = 3.2f, TopHeight = 6.4f, TileSize = 3f, DeckThickness = .18f;
         public const float HalfWidth = 15f, HalfDepth = 12f, CeilingHeight = 10.2f;
+        public const float GoalLampIntensity = 24f;
         // Compatibility for clients that capture the first gallery. Storey logic uses LevelRise/TopHeight.
         public const float UpperHeight = LevelRise;
         public int Seed { get; }
@@ -298,10 +299,11 @@ namespace BarPromenade
             var lamps = new List<WarehouseArenaLamp>
             {
                 new WarehouseArenaLamp(new Vector3(-7.5f, 2.72f, -4.6f), Vector3.down, 5.5f, .65f),
-                // Keep the lens on its fixture; aim between the valve dock and
-                // the exit door so both the operator and the hero receive red light.
-                new WarehouseArenaLamp(new Vector3(-2.65f, 2.6f, 11.97f), new Vector3(1.27f,-1f,-1.58f),
-                    6f, 9f, "EmergencyLamp", new Color(1f,.075f,.035f), 120f, 88f, Quaternion.identity),
+                // One surviving practical reveals the door and its concrete surround
+                // even at the deepest voltage dip. The wide cone still covers the valve dock.
+                new WarehouseArenaLamp(new Vector3(-2.65f, 2.6f, 11.97f), new Vector3(1.5f,-1f,-.95f),
+                    6f, WarehouseArenaPlan.GoalLampIntensity, "EmergencyLamp", new Color(1f,.075f,.035f),
+                    155f, 140f, Quaternion.identity),
                 new WarehouseArenaLamp(new Vector3(-12f, 5.92f, 5f), Vector3.down, 4.8f, .52f),
                 new WarehouseArenaLamp(new Vector3(7.5f, 5.92f, 4.4f), Vector3.down, 5.2f, .62f),
                 // The separate corded bulb is rooted at the real ceiling; finite finds own its power.

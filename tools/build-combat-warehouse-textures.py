@@ -173,7 +173,11 @@ if __name__ == "__main__":
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--prepare-signs", action="store_true", help="Prepare only the deterministic number bake sources")
     options = parser.parse_args()
-    toolchain.check_python(toolchain.load_config(), ("Pillow", "numpy"))
+    config = toolchain.load_config()
+    host = config["native"]["macos"] if sys.platform == "darwin" else config
+    toolchain.check_python({"python": host["python"],
+                            "packages": {**config["packages"], **host["packages"]}},
+                           ("Pillow", "numpy"))
     if options.prepare_signs:
         prepare_room_numbers()
     else:

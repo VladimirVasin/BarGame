@@ -4,6 +4,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
@@ -549,6 +550,7 @@ namespace BarPromenade.Tests.PlayMode
                 WarehouseFishLamp lamp = root.GetComponentInChildren<WarehouseFishLamp>();
                 Assert.That(lamp.ValveLamp != null && lamp.ValveLampFixture != null, Is.True);
                 AssertWarehouseValveMountingClearance(root, lamp);
+                AssertWarehouseGoalWallContinuity(root);
                 root.Hero.ResetActor(root.WarehousePlan.GateControlApproach +
                     Vector3.up * PlayerFactory.GroundedRootOffset, Vector3.forward);
                 root.Hero.SetCombatFocused(false);
@@ -556,6 +558,7 @@ namespace BarPromenade.Tests.PlayMode
                 WarehouseArenaLighting.UpdateHeroVisibility(root.Flashlight.transform);
                 root.CameraFollow.enabled = false;
                 Camera camera = root.CameraFollow.Camera;
+                CaptureWarehouseGoalWall(camera);
                 Vector3 mounting = lamp.ValveLampFixture.position;
                 Vector3 mountingEye = mounting + new Vector3(1.25f, .15f, -1.65f);
                 camera.transform.SetPositionAndRotation(mountingEye, Quaternion.LookRotation(mounting - mountingEye));
@@ -590,6 +593,7 @@ namespace BarPromenade.Tests.PlayMode
                 root.Flashlight.SynchronizeBodyFill(0f);
                 Physics.SyncTransforms();
                 CaptureCurrentCamera(camera, SceneIds.CombatTest, "Test warehouse - Red valve lamp after bulb burst");
+                CaptureWarehouseGoalApproach(root, camera, "after blackout");
                 VerifyWarehouseValveFlicker(root, lamp, camera, redIntensity);
                 root.Flashlight.SpotLight.enabled = true;
                 root.Flashlight.SynchronizeBodyFill(0f);
@@ -641,6 +645,81 @@ namespace BarPromenade.Tests.PlayMode
                 "The complete authored lamp must clear the valve riser and its brackets before and after reconstruction.");
         }
 
+        private static void CaptureWarehouseGoalWall(Camera camera)
+        {
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            float fov = camera.fieldOfView;
+            Vector4 origin = Shader.GetGlobalVector(WarehouseArenaLighting.OriginPropertyName);
+            try
+            {
+                // Diagnostic wide view: the ordinary ambient may reach the whole wall.
+                Shader.SetGlobalVector(WarehouseArenaLighting.OriginPropertyName, Vector4.zero);
+                camera.transform.SetPositionAndRotation(new Vector3(0f, 5f, -7f), Quaternion.identity);
+                camera.fieldOfView = 60f;
+                CaptureCurrentCamera(camera, SceneIds.CombatTest, "Test warehouse - Continuous goal wall");
+            }
+            finally
+            {
+                Shader.SetGlobalVector(WarehouseArenaLighting.OriginPropertyName, origin);
+                camera.transform.SetPositionAndRotation(position, rotation);
+                camera.fieldOfView = fov;
+            }
+        }
+
+        private static void AssertWarehouseGoalWallContinuity(CombatTestRoot root)
+        {
+            MeshCollider wall = null;
+            foreach (MeshCollider candidate in root.GetComponentsInChildren<MeshCollider>())
+                if (candidate.name.StartsWith("Collision_GoalWall", StringComparison.Ordinal)) wall = candidate;
+            Assert.That(wall, Is.Not.Null);
+            // Sample the old pier/header seams and both outer ends on the actual placed collision.
+            foreach (float x in new[] { -14.9f, -2.006f, -2f, -1.994f, 1.994f, 2f, 2.006f, 14.9f })
+                foreach (float y in new[] { .1f, 3.006f, 6f, 10.1f })
+                {
+                    if (Mathf.Abs(x) < 2f && y < 3f) continue;
+                    Assert.That(wall.Raycast(new Ray(new Vector3(x, y, 11f), Vector3.forward),
+                        out RaycastHit hit, 2f), Is.True, $"Goal wall gap at ({x}, {y}).");
+                    Assert.That(hit.point.z, Is.EqualTo(12f).Within(.013f),
+                        "Only the real doorway/perimeter bevel may recede from the continuous face.");
+                }
+            Assert.That(wall.Raycast(new Ray(new Vector3(0f, 1.5f, 11f), Vector3.forward),
+                out _, 2f), Is.False, "The monolithic wall must retain the real doorway.");
+        }
+
+        private static void CaptureWarehouseGoalApproach(CombatTestRoot root, Camera camera, string phase)
+        {
+            Vector3 restPosition = camera.transform.position;
+            Quaternion restRotation = camera.transform.rotation;
+            float restFov = camera.fieldOfView;
+            bool halation = GraphicsEffectsSettings.CleanHalationEnabled;
+            var cameraData = camera.GetUniversalAdditionalCameraData();
+            bool post = cameraData.renderPostProcessing;
+            try
+            {
+                Vector3 target = root.WarehousePlan.GoalDoorPosition + Vector3.up * 1.5f;
+                foreach (Vector3 eye in new[] { new Vector3(0f, 1.72f, -8f),
+                    new Vector3(0f, 1.72f, 4f), new Vector3(4.5f, 1.72f, 7f) })
+                {
+                    camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye));
+                    camera.fieldOfView = 60f;
+                    CaptureCurrentCamera(camera, SceneIds.CombatTest,
+                        $"Test warehouse - Goal {phase} from {eye.z}");
+                }
+                GraphicsEffectsSettings.CleanHalationEnabled = false;
+                cameraData.renderPostProcessing = false;
+                CaptureCurrentCamera(camera, SceneIds.CombatTest,
+                    $"Test warehouse - Goal {phase} without post processing");
+            }
+            finally
+            {
+                GraphicsEffectsSettings.CleanHalationEnabled = halation;
+                cameraData.renderPostProcessing = post;
+                camera.transform.SetPositionAndRotation(restPosition, restRotation);
+                camera.fieldOfView = restFov;
+            }
+        }
+
         private static void VerifyWarehouseValveFlicker(CombatTestRoot root, WarehouseFishLamp lamp,
             Camera camera, float baseIntensity)
         {
@@ -671,12 +750,22 @@ namespace BarPromenade.Tests.PlayMode
                 if (capturedDip || flicker.CurrentFactor >= .5f) continue;
                 capturedDip = true;
                 CaptureCurrentCamera(camera, SceneIds.CombatTest, "Test warehouse - Red valve lamp during flicker");
+                CaptureWarehouseGoalApproach(root, camera, "at minimum flicker");
             }
             Assert.That(minimum, Is.LessThan(.5f));
             Assert.That(maximum, Is.EqualTo(1f));
             Assert.That(capturedDip, Is.True);
             Assert.That(lens.sharedMaterial, Is.SameAs(sharedLens));
             Assert.That(sharedLens.GetColor(emissionId), Is.EqualTo(authoredEmission));
+            Quaternion routeRotation = lamp.ValveLamp.transform.rotation;
+            var tableauOwner = new object();
+            Assert.That(flicker.BeginDoorAmbushLighting(tableauOwner,
+                root.WarehousePlan.GoalDoorPosition + new Vector3(0f, 1.3f, -.92f)), Is.True);
+            Assert.That(lamp.ValveLamp.intensity, Is.InRange(30.6f - .001f, 36f + .001f),
+                "Route tuning must preserve the door tableau's absolute light level.");
+            flicker.EndDoorAmbushLighting(tableauOwner);
+            Assert.That(Quaternion.Angle(lamp.ValveLamp.transform.rotation, routeRotation), Is.LessThan(.01f));
+            Assert.That(lamp.ValveLamp.intensity, Is.EqualTo(baseIntensity * flicker.CurrentFactor).Within(.0001f));
             float elapsed = flicker.Elapsed, factor = flicker.CurrentFactor;
             using (GameTimeScaleRuntime.AcquirePause()) flicker.Advance(1.6f);
             Assert.That(flicker.Elapsed, Is.EqualTo(elapsed));

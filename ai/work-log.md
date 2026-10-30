@@ -3,6 +3,23 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-31
+
+Warehouse: continuous GoalWall and matching collision remove the piers/lintel
+seams around the doorway. The retained red practical reveals door/valve at
+its minimum dip; the ambush keeps its absolute brightness. Existing materials,
+light count and darkness ownership stay. CombatWarehouseGateLampSurvivesPendant
+passed; approach/minimum-dip/FX-off/wall frames reviewed. Deterministic geometry,
+UV/FBX roundtrip and texture publication passed COMBAT WAREHOUSE ART CONTRACT OK
+and WAREHOUSE MASTER TEXTURES OK; check-docs passed.
+Placement exporter: macOS Unity DLLs/SDK8 target and reviewed navigation
+omission guards restore reproducible warehouse layout export; placements stay.
+Labyrinth: stage-coloured door practical selects the next unsolved room outside
+rooms, on the current floor within the existing activation radius; it uses a
+current shadow slot. Inside-room lighting and solved-stage progress stay.
+StairwellLabyrinthLightRadius passed; closed-door/FX-off frames reviewed;
+progress/pause/disable/reset and departed-room darkness verified.
+
 ## 2026-10-30
 
 New Game:Home1/open balcony/noon until E; loading bar covers staged Home/first
