@@ -37,6 +37,7 @@ namespace BarPromenade
         public bool IsZombie { get; private set; }
         public CombatEnemyKind EnemyKind { get; private set; }
         public bool IsDocker => IsZombie && EnemyKind == CombatEnemyKind.Docker;
+        public bool IsOrdinaryZombie => IsZombie && EnemyKind == CombatEnemyKind.Zombie;
         public bool IsRoom => IsZombie && EnemyKind == CombatEnemyKind.Room;
         public bool IsImprint => IsZombie && EnemyKind == CombatEnemyKind.Imprint;
         public bool IsLongExposure => IsZombie && EnemyKind == CombatEnemyKind.LongExposure;
@@ -57,7 +58,7 @@ namespace BarPromenade
 
         // Finishing a round prevents further attacks, but the standing winner
         // still walks. Defeat/stagger and the active swing own their own stop.
-        public float MovementScale => IsRestrained || roomAttackPoseActive || roomHeadPainActive || !BodyDamage.CanStand || IsKnockedDown || IsZombieFrenzied || (footwork?.RecoveryEpisodeActive ?? false) ||
+        public float MovementScale => IsRestrained || IsZombie && !ZombieAwake || roomAttackPoseActive || roomHeadPainActive || !BodyDamage.CanStand || IsKnockedDown || IsZombieFrenzied || (footwork?.RecoveryEpisodeActive ?? false) ||
             (ImpactMotion != null && ImpactMotion.Velocity.sqrMagnitude > .04f) ? 0f : State.Phase switch
         {
             MeleePhase.Charging => .22f,
@@ -128,9 +129,13 @@ namespace BarPromenade
             CrowbarGripStation = 0f;
             EnemyKind = suspendedCrane ? CombatEnemyKind.Crane : kind;
             IsCrane = EnemyKind == CombatEnemyKind.Crane;
-            State = new MeleeCombatant(IsCrane ? CraneCombatSettings : IsDocker
-                ? MeleeCombatSettings.ZombieUnarmed : OrdinaryZombieCombatSettings);
             npc = presentation;
+            OrdinaryZombieVariant = IsOrdinaryZombie
+                ? presentation.GetComponentInChildren<CombatZombieOrdinaryAppearance>()?.Variant ?? 0 : 0;
+            State = new MeleeCombatant(IsCrane ? CraneCombatSettings : IsDocker
+                ? MeleeCombatSettings.ZombieUnarmed : IsOrdinaryZombie
+                    ? OrdinaryZombieVariant == 2 ? SelfCarrierZombieCombatSettings : DegradedZombieCombatSettings
+                    : OrdinaryZombieCombatSettings);
             Body = body;
             npc.ReleaseAnimation();
             if (IsCrane) LoadCraneClips();
@@ -142,6 +147,7 @@ namespace BarPromenade
             Ragdoll = gameObject.AddComponent<CombatRagdoll>();
             Ragdoll.InitializeOpponent(presentation, body, IsRoom ? CombatRoomAssetProvider.RigHeight : body.height);
             FitRoomHeadCollider();
+            FitOrdinaryZombieTorsoColliders();
             if (IsCrane) InitializeCraneSuspension();
             else InitializeZombieHands();
             InitializeDamagePose();

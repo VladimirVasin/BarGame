@@ -5,6 +5,24 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-01
 
+Puzzle levers have physical spindle/bracket/guide contacts throughout travel;
+grip anchors and cameras stay. A/D joins arrows; selection uses a bone contour,
+dark edge and surface wash with existing effects owners.
+STAIRWELL_LABYRINTH_CONTROL_MOUNTS_OK and
+StairwellLabyrinthPuzzleModeAndFlashlight passed; rendered frames reviewed.
+
+Stairwell crowd waits after the first puzzle; confirmed crowbar pickup and modal
+release wake it. Bounded movers and attack claims keep first contact solo even
+after waiting. Floor-aware routes leave bypass open and stop at the third puzzle.
+Retry preserves puzzles/crowbar, clears queued draw and restores fresh input;
+travel retains progress, New Game clears it. Ordinary zombies have giant dirty
+glass torsos or inverted bottle burdens, authored motion and bounded body/glass
+audio. Dormant/rise/idle share endpoints and phase; contacts follow skin bounds.
+Other species, lighting and effects owners stay; performance is unmeasured.
+StairwellSecondPuzzleCrowbar,
+DEGRADED ZOMBIE GROUNDED ACTIONS AND THREE BODY SCULPTS OK,
+ORDINARY BODY AUDIO / FINITE DRY MONO / ATTACK TIMELINE / DETERMINISTIC OK passed.
+
 Crowbar:weight transfer/sharp arc/brake;grip/low elbows/Ready preserved.
 Tissue damage now advances structure;wide surface tear;fatal head uses contact-side
 sectors with melee serial dedupe. Shared finite blood pool;no gun profile change.

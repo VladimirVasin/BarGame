@@ -220,6 +220,16 @@ namespace BarPromenade
             Actor?.SetBlock(false); Actor?.State.CancelParry();
             CancelInteractionPreparation();
         }
+
+        internal void ResetForLocalRetry()
+        {
+            CancelCommands();
+            // ResetActor returns this acquired loadout to storage. Forget the
+            // interrupted draw intent and keep the inventory marker in step.
+            RecordEquipment(false);
+            equipmentRequestPending = true;
+        }
+
         private void OnEnable()
         {
             equipmentDirty = equipmentRequestPending = true;

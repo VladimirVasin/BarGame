@@ -10,6 +10,12 @@ namespace BarPromenade
             "spine", "chest", "neck", "head", "clavicle.L", "clavicle.R",
             "forearm.L", "forearm.R", "hand.L", "hand.R"
         };
+        private static readonly string[] DegradedAnatomyBoneNames =
+        {
+            "pelvis", "spine", "chest", "neck", "head", "clavicle.L", "clavicle.R",
+            "upper_arm.L", "upper_arm.R", "forearm.L", "forearm.R", "hand.L", "hand.R",
+            "thigh.L", "thigh.R", "shin.L", "shin.R", "foot.L", "foot.R"
+        };
         private Transform[] zombieAnatomyBones;
         private Vector3[] zombieOriginalPositions, zombieOriginalScales;
         private Vector3[] zombieAnatomyOffsets, zombieAnatomyScaleRatios;
@@ -18,7 +24,7 @@ namespace BarPromenade
         private void CacheZombieOriginalAnatomy()
         {
             if (!IsZombie || zombieAnatomyBones != null) return;
-            string[] names = IsCrane ? CraneAnatomyBoneNames : ZombieAnatomyBoneNames;
+            string[] names = IsCrane ? CraneAnatomyBoneNames : IsOrdinaryZombie ? DegradedAnatomyBoneNames : ZombieAnatomyBoneNames;
             int count = names.Length;
             zombieAnatomyBones = new Transform[count];
             zombieOriginalPositions = new Vector3[count];

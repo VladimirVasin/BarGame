@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>Two retained material voices; a sleeping crate owns no audio update.</summary>
+    /// <summary>Two retained physical voices; dormant bodies and crates own no audio update.</summary>
     [DisallowMultipleComponent]
     public sealed class CombatZombieAudio : MonoBehaviour
     {
@@ -18,10 +18,29 @@ namespace BarPromenade
         };
         private static readonly CombatZombieAudio[] GroanOwners = new CombatZombieAudio[MaximumGroans];
         private static AudioClip[] clips;
+        private static AudioClip[] ordinaryClips;
+        private static AudioClip[] carrierClips;
+        private static readonly string[] OrdinaryClipNames =
+        {
+            "ZombieDecayRise", "ZombieDecayBreath", "ZombieDecayBreath2", "ZombieDecayBreath3",
+            "ZombieDecayAttack", "ZombieDecayAttack2", "ZombieDecayHurt", "ZombieDecayHurt",
+            "ZombieDecayHurt", "ZombieDecayHurt", "ZombieDecayDeath", "ZombieDecayDeath",
+            "ZombieDecayAttack", "ZombieDecayAttack2"
+        };
+        private static readonly string[] CarrierClipNames =
+        {
+            "ZombieCarrierRise", "ZombieCarrierBreath", "ZombieCarrierBreath2", "ZombieCarrierBreath3",
+            "ZombieCarrierAttack", "ZombieCarrierAttack2", "ZombieCarrierHurt", "ZombieCarrierHurt",
+            "ZombieCarrierHurt", "ZombieCarrierHurt", "ZombieCarrierDeath", "ZombieCarrierDeath",
+            "ZombieCarrierAttack", "ZombieCarrierAttack2"
+        };
+        public static string OrdinaryRiseAudioName(int variant) => variant == 2 ? "ZombieCarrierRise" : "ZombieDecayRise";
         private static uint variantSequence;
         private AudioSource body, effect;
         private Transform sourceAnchor;
         private bool initialized, alive, dead, revealed, frozen, ownsGroan, revealing;
+        private bool ordinaryBody, carrierBody;
+        private AudioClip[] VoiceClips => carrierBody ? carrierClips : ordinaryBody ? ordinaryClips : clips;
         private int lastGroan = -1, lastAttack = -1, lastWood = -1, lastFlesh = -1, lastDeath = -1, lastFrenzy = -1;
         private double nextHurtTime;
 
@@ -42,20 +61,38 @@ namespace BarPromenade
             }
         }
 
-        public void Initialize(Transform anchor)
+        public void Initialize(Transform anchor, bool ordinaryBody = false, int variant = 0)
         {
             if (initialized) return;
             if (anchor == null) throw new ArgumentNullException(nameof(anchor));
-            WarmClips();
+            this.ordinaryBody = ordinaryBody;
+            carrierBody = ordinaryBody && variant == 2;
+            WarmClips(ordinaryBody, carrierBody);
             sourceAnchor = anchor;
-            body = CreateVoice(anchor, "Porter Breath And Strain");
-            effect = CreateVoice(anchor, "Porter Wood And Catch");
+            body = CreateVoice(anchor, ordinaryBody ? "Degraded Body Breath" : "Porter Breath And Strain");
+            effect = CreateVoice(anchor, ordinaryBody ? "Degraded Body Contact" : "Porter Wood And Catch");
             initialized = true;
             Reset();
         }
 
-        private static void WarmClips()
+        private static void WarmClips(bool ordinaryBody, bool carrierBody)
         {
+            if (carrierBody)
+            {
+                if (carrierClips != null) return;
+                var carrierBank = new AudioClip[CarrierClipNames.Length];
+                for (int i = 0; i < carrierBank.Length; i++) carrierBank[i] = CombatZombieAssetProvider.LoadAudio(CarrierClipNames[i]);
+                carrierClips = carrierBank;
+                return;
+            }
+            if (ordinaryBody)
+            {
+                if (ordinaryClips != null) return;
+                var ordinaryBank = new AudioClip[OrdinaryClipNames.Length];
+                for (int i = 0; i < ordinaryBank.Length; i++) ordinaryBank[i] = CombatZombieAssetProvider.LoadAudio(OrdinaryClipNames[i]);
+                ordinaryClips = ordinaryBank;
+                return;
+            }
             if (clips != null) return;
             var bank = new AudioClip[ClipNames.Length];
             for (int i = 0; i < bank.Length; i++) bank[i] = CombatZombieAssetProvider.LoadAudio(ClipNames[i]);
@@ -83,7 +120,7 @@ namespace BarPromenade
             alive = false;
             ReleaseGroan();
             StopVoice(effect);
-            Play(body, clips[RevealIndex], .84f, 1f, 60);
+            Play(body, VoiceClips[RevealIndex], ordinaryBody ? .63f : .84f, 1f, 60);
             RevealPlayCount++;
         }
 
@@ -123,8 +160,8 @@ namespace BarPromenade
         {
             // Manual simulation can finish before the audio device does. Stop
             // only our cue; a death or another reaction may already own this voice.
-            if (body != null && clips != null &&
-                (body.clip == clips[FrenzyIndex] || body.clip == clips[FrenzyIndex + 1])) StopVoice(body);
+            if (body != null && VoiceClips != null &&
+                (body.clip == VoiceClips[FrenzyIndex] || body.clip == VoiceClips[FrenzyIndex + 1])) StopVoice(body);
         }
 
         public void Hurt(bool wood)
@@ -186,12 +223,12 @@ namespace BarPromenade
             if (frozen || GameTimeScaleRuntime.IsPaused) source.Pause();
         }
 
-        private static AudioClip Select(int start, int count, ref int previous)
+        private AudioClip Select(int start, int count, ref int previous)
         {
             int index = (int)(variantSequence++ % (uint)count);
             if (index == previous) index = (index + 1) % count;
             previous = index;
-            return clips[start + index];
+            return VoiceClips[start + index];
         }
 
         private bool AcquireGroan()
@@ -286,6 +323,8 @@ namespace BarPromenade
         {
             Array.Clear(GroanOwners, 0, GroanOwners.Length);
             clips = null;
+            ordinaryClips = null;
+            carrierClips = null;
             variantSequence = 0;
         }
     }

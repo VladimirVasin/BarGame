@@ -5,9 +5,58 @@ using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
-    /// <summary>Bounded CombatTest-only bank on the retained ordinary worker skeleton.</summary>
+    /// <summary>Bounded zombie assets for combat and the stairwell on the retained ordinary worker skeleton.</summary>
     public static class CombatZombieAssetProvider
     {
+        public const string DegradedIdleClip = "ZombieDecayIdle", DegradedWalkClip = "ZombieDecayWalk",
+            DegradedAttackRightClip = "ZombieDecayAttackRight", DegradedAttackLeftClip = "ZombieDecayAttackLeft",
+            DegradedHitClip = "ZombieDecayHit";
+        public const float OrdinaryRiseSeconds = 2.4f;
+        public const float CarrierWalkCycleDistance = .8f, CarrierWalkCycleSeconds = 1.8f;
+        public static readonly string[] DegradedClipNames = {
+            DegradedIdleClip, DegradedWalkClip, DegradedAttackRightClip, DegradedAttackLeftClip, DegradedHitClip,
+            "ZombieDecayDormant0", "ZombieDecayDormant1", "ZombieDecayDormant2",
+            "ZombieDecayRise0", "ZombieDecayRise1", "ZombieDecayRise2",
+            "ZombieCarrierIdle", "ZombieCarrierWalk", "ZombieCarrierAttackRight", "ZombieCarrierAttackLeft", "ZombieCarrierHit"
+        };
+        public static string OrdinaryDormantClip(int variant) => DegradedClipNames[5 + ValidateOrdinaryVariant(variant)];
+        public static string OrdinaryRiseClip(int variant) => DegradedClipNames[8 + ValidateOrdinaryVariant(variant)];
+        private static int ValidateOrdinaryVariant(int variant) => (uint)variant < 3 ? variant :
+            throw new ArgumentOutOfRangeException(nameof(variant));
+        public static bool IsDegradedLoop(string name) => name == DegradedIdleClip || name == DegradedWalkClip ||
+            name == "ZombieCarrierIdle" || name == "ZombieCarrierWalk" ||
+            name.StartsWith("ZombieDecayDormant", StringComparison.Ordinal);
+        public static float DegradedClipDuration(string name) => name switch {
+            DegradedIdleClip => 8f, DegradedWalkClip => OrdinaryWalkCycleSeconds,
+            DegradedAttackRightClip or DegradedAttackLeftClip => CombatActor.DegradedZombieCombatSettings.AnimationAttackDurationSeconds,
+            DegradedHitClip => .45f,
+            "ZombieDecayDormant0" or "ZombieDecayDormant1" or "ZombieDecayDormant2" => 1f,
+            "ZombieDecayRise0" or "ZombieDecayRise1" or "ZombieDecayRise2" => OrdinaryRiseSeconds,
+            "ZombieCarrierIdle" => 8f, "ZombieCarrierWalk" => CarrierWalkCycleSeconds,
+            "ZombieCarrierAttackRight" or "ZombieCarrierAttackLeft" => 2.76f,
+            "ZombieCarrierHit" => .45f,
+            _ => throw new ArgumentOutOfRangeException(nameof(name))
+        };
+        public static AnimationClip LoadDegradedClip(string name) => CombatZombieOrdinaryAssets.LoadClip(name);
+        public static AnimationClip LoadDegradedClip(string name, int variant)
+        {
+            ValidateOrdinaryVariant(variant);
+            if (variant == 2) name = name switch {
+                DegradedIdleClip => "ZombieCarrierIdle", DegradedWalkClip => "ZombieCarrierWalk",
+                DegradedAttackRightClip => "ZombieCarrierAttackRight", DegradedAttackLeftClip => "ZombieCarrierAttackLeft",
+                DegradedHitClip => "ZombieCarrierHit", _ => name
+            };
+            return LoadDegradedClip(name);
+        }
+        public static void PrepareOrdinaryAssets() => CombatZombieOrdinaryAssets.Prepare();
+        public static GameObject CreateOrdinaryPassive(Transform parent, int variant, bool standing) =>
+            CombatZombieOrdinaryAssets.CreatePassive(parent, ValidateOrdinaryVariant(variant), standing);
+        public static void ApplyOrdinaryAppearance(GameObject npc, int variant)
+        {
+            if (npc == null) throw new ArgumentNullException(nameof(npc));
+            (npc.GetComponent<CombatZombieOrdinaryAppearance>() ?? npc.AddComponent<CombatZombieOrdinaryAppearance>())
+                .Configure(ValidateOrdinaryVariant(variant));
+        }
         public const string ResourceFolder = "Combat/";
         public const string IdleClip = "ZombieIdle", WalkClip = "ZombieWalk",
             AttackRightClip = "ZombieAttackRight", AttackLeftClip = "ZombieAttackLeft", HitClip = "ZombieHit",

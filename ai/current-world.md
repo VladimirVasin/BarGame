@@ -2005,47 +2005,45 @@ cemetery:own interiors/returns.
   an unscaled fixed-camera handle/door sequence opens the leaf outward toward
   the camera against a solid black doorway while the destination preloads,
   then activates only after the final blackout;
-- `StairwellInterior`: ordinary8.6×9.6×6.25m/3ramps/48steps; street/middle/
-  apartment seams/upper debris. Sleep keeps lower walls/flights/columns,
-  breaks back/roof/seals descent. Gravity/domestic→shaft→machines/
-  branches/loops/scenery/abyss. E→frontal overview/hidden hero;←/→/E/Q;lower fixed.
-  Panel/handles/aspect/UI margin;head0. Rig/grips;weave→delivery→birds.
-  Arrows immediate;E pending1/short strokes;Q clears/cancels active.
-  First:compact back-to-wall cabinet/lamp;second:handle lifts/releases;
-  bar braces→cloth cart/endstop/catch→unloaded bar;weight automatic.
-  Pickup1x→CombatCrowbar;draw/stow;hidden bar/mount.
-  High-R gait→arm arc/return;parry/context→warehouse/CrowbarOnly;
-  Debug3. Lamp/fan/weight/vent/cloth:SFX/pause/cleanup.
-  Metre maps;statue/light stay. Flight1:2Hard lamps
-  22/24m/lens-hum-contactor;return restores. Next door lit anywhere inside;
-  solve→next sameframe regardless floor/range;3→none;guide1of2Hard slots.
-  Outside:black ambient/sun/fog/reflection/grain;supports hide finite ends/floor.
-  Chest beam:birdshadows. Stone-head E Cut
-  leases hero/shadow;liveCat/grant/quest stay. Single load keeps session/fish/
-  key/ambush/entry seal. Story keeps lamp/equip;Debug seeds it. Retry:HP/ammo;
-  story blocks preparation/layout;menu tests stay;
-- the fixed-metre `interior_kit` shell/dressing has real openings, panelled leaves,
-  steel necks/saddles meeting wooden rails and handles on doors/cabinet. Door
-  docks align the right-hand clip with the lever, plates with the latch stile.
-  Concrete, rust, pipes/grilles, cabinets/radiators, damp
-  damage/litter remain; upper junk is ordinary-only. Corrupted objects gain unique
-  charts; WallPaint/Damage use neutral512 micro overrides, with ochre-gray/rust-
-  brown palette/bounded shared bindings. Eight RGB ImageGen albedos under
-  `Resources/Stairwell/Textures` cover wall/concrete/stairs/metal/door/damage/
-  wood/debris; wall/door/metal retain stronger macro contrast.
-  `StairwellSurfaceAppearance` caches recipes and uses deterministic native-UV
-  `_BaseMap_ST`, smoothness/metallic and compensated tint through property blocks
-  on the shared `RuntimePrimitiveLit`. All ordinary shell/dressing renderers,
-  including non-emissive fixture parts, receive the appropriate recipe. Hidden walkable ramps and the upper
-  safety blocker, emissive tubes and halos, the hero, cat and dust/VFX remain
-  outside that surface layer. Ordinary mode keeps three fixed shots for lower/middle flight and apartment
-  landing with height hysteresis;
-  each shot keeps its exposed suspended HDR fluorescent tube and halo visible,
-  while three stronger flickering practical-light pools, a green desaturated
-  Bloom/vignette/grain profile, at most 14 dust particles, a concrete ambience
-  bed, spatial ventilation and electrical layers, sparse positional industrial
-  cues, a long dark reverb/moderate echo snapshot and the separate optional
-  `stairwell_theme` music slot establish the atmosphere;
+- `StairwellInterior` keeps its lower stair shell after sleep; roof breaks and
+  descent seals. Domestic stairs lead to shaft/machines/loops/abyss with
+  gravity/3P; lower fixed camera stays. E frames weave/delivery/birds and mounted
+  levers; hero hidden, rig/grips/UI margins stay. A/D or ←→ select immediately;
+  E queues one short action; Q exits. Only selection has a bone contour, dark
+  edge and surface wash. First: back-wall lamp cabinet. Second: braced crowbar
+  through cloth/cart/catch to shared pickup. Draw/stow hides carry; high-right
+  gait/arc/parry/context and warehouse CrowbarOnly/Debug3 stay.
+  Stage 2: 18 Loops (variants 0/1) have bottle torsos; three Carriers (2)
+  bear inverted bottles on their backs. Giant dirty glass dominates both.
+  The Carrier's second head hangs from the bottle's mouth. Confirmed pickup
+  and modal exit trigger staggered waking. Up to four move; the first
+  contact is solo, then two may attack with spaced commitments. A hero hit
+  gives 1.3 s grace. Routes respect floors and clear passage; supported entry
+  to stage 3 above 14 m ends pursuit. Retry resets the crowd and hero at room 2,
+  keeping puzzles and crowbar. Travel keeps waking/defeats but resets surviving
+  positions; New Game clears all. Passive views have no CombatActor; nearby
+  waking promotes them. Bodies, voices and simulation are bounded, unmeasured.
+  Lamp/fan/weight/vent/cloth:SFX/pause/cleanup. Metre maps/statue/light kept;
+  first flight:2Hard/22–24m/lens-hum-contactor;return restores. Solve→next door
+  light sameframe across floor/range;after3 none/guide1of2. Outside black
+  ambient/sun/fog/reflection/grain;supports hide ends/floor;chest birdshadows.
+  Stone-head E Cut leases hero/shadow;liveCat/grant/quest unchanged. Single
+  load retains session/fish/key/ambush/entry seal;story lamp/equip retained,
+  Debug seeds;warehouse retry HP/ammo,story preparation/layout blocked;
+- Fixed-metre `interior_kit` shell:openings/panelled leaves/steel necks-saddles
+  meet wooden rails/door-cabinet handles. Docks align right-hand lever clip,
+  plates/latch stile. Concrete/rust/pipes/grilles/cabinets/radiators/damp damage/
+  litter retained;upper junk ordinary-only. Corrupted unique charts;
+  WallPaint/Damage neutral512 micro/ochre-gray-rust-brown/bounded bindings.
+  Eight RGB ImageGen sheets `Resources/Stairwell/Textures`:wall/concrete/stairs/
+  metal/door/damage/wood/debris;wall-door-metal stronger macro contrast.
+  `StairwellSurfaceAppearance`:cached recipes/nativeUV `_BaseMap_ST`,smoothness/
+  metallic/compensated tint via MPBs/shared `RuntimePrimitiveLit`. Applies to
+  shell/dressing/nonemissive fixtures;excludes ramps/upper blocker/tubes/halos/
+  hero/cat/dust/VFX. Ordinary:three height-hysteresis shots/lower-middle-apartment,
+  visible suspended HDR tube/halo;three flickering pools/green desaturated
+  Bloom-vignette-grain/≤14dust. Concrete bed/spatial vent-electrical/rare industrial
+  cues/long dark reverb/moderate echo/optional `stairwell_theme`;
 - ordinary mode's clickable 3D near-black cat sits
   back-to-camera on `Middle Landing Back Rail`. Pivot empties/no armature;
   deterministic breath/tail/ears/groom36s, head-yaw65°/hysteresis. Default-hidden

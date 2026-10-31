@@ -17,7 +17,7 @@
     {"key":"interaction.labyrinth_carriage","value":"E — отправить каретку"},
     {"key":"interaction.labyrinth_lift","value":"E — поднять решётку"},
     {"key":"interaction.labyrinth_enter","value":"E — осмотреть механизм"},
-    {"key":"ui.labyrinth_controls","value":"←/→ — деталь   E — действие   Q — выйти"},
+    {"key":"ui.labyrinth_controls","value":"A/D или ←/→ — деталь   E — действие   Q — выйти"},
     {"key":"ui.labyrinth_exit","value":"Q — выйти"},
     {"key":"interaction.take_flashlight","value":"E — взять фонарик"},
     {"key":"interaction.flashlight_taken","value":"Фонарик взят."},

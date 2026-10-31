@@ -10,14 +10,29 @@ namespace BarPromenade
         private float mimicClock;
         private int mimicBreakIndex;
         private bool dormantPoseSampled;
-        public bool ZombieDormant => IsDocker && mimicPhase == MimicPhase.Dormant;
-        public bool ZombieRevealing => IsDocker && mimicPhase == MimicPhase.Revealing;
-        public bool ZombieAwake => !IsDocker || mimicPhase == MimicPhase.Awake;
+        private bool HasZombieDormancy => IsDocker || IsOrdinaryZombie;
+        public bool ZombieDormant => HasZombieDormancy && mimicPhase == MimicPhase.Dormant;
+        public bool ZombieRevealing => HasZombieDormancy && mimicPhase == MimicPhase.Revealing;
+        public bool ZombieAwake => !HasZombieDormancy || mimicPhase == MimicPhase.Awake;
         internal float ZombieRevealElapsed => mimicClock;
+        private float ZombieRiseDuration => IsOrdinaryZombie ? CombatZombieAssetProvider.OrdinaryRiseSeconds : CombatZombieAssetProvider.RevealSeconds;
+
+        /// <summary>The encounter explicitly owns waking; distance never changes this state.</summary>
+        public void SetOrdinaryZombieDormant(int variant)
+        {
+            if (!IsOrdinaryZombie) throw new System.InvalidOperationException("Only the ordinary zombie owns the degraded body poses.");
+            if ((uint)variant >= 3u) throw new System.ArgumentOutOfRangeException(nameof(variant));
+            if (variant != OrdinaryZombieVariant) throw new System.InvalidOperationException("A dormant body keeps its authored anatomy and attack profile.");
+            if (State.IsDefeated || IsKnockedDown || IsRagdollActive) return;
+            OrdinaryZombieVariant = variant;
+            zombieDormant = CombatZombieAssetProvider.LoadDegradedClip(CombatZombieAssetProvider.OrdinaryDormantClip(variant));
+            zombieReveal = CombatZombieAssetProvider.LoadDegradedClip(CombatZombieAssetProvider.OrdinaryRiseClip(variant));
+            SetZombieDormant();
+        }
 
         internal void SetZombieDormant()
         {
-            if (!IsDocker || State.IsDefeated) return;
+            if (!HasZombieDormancy || State.IsDefeated) return;
             ResetZombieFrenzy();
             mimicPhase = MimicPhase.Dormant;
             mimicClock = 0f;
@@ -27,20 +42,20 @@ namespace BarPromenade
             zombieWalkingRequested = false;
             State.CancelAction();
             zombieAudio?.Reset();
-            SetMimicCapsule(0f);
+            if (IsDocker) SetMimicCapsule(0f);
             CancelPoseBlend();
             Present();
         }
 
-        internal bool TryAwakenZombie()
+        internal bool TryAwakenZombie(bool playSound = true)
         {
             if (!isActiveAndEnabled || !ZombieDormant || State.IsDefeated || roundEnded) return false;
             mimicPhase = MimicPhase.Revealing;
             mimicClock = 0f;
             mimicBreakIndex = 0;
             dormantPoseSampled = false;
-            zombieAudio?.Reveal();
-            JournalEvent("mimic_reveal");
+            if (playSound) zombieAudio?.Reveal();
+            JournalEvent(IsOrdinaryZombie ? "ordinary_zombie_rise" : "mimic_reveal");
             return true;
         }
 
@@ -68,26 +83,26 @@ namespace BarPromenade
         // hit-stop. A dormant rig is sampled once; no breathing/fish/AI clocks run.
         private bool AdvanceZombieMimic(float seconds)
         {
-            if (!IsDocker || ZombieAwake || State.IsDefeated) return false;
-            if (IsKnockedDown || IsRagdollActive)
+            if (!HasZombieDormancy || ZombieAwake || State.IsDefeated) return false;
+            if (IsKnockedDown || IsRagdollActive || IsOrdinaryZombie && State.IsStunned)
             {
-                AdvanceMimicBreaks(CombatZombieAssetProvider.RevealSeconds, false);
+                if (IsDocker) AdvanceMimicBreaks(CombatZombieAssetProvider.RevealSeconds, false);
                 mimicPhase = MimicPhase.Awake;
                 zombieAudio?.Activate();
-                SetMimicCapsule(1f);
+                if (IsDocker) SetMimicCapsule(1f);
                 return false;
             }
             if (ZombieDormant || presentationFrozen) return true;
-            float nextClock = Mathf.Min(CombatZombieAssetProvider.RevealSeconds, mimicClock + seconds);
-            AdvanceMimicBreaks(nextClock, true);
+            float nextClock = Mathf.Min(ZombieRiseDuration, mimicClock + seconds);
+            if (IsDocker) AdvanceMimicBreaks(nextClock, true);
             mimicClock = nextClock;
             State.Advance(seconds, false);
-            SetMimicCapsule(Mathf.SmoothStep(0f, 1f, mimicClock / CombatZombieAssetProvider.RevealSeconds));
-            if (mimicClock + .000001f >= CombatZombieAssetProvider.RevealSeconds)
+            if (IsDocker) SetMimicCapsule(Mathf.SmoothStep(0f, 1f, mimicClock / ZombieRiseDuration));
+            if (mimicClock + .000001f >= ZombieRiseDuration)
             {
                 // The authored endpoint equals ready at zero; no pose blend or
                 // locomotion phase can pull this first standing frame elsewhere.
-                SampleNpcClip(zombieReveal, CombatZombieAssetProvider.RevealSeconds);
+                SampleNpcClip(zombieReveal, ZombieRiseDuration);
                 mimicPhase = MimicPhase.Awake;
                 poseClock = zombieWorkClock = zombieWalkClock = 0f;
                 visibleClip = null;
@@ -113,15 +128,15 @@ namespace BarPromenade
 
         private bool PresentZombieMimic()
         {
-            if (!IsDocker || ZombieAwake || State.IsDefeated || IsKnockedDown || IsRagdollActive) return false;
+            if (!HasZombieDormancy || ZombieAwake || State.IsDefeated || IsKnockedDown || IsRagdollActive) return false;
             if (ZombieDormant && dormantPoseSampled) return true;
             footwork?.Restore(); damagePose?.Restore(); bodyMotion?.Restore();
             AnimationClip clip = ZombieDormant ? zombieDormant : zombieReveal;
             SampleNpcClip(clip, ZombieDormant ? 0f : mimicClock);
             visibleClip = clip.name;
             visibleAttackSequence = State.AttackSequence;
-            handPose.SetGrip(false, .12f); handPose.SetGrip(true, .12f);
-            zombieLoad.RefreshRamProxyState();
+            handPose.SetGrip(false, IsDocker ? .12f : 0f); handPose.SetGrip(true, IsDocker ? .12f : 0f);
+            zombieLoad?.RefreshRamProxyState();
             RememberNpcPresentedPose();
             dormantPoseSampled = ZombieDormant;
             return true;

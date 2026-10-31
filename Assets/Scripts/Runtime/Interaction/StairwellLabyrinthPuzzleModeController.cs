@@ -38,6 +38,7 @@ namespace BarPromenade
         public StairwellLabyrinthPuzzleInteraction SelectedControl => IsActive ? stageControls[selectedIndex] : null;
         public int RenderedOutlineCount => IsSettled && !GameTimeScaleRuntime.IsPaused && !puzzles.State.CanPassGate(Stage)
             ? outline?.RenderedPartCount ?? 0 : 0;
+        public int RetainedOutlineOverlayCount => outline?.RetainedOverlayCount ?? 0;
         public Pose InspectionPose => Stage > 0 && puzzles != null && cameraFollow != null
             ? puzzles.GetStageViewPose(Stage, cameraFollow.Camera.aspect) : default;
         public Bounds InspectionBounds => Stage > 0 && puzzles != null ? puzzles.GetStageViewBounds(Stage) : default;

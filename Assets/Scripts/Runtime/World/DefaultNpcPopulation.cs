@@ -19,6 +19,12 @@ namespace BarPromenade
         public const string CityDogParkSeatedOwner = "zzzzz.city.dog-park.seated";
         // Append after every existing identity to retain their allocated looks.
         public const string CityResidentialCourtyardCarrier = "zzzzzz.city.residential-courtyard.carrier";
+        // Append-only allocation: these bespoke enemy bases must not reshuffle living residents.
+        public static string StairwellEnemyId(int index)
+        {
+            if ((uint)index >= StairwellEncounterState.Population) throw new ArgumentOutOfRangeException(nameof(index));
+            return "zzzzzzz.stairwell.degraded." + index.ToString("D2");
+        }
         // Sort after the narrative population so these test participants cannot reshuffle it.
         public const string CombatTestOpponent = "zz.combat-test.opponent";
         public const int CombatTestOpponentCount = CombatEncounterSettings.OpponentCapacity;
@@ -238,6 +244,11 @@ namespace BarPromenade
                     new SlotConstraint("gloves", "gloves.work"),
                     new SlotConstraint("scarf", new string[] { null }),
                     new SlotConstraint("apron", new string[] { null })));
+            for (int i = 0; i < StairwellEncounterState.Population; i++)
+                roster.Add(new CharacterDefinition(StairwellEnemyId(i), model, false,
+                    new SlotConstraint("outerwear", "outerwear.work"), new SlotConstraint("boots", "boots.work"),
+                    new SlotConstraint("headwear", new string[] { null }), new SlotConstraint("gloves", new string[] { null }),
+                    new SlotConstraint("scarf", new string[] { null }), new SlotConstraint("apron", new string[] { null })));
             roster.Add(new CharacterDefinition(CombatTestCraneEnemy, model, false,
                 new SlotConstraint("outerwear", "outerwear.work"),
                 new SlotConstraint("boots", "boots.work"),

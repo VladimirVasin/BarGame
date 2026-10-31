@@ -189,14 +189,14 @@ namespace BarPromenade
 
         private void FitRoomHeadCollider()
         {
-            if (!IsRoom) return;
+            if (!IsRoom && !IsOrdinaryZombie) return;
             CapsuleCollider capsule = null;
             foreach (var shape in Ragdoll.PhysicsController.AnatomicalColliders)
                 if (shape.Value == Player3DAnatomicalPart.Head) { capsule = shape.Key as CapsuleCollider; break; }
-            if (capsule == null) throw new InvalidOperationException("Room requires its retained head capsule.");
+            if (capsule == null) throw new InvalidOperationException("The authored combat head requires its retained capsule.");
             SkinnedMeshRenderer source = Array.Find(DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true),
                 skin => skin.name == "GEO_Head");
-            if (source == null) throw new InvalidOperationException("Room requires its authored head surface.");
+            if (source == null) throw new InvalidOperationException("The authored combat head requires its actual skin surface.");
             Mesh mesh = source.sharedMesh;
             Vector3[] points = mesh.vertices;
             BoneWeight[] weights = mesh.boneWeights;

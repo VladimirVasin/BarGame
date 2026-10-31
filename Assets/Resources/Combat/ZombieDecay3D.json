@@ -1,0 +1,136 @@
+{
+  "generator": "build-combat-degraded-zombie-3d-model.py",
+  "version": "2.0.0",
+  "rig": "NpcHumanV2",
+  "root_motion": false,
+  "animation_events": 0,
+  "source_fps": 100,
+  "walk_cycle_distance_m": 1.2,
+  "walk_duration_seconds": 1.6,
+  "prepare_seconds": 0.95,
+  "active_seconds": 0.22,
+  "recovery_seconds": 0.95,
+  "rise_seconds": 2.4,
+  "carrier": {
+    "walk_cycle_distance_m": 0.8,
+    "walk_duration_seconds": 1.8,
+    "prepare_seconds": 1.25,
+    "active_seconds": 0.26,
+    "recovery_seconds": 1.25
+  },
+  "signature": "1916fc58294a767843e2177b607fe022044a91487cd9794db867e7e1edc62898",
+  "clips": [
+    {
+      "name": "ZombieDecayIdle",
+      "duration_seconds": 8.0,
+      "loop": true,
+      "maximum_support_error_m": 1.5914447131226827e-08,
+      "maximum_scale_error": 7.450580596923828e-06
+    },
+    {
+      "name": "ZombieDecayWalk",
+      "duration_seconds": 1.6,
+      "loop": true,
+      "maximum_support_error_m": 0.0,
+      "maximum_scale_error": 1.2159347534179688e-05
+    },
+    {
+      "name": "ZombieDecayAttackRight",
+      "duration_seconds": 2.12,
+      "loop": false,
+      "maximum_support_error_m": 0.0,
+      "maximum_scale_error": 1.233816146850586e-05
+    },
+    {
+      "name": "ZombieDecayAttackLeft",
+      "duration_seconds": 2.12,
+      "loop": false,
+      "maximum_support_error_m": 0.0,
+      "maximum_scale_error": 7.450580596923828e-06
+    },
+    {
+      "name": "ZombieDecayHit",
+      "duration_seconds": 0.45,
+      "loop": false,
+      "maximum_support_error_m": 1.5914447131226827e-08,
+      "maximum_scale_error": 7.450580596923828e-06
+    },
+    {
+      "name": "ZombieDecayDormant0",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "maximum_support_error_m": 9.313225746154785e-09,
+      "maximum_scale_error": 1.1324882507324219e-05
+    },
+    {
+      "name": "ZombieDecayDormant1",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "maximum_support_error_m": 9.313225746154785e-09,
+      "maximum_scale_error": 1.1324882507324219e-05
+    },
+    {
+      "name": "ZombieDecayDormant2",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "maximum_support_error_m": 7.679882693323606e-09,
+      "maximum_scale_error": 1.1324882507324219e-05
+    },
+    {
+      "name": "ZombieDecayRise0",
+      "duration_seconds": 2.4,
+      "loop": false,
+      "maximum_support_error_m": 1.7071424778386354e-08,
+      "maximum_scale_error": 1.1324882507324219e-05
+    },
+    {
+      "name": "ZombieDecayRise1",
+      "duration_seconds": 2.4,
+      "loop": false,
+      "maximum_support_error_m": 1.7071424778386354e-08,
+      "maximum_scale_error": 1.1324882507324219e-05
+    },
+    {
+      "name": "ZombieDecayRise2",
+      "duration_seconds": 2.4,
+      "loop": false,
+      "maximum_support_error_m": 1.501712528671799e-08,
+      "maximum_scale_error": 1.1324882507324219e-05
+    },
+    {
+      "name": "ZombieCarrierIdle",
+      "duration_seconds": 8.0,
+      "loop": true,
+      "maximum_support_error_m": 7.679882693323606e-09,
+      "maximum_scale_error": 1.0013580322265625e-05
+    },
+    {
+      "name": "ZombieCarrierWalk",
+      "duration_seconds": 1.8,
+      "loop": true,
+      "maximum_support_error_m": 0.0,
+      "maximum_scale_error": 1.1801719665527344e-05
+    },
+    {
+      "name": "ZombieCarrierAttackRight",
+      "duration_seconds": 2.76,
+      "loop": false,
+      "maximum_support_error_m": 0.0,
+      "maximum_scale_error": 1.1980533599853516e-05
+    },
+    {
+      "name": "ZombieCarrierAttackLeft",
+      "duration_seconds": 2.76,
+      "loop": false,
+      "maximum_support_error_m": 0.0,
+      "maximum_scale_error": 1.1861324310302734e-05
+    },
+    {
+      "name": "ZombieCarrierHit",
+      "duration_seconds": 0.45,
+      "loop": false,
+      "maximum_support_error_m": 7.679882693323606e-09,
+      "maximum_scale_error": 1.0013580322265625e-05
+    }
+  ]
+}

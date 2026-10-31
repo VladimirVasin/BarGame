@@ -34,6 +34,7 @@ namespace BarPromenade
         public StairwellWarehouseEntrance WarehouseEntrance { get; private set; }
         public StairwellLabyrinthPresentation LabyrinthPresentation { get; private set; }
         public StairwellLabyrinthPuzzles LabyrinthPuzzles { get; private set; }
+        public StairwellEncounterController Encounter { get; private set; }
         public StairwellApartmentEntrance ApartmentEntrance
         {
             get;
@@ -225,6 +226,8 @@ namespace BarPromenade
                 LabyrinthPresentation.Initialize(Player, AnimatedInteraction, Atmosphere, Soundscape);
                 LabyrinthPuzzles = LabyrinthPresentation.GetComponent<StairwellLabyrinthPuzzles>();
                 LabyrinthPuzzles.Initialize(Player, AnimatedInteraction, Atmosphere, Soundscape);
+                Encounter = gameObject.AddComponent<StairwellEncounterController>();
+                Encounter.Initialize(this);
             }
             if (!Layout.IsCorrupted)
             {

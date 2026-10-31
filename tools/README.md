@@ -162,18 +162,19 @@ See [audio-vhs/README.md](audio-vhs/README.md).
 `build-player-corruption-portraits.py`:views.
 `build-player-bar-repeat-actions.py`:wave/wrist;`validate`.
 `build-player-karaoke-actions-3d-model.py`:43-bone Enter/Loop/Exit, planted feet,
-neutral/seam/determinism checks; `PlayerKaraokeActionAssetSetup` checks imports.
+neutral/seam/determinism; `PlayerKaraokeActionAssetSetup`:imports.
 
 `build-combat-{test,blood,pistol,shotgun,gore,body,skull,zombie,crane}-3d-model.py`:
-test:--simple-strike-only/--actions-only+--kick-only/--recovery-only/--footwork-only;
---refresh-published-contracts/--reuse-unchanged-actions/--resume-npc-bank file.blend;
+test:--{simple-strike,actions,kick,recovery,footwork}-only;
+--{refresh-published-contracts,reuse-unchanged-actions}/--resume-npc-bank file.blend;
 blood:--texture-only;all:--validate-only;gore:hero/NPC body-skull.
-`build-combat-pistol-3d-model.py`:launcher `--validate-only -- --normal-pilot-only`;
-`Slide__Steel` normals;geometry/UV/contacts/actions kept.
+Pistol:`--validate-only -- --normal-pilot-only`;`Slide__Steel` normals only.
 `build-combat-crane-surfaces.py`:2K+1K.
+`build-combat-degraded-zombie-3d-model.py` uses `degraded_zombie_geometry.py`.
+`combat_degraded_zombie_audio.py`: `--validate-only`.
 `build-combat-{room,imprint,long-exposure}-{3d-model,damage-3d-model}.py`:body/surfaces/damage.
 `build-combat-room-attack-3d-model.py`:clips/tableau.
-`--pointing-only`/`--npc-only`/`--tableau-only`/`--validate-only`;after body rebuild.
+`--{pointing,npc,tableau,validate}-only`;after rebuild.
 
 `build-combat-{firearm-walk,weapon-carry}-3d-model.py`→`Combat{FirearmWalk,WeaponCarry}`;
 8gaits/1.6m/C2feet/pelvis/200Hz;holster-belt-sling/6draw-stow.

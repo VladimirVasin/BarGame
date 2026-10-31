@@ -16,7 +16,7 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
-        [Explicit("Focused second-room shutter, physical crowbar brace, pickup and retained equipment capture.")]
+        [Explicit("Focused second-room puzzle, dormant crowd, confirmed crowbar awakening, physical combat and retained retry capture.")]
         [PrebuildSetup(typeof(StairwellAuthoredAssetsSetup))]
         public IEnumerator StairwellSecondPuzzleCrowbar()
         {
@@ -57,14 +57,17 @@ namespace BarPromenade.Tests.PlayMode
                 foreach (var control in puzzles.Controls)
                     if (control.Stage == 2) { first ??= control; stageControls++; }
                 Assert.That(stageControls, Is.EqualTo(3), "The second room has handle, brace and carriage only.");
-                stairwell.Player.Motor.Teleport(first.Plan.EntryRootPosition);
+                yield return VerifyStairwellDormantApproach(stairwell);
+                yield return WalkStairwellWaypoint(stairwell, stairwell.World.Root.InverseTransformPoint(first.Plan.EntryRootPosition));
                 stairwell.Player.Motor.SetInputEnabled(false);
                 stairwell.Player.Interactor.SetInputEnabled(true);
                 yield return new WaitForSecondsRealtime(.2f);
                 yield return VerifyLabyrinthPuzzleActions(stairwell, 2, input, keyboard);
                 Assert.That(state.CanPassGate(3), Is.False);
                 yield return VerifyLabyrinthCrowbarReward(stairwell, input, keyboard);
+                yield return VerifyStairwellCrowbarAwakening(stairwell);
                 yield return VerifyAcquiredCrowbarInput(stairwell, input);
+                yield return VerifyStairwellOutboundCombat(stairwell, input);
 
                 // The next real E must visibly stow the acquired tool before the original rig takes the puzzle.
                 StairwellLabyrinthPuzzleInteraction nextControl = null;
@@ -72,11 +75,16 @@ namespace BarPromenade.Tests.PlayMode
                     if (control.Id == "bird-0") { nextControl = control; break; }
                 stairwell.Player.Motor.Teleport(nextControl.Plan.EntryRootPosition);
                 yield return null;
+                Assert.That(stairwell.Encounter.State.Completed, Is.True,
+                    "Reaching the supported third storey ends the finite pursuit without requiring every body to be killed.");
                 yield return OperateLabyrinthControl(stairwell, "bird-0", input, keyboard, cancelAtContact: true);
                 var acquiredCombat = stairwell.Player.GameObject.GetComponent<PlayerCrowbarCombatController>();
                 Assert.That(acquiredCombat.Actor.HasWeaponInHand, Is.False,
                     "A contextual hand operation must keep the same acquired bar physically stowed.");
                 puzzles.PuzzleMode.Cancel();
+                Assert.That(stairwell.Encounter.CommittedAttackCount, Is.Zero,
+                    "The third puzzle's real contextual owner must not inherit live stairwell attacks.");
+                int retainedRetries = stairwell.Encounter.State.Retries;
 
                 yield return SceneManager.LoadSceneAsync(SceneIds.StairwellInterior, LoadSceneMode.Single);
                 stairwell = Object.FindAnyObjectByType<StairwellInteriorRoot>();
@@ -85,9 +93,14 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(GameSessionState.StairwellLabyrinthPuzzles.CanPassGate(2), Is.True);
                 Assert.That(stairwell.LabyrinthPuzzles.CrowbarPickup, Is.Null);
                 Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.CombatCrowbar), Is.EqualTo(1));
+                Assert.That(stairwell.Encounter.State.Completed, Is.True);
+                Assert.That(stairwell.Encounter.State.Retries, Is.EqualTo(retainedRetries));
+                Assert.That(stairwell.Encounter.MobileCount, Is.Zero, "A completed encounter cannot restart on scene reload.");
                 GameSessionState.BeginNewGame();
                 Assert.That(GameSessionState.HasInventoryItem(InventoryItemId.CombatCrowbar), Is.False);
                 Assert.That(GameSessionState.StairwellLabyrinthPuzzles.SolvedStages, Is.Zero);
+                Assert.That(GameSessionState.StairwellEncounter.Awakened || GameSessionState.StairwellEncounter.Completed, Is.False);
+                Assert.That(GameSessionState.StairwellEncounter.Retries, Is.Zero);
             }
             finally
             {
@@ -108,6 +121,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(pickup.enabled, Is.True);
             Assert.That(GameSessionState.HasInventoryItem(InventoryItemId.CombatCrowbar), Is.False,
                 "Sending the cloth frees the physical crowbar, without granting it before the shared Take.");
+            AssertStairwellEncounterDormant(stairwell);
             Vector3 point = pickup.InteractionPosition;
             Vector3 stand = Vector3.Lerp(point, stairwell.Player.GameObject.transform.position, .65f);
             stand.y = stairwell.Player.GameObject.transform.position.y;
@@ -121,6 +135,7 @@ namespace BarPromenade.Tests.PlayMode
             var screen = WorldItemFoundScreen.For(stairwell.Player.Interactor);
             yield return WaitForCorruptedStairwell(() => screen.IsShowing, "The shared crowbar find screen did not settle.");
             Assert.That(screen.ActiveItemId, Is.EqualTo(InventoryItemId.CombatCrowbar));
+            AssertStairwellEncounterDormant(stairwell);
             yield return CaptureCorruptedGameplay(stairwell, "puzzle-crowbar-item-screen", requireHero: false);
             input.Press(keyboard.escapeKey, queueEventOnly: true);
             yield return null;
@@ -129,10 +144,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.HasInventoryItem(InventoryItemId.CombatCrowbar), Is.False);
             Assert.That(pickup.Model, Is.Not.Null);
             Assert.That(GameSessionState.StairwellLabyrinthPuzzles.CanPassGate(2), Is.True);
+            AssertStairwellEncounterDormant(stairwell);
             yield return null;
             stairwell.Player.Interactor.SetInputEnabled(true);
             pickup.Interact(stairwell.Player.Interactor);
             yield return WaitForCorruptedStairwell(() => screen.IsShowing, "The cancelled crowbar could not be inspected again.");
+            AssertStairwellEncounterDormant(stairwell);
             input.Press(keyboard.eKey, queueEventOnly: true);
             yield return null;
             input.Release(keyboard.eKey, queueEventOnly: true);
@@ -194,7 +211,7 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static IEnumerator CaptureAcquiredCrowbarPose(StairwellInteriorRoot stairwell, string name)
+        private static IEnumerator CaptureAcquiredCrowbarPose(StairwellInteriorRoot stairwell, string name, bool requireHero = true)
         {
             // The finite parry is shorter than the general light-settling capture path.
             // Render its actual presented frame without pausing or advancing a diagnostic clock.
@@ -221,7 +238,7 @@ namespace BarPromenade.Tests.PlayMode
                         Directory.CreateDirectory(folder);
                         File.WriteAllBytes(Path.Combine(folder, name + ".png"), pixels.EncodeToPNG());
                         Assert.That(IsBlank(pixels), Is.False);
-                        AssertCorruptedHeroInFrame(stairwell, camera);
+                        if (requireHero) AssertCorruptedHeroInFrame(stairwell, camera);
                     }
                     finally { RenderTexture.active = previous; Object.DestroyImmediate(pixels); }
                 });
@@ -288,11 +305,18 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 Assert.That(stairwell.LabyrinthPuzzles.State.AllSolved, Is.True);
                 Assert.That(GameSessionState.IsInventoryItemEquipped(InventoryItemId.ChestFlashlight), Is.True);
+                var previousPuzzleMode = stairwell.LabyrinthPuzzles.PuzzleMode;
+                Assert.That(previousPuzzleMode.RenderedOutlineCount, Is.Zero);
+                Assert.That(previousPuzzleMode.RetainedOutlineOverlayCount, Is.InRange(1, 48));
                 // Recompose only the affected scene to prove both cabinet and equipment retention.
                 yield return SceneManager.LoadSceneAsync(SceneIds.StairwellInterior, LoadSceneMode.Single);
                 stairwell = Object.FindAnyObjectByType<StairwellInteriorRoot>();
                 yield return WaitForCorruptedStairwell(() => stairwell != null && stairwell.IsInitialized,
                     "The retained puzzle scene did not initialize.");
+                Assert.That(previousPuzzleMode.RetainedOutlineOverlayCount, Is.Zero,
+                    "Disposing the puzzle owner must release every retained selection layer.");
+                Assert.That(stairwell.LabyrinthPuzzles.PuzzleMode.RetainedOutlineOverlayCount, Is.Zero,
+                    "A recomposed solved scene must not carry selection layers from its previous owner.");
                 Assert.That(stairwell.LabyrinthPuzzles.IsCabinetOpen, Is.True);
                 Assert.That(stairwell.LabyrinthPuzzles.FlashlightPickup, Is.Null);
                 Assert.That(stairwell.LabyrinthPuzzles.State.AllSolved, Is.True);
@@ -1240,9 +1264,33 @@ namespace BarPromenade.Tests.PlayMode
             }
             Assert.That(mode.IsSettled && !mode.IsOperating, Is.True);
             int initialRevision = state.Revision;
+            StairwellLabyrinthPuzzleInteraction initialSelection = mode.SelectedControl;
+            input.Press(keyboard.dKey, queueEventOnly: true);
+            yield return null;
+            Assert.That(mode.SelectedControl, Is.SameAs(roll0), "D must select once on the next frame.");
+            yield return CaptureCorruptedGameplay(stairwell, "puzzle-first-selection-next", requireHero: false);
+            for (int frame = 0; frame < 8; frame++)
+            {
+                Assert.That(mode.SelectedControl, Is.SameAs(roll0), "Holding a selection key must not repeat.");
+                Assert.That(state.Revision, Is.EqualTo(initialRevision), "Selection must never operate a control.");
+                yield return null;
+            }
+            input.Release(keyboard.dKey, queueEventOnly: true);
+            yield return null;
+            input.Press(keyboard.aKey, queueEventOnly: true);
+            yield return null;
+            Assert.That(mode.SelectedControl, Is.SameAs(initialSelection), "A must select once backwards.");
+            yield return CaptureCorruptedGameplay(stairwell, "puzzle-first-selection-previous", requireHero: false);
+            Assert.That(mode.SelectedControl, Is.SameAs(initialSelection), "Holding A must retain the selected control.");
+            int retainedSelectionLayers = mode.RetainedOutlineOverlayCount;
+            Assert.That(retainedSelectionLayers, Is.InRange(1, 48));
+            input.Release(keyboard.aKey, queueEventOnly: true);
+            yield return null;
             input.Press(keyboard.rightArrowKey, queueEventOnly: true);
             yield return null;
             Assert.That(mode.SelectedControl, Is.SameAs(roll0), "Arrow selection must respond on the next rendered frame.");
+            Assert.That(mode.RetainedOutlineOverlayCount, Is.EqualTo(retainedSelectionLayers),
+                "Returning to an existing selection must reuse its finite overlay pool.");
             input.Release(keyboard.rightArrowKey, queueEventOnly: true);
             yield return null;
             input.Press(keyboard.eKey, queueEventOnly: true);
@@ -1354,7 +1402,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(stairwell.Player.Interactor.InputEnabled, Is.False);
                 Assert.That(stairwell.Player.Motor.InputEnabled, Is.False);
                 yield return CaptureCorruptedGameplay(stairwell, "puzzle-0" + control.Stage + "-frontal", requireHero: false);
-                Assert.That(mode.RenderedOutlineCount, Is.GreaterThan(0), "The selected physical handle needs its contour.");
+                Assert.That(mode.RenderedOutlineCount, Is.InRange(1, 16), "Only the selected physical handle needs its bounded highlight.");
                 float pausedLens = stairwell.CameraFollow.Camera.fieldOfView;
                 using (GameTimeScaleRuntime.AcquirePause())
                 {

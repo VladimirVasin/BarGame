@@ -207,6 +207,17 @@ def design_puzzles(add):
         def put(role,g,chunk='PuzzleFrame'):
             add(stage,role,kit.translated(bp.u_rotated(g,rotation),origin),chunk)
         def box(role,c,size,chunk='PuzzleFrame',bevel=.006):put(role,bp.u_box(c,size,bevel),chunk)
+        def cylinder(role,c,diameter,length,axis=1,chunk='PuzzleFrame',sides=12):
+            turn=(0,0,90) if axis==0 else (90,0,0) if axis==2 else (0,0,0)
+            body=bp.u_rotated(bp.u_cylinder((0,0,0),(diameter,length*.5,diameter),sides),turn)
+            put(role,kit.translated(body,c),chunk)
+        def grip(c,length,chunk):
+            # A rounded cross-grip reads from the front shot and retains the
+            # exact existing palm/contact centre; collars are real geometry.
+            cylinder('Rubber',c,.072,length,0,chunk)
+            for sign in (-1,1):
+                end=(c[0]+sign*(length*.5+.006),c[1],c[2])
+                cylinder('WornSteel',end,.079,.012,0,chunk)
         def node(id,kind,pivot,contact,axis=(1,0,0),step=120,travel=(0,0,0)):
             # The existing room door's measured outside dock/contact vector.
             # PlayerDoorActionTarget applies the shared 45-degree body facing.
@@ -222,11 +233,23 @@ def design_puzzles(add):
             target.update(lever_chunk='Lever_'+id,lever_pivot=wp((x,1.155,z+.20)),
                           lever_axis=rotated_point((1,0,0),rotation),lever_angle=-28,
                           lever_follows_node=False)
-            box('Steel',(x,1.155,z),(.11,.07,.08),target['lever_chunk'])
-            box('Steel',(x,1.155,z+.10),(.035,.035,.20),target['lever_chunk'])
-            box('Steel',(x,.52,z+.23),(.075,1.04,.10))
+            moving=target['lever_chunk'];pivot=(x,1.155,z+.20)
+            grip((x,1.155,z),.22,moving)
+            cylinder('Steel',(x,1.155,z+.105),.044,.21,2,moving)
+            cylinder('WornSteel',pivot,.125,.070,0,moving)
+            # The spindle is seated in a fixed clevis, which joins the full
+            # height stand. No moving handle floats above a shortened post.
+            cylinder('Steel',pivot,.042,.29,0)
+            for sign in (-1,1):
+                box('Steel',(x+sign*.092,1.155,z+.20),(.028,.18,.16))
+                cylinder('WornSteel',(x+sign*.149,1.155,z+.20),.063,.018,0,sides=6)
+            box('Steel',(x,.55,z+.23),(.09,1.10,.12))
             box('Steel',(x,.035,z+.23),(.24,.07,.27))
-            box('Steel',(x,1.02,(z+.23+3.3)/2),(.055,.055,3.3-z-.23))
+            # Tie each stand into an EXISTING lower frame cross-member, not a
+            # free endpoint behind the grip or a moving panel/cloth surface.
+            frame_y,frame_z=((.79,3.30),(.64,3.74),(.48,3.55))[stage-1]
+            box('Steel',(x,frame_y,(z+.23+frame_z)/2),(.065,.065,frame_z-z-.23))
+            for sign in (-1,1):cylinder('WornSteel',(x+sign*.078,.074,z+.23),.036,.012,1,sides=6)
         box('Collision',(0,.70,3.78),(3.25,1.4,1.05),bevel=0)
         if stage==1:
             # Three horizontal cloth drums make one image, each with a real
@@ -306,6 +329,11 @@ def design_puzzles(add):
             for y in (.82,1.26):
                 box('Steel',(1.16,y,3.46),(.20,.035,.11),target['lever_chunk'])
                 box('Steel',(1.16,y,3.53),(.20,.10,.035),target['lever_chunk'])
+                # The original shared crowbar stays the grip. Its two cups
+                # now bolt to one spine and the existing right-hand frame.
+                box('Steel',(1.205,y,3.645),(.15,.06,.23))
+                for x in (1.09,1.23):cylinder('Steel',(x,y,3.515),.034,.02,2,sides=6)
+            box('WornSteel',(1.16,1.04,3.555),(.24,.64,.035))
             crowbar=dict(item_position=wp((1.16,.95,3.40)),item_euler=(0,-90,0),
                          braced_position=wp((.80,.875,3.52)),braced_euler=(0,-90,0),
                          interaction_position=wp((1.10,1.155,2.85)))
@@ -326,12 +354,18 @@ def design_puzzles(add):
             for n in range(4):box('Cloth',(-.68,.80+n*.025,2.96),(.48,.023,.36),chunk,.003)
             box('Thread',(-.68,.89,2.96),(.035,.012,.38),chunk,.001)
             chunk=node('carriage-send','carriage-send',(-.68,1.155,2.65),(-.68,1.155,2.65),step=0,travel=(0,0,1.12))
-            for x in (-.92,-.44):box('Steel',(x,.94,2.69),(.035,.38,.035),chunk)
+            for x in (-.92,-.44):
+                cylinder('Steel',(x,.955,2.69),.049,.41,1,chunk)
+                cylinder('WornSteel',(x,.765,2.69),.09,.035,1,chunk)
+                # The short elbow reaches the crossbar instead of ending a
+                # few millimetres behind a detached rectangular block.
+                cylinder('Steel',(x,1.155,2.67),.049,.085,2,chunk)
             target=nodes[-1]
             target.update(dock=wp((-.88,.04,2.30)),exit_dock=wp((-.88,.04,2.30)))
             target.update(lever_chunk='Lever_carriage-send',lever_pivot=wp((-.68,1.155,2.65)),
                           lever_axis=(0,1,0),lever_angle=0,lever_follows_node=True)
-            box('WornSteel',(-.68,1.155,2.65),(.55,.055,.075),target['lever_chunk'])
+            cylinder('WornSteel',(-.68,1.155,2.65),.055,.55,0,target['lever_chunk'])
+            grip((-.68,1.155,2.65),.30,target['lever_chunk'])
             for x in (-1.0,-.36):box('Steel',(x,.69,3.52),(.045,.045,1.85))
             # Arrival nudges this stop; the solid connecting arm engages the pawl.
             chunk=node('delivery-catch','catch',(.80,1.48,3.70),(0,1.155,2.42),axis=(0,0,1),step=-32)
@@ -365,11 +399,20 @@ def design_puzzles(add):
                 # Fixed catch/running slot directly behind each moving tab.
                 box('Steel',(x+.25,y-.30,3.52),(.08,.16,.16))
             chunk=node('bird-lift','bird-lift',(1.12,1.155,2.25),(1.12,1.155,2.25),step=0,travel=(0,.3,0))
-            box('Steel',(1.12,1.30,2.25),(.075,.38,.075),chunk)
+            cylinder('WornSteel',(1.12,1.415,2.25),.055,.61,1,chunk)
             target=nodes[-1]
             target.update(lever_chunk='Lever_bird-lift',lever_pivot=wp((1.12,1.155,2.25)),
                           lever_axis=(0,1,0),lever_angle=0,lever_follows_node=True)
-            box('Steel',(1.12,1.155,2.25),(.24,.055,.095),target['lever_chunk'])
+            grip((1.12,1.155,2.25),.24,target['lever_chunk'])
+            # A sliding rod in two fixed guides belongs to a frame-mounted
+            # housing. The housing and brace reach the rear maintenance frame.
+            for y in (1.46,1.60):
+                box('Steel',(1.12,y,2.25),(.17,.09,.17))
+                box('Steel',(1.12,y,2.92),(.065,.065,1.34))
+                box('Steel',(1.26,y,3.55),(.32,.08,.10))
+            box('WornSteel',(1.12,1.53,2.34),(.10,.40,.035))
+            box('Steel',(1.12,.70,2.32),(.085,1.40,.10))
+            box('Steel',(1.12,.035,2.32),(.24,.07,.27))
             # A light matte receiving surface, non-emissive and physically part
             # of the room, catches the shadows rather than drawing fake birds.
             box('Cloth',(0,1.67,4.265),(2.94,1.78,.018))
@@ -872,6 +915,30 @@ def validate(groups):
         parts=[part for (stage,chunk,role),geometries in groups.items() if chunk==node['lever_chunk'] for part in geometries]
         if not parts or not all(math.isfinite(value) for value in node['lever_pivot']+node['lever_axis']):
             raise ValueError('Missing measured handle '+node['id'])
+        if node['id']=='shutter-stop':continue # The shared real crowbar is this grip.
+        grip_parts=groups.get((node['stage'],node['lever_chunk'],'Rubber'),[])
+        if not grip_parts:raise ValueError('Control lacks its rounded authored hand grip: '+node['id'])
+        low,high=kit.bounds(kit.merge_all(grip_parts))
+        if any(not low[i]<=node['contact'][i]<=high[i] for i in range(3)):
+            raise ValueError('Authored grip moved away from the original hand contact: '+node['id'])
+        if node['lever_angle']:
+            pivot=node['lever_pivot']
+            fixed=groups[(node['stage'],'PuzzleFrame','Steel')]
+            moving=groups[(node['stage'],node['lever_chunk'],'WornSteel')]
+            def contains(geometry):
+                lower,upper=kit.bounds(geometry)
+                return all(lower[i]<=pivot[i]<=upper[i] for i in range(3))
+            if not any(contains(g) for g in fixed) or not any(contains(g) for g in moving):
+                raise ValueError('Lever spindle must join the fixed and rotating assembly: '+node['id'])
+    # Both fixed bearings keep the moving rod captured over its complete
+    # .30m stroke, while the mechanism stays in the existing inspection area.
+    rod_low,rod_high=kit.bounds(kit.merge_all(groups[(3,'Puzzle_bird-lift','WornSteel')]))
+    floor=ROOMS[2]['door'][1]
+    for travel in (0.,.30):
+        for guide_y in (1.46,1.60):
+            if rod_low[1]+travel>floor+guide_y-.045 or rod_high[1]+travel<floor+guide_y+.045:
+                raise ValueError('Bird lift rod escaped a frame-mounted guide at a stroke endpoint')
+    print('STAIRWELL_LABYRINTH_CONTROL_MOUNTS_OK',flush=True)
     reward=design.reward_cabinet
     if reward is None or reward['stage']!=1 or not 90<=reward['open_angle']<=110:
         raise ValueError('First puzzle requires a physically opening flashlight cabinet')
@@ -1102,7 +1169,7 @@ def main():
         gates.append(record)
     reward={k:v for k,v in design.reward_cabinet.items() if k!='chunk'}
     reward['parts']=[part['name'] for part in records if part['chunk']==design.reward_cabinet['chunk']]
-    payload=dict(schema_version=5,generator_version='6.1.0',signature=signature,contract_signature=contract_signature(),report=report,parts=records,doors=doors,motions=motions,puzzle_nodes=puzzle_nodes,gates=gates,reward_cabinet=reward,reward_crowbar=design.reward_crowbar,contract=contract())
+    payload=dict(schema_version=5,generator_version='6.2.0',signature=signature,contract_signature=contract_signature(),report=report,parts=records,doors=doors,motions=motions,puzzle_nodes=puzzle_nodes,gates=gates,reward_cabinet=reward,reward_crowbar=design.reward_crowbar,contract=contract())
     args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
     manifest=json.dumps(payload,indent=2)+'\n';(args.model_dir/'Labyrinth3D.json').write_text(manifest);(args.source_dir/'labyrinth-3d-model.json').write_text(manifest)
     write_runtime(args.code_dir)

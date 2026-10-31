@@ -13,6 +13,23 @@ namespace BarPromenade
             obstacleRecoverySeconds: 3.2f, parriedRecoverySeconds: 3.2f,
             animationRecoverySeconds: .95f, staggerSeconds: .8f,
             isUnarmedZombie: true, incomingDamageScale: .5f);
+        public static MeleeCombatSettings DegradedZombieCombatSettings { get; } = new MeleeCombatSettings(
+            damage: 18f, blockCost: 14f, windupSeconds: .95f, activeSeconds: .22f,
+            recoverySeconds: 3.2f, hitRecoverySeconds: 3.2f, blockRecoverySeconds: 3.2f,
+            obstacleRecoverySeconds: 3.2f, parriedRecoverySeconds: 3.2f,
+            animationRecoverySeconds: .95f, staggerSeconds: .8f,
+            isUnarmedZombie: true, incomingDamageScale: .5f);
+        public static MeleeCombatSettings SelfCarrierZombieCombatSettings { get; } = new MeleeCombatSettings(
+            damage: 24f, blockCost: 18f, windupSeconds: 1.25f, activeSeconds: .26f,
+            recoverySeconds: 4.2f, hitRecoverySeconds: 4.2f, blockRecoverySeconds: 4.2f,
+            obstacleRecoverySeconds: 4.2f, parriedRecoverySeconds: 4.2f,
+            animationRecoverySeconds: 1.25f, staggerSeconds: .8f,
+            isUnarmedZombie: true, incomingDamageScale: .5f);
+        public int OrdinaryZombieVariant { get; private set; }
+        private float OrdinaryZombieStrideDistance => IsOrdinaryZombie && OrdinaryZombieVariant == 2
+            ? CombatZombieAssetProvider.CarrierWalkCycleDistance : CombatZombieAssetProvider.OrdinaryWalkCycleDistance;
+        private float OrdinaryZombieStrideSeconds => IsOrdinaryZombie && OrdinaryZombieVariant == 2
+            ? CombatZombieAssetProvider.CarrierWalkCycleSeconds : CombatZombieAssetProvider.OrdinaryWalkCycleSeconds;
         private float ZombiePalmRadius => .065f * PresentationScale;
         private AnimationClip zombieWalk, zombieAttackRight, zombieAttackLeft, zombieLoadAdjust, zombieWatch;
         private Transform zombieLeftShoulder, zombieRightShoulder;
@@ -34,6 +51,18 @@ namespace BarPromenade
 
         private void LoadZombieClips()
         {
+            if (IsOrdinaryZombie)
+            {
+                ready = rest = CombatZombieAssetProvider.LoadDegradedClip(CombatZombieAssetProvider.DegradedIdleClip, OrdinaryZombieVariant);
+                zombieWalk = CombatZombieAssetProvider.LoadDegradedClip(CombatZombieAssetProvider.DegradedWalkClip, OrdinaryZombieVariant);
+                zombieAttackRight = CombatZombieAssetProvider.LoadDegradedClip(CombatZombieAssetProvider.DegradedAttackRightClip, OrdinaryZombieVariant);
+                zombieAttackLeft = CombatZombieAssetProvider.LoadDegradedClip(CombatZombieAssetProvider.DegradedAttackLeftClip, OrdinaryZombieVariant);
+                hit = guardBreak = CombatZombieAssetProvider.LoadDegradedClip(CombatZombieAssetProvider.DegradedHitClip, OrdinaryZombieVariant);
+                zombieDormant = CombatZombieAssetProvider.LoadDegradedClip(CombatZombieAssetProvider.OrdinaryDormantClip(OrdinaryZombieVariant));
+                zombieReveal = CombatZombieAssetProvider.LoadDegradedClip(CombatZombieAssetProvider.OrdinaryRiseClip(OrdinaryZombieVariant));
+                defeat = CombatAssetProvider.LoadClip("CombatDefeat", true);
+                return;
+            }
             if (!IsDocker)
             {
                 // Ready/0 remains the canonical anatomical baseline. Only the
@@ -86,10 +115,10 @@ namespace BarPromenade
                 throw new InvalidOperationException("A zombie requires his original physical head shape.");
             zombieFootsteps = npc.gameObject.AddComponent<NpcFootstepProfile>();
             zombieFootsteps.Configure((IsDocker ? CombatZombieAssetProvider.WalkCycleDistance :
-                CombatZombieAssetProvider.OrdinaryWalkCycleDistance * PresentationScale) * .5f, .08f, 1f, true);
+                OrdinaryZombieStrideDistance * PresentationScale) * .5f, .08f, 1f, true);
             handPose.SetGrip(false, IsDocker ? .12f : 0f); handPose.SetGrip(true, IsDocker ? .12f : 0f);
             zombieAudio = gameObject.AddComponent<CombatZombieAudio>();
-            zombieAudio.Initialize(zombieLoad != null ? zombieLoad.Model : npc.transform);
+            zombieAudio.Initialize(zombieLoad != null ? zombieLoad.Model : npc.transform, IsOrdinaryZombie, OrdinaryZombieVariant);
             zombieLoad?.BindMaterialAudio(zombieAudio);
             if (IsDocker) InitializeZombieFrenzyEntry();
             ResetZombieAttack();
@@ -113,6 +142,18 @@ namespace BarPromenade
             JournalEvent("zombie_attack_started", contactTarget?.JournalActorId ?? 0, State.AttackSequence,
                 f0: GameLog.Field("left_side", ZombieAttackUsesLeftSide));
             return true;
+        }
+
+        /// <summary>Promotion transfers the already visible idle clock after bind-anatomy setup.</summary>
+        internal void RestoreOrdinaryZombieIdlePhase(float elapsed)
+        {
+            if (!IsOrdinaryZombie || !float.IsFinite(elapsed) || elapsed < 0f)
+                throw new ArgumentOutOfRangeException(nameof(elapsed));
+            if (!ZombieAwake || State.Phase != MeleePhase.Ready || IsKnockedDown || IsRagdollActive) return;
+            poseClock = Mathf.Repeat(elapsed, rest.length);
+            visibleClip = null;
+            CancelPoseBlend();
+            Present();
         }
 
         private void AdvanceZombiePresentation(float seconds)
@@ -171,7 +212,9 @@ namespace BarPromenade
                 (footwork.RecoveryEpisodeActive || (ImpactMotion?.IsActive ?? false));
             if (recoveryFeet) footwork.Apply();
             // Looking back at the hero would erase the impact's head whip.
-            if (!IsZombieFrenzied && !crowbarRecoil) ApplyCombatAttention();
+            // The loop's face stays in its own chest, and the carrier's head
+            // belongs to its weight. Target gaze must not straighten either body.
+            if (!IsOrdinaryZombie && !IsZombieFrenzied && !crowbarRecoil) ApplyCombatAttention();
             ApplyNpcPoseBlend();
             if (recoveryFeet) footwork.ConstrainContacts();
             ApplyCorpseStepPose();
@@ -397,11 +440,11 @@ namespace BarPromenade
         internal float GroundObstacleRadius => zombieLoad != null && zombieLoad.IsCarrying ? zombieLoad.NavigationRadius : 0f;
         internal float GroundObstacleHeight => zombieLoad != null && zombieLoad.IsCarrying ? zombieLoad.NavigationHeight : 0f;
 
-        internal void SetZombieWalking(bool walking) => zombieWalkingRequested = walking && !RoomAttackSuppressed;
+        internal void SetZombieWalking(bool walking) => zombieWalkingRequested = walking && ZombieAwake && !RoomAttackSuppressed;
 
         internal float PreviewZombieWalkDistance(float seconds) => IsDocker
             ? CombatZombieAssetProvider.WalkTravel(zombieWalkClock + seconds) - CombatZombieAssetProvider.WalkTravel(zombieWalkClock)
-            : seconds * CombatZombieAssetProvider.OrdinaryWalkCycleDistance / CombatZombieAssetProvider.OrdinaryWalkCycleSeconds * PresentationScale;
+            : seconds * OrdinaryZombieStrideDistance / OrdinaryZombieStrideSeconds * PresentationScale;
 
         internal void AdvanceZombieWalkClock(float seconds, float requested, float achieved)
         {
@@ -419,7 +462,7 @@ namespace BarPromenade
                 elapsed = low;
             }
             float end = zombieWalkClock + elapsed;
-            float cycle = IsDocker ? CombatZombieAssetProvider.WalkCycleSeconds : CombatZombieAssetProvider.OrdinaryWalkCycleSeconds;
+            float cycle = IsDocker ? CombatZombieAssetProvider.WalkCycleSeconds : OrdinaryZombieStrideSeconds;
             float rightContact = cycle * (IsDocker ? .42f : .5f);
             float leftContact = cycle * (IsDocker ? .92f : 1f);
             if (zombieWalkClock < rightContact && end >= rightContact || zombieWalkClock < leftContact && end >= leftContact)

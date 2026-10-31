@@ -1,6 +1,21 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted architecture exception 2026-11-01 — Stairwell zombies:**
+  `Zombie`: 18 Loops (variants 0/1), three Carriers (2). Giant bottles dominate
+  torsos or backs (art §7), without labels or brands. They are the hero's
+  perception; names stay outside fiction. Other enemies/NPCs are unchanged.
+  Stage two wakes after confirmed crowbar pickup and modal exit only.
+  First actual contact is solo; then up to four move and two attack, with
+  spaced commitments and 1.3 s hit grace. Retreat and bypass remain possible;
+  room three is safe. Retry keeps puzzles and crowbar; travel retains
+  progress, New Game resets it. Hero owns input/step; encounter owns contacts
+  and height-aware routing. Passive bodies have no AI/physics/audio; assets
+  are shared, rigs/voices/remains capped. Performance is unmeasured.
+  All 24 effects keep their owners/settings; labyrinth lighting stays black.
+  No new lights/passes, speech or lore; no act/scale changes, forced camera,
+  strobe or story death. Keep FX-off readability, §16/21 and nine art checks.
+
 - **Accepted 2026-10-31 — crowbar equipment and gait, user:**
   Inv after-modal draw/stow;hidden bar/holder/dock0.
   High-R bat/gait;action soles;palm/body;world/warehouse/context
@@ -42,20 +57,20 @@
   no forbidden detail/§6 waiver.
 
 - **Accepted architecture exception 2026-10-30 — myth puzzles/presence light:**
-  Philomela/Procne/Tereus→weave/delivery/birds;positioned rig/grips/RU.
-  Guarded domestic→shaft→machines/loops;gravity/3P/fixed below.
-  Reversible gates/session/reset→warehouse/fish/key/ambush/retry.
-  Silent/anonymous;woman/crime clue/voice/apparition/loss/timer0.
-  Statue/initial light stay;flight1:2Hard lamps22/24m/samefloor-room/lens-hum-
-  contactor;return restores. Black;Blender supports/cables hide finite ends/floor.
-  Bounded lights/caches/pause/cleanup.
+  Philomela/Procne/Tereus: weave/delivery/birds. Rig/grips/RU stay.
+  Domestic→shaft→machines/loops; gravity/3P, fixed below; gates/session
+  retain warehouse/fish/key/ambush/retry. No voice, apparition, crime clue,
+  loss or timer. Statue/lower light stay; two Hard lights at 22/24 m, same-floor
+  rooms, lens/hum/contactor; return restores. Black depths; Blender supports
+  hide ends/floor; bounded lights/caches/cleanup.
 
 - **Accepted exception 2026-10-30 — puzzle mode/chest lamp:**
-  User2026-10-31:front panel+handles/UI margin/4:3–16:9;head0/roll0/cache3.
-  Hiddenhero/rig-grips;arrows immediate/E pending1/Q cancels;short.
-  Solved1→compact cabinet/back-to-wall/shared take1x→ChestFlashlight/equip/session;
-  reset/storygrant0/Debug. Factory:event/lazy/warehouse;return leases.
-  All24:scene6/material10/post8 stay;readable lens/DOF;providers0/cost unknown;
+  Frontal panel/levers fit 4:3–16:9; hidden hero, shared grips, no head/roll.
+  A/D or ←→ select immediately; E queues one short action; Q exits.
+  Levers have mounts; selection alone uses a bone contour, dark edge
+  and surface wash. Back-wall cabinet opens a shared lamp pickup/equip/session.
+  Debug/lazy factory/leases stay; no story grant/reset.
+  All 24 effects retain owners; no added light, GI/SSR or post. Cost unmeasured;
   §6/16/21/art9.
 
 - **Accepted exception 2026-10-30 — Home ceiling, stove wall and room shots:**
@@ -111,17 +126,14 @@
   materials, cached grip indices/bounded obstacle buffers; cost unmeasured.
 
 - **Accepted architecture exception 2026-10-30 — calm Home new-game launch:**
-  User: top New Game/Debug/Quit. New Game prepares fresh Home/day1, hero/home1,
-  open balcony and actual12:00 before composition; clock/needs wait for E.
-  Covered ready callback acquires sleep after guard clears, before first frame.
-  `HomeOpeningCameraSequence`: five6s views,2.4s eased moves/shared
-  `ContextualCameraDirector`/saved DOF, outside the locked room. E starts the
-  prepared clock and normal same-rig seated wake; shared recovery/return/idle
-  hold awaits fresh E Stand, then slow exit. No startup nightmare/decay/Horror/
-  stinger or new prologue/act/lore. Debug keeps time07:40→twelve places, combat/
-  lab/vocalizer/back; legacy05:59 remains API-only. All24 effects retain owners:
-  existing actual-noon light/material/shadow/post coverage, only camera/DOF scope;
-  no new light/render pass. Bounded prepared shots/leases, cost unmeasured.
+  New Game/Debug/Quit; fresh Home/day1/hero-home1/open balcony/actual12:00;
+  clock-needs await E. Ready clears guard/acquires sleep before first frame.
+  `HomeOpeningCameraSequence`:five6s views/2.4s eased moves/shared
+  `ContextualCameraDirector`/saved DOF, outside locked room. E starts clock/
+  same-rig seated wake/recovery/return/idle→fresh E Stand/slow exit.
+  Nightmare/decay/Horror/stinger/prologue/act/lore0. Debug07:40/twelve places/
+  combat-lab-vocalizer-back;legacy05:59 API-only. All24 owners/noon coverage
+  stay;camera/DOF only, new lights/passes0. Bounded shots/leases;cost unmeasured.
 
 - **Accepted architecture exception 2026-10-30 — distorted Stairwell/short ascent:**
   Lower walls/columns/household/fixtures stay; broken back/east-south roof.
@@ -129,15 +141,13 @@
   X1.55; apartment bounce lights stone. Ordinary mode stays; upper:labyrinth.
 
 - **Accepted architecture exception 2026-10-30 — stone Cat-head inspection:**
-  Static stone Cat head/descent wall/ears-muzzle-carvedgrin/buried rear;
-  body/neck/plinth/blood/live-secondCat/transformation/storygrin0.
-  Feeding/quest stay;food/grant0. Narrative/ObjectCloseUp:silent
-  cancel E «Осмотреть»/lore-pages-speech-reward0. User:wide↔close instant
-  `NarrativeCameraTransition.Cut`/camera+DOF;defaultBlend. Close only:model/contact
-  shadow:`PlayerPresentationVisibility` lease hides on Cut;same-frame restore
-  exit/cancel/disable/failedframing. Collider/rig/originalapproach stay;
-  teleport/alignmentmask0. All24 shared/SSR-SSGIhistory-newFX0;
-  story§6/16/21/nine checks/shared passive assets.
+  Static stone ears/muzzle/carvedgrin/rear buried in descent wall;
+  body/neck/plinth/blood/secondCat/transformation/storygrin0. Feeding/quest stay;
+  food/grant/lore/pages/speech/reward0. Narrative/ObjectCloseUp:cancel E
+  «Осмотреть»;user:wide↔close `NarrativeCameraTransition.Cut`/DOF/defaultBlend.
+  Close-only `PlayerPresentationVisibility` model/contact-shadow lease;
+  sameframe restore on exit/cancel/disable/failedframe. Collider/rig/approach stay;
+  teleport/alignmentmask/newFX/SSR-SSGIhistory0. Shared assets/§6/16/21/art9.
 
 - **Accepted 2026-10-29 — decay hair and clothing wear:**
   User: cropped first hair grows long/unkempt at maximum, replacing fixed medium
@@ -147,30 +157,21 @@
   right patch/paired forearms/alpha/normal-response maps stay.
 
 - **Accepted 2026-10-29 — seven hero decay appearances:**
-  User approved seven increasingly emaciated human forms, maximum strongly
-  changing head/body/garment silhouette on the sole Hero V2. `HeroCorruptionRules`
-  maps confirmed swallowed dose to 1–7:0/120/300/540/840/1200/1620;
-  authored intoxication gains count beyond the current cap. Stale/duplicate
-  commits and water add nothing. Session dose survives sobriety/washing/travel; New Game clears it. Calendar,
-  acts and world0–5 stay separate; exact reverse selection is developer-only.
-  Blender's additive `HeroCorruption` retains Basis/rig/weights/UVs/actions and
-  contacts; prepared face/bare-skin/dialogue variants retain speech/blinks/soil.
-  `PlayerCorruptionAppearance` owns stage writes; world, passive mirror and FP
-  use the same applied state; inventory selects its authored portrait.
-  Shared contact-aware hunch/asymmetry/tremor yield
-  to contextual poses, falls and protected grips. No gait-speed/balance/access/
-  needs change, NPC reaction, fiction line or player meter. Sources/materials
-  stay shared; bounded prepared state/contact buffers, no world rebuild.
-  Original export triangulation is baked before the first morph; the focused
-  `check-hero-corruption-export.py` compares original vertex/triangle/UV/weight/
-  existing-shape contracts. The seated lower-body module retains support/outlet
-  anchors and shares the decay shape.
-  Effects: GI/SSAO/fog/volumetrics/shadows/grade retain scene owners; deformation
-  reaches ordinary mesh passes. Home has no SSGI/SCGI/interior SSR provider.
-  Probes/SSR/water/wetness/bevels/COLOR/wind/decals/particles/rim/outlines retain
-  scope; authored normals/roughness/palette carry illness without new emitters.
-  Bloom/DOF/AA/vignette/grain/flares/blur/lens retain shared settings. No new
-  render pass, light, atmosphere, sound or camera scene; cost unmeasured.
+  Sole Hero V2:seven increasingly emaciated human head/body/garment forms.
+  `HeroCorruptionRules`:confirmed swallowed dose1–7=0/120/300/540/840/1200/1620;
+  authored gains count past intoxication cap;water/stale/duplicate0. Dose survives
+  sobriety/wash/travel;New Game clears;calendar/acts/world0–5 separate;
+  reverse stage developer-only. Blender additive `HeroCorruption` keeps
+  Basis/rig/weights/UV/actions/contacts;prepared face/skin/dialogue keep
+  speech/blink/soil. `PlayerCorruptionAppearance` writes world/mirror/FP state;
+  inventory authored portrait. Shared contact-aware hunch/asymmetry/tremor yield
+  to context/falls/protected grips. Gait/balance/access/needs/NPC reaction/text/
+  meter unchanged;shared sources/materials/bounded buffers/no world rebuild.
+  Triangulation baked before morph;`check-hero-corruption-export.py` compares
+  original vertices/triangles/UV/weights/shapes. Seated lower body shares decay,
+  support/outlet anchors kept. All24 owners/passes/settings stay;normals/roughness/
+  palette carry illness. Home SSGI/SCGI/interiorSSR0;new light/pass/air/sound/
+  camera0;cost unmeasured.
 
 - **Accepted architecture exception 2026-10-29 — post-sleep corruption route:**
   Opaque Home cut commits apartment7/hero dose floor7 atomically; higher dose

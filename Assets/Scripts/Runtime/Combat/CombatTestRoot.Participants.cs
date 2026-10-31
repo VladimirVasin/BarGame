@@ -156,6 +156,7 @@ namespace BarPromenade
             else if (kind == CombatEnemyKind.Room) CombatRoomAssetProvider.ApplyAppearance(presentation.gameObject, identity);
             else if (kind == CombatEnemyKind.Imprint) CombatImprintAssetProvider.ApplyAppearance(presentation.gameObject, identity);
             else if (kind == CombatEnemyKind.LongExposure) CombatLongExposureAssetProvider.ApplyAppearance(presentation.gameObject, identity);
+            else if (kind == CombatEnemyKind.Zombie) CombatZombieAssetProvider.ApplyOrdinaryAppearance(presentation.gameObject, index % 3);
             else CombatZombieAssetProvider.ApplyAppearance(presentation.gameObject, IsLaboratory && kind == CombatEnemyKind.Docker ? 1 : index % 3);
             CombatActor actor = obj.AddComponent<CombatActor>();
             actor.InitializeOpponent(presentation, body, kind: kind);

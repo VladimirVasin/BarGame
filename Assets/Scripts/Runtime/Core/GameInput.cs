@@ -212,9 +212,9 @@ namespace BarPromenade
                            Read(keyboard?.enterKey, held) ||
                            Read(gamepad?.buttonSouth, held);
                 case GameInputAction.PuzzlePreviousControl:
-                    return Read(keyboard?.leftArrowKey, held);
+                    return Read(keyboard?.leftArrowKey, held) || Read(keyboard?.aKey, held);
                 case GameInputAction.PuzzleNextControl:
-                    return Read(keyboard?.rightArrowKey, held);
+                    return Read(keyboard?.rightArrowKey, held) || Read(keyboard?.dKey, held);
                 case GameInputAction.PuzzleExit:
                     return Read(keyboard?.qKey, held);
                 case GameInputAction.Confirm:

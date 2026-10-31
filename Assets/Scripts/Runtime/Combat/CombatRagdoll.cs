@@ -110,6 +110,7 @@ namespace BarPromenade
             {
                 combatActor.RestoreRoomHandBindScales();
                 RestoreSkinBindPose(npc.ModelRoot, anatomy);
+                combatActor.ApplyOrdinaryZombieArmProportionsToBindPose();
                 combatActor.ApplyRoomArmProportionsToFreshPose();
                 physicsController = controller.gameObject.AddComponent<Player3DRagdollController>();
                 physicsController.Initialize(controller.transform, controller, npc.ModelRoot, anatomy,

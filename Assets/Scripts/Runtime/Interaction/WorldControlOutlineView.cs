@@ -5,30 +5,49 @@ using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
-    /// <summary>A depth-tested pixel contour of one authored control, confined to its gameplay camera.</summary>
+    /// <summary>A restrained surface wash and continuous depth-tested contour of one selected control.</summary>
     internal sealed class WorldControlOutlineView : IDisposable
     {
         private const int MaximumParts = 16;
-        private static Material sharedMaterial;
+        private const int LayerCount = 3;
+        private static Material[] sharedMaterials;
         private static int users;
         private static readonly int ControlCenter = Shader.PropertyToID("_ControlCenterOS");
+        private static readonly int ControlExtents = Shader.PropertyToID("_ControlExtentsOS");
         private readonly MaterialPropertyBlock properties = new MaterialPropertyBlock();
         private readonly Renderer[] sources = new Renderer[MaximumParts];
         private readonly MeshFilter[] meshes = new MeshFilter[MaximumParts];
-        private readonly MeshFilter[] overlayMeshes = new MeshFilter[MaximumParts];
-        private readonly MeshRenderer[] overlays = new MeshRenderer[MaximumParts];
+        private readonly MeshFilter[] overlayMeshes = new MeshFilter[MaximumParts * LayerCount];
+        private readonly MeshRenderer[] overlays = new MeshRenderer[MaximumParts * LayerCount];
         private Camera targetCamera;
-        private int count;
+        private int count, retainedOverlays;
         private bool disposed;
         public int RenderedPartCount { get; private set; }
+        public int RetainedOverlayCount => disposed ? 0 : retainedOverlays;
 
         public WorldControlOutlineView()
         {
-            if (sharedMaterial == null)
+            if (sharedMaterials == null)
             {
                 Shader shader = Resources.Load<Shader>("Shaders/WorldControlOutline");
                 if (shader == null) throw new InvalidOperationException("Missing shared world-control outline shader.");
-                sharedMaterial = new Material(shader) { name = "Shared World Control Outline", hideFlags = HideFlags.HideAndDontSave };
+                // Separate bounded draws guarantee all layers in URP without
+                // introducing a renderer feature or relying on multipass dispatch.
+                sharedMaterials = new[]
+                {
+                    Layer("Outer Edge", 3f, new Color(.035f, .03f, .025f, 1f), CullMode.Front, 2020),
+                    Layer("Ivory Edge", 2f, new Color(.88f, .84f, .73f, 1f), CullMode.Front, 2021),
+                    Layer("Surface", 0f, new Color(.88f, .84f, .73f, .18f), CullMode.Back, 2022)
+                };
+                Material Layer(string name, float width, Color color, CullMode cull, int queue)
+                {
+                    var material = new Material(shader)
+                    { name = "Shared Control " + name, hideFlags = HideFlags.HideAndDontSave, renderQueue = queue };
+                    material.SetFloat("_OutlineWidth", width);
+                    material.SetColor("_OverlayColor", color);
+                    material.SetInt("_Cull", (int)cull);
+                    return material;
+                }
             }
             users++;
             RenderPipelineManager.beginCameraRendering += OnBeginCamera;
@@ -48,28 +67,34 @@ namespace BarPromenade
                     throw new ArgumentException("World-control contours require authored mesh renderers.", nameof(renderers));
                 sources[count] = source;
                 meshes[count] = mesh;
-                if (overlays[count] == null)
+                for (int layer = 0; layer < LayerCount; layer++)
                 {
-                    var overlay = new GameObject("World Control Contour") { hideFlags = HideFlags.HideAndDontSave };
-                    overlayMeshes[count] = overlay.AddComponent<MeshFilter>();
-                    overlays[count] = overlay.AddComponent<MeshRenderer>();
-                    overlays[count].sharedMaterial = sharedMaterial;
-                    overlays[count].shadowCastingMode = ShadowCastingMode.Off;
-                    overlays[count].receiveShadows = false;
-                    overlays[count].lightProbeUsage = LightProbeUsage.Off;
-                    overlays[count].reflectionProbeUsage = ReflectionProbeUsage.Off;
-                    overlays[count].forceRenderingOff = true;
+                    int slot = count * LayerCount + layer;
+                    if (overlays[slot] == null)
+                    {
+                        var overlay = new GameObject("World Control Selection " + layer) { hideFlags = HideFlags.HideAndDontSave };
+                        overlayMeshes[slot] = overlay.AddComponent<MeshFilter>();
+                        overlays[slot] = overlay.AddComponent<MeshRenderer>();
+                        overlays[slot].sharedMaterial = sharedMaterials[layer];
+                        overlays[slot].shadowCastingMode = ShadowCastingMode.Off;
+                        overlays[slot].receiveShadows = false;
+                        overlays[slot].lightProbeUsage = LightProbeUsage.Off;
+                        overlays[slot].reflectionProbeUsage = ReflectionProbeUsage.Off;
+                        overlays[slot].forceRenderingOff = true;
+                        retainedOverlays++;
+                    }
+                    MeshRenderer overlayRenderer = overlays[slot];
+                    overlayRenderer.gameObject.layer = source.gameObject.layer;
+                    overlayRenderer.renderingLayerMask = source.renderingLayerMask;
+                    overlayRenderer.transform.SetParent(mesh.transform, false);
+                    overlayRenderer.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+                    overlayRenderer.transform.localScale = Vector3.one;
+                    overlayMeshes[slot].sharedMesh = mesh.sharedMesh;
+                    properties.SetVector(ControlCenter, mesh.sharedMesh.bounds.center);
+                    properties.SetVector(ControlExtents, mesh.sharedMesh.bounds.extents);
+                    overlayRenderer.SetPropertyBlock(properties);
+                    overlayRenderer.enabled = false;
                 }
-                overlays[count].gameObject.layer = source.gameObject.layer;
-                overlays[count].renderingLayerMask = source.renderingLayerMask;
-                overlays[count].transform.SetParent(mesh.transform, false);
-                overlays[count].transform.localPosition = Vector3.zero;
-                overlays[count].transform.localRotation = Quaternion.identity;
-                overlays[count].transform.localScale = Vector3.one;
-                overlayMeshes[count].sharedMesh = mesh.sharedMesh;
-                properties.SetVector(ControlCenter, mesh.sharedMesh.bounds.center);
-                overlays[count].SetPropertyBlock(properties);
-                overlays[count].enabled = false;
                 count++;
             }
         }
@@ -77,18 +102,17 @@ namespace BarPromenade
         public void Present(Camera camera)
         {
             RenderedPartCount = 0;
-            if (disposed || camera == null || sharedMaterial == null) return;
+            if (disposed || camera == null || sharedMaterials == null) return;
             targetCamera = camera;
             for (int index = 0; index < count; index++)
             {
                 Renderer source = sources[index];
                 MeshFilter mesh = meshes[index];
-                MeshRenderer overlay = overlays[index];
-                overlay.enabled = false;
+                for (int layer = 0; layer < LayerCount; layer++) overlays[index * LayerCount + layer].enabled = false;
                 if (source == null || !source.enabled || !source.gameObject.activeInHierarchy || mesh == null) continue;
                 Vector3 centre = camera.WorldToViewportPoint(source.bounds.center);
                 if (centre.z <= camera.nearClipPlane || centre.x < 0f || centre.x > 1f || centre.y < 0f || centre.y > 1f) continue;
-                overlay.enabled = true;
+                for (int layer = 0; layer < LayerCount; layer++) overlays[index * LayerCount + layer].enabled = true;
                 RenderedPartCount++;
             }
         }
@@ -96,7 +120,7 @@ namespace BarPromenade
         private void OnBeginCamera(ScriptableRenderContext context, Camera camera)
         {
             bool allowed = camera == targetCamera;
-            for (int index = 0; index < count; index++)
+            for (int index = 0; index < count * LayerCount; index++)
                 if (overlays[index] != null) overlays[index].forceRenderingOff = !allowed;
         }
 
@@ -104,14 +128,14 @@ namespace BarPromenade
         {
             targetCamera = null;
             RenderedPartCount = 0;
-            for (int index = 0; index < count; index++)
+            for (int index = 0; index < count * LayerCount; index++)
                 if (overlays[index] != null) { overlays[index].enabled = false; overlays[index].forceRenderingOff = true; }
         }
 
         private void OnEndCamera(ScriptableRenderContext context, Camera camera)
         {
             if (camera != targetCamera) return;
-            for (int index = 0; index < count; index++)
+            for (int index = 0; index < count * LayerCount; index++)
                 if (overlays[index] != null) overlays[index].forceRenderingOff = true;
         }
 
@@ -131,16 +155,20 @@ namespace BarPromenade
             Clear();
             RenderPipelineManager.beginCameraRendering -= OnBeginCamera;
             RenderPipelineManager.endCameraRendering -= OnEndCamera;
-            for (int index = 0; index < MaximumParts; index++)
+            for (int index = 0; index < overlays.Length; index++)
             {
                 if (overlays[index] == null) continue;
                 if (Application.isPlaying) UnityEngine.Object.Destroy(overlays[index].gameObject);
                 else UnityEngine.Object.DestroyImmediate(overlays[index].gameObject);
             }
-            if (--users != 0 || sharedMaterial == null) return;
-            if (Application.isPlaying) UnityEngine.Object.Destroy(sharedMaterial);
-            else UnityEngine.Object.DestroyImmediate(sharedMaterial);
-            sharedMaterial = null;
+            if (--users != 0) return;
+            if (sharedMaterials != null) foreach (Material material in sharedMaterials) Release(material);
+            sharedMaterials = null;
+            static void Release(UnityEngine.Object value)
+            {
+                if (Application.isPlaying) UnityEngine.Object.Destroy(value);
+                else UnityEngine.Object.DestroyImmediate(value);
+            }
         }
     }
 }
