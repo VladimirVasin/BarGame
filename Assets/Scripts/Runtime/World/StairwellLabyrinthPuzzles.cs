@@ -34,13 +34,15 @@ namespace BarPromenade
         private Quaternion cabinetRest;
         private Vector3 cabinetAxis;
         private Collider pickupTrigger;
-        private Collider crowbarTrigger;
+        private Collider crowbarTrigger, pistolTrigger;
         public const string FlashlightSourceId = "stairwell.labyrinth.first_puzzle.flashlight";
+        public const string PistolSourceId = "stairwell.labyrinth.third_puzzle.pistol";
         public const string CrowbarSourceId = "stairwell.labyrinth.second_puzzle.crowbar";
         public StairwellLabyrinthPuzzleState State { get; private set; }
         public StairwellLabyrinthPuzzleModeController PuzzleMode { get; private set; }
         public WorldItemPickup FlashlightPickup { get; private set; }
         public WorldItemPickup CrowbarPickup { get; private set; }
+        public WorldItemPickup PistolPickup { get; private set; }
         private Renderer[] crowbarControlRenderers;
         private readonly Bounds[] viewBounds = new Bounds[3];
         private readonly bool[] hasViewBounds = new bool[3];
@@ -160,6 +162,7 @@ namespace BarPromenade
             PuzzleMode.Initialize(this, player, controller);
             CreateFlashlightPickup();
             CreateCrowbarPickup();
+            CreatePistolPickup();
             PrepareViewBounds();
             Apply(State.Current);
         }
@@ -264,6 +267,23 @@ namespace BarPromenade
                         projected.Encapsulate(intoView * (braced + braceRotation * offset));
                     }
                     IncludeViewPart(2, projected);
+                }
+            }
+            if (PistolPickup != null)
+            {
+                Quaternion intoView = Quaternion.Inverse(Quaternion.Euler(0f, manifest.doors[2].yaw, 0f));
+                Vector3 travel = StairwellLabyrinthManifest.Vector(manifest.reward_pistol.travel);
+                foreach (var renderer in PistolPickup.Model.GetComponentsInChildren<Renderer>(true))
+                {
+                    Bounds projected = default;
+                    for (int corner = 0; corner < 8; corner++)
+                    {
+                        Vector3 point = transform.InverseTransformPoint(Corner(renderer.bounds, corner));
+                        if (corner == 0) projected = new Bounds(intoView * point, Vector3.zero);
+                        else projected.Encapsulate(intoView * point);
+                        projected.Encapsulate(intoView * (point + travel));
+                    }
+                    IncludeViewPart(3, projected);
                 }
             }
             for (int stage = 0; stage < 3; stage++)
@@ -374,6 +394,27 @@ namespace BarPromenade
             SetCrowbar(0f);
         }
 
+        private void CreatePistolPickup()
+        {
+            var plan = manifest.reward_pistol;
+            if (plan == null) throw new InvalidOperationException("The bird puzzle requires its captive pistol tray.");
+            PistolPickup = WorldItemPickup.Create(transform, new WorldItemPickupPlan(
+                PistolSourceId, InventoryItemId.CombatPistol, "interaction.labyrinth_take_pistol",
+                StairwellLabyrinthManifest.Vector(plan.interaction_position), new Vector3(.052f, .178f, .252f)));
+            if (PistolPickup == null) return;
+            pistolTrigger = PistolPickup.GetComponent<Collider>();
+            SetPistol(0f);
+        }
+
+        private void SetPistol(float fraction)
+        {
+            if (PistolPickup == null || PistolPickup.IsPresenting) return;
+            var plan = manifest.reward_pistol;
+            PistolPickup.Model.SetPositionAndRotation(transform.TransformPoint(
+                StairwellLabyrinthManifest.Vector(plan.item_position) + StairwellLabyrinthManifest.Vector(plan.travel) * fraction),
+                transform.rotation * Quaternion.Euler(StairwellLabyrinthManifest.Vector(plan.item_euler)));
+        }
+
         private void SetCrowbar(float braced)
         {
             if (CrowbarPickup == null || CrowbarPickup.IsPresenting) return;
@@ -453,6 +494,7 @@ namespace BarPromenade
             }
             SetCabinet(Mathf.Lerp(before.CanPassGate(1) ? 1f : 0f, after.CanPassGate(1) ? 1f : 0f, fraction));
             SetCrowbar(Mathf.Lerp(CrowbarBrace(before), CrowbarBrace(after), fraction));
+            SetPistol(Mathf.Lerp(before.CanPassGate(3) ? 1f : 0f, after.CanPassGate(3) ? 1f : 0f, fraction));
         }
 
         private void Apply(StairwellLabyrinthPuzzleState.Snapshot value)
@@ -470,6 +512,12 @@ namespace BarPromenade
                 pickupTrigger.enabled = value.CanPassGate(1);
             }
             SetCrowbar(CrowbarBrace(value));
+            SetPistol(value.CanPassGate(3) ? 1f : 0f);
+            if (PistolPickup != null)
+            {
+                PistolPickup.enabled = value.CanPassGate(3);
+                pistolTrigger.enabled = value.CanPassGate(3);
+            }
             if (CrowbarPickup != null)
             {
                 CrowbarPickup.enabled = value.CanPassGate(2);
@@ -508,7 +556,7 @@ namespace BarPromenade
                 case "bird-0": return state.Bird0;
                 case "bird-1": return state.Bird1;
                 case "bird-2": return state.Bird2;
-                case "bird-lift": return state.CanPassGate(3) ? 1f : 0f;
+                case "pistol-tray": case "bird-lift": return state.CanPassGate(3) ? 1f : 0f;
                 default: throw new InvalidOperationException("Unbound labyrinth mechanism " + id);
             }
         }

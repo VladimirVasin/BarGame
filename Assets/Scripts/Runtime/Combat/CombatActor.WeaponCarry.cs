@@ -107,6 +107,21 @@ namespace BarPromenade
             RefreshShotgunSling();
         }
 
+        /// <summary>Add an acquired story weapon without replacing the actor, injuries or existing tool.</summary>
+        internal bool TryAcquireStoryPistol()
+        {
+            if (FindCarriedWeapon(CombatWeaponId.Pistol) != null) return true;
+            if (hero == null || carriedWeapons == null || !CanBeginStandingInspection ||
+                IsSwitchingWeapon || activeCarry == null) return false;
+            CarriedWeaponRecord previous = activeCarry;
+            carriedWeapons[0] = CreateCarriedWeapon(CombatWeaponId.Pistol);
+            LoadoutSelection = CombatLoadoutSelection.CrowbarAndPistol.WithInitialHeld(previous.Id);
+            BindCarriedWeapon(previous);
+            RegisterWeaponEquipment(hero.Registry.GetComponent<PlayerEquipmentContacts>());
+            UpdateConcealedEquipment();
+            return true;
+        }
+
         private CarriedWeaponRecord CreateCarriedWeapon(CombatWeaponId id)
         {
             WeaponId = id;

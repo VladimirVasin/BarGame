@@ -610,6 +610,7 @@ namespace BarPromenade
             LastTeethBrushingDayIndex = -1;
             collectedWorldItems.Clear();
             inventory.ResetWithStarterItems();
+            storyPistolState = null;
             warehouseFishAssembly.Reset();
             warehouseGate.Reset();
             WarehouseDoorAmbushPlayed = false;
@@ -949,6 +950,23 @@ namespace BarPromenade
             if (!warehouseGate.TryUnlock(inventory.GetCount(InventoryItemId.WarehouseGateKey) > 0)) return false;
             if (!alreadyUnlocked) GameLog.Info("combat", "warehouse_gate_unlocked");
             return true;
+        }
+
+        private static PistolState.Snapshot? storyPistolState;
+
+        internal static void ApplyStoryPistolState(CombatActor actor)
+        {
+            if (!HasInventoryItem(InventoryItemId.CombatPistol) ||
+                actor?.CarriedFirearm(CombatWeaponId.Pistol) is not PistolState pistol) return;
+            if (storyPistolState.HasValue) pistol.Restore(storyPistolState.Value);
+            else storyPistolState = pistol.Capture();
+        }
+
+        internal static void CaptureStoryPistolState(CombatActor actor)
+        {
+            if (HasInventoryItem(InventoryItemId.CombatPistol) &&
+                actor?.CarriedFirearm(CombatWeaponId.Pistol) is PistolState pistol)
+                storyPistolState = pistol.Capture();
         }
 
         public static bool IsInventoryItemEquipped(InventoryItemId itemId)
@@ -1368,6 +1386,7 @@ namespace BarPromenade
             int previousCollectedCount = collectedWorldItems.Count;
             collectedWorldItems.Clear();
             inventory.ResetWithStarterItems();
+            storyPistolState = null;
             warehouseFishAssembly.Reset();
             warehouseGate.Reset();
             WarehouseDoorAmbushPlayed = false;

@@ -15,6 +15,29 @@ namespace BarPromenade
             Reset();
         }
 
+        public readonly struct Snapshot
+        {
+            internal readonly int Rounds, ReserveRounds, ShotSequence;
+            internal readonly double ReloadElapsed, CooldownRemaining;
+            internal Snapshot(PistolState state)
+            {
+                Rounds = state.Rounds; ReserveRounds = state.ReserveRounds; ShotSequence = state.ShotSequence;
+                ReloadElapsed = state.reloadElapsed; CooldownRemaining = state.cooldownRemaining;
+            }
+        }
+
+        // Scene ownership ends intent, but not physical magazine exchange or spent rounds.
+        public Snapshot Capture() => new Snapshot(this);
+        public void Restore(Snapshot snapshot)
+        {
+            Rounds = Math.Max(0, Math.Min(Settings.MagazineCapacity, snapshot.Rounds));
+            ReserveRounds = Math.Max(0, Math.Min(ReserveCapacity, snapshot.ReserveRounds));
+            ShotSequence = snapshot.ShotSequence;
+            reloadElapsed = Math.Max(0d, Math.Min(Settings.ReloadSeconds, snapshot.ReloadElapsed));
+            cooldownRemaining = Math.Max(0d, Math.Min(Settings.FireCooldownSeconds, snapshot.CooldownRemaining));
+            AimRequested = reloading = false; aimElapsed = 0d;
+        }
+
         public PistolSettings Settings { get; }
         FirearmSettings IFirearmState.Settings => Settings;
         public int Rounds { get; private set; }

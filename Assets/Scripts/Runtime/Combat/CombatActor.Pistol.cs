@@ -60,6 +60,13 @@ namespace BarPromenade
             ? Vector3.Angle(PistolMuzzle.forward, PistolAimPoint - PistolMuzzle.position) : 180f;
         internal bool PistolAimAligned => pistolAimReachable && PistolAimErrorDegrees <= MaximumPistolAimErrorDegrees;
 
+        internal string PistolPoseDiagnostics =>
+            $"visual={pistolVisualAimProgress:F3},applied={pistolAimApplied},reachable={pistolAimReachable}," +
+            $"grounded={IsBodyGrounded},ragdoll={IsRagdollActive},dropped={weaponDropped}," +
+            $"arms={pistolArmBones?.Length ?? 0}/" +
+            $"{(pistolArmBones != null && System.Array.TrueForAll(pistolArmBones, bone => bone != null))}," +
+            $"supportError={PistolSupportError:F4}," + hero?.FirearmPresentationDiagnostics(this);
+
         private void InitializePistol()
         {
             Firearm = IsShotgun ? new ShotgunState() : new PistolState();

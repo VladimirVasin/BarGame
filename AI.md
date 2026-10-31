@@ -6,7 +6,7 @@ Read this file first, then use [ai/README.md](ai/README.md) as the documentation
 
 - Unity `6000.6.7f1`, URP `17.6.0`, Input System `1.20.1`, AI Navigation `2.0.16` are pinned in the
   project/package settings. The current target is Windows/PC.
-- Scene presentation uses native resolution, saved SMAA/lens/4:3/local-light effects and crisp UI.
+- Target16:9;native resolution,saved SMAA/lens/local-light effects,crisp UI;legacy4:3 unsupported.
 - Every scene change/visual task reviews all three groups, including
   post-processing: [effects standard](ai/visual-effects-standard.md).
 - Thirteen scenes contain ten gameplay roots, including `CombatTest`.

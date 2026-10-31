@@ -1,11 +1,11 @@
 {
-  "schema_version": 5,
-  "generator_version": "6.2.0",
-  "signature": "c05932cd1ee44c08acd8e18807288a3ddacb4bdfca6d49ca6f64732db6f97bb6",
-  "contract_signature": "9458a4efdaaf5cc9af83cbe05a199f41b2769175cfbcc3a9212dad82335b2cf4",
+  "schema_version": 6,
+  "generator_version": "6.3.0",
+  "signature": "0fcd72c140d4dc88c0161228bc2b0df75608d20593ea15d9b7adbe85b117c52f",
+  "contract_signature": "02c483b97b02171325e40f89abb0b0c9236e5029f65986067889739ab1c0bba5",
   "report": {
-    "meshes": 305,
-    "triangles": 225812,
+    "meshes": 307,
+    "triangles": 226324,
     "flights": 3,
     "steps_per_flight": 36,
     "clear_width": 3.2,
@@ -4742,16 +4742,16 @@
       "chunk": "PuzzleFrame",
       "role": "Steel",
       "bounds_min": [
-        14.89,
+        14.51,
         15.6,
         72.56
       ],
       "bounds_max": [
         16.335,
-        18.259999999999998,
+        18.509999999999998,
         75.44
       ],
-      "triangles": 972
+      "triangles": 1200
     },
     {
       "name": "Stage3__Puzzle_bird-0__WornSteel",
@@ -4844,16 +4844,16 @@
       "chunk": "PuzzleFrame",
       "role": "WornSteel",
       "bounds_min": [
-        16.00441154273188,
+        14.49,
         15.668,
-        73.182
+        72.58
       ],
       "bounds_max": [
         16.177500000000002,
-        17.33,
+        18.555,
         75.17
       ],
-      "triangles": 268
+      "triangles": 412
     },
     {
       "name": "Stage3__Puzzle_bird-1__WornSteel",
@@ -5109,6 +5109,40 @@
         75.47
       ],
       "triangles": 28
+    },
+    {
+      "name": "Stage3__Puzzle_pistol-tray__WornSteel",
+      "stage": 3,
+      "chunk": "Puzzle_pistol-tray",
+      "role": "WornSteel",
+      "bounds_min": [
+        14.629999999999999,
+        17.8625,
+        72.69
+      ],
+      "bounds_max": [
+        15.07,
+        17.8975,
+        73.31
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "Stage3__Puzzle_pistol-tray__Steel",
+      "stage": 3,
+      "chunk": "Puzzle_pistol-tray",
+      "role": "Steel",
+      "bounds_min": [
+        14.55,
+        17.675,
+        72.61
+      ],
+      "bounds_max": [
+        15.07,
+        17.97,
+        73.39
+      ],
+      "triangles": 112
     },
     {
       "name": "Stage1__Gate_1__Steel",
@@ -6591,6 +6625,66 @@
         "Stage3__Lever_bird-lift__Rubber",
         "Stage3__Lever_bird-lift__WornSteel"
       ]
+    },
+    {
+      "id": "pistol-tray",
+      "stage": 3,
+      "kind": "reward-tray",
+      "pivot": [
+        14.85,
+        17.88,
+        73.0
+      ],
+      "axis": [
+        6.123233995736766e-17,
+        0.0,
+        1.0
+      ],
+      "step_angle": 0,
+      "travel": [
+        0.0,
+        -1.33,
+        0.0
+      ],
+      "dock": [
+        15.59,
+        15.639999999999999,
+        72.52
+      ],
+      "facing": [
+        -1,
+        0,
+        0
+      ],
+      "contact": [
+        15.11,
+        16.59,
+        73.0
+      ],
+      "exit_dock": [
+        15.59,
+        15.639999999999999,
+        72.52
+      ],
+      "exit_facing": [
+        -1,
+        0,
+        0
+      ],
+      "bounds_center": [
+        15.11,
+        16.59,
+        73.0
+      ],
+      "bounds_size": [
+        0.26,
+        0.26,
+        0.26
+      ],
+      "parts": [
+        "Stage3__Puzzle_pistol-tray__WornSteel",
+        "Stage3__Puzzle_pistol-tray__Steel"
+      ]
     }
   ],
   "gates": [
@@ -6745,6 +6839,28 @@
       -10.35,
       13.155,
       15.1
+    ]
+  },
+  "reward_pistol": {
+    "item_position": [
+      14.91,
+      17.9235,
+      73.0
+    ],
+    "item_euler": [
+      0,
+      -90,
+      90
+    ],
+    "travel": [
+      0.0,
+      -1.33,
+      0.0
+    ],
+    "interaction_position": [
+      15.11,
+      16.5935,
+      73.0
     ]
   },
   "contract": {
@@ -8934,7 +9050,7 @@
         ]
       ]
     ],
-    "puzzle_version": 4,
+    "puzzle_version": 5,
     "abyss_floor": -60,
     "warehouse_chart_version": 1
   }

@@ -1150,7 +1150,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static IEnumerator VerifyLabyrinthPuzzleActions(StairwellInteriorRoot stairwell, int stage,
-            InputTestFixture sharedInput = null, Keyboard sharedKeyboard = null)
+            InputTestFixture sharedInput = null, Keyboard sharedKeyboard = null, bool captureFourThree = true)
         {
             bool ownsInput = sharedInput == null;
             var input = sharedInput ?? new InputTestFixture();
@@ -1171,12 +1171,12 @@ namespace BarPromenade.Tests.PlayMode
                     "A locked passage requires an actual solid gate.");
                 string failed = stage == 1 ? "cloth-bolt" : stage == 2 ? "carriage-send" : "bird-lift";
                 int revision = state.Revision;
-                yield return OperateLabyrinthControl(stairwell, failed, input, keyboard);
+                yield return OperateLabyrinthControl(stairwell, failed, input, keyboard, captureFourThree: captureFourThree);
                 Assert.That(state.Revision, Is.EqualTo(revision), "An obstructed mechanism cannot commit progress.");
                 if (stage == 1) yield return VerifyResponsiveFirstPuzzleInput(stairwell, input, keyboard);
                 if (stage == 2)
                 {
-                    yield return OperateLabyrinthControl(stairwell, "shutter-stop", input, keyboard, cancelAtContact: true);
+                    yield return OperateLabyrinthControl(stairwell, "shutter-stop", input, keyboard, cancelAtContact: true, captureFourThree: captureFourThree);
                     Assert.That(state.Revision, Is.EqualTo(revision), "A cancelled brace placement must not move or grant the tool.");
                     Assert.That(state.Current.StopEngaged || state.Current.ShutterRaised, Is.False);
                     Assert.That(GameSessionState.HasInventoryItem(InventoryItemId.CombatCrowbar), Is.False);
@@ -1199,7 +1199,7 @@ namespace BarPromenade.Tests.PlayMode
                 foreach (string id in actions)
                 {
                     bool wasBraced = state.Current.StopEngaged;
-                    yield return OperateLabyrinthControl(stairwell, id, input, keyboard);
+                    yield return OperateLabyrinthControl(stairwell, id, input, keyboard, captureFourThree: captureFourThree);
                     if (stage != 2) continue;
                     if (id == "shutter")
                         Assert.That(state.Current.ShutterRaised || state.Current.StopEngaged, Is.False,
@@ -1209,7 +1209,7 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(state.Current.StopEngaged, Is.EqualTo(!wasBraced));
                         Assert.That(state.Current.ShutterRaised, Is.EqualTo(!wasBraced));
                         if (!wasBraced)
-                            yield return CaptureCorruptedGameplay(stairwell, "puzzle-second-crowbar-brace", requireHero: false);
+                            yield return CaptureCorruptedGameplay(stairwell, "puzzle-second-crowbar-brace", requireHero: false, captureFourThree: captureFourThree);
                     }
                     if (id == "carriage-send" && !wasBraced)
                         Assert.That(state.CanPassGate(2), Is.False, "The cloth cannot pass through an unsupported closed shutter.");
@@ -1237,7 +1237,7 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3 roomCentre = stairwell.LabyrinthPresentation.Rooms[stage - 1].InteriorPoint;
                 yield return WalkStairwellWaypoint(stairwell, roomCentre);
                 AimLabyrinthOrbit(stairwell, roomCentre + Vector3.left * 1.2f + Vector3.up * 1.4f);
-                yield return CaptureCorruptedGameplay(stairwell, "labyrinth-0" + stage + "-solved-mechanism");
+                yield return CaptureCorruptedGameplay(stairwell, "labyrinth-0" + stage + "-solved-mechanism", captureFourThree: captureFourThree);
             }
             finally
             {
@@ -1363,7 +1363,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static IEnumerator OperateLabyrinthControl(StairwellInteriorRoot stairwell, string id,
-            InputTestFixture input, Keyboard keyboard, bool cancelAtContact = false)
+            InputTestFixture input, Keyboard keyboard, bool cancelAtContact = false, bool captureFourThree = true)
         {
             StairwellLabyrinthPuzzleInteraction control = null;
             foreach (var candidate in stairwell.LabyrinthPuzzles.Controls)
@@ -1401,7 +1401,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(renderer.enabled, Is.False, "The focused puzzle view must hide the whole hero: " + renderer.name);
                 Assert.That(stairwell.Player.Interactor.InputEnabled, Is.False);
                 Assert.That(stairwell.Player.Motor.InputEnabled, Is.False);
-                yield return CaptureCorruptedGameplay(stairwell, "puzzle-0" + control.Stage + "-frontal", requireHero: false);
+                yield return CaptureCorruptedGameplay(stairwell, "puzzle-0" + control.Stage + "-frontal", requireHero: false, captureFourThree: captureFourThree);
                 Assert.That(mode.RenderedOutlineCount, Is.InRange(1, 16), "Only the selected physical handle needs its bounded highlight.");
                 float pausedLens = stairwell.CameraFollow.Camera.fieldOfView;
                 using (GameTimeScaleRuntime.AcquirePause())
@@ -1448,7 +1448,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield break;
             }
             if (id == "roll-0" && stairwell.LabyrinthPuzzles.State.Current.Roll0 == 1)
-                yield return CaptureCorruptedGameplay(stairwell, "puzzle-frontal-operating", requireHero: false);
+                yield return CaptureCorruptedGameplay(stairwell, "puzzle-frontal-operating", requireHero: false, captureFourThree: captureFourThree);
             yield return null;
             int framingPoll = 0;
             yield return WaitForCorruptedStairwell(() =>
@@ -1504,7 +1504,7 @@ namespace BarPromenade.Tests.PlayMode
                 bool belongs = mode.Stage == 1 ? root.name.StartsWith("roll-", StringComparison.Ordinal) || root.name == "cloth-bolt" :
                     mode.Stage == 2 ? root.name == "shutter" || root.name == "shutter-stop" || root.name == "carriage" ||
                         root.name == "carriage-send" || root.name == "transfer-weight" || root.name == "delivery-catch" :
-                    root.name.StartsWith("bird-", StringComparison.Ordinal);
+                    root.name.StartsWith("bird-", StringComparison.Ordinal) || root.name == "pistol-tray";
                 if (!belongs) continue;
                 foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
                     if (renderer.enabled && renderer.gameObject.activeInHierarchy)
@@ -1517,6 +1517,9 @@ namespace BarPromenade.Tests.PlayMode
                     if (renderer.name == "Stage3__PuzzleFrame__Cloth") { receiver = renderer; break; }
                 Assert.That(receiver, Is.Not.Null, "The birds require their actual fixed shadow-receiving cloth.");
                 AssertPuzzleBoundsInFrame(camera, receiver.bounds, "complete bird-shadow cloth");
+                if (puzzles.PistolPickup != null)
+                    foreach (Renderer renderer in puzzles.PistolPickup.Model.GetComponentsInChildren<Renderer>(true))
+                        AssertPuzzleBoundsInFrame(camera, renderer.bounds, "pistol on its counterweight tray");
             }
         }
 
@@ -2169,14 +2172,14 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static IEnumerator CaptureCorruptedGameplay(StairwellInteriorRoot stairwell,
-            string name, bool requireHero = true)
+            string name, bool requireHero = true, bool captureFourThree = true)
         {
             Camera camera = Camera.main;
             RenderTexture oldTarget = camera.targetTexture;
             float oldAspect = camera.aspect;
             try
             {
-                foreach (int width in new[] { 1280, 960 })
+                foreach (int width in captureFourThree ? new[] { 1280, 960 } : new[] { 1280 })
                 {
                     const int height = 720;
                     var target = new RenderTexture(width, height, 24);

@@ -1,6 +1,20 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-11-01 — 16:9 target, user:**
+  4:3 unsupported;camera/UI target16:9,no mandatory4:3 proof. Legacy
+  `graphics.aspect_4_3` stays default-off:centre crop/bars,same vertical FOV/
+  camera rect,aspect≤4:3 clamps1/fullscreen IMGUI. No runtime removal.
+
+- **Accepted architecture exception 2026-11-01 — third puzzle pistol, user:**
+  BirdLift:gate3↑/open captive tray↓;pre-solve pistol visible;E/shared source1×;
+  cancel keeps. Rig:immediate equip/aim/fire/reload/stow;first8+0,travel/retry keep
+  ammo. Story:owned crowbar/pistol,ammo/pools;shotgun0/Debug3.
+  Blender rails/travel/manifest;preview/commit;pause/cancel/off restore endpoints.
+  Physics/cache/clue/voice/lore0;events/shared assets-materials;loads/clones0;
+  Unmeasured. All24 kept:black/SSR0/saved item DoF;worn steel/bevels/
+  pistol reused;new light/pass/particle0;FX-off readable;§6/16/21/art9.
+
 - **Accepted architecture exception 2026-11-01 — Stairwell zombies:**
   `Zombie`: 18 Loops (variants 0/1), three Carriers (2). Giant bottles dominate
   torsos or backs (art §7), without labels or brands. They are the hero's
@@ -29,49 +43,39 @@
   Modal/focus/switch/off:freshinput;rig/24FX kept;§16/21/art§16.
 
 - **Accepted 2026-10-31 — second puzzle/crowbar, user:**
-  Handle↕;brace;cloth/endstop→catch/unload.
-  AutoWeight;4/3/4controls. Shared pickup/session source1x→CombatCrowbar.
-  Actor/rig/strike-parry/context stow-draw;story:CrowbarOnly;Debug3.
-  Metre maps/seats/grips;stress→impact→silence.
-  24FX/owners kept;providers0;cost unmeasured;§6/16/21/art§16.
+  Handle↕/brace/cloth-endstop→catch/unload;AutoWeight;4/3/4controls.
+  Shared pickup/session source1x→CombatCrowbar;Actor/rig/strike-parry/context
+  stow-draw;Debug3. Metre maps/seats/grips;stress→impact→silence.
+  24FX owners kept;providers0;cost unmeasured;§6/16/21/art§16.
 
 - **Accepted 2026-10-31 — labyrinth room light, user:**
   3×EmergencyRoomLamp/palette;next door lit anywhere inside;solve→next sameframe/
   otherfloor/range;after3none. Local22/24m;guide1of2Hard slots.
-  All24:GI/SSAO/fog/volume/shadows/grade stay;SSGI/SCGI/SSR0;probes/water/wetness/
-  bevels/COLOR/wind/decals/dust/rim/outlines stay;eight post owners/settings
-  stay,optionaloff:readable. Shared material/pass;text-input-lore+0;
-  pause/reset/disable/cleanup;cost unmeasured;story§16/21/art§16/nine checks.
+  All24 owners/settings kept;SSGI/SCGI/SSR0;FX-off readable;shared material/pass;
+  text/input/lore0;pause/reset/off/cleanup;cost unmeasured;§16/21/art9.
 
 - **Accepted 2026-10-31 — warehouse goal light, user:**
-  GoalWall:closed U-profile, `30.6×10.2×.30 m`/sole `4×3 m` opening;
-  Blender/COL share shape. Shared worn Concrete/metre UVs; door/gate/valve
-  contacts stay. Red lamp:`24`, `6 m`, `155/140°`→door/valve;
-  soft dips stay≥`.45`. Door ambush owns absolute `36` with `.85` floor.
-  All24:GI/SSAO/fog/volume/shadows/grade keep blackout;SSGI/SCGI0.
-  probes/SSR, water, wetness, bevels, COLOR, wind, decals, dust, rim and
-  outlines retain scope. Bloom/DOF/SMAA/vignette/grain-dither/flares/blur/lens
-  keep settings; optional FX off:readable.
-  Light/pass/material-clone/lore/text/input+0; caches/pause/reset/
-  reconstruction/cleanup stay;cost unmeasured. Story§16/21/art§16/nine checks;
-  no forbidden detail/§6 waiver.
+  GoalWall:closed U `30.6×10.2×.30m`,sole `4×3m` opening;Blender/COL agree.
+  Shared worn Concrete/metre UV;door/gate/valve contacts stay.
+  Red lamp:`24`/`6m`/`155/140°`→door/valve;soft dips≥`.45`.
+  Door ambush:absolute`36`,floor`.85`.
+  All24 owners/settings/blackout kept;SSGI/SCGI0;FX-off readable;new light/pass/
+  clone/lore/text/input0. Caches/pause/reset/rebuild/cleanup;cost unmeasured;
+  story§16/21/art9;§6 waiver0.
 
 - **Accepted architecture exception 2026-10-30 — myth puzzles/presence light:**
-  Philomela/Procne/Tereus: weave/delivery/birds. Rig/grips/RU stay.
-  Domestic→shaft→machines/loops; gravity/3P, fixed below; gates/session
-  retain warehouse/fish/key/ambush/retry. No voice, apparition, crime clue,
-  loss or timer. Statue/lower light stay; two Hard lights at 22/24 m, same-floor
-  rooms, lens/hum/contactor; return restores. Black depths; Blender supports
-  hide ends/floor; bounded lights/caches/cleanup.
+  Philomela/Procne/Tereus:weave/delivery/birds;rig/grips/RU kept.
+  Domestic→shaft→machines/loops;gravity/3P/fixedbelow;gate/session:
+  warehouse/fish/key/ambush/retry. Voice/apparition/crimeclue/loss/timer0.
+  Statue/lowerlight kept;2Hard22/24m/samefloor/lens/hum/contactor;return restores.
+  Black;Blender hides ends/floor;bounded lights/cache/cleanup.
 
 - **Accepted exception 2026-10-30 — puzzle mode/chest lamp:**
-  Frontal panel/levers fit 4:3–16:9; hidden hero, shared grips, no head/roll.
-  A/D or ←→ select immediately; E queues one short action; Q exits.
-  Levers have mounts; selection alone uses a bone contour, dark edge
-  and surface wash. Back-wall cabinet opens a shared lamp pickup/equip/session.
-  Debug/lazy factory/leases stay; no story grant/reset.
-  All 24 effects retain owners; no added light, GI/SSR or post. Cost unmeasured;
-  §6/16/21/art9.
+  Front panel/levers fit16:9;hero hidden/shared grips/head-roll0.
+  A/D/←→ select;E queues1 short action;Q exits. Mounted levers;selection alone:
+  bone contour/dark edge/surface wash. Back-wall cabinet→shared lamp pickup/
+  equip/session. Debug/lazy factory/leases kept;story grant/reset0.
+  All24 owners kept;new light/GI/SSR/post0;cost unmeasured;§6/16/21/art9.
 
 - **Accepted exception 2026-10-30 — Home ceiling, stove wall and room shots:**
   User: lower ceiling/three room views/close stove's side gap.
@@ -2122,8 +2126,7 @@
   punches sharp holes through the blurred background.
   `AlpineFrostDiffusion` compares same-frame house GPU renders with fixed
   crystals and switched diffusion: increasing blur at 25/50/100%, identical
-  half-thaw/half-growth, clear full thaw, protected centre/black bars at 16:9
-  and 4:3. It pins presentation without changing saved preferences.
+  half-thaw/half-growth, clear full thaw, protected centre at16:9;legacy4:3 remains optional. Saved preferences stay.
   `AlpineFrostJourney` checks village/house round trip, warm cue timing, pause,
   repeat intervals and cold re-entry. Stills/reports are temporary review output.
 
@@ -7638,10 +7641,6 @@
 - **Accepted - shared intoxication lens:** `IntoxicationLensVolumeDriver` drives
   URP chromatic aberration 0..0.45 and lens distortion 0..-0.14 at priority 8;
   native scene effects retain the same shared input and exclusions.
-- **Accepted - optional 4:3 is an aspect choice:** `graphics.aspect_4_3` defaults
-  off. The native composite crops the central source window and adds black bars
-  at the same vertical FOV, without changing the camera rect. At or below 4:3
-  the aspect fraction clamps to one; the IMGUI canvas remains full-screen.
 - **Accepted — Cross-zone anchor-consumer dressing:** `CityWindDressingPlanner`
   is the first planner that consumes other plans' public descriptors instead
   of the layout alone: it reads decoration, seacoast, cemetery and fringe-yard

@@ -28,7 +28,8 @@ namespace BarPromenade
                 if (!GameSessionState.StairwellLabyrinthPuzzles.AllSolved) return;
                 PlayerMotor motor = interactor == null ? null : interactor.GetComponent<PlayerMotor>();
                 motor?.SetInputEnabled(false);
-                if (!WarehouseStoryEntryService.TryEnter()) motor?.SetInputEnabled(true);
+                if (!WarehouseStoryEntryService.TryEnter(interactor == null ? null : interactor.GetComponent<CombatActor>()))
+                    motor?.SetInputEnabled(true);
             });
         }
     }

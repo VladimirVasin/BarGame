@@ -9,11 +9,20 @@ namespace BarPromenade
         private static string pendingOperationId;
         private static int pendingSeed;
 
-        internal static CombatTestSelection Selection => new CombatTestSelection(
-            CombatLoadoutSelection.CrowbarOnly, CombatTestMode.Endless, CombatEncounterSettings.Default);
+        internal static CombatTestSelection Selection
+        {
+            get
+            {
+                bool hasPistol = GameSessionState.HasInventoryItem(InventoryItemId.CombatPistol);
+                var loadout = hasPistol ? CombatLoadoutSelection.CrowbarAndPistol : CombatLoadoutSelection.CrowbarOnly;
+                if (hasPistol && GameSessionState.IsInventoryItemEquipped(InventoryItemId.CombatPistol))
+                    loadout = loadout.WithInitialHeld(CombatWeaponId.Pistol);
+                return new CombatTestSelection(loadout, CombatTestMode.Endless, CombatEncounterSettings.Default);
+            }
+        }
 
         /// <summary>Called only after the source door's shared world-rig gesture completes.</summary>
-        public static bool TryEnter()
+        public static bool TryEnter(CombatActor sourceActor = null)
         {
             if (SceneManager.GetActiveScene().name != SceneIds.StairwellInterior ||
                 !GameSessionState.HomeSleepAppearanceActive || !GameSessionState.HasInventoryItem(InventoryItemId.CombatCrowbar) ||
@@ -21,6 +30,7 @@ namespace BarPromenade
                 !Application.CanStreamedLevelBeLoaded(SceneIds.CombatTest)) return false;
 
             ResetPending();
+            GameSessionState.CaptureStoryPistolState(sourceActor);
             if (!SceneTransitionService.RequestDoorLoad(SceneIds.CombatTest,
                     DoorTransitionDirection.EnterApartment, out string operationId)) return false;
 

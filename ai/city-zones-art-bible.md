@@ -1048,12 +1048,12 @@ Blender-кран из потёртого металла: компактный е
 Балкон `7`:секции/тёмное стекло/коллайдер закрыты;снаружи ждут входа;
 `1–6` восстановимы. Звук/текст/лор0.
 Сон: быт → шахта → машины → склад; 3P/gravity.
-E frames weave/delivery/birds and mounted levers; hero hidden, view restores.
-A/D or ←→ select; E acts/queues once, Q exits. Selection alone has a bone
-contour, dark edge and surface wash. Back-wall cabinet gives the lamp;
-cloth releases the crowbar. High-right gait/strike and hidden carry stay.
-Warehouse keeps it; Debug kit stays. Cat light, black route, 22 m contactors
-and two Hard lights stay; solve lights the next door.
+E frames weave/delivery/birds/mounted levers;hero hidden/view restores.
+A/D/←→ select,E acts/queues1,Q exits. Selection:bone contour/dark edge/surface
+wash. Back-wall cabinet→lamp;cloth→crowbar. High-right gait/strike/hidden carry stay.
+BirdLift lowers open worn-steel tray/visible pistol;rails/cable support both ends.
+Shared pickup/equip/ammo stay;story shotgun0/Debug kept.
+Cat/black route/22m contactors/2Hard lights stay;solve lights next door.
 
 `2026-11-01`, §6: «Замкнутый» и «Самонос» — имена вне фикции.
 Бутылка крупнее тела: грязное зелёное или бурое стекло,
@@ -4266,10 +4266,11 @@ frames replace black raster;UI/world/camera/light/materials compositor kept.
 
 ### Принятое исключение — стили графики
 
-`2026-10-20`, пользователь/сюж. §6: исходное разрешение, SMAA High/default-on;
-выбор стиля/консольный растр удалены. Общие свет/туман/SSAO/bloom/DoF/
-опьянение/UI; 4:3 — формат. Отражения, объёмный свет, ореолы, блики металла,
-отскок — отдельные сохраняемые флаги/default-on. CombatTest: лампа вентилятора;
+`2026-11-01`,user:target16:9;4:3 unsupported,no mandatory camera/UI proof.
+Legacy crop/settings stay;runtime removal0.
+`2026-10-20`,user/story§6:native/SMAA High default-on;style/console raster0.
+Shared light/fog/SSAO/bloom/DoF/intoxication/UI. Reflections/volume/halos/metal/
+bounce:independent saved flags/default-on. CombatTest: лампа вентилятора;
 деревня: окна/гирлянды; дом матери: собственный комнатный профиль (§10g).
 Горная дорога: свой местный профиль прежних приборов/движущихся фар,
 ограниченный воздух/снег/отскок и отражения кафе/станции (§10f).
@@ -4292,7 +4293,7 @@ City/балкон: прежние приборы/общий пул; двор/о�
 
 1. На RU и EN все символы существуют, строки помещаются в прежние границы.
 2. В grayscale без движения мыши видны текущий выбор и доступное действие.
-3. На `640x360`, 720p, 1080p и ultrawide визуальная рамка и hitbox совпадают.
+3. В16:9 (`640x360`/720p/1080p) и ultrawide рамка совпадает с hitbox.
 4. Два последовательных неподвижных кадра имеют одинаковую фактуру панелей.
 5. Prompt, inventory, map, pause, shops, journal, loading и малые HUD читаются
    одной системой, но сохраняют прежнюю модальность и приоритет ввода.

@@ -30,6 +30,12 @@ namespace BarPromenade
         private bool OwnsFirearmPresentation(object owner) => OwnsClip(owner) ||
             (!IsClipActive && !interactionHandoffLocked && OwnsCarryPose(owner));
 
+        internal string FirearmPresentationDiagnostics(object owner) =>
+            $"firearmOwner={ReferenceEquals(owner, firearmOwner)},firearmBound={firearm != null}," +
+            $"ownsFirearm={OwnsFirearmPresentation(owner)},ownsClip={OwnsClip(owner)}," +
+            $"activeClip={IsClipActive},ownsCarry={OwnsCarryPose(owner)}," +
+            $"handoff={interactionHandoffLocked},rise={risePose.Active},ragdollPose={ragdollPoseActive}";
+
         private void ApplyCombatFirearm()
         {
             // The authored lowered pistol may ride above ordinary gait. A

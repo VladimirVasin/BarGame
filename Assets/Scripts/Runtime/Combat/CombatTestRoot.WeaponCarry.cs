@@ -5,94 +5,120 @@ namespace BarPromenade
         private CombatProjectilePool pistolProjectiles, shotgunProjectiles;
         private CombatCasingPool pistolCasings, shotgunCasings;
         private int ActiveProjectileCount => (pistolProjectiles?.ActiveCount ?? 0) + (shotgunProjectiles?.ActiveCount ?? 0);
-        private bool crowbarInventorySubscribed, inventoryCrowbarEquipped, inventoryCrowbarPending, observedCrowbarHeld;
+        private bool weaponInventorySubscribed, inventoryWeaponPending, recordingInventoryWeapon;
+        private CombatWeaponId? inventoryWeapon, observedHeldWeapon;
 
-        private void SubscribeCrowbarInventory()
+        private static CombatWeaponId? ReadInventoryWeapon() =>
+            GameSessionState.IsInventoryItemEquipped(InventoryItemId.CombatPistol) ? CombatWeaponId.Pistol :
+            GameSessionState.IsInventoryItemEquipped(InventoryItemId.CombatCrowbar) ? CombatWeaponId.Crowbar : null;
+
+        private CombatWeaponId? HeldInventoryWeapon => Hero.HasWeaponInHand &&
+            Hero.WeaponId != CombatWeaponId.Shotgun ? Hero.WeaponId : null;
+
+        private void SubscribeWeaponInventory()
         {
-            if (crowbarInventorySubscribed || Hero == null) return;
-            crowbarInventorySubscribed = true;
-            inventoryCrowbarEquipped = GameSessionState.IsInventoryItemEquipped(InventoryItemId.CombatCrowbar);
-            observedCrowbarHeld = Hero.WeaponId == CombatWeaponId.Crowbar && Hero.HasWeaponInHand;
-            inventoryCrowbarPending = IsStoryContinuation && GameSessionState.HasInventoryItem(InventoryItemId.CombatCrowbar);
-            GameSessionState.InventoryEquipmentChanged += OnCrowbarInventoryChanged;
+            if (weaponInventorySubscribed || Hero == null) return;
+            weaponInventorySubscribed = true;
+            inventoryWeapon = ReadInventoryWeapon();
+            observedHeldWeapon = HeldInventoryWeapon;
+            inventoryWeaponPending = IsStoryContinuation;
+            GameSessionState.InventoryEquipmentChanged += OnWeaponInventoryChanged;
         }
 
-        private void UnsubscribeCrowbarInventory()
+        private void UnsubscribeWeaponInventory()
         {
-            GameSessionState.InventoryEquipmentChanged -= OnCrowbarInventoryChanged;
-            crowbarInventorySubscribed = false;
+            GameSessionState.InventoryEquipmentChanged -= OnWeaponInventoryChanged;
+            weaponInventorySubscribed = false;
         }
 
-        private void OnCrowbarInventoryChanged()
+        private void OnWeaponInventoryChanged()
         {
-            bool equipped = GameSessionState.IsInventoryItemEquipped(InventoryItemId.CombatCrowbar);
-            if (equipped == inventoryCrowbarEquipped) return;
-            inventoryCrowbarEquipped = equipped;
-            inventoryCrowbarPending = true;
+            if (recordingInventoryWeapon) return;
+            CombatWeaponId? equipped = ReadInventoryWeapon();
+            if (equipped == inventoryWeapon) return;
+            inventoryWeapon = equipped;
+            inventoryWeaponPending = true;
             requireAttackRelease = requireParryRelease = true;
         }
 
-        private void RecordCrowbarEquipment(bool equipped)
+        private void RecordWeaponEquipment(CombatWeaponId? weapon)
         {
-            inventoryCrowbarEquipped = equipped;
-            GameSessionState.TrySetInventoryItemEquipped(InventoryItemId.CombatCrowbar, equipped);
+            inventoryWeapon = weapon == CombatWeaponId.Shotgun ? null : weapon;
+            recordingInventoryWeapon = true;
+            try
+            {
+                bool equipped = inventoryWeapon.HasValue && GameSessionState.TrySetInventoryItemEquipped(
+                    inventoryWeapon == CombatWeaponId.Pistol ? InventoryItemId.CombatPistol : InventoryItemId.CombatCrowbar, true);
+                if (!equipped)
+                {
+                    // A debug firearm may not exist in the story inventory, but
+                    // selecting it still puts the story crowbar away.
+                    GameSessionState.TrySetInventoryItemEquipped(InventoryItemId.CombatCrowbar, false);
+                    GameSessionState.TrySetInventoryItemEquipped(InventoryItemId.CombatPistol, false);
+                }
+            }
+            finally { recordingInventoryWeapon = false; inventoryWeapon = ReadInventoryWeapon(); }
         }
 
-        private void ApplyCrowbarInventoryRequest()
+        private void ApplyWeaponInventoryRequest()
         {
-            if (!inventoryCrowbarPending)
+            if (!inventoryWeaponPending)
             {
-                bool held = Hero.WeaponId == CombatWeaponId.Crowbar && Hero.HasWeaponInHand;
-                if (!Hero.IsSwitchingWeapon && held != observedCrowbarHeld)
+                CombatWeaponId? held = HeldInventoryWeapon;
+                if (!Hero.IsSwitchingWeapon && held != observedHeldWeapon)
                 {
-                    observedCrowbarHeld = held;
-                    RecordCrowbarEquipment(held);
+                    observedHeldWeapon = held;
+                    RecordWeaponEquipment(held);
                 }
                 return;
             }
             if (Hero.State.IsDefeated || Hero.IsKnockedDown || Hero.IsRagdollActive ||
                 !Hero.BodyDamage.CanUseRightHand) return;
-            bool accepted = inventoryCrowbarEquipped
-                ? Hero.TrySelectWeapon(CombatWeaponId.Crowbar)
+            bool accepted = inventoryWeapon.HasValue
+                ? Hero.TrySelectWeapon(inventoryWeapon.Value)
                 : Hero.TryStowWeapon();
-            if (accepted) inventoryCrowbarPending = false;
+            if (accepted) inventoryWeaponPending = false;
             requireAttackRelease |= GameInput.IsHeld(GameInputAction.MeleeAttack, GameInputContext.PauseMenu);
             requireParryRelease |= GameInput.IsHeld(GameInputAction.MeleeBlock, GameInputContext.PauseMenu);
         }
 
         private void InitializeWeaponPools()
         {
-            if (!Hero.LoadoutSelection.Contains(CombatWeaponId.Pistol) &&
-                !Hero.LoadoutSelection.Contains(CombatWeaponId.Shotgun)) return;
-            pistolProjectiles = new CombatProjectilePool(transform);
-            pistolCasings = new CombatCasingPool(transform);
-            shotgunProjectiles = new CombatProjectilePool(transform, true);
-            shotgunCasings = new CombatCasingPool(transform, true);
+            if (Hero.LoadoutSelection.Contains(CombatWeaponId.Pistol))
+            {
+                pistolProjectiles = new CombatProjectilePool(transform);
+                pistolCasings = new CombatCasingPool(transform);
+            }
+            if (Hero.LoadoutSelection.Contains(CombatWeaponId.Shotgun))
+            {
+                shotgunProjectiles = new CombatProjectilePool(transform, true);
+                shotgunCasings = new CombatCasingPool(transform, true);
+            }
             Hero.ShotgunCasings = shotgunCasings;
         }
 
         private void ReadWeaponSelectionInput()
         {
-            ApplyCrowbarInventoryRequest();
+            ApplyWeaponInventoryRequest();
             bool selected = false;
             if (GameInput.WasPressed(GameInputAction.EquipPistol, GameInputContext.Gameplay))
             {
                 selected = Hero.TrySelectWeapon(CombatWeaponId.Pistol);
-                if (selected) RecordCrowbarEquipment(false);
+                if (selected) RecordWeaponEquipment(CombatWeaponId.Pistol);
             }
             else if (GameInput.WasPressed(GameInputAction.EquipCrowbar, GameInputContext.Gameplay))
             {
                 selected = Hero.TrySelectWeapon(CombatWeaponId.Crowbar);
-                if (selected) RecordCrowbarEquipment(true);
+                if (selected) RecordWeaponEquipment(CombatWeaponId.Crowbar);
             }
             else if (GameInput.WasPressed(GameInputAction.EquipShotgun, GameInputContext.Gameplay))
             {
                 selected = Hero.TrySelectWeapon(CombatWeaponId.Shotgun);
-                if (selected) RecordCrowbarEquipment(false);
+                if (selected) RecordWeaponEquipment(CombatWeaponId.Shotgun);
             }
             else if (GameInput.WasPressed(GameInputAction.CombatNextWeapon, GameInputContext.Gameplay))
                 selected = Hero.TrySelectNextWeapon();
-            if (selected) inventoryCrowbarPending = false;
+            if (selected) inventoryWeaponPending = false;
         }
 
         private void AdvanceProjectilePools(float seconds)

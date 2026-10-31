@@ -2,14 +2,14 @@
 
 ## Baseline
 
-- Windows/PC Unity, Mac Editor supported; runtime-composed city/road/village/interiors.
+- Windows/PC Unity/Mac Editor; runtime-composed city/road/village/interiors.
   [World](current-world.md).
 - Unity `6000.6.7f1`, URP `17.6.0`, Input System `1.20.1`, Navigation `2.0.16`:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
-- PC:native/SMAA/saved effects;City/balcony Soft;bar/church Neutral.
+- 16:9/native/SMAA/savedFX;4:3 unsupported;City/balcony Soft,bar/church Neutral.
   Maps/response/cubes; City/Home/bar UV0+1;house air/bar WC mirror.
-  Pilots:coastal stems(static City crowns),road RGB,pistol normals;fountain foam/mips.
+  Pilots:coastal stems(City crowns static),roadRGB,pistol normals;fountain foam/mips.
 - Thirteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
 
 | Index | Scene | Role |
@@ -78,13 +78,14 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- Sleep→weave/lamp→bar-delivery/pickup→birds→warehouse;front overview/←→/E/Q.
+- Sleep→weave/lamp→delivery/crowbar→birds/tray-pistol→warehouse;←→/E/Q.
+  Ammo kept/shotgun0/Debug3.
   CombatTest:fish-key-gate;3fish→power-music-spawn0.
   Endless1–5/def3:Crane/Room/Docker;Crane last≤2.
   Refillrng;≤5active/≤6prepared;Lab:6kinds/1target.
   HP2/head2/wounds;Room:head0→ret+2s/laugh5→idle5;simlive/otherAI0;finiteammo.
   Crane:up2m/5s/E6/overrails/others idle/bodycam/fall→home10;fatal3→regen10/kill0.
-  Hero:wounds/no detach;bar:hit/parry;story:bar/Debug3. Proxy:skin/aim.
+  Hero:wounds/no detach;bar:hit/parry;skin/aim.
   Gap:pierce/balance. [World](current-world.md)
 - City:west work/east homes3–5storeys+park;144lots/courts/wings.
   Courts/light/seats/carrier;Route01;dog3/owners2.

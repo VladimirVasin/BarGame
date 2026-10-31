@@ -11,7 +11,7 @@ namespace BarPromenade
 
         private void OnEnable()
         {
-            SubscribeCrowbarInventory();
+            SubscribeWeaponInventory();
             if (Cutscenes != null)
             {
                 Cutscenes.enabled = true;
@@ -27,7 +27,7 @@ namespace BarPromenade
 
         private void InitializeAmmoPickups()
         {
-            if (!Hero.LoadoutSelection.Contains(CombatWeaponId.Pistol) ||
+            if (!Hero.LoadoutSelection.Contains(CombatWeaponId.Pistol) &&
                 !Hero.LoadoutSelection.Contains(CombatWeaponId.Shotgun)) return;
             ResolveAmmoPositions();
             AmmoSpawns = new CombatAmmoSpawner(transform, Hero, ammoPositions);
@@ -76,6 +76,8 @@ namespace BarPromenade
             foreach (WarehouseLocker locker in warehouseLockers) locker.ResetState();
             for (int slot = 0; slot < ammoPositions.Length; slot++)
             {
+                CombatAmmoPickup pickup = AmmoSpawns.GetSlot(slot);
+                if (pickup == null) continue;
                 WarehouseLocker source = null;
                 int sourceBay = -1;
                 foreach (WarehouseLocker locker in warehouseLockers)
@@ -86,7 +88,7 @@ namespace BarPromenade
                     if (source != null) break;
                 }
                 if (source == null) throw new InvalidOperationException("Ammunition needs its authored locker shelf.");
-                source.BindAmmo(AmmoSpawns.GetSlot(slot), sourceBay);
+                source.BindAmmo(pickup, sourceBay);
             }
         }
     }

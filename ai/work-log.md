@@ -5,6 +5,20 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-01
 
+BirdLift opens the route and lowers a guided open tray with the existing pistol.
+Shared source pickup credits once after confirmation; cancel leaves it supported.
+Same rig equips/aims/fires/reloads/stows immediately. First8+0;session snapshot
+keeps ammo/partial reload across travel and retry. Warehouse imports only owned
+crowbar/pistol, stocks matching shelves and allocates matching pools;Debug stays.
+Frame fitting includes both endpoints and actual pistol bounds. Shared inspection
+uses rotation-invariant bounds plus nearest perspective depth, preventing clipping
+when the lying pistol turns upright. Cleanup tolerates a destroyed camera.
+STAIRWELL_LABYRINTH_PISTOL_TRAY_OK and StairwellThirdPuzzlePistol passed;
+rendered pickup/inspection/warehouse-arrival frames reviewed.
+
+User fixed target16:9;4:3 camera/UI proof no longer required. Legacy crop/settings
+remain. Canon/current-state documents updated; check-docs passed.
+
 Puzzle levers have physical spindle/bracket/guide contacts throughout travel;
 grip anchors and cameras stay. A/D joins arrows; selection uses a bone contour,
 dark edge and surface wash with existing effects owners.

@@ -11,6 +11,7 @@
     {"key":"interaction.labyrinth_shutter","value":"E — потянуть рукоять"},
     {"key":"interaction.labyrinth_stop","value":"E — подпереть заслонку ломом"},
     {"key":"interaction.labyrinth_unbrace","value":"E — убрать подпорку"},
+    {"key":"interaction.labyrinth_take_pistol","value":"E — взять пистолет"},
     {"key":"interaction.labyrinth_take_crowbar","value":"E — забрать лом"},
     {"key":"interaction.labyrinth_crowbar_left","value":"Лом остался у заслонки."},
     {"key":"interaction.labyrinth_weight","value":"E — переключить противовес"},

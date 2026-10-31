@@ -158,8 +158,9 @@ namespace BarPromenade
                 heroSpawn = CraneGround + Vector3.back * 4.4f + Vector3.up * PlayerFactory.GroundedRootOffset;
             Sparring = true;
             Hero.InitializeHero(Player, selection.Loadout, initiallyStowed: IsStoryContinuation &&
-                !GameSessionState.IsInventoryItemEquipped(InventoryItemId.CombatCrowbar));
-            SubscribeCrowbarInventory();
+                !ReadInventoryWeapon().HasValue);
+            if (IsStoryContinuation) GameSessionState.ApplyStoryPistolState(Hero);
+            SubscribeWeaponInventory();
             if (WarehousePlan != null)
             {
                 flashlightEquipment = Player.GameObject.GetComponent<PlayerChestFlashlightController>();
@@ -248,9 +249,11 @@ namespace BarPromenade
             BodyEffects?.ResetRound();
             SparkEffects?.ResetRound();
             Taunt?.ResetRound();
+            if (IsStoryContinuation) GameSessionState.CaptureStoryPistolState(Hero);
             Hero.ResetActor(heroSpawn, Vector3.forward);
-            inventoryCrowbarPending = IsStoryContinuation && GameSessionState.HasInventoryItem(InventoryItemId.CombatCrowbar);
-            observedCrowbarHeld = Hero.WeaponId == CombatWeaponId.Crowbar && Hero.HasWeaponInHand;
+            if (IsStoryContinuation) GameSessionState.ApplyStoryPistolState(Hero);
+            inventoryWeaponPending = IsStoryContinuation;
+            observedHeldWeapon = HeldInventoryWeapon;
             ResetCombatOpponents();
             ResetAmmoPickups();
             Physics.SyncTransforms();

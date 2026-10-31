@@ -15,6 +15,11 @@ namespace BarPromenade
         public Gate[] gates;
         public RewardCabinet reward_cabinet;
         public CrowbarReward reward_crowbar;
+        public PistolReward reward_pistol;
+        [Serializable] internal sealed class PistolReward
+        {
+            public float[] item_position, item_euler, travel, interaction_position;
+        }
         [Serializable] internal sealed class CrowbarReward
         {
             public float[] item_position, item_euler, braced_position, braced_euler, interaction_position;

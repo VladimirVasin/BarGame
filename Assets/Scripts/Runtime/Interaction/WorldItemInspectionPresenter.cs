@@ -391,16 +391,17 @@ namespace BarPromenade
             }
 
             float viewWidth = viewHeight * targetCamera.aspect;
-            float heightScale =
-                viewHeight * PreviewHeightFraction /
-                Mathf.Max(0.01f, bounds.size.y);
-            float widthScale =
-                viewWidth * PreviewWidthFraction /
-                Mathf.Max(0.01f, bounds.size.x);
-            return Mathf.Clamp(
-                Mathf.Min(heightScale, widthScale) * authoredScale,
-                MinimumPreviewScale,
-                MaximumPreviewScale);
+            // A thin item lying on its side has a tiny world-space height,
+            // then turns upright in inspection. Fit a rotation-invariant sphere
+            // so the source pose and automatic rotation cannot enlarge it past
+            // the viewport. Perspective uses the nearest point, not its centre.
+            float diameter = Mathf.Max(.01f, bounds.size.magnitude);
+            float available = Mathf.Min(viewHeight * PreviewHeightFraction,
+                viewWidth * PreviewWidthFraction);
+            float safeScale = targetCamera.orthographic ? available / diameter :
+                available / (diameter + diameter * .5f * available / PreviewDistance);
+            return Mathf.Min(safeScale, Mathf.Clamp(safeScale * authoredScale,
+                MinimumPreviewScale, MaximumPreviewScale));
         }
 
         private void ApplyBackdrop(float itemBlend)

@@ -145,7 +145,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
-            UnsubscribeCrowbarInventory();
+            if (IsStoryContinuation) GameSessionState.CaptureStoryPistolState(Hero);
+            UnsubscribeWeaponInventory();
             if (DoorAmbush != null) DoorAmbush.enabled = false;
             if (Cutscenes != null)
             {

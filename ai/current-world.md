@@ -623,8 +623,8 @@ cemetery:own interiors/returns.
   `48 / 120 / 110 m` far planes are render distance rather than low physical
   altitude. It owns no fog, grade, Light, shadow or collider, and Home disables
   it everywhere except the balcony;
-- native/SMAA High/default-on:three passes after native/intoxication, then 4:3/UI;
-  previews/probes off. Flags:`SceneLightingPresentation` (4 owners).
+- 16:9;4:3 unsupported.SMAA High/on:3passes after native/intoxication;
+  crop/UI last;previews/probes off.Flags:`SceneLightingPresentation` (4 owners).
   Warehouse:fan/steel/bounce. Village:window/garland air-snow/clip,
   snow bounce/metal/spring cube. House:halos/metal/bounce/air, two cubes;
   atlas/half-shadow/mirror stay. Road:air/snow/headlights/halos/metal/bounce,
@@ -2005,14 +2005,15 @@ cemetery:own interiors/returns.
   an unscaled fixed-camera handle/door sequence opens the leaf outward toward
   the camera against a solid black doorway while the destination preloads,
   then activates only after the final blackout;
-- `StairwellInterior` keeps its lower stair shell after sleep; roof breaks and
-  descent seals. Domestic stairs lead to shaft/machines/loops/abyss with
-  gravity/3P; lower fixed camera stays. E frames weave/delivery/birds and mounted
-  levers; hero hidden, rig/grips/UI margins stay. A/D or ←→ select immediately;
-  E queues one short action; Q exits. Only selection has a bone contour, dark
-  edge and surface wash. First: back-wall lamp cabinet. Second: braced crowbar
-  through cloth/cart/catch to shared pickup. Draw/stow hides carry; high-right
-  gait/arc/parry/context and warehouse CrowbarOnly/Debug3 stay.
+- `StairwellInterior`:sleep keeps lower shell,breaks roof/seals descent.
+  Domestic→shaft/machines/loops/abyss;gravity/3P,fixed below. E:weave/delivery/birds/mounted levers;hero hidden,
+  rig/grips/UI margins kept. A/D/←→ select;E queues1 short action;Q exits.
+  Selection:bone contour/dark edge/wash. Back-wall cabinet→lamp;
+  crowbar-brace→cloth/cart/catch→shared pickup. Hidden carry/high-right
+  gait/arc/parry/context kept. BirdLift↓open captive steel tray/visible
+  pistol;source1×,immediate equip/aim/fire/reload/stow. First8+0;
+  travel/retry keep ammo. Story:owned crowbar/pistol,ammo/pools;
+  shotgun0/Debug3.
   Stage 2: 18 Loops (variants 0/1) have bottle torsos; three Carriers (2)
   bear inverted bottles on their backs. Giant dirty glass dominates both.
   The Carrier's second head hangs from the bottle's mouth. Confirmed pickup
@@ -2029,7 +2030,7 @@ cemetery:own interiors/returns.
   ambient/sun/fog/reflection/grain;supports hide ends/floor;chest birdshadows.
   Stone-head E Cut leases hero/shadow;liveCat/grant/quest unchanged. Single
   load retains session/fish/key/ambush/entry seal;story lamp/equip retained,
-  Debug seeds;warehouse retry HP/ammo,story preparation/layout blocked;
+  Debug seeds;warehouse retry HP,story preparation/layout blocked;
 - Fixed-metre `interior_kit` shell:openings/panelled leaves/steel necks-saddles
   meet wooden rails/door-cabinet handles. Docks align right-hand lever clip,
   plates/latch stile. Concrete/rust/pipes/grilles/cabinets/radiators/damp damage/

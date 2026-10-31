@@ -415,6 +415,7 @@ namespace BarPromenade
             actors.Clear(); participants.Clear();
             Vector3 position = space.TransformPoint(scene.LabyrinthPresentation.Rooms[1].InteriorPoint);
             hero.ResetActor(position, space.TransformDirection(Vector3.right));
+            GameSessionState.ApplyStoryPistolState(hero);
             scene.Player.Motor.SetInputEnabled(true); scene.Player.Interactor.SetInputEnabled(true);
             scene.CameraFollow.Snap();
             participants.Add(hero); hero.SetCombatParticipants(participants);

@@ -13,6 +13,7 @@ namespace BarPromenade
         private bool interactionEnabled = true;
 
         internal int SlotCount => slots.Length;
+        // Keep authored anchor indices stable; an unowned weapon leaves its shelf empty.
         internal CombatAmmoPickup GetSlot(int index) => slots[index];
 
         internal CombatAmmoSpawner(Transform parent, CombatActor hero, Vector3[] positions)
@@ -23,28 +24,30 @@ namespace BarPromenade
             slots = new CombatAmmoPickup[positions.Length];
             IFirearmState pistol = hero.CarriedFirearm(CombatWeaponId.Pistol);
             IFirearmState shotgun = hero.CarriedFirearm(CombatWeaponId.Shotgun);
-            if (pistol == null || shotgun == null)
-                throw new InvalidOperationException("Ammo pickups require both owned firearm states.");
+            if (pistol == null && shotgun == null)
+                throw new InvalidOperationException("Ammo pickups require an owned firearm state.");
             for (int index = 0; index < slots.Length; index++)
             {
                 CombatWeaponId id = index % 2 == 0 ? CombatWeaponId.Pistol : CombatWeaponId.Shotgun;
+                IFirearmState firearm = id == CombatWeaponId.Pistol ? pistol : shotgun;
+                if (firearm == null) continue;
                 var root = new GameObject(id == CombatWeaponId.Pistol ? "Pistol ammunition" : "Shotgun ammunition");
                 root.transform.SetParent(parent, false);
                 slots[index] = root.AddComponent<CombatAmmoPickup>();
-                slots[index].Initialize(hero, id, id == CombatWeaponId.Pistol ? pistol : shotgun, positions[index]);
+                slots[index].Initialize(hero, id, firearm, positions[index]);
             }
         }
 
         internal void Advance(float seconds)
         {
             if (disposed || !interactionEnabled || seconds <= 0f || float.IsNaN(seconds) || float.IsInfinity(seconds)) return;
-            for (int index = 0; index < slots.Length; index++) slots[index].Advance(seconds);
+            for (int index = 0; index < slots.Length; index++) slots[index]?.Advance(seconds);
         }
 
         internal void Reset()
         {
             if (disposed) return;
-            for (int index = 0; index < slots.Length; index++) slots[index].ResetPickup();
+            for (int index = 0; index < slots.Length; index++) slots[index]?.ResetPickup();
         }
 
         internal void Reset(Vector3[] positions)
@@ -53,14 +56,14 @@ namespace BarPromenade
             ValidatePositions(positions);
             if (positions.Length != slots.Length)
                 throw new ArgumentException("A retained arena cannot change its ammunition pool size.", nameof(positions));
-            for (int index = 0; index < slots.Length; index++) slots[index].ResetPickup(positions[index]);
+            for (int index = 0; index < slots.Length; index++) slots[index]?.ResetPickup(positions[index]);
         }
 
         internal void SetInteractionEnabled(bool enabled)
         {
             if (disposed || interactionEnabled == enabled) return;
             interactionEnabled = enabled;
-            for (int index = 0; index < slots.Length; index++) slots[index].SetInteractionEnabled(enabled);
+            for (int index = 0; index < slots.Length; index++) slots[index]?.SetInteractionEnabled(enabled);
         }
 
         public void Dispose()

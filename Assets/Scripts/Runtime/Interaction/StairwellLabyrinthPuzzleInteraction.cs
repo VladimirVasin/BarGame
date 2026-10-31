@@ -40,7 +40,8 @@ namespace BarPromenade
             Action == StairwellLabyrinthPuzzleAction.WeightSwitch ? "interaction.labyrinth_weight" :
             Action == StairwellLabyrinthPuzzleAction.CarriageSend ? "interaction.labyrinth_carriage" :
             Action == StairwellLabyrinthPuzzleAction.BirdLift ? "interaction.labyrinth_lift" : "interaction.labyrinth_turn";
-        public float MotionDurationSeconds => Action == StairwellLabyrinthPuzzleAction.CarriageSend ? .7f : .32f;
+        public float MotionDurationSeconds => Action == StairwellLabyrinthPuzzleAction.BirdLift ? 1.1f :
+            Action == StairwellLabyrinthPuzzleAction.CarriageSend ? .7f : .32f;
         private float MotionSeconds => MotionDurationSeconds;
 
         internal void Initialize(StairwellLabyrinthPuzzles puzzles, StairwellLabyrinthManifest.PuzzleNode node,
@@ -109,7 +110,8 @@ namespace BarPromenade
             elapsed += Mathf.Max(0f, Time.deltaTime);
             owner.Preview(before, after, Id, Smooth(elapsed / MotionSeconds), outcome == StairwellLabyrinthPuzzleOutcome.Blocked);
             if (!contactEnded && elapsed >= MotionSeconds * .9f &&
-                (Action == StairwellLabyrinthPuzzleAction.Shutter || Action == StairwellLabyrinthPuzzleAction.CarriageSend))
+                (Action == StairwellLabyrinthPuzzleAction.Shutter || Action == StairwellLabyrinthPuzzleAction.CarriageSend ||
+                 Action == StairwellLabyrinthPuzzleAction.BirdLift && outcome != StairwellLabyrinthPuzzleOutcome.Blocked))
             {
                 contactEnded = true;
                 owner.PlayLatchCue(InteractionPosition);

@@ -116,7 +116,7 @@ def floor_at(row,p):
 def contract():
     return dict(main=MAIN,branches=BRANCHES,supports=supports(),lights=LIGHTS,light_directions=LIGHT_DIRECTIONS,
                 scenery_light_start=SCENERY_LIGHT_START,interior_volumes=INTERIOR_VOLUMES,door=DOOR,width=WIDTH,
-                rooms=ROOMS,motions=MOTIONS,gates=GATES,puzzle_version=4,abyss_floor=-60,warehouse_chart_version=1)
+                rooms=ROOMS,motions=MOTIONS,gates=GATES,puzzle_version=5,abyss_floor=-60,warehouse_chart_version=1)
 
 
 def contract_signature():
@@ -199,7 +199,7 @@ def validate_warehouse_charts(groups):
 
 def design_puzzles(add):
     """Passive solids and measured contacts; runtime owns only constrained pivots."""
-    nodes=[];gates=[];reward=None;crowbar=None
+    nodes=[];gates=[];reward=None;crowbar=None;pistol=None
     for room in ROOMS:
         stage=room['stage'];origin=room['door'];rotation=(0,-90,0)
         def wp(p):
@@ -416,6 +416,25 @@ def design_puzzles(add):
             # A light matte receiving surface, non-emissive and physically part
             # of the room, catches the shadows rather than drawing fake birds.
             box('Cloth',(0,1.67,4.265),(2.94,1.78,.018))
+            # An open captive counterweight lowers the already visible pistol.
+            # Rails and a closed cable loop support both endpoints; no loose physics.
+            tray=(-1.00,2.28,3.65);travel=(0,-1.33,0)
+            chunk=node('pistol-tray','reward-tray',tray,(-1.00,.99,3.39),step=0,travel=travel)
+            box('WornSteel',tray,(.62,.035,.44),chunk)
+            for x in (-1.30,-.70):box('Steel',(x,2.325,3.65),(.025,.09,.44),chunk)
+            box('Steel',(-1.00,2.325,3.855),(.62,.09,.025),chunk)
+            box('Steel',(-1.00,2.20,3.90),(.78,.25,.10),chunk)
+            for x in (-1.36,-.64):
+                box('Steel',(x,1.83,3.94),(.055,2.10,.055))
+                box('WornSteel',(x,.80,3.94),(.12,.09,.14))
+            for y in (.80,2.87):
+                box('Steel',(-1.00,y,3.94),(.78,.08,.10))
+                cylinder('WornSteel',(-1.00,y,3.94),.17,.065,2)
+            for x in (-1.07,-.93):cylinder('Steel',(x,1.835,3.94),.014,2.07)
+            box('Steel',(-1.00,2.87,3.70),(.08,.08,.48))
+            pistol=dict(item_position=wp((-1.00,2.3235,3.59)),item_euler=(0,-90,90),
+                        travel=rotated_point(travel,rotation),interaction_position=wp((-1.00,.9935,3.39)))
+
     for stage,pivot,normal in GATES:
         chunk='Gate_'+str(stage);across=(0,0,1) if normal[0] else (1,0,0)
         def gb(role,p,size,dynamic=True):add(stage,role,bp.u_box(p,size,.005),chunk if dynamic else 'GateFrame')
@@ -431,7 +450,7 @@ def design_puzzles(add):
         c=(pivot[0],pivot[1]+3.80,pivot[2]);gb('WornSteel',c,(.24,.24,3.7) if normal[0] else (3.7,.24,.24),False)
         gates.append(dict(id='gate-'+str(stage),stage=stage,chunk=chunk,pivot=pivot,travel=(0,3.35,0),
                           collider_center=(0,1.45,0),collider_size=(.18,3.2,3.2) if normal[0] else (3.2,3.2,.18)))
-    return nodes,gates,reward,crowbar
+    return nodes,gates,reward,crowbar,pistol
 
 
 def design():
@@ -890,7 +909,7 @@ def design():
         if i>=SCENERY_LIGHT_START:
             # Attach ceiling cages to the common roof; wall cages already meet their wall.
             if LIGHT_ROTATIONS[i]==(0,0,0):lb('Steel',(.67,1.5,0),(.055,3.0,.055))
-    design.puzzle_nodes,design.gates,design.reward_cabinet,design.reward_crowbar=design_puzzles(add)
+    design.puzzle_nodes,design.gates,design.reward_cabinet,design.reward_crowbar,design.reward_pistol=design_puzzles(add)
     design.last_counts=dict(short_stair_runs=piece_index,small_landings=piece_index*2,cross_bridges=bridge_count)
     return groups
 
@@ -938,6 +957,20 @@ def validate(groups):
         for guide_y in (1.46,1.60):
             if rod_low[1]+travel>floor+guide_y-.045 or rod_high[1]+travel<floor+guide_y+.045:
                 raise ValueError('Bird lift rod escaped a frame-mounted guide at a stroke endpoint')
+    pistol=design.reward_pistol
+    if pistol is None or any(len(v)!=3 or not all(math.isfinite(n) for n in v) for v in pistol.values()):
+        raise ValueError('Third puzzle requires measured reachable pistol poses')
+    tray=next(n for n in design.puzzle_nodes if n['id']=='pistol-tray')
+    if tray['travel'][1]>=-1 or tray['travel']!=pistol['travel']:
+        raise ValueError('Pistol must travel with its captive lowering tray')
+    # Resting on its side, the registered pistol has a 26mm half-width.
+    floor=ROOMS[2]['door'][1]
+    for fraction in (0.,1.):
+        surface=tray['pivot'][1]+tray['travel'][1]*fraction+.0175
+        if abs(pistol['item_position'][1]+pistol['travel'][1]*fraction-.026-surface)>.00001:
+            raise ValueError('Pistol must rest on tray at both endpoints')
+        if surface<floor+.90 or surface>floor+2.60:raise ValueError('Reward tray leaves room bounds')
+    print('STAIRWELL_LABYRINTH_PISTOL_TRAY_OK',flush=True)
     print('STAIRWELL_LABYRINTH_CONTROL_MOUNTS_OK',flush=True)
     reward=design.reward_cabinet
     if reward is None or reward['stage']!=1 or not 90<=reward['open_angle']<=110:
@@ -1169,7 +1202,7 @@ def main():
         gates.append(record)
     reward={k:v for k,v in design.reward_cabinet.items() if k!='chunk'}
     reward['parts']=[part['name'] for part in records if part['chunk']==design.reward_cabinet['chunk']]
-    payload=dict(schema_version=5,generator_version='6.2.0',signature=signature,contract_signature=contract_signature(),report=report,parts=records,doors=doors,motions=motions,puzzle_nodes=puzzle_nodes,gates=gates,reward_cabinet=reward,reward_crowbar=design.reward_crowbar,contract=contract())
+    payload=dict(schema_version=6,generator_version='6.3.0',signature=signature,contract_signature=contract_signature(),report=report,parts=records,doors=doors,motions=motions,puzzle_nodes=puzzle_nodes,gates=gates,reward_cabinet=reward,reward_crowbar=design.reward_crowbar,reward_pistol=design.reward_pistol,contract=contract())
     args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
     manifest=json.dumps(payload,indent=2)+'\n';(args.model_dir/'Labyrinth3D.json').write_text(manifest);(args.source_dir/'labyrinth-3d-model.json').write_text(manifest)
     write_runtime(args.code_dir)

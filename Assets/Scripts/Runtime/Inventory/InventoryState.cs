@@ -47,6 +47,8 @@ namespace BarPromenade
 
             if (equipped)
             {
+                if (itemId == InventoryItemId.CombatCrowbar) equippedItems.Remove(InventoryItemId.CombatPistol);
+                else if (itemId == InventoryItemId.CombatPistol) equippedItems.Remove(InventoryItemId.CombatCrowbar);
                 equippedItems.Add(itemId);
             }
             else

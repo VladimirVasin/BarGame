@@ -4,7 +4,7 @@ namespace BarPromenade
 {
     internal static class StairwellLabyrinthData
     {
-        public const string Signature="9458a4efdaaf5cc9af83cbe05a199f41b2769175cfbcc3a9212dad82335b2cf4";
+        public const string Signature="02c483b97b02171325e40f89abb0b0c9236e5029f65986067889739ab1c0bba5";
         public const float MainRouteLength=199.46f;
         public static StairwellLabyrinthSupportPlan[] CreateSupports() => new[] {
             new StairwellLabyrinthSupportPlan("main-00",1,new Vector3(-1.45f,4.8f,2.25f),new Vector3(-1.45f,4.8f,3.2f),3.2f,Rect.MinMaxRect(-3.05f,2.25f,0.15f,3.2f)),

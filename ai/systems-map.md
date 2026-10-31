@@ -49,7 +49,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Residential dog park | Residual fenced yard; three articulated dogs, two permanent owners; open entry and local voices. | `CityDogPark{Plan,AssetProvider,Controller,WorldBuilder}`, `CityDogPose`, `CityDogActivity` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
 | Unity URP foundation | 13 scenes; PC Neutral/Bloom/Vignette. | `6000.6.7f1`, `17.6.0` | Current |
-| Scene presentation | Native/SMAA/4:3; gamma-correct Editor UI; City/warehouse SSR. | `Scene*Feature`, `GraphicsEffectsSettings` | Current |
+| Scene presentation | 16:9/native/SMAA;4:3 unsupported;Editor gamma;City/warehouse SSR. | `Scene*Feature`, `GraphicsEffectsSettings` | Current |
 | Village local lighting | Real emitters; bounded air/snow/bounce, metal and spring reflections. | `AlpineVillageLightingPresentation`, `SceneReflectionCapture` | Current |
 | Road lighting | Bounded air/snow/headlights/halos/metal/bounce; station reflections. | `MountainRoad{LightingPresentation,ReflectionController,MetalAppearance}` | Current |
 | Depth of field tiers | Gaussian far blur/interiors radius0.55; shared owned inspection Bokeh. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder`, `CinematicDepthOfField` | Current |
@@ -68,7 +68,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
 | Session day/time displays | Inventory/day announcements follow calendar; final7 clock display is an exception. | `HomeAlarmClock`, `InventoryView` | Current |
 | Pause / cutscene debug | Shared pause;warehouse door ambush, local replay/timecode;script→live struggle. | `PauseMenu*`,`Cutscene*`,`WarehouseDoorAmbush*` | Current |
-| Hero inventory | Stacks/Use;crowbar draw-stow/hidden stored/free gait;pickup/receipt;preview MSAA. | `Inventory{Types,State,MenuModel,Controller,View}`, `GameSessionState`, `WorldItemFoundScreen` | Current |
+| Hero inventory | Stacks/Use;crowbar/pistol equip-stow;session ammo;pickup/receipt;preview MSAA. | `Inventory{Types,State,MenuModel,Controller,View}`, `GameSessionState`, `WorldItemFoundScreen` | Current |
 | World item pickup and its found screen | Shared lit 3D turn/owned focus;one take;isolated lights;layers restored. | `WorldItem{PickupPlan,Pickup,PickupModel,FoundScreen,FoundView,InspectionPresenter}` | Current |
 | Hunger, stress, fatigue and consumption | Needs follow the pause-aware calendar; consumption/rest commit relief once. Gap: needs apply no gameplay debuff. | `PlayerNeedsProgressionState`, `PlayerNeedsRules` | Partial |
 | Inventory-backed target interactions | Shared item-backed target menus commit consumption once and refund failed startup. | `InventoryItemRequirement`, `InventoryTargetInteraction{Definition,Model,Controller}` | Current |
@@ -204,7 +204,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Bar interior and exterior | Hall/worn WC; solid shared door, exclusive hero/guest access and masked broken mirror. | `BarInteriorLayout*`, `BarWashroom*`, `InteriorHingedDoorInteraction` | Current |
 | Player home interior | 12×8×2.9m; stove meets wall; sofa/kitchen/locked room/shared sit. | `HomeInteriorModelLibrary`, `HomeDiningSeatPlan` | Current |
 | Apartment calendar appearance | Days1–7 neglect; heavier7/exact debug restore; sleep view7+hero7. | `HomeApartmentDressing`, `HomeApartmentDay{Rules,Controller}` | Current |
-| Player-home stairwell | Three puzzles; crowbar wakes 21 bodies. Up to four mobile, two attackers; safe third room, local retry. | `StairwellLabyrinth*`, `StairwellEncounter*` | Current |
+| Player-home stairwell | Three puzzles; crowbar wakes crowd; third lowers pistol tray. Safe room3; bounded attackers/local retry. | `StairwellLabyrinth*`, `StairwellEncounter*` | Current |
 | City facade presentation | The legacy 4×4 path remains only for clipped Home crossings. | `CityFacade{Grid,Appearance}`, `CityBuilding{SurfaceAppearance,WindowSlotAppearance}` | Current |
 | City window presentation | Pure facade/window slots select bounded lit shares and preserve district palettes and daytime light floors. | `CityDistrict{ArtProfile,PresentationPlan,PresentationPlanner}`, `CityWindowAppearance` | Current |
 | Stairwell surface presentation | Cached textures and material property blocks apply measured stairwell surfaces without instance materials. | `StairwellSurfaceAppearance`, `SurfaceAppearanceCore` | Current |

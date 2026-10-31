@@ -90,7 +90,7 @@ namespace BarPromenade
             {
                 if (SelectedIsEquippable)
                 {
-                    if (SelectedStack.ItemId == InventoryItemId.CombatCrowbar)
+                    if (SelectedStack.ItemId is InventoryItemId.CombatCrowbar or InventoryItemId.CombatPistol)
                         return LocalizationService.Get(SelectedIsEquipped
                             ? "inventory.action.weapon.stow"
                             : "inventory.action.weapon.draw");
