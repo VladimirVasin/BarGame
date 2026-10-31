@@ -50,6 +50,11 @@ namespace BarPromenade
             internal readonly List<Fragment> Fragments = new List<Fragment>();
             internal readonly List<GameObject> Hosts = new List<GameObject>();
             internal readonly List<ShotgunFracture> Volleys = new List<ShotgunFracture>(8);
+            // Only the production hero supplies crowbar contacts. Keep its newest
+            // serial even after a fracture; a replay cannot remove more sectors.
+            internal CombatActor LastMeleeSource;
+            internal int LastMeleeSequence;
+            internal bool HasMeleeContact;
             internal int BrainCount;
             internal bool Active;
             internal Vector3 PreviousPosition, PreviousVelocity;
@@ -146,8 +151,23 @@ namespace BarPromenade
 
         internal void Apply(CombatImpact impact, CombatBloodEffects blood)
         {
-            if (impact.Kind != CombatImpactKind.Projectile || impact.Target == null || impact.Target.IsHero || impact.Target.IsCraneRegenerating) return;
+            bool crowbar = impact.Kind == CombatImpactKind.Weapon && impact.Source != null &&
+                impact.Source.IsHero && impact.Source.WeaponId == CombatWeaponId.Crowbar;
+            if ((!crowbar && impact.Kind != CombatImpactKind.Projectile) || impact.Target == null ||
+                impact.Target.IsHero || impact.Target.IsCraneRegenerating) return;
+            if (crowbar && (impact.Result is not (MeleeHitResult.Hit or MeleeHitResult.GuardBroken) ||
+                impact.Location.Region != MeleeBodyRegion.Head || impact.DetachedPart ||
+                impact.BodyRegion.HasValue && impact.BodyRegion != BodyDamageRegion.Head ||
+                !impact.Target.State.IsDefeated || Mathf.Max(impact.WoundDamage, impact.Damage) <= 0f)) return;
             Head head = RequireHead(impact.Target);
+            if (crowbar)
+            {
+                if (head.HasMeleeContact && head.LastMeleeSource == impact.Source &&
+                    unchecked(impact.AttackSequence - head.LastMeleeSequence) <= 0) return;
+                head.HasMeleeContact = true;
+                head.LastMeleeSource = impact.Source;
+                head.LastMeleeSequence = impact.AttackSequence;
+            }
             ShotgunFracture volley = null;
             float ejection = 1f;
             if (impact.IsPellet)
@@ -189,11 +209,11 @@ namespace BarPromenade
             var available = new List<Sector>(16);
             foreach (Sector sector in head.Sectors) if (sector != null && !sector.Detached) available.Add(sector);
             if (available.Count == 0) return;
-            // The chord through the skull determines both the lost silhouette and
-            // wider exit-side breakup. This is independent of actor/world yaw.
+            // A bullet follows its through-skull chord. A bar breaks only the
+            // nearby contact side; it must not invent a distant projectile exit.
             available.Sort((a, b) => Score(a).CompareTo(Score(b)));
             float offset = Vector3.ProjectOnPlane(point, direction).magnitude;
-            int amount = volley == null ? Mathf.RoundToInt(Mathf.Lerp(5f, 3f, Mathf.Clamp01(offset))) :
+            int amount = crowbar ? 3 : volley == null ? Mathf.RoundToInt(Mathf.Lerp(5f, 3f, Mathf.Clamp01(offset))) :
                 Mathf.Clamp(Mathf.RoundToInt(volley.Trauma), 1, 14) - volley.Released;
             amount = Mathf.Min(available.Count, amount);
             if (amount <= 0) return;
@@ -253,11 +273,13 @@ namespace BarPromenade
             {
                 Vector3 centre = Divide(sector.Bounds.center - head.Bounds.center, extent);
                 Vector3 delta = centre - point;
+                if (crowbar) return delta.sqrMagnitude;
                 return Vector3.ProjectOnPlane(delta, direction).sqrMagnitude - Vector3.Dot(delta, direction) * .45f;
             }
             float BrainScore(Piece piece)
             {
                 Vector3 delta = Divide(piece.Bounds.center - head.Bounds.center, extent) - point;
+                if (crowbar) return delta.sqrMagnitude;
                 return Vector3.ProjectOnPlane(delta, direction).sqrMagnitude - Vector3.Dot(delta, direction) * .45f;
             }
         }
@@ -583,6 +605,7 @@ namespace BarPromenade
                 Destroy(fragment.Body.gameObject);
             }
             head.Fragments.Clear(); head.Volleys.Clear(); head.BrainCount = 0; head.Active = false;
+            head.LastMeleeSource = null; head.LastMeleeSequence = 0; head.HasMeleeContact = false;
             foreach (Sector sector in head.Sectors) foreach (Piece piece in sector.Pieces)
                 piece.Released = null;
             foreach (Piece piece in head.Brains)

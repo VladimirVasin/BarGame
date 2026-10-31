@@ -3,52 +3,67 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-01
+
+Crowbar:weight transfer/sharp arc/brake;grip/low elbows/Ready preserved.
+Tissue damage now advances structure;wide surface tear;fatal head uses contact-side
+sectors with melee serial dedupe. Shared finite blood pool;no gun profile change.
+Third-hit living fall/rise retains damage;hero ordinary hits keep control.
+TWO HAND STRIKE EXPORTED PROOF; Range_CrowbarContactPresentsRecoilBeforeHitStop,
+Range_CrowbarHitsLeaveWoundsAndZombieRises, Range_CrowbarFatalHeadContactFracturesOnce
+passed. Gameplay/source strike, first wound, rise and fatal head frames reviewed.
+24FX reviewed:shared damage surfaces/particles;lighting/post/camera owners kept.
+
 ## 2026-10-31
 
-Puzzle: full frontal panel/handles/UI margin; small cabinet hangs by its back.
-Immediate selection/short gestures/one pending E replace lost busy input; Q
-cancels the active hand. Rig/return/FX stay. StairwellLabyrinthPuzzleModeAndFlashlight
-and STAIRWELL_LABYRINTH_COMPACT_WALL_CABINET_OK passed; input/cabinet/frame review.
+Zombie:recovery3.2/Docker3.6/all outcomes→authored .95/2.4s.
+Stagger:melee.8/counter+.3/pistol≥.45;bar amplified torso/head/arms recoil→freeze.
+Live attached capped-HP hits interrupt without extra HP loss (bar/pistol/primary
+shotgun);rig/contacts/pause/all24FX kept. Prebuild:legacy crowbar Ready/upright
+fails;runtime uses existing assets.
+Range_ZombieHitsInterruptLiveAttacksWithoutRefundingRecovery passed;frames reviewed.
 
-Labyrinth: native metre maps replace smeared warehouse strips. Handle/real bar
-brace/carriage/rails/endstop/catch explain unloading and shared single pickup.
-Session bar enables world strike/parry/story warehouse; context stows/draws the
-same rig, Debug kit stays. Existing FX owners retained. STAIRWELL_LABYRINTH_DETERMINISM_OK,
-STAIRWELL_LABYRINTH_GATE_CUTS_AND_DEPTH_OK, collision/enclosure/UV and
-StairwellSecondPuzzleCrowbar passed; brace/pickup/context-return frames reviewed.
+Combat HUD:screen edges;Lab/F8/result separate,result stays in F8;shared draw/input;
+bars/footer below. CombatHud_EdgePanelsDoNotOverlapAndPointerMatchesVisibility
+passed; Game View defeat/F8/reset reviewed.
 
-Crowbar: fixed fresh-press strike/finite front parry replace charge/combo/shove/
-kick/step; held input cannot repeat/extend. Firearms stay; charge HUD removed.
-One clip/time/torso arc and physical contacts own hit/parry. Authored support
-replaces the stale IK branch bending the arm into the shaft; bounded draw-arm
-travel/final collisions remain. Existing rig/shadows/metal/impact/post retained.
-Range_SimpleCrowbarStrikeUsesOneArcAndPhysicalContacts,
-CommittedStrikeIsFixedAndRejectsChargeChainsAndQueuedGuard,
-OnlyAFreshUnconsumedFrontParryPreventsDamage and action-clock checks passed;
-gameplay/front/side reviewed.
+Puzzle:frontal controls/UI;cabinet back-to-wall;immediate selection/short gestures/
+pending E/Q cancel. StairwellLabyrinthPuzzleModeAndFlashlight,
+STAIRWELL_LABYRINTH_COMPACT_WALL_CABINET_OK;input/cabinet frames reviewed.
 
-Warehouse: continuous GoalWall/collision; red practical reveals door/valve at
-minimum dip, ambush brightness stays. CombatWarehouseGateLampSurvivesPendant,
-COMBAT WAREHOUSE ART CONTRACT OK, WAREHOUSE MASTER TEXTURES OK passed; approach/
-minimum-dip/FX-off/wall reviewed. Exporter macOS DLLs/SDK8/navigation guards
-restore reproducible unchanged placements. Existing materials/lights stay.
-Next door lights on solve before render, from the previous mechanism/
-floor/range; local lamps retain radius/shadow budget. StairwellLabyrinthLightRadius
-passed; handoffs/closed/FX-off/pause/reset/departed-room darkness reviewed.
+Labyrinth:metre maps/bar brace/carriage/rails/endstop/catch→shared pickup;
+session world strike/parry/story warehouse/same rig/context;Debug kit.
+STAIRWELL_LABYRINTH_DETERMINISM_OK, STAIRWELL_LABYRINTH_GATE_CUTS_AND_DEPTH_OK,
+collision/enclosure/UV, StairwellSecondPuzzleCrowbar;pickup/context reviewed.
 
-Bed: narrowed sofa and baked arms disagreed; local pressure-rim contacts now
-share current geometry. Body→face and room-space wake replace skull-follow;
-return targets the current gameplay shot, avoiding empty-room travel/snap.
-Clip/body clocks drive pooled foley with pause/cleanup. User retune: cloth/breath
-quieter/darker/sparse; no wide idle loop. Calm/scene/material/post owners stay.
-HOME_BED_CONTACTS_OK / HOME_BED_PRESERVED_CONTENT_OK /
-HOME_BED_SAVED_SOURCE_OK / HOME_BED_PUBLICATION_OK;
-NewGame_MenuToNoonIntroRequiresFreshWakeAndStand passed. SleepMvp contacts,
-pause/return/stand passed; pre-existing balcony day-reset texture assertion fails
-(Dressing/Barrier restore different maps). Existing jacket-support source
-discrepancy unchanged. Entry/wake/return frames and HomeBedAudioSignalReview
-checked; signal/headroom only, no listening.
-GenerateSamples_IsDeterministicFiniteAndAudible bed cases passed after retune.
+Crowbar:inv draw/stow;hidden carry;gait/palm;contacts rebuilt.
+High-R/grip↑/L<R/fists;coil/arc/hold/return;elbow gates.
+Arc;1hit/body;world/metal stop;grip. LMB1/frontparry;
+held-repeat/charge/combo/shove/kick/step0.
+TWO HAND STRIKE EXPORTED PROOF/InventoryDrawWalkStrikeAndStowPreserveOrdinaryGait
+and CombatWeaponCarryAssetSetup.ValidateOrThrow passed.
+Melee:hero stun/grace;self veto0. Bar surface wounds,structure kept;3hits→fall/rise.
+Heavy rise:yield/world-only bar/blocked release-pickup.
+OrdinaryHitsKeepControlAndCrowbarStillContactsWallsAndParries passed.
+Range_CrowbarContactPresentsRecoilBeforeHitStop passed.
+Range_CrowbarHitsLeaveWoundsAndZombieRises passed.
+Live strike/wounds/fall/rise+24FX reviewed.
+
+Warehouse:GoalWall/collision continuous;red door/valve readable at minimum dip;
+ambush stays. CombatWarehouseGateLampSurvivesPendant, COMBAT WAREHOUSE ART CONTRACT OK,
+WAREHOUSE MASTER TEXTURES OK;approach/FX-off reviewed. Exporter macOS DLLs/SDK8/
+navigation guards preserve placement. Next door lights on solve before render
+across floors/range;shadow budget kept. StairwellLabyrinthLightRadius;
+handoff/closed/FX-off/pause/reset/darkness reviewed.
+
+Bed:sofa/grips agree;body→face→current gameplay camera;pooled pose-clock foley.
+Quieter/darker/sparse cloth/breath;no wide idle loop;FX kept.
+HOME_BED_CONTACTS_OK/HOME_BED_PRESERVED_CONTENT_OK/HOME_BED_SAVED_SOURCE_OK/
+HOME_BED_PUBLICATION_OK;NewGame_MenuToNoonIntroRequiresFreshWakeAndStand passed.
+SleepMvp contacts/pause/return/stand passed;old balcony day-reset texture failure
+(Dressing/Barrier maps differ);jacket-support source discrepancy unchanged.
+Entry/wake/return frames/HomeBedAudioSignalReview signal/headroom reviewed,
+without listening. GenerateSamples_IsDeterministicFiniteAndAudible bed cases passed.
 
 ## 2026-10-30
 

@@ -22,7 +22,7 @@ namespace BarPromenade
         private int profileSeed, recoveryStepSide;
         public float RecoverySkill => Mathf.Clamp(baseSkill * Mathf.Lerp(.65f, 1f, stamina) -
             intoxication * .22f - legWeakness * .18f, .3f, .95f);
-        public float RecoveryUrgency => IsActive ? Mathf.Clamp(BalanceLoad + velocity.magnitude * .08f, 0f, 2f) : 0f;
+        public float RecoveryUrgency => !standingResponse && IsActive ? Mathf.Clamp(BalanceLoad + velocity.magnitude * .08f, 0f, 2f) : 0f;
         public int RecoverySequence { get; private set; }
         public int LandedRecoverySteps { get; private set; }
         public int BlockedRecoverySteps { get; private set; }
@@ -133,6 +133,7 @@ namespace BarPromenade
 
         internal bool HasStableRecoverySupport(Vector3 locomotionVelocity)
         {
+            if (standingResponse) return true;
             if (!Finite(locomotionVelocity) || !leftPlanted || !rightPlanted || recoveryStepActive ||
                 handSupported || WantsKnockdown || BalanceLoad >= .35f) return false;
             // Impact velocity is only the hit response. The motor can still be
@@ -215,6 +216,11 @@ namespace BarPromenade
 
         private void MeasureBalance()
         {
+            if (standingResponse)
+            {
+                BalanceLoad = overload = 0f; CaptureOffset = Vector3.zero; WantsKnockdown = false;
+                return;
+            }
             float omega = Mathf.Sqrt(9.81f / Mathf.Max(.65f, 1f - crouch));
             Vector2 lean = LocalPlanar(Vector3.Cross(rotation, Vector3.up) * .65f);
             Vector2 capture = PlayerBalanceRules.CapturePoint(lean, LocalPlanar(velocity), omega);
@@ -264,6 +270,7 @@ namespace BarPromenade
         public void EvaluateSupport(float seconds)
         {
             if (!float.IsFinite(seconds) || seconds <= 0f) return;
+            if (standingResponse) { MeasureBalance(); return; }
             if (!IsActive) { overload = BalanceLoad = 0f; WantsKnockdown = false; return; }
             MeasureBalance();
             // A directed recovery shuffle moves the torso as well as its foot.

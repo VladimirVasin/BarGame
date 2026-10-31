@@ -145,6 +145,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            UnsubscribeCrowbarInventory();
             if (DoorAmbush != null) DoorAmbush.enabled = false;
             if (Cutscenes != null)
             {

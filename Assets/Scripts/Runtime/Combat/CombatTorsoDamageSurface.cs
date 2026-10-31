@@ -180,18 +180,26 @@ namespace BarPromenade
             return found;
         }
 
-        internal bool Apply(Vector3 point, float radius, float amount)
+        internal bool Apply(Vector3 point, float radius, float amount, Vector3 sweepAxis = default, float sweepStretch = 1f)
         {
             if (amount <= 0f || radius <= 0f) return false;
             CapturePose(); bool changed = false;
             float radiusSquared = radius * radius;
-            if (worldBounds.SqrDistance(point) > radiusSquared) { SurfaceRejects++; return false; }
+            sweepStretch = Mathf.Clamp(sweepStretch, 1f, 2f);
+            sweepAxis = sweepAxis.sqrMagnitude > .0001f ? sweepAxis.normalized : Vector3.zero;
+            float axisReduction = 1f - 1f / (sweepStretch * sweepStretch);
+            if (worldBounds.SqrDistance(point) > radiusSquared * sweepStretch * sweepStretch)
+            { SurfaceRejects++; return false; }
             float scale = Mathf.Max(.001f, skin.transform.lossyScale.magnitude / Mathf.Sqrt(3f));
             foreach (Cell cell in cells)
             {
                 if (cell.Loss >= 1f) continue;
                 CellTests++;
-                float squared = (WorldCentre(cell) - point).sqrMagnitude;
+                Vector3 offset = WorldCentre(cell) - point;
+                float along = axisReduction > 0f ? Vector3.Dot(offset, sweepAxis) : 0f;
+                // One contact produces a short dent/tear along the bar's travel,
+                // rather than a second circular projectile entry or exit wound.
+                float squared = Mathf.Max(0f, offset.sqrMagnitude - along * along * axisReduction);
                 if (squared > radiusSquared) continue;
                 float normalized = Mathf.Sqrt(squared) / radius;
                 if (normalized >= 1f) continue;

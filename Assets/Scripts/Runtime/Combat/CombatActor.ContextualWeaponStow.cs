@@ -90,7 +90,7 @@ namespace BarPromenade
             record.Model.transform.localScale = scale;
             record.Location = location;
             weaponDropped = dropped;
-            UpdateConcealedPistol();
+            UpdateConcealedEquipment();
             ResetWeaponContacts();
             RefreshShotgunSling();
         }

@@ -124,7 +124,7 @@ namespace BarPromenade.Editor
                 Mathf.Abs(manifest.walk_duration_seconds - CombatZombieAssetProvider.WalkCycleSeconds) > .0001f ||
                 Mathf.Abs(manifest.prepare_seconds - MeleeCombatSettings.ZombieUnarmed.WindupSeconds) > .0001f ||
                 Mathf.Abs(manifest.active_seconds - MeleeCombatSettings.ZombieUnarmed.ActiveSeconds) > .0001f ||
-                Mathf.Abs(manifest.recovery_seconds - MeleeCombatSettings.ZombieUnarmed.RecoverySeconds) > .0001f)
+                Mathf.Abs(manifest.recovery_seconds - MeleeCombatSettings.ZombieUnarmed.AnimationRecoverySeconds) > .0001f)
                 throw new InvalidOperationException("Zombie manifest violates the isolated grounded action contract.");
             foreach (string name in CombatZombieAssetProvider.ClipNames)
             {
@@ -139,7 +139,7 @@ namespace BarPromenade.Editor
                 Mathf.Abs(ordinary.walk_duration_seconds - CombatZombieAssetProvider.OrdinaryWalkCycleSeconds) > .0001f ||
                 Mathf.Abs(ordinary.prepare_seconds - ordinarySettings.WindupSeconds) > .0001f ||
                 Mathf.Abs(ordinary.active_seconds - ordinarySettings.ActiveSeconds) > .0001f ||
-                Mathf.Abs(ordinary.recovery_seconds - ordinarySettings.RecoverySeconds) > .0001f)
+                Mathf.Abs(ordinary.recovery_seconds - ordinarySettings.AnimationRecoverySeconds) > .0001f)
                 throw new InvalidOperationException("Ordinary zombie manifest violates its undeformed grounded action contract.");
             foreach (string name in CombatZombieAssetProvider.OrdinaryClipNames)
                 CombatTestAssetSetup.ValidateInPlaceClip(CombatZombieAssetProvider.LoadOrdinaryClip(name));

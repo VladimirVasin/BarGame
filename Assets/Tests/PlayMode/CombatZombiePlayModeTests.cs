@@ -735,7 +735,7 @@ namespace BarPromenade.Tests.PlayMode
                     state.Advance(settings.ActiveSeconds * .5f + .001f);
                 Assert.That(state.Phase, Is.EqualTo(MeleePhase.Recovery), outcome.ToString());
                 Assert.That(state.AttackOutcome, Is.EqualTo(outcome));
-                Assert.That(state.AttackRecoverySeconds, Is.EqualTo(2.4f).Within(.001f),
+                Assert.That(state.AttackRecoverySeconds, Is.EqualTo(3.6f).Within(.001f),
                     outcome + ": every outcome carries the full loaded recovery.");
                 int sequence = state.AttackSequence;
                 Assert.That(state.RequestAttack(true), Is.False);
@@ -761,7 +761,9 @@ namespace BarPromenade.Tests.PlayMode
             bool sawRecovery = false, sampledKneel = false, sampledHeldKneel = false, sawFrenzy = false;
             Vector3 plantedRoot = default;
             Quaternion plantedFacing = default;
-            for (int step = 0; step < (allowFrenzy ? 1000 : 440) &&
+            int stepLimit = allowFrenzy ? 1000 :
+                Mathf.CeilToInt(actor.State.CurrentAttackDurationSeconds / CombatTestRoot.SimulationStep) + 12;
+            for (int step = 0; step < stepLimit &&
                 (actor.State.Phase != MeleePhase.Ready || actor.IsZombieFrenzied); step++)
             {
                 sawFrenzy |= actor.IsZombieFrenzied;
@@ -785,7 +787,8 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(Physics.GetIgnoreCollision(load.Collider, root.Hero.Body), Is.False,
                         "The ram's motor exclusions end before the long kneeling recovery.");
                     Assert.That(Physics.GetIgnoreCollision(actor.Body, root.Hero.Body), Is.False);
-                    float recoveryTime = actor.State.AttackElapsed - actor.State.AttackActiveEnd;
+                    float recoveryTime = (actor.State.AttackElapsed - actor.State.AttackActiveEnd) /
+                        actor.State.AttackRecoverySeconds * actor.State.Settings.AnimationRecoverySeconds;
                     if (!sampledKneel && recoveryTime >= .65f && !actor.IsZombieFrenzied)
                     {
                         AssertLoaderKneeling(actor, load, readyPelvisHeight);

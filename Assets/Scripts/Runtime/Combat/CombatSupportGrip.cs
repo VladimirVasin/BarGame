@@ -6,7 +6,8 @@ namespace BarPromenade
     /// <summary>One left-arm owner: weapon contact, protective reach, or recovery support.</summary>
     public sealed class CombatSupportGrip
     {
-        public const float ReadyDistance = -.085f, BlockDistance = .38f;
+        // Hero physical stations on the unchanged crowbar, not offsets from the right palm.
+        public const float ReadyDistance = -.005f, BlockDistance = .38f;
         public const float ReleaseThreshold = .2f;
         private const float SlideSeconds = .18f, OpenSeconds = .10f, CloseSeconds = .08f;
         private const float ReachFraction = .999f, ReachSpeed = 2.2f;
@@ -58,6 +59,8 @@ namespace BarPromenade
         private float regripCommitSeconds, regripRetrySeconds, regripNoProgressSeconds, regripPreviousError;
         private Vector3 authoredPalmLocal;
         private bool hasAuthoredPalm;
+        private bool UsesAuthoredHeroSupport => wantsSupport && JournalActor != null &&
+            JournalActor.UsesAuthoredCrowbarPose && !JournalActor.WeaponClearanceBlocked && !recoveryOwned && !shoveActive;
 
         internal ContactPreviewScope BeginContactPreview() => new ContactPreviewScope(this);
 
@@ -135,6 +138,9 @@ namespace BarPromenade
 
         public CombatImpactMotion ImpactMotion { get; set; }
         internal CombatActor JournalActor { get; set; }
+        private float OwningHandStation => JournalActor != null
+            ? JournalActor.CrowbarGripStation : CombatAssetProvider.RightGripStation;
+        private float ReadyStation => OwningHandStation - .085f;
         private string journalGripReason;
         private string contactRejection, contactBlockingShape;
         internal string LastPoseRejection { get; private set; }
@@ -393,7 +399,7 @@ namespace BarPromenade
         public void SetTarget(bool blocking, bool supported, bool continuous = false)
         {
             preserveSupportBranch = continuous;
-            float next = blocking ? BlockDistance : ReadyDistance;
+            float next = blocking ? BlockDistance : ReadyStation;
             if (!initialized)
             {
                 initialized = true; distance = startDistance = targetDistance = next;
@@ -454,7 +460,7 @@ namespace BarPromenade
                 releaseHold = 0f;
                 // Every combat rise exits at Ready. An old blocking contact high
                 // on the shaft must not pull this hand away before it can regrip.
-                distance = startDistance = targetDistance = ReadyDistance;
+                distance = startDistance = targetDistance = ReadyStation;
                 slideElapsed = SlideSeconds;
             }
         }
@@ -756,6 +762,21 @@ namespace BarPromenade
             slideElapsed = Mathf.Min(SlideSeconds, slideElapsed + seconds);
             distance = Mathf.Lerp(startDistance, targetDistance, Mathf.SmoothStep(0f, 1f, slideElapsed / SlideSeconds));
             if (recoveryOwned) return;
+            if (UsesAuthoredHeroSupport)
+            {
+                // The clip/owned transition already moves both real arms into
+                // contact. Only finger closure needs its own clock; a failed
+                // regrip probe must not replace the authored arm on each frame.
+                ClearBalanceHand();
+                State = CombatArmSupportState.SupportingWeapon;
+                weight = Mathf.MoveTowards(weight, 1f, seconds / CloseSeconds);
+                armWeight = 1f;
+                protective = false;
+                releaseHold = lostSupportElapsed = urgency = 0f;
+                regripWaiting = regripClosing = regripProbePending = hasRegripTarget = false;
+                LastPoseRejection = null;
+                return;
+            }
             releaseHold = Mathf.Max(0f, releaseHold - seconds);
             armWeight = Mathf.MoveTowards(armWeight, wantsSupport || protective ? 1f : 0f, seconds / SlideSeconds);
             if (State == CombatArmSupportState.SupportingWeapon)
@@ -838,6 +859,13 @@ namespace BarPromenade
         internal void CommitPresentedContact(bool accepted)
         {
             if (contactPreview) return;
+            if (UsesAuthoredHeroSupport)
+            {
+                regripCommitSeconds = 0f;
+                MeasureAuthoredHeroContact();
+                RememberPresentedArm();
+                return;
+            }
             float seconds = regripCommitSeconds;
             regripCommitSeconds = 0f;
             if (seconds <= 0f) return;
@@ -980,6 +1008,18 @@ namespace BarPromenade
             Restore();
             if (!initialized || weapon == null || hand == null || hands == null) return;
             if (shoveActive) { CaptureArmReference(); ApplyShove(); return; }
+            if (UsesAuthoredHeroSupport)
+            {
+                // Leave the sampled, blended rig intact. The crowbar remains
+                // on its right palm; its left palm comes from the same clip.
+                // Contact quality stays observable without owning gameplay.
+                authoredPalmLocal = frame.InverseTransformDirection(hands.PalmNormal(true));
+                hasAuthoredPalm = true;
+                MeasureAuthoredHeroContact();
+                hands.SetGrip(true, weight);
+                RememberPresentedArm();
+                return;
+            }
             if (balanceCollider != null) { ApplyBalanceHand(); return; }
             if (!wantsSupport && !protective && State == CombatArmSupportState.Free)
             {
@@ -1342,6 +1382,15 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
             hasPresentedPose = true;
         }
 
+        private void MeasureAuthoredHeroContact()
+        {
+            if (!TryContact(out Pose contact)) return;
+            presentedContactError = Vector3.Distance(socket.position, contact.position);
+            presentedContactAngle = Quaternion.Angle(hand.rotation, contact.rotation);
+            presentedWristSafe = WristCanHold(hand.position - forearm.position, hand.rotation);
+            presentedContactStation = Vector3.Dot(hands.CylinderCentre(true) - Target, weapon.up);
+        }
+
         private void ApplyArmStep()
         {
             upper.localRotation = armStepUpper;
@@ -1590,7 +1639,7 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
         }
 
         private bool UsesAuthoredCrowbarPose => wantsSupport && JournalActor != null && !JournalActor.IsFirearm &&
-            Mathf.Abs(targetDistance - ReadyDistance) < .001f &&
+            Mathf.Abs(targetDistance - ReadyStation) < .001f &&
             (JournalActor.State.IsAttacking || JournalActor.State.Phase == MeleePhase.Ready);
 
         private bool TryAuthoredCrowbarContact(out Pose contact)
@@ -1620,7 +1669,8 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
             Vector3 authored = Vector3.ProjectOnPlane(hasAuthoredPalm ? frame.TransformDirection(authoredPalmLocal) :
                 hands.PalmNormal(true), axis).normalized;
             if (authored.sqrMagnitude < .1f) authored = opposed;
-            float guard = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(distance / BlockDistance));
+            float guard = Mathf.SmoothStep(0f, 1f,
+                Mathf.InverseLerp(OwningHandStation, BlockDistance, distance));
             Vector3 palm = guard <= 0f ? authored : guard >= 1f ? opposed :
                 Quaternion.AngleAxis(Vector3.SignedAngle(authored, opposed, axis) * guard, axis) * authored;
             contact = hands.GetSocketPose(true, Target, axis, palm);
@@ -2102,7 +2152,7 @@ closestAngle={closestWristAngle:F9}; closestWrist={closestWristAngles:F9}; close
             regripCommitSeconds = regripRetrySeconds = regripNoProgressSeconds = 0f;
             regripPreviousError = float.PositiveInfinity;
             presentedContactStation = armStepContactStation = 0f;
-            distance = startDistance = targetDistance = ReadyDistance;
+            distance = startDistance = targetDistance = ReadyStation;
             slideElapsed = SlideSeconds; releaseHold = closeElapsed = urgency = 0f;
             lostSupportElapsed = presentedContactError = presentedContactAngle = reachProgress = reachStepSeconds = 0f;
             weight = armWeight = 0f; presentedWristSafe = true; direction = palmVelocity = Vector3.zero;

@@ -6,12 +6,14 @@ namespace BarPromenade
     /// Human strikes are free; the meter pays for guard, steps, shoves, kicks and growing charge.</summary>
     public sealed class MeleeCombatSettings
     {
-        public static MeleeCombatSettings Crowbar { get; } = new MeleeCombatSettings();
+        public static MeleeCombatSettings Crowbar { get; } = new MeleeCombatSettings(
+            windupSeconds: .22f, activeSeconds: .14f, animationRecoverySeconds: .42f);
         public static MeleeCombatSettings ZombieUnarmed { get; } = new MeleeCombatSettings(
             damage: 32f, blockCost: 28f, windupSeconds: .25f, activeSeconds: .18f,
-            recoverySeconds: 2.4f, hitRecoverySeconds: 2.4f, blockRecoverySeconds: 2.4f,
-            obstacleRecoverySeconds: 2.4f, parriedRecoverySeconds: 2.4f,
-            animationRecoverySeconds: 2.4f, isUnarmedZombie: true, incomingDamageScale: .5f);
+            recoverySeconds: 3.6f, hitRecoverySeconds: 3.6f, blockRecoverySeconds: 3.6f,
+            obstacleRecoverySeconds: 3.6f, parriedRecoverySeconds: 3.6f,
+            animationRecoverySeconds: 2.4f, staggerSeconds: .8f,
+            isUnarmedZombie: true, incomingDamageScale: .5f);
 
         public MeleeCombatSettings(float maxHealth = 100f, float maxStamina = 100f,
             float damage = 25f, float attackCost = 0f, float blockCost = 20f,

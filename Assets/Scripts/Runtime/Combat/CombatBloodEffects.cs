@@ -199,7 +199,9 @@ namespace BarPromenade
         // A new bullet contact wounds a corpse without inventing another HP transaction.
         public void Emit(CombatImpact impact) => Emit(impact.Target, impact.Point, impact.Direction,
             impact.Kind == CombatImpactKind.Projectile ? (impact.IsPellet ? impact.WoundDamage : Mathf.Max(25f, impact.Damage)) : Mathf.Max(impact.WoundDamage, impact.Damage),
-            impact.Kind is CombatImpactKind.Projectile or CombatImpactKind.Hook, impact.Location.Region == MeleeBodyRegion.Head, impact.Part, impact.IsPellet);
+            impact.Kind is CombatImpactKind.Projectile or CombatImpactKind.Hook, impact.Location.Region == MeleeBodyRegion.Head, impact.Part, impact.IsPellet,
+            prominent: impact.Kind == CombatImpactKind.Weapon && impact.Source != null && impact.Source.IsHero &&
+                impact.Source.WeaponId == CombatWeaponId.Crowbar, contactNormal: impact.Normal);
 
         public void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage) =>
             Emit(actor, point, direction, damage, false, false);
@@ -271,7 +273,7 @@ namespace BarPromenade
         }
 
         private void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage, bool projectile, bool head,
-            Player3DAnatomicalPart? part = null, bool pellet = false)
+            Player3DAnatomicalPart? part = null, bool pellet = false, bool prominent = false, Vector3 contactNormal = default)
         {
             if (!IsInitialized || actor == null || damage <= 0f || float.IsNaN(damage) || float.IsInfinity(damage) || !Finite(point) || !Finite(direction)) return;
             PrepareActor(actor);
@@ -280,7 +282,7 @@ namespace BarPromenade
             Vector3 incoming = direction.sqrMagnitude > .0001f ? direction.normalized : actor.transform.forward;
             int oldWounds = injury.Marks.ProjectileCount;
             long projectionStart = System.Diagnostics.Stopwatch.GetTimestamp();
-            injury.Marks.Add(point, incoming, projectile, head, part);
+            injury.Marks.Add(point, incoming, projectile, head, part, prominent);
             WoundProjectionTicks += System.Diagnostics.Stopwatch.GetTimestamp() - projectionStart;
             long burstStart = System.Diagnostics.Stopwatch.GetTimestamp();
             if (projectile)
@@ -290,13 +292,17 @@ namespace BarPromenade
                 for (int i = oldWounds; i < injury.Marks.ProjectileCount; i++) injury.WoundBirth[i] = injury.BloodAge;
             }
             bool hasSurface = injury.Marks.TryGetBleed(out Vector3 bleedPoint, out Vector3 bleedDirection);
-            Vector3 origin = projectile || !hasSurface ? point : bleedPoint;
-            Vector3 outward = hasSurface ? bleedDirection : -incoming;
-            int amount = Mathf.Clamp(12 + Mathf.RoundToInt(damage * .24f), 12, 26);
+            Vector3 origin = projectile || prominent || !hasSurface ? point : bleedPoint;
+            Vector3 outward = prominent && contactNormal.sqrMagnitude > .0001f ? contactNormal.normalized :
+                hasSurface ? bleedDirection : -incoming;
+            int amount = prominent ? Mathf.Clamp(30 + Mathf.RoundToInt(damage * .30f), 30, 42) :
+                Mathf.Clamp(12 + Mathf.RoundToInt(damage * .24f), 12, 26);
             if (projectile) amount = pellet ? 5 : 56;
             float headPower = pellet && head ? Mathf.Clamp01(damage / 24f) : 0f;
             if (pellet && head) amount = Mathf.RoundToInt(Mathf.Lerp(2f, 8f, headPower));
             amount = SpendBlood(injury, amount);
+            Vector3 fanSide = prominent ? Vector3.Cross(incoming, Vector3.up) : Vector3.zero;
+            if (prominent) fanSide = fanSide.sqrMagnitude < .0001f ? actor.transform.right : fanSide.normalized;
             for (int i = 0; i < amount; i++)
             {
                 Vector3 scatter = new Vector3(Range(-1f, 1f), Range(-.25f, 1f), Range(-1f, 1f));
@@ -305,13 +311,21 @@ namespace BarPromenade
                 if (projectile)
                     velocity = outward * Range(2.2f, head ? 4.8f : 4f) + incoming * Range(.1f, .35f) +
                         scatter * Range(.65f, 1.4f) + Vector3.up * Range(.4f, 1.3f);
+                if (prominent)
+                {
+                    // A short, forceful fan follows the actual bar travel from
+                    // its contact point. It shares the finite blood/drop pools.
+                    velocity = incoming * Range(2.2f, 4.4f) + outward * Range(.5f, 1.2f) +
+                        fanSide * Range(-.55f, .55f) + Vector3.up * Range(.3f, 1.4f);
+                }
                 // A short local fan follows the bullet; a smaller part returns
                 // from the entry. Close buckshot scales its speed with pellet damage.
                 if (projectile && head)
                     velocity = (i < amount * .7f ? incoming : outward) * Range(1.4f, 3.2f) +
                         scatter * Range(.3f, .9f) + Vector3.up * Range(.15f, .65f);
                 if (pellet && head) velocity *= 1f + headPower * 1.2f;
-                SpawnDrop(origin + outward * .022f, velocity, Range(.021f, head ? .04f : projectile ? .05f : .039f));
+                SpawnDrop(origin + outward * .022f, velocity, prominent ? Range(.026f, .045f) :
+                    Range(.021f, head ? .04f : projectile ? .05f : .039f));
             }
             // All wounds share the actor's remaining supply. Another impact
             // adds a source and burst, but never rewinds the actor's bleed clock.

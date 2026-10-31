@@ -124,7 +124,13 @@ namespace BarPromenade
                     if (depth > recoveryFloorDepths[i] + RecoveryContactTolerance ||
                         depth > Skin + RecoveryContactTolerance ||
                         (depth > 0f && direction.y < .65f) || !RecoveryCoreClear(segment, a, b, contact.Shape))
-                    { BlockingShape = contact.Shape.name; return false; }
+                    {
+                        BlockingShape = contact.Shape.name;
+                        BlockingCollider = contact.Shape; BlockingActor = null;
+                        if (checkingDesiredPath)
+                            RecordWorldContact(step / (float)steps, (a + b) * .5f, Vector3.up, contact.Shape);
+                        return false;
+                    }
                     // Noise may not accumulate over many samples or attempts.
                     recoveryFloorDepths[i] = Mathf.Min(recoveryFloorDepths[i], depth);
                 }

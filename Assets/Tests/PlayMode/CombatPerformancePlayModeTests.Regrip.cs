@@ -11,6 +11,564 @@ namespace BarPromenade.Tests.PlayMode
     {
         private string lastSourceShoveDiagnostics;
 
+        [Category("CurrentCombat")]
+        [UnityTest]
+        public IEnumerator Range_CrowbarContactPresentsRecoilBeforeHitStop()
+        {
+            yield return StartOrdinaryZombieLaboratory();
+
+            foreach (bool hit in new[] { false, true })
+            {
+                PlacePair(hit ? .9f : 12f);
+                root.AutomaticOpponentDecisions = false;
+                CombatActor hero = root.Hero, victim = root.Opponent;
+                for (int frame = 0; frame < 36; frame++) { root.Tick(TickSeconds); yield return null; }
+                Assert.That(hero.HasWeaponInHand && !hero.IsSwitchingWeapon, Is.True);
+                Transform chest = ArmMotionBone(victim, "chest");
+                Transform victimHead = ArmMotionBone(victim, "head"), victimRightArm = ArmMotionBone(victim, "upper_arm.R"),
+                    victimLeftArm = ArmMotionBone(victim, "upper_arm.L");
+                Transform rightShoulder = ArmMotionBone(hero, "upper_arm.R"), leftShoulder = ArmMotionBone(hero, "upper_arm.L");
+                Transform rightElbow = ArmMotionBone(hero, "forearm.R"), leftElbow = ArmMotionBone(hero, "forearm.L");
+                Transform heroChest = ArmMotionBone(hero, "chest");
+                NpcHandPose hands = hero.GetComponentInChildren<NpcHandPose>();
+                Vector3 readyShoulders = Vector3.ProjectOnPlane(rightShoulder.position - leftShoulder.position, Vector3.up);
+                Quaternion readyRoot = hero.transform.rotation;
+                float minimumHeroTurn = 0f, maximumHeroTurn = 0f;
+                Quaternion previousRight = Quaternion.Inverse(heroChest.rotation) * rightShoulder.rotation;
+                Quaternion previousLeft = Quaternion.Inverse(heroChest.rotation) * leftShoulder.rotation;
+                Quaternion beforeContactChest = chest.rotation;
+                Quaternion beforeContactHead = Quaternion.Inverse(chest.rotation) * victimHead.rotation;
+                Quaternion beforeContactRight = Quaternion.Inverse(chest.rotation) * victimRightArm.rotation;
+                Quaternion beforeContactLeft = Quaternion.Inverse(chest.rotation) * victimLeftArm.rotation;
+                Quaternion hitChest = Quaternion.identity, hitHead = Quaternion.identity,
+                    hitRight = Quaternion.identity, hitLeft = Quaternion.identity;
+                float peakChest = 0f, peakHead = 0f, peakRight = 0f, peakLeft = 0f;
+                int impacts = victim.ReceivedImpactCount, contacts = 0;
+                bool contactPresented = false, pauseChecked = false, sawFreeze = false;
+                long startSubsteps = root.SimulationSubsteps, startFrozen = root.SimulationHitStopSubsteps;
+                float renderClock = 0f, contactGameClock = -1f;
+                bool peakCaptured = false;
+                void MeasureReaction()
+                {
+                    if (!contactPresented) return;
+                    peakChest = Mathf.Max(peakChest, Quaternion.Angle(hitChest, chest.rotation));
+                    peakHead = Mathf.Max(peakHead, Quaternion.Angle(hitHead, Quaternion.Inverse(chest.rotation) * victimHead.rotation));
+                    peakRight = Mathf.Max(peakRight, Quaternion.Angle(hitRight, Quaternion.Inverse(chest.rotation) * victimRightArm.rotation));
+                    peakLeft = Mathf.Max(peakLeft, Quaternion.Angle(hitLeft, Quaternion.Inverse(chest.rotation) * victimLeftArm.rotation));
+                }
+                System.Action<CombatImpact> observe = impact =>
+                {
+                    if (impact.Source != hero) return;
+                    contacts++;
+                    Assert.That(victim.State.Phase, Is.EqualTo(MeleePhase.Stagger), "The real hit interrupts the zombie's attack.");
+                    Assert.That(victim.ActiveClipName, Is.EqualTo(CombatZombieAssetProvider.OrdinaryHitClip),
+                        "The contact must display recoil before hit-stop can freeze it.");
+                    Assert.That(Quaternion.Angle(beforeContactChest, chest.rotation), Is.GreaterThanOrEqualTo(18f),
+                        "The frozen contact must already show a dramatic torso recoil, rather than a barely changed attack pose.");
+                    Assert.That(victim.ImpactMotion.Age, Is.Zero.Within(.0001f));
+                    Assert.That(victim.IsKnockedDown || victim.IsRagdollActive, Is.False);
+                    contactPresented = true;
+                    hitChest = beforeContactChest; hitHead = beforeContactHead;
+                    hitRight = beforeContactRight; hitLeft = beforeContactLeft;
+                    MeasureReaction();
+                };
+                victim.ImpactReceived += observe;
+                try
+                {
+                    if (hit) Assert.That(victim.TryAttack(), Is.True);
+                    Assert.That(hero.TryAttack(), Is.True);
+                    int sequence = hero.State.AttackSequence;
+                    using var strip = new ContactFollowStrip(root.CameraFollow.Camera, hit ? "hit-follow-60hz" : "miss-follow-60hz");
+                    using var inspection = hit ? new ContactFollowStrip(root.CameraFollow.Camera, "hit-side-full-reaction-30hz", 480) : null;
+                    strip.Sample(renderClock, 0f, hero.State.AttackElapsed, "live");
+                    if (hit) SampleContactSide(inspection, renderClock, 0f, "live");
+                    CaptureDuelFrame("balance/instant-contact", hit ? "hit-ready" : "miss-ready", true);
+                    for (int frame = 0; frame < 60; frame++)
+                    {
+                        long frameFrozen = root.SimulationHitStopSubsteps;
+                        bool frameHadContact = contactPresented;
+                        for (int step = 0; step < 2; step++)
+                        {
+                            beforeContactChest = chest.rotation;
+                            beforeContactHead = Quaternion.Inverse(chest.rotation) * victimHead.rotation;
+                            beforeContactRight = Quaternion.Inverse(chest.rotation) * victimRightArm.rotation;
+                            beforeContactLeft = Quaternion.Inverse(chest.rotation) * victimLeftArm.rotation;
+                            float heroClock = hero.State.AttackElapsed, victimClock = victim.State.StaggerElapsed;
+                            long frozen = root.SimulationHitStopSubsteps;
+                            bool hadContact = contactPresented;
+                            root.Tick(CombatTestRoot.SimulationStep);
+                            if (root.SimulationHitStopSubsteps > frozen)
+                            {
+                                sawFreeze = true;
+                                Assert.That(hero.State.AttackElapsed, Is.EqualTo(heroClock).Within(.00001f));
+                                Assert.That(victim.State.StaggerElapsed, Is.EqualTo(victimClock).Within(.00001f));
+                                Assert.That(Quaternion.Angle(beforeContactChest, chest.rotation), Is.LessThan(.01f));
+                            }
+                            if (!hadContact && contactPresented) break;
+                        }
+                        yield return null;
+                        renderClock += TickSeconds;
+                        float gameClock = (root.SimulationSubsteps - startSubsteps - root.SimulationHitStopSubsteps + startFrozen) * CombatTestRoot.SimulationStep;
+                        string clockState = !frameHadContact && contactPresented ? "contact" :
+                            root.SimulationHitStopSubsteps > frameFrozen ? "hitstop" : "live";
+                        strip.Sample(renderClock, gameClock, hero.State.AttackElapsed, clockState, victim.State.StaggerElapsed);
+                        if (hit && (frame % 2 == 0 || clockState == "contact"))
+                            SampleContactSide(inspection, renderClock, gameClock, clockState);
+                        MeasureReaction();
+                        Assert.That(hero.State.AttackSequence, Is.EqualTo(sequence), "A contact or freeze cannot create another swing.");
+                        Assert.That(contacts, Is.LessThanOrEqualTo(1));
+                        Vector3 shoulders = Vector3.ProjectOnPlane(rightShoulder.position - leftShoulder.position, Vector3.up);
+                        float heroTurn = Vector3.SignedAngle(readyShoulders, shoulders, Vector3.up);
+                        minimumHeroTurn = Mathf.Min(minimumHeroTurn, heroTurn);
+                        maximumHeroTurn = Mathf.Max(maximumHeroTurn, heroTurn);
+                        Assert.That(Mathf.Abs(heroTurn), Is.LessThan(24f));
+                        Assert.That(Quaternion.Angle(readyRoot, hero.transform.rotation), Is.LessThan(1f),
+                            "The expressive strike turns the torso while the gameplay root keeps its facing.");
+                        Quaternion right = Quaternion.Inverse(heroChest.rotation) * rightShoulder.rotation;
+                        Quaternion left = Quaternion.Inverse(heroChest.rotation) * leftShoulder.rotation;
+                        Assert.That(Quaternion.Angle(previousRight, right), Is.LessThan(35f));
+                        Assert.That(Quaternion.Angle(previousLeft, left), Is.LessThan(35f));
+                        previousRight = right; previousLeft = left;
+                        Assert.That(Vector3.Distance(hands.CylinderCentre(false), hero.Weapon.transform.TransformPoint(
+                            Vector3.up * hero.CrowbarGripStation)), Is.LessThan(.012f));
+                        Assert.That(Vector3.Distance(hands.CylinderCentre(true), hero.Weapon.transform.TransformPoint(
+                            Vector3.up * CombatSupportGrip.ReadyDistance)), Is.LessThan(.025f));
+                        if (hero.State.AttackElapsed >= hero.State.Settings.WindupSeconds + hero.State.Settings.ActiveSeconds)
+                        {
+                            Assert.That(rightElbow.position.y - rightShoulder.position.y, Is.LessThan(.04f));
+                            Assert.That(leftElbow.position.y - leftShoulder.position.y, Is.LessThan(.04f));
+                        }
+                        if (contactPresented && !pauseChecked)
+                        {
+                            contactGameClock = gameClock;
+                            Assert.That(victim.ReceivedImpactCount, Is.EqualTo(impacts + 1));
+                            CaptureDuelFrame("balance/instant-contact/opponent", "contact-front", true);
+                            CaptureDuelFrame("balance/instant-contact/opponent", "contact-side");
+                            float heroClock = hero.State.AttackElapsed, victimClock = victim.State.StaggerElapsed;
+                            long frozen = root.SimulationHitStopSubsteps, simulated = root.SimulationSubsteps;
+                            Quaternion frozenChest = chest.rotation;
+                            using (GameTimeScaleRuntime.AcquirePause())
+                                for (int paused = 0; paused < 3; paused++)
+                                {
+                                    root.Tick(TickSeconds); yield return null; renderClock += TickSeconds;
+                                    strip.Sample(renderClock, gameClock, hero.State.AttackElapsed, "paused", victim.State.StaggerElapsed);
+                                    SampleContactSide(inspection, renderClock, gameClock, "paused");
+                                    Assert.That(root.SimulationSubsteps, Is.EqualTo(simulated));
+                                    Assert.That(root.SimulationHitStopSubsteps, Is.EqualTo(frozen));
+                                    Assert.That(hero.State.AttackElapsed, Is.EqualTo(heroClock));
+                                    Assert.That(victim.State.StaggerElapsed, Is.EqualTo(victimClock));
+                                    Assert.That(Quaternion.Angle(frozenChest, chest.rotation), Is.LessThan(.01f));
+                                    Assert.That(contacts, Is.EqualTo(1));
+                                }
+                            pauseChecked = true;
+                        }
+                        if (hit && !peakCaptured && victim.State.StaggerElapsed >= .09f)
+                        {
+                            CaptureDuelFrame("balance/instant-contact/opponent", "recoil-peak-front", true);
+                            CaptureDuelFrame("balance/instant-contact/opponent", "recoil-peak-side");
+                            peakCaptured = true;
+                        }
+                        if (hero.State.Phase == MeleePhase.Ready)
+                        {
+                            Assert.That(gameClock, Is.LessThan(hero.State.Settings.AnimationAttackDurationSeconds + .1f),
+                                "The full miss/hit must not bank a long recovery after its visible return.");
+                            if (hit) Assert.That(gameClock - contactGameClock,
+                                Is.LessThan(hero.State.Settings.ActiveSeconds + hero.State.Settings.AnimationRecoverySeconds + 2f * TickSeconds),
+                                "Contact may retain only the remaining authored arc and return, with frame sampling tolerance.");
+                            break;
+                        }
+                    }
+                    Assert.That(hero.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                    Assert.That(maximumHeroTurn - minimumHeroTurn, Is.InRange(37f, 44f),
+                        "The visible shoulder line must cross a substantial torso arc, not leave the entire blow to the arms.");
+                    Assert.That(contacts, Is.EqualTo(hit ? 1 : 0));
+                    Assert.That(victim.ReceivedImpactCount, Is.EqualTo(impacts + (hit ? 1 : 0)));
+                    Assert.That(hit ? contactPresented && sawFreeze && pauseChecked : hero.State.AttackOutcome == MeleeAttackOutcome.Miss, Is.True);
+                    CaptureDuelFrame("balance/instant-contact", hit ? "hit-return" : "miss-return", true);
+                    if (hit)
+                    {
+                        for (int frame = 0; frame < 90 && (victim.State.Phase != MeleePhase.Ready || victim.ImpactMotion.IsActive); frame++)
+                        {
+                            root.Tick(TickSeconds); yield return null; renderClock += TickSeconds;
+                            float gameClock = (root.SimulationSubsteps - startSubsteps - root.SimulationHitStopSubsteps + startFrozen) * CombatTestRoot.SimulationStep;
+                            MeasureReaction();
+                            if (frame % 2 == 0) SampleContactSide(inspection, renderClock, gameClock, "live");
+                            Assert.That(contacts, Is.EqualTo(1));
+                            Assert.That(victim.IsKnockedDown || victim.IsRagdollActive, Is.False);
+                        }
+                        Assert.That(victim.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                        Assert.That(victim.ImpactMotion.IsActive, Is.False);
+                        Assert.That(peakChest, Is.GreaterThanOrEqualTo(50f), "The rendered zombie torso must show a large full-body recoil.");
+                        Assert.That(peakHead, Is.GreaterThanOrEqualTo(22f), "The head must whip relative to the chest.");
+                        Assert.That(peakRight, Is.GreaterThanOrEqualTo(48f), "The right arm must recoil relative to the torso.");
+                        Assert.That(peakLeft, Is.GreaterThanOrEqualTo(55f), "The left arm must recoil relative to the torso.");
+                        TestContext.Out.WriteLine($"Rendered recoil: chest={peakChest:F2}, head={peakHead:F2}, arms={peakRight:F2}/{peakLeft:F2}; " +
+                            $"hero torso={minimumHeroTurn:F2}..{maximumHeroTurn:F2}.");
+                        SampleContactSide(inspection, renderClock, (root.SimulationSubsteps - startSubsteps - root.SimulationHitStopSubsteps + startFrozen) *
+                            CombatTestRoot.SimulationStep, "settled");
+                        CaptureDuelFrame("balance/instant-contact/opponent", "recoil-settled-side");
+                    }
+                }
+                finally { victim.ImpactReceived -= observe; }
+            }
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [Category("CurrentCombat")]
+        [UnityTest]
+        public IEnumerator Range_CrowbarHitsLeaveWoundsAndZombieRises()
+        {
+            yield return StartOrdinaryZombieLaboratory();
+            PlacePair(.9f);
+            root.AutomaticOpponentDecisions = false;
+            CombatActor hero = root.Hero, victim = root.Opponent;
+            const string captures = "balance/crowbar-wounds/opponent";
+            for (int frame = 0; frame < 36; frame++) { root.Tick(TickSeconds); yield return null; }
+            Assert.That(hero.HasWeaponInHand && !hero.IsSwitchingWeapon, Is.True);
+            CaptureDuelFrame(captures, "00-intact-front", true);
+            int falls = 0;
+            var tissueBefore = new float[CombatBodyDamageState.RegionCount * CombatBodyDamageState.PatchCount];
+            int intactTissueRenderers = root.BodyEffects.TissueRendererCountFor(victim);
+            System.Action<CombatImpact> countFall = impact => falls++;
+            victim.KnockedDown += countFall;
+            try
+            {
+                for (int strike = 1; strike <= 4; strike++)
+                {
+                    // Reapproach the pushed/recovered target without resetting its
+                    // HP, wounds, knockdown counter or the attack sequence ledger.
+                    if (strike > 1)
+                    {
+                        Vector3 facing = victim.transform.forward;
+                        root.Player.Motor.Teleport(victim.transform.position + facing * .9f);
+                        hero.transform.rotation = Quaternion.LookRotation(-facing, Vector3.up);
+                        Physics.SyncTransforms();
+                        for (int frame = 0; frame < 12; frame++) { root.Tick(TickSeconds); yield return null; }
+                    }
+                    Assert.That(victim.State.IsDefeated || victim.IsKnockedDown, Is.False);
+                    float healthBefore = victim.State.Health;
+                    uint revisionBefore = victim.BodyDamage.ContactRevision;
+                    for (int regionIndex = 0; regionIndex < CombatBodyDamageState.RegionCount; regionIndex++)
+                        for (int patchIndex = 0; patchIndex < CombatBodyDamageState.PatchCount; patchIndex++)
+                            tissueBefore[regionIndex * CombatBodyDamageState.PatchCount + patchIndex] =
+                                victim.BodyDamage.TissueLoss((BodyDamageRegion)regionIndex, patchIndex);
+                    int impactsBefore = victim.ReceivedImpactCount, emissionsBefore = root.BloodEffects.EmissionCount;
+                    Assert.That(hero.TryAttack(), Is.True, $"Real crowbar strike {strike} must start.");
+                    int sequence = hero.State.AttackSequence;
+                    for (int frame = 0; frame < 120 && victim.ReceivedImpactCount == impactsBefore; frame++)
+                    {
+                        root.Tick(CombatTestRoot.SimulationStep);
+                        // Stop on the contact itself: the third blow must still show
+                        // its standing compression before its later fall.
+                        if (victim.ReceivedImpactCount == impactsBefore) root.Tick(CombatTestRoot.SimulationStep);
+                        yield return null;
+                    }
+                    Assert.That(victim.ReceivedImpactCount, Is.EqualTo(impactsBefore + 1), $"Strike {strike} must reach actual anatomy once.");
+                    Assert.That(victim.LastImpact.Source, Is.SameAs(hero));
+                    Assert.That(victim.LastImpact.AttackSequence, Is.EqualTo(sequence));
+                    Assert.That(victim.LastImpact.WoundDamage, Is.GreaterThan(0f));
+                    Assert.That(victim.State.Health, Is.LessThan(healthBefore), "Every landed blow in this sequence damages the living zombie.");
+                    Assert.That(victim.State.IsDefeated, Is.False, "A nonfatal knockdown must remain distinct from defeat.");
+                    Assert.That(victim.BodyDamage.ContactRevision, Is.EqualTo(revisionBefore + 1));
+                    Assert.That(root.BloodEffects.EmissionCount, Is.EqualTo(emissionsBefore + 1));
+                    Assert.That(root.BloodEffects.WoundCountFor(victim), Is.GreaterThan(0));
+                    BodyDamageRegion contactedRegion = victim.LastImpact.BodyRegion ?? CombatBodyAnatomy.ToRegion(victim.LastImpact.Part);
+                    // An intact anatomical capsule reports its region without a
+                    // patch; the body owner resolves that first contact to its
+                    // closest authored patch. Observe that committed transaction.
+                    int contactedPatch = -1, changedPatches = 0;
+                    for (int patch = 0; patch < CombatBodyDamageState.PatchCount; patch++)
+                        if (victim.BodyDamage.TissueLoss(contactedRegion, patch) >
+                            tissueBefore[(int)contactedRegion * CombatBodyDamageState.PatchCount + patch])
+                        { contactedPatch = patch; changedPatches++; }
+                    Assert.That(changedPatches, Is.EqualTo(1),
+                        "One real metal contact must damage exactly one patch of its resolved anatomical region.");
+                    if (victim.LastImpact.BodyPatch >= 0)
+                        Assert.That(contactedPatch, Is.EqualTo(victim.LastImpact.BodyPatch),
+                            "An existing authored surface must preserve its exact contact patch.");
+                    float priorTissue = tissueBefore[(int)contactedRegion * CombatBodyDamageState.PatchCount + contactedPatch];
+                    float contactedTissue = victim.BodyDamage.TissueLoss(contactedRegion, contactedPatch);
+                    Assert.That(contactedTissue, Is.GreaterThan(priorTissue), "Each blow must remove tissue at its actual contact, beyond a blood stamp.");
+                    Assert.That(contactedTissue, Is.GreaterThanOrEqualTo(Mathf.Min(1f, priorTissue + .25f)),
+                        "A light player crowbar contact must expose an authored wound immediately, despite zombie health resistance.");
+                    if (strike == 1)
+                        Assert.That(root.BodyEffects.TissueRendererCountFor(victim), Is.GreaterThan(intactTissueRenderers),
+                            "The first body contact must expose damaged tissue geometry, not wait for several cosmetic stamps.");
+                    if (victim.LastImpact.Location.Region != MeleeBodyRegion.Head)
+                        Assert.That(root.HeadEffects.DetachedSectorCountFor(victim), Is.Zero, "A limb or torso contact cannot fracture the skull.");
+                    AssertVisibleCrowbarWound(victim);
+                    Assert.That(victim.IsKnockedDown, Is.False, "The contact compression precedes any selected fall.");
+                    float contactHealth = victim.State.Health;
+                    uint contactRevision = victim.BodyDamage.ContactRevision;
+                    int woundCount = root.BloodEffects.WoundCountFor(victim);
+                    CaptureDuelFrame(captures, $"0{strike}-contact-front", true);
+                    if (strike == 1)
+                    {
+                        CaptureDuelFrame(captures, "01-first-wound-side");
+                        CaptureCrowbarWound(captures, victim);
+                    }
+                    using (GameTimeScaleRuntime.AcquirePause())
+                        for (int frame = 0; frame < 3; frame++)
+                        {
+                            root.Tick(TickSeconds); victim.Present(); yield return null;
+                            Assert.That(victim.State.Health, Is.EqualTo(contactHealth));
+                            Assert.That(victim.BodyDamage.ContactRevision, Is.EqualTo(contactRevision));
+                            Assert.That(root.BloodEffects.EmissionCount, Is.EqualTo(emissionsBefore + 1));
+                            Assert.That(victim.IsKnockedDown, Is.False, "A paused reaction cannot spend the delayed fall clock.");
+                        }
+
+                    bool sawFall = false, sawLying = false, sawRise = false, settled = false;
+                    int limit = strike == 3 ? 1200 : 180;
+                    for (int frame = 0; frame < limit; frame++)
+                    {
+                        root.Tick(TickSeconds); yield return null;
+                        Assert.That(hero.State.AttackSequence, Is.EqualTo(sequence));
+                        Assert.That(victim.ReceivedImpactCount, Is.EqualTo(impactsBefore + 1));
+                        Assert.That(victim.State.Health, Is.EqualTo(contactHealth), "Physics, presentation and recovery cannot duplicate or heal damage.");
+                        Assert.That(victim.BodyDamage.ContactRevision, Is.EqualTo(contactRevision));
+                        Assert.That(root.BloodEffects.EmissionCount, Is.EqualTo(emissionsBefore + 1));
+                        Assert.That(hero.IsKnockedDown || hero.IsRagdollActive, Is.False);
+                        if (strike != 3)
+                            Assert.That(victim.IsKnockedDown || victim.IsRagdollActive, Is.False, "Only the accumulated third hit should topple this zombie.");
+                        if (victim.IsKnockedDown && !sawFall)
+                        {
+                            sawFall = true;
+                            Assert.That(victim.Ragdoll.IsRecoverable && victim.BodyDamage.CanRise, Is.True);
+                            CaptureDuelFrame(captures, "03-falling");
+                        }
+                        if (sawFall && !sawLying && victim.Ragdoll.HasGroundContact &&
+                            victim.Ragdoll.PelvisBody.position.y < victim.transform.position.y + .65f)
+                        {
+                            sawLying = true;
+                            CaptureDuelFrame(captures, "03-lying");
+                        }
+                        if (victim.State.Phase == MeleePhase.Rising && !sawRise && victim.JournalRiseProgress >= .3f)
+                        {
+                            sawRise = true;
+                            CaptureDuelFrame(captures, "03-rising");
+                        }
+                        if (hero.State.Phase == MeleePhase.Ready && victim.State.Phase == MeleePhase.Ready &&
+                            !victim.IsKnockedDown && !victim.IsRagdollActive && !victim.ImpactMotion.IsActive)
+                        { settled = true; break; }
+                    }
+                    Assert.That(settled, Is.True, $"Strike {strike}: phase={victim.State.Phase}, rise={victim.JournalRiseProgress:F3}, " +
+                        $"ground={victim.Ragdoll.HasGroundContact}, support={victim.Ragdoll.HasSupportContact}, " +
+                        $"speed={victim.Ragdoll.CentralBodySpeed:F3}, quiet={victim.Ragdoll.QuietSeconds:F3}.");
+                    Assert.That(falls, Is.EqualTo(strike >= 3 ? 1 : 0));
+                    if (strike == 3)
+                    {
+                        Assert.That(sawFall && sawLying && sawRise, Is.True, "The living zombie must visibly fall, lie and rise on the same rig.");
+                        Assert.That(victim.IsAvailable && victim.BodyDamage.CanRise, Is.True);
+                        Assert.That(root.BloodEffects.WoundCountFor(victim), Is.EqualTo(woundCount));
+                        Assert.That(victim.BodyDamage.TissueLoss(contactedRegion, contactedPatch), Is.EqualTo(contactedTissue));
+                        Assert.That(root.BodyEffects.TissueRendererCountFor(victim), Is.GreaterThan(intactTissueRenderers));
+                        AssertVisibleCrowbarWound(victim);
+                        CaptureDuelFrame(captures, "03-recovered-front", true);
+                    }
+                    TestContext.Out.WriteLine($"Crowbar strike {strike}: HP {healthBefore:F2}->{contactHealth:F2}; wounds={woundCount}; " +
+                        $"tissue={contactedRegion}/{contactedPatch} {priorTissue:F2}->{contactedTissue:F2}; " +
+                        $"contact revision={contactRevision}; falls={falls}; recovered={settled}.");
+                }
+            }
+            finally { victim.KnockedDown -= countFall; }
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [Category("CurrentCombat")]
+        [UnityTest]
+        public IEnumerator Range_CrowbarFatalHeadContactFracturesOnce()
+        {
+            yield return StartOrdinaryZombieLaboratory();
+            PlacePair(4f);
+            root.AutomaticOpponentDecisions = false;
+            CombatActor hero = root.Hero, victim = root.Opponent;
+            for (int frame = 0; frame < 36; frame++) { root.Tick(TickSeconds); yield return null; }
+            for (int strike = 0; strike < 2; strike++)
+            {
+                // Use the existing resolved-contact harness with the actual posed
+                // skull surface. Full animated metal travel is covered above.
+                victim.CaptureContactPose();
+                Assert.That(victim.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out Vector3 centre,
+                    out Vector3 forward, out _), Is.True);
+                Assert.That(victim.Hurtboxes.SweepSphere(centre - forward * .5f, centre, .025f, forward,
+                    out CombatHurtboxes.Hit hit), Is.True);
+                Assert.That(hit.Location.Region, Is.EqualTo(MeleeBodyRegion.Head));
+                Assert.That(hit.Location.Side, Is.EqualTo(MeleeHitSide.Rear));
+                Assert.That(hero.TryAttack(), Is.True);
+                new CombatActor.Contact(hero, victim, hit.Point, hit.Normal, hit.Direction, hit.Location,
+                    hit.Part, hit.LocalPoint, weaponSpeed: 6f, physicalBody: true,
+                    bodyRegion: hit.DamageRegion, bodyPatch: hit.DamagePatch).Apply();
+                Assert.That(victim.ReceivedImpactCount, Is.EqualTo(strike + 1));
+                Assert.That(victim.LastImpact.Kind, Is.EqualTo(CombatImpactKind.Weapon));
+                Assert.That(victim.State.IsDefeated, Is.EqualTo(strike == 1));
+                Assert.That(root.HeadEffects.DetachedSectorCountFor(victim), Is.EqualTo(strike == 0 ? 0 : 3),
+                    "The fatal crowbar head contact must break contact-side skull geometry through the shared fracture owner.");
+                if (strike == 0)
+                {
+                    for (int frame = 0; frame < 180 && (hero.State.Phase != MeleePhase.Ready ||
+                        victim.State.Phase != MeleePhase.Ready || victim.ImpactMotion.IsActive); frame++)
+                    { root.Tick(TickSeconds); yield return null; }
+                    Assert.That(hero.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                    Assert.That(victim.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                }
+            }
+            CombatImpact fatal = victim.LastImpact;
+            int mask = root.HeadEffects.DestroyedMaskFor(victim);
+            uint revision = victim.BodyDamage.ContactRevision;
+            root.HeadEffects.Apply(fatal, root.BloodEffects);
+            root.BodyEffects.Apply(fatal);
+            Assert.That(root.HeadEffects.DestroyedMaskFor(victim), Is.EqualTo(mask), "Replaying one resolved wound cannot release another skull fragment.");
+            Assert.That(victim.BodyDamage.ContactRevision, Is.EqualTo(revision));
+            var bodyContact = new CombatImpact(hero, victim, fatal.AttackSequence + 1,
+                ArmMotionBone(victim, "chest").position, victim.transform.forward, -victim.transform.forward,
+                0f, 0f, MeleeHitResult.Hit, new MeleeHitLocation(MeleeBodyRegion.Torso, MeleeHitSide.Front),
+                woundDamage: hero.State.Settings.Damage, bodyRegion: BodyDamageRegion.Chest, bodyPatch: 0);
+            root.HeadEffects.Apply(bodyContact, root.BloodEffects);
+            Assert.That(root.HeadEffects.DestroyedMaskFor(victim), Is.EqualTo(mask), "A later corpse-body wound cannot break the head.");
+            CaptureDuelFrame("balance/crowbar-head/opponent", "fatal-skull-front", true);
+            CaptureCrowbarWound("balance/crowbar-head/opponent", victim);
+            TestContext.Out.WriteLine($"Fatal crowbar skull contact: sectors={root.HeadEffects.DetachedSectorCountFor(victim)}, " +
+                $"mask={mask}, contact revision={revision}; duplicate and torso wound preserved the mask.");
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        private void CaptureCrowbarWound(string subject, CombatActor actor)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            try
+            {
+                Vector3 focus = actor.LastImpact.Point;
+                // Read the actual contact side, including rear-head wounds which
+                // the victim's frontal view correctly hides behind retained skin.
+                Vector3 outward = actor.LastImpact.Normal;
+                if (!float.IsFinite(outward.x) || !float.IsFinite(outward.y) || !float.IsFinite(outward.z) ||
+                    outward.sqrMagnitude < .0001f) outward = actor.transform.forward;
+                outward.Normalize();
+                Vector3 side = Vector3.Cross(Vector3.up, outward);
+                if (side.sqrMagnitude < .0001f) side = actor.transform.right;
+                Vector3 eye = focus + outward * 1.1f + side.normalized * .25f + Vector3.up * .15f;
+                camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(focus - eye));
+                string folder = SceneIds.CombatTest + "/" + subject;
+                string path = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Captures", folder, "01-first-wound-close.png");
+                LogAssert.Expect(LogType.Log, "Area capture wrote " + path);
+                AreaCaptureFixture.CaptureCurrentCamera(camera, folder, "01-first-wound-close");
+            }
+            finally { camera.transform.SetPositionAndRotation(position, rotation); }
+        }
+
+        private void AssertVisibleCrowbarWound(CombatActor actor)
+        {
+            // Once a patch has opened, its original skin and stamp correctly
+            // yield to the retained authored flesh/bone surfaces.
+            if (root.BodyEffects.TissueRendererCountFor(actor) > 0 || root.BodyEffects.ExposedBoneCountFor(actor) > 0) return;
+            foreach (SkinnedMeshRenderer skin in actor.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                if (skin.name.StartsWith("Wound__") && skin.enabled && skin.gameObject.activeInHierarchy) return;
+            Assert.Fail("A landed crowbar contact must retain a visible wound on the posed body.");
+        }
+
+        private IEnumerator StartOrdinaryZombieLaboratory()
+        {
+            yield return UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(SceneIds.MainMenu);
+            for (int frame = 0; frame < 120 && SceneTransitionService.IsTransitioning; frame++) yield return null;
+            Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(CombatLoadoutSelection.Default,
+                CombatTestMode.Laboratory, laboratoryEnemy: CombatEnemyKind.Zombie)), Is.True);
+            root = null;
+            for (int frame = 0; frame < 600; frame++)
+            {
+                root = Object.FindAnyObjectByType<CombatTestRoot>();
+                if (root != null) root.AutomaticSimulation = false;
+                if (root != null && root.IsInitialized && GameInput.CanRead(GameInputContext.Gameplay)) break;
+                yield return null;
+            }
+            Assert.That(root != null && root.IsInitialized && root.IsLaboratory &&
+                root.LaboratoryEnemy == CombatEnemyKind.Zombie, Is.True);
+            root.SetSparring(false);
+            root.AutomaticOpponentDecisions = false;
+            typeof(CombatTestRoot).GetMethod("OnApplicationFocus", BindingFlags.Instance | BindingFlags.NonPublic)
+                .Invoke(root, new object[] { true });
+        }
+
+        private void SampleContactSide(ContactFollowStrip strip, float renderClock, float gameClock, string clockState)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            bool orthographic = camera.orthographic;
+            float size = camera.orthographicSize;
+            try
+            {
+                Vector3 focus = (root.Hero.transform.position + root.Opponent.transform.position) * .5f + Vector3.up * .95f;
+                // Stay inside the laboratory's nearby wall, as the side stills do.
+                camera.transform.SetPositionAndRotation(focus + root.Hero.transform.right * 2.7f + Vector3.up * .3f,
+                    Quaternion.LookRotation(-root.Hero.transform.right * 2.7f - Vector3.up * .3f));
+                camera.orthographic = true; camera.orthographicSize = 1.25f;
+                strip.Sample(renderClock, gameClock, root.Hero.State.AttackElapsed, clockState, root.Opponent.State.StaggerElapsed);
+            }
+            finally
+            {
+                camera.transform.SetPositionAndRotation(position, rotation);
+                camera.orthographic = orthographic; camera.orthographicSize = size;
+            }
+        }
+
+        private sealed class ContactFollowStrip : System.IDisposable
+        {
+            private const int Columns = 8, Rows = 8;
+            private readonly Camera camera;
+            private readonly string name;
+            private readonly RenderTexture frame, atlas;
+            private readonly int width, height;
+            private readonly System.Text.StringBuilder timeline = new System.Text.StringBuilder("frame,render_seconds,game_seconds,attack_seconds,clock_state,reaction_seconds,realtime_seconds\n");
+            private readonly double started = Time.realtimeSinceStartupAsDouble;
+            private int count;
+
+            internal ContactFollowStrip(Camera camera, string name, int width = 320)
+            {
+                this.camera = camera; this.name = name; this.width = width;
+                height = Mathf.RoundToInt(width / camera.aspect);
+                frame = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32); frame.Create();
+                atlas = new RenderTexture(width * Columns, height * Rows, 0, RenderTextureFormat.ARGB32); atlas.Create();
+                RenderTexture previous = RenderTexture.active;
+                RenderTexture.active = atlas; GL.Clear(false, true, Color.black); RenderTexture.active = previous;
+            }
+
+            internal void Sample(float renderClock, float gameClock, float attackClock, string clockState, float reactionClock = 0f)
+            {
+                Assert.That(count, Is.LessThan(Columns * Rows), "Keep the complete speed-review strip bounded.");
+                RenderTexture previous = camera.targetTexture;
+                try
+                {
+                    camera.targetTexture = frame; camera.Render();
+                    Graphics.CopyTexture(frame, 0, 0, 0, 0, width, height, atlas, 0, 0,
+                        count % Columns * width, (Rows - 1 - count / Columns) * height);
+                }
+                finally { camera.targetTexture = previous; }
+                timeline.AppendFormat(System.Globalization.CultureInfo.InvariantCulture, "{0},{1:F5},{2:F5},{3:F5},{4},{5:F5},{6:F5}\n",
+                    count++, renderClock, gameClock, attackClock, clockState, reactionClock, Time.realtimeSinceStartupAsDouble - started);
+            }
+
+            public void Dispose()
+            {
+                string folder = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Captures", SceneIds.CombatTest, "crowbar-impact-repair");
+                System.IO.Directory.CreateDirectory(folder);
+                var image = new Texture2D(atlas.width, atlas.height, TextureFormat.RGB24, false);
+                RenderTexture previous = RenderTexture.active;
+                try
+                {
+                    RenderTexture.active = atlas; image.ReadPixels(new Rect(0, 0, atlas.width, atlas.height), 0, 0); image.Apply();
+                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(folder, name + ".png"), image.EncodeToPNG());
+                    System.IO.File.WriteAllText(System.IO.Path.Combine(folder, name + ".csv"), timeline.ToString());
+                }
+                finally
+                {
+                    RenderTexture.active = previous; Object.Destroy(image);
+                    frame.Release(); atlas.Release(); Object.Destroy(frame); Object.Destroy(atlas);
+                }
+            }
+        }
+
         [Category("CombatMigrationPending")]
         [Ignore("Migration pending: this scenario has not been adapted to current zombie and warehouse contracts.")]
         [UnityTest]

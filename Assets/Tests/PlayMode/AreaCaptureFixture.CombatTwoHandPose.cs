@@ -300,7 +300,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(hand.RightGripWeight, Is.EqualTo(1f), sample);
             Assert.That(hand.LeftGripWeight, Is.GreaterThan(.99f), sample + ": support fingers must close on the bar.");
             Assert.That(actor.SupportGripWeight, Is.GreaterThan(.99f), sample);
-            Vector3 grip = CombatAssetProvider.FindAnchor(actor.Weapon, "Grip").position;
+            Vector3 grip = actor.Weapon.transform.TransformPoint(Vector3.up * actor.CrowbarGripStation);
             Assert.That(Vector3.Distance(hand.CylinderCentre(false), grip), Is.LessThan(.002f), sample);
             Assert.That(Vector3.Distance(measured, target), Is.LessThan(.012f),
                 sample + ": the actual left finger cylinder must meet the moving shaft target after all pose layers.");

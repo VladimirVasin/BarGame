@@ -65,7 +65,7 @@ ModelImporter:
       takeName: RIG_Player|CombatAttack
       internalID: 4207914590956406378
       firstFrame: 0
-      lastFrame: 128
+      lastFrame: 78
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -471,7 +471,7 @@ ModelImporter:
       takeName: RIG_Player|CombatRecoil
       internalID: 7956422627804960076
       firstFrame: 0
-      lastFrame: 48
+      lastFrame: 42
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -500,7 +500,7 @@ ModelImporter:
       takeName: RIG_Player|CombatReleaseHeavy
       internalID: -3301102650967797373
       firstFrame: 0
-      lastFrame: 128
+      lastFrame: 78
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -529,7 +529,7 @@ ModelImporter:
       takeName: RIG_Player|CombatReleaseLight
       internalID: -7037046216325683606
       firstFrame: 0
-      lastFrame: 128
+      lastFrame: 78
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

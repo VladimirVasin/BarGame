@@ -7,6 +7,9 @@ namespace BarPromenade
     {
         private CombatDamagePose damagePose;
         private float impactRecoveryGrace;
+        private int standingCrowbarHits, lastStandingCrowbarSequence;
+        private CombatActor lastStandingCrowbarSource;
+        private bool crowbarKnockdownPending;
         internal CombatHurtboxes Hurtboxes { get; private set; }
         public Transform DamageRigRoot => hero != null ? hero.Registry.ModelRoot : npc != null ? npc.ModelRoot : null;
         public CombatDamagePose DamagePose => damagePose;
@@ -15,6 +18,34 @@ namespace BarPromenade
         public CombatImpactMotion ImpactMotion { get; private set; }
         public event Action<CombatImpact> ImpactReceived;
         public event Action<CombatActor> DamageReset;
+
+        private bool UsesStandingMeleeResponse(CombatActor source, CombatImpactKind kind) =>
+            source != null && !State.IsDefeated && !IsKnockedDown && !IsRagdollActive &&
+            (kind is CombatImpactKind.Weapon or CombatImpactKind.Unarmed) &&
+            !source.IsDocker && !source.IsRoom && !source.IsCrane &&
+            (IsHero || !IsCrane && source.IsHero && source.WeaponId == CombatWeaponId.Crowbar);
+
+        // Ordinary contact strength is an explicit gameplay response. A missing
+        // measured speed must not manufacture a full 100 N s balancing impulse.
+        private Vector3 ResolveMeleeImpactImpulse(CombatActor source, Vector3 direction, float power,
+            float weaponSpeed, MeleeHitResult result)
+        {
+            CombatImpactKind kind = source.IsCrane ? CombatImpactKind.Hook :
+                source.IsZombie ? CombatImpactKind.Unarmed : CombatImpactKind.Weapon;
+            if (UsesStandingMeleeResponse(source, kind))
+            {
+                if (!float.IsFinite(direction.x) || !float.IsFinite(direction.y) || !float.IsFinite(direction.z) ||
+                    direction.sqrMagnitude < .000001f || result is MeleeHitResult.Ignored or MeleeHitResult.Parried)
+                    return Vector3.zero;
+                float momentum = IsHero ? 12f : 28f;
+                if (result == MeleeHitResult.Blocked) momentum *= .25f;
+                return direction.normalized * momentum;
+            }
+            return source.IsZombie ? direction * (source.IsDocker
+                ? result == MeleeHitResult.Blocked ? ZombieBlockedRamImpulse : ZombieRamImpulse
+                : result == MeleeHitResult.Blocked ? 10f : 25f) :
+                CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, result);
+        }
 
         private void InitializeDamagePose()
         {
@@ -34,6 +65,10 @@ namespace BarPromenade
 
         private void PresentDamagePose()
         {
+            if (damagePose != null)
+                damagePose.PreserveAuthoredLeftArm = UsesAuthoredCrowbarPose &&
+                    (State.Phase is MeleePhase.Ready or MeleePhase.Windup or MeleePhase.Active or
+                        MeleePhase.Recovery or MeleePhase.GuardImpact);
             // Injury yields to the committed tell, arc and step. Both contact
             // and rendering still use the same motion/transition composition.
             float weight = State.Phase switch
@@ -103,11 +138,21 @@ namespace BarPromenade
             if (impact.Impulse.sqrMagnitude < .0001f) return;
             if (IsKnockedDown || IsRagdollActive)
             {
+                crowbarKnockdownPending = false;
                 Ragdoll.AddImpact(impact);
                 if (!Ragdoll.IsRecovering)
                 { weaponConstraint?.Forget(); EnableHeldWeaponPhysics(); }
                 return;
             }
+            if (UsesStandingMeleeResponse(impact.Source, impact.Kind))
+            {
+                ImpactMotion.HitStanding(impact, IsHero);
+                RegisterStandingCrowbarHit(impact);
+                // The hit animation owns the same rig. A committed zombie
+                // knockdown follows its recoil without a balance/brace solver.
+                return;
+            }
+            crowbarKnockdownPending = false;
             Vector3 carry = motor != null ? motor.PlanarVelocity : locomotionVelocity;
             ImpactMotion.Hit(impact, carry, State.Stamina / State.Settings.MaxStamina,
                 IsHero ? GameSessionState.IntoxicationLevel / 100f : 0f, footwork.TransferringFoot || receivedDuringStep || State.Phase == MeleePhase.Step);
@@ -120,6 +165,51 @@ namespace BarPromenade
             if (gripHit && urgency >= .30f && impact.Result != MeleeHitResult.Blocked)
                 supportGrip?.RequestRelease(impact.Direction, Mathf.Clamp01(urgency));
             if (supportGrip == null || supportGrip.IsReleased || !supportGrip.IsSupportingWeapon) State.SetBlocking(false);
+        }
+
+        private void RegisterStandingCrowbarHit(CombatImpact impact)
+        {
+            if (!IsZombie || IsDocker || IsRoom || IsCrane || impactRecoveryGrace > 0f ||
+                impact.Source == null || !impact.Source.IsHero || impact.Source.WeaponId != CombatWeaponId.Crowbar ||
+                impact.Kind != CombatImpactKind.Weapon || !impact.PrimaryResponse || impact.WoundDamage <= 0f ||
+                impact.Result is not (MeleeHitResult.Hit or MeleeHitResult.GuardBroken) ||
+                !ImpactMotion.UsesStandingResponse || ImpactMotion.LastImpact.Source != impact.Source ||
+                ImpactMotion.LastImpact.AttackSequence != impact.AttackSequence)
+            {
+                crowbarKnockdownPending = false;
+                return;
+            }
+            // The contact path already deduplicates sweeps; keep this finite
+            // counter idempotent if the same resolved receipt is presented again.
+            if (lastStandingCrowbarSource == impact.Source && lastStandingCrowbarSequence == impact.AttackSequence) return;
+            lastStandingCrowbarSource = impact.Source;
+            lastStandingCrowbarSequence = impact.AttackSequence;
+            standingCrowbarHits = Mathf.Min(3, standingCrowbarHits + 1);
+            crowbarKnockdownPending = standingCrowbarHits == 3;
+        }
+
+        private void CompleteStandingCrowbarKnockdown(float seconds)
+        {
+            if (!crowbarKnockdownPending || seconds <= 0f || presentationFrozen || PauseMenuController.IsAnyPaused ||
+                ImpactMotion.Age < .12f || impactRecoveryGrace > 0f || State.IsDefeated || IsKnockedDown || IsRagdollActive) return;
+            crowbarKnockdownPending = false;
+            CombatImpact impact = ImpactMotion.LastImpact;
+            Vector3 direction = Vector3.ProjectOnPlane(impact.Direction, Vector3.up);
+            if (!float.IsFinite(direction.x) || !float.IsFinite(direction.z) || direction.sqrMagnitude < .0001f)
+                direction = -transform.forward;
+            direction.Normalize();
+            // Capture the dramatic hit pose at its peak, then let the existing
+            // physical fall and supported rise retain the wounded world rig.
+            Present();
+            standingCrowbarHits = TryBeginKnockdown(impact, direction * 1.1f,
+                Vector3.Cross(Vector3.up, direction) * 2f) ? 0 : 2;
+        }
+
+        private void ResetStandingCrowbarHits()
+        {
+            standingCrowbarHits = lastStandingCrowbarSequence = 0;
+            lastStandingCrowbarSource = null;
+            crowbarKnockdownPending = false;
         }
 
         // Resolved-contact records all use source -> victim, even though the
@@ -162,6 +252,12 @@ namespace BarPromenade
         private void CompleteImpactRecoveryStep(float seconds)
         {
             if (ImpactMotion == null) return;
+            if (ImpactMotion.UsesStandingResponse)
+            {
+                ApplyMotorConstraint();
+                CompleteStandingCrowbarKnockdown(seconds);
+                return;
+            }
             supportGrip?.AdvanceBalanceSupport(seconds);
             ImpactMotion.EvaluateSupport(seconds);
             footwork?.CompleteRecoveryDecision(motor != null ? motor.PlanarVelocity : locomotionVelocity);
@@ -178,6 +274,7 @@ namespace BarPromenade
 
         private void FinishImpactRecovery()
         {
+            ResetStandingCrowbarHits();
             ImpactMotion?.Forget();
             ImpactMotion?.Reset();
             footwork?.Reset();
@@ -186,6 +283,8 @@ namespace BarPromenade
 
         private void ResetDamage()
         {
+            ResetStandingCrowbarHits();
+            ordinaryHitGrace = 0f;
             BodyDamage.Reset();
             ResetBodyCapabilities();
             damagePose?.Reset();

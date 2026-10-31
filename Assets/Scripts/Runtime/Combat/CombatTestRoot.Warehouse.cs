@@ -6,7 +6,6 @@ namespace BarPromenade
 {
     public sealed partial class CombatTestRoot
     {
-        private static readonly Rect WarehouseButtonRect = new Rect(318, 12, 68, 18);
         // Explicit fixture selection preserves the original weapon-contact laboratory.
         // Laboratory selects it publicly; other player starts use the warehouse.
         internal static bool UseLegacyArenaForTests;
@@ -97,10 +96,10 @@ namespace BarPromenade
             return true;
         }
 
-        private void DrawWarehouseButton(RetroUiCanvas canvas)
+        private void DrawWarehouseButton(RetroUiCanvas canvas, Rect rect)
         {
             if (WarehousePlan == null || IsStoryContinuation) return;
-            if (DrawToolbarButton(canvas, WarehouseButtonRect, "warehouse-new",
+            if (DrawToolbarButton(canvas, rect, "warehouse-new",
                 LocalizationService.Get("combat.warehouse.new"))) NewWarehouseLayout(RandomWarehouseSeed());
         }
     }

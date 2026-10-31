@@ -216,15 +216,15 @@ This opt-in applies only during the interaction handoff without an active clip.
 - Accepted `2026-10-14`, CombatTest: clean orbit/neutral14°/stable gun intent;
   Spine/Chest40/60/down35-up20/yaw20/roll6°/combined cap;orbit35→90 fade.
   Legs/root kept;owned actions/fall/rise win;Lchest lamp follows.
-- Accepted `2026-09-21`, CombatTest: .42 m wide/.28 m staggered stance;
-  soft knees/low pelvis/travel feet/plant in Windup. Raised shoulders/tucked chin/
-  stiff grip/awkward effort;NPC calmer. Stamina breath/tremor/flinch keep grips;
-  same face/blink/HP/input/costs;no story/speech, notes/§6.
-- Accepted `2026-10-10`, CombatTest: pistol holster left chest under M-65.
-  Pistol/holster0cloth;normal coat hides stored renders. Held/dropped
-  visible;holster sans jacket. Crowbar right belt OR shotgun own soft sling/
-  close back/0holster-hardmount.6bone-only in-place `Draw/Stow`:same rig/models/
-  transfers;torso over gait/Ljacket-open/0root-motion/events.
+- Accepted `2026-09-21`, CombatTest action support:.42m wide/.28m stagger;
+  soft knees/low pelvis/Windup plant;shoulders up/chin tucked/stiff grip/awkward;
+  NPC calmer. Breath/tremor/flinch keep grips;face/blink/HP/input/costs stay;story0/§6.
+- Accepted `2026-10-10`, CombatTest:pistol Lchest/M65 holster.
+  Coat hides stored pistol/holster;0cloth;held/dropped visible,holster sans coat.
+  Shotgun softsling/back,0hardmount.6bone-only in-place `Draw/Stow`:
+  same rig/model/transfers;torso over gait/Lcoat-open;root-motion/events0.
+- Accepted `2026-10-31`:crowbar inv draw/stow;hidden bar/holder.
+  High-R/grip↑/L<R/fists;gait→fast arms R→L/braked return;elbows low/chest≤24°.
 - Accepted `2026-10-11`: sling LEFT shoulder→whole front chest/abdomen→lower
   right side;hand/gun/cloth draw/stow.
 - The accepted `2026-09-07` exterior-AlpineVillage exception, refined by the

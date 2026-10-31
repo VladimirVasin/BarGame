@@ -37,19 +37,20 @@ namespace BarPromenade
             return laboratoryCaption;
         }
 
-        private void DrawLaboratoryControls(RetroUiCanvas canvas)
+        private void DrawLaboratoryControls(RetroUiCanvas canvas, CombatHudLayout layout)
         {
-            float y = DebugHudVisible ? 38f : 10f;
-            RetroUiTheme.DrawPanel(new Rect(14f, y, 612f, 50f), RetroUiTheme.PanelInset,
+            Rect panel = layout.Laboratory;
+            RetroUiTheme.DrawPanel(panel, RetroUiTheme.PanelInset,
                 RetroUiTheme.BorderMuted, false, 0f, 1f, .82f);
-            GUI.Label(new Rect(20f, y + 5f, 100f, 18f), LocalizationService.Get("combat.mode.laboratory"), small);
-            if (DrawToolbarButton(canvas, new Rect(124f, y + 3f, 244f, 20f), "laboratory-enemy", LaboratoryEnemyCaption()))
+            GUI.Label(CombatHudLayout.Row(panel, 6f, 3f, 82f), LocalizationService.Get("combat.mode.laboratory"), small);
+            if (DrawToolbarButton(canvas, CombatHudLayout.Row(panel, 90f, 3f, 208f), "laboratory-enemy", LaboratoryEnemyCaption()))
                 laboratoryChoice = LaboratoryEnemyKinds[((int)laboratoryChoice + 1) % LaboratoryEnemyKinds.Length];
-            if (DrawToolbarButton(canvas, new Rect(374f, y + 3f, 132f, 20f), "laboratory-create",
+            if (DrawToolbarButton(canvas, CombatHudLayout.Row(panel, 6f, 25f, 114f), "laboratory-create",
                 LocalizationService.Get("combat.laboratory.create"))) SpawnLaboratoryEnemy(laboratoryChoice);
-            if (DrawToolbarButton(canvas, new Rect(512f, y + 3f, 108f, 20f), "laboratory-reset",
+            if (DrawToolbarButton(canvas, CombatHudLayout.Row(panel, 124f, 25f, 64f), "laboratory-reset",
                 LocalizationService.Get("combat.reset"))) ResetRound();
-            GUI.Label(new Rect(20f, y + 29f, 600f, 15f), LocalizationService.Get("combat.laboratory.help"), controls);
+            DrawHudHelp(layout.LaboratoryHelp, LocalizationService.Get("combat.laboratory.help"),
+                ref measuredLaboratoryHelp, ref laboratoryHelpWidth);
         }
     }
 }

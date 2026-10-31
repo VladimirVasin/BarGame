@@ -5,37 +5,38 @@ namespace BarPromenade
     public sealed partial class CombatTestRoot
     {
         // Retained authoring surface, selected explicitly with F8.
-        private void DrawDebugHud(RetroUiCanvas canvas)
+        private void DrawDebugHud(RetroUiCanvas canvas, CombatHudLayout layout)
         {
-            RetroUiTheme.DrawPanel(ToolbarRect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
-            if (DrawToolbarButton(canvas, new Rect(156, 12, 58, 18), "combat-weapons",
+            Rect panel = layout.Toolbar;
+            RetroUiTheme.DrawPanel(panel, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
+            if (DrawToolbarButton(canvas, CombatHudLayout.Row(panel, 6, 3, 52), "combat-weapons",
                 LocalizationService.Get("combat.weapons"), !IsStoryContinuation)) ReturnToWeapons();
             if (Opponent.IsZombie)
-                GUI.Label(new Rect(224, 12, WarehousePlan != null ? 94 : 166, 18),
+                GUI.Label(CombatHudLayout.Row(panel, 62, 3, WarehousePlan != null ? 128 : 228),
                     LocalizationService.Get(Opponent.IsCrane ? "combat.mode.crane" : Opponent.IsRoom ? "combat.mode.room" :
                         Opponent.IsImprint ? "combat.mode.imprint" : Opponent.IsLongExposure ? "combat.mode.long-exposure" : "combat.zombie"), small);
-            else if (DrawToolbarButton(canvas, new Rect(220, 12, WarehousePlan != null ? 94 : 166, 18), "combat-style",
+            else if (DrawToolbarButton(canvas, CombatHudLayout.Row(panel, 62, 3, WarehousePlan != null ? 128 : 228), "combat-style",
                 LocalizationService.Get(OpponentStyleHudKeys[(int)OpponentStyle]),
                 Mode != CombatTestMode.Endless || EndlessRunFinished))
                 SetOpponentStyle((CombatOpponentStyle)(((int)OpponentStyle + 1) % 3));
-            DrawWarehouseButton(canvas);
+            DrawWarehouseButton(canvas, CombatHudLayout.Row(panel, 194, 3, 96));
             if (Mode == CombatTestMode.Endless)
-                GUI.Label(new Rect(392, 12, 102, 18), endlessKillsLabel.Get(LocalizationService.Get("combat.kills"), EndlessKills), small);
-            else if (DrawToolbarButton(canvas, new Rect(392, 12, 102, 18), "combat-mode",
+                GUI.Label(CombatHudLayout.Row(panel, 6, 25, 126), endlessKillsLabel.Get(LocalizationService.Get("combat.kills"), EndlessKills), small);
+            else if (DrawToolbarButton(canvas, CombatHudLayout.Row(panel, 6, 25, 126), "combat-mode",
                 ModeHudText())) SetSparring(!Sparring);
-            if (DrawToolbarButton(canvas, new Rect(498, 12, 70, 18), "combat-reset",
+            if (DrawToolbarButton(canvas, CombatHudLayout.Row(panel, 136, 25, 90), "combat-reset",
                 LocalizationService.Get(Mode == CombatTestMode.Endless ? "combat.new_run" : "combat.reset"))) ResetRound();
-            if (DrawToolbarButton(canvas, new Rect(572, 12, 48, 18), "combat-menu",
+            if (DrawToolbarButton(canvas, CombatHudLayout.Row(panel, 230, 25, 60), "combat-menu",
                 LocalizationService.Get("combat.menu"))) ReturnToMenu();
-            DrawFighterHud(new Rect(14, 302, 138, 37), "combat.health", Hero);
+            DrawFighterHud(layout.Hero, "combat.health", Hero);
             if (Opponent.gameObject.activeInHierarchy)
-                DrawFighterHud(new Rect(488, 302, 138, 37), "combat.opponent", Opponent);
+                DrawFighterHud(layout.Opponent, "combat.opponent", Opponent);
             DrawFirearmCrosshair(canvas);
-            DrawLegacyPistolHud();
+            DrawLegacyPistolHud(layout.LegacyAmmunition);
             DrawFocusMarker(canvas);
-            DrawEndlessStatus();
-            GUI.Label(new Rect(14, 342, 612, 14), LocalizationService.Get(Hero.IsShotgun ? "combat.controls.shotgun" :
-                Hero.IsPistol ? "combat.controls.pistol" : "combat.controls"), controls);
+            DrawEndlessStatus(layout.Endless);
+            DrawHudHelp(layout.Help, LocalizationService.Get(Hero.IsShotgun ? "combat.controls.shotgun" :
+                Hero.IsPistol ? "combat.controls.pistol" : "combat.controls"), ref measuredHelp, ref helpWidth);
         }
 
         private bool DrawToolbarButton(RetroUiCanvas canvas, Rect rect, string control, string text, bool enabled = true)
@@ -53,6 +54,7 @@ namespace BarPromenade
 
         private void DrawFighterHud(Rect rect, string healthKey, CombatActor actor)
         {
+            if (actor.IsZombie) rect.yMin += 16f; // No empty stamina row under a single enemy meter.
             RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
             DrawMeter(new Rect(rect.x + 6f, rect.y + 3f, rect.width - (actor.IsHero ? 32f : 12f), 14f), healthKey,
                 actor.State.Health, actor.State.Settings.MaxHealth, RetroUiTheme.AccentPale, 3f,

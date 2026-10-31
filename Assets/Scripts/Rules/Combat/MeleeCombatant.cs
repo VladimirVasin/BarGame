@@ -77,6 +77,8 @@ namespace BarPromenade
         public bool IsBlocking => !Settings.IsUnarmedZombie && clock - guardPressedAt <= Settings.ParryWindowSeconds &&
             (Phase == MeleePhase.Ready || Phase == MeleePhase.GuardImpact);
         public bool IsStunned => Phase == MeleePhase.Stagger || Phase == MeleePhase.GuardBroken || Phase == MeleePhase.GuardImpact;
+        public float StaggerElapsed => IsStunned ? (float)(stunDuration - stunRemaining) : 0f;
+        public float StaggerDuration => IsStunned ? (float)stunDuration : 0f;
         /// <summary>Retired chain flag retained for historical diagnostic callers.</summary>
         public bool IsChained => false;
         /// <summary>Fixed crowbar strikes always complete their own return.</summary>
@@ -987,15 +989,20 @@ namespace BarPromenade
         /// <summary>A frontal hand contact uses the same finite parry. Its damage keeps
         /// the unarmed profile without crowbar regional multipliers or finishers.</summary>
         public MeleeHitResult ReceiveUnarmedHit(float damage, float blockCost, bool fromFront, float power = 0f,
-            MeleeHitLocation location = default)
-            => ReceiveMeleeHit(damage, blockCost, fromFront, power, location, MeleeDamageProfile.Unarmed, true);
+            MeleeHitLocation location = default, float? staggerSeconds = null)
+            => ReceiveMeleeHit(damage, blockCost, fromFront, power, location, MeleeDamageProfile.Unarmed, true, staggerSeconds);
 
         private MeleeHitResult ReceiveMeleeHit(float damage, float blockCost, bool fromFront, float power,
-            MeleeHitLocation location, MeleeDamageProfile profile, bool allowParry)
+            MeleeHitLocation location, MeleeDamageProfile profile, bool allowParry, float? staggerSeconds = null)
         {
             NonNegative(damage, nameof(damage));
             NonNegative(blockCost, nameof(blockCost));
             NonNegative(power, nameof(power));
+            if (staggerSeconds.HasValue)
+            {
+                NonNegative(staggerSeconds.Value, nameof(staggerSeconds));
+                if (staggerSeconds.Value == 0f) throw new ArgumentOutOfRangeException(nameof(staggerSeconds));
+            }
             if (IsDefeated || damage == 0f) return MeleeHitResult.Ignored;
             MeleePhase physicalPhase = Phase;
             double kickRemaining = IsKicking ? Math.Max(0d, KickDuration - kickElapsed) : 0d;
@@ -1009,9 +1016,7 @@ namespace BarPromenade
             bool guardBreak = false;
             // A committed swing or a whiff that gets punished pays extra, and being
             // punished can never end sooner than the swing would have on its own.
-            bool counterHit = Phase == MeleePhase.Charging || Phase == MeleePhase.Windup || Phase == MeleePhase.Kicking ||
-                (Phase == MeleePhase.Recovery &&
-                 (AttackOutcome == MeleeAttackOutcome.Miss || AttackOutcome == MeleeAttackOutcome.Obstacle));
+            bool counterHit = IsMeleeCounterHit;
             double swingRemaining = Math.Max(kickRemaining,
                 Phase == MeleePhase.Recovery ? Math.Max(0d, AttackDuration - attackElapsed) : 0d);
             float resolvedDamage = profile.ResolveDamage(damage, Settings.MaxHealth, location);
@@ -1034,13 +1039,13 @@ namespace BarPromenade
             {
                 // A second hit must not shorten an existing guard break.
                 bool retainGuardBreak = Phase == MeleePhase.GuardBroken;
-                double stun = guardBreak ? Settings.GuardBreakSeconds :
+                double stun = guardBreak ? Settings.GuardBreakSeconds : staggerSeconds ??
                     Settings.StaggerSeconds + Settings.ChargeStaggerBonus * power +
-                    (counterHit ? Settings.CounterHitStaggerBonus : 0d);
-                stunRemaining = Math.Max(Math.Max(stunRemaining, stun), swingRemaining);
-                stunDuration = stunRemaining;
-                Phase = physicalPhase == MeleePhase.KnockedDown || physicalPhase == MeleePhase.Rising
-                    ? physicalPhase : guardBreak || retainGuardBreak ? MeleePhase.GuardBroken : MeleePhase.Stagger;
+                    (counterHit ? Settings.CounterHitStaggerBonus : 0f);
+                // Ordinary player hits return movement promptly. The separate
+                // weapon-ready clock still retains the interrupted swing's cost.
+                EnterHitStagger(physicalPhase, stun, stunRemaining, staggerSeconds.HasValue ? 0d : swingRemaining,
+                    guardBreak || retainGuardBreak);
             }
             return guardBreak ? MeleeHitResult.GuardBroken : MeleeHitResult.Hit;
         }
@@ -1073,10 +1078,39 @@ namespace BarPromenade
                 Phase = MeleePhase.Defeated;
                 return MeleeHitResult.Hit;
             }
-            stunRemaining = stunDuration = Math.Max(Math.Max(previousStun, staggerSeconds), committedReturn);
-            Phase = physicalPhase == MeleePhase.KnockedDown || physicalPhase == MeleePhase.Rising
-                ? physicalPhase : retainGuardBreak ? MeleePhase.GuardBroken : MeleePhase.Stagger;
+            EnterHitStagger(physicalPhase, staggerSeconds, previousStun, committedReturn, retainGuardBreak);
             return MeleeHitResult.Hit;
+        }
+
+        /// <summary>A confirmed live-body contact still interrupts intent when a limb's
+        /// health budget is exhausted. Health and weapon cooldown remain unchanged;
+        /// longer stun/return and a physical fall or rise retain their ownership.</summary>
+        public bool ReceiveImpactStagger(float staggerSeconds, bool meleeCounterHit = false)
+        {
+            NonNegative(staggerSeconds, nameof(staggerSeconds));
+            if (staggerSeconds == 0f) throw new ArgumentOutOfRangeException(nameof(staggerSeconds));
+            if (IsDefeated) return false;
+            MeleePhase physicalPhase = Phase;
+            bool retainGuardBreak = Phase == MeleePhase.GuardBroken;
+            double previousStun = stunRemaining;
+            double committedReturn = IsKicking ? Math.Max(0d, KickDuration - kickElapsed) :
+                Phase == MeleePhase.Recovery ? Math.Max(0d, AttackDuration - attackElapsed) : 0d;
+            double duration = staggerSeconds + (meleeCounterHit && IsMeleeCounterHit ? Settings.CounterHitStaggerBonus : 0d);
+            CancelAction();
+            EnterHitStagger(physicalPhase, duration, previousStun, committedReturn, retainGuardBreak);
+            return true;
+        }
+
+        private bool IsMeleeCounterHit => Phase == MeleePhase.Charging || Phase == MeleePhase.Windup ||
+            Phase == MeleePhase.Kicking || Phase == MeleePhase.Recovery &&
+            (AttackOutcome == MeleeAttackOutcome.Miss || AttackOutcome == MeleeAttackOutcome.Obstacle);
+
+        private void EnterHitStagger(MeleePhase physicalPhase, double minimumSeconds, double previousStun,
+            double committedReturn, bool guardBreak)
+        {
+            stunRemaining = stunDuration = Math.Max(Math.Max(previousStun, minimumSeconds), committedReturn);
+            Phase = physicalPhase == MeleePhase.KnockedDown || physicalPhase == MeleePhase.Rising
+                ? physicalPhase : guardBreak ? MeleePhase.GuardBroken : MeleePhase.Stagger;
         }
 
         /// <summary>Yield to another presentation owner without refunding effort or replaying

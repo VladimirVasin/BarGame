@@ -375,8 +375,14 @@ namespace BarPromenade
             float trauma = impact.Kind == CombatImpactKind.Projectile ?
                 (impact.IsPellet ? Mathf.Clamp(impact.WoundDamage / 24f, 0f, 1.1f) * .50f : .18f) :
                 Mathf.Lerp(.10f, .24f, Mathf.Clamp01(impact.AttackPower));
-            float tissueTrauma = trauma;
-            trauma *= impact.Target.State.Settings.IncomingDamageScale;
+            // A crowbar uses the same persistent tissue/bone graph as bullets,
+            // with its own mechanical injury rather than the victim's HP resistance.
+            // Three local blows still permit a living victim to fall and rise.
+            bool crowbar = impact.Kind == CombatImpactKind.Weapon && impact.Source != null &&
+                impact.Source.IsHero && impact.Source.WeaponId == CombatWeaponId.Crowbar;
+            float tissueTrauma = crowbar ? MeleeDamageProfile.Crowbar.SurfaceTraumaPerHit : trauma;
+            trauma = crowbar ? MeleeDamageProfile.Crowbar.TissueTraumaPerHit :
+                trauma * impact.Target.State.Settings.IncomingDamageScale;
             if (region == BodyDamageRegion.Head)
             {
                 // The existing sixteen-sector fracture system owns skull continuity,
@@ -406,11 +412,15 @@ namespace BarPromenade
                 foreach (Piece piece in body.Regions[(int)region])
                     if (piece.Region == region && piece.Flesh && piece.Torso != null)
                         piece.Torso.ClosestSurfacePoint(impact.Point, ref distance, ref centre);
-                float radius = impact.Kind == CombatImpactKind.Projectile ?
+                float radius = crowbar ? .075f : impact.Kind == CombatImpactKind.Projectile ?
                     impact.IsPellet ? Mathf.Lerp(.055f, .12f, Mathf.Clamp01(impact.WoundDamage / 24f)) : .075f :
                     Mathf.Lerp(.07f, .12f, Mathf.Clamp01(impact.AttackPower));
+                Vector3 sweep = crowbar ? Vector3.ProjectOnPlane(impact.Direction, impact.Normal) : Vector3.zero;
+                if (crowbar && sweep.sqrMagnitude < .0001f) sweep = Vector3.Cross(impact.Normal, Vector3.up);
+                if (crowbar && sweep.sqrMagnitude < .0001f) sweep = impact.Source.transform.right;
                 foreach (Piece piece in body.Pieces)
-                    if (piece.Torso != null) changed |= piece.Torso.Apply(centre, radius, tissueTrauma);
+                    if (piece.Torso != null) changed |= piece.Torso.Apply(centre, radius, tissueTrauma,
+                        sweep, crowbar ? 1.6f : 1f);
             }
             if (changed)
             {

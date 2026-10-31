@@ -28,6 +28,9 @@ namespace BarPromenade
         public static bool IsKickClip(string name) => name == KickClip || name == KickLeftClip;
         public static readonly string[] RecoveryClipNames = { RiseProneClip, RiseSupineClip };
         public const float DefeatHandoffSeconds = .16f;
+        public const float CrowbarShoulderLoadSeconds = .11f, CrowbarRecoilSeconds = .42f;
+        public const int CrowbarContactSampleHz = 240;
+        public const float RightGripStation = .08f;
         public const float ChargePreparationAdvanceSeconds = .18f, ReleaseConvergenceSeconds = .45f;
 
         /// <summary>Charge advances one continuous arm trajectory, converging before contact.</summary>
@@ -80,7 +83,7 @@ namespace BarPromenade
 
         public static bool IsLoop(string clip) => clip == ReadyClip || clip == RestClip || clip == BlockClip ||
             clip == StrafeLeftClip || clip == StrafeRightClip || clip == AdvanceClip || clip == RetreatClip;
-        public static float ClipDuration(string clip)
+        public static float ClipDuration(string clip, bool npc = false)
         {
             switch (clip)
             {
@@ -90,12 +93,15 @@ namespace BarPromenade
                 // The authored step is exactly the motor's committed travel plus settle.
                 case StepForwardClip: case StepBackwardClip: case StepLeftClip: case StepRightClip:
                     return MeleeCombatSettings.Crowbar.StepDurationSeconds;
-                case AttackClip: case ReleaseLightClip: case ReleaseHeavyClip: case BackhandClip: case BackhandHeavyClip: return 1.28f;
+                case AttackClip: case ReleaseLightClip: case ReleaseHeavyClip:
+                    return npc ? 1.28f : MeleeCombatSettings.Crowbar.AnimationAttackDurationSeconds;
+                case BackhandClip: case BackhandHeavyClip: return 1.28f;
                 case HitClip: return .36f;
                 case KickClip: case KickLeftClip: return .95f;
                 case GuardImpactClip: return .28f;
                 case GuardBreakClip: return .70f;
-                case RecoilClip: case BackhandRecoilClip: return .48f;
+                case RecoilClip: return npc ? .48f : CrowbarRecoilSeconds;
+                case BackhandRecoilClip: return .48f;
                 case DefeatClip: return .36f;
                 case RiseProneClip: return 2.4f;
                 case RiseSupineClip: return 3.2f;
@@ -104,17 +110,19 @@ namespace BarPromenade
         }
 
         public static GameObject CreateArena(Transform parent) => Create("Arena", parent, true);
-        public static GameObject CreateCrowbar(Transform parent, NpcHandPose handPose)
+        public static GameObject CreateCrowbar(Transform parent, NpcHandPose handPose,
+            float rightGripStation = RightGripStation)
         {
             if (parent == null || handPose == null)
                 throw new ArgumentException("A crowbar requires its original hand and authored cylindrical grip.");
             GameObject result = Create("Crowbar", parent, false);
-            PlaceCrowbar(result, parent, handPose, false);
+            PlaceCrowbar(result, parent, handPose, false, rightGripStation);
             return result;
         }
 
         /// <summary>Seats the bar in either closed hand; the finished round's winner parks it in his left.</summary>
-        public static void PlaceCrowbar(GameObject crowbar, Transform grip, NpcHandPose handPose, bool isLeft)
+        public static void PlaceCrowbar(GameObject crowbar, Transform grip, NpcHandPose handPose, bool isLeft,
+            float rightGripStation = RightGripStation)
         {
             if (crowbar == null || grip == null || handPose == null)
                 throw new ArgumentException("A crowbar requires its hand and authored cylindrical grip.");
@@ -129,7 +137,6 @@ namespace BarPromenade
             // The generic socket lies inside the neutral palm. The closed
             // fingers instead wrap the authored cylinder centre, with its
             // axis running across the palm toward the thumb.
-            bar.position = handPose.CylinderCentre(isLeft);
             // Retain the authored socket roll: the bent tip follows the wrist,
             // while only the shaft is aligned to its closed cylindrical grip.
             Quaternion socketRotation = grip.rotation;
@@ -138,6 +145,9 @@ namespace BarPromenade
             bar.rotation = Quaternion.FromToRotation(socketRotation * Vector3.up,
                 handPose.CylinderAxis(isLeft)) * socketRotation *
                 Quaternion.AngleAxis(HeldShaftRollDegrees + ImportedSocketRollDegrees, Vector3.up);
+            // The palm closes farther along the unchanged shaft; its original
+            // geometry origin and every strike/collision anchor stay together.
+            bar.position = handPose.CylinderCentre(isLeft) - bar.up * rightGripStation;
         }
 
         public static GameObject Create(string name, Transform parent, bool collision = false)
@@ -177,7 +187,7 @@ namespace BarPromenade
             foreach (AnimationClip clip in Resources.LoadAll<AnimationClip>(ResourceFolder + (npc ? "CombatNpcActions" : "CombatActions")))
             {
                 if (clip.name != name) continue;
-                if (clip.isLooping != IsLoop(name) || Mathf.Abs(clip.length - ClipDuration(name)) > .003f || clip.events.Length != 0)
+                if (clip.isLooping != IsLoop(name) || Mathf.Abs(clip.length - ClipDuration(name, npc)) > .003f || clip.events.Length != 0)
                     throw new InvalidOperationException("Invalid combat action " + name);
                 Clips[key] = clip;
                 return clip;

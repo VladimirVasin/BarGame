@@ -4,6 +4,12 @@ namespace BarPromenade
 {
     public sealed partial class CombatActor
     {
+        // The player owns a simple authored swing/parry. Anatomy remains a hit
+        // target, but cannot steer that same swing through a second pose solver.
+        internal bool UsesAuthoredCrowbarPose => IsHero && WeaponId == CombatWeaponId.Crowbar &&
+            HasWeaponInHand && !IsWeaponInLeftHand && !IsSwitchingWeapon && !IsRagdollActive &&
+            !State.IsKnockedDown && !State.IsDefeated;
+
         // The same horizontal front sector protects every blockable contact.
         // Elevation alone never turns a frontal hook into a rear strike.
         internal bool FacingIncomingAttack(CombatActor source, Vector3 travel)

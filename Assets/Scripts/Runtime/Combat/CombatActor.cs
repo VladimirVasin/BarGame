@@ -24,6 +24,9 @@ namespace BarPromenade
         private bool presentationFrozen;
         private bool simulationPosePending;
         private float poseClock, reactionClock;
+        private float ordinaryHitGrace;
+        private const float OrdinaryHeroStaggerSeconds = .22f;
+        private const float OrdinaryHeroHitGraceSeconds = .45f;
         internal long NpcAnimationSampleTicks { get; private set; }
         internal long NpcPoseCompositionTicks { get; private set; }
         internal long NpcPoseSnapshotTicks { get; private set; }
@@ -41,6 +44,7 @@ namespace BarPromenade
         public CharacterController Body { get; private set; }
         public GameObject Weapon { get; private set; }
         public CombatWeaponId WeaponId { get; private set; }
+        internal float CrowbarGripStation { get; private set; }
         public bool IsPistol => WeaponId == CombatWeaponId.Pistol;
         public bool IsShotgun => WeaponId == CombatWeaponId.Shotgun;
         public bool IsFirearm => IsPistol || IsShotgun;
@@ -90,6 +94,7 @@ namespace BarPromenade
         {
             WeaponId = loadout.InitialHeld;
             hero = (Player3DCharacterPresentation)player.Visual;
+            CrowbarGripStation = CombatAssetProvider.RightGripStation;
             motor = player.Motor;
             interaction = GetComponent<PlayerAnimatedInteractionController>();
             Body = GetComponent<CharacterController>();
@@ -120,6 +125,7 @@ namespace BarPromenade
             bool suspendedCrane = false, CombatEnemyKind kind = CombatEnemyKind.Docker)
         {
             IsZombie = true;
+            CrowbarGripStation = 0f;
             EnemyKind = suspendedCrane ? CombatEnemyKind.Crane : kind;
             IsCrane = EnemyKind == CombatEnemyKind.Crane;
             State = new MeleeCombatant(IsCrane ? CraneCombatSettings : IsDocker
@@ -166,7 +172,7 @@ namespace BarPromenade
                 PrepareWeaponPhysics();
                 return;
             }
-            Weapon = CombatAssetProvider.CreateCrowbar(grip, handPose);
+            Weapon = CombatAssetProvider.CreateCrowbar(grip, handPose, CrowbarGripStation);
             strikeBase = CombatAssetProvider.FindAnchor(Weapon, "StrikeBase");
             strikeTip = CombatAssetProvider.FindAnchor(Weapon, "StrikeTip");
             if (strikeBase == null || strikeTip == null) throw new InvalidOperationException("Crowbar needs its authored strike anchors.");
@@ -202,7 +208,7 @@ namespace BarPromenade
         }
         private string AttackBalanceRejection => IsKnockedDown ? "knocked_down" : "balance_recovery";
         internal bool HasTwoHandSupport => BodyDamage.CanUseLeftHand && BodyDamage.CanUseRightHand && !weaponDropped && HasAttackBalance &&
-            (supportGrip == null || supportGrip.IsSupportingWeapon);
+            (UsesAuthoredCrowbarPose || supportGrip == null || supportGrip.IsSupportingWeapon);
         public bool GuardRequested => State.IsBlocking;
         public bool GuardReady => !IsZombie && GuardSupportRejection == null &&
             (State.Phase == MeleePhase.Ready || State.Phase == MeleePhase.GuardImpact);
@@ -323,6 +329,7 @@ namespace BarPromenade
         internal void AdvanceSimulation(float seconds, bool deferPoseMotion = false)
         {
             if (DoorAmbushPrepared) return; // The scene owns this staged source's one clock.
+            ordinaryHitGrace = Mathf.Max(0f, ordinaryHitGrace - seconds);
             if (IsRestrained) { AdvanceRestraint(seconds); return; }
             if (RoomAttackCooldownActive) AdvanceRoomAttackCooldown(seconds);
             if (IsCrane && !State.IsDefeated) { AdvanceCraneSimulation(seconds); return; }
@@ -418,6 +425,12 @@ namespace BarPromenade
             bool physicalBody = false, BodyDamageRegion? bodyRegion = null, int bodyPatch = -1, bool detachedPart = false)
         {
             if (damage <= 0f || IsCraneRegenerating) return MeleeHitResult.Ignored;
+            bool ordinaryHeroHit = IsHero && source.IsZombie && !source.IsDocker && !source.IsRoom &&
+                !source.IsCrane && !detachedPart;
+            // A crowd cannot repeatedly cancel the same short reaction or trap
+            // a living player in a special attack's get-up sequence.
+            if (ordinaryHeroHit && !State.IsDefeated &&
+                (ordinaryHitGrace > 0f || IsKnockedDown || IsRagdollActive)) return MeleeHitResult.Ignored;
             if ((source.IsCrane || source.IsZombie) && CanBlockIncoming(source, direction) && !State.IsDefeated)
                 return ReceiveTimedParry(source, sequence, point, normal, direction, power, location, part,
                     localPoint, weaponSpeed, source.IsCrane ? CombatImpactKind.Hook : CombatImpactKind.Unarmed);
@@ -442,10 +455,16 @@ namespace BarPromenade
             // Actual sweeps already tested the blocking prop before this body.
             // A guard flag cannot intercept a blade which physically went around it.
             MeleeHitResult result = structuralOnly ? MeleeHitResult.Hit :
-                unarmed ? State.ReceiveUnarmedHit(damage, blockCost, front && !physicalBody, power, location) :
+                unarmed ? State.ReceiveUnarmedHit(damage, blockCost, front && !physicalBody, power, location,
+                    ordinaryHeroHit ? OrdinaryHeroStaggerSeconds : null) :
                 State.ReceiveHit(damage, blockCost, front && !physicalBody, power, location);
+            if (structuralOnly && IsZombie && !postmortem && !detachedPart)
+                State.ReceiveImpactStagger(State.Settings.StaggerSeconds + State.Settings.ChargeStaggerBonus * power,
+                    meleeCounterHit: true);
             if (!postmortem && !detachedPart) CancelInterruptedShoveContact();
             if (result == MeleeHitResult.Ignored) { receivedDuringStep = false; return result; }
+            if (ordinaryHeroHit && !postmortem && result == MeleeHitResult.Hit)
+                ordinaryHitGrace = OrdinaryHeroHitGraceSeconds;
             // Weight lives in time and motion: the body is the loudest cue, a block
             // moves both fighters, a parry throws the attacker's weapon wide.
             switch (result)
@@ -473,10 +492,7 @@ namespace BarPromenade
             if (!postmortem && !detachedPart) reactionClock = 0f;
             var impact = new CombatImpact(source, this, sequence, point, normal, direction,
                 healthBefore, State.Health, result, location, power, part, localPoint, weaponSpeed,
-                unarmed ? direction * (source.IsDocker
-                    ? result == MeleeHitResult.Blocked ? ZombieBlockedRamImpulse : ZombieRamImpulse
-                    : result == MeleeHitResult.Blocked ? 10f : 25f) :
-                    CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, result),
+                ResolveMeleeImpactImpulse(source, direction, power, weaponSpeed, result),
                 kind: source.IsCrane ? CombatImpactKind.Hook : unarmed ? CombatImpactKind.Unarmed : CombatImpactKind.Weapon,
                 woundDamage: source.IsCrane ? requested : unarmed ? 0f : requested, bodyRegion: bodyRegion, bodyPatch: bodyPatch, detachedPart: detachedPart);
             // A strong fatal torso strike hands the live pose to physics before
@@ -541,7 +557,8 @@ namespace BarPromenade
                 {
                     bool releasingCharge = visibleClip == Current.Charge.name;
                     if (!hero.TryAcquireClip(this, chosen.name, releasingCharge)) return false;
-                    if (!releasingCharge) BeginPoseBlend();
+                    if (!releasingCharge) BeginPoseBlend(IsHero && WeaponId == CombatWeaponId.Crowbar
+                        ? CrowbarAttackEntryBlendSeconds : PoseBlendSeconds);
                 }
                 visibleClip = chosen.name;
                 hero.SetOwnedClipLocomotion(this, false);
@@ -617,7 +634,7 @@ namespace BarPromenade
             RestoreCombatAttention();
             if (ready == null || winnerPresentationReleased) return;
             if (!NeedsCombatPresentation) { ReleaseFreeLocomotion(); return; }
-            if (freeLocomotionReleased && IsFirearm && hero != null &&
+            if (freeLocomotionReleased && hero != null &&
                 hero.TryGetPresentedBonePose(hero.Registry.Anchors.LeftFoot, out Pose leftSole) &&
                 hero.TryGetPresentedBonePose(hero.Registry.Anchors.RightFoot, out Pose rightSole))
                 footwork?.AdoptPresentedStance(leftSole, rightSole);
@@ -753,7 +770,9 @@ namespace BarPromenade
             else SampleNpcClip(chosen, progress * chosen.length);
         }
 
-        private float TransitionSeconds(AnimationClip chosen) => IsFirearm && (chosen == pistolRaise || chosen == pistolLower)
+        private float TransitionSeconds(AnimationClip chosen) =>
+            IsHero && WeaponId == CombatWeaponId.Crowbar && State.IsAttacking && chosen == ReleaseClip
+            ? CrowbarAttackEntryBlendSeconds : IsFirearm && (chosen == pistolRaise || chosen == pistolLower)
             ? pistolRaise.length : State.Phase == MeleePhase.Stagger &&
             LastImpact.Kind == CombatImpactKind.Projectile && ImpactMotion != null && ImpactMotion.Age < .05f ? .045f : chosen == rest ? .35f :
             chosen == block || visibleClip == block.name ? .18f :
@@ -761,6 +780,7 @@ namespace BarPromenade
 
         public void ResetActor(Vector3 position, Vector3 facing)
         {
+            ordinaryHitGrace = 0f;
             CancelRestraint();
             ResetRestraintDiagnostics();
             EndRoomAttackPose();

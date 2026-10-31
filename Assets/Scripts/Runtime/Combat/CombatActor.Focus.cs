@@ -38,7 +38,9 @@ namespace BarPromenade
             !IsKnockedDown && !IsRagdollActive && reaction == null &&
             !(ImpactMotion?.IsActive ?? false) && !(footwork?.RecoveryEpisodeActive ?? false);
 
-        private bool NeedsCombatPresentation => IsRestrained || CombatFocused || State.IsBlocking || (Firearm?.ReloadPending ?? false) ||
+        // Target focus is an aiming decision, not a request for the retired
+        // crowbar shuffle. Only committed actions/injuries own its lower body.
+        private bool NeedsCombatPresentation => IsRestrained || (CombatFocused && (hero == null || IsFirearm)) || State.IsBlocking || (Firearm?.ReloadPending ?? false) ||
             (Firearm?.AimRequested ?? false) || (IsFirearm && pistolVisualAimProgress > 0f) || State.Phase != MeleePhase.Ready ||
             collectSweep || collectShove || collectKick || IsKnockedDown || IsRagdollActive ||
             reaction != null || (ImpactMotion?.IsActive ?? false) || (footwork?.RecoveryEpisodeActive ?? false);
@@ -68,7 +70,7 @@ namespace BarPromenade
                 if (charging) { reaction = null; sweepValid = collectSweep = false; }
                 ReleaseCombatAttention();
             }
-            else freeLocomotionReleased = false;
+            else if (NeedsCombatPresentation) freeLocomotionReleased = false;
             Present();
         }
 
@@ -100,6 +102,14 @@ namespace BarPromenade
                     hero.UpdateCarryPose(this, 0f, 0f);
                     hero.SetCombatFirearm(this, this);
                 }
+            }
+            else if (HasWeaponInHand && hero.TryAcquireCarryPose(this, ready.name))
+            {
+                // A relaxed two-hand hold above the ordinary walk/run graph;
+                // neither combat footwork nor the Ready pelvis owns the legs.
+                hero.UpdateCarryPose(this, 0f);
+                supportGrip?.SetTarget(false, true);
+                hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
             }
         }
     }

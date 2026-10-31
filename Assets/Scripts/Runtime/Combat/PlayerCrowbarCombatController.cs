@@ -13,6 +13,7 @@ namespace BarPromenade
         private PendingCommand pending;
         private IInteractable pendingInteraction;
         private bool equipmentDirty = true, attackRelease, parryRelease, stowing, equipmentVisible;
+        private bool desiredEquipped, equipmentRequestPending = true;
         public CombatActor Actor { get; private set; }
         public bool HasPendingAction => pending != PendingCommand.None;
         public bool IsPreparingInteraction => pendingInteraction != null;
@@ -23,11 +24,45 @@ namespace BarPromenade
             var controller = runtime.GameObject.AddComponent<PlayerCrowbarCombatController>();
             controller.player = runtime;
             controller.interaction = runtime.GameObject.GetComponent<PlayerAnimatedInteractionController>();
-            GameSessionState.WorldItemsChanged += controller.OnEquipmentChanged;
+            controller.desiredEquipped = GameSessionState.IsInventoryItemEquipped(InventoryItemId.CombatCrowbar);
+            GameSessionState.WorldItemsChanged += controller.OnWorldItemsChanged;
+            GameSessionState.InventoryEquipmentChanged += controller.OnEquipmentChanged;
             return controller;
         }
 
-        private void OnEquipmentChanged() => equipmentDirty = true;
+        private void OnWorldItemsChanged() => equipmentDirty = true;
+
+        private void OnEquipmentChanged()
+        {
+            bool equipped = GameSessionState.IsInventoryItemEquipped(InventoryItemId.CombatCrowbar);
+            if (desiredEquipped == equipped) return;
+            desiredEquipped = equipped;
+            equipmentRequestPending = true;
+            pending = PendingCommand.None;
+            attackRelease = parryRelease = true;
+        }
+
+        private void RecordEquipment(bool equipped)
+        {
+            desiredEquipped = equipped;
+            GameSessionState.TrySetInventoryItemEquipped(InventoryItemId.CombatCrowbar, equipped);
+        }
+
+        private void ApplyEquipmentRequest(bool attackHeld, bool parryHeld)
+        {
+            if (!equipmentRequestPending) return;
+            if (Actor.State.IsDefeated || Actor.IsKnockedDown || Actor.IsRagdollActive ||
+                !Actor.BodyDamage.CanUseRightHand) return;
+            Actor.SetCombatFocused(false);
+            Actor.SetBlock(false);
+            Actor.State.CancelParry();
+            bool accepted = desiredEquipped
+                ? Actor.TrySelectWeapon(CombatWeaponId.Crowbar)
+                : Actor.TryStowWeapon();
+            if (accepted) equipmentRequestPending = false;
+            attackRelease |= attackHeld;
+            parryRelease |= parryHeld;
+        }
 
         private bool CanReadCommands => player.Motor != null && player.Motor.InputEnabled &&
             player.Interactor.InputEnabled && !player.Interactor.InteractKeyClaimed &&
@@ -72,6 +107,7 @@ namespace BarPromenade
             {
                 attackRelease |= attackHeld; parryRelease |= parryHeld;
                 pending = PendingCommand.None;
+                equipmentRequestPending |= desiredEquipped != Actor.HasWeaponInHand;
                 Actor.SetBlock(false); Actor.State.CancelParry();
                 // Pause freezes the current pose. A different rig/modal owner takes a clean handoff.
                 if (!GameTimeScaleRuntime.IsPaused && !PauseMenuController.IsAnyPaused)
@@ -83,17 +119,29 @@ namespace BarPromenade
             }
             if (!attackHeld) attackRelease = false;
             if (!parryHeld) parryRelease = false;
+            ApplyEquipmentRequest(attackHeld, parryHeld);
             bool strike = !attackRelease && GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.Gameplay);
             bool parry = !parryRelease && GameInput.WasPressed(GameInputAction.MeleeBlock, GameInputContext.Gameplay);
+            if (equipmentRequestPending || Actor.IsSwitchingWeapon)
+            {
+                strike = parry = false;
+                attackRelease |= attackHeld;
+                parryRelease |= parryHeld;
+            }
             if (strike || parry || pending != PendingCommand.None) Actor.SetCombatFocused(true);
             if (!Actor.HasWeaponInHand && pending == PendingCommand.None && (strike || parry))
             {
-                if (Actor.TrySelectWeapon(CombatWeaponId.Crowbar)) pending = parry ? PendingCommand.Parry : PendingCommand.Strike;
+                if (Actor.TrySelectWeapon(CombatWeaponId.Crowbar))
+                {
+                    RecordEquipment(true);
+                    pending = parry ? PendingCommand.Parry : PendingCommand.Strike;
+                }
                 attackRelease |= attackHeld; parryRelease |= parryHeld;
             }
             else if (!Actor.IsSwitchingWeapon && Actor.HasWeaponInHand && pending == PendingCommand.None)
             {
                 Actor.SetBlock(parryHeld && !parryRelease);
+                if (parry) parryRelease = true;
                 if (strike && !Actor.State.IsBlocking) Actor.TryAttack();
             }
             Actor.SetLocomotion(player.Motor.PlanarVelocity);
@@ -105,6 +153,9 @@ namespace BarPromenade
                 if (command == PendingCommand.Parry) Actor.SetBlock(true);
                 else Actor.TryAttack();
             }
+            if (pending == PendingCommand.None && !Actor.IsSwitchingWeapon &&
+                Actor.State.Phase == MeleePhase.Ready && !Actor.State.IsBlocking)
+                Actor.SetCombatFocused(false);
         }
 
         /// <summary>Consume one deliberate E request and run the existing visible stow before its original target.</summary>
@@ -140,6 +191,8 @@ namespace BarPromenade
             if (!Actor.AdvanceDoorAmbushWeaponStow(this, seconds))
             { CancelInteractionPreparation(); return; }
             if (!Actor.IsDoorAmbushWeaponStowed) return;
+            RecordEquipment(false);
+            equipmentRequestPending = false;
             IInteractable target = pendingInteraction;
             CancelInteractionPreparation();
             if (target != null && (!(target is Object value) || value != null) && target.CanInteract(player.Interactor))
@@ -148,7 +201,13 @@ namespace BarPromenade
 
         private void CancelInteractionPreparation()
         {
+            bool preparedStow = stowing;
             Actor?.CancelDoorAmbushWeaponStow(this);
+            if (preparedStow && Actor != null && !Actor.HasWeaponInHand)
+            {
+                RecordEquipment(false);
+                equipmentRequestPending = false;
+            }
             pendingInteraction = null; stowing = false;
             player.Interactor?.SetOwnedInteractKeyClaim(this, false);
             player.Motor?.ReleaseMovementConstraint(this);
@@ -161,7 +220,11 @@ namespace BarPromenade
             Actor?.SetBlock(false); Actor?.State.CancelParry();
             CancelInteractionPreparation();
         }
-        private void OnEnable() => equipmentDirty = true;
+        private void OnEnable()
+        {
+            equipmentDirty = equipmentRequestPending = true;
+            desiredEquipped = GameSessionState.IsInventoryItemEquipped(InventoryItemId.CombatCrowbar);
+        }
         private void OnDisable()
         {
             CancelCommands();
@@ -169,7 +232,8 @@ namespace BarPromenade
         }
         private void OnDestroy()
         {
-            GameSessionState.WorldItemsChanged -= OnEquipmentChanged;
+            GameSessionState.WorldItemsChanged -= OnWorldItemsChanged;
+            GameSessionState.InventoryEquipmentChanged -= OnEquipmentChanged;
             CancelCommands();
         }
     }

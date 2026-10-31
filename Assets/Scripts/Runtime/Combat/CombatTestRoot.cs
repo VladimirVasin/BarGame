@@ -44,7 +44,6 @@ namespace BarPromenade
         private readonly List<CombatActor.ShoveContact> pendingShoves = new List<CombatActor.ShoveContact>(2);
         private readonly List<CombatActor.KickContact> pendingKicks = new List<CombatActor.KickContact>(2);
         private GUIStyle small, button, controls;
-        private static readonly Rect ToolbarRect = new Rect(150, 10, 476, 22);
         private static readonly string[] OpponentStyleHudKeys =
         { "combat.style.cautious", "combat.style.pressuring", "combat.style.patient" };
         private readonly HudCounterLabel heroHealthLabel = new HudCounterLabel("  ");
@@ -158,7 +157,9 @@ namespace BarPromenade
             if (Mode == CombatTestMode.Crane && WarehousePlan != null)
                 heroSpawn = CraneGround + Vector3.back * 4.4f + Vector3.up * PlayerFactory.GroundedRootOffset;
             Sparring = true;
-            Hero.InitializeHero(Player, selection.Loadout);
+            Hero.InitializeHero(Player, selection.Loadout, initiallyStowed: IsStoryContinuation &&
+                !GameSessionState.IsInventoryItemEquipped(InventoryItemId.CombatCrowbar));
+            SubscribeCrowbarInventory();
             if (WarehousePlan != null)
             {
                 flashlightEquipment = Player.GameObject.GetComponent<PlayerChestFlashlightController>();
@@ -248,6 +249,8 @@ namespace BarPromenade
             SparkEffects?.ResetRound();
             Taunt?.ResetRound();
             Hero.ResetActor(heroSpawn, Vector3.forward);
+            inventoryCrowbarPending = IsStoryContinuation && GameSessionState.HasInventoryItem(InventoryItemId.CombatCrowbar);
+            observedCrowbarHeld = Hero.WeaponId == CombatWeaponId.Crowbar && Hero.HasWeaponInHand;
             ResetCombatOpponents();
             ResetAmmoPickups();
             Physics.SyncTransforms();
@@ -655,7 +658,7 @@ namespace BarPromenade
 
         internal bool PointerOverToolbar()
         {
-            if (!HudCanRender || !DebugHudVisible) return false;
+            if (!HudCanRender) return false;
             if (Gamepad.current != null && Gamepad.current.rightTrigger.isPressed) return false;
             Mouse mouse = Mouse.current;
             if (mouse == null || !GameCursor.FreeCursorRequested) return false;
@@ -665,7 +668,8 @@ namespace BarPromenade
             screenPosition.y = Screen.height - screenPosition.y;
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
             Vector2 position = canvas.ScreenToLogical(screenPosition);
-            return ToolbarRect.Contains(position);
+            return new CombatHudLayout(canvas, IsLaboratory, DebugHudVisible)
+                .ContainsControls(position, IsLaboratory, DebugHudVisible, RoundFinished);
         }
 
     }

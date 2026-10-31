@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEditor;
@@ -96,6 +97,90 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(Vector2.one * (20f * canvas.Scale)));
             Assert.That(icon.xMin - hint.xMax,
                 Is.EqualTo(6f * canvas.Scale).Within(0.001f));
+        }
+
+        [TestCase(1280, 720)]
+        [TestCase(1920, 1080)]
+        [TestCase(2560, 1080)]
+        [TestCase(1440, 1080)]
+        [TestCase(1976, 984)]
+        [TestCase(480, 270)]
+        public void CombatHud_EdgePanelsDoNotOverlapAndPointerMatchesVisibility(int screenWidth, int screenHeight)
+        {
+            RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(screenWidth, screenHeight);
+            float edge = 8f * canvas.Scale;
+            foreach (bool laboratory in new[] { false, true })
+            foreach (bool debug in new[] { false, true })
+            {
+                var layout = new CombatHudLayout(canvas, laboratory, debug);
+                Rect laboratoryScreen = canvas.LogicalToScreen(layout.Laboratory);
+                Rect toolbarScreen = canvas.LogicalToScreen(layout.Toolbar);
+                Rect resultScreen = canvas.LogicalToScreen(layout.Result);
+                Rect helpScreen = canvas.LogicalToScreen(layout.Help);
+                Assert.That(laboratoryScreen.xMin, Is.EqualTo(edge).Within(.001f));
+                Assert.That(laboratoryScreen.yMin, Is.EqualTo(edge).Within(.001f));
+                Assert.That(screenWidth - toolbarScreen.xMax, Is.EqualTo(edge).Within(.001f));
+                Assert.That(toolbarScreen.yMin, Is.EqualTo(edge).Within(.001f));
+                Assert.That(screenWidth - resultScreen.xMax, Is.EqualTo(edge).Within(.001f));
+                Assert.That(screenHeight - helpScreen.yMax, Is.EqualTo(edge).Within(.001f));
+
+                // The result and laboratory may be visible together. Mutually exclusive meter presentations
+                // are checked separately so nested fighter indicators are not mistaken for overlapping panels.
+                var panels = new List<(string Name, Rect Rect)> { ("result", layout.Result) };
+                if (laboratory)
+                {
+                    panels.Add(("laboratory", layout.Laboratory));
+                    panels.Add(("laboratory help", layout.LaboratoryHelp));
+                }
+                if (debug)
+                {
+                    panels.Add(("toolbar", layout.Toolbar));
+                    panels.Add(("hero", layout.Hero));
+                    panels.Add(("opponent", layout.Opponent));
+                    panels.Add(("legacy ammunition", layout.LegacyAmmunition));
+                    panels.Add(("help", layout.Help));
+                    if (!laboratory) panels.Add(("endless", layout.Endless));
+                }
+                else
+                {
+                    panels.Add(("health", layout.Health));
+                    panels.Add(("stamina", layout.Stamina));
+                    panels.Add(("guard", layout.Guard));
+                    panels.Add(("ammunition", layout.Ammunition));
+                    panels.Add(("reload", layout.Reload));
+                    panels.Add(("restraint key", layout.RestraintKey));
+                    panels.Add(("restraint track", layout.RestraintTrack));
+                }
+                for (int index = 0; index < panels.Count; index++)
+                {
+                    Rect screen = canvas.LogicalToScreen(panels[index].Rect);
+                    string context = $"{screenWidth}×{screenHeight}, lab={laboratory}, debug={debug}: {panels[index].Name}";
+                    Assert.That(screen.xMin, Is.GreaterThanOrEqualTo(0f), context);
+                    Assert.That(screen.yMin, Is.GreaterThanOrEqualTo(0f), context);
+                    Assert.That(screen.xMax, Is.LessThanOrEqualTo(screenWidth), context);
+                    Assert.That(screen.yMax, Is.LessThanOrEqualTo(screenHeight), context);
+                    for (int other = index + 1; other < panels.Count; other++)
+                        Assert.That(panels[index].Rect.Overlaps(panels[other].Rect), Is.False,
+                            context + " overlaps " + panels[other].Name);
+                }
+            }
+
+            var controls = new CombatHudLayout(canvas, laboratory: true, debug: true);
+            Rect[] interactive = { controls.Laboratory, controls.Toolbar, controls.Result };
+            for (int index = 0; index < interactive.Length; index++)
+            {
+                Vector2 screen = canvas.LogicalToScreen(interactive[index].center);
+                Vector2 devicePointer = new Vector2(screen.x, screenHeight - screen.y);
+                Vector2 logical = canvas.ScreenToLogical(new Vector2(devicePointer.x, screenHeight - devicePointer.y));
+                Assert.That(controls.ContainsControls(logical, true, true, true), Is.True,
+                    "The actual Input System pointer must hit the rendered control after bottom-left/top-left conversion.");
+                Assert.That(controls.ContainsControls(logical, index != 0, index != 1, index != 2), Is.False,
+                    "An individually hidden panel cannot retain its pointer interception region.");
+                Assert.That(controls.ContainsControls(logical, false, false, false), Is.False);
+            }
+            foreach (Vector2 point in new[] { canvas.ViewportRect.center, controls.Hero.center, controls.Help.center })
+                Assert.That(controls.ContainsControls(point, true, true, true), Is.False,
+                    "World space and passive HUD instruments cannot intercept combat input.");
         }
 
         [Test]

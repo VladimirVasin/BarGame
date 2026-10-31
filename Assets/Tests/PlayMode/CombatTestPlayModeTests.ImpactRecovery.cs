@@ -768,7 +768,10 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3.ProjectOnPlane(hands.CylinderCentre(true) - joints[3].position, hands.PalmNormal(true)));
                 RightWristDeviation = WristDeviation(joints[4], rightForearm, false);
                 LeftWristDeviation = WristDeviation(joints[3], leftForearm, true);
-                RightGripGap = Vector3.Distance(hands.CylinderCentre(false), actor.Weapon.transform.position);
+                Vector3 rightContact = actor.WeaponId == CombatWeaponId.Crowbar
+                    ? actor.Weapon.transform.TransformPoint(Vector3.up * actor.CrowbarGripStation)
+                    : actor.Weapon.transform.position;
+                RightGripGap = Vector3.Distance(hands.CylinderCentre(false), rightContact);
                 ShaftAxisError = Vector3.Angle(shaft, actor.Weapon.transform.up);
                 RegripSeconds = actor.SupportArmState == CombatArmSupportState.Regripping
                     ? RegripSeconds + ImpactFrameSeconds : 0f;

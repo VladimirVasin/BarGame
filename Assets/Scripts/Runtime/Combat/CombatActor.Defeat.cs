@@ -154,6 +154,7 @@ namespace BarPromenade
                     ReleaseStandingPresentation();
                     winnerPresentationReleased = true;
                 }
+                AdvanceWinnerCarryGrip(seconds);
                 return;
             }
             CancelPendingKick("round_ended");
@@ -176,7 +177,13 @@ namespace BarPromenade
             }
             EndPistolAction();
             if (State.IsDefeated) { AdvanceDefeat(seconds); return; }
-            if (winnerPresentationReleased) { State.Advance(seconds); AdvanceWarehouseTorsoLook(seconds); return; }
+            if (winnerPresentationReleased)
+            {
+                State.Advance(seconds);
+                AdvanceWarehouseTorsoLook(seconds);
+                AdvanceWinnerCarryGrip(seconds);
+                return;
+            }
             // The winner finishes the visible swing without another damage window.
             AdvanceVisualClock(seconds);
             State.Advance(seconds);
@@ -186,10 +193,18 @@ namespace BarPromenade
                 // clip with combat footwork would keep the winner shuffling.
                 ReleaseStandingPresentation();
                 winnerPresentationReleased = true;
+                AdvanceWinnerCarryGrip(seconds);
                 return;
             }
             footwork?.Advance(seconds, State);
             Present();
+        }
+
+        private void AdvanceWinnerCarryGrip(float seconds)
+        {
+            // Carry still owns both hands after the full-body combat lease
+            // ends. Its finite finger closure must keep its simulation clock.
+            if (hero != null && !IsFirearm && HasWeaponInHand) supportGrip?.Advance(seconds);
         }
 
         private void AdvanceDefeat(float seconds)
@@ -321,11 +336,12 @@ namespace BarPromenade
                 Vector3.Cross(Vector3.up, defeatDirection) * 2f);
         }
 
-        private void ReleaseWeapon(Vector3 linearVelocity, Vector3 angularVelocity)
+        private void ReleaseWeapon(Vector3 linearVelocity, Vector3 angularVelocity, bool recoveryObstructed = false)
         {
             // A living hero keeps his weapon through impacts and falls.
-            // Terminal defeat retains the ordinary physical release.
-            if ((IsHero && !State.IsDefeated) || weaponDropped || Weapon == null) return;
+            // A proven world obstruction during recovery may open the hand;
+            // the same real prop remains recoverable through its normal pickup.
+            if ((IsHero && !State.IsDefeated && !recoveryObstructed) || weaponDropped || Weapon == null) return;
             EndWeaponCarryForRelease();
             EndPistolAction();
             weaponConstraint?.EndRecoveryContact();
@@ -375,7 +391,7 @@ namespace BarPromenade
             Weapon.transform.localScale = weaponScale;
             weaponDropped = false;
             if (activeCarry != null) activeCarry.Location = CombatWeaponCarryLocation.Held;
-            UpdateConcealedPistol();
+            UpdateConcealedEquipment();
         }
 
         /// <summary>

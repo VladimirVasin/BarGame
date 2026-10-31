@@ -90,6 +90,10 @@ namespace BarPromenade
             {
                 if (SelectedIsEquippable)
                 {
+                    if (SelectedStack.ItemId == InventoryItemId.CombatCrowbar)
+                        return LocalizationService.Get(SelectedIsEquipped
+                            ? "inventory.action.weapon.stow"
+                            : "inventory.action.weapon.draw");
                     return LocalizationService.Get(SelectedIsEquipped
                         ? "inventory.action.unequip"
                         : "inventory.action.equip");

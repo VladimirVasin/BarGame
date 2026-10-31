@@ -11,6 +11,7 @@ namespace BarPromenade
 
         private void OnEnable()
         {
+            SubscribeCrowbarInventory();
             if (Cutscenes != null)
             {
                 Cutscenes.enabled = true;

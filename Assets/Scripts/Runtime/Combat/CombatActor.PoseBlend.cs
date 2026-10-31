@@ -5,6 +5,8 @@ namespace BarPromenade
     public sealed partial class CombatActor
     {
         private const float PoseBlendSeconds = .14f;
+        // Keep the gait-to-strike pose/velocity handoff without softening most of the short windup.
+        private const float CrowbarAttackEntryBlendSeconds = .08f;
         private float poseBlendDuration = PoseBlendSeconds;
         private float poseBlendRemaining;
         private int poseBlendAfterFrame;

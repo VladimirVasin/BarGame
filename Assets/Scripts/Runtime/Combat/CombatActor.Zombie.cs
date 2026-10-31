@@ -9,9 +9,10 @@ namespace BarPromenade
         private const float ZombieRamImpulse = 85f, ZombieBlockedRamImpulse = 26f;
         public static MeleeCombatSettings OrdinaryZombieCombatSettings { get; } = new MeleeCombatSettings(
             damage: 18f, blockCost: 14f, windupSeconds: .6f, activeSeconds: .22f,
-            recoverySeconds: .95f, hitRecoverySeconds: .95f, blockRecoverySeconds: .95f,
-            obstacleRecoverySeconds: .95f, parriedRecoverySeconds: .95f,
-            animationRecoverySeconds: .95f, isUnarmedZombie: true, incomingDamageScale: .5f);
+            recoverySeconds: 3.2f, hitRecoverySeconds: 3.2f, blockRecoverySeconds: 3.2f,
+            obstacleRecoverySeconds: 3.2f, parriedRecoverySeconds: 3.2f,
+            animationRecoverySeconds: .95f, staggerSeconds: .8f,
+            isUnarmedZombie: true, incomingDamageScale: .5f);
         private float ZombiePalmRadius => .065f * PresentationScale;
         private AnimationClip zombieWalk, zombieAttackRight, zombieAttackLeft, zombieLoadAdjust, zombieWatch;
         private Transform zombieLeftShoulder, zombieRightShoulder;
@@ -23,6 +24,7 @@ namespace BarPromenade
         private bool zombieContactPoseValid;
         private float zombieWalkClock, zombieGroanRemaining, zombieWorkClock, roomIdleClock;
         private bool zombieWalkingRequested;
+        private int zombiePresentedCrowbarResponse = -1;
         private CombatZombieAudio zombieAudio;
         private NpcFootstepProfile zombieFootsteps;
         public bool ZombieAttackUsesLeftSide { get; private set; }
@@ -137,26 +139,39 @@ namespace BarPromenade
             RestoreCorpseStepPose();
             footwork?.Restore(); damagePose?.Restore(); bodyMotion?.Restore();
             bool stagger = State.IsStunned;
+            bool crowbarRecoil = stagger && (ImpactMotion?.UsesCrowbarContactReaction ?? false);
+            bool freshCrowbarContact = crowbarRecoil && zombiePresentedCrowbarResponse != ImpactMotion.RecoverySequence;
             AnimationClip chosen = State.IsDefeated ? defeat : stagger ? hit : IsZombieFrenzied ? zombieFrenzy : State.IsAttacking
                 ? ZombieAttackUsesLeftSide ? zombieAttackLeft : zombieAttackRight
                 : ZombieWorkPause ? zombieWorkClock < 9f ? zombieLoadAdjust : zombieWatch
                 : zombieWalkingRequested && !roundEnded ? zombieWalk : rest;
             float time = State.IsDefeated ? Mathf.Min(defeatClock, chosen.length) : stagger
-                ? State.PhaseProgress * chosen.length : IsZombieFrenzied ? ZombieFrenzySampleTime : State.IsAttacking ? State.AttackProgress * chosen.length
+                ? ZombieHitSampleTime(chosen.length) : IsZombieFrenzied ? ZombieFrenzySampleTime : State.IsAttacking ? State.AttackProgress * chosen.length
                 : chosen == zombieLoadAdjust ? zombieWorkClock - 4f : chosen == zombieWatch ? zombieWorkClock - 9f
                 : Mathf.Repeat(chosen == zombieWalk ? zombieWalkClock : IsRoom && chosen == rest ? roomIdleClock : poseClock, chosen.length);
-            if (visibleClip != chosen.name || !IsZombieFrenzied && visibleAttackSequence != State.AttackSequence)
+            if (freshCrowbarContact)
+            {
+                // Carry the struck silhouette into the contact frame itself.
+                // The remaining blend and hit clip continue on the duel clock;
+                // presenting the frozen contact again must not restart either.
+                BeginPoseBlend(.05f, force: true);
+                poseBlendRemaining = Mathf.Min(poseBlendRemaining, .0125f);
+                zombiePresentedCrowbarResponse = ImpactMotion.RecoverySequence;
+                visibleClip = chosen.name;
+            }
+            else if (visibleClip != chosen.name || !IsZombieFrenzied && visibleAttackSequence != State.AttackSequence)
             { BeginPoseBlend(IsZombieFrenzied ? .1f : State.IsAttacking ? .045f : .08f); visibleClip = chosen.name; }
             SampleNpcClip(chosen, time);
             long compositionStarted = System.Diagnostics.Stopwatch.GetTimestamp();
             // Corpse clips own their slouch and loose arms; a living fighter's
             // gait/breath layer must not straighten that authored silhouette.
-            if (ImpactMotion?.IsActive ?? false) bodyMotion?.Apply();
+            if (!crowbarRecoil && (ImpactMotion?.IsActive ?? false)) bodyMotion?.Apply();
             PresentDamagePose();
             bool recoveryFeet = footwork != null &&
                 (footwork.RecoveryEpisodeActive || (ImpactMotion?.IsActive ?? false));
             if (recoveryFeet) footwork.Apply();
-            if (!IsZombieFrenzied) ApplyCombatAttention();
+            // Looking back at the hero would erase the impact's head whip.
+            if (!IsZombieFrenzied && !crowbarRecoil) ApplyCombatAttention();
             ApplyNpcPoseBlend();
             if (recoveryFeet) footwork.ConstrainContacts();
             ApplyCorpseStepPose();
@@ -167,6 +182,22 @@ namespace BarPromenade
             NpcPoseCompositionTicks += System.Diagnostics.Stopwatch.GetTimestamp() - compositionStarted;
             RememberNpcPresentedPose();
             footwork?.CapturePresentedContacts();
+        }
+
+        private float ZombieHitSampleTime(float clipLength)
+        {
+            // Both clips reach their recoil at .09 s. A resolved crowbar contact
+            // starts inside that compression and reaches its peak promptly;
+            // the remainder still returns over the existing gameplay stun.
+            float authoredOnset = Mathf.Min(.09f, clipLength);
+            bool crowbarRecoil = ImpactMotion?.UsesCrowbarContactReaction ?? false;
+            float onset = Mathf.Min(crowbarRecoil ? .045f : authoredOnset, State.StaggerDuration);
+            float elapsed = State.StaggerElapsed;
+            if (elapsed <= onset) return crowbarRecoil
+                ? Mathf.Lerp(authoredOnset * .65f, authoredOnset, elapsed / Mathf.Max(.0001f, onset))
+                : elapsed;
+            return Mathf.Lerp(authoredOnset, clipLength,
+                (elapsed - onset) / Mathf.Max(.0001f, State.StaggerDuration - onset));
         }
 
         private void CaptureZombieContactPose()
@@ -415,6 +446,7 @@ namespace BarPromenade
 
         private void ResetZombieAttack()
         {
+            zombiePresentedCrowbarResponse = -1;
             ResetZombieFrenzy();
             ResetZombieMimic();
             zombieLoad?.EndRam();

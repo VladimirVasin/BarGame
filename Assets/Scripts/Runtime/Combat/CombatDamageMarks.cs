@@ -432,7 +432,7 @@ namespace BarPromenade
         }
 
         public void Add(Vector3 point, Vector3 incoming, bool projectile = false, bool head = false,
-            Player3DAnatomicalPart? part = null)
+            Player3DAnatomicalPart? part = null, bool prominent = false)
         {
             Patch nearest = null;
             ProjectileWound nearestWound = null;
@@ -498,7 +498,9 @@ namespace BarPromenade
                 return;
             }
             if (!nearest.Active) { nearest.Active = true; Count++; }
-            nearest.Grade = Mathf.Min(3, nearest.Grade + 1);
+            // A solid crowbar contact starts with a legible wound on clothing
+            // or skin; repeat hits deepen the same bounded authored patch.
+            nearest.Grade = Mathf.Min(3, Mathf.Max(prominent ? 2 : 1, nearest.Grade + 1));
             float scale = 1f - (nearest.Grade - 1) * .15f;
             nearest.Renderer.GetPropertyBlock(properties);
             properties.SetVector("_BaseMap_ST", new Vector4(scale, scale, (1f - scale) * .5f, (1f - scale) * .5f));

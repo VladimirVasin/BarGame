@@ -66,6 +66,13 @@ namespace BarPromenade
 
         private readonly bool unarmed;
         public bool RearHeadFinisher => !unarmed;
+        /// <summary>Local mechanical injury is separate from HP resistance. Three
+        /// ordinary blows leave the .9 support-loss threshold intact; repeated
+        /// contact with that same patch can subsequently break its support.</summary>
+        public float TissueTraumaPerHit => unarmed ? 0f : .27f;
+        /// <summary>The centre of the irregular, feathered surface wound. Its
+        /// first contact must reveal tissue rather than only darken a decal.</summary>
+        public float SurfaceTraumaPerHit => unarmed ? 0f : .32f;
 
         private MeleeDamageProfile(bool unarmed = false) { this.unarmed = unarmed; }
 

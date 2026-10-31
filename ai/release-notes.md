@@ -6,25 +6,35 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
+### 2026-11-01
+
+- Лом:усилен перенос веса и разгон удара. Повторные попадания глубже разрушают
+  ткани;смертельный удар в голову повреждает череп. Живые зомби встают с ранами.
+  Range_CrowbarContactPresentsRecoilBeforeHitStop/
+  Range_CrowbarHitsLeaveWoundsAndZombieRises/Range_CrowbarFatalHeadContactFracturesOnce
+  passed;кадры проверены.
+
 ### 2026-10-31
 
-- Сон: руки держат диван; камера плавно приближается/возвращается к герою.
-  Тихие мягкие ткань/дыхание реже; общий план без дыхательной петли.
-  Опора/скрип/обувь следуют движениям; старт спокойный.
-  HOME_BED_CONTACTS_OK; кадры и HomeBedAudioSignalReview проверены.
-  SleepMvp дошёл до старого сбоя текстуры балкона при сбросе дня.
-- Пазл2: лом подпирает заслонку; ткань/каретка включает фиксатор→забрать лом.
-  Удар/парирование доступны; склад хранит находку. Текстуры чётче вблизи.
-  STAIRWELL_LABYRINTH_DETERMINISM_OK; StairwellSecondPuzzleCrowbar; виды просмотрены.
-- Лом: ЛКМ один удар, ПКМ короткое парирование спереди. Заряд/комбо/толчок/
-  пинок/боевой шаг убраны; удержание не повторяет/продлевает, огнестрел прежний.
-  Range_SimpleCrowbarStrikeUsesOneArcAndPhysicalContacts; виды просмотрены.
-- Склад: красный свет выделяет конечную дверь; стена цельная, проём настоящий.
-  CombatWarehouseGateLampSurvivesPendant; виды просмотрены.
-- Загадки: полотно/рычаги прямо; малый шкаф спинкой к стене. Выбор сразу,
-  жест короче; принимается следующее E. StairwellLabyrinthPuzzleModeAndFlashlight.
-  Решил→сразу свет следующей двери. StairwellLabyrinthLightRadius;
-  закрытые входы/вид без эффектов просмотрены. check-docs.
+- Зомби:атаки раз в~4с;попадания сбивают их даже без нового урона части.
+  Range_ZombieHitsInterruptLiveAttacksWithoutRefundingRecovery passed.
+- HUD:выбор↖/итог↗/шкалы↓;итог при F8.
+  CombatHud_EdgePanelsDoNotOverlapAndPointerMatchesVisibility;Game View проверен.
+- Сон:хват дивана/плавная камера;тихие редкие ткань/дыхание/спокойный старт.
+  HOME_BED_CONTACTS_OK;кадры/HomeBedAudioSignalReview. SleepMvp:старый сбой
+  текстуры балкона при сбросе дня.
+- Пазл2:лом/заслонка→ткань/фиксатор→подбор;склад хранит находку.
+  STAIRWELL_LABYRINTH_DETERMINISM_OK/StairwellSecondPuzzleCrowbar;виды проверены.
+- Лом/U:взять/скрыть;шаг обычный. Хват↑/левая ниже;замах/стоп/отшат.
+  Раны с первого удара;3 попадания→падение/подъём живого.
+  Range_CrowbarHitsLeaveWoundsAndZombieRises passed.
+- Герой:обычные удары без падений;защита от повторов.
+  Подъём:враг уступает;зажатое оружие отпускается.
+- Склад:красный свет двери;цельная стена/настоящий проём.
+  CombatWarehouseGateLampSurvivesPendant;виды проверены.
+- Загадки:полотно/рычаги прямо;шкаф спинкой к стене;выбор сразу/жест короче/
+  следующее E;StairwellLabyrinthPuzzleModeAndFlashlight. Решил→свет следующей двери;
+  StairwellLabyrinthLightRadius;закрытые входы/без эффектов проверены.
 
 ### 2026-10-30
 

@@ -190,7 +190,8 @@ namespace BarPromenade.Tests.PlayMode
                     "The real held wrist remains inside 25° deviation, 55° flexion and 65° cone limits.");
                 var hands = actor.GetComponentInChildren<NpcHandPose>();
                 Assert.That(hands, Is.Not.Null);
-                Assert.That(Vector3.Distance(actor.Weapon.transform.position, hands.CylinderCentre(false)), Is.LessThan(.001f),
+                Assert.That(Vector3.Distance(actor.Weapon.transform.TransformPoint(Vector3.up * actor.CrowbarGripStation),
+                    hands.CylinderCentre(false)), Is.LessThan(.001f),
                     "Wrist clearance moves the continuous real hand and its attached prop together.");
                 Assert.That(root.BloodEffects.EmissionCount, Is.EqualTo(1));
                 Assert.That(root.SparkEffects.EmissionCount, Is.Zero);

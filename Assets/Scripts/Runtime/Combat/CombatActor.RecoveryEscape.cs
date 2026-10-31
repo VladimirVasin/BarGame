@@ -24,11 +24,13 @@ namespace BarPromenade
                 JournalEvent("rise_escape_started", f0: GameLog.Field("blocked_seconds", recoveryBlockedSeconds),
                     f1: GameLog.Field("shape", WeaponBlockingShape));
             }
-            if (!IsHero && !weaponDropped && recoveryBlockedSeconds >= RecoveryWeaponReleaseSeconds)
+            if ((!IsHero || WeaponId == CombatWeaponId.Crowbar &&
+                weaponConstraint != null && weaponConstraint.RecoveryWorldObstructed) && !weaponDropped &&
+                recoveryBlockedSeconds >= RecoveryWeaponReleaseSeconds)
             {
                 // Keep the complete displayed pose. Only the hand opens and its
                 // actual prop becomes a free physical body at its present location.
-                ReleaseWeapon(Vector3.zero, Vector3.zero);
+                ReleaseWeapon(Vector3.zero, Vector3.zero, recoveryObstructed: true);
                 recoveryRegrip = false;
                 State.CancelCharge();
                 State.CancelBufferedAction(State.BufferedAction);

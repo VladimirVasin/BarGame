@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CombatWeaponCarryBindings
   Slots:
   - Weapon: 0
-    BoneLocalPosition: {x: -0.0022499938, y: 0.0017891005, z: 0.0005098757}
+    BoneLocalPosition: {x: -0.002249995, y: 0.0025889026, z: 0.0005276463}
     BoneLocalRotation: {x: -0.9970925, y: 0.00083646557, z: -0.07538656, w: 0.011076366}
     PushHandLocalPosition: {x: 0, y: 0, z: 0}
     CatchHandLocalPosition: {x: 0, y: 0, z: 0}

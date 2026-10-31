@@ -54,7 +54,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Road lighting | Bounded air/snow/headlights/halos/metal/bounce; station reflections. | `MountainRoad{LightingPresentation,ReflectionController,MetalAppearance}` | Current |
 | Depth of field tiers | Gaussian far blur/interiors radius0.55; shared owned inspection Bokeh. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder`, `CinematicDepthOfField` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Combat | Warehouse:Crane/Room/Docker≤5;Lab6/1;livehero hold/deathdrop. Gap:pierce/balance. | `CombatActor`,`CombatTestRoot` | Partial |
+| Combat | Bar tissue/skull/recoil;3hits→fall/rise;hero grace;HUD edges. Gap:pierce. | `CombatActor`,`CombatTestRoot`,`CombatHudLayout` | Partial |
 | Crane | Hook6m/up2m/hold5/E6/hoist-haul/bodycam/fall;home10;fatal3→regen10/kill0. | `Combat*.Crane*`,`CombatActor.Restraint` | Current |
 | Authored enemies | Room:idle5s/jelly/bar/wet SFX;Lab:Imprint/LongExposure | `CombatActor`,`CombatTestRoot.Room*` | Current |
 | Warehouse | Story entry keeps session/seed;fish3→foes0;gate/ammo;L3broken;dust/A*. | `Warehouse*`,`CombatTestRoot` | Current |
@@ -68,7 +68,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
 | Session day/time displays | Inventory/day announcements follow calendar; final7 clock display is an exception. | `HomeAlarmClock`, `InventoryView` | Current |
 | Pause / cutscene debug | Shared pause;warehouse door ambush, local replay/timecode;script→live struggle. | `PauseMenu*`,`Cutscene*`,`WarehouseDoorAmbush*` | Current |
-| Hero inventory | Session stacks/Use;one-log cap;pickup/receipt;local preview MSAA/fallback. | `Inventory{Types,State,MenuModel,Controller,View}`, `GameSessionState`, `WorldItemFoundScreen` | Current |
+| Hero inventory | Stacks/Use;crowbar draw-stow/hidden stored/free gait;pickup/receipt;preview MSAA. | `Inventory{Types,State,MenuModel,Controller,View}`, `GameSessionState`, `WorldItemFoundScreen` | Current |
 | World item pickup and its found screen | Shared lit 3D turn/owned focus;one take;isolated lights;layers restored. | `WorldItem{PickupPlan,Pickup,PickupModel,FoundScreen,FoundView,InspectionPresenter}` | Current |
 | Hunger, stress, fatigue and consumption | Needs follow the pause-aware calendar; consumption/rest commit relief once. Gap: needs apply no gameplay debuff. | `PlayerNeedsProgressionState`, `PlayerNeedsRules` | Partial |
 | Inventory-backed target interactions | Shared item-backed target menus commit consumption once and refund failed startup. | `InventoryItemRequirement`, `InventoryTargetInteraction{Definition,Model,Controller}` | Current |

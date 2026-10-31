@@ -32,6 +32,8 @@ namespace BarPromenade
         public float InjuryAmount => Mathf.Clamp01(injury.Value);
         public float BreathAmount => InjuryAmount * InjuryAmount * Mathf.Sin(breathPhase);
         public float AppliedWeight { get; private set; }
+        // The weapon clip already supplies this contact; injury still owns the torso/head.
+        internal bool PreserveAuthoredLeftArm { get; set; }
         public bool HasOffsets => baseCaptured;
         public float ReactionAmount => Mathf.Clamp01(
             Mathf.Max(Mathf.Abs(pitch.Value), Mathf.Abs(roll.Value)) / 20f);
@@ -142,9 +144,12 @@ namespace BarPromenade
             Rotate(2, right, (hurt * -3f + headPitch.Value * .4f + breath * .35f) * weight);
             Rotate(3, right, (hurt * 7f + headPitch.Value * .6f) * weight);
             Rotate(3, forward, headRoll.Value * weight);
-            Rotate(4, right, (hurt * 8f + shoulder.Value * 10f + shoulderBreath * .8f) * weight);
-            Rotate(4, forward, (hurt * 8f + shoulder.Value * 7f) * weight);
-            Rotate(5, right, hurt * 10f * weight);
+            if (!PreserveAuthoredLeftArm || restraintActive)
+            {
+                Rotate(4, right, (hurt * 8f + shoulder.Value * 10f + shoulderBreath * .8f) * weight);
+                Rotate(4, forward, (hurt * 8f + shoulder.Value * 7f) * weight);
+                Rotate(5, right, hurt * 10f * weight);
+            }
             if (restraintActive) ApplyRestraint(weight, forward, right);
             // Pelvis and feet retain their authored contacts. Ordinary injury
             // preserves the weapon hand; restraint may temporarily own both arms.
@@ -169,6 +174,7 @@ namespace BarPromenade
         {
             Restore();
             restraintActive = false;
+            PreserveAuthoredLeftArm = false;
             impulse = Vector3.zero;
             breathPhase = 0f;
             injury.Reset(); pitch.Reset(); roll.Reset(); turn.Reset();

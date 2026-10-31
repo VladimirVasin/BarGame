@@ -214,7 +214,8 @@ namespace BarPromenade
                     damage, blockCost, power, location, part, localPoint, weaponSpeed, physicalBody,
                     bodyRegion, bodyPatch, detachedPart);
                 source.JournalEvent("weapon_contact_resolved", target.JournalActorId, attackSequence, request,
-                    GameLog.Field("result", (int)result), GameLog.Field("impact_seq", target.LastJournalImpactSequence),
+                    GameLog.Field("result", (int)result),
+                    GameLog.Field("impact_seq", result == MeleeHitResult.Ignored ? 0L : target.LastJournalImpactSequence),
                     GameLog.Field("from_front", fromFront), GameLog.Field("damage_requested", damage));
                 source.State.RecordAttackOutcome(result, attackSequence);
                 source.PlayCraneContactSound(result);
@@ -296,7 +297,12 @@ namespace BarPromenade
             // Elapsed times are rounded from the double rules clock to floats.
             // Their difference can be just over one step: Ceil then doubles the
             // entire pose/IK/clearance pass despite there being no extra motion.
-            int samples = Mathf.Max(1, Mathf.CeilToInt((to - from) / CombatTestRoot.SimulationStep - .0001f));
+            // The arm-led crowbar arc bends faster than the world simulation
+            // step. Its imported metal curve is certified at this smaller
+            // interval; leave the other weapons on the ordinary clock.
+            float contactStep = IsHero && WeaponId == CombatWeaponId.Crowbar && to > State.AttackWindupSeconds
+                ? 1f / CombatAssetProvider.CrowbarContactSampleHz : CombatTestRoot.SimulationStep;
+            int samples = Mathf.Max(1, Mathf.CeilToInt((to - from) / contactStep - .0001f));
             if (sweepSequence != sequence) sweepValid = false;
             sweepSequence = sequence;
             // Adjacent 120 Hz intervals share their boundary. Its world-space
@@ -380,22 +386,29 @@ namespace BarPromenade
                     metal = true; world = false; solidFraction = metalFraction; solidPoint = metalPoint; solidNormal = metalNormal;
                     solidCollider = null;
                 }
-                bool body = FindAnatomicalContact(currentWeapon, travel.normalized, sequence, sampleSeconds,
-                    out CombatActor bodyTarget, out CombatHurtboxes.Hit nearest, out float bodyFraction, out float weaponSpeed);
                 // Keep the body candidate behind a proposed interception until
                 // BOTH sweeps have been collected. The other moving bar may itself
                 // have met a wall earlier; only an accepted hard contact occludes.
-                if (body && CanDamageParticipant(bodyTarget) && State.TryRegisterHit(bodyTarget.GetEntityId().GetHashCode(), sequence))
+                CombatHurtboxes.Hit nearest;
+                float bodyFraction;
+                bool bodyBlocks;
+                if (IsHero && WeaponId == CombatWeaponId.Crowbar)
                 {
-                    pending.Add(new Contact(this, bodyTarget, nearest.Point, nearest.Normal, nearest.Direction, nearest.Location,
-                        nearest.Part, nearest.LocalPoint, weaponSpeed, Mathf.Lerp(sampleStart, sampleEnd, bodyFraction), physicalBody: true,
-                        bodyRegion: nearest.DamageRegion, bodyPatch: nearest.DamagePatch, detachedPart: nearest.IsDetached));
-                    JournalEvent("weapon_contact_provisional", bodyTarget.JournalActorId, sequence, journalActionRequest,
-                        GameLog.Field("part", (int)nearest.Part), GameLog.Field("fraction", bodyFraction),
-                        GameLog.Field("point_x", nearest.Point.x), GameLog.Field("point_y", nearest.Point.y), GameLog.Field("point_z", nearest.Point.z),
-                        GameLog.Field("weapon_speed", weaponSpeed), GameLog.Field("damage_requested", State.AttackDamage));
+                    // A broad swing can reach several bodies in this same interval.
+                    // An already struck body must not hide another real contact.
+                    bodyBlocks = CollectCrowbarAnatomicalContacts(currentWeapon, travel.normalized, sequence,
+                        sampleSeconds, sampleStart, sampleEnd, pending, out nearest, out bodyFraction);
                 }
-                if (body && !CanDamageParticipant(bodyTarget) && bodyFraction < solidFraction)
+                else
+                {
+                    bool body = FindAnatomicalContact(currentWeapon, travel.normalized, sequence, sampleSeconds,
+                        out CombatActor bodyTarget, out nearest, out bodyFraction, out float weaponSpeed);
+                    bool damageable = body && CanDamageParticipant(bodyTarget);
+                    if (damageable) QueueAnatomicalContact(bodyTarget, nearest, weaponSpeed, bodyFraction,
+                        sampleStart, sampleEnd, sequence, pending);
+                    bodyBlocks = body && !damageable;
+                }
+                if (bodyBlocks && bodyFraction < solidFraction)
                 {
                     world = true; metal = false; solidFraction = bodyFraction;
                     solidPoint = nearest.Point; solidNormal = nearest.Normal;
@@ -427,6 +440,43 @@ namespace BarPromenade
             if (to >= activeEnd)
                 JournalEvent("weapon_contact_terminal", contactTarget?.JournalActorId ?? 0, sequence, journalActionRequest,
                     GameLog.Field("reason", "active_window_complete"), GameLog.Field("outcome", (int)State.AttackOutcome));
+        }
+
+        private bool CollectCrowbarAnatomicalContacts(Pose currentWeapon, Vector3 direction, int sequence,
+            float sampleSeconds, float sampleStart, float sampleEnd, List<Contact> pending,
+            out CombatHurtboxes.Hit nearestSolid, out float solidFraction)
+        {
+            nearestSolid = default; solidFraction = float.PositiveInfinity;
+            for (int i = 0; i < ContactParticipantCount; i++)
+            {
+                CombatActor candidate = ContactParticipantAt(i);
+                if (candidate == this || !HasPhysicalBody(candidate) ||
+                    !candidate.IsAvailable && !candidate.IsKnockedDown && !candidate.State.IsDefeated ||
+                    !CombatWeaponGeometry.SweepAnatomy(candidate.Hurtboxes, sweepValid ? previousWeapon : currentWeapon,
+                        currentWeapon, sampleSeconds, direction, out var hit, out float fraction, out float speed)) continue;
+                if (CanDamageParticipant(candidate))
+                {
+                    QueueAnatomicalContact(candidate, hit, speed, fraction, sampleStart, sampleEnd, sequence, pending);
+                    continue;
+                }
+                if (fraction >= solidFraction) continue;
+                nearestSolid = hit; solidFraction = fraction;
+            }
+            if (ContactParticipantCount == 0) JournalContactRejected("no_target", sequence);
+            return solidFraction <= 1f;
+        }
+
+        private void QueueAnatomicalContact(CombatActor target, CombatHurtboxes.Hit hit, float weaponSpeed,
+            float fraction, float sampleStart, float sampleEnd, int sequence, List<Contact> pending)
+        {
+            if (!State.TryRegisterHit(target.GetEntityId().GetHashCode(), sequence)) return;
+            pending.Add(new Contact(this, target, hit.Point, hit.Normal, hit.Direction, hit.Location,
+                hit.Part, hit.LocalPoint, weaponSpeed, Mathf.Lerp(sampleStart, sampleEnd, fraction), physicalBody: true,
+                bodyRegion: hit.DamageRegion, bodyPatch: hit.DamagePatch, detachedPart: hit.IsDetached));
+            JournalEvent("weapon_contact_provisional", target.JournalActorId, sequence, journalActionRequest,
+                GameLog.Field("part", (int)hit.Part), GameLog.Field("fraction", fraction),
+                GameLog.Field("point_x", hit.Point.x), GameLog.Field("point_y", hit.Point.y), GameLog.Field("point_z", hit.Point.z),
+                GameLog.Field("weapon_speed", weaponSpeed), GameLog.Field("damage_requested", State.AttackDamage));
         }
 
         private bool FindAnatomicalContact(Pose currentWeapon, Vector3 direction,

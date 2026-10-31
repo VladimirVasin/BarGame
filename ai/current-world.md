@@ -93,13 +93,13 @@ cemetery:own interiors/returns.
   StdDocker;Endless1–5/def3:Room,Docker,Crane(last≤2);seedstart-reset-refill/≤5warm/≤2corpses/roleIDs.
   Lab:Arena/6warm/1target/Zombie/reset-prepkept.
   Room×1.2/bighead/longarms-hands/corridor;Lab:Imprint cast/LongExposure emulsion;Room:head0→ret+2s;lens1s/chest-seatface2s/ret18HP/laugh5s→idle5s;twin-chair/IK/rootkept;simlive/input0/others idle→headend;jelly/Lmidbar in/out;glugs/pull;§6.
-  HP/structure×.5;head50/torso12.5/hero1;wounds↑/wood1sthit hole-chips.
+  HP×.5;bar tissue.27/fatalhead3;guns structure×.5;wood1st hole-chips.
   Crane:flesh/carapace/6cables/3floors/6m/up2m-chest/LOS/1hit;
   hook5s/COLhoist-haul overrails/struggle/bodycam/fallHP/inertia;
   others+spawns idle→release/cancel;
   escape6freshE/bar/held0;success→actualhome→watch10;
   fatalcry-spasm3→home→regen10/full/sameactor/kill0.
-  Crowbar:finite frontparry/back0;front dot≥.35.
+  Hero:stun/grace;bar wounds/3hits→fall-rise;self veto0
   Hero:wounds/HP,no head-limb-bodydetach globally.
   pendulum/voidCOL;pause-modal-focus/reset-disable-unload;art§15a.
   18anchors/shared COL/occupied0decor;
@@ -111,17 +111,17 @@ cemetery:own interiors/returns.
   bodydrop0/focus≠hits/Tab-E0.
   Hero:story acquiredbar/DebugAll3;deathdrop-pickup/drawresume.
   Docker:30slats40HP→holes/fused head-woodram;8fish/1skin/anyfallspill/finiteasync;
-  1.7m/s/plantbursts;ram.9m(.25/.18/2.4)/kneel-rise;ownfall→5sFrenzy/2SFX/Recovery0;
+  1.7m/s/plantbursts;ram.9m(.25/.18/3.6)/kneel-rise;ownfall→5sFrenzy/2SFX/Recovery0;
   dmg32/impulse85/firstsurface1hit/guard-counter-retreat0;
   ownDebris0CC/resize-reset/floor;ground0attack/infection0;freecam/dummy/Tabfight/MMBfocus;
-  Rise:tread/pose/retry;guns8gaits/0run/Step1m4way-back/noviceaim/§15a;
+  Heavy rise:world-only bar/NPCyield/drop-pickup;guns8gaits/0run/Step1m4way-back/noviceaim;
   Pistol8+0≤48/slideempty/mag-rack/cases;shotgun2+0≤16/breakload/atomic;winfire/partreload/physspend/empty0;
   Ammo12(6mag×8/6shell×4)/seed9banks/3bays/both/flr;legacy4;3room+6wall/27soloE/fridgecurve/hollowCOL/std/full0/part1/Take>open>close/resetshut;
   Endless12s/pause-modal-focus-off-defeat0/resetrespawnkept/winlive.
   Nearlaunch/falloff/1react/head≤14/firstsurface/0pierce-ricochet-guard.
   Enemies:cloth-tissue-bone loss/sever/torso→skeleton/0chunks;Rhand0weapon/Lhand0twohand-reload;Rbar-loadedpistol.
   Legloss fall/crawl/0rise-step-kick;critical head-torso end/reset. Remains:passable/rigfootlift/floor-walls/poolreset.
-  Bar:LMB1arc/RMBfiniteparry;charge-combo-shove-kick-Step0;8seg/1hit/wallrecoil/6zones;E:taunt/0grant.
+  Bar:LMB1arc/RMBfinite frontparry dot≥.35;1hit/wallrecoil;E:taunt/0grant.
   Cloth:rig-anchors/hand-opening/physics0/hair;pause-resetclean.
   HUD:art§15a
 - legacy-only Home opening: held bed loop/silent `05:59`/rare whole-clock flicker,
@@ -2013,10 +2013,9 @@ cemetery:own interiors/returns.
   Arrows immediate;E pending1/short strokes;Q clears/cancels active.
   First:compact back-to-wall cabinet/lamp;second:handle lifts/releases;
   bar braces→cloth cart/endstop/catch→unloaded bar;weight automatic.
-  Shared pickup/session source1x→CombatCrowbar;
-  Actor/rig/strike-parry/context.
-  Retained gates;all3→warehouse/CrowbarOnly;
-  Debug3. Lamp/fan/weight/vent/cloth:audio/pause/cleanup.
+  Pickup1x→CombatCrowbar;draw/stow;hidden bar/mount.
+  High-R gait→arm arc/return;parry/context→warehouse/CrowbarOnly;
+  Debug3. Lamp/fan/weight/vent/cloth:SFX/pause/cleanup.
   Metre maps;statue/light stay. Flight1:2Hard lamps
   22/24m/lens-hum-contactor;return restores. Next door lit anywhere inside;
   solve→next sameframe regardless floor/range;3→none;guide1of2Hard slots.

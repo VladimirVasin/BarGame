@@ -1056,10 +1056,11 @@ F4: свободная камера, мышь/WASD, Q↓/E↑, Shift×4; зан�
 `1–6` восстановимы. Звук/текст/лор0.
 Сон:быт→шахта→машины→склад;3P/gravity.
 Ткань→передача→тени;E:полотно+рычаги прямо/скрыт;вид↩.
-`2026-10-31`:←/→сразу/E1/Q отмена;жест↓.
-1:малый шкаф/спинкой к стене/фонарь;2:лом/ткань/фиксатор→
-подбор/бой;3контакта/звук;metre maps/UI↓/head0.
-Склад:лом/Debug3;Кот:свет;22м/контактор/тьма;решил→сразу свет следующей двери/2Hard.
+`2026-10-31`:arrows immediate/E1/Q cancel/short gesture.
+1:small cabinet back-to-wall/lamp;2:bar/cloth/catch→pickup/combat.
+Inventory draw/stow;stored bar/mount hidden;ordinary gait/high-right bat→sharp wide swing/return.
+3contacts/audio;metre maps/UI↓/head0. Warehouse:bar/Debug3;
+Catlight/22m/contactor/dark;solve→next door lit/2Hard.
 
 Каменная голова Кота: улыбка/затылок в стене, тела/шеи/крови0;
 немой E/мгновенный кадр, герой скрыт лишь крупно. Живой Кот/финал/новый текст0;
@@ -4214,8 +4215,8 @@ Unity legacy:аварийный резерв. Заголовок/основно�
 
 `2026-10-30`/§6:warehouse;stairs:materials;finale0.
 `2026-10-31`:GoalWall solid/4×3;red24→door/valve/dip≥.45;ambush36.
-`2026-10-31`,user:Bar=LMB1arc/RMBfinite frontparry;charge-combo-shove-Q-Step0;
-same rig/two hands/hook→/shoulder-return/wall stop;guns kept;story0.
+`2026-11-01`:Bar=LMB1wideR→L/RMBparry;charge/combo/shove/step0;
+high-R/grip↑/L<R/fists;coil/arc/stop;low elbows;3hits→fall/rise;tissue/skull.
 
 `2026-10-19` user/§6:only CombatTest warehouse/fan-stopped→quiet rare insectclicks+wordless-indistinctwhisper;2ownerless textures/newrandom3D3–7m@hero/fixed-fullclip/mono/.8/LP2800/World echo-reverb/gaps;speaker/line/address/storyinfo0. Valve fullyopen→1heavy metal latch impact@drive;tail after inspection.
 `2026-10-19`:Room×1.2/head1.35/longarms-hands/wideDutch1s;Lhead0→ret+2s/laugh5s→idle5s.
@@ -4240,8 +4241,8 @@ Shared body/skull and finite wounds/wood chips;§6.
 `2026-10-12`:Draw Rbarrels↓;Loutside/Lshldr→vertstock/palmdown
 →outershldr/chest→Rgrip/Lforeend;0crossing/stow-rig-sling/2×.
 `2026-10-09`:nearmax/bodylaunch/head≤14/fastdebris-blood/falloff.Rig:chest-abdomen/arm-hand/leg-catch/skin/cloth-glove-boot/wet-dry/repeat.
-`2026-10-09`:torso→joined skel/0chunks;head-limbcuts/finiteparts;Survivor-corpse/crawl/reset.Pistolloweject;brain8:wetmutedjelly/squash/bone-tissue/cam-hide/loss.Darkblood/narrow-slow/finitepulse/rig-cut/stains-pool-debris;spasms≤2.35s/corpseimpulse/volley1react.Case/emptylock/mag-stash-seat-rack/SFX.World:chips-sparks/finiteholes;Shldrs↑/chin-in/breath-tremor/tightswing/awkwardret;softknees/pelvis-grip-elbows↓.≤2steps/crouch-brace/NPCdrop/livehero holds/ret≠parry.Bar:batgrip/end/wallsparks-recoil;GunQ:dry/0finish;far pelvis-foot→/chest←;nearknee.Chestcontrast;wall-edge-end→hide.Win:walk/gun;barE:toilet §7 FP/barL/body-floorR/0react.
-`2026-10-15`HUD:charcoal/bone;aim ammo/reloadmeter/HP damage3s-≤25%/staminafull+1s;parry/fade.15-.3;legacy:enemyHP/counts/result.Shield:parry readiness.
+`2026-10-09`:torso→joined skel/0chunks;head-limbcuts/finiteparts;Survivor-corpse/crawl/reset.Pistolloweject;brain8:wetmutedjelly/squash/bone-tissue/cam-hide/loss.Darkblood/narrow-slow/finitepulse/rig-cut/stains-pool-debris;spasms≤2.35s/corpseimpulse/volley1react.Case/emptylock/mag-stash-seat-rack/SFX.World:chips-sparks/finiteholes;Shldrs↑/chin-in/breath-tremor/broadarc/brakedret;softknees/pelvis-grip-elbows↓.Heavy:≤2steps/brace;blocked world→drop/pickup;ret≠parry.Bar:batgrip/wallsparks-recoil;GunQ:dry/0finish;far pelvis-foot→/chest←;nearknee.Chestcontrast;wall-edge-end→hide.Win:walk/gun;barE:toilet §7 FP/barL/body-floorR/0react.
+`2026-10-15`HUD:charcoal/bone;aim ammo/reload;HP damage3s/≤25%;stamina full+1s;parry readiness/fade.15-.3;legacy enemyHP/counts. Screen:Lab↖/F8↗/result belowF8;bars/footer↓;render=input.
 ### Принятое исключение — иллюстрации загрузки
 
 [Decision `2026-09-06`](architecture-notes.md): 4 static painterly `AreaLoading`

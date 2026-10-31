@@ -54,7 +54,7 @@ namespace BarPromenade
                 record.Location = CombatWeaponCarryLocation.Stowed;
                 record.Model.SetActive(true);
                 CombatWeaponCarryAssetProvider.PlaceOnMount(record.Model, record.Mount.WeaponDock);
-                UpdateConcealedPistol();
+                UpdateConcealedEquipment();
                 // The receipt has authorized recovery but still owns input during
                 // its finish callback. Retain intent until its deferred unlock.
                 if (BodyDamage.CanUseLeftHand || id == CombatWeaponId.Crowbar && activeCarry.Id == CombatWeaponId.Crowbar)

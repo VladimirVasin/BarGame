@@ -404,6 +404,56 @@ namespace BarPromenade
             return HasStandingClearance(actor.position, actor.rotation);
         }
 
+        internal bool TryYieldStandingBlocker(float seconds, float remainingDistance,
+            out CombatActor blocker, out Vector3 moved)
+        {
+            blocker = null; moved = Vector3.zero;
+            if (npc || !IsComplete || !FeetSupported || ClearanceRefusalCount == 0 ||
+                seconds <= 0f || !float.IsFinite(seconds) || remainingDistance <= 0f) return false;
+            Collider obstacle = clearanceRefusals[0].Obstacle;
+            blocker = obstacle != null ? obstacle.GetComponentInParent<CombatActor>() : null;
+            if (blocker == null || blocker.IsHero || !blocker.IsZombie ||
+                blocker.EnemyKind is not (CombatEnemyKind.Zombie or CombatEnemyKind.Docker) ||
+                !blocker.ZombieAwake || blocker.IsRestrained || blocker.IsKnockedDown || blocker.IsRagdollActive ||
+                blocker.State.IsDefeated || !blocker.BodyDamage.CanStand ||
+                blocker.Body == null || !blocker.Body.enabled || !blocker.isActiveAndEnabled) return false;
+            CharacterController body = blocker.Body;
+            Vector3 before = body.transform.position;
+            Vector3 away = Vector3.ProjectOnPlane(before - actor.position, Vector3.up);
+            if (away.sqrMagnitude < .0001f) away = -actor.forward;
+            away.Normalize();
+            if (!FindFloor(before, out Vector3 sourceFloor, out _)) return false;
+            float distance = Mathf.Min(.65f * Mathf.Min(seconds, .05f), remainingDistance);
+            float radius = Mathf.Max(.08f, body.radius - body.skinWidth);
+            float half = Mathf.Max(0f, body.height * .5f - radius);
+            // Three bounded alternatives, all farther from the supported hero.
+            // Capsule.Move remains the final authority for swept world contact.
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                Vector3 direction = Quaternion.AngleAxis(attempt == 0 ? 0f : attempt == 1 ? 60f : -60f,
+                    Vector3.up) * away;
+                Vector3 candidate = before + direction * distance;
+                if (!FindFloor(candidate + direction * radius, out Vector3 floor, out _) ||
+                    Mathf.Abs(floor.y - sourceFloor.y) > .08f) continue;
+                Vector3 centre = candidate + body.transform.rotation * body.center;
+                int count = OverlapComplete(centre + Vector3.up * half, centre - Vector3.up * half,
+                    radius, out Collider[] hits);
+                bool clear = true;
+                for (int i = 0; i < count; i++)
+                    if (hits[i] != null && !OwnsCollider(hits[i]) && !hits[i].transform.IsChildOf(blocker.transform))
+                    { clear = false; break; }
+                if (!clear) continue;
+                body.Move(direction * distance);
+                moved = Vector3.ProjectOnPlane(body.transform.position - before, Vector3.up);
+                if (moved.sqrMagnitude < .00000001f) continue;
+                blocker.SetLocomotion(moved / seconds);
+                blocker.SetZombieWalking(true);
+                blocker.AdvanceZombieWalkClock(seconds, blocker.PreviewZombieWalkDistance(seconds), moved.magnitude);
+                return true;
+            }
+            return false;
+        }
+
         internal bool TryRecoveryRoot(Vector3 desired, Quaternion rotation, Vector3 lyingPelvis,
             bool hasFloor, Vector3 floorPoint, out Vector3 result)
         {

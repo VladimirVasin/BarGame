@@ -239,10 +239,9 @@ namespace BarPromenade
             }
         }
 
-        private void DrawLegacyPistolHud()
+        private void DrawLegacyPistolHud(Rect rect)
         {
             if (!Hero.IsFirearm || Hero.Firearm == null) return;
-            var rect = new Rect(14, 273, 170, 25);
             RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
             string[] keys = Hero.IsShotgun ? ShotgunHudKeys : PistolHudKeys;
             string ammunition = AmmunitionHudText(LocalizationService.Get(keys[0]), Hero.Firearm.Rounds,

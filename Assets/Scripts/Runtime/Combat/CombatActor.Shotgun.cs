@@ -153,6 +153,10 @@ namespace BarPromenade
             bool wasDefeated = State.IsDefeated;
             MeleeHitResult result = wasDefeated || damage <= 0f ? MeleeHitResult.Hit :
                 State.ReceiveProjectileHit(damage, default, .42f, ProjectileDamageProfile.Shotgun);
+            // The volley has one primary response. Additional pellets and detached
+            // fragments cannot keep restarting the same living body's reaction.
+            if (firstResponse && IsZombie && !wasDefeated && damage <= 0f && !hits[primary].Hit.IsDetached)
+                State.ReceiveImpactStagger(.42f);
             if (result == MeleeHitResult.Ignored) return;
             bool terminal = !wasDefeated && State.IsDefeated;
             if (headIndex >= 0 && State.IsDefeated && !hits[headIndex].Hit.IsDetached) primary = headIndex;

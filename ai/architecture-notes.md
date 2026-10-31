@@ -1,13 +1,17 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-10-31 — crowbar equipment and gait, user:**
+  Inv after-modal draw/stow;hidden bar/holder/dock0.
+  High-R bat/gait;action soles;palm/body;world/warehouse/context
+
 - **Accepted 2026-10-31 — crowbar strike and parry, user:**
-  LMB→fixed forehand/full return;RMB fresh→finite frontparry. Holds never
-  charge/repeat/extend;combo/shove/kick/step0;firearms stay. Authored rig/clip/
-  clock/palms/sweep;one hit/target;wall stop;parry consumes/stops attack;
-  charge API inert/HUD0. Pause/modal/focus/switch/disable cancel/fresh input.
-  Shared/bounded/cost unmeasured. All24 keep GI/SSAO/fog/volume/
-  shadows/grade,ten material/motion/eight post owners;providers+0;§16/21/art§16.
+  LMB:high-R;R.08/L−.005,guardL.38;arms+torso→Ready.
+  .22/.14/.42s;load.11/recoil.36;metal240Hz;yaw22°/hips9°.
+  Pitch−4→8°;weight/feet pinned.
+  Low elbows/fists;overrun/hold;1hit/body;solid stop.
+  RMB finite frontparry;charge/combo/shove/kick/step0;guns stay.
+  Modal/focus/switch/off:freshinput;rig/24FX kept;§16/21/art§16.
 
 - **Accepted 2026-10-31 — second puzzle/crowbar, user:**
   Handle↕;brace;cloth/endstop→catch/unload.
@@ -1034,7 +1038,7 @@
 - **Accepted — 2026-10-14, corpse traversal:**
   CombatTest:auto corpsestep/rigcache;livefall≠corpse/world-weapon phys-lifecycle.
 - **Accepted — 2026-10-13, simple crowbar strike:**
-  Bat:RaboveL/end85mm/hook→;production rig/palms/25mm/12° contacts/0paired DAG.
+  R>L/end85mm/hook→;production rig/palms25mm/12°;paired DAG0.
 - **Accepted — 2026-10-13, diagnostic retention:**
   GameLog:v1/seq-context-IDs/Unity;Editor-dev verbose/release basic/
   batchoff/5MiB+3/F8;cached finals before close/fault-isolated/reset.
@@ -1044,7 +1048,7 @@
   `ai/debug-log.md`.
 
 - **Accepted — 2026-10-13, three-weapon carry:**
-  All3/1held-2stowed/mount-action-ammo/reset/0story.
+  All3/at most1held/rest stowed/mount-action-ammo/reset/0story.
 
 - **Accepted exception 2026-10-13, novice firearms:**
   Hero sway-recoil/regrip/blink-breath/novice§7;
@@ -1062,7 +1066,7 @@
   FPSunmeasured.
 - **Accepted — 2026-10-10, carry mounts:**
   CombatTest:pistol Lchest/M65/holster0cloth/storedhidden-else seen;
-  bar Rbelt/shotgun softsling-back;6stow-draw/rig-model-ammo/0hardmount.
+  shotgun softsling-back;6stow-draw/rig-model-ammo/0hardmount.
 
 - **Accepted — 2026-10-12, ShotgunDraw:**
   Art§15a hand path/offsets/continuous handoffs/pause pose-ammo/stow rig-sling/2×.
@@ -1298,28 +1302,30 @@
   Firstworldhit:chips-sparks/dark hole128FIFO/particles192/shared shader;0damage-pierce/pause-hitstop0/ClearFlights keeps/reset-exit0.
 - **Accepted 2026-10-08, regional hits:**
   Rig/wet/repeat/shared physics-camera.
-- **Accepted 2026-10-07, combat:**
-  NPCfloor/stall→drop;rise≠grip;hits-falls/Eshared/0grant;HPfocus/MMB/reset;
-  pause-hitstop≠lock-reset;firstworld-body/wallrecoil/sparks-SFXpool;
-  firearm Q-Step contacts:art§15a/`CombatActor`.
-- **Accepted 2026-10-02, combat:**
-  Gaze clip-physics;pause-hitstop-defeat/regrip.
+- **Accepted 2026-10-31 — ordinary melee, user:**
+  Hero:.22stun/.45grace/.10m;no fall.
+  Bar:3hits→recoil.12/fall/rise;HP/wounds kept;self veto0.
+  User2026-11-01:tissue.27/surface.32;wide tear;fatal head3sectors.
+  Blood30–42;shared pools;dedup/reset;guns kept;cost unmeasured.
+- **Accepted 2026-10-31 — heavy recovery, user:**
+  Enemy yields≤.8m,floor/world checked;hero rising bar is world-only.
+  Worldblock1.25s→physical prop release/carry pickup;no sealed-geometry guarantee.
 - **Accepted 2026-10-03, combat:**
-  Regrip≤600°/s wrist-elbow-shoulder/body-world-palm;support≠chain.
+  Physical regrip≤600°/s wrist-elbow-shoulder/body-world-palm.
 - **Accepted 2026-09-26, recovery:**
-  Impact≤2steps/flywheel-crouch-brace/pause-hitstop≠defeat/Lowns/Rbody-floor-wall;`CombatWeaponGeometry`:8seg/heldmass→forearm/free→inertia/NPCdrop past capsule→anatomy0/hand-ignore expiry/ROelbow-pronation-5..120/side±8°.
+  Heavy:≤2steps/flywheel-crouch-brace/Lsupport/Rbody-floor-wall;
+  `CombatWeaponGeometry`:8seg/heldmass→forearm/free inertia/NPCdrop beyond
+  capsule→anatomy0/hand-ignore expiry/ROelbow-pronation-5..120/side±8°.
 - **Accepted 2026-09-21, body:**
   6zones/firstseq;barhead×2(50,cap.99MaxHP);torso1-rear1.25/arms.5/legs.75;
   frozen mutual zone-dir/1HP-ragdoll;C1pose-contact/travel-yaw;stance.42/.28m/
   Smoothstep feet;thud/bar pool grows10s/stays.
-- **Accepted 2026-09-20, two hands:**
-  Ready low/defence high;Hit-Defeat release;L opposed/breath4s/blend/injury;ragdoll wins.
 - **Accepted 2026-09-21, duel:**
   Standard barwin→walk/reset;fall freecam/shared damage-time.
 - **Accepted exception 2026-09-21, taunt:**
   Standard E/settled defeat:Home toilet/view-timeline-stream-residue;Guided dock/aim/bone-floor;barL/§21-exempt silent/0speech-reaction-reward/6th FP.
 - **Accepted exception 2026-09-19, CombatTest:**
-  §6/§16.15/art§15a:input/hits-steps vulnerable/fall/reset/shoulder-wall;W-Swalk/A-Dstrafe.
+  §6/§16.15/art§15a:shared input/damage/reset/shoulder-wall camera.
 
 - **Accepted — 2026-09-15, default NPC catalog:**
   `DefaultNpcCatalog`:allowlist;extensions/bespoke:user request.

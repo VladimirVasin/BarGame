@@ -83,6 +83,9 @@ namespace BarPromenade
         private readonly Vector3[] fallbackBasePositions;
         private readonly Quaternion[] fallbackBaseRotations;
         private bool fullPoseApplied, contactPreview, pendingCommit, checkingDesiredPath;
+        private bool UsesWorldOnlyClearance => actor.UsesAuthoredCrowbarPose ||
+            actor.IsHero && actor.WeaponId == CombatWeaponId.Crowbar && actor.HasWeaponInHand &&
+            !actor.IsWeaponInLeftHand && actor.Ragdoll.IsRecovering;
         private Vector3 escapeAxis;
         private float escapeAngle;
         internal bool RightWristWithinLimits => RightWristCanHold(hand.rotation);
@@ -97,6 +100,8 @@ namespace BarPromenade
         private bool requestedOwnGeometryBlocked;
         internal bool Blocked { get; private set; }
         internal bool WorldBlocked { get; private set; }
+        internal bool RecoveryWorldObstructed => UsesWorldOnlyClearance &&
+            (WorldBlocked || BlockingCollider != null && WorldObstacle(BlockingCollider) || BlockingShape == "supporting floor");
         internal float WorldContactFraction { get; private set; } = float.PositiveInfinity;
         internal Vector3 WorldContactPoint { get; private set; }
         internal Vector3 WorldContactNormal { get; private set; }
@@ -301,6 +306,7 @@ namespace BarPromenade
             if (weapon == null || actor.IsWeaponDropped ||
                 (actor.IsRagdollActive && !actor.Ragdoll.IsRecovering)) { Forget(); return; }
             Restore();
+            actor.BindHeldCrowbarPose();
             pendingCommit = false;
             MotionBlocked = false;
             SupportBlocked = false;
@@ -313,7 +319,7 @@ namespace BarPromenade
             remainingCandidateChecks = MaximumCandidateChecksPerApply - 1;
             applied = true;
             GatherObstacles();
-            using var coreSnapshot = armClearance.BeginWeaponSolve();
+            using var coreSnapshot = UsesWorldOnlyClearance ? default : armClearance.BeginWeaponSolve();
             escapeAngle = 0f;
             WorldBlocked = false;
             WorldContactFraction = float.PositiveInfinity;
@@ -336,7 +342,8 @@ namespace BarPromenade
             // A held two-handed bar has one reachable pose. Probe the frozen
             // supporting arm after the right arm's collision gates, including
             // contact previews, so sampled and presented weapon paths agree.
-            bool constrainSupport = actor.SupportGrip != null && actor.SupportGrip.RequiresWeaponSupportConstraint;
+            bool constrainSupport = !UsesWorldOnlyClearance && actor.SupportGrip != null &&
+                actor.SupportGrip.RequiresWeaponSupportConstraint;
             SupportBlocked = !Blocked && constrainSupport && !actor.SupportGrip.IsWeaponSupportPoseGeometricallyFeasible();
             if (SupportBlocked)
             {
@@ -531,7 +538,7 @@ namespace BarPromenade
                 float finalDepth = Depth();
                 bool finalSweepBlocked = finalDepth <= 0f && hasLast && !SweepClear(lastWeapon, WeaponPose);
                 bool clear = finalDepth <= 0f && !finalSweepBlocked;
-                if (!clear && support != null)
+                if (!clear && support != null && !UsesWorldOnlyClearance)
                 {
                     // A blocked supporting reach opens the hand; it cannot push its
                     // forearm through the bar merely to satisfy a two-handed socket.
@@ -553,7 +560,11 @@ namespace BarPromenade
                 if (!contactPreview) support?.CommitPresentedContact(clear);
                 JournalConstraint(clear ? "committed" : "commit_rejected");
             }
-            finally { ClearAnatomyReuse(); }
+            finally
+            {
+                if (!contactPreview) actor.CommitHeldCrowbarBodyPose();
+                ClearAnatomyReuse();
+            }
         }
 
         private void RestoreLastSafePose()
@@ -636,6 +647,9 @@ namespace BarPromenade
             // run. Keep it separate from world obstacles: these sets cannot overlap
             // and adding every body with List.Contains made population work quadratic.
             otherDepthShapes.Clear();
+            // Targets are resolved by the real metal sweep. Their capsules and
+            // our own rig must not reshape the player's accepted action first.
+            if (UsesWorldOnlyClearance) { otherSnapshotReady = false; return; }
             for (int i = 0; i < otherAnatomy.Count; i++)
             {
                 ObserveOtherGeneration(i);
@@ -655,7 +669,7 @@ namespace BarPromenade
         private float CandidateDepth()
         {
             CandidateChecks++;
-            if (!armClearance.IsClear())
+            if (!UsesWorldOnlyClearance && !armClearance.IsClear())
             {
                 if (checkingDesiredPath) requestedOwnGeometryBlocked = true;
                 // A body correction must not hide a simultaneous wall contact
@@ -694,7 +708,7 @@ namespace BarPromenade
                 depthShapes.Add(shape.WithQuery(anatomyQueries.Prepare(shape.Collider))); OtherAnatomyDepthCandidates++;
             }
             foreach (Collider shape in anatomy)
-                if (shape != null && actor.Ragdoll.PhysicsController.IsCombatAnatomicalQueryAllowed(shape))
+                if (!UsesWorldOnlyClearance && shape != null && actor.Ragdoll.PhysicsController.IsCombatAnatomicalQueryAllowed(shape))
                 {
                     var live = new DepthShape(shape, false, actor);
                     if (live.Bounds.Intersects(weaponBounds))
@@ -845,13 +859,14 @@ namespace BarPromenade
             float angle = Quaternion.Angle(from.rotation, to.rotation);
             float weaponTravel = Vector3.Distance(from.position, to.position) + angle * Mathf.Deg2Rad * .7f;
             Bounds travelBounds = BuildSegmentSweepBounds(from, to, angle);
-            bool reuseAnatomy = CanReuseAnatomySweep(from, to);
-            if (reuseAnatomy) RepeatedAnatomySweepsAvoided++;
+            bool worldOnly = UsesWorldOnlyClearance;
+            bool reuseAnatomy = worldOnly || CanReuseAnatomySweep(from, to);
+            if (reuseAnatomy && !worldOnly) RepeatedAnatomySweepsAvoided++;
             // The exact live-input guard proves these derived bounds/travel too.
             // Reusing only native query results would still rebuild every body
             // primitive and segment pair again during the final commit.
-            float bodyTravel = reuseAnatomy ? clearAnatomyBodyTravel : 0f;
-            bool nearOther = reuseAnatomy && clearAnatomyNearOther;
+            float bodyTravel = reuseAnatomy && !worldOnly ? clearAnatomyBodyTravel : 0f;
+            bool nearOther = reuseAnatomy && !worldOnly && clearAnatomyNearOther;
             bool rightForearmPrepared = false;
             if (!reuseAnatomy)
             {

@@ -45,6 +45,16 @@ namespace BarPromenade
             BodyEffects?.Apply(impact);
             BodyImpactTicks += System.Diagnostics.Stopwatch.GetTimestamp() - bodyStart;
             if (!impact.PrimaryResponse) return;
+            if (impact.Kind == CombatImpactKind.Weapon && impact.Result == MeleeHitResult.Hit &&
+                impact.Target != null && !impact.Target.State.IsDefeated && !impact.DetachedPart &&
+                (impact.Target.ImpactMotion?.UsesCrowbarContactReaction ?? false))
+            {
+                // PublishImpact has committed the directional compression. Show
+                // it before stopping the duel, including its interrupted attack.
+                long presentationStart = System.Diagnostics.Stopwatch.GetTimestamp();
+                impact.Target.Present();
+                ImpactPresentationTicks += System.Diagnostics.Stopwatch.GetTimestamp() - presentationStart;
+            }
             // Weight is time: a few frozen substeps and a small kick on the shoulder
             // camera, graded by what happened. A killing blow holds longest.
             bool heavy = impact.AttackPower >= .5f;

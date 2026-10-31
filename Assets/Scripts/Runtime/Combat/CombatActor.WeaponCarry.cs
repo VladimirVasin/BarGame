@@ -34,6 +34,7 @@ namespace BarPromenade
         private CarriedWeaponRecord activeCarry, carryAction, interruptedShotgunDraw;
         private CombatWeaponId? requestedCarry;
         private bool carryDraw, carryTransferred, carrySettling, resettingCarry, disposingCarry;
+        private bool requestedStow, initiallyStowedCarry;
         private float carryElapsed, carrySettleElapsed;
         private int carryTerminalFrame = -1;
         private int shotgunDrawStage;
@@ -63,7 +64,7 @@ namespace BarPromenade
         }
         public bool HasWeaponInHand => activeCarry == null ? !weaponDropped && Weapon != null :
             activeCarry.Location == CombatWeaponCarryLocation.Held;
-        private bool HasWeaponSwitchRequest => IsSwitchingWeapon || WeaponCarryRecoveryPending || requestedCarry.HasValue;
+        private bool HasWeaponSwitchRequest => IsSwitchingWeapon || WeaponCarryRecoveryPending || requestedCarry.HasValue || requestedStow;
         public CombatWeaponId? WeaponCarryActionWeapon => carryAction?.Id;
         public bool WeaponCarryActionIsDraw => carryDraw;
         public float WeaponCarryActionProgress => carryAction == null ? 0f : Mathf.Clamp01(
@@ -88,6 +89,7 @@ namespace BarPromenade
         private void InitializeWeaponCarry(CombatLoadoutSelection selection, bool initiallyStowed)
         {
             LoadoutSelection = selection;
+            initiallyStowedCarry = initiallyStowed;
             carriedWeapons = new CarriedWeaponRecord[3];
             if (selection.Contains(CombatWeaponId.Pistol)) carriedWeapons[0] = CreateCarriedWeapon(CombatWeaponId.Pistol);
             if (selection.Contains(CombatWeaponId.Crowbar)) carriedWeapons[1] = CreateCarriedWeapon(CombatWeaponId.Crowbar);
@@ -170,7 +172,24 @@ namespace BarPromenade
         {
             if (record.Id == CombatWeaponId.Shotgun) CombatShotgunAssetProvider.PlaceShotgun(record.Model, record.Grip, handPose);
             else if (record.Id == CombatWeaponId.Pistol) CombatPistolAssetProvider.PlacePistol(record.Model, record.Grip, handPose);
-            else CombatAssetProvider.PlaceCrowbar(record.Model, record.Grip, handPose, false);
+            else CombatAssetProvider.PlaceCrowbar(record.Model, record.Grip, handPose, false, CrowbarGripStation);
+        }
+
+        internal void BindHeldCrowbarPose()
+        {
+            if (hero == null || IsFirearm || weaponDropped || IsWeaponInLeftHand || IsRagdollActive ||
+                Weapon == null || weaponGrip == null || !HasWeaponInHand) return;
+            CombatAssetProvider.PlaceCrowbar(Weapon, weaponGrip, handPose, false, CrowbarGripStation);
+        }
+
+        internal void CommitHeldCrowbarBodyPose()
+        {
+            if (hero == null || IsFirearm || weaponDropped || IsRagdollActive ||
+                weaponBody == null || !weaponBody.isKinematic || !HasWeaponInHand) return;
+            // Like the pistol, the parented kinematic prop publishes the final
+            // rendered palm pose even between physics steps and carry handoffs.
+            weaponBody.position = Weapon.transform.position;
+            weaponBody.rotation = Weapon.transform.rotation;
         }
 
         public bool TrySelectWeapon(CombatWeaponId id)
@@ -184,6 +203,7 @@ namespace BarPromenade
                 !isActiveAndEnabled ? "disabled" : !GameInput.CanRead(GameInputContext.Gameplay) ? "input_gate" : null;
             if (reason != null) { JournalWeaponCarry("request", record, reason); return false; }
             JournalWeaponCarry("request", record);
+            requestedStow = false;
             if (!IsSwitchingWeapon && !requestedCarry.HasValue && activeCarry == record && HasWeaponInHand) return true;
             requestedCarry = id;
             journalCarryQueuedRequest = request;
@@ -191,6 +211,23 @@ namespace BarPromenade
             guardHeld = false; State.SetBlocking(false); State.CancelParry();
             State.CancelCharge(); State.CancelBufferedAction(State.BufferedAction);
             CancelPendingKick("weapon_selection");
+            TryBeginPendingWeaponCarry();
+            return true;
+        }
+
+        /// <summary>Queue a visible return to storage; the latest draw/stow request wins.</summary>
+        public bool TryStowWeapon()
+        {
+            if (activeCarry == null || resettingCarry || disposingCarry || !isActiveAndEnabled ||
+                State.IsDefeated || IsKnockedDown || IsRagdollActive || !BodyDamage.CanUseRightHand ||
+                !GameInput.CanRead(GameInputContext.Gameplay)) return false;
+            journalCarryQueuedRequest = JournalCommand("stow_weapon");
+            requestedCarry = null;
+            requestedStow = IsSwitchingWeapon || HasWeaponInHand;
+            CancelPendingPistolShot("weapon_stow"); SetPistolAim(false);
+            guardHeld = false; State.SetBlocking(false); State.CancelParry();
+            State.CancelCharge(); State.CancelBufferedAction(State.BufferedAction);
+            CancelPendingKick("weapon_stow");
             TryBeginPendingWeaponCarry();
             return true;
         }
@@ -226,6 +263,12 @@ namespace BarPromenade
             if (WeaponCarryRecoveryPending)
             {
                 if (BodyDamage.CanUseLeftHand) ResumeInterruptedShotgunDraw();
+                return;
+            }
+            if (requestedStow)
+            {
+                if (HasWeaponInHand) BeginWeaponCarryPhase(activeCarry, false);
+                else requestedStow = false;
                 return;
             }
             if (!requestedCarry.HasValue) return;
@@ -291,7 +334,7 @@ namespace BarPromenade
         {
             bool contextual = externalOwner != null && ReferenceEquals(doorWeaponStowDriver, externalOwner);
             if (doorWeaponStowDriver != null && !contextual) return;
-            UpdateConcealedPistol();
+            UpdateConcealedEquipment();
             if (carriedWeapons == null || presentationFrozen ||
                 !contextual && (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused)) return;
             foreach (CarriedWeaponRecord record in carriedWeapons)
@@ -317,7 +360,7 @@ namespace BarPromenade
                 if (drew)
                 {
                     ReleaseStandingPresentation();
-                    freeLocomotionReleased = !CombatFocused;
+                    freeLocomotionReleased = !NeedsCombatPresentation;
                 }
                 else ReleasePresentation(preservePresentedPose: true);
                 CombatWeaponCarryAssetProvider.SetJacketAccess(hero.Registry, 0f);
@@ -374,7 +417,7 @@ namespace BarPromenade
                 }
                 carryTransferred = true;
                 JournalWeaponCarry("transfer", carryAction);
-                UpdateConcealedPistol();
+                UpdateConcealedEquipment();
             }
             carryElapsed = next;
             if (next + .000001f >= duration) carryTerminalFrame = Time.frameCount;
@@ -416,6 +459,8 @@ namespace BarPromenade
             motor.ReleaseMovementConstraint(this);
             motor.SetOwnedMovementConstraint(this, 1f, 1f, sprintBlocked: true);
             hero.ReapplyLatePresentationPose();
+            BindHeldCrowbarPose();
+            CommitHeldCrowbarBodyPose();
             hero.RememberOwnedRecoveryPose(this, poseClock);
             RefreshShotgunSling();
             return true;
@@ -425,6 +470,7 @@ namespace BarPromenade
         {
             ReleaseDoorWeaponStowDriver();
             requestedCarry = null;
+            requestedStow = false;
             bool lifecycle = resettingCarry || disposingCarry;
             if (lifecycle) ClearInterruptedShotgunDraw();
             if (!IsSwitchingWeapon) return WeaponCarryRecoveryPending;
@@ -469,8 +515,11 @@ namespace BarPromenade
                 CombatWeaponCarryAssetProvider.PlaceOnMount(record.Model, record.Mount.WeaponDock);
             }
             BindCarriedWeapon(FindCarriedWeapon(LoadoutSelection.InitialHeld));
-            activeCarry.Location = CombatWeaponCarryLocation.Held; weaponDropped = false;
-            PlaceCarriedWeaponInHand(activeCarry);
+            if (!initiallyStowedCarry)
+            {
+                activeCarry.Location = CombatWeaponCarryLocation.Held; weaponDropped = false;
+                PlaceCarriedWeaponInHand(activeCarry);
+            }
             pistolHandMagazine?.SetActive(false); shotgunHandShell?.SetActive(false);
             resettingCarry = false;
             RefreshShotgunSling();
@@ -501,6 +550,7 @@ namespace BarPromenade
                 record.Model.SetActive(active);
                 record.Mount.Root.SetActive(active);
             }
+            UpdateConcealedEquipment();
         }
 
         private void OnEnable()
@@ -508,7 +558,7 @@ namespace BarPromenade
             CombatCorpseTraversal.RegisterActor(this);
             if (carriedWeapons == null || hero == null) return;
             RegisterWeaponEquipment(hero.Registry.GetComponent<PlayerEquipmentContacts>());
-            UpdateConcealedPistol();
+            UpdateConcealedEquipment();
         }
 
         private void RegisterWeaponEquipment(PlayerEquipmentContacts equipment)
@@ -517,14 +567,24 @@ namespace BarPromenade
             // Concealed chest gear does not drive jacket cloth. The authored
             // hand opens the coat; no inflated collision envelope is needed.
             CarriedWeaponRecord pistol = FindCarriedWeapon(CombatWeaponId.Pistol);
-            equipment.Register(this, pistol != null
-                    ? new[] { pistol.Model.transform, pistol.Mount.Root.transform } : Array.Empty<Transform>(),
+            CarriedWeaponRecord crowbar = FindCarriedWeapon(CombatWeaponId.Crowbar);
+            // The concealed bar is parented under its excluded dock. Once it
+            // enters the palm it participates in equipment contacts normally.
+            equipment.Register(this, new[] { pistol?.Model.transform, pistol?.Mount.Root.transform,
+                    crowbar?.Mount.Root.transform },
                 carriedWeapons[0]?.Model, carriedWeapons[1]?.Model, carriedWeapons[2]?.Model,
                 carriedWeapons[0]?.Mount.Root, carriedWeapons[1]?.Mount.Root, carriedWeapons[2]?.Mount.Root);
         }
 
-        private void UpdateConcealedPistol()
+        private void UpdateConcealedEquipment()
         {
+            CarriedWeaponRecord crowbar = FindCarriedWeapon(CombatWeaponId.Crowbar);
+            if (crowbar != null)
+            {
+                SetConcealedRendering(crowbar.ModelRenderers, crowbar.ModelForcedOff,
+                    crowbar.Location == CombatWeaponCarryLocation.Stowed);
+                SetConcealedRendering(crowbar.MountRenderers, crowbar.MountForcedOff, true);
+            }
             CarriedWeaponRecord pistol = FindCarriedWeapon(CombatWeaponId.Pistol);
             if (pistol == null || hero == null) return;
             PlayerWardrobe wardrobe = hero.Registry.GetComponentInParent<PlayerWardrobe>();
@@ -586,7 +646,7 @@ namespace BarPromenade
 
         private void RefreshShotgunSling()
         {
-            UpdateConcealedPistol();
+            UpdateConcealedEquipment();
             FindCarriedWeapon(CombatWeaponId.Shotgun)?.Sling?.RequestPresent();
         }
     }

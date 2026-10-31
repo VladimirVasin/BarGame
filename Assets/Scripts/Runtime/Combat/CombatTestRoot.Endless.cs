@@ -253,18 +253,16 @@ namespace BarPromenade
             return true;
         }
 
-        private void DrawEndlessStatus()
+        private void DrawEndlessStatus(Rect rect)
         {
             if (Mode != CombatTestMode.Endless) return;
-            RetroUiTheme.DrawPanel(new Rect(14, 10, 130, 22), RetroUiTheme.PanelInset,
+            RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset,
                 RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
-            GUI.Label(new Rect(20, 12, 120, 18), LocalizationService.Get("combat.mode.endless"), small);
-            GUI.Label(new Rect(14, 36, 138, 18), string.Format(LocalizationService.Get("combat.enemies.live"),
+            GUI.Label(CombatHudLayout.Row(rect, 6, 3, 128), LocalizationService.Get("combat.mode.endless"), small);
+            GUI.Label(CombatHudLayout.Row(rect, 138, 3, 86), string.Format(LocalizationService.Get("combat.enemies.live"),
                 LiveOpponentCount, EncounterSettings.MaximumLiveOpponents), small);
-            if (EndlessRunFinished)
-                GUI.Label(new Rect(156, 36, 460, 18), LocalizationService.Get("combat.endless.finished"), small);
-            else if (WaitingForNextOpponent)
-                GUI.Label(new Rect(156, 36, 460, 18), NextOpponentHudText(), small);
+            if (!EndlessRunFinished && WaitingForNextOpponent)
+                GUI.Label(CombatHudLayout.Row(rect, 6, 25, 218), NextOpponentHudText(), small);
         }
 
         private string NextOpponentHudText()

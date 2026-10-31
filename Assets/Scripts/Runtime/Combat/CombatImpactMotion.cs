@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>One duel-clock momentum and support response for both rigs. Applying a pose is read-only.
+    /// <summary>Finite standing melee responses; heavy impacts retain momentum and support recovery. Applying a pose is read-only.
     /// Momentum is in N s, velocities in metres/radians per second; HP never scales this response.</summary>
     public sealed partial class CombatImpactMotion
     {
@@ -12,7 +12,7 @@ namespace BarPromenade
         // Retain the rejected prototype for a controlled visual comparison.
         // Configure only on an idle/reset actor; gameplay uses the minimal response.
         internal bool ExperimentalRecovery { get; set; }
-        internal int MaximumRecoverySteps => ExperimentalRecovery ? 3 : 2;
+        internal int MaximumRecoverySteps => UsesStandingResponse ? 0 : ExperimentalRecovery ? 3 : 2;
         private readonly Transform[] bones;
         private readonly Vector3[] basePositions, localRotation, localVelocity;
         private readonly Quaternion[] baseRotations;
@@ -20,6 +20,11 @@ namespace BarPromenade
         private Vector3 velocity, rotation, angularVelocity;
         private float age = 10f, overload, drop, dropVelocity, legWeakness;
         private int struckBone = 2;
+        private bool standingResponse, standingCrowbarContact;
+        private float standingDuration, standingDistance, standingSnap;
+        private Vector3 standingDirection, standingFromRotation, standingPeakRotation;
+        internal bool UsesStandingResponse => standingResponse;
+        internal bool UsesCrowbarContactReaction => standingResponse && standingCrowbarContact;
         public Vector3 Velocity => velocity;
         public Vector3 AngularVelocity => angularVelocity;
         public Vector3 Rotation => rotation;
@@ -27,7 +32,8 @@ namespace BarPromenade
         public float BalanceLoad { get; private set; }
         public float Age => age;
         public bool WantsKnockdown { get; private set; }
-        public bool IsActive => ProjectileReactionActive || age < .9f || velocity.sqrMagnitude > .0025f || rotation.sqrMagnitude > .0001f ||
+        public bool IsActive => standingResponse ? age < standingDuration :
+            ProjectileReactionActive || age < .9f || velocity.sqrMagnitude > .0025f || rotation.sqrMagnitude > .0001f ||
             recoveryStepActive || (ExperimentalRecovery && flywheelAngle.sqrMagnitude > .0004f);
         public float ReactionAmount => Mathf.Clamp01(Mathf.Max(rotation.magnitude * 2f, velocity.magnitude / 2f));
         public MeleeBodyRegion StruckRegion { get; private set; }
@@ -64,6 +70,7 @@ namespace BarPromenade
         {
             if (!Finite(impact.Impulse) || impact.Impulse.sqrMagnitude < .0001f) return;
             bool fresh = !IsActive;
+            standingResponse = standingCrowbarContact = false;
             BeginBalanceResponse(fresh, stamina01, intoxication01);
             LastImpact = impact; age = 0f;
             StruckRegion = impact.Location.Region;
@@ -99,15 +106,74 @@ namespace BarPromenade
             MeasureBalance();
         }
 
+        internal void HitStanding(CombatImpact impact, bool hero)
+        {
+            // A light hit cannot replace an already committed heavy reaction.
+            if (!standingResponse && IsActive) return;
+            Vector3 direction = Vector3.ProjectOnPlane(impact.Direction, Vector3.up);
+            if (!Finite(direction) || direction.sqrMagnitude < .000001f)
+                direction = Vector3.ProjectOnPlane(impact.Impulse, Vector3.up);
+            if (!Finite(direction) || direction.sqrMagnitude < .000001f) return;
+            bool blocked = impact.Result == MeleeHitResult.Blocked;
+            standingResponse = true;
+            standingCrowbarContact = !hero && impact.Target != null && impact.Target.IsZombie && !impact.Target.State.IsDefeated &&
+                impact.Source != null && impact.Source.IsHero && impact.Source.WeaponId == CombatWeaponId.Crowbar &&
+                impact.Kind == CombatImpactKind.Weapon && impact.Result == MeleeHitResult.Hit &&
+                impact.PrimaryResponse && !impact.DetachedPart;
+            standingDirection = direction.normalized;
+            standingDuration = hero ? .30f : standingCrowbarContact ? .62f : .38f;
+            standingDistance = (hero ? .10f : standingCrowbarContact ? .42f : .22f) * (blocked ? .25f : 1f);
+            standingSnap = hero ? .055f : standingCrowbarContact ? .06f : .07f;
+            standingFromRotation = rotation;
+            standingPeakRotation = Vector3.Cross(Vector3.up, standingDirection) *
+                ((hero ? .075f : standingCrowbarContact ? .76f : .12f) * (blocked ? .4f : 1f));
+            // The contact frame already breaks the attacking silhouette. The
+            // paused body is visibly struck before its head and arms whip back.
+            if (standingCrowbarContact)
+                rotation = standingFromRotation = Vector3.Lerp(rotation, standingPeakRotation, .70f);
+            LastImpact = impact; StruckRegion = impact.Location.Region; age = 0f;
+            velocity = standingDirection * (3f * standingDistance / standingDuration);
+            angularVelocity = Vector3.zero;
+            drop = dropVelocity = legWeakness = overload = BalanceLoad = 0f;
+            CaptureOffset = Vector3.zero; WantsKnockdown = false;
+            Array.Clear(localRotation, 0, localRotation.Length);
+            Array.Clear(localVelocity, 0, localVelocity.Length);
+            CancelRecoveryStep(); ClearHandSupport(); CancelMovementLanding();
+            ResetProjectileReaction();
+            RecoverySequence++;
+        }
+
+        private Vector3 AdvanceStanding(float seconds)
+        {
+            float before = Mathf.Clamp01(age / standingDuration);
+            float remainingBefore = 1f - before;
+            age = Mathf.Min(standingDuration, age + seconds);
+            float remainingAfter = 1f - age / standingDuration;
+            Vector3 displacement = standingDirection * standingDistance *
+                (remainingBefore * remainingBefore * remainingBefore - remainingAfter * remainingAfter * remainingAfter);
+            Vector3 previousRotation = rotation;
+            float release = standingCrowbarContact ? .13f : standingSnap;
+            rotation = age <= standingSnap
+                ? Vector3.Lerp(standingFromRotation, standingPeakRotation, Mathf.SmoothStep(0f, 1f, age / standingSnap))
+                : standingPeakRotation * (1f - Mathf.SmoothStep(0f, 1f,
+                    (age - release) / (standingDuration - release)));
+            velocity = standingDirection * (3f * standingDistance / standingDuration * remainingAfter * remainingAfter);
+            angularVelocity = (rotation - previousRotation) / seconds;
+            if (age >= standingDuration) velocity = rotation = angularVelocity = Vector3.zero;
+            return displacement;
+        }
+
         public void Push(Vector3 momentum)
         {
             if (!Finite(momentum)) return;
+            standingResponse = standingCrowbarContact = false;
             velocity = Vector3.ClampMagnitude(velocity + Vector3.ProjectOnPlane(momentum, Vector3.up) / BodyMass, 4.2f);
         }
 
         public Vector3 Advance(float seconds)
         {
             if (!float.IsFinite(seconds) || seconds <= 0f) return Vector3.zero;
+            if (standingResponse) return AdvanceStanding(seconds);
             // Last tick's pressure was already integrated. A moved/removed
             // surface must be measured again before it can supply new support.
             ClearHandSupport();
@@ -144,6 +210,7 @@ namespace BarPromenade
             if (refused.magnitude < .002f || velocity.sqrMagnitude < .001f) return;
             Vector3 normal = refused.normalized;
             velocity -= normal * Mathf.Max(0f, Vector3.Dot(velocity, normal));
+            if (standingResponse) standingDirection = Vector3.zero;
             // A wall takes the blocked momentum. Never bank refused distance for a later frame.
         }
 
@@ -153,6 +220,18 @@ namespace BarPromenade
             if (!IsActive) return;
             for (int i = 0; i < bones.Length; i++) { basePositions[i] = bones[i].localPosition; baseRotations[i] = bones[i].localRotation; }
             applied = true;
+            if (standingResponse)
+            {
+                if (standingCrowbarContact)
+                {
+                    ApplyCrowbarContactPose();
+                    return;
+                }
+                Rotate(1, rotation * .35f);
+                Rotate(2, rotation * .65f);
+                Rotate(3, rotation * -.12f);
+                return;
+            }
             bones[0].position += ProjectileWeightShift + Vector3.up * Mathf.Max(ProjectileReactionActive ? -.20f : -.16f,
                 drop - .055f * Mathf.Clamp01(BalanceLoad) - .055f * legWeakness - ProjectilePelvisDrop);
             // These are successive joints in one spine, so their bends add.
@@ -170,6 +249,44 @@ namespace BarPromenade
                 AnatomicalRotation(i, localRotation[i]) * (i <= 2 ? torsoScale : 1f));
             ApplyProjectileReaction(torsoScale);
             if (ExperimentalRecovery) ApplyCounterBalancePose();
+        }
+
+        private void ApplyCrowbarContactPose()
+        {
+            // Layer on the authored hit, whose own spine recoil is only twelve
+            // degrees. The legs keep their planted IK while the torso yields.
+            float body = CrowbarResponseEnvelope(.06f, .70f, .13f);
+            bones[0].position -= Vector3.up * (.09f * body);
+            Rotate(1, rotation * .35f);
+            Rotate(2, rotation * .65f);
+
+            Vector3 axis = standingPeakRotation.normalized;
+            Vector3 direction = Vector3.Cross(axis, Vector3.up);
+            // The head briefly trails the shoulders, then overtakes them. This
+            // is relative neck motion, not an extra turn of the actor root.
+            float head = age <= .10f
+                ? Mathf.Lerp(-.12f, .45f, Mathf.SmoothStep(0f, 1f, age / .10f))
+                : .45f * (1f - Mathf.SmoothStep(0f, 1f, (age - .15f) / (standingDuration - .15f)));
+            Rotate(3, axis * (head * .4f));
+            Rotate(4, axis * (head * .6f));
+
+            float arms = CrowbarResponseEnvelope(.085f, .60f, .15f);
+            ApplyCrowbarArmFling(5, 6, direction - frame.right * .7f + Vector3.up * .35f,
+                arms * (StruckRegion == MeleeBodyRegion.RightArm ? 1f : 1.13f));
+            ApplyCrowbarArmFling(8, 9, direction + frame.right * .7f + Vector3.up * .35f,
+                arms * (StruckRegion == MeleeBodyRegion.LeftArm ? 1f : 1.08f));
+        }
+
+        private float CrowbarResponseEnvelope(float peak, float initial, float release) => age <= peak
+            ? Mathf.Lerp(initial, 1f, Mathf.SmoothStep(0f, 1f, age / peak))
+            : 1f - Mathf.SmoothStep(0f, 1f, (age - release) / (standingDuration - release));
+
+        private void ApplyCrowbarArmFling(int shoulder, int elbow, Vector3 direction, float radians)
+        {
+            // Swing the real upper-arm segment toward the impact/outward vector;
+            // never twist its local axes or replace the authored elbow hinge.
+            Vector3 axis = Vector3.Cross(bones[elbow].position - bones[shoulder].position, direction);
+            if (axis.sqrMagnitude > .000001f) Rotate(shoulder, axis.normalized * radians);
         }
 
         private static int ResponseBone(int contactBone) => contactBone switch
@@ -211,6 +328,9 @@ namespace BarPromenade
             Restore(); velocity = rotation = angularVelocity = Vector3.zero;
             Array.Clear(localRotation, 0, localRotation.Length); Array.Clear(localVelocity, 0, localVelocity.Length);
             age = 10f; overload = drop = dropVelocity = legWeakness = BalanceLoad = 0f; CaptureOffset = Vector3.zero;
+            standingResponse = standingCrowbarContact = false;
+            standingDuration = standingDistance = standingSnap = 0f;
+            standingDirection = standingFromRotation = standingPeakRotation = Vector3.zero;
             LastImpact = default; StruckRegion = default; struckBone = 2;
             ResetProjectileReaction();
             ResetBalance();

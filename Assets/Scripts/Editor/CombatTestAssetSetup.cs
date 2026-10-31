@@ -133,7 +133,8 @@ namespace BarPromenade.Editor
                 if (matches.Length != 1 || matches[0].empty || matches[0].length <= 0f)
                     throw new InvalidOperationException("Combat import requires one nonempty animation: " + path + "/" + name);
                 AnimationClip clip = matches[0];
-                float duration = zombie ? CombatZombieAssetProvider.ClipDuration(name) : CombatAssetProvider.ClipDuration(name);
+                float duration = zombie ? CombatZombieAssetProvider.ClipDuration(name) :
+                    CombatAssetProvider.ClipDuration(name, path == Folder + "CombatNpcActions.fbx");
                 bool looping = zombie ? CombatZombieAssetProvider.IsLoop(name) : CombatAssetProvider.IsLoop(name);
                 if (Mathf.Abs(clip.length - duration) > .003f || clip.isLooping != looping || clip.events.Length != 0)
                     throw new InvalidOperationException("Combat import changed animation clock/loop/events: " + path + "/" + name);
@@ -538,7 +539,7 @@ namespace BarPromenade.Editor
                 }
                 animator.enabled = false;
                 NpcHandPose handPose = grip.GetComponentInParent<NpcHandPose>();
-                GameObject bar = CombatAssetProvider.CreateCrowbar(grip, handPose);
+                GameObject bar = CombatAssetProvider.CreateCrowbar(grip, handPose, npc ? 0f : CombatAssetProvider.RightGripStation);
                 handPose.SetGrip(false, 1f);
                 Transform tip = CombatAssetProvider.FindAnchor(bar, "StrikeTip");
                 Transform origin = CombatAssetProvider.FindAnchor(bar, "Grip");
@@ -547,7 +548,7 @@ namespace BarPromenade.Editor
                 if (!npc && simpleStrike)
                 {
                     ready.SampleAnimation(animator.gameObject, 0f);
-                    CombatAssetProvider.PlaceCrowbar(bar, grip, handPose, false);
+                    CombatAssetProvider.PlaceCrowbar(bar, grip, handPose, false, npc ? 0f : CombatAssetProvider.RightGripStation);
                     ValidateTwoHandContact(handPose, bar.transform, "baseball Ready");
                     ValidateCrowbarHookForward(bar.transform, origin, tip, actor.transform);
                     if (Vector3.Dot(bar.transform.up, actor.transform.up) < .70f)
@@ -568,23 +569,26 @@ namespace BarPromenade.Editor
                     CompareReadyEndpoint(attack, 0f, ready, 0f, animator, bones, names.Attack + " entry");
                     CompareReadyEndpoint(attack, attack.length, ready, 0f, animator, bones, names.Attack + " exit");
                     float reach = 0f, travel = 0f;
-                    attack.SampleAnimation(animator.gameObject, simpleStrike ? .30f : .45f);
-                    CombatAssetProvider.PlaceCrowbar(bar, grip, handPose, false);
+                    attack.SampleAnimation(animator.gameObject, simpleStrike ? CombatAssetProvider.CrowbarShoulderLoadSeconds : .45f);
+                    CombatAssetProvider.PlaceCrowbar(bar, grip, handPose, false, npc ? 0f : CombatAssetProvider.RightGripStation);
                     Vector3 windup = actor.transform.InverseTransformPoint(tip.position);
-                    if (simpleStrike && windup.z > -.10f)
+                    if (simpleStrike && windup.z > -.09f)
                         throw new InvalidOperationException($"Combat crowbar does not load behind the shoulder: " +
                             $"tip={windup:F5}, grip={actor.transform.InverseTransformPoint(origin.position):F5}, " +
                             $"axis={actor.transform.InverseTransformDirection(bar.transform.up):F5}, " +
                             $"hook={actor.transform.InverseTransformDirection(bar.transform.forward):F5}.");
                     if (simpleStrike) ValidateCrowbarHookForward(bar.transform, origin, tip, actor.transform);
-                    for (int frame = 45; frame <= 63; frame++)
+                    int firstActive = simpleStrike ? Mathf.RoundToInt(MeleeCombatSettings.Crowbar.WindupSeconds * 100f) : 45;
+                    int lastActive = simpleStrike ? Mathf.RoundToInt((MeleeCombatSettings.Crowbar.WindupSeconds +
+                        MeleeCombatSettings.Crowbar.ActiveSeconds) * 100f) : 63;
+                    for (int frame = firstActive; frame <= lastActive; frame++)
                     {
                         attack.SampleAnimation(animator.gameObject, frame / 100f);
-                        CombatAssetProvider.PlaceCrowbar(bar, grip, handPose, false);
+                        CombatAssetProvider.PlaceCrowbar(bar, grip, handPose, false, npc ? 0f : CombatAssetProvider.RightGripStation);
                         Vector3 point = actor.transform.InverseTransformPoint(tip.position);
                         reach = Mathf.Max(reach, point.z);
                         travel = Mathf.Max(travel, Vector3.Distance(windup, point));
-                        if (Vector3.Distance(origin.position, handPose.CylinderCentre(false)) > .001f ||
+                        if (Vector3.Distance(RightGripPoint(bar.transform, npc), handPose.CylinderCentre(false)) > .001f ||
                             Vector3.Dot(bar.transform.up, handPose.CylinderAxis(false)) < .999f ||
                             Mathf.Abs(Vector3.Distance(origin.position, tip.position) - CombatWeaponGeometry.StrikeTipLocal.magnitude) > .003f)
                             throw new InvalidOperationException("Combat crowbar grip or unit factor differs for " + (npc ? "NPC" : "hero"));
@@ -675,7 +679,7 @@ namespace BarPromenade.Editor
                     maximumHeight = Mathf.Max(maximumHeight, striking.position.y - grounded);
                     if (seconds >= .30f && seconds <= .40f)
                         activeReach = Mathf.Max(activeReach, actor.InverseTransformPoint(striking.position).z);
-                    if (Vector3.Distance(origin.position, handPose.CylinderCentre(false)) > .001f ||
+                    if (Vector3.Distance(RightGripPoint(bar.transform), handPose.CylinderCentre(false)) > .001f ||
                         Vector3.Dot(bar.transform.up, handPose.CylinderAxis(false)) < .999f)
                         throw new InvalidOperationException("Combat imported kick lost its retained right grip.");
                 }
@@ -744,11 +748,11 @@ namespace BarPromenade.Editor
                     float seconds = frame / 100f;
                     if (q == 0f && lightCopy) CompareEndpoint(light, seconds, attack, seconds, animator, bones, "light legacy strike");
                     Blend(seconds, q);
-                    CombatAssetProvider.PlaceCrowbar(bar, rightGrip, handPose, false);
+                    CombatAssetProvider.PlaceCrowbar(bar, rightGrip, handPose, false, npc ? 0f : CombatAssetProvider.RightGripStation);
                     for (int i = 0; i < feet.Length; i++)
                         if (Vector3.Distance(planted[i], feet[i].position) > .002f || Quaternion.Angle(flat[i], feet[i].rotation) > .15f)
                             throw new InvalidOperationException("Charged blend moved an authored support foot: " + q);
-                    if (Vector3.Distance(origin.position, handPose.CylinderCentre(false)) > .001f ||
+                    if (Vector3.Distance(RightGripPoint(bar.transform, npc), handPose.CylinderCentre(false)) > .001f ||
                         Vector3.Dot(bar.transform.up, handPose.CylinderAxis(false)) < .999f)
                         throw new InvalidOperationException("Charged blend lost the crowbar grip: " + q);
                     if (simpleStrike)
@@ -764,6 +768,9 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException("Charged blend cannot reach its target: " + names.Attack + "/" + q);
             }
         }
+
+        private static Vector3 RightGripPoint(Transform bar, bool npc = false) =>
+            bar.TransformPoint(Vector3.up * (npc ? 0f : CombatAssetProvider.RightGripStation));
 
         private static void ValidateTwoHandContact(NpcHandPose handPose, Transform bar, string label)
         {
@@ -899,7 +906,8 @@ namespace BarPromenade.Editor
                 bool simpleRecoil = simpleStrike && reaction.name == CombatAssetProvider.RecoilClip;
                 AnimationClip entry = CombatAssetProvider.LoadClip(reaction.entry_clip, npc);
                 AnimationClip exit = CombatAssetProvider.LoadClip(reaction.exit_clip, npc);
-                CompareReadyEndpoint(clip, 0f, entry, simpleRecoil ? .63f : reaction.entry_seconds,
+                CompareReadyEndpoint(clip, 0f, entry, simpleRecoil ? MeleeCombatSettings.Crowbar.WindupSeconds +
+                    MeleeCombatSettings.Crowbar.ActiveSeconds : reaction.entry_seconds,
                     animator, bones, reaction.name + " entry",
                     allowArmBlend: !npc && simpleStrike && reaction.entry_clip == CombatAssetProvider.ReadyClip);
                 CompareReadyEndpoint(clip, clip.length, exit, reaction.exit_seconds,
@@ -1022,8 +1030,18 @@ namespace BarPromenade.Editor
         }
         private static void ValidateSimpleStrike(SimpleStrike strike)
         {
-            if (strike.clips == null || string.IsNullOrEmpty(strike.fbx_sha256) || string.IsNullOrEmpty(strike.source_sha256))
+            if (strike.anatomy_version != 4 || strike.contact_sample_hz != CombatAssetProvider.CrowbarContactSampleHz || strike.clips == null ||
+                string.IsNullOrEmpty(strike.fbx_sha256) || string.IsNullOrEmpty(strike.source_sha256))
                 throw new InvalidOperationException("Simple crowbar strike has no exported-file anatomy proof.");
+            MeleeCombatSettings timing = MeleeCombatSettings.Crowbar;
+            if (Mathf.Abs(strike.windup_seconds - timing.WindupSeconds) > .0001f ||
+                Mathf.Abs(strike.right_grip_station_m - CombatAssetProvider.RightGripStation) > .0001f ||
+                Mathf.Abs(strike.active_seconds - timing.ActiveSeconds) > .0001f ||
+                Mathf.Abs(strike.recovery_seconds - timing.AnimationRecoverySeconds) > .0001f ||
+                Mathf.Abs(strike.shoulder_load_seconds - CombatAssetProvider.CrowbarShoulderLoadSeconds) > .0001f ||
+                Mathf.Abs(strike.contact_seconds - timing.WindupSeconds - timing.ActiveSeconds) > .0001f ||
+                Mathf.Abs(timing.AnimationAttackDurationSeconds - strike.recoil_entry_seconds - CombatAssetProvider.CrowbarRecoilSeconds) > .0001f)
+                throw new InvalidOperationException("Crowbar animation and gameplay clocks differ.");
             foreach (SimpleStrikeSample sample in new[] { strike.clips.CombatAttack, strike.clips.CombatReleaseLight,
                 strike.clips.CombatReleaseHeavy, strike.clips.CombatCharge, strike.clips.CombatRecoil })
                 if (sample == null || !float.IsFinite(sample.maximum_right_wrist_degrees) ||
@@ -1033,15 +1051,60 @@ namespace BarPromenade.Editor
                     sample.maximum_right_elbow_speed_m_s > 6.01f ||
                     !float.IsFinite(sample.maximum_left_wrist_degrees) || sample.maximum_left_wrist_degrees > 65.01f ||
                     sample.maximum_left_deviation_degrees > 25.01f || sample.maximum_left_flexion_degrees > 55.01f ||
-                    sample.maximum_support_error_m > .012f || sample.maximum_support_angle_degrees > 12.01f)
-                    throw new InvalidOperationException("Simple crowbar strike lost its anatomical wrist/body/floor gates.");
+                    sample.maximum_support_error_m > .012f || sample.maximum_support_angle_degrees > 12.01f ||
+                    !float.IsFinite(sample.maximum_chest_turn_degrees) || sample.maximum_chest_turn_degrees > 24f ||
+                    !float.IsFinite(sample.maximum_pelvis_turn_degrees) || sample.maximum_pelvis_turn_degrees > 9.3f ||
+                    !float.IsFinite(sample.minimum_chest_yaw_degrees) || Mathf.Abs(sample.minimum_chest_yaw_degrees) > 22.3f ||
+                    !float.IsFinite(sample.maximum_chest_yaw_degrees) || Mathf.Abs(sample.maximum_chest_yaw_degrees) > 22.3f ||
+                    !float.IsFinite(sample.minimum_chest_lean_degrees) || sample.minimum_chest_lean_degrees < -4.3f ||
+                    !float.IsFinite(sample.maximum_chest_lean_degrees) || sample.maximum_chest_lean_degrees > 8.3f ||
+                    !float.IsFinite(sample.maximum_pelvis_displacement_m) || sample.maximum_pelvis_displacement_m > .051f ||
+                    !float.IsFinite(sample.maximum_foot_slide_m) || sample.maximum_foot_slide_m > .0002f ||
+                    !float.IsFinite(sample.maximum_shoulder_speed_degrees_s) || sample.maximum_shoulder_speed_degrees_s > 1600f ||
+                    !float.IsFinite(sample.maximum_early_shoulder_speed_degrees_s) || sample.maximum_early_shoulder_speed_degrees_s > 900f ||
+                    !float.IsFinite(sample.maximum_early_left_shoulder_twist_degrees) || sample.maximum_early_left_shoulder_twist_degrees > 75.1f ||
+                    !float.IsFinite(sample.maximum_right_elbow_above_shoulder_m) || sample.maximum_right_elbow_above_shoulder_m > .022f ||
+                    !float.IsFinite(sample.maximum_left_elbow_above_shoulder_m) || sample.maximum_left_elbow_above_shoulder_m > .022f ||
+                    !float.IsFinite(sample.minimum_left_elbow_forward_m) || sample.minimum_left_elbow_forward_m < .008f)
+                    throw new InvalidOperationException("Simple crowbar strike lost its shoulder/wrist/body/floor gates.");
             if (strike.clips.CombatAttack.active_tip_travel_m < .80f || strike.clips.CombatAttack.maximum_forward_reach_m < .80f ||
-                strike.clips.CombatAttack.minimum_windup_tip_backward_m < .10f)
+                strike.clips.CombatAttack.minimum_windup_tip_backward_m < .09f ||
+                strike.clips.CombatAttack.minimum_active_tip_speed_m_s < 1f)
                 throw new InvalidOperationException("Simple crowbar strike has no usable physical contact arc.");
+            SimpleStrikeSample arc = strike.clips.CombatAttack;
+            if (!float.IsFinite(arc.chest_yaw_span_degrees) || arc.chest_yaw_span_degrees < 37f)
+                throw new InvalidOperationException("Crowbar strike needs a visible torso load and release.");
+            if (arc.minimum_chest_lean_degrees > -3f || arc.maximum_chest_lean_degrees < 6f ||
+                arc.maximum_pelvis_displacement_m < .04f)
+                throw new InvalidOperationException("Crowbar strike needs connected body weight over planted feet.");
+            // Cover both frontal flanks at useful reach through the arms,
+            // while the shoulder/body gates rule out a full torso rotation.
+            if (!float.IsFinite(arc.active_horizontal_coverage_degrees) || arc.active_horizontal_coverage_degrees < 70f ||
+                !float.IsFinite(arc.active_right_angle_degrees) || arc.active_right_angle_degrees < 35f ||
+                !float.IsFinite(arc.active_left_angle_degrees) || arc.active_left_angle_degrees > -35f ||
+                !float.IsFinite(arc.active_horizontal_path_m) || arc.active_horizontal_path_m < 1.18f)
+                throw new InvalidOperationException("Crowbar's active metal arc must sweep across both frontal sides.");
+            if (!float.IsFinite(arc.maximum_active_metal_chord_error_m) || arc.maximum_active_metal_chord_error_m > CombatWeaponGeometry.ContactSkin)
+                throw new InvalidOperationException("Crowbar's active metal curve exceeds the physical sweep's contact skin.");
+            // A held finish can pass reach/anatomy checks while still reading as
+            // a weak swipe. Require real follow-through and a visible brake.
+            if (!float.IsFinite(arc.overrun_tip_travel_m) || arc.overrun_tip_travel_m < .04f ||
+                !float.IsFinite(arc.centre_tip_speed_m_s) || arc.centre_tip_speed_m_s < 1f ||
+                !float.IsFinite(arc.braked_tip_speed_m_s) || arc.braked_tip_speed_m_s < 0f ||
+                arc.braked_tip_speed_m_s > arc.centre_tip_speed_m_s * .25f)
+                throw new InvalidOperationException("Crowbar strike needs physical follow-through and braking.");
+            float finishHold = strike.brake_end_seconds - strike.overrun_seconds;
+            if (!float.IsFinite(finishHold) || finishHold < .02f || finishHold > .05f ||
+                !float.IsFinite(arc.maximum_brake_hold_tip_speed_m_s) || arc.maximum_brake_hold_tip_speed_m_s > .15f)
+                throw new InvalidOperationException("Crowbar strike needs a brief, stable finish before returning.");
         }
         [Serializable] private sealed class SimpleStrike
         {
+            public int anatomy_version, contact_sample_hz;
+            public float right_grip_station_m;
             public string source_sha256, fbx_sha256;
+            public float windup_seconds, active_seconds, recovery_seconds, contact_seconds, shoulder_load_seconds, recoil_entry_seconds;
+            public float overrun_seconds, brake_end_seconds;
             public SimpleStrikeClips clips;
         }
         [Serializable] private sealed class SimpleStrikeClips
@@ -1055,6 +1118,20 @@ namespace BarPromenade.Editor
             public float maximum_right_elbow_speed_m_s, active_tip_travel_m, maximum_forward_reach_m;
             public float maximum_left_wrist_degrees, maximum_left_deviation_degrees, maximum_left_flexion_degrees;
             public float maximum_support_error_m, maximum_support_angle_degrees, minimum_windup_tip_backward_m;
+            public float minimum_active_tip_speed_m_s;
+            public float active_horizontal_coverage_degrees, active_right_angle_degrees, active_left_angle_degrees;
+            public float active_horizontal_path_m;
+            public float maximum_chest_turn_degrees, maximum_pelvis_turn_degrees;
+            public float minimum_chest_yaw_degrees, maximum_chest_yaw_degrees;
+            public float minimum_chest_lean_degrees, maximum_chest_lean_degrees;
+            public float maximum_pelvis_displacement_m, maximum_foot_slide_m;
+            public float chest_yaw_span_degrees;
+            public float maximum_shoulder_speed_degrees_s, maximum_early_shoulder_speed_degrees_s;
+            public float maximum_early_left_shoulder_twist_degrees, maximum_left_elbow_above_shoulder_m;
+            public float maximum_right_elbow_above_shoulder_m;
+            public float minimum_left_elbow_forward_m, maximum_active_metal_chord_error_m;
+            public float overrun_tip_travel_m, centre_tip_speed_m_s, braked_tip_speed_m_s;
+            public float maximum_brake_hold_tip_speed_m_s;
         }
         [Serializable] private sealed class Kick
         {

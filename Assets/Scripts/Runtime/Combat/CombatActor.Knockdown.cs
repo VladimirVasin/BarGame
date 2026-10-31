@@ -19,6 +19,7 @@ namespace BarPromenade
         private PlayerRagdollLyingPose knockdownLying;
         private bool knockedDown, knockdownFrozen, recoveryPoseBegun, recoveryRegrip;
         private float recoveryPoseRetrySeconds;
+        private float recoveryYieldDistance;
         private string journalClearanceReason, journalClearanceStage;
         private Collider journalClearanceObstacle;
         private int journalClearanceCount;
@@ -63,6 +64,7 @@ namespace BarPromenade
             knockedDown = true;
             recoveryPoseBegun = recoveryRegrip = false;
             recoveryPoseRetrySeconds = 0f;
+            recoveryYieldDistance = 0f;
             reaction = null;
             sweepValid = collectSweep = false;
             collectShove = false;
@@ -182,7 +184,23 @@ namespace BarPromenade
             // grip can keep guard unavailable, but cannot imprison a living actor.
             if (!knockdownPose.HandsReleased) return JournalRiseWait("hands_not_released");
             if (!knockdownPose.HasStandingClearance())
-            { JournalRiseClearance("finish"); return JournalRiseWait("standing_clearance"); }
+            {
+                JournalRiseClearance("finish");
+                // The completed rise keeps its planted boots. A nearby ordinary
+                // enemy gives that reserved capsule room through its own motor;
+                // never rebase the hero or ignore a wall to finish the recovery.
+                if (IsHero && recoveryYieldDistance < .8f &&
+                    knockdownPose.TryYieldStandingBlocker(seconds, .8f - recoveryYieldDistance,
+                        out CombatActor blocker, out Vector3 yielded))
+                {
+                    if (recoveryYieldDistance <= 0f)
+                        JournalEvent("rise_clearance_yield", blocker.JournalActorId,
+                            f0: GameLog.Field("maximum_distance", .8f));
+                    recoveryYieldDistance += yielded.magnitude;
+                    if (knockdownPose.HasStandingClearance()) { FinishKnockdown(); return true; }
+                }
+                return JournalRiseWait("standing_clearance");
+            }
             FinishKnockdown();
             return true;
         }
@@ -228,6 +246,7 @@ namespace BarPromenade
             State.EndKnockdown();
             knockedDown = knockdownFrozen = recoveryPoseBegun = recoveryRegrip = false;
             recoveryPoseRetrySeconds = 0f;
+            recoveryYieldDistance = 0f;
             supportGrip?.SetRecoveryOwned(false);
             supportGrip?.AllowRegrip(!weaponDropped);
             FinishImpactRecovery();
@@ -260,6 +279,7 @@ namespace BarPromenade
             if (knockedDown && !State.IsDefeated) State.EndKnockdown();
             knockedDown = knockdownFrozen = recoveryPoseBegun = recoveryRegrip = false;
             recoveryPoseRetrySeconds = 0f;
+            recoveryYieldDistance = 0f;
             supportGrip?.SetRecoveryOwned(false);
             supportGrip?.AllowRegrip(true);
         }

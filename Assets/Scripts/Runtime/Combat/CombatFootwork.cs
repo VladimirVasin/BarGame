@@ -839,6 +839,13 @@ namespace BarPromenade
         private bool AdvanceCatchStep(float seconds)
         {
             if (ImpactMotion == null) { catchDecisionPending = catchStabilityPending = false; return false; }
+            if (ImpactMotion.UsesStandingResponse)
+            {
+                catching = false;
+                catchDecisionPending = catchStabilityPending = false;
+                recoveryGaitReleased = true;
+                return false;
+            }
             if (recoverySequence != ImpactMotion.RecoverySequence)
             {
                 recoverySequence = ImpactMotion.RecoverySequence;

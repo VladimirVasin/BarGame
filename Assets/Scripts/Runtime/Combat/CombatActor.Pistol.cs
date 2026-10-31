@@ -692,6 +692,7 @@ namespace BarPromenade
                 MeleeBodyRegion.LeftLeg or MeleeBodyRegion.RightLeg => .36f,
                 _ => .32f
             };
+            if (IsZombie) stagger = Mathf.Max(stagger, .45f);
             bool postmortem = State.IsDefeated && IsRagdollActive;
             BodyDamageRegion region = hit.DamageRegion ?? CombatBodyAnatomy.ToRegion(hit.Part);
             float requestedDamage = ProjectileDamageProfile.Pistol.ResolveDamage(25f, hit.Location);
@@ -700,6 +701,8 @@ namespace BarPromenade
             MeleeHitResult result = postmortem || hit.IsDetached || healthDamage <= 0f ? MeleeHitResult.Hit :
                 hit.Location.Region == MeleeBodyRegion.Head ? State.ReceiveProjectileHit(25f, hit.Location, stagger) :
                     State.ReceiveProjectileHit(healthDamage, default, stagger, ProjectileDamageProfile.Shotgun);
+            if (IsZombie && !State.IsDefeated && !hit.IsDetached && healthDamage <= 0f)
+                State.ReceiveImpactStagger(stagger);
             if (result == MeleeHitResult.Ignored) return;
             reaction = null;
             reactionClock = 0f;
