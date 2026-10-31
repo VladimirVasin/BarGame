@@ -304,7 +304,7 @@ def resolve_path(path: Path) -> Path:
     return path.resolve()
 
 
-def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, Path, bool, bool, bool, bool, bool, bool, bool, bool]:
+def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, Path, bool, bool, bool, bool, bool, bool, bool, bool, bool]:
     user_args: list[str] = []
     if "--" in sys.argv:
         user_args = sys.argv[sys.argv.index("--") + 1 :]
@@ -333,6 +333,8 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
                         help="Refresh hand contact shapes in the verified production source without rebuilding actions.")
     parser.add_argument("--smoking-only", action="store_true",
                         help="Refresh only the three mouth-contact smoking takes on the verified production source.")
+    parser.add_argument("--bed-only", action="store_true",
+                        help="Refresh only supported sofa entry/exit actions and their measured bed contract.")
     parser.add_argument("--counter-seat-only", action="store_true",
                         help="Refresh only the bar's measured side-entry/exit bone actions on the verified Hero V2 source.")
     parser.add_argument("--corruption-only", action="store_true",
@@ -385,6 +387,8 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         default="apose",
     )
     args = parser.parse_args(user_args)
+    if args.bed_only and args.skip_animation_export:
+        parser.error("--bed-only must export the corrected animation bank")
     if not 1.40 <= args.height <= 2.10:
         parser.error("--height must be between 1.40 and 2.10 metres")
     if args.preview_only and (args.no_previews or args.face_atlas_only):
@@ -442,6 +446,7 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         args.counter_seat_only,
         args.corruption_only,
         args.smoking_only,
+        args.bed_only,
     )
 
 
@@ -3525,7 +3530,12 @@ def main() -> None:
         counter_seat_only,
         corruption_only,
         smoking_only,
+        bed_only,
     ) = parse_args()
+    if bed_only:
+        import player_bed_actions
+        player_bed_actions.refresh(sys.modules[__name__], config)
+        return
     if smoking_only:
         player_smoking_actions.refresh(sys.modules[__name__], config)
         return

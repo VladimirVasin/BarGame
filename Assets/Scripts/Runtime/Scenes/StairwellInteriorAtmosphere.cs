@@ -83,6 +83,7 @@ namespace BarPromenade
         private SphericalHarmonicsL2 previousAmbientProbe, lowerAmbientProbe;
         private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         private float nextLabyrinthUpdate;
+        private int litSolvedStages = -1;
         public float LabyrinthProgress { get; private set; }
         public Light[] LabyrinthLights { get; private set; }
         public int ActiveLabyrinthLightCount { get; private set; }
@@ -214,6 +215,16 @@ namespace BarPromenade
             UpdateLabyrinth();
         }
 
+        private void LateUpdate()
+        {
+            // Hand actions commit in Update. Progress must change the route's
+            // beacon before this frame renders, without waiting for movement or
+            // the slower position refresh. No repeated light scan while unchanged.
+            if (labyrinthTarget != null && !GameTimeScaleRuntime.IsPaused &&
+                litSolvedStages != GameSessionState.StairwellLabyrinthPuzzles.SolvedStages)
+                UpdateLabyrinth();
+        }
+
         private void UpdateLabyrinth()
         {
             if (labyrinthTarget == null) return;
@@ -338,6 +349,7 @@ namespace BarPromenade
         private void UpdateLabyrinthLights(Vector3 local, bool inside)
         {
             int guide = -1;
+            litSolvedStages = GameSessionState.StairwellLabyrinthPuzzles.SolvedStages;
             ActivePuzzleGuideStage = 0;
             for (int slot = 0; slot < nearbyLabyrinthLights.Length; slot++)
             {
@@ -346,6 +358,12 @@ namespace BarPromenade
             }
             if (inside)
             {
+                // The next door is a persistent destination, including while
+                // the hero is still at the previous mechanism on another floor.
+                // Only ordinary nearby lighting follows the supporting storey.
+                int nextStage = litSolvedStages + 1;
+                if (nextStage <= puzzleRooms.Count)
+                    guide = labyrinthPlan.LightDescriptors.Count + nextStage - 1;
                 // Room supports win their overlaps with the approach. Otherwise the
                 // actual supporting storey, never camera aim, owns lamp selection.
                 int supportIndex = -1;
@@ -370,14 +388,6 @@ namespace BarPromenade
                     var support = labyrinthPlan.Supports[supportIndex];
                     bool room = support.Id.StartsWith("room-", StringComparison.Ordinal) &&
                         !support.Id.EndsWith("-approach", StringComparison.Ordinal);
-                    int nextStage = GameSessionState.StairwellLabyrinthPuzzles.SolvedStages + 1;
-                    if (!room && nextStage <= puzzleRooms.Count && support.Stage == nextStage)
-                    {
-                        int candidate = labyrinthPlan.LightDescriptors.Count + nextStage - 1;
-                        float radius = LabyrinthLights[candidate].enabled ? LabyrinthDeactivationRadius : LabyrinthActivationRadius;
-                        if ((LabyrinthLights[candidate].transform.position - labyrinthTarget.position).sqrMagnitude <= radius * radius)
-                            guide = candidate;
-                    }
                     int ordinarySlots = nearbyLabyrinthLights.Length - (guide >= 0 ? 1 : 0);
                     for (int i = 0; i < labyrinthPlan.LightDescriptors.Count; i++)
                     {

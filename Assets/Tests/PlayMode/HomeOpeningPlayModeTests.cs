@@ -32,6 +32,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            AreaCaptureFixture.CompleteHomeBedScene();
             Time.timeScale = previousTimeScale;
             MainMenuRoot.ClearLegacyOpeningRequest();
             GameSessionState.BeginNewGame();
@@ -264,6 +265,35 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(clockFramed, Is.True, "At least one ordinary room view includes the real noon clock.");
                 Assert.That(GameSessionState.GameTimeOfDayMinutes, Is.EqualTo(720d));
             }
+            yield return AreaCaptureFixture.BeginHomeBedScene(home, "calm-wake");
+            // Inspect a natural deck boundary, separately from the exact
+            // authoring/debug Apply calls above. Natural playback must glide.
+            Assert.That(home.Opening.ApplyNewGameShot(home.Opening.ShotCount - 1, .95f), Is.True);
+            yield return null;
+            Vector3 previousShotPosition = home.CameraFollow.FixedBasePosition;
+            Quaternion previousShotRotation = home.CameraFollow.FixedBaseRotation;
+            float previousShotFov = home.CameraFollow.FixedBaseFieldOfView;
+            double boundaryUntil = Time.timeAsDouble + 3.2d;
+            float boundaryDeadline = Time.realtimeSinceStartup + 30f;
+            while (Time.timeAsDouble < boundaryUntil && Time.realtimeSinceStartup < boundaryDeadline)
+            {
+                yield return null;
+                float dt = Mathf.Max(Time.deltaTime, .001f);
+                Assert.That(Vector3.Distance(previousShotPosition, home.CameraFollow.FixedBasePosition),
+                    Is.LessThan(.04f + dt * 6f), "A calm opening must not jump to the next room camera.");
+                Assert.That(Quaternion.Angle(previousShotRotation, home.CameraFollow.FixedBaseRotation),
+                    Is.LessThan(1f + dt * 100f), "The opening camera's horizon/aim must remain continuous.");
+                Assert.That(Mathf.Abs(previousShotFov - home.CameraFollow.FixedBaseFieldOfView),
+                    Is.LessThan(.3f + dt * 12f), "Lens changes must follow the camera move.");
+                previousShotPosition = home.CameraFollow.FixedBasePosition;
+                previousShotRotation = home.CameraFollow.FixedBaseRotation;
+                previousShotFov = home.CameraFollow.FixedBaseFieldOfView;
+                Assert.That(home.Sleep.IsNormalOpening, Is.True);
+                AssertNoTransformationCue(home);
+            }
+            Assert.That(Time.timeAsDouble, Is.GreaterThanOrEqualTo(boundaryUntil));
+            Assert.That(home.Sleep.BedAudio.BreathCueCount, Is.GreaterThan(0),
+                "The ordinary sleeping body has quiet breathing without a fright cue.");
             inputFixture.Release(keyboard.eKey, queueEventOnly: true);
             yield return null;
             yield return null;
@@ -279,7 +309,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.AnimatedInteraction.ExitDurationSeconds,
                 Is.EqualTo(10.62d).Within(.001d),
                 "The neutral motion reaches .87 after 1.4+3.42s, holds 3s and reserves 2.8s to stand.");
-            Time.timeScale = 3f;
+            Time.timeScale = AreaCaptureFixture.CaptureHomeBedEnabled ? 1f : 3f;
             yield return WaitUntil(() => home.Bed.WakeRecoveryActive,
                 "The neutral wake did not reach its supported seated recovery.");
             float recoveryStart = Time.time - home.Bed.WakeRecoveryProgress * HomeBedInteraction.WakeRecoveryHoldSeconds;
@@ -317,8 +347,9 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(home.CameraFollow.FixedBasePosition, Is.EqualTo(heldCamera));
                 Assert.That(home.AnimatedInteraction.ClipProgress, Is.EqualTo(heldClip));
             }
-            yield return WaitUntil(() => home.Opening.Phase == HomeOpeningPhase.AwaitingStand,
-                "The ordinary opening did not return to gameplay framing and wait for a separate stand input.");
+            yield return AreaCaptureFixture.VerifyHomeBedCameraReturn(home);
+            Assert.That(home.Opening.Phase, Is.EqualTo(HomeOpeningPhase.AwaitingStand),
+                "The ordinary opening must return to gameplay framing and wait for a separate stand input.");
             Assert.That(Time.time - returnStart, Is.GreaterThanOrEqualTo(HomeSleepController.CameraReturnSeconds - .15f));
             Assert.That(home.Sleep.WaitingForStandUp, Is.True);
             Assert.That(home.Player.Interactor.ActiveInteractable, Is.SameAs(home.Bed));
@@ -329,9 +360,9 @@ namespace BarPromenade.Tests.PlayMode
             Player3DBoneAnchors idle = hero.Registry.Anchors;
             Vector3 leftFoot = idle.LeftFoot.position, rightFoot = idle.RightFoot.position;
             Vector3 leftHand = idle.LeftGrip.position, rightHand = idle.RightGrip.position;
-            float idleUntil = Time.time + 30f;
+            float idleUntil = Time.time + (AreaCaptureFixture.CaptureHomeBedEnabled ? 5f : 30f);
             float idleDeadline = Time.realtimeSinceStartup + TimeoutSeconds;
-            Time.timeScale = 10f;
+            Time.timeScale = AreaCaptureFixture.CaptureHomeBedEnabled ? 1f : 10f;
             while (Time.time < idleUntil && Time.realtimeSinceStartup < idleDeadline)
             {
                 hero.ReapplyLatePresentationPose();
@@ -385,6 +416,7 @@ namespace BarPromenade.Tests.PlayMode
             AssertWorldPresentationEnabled(home.Player);
             AssertNoTransformationCue(home);
             CaptureNewGameFrame("standing-gameplay");
+            AreaCaptureFixture.CompleteHomeBedScene();
         }
 
         [UnityTest]

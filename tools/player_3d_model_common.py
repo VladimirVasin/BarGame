@@ -158,21 +158,21 @@ BED_EXIT_SETTLE = 1.0
 # coordinate. Each transfer has a separate lift, horizontal push and landing.
 BED_PELVIS_PROFILES = {
     "BedEnter": (
-        (0.0, 0.88, -1.73), (0.05, 0.88, -1.73),
-        (0.22, 0.6244, -1.09), (0.30, 0.6244, -1.09),
-        (0.34, 0.6944, -1.09), (0.41, 0.6944, -0.7325),
-        (0.44, 0.6244, -0.7325), (0.47, 0.6244, -0.7325),
-        (0.51, 0.6944, -0.7325), (0.58, 0.6944, -0.375),
+        (0.0, 0.88, -1.43), (0.05, 0.88, -1.43),
+        (0.22, 0.6244, -0.79), (0.30, 0.6244, -0.79),
+        (0.34, 0.6944, -0.79), (0.41, 0.6944, -0.5825),
+        (0.44, 0.6244, -0.5825), (0.47, 0.6244, -0.5825),
+        (0.51, 0.6944, -0.5825), (0.58, 0.6944, -0.375),
         (0.61, 0.6244, -0.375), (0.64, 0.6244, -0.375),
         (0.96, 0.5903, -0.375), (1.0, 0.5903, -0.375),
     ),
     "BedExit": (
         (0.0, 0.5903, -0.375), (0.30, 0.6244, -0.375),
         (0.32, 0.6244, -0.375), (0.35, 0.6944, -0.375),
-        (0.40, 0.6944, -0.7325), (0.43, 0.6244, -0.7325),
-        (0.46, 0.6244, -0.7325), (0.49, 0.6944, -0.7325),
-        (0.54, 0.6944, -1.09), (0.57, 0.6244, -1.09),
-        (0.90, 0.6244, -1.09), (1.0, 0.88, -1.73),
+        (0.40, 0.6944, -0.5825), (0.43, 0.6244, -0.5825),
+        (0.46, 0.6244, -0.5825), (0.49, 0.6944, -0.5825),
+        (0.54, 0.6944, -0.79), (0.57, 0.6244, -0.79),
+        (0.90, 0.6244, -0.79), (1.0, 0.88, -1.43),
     ),
 }
 BED_SCOOTS = {
@@ -2537,6 +2537,13 @@ class ProductionPlayerBuilderBase:
                             key.handle_left.y = key.co.y
                             key.handle_right.y = key.co.y
 
+        self.build_bed_actions()
+
+        self.build_remaining_actions()
+
+    def build_bed_actions(self) -> None:
+        """Sofa-only refresh shares the exact full-generator authored actions."""
+        relaxed = self.relaxed_pose()
         # A tired man shifts his weight before he folds. The lead-in gives
         # the sit something to come out of instead of starting at speed.
         bed_stand_shift = self.merge_pose(
@@ -3154,7 +3161,7 @@ class ProductionPlayerBuilderBase:
                 )})
                 for t in times:
                     height, cross = bed_pelvis_at(name, t)
-                    carried_fraction = abs(cross - start_cross) / 0.3575
+                    carried_fraction = abs(cross - start_cross) / 0.2075
                     pitch = (-1.0 + 40.0 * carried_fraction if name == "BedEnter"
                              else 25.0 - 50.0 * carried_fraction)
                     pose = self.merge_pose(bed_wake_hunch, gathered_legs, {
@@ -3308,6 +3315,11 @@ class ProductionPlayerBuilderBase:
             interpolation="BEZIER",
         )
 
+        import player_bed_actions
+        player_bed_actions.bake_contacts(self, sys.modules[__name__])
+
+    def build_remaining_actions(self) -> None:
+        relaxed = self.relaxed_pose()
         import player_smoking_actions
         player_smoking_actions.build(self, sys.modules[__name__])
 
@@ -4679,7 +4691,7 @@ def validate_bed_support_contract(
                         for vertex in mesh.vertices:
                             relative = evaluated.matrix_world @ vertex.co - pelvis
                             x, z = relative.x + hip_x, relative.y + hip_z
-                            if -4.17 <= x <= -1.78 and -1.16 <= z <= 0.41:
+                            if -4.17 <= x <= -1.78 and -0.890857 <= z <= 0.140857:
                                 y = relative.z + hip_height_at(name, t)
                                 if y < mattress_worst[0]:
                                     mattress_worst = (y, part.obj.name, t)
@@ -4853,7 +4865,7 @@ def validate_bed_support_contract(
         reaches = []
         for normalized_time in (0.70, 0.74, 0.78, 0.82, 0.86):
             sample("BedEnter", normalized_time)
-            plane = pelvis_height() - entering_support_offset(normalized_time)
+            plane = pelvis_height() - bed_pelvis_at("BedEnter", normalized_time)[0] + BED_MATTRESS_ABOVE_FLOOR_M
             reaches.append(
                 (
                     normalized_time,
@@ -4867,7 +4879,7 @@ def validate_bed_support_contract(
         )
         deepest = min(reach for _, reach in reaches)
         closest = min(abs(reach) for _, reach in reaches)
-        if deepest < -0.08:
+        if deepest < -0.004:
             errors.append(
                 "The bracing hand drops toward the floor while the torso "
                 f"lowers, {-deepest:.4f} m under the bed"
@@ -4877,6 +4889,14 @@ def validate_bed_support_contract(
                 "The head-side hand must reach the mattress while the torso "
                 f"lowers; its closest approach is {closest:.4f} m"
             )
+        # The generic deepest-body allowance cannot prove a palm is outside
+        # the current narrow sofa. Sweep the real arms against its surface
+        # and back, and retain the production-rig seams and planted hand.
+        import player_bed_actions
+        try:
+            player_bed_actions.validate_contacts(result, sys.modules[__name__])
+        except RuntimeError as error:
+            errors.append(str(error))
     finally:
         animation_data.action = previous_action
         scene.frame_set(previous_frame)
@@ -6364,7 +6384,7 @@ def write_manifest(
             "exit_settle": BED_EXIT_SETTLE,
             "pelvis_step_lift_m": 0.07,
             **{
-                key: [{"progress": t, "position": [-2.84, height, cross]} for t, height, cross in BED_PELVIS_PROFILES[name]]
+                key: [{"progress": t, "position": [-6.285 - (cross + 0.375), height, -0.04]} for t, height, cross in BED_PELVIS_PROFILES[name]]
                 for key, name in (("enter_pelvis_path", "BedEnter"), ("exit_pelvis_path", "BedExit"))
             },
         },

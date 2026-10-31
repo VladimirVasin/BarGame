@@ -5,46 +5,50 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-31
 
-Puzzle camera: frontal whole-panel/handle overview replaces the head-follow view;
-aspect fit reserves prompt space, selection/hand poses cannot skew the shot.
-Existing rig/visibility/return and effect owners stay.
-StairwellLabyrinthPuzzleModeAndFlashlight passed; frontal/operation/aspect frames reviewed.
+Puzzle: full frontal panel/handles/UI margin; small cabinet hangs by its back.
+Immediate selection/short gestures/one pending E replace lost busy input; Q
+cancels the active hand. Rig/return/FX stay. StairwellLabyrinthPuzzleModeAndFlashlight
+and STAIRWELL_LABYRINTH_COMPACT_WALL_CABINET_OK passed; input/cabinet/frame review.
 
-Labyrinth: tiny warehouse auxiliary strips smeared close surfaces; existing
-native metre maps now retain concrete/metal/wood detail without new textures.
-Second puzzle: distinct handle/real crowbar brace/carriage; automatic weight,
-visible rails/endstop/catch unload the bar for shared single-source pickup.
-Session ownership drives world strike/parry and story warehouse kit; context
-stows/draws the same rig. Debug kit stays. Existing scene/material/motion/post
-owners retained; no new provider. STAIRWELL_LABYRINTH_DETERMINISM_OK,
-STAIRWELL_LABYRINTH_GATE_CUTS_AND_DEPTH_OK and collision/enclosure/UV checks passed.
-StairwellSecondPuzzleCrowbar passed; brace/pickup/weapon/context-return frames reviewed.
+Labyrinth: native metre maps replace smeared warehouse strips. Handle/real bar
+brace/carriage/rails/endstop/catch explain unloading and shared single pickup.
+Session bar enables world strike/parry/story warehouse; context stows/draws the
+same rig, Debug kit stays. Existing FX owners retained. STAIRWELL_LABYRINTH_DETERMINISM_OK,
+STAIRWELL_LABYRINTH_GATE_CUTS_AND_DEPTH_OK, collision/enclosure/UV and
+StairwellSecondPuzzleCrowbar passed; brace/pickup/context-return frames reviewed.
 
-Crowbar: fresh-press fixed strike and finite front parry; charge/combo/shove/
-kick/step removed from its input. One clip/time/torso direction now drives the
-arc; real hand/weapon/hook contacts consume parry instead of sustained block.
-Held input cannot repeat/extend; firearm controls stay. Charge HUD removed;
-existing rig, contact shadows, metal, impact and post owners retained.
-The old left-arm branch bent a valid authored grip into the shaft; authored
-contacts now win, with bounded visible-arm travel after draw and real final
-collision checks. Range_SimpleCrowbarStrikeUsesOneArcAndPhysicalContacts passed;
-gameplay/front/side frames reviewed. CommittedStrikeIsFixedAndRejectsChargeChainsAndQueuedGuard,
-OnlyAFreshUnconsumedFrontParryPreventsDamage and retained action-clock checks passed.
+Crowbar: fixed fresh-press strike/finite front parry replace charge/combo/shove/
+kick/step; held input cannot repeat/extend. Firearms stay; charge HUD removed.
+One clip/time/torso arc and physical contacts own hit/parry. Authored support
+replaces the stale IK branch bending the arm into the shaft; bounded draw-arm
+travel/final collisions remain. Existing rig/shadows/metal/impact/post retained.
+Range_SimpleCrowbarStrikeUsesOneArcAndPhysicalContacts,
+CommittedStrikeIsFixedAndRejectsChargeChainsAndQueuedGuard,
+OnlyAFreshUnconsumedFrontParryPreventsDamage and action-clock checks passed;
+gameplay/front/side reviewed.
 
-Warehouse: continuous GoalWall and matching collision remove the piers/lintel
-seams around the doorway. The retained red practical reveals door/valve at
-its minimum dip; the ambush keeps its absolute brightness. Existing materials,
-light count and darkness ownership stay. CombatWarehouseGateLampSurvivesPendant
-passed; approach/minimum-dip/FX-off/wall frames reviewed. Deterministic geometry,
-UV/FBX roundtrip and texture publication passed COMBAT WAREHOUSE ART CONTRACT OK
-and WAREHOUSE MASTER TEXTURES OK; check-docs passed.
-Placement exporter: macOS Unity DLLs/SDK8 target and reviewed navigation
-omission guards restore reproducible warehouse layout export; placements stay.
-Labyrinth: stage-coloured door practical selects the next unsolved room outside
-rooms, on the current floor within the existing activation radius; it uses a
-current shadow slot. Inside-room lighting and solved-stage progress stay.
-StairwellLabyrinthLightRadius passed; closed-door/FX-off frames reviewed;
-progress/pause/disable/reset and departed-room darkness verified.
+Warehouse: continuous GoalWall/collision; red practical reveals door/valve at
+minimum dip, ambush brightness stays. CombatWarehouseGateLampSurvivesPendant,
+COMBAT WAREHOUSE ART CONTRACT OK, WAREHOUSE MASTER TEXTURES OK passed; approach/
+minimum-dip/FX-off/wall reviewed. Exporter macOS DLLs/SDK8/navigation guards
+restore reproducible unchanged placements. Existing materials/lights stay.
+Next door lights on solve before render, from the previous mechanism/
+floor/range; local lamps retain radius/shadow budget. StairwellLabyrinthLightRadius
+passed; handoffs/closed/FX-off/pause/reset/departed-room darkness reviewed.
+
+Bed: narrowed sofa and baked arms disagreed; local pressure-rim contacts now
+share current geometry. Body→face and room-space wake replace skull-follow;
+return targets the current gameplay shot, avoiding empty-room travel/snap.
+Clip/body clocks drive pooled foley with pause/cleanup. User retune: cloth/breath
+quieter/darker/sparse; no wide idle loop. Calm/scene/material/post owners stay.
+HOME_BED_CONTACTS_OK / HOME_BED_PRESERVED_CONTENT_OK /
+HOME_BED_SAVED_SOURCE_OK / HOME_BED_PUBLICATION_OK;
+NewGame_MenuToNoonIntroRequiresFreshWakeAndStand passed. SleepMvp contacts,
+pause/return/stand passed; pre-existing balcony day-reset texture assertion fails
+(Dressing/Barrier restore different maps). Existing jacket-support source
+discrepancy unchanged. Entry/wake/return frames and HomeBedAudioSignalReview
+checked; signal/headroom only, no listening.
+GenerateSamples_IsDeterministicFiniteAndAudible bed cases passed after retune.
 
 ## 2026-10-30
 

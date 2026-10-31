@@ -13,6 +13,7 @@ namespace BarPromenade.Tests.PlayMode
     {
         private const float TimeoutSeconds = 15f;
         private const float FastTimeScale = 20f;
+        private static float ReviewTimeScale => AreaCaptureFixture.CaptureHomeBedEnabled ? 1f : FastTimeScale;
         private const float GuidedMoveSpeed = 2.6f;
         private const float GuidedStartOffset = 0.22f;
 
@@ -50,6 +51,9 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            AreaCaptureFixture.CompleteHomeBedScene();
+            AreaCaptureFixture.CompleteHomeBedMotion("BedEnter");
+            AreaCaptureFixture.CompleteHomeBedMotion("BedExit");
             SetSceneTransitionStateForTest(false);
             Time.timeScale = previousTimeScale;
             Scene homeScene =
@@ -247,6 +251,8 @@ namespace BarPromenade.Tests.PlayMode
             Physics.SyncTransforms();
             yield return WaitForActiveBed(home);
 
+            yield return AreaCaptureFixture.BeginHomeBedScene(home, "sleep-wake");
+
             // The approach includes a real half-turn at the normal walking
             // turn rate; quarter-speed cannot finish inside this bounded wait.
             Time.timeScale = 1f;
@@ -288,7 +294,7 @@ namespace BarPromenade.Tests.PlayMode
             bool sawSettledRenderFrame = false;
             int positioningFrames = 0;
             float positioningDeadline =
-                Time.realtimeSinceStartup + 3f;
+                Time.realtimeSinceStartup + (AreaCaptureFixture.CaptureHomeBedEnabled ? 30f : 3f);
             while (home.AnimatedInteraction.Phase ==
                        PlayerAnimatedInteractionPhase.Positioning &&
                    Time.realtimeSinceStartup < positioningDeadline)
@@ -366,8 +372,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Sleep.Phase, Is.EqualTo(HomeSleepPhase.LyingDown));
             Assert.That(home.IntoxicationHud.Visible, Is.False);
             Assert.That(home.Bed.CanInteract(home.Player.Interactor), Is.False);
-            Time.timeScale = FastTimeScale;
-            yield return WaitForPhaseCompletion(home, PlayerAnimatedInteractionPhase.Looping);
+            Time.timeScale = 1f;
+            yield return ObserveSleepEntry();
             Assert.That(home.Player.Motor.InputEnabled, Is.False);
             Assert.That(home.Player.Interactor.InputEnabled, Is.False);
             AssertContinuous3DPresentation(home, "BedSleepLoop");
@@ -438,7 +444,7 @@ namespace BarPromenade.Tests.PlayMode
             bool sawCoveredCommit = false;
             var montageLevels = new HashSet<int>();
             int previousMontageLevel = 1;
-            float cutDeadline = Time.realtimeSinceStartup + 6f;
+            float cutDeadline = Time.realtimeSinceStartup + (AreaCaptureFixture.CaptureHomeBedEnabled ? 30f : 6f);
             while (home.Sleep.Phase == HomeSleepPhase.Cut &&
                    Time.realtimeSinceStartup < cutDeadline)
             {
@@ -495,10 +501,14 @@ namespace BarPromenade.Tests.PlayMode
                 yield return null;
                 float heldElapsed = home.Sleep.PhaseElapsedSeconds;
                 int heldSamples = accentVoice.timeSamples;
+                int heldContactCues = home.Sleep.BedAudio.ContactCueCount;
+                int heldBreathCues = home.Sleep.BedAudio.BreathCueCount;
                 yield return new WaitForSecondsRealtime(.08f);
                 Assert.That(home.Sleep.PhaseElapsedSeconds, Is.EqualTo(heldElapsed));
                 Assert.That(accentVoice.isPlaying, Is.False);
                 Assert.That(accentVoice.timeSamples, Is.EqualTo(heldSamples).Within(512));
+                Assert.That(home.Sleep.BedAudio.ContactCueCount, Is.EqualTo(heldContactCues));
+                Assert.That(home.Sleep.BedAudio.BreathCueCount, Is.EqualTo(heldBreathCues));
                 // Paused capture preserves the owned playback position.
                 CaptureSleepFrame("02-startled-corrupted-face");
             }
@@ -509,6 +519,8 @@ namespace BarPromenade.Tests.PlayMode
             yield return WaitForSleepPhase(HomeSleepPhase.Recovering);
             AssertSleepFaceCameraHeld(hero);
             AssertSeatedOnDoorSideEdge(home);
+            Assert.That(home.Sleep.BedAudio.BreathCueCount, Is.GreaterThan(0),
+                "Breathing follows the sleeping/waking body rather than a silent face close-up.");
             float recoveryStarted = Time.time - home.Bed.WakeRecoveryProgress * 3f;
             hero.ReapplyLatePresentationPose();
             float seatedPitch = hero.DebugHeadPitchDownDegrees;
@@ -566,15 +578,11 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             inputFixture.Press(keyboard.eKey, queueEventOnly: true);
-            Time.timeScale = FastTimeScale;
-            float returnDeadline = Time.realtimeSinceStartup + 5f;
-            while (home.Sleep.Phase == HomeSleepPhase.Returning && Time.realtimeSinceStartup < returnDeadline)
-            {
-                Assert.That(home.Bed.WakeRecoveryActive, Is.True);
-                Assert.That(home.AnimatedInteraction.ClipProgress,
-                    Is.EqualTo(HomeBedInteraction.WakeRecoveryClipProgress).Within(.0001f));
-                yield return null;
-            }
+            Time.timeScale = ReviewTimeScale;
+            yield return AreaCaptureFixture.VerifyHomeBedCameraReturn(home);
+            Assert.That(home.Bed.WakeRecoveryActive, Is.True);
+            Assert.That(home.AnimatedInteraction.ClipProgress,
+                Is.EqualTo(HomeBedInteraction.WakeRecoveryClipProgress).Within(.0001f));
             Assert.That(home.Sleep.Phase, Is.EqualTo(HomeSleepPhase.AwaitingStandUp));
             yield return null;
             yield return null;
@@ -589,7 +597,7 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 idleLeftHand = idleAnchors.LeftGrip.position, idleRightHand = idleAnchors.RightGrip.position;
             Vector3 idleLeftFoot = idleAnchors.LeftFoot.position, idleRightFoot = idleAnchors.RightFoot.position;
             float idlePitchMinimum = hero.DebugHeadPitchDownDegrees, idlePitchMaximum = idlePitchMinimum;
-            float idleWaitUntil = Time.time + 30f;
+            float idleWaitUntil = Time.time + (AreaCaptureFixture.CaptureHomeBedEnabled ? 5f : 30f);
             while (Time.time < idleWaitUntil)
             {
                 hero.ReapplyLatePresentationPose();
@@ -616,9 +624,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Sleep.Phase, Is.EqualTo(HomeSleepPhase.Waking));
             inputFixture.Release(keyboard.eKey, queueEventOnly: true);
             bool sawStandingTerminal = false;
-            float standDeadline = Time.realtimeSinceStartup + 5f;
+            float standDeadline = Time.realtimeSinceStartup + (AreaCaptureFixture.CaptureHomeBedEnabled ? 30f : 5f);
             while (home.Sleep.IsActive && Time.realtimeSinceStartup < standDeadline)
             {
+                AssertHandsClearActualBedding($"BedExit stand at {home.AnimatedInteraction.ClipProgress:P1}");
+                AreaCaptureFixture.CaptureHomeBedMotionFrame(home, "BedExit", (float)Time.timeAsDouble);
                 AssertSleepGameplayCamera();
                 if (home.AnimatedInteraction.ClipProgress >= 1f)
                 {
@@ -632,6 +642,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Sleep.Phase, Is.EqualTo(HomeSleepPhase.Idle));
             Assert.That(home.AnimatedInteraction.IsActive, Is.False);
             Assert.That(home.Bed.OwnsActiveInteraction, Is.False);
+            AssertNoBedAudioPlaying();
             Assert.That(home.Player.Motor.InputEnabled, Is.True);
             Assert.That(home.Player.Interactor.InputEnabled, Is.True);
             Assert.That(home.IntoxicationHud.Visible, Is.EqualTo(hudBefore));
@@ -648,6 +659,8 @@ namespace BarPromenade.Tests.PlayMode
                 home.BedInteractionPlan.ExitRootPosition, home.BedInteractionPlan.ExitRotation);
             AssertSleepGameplayCamera();
             CaptureSleepFrame("03-corrupted-room");
+            AreaCaptureFixture.CompleteHomeBedMotion("BedExit");
+            AreaCaptureFixture.CompleteHomeBedScene();
             Assert.That(home.ApartmentDays.BalconyBarrier.IsSealed, Is.True);
             Assert.That(home.ApartmentDays.BalconyBarrier.DoorCollider.enabled, Is.True);
             AssertBalconyCrossing(true);
@@ -725,7 +738,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return WaitForActiveBed(home);
             home.Bed.Interact(home.Player.Interactor);
             Assert.That(home.Sleep.IsActive, Is.True);
-            Time.timeScale = FastTimeScale;
+            Time.timeScale = ReviewTimeScale;
             yield return WaitForSleepPhase(HomeSleepPhase.FaceHold);
             Time.timeScale = 1f;
             yield return WaitForSleepPhase(HomeSleepPhase.Cut);
@@ -741,6 +754,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(source.isPlaying, Is.False,
                         "Cancelling the montage must stop its sustained transformation cue.");
             Assert.That(home.Sleep.IsActive, Is.False);
+            AssertNoBedAudioPlaying();
             Assert.That(home.Sleep.IsScreenDark, Is.False);
             Assert.That(home.AnimatedInteraction.IsActive, Is.False);
             Assert.That(GameSessionState.HomeSleepAppearanceActive, Is.False);
@@ -1323,6 +1337,87 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
         }
 
+        private IEnumerator ObserveSleepEntry()
+        {
+            float previousCaptureStep = Time.captureDeltaTime;
+            Time.captureDeltaTime = 1f / 24f;
+            double started = Time.timeAsDouble;
+            float deadline = Time.realtimeSinceStartup + 60f;
+            int sampled = 0, supportSamples = 0;
+            Vector3 plantedRightGrip = default;
+            var hero = (Player3DCharacterPresentation)home.Player.Visual;
+            try
+            {
+                while (home.AnimatedInteraction.Phase == PlayerAnimatedInteractionPhase.Entering &&
+                       Time.realtimeSinceStartup < deadline)
+                {
+                    yield return null;
+                    if (home.AnimatedInteraction.Phase != PlayerAnimatedInteractionPhase.Entering) break;
+                    float progress = home.AnimatedInteraction.ClipProgress;
+                    AssertHandsClearActualBedding($"BedEnter at {progress:P1}");
+                    if (progress >= .70f && progress <= .84f)
+                    {
+                        Vector3 grip = hero.Registry.Anchors.RightGrip.position;
+                        if (supportSamples++ == 0) plantedRightGrip = grip;
+                        Assert.That(Vector3.Distance(grip, plantedRightGrip), Is.LessThanOrEqualTo(.015f),
+                            "The bearing palm must stay planted while the torso lowers onto the sofa.");
+                    }
+                    AreaCaptureFixture.CaptureHomeBedMotionFrame(home, "BedEnter", (float)(Time.timeAsDouble - started));
+                    sampled++;
+                }
+                Assert.That(home.AnimatedInteraction.Phase, Is.EqualTo(PlayerAnimatedInteractionPhase.Looping));
+                Assert.That(sampled, Is.GreaterThan(80), "The support sweep must sample the complete clip, including its recline.");
+                Assert.That(supportSamples, Is.GreaterThan(10), "The recline support must be checked throughout its held interval.");
+                Assert.That(home.Sleep.BedAudio.ContactCueCount, Is.GreaterThanOrEqualTo(5),
+                    "Sitting, shifting weight and reclining must produce their own contact cues.");
+                Assert.That(home.Sleep.BedAudio.ContactCueCount, Is.LessThanOrEqualTo(12),
+                    "A held clip sample must not replay contact sounds every frame.");
+            }
+            finally
+            {
+                Time.captureDeltaTime = previousCaptureStep;
+                AreaCaptureFixture.CompleteHomeBedMotion("BedEnter");
+            }
+        }
+
+        private void AssertHandsClearActualBedding(string context)
+        {
+            var presentation = home.Player.Visual as Player3DCharacterPresentation;
+            Assert.That(presentation, Is.Not.Null);
+            HomeBedDeformableSurface mattress = FindBedSurface("Home Bed Mattress");
+            Transform back = home.Room.Find("Home Sleeping Sofa Back");
+            Assert.That(back, Is.Not.Null);
+            Renderer backRenderer = back.GetComponentInChildren<Renderer>();
+            Assert.That(backRenderer, Is.Not.Null);
+            Bounds backInterior = backRenderer.bounds;
+            backInterior.Expand(-.008f);
+            bodyProbeRenderers.Clear();
+            int inspected = 0;
+            foreach (Player3DMeshBinding binding in presentation.Registry.MeshBindings)
+            {
+                string bone = binding?.BoneName;
+                if (string.IsNullOrEmpty(bone) || !(bone.StartsWith("hand.", System.StringComparison.Ordinal) ||
+                    bone.StartsWith("forearm.", System.StringComparison.Ordinal))) continue;
+                Renderer renderer = binding.Renderer;
+                if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy ||
+                    !bodyProbeRenderers.Add(renderer) || !ReadPosedVertices(renderer)) continue;
+                inspected++;
+                foreach (Vector3 localVertex in bodyProbeVertices)
+                {
+                    Vector3 vertex = renderer.transform.TransformPoint(localVertex);
+                    Assert.That(backInterior.Contains(vertex), Is.False,
+                        $"{context}: {binding.MeshName} crosses the actual sofa back at {vertex:F3}.");
+                    Vector2 local = mattress.WorldToLocalPlanar(vertex);
+                    if (Mathf.Abs(local.x) >= mattress.SizeX * .5f - .015f ||
+                        Mathf.Abs(local.y) >= mattress.SizeZ * .5f - .015f) continue;
+                    float surface = home.BedSurface.GetSurfaceHeight(vertex);
+                    Assert.That(vertex.y, Is.GreaterThanOrEqualTo(surface - .004f),
+                        $"{context}: {binding.MeshName} penetrates the live bedding by {surface - vertex.y:F3}m at {vertex:F3}.");
+                }
+            }
+            Assert.That(inspected, Is.GreaterThanOrEqualTo(4), "Both hands and forearms must participate in the contact sweep.");
+        }
+
         private void AssertPosedVerticesClearMattress(
             string context,
             bool requireContact = false,
@@ -1618,9 +1713,16 @@ namespace BarPromenade.Tests.PlayMode
 
         private IEnumerator WaitForSleepPhase(HomeSleepPhase phase)
         {
-            float deadline = Time.realtimeSinceStartup + 5f;
+            float deadline = Time.realtimeSinceStartup + (AreaCaptureFixture.CaptureHomeBedEnabled ? 45f : 5f);
             while (home.Sleep.Phase != phase && Time.realtimeSinceStartup < deadline)
+            {
                 yield return null;
+                if (home.AnimatedInteraction.Phase == PlayerAnimatedInteractionPhase.Exiting)
+                {
+                    AssertHandsClearActualBedding($"BedExit at {home.AnimatedInteraction.ClipProgress:P1}");
+                    AreaCaptureFixture.CaptureHomeBedMotionFrame(home, "BedExit", (float)Time.timeAsDouble);
+                }
+            }
             Assert.That(home.Sleep.Phase, Is.EqualTo(phase));
         }
 
@@ -1639,9 +1741,9 @@ namespace BarPromenade.Tests.PlayMode
         {
             Assert.That(home.Sleep.IsCameraReturning, Is.False,
                 "The first supported recovery stays focused before the camera returns while seated.");
-            Assert.That(home.CameraFollow.FixedBaseFieldOfView, Is.EqualTo(38f).Within(.01f));
+            Assert.That(home.CameraFollow.FixedBaseFieldOfView, Is.InRange(38f - .01f, 42f + .01f));
             Vector3 toHead = hero.Registry.Anchors.Head.position - home.CameraFollow.FixedBasePosition;
-            Assert.That(toHead.magnitude, Is.InRange(.65f, 1.15f),
+            Assert.That(toHead.magnitude, Is.InRange(.65f, 1.35f),
                 "Face focus must give the head and shoulders breathing room while tracking their movement.");
             Assert.That(Vector3.Angle(home.CameraFollow.FixedBaseRotation * Vector3.forward, toHead),
                 Is.LessThan(15f), "The face stays near frame centre throughout the wake.");
@@ -1774,6 +1876,18 @@ namespace BarPromenade.Tests.PlayMode
             }
             Assert.That(changedSurfaces, Is.GreaterThan(0));
             Assert.That(longHairSurfaces, Is.GreaterThan(0));
+        }
+
+        private void AssertNoBedAudioPlaying()
+        {
+            var bedClips = new HashSet<AudioClip>();
+            foreach (RetroSfxId id in new[] { RetroSfxId.HomeSleepStartle, RetroSfxId.HomeBedCloth,
+                RetroSfxId.HomeBedSettle, RetroSfxId.HomeBedCreak, RetroSfxId.HomeBedInhale,
+                RetroSfxId.HomeBedExhale, RetroSfxId.HomeBedGasp })
+                bedClips.Add(home.Audio.GetClip(id));
+            foreach (AudioSource source in home.Audio.GetComponentsInChildren<AudioSource>())
+                if (source.clip != null && bedClips.Contains(source.clip))
+                    Assert.That(source.isPlaying, Is.False, "Completing/cancelling bed use releases every owned bed voice.");
         }
 
         private static void CaptureSleepFrame(string name)

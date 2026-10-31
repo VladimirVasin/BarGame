@@ -63,7 +63,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Bar hours and crowd | Daily12-02, hourly3-8; real entry/exit, partial pairs, occupied docks; accepted service finishes. | `BarBusinessHours`, `BarCrowdController`, `BarInteriorRoot` | Current |
 | Russian vocalizer | Twelve M/F styles; menu A/B/free/window; shared phonetic text/face timing, bounded workers/PCM. | `RussianVocalizer{Lab,Synthesis,Voice,Plan}`, `RussianSpeechPhonetics` | Current |
 | Free karaoke | LMB/mouse, drunk DSP drift; silent hall gaze, dynamic hero/guest shots, rare WC; cleanup. | `BarKaraoke*`, `KaraokeVoice{,Output}`, `RussianVocalizerSustainOutput` | Current |
-| Calm Home opening | Five quiet views/stopped12:00→E wake; shared recovery/seated return/idle→fresh E stand. | `HomeOpening{Controller,CameraSequence}`, `HomeSleepController` | Current |
+| Calm Home opening | Five eased views/noon→E wake; physical foley/breath, seated return/idle→fresh E stand. | `HomeOpening{Controller,CameraSequence}`, `HomeSleepController` | Current |
 | Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
 | World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
 | Session day/time displays | Inventory/day announcements follow calendar; final7 clock display is an exception. | `HomeAlarmClock`, `InventoryView` | Current |
@@ -178,7 +178,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Ferryman radio and road speech | Three stations, playheads and cabin reactions persist; passenger exit switches the radio off. | `LastRouteRadioMusicPlayer`, `LastRouteRideSpeech{Session,View}` | Current |
 | Ferryman coin | One authored coin supplies the toss and contained glovebox pile; shared material, no pickups. | `LastRouteCoinAsset`, `LastRouteGloveboxCoins` | Current |
 | The last route | Journey stages coordinate Ferryman dialogue, car legs, blackouts and arrivals; the ride is refused when very drunk. | `LastRouteRideController`, `LastRouteFerrymanRideRules`, `LastRouteCar{DrivePath,DriveModel,Driver,GiveWay*}` | Current |
-| Home sofa sleep | Cut:forms→7/sustained SFX; seated idle/camera return→fresh E stand; fixed contacts. | `HomeBedInteraction`, `HomeSleep{Controller,AudioCue}` | Current |
+| Home sofa sleep | Supported hands/body→face; stable wake/foley/breath; forms→7, seated return→E stand. | `HomeBedInteraction`, `HomeSleep{Controller,AudioCue}` | Current |
 | Home balcony | Mouth-contact smoke/right orbit; E folding door; final7 seal waits if outside. | `HomeBalconySmoking*`, `HomeBalconyWorldBuilder`, `HomeBalcony{FoldingDoorInteraction,CorruptionBarrier}` | Current |
 | Shared refrigerator | Hand-free Home/warehouse;entry/chest aim;atomic Take/Back. Gap: `Use` hidden/unimplemented. | `HomeRefrigerator*`, `RefrigeratorInteractionContext`, `WorldItemInspectionPresenter` | Partial |
 | Player shadows | Real mesh shadows and an analytic contact patch follow hero/contextual visibility ownership. | `Player3DCharacterPresentation`, `Player3DRagdollController` | Current |
@@ -204,7 +204,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Bar interior and exterior | Hall/worn WC; solid shared door, exclusive hero/guest access and masked broken mirror. | `BarInteriorLayout*`, `BarWashroom*`, `InteriorHingedDoorInteraction` | Current |
 | Player home interior | 12×8×2.9m; stove meets wall; sofa/kitchen/locked room/shared sit. | `HomeInteriorModelLibrary`, `HomeDiningSeatPlan` | Current |
 | Apartment calendar appearance | Days1–7 neglect; heavier7/exact debug restore; sleep view7+hero7. | `HomeApartmentDressing`, `HomeApartmentDay{Rules,Controller}` | Current |
-| Player-home stairwell | Three gates; FP/←→/E/Q; lamp cabinet; next-room entrance light. Session retained. | `StairwellLabyrinth{Puzzles,PuzzleModeController}`, `PlayerChestFlashlightController` | Current |
+| Player-home stairwell | Three gates; FP/←→/E/Q; lamp cabinet; solve→next light immediately. Session retained. | `StairwellLabyrinth{Puzzles,PuzzleModeController}`, `PlayerChestFlashlightController` | Current |
 | City facade presentation | The legacy 4×4 path remains only for clipped Home crossings. | `CityFacade{Grid,Appearance}`, `CityBuilding{SurfaceAppearance,WindowSlotAppearance}` | Current |
 | City window presentation | Pure facade/window slots select bounded lit shares and preserve district palettes and daytime light floors. | `CityDistrict{ArtProfile,PresentationPlan,PresentationPlanner}`, `CityWindowAppearance` | Current |
 | Stairwell surface presentation | Cached textures and material property blocks apply measured stairwell surfaces without instance materials. | `StairwellSurfaceAppearance`, `SurfaceAppearanceCore` | Current |

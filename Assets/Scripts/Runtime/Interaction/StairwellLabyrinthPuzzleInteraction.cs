@@ -9,7 +9,7 @@ namespace BarPromenade
     public sealed class StairwellLabyrinthPuzzleInteraction : MonoBehaviour, IInteractable
     {
         private static readonly PlayerAnimatedInteractionDefinition Definition = new PlayerAnimatedInteractionDefinition(
-            "DoorUseEnter", "DoorUseLoop", "DoorUseExit", 6, 12f, 2, 8f, 6, 12f);
+            "DoorUseEnter", "DoorUseLoop", "DoorUseExit", 6, 30f, 2, 20f, 6, 30f);
         private StairwellLabyrinthPuzzles owner;
         private PlayerRuntime player;
         private PlayerAnimatedInteractionController controller;
@@ -40,7 +40,8 @@ namespace BarPromenade
             Action == StairwellLabyrinthPuzzleAction.WeightSwitch ? "interaction.labyrinth_weight" :
             Action == StairwellLabyrinthPuzzleAction.CarriageSend ? "interaction.labyrinth_carriage" :
             Action == StairwellLabyrinthPuzzleAction.BirdLift ? "interaction.labyrinth_lift" : "interaction.labyrinth_turn";
-        private float MotionSeconds => Action == StairwellLabyrinthPuzzleAction.CarriageSend ? 1.1f : .75f;
+        public float MotionDurationSeconds => Action == StairwellLabyrinthPuzzleAction.CarriageSend ? .7f : .32f;
+        private float MotionSeconds => MotionDurationSeconds;
 
         internal void Initialize(StairwellLabyrinthPuzzles puzzles, StairwellLabyrinthManifest.PuzzleNode node,
             StairwellLabyrinthPuzzleAction action, PlayerRuntime runtime, PlayerAnimatedInteractionController shared)

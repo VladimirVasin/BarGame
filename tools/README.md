@@ -22,7 +22,7 @@ source `ArtSource/City/EastExit`.
 `build-city-coastal-infrastructure-3d-model.py` v1.0.0;
 `Assets/Resources/City/CoastalInfrastructure/CityCoastalInfrastructure3D.{fbx,json}`;
 `CityCoastalInfrastructureAssetSetup.{Build,Validate}OrThrow`.
-Both:launcher/`--validate-only`.
+Both:`--validate-only`.
 
 `build-city-street-profile-3d-model.py`:launcher/`--validate-only`;
 `Assets/Resources/City/StreetProfile/CityStreetProfile3D.{fbx,json}`.
@@ -157,7 +157,7 @@ VHS:Windows `tools/audio-vhs/build.ps1`;Mac `tools/audio-vhs/build-macos.py`.
 Both validate ABI/DSP;compile-only retains temporary output.
 See [audio-vhs/README.md](audio-vhs/README.md).
 
-`build-player-3d-model-v2.py`: `--{surfaces,hand-grip,corruption,smoking}-only`;
+`build-player-3d-model-v2.py`: `--{surfaces,hand-grip,corruption,smoking,bed}-only`;
 `--skip-animation-export --no-previews`;`player_hand_gestures.validate`:FBX.
 `build-player-corruption-portraits.py`:views.
 `build-player-bar-repeat-actions.py`:wave/wrist;`validate`.

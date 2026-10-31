@@ -255,22 +255,31 @@ def design_puzzles(add):
             box('Steel',(1.38,1.42,3.14),(.10,1.12,.10),chunk)
             box('Steel',(1.18,1.155,3.14),(.45,.075,.10),chunk)
             lever('cloth-bolt',.98)
-            # A plain wall cabinet keeps the light physically behind a real
-            # leaf until the first puzzle releases its latch. No reward glow.
-            for x in (1.12,1.88):box('WornSteel',(x,1.20,1.38),(.045,1.16,.50))
-            for y in (.64,1.76):box('WornSteel',(1.50,y,1.38),(.80,.045,.50))
-            box('WornSteel',(1.50,1.20,1.61),(.80,1.16,.045))
-            box('Steel',(1.50,.95,1.38),(.74,.025,.44),'RewardCabinetShelf')
-            box('Collision',(1.50,1.20,1.39),(.80,1.16,.50),bevel=0)
+            # A compact lamp cabinet hangs by its BACK on the right wall.
+            # Its inward-facing front, shelf, hinge and collision share one
+            # measured basis; the old cabinet faced the doorway and floated.
+            cabinet_origin=(1.75,1.35,1.45);cabinet_rotation=(0,90,0)
+            def cp(point):
+                point=rotated_point(point,cabinet_rotation)
+                return tuple(cabinet_origin[i]+point[i] for i in range(3))
+            def cb(role,center,size,chunk='RewardCabinetBody',bevel=.003):
+                put(role,kit.translated(bp.u_rotated(bp.u_box(center,size,bevel),cabinet_rotation),cabinet_origin),chunk)
+            for x in (-.17,.17):cb('WornSteel',(x,0,0),(.02,.44,.18))
+            for y in (-.21,.21):cb('WornSteel',(0,y,0),(.36,.02,.18))
+            cb('WornSteel',(0,0,.08),(.36,.44,.02))
+            cb('Steel',(0,-.135,0),(.32,.015,.135),'RewardCabinetShelf')
+            cb('Collision',(0,0,0),(.36,.44,.18),bevel=0)
             leaf='RewardCabinetLeaf'
-            box('Steel',(1.50,1.20,1.115),(.75,1.08,.045),leaf)
-            box('WornSteel',(1.76,1.20,1.065),(.045,.16,.065),leaf)
-            for y in (.82,1.58):box('WornSteel',(1.13,y,1.10),(.055,.12,.075),leaf)
-            reward=dict(id='flashlight-cabinet',stage=1,chunk=leaf,pivot=wp((1.125,1.20,1.115)),
+            cb('Steel',(0,0,-.101),(.34,.405,.022),leaf)
+            cb('WornSteel',(.12,0,-.124),(.025,.09,.035),leaf)
+            for y in (-.145,.145):cb('WornSteel',(-.169,y,-.103),(.032,.055,.035),leaf)
+            # The lamp's authored bottom is its pickup support; do not scale
+            # the actual equipment to fill the cabinet.
+            reward=dict(id='flashlight-cabinet',stage=1,chunk=leaf,pivot=wp(cp((-.17,0,-.101))),
                         axis=(0,1,0),open_angle=105,
-                        collider_center=rotated_point((.375,0,0),rotation),collider_size=(.045,1.08,.75),
-                        item_position=wp((1.50,.9625,1.37)),item_euler=(0,-90,0),
-                        interaction_position=wp((1.50,1.10,1.02)))
+                        collider_center=(.17,0,0),collider_size=(.34,.405,.022),
+                        item_position=wp(cp((0,-.1275,0))),item_euler=(0,180,0),
+                        interaction_position=wp(cp((0,-.08,-.145))))
         elif stage==2:
             # The whole task reads in one view: cloth/rails -> heavy shutter ->
             # receiving stop. The loose crowbar becomes the physical prop;
@@ -871,6 +880,30 @@ def validate(groups):
     shelf_low,shelf_high=kit.bounds(shelf);item=reward['item_position']
     if abs(item[1]-shelf_high[1])>.00001 or not all(shelf_low[axis]<item[axis]<shelf_high[axis] for axis in (0,2)):
         raise ValueError('Cabinet flashlight base must sit on its measured shelf')
+    # The first room's right wall is local X=1.84 at its inner face. Measure
+    # the generated body rather than trusting a disconnected mount anchor.
+    cabinet=kit.merge_all(part for (stage,chunk,role),geometries in groups.items()
+                         if chunk=='RewardCabinetBody' and role!='Collision' for part in geometries)
+    room=ROOMS[0];origin=room['door']
+    local=[rotated_point(tuple(point[i]-origin[i] for i in range(3)),(0,90,0)) for point in cabinet[0]]
+    lower=tuple(min(p[i] for p in local) for i in range(3));upper=tuple(max(p[i] for p in local) for i in range(3))
+    if abs(upper[0]-1.84)>1e-5 or any(abs((upper[i]-lower[i])-size)>1e-5 for i,size in enumerate((.18,.44,.36))):
+        raise ValueError('Compact cabinet back must meet the right wall at its real .18/.44/.36m dimensions')
+    # Check the actual passive lamp fits above the shelf with its front
+    # pointing into the room; the gameplay equipment remains its true size.
+    lamp=json.loads((ROOT/'Assets/Resources/Combat/Flashlight/ChestFlashlight3D.json').read_text())['models'][0]
+    item_local=rotated_point(tuple(item[i]-origin[i] for i in range(3)),(0,90,0))
+    lamp_points=[]
+    for x in (lamp['bounds_min'][0],lamp['bounds_max'][0]):
+        for y in (lamp['bounds_min'][1],lamp['bounds_max'][1]):
+            for z in (lamp['bounds_min'][2],lamp['bounds_max'][2]):
+                p=rotated_point((x,y+.0555,z),(0,180,0))
+                p=rotated_point(p,(0,90,0))
+                lamp_points.append(tuple(item_local[i]+p[i] for i in range(3)))
+    if any(not (lower[0]+.02<p[0]<upper[0]-.02 and lower[1]+.02<p[1]<upper[1]-.02 and lower[2]+.02<p[2]<upper[2]-.02)
+           for p in lamp_points):
+        raise ValueError('The real chest lamp must fit inside the compact cabinet without scaling')
+    print('STAIRWELL_LABYRINTH_COMPACT_WALL_CABINET_OK',flush=True)
     crowbar=design.reward_crowbar
     if crowbar is None or any(len(value)!=3 or not all(math.isfinite(v) for v in value) for value in crowbar.values()):
         raise ValueError('Second puzzle requires finite shared-crowbar mount, brace and reachable pickup poses')

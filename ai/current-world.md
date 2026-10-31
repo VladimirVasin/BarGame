@@ -2009,16 +2009,17 @@ cemetery:own interiors/returns.
   apartment seams/upper debris. Sleep keeps lower walls/flights/columns,
   breaks back/roof/seals descent. Gravity/domestic→shaft→machines/
   branches/loops/scenery/abyss. E→frontal overview/hidden hero;←/→/E/Q;lower fixed.
-  Whole panel/handles/aspect/UI margin;head/selection0. Rig/grips;weave→delivery→birds.
-  First:cabinet/lamp pickup/equip;second:handle lifts/releases;
+  Panel/handles/aspect/UI margin;head0. Rig/grips;weave→delivery→birds.
+  Arrows immediate;E pending1/short strokes;Q clears/cancels active.
+  First:compact back-to-wall cabinet/lamp;second:handle lifts/releases;
   bar braces→cloth cart/endstop/catch→unloaded bar;weight automatic.
   Shared pickup/session source1x→CombatCrowbar;
-  PlayerCrowbarCombatController:actor/rig/strike-parry/context.
+  Actor/rig/strike-parry/context.
   Retained gates;all3→warehouse/CrowbarOnly;
   Debug3. Lamp/fan/weight/vent/cloth:audio/pause/cleanup.
-  Native metre maps replace auxiliary-strip blur;statue/light stay. Flight1:2Hard lamps
-  22/24m/lens-hum-contactor;return restores. Next door:stage lamp/
-  outside/samefloor/1of2Hard slots;solve→next/3→none;room lights stay.
+  Metre maps;statue/light stay. Flight1:2Hard lamps
+  22/24m/lens-hum-contactor;return restores. Next door lit anywhere inside;
+  solve→next sameframe regardless floor/range;3→none;guide1of2Hard slots.
   Outside:black ambient/sun/fog/reflection/grain;supports hide finite ends/floor.
   Chest beam:birdshadows. Stone-head E Cut
   leases hero/shadow;liveCat/grant/quest stay. Single load keeps session/fish/
@@ -2388,21 +2389,20 @@ cemetery:own interiors/returns.
   remain fixed. Shared `interaction.stand_up` uses fresh E; held E does nothing.
   Bed-only interaction filter enables the prompt; motor/modal stay locked. E
   releases the shared hold into2.8s stand in default camera; cleanup removes filter.
-  The38° head-local face camera uses1.45×offset(~.84m focus); camera/DOF return
-  before standing, while motor/modal ownership lasts through the stand.
+  Camera shows support→face38°, then eases room-space wake to42°; skull roll
+  never drives lens. Opening views glide2.4s; montage holds one axis/lens.
+  Clip contacts drive cloth/cushion/timber/boots; cloth/breath are quiet/low-passed.
+  Breath follows chest, spaced≥6s; no wide return/idle loop; calm has no gasp.
+  Camera/DOF return to the current gameplay shot; motor/modal lock lasts through stand.
   Early cancel commits nothing. No dream scene/calendar skip/text/world reload/
   hidden relocation. Camera/DOF/input/HUD/face/overlay/additive/audio ownership
   freezes on pause and restores on cancellation/transition/disable/destroy.
   The retained opening starts in the loop with its own wake multiplier.
-  Per-sample pelvis alignment
-  keeps the same longitudinal coordinate through entry, sleep and exit. The
-  standing approach stays clear of the south-west bookcase.
-  The sleeper remains at the authored sofa action anchor, with the head at the
-  south pillow. Both hip anchors are the mattress top plus a measured body
-  offset rather than a clearance guess: the generator reports how far the
-  supine back, the lifted head and the seated weight hang below the pelvis
-  bone, `PlayerCharacterDimensions` mirrors those numbers, and the pillow,
-  blanket and crumpled shirt are placed around the pose instead of through it.
+  Pelvis alignment keeps the longitudinal coordinate; the approach clears the
+  south-west bookcase and the head rests south. The1.15m sofa/manifest share
+  .415m travel; baked hands retain support and clear the mattress/back.
+  Measured supine/head/seat offsets in `PlayerCharacterDimensions` determine
+  hip heights; pillow/blanket/shirt fit around the pose.
   The mattress and the closed, domed pillow use deformable vertex grids:
   they dent under actual contact with their local rest surface, his hip
   target descends by the same sink depth so he lies in the dent rather than

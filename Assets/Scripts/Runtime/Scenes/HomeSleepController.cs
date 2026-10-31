@@ -11,7 +11,7 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class HomeSleepController : MonoBehaviour
     {
-        public const float PushSeconds = 3f;
+        public const float PushSeconds = 2.5f;
         public const float FaceHoldSeconds = 3f;
         public const float NightmareSeconds = 1.2f;
         public const float CutSeconds = 2.1f;
@@ -24,6 +24,7 @@ namespace BarPromenade
         private const float CutCommitSeconds = 1.92f;
         private readonly BarMinigameModalLock modal = new BarMinigameModalLock();
         private readonly ContextualCameraDirector cameraDirector = new ContextualCameraDirector();
+        private readonly HomeSleepAudioCue.Sequence bedAudio = new HomeSleepAudioCue.Sequence();
         private HomeInteriorRoot home;
         private Transform head;
         private Player3DCharacterPresentation hero;
@@ -40,12 +41,14 @@ namespace BarPromenade
         private bool wakeCompleted;
         private bool cameraReturned;
         private Func<IInteractable, bool> standUpFilter;
-        private Vector3 wakeCameraLocal, wakeFocusLocal, wakeFaceLocal, wakeUpLocal;
+        private Vector3 trackedFace, faceVelocity, wakeStartOffset, wakeStartUp;
+        private bool faceTrackingInitialized;
         private bool normalOpening;
         private HomeOpeningCameraSequence openingShots;
 
         public HomeSleepPhase Phase { get; private set; }
         public bool IsActive => Phase != HomeSleepPhase.Idle;
+        public HomeSleepAudioCue.Sequence BedAudio => bedAudio;
         public float PhaseElapsedSeconds => elapsed;
         public bool IsCameraReturning => cameraAcquired && cameraDirector.IsReturning;
         public bool WaitingForStandUp => Phase == HomeSleepPhase.AwaitingStandUp;
@@ -94,6 +97,9 @@ namespace BarPromenade
             elapsed = 0f;
             wakeElapsed = 0f;
             seatedIdleElapsed = idleExitElapsed = 0f;
+            bedAudio.Reset();
+            faceTrackingInitialized = false;
+            faceVelocity = Vector3.zero;
             committed = cameraAcquired = false;
             ownsFace = false;
             wakeCompleted = false;
@@ -144,6 +150,7 @@ namespace BarPromenade
                 Restore(false);
                 return;
             }
+            bedAudio.Tick(home, this, Phase, normalOpening, wakeElapsed);
             switch (Phase)
             {
                 case HomeSleepPhase.OpeningSleep:
@@ -153,7 +160,7 @@ namespace BarPromenade
                 case HomeSleepPhase.LyingDown:
                     if (home.AnimatedInteraction.Phase == PlayerAnimatedInteractionPhase.Positioning) return;
                     if (!cameraAcquired && home.AnimatedInteraction.Phase == PlayerAnimatedInteractionPhase.Entering &&
-                        home.AnimatedInteraction.PhaseProgress < .4f) return;
+                        home.AnimatedInteraction.PhaseProgress < .2f) return;
                     if (!UpdateFaceCamera(dt)) { Restore(true); return; }
                     if (cameraDirector.IsSettled && home.AnimatedInteraction.Phase == PlayerAnimatedInteractionPhase.Looping)
                     {
@@ -208,7 +215,7 @@ namespace BarPromenade
                         }
                     }
                     if (!SetBody(.3f * (1f - Mathf.Clamp01(elapsed / CutCommitSeconds)), 0f,
-                            NightmareSeconds + elapsed) || !UpdateFaceCamera(dt, true))
+                            NightmareSeconds + elapsed) || !UpdateFaceCamera(dt))
                     { Restore(true); return; }
                     if (!committed && elapsed >= CutCommitSeconds)
                     {
@@ -234,14 +241,10 @@ namespace BarPromenade
                     {
                         if (!home.Bed.RequestStartledWake()) { Restore(true); return; }
                         SetFace(AwakeExpression);
-                        // Preserve the face's local framing as the same head
-                        // rises from the pillow into its supported seated pose.
-                        wakeCameraLocal = head.InverseTransformPoint(cameraDirector.CurrentShotPose.position);
-                        wakeFocusLocal = head.InverseTransformPoint(head.position + Vector3.up * .065f);
-                        wakeUpLocal = head.InverseTransformDirection(cameraDirector.CurrentShotPose.up);
-                        Transform mouth = hero.Registry.Anchors.Mouth;
-                        wakeFaceLocal = mouth != null ? head.InverseTransformPoint(
-                            mouth.position + cameraDirector.CurrentShotPose.up * .065f) : wakeFocusLocal;
+                        // The lens belongs to the room, not to the animated
+                        // skull: a flinch must not roll or whip the camera.
+                        wakeStartOffset = cameraDirector.CurrentShotPose.position - trackedFace;
+                        wakeStartUp = cameraDirector.CurrentShotPose.up;
                         Phase = HomeSleepPhase.Waking; elapsed = wakeElapsed = 0f;
                     }
                     break;
@@ -283,7 +286,11 @@ namespace BarPromenade
                         {
                             // Keep the authored seat held throughout the full
                             // ordinary-duration camera return, then await E.
-                            cameraDirector.BeginExit();
+                            HomeCameraShot destination = home.FixedCamera.ActiveShot;
+                            if (!cameraDirector.BeginExitToFixedShot(
+                                    new Pose(destination.Position, destination.Rotation),
+                                    destination.FieldOfView, destination.Focus))
+                            { Restore(true); return; }
                             Phase = HomeSleepPhase.Returning;
                             elapsed = 0f;
                         }
@@ -365,34 +372,49 @@ namespace BarPromenade
                     ? PlayerFacialExpression.ClosedBlink : AwakeExpression);
         }
 
-        private bool UpdateFaceCamera(float dt, bool montage = false, bool waking = false)
+        private bool UpdateFaceCamera(float dt, bool waking = false)
         {
-            Vector3 focus = head.position + Vector3.up * .065f;
             Vector3 footward = home.Room.TransformDirection(home.BedInteractionPlan.HeadToFootAxis).normalized;
-            Vector3 position = focus + (Vector3.up * .53f + Vector3.right * .23f + footward * .04f) *
+            Vector3 roomSide = home.Room.right;
+            float reframe = waking ? SmoothCameraProgress(wakeElapsed / 1.2f) : 0f;
+            Vector3 target = head.position + Vector3.up * .065f;
+            Transform mouth = hero.Registry.Anchors.Mouth;
+            if (waking && mouth != null)
+                target = Vector3.Lerp(target, mouth.position + Vector3.up * .065f, reframe);
+            if (!faceTrackingInitialized)
+            {
+                trackedFace = target;
+                faceTrackingInitialized = true;
+            }
+            trackedFace = Vector3.SmoothDamp(trackedFace, target, ref faceVelocity,
+                waking ? .045f : .12f, Mathf.Infinity, dt);
+            Vector3 focus = trackedFace;
+            Vector3 position = focus + (Vector3.up * .53f + roomSide * .23f + footward * .04f) *
                 FaceCameraDistanceScale;
             Pose pose = new Pose(position, Quaternion.LookRotation(focus - position, -footward));
             float fov = 38f;
             if (waking)
             {
-                // The head pivot sits below the facial centre. Reframe toward
-                // the registered mouth/eyes as he sits up, without a shot cut.
-                float reframe = wakeCompleted ? 1f : Mathf.SmoothStep(0f, 1f,
-                    home.AnimatedInteraction.ClipProgress / HomeBedInteraction.AbruptWakeClipSplit);
-                Vector3 shift = (wakeFaceLocal - wakeFocusLocal) * reframe;
-                position = head.TransformPoint(wakeCameraLocal + shift);
-                focus = head.TransformPoint(wakeFocusLocal + shift);
+                Vector3 offset = Vector3.Lerp(wakeStartOffset,
+                    roomSide + Vector3.up * .13f + footward * .13f, reframe);
+                position = focus + offset;
                 pose = new Pose(position, Quaternion.LookRotation(focus - position,
-                    head.TransformDirection(wakeUpLocal)));
+                    Vector3.Slerp(wakeStartUp, Vector3.up, reframe)));
+                fov = Mathf.Lerp(38f, 42f, reframe);
             }
-            if (montage && !IsScreenDark)
+            else if (Phase == HomeSleepPhase.LyingDown)
             {
-                // Finite staged glimpses reveal the same body deteriorating.
-                float side = montageBeat % 2 == 0 ? 1f : -1f;
-                position += footward * (.025f * side);
-                pose = new Pose(position, Quaternion.LookRotation(focus - position, -footward) *
-                    Quaternion.Euler(0f, 0f, side * 2.5f));
-                fov = Mathf.Lerp(37f, 33f, (montageBeat + 1f) / MontageBeatCount);
+                // First reveal the supported body, then approach the face as
+                // the shoulders settle. Both moves fit the existing BedEnter.
+                Vector3 bed = home.Room.TransformPoint(home.BedInteractionPlan.ActionHipPosition);
+                Vector3 mediumFocus = bed + Vector3.up * .24f;
+                Vector3 mediumPosition = bed + roomSide * 2.35f + Vector3.up * 1.15f - footward * .25f;
+                float close = SmoothCameraProgress((home.AnimatedInteraction.ClipProgress - .70f) / .30f);
+                focus = Vector3.Lerp(mediumFocus, focus, close);
+                position = Vector3.Lerp(mediumPosition, position, close);
+                pose = new Pose(position, Quaternion.LookRotation(focus - position,
+                    Vector3.Slerp(Vector3.up, -footward, close)));
+                fov = Mathf.Lerp(50f, fov, close);
             }
             if (!cameraAcquired)
             {
@@ -400,10 +422,16 @@ namespace BarPromenade
                     home.Player.GameObject.transform, pose, fov, focus, PushSeconds, CameraReturnSeconds, true, .035f);
                 if (!cameraAcquired) return false;
             }
-            if (!cameraDirector.TrySetAuthoredShot(pose, fov, focus, cut: montage,
+            if (!cameraDirector.TrySetAuthoredShot(pose, fov, focus,
                     sightSubject: head, nearClipPlane: .035f)) return false;
             cameraDirector.Tick(dt);
             return true;
+        }
+
+        private static float SmoothCameraProgress(float progress)
+        {
+            float t = Mathf.Clamp01(progress);
+            return t * t * t * (t * (t * 6f - 15f) + 10f);
         }
 
         private void OnGUI()
@@ -422,6 +450,7 @@ namespace BarPromenade
         private void Restore(bool cancelBed)
         {
             if (home != null) HomeSleepAudioCue.Stop(home.Audio, this);
+            bedAudio.Reset();
             if (!IsActive) return;
             if (normalOpening && !GameSessionState.IsGameTimeRunning &&
                 !SceneTransitionService.IsTransitioning && SceneManager.GetActiveScene().name == SceneIds.HomeInterior)

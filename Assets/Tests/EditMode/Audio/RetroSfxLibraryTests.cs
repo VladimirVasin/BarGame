@@ -107,6 +107,10 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(RetroSfxId.PistolReady)]
         [TestCase(RetroSfxId.PistolCasingEject)]
         [TestCase(RetroSfxId.PistolCasingBounce)]
+        [TestCase(RetroSfxId.HomeBedCloth)]
+        [TestCase(RetroSfxId.HomeBedInhale)]
+        [TestCase(RetroSfxId.HomeBedExhale)]
+        [TestCase(RetroSfxId.HomeBedGasp)]
         public void GenerateSamples_IsDeterministicFiniteAndAudible(
             RetroSfxId id)
         {

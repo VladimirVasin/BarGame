@@ -23,13 +23,17 @@ namespace BarPromenade
         private Pose cameraStart, returnStart, previousFixedPose;
         private float cameraElapsed, previousLens;
         private int selectedIndex, openingFrame, controlCount;
+        private StairwellLabyrinthPuzzleInteraction operatingControl, queuedControl, dispatchControl;
         private bool wasFixed, returning, inspectionPresented, releasePresented, restoring;
         private Func<bool> operatePrompt;
         private string shownPromptKey;
 
         public bool IsActive { get; private set; }
         public bool IsSettled => IsActive && !returning && inspectionPresented;
-        public bool IsOperating => IsActive && SelectedControl != null && SelectedControl.OwnsActiveInteraction;
+        public bool IsOperating => IsActive && operatingControl != null && operatingControl.OwnsActiveInteraction;
+        public StairwellLabyrinthPuzzleInteraction OperatingControl => IsOperating ? operatingControl : null;
+        public StairwellLabyrinthPuzzleInteraction QueuedControl => queuedControl;
+        public bool HasQueuedOperation => queuedControl != null;
         public int Stage { get; private set; }
         public StairwellLabyrinthPuzzleInteraction SelectedControl => IsActive ? stageControls[selectedIndex] : null;
         public int RenderedOutlineCount => IsSettled && !GameTimeScaleRuntime.IsPaused && !puzzles.State.CanPassGate(Stage)
@@ -86,6 +90,7 @@ namespace BarPromenade
                 previousLens = cameraFollow.Camera.fieldOfView;
                 cameraStart = new Pose(cameraFollow.Camera.transform.position, cameraFollow.Camera.transform.rotation);
                 cameraElapsed = 0f;
+                operatingControl = queuedControl = dispatchControl = null;
                 returning = inspectionPresented = releasePresented = false;
                 openingFrame = Time.frameCount;
                 IsActive = true;
@@ -97,12 +102,12 @@ namespace BarPromenade
         }
 
         internal bool Owns(StairwellLabyrinthPuzzleInteraction control) => IsSettled && !IsOperating &&
-            control == SelectedControl && GameCursor.ApplicationFocused && !GameTimeScaleRuntime.IsPaused &&
+            control == dispatchControl && GameCursor.ApplicationFocused && !GameTimeScaleRuntime.IsPaused &&
             !SceneTransitionService.IsTransitioning;
 
         public bool Select(int delta)
         {
-            if (!IsSettled || IsOperating || delta == 0 || !GameCursor.ApplicationFocused ||
+            if (!IsSettled || delta == 0 || !GameCursor.ApplicationFocused ||
                 !GameInput.CanRead(GameInputContext.Contextual) || puzzles.State.CanPassGate(Stage)) return false;
             selectedIndex = (selectedIndex + (delta < 0 ? controlCount - 1 : 1)) % controlCount;
             outline.Select(puzzles.GetControlRenderers(SelectedControl));
@@ -110,13 +115,48 @@ namespace BarPromenade
             return true;
         }
 
-        public bool OperateSelected() => IsSettled && !IsOperating &&
-            SelectedControl != null && SelectedControl.BeginFromPuzzleMode(this);
+        public bool OperateSelected()
+        {
+            if (!IsSettled || SelectedControl == null || !GameCursor.ApplicationFocused ||
+                GameTimeScaleRuntime.IsPaused || SceneTransitionService.IsTransitioning ||
+                !GameInput.CanRead(GameInputContext.Contextual) || puzzles.State.CanPassGate(Stage)) return false;
+            if (IsOperating || animation.Phase != PlayerAnimatedInteractionPhase.Idle || queuedControl != null)
+            {
+                // One fresh press may replace the next request; no input builds an unbounded action queue.
+                queuedControl = SelectedControl;
+                return true;
+            }
+            return StartOperation(SelectedControl);
+        }
+
+        private bool StartOperation(StairwellLabyrinthPuzzleInteraction control)
+        {
+            dispatchControl = control;
+            try
+            {
+                if (!control.BeginFromPuzzleMode(this)) return false;
+                operatingControl = control;
+                return true;
+            }
+            finally { dispatchControl = null; }
+        }
+
+        private void AdvanceQueuedOperation()
+        {
+            if (!GameInput.CanRead(GameInputContext.Contextual)) { queuedControl = null; return; }
+            if (operatingControl != null && !operatingControl.OwnsActiveInteraction) operatingControl = null;
+            if (queuedControl == null || IsOperating || animation.Phase != PlayerAnimatedInteractionPhase.Idle) return;
+            var next = queuedControl;
+            queuedControl = null;
+            if (puzzles.State.CanOperate(next.Action)) StartOperation(next);
+        }
 
         public bool RequestExit()
         {
             if (!IsActive || returning) return false;
-            SelectedControl?.Cancel();
+            queuedControl = null;
+            operatingControl?.Cancel();
+            operatingControl = null;
             returnStart = new Pose(cameraFollow.Camera.transform.position, cameraFollow.Camera.transform.rotation);
             cameraElapsed = 0f;
             returning = true;
@@ -139,16 +179,18 @@ namespace BarPromenade
                 !animation.isActiveAndEnabled || cameraFollow == null || SceneTransitionService.IsTransitioning)
             { Restore(); return; }
             if (releasePresented) { Restore(); return; }
-            if (GameTimeScaleRuntime.IsPaused || !GameCursor.ApplicationFocused) return;
+            if (!GameCursor.ApplicationFocused) { queuedControl = null; return; }
+            if (GameTimeScaleRuntime.IsPaused) return;
             cameraElapsed = Mathf.Min(CameraBlendSeconds, cameraElapsed + Mathf.Max(0f, Time.deltaTime));
-            if (DebugFreeCamera.IsInspecting(player.GameObject)) { ReleasePrompt(); return; }
+            if (DebugFreeCamera.IsInspecting(player.GameObject)) { queuedControl = null; ReleasePrompt(); return; }
             RefreshPrompt();
             if (Time.frameCount <= openingFrame || returning) return;
             if (GameInput.WasPressed(GameInputAction.PuzzleExit, GameInputContext.Contextual)) { RequestExit(); return; }
-            if (!IsSettled || IsOperating) return;
+            if (!IsSettled) return;
             if (GameInput.WasPressed(GameInputAction.PuzzlePreviousControl, GameInputContext.Contextual)) Select(-1);
             else if (GameInput.WasPressed(GameInputAction.PuzzleNextControl, GameInputContext.Contextual)) Select(1);
             if (GameInput.WasPressed(GameInputAction.Interact, GameInputContext.Contextual)) OperateSelected();
+            AdvanceQueuedOperation();
         }
 
         private void LateUpdate()
@@ -199,7 +241,9 @@ namespace BarPromenade
             restoring = true;
             try
             {
-                SelectedControl?.Cancel();
+                queuedControl = null;
+                operatingControl?.Cancel();
+                operatingControl = dispatchControl = null;
                 RestorePlayer();
                 outline?.Clear();
                 ReleasePrompt();

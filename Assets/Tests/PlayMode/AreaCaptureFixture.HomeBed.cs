@@ -17,6 +17,110 @@ namespace BarPromenade.Tests.PlayMode
         internal static bool CaptureHomeBedEnabled =>
             Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_HOME_BED") == "1";
 
+        private static HomeBedSceneCapture homeBedSceneCapture;
+
+        internal static IEnumerator BeginHomeBedScene(HomeInteriorRoot home, string name)
+        {
+            if (!CaptureHomeBedEnabled) yield break;
+            CompleteHomeBedScene();
+            string audioFolder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", "HomeBed", "audio-cues");
+            Directory.CreateDirectory(audioFolder);
+            foreach (RetroSfxId cueId in new[] { RetroSfxId.HomeBedCloth, RetroSfxId.HomeBedSettle,
+                         RetroSfxId.HomeBedCreak, RetroSfxId.HomeBedInhale, RetroSfxId.HomeBedExhale, RetroSfxId.HomeBedGasp })
+            {
+                AudioClip cue = home.Audio.GetClip(cueId);
+                var pcm = new float[cue.samples * cue.channels];
+                Assert.That(cue.GetData(pcm, 0), Is.True);
+                WritePcmWave(Path.Combine(audioFolder, cueId + ".wav"), pcm, cue.frequency, cue.channels, 1f);
+            }
+            float volume = AudioListener.volume, captureStep = Time.captureDeltaTime;
+            bool started = false;
+            try
+            {
+                Time.captureDeltaTime = 1f / 24f;
+                Assert.That(AudioRenderer.Start(), Is.True, "Bed sound review needs native offline rendering.");
+                started = true;
+                AudioListener.volume = 1f;
+                // Prime Unity's first offline session before recording: its
+                // first native buffer can be empty even with playing sources.
+                for (int frame = 0; frame < 8; frame++)
+                {
+                    yield return null;
+                    int count = Mathf.Max(0, AudioRenderer.GetSampleCountForCaptureFrame());
+                    using var buffer = new Unity.Collections.NativeArray<float>(count * 2,
+                        Unity.Collections.Allocator.Temp);
+                    AudioRenderer.Render(buffer);
+                }
+            }
+            finally
+            {
+                AudioListener.volume = 0f;
+                if (started) AudioRenderer.Stop();
+                AudioListener.volume = volume;
+                Time.captureDeltaTime = captureStep;
+            }
+            homeBedSceneCapture = home.gameObject.AddComponent<HomeBedSceneCapture>();
+            homeBedSceneCapture.Initialize(home, name);
+        }
+
+        internal static void CompleteHomeBedScene()
+        {
+            if (homeBedSceneCapture == null) return;
+            homeBedSceneCapture.Complete();
+            Object.DestroyImmediate(homeBedSceneCapture);
+            homeBedSceneCapture = null;
+        }
+
+        internal static IEnumerator VerifyHomeBedCameraReturn(HomeInteriorRoot home)
+        {
+            // UnityTest coroutines resume before LateUpdate. This probe reads
+            // the final camera and final posed head together after all owners,
+            // rather than comparing today's target with yesterday's lens.
+            var probe = home.gameObject.AddComponent<HomeBedReturnCameraProbe>();
+            probe.Initialize(home);
+            float deadline = Time.realtimeSinceStartup + (CaptureHomeBedEnabled ? 45f : 12f);
+            int lastFrame = -1, returnSamples = 0, heldSamples = 0;
+            Pose previous = default;
+            float previousFov = 0f;
+            bool hasPrevious = false;
+            try
+            {
+                while (heldSamples < 2 && Time.realtimeSinceStartup < deadline)
+                {
+                    yield return null;
+                    if (probe.Frame == lastFrame || probe.Frame < 0) continue;
+                    lastFrame = probe.Frame;
+                    Assert.That(probe.Phase, Is.EqualTo(HomeSleepPhase.Returning).Or.EqualTo(HomeSleepPhase.AwaitingStandUp),
+                        "The camera return must end at the seated wait, with the bed still owning the hero.");
+                    if (probe.Phase == HomeSleepPhase.Returning) returnSamples++;
+                    else heldSamples++;
+                    Assert.That(probe.HeadViewport.z, Is.GreaterThan(probe.NearPlane),
+                        "The hero's head must remain in front of the actual returning lens.");
+                    Assert.That(probe.HeadViewport.x, Is.InRange(.025f, .975f),
+                        "Camera return loses the seated hero horizontally.");
+                    Assert.That(probe.HeadViewport.y, Is.InRange(.025f, .975f),
+                        "Camera return loses the seated hero vertically.");
+                    if (hasPrevious)
+                    {
+                        float dt = Mathf.Max(probe.DeltaTime, .001f);
+                        Assert.That(Vector3.Distance(previous.position, probe.Pose.position),
+                            Is.LessThan(.04f + dt * 6f),
+                            "The rendered return must stay continuous through its final gameplay handoff.");
+                        Assert.That(Quaternion.Angle(previous.rotation, probe.Pose.rotation),
+                            Is.LessThan(1f + dt * 100f),
+                            "The rendered camera must not snap its aim at the seated-wait boundary.");
+                        Assert.That(Mathf.Abs(previousFov - probe.FieldOfView),
+                            Is.LessThan(.3f + dt * 12f),
+                            "The returning lens must not jump when gameplay framing resumes.");
+                    }
+                    previous = probe.Pose; previousFov = probe.FieldOfView; hasPrevious = true;
+                }
+                Assert.That(returnSamples, Is.GreaterThan(2), "Inspect the moving return, not only its endpoint.");
+                Assert.That(heldSamples, Is.EqualTo(2), "Inspect both sides of the final rendered camera handoff.");
+            }
+            finally { Object.DestroyImmediate(probe); }
+        }
+
         private static readonly Dictionary<string, HomeBedMotionCapture> HomeBedMotionCaptures =
             new Dictionary<string, HomeBedMotionCapture>();
 
@@ -282,4 +386,164 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
     }
+
+    [DefaultExecutionOrder(11000)]
+    internal sealed class HomeBedReturnCameraProbe : MonoBehaviour
+    {
+        private HomeInteriorRoot home;
+        private Camera camera;
+        private Transform head;
+        internal int Frame { get; private set; } = -1;
+        internal HomeSleepPhase Phase { get; private set; }
+        internal Pose Pose { get; private set; }
+        internal Vector3 HeadViewport { get; private set; }
+        internal float FieldOfView { get; private set; }
+        internal float NearPlane { get; private set; }
+        internal float DeltaTime { get; private set; }
+
+        internal void Initialize(HomeInteriorRoot owner)
+        {
+            home = owner; camera = Camera.main;
+            head = ((Player3DCharacterPresentation)home.Player.Visual).Registry.Anchors.Head;
+        }
+
+        private void LateUpdate()
+        {
+            if (home == null || camera == null || head == null) return;
+            Phase = home.Sleep.Phase;
+            Pose = new Pose(camera.transform.position, camera.transform.rotation);
+            FieldOfView = camera.fieldOfView; NearPlane = camera.nearClipPlane;
+            HeadViewport = camera.WorldToViewportPoint(head.position);
+            DeltaTime = Time.deltaTime; Frame = Time.frameCount;
+        }
+    }
+
+    // Test-only, opt-in presentation evidence. The camera is the actual live
+    // shot (no diagnostic repositioning); the two-angle contact video remains
+    // a separate capture above. Camera.Render excludes OnGUI/UI overlays.
+    [DefaultExecutionOrder(10000)]
+    internal sealed class HomeBedSceneCapture : MonoBehaviour
+    {
+        private const int Rate = 24;
+        private HomeInteriorRoot home;
+        private Camera camera;
+        private RenderTexture target;
+        private Texture2D pixels;
+        private BinaryWriter wave;
+        private StreamWriter concat;
+        private string folder;
+        private float previousVolume, previousCaptureStep;
+        private int frames, images, samples, sampleRate;
+        private bool active;
+        private HomeSleepPhase previousPhase;
+
+        internal void Initialize(HomeInteriorRoot owner, string name)
+        {
+            home = owner; camera = Camera.main;
+            previousVolume = AudioListener.volume;
+            previousCaptureStep = Time.captureDeltaTime;
+            sampleRate = Mathf.Max(8000, AudioSettings.outputSampleRate);
+            folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", "HomeBed", name);
+            Directory.CreateDirectory(folder);
+            target = new RenderTexture(640, 360, 24);
+            pixels = new Texture2D(640, 360, TextureFormat.RGB24, false);
+            concat = new StreamWriter(Path.Combine(folder, "frames.ffconcat"));
+            concat.WriteLine("ffconcat version 1.0");
+            wave = new BinaryWriter(File.Create(Path.Combine(folder, "scene.wav")));
+            WriteWaveHeader(0);
+            Time.captureDeltaTime = 1f / Rate;
+            if (!AudioRenderer.Start())
+            {
+                Complete();
+                throw new InvalidOperationException("Bed scene capture could not acquire offline audio.");
+            }
+            active = true;
+            AudioListener.volume = 1f;
+            previousPhase = home.Sleep.Phase;
+            Debug.Log("Home bed scene review started: " + name);
+        }
+
+        private void LateUpdate()
+        {
+            if (!active) return;
+            if (frames >= Rate * 100 || camera == null || home == null)
+            { Complete(); return; }
+            if (previousPhase != home.Sleep.Phase)
+            {
+                previousPhase = home.Sleep.Phase;
+                Debug.Log("Home bed scene review: " + previousPhase);
+            }
+            int count = Mathf.Max(0, AudioRenderer.GetSampleCountForCaptureFrame());
+            using (var buffer = new Unity.Collections.NativeArray<float>(count * 2,
+                Unity.Collections.Allocator.Temp))
+            {
+                bool rendered = AudioRenderer.Render(buffer);
+                if (rendered)
+                    for (int i = 0; i < buffer.Length; i++)
+                    {
+                        wave.Write((short)(Mathf.Clamp(buffer[i], -1f, 1f) * short.MaxValue));
+                        samples++;
+                    }
+            }
+            if (frames % 2 == 0) CaptureFrame();
+            frames++;
+        }
+
+        private void CaptureFrame()
+        {
+            RenderTexture previousTarget = camera.targetTexture, previousActive = RenderTexture.active;
+            try
+            {
+                camera.targetTexture = target;
+                camera.Render();
+                RenderTexture.active = target;
+                pixels.ReadPixels(new Rect(0f, 0f, 640f, 360f), 0, 0);
+                pixels.Apply();
+                string name = "frame-" + images.ToString("00000") + ".png";
+                File.WriteAllBytes(Path.Combine(folder, name), pixels.EncodeToPNG());
+                concat.WriteLine("file '" + name + "'");
+                concat.WriteLine("option framerate 1000");
+                concat.WriteLine("duration " + (2f / Rate).ToString("0.######", CultureInfo.InvariantCulture));
+                images++;
+            }
+            finally
+            {
+                camera.targetTexture = previousTarget;
+                RenderTexture.active = previousActive;
+            }
+        }
+
+        private void WriteWaveHeader(int sampleCount)
+        {
+            wave.Write(Encoding.ASCII.GetBytes("RIFF")); wave.Write(36 + sampleCount * 2);
+            wave.Write(Encoding.ASCII.GetBytes("WAVEfmt ")); wave.Write(16);
+            wave.Write((short)1); wave.Write((short)2); wave.Write(sampleRate);
+            wave.Write(sampleRate * 4); wave.Write((short)4); wave.Write((short)16);
+            wave.Write(Encoding.ASCII.GetBytes("data")); wave.Write(sampleCount * 2);
+        }
+
+        internal void Complete()
+        {
+            AudioListener.volume = 0f;
+            if (active) AudioRenderer.Stop();
+            active = false;
+            if (wave != null)
+            {
+                wave.Seek(0, SeekOrigin.Begin); WriteWaveHeader(samples); wave.Dispose(); wave = null;
+            }
+            if (concat != null)
+            {
+                if (images > 0) concat.WriteLine("file 'frame-" + (images - 1).ToString("00000") + ".png'");
+                concat.Dispose(); concat = null;
+            }
+            if (target != null) { target.Release(); DestroyImmediate(target); target = null; }
+            if (pixels != null) { DestroyImmediate(pixels); pixels = null; }
+            Time.captureDeltaTime = previousCaptureStep;
+            AudioListener.volume = previousVolume;
+            if (samples > 0) Debug.Log("Home bed scene review complete: " + images + " frames / " + samples + " stereo samples.");
+        }
+
+        private void OnDestroy() => Complete();
+    }
+
 }

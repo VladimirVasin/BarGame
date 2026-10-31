@@ -87,6 +87,12 @@ namespace BarPromenade
         FootstepMetal,
         Payment,
         HomeSleepStartle,
+        HomeBedCloth,
+        HomeBedSettle,
+        HomeBedCreak,
+        HomeBedInhale,
+        HomeBedExhale,
+        HomeBedGasp,
         Count
     }
 
@@ -907,7 +913,21 @@ namespace BarPromenade
             // One owned, finite nonverbal transformation, including its tail.
             // Gameplay routes it through the existing SFX gain and perception bus.
             new RetroSfxDefinition(RetroSfxId.HomeSleepStartle, RetroSfxCategory.Bar,
-                HomeSleepStartleDurationSeconds, .86f, 0f, 1, .5f, 1, 4096, 8500f, 0f, 30)
+                HomeSleepStartleDurationSeconds, .86f, 0f, 1, .5f, 1, 4096, 8500f, 0f, 30),
+            // Short dry contacts belong to the actual sofa; breaths to the hero.
+            // Both reuse the finite pools and the sleep director's pause owner.
+            new RetroSfxDefinition(RetroSfxId.HomeBedCloth, RetroSfxCategory.World,
+                .48f, .18f, .85f, 1, .16f, 1, 4096, 1500f, .025f, 95, 2),
+            new RetroSfxDefinition(RetroSfxId.HomeBedSettle, RetroSfxCategory.World,
+                .42f, .61f, .85f, 1, .18f, 1, 4096, 3200f, .025f, 90, 2),
+            new RetroSfxDefinition(RetroSfxId.HomeBedCreak, RetroSfxCategory.World,
+                .62f, .43f, .9f, 1, .3f, 1, 4096, 2900f, .02f, 97, 2),
+            new RetroSfxDefinition(RetroSfxId.HomeBedInhale, RetroSfxCategory.Bar,
+                .66f, .13f, .65f, 1, .3f, 1, 4096, 1100f, 0f, 80, 2),
+            new RetroSfxDefinition(RetroSfxId.HomeBedExhale, RetroSfxCategory.Bar,
+                .72f, .12f, .65f, 1, .3f, 1, 4096, 950f, 0f, 82, 2),
+            new RetroSfxDefinition(RetroSfxId.HomeBedGasp, RetroSfxCategory.Bar,
+                .39f, .35f, .6f, 1, .5f, 1, 4096, 2200f, 0f, 65)
         };
 
         public static int Count => definitions.Length - 1;
@@ -1015,6 +1035,9 @@ namespace BarPromenade
             {
                 throw new ArgumentOutOfRangeException(nameof(variant));
             }
+
+            if (HomeBedSoundSynthesis.IsBedCue(id))
+                return HomeBedSoundSynthesis.GenerateSamples(definition, variant, SampleRate);
 
             int sampleCount = Mathf.Max(
                 1,

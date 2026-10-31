@@ -17,8 +17,8 @@
   24FX/owners kept;providers0;cost unmeasured;§6/16/21/art§16.
 
 - **Accepted 2026-10-31 — labyrinth room light, user:**
-  3×EmergencyRoomLamp/stage palette;outside→next unsolved door/
-  samefloor22/24m/1of2Hard slots;inside room light stays;solve→next/after3none.
+  3×EmergencyRoomLamp/palette;next door lit anywhere inside;solve→next sameframe/
+  otherfloor/range;after3none. Local22/24m;guide1of2Hard slots.
   All24:GI/SSAO/fog/volume/shadows/grade stay;SSGI/SCGI/SSR0;probes/water/wetness/
   bevels/COLOR/wind/decals/dust/rim/outlines stay;eight post owners/settings
   stay,optionaloff:readable. Shared material/pass;text-input-lore+0;
@@ -47,12 +47,12 @@
   Bounded lights/caches/pause/cleanup.
 
 - **Accepted exception 2026-10-30 — puzzle mode/chest lamp:**
-  User2026-10-31:E→front whole panel+handles/UI margin;aspect fit4:3–16:9.
-  Head/tool/clip0;zero roll;cached3.
-  Hiddenhero/same rig-grips;←→/E/Q;return-cancel leases.
-  Solved1→cabinet/shared take1x→ChestFlashlight/equip/session/reset;storygrant0/Debug.
-  Factory:event/lazy/warehouse ambient. All24:scene6/material10/post8 stay;
-  Readable DOF/lens;providers0/cost unknown;§6/16/21/art9.
+  User2026-10-31:front panel+handles/UI margin/4:3–16:9;head0/roll0/cache3.
+  Hiddenhero/rig-grips;arrows immediate/E pending1/Q cancels;short.
+  Solved1→compact cabinet/back-to-wall/shared take1x→ChestFlashlight/equip/session;
+  reset/storygrant0/Debug. Factory:event/lazy/warehouse;return leases.
+  All24:scene6/material10/post8 stay;readable lens/DOF;providers0/cost unknown;
+  §6/16/21/art9.
 
 - **Accepted exception 2026-10-30 — Home ceiling, stove wall and room shots:**
   User: lower ceiling/three room views/close stove's side gap.
@@ -110,7 +110,7 @@
   User: top New Game/Debug/Quit. New Game prepares fresh Home/day1, hero/home1,
   open balcony and actual12:00 before composition; clock/needs wait for E.
   Covered ready callback acquires sleep after guard clears, before first frame.
-  `HomeOpeningCameraSequence`: five6s room/sleeper shots, mild dolly/shared
+  `HomeOpeningCameraSequence`: five6s views,2.4s eased moves/shared
   `ContextualCameraDirector`/saved DOF, outside the locked room. E starts the
   prepared clock and normal same-rig seated wake; shared recovery/return/idle
   hold awaits fresh E Stand, then slow exit. No startup nightmare/decay/Horror/
@@ -177,7 +177,7 @@
   decision owns its outgoing route.
 
 - **Accepted architecture exception 2026-10-29 — technical Home sleep MVP:**
-  Same positioned rig/sofa entry/settle/contacts/exit; push3/closed-eye hold3,
+  Same positioned rig/sofa entry/settle/contacts/exit; medium→face/closed-eye hold3,
   Story§6 face/montage/strobe scope. Pre-cut cancel commits nothing; completed
   stand resets fatigue. Pause/cleanup own camera/DOF/input/HUD/face/overlay;
   prepared assets/buffers, no reload/hidden endpoint mismatch.
@@ -192,8 +192,20 @@
   Palms IK/feet/pelvis hold; shared release plays slow stand in default camera.
   Motor/modal/filter persist through stand; owned cleanup removes the filter.
   Cut entry `HomeSleepStartle`:5.2s/2D Gameplay SFX voice/pause/cancel.
-  All24 owners retain coverage above; Home has no SSGI/SCGI/interior SSR.
-  Only owned DOF/overlay; no new light/GI/pass, cost unmeasured.
+  User2026-10-31: physical sofa contacts, smooth camera and complete bed foley.
+  Entry shows body support before face38; waking eases room-space framing to42
+  instead of skull roll. Return targets the current gameplay shot; montage
+  retains one lens/axis. Same total
+  action/hold times; shared camera/DOF and saved settings.
+  `HomeSleepAudioCue.Sequence`: sampled clip contacts and existing body clocks
+  drive cached cloth/weight/timber/breath/gasp and wooden footsteps. Finite
+  pooled voices share pause/cancel/scene cleanup; hitches discard old contacts.
+  Cloth/breath are quiet/low-passed/sparse; breath gate6s, no wide return/idle loop.
+  Calm opening uses physical sounds/breath only. No extra soundscape/music/lore.
+  All24: existing GI/SSAO/fog/volumes/shadows/grade; Home SSR/SSGI/SCGI absent.
+  Probes/water/wetness/bevels/COLOR/wind/wear/particles/rim/outlines retain scope.
+  Bloom/AA/vignette/grain/dither/flares/blur/lens retain settings; owned DOF only.
+  No new light/GI/pass, cost unmeasured.
 
 - **Accepted architecture exception 2026-10-30 — final balcony seal:**
   User: Home7 balcony inaccessible: existing swollen closed leaf/dark glazing/
@@ -5602,15 +5614,12 @@
   returns — the weight is re-resolved in `LateUpdate` where snapping a
   foreign loop lands harmlessly on rest.
 - **Accepted — The bed is built around the sleeper, not beside him:**
-  A contextual clip is pinned to the world by its pelvis bone and
-  `GroundOrdinaryPose` is off for as long as it owns the rig, so a single
-  guessed clearance decides whether the hero rests on the bed or inside it.
-  `HomeInteriorWorldBuilder.BedDressingSurfaceHeight` was one such guess and
-  matched no real surface: the mattress top is `0.56`, the crooked blanket
-  `0.66` and the pillow `0.73`, while the hero was placed at `0.715` — hips
-  three centimetres inside the blanket, head twelve inside the pillow, and
-  seated eight centimetres above the bedding with his boots off the floor.
-  The bed now derives from measurement in both directions.
+  Pelvis-aligned clips derive support heights from posed production meshes.
+  User2026-10-31: the1.15m sofa owns .415m supported travel; generator paths,
+  baked alternating hands and published manifest match runtime. Recline holds
+  the right palm before releasing it. Dense hand/forearm sweeps clear the local
+  mattress/back; full-rig seams stay exact. Scoped `--bed-only` preserves all
+  non-bed actions/rig/meshes/UV/weights/morphs and exports animations/manifest.
   `validate_bed_support_contract` in `tools/player_3d_model_common.py` samples
   the real posed meshes and reports how far the supine back, the back of the
   lifted head and the seated weight hang below the pelvis bone;
@@ -5626,11 +5635,8 @@
   samples above the mattress footprint so a foot descending outside the bed
   is not mistaken for penetration. The bed uses the shared pelvis transition's
   hold/settle windows to align travel with authored contact beats.
-  The standing dock, seat and sleeping pelvis share the same longitudinal
-  coordinate, `bed.Bounds.center.x + 0.135 m`. Entry, exit and their trigger
-  therefore sit near the middle of the door-side long edge. This removes the
-  former `0.69 m` travel along the mattress between the foot-side dock and
-  the sleeping pelvis; only the supported movement across the bed remains.
+  Dock/seat/sleep pelvis share the bed centre plus .135m footward; trigger and
+  entry stay near the middle of its east long edge, clear of the bookcase.
   `PlayerAnimatedInteractionPelvisPath` adds optional immutable, endpoint-checked
   world-space keys to the shared transition; omitted paths retain the existing
   waypoint behavior. Bed uses two distinct support changes instead of a single
@@ -5645,16 +5651,9 @@
   comparison with Unity. Full motion captures accompany the contact regression.
   The plan contract rejects a dock inside any blocking furniture's clearance
   envelope; the accepted remodel removes the former camera-corner junk entirely.
-  The three bed clips also became the first contextual Actions on auto-clamped
-  Bezier curves with separately staggered pelvis, lower-spine, chest and head
-  keys. V2's build now runs the bed support validator on its actual skinned
-  geometry. Waking was then re-cut at the user's direction from
-  a roll into a four-beat sit-up — half-crouch on the mattress, right leg over
-  the near edge, then the left, then stand — which is both what a man getting
-  out on the door side actually does and what makes the whole wake checkable:
-  with no roll, his weight stays on the bed until the first boot leaves it, so
-  every sample of it is asserted, and the leg order is stated as its own
-  measurement rather than left to survive by accident.
+  Bed clips use auto-clamped Bezier curves, staggered pelvis/spine/chest/head
+  keys and real skinned-mesh validation. Wake retains its measured half-crouch,
+  right boot, left boot and stand sequence; weight stays supported.
 - **Accepted — Separate vertical home stairwell:** `StairwellInterior`:
   exterior↔apartment/8.6×9.6×6.25m/street-middle-apartment;
   3ramps/48noncollider steps/radius-safe corridors overlap→`PlayerMotor`seams/

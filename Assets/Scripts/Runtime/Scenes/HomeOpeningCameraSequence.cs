@@ -7,6 +7,7 @@ namespace BarPromenade
     {
         public const int ShotCount = 5;
         public const float ShotSeconds = 6f;
+        public const float TransitionSeconds = 2.4f;
         private readonly HomeInteriorRoot home;
         private readonly ContextualCameraDirector director;
         private readonly Transform head;
@@ -14,6 +15,10 @@ namespace BarPromenade
         private Pose lastPose;
         private Vector3 lastFocus;
         private float lastFov;
+        private Pose transitionPose;
+        private Vector3 transitionFocus;
+        private float transitionFov;
+        private bool transitioning;
 
         public int CurrentShotIndex { get; private set; }
 
@@ -36,10 +41,14 @@ namespace BarPromenade
             elapsed += Mathf.Max(0f, seconds);
             if (elapsed >= ShotSeconds)
             {
-                // One visible cut per frame: a loading hitch never skips the deck.
+                // Keep the outgoing composition and ease into the next one.
+                // A hitch begins one transition rather than skipping the deck.
+                transitionPose = director.CurrentShotPose;
+                transitionFocus = lastFocus;
+                transitionFov = lastFov;
+                transitioning = true;
                 CurrentShotIndex = (CurrentShotIndex + 1) % ShotCount;
                 elapsed = 0f;
-                return Apply(CurrentShotIndex, 0f);
             }
             return SetShot(CurrentShotIndex, elapsed / ShotSeconds, false, seconds);
         }
@@ -49,6 +58,7 @@ namespace BarPromenade
             if (index < 0 || index >= ShotCount || !float.IsFinite(progress)) return false;
             CurrentShotIndex = index;
             elapsed = Mathf.Clamp01(progress) * ShotSeconds;
+            transitioning = false;
             return SetShot(index, progress, true, 0f);
         }
 
@@ -69,6 +79,16 @@ namespace BarPromenade
         private bool SetShot(int index, float progress, bool cut, float seconds)
         {
             Resolve(index, progress, out Pose pose, out float fov, out Vector3 focus);
+            if (transitioning)
+            {
+                float t = Mathf.Clamp01(elapsed / TransitionSeconds);
+                t = t * t * t * (t * (t * 6f - 15f) + 10f);
+                Vector3 position = Vector3.Lerp(transitionPose.position, pose.position, t);
+                focus = Vector3.Lerp(transitionFocus, focus, t);
+                pose = new Pose(position, Quaternion.LookRotation(focus - position, home.Room.up));
+                fov = Mathf.Lerp(transitionFov, fov, t);
+                if (elapsed >= TransitionSeconds) transitioning = false;
+            }
             if (!director.TrySetAuthoredShot(pose, fov, focus, cut: cut,
                     sightSubject: head, nearClipPlane: .035f)) return false;
             lastPose = pose; lastFocus = focus; lastFov = fov;

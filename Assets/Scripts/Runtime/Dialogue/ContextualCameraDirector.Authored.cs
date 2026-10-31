@@ -74,6 +74,24 @@ namespace BarPromenade
             CameraPositionClear(pose.position, Mathf.Clamp(clearanceRadius, .015f, CameraClearanceMeters), ignoredCoarseProxy) &&
             SightClear(focus, pose.position, sightSubject, ignoredCoarseProxy);
 
+        /// <summary>Return to the current gameplay composition when the action changed its camera zone.</summary>
+        public bool BeginExitToFixedShot(Pose pose, float fieldOfView, FixedCameraFocus focus)
+        {
+            if (!active || !authoredShot || returning ||
+                !float.IsFinite(fieldOfView) || fieldOfView < 20f || fieldOfView > 100f ||
+                !float.IsFinite(pose.position.x) || !float.IsFinite(pose.position.y) || !float.IsFinite(pose.position.z) ||
+                !float.IsFinite(pose.rotation.x) || !float.IsFinite(pose.rotation.y) ||
+                !float.IsFinite(pose.rotation.z) || !float.IsFinite(pose.rotation.w) ||
+                Quaternion.Dot(pose.rotation, pose.rotation) < .0001f || !CameraPositionClear(pose.position))
+                return false;
+            previousFixed = true;
+            previousFixedPose = new Pose(pose.position, pose.rotation.normalized);
+            previousFixedFov = fieldOfView;
+            previousFocus = focus;
+            BeginExit();
+            return IsReturning;
+        }
+
         private float ResolveAuthoredNearClip(float value) => float.IsFinite(value)
             ? Mathf.Clamp(value, .001f, Mathf.Max(.001f, camera.farClipPlane - .001f))
             : camera.nearClipPlane;

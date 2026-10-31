@@ -1,10 +1,10 @@
 {
   "schema_version": 5,
   "generator_version": "6.1.0",
-  "signature": "8ed53774a4296cf88d2331ef22ae7a311ed38bcf88eef2c39ca43b1916f2b88a",
+  "signature": "b663eb882e0dc3f856c08044f4503f65e6e13f3acd332a435a64cbc6c251dfaa",
   "contract_signature": "9458a4efdaaf5cc9af83cbe05a199f41b2769175cfbcc3a9212dad82335b2cf4",
   "report": {
-    "meshes": 282,
+    "meshes": 283,
     "triangles": 222168,
     "flights": 3,
     "steps_per_flight": 36,
@@ -3778,11 +3778,11 @@
         21.375
       ],
       "bounds_max": [
-        -29.64,
-        10.18,
-        24.9
+        -31.755,
+        9.8,
+        24.625
       ],
-      "triangles": 24
+      "triangles": 12
     },
     {
       "name": "Stage1__PuzzleFrame__Wood",
@@ -4108,19 +4108,19 @@
       "triangles": 56
     },
     {
-      "name": "Stage1__PuzzleFrame__WornSteel",
+      "name": "Stage1__RewardCabinetBody__WornSteel",
       "stage": 1,
-      "chunk": "PuzzleFrame",
+      "chunk": "RewardCabinetBody",
       "role": "WornSteel",
       "bounds_min": [
-        -30.1325,
-        9.0175,
-        24.0975
+        -30.13,
+        9.530000000000001,
+        24.66
       ],
       "bounds_max": [
-        -29.63,
-        10.182500000000001,
-        24.9025
+        -29.77,
+        9.97,
+        24.84
       ],
       "triangles": 140
     },
@@ -4130,16 +4130,33 @@
       "chunk": "RewardCabinetShelf",
       "role": "Steel",
       "bounds_min": [
-        -30.1,
-        9.3375,
-        24.13
+        -30.11,
+        9.6075,
+        24.6825
       ],
       "bounds_max": [
-        -29.66,
-        9.3625,
-        24.87
+        -29.79,
+        9.6225,
+        24.8175
       ],
       "triangles": 28
+    },
+    {
+      "name": "Stage1__RewardCabinetBody__Collision",
+      "stage": 1,
+      "chunk": "RewardCabinetBody",
+      "role": "Collision",
+      "bounds_min": [
+        -30.13,
+        9.530000000000001,
+        24.66
+      ],
+      "bounds_max": [
+        -29.77,
+        9.97,
+        24.84
+      ],
+      "triangles": 12
     },
     {
       "name": "Stage1__RewardCabinetLeaf__Steel",
@@ -4147,14 +4164,14 @@
       "chunk": "RewardCabinetLeaf",
       "role": "Steel",
       "bounds_min": [
-        -29.6375,
-        9.06,
-        24.125
+        -30.12,
+        9.5475,
+        24.637999999999998
       ],
       "bounds_max": [
-        -29.5925,
-        10.14,
-        24.875
+        -29.78,
+        9.9525,
+        24.66
       ],
       "triangles": 28
     },
@@ -4164,14 +4181,14 @@
       "chunk": "RewardCabinetLeaf",
       "role": "WornSteel",
       "bounds_min": [
-        -29.6375,
-        9.16,
-        24.1025
+        -30.135,
+        9.5775,
+        24.6085
       ],
       "bounds_max": [
-        -29.5325,
-        10.040000000000001,
-        24.7825
+        -29.8175,
+        9.9225,
+        24.6645
       ],
       "triangles": 84
     },
@@ -6270,9 +6287,9 @@
     "id": "flashlight-cabinet",
     "stage": 1,
     "pivot": [
-      -29.615,
-      9.6,
-      24.125
+      -30.12,
+      9.75,
+      24.649
     ],
     "axis": [
       0,
@@ -6281,29 +6298,29 @@
     ],
     "open_angle": 105,
     "collider_center": [
-      2.296212748401287e-17,
-      0.0,
-      0.375
+      0.17,
+      0,
+      0
     ],
     "collider_size": [
-      0.045,
-      1.08,
-      0.75
+      0.34,
+      0.405,
+      0.022
     ],
     "item_position": [
-      -29.87,
-      9.3625,
-      24.5
+      -29.95,
+      9.6225,
+      24.75
     ],
     "item_euler": [
       0,
-      -90,
+      180,
       0
     ],
     "interaction_position": [
-      -29.52,
-      9.5,
-      24.5
+      -29.95,
+      9.67,
+      24.605
     ],
     "parts": [
       "Stage1__RewardCabinetLeaf__Steel",

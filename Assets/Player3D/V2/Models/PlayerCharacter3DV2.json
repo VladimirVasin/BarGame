@@ -106,113 +106,113 @@
       {
         "progress": 0.0,
         "position": [
-          -2.84,
+          -5.23,
           0.88,
-          -1.73
+          -0.04
         ]
       },
       {
         "progress": 0.05,
         "position": [
-          -2.84,
+          -5.23,
           0.88,
-          -1.73
+          -0.04
         ]
       },
       {
         "progress": 0.22,
         "position": [
-          -2.84,
+          -5.87,
           0.6244,
-          -1.09
+          -0.04
         ]
       },
       {
         "progress": 0.3,
         "position": [
-          -2.84,
+          -5.87,
           0.6244,
-          -1.09
+          -0.04
         ]
       },
       {
         "progress": 0.34,
         "position": [
-          -2.84,
+          -5.87,
           0.6944,
-          -1.09
+          -0.04
         ]
       },
       {
         "progress": 0.41,
         "position": [
-          -2.84,
+          -6.077500000000001,
           0.6944,
-          -0.7325
+          -0.04
         ]
       },
       {
         "progress": 0.44,
         "position": [
-          -2.84,
+          -6.077500000000001,
           0.6244,
-          -0.7325
+          -0.04
         ]
       },
       {
         "progress": 0.47,
         "position": [
-          -2.84,
+          -6.077500000000001,
           0.6244,
-          -0.7325
+          -0.04
         ]
       },
       {
         "progress": 0.51,
         "position": [
-          -2.84,
+          -6.077500000000001,
           0.6944,
-          -0.7325
+          -0.04
         ]
       },
       {
         "progress": 0.58,
         "position": [
-          -2.84,
+          -6.285,
           0.6944,
-          -0.375
+          -0.04
         ]
       },
       {
         "progress": 0.61,
         "position": [
-          -2.84,
+          -6.285,
           0.6244,
-          -0.375
+          -0.04
         ]
       },
       {
         "progress": 0.64,
         "position": [
-          -2.84,
+          -6.285,
           0.6244,
-          -0.375
+          -0.04
         ]
       },
       {
         "progress": 0.96,
         "position": [
-          -2.84,
+          -6.285,
           0.5903,
-          -0.375
+          -0.04
         ]
       },
       {
         "progress": 1.0,
         "position": [
-          -2.84,
+          -6.285,
           0.5903,
-          -0.375
+          -0.04
         ]
       }
     ],
@@ -220,100 +220,114 @@
       {
         "progress": 0.0,
         "position": [
-          -2.84,
+          -6.285,
           0.5903,
-          -0.375
+          -0.04
         ]
       },
       {
         "progress": 0.3,
         "position": [
-          -2.84,
+          -6.285,
           0.6244,
-          -0.375
+          -0.04
         ]
       },
       {
         "progress": 0.32,
         "position": [
-          -2.84,
+          -6.285,
           0.6244,
-          -0.375
+          -0.04
         ]
       },
       {
         "progress": 0.35,
         "position": [
-          -2.84,
+          -6.285,
           0.6944,
-          -0.375
+          -0.04
         ]
       },
       {
         "progress": 0.4,
         "position": [
-          -2.84,
+          -6.077500000000001,
           0.6944,
-          -0.7325
+          -0.04
         ]
       },
       {
         "progress": 0.43,
         "position": [
-          -2.84,
+          -6.077500000000001,
           0.6244,
-          -0.7325
+          -0.04
         ]
       },
       {
         "progress": 0.46,
         "position": [
-          -2.84,
+          -6.077500000000001,
           0.6244,
-          -0.7325
+          -0.04
         ]
       },
       {
         "progress": 0.49,
         "position": [
-          -2.84,
+          -6.077500000000001,
           0.6944,
-          -0.7325
+          -0.04
         ]
       },
       {
         "progress": 0.54,
         "position": [
-          -2.84,
+          -5.87,
           0.6944,
-          -1.09
+          -0.04
         ]
       },
       {
         "progress": 0.57,
         "position": [
-          -2.84,
+          -5.87,
           0.6244,
-          -1.09
+          -0.04
         ]
       },
       {
         "progress": 0.9,
         "position": [
-          -2.84,
+          -5.87,
           0.6244,
-          -1.09
+          -0.04
         ]
       },
       {
         "progress": 1.0,
         "position": [
-          -2.84,
+          -5.23,
           0.88,
-          -1.73
+          -0.04
         ]
       }
-    ]
+    ],
+    "supported_sofa": {
+      "minimum_arm_mattress_clearance_m": 0.003344,
+      "minimum_padded_margin_m": -0.000656,
+      "minimum_arm_back_clearance_m": 0.007507,
+      "recline_palm_drift_m": 0.0,
+      "sofa_depth_m": 1.15,
+      "surface": "bounded actual pressure skirts; all bed phases and body forms",
+      "local_import_sampling_margin_m": 0.004,
+      "recline_palm_hold": [
+        0.7,
+        0.84
+      ],
+      "exact_full_rig_seams": true
+    }
   },
   "actions": [
     {
@@ -2584,7 +2598,7 @@
     "action_count": 55,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "65c959880cadfbe2ab0014046569bd89e09788d621823c598e4a907fac71caed",
+  "content_signature_sha256": "6ab05bb64ed531687deb2ef8ad3000e228f145ca53fba82c9e7e2e3277a2f965",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -8231,5 +8245,6 @@
     "socket_delta_in_smoking_clips": true,
     "shape_signature": "d93e202ab708f3b96c510e372ed27436bf19d4a28cebf72e26c03ffd8a7c1002",
     "authoring_sha256": "5d3ba57db00e55fd0e916f43b73acb17bdc29c80e98503938b9f748da4e59c47"
-  }
+  },
+  "bed_authoring_sha256": "9bca7aa050d1f634eb2c8688c1d2968ee60938651a0191b94839dfcf577e900a"
 }
