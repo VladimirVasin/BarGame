@@ -210,6 +210,57 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator DoorAmbush_AncestorDisableRestoresWeaponAndMotorAudio()
+        {
+            // Cover teardown both before and after the physical/pistol handoff.
+            // Disabling only the scene component cannot reproduce Unity's
+            // ancestor activation lock on the hero's weapon hierarchy.
+            for (int phase = 0; phase < 2; phase++)
+            {
+                WarehouseDoorAmbushScene scene = root.DoorAmbush;
+                CombatActor hero = root.Hero;
+                CombatWeaponId weapon = hero.WeaponId;
+                Transform model = hero.CarriedWeapon(weapon).transform;
+                Transform parent = model.parent;
+                var pose = new LocalPose(model);
+                var pistol = (PistolState)hero.CarriedFirearm(CombatWeaponId.Pistol);
+                int rounds = pistol.Rounds, reserve = pistol.ReserveRounds;
+                yield return StartFromPauseMenu();
+                yield return AwaitFirstActionSample();
+                yield return AdvanceTo(phase == 0 ? 4d : 8d);
+                if (phase == 1)
+                {
+                    yield return AwaitInteractive();
+                    // The visible head is borrowed from the old gantry. Its
+                    // hidden replacement must not disable the motor's voice.
+                    var motor = (AudioSource)typeof(CombatActor).GetField("craneWinch",
+                        BindingFlags.Instance | BindingFlags.NonPublic).GetValue(scene.Source);
+                    scene.Source.AdvanceDoorAmbush(.02f);
+                    Assert.That(motor.isActiveAndEnabled, Is.True);
+                    yield return AwaitInvertedCeiling();
+                    yield return AwaitCompletion();
+                    Assert.That(hero.DoorAmbushCombatActive && pistol.UnlimitedReserve, Is.True);
+                }
+                root.gameObject.SetActive(false);
+                Assert.That(scene.IsActive || hero.IsRestrained || hero.DoorAmbushCombatActive ||
+                    hero.DoorAmbushScriptProtected || pistol.UnlimitedReserve, Is.False);
+                Assert.That(pistol.Rounds, Is.EqualTo(rounds));
+                Assert.That(pistol.ReserveRounds, Is.EqualTo(reserve));
+                Assert.That(root.Player.Interactor.InteractKeyClaimed || GameTimeScaleRuntime.IsPaused ||
+                    BarMinigameModalLock.IsAnyLocked, Is.False);
+                yield return null;
+                root.gameObject.SetActive(true);
+                yield return null;
+                yield return null;
+                Assert.That(hero.WeaponId, Is.EqualTo(weapon));
+                Assert.That(model.parent, Is.SameAs(parent));
+                pose.AssertRestored();
+                Assert.That(scene.IsActive || root.CameraFollow.FreeAimActive, Is.False);
+                LogAssert.NoUnexpectedReceived();
+            }
+        }
+
+        [UnityTest]
         public IEnumerator DoorAmbush_CleanupAfterCameraDestroyed()
         {
             WarehouseDoorAmbushScene scene = root.DoorAmbush;

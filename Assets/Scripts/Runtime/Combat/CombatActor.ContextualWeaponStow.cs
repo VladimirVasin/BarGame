@@ -14,6 +14,7 @@ namespace BarPromenade
             internal Quaternion Rotation;
             internal CombatWeaponCarryLocation Location;
             internal bool WeaponDropped;
+            internal bool RestorePending;
         }
 
         private object doorWeaponStowDriver;
@@ -25,6 +26,7 @@ namespace BarPromenade
         internal bool BeginDoorAmbushWeaponStow(object owner)
         {
             if (owner == null || !IsHero || activeCarry == null || !CanBeginStandingInspection) return false;
+            RestoreDeferredDoorAmbushWeaponStow();
             if (doorWeaponStowSnapshot != null && doorWeaponStowSnapshot.Owner != null)
                 return ReferenceEquals(doorWeaponStowSnapshot.Owner, owner) &&
                     (ReferenceEquals(doorWeaponStowDriver, owner) || IsDoorAmbushWeaponStowed);
@@ -70,6 +72,7 @@ namespace BarPromenade
             doorWeaponStowSnapshot.Owner = null;
             doorWeaponStowSnapshot.Record = null;
             doorWeaponStowSnapshot.Parent = null;
+            doorWeaponStowSnapshot.RestorePending = false;
         }
 
         /// <summary>The explicit debug boundary restores the original attachment, without resetting ammunition.</summary>
@@ -77,13 +80,33 @@ namespace BarPromenade
         {
             DoorWeaponStowSnapshot saved = doorWeaponStowSnapshot;
             if (owner == null || saved == null || !ReferenceEquals(saved.Owner, owner)) return;
+            if (ReferenceEquals(doorWeaponStowDriver, owner)) CancelWeaponCarry();
+            if (hero != null) hero.ReleaseContextualPresentationClock(owner);
+            saved.Owner = null;
+            saved.RestorePending = true;
+            if (activeCarry == saved.Record)
+            {
+                activeCarry.Location = saved.Location;
+                weaponDropped = saved.WeaponDropped;
+            }
+            RestoreDeferredDoorAmbushWeaponStow();
+        }
+
+        private void RestoreDeferredDoorAmbushWeaponStow()
+        {
+            DoorWeaponStowSnapshot saved = doorWeaponStowSnapshot;
+            // An ancestor's SetActive(false) is still traversing this graph.
+            // Release ownership now; apply its saved attachment in LateUpdate
+            // after reactivation, rather than inside either activation callback.
+            if (saved == null || !saved.RestorePending || !gameObject.activeInHierarchy) return;
             CarriedWeaponRecord record = saved.Record;
             Transform parent = saved.Parent;
             Vector3 position = saved.Position, scale = saved.Scale;
             Quaternion rotation = saved.Rotation;
             CombatWeaponCarryLocation location = saved.Location;
             bool dropped = saved.WeaponDropped;
-            CancelDoorAmbushWeaponStow(owner);
+            saved.RestorePending = false;
+            saved.Record = null; saved.Parent = null;
             if (record == null || record.Model == null || parent == null || activeCarry != record) return;
             record.Model.transform.SetParent(parent, false);
             record.Model.transform.SetLocalPositionAndRotation(position, rotation);

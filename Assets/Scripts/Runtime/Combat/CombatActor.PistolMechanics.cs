@@ -22,6 +22,8 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
+            RestoreDeferredDoorAmbushFirearm();
+            RestoreDeferredDoorAmbushWeaponStow();
             if (IsCrane)
             {
                 if (CraneHookPhase == CombatCraneHookPhase.Released) PresentCraneCuff();

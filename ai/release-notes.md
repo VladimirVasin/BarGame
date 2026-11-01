@@ -17,8 +17,7 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - Цель16:9;4:3 не поддержан,настройки сохранены. check-docs passed.
 - Рычаги:крепления/A-D/контур.
   StairwellLabyrinthPuzzleModeAndFlashlight passed.
-- Загадка1→тела,лом→подъём;одиночный старт/очередь атак/безопасная комната3;повтор хранит прогресс. StairwellSecondPuzzleCrowbar/
-  DEGRADED ZOMBIE GROUNDED ACTIONS AND THREE BODY SCULPTS OK passed.
+- Загадка1→тела,лом→подъём;одиночный старт/очередь атак/безопасная комната3;повтор хранит прогресс. StairwellSecondPuzzleCrowbar passed.
 - Лом:вес/разгон/глубокие раны/череп/подъём живых.
   Range_CrowbarContactPresentsRecoilBeforeHitStop/
   Range_CrowbarHitsLeaveWoundsAndZombieRises/Range_CrowbarFatalHeadContactFracturesOnce passed.
@@ -30,7 +29,8 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 - Засада:без урона катсцены;герой↑первым/переворот/пистолет∞запас/R;
   затем крановщик↑/бой. Свет/3D-звук фаз;чан без растянутых стенок.
-  DoorAmbush_HeroFirstPistolCombat/CombatWarehouseFishAssemblyCloseUp passed;кадры проверены.
+  DoorAmbush_HeroFirstPistolCombat/CombatWarehouseFishAssemblyCloseUp passed.
+  Очистка:DoorAmbush_AncestorDisableRestoresWeaponAndMotorAudio passed.
 
 ### 2026-10-31
 

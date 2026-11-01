@@ -142,6 +142,7 @@ namespace BarPromenade
             craneSuspensionHost.SetActive(true);
             bool ownMachine = doorSuspensionSource == this;
             craneRails.SetActive(ownMachine); craneBridge.SetActive(ownMachine); craneSuspensionHead.SetActive(ownMachine);
+            craneMotorVoiceAnchor.position = doorSuspensionSource.craneSuspensionHead.transform.position;
             craneHookFrame.SetActive(true); craneCuffFrame.SetActive(true); craneAttackCable.gameObject.SetActive(false);
             craneHookCollider.enabled = craneCuffCollider.enabled = false;
             craneHookBody.isKinematic = craneCuffBody.isKinematic = true;
@@ -164,7 +165,7 @@ namespace BarPromenade
         {
             if (!DoorAmbushHangingGameplay || DoorAmbushPursuitStarted) return;
             DoorAmbushPursuitStarted = true;
-            craneRelease.clip = CombatCraneAssetProvider.LoadStartSound(); craneRelease.Play();
+            craneRelease.clip = CombatCraneAssetProvider.LoadStartSound(); PlayCraneVoice(craneRelease);
         }
 
         internal void PlayDoorAmbushRevealSound()
@@ -172,14 +173,14 @@ namespace BarPromenade
             if (!DoorAmbushPrepared) return;
             craneBodyVoice.clip = CombatCraneAssetProvider.LoadBodySound();
             craneBodyVoice.pitch = .72f; craneBodyVoice.volume = .55f;
-            craneBodyVoice.Play();
+            PlayCraneVoice(craneBodyVoice);
         }
 
         internal void PlayDoorAmbushHookSound()
         {
             if (!DoorAmbushPrepared) return;
             craneBodyVoice.PlayOneShot(CombatCraneAssetProvider.LoadReleaseSound(), 1f);
-            craneRelease.clip = CombatCraneAssetProvider.LoadStartSound(); craneRelease.Play();
+            craneRelease.clip = CombatCraneAssetProvider.LoadStartSound(); PlayCraneVoice(craneRelease);
         }
 
         internal void SetDoorAmbushAudioPaused(bool paused)
@@ -374,7 +375,7 @@ namespace BarPromenade
                     else if (doorMotorWasRunning)
                     {
                         StopCraneMotors();
-                        craneRelease.clip = CombatCraneAssetProvider.LoadBrakeSound(); craneRelease.Play();
+                        craneRelease.clip = CombatCraneAssetProvider.LoadBrakeSound(); PlayCraneVoice(craneRelease);
                     }
                     doorMotorWasRunning = moving;
                     if (DoorAmbushCraneArrived && accepted && !victim.State.IsDefeated)
@@ -426,7 +427,7 @@ namespace BarPromenade
             if (!BodyDamage.CanUseLeftHand) return;
             doorAttackSeconds += seconds;
             float phase = doorAttackSeconds;
-            if (phase >= 0f && phase < seconds * 1.5f) { craneBodyVoice.pitch = .9f; craneBodyVoice.Play(); }
+            if (phase >= 0f && phase < seconds * 1.5f) { craneBodyVoice.pitch = .9f; PlayCraneVoice(craneBodyVoice); }
             Vector3 target = victim.Ragdoll.PhysicsController.ChestBody.position;
             Vector3 rest = doorLeftHand.position;
             float extension = phase < .5f ? 0f : phase < .72f ? Mathf.InverseLerp(.5f, .72f, phase) :
@@ -718,6 +719,7 @@ namespace BarPromenade
             Body.enabled = doorOriginalBody;
             craneRails.SetActive(doorOriginalRails); craneBridge.SetActive(doorOriginalBridge);
             craneSuspensionHead.SetActive(doorOriginalHead); craneHookFrame.SetActive(doorOriginalHook);
+            craneMotorVoiceAnchor.position = craneSuspensionHead.transform.position;
             craneCuffFrame.SetActive(doorOriginalCuff); craneAttackCable.gameObject.SetActive(doorOriginalAttackCable);
             for (int i = 0; i < 6; i++)
                 for (int segment = 0; segment < CraneCableSegments; segment++)

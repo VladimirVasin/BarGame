@@ -38,6 +38,7 @@ namespace BarPromenade
         private Transform craneFeedSwivel;
         private Quaternion craneFeedSwivelRest;
         private AudioSource craneWinch, craneRelease, craneRailVoice, craneBodyVoice;
+        private Transform craneMotorVoiceAnchor;
         private bool craneWinchPaused, craneContactValid, craneStrikeStopped;
         private float craneClock, cranePerceptionWait, craneCooldown, craneHurtHold, craneStoppedPoseSeconds, craneBreathWait;
         private float craneMoveSpeed, craneMotorClock, craneBrakeClock, craneBlockedClock, craneHurtClock;
@@ -133,9 +134,15 @@ namespace BarPromenade
             craneRemnant = craneSuspensionHost.AddComponent<CombatCraneRemnant>();
             craneRemnant.Initialize(craneCablePieces, craneCableScales, GetComponentInParent<CombatTestRoot>(), this);
             InitializeCraneClearance(); InitializeCraneDynamics(); InitializeCraneHook();
-            craneWinch = CreateCraneVoice(craneSuspensionHead, true, CombatCraneAssetProvider.LoadWinchSound(), .26f);
-            craneRailVoice = CreateCraneVoice(craneSuspensionHead, true, CombatCraneAssetProvider.LoadRailSound(), .24f);
-            craneRelease = CreateCraneVoice(craneSuspensionHead, false, CombatCraneAssetProvider.LoadBrakeSound(), .38f);
+            // A staged ambush borrows another gantry and hides this head. The
+            // retained voices must outlive that renderer hierarchy's activity.
+            var motorVoiceHost = new GameObject("Crane motor voices");
+            craneMotorVoiceAnchor = motorVoiceHost.transform;
+            craneMotorVoiceAnchor.SetParent(craneSuspensionHost.transform, false);
+            craneMotorVoiceAnchor.position = craneSuspensionHead.transform.position;
+            craneWinch = CreateCraneVoice(motorVoiceHost, true, CombatCraneAssetProvider.LoadWinchSound(), .26f);
+            craneRailVoice = CreateCraneVoice(motorVoiceHost, true, CombatCraneAssetProvider.LoadRailSound(), .24f);
+            craneRelease = CreateCraneVoice(motorVoiceHost, false, CombatCraneAssetProvider.LoadBrakeSound(), .38f);
             craneBodyVoice = CreateCraneVoice(gameObject, false, CombatCraneAssetProvider.LoadBodySound(), .20f);
             InitializeCraneFrenzy();
         }
@@ -258,7 +265,7 @@ namespace BarPromenade
             }
             craneBreathWait -= seconds;
             if (craneBreathWait <= 0f && !craneBodyVoice.isPlaying)
-            { craneBodyVoice.clip = CombatCraneAssetProvider.LoadBodySound(); craneBodyVoice.Play(); craneBreathWait = 2f; }
+            { craneBodyVoice.clip = CombatCraneAssetProvider.LoadBodySound(); PlayCraneVoice(craneBodyVoice); craneBreathWait = 2f; }
             craneClock += seconds;
             if (craneRetreatRequested && CranePhase == CombatCranePhase.Waiting) BeginCraneReturnHome();
             Vector3 previous = transform.position, oldCommand = craneCommand;
@@ -387,7 +394,7 @@ namespace BarPromenade
             AddCraneWaypoint(ref cursor, goal);
             craneTravelling = true; craneStarting = true; craneMotorClock = craneBrakeClock = craneMoveSpeed = craneBlockedClock = 0f;
             CraneTravelBlocked = false; BeginPoseBlend(.12f);
-            craneRelease.clip = CombatCraneAssetProvider.LoadStartSound(); craneRelease.pitch = 1f; craneRelease.Play();
+            craneRelease.clip = CombatCraneAssetProvider.LoadStartSound(); craneRelease.pitch = 1f; PlayCraneVoice(craneRelease);
         }
 
         private void AddCraneWaypoint(ref Vector3 cursor, Vector3 point)
@@ -430,7 +437,7 @@ namespace BarPromenade
             {
                 craneWaypointIndex++; craneMoveSpeed = 0f; craneBrakeClock = CraneBrakeSeconds;
                 StopCraneMotors();
-                craneRelease.clip = CombatCraneAssetProvider.LoadBrakeSound(); craneRelease.pitch = .85f; craneRelease.Play(); BeginPoseBlend(.1f);
+                craneRelease.clip = CombatCraneAssetProvider.LoadBrakeSound(); craneRelease.pitch = .85f; PlayCraneVoice(craneRelease); BeginPoseBlend(.1f);
             }
             return false;
         }
@@ -439,6 +446,7 @@ namespace BarPromenade
         {
             CraneAnchorPosition = new Vector3(craneCommand.x, CraneAnchorPosition.y, craneCommand.z);
             craneSuspensionHead.transform.position = CraneAnchorPosition;
+            if (craneMotorVoiceAnchor != null) craneMotorVoiceAnchor.position = CraneAnchorPosition;
             craneFeedSwivel.rotation = Quaternion.AngleAxis(transform.eulerAngles.y, Vector3.up) * craneFeedSwivelRest;
             craneBridge.transform.position = new Vector3(0f, CraneAnchorPosition.y, craneCommand.z);
         }
@@ -449,16 +457,20 @@ namespace BarPromenade
             {
                 craneRailVoice.Stop(); craneWinch.pitch = vertical > 0f ? .86f : .67f;
                 craneWinch.volume = Mathf.Lerp(.12f, .28f, craneMoveSpeed / 2.4f);
-                if (!craneWinch.isPlaying) craneWinch.Play();
+                if (!craneWinch.isPlaying) PlayCraneVoice(craneWinch);
             }
             else
             {
                 craneWinch.Stop(); craneRailVoice.pitch = Mathf.Lerp(.68f, 1.04f, craneMoveSpeed / 3.4f);
-                if (!craneRailVoice.isPlaying) craneRailVoice.Play();
+                if (!craneRailVoice.isPlaying) PlayCraneVoice(craneRailVoice);
             }
         }
 
         private void StopCraneMotors() { craneWinch.Stop(); craneRailVoice.Stop(); }
+        private static void PlayCraneVoice(AudioSource source)
+        {
+            if (source != null && source.isActiveAndEnabled) source.Play();
+        }
         private void StopCraneVoices() { StopCraneMotors(); craneRelease.Stop(); craneBodyVoice.Stop(); }
 
         private bool MoveCraneRoot(Vector3 wanted, Quaternion rotation, Vector3 carriage)
@@ -510,7 +522,7 @@ namespace BarPromenade
             craneSwayVelocity += Vector3.ClampMagnitude(Vector3.ProjectOnPlane(impact.Impulse, Vector3.up) * .008f, .65f);
             craneHurtHold = .18f; craneHurtClock = .55f;
             BeginPoseBlend(.08f);
-            craneBodyVoice.clip = CombatCraneAssetProvider.LoadHurtSound(); craneBodyVoice.Play(); craneBreathWait = 1.2f;
+            craneBodyVoice.clip = CombatCraneAssetProvider.LoadHurtSound(); PlayCraneVoice(craneBodyVoice); craneBreathWait = 1.2f;
             if (CranePhase == CombatCranePhase.Striking) StopCraneStrike();
         }
 
@@ -536,7 +548,7 @@ namespace BarPromenade
             CraneMotionAxis = 0;
             craneContactValid = collectSweep = false;
             StopCraneVoices();
-            craneRelease.clip = CombatCraneAssetProvider.LoadReleaseSound(); craneRelease.pitch = .72f; craneRelease.Play();
+            craneRelease.clip = CombatCraneAssetProvider.LoadReleaseSound(); craneRelease.pitch = .72f; PlayCraneVoice(craneRelease);
             SetCraneRopesVisible(false); ReleaseCraneHook();
         }
 

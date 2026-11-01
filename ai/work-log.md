@@ -26,10 +26,9 @@ Levers:physical spindle/bracket/guide throughout;A/D joins arrows;selection
 uses contour/dark edge/wash. STAIRWELL_LABYRINTH_CONTROL_MOUNTS_OK;
 StairwellLabyrinthPuzzleModeAndFlashlight passed;frames reviewed.
 
-Bodies wait for crowbar/modal return;bounded attackers keep solo first contact,
-floor bypass and safe room3. Retry retains puzzles/crowbar,clears queued draw;
-travel keeps progress,New Game clears. Bottle bodies:grounded motion,finite
-body/glass audio;dormant/rise/idle/contact agree. Other forms/light stay.
+Bodies wait for bar/modal;bounded solo/attackers,bypass/safe room3;retry keeps
+puzzles/bar/clears draw;travel keeps/New Game clears. Bottle:grounded/finite
+body-glass audio/dormant-rise-idle-contact;other forms/light kept.
 StairwellSecondPuzzleCrowbar;
 DEGRADED ZOMBIE GROUNDED ACTIONS AND THREE BODY SCULPTS OK;
 ORDINARY BODY AUDIO / FINITE DRY MONO / ATTACK TIMELINE / DETERMINISTIC OK passed.
@@ -41,9 +40,11 @@ TWO HAND STRIKE EXPORTED PROOF;Range_CrowbarContactPresentsRecoilBeforeHitStop;
 Range_CrowbarHitsLeaveWoundsAndZombieRises;Range_CrowbarFatalHeadContactFracturesOnce
 passed;strike/wound/rise/head frames reviewed. 24FX/shared owners kept.
 
-Room:closer camera probes;contact escape fits body/full destination clearance.
+Room:near camera probes;body-fit escape/full clearance.
 Range_StoryWarehouseRoomPursuesAndAttacksFromInitialSpawn passed;frames reviewed.
-Ambush cleanup skips destroyed Unity owners;capture/clock/audio release stays.
+Ambush:ancestor-off releases leases/ammo now;weapon pose waits for LateUpdate.
+Motor voices outside hidden head;disabled sources never Play.
+DoorAmbush_AncestorDisableRestoresWeaponAndMotorAudio;
 DoorAmbush_CleanupAfterCameraDestroyed passed.
 
 Docker:2sources→last-fridge crate;entry→reveal before3rd;retry/identity kept.

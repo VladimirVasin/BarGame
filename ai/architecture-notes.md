@@ -946,9 +946,9 @@
   Hero-only fast haul under deck→well;roll.4s→aim/forced pistol/∞reserve/R/switch0.
   Crane↑after roll→hits;finale/E/release0. One clock/rig/target/pools/ammo snapshot.
   Red36/.85/155°/shadow.35/front1.85m;fan shadow.5+one actor-only4m bounce.
-  Door/body/hook/tension/hoist/brake/hits:existing3D voices;pause/off restore.
+  3D reveal/hook/haul/brake/hits;motor voices independent head;pause/off restore.
   Fan720°/s+Spot↑5s/1sparkPoint4.8m/.1s;1Crane/8guides/feedcap.
-  Debug prereq/progress kept;cancel/replay/off→pose/vitals/grip/ammo/fan/red/cam.
+  Debug prereq/progress kept;cancel/replay/off→pose/vitals/grip/ammo/fan/red/cam;parent-off:pose after re-enable.
 - **Accepted 2026-11-01, warehouse vat — user:**
   Station-only1024×384/512×192 Rust/response;metric faceUV0/UV1 kept.
   Floor/walls/rim crisp;geometry/COL/source kept;all maps BC7+mips≤28MiB.

@@ -9,6 +9,7 @@ namespace BarPromenade
         private CombatWeaponCarryLocation doorAmbushPreviousLocation;
         private bool doorAmbushTemporaryPistol;
         private PistolState.Snapshot doorAmbushPistolSnapshot;
+        private bool doorAmbushWeaponRestorePending;
         internal bool DoorAmbushScriptProtected { get; private set; }
         internal bool DoorAmbushCombatActive { get; private set; }
         private bool CanUseDoorAmbushFirearm => DoorAmbushCombatActive && IsRestrained && IsRagdollActive &&
@@ -19,6 +20,7 @@ namespace BarPromenade
         internal bool PrepareDoorAmbushFirearm(object owner)
         {
             if (owner == null || !IsHero || carriedWeapons == null || activeCarry == null) return false;
+            RestoreDeferredDoorAmbushFirearm();
             if (doorAmbushCombatOwner != null) return ReferenceEquals(owner, doorAmbushCombatOwner);
             doorAmbushPreviousCarry = activeCarry;
             doorAmbushPreviousLocation = activeCarry.Location;
@@ -104,22 +106,35 @@ namespace BarPromenade
                 ((PistolState)pistol.Firearm).SetUnlimitedReserve(false);
                 ((PistolState)pistol.Firearm).Restore(doorAmbushPistolSnapshot);
                 pistol.Location = CombatWeaponCarryLocation.Stowed;
-                CombatWeaponCarryAssetProvider.PlaceOnMount(pistol.Model, pistol.Mount.WeaponDock);
             }
             if (doorAmbushPreviousCarry != null)
             {
                 BindCarriedWeapon(doorAmbushPreviousCarry);
                 activeCarry.Location = doorAmbushPreviousLocation;
                 weaponDropped = doorAmbushPreviousLocation != CombatWeaponCarryLocation.Held;
-                if (HasWeaponInHand) PlaceCarriedWeaponInHand(activeCarry);
             }
+            doorAmbushPreviousCarry = null;
+            doorAmbushCombatOwner = null;
+            doorAmbushWeaponRestorePending = true;
+            RestoreDeferredDoorAmbushFirearm();
+            UpdateConcealedEquipment();
+            ResetWeaponContacts();
+        }
+
+        private void RestoreDeferredDoorAmbushFirearm()
+        {
+            if (!doorAmbushWeaponRestorePending || !gameObject.activeInHierarchy) return;
+            doorAmbushWeaponRestorePending = false;
+            CarriedWeaponRecord pistol = FindCarriedWeapon(CombatWeaponId.Pistol);
+            if (pistol != null && pistol.Model != null && (pistol != activeCarry || !HasWeaponInHand))
+                CombatWeaponCarryAssetProvider.PlaceOnMount(pistol.Model, pistol.Mount.WeaponDock);
+            if (activeCarry != null && activeCarry.Model != null && HasWeaponInHand)
+                PlaceCarriedWeaponInHand(activeCarry);
             if (pistol != null && doorAmbushTemporaryPistol)
             {
                 pistol.Model.SetActive(false);
                 pistol.Mount.Root.SetActive(false);
             }
-            doorAmbushPreviousCarry = null;
-            doorAmbushCombatOwner = null;
             UpdateConcealedEquipment();
             ResetWeaponContacts();
         }

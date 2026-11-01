@@ -515,6 +515,12 @@ namespace BarPromenade
         private void ResetWeaponCarry()
         {
             if (carriedWeapons == null) return;
+            doorAmbushWeaponRestorePending = false;
+            if (doorWeaponStowSnapshot != null && doorWeaponStowSnapshot.RestorePending)
+            {
+                doorWeaponStowSnapshot.RestorePending = false;
+                doorWeaponStowSnapshot.Record = null; doorWeaponStowSnapshot.Parent = null;
+            }
             resettingCarry = true;
             CancelWeaponCarry(); projectileSequence = 0;
             foreach (CarriedWeaponRecord record in carriedWeapons)
