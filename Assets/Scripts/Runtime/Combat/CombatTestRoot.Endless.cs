@@ -65,6 +65,7 @@ namespace BarPromenade
                 warehouseOpponentsCleared = false;
                 PlaceRound(focusOpponent: Mode == CombatTestMode.Standard || !Hero.IsFirearm);
             }
+            if (!endlessSpawnsBlockedByFish) RefreshFinalRoomMimic();
             endless.SetSpawningEnabled(!endlessSpawnsBlockedByFish, LiveOpponentCount);
         }
 
@@ -103,9 +104,9 @@ namespace BarPromenade
                 if (slot.Actor.IsCrane && (!slot.Spawned || slot.Actor.State.IsDefeated)) { available = slot; break; }
             if (available == null)
                 foreach (OpponentSlot slot in opponentSlots)
-                    if (!slot.Spawned) { available = slot; break; }
+                    if (!slot.Spawned && !IsFinalRoomMimic(slot)) { available = slot; break; }
             if (available == null)
-                available = OldestOpponentCorpse();
+                available = OldestOpponentCorpse(forRespawn: true);
             if (available == null) { endless.DeferSpawn(); return false; }
             long started = System.Diagnostics.Stopwatch.GetTimestamp();
             bool found;

@@ -389,8 +389,10 @@ namespace BarPromenade
             foreach (CombatActor actor in preparedOpponents)
                 actor.BeginRoomAttackGameplayFrame();
             AdvanceRoomAttackSequence(seconds);
+            AdvanceFinalRoomMimic();
             AmmoSpawns?.SetInteractionEnabled(!RoomAttackCinematicActive && !Hero.State.IsDefeated && !Hero.IsRestrained && pistolApplicationFocused);
-            if (Mode == CombatTestMode.Endless || warehouseOpponentsCleared) { TickEndlessCore(seconds); return; }
+            if (Mode == CombatTestMode.Endless || warehouseOpponentsCleared || opponentSlots.Count > 1)
+            { TickEndlessCore(seconds); return; }
             if (RoundFinished)
             {
                 BeginFinishedRound();

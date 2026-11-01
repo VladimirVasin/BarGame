@@ -81,7 +81,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 - Sleep→weave/lamp→delivery/crowbar→birds/tray-pistol→warehouse;←→/E/Q.
   Ammo kept/shotgun0/Debug3.
   CombatTest:fish-key-gate;3fish→power-music-spawn0.
-  Endless1–5/def3:Crane/Room/Docker;Crane last≤2.
+  Endless1–5/def3:Crane/Room;Docker lastfridge;≤2.
   Refillrng;≤5active/≤6prepared;Lab:6kinds/1target.
   HP2/head2/wounds;Room:head0→ret+2s/laugh5→idle5;simlive/otherAI0;finiteammo.
   Crane:up2m/5s/E6/overrails/others idle/bodycam/fall→home10;fatal3→regen10/kill0.

@@ -59,11 +59,11 @@ namespace BarPromenade
             }
         }
 
-        private OpponentSlot OldestOpponentCorpse()
+        private OpponentSlot OldestOpponentCorpse(bool forRespawn = false)
         {
             OpponentSlot oldest = null;
             foreach (OpponentSlot slot in opponentSlots)
-                if (slot.Spawned && slot.DefeatCounted &&
+                if (slot.Spawned && slot.DefeatCounted && (!forRespawn || !IsFinalRoomMimic(slot)) &&
                     (oldest == null || slot.DefeatOrder < oldest.DefeatOrder)) oldest = slot;
             return oldest;
         }
@@ -123,6 +123,7 @@ namespace BarPromenade
                 combatParticipants.Add(actor);
                 opponentSlots.Add(new OpponentSlot { Actor = actor, Variants = variants, Ai = new OpponentAiContext(i) });
             }
+            PrepareFinalRoomMimicSlot();
             foreach (CombatActor actor in preparedParticipants) actor.SetCombatParticipants(combatParticipants);
             SelectCombatOpponent(combatOpponents[0]);
         }
@@ -137,7 +138,7 @@ namespace BarPromenade
             body.slopeLimit = PlayerFactory.SlopeLimitDegrees; body.minMoveDistance = 0f;
             string identity = kind == CombatEnemyKind.Crane ? DefaultNpcPopulation.CombatTestCraneEnemy :
                 kind is CombatEnemyKind.Room or CombatEnemyKind.Imprint or CombatEnemyKind.LongExposure ? DefaultNpcPopulation.CombatTestAuthoredEnemyId(kind, index) :
-                DefaultNpcPopulation.CombatTestOpponentId(IsLaboratory && kind == CombatEnemyKind.Docker ? 1 : index);
+                DefaultNpcPopulation.CombatTestOpponentId((IsLaboratory || UsesFinalRoomMimic) && kind == CombatEnemyKind.Docker ? 1 : index);
             Transform presentationParent = obj.transform;
             if (kind == CombatEnemyKind.Room)
             {
@@ -157,7 +158,8 @@ namespace BarPromenade
             else if (kind == CombatEnemyKind.Imprint) CombatImprintAssetProvider.ApplyAppearance(presentation.gameObject, identity);
             else if (kind == CombatEnemyKind.LongExposure) CombatLongExposureAssetProvider.ApplyAppearance(presentation.gameObject, identity);
             else if (kind == CombatEnemyKind.Zombie) CombatZombieAssetProvider.ApplyOrdinaryAppearance(presentation.gameObject, index % 3);
-            else CombatZombieAssetProvider.ApplyAppearance(presentation.gameObject, IsLaboratory && kind == CombatEnemyKind.Docker ? 1 : index % 3);
+            else CombatZombieAssetProvider.ApplyAppearance(presentation.gameObject,
+                (IsLaboratory || UsesFinalRoomMimic) && kind == CombatEnemyKind.Docker ? 1 : index % 3);
             CombatActor actor = obj.AddComponent<CombatActor>();
             actor.InitializeOpponent(presentation, body, kind: kind);
             actor.SetContactTarget(Hero);
@@ -231,6 +233,7 @@ namespace BarPromenade
             {
                 ChooseOpponentVariant(slot);
                 bool spawn = Mode != CombatTestMode.Endless || WarehousePlan != null && !WarehouseFishLamp.AllSourcesCollected(WarehousePlan);
+                if (IsFinalRoomMimic(slot)) spawn = false;
                 if (slot.Actor.IsCrane)
                 {
                     Vector3 ground = IsLaboratory ? opponentSpawn - Vector3.up * PlayerFactory.GroundedRootOffset : CraneGround;
@@ -247,7 +250,7 @@ namespace BarPromenade
                     ? InitialMimicAnchor(slotIndex).Position + Vector3.up * PlayerFactory.GroundedRootOffset
                     : InitialGroundOpponentSpawn(slotIndex, slot.Actor);
                 slot.CrateAnchorId = -1;
-                if (WarehousePlan != null && slot.Actor.IsDocker) fishCrates.SetOccupied(InitialMimicAnchor(slotIndex).Id, true);
+                if (WarehousePlan != null && slot.Actor.IsDocker && spawn) fishCrates.SetOccupied(InitialMimicAnchor(slotIndex).Id, true);
                 slot.Actor.gameObject.SetActive(true);
                 slot.Actor.ResetActor(position, Vector3.back);
                 ResetOpponentDecisions(slot.Actor, slot.Ai);

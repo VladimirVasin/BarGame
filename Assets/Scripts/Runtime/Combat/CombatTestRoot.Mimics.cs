@@ -7,6 +7,84 @@ namespace BarPromenade
         private readonly Plane[] mimicViewPlanes = new Plane[6];
         private WarehouseFishCratePopulation fishCrates;
         private const float MimicWakeDistance = 2.7f;
+        private OpponentSlot finalRoomMimic;
+        private string finalMimicSource;
+        private int finalMimicRoom = -1;
+        private bool finalMimicRevealStarted, finalMimicRevealFinished;
+
+        private bool UsesFinalRoomMimic => WarehousePlan != null && !IsLaboratory &&
+            !UseDockerPopulationForTests && !UseImmediateMimicsForTests;
+        private bool IsFinalRoomMimic(OpponentSlot slot) => slot == finalRoomMimic;
+
+        private void PrepareFinalRoomMimicSlot()
+        {
+            if (!UsesFinalRoomMimic) return;
+            foreach (OpponentSlot slot in opponentSlots)
+                if (slot.Actor.IsDocker) { finalRoomMimic = slot; return; }
+            // A scripted encounter also exists in one/two-opponent test modes.
+            // Only those smaller pools need an extra retained actor; total <= 5.
+            int index = opponentSlots.Count;
+            CombatActor actor = CreatePreparedOpponent(index, CombatEnemyKind.Docker, 0);
+            combatOpponents.Add(actor);
+            combatParticipants.Add(actor);
+            finalRoomMimic = new OpponentSlot { Actor = actor, Ai = new OpponentAiContext(index) };
+            opponentSlots.Add(finalRoomMimic);
+        }
+
+        private void RefreshFinalRoomMimic()
+        {
+            if (finalRoomMimic == null || fishCrates == null || finalMimicSource != null) return;
+            int missing = -1;
+            for (int i = 0; i < WarehousePlan.Refrigerators.Count; i++)
+                if (!GameSessionState.IsWorldItemCollected(WarehousePlan.Refrigerators[i].SourceId))
+                {
+                    if (missing >= 0) return;
+                    missing = i;
+                }
+            if (missing < 0) return;
+            WarehouseRefrigeratorPlacement refrigerator = WarehousePlan.Refrigerators[missing];
+            // The planner's first anchors belong to the rooms in RoomIndex order.
+            WarehouseFishCrateAnchor anchor = WarehousePlan.FishCrateAnchors[refrigerator.RoomIndex];
+            finalMimicSource = refrigerator.SourceId;
+            finalMimicRoom = refrigerator.RoomIndex;
+            fishCrates.SetOccupied(anchor.Id, true);
+            CombatActor actor = finalRoomMimic.Actor;
+            actor.gameObject.SetActive(true);
+            actor.ResetActor(anchor.Position + Vector3.up * PlayerFactory.GroundedRootOffset,
+                Quaternion.Euler(0f, anchor.Yaw, 0f) * Vector3.forward);
+            PlaceSpawnedMimic(finalRoomMimic, actor.transform.position);
+            finalRoomMimic.Spawned = true;
+            finalRoomMimic.DefeatCounted = false;
+            finalRoomMimic.DefeatOrder = 0;
+            actor.SetRoomAttackSuppressed(IsOpponentAttackSuppressed(actor));
+            ResetOpponentDecisions(actor, finalRoomMimic.Ai);
+            RestoreSelectedOpponentContext();
+            Physics.SyncTransforms();
+        }
+
+        private void AdvanceFinalRoomMimic()
+        {
+            if (finalRoomMimic == null || !finalRoomMimic.Spawned || finalMimicRoom < 0 || finalMimicRevealFinished) return;
+            CombatActor actor = finalRoomMimic.Actor;
+            if (actor.State.IsDefeated) { finalMimicRevealFinished = true; return; }
+            if (actor.ZombieRevealing || actor.ZombieAwake) finalMimicRevealStarted = true;
+            if (finalMimicRevealStarted)
+            {
+                finalMimicRevealFinished = actor.ZombieAwake;
+                return;
+            }
+            if (RoomAttackCinematicActive || IsOpponentAttackSuppressed(actor) || !Hero.IsAvailable || Hero.IsRestrained) return;
+            Vector3 delta = Hero.transform.position - WarehousePlan.RoomCenters[finalMimicRoom];
+            // Room entry owns the scare; neither aim, proximity to a particular
+            // corner nor the order of earlier refrigerator visits can skip it.
+            if (Mathf.Abs(delta.y) <= WarehouseMeleeHeight && Mathf.Abs(delta.x) < 2.9f && Mathf.Abs(delta.z) < 2.9f)
+                finalMimicRevealStarted = actor.TryAwakenZombie();
+        }
+
+        internal bool CanOpenWarehouseRefrigerator(string sourceId) =>
+            finalRoomMimic == null || sourceId != finalMimicSource || finalMimicRevealFinished ||
+            finalRoomMimic.Actor.State.IsDefeated ||
+            GameSessionState.IsWorldItemCollected(sourceId);
 
         private bool AdvanceMimicPerception(float seconds)
         {
@@ -14,6 +92,7 @@ namespace BarPromenade
             ResetOpponentMovement();
             OpponentIntent = CombatOpponentIntent.Recover;
             if (!AiOpponent.ZombieDormant) return true;
+            if (finalRoomMimic != null && AiOpponent == finalRoomMimic.Actor) return true;
             opponentContext.warehousePerceptionWait -= seconds;
             if (opponentContext.warehousePerceptionWait > 0f) return true;
             opponentContext.warehousePerceptionWait = WarehousePerceptionSeconds;
@@ -30,6 +109,9 @@ namespace BarPromenade
         {
             fishCrates = combatLocation != null ? combatLocation.GetComponent<WarehouseFishCratePopulation>() : null;
             fishCrates?.ResetAllDecor();
+            finalMimicSource = null;
+            finalMimicRoom = -1;
+            finalMimicRevealStarted = finalMimicRevealFinished = false;
         }
 
         private WarehouseFishCrateAnchor InitialMimicAnchor(int slotIndex)

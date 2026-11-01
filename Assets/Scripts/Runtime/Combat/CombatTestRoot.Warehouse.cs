@@ -10,6 +10,7 @@ namespace BarPromenade
         // Laboratory selects it publicly; other player starts use the warehouse.
         internal static bool UseLegacyArenaForTests;
         internal static bool UseDockerPopulationForTests;
+        internal static bool UseImmediateMimicsForTests;
         internal static int? WarehouseSeedForTests;
         private GameObject combatLocation;
         public WarehouseArenaPlan WarehousePlan { get; private set; }
@@ -31,6 +32,7 @@ namespace BarPromenade
         {
             UseLegacyArenaForTests = false;
             UseDockerPopulationForTests = false;
+            UseImmediateMimicsForTests = false;
             WarehouseSeedForTests = null;
             AuthoredEnemyKindForTests = null;
         }

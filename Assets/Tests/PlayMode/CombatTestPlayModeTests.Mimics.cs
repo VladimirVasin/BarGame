@@ -12,6 +12,184 @@ namespace BarPromenade.Tests.PlayMode
     {
         [Category("CurrentCombat")]
         [UnityTest]
+        [PrebuildSetup(typeof(CombatMixedEndlessAssetsSetup))]
+        public IEnumerator Range_LastFridgeMimicAllOrders()
+        {
+            CombatTestRoot.UseImmediateMimicsForTests = false;
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
+                new CombatLoadoutSelection(CombatWeaponId.Pistol), CombatTestMode.Endless,
+                new CombatEncounterSettings(3, .1f, .1f, .15f, .15f))), Is.True);
+            yield return AwaitSelectedCombatRange();
+            ForceAmmoFocus();
+            var orders = new[] { new[] { 0, 1, 2 }, new[] { 0, 2, 1 }, new[] { 1, 0, 2 },
+                new[] { 1, 2, 0 }, new[] { 2, 0, 1 }, new[] { 2, 1, 0 } };
+            var items = new[] { InventoryItemId.RottenFishTailCan, InventoryItemId.RottenFishBellyCan,
+                InventoryItemId.RottenFishHeadCan };
+            WarehouseRefrigerator[] fridges = root.GetComponentsInChildren<WarehouseRefrigerator>(true);
+            WarehouseFishCratePopulation crates = root.GetComponentInChildren<WarehouseFishCratePopulation>();
+            CombatActor docker = null;
+            foreach (CombatActor actor in root.Opponents)
+                if (actor.IsDocker) { Assert.That(docker, Is.Null); docker = actor; }
+                else actor.enabled = false;
+            Assert.That(docker, Is.Not.Null);
+            Assert.That(crates, Is.Not.Null);
+            string dockerIdentity = docker.GetComponentInChildren<DefaultNpcAppearance>(true).AppearanceKey;
+            CombatZombieAudio sound = docker.GetComponent<CombatZombieAudio>();
+            for (int permutation = 0; permutation < orders.Length; permutation++)
+            {
+                if (permutation > 0) GameSessionState.ResetInventoryState();
+                root.ResetRound();
+                ForceAmmoFocus();
+                int[] order = orders[permutation];
+                string context = $"Can order {order[0]} → {order[1]} → {order[2]}";
+                TestContext.Progress.WriteLine("Last-fridge mimic proof: " + context);
+                Assert.That(docker.gameObject.activeInHierarchy, Is.False, context + ": no early live crate.");
+                for (int collected = 0; collected < 2; collected++)
+                {
+                    WarehouseRefrigeratorPlacement source = root.WarehousePlan.Refrigerators[order[collected]];
+                    WarehouseRefrigerator earlyFridge = FindFinalRoomTestRefrigerator(fridges, source.SourceId);
+                    PlaceFinalRoomTestHero(earlyFridge.InteractionPosition);
+                    root.Tick(.15f);
+                    root.AdvanceEndlessInterval(10f);
+                    Assert.That(docker.gameObject.activeInHierarchy, Is.False,
+                        context + ": visiting an earlier fridge or waiting for respawn cannot activate the reserve.");
+                    Assert.That(GameSessionState.TryCollectWorldItem(source.SourceId, items[order[collected]]), Is.True);
+                }
+
+                WarehouseRefrigeratorPlacement last = root.WarehousePlan.Refrigerators[order[2]];
+                WarehouseFishCrateAnchor anchor = root.WarehousePlan.FishCrateAnchors[last.RoomIndex];
+                WarehouseRefrigerator fridge = FindFinalRoomTestRefrigerator(fridges, last.SourceId);
+                Assert.That(docker.gameObject.activeInHierarchy && docker.ZombieDormant, Is.True, context);
+                Assert.That(Vector3.Distance(docker.transform.position,
+                    anchor.Position + Vector3.up * PlayerFactory.GroundedRootOffset), Is.LessThan(.01f), context);
+                Assert.That(Quaternion.Angle(docker.transform.rotation, Quaternion.Euler(0f, anchor.Yaw, 0f)),
+                    Is.LessThan(.01f), context);
+                foreach (WarehouseFishCrateAnchor candidate in root.WarehousePlan.FishCrateAnchors)
+                    Assert.That(crates.IsOccupied(candidate.Id), Is.EqualTo(candidate.Id == anchor.Id), context);
+                Assert.That(sound.RevealPlayCount, Is.Zero, context);
+
+                Vector3 entry = FindFinalRoomTestEntry(last.RoomIndex, anchor.Position);
+                PlaceFinalRoomTestHero(entry);
+                Assert.That(Vector3.ProjectOnPlane(entry - docker.transform.position, Vector3.up).magnitude,
+                    Is.GreaterThan(2.7f), "Room entry must trigger even outside the old proximity radius.");
+                root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(docker.ZombieRevealing, Is.True, context + ": room entry guarantees the actual reveal.");
+                Assert.That(sound.RevealPlayCount, Is.EqualTo(1), context);
+                PlaceFinalRoomTestHero(fridge.InteractionPosition);
+                Assert.That(fridge.BeginInteraction(), Is.False, context + ": the last can waits for the reveal.");
+                if (permutation == 0)
+                {
+                    yield return AdvanceMimicTo(docker, .4f);
+                    yield return null;
+                    CaptureMimicView(docker, "mimic-final-room-reveal");
+                }
+                yield return AdvanceMimicTo(docker, CombatZombieAssetProvider.RevealSeconds);
+                root.Tick(0f);
+                Assert.That(docker.ZombieAwake, Is.True, context);
+                Assert.That(fridge.BeginInteraction(), Is.True, context + ": the last fridge opens after the full reveal.");
+                fridge.Interaction.CancelInteraction();
+                yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay),
+                    "The final refrigerator cancellation did not release its input owner.");
+
+                docker.State.ReceiveProjectileHit(docker.State.Settings.MaxHealth * 10f);
+                root.Tick(0f);
+                for (int attempt = 0; attempt < 3; attempt++) root.AdvanceEndlessInterval(10f);
+                Assert.That(docker.State.IsDefeated, Is.True, context + ": the one-shot reserve cannot respawn.");
+                Assert.That(sound.RevealPlayCount, Is.EqualTo(1), context);
+                root.ResetRound();
+                ForceAmmoFocus();
+                Assert.That(docker.ZombieDormant && docker.gameObject.activeInHierarchy, Is.True,
+                    context + ": retry with two cans re-arms the same remaining room.");
+                Assert.That(Vector3.Distance(docker.transform.position,
+                    anchor.Position + Vector3.up * PlayerFactory.GroundedRootOffset), Is.LessThan(.01f), context);
+                Assert.That(root.CanOpenWarehouseRefrigerator(last.SourceId), Is.False, context);
+                PlaceFinalRoomTestHero(entry);
+                root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(docker.ZombieRevealing, Is.True, context);
+                yield return AdvanceMimicTo(docker, CombatZombieAssetProvider.RevealSeconds);
+                root.Tick(0f);
+                Assert.That(sound.RevealPlayCount, Is.EqualTo(1), context + ": retry owns a single fresh reveal.");
+                Assert.That(root.CanOpenWarehouseRefrigerator(last.SourceId), Is.True, context);
+                Assert.That(GameSessionState.TryCollectWorldItem(last.SourceId, items[order[2]]), Is.True);
+                Assert.That(root.EndlessSpawnsBlockedByFish && !docker.gameObject.activeInHierarchy, Is.True, context);
+                Assert.That(root.LiveOpponentCount, Is.Zero, context);
+                root.ResetRound();
+                Assert.That(root.LiveOpponentCount, Is.Zero, context + ": three sources keep the warehouse clear on retry.");
+                Assert.That(docker.gameObject.activeInHierarchy, Is.False, context);
+            }
+
+            // The small population has no ordinary Docker slot; its separately
+            // retained reserve must use the same identity and shared clock.
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            GameSessionState.ResetInventoryState();
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
+                new CombatLoadoutSelection(CombatWeaponId.Pistol), CombatTestMode.Endless,
+                new CombatEncounterSettings(1))), Is.True);
+            yield return AwaitSelectedCombatRange();
+            ForceAmmoFocus();
+            Assert.That(root.Opponents.Count, Is.EqualTo(2), "The one-opponent pool retains its crane and scripted Docker.");
+            docker = null;
+            foreach (CombatActor actor in root.Opponents)
+                if (actor.IsDocker) docker = actor;
+                else { Assert.That(actor.IsCrane, Is.True); actor.enabled = false; }
+            Assert.That(docker, Is.Not.Null);
+            Assert.That(docker.GetComponentInChildren<DefaultNpcAppearance>(true).AppearanceKey,
+                Is.EqualTo(dockerIdentity), "The extra reserve retains the permanent Docker identity.");
+            Assert.That(docker.gameObject.activeInHierarchy, Is.False);
+            for (int index = 0; index < 2; index++)
+                Assert.That(GameSessionState.TryCollectWorldItem(root.WarehousePlan.Refrigerators[index].SourceId,
+                    items[index]), Is.True);
+            WarehouseRefrigeratorPlacement smallLast = root.WarehousePlan.Refrigerators[2];
+            WarehouseFishCrateAnchor smallAnchor = root.WarehousePlan.FishCrateAnchors[smallLast.RoomIndex];
+            Assert.That(docker.gameObject.activeInHierarchy && docker.ZombieDormant, Is.True);
+            PlaceFinalRoomTestHero(FindFinalRoomTestEntry(smallLast.RoomIndex, smallAnchor.Position));
+            root.Tick(CombatTestRoot.SimulationStep);
+            Assert.That(docker.ZombieRevealing, Is.True);
+            yield return AdvanceMimicTo(docker, CombatZombieAssetProvider.RevealSeconds);
+            root.Tick(0f);
+            Assert.That(docker.ZombieAwake && root.CanOpenWarehouseRefrigerator(smallLast.SourceId), Is.True,
+                "The added reserve completes its reveal on the ordinary shared population clock.");
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        private static WarehouseRefrigerator FindFinalRoomTestRefrigerator(WarehouseRefrigerator[] fridges, string source)
+        {
+            foreach (WarehouseRefrigerator fridge in fridges)
+                if (fridge.SourceId == source) return fridge;
+            Assert.Fail("Missing refrigerator for " + source);
+            return null;
+        }
+
+        private Vector3 FindFinalRoomTestEntry(int room, Vector3 crate)
+        {
+            Vector3 centre = root.WarehousePlan.RoomCenters[room];
+            foreach (Vector2 corner in new[] { new Vector2(-2.4f, -2.4f), new Vector2(-2.4f, 2.4f),
+                new Vector2(2.4f, -2.4f), new Vector2(2.4f, 2.4f) })
+            {
+                Vector3 point = centre + new Vector3(corner.x, 0f, corner.y);
+                if (Vector3.ProjectOnPlane(point - crate, Vector3.up).sqrMagnitude <= 2.8f * 2.8f ||
+                    !root.WarehouseArea.TryGetHeight(point, out float floor, root.Hero.Body.radius,
+                        root.Hero.Body.height + PlayerFactory.GroundedRootOffset)) continue;
+                return new Vector3(point.x, floor + PlayerFactory.GroundedRootOffset, point.z);
+            }
+            Assert.Fail("The final-room test needs a supported room entry outside the old mimic radius.");
+            return default;
+        }
+
+        private void PlaceFinalRoomTestHero(Vector3 rootPosition)
+        {
+            root.Hero.ResetActor(rootPosition, Vector3.forward);
+            root.Hero.SetCombatFocused(false);
+            root.CameraFollow.Snap();
+            Physics.SyncTransforms();
+        }
+
+        [Category("CurrentCombat")]
+        [UnityTest]
         public IEnumerator Range_FishCrateMimicsKeepDisguiseRevealDamageAndLifecycle()
         {
             MeshFilter[] sourceMeshes = CombatZombieAssetProvider.LoadCrate().GetComponentsInChildren<MeshFilter>(true);

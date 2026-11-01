@@ -90,7 +90,7 @@ cemetery:own interiors/returns.
   Dust192+32/fan→settle/seed.
   SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync/stop/replay0/exitfade.
   Fan0:2mono3D/clicks-whisper/.3/.15/.8/LP2800/Worldwet;EOF12–25|25–50/startsame;newfixed3–7m;pause-ownerhold/ResetNewkeep/empty0/clear;§6/art15a.
-  StdDocker;Endless1–5/def3:Room,Docker,Crane(last≤2);seedstart-reset-refill/≤5warm/≤2corpses/roleIDs.
+  Endless1–5/def3:Room/Crane;Docker2src→lastfridge crate/reveal→3rd;retry2same/3clear;≤5warm/2corpses.
   Lab:Arena/6warm/1target/Zombie/reset-prepkept.
   Room×1.2/bighead/longarms/corridor;Lab:Imprint cast/LongExposure emulsion;Room:head0→ret+2s;lens1s/chest-seatface2s/ret18HP/laugh5s→idle5s;twin/IK/root;cam5;escape@rail;simlive/input0/others idle→headend;jelly/Lmidbar in/out;glugs/pull;§6.
   HP×.5;bar tissue.27/fatalhead3;guns structure×.5;wood1st hole-chips.

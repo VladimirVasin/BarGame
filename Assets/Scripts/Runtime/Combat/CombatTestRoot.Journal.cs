@@ -269,7 +269,8 @@ namespace BarPromenade
             duelJournal.Record("character", actor: actor.JournalActorId,
                 f0: GameLog.Field("id", actor.IsHero ? "hero" : actor.IsCrane ? DefaultNpcPopulation.CombatTestCraneEnemy :
                     actor.IsAuthoredEnemy ? actor.GetComponentInChildren<DefaultNpcAppearance>(true).AppearanceKey :
-                    DefaultNpcPopulation.CombatTestOpponentId(IsLaboratory ? (actor.IsDocker ? 1 : 0) : combatOpponents.IndexOf(actor))));
+                    DefaultNpcPopulation.CombatTestOpponentId(actor.IsDocker && UsesFinalRoomMimic ? 1 :
+                        IsLaboratory ? (actor.IsDocker ? 1 : 0) : combatOpponents.IndexOf(actor))));
         }
 
         private void EndJournalRound(string reason)

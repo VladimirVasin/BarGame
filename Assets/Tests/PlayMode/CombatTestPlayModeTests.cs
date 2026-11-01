@@ -50,6 +50,9 @@ namespace BarPromenade.Tests.PlayMode
         {
             zombieFixtureStarted = false;
             CombatTestRoot.UseDockerPopulationForTests = false;
+            // Direct contact/shot/capture fixtures retain their initial actors.
+            // The encounter-order scenario selects the production schedule.
+            CombatTestRoot.UseImmediateMimicsForTests = true;
             CombatTestRoot.AuthoredEnemyKindForTests = null;
             zombieFixtureStarted = true;
             // Existing contact fixtures explicitly retain the authored arena;
@@ -77,6 +80,7 @@ namespace BarPromenade.Tests.PlayMode
             zombieFixtureStarted = false;
             CombatTestRoot.UseLegacyArenaForTests = false;
             CombatTestRoot.UseDockerPopulationForTests = false;
+            CombatTestRoot.UseImmediateMimicsForTests = false;
             CombatTestRoot.WarehouseSeedForTests = null;
             if (root != null) root.AutomaticSimulation = false;
             // Contact voices are pooled under DontDestroyOnLoad. End them before

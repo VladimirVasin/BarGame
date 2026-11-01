@@ -947,25 +947,24 @@
 - **Accepted 2026-10-19, scene cinematography:** FOV, Dutch angles and horizon
   rolls follow action;review framing/contacts.
 - **Accepted exception 2026-10-19, warehouse door ambush:**
-  CombatTest;story§6/7/16.16/21/22,art§15a. Gate→door E;prep clock0.
+  CombatTest;§6/7/16.16/21/22/art§15a. Gate→doorE;prep clock0.
   User2026-10-20:door3s→attack5s→RightShin hook/jerk;fan720°/s+Spot↑5s.
   Sparks:1pooled Point/4.8m/.1s.
-  Physical inverted roof hoist→free camera/180°ease;hero stays struggling.
+  Physical inverted roof hoist→freecam/180°ease;hero struggles.
   E/release/next0;1Crane/8guides/feedcap;haul under gallery→well.
-  Front1.18m/red36/.85floor/rig/audio/FOV;stowed. Debug commits prereqs;
-  stages entry;progress stays. Cancel:pose/vitals/grip/fan/red;ammo kept,
-  preview wound0/real shared puncture. Replay/disable clean owned hang/camera.
+  Front1.18m/red36/.85floor;stowed. Debug:prereqcommit/entry;progress kept. Cancel:pose/vitals/grip/fan/red;ammo kept,
+  preview wound0/real shared puncture. Replay/off clears hang/cam.
 - **Accepted exception 2026-10-19, warehouse post-fan audio — explicit user request:**
-  CombatTest only:2ownerless wordless insectclicks/whispers;§6/art§15a/16;speech-story0. `CombatWarehouseAmbiencePlayer`:`Audio/CombatWarehouseAmbience`/{warehouse_clicks,warehouse_whispers};2optional mono/bgStreaming;WAV|OGG|MP3/slot1;fan≥1;EOF→wait12–25/25–50s/firstsame/pitch.8/PCMcal/queue0. Play:random3–7m@hero/root+1.35±.4/fixed/clearinside≤24tries/retry1s;2reused3D/linear2–16m/SfxWorld+LP2800/gain.30/.15/echo-reverb;empty0/ResetNewkeep/pause-ownerhold/unload0/perf unmeasured. Gate:moved→open=1heavy synthlatch/SfxWorld@valve;activity-tail/fullstop0.
+  CombatTest:2ownerless wordless insectclicks/whispers;§6/art§15a/16;speech-story0. `CombatWarehouseAmbiencePlayer`:{warehouse_clicks,warehouse_whispers};2optional mono/bgStreaming;WAV|OGG|MP3/slot1;fan≥1;EOF→wait12–25/25–50s/firstsame/pitch.8/PCMcal/queue0. random3–7m@hero/root+1.35±.4/fixed/clearinside≤24tries/retry1s;2reused3D/linear2–16m/SfxWorld+LP2800/gain.30/.15/echo-reverb;empty0/ResetNewkeep/pause-ownerhold/unload0/unmeasured. Gate:moved→open=1heavy synthlatch/SfxWorld@valve;activity-tail/fullstop0.
 - **Accepted 2026-10-19, ground navigation:** Warehouse:FindApproachRoute/A*;feet/cargo clearance;gate/railnodes/contactexit/retry;art15a/story6.
 - **Accepted 2026-10-19, warehouse atmosphere:** `WarehouseAtmosphere`:litdust/fan/grit→settle/192+32;fog-newL-game0;perf unmeasured.
-- **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a. Hook6m/lift2m;LOS before cast/release;one puncture,5s hold,6 fresh E presses. Collision haul over rails,physical struggle,body camera,fall damage;release keeps velocity. Others/spawns wait. Escape→home/watch10s;fatal→cry/spasm3s/home/regen10s;same actor,no kill/reward/corpse. Hero wounds never sever;front crowbar parries(dot≥.35),back does not. Pause/modal/focus/reset/disable/unload clear owned input/rig/anchors/UI;no story.
+- **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a. Hook6m/lift2m/LOSprecast-release/puncture1/hold5s/6freshE. COLhaul-overrails/physical struggle/bodycam/fallHP/keptV. Others/spawns wait. Escape→homewatch10s;fatal→cryspasm3s/home/regen10s;sameactor/kill-reward-corpse0. Hero wounds kept/sever0;frontcrowbarparry(dot≥.35)/back0. Pause/modal/focus/reset/off/unload→owned input/rig/anchors/UI clear;story0.
 - **Accepted 2026-10-19, hero airborne inertia:** WorldV/yaw-release brake0/limitedsteer;combat planar/vertical caps/freefall g24;NPCphys kept;fixedstep/boundedbodies/shared clamp/hotalloc0.
 - **Accepted 2026-10-19, hero weapon retention:** Hero alive:hit-fall-recovery drop0;death→drop+pickup;NPC kept;shotgun draw grip-model-ammo resumes.
 - **Accepted exception 2026-10-19, Room shadow:** §6/art§15a kept;jelly waves;mid flatbar axial in/out;wet closure/low glugs/sticky pull. `CombatRoomAttackTableau`:1Spot/24×256R8texels+mips≤2MiB/.64s;SFX3.6s;preload/layerrestore/pause-focus-exit clear/hotalloc0/extra shadowpass0.
 - **Accepted exception 2026-10-19, Room attack:** §6/7/16.16/art§15a;text0;Cam:focus.9/point1/chest.6/in1/seat2:wide→face/out.6/ret.8;P/C/I/S FOV/roll°:76→88/12→22,45/6,48/4,48→50/4→-4;out reverse/ret normal. Head-high indexray/headsize kept;3palmarfingers/thumb/wristroll. Skin/4frames/hole;weighted Player3DV2-chair-lamp/FBXscale;dupewalls0/up;cached plaster-threshold→LimbTwoBoneIk/boot-pelvis-chair/seatbackoff;warp-fade/hotbake-load-alloc0. HeroLhead0→ret+2s/input0;ret18HP1x/laugh5s;simlive/others+spawns idle→heroend. Vulnerable/hitcancel/HUDlock→HP3sunlock;Laughend-cancel→idle5s/remainder0;hits keep/hurt wins. Idle:planted/headcant/breath/lag-twitchhands/blend. Pause0;death-reset-disable-end-exit clear1x.
 - **Accepted 2026-10-19:** Room×1.2/bighead/longarms+hands
-- **Accepted 2026-10-19, warehouse roster:** Main:Crane/Room/Docker;Endless1–5/def3;Crane last/≤2corpses;Lab6/Zombie/def1target/≤6warm;§6/art§15a/story0.
+- **Accepted 2026-11-01 — last-fridge Docker, user:** Warehouse≠Lab/legacyDocker;pool ID1/v1;reuse/+1;≤5regular,target1/2+1. Initial/refill0;2src→samecrate@lastRoomIndex;entry→reveal1×;Take≥revealend/defeat;Reset2=rearm/3=clear;Endless1–5/def3,Crane last/≤2corpses;Lab6/Zombie/def1target/≤6warm;§6/art15a/24FX kept.
 - **Accepted exception 2026-10-17, crane insect:** art§15a;sharedrig/yaw±100°/hang↓.25/rootkept. CraneBody/UV0/body-skull;ImageGen2KsRGB+1Klinear:RGslope/Brough/Acavity;WarehouseSurface/3shared/BC7mips<7MiB. 3floors/insetvoid/inertia-slack/pause-reset;§6/story0.
 - **Accepted exception 2026-10-17, endless endurance:** Crane/sharedlife/fishcutoff. EnemyHP/structure×.5;head-rear maxHPcap→scale/head2/torso8;hero1. Everyhit/repeats/woodchips-hole/bounded;§6/art§15a/story0.
 - **Accepted 2026-10-19, warehouse routes/stock:** upperLbroken/Ronly;3room6wall/27soloE/fridgecurve/hollowCOL/multiopen/ownbay→Take;seed12packs/6mag6shell/9banks/3bays/allfloors;reset-respawnkeep/Endlessrefill/shut;8/2+0reserve/wave-story0.

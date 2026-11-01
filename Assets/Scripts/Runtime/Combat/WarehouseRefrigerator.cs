@@ -94,6 +94,7 @@ namespace BarPromenade
             Vector3 local = transform.InverseTransformPoint(owner.Player.GameObject.transform.position);
             if (Mathf.Abs(local.y - Plan.ApproachPosition.y) > .65f || local.z > -.28f ||
                 (local - Plan.ApproachPosition).sqrMagnitude > 1.7f) return false;
+            if (!owner.CanOpenWarehouseRefrigerator(SourceId)) return false;
             Vector3 origin = owner.Player.GameObject.transform.position + Vector3.up * 1.15f;
             Vector3 handle = View.HandlePivot.position;
             return !Physics.Linecast(origin, handle, out RaycastHit hit, ~0, QueryTriggerInteraction.Ignore) ||

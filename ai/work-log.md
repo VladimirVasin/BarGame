@@ -5,13 +5,11 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-01
 
-Bottle bodies use closed authored glass cells:local fracture/real contact holes,
-finite world shards and ring;glass skips flesh blood/bones. Rig/UV/24FX retained;
-bounded pools/shared banks;cost unmeasured. Blender:
-BOTTLE FRACTURE EXACT SURFACE CLOSED CELLS / RETAINED UV RIG OK passed.
-BottleMonstersFractureFromCrowbar passed;intact/impact/retained/reset frames
-reviewed. Exact glass queries preserve arm shielding;legacy civilian bodies keep
-their own damage path. One glass material slot prevents imported grey overdraw.
+Bottles:closed glass cells/contact holes/finite shards+ring;no blood/bones.
+Rig/UV/24FX,shared banks/bounds/arm shielding/civilian damage kept;cost unmeasured.
+One material slot fixes grey overdraw.
+BOTTLE FRACTURE EXACT SURFACE CLOSED CELLS / RETAINED UV RIG OK;
+BottleMonstersFractureFromCrowbar passed;intact/impact/retained/reset frames reviewed.
 
 Monster ImageGen detail rebaked to retained UV/native maps;offline filtering
 removes pore aliasing. MonsterHorrorTextures passed;frames reviewed.
@@ -52,6 +50,9 @@ Range_RoomAttackStartsWhenOuterCameraPositionsAreBlocked;
 Range_StoryWarehouseRoomPursuesAndAttacksFromInitialSpawn passed;frames reviewed.
 Ambush cleanup skips destroyed Unity owners;capture/clock/audio release stays.
 DoorAmbush_CleanupAfterCameraDestroyed passed. Unrelated valve-angle mismatch kept.
+
+Docker:2sources→last-fridge crate;entry→reveal before3rd;retry/identity kept.
+Range_LastFridgeMimicAllOrders passed;frame reviewed.
 
 ## 2026-10-31
 

@@ -27,11 +27,10 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   Range_CrowbarContactPresentsRecoilBeforeHitStop/
   Range_CrowbarHitsLeaveWoundsAndZombieRises/Range_CrowbarFatalHeadContactFracturesOnce passed.
 
-- Комната:сама идёт/атакует после входа;выходит из зазора у перил;ближний кадр.
-  Range_RoomAttackStartsWhenOuterCameraPositionsAreBlocked/
-  Range_StoryWarehouseRoomPursuesAndAttacksFromInitialSpawn passed;кадры проверены.
-
-Прежние кадры проверены.
+- Комната подходит/атакует;ближний кадр.
+  Range_StoryWarehouseRoomPursuesAndAttacksFromInitialSpawn passed.
+- Грузчик:ящик последнего холодильника при любом порядке банок;раскрытие до третьей.
+  Range_LastFridgeMimicAllOrders passed;кадр проверен.
 
 ### 2026-10-31
 
