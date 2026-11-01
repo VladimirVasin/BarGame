@@ -9,6 +9,11 @@
     "allowed": "local state that belongs here; measured only"
   },
   "paths": {
+    "Build/": {
+      "policy": "declared",
+      "sweep": false,
+      "note": "User-requested player builds for manual distribution and testing; never committed or swept."
+    },
     "Library/": {
       "policy": "idle",
       "days": 14,
@@ -120,6 +125,12 @@
       "regenerated_by": "Blender, on the next save",
       "guard": "sibling-blend-clean",
       "note": "The autosave is worthless once its .blend is committed, and load-bearing while it is not. The sweep refuses one whose .blend has uncommitted changes."
+    },
+    ".DS_Store": {
+      "policy": "allowed",
+      "max_count": 1,
+      "sweep": false,
+      "note": "macOS Finder view state for the repository directory; never committed."
     }
   },
   "worktrees": {

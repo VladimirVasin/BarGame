@@ -380,7 +380,9 @@ namespace BarPromenade
             FireLight.shadowNormalBias = 0.34f;
             FireLight.shadowNearPlane = 0.12f;
             FireLight.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             FireLight.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             if (Application.isPlaying)
             {
                 UniversalAdditionalLightData lightData =

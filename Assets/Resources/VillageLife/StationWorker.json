@@ -4927,7 +4927,7 @@
     ],
     "neutral_build": 0.5,
     "source_path": "ArtSource/PlayerV2/Blender/PlayerCharacter3DV2.blend",
-    "source_sha256": "e3faf9acb17eb67374ccaba751e6e55d676874b5f4d35e21503789a8f7b7b1aa",
+    "source_sha256": "d44e21049589108f88734f8d29af5de0359b65a499a2fd7232d97c16d3f75e79",
     "source_renderers": [
       {
         "renderer": "GEO_Torso",
@@ -7797,5 +7797,5 @@
     }
   ],
   "uv_signature": "46ecf0bfe0a432b514ad65b9e3d966127364b8976081eac93d3abd8f79bb71f1",
-  "signature": "787d1bb26b3151f40c108284f9467b3355bcd864f3625990926aea57d6ea602f"
+  "signature": "0d0243478c98f12871730fb6a86a6f4f69dc4f0d65963b5ee5f2cb5c81d1f525"
 }

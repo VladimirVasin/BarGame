@@ -1,0 +1,768 @@
+{
+  "schema_version": 1,
+  "variant_policy": "retain_all",
+  "shader_path": "Assets/Resources/Shaders/Lit.shader",
+  "shader_guid": "b5743a506241315419f3a2ffcfef4d20",
+  "review_contract": "Source snapshots force review on changes. Registration is not a reachability proof. No stripping allowlist or Unity callback exists.",
+  "static_local_sets": [
+    {
+      "keywords": [],
+      "evidence_materials": [
+        "Assets/Church/Materials/ChurchFloor.mat",
+        "Assets/Church/Materials/ChurchGold.mat",
+        "Assets/Church/Materials/ChurchIron.mat",
+        "Assets/Church/Materials/ChurchMural.mat",
+        "Assets/Church/Materials/ChurchPlaster.mat",
+        "Assets/Church/Materials/ChurchRoof.mat",
+        "Assets/Church/Materials/ChurchSacredArt.mat",
+        "Assets/Church/Materials/ChurchStone.mat",
+        "Assets/Church/Materials/ChurchTextile.mat",
+        "Assets/Church/Materials/ChurchWood.mat",
+        "Assets/ChurchGarden/Materials/GardenFoliage.mat",
+        "Assets/ChurchGarden/Materials/GardenMetal.mat",
+        "Assets/ChurchGarden/Materials/GardenStream.mat",
+        "Assets/ChurchGarden/Materials/GardenWater.mat",
+        "Assets/Resources/City/EastExit/Guards/EastGuardRifleDark.mat",
+        "Assets/Resources/City/EastExit/Guards/EastGuardRifleMetal.mat",
+        "Assets/Resources/City/EastExit/Guards/EastGuardRifleWood.mat",
+        "Assets/Resources/Materials/RuntimePrimitiveLit.mat",
+        "Assets/Vehicles/Materials/CityBusAccent.mat",
+        "Assets/Vehicles/Materials/CityBusBody.mat",
+        "Assets/Vehicles/Materials/CityBusDashboard.mat",
+        "Assets/Vehicles/Materials/CityBusInterior.mat",
+        "Assets/Vehicles/Materials/CityBusMetal.mat",
+        "Assets/Vehicles/Materials/CityBusRail.mat",
+        "Assets/Vehicles/Materials/CityBusRubber.mat",
+        "Assets/Vehicles/Materials/CityBusSeat.mat",
+        "Assets/Vehicles/Materials/CityBusTrim.mat",
+        "Assets/Vehicles/Materials/LastRouteCarAccentPaint.mat",
+        "Assets/Vehicles/Materials/LastRouteCarBody.mat",
+        "Assets/Vehicles/Materials/LastRouteCarBrokenGlass.mat",
+        "Assets/Vehicles/Materials/LastRouteCarChrome.mat",
+        "Assets/Vehicles/Materials/LastRouteCarDashboard.mat",
+        "Assets/Vehicles/Materials/LastRouteCarInterior.mat",
+        "Assets/Vehicles/Materials/LastRouteCarMetal.mat",
+        "Assets/Vehicles/Materials/LastRouteCarPlate.mat",
+        "Assets/Vehicles/Materials/LastRouteCarRubber.mat",
+        "Assets/Vehicles/Materials/LastRouteCarRust.mat",
+        "Assets/Vehicles/Materials/LastRouteCarSeat.mat",
+        "Assets/Vehicles/Materials/LastRouteCarTrim.mat"
+      ]
+    },
+    {
+      "keywords": [
+        "_ALPHAPREMULTIPLY_ON",
+        "_SURFACE_TYPE_TRANSPARENT"
+      ],
+      "evidence_materials": [
+        "Assets/Vehicles/Materials/CityBusGlass.mat",
+        "Assets/Vehicles/Materials/LastRouteCarCrackedGlass.mat",
+        "Assets/Vehicles/Materials/LastRouteCarGlass.mat"
+      ]
+    },
+    {
+      "keywords": [
+        "_EMISSION"
+      ],
+      "evidence_materials": [
+        "Assets/Vehicles/Materials/CityBusCabinLight.mat",
+        "Assets/Vehicles/Materials/CityBusDestination.mat",
+        "Assets/Vehicles/Materials/CityBusHeadlight.mat",
+        "Assets/Vehicles/Materials/CityBusTailLight.mat",
+        "Assets/Vehicles/Materials/LastRouteCarCabinLamp.mat",
+        "Assets/Vehicles/Materials/LastRouteCarHeadlight.mat",
+        "Assets/Vehicles/Materials/LastRouteCarRadioDial.mat",
+        "Assets/Vehicles/Materials/LastRouteCarTailLight.mat"
+      ]
+    },
+    {
+      "keywords": [
+        "_ENVIRONMENTREFLECTIONS_OFF",
+        "_METALLICSPECGLOSSMAP",
+        "_NORMALMAP"
+      ],
+      "evidence_materials": [
+        "Assets/Player3D/V2/Materials/Player3DV2Clothing.mat",
+        "Assets/Player3D/V2/Materials/Player3DV2Hair.mat",
+        "Assets/Player3D/V2/Materials/Player3DV2Skin.mat"
+      ]
+    },
+    {
+      "keywords": [
+        "_ENVIRONMENTREFLECTIONS_OFF",
+        "_SPECULARHIGHLIGHTS_OFF"
+      ],
+      "evidence_materials": [
+        "Assets/Player3D/Materials/Player3DLit.mat"
+      ]
+    }
+  ],
+  "runtime_local_sets": [
+    {
+      "keywords": [
+        "_ALPHATEST_ON"
+      ],
+      "owners": [
+        "Assets/Scripts/Runtime/Combat/CombatBloodEffects.cs",
+        "Assets/Scripts/Runtime/Combat/WarehouseArenaAssetProvider.cs"
+      ],
+      "evidence": "Blood material and warehouse wear-decal use common Lit plus alpha test; not represented by serialized materials.",
+      "uncertainty": "Observed constructors/roles establish this local set; no pass/API or global-state closure is claimed."
+    },
+    {
+      "keywords": [
+        "_SURFACE_TYPE_TRANSPARENT"
+      ],
+      "owners": [
+        "Assets/Scripts/Runtime/Interaction/HomeToiletBowelEffect.cs",
+        "Assets/Scripts/Runtime/World/HomeBathroomMirrorResources.cs",
+        "Assets/Scripts/Runtime/World/HomeBrushingResources.cs",
+        "Assets/Scripts/Runtime/World/HomeUrineResources.cs",
+        "Assets/Scripts/Runtime/World/CityPortAssetProvider.cs",
+        "Assets/Scripts/Runtime/World/CityCanneryAssetProvider.cs",
+        "Assets/Scripts/Runtime/World/CityLaundryAssetProvider.cs"
+      ],
+      "evidence": "Runtime straight-alpha materials do not enable premultiply, unlike the serialized glass set.",
+      "uncertainty": "Clone sources can carry additional keywords; this is an evidenced set, not an exhaustive family allowlist."
+    },
+    {
+      "keywords": [
+        "_ENVIRONMENTREFLECTIONS_OFF"
+      ],
+      "owners": [
+        "Assets/Scripts/Runtime/Combat/CombatZombieOrdinaryAppearance.cs"
+      ],
+      "evidence": "Default NPC common Lit template has environment/specular off; glass slot removes only specular-off.",
+      "uncertainty": "Depends on DefaultNpcCatalog template/material assignment. All inherited sets remain retained."
+    },
+    {
+      "keywords": [
+        "_EMISSION"
+      ],
+      "owners": [
+        "Assets/Scripts/Runtime/Combat/CombatFlashlightAssetProvider.cs",
+        "Assets/Scripts/Runtime/Combat/CombatPistolAssetProvider.cs",
+        "Assets/Scripts/Runtime/Combat/CombatShotgunAssetProvider.cs",
+        "Assets/Scripts/Runtime/Combat/WarehouseArenaAssetProvider.cs",
+        "Assets/Scripts/Runtime/World/CityFairAssetProvider.cs",
+        "Assets/Scripts/Runtime/World/CityWindowAppearance.cs"
+      ],
+      "evidence": "Runtime lamp, flash, signal, bulb and window materials enable emission; matches one serialized set.",
+      "uncertainty": "Role selection and inherited material states are not exhaustively executed offline."
+    }
+  ],
+  "keyword_owners": {
+    "Assets/Scripts/Runtime/Combat/CombatBloodEffects.cs": {
+      "sha256": "805b6f0a0b9dc445f14b0cc8047694a84a0eb39bfefb3cc7e58bbdd206573149",
+      "review": "Reviewed: creates common Lit for blood; enables alpha test. Runtime local extension."
+    },
+    "Assets/Scripts/Runtime/Combat/CombatBodySourceDeformation.cs": {
+      "sha256": "c0b809fc4cf3ab28acaadaaa55001617c1ec025e0ea9988caba60523e1b46677",
+      "review": "Reviewed read-only IsKeywordEnabled(normal map); deformation mirrors source material state, no keyword write."
+    },
+    "Assets/Scripts/Runtime/Combat/CombatFlashlightAssetProvider.cs": {
+      "sha256": "f8930f7ad1c6ce29f9ed44a00e175b23b47b1efee42f7e7b864ab1f544afbb13",
+      "review": "Reviewed: creates common Lit; emission enabled for lamp glass."
+    },
+    "Assets/Scripts/Runtime/Combat/CombatPistolAssetProvider.cs": {
+      "sha256": "9f023e32bb4b338be9b648671ea59cee1796f6f19346a37647ac041919c0a060",
+      "review": "Reviewed: creates common Lit; emission enabled for muzzle flash."
+    },
+    "Assets/Scripts/Runtime/Combat/CombatShotgunAssetProvider.cs": {
+      "sha256": "4899e4063d76abc05f0884de6ec851a23c1e53741a9333e58ab9a67146e9aa3a",
+      "review": "Reviewed: creates common Lit; emission enabled for muzzle flash."
+    },
+    "Assets/Scripts/Runtime/Combat/CombatZombieOrdinaryAppearance.cs": {
+      "sha256": "579a3876eb59e69a1728b12c292fe073bb112b5803af496256faa2a699a15d4f",
+      "review": "Reviewed: clones default NPC materials; glass disables specular-off while inherited environment-off remains. Other inherited sets remain possible."
+    },
+    "Assets/Scripts/Runtime/Combat/WarehouseArenaAssetProvider.cs": {
+      "sha256": "7f44f9b8a6acff91e60bacc5fbe7bda09bb7204801fa4da7401a2635d0a7d363",
+      "review": "Reviewed: common Lit emission roles and alpha-test wear decal; separate material paths, not a closed-world combination proof."
+    },
+    "Assets/Scripts/Runtime/Interaction/HomeToiletBowelEffect.cs": {
+      "sha256": "9975ac82f5a13000c128b8a773a7eb7e3551ced3449ceeb988540c2f7821405c",
+      "review": "Reviewed: clones RuntimePrimitiveLit, enables straight-alpha transparency; inherited source changes require review."
+    },
+    "Assets/Scripts/Runtime/Player3D/PlayerJacketClothSurface.cs": {
+      "sha256": "752eae671255b80ecde3da9d3d3b70f480ad1718802677c280f46e48977c9166",
+      "review": "Reviewed read-only normal-map keyword checks; no keyword mutation."
+    },
+    "Assets/Scripts/Runtime/Rendering/BarSurfaceCacheGiPilot.cs": {
+      "sha256": "02d36b320fc2ea0a8562ccb12eec2beee909804df30abe1ab563a273f5bfe31a",
+      "review": "Reviewed: clones selected Meta-compatible materials, disables emission; inherited keyword combinations remain open."
+    },
+    "Assets/Scripts/Runtime/Rendering/CleanSmaaPass.cs": {
+      "sha256": "3c280d34d25d9ea07722f6124c20378dd181d23b8bc78fb90ef9a65023a4e90d",
+      "review": "Reviewed: SMAA preset on URP SMAA material, a different shader. Kept in global producer inventory."
+    },
+    "Assets/Scripts/Runtime/Rendering/SceneScreenSpaceReflectionScope.cs": {
+      "sha256": "8a60876179e23d2a8c58f0a9dad8c3f6f14199053b77d8880d333a5f0042ecf6",
+      "review": "Reviewed: SSR-off clones only stock URP Lit/SimpleLit/ComplexLit; current guard excludes project Lit. Scope changes require review."
+    },
+    "Assets/Scripts/Runtime/Rendering/WarehouseFanVolumePass.cs": {
+      "sha256": "4ffa0f0056a2eaf3f479830741568b32e01ecee4b15bc50d0e465281c6e9fdcc",
+      "review": "Reviewed: CoreUtils.SetKeyword diagnostic toggle on WarehouseFanVolume, a different shader. Constant keyword argument reviewed."
+    },
+    "Assets/Scripts/Runtime/World/CityCanneryAssetProvider.cs": {
+      "sha256": "8c5fc9ddc1a0e49d10055464bf0fb045be18c245c2c824e8b12de7bf80d8621d",
+      "review": "Reviewed: clones port opaque material and enables straight-alpha transparency; inherited sets remain open."
+    },
+    "Assets/Scripts/Runtime/World/CityFairAssetProvider.cs": {
+      "sha256": "638deb8f5a8038518a07d8a11b7a45167520f532742a5cd01c230ffa0737bb88",
+      "review": "Reviewed: creates common Lit; emission enabled for bulb roles."
+    },
+    "Assets/Scripts/Runtime/World/CityLaundryAssetProvider.cs": {
+      "sha256": "6007d349b8c451887cdb4544b1c9072ddf545ca6e902911530ae9dc18823684c",
+      "review": "Reviewed: clones port SteelLight and enables straight-alpha transparency; inherited sets remain open."
+    },
+    "Assets/Scripts/Runtime/World/CityLightingPresentation.cs": {
+      "sha256": "ca98d7a58e4ba6f7b2f680699c414942f54eecf01e526547aebe7791e60d4598",
+      "review": "Reviewed read-only emission keyword check; no keyword mutation."
+    },
+    "Assets/Scripts/Runtime/World/CityPortAssetProvider.cs": {
+      "sha256": "5237de005b7e14702811aea28616eab6dbf94a698e97c777c7cfee307ff92730",
+      "review": "Reviewed: creates common Lit opaque surface and straight-alpha transparent glass clone."
+    },
+    "Assets/Scripts/Runtime/World/CitySurfaceLibrary.cs": {
+      "sha256": "eed4851f5bebc1b71a79d52a8bd9abc161e99a5c7e04276e60184a073970234d",
+      "review": "Reviewed read-only transparency/emission checks before replacement with CitySurface; no keyword mutation."
+    },
+    "Assets/Scripts/Runtime/World/CityWindowAppearance.cs": {
+      "sha256": "b4e70115143ff93118d21aaf68f203125b70899c92f38c1e239b6a2366c80d90",
+      "review": "Reviewed: creates common Lit and enables emission for lit windows."
+    },
+    "Assets/Scripts/Runtime/World/HomeBathroomMirrorResources.cs": {
+      "sha256": "0da76521eb615f89b86ede6a4e49c1b2ed6f6f22c564e6ab64f55a1fa33c2c97",
+      "review": "Reviewed: creates common Lit and enables straight-alpha transparency."
+    },
+    "Assets/Scripts/Runtime/World/HomeBrushingResources.cs": {
+      "sha256": "5ec1773e317985bfc594b3aece3d5fc88c9614387ce92216eeffbe036d618f90",
+      "review": "Reviewed: creates common Lit foam, enables straight-alpha transparency; water clones foam."
+    },
+    "Assets/Scripts/Runtime/World/HomeUrineResources.cs": {
+      "sha256": "3b6976c17bf76a21d0d961ec688a34ab328165602cecb5a161c9e161f0e47f52",
+      "review": "Reviewed: creates common Lit liquid/residue, enables straight-alpha transparency."
+    },
+    "Assets/Scripts/Runtime/World/StairwellLabyrinthPuzzles.cs": {
+      "sha256": "8012516b6ace1efad57b8dcff752c0a17c6d6dbe416e2ec73e2f80e831e0a7f6",
+      "review": "Reviewed: cloth material uses common Lit and disables emission; inherited material flow remains open."
+    }
+  },
+  "material_helper_policy": "Conservative lexical candidate snapshots, not a claim of semantic review or common-Lit reachability. Unknown/changed candidates require review; every candidate retains variants.",
+  "material_helpers": {
+    "Assets/Scripts/Runtime/City/LastRoute/LastRouteCoinAsset.cs": {
+      "sha256": "a76888595396d2e24aa942938285c5e374ade8ef6c43eb7fa2d2895f33a61131"
+    },
+    "Assets/Scripts/Runtime/City/Yard/CityCourtyardSweepingTool.cs": {
+      "sha256": "c5fea44e9b6c61226e0ea01a20e832e656178a3f1fa000e2950788663f00c893"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatAssetProvider.cs": {
+      "sha256": "be350f4e06ab8e33ba21077437075bfbd3142a29284861e2222ca6ed64cb3a0f"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatAuthoredBodyBank.cs": {
+      "sha256": "3f9e9b444f29dbb5903a46b17ea60cd9927692bab26a8f60d376412599367d5a"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatBloodEffects.cs": {
+      "sha256": "805b6f0a0b9dc445f14b0cc8047694a84a0eb39bfefb3cc7e58bbdd206573149"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatBodyDestruction.cs": {
+      "sha256": "8094f2efee8fb1a5ad6cb737e82b12b486ca139cb710eef0114a21f68231bea8"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatCraneAssetProvider.cs": {
+      "sha256": "de6a41ac14fdb04a556e6ca3f71b210a63a7a57500465bda0a25203e0cfc7a90"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatDamageMarks.cs": {
+      "sha256": "1005b9271488bffd8911a83795f931a56d8e5435bc6242eb55d9fe94ca5bc5d4"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatFlashlightAssetProvider.cs": {
+      "sha256": "f8930f7ad1c6ce29f9ed44a00e175b23b47b1efee42f7e7b864ab1f544afbb13"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatFlashlightGlow.cs": {
+      "sha256": "7793521ec4ba5cec264d0165e4e57493de06d290a7401f9fc7f53b7e841500e7"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatHeadDestruction.Tissue.cs": {
+      "sha256": "c7912b7c9e907495133b952664afb0d5372296bee89905248cd85e675a9f013c"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatHeadDestruction.cs": {
+      "sha256": "62b4cbf12295e509a1c851cfe8f63eb5a3d687da6ec199fbf6dceac4157b5d09"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatImprintAssetProvider.cs": {
+      "sha256": "ca257c88dd77de24ad774979795d57c45e9bac795b582befccc954f4af44707e"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatLongExposureAssetProvider.cs": {
+      "sha256": "106e54d0f66ffdcf7f3693f3c48d3742a68f8a588e82a271a73b51e3656918ac"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatPistolAssetProvider.cs": {
+      "sha256": "9f023e32bb4b338be9b648671ea59cee1796f6f19346a37647ac041919c0a060"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatRoomAssetProvider.cs": {
+      "sha256": "48857ff21a8e7cf7d35107625a417b2b756a3b00549e98efc4484ca787a19888"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatRoomAttackAssetProvider.cs": {
+      "sha256": "efdffbf900829101e3815851f2f57cd3c3e60cf48bef73c59331ba5b2bcf1837"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatShotgunAssetProvider.cs": {
+      "sha256": "4899e4063d76abc05f0884de6ec851a23c1e53741a9333e58ab9a67146e9aa3a"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatSurfaceImpactEffects.cs": {
+      "sha256": "60b56a3e723145e0b845e3e44a2f9cbf6633d823a5184414be57aa1ea5700438"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatWeaponCarryAssetProvider.cs": {
+      "sha256": "d176568f1099d5f3330a6ff277eb2580f2f6f91643a186feedc2091d0d4c39ec"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatZombieAssetProvider.cs": {
+      "sha256": "ac9ec20e9a0e19d84db1c654789356285752b11999da8d68a316822e8fb966d9"
+    },
+    "Assets/Scripts/Runtime/Combat/CombatZombieOrdinaryAppearance.cs": {
+      "sha256": "579a3876eb59e69a1728b12c292fe073bb112b5803af496256faa2a699a15d4f"
+    },
+    "Assets/Scripts/Runtime/Combat/WarehouseArenaAssetProvider.cs": {
+      "sha256": "7f44f9b8a6acff91e60bacc5fbe7bda09bb7204801fa4da7401a2635d0a7d363"
+    },
+    "Assets/Scripts/Runtime/Combat/WarehouseAtmosphere.cs": {
+      "sha256": "c346ef4e22298c4b7175a6a5aae46a50c44ecb1227b13c0389cb8525b7bb5481"
+    },
+    "Assets/Scripts/Runtime/Core/RuntimePrimitiveFactory.cs": {
+      "sha256": "99593e174cba3eb62c248c25f638749ae70a9bddd072357c4f0a5fb59d7450a2"
+    },
+    "Assets/Scripts/Runtime/Drinks/BarDrinkServiceResources.cs": {
+      "sha256": "68a379b78b715709971129f652fe1697691bc792ee2af617cc8b9cc94275918a"
+    },
+    "Assets/Scripts/Runtime/Interaction/HomeShowerTrayWater.cs": {
+      "sha256": "f5ce00822564d1c5d515cb23798565bc34fa674439e8b3b70278372f59c4d07e"
+    },
+    "Assets/Scripts/Runtime/Interaction/HomeTeethBrushingInteraction.cs": {
+      "sha256": "f0b568eb5d50126143cf085cae923151264a80a58ba823f2f90d1071f31ee575"
+    },
+    "Assets/Scripts/Runtime/Interaction/HomeToiletBowelEffect.cs": {
+      "sha256": "9975ac82f5a13000c128b8a773a7eb7e3551ced3449ceeb988540c2f7821405c"
+    },
+    "Assets/Scripts/Runtime/Interaction/HomeToiletUnderwaterEffect.cs": {
+      "sha256": "7b5c17b7c59ad4b180663de5c006b39f5f1bb00f791871a4087bba9b7fd6dd48"
+    },
+    "Assets/Scripts/Runtime/Interaction/LodgeShelterController.cs": {
+      "sha256": "c552f7dc0c334f1c46f67f0dc540d6147f9ac0a3b191310047b86b943690f2cb"
+    },
+    "Assets/Scripts/Runtime/Interaction/WorldControlOutlineView.cs": {
+      "sha256": "77a04fd36aef0a761be71c527d34baa2d32674579dd7c79fadee934046339d45"
+    },
+    "Assets/Scripts/Runtime/Inventory/InventoryItemModelFactory.cs": {
+      "sha256": "b5a4e917aa1d936e21c08598fd832118b5847ca78570dad10447fa37b95c4d0e"
+    },
+    "Assets/Scripts/Runtime/Player/HeroVomitResources.cs": {
+      "sha256": "786351afbbcd599130886c1cacc259ac63c8eae5cddcf87f0ec07579ef4e7221"
+    },
+    "Assets/Scripts/Runtime/Player/PlayerShadowResources.cs": {
+      "sha256": "e2c3501fb830a34fe4f769e8198d3ee97639e8547f6a1f27188c4c7c90c2df8e"
+    },
+    "Assets/Scripts/Runtime/Player3D/PlayerScarfResources.cs": {
+      "sha256": "7ea310dc2f9e59e2a80adbfb6cdea4f50daf21c0b896cfdfe015d3306726166d"
+    },
+    "Assets/Scripts/Runtime/Rendering/AlpineColdFrostPass.cs": {
+      "sha256": "e966657dcdc6eae07518683e6af5fc0698e9b8a7c164728068da8d933167acc8"
+    },
+    "Assets/Scripts/Runtime/Rendering/AlpineVillageLightVolumePass.cs": {
+      "sha256": "97a827390462950d4798f79ee006d9165eaaa5ba0fb67cbc8550a3b07894e40f"
+    },
+    "Assets/Scripts/Runtime/Rendering/BarSurfaceCacheGiPilot.cs": {
+      "sha256": "02d36b320fc2ea0a8562ccb12eec2beee909804df30abe1ab563a273f5bfe31a"
+    },
+    "Assets/Scripts/Runtime/Rendering/CleanHalationPass.cs": {
+      "sha256": "3bb44571cae5cbde9d208b9ae6007882c9e35c2d4012c4514b59ad3e0a60cd56"
+    },
+    "Assets/Scripts/Runtime/Rendering/HomeToiletUnderwaterPass.cs": {
+      "sha256": "ca13fa1c8c0204f62583a049e024ce6fe121bff59f21a8d2617d54a62fa5676c"
+    },
+    "Assets/Scripts/Runtime/Rendering/MothersHouseLightVolumePass.cs": {
+      "sha256": "829910c6ec8f585eace212ad32f51f2b792fa31d2df69b170acf1814a167870d"
+    },
+    "Assets/Scripts/Runtime/Rendering/NpcNameplatePass.cs": {
+      "sha256": "0b055fa7c64dfb23110cbc79643f803edc48ffce81007ad418ca16beae69284a"
+    },
+    "Assets/Scripts/Runtime/Rendering/SceneCompositeRendererFeature.cs": {
+      "sha256": "75cc794016910dab362f49f066fbdaaf99e9bbd5fe0dd72bcb9b884ec3051bc6"
+    },
+    "Assets/Scripts/Runtime/Rendering/SceneScreenSpaceReflectionScope.cs": {
+      "sha256": "8a60876179e23d2a8c58f0a9dad8c3f6f14199053b77d8880d333a5f0042ecf6"
+    },
+    "Assets/Scripts/Runtime/Rendering/WarehouseFanVolumePass.cs": {
+      "sha256": "4ffa0f0056a2eaf3f479830741568b32e01ecee4b15bc50d0e465281c6e9fdcc"
+    },
+    "Assets/Scripts/Runtime/Scenes/BarWashroomMirrorWorld.cs": {
+      "sha256": "fce5f525a4ba2eaea3377612396cbf444488490ef6990e9c640537d1e0e1aa5a"
+    },
+    "Assets/Scripts/Runtime/Scenes/ChurchLightShaft.cs": {
+      "sha256": "17718020d553d97fdb2568bf7c0926656de80d15609c6ba9ece7cf9d82e60f09"
+    },
+    "Assets/Scripts/Runtime/Scenes/HomePlayerOcclusionController.cs": {
+      "sha256": "2efe6dea53127ae191cbff4e5077d1ece4a2e3cb890b0ae230dbacf9eb8a2809"
+    },
+    "Assets/Scripts/Runtime/Scenes/StairwellInteriorAtmosphere.cs": {
+      "sha256": "8a524daa5240971cce222dceec56e6b888d28a8183f089b7d4d26be1c45a0b65"
+    },
+    "Assets/Scripts/Runtime/Supermarket/Interior/SupermarketInteriorAssetRegistry.cs": {
+      "sha256": "2941a4c09fe5c56c77ada7c28e873d51ac176e5ee563573218cdc9a5baf2cd13"
+    },
+    "Assets/Scripts/Runtime/Supermarket/Products/SupermarketProductAssetRegistry.cs": {
+      "sha256": "973569f230c341243a4f0a2fda596406a77b0b481318539a133f5ed7be0e3b8b"
+    },
+    "Assets/Scripts/Runtime/UI/RetroUiTexture.cs": {
+      "sha256": "cee5a7ca6ad3d62414db0ac3c203c75284909ef6cb38036ceb9caac68ebe418a"
+    },
+    "Assets/Scripts/Runtime/Vehicles/CityBusPresentation.cs": {
+      "sha256": "a8ee411a48cb0a3521ef7c6e02ff83834ad200468853033efc57d33e8ec6a9d4"
+    },
+    "Assets/Scripts/Runtime/World/AlpineSpringWaterResources.cs": {
+      "sha256": "9dc08bf1d1f793bdc1a8935217fb1d86d70a217023e4c8efe08afcd920406510"
+    },
+    "Assets/Scripts/Runtime/World/AlpineVillageBrookBuilder.cs": {
+      "sha256": "5daa469fd98c250685c15879bf3a8c7304333423af657005d65f2fc813c91058"
+    },
+    "Assets/Scripts/Runtime/World/AlpineVillageRidgeAppearance.cs": {
+      "sha256": "2046a7fb8ae53b14636943896e318f2f8bad48f7aed953085867505c546b112f"
+    },
+    "Assets/Scripts/Runtime/World/AlpineVillageWorldBuilder.cs": {
+      "sha256": "3887b32efeec8723197dbd00cbc8c9ff99fe91c56da5641f956065c293b6d0dd"
+    },
+    "Assets/Scripts/Runtime/World/BarCounterMaterialResponse.cs": {
+      "sha256": "0e05314dfcdd508951f94959d92f63113709a3d523183575a7d86481eac7ab7d"
+    },
+    "Assets/Scripts/Runtime/World/BarExteriorSurfaceAppearance.cs": {
+      "sha256": "0dc888556e35d321248f5784eaf7f9c88d3ef0e5ad1eef316189572387123fb0"
+    },
+    "Assets/Scripts/Runtime/World/BarInteriorSurfaceAppearance.cs": {
+      "sha256": "4e33cc64af7831ade560564b7a47e6a76bfd303ca0f600ab7bfbc8548170785f"
+    },
+    "Assets/Scripts/Runtime/World/BarSurfaceAppearance.cs": {
+      "sha256": "e7a4fad164380cabf98f9bbefeb5740e3c3442ccc1b6f0007b5e05301c7a5be4"
+    },
+    "Assets/Scripts/Runtime/World/CityArchShelterSurfaceAppearance.cs": {
+      "sha256": "1b47136ba6a1365c39af5f5a248455eb6c84357180cc04aef7fa0f0885be2c54"
+    },
+    "Assets/Scripts/Runtime/World/CityBarFacadeWorldBuilder.cs": {
+      "sha256": "94e17187c3a62fa40648509ca46c1c816d9a8577aad55f77432ca31bf0980849"
+    },
+    "Assets/Scripts/Runtime/World/CityBuildingPrototypeWorldBuilder.cs": {
+      "sha256": "ac2fbd5c31d1f3f7ba487f037ca00e430f4b929c2f61a01ae4adf8b7e34d0e04"
+    },
+    "Assets/Scripts/Runtime/World/CityBuildingSurfaceAppearance.cs": {
+      "sha256": "f4082e453f9a788b8f3bdcd7c0fd84bc5b2df1a29cb108c62d2678e9157c8ca5"
+    },
+    "Assets/Scripts/Runtime/World/CityBuildingWindowSlotAppearance.cs": {
+      "sha256": "e3ff27684066e0ef03bb03978609a2e0f177eeb7106167e4c4aad2c1285d268a"
+    },
+    "Assets/Scripts/Runtime/World/CityCanneryAssetProvider.Surfaces.cs": {
+      "sha256": "b2ae67fcddbf6db8f15a572e8203dfd4a423aeea83e95b7fe056c6b4e9ded5f7"
+    },
+    "Assets/Scripts/Runtime/World/CityCanneryAssetProvider.cs": {
+      "sha256": "8c5fc9ddc1a0e49d10055464bf0fb045be18c245c2c824e8b12de7bf80d8621d"
+    },
+    "Assets/Scripts/Runtime/World/CityCemeterySurfaceAppearance.cs": {
+      "sha256": "21e8a70e06ed5811b073a58cfb6cb12866dfb88af7213d4a458c8b32601f75de"
+    },
+    "Assets/Scripts/Runtime/World/CityCoastalGrassWind.cs": {
+      "sha256": "81a237d39d5182a6bd7f2b204e63a692bb90108ce7014ea292c888763f18c2d4"
+    },
+    "Assets/Scripts/Runtime/World/CityDecorationWorldBuilder.cs": {
+      "sha256": "4fc5474a9740cb75b00ec9694d45599566d1ad3c8afc0eeee454ebe86eecb76a"
+    },
+    "Assets/Scripts/Runtime/World/CityDistrictPointOfInterestWorldBuilder.cs": {
+      "sha256": "81792d1f18cd611dab0b9a299b4ecb12c2432ffdca85567f6506e040b4d71957"
+    },
+    "Assets/Scripts/Runtime/World/CityDogParkAssetProvider.cs": {
+      "sha256": "acdbbdd46859e5e450e02d86a86c0782bbc9781d09326fbeea1acf2cadeb73a6"
+    },
+    "Assets/Scripts/Runtime/World/CityEastDistanceWorldBuilder.cs": {
+      "sha256": "edf7d056dcf52a46e78daef2e754789372de26bfd0c6d2b02233f5e62eb6ccbf"
+    },
+    "Assets/Scripts/Runtime/World/CityEastExitDressingWorldBuilder.cs": {
+      "sha256": "468df73d574a3f31d2ec7e62a65a64f13cfd6928f623a28547e30a88c4ba498e"
+    },
+    "Assets/Scripts/Runtime/World/CityEastExitWorldBuilder.cs": {
+      "sha256": "eb09841e981d41eef711e0337f34f34315a4e0b99a3a9d8f98477a5fb2d492b0"
+    },
+    "Assets/Scripts/Runtime/World/CityEastGroundTransition.cs": {
+      "sha256": "4e3669564c05662261894d5625f1d40ff244e4e94bf1b290be6f6f7a60ae0af9"
+    },
+    "Assets/Scripts/Runtime/World/CityEntranceForecourtWorldBuilder.cs": {
+      "sha256": "283d9ad4aa947b8fb23d899796ed3f48824142c891336cb0a273cb46473c78f3"
+    },
+    "Assets/Scripts/Runtime/World/CityExteriorAppearance.cs": {
+      "sha256": "1c82306eb05a052a1f1f13fac4c57e4f3fb95d8b0e11a7a9ad133ae7b4cd5ef4"
+    },
+    "Assets/Scripts/Runtime/World/CityFacadeAppearance.cs": {
+      "sha256": "0e7409bceec8df6e522242511a58ecd82a77119f8876ed5fae949fc10e05487a"
+    },
+    "Assets/Scripts/Runtime/World/CityFairAssetProvider.cs": {
+      "sha256": "638deb8f5a8038518a07d8a11b7a45167520f532742a5cd01c230ffa0737bb88"
+    },
+    "Assets/Scripts/Runtime/World/CityFairChildAssetProvider.cs": {
+      "sha256": "e25774bdb82de0566192e01776636fdeffdde71c9584ae181c62daecd80bc4de"
+    },
+    "Assets/Scripts/Runtime/World/CityFountainWaterResources.cs": {
+      "sha256": "519a2a71f391a618f7e633a1de9d12f2103192bad7dc02d223cd8ae8d136a5e2"
+    },
+    "Assets/Scripts/Runtime/World/CityFringeYardSurfaceAppearance.cs": {
+      "sha256": "0f7b51bf34bf9bbe40dadf9cb32d197d2dae3279dac289386afadbd4f9db38c0"
+    },
+    "Assets/Scripts/Runtime/World/CityHomeGroundWorldBuilder.cs": {
+      "sha256": "ad77bfadc666acc120045d33cb2a05c25d43a6a0c867b47b9066b49b766da917"
+    },
+    "Assets/Scripts/Runtime/World/CityLaundryAssetProvider.cs": {
+      "sha256": "6007d349b8c451887cdb4544b1c9072ddf545ca6e902911530ae9dc18823684c"
+    },
+    "Assets/Scripts/Runtime/World/CityLighthouseIslandResources.cs": {
+      "sha256": "da2768cef464f1e149fdd8135241c88cc123453003a5b1275c85886ddb10cb55"
+    },
+    "Assets/Scripts/Runtime/World/CityLitterInstancer.cs": {
+      "sha256": "ea6a4bd93b1926915b375c40eed805005f09a1da1cb667c5217c1c8b8219910f"
+    },
+    "Assets/Scripts/Runtime/World/CityMountainBackdropResources.cs": {
+      "sha256": "3cd8f7e712f64c093a4a75f121082e1b78087abaade6c008a08b9313bb0c9a00"
+    },
+    "Assets/Scripts/Runtime/World/CityMountainSurfaceAppearance.cs": {
+      "sha256": "6fe5741c4cb4eb82ddf435f256291b00961c59810bddcdb1b3bdbc1f7a26c650"
+    },
+    "Assets/Scripts/Runtime/World/CityNightResources.cs": {
+      "sha256": "290049094d36cced43f8867bad0df70aaaa56e34f8f28fe9192ad3f49c2f2478"
+    },
+    "Assets/Scripts/Runtime/World/CityOffshoreBoatResources.cs": {
+      "sha256": "16ad5c0d4c163a1b375f6ee6eb480837b4dd9c9a2bcac91fc47d97b712dfaa29"
+    },
+    "Assets/Scripts/Runtime/World/CityParkChessLampWorldBuilder.cs": {
+      "sha256": "b2debe5d311e29fc76d4e6cb0d03c4e8011626e3206f844a545f69ccbb72aec5"
+    },
+    "Assets/Scripts/Runtime/World/CityParkSurfaceAppearance.cs": {
+      "sha256": "c1e5423f045bf6beba0ec8094314b728861db31eee32788751372fcd6e6d7b1c"
+    },
+    "Assets/Scripts/Runtime/World/CityPointOfInterestSurfaceAppearance.cs": {
+      "sha256": "62cc38c04a5c6eb71b991601c8904247b5657e2dab85831126cbde07c34599a5"
+    },
+    "Assets/Scripts/Runtime/World/CityPortAssetProvider.cs": {
+      "sha256": "5237de005b7e14702811aea28616eab6dbf94a698e97c777c7cfee307ff92730"
+    },
+    "Assets/Scripts/Runtime/World/CityPuddleWaterResources.cs": {
+      "sha256": "1fcf05a00cc5a18357af41ab9b56ffb31b2c8b0fd502fc10088abe856ccedf4a"
+    },
+    "Assets/Scripts/Runtime/World/CityRiverResources.cs": {
+      "sha256": "e310f02922da6da972ad776582386133c0c8739ecef83077690e0586ea129663"
+    },
+    "Assets/Scripts/Runtime/World/CityRiverSurfaceAppearance.cs": {
+      "sha256": "74b21e58c2027ce81686a7d895c875c44f9db355f732622ea43fbbe5b95747ea"
+    },
+    "Assets/Scripts/Runtime/World/CitySeaResources.cs": {
+      "sha256": "b601c91f0cb905838c12e4857bc8b77262c4c92e8cd0a5e4872f22978265a8a8"
+    },
+    "Assets/Scripts/Runtime/World/CitySeacoastSurfaceAppearance.cs": {
+      "sha256": "76bdab11c70966025ddf4d0a65cbd15b1e68dff81afb35931095b21f5a49d905"
+    },
+    "Assets/Scripts/Runtime/World/CitySpecialBuildingWorldBuilder.cs": {
+      "sha256": "fdf3f7c3b1e985722270fcb9f29a69fb44553f1b658f67acfed09cd83814cc16"
+    },
+    "Assets/Scripts/Runtime/World/CityStreetSurfaceWorldBuilder.cs": {
+      "sha256": "f8792896519266ddd577a3dc0c0e592a10ccb140e2c7a53d2b620e1448e29947"
+    },
+    "Assets/Scripts/Runtime/World/CitySurfaceLibrary.cs": {
+      "sha256": "eed4851f5bebc1b71a79d52a8bd9abc161e99a5c7e04276e60184a073970234d"
+    },
+    "Assets/Scripts/Runtime/World/CityTerrainSurfaceWorldBuilder.cs": {
+      "sha256": "06981df4017549d9a110adece7120a96db484d46d4b452ba0422f7c0f1258d4b"
+    },
+    "Assets/Scripts/Runtime/World/CityWindowAppearance.cs": {
+      "sha256": "b4e70115143ff93118d21aaf68f203125b70899c92f38c1e239b6a2366c80d90"
+    },
+    "Assets/Scripts/Runtime/World/CityWorldBuilder.cs": {
+      "sha256": "439c1f6e30f638b114f0f60a88071c61e5a9555d2cb35ea2b2943262e7366872"
+    },
+    "Assets/Scripts/Runtime/World/ClothPanelFactory.cs": {
+      "sha256": "9ea98477ca9ffe45e410e2d6b89ae6fb8897bb8470250c78107649c0ec278278"
+    },
+    "Assets/Scripts/Runtime/World/ExteriorCloudResources.cs": {
+      "sha256": "31f4b9333ae95202bdf5862af072a4c8e13d57a31558b340495ede3f98f6c625"
+    },
+    "Assets/Scripts/Runtime/World/GroundSurfaceAppearance.cs": {
+      "sha256": "73ecb223b0c248cf1033b3f7058fa48e03ea99066d8c9f8d60a4d22134bb158a"
+    },
+    "Assets/Scripts/Runtime/World/HomeAuthoredVisualFactory.cs": {
+      "sha256": "79b035d21043dac7cbcbe41443080cd3fafc7bbce724bd0b466ec974a7477572"
+    },
+    "Assets/Scripts/Runtime/World/HomeBalconyResources.cs": {
+      "sha256": "7487de7535d7dd439076fc5dd3a252ebfc48a97779e18913098192b17a2206ec"
+    },
+    "Assets/Scripts/Runtime/World/HomeBathroomMirrorResources.cs": {
+      "sha256": "0da76521eb615f89b86ede6a4e49c1b2ed6f6f22c564e6ab64f55a1fa33c2c97"
+    },
+    "Assets/Scripts/Runtime/World/HomeBedDeformableSurfaceFactory.cs": {
+      "sha256": "012c3903ee7d954860e20b6bffe950d7a658e6370c2d46db76be119c75bd3082"
+    },
+    "Assets/Scripts/Runtime/World/HomeBrushingResources.cs": {
+      "sha256": "5ec1773e317985bfc594b3aece3d5fc88c9614387ce92216eeffbe036d618f90"
+    },
+    "Assets/Scripts/Runtime/World/HomeExteriorViewBuilder.cs": {
+      "sha256": "c90d48fcf5026416a02eb74819fd9fe0d4facb750617d136dce814dd144f4251"
+    },
+    "Assets/Scripts/Runtime/World/HomeSurfaceAppearance.cs": {
+      "sha256": "12ca0a33ddad31c7ea183c9c4038ce649b1cb170ec8203b8e8987c0c66fc79c7"
+    },
+    "Assets/Scripts/Runtime/World/HomeToiletLid.cs": {
+      "sha256": "4248ad5bb29f236d31d60399150be2d9da162301e1fbf5ea6766c63647c2e850"
+    },
+    "Assets/Scripts/Runtime/World/HomeToiletWaterResources.cs": {
+      "sha256": "0ccc5e7b110424928dfe1fff5a345af0c1fa66b2b4238e04775b8a3b35e6d810"
+    },
+    "Assets/Scripts/Runtime/World/HomeUrineResources.cs": {
+      "sha256": "3b6976c17bf76a21d0d961ec688a34ab328165602cecb5a161c9e161f0e47f52"
+    },
+    "Assets/Scripts/Runtime/World/MountainRoadBrookBuilder.cs": {
+      "sha256": "1884f76a5a4a7959b3328fbb0e3301fc259400412aaab70137aa767e68d6046e"
+    },
+    "Assets/Scripts/Runtime/World/MountainRoadCafeSurfaceAppearance.cs": {
+      "sha256": "6fb0671b5d12ac9cdf9a6e247b2b8b094461da0fef99faa1f969b02b5b880f6a"
+    },
+    "Assets/Scripts/Runtime/World/MountainRoadCrownGradientPilot.cs": {
+      "sha256": "a26c8a397d7cbb8aa9847ca4d71f9d986753c3f2f9b66ee5287e250543a4ce3d"
+    },
+    "Assets/Scripts/Runtime/World/MountainRoadSurfaceAppearance.cs": {
+      "sha256": "8748155207e654c31a7c93faa3f15cc514c9a0f6c1ddfe7f22f9e929ddcc8a4a"
+    },
+    "Assets/Scripts/Runtime/World/MountainRoadSurfaceLibrary.cs": {
+      "sha256": "818250f210f37b08da200d49ae40da8273011989fffb16068d7e727d10000e8f"
+    },
+    "Assets/Scripts/Runtime/World/MountainRoadVistaResources.cs": {
+      "sha256": "40254ad12225177921e4be555d509844f68d106f1718b3bd28da63de334fc6a5"
+    },
+    "Assets/Scripts/Runtime/World/MountainRoadWorldBuilder.cs": {
+      "sha256": "cb0602f0f7b04dc2709d3a48801d7d20384e86ab700b05c8633fa62c7389e254"
+    },
+    "Assets/Scripts/Runtime/World/PlayerHomeExteriorSurfaceAppearance.cs": {
+      "sha256": "4f23de2de8a49b55165d63c9f12f9e3bc2bd6497ddc31ab0d867ea2d4cb27137"
+    },
+    "Assets/Scripts/Runtime/World/StairwellAuthoredVisualFactory.cs": {
+      "sha256": "3444b64764b45eaef9c39c9c8667bcf6dd4afbc6c34a07b7f57595f9c14045b4"
+    },
+    "Assets/Scripts/Runtime/World/StairwellLabyrinthPuzzles.cs": {
+      "sha256": "8012516b6ace1efad57b8dcff752c0a17c6d6dbe416e2ec73e2f80e831e0a7f6"
+    },
+    "Assets/Scripts/Runtime/World/StairwellLabyrinthWorldBuilder.cs": {
+      "sha256": "c449e38c1d498bcd5c742503a6767b44390ea4196cb3c696fc92144123a96726"
+    },
+    "Assets/Scripts/Runtime/World/StairwellSurfaceAppearance.cs": {
+      "sha256": "7b14208557f114fd820d08993fa98703cbd611055f4d1bd8fa7762933aa138c3"
+    },
+    "Assets/Scripts/Runtime/World/SupermarketExteriorSurfaceAppearance.cs": {
+      "sha256": "aa9424714a68454532346e1116c7548525c189ed8944a146bc432c5ff80c394f"
+    },
+    "Assets/Scripts/Runtime/World/SupermarketSurfaceAppearance.cs": {
+      "sha256": "7bdbb27faff1695204b726766899a8413b228c894394741719dd5f4f80f968fc"
+    },
+    "Assets/Scripts/Runtime/World/SurfaceDamageLibrary.cs": {
+      "sha256": "ef3b55066ef14944bd8aaa8404498e7bbff4dd8161fa679a011fb0eb70591b02"
+    },
+    "Assets/Scripts/Runtime/World/VillageExpansionAssetProvider.cs": {
+      "sha256": "2ba1dc2dc6fc84f7365f71e8d3d8e09bafb7842eb82590052ebbff4d2bfbab89"
+    },
+    "Assets/Scripts/Runtime/World/VillageNarrativeLibrary.cs": {
+      "sha256": "90470335e14f8eeb02f1b923c31258c7202d9183e8ffce945d806103c371baf2"
+    },
+    "Assets/Scripts/Runtime/World/VillageSurfaceAppearance.cs": {
+      "sha256": "8dce872de1133575251e153d306302cabce8b670063c463960fee9310285f3f5"
+    },
+    "Assets/Scripts/Runtime/World/VillageWorkroomAssets.cs": {
+      "sha256": "6daeb1618e7dca9edc615421b198240f35597baafa3a511b6f82872d3ed641b2"
+    }
+  },
+  "shader_inputs": {
+    "Assets/Resources/Shaders/DirectionalMetalLighting.hlsl": {
+      "sha256": "cf22c29f89d4faaef68c81f8740762814a137b7f3cfdf506bba7fe7c6097fa8e"
+    },
+    "Assets/Resources/Shaders/Lit.shader": {
+      "sha256": "b319c56b1da0cd00ec35d8cb3cc7ee48522ea73b2a3b26fad53bb2fd98cb6ad3"
+    },
+    "Assets/Resources/Shaders/ProjectLitDirectionalLighting.hlsl": {
+      "sha256": "c0746871ffba5b540fb110c8010afce48b7629eb864d37b1bd33c930fc63f6bd"
+    },
+    "Assets/Resources/Shaders/ProjectScreenSpaceReflection.hlsl": {
+      "sha256": "76cb918259fbfe5f621515da10ac9c09660992c02707ba896484f9eac11330a2"
+    },
+    "Assets/Resources/Shaders/SceneSurfaceReflection.hlsl": {
+      "sha256": "1ebd907e7e7b25248921405edd55966aca7f8516856e34857fbad8ef3cff2736"
+    },
+    "Assets/Resources/Shaders/WarehouseAmbientVisibility.hlsl": {
+      "sha256": "68312d9c4447681c760854bd1f161678140384001070c9c2097886b0c4cec96a"
+    },
+    "Assets/Resources/Shaders/WarehouseCleanCommon.hlsl": {
+      "sha256": "957b689abc7aad016008d648d3f623d88be0b0356291186265ad875ee582838a"
+    }
+  },
+  "external_package_includes": [
+    "Packages/com.unity.render-pipelines.core/ShaderLibrary/FoveatedRenderingKeywords.hlsl",
+    "Packages/com.unity.render-pipelines.universal/ShaderLibrary/BRDF.hlsl",
+    "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl",
+    "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Fog.hlsl",
+    "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GBufferOutputFormat.hlsl",
+    "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl",
+    "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ObjectMotionVectors.hlsl",
+    "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ProbeVolumeVariants.hlsl",
+    "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RenderingLayers.hlsl",
+    "Packages/com.unity.render-pipelines.universal/ShaderLibrary/SampleScreenSpaceReflection.hlsl",
+    "Packages/com.unity.render-pipelines.universal/Shaders/DepthOnlyPass.hlsl",
+    "Packages/com.unity.render-pipelines.universal/Shaders/LitDepthNormalsPass.hlsl",
+    "Packages/com.unity.render-pipelines.universal/Shaders/LitForwardPass.hlsl",
+    "Packages/com.unity.render-pipelines.universal/Shaders/LitGBufferPass.hlsl",
+    "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl",
+    "Packages/com.unity.render-pipelines.universal/Shaders/LitMetaPass.hlsl",
+    "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl",
+    "Packages/com.unity.render-pipelines.universal/Shaders/Utils/Universal2D.hlsl"
+  ],
+  "context_inputs": {
+    "Packages/manifest.json": {
+      "sha256": "25510b67918af2970cc844c99d69b84200ff7c7fa15fe8659d887a5ac5781c9b"
+    },
+    "Packages/packages-lock.json": {
+      "sha256": "da33376f546d4c566c567b9293b114eff7cbd745f428ea960413d2266817fa7c"
+    },
+    "ProjectSettings/ProjectVersion.txt": {
+      "sha256": "2a88e6864b6f54588287bed3bc6e9260e65bd49498910cca4478770ca8a5d674"
+    },
+    "ProjectSettings/GraphicsSettings.asset": {
+      "sha256": "394dd0a451bd1444fe0437d9d8281970df295914ac1e54e973f96b3ae42e97db"
+    },
+    "ProjectSettings/QualitySettings.asset": {
+      "sha256": "3526cd22b6ff8f2356d7c699a895aa340072d2f5ffb22fd96b180e344e0081f5"
+    },
+    "Assets/Settings/PC_RPAsset.asset": {
+      "sha256": "df619ad9175fe158b36e81be5010a473c45d3a3affd119c33264b176d49f0c92"
+    },
+    "Assets/Settings/PC_Renderer.asset": {
+      "sha256": "b60b6b2ae64746b3bfbe3737ed370f2241b57c83f2a3a9d7dd53382743f71b96"
+    },
+    "Assets/Scripts/Runtime/Rendering/SceneScreenSpaceReflectionFeature.cs": {
+      "sha256": "2f855ee80cab33a9f457903dc8f8e0a870022845ec498266908a5ebc4a4da2b6"
+    },
+    "Assets/Scripts/Runtime/Rendering/BarSurfaceCacheGiRendererFeature.cs": {
+      "sha256": "010e88cce3fa580539ead0885a2f9b24be8cfb0f8a260f268704f00c8d5492f7"
+    },
+    "Assets/Scripts/Runtime/Core/RuntimeSceneSetup.cs": {
+      "sha256": "fddccdc98fe69edee74f56a9b6a8d7977f9e077581f57e5958214bf684fd4e8f"
+    },
+    "Assets/Scripts/Runtime/Scenes/StairwellInteriorAtmosphere.cs": {
+      "sha256": "8a524daa5240971cce222dceec56e6b888d28a8183f089b7d4d26be1c45a0b65"
+    }
+  },
+  "runtime_global_state_review": [
+    "URP global keywords are also controlled by package renderer internals, not only explicit project keyword calls. Package includes remain opaque; manifest/lock and renderer settings are fingerprinted.",
+    "SceneScreenSpaceReflectionFeature changes SSR eligibility by scene/camera and saved preference; BarSurfaceCacheGiRendererFeature gates the SCGI pilot by scene/camera. Keep both states.",
+    "RuntimeSceneSetup uses ExpSquared fog; StairwellInteriorAtmosphere uses Linear and can disable fog. Preserve declared fog paths; hard/soft/no-shadow light owners do not prove global keyword exclusivity.",
+    "Common Lit is not held by Always Included; URP unused-variant stripping is already active. Neither fact proves retained tuples unreachable."
+  ],
+  "limitations": [
+    "Lexical scanner, not a C# semantic parser, asset dependency graph or runtime execution. Reflection, aliases, interpolation expressions, generated/package/native code and helper/data flow may escape detection.",
+    "Runtime C# scan covers Assets except Editor and Tests directories. Material constructors, shader assignment/load/find/copy, typed Material-returning helpers and default-material references are conservative candidates.",
+    "Keyword-like calls include reads and possible false positives; explicit owner reviews distinguish them. Dynamic/nonliteral keyword arguments and inherited clone sets remain open.",
+    "Project-local shader include closure is scanned. Package includes are listed but not traversed; their pinned configuration is fingerprinted. All unresolved dependencies retain all variants.",
+    "Serialized material keyword lists plus runtime extensions are an evidenced lower bound, not a closed-world whitelist and not proof that a player contains each runtime-required shader variant.",
+    "No per-pass, API, global keyword combination or code reachability is proven. Unknown/changed inputs return a review diagnostic, never permission to prune.",
+    "All 24 visual effects, lighting, SSR/SSGI/SCGI, native appearance, runtime quality and cache policy remain unchanged. This tool does not measure build gains."
+  ]
+}

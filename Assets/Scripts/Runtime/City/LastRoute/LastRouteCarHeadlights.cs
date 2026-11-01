@@ -440,7 +440,9 @@ namespace BarPromenade
             light.type = LightType.Spot;
             light.color = BeamColor;
             light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             light.enabled = false;
             return light;
         }

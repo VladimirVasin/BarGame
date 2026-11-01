@@ -1091,7 +1091,9 @@ namespace BarPromenade
             light.range = HutBulbRange;
             light.shadows = LightShadows.None;
             light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
 
             GameObject haloObject = new GameObject("Hut Lamp Halo");
             haloObject.transform.SetParent(emitter.transform, false);

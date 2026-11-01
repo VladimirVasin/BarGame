@@ -1,8 +1,10 @@
 using System;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 
 namespace BarPromenade.Editor
@@ -99,6 +101,39 @@ namespace BarPromenade.Editor
 
         public static void BuildWindows()
         {
+            BuildPlayer(BuildTarget.StandaloneWindows64,
+                "Build/Windows/BarPromenade.exe", "Windows");
+        }
+
+        public static void BuildMacOS()
+        {
+            if (PlayerSettings.GetScriptingBackend(NamedBuildTarget.Standalone) !=
+                ScriptingImplementation.Mono2x)
+                throw new InvalidOperationException("The macOS build requires the existing Mono backend.");
+            GraphicsDeviceType[] graphics = PlayerSettings.GetGraphicsAPIs(BuildTarget.StandaloneOSX);
+            if (graphics.Length == 0 || graphics[0] != GraphicsDeviceType.Metal)
+                throw new InvalidOperationException("The macOS build requires Metal as its first graphics API.");
+
+            // OSXStandalone.UserBuildSettings.architecture uses this target-local
+            // setting. Preserve its raw value, including an implicit default,
+            // without requiring the Mac support assembly on Windows editors.
+            const string platform = "OSXUniversal";
+            const string setting = "Architecture";
+            string previous = EditorUserBuildSettings.GetPlatformSettings(platform, setting);
+            try
+            {
+                EditorUserBuildSettings.SetPlatformSettings(platform, setting, "x64arm64");
+                BuildPlayer(BuildTarget.StandaloneOSX,
+                    "Build/macOS/BarPromenade.app", "macOS");
+            }
+            finally
+            {
+                EditorUserBuildSettings.SetPlatformSettings(platform, setting, previous);
+            }
+        }
+
+        private static void BuildPlayer(BuildTarget target, string location, string platform)
+        {
             EnsureMountainRoadScene();
             EnsureAreaLoadingScene();
             EnsureChurchInteriorScene();
@@ -106,23 +141,28 @@ namespace BarPromenade.Editor
             EnsureMothersHouseInteriorScene();
             EnsureCombatTestScene();
             ConfigureBuildScenes();
+            // Packaging normalizes the internal macOS executable name. Unity
+            // otherwise leaves that signed executable beside the next build's
+            // product-named one, so recreate only this generated .app bundle.
+            if (target == BuildTarget.StandaloneOSX && System.IO.Directory.Exists(location))
+                FileUtil.DeleteFileOrDirectory(location);
             var options = new BuildPlayerOptions
             {
                 scenes = (string[])BuildScenePaths.Clone(),
-                locationPathName = "Build/Windows/BarPromenade.exe",
-                target = BuildTarget.StandaloneWindows64,
+                locationPathName = location,
+                target = target,
                 options = BuildOptions.None
             };
             BuildReport report = BuildPipeline.BuildPlayer(options);
             if (report.summary.result != BuildResult.Succeeded)
             {
                 throw new InvalidOperationException(
-                    $"Windows build failed: {report.summary.result}, " +
+                    $"{platform} build failed: {report.summary.result}, " +
                     $"{report.summary.totalErrors} errors.");
             }
 
             Debug.Log(
-                $"Windows build succeeded: {report.summary.totalSize} bytes, " +
+                $"{platform} build succeeded: {report.summary.totalSize} bytes, " +
                 $"{report.summary.totalWarnings} warnings.");
         }
 

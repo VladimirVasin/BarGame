@@ -48,6 +48,11 @@
         "no-gear/CombatStepRight.bytes",
         "no-gear/CombatStrafeLeft.bytes",
         "no-gear/CombatStrafeRight.bytes",
+        "no-gear/CounterSeatEnterLeft.bytes",
+        "no-gear/CounterSeatEnterRight.bytes",
+        "no-gear/CounterSeatExitLeft.bytes",
+        "no-gear/CounterSeatExitRight.bytes",
+        "no-gear/CounterSeatLoop.bytes",
         "no-gear/CrowbarDraw.bytes",
         "no-gear/CrowbarStow.bytes",
         "no-gear/DoorUseEnter.bytes",
@@ -132,6 +137,11 @@
         "stored-shotgun/CombatStepRight.bytes",
         "stored-shotgun/CombatStrafeLeft.bytes",
         "stored-shotgun/CombatStrafeRight.bytes",
+        "stored-shotgun/CounterSeatEnterLeft.bytes",
+        "stored-shotgun/CounterSeatEnterRight.bytes",
+        "stored-shotgun/CounterSeatExitLeft.bytes",
+        "stored-shotgun/CounterSeatExitRight.bytes",
+        "stored-shotgun/CounterSeatLoop.bytes",
         "stored-shotgun/CrowbarDraw.bytes",
         "stored-shotgun/CrowbarStow.bytes",
         "stored-shotgun/DoorUseEnter.bytes",
@@ -178,87 +188,87 @@
     "sources": [
         {
             "path": "Assets/Player3D/V2/Animations/PlayerCharacter3DV2Animations.fbx",
-            "hash": "7b6f3a36a04f4e3def646ddf65519dfd",
+            "hash": "807022f0fb40d5e727857c0b58b1985b",
             "raw": false
         },
         {
             "path": "Assets/Resources/Combat/CombatActions.fbx",
-            "hash": "09a104c150c912c824db5157993fe9fd",
+            "hash": "3ed0486ab630c2b9077128ab0cdb83ec",
             "raw": false
         },
         {
             "path": "Assets/Resources/CombatFirearmWalk/Actions.fbx",
-            "hash": "3bce3f6c955b197203a0d704ffc22292",
+            "hash": "a75ef79dcfb658ae546619f2faefc8cf",
             "raw": false
         },
         {
             "path": "Assets/Resources/CombatPistol/PistolActions.fbx",
-            "hash": "131e9736cb2c5fb9446f8e7de7bffb21",
+            "hash": "4f2026feb991876c1a7313275eaa4c8b",
             "raw": false
         },
         {
             "path": "Assets/Resources/CombatShotgun/Pellet.fbx",
-            "hash": "61f899e0f3ec2e5f5f96b1b6eea9a8bb",
+            "hash": "0598594884de017ec88f84a9d29f767b",
             "raw": false
         },
         {
             "path": "Assets/Resources/CombatShotgun/Shell.fbx",
-            "hash": "d34cd14b2767e73a209d51116d4f332e",
+            "hash": "af8ac996493600171e407f74423dfdb6",
             "raw": false
         },
         {
             "path": "Assets/Resources/CombatShotgun/Shotgun.fbx",
-            "hash": "bf460924b57df68485671d0d919f0a1e",
+            "hash": "9aca80f726429f29f896481ef4773ca7",
             "raw": false
         },
         {
             "path": "Assets/Resources/CombatShotgun/ShotgunActions.fbx",
-            "hash": "0a74ec3932ae93276ef44696cf92eec8",
+            "hash": "fad0677616ce92f030c315e14bf23b81",
             "raw": false
         },
         {
             "path": "Assets/Resources/CombatShotgun/SpentShell.fbx",
-            "hash": "f65c44ea769bd0c299d012f972bda116",
+            "hash": "3a1ad0fa7add52c386efcf16cfba19e5",
             "raw": false
         },
         {
             "path": "Assets/Resources/CombatWeaponCarry/CarryActions.fbx",
-            "hash": "787fdac742a68b5df8f6f7af193b10df",
+            "hash": "fff623aba09c32c3bc08c69077bccc3c",
             "raw": false
         },
         {
             "path": "Assets/Resources/CombatWeaponCarry/CrowbarBeltHolder.fbx",
-            "hash": "61108f84e6653a53cd2075df36737a54",
+            "hash": "f8622717b9cd5403ce4378e946182c17",
             "raw": false
         },
         {
             "path": "Assets/Resources/CombatWeaponCarry/PistolHolster.fbx",
-            "hash": "032d51961e32be555b9828173d6a33db",
+            "hash": "71d3a166ab78c0b2da7fb7f3d9a0eb18",
             "raw": false
         },
         {
             "path": "Assets/Resources/CombatWeaponCarry/ShotgunSling.fbx",
-            "hash": "f8d50315f6d5d34678e4a4f8b47dce72",
+            "hash": "9f87fb2c1962eb8ac819dd796d6280b9",
             "raw": false
         },
         {
             "path": "Assets/Resources/Player/Player3DV2.prefab",
-            "hash": "2d3a2cb31394f03a7a4144275bd07c0e",
+            "hash": "937f8ed6abecc02b8922e2ff1578f0ea",
             "raw": false
         },
         {
             "path": "Assets/Scripts/Editor/Player3D/SecondaryMotionBakeAssetSetup.cs",
-            "hash": "6B2AC6B141B6C8476A9CE1BCF626A95A7DAC718592393447291E9F573E9872C2",
+            "hash": "C10A5EFADC2F3D8B184E82C5EA00D4C0120FA1963A8199673BB2E439A6197E47",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Combat/CombatShotgunAssetProvider.cs",
-            "hash": "5D7E3E564F6289A97F4E8190181AA5366CBB7E5AF9525BE7623415D2978FB9AA",
+            "hash": "4899E4063D76ABC05F0884DE6EC851A23C1E53741A9333E58AB9A67146E9AA3A",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Combat/CombatShotgunSling.cs",
-            "hash": "A2A07F47A2C6F9C432D719CAD887773E574BA12C6F6DF82DE6A3193C1E8046D8",
+            "hash": "603371B21E7EB9D08306A4A7DAEF1257D54323FBE9CD5E58DC4CF0809413981B",
             "raw": true
         },
         {
@@ -268,7 +278,7 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Combat/CombatWeaponCarryAssetProvider.cs",
-            "hash": "DAC4DDA3B13406288E0076C4A0D0033ABD86AB4BA34CB8E879C4C43B8326627E",
+            "hash": "D176568F1099D5F3330A6FF277EB2580F2F6F91643A186FEEDC2091D0D4C39EC",
             "raw": true
         },
         {
@@ -283,7 +293,7 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DAssetRegistry.cs",
-            "hash": "BC2FECFCDACCE22933F9F8C4922E491BE5308FEB32FEE7E598F0FA5C068F73D1",
+            "hash": "B624978F435D02960D10DB6030D73D8DC06D371FCFE73DBC9F27163C486BD370",
             "raw": true
         },
         {
@@ -323,7 +333,7 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DCharacterPresentation.Firearm.cs",
-            "hash": "AF23D14C6FB4945352307B7B211580682BB81577E9501046407C5A0FDEC37A80",
+            "hash": "CCAF945D71928ABD732964E98277132F900F090AA9904FC43159E45C234300F6",
             "raw": true
         },
         {
@@ -333,12 +343,17 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DCharacterPresentation.Recovery.cs",
-            "hash": "6483C015689BCF7C334F78E128EAB86A89AE7DDF6BC2BCC2D2A35488A067D697",
+            "hash": "D2613D5BEEDE7B7CC29FC71DB6B5A9A90DA577DA1B307AC44A4B2EC066E4B549",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DCharacterPresentation.SecondaryMotionBake.cs",
             "hash": "A8F29AEFDF5C385E242D8831160DAED1FEC21C115C86BD0BEF86D0AD6DDB2C51",
+            "raw": true
+        },
+        {
+            "path": "Assets/Scripts/Runtime/Player3D/Player3DCharacterPresentation.Sleep.cs",
+            "hash": "4F10C1276739AE64007087D054663ACE81A1ABEEAA89933D3480E56ED819C1A5",
             "raw": true
         },
         {
@@ -348,7 +363,7 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DCharacterPresentation.SpeechFace.cs",
-            "hash": "F2016EDD39AFDFE7E163C8DB33DFA2E6EEB50705D481D52C1423551BB44ED154",
+            "hash": "CEA96CC614A8CE11428733E4C026A85069035C701FCA76D58474F8944EA638ED",
             "raw": true
         },
         {
@@ -357,23 +372,28 @@
             "raw": true
         },
         {
+            "path": "Assets/Scripts/Runtime/Player3D/Player3DCharacterPresentation.TorsoLook.cs",
+            "hash": "0B73E95948BEA10C1C45C575D2E8BD666FF63333DEC0BA3BD4183BFE9633C44D",
+            "raw": true
+        },
+        {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DCharacterPresentation.cs",
-            "hash": "0D57CFB92673699EB9776AF7333F5A92C9E422ECEBF65BAE52955092AE889F85",
+            "hash": "9F718F9D671F96A81518FBFC519561A876F068D8BE40D72064D346F5C65B9FDB",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DFaceAtlasPresenter.cs",
-            "hash": "8583BC66B0A9E8C48448999A455E85BC6C3CCF4C1A7BAE2D0F661DD34ED7BF09",
+            "hash": "BCB859D8EE212E75402D14FC1EA9D00EED94FD86EA6F8C388A963AD5A3B46ED6",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DFirstPersonSubset.cs",
-            "hash": "EA3DE2C1DA9EDC09442514C6D4C186F216F4CB6EA7E1EFB20F4B67DBED1979F3",
+            "hash": "105077570ABA89996C1349786F5EF189F95EF711F26F9E850F2EDD5A276DE363",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DFootGroundProbe.cs",
-            "hash": "A1361CBD4297818907E4023DA4D7193AB12E523C709D4A2405A90A0FE247B7C9",
+            "hash": "501F431B3302F0E755CACD78E58CF1F75E3F2D6FD98326FB83F03EEE6963D73E",
             "raw": true
         },
         {
@@ -393,22 +413,27 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DRagdollController.Combat.cs",
-            "hash": "815906103340C33C25E7E14267EAE4E03F75B8292D8ABEB01FEB373E502671AF",
+            "hash": "6BA992114EE473B259BBA3C817E4EB4D94F3CA852D40753D6E1478FAFD544FC4",
+            "raw": true
+        },
+        {
+            "path": "Assets/Scripts/Runtime/Player3D/Player3DRagdollController.Restraint.cs",
+            "hash": "BB877FD864294575D819B863B65EDD81ACE8177AC42AB27470EE1FC04BD6CB77",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DRagdollController.Survivor.cs",
-            "hash": "9DAC17AED86EAFFEBD64ABC23793EB3A951DAB075F7CED51C78BD9E83558B69B",
+            "hash": "F488391929C46CEE2FA6F9200AF1251563C9363B395BB6B2CE3F225BEEC5AC2A",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DRagdollController.cs",
-            "hash": "3A785BB08BC4D6DD7969B56678D4CDA5A2EC029FC54F84CCC9DF9CD642F9170B",
+            "hash": "96D72D3CF137176E59A4007F59D45636C69BED3BAE15C55E33628DA5B451180A",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DResources.cs",
-            "hash": "E1B9F46D0ABE4ABD57F0B641820BF06C092E8AB7CAD46837EDF649F71A8147C8",
+            "hash": "F327D49ED50FD65C386F99D4F960B540102F4AE956A2A52955F576F4E58B8668",
             "raw": true
         },
         {
@@ -428,7 +453,7 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/PlayerBodyRayJob.cs",
-            "hash": "ACCC250A7417373633241539B844250EA944ECC9BBC77422BB00E379F235499C",
+            "hash": "87EC27602025B164F40A61DA347E7BDB793D965521FDD98DCBB0CE7D6F5FCBD7",
             "raw": true
         },
         {
@@ -438,7 +463,7 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/PlayerBodySupportJob.cs",
-            "hash": "A5C0E57602156D48A7140E9CA04929CA7324476BB42D697B87C2E26BEB853575",
+            "hash": "B3A55592C3D7B1FBBB642325F5674CBF5D485A2CC6F26B1E087E70F81F0B74A4",
             "raw": true
         },
         {
@@ -452,6 +477,16 @@
             "raw": true
         },
         {
+            "path": "Assets/Scripts/Runtime/Player3D/PlayerChestFlashlightController.cs",
+            "hash": "A2B206F59B24DAEBE97EF080EC7D3F72A06EEF17F94B92DE16C8B88898D673F3",
+            "raw": true
+        },
+        {
+            "path": "Assets/Scripts/Runtime/Player3D/PlayerClothPhysicsPolicy.cs",
+            "hash": "5252F6E0FAB32520AAA8D79B349A0E7BE4C156895D3726C9D3CC285296E78C98",
+            "raw": true
+        },
+        {
             "path": "Assets/Scripts/Runtime/Player3D/PlayerColdBreathEffect.cs",
             "hash": "7D49EDDBE5CB47C3166F2D75F5D70C7A5965BF0EFE2FD5EC3C355B46C8F7989C",
             "raw": true
@@ -462,13 +497,18 @@
             "raw": true
         },
         {
+            "path": "Assets/Scripts/Runtime/Player3D/PlayerCorruptionAppearance.cs",
+            "hash": "6873AA0D9B56E5AC1589F133532AA7F44B4DCFCF03D685A27748D804CF4DBC0A",
+            "raw": true
+        },
+        {
             "path": "Assets/Scripts/Runtime/Player3D/PlayerEquipmentContacts.cs",
             "hash": "302AE3FB349D4802DA698B00578A76E46C0405795D6B86CD3C2007CE26B38250",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/PlayerHair.cs",
-            "hash": "A7287ED0D1427FEA5B286C016EF23D29498F376CE57EF76848B82006E4646E9B",
+            "hash": "E0327C0FC58EB116F5DA15197AC9C7294C0E90EFBDF4491E2895935F098B80A7",
             "raw": true
         },
         {
@@ -478,22 +518,27 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/PlayerHairContacts.cs",
-            "hash": "C561A200FBD43B9BCAE3E1BD3793D87240BE72A5AB4364FB5FF817839428AB5F",
+            "hash": "5F859697FEC84C85A08925A33038F045534F443FF657F91B291AE79F8FCC0DE0",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/PlayerJacketCloth.cs",
-            "hash": "F3A8F9FA049FA08C68E6DFD71646CCB1B4D706B092E2062B210B33D3BF02EAD6",
+            "hash": "52D605DC3420B68E207D74E74F8F43F32A76F2168D5EF36328358526E59E87C0",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/PlayerJacketClothSurface.cs",
-            "hash": "D31674199D654BB4881BBFE6214E6897BA9C25ECB720544122E862C3531C0666",
+            "hash": "752EAE671255B80ECDE3DA9D3D3B70F480AD1718802677C280F46E48977C9166",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/PlayerJacketSurfaceJob.cs",
             "hash": "0E6133BC1E3651C12B9CA950D7EFA02F8D69F0F91E2351523CC14F2B31025581",
+            "raw": true
+        },
+        {
+            "path": "Assets/Scripts/Runtime/Player3D/PlayerKaraokeActions.cs",
+            "hash": "8728CCC2054C9D9F98875E18FBB4ABBAC606F3198551CC0D29CC9DCEFD4E3386",
             "raw": true
         },
         {
@@ -503,7 +548,7 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/PlayerScarfBodyContacts.cs",
-            "hash": "382EE87F7727254CB197A2FC49CEAC04CBB9C89DE4CC5083E0DAD5F70AA5307D",
+            "hash": "8834DEB5201BE7DB9BDC97E33BEEC595520037D06CA4A70EB4291D2168913F88",
             "raw": true
         },
         {
@@ -548,7 +593,7 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/PlayerScarfPresentation.cs",
-            "hash": "6501C8CC8E79F306CC7E4C8F24CE47C6D8F8E857C42CE130A2C80D6D40765D60",
+            "hash": "69AC699354B3B1C1E15985157548862E7D819543FF912B5CB5CCC203BB5EC9AD",
             "raw": true
         },
         {
@@ -562,8 +607,13 @@
             "raw": true
         },
         {
+            "path": "Assets/Scripts/Runtime/Player3D/PlayerTorsoLookPose.cs",
+            "hash": "9081AC23007B5DF12C6C7AB9B9BFC19D059C81B38A7DEEB5832A2D6B296471B6",
+            "raw": true
+        },
+        {
             "path": "Assets/Scripts/Runtime/Player3D/PlayerWardrobe.cs",
-            "hash": "168F1D2AA1B1280742A47697F095D51470952DAE6EE3BE0698D1858739FE8924",
+            "hash": "4FA5EAC3F07091F3395F11E5D9D2BA46B4E56C579FD27438DD8BD393EE8DC016",
             "raw": true
         },
         {
@@ -572,8 +622,13 @@
             "raw": true
         },
         {
+            "path": "Assets/Scripts/Runtime/Player3D/SecondaryMotionBakeRuntime.Diagnostics.cs",
+            "hash": "4783E9DEFF5D7FA495AC40C3B2EBB114BB92CEBCBF214D21C30A767193E1348A",
+            "raw": true
+        },
+        {
             "path": "Assets/Scripts/Runtime/Player3D/SecondaryMotionBakeRuntime.cs",
-            "hash": "67DF41315774DE32897ED363499B6D1093ABCD37C9F1D964C29C13343714F4D3",
+            "hash": "BD12ED5616E3E940CD019162C623D63916AC12F460740637E3102E8E2D29F179",
             "raw": true
         }
     ]

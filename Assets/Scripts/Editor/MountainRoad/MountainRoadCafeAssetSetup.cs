@@ -1009,7 +1009,8 @@ namespace BarPromenade.Editor
                 importer.importNormals != ModelImporterNormals.Import ||
                 importer.importTangents != ModelImporterTangents.CalculateMikk ||
                 importer.meshCompression != ModelImporterMeshCompression.Off ||
-                importer.isReadable || !importer.weldVertices ||
+                // City cooks the shared cafe roof as a convex rain trigger.
+                !importer.isReadable || !importer.weldVertices ||
                 importer.keepQuads || importer.generateSecondaryUV ||
                 importer.materialImportMode != ModelImporterMaterialImportMode.None)
             {

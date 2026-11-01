@@ -743,6 +743,65 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void ParkBandstand_KeepsSourceCollisionSeparateFromReleasedVisualMeshes()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default, CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            CityDecorationPlan plan = CityDecorationPlanner.CreatePlan(layout,
+                RoadFencePlanner.CreatePlan(layout), CityNightFixturePlanner.CreatePlan(layout));
+            Assert.That(CityParkGazeboGeometry.TryFind(plan, out CityDecorationDescriptor descriptor), Is.True);
+            CityMiscAssetProvider provider = CityMiscAssetProvider.LoadOrThrow();
+            var parent = new GameObject("Gazebo Collision Lifecycle Test");
+            try
+            {
+                CityParkGazeboWorld gazebo = CityParkGazeboWorld.Build(parent.transform, descriptor, provider);
+                MeshCollider[] solids = gazebo.GetComponentsInChildren<MeshCollider>()
+                    .Where(collider => !collider.isTrigger).ToArray();
+                Assert.That(solids, Has.Length.EqualTo(4));
+                foreach (MeshCollider collider in solids)
+                {
+                    Assert.That(collider.GetComponent<MeshFilter>(), Is.Null,
+                        "Adding collision must never auto-cook the released visual mesh.");
+                    MeshFilter visual = collider.transform.parent.GetComponent<MeshFilter>();
+                    Assert.That(visual, Is.Not.Null);
+                    Assert.That(visual.sharedMesh.isReadable, Is.False,
+                        "Visual batches still release their CPU copy.");
+                    CityMiscMeshPart source = Enumerable.Range(0,
+                        CityMiscAssetProvider.GetPartCount(CityMiscKind.ParkBandstand))
+                        .Select(index => provider.GetPartOrThrow(CityMiscKind.ParkBandstand, 0, index))
+                        .Single(part => part.Component == visual.name);
+                    Assert.That(collider.sharedMesh, Is.SameAs(source.Mesh));
+                    Assert.That(collider.sharedMesh.isReadable, Is.True);
+                    Assert.That(collider.transform.localPosition, Is.EqualTo(Vector3.zero));
+                    Assert.That(collider.transform.localRotation, Is.EqualTo(Quaternion.identity));
+                    Assert.That(collider.transform.localScale, Is.EqualTo(Vector3.one));
+                    Assert.That(collider.gameObject.layer, Is.EqualTo(visual.gameObject.layer));
+                    Assert.That(collider.tag, Is.EqualTo(visual.tag));
+                    Assert.That(collider.GetComponentInParent<FootstepGround>().Kind,
+                        Is.EqualTo(source.Surface == CityMiscSurfaceKind.Timber
+                            ? FootstepGroundKind.Wood : FootstepGroundKind.Stone));
+                }
+
+                Physics.SyncTransforms();
+                foreach (Vector3 local in new[] { new Vector3(0, .54f, 0), new Vector3(0, .54f, 3.5f),
+                    new Vector3(0, .36f, 4.1f), new Vector3(0, .18f, 4.65f) })
+                {
+                    Vector3 expected = CityParkGazeboGeometry.ToWorld(descriptor, local);
+                    var ray = new Ray(expected + Vector3.up * .35f, Vector3.down);
+                    Assert.That(solids.Any(collider => collider.Raycast(ray, out RaycastHit hit, 1f)
+                        && Mathf.Abs(hit.point.y - expected.y) < .025f), Is.True,
+                        "The imported deck and visible steps must still support the player at " + local);
+                }
+                Assert.That(gazebo.RainShelters, Has.Count.EqualTo(1));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent);
+            }
+        }
+
+        [Test]
         public void DefaultCity_MigratesWaveOneWithoutMovingRuntimeContracts()
         {
             CityLayout layout = CityLayoutGenerator.Generate(

@@ -179,7 +179,9 @@ namespace BarPromenade
             // light is not an additional light the water shader can
             // read, and the reflection is the whole point of the lamp.
             light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
 
             var haloObject = new GameObject("Hand Lamp Halo");
             haloObject.transform.SetParent(emitter.transform, false);

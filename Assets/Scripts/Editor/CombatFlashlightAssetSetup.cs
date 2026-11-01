@@ -47,12 +47,12 @@ namespace BarPromenade.Editor
         {
             VerifyImporter();
             Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestPath));
-            if (manifest == null || !manifest.passive || !manifest.test_only ||
-                !manifest.always_on_warehouse_only || manifest.units != "metres" ||
+            if (manifest == null || !manifest.passive || manifest.test_only ||
+                manifest.always_on_warehouse_only || !manifest.session_inventory_equipment || manifest.units != "metres" ||
                 manifest.models == null || manifest.models.Length != 1 || manifest.mount == null ||
                 manifest.mount.physical_side != "Left" || manifest.mount.bone != "chest" ||
                 manifest.models[0].name != "ChestFlashlight")
-                throw new InvalidOperationException("Chest lamp lost the isolated passive left-chest contract.");
+                throw new InvalidOperationException("Chest lamp lost the passive session-equipment left-chest contract.");
             if (manifest.mount.hero_manifest_sha256 != Sha256(HeroManifestPath))
                 throw new InvalidOperationException("Hero V2 changed: regenerate the lamp's measured jacket contact.");
             return manifest;
@@ -220,7 +220,7 @@ namespace BarPromenade.Editor
             return BitConverter.ToString(hash.ComputeHash(File.ReadAllBytes(path))).Replace("-", "").ToLowerInvariant();
         }
         [Serializable] private sealed class Manifest
-        { public bool passive, test_only, always_on_warehouse_only; public string units, build_signature; public Model[] models; public Mount mount; }
+        { public bool passive, test_only, always_on_warehouse_only, session_inventory_equipment; public string units, build_signature; public Model[] models; public Mount mount; }
         [Serializable] private sealed class Model
         { public string name; public float[] bounds_min, bounds_max; public int triangle_count, mesh_count; public Anchor[] anchors; }
         [Serializable] private sealed class Anchor { public string name; public float[] position; }

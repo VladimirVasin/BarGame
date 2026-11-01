@@ -8,12 +8,13 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-01
 
-- Бутылочные монстры:фактурная плоть,судороги,быстрый натиск;пробоины/осколки/звон. BottleMonstersFractureFromCrowbar passed.
+- 0.1.1 Win/Mac:пол лабиринта/укрытие кафе/беседка. MacStairwellAscent passed.
+- Бутылки:фактурная плоть,судороги,быстрый натиск;пробоины/осколки/звон. BottleMonstersFractureFromCrowbar passed.
 - Фонарик/лом/пистолет:катсцены/экипировка;толпа ждёт.
   StairwellPickupCinematics passed.
 - Загадка3:пистолет/8+0;склад хранит оружие/патроны,без двустволки.
   StairwellThirdPuzzlePistol passed.
-- Цель16:9;4:3 не поддержан,настройки сохранены. check-docs passed.
+- 16:9;4:3 не поддержан;настройки сохранены. check-docs passed.
 - Рычаги:крепления/A-D/контур.
   StairwellLabyrinthPuzzleModeAndFlashlight passed.
 - Загадка1→тела,лом→подъём;одиночный старт/очередь атак/безопасная комната3;повтор хранит прогресс. StairwellSecondPuzzleCrowbar passed.

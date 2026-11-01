@@ -191,7 +191,9 @@ namespace BarPromenade
             light.shadowBias = .015f;
             light.shadowNormalBias = .06f;
             light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             CityLightHalo halo = CityLightHalo.CreateAlwaysBurning(emitter, Vector3.zero,
                 .16f, .52f, new Color(1f, .72f, .42f, .12f), new Color(.8f, .51f, .3f, .035f));
             // These two accepted fixed site lamps follow the shared day floor

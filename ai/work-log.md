@@ -5,12 +5,16 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-01
 
+Desktop:provenance/lamp/API;Universal+adhoc;reports/Lit/diagnostics.
+Collision:Labyrinth/café CPU imports;read-only guard;gazebo separate host;old ZIP removed.
+BuildWindows/BuildMacOS/PlayerDistributionZip/MacStairwellAscent passed.
+
 Bottles:closed glass cells/contact holes/finite shards+ring;no blood/bones.
 Rig/UV/24FX/banks/bounds/arm shielding/civilian damage kept;one slot fixes grey;cost unmeasured.
 BOTTLE FRACTURE EXACT SURFACE CLOSED CELLS / RETAINED UV RIG OK;
-BottleMonstersFractureFromCrowbar passed;intact/impact/retained/reset frames reviewed.
+BottleMonstersFractureFromCrowbar passed;frames reviewed.
 
-Monster maps:native/offline pore filtering. MonsterHorrorTextures passed;frames reviewed.
+Pore maps:MonsterHorrorTextures passed;frames reviewed.
 
 Stairwell finds:same-rig action/camera/foley,one confirmed credit;cleanup waits
 for camera/equipment return,crowbar wakes afterward;cancel retains committed items.
@@ -21,15 +25,13 @@ Same-rig equip/aim/fire/reload/stow;8+0 and partial ammo survive travel/retry.
 Warehouse:owned bar/pistol/shelves/pools;Debug kept;tray/depth fit;destroyed-camera cleanup.
 STAIRWELL_LABYRINTH_PISTOL_TRAY_OK;StairwellThirdPuzzlePistol passed;frames reviewed.
 
-Target16:9;legacy4:3 settings kept;check-docs passed.
-Levers:physical spindle/bracket/guide throughout;A/D joins arrows;selection
-uses contour/dark edge/wash. STAIRWELL_LABYRINTH_CONTROL_MOUNTS_OK;
+16:9/legacy4:3;check-docs passed.
+Levers:spindle/bracket/guide;addA/D;contour/edge/wash. STAIRWELL_LABYRINTH_CONTROL_MOUNTS_OK;
 StairwellLabyrinthPuzzleModeAndFlashlight passed;frames reviewed.
 
-Bottles:ring/hand UV fixes flat flesh;held pulls/delayed head/weight/grounded
-feet. Stairwell:faster chase/recovery;parry window/caps/bypass/retry kept.
+Bottles:ring/hand UV;held pulls/delayed head/grounded feet;Stairwell chase/recovery.
+Parry/caps/bypass/retry kept.
 DEGRADED ZOMBIE GROUNDED ACTIONS AND THREE BODY SCULPTS OK;
-BOTTLE FRACTURE EXACT SURFACE CLOSED CELLS / RETAINED UV RIG OK.
 BOTTLE FLESH SOURCE DETAIL / RETAINED NORMALIZED CHARTS OK.
 StairwellSecondPuzzleCrowbar passed;surface/motion frames reviewed.
 

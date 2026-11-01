@@ -515,7 +515,9 @@ namespace BarPromenade
             apronFlood.innerSpotAngle = ApronFloodInnerSpotAngle;
             apronFlood.shadows = LightShadows.None;
             apronFlood.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             apronFlood.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
 
             // Down the beam, not at the head's own centre. The island can put
             // its halo on the emitter because its housing is built around

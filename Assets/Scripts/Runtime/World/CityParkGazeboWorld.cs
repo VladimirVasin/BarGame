@@ -53,7 +53,16 @@ namespace BarPromenade
                 CityParkSurfaceAppearance.ApplyCombined(renderer, kind, tint);
                 renderer.shadowCastingMode = ShadowCastingMode.On;
                 renderer.receiveShadows = true;
-                MeshCollider collider = surface.AddComponent<MeshCollider>();
+                // Adding a MeshCollider beside the visual MeshFilter would
+                // first auto-bind its combined mesh, whose CPU data is gone.
+                // Keep exact imported collision on a host with no MeshFilter.
+                var collisionHost = new GameObject("Source Collision")
+                {
+                    layer = surface.layer,
+                    tag = surface.tag
+                };
+                collisionHost.transform.SetParent(surface.transform, false);
+                MeshCollider collider = collisionHost.AddComponent<MeshCollider>();
                 collider.sharedMesh = part.Mesh;
                 FootstepGround.Stamp(surface,
                     part.Surface == CityMiscSurfaceKind.Timber

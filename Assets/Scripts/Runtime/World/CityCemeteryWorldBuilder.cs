@@ -1175,7 +1175,9 @@ namespace BarPromenade
             light.range = LampRange;
             light.shadows = LightShadows.None;
             light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
 
             GameObject haloObject = new GameObject(
                 "Cemetery Lamp Halo");
@@ -1251,7 +1253,9 @@ namespace BarPromenade
             light.range = PorchRange;
             light.shadows = LightShadows.None;
             light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
 
             GameObject haloObject = new GameObject("Porch Lamp Halo");
             haloObject.transform.SetParent(emitter.transform, false);

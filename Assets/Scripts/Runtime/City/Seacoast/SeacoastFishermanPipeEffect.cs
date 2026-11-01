@@ -77,7 +77,9 @@ namespace BarPromenade
                 emberLight.range = LightRange;
                 emberLight.shadows = LightShadows.None;
                 emberLight.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
                 emberLight.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             }
             exhaleEffect = GetComponent<HomeBalconySmokingExhaleEffect>() ??
                 gameObject.AddComponent<HomeBalconySmokingExhaleEffect>();

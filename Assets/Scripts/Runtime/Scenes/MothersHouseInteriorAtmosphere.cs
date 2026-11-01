@@ -246,7 +246,9 @@ namespace BarPromenade
             light.shadowStrength = 0.9f;
             light.renderMode = LightRenderMode.ForcePixel;
             light.bounceIntensity = 0.15f;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             ConfigureLocalShadows(light, true);
             return light;
         }
@@ -262,7 +264,9 @@ namespace BarPromenade
             light.intensity = FloorLampIntensity;
             light.range = FloorLampRange;
             light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             light.bounceIntensity = 0f;
             ConfigureLocalShadows(light, true);
             return light;
@@ -310,7 +314,9 @@ namespace BarPromenade
             light.shadows = LightShadows.None;
             light.renderMode = LightRenderMode.ForcePixel;
             light.bounceIntensity = 0f;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             return light;
         }
 
@@ -384,7 +390,9 @@ namespace BarPromenade
             light.innerSpotAngle = 48f;
             ConfigureLocalShadows(light, false);
             light.bounceIntensity = 0f;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             return light;
         }
 
@@ -413,7 +421,9 @@ namespace BarPromenade
             ConfigureLocalShadows(light, false);
             light.renderMode = LightRenderMode.ForcePixel;
             light.bounceIntensity = 0f;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             return light;
         }
 
@@ -440,7 +450,9 @@ namespace BarPromenade
             light.innerSpotAngle = 50f;
             ConfigureLocalShadows(light, false);
             light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             return light;
         }
 

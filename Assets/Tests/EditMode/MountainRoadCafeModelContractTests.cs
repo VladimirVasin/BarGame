@@ -38,11 +38,16 @@ namespace BarPromenade.Tests.EditMode
         };
 
         [Test]
+        public void AuthoredCafe_UsesPlayerReadableImporter()
+        {
+            AssertPassiveImporter();
+        }
+
+        [Test]
         public void AuthoredCafe_IsExactPassivePrefabWithSharedGlass()
         {
             CafeManifest manifest = LoadManifest();
             AssertManifest(manifest);
-            AssertPassiveImporter();
 
             GameObject prefab = MountainRoadCafeModelResources.LoadPrefab();
             Assert.That(prefab, Is.Not.Null,
@@ -415,6 +420,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(importer.importCameras, Is.False);
             Assert.That(importer.importLights, Is.False);
             Assert.That(importer.addCollider, Is.False);
+            Assert.That(importer.isReadable, Is.True,
+                "City cooks the authored cafe roof into a runtime convex rain trigger.");
             Assert.That(importer.importBlendShapes, Is.False);
             Assert.That(importer.bakeAxisConversion, Is.True);
             Assert.That(importer.preserveHierarchy, Is.True);

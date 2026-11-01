@@ -521,7 +521,9 @@ namespace BarPromenade
             light.renderMode = LightRenderMode.ForcePixel;
             light.bounceIntensity = 0.10f;
             light.cullingMask = ~0;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             light.enabled = true;
 
             GameObject haloObject = new GameObject(

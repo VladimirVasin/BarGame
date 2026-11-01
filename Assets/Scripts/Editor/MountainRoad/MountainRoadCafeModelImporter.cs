@@ -27,7 +27,9 @@ namespace BarPromenade.Editor
             importer.importNormals = ModelImporterNormals.Import;
             importer.importTangents = ModelImporterTangents.CalculateMikk;
             importer.meshCompression = ModelImporterMeshCompression.Off;
-            importer.isReadable = false;
+            // City reuses the authored roof for a runtime convex rain-shelter
+            // trigger; player-side MeshCollider cooking needs its CPU mesh.
+            importer.isReadable = true;
             importer.weldVertices = true;
             importer.keepQuads = false;
             importer.generateSecondaryUV = false;

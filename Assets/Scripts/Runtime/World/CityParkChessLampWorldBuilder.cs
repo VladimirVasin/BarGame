@@ -134,7 +134,9 @@ namespace BarPromenade
             // The accepted park practical remains weak and shadowless.
             light.shadows = LightShadows.None;
             light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
 
             CityLightHalo halo = CityLightHalo.CreateAlwaysBurning(
                 emitter.transform,

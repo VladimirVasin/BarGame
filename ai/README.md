@@ -9,6 +9,8 @@ Document **types** and **byte budgets** come from
 
 | File | Type | Budget | Purpose |
 | --- | --- | --- | --- |
+| `windows-build-optimization-plan.md` | note | 16000 | Desktop build/cache/package workflow |
+| `player-collision-audit.md` | note | 24000 | Player mesh/collision contracts |
 | `prompt-templates.md` | entry | 6000 | Canonical FAST-default, FEATURE, RELEASE, PLAN, BUGFIX, and REFACTOR workflows |
 | `project-overview.md` | entry | 9000 | Concise current baseline, technical owners, capability and scope links |
 | `current-world.md` | state | 208000 | Detailed current gameplay/MVP catalogue and deferred scope |
@@ -32,7 +34,7 @@ Document **types** and **byte budgets** come from
 | `bartender-spec.md` | canon | 13000 | Default NPC bartender, shared service rig and contacts |
 | `city-zones-art-bible.md` | canon | 473000 | Binding form/material/light/sound; §16 holds nine acceptance checks |
 | `city-story-bible.md` | canon | 305000 | Binding meaning; §6 exception registry, §16 laws, §21 text register |
-| `work-log.md` | ledger | 563000 | Reverse-chronological implementation record, one entry per date |
+| `work-log.md` | ledger | 563000 | Implementation ledger, one entry per date |
 | `tutorial-scenario.md` | state | 5000 | Vertical-slice walkthrough; covers three of the nine gameplay roots |
 | `release-notes.md` | ledger | 211000 | Player-visible milestone notes, one entry per date |
 | `archive/` | — | — | Retired logs and explicitly superseded document snapshots, retained verbatim. Not budgeted and not checked |

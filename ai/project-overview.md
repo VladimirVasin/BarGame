@@ -2,7 +2,7 @@
 
 ## Baseline
 
-- Windows/PC Unity/Mac Editor; runtime-composed city/road/village/interiors.
+- Windows x64/macOS Universal; runtime-composed city/road/village/interiors.
   [World](current-world.md).
 - Unity `6000.6.7f1`, URP `17.6.0`, Input System `1.20.1`, Navigation `2.0.16`:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
@@ -73,8 +73,8 @@ and the accepted architecture decision define this bounded exception.
 Performance captures retain targets/texture mode and frame/GPU/GC plus combat/
 NPC/fountain/probe work; mismatches reject samples. Missing counters stay unavailable.
 
-`PlayerBuildAssetValidation` gates packaging with read-only asset checks and
-repair commands. Generation/publication: [../tools/README.md](../tools/README.md).
+`PlayerBuildAssetValidation` checks assets/importer CPU access read-only.
+Repair/publication: [../tools/README.md](../tools/README.md).
 
 ## Implemented capabilities
 
@@ -140,7 +140,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Deferred
 
-Long-term saves, broader economy/story progression, release/platform work and
+Long-term saves, broader economy/story progression, release certification and
 other omissions are itemized in [current-world.md#deferred](current-world.md#deferred).
 A `Partial` system states its own gap in the systems map. Coverage does not imply a fresh run.
 

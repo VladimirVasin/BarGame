@@ -2400,7 +2400,9 @@ namespace BarPromenade
                 light.innerSpotAngle = FloodlightInnerSpotAngle;
                 light.shadows = LightShadows.None;
                 light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
                 light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
 
                 GameObject haloObject = new GameObject(
                     "Floodlight Source Halo");
@@ -2817,7 +2819,9 @@ namespace BarPromenade
                 light.innerSpotAngle = IslandFloodlightInnerSpotAngle;
                 light.shadows = LightShadows.None;
                 light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
                 light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
 
                 GameObject haloObject = new GameObject(
                     "Island Floodlight Source Halo");
@@ -3262,7 +3266,9 @@ namespace BarPromenade
             light.innerSpotAngle = FerrymanFloodlightInnerSpotAngle;
             light.shadows = LightShadows.None;
             light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
 
             GameObject haloObject = new GameObject(
                 "Ferryman Floodlight Source Halo");

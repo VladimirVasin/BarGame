@@ -37,7 +37,9 @@ namespace BarPromenade
             Emitter.innerSpotAngle = lightsStatue ? 34f : 44f;
             Emitter.shadows = LightShadows.None;
             Emitter.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             Emitter.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             // Small and attached to the real lens: no floating decorative orbs.
             CityLightHalo halo = CityLightHalo.CreateAlwaysBurning(source.transform,
                 Vector3.zero, lightsStatue ? 0.10f : 0.16f, lightsStatue ? 0.34f : 0.58f,

@@ -132,17 +132,12 @@ hero bone bank retained. `AreaCaptureFixture.VillageWorkroom`:imports/journey.
 Frost:ImageGen/prompt/hash/linear import;runtime reveal/tint:
 [alpine-cold-frost-mask.md](alpine-cold-frost-mask.md).
 
-Windows art/toolchain pins:
-
-```powershell
-python tools/toolchain.py --scope all
-```
-
+Art pins:`python tools/toolchain.py --scope all`.
 `python -m pip install Pillow==12.3.0 numpy==2.4.4`.
-`BP_BLENDER`/`--blender`:installed Blender;Windows:MSVC/SDK.
-Mac:`native.macos` pins Python/NumPy/clang/SDK;
-`python3 tools/toolchain.py --scope native`.
+`BP_BLENDER`/`--blender`:Blender;Windows:MSVC/SDK.
+Mac:`native.macos`:Python/NumPy/clang/SDK;`python3 tools/toolchain.py --scope native`.
 
+Desktop:[workflow](../ai/windows-build-optimization-plan.md).
 Repo root;`--`:args. Launcher:Python pin/startup/errors/fresh `--expect`/JSON;
 both launcher/generator:`--validate-only`.
 Ordinary: `principal_npc_detail.py` (fish/mother), `service_npc_detail.py`
@@ -154,8 +149,8 @@ other args kept;`--expect`:destinations. Publish checked/Unity closed;
 keep `.meta`/rollback;import non-atomic.
 
 VHS:Windows `tools/audio-vhs/build.ps1`;Mac `tools/audio-vhs/build-macos.py`.
-Both validate ABI/DSP;compile-only retains temporary output.
-See [audio-vhs/README.md](audio-vhs/README.md).
+Both:ABI/DSP;compile-only keeps temporary output.
+[audio-vhs/README.md](audio-vhs/README.md).
 
 `build-player-3d-model-v2.py`: `--{surfaces,hand-grip,corruption,smoking,bed}-only`;
 `--skip-animation-export --no-previews`;`player_hand_gestures.validate`:FBX.

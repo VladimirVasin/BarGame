@@ -36,6 +36,8 @@ namespace BarPromenade.Editor
         {
             Register("Core runtime resources", ValidateCoreResources,
                 "Restore the missing source asset and its .meta from version control.");
+            Register("Runtime imported CPU and physics meshes", RuntimeMeshReadabilityValidation.ValidateOrThrow,
+                "Use the source-specific importer/setup repair named by RuntimeMeshReadabilityValidation.");
             Register("Area loading illustrations", AreaLoadingArtImporter.ValidateOrThrow,
                 "Restore the four loading PNGs, then run BarPromenade.Editor.AreaLoadingArtImporter.ReimportAll.");
             Register("Hero V2", ValidateHero,
@@ -91,6 +93,8 @@ namespace BarPromenade.Editor
                 "BarPromenade.EditorTools.LastRouteCarAssetSetup.BuildOrThrow");
             RegisterGenerated("Raven", CemeteryRavenAssetSetup.ValidateOrThrow, "CemeteryRavenAssetSetup");
             RegisterGenerated("Stairwell cat", StairwellCatAssetSetup.ValidateOrThrow, "StairwellCatAssetSetup");
+            Register("Stairwell labyrinth collision", StairwellLabyrinthAssetSetup.ValidateOrThrow,
+                "BarPromenade.Editor.StairwellLabyrinthAssetSetup.EnsureAssets");
             RegisterGenerated("Exterior cloud", ExteriorCloudAssetSetup.ValidateOrThrow, "ExteriorCloudAssetSetup");
         }
 

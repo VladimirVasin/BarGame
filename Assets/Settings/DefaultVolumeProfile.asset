@@ -299,6 +299,75 @@ MonoBehaviour:
   cropToFit:
     m_OverrideState: 1
     m_Value: 1
+--- !u!114 &-4424074712860293369
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac1e685d8f7565142b879339cd471764, type: 3}
+  m_Name: SurfaceCacheGIVolumeOverride
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.SurfaceCacheGIVolumeOverride
+  active: 1
+  enabled:
+    m_OverrideState: 1
+    m_Value: 1
+  multiBounce:
+    m_OverrideState: 1
+    m_Value: 1
+  bouncePatchAllocation:
+    m_OverrideState: 1
+    m_Value: 1
+  sampleCount:
+    m_OverrideState: 1
+    m_Value: 2
+  temporalSmoothing:
+    m_OverrideState: 1
+    m_Value: 0.8
+  spatialFilterEnabled:
+    m_OverrideState: 1
+    m_Value: 1
+  spatialSampleCount:
+    m_OverrideState: 1
+    m_Value: 4
+  spatialRadius:
+    m_OverrideState: 1
+    m_Value: 1
+  temporalPostFilter:
+    m_OverrideState: 1
+    m_Value: 1
+  lookupSampleCount:
+    m_OverrideState: 1
+    m_Value: 6
+  upsamplingKernelSize:
+    m_OverrideState: 1
+    m_Value: 4
+  upsamplingSampleCount:
+    m_OverrideState: 1
+    m_Value: 2
+  volumeSize:
+    m_OverrideState: 1
+    m_Value: 128
+  volumeResolution:
+    m_OverrideState: 1
+    m_Value: 32
+  volumeCascadeCount:
+    m_OverrideState: 1
+    m_Value: 4
+  cascadeMovement:
+    m_OverrideState: 1
+    m_Value: 1
+  defragCount:
+    m_OverrideState: 1
+    m_Value: 2
+  renderingLayerMask:
+    m_OverrideState: 1
+    m_Value:
+      serializedVersion: 0
+      m_Bits: 4294967295
 --- !u!114 &-1410297666881709256
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -468,6 +537,8 @@ MonoBehaviour:
   - {fileID: -6288072647309666549}
   - {fileID: 7518938298396184218}
   - {fileID: -1410297666881709256}
+  - {fileID: -4424074712860293369}
+  - {fileID: 3983140301730148190}
 --- !u!114 &853819529557874667
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -824,6 +895,85 @@ MonoBehaviour:
   bladeRotation:
     m_OverrideState: 1
     m_Value: 0
+--- !u!114 &3983140301730148190
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2274cd80d4e22254d98d0282578183e0, type: 3}
+  m_Name: ScreenSpaceReflectionVolumeSettings
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.ScreenSpaceReflectionVolumeSettings
+  active: 1
+  mode:
+    m_OverrideState: 1
+    m_Value: 1
+  reflectionStrength:
+    m_OverrideState: 1
+    m_Value: 1
+  clampReflectedColor:
+    m_OverrideState: 1
+    m_Value: 0
+  maxColorValue:
+    m_OverrideState: 1
+    m_Value: 1
+  resolution:
+    m_OverrideState: 1
+    m_Value: 2
+  upscalingMethod:
+    m_OverrideState: 1
+    m_Value: 1
+  marchingMethod:
+    m_OverrideState: 1
+    m_Value: 1
+  hitRefinementSteps:
+    m_OverrideState: 1
+    m_Value: 5
+  finalThicknessMultiplier:
+    m_OverrideState: 1
+    m_Value: 0.16
+  roughnessFilter:
+    m_OverrideState: 1
+    m_Value: 2
+  roughnessScale:
+    m_OverrideState: 1
+    m_Value: 0
+  minimumSmoothness:
+    m_OverrideState: 1
+    m_Value: 0.05
+  smoothnessFadeStart:
+    m_OverrideState: 1
+    m_Value: 0.1
+  normalFade:
+    m_OverrideState: 1
+    m_Value: 0
+  screenEdgeFadeDistance:
+    m_OverrideState: 1
+    m_Value: 0.2
+  reflectSky:
+    m_OverrideState: 1
+    m_Value: 0
+  maxRayLength:
+    m_OverrideState: 1
+    m_Value: 30
+  rayLengthFade:
+    m_OverrideState: 1
+    m_Value: 1
+  maxRaySteps:
+    m_OverrideState: 1
+    m_Value: 64
+  objectThickness:
+    m_OverrideState: 1
+    m_Value: 0.01
+  temporalFiltering:
+    m_OverrideState: 1
+    m_Value: 0
+  baseBlendFactor:
+    m_OverrideState: 1
+    m_Value: 0.95
 --- !u!114 &4251301726029935498
 MonoBehaviour:
   m_ObjectHideFlags: 3

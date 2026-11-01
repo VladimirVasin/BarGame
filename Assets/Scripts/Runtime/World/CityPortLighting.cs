@@ -85,7 +85,9 @@ namespace BarPromenade
                 light.shadowBias = .015f;
                 light.shadowNormalBias = .06f;
                 light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
                 light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
                 CityLightHalo halo = CityLightHalo.CreateNightRegistered(fixture, Vector3.zero,
                     .16f, .50f, new Color(1f, .72f, .47f, .075f), new Color(.8f, .51f, .3f, .025f));
                 CityNightSiteLightRegistry.Register(light, 14f, halo);
@@ -121,7 +123,9 @@ namespace BarPromenade
             light.shadowBias = .025f;
             light.shadowNormalBias = .12f;
             light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
             CityLightHalo halo = CityLightHalo.CreateNightRegistered(emitter, Vector3.zero,
                 .23f, .65f, new Color(1f, .72f, .47f, .14f), new Color(.8f, .51f, .3f, .04f));
             CityNightSiteLightRegistry.Register(light, 16f, halo);

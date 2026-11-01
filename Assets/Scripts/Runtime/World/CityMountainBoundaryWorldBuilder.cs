@@ -489,7 +489,9 @@ namespace BarPromenade
             light.range = CaveLampRange;
             light.shadows = LightShadows.None;
             light.renderMode = LightRenderMode.ForcePixel;
+#if UNITY_EDITOR
             light.lightmapBakeType = LightmapBakeType.Realtime;
+#endif
 
             var haloObject = new GameObject("Cave Lamp Halo");
             haloObject.transform.SetParent(emitter.transform, false);

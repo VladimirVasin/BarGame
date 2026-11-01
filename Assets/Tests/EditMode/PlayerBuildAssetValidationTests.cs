@@ -66,6 +66,67 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(failures[1], Does.Contain("RepairC").And.Contain("stale prefab"));
         }
 
+        [TestCase("current")]
+        [TestCase("raw")]
+        [TestCase("asset")]
+        [TestCase("missing_source")]
+        [TestCase("missing_recording")]
+        [TestCase("missing_manifest")]
+        [TestCase("malformed")]
+        [TestCase("shape")]
+        [TestCase("unsafe_source")]
+        [TestCase("unsafe_recording")]
+        [TestCase("bounded")]
+        public void SecondaryMotionDiagnostics_NamesActualFailureWithoutReadingUnsafePaths(string fault)
+        {
+            const string source = "Assets/Example.cs";
+            const string asset = "Assets/Example.fbx";
+            const string recording = "Assets/Resources/Player/SecondaryMotionBakes/no-gear/Idle.bytes";
+            string savedRaw = new string('A', 64), savedAsset = new string('b', 32);
+            string sourcePath = fault == "unsafe_source" ? "Assets/../outside.cs" : source;
+            string recordingPath = fault == "unsafe_recording" ? "../outside.bytes" : "no-gear/Idle.bytes";
+            string sources = $"{{\"path\":\"{sourcePath}\",\"hash\":\"{savedRaw}\",\"raw\":true}}," +
+                $"{{\"path\":\"{asset}\",\"hash\":\"{savedAsset}\",\"raw\":false}}";
+            if (fault == "bounded")
+            {
+                var rows = new string[15];
+                for (int i = 0; i < rows.Length; i++)
+                    rows[i] = $"{{\"path\":\"Assets/Missing{i}.cs\",\"hash\":\"{savedRaw}\",\"raw\":true}}";
+                sources = string.Join(",", rows);
+            }
+            string json = $"{{\"version\":1,\"sources\":[{sources}],\"recordings\":[\"{recordingPath}\"]}}";
+            if (fault == "missing_manifest") json = null;
+            else if (fault == "malformed") json = "{broken";
+            else if (fault == "shape") json = "{\"version\":2}";
+            int unsafeReads = 0;
+            Func<string, bool> exists = path =>
+            {
+                if (path.Contains("..")) unsafeReads++;
+                return !(fault == "missing_source" && path == source ||
+                    fault == "missing_recording" && path == recording || path.StartsWith("Assets/Missing", StringComparison.Ordinal));
+            };
+            Func<string, string> rawHash = _ => fault == "raw" ? new string('C', 64) : savedRaw;
+            Func<string, string> assetHash = _ => fault == "asset" ? new string('d', 32) : savedAsset;
+            Type owner = Type.GetType("BarPromenade.Editor.SecondaryMotionBakeDiagnostics, BarPromenade.Editor", true);
+            string report = (string)owner.GetMethod("Inspect").Invoke(null, new object[] { json, exists, rawHash, assetHash });
+            Assert.That(unsafeReads, Is.Zero, "Diagnostics must reject traversal before calling any reader.");
+            if (fault == "current") { Assert.That(report, Is.Empty); return; }
+            Assert.That(report, Does.Contain("-executeMethod BarPromenade.Editor.SecondaryMotionBakeAssetSetup.BakeAll"));
+            if (fault == "raw")
+                Assert.That(report, Does.Contain(source).And.Contain("raw SHA-256").And.Contain(savedRaw).And.Contain(new string('C', 64)));
+            else if (fault == "asset")
+                Assert.That(report, Does.Contain(asset).And.Contain("AssetDatabase dependency hash").And.Contain(savedAsset).And.Contain(new string('d', 32)));
+            else if (fault == "missing_source") Assert.That(report, Does.Contain(source).And.Contain("<missing file>"));
+            else if (fault == "missing_recording") Assert.That(report, Does.Contain(recording).And.Contain("Missing recording"));
+            else if (fault == "bounded")
+            {
+                Assert.That(report, Does.Contain("15 issue(s), showing 12").And.Contain("Missing11.cs"));
+                Assert.That(report, Does.Not.Contain("Missing12.cs"));
+            }
+            else if (fault.StartsWith("unsafe_", StringComparison.Ordinal)) Assert.That(report, Does.Contain("Unsafe"));
+            else Assert.That(report.ToLowerInvariant(), Does.Contain(fault == "missing_manifest" ? "missing provenance" : "malformed"));
+        }
+
         [Test]
         public void Gate_IsInstalledForEveryPlayerBuildAndUsesExistingHeroSignature()
         {
@@ -77,6 +138,118 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(signature, Is.Not.Null);
             Assert.That(signature.ReturnType, Is.EqualTo(typeof(string)));
             Assert.That(signature.GetParameters(), Is.Empty);
+        }
+
+        [TestCase("current")]
+        [TestCase("importer_unreadable")]
+        [TestCase("missing_collision")]
+        [TestCase("unreadable_collision")]
+        [TestCase("empty_collision")]
+        [TestCase("unreadable_decoration")]
+        public void StairwellLabyrinth_RequiresPlayerReadableCollisionWithoutRepairingAssets(string fault)
+        {
+            Type owner = Type.GetType("BarPromenade.Editor.StairwellLabyrinthAssetSetup, BarPromenade.Editor", true);
+            MethodInfo validate = owner.GetMethod("ValidateModel");
+            Assert.That(validate, Is.Not.Null);
+            const string manifest = "{\"parts\":[{\"name\":\"Floor\",\"role\":\"Collision\"}," +
+                "{\"name\":\"Shell\",\"role\":\"ShellCollision\"},{\"name\":\"Rail\",\"role\":\"DecorCollision\"}," +
+                "{\"name\":\"Decoration\",\"role\":\"Decor\"}]}";
+            var model = new GameObject("Read-only labyrinth collision fixture");
+            var meshes = new Mesh[4];
+            try
+            {
+                string[] names = { "Floor", "Shell", "Rail", "Decoration" };
+                for (int i = 0; i < names.Length; i++)
+                {
+                    var part = new GameObject(names[i]);
+                    part.transform.SetParent(model.transform, false);
+                    meshes[i] = new Mesh { name = names[i] };
+                    if (fault != "empty_collision" || i != 0)
+                    {
+                        meshes[i].vertices = new[] { Vector3.zero, Vector3.right, Vector3.forward };
+                        meshes[i].triangles = new[] { 0, 1, 2 };
+                    }
+                    part.AddComponent<MeshFilter>().sharedMesh = meshes[i];
+                    if (i == 0 && fault == "missing_collision") Object.DestroyImmediate(part);
+                }
+                if (fault == "unreadable_collision") meshes[0].UploadMeshData(true);
+                if (fault == "unreadable_decoration") meshes[3].UploadMeshData(true);
+                bool importerReadable = fault != "importer_unreadable";
+                bool accepted = fault == "current" || fault == "unreadable_decoration";
+                if (accepted) Assert.DoesNotThrow(() => validate.Invoke(null, new object[] { model, manifest, importerReadable }));
+                else
+                {
+                    TargetInvocationException failure = Assert.Throws<TargetInvocationException>(
+                        () => validate.Invoke(null, new object[] { model, manifest, importerReadable }));
+                    Assert.That(failure.InnerException, Is.TypeOf<InvalidOperationException>());
+                    Assert.That(failure.InnerException.Message, Does.Contain("Stairwell labyrinth"));
+                }
+                Assert.That(meshes[0].isReadable, Is.EqualTo(fault != "unreadable_collision"), "Validation must not repair unreadable meshes.");
+                Assert.That(meshes[3].isReadable, Is.EqualTo(fault != "unreadable_decoration"), "Non-collision meshes remain untouched.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(model);
+                foreach (Mesh mesh in meshes) if (mesh != null) Object.DestroyImmediate(mesh);
+            }
+        }
+
+        [TestCase("current")]
+        [TestCase("importer_unreadable")]
+        [TestCase("missing_importer")]
+        [TestCase("missing_meshes")]
+        [TestCase("unreadable_mesh")]
+        [TestCase("empty_mesh")]
+        [TestCase("bounded")]
+        public void RuntimeMeshReadability_RejectsPlayerMissingDataWithBoundedReadOnlyDiagnostics(string fault)
+        {
+            Type owner = Type.GetType("BarPromenade.Editor.RuntimeMeshReadabilityValidation, BarPromenade.Editor", true);
+            MethodInfo inspect = owner.GetMethod("InspectImportedModel");
+            MethodInfo summarize = owner.GetMethod("SummarizeFailures");
+            Assert.That(inspect, Is.Not.Null);
+            Assert.That(summarize, Is.Not.Null);
+            var mesh = new Mesh { name = "Runtime collision source" };
+            try
+            {
+                if (fault != "empty_mesh")
+                {
+                    mesh.vertices = new[] { Vector3.zero, Vector3.right, Vector3.forward };
+                    mesh.triangles = new[] { 0, 1, 2 };
+                }
+                if (fault == "unreadable_mesh") mesh.UploadMeshData(true);
+                bool readable = mesh.isReadable;
+                int vertices = mesh.vertexCount;
+                string report = (string)inspect.Invoke(null, new object[]
+                {
+                    "Assets/Required.fbx", "Audited runtime consumer", "NamedImporter.Reimport",
+                    fault != "missing_importer", fault != "importer_unreadable" && fault != "bounded",
+                    fault == "missing_meshes" ? Array.Empty<Mesh>() : new[] { mesh }
+                });
+                if (fault == "current") Assert.That(report, Is.Empty);
+                else
+                {
+                    Assert.That(report, Does.Contain("Assets/Required.fbx").And.Contain("Audited runtime consumer")
+                        .And.Contain("NamedImporter.Reimport"));
+                    if (fault == "importer_unreadable" || fault == "bounded")
+                    {
+                        Assert.That(readable, Is.True, "Editor-accessible mesh must not excuse a disabled importer flag.");
+                        Assert.That(report, Does.Contain("ModelImporter Read/Write is disabled"));
+                    }
+                }
+                if (fault == "bounded")
+                {
+                    var failures = new string[20];
+                    for (int i = 0; i < failures.Length; i++) failures[i] = "Source" + i + ": " + report;
+                    string bounded = (string)summarize.Invoke(null, new object[] { failures });
+                    Assert.That(bounded, Does.Contain("20 source(s) failed, showing 16").And.Contain("Source15:"));
+                    Assert.That(bounded, Does.Not.Contain("Source16:").And.Not.Contain("Source19:"));
+                }
+                else if (fault == "current")
+                    Assert.That(summarize.Invoke(null, new object[] { new[] { report } }), Is.EqualTo(string.Empty));
+                Assert.That(mesh.isReadable, Is.EqualTo(readable));
+                Assert.That(mesh.vertexCount, Is.EqualTo(vertices));
+            }
+            finally { Object.DestroyImmediate(mesh); }
         }
 
         [Test]
