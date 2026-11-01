@@ -691,6 +691,7 @@ namespace BarPromenade
         internal void ReceiveProjectile(CombatActor source, int sequence, CombatHurtboxes.Hit hit, Vector3 velocity)
         {
             if (IsCraneRegenerating) return;
+            bool glassContact = !hit.IsDetached && bottleDestruction != null && bottleDestruction.ContainsGlassPoint(hit.Point);
             MeleePhase phaseBefore = State.Phase;
             float health = State.Health;
             float stagger = hit.Location.Region switch
@@ -724,10 +725,11 @@ namespace BarPromenade
                 health, State.Health, result, hit.Location, 0f, hit.Part, hit.LocalPoint, velocity.magnitude,
                 velocity.normalized * momentum, CombatImpactKind.Projectile, hit.LocalDirection,
                 woundDamage: 25f, bodyRegion: hit.DamageRegion, bodyPatch: hit.DamagePatch, detachedPart: hit.IsDetached);
+            if (glassContact) impact = impact.WithGlassContact();
             // Physics takes the already visible pose before impact publication freezes
             // it. The shared impact path then applies this anatomical impulse once.
             if (State.IsDefeated && !postmortem && !hit.IsDetached) BeginProjectileDefeat(impact);
-            RetroAudio.PlayAt(RetroSfxId.SpadeBite, hit.Point, 1f);
+            if (!glassContact) RetroAudio.PlayAt(RetroSfxId.SpadeBite, hit.Point, 1f);
             RetroAudio.PlayAt(RetroSfxId.StoneTamp, hit.Point, hit.Location.Region == MeleeBodyRegion.Head ? .65f : .45f);
             PublishImpact(impact, phaseBefore);
             if (State.IsDefeated && !postmortem && !hit.IsDetached) Ragdoll.BeginTerminalConvulsions();

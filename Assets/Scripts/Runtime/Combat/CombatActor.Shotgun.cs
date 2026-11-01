@@ -132,10 +132,13 @@ namespace BarPromenade
             if (hits.Count == 0 || IsCraneRegenerating) return;
             float damage = 0f, strongest = -1f;
             var healthDamage = new float[hits.Count];
+            uint glassContacts = 0;
             Vector3 impulse = Vector3.zero;
             int primary = 0, headIndex = -1;
             for (int i = 0; i < hits.Count; i++)
             {
+                if (!hits[i].Hit.IsDetached && bottleDestruction != null && bottleDestruction.ContainsGlassPoint(hits[i].Hit.Point))
+                    glassContacts |= 1u << i;
                 float regional = ProjectileDamageProfile.Shotgun.ResolveDamage(hits[i].Damage, hits[i].Hit.Location);
                 healthDamage[i] = State.IsDefeated || hits[i].Hit.IsDetached ? 0f : BodyDamage.ResolveHealthDamage(
                     hits[i].Hit.DamageRegion ?? CombatBodyAnatomy.ToRegion(hits[i].Hit.Part), regional,
@@ -167,11 +170,12 @@ namespace BarPromenade
                 impulse, CombatImpactKind.Projectile, representative.Hit.LocalDirection, representative.Index,
                 bodyRegion: representative.Hit.DamageRegion, bodyPatch: representative.Hit.DamagePatch,
                 detachedPart: representative.Hit.IsDetached);
+            if ((glassContacts & (1u << primary)) != 0) summary = summary.WithGlassContact();
             if (terminal) BeginProjectileDefeat(summary);
             if (firstResponse)
             {
                 reaction = null; reactionClock = 0f; ShotgunVolleyResponseCount++;
-                RetroAudio.PlayAt(RetroSfxId.SpadeBite, representative.Hit.Point);
+                if (!summary.IsGlassContact) RetroAudio.PlayAt(RetroSfxId.SpadeBite, representative.Hit.Point);
                 RetroAudio.PlayAt(RetroSfxId.StoneTamp, representative.Hit.Point, .7f);
             }
             float allocatedHealth = health;
@@ -187,6 +191,7 @@ namespace BarPromenade
                         n == 0 ? impulse : Vector3.zero, CombatImpactKind.Projectile, pellet.Hit.LocalDirection,
                     pellet.Index, n == 0 && firstResponse, true, pellet.Damage, pellet.HeadTrauma,
                     pellet.Hit.DamageRegion, pellet.Hit.DamagePatch, pellet.Hit.IsDetached);
+                if ((glassContacts & (1u << i)) != 0) impact = impact.WithGlassContact();
                 PublishImpact(impact, before);
                 allocatedHealth = nextHealth;
             }

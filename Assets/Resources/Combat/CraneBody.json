@@ -7,7 +7,7 @@
   "retained_rest_skeleton": true,
   "uv_channel": 0,
   "source_uv_channel": 1,
-  "source_sha256": "2891c293b4c277ebf8aeb2377b211730a7ed67861d4286dbed84a019045b5bbc",
+  "source_sha256": "b1d637cbc7b2add9f96853aaffc33a067c8fbdcf2938263d921e32ebca62f42c",
   "source_geometry_sha256": "4458aa34ab8ca54f1d6425a1888e9ce4632291e1ee647696c1d4116ccf948643",
   "signature": "d66e191bdf4d15d575fe45126a2be6744377f5c5c53210f45e06b4f5605a4a51",
   "meshes": [
@@ -586,14 +586,16 @@
       "name": "CraneBodyAtlas",
       "size": 2048,
       "sRGB": true,
-      "sha256": "96373fe74d1730a8be193737d76f5053a2e0c33e5cb532176d62a35221dd7ef4"
+      "sha256": "6ebddf8cefcadf4d014e772d964082f1c5d633ab9ed21f640218f6903238dac0"
     },
     {
       "name": "CraneMaterialResponse",
       "size": 1024,
       "sRGB": false,
-      "sha256": "acc86fdbc65a11703f726d4e454bd2f13d4372fc990bc6e2b9456defaca32d83"
+      "sha256": "81593f583be597090ab66c084c2f9db8509a8719ede6d71a041d14647c01a911"
     }
   ],
-  "estimated_gpu_bytes": 6990560
+  "estimated_gpu_bytes": 6990560,
+  "surface_profile": "monster_horror_materials_v1",
+  "texture_source": "ArtSource/Combat/Textures/MonsterHorrorSurface.source.png"
 }

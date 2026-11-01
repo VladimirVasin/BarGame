@@ -110,6 +110,7 @@ namespace BarPromenade
             for (int i = 0; i < activeShapes.Length; i++) snapshots[i] = activeShapes[i].Capture();
             CaptureHeadSurfaces();
             CaptureBodySurfaces(refreshBodySurfaces);
+            CaptureBottlePose();
         }
 
         // Rebuild only on a fracture/reset, never in the contact sampling loop.
@@ -160,6 +161,7 @@ namespace BarPromenade
             {
                 Snapshot shape = snapshots[i];
                 if (!includeHead && shape.Part == Player3DAnatomicalPart.Head) continue;
+                if (BottleOwnsTorso(shape.Part)) continue;
                 if (bodySurfaces != null && shape.Part != Player3DAnatomicalPart.Head) continue;
                 float reach = shape.BoundingRadius + radius;
                 if ((ClosestOnSegment(from, to, shape.Center) - shape.Center).sqrMagnitude > reach * reach)
@@ -174,7 +176,9 @@ namespace BarPromenade
                     shape.WorldToBone.MultiplyVector(direction).normalized);
                 found = true;
             }
-            return SweepBodySurfaces(from, to, radius, direction, ref hit, first) || found;
+            if (SweepBodySurfaces(from, to, radius, direction, ref hit, first))
+            { found = true; first = hit.Fraction; }
+            return SweepBottleSurfaces(from, to, radius, direction, ref hit, first) || found;
         }
 
         internal readonly struct SweepSurfaceGap

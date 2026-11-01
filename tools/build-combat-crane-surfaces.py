@@ -23,11 +23,12 @@ from mathutils import Vector
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
+import combat_horror_surfaces as horror
 import crane_mutant_geometry
 SIZE, RESPONSE_SIZE = 2048, 1024
 OUT = ROOT / 'Assets/Resources/Combat'
 SOURCE = ROOT / 'ArtSource/CombatCrane'
-SOURCE_IMAGE = SOURCE / 'Textures/CraneSurface.source.png'
+SOURCE_IMAGE = horror.SOURCE_IMAGE
 HIDDEN = ('GEO_Ear', 'GEO_EarFold', 'GEO_HandFinger', 'GEO_HandThumb')
 BONES = {}
 
@@ -55,19 +56,7 @@ def load_crane():
 
 
 def source_pixels():
-    image = bpy.data.images.load(str(SOURCE_IMAGE), check_existing=True)
-    image.colorspace_settings.name = 'Non-Color'
-    values = np.empty(image.size[0] * image.size[1] * 4, dtype=np.float32)
-    image.pixels.foreach_get(values)
-    values = values.reshape(image.size[1], image.size[0], 4)[..., :3]
-    h, w = values.shape[:2]
-    regions=(values[h//2:, :w//2], values[h//2:, w//2:], values[:h//2, :w//2], values[:h//2, w//2:])
-    # Give each physical material its own value range. Fine source variation
-    # stays subordinate to the large anatomical shapes at gameplay distance.
-    targets=((.48,.46,.39),(.31,.33,.27),(.34,.27,.22),(.22,.24,.22))
-    gains=(.28,.34,.31,.48)
-    return tuple(np.clip((image-image.mean(axis=(0,1)))*gain+target,.012,.85)
-        for image,target,gain in zip(regions,targets,gains))
+    return horror.source_pixels('Crane')
 
 
 def sample(image, uv):
@@ -115,7 +104,7 @@ def field(points, normals, name, sources, height_only=False):
     ribs=.5+.5*np.sin(z*96+np.sin(x*25+y*18)*.7)
     heights=(.003*grain,.010*np.maximum(0,np.sin(z*46+x*19))**6,.012*ribs+.003*grain,.003*grain)
     height=np.choose(material,heights)
-    if height_only:return height
+    if height_only:return horror.relief(points, normals, material, sources, height)
     weights=np.abs(normals)**5
     weights/=np.maximum(weights.sum(axis=-1,keepdims=True),1e-9)
     projections=(p[...,(1,2)],p[...,(0,2)],p[...,(0,1)])
@@ -131,7 +120,7 @@ def field(points, normals, name, sources, height_only=False):
         rgb[slit]*=.28
     roughness=np.choose(material,(.74,.61,.46,.38))+.035*grain
     cavity=np.choose(material,(.96,.94,.83+.08*ribs,.90))
-    return np.clip(rgb,0,1),height,roughness,cavity
+    return horror.finish(points, normals, material, sources, rgb, height, roughness, cavity)
 
 
 def unwrap(objects, coordinates, rectangle):
@@ -308,6 +297,7 @@ def build(output, source_dir, preview_dir=None, publish=True):
         textures=[dict(name='CraneBodyAtlas',size=SIZE,sRGB=True,sha256=digest(colour)),
                   dict(name='CraneMaterialResponse',size=RESPONSE_SIZE,sRGB=False,sha256=digest(response))],
         estimated_gpu_bytes=sum(sum(max(1,(s>>m)+3>>2)**2*16 for m in range(int(math.log2(s))+1)) for s in (SIZE,RESPONSE_SIZE)))
+    horror.decorate(payload)
     if not publish:return payload
     output.mkdir(parents=True,exist_ok=True);source_dir.mkdir(parents=True,exist_ok=True)
     (output/'CraneBodyAtlas.png').write_bytes(colour)

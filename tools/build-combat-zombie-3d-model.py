@@ -542,7 +542,8 @@ def crate_atlas():
                 base=(16.,23.,20.) if x<448 else (66.+mottle,76.+mottle,68.+mottle)
             else:base=(48.+mottle,59.+mottle,52.+mottle) if x<448 else (151.,155.,137.)
             canvas.put(x,y,tuple(max(0,min(255,round(v+noise))) for v in base)+(255,))
-    return canvas.png_bytes()
+    from combat_zombie_horror_surfaces import crate
+    return crate(canvas)
 
 
 def crate_geometry():
@@ -1350,7 +1351,8 @@ def atlas(variant):
     y = (464,476,419)[variant]
     canvas.line(x,y,x+6,y+13,(105,79,72,255),2)
     canvas.line(x+1,y+1,x+7,y+12,(127,102,86,255))
-    return canvas.png_bytes()
+    from combat_zombie_horror_surfaces import porter
+    return porter(canvas, variant)
 
 
 def main():

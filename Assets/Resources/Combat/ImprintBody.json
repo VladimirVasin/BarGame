@@ -7,7 +7,7 @@
   "retained_rest_skeleton": true,
   "uv_channel": 0,
   "source_uv_channel": 1,
-  "source_sha256": "ec2af8db9811159f30289b7b237c2e6ead08913a571368f2e57deba5f2858e85",
+  "source_sha256": "b1d637cbc7b2add9f96853aaffc33a067c8fbdcf2938263d921e32ebca62f42c",
   "source_geometry_sha256": "4458aa34ab8ca54f1d6425a1888e9ce4632291e1ee647696c1d4116ccf948643",
   "signature": "ee2ee5461f9e95de55da22898bb2e627c7e99c6c32d5f9145983e375b046f19a",
   "imprint_negative_form": {
@@ -736,14 +736,16 @@
       "name": "ImprintBodyAtlas",
       "size": 2048,
       "sRGB": true,
-      "sha256": "082958873f20591ecc7b8c9e035ac15c94e74153eaf1c498870614bdfd158229"
+      "sha256": "186ab5125c6dad5957737b93a3a09e600480304d647eeaa48a0b418709b0bde1"
     },
     {
       "name": "ImprintMaterialResponse",
       "size": 1024,
       "sRGB": false,
-      "sha256": "12e3ce77bb4876391b8844a392df73697bd4c06b7d7ce97d7d9dcefe3d9c85ec"
+      "sha256": "70eb2f6df3786782b6f4092adc268272a6409b184da7790fbbc2c9233b22794c"
     }
   ],
-  "estimated_gpu_bytes": 6990560
+  "estimated_gpu_bytes": 6990560,
+  "surface_profile": "monster_horror_materials_v1",
+  "texture_source": "ArtSource/Combat/Textures/MonsterHorrorSurface.source.png"
 }

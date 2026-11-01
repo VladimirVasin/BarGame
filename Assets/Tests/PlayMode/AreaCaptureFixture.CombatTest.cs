@@ -52,7 +52,9 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         [Explicit("Focused old arena and six current laboratory targets; no damage, duel or regeneration sequence.")]
         [PrebuildSetup(typeof(CombatLaboratoryAssetsSetup))]
-        public IEnumerator CombatLaboratoryArtVisuals()
+        public IEnumerator CombatLaboratoryArtVisuals() => CaptureLaboratoryArtVisuals(false);
+
+        private IEnumerator CaptureLaboratoryArtVisuals(bool textureReview)
         {
             float previousDelta = Time.captureDeltaTime;
             CombatTestRoot root = null;
@@ -94,12 +96,13 @@ namespace BarPromenade.Tests.PlayMode
                 root.CameraFollow.enabled = false;
                 probe = camera.gameObject.AddComponent<WarehouseRefrigeratorPresentationProbe>();
                 for (int frame = 0; frame < SettleFrames; frame++) yield return null;
-                yield return AtWarehouseFridgePresentation(probe, () =>
-                {
-                    CaptureCombatGrip(camera, root.Hero, "Test laboratory art - Hero current crowbar grip");
-                    CaptureLaboratoryArtView(camera, "Test laboratory art - Old arena overview",
-                        new Vector3(9f, 8f, -10f), new Vector3(0f, .5f, 0f), 60f);
-                });
+                if (!textureReview)
+                    yield return AtWarehouseFridgePresentation(probe, () =>
+                    {
+                        CaptureCombatGrip(camera, root.Hero, "Test laboratory art - Hero current crowbar grip");
+                        CaptureLaboratoryArtView(camera, "Test laboratory art - Old arena overview",
+                            new Vector3(9f, 8f, -10f), new Vector3(0f, .5f, 0f), 60f);
+                    });
 
                 foreach (CombatEnemyKind kind in new[] { CombatEnemyKind.Zombie, CombatEnemyKind.Docker,
                     CombatEnemyKind.Crane, CombatEnemyKind.Room, CombatEnemyKind.Imprint, CombatEnemyKind.LongExposure })
@@ -127,11 +130,16 @@ namespace BarPromenade.Tests.PlayMode
                         Vector3 focus = actor.IsCrane ? (actor.CraneAnchorPosition + actor.transform.position) * .5f
                             : actor.transform.position + Vector3.up;
                         Vector3 eye = focus + (actor.IsCrane ? new Vector3(7f, 2f, 8f) : new Vector3(3.5f, 1.6f, 4.5f));
-                        CaptureLaboratoryArtView(camera, "Test laboratory art - " + kind + " full rig", eye, focus, 60f);
-                        CaptureLaboratoryArtView(camera, "Test laboratory art - " + kind + " head",
-                            head + outward * .9f + Vector3.up * .08f, head, 40f);
+                        if (textureReview) CaptureMonsterSurfaceViews(camera, actor, kind.ToString(), head, outward);
+                        else
+                        {
+                            CaptureLaboratoryArtView(camera, "Test laboratory art - " + kind + " full rig", eye, focus, 60f);
+                            CaptureLaboratoryArtView(camera, "Test laboratory art - " + kind + " head",
+                                head + outward * .9f + Vector3.up * .08f, head, 40f);
+                        }
                     });
                 }
+                if (textureReview) yield return CaptureOrdinaryMonsterTextureVariants(root, camera, probe);
                 yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             }
             finally

@@ -220,6 +220,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return WaitForCorruptedStairwell(() => screen.IsShowing, "The cancelled pistol could not be inspected again.");
             input.Press(keyboard.eKey, queueEventOnly: true);
             yield return WaitForCorruptedStairwell(() => !screen.IsPresenting, "Confirming the pistol find did not complete.");
+            yield return WaitForStairwellPickupCinematic(stairwell);
             yield return null; // The confirming E remains held through the following world Update.
             input.Release(keyboard.eKey, queueEventOnly: true);
             Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.CombatPistol), Is.EqualTo(1));

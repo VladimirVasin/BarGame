@@ -154,6 +154,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
             input.Release(keyboard.eKey, queueEventOnly: true);
             yield return WaitForCorruptedStairwell(() => !screen.IsPresenting, "Confirming the crowbar find did not finish.");
+            yield return WaitForStairwellPickupCinematic(stairwell);
             Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.CombatCrowbar), Is.EqualTo(1));
             Assert.That(GameSessionState.TryCollectWorldItem(BarPromenade.StairwellLabyrinthPuzzles.CrowbarSourceId,
                 InventoryItemId.CombatCrowbar), Is.False, "The source must not grant a second crowbar.");
@@ -378,6 +379,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
             input.Release(keyboard.eKey, queueEventOnly: true);
             yield return WaitForCorruptedStairwell(() => !screen.IsPresenting, "Confirming the find did not complete the pickup.");
+            yield return WaitForStairwellPickupCinematic(stairwell);
             Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.ChestFlashlight), Is.EqualTo(1));
             Assert.That(GameSessionState.TryCollectWorldItem(BarPromenade.StairwellLabyrinthPuzzles.FlashlightSourceId,
                 InventoryItemId.ChestFlashlight), Is.False);

@@ -197,11 +197,15 @@ namespace BarPromenade
         }
 
         // A new bullet contact wounds a corpse without inventing another HP transaction.
-        public void Emit(CombatImpact impact) => Emit(impact.Target, impact.Point, impact.Direction,
-            impact.Kind == CombatImpactKind.Projectile ? (impact.IsPellet ? impact.WoundDamage : Mathf.Max(25f, impact.Damage)) : Mathf.Max(impact.WoundDamage, impact.Damage),
-            impact.Kind is CombatImpactKind.Projectile or CombatImpactKind.Hook, impact.Location.Region == MeleeBodyRegion.Head, impact.Part, impact.IsPellet,
-            prominent: impact.Kind == CombatImpactKind.Weapon && impact.Source != null && impact.Source.IsHero &&
-                impact.Source.WeaponId == CombatWeaponId.Crowbar, contactNormal: impact.Normal);
+        public void Emit(CombatImpact impact)
+        {
+            if (impact.IsGlassContact) return;
+            Emit(impact.Target, impact.Point, impact.Direction,
+                impact.Kind == CombatImpactKind.Projectile ? (impact.IsPellet ? impact.WoundDamage : Mathf.Max(25f, impact.Damage)) : Mathf.Max(impact.WoundDamage, impact.Damage),
+                impact.Kind is CombatImpactKind.Projectile or CombatImpactKind.Hook, impact.Location.Region == MeleeBodyRegion.Head, impact.Part, impact.IsPellet,
+                prominent: impact.Kind == CombatImpactKind.Weapon && impact.Source != null && impact.Source.IsHero &&
+                    impact.Source.WeaponId == CombatWeaponId.Crowbar, contactNormal: impact.Normal);
+        }
 
         public void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage) =>
             Emit(actor, point, direction, damage, false, false);

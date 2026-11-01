@@ -1,0 +1,40 @@
+{
+  "generator": "build-combat-zombie-horror-surfaces.py",
+  "version": 1,
+  "source": "ArtSource/Combat/Textures/MonsterHorrorSurface.source.png",
+  "source_sha256": "b1d637cbc7b2add9f96853aaffc33a067c8fbdcf2938263d921e32ebca62f42c",
+  "uv_layout": "retained 512x512 worker and 512x256 porter charts",
+  "geometry_rig_actions": {
+    "ZombieCrate.fbx": "19e64ef094b75254b4028995ca16df4c9c9633534346d180f263d85a0eccd696",
+    "ZombieActions.fbx": "d0544c3022fc965c05cb362d93bd8eaeaf990b391f08166d3efa2cc0cf5106cd",
+    "ZombieDecayActions.fbx": "b6ac59588d0c9a44c91504684b2a80d5d21ef8e082505e9d95c44c42655b1bba",
+    "ZombieDecayBody0.fbx": "35b88a0402c0d675a64c5aa5878f2d7e092308fd7560d4997609a2d7f219a39b",
+    "ZombieDecayBody1.fbx": "6f06b9e8d62852bb07863fc584e7d53530b8f8953d4a6ce23c48984551927460",
+    "ZombieDecayBody2.fbx": "a92cd3c82d23557bbbf5245e5c0c3c9ea0e21e4f261dc53972b0ab0ec986a48e",
+    "ZombieDecayDormant0.fbx": "64cc43e8a01a774f86a28dae5d9510fd8c5891e63c69128d90c7654716891609",
+    "ZombieDecayDormant1.fbx": "39d895444bf8cb3774efc813b90d8499b40fe48bea861de7632c194df66a35ee",
+    "ZombieDecayDormant2.fbx": "18df92c1641702dfd6b3b22af84f4df251d31fb732dd24355e2dab27d411e8b9",
+    "ZombieDecayStanding0.fbx": "9c8147d73d35e0ff383f9ab11f8b8ae4c95798fa3f8caf583d4f96e4a395a11a",
+    "ZombieDecayStanding1.fbx": "d032d7699d72048a10215de8f3db0b52c05a4e97c915224094a1ab0e03b35814",
+    "ZombieDecayStanding2.fbx": "c92b1d9ce2f687650c465e14eecae29ac69b7c2d4926a166e43cf6c35400e21f",
+    "Assets/Resources/VillageLife/StationWorkerAtlas.png": "01c1b577931563cfb18b8af9aea80a3a36cb99e7cf0d0b84f6f9d2814141205b",
+    "ArtSource/VillageLife/StationWorker.blend": "552ca4d4b6475b6dad558df45180ca64bd883c02c566d7b8ea51f01ba54bfb32"
+  },
+  "output_sha256": {
+    "ZombieDecayBody0Atlas.png": "d679c4a0c6ca311aeb15fd9089b76480abce8dcf13bc595735101e77d1787da5",
+    "ZombieDecayBody1Atlas.png": "1fec2de16afcc33b4a37c2299a51800651c8e3d6de6678bdb166d8b656021a9b",
+    "ZombieDecayBody2Atlas.png": "20ae365925d7210d8d8af91875e66f5748215eabecd062190a08993108a2adab",
+    "ZombieFace1.png": "5fe5ca6c49f86b01513d98ef7a985e151a3d49b73127849596c673247ef08095",
+    "ZombieFace2.png": "69b72be023d6ca200c5eab8386427f2961d5a215a8860bddb35ed6cc8a1febdc",
+    "ZombieFace3.png": "a1e9085e38bac6c4d9219d93c9574eefda9d75b49bbb99787797853143c70291",
+    "ZombieCrateAtlas.png": "2747c83174eba8a79f75333653e463ed00e6ee12b1ca42ba15cee6d236db901f"
+  },
+  "material_tiles": [
+    "skin",
+    "glass",
+    "cloth",
+    "wood",
+    "fascia",
+    "residue"
+  ]
+}

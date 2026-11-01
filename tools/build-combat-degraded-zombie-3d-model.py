@@ -270,7 +270,8 @@ def atlas(variant):
     for y in range(96,125):
         for x in range(29,102):
             if (x*13+y*7+variant)%23==0: canvas.put(384+x,384+y,(113,106,91,255))
-    return canvas.png_bytes()
+    from combat_zombie_horror_surfaces import decay
+    return decay(canvas, variant)
 
 
 def build_bodies(output,source,preview):

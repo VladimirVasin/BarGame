@@ -1,0 +1,21 @@
+{
+  "source": "MonsterHorrorSurface.source.png",
+  "generator": "image_gen built-in",
+  "intent": "shared albedo source atlas for existing monster texture-only bake",
+  "layout": {
+    "columns": 3,
+    "rows": 3,
+    "order_top_left": [
+      "unhealthy_skin",
+      "dirty_bottle_glass",
+      "weathered_timber",
+      "damp_wool",
+      "aged_plaster_chalk",
+      "organic_chitin",
+      "photographic_emulsion",
+      "closed_tendon_fascia",
+      "dark_mineral_metal"
+    ]
+  },
+  "prompt": "Create ONE production game-material source atlas, a precise 3 by 3 grid of NINE equal square material swatches, edge-to-edge with NO gaps, NO frames, NO words or labels. Square 2048x2048 image. Flat orthographic close views of surfaces, diffuse flat neutral illumination suitable as albedo, no shadows, no vignette, no directional shiny highlights, no perspective, no background, no objects or characters. A restrained filthy psychological horror aesthetic for existing low-poly monsters in a gray-green decaying coastal town, earthy muted hues, visibly rich irregular macro discoloration alongside fine material grain, avoid mere uniform noise. Exact spatial layout: TOP ROW LEFT: unhealthy pale gray-yellow human skin surface, pores, stretched fine creases, faint gray-purple mottling, subtle capillary threads and waxy dry patches; TOP ROW CENTER: dark green and amber-brown dirty bottle glass surface, cloudy residue, greasy smears, hairline scuff clusters, rubbed cleaner areas, translucent-looking mineral grime but fully opaque albedo swatch; TOP ROW RIGHT: dark swollen weathered wood with broad readable grain, splintered fibres and damp seams. MIDDLE ROW LEFT: worn faded olive and charcoal coarse wool fabric with actual thread weave, embedded grime, flattened oily wear and stretched fibres, no holes or insignia; MIDDLE ROW CENTER: old bone-gray damp plaster and chalk with crazed fine cracks, dark water tide marks and powdery patches, no masonry pattern; MIDDLE ROW RIGHT: organic insect-like chitin, sickly muted gray-olive and brown hard surface, thin layered striations, dry crust and worn pale ridges, no insect body or recognizable shapes. BOTTOM ROW LEFT: deteriorated black-brown photographic emulsion material, silver-gray marbling, uneven cloudy delamination, fine scratched opaque film with localized dull milky blooms, no photographs or faces; BOTTOM ROW CENTER: closed unbroken pale tendon/fascia-like organic surface, taut long fibrous striations, gray mauve ochre translucent-looking layers and slight sticky residue, non-graphic material only; BOTTOM ROW RIGHT: nearly black brown industrial mineral and old dark steel surface with greasy residues, dull scuffs, worn graphite highlights and chalky sediment. Material patterns must remain believable and readable at medium game distance, each tile is its own distinct material, variations are irregular rather than tiled symbols. No blood, wounds, organs, skulls, bones, faces, eyes, teeth, writing, brands, decorative occult symbols, bright neon or baked dramatic lighting. Deliver only the raw nine-swatch texture source image."
+}

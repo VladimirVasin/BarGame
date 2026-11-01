@@ -5,46 +5,47 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-01
 
-BirdLift opens the route and lowers a guided open tray with the existing pistol.
-Shared source pickup credits once after confirmation; cancel leaves it supported.
-Same rig equips/aims/fires/reloads/stows immediately. First8+0;session snapshot
-keeps ammo/partial reload across travel and retry. Warehouse imports only owned
-crowbar/pistol, stocks matching shelves and allocates matching pools;Debug stays.
-Frame fitting includes both endpoints and actual pistol bounds. Shared inspection
-uses rotation-invariant bounds plus nearest perspective depth, preventing clipping
-when the lying pistol turns upright. Cleanup tolerates a destroyed camera.
-STAIRWELL_LABYRINTH_PISTOL_TRAY_OK and StairwellThirdPuzzlePistol passed;
-rendered pickup/inspection/warehouse-arrival frames reviewed.
+Bottle bodies use closed authored glass cells:local fracture/real contact holes,
+finite world shards and ring;glass skips flesh blood/bones. Rig/UV/24FX retained;
+bounded pools/shared banks;cost unmeasured. Blender:
+BOTTLE FRACTURE EXACT SURFACE CLOSED CELLS / RETAINED UV RIG OK passed.
+BottleMonstersFractureFromCrowbar passed;intact/impact/retained/reset frames
+reviewed. Exact glass queries preserve arm shielding;legacy civilian bodies keep
+their own damage path. One glass material slot prevents imported grey overdraw.
 
-User fixed target16:9;4:3 camera/UI proof no longer required. Legacy crop/settings
-remain. Canon/current-state documents updated; check-docs passed.
+Monster ImageGen detail rebaked to retained UV/native maps;offline filtering
+removes pore aliasing. MonsterHorrorTextures passed;frames reviewed.
 
-Puzzle levers have physical spindle/bracket/guide contacts throughout travel;
-grip anchors and cameras stay. A/D joins arrows; selection uses a bone contour,
-dark edge and surface wash with existing effects owners.
-STAIRWELL_LABYRINTH_CONTROL_MOUNTS_OK and
-StairwellLabyrinthPuzzleModeAndFlashlight passed; rendered frames reviewed.
+Stairwell finds:same-rig action/camera/foley,one confirmed credit;cleanup waits
+for camera/equipment return,crowbar wakes afterward;cancel retains committed items.
+STAIRWELL PICKUP ART CONTRACT OK;StairwellPickupCinematics passed;frames reviewed.
 
-Stairwell crowd waits after the first puzzle; confirmed crowbar pickup and modal
-release wake it. Bounded movers and attack claims keep first contact solo even
-after waiting. Floor-aware routes leave bypass open and stop at the third puzzle.
-Retry preserves puzzles/crowbar, clears queued draw and restores fresh input;
-travel retains progress, New Game clears it. Ordinary zombies have giant dirty
-glass torsos or inverted bottle burdens, authored motion and bounded body/glass
-audio. Dormant/rise/idle share endpoints and phase; contacts follow skin bounds.
-Other species, lighting and effects owners stay; performance is unmeasured.
-StairwellSecondPuzzleCrowbar,
-DEGRADED ZOMBIE GROUNDED ACTIONS AND THREE BODY SCULPTS OK,
+BirdLift:guided tray/existing pistol/shared pickup;cancel keeps support.
+Same-rig equip/aim/fire/reload/stow;8+0 and partial ammo survive travel/retry.
+Warehouse imports owned crowbar/pistol,matching shelves/pools;Debug kept.
+Tray/pistol/depth fit inspection;cleanup tolerates a destroyed camera.
+STAIRWELL_LABYRINTH_PISTOL_TRAY_OK;StairwellThirdPuzzlePistol passed;frames reviewed.
+
+Target16:9;legacy4:3 settings stay. Canon/current-state updated;check-docs passed.
+Levers:physical spindle/bracket/guide throughout;A/D joins arrows;selection
+uses contour/dark edge/wash. STAIRWELL_LABYRINTH_CONTROL_MOUNTS_OK;
+StairwellLabyrinthPuzzleModeAndFlashlight passed;frames reviewed.
+
+Bodies wait for crowbar/modal return;bounded attackers keep solo first contact,
+floor bypass and safe room3. Retry retains puzzles/crowbar,clears queued draw;
+travel keeps progress,New Game clears. Bottle bodies:grounded motion,finite
+body/glass audio;dormant/rise/idle/contact agree. Other forms/light stay.
+StairwellSecondPuzzleCrowbar;
+DEGRADED ZOMBIE GROUNDED ACTIONS AND THREE BODY SCULPTS OK;
 ORDINARY BODY AUDIO / FINITE DRY MONO / ATTACK TIMELINE / DETERMINISTIC OK passed.
 
-Crowbar:weight transfer/sharp arc/brake;grip/low elbows/Ready preserved.
-Tissue damage now advances structure;wide surface tear;fatal head uses contact-side
-sectors with melee serial dedupe. Shared finite blood pool;no gun profile change.
-Third-hit living fall/rise retains damage;hero ordinary hits keep control.
-TWO HAND STRIKE EXPORTED PROOF; Range_CrowbarContactPresentsRecoilBeforeHitStop,
-Range_CrowbarHitsLeaveWoundsAndZombieRises, Range_CrowbarFatalHeadContactFracturesOnce
-passed. Gameplay/source strike, first wound, rise and fatal head frames reviewed.
-24FX reviewed:shared damage surfaces/particles;lighting/post/camera owners kept.
+Crowbar:weight/arc/brake,retained grip/low elbows/Ready. Wide tears advance
+structure;fatal head uses contact-side sectors/melee serial dedupe;finite blood
+pool/gun profile kept. Living fall/rise retains wounds;hero keeps control.
+TWO HAND STRIKE EXPORTED PROOF;Range_CrowbarContactPresentsRecoilBeforeHitStop;
+Range_CrowbarHitsLeaveWoundsAndZombieRises;Range_CrowbarFatalHeadContactFracturesOnce
+passed;strike/wound/rise/head frames reviewed. 24FX:shared damage surfaces/
+particles;lighting/post/camera owners kept.
 
 ## 2026-10-31
 

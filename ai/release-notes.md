@@ -8,26 +8,26 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-01
 
-- Третья загадка опускает пистолет:подбор1×,8+0,бой сразу. Склад хранит
-  оружие/патроны,двустволки нет. STAIRWELL_LABYRINTH_PISTOL_TRAY_OK/
-  StairwellThirdPuzzlePistol passed;кадры проверены.
-- Целевой формат16:9;4:3 без поддержки,старые настройки сохранены.
-  check-docs passed.
-- Рычаги:опора при движении;A/D/←→ выбирают. Светлый контур/тёмный край/
-  высветление отмечают выбор. STAIRWELL_LABYRINTH_CONTROL_MOUNTS_OK/
-  StairwellLabyrinthPuzzleModeAndFlashlight passed;кадры проверены.
-- После первой загадки лестницу заполняют неподвижные тела. Подбор лома будит
-  толпу; первый бой одиночный, дальше атаки чередуются. Врагов можно обойти,
-  у третьей загадки безопасно. Повтор сохраняет лом и решённые загадки.
-  Зомби обвивают огромную бутылку вместо туловища или тащат её на спине;
-  движения, подъём и звук стекла соответствуют новым телам.
-  StairwellSecondPuzzleCrowbar и
+- Бутылочные тела:удар→скол/пробоина/физические осколки/звон,без крови/костей.
+  Риг/UV/24FX сохранены;стоимость не замерена. Blender:
+  BOTTLE FRACTURE EXACT SURFACE CLOSED CELLS / RETAINED UV RIG OK;
+  BottleMonstersFractureFromCrowbar passed;кадры до/после проверены.
+- Монстры:страшные фактуры без ряби. MonsterHorrorTextures passed.
+- Фонарик/лом/пистолет:катсцены/экипировка;толпа ждёт.
+  StairwellPickupCinematics passed.
+- Загадка3:пистолет/8+0;склад хранит оружие/патроны,без двустволки.
+  STAIRWELL_LABYRINTH_PISTOL_TRAY_OK/StairwellThirdPuzzlePistol passed.
+- Цель16:9;4:3 не поддержан,настройки сохранены. check-docs passed.
+- Рычаги:крепления/A-D/контур.
+  STAIRWELL_LABYRINTH_CONTROL_MOUNTS_OK/StairwellLabyrinthPuzzleModeAndFlashlight passed.
+- Загадка1→тела,лом→подъём;одиночный старт/очередь атак/безопасная комната3;
+  повтор хранит прогресс. StairwellSecondPuzzleCrowbar/
   DEGRADED ZOMBIE GROUNDED ACTIONS AND THREE BODY SCULPTS OK passed.
-- Лом:усилен перенос веса и разгон удара. Повторные попадания глубже разрушают
-  ткани;смертельный удар в голову повреждает череп. Живые зомби встают с ранами.
+- Лом:вес/разгон/глубокие раны/череп/подъём живых.
   Range_CrowbarContactPresentsRecoilBeforeHitStop/
-  Range_CrowbarHitsLeaveWoundsAndZombieRises/Range_CrowbarFatalHeadContactFracturesOnce
-  passed;кадры проверены.
+  Range_CrowbarHitsLeaveWoundsAndZombieRises/Range_CrowbarFatalHeadContactFracturesOnce passed.
+
+Прежние кадры проверены.
 
 ### 2026-10-31
 

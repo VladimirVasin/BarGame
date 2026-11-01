@@ -6,6 +6,8 @@ namespace BarPromenade
     public sealed partial class CombatActor
     {
         private CombatDamagePose damagePose;
+        private CombatZombieBottleDestruction bottleDestruction;
+        internal bool HasBottleGlass => bottleDestruction != null;
         private float impactRecoveryGrace;
         private int standingCrowbarHits, lastStandingCrowbarSequence;
         private CombatActor lastStandingCrowbarSource;
@@ -61,6 +63,13 @@ namespace BarPromenade
             footwork.ImpactMotion = ImpactMotion;
             if (supportGrip != null) supportGrip.ImpactMotion = ImpactMotion;
             Hurtboxes = new CombatHurtboxes(DamageRigRoot, transform, Ragdoll.PhysicsController);
+            CombatZombieOrdinaryAppearance bottleAppearance = npc != null
+                ? npc.GetComponentInChildren<CombatZombieOrdinaryAppearance>(true) : null;
+            if (IsOrdinaryZombie && bottleAppearance != null && bottleAppearance.Variant >= 0)
+            {
+                bottleDestruction = gameObject.AddComponent<CombatZombieBottleDestruction>();
+                bottleDestruction.Initialize(this);
+            }
         }
 
         private void PresentDamagePose()
@@ -89,6 +98,11 @@ namespace BarPromenade
 
         private void PublishImpact(CombatImpact impact, MeleePhase? targetPhaseBefore = null, bool preserveRoomHeadPain = false)
         {
+            if (bottleDestruction != null)
+            {
+                impact = bottleDestruction.Annotate(impact);
+                bottleDestruction.ApplyImpact(impact);
+            }
             // Real contacts interrupt special poses. The Room's own nonphysical
             // receipt alone preserves the head already held for that sequence.
             EndRoomAttackPose();

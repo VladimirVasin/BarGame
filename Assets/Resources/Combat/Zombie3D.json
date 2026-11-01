@@ -791,9 +791,9 @@
     }
   ],
   "assets": {
-    "ZombieFace1.png": "b05ea3753db48c6b54259807879a0e8783e37f32a0d7a4c61e3f684860a155d4",
-    "ZombieFace2.png": "903b9101de3a5d32559920456466744145ae346efbc76cefe37b80149c1cc831",
-    "ZombieFace3.png": "81c197043a4f80d04daafc506f3fd7b9cef2a12c51fda5436d14a3d22b756fc5",
+    "ZombieFace1.png": "5fe5ca6c49f86b01513d98ef7a985e151a3d49b73127849596c673247ef08095",
+    "ZombieFace2.png": "69b72be023d6ca200c5eab8386427f2961d5a215a8860bddb35ed6cc8a1febdc",
+    "ZombieFace3.png": "a1e9085e38bac6c4d9219d93c9574eefda9d75b49bbb99787797853143c70291",
     "ZombieReveal.wav": "9421798877a96f5c66736f730fac10b33566dd000137e9914c0e7476c91f73a2",
     "ZombieGroan.wav": "9fc3b9a0afeb3d810e8101a932194f57c8f4f7935dba97874c39d257fc5fbe8b",
     "ZombieGroan2.wav": "2efe6c3dbaf6ce29637506d981257661354637e85f24a9b32ea375760e92b92e",
@@ -808,6 +808,6 @@
     "ZombieDeath2.wav": "cca21d9868d03a6944e62a833cbafab39326ec4e093a8da2f80cd2e61e6548a1",
     "ZombieFrenzy.wav": "80bb6db2b71cfd49e2752313f11ce3dc46cf77d43478a4b8109b1bb763cf39eb",
     "ZombieFrenzy2.wav": "448b6ebaea5ca9317cf90e6dc8b7613774770726b9cf407e1229713c7e4de214",
-    "ZombieCrateAtlas.png": "0f6a7e134f566a6428b5bb4f46f5aa56e40069df21dcbfe4dac9f6d567476d38"
+    "ZombieCrateAtlas.png": "2747c83174eba8a79f75333653e463ed00e6ee12b1ca42ba15cee6d236db901f"
   }
 }

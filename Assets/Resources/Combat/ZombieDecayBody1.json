@@ -6,7 +6,7 @@
   "geometry_owner": "authored_decay_sculpt",
   "bounds_space": "unity_metres",
   "signature": "e9bc58bd8230f1eec81b5ab4eeab66db6417be8d3a90374307e34b148e8d9338",
-  "atlas_sha256": "d0806f10da9fdfd00d855ae92fb347bf1fad90e95b7f2685929e3ebcf11aa3cb",
+  "atlas_sha256": "1fec2de16afcc33b4a37c2299a51800651c8e3d6de6678bdb166d8b656021a9b",
   "meshes": [
     {
       "name": "GEO_Arm.L",

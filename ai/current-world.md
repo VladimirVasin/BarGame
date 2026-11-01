@@ -2011,20 +2011,20 @@ cemetery:own interiors/returns.
   Selection:bone contour/dark edge/wash. Back-wall cabinet→lamp;
   crowbar-brace→cloth/cart/catch→shared pickup. Hidden carry/high-right
   gait/arc/parry/context kept. BirdLift↓open captive steel tray/visible
-  pistol;source1×,immediate equip/aim/fire/reload/stow. First8+0;
+  pistol;source1×. Take→same-rig lamp attach/crowbar catch/pistol weight→equip.
+  Grounded docks/neutral ends/camera return. Pre-Take
+  cancel keeps source;post-Take keeps item/cleans owners. First8+0;
   travel/retry keep ammo. Story:owned crowbar/pistol,ammo/pools;
   shotgun0/Debug3.
-  Stage 2: 18 Loops (variants 0/1) have bottle torsos; three Carriers (2)
-  bear inverted bottles on their backs. Giant dirty glass dominates both.
-  The Carrier's second head hangs from the bottle's mouth. Confirmed pickup
-  and modal exit trigger staggered waking. Up to four move; the first
+  Stage2:18 Loops(0/1)/3 Carriers(2),bottle bodies per art§7. Pickup and full
+  camera/modal return trigger staggered waking. Up to four move; the first
   contact is solo, then two may attack with spaced commitments. A hero hit
   gives 1.3 s grace. Routes respect floors and clear passage; supported entry
   to stage 3 above 14 m ends pursuit. Retry resets the crowd and hero at room 2,
   keeping puzzles and crowbar. Travel keeps waking/defeats but resets surviving
   positions; New Game clears all. Passive views have no CombatActor; nearby
   waking promotes them. Bodies, voices and simulation are bounded, unmeasured.
-  Lamp/fan/weight/vent/cloth:SFX/pause/cleanup. Metre maps/statue/light kept;
+  Lamp/fan/weight/vent/cloth:SFX/pause/cleanup;metre maps/statue/light kept;
   first flight:2Hard/22–24m/lens-hum-contactor;return restores. Solve→next door
   light sameframe across floor/range;after3 none/guide1of2. Outside black
   ambient/sun/fog/reflection/grain;supports hide ends/floor;chest birdshadows.

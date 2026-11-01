@@ -1,0 +1,1334 @@
+{
+  "design_id": "zombie_bottle_fracture_v1",
+  "generator": "build-combat-zombie-bottle-fracture-3d-model.py",
+  "coordinate_space": "source_body_unity_metres",
+  "runtime_anchor": "canonical_imported_chest",
+  "cell_count": 35,
+  "wall_thickness_m": 0.006,
+  "variants": [
+    {
+      "variant": 0,
+      "anchor": "Variant0",
+      "cell_count": 35,
+      "bounds_min": [
+        -0.30500001,
+        0.89999998,
+        -0.26499999
+      ],
+      "bounds_max": [
+        0.30500001,
+        1.78499997,
+        0.235
+      ],
+      "source_body_sha256": "35b88a0402c0d675a64c5aa5878f2d7e092308fd7560d4997609a2d7f219a39b",
+      "source_editable_sha256": "e7fc454fffa4797799d8e7f35f331ef86bfa4fad5b6e6b66cdb95f195f60d2ba",
+      "source_surface_sha256": "273e9a769e65046f46ad5a9916a8c79ae90882737a8e0dfc66b9ec338ff2cc9f",
+      "source_area_m2": 1.52280924,
+      "cells": [
+        {
+          "index": 0,
+          "name": "Cell_00",
+          "volume_m3": 0.0004374179,
+          "source_center": [
+            0.16879819,
+            0.93740869,
+            0.04065971
+          ],
+          "vertices": 218,
+          "triangles": 424
+        },
+        {
+          "index": 1,
+          "name": "Cell_01",
+          "volume_m3": 0.0004237163,
+          "source_center": [
+            0.05279429,
+            0.93917471,
+            0.12900966
+          ],
+          "vertices": 218,
+          "triangles": 424
+        },
+        {
+          "index": 2,
+          "name": "Cell_02",
+          "volume_m3": 0.0004227838,
+          "source_center": [
+            -0.10451926,
+            0.93740869,
+            0.10833374
+          ],
+          "vertices": 218,
+          "triangles": 424
+        },
+        {
+          "index": 3,
+          "name": "Cell_03",
+          "volume_m3": 0.0004443702,
+          "source_center": [
+            -0.17725769,
+            0.93891943,
+            -0.00526011
+          ],
+          "vertices": 222,
+          "triangles": 436
+        },
+        {
+          "index": 4,
+          "name": "Cell_04",
+          "volume_m3": 0.0003796011,
+          "source_center": [
+            -0.12497891,
+            0.9375236,
+            -0.12738767
+          ],
+          "vertices": 216,
+          "triangles": 420
+        },
+        {
+          "index": 5,
+          "name": "Cell_05",
+          "volume_m3": 0.0005216311,
+          "source_center": [
+            0.0308052,
+            0.93747681,
+            -0.16619422
+          ],
+          "vertices": 212,
+          "triangles": 416
+        },
+        {
+          "index": 6,
+          "name": "Cell_06",
+          "volume_m3": 0.0003842049,
+          "source_center": [
+            0.15534209,
+            0.93718523,
+            -0.08739454
+          ],
+          "vertices": 222,
+          "triangles": 432
+        },
+        {
+          "index": 7,
+          "name": "Cell_07",
+          "volume_m3": 0.00015757,
+          "source_center": [
+            0.22468922,
+            1.20139992,
+            0.14026754
+          ],
+          "vertices": 50,
+          "triangles": 68
+        },
+        {
+          "index": 8,
+          "name": "Cell_08",
+          "volume_m3": 0.0003077927,
+          "source_center": [
+            0.01632162,
+            1.14749992,
+            0.22362073
+          ],
+          "vertices": 68,
+          "triangles": 100
+        },
+        {
+          "index": 9,
+          "name": "Cell_09",
+          "volume_m3": 0.0001951615,
+          "source_center": [
+            -0.21442084,
+            1.18068945,
+            0.14522165
+          ],
+          "vertices": 58,
+          "triangles": 80
+        },
+        {
+          "index": 10,
+          "name": "Cell_10",
+          "volume_m3": 0.0002268297,
+          "source_center": [
+            -0.2868818,
+            1.16033328,
+            -0.06957456
+          ],
+          "vertices": 60,
+          "triangles": 88
+        },
+        {
+          "index": 11,
+          "name": "Cell_11",
+          "volume_m3": 0.0002581651,
+          "source_center": [
+            -0.14458078,
+            1.15953112,
+            -0.22231488
+          ],
+          "vertices": 64,
+          "triangles": 92
+        },
+        {
+          "index": 12,
+          "name": "Cell_12",
+          "volume_m3": 0.0002044743,
+          "source_center": [
+            0.13557632,
+            1.18314815,
+            -0.22937764
+          ],
+          "vertices": 54,
+          "triangles": 76
+        },
+        {
+          "index": 13,
+          "name": "Cell_13",
+          "volume_m3": 0.0002614477,
+          "source_center": [
+            0.28018641,
+            1.14749992,
+            -0.08114109
+          ],
+          "vertices": 68,
+          "triangles": 100
+        },
+        {
+          "index": 14,
+          "name": "Cell_14",
+          "volume_m3": 0.0002733563,
+          "source_center": [
+            0.26517206,
+            1.3505106,
+            0.05015668
+          ],
+          "vertices": 98,
+          "triangles": 188
+        },
+        {
+          "index": 15,
+          "name": "Cell_15",
+          "volume_m3": 0.0002860152,
+          "source_center": [
+            0.11124686,
+            1.34066713,
+            0.19672729
+          ],
+          "vertices": 90,
+          "triangles": 172
+        },
+        {
+          "index": 16,
+          "name": "Cell_16",
+          "volume_m3": 0.0002874388,
+          "source_center": [
+            -0.13575202,
+            1.34542596,
+            0.18445104
+          ],
+          "vertices": 94,
+          "triangles": 180
+        },
+        {
+          "index": 17,
+          "name": "Cell_17",
+          "volume_m3": 0.0002608347,
+          "source_center": [
+            -0.27392846,
+            1.34617054,
+            0.02830575
+          ],
+          "vertices": 94,
+          "triangles": 180
+        },
+        {
+          "index": 18,
+          "name": "Cell_18",
+          "volume_m3": 0.0002649467,
+          "source_center": [
+            -0.20952122,
+            1.34271777,
+            -0.16729963
+          ],
+          "vertices": 92,
+          "triangles": 176
+        },
+        {
+          "index": 19,
+          "name": "Cell_19",
+          "volume_m3": 0.00031634,
+          "source_center": [
+            0.01357951,
+            1.3505106,
+            -0.24230464
+          ],
+          "vertices": 98,
+          "triangles": 188
+        },
+        {
+          "index": 20,
+          "name": "Cell_20",
+          "volume_m3": 0.000253244,
+          "source_center": [
+            0.22678605,
+            1.34066713,
+            -0.15112177
+          ],
+          "vertices": 90,
+          "triangles": 172
+        },
+        {
+          "index": 21,
+          "name": "Cell_21",
+          "volume_m3": 0.000192243,
+          "source_center": [
+            0.11295984,
+            1.52546036,
+            0.05581448
+          ],
+          "vertices": 130,
+          "triangles": 256
+        },
+        {
+          "index": 22,
+          "name": "Cell_22",
+          "volume_m3": 0.0002235029,
+          "source_center": [
+            0.00372174,
+            1.5139029,
+            0.11276195
+          ],
+          "vertices": 146,
+          "triangles": 284
+        },
+        {
+          "index": 23,
+          "name": "Cell_23",
+          "volume_m3": 0.0001917875,
+          "source_center": [
+            -0.10738553,
+            1.52598369,
+            0.06038522
+          ],
+          "vertices": 132,
+          "triangles": 256
+        },
+        {
+          "index": 24,
+          "name": "Cell_24",
+          "volume_m3": 0.0002049688,
+          "source_center": [
+            -0.14735325,
+            1.51830864,
+            -0.04137013
+          ],
+          "vertices": 142,
+          "triangles": 280
+        },
+        {
+          "index": 25,
+          "name": "Cell_25",
+          "volume_m3": 0.0001998132,
+          "source_center": [
+            -0.07023127,
+            1.52358079,
+            -0.11848446
+          ],
+          "vertices": 134,
+          "triangles": 260
+        },
+        {
+          "index": 26,
+          "name": "Cell_26",
+          "volume_m3": 0.0002090991,
+          "source_center": [
+            0.06117836,
+            1.52352822,
+            -0.12362655
+          ],
+          "vertices": 136,
+          "triangles": 268
+        },
+        {
+          "index": 27,
+          "name": "Cell_27",
+          "volume_m3": 0.0002008639,
+          "source_center": [
+            0.14484935,
+            1.51711142,
+            -0.04946449
+          ],
+          "vertices": 142,
+          "triangles": 276
+        },
+        {
+          "index": 28,
+          "name": "Cell_28",
+          "volume_m3": 0.0001140159,
+          "source_center": [
+            0.03023441,
+            1.73766124,
+            -0.00516709
+          ],
+          "vertices": 308,
+          "triangles": 608
+        },
+        {
+          "index": 29,
+          "name": "Cell_29",
+          "volume_m3": 0.0001149802,
+          "source_center": [
+            0.01125197,
+            1.73561954,
+            0.01682134
+          ],
+          "vertices": 290,
+          "triangles": 572
+        },
+        {
+          "index": 30,
+          "name": "Cell_30",
+          "volume_m3": 0.0001188277,
+          "source_center": [
+            -0.022643,
+            1.7356838,
+            0.0116233
+          ],
+          "vertices": 292,
+          "triangles": 576
+        },
+        {
+          "index": 31,
+          "name": "Cell_31",
+          "volume_m3": 0.000108257,
+          "source_center": [
+            -0.03137113,
+            1.73886251,
+            -0.01408436
+          ],
+          "vertices": 308,
+          "triangles": 608
+        },
+        {
+          "index": 32,
+          "name": "Cell_32",
+          "volume_m3": 0.0001193445,
+          "source_center": [
+            -0.02497341,
+            1.73246622,
+            -0.03733484
+          ],
+          "vertices": 306,
+          "triangles": 604
+        },
+        {
+          "index": 33,
+          "name": "Cell_33",
+          "volume_m3": 0.0001088651,
+          "source_center": [
+            0.00705349,
+            1.7404598,
+            -0.04685261
+          ],
+          "vertices": 282,
+          "triangles": 556
+        },
+        {
+          "index": 34,
+          "name": "Cell_34",
+          "volume_m3": 0.0001164729,
+          "source_center": [
+            0.03051276,
+            1.73385358,
+            -0.02917029
+          ],
+          "vertices": 310,
+          "triangles": 612
+        }
+      ]
+    },
+    {
+      "variant": 1,
+      "anchor": "Variant1",
+      "cell_count": 35,
+      "bounds_min": [
+        -0.30500001,
+        0.89999998,
+        -0.26499999
+      ],
+      "bounds_max": [
+        0.30500001,
+        1.78499997,
+        0.235
+      ],
+      "source_body_sha256": "6f06b9e8d62852bb07863fc584e7d53530b8f8953d4a6ce23c48984551927460",
+      "source_editable_sha256": "6d90169b8375645174cf7e6010aad0ddf9b3bc9558515d101e4ca88cd5b80c3e",
+      "source_surface_sha256": "273e9a769e65046f46ad5a9916a8c79ae90882737a8e0dfc66b9ec338ff2cc9f",
+      "source_area_m2": 1.52280924,
+      "cells": [
+        {
+          "index": 0,
+          "name": "Cell_00",
+          "volume_m3": 0.0004530811,
+          "source_center": [
+            0.16879819,
+            0.93740869,
+            0.04065971
+          ],
+          "vertices": 218,
+          "triangles": 424
+        },
+        {
+          "index": 1,
+          "name": "Cell_01",
+          "volume_m3": 0.0004060877,
+          "source_center": [
+            0.05426263,
+            0.9393186,
+            0.12929745
+          ],
+          "vertices": 220,
+          "triangles": 424
+        },
+        {
+          "index": 2,
+          "name": "Cell_02",
+          "volume_m3": 0.000441193,
+          "source_center": [
+            -0.10451926,
+            0.93740869,
+            0.10833374
+          ],
+          "vertices": 218,
+          "triangles": 424
+        },
+        {
+          "index": 3,
+          "name": "Cell_03",
+          "volume_m3": 0.0004286943,
+          "source_center": [
+            -0.17725769,
+            0.93891943,
+            -0.00526011
+          ],
+          "vertices": 222,
+          "triangles": 436
+        },
+        {
+          "index": 4,
+          "name": "Cell_04",
+          "volume_m3": 0.0003796011,
+          "source_center": [
+            -0.12497891,
+            0.9375236,
+            -0.12738767
+          ],
+          "vertices": 216,
+          "triangles": 420
+        },
+        {
+          "index": 5,
+          "name": "Cell_05",
+          "volume_m3": 0.0005215943,
+          "source_center": [
+            0.02928053,
+            0.93943959,
+            -0.16688624
+          ],
+          "vertices": 214,
+          "triangles": 420
+        },
+        {
+          "index": 6,
+          "name": "Cell_06",
+          "volume_m3": 0.0003842049,
+          "source_center": [
+            0.15534209,
+            0.93718523,
+            -0.08739454
+          ],
+          "vertices": 222,
+          "triangles": 432
+        },
+        {
+          "index": 7,
+          "name": "Cell_07",
+          "volume_m3": 0.0001753046,
+          "source_center": [
+            0.22429009,
+            1.19192302,
+            0.14105207
+          ],
+          "vertices": 52,
+          "triangles": 72
+        },
+        {
+          "index": 8,
+          "name": "Cell_08",
+          "volume_m3": 0.0003077927,
+          "source_center": [
+            0.01632162,
+            1.14749992,
+            0.22362073
+          ],
+          "vertices": 68,
+          "triangles": 100
+        },
+        {
+          "index": 9,
+          "name": "Cell_09",
+          "volume_m3": 0.0001766621,
+          "source_center": [
+            -0.21631983,
+            1.18874979,
+            0.14343137
+          ],
+          "vertices": 56,
+          "triangles": 76
+        },
+        {
+          "index": 10,
+          "name": "Cell_10",
+          "volume_m3": 0.0002426321,
+          "source_center": [
+            -0.28721955,
+            1.15370953,
+            -0.06601956
+          ],
+          "vertices": 62,
+          "triangles": 92
+        },
+        {
+          "index": 11,
+          "name": "Cell_11",
+          "volume_m3": 0.0002390994,
+          "source_center": [
+            -0.14497581,
+            1.16612875,
+            -0.22173658
+          ],
+          "vertices": 62,
+          "triangles": 88
+        },
+        {
+          "index": 12,
+          "name": "Cell_12",
+          "volume_m3": 0.0002235744,
+          "source_center": [
+            0.13430937,
+            1.17499995,
+            -0.23009583
+          ],
+          "vertices": 56,
+          "triangles": 80
+        },
+        {
+          "index": 13,
+          "name": "Cell_13",
+          "volume_m3": 0.0002456572,
+          "source_center": [
+            0.27943447,
+            1.15333331,
+            -0.08314537
+          ],
+          "vertices": 66,
+          "triangles": 96
+        },
+        {
+          "index": 14,
+          "name": "Cell_14",
+          "volume_m3": 0.0002726594,
+          "source_center": [
+            0.2659367,
+            1.3505106,
+            0.04896951
+          ],
+          "vertices": 98,
+          "triangles": 188
+        },
+        {
+          "index": 15,
+          "name": "Cell_15",
+          "volume_m3": 0.0002828459,
+          "source_center": [
+            0.11124686,
+            1.34066713,
+            0.19672729
+          ],
+          "vertices": 90,
+          "triangles": 172
+        },
+        {
+          "index": 16,
+          "name": "Cell_16",
+          "volume_m3": 0.0002949061,
+          "source_center": [
+            -0.13683303,
+            1.34802127,
+            0.18285471
+          ],
+          "vertices": 96,
+          "triangles": 184
+        },
+        {
+          "index": 17,
+          "name": "Cell_17",
+          "volume_m3": 0.0002580194,
+          "source_center": [
+            -0.27498981,
+            1.34347868,
+            0.02784162
+          ],
+          "vertices": 92,
+          "triangles": 176
+        },
+        {
+          "index": 18,
+          "name": "Cell_18",
+          "volume_m3": 0.0002685994,
+          "source_center": [
+            -0.20952122,
+            1.34271777,
+            -0.16729963
+          ],
+          "vertices": 92,
+          "triangles": 176
+        },
+        {
+          "index": 19,
+          "name": "Cell_19",
+          "volume_m3": 0.0003169765,
+          "source_center": [
+            0.01194467,
+            1.3505106,
+            -0.24225426
+          ],
+          "vertices": 98,
+          "triangles": 188
+        },
+        {
+          "index": 20,
+          "name": "Cell_20",
+          "volume_m3": 0.0002522555,
+          "source_center": [
+            0.22755896,
+            1.34271777,
+            -0.14874309
+          ],
+          "vertices": 92,
+          "triangles": 176
+        },
+        {
+          "index": 21,
+          "name": "Cell_21",
+          "volume_m3": 0.0001927434,
+          "source_center": [
+            0.11253502,
+            1.52727151,
+            0.05486628
+          ],
+          "vertices": 132,
+          "triangles": 260
+        },
+        {
+          "index": 22,
+          "name": "Cell_22",
+          "volume_m3": 0.0002228104,
+          "source_center": [
+            0.00677009,
+            1.5139029,
+            0.11264038
+          ],
+          "vertices": 146,
+          "triangles": 284
+        },
+        {
+          "index": 23,
+          "name": "Cell_23",
+          "volume_m3": 0.0001932163,
+          "source_center": [
+            -0.10738553,
+            1.52598369,
+            0.06038522
+          ],
+          "vertices": 132,
+          "triangles": 256
+        },
+        {
+          "index": 24,
+          "name": "Cell_24",
+          "volume_m3": 0.0002030072,
+          "source_center": [
+            -0.14647119,
+            1.51888764,
+            -0.04077518
+          ],
+          "vertices": 144,
+          "triangles": 280
+        },
+        {
+          "index": 25,
+          "name": "Cell_25",
+          "volume_m3": 0.0001946557,
+          "source_center": [
+            -0.06818665,
+            1.52545345,
+            -0.11749727
+          ],
+          "vertices": 132,
+          "triangles": 256
+        },
+        {
+          "index": 26,
+          "name": "Cell_26",
+          "volume_m3": 0.0002137376,
+          "source_center": [
+            0.06252906,
+            1.52173793,
+            -0.12497889
+          ],
+          "vertices": 138,
+          "triangles": 272
+        },
+        {
+          "index": 27,
+          "name": "Cell_27",
+          "volume_m3": 0.0001980944,
+          "source_center": [
+            0.14285178,
+            1.5187844,
+            -0.04919391
+          ],
+          "vertices": 140,
+          "triangles": 272
+        },
+        {
+          "index": 28,
+          "name": "Cell_28",
+          "volume_m3": 0.0001119811,
+          "source_center": [
+            0.02987697,
+            1.73882222,
+            -0.00515663
+          ],
+          "vertices": 306,
+          "triangles": 604
+        },
+        {
+          "index": 29,
+          "name": "Cell_29",
+          "volume_m3": 0.0001172048,
+          "source_center": [
+            0.01158879,
+            1.73441672,
+            0.01695953
+          ],
+          "vertices": 292,
+          "triangles": 576
+        },
+        {
+          "index": 30,
+          "name": "Cell_30",
+          "volume_m3": 0.0001165206,
+          "source_center": [
+            -0.0224856,
+            1.73689544,
+            0.0113775
+          ],
+          "vertices": 290,
+          "triangles": 572
+        },
+        {
+          "index": 31,
+          "name": "Cell_31",
+          "volume_m3": 0.0001102996,
+          "source_center": [
+            -0.03170966,
+            1.73770845,
+            -0.01398403
+          ],
+          "vertices": 310,
+          "triangles": 612
+        },
+        {
+          "index": 32,
+          "name": "Cell_32",
+          "volume_m3": 0.0001193445,
+          "source_center": [
+            -0.02497341,
+            1.73246622,
+            -0.03733484
+          ],
+          "vertices": 306,
+          "triangles": 604
+        },
+        {
+          "index": 33,
+          "name": "Cell_33",
+          "volume_m3": 0.0001088655,
+          "source_center": [
+            0.00745385,
+            1.7404598,
+            -0.04689143
+          ],
+          "vertices": 282,
+          "triangles": 556
+        },
+        {
+          "index": 34,
+          "name": "Cell_34",
+          "volume_m3": 0.0001164729,
+          "source_center": [
+            0.03051276,
+            1.73385358,
+            -0.02917029
+          ],
+          "vertices": 310,
+          "triangles": 612
+        }
+      ]
+    },
+    {
+      "variant": 2,
+      "anchor": "Variant2",
+      "cell_count": 35,
+      "bounds_min": [
+        -0.44999999,
+        1.03999996,
+        -0.31
+      ],
+      "bounds_max": [
+        0.44999999,
+        2.31999993,
+        0.5
+      ],
+      "source_body_sha256": "a92cd3c82d23557bbbf5245e5c0c3c9ea0e21e4f261dc53972b0ab0ec986a48e",
+      "source_editable_sha256": "ce7a0129d61a0cd08745ead13ffec84694a729f1a9bf753d8f0923d6d2588346",
+      "source_surface_sha256": "8582d7ed01a90cde16f0ab0bf604946b1dbe167fd8fae8cbb7021150dfe024a9",
+      "source_area_m2": 3.03301378,
+      "cells": [
+        {
+          "index": 0,
+          "name": "Cell_00",
+          "volume_m3": 0.0001723025,
+          "source_center": [
+            0.06612539,
+            1.10978675,
+            -0.16128676
+          ],
+          "vertices": 164,
+          "triangles": 320
+        },
+        {
+          "index": 1,
+          "name": "Cell_01",
+          "volume_m3": 0.0001785071,
+          "source_center": [
+            0.02380254,
+            1.11297083,
+            -0.12414888
+          ],
+          "vertices": 170,
+          "triangles": 320
+        },
+        {
+          "index": 2,
+          "name": "Cell_02",
+          "volume_m3": 0.0001870077,
+          "source_center": [
+            -0.03860223,
+            1.11026812,
+            -0.13172163
+          ],
+          "vertices": 168,
+          "triangles": 320
+        },
+        {
+          "index": 3,
+          "name": "Cell_03",
+          "volume_m3": 0.0001747626,
+          "source_center": [
+            -0.07068489,
+            1.11256039,
+            -0.17408702
+          ],
+          "vertices": 166,
+          "triangles": 324
+        },
+        {
+          "index": 4,
+          "name": "Cell_04",
+          "volume_m3": 0.000190963,
+          "source_center": [
+            -0.05288003,
+            1.11198187,
+            -0.22395016
+          ],
+          "vertices": 164,
+          "triangles": 316
+        },
+        {
+          "index": 5,
+          "name": "Cell_05",
+          "volume_m3": 0.0001921925,
+          "source_center": [
+            0.00900359,
+            1.11528146,
+            -0.24411665
+          ],
+          "vertices": 160,
+          "triangles": 312
+        },
+        {
+          "index": 6,
+          "name": "Cell_06",
+          "volume_m3": 0.0001950851,
+          "source_center": [
+            0.06208131,
+            1.11111462,
+            -0.21198592
+          ],
+          "vertices": 166,
+          "triangles": 320
+        },
+        {
+          "index": 7,
+          "name": "Cell_07",
+          "volume_m3": 0.0004760247,
+          "source_center": [
+            0.17861159,
+            1.44990766,
+            0.09495696
+          ],
+          "vertices": 108,
+          "triangles": 208
+        },
+        {
+          "index": 8,
+          "name": "Cell_08",
+          "volume_m3": 0.0005168129,
+          "source_center": [
+            0.00382852,
+            1.40594351,
+            0.11478559
+          ],
+          "vertices": 106,
+          "triangles": 208
+        },
+        {
+          "index": 9,
+          "name": "Cell_09",
+          "volume_m3": 0.0004809176,
+          "source_center": [
+            -0.17152309,
+            1.45794129,
+            0.11275888
+          ],
+          "vertices": 102,
+          "triangles": 200
+        },
+        {
+          "index": 10,
+          "name": "Cell_10",
+          "volume_m3": 0.0002650196,
+          "source_center": [
+            -0.1853344,
+            1.40951955,
+            -0.07260485
+          ],
+          "vertices": 104,
+          "triangles": 204
+        },
+        {
+          "index": 11,
+          "name": "Cell_11",
+          "volume_m3": 0.0002698463,
+          "source_center": [
+            -0.089749,
+            1.43875027,
+            -0.17526396
+          ],
+          "vertices": 104,
+          "triangles": 204
+        },
+        {
+          "index": 12,
+          "name": "Cell_12",
+          "volume_m3": 0.0002517225,
+          "source_center": [
+            0.0776766,
+            1.43273616,
+            -0.17930718
+          ],
+          "vertices": 106,
+          "triangles": 204
+        },
+        {
+          "index": 13,
+          "name": "Cell_13",
+          "volume_m3": 0.0002900197,
+          "source_center": [
+            0.18702844,
+            1.41421604,
+            -0.07216553
+          ],
+          "vertices": 102,
+          "triangles": 200
+        },
+        {
+          "index": 14,
+          "name": "Cell_14",
+          "volume_m3": 0.0004207673,
+          "source_center": [
+            0.35760063,
+            1.67026985,
+            0.20359306
+          ],
+          "vertices": 74,
+          "triangles": 140
+        },
+        {
+          "index": 15,
+          "name": "Cell_15",
+          "volume_m3": 0.0005880417,
+          "source_center": [
+            0.14336348,
+            1.65820515,
+            0.38894412
+          ],
+          "vertices": 78,
+          "triangles": 152
+        },
+        {
+          "index": 16,
+          "name": "Cell_16",
+          "volume_m3": 0.0005431496,
+          "source_center": [
+            -0.17452982,
+            1.67026997,
+            0.39059624
+          ],
+          "vertices": 74,
+          "triangles": 140
+        },
+        {
+          "index": 17,
+          "name": "Cell_17",
+          "volume_m3": 0.0004576579,
+          "source_center": [
+            -0.35942814,
+            1.65974355,
+            0.16263171
+          ],
+          "vertices": 78,
+          "triangles": 148
+        },
+        {
+          "index": 18,
+          "name": "Cell_18",
+          "volume_m3": 0.0004707094,
+          "source_center": [
+            -0.27799633,
+            1.6610254,
+            -0.07234671
+          ],
+          "vertices": 78,
+          "triangles": 148
+        },
+        {
+          "index": 19,
+          "name": "Cell_19",
+          "volume_m3": 0.0005159384,
+          "source_center": [
+            0.01576572,
+            1.6757139,
+            -0.17845064
+          ],
+          "vertices": 70,
+          "triangles": 136
+        },
+        {
+          "index": 20,
+          "name": "Cell_20",
+          "volume_m3": 0.0004812393,
+          "source_center": [
+            0.28874677,
+            1.65820515,
+            -0.06155079
+          ],
+          "vertices": 78,
+          "triangles": 152
+        },
+        {
+          "index": 21,
+          "name": "Cell_21",
+          "volume_m3": 0.0005159052,
+          "source_center": [
+            0.32845241,
+            1.92499995,
+            0.32862931
+          ],
+          "vertices": 68,
+          "triangles": 100
+        },
+        {
+          "index": 22,
+          "name": "Cell_22",
+          "volume_m3": 0.0005818451,
+          "source_center": [
+            0.02261007,
+            1.92499995,
+            0.4654896
+          ],
+          "vertices": 68,
+          "triangles": 100
+        },
+        {
+          "index": 23,
+          "name": "Cell_23",
+          "volume_m3": 0.000493341,
+          "source_center": [
+            -0.30041382,
+            1.9333334,
+            0.35659352
+          ],
+          "vertices": 66,
+          "triangles": 96
+        },
+        {
+          "index": 24,
+          "name": "Cell_24",
+          "volume_m3": 0.0004880524,
+          "source_center": [
+            -0.3970257,
+            1.92499995,
+            0.08541624
+          ],
+          "vertices": 68,
+          "triangles": 100
+        },
+        {
+          "index": 25,
+          "name": "Cell_25",
+          "volume_m3": 0.0005390102,
+          "source_center": [
+            -0.19789666,
+            1.9333334,
+            -0.14391568
+          ],
+          "vertices": 66,
+          "triangles": 96
+        },
+        {
+          "index": 26,
+          "name": "Cell_26",
+          "volume_m3": 0.0005867564,
+          "source_center": [
+            0.15408304,
+            1.92499995,
+            -0.16119759
+          ],
+          "vertices": 68,
+          "triangles": 100
+        },
+        {
+          "index": 27,
+          "name": "Cell_27",
+          "volume_m3": 0.0004953143,
+          "source_center": [
+            0.38696328,
+            1.92499995,
+            0.04972725
+          ],
+          "vertices": 68,
+          "triangles": 100
+        },
+        {
+          "index": 28,
+          "name": "Cell_28",
+          "volume_m3": 0.0008747987,
+          "source_center": [
+            0.25866377,
+            2.25048995,
+            0.219042
+          ],
+          "vertices": 264,
+          "triangles": 512
+        },
+        {
+          "index": 29,
+          "name": "Cell_29",
+          "volume_m3": 0.0009164565,
+          "source_center": [
+            0.08857932,
+            2.24956155,
+            0.3636173
+          ],
+          "vertices": 252,
+          "triangles": 488
+        },
+        {
+          "index": 30,
+          "name": "Cell_30",
+          "volume_m3": 0.0009231995,
+          "source_center": [
+            -0.1634867,
+            2.24972224,
+            0.33261272
+          ],
+          "vertices": 254,
+          "triangles": 492
+        },
+        {
+          "index": 31,
+          "name": "Cell_31",
+          "volume_m3": 0.0008536784,
+          "source_center": [
+            -0.27810144,
+            2.25034118,
+            0.15888415
+          ],
+          "vertices": 262,
+          "triangles": 512
+        },
+        {
+          "index": 32,
+          "name": "Cell_32",
+          "volume_m3": 0.000892358,
+          "source_center": [
+            -0.19925886,
+            2.24972224,
+            -0.02926665
+          ],
+          "vertices": 254,
+          "triangles": 492
+        },
+        {
+          "index": 33,
+          "name": "Cell_33",
+          "volume_m3": 0.00094175,
+          "source_center": [
+            0.04246695,
+            2.24972224,
+            -0.0902839
+          ],
+          "vertices": 254,
+          "triangles": 492
+        },
+        {
+          "index": 34,
+          "name": "Cell_34",
+          "volume_m3": 0.0008728683,
+          "source_center": [
+            0.24803458,
+            2.24988055,
+            0.02416927
+          ],
+          "vertices": 256,
+          "triangles": 500
+        }
+      ]
+    }
+  ],
+  "signature": "40d83d336cf8b2a35a9aad4ad4dae2c1a48d7d046a5119b76572c28b49bdf1fd"
+}

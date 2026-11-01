@@ -442,6 +442,7 @@ namespace BarPromenade
                     localPoint, weaponSpeed, source.IsCrane ? CombatImpactKind.Hook : CombatImpactKind.Unarmed);
             MeleePhase phaseBefore = State.Phase;
             bool postmortem = State.IsDefeated;
+            bool glassContact = !detachedPart && bottleDestruction != null && bottleDestruction.ContainsGlassPoint(point);
             receivedDuringStep = State.Phase == MeleePhase.Step;
             float healthBefore = State.Health;
             BodyDamageRegion region = bodyRegion ?? CombatBodyAnatomy.ToRegion(part);
@@ -476,16 +477,17 @@ namespace BarPromenade
             switch (result)
             {
                 case MeleeHitResult.Hit:
-                    RetroAudio.PlayAt(RetroSfxId.SpadeBite, point, Mathf.Lerp(.8f, 1f, power));
+                    if (!glassContact) RetroAudio.PlayAt(RetroSfxId.SpadeBite, point, Mathf.Lerp(.8f, 1f, power));
                     if (!postmortem && !detachedPart) reaction = null;
                     break;
                 case MeleeHitResult.GuardBroken:
-                    RetroAudio.PlayAt(RetroSfxId.SpadeBite, point, 1f);
+                    if (!glassContact) RetroAudio.PlayAt(RetroSfxId.SpadeBite, point, 1f);
                     RetroAudio.PlayAt(RetroSfxId.StoneTamp, transform.position + Vector3.up, .6f);
                     reaction = null;
                     break;
                 case MeleeHitResult.Blocked:
-                    RetroAudio.PlayAt(unarmed ? RetroSfxId.SpadeBite : RetroSfxId.SpadeGlance, point, .55f);
+                    if (!glassContact || !unarmed)
+                        RetroAudio.PlayAt(unarmed ? RetroSfxId.SpadeBite : RetroSfxId.SpadeGlance, point, .55f);
                     source.Shove(-direction, .04f, .12f);
                     reaction = guardImpact;
                     break;
@@ -501,6 +503,7 @@ namespace BarPromenade
                 ResolveMeleeImpactImpulse(source, direction, power, weaponSpeed, result),
                 kind: source.IsCrane ? CombatImpactKind.Hook : unarmed ? CombatImpactKind.Unarmed : CombatImpactKind.Weapon,
                 woundDamage: source.IsCrane ? requested : unarmed ? 0f : requested, bodyRegion: bodyRegion, bodyPatch: bodyPatch, detachedPart: detachedPart);
+            if (glassContact) impact = impact.WithGlassContact();
             // A strong fatal torso strike hands the live pose to physics before
             // publishing its momentum, just like a fatal projectile contact.
             bool immediateFall = !postmortem && !detachedPart && State.IsDefeated &&

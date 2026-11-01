@@ -43,6 +43,7 @@ namespace BarPromenade
         public WorldItemPickup FlashlightPickup { get; private set; }
         public WorldItemPickup CrowbarPickup { get; private set; }
         public WorldItemPickup PistolPickup { get; private set; }
+        public StairwellPickupCinematicController PickupCinematics { get; private set; }
         private Renderer[] crowbarControlRenderers;
         private readonly Bounds[] viewBounds = new Bounds[3];
         private readonly bool[] hasViewBounds = new bool[3];
@@ -160,6 +161,8 @@ namespace BarPromenade
             Controls = controls.AsReadOnly();
             PuzzleMode = gameObject.AddComponent<StairwellLabyrinthPuzzleModeController>();
             PuzzleMode.Initialize(this, player, controller);
+            PickupCinematics = gameObject.AddComponent<StairwellPickupCinematicController>();
+            PickupCinematics.Initialize(player, controller);
             CreateFlashlightPickup();
             CreateCrowbarPickup();
             CreatePistolPickup();
@@ -378,6 +381,9 @@ namespace BarPromenade
             Vector3 itemPosition = FlashlightPickup.transform.position;
             FlashlightPickup.transform.position = transform.TransformPoint(StairwellLabyrinthManifest.Vector(plan.interaction_position));
             FlashlightPickup.Model.position += itemPosition - FlashlightPickup.transform.position;
+            PickupCinematics.Bind(FlashlightPickup,
+                transform.TransformPoint(StairwellLabyrinthManifest.Vector(plan.item_position) + Vector3.up * .0275f),
+                transform.TransformPoint(new Vector3(0f, 8.4f, 0f)).y, transform.TransformDirection(Quaternion.Euler(0f, -45f, 0f) * Vector3.forward));
         }
 
         private void CreateCrowbarPickup()
@@ -392,6 +398,9 @@ namespace BarPromenade
             crowbarControlRenderers = CrowbarPickup.Model.GetComponentsInChildren<Renderer>(true);
             // The actual weapon model keeps its authored metre scale; this is also the pickup model.
             SetCrowbar(0f);
+            PickupCinematics.Bind(CrowbarPickup,
+                transform.TransformPoint(StairwellLabyrinthManifest.Vector(plan.braced_position) + Vector3.up * .28f),
+                transform.TransformPoint(new Vector3(0f, 12f, 0f)).y, -transform.right);
         }
 
         private void CreatePistolPickup()
@@ -404,6 +413,10 @@ namespace BarPromenade
             if (PistolPickup == null) return;
             pistolTrigger = PistolPickup.GetComponent<Collider>();
             SetPistol(0f);
+            PickupCinematics.Bind(PistolPickup,
+                transform.TransformPoint(StairwellLabyrinthManifest.Vector(plan.item_position) +
+                    StairwellLabyrinthManifest.Vector(plan.travel) + Vector3.up * .0265f),
+                transform.TransformPoint(new Vector3(0f, 15.6f, 0f)).y, -transform.right);
         }
 
         private void SetPistol(float fraction)

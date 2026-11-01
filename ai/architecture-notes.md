@@ -1,34 +1,38 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-11-01 — bottle fracture, user:**
+  Blender cells→holes/shards. Material tagged before fracture;glass
+  skips blood/skull/flesh/NPC torso derivatives. Exact queries/rig/UV/mats/HP;
+  reset/pause/off/unload;24FX kept;unmeasured;§6/16/21/art9.
+
+- **Accepted 2026-11-01 — Stairwell pickup cinematics, user:**
+  Shared Take→positioned same-rig lamp attach/click,crowbar catch,pistol weight/
+  grip→equip;independent docks/neutral ends. Preflight before credit;postcredit
+  cancel keeps item/cleans owners. Input/crowd wait camera;foley/pause/off/unload.
+  24FX kept;unmeasured;§16/21/art9.
+
 - **Accepted 2026-11-01 — 16:9 target, user:**
-  4:3 unsupported;camera/UI target16:9,no mandatory4:3 proof. Legacy
+  Target16:9;4:3 unsupported/no proof. Legacy
   `graphics.aspect_4_3` stays default-off:centre crop/bars,same vertical FOV/
   camera rect,aspect≤4:3 clamps1/fullscreen IMGUI. No runtime removal.
 
 - **Accepted architecture exception 2026-11-01 — third puzzle pistol, user:**
-  BirdLift:gate3↑/open captive tray↓;pre-solve pistol visible;E/shared source1×;
-  cancel keeps. Rig:immediate equip/aim/fire/reload/stow;first8+0,travel/retry keep
-  ammo. Story:owned crowbar/pistol,ammo/pools;shotgun0/Debug3.
-  Blender rails/travel/manifest;preview/commit;pause/cancel/off restore endpoints.
-  Physics/cache/clue/voice/lore0;events/shared assets-materials;loads/clones0;
-  Unmeasured. All24 kept:black/SSR0/saved item DoF;worn steel/bevels/
-  pistol reused;new light/pass/particle0;FX-off readable;§6/16/21/art9.
+  BirdLift:gate3↑/captive open tray↓;pistol visible before solve;shared source1×,
+  cancel keeps;rig equip/aim/fire/reload/stow;first8+0,travel/retry ammo kept.
+  Warehouse:owned bar/pistol/ammo/pools;shotgun0/Debug3.
+  Blender rails/travel/manifest;preview/commit/pause/cancel/off restore endpoints.
+  Physics/cache/clue/voice/lore/loads/clones0;shared assets/mats;unmeasured.
+  24FX:black/SSR0/savedDoF/worn steel/bevels;light/pass/particle0;FX-off;§6/16/21/art9.
 
 - **Accepted architecture exception 2026-11-01 — Stairwell zombies:**
-  `Zombie`: 18 Loops (variants 0/1), three Carriers (2). Giant bottles dominate
-  torsos or backs (art §7), without labels or brands. They are the hero's
-  perception; names stay outside fiction. Other enemies/NPCs are unchanged.
-  Stage two wakes after confirmed crowbar pickup and modal exit only.
-  First actual contact is solo; then up to four move and two attack, with
-  spaced commitments and 1.3 s hit grace. Retreat and bypass remain possible;
-  room three is safe. Retry keeps puzzles and crowbar; travel retains
-  progress, New Game resets it. Hero owns input/step; encounter owns contacts
-  and height-aware routing. Passive bodies have no AI/physics/audio; assets
-  are shared, rigs/voices/remains capped. Performance is unmeasured.
-  All 24 effects keep their owners/settings; labyrinth lighting stays black.
-  No new lights/passes, speech or lore; no act/scale changes, forced camera,
-  strobe or story death. Keep FX-off readability, §16/21 and nine art checks.
+  Zombie:18 Loops(0/1)/3 Carriers(2),giant unbranded bottle torso/back(art§7).
+  Hero perception;names outside fiction;other forms kept. Crowbar/modal return
+  wakes stage2. First solo;≤4 movers/2 attackers,spaced hits/1.3s grace.
+  Retreat/bypass;room3 safe. Retry:puzzles/crowbar;travel:progress;New Game reset.
+  Hero:input/step;encounter:height routes/contacts. Passive:no AI/physics/audio;
+  shared assets/capped rigs/voices/remains;unmeasured. All24/black kept;new light/
+  pass/speech/lore/act/scale/forced camera/strobe/story death0;FX-off;§16/21/art9.
 
 - **Accepted 2026-10-31 — crowbar equipment and gait, user:**
   Inv after-modal draw/stow;hidden bar/holder/dock0.
@@ -72,10 +76,10 @@
 
 - **Accepted exception 2026-10-30 — puzzle mode/chest lamp:**
   Front panel/levers fit16:9;hero hidden/shared grips/head-roll0.
-  A/D/←→ select;E queues1 short action;Q exits. Mounted levers;selection alone:
-  bone contour/dark edge/surface wash. Back-wall cabinet→shared lamp pickup/
-  equip/session. Debug/lazy factory/leases kept;story grant/reset0.
-  All24 owners kept;new light/GI/SSR/post0;cost unmeasured;§6/16/21/art9.
+  A/D/←→select;E queues1 short action;Q exits. Mounted levers;selection-only
+  bone contour/dark edge/wash. Cabinet→shared lamp pickup/equip/session.
+  Debug/lazy factory/leases kept;story grant/reset0. All24 kept;new light/GI/SSR/
+  post0;unmeasured;§6/16/21/art9.
 
 - **Accepted exception 2026-10-30 — Home ceiling, stove wall and room shots:**
   User: lower ceiling/three room views/close stove's side gap.

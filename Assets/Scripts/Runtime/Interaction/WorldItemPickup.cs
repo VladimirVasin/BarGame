@@ -15,10 +15,32 @@ namespace BarPromenade
     {
         private WorldItemFoundScreen screen;
         private PlayerInteractor activeInteractor;
+        private Func<PlayerInteractor, bool> preparePresentation;
+        private Func<PlayerInteractor, Transform, Action, bool> presentCollected;
+        private Action cancelPresentation;
+        private bool presentingCollected;
 
         public WorldItemPickupPlan Plan { get; private set; }
         public Transform Model { get; private set; }
-        public bool IsPresenting => screen != null && screen.IsPresenting;
+        public bool IsPresenting => presentingCollected || (screen != null && screen.IsPresenting);
+
+        /// <summary>
+        /// Optional physical presentation after the shared screen's single Take.
+        /// Preparation validates assets/docks before credit and must not acquire
+        /// a modal owner. The presenter synchronously borrows input in the screen's
+        /// completion callback, and calls completed after its final camera frame.
+        /// Cancellation after credit keeps the item and finalizes the source.
+        /// </summary>
+        public void ConfigurePresentation(
+            Func<PlayerInteractor, bool> prepare,
+            Func<PlayerInteractor, Transform, Action, bool> present,
+            Action cancel = null)
+        {
+            if (IsPresenting) throw new InvalidOperationException("Cannot replace an active pickup presentation.");
+            preparePresentation = prepare;
+            presentCollected = present;
+            cancelPresentation = cancel;
+        }
 
         public string PromptKey => Plan.PromptLocalizationKey;
         public Vector3 InteractionPosition => transform.position;
@@ -109,6 +131,8 @@ namespace BarPromenade
 
         private bool CollectOnce()
         {
+            if (preparePresentation != null && !preparePresentation(activeInteractor))
+                return false;
             return GameSessionState.TryCollectWorldItem(
                 Plan.SourceId,
                 Plan.ItemId);
@@ -125,11 +149,34 @@ namespace BarPromenade
 
             screen = null;
             PlayerInteractor interactor = activeInteractor;
-            activeInteractor = null;
             if (!taken)
             {
+                activeInteractor = null;
                 return;
             }
+
+            presentingCollected = true;
+            if (presentCollected != null)
+            {
+                try
+                {
+                    if (presentCollected(interactor, Model, FinishCollected)) return;
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception, this);
+                    cancelPresentation?.Invoke();
+                }
+            }
+            FinishCollected();
+        }
+
+        private void FinishCollected()
+        {
+            if (this == null || !presentingCollected) return;
+            presentingCollected = false;
+            PlayerInteractor interactor = activeInteractor;
+            activeInteractor = null;
 
             if (interactor != null &&
                 !string.IsNullOrEmpty(Plan.TakenFeedbackKey))
@@ -139,6 +186,15 @@ namespace BarPromenade
 
             gameObject.SetActive(false);
             Destroy(gameObject);
+        }
+
+        private void OnDisable()
+        {
+            if (!presentingCollected) return;
+            // The presentation owner restores its rig/camera/prop before this
+            // source is removed. FinishCollected is guarded against re-entry.
+            cancelPresentation?.Invoke();
+            FinishCollected();
         }
     }
 }

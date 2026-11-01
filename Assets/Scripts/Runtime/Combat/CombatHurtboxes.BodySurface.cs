@@ -74,6 +74,10 @@ namespace BarPromenade
         internal bool MayIntersectProjectile(Vector3 from, Vector3 to, float radius, out bool poseCurrent)
         {
             poseCurrent = false;
+            // Bottle topology is a separately versioned exact retained shell.
+            // Its cheap finite broad phase is captured by the ordinary query;
+            // an NPC flesh revision cannot prove that a glass hole is current.
+            if (bottle != null) return true;
             if (!projectileBoundsCaptured || projectileShapes != activeShapes ||
                 projectileHeadSurfaces != activeHeadSurfaces || projectileBodySurfaces != bodySurfaces ||
                 projectileHeadStates.Length != headSurfaceCache.Count ||

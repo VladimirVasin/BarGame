@@ -1846,7 +1846,7 @@
   "hands": "retained rig forearms and limp hands; no carrying grip or lock markers",
   "geometry_signature": "a912e53cce17c48b7f7f7ef05a06f029a9655333594ae7693b0407857afc4630",
   "uv_signature": "3d5dbaa9162a2b5d5d1f72b9b9e76f56e2940002c41fe4d6f87ab2735438b350",
-  "texture_sha256": "0f6a7e134f566a6428b5bb4f46f5aa56e40069df21dcbfe4dac9f6d567476d38",
+  "texture_sha256": "2747c83174eba8a79f75333653e463ed00e6ee12b1ca42ba15cee6d236db901f",
   "winding": "all individual bevelled solids positive",
   "determinism": "two independent geometry builds match"
 }

@@ -272,6 +272,11 @@ namespace BarPromenade
                 string[] names = template.name.Split(new[] { "__" }, StringSplitOptions.None);
                 if (names.Length != 2 || !originals.TryGetValue(names[1], out SkinnedMeshRenderer source))
                     throw new InvalidOperationException("Combat body derivative lost its source: " + template.name);
+                // The impossible torso contains real bottle glass. Human torso
+                // partitions would fill its holes with an unrelated flesh cage.
+                // Keep its authored flesh surface; the glass owner supplies the
+                // exact closed shell, fracture cells and surviving contact mesh.
+                if (actor.HasBottleGlass && names[1] == "GEO_Torso") continue;
                 string label = names[0];
                 bool isFlesh = label.StartsWith("FleshRegion", StringComparison.Ordinal), isBone = label.StartsWith("BoneRegion", StringComparison.Ordinal);
                 int start = isFlesh ? 11 : isBone ? 10 : 6;
@@ -364,6 +369,7 @@ namespace BarPromenade
         /// <summary>One actual resolved contact; structural damage is independent of health delta.</summary>
         public void Apply(CombatImpact impact)
         {
+            if (impact.IsGlassContact) return;
             if (impact.Target == null || impact.Result is not (MeleeHitResult.Hit or MeleeHitResult.GuardBroken)) return;
             if (impact.Target.IsHero || impact.Target.IsCraneRegenerating) return;
             if (impact.Kind is CombatImpactKind.Shove or CombatImpactKind.Kick or CombatImpactKind.Unarmed or CombatImpactKind.Fall or CombatImpactKind.Hook) return;

@@ -16,6 +16,17 @@ namespace BarPromenade
         /// <summary>The lens clipping value borrowed with this camera session.</summary>
         public float OriginalNearClipPlane { get; private set; }
 
+        /// <summary>Checks an authored lens before an inventory commit, without borrowing its camera or focus.</summary>
+        public bool CanPrepareAuthored(PlayerCameraFollow cameraFollow, Transform subject,
+            Transform playerRoot, Pose pose, Vector3 focus)
+        {
+            if (active || cameraFollow == null || !cameraFollow.isActiveAndEnabled ||
+                cameraFollow.Camera == null || subject == null || playerRoot == null) return false;
+            follow = cameraFollow; npcRoot = subject; heroRoot = playerRoot;
+            try { return CameraPositionClear(pose.position) && SightClear(focus, pose.position); }
+            finally { follow = null; npcRoot = heroRoot = null; }
+        }
+
         /// <summary>Loans the same camera lifecycle to an explicitly authored shot sequence.</summary>
         public bool BeginAuthored(PlayerCameraFollow cameraFollow, Transform subject,
             Transform playerRoot, Pose pose, float fieldOfView, Vector3 focus,

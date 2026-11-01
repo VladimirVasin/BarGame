@@ -20,12 +20,13 @@ from mathutils import Matrix, Vector
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
+import combat_horror_surfaces as horror
 import long_exposure_geometry as geometry
 
 SIZE, RESPONSE_SIZE = 2048, 1024
 OUT = ROOT / 'Assets/Resources/Combat'
 SOURCE = ROOT / 'ArtSource/CombatLongExposure'
-SOURCE_IMAGE = SOURCE / 'Textures/LongExposureSurface.source.png'
+SOURCE_IMAGE = horror.SOURCE_IMAGE
 HIDDEN = ('GEO_Ear', 'GEO_EarFold', 'GEO_FaceSurface')
 
 
@@ -46,19 +47,7 @@ def digest(value):
 
 
 def source_pixels():
-    image = bpy.data.images.load(str(SOURCE_IMAGE), check_existing=True)
-    image.colorspace_settings.name = 'Non-Color'
-    array = np.empty(image.size[0] * image.size[1] * 4, dtype=np.float32)
-    image.pixels.foreach_get(array)
-    array = array.reshape(image.size[1], image.size[0], 4)[..., :3]
-    h, w = array.shape[:2]
-    regions = (array[h // 2:, :w // 2], array[h // 2:, w // 2:],
-               array[:h // 2, :w // 2], array[:h // 2, w // 2:])
-    # Midtones deliberately survive the warehouse's existing chest lamp.
-    targets = ((.40, .365, .335), (.315, .34, .335), (.155, .175, .17), (.26, .28, .27))
-    gains = (.40, .42, .35, .40)
-    return tuple(np.clip((a - a.mean(axis=(0, 1))) * gain + target, .015, .82)
-                 for a, gain, target in zip(regions, gains, targets))
+    return horror.source_pixels('LongExposure')
 
 
 def field(points, normals, role, name, sources, height_only=False):
@@ -76,7 +65,7 @@ def field(points, normals, role, name, sources, height_only=False):
         height = .00055 * pores + .0003 * grain
         roughness, cavity, index = .67 + grain * .025, .96, 0
     if height_only:
-        return height
+        return horror.relief(points, normals, index, sources, height)
     projection = (points[..., (1, 2)], points[..., (0, 2)], points[..., (0, 1)])
     weights = np.abs(normals) ** 5
     weights /= max(float(weights.sum()), 1e-9)
@@ -86,7 +75,7 @@ def field(points, normals, role, name, sources, height_only=False):
         transition = helpers.sample(sources[3], points[..., (0, 2)] * 2.2)
         worn = np.maximum(0., streak) ** 8 * .13
         rgb = rgb * (1 - worn[..., None]) + transition * worn[..., None]
-    return np.clip(rgb, 0, 1), height, roughness + np.zeros_like(x), cavity + np.zeros_like(x)
+    return horror.finish(points, normals, index, sources, rgb, height, roughness + np.zeros_like(x), cavity + np.zeros_like(x))
 
 
 def paint(objects, sources, size, response=False):
@@ -281,6 +270,7 @@ def build(output, source_dir, preview_dir=None, publish=True):
                   dict(name='LongExposureMaterialResponse', size=RESPONSE_SIZE, sRGB=False, sha256=digest(response))],
         estimated_gpu_bytes=sum(sum(max(1, (s >> m) + 3 >> 2) ** 2 * 16 for m in range(int(math.log2(s)) + 1))
                                 for s in (SIZE, RESPONSE_SIZE)))
+    horror.decorate(payload)
     if payload['estimated_gpu_bytes'] > 7 * 1024 * 1024:
         raise ValueError('LongExposure surface bank exceeds 7 MiB')
     if not publish:

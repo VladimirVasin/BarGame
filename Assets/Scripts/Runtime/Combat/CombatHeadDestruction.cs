@@ -151,6 +151,7 @@ namespace BarPromenade
 
         internal void Apply(CombatImpact impact, CombatBloodEffects blood)
         {
+            if (impact.IsGlassContact) return;
             bool crowbar = impact.Kind == CombatImpactKind.Weapon && impact.Source != null &&
                 impact.Source.IsHero && impact.Source.WeaponId == CombatWeaponId.Crowbar;
             if ((!crowbar && impact.Kind != CombatImpactKind.Projectile) || impact.Target == null ||

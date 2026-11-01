@@ -1052,17 +1052,17 @@ E frames weave/delivery/birds/mounted levers;hero hidden/view restores.
 A/D/←→ select,E acts/queues1,Q exits. Selection:bone contour/dark edge/surface
 wash. Back-wall cabinet→lamp;cloth→crowbar. High-right gait/strike/hidden carry stay.
 BirdLift lowers open worn-steel tray/visible pistol;rails/cable support both ends.
-Shared pickup/equip/ammo stay;story shotgun0/Debug kept.
+Same-rig pickup:lamp chest click/crowbar catch/pistol weight→equip;neutral ends/
+source light,crowd waits for camera. Ammo/shotgun0/Debug kept.
 Cat/black route/22m contactors/2Hard lights stay;solve lights next door.
 
 `2026-11-01`, §6: «Замкнутый» и «Самонос» — имена вне фикции.
-Бутылка крупнее тела: грязное зелёное или бурое стекло,
-блики от прежнего света и звон; без брендов и текста.
-У Замкнутого она заменяет грудь и живот. Шея обвивает стекло,
-лицо прижато к горлышку, ладони держат бутылку. Он глотает.
-Из узла выходят ноги; для удара рука отрывается от стекла.
-Малый Самонос тащит огромную перевёрнутую бутылку на спине;
-из горлышка свисает вторая голова. Движения вразнобой; падение с замахом.
+Бутылка крупнее тела: мутное зелёное/бурое стекло с потёртостями/осадком.
+Удар выбивает местный скол/полость/осколки;звон/свет прежние,без крови/костей/надписей.
+Замкнутый:бутылка вместо груди/живота;шея вокруг,лицо у горлышка,
+ладони держат;он глотает. Ноги из узла;удар отрывает руку от стекла.
+Самонос:малое тело несёт на спине огромную перевёрнутую бутылку;
+из горлышка свисает вторая голова. Движения вразнобой,падение с замахом.
 Проход виден без фонаря; §21 и девять проверок.
 
 Каменный Кот:улыбка/затылок в стене;тело/шея/кровь/живойКот/финал/текст0.

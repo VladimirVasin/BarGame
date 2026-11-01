@@ -7,7 +7,7 @@
   "retained_rest_skeleton": true,
   "uv_channel": 0,
   "source_uv_channel": 1,
-  "source_sha256": "e25c2ae26ee83de8e4a448a0170cc8fa0de474d3d3799e240ca371b888bc7126",
+  "source_sha256": "b1d637cbc7b2add9f96853aaffc33a067c8fbdcf2938263d921e32ebca62f42c",
   "source_geometry_sha256": "4458aa34ab8ca54f1d6425a1888e9ce4632291e1ee647696c1d4116ccf948643",
   "signature": "62f561b990d890bad668272670ab4df8de81896985eab3fabaeae09175b526b1",
   "corridor": {
@@ -777,14 +777,16 @@
       "name": "RoomBodyAtlas",
       "size": 2048,
       "sRGB": true,
-      "sha256": "cf822263741b5d27af184ef009671be51a18c6b635f9e39635446cc09c04ebb8"
+      "sha256": "3be1c526c116be81e2407d2267171b9f6ef11b97f8a70490b762aff61d3f178e"
     },
     {
       "name": "RoomMaterialResponse",
       "size": 1024,
       "sRGB": false,
-      "sha256": "75858978015e07a398e836524ea775af8baf68940b6319ba07029c4331e76522"
+      "sha256": "444944d559289ad8125d6b1836f608121ca1e0320918090f8d8f84a862cd1b78"
     }
   ],
-  "estimated_gpu_bytes": 6990560
+  "estimated_gpu_bytes": 6990560,
+  "surface_profile": "monster_horror_materials_v1",
+  "texture_source": "ArtSource/Combat/Textures/MonsterHorrorSurface.source.png"
 }

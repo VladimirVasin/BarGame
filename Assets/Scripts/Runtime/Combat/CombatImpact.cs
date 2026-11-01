@@ -34,6 +34,8 @@ namespace BarPromenade
         public BodyDamageRegion? BodyRegion { get; }
         public int BodyPatch { get; }
         public bool DetachedPart { get; }
+        /// <summary>The resolved contact struck retained bottle glass, classified before fracture.</summary>
+        public bool IsGlassContact { get; }
         public bool IsCritical => (Kind == CombatImpactKind.Weapon || Kind == CombatImpactKind.Projectile) && Damage > 0f && Location.IsCritical;
         public bool IsFinisher => Kind == CombatImpactKind.Weapon && Damage > 0f && Location.IsFinisher;
 
@@ -57,6 +59,16 @@ namespace BarPromenade
             PelletIndex = pelletIndex; PrimaryResponse = primaryResponse; HeadFeedback = headFeedback; WoundDamage = woundDamage;
             HeadTrauma = headTrauma;
             BodyRegion = bodyRegion; BodyPatch = bodyPatch; DetachedPart = detachedPart;
+            IsGlassContact = false;
         }
+
+        private CombatImpact(CombatImpact source, bool glassContact)
+        {
+            this = source;
+            IsGlassContact = glassContact;
+        }
+
+        /// <summary>Preserves the one damage transaction and all contact data while tagging its material.</summary>
+        public CombatImpact WithGlassContact() => new CombatImpact(this, true);
     }
 }

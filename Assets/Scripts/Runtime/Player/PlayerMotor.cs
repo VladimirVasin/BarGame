@@ -111,6 +111,14 @@ namespace BarPromenade
             controller != null &&
             (controller.isGrounded || groundedAfterMainMove);
 
+        /// <summary>Non-mutating support preflight for a positioned interaction's finite direct approach.</summary>
+        internal bool IsInteractionApproachSupported(Vector3 target)
+        {
+            if (controller == null || walkableArea == null) return controller != null;
+            return walkableArea.Contains(target, controller.radius) &&
+                (walkableArea.Constrain(transform.position, target, controller.radius) - target).sqrMagnitude <= .000001f;
+        }
+
         private bool groundedAfterMainMove;
         public float SpeedMultiplier => speedMultiplier;
         public Vector3 PlanarVelocity { get; private set; }

@@ -12,6 +12,8 @@ namespace BarPromenade.Tests.PlayMode
                 .GetMethod("EnsureAssets", Type.EmptyTypes).Invoke(null, null);
             Type.GetType("BarPromenade.Editor.StairwellLabyrinthAssetSetup, BarPromenade.Editor", true)
                 .GetMethod("EnsureAssets", Type.EmptyTypes).Invoke(null, null);
+            Type.GetType("BarPromenade.Editor.PlayerStairwellPickupActionAssetSetup, BarPromenade.Editor", true)
+                .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
 #endif
         }
     }
