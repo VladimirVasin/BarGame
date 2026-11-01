@@ -90,13 +90,20 @@ def decay(canvas, variant):
     # belongs to the existing opaque glass material and its source lights.
     pixels[:256, :256, :3] = glass
     pixels[240:256, 240:256, :3] = (.075, .094, .055)
-    skin_targets = ((.59, .56, .49), (.56, .55, .51), (.60, .56, .51))
-    pixels[:128, 256:384, :3] = _pigment('skin', 128, 128, skin_targets[variant], .85, variant)
-    # The retained tiny skin palette is still sampled by a few original hand
-    # surfaces. It must stay a constant patch to avoid face/clothing leakage.
+    skin_targets = ((.54, .46, .42), (.49, .43, .41), (.55, .46, .43))
+    # Retained head/ear surfaces still use the tiny skin palette. Hands and
+    # authored flesh now have area charts in the skin tile above; this palette
+    # stays constant so the unchanged face anatomy cannot leak clothing.
     pixels[:12, 500:512, :3] = skin_targets[variant]
     _face(pixels, variant)
-    return _finish(canvas, pixels)
+    # The long flesh tubes need real source detail at gameplay distance. Keep
+    # every existing normalized chart, doubling the atlas and rebaking only
+    # its flesh tile from the master rather than enlarging the old 128px crop.
+    # Larger source-derived mottling/veins survive the game's coloured lights.
+    pixels = np.repeat(np.repeat(pixels, 2, axis=0), 2, axis=1)
+    pixels[:256, 512:768, :3] = _pigment('skin', 256, 256, skin_targets[variant], 2.1, variant)
+    from atlas_kit import PixelCanvas
+    return _finish(PixelCanvas(1024, 1024), pixels)
 
 
 def porter(canvas, variant):

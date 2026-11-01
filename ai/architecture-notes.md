@@ -2,15 +2,14 @@
 
 ## Current facts
 - **Accepted 2026-11-01 — bottle fracture, user:**
-  Blender cells→holes/shards. Material tagged before fracture;glass
-  skips blood/skull/flesh/NPC torso derivatives. Exact queries/rig/UV/mats/HP;
-  reset/pause/off/unload;24FX kept;unmeasured;§6/16/21/art9.
+  Blender cells→holes/shards;tag→glass skips blood/skull/flesh/NPC torso
+  derivatives. Queries/rig/UV/mats/HP/reset/pause/off/unload kept;
+  24FX;unmeasured;§6/16/21/art9.
 
 - **Accepted 2026-11-01 — Stairwell pickup cinematics, user:**
-  Shared Take→positioned same-rig lamp attach/click,crowbar catch,pistol weight/
-  grip→equip;independent docks/neutral ends. Preflight before credit;postcredit
-  cancel keeps item/cleans owners. Input/crowd wait camera;foley/pause/off/unload.
-  24FX kept;unmeasured;§16/21/art9.
+  Shared rig Take→lamp attach/click,bar catch,pistol weight/grip→equip;
+  own docks/neutral ends;preflight→credit;postcredit cancel keeps/cleans.
+  Input/crowd await camera;foley/pause/off/unload;24FX;unmeasured;§16/21/art9.
 
 - **Accepted 2026-11-01 — 16:9 target, user:**
   Target16:9;4:3 unsupported/no proof. Legacy
@@ -26,13 +25,17 @@
   24FX:black/SSR0/savedDoF/worn steel/bevels;light/pass/particle0;FX-off;§6/16/21/art9.
 
 - **Accepted architecture exception 2026-11-01 — Stairwell zombies:**
-  Zombie:18 Loops(0/1)/3 Carriers(2),giant unbranded bottle torso/back(art§7).
-  Hero perception;names outside fiction;other forms kept. Crowbar/modal return
-  wakes stage2. First solo;≤4 movers/2 attackers,spaced hits/1.3s grace.
-  Retreat/bypass;room3 safe. Retry:puzzles/crowbar;travel:progress;New Game reset.
-  Hero:input/step;encounter:height routes/contacts. Passive:no AI/physics/audio;
-  shared assets/capped rigs/voices/remains;unmeasured. All24/black kept;new light/
-  pass/speech/lore/act/scale/forced camera/strobe/story death0;FX-off;§16/21/art9.
+  18Loops(0/1)/3Carriers(2):art§7/hero perception.
+  Wake:crowbar+camera/modal return;solo→≤4move/2attack;gap.65/grace1.3s.
+  Scene speed1.15/1.05/.8m/s;recover2.1/2.8s;parried3.2/4.2s.
+  UV:length/rings/hands;face/glass/SourceUV;deterministic hold/snap/lag.
+  Body1024/skin256;BC7/mips/trilinear.
+  Rig/contacts/input/height routes;safe3/bypass;retry puzzles/bar;
+  travel keeps/NewGame0;passive AI/physics/audio0;shared/capped
+  bodies/voices/remains;unmeasured. 24FX:black/GI/SSR/fog/grain0;
+  Other scene/material/post FX kept;waterN/A;
+  new light/pass/speech/lore/act/scale/forced camera/strobe/story death0;
+  FX-off;§16/21/art9.
 
 - **Accepted 2026-10-31 — crowbar equipment and gait, user:**
   Inv after-modal draw/stow;hidden bar/holder/dock0.

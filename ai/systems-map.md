@@ -56,7 +56,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Bar tissue/skull/recoil;3hits→fall/rise;hero grace;HUD edges. Gap:pierce. | `CombatActor`,`CombatTestRoot`,`CombatHudLayout` | Partial |
 | Crane | Hook6m/up2m/hold5/E6/hoist-haul/bodycam/fall;home10;fatal3→regen10/kill0. | `Combat*.Crane*`,`CombatActor.Restraint` | Current |
-| Authored enemies | Bottle zombies:local glass fracture/holes/shards;all six share horror surfaces. | `CombatActor`,`Combat*Appearance`,`CombatZombieBottleDestruction` | Current |
+| Authored enemies | Bottles:glass fracture,flesh UV,held/snapped poses;all six:horror surfaces. | `CombatActor`,`Combat*Appearance`,`CombatZombieBottleDestruction` | Current |
 | Warehouse | Story keeps session/seed;fish2→last-room Docker,3→foes0;gate/ammo;L3broken;A*. | `Warehouse*`,`CombatTestRoot` | Current |
 | Body destruction | Enemies:sever/crawl;hero:wounds/no detach;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatBodyAssetSetup` | Current |
 | New Game/Debug | Loading bar through staged Home/first frame; stopped12:00 until E. Debug time/starts/tools. | `StartMenu{Root,Model}`, `NewGameStartService`, `SceneTransitionService`, `AreaLoadingRoot` | Current |

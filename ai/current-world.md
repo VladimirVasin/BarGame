@@ -2016,14 +2016,15 @@ cemetery:own interiors/returns.
   cancel keeps source;post-Take keeps item/cleans owners. First8+0;
   travel/retry keep ammo. Story:owned crowbar/pistol,ammo/pools;
   shotgun0/Debug3.
-  Stage2:18 Loops(0/1)/3 Carriers(2),bottle bodies per art§7. Pickup and full
-  camera/modal return trigger staggered waking. Up to four move; the first
-  contact is solo, then two may attack with spaced commitments. A hero hit
-  gives 1.3 s grace. Routes respect floors and clear passage; supported entry
-  to stage 3 above 14 m ends pursuit. Retry resets the crowd and hero at room 2,
-  keeping puzzles and crowbar. Travel keeps waking/defeats but resets surviving
-  positions; New Game clears all. Passive views have no CombatActor; nearby
-  waking promotes them. Bodies, voices and simulation are bounded, unmeasured.
+  Stage2:18 Loops(0/1)/3 Carriers(2),bottle bodies per art§7. Crowbar+camera/modal
+  return→staggered waking;solo first→≤4 movers/2 attackers;gap .65s,
+  hero-hit grace1.3s. Scene speeds1.15/1.05/.8m/s;recovery2.1/2.8s;
+  parried3.2/4.2s. Flesh:1024atlas/256skin/BC7/mips/trilinear;UV:length/rings/hands.
+  Holds/snaps/lag:deterministic,contacts kept. Height routes/clear
+  bypass;stage3 supported entry above14m→safe. Retry room2 keeps puzzles/bar;
+  travel keeps waking/defeats,restores survivor positions;NewGame0.
+  Passive:no CombatActor;nearby wake promotes. Shared/capped bodies/voices/AI;
+  unmeasured.
   Lamp/fan/weight/vent/cloth:SFX/pause/cleanup;metre maps/statue/light kept;
   first flight:2Hard/22–24m/lens-hum-contactor;return restores. Solve→next door
   light sameframe across floor/range;after3 none/guide1of2. Outside black

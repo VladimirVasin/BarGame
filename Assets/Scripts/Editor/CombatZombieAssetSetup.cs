@@ -74,6 +74,16 @@ namespace BarPromenade.Editor
             importer.filterMode = FilterMode.Point; importer.wrapMode = TextureWrapMode.Clamp;
             importer.mipmapEnabled = true; importer.textureCompression = TextureImporterCompression.Uncompressed;
             importer.sRGBTexture = true; importer.maxTextureSize = 512; importer.isReadable = false;
+            if (assetPath.StartsWith(Folder + "ZombieDecayBody", StringComparison.Ordinal) &&
+                assetPath.EndsWith("Atlas.png", StringComparison.Ordinal))
+            {
+                importer.maxTextureSize = 1024; importer.filterMode = FilterMode.Trilinear;
+                importer.textureCompression = TextureImporterCompression.CompressedHQ;
+                var desktop = importer.GetPlatformTextureSettings("Standalone");
+                desktop.overridden = true; desktop.maxTextureSize = 1024;
+                desktop.format = TextureImporterFormat.BC7; desktop.textureCompression = TextureImporterCompression.CompressedHQ;
+                importer.SetPlatformTextureSettings(desktop);
+            }
             if (assetPath.EndsWith("ZombieCrateAtlas.png", StringComparison.Ordinal))
             { importer.wrapMode = TextureWrapMode.Repeat; importer.textureCompression = TextureImporterCompression.CompressedHQ; }
             importer.alphaSource = TextureImporterAlphaSource.None;

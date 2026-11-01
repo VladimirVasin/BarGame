@@ -9,6 +9,21 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class StairwellEncounterController : MonoBehaviour
     {
+        // Scene-owned pressure: shared bottle assets also appear in the warehouse,
+        // whose combat timings must not inherit this encounter's faster recovery.
+        private static readonly MeleeCombatSettings LoopCombat = new MeleeCombatSettings(
+            damage: 18f, blockCost: 14f, windupSeconds: .95f, activeSeconds: .22f,
+            recoverySeconds: 2.1f, hitRecoverySeconds: 2.1f, blockRecoverySeconds: 2.1f,
+            obstacleRecoverySeconds: 2.1f, parriedRecoverySeconds: 3.2f,
+            animationRecoverySeconds: .95f, staggerSeconds: .8f,
+            isUnarmedZombie: true, incomingDamageScale: .5f);
+        private static readonly MeleeCombatSettings CarrierCombat = new MeleeCombatSettings(
+            damage: 24f, blockCost: 18f, windupSeconds: 1.25f, activeSeconds: .26f,
+            recoverySeconds: 2.8f, hitRecoverySeconds: 2.8f, blockRecoverySeconds: 2.8f,
+            obstacleRecoverySeconds: 2.8f, parriedRecoverySeconds: 4.2f,
+            animationRecoverySeconds: 1.25f, staggerSeconds: .8f,
+            isUnarmedZombie: true, incomingDamageScale: .5f);
+
         private sealed class Enemy
         {
             internal StairwellEnemyPlacement Placement;
@@ -290,7 +305,8 @@ namespace BarPromenade
             body.slopeLimit = PlayerFactory.SlopeLimitDegrees; body.minMoveDistance = 0f;
             enemy.Visual.Animator.enabled = true;
             CombatActor actor = enemy.Root.AddComponent<CombatActor>();
-            actor.InitializeOpponent(enemy.Visual, body, kind: CombatEnemyKind.Zombie);
+            actor.InitializeOpponent(enemy.Visual, body, kind: CombatEnemyKind.Zombie,
+                settings: enemy.Placement.Variant == 2 ? CarrierCombat : LoopCombat);
             enemy.Actor = actor; actors.Add(actor); participants.Add(actor);
             actor.SetCombatParticipants(participants); actor.SetContactTarget(hero);
             if (wake < CombatZombieAssetProvider.OrdinaryRiseSeconds)
@@ -315,7 +331,14 @@ namespace BarPromenade
                 float begin = Mathf.Max(actor.State.AttackElapsed, actor.State.AttackWindupSeconds);
                 float end = Mathf.Min(actor.State.AttackElapsed + seconds, actor.State.AttackActiveEnd);
                 if (end > begin && actor.State.AttackOutcome == MeleeAttackOutcome.None)
-                    Move(enemy, enemy.AttackDirection * (.42f * (end - begin) / actor.State.Settings.ActiveSeconds), seconds);
+                {
+                    // Match the planted-foot travel authored in the shared bottle
+                    // clip. Support/body constraints still limit the real capsule.
+                    float fromPhase = (begin - actor.State.AttackWindupSeconds) / actor.State.Settings.ActiveSeconds;
+                    float toPhase = (end - actor.State.AttackWindupSeconds) / actor.State.Settings.ActiveSeconds;
+                    float surgeTravel = .7f * (Mathf.SmoothStep(0f, 1f, toPhase) - Mathf.SmoothStep(0f, 1f, fromPhase));
+                    Move(enemy, enemy.AttackDirection * surgeTravel, seconds);
+                }
                 return;
             }
             if (actor.State.Phase != MeleePhase.Ready) return;
@@ -328,7 +351,7 @@ namespace BarPromenade
                     Mathf.Abs(hero.transform.position.y - actor.transform.position.y) < .45f &&
                     Vector3.Dot(actor.transform.forward, space.TransformDirection(delta.normalized)) > .995f && actor.TryZombieAttack())
                 {
-                    enemy.AttackDirection = delta.normalized; attackDelay = .85f; CommittedAttackCount++;
+                    enemy.AttackDirection = delta.normalized; attackDelay = .65f; CommittedAttackCount++;
                 }
                 return;
             }
@@ -340,7 +363,7 @@ namespace BarPromenade
             Vector3 direction = enemy.Waypoint - from; direction.y = 0f;
             if (direction.sqrMagnitude < .0025f) return;
             direction.Normalize(); actor.SetNavigationFacing(space.TransformDirection(direction));
-            float speed = enemy.Placement.Variant == 2 ? .52f : enemy.Placement.Variant == 1 ? .68f : .75f;
+            float speed = enemy.Placement.Variant == 2 ? .8f : enemy.Placement.Variant == 1 ? 1.05f : 1.15f;
             Vector3 travel = direction * Mathf.Min(speed * seconds, Vector3.Distance(from, enemy.Waypoint));
             Move(enemy, travel, seconds);
         }

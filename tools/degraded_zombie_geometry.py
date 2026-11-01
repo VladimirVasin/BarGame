@@ -10,7 +10,8 @@ import bpy
 from mathutils import Vector, Quaternion
 import crane_mutant_geometry as kit
 
-FLESH_UV=(.60,.88)
+# Inset from the existing 128-square flesh tile; neither faces nor glass move.
+FLESH_RECT=(.51,.77,.22,.20)
 
 
 def catmull(points, samples=5):
@@ -35,22 +36,90 @@ def sweep(points,radius,sides=16,flatten=1.,rib=.0):
     return kit.tube(path,radii,sides,flatten,False)
 
 
-def flesh_uv(obj):
-    uv=obj.data.uv_layers.new(name='UVMap')
+def ring_chart(geometry,sides):
+    """Unwrap the actual swept surface, including its seam and closed caps.
+
+    Distances along rings and between surface stations retain metric aspect.
+    A long crooked neck therefore gets a full longitudinal chart rather than
+    a clamped projection of the small area it occupies in the bind pose.
+    """
+    vertices,faces=geometry
+    if len(vertices)%sides or len(vertices)<2*sides:
+        raise ValueError('Flesh chart requires complete authored rings')
+    points=[Vector(p) for p in vertices];rows=len(points)//sides
+    around=[];lengths=[0.]
+    for row in range(rows):
+        ring=points[row*sides:(row+1)*sides];distances=[0.]
+        for side in range(sides):
+            distances.append(distances[-1]+(ring[(side+1)%sides]-ring[side]).length)
+        around.append(distances)
+        if row:
+            lengths.append(lengths[-1]+sum((points[row*sides+i]-points[(row-1)*sides+i]).length
+                                           for i in range(sides))/sides)
+    scale=max(lengths[-1],max(row[-1] for row in around))
+    if scale<=1e-8:raise ValueError('Empty flesh chart')
+    charts=[]
+    for face in faces:
+        rows_used={index//sides for index in face}
+        if len(rows_used)==1:
+            # These authored end rings are planar; radial cap charts avoid a
+            # zero-area swatch while keeping the existing closed geometry.
+            row=next(iter(rows_used));ring=points[row*sides:(row+1)*sides]
+            centre=sum(ring,Vector())/sides
+            x=(ring[0]-centre).normalized()
+            normal=(ring[1]-centre).cross(x).normalized();y=normal.cross(x)
+            charts.append([(.5+(points[i]-centre).dot(x)/scale,
+                            .5+(points[i]-centre).dot(y)/scale) for i in face])
+            continue
+        seam=0 in {i%sides for i in face} and sides-1 in {i%sides for i in face}
+        chart=[]
+        for index in face:
+            row,side=divmod(index,sides)
+            distance=around[row][-1] if seam and side==0 else around[row][side]
+            chart.append((.5+(distance-.5*around[row][-1])/scale,
+                          .5+(lengths[row]-.5*lengths[-1])/scale))
+        charts.append(chart)
+    return charts
+
+
+def hand_chart(obj):
+    """Face-oriented charts on the retained palm/fingers; no rig/topology edit."""
+    points=[v.co for v in obj.data.vertices]
+    low=Vector(tuple(min(p[axis] for p in points) for axis in range(3)))
+    high=Vector(tuple(max(p[axis] for p in points) for axis in range(3)))
+    centre=(low+high)*.5;scale=max(high-low)
+    if scale<=1e-8:raise ValueError('Empty retained hand chart: '+obj.name)
+    charts=[]
     for polygon in obj.data.polygons:
-        for index in polygon.loop_indices:
-            point=obj.matrix_world@obj.data.vertices[obj.data.loops[index].vertex_index].co
-            # Dedicated nonrepeating flesh sheet, independent from face UVs.
-            u=max(0.,min(1.,(point.x+.6)/1.2));v=max(0.,min(1.,(point.z+.1)/2.8))
-            uv.data[index].uv=(.51+.22*u,.77+.20*v)
-    source=obj.data.uv_layers.new(name='SourceUV')
+        # Each face chooses the projection with greatest area, so fingers and
+        # palm edges cannot collapse into the old constant skin palette.
+        drop=max(range(3),key=lambda axis:abs(polygon.normal[axis]))
+        axes=[axis for axis in range(3) if axis!=drop]
+        charts.append([tuple(.5+(points[i][axis]-centre[axis])/scale for axis in axes)
+                       for i in polygon.vertices])
+    return charts
+
+
+def flesh_uv(obj,charts):
+    if len(charts)!=len(obj.data.polygons):raise ValueError('Flesh chart topology mismatch: '+obj.name)
+    uv=obj.data.uv_layers.get('UVMap') or obj.data.uv_layers.new(name='UVMap')
+    x,y,width,height=FLESH_RECT
+    for polygon,coords in zip(obj.data.polygons,charts):
+        if len(coords)!=len(polygon.loop_indices):raise ValueError('Flesh chart corners differ: '+obj.name)
+        area=abs(sum(a[0]*b[1]-b[0]*a[1] for a,b in zip(coords,coords[1:]+coords[:1])))
+        if polygon.area>1e-10 and area<=1e-12:raise ValueError('Collapsed flesh UV: '+obj.name)
+        for index,(u,v) in zip(polygon.loop_indices,coords):
+            if not (-1e-6<=u<=1.000001 and -1e-6<=v<=1.000001):
+                raise ValueError('Flesh chart escaped its atlas tile: '+obj.name)
+            uv.data[index].uv=(x+width*u,y+height*v)
+    source=obj.data.uv_layers.get('SourceUV') or obj.data.uv_layers.new(name='SourceUV')
     for a,b in zip(source.data,uv.data):a.uv=b.uv
     obj.data.uv_layers.active_index=0
 
 
-def replace(builder,name,geometry,weights):
+def replace(builder,name,geometry,weights,charts):
     obj=kit.replace(builder,name,geometry,weights)
-    flesh_uv(obj)
+    flesh_uv(obj,charts)
     return obj
 
 
@@ -123,12 +192,13 @@ def loop(builder,variant):
     glass=kit.shell(profile,28)
     parts=[(lower,lambda p:kit.trunk_weight(p[2])),(glass,{'chest':1.})]
     vertices,faces,weights=merged_geometry(parts)
-    torso=replace(builder,'GEO_Torso',(vertices,faces),{'chest':1.});kit.skin(torso,weights)
+    torso=replace(builder,'GEO_Torso',(vertices,faces),{'chest':1.},
+                  ring_chart(lower,24)+ring_chart(glass,28));kit.skin(torso,weights)
     bottle_surface(torso,parts,1,len(profile),cavity=True)
     path=[(0,.16,1.40),(side*.24,.23,1.65),(side*.35,.08,1.83),
         (side*.35,-.18,1.93),(side*.15,-.35,1.98),(-side*.09,-.30,1.90),(-side*.13,-.23,1.885)]
     neck=sweep(path,.062,18,.88,.10)
-    replace(builder,'GEO_Neck',neck,{'chest':1.})
+    replace(builder,'GEO_Neck',neck,{'chest':1.},ring_chart(neck,18))
     relocate_head((-side*.06,-.163,1.885),1.05,15,side*135)
     return dict(kind='closed_loop',dominant_bottle=True,bottle_orientation='upright',real_neck_tube=True,
         face_at_bottle_lip=True,second_torso=False,neck_path_length_m=sum((b-a).length for a,b in zip(catmull(path),catmull(path)[1:])))
@@ -145,19 +215,27 @@ def carrier(builder):
         (2.29,0,.14,.45,.36),(2.32,0,.14,.38,.30),(2.29,0,.14,.30,.24),(2.27,0,.14,.11,.09)]
     upper=kit.shell(profile,28)
     parts.extend([(lower,{'pelvis':.5,'spine':.5}),(upper,{'chest':1.})]);uv_parts.extend([None,None])
+    flesh_charts=ring_chart(lower,20)+ring_chart(upper,28)
     lower_neck=sweep([(0,-.03,1.17),(.06,-.25,1.23),(.05,-.40,1.30)],.043,12,.9,.08)
-    parts.append((lower_neck,{'spine':1.}));uv_parts.append(None)
+    parts.append((lower_neck,{'spine':1.}));uv_parts.append(None);flesh_charts+=ring_chart(lower_neck,12)
     for sign in (-1,1):
         small_arm=sweep([(sign*.16,-.02,1.15),(sign*.22,-.18,1.04),(sign*.11,-.30,1.02)],.038,12,.85)
-        parts.append((small_arm,{'spine':1.}));uv_parts.append(None)
+        parts.append((small_arm,{'spine':1.}));uv_parts.append(None);flesh_charts+=ring_chart(small_arm,12)
         # Four narrow fingers visibly clutch the burden above the small body.
         for i in range(4):
             finger=sweep([(sign*(.095+i*.013),-.30,1.02),(sign*(.09+i*.013),-.33,1.07),
                           (sign*(.088+i*.013),-.31,1.10)],.008,8,.85)
-            parts.append((finger,{'spine':1.}));uv_parts.append(None)
+            parts.append((finger,{'spine':1.}));uv_parts.append(None);flesh_charts+=ring_chart(finger,8)
+    face_start=len(parts)
     copy_lower_face(parts,uv_parts)
+    # Existing face charts live elsewhere in the atlas. Give them temporary
+    # valid charts here, then restore their exact authored coordinates below.
+    for (vertices,faces),_ in parts[face_start:]:
+        for face in faces:
+            flesh_charts.append([(.5+.4*math.cos(i*math.tau/len(face)),
+                                  .5+.4*math.sin(i*math.tau/len(face))) for i in range(len(face))])
     vertices,faces,weights=merged_geometry(parts)
-    torso=replace(builder,'GEO_Torso',(vertices,faces),{'chest':1.});kit.skin(torso,weights)
+    torso=replace(builder,'GEO_Torso',(vertices,faces),{'chest':1.},flesh_charts);kit.skin(torso,weights)
     bottle_surface(torso,parts,1,len(profile))
     # Restore the second face's exact original atlas patch after generic flesh UVs.
     polygon_offset=0
@@ -169,7 +247,7 @@ def carrier(builder):
     for source,target in zip(torso.data.uv_layers[1].data,torso.data.uv_layers[0].data):source.uv=target.uv
     neck=sweep([(0,-.19,1.06),(0,-.34,1.04),(0,-.50,1.01),(0,-.61,.94)],.104,20,.9,.11)
     replace(builder,'GEO_Neck',neck,lambda p: {'chest':max(0.,min(1.,(p[1]+.61)/.42)),
-                                            'neck':1.-max(0.,min(1.,(p[1]+.61)/.42))})
+                                            'neck':1.-max(0.,min(1.,(p[1]+.61)/.42))},ring_chart(neck,20))
     relocate_head((0,-.64,.89),2.05,13)
     return dict(kind='self_carrier',dominant_bottle=True,bottle_orientation='inverted',second_torso=False,second_head=True,second_small_arms=True,
         primary_head_scale=2.05,lower_head_scale=.61)
@@ -200,8 +278,12 @@ def sculpt(builder,variant):
         lower_geometry=kit.tube(points[6:],radii[6:],14,.85,False)
         vertices,faces,weights=merged_geometry([(upper_geometry,{'upper_arm.'+side:1.}),
                                                 (lower_geometry,{'forearm.'+side:1.})])
-        arm=replace(builder,'GEO_Arm.'+side,(vertices,faces),{'upper_arm.'+side:1.})
+        arm=replace(builder,'GEO_Arm.'+side,(vertices,faces),{'upper_arm.'+side:1.},
+                    ring_chart(upper_geometry,14)+ring_chart(lower_geometry,14))
         kit.skin(arm,weights)
+        for hand_obj in bpy.data.objects:
+            if hand_obj.type=='MESH' and hand_obj.name.startswith('GEO_Hand') and hand_obj.name.endswith('.'+side):
+                flesh_uv(hand_obj,hand_chart(hand_obj))
     for obj in bpy.data.objects:
         if obj.type=='MESH' and not {g.name for g in obj.vertex_groups}.issubset(canonical_groups[obj.name]):
             raise ValueError('New anatomy introduced a noncanonical skin bone: '+obj.name)

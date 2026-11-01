@@ -10,7 +10,7 @@ Rig/UV/24FX/banks/bounds/arm shielding/civilian damage kept;one slot fixes grey;
 BOTTLE FRACTURE EXACT SURFACE CLOSED CELLS / RETAINED UV RIG OK;
 BottleMonstersFractureFromCrowbar passed;intact/impact/retained/reset frames reviewed.
 
-Monster maps:retained UV/native/offline pore filtering. MonsterHorrorTextures passed;frames reviewed.
+Monster maps:native/offline pore filtering. MonsterHorrorTextures passed;frames reviewed.
 
 Stairwell finds:same-rig action/camera/foley,one confirmed credit;cleanup waits
 for camera/equipment return,crowbar wakes afterward;cancel retains committed items.
@@ -26,12 +26,12 @@ Levers:physical spindle/bracket/guide throughout;A/D joins arrows;selection
 uses contour/dark edge/wash. STAIRWELL_LABYRINTH_CONTROL_MOUNTS_OK;
 StairwellLabyrinthPuzzleModeAndFlashlight passed;frames reviewed.
 
-Bodies wait for bar/modal;bounded solo/attackers,bypass/safe room3;retry keeps
-puzzles/bar/clears draw;travel keeps/New Game clears. Bottle:grounded/finite
-body-glass audio/dormant-rise-idle-contact;other forms/light kept.
-StairwellSecondPuzzleCrowbar;
+Bottles:ring/hand UV fixes flat flesh;held pulls/delayed head/weight/grounded
+feet. Stairwell:faster chase/recovery;parry window/caps/bypass/retry kept.
 DEGRADED ZOMBIE GROUNDED ACTIONS AND THREE BODY SCULPTS OK;
-ORDINARY BODY AUDIO / FINITE DRY MONO / ATTACK TIMELINE / DETERMINISTIC OK passed.
+BOTTLE FRACTURE EXACT SURFACE CLOSED CELLS / RETAINED UV RIG OK.
+BOTTLE FLESH SOURCE DETAIL / RETAINED NORMALIZED CHARTS OK.
+StairwellSecondPuzzleCrowbar passed;surface/motion frames reviewed.
 
 Crowbar:weight/arc/brake,retained grip/low elbows/Ready. Wide tears advance
 structure;fatal head uses contact-side sectors/melee serial dedupe;finite blood

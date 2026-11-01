@@ -170,7 +170,7 @@ test:--{simple-strike,actions,kick,recovery,footwork}-only;
 blood:--texture-only;all:--validate-only;gore:hero/NPC body-skull.
 Pistol:`--validate-only -- --normal-pilot-only`;`Slide__Steel` normals only.
 `build-combat-crane-surfaces.py`:2K+1K.
-`build-combat-degraded-zombie-3d-model.py` uses `degraded_zombie_geometry.py`.
+`build-combat-degraded-zombie-3d-model.py`/degraded_zombie_geometry.py:--textures-only
 `combat_degraded_zombie_audio.py`: `--validate-only`.
 `build-combat-{room,imprint,long-exposure}-{3d-model,damage-3d-model}.py`:body/surfaces/damage.
 `build-combat-room-attack-3d-model.py`:clips/tableau.

@@ -123,7 +123,7 @@ namespace BarPromenade
         }
 
         public void InitializeOpponent(VillageResidentPresentation presentation, CharacterController body,
-            bool suspendedCrane = false, CombatEnemyKind kind = CombatEnemyKind.Docker)
+            bool suspendedCrane = false, CombatEnemyKind kind = CombatEnemyKind.Docker, MeleeCombatSettings settings = null)
         {
             IsZombie = true;
             CrowbarGripStation = 0f;
@@ -132,10 +132,10 @@ namespace BarPromenade
             npc = presentation;
             OrdinaryZombieVariant = IsOrdinaryZombie
                 ? presentation.GetComponentInChildren<CombatZombieOrdinaryAppearance>()?.Variant ?? 0 : 0;
-            State = new MeleeCombatant(IsCrane ? CraneCombatSettings : IsDocker
+            State = new MeleeCombatant(settings ?? (IsCrane ? CraneCombatSettings : IsDocker
                 ? MeleeCombatSettings.ZombieUnarmed : IsOrdinaryZombie
                     ? OrdinaryZombieVariant == 2 ? SelfCarrierZombieCombatSettings : DegradedZombieCombatSettings
-                    : OrdinaryZombieCombatSettings);
+                    : OrdinaryZombieCombatSettings));
             Body = body;
             npc.ReleaseAnimation();
             if (IsCrane) LoadCraneClips();

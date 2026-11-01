@@ -62,6 +62,54 @@ def pulse(t, a, b, c, d):
     return smooth((t-a)/(b-a))*(1.-smooth((t-c)/(d-c)))
 
 
+def held_motion(t, knots):
+    """Short continuous pulls separated by real holds, not sampled-frame noise."""
+    if t <= knots[0][0]:return knots[0][1]
+    for (begin, start), (end, finish) in zip(knots, knots[1:]):
+        if t <= end:return start+(finish-start)*smooth((t-begin)/(end-begin))
+    return knots[-1][1]
+
+
+def bottle_foot_target(builder, side, seconds, cycle, carrier):
+    # Root travel remains linear and the stance foot cancels that exact travel.
+    # Only the unsupported foot catches up in unequal short pulls. Contacts stay
+    # at half/full cycle so the existing runtime clock and footfalls still match.
+    phase=min(1.,max(0.,seconds/cycle))
+    stance=phase <= .5 if side=='L' else phase >= .5
+    swing=min(1.,max(0.,phase*2.-(1. if side=='L' else 0.)))
+    if stance:
+        progress=.25-phase if side=='L' else .75-phase
+        lift=0.
+    else:
+        pulls=((0.,0.),(.15,.04),(.31,.68),(.58,.68),(.83,.97),(1.,1.)) if side=='L' else \
+            ((0.,0.),(.28,.03),(.49,.46),(.63,.46),(.88,.99),(1.,1.))
+        progress=held_motion(swing,pulls)-phase+(.25 if side=='L' else -.25)
+        lift=pulse(swing,0.,.20 if side=='L' else .34,.66,.99)
+    ankle=builder.support(side)
+    ankle.y-=(.8 if carrier else 1.2)*progress
+    ankle.z+=(.038 if side=='L' else .061)*(.65 if carrier else 1.)*lift
+    return ankle,stance,lift
+
+
+def bottle_attack_foot(builder, side, kind, seconds, carrier):
+    original=ordinary.PREPARE,ordinary.ACTIVE
+    ordinary.PREPARE,ordinary.ACTIVE=(1.25,.26) if carrier else (PREPARE,ACTIVE)
+    try:
+        return ordinary.attack_foot(builder,side,kind.replace('Decay','Ordinary').replace('Carrier','Ordinary'),seconds)
+    finally:
+        ordinary.PREPARE,ordinary.ACTIVE=original
+
+
+def assert_pose_join(first, last, label):
+    for name, initial in first.items():
+        final=last[name]
+        angle=max(abs((a-b+180.)%360.-180.) for a,b in zip(initial.rotation_degrees,final.rotation_degrees))
+        offset=max(abs(a-b) for a,b in zip(initial.location_m,final.location_m))
+        scale=max(abs(a-b) for a,b in zip(initial.scale,final.scale))
+        if angle>.002 or offset>.00001 or scale>.00001:
+            raise ValueError('Discontinuous bottle action '+label+': '+name)
+
+
 def load_builder(retain_meshes=False):
     builder=ordinary.load_builder(retain_meshes)
     rig=builder.result.rig;bpy.context.view_layer.objects.active=rig
@@ -98,34 +146,63 @@ def pose(builder,kind,seconds):
     dormant=kind.startswith('ZombieDecayDormant');rising=kind.startswith('ZombieDecayRise')
     variant=int(kind[-1]) if dormant or rising else 2 if kind.startswith('ZombieCarrier') else 0
     carrier=variant==2
-    weight=1. if dormant else 1.-smooth((seconds-.15)/(RISE-.15)) if rising else 0.
-    upper_weight=1. if dormant else 1.-smooth((seconds-.75)/(RISE-.75)) if rising and carrier else weight
+    rise=seconds/RISE
+    weight=1. if dormant else 1.-held_motion(rise,((0.,0.),(.08,0.),(.19,.19),(.37,.19),
+        (.51,.69),(.70,.69),(.92,1.),(1.,1.))) if rising else 0.
+    upper_weight=1. if dormant else 1.-held_motion(rise,((0.,0.),(.20,0.),(.30,.13),(.50,.13),
+        (.64,.55),(.77,.55),(.96,1.),(1.,1.))) if rising and carrier else weight
     walking=kind.endswith('Walk');attack='Attack' in kind;idle=kind.endswith('Idle')
     windup,active,recovery=(1.25,.26,1.25) if carrier else (PREPARE,ACTIVE,RECOVER)
     walk_seconds=1.8 if carrier else 1.6
-    wave=math.sin(seconds*math.tau/8.) if idle else 0.
-    swallow=(pulse(seconds,.6,1.0,1.1,1.45)+.7*pulse(seconds,1.9,2.18,2.24,2.7)+pulse(seconds,5.1,5.4,5.5,6.0)) if idle else 0.
-    prep=smooth(seconds/windup)*(1.-smooth((seconds-windup)/active)) if attack else 0.
-    follow=smooth((seconds-windup)/active)*(1.-smooth((seconds-windup-active)/recovery)) if attack else 0.
+    idle_time=seconds%8. if idle else 0.
+    wave=math.sin(idle_time*math.tau/8.) if idle else 0.
+    swallow=(pulse(idle_time,.62,.69,.74,1.08)+.65*pulse(idle_time,1.92,1.98,2.03,2.37)+
+        pulse(idle_time,5.14,5.22,5.28,5.72)) if idle else 0.
+    prep=held_motion(seconds/windup,((0.,0.),(.15,.06),(.31,.72),(.68,.72),(.86,1.),(1.,1.)))*\
+        (1.-smooth((seconds-windup)/active)) if attack else 0.
+    follow=smooth((seconds-windup)/active)*(1.-held_motion((seconds-windup-active)/recovery,
+        ((0.,0.),(.12,.08),(.31,.67),(.59,.67),(.91,1.),(1.,1.)))) if attack else 0.
     hit=smooth(seconds/.09)*(1.-smooth((seconds-.09)/.36)) if kind.endswith('Hit') else 0.
-    sway=math.sin(seconds*math.tau/walk_seconds) if walking else 0.
+    phase=(seconds%walk_seconds)/walk_seconds if walking else 0.
+    sway=pulse(phase,.08,.14,.19,.34)-.8*pulse(phase,.56,.65,.70,.88) if walking else 0.
+    body_jerk=head_jerk=0.
+    if idle:
+        body_jerk=pulse(idle_time,.74,.83,.87,1.26)-.6*pulse(idle_time,2.09,2.17,2.22,2.65)+\
+            .8*pulse(idle_time,5.30,5.40,5.45,5.93)
+        head_jerk=pulse(idle_time,.58,.64,.70,.91)-.85*pulse(idle_time,1.84,1.91,1.97,2.21)+\
+            .7*pulse(idle_time,5.10,5.16,5.21,5.49)
+    elif walking:
+        body_jerk=pulse(phase,.13,.20,.24,.39)-.75*pulse(phase,.63,.70,.76,.93)
+        head_jerk=pulse(phase,.24,.30,.34,.46)-.85*pulse(phase,.75,.82,.85,.98)
+    elif rising:
+        body_jerk=pulse(rise,.37,.42,.46,.58)-.6*pulse(rise,.72,.77,.80,.94)
+        head_jerk=-pulse(rise,.46,.51,.55,.66)+.8*pulse(rise,.81,.85,.88,.98)
+    elif attack:
+        # The contact interval keeps its continuous original hand sweep. The
+        # fracture in rhythm belongs to anticipation and the delayed return.
+        body_jerk=pulse(seconds/windup,.12,.20,.27,.42)
+        head_jerk=-pulse(seconds/windup,.27,.34,.39,.57)+\
+            .7*pulse((seconds-windup-active)/recovery,.14,.20,.27,.50)
     pelvis=rig.pose.bones['pelvis'];matrix=pelvis.matrix.copy()
-    matrix.translation+=Vector((.012*sway,0.,-(.40 if carrier else .15)-(.12 if carrier else .38)*weight-.025*follow))
+    matrix.translation+=Vector((.014*sway,0.,-(.40 if carrier else .15)-(.12 if carrier else .38)*weight-
+        .025*follow-(.018 if carrier else .012)*abs(body_jerk)))
     pelvis.matrix=matrix;bpy.context.view_layer.update()
-    ordinary.rotation(rig.pose.bones['spine'],Quaternion(Vector((1,0,0)),math.radians((5 if carrier else 8)+10*weight+2*wave-4*hit)))
-    ordinary.rotation(rig.pose.bones['chest'],Quaternion(Vector((1,0,0)),math.radians((3 if carrier else 0)+(48 if carrier else 42)*upper_weight+3*swallow-6*prep+7*follow)))
-    ordinary.rotation(rig.pose.bones['chest'],Quaternion(Vector((0,1,0)),math.radians((3 if carrier else -4)+2*sway)))
+    ordinary.rotation(rig.pose.bones['spine'],Quaternion(Vector((1,0,0)),math.radians((5 if carrier else 8)+10*weight+2*wave-4*hit+3*body_jerk)))
+    ordinary.rotation(rig.pose.bones['chest'],Quaternion(Vector((1,0,0)),math.radians((3 if carrier else 0)+(48 if carrier else 42)*upper_weight+3*swallow-6*prep+7*follow+(7 if carrier else 5)*body_jerk)))
+    ordinary.rotation(rig.pose.bones['chest'],Quaternion(Vector((0,1,0)),math.radians((3 if carrier else -4)+2*sway+5*body_jerk)))
     chest=rig.pose.bones['chest'];delta=chest.matrix@chest.bone.matrix_local.inverted()
     head=rig.pose.bones['head']
     if carrier:
         # Upper head remains dragged close to the ground as the lower human rises.
-        hanging=Matrix.Translation(Vector((.018*sway,-.02*follow,-.43-.018*swallow)))
+        hanging=Matrix.Translation(Vector((.018*sway+.018*head_jerk,-.02*follow,-.43-.018*swallow)))
         neck=rig.pose.bones['neck'];neck.matrix=hanging@neck.bone.matrix_local
         bpy.context.view_layer.update()
         head.matrix=hanging@head.bone.matrix_local
     else:
         head.matrix=Matrix.Translation(Vector((0.,-.008*swallow,-.009*swallow)))@delta@head.bone.matrix_local
     bpy.context.view_layer.update()
+    ordinary.rotation(head,Quaternion(Vector((0,1,0)),math.radians((9 if carrier else 6)*head_jerk)))
+    ordinary.rotation(head,Quaternion(Vector((1,0,0)),math.radians(-5*head_jerk)))
     for side in ('L','R'):
         sign=1. if side=='L' else -1.
         if carrier:
@@ -144,17 +221,10 @@ def pose(builder,kind,seconds):
     for side in ('L','R'):
         ankle=builder.support(side);rotation=builder.footwork_support_rotations[side]
         if walking:
-            source_seconds=seconds/walk_seconds*1.6
-            ankle,_,lift=ordinary.foot_target(builder,side,source_seconds)
-            if carrier:
-                baseline=builder.support(side);ankle.y=baseline.y+(ankle.y-baseline.y)*(.8/1.2)
-                ankle.z=baseline.z+(ankle.z-baseline.z)*.65
+            ankle,_,lift=bottle_foot_target(builder,side,seconds,walk_seconds,carrier)
             rotation=Quaternion(Vector((1,0,0)),math.radians(-7*lift))@rotation
         elif attack:
-            original=(ordinary.PREPARE,ordinary.ACTIVE)
-            ordinary.PREPARE,ordinary.ACTIVE=windup,active
-            ankle,_,lift=ordinary.attack_foot(builder,side,kind.replace('Decay','Ordinary').replace('Carrier','Ordinary'),seconds)
-            ordinary.PREPARE,ordinary.ACTIVE=original
+            ankle,_,lift=bottle_attack_foot(builder,side,kind,seconds,carrier)
             rotation=Quaternion(Vector((1,0,0)),math.radians(-7*lift))@rotation
         builder.recovery_leg(side,ankle,(0,-1,0),rotation)
     return builder.snapshot_pose()
@@ -169,9 +239,29 @@ def author_actions(output, source):
     for name, duration, loop in CLIPS:
         frames = round(duration*FPS)
         keys = []
+        max_planted = 0.
         for frame in range(frames+1):
-            keys.append((frame/frames,pose(builder,name,duration*frame/frames)))
+            seconds=duration*frame/frames
+            keys.append((frame/frames,pose(builder,name,seconds)))
+            # Inspect the pose already evaluated for export, including the short
+            # pulls between old quarter-cycle samples. No second scene sampling.
+            for side in ('L','R'):
+                target=builder.support(side);stance=True
+                if name.endswith('Walk'):
+                    carrier=name.startswith('ZombieCarrier')
+                    target,stance,_=bottle_foot_target(builder,side,seconds,1.8 if carrier else 1.6,carrier)
+                elif 'Attack' in name:
+                    target,stance,_=bottle_attack_foot(builder,side,name,seconds,name.startswith('ZombieCarrier'))
+                if stance:
+                    max_planted=max(max_planted,(builder.result.rig.pose.bones['foot.'+side].head-target).length)
             if frame and frame%100==0: print(name, frame, '/', frames, flush=True)
+        if max_planted>.001:raise ValueError('Lost planted bottle contact: '+name)
+        if loop:assert_pose_join(keys[0][1],keys[-1][1],name+' loop')
+        if 'Attack' in name or name.endswith('Hit'):
+            idle='ZombieCarrierIdle' if name.startswith('ZombieCarrier') else 'ZombieDecayIdle'
+            baseline=pose(builder,idle,0.)
+            assert_pose_join(keys[0][1],baseline,name+' entry')
+            assert_pose_join(keys[-1][1],baseline,name+' return')
         builder._create_action(name,'combat_degraded_zombie',duration,loop,frames,FPS,keys)
         action = builder.result.actions[name].action
         for curve in common.iter_action_fcurves(action):
@@ -189,7 +279,8 @@ def author_actions(output, source):
             for bone in builder.result.rig.pose.bones:
                 max_scale = max(max_scale,max(abs(v-1) for v in bone.scale))
         if max_support>.001 or max_scale>.0001: raise ValueError('Lost grounded contacts: '+name)
-        records.append(dict(name=name,duration_seconds=duration,loop=loop,maximum_support_error_m=max_support,maximum_scale_error=max_scale))
+        records.append(dict(name=name,duration_seconds=duration,loop=loop,maximum_support_error_m=max_support,
+            maximum_planted_support_error_m=max_planted,maximum_scale_error=max_scale))
         print('Validated '+name,flush=True)
     for i in range(3):
         first = pose(builder,f'ZombieDecayDormant{i}',0.)
@@ -201,7 +292,7 @@ def author_actions(output, source):
     builder._reset_pose()
     common.export_animation_fbx(output/'ZombieDecayActions.fbx',builder.result)
     common.save_blend(source/'ZombieDecayActions.blend')
-    payload=dict(generator=Path(__file__).name,version='2.0.0',rig='NpcHumanV2',root_motion=False,
+    payload=dict(generator=Path(__file__).name,version='2.1.0',rig='NpcHumanV2',root_motion=False,
         animation_events=0,source_fps=FPS,walk_cycle_distance_m=1.2,walk_duration_seconds=1.6,
         prepare_seconds=PREPARE,active_seconds=ACTIVE,recovery_seconds=RECOVER,rise_seconds=RISE,
         carrier=dict(walk_cycle_distance_m=.8,walk_duration_seconds=1.8,prepare_seconds=1.25,active_seconds=.26,recovery_seconds=1.25),
@@ -410,8 +501,19 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--output-dir',type=Path,default=OUT);parser.add_argument('--source-dir',type=Path,default=SOURCE)
     parser.add_argument('--preview-dir',type=Path);parser.add_argument('--bodies-only',action='store_true');parser.add_argument('--actions-only',action='store_true')
+    parser.add_argument('--textures-only',action='store_true')
     args=parser.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else [])
     args.output_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
+    if args.textures_only:
+        for variant in range(3):
+            name=f'ZombieDecayBody{variant}'
+            texture=atlas(variant)
+            payload=json.loads((OUT/(name+'.json')).read_text())
+            payload['atlas_sha256']=hashlib.sha256(texture).hexdigest()
+            (args.output_dir/(name+'Atlas.png')).write_bytes(texture)
+            (args.output_dir/(name+'.json')).write_text(json.dumps(payload,indent=2)+'\n')
+        print('BOTTLE FLESH SOURCE DETAIL / RETAINED NORMALIZED CHARTS OK',flush=True)
+        return
     if not args.bodies_only:author_actions(args.output_dir,args.source_dir)
     if not args.actions_only:build_bodies(args.output_dir,args.source_dir,args.preview_dir)
     print('DEGRADED ZOMBIE GROUNDED ACTIONS AND THREE BODY SCULPTS OK',flush=True)

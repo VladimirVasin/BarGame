@@ -71,10 +71,12 @@ namespace BarPromenade.Tests.PlayMode
             yield return null; // Let the real camera switch from the entry shot to the labyrinth orbit.
             AimLabyrinthOrbit(root, carrier + Vector3.up * .9f);
             yield return CaptureCorruptedGameplay(root, "stairwell-selfcarrier-dormant");
+            CaptureStairwellFleshDetail(root, "stairwell-selfcarrier-flesh", 11);
             root.Player.Motor.Teleport(root.World.Root.TransformPoint(new Vector3(-1f, 12.04f, 14f)));
             yield return null;
             AimLabyrinthOrbit(root, plan.Enemies[0].Position + Vector3.up * .9f);
             yield return CaptureCorruptedGameplay(root, "stairwell-enemies-dormant");
+            CaptureStairwellFleshDetail(root, "stairwell-loop-flesh");
             AssertStairwellEncounterDormant(root);
             yield return WalkStairwellWaypoint(root, room.OutsideDock);
             var door = root.LabyrinthPresentation.Doors[1];
@@ -157,6 +159,8 @@ namespace BarPromenade.Tests.PlayMode
                     "The first opponent did not begin its readable attack.");
                 int attack = target.State.AttackSequence;
                 yield return CaptureAcquiredCrowbarPose(root, "stairwell-enemies-pre-contact", requireHero: false);
+                AssertBottleFleshCharts(target.gameObject);
+                CaptureStairwellFleshDetail(root, "stairwell-loop-active-flesh");
                 yield return WaitForEncounter(root, () => target.State.Phase == MeleePhase.Windup &&
                     target.State.AttackElapsed >= target.State.AttackWindupSeconds - .04f,
                     "The first opponent did not present its readable committed attack.");
@@ -181,6 +185,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return WaitForEncounter(root, () => target.ReceivedImpactCount > hits,
                     "The real outbound LMB strike did not reach the enemy's physical body.");
                 Assert.That(target.LastImpact.Source, Is.SameAs(hero));
+                AssertBottleFleshCharts(target.gameObject);
                 yield return CaptureAcquiredCrowbarPose(root, "stairwell-enemies-crowbar-contact");
                 AssertStairwellEncounterCaps(root);
 
@@ -280,6 +285,14 @@ namespace BarPromenade.Tests.PlayMode
             }
             foreach (CombatActor actor in root.Encounter.ActiveActors)
             {
+                if (actor != null && actor.IsOrdinaryZombie)
+                {
+                    bool carrier = actor.OrdinaryZombieVariant == 2;
+                    Assert.That(actor.State.Settings.RecoverySeconds, Is.EqualTo(carrier ? 2.8f : 2.1f).Within(.0001f),
+                        "A promoted stairwell body must use the encounter's shorter ordinary recovery.");
+                    Assert.That(actor.State.Settings.ParriedRecoverySeconds, Is.EqualTo(carrier ? 4.2f : 3.2f).Within(.0001f),
+                        "Faster pursuit must retain the player's counterattack window after a parry.");
+                }
                 if (actor == null || actor.State.IsDefeated || actor.IsKnockedDown || actor.IsRagdollActive) continue;
                 Vector3 local = root.World.Root.InverseTransformPoint(actor.transform.position);
                 Assert.That(root.Encounter.Plan.Contains(local), Is.True,
@@ -308,6 +321,9 @@ namespace BarPromenade.Tests.PlayMode
                     actor.InitializeOpponent(visual, body, kind: CombatEnemyKind.Zombie);
                     Assert.That(actor.OrdinaryZombieVariant, Is.EqualTo(variant));
                     Assert.That(actor.State.AttackWindupSeconds, Is.EqualTo(variant == 2 ? 1.25f : .95f).Within(.0001f));
+                    Assert.That(actor.State.Settings.RecoverySeconds, Is.EqualTo(variant == 2 ? 4.2f : 3.2f).Within(.0001f),
+                        "The scene's faster recovery must not alter a bottle created with the shared default settings.");
+                    AssertBottleFleshCharts(visual.gameObject);
                     AssertStairwellArmCapsuleLengths(actor);
                     actor.SetOrdinaryZombieDormant(variant);
                     GameObject passive = CombatZombieAssetProvider.CreateOrdinaryPassive(fixture.transform, variant, false);
@@ -336,11 +352,97 @@ namespace BarPromenade.Tests.PlayMode
                     actor.RestoreOrdinaryZombieIdlePhase(phase);
                     AssertStairwellBodyBounds(StairwellVisibleBodyBounds(visual.gameObject, fixture.transform), continuingIdle,
                         "standing promotion preserves phase " + variant);
+                    if (variant != 1) CaptureBottleMotionReview(visual, fixture.transform, variant);
                     NpcFootstepSources.Unregister(visual.transform);
                     UnityEngine.Object.DestroyImmediate(actorRoot);
                 }
             }
             finally { UnityEngine.Object.DestroyImmediate(fixture); }
+        }
+
+        private static void AssertBottleFleshCharts(GameObject body)
+        {
+            AssertMonsterSurfaceBindings(body);
+            int measured = 0;
+            var properties = new MaterialPropertyBlock();
+            foreach (SkinnedMeshRenderer renderer in body.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (!renderer.enabled || !renderer.gameObject.activeInHierarchy ||
+                    !(renderer.name == "GEO_Neck" || renderer.name.StartsWith("GEO_Arm.", StringComparison.Ordinal) ||
+                      renderer.name.StartsWith("GEO_Hand", StringComparison.Ordinal))) continue;
+                renderer.GetPropertyBlock(properties);
+                Texture atlas = properties.GetTexture("_BaseMap") ?? renderer.sharedMaterial.GetTexture("_BaseMap");
+                Assert.That(atlas, Is.Not.Null, "Every visible flesh part needs its own effective atlas binding: " + renderer.name);
+                Assert.That(atlas.width, Is.EqualTo(1024), "Flesh needs its rebaked source detail, without a 512px import cap.");
+                Assert.That(atlas.filterMode, Is.EqualTo(FilterMode.Trilinear));
+                Vector2 min = Vector2.one, max = Vector2.zero;
+                Vector2[] uv = renderer.sharedMesh.uv;
+                Assert.That(uv.Length, Is.EqualTo(renderer.sharedMesh.vertexCount));
+                foreach (Vector2 point in uv)
+                {
+                    Assert.That(point.x, Is.InRange(.5099f, .7301f), renderer.name + " flesh U must remain inside its skin tile.");
+                    Assert.That(point.y, Is.InRange(.7699f, .9701f), renderer.name + " flesh V must remain inside its skin tile.");
+                    min = Vector2.Min(min, point); max = Vector2.Max(max, point);
+                }
+                Assert.That(max.x - min.x, Is.GreaterThan(.025f), "A flesh surface cannot collapse to a constant skin swatch: " + renderer.name);
+                Assert.That(max.y - min.y, Is.GreaterThan(.025f), "A flesh surface needs longitudinal texture variation: " + renderer.name);
+                properties.Clear(); measured++;
+            }
+            Assert.That(measured, Is.GreaterThanOrEqualTo(5), "Neck, both arms and both hands require textured charts.");
+        }
+
+        private static void CaptureStairwellFleshDetail(StairwellInteriorRoot root, string name, int enemy = 0)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            float fov = camera.fieldOfView;
+            var pose = new Pose(camera.transform.position, camera.transform.rotation);
+            try
+            {
+                Vector3 focus = root.Encounter.GetEnemyPosition(enemy) + Vector3.up * .95f;
+                Vector3 front = root.World.Root.TransformDirection(root.Encounter.Plan.Enemies[enemy].Facing);
+                Vector3 eye = focus + front * 2.6f + Vector3.Cross(Vector3.up, front) * .8f + Vector3.up * .25f;
+                camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(focus - eye));
+                camera.fieldOfView = 44f;
+                CaptureCurrentCamera(camera, SceneIds.StairwellInterior, name, 1280, 720);
+            }
+            finally { camera.fieldOfView = fov; camera.transform.SetPositionAndRotation(pose.position, pose.rotation); }
+        }
+
+        private static void CaptureBottleMotionReview(VillageResidentPresentation visual, Transform frame, int variant)
+        {
+            // Isolate the surface from the scene's grade and darkness, while
+            // retaining the real imported skin, shader and sampled bone clips.
+            var review = new GameObject("Bottle neutral motion review");
+            review.transform.position = frame.position;
+            try
+            {
+                Camera camera = review.AddComponent<Camera>();
+                review.AddComponent<BarPromenade.Rendering.ScenePresentationExclusion>();
+                camera.enabled = false; camera.nearClipPlane = .03f; camera.farClipPlane = 10f;
+                camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.06f, .06f, .06f);
+                camera.fieldOfView = 42f; camera.aspect = 16f / 9f;
+                var lamp = new GameObject("Neutral flesh key"); lamp.transform.SetParent(review.transform, false);
+                Light light = lamp.AddComponent<Light>();
+                light.type = LightType.Point; light.color = Color.white; light.intensity = 8f; light.range = 10f;
+                Vector3 focus = frame.position + Vector3.up * 1.15f;
+                camera.transform.SetPositionAndRotation(frame.position + new Vector3(1.6f, 1.45f, 3.3f),
+                    Quaternion.LookRotation(focus - (frame.position + new Vector3(1.6f, 1.45f, 3.3f))));
+                lamp.transform.position = frame.position + new Vector3(1.5f, 2.8f, 2f);
+                foreach (string clipName in new[] { CombatZombieAssetProvider.DegradedWalkClip, CombatZombieAssetProvider.DegradedAttackRightClip })
+                {
+                    AnimationClip clip = CombatZombieAssetProvider.LoadDegradedClip(clipName, variant);
+                    float[] samples = clipName == CombatZombieAssetProvider.DegradedWalkClip
+                        ? new[] { 0f, .20f, .48f, .73f }
+                        : new[] { 0f, .32f, .46f, .53f, .78f, 1f };
+                    for (int index = 0; index < samples.Length; index++)
+                    {
+                        clip.SampleAnimation(visual.Animator.gameObject, clip.length * samples[index]);
+                        CaptureCurrentCamera(camera, SceneIds.StairwellInterior,
+                            "bottle-neutral-" + variant + "-" + clipName + "-" + index, 1280, 720);
+                    }
+                }
+            }
+            finally { UnityEngine.Object.DestroyImmediate(review); }
         }
 
         private static void AssertStairwellArmCapsuleLengths(CombatActor actor)

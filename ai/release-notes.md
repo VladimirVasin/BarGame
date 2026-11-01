@@ -8,8 +8,7 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-01
 
-- Бутылочные тела:пробоины/осколки/звон,без крови/костей;риг/UV/24FX. BottleMonstersFractureFromCrowbar passed.
-- Монстры:страшные фактуры без ряби. MonsterHorrorTextures passed.
+- Бутылочные монстры:фактурная плоть,судороги,быстрый натиск;пробоины/осколки/звон. BottleMonstersFractureFromCrowbar passed.
 - Фонарик/лом/пистолет:катсцены/экипировка;толпа ждёт.
   StairwellPickupCinematics passed.
 - Загадка3:пистолет/8+0;склад хранит оружие/патроны,без двустволки.

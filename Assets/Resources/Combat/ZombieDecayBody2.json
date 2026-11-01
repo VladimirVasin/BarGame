@@ -6,7 +6,7 @@
   "geometry_owner": "authored_decay_sculpt",
   "bounds_space": "unity_metres",
   "signature": "e048093ca79ead1b81b69e77e961264751d3c04ef45162823ec2a19aece5794c",
-  "atlas_sha256": "20ae365925d7210d8d8af91875e66f5748215eabecd062190a08993108a2adab",
+  "atlas_sha256": "df0d9296c647e1bdcaf5a67cbeab1a0950c3f519c665f659fcccda79f55cf427",
   "meshes": [
     {
       "name": "GEO_Arm.L",
@@ -455,7 +455,7 @@
       "bounds_min": [
         -0.4194526672363281,
         -8.940696716308594e-08,
-        -0.8992796540260315
+        -0.8992798328399658
       ],
       "bounds_max": [
         0.5066347718238831,
@@ -471,7 +471,7 @@
       "bounds_min": [
         -0.5107740163803101,
         -8.940696716308594e-08,
-        -0.8992797136306763
+        -0.8992798924446106
       ],
       "bounds_max": [
         0.506388783454895,
