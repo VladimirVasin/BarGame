@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade
 {
@@ -12,6 +13,7 @@ namespace BarPromenade
         internal const float ActionStretch = 2f;
         internal const double ScriptDurationSeconds = 8d;
         internal const double AttackCueSeconds = 3d;
+        internal const float InversionSeconds = .4f;
         private CombatTestRoot owner;
         private WarehouseGateController gate;
         private WarehouseArenaMechanisms mechanisms;
@@ -23,6 +25,10 @@ namespace BarPromenade
         private Player3DCharacterPresentation hero;
         private Camera sceneCamera;
         private CombatActor suspension;
+        private Light hangingBounce;
+        private Renderer[] hangingReceivers;
+        private bool[] hangingReceiverHadLayer;
+        private const uint HangingLightLayer = 1u << 7;
 
         public bool IsActive => playback != null || hangingPlayback != null;
         internal bool HangingGameplayActive => hangingPlayback != null;
@@ -38,6 +44,20 @@ namespace BarPromenade
             hero = (Player3DCharacterPresentation)root.Player.Visual;
             interaction = root.Player.GameObject.GetComponent<PlayerAnimatedInteractionController>();
             sceneCamera = root.CameraFollow.GetComponent<Camera>();
+            var bounceHost = new GameObject("Warehouse hanging fan bounce");
+            bounceHost.transform.SetParent(transform, false);
+            hangingBounce = bounceHost.AddComponent<Light>();
+            hangingBounce.type = LightType.Point;
+            hangingBounce.range = 4f;
+            hangingBounce.shadows = LightShadows.None;
+            hangingBounce.renderMode = LightRenderMode.ForcePixel;
+            hangingBounce.GetUniversalAdditionalLightData().renderingLayers = HangingLightLayer;
+            hangingBounce.enabled = false;
+            var receivers = new List<Renderer>(48);
+            receivers.AddRange(root.Hero.GetComponentsInChildren<SkinnedMeshRenderer>(true));
+            receivers.AddRange(source.GetComponentsInChildren<SkinnedMeshRenderer>(true));
+            hangingReceivers = receivers.ToArray();
+            hangingReceiverHadLayer = new bool[hangingReceivers.Length];
             hero.Registry.RegisterRuntimeAnimationBank("CombatDoorAmbush/HeroActions", "Contextual");
             WarehouseDoorAmbushAssets.Clip(WarehouseDoorAmbushAssets.Attack);
             _ = WarehouseDoorAmbushAssets.Plan;
@@ -90,7 +110,7 @@ namespace BarPromenade
             // clock ends; ordinary combat must not advance them a second time.
             if (hangingPlayback != null && GameInput.MovementFocused && !GameTimeScaleRuntime.IsPaused &&
                 !PauseMenuController.IsAnyPaused && !SceneTransitionService.IsTransitioning)
-                Source.AdvanceDoorAmbush(Time.deltaTime);
+                hangingPlayback.AdvanceHanging(Time.deltaTime);
         }
 
         private void LateUpdate()
@@ -100,7 +120,32 @@ namespace BarPromenade
             {
                 Source.Present();
                 playback?.PresentCamera();
+                bool bounce = Source.DoorAmbushCaptured && mechanisms != null && mechanisms.FanLight.enabled;
+                hangingBounce.enabled = bounce;
+                if (bounce)
+                {
+                    Vector3 centre = (owner.Hero.BodyWorldPosition + Source.BodyWorldPosition) * .5f + Vector3.up * .5f;
+                    hangingBounce.transform.position = centre + sceneCamera.transform.right * .8f - sceneCamera.transform.forward * .5f;
+                    hangingBounce.color = mechanisms.FanLight.color;
+                    hangingBounce.intensity = mechanisms.FanLight.intensity * .055f;
+                }
             }
+        }
+
+        private void SetHangingLightReceivers(bool active)
+        {
+            for (int i = 0; i < hangingReceivers.Length; i++)
+            {
+                Renderer receiver = hangingReceivers[i];
+                if (receiver == null) continue;
+                if (active)
+                {
+                    hangingReceiverHadLayer[i] = (receiver.renderingLayerMask & HangingLightLayer) != 0;
+                    receiver.renderingLayerMask |= HangingLightLayer;
+                }
+                else if (!hangingReceiverHadLayer[i]) receiver.renderingLayerMask &= ~HangingLightLayer;
+            }
+            if (!active && hangingBounce != null) hangingBounce.enabled = false;
         }
 
         private void OnDisable()
@@ -141,6 +186,7 @@ namespace BarPromenade
             private float previousHealth, previousStamina, previousFallDamage;
             private int previousFallCount;
             private float previousFieldOfView;
+            private float previousFanShadowStrength;
             private bool previousFixed;
             private Pose previousFixedPose;
             private float previousFixedLens;
@@ -158,7 +204,7 @@ namespace BarPromenade
             public double DurationSeconds => ScriptDurationSeconds;
             public bool IsReady => prepared && scene.interaction.Phase != PlayerAnimatedInteractionPhase.Positioning;
             public bool WantsGameplay => handoff;
-            public bool IsComplete => handoff && scene.Source.DoorAmbushHoistComplete && cameraInversionSeconds >= 2f;
+            public bool IsComplete => handoff && scene.Source.DoorAmbushHoistComplete && scene.Source.DoorAmbushVictimInverted;
             public bool KeepsGameplayOnCompletion => true;
             internal bool AttackStarted => sampled >= AttackCueSeconds;
 
@@ -172,6 +218,7 @@ namespace BarPromenade
                     throw new InvalidOperationException("The hero is not ready for the warehouse door.");
                 scene.playback = this;
                 claimed = true;
+                scene.SetHangingLightReceivers(true);
                 previousFocus = scene.owner.Hero.CombatFocused;
                 previousHero = new Pose(scene.owner.Hero.transform.position, scene.owner.Hero.transform.rotation);
                 previousHealth = scene.owner.Hero.State.Health;
@@ -180,10 +227,13 @@ namespace BarPromenade
                 previousFallDamage = scene.owner.Hero.LastRestraintFallDamage;
                 previousCamera = new Pose(scene.sceneCamera.transform.position, scene.sceneCamera.transform.rotation);
                 previousFieldOfView = scene.sceneCamera.fieldOfView;
+                previousFanShadowStrength = scene.mechanisms.FanLight.shadowStrength;
                 approachPosition = scene.owner.Player.GameObject.transform.position;
                 previousFixed = scene.owner.CameraFollow.FixedPoseActive;
                 previousFixedPose = scene.owner.CameraFollow.FixedBasePose;
                 previousFixedLens = scene.owner.CameraFollow.FixedBaseFieldOfView;
+                if (!scene.owner.PrepareDoorAmbushCombat(this, scene.Source))
+                    throw new InvalidOperationException("The hanging episode could not prepare its pistol.");
                 if (!scene.valveLamp.BeginDoorAmbushLighting(this, scene.EntryRootPosition + new Vector3(-.02f, 1.26f, -.22f)))
                     throw new InvalidOperationException("The door's red light could not frame the paired actors.");
                 lit = true;
@@ -262,6 +312,9 @@ namespace BarPromenade
                 SetOpeningCamera(next);
                 if (next >= .65f && next - delta < .65f) PlayCue(RetroSfxId.DoorCreak, scene.EntryRootPosition);
                 if (next >= 7.7f && next - delta < 7.7f) PlayCue(RetroSfxId.RopeCreak, scene.owner.Hero.BodyWorldPosition);
+                if (next >= (float)AttackCueSeconds && next - delta < (float)AttackCueSeconds)
+                    scene.Source.PlayDoorAmbushRevealSound();
+                if (next >= 7.7f && next - delta < 7.7f) scene.Source.PlayDoorAmbushHookSound();
                 if (next >= (float)AttackCueSeconds)
                 {
                     scene.Source.SetDoorAmbushVisible(true);
@@ -275,11 +328,12 @@ namespace BarPromenade
                 if (terminalFrame < 0) { terminalFrame = Time.frameCount; return; }
                 if (Time.frameCount <= terminalFrame) return;
                 if (!scene.interaction.ReleaseForHandoff(this) ||
-                    !scene.Source.BeginScriptedLegCapture(scene.owner.Hero, heroHold, hold, retreat, applyDamage: !preview))
+                    !scene.Source.BeginScriptedLegCapture(scene.owner.Hero, heroHold, hold, retreat, applyDamage: false))
                     throw new InvalidOperationException("The leg capture could not accept the paired terminal pose.");
                 if (!scene.mechanisms.BeginDoorAmbushOverdrive(this))
                     throw new InvalidOperationException("The ceiling fan could not restart with the hook strike.");
                 fanOverdrive = true;
+                scene.mechanisms.FanLight.shadowStrength = .5f;
                 handoff = true;
                 PresentCamera();
             }
@@ -295,9 +349,9 @@ namespace BarPromenade
             {
                 Vector3 entry = scene.EntryRootPosition;
                 float legShot = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(3.3f, 6.5f, seconds));
-                Vector3 position = entry + Vector3.Lerp(new Vector3(.06f, 1.18f, .55f),
+                Vector3 position = entry + Vector3.Lerp(new Vector3(.06f, 1.85f, .55f),
                     new Vector3(.12f, .34f, .55f), legShot);
-                Vector3 target = entry + Vector3.Lerp(new Vector3(0f, 1.35f, -.05f),
+                Vector3 target = entry + Vector3.Lerp(new Vector3(0f, 1.7f, -.15f),
                     new Vector3(.1f, .35f, -.03f), legShot);
                 float attempt = Mathf.SmoothStep(0f, 1f, seconds / 3f);
                 float attack = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(3f, 3.18f, seconds));
@@ -317,12 +371,11 @@ namespace BarPromenade
                         actor.Ragdoll.PhysicsController.ChestBody.position, .5f)
                     : actor.transform.position + Vector3.up * 1.05f;
                 float raised = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1.5f, 5.5f, centre.y));
-                Vector3 position = centre + new Vector3(.06f, Mathf.Lerp(-.27f, -.1f, raised),
-                    Mathf.Lerp(.55f, 2f, raised));
+                Vector3 position = centre + new Vector3(Mathf.Lerp(.06f, .9f, raised), Mathf.Lerp(-.27f, -.1f, raised),
+                    Mathf.Lerp(.55f, 2.5f, raised));
                 Vector3 target = centre + Vector3.up * Mathf.Lerp(.2f, 0f, raised);
-                float inversion = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(cameraInversionSeconds / 2f));
                 Quaternion rotation = Quaternion.LookRotation(target - position) *
-                    Quaternion.AngleAxis(Mathf.Lerp(-4f, 180f, inversion), Vector3.forward);
+                    Quaternion.AngleAxis(-4f, Vector3.forward);
                 float lens = Mathf.Lerp(78f, 70f, raised);
                 scene.owner.CameraFollow.SetFixedPose(position, rotation, lens);
                 scene.sceneCamera.transform.SetPositionAndRotation(position, rotation);
@@ -333,8 +386,15 @@ namespace BarPromenade
             {
                 interactiveSeconds += seconds;
                 scene.Source.AdvanceDoorAmbush(seconds);
-                if (scene.Source.DoorAmbushHoistComplete && scene.Source.DoorAmbushVictimInverted)
-                    cameraInversionSeconds += seconds;
+            }
+
+            internal void AdvanceHanging(float seconds)
+            {
+                cameraInversionSeconds = Mathf.Min(InversionSeconds, cameraInversionSeconds + seconds);
+                scene.owner.CameraFollow.SetFreeAimHorizonRoll(this,
+                    184f * Mathf.SmoothStep(0f, 1f, cameraInversionSeconds / InversionSeconds));
+                if (cameraInversionSeconds >= InversionSeconds) scene.Source.BeginDoorAmbushPursuit();
+                scene.Source.AdvanceDoorAmbush(seconds);
             }
 
             public void CompleteIntoGameplay()
@@ -350,7 +410,7 @@ namespace BarPromenade
                 scene.sceneCamera.transform.SetPositionAndRotation(finalCamera.position, finalCamera.rotation);
                 scene.sceneCamera.fieldOfView = finalLens;
                 if (!scene.owner.CameraFollow.SetFreeAim(this, chest, preserveCurrentPose: true, followPhysicalBody: true) ||
-                    !scene.Source.CommitDoorAmbushHangingGameplay())
+                    !scene.Source.CommitDoorAmbushHangingGameplay() || !scene.owner.BeginDoorAmbushCombat(this))
                     throw new InvalidOperationException("The hanging hero could not accept gameplay camera ownership.");
                 committed = true;
             }
@@ -359,6 +419,7 @@ namespace BarPromenade
             {
                 scene.interaction.SetExternalPaused(this, paused);
                 RetroAudioService.Instance?.SetPresentationPaused(this, paused);
+                if (scene.Source != null) scene.Source.SetDoorAmbushAudioPaused(paused);
             }
 
             public void Stop()
@@ -383,11 +444,15 @@ namespace BarPromenade
             internal void ReleaseHangingGameplay(bool prepareAgain = false)
             {
                 ReleaseLighting();
+                scene.SetHangingLightReceivers(false);
                 // Scene unload may destroy the camera or hero before this
                 // owner. Each resource needs its own Unity-null check.
                 PlayerCameraFollow follow = scene.owner != null ? scene.owner.CameraFollow : null;
                 CombatActor actor = scene.owner != null ? scene.owner.Hero : null;
                 if (follow != null) follow.ClearFreeAim(this);
+                if (scene.owner != null) scene.owner.EndDoorAmbushCombat(this);
+                if (scene.mechanisms != null && scene.mechanisms.FanLight != null)
+                    scene.mechanisms.FanLight.shadowStrength = previousFanShadowStrength;
                 if (scene.Source != null) scene.Source.EndDoorAmbush();
                 if (scene.interaction != null)
                 {

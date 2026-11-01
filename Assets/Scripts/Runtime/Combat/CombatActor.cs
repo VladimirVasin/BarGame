@@ -430,7 +430,7 @@ namespace BarPromenade
             Player3DAnatomicalPart part = Player3DAnatomicalPart.Torso, Vector3 localPoint = default, float weaponSpeed = 0f,
             bool physicalBody = false, BodyDamageRegion? bodyRegion = null, int bodyPatch = -1, bool detachedPart = false)
         {
-            if (damage <= 0f || IsCraneRegenerating) return MeleeHitResult.Ignored;
+            if (damage <= 0f || IsCraneRegenerating || DoorAmbushScriptProtected) return MeleeHitResult.Ignored;
             bool ordinaryHeroHit = IsHero && source.IsZombie && !source.IsDocker && !source.IsRoom &&
                 !source.IsCrane && !detachedPart;
             // A crowd cannot repeatedly cancel the same short reaction or trap

@@ -209,7 +209,7 @@ namespace BarPromenade
             if (alpha > 0f)
             {
                 string rounds = gameplayRounds.Get("", Hero.Firearm.Rounds);
-                string reserve = gameplayReserve.Get("/ ", Hero.Firearm.ReserveRounds);
+                string reserve = Hero.DoorAmbushCombatActive ? "/ ∞" : gameplayReserve.Get("/ ", Hero.Firearm.ReserveRounds);
                 // Retain readable type; fit the plate to its contents instead of
                 // reserving empty columns. Measure only when a counter changes.
                 if (rounds != measuredRounds || reserve != measuredReserve)

@@ -188,7 +188,7 @@ namespace BarPromenade
         internal bool PresentRestraint()
         {
             if (!restraintActive) return false;
-            if (IsRagdollActive) { ReassertTransientShotgunHold(); return true; }
+            if (IsRagdollActive) { BindGroundedFirearm(); ReassertTransientShotgunHold(); return true; }
             RestoreCombatAttention();
             string clipName = restraintHoldClip != null ? restraintHoldClip.name : hit.name;
             if (!hero.OwnsClip(this) && !hero.TryAcquireClip(this, clipName)) return true;
@@ -264,7 +264,7 @@ namespace BarPromenade
 
         internal void ReceiveRestraintLanding(float speed, Vector3 point, Vector3 normal)
         {
-            if (!IsHero || State.IsDefeated || !float.IsFinite(speed) || speed <= RestraintLandingSafeSpeed) return;
+            if (DoorAmbushScriptProtected || !IsHero || State.IsDefeated || !float.IsFinite(speed) || speed <= RestraintLandingSafeSpeed) return;
             float before = State.Health;
             float excess = speed - RestraintLandingSafeSpeed;
             MeleePhase phase = State.Phase;

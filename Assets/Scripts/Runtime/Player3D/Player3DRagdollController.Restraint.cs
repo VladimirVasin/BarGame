@@ -89,7 +89,7 @@ namespace BarPromenade
             Vector3 delta = restraintPullTarget - point;
             float distance = delta.magnitude;
             bool initialJerk = restraintInvertedLeg && restraintDriveSeconds < .45f;
-            float maximumSpeed = initialJerk ? 7.2f : 4.2f;
+            float maximumSpeed = restraintInvertedLeg ? 9f : 4.2f;
             Vector3 desired = distance > .001f ? delta / distance * (maximumSpeed * Mathf.Clamp01((distance - .45f) / .85f)) : Vector3.zero;
             float mass = ActiveCombatMass;
             Vector3 force = (desired - restraintContactBody.GetPointVelocity(point)) * (mass * 7f) - Physics.gravity * mass;
@@ -100,6 +100,10 @@ namespace BarPromenade
             {
                 RestraintJointDrive drive = restraintJointDrives[i];
                 if (drive.Joint == null) continue;
+                // A hanging shot owns the same physical right-arm joints;
+                // the body and legs retain their suspension effort.
+                if (HasActiveSurvivorArmAim &&
+                    (drive.Joint == survivorUpperJoint || drive.Joint == survivorForearmJoint)) continue;
                 Quaternion intent = RestraintEffortTarget(drive, point);
                 Quaternion wanted = Quaternion.Slerp(drive.HeldTarget, LimitRestraintTarget(drive.Joint, intent), engagement);
                 // Bound intent velocity too: a changing wound point cannot demand

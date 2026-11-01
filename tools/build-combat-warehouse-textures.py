@@ -95,12 +95,38 @@ def encode_png(image):
     return buffer.getvalue()
 
 
-def bc7_mip_bytes(size):
+def bc7_mip_bytes(size, height=None):
+    height = size if height is None else height
     total = 0
     while True:
-        total += max(1, (size + 3) // 4) ** 2 * 16
-        if size == 1: return total
-        size //= 2
+        total += max(1, (size + 3) // 4) * max(1, (height + 3) // 4) * 16
+        if size == height == 1: return total
+        size, height = max(1, size // 2), max(1, height // 2)
+
+
+def preparation_sheets():
+    """A bounded close-up crop of the existing authored rust, never an upscale."""
+    provenance = json.loads((SOURCE / "generation.json").read_text(encoding="utf8"))
+    row = next(row for row in provenance["images"] if row["name"] == "WarehouseRust")
+    raw = (ROOT / row["source"]).read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == row["sha256"]
+    source = Image.open(io.BytesIO(raw)).convert("RGB")
+    assert source.width >= 1024 and source.height >= 256
+    # Full horizontal source detail and a centred, nonstretched corrosion band.
+    crop_height = round(source.width * 3 / 8)
+    top = (source.height - crop_height) // 2
+    colour = np.asarray(source.crop((0, top, source.width, top + crop_height))
+        .resize((1024, 384), Image.Resampling.LANCZOS), dtype=np.float32) / 255
+    colour *= np.array((.90, .83, .72), dtype=np.float32)
+    albedo = Image.fromarray(np.round(np.clip(colour, 0, 1) * 255).astype(np.uint8))
+    small = np.asarray(albedo.resize((512, 192), Image.Resampling.LANCZOS), dtype=np.float32) / 255
+    height = small @ np.array((.2126, .7152, .0722), dtype=np.float32)
+    dv, du = np.gradient(height)
+    response = np.stack((.5 - du * .85, .5 - dv * .85,
+        .91 + (.5 - height) * .08, .90 + height * .16), axis=-1)
+    physical = Image.fromarray(np.round(np.clip(response, 0, 1) * 255).astype(np.uint8))
+    return (("WarehousePreparationAtlas", albedo, False, row["sha256"]),
+            ("WarehousePreparationResponse", physical, True, row["sha256"]))
 
 
 def build(validate_only):
@@ -140,7 +166,13 @@ def build(validate_only):
     assert label.size == (SIZE, SIZE)
     measures.append(dict(name="WarehouseFishLabels", sha256=hashlib.sha256(label_bytes).hexdigest(),
         size=SIZE, mode=label.mode, sRGB=True, wrap="Clamp", authoring="accounted external fish-label drawing"))
-    estimated = sum(bc7_mip_bytes(row["size"]) for row in measures)
+    for name, image, linear, checksum in preparation_sheets():
+        encoded = encode_png(image)
+        textures[name] = (encoded, dict(size=image.width, clamp=True, linear=linear))
+        measures.append(dict(name=name, sha256=hashlib.sha256(encoded).hexdigest(), source_sha256=checksum,
+            size=image.width, height=image.height, mode=image.mode, sRGB=not linear, wrap="Clamp",
+            authoring="station-only close-up Rust crop; authored UV0 / unchanged metric UV1"))
+    estimated = sum(bc7_mip_bytes(row["size"], row.get("height")) for row in measures)
     assert estimated <= GPU_BUDGET_BYTES
     manifest = json.dumps(dict(design_id="warehouse_unique_surface_v5", mipmaps=True,
         windows_compression="BC7", gpu_budget_bytes=GPU_BUDGET_BYTES, estimated_gpu_bytes=estimated,

@@ -211,7 +211,9 @@ namespace BarPromenade
         {
             CarriedWeaponRecord record = FindCarriedWeapon(id);
             int request = JournalCommand("select_weapon");
-            string reason = record == null ? "not_carried" : record.Location == CombatWeaponCarryLocation.Dropped ? "dropped" :
+            string reason = doorAmbushCombatOwner != null ? "episode_weapon_locked" :
+                id == CombatWeaponId.Pistol && doorAmbushTemporaryPistol && !LoadoutSelection.Contains(id) ? "not_carried" :
+                record == null ? "not_carried" : record.Location == CombatWeaponCarryLocation.Dropped ? "dropped" :
                 resettingCarry || disposingCarry ? "lifecycle" : !BodyDamage.CanUseRightHand || !BodyDamage.CanUseLeftHand &&
                 (id != CombatWeaponId.Crowbar || HasWeaponInHand && activeCarry?.Id != CombatWeaponId.Crowbar) ? "hands_unavailable" :
                 State.IsDefeated || IsKnockedDown || IsRagdollActive ? "body_unavailable" :
@@ -233,7 +235,7 @@ namespace BarPromenade
         /// <summary>Queue a visible return to storage; the latest draw/stow request wins.</summary>
         public bool TryStowWeapon()
         {
-            if (activeCarry == null || resettingCarry || disposingCarry || !isActiveAndEnabled ||
+            if (doorAmbushCombatOwner != null || activeCarry == null || resettingCarry || disposingCarry || !isActiveAndEnabled ||
                 State.IsDefeated || IsKnockedDown || IsRagdollActive || !BodyDamage.CanUseRightHand ||
                 !GameInput.CanRead(GameInputContext.Gameplay)) return false;
             journalCarryQueuedRequest = JournalCommand("stow_weapon");

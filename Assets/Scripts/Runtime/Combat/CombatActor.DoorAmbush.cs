@@ -4,7 +4,7 @@ namespace BarPromenade
 {
     public sealed partial class CombatActor
     {
-        internal const float DoorAmbushMotionRate = .5f;
+        internal const float DoorAmbushMotionRate = 1f;
         private const float DoorAmbushHaulSourceZ = 2f;
         private readonly Transform[] doorCableGuides = new Transform[6];
         private readonly Transform[] doorRoofGuides = new Transform[2];
@@ -35,6 +35,11 @@ namespace BarPromenade
         private float doorHoistRootCap, doorHoistAnchorHeight, doorTopHoldElapsed, doorGuideRelease;
         private float doorHoistStallSeconds;
         private float doorHoldAnimationSeconds;
+        private float doorAttackSeconds;
+        private bool doorAttackContact;
+        private Transform doorLeftUpper, doorLeftForearm, doorLeftHand;
+        private float doorOriginalBodyVolume, doorOriginalBodyPitch;
+        private bool doorPresentationAudio, doorAudioPaused, doorMotorWasRunning;
         private int doorRetreatTerminalFrame = -1;
 
         internal bool DoorAmbushPrepared { get; private set; }
@@ -45,6 +50,9 @@ namespace BarPromenade
         internal float DoorAmbushCaptureElapsed => doorCaptureSeconds;
         internal bool DoorAmbushHoistComplete { get; private set; }
         internal bool DoorAmbushHangingGameplay { get; private set; }
+        internal bool DoorAmbushPursuitStarted { get; private set; }
+        internal bool DoorAmbushCraneArrived { get; private set; }
+        internal int DoorAmbushAttackCount { get; private set; }
         internal float DoorAmbushTopHoldElapsed => doorTopHoldElapsed;
         internal float DoorAmbushHoistTargetHeight => DoorRoofCentre.y - .12f;
         internal Vector3 DoorAmbushVictimTarget => craneVictim != null ? craneVictim.RestraintAnchor : doorAmbushPullOrigin;
@@ -85,6 +93,7 @@ namespace BarPromenade
             doorOriginalPose = new Pose(transform.position, transform.rotation);
             doorOriginalPhase = CranePhase; doorOriginalHookPhase = CraneHookPhase;
             doorOriginalCraneClock = craneClock;
+            doorOriginalBodyVolume = craneBodyVoice.volume; doorOriginalBodyPitch = craneBodyVoice.pitch;
             doorOriginalActive = gameObject.activeSelf; doorOriginalEnabled = enabled;
             doorOriginalHost = craneSuspensionHost.activeSelf; doorOriginalRails = craneRails.activeSelf;
             doorOriginalHead = craneSuspensionHead.activeSelf; doorOriginalBridge = craneBridge.activeSelf;
@@ -113,12 +122,19 @@ namespace BarPromenade
             doorHoldAnimationSeconds = 0f;
             DoorAmbushHoistComplete = false;
             DoorAmbushHangingGameplay = false;
+            DoorAmbushPursuitStarted = DoorAmbushCraneArrived = false;
+            DoorAmbushAttackCount = 0; doorAttackSeconds = 0f; doorAttackContact = false;
+            doorLeftUpper = RequireCraneBone("upper_arm.L");
+            doorLeftForearm = RequireCraneBone("forearm.L");
+            doorLeftHand = RequireCraneBone("hand.L");
             doorAmbushVictim = null; doorAmbushLeg = null;
             doorAmbushClip = doorAmbushHoldClip = doorAmbushRetreatClip = null;
             CranePatrolEnabled = false;
             State.CancelAction();
             collectSweep = sweepValid = collectShove = collectKick = craneContactValid = false;
             StopCraneVoices();
+            doorPresentationAudio = true; doorAudioPaused = doorMotorWasRunning = false;
+            craneBodyVoice.ignoreListenerPause = craneRelease.ignoreListenerPause = true;
             CancelPoseBlend();
             enabled = true;
             gameObject.SetActive(true);
@@ -142,6 +158,36 @@ namespace BarPromenade
             if (!DoorAmbushCaptured || !DoorAmbushHoistComplete) return false;
             DoorAmbushHangingGameplay = true;
             return true;
+        }
+
+        internal void BeginDoorAmbushPursuit()
+        {
+            if (!DoorAmbushHangingGameplay || DoorAmbushPursuitStarted) return;
+            DoorAmbushPursuitStarted = true;
+            craneRelease.clip = CombatCraneAssetProvider.LoadStartSound(); craneRelease.Play();
+        }
+
+        internal void PlayDoorAmbushRevealSound()
+        {
+            if (!DoorAmbushPrepared) return;
+            craneBodyVoice.clip = CombatCraneAssetProvider.LoadBodySound();
+            craneBodyVoice.pitch = .72f; craneBodyVoice.volume = .55f;
+            craneBodyVoice.Play();
+        }
+
+        internal void PlayDoorAmbushHookSound()
+        {
+            if (!DoorAmbushPrepared) return;
+            craneBodyVoice.PlayOneShot(CombatCraneAssetProvider.LoadReleaseSound(), 1f);
+            craneRelease.clip = CombatCraneAssetProvider.LoadStartSound(); craneRelease.Play();
+        }
+
+        internal void SetDoorAmbushAudioPaused(bool paused)
+        {
+            if (!DoorAmbushPrepared || !doorPresentationAudio || doorAudioPaused == paused) return;
+            doorAudioPaused = paused;
+            if (paused) { craneBodyVoice.Pause(); craneRelease.Pause(); }
+            else { craneBodyVoice.UnPause(); craneRelease.UnPause(); }
         }
 
         /// <summary>Reveal the staged body without disabling its ownership or the borrowed original machinery.</summary>
@@ -238,6 +284,8 @@ namespace BarPromenade
             { ReleaseDoorAmbushCapture(); return false; }
             doorHoistRootCap = DoorSuspendedRootCap();
             doorHoistAnchorHeight = doorCapturePoint.y;
+            doorPresentationAudio = false;
+            craneBodyVoice.ignoreListenerPause = craneRelease.ignoreListenerPause = false;
             PresentDoorAmbushCables();
             return true;
         }
@@ -278,16 +326,29 @@ namespace BarPromenade
                     // permits the second lift through the open vertical shaft.
                     Vector3 wanted = doorCapturePose.position;
                     wanted.z = Mathf.Lerp(doorCapturePose.position.z, DoorAmbushHaulSourceZ,
-                        Mathf.SmoothStep(0f, 1f, doorCaptureSeconds * DoorAmbushMotionRate / 2.15f));
+                        Mathf.SmoothStep(0f, 1f, doorCaptureSeconds / .75f));
                     bool insideWell = Mathf.Abs(victim.RestraintAnchor.z) < 5.2f &&
                         Mathf.Abs(victim.RestraintAnchor.x) < 5.2f && DoorSourceInsideWell();
                     if (insideWell)
-                        doorGuideRelease = Mathf.MoveTowards(doorGuideRelease, 1f, seconds * DoorAmbushMotionRate);
-                    bool releasedGuides = insideWell && doorGuideRelease >= 1f &&
+                        doorGuideRelease = Mathf.MoveTowards(doorGuideRelease, 1f, seconds * 4f);
+                    bool releasedGuides = DoorAmbushHoistComplete || insideWell && doorGuideRelease >= 1f &&
                         Mathf.Abs(transform.position.z - DoorAmbushHaulSourceZ) < .03f;
-                    wanted.y = releasedGuides ? Mathf.MoveTowards(transform.position.y,
-                        doorHoistRootCap, seconds * 2.2f * DoorAmbushMotionRate) : transform.position.y;
-                    var pose = new Pose(wanted, doorCapturePose.rotation);
+                    // The hero's roof cable lifts first. The body supplying it
+                    // stays below until free aim and the horizon roll are ready.
+                    wanted.y = transform.position.y;
+                    Quaternion facing = doorCapturePose.rotation;
+                    if (DoorAmbushPursuitStarted)
+                    {
+                        Vector3 chest = victim.Ragdoll.PhysicsController.ChestBody.position;
+                        Vector3 goal = new Vector3(chest.x, Mathf.Min(doorHoistRootCap, chest.y - 1.05f), chest.z + .68f);
+                        wanted = Vector3.MoveTowards(transform.position, goal, seconds * 4.5f);
+                        Vector3 forward = Vector3.ProjectOnPlane(chest - wanted, Vector3.up);
+                        if (forward.sqrMagnitude > .001f)
+                            facing = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(forward), seconds * 240f);
+                        DoorAmbushCraneArrived = Vector3.Distance(wanted, goal) < .08f &&
+                            Quaternion.Angle(facing, Quaternion.LookRotation(forward)) < 8f;
+                    }
+                    var pose = new Pose(wanted, facing);
                     float previousHeight = doorHoistAnchorHeight;
                     bool accepted = SampleDoorAmbushPose(pose, doorAmbushHoldClip,
                         doorHoldAnimationSeconds, sweep: true);
@@ -296,7 +357,7 @@ namespace BarPromenade
                         Vector3 floorPull = doorCapturePoint + Vector3.ProjectOnPlane(transform.position - doorCapturePose.position, Vector3.up);
                         if (releasedGuides)
                             doorHoistAnchorHeight = Mathf.MoveTowards(doorHoistAnchorHeight,
-                                DoorAmbushHoistTargetHeight, seconds * 2.2f * DoorAmbushMotionRate);
+                                DoorAmbushHoistTargetHeight, seconds * 8f);
                         else
                             doorHoistAnchorHeight = Mathf.Lerp(doorCapturePoint.y, 2.35f,
                                 Mathf.SmoothStep(0f, 1f, doorCaptureSeconds / .30f));
@@ -305,10 +366,19 @@ namespace BarPromenade
                         doorAmbushPullOrigin.y = doorHoistAnchorHeight;
                     }
                     bool top = releasedGuides && accepted &&
-                        Mathf.Abs(transform.position.y - doorHoistRootCap) < .035f &&
                         doorHoistAnchorHeight >= DoorAmbushHoistTargetHeight - .015f &&
                         victim.RestraintAnchor.y >= DoorAmbushHoistTargetHeight - .60f && DoorAmbushVictimInverted;
                     if (top) DoorAmbushHoistComplete = true;
+                    bool moving = !DoorAmbushHoistComplete || DoorAmbushPursuitStarted && !DoorAmbushCraneArrived;
+                    if (moving) UpdateCraneMotorSound(2, 1f);
+                    else if (doorMotorWasRunning)
+                    {
+                        StopCraneMotors();
+                        craneRelease.clip = CombatCraneAssetProvider.LoadBrakeSound(); craneRelease.Play();
+                    }
+                    doorMotorWasRunning = moving;
+                    if (DoorAmbushCraneArrived && accepted && !victim.State.IsDefeated)
+                        AdvanceDoorAmbushAttack(seconds, victim);
                     if (DoorAmbushHoistComplete) doorTopHoldElapsed += seconds;
                     else if (releasedGuides && (!accepted || doorHoistAnchorHeight <= previousHeight + .00001f))
                         doorHoistStallSeconds += seconds;
@@ -349,6 +419,39 @@ namespace BarPromenade
                     throw new System.InvalidOperationException("The crane's collision-aware retreat could not reach its endpoint.");
             }
             if (DoorAmbushCaptured || DoorAmbushReleased) doorAmbushVictim?.AdvanceSimulation(seconds);
+        }
+
+        private void AdvanceDoorAmbushAttack(float seconds, CombatActor victim)
+        {
+            if (!BodyDamage.CanUseLeftHand) return;
+            doorAttackSeconds += seconds;
+            float phase = doorAttackSeconds;
+            if (phase >= 0f && phase < seconds * 1.5f) { craneBodyVoice.pitch = .9f; craneBodyVoice.Play(); }
+            Vector3 target = victim.Ragdoll.PhysicsController.ChestBody.position;
+            Vector3 rest = doorLeftHand.position;
+            float extension = phase < .5f ? 0f : phase < .72f ? Mathf.InverseLerp(.5f, .72f, phase) :
+                1f - Mathf.InverseLerp(.72f, 1.02f, phase);
+            Vector3 windup = rest - transform.forward * (.18f * Mathf.Sin(Mathf.Clamp01(phase / .5f) * Mathf.PI));
+            LimbTwoBoneIk.Solve(doorLeftUpper, doorLeftForearm, doorLeftHand,
+                Vector3.Lerp(windup, target, extension), doorLeftHand.rotation,
+                doorLeftUpper.position - transform.right * .7f + Vector3.up * .12f,
+                1f, .98f, false);
+            if (phase >= .72f && !doorAttackContact)
+            {
+                doorAttackContact = true;
+                DoorAmbushAttackCount++;
+                Vector3 direction = target - doorLeftHand.position;
+                if (direction.sqrMagnitude < .32f * .32f && !CraneWorldOverlap(doorLeftHand.position, target, .04f))
+                {
+                    Vector3 impactDirection = (target - doorLeftUpper.position).normalized;
+                    MeleeHitResult result = victim.Receive(this, false, DoorAmbushAttackCount, target, -impactDirection,
+                        impactDirection, State.AttackDamage, State.AttackBlockCost, 0f,
+                        new MeleeHitLocation(MeleeBodyRegion.Torso, MeleeHitSide.Front),
+                        Player3DAnatomicalPart.Torso, physicalBody: true, bodyRegion: BodyDamageRegion.Chest);
+                    PlayCraneContactSound(result);
+                }
+            }
+            if (phase >= 1.8f) { doorAttackSeconds = 0f; doorAttackContact = false; }
         }
 
         private void ReleaseDoorAmbushCapture()
@@ -605,6 +708,8 @@ namespace BarPromenade
             for (int i = 0; i < doorBodyRenderers.Length; i++)
                 if (doorBodyRenderers[i] != null) doorBodyRenderers[i].enabled = doorOriginalBodyVisibility[i];
             StopCraneVoices();
+            craneBodyVoice.ignoreListenerPause = craneRelease.ignoreListenerPause = false;
+            craneBodyVoice.volume = doorOriginalBodyVolume; craneBodyVoice.pitch = doorOriginalBodyPitch;
             transform.SetPositionAndRotation(doorOriginalPose.position, doorOriginalPose.rotation);
             RestoreDoorBones(doorSavedPositions, doorSavedRotations, doorSavedScales);
             CranePhase = doorOriginalPhase; CraneHookPhase = doorOriginalHookPhase;

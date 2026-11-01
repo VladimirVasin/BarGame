@@ -337,6 +337,7 @@ namespace BarPromenade
             UpdateHudInput();
             if (DoorAmbush != null && DoorAmbush.IsActive)
             {
+                if (AutomaticSimulation && DoorAmbushCombatActive) AdvanceDoorAmbushCombat(Time.deltaTime);
                 if (AutomaticHudPresentation) AdvanceHudPresentation(Time.unscaledDeltaTime);
                 return;
             }

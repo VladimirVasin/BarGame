@@ -96,7 +96,7 @@ namespace BarPromenade
 
         /// <summary>Muscle impulses aim the existing physical arm. This method
         /// never writes a bone/weapon transform or creates another pose owner.</summary>
-        internal void AimCombatSurvivorArm(Vector3 target, Transform muzzle, Transform support, float seconds)
+        internal void AimCombatSurvivorArm(Vector3 target, Transform muzzle, Transform support, float seconds, bool suspended = false)
         {
             if (!IsSimulating || muzzle == null || seconds <= 0f || !FiniteCombatVector(target)) return;
             Rigidbody upper = GetBody(Player3DAnatomicalPart.RightUpperArm);
@@ -116,7 +116,7 @@ namespace BarPromenade
             // Muzzle direction leaves barrel roll free. Use that freedom to
             // keep this anatomical shoulder near its own joint reference and
             // the elbow/wrist clear of the supporting torso and floor.
-            aim = SelectSurvivorArmRoll(aim, bend, desired, upper, forearm, wrist);
+            aim = SelectSurvivorArmRoll(aim, bend, desired, upper, forearm, wrist, suspended);
             Quaternion forearmTarget = aim * forearm.rotation;
             Quaternion upperTarget = aim * bend * upper.rotation;
             survivorUpperTarget = upperTarget; survivorForearmTarget = forearmTarget;
@@ -140,7 +140,7 @@ namespace BarPromenade
         }
 
         private Quaternion SelectSurvivorArmRoll(Quaternion aim, Quaternion bend, Vector3 direction,
-            Rigidbody upper, Rigidbody forearm, Vector3 wrist)
+            Rigidbody upper, Rigidbody forearm, Vector3 wrist, bool suspended)
         {
             if (!survivorArmJoints.TryGetValue(survivorUpperJoint, out SurvivorArmJoint source)) return aim;
             Vector3 upperLocal = Quaternion.Inverse(upper.rotation) * (forearm.position - upper.position);
@@ -159,7 +159,8 @@ namespace BarPromenade
                     Vector3 elbow = upper.position + upperTarget * upperLocal;
                     Vector3 hand = elbow + candidate * forearm.rotation * lowerLocal;
                     float elbowBelow = Mathf.Max(0f, clearance - elbow.y), handBelow = Mathf.Max(0f, clearance - hand.y);
-                    float cost = jointAngle * jointAngle + (elbowBelow * elbowBelow + handBelow * handBelow) * 1000000f;
+                    float cost = jointAngle * jointAngle + (suspended ? 0f :
+                        (elbowBelow * elbowBelow + handBelow * handBelow) * 1000000f);
                     if (cost >= best) continue;
                     best = cost; bestRoll = roll;
                 }

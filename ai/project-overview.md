@@ -135,8 +135,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 - Home toilet choices share actual hand-operated lid actions; the seated
   branch coordinates the original rig, lowered clothing, inspection/flush
   and an underwater camera that returns while the hero dresses.
-- City/Village maps:ImageGen;localized inventory/journal/pause/options;warehouse ambush/debug.
-- Shared styles, causal audio and bounded diagnostics.
+- ImageGen City/Village maps;localized menus;warehouse ambush/debug/forced pistol∞reserve+reload.
+- Shared style/causal audio/bounded diagnostics.
 
 ## Deferred
 

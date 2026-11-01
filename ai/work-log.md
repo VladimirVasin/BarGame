@@ -6,13 +6,11 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 ## 2026-11-01
 
 Bottles:closed glass cells/contact holes/finite shards+ring;no blood/bones.
-Rig/UV/24FX,shared banks/bounds/arm shielding/civilian damage kept;cost unmeasured.
-One material slot fixes grey overdraw.
+Rig/UV/24FX/banks/bounds/arm shielding/civilian damage kept;one slot fixes grey;cost unmeasured.
 BOTTLE FRACTURE EXACT SURFACE CLOSED CELLS / RETAINED UV RIG OK;
 BottleMonstersFractureFromCrowbar passed;intact/impact/retained/reset frames reviewed.
 
-Monster ImageGen detail rebaked to retained UV/native maps;offline filtering
-removes pore aliasing. MonsterHorrorTextures passed;frames reviewed.
+Monster maps:retained UV/native/offline pore filtering. MonsterHorrorTextures passed;frames reviewed.
 
 Stairwell finds:same-rig action/camera/foley,one confirmed credit;cleanup waits
 for camera/equipment return,crowbar wakes afterward;cancel retains committed items.
@@ -20,11 +18,10 @@ STAIRWELL PICKUP ART CONTRACT OK;StairwellPickupCinematics passed;frames reviewe
 
 BirdLift:guided tray/existing pistol/shared pickup;cancel keeps support.
 Same-rig equip/aim/fire/reload/stow;8+0 and partial ammo survive travel/retry.
-Warehouse imports owned crowbar/pistol,matching shelves/pools;Debug kept.
-Tray/pistol/depth fit inspection;cleanup tolerates a destroyed camera.
+Warehouse:owned bar/pistol/shelves/pools;Debug kept;tray/depth fit;destroyed-camera cleanup.
 STAIRWELL_LABYRINTH_PISTOL_TRAY_OK;StairwellThirdPuzzlePistol passed;frames reviewed.
 
-Target16:9;legacy4:3 settings stay. Canon/current-state updated;check-docs passed.
+Target16:9;legacy4:3 settings kept;check-docs passed.
 Levers:physical spindle/bracket/guide throughout;A/D joins arrows;selection
 uses contour/dark edge/wash. STAIRWELL_LABYRINTH_CONTROL_MOUNTS_OK;
 StairwellLabyrinthPuzzleModeAndFlashlight passed;frames reviewed.
@@ -42,17 +39,20 @@ structure;fatal head uses contact-side sectors/melee serial dedupe;finite blood
 pool/gun profile kept. Living fall/rise retains wounds;hero keeps control.
 TWO HAND STRIKE EXPORTED PROOF;Range_CrowbarContactPresentsRecoilBeforeHitStop;
 Range_CrowbarHitsLeaveWoundsAndZombieRises;Range_CrowbarFatalHeadContactFracturesOnce
-passed;strike/wound/rise/head frames reviewed. 24FX:shared damage surfaces/
-particles;lighting/post/camera owners kept.
+passed;strike/wound/rise/head frames reviewed. 24FX/shared owners kept.
 
 Room:closer camera probes;contact escape fits body/full destination clearance.
-Range_RoomAttackStartsWhenOuterCameraPositionsAreBlocked;
 Range_StoryWarehouseRoomPursuesAndAttacksFromInitialSpawn passed;frames reviewed.
 Ambush cleanup skips destroyed Unity owners;capture/clock/audio release stays.
-DoorAmbush_CleanupAfterCameraDestroyed passed. Unrelated valve-angle mismatch kept.
+DoorAmbush_CleanupAfterCameraDestroyed passed.
 
 Docker:2sources→last-fridge crate;entry→reveal before3rd;retry/identity kept.
 Range_LastFridgeMimicAllOrders passed;frame reviewed.
+
+Ambush:HP-safe solo hero hoist→roll/pistol∞reserve/R→Crane↑/hits;finale deferred.
+Red shadow/framing/fan-derived body bounce and phased3D audio;owned cleanup.
+Vat:metric floor/wall/rim UV;bounded source maps/BC7 cap kept.
+DoorAmbush_HeroFirstPistolCombat;CombatWarehouseFishAssemblyCloseUp passed;frames reviewed.
 
 ## 2026-10-31
 

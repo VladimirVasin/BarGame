@@ -8,20 +8,16 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-01
 
-- Бутылочные тела:удар→скол/пробоина/физические осколки/звон,без крови/костей.
-  Риг/UV/24FX сохранены;стоимость не замерена. Blender:
-  BOTTLE FRACTURE EXACT SURFACE CLOSED CELLS / RETAINED UV RIG OK;
-  BottleMonstersFractureFromCrowbar passed;кадры до/после проверены.
+- Бутылочные тела:пробоины/осколки/звон,без крови/костей;риг/UV/24FX. BottleMonstersFractureFromCrowbar passed.
 - Монстры:страшные фактуры без ряби. MonsterHorrorTextures passed.
 - Фонарик/лом/пистолет:катсцены/экипировка;толпа ждёт.
   StairwellPickupCinematics passed.
 - Загадка3:пистолет/8+0;склад хранит оружие/патроны,без двустволки.
-  STAIRWELL_LABYRINTH_PISTOL_TRAY_OK/StairwellThirdPuzzlePistol passed.
+  StairwellThirdPuzzlePistol passed.
 - Цель16:9;4:3 не поддержан,настройки сохранены. check-docs passed.
 - Рычаги:крепления/A-D/контур.
-  STAIRWELL_LABYRINTH_CONTROL_MOUNTS_OK/StairwellLabyrinthPuzzleModeAndFlashlight passed.
-- Загадка1→тела,лом→подъём;одиночный старт/очередь атак/безопасная комната3;
-  повтор хранит прогресс. StairwellSecondPuzzleCrowbar/
+  StairwellLabyrinthPuzzleModeAndFlashlight passed.
+- Загадка1→тела,лом→подъём;одиночный старт/очередь атак/безопасная комната3;повтор хранит прогресс. StairwellSecondPuzzleCrowbar/
   DEGRADED ZOMBIE GROUNDED ACTIONS AND THREE BODY SCULPTS OK passed.
 - Лом:вес/разгон/глубокие раны/череп/подъём живых.
   Range_CrowbarContactPresentsRecoilBeforeHitStop/
@@ -30,7 +26,11 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - Комната подходит/атакует;ближний кадр.
   Range_StoryWarehouseRoomPursuesAndAttacksFromInitialSpawn passed.
 - Грузчик:ящик последнего холодильника при любом порядке банок;раскрытие до третьей.
-  Range_LastFridgeMimicAllOrders passed;кадр проверен.
+  Range_LastFridgeMimicAllOrders passed.
+
+- Засада:без урона катсцены;герой↑первым/переворот/пистолет∞запас/R;
+  затем крановщик↑/бой. Свет/3D-звук фаз;чан без растянутых стенок.
+  DoorAmbush_HeroFirstPistolCombat/CombatWarehouseFishAssemblyCloseUp passed;кадры проверены.
 
 ### 2026-10-31
 

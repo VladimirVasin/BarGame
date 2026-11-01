@@ -1,7 +1,7 @@
 {
   "generator": "tools/build-combat-warehouse-fish-props.py",
   "generator_version": "1.4.0",
-  "blender_version": "5.0.1",
+  "blender_version": "5.2.3 LTS",
   "build_signature": "31c3e8d8e1e4bb807e4d529df316e1cf7631c021d49523368a90462bf5a2b3e4",
   "units": "metres",
   "unity_forward": "+Z",
@@ -329,9 +329,25 @@
   ],
   "design_id": "warehouse_fish_props_v1",
   "surfaces": {
-    "mode": "shared warehouse textures / paper label UV0 atlas / metric UV1",
-    "uv_signature": "0fe1459ae18696429bc4f77426165e4a0dc33d852eb26fc31787b6c5be07c591",
-    "additional_runtime_textures": 1,
+    "mode": "shared warehouse textures / station Rust close-up UV0 / paper label UV0 atlas / metric UV1",
+    "uv_signature": "9671861058ce46bddfefa00c35e8b37c3502321aa395133c9b3ff3ee25111fb8",
+    "additional_runtime_textures": 3,
+    "station_closeup": {
+      "colour": [
+        1024,
+        384
+      ],
+      "response": [
+        512,
+        192
+      ],
+      "minimum_floor_texels": [
+        800,
+        350
+      ],
+      "role": "Rust",
+      "geometry_unchanged": true
+    },
     "labels": {
       "generator": "tools/build-warehouse-fish-labels.py",
       "version": "2.0.0",

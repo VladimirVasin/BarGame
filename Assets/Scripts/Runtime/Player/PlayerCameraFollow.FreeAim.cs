@@ -18,6 +18,7 @@ namespace BarPromenade
         private Quaternion freeAimRotationOffset = Quaternion.identity;
         private float freeAimFieldOfView = TargetLockFieldOfView;
         private float freeAimHitKick;
+        private float freeAimHorizonRoll;
         private int freeAimHitKickFrame = -1;
         private bool aimTransitionActive;
         private int aimTransitionFrame = -1;
@@ -48,6 +49,7 @@ namespace BarPromenade
             freeAimOwner = owner;
             freeAimShoulder = shoulder;
             freeAimPhysicalBody = followPhysicalBody;
+            freeAimHorizonRoll = 0f;
             freeAimShoulderHeight = shoulder.position.y - followTarget.position.y;
             freeAimCameraOffset = new Vector3(RightShoulderOffset, 0f, -FirearmAimDistance);
             freeAimRotationOffset = Quaternion.identity;
@@ -81,6 +83,7 @@ namespace BarPromenade
             freeAimOwner = null;
             freeAimShoulder = null;
             freeAimPhysicalBody = false;
+            freeAimHorizonRoll = 0f;
             freeAimInputFrame = -1;
             // Resume the chase camera from the accepted look direction.
             freeAimHitKick = 0f;
@@ -111,7 +114,8 @@ namespace BarPromenade
         private void UpdateFreeAimPose()
         {
             Quaternion rotation = Quaternion.Euler(targetPitch + freeAimHitKick,
-                targetYaw, -freeAimHitKick * .2f) * freeAimRotationOffset;
+                targetYaw, -freeAimHitKick * .2f) * freeAimRotationOffset *
+                Quaternion.AngleAxis(freeAimHorizonRoll, Vector3.forward);
             Vector3 origin = GetFreeAimOrigin();
             // Keep the accepted framing for this aim lease, including a focus
             // handoff's vertical/lateral offset. Both real path segments still
@@ -129,6 +133,13 @@ namespace BarPromenade
             currentPitch = targetPitch;
             currentFocusPoint = origin;
             previousTargetPosition = followTarget.position;
+        }
+
+        /// <summary>The scoped action may roll the horizon while mouse aim stays live.</summary>
+        internal void SetFreeAimHorizonRoll(object owner, float degrees)
+        {
+            if (!FreeAimActive || !ReferenceEquals(owner, freeAimOwner) || !float.IsFinite(degrees)) return;
+            freeAimHorizonRoll = degrees;
         }
 
         private void BeginAimTransition(Vector3 origin)

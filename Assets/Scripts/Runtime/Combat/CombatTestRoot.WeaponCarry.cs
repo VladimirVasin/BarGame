@@ -62,6 +62,7 @@ namespace BarPromenade
 
         private void ApplyWeaponInventoryRequest()
         {
+            if (DoorAmbushCombatActive) return;
             if (!inventoryWeaponPending)
             {
                 CombatWeaponId? held = HeldInventoryWeapon;

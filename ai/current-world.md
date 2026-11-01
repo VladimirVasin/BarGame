@@ -637,8 +637,7 @@ cemetery:own interiors/returns.
   Cleanup; GPU unmeasured; Lights/fog/weather/story stay.
   Intoxication:vignette/ghost/chromatic/warp/warmth/exposure;
 - DoF: shared setting, exterior Gaussian far blur;
-  Bar/Supermarket/Stairwell/Home/Church/Mother's House radius `0.55`
-  keeps nearby people/furniture/gestures legible. Priority-10 Bokeh serves
+  Bar/Supermarket/Stairwell/Home/Church/Mother's House radius`.55`:nearby people/furniture/gestures clear. Priority-10 Bokeh serves
   modal close-ups, then yields to the scene grade;
 - prompts/pause/start/inventory/shops/inspectors/journal/HUD/maps
   use Input System pointer/text and crisp `640x360` IMGUI after the world: soot/charcoal/
@@ -652,10 +651,11 @@ cemetery:own interiors/returns.
   retains framing/progress and its separately accepted painterly illustration;
 - localized pause:Esc/Start/input-time-audio;Resume/Options/default-No restart/quit.
   Warehouse ambush;Lab0. Debug commits cans/fish/key/lamp/fan/gate;
-  stages entry;progress stays. Gate→door E. Prep clock0;door3s→attack5s→shin
-  hook/jerk+fan720°/s+Spot↑5s/lit sparks. Inverted roof hoist→free camera/180°roll;
-  struggle;E/next0. Crane/8guides;front1.18m/red36/pair/FOV.
-  Cancel restores preview pose/vitals/grip/fan/red. Clock until end;
+  progress kept;doorE/3+5s→safe hook;
+  Hero roof hoist/180°roll→aim/fire/pistol;switch0/∞reserve/R.
+  Crane↑next→hits;finish deferred;fan720°/s+Spot↑5s/sparks/8guides;
+  cam1.85m/red36/155°/shadow.35;fan shadow.5/body bounce4m.
+  3D reveal/hook/haul/brake/hits;cancel→pose/vitals/grip/ammo/fan/red;
   Space/A pause,R/X replay,Esc/B list before capture;
 - shared 8-sided cylinders/URP Lit; soft City/balcony directional shadows;
   Home interior keeps its hard directional mode; MSAA off;

@@ -118,6 +118,98 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator DoorAmbush_HeroFirstPistolCombat()
+        {
+            WarehouseDoorAmbushScene scene = root.DoorAmbush;
+            root.PrepareDoorAmbushDebugProgress();
+            PlaceHero(scene.EntryRootPosition);
+            Assert.That(root.Hero.TrySelectWeapon(CombatWeaponId.Crowbar), Is.True);
+            for (int frame = 0; frame < 240 && (root.Hero.IsSwitchingWeapon || root.Hero.WeaponId != CombatWeaponId.Crowbar); frame++)
+            { root.Hero.AdvanceSimulation(1f / 60f); yield return null; }
+            Assert.That(root.Hero.WeaponId, Is.EqualTo(CombatWeaponId.Crowbar));
+            var pistol = (PistolState)root.Hero.CarriedFirearm(CombatWeaponId.Pistol);
+            Assert.That(pistol, Is.Not.Null);
+            pistol.SetAim(true);
+            while (pistol.Rounds > 0) { pistol.Advance(1f); Assert.That(pistol.TryFire(), Is.True); }
+            int reserve = pistol.ReserveRounds;
+            float health = root.Hero.State.Health;
+            Assert.That(scene.DoorInteraction.CanInteract(root.Player.Interactor), Is.True);
+            scene.DoorInteraction.Interact(root.Player.Interactor);
+            yield return AwaitFirstActionSample();
+            yield return AdvanceTo(4d);
+            AssertValveLightingForDoorActors();
+            yield return Capture("Red light on both actors");
+            yield return AdvanceTo(8d);
+            yield return AwaitInteractive();
+            float sourceY = scene.Source.transform.position.y;
+            for (int frame = 0; frame < 900 && !scene.Source.DoorAmbushHoistComplete; frame++)
+            {
+                Assert.That(root.Hero.State.Health, Is.EqualTo(health), "The scripted capture/hoist must never spend health.");
+                Assert.That(scene.Source.transform.position.y, Is.EqualTo(sourceY).Within(.03f), "Only the hero rises first.");
+                root.Cutscenes.Advance(1d / 60d);
+                yield return new WaitForFixedUpdate();
+            }
+            Assert.That(scene.Source.DoorAmbushHoistComplete, Is.True, Diagnostic());
+            Assert.That(root.Hero.DoorAmbushCombatActive && root.CameraFollow.FreeAimActive, Is.True);
+            Assert.That(scene.Source.DoorAmbushPursuitStarted, Is.False, "Pursuit waits for the short horizon roll.");
+            Assert.That(root.Hero.WeaponId, Is.EqualTo(CombatWeaponId.Pistol));
+            Assert.That(root.Hero.HasWeaponInHand && pistol.UnlimitedReserve, Is.True);
+            Assert.That(root.Hero.TrySelectWeapon(CombatWeaponId.Crowbar), Is.False);
+            Assert.That(root.Hero.TryStowWeapon(), Is.False);
+            yield return Capture("Hero alone at roof with pistol");
+            yield return AwaitCompletion();
+            yield return AwaitGameplayInput();
+            for (int frame = 0; frame < 360 && !scene.Source.DoorAmbushCraneArrived; frame++)
+                yield return new WaitForFixedUpdate();
+            Assert.That(scene.Source.DoorAmbushCraneArrived, Is.True, Diagnostic());
+            Assert.That(Vector3.Dot(root.CameraFollow.Camera.transform.up, Vector3.down), Is.GreaterThan(.8f));
+            yield return Capture("Separate crane ascent and hanging aim");
+            int contacts = 0;
+            scene.Source.ImpactReceived += impact => { if (impact.Source == root.Hero && impact.Result != MeleeHitResult.Ignored) contacts++; };
+
+            // Aim the real arm, then fire actual pooled projectiles beyond one
+            // magazine. Reload must still take time with an unlimited reserve.
+            int fired = 0;
+            float minimumHealth = health;
+            for (int frame = 0; frame < 900 && fired <= pistol.Settings.MagazineCapacity; frame++)
+            {
+                Vector3 aim = scene.Source.BodyWorldPosition + Vector3.up * 1.1f;
+                root.Hero.SetPistolAim(true, aim);
+                root.AdvanceDoorAmbushCombatSimulation(1f / 60f);
+                if (pistol.Rounds == 0 && !pistol.ReloadPending)
+                {
+                    Assert.That(root.Hero.TryReloadPistol(), Is.True);
+                    Assert.That(pistol.Rounds, Is.Zero, "Reload is not an instant refill.");
+                }
+                if (pistol.CanFire)
+                {
+                    int before = pistol.ShotSequence;
+                    Assert.That(root.Hero.RequestPistolShot(), Is.True);
+                    root.AdvanceDoorAmbushCombatSimulation(1f / 60f);
+                    if (pistol.ShotSequence != before) fired++;
+                }
+                minimumHealth = Mathf.Min(minimumHealth, root.Hero.State.Health);
+                if (root.Hero.State.Health < 35f) root.Hero.State.RestoreVitals(health, root.Hero.State.Stamina);
+                if (frame % 180 == 0) TestContext.Progress.WriteLine("Hanging aim " + root.Hero.PistolAimErrorDegrees +
+                    "; " + root.Hero.Ragdoll.PhysicsController.SurvivorArmAimDiagnostics);
+                yield return new WaitForFixedUpdate();
+            }
+            Assert.That(fired, Is.GreaterThan(pistol.Settings.MagazineCapacity), root.Hero.PistolPoseDiagnostics + "; " +
+                root.Hero.Ragdoll.PhysicsController.SurvivorArmAimDiagnostics);
+            Assert.That(scene.Source.DoorAmbushAttackCount, Is.GreaterThan(0));
+            Assert.That(minimumHealth, Is.LessThan(health), "Only the live attacks, after the separate ascent, may damage the hero.");
+            Assert.That(contacts, Is.GreaterThan(0), "Real muzzle projectiles must hit the staged Crane.");
+            Assert.That(scene.Source.DoorAmbushCaptured, Is.True, "This fragment keeps the suspension after hits.");
+            yield return Capture("Hanging pistol combat");
+            Assert.That(pistol.ReserveRounds, Is.EqualTo(pistol.Settings.StartingReserveRounds));
+            scene.enabled = false;
+            Assert.That(root.Hero.IsRestrained || root.Hero.DoorAmbushCombatActive || pistol.UnlimitedReserve, Is.False);
+            Assert.That(pistol.Rounds, Is.Zero);
+            Assert.That(pistol.ReserveRounds, Is.EqualTo(reserve));
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [UnityTest]
         public IEnumerator DoorAmbush_CleanupAfterCameraDestroyed()
         {
             WarehouseDoorAmbushScene scene = root.DoorAmbush;
@@ -217,7 +309,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return AwaitFirstActionSample();
             yield return AdvanceTo(1d);
             Assert.That(root.CameraFollow.Camera.transform.position.y,
-                Is.EqualTo(scene.EntryRootPosition.y + 1.18f).Within(.01f));
+                Is.EqualTo(scene.EntryRootPosition.y + 1.85f).Within(.01f));
             Assert.That(root.CameraFollow.Camera.transform.position.z, Is.GreaterThan(scene.EntryRootPosition.z),
                 "The raised opening camera must keep its frontal view of the hero.");
             Assert.That(root.Hero.CarriedWeaponLocation(originalWeapon), Is.EqualTo(CombatWeaponCarryLocation.Stowed),
@@ -262,7 +354,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Player.Interactor.InteractKeyClaimed, Is.True);
             AssertFanOverdriveStarted();
             yield return AwaitInvertedCeiling();
-            Assert.That(root.CameraFollow.CombatBodyFocusActive, Is.True);
+            Assert.That(root.CameraFollow.FreeAimActive, Is.True);
             yield return Capture("Test door ambush - Inverted ceiling lift");
             yield return AwaitCompletion();
             yield return AssertPersistentHangingGameplay();
@@ -303,8 +395,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.gameObject.scene, Is.EqualTo(loaded));
             Assert.That(root.Player.Interactor.InputEnabled, Is.True);
             Assert.That(root.Player.Interactor.InteractKeyClaimed, Is.True);
-            Assert.That(root.Hero.CarriedWeaponLocation(originalWeapon), Is.EqualTo(CombatWeaponCarryLocation.Stowed),
-                "The hanging pose retains the same body-mounted weapon.");
+            Assert.That(root.Hero.WeaponId, Is.EqualTo(CombatWeaponId.Pistol));
+            Assert.That(root.Hero.HasWeaponInHand && root.Hero.DoorAmbushCombatActive, Is.True);
             AssertAmmunitionPreserved();
             Assert.That(GameTimeScaleRuntime.IsPaused || BarMinigameModalLock.IsAnyLocked, Is.False);
             root.ResetRound();
@@ -402,6 +494,8 @@ namespace BarPromenade.Tests.PlayMode
         {
             CombatActor source = root.DoorAmbush.Source;
             yield return AwaitGameplayInput();
+            for (int frame = 0; frame < 30 && Vector3.Dot(root.CameraFollow.Camera.transform.up, Vector3.down) <= .8f; frame++)
+                yield return null;
             AssertValveLightingRestored();
             Assert.That(root.Cutscenes.IsPlaying, Is.False);
             Assert.That(root.DoorAmbush.HangingGameplayActive && source.DoorAmbushHangingGameplay, Is.True);
@@ -511,8 +605,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(valveLight.color.r, Is.GreaterThanOrEqualTo(.99f));
             Assert.That(valveLight.color.g, Is.GreaterThanOrEqualTo(.2f));
             Assert.That(valveLight.color.r, Is.GreaterThan(valveLight.color.g));
-            Assert.That(valveLight.innerSpotAngle, Is.EqualTo(88f).Within(.001f));
-            Assert.That(valveLight.spotAngle, Is.EqualTo(110f).Within(.001f));
+            Assert.That(valveLight.innerSpotAngle, Is.GreaterThanOrEqualTo(140f));
+            Assert.That(valveLight.spotAngle, Is.GreaterThanOrEqualTo(150f));
             Assert.That(valveLight.range, Is.EqualTo(6f).Within(.001f));
             Assert.That(valveLight.shadows, Is.EqualTo(LightShadows.Hard));
             Assert.That(Vector3.Distance(valveLight.transform.position, valveLightPosition), Is.LessThan(.0001f));
@@ -605,8 +699,11 @@ namespace BarPromenade.Tests.PlayMode
         {
             Assert.That(root.Hero.CarriedFirearm(CombatWeaponId.Pistol), Is.SameAs(originalPistol));
             Assert.That(root.Hero.CarriedFirearm(CombatWeaponId.Shotgun), Is.SameAs(originalShotgun));
-            Assert.That(originalPistol.Rounds, Is.EqualTo(originalPistolRounds));
-            Assert.That(originalPistol.ReserveRounds, Is.EqualTo(originalPistolReserve));
+            if (!root.Hero.DoorAmbushCombatActive)
+            {
+                Assert.That(originalPistol.Rounds, Is.EqualTo(originalPistolRounds));
+                Assert.That(originalPistol.ReserveRounds, Is.EqualTo(originalPistolReserve));
+            }
             Assert.That(originalShotgun.Rounds, Is.EqualTo(originalShotgunRounds));
             Assert.That(originalShotgun.ReserveRounds, Is.EqualTo(originalShotgunReserve));
         }
@@ -651,6 +748,8 @@ namespace BarPromenade.Tests.PlayMode
         {
             if (!CaptureRequested) yield break;
             yield return null;
+            LogAssert.Expect(LogType.Log, "Area capture wrote " + Path.Combine(Directory.GetCurrentDirectory(),
+                "Captures", "CombatDoorAmbush", name + ".png"));
             AreaCaptureFixture.CaptureCurrentCamera(root.CameraFollow.Camera, "CombatDoorAmbush", name);
             if (gameView == null) yield break;
             yield return new WaitForEndOfFrame();

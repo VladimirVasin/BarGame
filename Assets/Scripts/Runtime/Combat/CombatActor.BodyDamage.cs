@@ -175,7 +175,7 @@ namespace BarPromenade
 
         private void AdvanceGroundedFirearmAim(float seconds)
         {
-            if (!IsBodyGrounded)
+            if (!IsBodyGrounded && !CanUseDoorAmbushFirearm)
             {
                 Ragdoll?.PhysicsController?.ResetCombatSurvivorArmAim();
                 return;
@@ -187,7 +187,7 @@ namespace BarPromenade
                 Ragdoll.PhysicsController.ResetCombatSurvivorArmAim();
                 return;
             }
-            if (!CanUseGroundedFirearm || Firearm.ReloadPending || PistolMuzzle == null)
+            if (!(CanUseGroundedFirearm || CanUseDoorAmbushFirearm) || Firearm.ReloadPending && !CanUseDoorAmbushFirearm || PistolMuzzle == null)
             {
                 Ragdoll.PhysicsController.ResetCombatSurvivorArmAim();
                 return;
@@ -200,7 +200,9 @@ namespace BarPromenade
                 return;
             }
             Ragdoll.PhysicsController.AimCombatSurvivorArm(target, PistolMuzzle,
-                BodyDamage.CanUseLeftHand ? pistolSupport : null, seconds);
+                BodyDamage.CanUseLeftHand && !Firearm.ReloadPending ? pistolSupport : null, seconds,
+                suspended: CanUseDoorAmbushFirearm);
+            AdvanceDoorAmbushReloadHand(seconds);
             // Readiness is measured from the actual visible muzzle after the
             // next physical step; a trigger before alignment spends no round.
             pistolAimReachable = true;
@@ -208,7 +210,7 @@ namespace BarPromenade
 
         private void BindGroundedFirearm()
         {
-            if (!IsBodyGrounded || !IsFirearm || Weapon == null || weaponDropped || !BodyDamage.CanUseRightHand) return;
+            if ((!IsBodyGrounded && !CanUseDoorAmbushFirearm) || !IsFirearm || Weapon == null || weaponDropped || !BodyDamage.CanUseRightHand) return;
             handPose.SetGrip(false, 1f);
             handPose.SetGrip(true, BodyDamage.CanUseLeftHand && (Firearm?.AimRequested ?? false) ? FirearmSupportGripWeight : 0f);
             // The kinematic prop's old world pose is not an aiming source. Derive
@@ -220,7 +222,7 @@ namespace BarPromenade
 
         private void ApplyGroundedFirearmRecoil(Vector3 forward)
         {
-            if (!IsBodyGrounded || !CanUseGroundedFirearm) return;
+            if (!(CanUseGroundedFirearm || CanUseDoorAmbushFirearm)) return;
             Ragdoll.PhysicsController.AddCombatImpulse(Player3DAnatomicalPart.RightForearm,
                 handPose.CylinderCentre(false), -forward * (IsShotgun ? 7f : 1.25f));
         }

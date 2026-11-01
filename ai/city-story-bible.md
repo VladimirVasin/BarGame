@@ -429,7 +429,7 @@ README называет жильё квартирой старого алког�
 | `0` | §12/§21 «Нельзя», «Проверка»; худ. §10g | пассивность/вопрос без ответа/нижний ответ | `2026-09-25`: люк приподнимается/упирается/закрывается→точная нижняя строка; границы — §12. §16/остальной §21/девять проверок; `ai/architecture-notes.md`. |
 | `0` | §12; худ. §1/§10g | единая походка/скорость; нет замедления вне троп | `2026-09-25`: сугроб деревни — отдельный шаг без бега; глубина/следы/расчистка, не граница. Без урона/возврата/опасности/сюжета/текста; §16/§21/девять проверок, `ai/architecture-notes.md`. |
 |вне шкалы|§6/7/16.15/21;art§15a|loss/UI/gore/taunt/undead/rust-otherworld/strobe0|2026-09-19:bar;2026-09-20:HP/blood;2026-09-21:duel/FPtoilet/rearhead/shy;2026-09-25:grip/blood;2026-10-02:rise/shield;2026-10-03:AI/recoil;2026-10-07:body/guns;2026-10-08:aim/shotgun/flights;2026-10-09:power/sever;2026-10-10:carry;2026-10-12:warehouse/endless;2026-10-13:pop/ammo;2026-10-14:corpse/cloth/Spot/otherworld/key;2026-10-15:fish/key/gate/HUD;mimic/ram/frenzy/dormant/back0;2026-10-16:CraneHook/Frenzy/Fishorganic;2026-10-17:ZDC/2x/wounds/Crane3D;2026-10-18:Room/Imprint/LongExposure/Zombie:Lab6;2026-10-31:bar=strike/finiteparry;charge-combo-shove-kick-step0/gunskept;2026-11-01:Docker=lastfridge/reveal→can3|
-|вне шкалы|§7/16.16/21/22;art§15a|capture/cam/clear/postfish|2026-10-19:Room seat-facecam/others wait;Crane hook/hoist/E/fall/immortal/frontparry;fish→foes-bodies-spawn0/reward0/cables kept. Door2026-10-20:gate/prep0/door3s→attack5s/shin puncture-jerk/fan-Spot-lit sparks sync. Roof inverted struggle→freecam;E/next0;1Crane/8guides/stowed;previewHP0/cancel→grip-ammo-fan/story0.|
+|вне шкалы|§7/16.16/21/22;art§15a|capture/cam/fishclear|2026-10-19:Room seat-facecam/AIwait;Crane hook/hoist/E/fall/immortal/frontparry;fish→foes-bodies-spawn0/reward0/cables kept. Door2026-10-20/2026-11-01:gate/prep0/3+5s→safehook/herojerk;roll→aim/fire/pistol∞reserve+reload/switch0;Crane↑→attack/finale0.Fan/Spot/lit sparks;E0/1Crane/8guides;cancel→grip-ammo-fan/story0.|
 |вне шкалы|§3/11/16.10;art§15a|subjective light/SFX|2026-10-19:Roomtwin:abstractjelly;1neutral midbar L→R/in-out;wet close/glugs/pull;figures/anatomy/sex/voicebreath/her/factmemory/motive0.|
 |вне шкалы|§6/7/21;art§15a/16|SFX-owner|2026-10-19 user:CombatTest warehouse/fanstop→quiet insectclicks/wordless-indistinctwhisper;2random3D@hero/fixed-fullclip/.8/gaps/mix;speaker/line/address/info/story0.|
 | `0` | §18 «Междомовая арка»; §21 «Проверка» | «молчат», «добавить разговор»; первый пул троих | `2026-09-16`: двое у бочки переговариваются между собой, спящий отвечает из-под одеяла; общие пузыри, пары без повторов, в слышимости героя. Без обращения к нему, просьб, реакции, квеста; §16/§21. |
@@ -2059,7 +2059,7 @@ AudioSource нет. Ни герой, ни сюжет/странности не �
 «Лыжные склоны, лесные прогулки и вечера у печи.» Dry;map labels:§21;
 speech/pool0.
 
-- Одно-два коротких предложения. Двоеточие вместо придаточного.
+- Одно-два коротких предложения;двоеточие вместо придаточного.
 - Никаких восклицательных знаков.
 - Никаких абстракций: «судьба», «душа», «зло», «истина», «прощение».
 - Причины допустимы лишь в истории деревни через осмотр §6 `2026-09-24`.

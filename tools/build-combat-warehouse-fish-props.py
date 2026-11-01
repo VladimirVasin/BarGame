@@ -248,6 +248,35 @@ def metric_uvs(roots):
         for obj in root.children_recursive:
             if obj.type != "MESH":
                 continue
+            if root.name == "FishPreparationStation" and obj.get("bp_surface") in ("Rust", "Steel"):
+                # The close camera needs the full station sheet, not the tiny
+                # auxiliary patch. Keep UV1's original metre projections intact.
+                floor_proved = False
+                for polygon in obj.data.polygons:
+                    axis = max(range(3), key=lambda i: abs(polygon.normal[i]))
+                    # Same physical texel scale on every face; projecting
+                    # actual vertices avoids the thin-face UV normalization.
+                    points = [obj.data.vertices[obj.data.loops[i].vertex_index].co for i in polygon.loop_indices]
+                    projected = [(p.y if axis == 0 else p.x, p.y if axis == 2 else p.z) for p in points]
+                    centre = [(min(p[i] for p in projected) + max(p[i] for p in projected)) * .5 for i in (0, 1)]
+                    width = max(2.48, max(p[0] for p in projected) - min(p[0] for p in projected) + .02)
+                    height = width * 3 / 8
+                    scale = max(1., (max(p[1] for p in projected) - min(p[1] for p in projected) + .02) / height)
+                    values = []
+                    for index, (u, v) in zip(polygon.loop_indices, projected):
+                        value = ((u - centre[0]) / (width * scale) + .5,
+                                 (v - centre[1]) / (height * scale) + .5)
+                        obj.data.uv_layers[0].data[index].uv = value
+                        values.append(value)
+                    if axis == 2 and 1.5 < polygon.area < 2.1:
+                        span = [max(p[i] for p in values) - min(p[i] for p in values) for i in (0, 1)]
+                        if span[0] * 1024 < 800 or span[1] * 384 < 350:
+                            raise RuntimeError("Preparation floor lost close-up texel density")
+                        floor_proved = True
+                if obj.get("bp_surface") == "Rust" and not floor_proved:
+                    raise RuntimeError("Preparation trough lost its measured large floor")
+                if any(v < 0 or v > 1 for loop in obj.data.uv_layers[0].data for v in loop.uv):
+                    raise RuntimeError("Preparation close-up UVs escaped their clamped sheet")
             if obj.get("bp_surface") == "FishLabelPaper":
                 record = labels[root.name]
                 _, top, _, bottom = record["cell_pixels"]
@@ -364,8 +393,10 @@ def main():
     payload.update(generator="tools/build-combat-warehouse-fish-props.py", design_id="warehouse_fish_props_v1")
     roots = passive.build_objects(items)
     uv_cache = metric_uvs(roots)
-    payload["surfaces"] = {"mode": "shared warehouse textures / paper label UV0 atlas / metric UV1",
-        "uv_signature": appearance.uv_signature(uv_cache), "additional_runtime_textures": 1,
+    payload["surfaces"] = {"mode": "shared warehouse textures / station Rust close-up UV0 / paper label UV0 atlas / metric UV1",
+        "uv_signature": appearance.uv_signature(uv_cache), "additional_runtime_textures": 3,
+        "station_closeup": {"colour": [1024, 384], "response": [512, 192],
+            "minimum_floor_texels": [800, 350], "role": "Rust", "geometry_unchanged": True},
         "labels": label_source()}
     payload["contract"] = {"preparation_source": "tools/build-city-cannery-3d-model.py:add_preparation_station",
         "preparation_source_geometry_signature": items[0].source_geometry_signature,

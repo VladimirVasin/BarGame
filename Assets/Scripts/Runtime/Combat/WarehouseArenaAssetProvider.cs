@@ -19,7 +19,7 @@ namespace BarPromenade
             "RottenFishTailCan", "RottenFishBellyCan", "RottenFishHeadCan", "FishStationLamp" };
         public const int CoreModelCount = 36;
         public static readonly string[] TextureNames = { "WarehouseMasterAtlas", "WarehouseMaterialResponse",
-            "WarehouseWearDecals", "WarehouseFishLabels" };
+            "WarehouseWearDecals", "WarehouseFishLabels", "WarehousePreparationAtlas", "WarehousePreparationResponse" };
         public static readonly string[] AtlasTextureNames = { "WarehouseMasterAtlas" };
         private static readonly Dictionary<string, Material> Materials = new Dictionary<string, Material>();
         private static readonly Dictionary<string, GameObject> Templates = new Dictionary<string, GameObject>();
@@ -209,8 +209,9 @@ namespace BarPromenade
 
         internal static Material Surface(string kind, string role)
         {
-            bool auxiliary = kind == "Auxiliary" || Array.IndexOf(FishModelNames, kind) >= 0;
-            string atlas = auxiliary ? null : AtlasForModel(kind);
+            bool preparation = kind == "FishPreparationStation" && (role == "Rust" || role == "Steel");
+            bool auxiliary = !preparation && (kind == "Auxiliary" || Array.IndexOf(FishModelNames, kind) >= 0);
+            string atlas = preparation ? "WarehousePreparationAtlas" : auxiliary ? null : AtlasForModel(kind);
             string family = role == "WearDecal" ? "Wear decals" : atlas ?? "Props";
             bool fanLens = kind == "FanHousing" && role == "Lamp";
             bool fishBulb = kind == "FishStationLamp" && role == "Lamp";
@@ -286,7 +287,7 @@ namespace BarPromenade
             }
             if (layered)
             {
-                ConfigureMaterialResponse(material, role);
+                ConfigureMaterialResponse(material, role, preparation ? "WarehousePreparationResponse" : "WarehouseMaterialResponse");
                 material.SetFloat("_WarehouseAnisotropy", role == "WornSteel" ? .38f :
                     role == "Steel" || role == "LockSteel" ? .22f : 0f);
                 material.SetFloat("_WarehouseWetReflection", role == "Concrete" ? .65f :
@@ -315,7 +316,7 @@ namespace BarPromenade
             return material;
         }
 
-        private static void ConfigureMaterialResponse(Material material, string role)
+        private static void ConfigureMaterialResponse(Material material, string role, string responseName)
         {
             float normal;
             switch (role)
@@ -329,7 +330,7 @@ namespace BarPromenade
                 case "Rubber": normal = .09f; break;
                 default: normal = .12f; break;
             }
-            Texture2D response = Resources.Load<Texture2D>(ResourceFolder + "Textures/WarehouseMaterialResponse");
+            Texture2D response = Resources.Load<Texture2D>(ResourceFolder + "Textures/" + responseName);
             if (response == null) throw new InvalidOperationException("Warehouse is missing its shared material response.");
             material.SetTexture("_WarehouseMaterialResponse", response);
             material.SetFloat("_WarehouseResponseStrength", .9f);

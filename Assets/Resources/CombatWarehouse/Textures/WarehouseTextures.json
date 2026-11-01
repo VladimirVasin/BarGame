@@ -3,7 +3,7 @@
   "mipmaps": true,
   "windows_compression": "BC7",
   "gpu_budget_bytes": 29360128,
-  "estimated_gpu_bytes": 28661184,
+  "estimated_gpu_bytes": 29316704,
   "sheets": [
     {
       "name": "WarehouseMasterAtlas",
@@ -54,6 +54,28 @@
       "sRGB": true,
       "wrap": "Clamp",
       "authoring": "accounted external fish-label drawing"
+    },
+    {
+      "name": "WarehousePreparationAtlas",
+      "sha256": "72efcdd529c1c98482ba82a294da942b741eaab4501acec740a4ddc5429823de",
+      "source_sha256": "14e37398089412df751d565afe4e95da88958a931a53327bfc71c63afc9a9010",
+      "size": 1024,
+      "height": 384,
+      "mode": "RGB",
+      "sRGB": true,
+      "wrap": "Clamp",
+      "authoring": "station-only close-up Rust crop; authored UV0 / unchanged metric UV1"
+    },
+    {
+      "name": "WarehousePreparationResponse",
+      "sha256": "e73f69235c4b31533a473299dd603af99276838b4e3228b1672b83278cd5f5e0",
+      "source_sha256": "14e37398089412df751d565afe4e95da88958a931a53327bfc71c63afc9a9010",
+      "size": 512,
+      "height": 192,
+      "mode": "RGBA",
+      "sRGB": false,
+      "wrap": "Clamp",
+      "authoring": "station-only close-up Rust crop; authored UV0 / unchanged metric UV1"
     }
   ]
 }

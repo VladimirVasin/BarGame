@@ -211,6 +211,7 @@ namespace BarPromenade.Editor
             if (uv.Length != mesh.vertexCount || metreUv.Length != mesh.vertexCount)
                 throw new InvalidOperationException("Warehouse render meshes require UV0 and metre-space UV1: " + model + "/" + meshName);
             bool atlas = WarehouseArenaAssetProvider.AtlasForModel(model) != null ||
+                model == "FishPreparationStation" && meshName.EndsWith("__Rust", StringComparison.Ordinal) ||
                 meshName.EndsWith("__WearDecal",StringComparison.Ordinal) ||
                 meshName.EndsWith("__FishLabelPaper",StringComparison.Ordinal);
             for (int index = 0; index < uv.Length; index++)
@@ -338,20 +339,22 @@ namespace BarPromenade.Editor
                 if (sheet == null || !sheetNames.Add(sheet.name) ||
                     Array.IndexOf(WarehouseArenaAssetProvider.TextureNames, sheet.name) < 0)
                     throw new InvalidOperationException("Warehouse texture manifest contains an unrecognized/repeated sheet.");
-                measuredBytes += Bc7MipBytes(sheet.size);
+                measuredBytes += Bc7MipBytes(sheet.size, sheet.height > 0 ? sheet.height : sheet.size);
             }
             if (measuredBytes != manifest.estimated_gpu_bytes || measuredBytes > manifest.gpu_budget_bytes)
                 throw new InvalidOperationException("Warehouse full resident texture set exceeds its measured 28 MiB BC7/mip budget.");
             foreach (string name in WarehouseArenaAssetProvider.TextureNames)
             {
                 bool atlas = Array.IndexOf(WarehouseArenaAssetProvider.AtlasTextureNames,name) >= 0;
-                bool response = name == "WarehouseMaterialResponse", decals = name == "WarehouseWearDecals";
-                int size = atlas ? 4096 : response ? 2048 : 512;
+                bool preparation = name.StartsWith("WarehousePreparation", StringComparison.Ordinal);
+                bool response = name == "WarehouseMaterialResponse" || name == "WarehousePreparationResponse", decals = name == "WarehouseWearDecals";
+                int size = preparation ? (response ? 512 : 1024) : atlas ? 4096 : response ? 2048 : 512;
+                int height = preparation ? size * 3 / 8 : size;
                 TextureWrapMode wrap = TextureWrapMode.Clamp;
                 string path = Folder + "Textures/" + name + ".png";
                 Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
                 var importer = AssetImporter.GetAtPath(path) as TextureImporter;
-                if (texture == null || importer == null || texture.width != size || texture.height != size ||
+                if (texture == null || importer == null || texture.width != size || texture.height != height ||
                     texture != Resources.Load<Texture2D>(WarehouseArenaAssetProvider.ResourceFolder + "Textures/" + name) ||
                     importer.sRGBTexture == response || !importer.mipmapEnabled || importer.isReadable ||
                     importer.wrapMode != wrap || importer.maxTextureSize != size ||
@@ -361,22 +364,24 @@ namespace BarPromenade.Editor
                 if (!windows.overridden || windows.format != TextureImporterFormat.BC7 || windows.maxTextureSize != size)
                     throw new InvalidOperationException("Warehouse surface must retain the Windows BC7 profile: " + name);
                 TextureSheet sheet = Array.Find(manifest.sheets, item => item.name == name);
-                if (sheet.size != size || sheet.sRGB == response || sheet.wrap != wrap.ToString())
+                if (sheet.size != size || (sheet.height > 0 ? sheet.height : sheet.size) != height || sheet.sRGB == response || sheet.wrap != wrap.ToString())
                     throw new InvalidOperationException("Warehouse measured texture profile differs from its imported sheet: " + name);
             }
         }
 
-        private static long Bc7MipBytes(int size)
+        private static long Bc7MipBytes(int size, int height)
         {
-            if (size != 512 && size != 2048 && size != 4096)
+            if (!((size == 512 || size == 2048 || size == 4096) && height == size ||
+                size == 1024 && height == 384 || size == 512 && height == 192))
                 throw new InvalidOperationException("Warehouse texture dimensions escaped the bounded base/atlas profiles.");
             long result = 0;
             for (;;)
             {
-                long blocks = Math.Max(1, (size + 3) / 4);
-                result += blocks * blocks * 16;
-                if (size == 1) return result;
-                size /= 2;
+                long blocks = Math.Max(1, (size + 3) / 4), rows = Math.Max(1, (height + 3) / 4);
+                result += blocks * rows * 16;
+                if (size == 1 && height == 1) return result;
+                size = Math.Max(1, size / 2);
+                height = Math.Max(1, height / 2);
             }
         }
 
@@ -408,7 +413,7 @@ namespace BarPromenade.Editor
         [Serializable] private sealed class TextureSheet
         {
             public string name, wrap;
-            public int size;
+            public int size, height;
             public bool sRGB;
         }
 

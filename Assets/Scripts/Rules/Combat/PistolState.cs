@@ -43,6 +43,8 @@ namespace BarPromenade
         public int Rounds { get; private set; }
         public int ReserveRounds { get; private set; }
         public int ReserveCapacity => Settings.ReserveCapacity;
+        public bool UnlimitedReserve { get; private set; }
+        public void SetUnlimitedReserve(bool enabled) => UnlimitedReserve = enabled;
         public int ShotSequence { get; private set; }
         public bool AimRequested { get; private set; }
         public bool IsReloading => reloading;
@@ -91,7 +93,7 @@ namespace BarPromenade
         /// <summary>The finite reserve is committed only at the reload's completed boundary.</summary>
         public bool TryReload()
         {
-            if (reloading || !ReloadPending && (Rounds == Settings.MagazineCapacity || ReserveRounds == 0)) return false;
+            if (reloading || !ReloadPending && (Rounds == Settings.MagazineCapacity || !UnlimitedReserve && ReserveRounds == 0)) return false;
             reloading = true;
             aimElapsed = 0d;
             return true;
@@ -130,9 +132,10 @@ namespace BarPromenade
                     return;
                 }
                 remaining = Math.Max(0d, remaining - untilComplete);
-                int transferred = Math.Min(Settings.MagazineCapacity - Rounds, ReserveRounds);
+                int transferred = UnlimitedReserve ? Settings.MagazineCapacity - Rounds :
+                    Math.Min(Settings.MagazineCapacity - Rounds, ReserveRounds);
                 Rounds += transferred;
-                ReserveRounds -= transferred;
+                if (!UnlimitedReserve) ReserveRounds -= transferred;
                 reloading = false;
                 reloadElapsed = aimElapsed = 0d;
             }
@@ -149,6 +152,7 @@ namespace BarPromenade
 
         public void Reset()
         {
+            UnlimitedReserve = false;
             Rounds = Settings.MagazineCapacity;
             ReserveRounds = Settings.StartingReserveRounds;
             ShotSequence = unchecked(ShotSequence + 1);

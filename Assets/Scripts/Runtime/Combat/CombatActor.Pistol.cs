@@ -92,10 +92,10 @@ namespace BarPromenade
         // A committed step keeps the upper-body aim; firing/reloading still wait for Ready.
         internal bool PistolAimBodyAvailable => !RoomAttackSuppressed && IsFirearm && Firearm != null && BodyDamage.CanUseRightHand &&
             (!IsShotgun || BodyDamage.CanUseLeftHand) && !weaponDropped && !State.IsDefeated && (!roundEnded || hero != null) &&
-            (CanUseGroundedFirearm || CanAttemptBodyAction && IsAvailable &&
+            (CanUseDoorAmbushFirearm || CanUseGroundedFirearm || CanAttemptBodyAction && IsAvailable &&
                 (State.Phase is MeleePhase.Ready or MeleePhase.Step) && !(footwork?.RecoveryEpisodeActive ?? false));
 
-        internal bool PistolBodyAvailable => PistolAimBodyAvailable && (CanUseGroundedFirearm || State.Phase == MeleePhase.Ready);
+        internal bool PistolBodyAvailable => PistolAimBodyAvailable && (CanUseDoorAmbushFirearm || CanUseGroundedFirearm || State.Phase == MeleePhase.Ready);
 
         public void SetPistolAim(bool held, Vector3? worldAimPoint = null)
         {
@@ -172,7 +172,7 @@ namespace BarPromenade
                 !GameInput.CanRead(GameInputContext.Gameplay) ? "input_gate" :
                 Firearm.IsReloading ? "already_reloading" :
                 !resuming && Firearm.Rounds == Firearm.Settings.MagazineCapacity ? "full" :
-                !resuming && Firearm.ReserveRounds == 0 ? "no_reserve" : null;
+                !resuming && Firearm.ReserveRounds == 0 && !(Pistol?.UnlimitedReserve ?? false) ? "no_reserve" : null;
             if (reason != null || !Firearm.TryReload())
             {
                 JournalReload("reload_rejected", request, reason ?? "state_refused", resuming);
@@ -211,7 +211,9 @@ namespace BarPromenade
                 f3: GameLog.Field("target_x", target.x), f4: GameLog.Field("target_y", target.y), f5: GameLog.Field("target_z", target.z),
                 f6: GameLog.Field("aim_error_degrees", PistolAimErrorDegrees), f7: GameLog.Field("reachable", pistolAimReachable));
             if (!pistolAimReachable) return RejectPistolShot(request, "aim_unreachable", "commit");
-            if (!PistolAimAligned) return RejectPistolShot(request, "aim_unaligned", "commit");
+            // Suspended arms fire along their real achieved muzzle, including
+            // struggle/recoil. The crosshair already follows that same ray.
+            if (!PistolAimAligned && !CanUseDoorAmbushFirearm) return RejectPistolShot(request, "aim_unaligned", "commit");
             int count = IsShotgun ? Shotgun.Settings.PelletCount : 1;
             if (projectiles == null || !projectiles.HasCapacityFor(count)) return RejectPistolShot(request, "projectile_capacity", "commit");
             if (IsShotgun) muzzle = ShotgunMuzzle(Shotgun.NextBarrel).position;

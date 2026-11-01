@@ -28,7 +28,7 @@ namespace BarPromenade
             {
                 ammunitionHudSource = caption;
                 ammunitionHudRounds = rounds; ammunitionHudReserve = reserve;
-                ammunitionHudText = caption + " " + rounds + " / " + reserve;
+                ammunitionHudText = caption + " " + rounds + (DoorAmbushCombatActive ? " / ∞" : " / " + reserve);
             }
             return ammunitionHudText;
         }
@@ -115,20 +115,25 @@ namespace BarPromenade
             // A standing motor capsule is not the surface visible under the
             // crosshair. Converge the actual muzzle on the same anatomy that
             // bullets hit, while allowing nearer world geometry to occlude it.
-            foreach (CombatActor actor in combatOpponents)
-            {
-                if (!actor.gameObject.activeInHierarchy || actor.Hurtboxes == null) continue;
-                if (!actor.Hurtboxes.MayIntersectProjectile(ray.origin, ray.GetPoint(distance), 0f, out bool poseCurrent)) continue;
-                if (!poseCurrent)
-                {
-                    actor.Hurtboxes.Capture();
-                    actor.Hurtboxes.CaptureProjectileAimBounds();
-                }
-                if (actor.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(distance), 0f, ray.direction, out var hit))
-                    distance *= hit.Fraction;
-            }
+            if (DoorAmbushCombatActive && doorCombatSource != null)
+                ResolvePistolAimActor(doorCombatSource, ray, ref distance);
+            else foreach (CombatActor actor in combatOpponents)
+                ResolvePistolAimActor(actor, ray, ref distance);
             return ray.GetPoint(fromMuzzle ? distance :
                 Mathf.Max(distance, Vector3.Dot(heroChest.position - ray.origin, ray.direction) + .5f));
+        }
+
+        private static void ResolvePistolAimActor(CombatActor actor, Ray ray, ref float distance)
+        {
+            if (!actor.gameObject.activeInHierarchy || actor.Hurtboxes == null) return;
+            if (!actor.Hurtboxes.MayIntersectProjectile(ray.origin, ray.GetPoint(distance), 0f, out bool poseCurrent)) return;
+            if (!poseCurrent)
+            {
+                actor.Hurtboxes.Capture();
+                actor.Hurtboxes.CaptureProjectileAimBounds();
+            }
+            if (actor.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(distance), 0f, ray.direction, out var hit))
+                distance *= hit.Fraction;
         }
 
         internal bool TryGetFirearmCrosshairPoint(out Vector3 worldPoint)

@@ -22,6 +22,8 @@ namespace BarPromenade
         private Color sourceColor;
         private Quaternion sourceRotation;
         private float sourceInnerAngle, sourceOuterAngle;
+        private LightRenderMode sourceRenderMode;
+        private float sourceShadowStrength;
         private object doorAmbushLightingOwner;
         private bool initialized;
 
@@ -44,6 +46,8 @@ namespace BarPromenade
             sourceRotation = light.transform.rotation;
             sourceInnerAngle = light.innerSpotAngle;
             sourceOuterAngle = light.spotAngle;
+            sourceRenderMode = light.renderMode;
+            sourceShadowStrength = light.shadowStrength;
             originalProperties = new MaterialPropertyBlock();
             properties = new MaterialPropertyBlock();
             lens.GetPropertyBlock(originalProperties);
@@ -64,8 +68,10 @@ namespace BarPromenade
             doorAmbushLightingOwner = lightingOwner;
             Source.color = DoorAmbushColor;
             Source.transform.rotation = Quaternion.LookRotation(direction);
-            Source.innerSpotAngle = 88f;
-            Source.spotAngle = 110f;
+            Source.innerSpotAngle = 140f;
+            Source.spotAngle = 155f;
+            Source.renderMode = LightRenderMode.ForcePixel;
+            Source.shadowStrength = .35f;
             Apply(CurrentFactor, force: true);
             return true;
         }
@@ -126,6 +132,8 @@ namespace BarPromenade
             Source.transform.rotation = sourceRotation;
             Source.innerSpotAngle = sourceInnerAngle;
             Source.spotAngle = sourceOuterAngle;
+            Source.renderMode = sourceRenderMode;
+            Source.shadowStrength = sourceShadowStrength;
         }
 
         private void Restore()

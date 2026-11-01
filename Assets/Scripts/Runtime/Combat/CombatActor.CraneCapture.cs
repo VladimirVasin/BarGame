@@ -185,6 +185,16 @@ namespace BarPromenade
         internal bool TryBeginCraneRegeneration()
         {
             if (!CraneAttached) return false;
+            if (DoorAmbushPrepared)
+            {
+                // This fragment has no authored escape/finale yet. A terminal
+                // hit stops this attack and recovers the same suspended body.
+                State.BeginRegeneration();
+                RestoreCraneAfterRegeneration();
+                doorAttackSeconds = -2f;
+                doorAttackContact = false;
+                return true;
+            }
             if (craneRegenerating) return true;
             ReleaseCraneVictim(false);
             craneRegenerating = craneRetreatRequested = true;

@@ -879,14 +879,11 @@
   never live intensity/colour/pose/flame time; direct light/air remain live.
   Mother stays in half-shadow; mirror passive. Rooms/cameras/source hierarchy/
   speech/story stay. Excluded/foreign/cube cameras clear receiver/air parameters;
-  teardown restores material/property bindings and releases captures. Village
-  atmosphere is not imported. Local costs unmeasured; claims follow checks.
+  Teardown restores material/properties/releases captures;Village atmosphere0;cost unmeasured.
 - **Accepted exception 2026-10-20, Alpine Village local lighting — explicit user decision:**
-  Transfer applicable native warehouse effects; the user separately permits
-  real windows/garlands to illuminate nearby air and falling snow (art §10g,
-  story §6). No new Light, global fog writer, prologue or story change.
-  `SceneLightingPresentation` registers at most four scene owners; cameras
-  resolve only their active, non-dormant scene. `ScenePresentationExclusion`
+  Native warehouse effects;user permits window/garland light on nearby air/snow
+  (art§10g/story§6);new Light/global fog/prologue/story0.
+  `SceneLightingPresentation`:≤4 owners;camera resolves active/non-dormant scene. `ScenePresentationExclusion`
   and reflection/foreign cameras clear camera-scoped lighting parameters.
   Halation selects at most 24 actual geometry sources, including individual
   moving bulbs, occupied windows and the switched lodge lantern; shared source
@@ -904,12 +901,10 @@
   flags retain original response and teardown restores the original blocks.
   `SceneReflectionCapture` shares filtered 256-cube capture/watchdog/quality-lease
   recovery with the warehouse: at most two attempts per state; bounded frame grace.
-  The village binds one finite spring-water/nearby-stone region. Meaningful
-  light/night/warmth drift invalidates it no more often than every five seconds;
-  gusts do not trigger recapture. The saved `graphics.clean_*` effect keys stay.
+  Village:one finite spring-water/nearby-stone region;meaningful light/night/
+  warmth drift invalidates≤every5s;gusts never recapture. The saved `graphics.clean_*` effect keys stay.
   Dormancy releases capture resources/bindings; return restores scene ownership.
-  The same-scene lodge retains its profile; separate `MothersHouseInterior`
-  keeps its own presentation. Local effect costs remain unmeasured.
+  Same-scene lodge keeps profile;`MothersHouseInterior` keeps its own. Costs unmeasured.
 - **Accepted exception 2026-10-20, native-only presentation — user:**
   Art§4/§15a;story§6.Native only;style/low-res/quantization/output dither/
   scanlines/vertex snapping removed. Saved
@@ -946,14 +941,17 @@
   isolated effect cost, player frame-rate or target-FPS guarantee.
 - **Accepted 2026-10-19, scene cinematography:** FOV, Dutch angles and horizon
   rolls follow action;review framing/contacts.
-- **Accepted exception 2026-10-19, warehouse door ambush:**
-  CombatTest;§6/7/16.16/21/22/art§15a. Gate→doorE;prep clock0.
-  User2026-10-20:door3s→attack5s→RightShin hook/jerk;fan720°/s+Spot↑5s.
-  Sparks:1pooled Point/4.8m/.1s.
-  Physical inverted roof hoist→freecam/180°ease;hero struggles.
-  E/release/next0;1Crane/8guides/feedcap;haul under gallery→well.
-  Front1.18m/red36/.85floor;stowed. Debug:prereqcommit/entry;progress kept. Cancel:pose/vitals/grip/fan/red;ammo kept,
-  preview wound0/real shared puncture. Replay/off clears hang/cam.
+- **Accepted exception 2026-11-01, warehouse door combat — user:**
+  CombatTest;§6/7/16.16/21/22/art15a;gateE/prep0/3+5s→safe shin hook.
+  Hero-only fast haul under deck→well;roll.4s→aim/forced pistol/∞reserve/R/switch0.
+  Crane↑after roll→hits;finale/E/release0. One clock/rig/target/pools/ammo snapshot.
+  Red36/.85/155°/shadow.35/front1.85m;fan shadow.5+one actor-only4m bounce.
+  Door/body/hook/tension/hoist/brake/hits:existing3D voices;pause/off restore.
+  Fan720°/s+Spot↑5s/1sparkPoint4.8m/.1s;1Crane/8guides/feedcap.
+  Debug prereq/progress kept;cancel/replay/off→pose/vitals/grip/ammo/fan/red/cam.
+- **Accepted 2026-11-01, warehouse vat — user:**
+  Station-only1024×384/512×192 Rust/response;metric faceUV0/UV1 kept.
+  Floor/walls/rim crisp;geometry/COL/source kept;all maps BC7+mips≤28MiB.
 - **Accepted exception 2026-10-19, warehouse post-fan audio — explicit user request:**
   CombatTest:2ownerless wordless insectclicks/whispers;§6/art§15a/16;speech-story0. `CombatWarehouseAmbiencePlayer`:{warehouse_clicks,warehouse_whispers};2optional mono/bgStreaming;WAV|OGG|MP3/slot1;fan≥1;EOF→wait12–25/25–50s/firstsame/pitch.8/PCMcal/queue0. random3–7m@hero/root+1.35±.4/fixed/clearinside≤24tries/retry1s;2reused3D/linear2–16m/SfxWorld+LP2800/gain.30/.15/echo-reverb;empty0/ResetNewkeep/pause-ownerhold/unload0/unmeasured. Gate:moved→open=1heavy synthlatch/SfxWorld@valve;activity-tail/fullstop0.
 - **Accepted 2026-10-19, ground navigation:** Warehouse:FindApproachRoute/A*;feet/cargo clearance;gate/railnodes/contactexit/retry;art15a/story6.
@@ -969,7 +967,7 @@
 - **Accepted exception 2026-10-17, endless endurance:** Crane/sharedlife/fishcutoff. EnemyHP/structure×.5;head-rear maxHPcap→scale/head2/torso8;hero1. Everyhit/repeats/woodchips-hole/bounded;§6/art§15a/story0.
 - **Accepted 2026-10-19, warehouse routes/stock:** upperLbroken/Ronly;3room6wall/27soloE/fridgecurve/hollowCOL/multiopen/ownbay→Take;seed12packs/6mag6shell/9banks/3bays/allfloors;reset-respawnkeep/Endlessrefill/shut;8/2+0reserve/wave-story0.
 - **Accepted 2026-10-16, warehouse detail:**
-  9sets/doorCOLclear;4096+2048resp+2×512/BC7mips27.34≤28MiB;
+  9sets/doorCOLclear;4096+2048resp+2×512/BC7mips≤28MiB;
   UVslots/metrewear;gatePlatformUV/UV-matclone0.
 - **Accepted 2026-10-15, shared entry door design:**
   Home/CombatTest:`ApartmentEntranceDoor`:agedwood/4panels/reveals-trim-threshold/
