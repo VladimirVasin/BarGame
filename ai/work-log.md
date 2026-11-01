@@ -47,6 +47,12 @@ Range_CrowbarHitsLeaveWoundsAndZombieRises;Range_CrowbarFatalHeadContactFracture
 passed;strike/wound/rise/head frames reviewed. 24FX:shared damage surfaces/
 particles;lighting/post/camera owners kept.
 
+Room:closer camera probes;contact escape fits body/full destination clearance.
+Range_RoomAttackStartsWhenOuterCameraPositionsAreBlocked;
+Range_StoryWarehouseRoomPursuesAndAttacksFromInitialSpawn passed;frames reviewed.
+Ambush cleanup skips destroyed Unity owners;capture/clock/audio release stays.
+DoorAmbush_CleanupAfterCameraDestroyed passed. Unrelated valve-angle mismatch kept.
+
 ## 2026-10-31
 
 Zombie:recovery3.2/Docker3.6/all outcomes→authored .95/2.4s.

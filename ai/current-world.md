@@ -92,7 +92,7 @@ cemetery:own interiors/returns.
   Fan0:2mono3D/clicks-whisper/.3/.15/.8/LP2800/Worldwet;EOF12–25|25–50/startsame;newfixed3–7m;pause-ownerhold/ResetNewkeep/empty0/clear;§6/art15a.
   StdDocker;Endless1–5/def3:Room,Docker,Crane(last≤2);seedstart-reset-refill/≤5warm/≤2corpses/roleIDs.
   Lab:Arena/6warm/1target/Zombie/reset-prepkept.
-  Room×1.2/bighead/longarms-hands/corridor;Lab:Imprint cast/LongExposure emulsion;Room:head0→ret+2s;lens1s/chest-seatface2s/ret18HP/laugh5s→idle5s;twin-chair/IK/rootkept;simlive/input0/others idle→headend;jelly/Lmidbar in/out;glugs/pull;§6.
+  Room×1.2/bighead/longarms/corridor;Lab:Imprint cast/LongExposure emulsion;Room:head0→ret+2s;lens1s/chest-seatface2s/ret18HP/laugh5s→idle5s;twin/IK/root;cam5;escape@rail;simlive/input0/others idle→headend;jelly/Lmidbar in/out;glugs/pull;§6.
   HP×.5;bar tissue.27/fatalhead3;guns structure×.5;wood1st hole-chips.
   Crane:flesh/carapace/6cables/3floors/6m/up2m-chest/LOS/1hit;
   hook5s/COLhoist-haul overrails/struggle/bodycam/fallHP/inertia;

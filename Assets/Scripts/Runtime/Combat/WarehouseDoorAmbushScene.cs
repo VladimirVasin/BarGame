@@ -80,7 +80,7 @@ namespace BarPromenade
 
         internal void ResetEpisode()
         {
-            owner?.Cutscenes?.Stop();
+            if (owner != null && owner.Cutscenes != null) owner.Cutscenes.Stop();
             ClearHangingGameplay();
         }
 
@@ -105,7 +105,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
-            if (IsActive) owner?.Cutscenes?.Stop();
+            if (IsActive && owner != null && owner.Cutscenes != null) owner.Cutscenes.Stop();
             ClearHangingGameplay();
             if (gate != null && gate.DoorInteraction != null) gate.DoorInteraction.InteractionHandler = null;
         }
@@ -367,11 +367,11 @@ namespace BarPromenade
                 stopped = true;
                 if (!claimed) return;
                 ReleaseLighting();
-                if (fanOverdrive)
+                if (fanOverdrive && scene.mechanisms != null)
                     scene.mechanisms.EndDoorAmbushOverdrive(this, keepRunning: committed);
                 if (committed)
                 {
-                    scene.interaction.ReleaseExternalClock(this);
+                    if (scene.interaction != null) scene.interaction.ReleaseExternalClock(this);
                     RetroAudioService.Instance?.ReleasePresentation(this);
                     scene.hangingPlayback = this;
                     if (scene.playback == this) scene.playback = null;
@@ -383,24 +383,34 @@ namespace BarPromenade
             internal void ReleaseHangingGameplay(bool prepareAgain = false)
             {
                 ReleaseLighting();
-                scene.owner.CameraFollow?.ClearFreeAim(this);
-                scene.Source.EndDoorAmbush();
-                if (scene.interaction.IsActive) scene.interaction.CancelActiveInteraction();
-                scene.interaction.ReleaseExternalClock(this);
-                RetroAudioService.Instance?.ReleasePresentation(this);
-                scene.guides.SetActive(false);
-                if (preview) scene.owner.Hero.RestoreDoorAmbushPreview(previousHero.position, previousHero.rotation,
-                    previousHealth, previousStamina, previousFallCount, previousFallDamage);
-                else if (prepareAgain) scene.owner.Hero.RestoreDoorAmbushPreview(scene.EntryRootPosition,
-                    Quaternion.identity, scene.owner.Hero.State.Health, scene.owner.Hero.State.Stamina,
-                    scene.owner.Hero.RestraintFallDamageCount, scene.owner.Hero.LastRestraintFallDamage);
-                if (preview) scene.owner.Hero.RestoreDoorAmbushWeaponStow(this);
-                else scene.owner.Hero.CancelDoorAmbushWeaponStow(this);
-                scene.owner.Hero.RestoreStandingInspectionFocus(previousFocus);
-                if (scene.owner.CameraFollow != null)
+                // Scene unload may destroy the camera or hero before this
+                // owner. Each resource needs its own Unity-null check.
+                PlayerCameraFollow follow = scene.owner != null ? scene.owner.CameraFollow : null;
+                CombatActor actor = scene.owner != null ? scene.owner.Hero : null;
+                if (follow != null) follow.ClearFreeAim(this);
+                if (scene.Source != null) scene.Source.EndDoorAmbush();
+                if (scene.interaction != null)
                 {
-                    if (previousFixed) scene.owner.CameraFollow.SetFixedPose(previousFixedPose.position, previousFixedPose.rotation, previousFixedLens);
-                    else scene.owner.CameraFollow.ClearFixedPose();
+                    if (scene.interaction.IsActive) scene.interaction.CancelActiveInteraction();
+                    scene.interaction.ReleaseExternalClock(this);
+                }
+                RetroAudioService.Instance?.ReleasePresentation(this);
+                if (scene.guides != null) scene.guides.SetActive(false);
+                if (actor != null)
+                {
+                    if (preview) actor.RestoreDoorAmbushPreview(previousHero.position, previousHero.rotation,
+                        previousHealth, previousStamina, previousFallCount, previousFallDamage);
+                    else if (prepareAgain) actor.RestoreDoorAmbushPreview(scene.EntryRootPosition,
+                        Quaternion.identity, actor.State.Health, actor.State.Stamina,
+                        actor.RestraintFallDamageCount, actor.LastRestraintFallDamage);
+                    if (preview) actor.RestoreDoorAmbushWeaponStow(this);
+                    else actor.CancelDoorAmbushWeaponStow(this);
+                    actor.RestoreStandingInspectionFocus(previousFocus);
+                }
+                if (follow != null)
+                {
+                    if (previousFixed) follow.SetFixedPose(previousFixedPose.position, previousFixedPose.rotation, previousFixedLens);
+                    else follow.ClearFixedPose();
                 }
                 // The core restores the preview camera snapshot; gameplay follows the hero's real exit.
                 if (preview && scene.sceneCamera != null)
@@ -414,7 +424,7 @@ namespace BarPromenade
             private void ReleaseLighting()
             {
                 if (!lit) return;
-                scene.valveLamp?.EndDoorAmbushLighting(this);
+                if (scene.valveLamp != null) scene.valveLamp.EndDoorAmbushLighting(this);
                 lit = false;
             }
         }

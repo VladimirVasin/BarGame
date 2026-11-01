@@ -68,7 +68,7 @@ namespace BarPromenade
             attacker.SampleRoomAttackPose(CombatRoomAttackPose.PointHero, 1f);
             roomTableau.BindTo(attacker);
             bool acquired = false;
-            for (int variant = 0; variant < 3 && !acquired; variant++)
+            for (int variant = 0; variant < 5 && !acquired; variant++)
             {
                 Pose shot = ResolveRoomPointShot(variant, out Vector3 focus);
                 acquired = roomCamera.BeginAuthored(CameraFollow, attacker.transform, Hero.transform, shot, RoomPointStartFov, focus,
@@ -104,7 +104,10 @@ namespace BarPromenade
             focus = head;
             Vector3 axis = roomAttacker.RoomPointingDirectionWorld;
             float scale = roomAttacker.PresentationScale;
-            float distance = (.76f + .22f * variant) * scale;
+            // Keep the ordinary composition first, then look inward on the
+            // same index ray. The former outward-only probes could all meet
+            // stock or another opponent and retry forever at attack spacing.
+            float distance = (variant < 3 ? .76f + .22f * variant : .54f - .22f * (variant - 3)) * scale;
             Vector3 position = finger + axis * distance;
             roomPointStartCamera = RollRoomCamera(position, head, RoomPointStartRoll);
             // A real push compensates the widening lens at the head. The much

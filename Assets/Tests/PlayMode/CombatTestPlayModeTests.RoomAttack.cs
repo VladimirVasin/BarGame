@@ -164,6 +164,116 @@ namespace BarPromenade.Tests.PlayMode
 
         [Category("CurrentCombat")]
         [UnityTest]
+        [PrebuildSetup(typeof(CombatMixedEndlessAssetsSetup))]
+        public IEnumerator Range_StoryWarehouseRoomPursuesAndAttacksFromInitialSpawn()
+        {
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            GameSessionState.CommitHomeSleepAppearance();
+            Assert.That(GameSessionState.TryAddInventoryItem(InventoryItemId.CombatCrowbar), Is.True);
+            yield return SceneManager.LoadSceneAsync(SceneIds.StairwellInterior, LoadSceneMode.Single);
+            GameInput.HandleApplicationFocus(true);
+            Assert.That(WarehouseStoryEntryService.TryEnter(), Is.True);
+            yield return AwaitSelectedCombatRange();
+            ForceAmmoFocus();
+            Assert.That(root.IsStoryContinuation, Is.True);
+            Assert.That(root.WarehousePlan.Seed, Is.EqualTo(GameSessionState.GetOrCreateWarehouseStorySeed()));
+            Assert.That(root.EncounterSettings, Is.EqualTo(CombatEncounterSettings.Default));
+            CombatActor room = root.Opponents[0];
+            Assert.That(room.IsRoom && room.ZombieAwake, Is.True);
+            Vector3 spawn = room.transform.position, arrival = root.Hero.transform.position;
+            float health = root.Hero.State.Health;
+            TestContext.Progress.WriteLine($"Story warehouse initial spawn: seed={root.WarehousePlan.Seed}, room={spawn:F3}, hero={arrival:F3}");
+            // Keep the actual entry placement, loadout, population and physics.
+            // Only the simulation clock is driven explicitly; no setup attack,
+            // actor reset, target relocation or navigation override is used.
+            for (int frame = 0; frame < 2700 && !root.RoomAttackCinematicActive; frame++)
+            {
+                root.Tick(1f / 30f);
+                if (frame % 150 == 149)
+                    TestContext.Progress.WriteLine($"Story Room approach: {room.transform.position:F3}, " +
+                        root.DescribeWarehouseOpponentNavigation(room));
+                if (frame % 30 == 29) yield return null;
+            }
+            Assert.That(Vector3.Distance(spawn, room.transform.position), Is.GreaterThan(1f),
+                "The naturally spawned Room must walk toward the arriving hero. " + root.DescribeWarehouseOpponentNavigation(room));
+            Assert.That(root.RoomAttackCinematicActive, Is.True,
+                $"The natural story spawn never started its Room attack: room={room.transform.position:F3}, " +
+                $"hero={root.Hero.transform.position:F3}, phase={room.State.Phase}, " + root.DescribeWarehouseOpponentNavigation(room));
+            Assert.That(Vector3.Distance(arrival, root.Hero.transform.position), Is.LessThan(.15f),
+                "The Room reaches the untouched arrival position rather than relying on the hero moving closer.");
+            yield return AdvanceRoomTestToPhase(CombatRoomSequencePhase.PointHero);
+            yield return AtCombatPresentation(() =>
+                CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test Room attack - Story entry"));
+            yield return AdvanceRoomTestToPhase(CombatRoomSequencePhase.HeadPain);
+            Assert.That(root.Hero.State.Health, Is.EqualTo(health - 18f));
+            Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1));
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [Category("CurrentCombat")]
+        [UnityTest]
+        [PrebuildSetup(typeof(CombatMixedEndlessAssetsSetup))]
+        public IEnumerator Range_RoomAttackStartsWhenOuterCameraPositionsAreBlocked()
+        {
+            CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.WarehouseSeedForTests = 0;
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
+                new CombatLoadoutSelection(CombatWeaponId.Pistol), CombatTestMode.Endless,
+                new CombatEncounterSettings(3, 12f, 12f, 12f, 12f))), Is.True);
+            yield return AwaitSelectedCombatRange();
+            ForceAmmoFocus();
+            CombatActor room = root.Opponents[0];
+            Assert.That(room.IsRoom, Is.True);
+            PlaceRoomAttackTestPair(room);
+            float health = root.Hero.State.Health;
+            Assert.That(room.TryBeginRoomAttackPose(), Is.True);
+            Assert.That(room.SampleRoomAttackPose(CombatRoomAttackPose.PointHero, 1f), Is.True);
+            Vector3 finger = room.RoomPointingTipWorld, axis = room.RoomPointingDirectionWorld;
+            Vector3 head = FindAnatomicalBone(room, "head").position + Vector3.up * .04f;
+            // Another participant blocks the lens but, like real enemy bodies,
+            // does not turn the warehouse's static travel query into a wall.
+            var blocker = new GameObject("Test occupied outer Room camera positions");
+            blocker.transform.SetParent(root.Opponents[1].transform, false);
+            blocker.transform.SetPositionAndRotation(finger + axis * (1f * room.PresentationScale),
+                Quaternion.LookRotation(axis));
+            blocker.AddComponent<BoxCollider>().size = new Vector3(.8f, .8f, .9f) * room.PresentationScale;
+            Physics.SyncTransforms();
+            try
+            {
+                var probe = new ContextualCameraDirector();
+                foreach (float distance in new[] { .76f, .98f, 1.2f })
+                {
+                    Vector3 position = finger + axis * (distance * room.PresentationScale);
+                    Assert.That(probe.CanPrepareAuthored(root.CameraFollow, room.transform, root.Hero.transform,
+                        new Pose(position, Quaternion.LookRotation(head - position)), head), Is.False,
+                        "Every former outward-only camera candidate must be occupied in this reproduction.");
+                }
+                room.EndRoomAttackPose();
+                yield return AdvanceRoomTestToPhase(CombatRoomSequencePhase.PointHero);
+                yield return AtCombatPresentation(() =>
+                {
+                    AssertRoomPointShotComposition(room);
+                    CaptureMixedCameraFrame(root.CameraFollow.Camera, "Test Room attack - Occupied outer camera");
+                });
+                yield return AdvanceRoomTestToPhase(CombatRoomSequencePhase.HeadPain);
+                Assert.That(root.Hero.State.Health, Is.EqualTo(health - 18f),
+                    "The automatically acquired attack still applies its one ordinary Room hit.");
+                Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1));
+                root.ResetRound();
+                Assert.That(root.RoomAttackPhase, Is.EqualTo(CombatRoomSequencePhase.Idle));
+                Assert.That(root.Player.Motor.InputEnabled, Is.True);
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                room.EndRoomAttackPose();
+                UnityEngine.Object.Destroy(blocker);
+            }
+        }
+
+        [Category("CurrentCombat")]
+        [UnityTest]
         [PrebuildSetup(typeof(CombatRoomAssetsSetup))]
         public IEnumerator Range_RoomAttackKeepsShotsDamageLaughPauseAndCleanup()
         {

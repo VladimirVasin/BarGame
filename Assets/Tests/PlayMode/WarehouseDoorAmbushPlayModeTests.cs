@@ -118,6 +118,38 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator DoorAmbush_CleanupAfterCameraDestroyed()
+        {
+            WarehouseDoorAmbushScene scene = root.DoorAmbush;
+            yield return StartFromPauseMenu();
+            yield return AwaitFirstActionSample();
+            yield return AdvanceTo(8d);
+            yield return AwaitInteractive();
+            yield return AwaitInvertedCeiling();
+            yield return AwaitCompletion();
+            yield return AwaitGameplayInput();
+
+            PlayerCameraFollow follow = root.CameraFollow;
+            Assert.That(scene.HangingGameplayActive && scene.Source.DoorAmbushHangingGameplay, Is.True);
+            Assert.That(follow.FreeAimActive && root.Hero.IsRestrained, Is.True);
+            // Reproduce scene-unload ordering with all other owners still live.
+            // A destroyed Unity component keeps a non-null CLR reference.
+            Object.DestroyImmediate(follow);
+            Assert.That(follow == null && !ReferenceEquals(follow, null), Is.True);
+            scene.enabled = false;
+            Assert.That(scene.IsActive || scene.HangingGameplayActive, Is.False);
+            Assert.That(root.Hero.IsRestrained || scene.Source.DoorAmbushPrepared, Is.False,
+                "A missing camera must not abort the remaining actor cleanup.");
+            Assert.That(root.Player.Interactor.InteractKeyClaimed, Is.False);
+            Assert.That(root.Hero.Ragdoll.PhysicsController.IsRestraintDriveActive, Is.False);
+            Assert.That(GameTimeScaleRuntime.IsPaused || BarMinigameModalLock.IsAnyLocked, Is.False);
+            Assert.That(valveLamp.DoorAmbushLightingActive, Is.False);
+            // OnDestroy repeats the same release after OnDisable.
+            Object.DestroyImmediate(scene);
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [UnityTest]
         public IEnumerator DoorAmbush_ValveGatePreviewReplayAndInvertedGameplayKeepTheLoadedWarehouse()
         {
             WarehouseDoorAmbushScene scene = root.DoorAmbush;

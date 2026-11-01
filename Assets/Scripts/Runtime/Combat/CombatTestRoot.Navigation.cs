@@ -238,7 +238,12 @@ namespace BarPromenade
                     if (!area.TryGetHeight(candidate, out float floor, OpponentNavigationRadius,
                             OpponentClearanceHeight, OpponentObstacleRadius)) continue;
                     candidate.y = floor;
-                    if (!area.CanTraverse(from, candidate, OpponentNavigationRadius, OpponentBodyHeight) ||
+                    // Contact can leave the real capsule clear but inside its
+                    // extra navigation margin. Requiring that margin at the
+                    // start makes every escape reject the same cramped pose.
+                    // The destination above still needs full clearance; the
+                    // exit segment must fit the actual body and physical sweep.
+                    if (!area.CanTraverse(from, candidate, AiOpponent.Body.radius, OpponentBodyHeight) ||
                         !WarehouseTravelClear(travel)) continue;
                     Vector3 probe = travel.normalized * .05f;
                     if (AiOpponent.IsDocker && AiOpponent.LimitZombieLoadTravel(probe).sqrMagnitude < probe.sqrMagnitude * .8f) continue;
