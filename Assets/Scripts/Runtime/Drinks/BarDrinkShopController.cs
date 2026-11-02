@@ -125,6 +125,8 @@ namespace BarPromenade
         public const float VesselCarryClearance = 0.08f;
         private const float RestingMenuCarryClearance = 0.02f;
         public const float BottleShelfServerSetback = 0.42f;
+        public const float UnderCounterBottleServerSetback = .54f;
+        public const float UnderCounterBottleServerSideOffset = .35f;
         public const float BottlePreparationServerSetback = 0.55f;
         public const float BottleGripAttachProgress = 0.48f;
         public const float BottlePourMouthGap = 0.10f;
@@ -641,12 +643,14 @@ namespace BarPromenade
             Vector3 bottleLocal = serviceView.transform.InverseTransformPoint(
                 bottleWorld);
             Vector3 serverLocal = new Vector3(
-                bottleLocal.x,
+                bottleLocal.x + (ActiveServiceTimeline.UsesUnderCounterBottle ? UnderCounterBottleServerSideOffset : 0f),
                 0f,
-                bottleLocal.z - BottleShelfServerSetback);
+                bottleLocal.z + (ActiveServiceTimeline.UsesUnderCounterBottle
+                    ? UnderCounterBottleServerSetback : -BottleShelfServerSetback));
             return new Pose(
                 serviceView.transform.TransformPoint(serverLocal),
-                serviceView.transform.rotation);
+                serviceView.transform.rotation * (ActiveServiceTimeline.UsesUnderCounterBottle
+                    ? Quaternion.Euler(0f, 180f, 0f) : Quaternion.identity));
         }
 
         public Pose ResolveBottlePreparationServerWorldPose()

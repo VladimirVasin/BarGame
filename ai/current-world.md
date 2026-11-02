@@ -2762,8 +2762,8 @@ cemetery:own interiors/returns.
   follows the upper arc and both page/cover blocks are separated in the closed
   stack, so neither material alpha nor z-fighting represents the closed state.
   `W/S` or D-pad wraps selection. In the bar, `Space`/West and the contextual
-  `E`/`Enter`/South all order the selected offer; `Escape` alone folds and rests
-  the booklet without ordering, and a rejected purchase remains open. The cafe
+  `E`/`Enter`/South order; `Escape` folds/rests the book before pause handling,
+  without purchase or standing. Rejected orders leave it open. The cafe
   keeps its selection-only contract: `Space`/West confirms the choice, while
   its first `E`/`Enter`/South still closes and rests the menu. Looking at that
   closed booklet changes the contextual action to unfold it and, through that
@@ -2771,24 +2771,22 @@ cemetery:own interiors/returns.
   away or beginning the unfold clears the contour, so the open spread is never
   highlighted; looking away changes the action to stand. The bar adapter fills
   two rows on each page with exactly four localized low-grade offers — flat
-  house beer, cheap fortified wine, unaged distillate and bottom-shelf vodka. Every block
-  carries a name, fixed price and two-line description; four matching shelf
-  bottles are centred behind the counter. The cafe adapter remains three
-  selection-only item names. A rejected bar purchase leaves the booklet open
-  with failure feedback. Confirmation closes the booklet for the request gesture;
+  house beer, cheap fortified wine, unaged distillate and bottom-shelf vodka.
+  Each has name/price/description. Four sources: vodka under the rear counter
+  overhang; others on the backbar shelf. Cafe retains three selection-only names.
+  Rejection keeps the book open with feedback; confirmation closes it for the request gesture;
   completion revalidates, charges once and queues behind earlier guests.
   Intoxication/last-drink/count/stress commit only after drinking.
   Beer: full Walk to the central tap, `155 mm` mug, real handle/world stream;
   upright carry to the selected place, handle right. Guest-side reach/spine
-  bend keep the palm on the handle until supported, without throw/roll. Wine,
-  cognac and vodka use the selected shelf bottle. The bartender reaches its
-  live position with the full Walk, takes it only when the right hand makes
-  contact, then walks to a stable upright preparation vessel at the server edge
-  opposite the resting menu. Its scaled shell stays above the counter through
-  lift, transfer and lowering; the tilted bottle also retains wood clearance. He pours into the matching `WineGlass`, `Snifter` or
-  `ShotGlass`, carries the full vessel to the selected place and sets it down,
-  then returns the bottle to its exact shelf pose. While every full vessel
-  waits, the same gaze predicate
+  bend keep the palm on the handle until supported, without throw/roll.
+  Wine/cognac use the backbar shelf. Vodka stands on the floor beneath the
+  existing rear overhang, behind the solid counter body. Facing the counter,
+  the bartender bends knees with planted feet to grip/return it at that same spot.
+  Full Walk/contact-gated right-hand pickup and carry stay shared. Preparation
+  is opposite the resting menu; vessels/tilted bottle clear wood. He pours into
+  `WineGlass`/`Snifter`/`ShotGlass`, carries/places the full vessel, then returns
+  the bottle to its exact source. While every full vessel waits, the same gaze predicate
   drives its thin yellow contour and the localized `E` drink prompt. The seated
   world body owns base `2 s` pickup, `3 s` sip and `2 s` return clips.
   For beer its right hand grips the handle directly. The seated

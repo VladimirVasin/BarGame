@@ -103,6 +103,7 @@ namespace BarPromenade
         public const float ClosedMenuHalfDepth = 0.25f;
         public const float MaximumServiceVesselRadius = 0.18f;
         public const float MinimumMenuVesselClearance = 0.08f;
+        public const float UnderCounterBottleRearOffset = 0.08f;
 
         private readonly IReadOnlyList<BarDrinkBottleSlotPlan> bottleSlots;
         private Vector2 preparationLanes;
@@ -239,7 +240,10 @@ namespace BarPromenade
                     presentation.StableId,
                     drinkId,
                     new BarDrinkServicePose(
-                        new Vector3(
+                        drinkId == DrinkId.Vodka ? new Vector3(
+                            firstX + spacing * index,
+                            0f,
+                            counter.Bounds.yMax + UnderCounterBottleRearOffset) : new Vector3(
                             firstX + spacing * index,
                             bottleBaseY,
                             bottleZ),
@@ -500,6 +504,20 @@ namespace BarPromenade
 
                 ValidatePose(slot.Pose, slot.Id);
                 Vector3 position = slot.Pose.Position;
+                if (slot.DrinkId == DrinkId.Vodka)
+                {
+                    // The existing top overhang shelters a floor-standing
+                    // bottle behind the solid counter body, clear of its wood.
+                    bool underCounter = position.x >= counter.Bounds.xMin + 0.10f &&
+                        position.x <= counter.Bounds.xMax - 0.10f &&
+                        Mathf.Abs(position.y) <= 0.001f &&
+                        Mathf.Abs(position.z - counter.Bounds.yMax -
+                            UnderCounterBottleRearOffset) <= 0.001f;
+                    if (!underCounter)
+                        throw new InvalidOperationException(
+                            "Vodka must stand under the rear counter overhang.");
+                    continue;
+                }
                 bool onBackBar =
                     position.x >= backBar.Bounds.xMin - 0.05f &&
                     position.x <= backBar.Bounds.xMax + 0.05f &&

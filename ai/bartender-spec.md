@@ -77,16 +77,15 @@ poses remain. Source anatomy, models, materials and effects are unchanged.
 
 ## 4. Reused service and locomotion animation
 
-One service graph samples the shared Wipe, Notice, Pour and handling clips;
-full Walk is sampled only while the root translates. `BarDrinkServiceTimeline`
-and physical arrival drive choreography; it cannot commit purchases. Beer uses
-the central tap of three; wine/cognac/vodka use the selected shelf bottle,
-preparation dock and matching vessel, then restore its exact source pose. Preparation
-uses the opposite side from the resting menu. Wine/snifter/shot heights are 18.5/12.8/5.8 cm; beer stays
-15.515 cm. Measured shell bounds drive supported poses and raised carry paths:
-lift/transfer/lower above the counter. Shared IK closes hand contacts; torso tilt
-is capped at 38°. Knees bend forward with planted feet. Menu/drink docks follow
-chosen stool; hands blend out on completion/cleanup.
+Shared Wipe/Notice/Pour/handling; full Walk only during root travel.
+`BarDrinkServiceTimeline`/arrival drive choreography, never payment. Beer:
+central tap; wine/cognac: selected backbar shelf bottle. Vodka stands on the
+floor under the rear counter overhang: facing the counter, deep forward knee
+bend with planted feet closes the grip, then restores its exact source pose.
+All bottles share preparation opposite the resting menu and matching vessels.
+Wine/snifter/shot:18.5/12.8/5.8 cm; beer15.515 cm. Measured shells drive
+wood-clear lift/transfer/lower. Shared IK closes contacts; torso tilt≤38°.
+Menu/drink docks follow the chosen stool; completion/cleanup releases hands.
 
 `BarBartenderServiceQueue` gives hero/present counter guests deduplicated FIFO slots;
 one service runs. `BarCounterPatronRefill` drains cups during sips at distinct
@@ -141,7 +140,7 @@ same mug to the tap and stays planted while retracting the full mug into
 the walking grasp; only the completed retraction releases guest travel.
 Wine/cognac/vodka keep the same vessel
 on its guest dock while the matching bottle comes, pours directly and returns
-to its shelf. Another explicit sip commits the new order's effects once.
+to its source. Another explicit sip commits the new order's effects once.
 Accepted user exception `2026-10-22` replaces disposal only for this repeat.
 
 Choosing a different drink through the menu first sends the bartender to collect it: walk to the

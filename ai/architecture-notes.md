@@ -1,6 +1,17 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted by explicit user decision 2026-11-02 — bar close and vodka storage:**
+  Escape closes the open physical drink book before pause handling, without
+  ordering/standing. Vodka stands on the floor beneath the existing rear counter
+  overhang, behind its solid body. The bartender faces the counter, bends knees
+  with planted feet, grips at contact and returns it to the exact same source.
+  Wine/cognac keep the backbar shelf. Shared service/timeline/IK/cleanup;
+  no new geometry/text/material/effects. All24FX retain existing coverage:
+  finite bounce/SSAO/shadows/cubes/grade, dry materials/dust and scoped DOF/SMAA;
+  bar gameplay SSR/SSGI/SCGI remain inactive. No canon ban or contextual exception;
+  §16/21/art9 kept. Cached contacts/bounded solver;CPU/GPU unmeasured.
+
 - **Accepted 2026-11-02 — replenishable supermarket, user:**
   Five offers repeat;prices/stack9 kept. TryPurchaseWorldItem:item/price1×,
   no collection history;unique pickups kept. Shelf model/tag/collider persist.
@@ -2672,8 +2683,8 @@
   ordinary taste and packaging rather than a fictional brand or a new source
   of poisoning. Two logical blocks reuse the outer authored text sockets on
   each page; the passive nine-socket asset remains compatible and is not a
-  second content authority. `BarDrinkServicePlan` centres four physical shelf
-  bottles. The complete historical DrinkId/purchase lookup and unused bottle
+  second authority. `BarDrinkServicePlan` owns four bottle sources: vodka under
+  the counter, others on the shelf. Historical DrinkId/purchase lookup and unused bottle
   presentations remain readable for existing session/save compatibility and
   patron props, but the bar controller exposes only the four-item ordered
   `BarDrinkCatalog.Offers`. This supersedes only the nine-row/water-in-menu
@@ -7383,39 +7394,25 @@
   Aggregate debug state changes do not simulate a drink. The remaining
   balance-check delay and consumed deterministic sequence share that
   scene-persistent session lifetime.
-- **Accepted — Physical first-person bar retail:** Every generated bar derives
-  one validated `BarDrinkServicePlan` from its existing counter/back-bar
-  layout. The world builder reserves the lower central shelf for exactly four
-  stable visible-menu bottle roots and builds each with renderers, a solid collider,
-  a larger selection trigger, a kinematic non-gravity Rigidbody and a mouth
-  anchor. Five shared low-poly vessel meshes cover tumbler, the compatibility-
-  named `Pint` slot rendered as a compact handled beer mug, wine glass, shot
-  glass and snifter; transparent glass and liquid resources are shared,
-  while per-drink colors and highlights use property blocks. A pure unscaled
-  timeline owns camera approach, persistent browsing, pickup, vessel
-  placement, pour/fill, bottle return, an exact three-second drink, empty
-  vessel return and the explicit-exit camera return. The bartender owns bottle
-  pickup, pour and return through deterministic kinematic poses and one
-  reusable world-space liquid stream rather than a free physics/fluid
-  simulation. During the hero's drink, a prefab-derived camera-local rig keeps
-  only the vessel attachment trajectory alive: both arm-subset renderer groups
-  stay disabled in seated gameplay. The seated world body remains authoritative
-  and the seat view hides only its head. Confirmation remains the
-  sole transaction boundary: cash and
-  drinking state commit exactly once before service and exit is then rejected
-  until the empty vessel reaches the counter. Completing service clears only
-  that order and leaves the physical booklet closed on the counter. Looking at
-  it reopens the seated browser; looking away offers the shared animated exit,
-  whose completion alone permits bartender retrieval. Lifecycle cleanup never
-  refunds but always restores the
-  selected bottle, vessel, camera, player presentation, controls and HUD. The
-  F9 debug window may replace only pre-commit browsing and refuses to interrupt
-  committed service. The validated seated framing keeps all bottle renderer
-  bounds inside a 16:10 viewport, and every reusable vessel snapshots and
-  restores its authored transform so repeated orders cannot compound scale.
-  The camera is placed above the counter at seated eye height with a shallow
-  upward pitch. There is no floor order marker or visible emissive counter
-  sign.
+- **Accepted — Physical first-person bar retail:** A validated
+  `BarDrinkServicePlan` derives from counter/backbar layout. Four stable bottle
+  roots have renderers, solid collider, larger selection trigger, kinematic
+  non-gravity Rigidbody and mouth anchor. Vodka's source is under the counter;
+  others use the lower central shelf. Shared low-poly vessels: tumbler,
+  compatibility-named `Pint` handled mug, wine glass, shot glass and snifter.
+  Glass/liquid resources are shared; drink colors/highlights use property blocks.
+  Pure unscaled timeline owns approach/browse/pickup/place/pour/return/drink/exit.
+  Deterministic poses and one reusable world stream serve bottles. Prefab-derived
+  camera-local attachment retains trajectory only; subset renderers stay off.
+  The seated world body is authoritative; seat view hides its head only.
+  Payment commits once before service; drinking effects once after the visible
+  drink. Exit waits until empty-vessel return. Completion clears that order and
+  leaves the book closed. Gaze reopens; looking away offers shared animated exit;
+  bartender retrieves the book only after exit. Cleanup never refunds and restores
+  bottle/vessel/camera/body/controls/HUD. F9 replaces pre-commit browsing only.
+  Vessels restore authored transforms, preventing scale accumulation. Seated
+  eye camera stays above the counter with shallow upward pitch. No floor order
+  marker or emissive counter sign.
 - **Accepted by explicit user decision, 2026-09-04 — central-tap beer service
   and embodied drinking:** this supersedes the beer-specific bottle,
   camera-local vessel-attachment and single confirmation/effect-boundary

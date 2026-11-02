@@ -110,6 +110,11 @@ namespace BarPromenade
             if (AutoAdvance) Advance(Time.deltaTime);
         }
 
+        private bool IsLowBottleAccess => shop?.Timeline != null && shop.Timeline.UsesUnderCounterBottle &&
+            (shop.Phase == BarDrinkServicePhase.BottlePickup ||
+             shop.Phase == BarDrinkServicePhase.BottleReturn);
+        private bool lowBottleRecovery;
+
         public void Advance(float deltaTime)
         {
             if (!isInitialized || !presentation.IsInitialized || GameTimeScaleRuntime.IsPaused)
@@ -117,11 +122,15 @@ namespace BarPromenade
                 return;
             }
             deltaTime = Mathf.Max(0f, deltaTime);
+            if (IsLowBottleAccess) lowBottleRecovery = true;
+            else if (presentation.LowReachLowering <= .002f) lowBottleRecovery = false;
             if (AdvanceCleanup(deltaTime)) return;
-            if (presentation.LowReachLowering > .002f)
+            if (presentation.LowReachLowering > .002f && !IsLowBottleAccess)
             {
                 ReleaseAll();
-                presentation.ApplyCounterTurnPose(0f);
+                // A patron may release its service clock before the actor
+                // finishes standing; retain this pose across that handoff.
+                presentation.ApplyCounterTurnPose(0f, plantedLowReach: lowBottleRecovery);
                 return;
             }
             if (!IsRepeatFilledBeerCarry) repeatVesselCarryPrepared = false;
@@ -199,7 +208,7 @@ namespace BarPromenade
                 menu.IsVisible &&
                 !menu.IsPlaced &&
                 menu.GripAnchor != null;
-            presentation.ApplyServiceFrame(frame, menuHandled);
+            presentation.ApplyServiceFrame(frame, menuHandled, IsLowBottleAccess);
             ApplyOrdinaryService(frame, menu, menuHandled);
             if (counterTravel.IsActive)
             {
@@ -571,6 +580,13 @@ namespace BarPromenade
             service.SetBeerTapBartenderContact(false, 0f, 0f);
             service.SetBeerTapHandlePull(0f);
 
+            bool lowBottle = shop.Timeline.UsesUnderCounterBottle;
+            bool lowersToBottle = lowBottle &&
+                (frame.Phase == BarDrinkServicePhase.BottleReturn ||
+                 (frame.Phase == BarDrinkServicePhase.BottlePickup &&
+                  frame.PhaseProgress <= BarDrinkShopController.BottleGripAttachProgress));
+            presentation.SetLowReachStance(lowersToBottle ? .60f : 0f, lowBottle ? .9f : .4f);
+
             bool carriesVessel =
                 frame.Phase ==
                     BarDrinkServicePhase.BottleCarryToGuest;
@@ -632,6 +648,11 @@ namespace BarPromenade
             presentation.SetCounterReachLean(
                 placesVessel || reachesRepeatVessel ? vessel.GripWorldPosition : Vector3.zero,
                 placesVessel || reachesRepeatVessel ? 1f : 0f);
+            if (lowersToBottle && service.SelectedBottle != null)
+                presentation.SetCounterReachLean(service.ResolveCarriedBottleHandContact(
+                    service.SelectedBottle.transform.position, service.SelectedBottle.transform.rotation,
+                    presentation.Registry.RightUpperArm.position), 1f,
+                    BarBartenderPresentation.OrdinaryBottleHandIndex);
             presentation.SetChainTarget(
                 BarBartenderPresentation.OrdinaryBottleHandIndex,
                 service.IsCarriedBottleVisible && bottleWeight > 0f

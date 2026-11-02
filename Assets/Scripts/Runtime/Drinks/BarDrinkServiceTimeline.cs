@@ -107,6 +107,7 @@ namespace BarPromenade
         public const float VesselPlacementDurationSeconds = 0.38f;
         public const float PouringDurationSeconds = 1.45f;
         public const float BottleReturnDurationSeconds = 0.55f;
+        public const float UnderCounterBottleAccessDurationSeconds = 1.8f;
         public const float DrinkingDurationSeconds = 3f;
         public const float VesselReturnDurationSeconds = 0.65f;
         public const float CameraReturnDurationSeconds = 0.70f;
@@ -147,6 +148,7 @@ namespace BarPromenade
         public bool IsCommitted { get; private set; }
         public bool IsBeerService { get; private set; }
         public bool IsBottleService { get; private set; }
+        public bool UsesUnderCounterBottle { get; private set; }
         public bool IsRepeatService { get; private set; }
         public bool IsAwaitingDrink =>
             Phase == BarDrinkServicePhase.AwaitingDrink;
@@ -181,6 +183,7 @@ namespace BarPromenade
             IsCommitted = false;
             IsBeerService = false;
             IsBottleService = false;
+            UsesUnderCounterBottle = false;
             IsRepeatService = false;
             EmptyVesselGripConfirmed = false;
             returnStartCameraBlend = 0f;
@@ -208,6 +211,7 @@ namespace BarPromenade
             IsBeerService = drinkId == DrinkId.LightBeer;
             IsBottleService =
                 drinkId != DrinkId.None && !IsBeerService;
+            UsesUnderCounterBottle = drinkId == DrinkId.Vodka;
             if (clearsEmptyVessel)
                 SetPhase(BarDrinkServicePhase.EmptyVesselWalkToGuest);
             else
@@ -223,6 +227,7 @@ namespace BarPromenade
             IsRepeatService = true;
             IsBeerService = drinkId == DrinkId.LightBeer;
             IsBottleService = !IsBeerService;
+            UsesUnderCounterBottle = drinkId == DrinkId.Vodka;
             EmptyVesselGripConfirmed = false;
             SetPhase(IsBeerService
                 ? BarDrinkServicePhase.EmptyVesselWalkToGuest
@@ -236,6 +241,7 @@ namespace BarPromenade
             IsCommitted = IsRepeatService = true;
             IsBeerService = drinkId == DrinkId.LightBeer || drinkId == DrinkId.DarkBeer;
             IsBottleService = !IsBeerService;
+            UsesUnderCounterBottle = drinkId == DrinkId.Vodka;
             EmptyVesselGripConfirmed = false;
             SetPhase(IsBeerService ? BarDrinkServicePhase.EmptyVesselWalkToGuest : BarDrinkServicePhase.BottleWalkToShelf);
         }
@@ -392,6 +398,7 @@ namespace BarPromenade
             IsCommitted = false;
             IsBeerService = false;
             IsBottleService = false;
+            UsesUnderCounterBottle = false;
             IsRepeatService = false;
             EmptyVesselGripConfirmed = false;
             returnStartCameraBlend = 0f;
@@ -781,7 +788,7 @@ namespace BarPromenade
             Phase = phase;
         }
 
-        private static float GetPhaseDurationSeconds(
+        private float GetPhaseDurationSeconds(
             BarDrinkServicePhase phase)
         {
             switch (phase)
@@ -789,13 +796,13 @@ namespace BarPromenade
                 case BarDrinkServicePhase.CameraApproach:
                     return CameraApproachDurationSeconds;
                 case BarDrinkServicePhase.BottlePickup:
-                    return BottlePickupDurationSeconds;
+                    return UsesUnderCounterBottle ? UnderCounterBottleAccessDurationSeconds : BottlePickupDurationSeconds;
                 case BarDrinkServicePhase.VesselPlacement:
                     return VesselPlacementDurationSeconds;
                 case BarDrinkServicePhase.Pouring:
                     return PouringDurationSeconds;
                 case BarDrinkServicePhase.BottleReturn:
-                    return BottleReturnDurationSeconds;
+                    return UsesUnderCounterBottle ? UnderCounterBottleAccessDurationSeconds : BottleReturnDurationSeconds;
                 case BarDrinkServicePhase.Drinking:
                     return DrinkingDurationSeconds;
                 case BarDrinkServicePhase.VesselReturn:

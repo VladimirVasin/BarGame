@@ -226,8 +226,10 @@ namespace BarPromenade
                 Player,
                 follow,
                 intoxicationHud,
-                () => ArrivalPresentation == null ||
-                      !ArrivalPresentation.IsPlaying);
+                () => (ArrivalPresentation == null ||
+                       !ArrivalPresentation.IsPlaying) &&
+                      (!DrinkShop.CanRestPhysicalMenu ||
+                       !GameInput.WasPressed(GameInputAction.Cancel, GameInputContext.Gameplay)));
             GameLogPhases.Report("bar", "activity_and_crowd", phaseTimer);
             totalTimer.Stop();
             GameLog.Info(

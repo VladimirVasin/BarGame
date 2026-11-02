@@ -64,7 +64,7 @@ namespace BarPromenade
         public string CleanupBlockedBy => cleanupBlockedBy;
         public int CleanupReachAdjustmentCount => cleanupReachAdjustments;
         public bool IsReadyForForegroundService => !IsCleaningPatronDrink &&
-            (presentation == null || presentation.LowReachLowering <= .002f);
+            (presentation == null || presentation.LowReachLowering <= .002f || IsLowBottleAccess);
 
         public void ConfigureTraffic(BarAisleTraffic traffic)
         {

@@ -168,7 +168,8 @@ namespace BarPromenade
             pendingOrderedDrinkPresentation = false;
             patronPresentationPrepared = false;
             ResetCueState();
-            patronServiceTimeline.BeginPatronRefill(patron.DrinkId);
+            // Legacy patron variants use the same physical bottle source.
+            patronServiceTimeline.BeginPatronRefill(shelfDrink);
             patronCupOfferElapsed = 0f;
             patronCupReturnElapsed = 0f;
             patronCupReturnPending = false;

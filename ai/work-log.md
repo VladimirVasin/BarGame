@@ -5,16 +5,18 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-02
 
-Vodka:session fills/exact commits;LMB1/held1s mouth loop;release/empty/refusal lowers.
-Four shared wet DrinkGulp cues replace hiss,once/swallow;left caps before jacket stow.
-Depletion raises bottle/neck/head;last≤34ml reaches maximum before commit,live grip/lips kept.
-Empty2s:inspect→strict world-down for two quarter-second-apart shakes→resentful toss.
-Last sip debits once;actual prop inherits motion→bounded surface breakage/debris/water sink.
-Gain24/nominal96 per bottle;decay keeps dose. Recovery4.5–18s/point grows with level;
-binary split fixes boundary. Recovery_LowerLevelsLosePointsFaster/
+Bar:Escape closes before pause;vodka floor-source under rear counter overhang,
+contact pickup/exact return,planted low reach;wine/cognac shelf kept. Shared24FX.
+CounterMenu_EscapeClosesBookBeforePause/VodkaService_FetchesAndReturnsBottleUnderCounter passed;frames reviewed.
+VodkaService_KeepsShotClearOfCounterAndMenu:pre-service camera-sweep failure.
+Vodka:session fills/one commit;LMB1/held mouth loop;release/empty/refusal lowers.
+Shared wet DrinkGulp once/swallow;cap before jacket stow. Depletion raises
+bottle/neck/head;last sip reaches maximum,live grip/lips kept.
+Empty:inspect→world-down shakes→toss;actual prop inherits motion,bounded breakage/sink.
+Gain24/nominal96;decay keeps dose,level-based recovery;binary split fixes boundary. Recovery_LowerLevelsLosePointsFaster/
 IntoxicationRecovery_ConsumesTimeAndStopsAtSober passed.
 InventoryWalkingSipPersistenceAndLastSipThrow/SeatedBottlePreservesParentPoseInventoryAndExit
-passed;standing/seated frames reviewed. Live eyes/float-safe landmarks kept.
+passed;standing/seated frames reviewed.
 Fixture disables/restores heroes to isolate synthetic input/session commits.
 GenerateSamples_IsDeterministicFiniteAndAudible(DrinkGulp)/
 NextVariant_NeverRepeatsAndCoversEveryVariant passed.
@@ -24,19 +26,18 @@ mesh/metas kept. Hand/joint morph rebind preserves owner;NpcHandPoseTests passed
 Hollow Blender glass/anchors;0.299m neck grip/thumb-up. Wrapper/baked axes fix import roll;
 canonical basis avoids duplicate prep. Pistol/jacket path keeps palm/elbow/hidden transfer
 continuous,outside torso. PLAYER VODKA ACTION CONTRACT OK/body clearance/determinism.
-Ordinary seats/bus share equipment;inventory at rest,carry survives sit/stand;
-child waits visible stow,parent legs/root/pelvis/camera kept. Cached bus skinning uses
-import scale once;soles follow tilted floor,bottle above knees;finite cabin/door colliders,
-traffic hull kept. Passenger_BoardsRidesAndExitsAtLaterStop passed;bus frames reviewed.
+Seats/bus share equipment/inventory;child waits stow,parent pose/camera kept.
+Cached bus skinning/import scale;soles follow floor,bottle clears knees;
+finite cabin/door collision,traffic hull kept.
+Passenger_BoardsRidesAndExitsAtLaterStop passed;bus frames reviewed.
 Shop:five repeatable offers/unchanged price/stack9;shelf model/tag/collider persist.
 Prepared shared receipt borrows browser modal;one item/price,no growing source history;
 close cannot rebuy/grant/refund. Unique pickups kept.
 Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures/
 ShelfBrowser_CentersProducts_CrossesStockedShelves_ThenRestoresState/
 ShelfBrowser_DisableRestoresCharacterRenderers passed;Game View receipt reviewed.
-All24FX:light/shadows/grade,glass/roughness/Fresnel/bevel/gravity-liquid and PP kept;
-higher dose reaches existing FX earlier,no new passes. Cached rig/prop,bounded solver/
-receipt preview;CPU/GPU unmeasured.
+All24FX kept;higher dose reaches existing FX earlier. Cached rig/prop,
+bounded solver/receipt preview;CPU/GPU unmeasured.
 Fridge movable contents avoid cabinet dither;liquid shader clips disc inside bottle.
 Build_CreatesAnimatedHollowStorageWithoutLights passed;frame reviewed;registration-only.
 Closed bar/Home/church doors block hero;stairwell follows leaf. Shared apartment solid

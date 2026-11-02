@@ -54,6 +54,7 @@ namespace BarPromenade
         private Vector3 ordinaryTorsoLeanTarget;
         private float ordinaryTorsoLeanWeight;
         private float ordinaryTorsoLeanGoalWeight;
+        private int ordinaryTorsoLeanChain = OrdinaryVesselHandIndex;
         private AnatomicalHandFrame counterSupportHandFrame;
         private Vector3 counterSupportContactInHand;
         private Vector3 counterSupportSurfaceTarget;
@@ -71,14 +72,16 @@ namespace BarPromenade
         private Vector3 authoredPelvisLocalPosition;
         private float lowReachLowering;
         private float lowReachLoweringGoal;
+        private float lowReachLoweringSpeed = .4f;
 
         public float LowReachLowering => lowReachLowering;
 
-        /// <summary>A small knee bend for stationary low contacts; both authored feet stay planted.</summary>
-        public void SetLowReachStance(float loweringMetres)
+        /// <summary>A stationary knee bend; both authored feet stay planted.</summary>
+        public void SetLowReachStance(float loweringMetres, float speed = .4f)
         {
             if (!float.IsFinite(loweringMetres)) return;
-            lowReachLoweringGoal = Mathf.Clamp(loweringMetres, 0f, .12f);
+            lowReachLoweringGoal = Mathf.Clamp(loweringMetres, 0f, .60f);
+            lowReachLoweringSpeed = float.IsFinite(speed) ? Mathf.Clamp(speed, .4f, .9f) : .4f;
         }
 
         public bool IsInitialized => isInitialized;
@@ -324,12 +327,15 @@ namespace BarPromenade
         /// </summary>
         public void SetCounterReachLean(
             Vector3 worldTarget,
-            float weight)
+            float weight,
+            int handIndex = OrdinaryVesselHandIndex)
         {
             ordinaryTorsoLeanGoalWeight = Mathf.Clamp01(weight);
             if (ordinaryTorsoLeanGoalWeight > 0.0001f)
             {
                 ordinaryTorsoLeanTarget = worldTarget;
+                ordinaryTorsoLeanChain = handIndex == OrdinaryBottleHandIndex
+                    ? OrdinaryBottleHandIndex : OrdinaryVesselHandIndex;
             }
         }
 
@@ -457,7 +463,8 @@ namespace BarPromenade
         /// </summary>
         public void ApplyServiceFrame(
             BarDrinkServiceFrame frame,
-            bool leftHandCarriesMenu = false)
+            bool leftHandCarriesMenu = false,
+            bool plantedLowReach = false)
         {
             if (!isInitialized)
             {
@@ -485,8 +492,8 @@ namespace BarPromenade
                 case BarDrinkServicePhase.BeerGlassPickup:
                 case BarDrinkServicePhase.BeerGlassPlacement:
                     SetOrdinaryClip(
-                        BarBartenderClipKind.ServiceStep,
-                        frame.PhaseElapsedSeconds);
+                        plantedLowReach ? BarBartenderClipKind.Notice : BarBartenderClipKind.ServiceStep,
+                        plantedLowReach ? 0f : frame.PhaseElapsedSeconds);
                     break;
                 case BarDrinkServicePhase.Pouring:
                 case BarDrinkServicePhase.BeerPouring:
@@ -540,7 +547,8 @@ namespace BarPromenade
 
         public void ApplyCounterTurnPose(
             float elapsedSeconds,
-            bool leftHandCarriesMenu = false)
+            bool leftHandCarriesMenu = false,
+            bool plantedLowReach = false)
         {
             if (!isInitialized)
             {
@@ -548,8 +556,8 @@ namespace BarPromenade
             }
 
             SetOrdinaryClip(
-                BarBartenderClipKind.ServiceStep,
-                Mathf.Max(0f, elapsedSeconds));
+                plantedLowReach ? BarBartenderClipKind.Notice : BarBartenderClipKind.ServiceStep,
+                plantedLowReach ? 0f : Mathf.Max(0f, elapsedSeconds));
             counterMotionPose = true;
         }
 
@@ -595,7 +603,7 @@ namespace BarPromenade
             EvaluateOrdinaryAnimation();
             CaptureAuthoredPose();
             lowReachLowering = Mathf.MoveTowards(lowReachLowering, lowReachLoweringGoal,
-                Mathf.Max(0f, deltaTime) * .4f);
+                Mathf.Max(0f, deltaTime) * lowReachLoweringSpeed);
             ApplyLowReachStance();
             ordinaryTorsoLeanWeight = Mathf.MoveTowards(
                 ordinaryTorsoLeanWeight,
@@ -792,6 +800,10 @@ namespace BarPromenade
             Vector3 targetDirection = Vector3.ProjectOnPlane(
                 ordinaryTorsoLeanTarget - registry.Spine.position,
                 transform.up);
+            // A low bottle sits beside the right knee. Hinge sideways to
+            // that hand so the head stays behind the counter's solid edge.
+            if (ordinaryTorsoLeanChain == OrdinaryBottleHandIndex && lowReachLowering > .002f)
+                targetDirection = transform.right;
             if (torsoDirection.sqrMagnitude < 0.000001f ||
                 targetDirection.sqrMagnitude < 0.000001f)
             {
@@ -813,14 +825,15 @@ namespace BarPromenade
             float budget = Mathf.Max(0f, BeerPlacementTorsoLeanDegrees -
                 Vector3.Angle(torsoDirection, transform.up));
             Vector3 spineOffset = registry.Spine.position - registry.Pelvis.position;
-            Vector3 shoulderOffset = registry.LeftUpperArm.position - registry.Spine.position;
-            Quaternion handRotation = chainHasGripFrame[OrdinaryVesselHandIndex]
-                ? chainHandRotations[OrdinaryVesselHandIndex] : registry.LeftHand.rotation;
+            int handIndex = ordinaryTorsoLeanChain;
+            Vector3 shoulderOffset = chainShoulders[handIndex].position - registry.Spine.position;
+            Quaternion handRotation = chainHasGripFrame[handIndex]
+                ? chainHandRotations[handIndex] : chainHands[handIndex].rotation;
             Vector3 wristTarget = ordinaryTorsoLeanTarget - handRotation *
-                handAttachments[OrdinaryVesselHandIndex].SocketPositionInHand;
-            float reach = LimbTwoBoneIk.ChainLength(registry.LeftUpperArm,
-                registry.LeftForearm, registry.LeftHand) * 0.98f;
-            if (Vector3.Distance(registry.LeftUpperArm.position, wristTarget) <= reach)
+                handAttachments[handIndex].SocketPositionInHand;
+            float reach = LimbTwoBoneIk.ChainLength(chainShoulders[handIndex],
+                chainElbows[handIndex], chainHands[handIndex]) * 0.98f;
+            if (Vector3.Distance(chainShoulders[handIndex].position, wristTarget) <= reach)
                 return;
             float low = 0f;
             float high = budget;
@@ -1027,6 +1040,7 @@ namespace BarPromenade
         private void OnDisable()
         {
             orderAcknowledgement?.Clear();
+            lowReachLoweringGoal = lowReachLowering = 0f;
             counterSupportGoalWeight = counterSupportWeight = 0f;
             freeRightSupportWeight = 0f;
             RestoreAuthoredPose();

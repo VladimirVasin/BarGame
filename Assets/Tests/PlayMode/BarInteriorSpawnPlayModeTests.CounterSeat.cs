@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
@@ -10,6 +11,62 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class BarInteriorSpawnPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator CounterMenu_EscapeClosesBookBeforePause()
+        {
+            var input = new InputTestFixture();
+            Keyboard keyboard = null;
+            BarInteriorRoot bar = null;
+            try
+            {
+                input.Setup();
+                keyboard = InputSystem.AddDevice<Keyboard>();
+                yield return LoadBar(value => bar = value);
+                bar.ArrivalPresentation.Skip();
+                BarCounterStation station = bar.CounterStation;
+                CounterSeatPlan plan = station.Seat.Plan;
+                bar.Player.Motor.Teleport(plan.EntryPose.RootPosition);
+                bar.Player.GameObject.transform.rotation = plan.EntryPose.RootRotation;
+                Physics.SyncTransforms();
+                station.Interact(bar.Player.Interactor);
+                float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+                while (!bar.DrinkShop.CanRestPhysicalMenu &&
+                       Time.realtimeSinceStartup < deadline) yield return null;
+                Assert.That(bar.DrinkShop.CanRestPhysicalMenu, Is.True);
+                yield return null;
+                yield return null;
+                int balance = GameSessionState.CashBalance;
+                int drinks = GameSessionState.DrinksConsumed;
+
+                input.Press(keyboard.escapeKey, queueEventOnly: true);
+                yield return null;
+                input.Release(keyboard.escapeKey, queueEventOnly: true);
+                yield return null;
+
+                Assert.That(bar.DrinkShop.MenuState,
+                    Is.EqualTo(BarPromenade.Runtime.World.CounterMenuState.Resting));
+                Assert.That(station.Seat.IsSeated, Is.True);
+                Assert.That(bar.PauseMenu.IsOpen, Is.False,
+                    "The menu owns Escape before the gameplay pause can open.");
+                Assert.That(BarPromenade.Rendering.CinematicDepthOfField.IsActive, Is.False);
+                Assert.That(GameSessionState.CashBalance, Is.EqualTo(balance));
+                Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(drinks));
+                Assert.That(bar.DrinkShop.PurchaseCommitted, Is.False);
+
+                input.Press(keyboard.escapeKey, queueEventOnly: true);
+                yield return null;
+                input.Release(keyboard.escapeKey, queueEventOnly: true);
+                Assert.That(bar.PauseMenu.IsOpen, Is.True,
+                    "The next Escape must still pause once selection has closed.");
+            }
+            finally
+            {
+                if (bar != null && bar.PauseMenu != null) bar.PauseMenu.enabled = false;
+                if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
+                input.TearDown();
+            }
+        }
+
         [UnityTest]
         public IEnumerator VodkaService_ReturnsToSeatedViewAfterEmptyShot()
             => VerifyBottleService(DrinkId.Vodka, BarDrinkVesselKind.ShotGlass,

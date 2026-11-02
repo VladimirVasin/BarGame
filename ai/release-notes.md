@@ -8,14 +8,13 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-02
 
+- Бар:Escape закрывает меню без заказа/паузы;водку достают из-под прилавка и возвращают туда же.
+  CounterMenu_EscapeClosesBookBeforePause/VodkaService_FetchesAndReturnsBottleUnderCounter passed;frames reviewed.
 - Холодильник:жидкость хранит свой материал,лишний круг исчез.
   Build_CreatesAnimatedHollowStorageWithoutLights passed;frame reviewed.
-- Водка:ЛКМ1/держать раз/с без опускания;четыре мокрых глотка,в баре тоже.
-  Меньше остаток — выше бутылка/голова;последний глоток — максимум.
-  Убирает закрытой;пустую осмотр→две встряски строго горлышком вниз→бросок.
-  Остаток хранится;0,299м,пальцы вокруг горлышка,большой вверх.
-  Достаёт из куртки,как пистолет;руки снаружи корпуса.
-  Ходьба/сиденья/автобус,инвентарь сидя;бутылка над коленями,стопы на полу.
+- Водка:ЛКМ1/держать раз/с;мокрые глотки. Остаток↓:бутылка/голова↑,последний=максимум.
+  Убирает закрытой;пустую осмотр→встряски горлышком вниз→бросок.
+  Остаток/хват/куртка сохранены;ходьба/сидя/автобус,инвентарь сидя.
   InventoryWalkingSipPersistenceAndLastSipThrow/
   SeatedBottlePreservesParentPoseInventoryAndExit passed;frames reviewed.
   Passenger_BoardsRidesAndExitsAtLaterStop passed;bus frames reviewed.

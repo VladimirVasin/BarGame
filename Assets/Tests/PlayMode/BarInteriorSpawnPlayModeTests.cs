@@ -685,8 +685,13 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator VodkaService_KeepsShotClearOfCounterAndMenu()
             => VerifyBottleService(DrinkId.Vodka, BarDrinkVesselKind.ShotGlass);
 
+        [UnityTest]
+        public IEnumerator VodkaService_FetchesAndReturnsBottleUnderCounter()
+            => VerifyBottleService(DrinkId.Vodka, BarDrinkVesselKind.ShotGlass,
+                verifyBottleStorageOnly: true);
+
         private IEnumerator VerifyBottleService(DrinkId drinkId, BarDrinkVesselKind vesselKind,
-            bool verifyCompletionOnly = false)
+            bool verifyCompletionOnly = false, bool verifyBottleStorageOnly = false)
         {
             GameSessionState.ResetEconomyState();
             GameSessionState.ResetDrinkingState();
@@ -720,6 +725,16 @@ namespace BarPromenade.Tests.PlayMode
             Quaternion restingShelfRotation =
                 shelfBottle.transform.localRotation;
             Vector3 restingShelfScale = shelfBottle.transform.localScale;
+            if (drinkId == DrinkId.Vodka)
+            {
+                Bounds top = bar.Room.Find("Counter Top").GetComponent<Renderer>().bounds;
+                foreach (Renderer part in shelfBottle.Renderers)
+                {
+                    Assert.That(part.bounds.min.y, Is.GreaterThanOrEqualTo(-.005f));
+                    Assert.That(part.bounds.max.y, Is.LessThan(top.min.y));
+                    Assert.That(part.bounds.max.z, Is.LessThan(top.max.z));
+                }
+            }
 
             CounterSeatPlan seatPlan = station.Seat.Plan;
             bar.Player.Motor.Teleport(seatPlan.EntryPose.RootPosition);
@@ -762,7 +777,13 @@ namespace BarPromenade.Tests.PlayMode
             int intoxicationBefore = GameSessionState.IntoxicationLevel;
             int drinksBefore = GameSessionState.DrinksConsumed;
             int paymentNotices = shop.PaymentNotice.NotificationCount;
-            yield return VerifyInitialOrderGesture(bar, drinkId);
+            if (verifyBottleStorageOnly)
+            {
+                Assert.That(shop.ConfirmSelection(), Is.True);
+                for (int frame = 0; frame < 720 && !shop.PurchaseCommitted; frame++) yield return null;
+                Assert.That(shop.PurchaseCommitted, Is.True);
+            }
+            else yield return VerifyInitialOrderGesture(bar, drinkId);
             AssertPaymentNotice(shop, paymentNotices + 1, shop.SelectedOffer.Price, cashBefore - shop.SelectedOffer.Price);
             if (drinkId == DrinkId.RedWine)
                 yield return CapturePaymentNotice(bar, "Test first bottle drink payment receipt");
@@ -823,6 +844,8 @@ namespace BarPromenade.Tests.PlayMode
                 false);
             Assert.That(service.IsCarriedBottleVisible, Is.True);
             bool sawAttachedBottle = false;
+            bool sawLowBottlePickup = false;
+            Vector3 lowPickupLeftFoot = Vector3.zero, lowPickupRightFoot = Vector3.zero;
             // Record the shelf position before the phase-changing Update can
             // already take the first step toward the nearby preparation point.
             Vector3 pourTravelStart = bartender.transform.position;
@@ -838,6 +861,26 @@ namespace BarPromenade.Tests.PlayMode
             {
                 yield return new WaitForFixedUpdate();
                 travel.Observe("pick up selected bottle");
+                if (drinkId == DrinkId.Vodka && shop.Timeline.PhaseProgress > .20f &&
+                    lowPickupLeftFoot == Vector3.zero)
+                {
+                    lowPickupLeftFoot = leftFoot.position;
+                    lowPickupRightFoot = rightFoot.position;
+                }
+                if (drinkId == DrinkId.Vodka && shop.Phase == BarDrinkServicePhase.BottlePickup &&
+                    shop.Timeline.PhaseProgress > .40f && !sawLowBottlePickup)
+                {
+                    Assert.That(bartender.LowReachLowering, Is.GreaterThan(.5f));
+                    Assert.That(Vector3.Distance(leftFoot.position, lowPickupLeftFoot), Is.LessThan(.005f));
+                    Assert.That(Vector3.Distance(rightFoot.position, lowPickupRightFoot), Is.LessThan(.005f));
+                    Vector3 target = bar.Room.InverseTransformPoint(shelfBottle.transform.position);
+                    CaptureBarWipeReview(bar, "Vodka pickup beneath counter",
+                        target + new Vector3(-1.1f, 1.4f, .55f), target + Vector3.up * .5f, 62f);
+                    Assert.That(bartender.Registry.Head.position.z, Is.GreaterThan(
+                        bar.Room.Find("Counter Top").GetComponent<Renderer>().bounds.max.z + .12f),
+                        "The low bottle reach must keep the head behind the counter edge.");
+                    sawLowBottlePickup = true;
+                }
                 if (shop.Phase == BarDrinkServicePhase.BottlePickup &&
                     shop.IsBottleGripAttached)
                 {
@@ -861,6 +904,7 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(sawAttachedBottle, Is.True);
+            if (drinkId == DrinkId.Vodka) Assert.That(sawLowBottlePickup, Is.True);
             Assert.That(shop.Phase,
                 Is.EqualTo(BarDrinkServicePhase.BottleCarryToPour));
             int pourTravelFrames = 0;
@@ -1088,12 +1132,24 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(BarDrinkServicePhase.BottleReturn));
             phaseStartFrame = Time.frameCount;
             phaseStartedAt = Time.realtimeSinceStartup;
+            bool sawLowBottleReturn = false;
             while (shop.Phase == BarDrinkServicePhase.BottleReturn &&
                    HasBarSimulationBudget(phaseStartFrame, 180, phaseStartedAt, 30f))
             {
                 yield return new WaitForFixedUpdate();
                 travel.Observe("set selected bottle back on shelf");
+                if (drinkId == DrinkId.Vodka && shop.Phase == BarDrinkServicePhase.BottleReturn &&
+                    shop.Timeline.PhaseProgress > .90f && !sawLowBottleReturn)
+                {
+                    Assert.That(bartender.LowReachLowering, Is.GreaterThan(.5f));
+                    Assert.That(shop.BottleGripError, Is.LessThan(.015f));
+                    Vector3 target = bar.Room.InverseTransformPoint(shelfBottle.transform.position);
+                    CaptureBarWipeReview(bar, "Vodka return beneath counter",
+                        target + new Vector3(-1.1f, 1.4f, .55f), target + Vector3.up * .5f, 62f);
+                    sawLowBottleReturn = true;
+                }
             }
+            if (drinkId == DrinkId.Vodka) Assert.That(sawLowBottleReturn, Is.True);
 
             Assert.That(shop.Phase,
                 Is.EqualTo(BarDrinkServicePhase.AwaitingDrink));
@@ -1114,6 +1170,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(drinksBefore));
             Assert.That(GameSessionState.LastAlcoholicDrink,
                 Is.EqualTo(DrinkId.None));
+            if (verifyBottleStorageOnly)
+            {
+                AreaCaptureFixture.CaptureCurrentCamera(Camera.main, SceneIds.BarInterior, "Vodka served after under-counter return");
+                yield break;
+            }
             shop.AdvancePresentation(30f);
             Assert.That(shop.Phase,
                 Is.EqualTo(BarDrinkServicePhase.AwaitingDrink));
@@ -2329,8 +2390,17 @@ namespace BarPromenade.Tests.PlayMode
                     bool overCounter = item.max.x > top.min.x && item.min.x < top.max.x &&
                         item.max.z > top.min.z && item.min.z < top.max.z;
                     if (overCounter)
-                        Assert.That(item.min.y, Is.GreaterThanOrEqualTo(top.max.y - 0.005f),
-                            $"During {step}, {name} crosses the counter: {item} vs {top}.");
+                    {
+                        bool underCounter = name == "bottle" && bar.DrinkShop.Timeline.UsesUnderCounterBottle &&
+                            item.max.y <= top.min.y + .005f;
+                        if (underCounter)
+                            Assert.That(item.min.z, Is.GreaterThanOrEqualTo(
+                                bar.Room.Find("Bar Counter").GetComponent<Renderer>().bounds.max.z - .005f),
+                                $"During {step}, {name} crosses the solid counter body.");
+                        else
+                            Assert.That(item.min.y, Is.GreaterThanOrEqualTo(top.max.y - 0.005f),
+                                $"During {step}, {name} crosses the counter: {item} vs {top}.");
+                    }
                     if (hasMenu)
                         Assert.That(item.Intersects(menu), Is.False,
                             $"During {step}, {name} crosses the resting menu: {item} vs {menu}.");
