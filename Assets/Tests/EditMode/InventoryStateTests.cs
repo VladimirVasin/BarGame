@@ -113,5 +113,41 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(state.TryAdd(itemId), Is.True);
             Assert.That(state.GetCount(itemId), Is.EqualTo(maximumStack));
         }
+
+        [Test]
+        public void VodkaBottles_PreserveIndependentFillsAcrossEquipmentAndGenericRemoval()
+        {
+            var state = new InventoryState();
+            Assert.That(state.TryAdd(InventoryItemId.VodkaBottle, 2), Is.True);
+            Assert.That(state.TrySetEquipped(InventoryItemId.VodkaBottle, true), Is.True);
+            int openedId = state.VodkaBottleId;
+            Assert.That(state.TryDrinkVodkaSip(openedId, out _), Is.True);
+            Assert.That(state.TrySetEquipped(InventoryItemId.VodkaBottle, false), Is.True);
+            Assert.That(state.TryAdd(InventoryItemId.VodkaBottle, 1, VodkaBottleState.RefrigeratorMl), Is.True);
+            Assert.That(state.TryAdd(InventoryItemId.CombatCrowbar), Is.True);
+            Assert.That(state.TrySetEquipped(InventoryItemId.CombatCrowbar, true), Is.True);
+            Assert.That(state.TrySetEquipped(InventoryItemId.VodkaBottle, true), Is.True);
+            Assert.That(state.IsEquipped(InventoryItemId.CombatCrowbar), Is.False);
+            Assert.That(state.VodkaBottleId, Is.EqualTo(openedId));
+            Assert.That(state.VodkaBottleRemainingMl, Is.EqualTo(467));
+            for (int sip = 1; sip < VodkaBottleState.FullBottleSipCount; sip++)
+                Assert.That(state.TryDrinkVodkaSip(openedId, out _), Is.True);
+            Assert.That(state.GetCount(InventoryItemId.VodkaBottle), Is.EqualTo(2));
+            Assert.That(state.IsEquipped(InventoryItemId.VodkaBottle), Is.False);
+            Assert.That(state.VodkaBottleId, Is.Zero, "An empty bottle never auto-equips its successor.");
+            Assert.That(state.TrySetEquipped(InventoryItemId.VodkaBottle, true), Is.True);
+            int refrigeratorId = state.VodkaBottleId;
+            Assert.That(refrigeratorId, Is.Not.EqualTo(openedId));
+            Assert.That(state.VodkaBottleRemainingMl, Is.EqualTo(100));
+            Assert.That(state.TryDrinkVodkaSip(openedId, out _), Is.False);
+            Assert.That(state.TryRemove(InventoryItemId.VodkaBottle), Is.True);
+            Assert.That(state.VodkaBottleId, Is.EqualTo(refrigeratorId), "Generic removal preserves the active bottle where possible.");
+            Assert.That(state.VodkaBottleRemainingMl, Is.EqualTo(100));
+            state.ResetWithStarterItems();
+            Assert.That(state.VodkaBottleRemainingMl, Is.Zero);
+            state.TryAdd(InventoryItemId.VodkaBottle);
+            state.TrySetEquipped(InventoryItemId.VodkaBottle, true);
+            Assert.That(state.VodkaBottleId, Is.Not.EqualTo(openedId).And.Not.EqualTo(refrigeratorId));
+        }
     }
 }

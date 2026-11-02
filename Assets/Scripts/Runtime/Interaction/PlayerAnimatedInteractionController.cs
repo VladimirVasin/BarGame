@@ -264,6 +264,8 @@ namespace BarPromenade
         private object externalClockOwner;
         private int externalTerminalSampleFrame = -1;
         private bool externalClockPaused;
+        private PlayerVodkaBottleController handEquipment;
+        private bool handEquipmentResolved;
 
         public event Action<PlayerAnimatedInteractionPhase> PhaseChanged;
         public event Action<PlayerAnimatedInteractionPhase>
@@ -334,6 +336,7 @@ namespace BarPromenade
                 : null;
         public bool IsActive => isPositioning ||
                                 (timeline != null && timeline.IsActive);
+        public bool AllowsHandEquipment => IsActive && timeline != null && timeline.Definition.AllowsHandEquipment;
         public float ExitDurationMultiplier => timeline != null
             ? timeline.ExitDurationMultiplier
             : 1f;
@@ -1152,6 +1155,18 @@ namespace BarPromenade
 
         private void UpdateNestedLoopAction(float seconds)
         {
+            // A seated child action waits for the actual held item to leave
+            // the hand; its authored clock and transactions have not advanced.
+            if (!handEquipmentResolved)
+            {
+                handEquipment = player.GameObject.GetComponent<PlayerVodkaBottleController>();
+                handEquipmentResolved = true;
+            }
+            if (AllowsHandEquipment && handEquipment != null && handEquipment.OccupiesHand)
+            {
+                handEquipment.RequestContextualStow();
+                return;
+            }
             if (nestedMouthAccess != null && !nestedMouthAccess.IsReady) return;
             if (Time.frameCount <= nestedLoopActionSettleFrame)
             {

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public enum NpcHandGripKind { Cylindrical = 0, WineBowl = 1, SnifterBowl = 2, Cigarette = 3 }
+    public enum NpcHandGripKind { Cylindrical = 0, WineBowl = 1, SnifterBowl = 2, Cigarette = 3, Bottle = 4 }
 
     /// <summary>Neutral hand anatomy measured in rotation-only hand space, in metres.</summary>
     public readonly struct AnatomicalHandFrame
@@ -105,6 +105,7 @@ namespace BarPromenade
             NpcHandGripKind.WineBowl => .037f,
             NpcHandGripKind.SnifterBowl => .046f,
             NpcHandGripKind.Cigarette => .00325f,
+            NpcHandGripKind.Bottle => .0147796875f,
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
 
@@ -142,6 +143,7 @@ namespace BarPromenade
                 HandBinding binding = bindings[i] ?? throw new ArgumentException("A hand binding is missing.", nameof(bindings));
                 copy[i] = new HandBinding(binding.IsLeft, binding.Hand, binding.GripSocket, binding.CentreAnchor,
                     binding.AxisAnchor, binding.PalmAnchor, Copy(binding.Renderers));
+                PlayerVodkaGripCatalog.Apply(copy[i].Renderers);
                 var bound = new BoundHand(copy[i], authoredShapeName, transform, owned);
                 if (binding.IsLeft)
                 {
@@ -173,10 +175,10 @@ namespace BarPromenade
         public void PrepareGrip(bool isLeft, NpcHandGripKind kind) => Hand(isLeft).Prepare(kind);
 
         /// <summary>A temporary contact restores only the hand it captured, with its exact prior variant/weight.</summary>
-        public bool TryCaptureGrip(UnityEngine.Object owner, bool isLeft, NpcHandGripKind kind)
+        public bool TryCaptureGrip(UnityEngine.Object owner, bool isLeft, NpcHandGripKind kind, bool exclusive = false)
         {
             if (owner == null) throw new ArgumentNullException(nameof(owner));
-            return Hand(isLeft).TryCapture(owner, kind);
+            return Hand(isLeft).TryCapture(owner, kind, exclusive);
         }
 
         public bool SetOwnedGrip(UnityEngine.Object owner, bool isLeft, float weight)
@@ -262,6 +264,7 @@ namespace BarPromenade
             private UnityEngine.Object gripOwner;
             private NpcHandGripKind ownedKind, previousKind;
             private float previousWeight;
+            private bool exclusiveCapture;
             private Transform cigaretteSocket;
             private readonly Dictionary<NpcHandGripKind, int[]> variantShapes = new();
             private readonly Dictionary<NpcHandGripKind, AnatomicalHandFrame> variantFrames = new();
@@ -322,19 +325,20 @@ namespace BarPromenade
             public void SetManualWeight(float weight, NpcHandGripKind kind)
             {
                 GetVariantShapes(kind);
+                if (exclusiveCapture && !ReferenceEquals(gripOwner, null) && gripOwner != null) return;
                 // An explicit presentation write takes this hand over. A stale
                 // scoped contact may no longer restore over that new owner.
                 gripOwner = null;
                 SetWeight(weight, kind);
             }
 
-            public bool TryCapture(UnityEngine.Object owner, NpcHandGripKind kind)
+            public bool TryCapture(UnityEngine.Object owner, NpcHandGripKind kind, bool exclusive)
             {
                 if (!ReferenceEquals(gripOwner, null))
                     return ReferenceEquals(gripOwner, owner) && ownedKind == kind;
                 GetVariantShapes(kind);
                 previousKind = Kind; previousWeight = Mathf.Max(0f, Weight);
-                ownedKind = kind; gripOwner = owner;
+                ownedKind = kind; gripOwner = owner; exclusiveCapture = exclusive;
                 SetWeight(0f, kind);
                 return true;
             }
@@ -349,7 +353,7 @@ namespace BarPromenade
             public bool Release(UnityEngine.Object owner)
             {
                 if (ReferenceEquals(gripOwner, null) || !ReferenceEquals(gripOwner, owner)) return false;
-                gripOwner = null;
+                gripOwner = null; exclusiveCapture = false;
                 SetWeight(previousWeight, previousKind);
                 return true;
             }
@@ -399,6 +403,7 @@ namespace BarPromenade
             public AnatomicalHandFrame GetVariantFrame(NpcHandGripKind kind)
             {
                 if (kind == NpcHandGripKind.Cylindrical) return AnatomicalFrame;
+                if (kind == NpcHandGripKind.Bottle) return PlayerVodkaGripCatalog.Frame(AnatomicalFrame);
                 if (kind == NpcHandGripKind.Cigarette)
                 {
                     GetVariantShapes(kind);
@@ -433,6 +438,7 @@ namespace BarPromenade
                 NpcHandGripKind.WineBowl => "WineBowlGrip",
                 NpcHandGripKind.SnifterBowl => "SnifterBowlGrip",
                 NpcHandGripKind.Cigarette => "SmokingGrip",
+                NpcHandGripKind.Bottle => "BottleGrip",
                 _ => throw new ArgumentOutOfRangeException(nameof(kind))
             };
 

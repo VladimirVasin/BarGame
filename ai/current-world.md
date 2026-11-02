@@ -2164,7 +2164,7 @@ cemetery:own interiors/returns.
   only five offers: noodles and loaf, vodka and closed stew, plus the egg on
   the cold shelf. Their
   bottom-centre pivots sit on exact authored tier anchors instead of floating
-  or overhanging. The `0.46 m` vodka source uses a `0.37 m` shop fit envelope on
+  or overhanging. The `0.299 m` vodka source uses a `0.37 m` shop fit envelope on
   the unobstructed third/top tier and remains below the shelving-unit top during
   selection; closed stew occupies the first tier. The open can's world source
   remains the Home/cat flow, and it does not add a sixth store offer. Confirming a purchase
@@ -2246,24 +2246,13 @@ cemetery:own interiors/returns.
   captures the shared modal lock, freezes scaled time, hides the gameplay HUD
   and preserves the ambient audio bed; Escape, the same toggle or gamepad East
   restores the exact prior input, camera, HUD and time-scale state without
-  opening pause on the same frame. The logical `640x360` screen combines a
-  dedicated transparent portrait rendered from the production 3D hero, four
-  compact intoxication/hunger/stress/fatigue bars, dollar cash, a five-column point-filtered
-  icon grid, selected item description and contextual Eat/Drink/Equip/Remove, Examine and
-  Close commands. Hunger, stress and fatigue are session-owned `0-100` values
-  that start at zero and survive ordinary scene loads. Once the accepted startup E Wake
-  starts the prepared session clock, hunger rises from `0` to `100` over
-  `1440` game minutes and fatigue over `1080`; both use hidden double-precision
-  fractions while the existing menu bars expose only clamped integers. The
-  same pause-aware real-time path freezes progression before Wake and during
-  true pause, but otherwise continues through scenes, transitions and ordinary
-  interactions without following intoxication's world slowdown. Food clears
-  the hunger fraction when it applies its relief, while only a normally
-  completed bed sleep clears fatigue and its
-  fraction. Neither need has a gameplay debuff yet. The selected item is a
-   live low-resolution 3D model in the lower panel and Examine view. Examine
-   centres a compact preview without an inner frame, with compact text/buttons;
-   fish cans use a smaller inspection scale.
+  opening pause on the same frame. The logical `640x360` screen combines the production hero's transparent3D
+  portrait, four needs bars, cash, five-column icons, description and contextual
+  Use/Equip/Remove/Examine/Close. Hunger/stress/fatigue start0 and survive travel;
+  Wake starts hunger100/1440 and fatigue100/1080 game minutes,with double
+  fractions. Pause freezes progression;intoxication slowdown does not. Food
+  clears hunger fraction;completed sleep clears fatigue/fraction. No need
+  debuffs yet. Lower panel/compact Examine share live3D;fish cans scale smaller.
    The hidden unscaled preview stage reuses Home/shop bottle/egg/stew/noodles/loaf,
    warehouse fish cans,key/lighter/chest lamp geometry. Catalog/stacks:
   starter keys/lighter;session persists across scenes/reset.
@@ -2300,13 +2289,22 @@ cemetery:own interiors/returns.
   reset clear the resting posture. Shower
   clothing ownership temporarily removes its visible form. Head/body hiding
   applies to the accessory, and the bathroom mirror copies its live appearance
-  and all corrected surfaces without another deformation/contact update. Instant inventory
-  consumption retains its existing non-animated behavior. Current
-  food has explicit relief but cannot reduce hunger below `20`; food with no
-  effect remains in its stack. Alcohol has separate stress-relief values, and
-  the inventory vodka bottle commits four servings atomically while maximum
-  intoxication leaves it untouched. Use appears only for consumables/equipment;
-  temporarily blocked actions stay disabled;
+  and corrected surfaces without another contact update. Inventory food remains
+  non-animated;hunger floor20,no-effect stacks retained. Alcohol has separate
+  stress relief. Vodka:LMB click one sip,hold repeats until release/empty;
+  full500ml=15×33/34ml,four prior servings. Session fills persist;Home100ml.
+  Max intoxication refuses without spending. Pistol-path draw/stow owns jacket access;
+  separate front cap-opening uses the left hand's forward arc. Each sip raises/
+  tilts/lowers the same bottle,shared DrinkGulp once/swallow;scarf mouth access.
+  Above gait or ordinary bench/chair/sofa/game/counter seats+bus,the equipment
+  layer keeps parent root/pelvis/legs/camera;right-arm carry sits above knees.
+  Bus cached sole IK adjusts knees/ankles to its tilting floor,seat root/pelvis kept.
+  Carry survives sit/stand;inventory/sips need stable loop,no nested action/modal.
+  Child actions wait visible stow;other contexts stow. Car/cableway unsupported.
+  Last swallow removes one;actual prop flies sideways,surface/normal impact
+  decides breakage. Bus throws inherit motion,meet finite cabin/door colliders.
+  Finite glass debris pauses/clears on disposal. Use only for consumables/equipment;
+  temporarily blocked actions disabled;
 - Home window/four-section glazed folding door/walkable balcony at4.7m in one
   scene; rails retain safety colliders. E uses shared hero actions/hand contacts;
   wood-mounted free-edge pulls and solid panels fold apartment-side, clear of

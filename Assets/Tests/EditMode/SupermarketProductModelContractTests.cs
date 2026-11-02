@@ -47,7 +47,7 @@ namespace BarPromenade.Tests.EditMode
                 "ITEM_vodka_bottle",
                 InventoryItemId.VodkaBottle,
                 "Vodka Bottle",
-                new[] { "glass", "label", "liquid", "cap" }),
+                new[] { "glass", "label", "liquid", "liquid_surface", "cap" }),
             new ProductContract(
                 "closed_stew_can",
                 "ITEM_closed_stew_can",
@@ -287,7 +287,8 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(binding.Renderer.sharedMaterials,
                             Has.Length.EqualTo(1));
                         Assert.That(binding.Renderer.sharedMaterial,
-                            Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                            Is.SameAs(contract.ItemId == InventoryItemId.VodkaBottle
+                                ? VodkaBottleView.MaterialFor(binding.Role) : RuntimePrimitiveFactory.DefaultMaterial));
                         Assert.That(binding.Renderer.shadowCastingMode,
                             Is.EqualTo(ShadowCastingMode.On));
                         Assert.That(binding.Renderer.receiveShadows, Is.True);
@@ -296,9 +297,15 @@ namespace BarPromenade.Tests.EditMode
 
                         var block = new MaterialPropertyBlock();
                         binding.Renderer.GetPropertyBlock(block);
+                        float[] expectedTint = (float[])source.base_color.Clone();
+                        if (contract.ItemId == InventoryItemId.VodkaBottle)
+                        {
+                            if (binding.Role == "glass") expectedTint[3] = .18f;
+                            if (binding.Role == "liquid" || binding.Role == "liquid_surface") expectedTint[3] = .48f;
+                        }
                         AssertColor(
                             block.GetColor(Shader.PropertyToID("_BaseColor")),
-                            source.base_color,
+                            expectedTint,
                             binding.SourceName + " property block");
                     }
                 }

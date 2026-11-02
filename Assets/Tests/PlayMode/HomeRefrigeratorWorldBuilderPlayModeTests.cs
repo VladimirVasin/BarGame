@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.ObjectModel;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -60,6 +61,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(colliders, Does.Contain(view.BodyCollider));
             Assert.That(view.BodyCollider.enabled, Is.True);
             Assert.That(view.Items, Has.Count.EqualTo(3));
+            AssertItemMaterialsSurviveCabinetOcclusion(view);
             Assert.That(
                 view.Items,
                 Is.InstanceOf<
@@ -341,6 +343,31 @@ namespace BarPromenade.Tests.PlayMode
                     }
                 }
             }
+        }
+
+        private static void AssertItemMaterialsSurviveCabinetOcclusion(HomeRefrigeratorView view)
+        {
+            var registry = view.gameObject.AddComponent<HomeOcclusionRegistry>();
+            typeof(HomeInteriorWorldBuilder).GetMethod("RegisterRefrigerator",
+                BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, new object[] { registry, view });
+            Assert.That(registry.TryGetGroup("home.furniture.refrigerator", out HomeOccluderGroup group), Is.True);
+            var original = new System.Collections.Generic.Dictionary<Renderer, Material>();
+            foreach (HomeRefrigeratorItemView item in view.Items)
+                foreach (Renderer renderer in item.Renderers)
+                {
+                    Assert.That(group.Renderers, Has.No.Member(renderer), "Movable shelf items do not belong to the cabinet's material owner.");
+                    original.Add(renderer, renderer.sharedMaterial);
+                }
+
+            var cameraObject = new GameObject("Refrigerator material test camera");
+            cameraObject.transform.SetParent(view.transform, false);
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.enabled = false;
+            var occlusion = view.gameObject.AddComponent<HomePlayerOcclusionController>();
+            occlusion.Initialize(camera, new[] { group.Renderers[0] }, registry);
+            foreach (var entry in original)
+                Assert.That(entry.Key.sharedMaterial, Is.SameAs(entry.Value), entry.Key.name + ": cabinet occlusion must preserve authored item shaders, including liquid clipping.");
+            occlusion.enabled = false;
         }
 
         private static void AssertSelectionBounds(

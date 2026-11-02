@@ -1872,6 +1872,11 @@
       "key": "inventory.action.weapon.stow",
       "value": "УБРАТЬ"
     },
+    {"key":"inventory.action.bottle.draw","value":"ВЗЯТЬ В РУКУ"},
+    {"key":"inventory.action.bottle.stow","value":"УБРАТЬ"},
+    {"key":"inventory.use.failure.equip_bottle","value":"Сначала возьмите бутылку в руку."},
+    {"key":"inventory.bottle.remaining","value":"Осталось {0} мл"},
+    {"key":"inventory.bottle.sip_hint","value":"ЛКМ — сделать глоток"},
     {
       "key": "inventory.equipment.used",
       "value": "Используется"
@@ -1970,7 +1975,7 @@
     },
     {
       "key": "inventory.item.vodka_bottle.description",
-      "value": "Пол-литра дешёвой водки под винтовой крышкой."
+      "value": "Бутылка дешёвой водки под винтовой крышкой."
     },
     {
       "key": "inventory.item.chicken_egg.name",

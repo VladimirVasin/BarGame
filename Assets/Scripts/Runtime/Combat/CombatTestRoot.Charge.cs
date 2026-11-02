@@ -48,6 +48,15 @@ namespace BarPromenade
             if (GameCursor.GameplayMouseInputAllowed && GameInput.WasPressed(GameInputAction.CombatFocus, GameInputContext.Gameplay))
                 SetOpponentFocus(!IsOpponentFocused);
             ReadWeaponSelectionInput();
+            if (BottleOwnsCombatHand)
+            {
+                ReleaseFreePistolAim(); Hero.SuspendPistolInput();
+                Hero.CancelPendingKick("bottle_in_hand"); Hero.SetBlock(false); Hero.State.CancelParry();
+                requireAttackRelease |= GameInput.IsHeld(GameInputAction.MeleeAttack, GameInputContext.PauseMenu);
+                requireParryRelease |= GameInput.IsHeld(GameInputAction.MeleeBlock, GameInputContext.PauseMenu);
+                requirePistolAimRelease = true;
+                return true;
+            }
             if (Hero.IsSwitchingWeapon)
             {
                 ReleaseFreePistolAim(); Hero.SuspendPistolInput();
@@ -100,6 +109,7 @@ namespace BarPromenade
 
         private bool ReadCombatPointerAction(GameInputAction action, bool held)
         {
+            if (BottleOwnsCombatHand) return false;
             bool requested = held ? GameInput.IsHeld(action, GameInputContext.Gameplay) :
                 GameInput.WasPressed(action, GameInputContext.Gameplay);
             if (!requested) return false;

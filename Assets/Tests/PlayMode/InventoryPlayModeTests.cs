@@ -313,7 +313,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator UKey_DrinksAtZeroStressAndKeepsMenuOpen()
+        public IEnumerator UKey_EquipsBottleWithoutDrinkingAndKeepsMenuOpen()
         {
             Assert.That(GameSessionState.StressLevel, Is.Zero);
             Assert.That(
@@ -337,17 +337,19 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.GetInventoryItemCount(
                     InventoryItemId.VodkaBottle),
-                Is.Zero);
+                Is.EqualTo(1));
             Assert.That(GameSessionState.StressLevel, Is.Zero);
-            Assert.That(GameSessionState.IntoxicationLevel, Is.GreaterThan(0));
-            Assert.That(inventory.SelectedItemIndex, Is.EqualTo(1));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.Zero);
+            Assert.That(inventory.SelectedIsEquipped, Is.True);
+            Assert.That(GameSessionState.VodkaBottleRemainingMl, Is.EqualTo(500));
+            Assert.That(inventory.SelectedItemIndex, Is.EqualTo(2));
             Assert.That(
                 inventory.View.PreviewRenderer.CurrentItemId,
-                Is.EqualTo(InventoryItemId.Lighter));
+                Is.EqualTo(InventoryItemId.VodkaBottle));
             Assert.That(inventory.UseFeedbackSucceeded, Is.True);
             Assert.That(
                 inventory.UseFeedbackMessage,
-                Is.Not.Null.And.Not.Empty);
+                Is.Empty);
 
             inputFixture.Release(keyboard.uKey, queueEventOnly: true);
             yield return null;

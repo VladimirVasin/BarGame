@@ -1286,6 +1286,9 @@ namespace BarPromenade
             {
                 Renderer renderer = descendants[index];
                 if (renderer == refrigerator.InteriorLightStrip ||
+                    // Shelf items leave the cabinet for inspection/pickup and
+                    // retain their own glass/liquid shaders and clipping.
+                    renderer.GetComponentInParent<HomeRefrigeratorItemView>() != null ||
                     (haloRoot != null &&
                      renderer.transform.IsChildOf(haloRoot)))
                 {

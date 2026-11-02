@@ -22,7 +22,8 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityBusRideController :
         MonoBehaviour,
-        IInteractable
+        IInteractable,
+        IHandEquipmentSeat
     {
         public const string BoardPromptKey = "interaction.board_bus";
         public const string ExitPromptKey = "interaction.exit_bus";
@@ -83,6 +84,14 @@ namespace BarPromenade
         private float cameraBlendElapsed;
         private float rideCameraYawOffset;
         private float rideCameraPitch;
+        private CityBusCabinBottleCollision bottleCabin;
+        private Matrix4x4 previousBusPose;
+        private bool hasPreviousBusPose;
+        private Vector3 bottleInheritedVelocity;
+        private SeatedFootContactSolver seatedFeet;
+        private CityBusAssetRegistry floorRegistry;
+        private Transform floorMeshTransform;
+        private Bounds floorMeshBounds;
 
         public bool IsInitialized { get; private set; }
         public CityBusRideState State { get; private set; } =
@@ -92,6 +101,88 @@ namespace BarPromenade
         public int BoardedServiceOrdinal => boardedServiceOrdinal;
         public CityBusRidePlan ActivePlan => activePlan;
         public PlayerAnimatedInteractionDefinition Definition => definition;
+        public bool AllowsHandEquipment => true;
+        public string DescribePassengerFootContacts() => seatedFeet?.Describe() ?? "No seated foot solver";
+
+        /// <summary>The actual interior floor's upper plane, including the visible body's suspension.</summary>
+        public bool TryGetPassengerFloor(out Vector3 point, out Vector3 normal)
+        {
+            point = Vector3.zero; normal = Vector3.up;
+            CityBusAssetRegistry registry = actor != null ? actor.Presentation?.Registry : null;
+            if (registry == null) return false;
+            if (floorRegistry != registry || floorMeshTransform == null)
+            {
+                floorRegistry = registry; floorMeshTransform = null;
+                foreach (CityBusRendererBinding binding in registry.RendererBindings)
+                {
+                    if (binding.Role != "interior_shell" || binding.Renderer == null) continue;
+                    MeshFilter mesh = binding.Renderer.GetComponent<MeshFilter>();
+                    if (mesh == null || mesh.sharedMesh == null) continue;
+                    floorMeshTransform = mesh.transform; floorMeshBounds = mesh.sharedMesh.bounds;
+                    break;
+                }
+            }
+            if (floorMeshTransform == null) return false;
+            Pose cabin = CityBusCabinBottleCollision.ResolveFrame(actor, registry);
+            normal = cabin.rotation * Vector3.up;
+            float bottom = float.PositiveInfinity;
+            for (int x = -1; x <= 1; x += 2)
+                for (int y = -1; y <= 1; y += 2)
+                    for (int z = -1; z <= 1; z += 2)
+                    {
+                        Vector3 vertex = floorMeshTransform.TransformPoint(floorMeshBounds.center +
+                            Vector3.Scale(floorMeshBounds.extents, new Vector3(x, y, z)));
+                        bottom = Mathf.Min(bottom, Vector3.Dot(vertex - cabin.position, normal));
+                    }
+            // The lowest member of INT_InteriorSurfaces is the authored .10m
+            // floor slab; its upper plane is .67m, independently of wheels/hull.
+            point = cabin.position + normal * (bottom + .10f * registry.Dimensions.Height / 2.95f);
+            return true;
+        }
+
+        /// <summary>The seat keeps its moving frame; a released prop inherits that frame's motion.</summary>
+        public bool TryGetBottleReleaseContext(out Vector3 velocity, out Collider outerHull)
+        {
+            velocity = Vector3.zero;
+            outerHull = null;
+            if ((State != CityBusRideState.Riding && State != CityBusRideState.Alighting) ||
+                !IsPassengerAboard || !actor.IsSpawned || activePlan == null)
+                return false;
+            bottleCabin ??= new CityBusCabinBottleCollision(actor);
+            bottleCabin.Refresh();
+            velocity = hasPreviousBusPose ? bottleInheritedVelocity : actor.TravelDirection * actor.Speed;
+            outerHull = actor.BodyCollider;
+            return true;
+        }
+
+        /// <summary>Keeps both ends of the held bottle inside the cabin with room for its glass and grip.</summary>
+        public Vector3 ConstrainHeldBottlePosition(Vector3 position, Quaternion rotation)
+        {
+            if ((State != CityBusRideState.Riding && State != CityBusRideState.Alighting) ||
+                !IsPassengerAboard || actor.BodyCollider == null)
+                return position;
+            BoxCollider hull = actor.BodyCollider;
+            Transform frame = hull.transform;
+            Vector3 bottom = frame.InverseTransformPoint(position);
+            Vector3 top = frame.InverseTransformPoint(position + rotation * Vector3.up * VodkaBottleDimensions.Height);
+            Vector3 half = hull.size * .5f;
+            float insetX = .12f / Mathf.Max(.00001f, frame.TransformVector(Vector3.right).magnitude);
+            float insetZ = .12f / Mathf.Max(.00001f, frame.TransformVector(Vector3.forward).magnitude);
+            float x = ContainmentOffset(bottom.x, top.x, hull.center.x - half.x + insetX,
+                hull.center.x + half.x - insetX);
+            float z = ContainmentOffset(bottom.z, top.z, hull.center.z - half.z + insetZ,
+                hull.center.z + half.z - insetZ);
+            return position + frame.TransformVector(new Vector3(x, 0f, z));
+        }
+
+        private static float ContainmentOffset(float first, float second, float minimum, float maximum)
+        {
+            float low = Mathf.Min(first, second), high = Mathf.Max(first, second);
+            if (high - low > maximum - minimum) return (minimum + maximum - low - high) * .5f;
+            if (low < minimum) return minimum - low;
+            return high > maximum ? maximum - high : 0f;
+        }
+
         public string PromptKey => State == CityBusRideState.Riding
             ? ExitPromptKey
             : BoardPromptKey;
@@ -217,6 +308,7 @@ namespace BarPromenade
             neutralPelvisLocalPosition =
                 playerRoot.InverseTransformPoint(
                     visual.Registry.Anchors.Pelvis.position);
+            seatedFeet = new SeatedFootContactSolver(visual.Registry);
             interaction = player.GameObject.GetComponent<
                 PlayerAnimatedInteractionController>();
             if (interaction == null)
@@ -239,7 +331,8 @@ namespace BarPromenade
                 loopFrameCount: RideLoopFrameCount,
                 loopFramesPerSecond: RideLoopFramesPerSecond,
                 exitFrameCount: TransferFrameCount,
-                exitFramesPerSecond: TransferFramesPerSecond);
+                exitFramesPerSecond: TransferFramesPerSecond,
+                allowsHandEquipment: true);
             interaction.PhaseChanged += HandleInteractionPhaseChanged;
             interaction.InteractionCompleted +=
                 HandleInteractionCompleted;
@@ -252,6 +345,7 @@ namespace BarPromenade
             seatTriggerObject = CreateTrigger("Passenger Seat Interaction");
             RefreshTriggers();
             IsInitialized = true;
+            player.GameObject.GetComponent<PlayerVodkaBottleController>()?.BindBusRide(this);
         }
 
         public bool CanInteract(PlayerInteractor interactorToUse)
@@ -469,15 +563,32 @@ namespace BarPromenade
             }
 
             RefreshTriggerPositions();
+            RefreshPassengerPose();
+
+            RefreshBottleFrameVelocity();
+            bottleCabin?.Refresh();
+
+            UpdateRideCameraInput(Time.unscaledDeltaTime);
+            UpdateOwnedCamera(Time.deltaTime);
+        }
+
+        /// <summary>Reapplies the current moving-seat pose without advancing any action or camera clock.</summary>
+        public void RefreshPassengerPose()
+        {
+            if (!IsInitialized) return;
             RefreshAttachedRootPose();
             if (State == CityBusRideState.Riding ||
                 State == CityBusRideState.Alighting)
             {
                 interaction?.RefreshActiveClipAlignment();
             }
-
-            UpdateRideCameraInput(Time.unscaledDeltaTime);
-            UpdateOwnedCamera(Time.deltaTime);
+            float contact = State == CityBusRideState.Riding ? 1f :
+                State == CityBusRideState.Boarding && interaction.Phase == PlayerAnimatedInteractionPhase.Entering
+                    ? Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.76f, 1f, interaction.ClipProgress)) :
+                State == CityBusRideState.Alighting
+                    ? 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, .20f, interaction.ClipProgress)) : 0f;
+            if (contact > 0f && TryGetPassengerFloor(out Vector3 floor, out Vector3 normal))
+                seatedFeet?.Apply(floor, normal, contact);
         }
 
         private void OnDisable()
@@ -496,6 +607,8 @@ namespace BarPromenade
             }
 
             ForceReleaseForBusLifecycle();
+            bottleCabin?.Dispose();
+            bottleCabin = null;
             director?.UnregisterPassengerCleanup(
                 ForceReleaseForBusLifecycle);
             if (interaction != null)
@@ -507,6 +620,30 @@ namespace BarPromenade
             }
 
             IsInitialized = false;
+        }
+
+        private void RefreshBottleFrameVelocity()
+        {
+            if ((State != CityBusRideState.Riding && State != CityBusRideState.Alighting) ||
+                activePlan?.SeatAnchor == null || actor == null)
+            {
+                hasPreviousBusPose = false;
+                bottleInheritedVelocity = Vector3.zero;
+                return;
+            }
+            Matrix4x4 current = actor.transform.localToWorldMatrix;
+            Vector3 seat = activePlan.SeatAnchor.position;
+            if (hasPreviousBusPose && Time.deltaTime > .00001f)
+            {
+                Vector3 prior = previousBusPose.MultiplyPoint3x4(actor.transform.InverseTransformPoint(seat));
+                Vector3 movement = seat - prior;
+                // A lifecycle relocation is not a physical launch impulse.
+                bottleInheritedVelocity = movement.magnitude <= Mathf.Max(2f, actor.Speed * Time.deltaTime * 2f)
+                    ? movement / Time.deltaTime : actor.TravelDirection * actor.Speed;
+            }
+            else bottleInheritedVelocity = actor.TravelDirection * actor.Speed;
+            previousBusPose = current;
+            hasPreviousBusPose = true;
         }
 
         private void HandleInteractionPhaseChanged(

@@ -1,0 +1,53 @@
+{
+  "generator": "player_vodka_grip_v1",
+  "rig": "HeroV2",
+  "shape": "BottleGrip",
+  "radius_m": 0.0147796875,
+  "surfaces": [
+    "GEO_Hand.R",
+    "GEO_Thumb.R",
+    "GEO_Finger0.R",
+    "GEO_Finger1.R",
+    "GEO_Finger2.R",
+    "GEO_Finger3.R"
+  ],
+  "maximum_link_length_error_m": 7.622335662475777e-08,
+  "thumb_axis_alignment": 0.9778023589169607,
+  "cylinder_surface_clearances_m": {
+    "GEO_Finger0.R": 0.00146407868515162,
+    "GEO_Finger1.R": 0.0007883029415891602,
+    "GEO_Finger2.R": 0.000995030805879371,
+    "GEO_Finger3.R": 0.0015942185408202025,
+    "GEO_Hand.R": 0.0019999477817734465,
+    "GEO_Thumb.R": 0.0054369451596267895
+  },
+  "palm_tangent_clearance_m": 0.002,
+  "axial_surface_bounds_m": {
+    "GEO_Finger0.R": [
+      0.020293894587666728,
+      0.035075831081485376
+    ],
+    "GEO_Finger1.R": [
+      0.0006668422720395029,
+      0.01631728370557539
+    ],
+    "GEO_Finger2.R": [
+      -0.018104273738572374,
+      -0.003323029668536037
+    ],
+    "GEO_Finger3.R": [
+      -0.035247628518845886,
+      -0.022204357301234268
+    ],
+    "GEO_Hand.R": [
+      -0.038400005956646055,
+      0.03840001023490913
+    ],
+    "GEO_Thumb.R": [
+      0.016502177095389925,
+      0.06761519312567543
+    ]
+  },
+  "source_sha256": "d44e21049589108f88734f8d29af5de0359b65a499a2fd7232d97c16d3f75e79",
+  "signature": "4a426614a55d696fd02ad9426a1fa58071a2e1bb86c6d57d0ab056a866a35aad"
+}

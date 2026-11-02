@@ -160,14 +160,9 @@ namespace BarPromenade
                 }
             }
 
-            return CreateSheet(
-                name,
-                parent,
-                origin,
-                vertices,
-                normals,
-                triangles,
-                sharedMaterial);
+            GameObject sheet = CreateSheet(name, parent, origin, vertices, normals, triangles, sharedMaterial);
+            sheet.AddComponent<WorldWaterSurface>().Configure(bounds, southTopY, northTopY, sampleTop);
+            return sheet;
         }
 
         /// <summary>

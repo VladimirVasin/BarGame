@@ -135,7 +135,7 @@ namespace BarPromenade
                 loopFrameCount: LoopFrameCount,
                 loopFramesPerSecond: LoopFramesPerSecond,
                 exitFrameCount: TransferFrameCount,
-                exitFramesPerSecond: TransferFramesPerSecond);
+                exitFramesPerSecond: TransferFramesPerSecond, allowsHandEquipment: true);
         }
 
         public static PlayerAnimatedInteractionDefinition

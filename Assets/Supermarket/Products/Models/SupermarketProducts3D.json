@@ -1,7 +1,59 @@
 {
   "generator": "tools/build-supermarket-products-3d-model.py",
-  "generator_version": "1.0.0",
-  "blender_version": "5.0.1",
+  "generator_version": "1.4.0",
+  "vodka_contract": {
+    "source_scale": 0.65,
+    "radial_scale": 0.75,
+    "grip_m": [
+      0.0,
+      0.215,
+      0.0
+    ],
+    "neck_start_m": 0.175,
+    "neck_radius_m": 0.0147796875,
+    "mouth_m": [
+      0.0,
+      0.28600000000000003,
+      0.0
+    ],
+    "cap_m": [
+      0.0,
+      0.28925,
+      0.0
+    ],
+    "closed_glass_cells": 8,
+    "inner_profile_m": [
+      [
+        0.0078000000000000005,
+        0.029249999999999998
+      ],
+      [
+        0.013000000000000001,
+        0.03315
+      ],
+      [
+        0.15,
+        0.03315
+      ],
+      [
+        0.175,
+        0.012829687499999997
+      ],
+      [
+        0.22749999999999998,
+        0.012829687499999997
+      ],
+      [
+        0.2795,
+        0.012829687499999997
+      ],
+      [
+        0.2834,
+        0.013321875
+      ]
+    ]
+  },
+  "blender_version": "5.2.3 LTS",
   "design_id": "supermarket_product_pack_v1",
   "display_name": "Bar Promenade Supermarket Product Pack",
   "root_name": "ROOT_SupermarketProducts3D",
@@ -30,8 +82,8 @@
   "audio_sources": false,
   "animation_count": 0,
   "item_count": 6,
-  "mesh_count": 33,
-  "triangle_count": 2276,
+  "mesh_count": 40,
+  "triangle_count": 3116,
   "bounds_min": [
     -0.181,
     -0.124,
@@ -40,7 +92,7 @@
   "bounds_max": [
     0.178,
     0.124,
-    0.46
+    0.299
   ],
   "unity_bounds_min": [
     -0.181,
@@ -49,7 +101,7 @@
   ],
   "unity_bounds_max": [
     0.178,
-    0.46,
+    0.299,
     0.124
   ],
   "budgets": {
@@ -187,43 +239,50 @@
         ]
       },
       "available_size_m": [
-        0.42,
-        0.46,
-        0.38
+        0.27,
+        0.3,
+        0.25
       ],
       "bounds_min": [
-        -0.0765,
-        -0.074582,
+        -0.037294,
+        -0.037294,
         0.0
       ],
       "bounds_max": [
-        0.0765,
-        0.074582,
-        0.46
+        0.037294,
+        0.037294,
+        0.299
       ],
       "unity_bounds_min": [
-        -0.0765,
+        -0.037294,
         0.0,
-        -0.074582
+        -0.037294
       ],
       "unity_bounds_max": [
-        0.0765,
-        0.46,
-        0.074582
+        0.037294,
+        0.299,
+        0.037294
       ],
       "dimensions_m": [
-        0.153,
-        0.46,
-        0.149164
+        0.074588,
+        0.299,
+        0.074588
       ],
-      "mesh_count": 6,
-      "triangle_count": 452,
+      "mesh_count": 13,
+      "triangle_count": 1292,
       "parts": [
-        "Vodka Bottle Glass",
-        "Vodka Bottle Base Glass Ring",
+        "Vodka Bottle Glass Cell 00",
+        "Vodka Bottle Glass Cell 01",
+        "Vodka Bottle Glass Cell 02",
+        "Vodka Bottle Glass Cell 03",
+        "Vodka Bottle Glass Cell 04",
+        "Vodka Bottle Glass Cell 05",
+        "Vodka Bottle Glass Cell 06",
+        "Vodka Bottle Glass Cell 07",
         "Vodka Bottle Generic Paper Band",
         "Vodka Bottle Faded Label Stripe",
         "Vodka Bottle Clear Contents",
+        "Vodka Bottle Liquid Surface",
         "Vodka Bottle Metal Cap"
       ]
     },
@@ -709,7 +768,7 @@
       ]
     },
     {
-      "name": "Vodka Bottle Glass",
+      "name": "Vodka Bottle Glass Cell 00",
       "item_id": "vodka_bottle",
       "role": "glass",
       "group": "render",
@@ -723,65 +782,293 @@
       ],
       "casts_shadows": true,
       "shadows": true,
-      "vertices": 98,
-      "triangles": 192,
+      "vertices": 40,
+      "triangles": 76,
       "bounds_min": [
-        -0.073,
-        -0.07117,
+        0.0,
+        0.0,
         0.0
       ],
       "bounds_max": [
-        0.073,
-        0.07117,
-        0.44
+        0.035588,
+        0.035588,
+        0.1417
       ],
       "unity_bounds_min": [
-        -0.073,
         0.0,
-        -0.07117
+        0.0,
+        0.0
       ],
       "unity_bounds_max": [
-        0.073,
-        0.44,
-        0.07117
+        0.035588,
+        0.1417,
+        0.035588
       ]
     },
     {
-      "name": "Vodka Bottle Base Glass Ring",
+      "name": "Vodka Bottle Glass Cell 01",
       "item_id": "vodka_bottle",
       "role": "glass",
       "group": "render",
       "surface": "glass",
       "sheet": "",
       "base_color": [
-        0.42,
-        0.52,
-        0.45,
+        0.32,
+        0.43,
+        0.37,
         1.0
       ],
       "casts_shadows": true,
       "shadows": true,
-      "vertices": 28,
-      "triangles": 52,
+      "vertices": 40,
+      "triangles": 76,
       "bounds_min": [
-        -0.0745,
-        -0.072632,
+        -0.035588,
+        0.0,
         0.0
       ],
       "bounds_max": [
-        0.0745,
-        0.072632,
-        0.024
+        0.0,
+        0.035588,
+        0.1417
       ],
       "unity_bounds_min": [
-        -0.0745,
+        -0.035588,
         0.0,
-        -0.072632
+        0.0
       ],
       "unity_bounds_max": [
-        0.0745,
-        0.024,
-        0.072632
+        0.0,
+        0.1417,
+        0.035588
+      ]
+    },
+    {
+      "name": "Vodka Bottle Glass Cell 02",
+      "item_id": "vodka_bottle",
+      "role": "glass",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.32,
+        0.43,
+        0.37,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 40,
+      "triangles": 76,
+      "bounds_min": [
+        -0.035588,
+        -0.035588,
+        0.0
+      ],
+      "bounds_max": [
+        -0.0,
+        0.0,
+        0.1417
+      ],
+      "unity_bounds_min": [
+        -0.035588,
+        0.0,
+        -0.035588
+      ],
+      "unity_bounds_max": [
+        -0.0,
+        0.1417,
+        0.0
+      ]
+    },
+    {
+      "name": "Vodka Bottle Glass Cell 03",
+      "item_id": "vodka_bottle",
+      "role": "glass",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.32,
+        0.43,
+        0.37,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 40,
+      "triangles": 76,
+      "bounds_min": [
+        -0.0,
+        -0.035588,
+        0.0
+      ],
+      "bounds_max": [
+        0.035588,
+        -0.0,
+        0.1417
+      ],
+      "unity_bounds_min": [
+        -0.0,
+        0.0,
+        -0.035588
+      ],
+      "unity_bounds_max": [
+        0.035588,
+        0.1417,
+        -0.0
+      ]
+    },
+    {
+      "name": "Vodka Bottle Glass Cell 04",
+      "item_id": "vodka_bottle",
+      "role": "glass",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.32,
+        0.43,
+        0.37,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 60,
+      "triangles": 116,
+      "bounds_min": [
+        0.0,
+        0.0,
+        0.1417
+      ],
+      "bounds_max": [
+        0.035588,
+        0.035588,
+        0.286
+      ],
+      "unity_bounds_min": [
+        0.0,
+        0.1417,
+        0.0
+      ],
+      "unity_bounds_max": [
+        0.035588,
+        0.286,
+        0.035588
+      ]
+    },
+    {
+      "name": "Vodka Bottle Glass Cell 05",
+      "item_id": "vodka_bottle",
+      "role": "glass",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.32,
+        0.43,
+        0.37,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 60,
+      "triangles": 116,
+      "bounds_min": [
+        -0.035588,
+        0.0,
+        0.1417
+      ],
+      "bounds_max": [
+        0.0,
+        0.035588,
+        0.286
+      ],
+      "unity_bounds_min": [
+        -0.035588,
+        0.1417,
+        0.0
+      ],
+      "unity_bounds_max": [
+        0.0,
+        0.286,
+        0.035588
+      ]
+    },
+    {
+      "name": "Vodka Bottle Glass Cell 06",
+      "item_id": "vodka_bottle",
+      "role": "glass",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.32,
+        0.43,
+        0.37,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 60,
+      "triangles": 116,
+      "bounds_min": [
+        -0.035588,
+        -0.035588,
+        0.1417
+      ],
+      "bounds_max": [
+        -0.0,
+        0.0,
+        0.286
+      ],
+      "unity_bounds_min": [
+        -0.035588,
+        0.1417,
+        -0.035588
+      ],
+      "unity_bounds_max": [
+        -0.0,
+        0.286,
+        0.0
+      ]
+    },
+    {
+      "name": "Vodka Bottle Glass Cell 07",
+      "item_id": "vodka_bottle",
+      "role": "glass",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.32,
+        0.43,
+        0.37,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 60,
+      "triangles": 116,
+      "bounds_min": [
+        -0.0,
+        -0.035588,
+        0.1417
+      ],
+      "bounds_max": [
+        0.035588,
+        -0.0,
+        0.286
+      ],
+      "unity_bounds_min": [
+        -0.0,
+        0.1417,
+        -0.035588
+      ],
+      "unity_bounds_max": [
+        0.035588,
+        0.286,
+        -0.0
       ]
     },
     {
@@ -799,27 +1086,27 @@
       ],
       "casts_shadows": true,
       "shadows": true,
-      "vertices": 28,
-      "triangles": 52,
+      "vertices": 32,
+      "triangles": 60,
       "bounds_min": [
-        -0.0755,
-        -0.073607,
-        0.124
+        -0.036806,
+        -0.036806,
+        0.07475
       ],
       "bounds_max": [
-        0.0755,
-        0.073607,
-        0.256
+        0.036806,
+        0.036806,
+        0.13975
       ],
       "unity_bounds_min": [
-        -0.0755,
-        0.124,
-        -0.073607
+        -0.036806,
+        0.07475,
+        -0.036806
       ],
       "unity_bounds_max": [
-        0.0755,
-        0.256,
-        0.073607
+        0.036806,
+        0.13975,
+        0.036806
       ]
     },
     {
@@ -837,27 +1124,27 @@
       ],
       "casts_shadows": true,
       "shadows": true,
-      "vertices": 28,
-      "triangles": 52,
+      "vertices": 32,
+      "triangles": 60,
       "bounds_min": [
-        -0.0765,
-        -0.074582,
-        0.18
+        -0.037294,
+        -0.037294,
+        0.10075
       ],
       "bounds_max": [
-        0.0765,
-        0.074582,
-        0.2
+        0.037294,
+        0.037294,
+        0.11375
       ],
       "unity_bounds_min": [
-        -0.0765,
-        0.18,
-        -0.074582
+        -0.037294,
+        0.10075,
+        -0.037294
       ],
       "unity_bounds_max": [
-        0.0765,
-        0.2,
-        0.074582
+        0.037294,
+        0.11375,
+        0.037294
       ]
     },
     {
@@ -875,27 +1162,65 @@
       ],
       "casts_shadows": true,
       "shadows": true,
-      "vertices": 28,
-      "triangles": 52,
+      "vertices": 112,
+      "triangles": 220,
       "bounds_min": [
-        -0.063,
-        -0.06142,
-        0.015
+        -0.03315,
+        -0.03315,
+        0.0078
       ],
       "bounds_max": [
-        0.063,
-        0.06142,
-        0.135
+        0.03315,
+        0.03315,
+        0.2834
       ],
       "unity_bounds_min": [
-        -0.063,
-        0.015,
-        -0.06142
+        -0.03315,
+        0.0078,
+        -0.03315
       ],
       "unity_bounds_max": [
-        0.063,
-        0.135,
-        0.06142
+        0.03315,
+        0.2834,
+        0.03315
+      ]
+    },
+    {
+      "name": "Vodka Bottle Liquid Surface",
+      "item_id": "vodka_bottle",
+      "role": "liquid_surface",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.64,
+        0.67,
+        0.56,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 64,
+      "triangles": 124,
+      "bounds_min": [
+        -0.03315,
+        -0.03315,
+        0.18187
+      ],
+      "bounds_max": [
+        0.03315,
+        0.03315,
+        0.18213
+      ],
+      "unity_bounds_min": [
+        -0.03315,
+        0.18187,
+        -0.03315
+      ],
+      "unity_bounds_max": [
+        0.03315,
+        0.18213,
+        0.03315
       ]
     },
     {
@@ -913,27 +1238,27 @@
       ],
       "casts_shadows": true,
       "shadows": true,
-      "vertices": 28,
-      "triangles": 52,
+      "vertices": 32,
+      "triangles": 60,
       "bounds_min": [
-        -0.0325,
-        -0.031685,
-        0.43
+        -0.015844,
+        -0.015844,
+        0.2795
       ],
       "bounds_max": [
-        0.0325,
-        0.031685,
-        0.46
+        0.015844,
+        0.015844,
+        0.299
       ],
       "unity_bounds_min": [
-        -0.0325,
-        0.43,
-        -0.031685
+        -0.015844,
+        0.2795,
+        -0.015844
       ],
       "unity_bounds_max": [
-        0.0325,
-        0.46,
-        0.031685
+        0.015844,
+        0.299,
+        0.015844
       ]
     },
     {
@@ -1659,5 +1984,5 @@
       ]
     }
   ],
-  "build_signature": "2437d765ab7b7004a05d281193ae78e26b2c6728e641e57273ecc0d9842821b7"
+  "build_signature": "ada6ce10ed71c84163ed979567b028956160d1e9f51b18f00abb457c0cc9312a"
 }

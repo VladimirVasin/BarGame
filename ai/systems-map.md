@@ -68,7 +68,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
 | Session day/time displays | Inventory/day announcements follow calendar; final7 clock display is an exception. | `HomeAlarmClock`, `InventoryView` | Current |
 | Pause / cutscene debug | Pause/replay/timecode;safe hoist→pistol∞reserve/reload→Crane rises/attacks. | `PauseMenu*`,`Cutscene*`,`WarehouseDoorAmbush*` | Current |
-| Hero inventory | Stacks/Use;crowbar/pistol equip-stow;session ammo;pickup/receipt;preview MSAA. | `Inventory{Types,State,MenuModel,Controller,View}`, `GameSessionState`, `WorldItemFoundScreen` | Current |
+| Hero inventory | Stacks;weapons/bottle equip;standing/seated LMB click/hold sips/fill/throw;receipt. | `Inventory*`, `GameSessionState`, `PlayerVodkaBottleController` | Current |
 | World item pickup and its found screen | Shared lit 3D turn/owned focus;one take;isolated lights;layers restored. | `WorldItem{PickupPlan,Pickup,PickupModel,FoundScreen,FoundView,InspectionPresenter}` | Current |
 | Hunger, stress, fatigue and consumption | Needs follow the pause-aware calendar; consumption/rest commit relief once. Gap: needs apply no gameplay debuff. | `PlayerNeedsProgressionState`, `PlayerNeedsRules` | Partial |
 | Inventory-backed target interactions | Shared item-backed target menus commit consumption once and refund failed startup. | `InventoryItemRequirement`, `InventoryTargetInteraction{Definition,Model,Controller}` | Current |

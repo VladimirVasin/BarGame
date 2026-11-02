@@ -49,12 +49,12 @@ namespace BarPromenade
         private void OnEquipmentChanged()
         {
             CombatWeaponId? equipped = EquippedWeapon();
-            if (desiredWeapon == equipped) return;
-            desiredWeapon = equipped;
-            equipmentRequestPending = true;
             pending = PendingCommand.None;
             attackRelease = parryRelease = true;
             ReleasePistolAim();
+            if (desiredWeapon == equipped) return;
+            desiredWeapon = equipped;
+            equipmentRequestPending = true;
         }
 
         private void RecordEquipment(bool equipped) => RecordWeapon(equipped ? Actor.WeaponId : null);
@@ -75,6 +75,7 @@ namespace BarPromenade
         private void ApplyEquipmentRequest(bool attackHeld, bool parryHeld)
         {
             if (!equipmentRequestPending) return;
+            if (desiredWeapon.HasValue && PlayerVodkaBottleController.IsHandOccupied(gameObject)) return;
             if (Actor.State.IsDefeated || Actor.IsKnockedDown || Actor.IsRagdollActive ||
                 !Actor.BodyDamage.CanUseRightHand) return;
             Actor.SetCombatFocused(false);
@@ -161,6 +162,16 @@ namespace BarPromenade
             if (!parryHeld) parryRelease = false;
             ReadWeaponSelectionInput();
             ApplyEquipmentRequest(attackHeld, parryHeld);
+            if (GameSessionState.IsInventoryItemEquipped(InventoryItemId.VodkaBottle) ||
+                PlayerVodkaBottleController.IsHandOccupied(gameObject))
+            {
+                pending = PendingCommand.None;
+                attackRelease |= attackHeld; parryRelease |= parryHeld;
+                ReleasePistolAim(); Actor.SuspendPistolInput();
+                Actor.SetBlock(false); Actor.State.CancelParry(); Actor.SetCombatFocused(false);
+                StepActor();
+                return;
+            }
             if (Actor.IsPistol)
             {
                 UpdatePistolCommands(attackHeld, parryHeld);

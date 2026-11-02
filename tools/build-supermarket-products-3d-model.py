@@ -25,7 +25,7 @@ import bar_parts as bp  # noqa: E402
 import interior_kit as kit  # noqa: E402
 
 GENERATOR = "tools/build-supermarket-products-3d-model.py"
-GENERATOR_VERSION = "1.0.0"
+GENERATOR_VERSION = "1.4.0"
 DESIGN_ID = "supermarket_product_pack_v1"
 DISPLAY_NAME = "Bar Promenade Supermarket Product Pack"
 ROOT_NAME = "ROOT_SupermarketProducts3D"
@@ -47,7 +47,7 @@ ROOT_NAMES = {item_id: f"ITEM_{item_id}" for item_id in ITEM_IDS}
 AVAILABLE_SIZES = {
     "instant_noodles": (0.48, 0.34, 0.30),
     "day_old_loaf": (0.56, 0.32, 0.34),
-    "vodka_bottle": (0.42, 0.46, 0.38),
+    "vodka_bottle": (0.27, 0.30, 0.25),
     "closed_stew_can": (0.42, 0.34, 0.36),
     "open_stew_can": (0.31, 0.48, 0.28),
     "chicken_egg": (0.48, 0.34, 0.36),
@@ -55,7 +55,7 @@ AVAILABLE_SIZES = {
 REQUIRED_ROLES = {
     "instant_noodles": {"packet", "seal", "label"},
     "day_old_loaf": {"bread", "crumb", "score"},
-    "vodka_bottle": {"glass", "label", "cap"},
+    "vodka_bottle": {"glass", "label", "cap", "liquid", "liquid_surface"},
     "closed_stew_can": {"can_body", "label", "rim", "pull_tab"},
     "open_stew_can": {
         "can_body", "label", "rim", "stew", "lid", "pull_tab",
@@ -439,46 +439,99 @@ def build_day_old_loaf(asset: AssetBuild) -> None:
     )
 
 
+VODKA_SOURCE_SCALE = .65
+VODKA_RADIAL_SCALE = .75
+VODKA_GRIP_Y = .215 / VODKA_SOURCE_SCALE
+VODKA_BODY_TOP_Y = .150 / VODKA_SOURCE_SCALE
+VODKA_NECK_START_Y = .175 / VODKA_SOURCE_SCALE
+VODKA_NECK_RADIUS = .0147796875 / (VODKA_SOURCE_SCALE * VODKA_RADIAL_SCALE)
+VODKA_NECK_INNER_RADIUS = VODKA_NECK_RADIUS - .004
+VODKA_INNER_PROFILE = ((.012, .060), (.020, .068), (VODKA_BODY_TOP_Y, .068),
+    (VODKA_NECK_START_Y, VODKA_NECK_INNER_RADIUS), (.350, VODKA_NECK_INNER_RADIUS),
+    (.430, VODKA_NECK_INNER_RADIUS), (.436, VODKA_NECK_INNER_RADIUS * .4 + .028 * .6))
+
+
+def bottle_cell(profile, sector, sides=16):
+    """Closed quarter-shell; lower cells include the physical glass bottom."""
+    vertices = []
+    steps = sides // 4
+    for y, radius in profile:
+        for index in range(steps + 1):
+            angle = math.tau * (sector * steps + index) / sides
+            vertices.append((math.cos(angle) * radius, y, math.sin(angle) * radius))
+    width = steps + 1
+    faces = []
+    for row in range(len(profile)):
+        following = (row + 1) % len(profile)
+        for index in range(steps):
+            faces.append((row * width + index + 1, row * width + index,
+                following * width + index, following * width + index + 1))
+    faces.append(tuple(row * width for row in reversed(range(len(profile)))))
+    faces.append(tuple(row * width + steps for row in range(len(profile))))
+    geometry = vertices, faces
+    # Winding is checked before Blender's handedness conversion too.
+    if bp.signed_volume(geometry) < 0:
+        geometry = vertices, [tuple(reversed(face)) for face in faces]
+    return geometry
+
+
+def bottle_anchor(asset, item, name, point):
+    anchor = bpy.data.objects.new(name, None)
+    asset.collection.objects.link(anchor)
+    anchor.parent = item.root
+    anchor.location = (point[0], point[2], point[1])
+    anchor.empty_display_size = .025
+    return anchor
+
+
 def build_vodka_bottle(asset: AssetBuild) -> None:
     item = create_item(asset, "vodka_bottle")
-    bottle = ring_solid((
-        (0.000, 0.064, 0.064),
-        (0.010, 0.073, 0.073),
-        (0.282, 0.073, 0.073),
-        (0.320, 0.066, 0.066),
-        (0.350, 0.032, 0.032),
-        (0.430, 0.027, 0.027),
-        (0.440, 0.030, 0.030),
-    ), 14)
-    add_part(
-        asset, item, "Vodka Bottle Glass", bottle,
-        "glass", "glass", GLASS_GREEN,
+    profiles = (
+        ((0., .064), (.010, .073), (.218, .073), (.218, .069),
+         (.020, .068), (.012, .060), (.012, 0.), (0., 0.)),
+        ((.218, .073), (VODKA_BODY_TOP_Y, .073), (VODKA_NECK_START_Y, VODKA_NECK_RADIUS),
+         (.350, VODKA_NECK_RADIUS), (.430, VODKA_NECK_RADIUS), (.440, .032),
+         (.440, .028), (.430, VODKA_NECK_INNER_RADIUS), (.350, VODKA_NECK_INNER_RADIUS),
+         (VODKA_NECK_START_Y, VODKA_NECK_INNER_RADIUS), (VODKA_BODY_TOP_Y, .068), (.218, .069)),
     )
-    add_part(
-        asset, item, "Vodka Bottle Base Glass Ring",
-        bp.u_cylinder((0.0, 0.012, 0.0), (0.149, 0.012, 0.149), 14),
-        "glass", "glass", GLASS_EDGE,
-    )
-    add_part(
-        asset, item, "Vodka Bottle Generic Paper Band",
-        bp.u_cylinder((0.0, 0.190, 0.0), (0.151, 0.066, 0.151), 14),
-        "label", "paper", PAPER_PALE,
-    )
-    add_part(
-        asset, item, "Vodka Bottle Faded Label Stripe",
-        bp.u_cylinder((0.0, 0.190, 0.0), (0.153, 0.010, 0.153), 14),
-        "label", "paper", (0.205, 0.285, 0.34, 1.0),
-    )
-    add_part(
-        asset, item, "Vodka Bottle Clear Contents",
-        bp.u_cylinder((0.0, 0.075, 0.0), (0.126, 0.060, 0.126), 14),
-        "liquid", "glass", LIQUID_CLEAR,
-    )
-    add_part(
-        asset, item, "Vodka Bottle Metal Cap",
-        bp.u_cylinder((0.0, 0.445, 0.0), (0.065, 0.015, 0.065), 14),
-        "cap", "metal", METAL,
-    )
+    for band, profile in enumerate(profiles):
+        for sector in range(4):
+            add_part(asset, item, f"Vodka Bottle Glass Cell {band * 4 + sector:02}",
+                bottle_cell(profile, sector), "glass", "glass", GLASS_GREEN)
+    add_part(asset, item, "Vodka Bottle Generic Paper Band",
+        bp.u_cylinder((0., .165, 0.), (.151, .050, .151), 16),
+        "label", "paper", PAPER_PALE)
+    add_part(asset, item, "Vodka Bottle Faded Label Stripe",
+        bp.u_cylinder((0., .165, 0.), (.153, .010, .153), 16),
+        "label", "paper", (.205, .285, .34, 1.))
+    add_part(asset, item, "Vodka Bottle Clear Contents",
+        ring_solid(tuple((y, radius, radius) for y, radius in VODKA_INNER_PROFILE), 16),
+        "liquid", "glass", LIQUID_CLEAR)
+    add_part(asset, item, "Vodka Bottle Liquid Surface",
+        bp.u_cylinder((0., .280, 0.), (.136, .0002, .136), 32),
+        "liquid_surface", "glass", LIQUID_CLEAR)
+    add_part(asset, item, "Vodka Bottle Metal Cap",
+        bp.u_cylinder((0., .445, 0.), (.065, .015, .065), 16),
+        "cap", "metal", METAL)
+    # A movable cap pivot must be at the cap, while manifest geometry remains metres.
+    cap = item.parts[-1].obj
+    offset = Vector((0., 0., .445))
+    for vertex in cap.data.vertices:
+        vertex.co -= offset
+    cap.location = offset
+    bottle_anchor(asset, item, "VodkaGrip", (0., VODKA_GRIP_Y, 0.))
+    bottle_anchor(asset, item, "VodkaMouth", (0., .440, 0.))
+    # Scale authored metres, never the imported runtime wrapper. Other products remain untouched.
+    for part in item.parts:
+        source_scale = Vector((VODKA_SOURCE_SCALE * VODKA_RADIAL_SCALE,
+            VODKA_SOURCE_SCALE * VODKA_RADIAL_SCALE, VODKA_SOURCE_SCALE))
+        for vertex in part.obj.data.vertices:
+            vertex.co = Vector(tuple(vertex.co[axis] * source_scale[axis] for axis in range(3)))
+        part.obj.location = Vector(tuple(part.obj.location[axis] * source_scale[axis] for axis in range(3)))
+        part.geometry = ([tuple(vertex[axis] * source_scale[axis] for axis in range(3))
+            for vertex in part.geometry[0]], part.geometry[1])
+    for name in ("VodkaGrip", "VodkaMouth"):
+        bpy.data.objects[name].location *= VODKA_SOURCE_SCALE
 
 
 def build_closed_stew_can(asset: AssetBuild) -> None:
@@ -665,6 +718,13 @@ def validate(asset: AssetBuild) -> dict:
         missing_roles = REQUIRED_ROLES[item_id] - roles
         if missing_roles:
             problems.append(f"'{item_id}' lacks roles {sorted(missing_roles)}")
+        if item_id == "vodka_bottle":
+            if len([p for p in item.parts if p.role == "glass"]) != 8:
+                problems.append("vodka requires eight closed authored glass cells")
+            for name, y in (("VodkaGrip", VODKA_GRIP_Y * VODKA_SOURCE_SCALE), ("VodkaMouth", .440 * VODKA_SOURCE_SCALE)):
+                anchor = bpy.data.objects.get(name)
+                if anchor is None or anchor.parent != root or abs(anchor.location.z - y) > 1e-6:
+                    problems.append(f"vodka lost measured {name}")
         geometry = item_geometry(item)
         low, high = kit.bounds(geometry)
         unity_low = source_to_unity(low)
@@ -686,7 +746,7 @@ def validate(asset: AssetBuild) -> dict:
                     f"'{item_id}' exceeds slot axis {axis}: "
                     f"{unity_dimensions[axis]:.4f}>{available[axis]:.4f}"
                 )
-        if item_id == "vodka_bottle" and unity_high[1] > 0.475:
+        if item_id == "vodka_bottle" and unity_high[1] > 0.3001:
             problems.append("vodka bottle violates selected-state shelf clearance")
         triangles = kit.triangle_count(geometry)
         item_reports[item_id] = {
@@ -741,6 +801,9 @@ def signature_for(asset: AssetBuild) -> str:
     payload = {
         "design_id": DESIGN_ID,
         "generator_version": GENERATOR_VERSION,
+        "vodka_anchors": [{"name": name, "source_position":
+            [stable(value) for value in bpy.data.objects[name].location]}
+            for name in ("VodkaGrip", "VodkaMouth")],
         "items": [
             {
                 "id": item_id,
@@ -804,6 +867,14 @@ def manifest_for(asset: AssetBuild, report: dict, signature: str) -> dict:
     return {
         "generator": GENERATOR,
         "generator_version": GENERATOR_VERSION,
+        "vodka_contract": {"source_scale": VODKA_SOURCE_SCALE, "radial_scale": VODKA_RADIAL_SCALE,
+            "grip_m": [0., VODKA_GRIP_Y * VODKA_SOURCE_SCALE, 0.],
+            "neck_start_m": VODKA_NECK_START_Y * VODKA_SOURCE_SCALE,
+            "neck_radius_m": VODKA_NECK_RADIUS * VODKA_SOURCE_SCALE * VODKA_RADIAL_SCALE,
+            "mouth_m": [0., .440 * VODKA_SOURCE_SCALE, 0.],
+            "cap_m": [0., .445 * VODKA_SOURCE_SCALE, 0.], "closed_glass_cells": 8,
+            "inner_profile_m": [[y * VODKA_SOURCE_SCALE, radius * VODKA_SOURCE_SCALE * VODKA_RADIAL_SCALE]
+                for y, radius in VODKA_INNER_PROFILE]},
         "blender_version": bpy.app.version_string,
         "design_id": DESIGN_ID,
         "display_name": DISPLAY_NAME,

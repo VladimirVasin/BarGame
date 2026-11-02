@@ -865,6 +865,7 @@ namespace BarPromenade
             corpseStepPose?.Forget();
             if (active)
             {
+                ClearEquipmentPose();
                 ragdollPoseSince = Time.time;
                 RestoreFacialBones();
                 SetFootPlant(0.25f, 0.25f, 0.25f, false);
@@ -1291,6 +1292,7 @@ namespace BarPromenade
             ClearCombatBodyMotion(combatMotionOwner);
             ClearSpeechFace();
             ClearCarryPose();
+            ClearEquipmentPose();
             ResetColdPose();
             ClearRecoveryPresentation();
             ClearContextualFacialExpression();
@@ -3264,6 +3266,7 @@ namespace BarPromenade
             {
                 SampleColdPose();
                 SampleCarryPose();
+                SampleEquipmentPose();
                 graph.Evaluate(Mathf.Max(0f, deltaTime));
                 PublishSecondaryMotionClock();
             }
@@ -3281,6 +3284,7 @@ namespace BarPromenade
             ClearSnowGaits();
             DisposeOwnedClipMasks();
             DisposeCarryGraph();
+            DisposeEquipmentGraph();
             DisposeColdGraph();
             layer.Restore();
             RestoreAttentionPoseBase();

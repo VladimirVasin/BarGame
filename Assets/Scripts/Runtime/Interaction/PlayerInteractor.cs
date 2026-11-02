@@ -209,6 +209,8 @@ namespace BarPromenade
                 return false;
             }
 
+            var bottle = GetComponent<PlayerVodkaBottleController>();
+            if (bottle != null && bottle.TryPrepareInteraction(activeInteractable)) return true;
             var crowbar = GetComponent<PlayerCrowbarCombatController>();
             if (crowbar != null && crowbar.TryPrepareInteraction(activeInteractable)) return true;
             activeInteractable.Interact(this);

@@ -4,7 +4,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     [DisallowMultipleComponent]
-    public sealed class BarCounterStation : MonoBehaviour, IInteractable
+    public sealed class BarCounterStation : MonoBehaviour, IInteractable, IHandEquipmentSeat
     {
         public const string SitPromptKey = "interaction.sit_at_counter";
         public const string OrderPromptKey =
@@ -67,6 +67,7 @@ namespace BarPromenade
         public CounterSeatInteraction Seat => seat;
         public CounterSeatView SeatView => seatView;
         public bool UsesPhysicalSeat => seat != null;
+        public bool AllowsHandEquipment => seat != null && (!seat.IsSeated || controller == null || !controller.CanDrinkServedVessel);
 
         public void SetAvailability(Func<bool> available) => isAvailable = available;
 

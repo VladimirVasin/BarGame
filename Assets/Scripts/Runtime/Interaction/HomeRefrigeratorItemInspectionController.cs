@@ -342,7 +342,9 @@ namespace BarPromenade
             string sourceId = activeItem.SourceId;
             if (!GameSessionState.TryCollectWorldItem(
                     sourceId,
-                    inventoryItemId))
+                    inventoryItemId,
+                    initialVodkaMl: inventoryItemId == InventoryItemId.VodkaBottle
+                        ? VodkaBottleState.RefrigeratorMl : VodkaBottleState.FullMl))
             {
                 feedbackKey = WorldItemFoundScreen.NoRoomFeedbackKey;
                 return true;

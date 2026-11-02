@@ -1,9 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.TestTools;
 using UnityEngine.TestTools.Utils;
 
@@ -11,7 +14,18 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed class CityBusRidePlayModeTests
     {
+        private System.Action passengerCleanup;
+
+        [TearDown]
+        public void CleanupPassengerFixture()
+        {
+            System.Action cleanup = passengerCleanup;
+            passengerCleanup = null;
+            cleanup?.Invoke();
+        }
+
         [UnityTest]
+        [PrebuildSetup(typeof(VodkaBottleAssetsSetup))]
         public IEnumerator Passenger_BoardsRidesAndExitsAtLaterStop()
         {
 
@@ -21,12 +35,32 @@ namespace BarPromenade.Tests.PlayMode
             InputTestFixture inputFixture = null;
             Mouse mouse = null;
             Gamepad gamepad = null;
+            object cursorOwner = new object();
+            bool previousFocus = GameInput.MovementFocused;
+            // Unity's nested-enumerator assertion path does not dispose the
+            // outer iterator. NUnit teardown must also own this fixture.
+            passengerCleanup = () =>
+            {
+                director?.Shutdown();
+                if (root != null) Object.DestroyImmediate(root);
+                if (gamepad != null && gamepad.added) InputSystem.RemoveDevice(gamepad);
+                if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
+                inputFixture?.TearDown();
+                ThrownVodkaBottle.ResetForTests();
+                GameCursor.Release(cursorOwner);
+                GameInput.HandleApplicationFocus(previousFocus);
+                GameSessionState.BeginNewGame();
+                Time.timeScale = previousTimeScale;
+            };
             try
             {
                 inputFixture = new InputTestFixture();
                 inputFixture.Setup();
                 mouse = InputSystem.AddDevice<Mouse>();
                 gamepad = InputSystem.AddDevice<Gamepad>();
+                GameSessionState.BeginNewGame();
+                GameInput.HandleApplicationFocus(true);
+                GameCursor.Capture(cursorOwner, CursorLockMode.Locked, false, 0);
                 Time.timeScale = 20f;
                 root = new GameObject("City Bus Ride Integration Root");
                 var walkableArea = new AlwaysWalkableArea();
@@ -159,6 +193,18 @@ namespace BarPromenade.Tests.PlayMode
                         cameraFollow);
 
                 Assert.That(ride, Is.Not.Null);
+                var bottle = player.GameObject.GetComponent<PlayerVodkaBottleController>();
+                Assert.That(bottle, Is.Not.Null);
+                Assert.That(GameSessionState.TryCollectWorldItem("bus-test-vodka", InventoryItemId.VodkaBottle), Is.True);
+                Assert.That(GameSessionState.TrySetInventoryItemEquipped(InventoryItemId.VodkaBottle, true), Is.True);
+                Assert.That(GameSessionState.CanDrinkVodkaSip, Is.True);
+                for (int frame = 0; frame < 360 && bottle.Phase != PlayerVodkaBottleController.BottlePhase.Carrying; frame++)
+                    yield return null;
+                Assert.That(bottle.Phase, Is.EqualTo(PlayerVodkaBottleController.BottlePhase.Carrying),
+                    "The full bottle must finish its real draw before the boarding prompt is invoked.");
+                VodkaBottleView boardedBottle = bottle.Bottle;
+                int boardedBottleId = GameSessionState.VodkaBottleId;
+                GameCursor.Capture(cursorOwner, CursorLockMode.Locked, false, 0);
                 yield return null;
                 yield return null;
                 Assert.That(
@@ -201,10 +247,16 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(CityBusPassengerDoor.Rear));
                 yield return WaitForRidingWithLevelHorizon(
                     ride,
-                    camera);
+                    camera,
+                    bottle,
+                    boardedBottle);
                 yield return null;
 
                 Assert.That(actor.HasPassenger, Is.True);
+                Assert.That(bottle.Bottle, Is.SameAs(boardedBottle), "Boarding must retain the actual equipped prop.");
+                Assert.That(bottle.OccupiesHand, Is.True);
+                Assert.That(GameSessionState.VodkaBottleId, Is.EqualTo(boardedBottleId));
+                Assert.That(GameSessionState.VodkaBottleRemainingMl, Is.EqualTo(VodkaBottleState.FullMl));
                 Assert.That(actor.HasServiceHold, Is.False);
                 Assert.That(
                     player.GameObject.transform.parent,
@@ -379,11 +431,14 @@ namespace BarPromenade.Tests.PlayMode
                     "The boarding service is not a valid exit stop.");
 
                 Vector3 boardedActorPosition = actor.Position;
+                string boardedStopId = actor.CurrentStop.Id;
                 Vector3 boardedPlayerPosition =
                     player.GameObject.transform.position;
                 Vector3 boardedPlayerActorLocalPosition =
                     actor.transform.InverseTransformPoint(
                         player.GameObject.transform.position);
+                yield return ExerciseSeatedBottle(root.transform, player, visual, bottle, boardedBottle,
+                    ride, actor, director, inputFixture, mouse);
                 bool reachedLaterStop = false;
                 for (int step = 0; step < 1600; step++)
                 {
@@ -398,7 +453,8 @@ namespace BarPromenade.Tests.PlayMode
                         "The attached player must not become a bus " +
                         "obstacle.");
                     if (actor.ServiceOrdinal > ride.BoardedServiceOrdinal &&
-                        actor.DoorsFullyOpen)
+                        actor.DoorsFullyOpen && actor.CurrentStop != null &&
+                        actor.CurrentStop.Id != boardedStopId)
                     {
                         reachedLaterStop = true;
                         break;
@@ -408,8 +464,9 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     reachedLaterStop,
                     Is.True,
-                    "The deterministic route must reach its second stop.");
+                    "The deterministic route must reach a later service at a distinct stop, even after drinking spans a full circuit.");
                 yield return null;
+                ride.RefreshPassengerPose();
                 Assert.That(
                     Vector3.Distance(actor.Position, boardedActorPosition),
                     Is.GreaterThan(1f));
@@ -543,25 +600,307 @@ namespace BarPromenade.Tests.PlayMode
             }
             finally
             {
-                Time.timeScale = previousTimeScale;
-                director?.Shutdown();
-                if (root != null)
-                {
-                    Object.DestroyImmediate(root);
-                }
-
-                if (gamepad != null && gamepad.added)
-                {
-                    InputSystem.RemoveDevice(gamepad);
-                }
-
-                if (mouse != null && mouse.added)
-                {
-                    InputSystem.RemoveDevice(mouse);
-                }
-
-                inputFixture?.TearDown();
+                CleanupPassengerFixture();
             }
+        }
+
+        private static IEnumerator ExerciseSeatedBottle(Transform fixture, PlayerRuntime player,
+            Player3DCharacterPresentation visual, PlayerVodkaBottleController bottle, VodkaBottleView expectedBottle,
+            CityBusRideController ride, CityBusActor actor, CityBusDirector director, InputTestFixture input, Mouse mouse)
+        {
+            PlayerAnimatedInteractionController interaction = player.GameObject.GetComponent<PlayerAnimatedInteractionController>();
+            Player3DAnatomicalPart[] legParts = { Player3DAnatomicalPart.LeftThigh, Player3DAnatomicalPart.LeftShin,
+                Player3DAnatomicalPart.LeftFoot, Player3DAnatomicalPart.RightThigh, Player3DAnatomicalPart.RightShin,
+                Player3DAnatomicalPart.RightFoot };
+            var legs = new Transform[legParts.Length];
+            for (int i = 0; i < legs.Length; i++)
+            {
+                Assert.That(visual.Registry.TryGetPart(legParts[i], out var binding), Is.True);
+                legs[i] = binding.Bone;
+            }
+            PlayerBootDeformation boots = visual.Registry.GetComponent<PlayerBootDeformation>();
+            Assert.That(boots, Is.Not.Null);
+            Assert.That(boots.HasBindings, Is.True);
+            Renderer[] bottleLabels = expectedBottle.GetComponentInChildren<SupermarketProductAssetRegistry>().Parts
+                .Where(part => part.Role == "label").Select(part => part.Renderer).ToArray();
+            Vector3 seatRoot = actor.transform.InverseTransformPoint(player.GameObject.transform.position);
+            Quaternion seatRotation = Quaternion.Inverse(actor.transform.rotation) * player.GameObject.transform.rotation;
+            var proxyObject = new GameObject("Bus held bottle contact witness");
+            proxyObject.transform.SetParent(fixture, false);
+            CapsuleCollider proxy = proxyObject.AddComponent<CapsuleCollider>();
+            proxy.enabled = false; proxy.direction = 1; proxy.radius = VodkaBottleDimensions.BodyRadius;
+            proxy.height = VodkaBottleDimensions.LowerColliderHeight;
+            proxy.center = Vector3.up * VodkaBottleDimensions.LowerColliderCentre;
+
+            void AssertSeated()
+            {
+                ride.RefreshPassengerPose();
+                bottle.ReapplyPresentation();
+                Assert.That(ride.State, Is.EqualTo(CityBusRideState.Riding));
+                Assert.That(interaction.Phase, Is.EqualTo(PlayerAnimatedInteractionPhase.Looping));
+                Assert.That(visual.ActiveClipName, Is.EqualTo("BusRideLoop"), "Equipment cannot replace the seated parent clip.");
+                Assert.That(player.Motor.enabled, Is.False);
+                Assert.That(Vector3.Distance(actor.transform.InverseTransformPoint(player.GameObject.transform.position), seatRoot), Is.LessThan(.002f));
+                Assert.That(Quaternion.Angle(Quaternion.Inverse(actor.transform.rotation) * player.GameObject.transform.rotation, seatRotation), Is.LessThan(.1f));
+                Assert.That(Vector3.Distance(visual.Registry.Anchors.Pelvis.position, ride.ActivePlan.SeatAnchor.position), Is.LessThan(.012f));
+                Assert.That(ride.TryGetPassengerFloor(out Vector3 floorPoint, out Vector3 floorNormal), Is.True);
+                for (int i = 0; i < legs.Length; i += 3)
+                {
+                    Vector3 hip = legs[i].position, knee = legs[i + 1].position, ankle = legs[i + 2].position;
+                    float kneeAngle = Vector3.Angle(hip - knee, ankle - knee);
+                    if (!(kneeAngle >= 35f && kneeAngle <= 150f))
+                        Assert.Fail($"{legParts[i]}: floor correction must retain a bent seated knee (35–150°), actual={kneeAngle:F5}. " +
+                            $"floorPoint={floorPoint:F5} floorNormal={floorNormal:F5} hip={hip:F5} knee={knee:F5} ankle={ankle:F5} " +
+                            $"footScale={legs[i + 2].lossyScale:F5} " + PassengerSoleDiagnostic(visual.Registry, i == 0 ? "L" : "R") +
+                            ride.DescribePassengerFootContacts());
+                    Assert.That(Mathf.Abs(Vector3.Dot((knee - hip).normalized, Vector3.up)), Is.LessThan(.8f),
+                        legParts[i] + ": equipment cannot replace the seated thigh with a standing leg.");
+                }
+                foreach (PlayerBootDeformation.FootBinding foot in boots.Bindings)
+                    Assert.That(Vector3.Dot(foot.Foot.TransformPoint(foot.BallContactLocal) - floorPoint, floorNormal),
+                        Is.InRange(-.008f, .05f), foot.Side + ": the seated foot must retain cabin-floor contact.");
+                if (bottle.Bottle == null) return;
+                Assert.That(bottle.Bottle, Is.SameAs(expectedBottle));
+                AssertHeldBottleVisibility(bottle, bottleLabels);
+                if (bottle.IsBottleConcealed && (bottle.Phase == PlayerVodkaBottleController.BottlePhase.Drawing ||
+                    bottle.Phase == PlayerVodkaBottleController.BottlePhase.Stowing)) return;
+                Assert.That(Vector3.Distance(visual.Registry.GetComponent<NpcHandPose>().AnatomicalCylinderCentre(false),
+                    bottle.Bottle.Grip.position), Is.LessThan(.018f), "A moving seat must retain the visible hand/neck contact.");
+                foreach (var part in player.Ragdoll.AnatomicalColliders)
+                {
+                    if (part.Value != Player3DAnatomicalPart.LeftThigh && part.Value != Player3DAnatomicalPart.RightThigh) continue;
+                    bool overlap = Physics.ComputePenetration(proxy, bottle.Bottle.transform.position, bottle.Bottle.transform.rotation,
+                        part.Key, part.Key.transform.position, part.Key.transform.rotation, out _, out float depth);
+                    Assert.That(overlap && depth > .006f, Is.False, "The seated bottle crosses " + part.Value + " by " + depth);
+                }
+                if (actor.BodyCollider is BoxCollider hull)
+                    foreach (Vector3 point in new[] { bottle.Bottle.transform.position,
+                        bottle.Bottle.transform.TransformPoint(Vector3.up * VodkaBottleDimensions.Height) })
+                    {
+                        Vector3 local = hull.transform.InverseTransformPoint(point) - hull.center;
+                        Assert.That(Mathf.Abs(local.x), Is.LessThan(hull.size.x * .5f - VodkaBottleDimensions.BodyRadius), "Held bottle crosses the bus side/window.");
+                        Assert.That(Mathf.Abs(local.z), Is.LessThan(hull.size.z * .5f - VodkaBottleDimensions.BodyRadius));
+                    }
+            }
+            IEnumerator Until(System.Func<bool> condition, string message, float routeStep = .02f)
+            {
+                for (int frame = 0; frame < 900 && !condition(); frame++)
+                {
+                    director.Advance(routeStep);
+                    yield return null;
+                    AssertSeated();
+                }
+                Assert.That(condition(), Is.True, message);
+            }
+
+            try
+            {
+                yield return Until(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying,
+                    "The seated bottle must complete its visible draw before the carry proof and fresh sip.");
+                AssertSeated();
+                CaptureSeatedBottle("00-carried-in-seat", fixture, player, visual, bottle, ride, false);
+                yield return Until(() => actor.Speed > .5f, "The passenger service must depart before the moving sip.", .1f);
+                Vector3 beforeSipPosition = actor.Position;
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                yield return null;
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                yield return Until(() => bottle.CompletedSips == 1, "Fresh LMB must swallow while the bus is moving.", .05f);
+                CaptureSeatedBottle("01-moving-seat-sip", fixture, player, visual, bottle, ride, false);
+                CaptureSeatedBottle("02-mouth-and-neck-contact", fixture, player, visual, bottle, ride, true);
+                Assert.That(bottle.MouthContactError, Is.LessThan(.012f));
+                Assert.That(Vector3.Distance(actor.Position, beforeSipPosition), Is.GreaterThan(.1f));
+                yield return Until(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying, "A seated sip must lower to carry.");
+                for (int frame = 0; frame < 8; frame++) { director.Advance(.02f); yield return null; AssertSeated(); }
+                Assert.That(bottle.CompletedSips, Is.EqualTo(1), "Releasing LMB must stop after the current sip.");
+
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    for (int frame = 0; frame < 4; frame++) yield return null;
+                    Assert.That(bottle.CompletedSips, Is.EqualTo(1));
+                    Assert.That(GameSessionState.VodkaBottleRemainingMl, Is.EqualTo(467));
+                }
+                for (int frame = 0; frame < 6; frame++) { director.Advance(.02f); yield return null; AssertSeated(); }
+                Assert.That(bottle.CompletedSips, Is.EqualTo(1), "A mouse held through pause must require a fresh press.");
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                yield return null;
+                yield return null;
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                for (int sip = 2; sip <= VodkaBottleState.FullBottleSipCount; sip++)
+                {
+                    int expected = sip;
+                    yield return Until(() => bottle.CompletedSips >= expected, "Held seated drinking stopped before sip " + expected);
+                    Assert.That(bottle.CompletedSips, Is.EqualTo(expected));
+                    Assert.That(GameSessionState.VodkaBottleRemainingMl,
+                        Is.EqualTo(VodkaBottleState.FullMl - expected * VodkaBottleState.FullMl / VodkaBottleState.FullBottleSipCount));
+                    if (sip < VodkaBottleState.FullBottleSipCount)
+                        yield return Until(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying,
+                            "Each seated sip needs a distinct lowering cycle.");
+                }
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                yield return Until(() => bottle.ThrownBottles == 1, "An empty bottle must enter physics inside the bus.");
+                ThrownVodkaBottle thrown = Object.FindAnyObjectByType<ThrownVodkaBottle>();
+                Assert.That(thrown, Is.Not.Null);
+                Assert.That(thrown.IsBroken || !thrown.Body.isKinematic, Is.True);
+                if (thrown.IsBroken) Assert.That(thrown.ActiveShardCount, Is.GreaterThan(0));
+                Assert.That(ride.TryGetBottleReleaseContext(out Vector3 inheritedVelocity, out Collider outerHull), Is.True);
+                Assert.That(float.IsNaN(inheritedVelocity.sqrMagnitude) || float.IsInfinity(inheritedVelocity.sqrMagnitude), Is.False);
+                Assert.That(outerHull, Is.SameAs(actor.BodyCollider));
+                foreach (Collider collider in thrown.GetComponents<Collider>())
+                    if (collider.enabled) Assert.That(Physics.GetIgnoreCollision(collider, outerHull), Is.True,
+                        "The released bottle must collide with the hollow cabin rather than the solid exterior obstacle hull.");
+                CaptureSeatedBottle("03-empty-bottle-released", fixture, player, visual, bottle, ride, false);
+                Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.VodkaBottle), Is.Zero);
+                Assert.That(GameSessionState.IsInventoryItemEquipped(InventoryItemId.VodkaBottle), Is.False);
+                yield return Until(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Hidden, "The final seated throw must release the overlay.");
+                Assert.That(visual.OwnsEquipmentPose(bottle), Is.False);
+                Assert.That(bottle.CompletedSips, Is.EqualTo(VodkaBottleState.FullBottleSipCount));
+            }
+            finally
+            {
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                Object.DestroyImmediate(proxyObject);
+            }
+        }
+
+        private static void CaptureSeatedBottle(string name, Transform fixture, PlayerRuntime player,
+            Player3DCharacterPresentation visual, PlayerVodkaBottleController bottle, CityBusRideController ride, bool close)
+        {
+            var cameraObject = new GameObject("Seated bottle proof camera"); cameraObject.transform.SetParent(fixture, false);
+            var lightObject = new GameObject("Seated bottle proof key"); lightObject.transform.SetParent(fixture, false);
+            RenderTexture target = null; Texture2D pixels = null;
+            bool fog = RenderSettings.fog; AmbientMode ambientMode = RenderSettings.ambientMode;
+            Color ambient = RenderSettings.ambientLight; Light sun = RenderSettings.sun;
+            try
+            {
+                visual.ReapplyLatePresentationPose(); ride.RefreshPassengerPose(); bottle.ReapplyPresentation();
+                AssertHeldBottleVisibility(bottle, measureBounds: true);
+                Assert.That(ride.TryGetPassengerFloor(out Vector3 floorPoint, out Vector3 floorNormal), Is.True);
+                AssertPassengerSoles(visual.Registry, floorPoint, floorNormal, name);
+                Camera proof = cameraObject.AddComponent<Camera>(); proof.enabled = false;
+                proof.orthographic = true; proof.orthographicSize = close ? .28f : .9f;
+                proof.aspect = 1f; proof.nearClipPlane = .025f; proof.farClipPlane = 25f;
+                proof.clearFlags = CameraClearFlags.SolidColor; proof.backgroundColor = new Color(.2f, .23f, .25f);
+                proof.allowHDR = proof.allowMSAA = false;
+                UniversalAdditionalCameraData data = proof.GetUniversalAdditionalCameraData();
+                data.renderPostProcessing = false; data.volumeLayerMask = 0;
+                Vector3 focus = close && bottle.Bottle != null ?
+                    (bottle.Bottle.Grip.position + visual.Registry.Anchors.Mouth.position) * .5f : visual.Registry.Anchors.Pelvis.position + Vector3.up * .36f;
+                Vector3 aisle = -ResolveWindowOutward(ride.ActivePlan);
+                proof.transform.position = focus + aisle * 1.1f + ride.ActivePlan.ActorRoot.forward * .7f + Vector3.up * .2f;
+                proof.transform.LookAt(focus);
+                Light key = lightObject.AddComponent<Light>(); key.type = LightType.Directional;
+                key.intensity = 1.6f; key.color = new Color(1f, .91f, .81f);
+                lightObject.transform.rotation = Quaternion.Euler(45f, 135f, 0f);
+                RenderSettings.sun = key; RenderSettings.fog = false;
+                RenderSettings.ambientMode = AmbientMode.Flat; RenderSettings.ambientLight = new Color(.5f, .53f, .58f);
+                target = new RenderTexture(768, 768, 24, RenderTextureFormat.ARGB32); target.Create(); proof.targetTexture = target;
+                pixels = new Texture2D(768, 768, TextureFormat.RGB24, false);
+                proof.Render(); RenderTexture previous = RenderTexture.active;
+                try { RenderTexture.active = target; pixels.ReadPixels(new Rect(0f, 0f, 768f, 768f), 0, 0); pixels.Apply(); }
+                finally { RenderTexture.active = previous; }
+                string directory = Path.Combine(Directory.GetCurrentDirectory(), "Captures", "VodkaBottleBus");
+                Directory.CreateDirectory(directory); File.WriteAllBytes(Path.Combine(directory, name + ".png"), pixels.EncodeToPNG());
+            }
+            finally
+            {
+                RenderSettings.fog = fog; RenderSettings.ambientMode = ambientMode;
+                RenderSettings.ambientLight = ambient; RenderSettings.sun = sun;
+                if (target != null) { target.Release(); Object.DestroyImmediate(target); }
+                if (pixels != null) Object.DestroyImmediate(pixels);
+                Object.DestroyImmediate(cameraObject); Object.DestroyImmediate(lightObject);
+            }
+        }
+
+        private static void AssertPassengerSoles(Player3DAssetRegistry registry, Vector3 floorPoint,
+            Vector3 floorNormal, string phase)
+        {
+            int soleCount = 0;
+            foreach (Player3DMeshBinding binding in registry.MeshBindings)
+            {
+                if (binding.MeshName != "CLO_BootSole.L" && binding.MeshName != "CLO_BootSole.R") continue;
+                Assert.That(binding.Renderer, Is.TypeOf<SkinnedMeshRenderer>());
+                var renderer = (SkinnedMeshRenderer)binding.Renderer;
+                Assert.That(renderer.enabled, Is.True);
+                Mesh mesh = renderer.sharedMesh;
+                Assert.That(mesh, Is.Not.Null);
+                Vector3[] vertices = mesh.vertices;
+                Assert.That(vertices, Is.Not.Empty);
+                var deltas = new Vector3[vertices.Length];
+                for (int shape = 0; shape < mesh.blendShapeCount; shape++)
+                {
+                    float weight = renderer.GetBlendShapeWeight(shape);
+                    if (Mathf.Abs(weight) < .00001f) continue;
+                    Assert.That(mesh.GetBlendShapeFrameCount(shape), Is.EqualTo(1), "Production sole morphs use one authored endpoint.");
+                    float endpoint = mesh.GetBlendShapeFrameWeight(shape, 0);
+                    Assert.That(endpoint, Is.GreaterThan(0f));
+                    mesh.GetBlendShapeFrameVertices(shape, 0, deltas, null, null);
+                    for (int i = 0; i < vertices.Length; i++) vertices[i] += deltas[i] * (weight / endpoint);
+                }
+                BoneWeight[] weights = mesh.boneWeights;
+                Matrix4x4[] bindposes = mesh.bindposes;
+                Transform[] bones = renderer.bones;
+                Assert.That(weights.Length, Is.EqualTo(vertices.Length));
+                Assert.That(bindposes.Length, Is.EqualTo(bones.Length));
+                var skin = new Matrix4x4[bones.Length];
+                for (int i = 0; i < skin.Length; i++) skin[i] = bones[i].localToWorldMatrix * bindposes[i];
+                float minimum = float.PositiveInfinity;
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    BoneWeight w = weights[i]; Vector3 point = vertices[i];
+                    Vector3 world = skin[w.boneIndex0].MultiplyPoint3x4(point) * w.weight0 +
+                        skin[w.boneIndex1].MultiplyPoint3x4(point) * w.weight1 +
+                        skin[w.boneIndex2].MultiplyPoint3x4(point) * w.weight2 +
+                        skin[w.boneIndex3].MultiplyPoint3x4(point) * w.weight3;
+                    minimum = Mathf.Min(minimum, Vector3.Dot(world - floorPoint, floorNormal));
+                }
+                Assert.That(minimum, Is.InRange(-.005f, .025f),
+                    phase + "/" + binding.MeshName + ": the live skinned sole must touch the cabin floor without crossing it.");
+                soleCount++;
+            }
+            Assert.That(soleCount, Is.EqualTo(2), "The production hero must expose both authored boot soles.");
+        }
+
+        private static void AssertHeldBottleVisibility(PlayerVodkaBottleController controller,
+            IReadOnlyList<Renderer> labels = null, bool measureBounds = false)
+        {
+            VodkaBottleView bottle = controller.Bottle;
+            if (bottle == null || controller.Phase == PlayerVodkaBottleController.BottlePhase.Drawing ||
+                controller.Phase == PlayerVodkaBottleController.BottlePhase.Stowing) return;
+            Assert.That(controller.IsBottleConcealed, Is.False, controller.Phase + ": held glass cannot remain hidden after coat transfer.");
+            if (controller.Phase != PlayerVodkaBottleController.BottlePhase.Opening)
+            {
+                Assert.That(bottle.IsOpened, Is.True, controller.Phase + ": the completed opening must survive a skipped LateUpdate boundary.");
+                Assert.That(bottle.Cap.gameObject.activeInHierarchy, Is.False, controller.Phase + ": an opened bottle cannot retain its cap at the mouth.");
+            }
+            Assert.That(bottle.GlassCells.Count, Is.EqualTo(8));
+            foreach (Renderer glass in bottle.GlassCells)
+            {
+                Assert.That(glass.gameObject.activeInHierarchy && glass.enabled && !glass.forceRenderingOff, Is.True,
+                    controller.Phase + ": every held glass cell must be visible.");
+            }
+            if (labels == null)
+                labels = bottle.GetComponentInChildren<SupermarketProductAssetRegistry>().Parts
+                    .Where(part => part.Role == "label").Select(part => part.Renderer).ToArray();
+            Assert.That(labels.Count, Is.GreaterThan(0));
+            foreach (Renderer label in labels)
+                Assert.That(label.gameObject.activeInHierarchy && label.enabled && !label.forceRenderingOff, Is.True,
+                    controller.Phase + ": the held bottle label must be visible.");
+            if (!measureBounds) return;
+            Bounds bounds = bottle.GlassCells[0].bounds;
+            for (int i = 1; i < bottle.GlassCells.Count; i++) bounds.Encapsulate(bottle.GlassCells[i].bounds);
+            Assert.That(bounds.size.magnitude, Is.InRange(.26f, .45f), "Held glass must retain the ordinary half-litre world size.");
+            Assert.That(bounds.SqrDistance(bottle.Grip.position), Is.LessThan(.0001f), "Visible glass must surround its actual neck grip.");
+        }
+
+        private static string PassengerSoleDiagnostic(Player3DAssetRegistry registry, string side)
+        {
+            foreach (Player3DMeshBinding binding in registry.MeshBindings)
+                if (binding.MeshName == "CLO_BootSole." + side && binding.Renderer is SkinnedMeshRenderer renderer)
+                    return $"sole={binding.MeshName} sourceBounds={renderer.sharedMesh.bounds:F5} " +
+                        $"rendererLocalBounds={renderer.localBounds:F5} worldBounds={renderer.bounds:F5} " +
+                        $"rendererPosition={renderer.transform.position:F5} rendererScale={renderer.transform.lossyScale:F5}";
+            return "Missing production sole " + side;
         }
 
         private static Vector3 ResolveWindowOutward(
@@ -1361,13 +1700,18 @@ namespace BarPromenade.Tests.PlayMode
 
         private static IEnumerator WaitForRidingWithLevelHorizon(
             CityBusRideController ride,
-            Camera camera)
+            Camera camera,
+            PlayerVodkaBottleController bottle,
+            VodkaBottleView expectedBottle)
         {
             float deadline = Time.realtimeSinceStartup + 4f;
             while (ride != null &&
                    ride.State != CityBusRideState.Riding &&
                    Time.realtimeSinceStartup < deadline)
             {
+                Assert.That(bottle.Bottle, Is.SameAs(expectedBottle), "Boarding must not hide and recreate the equipped bottle.");
+                Assert.That(bottle.OccupiesHand, Is.True);
+                Assert.That(GameSessionState.VodkaBottleRemainingMl, Is.EqualTo(VodkaBottleState.FullMl));
                 Assert.That(
                     Mathf.Abs(Vector3.Dot(
                         camera.transform.right,

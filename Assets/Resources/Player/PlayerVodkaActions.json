@@ -1,0 +1,97 @@
+{
+  "generator": "player_vodka_v1",
+  "rig": "HeroV2",
+  "bone_count": 43,
+  "fps": 24,
+  "root_motion": false,
+  "animation_events": 0,
+  "source_sha256": "d44e21049589108f88734f8d29af5de0359b65a499a2fd7232d97c16d3f75e79",
+  "pistol_action_source_sha256": "ef37587d82055c73b72a9bb27c17498fea77bdb76d9f136450a4a762b9e9fcd7",
+  "maximum_lower_body_error": 0.0,
+  "maximum_endpoint_error": 3.8743019104003906e-07,
+  "maximum_drink_wrist_error_m": 1.2489448945403256e-07,
+  "minimum_left_arm_body_clearance_m": 0.07838208955526352,
+  "left_arm_body_clearance_by_clip_m": {
+    "VodkaDraw": 0.0783821193575859,
+    "VodkaOpen": 0.0783821193575859,
+    "VodkaStow": 0.07838208955526352
+  },
+  "minimum_right_arm_body_clearance_m": 0.06819231790304184,
+  "right_arm_body_clearance_by_clip_m": {
+    "VodkaDraw": 0.06819231790304184,
+    "VodkaOpen": 0.15067252027988434,
+    "VodkaStow": 0.06819231790304184
+  },
+  "maximum_draw_neck_contact_error_m": 8.429369702178807e-08,
+  "sip_commit_progress": 0.5,
+  "throw_release_progress": 0.6,
+  "draw_transfer_progress": 0.2823529411764706,
+  "cap_contact_progress": 0.448,
+  "cap_twist_end_progress": 0.664,
+  "cap_detach_progress": 0.7,
+  "cap_release_progress": 0.9,
+  "cap_open_progress": 0.7,
+  "draw_neck_contact_source": [
+    0.08,
+    -0.17,
+    1.32
+  ],
+  "open_neck_source": [
+    -0.18000000715255737,
+    -0.3700000047683716,
+    1.2200000286102295
+  ],
+  "open_cap_source": [
+    -0.18000000715255737,
+    -0.3700000047683716,
+    1.2942500114440918
+  ],
+  "carry_wrist_source": [
+    -0.2926734387874603,
+    -0.1393454521894455,
+    1.0271883010864258
+  ],
+  "drink_wrist_source": [
+    -0.10229010879993439,
+    -0.4041891098022461,
+    1.4182474613189697
+  ],
+  "mouth_source": [
+    -0.0022901035845279694,
+    -0.13418908417224884,
+    1.5382474660873413
+  ],
+  "clips": [
+    {
+      "name": "VodkaCarry",
+      "duration_seconds": 1.0,
+      "loop": true
+    },
+    {
+      "name": "VodkaDraw",
+      "duration_seconds": 1.5,
+      "loop": false
+    },
+    {
+      "name": "VodkaOpen",
+      "duration_seconds": 1.25,
+      "loop": false
+    },
+    {
+      "name": "VodkaSip",
+      "duration_seconds": 2.0,
+      "loop": false
+    },
+    {
+      "name": "VodkaStow",
+      "duration_seconds": 0.75,
+      "loop": false
+    },
+    {
+      "name": "VodkaThrow",
+      "duration_seconds": 1.0,
+      "loop": false
+    }
+  ],
+  "signature": "68235893815f60602c12ae5cd5b29ad817f33c3e99ce811310211c2f36f11709"
+}

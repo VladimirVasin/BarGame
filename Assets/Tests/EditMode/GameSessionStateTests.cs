@@ -801,7 +801,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void VodkaBottleUse_CommitsFourServingsAtomically()
+        public void VodkaBottleSips_CommitFourServingsWithoutRoundingDrift()
         {
             GameSessionState.UpdateNeeds(0, 60);
             Assert.That(
@@ -809,13 +809,20 @@ namespace BarPromenade.Tests.EditMode
                     InventoryItemId.VodkaBottle),
                 Is.True);
 
-            InventoryItemUseResult result =
-                GameSessionState.TryConsumeInventoryItem(
-                    InventoryItemId.VodkaBottle);
-
-            Assert.That(result.Succeeded, Is.True);
-            Assert.That(result.ActualStressRelief, Is.EqualTo(48));
-            Assert.That(result.ActualIntoxicationGain, Is.EqualTo(72));
+            Assert.That(GameSessionState.TryConsumeInventoryItem(InventoryItemId.VodkaBottle).Status,
+                Is.EqualTo(InventoryItemUseStatus.RequiresEquipment));
+            Assert.That(GameSessionState.TrySetInventoryItemEquipped(InventoryItemId.VodkaBottle, true), Is.True);
+            int bottleId = GameSessionState.VodkaBottleId;
+            Assert.That(VodkaBottleState.FullBottleSipCount, Is.EqualTo(15));
+            for (int sip = 0; sip < VodkaBottleState.FullBottleSipCount; sip++)
+            {
+                int before = GameSessionState.VodkaBottleRemainingMl;
+                Assert.That(GameSessionState.TryDrinkVodkaSip(bottleId, before, out var result), Is.True);
+                Assert.That(result.RemainingMl, Is.EqualTo(500 - (sip + 1) * 500 / 15));
+                Assert.That(result.Emptied, Is.EqualTo(sip == VodkaBottleState.FullBottleSipCount - 1));
+                Assert.That(GameSessionState.TryDrinkVodkaSip(bottleId, before, out _), Is.False,
+                    "The same prepared swallow may not commit twice.");
+            }
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(12));
             Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(72));
             Assert.That(
@@ -823,6 +830,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(DrinkId.Vodka));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(4));
             Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(72));
+            Assert.That(GameSessionState.IsInventoryItemEquipped(InventoryItemId.VodkaBottle), Is.False);
             Assert.That(
                 GameSessionState.GetInventoryItemCount(
                     InventoryItemId.VodkaBottle),
@@ -842,15 +850,10 @@ namespace BarPromenade.Tests.EditMode
                     InventoryItemId.VodkaBottle),
                 Is.True);
 
-            InventoryItemUseResult result =
-                GameSessionState.TryConsumeInventoryItem(
-                    InventoryItemId.VodkaBottle);
-
-            Assert.That(result.Succeeded, Is.False);
-            Assert.That(
-                result.Status,
-                Is.EqualTo(
-                    InventoryItemUseStatus.MaximumIntoxication));
+            Assert.That(GameSessionState.TrySetInventoryItemEquipped(InventoryItemId.VodkaBottle, true), Is.True);
+            Assert.That(GameSessionState.CanDrinkVodkaSip, Is.False);
+            Assert.That(GameSessionState.TryDrinkVodkaSip(GameSessionState.VodkaBottleId, out _), Is.False);
+            Assert.That(GameSessionState.VodkaBottleRemainingMl, Is.EqualTo(500));
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(60));
             Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(100));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(2));
@@ -904,11 +907,10 @@ namespace BarPromenade.Tests.EditMode
                     InventoryItemId.VodkaBottle),
                 Is.True);
 
-            InventoryItemUseResult result =
-                GameSessionState.TryConsumeInventoryItem(
-                    InventoryItemId.VodkaBottle);
-
-            Assert.That(result.Succeeded, Is.True);
+            Assert.That(GameSessionState.TrySetInventoryItemEquipped(InventoryItemId.VodkaBottle, true), Is.True);
+            int bottleId = GameSessionState.VodkaBottleId;
+            for (int sip = 0; sip < VodkaBottleState.FullBottleSipCount; sip++)
+                Assert.That(GameSessionState.TryDrinkVodkaSip(bottleId, out _), Is.True);
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(12));
             Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(72));
             Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(72),

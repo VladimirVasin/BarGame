@@ -59,7 +59,7 @@ namespace BarPromenade
         public string DescriptionLocalizationKey { get; }
         public int MaximumStack { get; }
         public bool IsEquippable => Category == InventoryItemCategory.Clothing ||
-            Id is InventoryItemId.ChestFlashlight or InventoryItemId.CombatCrowbar or InventoryItemId.CombatPistol;
+            Id is InventoryItemId.ChestFlashlight or InventoryItemId.CombatCrowbar or InventoryItemId.CombatPistol or InventoryItemId.VodkaBottle;
     }
 
     public readonly struct InventoryItemStack

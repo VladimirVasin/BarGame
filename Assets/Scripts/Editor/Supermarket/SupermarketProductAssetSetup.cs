@@ -38,7 +38,7 @@ namespace BarPromenade.Editor
         private const float PivotTolerance = 0.002f;
         private const float HorizontalCentreTolerance = 0.012f;
         private const float BoundsTolerance = 0.012f;
-        private const float VodkaMaximumHeight = 0.4701f;
+        private const float VodkaMaximumHeight = VodkaBottleDimensions.Height + 0.0001f;
 
         private static readonly ProductContract[] Contracts =
         {
@@ -183,6 +183,7 @@ namespace BarPromenade.Editor
             try
             {
                 EnsureAssetFolder(PrefabFolder);
+                EnsureVodkaLiquidMaterial();
                 ImportSources();
                 SupermarketProductManifest manifest =
                     LoadAndValidateManifest();
@@ -219,6 +220,20 @@ namespace BarPromenade.Editor
                     .Single(candidate => candidate.id == contract.StableId);
                 ValidatePrefab(manifest, item, contract);
             }
+        }
+
+        private static void EnsureVodkaLiquidMaterial()
+        {
+            const string path = "Assets/Resources/Materials/VodkaBottleLiquid.mat";
+            Shader shader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Resources/Shaders/VodkaBottleLiquid.shader");
+            if (shader == null) throw new InvalidOperationException("Missing vodka liquid shader.");
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = new Material(shader) { name = "Vodka Bottle Liquid" };
+                AssetDatabase.CreateAsset(material, path);
+            }
+            else if (material.shader != shader) { material.shader = shader; EditorUtility.SetDirty(material); }
         }
 
         private static void ImportSources()
@@ -772,7 +787,8 @@ namespace BarPromenade.Editor
                     binding.Color != ToColor(source.base_color) ||
                     !rendererSet.Add(binding.Renderer) ||
                     binding.Renderer.sharedMaterials.Length != 1 ||
-                    binding.Renderer.sharedMaterial != sharedLit ||
+                    binding.Renderer.sharedMaterial != (contract.ItemId == InventoryItemId.VodkaBottle
+                        ? VodkaBottleView.MaterialFor(binding.Role) : sharedLit) ||
                     binding.Renderer.shadowCastingMode != ShadowCastingMode.On ||
                     !binding.Renderer.receiveShadows)
                 {

@@ -100,12 +100,23 @@ namespace BarPromenade
                     continue;
                 }
 
-                renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+                renderer.sharedMaterial = itemId == InventoryItemId.VodkaBottle
+                    ? VodkaBottleView.MaterialFor(part.Role) : RuntimePrimitiveFactory.DefaultMaterial;
                 renderer.shadowCastingMode = ShadowCastingMode.On;
                 renderer.receiveShadows = true;
                 renderer.GetPropertyBlock(properties);
-                properties.SetColor(BaseColorId, part.Color);
-                properties.SetColor(LegacyColorId, part.Color);
+                Color tint = part.Color;
+                if (itemId == InventoryItemId.VodkaBottle)
+                {
+                    if (part.Role == "glass") tint.a = .18f;
+                    if (part.Role == "liquid" || part.Role == "liquid_surface")
+                    {
+                        tint.a = .48f;
+                        VodkaBottleView.SetPassiveLiquid(renderer, transform, part.Role == "liquid_surface", properties);
+                    }
+                }
+                properties.SetColor(BaseColorId, tint);
+                properties.SetColor(LegacyColorId, tint);
                 renderer.SetPropertyBlock(properties);
                 properties.Clear();
             }
@@ -145,6 +156,24 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     $"Product '{itemId}' has no valid render bounds or parts.");
+            }
+
+            if (itemId == InventoryItemId.VodkaBottle)
+            {
+                if (Mathf.Abs(localBounds.size.y - VodkaBottleDimensions.Height) > .0005f ||
+                    Mathf.Abs(localBounds.size.x - VodkaBottleDimensions.Width) > .0005f ||
+                    Mathf.Abs(localBounds.size.z - VodkaBottleDimensions.Width) > .0005f)
+                    throw new InvalidOperationException("Vodka geometry must match the authored half-litre metre contract.");
+                Transform grip = null, mouth = null;
+                foreach (Transform anchor in GetComponentsInChildren<Transform>(true))
+                {
+                    if (anchor.name == "VodkaGrip") grip = anchor;
+                    if (anchor.name == "VodkaMouth") mouth = anchor;
+                }
+                if (grip == null || mouth == null ||
+                    Vector3.Distance(transform.InverseTransformPoint(grip.position), Vector3.up * VodkaBottleDimensions.GripHeight) > .0005f ||
+                    Vector3.Distance(transform.InverseTransformPoint(mouth.position), Vector3.up * VodkaBottleDimensions.MouthHeight) > .0005f)
+                    throw new InvalidOperationException("Vodka grip/mouth anchors must match its measured metre contract.");
             }
 
             for (int index = 0; index < parts.Length; index++)

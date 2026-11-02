@@ -24,7 +24,8 @@ namespace BarPromenade
         MissingItem,
         NoEffect,
         MaximumIntoxication,
-        ReservedForQuest
+        ReservedForQuest,
+        RequiresEquipment
     }
 
     public readonly struct InventoryItemUseResult
@@ -82,7 +83,7 @@ namespace BarPromenade
         public int RequestedStressRelief { get; }
     }
 
-    public static class GameSessionState
+    public static partial class GameSessionState
     {
         public const int DefaultCitySeed = 20260727;
         public const string DefaultCityBlueprintId =
@@ -375,6 +376,7 @@ namespace BarPromenade
         public static void BeginNewGame(string reason = "new_game_start")
         {
             ResetToDefaults();
+            ThrownVodkaBottle.ClearForNewSession();
             GameTimeScaleRuntime.ResetSession();
             IntoxicationAudioDriver.ResetSession();
             GameLog.Info(
@@ -1163,6 +1165,10 @@ namespace BarPromenade
                     itemCount);
             }
 
+            if (itemId == InventoryItemId.VodkaBottle)
+                return CreateInventoryItemUseResult(InventoryItemUseStatus.RequiresEquipment, itemId,
+                    definition.Kind, itemCount, itemCount);
+
             if (IsInventoryItemReservedForQuest(itemId))
             {
                 return CreateInventoryItemUseResult(
@@ -1286,7 +1292,8 @@ namespace BarPromenade
         public static bool TryCollectWorldItem(
             string sourceId,
             InventoryItemId itemId,
-            int count = 1)
+            int count = 1,
+            int initialVodkaMl = VodkaBottleState.FullMl)
         {
             if (string.IsNullOrWhiteSpace(sourceId))
             {
@@ -1295,7 +1302,7 @@ namespace BarPromenade
 
             string normalizedSourceId = sourceId.Trim();
             if (collectedWorldItems.Contains(normalizedSourceId) ||
-                !inventory.TryAdd(itemId, count))
+                !inventory.TryAdd(itemId, count, initialVodkaMl))
             {
                 return false;
             }

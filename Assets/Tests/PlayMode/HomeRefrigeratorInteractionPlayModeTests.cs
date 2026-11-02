@@ -534,6 +534,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.InventoryItems[2].ItemId,
                 Is.EqualTo(InventoryItemId.VodkaBottle));
+            Assert.That(GameSessionState.VodkaBottlePreviewRemainingMl, Is.EqualTo(100),
+                "The almost-empty source keeps its authored remainder after pickup.");
             Assert.That(item.gameObject.activeSelf, Is.False);
 
             Assert.That(interaction.RequestClose(), Is.True);

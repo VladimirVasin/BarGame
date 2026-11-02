@@ -19,7 +19,7 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityBenchSitInteraction :
         MonoBehaviour,
-        IInteractable
+        IInteractable, IHandEquipmentSeat
     {
         private readonly Vector3[] approachWaypointBuffer =
             new Vector3[CityBenchSitPlan.MaximumApproachWaypoints];
@@ -89,6 +89,7 @@ namespace BarPromenade
         /// <summary>The hero is on this plank, in the seated loop
         /// rather than still walking in or standing up.</summary>
         public bool IsSeated => seated;
+        public bool AllowsHandEquipment => true;
         public bool OwnsActiveInteraction => ownsActiveInteraction;
 
         public void Initialize(
@@ -194,7 +195,7 @@ namespace BarPromenade
                         SitLoopFramesPerSecond,
                     exitFrameCount: TransferFrameCount,
                     exitFramesPerSecond:
-                        TransferFramesPerSecond);
+                        TransferFramesPerSecond, allowsHandEquipment: true);
             }
 
             // Both game tables wear the same clips: the timber, the
@@ -214,7 +215,7 @@ namespace BarPromenade
                     BoardLoopFramesPerSecond,
                 exitFrameCount: BoardTransferFrameCount,
                 exitFramesPerSecond:
-                    BoardTransferFramesPerSecond);
+                    BoardTransferFramesPerSecond, allowsHandEquipment: true);
         }
 
         public bool CanInteract(PlayerInteractor interactor)

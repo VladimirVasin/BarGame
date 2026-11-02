@@ -8,6 +8,19 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-02
 
+- Убран лишний круг под бутылкой при осмотре холодильника:жидкость сохраняет
+  свой материал. Build_CreatesAnimatedHollowStorageWithoutLights passed;frame reviewed.
+
+- Водка в руке:клик ЛКМ — глоток,удержание — отдельные подъём/наклон/опускание
+  со звуком до отпускания. Ходьба/остаток сохраняются;пустую бросает.
+  Бутылка уменьшена,пальцы охватывают горлышко,большой вверх.
+  Достаёт из-под куртки,как пистолет,и убирает обратно. Крышку открывает
+  перед собой;обе руки проходят снаружи корпуса.
+  InventoryWalkingSipPersistenceAndLastSipThrow passed.
+  Можно пить на обычных сиденьях и в автобусе,открывать инвентарь сидя.
+  Бутылка над коленями;стопы опираются на пол автобуса.
+  SeatedBottlePreservesParentPoseInventoryAndExit/
+  Passenger_BoardsRidesAndExitsAtLaterStop passed;frames reviewed.
 - Закрытые двери бара,квартиры,подъезда и церкви останавливают героя;
   подход к действию E свободен. ClosedDoorCollisionTests passed.
 

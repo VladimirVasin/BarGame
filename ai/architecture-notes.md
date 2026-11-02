@@ -1,6 +1,39 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-11-02 — seated vodka, user:**
+  Spine equipment layer;right-arm Carry keeps parent root/pelvis/legs/camera.
+  Ordinary bench/chair/sofa/game/counter seats+bus;carry through sit/stand.
+  Inventory/sips:stable loop,no child/modal. Child clock waits visible stow;
+  other contexts stow;car/cableway deferred. Bottle forward over knees.
+  Bus sole IK:cached source skinning,knees/ankles→tilting floor,seat pelvis/root kept;
+  no doubled import scale. Throw inherits motion;finite logical cabin/door
+  colliders,traffic hull kept. Bounded caches/owners;24FX retained;CPU/GPU unmeasured.
+
+- **Accepted 2026-11-02 — vodka jacket draw, user:**
+  Pistol phases;chest-bound neck dock→grip/reverse stow.
+  Authored palm/elbow;shared owned jacket access;front Open/left arc.
+  Same rig/grip/gait;fade/cut/geometry/light/PP0.
+
+- **Accepted architecture exception 2026-11-02 — bottle size/grip, user:**
+  Vodka0.299m×≈0.075m;vertical neck palm/closed fingers/thumb-up;
+  same hand/morph/contact;Art§2.
+
+- **Accepted 2026-11-02 — vodka sip cadence, user:**
+  500ml=15×33/34ml;LMB click1/hold cycles raise/tilt/lower until
+  release/empty/refusal;neck grip/rig/gait,shared DrinkGulp/swallow.
+  Text/voice/FX0.
+
+- **Accepted 2026-11-02 — carried vodka, user:**
+  Inventory;session≤9 IDs/fills,500ml/Home100ml;four prior
+  servings. ID+fill commits once/swallow;max intoxication refuses.
+  Mouse hand wins weapons;UI/focus/handoff fresh press;rig/scarf/clip/carry;
+  other contexts stow,root/camera kept. Blender glass/gravity liquid/anchors/cells.
+  Last sip debits1;actual prop→CCD/inherited motion;surface/normal impact
+  breakage. Finite debris sleep/pause/cleanup;NPC damage/reactions/persistence0.
+  24FX owners/settings kept;shared glass/roughness/Fresnel/bevel/liquid;
+  probe/SSR unproven;bounded solver/cost unmeasured;§16/21/art9.
+
 - **Accepted 2026-11-01 — bottle fracture, user:**
   Blender cells→holes/shards;tag→glass skips blood/skull/flesh/NPC torso
   derivatives. Queries/rig/UV/mats/HP/reset/pause/off/unload kept;
@@ -3731,35 +3764,28 @@
   16; helmet and yard Spots make worst-case 18 local realtime lights. Scene/
   lightning Directionals are separate.
 
-- **Accepted — City-only Route 01 passenger MVP:** Three Default-layer trigger
-  children serve front/rear doors and seat `07` (anchor `6`), opposite the driver;
-  solid `CityBus` never enters general interaction queries. Doors use shared
-  `PlayerInteractor`/`InteractionPromptView` E/Enter/gamepad/pointer input.
-  Board only during fully open dwell with a deterministic walkable dock outside
-  the bus obstacle corridor. Resolve nearest valid door plan and keep that door
-  for exit. Ground roots from actual `CityStreetSurfacePlan.Sidewalks` bounds:
-  raised sidewalk `Bounds.max.y`, cut-back apron `RoadTop`, plus grounded-root
-  offset. Curb delta must fit live controller stepOffset; reject unreachable levels.
+- **Accepted — City-only Route 01 passenger MVP:** Default-layer triggers:
+  front/rear doors,seat07(anchor6) opposite driver;solid CityBus excluded from
+  interaction queries. Shared PlayerInteractor/InteractionPromptView E/Enter/
+  gamepad/pointer. Fully open dwell boarding;nearest valid door's deterministic
+  walkable dock outside obstacle corridor retained for exit. Grounding:
+  CityStreetSurfacePlan.Sidewalks Bounds.max.y or cut-back RoadTop+root offset;
+  curb delta≤live stepOffset.
 
-  `CityBusRideController` holds service through transfer and uses shared positioned
-  approach/`BusBoardEnter` through the live door waypoint. The same visible rig's
-  pelvis follows the sprung seat through entry/`BusRideLoop`. Gameplay root stays
-  under its original parent; disable motor/controller/contact shadow at loop
-  handoff. After director movement, late-sync root to actor-local seat pose.
-  Camera follows the sprung seat from aisle side, defaults through the nearest
-  lateral window, and uses actor-forward/world-up without suspension pitch/roll.
-  Entry/exit interpolate world-up look without roll. Shared mouse/right-stick/
-  arrow bounded orbit remains available except during modals; fixed-pose
-  transactions restore ordinary camera exactly.
+  CityBusRideController holds transfer service;positioned approach/BusBoardEnter
+  via live door. Pelvis follows sprung seat into BusRideLoop;root parent kept,
+  motor/controller/contact shadow off at loop. Late-sync actor-local seat after
+  director movement. Camera:aisle-side sprung seat,nearest lateral window,
+  actor-forward/world-up,no suspension pitch/roll. Enter/exit interpolate world-up
+  look without roll;bounded mouse/right-stick/arrow orbit except modals. Fixed-pose
+  transactions restore camera exactly.
 
-  Passenger ownership blocks pooling; director cleanup handles forced shutdown.
-  Exit needs a later service ordinal than boarding, reacquires service hold,
-  detaches moving-frame binding, freezes seat target and uses `BusAlightExit`
-  through the retained door to its grounded dock, blending camera to chase.
-  Completion/cancellation/lifecycle restore motor/controller/shadow/camera once,
-  without hierarchy mutation; release both owners. Failed exit uses last safe
-  exterior dock. Fares, destinations, passenger persistence, traffic signals
-  and live tracking remain deferred.
+  Passenger blocks pooling;director cleans shutdown. Exit:later service ordinal,
+  reacquire hold,detach moving-frame,freeze seat target;BusAlightExit via retained
+  door/grounded dock,camera→chase. Completion/cancel/lifecycle restore motor/
+  controller/shadow/camera once,release both owners,no hierarchy mutation.
+  Failed exit:last safe exterior dock. Fares/destinations/passenger persistence/
+  signals/live tracking deferred.
 
 - **Accepted — A three-place cabin counting the hero, with declared seated
   riders:** `CityBusActor` owns `CabinCapacity = 3` occupants and a shared
@@ -5438,29 +5464,14 @@
   Pause executes before
   inventory so Escape sees the occupied lock, then inventory closes later in
   the same frame without leaking that press into pause.
-- **Accepted — Session needs and atomic inventory consumption:** Hunger, stress
-  and fatigue are clamped integer `0-100` session values where higher is worse.
-  All start at `0`, survive ordinary scene loads and reset to `0` with a new
-  game. Once the startup Wake starts the persistent scaled clock, one pure
-  double-precision progression state raises hunger by `100 / 1440` and fatigue
-  by `100 / 1080` per elapsed game minute. Fractional state makes the result
-  independent of frame partitioning; reaching `100` discards overflow instead
-  of banking hidden growth. The clock path keeps both frozen before Wake and
-  at `timeScale = 0`, while ordinary interactions, transitions and scene loads
-  do not create another pause rule. The inventory exposes the clamped integer
-  values, but neither need applies a gameplay debuff yet. A normally completed
-  bed exit resets fatigue and its fraction through the shared interaction
-  completion boundary; cancellation and lifecycle cleanup do not. A
-  data-first consumable catalog gives all present food an explicit relief
-  value plus a poor-food minimum hunger of `20`, so repeated cheap food can
-  never fully satisfy the
-  hero and food at or below its floor is not consumed. The supermarket vodka
-  bottle is one atomic four-serving use. `GameSessionState` preflights every
-  use, removes exactly one stack only after success is known, then commits food
-  relief and clears the hunger fraction, or commits drinking, stress and
-  intoxication together. Maximum intoxication,
-  a stale stack or a no-effect food use mutates nothing. Refrigerator `Use`
-  remains unavailable; items are taken into the hero inventory first.
+- **Accepted — Session needs and atomic inventory consumption:**
+  Session hunger/stress/fatigue:clamped integer0–100,start/reset0,scene-persistent.
+  Wake starts scaled clock;pure double fractions raise hunger100/1440 and
+  fatigue100/1080 game minutes,discard overflow at100. Pause/pre-Wake freeze;
+  ordinary actions/transitions preserve time. UI shows integers;no debuffs yet.
+  Completed sleep resets fatigue/fraction;cancel does not. Food catalog owns
+  relief/minimum20;no effect at/below floor. Preflight→remove one→relief/fraction
+  atomically;stale/no-effect use changes nothing. Fridge Use unavailable:Take first.
 - **Accepted — Separate finite-stock supermarket interior:**
   `SupermarketInterior` owns one validated `16 x 11 x 3.6 m` room with
   protected aisles, three shelf sections, a stockroom facade and a decorative
@@ -5516,11 +5527,9 @@
   `Assets/Supermarket/Products/Models/SupermarketProducts3D.{fbx,json}`.
   The pack contains six coincident bottom-centre item roots — instant noodles,
   day-old loaf, vodka bottle, closed stew can, open stew can and chicken egg —
-  over `33` meshes / `2,276` triangles. They are deliberately generic:
-  `authored_text` and `brands` are empty, and the source imports no Collider,
-  material, Light, Camera, Rigidbody, AudioSource or animation. Its fixed build
-  signature is
-  `2437d765ab7b7004a05d281193ae78e26b2c6728e641e57273ecc0d9842821b7`.
+  with measured mesh/triangle budgets/signature in the manifest. Generic:
+  `authored_text`/`brands` empty;no imported Collider/material/Light/Camera/
+  Rigidbody/AudioSource/animation.
   `SupermarketProductAssetSetup` extracts one passive Resources prefab per
   item; `SupermarketProductModelResources` and `InventoryItemModelFactory`
   reuse those same render models on shop shelves, in live inventory previews,
@@ -5528,10 +5537,9 @@
   ownership of selection collision, sizing and item lifetime. Only five item
   IDs are supermarket offers: their bottom pivots bind to exact tier anchors
   in the interior asset. `OpenStewCan` has only the Home refrigerator/cat world
-  source and never becomes a supermarket offer. The vodka source is exactly
-  `0.46 m` tall; only its shop instance uses a `0.37 m` fit envelope on the
-  unobstructed third/top tier, keeping the `1.08x` selected bounds below the
-  `2.05 m` shelving-unit top. Closed stew occupies the first tier.
+  source and never becomes a supermarket offer. The vodka source is
+  about `0.299 m` tall;its `0.37 m` top-tier fit envelope keeps selected bounds
+  below the `2.05 m` shelving top. Closed stew occupies the first tier.
 - **Accepted — Reusable inventory-backed target interaction:** A target-specific
   adapter supplies one validated `InventoryItemRequirement`, localized Talk,
   confirmation and missing-item keys, and an idempotent

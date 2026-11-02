@@ -39,7 +39,8 @@ namespace BarPromenade
         CutsceneRestart,
         PuzzlePreviousControl,
         PuzzleNextControl,
-        PuzzleExit
+        PuzzleExit,
+        VodkaSip
     }
 
     /// <summary>Input ownership rules with no device or scene dependencies.</summary>

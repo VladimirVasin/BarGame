@@ -132,6 +132,7 @@ namespace BarPromenade
             instance.transform.localRotation = Quaternion.identity;
             instance.transform.localScale = Vector3.one * scale;
             registry.ApplyAppearance();
+            if (itemId == InventoryItemId.VodkaBottle) VodkaBottleView.Bind(wrapper.transform);
             return wrapper.transform;
         }
 

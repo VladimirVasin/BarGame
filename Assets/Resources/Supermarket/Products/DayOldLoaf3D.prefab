@@ -373,9 +373,9 @@ MonoBehaviour:
     m_Center: {x: -0.0029999912, y: 0.08441915, z: 0.000000014901161}
     m_Extent: {x: 0.178, y: 0.08441917, z: 0.10000001}
   sourceTriangleCount: 272
-  sourceGeneratorVersion: 1.0.0
+  sourceGeneratorVersion: 1.4.0
   designId: supermarket_product_pack_v1
-  buildSignature: 2437d765ab7b7004a05d281193ae78e26b2c6728e641e57273ecc0d9842821b7
+  buildSignature: ada6ce10ed71c84163ed979567b028956160d1e9f51b18f00abb457c0cc9312a
 --- !u!1 &5601033437957383080
 GameObject:
   m_ObjectHideFlags: 0

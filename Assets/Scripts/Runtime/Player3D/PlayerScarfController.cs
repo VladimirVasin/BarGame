@@ -5,7 +5,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>Session equipment and owned mouth access on the one production hero.</summary>
-    [DefaultExecutionOrder(300)]
+    [DefaultExecutionOrder(355)]
     [DisallowMultipleComponent]
     public sealed class PlayerScarfController : MonoBehaviour
     {

@@ -31,4 +31,10 @@ namespace BarPromenade
         bool CanHandleSeatedInteraction(PlayerInteractor interactor);
         void HandleSeatedInteraction(PlayerInteractor interactor);
     }
+
+    /// <summary>A seat can preserve a held item while its own timeline moves the body.</summary>
+    public interface IHandEquipmentSeat
+    {
+        bool AllowsHandEquipment { get; }
+    }
 }

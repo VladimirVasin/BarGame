@@ -10,6 +10,7 @@ namespace BarPromenade
         public const int GridColumns = 5;
 
         private static InventoryController activeController;
+        private PlayerAnimatedInteractionController seatedInteraction;
 
         private readonly BarMinigameModalLock modalLock =
             new BarMinigameModalLock();
@@ -62,11 +63,10 @@ namespace BarPromenade
             HasSelection && GameSessionState.IsInventoryItemEquipped(
                 SelectedStack.ItemId);
 
-        public string SelectedEquipmentStatusLabel =>
-            SelectedIsEquippable
-                ? LocalizationService.Get(SelectedIsEquipped
-                    ? "inventory.equipment.used"
-                    : "inventory.equipment.unused")
+        public string SelectedEquipmentStatusLabel => SelectedStack.ItemId == InventoryItemId.VodkaBottle
+            ? string.Format(LocalizationService.Get("inventory.bottle.remaining"), GameSessionState.VodkaBottlePreviewRemainingMl)
+            : SelectedIsEquippable
+                ? LocalizationService.Get(SelectedIsEquipped ? "inventory.equipment.used" : "inventory.equipment.unused")
                 : string.Empty;
 
         public bool HasSelectedUseAction =>
@@ -90,6 +90,9 @@ namespace BarPromenade
             {
                 if (SelectedIsEquippable)
                 {
+                    if (SelectedStack.ItemId == InventoryItemId.VodkaBottle)
+                        return LocalizationService.Get(SelectedIsEquipped
+                            ? "inventory.action.bottle.stow" : "inventory.action.bottle.draw");
                     if (SelectedStack.ItemId is InventoryItemId.CombatCrowbar or InventoryItemId.CombatPistol)
                         return LocalizationService.Get(SelectedIsEquipped
                             ? "inventory.action.weapon.stow"
@@ -158,6 +161,7 @@ namespace BarPromenade
             }
 
             player = playerRuntime;
+            seatedInteraction = playerRuntime.GameObject.GetComponent<PlayerAnimatedInteractionController>();
             cameraFollow = follow;
             intoxicationHud = hud;
             additionalCanOpen = canOpen;
@@ -315,7 +319,8 @@ namespace BarPromenade
                    !BarMinigameModalLock.IsAnyLocked &&
                    !SceneTransitionService.IsTransitioning &&
                    player.Motor != null &&
-                   player.Motor.InputEnabled &&
+                   (player.Motor.InputEnabled || seatedInteraction != null && seatedInteraction.AllowsHandEquipment &&
+                    seatedInteraction.Phase == PlayerAnimatedInteractionPhase.Looping && !seatedInteraction.IsNestedLoopActionActive) &&
                    player.Interactor.InputEnabled &&
                    (additionalCanOpen == null || additionalCanOpen());
         }
@@ -493,6 +498,9 @@ namespace BarPromenade
                 case InventoryItemUseStatus.ReservedForQuest:
                     localizationKey =
                         "inventory.use.failure.reserved_for_quest";
+                    break;
+                case InventoryItemUseStatus.RequiresEquipment:
+                    localizationKey = "inventory.use.failure.equip_bottle";
                     break;
                 default:
                     localizationKey = "inventory.use.failure.generic";

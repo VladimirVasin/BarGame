@@ -7,6 +7,9 @@ namespace BarPromenade
         private int ActiveProjectileCount => (pistolProjectiles?.ActiveCount ?? 0) + (shotgunProjectiles?.ActiveCount ?? 0);
         private bool weaponInventorySubscribed, inventoryWeaponPending, recordingInventoryWeapon;
         private CombatWeaponId? inventoryWeapon, observedHeldWeapon;
+        private CombatWeaponId? bottleQueuedWeapon;
+        private bool BottleOwnsCombatHand => GameSessionState.IsInventoryItemEquipped(InventoryItemId.VodkaBottle) ||
+            Hero != null && PlayerVodkaBottleController.IsHandOccupied(Hero.gameObject);
 
         private static CombatWeaponId? ReadInventoryWeapon() =>
             GameSessionState.IsInventoryItemEquipped(InventoryItemId.CombatPistol) ? CombatWeaponId.Pistol :
@@ -21,7 +24,7 @@ namespace BarPromenade
             weaponInventorySubscribed = true;
             inventoryWeapon = ReadInventoryWeapon();
             observedHeldWeapon = HeldInventoryWeapon;
-            inventoryWeaponPending = IsStoryContinuation;
+            inventoryWeaponPending = IsStoryContinuation || GameSessionState.IsInventoryItemEquipped(InventoryItemId.VodkaBottle);
             GameSessionState.InventoryEquipmentChanged += OnWeaponInventoryChanged;
         }
 
@@ -29,16 +32,18 @@ namespace BarPromenade
         {
             GameSessionState.InventoryEquipmentChanged -= OnWeaponInventoryChanged;
             weaponInventorySubscribed = false;
+            bottleQueuedWeapon = null;
         }
 
         private void OnWeaponInventoryChanged()
         {
             if (recordingInventoryWeapon) return;
+            bottleQueuedWeapon = null;
             CombatWeaponId? equipped = ReadInventoryWeapon();
-            if (equipped == inventoryWeapon) return;
+            requireAttackRelease = requireParryRelease = true;
+            if (equipped == inventoryWeapon && !BottleOwnsCombatHand) return;
             inventoryWeapon = equipped;
             inventoryWeaponPending = true;
-            requireAttackRelease = requireParryRelease = true;
         }
 
         private void RecordWeaponEquipment(CombatWeaponId? weapon)
@@ -75,6 +80,7 @@ namespace BarPromenade
             }
             if (Hero.State.IsDefeated || Hero.IsKnockedDown || Hero.IsRagdollActive ||
                 !Hero.BodyDamage.CanUseRightHand) return;
+            if (inventoryWeapon.HasValue && PlayerVodkaBottleController.IsHandOccupied(Hero.gameObject)) return;
             bool accepted = inventoryWeapon.HasValue
                 ? Hero.TrySelectWeapon(inventoryWeapon.Value)
                 : Hero.TryStowWeapon();
@@ -101,6 +107,40 @@ namespace BarPromenade
         private void ReadWeaponSelectionInput()
         {
             ApplyWeaponInventoryRequest();
+            if (BottleOwnsCombatHand)
+            {
+                CombatWeaponId? requested = null;
+                if (GameInput.WasPressed(GameInputAction.EquipPistol, GameInputContext.Gameplay)) requested = CombatWeaponId.Pistol;
+                else if (GameInput.WasPressed(GameInputAction.EquipCrowbar, GameInputContext.Gameplay)) requested = CombatWeaponId.Crowbar;
+                else if (GameInput.WasPressed(GameInputAction.EquipShotgun, GameInputContext.Gameplay)) requested = CombatWeaponId.Shotgun;
+                else if (GameInput.WasPressed(GameInputAction.CombatNextWeapon, GameInputContext.Gameplay))
+                {
+                    CombatWeaponId next = Hero.WeaponId;
+                    for (int i = 0; i < 3; i++)
+                    {
+                        next = next switch { CombatWeaponId.Pistol => CombatWeaponId.Crowbar,
+                            CombatWeaponId.Crowbar => CombatWeaponId.Shotgun, _ => CombatWeaponId.Pistol };
+                        if (Hero.LoadoutSelection.Contains(next)) { requested = next; break; }
+                    }
+                }
+                if (requested.HasValue && Hero.LoadoutSelection.Contains(requested.Value))
+                {
+                    GameSessionState.TrySetInventoryItemEquipped(InventoryItemId.VodkaBottle, false);
+                    RecordWeaponEquipment(requested);
+                    bottleQueuedWeapon = requested;
+                    inventoryWeaponPending = true;
+                }
+                return;
+            }
+            if (bottleQueuedWeapon.HasValue)
+            {
+                if (!Hero.TrySelectWeapon(bottleQueuedWeapon.Value)) return;
+                RecordWeaponEquipment(bottleQueuedWeapon);
+                bottleQueuedWeapon = null;
+                inventoryWeaponPending = false;
+                requireAttackRelease = requireParryRelease = true;
+                return;
+            }
             bool selected = false;
             if (GameInput.WasPressed(GameInputAction.EquipPistol, GameInputContext.Gameplay))
             {

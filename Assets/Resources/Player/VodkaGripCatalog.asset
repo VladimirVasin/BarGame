@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b479db4c215d6a518d8c248acb34bc4, type: 3}
+  m_Name: VodkaGripCatalog
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.PlayerVodkaGripCatalog
+  entries:
+  - Source: {fileID: 5896537241196182935, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
+    Extended: {fileID: 4300000, guid: 1f8bf251e4dae42b79c37a696f7ee0d2, type: 2}
+    PalmPlane:
+    ThumbBaseRing:
+    ThumbTipRing:
+  - Source: {fileID: 7116938033654778257, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
+    Extended: {fileID: 4300000, guid: 6f345908e1f824ae3a37a621c847690a, type: 2}
+    PalmPlane:
+    ThumbBaseRing:
+    ThumbTipRing:
+  - Source: {fileID: 753631431316952164, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
+    Extended: {fileID: 4300000, guid: ad2e5e21c8c7343a8a44d14011aefd0a, type: 2}
+    PalmPlane:
+    ThumbBaseRing:
+    ThumbTipRing:
+  - Source: {fileID: 6139442972436102719, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
+    Extended: {fileID: 4300000, guid: 544566aaadaf8480b992c8f58c120e79, type: 2}
+    PalmPlane:
+    ThumbBaseRing:
+    ThumbTipRing:
+  - Source: {fileID: -5217224882991408245, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
+    Extended: {fileID: 4300000, guid: bc940a55324724e3fade887ab10bfef6, type: 2}
+    PalmPlane: 210000002400000025000000i
+    ThumbBaseRing:
+    ThumbTipRing:
+  - Source: {fileID: 1885554773338887479, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
+    Extended: {fileID: 4300000, guid: 1814af01695f343dcbafe7418b07f86e, type: 2}
+    PalmPlane:
+    ThumbBaseRing: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000001400000017000000180000001b0000001c0000001f00000020000000230000002400000027000000280000002b0000002c0000002f000000i
+    ThumbTipRing: 0e0000000f0000001000000011000000120000001300000031000000320000003500000036000000390000003a0000003d0000003e00000041000000420000004500000046000000490000004a0000004c0000004d0000004e0000004f00000050000000i
+  centre: {x: 0.015366764, y: 0.03500019, z: 0.025508763}
+  axis: {x: -0.8565817, y: 0.00000007450581, z: 0.5160114}
+  palm: {x: 0.5160124, y: 0.0000005215413, z: 0.85658115}

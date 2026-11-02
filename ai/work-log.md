@@ -5,6 +5,35 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-02
 
+Vodka:inventory draw/stow,session fills,exact sip boundaries;mouse click starts
+one cycle,hold repeats visible raises/tilts/lowers until release/empty or refusal.
+Shared DrinkGulp sounds at each swallow;full dose retains prior balance.
+Same rig/scarf hands yield to context;last sip releases actual bottle to finite
+surface-dependent physics,glass debris and water sink. Blender hollow glass/
+volume profile/anchors replace passive opaque contents. User requested smaller
+bottle and neck grip;source now0.299m. Imported anchor roll had rotated the
+palm;wrapper axes plus actual baked-surface checks fix vertical palm/thumb-up.
+Pistol-derived reach uses the bottle-neck dock on the chest binding;authored
+palm/elbow and concealed-to-hand contact stay continuous. Both forearms/hands
+clear the torso. Separate front cap-opening/reverse stow restore jacket access.
+PLAYER VODKA ACTION CONTRACT OK proves deterministic body clearance;model validator passed.
+Canonical hand-basis rebuild prevents duplicate BottleGrip preparation.
+InventoryWalkingSipPersistenceAndLastSipThrow passed;front/side draw/open frames reviewed.
+All24FX owners reviewed;shared mats/bounded solver,incremental cost unmeasured.
+Seated vodka shares the parent equipment layer for ordinary seats/bus;inventory
+opens at rest,carry survives transfers,child actions wait for stow. The layer
+leaves legs/root/pelvis/camera intact. Bus sole IK uses bounded cached source
+skinning to avoid doubled import scale;actual tilted floor controls knees/ankles.
+Bottle rests forward above knees;released props inherit bus motion and meet
+finite logical cabin/door colliders. Bus frames reviewed.
+SeatedBottlePreservesParentPoseInventoryAndExit and
+Passenger_BoardsRidesAndExitsAtLaterStop passed.
+All24FX retained;CPU/GPU unmeasured.
+Fridge inspection:movable contents no longer inherit cabinet dither materials;
+liquid clipping retains its shader,so the broad free-surface disc stays inside
+the bottle. Build_CreatesAnimatedHollowStorageWithoutLights passed;frame reviewed.
+All24FX retained;registration-only fix,no new passes or per-frame work.
+
 Closed entrances:bar/Home/church now block the hero;stairwell contact follows
 the leaf. Shared apartment assembly owns the solid for Home/warehouse/labyrinth,
 replacing caller duplicates. Interaction docks stay clear;shop/mother entrances

@@ -11,6 +11,10 @@ namespace BarPromenade
         private readonly ReadOnlyCollection<InventoryItemStack> itemsView;
         private readonly HashSet<InventoryItemId> equippedItems =
             new HashSet<InventoryItemId>();
+        private readonly VodkaBottleState vodkaBottles = new VodkaBottleState();
+        public int VodkaBottleId => vodkaBottles.ActiveId;
+        public int VodkaBottleRemainingMl => vodkaBottles.ActiveRemainingMl;
+        public int VodkaBottlePreviewRemainingMl => vodkaBottles.PreviewRemainingMl;
 
         public InventoryState()
         {
@@ -30,6 +34,7 @@ namespace BarPromenade
         {
             items.Clear();
             equippedItems.Clear();
+            vodkaBottles.Clear();
         }
 
         public bool IsEquipped(InventoryItemId itemId)
@@ -47,8 +52,13 @@ namespace BarPromenade
 
             if (equipped)
             {
-                if (itemId == InventoryItemId.CombatCrowbar) equippedItems.Remove(InventoryItemId.CombatPistol);
-                else if (itemId == InventoryItemId.CombatPistol) equippedItems.Remove(InventoryItemId.CombatCrowbar);
+                if (itemId == InventoryItemId.VodkaBottle && !vodkaBottles.SelectBottle()) return false;
+                if (itemId is InventoryItemId.CombatCrowbar or InventoryItemId.CombatPistol or InventoryItemId.VodkaBottle)
+                {
+                    equippedItems.Remove(InventoryItemId.CombatCrowbar);
+                    equippedItems.Remove(InventoryItemId.CombatPistol);
+                    equippedItems.Remove(InventoryItemId.VodkaBottle);
+                }
                 equippedItems.Add(itemId);
             }
             else
@@ -74,12 +84,14 @@ namespace BarPromenade
             return currentCount <= definition.MaximumStack - count;
         }
 
-        public bool TryAdd(InventoryItemId itemId, int count = 1)
+        public bool TryAdd(InventoryItemId itemId, int count = 1, int initialVodkaMl = VodkaBottleState.FullMl)
         {
             if (!CanAdd(itemId, count))
             {
                 return false;
             }
+
+            if (itemId == InventoryItemId.VodkaBottle && !vodkaBottles.TryAdd(count, initialVodkaMl)) return false;
 
             int index = FindIndex(itemId);
             int currentCount = index >= 0 ? items[index].Count : 0;
@@ -110,6 +122,12 @@ namespace BarPromenade
                 return false;
             }
 
+            if (itemId == InventoryItemId.VodkaBottle)
+            {
+                vodkaBottles.TryRemove(count);
+                if (vodkaBottles.ActiveId == 0) equippedItems.Remove(itemId);
+            }
+
             int remaining = items[index].Count - count;
             if (remaining == 0)
             {
@@ -122,6 +140,22 @@ namespace BarPromenade
                     new InventoryItemStack(itemId, remaining);
             }
 
+            return true;
+        }
+
+        public bool TryDrinkVodkaSip(int expectedBottleId, out VodkaBottleSipResult result)
+        {
+            result = default;
+            InventoryConsumableDefinition definition = InventoryConsumableCatalog.Get(InventoryItemId.VodkaBottle);
+            if (!IsEquipped(InventoryItemId.VodkaBottle) || !vodkaBottles.TrySip(expectedBottleId,
+                PlayerNeedsRules.ScaleRelief(DrinkRules.GetIntoxicationGain(definition.DrinkId), definition.Servings),
+                definition.StressRelief, PlayerNeedsRules.ScaleRelief(1, definition.Servings), out result)) return false;
+            if (!result.Emptied) return true;
+            int index = FindIndex(InventoryItemId.VodkaBottle);
+            int count = items[index].Count - 1;
+            if (count == 0) items.RemoveAt(index);
+            else items[index] = new InventoryItemStack(InventoryItemId.VodkaBottle, count);
+            equippedItems.Remove(InventoryItemId.VodkaBottle);
             return true;
         }
 
