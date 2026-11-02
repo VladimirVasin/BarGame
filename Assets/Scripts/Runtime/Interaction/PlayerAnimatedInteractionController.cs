@@ -237,6 +237,7 @@ namespace BarPromenade
         private readonly List<Vector3> approachWaypoints =
             new List<Vector3>(capacity: 4);
         private int approachWaypointIndex;
+        private float approachArrivalRadius = ApproachWaypointArrivalRadius;
         private PlayerRuntime player;
         private IPlayerClipPresentation clipPresentation;
         private PlayerAnimatedInteractionTimeline timeline;
@@ -643,7 +644,8 @@ namespace BarPromenade
             PlayerAnimatedInteractionPose authoredExitPose,
             float initialVerticalTolerance,
             IReadOnlyList<Vector3> entryApproachWaypoints,
-            int entryApproachWaypointCount)
+            int entryApproachWaypointCount,
+            float waypointArrivalRadius = ApproachWaypointArrivalRadius)
         {
             return BeginPositionedInternal(
                 definition,
@@ -653,7 +655,8 @@ namespace BarPromenade
                 null,
                 initialVerticalTolerance,
                 entryApproachWaypoints,
-                entryApproachWaypointCount);
+                entryApproachWaypointCount,
+                waypointArrivalRadius);
         }
 
         public bool BeginPositioned(
@@ -686,7 +689,8 @@ namespace BarPromenade
             float initialVerticalTolerance =
                 PlayerMotor.InteractionVerticalTolerance,
             IReadOnlyList<Vector3> entryApproachWaypoints = null,
-            int entryApproachWaypointCount = 0)
+            int entryApproachWaypointCount = 0,
+            float waypointArrivalRadius = ApproachWaypointArrivalRadius)
         {
             authoredEntryPose.Validate(nameof(authoredEntryPose));
             authoredExitPose.Validate(nameof(authoredExitPose));
@@ -702,6 +706,8 @@ namespace BarPromenade
             ValidateApproachWaypoints(
                 entryApproachWaypoints,
                 entryApproachWaypointCount);
+            if (!float.IsFinite(waypointArrivalRadius) || waypointArrivalRadius <= 0f)
+                throw new ArgumentOutOfRangeException(nameof(waypointArrivalRadius));
             if (!TryPrepareInternal(
                     definition,
                     authoredEntryPose.HipPosition,
@@ -726,6 +732,7 @@ namespace BarPromenade
             SetPelvisTransition(transition);
             approachWaypoints.Clear();
             approachWaypointIndex = 0;
+            approachArrivalRadius = waypointArrivalRadius;
             for (int index = 0;
                  index < entryApproachWaypointCount;
                  index++)
@@ -1202,7 +1209,7 @@ namespace BarPromenade
                     approachWaypoints[approachWaypointIndex];
                 if (player.Motor.MoveTowardsApproachWaypoint(
                         corner,
-                        ApproachWaypointArrivalRadius,
+                        approachArrivalRadius,
                         seconds))
                 {
                     approachWaypointIndex++;

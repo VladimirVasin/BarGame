@@ -125,6 +125,7 @@ namespace BarPromenade
             if (IsLowBottleAccess) lowBottleRecovery = true;
             else if (presentation.LowReachLowering <= .002f) lowBottleRecovery = false;
             if (AdvanceCleanup(deltaTime)) return;
+            if (AdvanceClosingAnnouncement(deltaTime)) return;
             if (presentation.LowReachLowering > .002f && !IsLowBottleAccess)
             {
                 ReleaseAll();
@@ -862,6 +863,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ReleaseClosingAnnouncement();
             DisconnectCleanup();
             if (IsCleaningPatronDrink)
             {

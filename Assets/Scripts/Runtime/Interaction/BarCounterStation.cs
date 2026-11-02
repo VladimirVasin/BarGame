@@ -172,6 +172,7 @@ namespace BarPromenade
         {
             if (interactor == null ||
                 controller == null ||
+                controller.IsPresentationSuspended ||
                 SceneTransitionService.IsTransitioning)
             {
                 return false;
@@ -314,6 +315,17 @@ namespace BarPromenade
             {
                 seat.RequestExit();
             }
+        }
+
+        /// <summary>Closing requests the shared exit clip after the current sip and service have finished.</summary>
+        public bool RequestClosingExit()
+        {
+            if (seat == null || !seat.IsSeated) return false;
+            if (!ownsShopSession || controller == null || !controller.RequestClosingDeparture()) return false;
+            waitingForSeatExit = true;
+            if (seat.RequestExit()) return true;
+            waitingForSeatExit = false;
+            return false;
         }
 
         private void HandleSeatInteractionCompleted(

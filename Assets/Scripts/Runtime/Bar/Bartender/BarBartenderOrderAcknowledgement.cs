@@ -89,6 +89,9 @@ namespace BarPromenade
         {
             if (owner == null || !owner.isActiveAndEnabled) { Clear(); return; }
             RestoreUntouched();
+            // Accepted service waits behind the hall address without turning
+            // that authored public gesture into a look at one ordering guest.
+            if (owner.IsClosingAddressPose) return;
             if (Target == null) BeginNext();
             if (Target == null) { Weight = NodDegrees = 0f; return; }
             if (!GameTimeScaleRuntime.IsPaused)

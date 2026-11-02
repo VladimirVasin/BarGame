@@ -56,6 +56,7 @@ namespace BarPromenade
         /// the cafe pair's settled interval between cigarette actions.
         /// </summary>
         public const float VisibleSeconds = 4.4f;
+        public const float SynthesisStartupGraceSeconds = 1f;
 
         public const float MinimumPanelWidth = 70f;
         public const float MaximumPanelWidth = 180f;
@@ -118,6 +119,9 @@ namespace BarPromenade
 
             public SpeechDelivery Line;
             public float DurationSeconds;
+            public float SpeechWindowSeconds;
+            public float MinimumReadingTailSeconds;
+            public float FullTextRevealedAt;
             public float OriginalStartedAt;
             public uint LineToken;
             public float SampledElapsedSeconds;
@@ -289,14 +293,40 @@ namespace BarPromenade
             float unscaledTime,
             float durationSeconds)
         {
+            return ShowAt(owner, text, unscaledTime, durationSeconds, 0f);
+        }
+
+        /// <summary>
+        /// Optional reading holds reserve their speech/startup budget and an
+        /// immutable worst-rate deadline at admission, then finish once the
+        /// whole text has actually remained visible for the requested tail.
+        /// </summary>
+        public bool ShowAt(
+            Object owner,
+            string text,
+            float unscaledTime,
+            float durationSeconds,
+            float minimumReadingTailSeconds)
+        {
             if (string.IsNullOrWhiteSpace(text) ||
                 float.IsNaN(unscaledTime) ||
                 float.IsInfinity(unscaledTime) ||
                 durationSeconds <= 0f || float.IsNaN(durationSeconds) ||
-                float.IsInfinity(durationSeconds))
+                float.IsInfinity(durationSeconds) || minimumReadingTailSeconds < 0f ||
+                !float.IsFinite(minimumReadingTailSeconds) || minimumReadingTailSeconds > 0f &&
+                durationSeconds <= minimumReadingTailSeconds + SynthesisStartupGraceSeconds)
             {
                 return false;
             }
+
+            float speechWindow = minimumReadingTailSeconds > 0f
+                ? durationSeconds - minimumReadingTailSeconds - SynthesisStartupGraceSeconds
+                : durationSeconds;
+            float capturedDuration = minimumReadingTailSeconds > 0f
+                ? SynthesisStartupGraceSeconds + speechWindow / IntoxicationPerceptionRules.MinimumPlaybackRate +
+                  minimumReadingTailSeconds
+                : durationSeconds;
+            if (!float.IsFinite(capturedDuration)) return false;
 
             int speaker = FindSpeaker(owner);
             if (speaker < 0 || IsSpeakingElsewhere(speakers[speaker]))
@@ -337,7 +367,10 @@ namespace BarPromenade
             {
                 Speaker = speaker,
                 Line = SpeechDelivery.Spoken(text, unscaledTime),
-                DurationSeconds = durationSeconds,
+                DurationSeconds = capturedDuration,
+                SpeechWindowSeconds = speechWindow,
+                MinimumReadingTailSeconds = minimumReadingTailSeconds,
+                FullTextRevealedAt = -1f,
                 OriginalStartedAt = unscaledTime,
                 LineToken = NextLineToken(),
                 SampledElapsedSeconds = 0f,
@@ -642,7 +675,9 @@ namespace BarPromenade
             NpcSpeaker speaker = speakers[bubble.Speaker];
             if (speaker.Owner == null || speaker.Anchor == null ||
                 !speaker.Anchor.gameObject.activeInHierarchy ||
-                unscaledTime - bubble.OriginalStartedAt > bubble.DurationSeconds)
+                unscaledTime - bubble.OriginalStartedAt > bubble.DurationSeconds ||
+                bubble.MinimumReadingTailSeconds > 0f && bubble.FullTextRevealedAt >= 0f &&
+                unscaledTime - bubble.FullTextRevealedAt >= bubble.MinimumReadingTailSeconds)
             {
                 CloseSlot(ref bubble);
                 return;
@@ -666,7 +701,7 @@ namespace BarPromenade
                 if (!bubble.SynthesisReady)
                 {
                     float originalElapsed = Mathf.Max(0f, unscaledTime - bubble.OriginalStartedAt);
-                    if (originalElapsed > 1f)
+                    if (originalElapsed > SynthesisStartupGraceSeconds)
                     {
                         // Reconstruction and an overloaded worker may arrive far
                         // into an authored line. Neither may replay its beginning.
@@ -682,8 +717,11 @@ namespace BarPromenade
                     {
                         float duration = NpcSpeechVoice.LineDuration(bubble.VoiceLease);
                         float remaining = bubble.DurationSeconds - originalElapsed;
+                        float reservedDelivery = bubble.MinimumReadingTailSeconds > 0f
+                            ? duration / IntoxicationPerceptionRules.MinimumPlaybackRate + bubble.MinimumReadingTailSeconds
+                            : duration;
                         if (duration <= 0f || float.IsNaN(duration) || float.IsInfinity(duration) ||
-                            remaining < duration + 0.05f)
+                            remaining < reservedDelivery + 0.05f)
                         {
                             ReleaseVoice(ref bubble);
                             bubble.SynthesisSuppressed = true;
@@ -707,16 +745,18 @@ namespace BarPromenade
                         Mathf.Max(0f, unscaledTime - bubble.Line.StartedAt),
                         speaker.ResolvePosition(Vector3.zero), bubble.Opacity, speaker.Earshot,
                         bubble.ExtraJitterCents);
-                    bubble.Line.Step(bubble.Line.StartedAt + bubble.SampledElapsedSeconds, out _);
+                    bubble.Line.StepElapsed(bubble.SampledElapsedSeconds, out _);
                 }
                 else
                 {
                     bubble.Line.Step(unscaledTime, out _);
                     bubble.SampledElapsedSeconds = Mathf.Max(0f, unscaledTime - bubble.Line.StartedAt);
                 }
+                TrackFullText(ref bubble, unscaledTime);
                 return;
             }
             bool hasBlip = bubble.Line.Step(unscaledTime, out char blip);
+            TrackFullText(ref bubble, unscaledTime);
             bubble.SampledElapsedSeconds = Mathf.Max(0f, unscaledTime - bubble.Line.StartedAt);
             if (!hasBlip ||
                 bubble.IsCulled)
@@ -741,6 +781,14 @@ namespace BarPromenade
                 bubble.ExtraJitterCents);
         }
 
+        private static void TrackFullText(ref Bubble bubble, float time)
+        {
+            if (bubble.MinimumReadingTailSeconds > 0f && bubble.FullTextRevealedAt < 0f && bubble.Line.IsComplete)
+            {
+                bubble.FullTextRevealedAt = time;
+            }
+        }
+
         private void BeginSynthesizedVoice(ref Bubble bubble)
         {
             NpcSpeaker speaker = speakers[bubble.Speaker];
@@ -762,7 +810,7 @@ namespace BarPromenade
             }
 
             NpcSpeechVoice.BeginLine(bubble.VoiceLease, speaker.VoiceOrdinal,
-                bubble.Line.Text, bubble.DurationSeconds);
+                bubble.Line.Text, bubble.SpeechWindowSeconds);
         }
 
         private void EnsureVoice(ref Bubble bubble)
@@ -790,6 +838,9 @@ namespace BarPromenade
             bubble.Speaker = -1;
             bubble.Line = default;
             bubble.DurationSeconds = 0f;
+            bubble.SpeechWindowSeconds = 0f;
+            bubble.MinimumReadingTailSeconds = 0f;
+            bubble.FullTextRevealedAt = -1f;
             bubble.OriginalStartedAt = 0f;
             bubble.LineToken = 0;
             bubble.SampledElapsedSeconds = 0f;
@@ -855,6 +906,8 @@ namespace BarPromenade
                     bubbles[index].OriginalStartedAt += held;
                     bubbles[index].Line.StartedAt += held;
                     bubbles[index].Line.LastBlipAt += held;
+                    if (bubbles[index].FullTextRevealedAt >= 0f)
+                        bubbles[index].FullTextRevealedAt += held;
                 }
                 return;
             }

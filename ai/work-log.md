@@ -5,6 +5,30 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-03
 
+Daily bar close:ordinary warning/request,accepted service grace,safe action
+finish/stand/visible walk/door return. Partial vessel remains for physical cleanup;
+no forced drink,refund or story event. Shared speech/rig/camera/24FX kept;
+bounded pause-aware state. Canon§6 records the daily speech/departure exception.
+Both lines focus bartender during menu selection too;shared camera/DOF suspension
+then exact pose/FOV/roll/menu return. Clear sight:in-place pan;obstructed:
+bounded validated hall cut/cutback,hero stays;no new FX.
+Worker finishes handoff/stows towel,visibly turns to hall;same-rig dedicated
+Enter/Loop/Exit:low elbow beside torso,palm moves forward/back at chest height;
+both lines/camera synchronized,no new model/FX.
+Full-text shared reading tail plus extra hold precedes camera/pose return.
+SpeechDelivery.StepElapsed avoids epoch precision loss;PCM terminal uses plan
+duration instead of native clip length. Pause shifts reading hold.
+build-city-pedestrian-3d-model.py --cafe-animation-only:
+BarClosingAddress posture/loop motion/seams/planted feet/repeated curves passed;
+source frames reviewed;model geometry kept.
+ParkQuarrelTests.Delivery_StepsOncePerFrameAndBlipsOnLettersOnly passed.
+LastGuest_ClosingPreservesMenuSipAndWalksToDoor passed:both full-text holds/pause,
+low elbow/wrist/motion,exact menu/camera return,partial wine/full route.
+Warning/request full-text and walk frames reviewed.
+ActualBar_FillsAndEmptiesWithClockAndFinishesAcceptedServiceAfterClosing:
+existing late-crowd departure failed before new closing coverage.
+check-docs passed.
+
 Bar beer/wine:three separate E actions;partial vessel waits at same dock,
 shared gaze/outline and seated camera restored each return. Payment once;
 proportional existing alcohol/stress after each completed action,order count at last.

@@ -12,7 +12,10 @@ namespace BarPromenade
         Walk = 3,
         Pour = 4,
         Notice = 5,
-        Interject = 6
+        Interject = 6,
+        ClosingAddressEnter = 7,
+        ClosingAddressLoop = 8,
+        ClosingAddressExit = 9
     }
 
     [Serializable]
@@ -62,9 +65,9 @@ namespace BarPromenade
 
     /// <summary>
     /// Authored animation and renderer contract carried by one of the four
-    /// staged cafe prefabs. Across the set it owns exactly ten named clips:
+    /// staged cafe prefabs. Across the set it owns thirteen named clips:
     /// one sleeping loop and one lone-patron interjection, four pair clips,
-    /// and four attendant clips.
+    /// four attendant service clips and three shared bar closing clips.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MountainRoadCafeCastAssetRegistry : MonoBehaviour
@@ -290,7 +293,10 @@ namespace BarPromenade
                         MountainRoadCafeCastClipKind.Wipe,
                         MountainRoadCafeCastClipKind.Walk,
                         MountainRoadCafeCastClipKind.Pour,
-                        MountainRoadCafeCastClipKind.Notice
+                        MountainRoadCafeCastClipKind.Notice,
+                        MountainRoadCafeCastClipKind.ClosingAddressEnter,
+                        MountainRoadCafeCastClipKind.ClosingAddressLoop,
+                        MountainRoadCafeCastClipKind.ClosingAddressExit
                     };
             }
             else if (role == MountainRoadCafeCastRole.LonePatron)

@@ -620,7 +620,7 @@
       }
     ]
   },
-  "blender_version": "5.0.1",
+  "blender_version": "5.2.3 LTS",
   "design_id": "cafe_attendant_v2",
   "display_name": "Cafe Attendant",
   "seed": 1498303,
@@ -669,7 +669,10 @@
     "CafeAttendantWipe",
     "CafeAttendantWalk",
     "CafeAttendantPour",
-    "CafeAttendantNotice"
+    "CafeAttendantNotice",
+    "BarClosingAddressEnter",
+    "BarClosingAddressLoop",
+    "BarClosingAddressExit"
   ],
   "rides_bus": false,
   "seated_clearance_m": null,

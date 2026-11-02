@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -22,6 +23,33 @@ namespace BarPromenade.Rendering
 
         private static CinematicDepthOfFieldOwner owner;
         private static object leaseOwner;
+        private static int presentationSuspensions;
+        private static int suspensionGeneration;
+
+        internal static bool PresentationSuspended => presentationSuspensions > 0;
+
+        /// <summary>Temporarily reveals scene depth without replacing or retuning the current close-up.</summary>
+        internal static IDisposable SuspendPresentation()
+        {
+            presentationSuspensions++;
+            owner?.RefreshPresentationWeight();
+            return new PresentationSuspension(suspensionGeneration);
+        }
+
+        private sealed class PresentationSuspension : IDisposable
+        {
+            private readonly int generation;
+            private bool disposed;
+            public PresentationSuspension(int generation) => this.generation = generation;
+            public void Dispose()
+            {
+                if (disposed) return;
+                disposed = true;
+                if (generation != suspensionGeneration) return;
+                presentationSuspensions = Math.Max(0, presentationSuspensions - 1);
+                owner?.RefreshPresentationWeight();
+            }
+        }
 
         public static bool IsActive =>
             owner != null && owner.IsEngaged;
@@ -32,6 +60,8 @@ namespace BarPromenade.Rendering
         {
             owner = null;
             leaseOwner = null;
+            presentationSuspensions = 0;
+            suspensionGeneration++;
         }
 
         public static void Begin(
@@ -184,9 +214,10 @@ namespace BarPromenade.Rendering
             blendInSeconds = Mathf.Max(.01f, entrySeconds);
             blendOutSeconds = Mathf.Max(.01f, exitSeconds);
             smoothBlend = smooth;
-            blendWeight = volume.weight;
+            if (!CinematicDepthOfField.PresentationSuspended) blendWeight = volume.weight;
             // An explicit camera cut must arrive already focused on its subject.
-            if (entrySeconds <= 0f && IsEngaged) blendWeight = volume.weight = 1f;
+            if (entrySeconds <= 0f && IsEngaged) blendWeight = 1f;
+            RefreshPresentationWeight();
         }
 
         public void SetFocusDistance(float meters)
@@ -225,6 +256,11 @@ namespace BarPromenade.Rendering
             }
 
             if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
+            if (CinematicDepthOfField.PresentationSuspended)
+            {
+                volume.weight = 0f;
+                return;
+            }
 
             float target = IsEngaged ? 1f : 0f;
             float seconds = IsEngaged
@@ -234,12 +270,19 @@ namespace BarPromenade.Rendering
                 blendWeight,
                 target,
                 Time.unscaledDeltaTime / seconds);
-            float t = blendWeight;
-            volume.weight = smoothBlend ? t * t * t * (t * (t * 6f - 15f) + 10f) : t;
+            RefreshPresentationWeight();
             if (!IsEngaged && volume.weight <= 0f)
             {
                 gameObject.SetActive(false);
             }
+        }
+
+        public void RefreshPresentationWeight()
+        {
+            if (volume == null) return;
+            float t = blendWeight;
+            volume.weight = CinematicDepthOfField.PresentationSuspended ? 0f :
+                smoothBlend ? t * t * t * (t * (t * 6f - 15f) + 10f) : t;
         }
 
         private void OnDestroy()

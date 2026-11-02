@@ -192,8 +192,8 @@ namespace BarPromenade.Tests.EditMode
                 prefabs.Sum(prefab => prefab
                     .GetComponent<MountainRoadCafeCastAssetRegistry>()
                     .ClipBindings.Count),
-                Is.EqualTo(10),
-                "The isolated cafe library is a ten-clip contract.");
+                Is.EqualTo(13),
+                "The isolated library retains ten cafe clips and three shared bar closing actions.");
         }
 
         [Test]
@@ -1054,7 +1054,7 @@ namespace BarPromenade.Tests.EditMode
             int expectedClipCount = expectedRole switch
             {
                 MountainRoadCafeCastRole.LonePatron => 2,
-                MountainRoadCafeCastRole.Attendant => 4,
+                MountainRoadCafeCastRole.Attendant => 7,
                 _ => 2
             };
             Assert.That(
@@ -1071,7 +1071,8 @@ namespace BarPromenade.Tests.EditMode
                 bool expectedLoop =
                     clip.Kind == MountainRoadCafeCastClipKind.Idle ||
                     clip.Kind == MountainRoadCafeCastClipKind.Wipe ||
-                    clip.Kind == MountainRoadCafeCastClipKind.Walk;
+                    clip.Kind == MountainRoadCafeCastClipKind.Walk ||
+                    clip.Kind == MountainRoadCafeCastClipKind.ClosingAddressLoop;
                 Assert.That(clip.Loop, Is.EqualTo(expectedLoop));
             }
             if (expectedRole == MountainRoadCafeCastRole.LonePatron)

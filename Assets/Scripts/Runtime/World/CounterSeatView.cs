@@ -231,6 +231,8 @@ namespace BarPromenade
                 return;
             }
 
+            if (cameraFollow != null && cameraFollow.PresentationSuspended) return;
+
             if (seat == null || !seat.IsSeated)
             {
                 EndView();
@@ -329,6 +331,7 @@ namespace BarPromenade
 
         private void ApplyView()
         {
+            if (cameraFollow != null && cameraFollow.PresentationSuspended) return;
             Transform pelvis = playerRegistry?.Anchors.Pelvis;
             CounterSeatPlan plan = seat?.Plan;
             if (pelvis == null || plan == null || cameraFollow == null)

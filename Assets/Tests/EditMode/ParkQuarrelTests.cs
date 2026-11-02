@@ -750,6 +750,24 @@ namespace BarPromenade.Tests.EditMode
                 blips,
                 Is.LessThan(line.Length),
                 "The throttle and the punctuation both thin it out.");
+
+            // PCM's terminal sample is already relative. Adding it to a large
+            // owner epoch can erase it before the shared reveal subtracts that
+            // epoch again, leaving the final punctuation unread indefinitely.
+            const string spoken = "Мёд.";
+            const float lateEpoch = 67108864f;
+            RussianVocalizerPlan plan = RussianVocalizerSynthesis.Prepare(
+                spoken, RussianVocalizerSynthesis.LabVoiceAt(5));
+            Assert.That(plan.DurationSeconds, Is.InRange(.001f, 3.99f));
+            var storedClock = new[] { lateEpoch + plan.DurationSeconds };
+            Assert.That(storedClock[0] - lateEpoch, Is.EqualTo(0f));
+            SpeechDelivery pcm = SpeechDelivery.Spoken(spoken, lateEpoch);
+            pcm.VocalizerPlan = plan;
+            pcm.StepElapsed(plan.DurationSeconds, out _);
+            Assert.That(pcm.IsComplete, Is.True);
+            Assert.That(pcm.RevealedText, Is.EqualTo(spoken));
+            pcm.StepElapsed(0f, out _);
+            Assert.That(pcm.RevealedText, Is.EqualTo(spoken), "A later stale sample cannot rewind completed text.");
         }
 
         [Test]

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace BarPromenade
 {
@@ -6,6 +7,12 @@ namespace BarPromenade
     {
         public string PromptKey => "interaction.exit_bar";
         public Vector3 InteractionPosition => transform.position;
+
+        public bool TryBeginClosingExit(PlayerInteractor interactor, IReadOnlyList<Vector3> waypoints, int count)
+        {
+            return CanInteract(interactor) && GetComponent<PlayerDoorActionTarget>().TryBegin(
+                interactor, () => CompleteDoorAction(interactor), waypoints, count);
+        }
 
         public bool CanInteract(PlayerInteractor interactor)
         {

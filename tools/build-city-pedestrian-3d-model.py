@@ -507,6 +507,9 @@ class ArchetypeSpec:
     # ensemble may own a smaller animation-only FBX instead, keeping its
     # highly specific poses out of the ambient pedestrian import contract.
     animation_source: str = ANIMATION_SOURCE
+    # Additional reusable actions over this same rig, beyond its local role's
+    # idle/walk/one-shot slots. They remain explicit in the passive model contract.
+    shared_extra_clips: tuple[str, ...] = ()
     # A resident sleeping on a world mattress is neither grounded on footwear
     # nor seated on a cushion.  This band describes the permitted vertical
     # thickness of the fully deformed figure above the mattress plane; the
@@ -962,7 +965,7 @@ ARCHETYPES = {
     # tableau rather than an ambient pedestrian population. Each design stays
     # outside Resources; the sleeping patron additionally owns one exact-base
     # interjection while the attendant keeps her two service one-shots. The
-    # complete cast lives in a dedicated ten-clip animation library.
+    # complete cast and shared bar closing actions live in one dedicated animation library.
     "cafe_lone_patron": ArchetypeSpec(
         "cafe_lone_patron", "cafe_lone_patron_v2", "Cafe Lone Patron",
         1327109,
@@ -1020,6 +1023,7 @@ ARCHETYPES = {
         animation_source=CAFE_ANIMATION_SOURCE,
         action_clip="CafeAttendantPour",
         dismount_clip="CafeAttendantNotice",
+        shared_extra_clips=("BarClosingAddressEnter", "BarClosingAddressLoop", "BarClosingAddressExit"),
         texture_atlas=CAFE_ATTENDANT_DETAIL_ATLAS_NAME,
         texture_regions=CAFE_ATTENDANT_ATLAS_REGIONS,
     ),
@@ -1702,7 +1706,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help=(
             "Build only the four Mountain Road cafe models plus their "
-            "dedicated ten-clip animation library."
+            "dedicated animation library, including shared bar closing actions."
         ),
     )
     parser.add_argument(
@@ -1743,6 +1747,10 @@ def parse_args() -> argparse.Namespace:
             "Build only the shared CityPedestrianLocomotion clip bank and "
             "its contact sheet; no bodies, atlases or props are rewritten."
         ),
+    )
+    parser.add_argument(
+        "--cafe-animation-only", action="store_true",
+        help="Rebuild only the shared cafe/bar bone-animation bank, retaining every model, atlas and prop.",
     )
     arguments = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     config = parser.parse_args(arguments)
@@ -9930,6 +9938,7 @@ def write_manifest(
             + ([spec.sit_clip] if spec.sit_clip is not None else [])
             + ([spec.action_clip] if spec.action_clip is not None else [])
             + ([spec.dismount_clip] if spec.dismount_clip is not None else [])
+            + list(spec.shared_extra_clips)
         )),
         "rides_bus": spec.sit_clip is not None,
         "seated_clearance_m": (
@@ -10655,6 +10664,23 @@ ACTION_SPECS = (
         "CafeAttendantNotice", "cafe_attendant_v2", 2.5, 60,
         "standing behind the counter with the towel held low",
         "head and shoulders register the arrival, hold, then return without speech",
+        one_shot=True,
+    ),
+    ActionSpec(
+        "BarClosingAddressEnter", "cafe_attendant_v2", 0.5, 12,
+        "the same grounded service neutral, with both hands free of props",
+        "relax the right elbow beside the torso and present the open palm forward at chest height",
+        one_shot=True,
+    ),
+    ActionSpec(
+        "BarClosingAddressLoop", "cafe_attendant_v2", 2.0, 48,
+        "right elbow low beside the torso, open palm forward, feet planted at the service mark",
+        "one restrained outward palm gesture and return with a small hall-wide head sweep",
+    ),
+    ActionSpec(
+        "BarClosingAddressExit", "cafe_attendant_v2", 0.5, 12,
+        "the open right palm remains forward at chest height at the beginning of the return",
+        "lower the hand and return exactly to the original grounded service neutral",
         one_shot=True,
     ),
 )
@@ -14118,6 +14144,25 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "neck": BonePose(rotation_degrees=(-5.0, 12.0, 0.0)),
         "head": BonePose(rotation_degrees=(2.0, 16.0, 0.0)),
     })
+    bar_closing_raised = merge_pose(cafe_attendant, {
+        # Measured from a shoulder->low elbow->forward palm chain on this
+        # exact rig. Anatomical right is -X; the hall is source -Y.
+        "upper_arm.R": BonePose(rotation_degrees=(-60.567003, -.788620, -1.350424)),
+        "forearm.R": BonePose(rotation_degrees=(-10.937514, 14.213210, 104.957516)),
+        "hand.R": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+    })
+    bar_closing_left = merge_pose(bar_closing_raised, {
+        "neck": BonePose(rotation_degrees=(-8.0, -3.0, 0.0)),
+        "head": BonePose(rotation_degrees=(2.0, -4.0, 0.0)),
+    })
+    bar_closing_right = merge_pose(bar_closing_raised, {
+        "upper_arm.R": BonePose(rotation_degrees=(-54.869901, -1.026395, -1.977033)),
+        "forearm.R": BonePose(rotation_degrees=(2.874546, -3.391145, 99.431203)),
+        "neck": BonePose(rotation_degrees=(-8.0, 3.0, 0.0)),
+        "head": BonePose(rotation_degrees=(2.0, 4.0, 0.0)),
+    })
 
     return {
         "ShelterStandingWarm": (
@@ -14426,6 +14471,12 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (0.68, cafe_attendant_notice),
             (1.0, cafe_attendant),
         ),
+        "BarClosingAddressEnter": ((0.0, cafe_attendant), (1.0, bar_closing_raised)),
+        "BarClosingAddressLoop": (
+            (0.0, bar_closing_raised), (0.22, bar_closing_left),
+            (0.58, bar_closing_right), (0.84, bar_closing_left), (1.0, bar_closing_raised),
+        ),
+        "BarClosingAddressExit": ((0.0, bar_closing_raised), (1.0, cafe_attendant)),
         "WatchmanWatch": (
             (0.0, watchman),
             (0.12, watchman_left),
@@ -14653,6 +14704,67 @@ def antipodal_loop_bones(
     return sorted(flipped)
 
 
+def validate_bar_closing_address(rig: bpy.types.Object, actions: dict[str, bpy.types.Action]) -> dict:
+    """The call is one planted action with exact neutral/held seams, never root motion."""
+    names = ("BarClosingAddressEnter", "BarClosingAddressLoop", "BarClosingAddressExit")
+    if not all(name in actions for name in names):
+        return {}
+    previous = rig.animation_data.action
+    previous_frame = bpy.context.scene.frame_current
+    samples = {}
+    try:
+        for name in names:
+            action = actions[name]
+            rig.animation_data.action = action
+            for frame in range(round(action.frame_end) + 1):
+                bpy.context.scene.frame_set(frame)
+                bpy.context.view_layer.update()
+                samples[name, frame] = {bone.name: bone.matrix.copy() for bone in rig.pose.bones}
+        enter_end = round(actions[names[0]].frame_end)
+        loop_end = round(actions[names[1]].frame_end)
+        exit_end = round(actions[names[2]].frame_end)
+        for first, second in (
+            ((names[0], enter_end), (names[1], 0)),
+            ((names[1], loop_end), (names[2], 0)),
+            ((names[2], exit_end), (names[0], 0)),
+        ):
+            error = max(abs(samples[first][bone][row][column] - samples[second][bone][row][column])
+                        for bone in samples[first] for row in range(4) for column in range(4))
+            if error > .0001:
+                raise RuntimeError(f"Bar closing address endpoint mismatch: {first} -> {second}: {error}")
+        neutral = samples[names[0], 0]
+        loop_poses = [pose for (name, _), pose in samples.items() if name == names[1]]
+        elbow_drop = min(pose["upper_arm.R"].translation.z - pose["forearm.R"].translation.z for pose in loop_poses)
+        elbow_side = max(abs(pose["upper_arm.R"].translation.x - pose["forearm.R"].translation.x) for pose in loop_poses)
+        wrist_chin_gap = min(pose["head"].translation.z - pose["hand.R"].translation.z for pose in samples.values())
+        hand_front = min(pose["chest"].translation.y - pose["hand.R"].translation.y for pose in samples.values())
+        head_clearance = min((pose["hand.R"].translation - pose["head"].translation).length for pose in samples.values())
+        hand_travel = max((first["hand.R"].translation - second["hand.R"].translation).length
+                          for first in loop_poses for second in loop_poses)
+        if elbow_drop < .20 or elbow_side > .12 or wrist_chin_gap < .10 or hand_front < .10 or head_clearance < .25:
+            raise RuntimeError(f"Bar closing arm must stay relaxed/forward/clear of the head: "
+                               f"elbow drop {elbow_drop:.3f}, side {elbow_side:.3f}, wrist/chin {wrist_chin_gap:.3f}, "
+                               f"front {hand_front:.3f}, head clearance {head_clearance:.3f}")
+        if not .06 <= hand_travel <= .14:
+            raise RuntimeError(f"Bar closing palm gesture must travel 6-14cm, measured {hand_travel:.4f}m")
+        feet_error = max((pose[foot].translation - neutral[foot].translation).length
+                         for pose in samples.values() for foot in ("foot.L", "foot.R"))
+        if feet_error > .0001:
+            raise RuntimeError(f"Bar closing address feet moved {feet_error:.6f}m")
+        print(f"  Bar closing address: exact seams/planted feet; elbow {elbow_drop:.3f}m below shoulder; "
+              f"palm gesture {hand_travel:.3f}m; hand/head clearance {head_clearance:.3f}m")
+        return {"right_elbow_below_shoulder_min_m": stable_float(elbow_drop),
+                "right_elbow_side_offset_max_m": stable_float(elbow_side),
+                "right_wrist_below_chin_min_m": stable_float(wrist_chin_gap),
+                "right_hand_forward_of_chest_min_m": stable_float(hand_front),
+                "right_hand_head_clearance_min_m": stable_float(head_clearance),
+                "right_hand_loop_travel_m": stable_float(hand_travel),
+                "planted_feet_error_m": stable_float(feet_error), "endpoint_match": True}
+    finally:
+        rig.animation_data.action = previous
+        bpy.context.scene.frame_set(previous_frame)
+
+
 def validate_animation_library(
     rig: bpy.types.Object,
     actions: dict[str, bpy.types.Action],
@@ -14745,6 +14857,11 @@ def validate_animation_library(
             clip_payload["motion_beats"] = motion_beats
         clip_payload.update(grounding.get(spec.name, {}))
         manifest_clips.append(clip_payload)
+    closing_report = validate_bar_closing_address(rig, actions)
+    if closing_report:
+        for clip in manifest_clips:
+            if clip["name"].startswith("BarClosingAddress"):
+                clip.update(closing_report)
     if errors:
         raise RuntimeError("Pedestrian animation validation failed:\n" + "\n".join(f"  - {item}" for item in errors))
     signature_payload = {
@@ -16932,6 +17049,20 @@ def build_named_animation_library(
     }
     for name, action in actions.items():
         apply_pelvis_track(result.rig, action, pelvis_tracks[name])
+    for spec in action_specs:
+        if not spec.name.startswith("BarClosingAddress"):
+            continue
+        def curve_signature(action):
+            return sorted((curve.data_path, curve.array_index,
+                           tuple((stable_float(point.co.x), stable_float(point.co.y))
+                                 for point in curve.keyframe_points))
+                          for curve in iter_action_fcurves(action))
+        repeated = create_action(result.rig, spec, keys[spec.name])
+        apply_pelvis_track(result.rig, repeated, pelvis_tracks[spec.name])
+        if curve_signature(repeated) != curve_signature(actions[spec.name]):
+            raise RuntimeError(f"Non-deterministic closing action curves: {spec.name}")
+        bpy.data.actions.remove(repeated)
+        print(f"  Determinism: repeated {spec.name} bone curves match")
     for part in model_parts:
         bpy.data.objects.remove(part.obj, do_unlink=True)
     result.parts.clear()
@@ -17837,6 +17968,9 @@ def build_hand_prop_library(config: argparse.Namespace) -> None:
 
 def main() -> None:
     config = parse_args()
+    if config.cafe_animation_only:
+        build_cafe_animation_library(config)
+        return
     if config.personal_space_only:
         build_personal_space_animation_library(config)
         return

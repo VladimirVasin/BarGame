@@ -253,7 +253,13 @@ namespace BarPromenade
             instance.ValidLease(lease) && instance.lines[lease].Ready;
 
         public static float LineDuration(int lease) => instance != null && instance.ValidLease(lease) &&
-            instance.lines[lease].Clip != null ? instance.lines[lease].Clip.length : 0f;
+            instance.lines[lease].Clip != null ? ResolvePcmDuration(instance.lines[lease]) : 0f;
+
+        // Unity's native AudioClip.length can round below the
+        // immutable phone plan. The plan's exact PCM sample count owns the
+        // terminal clock shared by voice, text and face.
+        private static float ResolvePcmDuration(SpeechLine line) => line.Plan != null
+            ? line.Plan.DurationSeconds : line.Clip != null ? line.Clip.length : 0f;
 
         public static RussianVocalizerPlan LinePlan(int lease) => instance != null && instance.ValidLease(lease)
             ? instance.lines[lease].Plan : null;
@@ -270,9 +276,14 @@ namespace BarPromenade
             AudioSource source = service.sources[lease];
             line.LastFrame = Time.frameCount;
             if (!line.Ready || line.Clip == null) return 0f;
+            float terminalSeconds = ResolvePcmDuration(line);
             service.ConfigureSource(lease, line.VoiceOrdinal, worldPosition, distanceGain, earshot,
                 VocalizerLowPassFrequencyHz);
-            if (line.Finished) return line.PlayedSeconds;
+            if (line.Finished)
+            {
+                line.PlayedSeconds = terminalSeconds;
+                return line.PlayedSeconds;
+            }
             if (line.Started && elapsedSeconds + 0.001f < line.LastClock)
             {
                 service.ClearLine(lease);
@@ -292,11 +303,11 @@ namespace BarPromenade
             float step = previousClock < 0f ? line.LastClock :
                 Mathf.Max(0f, line.LastClock - previousClock);
             line.TargetSeconds += step * service.perception.PlaybackRate;
-            if (line.TargetSeconds >= line.Clip.length)
+            if (line.TargetSeconds >= terminalSeconds)
             {
                 source.Stop();
                 line.Finished = true;
-                line.PlayedSeconds = line.Clip.length;
+                line.PlayedSeconds = terminalSeconds;
                 return line.PlayedSeconds;
             }
             int desired = Mathf.Clamp(Mathf.RoundToInt(line.TargetSeconds *
@@ -315,7 +326,7 @@ namespace BarPromenade
                 if (!source.isPlaying && !line.Paused)
                 {
                     line.Finished = true;
-                    line.PlayedSeconds = line.Clip.length;
+                    line.PlayedSeconds = terminalSeconds;
                     return line.PlayedSeconds;
                 }
                 // Slower owner clocks must never rewind and repeat syllables.

@@ -797,7 +797,7 @@ cemetery:own interiors/returns.
   `NpcHumanV2`, the Hero V2 31-bone body core and compatible A-pose Avatar from
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a common
   `0.835 m` rest pelvis. The `53`-clip `CityPedestrianLocomotion` bank uses `4.5.2`.
-  The four relocated cafe models and their separate `10`-clip bank use
+  The four relocated cafe models and their separate `13`-clip bank use
   `4.5.2`; the shelter trio and dedicated three-loop bank use `4.2.0`.
   Nothing an NPC holds is part of a body model. The nine hand props
   (carpet beater, cigarette, funeral bouquet, chalk, fishing rod, smoking
@@ -1899,8 +1899,8 @@ cemetery:own interiors/returns.
   cycle creates
   no order, product, payment, inventory item, food, drink, dialogue, reaction,
   sound or story state. The
-  ten-clip cast (`2` lone-patron clips, `2 + 2` pair clips, `4` attendant
-  clips) has no NPC voice bed; the hero never enters its pair-only cup/refill
+  bank (`2` lone-patron, `2 + 2` pair, `7` attendant clips, three for bar closing)
+  has no voice bed; the hero never enters its pair-only cup/refill
   queue. Only while the player is
   inside the plan's physical cafe volume, the pair follows the fixed localized
   text order `Man01 -> Woman01 -> ... -> Man10 -> Woman10 -> loop`; each role
@@ -2638,17 +2638,22 @@ cemetery:own interiors/returns.
 ### People, diagnostics and money
 
 - `BarBusinessHours`: daily12:00 inclusive–02:00 exclusive; new entrance/order/repeat/refill
-  reject after closing. Accepted FIFO service/served drinks finish; exit stays free.
-  No plot closure/event advances. New-game location validation shares these hours.
+  reject after closing; accepted FIFO finishes, exit free. New-game shares hours.
+  Daily:01:30 bartender warning;02:00 gates close. Grace60 active
+  calendar-rate seconds from later close/last hero delivery;
+  final line finishes,8s self-exit,then safe action return/stand/visible walk/door.
+  Leftover awaits cleanup;no auto-sip/plot;pause freezes.
+  Menu too:clear pan/validated hall cutback to bartender;hero stays.
+  Camera/DOF suspend;exact pose/FOV/roll/menu restore. Finish handoff/stow towel,
+  turn to hall;Enter/Loop/Exit low elbow,moving chest palm.No new FX.Full text holds2.5+1=3.5s;
+  camera/pose return after shared line expiry.
   Hourly deterministic day/bar target:12–16=3–4,16–19=4–6,19–23=6–8,
   23–01=4–6,01–02=3–4; closed0, excluding bartender/hero.
-  `BarCrowdController` reserves eight visit appearances/slots, instantiates only present
-  guests, moves one through the real hinged door/aisle at a time, blends shared rig
-  seat endpoints. Active speech/service finish before departure; the guest
-  releases the same supported vessel and leaves empty-handed. Dirty docks stay
-  reserved until the bartender collects and stows their actual prop behind the
-  counter. One bounded background queue covers counter, tables and booths;
-  the worker goes around the left counter end, grips at contact and walks back.
+  `BarCrowdController`:eight visit slots,only present guests instantiate;
+  one real door/aisle transit,shared seat endpoints. Active speech/service finish;
+  guest releases the same supported vessel/leaves empty-handed. Dirty docks
+  reserved until physical collection/storage. Bounded counter/table/booth queue;
+  bartender walks around left end,grips at contact,returns behind counter.
   Accepted service waits for his real return; cleanup also runs after closing.
   Rare WC visits preserve the same resident/place/drink while speech/refill wait.
   Physical door/access admits one visitor, respects the hero and shows silent

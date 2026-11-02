@@ -269,7 +269,7 @@ namespace BarPromenade
             int expectedClipCount = role switch
             {
                 MountainRoadCafeCastRole.LonePatron => 2,
-                MountainRoadCafeCastRole.Attendant => 4,
+                MountainRoadCafeCastRole.Attendant => 7,
                 _ => 2
             };
             if (registry.ClipBindings.Count != expectedClipCount)

@@ -63,7 +63,7 @@ namespace BarPromenade
         public float CleanupGripError => cleanupGripError;
         public string CleanupBlockedBy => cleanupBlockedBy;
         public int CleanupReachAdjustmentCount => cleanupReachAdjustments;
-        public bool IsReadyForForegroundService => !IsCleaningPatronDrink &&
+        public bool IsReadyForForegroundService => !ClosingAnnouncementOwnsPresentation && !IsCleaningPatronDrink &&
             (presentation == null || presentation.LowReachLowering <= .002f || IsLowBottleAccess);
 
         public void ConfigureTraffic(BarAisleTraffic traffic)
@@ -122,7 +122,7 @@ namespace BarPromenade
         private bool AdvanceCleanup(float deltaTime)
         {
             if (cleanupCrowd == null) return false;
-            bool foreground = shop.WantsBartenderService || shop.IsReturningCounterMenuHome;
+            bool foreground = closingAnnouncementRequested || shop.WantsBartenderService || shop.IsReturningCounterMenuHome;
             if (!IsCleaningPatronDrink)
             {
                 cleanupRetryWait = Mathf.Max(0f, cleanupRetryWait - deltaTime);

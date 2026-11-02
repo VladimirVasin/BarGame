@@ -1,16 +1,29 @@
 # Architecture notes
 
 ## Current facts
-- **Accepted by explicit user decision 2026-11-03 — three separate beer/wine sips:**
-  Beer/wine require three fresh E presses. Each visible pickup/sip/return consumes
-  one third;2/3 and1/3 wait at the same counter dock with ordinary gaze prompt/
-  contour. Each return restores seated camera/look; contacts/parent rig kept.
-  One payment/order; proportional existing alcohol/stress per completed action,
-  unchanged total, order count once on third. Cognac/vodka retain one action.
-  RedWine/legacy WhiteWine use full safe authored TargetFill1; no new art/text.
-  Shared timeline/token/cleanup, bounded sip state;24FX providers retained,
-  liquid/glass/DOF/head-camera contacts use the same owners.
-  No canon ban or contextual exception;§16/21/art9;CPU/GPU unmeasured.
+- **Accepted 2026-11-03,user — daily closing departure:**
+  01:30:«Через полчаса закрываемся.»;02:00:existing gates close.
+  Grace60 calendar-rate active seconds from close/latest hero delivery.
+  «Всё. На сегодня закрыто.» ends,then8s free exit. Finish action/return,
+  stand,visible PlayerMotor approach,normal door/City.
+  Leftover stays for cleanup;no auto-sip/refund/charge.
+  Pause freezes;failure/unload releases ownership. Shared RU speech;
+  Finish handoff/stow towel→turn to hall;same-rig Enter/Loop/Exit follows both
+  lines/camera;low elbow,moving chest-high palm,no new model/FX. Full text holds shared
+  ReadingTailSeconds2.5+extra1=3.5s;camera/pose wait line expiry,then return.
+  Both lines/menu focus bartender:pan or occlusion-safe hall cut/back;hero stays.
+  Exact pose/FOV/roll/selection via shared camera/DOF suspension/restore.
+  No reply/judgement/plot/home/teleport/fade/bouncer;§6 exception;
+  §16/21/art9;24FX kept: bounce/SSAO/shadows/probes/grade,dry dust/contours,
+  scoped DOF/SMAA/lens;bar SSR/SSGI/SCGI off. Bounded cache;cost unmeasured.
+
+- **Accepted 2026-11-03,user — three separate beer/wine sips:**
+  Beer/wine:three fresh E,visible pickup/sip/return consumes1/3;2/3 and1/3 wait
+  at same dock/gaze/contour. Return restores seated camera/look,parent rig/contacts.
+  One payment;alcohol/stress per third,total kept;order counted on third.
+  Cognac/vodka one action. RedWine/legacy WhiteWine:full safe TargetFill1,no art/text.
+  Shared timeline/token/cleanup;bounded sips,24FX/liquid/glass/DOF/head owners kept.
+  No canon/contextual exception;§16/21/art9;cost unmeasured.
 
 - **Accepted by explicit user decision 2026-11-02 — bar close and vodka storage:**
   Escape closes the open physical drink book before pause handling, without
@@ -517,29 +530,19 @@
   One aisle lease: visits/transit/cleanup; return priority keeps moving owners.
   Closing completes return; blocks defer; pause/disable retain occupancy,
   unload cleans; no speech/story/signal; §16/21/art checks.
-- **Accepted 2026-10-25 — daily bar hours and attendance:** The user accepted
-  `12:00–02:00` service and time-dependent attendance, excluding hero/bartender:
+- **Accepted 2026-10-25 — daily bar hours and attendance:** User:
+  `12:00–02:00`; no hero/bartender in attendance:
   `12–16`:3–4, `16–19`:4–6, `19–23`:6–8, `23–01`:4–6, `01–02`:3–4; closed:0.
-  `BarBusinessHours` owns admission and a seed/day/hour target stable on quick
-  returns. `BarCrowdController` moves toward it through the real door, one guest
-  at a time, retaining the visit-owned default appearance.
-  Only settled guests enter the actual cast, speech and ambience; vacant counter
-  docks become available, and the hero's active dock stays reserved. Departure
-  waits for the pair exchange, accepted service and the current attention wave.
-  Closing admits no new guest exchange; the active one and accepted-order comments finish.
-  `RefreshPatrons` withdraws only affected guest roles/pair ownership, preserving
-  other pairs and bartender state. Solitary guests remain silent; broken present
-  rigs still fail. Counter refill rebinding preserves stable left/right slots.
-  Entrance and menu/repeat/refill admission share the clock, including final
-  gesture/payment validation. Closing drains accepted orders; served drinks,
-  normal cleanup and exit remain available. Music fades; work light/ventilation
-  continue. The only exception to story §20's always-lit facade is the bar's
-  ground-floor glazing dimming outside hours; upstairs windows and the entrance
-  landmark stay lit. Daily closing neither advances nor represents story closing.
-  All 24 effects categories retain existing providers; no new model, material,
-  speech pool or supernatural signal. Bounded slots, one transit and cached
-  references limit recurring work; runtime cost remains unmeasured. Story §6
-  records the exception; §16/21/nine art checks remain binding.
+  `BarBusinessHours`: admission/stable seed-day-hour target.
+  `BarCrowdController`: one door transit,same appearance;only settled
+  guests join cast/speech/ambience. Vacant docks free; hero's active dock reserved.
+  Departure waits for pair/service/attention. Closing finishes owned
+  exchanges/comments,no new pair. `RefreshPatrons` removes only
+  affected roles/pairs; others/bartender/left-right refill slots persist.
+  Solitary guests silent;broken rigs fail. Entrance/menu/repeat/refill
+  revalidate gesture/payment;accepted orders/cleanup/free exit kept.
+  Music fades;work light/ventilation/upper windows/entrance stay,ground panes dim.
+  No plot. Existing24FX;bounded slots/transit/cache,cost unmeasured;§6/16/21/art9.
 - **Accepted architecture exception 2026-10-25 — guests leave their vessels:**
   The user's correction replaces carrying drinks out. The actual supported
   vessel stays on its counter/table/booth while the guest releases the grip,
@@ -7428,7 +7431,7 @@
   and embodied drinking:** `LightBeer` uses the middle of three taps instead
   of bottle service. The ordinary bartender walks to the dock, takes a mug,
   pulls the handle, fills via world stream, carries/places it before the selected
-  stool. `AwaitingDrink` has no timeout;one gaze predicate owns contour/E.
+  stool. During open hours `AwaitingDrink` has no timeout;one gaze owns contour/E.
   Each accepted action uses nested visible Hero V2 `BarDrinkPickupEnter`2s →
   `BarDrinkSipLoop`3s → `BarDrinkReturnExit`2s with right-hand handle contact.
   Three separate actions consume thirds;only the last leaves it empty. Payment

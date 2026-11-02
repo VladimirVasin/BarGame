@@ -6,7 +6,8 @@ namespace BarPromenade
 {
     public enum BarBartenderClipKind
     {
-        Wipe = 0, Walk = 1, Pour = 2, Notice = 3, ServiceStep = 4
+        Wipe = 0, Walk = 1, Pour = 2, Notice = 3, ServiceStep = 4,
+        ClosingAddressEnter = 5, ClosingAddressLoop = 6, ClosingAddressExit = 7
     }
 
     /// <summary>
@@ -526,6 +527,9 @@ namespace BarPromenade
                 BarBartenderClipKind.Wipe => MountainRoadCafeCastClipKind.Wipe,
                 BarBartenderClipKind.ServiceStep => MountainRoadCafeCastClipKind.Walk,
                 BarBartenderClipKind.Pour => MountainRoadCafeCastClipKind.Pour,
+                BarBartenderClipKind.ClosingAddressEnter => MountainRoadCafeCastClipKind.ClosingAddressEnter,
+                BarBartenderClipKind.ClosingAddressLoop => MountainRoadCafeCastClipKind.ClosingAddressLoop,
+                BarBartenderClipKind.ClosingAddressExit => MountainRoadCafeCastClipKind.ClosingAddressExit,
                 _ => MountainRoadCafeCastClipKind.Notice
             };
             clip = null; loop = false;

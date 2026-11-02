@@ -198,14 +198,27 @@ namespace BarPromenade
         /// </summary>
         public bool Step(float unscaledTime, out char blip)
         {
+            return StepCore(unscaledTime - StartedAt, unscaledTime, out blip);
+        }
+
+        /// <summary>
+        /// PCM already owns an exact relative sample clock. Preserve that
+        /// terminal sample instead of adding and subtracting a large epoch.
+        /// </summary>
+        public bool StepElapsed(float elapsedSeconds, out char blip)
+        {
+            return StepCore(elapsedSeconds, StartedAt + elapsedSeconds, out blip);
+        }
+
+        private bool StepCore(float elapsed, float unscaledTime, out char blip)
+        {
             blip = '\0';
             if (string.IsNullOrEmpty(Text) ||
-                float.IsNaN(unscaledTime))
+                float.IsNaN(unscaledTime) || float.IsNaN(elapsed))
             {
                 return false;
             }
 
-            float elapsed = unscaledTime - StartedAt;
             int revealed = VocalizerPlan != null
                 ? elapsed >= VocalizerPlan.DurationSeconds ? Text.Length :
                     Mathf.Clamp(VocalizerPlan.RevealedCharactersAt(elapsed), 0, Text.Length)

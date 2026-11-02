@@ -4346,6 +4346,8 @@
       "value": "Не надо."
     },
     {"key": "combat.warehouse.new", "value": "Новый склад"},
+    {"key":"bar.closing.warning","value":"Через полчаса закрываемся."},
+    {"key":"bar.closing.leave","value":"Всё. На сегодня закрыто."},
     {"key":"bar.speech.bg01","value":"Хорошо. Сейчас подам."},
     {"key":"bar.speech.bg02","value":"Ладно. Сделаю."},
     {"key":"bar.speech.bg03","value":"Сейчас налью."},

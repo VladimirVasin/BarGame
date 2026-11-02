@@ -153,6 +153,7 @@ namespace BarPromenade
         public int CompletedDrinkSteps { get; private set; }
         public float RemainingDrinkFill => 1f - (float)CompletedDrinkSteps / ConsumptionStepCount;
         public bool IsRepeatService { get; private set; }
+        public bool IsAbandoningServedDrink { get; private set; }
         public bool IsAwaitingDrink =>
             Phase == BarDrinkServicePhase.AwaitingDrink;
         public bool HasEmptyVessel =>
@@ -190,6 +191,7 @@ namespace BarPromenade
             ConsumptionStepCount = 1;
             CompletedDrinkSteps = 0;
             IsRepeatService = false;
+            IsAbandoningServedDrink = false;
             EmptyVesselGripConfirmed = false;
             returnStartCameraBlend = 0f;
             returnStartArmsVisibility = 0f;
@@ -303,6 +305,13 @@ namespace BarPromenade
             if (!hiddenBehindCounter || Phase != BarDrinkServicePhase.EmptyVesselStow ||
                 PhaseProgress < 1f) return false;
             EmptyVesselGripConfirmed = false;
+            if (IsAbandoningServedDrink)
+            {
+                IsAbandoningServedDrink = false;
+                IsCommitted = false;
+                SetPhase(BarDrinkServicePhase.Browsing);
+                return true;
+            }
             BeginOrderedService();
             return true;
         }
@@ -390,6 +399,17 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>Returns a supported served vessel to storage without another drink or purchase.</summary>
+        public bool RequestAbandonServedDrink()
+        {
+            if (!IsAwaitingDrink && !HasEmptyVessel) return false;
+            IsAbandoningServedDrink = IsCommitted = true;
+            IsRepeatService = false;
+            EmptyVesselGripConfirmed = false;
+            SetPhase(BarDrinkServicePhase.EmptyVesselWalkToGuest);
+            return true;
+        }
+
         public bool Cancel()
         {
             if (!CanCancel)
@@ -413,6 +433,7 @@ namespace BarPromenade
             ConsumptionStepCount = 1;
             CompletedDrinkSteps = 0;
             IsRepeatService = false;
+            IsAbandoningServedDrink = false;
             EmptyVesselGripConfirmed = false;
             returnStartCameraBlend = 0f;
             returnStartArmsVisibility = 0f;
@@ -657,6 +678,7 @@ namespace BarPromenade
                 case BarDrinkServicePhase.EmptyVesselStow:
                     cameraBlend = 1f;
                     vesselVisibility = 1f;
+                    vesselFill = IsAbandoningServedDrink ? RemainingDrinkFill : 0f;
                     serviceVesselTravel = 1f;
                     break;
                 case BarDrinkServicePhase.CameraReturn:

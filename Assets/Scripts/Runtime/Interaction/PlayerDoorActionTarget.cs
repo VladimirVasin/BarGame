@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -70,7 +71,9 @@ namespace BarPromenade
 
         public bool TryBegin(
             PlayerInteractor interactor,
-            Action completed)
+            Action completed,
+            IReadOnlyList<Vector3> approachWaypoints = null,
+            int approachWaypointCount = 0)
         {
             if (completed == null)
             {
@@ -97,7 +100,7 @@ namespace BarPromenade
                     }
 
                     completed();
-                });
+                }, approachWaypoints, approachWaypointCount);
             if (!accepted)
             {
                 activeController = null;

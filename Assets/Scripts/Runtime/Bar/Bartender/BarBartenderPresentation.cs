@@ -66,6 +66,10 @@ namespace BarPromenade
         private Vector3 lastWipeHandTarget;
         private bool menuHandActive;
         private bool counterMotionPose;
+        private bool closingAddressPose;
+        private Quaternion[] closingAddressStartRotations;
+        private Vector3 closingAddressStartPelvis;
+        private float closingAddressBlend = 1f;
         private bool hasGraph;
         private bool hasActionPlayable;
         private bool isInitialized;
@@ -85,6 +89,7 @@ namespace BarPromenade
         }
 
         public bool IsInitialized => isInitialized;
+        public bool IsClosingAddressPose => closingAddressPose;
         public BarBartenderAssetRegistry Registry => registry;
         public bool UsesOrdinaryRig => isInitialized;
         public BarBartenderClipKind CurrentClipKind => currentClipKind;
@@ -160,6 +165,7 @@ namespace BarPromenade
                 registry.RightThigh, registry.RightShin, registry.RightFoot
             };
             authoredRotations = new Quaternion[proceduralBones.Length];
+            closingAddressStartRotations = new Quaternion[proceduralBones.Length];
             CaptureAuthoredPose();
             isInitialized = true;
             TowelPresentation = new BarBartenderTowelPresentation(this, registry);
@@ -561,6 +567,26 @@ namespace BarPromenade
             counterMotionPose = true;
         }
 
+        public void BeginClosingAddressPose()
+        {
+            if (!isInitialized) return;
+            for (int index = 0; index < proceduralBones.Length; index++)
+                closingAddressStartRotations[index] = proceduralBones[index].localRotation;
+            closingAddressStartPelvis = registry.Pelvis.localPosition;
+            closingAddressPose = true;
+            closingAddressBlend = 0f;
+        }
+
+        public void ApplyClosingAddressPose(BarBartenderClipKind kind, float seconds, float blend = 1f)
+        {
+            if (!isInitialized) return;
+            SetOrdinaryClip(kind, seconds);
+            counterMotionPose = true;
+            closingAddressBlend = Mathf.Clamp01(blend);
+        }
+
+        public void EndClosingAddressPose() => closingAddressPose = false;
+
         /// <summary>
         /// Public so EditMode tests can drive the pose without a
         /// player loop.
@@ -601,6 +627,15 @@ namespace BarPromenade
             // never treats last frame's correction as its authored baseline.
             RestoreAuthoredPose();
             EvaluateOrdinaryAnimation();
+            if (closingAddressPose && closingAddressBlend < 1f)
+            {
+                float amount = Mathf.SmoothStep(0f, 1f, closingAddressBlend);
+                for (int index = 0; index < proceduralBones.Length; index++)
+                    proceduralBones[index].localRotation = Quaternion.Slerp(
+                        closingAddressStartRotations[index], proceduralBones[index].localRotation, amount);
+                registry.Pelvis.localPosition = Vector3.Lerp(
+                    closingAddressStartPelvis, registry.Pelvis.localPosition, amount);
+            }
             CaptureAuthoredPose();
             lowReachLowering = Mathf.MoveTowards(lowReachLowering, lowReachLoweringGoal,
                 Mathf.Max(0f, deltaTime) * lowReachLoweringSpeed);

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.IO;
 using NUnit.Framework;
+using BarPromenade.Runtime.World;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
@@ -154,6 +155,7 @@ namespace BarPromenade.Tests.PlayMode
             } while (bar == null || !bar.IsInitialized || SceneTransitionService.IsTransitioning);
             Assert.That(GameSessionState.GameMinuteOfDay, Is.EqualTo(12 * 60));
             bar.ArrivalPresentation?.Skip();
+            bar.Closing.AutoAdvance = false;
             Assert.That(bar.Crowd, Is.Not.Null.And.Property("IsInitialized").True);
             bar.Crowd.AutoAdvance = false;
             bar.Conversation.AutoAdvance = false;
@@ -311,6 +313,259 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashAfter));
             Assert.That(exit.CanInteract(bar.Player.Interactor), Is.True);
             yield return AssertFacadeHoursRestoreActualPanes();
+        }
+
+        [UnityTest]
+        public IEnumerator LastGuest_ClosingPreservesMenuSipAndWalksToDoor()
+        {
+            Assert.That(Application.isBatchMode, Is.False,
+                "This focused closing scenario reviews the actual Game view.");
+            FocusGameView();
+            Assert.That(GameSessionState.TryStartGameTimeAt(60), Is.True);
+            GameSessionState.EnterBar("last-guest-closing", BarActivityKind.Cocktail);
+            yield return SceneManager.LoadSceneAsync(SceneIds.BarInterior, LoadSceneMode.Single);
+            float deadline = Time.realtimeSinceStartup + 20f;
+            do
+            {
+                bar = Object.FindAnyObjectByType<BarInteriorRoot>();
+                Assert.That(Time.realtimeSinceStartup, Is.LessThan(deadline), "The real bar did not initialize.");
+                if (bar == null || !bar.IsInitialized) yield return null;
+            } while (bar == null || !bar.IsInitialized);
+            bar.ArrivalPresentation?.Skip();
+            bar.Closing.AutoAdvance = false;
+            bar.Crowd.AutoAdvance = false;
+            bar.Conversation.AutoAdvance = false;
+            foreach (BarPatronAnimator animator in bar.GetComponentsInChildren<BarPatronAnimator>(true))
+                animator.enabled = false;
+            Camera camera = Camera.main;
+            PlayerCameraFollow follow = camera.GetComponent<PlayerCameraFollow>();
+            BarDrinkShopController shop = bar.DrinkShop;
+            BarCounterStation station = bar.CounterStations[bar.CounterStations.Count - 1];
+            bar.Player.Motor.Teleport(station.Seat.Plan.EntryPose.RootPosition);
+            bar.Player.GameObject.transform.rotation = station.Seat.Plan.EntryPose.RootRotation;
+            Physics.SyncTransforms();
+            playerAction = station.Seat.Controller;
+            Assert.That(playerAction.BeginExternalClock(this), Is.True);
+            station.Interact(bar.Player.Interactor);
+            yield return DriveServiceUntil(() => station.Seat.IsSeated && shop.IsBrowsing,
+                "The ordinary physical seat and menu must become ready.");
+            Assert.That(shop.Select(1), Is.True);
+            Assert.That(shop.SelectedOffer.DrinkId, Is.EqualTo(DrinkId.RedWine));
+            deadline = Time.realtimeSinceStartup + 3f;
+            while (!station.SeatView.IsMenuFocusComplete)
+            {
+                Assert.That(Time.realtimeSinceStartup, Is.LessThan(deadline));
+                yield return null;
+            }
+            Pose menuCamera = new Pose(camera.transform.position, camera.transform.rotation);
+            float menuFov = camera.fieldOfView;
+            int menuSelection = shop.SelectedIndex;
+            CounterMenuState menuState = shop.MenuState;
+            AdvanceClockTo(90);
+            yield return DriveClosingUntil(() => bar.Closing.WarningIssued,
+                "The bartender must warn at 01:30 even while the physical menu is open.");
+            BarClosingCameraFocus focus = bar.Closing.GetComponent<BarClosingCameraFocus>();
+            Assert.That(focus, Is.Not.Null);
+            Assert.That(focus.IsActive, Is.True);
+            Assert.That(bar.Bartender.GetComponent<BarBartenderServiceChoreography>().IsReadyForClosingAnnouncement,
+                Is.True, "Speech and camera wait for the dedicated hall-address pose.");
+            deadline = Time.realtimeSinceStartup + 10f;
+            while (bar.Conversation.LastLineKey != BarConversationController.ClosingWarningKey)
+            {
+                bar.Conversation.Advance(1f / 60f);
+                bar.Closing.Advance(1f / 60f);
+                Assert.That(Time.realtimeSinceStartup, Is.LessThan(deadline), "The shared warning voice did not reveal its line.");
+                yield return null;
+            }
+            for (int frame = 0; frame < 30; frame++)
+            {
+                bar.Conversation.Advance(1f / 60f);
+                bar.Closing.Advance(1f / 60f);
+                yield return null;
+            }
+            Assert.That(focus.IsActive, Is.True);
+            Vector3 head = bar.Conversation.Head(BarConversationController.BartenderRole).position;
+            Vector3 inFrame = camera.WorldToViewportPoint(head);
+            Assert.That(inFrame.z, Is.GreaterThan(0f));
+            Assert.That(inFrame.x, Is.InRange(.15f, .85f));
+            Assert.That(inFrame.y, Is.InRange(.15f, .85f));
+            yield return Capture("bar-hours-warning-bartender.png");
+            yield return AssertClosingReadingHold(BarConversationController.ClosingWarningKey, focus);
+            yield return DriveClosingUntil(() => !focus.IsActive, "The warning must return the borrowed menu camera.");
+            Assert.That(Vector3.Distance(camera.transform.position, menuCamera.position), Is.LessThan(.002f));
+            Assert.That(Quaternion.Angle(camera.transform.rotation, menuCamera.rotation), Is.LessThan(.05f));
+            Assert.That(camera.fieldOfView, Is.EqualTo(menuFov).Within(.01f));
+            Assert.That(shop.SelectedIndex, Is.EqualTo(menuSelection));
+            Assert.That(shop.MenuState, Is.EqualTo(menuState));
+            Assert.That(bar.Closing.FinalRequestIssued, Is.False);
+            Assert.That(bar.Closing.IsDepartureRequested, Is.False);
+
+            int cashBefore = GameSessionState.CashBalance;
+            int price = shop.SelectedOffer.Price;
+            Assert.That(shop.ConfirmSelection(), Is.True);
+            yield return DriveServiceUntil(() => shop.PurchaseCommitted, "The visible gesture must accept the paid wine order.");
+            Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashBefore - price));
+            int cashAfter = GameSessionState.CashBalance;
+            AdvanceClockTo(120);
+            bar.Closing.Advance(0f);
+            Assert.That(shop.IsAcceptingOrders, Is.False);
+            bar.Closing.Advance(61f);
+            Assert.That(bar.Closing.FinalRequestIssued, Is.False,
+                "An accepted order must be delivered before the time to drink it can expire.");
+            yield return DriveServiceUntil(() => shop.CanDrinkServedVessel, "The paid wine must still be served after closing.");
+            BarDrinkVesselView vessel = shop.HeroServiceVessel;
+            Assert.That(vessel.FillProgress, Is.GreaterThan(.99f));
+            Assert.That(bar.Closing.GraceRemainingSeconds, Is.EqualTo(60f).Within(.1f));
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                float grace = bar.Closing.GraceRemainingSeconds;
+                bar.Closing.Advance(120f);
+                Assert.That(bar.Closing.GraceRemainingSeconds, Is.EqualTo(grace));
+            }
+            bar.Closing.Advance(bar.Closing.GraceRemainingSeconds - .25f);
+            Assert.That(bar.Closing.FinalRequestIssued, Is.False);
+            Assert.That(vessel.FillProgress, Is.GreaterThan(.99f), "Closing cannot consume the wine automatically.");
+            yield return DriveClosingUntil(() => bar.Closing.FinalRequestIssued, "The final ordinary request must be spoken.");
+            yield return AssertClosingReadingHold(BarConversationController.ClosingRequestKey, focus);
+            yield return DriveClosingUntil(() => !bar.Conversation.IsBartenderSpeaking && !focus.IsActive,
+                "The final request must return the camera before the last chance to leave.");
+            camera.transform.rotation = Quaternion.LookRotation(
+                vessel.GlassRenderer.bounds.center - camera.transform.position, Vector3.up);
+            shop.RefreshServedDrinkAffordance();
+            Assert.That(shop.BeginServedDrink(), Is.True);
+            Assert.That(playerAction.IsNestedLoopActionActive, Is.True);
+            bar.Closing.Advance(8.1f);
+            Assert.That(bar.Closing.IsDepartureRequested, Is.True);
+            Assert.That(station.Seat.IsSeated, Is.True);
+            Assert.That(playerAction.IsNestedLoopActionActive, Is.True,
+                "The deadline cannot interrupt a live hand grip and sip.");
+            yield return DriveServiceUntil(() => !playerAction.IsNestedLoopActionActive && shop.Timeline.CompletedDrinkSteps == 1,
+                "The current sip must return the actual vessel normally.");
+            Assert.That(vessel.FillProgress, Is.EqualTo(2f / 3f).Within(.02f));
+            Assert.That(shop.BeginServedDrink(), Is.False, "Starting another sip cannot postpone an overdue departure.");
+            int drinksAfterSip = GameSessionState.DrinksConsumed;
+            yield return DriveClosingUntil(() => !playerAction.IsActive,
+                "The last guest must use the normal visible stand-up, without cancelling the seat.", true);
+            Assert.That(vessel, Is.Not.Null);
+            Assert.That(vessel.gameObject.activeInHierarchy, Is.True);
+            Assert.That(vessel.FillProgress, Is.EqualTo(2f / 3f).Within(.02f));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(drinksAfterSip));
+            Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashAfter));
+            bar.Closing.enabled = false;
+            yield return DriveServiceUntil(() => !shop.IsOpen,
+                "The bartender must collect the real remaining wine and menu through normal storage.");
+            playerAction.ReleaseExternalClock(this);
+            playerAction = null;
+            // Stage the opposite side of the real hall; only fixture setup may place the player.
+            ParkHeroForCrowd();
+            follow.enabled = true;
+            Physics.SyncTransforms();
+            bar.Closing.enabled = true;
+            Vector3 routeStart = bar.Player.GameObject.transform.position;
+            Vector3 previousPosition = routeStart;
+            deadline = Time.realtimeSinceStartup + 20f;
+            while (!(bar.Closing.IsWalkingToExit && Vector3.Distance(previousPosition, routeStart) > .4f))
+            {
+                bar.Closing.Advance(.05f);
+                Vector3 position = bar.Player.GameObject.transform.position;
+                Assert.That(Vector3.Distance(position, previousPosition), Is.LessThan(.5f));
+                previousPosition = position;
+                Assert.That(Time.realtimeSinceStartup, Is.LessThan(deadline), "The constrained exit walk did not begin.");
+                yield return null;
+            }
+            yield return Capture("bar-hours-last-guest-walking.png");
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                Vector3 paused = bar.Player.GameObject.transform.position;
+                bar.Closing.Advance(2f);
+                yield return null;
+                Assert.That(bar.Player.GameObject.transform.position, Is.EqualTo(paused));
+            }
+            PlayerAnimatedInteractionController exitAction = bar.Player.GameObject.GetComponent<PlayerAnimatedInteractionController>();
+            BarExit exit = bar.GetComponentInChildren<BarExit>(true);
+            Vector3 doorDock = exit.GetComponent<PlayerDoorActionTarget>().Plan.EntryPose.RootPosition;
+            deadline = Time.realtimeSinceStartup + 20f;
+            while (exitAction.Phase != PlayerAnimatedInteractionPhase.Entering)
+            {
+                bar.Closing.Advance(.05f);
+                Vector3 position = bar.Player.GameObject.transform.position;
+                Assert.That(Vector3.Distance(position, previousPosition), Is.LessThan(.5f),
+                    "Every waypoint must retain visible constrained locomotion.");
+                previousPosition = position;
+                Assert.That(Time.realtimeSinceStartup, Is.LessThan(deadline), "The full route did not reach the authored door dock.");
+                yield return null;
+            }
+            Vector3 offset = bar.Player.GameObject.transform.position - doorDock;
+            offset.y = 0f;
+            Assert.That(offset.magnitude, Is.LessThan(.05f));
+            bar.Closing.enabled = false;
+            Assert.That(bar.Player.Motor.InputEnabled, Is.True);
+            Assert.That(SceneTransitionService.IsTransitioning, Is.False,
+                "The test stops the ordinary door action before its terminal scene load.");
+        }
+
+        private IEnumerator AssertClosingReadingHold(string key, BarClosingCameraFocus focus)
+        {
+            string text = LocalizationService.Get(key);
+            UnityEngine.Object speaker = bar.Conversation.Speaker(BarConversationController.BartenderRole);
+            yield return DriveClosingUntil(() => bar.Conversation.BartenderBubbles.RevealedTextOf(speaker) == text,
+                "The complete announcement must appear before its reading hold.");
+            BarBartenderAssetRegistry rig = bar.Bartender.Registry;
+            Bounds handTravel = new Bounds(rig.RightHand.position, Vector3.zero);
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                double life = bar.Conversation.LifeSeconds;
+                bar.Conversation.Advance(10f);
+                bar.Closing.Advance(10f);
+                yield return null;
+                Assert.That(bar.Conversation.LifeSeconds, Is.EqualTo(life));
+                Assert.That(focus.IsActive, Is.True);
+            }
+            // Existing reading time plus the user's additional second, all with the full line visible.
+            for (int step = 0; step < 70; step++)
+            {
+                Assert.That(bar.Conversation.BartenderBubbles.RevealedTextOf(speaker), Is.EqualTo(text));
+                Assert.That(focus.IsActive && !focus.IsReturning, Is.True);
+                Assert.That(bar.Closing.IsDepartureRequested, Is.False);
+                Assert.That(rig.RightForearm.position.y, Is.LessThan(rig.RightUpperArm.position.y - .12f),
+                    "The hall-address elbow stays naturally below its shoulder.");
+                Assert.That(rig.RightHand.position.y, Is.LessThan(rig.Head.position.y - .16f));
+                handTravel.Encapsulate(rig.RightHand.position);
+                if (step == 20)
+                    yield return Capture(key == BarConversationController.ClosingWarningKey
+                        ? "bar-hours-warning-full-text.png" : "bar-hours-request-full-text.png");
+                bar.Conversation.Advance(.05f);
+                bar.Closing.Advance(.05f);
+                yield return null;
+            }
+            Assert.That(handTravel.size.magnitude, Is.GreaterThan(.025f),
+                "The open hand must gesture while the full announcement is held.");
+        }
+
+        private IEnumerator DriveClosingUntil(Func<bool> complete, string message, bool advanceService = false)
+        {
+            float deadline = Time.realtimeSinceStartup + 20f;
+            BarBartenderServiceChoreography choreography =
+                bar.Bartender.GetComponent<BarBartenderServiceChoreography>();
+            for (int step = 0; step < 1600 && !complete(); step++)
+            {
+                if (advanceService)
+                {
+                    playerAction.AdvanceExternal(this, .1f);
+                    bar.Bartender.Advance(.1f);
+                    choreography.Advance(.1f);
+                    bar.DrinkShop.AdvancePresentation(.1f);
+                }
+                bar.Conversation.Advance(.1f);
+                bar.Closing.Advance(.1f);
+                Assert.That(Time.realtimeSinceStartup, Is.LessThan(deadline), message +
+                    " Last line: " + bar.Conversation.LastLineKey + "; visible: " +
+                    bar.Conversation.BartenderBubbles.RevealedTextOf(
+                        bar.Conversation.Speaker(BarConversationController.BartenderRole)) +
+                    "; speaking: " + bar.Conversation.IsBartenderSpeaking);
+                yield return null;
+            }
+            Assert.That(complete(), Is.True, message);
         }
 
         private void ParkHeroForCrowd()

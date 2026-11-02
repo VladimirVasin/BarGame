@@ -188,7 +188,16 @@ namespace BarPromenade.Editor
                         "CafeAttendantPour", 3.5f, false),
                     new CafeClipDescriptor(
                         MountainRoadCafeCastClipKind.Notice,
-                        "CafeAttendantNotice", 2.5f, false)
+                        "CafeAttendantNotice", 2.5f, false),
+                    new CafeClipDescriptor(
+                        MountainRoadCafeCastClipKind.ClosingAddressEnter,
+                        "BarClosingAddressEnter", .5f, false),
+                    new CafeClipDescriptor(
+                        MountainRoadCafeCastClipKind.ClosingAddressLoop,
+                        "BarClosingAddressLoop", 2f, true),
+                    new CafeClipDescriptor(
+                        MountainRoadCafeCastClipKind.ClosingAddressExit,
+                        "BarClosingAddressExit", .5f, false)
                 },
                 1800,
                 3200)
@@ -1333,7 +1342,7 @@ namespace BarPromenade.Editor
                     clip.keyed_bone_count != ExpectedBoneCount ||
                     string.IsNullOrWhiteSpace(clip.authored_posture) ||
                     string.IsNullOrWhiteSpace(clip.gait) ||
-                    Mathf.Abs(clip.loop_max_error) > 0.0001f ||
+                    clip.loop && Mathf.Abs(clip.loop_max_error) > 0.0001f ||
                     clip.root_translation_range_m == null ||
                     clip.root_translation_range_m.Length != 3 ||
                     clip.root_translation_range_m.Any(component =>
@@ -1351,7 +1360,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "Cafe animation manifest must contain exactly the " +
-                    "approved ten cafe tableau clips.");
+                    "approved cafe tableau and bar closing clips.");
             }
 
             ValidateImportedAnimationAsset(manifest);

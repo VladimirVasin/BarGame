@@ -60,7 +60,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Warehouse | Story keeps session/seed;fish2→last-room Docker,3→foes0;gate/ammo;L3broken;A*. | `Warehouse*`,`CombatTestRoot` | Current |
 | Body destruction | Enemies:sever/crawl;hero:wounds/no detach;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatBodyAssetSetup` | Current |
 | New Game/Debug | Loading bar through staged Home/first frame; stopped12:00 until E. Debug time/starts/tools. | `StartMenu{Root,Model}`, `NewGameStartService`, `SceneTransitionService`, `AreaLoadingRoot` | Current |
-| Bar hours and crowd | Daily12-02, hourly3-8; real entry/exit, partial pairs, occupied docks; accepted service finishes. | `BarBusinessHours`, `BarCrowdController`, `BarInteriorRoot` | Current |
+| Bar hours and crowd | Daily12-02/3-8; warning/grace/safe exit; accepted service and physical cleanup finish. | `BarBusinessHours`, `BarCrowdController`, `BarClosingController` | Current |
 | Russian vocalizer | Twelve M/F styles; menu A/B/free/window; shared phonetic text/face timing, bounded workers/PCM. | `RussianVocalizer{Lab,Synthesis,Voice,Plan}`, `RussianSpeechPhonetics` | Current |
 | Free karaoke | LMB/mouse, drunk DSP drift; silent hall gaze, dynamic hero/guest shots, rare WC; cleanup. | `BarKaraoke*`, `KaraokeVoice{,Output}`, `RussianVocalizerSustainOutput` | Current |
 | Calm Home opening | Five eased views/noon→E wake; physical foley/breath, seated return/idle→fresh E stand. | `HomeOpening{Controller,CameraSequence}`, `HomeSleepController` | Current |

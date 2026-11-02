@@ -20,14 +20,14 @@ Missing speakers cancel delivery; no invented anchor or bottom fallback.
 
 - `NpcSpeechBubbleView` owns active lines, immutable captured windows and cleanup;
   scenes/channels may own shared views.
-- `SpeechDelivery` owns reveal/duration. Russian PCM, text and mouths share one
-  immutable phone/sample timeline. Pauses hold text/close mouths; held final vowels
-  retain articulation. Window fitting reduces pauses/drawl before uniform timing,
-  without pitch shifts.
-  English fallback retains `24` chars/s and clicks at least `.13 s` apart.
-  English reading tail defaults to `2.5 s`; Russian uses the remaining window.
-  Ambient window defaults to `4.4 s`; authored windows stay. Preparation holds
-  reveal; overdue/unready results cancel rather than replay or overrun the window.
+- `SpeechDelivery` owns reveal/duration:immutable Russian phone/sample timeline
+  for PCM/text/mouth. Pause holds text/closes mouths;final vowels articulate.
+  Fit pauses/drawl then uniform timing,no pitch shift. EN:24chars/s,click gap≥.13s,
+  default tail2.5s;RU default:remaining window. Optional captured full-text tail
+  reserves shared2.5s+caller extra;pause shifts it. StepElapsed advances once/frame
+  without epoch subtraction;PCM end=plan duration,not clip length.
+  Ambient4.4s,authored windows kept.
+  Prep holds reveal;late/unready cancels,no replay/window overrun.
 - `NpcSpeaker` supplies the actual head, declared voice and earshot profile.
   Explicit male/female `NpcVoiceCatalog` pools retain speaker identity; shared
   models use permanent character IDs. The hero remains exclusive.

@@ -62,6 +62,15 @@ MonoBehaviour:
   - kind: 5
     clip: {fileID: 3097864120358050459, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
     loop: 0
+  - kind: 7
+    clip: {fileID: -3600441236835388276, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+    loop: 0
+  - kind: 8
+    clip: {fileID: 7248370803549437165, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+    loop: 1
+  - kind: 9
+    clip: {fileID: 6999320582133130168, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+    loop: 0
   modelRoot: {fileID: 915040728349051886}
   rendererBindings:
   - renderer: {fileID: 8159573045269041531}
@@ -197,41 +206,49 @@ MonoBehaviour:
     RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
     LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
     Shape: 0
+    ShapeName: JointVolume.Knee.L
   - Renderer: {fileID: 5026920209093209985}
     Bone: {fileID: 461319255950179371}
     RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
     LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
+    ShapeName: JointVolume.Knee.R
   - Renderer: {fileID: 1972612729668416672}
     Bone: {fileID: 3219901188057825254}
     RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
     LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
     Shape: 0
+    ShapeName: JointVolume.Elbow.L
   - Renderer: {fileID: 833014827667881022}
     Bone: {fileID: 2699683121661585606}
     RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
-    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    LongitudinalAxis: {x: 0.00000017636458, y: 1, z: -0.00000032333506}
     Shape: 0
+    ShapeName: JointVolume.Elbow.R
   - Renderer: {fileID: 8101125090793211949}
     Bone: {fileID: 3219901188057825254}
     RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
     LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
     Shape: 0
+    ShapeName: JointVolume.Elbow.L
   - Renderer: {fileID: 1600124538009112700}
     Bone: {fileID: 2699683121661585606}
     RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
-    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    LongitudinalAxis: {x: 0.00000017636458, y: 1, z: -0.00000032333506}
     Shape: 0
+    ShapeName: JointVolume.Elbow.R
   - Renderer: {fileID: 8593167129383656891}
     Bone: {fileID: 4116970227677668697}
     RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
     LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
     Shape: 0
+    ShapeName: JointVolume.Knee.L
   - Renderer: {fileID: 1091857885417038690}
     Bone: {fileID: 461319255950179371}
     RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
     LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
+    ShapeName: JointVolume.Knee.R
 --- !u!1001 &808494869025647621
 PrefabInstance:
   m_ObjectHideFlags: 0

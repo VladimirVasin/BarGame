@@ -14,6 +14,10 @@ namespace BarPromenade
         public const int PendingCommentCapacity = BarDrinkShopController.MaximumPendingServiceOrders * 2 + 1;
         public const int BartenderRole = BarConversationCatalog.RoleCount;
         public const int MaximumSimultaneousLines = BarConversationCatalog.ActiveGroupCount + 1;
+        public const string ClosingWarningKey = "bar.closing.warning";
+        public const string ClosingRequestKey = "bar.closing.leave";
+        public const float ClosingExtraHoldSeconds = 1f;
+        public const float ClosingReadingTailSeconds = SpeechDelivery.ReadingTailSeconds + ClosingExtraHoldSeconds;
         private const int BartenderChannel = BarConversationCatalog.KindCount;
         private struct ActiveLine
         {
@@ -69,6 +73,7 @@ namespace BarPromenade
         public int StartedLineCount { get; private set; }
         public string LastLineKey { get; private set; } = string.Empty;
         public int LastSpeakerRole { get; private set; } = -1;
+        public bool IsBartenderSpeaking => IsInitialized && lines[BartenderChannel].IsActive;
         public int ActiveLineCount
         {
             get
@@ -89,6 +94,14 @@ namespace BarPromenade
         public Object Speaker(int role) => owners[role];
         public Transform Head(int role) => heads[role];
         public void ConfigureKaraoke(BarKaraokeInteraction interaction) => karaoke = interaction;
+
+        /// <summary>Daily closing shares the bartender's ordinary voice, hearing and busy gates.</summary>
+        public bool TryStartClosingLine(bool finalRequest)
+        {
+            if (!IsInitialized || !isActiveAndEnabled || GameTimeScaleRuntime.IsPaused ||
+                !GameSessionState.IsGameTimeRunning || !ListenerInBar(includeWashroom: true)) return false;
+            return BeginLine(BartenderRole, finalRequest ? ClosingRequestKey : ClosingWarningKey);
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetVisits() => visitOrdinal = 0;
@@ -229,10 +242,27 @@ namespace BarPromenade
             if (!float.IsFinite(deltaTime) || deltaTime < 0f) throw new ArgumentOutOfRangeException(nameof(deltaTime));
             if (deltaTime == 0f) return;
             LifeSeconds += deltaTime;
-            if (!ListenerInHall() || deltaTime > BarConversationSchedule.MaximumContinuousStepSeconds)
+            bool listenerInHall = ListenerInHall();
+            if (!ListenerInBar(includeWashroom: true) || deltaTime > BarConversationSchedule.MaximumContinuousStepSeconds)
             {
                 CancelSpeech();
                 return;
+            }
+            if (!listenerInHall)
+            {
+                // A last request carries through the existing earshot into
+                // the WC; visitor talk and ordinary service still stay out.
+                for (int group = 0; group < schedules.Length; group++)
+                {
+                    EndLine(group);
+                    schedules[group].Cancel(LifeSeconds);
+                    ReservePartners(group, false);
+                }
+                if (lines[BartenderChannel].IsActive &&
+                    lines[BartenderChannel].Key != ClosingWarningKey &&
+                    lines[BartenderChannel].Key != ClosingRequestKey) EndLine(BartenderChannel);
+                Array.Clear(comments, 0, commentCount);
+                commentCount = cachedGroups = 0;
             }
             // A missing partner is checked before reveal, so it cannot spend a
             // line on the frame its head or hearing disappears.
@@ -266,6 +296,7 @@ namespace BarPromenade
             }
             for (int group = 0; group < schedules.Length; group++)
             {
+                if (!listenerInHall) continue;
                 if (!BarConversationCatalog.IsEnabled((BarConversationKind)group)) continue;
                 BarConversationSchedule schedule = schedules[group];
                 int eligible = cachedGroups & (1 << group);
@@ -282,20 +313,23 @@ namespace BarPromenade
             }
             ActiveLine bartender = lines[BartenderChannel];
             if (bartender.IsActive && !BartenderBubbles.IsShowing(owners[BartenderRole])) EndLine(BartenderChannel);
-            if (!lines[BartenderChannel].IsActive) TryStartComment();
+            if (listenerInHall && !lines[BartenderChannel].IsActive) TryStartComment();
         }
 
-        private bool ListenerInHall()
+        private bool ListenerInHall() => ListenerInBar(includeWashroom: false);
+
+        private bool ListenerInBar(bool includeWashroom)
         {
             bool karaokeOwns = karaoke != null && karaoke.OwnsInteraction;
             if (listener == null || !listener.gameObject.activeInHierarchy || roomSpace == null ||
                 SceneTransitionService.IsTransitioning ||
-                BarMinigameModalLock.IsAnyLocked && !karaokeOwns ||
+                BarMinigameModalLock.IsAnyLocked && !karaokeOwns && !includeWashroom ||
                 karaokeOwns && karaoke.IsPerforming) return false;
             Vector3 local = roomSpace.InverseTransformPoint(listener.position);
-            // Even the open doorway does not start conversations from inside the WC.
-            return local.y >= -.5f && local.y <= hallHeight && BarWashroomLayout.Contains(hallBounds, local) &&
-                   !BarWashroomLayout.Contains(BarWashroomLayout.Bounds, local);
+            bool inWashroom = BarWashroomLayout.Contains(BarWashroomLayout.Bounds, local);
+            return local.y >= -.5f && local.y <= hallHeight &&
+                   (BarWashroomLayout.Contains(hallBounds, local) || includeWashroom && inWashroom) &&
+                   (includeWashroom || !inWashroom);
         }
 
         private bool SpeakerAudible(int role) => owners[role] != null && heads[role] != null &&
@@ -327,9 +361,15 @@ namespace BarPromenade
             int channel = role == BartenderRole ? BartenderChannel : role / 2;
             if (lines[channel].IsActive || !SpeakerAudible(role) || NpcSpeechBubbleView.IsPresentingAt(heads[role])) return false;
             string text = LocalizationService.Get(key);
+            bool closingLine = key == ClosingWarningKey || key == ClosingRequestKey;
             float duration = Mathf.Max(NpcSpeechBubbleView.VisibleSeconds,
                 SpeechDelivery.ResolveSpokenDuration(text, SpeechDelivery.ReadingTailSeconds));
-            if (!View(role).ShowAt(owners[role], text, (float)LifeSeconds, duration)) return false;
+            float readingTail = closingLine ? ClosingReadingTailSeconds : 0f;
+            if (closingLine)
+                duration = Mathf.Max(NpcSpeechBubbleView.VisibleSeconds,
+                    SpeechDelivery.ResolveSpokenDuration(text, 0f)) +
+                    NpcSpeechBubbleView.SynthesisStartupGraceSeconds + readingTail;
+            if (!View(role).ShowAt(owners[role], text, (float)LifeSeconds, duration, readingTail)) return false;
             lines[channel] = new ActiveLine
             {
                 IsActive = true, Role = role, Key = key, Started = LifeSeconds, Duration = duration
@@ -340,12 +380,13 @@ namespace BarPromenade
         private void AcknowledgeLine(int channel)
         {
             ActiveLine line = lines[channel];
-            if (channel == BartenderChannel)
+            if (channel == BartenderChannel && activeOrder != 0)
             {
                 commentDecks[(int)activeCommentKind].Commit(activeVariant);
                 RemoveComment(activeOrder);
             }
-            else if (!schedules[channel].StartLine(LifeSeconds, Math.Max(.001d, line.Duration - (LifeSeconds - line.Started))))
+            else if (channel != BartenderChannel &&
+                     !schedules[channel].StartLine(LifeSeconds, Math.Max(.001d, line.Duration - (LifeSeconds - line.Started))))
             {
                 EndLine(channel);
                 return;

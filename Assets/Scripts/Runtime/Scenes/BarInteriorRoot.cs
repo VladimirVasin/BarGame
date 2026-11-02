@@ -31,6 +31,8 @@ namespace BarPromenade
         public BarCrowdController Crowd { get; private set; }
         public bool IsBusinessOpen => BarBusinessHours.IsOpen(GameSessionState.GameMinuteOfDay);
         public BarConversationController Conversation { get; private set; }
+        public BarClosingController Closing { get; private set; }
+        private BarExit barExit;
 
         /// <summary>
         /// The population-owned bartender behind the counter, or <c>null</c>
@@ -228,8 +230,10 @@ namespace BarPromenade
                 intoxicationHud,
                 () => (ArrivalPresentation == null ||
                        !ArrivalPresentation.IsPlaying) &&
-                      (!DrinkShop.CanRestPhysicalMenu ||
+                      (!DrinkShop.CanRestPhysicalMenu || DrinkShop.IsPresentationSuspended ||
                        !GameInput.WasPressed(GameInputAction.Cancel, GameInputContext.Gameplay)));
+            Closing = gameObject.AddComponent<BarClosingController>();
+            Closing.Initialize(this, barExit);
             GameLogPhases.Report("bar", "activity_and_crowd", phaseTimer);
             totalTimer.Stop();
             GameLog.Info(
@@ -664,7 +668,7 @@ namespace BarPromenade
             BoxCollider trigger = exit.AddComponent<BoxCollider>();
             trigger.isTrigger = true;
             trigger.size = Layout.ExitTriggerSize;
-            exit.AddComponent<BarExit>();
+            barExit = exit.AddComponent<BarExit>();
             Vector3 exitDock = Layout.ExitApproachPosition;
             exitDock.y = PlayerFactory.GroundedRootOffset;
             PlayerDoorActionTarget doorAction =

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -101,7 +102,9 @@ namespace BarPromenade
             UnityEngine.Object owner,
             PlayerDoorActionPlan plan,
             float initialVerticalTolerance,
-            Action completed)
+            Action completed,
+            IReadOnlyList<Vector3> approachWaypoints = null,
+            int approachWaypointCount = 0)
         {
             if (completed == null)
             {
@@ -135,7 +138,10 @@ namespace BarPromenade
                     plan.EntryPose,
                     plan.ActionHipPosition,
                     plan.ExitPose,
-                    initialVerticalTolerance);
+                    initialVerticalTolerance,
+                    approachWaypoints,
+                    approachWaypointCount,
+                    approachWaypointCount > 0 ? .03f : PlayerAnimatedInteractionController.ApproachWaypointArrivalRadius);
             }
             catch
             {

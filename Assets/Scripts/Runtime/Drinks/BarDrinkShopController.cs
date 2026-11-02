@@ -148,6 +148,8 @@ namespace BarPromenade
         private bool counterServerAtTarget;
         private bool returningCounterMenuHome;
         private bool restingMenuGazeArmed;
+        private bool closingDepartureRequested;
+        private bool closingSeatExitCompleted;
 
         public event Action<BarDrinkShopController> Closed;
 
@@ -181,7 +183,10 @@ namespace BarPromenade
             (timeline.IsCommitted || drinkActionPending || repeatRequestPending || menuOrderRequestPending);
         public bool CanDrinkServedVessel =>
             IsOpen && UsesPhysicalMenu && timeline != null &&
-            !drinkActionPending && timeline.CanBeginDrink && HeroServiceVessel != null;
+            !IsPresentationSuspended && !closingDepartureRequested && !drinkActionPending &&
+            timeline.CanBeginDrink && HeroServiceVessel != null;
+        internal bool IsPresentationSuspended => cameraFollow != null && cameraFollow.PresentationSuspended;
+        public bool IsClosingDepartureRequested => closingDepartureRequested;
         public bool IsLookingAtServedVessel =>
             CanDrinkServedVessel && targetCamera != null &&
             !CounterMenuInput.IsBlockedByOtherUi() &&
@@ -220,6 +225,11 @@ namespace BarPromenade
                 if (returningCounterMenuHome || pendingCounterMenuDelivery ||
                     pendingCounterMenuRetrieval || pendingOrderedDrinkPresentation) return true;
                 if (!IsOpen || timeline == null) return false;
+                // Return any hall collection before the hero stands into its
+                // aisle, then keep that single worker behind the counter.
+                // An in-progress sip keeps advancing independently first.
+                if (closingDepartureRequested && !drinkActionPending &&
+                    (playerInteraction == null || !playerInteraction.IsNestedLoopActionActive)) return true;
                 if (counterMenuModel != null && (counterMenuModel.State == CounterMenuState.Delivering ||
                     counterMenuModel.State == CounterMenuState.Retrieving)) return true;
                 switch (timeline.Phase)
@@ -818,13 +828,20 @@ namespace BarPromenade
         {
             if (GameTimeScaleRuntime.IsPaused || timeline == null || timeline.Phase != BarDrinkServicePhase.EmptyVesselStow ||
                 timeline.PhaseProgress < 1f || !IsEmptyVesselBehindCounter()) return false;
+            bool closingCleanup = timeline.IsAbandoningServedDrink;
             if (!timeline.ReportEmptyVesselStored(true)) return false;
             serviceView.SetBartenderVesselContact(false, 0f);
             serviceView.HideVessel();
             ClearedEmptyVesselCount++;
             emptyVesselStowCaptured = false;
-            PrepareOrderedDrinkPresentation();
+            if (!closingCleanup) PrepareOrderedDrinkPresentation();
+            else
+            {
+                purchaseCommitted = false;
+                if (counterMenuModel.State == CounterMenuState.Confirmed) RestPhysicalMenuAtCounter();
+            }
             ApplyCurrentPresentation();
+            if (closingCleanup && closingSeatExitCompleted) FinishSeatedSessionAfterExit();
             return true;
         }
 
@@ -1507,7 +1524,7 @@ namespace BarPromenade
 
         public bool ReopenPhysicalMenu()
         {
-            if (!CanStandAfterMenuRested || !IsLookingAtRestingMenu ||
+            if (closingDepartureRequested || !CanStandAfterMenuRested || !IsLookingAtRestingMenu ||
                 !counterMenuModel.Reopen())
             {
                 return false;
@@ -1543,6 +1560,13 @@ namespace BarPromenade
         /// </summary>
         public bool FinishSeatedSessionAfterExit()
         {
+            if (closingDepartureRequested)
+            {
+                closingSeatExitCompleted = true;
+                // The hero can stand while the same vessel waits for the
+                // bartender's hand. Menu retrieval waits for actual storage.
+                if (!CanStandAfterMenuRested) return true;
+            }
             if (!CanStandAfterMenuRested || !timeline.Cancel() ||
                 !counterMenuModel.BeginRetrieval())
             {
@@ -1555,6 +1579,34 @@ namespace BarPromenade
             counterMenuHint?.Hide();
             ApplyCurrentPresentation();
             return true;
+        }
+
+        /// <summary>Stops new sips and releases the seat only at a supported hand/prop boundary.</summary>
+        public bool RequestClosingDeparture()
+        {
+            closingDepartureRequested = true;
+            if (!IsOpen) return true;
+            if (GameTimeScaleRuntime.IsPaused || !GameSessionState.IsGameTimeRunning ||
+                !UsesPhysicalMenu || IsPatronServiceActive || pendingHeroPresentation ||
+                FindPendingServiceOrder(this) >= 0 || IsOrderRequestPending || drinkActionPending ||
+                playerInteraction != null && playerInteraction.IsNestedLoopActionActive) return false;
+            if (timeline.IsAwaitingDrink || timeline.HasEmptyVessel)
+            {
+                BarDrinkVesselView vessel = HeroServiceVessel;
+                if (vessel == null || !vessel.gameObject.activeInHierarchy) return false;
+                emptyVesselCounterPose = new Pose(vessel.transform.position, vessel.transform.rotation);
+                emptyVesselStowCaptured = false;
+                emptyVesselStorageServerPose = default;
+                // Paid, unconsumed portions are left behind; no consumption
+                // transaction runs when the bartender collects this vessel.
+                pendingOrder = null;
+                if (!timeline.RequestAbandonServedDrink()) return false;
+                if (counterMenuModel.State == CounterMenuState.Confirmed) RestPhysicalMenuAtCounter();
+                ApplyCurrentPresentation();
+            }
+            if (timeline.IsAbandoningServedDrink) return IsBartenderAvailableForService;
+            if (CanRestPhysicalMenu) RestPhysicalMenuAtCounter();
+            return CanStandAfterMenuRested && IsBartenderAvailableForService;
         }
 
         public void Cancel()
@@ -1740,7 +1792,7 @@ namespace BarPromenade
                     UpdatePhysicalMenuHint();
                 }
 
-                if (!timeline.IsCommitted &&
+                if (!IsPresentationSuspended && !timeline.IsCommitted &&
                     !timeline.IsBrowsing &&
                     Time.frameCount > inputUnlockFrame &&
                     (!UsesPhysicalMenu ||
@@ -1751,6 +1803,7 @@ namespace BarPromenade
                 }
 
                 if (timeline.IsBrowsing &&
+                    !IsPresentationSuspended &&
                     Time.frameCount > inputUnlockFrame &&
                     (!UsesPhysicalMenu ||
                      !CounterMenuInput.IsBlockedByOtherUi()))
@@ -1889,7 +1942,7 @@ namespace BarPromenade
             }
 
             bool showRepeatFailure = IsLookingAtRepeatVessel && !string.IsNullOrEmpty(FeedbackKey);
-            if ((!IsBrowsing && !showRepeatFailure) ||
+            if (IsPresentationSuspended || (!IsBrowsing && !showRepeatFailure) ||
                 CounterMenuInput.IsBlockedByOtherUi())
             {
                 counterMenuHint.Hide();
@@ -2653,7 +2706,8 @@ namespace BarPromenade
             if (vessel == null) return;
             vessel.gameObject.SetActive(true);
             vessel.SetInteractionHighlight(false);
-            serviceView.SetFillProgress(0f);
+            serviceView.SetFillProgress(ActiveServiceTimeline.IsAbandoningServedDrink
+                ? ActiveServiceTimeline.RemainingDrinkFill : 0f);
             serviceView.HidePourStream();
             bool attached = ActiveServiceTimeline.EmptyVesselGripConfirmed;
             serviceView.SetBartenderVesselContact(attached, 1f);
@@ -3546,6 +3600,7 @@ namespace BarPromenade
 
         private void RestoreOwnedState()
         {
+            closingDepartureRequested = closingSeatExitCompleted = false;
             bool preservePatronService = IsPatronServiceActive;
             if (preservePatronService) ClearPreservedHeroService();
             heroServiceQueued = menuOrderRequestPending = menuOrderGestureStarted = false;

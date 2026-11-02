@@ -82,7 +82,9 @@ namespace BarPromenade
 
         public void Interact(PlayerInteractor interactor) { if (CanInteract(interactor)) Begin(); }
 
-        public bool Begin()
+        public bool Begin() => Begin(null, 0);
+
+        public bool Begin(System.Collections.Generic.IReadOnlyList<Vector3> approachWaypoints, int approachWaypointCount)
         {
             if (!CanInteract(player.Interactor)) return false;
             if (washroomAccess != null && !washroomAccess.CanHeroOperateDoor(IsInside)) return false;
@@ -118,7 +120,9 @@ namespace BarPromenade
             owns = true; exitRequested = false; elapsed = 0f;
             try
             {
-                bool accepted = controller.BeginPositioned(Definition, Plan.EntryPose, Plan.ActionHipPosition, Plan.ExitPose, .35f);
+                bool accepted = controller.BeginPositioned(Definition, Plan.EntryPose, Plan.ActionHipPosition,
+                    Plan.ExitPose, .35f, approachWaypoints, approachWaypointCount,
+                    approachWaypointCount > 0 ? .03f : PlayerAnimatedInteractionController.ApproachWaypointArrivalRadius);
                 if (!accepted) Finish(false);
                 return accepted;
             }
