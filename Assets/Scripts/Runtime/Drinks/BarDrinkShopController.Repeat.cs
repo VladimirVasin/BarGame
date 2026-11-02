@@ -135,6 +135,12 @@ namespace BarPromenade
                 RetroAudio.Play(RetroSfxId.DrinkGulp);
             }
             ApplyConcurrentHeroDrinkPose();
+            if (drinkActionPending && timeline.IsAwaitingDrink &&
+                (playerInteraction == null || !playerInteraction.IsNestedLoopActionActive))
+            {
+                CompletePartialDrinkPresentation();
+                return;
+            }
             if (!timeline.IsCommitted && timeline.IsBrowsing &&
                 (playerInteraction == null || !playerInteraction.IsNestedLoopActionActive))
             {

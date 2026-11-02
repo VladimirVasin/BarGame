@@ -12,6 +12,112 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class BarInteriorSpawnPlayModeTests
     {
         [UnityTest]
+        public IEnumerator BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment()
+            => VerifyThreeSipService(DrinkId.LightBeer);
+
+        [UnityTest]
+        public IEnumerator WineService_FullGlassTakesThreeSeparateSips()
+            => VerifyThreeSipService(DrinkId.RedWine);
+
+        private IEnumerator VerifyThreeSipService(DrinkId drinkId)
+        {
+            GameSessionState.ResetEconomyState();
+            GameSessionState.ResetDrinkingState();
+            BarInteriorRoot bar = null;
+            yield return LoadBar(value => bar = value);
+            bar.ArrivalPresentation.Skip();
+            using var freshSkins = new BarServiceCaptureSkinScope(bar);
+            BarDrinkShopController shop = bar.DrinkShop;
+            BarCounterStation station = bar.CounterStations[bar.CounterStations.Count - 1];
+            CounterSeatPlan plan = station.Seat.Plan;
+            bar.Player.Motor.Teleport(plan.EntryPose.RootPosition);
+            bar.Player.GameObject.transform.rotation = plan.EntryPose.RootRotation;
+            Physics.SyncTransforms();
+            station.Interact(bar.Player.Interactor);
+            int start = Time.frameCount;
+            float started = Time.realtimeSinceStartup;
+            while (!shop.IsBrowsing && HasBarSimulationBudget(start, 1800, started, 30f)) yield return null;
+            Assert.That(shop.IsBrowsing, Is.True);
+            Assert.That(shop.Select(FindOfferIndex(shop, drinkId)), Is.True);
+            int balance = GameSessionState.CashBalance;
+            int count = GameSessionState.DrinksConsumed;
+            int dose = GameSessionState.HeroCorruptionDose;
+            int notifications = shop.PaymentNotice.NotificationCount;
+            int price = shop.SelectedOffer.Price;
+            Assert.That(shop.ConfirmSelection(), Is.True);
+            start = Time.frameCount;
+            started = Time.realtimeSinceStartup;
+            while (!shop.CanDrinkServedVessel && HasBarSimulationBudget(start, 3600, started, 30f)) yield return null;
+            Assert.That(shop.CanDrinkServedVessel, Is.True);
+            Assert.That(GameSessionState.CashBalance, Is.EqualTo(balance - price));
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(dose));
+            BarDrinkVesselView vessel = shop.HeroServiceVessel;
+            Assert.That(vessel.FillProgress, Is.EqualTo(1f));
+            if (drinkId == DrinkId.RedWine)
+            {
+                float gapRatio = (vessel.DrinkRimWorldPosition.y - vessel.LiquidRenderer.bounds.max.y) /
+                    vessel.GlassRenderer.bounds.size.y;
+                Assert.That(gapRatio, Is.InRange(.04f, .12f),
+                    "A full wine bowl must sit near the rim with safe headroom.");
+            }
+            CaptureBarWorkPose(bar, $"Three sips {drinkId} full", vessel.GlassRenderer.bounds.center);
+            var probe = bar.gameObject.AddComponent<WarehouseRefrigeratorPresentationProbe>();
+            PlayerAnimatedInteractionController interaction = shop.CounterSeatView.Seat.Controller;
+            BarPlayerDrinkReach reach = shop.PlayerDrinkReach;
+            Pose counter = new Pose(vessel.transform.position, vessel.transform.rotation);
+            try
+            {
+                for (int sip = 1; sip <= 3; sip++)
+                {
+                    Camera camera = Camera.main;
+                    camera.transform.rotation = Quaternion.LookRotation(
+                        vessel.GlassRenderer.bounds.center - camera.transform.position, Vector3.up);
+                    shop.RefreshServedDrinkAffordance();
+                    Assert.That(shop.IsLookingAtServedVessel, Is.True);
+                    Assert.That(station.PromptKey, Is.EqualTo(BarCounterStation.DrinkPromptKey));
+                    Assert.That(vessel.IsInteractionHighlighted, Is.True);
+                    station.Interact(bar.Player.Interactor);
+                    Assert.That(interaction.IsNestedLoopActionActive, Is.True);
+                    Assert.That(shop.BeginServedDrink(), Is.False, "Repeated input cannot start another sip during an action.");
+                    bool sawRelease = false;
+                    start = Time.frameCount;
+                    started = Time.realtimeSinceStartup;
+                    while ((interaction.IsNestedLoopActionActive || shop.CounterSeatView.IsActionLookLocked ||
+                            (sip < 3 ? !shop.CanDrinkServedVessel : shop.IsServing)) &&
+                           HasBarSimulationBudget(start, 1800, started, 30f))
+                        yield return AtFinalBarPose(probe, () =>
+                        {
+                            sawRelease |= reach.ReturnContactObserved;
+                            if (!reach.IsAttached) return;
+                            Assert.That(reach.GripError, Is.LessThan(.02f));
+                            Assert.That(reach.LastFootContactError, Is.LessThan(.002f));
+                            Assert.That(reach.LastPelvisContactError, Is.LessThan(.001f));
+                        });
+                    Assert.That(interaction.IsNestedLoopActionActive, Is.False);
+                    Assert.That(shop.CounterSeatView.IsActionLookLocked, Is.False);
+                    Assert.That(shop.CounterSeatView.IsFirstPerson, Is.True);
+                    Assert.That(sawRelease, Is.True);
+                    Assert.That(shop.CanDrinkServedVessel, Is.EqualTo(sip < 3));
+                    Assert.That(vessel.FillProgress, Is.EqualTo((3f - sip) / 3f).Within(.0001f));
+                    Assert.That(Vector3.Distance(vessel.transform.position, counter.position), Is.LessThan(.005f));
+                    Assert.That(GameSessionState.CashBalance, Is.EqualTo(balance - price));
+                    Assert.That(shop.PaymentNotice.NotificationCount, Is.EqualTo(notifications + 1));
+                    Assert.That(GameSessionState.HeroCorruptionDose,
+                        Is.EqualTo(dose + DrinkRules.GetIntoxicationGain(drinkId) * sip / 3));
+                    Assert.That(GameSessionState.LastAlcoholicDrink, Is.EqualTo(drinkId));
+                    Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(count + (sip == 3 ? 1 : 0)));
+                    Assert.That(shop.PurchaseCommitted, Is.EqualTo(sip < 3));
+                    Assert.That(BarPromenade.Rendering.CinematicDepthOfField.IsActive, Is.False);
+                    CaptureBarWorkPose(bar, $"Three sips {drinkId} remaining {3 - sip}", vessel.GlassRenderer.bounds.center);
+                    for (int frame = 0; frame < 15; frame++) yield return null;
+                    Assert.That(vessel.FillProgress, Is.EqualTo((3f - sip) / 3f).Within(.0001f),
+                        "The next portion waits for a separate interaction.");
+                }
+            }
+            finally { probe.CancelPending(); Object.Destroy(probe); }
+        }
+
+        [UnityTest]
         public IEnumerator CounterMenu_EscapeClosesBookBeforePause()
         {
             var input = new InputTestFixture();
@@ -84,11 +190,14 @@ namespace BarPromenade.Tests.PlayMode
             bool sawReturnContact = false;
             bool sawRestoredPose = false;
             float returnError = float.PositiveInfinity;
-            float deadline = Time.realtimeSinceStartup + 20f;
+            int steps = vessel.Kind == BarDrinkVesselKind.Pint || vessel.Kind == BarDrinkVesselKind.WineGlass ? 3 : 1;
+            float deadline = Time.realtimeSinceStartup + 20f * steps;
             try
             {
                 Assert.That(view.IsActionLookLocked, Is.True);
                 while (shop.IsServing && Time.realtimeSinceStartup < deadline)
+                {
+                    BeginNextTestDrinkSip(bar);
                     yield return AtFinalBarPose(probe, () =>
                     {
                         if (!reach.ReturnContactObserved) return;
@@ -98,6 +207,7 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(Vector3.Distance(vessel.transform.position, counter.position),
                             Is.LessThanOrEqualTo(BarPlayerDrinkReach.ReleaseTolerance));
                     });
+                }
                 yield return AtFinalBarPose(probe, () =>
                 {
                     AreaCaptureFixture.CaptureCurrentCamera(Camera.main, SceneIds.BarInterior,
@@ -120,6 +230,19 @@ namespace BarPromenade.Tests.PlayMode
                 });
             }
             finally { probe.CancelPending(); Object.Destroy(probe); }
+        }
+
+        private static bool BeginNextTestDrinkSip(BarInteriorRoot bar)
+        {
+            BarDrinkShopController shop = bar.DrinkShop;
+            if (!shop.CanDrinkServedVessel || shop.CounterSeatView.Seat.Controller.IsNestedLoopActionActive)
+                return false;
+            Camera camera = Camera.main;
+            camera.transform.rotation = Quaternion.LookRotation(
+                shop.HeroServiceVessel.GlassRenderer.bounds.center - camera.transform.position, Vector3.up);
+            shop.RefreshServedDrinkAffordance();
+            Assert.That(shop.BeginServedDrink(), Is.True);
+            return true;
         }
 
         [UnityTest]

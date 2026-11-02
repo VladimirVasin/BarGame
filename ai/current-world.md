@@ -2776,7 +2776,10 @@ cemetery:own interiors/returns.
   overhang; others on the backbar shelf. Cafe retains three selection-only names.
   Rejection keeps the book open with feedback; confirmation closes it for the request gesture;
   completion revalidates, charges once and queues behind earlier guests.
-  Intoxication/last-drink/count/stress commit only after drinking.
+  Beer/wine:three fresh E presses, each visible pickup/sip/return consumes1/3.
+  Same dock retains2/3,1/3,then empty;gaze E/contour remains for partial fills.
+  One payment;existing alcohol/stress split per completed action,count once on3rd.
+  Wine full safe authored TargetFill1 (Red/legacy White);cognac/vodka one action.
   Beer: full Walk to the central tap, `155 mm` mug, real handle/world stream;
   upright carry to the selected place, handle right. Guest-side reach/spine
   bend keep the palm on the handle until supported, without throw/roll.
@@ -2786,20 +2789,13 @@ cemetery:own interiors/returns.
   Full Walk/contact-gated right-hand pickup and carry stay shared. Preparation
   is opposite the resting menu; vessels/tilted bottle clear wood. He pours into
   `WineGlass`/`Snifter`/`ShotGlass`, carries/places the full vessel, then returns
-  the bottle to its exact source. While every full vessel waits, the same gaze predicate
-  drives its thin yellow contour and the localized `E` drink prompt. The seated
-  world body owns base `2 s` pickup, `3 s` sip and `2 s` return clips.
-  For beer its right hand grips the handle directly. The seated
-  first-person camera starts from the gaze that accepted the mug and keeps its
-  captured eye-space offset through the animated head's complete pose. It eases
-  `0.02 m` back along that gaze at the mouth and temporarily uses a `0.03 m`
-  near plane. During the sip the drinking rim stays at the
-  mouth, the mug reaches horizontal, and the head and
-  torso rise with it in the same restrained motion as the corrected bar
-  patrons. All drinks use continuous right-hand Hero V2. Lean precedes contact;
-  wrists lift for approach, carry until counter support, then retract.
-  Clavicle reach uses upper arm, not nested wrist.
-  Completion restores seated camera/look.
+  the bottle to its exact source. Full/partial vessels wait with shared gaze E/
+  contour. Seated Hero V2 owns each `2 s` pickup/`3 s` sip/`2 s` return.
+  Right hand holds mug handle;head-camera retains accepting gaze/eye offset,
+  eases .02m back at mouth,near plane .03m until return. Rim stays at mouth,
+  mug horizontal;head/torso rise like patrons. All use continuous right-hand rig:
+  lean before contact,wrist lift/carry/counter support/retract;clavicle reach
+  measures upper arm,not nested wrist. Every action restores seated camera/look.
   Cached palm/thumb/finger anatomy orients grip; fingers close post-animation.
   Wine/snifter use cupped bowl grips, shot its body, beer its handle.
   View is head-tracked. Pickup/sip/return: manual yaw±12°/pitch±10°.
@@ -2810,7 +2806,7 @@ cemetery:own interiors/returns.
   Empty-beer repeat: typed R grip/short supported offer/release before charge;
   reach-fitted up to12cm, whole mug1cm from book/edge. Other vessels/no cup: no offer.
   Same mug→tap/planted server retract/return; other cups wait for bottle.
-  A second explicit sip applies effects once.
+  Refilled beer/wine repeat the same three-action portion/effect contract.
   Accepted first/repeat payments briefly show actual debit/balance at left HUD
   with the shared payment cue; gesture/failure/spam never charges or notifies.
   Different menu order: contact pickup, .25m straight back

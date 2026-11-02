@@ -181,7 +181,7 @@ namespace BarPromenade
             (timeline.IsCommitted || drinkActionPending || repeatRequestPending || menuOrderRequestPending);
         public bool CanDrinkServedVessel =>
             IsOpen && UsesPhysicalMenu && timeline != null &&
-            timeline.CanBeginDrink && HeroServiceVessel != null;
+            !drinkActionPending && timeline.CanBeginDrink && HeroServiceVessel != null;
         public bool IsLookingAtServedVessel =>
             CanDrinkServedVessel && targetCamera != null &&
             !CounterMenuInput.IsBlockedByOtherUi() &&
@@ -1641,7 +1641,12 @@ namespace BarPromenade
                     timeline.PhaseDurationSeconds - timeline.PhaseElapsedSeconds - .001f));
             timeline.Advance(deltaTime);
             PlayCrossedCues();
-            if (wasCommitted &&
+            if (drinkActionPending && timeline.IsAwaitingDrink &&
+                (playerInteraction == null || !playerInteraction.IsNestedLoopActionActive))
+            {
+                CompletePartialDrinkPresentation();
+            }
+            else if (wasCommitted &&
                 !timeline.IsCommitted &&
                 timeline.IsBrowsing)
             {
@@ -1690,6 +1695,7 @@ namespace BarPromenade
             BarDrinkVesselView heroVessel = HeroServiceVessel;
             heroPlayerDrinkCounterPose = new Pose(heroVessel.transform.position, heroVessel.transform.rotation);
             heroConcurrentGulpPlayed = false;
+            gulpPlayed = false;
             playerDrinkReach?.PrepareForDrink(heroVessel,
                 heroPlayerDrinkCounterPose, serviceView.CounterSurfaceWorldBounds);
             if (!playerInteraction.BeginNestedLoopAction(definition))
@@ -3671,6 +3677,18 @@ namespace BarPromenade
             Physics.SyncTransforms();
         }
 
+        private void CompletePartialDrinkPresentation()
+        {
+            CommitPendingDrink();
+            playerDrinkReach?.ResetPresentation();
+            HeroServiceVessel?.SetFillProgress(timeline.RemainingDrinkFill);
+            counterSeatView?.SetActionEyeClearance(0f);
+            counterSeatView?.SetActionLookLocked(false);
+            drinkActionPending = false;
+            playerDrinkStartedFrame = -1;
+            inputUnlockFrame = Time.frameCount + 1;
+        }
+
         private void CommitPendingDrink()
         {
             if (pendingOrder == null)
@@ -3678,13 +3696,16 @@ namespace BarPromenade
                 return;
             }
 
-            if (!GameSessionState.TryConsumeOrderedDrink(pendingOrder))
+            bool consumed = timeline.ConsumptionStepCount > 1
+                ? GameSessionState.TryConsumeOrderedDrinkPortion(pendingOrder, timeline.CompletedDrinkSteps)
+                : GameSessionState.TryConsumeOrderedDrink(pendingOrder);
+            if (!consumed)
             {
                 throw new InvalidOperationException(
                     "A completed physical drink could not commit its effects.");
             }
 
-            pendingOrder = null;
+            if (pendingOrder.IsConsumed) pendingOrder = null;
         }
 
         private static PlayerAnimatedInteractionDefinition

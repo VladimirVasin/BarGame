@@ -1070,8 +1070,12 @@ namespace BarPromenade.Tests.EditMode
                 "Both full authored doses count, including nine dark-beer points beyond the live cap.");
         }
 
-        [Test]
-        public void PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce()
+        [TestCase(DrinkId.LightBeer, 8, 6, 2, 5, 2, 4)]
+        [TestCase(DrinkId.DarkBeer, 10, 8, 3, 6, 2, 5)]
+        [TestCase(DrinkId.WhiteWine, 11, 10, 3, 7, 3, 6)]
+        [TestCase(DrinkId.RedWine, 13, 12, 4, 8, 4, 8)]
+        public void PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce(DrinkId drink,
+            int fullDose, int fullRelief, int firstDose, int secondDose, int firstRelief, int secondRelief)
         {
             GameSessionState.UpdateDrinkingProgress(
                 40,
@@ -1080,13 +1084,13 @@ namespace BarPromenade.Tests.EditMode
             GameSessionState.UpdateNeeds(0, 20);
 
             DrinkPurchaseResult result = GameSessionState.TryOrderDrink(
-                DrinkId.LightBeer,
+                drink,
                 out DrinkOrderToken order);
 
             Assert.That(result.Succeeded, Is.True);
             Assert.That(order, Is.Not.Null);
             Assert.That(order.IsConsumed, Is.False);
-            Assert.That(GameSessionState.CashBalance, Is.EqualTo(991));
+            Assert.That(GameSessionState.CashBalance, Is.EqualTo(999 - result.Offer.Price));
             Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(40));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(2));
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(20));
@@ -1102,19 +1106,80 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.TryConsumeOrderedDrink(order),
                 Is.True);
             Assert.That(order.IsConsumed, Is.True);
-            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(47));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(39 + fullDose));
             Assert.That(
                 GameSessionState.LastAlcoholicDrink,
-                Is.EqualTo(DrinkId.LightBeer));
+                Is.EqualTo(drink));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(3));
-            Assert.That(GameSessionState.StressLevel, Is.EqualTo(14));
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(20 - fullRelief));
 
             Assert.That(
                 GameSessionState.TryConsumeOrderedDrink(order),
                 Is.False);
-            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(47));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(39 + fullDose));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(3));
-            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(8));
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(fullDose));
+
+            GameSessionState.BeginNewGame();
+            GameSessionState.UpdateDrinkingProgress(40, DrinkId.None, 0);
+            GameSessionState.UpdateNeeds(0, 50);
+            result = GameSessionState.TryOrderDrink(drink, out order);
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(order.PortionCount, Is.EqualTo(3));
+            Assert.That(order.CompletedPortionCount, Is.Zero);
+            int paidBalance = GameSessionState.CashBalance;
+            Assert.That(GameSessionState.TryConsumeOrderedDrinkPortion(null, 1), Is.False);
+            Assert.That(GameSessionState.TryConsumeOrderedDrinkPortion(order, 0), Is.False);
+            Assert.That(GameSessionState.TryConsumeOrderedDrinkPortion(order, 2), Is.False);
+            Assert.That(GameSessionState.TryConsumeOrderedDrinkPortion(order, 4), Is.False);
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(40));
+            Assert.That(GameSessionState.LastAlcoholicDrink, Is.EqualTo(DrinkId.None));
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(50));
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.Zero);
+
+            int[] expectedDoses = { firstDose, secondDose, fullDose };
+            int[] expectedReliefs = { firstRelief, secondRelief, fullRelief };
+            for (int portion = 1; portion <= 3; portion++)
+            {
+                if (portion == 2)
+                {
+                    Assert.That(GameSessionState.TryConsumeOrderedDrinkPortion(order, 3), Is.False,
+                        "The third sip cannot skip the second paid portion.");
+                    GameSessionState.UpdateDrinkingProgress(25, drink, 0);
+                }
+                int intoxicationBefore = GameSessionState.IntoxicationLevel;
+                int doseBefore = GameSessionState.HeroCorruptionDose;
+                Assert.That(GameSessionState.TryConsumeOrderedDrinkPortion(order, portion), Is.True);
+                Assert.That(order.CompletedPortionCount, Is.EqualTo(portion));
+                Assert.That(order.IsConsumed, Is.EqualTo(portion == 3));
+                Assert.That(GameSessionState.CashBalance, Is.EqualTo(paidBalance));
+                Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(expectedDoses[portion - 1]));
+                Assert.That(GameSessionState.IntoxicationLevel,
+                    Is.EqualTo(intoxicationBefore + expectedDoses[portion - 1] - doseBefore));
+                Assert.That(GameSessionState.StressLevel, Is.EqualTo(50 - expectedReliefs[portion - 1]));
+                Assert.That(GameSessionState.LastAlcoholicDrink, Is.EqualTo(drink));
+                Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(portion == 3 ? 1 : 0));
+                Assert.That(GameSessionState.TryConsumeOrderedDrinkPortion(order, portion), Is.False);
+                Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(expectedDoses[portion - 1]));
+            }
+            Assert.That(GameSessionState.TryConsumeOrderedDrink(order), Is.False);
+
+            // A legacy caller finishing a partial order receives only its
+            // remaining dose, not another complete drink on top of its sip.
+            Assert.That(GameSessionState.TryOrderDrink(drink, out order).Succeeded, Is.True);
+            Assert.That(GameSessionState.TryConsumeOrderedDrinkPortion(order, 1), Is.True);
+            Assert.That(GameSessionState.TryConsumeOrderedDrink(order), Is.True);
+            Assert.That(order.CompletedPortionCount, Is.EqualTo(3));
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(fullDose * 2));
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(50 - fullRelief * 2));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(2));
+
+            Assert.That(GameSessionState.TryOrderDrink(drink, out order).Succeeded, Is.True);
+            GameSessionState.BeginNewGame();
+            Assert.That(GameSessionState.TryConsumeOrderedDrinkPortion(order, 1), Is.False);
+            Assert.That(GameSessionState.TryConsumeOrderedDrink(order), Is.False);
+            Assert.That(GameSessionState.DrinksConsumed, Is.Zero);
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.Zero);
         }
 
         [TestCase(-1, 1)]

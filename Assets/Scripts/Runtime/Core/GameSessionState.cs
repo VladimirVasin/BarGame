@@ -2077,32 +2077,56 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Applies a paid drink to the current recovered state exactly once.
+        /// Applies the remaining paid drink to the current recovered state once.
         /// This deliberately recomputes the delta rather than replaying the
         /// order-time snapshot because intoxication may recover while a full
         /// glass waits on the counter.
         /// </summary>
         public static bool TryConsumeOrderedDrink(DrinkOrderToken order)
         {
+            return TryCommitOrderedDrinkPortions(order, order?.PortionCount ?? 0, consumeRemaining: true);
+        }
+
+        /// <summary>Commits only the next visible sip of this session's paid drink.</summary>
+        public static bool TryConsumeOrderedDrinkPortion(DrinkOrderToken order, int portionIndex)
+        {
+            return TryCommitOrderedDrinkPortions(order, portionIndex, consumeRemaining: false);
+        }
+
+        private static bool TryCommitOrderedDrinkPortions(DrinkOrderToken order, int portionIndex,
+            bool consumeRemaining)
+        {
             if (order == null || order.IsConsumed ||
                 order.SessionGeneration != sessionGeneration ||
-                DrinksConsumed == int.MaxValue)
+                DrinksConsumed == int.MaxValue || portionIndex <= order.CompletedPortionCount ||
+                portionIndex > order.PortionCount)
             {
                 return false;
             }
 
+            int completed = order.CompletedPortionCount;
+            int fullDose = DrinkRules.GetIntoxicationGain(order.DrinkId);
+            int fullRelief = DrinkRules.GetStressRelief(order.DrinkId);
+            // Cumulative integer shares retain the complete authored dose,
+            // including the final remainder, without duplicating earlier sips.
+            int dose = (int)((long)fullDose * portionIndex / order.PortionCount -
+                (long)fullDose * completed / order.PortionCount);
+            int relief = (int)((long)fullRelief * portionIndex / order.PortionCount -
+                (long)fullRelief * completed / order.PortionCount);
             int intoxication = IntoxicationLevel;
             DrinkId lastDrink = LastAlcoholicDrink;
             if (DrinkRules.IsAlcoholic(order.DrinkId))
             {
                 intoxication = Math.Min(
                     IntoxicationStageRules.MaximumLevel,
-                    intoxication +
-                    DrinkRules.GetIntoxicationGain(order.DrinkId));
+                    intoxication + dose);
                 lastDrink = order.DrinkId;
             }
 
-            if (!order.TryMarkConsumed(sessionGeneration))
+            bool accepted = consumeRemaining
+                ? order.TryMarkConsumed(sessionGeneration)
+                : order.TryMarkPortionConsumed(sessionGeneration, portionIndex);
+            if (!accepted)
             {
                 return false;
             }
@@ -2110,14 +2134,15 @@ namespace BarPromenade
             CommitAcceptedDrinkingProgress(
                 intoxication,
                 lastDrink,
-                DrinksConsumed + 1,
-                DrinkRules.GetStressRelief(order.DrinkId),
-                DrinkRules.GetIntoxicationGain(order.DrinkId));
-            GameLog.Info(
-                "session",
-                "paid_drink_consumed",
-                GameLog.Field("order_sequence", order.Sequence),
-                GameLog.Field("drink", order.DrinkId.ToString()));
+                DrinksConsumed + (order.IsConsumed ? 1 : 0),
+                relief,
+                dose);
+            if (order.IsConsumed)
+                GameLog.Info(
+                    "session",
+                    "paid_drink_consumed",
+                    GameLog.Field("order_sequence", order.Sequence),
+                    GameLog.Field("drink", order.DrinkId.ToString()));
             return true;
         }
 

@@ -100,7 +100,7 @@ namespace BarPromenade
                 Rgb(64, 93, 62),
                 Rgb(224, 204, 117),
                 Rgb(220, 211, 176),
-                0.56f),
+                1f),
             Define(
                 DrinkId.RedWine,
                 "red-wine",
@@ -109,7 +109,7 @@ namespace BarPromenade
                 Rgb(47, 72, 50),
                 Rgb(111, 24, 38),
                 Rgb(190, 159, 112),
-                0.56f),
+                1f),
             Define(
                 DrinkId.Vodka,
                 "vodka",

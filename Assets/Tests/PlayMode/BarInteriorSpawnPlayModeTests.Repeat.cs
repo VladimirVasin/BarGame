@@ -1037,7 +1037,12 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(shop.BeginServedDrink(), Is.True);
                 waitStartFrame = Time.frameCount;
                 waitStartedAt = Time.realtimeSinceStartup;
-                while (shop.IsServing && HasBarSimulationBudget(waitStartFrame, 1200, waitStartedAt, 60f)) yield return null;
+                while (shop.IsServing && HasBarSimulationBudget(waitStartFrame,
+                           1200 * DrinkPurchaseRules.GetConsumptionStepCount(drink), waitStartedAt, 60f))
+                {
+                    BeginNextTestDrinkSip(bar);
+                    yield return null;
+                }
                 Assert.That(shop.Phase, Is.EqualTo(BarDrinkServicePhase.EmptyOnCounter),
                     DescribeBarSimulationWait(bar, waitStartFrame, waitStartedAt));
                 Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(consumed + 1));

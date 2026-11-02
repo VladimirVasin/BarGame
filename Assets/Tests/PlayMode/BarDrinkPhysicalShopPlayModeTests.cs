@@ -505,6 +505,9 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 cameraBeforePickup = camera.transform.position;
             Quaternion actionGazeRotation = camera.transform.rotation;
             float nearClipBeforePickup = camera.nearClipPlane;
+            int doseBeforeDrink = GameSessionState.HeroCorruptionDose;
+            int intoxicationAtDrinkStart = GameSessionState.IntoxicationLevel;
+            float drinkStartedAt = Time.unscaledTime;
             station.Interact(player.Interactor);
             Assert.That(
                 controller.Phase,
@@ -637,10 +640,11 @@ namespace BarPromenade.Tests.PlayMode
                     "The sip camera must rise with the animated head instead " +
                     "of remaining behind at the initiating gaze.");
 
-                timeout = Time.realtimeSinceStartup + 3f;
+                timeout = Time.realtimeSinceStartup + 3f * DrinkPurchaseRules.GetConsumptionStepCount(DrinkId.LightBeer);
                 while (controller.IsServing &&
                        Time.realtimeSinceStartup < timeout)
                 {
+                    BeginNextTestDrinkSip();
                     yield return null;
                 }
             }
@@ -659,11 +663,7 @@ namespace BarPromenade.Tests.PlayMode
                 camera.nearClipPlane,
                 Is.EqualTo(nearClipBeforePickup).Within(0.0001f),
                 "The action-specific near plane was not restored.");
-            Assert.That(
-                GameSessionState.IntoxicationLevel,
-                Is.EqualTo(
-                    intoxicationBefore +
-                    DrinkRules.GetIntoxicationGain(DrinkId.LightBeer)));
+            AssertCompleteDrinkEffects(DrinkId.LightBeer, intoxicationAtDrinkStart, doseBeforeDrink, drinkStartedAt);
             Assert.That(
                 GameSessionState.DrinksConsumed,
                 Is.EqualTo(drinksBefore + 1));
@@ -1021,6 +1021,9 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3.up);
             controller.RefreshServedDrinkAffordance();
             Assert.That(controller.IsLookingAtServedVessel, Is.True);
+            int doseBeforeDrink = GameSessionState.HeroCorruptionDose;
+            int intoxicationAtDrinkStart = GameSessionState.IntoxicationLevel;
+            float drinkStartedAt = Time.unscaledTime;
             Assert.That(controller.BeginServedDrink(), Is.True);
             Assert.That(
                 GameSessionState.DrinksConsumed,
@@ -1030,10 +1033,11 @@ namespace BarPromenade.Tests.PlayMode
             try
             {
                 Time.timeScale = 20f;
-                timeout = Time.realtimeSinceStartup + 4f;
+                timeout = Time.realtimeSinceStartup + 4f * DrinkPurchaseRules.GetConsumptionStepCount(DrinkId.RedWine);
                 while (controller.IsServing &&
                        Time.realtimeSinceStartup < timeout)
                 {
+                    BeginNextTestDrinkSip();
                     yield return null;
                 }
             }
@@ -1047,11 +1051,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 controller.Phase,
                 Is.EqualTo(BarDrinkServicePhase.EmptyOnCounter));
-            Assert.That(
-                GameSessionState.IntoxicationLevel,
-                Is.EqualTo(
-                    intoxicationBeforeService +
-                    DrinkRules.GetIntoxicationGain(DrinkId.RedWine)));
+            AssertCompleteDrinkEffects(DrinkId.RedWine, intoxicationAtDrinkStart, doseBeforeDrink, drinkStartedAt);
             Assert.That(
                 GameSessionState.DrinksConsumed,
                 Is.EqualTo(drinksBeforeService + 1));
@@ -2141,6 +2141,29 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(bottle.Body.isKinematic, Is.True);
             Assert.That(bottle.Body.useGravity, Is.False);
             Assert.That(bottle.Body.detectCollisions, Is.True);
+        }
+
+        private static void AssertCompleteDrinkEffects(DrinkId drink, int intoxicationBefore,
+            int doseBefore, float startedAt)
+        {
+            int gain = DrinkRules.GetIntoxicationGain(drink);
+            int projected = Mathf.Min(IntoxicationStageRules.MaximumLevel, intoxicationBefore + gain);
+            int maximumRecovery = Mathf.CeilToInt((Time.unscaledTime - startedAt) /
+                IntoxicationStageRules.RecoverySecondsPerPointAtMinimumLevel);
+            Assert.That(GameSessionState.IntoxicationLevel,
+                Is.InRange(Mathf.Max(0, projected - maximumRecovery), projected));
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(doseBefore + gain));
+        }
+
+        private void BeginNextTestDrinkSip()
+        {
+            CounterSeatView view = controller.CounterSeatView;
+            if (!controller.CanDrinkServedVessel || view == null || view.IsActionLookLocked ||
+                view.Seat.Controller.IsNestedLoopActionActive) return;
+            camera.transform.rotation = Quaternion.LookRotation(
+                serviceView.ActiveVessel.GlassRenderer.bounds.center - camera.transform.position, Vector3.up);
+            controller.RefreshServedDrinkAffordance();
+            Assert.That(controller.BeginServedDrink(), Is.True);
         }
 
         private static void CloseExistingModalOwners()

@@ -44,7 +44,7 @@ namespace BarPromenade.Tests.EditMode
                 Rgb(64, 93, 62),
                 Rgb(224, 204, 117),
                 Rgb(220, 211, 176),
-                0.56f),
+                1f),
             Entry(
                 DrinkId.RedWine,
                 "red-wine",
@@ -53,7 +53,7 @@ namespace BarPromenade.Tests.EditMode
                 Rgb(47, 72, 50),
                 Rgb(111, 24, 38),
                 Rgb(190, 159, 112),
-                0.56f),
+                1f),
             Entry(
                 DrinkId.Vodka,
                 "vodka",

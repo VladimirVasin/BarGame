@@ -442,6 +442,16 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(vessel.FillProgress, Is.Zero);
                 Assert.That(vessel.LiquidRoot.gameObject.activeSelf, Is.False);
 
+                if (vessel.Kind == BarDrinkVesselKind.WineGlass)
+                {
+                    view.SetFillProgress(1f);
+                    float rimHeight = vessel.DrinkRimAnchor.position.y;
+                    float rimGap = rimHeight - vessel.LiquidRenderer.bounds.max.y;
+                    Assert.That(rimGap / vessel.GlassRenderer.bounds.size.y,
+                        Is.InRange(.04f, .12f),
+                        "A complete wine pour must fill the authored bowl near its rim without overflowing.");
+                }
+
                 view.SetFillProgress(0.5f);
                 Assert.That(vessel.FillProgress, Is.EqualTo(0.5f));
                 Assert.That(

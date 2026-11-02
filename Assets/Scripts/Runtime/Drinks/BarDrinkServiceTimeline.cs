@@ -149,6 +149,9 @@ namespace BarPromenade
         public bool IsBeerService { get; private set; }
         public bool IsBottleService { get; private set; }
         public bool UsesUnderCounterBottle { get; private set; }
+        public int ConsumptionStepCount { get; private set; } = 1;
+        public int CompletedDrinkSteps { get; private set; }
+        public float RemainingDrinkFill => 1f - (float)CompletedDrinkSteps / ConsumptionStepCount;
         public bool IsRepeatService { get; private set; }
         public bool IsAwaitingDrink =>
             Phase == BarDrinkServicePhase.AwaitingDrink;
@@ -184,6 +187,8 @@ namespace BarPromenade
             IsBeerService = false;
             IsBottleService = false;
             UsesUnderCounterBottle = false;
+            ConsumptionStepCount = 1;
+            CompletedDrinkSteps = 0;
             IsRepeatService = false;
             EmptyVesselGripConfirmed = false;
             returnStartCameraBlend = 0f;
@@ -212,6 +217,8 @@ namespace BarPromenade
             IsBottleService =
                 drinkId != DrinkId.None && !IsBeerService;
             UsesUnderCounterBottle = drinkId == DrinkId.Vodka;
+            ConsumptionStepCount = DrinkPurchaseRules.GetConsumptionStepCount(drinkId);
+            CompletedDrinkSteps = 0;
             if (clearsEmptyVessel)
                 SetPhase(BarDrinkServicePhase.EmptyVesselWalkToGuest);
             else
@@ -228,6 +235,8 @@ namespace BarPromenade
             IsBeerService = drinkId == DrinkId.LightBeer;
             IsBottleService = !IsBeerService;
             UsesUnderCounterBottle = drinkId == DrinkId.Vodka;
+            ConsumptionStepCount = DrinkPurchaseRules.GetConsumptionStepCount(drinkId);
+            CompletedDrinkSteps = 0;
             EmptyVesselGripConfirmed = false;
             SetPhase(IsBeerService
                 ? BarDrinkServicePhase.EmptyVesselWalkToGuest
@@ -242,6 +251,8 @@ namespace BarPromenade
             IsBeerService = drinkId == DrinkId.LightBeer || drinkId == DrinkId.DarkBeer;
             IsBottleService = !IsBeerService;
             UsesUnderCounterBottle = drinkId == DrinkId.Vodka;
+            ConsumptionStepCount = DrinkPurchaseRules.GetConsumptionStepCount(drinkId);
+            CompletedDrinkSteps = 0;
             EmptyVesselGripConfirmed = false;
             SetPhase(IsBeerService ? BarDrinkServicePhase.EmptyVesselWalkToGuest : BarDrinkServicePhase.BottleWalkToShelf);
         }
@@ -399,6 +410,8 @@ namespace BarPromenade
             IsBeerService = false;
             IsBottleService = false;
             UsesUnderCounterBottle = false;
+            ConsumptionStepCount = 1;
+            CompletedDrinkSteps = 0;
             IsRepeatService = false;
             EmptyVesselGripConfirmed = false;
             returnStartCameraBlend = 0f;
@@ -609,26 +622,27 @@ namespace BarPromenade
                 case BarDrinkServicePhase.AwaitingDrink:
                     cameraBlend = 1f;
                     vesselVisibility = 1f;
-                    vesselFill = 1f;
+                    vesselFill = RemainingDrinkFill;
                     serviceVesselTravel = 1f;
                     break;
                 case BarDrinkServicePhase.PlayerPickup:
                     cameraBlend = 1f;
                     vesselVisibility = 1f;
-                    vesselFill = 1f;
+                    vesselFill = RemainingDrinkFill;
                     drinkLift = SmootherStep(progress);
                     serviceVesselTravel = 1f;
                     break;
                 case BarDrinkServicePhase.PlayerDrinking:
                     cameraBlend = 1f;
                     vesselVisibility = 1f;
-                    vesselFill = 1f - SmootherStep(progress);
+                    vesselFill = Math.Max(0f, RemainingDrinkFill - SmootherStep(progress) / ConsumptionStepCount);
                     drinkLift = 1f;
                     serviceVesselTravel = 1f;
                     break;
                 case BarDrinkServicePhase.PlayerVesselReturn:
                     cameraBlend = 1f;
                     vesselVisibility = 1f;
+                    vesselFill = Math.Max(0f, RemainingDrinkFill - 1f / ConsumptionStepCount);
                     drinkLift = 1f - SmootherStep(progress);
                     serviceVesselTravel = 1f;
                     break;
@@ -753,9 +767,10 @@ namespace BarPromenade
                         BarDrinkServicePhase.PlayerVesselReturn);
                     break;
                 case BarDrinkServicePhase.PlayerVesselReturn:
-                    IsCommitted = false;
+                    CompletedDrinkSteps++;
+                    IsCommitted = CompletedDrinkSteps < ConsumptionStepCount;
                     SetPhaseWithoutClearingElapsed(
-                        BarDrinkServicePhase.EmptyOnCounter);
+                        IsCommitted ? BarDrinkServicePhase.AwaitingDrink : BarDrinkServicePhase.EmptyOnCounter);
                     break;
                 case BarDrinkServicePhase.CameraReturn:
                     Reset();

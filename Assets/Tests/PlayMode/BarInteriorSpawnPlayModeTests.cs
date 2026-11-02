@@ -1263,7 +1263,11 @@ namespace BarPromenade.Tests.PlayMode
             bool sawApproach = false, sawPickup = false, sawSip = false, sawReturn = false;
             try
             {
-                for (int frame = 0; frame < 900 && bar.DrinkShop.IsServing; frame++)
+                for (int frame = 0;
+                     frame < 900 * DrinkPurchaseRules.GetConsumptionStepCount(drinkId) && bar.DrinkShop.IsServing;
+                     frame++)
+                {
+                    BeginNextTestDrinkSip(bar);
                     yield return AtFinalBarPose(probe, () =>
                     {
                         BarDrinkServicePhase phase = bar.DrinkShop.Phase;
@@ -1323,6 +1327,7 @@ namespace BarPromenade.Tests.PlayMode
                             "The hero's vessel jumped between rendered frames.");
                         previous = vessel.transform.position;
                     });
+                }
                 yield return AtFinalBarPose(probe, () =>
                 {
                     if (bar.DrinkShop.Phase != BarDrinkServicePhase.EmptyOnCounter)

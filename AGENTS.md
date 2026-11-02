@@ -29,11 +29,16 @@ Rules:
   included — must satisfy the story bible's §21 «Регистр текста».
 - Every level of the story bible's `0-5` scale must still pass all nine art
   bible §16 acceptance checks.
-- A deviation from either bible requires an explicit user decision recorded as
-  an accepted architecture exception in `ai/architecture-notes.md`. The same
-  rule already governs `ai/contextual-animation-standard.md`.
+- Bible or contextual-animation deviations require an explicit user decision
+  recorded as an accepted exception in `ai/architecture-notes.md`.
 - Update the relevant bible when its facts change, exactly as for the documents
   listed under Quality and documentation.
+
+## Git
+
+User `2026-11-03`: «отправить в гит» authorizes committing task changes and
+pushing to `origin/main` (`https://github.com/VladimirVasin/BarGame.git`)
+without reconfirmation. Host approval policy still applies.
 
 ## Host power state
 
@@ -138,13 +143,11 @@ Fix growing writers or shorten retention; never raise it.
   do not stack compilation and both Unity test layers.
 - Update `ai/project-overview.md` or `ai/systems-map.md` when their facts change.
   Use `git ls-files`/`rg` as the path reference; do not keep a copied file tree.
-- Update `ai/city-zones-art-bible.md` or `ai/city-story-bible.md` when their
-  facts change; see World canon above for how they bind a change.
+- Keep both bibles current; World canon governs changes.
 - Record meaningful implementation sessions in `ai/work-log.md`.
 - Put player-visible milestones in `ai/release-notes.md`.
-- Keep `README.md` in step with player-visible reality. It is the only
-  human-facing document and drifts fastest; a change that alters what the
-  player sees or controls also belongs there.
+- Keep `README.md`, the only human-facing document, current with what the
+  player sees and controls.
 - `ai/systems-map.md` is an index. Keep each cell to one or two rendered lines
   and use only the four statuses defined in `ai/README.md`; a `Partial` row
   must name its gap. Put the detail in `ai/architecture-notes.md`.

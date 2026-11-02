@@ -57,7 +57,7 @@ namespace BarPromenade
 
     /// <summary>
     /// One paid drink that has not necessarily been consumed yet. The token is
-    /// session-bound and can commit its effects at most once.
+    /// session-bound and commits each ordered portion at most once.
     /// </summary>
     public sealed class DrinkOrderToken
     {
@@ -69,12 +69,24 @@ namespace BarPromenade
             SessionGeneration = sessionGeneration;
             Sequence = sequence;
             DrinkId = drinkId;
+            PortionCount = DrinkPurchaseRules.GetConsumptionStepCount(drinkId);
         }
 
         internal int SessionGeneration { get; }
         internal long Sequence { get; }
         public DrinkId DrinkId { get; }
-        public bool IsConsumed { get; private set; }
+        public int PortionCount { get; }
+        public int CompletedPortionCount { get; private set; }
+        public bool IsConsumed => CompletedPortionCount == PortionCount;
+
+        internal bool TryMarkPortionConsumed(int currentSessionGeneration, int portionIndex)
+        {
+            if (IsConsumed || SessionGeneration != currentSessionGeneration ||
+                portionIndex != CompletedPortionCount + 1 || portionIndex > PortionCount)
+                return false;
+            CompletedPortionCount = portionIndex;
+            return true;
+        }
 
         internal bool TryMarkConsumed(int currentSessionGeneration)
         {
@@ -83,13 +95,27 @@ namespace BarPromenade
                 return false;
             }
 
-            IsConsumed = true;
+            CompletedPortionCount = PortionCount;
             return true;
         }
     }
 
     public static class DrinkPurchaseRules
     {
+        public static int GetConsumptionStepCount(DrinkId drinkId)
+        {
+            switch (drinkId)
+            {
+                case DrinkId.LightBeer:
+                case DrinkId.DarkBeer:
+                case DrinkId.WhiteWine:
+                case DrinkId.RedWine:
+                    return 3;
+                default:
+                    return 1;
+            }
+        }
+
         public static DrinkPurchaseResult Evaluate(
             DrinkId drinkId,
             int cashBalance,

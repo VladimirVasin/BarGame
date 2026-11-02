@@ -3,6 +3,20 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-03
+
+Bar beer/wine:three separate E actions;partial vessel waits at same dock,
+shared gaze/outline and seated camera restored each return. Payment once;
+proportional existing alcohol/stress after each completed action,order count at last.
+Wine uses full safe authored fill;vodka/cognac stay single-action.
+Shared rig/timeline/contacts/cleanup;24FX providers/materials kept,
+liquid/glass/DOF/head-camera fit govern focused visual review;bounded state,
+CPU/GPU unmeasured.
+BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment/
+WineService_FullGlassTakesThreeSeparateSips passed;full/partial/empty frames reviewed.
+PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce/BeerService_WaitsForPhysicalArrivalAndExplicitDrink/
+BottleService_WaitsForEveryArrivalAndExplicitDrink passed.
+
 ## 2026-11-02
 
 Bar:Escape closes before pause;vodka floor-source under rear counter overhang,

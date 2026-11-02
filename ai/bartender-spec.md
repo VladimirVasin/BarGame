@@ -82,10 +82,12 @@ Shared Wipe/Notice/Pour/handling; full Walk only during root travel.
 central tap; wine/cognac: selected backbar shelf bottle. Vodka stands on the
 floor under the rear counter overhang: facing the counter, deep forward knee
 bend with planted feet closes the grip, then restores its exact source pose.
-All bottles share preparation opposite the resting menu and matching vessels.
-Wine/snifter/shot:18.5/12.8/5.8 cm; beer15.515 cm. Measured shells drive
-wood-clear lift/transfer/lower. Shared IK closes contacts; torso tilt≤38°.
-Menu/drink docks follow the chosen stool; completion/cleanup releases hands.
+Preparation opposite menu;wine/snifter/shot18.5/12.8/5.8cm,beer15.515cm.
+Shell bounds/IK preserve wood clearance/contacts,torso≤38°,chosen-stool docks.
+Beer/wine:three separate E actions,each pickup/sip/return consumes1/3;
+partial2/3,1/3 retain gazeE/contour,each restores seated view. One payment,
+proportional alcohol/stress,order count on third. Wine safe full TargetFill1.
+Cognac/vodka one action;completion/cleanup releases hands.
 
 `BarBartenderServiceQueue` gives hero/present counter guests deduplicated FIFO slots;
 one service runs. `BarCounterPatronRefill` drains cups during sips at distinct
@@ -138,9 +140,8 @@ and charges the selected or last served drink once, then joins the FIFO.
 Payment/receipt occur on acceptance, not dispatch. The bartender carries the
 same mug to the tap and stays planted while retracting the full mug into
 the walking grasp; only the completed retraction releases guest travel.
-Wine/cognac/vodka keep the same vessel
-on its guest dock while the matching bottle comes, pours directly and returns
-to its source. Another explicit sip commits the new order's effects once.
+Wine/cognac/vodka keep their vessel at the guest dock for bottle refill/return.
+Beer/wine repeat three portions;other drinks one,with the same effect boundaries.
 Accepted user exception `2026-10-22` replaces disposal only for this repeat.
 
 Choosing a different drink through the menu first sends the bartender to collect it: walk to the

@@ -6,6 +6,15 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
+### 2026-11-03
+
+- Пиво и полный бокал вина:три отдельных нажатия E,каждый раз треть и возврат
+  на стойку. Остаток ждёт следующего нажатия;камера возвращается к сидячему виду.
+  Оплата одна,алкоголь/стресс по частям,напиток засчитан после последней.
+  Коньяк и водка по-прежнему за один приём.
+  BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment/
+  WineService_FullGlassTakesThreeSeparateSips passed;frames reviewed.
+
 ### 2026-11-02
 
 - Бар:Escape закрывает меню без заказа/паузы;водку достают из-под прилавка и возвращают туда же.

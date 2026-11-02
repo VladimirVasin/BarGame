@@ -1,6 +1,17 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted by explicit user decision 2026-11-03 — three separate beer/wine sips:**
+  Beer/wine require three fresh E presses. Each visible pickup/sip/return consumes
+  one third;2/3 and1/3 wait at the same counter dock with ordinary gaze prompt/
+  contour. Each return restores seated camera/look; contacts/parent rig kept.
+  One payment/order; proportional existing alcohol/stress per completed action,
+  unchanged total, order count once on third. Cognac/vodka retain one action.
+  RedWine/legacy WhiteWine use full safe authored TargetFill1; no new art/text.
+  Shared timeline/token/cleanup, bounded sip state;24FX providers retained,
+  liquid/glass/DOF/head-camera contacts use the same owners.
+  No canon ban or contextual exception;§16/21/art9;CPU/GPU unmeasured.
+
 - **Accepted by explicit user decision 2026-11-02 — bar close and vodka storage:**
   Escape closes the open physical drink book before pause handling, without
   ordering/standing. Vodka stands on the floor beneath the existing rear counter
@@ -7405,8 +7416,8 @@
   Deterministic poses and one reusable world stream serve bottles. Prefab-derived
   camera-local attachment retains trajectory only; subset renderers stay off.
   The seated world body is authoritative; seat view hides its head only.
-  Payment commits once before service; drinking effects once after the visible
-  drink. Exit waits until empty-vessel return. Completion clears that order and
+  Payment once before service;beer/wine effects per completed third, other drinks
+  once. Exit waits for return;completion counts the order once and
   leaves the book closed. Gaze reopens; looking away offers shared animated exit;
   bartender retrieves the book only after exit. Cleanup never refunds and restores
   bottle/vessel/camera/body/controls/HUD. F9 replaces pre-commit browsing only.
@@ -7414,24 +7425,16 @@
   eye camera stays above the counter with shallow upward pitch. No floor order
   marker or emissive counter sign.
 - **Accepted by explicit user decision, 2026-09-04 — central-tap beer service
-  and embodied drinking:** this supersedes the beer-specific bottle,
-  camera-local vessel-attachment and single confirmation/effect-boundary
-  clauses of the physical-retail decision above; the non-beer bottle branch
-  remains available. `LightBeer` uses the middle of the three existing taps.
-  After the paid order the ordinary bartender walks to its authored dock,
-  takes the compact beer mug, physically pulls the handle over it while the
-  stream fills it, walks to the selected stool and places the full mug directly
-  before the hero. `AwaitingDrink` has no timeout: the same gaze predicate owns both
-  the thin yellow contour and the localized `E` prompt. Accepting it runs
-  `BarDrinkPickupEnter` (`2 s`) → `BarDrinkSipLoop` (`3 s`) →
-  `BarDrinkReturnExit` (`2 s`) as a nested action on the visible seated Hero V2
-  rig. His right hand grips the handle, lifts, drinks and replaces the mug; it
-  remains visibly empty on the counter. Cash commits at order confirmation,
-  while intoxication,
-  last-drink, consumed-count and stress effects commit exactly once after the
-  physical action completes. This follows the shared nested-action and cleanup
-  rules in `ai/contextual-animation-standard.md`; it is an accepted architecture
-  decision, not an exception to that standard or either world bible.
+  and embodied drinking:** `LightBeer` uses the middle of three taps instead
+  of bottle service. The ordinary bartender walks to the dock, takes a mug,
+  pulls the handle, fills via world stream, carries/places it before the selected
+  stool. `AwaitingDrink` has no timeout;one gaze predicate owns contour/E.
+  Each accepted action uses nested visible Hero V2 `BarDrinkPickupEnter`2s →
+  `BarDrinkSipLoop`3s → `BarDrinkReturnExit`2s with right-hand handle contact.
+  Three separate actions consume thirds;only the last leaves it empty. Payment
+  once before service;effects proportional after each completed return, order
+  count once after third. Shared contextual positioning/timeline/cleanup apply;
+  no animation or bible exception.
 - **Accepted by explicit user decision, 2026-09-04 — compact right-handed beer
   mug and patron-aligned sip:** this supersedes only the vessel form, grip side
   and drinking-pose clauses of the central-tap decision above. The stable
@@ -7447,9 +7450,8 @@
   vessel remains ahead of the lens when the body moves back into the sip. The
   rim stays at the mouth, the mug reaches a horizontal pose and the head and
   upper body rise with it, following the same restrained pose logic as the
-  corrected patron drink. The central tap, `2/3/2 s` timeline, payment and
-  deferred-effect boundaries, empty return and everyday level-`0` meaning remain
-  unchanged; no new lore or contextual-animation exception is introduced.
+  corrected patron drink. Each third retains central tap, `2/3/2 s` clips,
+  contact return and everyday level-`0` meaning;no new lore/animation exception.
 - **Accepted — Session wallet and paid bar orders:** A fresh runtime
   session starts with `$999` in integer cash and preserves that balance across
   city/bar/supermarket scene loads and city-seed changes. Every bar owns one
@@ -7458,10 +7460,10 @@
   distillate and vodka. Each offer includes its price and a short low-grade
   taste description. Pure purchase rules
   validate the offer, affordability and maximum intoxication before one
-  `GameSessionState` paid-order transaction deducts cash and issues a
-  single-use token. Intoxication, last-drink, consumed-count and stress effects
-  commit only when physical consumption completes; failures mutate nothing,
-  duplicate consumption is rejected and cash cannot become negative. Legacy
+  `GameSessionState` payment issues one token. Beer/wine complete thirds with
+  proportional alcohol/stress;other drinks consume once. Only the final portion
+  completes/counts the order. Failure/duplicate consumption mutate nothing;
+  cash cannot become negative. Legacy
   lookup still accepts the former water and alcohol IDs so persisted state and
   patron props remain readable, but those offers are not enumerated in the
   player menu. `None` and `Moonshine` (a stable legacy ID kept for persisted
