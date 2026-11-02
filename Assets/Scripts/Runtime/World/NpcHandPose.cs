@@ -261,6 +261,9 @@ namespace BarPromenade
             public float Weight { get; private set; } = -1f;
             public NpcHandGripKind Kind { get; private set; }
             private readonly int[] shapes;
+            private readonly string shapeName;
+            private readonly Mesh[] meshes;
+            private readonly int[] shapeCounts;
             private UnityEngine.Object gripOwner;
             private NpcHandGripKind ownedKind, previousKind;
             private float previousWeight;
@@ -287,6 +290,7 @@ namespace BarPromenade
             public BoundHand(HandBinding binding, string shape, Transform owner, HashSet<SkinnedMeshRenderer> owned)
             {
                 Binding = binding;
+                shapeName = shape;
                 Transform hand = binding.Hand;
                 if (hand == null || !hand.IsChildOf(owner) || binding.GripSocket == null ||
                     !binding.GripSocket.IsChildOf(hand) || binding.CentreAnchor == null ||
@@ -302,12 +306,16 @@ namespace BarPromenade
                 if (binding.Renderers == null || binding.Renderers.Count == 0)
                     throw new ArgumentException("An authored grip needs its existing hand renderers.");
                 shapes = new int[binding.Renderers.Count];
+                meshes = new Mesh[shapes.Length];
+                shapeCounts = new int[shapes.Length];
                 for (int part = 0; part < shapes.Length; part++)
                 {
                     SkinnedMeshRenderer renderer = binding.Renderers[part];
                     if (renderer == null || !renderer.transform.IsChildOf(owner) || !owned.Add(renderer) || renderer.sharedMesh == null)
                         throw new ArgumentException("Grip renderers must be unique parts of this NPC.");
                     Mesh mesh = renderer.sharedMesh;
+                    meshes[part] = mesh;
+                    shapeCounts[part] = mesh.blendShapeCount;
                     shapes[part] = -1;
                     for (int i = 0; i < mesh.blendShapeCount; i++)
                     {
@@ -320,7 +328,11 @@ namespace BarPromenade
                 }
             }
 
-            public void Prepare(NpcHandGripKind kind) => GetVariantShapes(kind);
+            public void Prepare(NpcHandGripKind kind)
+            {
+                RefreshShapes();
+                GetVariantShapes(kind);
+            }
 
             public void SetManualWeight(float weight, NpcHandGripKind kind)
             {
@@ -360,6 +372,7 @@ namespace BarPromenade
 
             public void SetWeight(float weight, NpcHandGripKind kind = NpcHandGripKind.Cylindrical)
             {
+                RefreshShapes();
                 GetVariantShapes(kind);
                 foreach (KeyValuePair<NpcHandGripKind, int[]> variant in variantShapes)
                     WriteWeights(variant.Value, variant.Key == kind ? weight : 0f);
@@ -374,8 +387,35 @@ namespace BarPromenade
                 // changing this owner's cached weight. Reconcile the actual
                 // mesh after sampling, including an unchanged held grip.
                 for (int i = 0; i < indices.Length; i++)
-                    if (Binding.Renderers[i] != null && Binding.Renderers[i].GetBlendShapeWeight(indices[i]) != weight * 100f)
-                        Binding.Renderers[i].SetBlendShapeWeight(indices[i], weight * 100f);
+                {
+                    SkinnedMeshRenderer renderer = Binding.Renderers[i];
+                    Mesh mesh = renderer != null ? renderer.sharedMesh : null;
+                    int index = indices[i];
+                    if (mesh != null && index >= 0 && index < mesh.blendShapeCount &&
+                        renderer.GetBlendShapeWeight(index) != weight * 100f)
+                        renderer.SetBlendShapeWeight(index, weight * 100f);
+                }
+            }
+
+            private void RefreshShapes()
+            {
+                for (int part = 0; part < shapes.Length; part++)
+                {
+                    SkinnedMeshRenderer renderer = Binding.Renderers[part];
+                    Mesh mesh = renderer != null ? renderer.sharedMesh : null;
+                    int count = mesh != null ? mesh.blendShapeCount : 0;
+                    if (meshes[part] == mesh && shapeCounts[part] == count) continue;
+                    meshes[part] = mesh;
+                    shapeCounts[part] = count;
+                    // A live import can temporarily remove morphs or replace
+                    // their ordering. Keep ownership and desired weight while
+                    // absent, then resolve names and reapply on the next write.
+                    shapes[part] = CharacterJointDeformation.FindShape(mesh, shapeName);
+                    foreach (KeyValuePair<NpcHandGripKind, int[]> variant in variantShapes)
+                        variant.Value[part] = CharacterJointDeformation.FindShape(mesh, VariantName(variant.Key));
+                    hasAnatomicalFrame = false;
+                    variantFrames.Clear();
+                }
             }
 
             private int[] GetVariantShapes(NpcHandGripKind kind)

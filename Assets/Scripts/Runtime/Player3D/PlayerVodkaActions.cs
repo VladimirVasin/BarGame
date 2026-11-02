@@ -11,13 +11,13 @@ namespace BarPromenade
             RaiseClip = "VodkaRaise", SipClip = "VodkaSip", LowerClip = "VodkaLower", CloseClip = "VodkaClose",
             EmptyCheckClip = "VodkaEmptyCheck", StowClip = "VodkaStow", ThrowClip = "VodkaThrow";
         public const float CarrySeconds = 1f, DrawSeconds = 1.5f, OpenSeconds = 1.25f,
-            RaiseSeconds = .5f, SipSeconds = 2f, LowerSeconds = .5f, CloseSeconds = 1.25f,
-            EmptyCheckSeconds = 3f, StowSeconds = .75f, ThrowSeconds = 1f;
+            RaiseSeconds = .5f, SipSeconds = 1f, LowerSeconds = .5f, CloseSeconds = 1.25f,
+            EmptyCheckSeconds = 2f, StowSeconds = .75f, ThrowSeconds = 1f;
         public const float SipCommitProgress = .5f, ThrowReleaseProgress = .6f,
             DrawTransferProgress = .48f / 1.70f, CapContactProgress = .448f,
             CapTwistEndProgress = .664f, CapOpenProgress = .70f, CapReleaseProgress = .90f;
-        public const float EmptyCheckTurnProgress = .25f, FirstShakeProgress = .40f, ShakeRestProgress = .55f,
-            SecondShakeProgress = .70f, EmptyCheckReturnProgress = .85f, EmptyCheckShakeDistance = .075f;
+        public const float EmptyCheckTurnProgress = .25f, FirstShakeProgress = .375f, ShakeRestProgress = .4375f,
+            SecondShakeProgress = .5f, EmptyCheckReturnProgress = .625f, EmptyCheckShakeDistance = .075f;
         public const float EmptyCheckTiltDegrees = 235f, ThrowWindupProgress = .44f;
         public static readonly string[] ClipNames = { CarryClip, DrawClip, OpenClip, RaiseClip, SipClip, LowerClip,
             CloseClip, EmptyCheckClip, StowClip, ThrowClip };

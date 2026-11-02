@@ -17,9 +17,9 @@
   same hand/morph/contact;Art§2.
 
 - **Accepted 2026-11-02 — vodka sip cadence, user:**
-  500ml=15×33/34ml;click1;hold raises once→mouth-held sips→lower on
-  release/empty/refusal. Neck grip/rig/gait/scarf;DrinkGulp once/swallow.
-  Close before stow;empty→eye-level neck-down/look→2shakes→resentful toss.
+  500ml=15×33/34ml;click1;held mouth loop1s;release/empty/refusal lowers.
+  Neck/rig/gait/scarf;DrinkGulp4 wet cues once/swallow,shared bar.
+  Cap→stow;empty2s:eye-level neck-down/look→2shakes(.25s apart)→resentful toss.
   Text/voice0.
 
 - **Accepted 2026-11-02 — vodka balance, user:**

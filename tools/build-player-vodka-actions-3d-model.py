@@ -26,11 +26,11 @@ MANIFEST = OUT.with_suffix(".json")
 BLEND = ROOT / "ArtSource/Player/Blender/PlayerVodkaActions.blend"
 FPS = 24
 CLIPS = (("VodkaCarry", 1., True), ("VodkaDraw", 1.5, False),
-         ("VodkaOpen", 1.25, False), ("VodkaRaise", .5, False), ("VodkaSip", 2., True),
-         ("VodkaLower", .5, False), ("VodkaClose", 1.25, False), ("VodkaEmptyCheck", 3., False),
+         ("VodkaOpen", 1.25, False), ("VodkaRaise", .5, False), ("VodkaSip", 1., True),
+         ("VodkaLower", .5, False), ("VodkaClose", 1.25, False), ("VodkaEmptyCheck", 2., False),
          ("VodkaStow", .75, False), ("VodkaThrow", 1., False))
 LOWER = ("root", "pelvis", "thigh.L", "thigh.R", "shin.L", "shin.R", "foot.L", "foot.R")
-SHAKE_MARKERS = (.25, .40, .55, .70, .85)
+SHAKE_MARKERS = (.25, .375, .4375, .50, .625)
 SHAKE_DISTANCE = .075
 CHECK_TILT_DEGREES = 235.
 MOUTH_ABOVE_GRIP = .440*.65-.215
@@ -41,6 +41,14 @@ THROW_RELEASE = .60
 def smooth(t):
     t = max(0., min(1., t))
     return t*t*(3.-2.*t)
+
+
+def empty_check_amounts(t):
+    turn_end,first_peak,between,second_peak,return_start=SHAKE_MARKERS
+    turn=smooth(t/turn_end)*(1.-smooth((t-return_start)/(1.-return_start)))
+    first=smooth((t-turn_end)/(first_peak-turn_end))*(1.-smooth((t-first_peak)/(between-first_peak)))
+    second=smooth((t-between)/(second_peak-between))*(1.-smooth((t-second_peak)/(return_start-second_peak)))
+    return turn,first+second
 
 
 def pose_dict(builder):
@@ -205,8 +213,7 @@ def build():
                 rig.pose.bones['head'].rotation_quaternion=Quaternion(Vector((1.,0.,0.)),math.radians(-6*amount-1.5*gulp))@neutral['head'][1]
                 bpy.context.view_layer.update()
             elif name=='VodkaEmptyCheck':
-                turn=smooth(t/.25)*(1.-smooth((t-.85)/.15))
-                shake=smooth((t-.25)/.15)*(1.-smooth((t-.40)/.15))+smooth((t-.55)/.15)*(1.-smooth((t-.70)/.15))
+                turn,shake=empty_check_amounts(t)
                 rpos=carry.lerp(check_wrist,turn)+check_axis*(SHAKE_DISTANCE*shake)
                 rrot=carry_rot.slerp(check_rotation,turn)
                 opening=check_mouth+check_axis*(SHAKE_DISTANCE*shake)
@@ -243,8 +250,8 @@ def build():
                 elif open_second>1.10:mix_bones(current,neutral,smooth((open_second-1.10)/.15),left_bones)
             elif name=='VodkaEmptyCheck':
                 current=seat.snapshot(result)
-                if t<.25:mix_bones(carry_pose,current,smooth(t/.25),right_bones)
-                elif t>.85:mix_bones(current,carry_pose,smooth((t-.85)/.15),right_bones)
+                if t<SHAKE_MARKERS[0]:mix_bones(carry_pose,current,smooth(t/SHAKE_MARKERS[0]),right_bones)
+                elif t>SHAKE_MARKERS[-1]:mix_bones(current,carry_pose,smooth((t-SHAKE_MARKERS[-1])/(1.-SHAKE_MARKERS[-1])),right_bones)
             keys.append((t,pose_dict(builder)))
         builder._create_action(name,'vodka_equipment',duration,loop,count,FPS,keys)
     def sample(name,t):

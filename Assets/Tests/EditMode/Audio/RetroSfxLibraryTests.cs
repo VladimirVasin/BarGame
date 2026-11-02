@@ -141,6 +141,23 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(peak, Is.GreaterThan(0.04f));
             Assert.That(peak, Is.LessThanOrEqualTo(0.981f));
             Assert.That(energy, Is.GreaterThan(0.01d));
+
+            if (id == RetroSfxId.DrinkGulp)
+            {
+                Assert.That(definition.VariantCount, Is.EqualTo(4));
+                float[] previous = first;
+                for (int variant = 1; variant < definition.VariantCount; variant++)
+                {
+                    float[] samples = RetroSfxLibrary.GenerateSamples(id, variant);
+                    string label = id + " variant " + variant;
+                    Assert.That(samples.Length, Is.EqualTo(first.Length), label);
+                    CollectionAssert.AreEqual(samples, RetroSfxLibrary.GenerateSamples(id, variant), label);
+                    AssertAudible(samples, label);
+                    Assert.That(samples, Is.Not.EqualTo(first), label);
+                    Assert.That(samples, Is.Not.EqualTo(previous), label);
+                    previous = samples;
+                }
+            }
         }
 
         [Test]
@@ -355,12 +372,11 @@ namespace BarPromenade.Tests.EditMode
                     .MaxVoices,
                 Is.EqualTo(2));
 
-            // Only footsteps carry a bank; the service generates exactly
-            // the extra clips those banks add.
+            // Footstep and gulp banks add cached clips to the total budget.
             for (int index = 1; index < (int)RetroSfxId.Count; index++)
             {
                 var id = (RetroSfxId)index;
-                if (System.Array.IndexOf(FootstepCues, id) >= 0)
+                if (System.Array.IndexOf(FootstepCues, id) >= 0 || id == RetroSfxId.DrinkGulp)
                 {
                     continue;
                 }
@@ -373,20 +389,21 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 RetroSfxLibrary.TotalClipCount,
-                Is.EqualTo(RetroSfxLibrary.Count + FootstepCues.Length * 2));
+                Is.EqualTo(RetroSfxLibrary.Count + FootstepCues.Length * 2 + 3));
         }
 
-        [Test]
-        public void NextVariant_NeverRepeatsAndCoversEveryVariant()
+        [TestCase(3)]
+        [TestCase(4)]
+        public void NextVariant_NeverRepeatsAndCoversEveryVariant(int variantCount)
         {
-            // Consecutive footsteps on a walk advance the sequence by one
-            // each; the choice must still not settle into two of three.
+            // Consecutive plays advance one shared sequence; each bank must
+            // cover every variant without immediate repeats.
             int last = 0;
-            var seen = new bool[3];
+            var seen = new bool[variantCount];
             for (uint sequence = 0; sequence < 60; sequence++)
             {
-                int next = RetroSfxLibrary.NextVariant(last, 3, sequence);
-                Assert.That(next, Is.InRange(0, 2));
+                int next = RetroSfxLibrary.NextVariant(last, variantCount, sequence);
+                Assert.That(next, Is.InRange(0, variantCount - 1));
                 Assert.That(
                     next,
                     Is.Not.EqualTo(last),

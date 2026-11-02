@@ -123,7 +123,7 @@ ModelImporter:
       takeName: RIG_Player|VodkaEmptyCheck
       internalID: 8439249440755904776
       firstFrame: 0
-      lastFrame: 72
+      lastFrame: 48
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -239,7 +239,7 @@ ModelImporter:
       takeName: RIG_Player|VodkaSip
       internalID: -6496946540914372304
       firstFrame: 0
-      lastFrame: 48
+      lastFrame: 24
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

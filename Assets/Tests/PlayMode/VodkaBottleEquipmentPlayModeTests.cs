@@ -312,12 +312,22 @@ namespace BarPromenade.Tests.PlayMode
             Time.captureDeltaTime = .05f;
             yield return Frames(3);
             input.Press(mouse.leftButton, queueEventOnly: true);
+            double previousHeldCommit = -1d;
             for (int sip = 2; sip <= VodkaBottleState.FullBottleSipCount; sip++)
             {
                 int expected = sip;
                 if (sip <= 2) yield return Await(() => bottle.CompletedSips >= expected, "Held LMB did not advance to sip " + expected);
                 else yield return AwaitHeldSip(expected, allowRaise: sip == 3);
                 Assert.That(bottle.CompletedSips, Is.EqualTo(expected), "One cycle can commit only one sip.");
+                if (sip >= 3)
+                {
+                    double committedAt = Time.timeAsDouble;
+                    if (previousHeldCommit >= 0d)
+                        Assert.That(committedAt - previousHeldCommit,
+                            Is.InRange(1d - .0001d, 1d + 2d * Time.deltaTime + .0001d),
+                            "Continuous drinking must swallow about once a second, including bounded terminal-frame overhead.");
+                    previousHeldCommit = committedAt;
+                }
                 Assert.That(GameSessionState.VodkaBottleRemainingMl,
                     Is.EqualTo(VodkaBottleState.FullMl - expected * VodkaBottleState.FullMl / VodkaBottleState.FullBottleSipCount));
                 if (sip == 2 || sip == 3)
@@ -553,8 +563,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.VodkaBottle), Is.Zero);
             Assert.That(GameSessionState.IsInventoryItemEquipped(InventoryItemId.VodkaBottle), Is.False);
             int thrown = bottle.ThrownBottles, captured = 0, previousShakes = 0;
-            float[] stops = { .25f, .40f, .55f, .70f, .85f };
+            float[] stops = { PlayerVodkaActions.EmptyCheckTurnProgress, PlayerVodkaActions.FirstShakeProgress,
+                PlayerVodkaActions.ShakeRestProgress, PlayerVodkaActions.SecondShakeProgress, PlayerVodkaActions.EmptyCheckReturnProgress };
             Vector3[] neckPositions = new Vector3[stops.Length];
+            double[] presentedAt = new double[stops.Length];
             Vector3 checkAxis = Vector3.zero;
             for (int frame = 0; frame < 300 && bottle.Phase == PlayerVodkaBottleController.BottlePhase.CheckingEmpty; frame++)
             {
@@ -565,7 +577,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(bottle.ThrownBottles, Is.EqualTo(thrown), "The prop cannot leave the hand before both shakes finish.");
                 Assert.That(bottle.CompletedEmptyShakes, Is.InRange(previousShakes, 2));
                 previousShakes = bottle.CompletedEmptyShakes;
-                if (bottle.PhaseProgress >= .25f && bottle.PhaseProgress <= .85f)
+                if (bottle.PhaseProgress >= PlayerVodkaActions.EmptyCheckTurnProgress &&
+                    bottle.PhaseProgress <= PlayerVodkaActions.EmptyCheckReturnProgress)
                     Assert.That(Vector3.Dot(original.transform.up, Vector3.up), Is.LessThan(-.50f),
                         "Both empty-check thrusts must keep the neck facing down.");
                 if (captured >= stops.Length || bottle.PhaseProgress + .00001f < stops[captured]) continue;
@@ -598,6 +611,7 @@ namespace BarPromenade.Tests.PlayMode
                 // the face. Measure each shake and recovered hold relative to
                 // those live eyes rather than requiring a frozen world pose.
                 neckPositions[captured] = player.GameObject.transform.InverseTransformDirection(original.Grip.position - eyes);
+                presentedAt[captured] = Time.timeAsDouble;
                 if (captured == 0)
                     checkAxis = player.GameObject.transform.InverseTransformDirection(original.transform.up).normalized;
                 Capture(label + "-empty-check-" + captured, false, focus);
@@ -606,6 +620,11 @@ namespace BarPromenade.Tests.PlayMode
             }
             Assert.That(captured, Is.EqualTo(stops.Length), "The inverted hold and both separate shakes must be presented.");
             Assert.That(bottle.CompletedEmptyShakes, Is.EqualTo(2));
+            // Each of the two bounded segments between peaks may round up to
+            // the next rendered frame, while the impulses remain one pair.
+            Assert.That(presentedAt[3] - presentedAt[1],
+                Is.InRange(.25d - .0001d, .25d + 2d * Time.deltaTime + .0001d),
+                "The two empty-check shakes must land about a quarter-second apart.");
             Vector3 firstThrust = neckPositions[1] - neckPositions[0];
             Vector3 secondThrust = neckPositions[3] - neckPositions[2];
             Assert.That(Vector3.Dot(firstThrust, checkAxis), Is.GreaterThan(.055f), "The first shake must visibly thrust along the inverted bottle axis.");

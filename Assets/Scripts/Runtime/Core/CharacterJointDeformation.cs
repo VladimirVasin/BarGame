@@ -17,6 +17,10 @@ namespace BarPromenade
             public Quaternion RestRotation;
             public Vector3 LongitudinalAxis;
             public int Shape;
+            public string ShapeName;
+            [NonSerialized] public Mesh BoundMesh;
+            [NonSerialized] public int BoundShapeCount, ResolvedShape;
+            [NonSerialized] public bool MeshCaptured;
         }
 
         [SerializeField] private Binding[] bindings = Array.Empty<Binding>();
@@ -36,7 +40,8 @@ namespace BarPromenade
                 if (mesh == null) continue;
                 for (int shape = 0; shape < mesh.blendShapeCount; shape++)
                 {
-                    string name = mesh.GetBlendShapeName(shape);
+                    string authoredName = mesh.GetBlendShapeName(shape);
+                    string name = authoredName;
                     int marker = name.IndexOf("JointVolume.", StringComparison.Ordinal);
                     bool trouserFold = false;
                     if (marker < 0 || marker > 0 && name[marker - 1] != '.')
@@ -77,7 +82,7 @@ namespace BarPromenade
                     authored.Add(new Binding { Renderer = renderer, Bone = bone,
                         RestRotation = bone.localRotation,
                         LongitudinalAxis = axis.normalized,
-                        Shape = shape });
+                        Shape = shape, ShapeName = authoredName });
                 }
             }
             if (authored.Count == 0) return;
@@ -93,14 +98,39 @@ namespace BarPromenade
             float maximumExpansion = 1f / minimumCosine - 1f;
             foreach (Binding binding in bindings)
             {
-                if (binding.Renderer == null || binding.Bone == null) continue;
+                if (binding.Renderer == null || binding.Bone == null || !ResolveCurrentShape(binding)) continue;
                 Quaternion bend = Quaternion.Inverse(binding.RestRotation) * binding.Bone.localRotation;
                 float angle = Vector3.Angle(binding.LongitudinalAxis, bend * binding.LongitudinalAxis);
                 float cosine = Mathf.Max(minimumCosine, Mathf.Cos(angle * Mathf.Deg2Rad * .5f));
                 float weight = Mathf.Clamp01((1f / cosine - 1f) / maximumExpansion) * 100f;
-                if (binding.Renderer.GetBlendShapeWeight(binding.Shape) != weight)
-                    binding.Renderer.SetBlendShapeWeight(binding.Shape, weight);
+                if (binding.Renderer.GetBlendShapeWeight(binding.ResolvedShape) != weight)
+                    binding.Renderer.SetBlendShapeWeight(binding.ResolvedShape, weight);
             }
+        }
+
+        private static bool ResolveCurrentShape(Binding binding)
+        {
+            Mesh mesh = binding.Renderer.sharedMesh;
+            int count = mesh != null ? mesh.blendShapeCount : 0;
+            if (binding.MeshCaptured && binding.BoundMesh == mesh && binding.BoundShapeCount == count)
+                return binding.ResolvedShape >= 0;
+
+            binding.MeshCaptured = true;
+            binding.BoundMesh = mesh;
+            binding.BoundShapeCount = count;
+            binding.ResolvedShape = -1;
+            if (mesh == null || count == 0) return false;
+
+            // Older prefabs have only the authored index. Capture its name on
+            // their first valid mesh, then retain it through clear/reimport or
+            // replacement. A temporary absent shape never loses its binding.
+            if (string.IsNullOrEmpty(binding.ShapeName))
+            {
+                if ((uint)binding.Shape >= (uint)count) return false;
+                binding.ShapeName = mesh.GetBlendShapeName(binding.Shape);
+            }
+            binding.ResolvedShape = FindShape(mesh, binding.ShapeName);
+            return binding.ResolvedShape >= 0;
         }
 
         public static int FindShape(Mesh mesh, string name)

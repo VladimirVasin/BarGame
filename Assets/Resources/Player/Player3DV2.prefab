@@ -1350,7 +1350,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 2.0.0
   sourcePose: apose
   sourceTriangleCount: 9744
-  buildSignature: c4026a8f7c436cf4690a45e2914e726a
+  buildSignature: 8f36fcba134e021201858975140f18d0
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}
@@ -6700,101 +6700,121 @@ MonoBehaviour:
     RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
     LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
     Shape: 0
+    ShapeName: TrouserKneeFold.L
   - Renderer: {fileID: 6456853685736919218}
     Bone: {fileID: 1055942084738798115}
     RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
     LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
+    ShapeName: TrouserKneeFold.R
   - Renderer: {fileID: 4674692243902582788}
     Bone: {fileID: 8103656678534408315}
     RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
     LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
     Shape: 0
+    ShapeName: TrouserKneeFold.L
   - Renderer: {fileID: 4674692243902582788}
     Bone: {fileID: 1883504537429377356}
     RestRotation: {x: 0.9991083, y: -0.005299463, z: 0.005182276, w: -0.04156499}
     LongitudinalAxis: {x: 0.000000031930853, y: 1, z: -0.000000037843975}
     Shape: 1
+    ShapeName: JointVolume.Hip.L
   - Renderer: {fileID: 7677652450174556964}
     Bone: {fileID: 1055942084738798115}
     RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
     LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
+    ShapeName: TrouserKneeFold.R
   - Renderer: {fileID: 7677652450174556964}
     Bone: {fileID: 3492211174749225864}
     RestRotation: {x: 0.9999525, y: 0.005052606, z: -0.0049415664, w: 0.0067196256}
     LongitudinalAxis: {x: -0.00000002131338, y: 1, z: -0.00000003197007}
     Shape: 1
+    ShapeName: JointVolume.Hip.R
   - Renderer: {fileID: 2012916849144248295}
     Bone: {fileID: 4000893682187503971}
     RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
     LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
     Shape: 0
+    ShapeName: JointVolume.Elbow.L
   - Renderer: {fileID: 2012916849144248295}
     Bone: {fileID: 6810076773524857089}
     RestRotation: {x: -0.04520571, y: -0.061339736, z: -0.039025165, w: 0.9963287}
     LongitudinalAxis: {x: -0.072218545, y: 0.99286693, z: 0.09486674}
     Shape: 1
+    ShapeName: JointVolume.Wrist.L
   - Renderer: {fileID: 8306324871454953296}
     Bone: {fileID: 8824654768390316006}
     RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
     LongitudinalAxis: {x: 0.00000017636458, y: 1, z: -0.00000032333506}
     Shape: 0
+    ShapeName: JointVolume.Elbow.R
   - Renderer: {fileID: 8306324871454953296}
     Bone: {fileID: 1717921337950377400}
     RestRotation: {x: -0.04520618, y: 0.061340366, z: 0.0390255, w: 0.99632865}
     LongitudinalAxis: {x: 0.07221874, y: 0.9928668, z: 0.0948678}
     Shape: 1
+    ShapeName: JointVolume.Wrist.R
   - Renderer: {fileID: 471649020633539675}
     Bone: {fileID: 6810076773524857089}
     RestRotation: {x: -0.04520571, y: -0.061339736, z: -0.039025165, w: 0.9963287}
     LongitudinalAxis: {x: -0.072218545, y: 0.99286693, z: 0.09486674}
     Shape: 1
+    ShapeName: JointVolume.Wrist.L
   - Renderer: {fileID: 7815775451635216566}
     Bone: {fileID: 1717921337950377400}
     RestRotation: {x: -0.04520618, y: 0.061340366, z: 0.0390255, w: 0.99632865}
     LongitudinalAxis: {x: 0.07221874, y: 0.9928668, z: 0.0948678}
     Shape: 1
+    ShapeName: JointVolume.Wrist.R
   - Renderer: {fileID: 1680721102796537145}
     Bone: {fileID: 8103656678534408315}
     RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
     LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
     Shape: 0
+    ShapeName: JointVolume.Knee.L
   - Renderer: {fileID: 4602275268068089644}
     Bone: {fileID: 1055942084738798115}
     RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
     LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
+    ShapeName: JointVolume.Knee.R
   - Renderer: {fileID: 8403157323879051710}
     Bone: {fileID: 8103656678534408315}
     RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
     LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
     Shape: 0
+    ShapeName: JointVolume.Knee.L
   - Renderer: {fileID: 8403157323879051710}
     Bone: {fileID: 1883504537429377356}
     RestRotation: {x: 0.9991083, y: -0.005299463, z: 0.005182276, w: -0.04156499}
     LongitudinalAxis: {x: 0.000000031930853, y: 1, z: -0.000000037843975}
     Shape: 1
+    ShapeName: JointVolume.Hip.L
   - Renderer: {fileID: 2024443831129506719}
     Bone: {fileID: 1055942084738798115}
     RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
     LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
+    ShapeName: JointVolume.Knee.R
   - Renderer: {fileID: 2024443831129506719}
     Bone: {fileID: 3492211174749225864}
     RestRotation: {x: 0.9999525, y: 0.005052606, z: -0.0049415664, w: 0.0067196256}
     LongitudinalAxis: {x: -0.00000002131338, y: 1, z: -0.00000003197007}
     Shape: 1
+    ShapeName: JointVolume.Hip.R
   - Renderer: {fileID: 4688491048656370843}
     Bone: {fileID: 4000893682187503971}
     RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
     LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
     Shape: 0
+    ShapeName: JointVolume.Elbow.L
   - Renderer: {fileID: 4650837828654637243}
     Bone: {fileID: 8824654768390316006}
     RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
     LongitudinalAxis: {x: 0.00000017636458, y: 1, z: -0.00000032333506}
     Shape: 0
+    ShapeName: JointVolume.Elbow.R
 --- !u!114 &3825960121278261439
 MonoBehaviour:
   m_ObjectHideFlags: 0

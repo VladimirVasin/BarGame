@@ -142,10 +142,9 @@ namespace BarPromenade
         public int Priority { get; }
 
         /// <summary>
-        /// How many differently seeded clips the service keeps for this
-        /// cue. One for nearly everything; a footstep gets three, because
-        /// the same sample every 1.35 m is a metronome, and the pitch
-        /// wander alone never hid that.
+        /// How many differently seeded clips the service caches for this cue.
+        /// Footsteps and gulps vary their transient, body and timing while
+        /// reusing the same bounded playback pool.
         /// </summary>
         public int VariantCount { get; }
     }
@@ -391,16 +390,17 @@ namespace BarPromenade
             new RetroSfxDefinition(
                 RetroSfxId.DrinkGulp,
                 RetroSfxCategory.Bar,
-                0.32f,
+                0.24f,
                 0.35f,
                 0f,
                 1,
                 0.22f,
-                3,
-                1024,
-                4200f,
+                1,
+                4096,
+                1800f,
                 0.035f,
-                42),
+                42,
+                4),
             new RetroSfxDefinition(
                 RetroSfxId.ShotSwap,
                 RetroSfxCategory.Bar,
@@ -1445,7 +1445,8 @@ namespace BarPromenade
                     return GenerateDrinkGulp(
                         time,
                         duration,
-                        ref noiseState);
+                        ref noiseState,
+                        detune);
                 case RetroSfxId.ShotSwap:
                     return GenerateShotSwap(
                         time,
@@ -2344,43 +2345,34 @@ namespace BarPromenade
         private static float GenerateDrinkGulp(
             float time,
             float duration,
-            ref uint noiseState)
+            ref uint noiseState,
+            float detune)
         {
-            float normalized = Mathf.Clamp01(time / duration);
-            float envelope = Envelope(
-                time,
-                duration,
-                0.018f,
-                1.05f);
-            float throatPulse =
-                Mathf.Max(
-                    0f,
-                    Mathf.Sin(
-                        2f *
-                        Mathf.PI *
-                        (7.5f + normalized * 2f) *
-                        time));
-            float body = GlideSine(
-                time,
-                duration,
-                145f,
-                82f);
-            float liquid =
-                NextNoise(ref noiseState) *
-                (0.14f + throatPulse * 0.18f);
-            float bubble =
-                Mathf.Sin(
-                    2f *
-                    Mathf.PI *
-                    (310f + throatPulse * 130f) *
-                    time) *
-                throatPulse *
-                0.16f;
-            return (
-                       body * 0.28f +
-                       liquid +
-                       bubble) *
-                   envelope;
+            // A throat closure followed by a smaller wet release: one "gluk",
+            // not a breath/noise bed. Bank variants change the two impulses'
+            // spacing and resonances as well as their deterministic mouth click.
+            float character = (detune - 1f) * 12.5f;
+            float local = time - 0.008f;
+            float throatDuration = 0.082f + character * 0.012f;
+            float throat = (
+                GlideSine(local, throatDuration, 190f * detune, 78f * detune) * 0.72f +
+                GlideSine(local, throatDuration, 460f * detune, 215f * detune) * 0.18f) *
+                Envelope(local, throatDuration, 0.005f, 1.7f);
+
+            float releaseLocal = time - (0.082f + character * 0.014f);
+            float releaseDuration = 0.072f - character * 0.008f;
+            float release = (
+                GlideSine(releaseLocal, releaseDuration, 255f * detune, 102f * detune) *
+                (0.25f + character * 0.06f) +
+                GlideSine(releaseLocal, releaseDuration, 670f * detune, 320f * detune) * 0.07f) *
+                Envelope(releaseLocal, releaseDuration, 0.003f, 2.1f);
+
+            // Moisture is audible only at the seals; no long white-noise hiss.
+            float wet = NextNoise(ref noiseState) * 0.16f *
+                Envelope(local, 0.016f, 0.001f, 2.3f) +
+                NextNoise(ref noiseState) * 0.10f *
+                Envelope(releaseLocal, 0.011f, 0.001f, 2.5f);
+            return (throat + release + wet) * Mathf.Clamp01((duration - time) / 0.012f);
         }
 
         /// <summary>

@@ -5,25 +5,28 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-02
 
-Vodka:session fills,exact sip boundaries;click gives one gulp,held LMB keeps
-the bottle at the mouth between swallows. Release/empty/refusal lowers once;
-DrinkGulp sounds once/swallow. Left hand closes the cap before jacket stow.
-Empty bottle turns neck-down at eye level;hero looks inside,shakes twice,
-then tosses resentfully. Last swallow debits once,actual prop inherits motion
-into bounded surface-dependent breakage/debris/water sink;context cleanup kept.
+Vodka:session fills/exact commits;LMB one,held1s sips at mouth.
+Release/empty/refusal lowers once;four shared wet DrinkGulp variants
+replace hiss for bottle/bar,once/swallow. Left hand caps before jacket stow.
+Empty2s:neck-down at eyes,looks inside,two .25s-apart shakes,resentful toss.
+Last swallow debits once;actual prop inherits motion into bounded surface
+breakage/debris/water sink;context cleanup kept.
 Shared Vodka gain24 gives nominal96/full bottle;decay retains that authored
-dose. Passive recovery4.5–18s/point stays slower higher up. Exact binary
-time split fixes a rounded boundary in the existing recovery regression.
+dose. Passive recovery4.5–18s/point stays slower higher up. Binary split fixes recovery boundary.
 Recovery_LowerLevelsLosePointsFaster and
 IntoxicationRecovery_ConsumesTimeAndStopsAtSober passed.
 Seated eye contact follows the live head;float-safe landmarks retain both holds.
 VodkaBottleEquipmentPlayModeTests passed;standing/seated frames reviewed.
+GenerateSamples_IsDeterministicFiniteAndAudible(DrinkGulp)/
+NextVariant_NeverRepeatsAndCoversEveryVariant passed.
+FootstepCues still fails:PistolCasingBounce expects1/actual3.
 Grip main names match filenames,removing native-import warnings;
 PlayerVodkaGripAssetSetup.BuildOrThrow passed;mesh payloads/metas kept.
-Blender hollow glass/profile/anchors;0.299m neck grip with vertical palm/thumb-up.
-Wrapper axes and baked-hand surfaces correct imported roll;canonical hand basis
-avoids duplicate grip preparation. Chest-bound pistol path/shared jacket access
-keeps palm/elbow/concealed transfer continuous,forearms outside torso.
+Hand/joint morph indices rebind after mesh changes;grip owner survives.
+NpcHandPoseTests passed.
+Blender hollow glass/anchors;0.299m vertical neck grip/thumb-up.
+Wrapper/baked-hand axes correct import roll;canonical basis avoids duplicate prep.
+Pistol/jacket path keeps palm/elbow/hidden transfer continuous,forearms outside torso.
 PLAYER VODKA ACTION CONTRACT OK proves body clearance.
 Ordinary seats/bus share the equipment layer;inventory at rest,carry survives
 sit/stand,child waits visible stow. Parent legs/root/pelvis/camera stay.
