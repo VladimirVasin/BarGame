@@ -2126,7 +2126,7 @@ cemetery:own interiors/returns.
   fluorescent housings and articulated CCTV pivots are one deterministic
   passive Blender asset. The validated layout plan still owns protected
   aisles and the placement data for collision, product slots and interactions;
-  runtime composition owns the actual colliders, finite-product lifetimes,
+  runtime composition owns colliders, retained shop offers,
   practical lights and interaction objects. Five trimmed counter-clockwise
   skirting sections bury their rear and bottom faces `3 mm` into the wall/floor
   and meet without coplanar corner overlap. Its
@@ -2160,20 +2160,19 @@ cemetery:own interiors/returns.
   day-old loaf, vodka bottle, closed stew can, open stew can and chicken egg.
   Its `33` meshes / `2,276` triangles feed an asset setup responsible for one
   Resources prefab per item; runtime supplies selection collision and lifetime.
-  The three shop shelves contain exactly one finite physical unit of each of
-  only five offers: noodles and loaf, vodka and closed stew, plus the egg on
-  the cold shelf. Their
+  The three shop shelves retain five repeatable offers: noodles and loaf,
+  vodka and closed stew, plus the egg on the cold shelf. Their
   bottom-centre pivots sit on exact authored tier anchors instead of floating
   or overhanging. The `0.299 m` vodka source uses a `0.37 m` shop fit envelope on
   the unobstructed third/top tier and remains below the shelving-unit top during
   selection; closed stew occupies the first tier. The open can's world source
-  remains the Home/cat flow, and it does not add a sixth store offer. Confirming a purchase
-  atomically deducts its integer price, adds one matching inventory item and
-  commits the product's stable world-source ID. The bought model and collider
-  disappear immediately, and the source filter keeps that shelf position empty
-  after leaving and re-entering until `BeginNewGame`. Failures for insufficient
-  cash, a full stack or an already-bought source mutate nothing. The product's
-  child price tag disappears with it instead of remaining on an empty shelf.
+  remains the Home/cat flow, without a sixth store offer. Each guarded purchase
+  atomically deducts the unchanged price and adds one item within stack9;
+  insufficient funds/capacity mutate nothing. Shop sources never enter unique
+  collection history; models, colliders and price tags remain across reentry.
+  The shared received screen prepares one temporary model before commit,
+  borrows the browser's modal owner and returns to the same selection.
+  Closing/Escape/unload never credit or refund; the closing press cannot buy again.
   Closed stew is
   a separate `ClosedStewCan` item from the refrigerator's `OpenStewCan` and
   therefore cannot satisfy the stairwell cat's feeding requirement;
@@ -2301,7 +2300,9 @@ cemetery:own interiors/returns.
   carry above knees survives sit/stand. Bus cached sole IK follows tilted floor;
   source import scale once. Inventory/sips:stable loop,no child/modal;
   child waits visible stow,other contexts stow;car/cableway unsupported.
-  Last swallow debits1;eye-level neck-down look inside,exactly2shakes→resentful toss.
+  Draining smoothly raises bottle/neck/head;last≤34ml reaches maximum before commit.
+  Same lips/grip;held seams/lower keep continuity. Last swallow debits1;
+  inspect opening→strict world-down for exactly2shakes→resentful toss.
   Surface/normal impact decides breakage;bus throw inherits motion,finite cabin/
   door colliders. Finite glass debris pauses/clears. Consumables/equipment only;
   temporarily blocked actions disabled;
@@ -2734,8 +2735,8 @@ cemetery:own interiors/returns.
   calendar/needs/hero stay;
 - `debug.log`:NDJSON scene/world/drink/balance/Unity results;F8snapshot/Shift+F8dir;
   cached movement_summary before end-close. Duel:20MiB/70%samples/32-action summary tail;
-- a session-only cash wallet starting at `$999`, shared by finite supermarket
-  stock and the bar's four-item visible drink menu. The bar now uses the same
+- a session-only `$999` wallet, shared by repeatable supermarket
+  offers and the bar's four-item visible drink menu. The bar now uses the same
   physical counter-seat and `CounterMenu` behavior as the relocated City cafe.
   `BarCounterSeatPlanner` exposes all three stools not occupied by patrons; each
   owns a collision-safe entry/exit, and the rightmost sits at local `x = 1.95`

@@ -676,9 +676,8 @@ namespace BarPromenade
                 tagSize,
                 PriceTag,
                 false);
-            // The tag is part of the finite offer, not permanent shelf
-            // dressing. Keep its shelf-space pose but make the purchased
-            // product own its lifetime so both disappear atomically.
+            // The reusable shelf offer retains its tag and model together.
+            // Purchase receipts use a separate temporary instance.
             tag.transform.SetParent(productRoot, true);
         }
 

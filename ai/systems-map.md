@@ -140,7 +140,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Route 01 passengers | Hero plus two ambient passenger places. Gap: fares, destination choice, persistence and live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |
 | City visual diversity and collision proxies | Deterministic visual variants share simple semantic collision proxies and reusable resources. | `CityDecoration{Descriptor,Plan,Planner,Validator,WorldBuilder}`, `CityDecorationCollisionCatalog` | Current |
 | Road-edge fences | Plan-owned fences protect boundaries while preserving every validated road/waterside opening. | `RoadFence{Planner,Plan,WorldBuilder}`, `CitySurfaceDescriptor` | Current |
-| Supermarket interior, product art and finite shelf purchases | A passive `16 x 11 x 3.6 m` shell plus one six-model, no-brand product pack shared by shop, inventory and cat flow. | `tools/build-supermarket-{interior,products}-3d-model.py` | Current |
+| Supermarket and repeatable purchases | Five offers stay; atomic cash/item commit and shared receipt; stock survives reload. | `SupermarketShelfShopController`, `WorldItemFoundScreen`, `SupermarketPurchaseRules` | Current |
 | Supermarket cashier | One staged cashier uses the imported rig, authored service motions and existing shop interaction. | `SupermarketCashier{Provider,AssetRegistry,Factory,Presentation,Actor,SurveillanceState,BlinkState,Interaction}` | Current |
 | Supermarket CCTV corner cameras | Four authored corner cameras follow the hero without gameplay surveillance. | `SupermarketInteriorAssetRegistry`, `SupermarketSecurityCamera{,WorldBuilder}` | Current |
 | Supermarket fluorescent atmosphere | Visible fixtures own the store's restrained light, flicker and sound within explicit shared-resource budgets. | `SupermarketInteriorAtmosphere`, `SupermarketFluorescentFlicker` | Current |
@@ -252,7 +252,7 @@ map/travel -> AreaLoading -> destination Single (20%) -> staged composition (80%
 ten gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
   -> locomotion/balance/ragdoll/rise/contextual actions/inventory portrait
 interaction -> SceneTransitionService -> DoorTransition -> destination
-  -> Bar: seated service; Supermarket: finite stock/atomic purchase
+  -> Bar: seated service; Supermarket: repeatable stock/shared receipt
   -> Stairwell: cat; Home: sleep/balcony/fridge/fixed views/exterior slice
 results -> GameSessionState -> survive scene loads, not process exit
 boundaries -> rotating NDJSON diagnostics; scene -> scoped audio

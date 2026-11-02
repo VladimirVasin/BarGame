@@ -15,9 +15,48 @@ namespace BarPromenade
         private int equipmentClipIndex = -1, equipmentCacheCursor;
         private float equipmentTime, equipmentWeight;
         private bool equipmentRightArmOnly;
+        private object equipmentHeadPitchOwner;
+        private Transform equipmentPitchNeck;
+        private Quaternion equipmentNeckBase, equipmentHeadBase;
+        private bool equipmentHeadPitchApplied;
         private bool EquipmentPosePhysicsAllowed => !ragdollPoseActive && !risePose.Active && fallAmount <= .001f;
 
         public bool OwnsEquipmentPose(object owner) => owner != null && ReferenceEquals(equipmentPoseOwner, owner);
+
+        /// <summary>Adds a bounded bend to the sampled world rig before a held item's lip/hand contacts are resolved.</summary>
+        internal void ApplyEquipmentHeadPitch(object owner, float degrees)
+        {
+            if (owner == null || equipmentHeadPitchOwner != null && !ReferenceEquals(equipmentHeadPitchOwner, owner) ||
+                !float.IsFinite(degrees) || !EquipmentPosePhysicsAllowed ||
+                !(OwnsEquipmentPose(owner) || OwnsClip(owner)) || registry == null || actorFacingTransform == null) return;
+            RestoreEquipmentHeadPitch();
+            if (Mathf.Abs(degrees) < .0001f) { equipmentHeadPitchOwner = null; return; }
+            equipmentPitchNeck ??= GetPartBone(Player3DAnatomicalPart.Neck);
+            Transform head = registry.Anchors.Head;
+            if (equipmentPitchNeck == null || head == null) return;
+            equipmentHeadPitchOwner = owner;
+            equipmentNeckBase = equipmentPitchNeck.localRotation;
+            equipmentHeadBase = head.localRotation;
+            equipmentHeadPitchApplied = true;
+            float pitch = Mathf.Clamp(degrees, -48f, 48f);
+            equipmentPitchNeck.rotation = Quaternion.AngleAxis(-pitch * .3f, actorFacingTransform.right) * equipmentPitchNeck.rotation;
+            head.rotation = Quaternion.AngleAxis(-pitch * .7f, actorFacingTransform.right) * head.rotation;
+        }
+
+        internal void ClearEquipmentHeadPitch(object owner)
+        {
+            if (owner == null || !ReferenceEquals(equipmentHeadPitchOwner, owner)) return;
+            RestoreEquipmentHeadPitch();
+            equipmentHeadPitchOwner = null;
+        }
+
+        private void RestoreEquipmentHeadPitch()
+        {
+            if (!equipmentHeadPitchApplied) return;
+            if (equipmentPitchNeck != null) equipmentPitchNeck.localRotation = equipmentNeckBase;
+            if (registry != null && registry.Anchors.Head != null) registry.Anchors.Head.localRotation = equipmentHeadBase;
+            equipmentHeadPitchApplied = false;
+        }
 
         /// <summary>Layers equipment above the current pose without acquiring its root, pelvis, legs or clock.</summary>
         public bool TryAcquireEquipmentPose(object owner, string clipName, bool rightArmOnly = false)
@@ -133,6 +172,8 @@ namespace BarPromenade
 
         private void DisposeEquipmentGraph()
         {
+            RestoreEquipmentHeadPitch();
+            equipmentHeadPitchOwner = null;
             ClearEquipmentPose();
             if (equipmentMask != null) Destroy(equipmentMask);
             if (equipmentRightArmMask != null) Destroy(equipmentRightArmMask);

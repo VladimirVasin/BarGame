@@ -1,6 +1,14 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-11-02 — replenishable supermarket, user:**
+  Five offers repeat;prices/stack9 kept. TryPurchaseWorldItem:item/price1×,
+  no collection history;unique pickups kept. Shelf model/tag/collider persist.
+  Shared receipt preflights before commit;borrows modal,one temp model;
+  close resumes selection. Escape/disable/unload never grant/refund;close cannot rebuy.
+  Parent camera/visibility/input;RU;access/story/cat kept.
+  24FX kept;bounded preview;CPU/GPU unmeasured;§16/21/art9.
+
 - **Accepted 2026-11-02 — seated vodka, user:**
   Spine:bench/chair/sofa/game/counter+bus;carry sit/stand above knees;
   parent root/pelvis/legs/camera kept. Inventory/sips:stable loop,no child/modal;
@@ -19,8 +27,9 @@
 - **Accepted 2026-11-02 — vodka sip cadence, user:**
   500ml=15×33/34ml;click1;held mouth loop1s;release/empty/refusal lowers.
   Neck/rig/gait/scarf;DrinkGulp4 wet cues once/swallow,shared bar.
-  Cap→stow;empty2s:eye-level neck-down/look→2shakes(.25s apart)→resentful toss.
-  Text/voice0.
+  Depletion smoothly raises bottle/neck/head;last≤34ml reaches maximum before commit;
+  live mouth/grip contacts and held/lower seams kept. Cap→stow;
+  empty2s:inspect→strict world-down for2shakes(.25s apart)→resentful toss. Text/voice0.
 
 - **Accepted 2026-11-02 — vodka balance, user:**
   Vodka+24;four servings=nominal96,cap100/recovery apply. Dose feeds decay;
@@ -5473,15 +5482,14 @@
   Completed sleep resets fatigue/fraction;cancel does not. Food catalog owns
   relief/minimum20;no effect at/below floor. Preflight→remove one→relief/fraction
   atomically;stale/no-effect use changes nothing. Fridge Use unavailable:Take first.
-- **Accepted — Separate finite-stock supermarket interior:**
+- **Accepted — Separate supermarket interior:**
   `SupermarketInterior` owns one validated `16 x 11 x 3.6 m` room with
   protected aisles, three shelf sections, a stockroom facade and a decorative
   checkout staffed by the separate normal supermarket cashier. The register does not
   process sales. Each shelf owns an authored fixed camera and one interaction
   station.
-  One continuous modal browser cycles through every available physical product
-  in deterministic shelf/slot order, skips empty shelves and never releases its
-  captured player/camera state while changing shelves. The selected shelf keeps
+  One modal browser cycles available products in deterministic shelf/slot order,
+  skips empty shelves and retains player/camera ownership between shelves. The selected shelf keeps
   its authored camera position and field of view while the rotation targets the
   combined world renderer bounds of the selected product. Muted clickable
   previous/next arrows follow the product's projected screen bounds; pointer,
@@ -5489,15 +5497,9 @@
   owner-scoped renderer-only visibility leases over both hero and cashier
   presentations: gameplay roots stay active, and ordinary exit, failed
   open, disable and destroy restore each captured renderer state exactly.
-  `SupermarketProductCatalog` offers exactly one physical chicken egg, vodka
-  bottle, closed stew can, instant noodles and day-old loaf. Each product has a
-  stable source ID. `GameSessionState.TryPurchaseWorldItem` is the sole commit
-  boundary: pure rules validate source, offer, cash and stack capacity, then
-  the transaction records the source, adds one inventory item and deducts cash,
-  rolling the source back if inventory insertion fails. Success immediately
-  removes the shelf model and collider; scene rebuilding filters committed
-  sources, so sold products stay gone until `BeginNewGame`. Failure mutates no
-  cash, source or inventory state. `ClosedStewCan` is deliberately distinct
+  `SupermarketProductCatalog` owns the five physical offers:chicken egg,vodka,
+  closed stew,instant noodles and day-old loaf. Purchase lifetime/receipt use
+  the accepted replenishable-supermarket decision above. `ClosedStewCan` is distinct
   from the refrigerator's `OpenStewCan`, so buying sealed stew cannot satisfy
   the cat-feeding requirement. Entry and exit use the shared DoorTransition and
   restore the supermarket's own City return point. The City entrance alone
@@ -5513,11 +5515,10 @@
   parts, metre bounds, shared surface sheets, a build signature and anchors
   checked against `SupermarketInteriorLayoutPlanner`; the prefab itself owns no
   Collider, Light, Camera, Rigidbody, AudioSource or Animator. Unity continues
-  to own shell/fixture collision, shelf triggers, five finite product lifetimes
-  and selection colliders, practical lights, flicker, the cashier, CCTV servo
-  controllers, UI and scene transitions. CCTV controllers rotate only the
-  authored head pivots, and a purchased product owns its price tag so both
-  leave on the same transaction. Five counter-clockwise perimeter-skirting
+  to own shell/fixture collision,shelf triggers,five retained offers/selection
+  colliders,practical lights,flicker,cashier,CCTV servo,UI and transitions.
+  CCTV rotates authored head pivots;each retained offer owns its price tag.
+  Five counter-clockwise perimeter-skirting
   sweeps bury rear and bottom faces `3 mm` into their neighbouring wall/floor
   surfaces and trim corner joins, removing all coplanar render pairs while
   preserving the visible profile.
@@ -7469,7 +7470,7 @@
   player menu. `None` and `Moonshine` (a stable legacy ID kept for persisted
   state) are not sold. Purchased drinks are consumed at the counter instead of being added to
   the hero inventory. Supermarket purchases use the same wallet but add their
-  finite physical item to inventory rather than consuming it. Earnings and
+  item to inventory rather than consuming it. Earnings and
   long-term wallet/save persistence remain deferred, and a purchase never
   completes a bar visit.
 - **Accepted — Five percentage-driven intoxication ranges:** `0` is Sober.

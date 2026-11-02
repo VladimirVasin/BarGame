@@ -853,6 +853,8 @@ namespace BarPromenade
                 return;
             }
 
+            RestoreEquipmentHeadPitch();
+            equipmentHeadPitchOwner = null;
             RestoreCorpseStepPose();
             RestoreCombatSupportGrip();
             RestoreRecoveryPoseTransition();
@@ -1052,6 +1054,7 @@ namespace BarPromenade
         {
             using var journalTiming = CombatTestRoot.MeasureJournalLatePose(this);
             if (OwnedAttentionPresentationFrozen) return;
+            RestoreEquipmentHeadPitch();
             RestoreCorpseStepPose();
             RestoreCombatFirearm();
             float deltaTime = scopedPresentationFrozen ? 0f : PresentationDeltaTime;
@@ -1181,6 +1184,7 @@ namespace BarPromenade
             // Match the real late pass: a contact freeze retains its completed
             // rig, including a blended continuation and its planted soles.
             if (OwnedAttentionPresentationFrozen) return;
+            RestoreEquipmentHeadPitch();
             RestoreCorpseStepPose();
             RestoreCombatFirearm();
             // A deterministic seam for checks that run in batch mode, where
@@ -1285,6 +1289,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            RestoreEquipmentHeadPitch();
+            equipmentHeadPitchOwner = null;
             ResetCorpseStepPose();
             ClearCombatSupportGrip(combatGripOwner);
             ResetTorsoLook();
@@ -3247,6 +3253,7 @@ namespace BarPromenade
 
         private void EvaluateGraph(float deltaTime)
         {
+            RestoreEquipmentHeadPitch();
             RestoreSleepBodyPresentation();
             RestoreCorpseStepPose();
             RestoreCombatFirearm();

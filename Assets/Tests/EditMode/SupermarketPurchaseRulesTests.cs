@@ -45,7 +45,6 @@ namespace BarPromenade.Tests.EditMode
                 SupermarketPurchaseRules.Evaluate(
                     "supermarket.test.offer",
                     itemId,
-                    false,
                     expectedPrice,
                     0);
 
@@ -89,7 +88,6 @@ namespace BarPromenade.Tests.EditMode
                 SupermarketPurchaseRules.Evaluate(
                     " ",
                     InventoryItemId.ChickenEgg,
-                    false,
                     20,
                     1),
                 SupermarketPurchaseStatus.InvalidSource);
@@ -97,23 +95,13 @@ namespace BarPromenade.Tests.EditMode
                 SupermarketPurchaseRules.Evaluate(
                     "supermarket.test.not-offered",
                     InventoryItemId.OpenStewCan,
-                    false,
                     20,
                     1),
                 SupermarketPurchaseStatus.NotOffered);
             AssertFailure(
                 SupermarketPurchaseRules.Evaluate(
-                    "supermarket.test.sold",
-                    InventoryItemId.ChickenEgg,
-                    true,
-                    20,
-                    1),
-                SupermarketPurchaseStatus.AlreadyPurchased);
-            AssertFailure(
-                SupermarketPurchaseRules.Evaluate(
                     "supermarket.test.cash",
                     InventoryItemId.VodkaBottle,
-                    false,
                     27,
                     1),
                 SupermarketPurchaseStatus.InsufficientFunds);
@@ -121,82 +109,64 @@ namespace BarPromenade.Tests.EditMode
                 SupermarketPurchaseRules.Evaluate(
                     "supermarket.test.full",
                     InventoryItemId.ChickenEgg,
-                    false,
                     20,
                     9),
                 SupermarketPurchaseStatus.InventoryFull);
         }
 
-        [Test]
-        public void SessionPurchase_IsAtomicAndPersistsSourceUntilNewGame()
+        [TestCase(InventoryItemId.ChickenEgg, 2)]
+        [TestCase(InventoryItemId.VodkaBottle, 28)]
+        [TestCase(InventoryItemId.ClosedStewCan, 11)]
+        [TestCase(InventoryItemId.InstantNoodles, 3)]
+        [TestCase(InventoryItemId.DayOldLoaf, 4)]
+        public void SessionPurchase_IsRepeatableAtomicAndKeepsUniquePickupsSeparate(
+            InventoryItemId itemId, int price)
         {
-            const string purchasedSource = "supermarket.test.egg.1";
+            const string source = "supermarket.test.reusable";
+            const string uniqueSource = "world.test.unique";
+            Assert.That(GameSessionState.TryCollectWorldItem(uniqueSource,
+                InventoryItemId.OpenStewCan), Is.True);
             int cashBefore = GameSessionState.CashBalance;
+            int stockEvents = 0;
+            System.Action onStockChanged = () => stockEvents++;
+            GameSessionState.WorldItemsChanged += onStockChanged;
+            try
+            {
+                for (int purchase = 1; purchase <= 9; purchase++)
+                {
+                    SupermarketPurchaseResult result =
+                        GameSessionState.TryPurchaseWorldItem(source, itemId);
+                    Assert.That(result.Succeeded, Is.True);
+                    Assert.That(GameSessionState.CashBalance,
+                        Is.EqualTo(cashBefore - purchase * price));
+                    Assert.That(GameSessionState.GetInventoryItemCount(itemId),
+                        Is.EqualTo(purchase));
+                    Assert.That(GameSessionState.IsWorldItemCollected(source), Is.False);
+                }
+                int cashAtCapacity = GameSessionState.CashBalance;
+                SupermarketPurchaseResult full = GameSessionState.TryPurchaseWorldItem(source, itemId);
+                AssertFailure(full, SupermarketPurchaseStatus.InventoryFull);
+                Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashAtCapacity));
+                Assert.That(GameSessionState.GetInventoryItemCount(itemId), Is.EqualTo(9));
+                Assert.That(GameSessionState.TryRemoveInventoryItem(itemId), Is.True);
+                Assert.That(GameSessionState.TryPurchaseWorldItem(source, itemId).Succeeded, Is.True,
+                    "The reusable offer must still work after making room in the inventory.");
+                Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashAtCapacity - price));
+                Assert.That(stockEvents, Is.Zero,
+                    "A replenishable purchase must not append a collected source or invalidate world stock.");
+            }
+            finally
+            {
+                GameSessionState.WorldItemsChanged -= onStockChanged;
+            }
 
-            SupermarketPurchaseResult purchased =
-                GameSessionState.TryPurchaseWorldItem(
-                    purchasedSource,
-                    InventoryItemId.ChickenEgg);
-
-            Assert.That(purchased.Succeeded, Is.True);
-            Assert.That(
-                GameSessionState.CashBalance,
-                Is.EqualTo(cashBefore - 2));
-            Assert.That(
-                GameSessionState.GetInventoryItemCount(
-                    InventoryItemId.ChickenEgg),
-                Is.EqualTo(1));
-            Assert.That(
-                GameSessionState.IsWorldItemCollected(purchasedSource),
-                Is.True);
-
-            SupermarketPurchaseResult duplicate =
-                GameSessionState.TryPurchaseWorldItem(
-                    purchasedSource,
-                    InventoryItemId.ChickenEgg);
-            Assert.That(
-                duplicate.Status,
-                Is.EqualTo(
-                    SupermarketPurchaseStatus.AlreadyPurchased));
-            Assert.That(
-                GameSessionState.CashBalance,
-                Is.EqualTo(cashBefore - 2));
-            Assert.That(
-                GameSessionState.GetInventoryItemCount(
-                    InventoryItemId.ChickenEgg),
-                Is.EqualTo(1));
-
-            Assert.That(
-                GameSessionState.TryAddInventoryItem(
-                    InventoryItemId.ChickenEgg,
-                    8),
-                Is.True);
-            const string fullSource = "supermarket.test.egg.full";
-            SupermarketPurchaseResult full =
-                GameSessionState.TryPurchaseWorldItem(
-                    fullSource,
-                    InventoryItemId.ChickenEgg);
-            Assert.That(
-                full.Status,
-                Is.EqualTo(SupermarketPurchaseStatus.InventoryFull));
-            Assert.That(
-                GameSessionState.CashBalance,
-                Is.EqualTo(cashBefore - 2));
-            Assert.That(
-                GameSessionState.IsWorldItemCollected(fullSource),
-                Is.False);
-
+            Assert.That(GameSessionState.IsWorldItemCollected(uniqueSource), Is.True);
+            Assert.That(GameSessionState.TryCollectWorldItem(uniqueSource,
+                InventoryItemId.OpenStewCan), Is.False);
             GameSessionState.BeginNewGame();
-            Assert.That(
-                GameSessionState.IsWorldItemCollected(purchasedSource),
-                Is.False);
-            Assert.That(
-                GameSessionState.GetInventoryItemCount(
-                    InventoryItemId.ChickenEgg),
-                Is.Zero);
-            Assert.That(
-                GameSessionState.CashBalance,
-                Is.EqualTo(GameSessionState.DefaultCash));
+            Assert.That(GameSessionState.IsWorldItemCollected(uniqueSource), Is.False);
+            Assert.That(GameSessionState.GetInventoryItemCount(itemId), Is.Zero);
+            Assert.That(GameSessionState.CashBalance, Is.EqualTo(GameSessionState.DefaultCash));
         }
 
         private static void AssertFailure(

@@ -12,9 +12,8 @@ namespace BarPromenade
     ///
     /// It lives on the hero, installed once by
     /// <see cref="PlayerFactory"/>, so a pickup anywhere in the game needs no
-    /// wiring of its own beyond asking for it. It takes the full modal lock,
-    /// unlike the refrigerator's nested inspector, because out in the world
-    /// there is no outer interaction already holding one.
+    /// wiring of its own beyond asking for it. World finds take the full
+    /// modal lock; a nested purchase receipt borrows its caller's ownership.
     /// </summary>
     [DefaultExecutionOrder(270)]
     [DisallowMultipleComponent]
@@ -59,6 +58,7 @@ namespace BarPromenade
         private int inputUnlockFrame;
         private string feedbackKey = string.Empty;
         private bool alreadyReceived;
+        private BarMinigameModalLock outerModalLock;
 
         public bool IsInitialized { get; private set; }
         public InventoryItemId ActiveItemId { get; private set; }
@@ -123,6 +123,49 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Prepares a receipt inside an existing interaction, then commits its
+        /// confirmed transaction once. The caller keeps its modal ownership;
+        /// closing or tearing down this screen never releases the outer lock.
+        /// A failed preparation never calls <paramref name="commitReceived"/>.
+        /// </summary>
+        public bool TryPresentReceivedWithin(
+            BarMinigameModalLock outerModal,
+            PlayerInteractor interactor,
+            InventoryItemId itemId,
+            Transform model,
+            string receivedFeedbackKey,
+            Func<bool> commitReceived,
+            Action<bool> onFinished)
+        {
+            if (commitReceived == null)
+                throw new ArgumentNullException(nameof(commitReceived));
+            if (outerModal == null || !outerModal.IsLocked ||
+                !BarMinigameModalLock.IsAnyLocked)
+                return false;
+            if (!TryPresentCore(interactor, itemId, model, () => true,
+                    onFinished, outerModal))
+                return false;
+
+            try
+            {
+                if (!commitReceived())
+                {
+                    Abandon();
+                    return false;
+                }
+
+                alreadyReceived = true;
+                feedbackKey = receivedFeedbackKey;
+                return true;
+            }
+            catch
+            {
+                Abandon();
+                throw;
+            }
+        }
+
+        /// <summary>
         /// Holds one found object up. <paramref name="commitTake"/> is called
         /// once, at the moment the player agrees, and reports whether the
         /// inventory accepted it; <paramref name="onFinished"/> reports how
@@ -134,6 +177,18 @@ namespace BarPromenade
             Transform model,
             Func<bool> commitTake,
             Action<bool> onFinished)
+        {
+            return TryPresentCore(interactor, itemId, model, commitTake,
+                onFinished, null);
+        }
+
+        private bool TryPresentCore(
+            PlayerInteractor interactor,
+            InventoryItemId itemId,
+            Transform model,
+            Func<bool> commitTake,
+            Action<bool> onFinished,
+            BarMinigameModalLock outerModal)
         {
             if (commitTake == null)
             {
@@ -163,7 +218,7 @@ namespace BarPromenade
                 return false;
             }
 
-            if (!modalLock.TryCaptureAndDisable(
+            if (outerModal == null && !modalLock.TryCaptureAndDisable(
                     interactor,
                     ResolveCameraFollow(),
                     ResolveHud()))
@@ -173,6 +228,7 @@ namespace BarPromenade
 
             try
             {
+                outerModalLock = outerModal;
                 EnsurePresenter();
                 pickup = new WorldItemPickupModel();
                 ActiveItemId = itemId;
@@ -291,6 +347,12 @@ namespace BarPromenade
                 return;
             }
 
+            if (outerModalLock != null && !outerModalLock.IsLocked)
+            {
+                Abandon();
+                return;
+            }
+
             // Not `if (!IsPresenting) return;`. A confirm or a dismiss taken
             // through the API before the item has left the floor closes the
             // timeline the same instant, and an early return here would then
@@ -382,6 +444,8 @@ namespace BarPromenade
             // not. Left hanging off the camera pivot it would outlive the
             // object that owns it and ride the camera into the next scene.
             presenter?.Restore();
+            bool restoreModal = outerModalLock == null;
+            outerModalLock = null;
             Action<bool> callback = finished;
             pickup = null;
             commit = null;
@@ -390,7 +454,7 @@ namespace BarPromenade
             alreadyReceived = false;
             feedbackKey = string.Empty;
             ActiveItemId = InventoryItemId.None;
-            modalLock.Restore();
+            if (restoreModal) modalLock.Restore();
             callback?.Invoke(taken);
         }
 

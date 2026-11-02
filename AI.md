@@ -110,8 +110,8 @@ repository evidence. This does not require running every test layer.
   shell, fixtures and CCTV pivots come from
   `tools/build-supermarket-interior-3d-model.py`. Its six reusable generic,
   unbranded and text-free product models come from the separate passive
-  `tools/build-supermarket-products-3d-model.py` pack: five are finite shop
-  stock, while the open stew can enters the world only through the Home
+  `tools/build-supermarket-products-3d-model.py` pack: five repeatable shop
+  offers; the open stew can enters the world only through the Home
   refrigerator/cat flow. Home and the metric church remodel use the kit;
   church openings/collision/light share placed exterior metres and anchors.
   Stairwell and the transition leaf use the same fixed-metre kit; ramps, pivots and cat contacts stay in their plans.

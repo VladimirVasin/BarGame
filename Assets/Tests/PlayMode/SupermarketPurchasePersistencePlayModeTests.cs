@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -24,6 +25,8 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            SupermarketInteriorRoot root = UnityEngine.Object.FindAnyObjectByType<SupermarketInteriorRoot>();
+            if (root != null) root.ShelfShop?.Close();
             GameSessionState.BeginNewGame();
             yield return null;
         }
@@ -81,92 +84,136 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator ClosedStewPurchase_RemovesProductAndPersistsAcrossReload()
+        public IEnumerator Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures()
         {
-            SupermarketInteriorRoot firstRoot = null;
-            yield return LoadSceneAndWaitForRoot(root => firstRoot = root);
-            yield return WaitUntil(
-                () => firstRoot.IsInitialized,
+            SupermarketInteriorRoot root = null;
+            yield return LoadSceneAndWaitForRoot(value => root = value);
+            yield return WaitUntil(() => root.IsInitialized,
                 "Supermarket runtime root did not finish initialization.");
-
-            Assert.That(
-                TryFindProduct(
-                    firstRoot,
-                    InventoryItemId.ClosedStewCan,
-                    out SupermarketShelfView shelf,
-                    out SupermarketProductView product),
-                Is.True,
-                "The supermarket must create one physical closed stew can.");
-            Assert.That(product.SourceId, Is.Not.Null.And.Not.Empty);
-            Assert.That(product.OriginalRoot.gameObject.activeSelf, Is.True);
-            Assert.That(product.SelectionCollider.enabled, Is.True);
-            Assert.That(
-                GameSessionState.GetInventoryItemCount(
-                    InventoryItemId.ClosedStewCan),
-                Is.Zero);
-
-            string sourceId = product.SourceId;
+            WorldItemFoundScreen receipt = WorldItemFoundScreen.For(root.Player.Interactor);
+            Assert.That(receipt != null && receipt.IsInitialized, Is.True);
             int cashBefore = GameSessionState.CashBalance;
-            SupermarketProductOffer offer =
-                SupermarketProductCatalog.GetOffer(
-                    InventoryItemId.ClosedStewCan);
+            int spent = 0;
+            var sourceIds = new List<string>();
 
-            Assert.That(
-                firstRoot.ShelfShop.Open(
-                    shelf,
-                    firstRoot.Player.Interactor),
-                Is.True);
-            int productIndex = IndexOf(
-                firstRoot.ShelfShop.Products,
-                product);
-            Assert.That(productIndex, Is.GreaterThanOrEqualTo(0));
-            Assert.That(
-                firstRoot.ShelfShop.Select(productIndex),
-                Is.True);
-            Assert.That(
-                firstRoot.ShelfShop.ConfirmSelection(),
-                Is.True);
+            for (int offerIndex = 0; offerIndex < SupermarketProductCatalog.Offers.Count; offerIndex++)
+            {
+                SupermarketProductOffer offer = SupermarketProductCatalog.Offers[offerIndex];
+                Assert.That(TryFindProduct(root, offer.ItemId,
+                    out SupermarketShelfView shelf, out SupermarketProductView product), Is.True);
+                sourceIds.Add(product.SourceId);
+                Assert.That(root.ShelfShop.Open(shelf, root.Player.Interactor), Is.True);
+                Assert.That(root.ShelfShop.Select(IndexOf(root.ShelfShop.Products, product)), Is.True);
+                yield return null;
+                yield return null;
+                if (offerIndex == 0)
+                {
+                    receipt.enabled = false;
+                    Assert.That(root.ShelfShop.ConfirmSelection(), Is.False,
+                        "A failed receipt preparation must not spend money or grant stock.");
+                    Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashBefore));
+                    Assert.That(GameSessionState.GetInventoryItemCount(offer.ItemId), Is.Zero);
+                    Assert.That(root.ShelfShop.IsReceiptOpen, Is.False);
+                    receipt.enabled = true;
+                    yield return null;
+                    yield return null;
+                }
+                for (int repeat = 1; repeat <= 2; repeat++)
+                {
+                    Assert.That(root.ShelfShop.ConfirmSelection(), Is.True);
+                    spent += offer.Price;
+                    Assert.That(root.ShelfShop.IsReceiptOpen, Is.True);
+                    Assert.That(receipt.ActionKey, Is.EqualTo(WorldItemFoundScreen.CloseActionKey));
+                    Assert.That(receipt.FeedbackKey, Is.EqualTo(SupermarketShelfShopController.ReceivedFeedbackKey));
+                    Assert.That(root.ShelfShop.ConfirmSelection(), Is.False,
+                        "A repeated confirm during the same receipt must not buy another item.");
+                    Assert.That(root.ShelfShop.MoveSelection(1), Is.False);
+                    Assert.That(root.ShelfShop.Select(0), Is.False);
+                    Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashBefore - spent));
+                    Assert.That(GameSessionState.GetInventoryItemCount(offer.ItemId), Is.EqualTo(repeat));
+                    Assert.That(GameSessionState.IsWorldItemCollected(product.SourceId), Is.False);
+                    Assert.That(shelf.TryGetProduct(product.SourceId, out _), Is.True);
+                    Assert.That(product.OriginalRoot.gameObject.activeSelf, Is.True);
+                    Assert.That(product.SelectionCollider.enabled, Is.True);
+                    Assert.That(BarMinigameModalLock.IsAnyLocked, Is.True);
+                    Assert.That(root.Player.Motor.InputEnabled, Is.False);
+                    Assert.That(root.Player.Interactor.InputEnabled, Is.False);
 
-            Assert.That(
-                GameSessionState.CashBalance,
-                Is.EqualTo(cashBefore - offer.Price));
-            Assert.That(
-                GameSessionState.GetInventoryItemCount(
-                    InventoryItemId.ClosedStewCan),
-                Is.EqualTo(1));
-            Assert.That(
-                GameSessionState.IsWorldItemCollected(sourceId),
-                Is.True);
-            Assert.That(
-                shelf.TryGetProduct(sourceId, out _),
-                Is.False);
-            Assert.That(product.SelectionCollider.enabled, Is.False);
-            Assert.That(product.OriginalRoot.gameObject.activeSelf, Is.False);
+                    yield return WaitUntil(() => receipt.IsShowing, "The shared shop receipt did not settle.");
+                    if (offer.ItemId == InventoryItemId.VodkaBottle && repeat == 1)
+                        yield return CaptureReceipt(root.CameraFollow.Camera);
+                    if (repeat == 1) Assert.That(receipt.Dismiss(), Is.True);
+                    else Assert.That(receipt.Abandon(), Is.True);
+                    if (repeat == 1)
+                        yield return WaitUntil(() => !root.ShelfShop.IsReceiptOpen, "The receipt did not close.");
+                    Assert.That(root.ShelfShop.ConfirmSelection(), Is.False,
+                        "The receipt closing frame cannot start the next purchase.");
+                    Assert.That(root.ShelfShop.SelectedProduct, Is.SameAs(product));
+                    Assert.That(root.ShelfShop.IsOpen && BarMinigameModalLock.IsAnyLocked, Is.True,
+                        "A nested receipt must retain the shelf browser's modal ownership.");
+                    Assert.That(root.Player.Motor.InputEnabled || root.Player.Interactor.InputEnabled, Is.False);
+                    yield return null;
+                    yield return null;
+                }
+                root.ShelfShop.Close();
+                Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
+                Assert.That(root.Player.Motor.InputEnabled && root.Player.Interactor.InputEnabled, Is.True);
+            }
 
-            SupermarketInteriorRoot reloadedRoot = null;
-            yield return LoadSceneAndWaitForRoot(root => reloadedRoot = root);
-            yield return WaitUntil(
-                () => reloadedRoot.IsInitialized,
-                "Reloaded supermarket root did not finish initialization.");
+            // An old sold-source bit must not remove the replenishable offer on re-entry.
+            string legacySource = sourceIds[sourceIds.Count - 1];
+            InventoryItemId legacyItem = SupermarketProductCatalog.Offers[sourceIds.Count - 1].ItemId;
+            Assert.That(GameSessionState.TryCollectWorldItem(legacySource, legacyItem), Is.True);
+            yield return LoadSceneAndWaitForRoot(value => root = value);
+            yield return WaitUntil(() => root.IsInitialized, "Reloaded supermarket did not initialize.");
+            foreach (string source in sourceIds)
+                Assert.That(TryFindProduct(root, source, out _), Is.True);
+            Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashBefore - spent));
+            foreach (SupermarketProductOffer offer in SupermarketProductCatalog.Offers)
+                Assert.That(GameSessionState.GetInventoryItemCount(offer.ItemId),
+                    Is.EqualTo(offer.ItemId == legacyItem ? 3 : 2));
 
-            Assert.That(
-                TryFindProduct(reloadedRoot, sourceId, out _),
-                Is.False,
-                "A purchased source must not be rebuilt on scene re-entry.");
-            Assert.That(
-                GameSessionState.IsWorldItemCollected(sourceId),
-                Is.True);
-            Assert.That(
-                GameSessionState.GetInventoryItemCount(
-                    InventoryItemId.ClosedStewCan),
-                Is.EqualTo(1));
-            Assert.That(
-                GameSessionState.CashBalance,
-                Is.EqualTo(cashBefore - offer.Price));
+            Assert.That(TryFindProduct(root, InventoryItemId.ClosedStewCan,
+                out SupermarketShelfView fullShelf, out SupermarketProductView fullProduct), Is.True);
+            Assert.That(GameSessionState.TryAddInventoryItem(InventoryItemId.ClosedStewCan,
+                9 - GameSessionState.GetInventoryItemCount(InventoryItemId.ClosedStewCan)), Is.True);
+            Assert.That(root.ShelfShop.Open(fullShelf, root.Player.Interactor), Is.True);
+            Assert.That(root.ShelfShop.Select(IndexOf(root.ShelfShop.Products, fullProduct)), Is.True);
+            yield return null;
+            yield return null;
+            Assert.That(root.ShelfShop.ConfirmSelection(), Is.False);
+            Assert.That(root.ShelfShop.FeedbackKey, Is.EqualTo("supermarket.failure.inventory_full"));
+            Assert.That(root.ShelfShop.IsReceiptOpen, Is.False);
+            Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashBefore - spent));
+            Assert.That(fullProduct.OriginalRoot.gameObject.activeSelf && fullProduct.SelectionCollider.enabled, Is.True);
+            root.ShelfShop.Close();
+
+            // Exercise the actual cash commit boundary without manufacturing more world sources.
+            while (GameSessionState.CashBalance >= 28)
+            {
+                Assert.That(GameSessionState.TryRemoveInventoryItem(InventoryItemId.VodkaBottle,
+                    GameSessionState.GetInventoryItemCount(InventoryItemId.VodkaBottle)), Is.True);
+                Assert.That(GameSessionState.TryPurchaseWorldItem("supermarket.test.cash", InventoryItemId.VodkaBottle).Succeeded,
+                    Is.True);
+            }
+            Assert.That(TryFindProduct(root, InventoryItemId.VodkaBottle,
+                out SupermarketShelfView vodkaShelf, out SupermarketProductView vodkaProduct), Is.True);
+            int cashAtRefusal = GameSessionState.CashBalance;
+            int bottlesAtRefusal = GameSessionState.GetInventoryItemCount(InventoryItemId.VodkaBottle);
+            Assert.That(root.ShelfShop.Open(vodkaShelf, root.Player.Interactor), Is.True);
+            Assert.That(root.ShelfShop.Select(IndexOf(root.ShelfShop.Products, vodkaProduct)), Is.True);
+            yield return null;
+            yield return null;
+            Assert.That(root.ShelfShop.ConfirmSelection(), Is.False);
+            Assert.That(root.ShelfShop.FeedbackKey, Is.EqualTo("supermarket.failure.insufficient_funds"));
+            Assert.That(root.ShelfShop.IsReceiptOpen, Is.False);
+            Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashAtRefusal));
+            Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.VodkaBottle), Is.EqualTo(bottlesAtRefusal));
+            root.ShelfShop.Close();
         }
 
         [UnityTest]
-        public IEnumerator ShelfBrowser_CentersProducts_CrossesAndSkipsEmptyShelf_ThenRestoresState()
+        public IEnumerator ShelfBrowser_CentersProducts_CrossesStockedShelves_ThenRestoresState()
         {
             SupermarketInteriorRoot root = null;
             yield return LoadSceneAndWaitForRoot(value => root = value);
@@ -243,29 +290,19 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.ShelfShop.SelectedIndex, Is.Zero);
             AssertSelectedProductCentered(root, pantryShelf);
 
-            Assert.That(root.ShelfShop.ConfirmSelection(), Is.True);
-            Assert.That(root.ShelfShop.IsOpen, Is.True);
+            Assert.That(root.ShelfShop.MoveSelection(1), Is.True);
             Assert.That(root.ShelfShop.ActiveShelf, Is.SameAs(pantryShelf));
-            Assert.That(pantryShelf.Products, Has.Count.EqualTo(1));
+            Assert.That(root.ShelfShop.SelectedIndex, Is.EqualTo(1));
             AssertSelectedProductCentered(root, pantryShelf);
 
-            Assert.That(root.ShelfShop.ConfirmSelection(), Is.True);
-            Assert.That(root.ShelfShop.IsOpen, Is.True);
-            Assert.That(pantryShelf.Products, Is.Empty);
+            Assert.That(root.ShelfShop.MoveSelection(1), Is.True);
             Assert.That(root.ShelfShop.ActiveShelf, Is.SameAs(coldShelf));
             AssertSelectedProductCentered(root, coldShelf);
 
             Assert.That(root.ShelfShop.MoveSelection(-1), Is.True);
-            Assert.That(root.ShelfShop.ActiveShelf, Is.SameAs(dryShelf));
-            Assert.That(
-                root.ShelfShop.SelectedIndex,
-                Is.EqualTo(root.ShelfShop.Products.Count - 1));
-            AssertSelectedProductCentered(root, dryShelf);
-
-            Assert.That(root.ShelfShop.MoveSelection(1), Is.True);
-            Assert.That(root.ShelfShop.ActiveShelf, Is.SameAs(coldShelf));
-            Assert.That(root.ShelfShop.SelectedIndex, Is.Zero);
-            AssertSelectedProductCentered(root, coldShelf);
+            Assert.That(root.ShelfShop.ActiveShelf, Is.SameAs(pantryShelf));
+            Assert.That(root.ShelfShop.SelectedIndex, Is.EqualTo(1));
+            AssertSelectedProductCentered(root, pantryShelf);
 
             root.ShelfShop.Exit();
             Assert.That(root.ShelfShop.IsOpen, Is.False);
@@ -338,20 +375,45 @@ namespace BarPromenade.Tests.PlayMode
                 root.ShelfShop.Open(dryShelf, root.Player.Interactor),
                 Is.True);
             yield return null;
+            yield return null;
 
             AssertAllRenderersDisabled(playerRenderers);
             AssertAllRenderersDisabled(cashierRenderers);
+            InventoryItemId boughtItem = root.ShelfShop.SelectedProduct.ItemId;
+            int price = root.ShelfShop.SelectedOffer.Price;
+            int cashBefore = GameSessionState.CashBalance;
+            Assert.That(root.ShelfShop.ConfirmSelection(), Is.True);
+            WorldItemFoundScreen receipt = WorldItemFoundScreen.For(root.Player.Interactor);
+            Assert.That(receipt.IsPresenting && root.ShelfShop.IsReceiptOpen, Is.True);
 
             root.ShelfShop.enabled = false;
             yield return null;
 
             Assert.That(root.ShelfShop.IsOpen, Is.False);
+            Assert.That(root.ShelfShop.IsReceiptOpen || receipt.IsPresenting, Is.False);
+            Assert.That(GameSessionState.GetInventoryItemCount(boughtItem), Is.EqualTo(1));
+            Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashBefore - price));
             Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
             Assert.That(
                 root.Player.PresentationVisibility.RenderersHidden,
                 Is.False);
             AssertRendererStates(playerRenderers, playerStates);
             AssertRendererStates(cashierRenderers, cashierStates);
+        }
+
+        private static IEnumerator CaptureReceipt(Camera camera)
+        {
+            AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.SupermarketInterior,
+                "Test supermarket - Replenishable offer receipt");
+            if (Application.isBatchMode) yield break;
+            string folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", SceneIds.SupermarketInterior);
+            Directory.CreateDirectory(folder);
+            string path = Path.Combine(folder, "Test supermarket - Shared receipt Game View.png");
+            DateTime previous = File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue;
+            ScreenCapture.CaptureScreenshot(path);
+            yield return WaitUntil(() => File.Exists(path) &&
+                File.GetLastWriteTimeUtc(path) > previous && new FileInfo(path).Length > 8,
+                "The shared shop receipt Game View capture did not finish.");
         }
 
         private static void AssertSelectedProductCentered(

@@ -27,6 +27,13 @@ namespace BarPromenade.Editor
                 manifest.empty_check_gaze_dot == null || manifest.empty_check_gaze_dot.Length != 5 ||
                 manifest.empty_check_inside_gaze_dot == null || manifest.empty_check_inside_gaze_dot.Length != 5 ||
                 manifest.empty_check_opening_forward_clearance_m == null || manifest.empty_check_opening_forward_clearance_m.Length != 5 ||
+                manifest.empty_check_inspection_markers == null || manifest.empty_check_inspection_markers.Length != 2 ||
+                manifest.empty_check_inspection_opening_eye_height_m == null || manifest.empty_check_inspection_opening_eye_height_m.Length != 2 ||
+                manifest.empty_check_inspection_gaze_dot == null || manifest.empty_check_inspection_gaze_dot.Length != 2 ||
+                manifest.empty_check_inspection_inside_gaze_dot == null || manifest.empty_check_inspection_inside_gaze_dot.Length != 2 ||
+                manifest.empty_check_inspection_forward_clearance_m == null || manifest.empty_check_inspection_forward_clearance_m.Length != 2 ||
+                float.IsNaN(manifest.empty_check_minimum_down_dot) || manifest.empty_check_minimum_down_dot < .99999f ||
+                Mathf.Abs(manifest.empty_check_inspect_tilt_degrees - PlayerVodkaActions.EmptyCheckInspectTiltDegrees) > .00001f ||
                 Mathf.Abs(manifest.empty_check_tilt_degrees - PlayerVodkaActions.EmptyCheckTiltDegrees) > .00001f ||
                 Mathf.Abs(manifest.throw_windup_progress - PlayerVodkaActions.ThrowWindupProgress) > .00001f ||
                 manifest.throw_release_speed_mps < 2.3f || manifest.throw_release_speed_mps < manifest.throw_windup_speed_mps * 2.5f ||
@@ -49,10 +56,17 @@ namespace BarPromenade.Editor
                 if (float.IsNaN(travel) || Mathf.Abs(travel - PlayerVodkaActions.EmptyCheckShakeDistance) > .003f)
                     throw new InvalidOperationException("Empty bottle check must contain two visible full shakes.");
             for (int i = 0; i < shakeMarkers.Length; i++)
-                if (manifest.empty_check_gaze_dot[i] < .995f || manifest.empty_check_inside_gaze_dot[i] < .90f ||
+                if (manifest.empty_check_gaze_dot[i] < .995f ||
                     manifest.empty_check_opening_forward_clearance_m[i] < .22f ||
                     i % 2 == 0 && (manifest.empty_check_opening_eye_height_m[i] < -.04f || manifest.empty_check_opening_eye_height_m[i] > .10f))
-                    throw new InvalidOperationException("The hero must hold the opening at eye level and look into it.");
+                    throw new InvalidOperationException("The hero must watch the opening while both shakes point straight down.");
+            float[] inspectionMarkers = { PlayerVodkaActions.EmptyCheckInspectProgress, PlayerVodkaActions.EmptyCheckInspectEndProgress };
+            for (int i = 0; i < inspectionMarkers.Length; i++)
+                if (Mathf.Abs(manifest.empty_check_inspection_markers[i] - inspectionMarkers[i]) > .00001f ||
+                    manifest.empty_check_inspection_gaze_dot[i] < .995f || manifest.empty_check_inspection_inside_gaze_dot[i] < .90f ||
+                    manifest.empty_check_inspection_forward_clearance_m[i] < .22f ||
+                    manifest.empty_check_inspection_opening_eye_height_m[i] < -.04f || manifest.empty_check_inspection_opening_eye_height_m[i] > .10f)
+                    throw new InvalidOperationException("The hero must inspect the opening before turning it straight down for both shakes.");
             AnimationClip[] clips = AssetDatabase.LoadAllAssetsAtPath(AnimationPath).OfType<AnimationClip>()
                 .Where(value => !value.name.StartsWith("__preview__", StringComparison.Ordinal)).ToArray();
             if (clips.Length != PlayerVodkaActions.ClipNames.Length)
@@ -86,6 +100,9 @@ namespace BarPromenade.Editor
             public float[] draw_neck_contact_source, empty_check_markers, empty_check_shake_travel_m;
             public float[] empty_check_opening_eye_height_m, empty_check_gaze_dot, empty_check_opening_forward_clearance_m;
             public float[] empty_check_inside_gaze_dot;
+            public float empty_check_inspect_tilt_degrees, empty_check_minimum_down_dot;
+            public float[] empty_check_inspection_markers, empty_check_inspection_opening_eye_height_m, empty_check_inspection_gaze_dot;
+            public float[] empty_check_inspection_inside_gaze_dot, empty_check_inspection_forward_clearance_m;
         }
     }
 

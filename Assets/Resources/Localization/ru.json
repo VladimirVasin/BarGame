@@ -2038,6 +2038,10 @@
       "value": "НАЗАД"
     },
     {
+      "key": "supermarket.shop.received",
+      "value": "Покупка убрана в инвентарь."
+    },
+    {
       "key": "supermarket.failure.invalid_source",
       "value": "На этой упаковке нет ценника."
     },

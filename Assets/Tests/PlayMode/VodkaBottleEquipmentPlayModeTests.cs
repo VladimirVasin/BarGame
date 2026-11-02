@@ -47,6 +47,8 @@ namespace BarPromenade.Tests.PlayMode
         private Texture2D tile;
         private Mesh handScratch;
         private Scene previousScene, fixtureScene;
+        private PlayerVodkaBottleController[] previousPlayers;
+        private bool[] previousPlayerStates;
         private float previousDelta, previousScale;
         private bool previousFocus, previousFog;
         private AmbientMode previousAmbientMode;
@@ -56,6 +58,16 @@ namespace BarPromenade.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            // A preceding scene test can leave its production hero loaded.
+            // Only this fixture's hero may read the synthetic input or mutate
+            // the shared session bottle; restore the prior actors afterward.
+            previousPlayers = Object.FindObjectsByType<PlayerVodkaBottleController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            previousPlayerStates = new bool[previousPlayers.Length];
+            for (int i = 0; i < previousPlayers.Length; i++)
+            {
+                previousPlayerStates[i] = previousPlayers[i].gameObject.activeSelf;
+                previousPlayers[i].gameObject.SetActive(false);
+            }
             previousDelta = Time.captureDeltaTime; previousScale = Time.timeScale;
             previousFocus = GameInput.MovementFocused;
             previousFog = RenderSettings.fog; previousAmbientMode = RenderSettings.ambientMode;
@@ -141,6 +153,9 @@ namespace BarPromenade.Tests.PlayMode
             if (fixtureScene.IsValid() && fixtureScene.isLoaded) yield return SceneManager.UnloadSceneAsync(fixtureScene);
             RenderSettings.fog = previousFog; RenderSettings.ambientMode = previousAmbientMode;
             RenderSettings.ambientLight = previousAmbient; RenderSettings.sun = previousSun;
+            for (int i = 0; i < previousPlayers.Length; i++)
+                if (previousPlayers[i] != null) previousPlayers[i].gameObject.SetActive(previousPlayerStates[i]);
+            previousPlayers = null; previousPlayerStates = null;
             yield return null;
         }
 
@@ -235,6 +250,8 @@ namespace BarPromenade.Tests.PlayMode
             Capture("03-thumb-and-four-fingers-sip-rear", true, null, new Vector3(1f, .15f, -2f));
             AssertBottleGrip();
             Assert.That(bottle.MouthContactError, Is.LessThan(.012f));
+            Vector2 fullDrinkPose = MeasureDrinkPose();
+            Vector2 middleDrinkPose = fullDrinkPose;
             Assert.That(Vector3.Distance(start, player.GameObject.transform.position), Is.GreaterThan(.5f), "Sip must preserve walking.");
             Assert.That(player.Motor.InputEnabled, Is.True);
             yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying, "Sip did not return to carry.");
@@ -330,6 +347,16 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 Assert.That(GameSessionState.VodkaBottleRemainingMl,
                     Is.EqualTo(VodkaBottleState.FullMl - expected * VodkaBottleState.FullMl / VodkaBottleState.FullBottleSipCount));
+                if (sip == 8 || sip == VodkaBottleState.FullBottleSipCount)
+                {
+                    Vector2 pose = MeasureDrinkPose();
+                    Vector2 previous = sip == 8 ? fullDrinkPose : middleDrinkPose;
+                    Assert.That(pose.x, Is.GreaterThan(previous.x + 12f), "Draining the bottle must visibly raise its base.");
+                    Assert.That(pose.y, Is.GreaterThan(previous.y + 10f), "The actual head must lean back further as the bottle drains.");
+                    if (sip == 8) middleDrinkPose = pose;
+                    Capture("drink-fill-" + (sip == 8 ? "middle" : "last"), false, null, Vector3.right);
+                    AssertBottleGrip();
+                }
                 if (sip == 2 || sip == 3)
                 {
                     Capture("held-sip-" + sip, false);
@@ -467,6 +494,10 @@ namespace BarPromenade.Tests.PlayMode
             yield return Frames(3);
             input.Press(mouse.leftButton, queueEventOnly: true); yield return null;
             input.Release(mouse.leftButton, queueEventOnly: true);
+            yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Sipping,
+                "The seated last sip did not raise the bottle.");
+            AssertLastSipMaximum();
+            AssertEquipmentLeavesSeatLegsAlone(seatController);
             yield return Await(() => bottle.CompletedSips == previousSips + 1, "The seated final sip did not commit.");
             Capture("seated-final-sip", false, seatGround + Vector3.up * .8f);
             yield return ObserveEmptyCheck("seated", seatController, plan.ActionHipPosition, seatGround + Vector3.up * .8f);
@@ -497,6 +528,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private IEnumerator AwaitHeldSip(int expected, bool allowRaise = false)
         {
+            bool checkedLastSip = false;
             for (int frame = 0; frame < 300 && bottle.CompletedSips < expected; frame++)
             {
                 yield return null;
@@ -511,8 +543,40 @@ namespace BarPromenade.Tests.PlayMode
                 NpcHandPose hands = presentation.Registry.GetComponent<NpcHandPose>();
                 Assert.That(Vector3.Distance(hands.AnatomicalCylinderCentre(false), bottle.Bottle.Grip.position), Is.LessThan(.015f),
                     "The held-loop seam must retain the original hand's neck contact.");
+                if (!checkedLastSip && expected == VodkaBottleState.FullBottleSipCount &&
+                    bottle.PhaseProgress < PlayerVodkaActions.SipCommitProgress)
+                {
+                    AssertLastSipMaximum();
+                    Capture("drink-fill-last-before-commit", false, null, Vector3.right);
+                    checkedLastSip = true;
+                }
             }
             Assert.That(bottle.CompletedSips, Is.EqualTo(expected), "Held LMB did not commit its next single swallow.");
+            if (expected == VodkaBottleState.FullBottleSipCount) Assert.That(checkedLastSip, Is.True);
+        }
+
+        private Vector2 MeasureDrinkPose()
+        {
+            Vector3 axis = -bottle.Bottle.transform.up;
+            Vector3 gaze = presentation.Registry.Anchors.Head.TransformDirection(headLocalForward).normalized;
+            return new Vector2(Mathf.Asin(Mathf.Clamp(axis.y, -1f, 1f)) * Mathf.Rad2Deg,
+                Mathf.Asin(Mathf.Clamp(gaze.y, -1f, 1f)) * Mathf.Rad2Deg);
+        }
+
+        private void AssertLastSipMaximum()
+        {
+            presentation.ReapplyLatePresentationPose(); bottle.ReapplyPresentation();
+            Assert.That(GameSessionState.VodkaBottleRemainingMl, Is.InRange(1, 34),
+                "The maximum pose must be visible before the final swallow removes the active bottle.");
+            Vector2 pose = MeasureDrinkPose();
+            Assert.That(pose.x, Is.GreaterThan(75f), "The last sip must lift the base almost vertically above the mouth.");
+            Assert.That(pose.y, Is.GreaterThan(45f), "The last sip must visibly lean the head back.");
+            Assert.That(bottle.MouthContactError, Is.LessThan(.012f));
+            AssertBottleGrip();
+            Quaternion head = presentation.Registry.Anchors.Head.rotation;
+            bottle.ReapplyPresentation();
+            Assert.That(Quaternion.Angle(head, presentation.Registry.Anchors.Head.rotation), Is.LessThan(.01f),
+                "Reapplying a held-item contact must not accumulate head pitch.");
         }
 
         private void AssertClosedBottleBeforeStow()
@@ -563,6 +627,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.VodkaBottle), Is.Zero);
             Assert.That(GameSessionState.IsInventoryItemEquipped(InventoryItemId.VodkaBottle), Is.False);
             int thrown = bottle.ThrownBottles, captured = 0, previousShakes = 0;
+            bool inspected = false;
             float[] stops = { PlayerVodkaActions.EmptyCheckTurnProgress, PlayerVodkaActions.FirstShakeProgress,
                 PlayerVodkaActions.ShakeRestProgress, PlayerVodkaActions.SecondShakeProgress, PlayerVodkaActions.EmptyCheckReturnProgress };
             Vector3[] neckPositions = new Vector3[stops.Length];
@@ -579,8 +644,19 @@ namespace BarPromenade.Tests.PlayMode
                 previousShakes = bottle.CompletedEmptyShakes;
                 if (bottle.PhaseProgress >= PlayerVodkaActions.EmptyCheckTurnProgress &&
                     bottle.PhaseProgress <= PlayerVodkaActions.EmptyCheckReturnProgress)
-                    Assert.That(Vector3.Dot(original.transform.up, Vector3.up), Is.LessThan(-.50f),
-                        "Both empty-check thrusts must keep the neck facing down.");
+                    Assert.That(Vector3.Dot(original.transform.up, Vector3.down), Is.GreaterThan(.9999f),
+                        "Both empty-check thrusts must keep the neck strictly toward the ground.");
+                if (!inspected && bottle.PhaseProgress >= PlayerVodkaActions.EmptyCheckInspectProgress &&
+                    bottle.PhaseProgress <= PlayerVodkaActions.EmptyCheckInspectEndProgress)
+                {
+                    Vector3 toOpening = original.Mouth.position - (leftEye.position + rightEye.position) * .5f;
+                    Vector3 gaze = presentation.Registry.Anchors.Head.TransformDirection(headLocalForward).normalized;
+                    Assert.That(Vector3.Dot(gaze, toOpening.normalized), Is.GreaterThan(.95f));
+                    Assert.That(Vector3.Dot(-original.transform.up, toOpening.normalized), Is.GreaterThan(.90f),
+                        "Inspect the opening before rotating into the two vertical shakes.");
+                    Capture(label + "-look-into-empty-neck", false, focus);
+                    inspected = true;
+                }
                 if (captured >= stops.Length || bottle.PhaseProgress + .00001f < stops[captured]) continue;
                 if (seatController != null)
                 {
@@ -595,18 +671,10 @@ namespace BarPromenade.Tests.PlayMode
                 bool examining = captured == 0 || captured == 2 || captured == 4;
                 Vector3 eyes = (leftEye.position + rightEye.position) * .5f;
                 Vector3 eyeToMouth = original.Mouth.position - eyes;
-                Vector3 gaze = presentation.Registry.Anchors.Head.TransformDirection(headLocalForward).normalized;
                 Assert.That(Vector3.Dot(eyeToMouth, player.GameObject.transform.forward), Is.InRange(.15f, .55f),
                     "The bottle opening must remain in front of the face, with clearance for the inspection.");
                 Assert.That(eyeToMouth.y, Is.InRange(examining ? -.04f : -.12f, .10f),
                     "Empty-check holds lift the bottle opening to eye level; only the two thrusts lower it.");
-                if (examining)
-                {
-                    Assert.That(Vector3.Dot(gaze, eyeToMouth.normalized), Is.GreaterThan(.95f),
-                        "The actual head must face the bottle opening during each inspection hold.");
-                    Assert.That(Vector3.Dot(-original.transform.up, eyeToMouth.normalized), Is.GreaterThan(.90f),
-                        "The opening must face the hero so he can look into the neck rather than at the label.");
-                }
                 // The ordinary body may sway while the raised bottle follows
                 // the face. Measure each shake and recovered hold relative to
                 // those live eyes rather than requiring a frozen world pose.
@@ -619,6 +687,7 @@ namespace BarPromenade.Tests.PlayMode
                     (eyes + original.Mouth.position + original.transform.position) / 3f, new Vector3(.7f, .1f, 2f), .43f);
             }
             Assert.That(captured, Is.EqualTo(stops.Length), "The inverted hold and both separate shakes must be presented.");
+            Assert.That(inspected, Is.True, "The opening inspection must be presented before the vertical shakes.");
             Assert.That(bottle.CompletedEmptyShakes, Is.EqualTo(2));
             // Each of the two bounded segments between peaks may round up to
             // the next rendered frame, while the impulses remain one pair.

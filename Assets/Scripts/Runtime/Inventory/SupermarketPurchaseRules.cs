@@ -7,9 +7,8 @@ namespace BarPromenade
         Success = 0,
         InvalidSource,
         NotOffered,
-        AlreadyPurchased,
-        InsufficientFunds,
-        InventoryFull
+        InsufficientFunds = 4,
+        InventoryFull = 5
     }
 
     public readonly struct SupermarketPurchaseResult
@@ -50,7 +49,6 @@ namespace BarPromenade
         public static SupermarketPurchaseResult Evaluate(
             string sourceId,
             InventoryItemId itemId,
-            bool sourceAlreadyPurchased,
             int cashBalance,
             int currentItemCount)
         {
@@ -100,17 +98,6 @@ namespace BarPromenade
                     nameof(currentItemCount),
                     currentItemCount,
                     "The current count exceeds the catalog stack limit.");
-            }
-
-            if (sourceAlreadyPurchased)
-            {
-                return CreateFailure(
-                    SupermarketPurchaseStatus.AlreadyPurchased,
-                    normalizedSourceId,
-                    itemId,
-                    offer,
-                    cashBalance,
-                    currentItemCount);
             }
 
             if (cashBalance < offer.Price)

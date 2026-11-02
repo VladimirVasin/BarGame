@@ -80,7 +80,7 @@ namespace BarPromenade
         private void OnGUI()
         {
             using var input = RetroUiInput.Begin();
-            if (controller == null || !controller.IsOpen ||
+            if (controller == null || !controller.IsOpen || controller.IsReceiptOpen ||
                 controller.SelectedProduct == null)
             {
                 return;

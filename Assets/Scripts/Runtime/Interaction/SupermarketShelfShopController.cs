@@ -11,6 +11,7 @@ namespace BarPromenade
     {
         private const int MaximumRayHits = 32;
         private const float SelectedScale = 1.08f;
+        public const string ReceivedFeedbackKey = "supermarket.shop.received";
 
         private readonly BarMinigameModalLock modalLock =
             new BarMinigameModalLock();
@@ -38,14 +39,18 @@ namespace BarPromenade
         private Quaternion previousFixedRotation;
         private float previousFixedFieldOfView;
         private int inputUnlockFrame;
+        private PlayerInteractor activeInteractor;
+        private WorldItemFoundScreen receiptScreen;
+        private Transform receiptModel;
 
         public bool IsOpen { get; private set; }
+        public bool IsReceiptOpen => receiptScreen != null;
         public int SelectedIndex { get; private set; }
         public string FeedbackKey { get; private set; } = string.Empty;
         public int CashBalance => GameSessionState.CashBalance;
         public SupermarketShelfView ActiveShelf => activeShelf;
         public IReadOnlyList<SupermarketProductView> Products => products;
-        public bool CanNavigate => CountAvailableProducts() > 1;
+        public bool CanNavigate => !IsReceiptOpen && CountAvailableProducts() > 1;
         public SupermarketProductView SelectedProduct =>
             products.Count > 0
                 ? products[Mathf.Clamp(
@@ -157,6 +162,7 @@ namespace BarPromenade
                 SelectedIndex = 0;
                 FeedbackKey = string.Empty;
                 inputUnlockFrame = Time.frameCount + 1;
+                activeInteractor = interactor;
                 IsOpen = true;
                 ApplySelectionHighlight();
                 ApplySelectedProductCamera();
@@ -174,7 +180,7 @@ namespace BarPromenade
 
         public bool Select(int index)
         {
-            if (!IsOpen || index < 0 || index >= products.Count)
+            if (!IsOpen || IsReceiptOpen || index < 0 || index >= products.Count)
             {
                 return false;
             }
@@ -215,58 +221,86 @@ namespace BarPromenade
         public bool ConfirmSelection()
         {
             SupermarketProductView product = SelectedProduct;
-            if (!IsOpen || product == null)
+            if (!IsOpen || IsReceiptOpen || product == null ||
+                Time.frameCount <= inputUnlockFrame)
             {
                 return false;
             }
 
-            SupermarketPurchaseResult result =
-                GameSessionState.TryPurchaseWorldItem(
-                    product.SourceId,
-                    product.ItemId);
-            if (!result.Succeeded)
+            inputUnlockFrame = Time.frameCount + 1;
+            SupermarketPurchaseResult preflight = SupermarketPurchaseRules.Evaluate(
+                product.SourceId, product.ItemId, GameSessionState.CashBalance,
+                GameSessionState.GetInventoryItemCount(product.ItemId));
+            if (!preflight.Succeeded)
             {
-                FeedbackKey = GetFailureKey(result.Status);
+                FeedbackKey = GetFailureKey(preflight.Status);
                 RetroAudio.Play(RetroSfxId.Bad);
                 return false;
             }
 
-            ResetSelectionHighlight();
-            if (product.SelectionCollider != null)
+            WorldItemFoundScreen screen = WorldItemFoundScreen.For(activeInteractor);
+            if (screen == null || !screen.IsInitialized || screen.IsPresenting)
+                return false;
+
+            // Prepare the shared receipt before spending cash. Its separate
+            // model keeps this replenishable offer and its price tag intact.
+            receiptScreen = screen;
+            SupermarketPurchaseResult result = default;
+            bool committed = false;
+            bool presented;
+            try
             {
-                product.SelectionCollider.enabled = false;
+                receiptModel = InventoryItemModelFactory.BuildPreviewModel(
+                    product.ItemId, transform);
+                if (receiptModel.TryGetComponent(out VodkaBottleView bottle))
+                    bottle.SetRemaining(1f);
+                presented = screen.TryPresentReceivedWithin(modalLock,
+                    activeInteractor, product.ItemId, receiptModel,
+                    ReceivedFeedbackKey,
+                    () =>
+                    {
+                        result = GameSessionState.TryPurchaseWorldItem(
+                            product.SourceId, product.ItemId);
+                        committed = true;
+                        return result.Succeeded;
+                    },
+                    _ => ClearReceipt());
+            }
+            catch
+            {
+                ClearReceipt();
+                throw;
             }
 
-            activeShelf.RemoveProduct(product);
-            if (product.OriginalRoot != null)
+            if (!presented)
             {
-                product.OriginalRoot.gameObject.SetActive(false);
+                ClearReceipt();
+                if (committed)
+                {
+                    FeedbackKey = GetFailureKey(result.Status);
+                    RetroAudio.Play(RetroSfxId.Bad);
+                }
+                return false;
             }
 
             FeedbackKey = string.Empty;
             RetroAudio.Play(RetroSfxId.UiConfirm);
-            int removedIndex = SelectedIndex;
-            RefreshProducts();
-            Physics.SyncTransforms();
-            if (products.Count == 0)
-            {
-                inputUnlockFrame = Time.frameCount + 1;
-                if (!MoveToAdjacentShelf(1, false))
-                {
-                    Close();
-                }
-
-                return true;
-            }
-
-            SelectedIndex = Mathf.Clamp(
-                removedIndex,
-                0,
-                products.Count - 1);
-            ApplySelectionHighlight();
-            ApplySelectedProductCamera();
-            inputUnlockFrame = Time.frameCount + 1;
             return true;
+        }
+
+        private void ClearReceipt()
+        {
+            receiptScreen = null;
+            if (receiptModel != null)
+            {
+                receiptModel.gameObject.SetActive(false);
+                if (Application.isPlaying) Destroy(receiptModel.gameObject);
+                else DestroyImmediate(receiptModel.gameObject);
+                receiptModel = null;
+            }
+            // The Close/Escape press belongs to the receipt for its whole
+            // rendered frame, including calls through the public shop API.
+            inputUnlockFrame = Time.frameCount + 1;
         }
 
         public void Exit()
@@ -290,6 +324,8 @@ namespace BarPromenade
                 cashierRenderersHidden != null;
             IsOpen = false;
             FeedbackKey = string.Empty;
+            if (receiptScreen != null) receiptScreen.Abandon();
+            ClearReceipt();
             if (hadOwnership)
             {
                 RestoreOwnedState();
@@ -302,7 +338,7 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (!IsOpen || Time.frameCount <= inputUnlockFrame)
+            if (!IsOpen || IsReceiptOpen || Time.frameCount <= inputUnlockFrame)
             {
                 return;
             }
@@ -403,6 +439,7 @@ namespace BarPromenade
             ResetSelectionHighlight();
             products.Clear();
             activeShelf = null;
+            activeInteractor = null;
             if (cameraFollow != null)
             {
                 if (cameraWasFixed)
@@ -693,8 +730,6 @@ namespace BarPromenade
                     return "supermarket.failure.insufficient_funds";
                 case SupermarketPurchaseStatus.InventoryFull:
                     return "supermarket.failure.inventory_full";
-                case SupermarketPurchaseStatus.AlreadyPurchased:
-                    return "supermarket.failure.already_purchased";
                 case SupermarketPurchaseStatus.InvalidSource:
                     return "supermarket.failure.invalid_source";
                 case SupermarketPurchaseStatus.NotOffered:

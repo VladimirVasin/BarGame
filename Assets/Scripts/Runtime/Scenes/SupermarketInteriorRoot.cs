@@ -123,9 +123,7 @@ namespace BarPromenade
             phaseTimer.Restart();
             World = SupermarketInteriorWorldBuilder.Build(
                 transform,
-                Layout,
-                sourceId =>
-                    !GameSessionState.IsWorldItemCollected(sourceId));
+                Layout);
             GameLogPhases.Report("supermarket", "world_build", phaseTimer);
             phaseTimer.Restart();
 

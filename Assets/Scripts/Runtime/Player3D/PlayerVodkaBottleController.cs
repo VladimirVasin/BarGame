@@ -35,7 +35,8 @@ namespace BarPromenade
         private bool stowRequested, pendingSeatHandoff, emptyBottle, terminalPresented;
         private float presentedProgress;
         private string activeActionClip;
-        private static readonly float[] EmptyCheckStops = { PlayerVodkaActions.EmptyCheckTurnProgress,
+        private static readonly float[] EmptyCheckStops = { PlayerVodkaActions.EmptyCheckInspectProgress,
+            PlayerVodkaActions.EmptyCheckInspectEndProgress, PlayerVodkaActions.EmptyCheckTurnProgress,
             PlayerVodkaActions.FirstShakeProgress, PlayerVodkaActions.ShakeRestProgress,
             PlayerVodkaActions.SecondShakeProgress, PlayerVodkaActions.EmptyCheckReturnProgress, 1f };
         private static readonly float[] OpenStops = { PlayerVodkaActions.CapContactProgress, .55f,
@@ -414,7 +415,7 @@ namespace BarPromenade
 
         private static float Smooth(float from, float to, float value) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(from, to, value));
         private static float EmptyCheckDownAmount(float progress) =>
-            Smooth(0f, PlayerVodkaActions.EmptyCheckTurnProgress, progress) *
+            Smooth(0f, PlayerVodkaActions.EmptyCheckInspectProgress, progress) *
             (1f - Smooth(PlayerVodkaActions.EmptyCheckReturnProgress, 1f, progress));
         private static float EmptyCheckShakeAmount(float progress) =>
             Smooth(PlayerVodkaActions.EmptyCheckTurnProgress, PlayerVodkaActions.FirstShakeProgress, progress) *
@@ -468,6 +469,16 @@ namespace BarPromenade
             }
             float shown = Phase == BottlePhase.Sipping && committed ?
                 Mathf.Lerp(beforeSipMl, displayedMl, Smooth(PlayerVodkaActions.SipCommitProgress, .65f, progress)) : displayedMl;
+            float sip = Phase switch
+            {
+                BottlePhase.Raising => Smooth(0f, 1f, progress),
+                BottlePhase.Sipping => 1f,
+                BottlePhase.Lowering => 1f - Smooth(0f, 1f, progress),
+                _ => 0f
+            };
+            float depletion = Smooth(VodkaBottleState.FullMl, PlayerVodkaActions.LastSipPoseMl, shown);
+            if (sip > 0f) visual.ApplyEquipmentHeadPitch(this, PlayerVodkaActions.LastDrinkHeadPitchDegrees * depletion * sip);
+            else visual.ClearEquipmentHeadPitch(this);
             // The carried bottle is upright; the original wrist follows its
             // neck frame instead of inheriting a sideways relaxed thumb.
             Quaternion rotation = Quaternion.LookRotation(transform.right, Vector3.up);
@@ -496,22 +507,17 @@ namespace BarPromenade
                 grip = Vector3.Lerp(grip, seatedGrip, seatedWeight);
             }
             Vector3 position = grip - rotation * gripLocal;
-            float sip = Phase switch
-            {
-                BottlePhase.Raising => Smooth(0f, 1f, progress),
-                BottlePhase.Sipping => 1f,
-                BottlePhase.Lowering => 1f - Smooth(0f, 1f, progress),
-                _ => 0f
-            };
             if (sip > 0f)
             {
                 // The mouth stays anchored while the base rises with the remaining volume.
-                Vector3 drinkAxis = (-transform.forward + Vector3.up * Mathf.Lerp(-.04f, -.65f, 1f - shown / VodkaBottleState.FullMl)).normalized;
+                Vector3 levelForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+                float tilt = Mathf.Lerp(PlayerVodkaActions.FullDrinkTiltDegrees, PlayerVodkaActions.LastDrinkTiltDegrees, depletion);
                 // Only the swallow tilts during a held loop; its endpoints
                 // retain the same raised mouth contact as Raise and Lower.
                 float gulp = Phase == BottlePhase.Sipping ? Smooth(.38f, PlayerVodkaActions.SipCommitProgress, progress) *
                     (1f - Smooth(.53f, .66f, progress)) : 0f;
-                drinkAxis = Quaternion.AngleAxis(-5f * gulp, transform.right) * drinkAxis;
+                tilt += 5f * gulp * (1f - depletion);
+                Vector3 drinkAxis = -levelForward * Mathf.Cos(tilt * Mathf.Deg2Rad) - Vector3.up * Mathf.Sin(tilt * Mathf.Deg2Rad);
                 Quaternion drinkRotation = Quaternion.LookRotation(Vector3.Cross(transform.right, drinkAxis), drinkAxis);
                 Vector3 lip = visual.Registry.Anchors.Mouth.position + transform.forward * .008f;
                 Vector3 drinkPosition = lip - drinkRotation * mouthLocal;
@@ -523,7 +529,11 @@ namespace BarPromenade
             if (Phase == BottlePhase.CheckingEmpty)
             {
                 float down = EmptyCheckDownAmount(progress);
-                rotation = Quaternion.AngleAxis(PlayerVodkaActions.EmptyCheckTiltDegrees * down, transform.right) * rotation;
+                float vertical = Smooth(PlayerVodkaActions.EmptyCheckInspectEndProgress, PlayerVodkaActions.EmptyCheckTurnProgress, progress);
+                Quaternion inspect = Quaternion.AngleAxis(PlayerVodkaActions.EmptyCheckInspectTiltDegrees, transform.right) * rotation;
+                Vector3 horizontalPalm = Vector3.ProjectOnPlane(transform.right, Vector3.up).normalized;
+                Quaternion straightDown = Quaternion.LookRotation(horizontalPalm, Vector3.down);
+                rotation = Quaternion.Slerp(rotation, Quaternion.Slerp(inspect, straightDown, vertical), down);
                 if (seatedWeight > 0f && inspectionLeftEye != null && inspectionRightEye != null)
                 {
                     // The parent's seated pelvis pitch raises this contact
@@ -648,6 +658,7 @@ namespace BarPromenade
         { pendingInteraction = null; pendingSeatHandoff = false; player.Interactor?.SetOwnedInteractKeyClaim(this, false); }
         private void Suspend()
         {
+            visual?.ClearEquipmentHeadPitch(this);
             visual?.ReleaseOwnedClip(this); visual?.ReleaseCarryPose(this); visual?.ReleaseEquipmentPose(this);
             visual?.ReleaseContextualFacialExpression(this);
             jacket?.ClearWeaponAccess(this);

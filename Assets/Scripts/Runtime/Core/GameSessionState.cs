@@ -1333,8 +1333,6 @@ namespace BarPromenade
                 SupermarketPurchaseRules.Evaluate(
                     normalizedSourceId,
                     itemId,
-                    normalizedSourceId.Length > 0 &&
-                    collectedWorldItems.Contains(normalizedSourceId),
                     CashBalance,
                     itemCountBefore);
             if (!result.Succeeded)
@@ -1343,25 +1341,11 @@ namespace BarPromenade
                 return result;
             }
 
-            if (!collectedWorldItems.Add(normalizedSourceId))
-            {
-                result = SupermarketPurchaseRules.Evaluate(
-                    normalizedSourceId,
-                    itemId,
-                    true,
-                    CashBalance,
-                    itemCountBefore);
-                LogWorldItemPurchase(result);
-                return result;
-            }
-
             if (!inventory.TryAdd(itemId))
             {
-                collectedWorldItems.Remove(normalizedSourceId);
                 result = SupermarketPurchaseRules.Evaluate(
                     normalizedSourceId,
                     itemId,
-                    false,
                     CashBalance,
                     inventory.GetCount(itemId));
                 LogWorldItemPurchase(result);
@@ -1369,7 +1353,6 @@ namespace BarPromenade
             }
 
             CashBalance = result.CashAfter;
-            WorldItemsChanged?.Invoke();
             LogWorldItemPurchase(result);
             return result;
         }

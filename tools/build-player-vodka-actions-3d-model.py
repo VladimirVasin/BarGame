@@ -32,7 +32,9 @@ CLIPS = (("VodkaCarry", 1., True), ("VodkaDraw", 1.5, False),
 LOWER = ("root", "pelvis", "thigh.L", "thigh.R", "shin.L", "shin.R", "foot.L", "foot.R")
 SHAKE_MARKERS = (.25, .375, .4375, .50, .625)
 SHAKE_DISTANCE = .075
-CHECK_TILT_DEGREES = 235.
+INSPECT_MARKERS = (.125, 1./6.)
+INSPECT_TILT_DEGREES = 235.
+CHECK_TILT_DEGREES = 180.
 MOUTH_ABOVE_GRIP = .440*.65-.215
 THROW_WINDUP = .44
 THROW_RELEASE = .60
@@ -45,10 +47,11 @@ def smooth(t):
 
 def empty_check_amounts(t):
     turn_end,first_peak,between,second_peak,return_start=SHAKE_MARKERS
-    turn=smooth(t/turn_end)*(1.-smooth((t-return_start)/(1.-return_start)))
+    turn=smooth(t/INSPECT_MARKERS[0])*(1.-smooth((t-return_start)/(1.-return_start)))
+    down=smooth((t-INSPECT_MARKERS[1])/(turn_end-INSPECT_MARKERS[1]))
     first=smooth((t-turn_end)/(first_peak-turn_end))*(1.-smooth((t-first_peak)/(between-first_peak)))
     second=smooth((t-between)/(second_peak-between))*(1.-smooth((t-second_peak)/(return_start-second_peak)))
-    return turn,first+second
+    return turn,down,first+second
 
 
 def pose_dict(builder):
@@ -179,8 +182,11 @@ def build():
         (1.025,*contact('L',(.28,-.40,1.23))),(1.10,*contact('L',(.34,-.20,1.08))),(1.25,lw,lr))
     seat.restore_mix(result,neutral,neutral,0.)
     neutral_eyes=eye_centre(rig).copy()
-    check_axis=Vector((0.,-math.sin(math.radians(CHECK_TILT_DEGREES)),math.cos(math.radians(CHECK_TILT_DEGREES))))
+    inspect_axis=Vector((0.,-math.sin(math.radians(INSPECT_TILT_DEGREES)),math.cos(math.radians(INSPECT_TILT_DEGREES))))
+    check_axis=Vector((0.,0.,-1.))
     check_mouth=neutral_eyes+Vector((-.03,-.28,.10))
+    inspect_neck=check_mouth-inspect_axis*MOUTH_ABOVE_GRIP
+    inspect_wrist,inspect_rotation=contact('R',inspect_neck,axis=inspect_axis)
     check_neck=check_mouth-check_axis*MOUTH_ABOVE_GRIP
     check_wrist,check_rotation=contact('R',check_neck,axis=check_axis)
     for obj in list(bpy.data.objects):
@@ -213,9 +219,12 @@ def build():
                 rig.pose.bones['head'].rotation_quaternion=Quaternion(Vector((1.,0.,0.)),math.radians(-6*amount-1.5*gulp))@neutral['head'][1]
                 bpy.context.view_layer.update()
             elif name=='VodkaEmptyCheck':
-                turn,shake=empty_check_amounts(t)
-                rpos=carry.lerp(check_wrist,turn)+check_axis*(SHAKE_DISTANCE*shake)
-                rrot=carry_rot.slerp(check_rotation,turn)
+                turn,down,shake=empty_check_amounts(t)
+                # Inspect the opening first. Both subsequent impulses use the
+                # gravity axis, with the wrist/forearm re-authored around it.
+                target=inspect_wrist.lerp(check_wrist,down)
+                rpos=carry.lerp(target,turn)+check_axis*(SHAKE_DISTANCE*shake)
+                rrot=carry_rot.slerp(inspect_rotation.slerp(check_rotation,down),turn)
                 opening=check_mouth+check_axis*(SHAKE_DISTANCE*shake)
                 aim_head(rig,neutral,opening,turn)
             elif name=='VodkaThrow':
@@ -250,7 +259,7 @@ def build():
                 elif open_second>1.10:mix_bones(current,neutral,smooth((open_second-1.10)/.15),left_bones)
             elif name=='VodkaEmptyCheck':
                 current=seat.snapshot(result)
-                if t<SHAKE_MARKERS[0]:mix_bones(carry_pose,current,smooth(t/SHAKE_MARKERS[0]),right_bones)
+                if t<INSPECT_MARKERS[0]:mix_bones(carry_pose,current,smooth(t/INSPECT_MARKERS[0]),right_bones)
                 elif t>SHAKE_MARKERS[-1]:mix_bones(current,carry_pose,smooth((t-SHAKE_MARKERS[-1])/(1.-SHAKE_MARKERS[-1])),right_bones)
             keys.append((t,pose_dict(builder)))
         builder._create_action(name,'vodka_equipment',duration,loop,count,FPS,keys)
@@ -268,25 +277,29 @@ def build():
     endpoint=max(endpoint,error(baseline,sample('VodkaDraw',0.),baseline),error(baseline,sample('VodkaStow',1.),baseline),error(baseline,sample('VodkaThrow',1.),baseline))
     wrist_error=max((sample('VodkaSip',t) and (rig.pose.bones['hand.R'].head-drinking).length) for t in (0.,.5,1.))
     close_reverse_error=max(error(sample('VodkaClose',t),sample('VodkaOpen',1.-t),baseline) for t in (0.,.2,.4,.6,.8,1.))
-    check_contacts=[];eye_heights=[];gaze_dots=[];inside_dots=[];opening_clearances=[]
-    for t in SHAKE_MARKERS:
+    def measure_check(t):
         sample('VodkaEmptyCheck',t)
         hand=rig.pose.bones['hand.R']
         neck=hand.head+hand.matrix.to_quaternion()@hand_frames['R'][0]
         axis=hand.matrix.to_quaternion()@hand_frames['R'][1]
         opening=neck+axis*MOUTH_ABOVE_GRIP
         eyes=eye_centre(rig)
+        return neck,axis,opening.z-eyes.z,gaze_forward(rig).dot((opening-eyes).normalized()),(-axis).dot((opening-eyes).normalized()),-(opening.y-eyes.y)
+    check_contacts=[];eye_heights=[];gaze_dots=[];inside_dots=[];opening_clearances=[]
+    for t in SHAKE_MARKERS:
+        neck,axis,height,gaze,inside,clearance=measure_check(t)
         check_contacts.append(neck)
-        eye_heights.append(opening.z-eyes.z)
-        gaze_dots.append(gaze_forward(rig).dot((opening-eyes).normalized()))
-        inside_dots.append((-axis).dot((opening-eyes).normalized()))
-        opening_clearances.append(-(opening.y-eyes.y))
+        eye_heights.append(height);gaze_dots.append(gaze);inside_dots.append(inside);opening_clearances.append(clearance)
+    inspection=[measure_check(t) for t in INSPECT_MARKERS]
+    down_dot=min(measure_check(SHAKE_MARKERS[0]+(SHAKE_MARKERS[-1]-SHAKE_MARKERS[0])*i/90)[1].dot(check_axis) for i in range(91))
     shake_travels=[(check_contacts[i+1]-check_contacts[i]).dot(check_axis) for i in (0,2)]
     shake_error=max(abs(distance-SHAKE_DISTANCE) for distance in shake_travels)
     if any(not -.04<=eye_heights[i]<=.10 for i in (0,2,4)) or min(opening_clearances)<.22:
         raise ValueError(f'Empty bottle opening must be safely in front of the real eyes: {eye_heights}, {opening_clearances}')
-    if min(gaze_dots)<.995:raise ValueError(f'Hero must look into the opening throughout both checks: {gaze_dots}')
-    if min(inside_dots)<.90:raise ValueError(f'Opening must point toward the eyes so the gaze can enter the bottle: {inside_dots}')
+    if min(gaze_dots)<.995:raise ValueError(f'Hero must watch the opening throughout both shakes: {gaze_dots}')
+    if any(not -.04<=v[2]<=.10 or v[3]<.995 or v[4]<.90 or v[5]<.22 for v in inspection):
+        raise ValueError('Hero must inspect the opening before turning it straight down: '+repr(inspection))
+    if down_dot<.99999:raise ValueError('Both empty shakes must point straight down: '+str(down_dot))
     def wrist_at(t):
         sample('VodkaThrow',t)
         return rig.pose.bones['hand.R'].head.copy()
@@ -332,6 +345,10 @@ def build():
         maximum_close_reverse_error=close_reverse_error,empty_check_shake_count=2,
         empty_check_markers=list(SHAKE_MARKERS),empty_check_shake_travel_m=shake_travels,
         empty_check_tilt_degrees=CHECK_TILT_DEGREES,empty_check_neck_source=list(check_neck),empty_check_axis_source=list(check_axis),
+        empty_check_inspection_markers=list(INSPECT_MARKERS),empty_check_inspect_tilt_degrees=INSPECT_TILT_DEGREES,
+        empty_check_inspection_opening_eye_height_m=[v[2] for v in inspection],empty_check_inspection_gaze_dot=[v[3] for v in inspection],
+        empty_check_inspection_inside_gaze_dot=[v[4] for v in inspection],empty_check_inspection_forward_clearance_m=[v[5] for v in inspection],
+        empty_check_minimum_down_dot=down_dot,
         empty_check_opening_eye_height_m=eye_heights,empty_check_gaze_dot=gaze_dots,
         empty_check_inside_gaze_dot=inside_dots,
         empty_check_opening_forward_clearance_m=opening_clearances,throw_windup_progress=THROW_WINDUP,

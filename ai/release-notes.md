@@ -8,26 +8,26 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-02
 
-- Убран лишний круг под бутылкой при осмотре холодильника:жидкость сохраняет
-  свой материал. Build_CreatesAnimatedHollowStorageWithoutLights passed;frame reviewed.
-
-- Водка:клик ЛКМ — глоток;удержание — раз в секунду без опускания.
-  Четыре варианта глотка вместо шипения,в баре тоже.
-  Перед убиранием закрывает крышку. Пустую горлышком вниз на уровне глаз:
-  глядит внутрь,дважды быстро трясёт с паузой0,25с,досадливо бросает.
-  Ходьба/остаток сохранены.
-  Порция водки даёт24,полная бутылка номинально96;отрезвление4,5–18с/пункт,
-  выше стадия — медленнее. Recovery_LowerLevelsLosePointsFaster/
-  IntoxicationRecovery_ConsumesTimeAndStopsAtSober passed.
-  VodkaBottleEquipmentPlayModeTests passed;standing/seated frames reviewed.
-  Бутылка уменьшена,пальцы охватывают горлышко,большой вверх.
-  Достаёт из-под куртки,как пистолет,и убирает обратно. Крышку открывает
-  перед собой;обе руки проходят снаружи корпуса.
-  Можно пить на обычных сиденьях и в автобусе,открывать инвентарь сидя.
-  Бутылка над коленями;стопы опираются на пол автобуса.
+- Холодильник:жидкость хранит свой материал,лишний круг исчез.
+  Build_CreatesAnimatedHollowStorageWithoutLights passed;frame reviewed.
+- Водка:ЛКМ1/держать раз/с без опускания;четыре мокрых глотка,в баре тоже.
+  Меньше остаток — выше бутылка/голова;последний глоток — максимум.
+  Убирает закрытой;пустую осмотр→две встряски строго горлышком вниз→бросок.
+  Остаток хранится;0,299м,пальцы вокруг горлышка,большой вверх.
+  Достаёт из куртки,как пистолет;руки снаружи корпуса.
+  Ходьба/сиденья/автобус,инвентарь сидя;бутылка над коленями,стопы на полу.
+  InventoryWalkingSipPersistenceAndLastSipThrow/
+  SeatedBottlePreservesParentPoseInventoryAndExit passed;frames reviewed.
   Passenger_BoardsRidesAndExitsAtLaterStop passed;bus frames reviewed.
-- Закрытые двери бара,квартиры,подъезда и церкви останавливают героя;
-  подход к действию E свободен. ClosedDoorCollisionTests passed.
+  Порция+24/бутылка номинально96;отрезвление4,5–18с/пункт растёт со стадией.
+  Recovery_LowerLevelsLosePointsFaster/
+  IntoxicationRecovery_ConsumesTimeAndStopsAtSober passed.
+- Магазин:пять товаров не кончаются;цены/лимит9 прежние.
+  Общая квитанция возвращает к товару;полки заполнены и при повторном входе.
+  Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures passed;
+  Game View receipt reviewed.
+- Закрытые двери бара/квартиры/подъезда/церкви блокируют героя,подход E свободен.
+  ClosedDoorCollisionTests passed.
 
 ### 2026-11-01
 

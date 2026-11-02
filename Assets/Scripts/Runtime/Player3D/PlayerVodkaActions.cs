@@ -16,9 +16,14 @@ namespace BarPromenade
         public const float SipCommitProgress = .5f, ThrowReleaseProgress = .6f,
             DrawTransferProgress = .48f / 1.70f, CapContactProgress = .448f,
             CapTwistEndProgress = .664f, CapOpenProgress = .70f, CapReleaseProgress = .90f;
-        public const float EmptyCheckTurnProgress = .25f, FirstShakeProgress = .375f, ShakeRestProgress = .4375f,
+        public const float EmptyCheckInspectProgress = .125f, EmptyCheckInspectEndProgress = 1f / 6f,
+            EmptyCheckTurnProgress = .25f, FirstShakeProgress = .375f, ShakeRestProgress = .4375f,
             SecondShakeProgress = .5f, EmptyCheckReturnProgress = .625f, EmptyCheckShakeDistance = .075f;
-        public const float EmptyCheckTiltDegrees = 235f, ThrowWindupProgress = .44f;
+        public const float EmptyCheckTiltDegrees = 180f, EmptyCheckInspectTiltDegrees = 235f, ThrowWindupProgress = .44f;
+        public const float FullDrinkTiltDegrees = 5f, LastDrinkTiltDegrees = 78f, LastDrinkHeadPitchDegrees = 48f;
+        // The last 33/34 ml swallow starts at the maximum pose, before its commit removes the bottle ID.
+        public const float LastSipPoseMl = (VodkaBottleState.FullMl + VodkaBottleState.FullBottleSipCount - 1) /
+            VodkaBottleState.FullBottleSipCount;
         public static readonly string[] ClipNames = { CarryClip, DrawClip, OpenClip, RaiseClip, SipClip, LowerClip,
             CloseClip, EmptyCheckClip, StowClip, ThrowClip };
         public static readonly Vector3 DrawNeckSource = new Vector3(.08f, -.17f, 1.32f);
