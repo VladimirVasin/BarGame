@@ -734,8 +734,11 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(GameSessionState.VodkaBottleRemainingMl,
                         Is.EqualTo(VodkaBottleState.FullMl - expected * VodkaBottleState.FullMl / VodkaBottleState.FullBottleSipCount));
                     if (sip < VodkaBottleState.FullBottleSipCount)
-                        yield return Until(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying,
-                            "Each seated sip needs a distinct lowering cycle.");
+                    {
+                        Assert.That(bottle.Phase, Is.EqualTo(PlayerVodkaBottleController.BottlePhase.Sipping),
+                            "Held seated drinking must retain the raised bottle between swallows.");
+                        Assert.That(bottle.MouthContactError, Is.LessThan(.012f));
+                    }
                 }
                 input.Release(mouse.leftButton, queueEventOnly: true);
                 yield return Until(() => bottle.ThrownBottles == 1, "An empty bottle must enter physics inside the bus.");

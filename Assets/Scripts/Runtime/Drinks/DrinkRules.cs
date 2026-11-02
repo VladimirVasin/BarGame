@@ -11,7 +11,7 @@ namespace BarPromenade
             new DrinkDefinition(DrinkId.DarkBeer, DrinkFamily.Beer, 10, 8),
             new DrinkDefinition(DrinkId.WhiteWine, DrinkFamily.Wine, 11, 10),
             new DrinkDefinition(DrinkId.RedWine, DrinkFamily.Wine, 13, 12),
-            new DrinkDefinition(DrinkId.Vodka, DrinkFamily.Vodka, 18, 12),
+            new DrinkDefinition(DrinkId.Vodka, DrinkFamily.Vodka, 24, 12),
             new DrinkDefinition(DrinkId.PepperVodka, DrinkFamily.Vodka, 20, 14),
             new DrinkDefinition(DrinkId.CognacVs, DrinkFamily.Cognac, 16, 16),
             new DrinkDefinition(DrinkId.CognacVsop, DrinkFamily.Cognac, 18, 20),

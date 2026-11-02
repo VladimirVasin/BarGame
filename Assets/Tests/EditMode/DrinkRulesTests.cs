@@ -12,7 +12,7 @@ namespace BarPromenade.Tests.EditMode
             new object[] { DrinkId.DarkBeer, DrinkFamily.Beer, 10, 8 },
             new object[] { DrinkId.WhiteWine, DrinkFamily.Wine, 11, 10 },
             new object[] { DrinkId.RedWine, DrinkFamily.Wine, 13, 12 },
-            new object[] { DrinkId.Vodka, DrinkFamily.Vodka, 18, 12 },
+            new object[] { DrinkId.Vodka, DrinkFamily.Vodka, 24, 12 },
             new object[] { DrinkId.PepperVodka, DrinkFamily.Vodka, 20, 14 },
             new object[] { DrinkId.CognacVs, DrinkFamily.Cognac, 16, 16 },
             new object[] { DrinkId.CognacVsop, DrinkFamily.Cognac, 18, 20 },

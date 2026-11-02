@@ -5,30 +5,34 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-02
 
-Vodka:inventory draw/stow,session fills,exact sip boundaries;mouse click starts
-one cycle,hold repeats visible raises/tilts/lowers until release/empty or refusal.
-Shared DrinkGulp sounds at each swallow;full dose retains prior balance.
-Same rig/scarf hands yield to context;last sip releases actual bottle to finite
-surface-dependent physics,glass debris and water sink. Blender hollow glass/
-volume profile/anchors replace passive opaque contents. User requested smaller
-bottle and neck grip;source now0.299m. Imported anchor roll had rotated the
-palm;wrapper axes plus actual baked-surface checks fix vertical palm/thumb-up.
-Pistol-derived reach uses the bottle-neck dock on the chest binding;authored
-palm/elbow and concealed-to-hand contact stay continuous. Both forearms/hands
-clear the torso. Separate front cap-opening/reverse stow restore jacket access.
-PLAYER VODKA ACTION CONTRACT OK proves deterministic body clearance;model validator passed.
-Canonical hand-basis rebuild prevents duplicate BottleGrip preparation.
-InventoryWalkingSipPersistenceAndLastSipThrow passed;front/side draw/open frames reviewed.
-All24FX owners reviewed;shared mats/bounded solver,incremental cost unmeasured.
-Seated vodka shares the parent equipment layer for ordinary seats/bus;inventory
-opens at rest,carry survives transfers,child actions wait for stow. The layer
-leaves legs/root/pelvis/camera intact. Bus sole IK uses bounded cached source
-skinning to avoid doubled import scale;actual tilted floor controls knees/ankles.
-Bottle rests forward above knees;released props inherit bus motion and meet
-finite logical cabin/door colliders. Bus frames reviewed.
-SeatedBottlePreservesParentPoseInventoryAndExit and
-Passenger_BoardsRidesAndExitsAtLaterStop passed.
-All24FX retained;CPU/GPU unmeasured.
+Vodka:session fills,exact sip boundaries;click gives one gulp,held LMB keeps
+the bottle at the mouth between swallows. Release/empty/refusal lowers once;
+DrinkGulp sounds once/swallow. Left hand closes the cap before jacket stow.
+Empty bottle turns neck-down at eye level;hero looks inside,shakes twice,
+then tosses resentfully. Last swallow debits once,actual prop inherits motion
+into bounded surface-dependent breakage/debris/water sink;context cleanup kept.
+Shared Vodka gain24 gives nominal96/full bottle;decay retains that authored
+dose. Passive recovery4.5–18s/point stays slower higher up. Exact binary
+time split fixes a rounded boundary in the existing recovery regression.
+Recovery_LowerLevelsLosePointsFaster and
+IntoxicationRecovery_ConsumesTimeAndStopsAtSober passed.
+Seated eye contact follows the live head;float-safe landmarks retain both holds.
+VodkaBottleEquipmentPlayModeTests passed;standing/seated frames reviewed.
+Grip main names match filenames,removing native-import warnings;
+PlayerVodkaGripAssetSetup.BuildOrThrow passed;mesh payloads/metas kept.
+Blender hollow glass/profile/anchors;0.299m neck grip with vertical palm/thumb-up.
+Wrapper axes and baked-hand surfaces correct imported roll;canonical hand basis
+avoids duplicate grip preparation. Chest-bound pistol path/shared jacket access
+keeps palm/elbow/concealed transfer continuous,forearms outside torso.
+PLAYER VODKA ACTION CONTRACT OK proves body clearance.
+Ordinary seats/bus share the equipment layer;inventory at rest,carry survives
+sit/stand,child waits visible stow. Parent legs/root/pelvis/camera stay.
+Bus cached source skinning applies import scale once;soles follow tilted floor,
+bottle stays above knees;finite cabin/door colliders retain traffic hull.
+Passenger_BoardsRidesAndExitsAtLaterStop passed;bus frames reviewed.
+All24FX reviewed:lighting/shadows unchanged;shared glass/roughness/Fresnel/
+bevel/liquid and PP owners/settings retained. Higher dose reaches existing FX
+earlier;no new FX. Cached clips/prop,bounded solver;CPU/GPU unmeasured.
 Fridge inspection:movable contents no longer inherit cabinet dither materials;
 liquid clipping retains its shader,so the broad free-surface disc stays inside
 the bottle. Build_CreatesAnimatedHollowStorageWithoutLights passed;frame reviewed.

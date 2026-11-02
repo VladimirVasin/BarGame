@@ -20,6 +20,17 @@ namespace BarPromenade.Editor
                 manifest.bone_count != 43 || manifest.fps != 24 || manifest.root_motion || manifest.animation_events != 0 ||
                 !ValidError(manifest.maximum_lower_body_error) || !ValidError(manifest.maximum_endpoint_error) ||
                 !ValidError(manifest.maximum_drink_wrist_error_m) ||
+                !ValidError(manifest.maximum_close_reverse_error) || manifest.empty_check_shake_count != 2 ||
+                manifest.empty_check_markers == null || manifest.empty_check_markers.Length != 5 ||
+                manifest.empty_check_shake_travel_m == null || manifest.empty_check_shake_travel_m.Length != 2 ||
+                manifest.empty_check_opening_eye_height_m == null || manifest.empty_check_opening_eye_height_m.Length != 5 ||
+                manifest.empty_check_gaze_dot == null || manifest.empty_check_gaze_dot.Length != 5 ||
+                manifest.empty_check_inside_gaze_dot == null || manifest.empty_check_inside_gaze_dot.Length != 5 ||
+                manifest.empty_check_opening_forward_clearance_m == null || manifest.empty_check_opening_forward_clearance_m.Length != 5 ||
+                Mathf.Abs(manifest.empty_check_tilt_degrees - PlayerVodkaActions.EmptyCheckTiltDegrees) > .00001f ||
+                Mathf.Abs(manifest.throw_windup_progress - PlayerVodkaActions.ThrowWindupProgress) > .00001f ||
+                manifest.throw_release_speed_mps < 2.3f || manifest.throw_release_speed_mps < manifest.throw_windup_speed_mps * 2.5f ||
+                manifest.throw_shoulder_sweep_degrees < 8f ||
                 !ValidError(manifest.maximum_draw_neck_contact_error_m) ||
                 manifest.minimum_left_arm_body_clearance_m < .02f ||
                 manifest.minimum_right_arm_body_clearance_m < .02f ||
@@ -29,6 +40,19 @@ namespace BarPromenade.Editor
                 Mathf.Abs(manifest.draw_transfer_progress - PlayerVodkaActions.DrawTransferProgress) > .00001f ||
                 Mathf.Abs(manifest.cap_open_progress - PlayerVodkaActions.CapOpenProgress) > .00001f)
                 throw new InvalidOperationException("Vodka action source violated its rig, support or endpoint contract.");
+            float[] shakeMarkers = { PlayerVodkaActions.EmptyCheckTurnProgress, PlayerVodkaActions.FirstShakeProgress,
+                PlayerVodkaActions.ShakeRestProgress, PlayerVodkaActions.SecondShakeProgress, PlayerVodkaActions.EmptyCheckReturnProgress };
+            for (int i = 0; i < shakeMarkers.Length; i++)
+                if (Mathf.Abs(manifest.empty_check_markers[i] - shakeMarkers[i]) > .00001f)
+                    throw new InvalidOperationException("Empty bottle check timing differs from the authored contacts.");
+            foreach (float travel in manifest.empty_check_shake_travel_m)
+                if (float.IsNaN(travel) || Mathf.Abs(travel - PlayerVodkaActions.EmptyCheckShakeDistance) > .003f)
+                    throw new InvalidOperationException("Empty bottle check must contain two visible full shakes.");
+            for (int i = 0; i < shakeMarkers.Length; i++)
+                if (manifest.empty_check_gaze_dot[i] < .995f || manifest.empty_check_inside_gaze_dot[i] < .90f ||
+                    manifest.empty_check_opening_forward_clearance_m[i] < .22f ||
+                    i % 2 == 0 && (manifest.empty_check_opening_eye_height_m[i] < -.04f || manifest.empty_check_opening_eye_height_m[i] > .10f))
+                    throw new InvalidOperationException("The hero must hold the opening at eye level and look into it.");
             AnimationClip[] clips = AssetDatabase.LoadAllAssetsAtPath(AnimationPath).OfType<AnimationClip>()
                 .Where(value => !value.name.StartsWith("__preview__", StringComparison.Ordinal)).ToArray();
             if (clips.Length != PlayerVodkaActions.ClipNames.Length)
@@ -53,12 +77,15 @@ namespace BarPromenade.Editor
         [Serializable] private sealed class Manifest
         {
             public string generator, rig;
-            public int bone_count, fps, animation_events;
+            public int bone_count, fps, animation_events, empty_check_shake_count;
             public bool root_motion;
-            public float maximum_lower_body_error, maximum_endpoint_error, maximum_drink_wrist_error_m;
+            public float maximum_lower_body_error, maximum_endpoint_error, maximum_drink_wrist_error_m, maximum_close_reverse_error;
             public float maximum_draw_neck_contact_error_m, minimum_left_arm_body_clearance_m, draw_transfer_progress, cap_open_progress;
             public float minimum_right_arm_body_clearance_m;
-            public float[] draw_neck_contact_source;
+            public float empty_check_tilt_degrees, throw_windup_progress, throw_windup_speed_mps, throw_release_speed_mps, throw_shoulder_sweep_degrees;
+            public float[] draw_neck_contact_source, empty_check_markers, empty_check_shake_travel_m;
+            public float[] empty_check_opening_eye_height_m, empty_check_gaze_dot, empty_check_opening_forward_clearance_m;
+            public float[] empty_check_inside_gaze_dot;
         }
     }
 

@@ -111,8 +111,8 @@ namespace BarPromenade
         public const int MaximumLevel = 100;
         public const int StageSize = 20;
         public const int BalanceThreshold = 60;
-        public const float RecoverySecondsPerPointAtMinimumLevel = 3f;
-        public const float RecoverySecondsPerPointAtMaximumLevel = 12f;
+        public const float RecoverySecondsPerPointAtMinimumLevel = 4.5f;
+        public const float RecoverySecondsPerPointAtMaximumLevel = 18f;
 
         public static IntoxicationProfile Evaluate(int level)
         {

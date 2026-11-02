@@ -38,6 +38,8 @@ namespace BarPromenade.Tests.PlayMode
         private PlayerRuntime player;
         private Player3DCharacterPresentation presentation;
         private PlayerVodkaBottleController bottle;
+        private Transform leftEye, rightEye;
+        private Vector3 headLocalForward;
         private PlayerCrowbarCombatController crowbar;
         private InventoryController inventory;
         private Camera camera;
@@ -89,6 +91,19 @@ namespace BarPromenade.Tests.PlayMode
             RenderSettings.ambientMode = AmbientMode.Flat; RenderSettings.ambientLight = new Color(.5f, .53f, .57f);
             player = PlayerFactory.Create(fixture.transform, origin + Vector3.up * PlayerFactory.GroundedRootOffset, camera, null, null);
             presentation = (Player3DCharacterPresentation)player.Visual;
+            int leftEyeCount = 0, rightEyeCount = 0;
+            foreach (Transform bone in presentation.Registry.Anchors.Head.GetComponentsInChildren<Transform>(true))
+            {
+                if (bone.name == "face.eye.L") { leftEye = bone; leftEyeCount++; }
+                if (bone.name == "face.eye.R") { rightEye = bone; rightEyeCount++; }
+            }
+            Assert.That(leftEyeCount, Is.EqualTo(1)); Assert.That(rightEyeCount, Is.EqualTo(1));
+            Assert.That(leftEye, Is.Not.Null); Assert.That(rightEye, Is.Not.Null);
+            Assert.That(leftEye.IsChildOf(presentation.Registry.Anchors.Head), Is.True);
+            Assert.That(rightEye.IsChildOf(presentation.Registry.Anchors.Head), Is.True);
+            // Imported bone axes are not gameplay forward. Capture the same
+            // neutral anatomical frame used by the production head probe.
+            headLocalForward = presentation.Registry.Anchors.Head.InverseTransformDirection(player.GameObject.transform.forward);
             bottle = player.GameObject.GetComponent<PlayerVodkaBottleController>();
             crowbar = player.GameObject.GetComponent<PlayerCrowbarCombatController>();
             Assert.That(bottle, Is.Not.Null);
@@ -233,13 +248,31 @@ namespace BarPromenade.Tests.PlayMode
             input.Press(keyboard.digit2Key, queueEventOnly: true);
             yield return null;
             input.Release(keyboard.digit2Key, queueEventOnly: true);
+            int closeFrame = 0;
+            bool sawClosedBottleBeforeStow = false;
+            float[] closeStops = { .12f, .32f, .50f, .75f, .98f };
             for (int frame = 0; frame < 360 && (bottle.OccupiesHand || !crowbar.Actor.HasWeaponInHand || crowbar.Actor.IsSwitchingWeapon); frame++)
             {
                 yield return null;
-                if (bottle.Phase == PlayerVodkaBottleController.BottlePhase.Stowing) AssertArmsOutsideCore();
+                if (bottle.Phase == PlayerVodkaBottleController.BottlePhase.Closing)
+                {
+                    AssertArmsOutsideCore();
+                    if (closeFrame < closeStops.Length && bottle.PhaseProgress >= closeStops[closeFrame])
+                    {
+                        Capture("close-before-weapon-" + closeFrame++, false, null, new Vector3(.7f, .15f, 2f));
+                        if (closeFrame == 1) AssertCapInLeftHand();
+                    }
+                }
+                if (bottle.Phase == PlayerVodkaBottleController.BottlePhase.Stowing)
+                {
+                    AssertClosedBottleBeforeStow(); sawClosedBottleBeforeStow = true;
+                    AssertArmsOutsideCore();
+                }
                 Assert.That(crowbar.Actor.HasWeaponInHand && bottle.OccupiesHand, Is.False,
                     "The weapon must wait until the partial bottle has left the hand.");
             }
+            Assert.That(closeFrame, Is.EqualTo(closeStops.Length), "The cap must visibly return before the weapon handoff.");
+            Assert.That(sawClosedBottleBeforeStow, Is.True);
             Assert.That(bottle.Phase, Is.EqualTo(PlayerVodkaBottleController.BottlePhase.Hidden));
             Assert.That(crowbar.Actor.HasWeaponInHand && !crowbar.Actor.IsSwitchingWeapon, Is.True,
                 "The weapon hotkey did not complete its bottle-to-crowbar handoff.");
@@ -274,15 +307,16 @@ namespace BarPromenade.Tests.PlayMode
             yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Hidden, "Partial bottle did not stow before preparing final dose.");
             yield return InventoryToggle(true);
             yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying, "Partial bottle did not draw for continuous drinking.");
-            // Release a held sequence after its swallow, then keep the next
-            // press down through all remaining distinct raise/lower cycles.
+            // Releasing finishes one swallow and lowers once. The next hold
+            // retains the mouth contact through every subsequent loop seam.
             Time.captureDeltaTime = .05f;
             yield return Frames(3);
             input.Press(mouse.leftButton, queueEventOnly: true);
             for (int sip = 2; sip <= VodkaBottleState.FullBottleSipCount; sip++)
             {
                 int expected = sip;
-                yield return Await(() => bottle.CompletedSips >= expected, "Held LMB did not advance to sip " + expected);
+                if (sip <= 2) yield return Await(() => bottle.CompletedSips >= expected, "Held LMB did not advance to sip " + expected);
+                else yield return AwaitHeldSip(expected, allowRaise: sip == 3);
                 Assert.That(bottle.CompletedSips, Is.EqualTo(expected), "One cycle can commit only one sip.");
                 Assert.That(GameSessionState.VodkaBottleRemainingMl,
                     Is.EqualTo(VodkaBottleState.FullMl - expected * VodkaBottleState.FullMl / VodkaBottleState.FullBottleSipCount));
@@ -293,26 +327,27 @@ namespace BarPromenade.Tests.PlayMode
                     AssertBottleGrip();
                 }
                 if (sip == 2) input.Release(mouse.leftButton, queueEventOnly: true);
-                if (sip < VodkaBottleState.FullBottleSipCount)
+                if (sip == 2)
                 {
+                    yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Lowering,
+                        "Releasing LMB must visibly lower the bottle after its current swallow.");
+                    Capture("released-sip-lowering", false);
                     yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying,
-                        "Each held sip must visibly lower before the next raise.");
+                        "The released sequence did not return to carry.");
                     Assert.That(Vector3.Dot(bottle.Bottle.transform.up, Vector3.up), Is.GreaterThan(.99f));
                     Assert.That(bottle.Bottle.Remaining,
                         Is.EqualTo((float)GameSessionState.VodkaBottleRemainingMl / VodkaBottleState.FullMl).Within(.0001f));
-                    if (sip == 2) Capture("held-between-sips", false);
-                }
-                if (sip == 2)
-                {
+                    Capture("released-sip-carried", false);
                     yield return Frames(10);
                     Assert.That(bottle.CompletedSips, Is.EqualTo(2), "Releasing a held sequence must stop after its current sip.");
                     input.Press(mouse.leftButton, queueEventOnly: true);
                 }
             }
-            yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Throwing, "Held drinking did not empty and throw the bottle.");
+            yield return ObserveEmptyCheck("standing");
+            yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Throwing, "The empty check did not lead to the throw.");
             input.Release(mouse.leftButton, queueEventOnly: true);
             Capture("06-empty-throw-start", false);
-            yield return Await(() => bottle.ThrownBottles == 1, "Final sip did not release its actual prop to physics.");
+            yield return ObserveThrow("standing");
             Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.VodkaBottle), Is.Zero);
             Assert.That(GameSessionState.IsInventoryItemEquipped(InventoryItemId.VodkaBottle), Is.False);
             ThrownVodkaBottle thrown = Object.FindAnyObjectByType<ThrownVodkaBottle>();
@@ -364,24 +399,28 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(presentation.OwnsEquipmentPose(bottle), Is.True);
             Capture("seated-carry", false, seatGround + Vector3.up * .8f);
             yield return Frames(3);
-            input.Press(mouse.leftButton, queueEventOnly: true); yield return null;
-            input.Release(mouse.leftButton, queueEventOnly: true);
-            yield return Await(() => bottle.CompletedSips == 1, "A seated click did not swallow exactly once.");
+            input.Press(mouse.leftButton, queueEventOnly: true);
+            yield return Await(() => bottle.CompletedSips == 1, "A seated hold did not commit its first swallow.");
             Assert.That(Vector3.Distance(presentation.Registry.Anchors.Pelvis.position, plan.ActionHipPosition), Is.LessThan(.015f));
             AssertEquipmentLeavesSeatLegsAlone(seatController);
             Capture("seated-sip", false, seatGround + Vector3.up * .8f);
+            yield return AwaitHeldSip(2);
+            Assert.That(Vector3.Distance(presentation.Registry.Anchors.Pelvis.position, plan.ActionHipPosition), Is.LessThan(.015f));
+            AssertEquipmentLeavesSeatLegsAlone(seatController);
+            Capture("seated-held-second-sip", false, seatGround + Vector3.up * .8f);
+            input.Release(mouse.leftButton, queueEventOnly: true);
             yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying, "Seated sip did not return to carry.");
             Assert.That(player.Motor.InputEnabled, Is.False);
             yield return InventoryToggle(false);
-            yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Hidden, "Seated inventory stow failed.");
+            yield return ObserveStow("seated", seatGround + Vector3.up * .8f);
             Assert.That(seat.IsSeated, Is.True);
             yield return InventoryToggle(true);
             yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying, "Seated inventory draw failed.");
             Assert.That(GameSessionState.VodkaBottleId, Is.EqualTo(id));
-            Assert.That(GameSessionState.VodkaBottleRemainingMl, Is.EqualTo(467));
+            Assert.That(GameSessionState.VodkaBottleRemainingMl, Is.EqualTo(434));
             Assert.That(player.Motor.InputEnabled, Is.False, "Inventory must retain the seat's movement lock.");
             Assert.That(seatController.BeginNestedLoopAction(CounterSeatInteraction.CreateBarDrinkDefinition()), Is.True);
-            for (int frame = 0; frame < 120 && bottle.OccupiesHand; frame++)
+            for (int frame = 0; frame < 180 && bottle.OccupiesHand; frame++)
             {
                 yield return null;
                 Assert.That(seatController.NestedLoopActionPhaseProgress, Is.Zero, "Child actions must wait for the bottle's visible stow.");
@@ -396,26 +435,255 @@ namespace BarPromenade.Tests.PlayMode
             yield return Frames(3);
             Assert.That(bottle.Bottle, Is.SameAs(original));
             Assert.That(GameSessionState.VodkaBottleId, Is.EqualTo(id));
-            Assert.That(GameSessionState.VodkaBottleRemainingMl, Is.EqualTo(467));
+            Assert.That(GameSessionState.VodkaBottleRemainingMl, Is.EqualTo(434));
             Assert.That(player.Motor.InputEnabled, Is.True);
             Assert.That(presentation.HasCarryPose, Is.True);
             Assert.That(presentation.OwnsEquipmentPose(bottle), Is.False);
+
+            // Prepare only the remaining final sip through the pure session
+            // contract; redraw synchronizes the actual prop before sitting.
+            while (GameSessionState.VodkaBottleRemainingMl > 34)
+                Assert.That(GameSessionState.TryDrinkVodkaSip(id, out _), Is.True);
+            GameSessionState.UpdateDrinkingProgress(0, DrinkId.Vodka, 0);
+            yield return InventoryToggle(false);
+            yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Hidden, "The prepared final sip did not stow.");
+            yield return InventoryToggle(true);
+            yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying, "The prepared final sip did not draw.");
+            Assert.That(GameSessionState.VodkaBottleRemainingMl, Is.EqualTo(34));
+            Assert.That(bottle.TryPrepareInteraction(seat), Is.False);
+            seat.Interact(player.Interactor);
+            yield return Await(() => seat.IsSeated, "The final-sip check did not return to the seat.");
+            int previousSips = bottle.CompletedSips;
+            yield return Frames(3);
+            input.Press(mouse.leftButton, queueEventOnly: true); yield return null;
+            input.Release(mouse.leftButton, queueEventOnly: true);
+            yield return Await(() => bottle.CompletedSips == previousSips + 1, "The seated final sip did not commit.");
+            Capture("seated-final-sip", false, seatGround + Vector3.up * .8f);
+            yield return ObserveEmptyCheck("seated", seatController, plan.ActionHipPosition, seatGround + Vector3.up * .8f);
+            yield return ObserveThrow("seated", seatController, plan.ActionHipPosition, seatGround + Vector3.up * .8f);
+            yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Hidden, "The seated throw did not release its equipment layer.");
+            Assert.That(seat.IsSeated, Is.True);
+            Assert.That(player.Motor.InputEnabled, Is.False);
+            Assert.That(presentation.OwnsEquipmentPose(bottle), Is.False);
+            Assert.That(Vector3.Distance(presentation.Registry.Anchors.Pelvis.position, plan.ActionHipPosition), Is.LessThan(.015f));
         }
 
-        private void AssertEquipmentLeavesSeatLegsAlone(PlayerAnimatedInteractionController seatController)
+        private void AssertEquipmentLeavesSeatLegsAlone(PlayerAnimatedInteractionController seatController,
+            string clip = PlayerVodkaActions.SipClip, float? clipTime = null)
         {
             var parts = new[] { Player3DAnatomicalPart.Pelvis, Player3DAnatomicalPart.LeftThigh, Player3DAnatomicalPart.RightThigh,
                 Player3DAnatomicalPart.LeftShin, Player3DAnatomicalPart.RightShin, Player3DAnatomicalPart.LeftFoot, Player3DAnatomicalPart.RightFoot };
             var before = new Quaternion[parts.Length];
             for (int i = 0; i < parts.Length; i++)
             { Assert.That(presentation.Registry.TryGetPart(parts[i], out var binding), Is.True); before[i] = binding.Bone.localRotation; }
-            float time = bottle.PhaseProgress * PlayerVodkaActions.SipSeconds;
+            float time = clipTime ?? bottle.PhaseProgress * PlayerVodkaActions.SipSeconds;
             presentation.ReleaseEquipmentPose(bottle); seatController.RefreshActiveClipAlignment();
             for (int i = 0; i < parts.Length; i++)
             { presentation.Registry.TryGetPart(parts[i], out var binding); Assert.That(Quaternion.Angle(before[i], binding.Bone.localRotation), Is.LessThan(.01f), parts[i].ToString()); }
-            Assert.That(presentation.TryAcquireEquipmentPose(bottle, PlayerVodkaActions.SipClip), Is.True);
+            Assert.That(presentation.TryAcquireEquipmentPose(bottle, clip), Is.True);
             Assert.That(presentation.SampleEquipmentPose(bottle, time), Is.True);
             seatController.RefreshActiveClipAlignment(); bottle.ReapplyPresentation();
+        }
+
+        private IEnumerator AwaitHeldSip(int expected, bool allowRaise = false)
+        {
+            for (int frame = 0; frame < 300 && bottle.CompletedSips < expected; frame++)
+            {
+                yield return null;
+                if (allowRaise && (bottle.Phase == PlayerVodkaBottleController.BottlePhase.MouthAccess ||
+                    bottle.Phase == PlayerVodkaBottleController.BottlePhase.Raising)) continue;
+                Assert.That(bottle.Phase, Is.EqualTo(PlayerVodkaBottleController.BottlePhase.Sipping),
+                    "Held LMB must retain the raised bottle through the next swallow.");
+                presentation.ReapplyLatePresentationPose(); bottle.ReapplyPresentation();
+                Assert.That(bottle.MouthContactError, Is.LessThan(.012f), "The held-loop seam must retain lip contact.");
+                Assert.That(Vector3.Dot(bottle.Bottle.transform.up, Vector3.up), Is.LessThan(.25f),
+                    "The bottle cannot dip to its upright carry pose between held swallows.");
+                NpcHandPose hands = presentation.Registry.GetComponent<NpcHandPose>();
+                Assert.That(Vector3.Distance(hands.AnatomicalCylinderCentre(false), bottle.Bottle.Grip.position), Is.LessThan(.015f),
+                    "The held-loop seam must retain the original hand's neck contact.");
+            }
+            Assert.That(bottle.CompletedSips, Is.EqualTo(expected), "Held LMB did not commit its next single swallow.");
+        }
+
+        private void AssertClosedBottleBeforeStow()
+        {
+            Assert.That(bottle.Bottle, Is.Not.Null);
+            Assert.That(bottle.Bottle.IsOpened, Is.False, "A nonempty bottle must be closed before entering the coat.");
+            Assert.That(bottle.Bottle.Cap.gameObject.activeInHierarchy, Is.True, "The real cap must remain visible on the closed bottle.");
+        }
+
+        private void AssertCapInLeftHand()
+        {
+            Assert.That(bottle.Bottle.Cap.gameObject.activeInHierarchy, Is.True, "Closing retrieves the real visible cap.");
+            NpcHandPose hands = presentation.Registry.GetComponent<NpcHandPose>();
+            Assert.That(Vector3.Distance(hands.AnatomicalCylinderCentre(true), bottle.Bottle.Cap.position), Is.LessThan(.015f),
+                "The retrieved cap must begin in the original left hand before returning to the neck.");
+        }
+
+        private IEnumerator ObserveStow(string label, Vector3? focus = null)
+        {
+            int captured = 0;
+            bool sawClosed = false;
+            float[] stops = { .12f, .32f, .50f, .75f, .98f };
+            for (int frame = 0; frame < 300 && bottle.OccupiesHand; frame++)
+            {
+                yield return null;
+                if (bottle.Phase == PlayerVodkaBottleController.BottlePhase.Closing &&
+                    captured < stops.Length && bottle.PhaseProgress >= stops[captured])
+                {
+                    Capture(label + "-close-" + captured++, false, focus, new Vector3(.7f, .15f, 2f));
+                    if (captured == 1) AssertCapInLeftHand();
+                    AssertArmsOutsideCore();
+                }
+                if (bottle.Phase == PlayerVodkaBottleController.BottlePhase.Stowing)
+                { AssertClosedBottleBeforeStow(); sawClosed = true; }
+            }
+            Assert.That(captured, Is.EqualTo(stops.Length), "Closing must be visible before stowing: " + label);
+            Assert.That(sawClosed, Is.True);
+            Assert.That(bottle.Phase, Is.EqualTo(PlayerVodkaBottleController.BottlePhase.Hidden));
+        }
+
+        private IEnumerator ObserveEmptyCheck(string label, PlayerAnimatedInteractionController seatController = null,
+            Vector3? seatedPelvis = null, Vector3? focus = null)
+        {
+            yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.CheckingEmpty,
+                "The final swallow must lead to the visible empty check.");
+            VodkaBottleView original = bottle.Bottle;
+            Assert.That(original, Is.Not.Null);
+            Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.VodkaBottle), Is.Zero);
+            Assert.That(GameSessionState.IsInventoryItemEquipped(InventoryItemId.VodkaBottle), Is.False);
+            int thrown = bottle.ThrownBottles, captured = 0, previousShakes = 0;
+            float[] stops = { .25f, .40f, .55f, .70f, .85f };
+            Vector3[] neckPositions = new Vector3[stops.Length];
+            Vector3 checkAxis = Vector3.zero;
+            for (int frame = 0; frame < 300 && bottle.Phase == PlayerVodkaBottleController.BottlePhase.CheckingEmpty; frame++)
+            {
+                yield return null;
+                if (bottle.Phase != PlayerVodkaBottleController.BottlePhase.CheckingEmpty) break;
+                presentation.ReapplyLatePresentationPose(); bottle.ReapplyPresentation();
+                Assert.That(bottle.Bottle, Is.SameAs(original), "The empty check retains the actual emptied prop after automatic unequip.");
+                Assert.That(bottle.ThrownBottles, Is.EqualTo(thrown), "The prop cannot leave the hand before both shakes finish.");
+                Assert.That(bottle.CompletedEmptyShakes, Is.InRange(previousShakes, 2));
+                previousShakes = bottle.CompletedEmptyShakes;
+                if (bottle.PhaseProgress >= .25f && bottle.PhaseProgress <= .85f)
+                    Assert.That(Vector3.Dot(original.transform.up, Vector3.up), Is.LessThan(-.50f),
+                        "Both empty-check thrusts must keep the neck facing down.");
+                if (captured >= stops.Length || bottle.PhaseProgress + .00001f < stops[captured]) continue;
+                if (seatController != null)
+                {
+                    Assert.That(Vector3.Distance(presentation.Registry.Anchors.Pelvis.position, seatedPelvis.Value), Is.LessThan(.015f));
+                    AssertEquipmentLeavesSeatLegsAlone(seatController, PlayerVodkaActions.EmptyCheckClip,
+                        bottle.PhaseProgress * PlayerVodkaActions.EmptyCheckSeconds);
+                    Assert.That(Vector3.Dot(original.Grip.position - presentation.Registry.Anchors.Pelvis.position,
+                        player.GameObject.transform.forward), Is.GreaterThan(.10f), "The inverted bottle must stay in front of the seated knees.");
+                }
+                int expectedShakes = captured < 1 ? 0 : captured < 3 ? 1 : 2;
+                Assert.That(bottle.CompletedEmptyShakes, Is.EqualTo(expectedShakes));
+                bool examining = captured == 0 || captured == 2 || captured == 4;
+                Vector3 eyes = (leftEye.position + rightEye.position) * .5f;
+                Vector3 eyeToMouth = original.Mouth.position - eyes;
+                Vector3 gaze = presentation.Registry.Anchors.Head.TransformDirection(headLocalForward).normalized;
+                Assert.That(Vector3.Dot(eyeToMouth, player.GameObject.transform.forward), Is.InRange(.15f, .55f),
+                    "The bottle opening must remain in front of the face, with clearance for the inspection.");
+                Assert.That(eyeToMouth.y, Is.InRange(examining ? -.04f : -.12f, .10f),
+                    "Empty-check holds lift the bottle opening to eye level; only the two thrusts lower it.");
+                if (examining)
+                {
+                    Assert.That(Vector3.Dot(gaze, eyeToMouth.normalized), Is.GreaterThan(.95f),
+                        "The actual head must face the bottle opening during each inspection hold.");
+                    Assert.That(Vector3.Dot(-original.transform.up, eyeToMouth.normalized), Is.GreaterThan(.90f),
+                        "The opening must face the hero so he can look into the neck rather than at the label.");
+                }
+                // The ordinary body may sway while the raised bottle follows
+                // the face. Measure each shake and recovered hold relative to
+                // those live eyes rather than requiring a frozen world pose.
+                neckPositions[captured] = player.GameObject.transform.InverseTransformDirection(original.Grip.position - eyes);
+                if (captured == 0)
+                    checkAxis = player.GameObject.transform.InverseTransformDirection(original.transform.up).normalized;
+                Capture(label + "-empty-check-" + captured, false, focus);
+                Capture(label + "-empty-check-head-" + captured++, false,
+                    (eyes + original.Mouth.position + original.transform.position) / 3f, new Vector3(.7f, .1f, 2f), .43f);
+            }
+            Assert.That(captured, Is.EqualTo(stops.Length), "The inverted hold and both separate shakes must be presented.");
+            Assert.That(bottle.CompletedEmptyShakes, Is.EqualTo(2));
+            Vector3 firstThrust = neckPositions[1] - neckPositions[0];
+            Vector3 secondThrust = neckPositions[3] - neckPositions[2];
+            Assert.That(Vector3.Dot(firstThrust, checkAxis), Is.GreaterThan(.055f), "The first shake must visibly thrust along the inverted bottle axis.");
+            Assert.That(Vector3.Dot(secondThrust, checkAxis), Is.GreaterThan(.055f), "The second shake must visibly thrust along the inverted bottle axis.");
+            Assert.That(-firstThrust.y, Is.GreaterThan(.025f), "The first thrust must retain a downward component.");
+            Assert.That(-secondThrust.y, Is.GreaterThan(.025f), "The second thrust must retain a downward component.");
+            Assert.That(Vector3.Distance(neckPositions[2], neckPositions[0]), Is.LessThan(.02f), "The two shakes require a distinct restored hold between them.");
+            Assert.That(Vector3.Distance(neckPositions[4], neckPositions[2]), Is.LessThan(.02f), "The second shake must recover before the throw.");
+        }
+
+        private IEnumerator ObserveThrow(string label, PlayerAnimatedInteractionController seatController = null,
+            Vector3? seatedPelvis = null, Vector3? focus = null)
+        {
+            yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Throwing,
+                "The inspected empty bottle must lead to the throw.");
+            VodkaBottleView original = bottle.Bottle;
+            Assert.That(original, Is.Not.Null);
+            Vector3 root = player.GameObject.transform.position;
+            Quaternion facing = player.GameObject.transform.rotation;
+            int expectedThrows = bottle.ThrownBottles + 1;
+            bool capturedWindup = false, capturedRelease = false;
+            for (int frame = 0; frame < 300 && !capturedRelease; frame++)
+            {
+                yield return null;
+                presentation.ReapplyLatePresentationPose(); bottle.ReapplyPresentation();
+                Assert.That(Vector3.Distance(player.GameObject.transform.position, root), Is.LessThan(.01f),
+                    "The frustrated throw must retain the player's grounded root.");
+                Assert.That(Quaternion.Angle(player.GameObject.transform.rotation, facing), Is.LessThan(.25f));
+                if (!capturedWindup && bottle.Phase == PlayerVodkaBottleController.BottlePhase.Throwing &&
+                    bottle.PhaseProgress >= .44f && bottle.Bottle != null)
+                {
+                    Assert.That(bottle.Bottle, Is.SameAs(original));
+                    NpcHandPose hands = presentation.Registry.GetComponent<NpcHandPose>();
+                    Assert.That(Vector3.Distance(hands.AnatomicalCylinderCentre(false), original.Grip.position), Is.LessThan(.015f),
+                        "The windup must keep the actual palm attached until physical release.");
+                    if (seatController != null)
+                    {
+                        Assert.That(Vector3.Distance(presentation.Registry.Anchors.Pelvis.position, seatedPelvis.Value), Is.LessThan(.015f));
+                        AssertEquipmentLeavesSeatLegsAlone(seatController, PlayerVodkaActions.ThrowClip,
+                            bottle.PhaseProgress * PlayerVodkaActions.ThrowSeconds);
+                    }
+                    else AssertStandingFeetGrounded();
+                    Capture(label + "-throw-windup", false, focus);
+                    capturedWindup = true;
+                }
+                if (bottle.ThrownBottles != expectedThrows) continue;
+                Assert.That(bottle.Bottle, Is.Null);
+                ThrownVodkaBottle thrown = original.GetComponent<ThrownVodkaBottle>();
+                Assert.That(thrown, Is.Not.Null, "The same inspected prop must become the physical thrown bottle.");
+                Assert.That(thrown.gameObject, Is.SameAs(original.gameObject));
+                Assert.That(thrown.Body.isKinematic, Is.False);
+                if (seatController != null)
+                {
+                    Assert.That(Vector3.Distance(presentation.Registry.Anchors.Pelvis.position, seatedPelvis.Value), Is.LessThan(.015f));
+                    AssertEquipmentLeavesSeatLegsAlone(seatController, PlayerVodkaActions.ThrowClip,
+                        bottle.PhaseProgress * PlayerVodkaActions.ThrowSeconds);
+                }
+                else AssertStandingFeetGrounded();
+                Capture(label + "-throw-release", false, focus);
+                capturedRelease = true;
+            }
+            Assert.That(capturedWindup && capturedRelease, Is.True, "Both the frustrated windup and real release must remain visible.");
+        }
+
+        private void AssertStandingFeetGrounded()
+        {
+            foreach (Player3DAnatomicalPart part in new[] { Player3DAnatomicalPart.LeftFoot, Player3DAnatomicalPart.RightFoot })
+            {
+                Assert.That(presentation.Registry.TryGetPart(part, out Player3DAnatomicalPartBinding binding), Is.True);
+                Assert.That(binding.Renderer, Is.InstanceOf<SkinnedMeshRenderer>());
+                var renderer = (SkinnedMeshRenderer)binding.Renderer;
+                renderer.BakeMesh(handScratch, true);
+                float lowest = float.PositiveInfinity;
+                foreach (Vector3 point in handScratch.vertices)
+                    lowest = Mathf.Min(lowest, renderer.transform.TransformPoint(point).y);
+                Assert.That(lowest, Is.InRange(-.025f, .05f),
+                    "The standing throw must retain real boot contact with the fixture floor: " + part);
+            }
         }
 
         [UnityTest]
@@ -597,20 +865,20 @@ namespace BarPromenade.Tests.PlayMode
             int[] remainders = { 467, 434, 400, 367, 334, 300, 267, 234, 200, 167, 134, 100, 67, 34, 0 };
             for (int sip = 0; sip < remainders.Length; sip++)
             {
-                Assert.That(state.TrySip(id, 72, 48, 4, out VodkaBottleSipResult dose), Is.True);
+                Assert.That(state.TrySip(id, 96, 48, 4, out VodkaBottleSipResult dose), Is.True);
                 Assert.That(dose.RemainingMl, Is.EqualTo(remainders[sip]));
                 Assert.That(dose.BeforeMl - dose.RemainingMl, Is.InRange(33, 34));
                 Assert.That(dose.Emptied, Is.EqualTo(sip == remainders.Length - 1));
                 alcohol += dose.AlcoholDose; stress += dose.StressRelief; servings += dose.Servings;
             }
-            Assert.That(alcohol, Is.EqualTo(72)); Assert.That(stress, Is.EqualTo(48)); Assert.That(servings, Is.EqualTo(4));
-            Assert.That(state.Count, Is.Zero); Assert.That(state.TrySip(id, 72, 48, 4, out _), Is.False);
+            Assert.That(alcohol, Is.EqualTo(96)); Assert.That(stress, Is.EqualTo(48)); Assert.That(servings, Is.EqualTo(4));
+            Assert.That(state.Count, Is.Zero); Assert.That(state.TrySip(id, 96, 48, 4, out _), Is.False);
             state.Clear(); Assert.That(state.TryAdd(1, VodkaBottleState.RefrigeratorMl), Is.True);
             Assert.That(state.SelectBottle(), Is.True); Assert.That(state.ActiveRemainingMl, Is.EqualTo(100));
             id = state.ActiveId;
             for (int sip = 0; sip < 3; sip++)
             {
-                Assert.That(state.TrySip(id, 72, 48, 4, out VodkaBottleSipResult dose), Is.True);
+                Assert.That(state.TrySip(id, 96, 48, 4, out VodkaBottleSipResult dose), Is.True);
                 Assert.That(dose.RemainingMl, Is.EqualTo(sip == 0 ? 67 : sip == 1 ? 34 : 0));
                 Assert.That(dose.Emptied, Is.EqualTo(sip == 2));
             }
@@ -621,7 +889,7 @@ namespace BarPromenade.Tests.PlayMode
                 int swallowedMl = 0, sipCount = 0;
                 while (state.Count > 0 && sipCount <= VodkaBottleState.FullBottleSipCount)
                 {
-                    Assert.That(state.TrySip(id, 72, 48, 4, out VodkaBottleSipResult dose), Is.True);
+                    Assert.That(state.TrySip(id, 96, 48, 4, out VodkaBottleSipResult dose), Is.True);
                     Assert.That(dose.BeforeMl - dose.RemainingMl, Is.InRange(1, 34));
                     swallowedMl += dose.BeforeMl - dose.RemainingMl; sipCount++;
                 }
@@ -675,7 +943,11 @@ namespace BarPromenade.Tests.PlayMode
             presentation.ReapplyLatePresentationPose();
             bottle.ReapplyPresentation();
             if (bottle.Bottle != null && (bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying ||
-                bottle.Phase == PlayerVodkaBottleController.BottlePhase.Sipping))
+                bottle.Phase == PlayerVodkaBottleController.BottlePhase.Raising ||
+                bottle.Phase == PlayerVodkaBottleController.BottlePhase.Sipping ||
+                bottle.Phase == PlayerVodkaBottleController.BottlePhase.Lowering ||
+                bottle.Phase == PlayerVodkaBottleController.BottlePhase.Closing ||
+                bottle.Phase == PlayerVodkaBottleController.BottlePhase.CheckingEmpty))
             {
                 NpcHandPose hands = presentation.Registry.GetComponent<NpcHandPose>();
                 Assert.That(Vector3.Distance(hands.AnatomicalCylinderCentre(false), bottle.Bottle.Grip.position), Is.LessThan(.015f),

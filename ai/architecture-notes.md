@@ -2,37 +2,38 @@
 
 ## Current facts
 - **Accepted 2026-11-02 — seated vodka, user:**
-  Spine equipment layer;right-arm Carry keeps parent root/pelvis/legs/camera.
-  Ordinary bench/chair/sofa/game/counter seats+bus;carry through sit/stand.
-  Inventory/sips:stable loop,no child/modal. Child clock waits visible stow;
-  other contexts stow;car/cableway deferred. Bottle forward over knees.
-  Bus sole IK:cached source skinning,knees/ankles→tilting floor,seat pelvis/root kept;
-  no doubled import scale. Throw inherits motion;finite logical cabin/door
-  colliders,traffic hull kept. Bounded caches/owners;24FX retained;CPU/GPU unmeasured.
+  Spine:bench/chair/sofa/game/counter+bus;carry sit/stand above knees;
+  parent root/pelvis/legs/camera kept. Inventory/sips:stable loop,no child/modal;
+  child waits visible stow,others stow;car/cableway deferred. Bus sole IK:cached
+  source skinning→knees/ankles at tilted floor,seat kept,import scale once.
+  Cabin/door colliders,traffic hull kept;throw inherits motion.
 
 - **Accepted 2026-11-02 — vodka jacket draw, user:**
-  Pistol phases;chest-bound neck dock→grip/reverse stow.
-  Authored palm/elbow;shared owned jacket access;front Open/left arc.
-  Same rig/grip/gait;fade/cut/geometry/light/PP0.
+  Pistol phases,chest neck dock→grip/reverse;authored palm/elbow;
+  shared jacket/front left open-close arc;rig/grip/gait kept;fade/cut/geometry/light/PP0.
 
 - **Accepted architecture exception 2026-11-02 — bottle size/grip, user:**
   Vodka0.299m×≈0.075m;vertical neck palm/closed fingers/thumb-up;
   same hand/morph/contact;Art§2.
 
 - **Accepted 2026-11-02 — vodka sip cadence, user:**
-  500ml=15×33/34ml;LMB click1/hold cycles raise/tilt/lower until
-  release/empty/refusal;neck grip/rig/gait,shared DrinkGulp/swallow.
-  Text/voice/FX0.
+  500ml=15×33/34ml;click1;hold raises once→mouth-held sips→lower on
+  release/empty/refusal. Neck grip/rig/gait/scarf;DrinkGulp once/swallow.
+  Close before stow;empty→eye-level neck-down/look→2shakes→resentful toss.
+  Text/voice0.
+
+- **Accepted 2026-11-02 — vodka balance, user:**
+  Vodka+24;four servings=nominal96,cap100/recovery apply. Dose feeds decay;
+  recovery4.5–18s/point rises with level;stages/clocks/pause/FX kept.
 
 - **Accepted 2026-11-02 — carried vodka, user:**
-  Inventory;session≤9 IDs/fills,500ml/Home100ml;four prior
-  servings. ID+fill commits once/swallow;max intoxication refuses.
-  Mouse hand wins weapons;UI/focus/handoff fresh press;rig/scarf/clip/carry;
-  other contexts stow,root/camera kept. Blender glass/gravity liquid/anchors/cells.
-  Last sip debits1;actual prop→CCD/inherited motion;surface/normal impact
-  breakage. Finite debris sleep/pause/cleanup;NPC damage/reactions/persistence0.
-  24FX owners/settings kept;shared glass/roughness/Fresnel/bevel/liquid;
-  probe/SSR unproven;bounded solver/cost unmeasured;§16/21/art9.
+  ≤9sessionIDs/fills,500ml/Home100ml;ID+fill commits1x/swallow,
+  max100refuses. Mouse hand wins weapons;UI/focus/handoff fresh press.
+  Blender hollow glass/gravity liquid/anchors/cells;last sip debits1;
+  actual prop→CCD/surface-normal breakage;finite debris pause/sleep/cleanup;
+  NPC damage/reactions/persistence0. 24FX:light/shadows/PP owners/settings kept;
+  shared glass/roughness/Fresnel/bevel/liquid;probe/SSR unproven.
+  Cached clips/prop,bounded solver;cost unmeasured;§16/21/art9.
 
 - **Accepted 2026-11-01 — bottle fracture, user:**
   Blender cells→holes/shards;tag→glass skips blood/skull/flesh/NPC torso

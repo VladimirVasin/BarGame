@@ -26,8 +26,16 @@ MANIFEST = OUT.with_suffix(".json")
 BLEND = ROOT / "ArtSource/Player/Blender/PlayerVodkaActions.blend"
 FPS = 24
 CLIPS = (("VodkaCarry", 1., True), ("VodkaDraw", 1.5, False),
-         ("VodkaOpen", 1.25, False), ("VodkaSip", 2., False), ("VodkaStow", .75, False), ("VodkaThrow", 1., False))
+         ("VodkaOpen", 1.25, False), ("VodkaRaise", .5, False), ("VodkaSip", 2., True),
+         ("VodkaLower", .5, False), ("VodkaClose", 1.25, False), ("VodkaEmptyCheck", 3., False),
+         ("VodkaStow", .75, False), ("VodkaThrow", 1., False))
 LOWER = ("root", "pelvis", "thigh.L", "thigh.R", "shin.L", "shin.R", "foot.L", "foot.R")
+SHAKE_MARKERS = (.25, .40, .55, .70, .85)
+SHAKE_DISTANCE = .075
+CHECK_TILT_DEGREES = 235.
+MOUTH_ABOVE_GRIP = .440*.65-.215
+THROW_WINDUP = .44
+THROW_RELEASE = .60
 
 
 def smooth(t):
@@ -79,6 +87,27 @@ def body_surfaces(rig):
     return surfaces
 
 
+def eye_centre(rig):
+    return (rig.pose.bones['face.eye.L'].head+rig.pose.bones['face.eye.R'].head)*.5
+
+
+def gaze_forward(rig):
+    mouth=rig.pose.bones['SOCKET_Mouth']
+    return (mouth.tail-mouth.head).normalized()
+
+
+def aim_head(rig,neutral,target,amount):
+    head=rig.pose.bones['head']
+    # Aim from the real moving eyes. Iteration accounts for their offset from
+    # the head pivot instead of treating a pitched head as a fixed camera.
+    for _ in range(3):
+        turn=gaze_forward(rig).rotation_difference((target-eye_centre(rig)).normalized())
+        head.matrix=Matrix.Translation(head.head)@(turn@head.matrix.to_quaternion()).to_matrix().to_4x4()
+        bpy.context.view_layer.update()
+    head.rotation_quaternion=neutral['head'][1].slerp(head.rotation_quaternion,amount)
+    bpy.context.view_layer.update()
+
+
 def build():
     bpy.ops.wm.open_mainfile(filepath=str(hero.DEFAULT_OUTPUT))
     rig=next(obj for obj in bpy.data.objects if obj.type=='ARMATURE')
@@ -93,7 +122,7 @@ def build():
     re,le=(rig.pose.bones['forearm.'+side].head.copy() for side in ('R','L'))
     mouth=rig.pose.bones['SOCKET_Mouth'].head.copy()
     carry=rw+Vector((-.025,-.12,.19));drinking=mouth+Vector((-.10,-.27,-.12))
-    throw_back=carry+Vector((-.14,.05,.16));throw_release=carry+Vector((-.26,-.11,.11))
+    throw_back=carry+Vector((.13,-.09,.37));throw_release=carry+Vector((-.33,-.10,.28))
     carry_rot=Quaternion(Vector((0.,1.,0.)),math.radians(-12))@rr
     drink_rot=Quaternion(Vector((1.,0.,0.)),math.radians(-72))@carry_rot
     seat.restore_mix(result,neutral,neutral,0.)
@@ -140,6 +169,12 @@ def build():
     open_left=((0.,lw,lr),(.16,*contact('L',(.34,-.20,1.08))),(.36,*contact('L',(.31,-.38,1.26))),
         (.54,*contact('L',cap)),(.83,*contact('L',cap)),(.875,*contact('L',cap+Vector((0.,0.,.035)))),
         (1.025,*contact('L',(.28,-.40,1.23))),(1.10,*contact('L',(.34,-.20,1.08))),(1.25,lw,lr))
+    seat.restore_mix(result,neutral,neutral,0.)
+    neutral_eyes=eye_centre(rig).copy()
+    check_axis=Vector((0.,-math.sin(math.radians(CHECK_TILT_DEGREES)),math.cos(math.radians(CHECK_TILT_DEGREES))))
+    check_mouth=neutral_eyes+Vector((-.03,-.28,.10))
+    check_neck=check_mouth-check_axis*MOUTH_ABOVE_GRIP
+    check_wrist,check_rotation=contact('R',check_neck,axis=check_axis)
     for obj in list(bpy.data.objects):
         if obj not in (result.root,rig):bpy.data.objects.remove(obj,do_unlink=True)
     for action in list(bpy.data.actions):bpy.data.actions.remove(action)
@@ -155,41 +190,61 @@ def build():
                 for bone_name,(location,rotation,scale) in left.items():
                     b=rig.pose.bones[bone_name];b.location=location;b.rotation_quaternion=rotation;b.scale=scale
                 bpy.context.view_layer.update()
-            elif name=='VodkaOpen':
-                rpos,rrot=sample_stops(open_right,second)
-                lpos,lrot=sample_stops(open_left,second)
-                if .54<=second<=.83:
-                    twist=math.sin(smooth((second-.54)/.29)*math.pi)*22.
+            elif name in ('VodkaOpen','VodkaClose'):
+                open_second=second if name=='VodkaOpen' else duration-second
+                rpos,rrot=sample_stops(open_right,open_second)
+                lpos,lrot=sample_stops(open_left,open_second)
+                if .54<=open_second<=.83:
+                    twist=math.sin(smooth((open_second-.54)/.29)*math.pi)*22.
                     lrot=Quaternion(Vector((0.,0.,1.)),math.radians(twist))@lrot
                 if (lpos-lw).length>1e-7:solve_hand(rig,'L',lpos,lrot,(.8,-.65,-.35))
-            elif name=='VodkaSip':
-                amount=smooth(t/.35)*(1.-smooth((t-.65)/.35))
+            elif name in ('VodkaRaise','VodkaSip','VodkaLower'):
+                amount=1. if name=='VodkaSip' else smooth(t if name=='VodkaRaise' else 1.-t)
                 rpos=carry.lerp(drinking,amount);rrot=carry_rot.slerp(drink_rot,amount)
-                rig.pose.bones['head'].rotation_quaternion=Quaternion(Vector((1.,0.,0.)),math.radians(-6*amount))@neutral['head'][1]
+                gulp=smooth((t-.30)/.20)*(1.-smooth((t-.50)/.20)) if name=='VodkaSip' else 0.
+                rig.pose.bones['head'].rotation_quaternion=Quaternion(Vector((1.,0.,0.)),math.radians(-6*amount-1.5*gulp))@neutral['head'][1]
                 bpy.context.view_layer.update()
+            elif name=='VodkaEmptyCheck':
+                turn=smooth(t/.25)*(1.-smooth((t-.85)/.15))
+                shake=smooth((t-.25)/.15)*(1.-smooth((t-.40)/.15))+smooth((t-.55)/.15)*(1.-smooth((t-.70)/.15))
+                rpos=carry.lerp(check_wrist,turn)+check_axis*(SHAKE_DISTANCE*shake)
+                rrot=carry_rot.slerp(check_rotation,turn)
+                opening=check_mouth+check_axis*(SHAKE_DISTANCE*shake)
+                aim_head(rig,neutral,opening,turn)
             elif name=='VodkaThrow':
-                if t<.35:rpos=carry.lerp(throw_back,smooth(t/.35))
-                elif t<.60:rpos=throw_back.lerp(throw_release,smooth((t-.35)/.25))
-                else:rpos=throw_release.lerp(rw,smooth((t-.60)/.40));rrot=carry_rot.slerp(rr,smooth((t-.60)/.40))
+                wind=smooth(t/THROW_WINDUP)*(1.-smooth((t-THROW_WINDUP)/(THROW_RELEASE-THROW_WINDUP)))
+                whip=smooth((t-THROW_WINDUP)/(THROW_RELEASE-THROW_WINDUP))*(1.-smooth((t-THROW_RELEASE)/(1.-THROW_RELEASE)))
+                rig.pose.bones['chest'].rotation_quaternion=Quaternion(Vector((0.,1.,0.)),math.radians(4.5*wind-7.*whip))@neutral['chest'][1]
+                rig.pose.bones['clavicle.R'].rotation_quaternion=Quaternion(Vector((0.,0.,1.)),math.radians(4.*wind-10.*whip))@neutral['clavicle.R'][1]
+                rig.pose.bones['head'].rotation_quaternion=Quaternion(Vector((0.,1.,0.)),math.radians(-5.*whip))@neutral['head'][1]
+                bpy.context.view_layer.update()
+                if t<THROW_WINDUP:rpos=carry.lerp(throw_back,smooth(t/THROW_WINDUP))
+                elif t<THROW_RELEASE:rpos=throw_back.lerp(throw_release,smooth((t-THROW_WINDUP)/(THROW_RELEASE-THROW_WINDUP)))
+                else:rpos=throw_release.lerp(rw,smooth((t-THROW_RELEASE)/(1.-THROW_RELEASE)));rrot=carry_rot.slerp(rr,smooth((t-THROW_RELEASE)/(1.-THROW_RELEASE)))
             if (rpos-rw).length>1e-7:
                 pole=Vector((-.45,-.35,-.85))
                 if name in ('VodkaDraw','VodkaStow'):
                     draw_second=(t if name=='VodkaDraw' else 1.-t)*1.70
                     pole=Vector((-.95,-.25,-.1)).lerp(pole,smooth((draw_second-.55)/.27))
-                if name in ('VodkaDraw','VodkaStow','VodkaOpen'):solve_hand(rig,'R',rpos,rrot,pole)
+                if name in ('VodkaDraw','VodkaStow','VodkaOpen','VodkaClose','VodkaEmptyCheck'):solve_hand(rig,'R',rpos,rrot,pole)
                 else:seat.solve_chain(rig.pose.bones['upper_arm.R'],rig.pose.bones['forearm.R'],rig.pose.bones['hand.R'],rpos,rrot,re+Vector((-.10,0.,-.06)))
             if name in ('VodkaDraw','VodkaStow'):
                 progress=t if name=='VodkaDraw' else 1.-t
                 current=seat.snapshot(result)
                 if progress<.10:mix_bones(neutral,current,smooth(progress/.10),right_bones)
                 elif progress>.76:mix_bones(current,carry_pose,smooth((progress-.76)/.24),right_bones)
-            elif name=='VodkaOpen':
+            elif name in ('VodkaOpen','VodkaClose'):
+                open_second=second if name=='VodkaOpen' else duration-second
                 current=seat.snapshot(result)
-                if second<.18:mix_bones(carry_pose,current,smooth(second/.18),right_bones)
-                elif second>.95:mix_bones(current,carry_pose,smooth((second-.95)/.30),right_bones)
+                if open_second<.18:mix_bones(carry_pose,current,smooth(open_second/.18),right_bones)
+                elif open_second>.95:mix_bones(current,carry_pose,smooth((open_second-.95)/.30),right_bones)
                 current=seat.snapshot(result)
-                if second<.12:mix_bones(neutral,current,smooth(second/.12),left_bones)
-                elif second>1.10:mix_bones(current,neutral,smooth((second-1.10)/.15),left_bones)
+                if open_second<.12:mix_bones(neutral,current,smooth(open_second/.12),left_bones)
+                elif open_second>1.10:mix_bones(current,neutral,smooth((open_second-1.10)/.15),left_bones)
+            elif name=='VodkaEmptyCheck':
+                current=seat.snapshot(result)
+                if t<.25:mix_bones(carry_pose,current,smooth(t/.25),right_bones)
+                elif t>.85:mix_bones(current,carry_pose,smooth((t-.85)/.15),right_bones)
             keys.append((t,pose_dict(builder)))
         builder._create_action(name,'vodka_equipment',duration,loop,count,FPS,keys)
     def sample(name,t):
@@ -197,17 +252,49 @@ def build():
     def error(a,b,names):return max(abs(a[n][i][j]-b[n][i][j]) for n in names for i in range(4) for j in range(4))
     lower=max(error(baseline,sample(n,i/(d*FPS)),LOWER) for n,d,_ in CLIPS for i in range(round(d*FPS)+1))
     seams=(('VodkaDraw',1.,'VodkaCarry',0.),('VodkaCarry',1.,'VodkaCarry',0.),('VodkaOpen',0.,'VodkaCarry',0.),
-        ('VodkaOpen',1.,'VodkaCarry',0.),('VodkaCarry',0.,'VodkaSip',0.),('VodkaSip',1.,'VodkaCarry',0.),
+        ('VodkaOpen',1.,'VodkaCarry',0.),('VodkaCarry',0.,'VodkaRaise',0.),('VodkaRaise',1.,'VodkaSip',0.),
+        ('VodkaSip',0.,'VodkaSip',1.),('VodkaSip',1.,'VodkaLower',0.),('VodkaLower',1.,'VodkaCarry',0.),
+        ('VodkaClose',0.,'VodkaCarry',0.),('VodkaClose',1.,'VodkaCarry',0.),
+        ('VodkaEmptyCheck',0.,'VodkaCarry',0.),('VodkaEmptyCheck',1.,'VodkaCarry',0.),
         ('VodkaCarry',0.,'VodkaStow',0.),('VodkaCarry',0.,'VodkaThrow',0.))
     endpoint=max(error(sample(a,t),sample(b,u),baseline) for a,t,b,u in seams)
     endpoint=max(endpoint,error(baseline,sample('VodkaDraw',0.),baseline),error(baseline,sample('VodkaStow',1.),baseline),error(baseline,sample('VodkaThrow',1.),baseline))
-    sample('VodkaSip',.5);wrist_error=(rig.pose.bones['hand.R'].head-drinking).length
+    wrist_error=max((sample('VodkaSip',t) and (rig.pose.bones['hand.R'].head-drinking).length) for t in (0.,.5,1.))
+    close_reverse_error=max(error(sample('VodkaClose',t),sample('VodkaOpen',1.-t),baseline) for t in (0.,.2,.4,.6,.8,1.))
+    check_contacts=[];eye_heights=[];gaze_dots=[];inside_dots=[];opening_clearances=[]
+    for t in SHAKE_MARKERS:
+        sample('VodkaEmptyCheck',t)
+        hand=rig.pose.bones['hand.R']
+        neck=hand.head+hand.matrix.to_quaternion()@hand_frames['R'][0]
+        axis=hand.matrix.to_quaternion()@hand_frames['R'][1]
+        opening=neck+axis*MOUTH_ABOVE_GRIP
+        eyes=eye_centre(rig)
+        check_contacts.append(neck)
+        eye_heights.append(opening.z-eyes.z)
+        gaze_dots.append(gaze_forward(rig).dot((opening-eyes).normalized()))
+        inside_dots.append((-axis).dot((opening-eyes).normalized()))
+        opening_clearances.append(-(opening.y-eyes.y))
+    shake_travels=[(check_contacts[i+1]-check_contacts[i]).dot(check_axis) for i in (0,2)]
+    shake_error=max(abs(distance-SHAKE_DISTANCE) for distance in shake_travels)
+    if any(not -.04<=eye_heights[i]<=.10 for i in (0,2,4)) or min(opening_clearances)<.22:
+        raise ValueError(f'Empty bottle opening must be safely in front of the real eyes: {eye_heights}, {opening_clearances}')
+    if min(gaze_dots)<.995:raise ValueError(f'Hero must look into the opening throughout both checks: {gaze_dots}')
+    if min(inside_dots)<.90:raise ValueError(f'Opening must point toward the eyes so the gaze can enter the bottle: {inside_dots}')
+    def wrist_at(t):
+        sample('VodkaThrow',t)
+        return rig.pose.bones['hand.R'].head.copy()
+    windup_speed=(wrist_at(THROW_WINDUP)-wrist_at(0.)).length/THROW_WINDUP
+    release_speed=(wrist_at(THROW_RELEASE)-wrist_at(THROW_WINDUP)).length/(THROW_RELEASE-THROW_WINDUP)
+    sample('VodkaThrow',THROW_RELEASE)
+    shoulder_sweep=math.degrees(neutral['clavicle.R'][1].rotation_difference(rig.pose.bones['clavicle.R'].rotation_quaternion).angle)
+    if release_speed<2.3 or release_speed<windup_speed*2.5 or shoulder_sweep<8.:
+        raise ValueError(f'Throw needs a sharp annoyed shoulder/arm release: {windup_speed}, {release_speed}, {shoulder_sweep}')
     # Whole forearm/palm volumes, not just a reachable wrist, must remain
     # outside the actual torso/pelvis/neck/head throughout all three actions.
     arm_clearance={side:float('inf') for side in ('L','R')}
     phase_clearance={side:{} for side in ('L','R')};worst={}
     for name,duration,_ in CLIPS:
-        if name not in ('VodkaDraw','VodkaOpen','VodkaStow'):continue
+        if name not in ('VodkaDraw','VodkaOpen','VodkaClose','VodkaStow','VodkaEmptyCheck','VodkaThrow'):continue
         for side in ('L','R'):
             minimum=float('inf')
             for frame_index in range(round(duration*120)+1):
@@ -225,7 +312,8 @@ def build():
                             minimum=value;worst[(side,name)]=(progress,surface_name,tuple(point),value)
             phase_clearance[side][name]=minimum;arm_clearance[side]=min(arm_clearance[side],minimum)
     if min(arm_clearance.values())<-.008:raise ValueError('Bottle arm crosses body: '+repr(worst))
-    if max(lower,endpoint,wrist_error)>.00002:raise ValueError(f'Vodka action contract: {lower}, {endpoint}, {wrist_error}')
+    if max(lower,endpoint,wrist_error,close_reverse_error)>.00002:raise ValueError(f'Vodka action contract: {lower}, {endpoint}, {wrist_error}, {close_reverse_error}')
+    if shake_error>.003:raise ValueError(f'Empty bottle needs two full authored shakes: {shake_travels}')
     curves=[[n,c.data_path,c.array_index,[[round(v,7) for v in p.co] for p in c.keyframe_points]] for n,_,_ in CLIPS for c in common.iter_action_fcurves(result.actions[n].action)]
     sample('VodkaDraw',.48/1.70)
     hand=rig.pose.bones['hand.R'];offset=hand_frames['R'][0]
@@ -234,6 +322,13 @@ def build():
     payload=dict(generator='player_vodka_v1',rig='HeroV2',bone_count=len(rig.data.bones),fps=FPS,root_motion=False,animation_events=0,
         source_sha256=hashlib.sha256(hero.DEFAULT_OUTPUT.read_bytes()).hexdigest(),pistol_action_source_sha256=hashlib.sha256(pistol_source.read_bytes()).hexdigest(),
         maximum_lower_body_error=lower,maximum_endpoint_error=endpoint,maximum_drink_wrist_error_m=wrist_error,
+        maximum_close_reverse_error=close_reverse_error,empty_check_shake_count=2,
+        empty_check_markers=list(SHAKE_MARKERS),empty_check_shake_travel_m=shake_travels,
+        empty_check_tilt_degrees=CHECK_TILT_DEGREES,empty_check_neck_source=list(check_neck),empty_check_axis_source=list(check_axis),
+        empty_check_opening_eye_height_m=eye_heights,empty_check_gaze_dot=gaze_dots,
+        empty_check_inside_gaze_dot=inside_dots,
+        empty_check_opening_forward_clearance_m=opening_clearances,throw_windup_progress=THROW_WINDUP,
+        throw_windup_speed_mps=windup_speed,throw_release_speed_mps=release_speed,throw_shoulder_sweep_degrees=shoulder_sweep,
         minimum_left_arm_body_clearance_m=arm_clearance['L'],left_arm_body_clearance_by_clip_m=phase_clearance['L'],
         minimum_right_arm_body_clearance_m=arm_clearance['R'],right_arm_body_clearance_by_clip_m=phase_clearance['R'],
         maximum_draw_neck_contact_error_m=contact_error,sip_commit_progress=.5,throw_release_progress=.6,draw_transfer_progress=.48/1.70,

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -43,7 +44,7 @@ namespace BarPromenade.Editor
                 Mesh source = renderer.sharedMesh;
                 if (PlayerVodkaGripCatalog.TryGetEntry(source, out PlayerVodkaGripCatalog.Entry previous)) source = previous.Source;
                 Mesh target = UnityEngine.Object.Instantiate(source);
-                target.name = source.name + " Bottle Grip";
+                target.name = renderer.name;
                 int shape = CharacterJointDeformation.FindShape(donor.sharedMesh, "BottleGrip");
                 if (shape < 0) throw new InvalidOperationException("Authored BottleGrip is absent on " + donor.name);
                 var positions = donor.sharedMesh.vertices;
@@ -72,6 +73,8 @@ namespace BarPromenade.Editor
                 Mesh existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
                 if (existing == null) { AssetDatabase.CreateAsset(target, path); existing = target; }
                 else { EditorUtility.CopySerialized(target, existing); UnityEngine.Object.DestroyImmediate(target); EditorUtility.SetDirty(existing); }
+                if (existing.name != Path.GetFileNameWithoutExtension(path))
+                    throw new InvalidOperationException("Bottle grip main asset name must match its filename: " + path);
                 int[] palmPlane = Array.Empty<int>(), thumbBaseRing = Array.Empty<int>(), thumbTipRing = Array.Empty<int>();
                 if (renderer.name == "GEO_Hand.R")
                 {

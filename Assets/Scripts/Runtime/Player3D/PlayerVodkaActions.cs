@@ -7,22 +7,29 @@ namespace BarPromenade
     public static class PlayerVodkaActions
     {
         public const string ResourcePath = "Player/PlayerVodkaActions";
-        public const string CarryClip = "VodkaCarry", DrawClip = "VodkaDraw", OpenClip = "VodkaOpen", SipClip = "VodkaSip",
-            StowClip = "VodkaStow", ThrowClip = "VodkaThrow";
-        public const float CarrySeconds = 1f, DrawSeconds = 1.5f, OpenSeconds = 1.25f, SipSeconds = 2f,
-            StowSeconds = .75f, ThrowSeconds = 1f;
+        public const string CarryClip = "VodkaCarry", DrawClip = "VodkaDraw", OpenClip = "VodkaOpen",
+            RaiseClip = "VodkaRaise", SipClip = "VodkaSip", LowerClip = "VodkaLower", CloseClip = "VodkaClose",
+            EmptyCheckClip = "VodkaEmptyCheck", StowClip = "VodkaStow", ThrowClip = "VodkaThrow";
+        public const float CarrySeconds = 1f, DrawSeconds = 1.5f, OpenSeconds = 1.25f,
+            RaiseSeconds = .5f, SipSeconds = 2f, LowerSeconds = .5f, CloseSeconds = 1.25f,
+            EmptyCheckSeconds = 3f, StowSeconds = .75f, ThrowSeconds = 1f;
         public const float SipCommitProgress = .5f, ThrowReleaseProgress = .6f,
             DrawTransferProgress = .48f / 1.70f, CapContactProgress = .448f,
             CapTwistEndProgress = .664f, CapOpenProgress = .70f, CapReleaseProgress = .90f;
-        public static readonly string[] ClipNames = { CarryClip, DrawClip, OpenClip, SipClip, StowClip, ThrowClip };
+        public const float EmptyCheckTurnProgress = .25f, FirstShakeProgress = .40f, ShakeRestProgress = .55f,
+            SecondShakeProgress = .70f, EmptyCheckReturnProgress = .85f, EmptyCheckShakeDistance = .075f;
+        public const float EmptyCheckTiltDegrees = 235f, ThrowWindupProgress = .44f;
+        public static readonly string[] ClipNames = { CarryClip, DrawClip, OpenClip, RaiseClip, SipClip, LowerClip,
+            CloseClip, EmptyCheckClip, StowClip, ThrowClip };
         public static readonly Vector3 DrawNeckSource = new Vector3(.08f, -.17f, 1.32f);
         private static AnimationClip[] clips;
 
-        public static bool IsLoop(string name) => name == CarryClip;
+        public static bool IsLoop(string name) => name == CarryClip || name == SipClip;
         public static float Duration(string name) => name switch
         {
-            CarryClip => CarrySeconds, DrawClip => DrawSeconds, OpenClip => OpenSeconds, SipClip => SipSeconds,
-            StowClip => StowSeconds, ThrowClip => ThrowSeconds,
+            CarryClip => CarrySeconds, DrawClip => DrawSeconds, OpenClip => OpenSeconds,
+            RaiseClip => RaiseSeconds, SipClip => SipSeconds, LowerClip => LowerSeconds, CloseClip => CloseSeconds,
+            EmptyCheckClip => EmptyCheckSeconds, StowClip => StowSeconds, ThrowClip => ThrowSeconds,
             _ => throw new ArgumentOutOfRangeException(nameof(name))
         };
 

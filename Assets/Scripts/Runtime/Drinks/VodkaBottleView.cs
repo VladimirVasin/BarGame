@@ -109,10 +109,11 @@ namespace BarPromenade
             Remaining = Mathf.Clamp01(float.IsNaN(fraction) ? 0f : fraction);
             RefreshLiquid();
         }
-        public void SetOpened(bool value)
+        public void SetOpened(bool value) => SetCapPresentation(value, !value);
+        public void SetCapPresentation(bool opened, bool visible)
         {
-            IsOpened = value;
-            if (Cap != null) Cap.gameObject.SetActive(!value);
+            IsOpened = opened;
+            if (Cap != null && Cap.gameObject.activeSelf != visible) Cap.gameObject.SetActive(visible);
         }
         private void LateUpdate() => RefreshLiquid();
 

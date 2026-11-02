@@ -11,16 +11,19 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - Убран лишний круг под бутылкой при осмотре холодильника:жидкость сохраняет
   свой материал. Build_CreatesAnimatedHollowStorageWithoutLights passed;frame reviewed.
 
-- Водка в руке:клик ЛКМ — глоток,удержание — отдельные подъём/наклон/опускание
-  со звуком до отпускания. Ходьба/остаток сохраняются;пустую бросает.
+- Водка:клик ЛКМ — глоток;при удержании пьёт подряд,не опуская бутылку.
+  Перед убиранием закрывает крышку. Пустую горлышком вниз на уровне глаз:
+  заглядывает внутрь,дважды трясёт,досадливо бросает. Ходьба/остаток сохранены.
+  Порция водки даёт24,полная бутылка номинально96;отрезвление4,5–18с/пункт,
+  выше стадия — медленнее. Recovery_LowerLevelsLosePointsFaster/
+  IntoxicationRecovery_ConsumesTimeAndStopsAtSober passed.
+  VodkaBottleEquipmentPlayModeTests passed;standing/seated frames reviewed.
   Бутылка уменьшена,пальцы охватывают горлышко,большой вверх.
   Достаёт из-под куртки,как пистолет,и убирает обратно. Крышку открывает
   перед собой;обе руки проходят снаружи корпуса.
-  InventoryWalkingSipPersistenceAndLastSipThrow passed.
   Можно пить на обычных сиденьях и в автобусе,открывать инвентарь сидя.
   Бутылка над коленями;стопы опираются на пол автобуса.
-  SeatedBottlePreservesParentPoseInventoryAndExit/
-  Passenger_BoardsRidesAndExitsAtLaterStop passed;frames reviewed.
+  Passenger_BoardsRidesAndExitsAtLaterStop passed;bus frames reviewed.
 - Закрытые двери бара,квартиры,подъезда и церкви останавливают героя;
   подход к действию E свободен. ClosedDoorCollisionTests passed.
 

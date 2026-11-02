@@ -25,8 +25,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(result.CashBefore, Is.EqualTo(15));
             Assert.That(result.CashAfter, Is.Zero);
             Assert.That(result.IntoxicationBefore, Is.EqualTo(10));
-            Assert.That(result.IntoxicationAfter, Is.EqualTo(28));
-            Assert.That(result.ActualIntoxicationDelta, Is.EqualTo(18));
+            Assert.That(result.IntoxicationAfter, Is.EqualTo(34));
+            Assert.That(result.ActualIntoxicationDelta, Is.EqualTo(24));
             Assert.That(
                 result.LastAlcoholicDrinkBefore,
                 Is.EqualTo(DrinkId.RedWine));

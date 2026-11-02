@@ -9,18 +9,80 @@
   "pistol_action_source_sha256": "ef37587d82055c73b72a9bb27c17498fea77bdb76d9f136450a4a762b9e9fcd7",
   "maximum_lower_body_error": 0.0,
   "maximum_endpoint_error": 3.8743019104003906e-07,
-  "maximum_drink_wrist_error_m": 1.2489448945403256e-07,
-  "minimum_left_arm_body_clearance_m": 0.07838208955526352,
+  "maximum_drink_wrist_error_m": 2.590617336439149e-07,
+  "maximum_close_reverse_error": 3.6694109439849854e-07,
+  "empty_check_shake_count": 2,
+  "empty_check_markers": [
+    0.25,
+    0.4,
+    0.55,
+    0.7,
+    0.85
+  ],
+  "empty_check_shake_travel_m": [
+    0.07339022494852543,
+    0.07320882193744183
+  ],
+  "empty_check_tilt_degrees": 235.0,
+  "empty_check_neck_source": [
+    -0.03423412889242172,
+    -0.45334532856941223,
+    1.7469720840454102
+  ],
+  "empty_check_axis_source": [
+    0.0,
+    0.8191520571708679,
+    -0.5735764503479004
+  ],
+  "empty_check_opening_eye_height_m": [
+    0.07864499092102051,
+    0.04141855239868164,
+    0.07863342761993408,
+    0.041492342948913574,
+    0.07486939430236816
+  ],
+  "empty_check_gaze_dot": [
+    0.9999348828569055,
+    0.9998288843780756,
+    0.9999383985996246,
+    0.9998293370008469,
+    0.999731152318418
+  ],
+  "empty_check_inside_gaze_dot": [
+    0.9315684169938265,
+    0.900303398553536,
+    0.9315975106665171,
+    0.9003888158882596,
+    0.9280249152361648
+  ],
+  "empty_check_opening_forward_clearance_m": [
+    0.3130725175142288,
+    0.2431020438671112,
+    0.3130102753639221,
+    0.2432505488395691,
+    0.3150187283754349
+  ],
+  "throw_windup_progress": 0.44,
+  "throw_windup_speed_mps": 0.9007470040060982,
+  "throw_release_speed_mps": 2.8061085899677622,
+  "throw_shoulder_sweep_degrees": 9.700602635693643,
+  "minimum_left_arm_body_clearance_m": 0.0777918918132782,
   "left_arm_body_clearance_by_clip_m": {
     "VodkaDraw": 0.0783821193575859,
     "VodkaOpen": 0.0783821193575859,
-    "VodkaStow": 0.07838208955526352
+    "VodkaClose": 0.0783821193575859,
+    "VodkaEmptyCheck": 0.0783821193575859,
+    "VodkaStow": 0.07838208955526352,
+    "VodkaThrow": 0.0777918918132782
   },
-  "minimum_right_arm_body_clearance_m": 0.06819231790304184,
+  "minimum_right_arm_body_clearance_m": 0.06819225829839706,
   "right_arm_body_clearance_by_clip_m": {
     "VodkaDraw": 0.06819231790304184,
     "VodkaOpen": 0.15067252027988434,
-    "VodkaStow": 0.06819231790304184
+    "VodkaClose": 0.15067255008220673,
+    "VodkaEmptyCheck": 0.13136426615715027,
+    "VodkaStow": 0.06819231790304184,
+    "VodkaThrow": 0.06819225829839706
   },
   "maximum_draw_neck_contact_error_m": 8.429369702178807e-08,
   "sip_commit_progress": 0.5,
@@ -78,8 +140,28 @@
       "loop": false
     },
     {
+      "name": "VodkaRaise",
+      "duration_seconds": 0.5,
+      "loop": false
+    },
+    {
       "name": "VodkaSip",
       "duration_seconds": 2.0,
+      "loop": true
+    },
+    {
+      "name": "VodkaLower",
+      "duration_seconds": 0.5,
+      "loop": false
+    },
+    {
+      "name": "VodkaClose",
+      "duration_seconds": 1.25,
+      "loop": false
+    },
+    {
+      "name": "VodkaEmptyCheck",
+      "duration_seconds": 3.0,
       "loop": false
     },
     {
@@ -93,5 +175,5 @@
       "loop": false
     }
   ],
-  "signature": "68235893815f60602c12ae5cd5b29ad817f33c3e99ce811310211c2f36f11709"
+  "signature": "ffb1d1386d7c27ea6468639baa13255a75272d17477eb0cd6d95918af6c2cef9"
 }

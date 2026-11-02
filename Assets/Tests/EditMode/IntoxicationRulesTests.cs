@@ -219,13 +219,19 @@ namespace BarPromenade.Tests.EditMode
         {
             float nearSober =
                 IntoxicationStageRules.GetRecoverySecondsPerPoint(1);
-            float middle =
-                IntoxicationStageRules.GetRecoverySecondsPerPoint(50);
             float maximum =
                 IntoxicationStageRules.GetRecoverySecondsPerPoint(100);
 
-            Assert.That(nearSober, Is.LessThan(middle));
-            Assert.That(middle, Is.LessThan(maximum));
+            Assert.That(nearSober, Is.EqualTo(4.5f));
+            Assert.That(maximum, Is.EqualTo(18f));
+            float previous = nearSober;
+            for (int level = 2; level <= IntoxicationStageRules.MaximumLevel; level++)
+            {
+                float current = IntoxicationStageRules.GetRecoverySecondsPerPoint(level);
+                Assert.That(current, Is.GreaterThan(previous), $"Level {level} must sober more slowly.");
+                previous = current;
+            }
+
             Assert.That(
                 maximum,
                 Is.EqualTo(

@@ -1697,8 +1697,8 @@ cemetery:own interiors/returns.
   `1–20` Light Buzz / «Лёгкий хмель», `21–40` Tipsy / «Навеселе»,
   `41–60` Drunk / «Подшофе», `61–80` Unsteady / «Шатает» and `81–100`
   Very Drunk / «В стельку»; `0` is Sober and hides the HUD. Free gameplay
-  continuously lowers the session level on unscaled time, from about `12 s`
-  per point at `100` to `3 s` per point near sober; modal interactions pause
+  continuously lowers the session level on unscaled time, from `18 s`
+  per point at `100` to `4.5 s` per point near sober; modal interactions pause
   this recovery so their committed drinking snapshots remain authoritative;
 - continuously escalating movement slowdown, 3D bone sway, arm spread, knee
   bend, camera roll and world-image distortion within those ranges, with the
@@ -2291,19 +2291,19 @@ cemetery:own interiors/returns.
   applies to the accessory, and the bathroom mirror copies its live appearance
   and corrected surfaces without another contact update. Inventory food remains
   non-animated;hunger floor20,no-effect stacks retained. Alcohol has separate
-  stress relief. Vodka:LMB click one sip,hold repeats until release/empty;
-  full500ml=15×33/34ml,four prior servings. Session fills persist;Home100ml.
-  Max intoxication refuses without spending. Pistol-path draw/stow owns jacket access;
-  separate front cap-opening uses the left hand's forward arc. Each sip raises/
-  tilts/lowers the same bottle,shared DrinkGulp once/swallow;scarf mouth access.
-  Above gait or ordinary bench/chair/sofa/game/counter seats+bus,the equipment
-  layer keeps parent root/pelvis/legs/camera;right-arm carry sits above knees.
-  Bus cached sole IK adjusts knees/ankles to its tilting floor,seat root/pelvis kept.
-  Carry survives sit/stand;inventory/sips need stable loop,no nested action/modal.
-  Child actions wait visible stow;other contexts stow. Car/cableway unsupported.
-  Last swallow removes one;actual prop flies sideways,surface/normal impact
-  decides breakage. Bus throws inherit motion,meet finite cabin/door colliders.
-  Finite glass debris pauses/clears on disposal. Use only for consumables/equipment;
+  stress relief. Vodka:LMB click1;hold raises once,keeps at mouth for successive
+  swallows,lowers on release/empty/refusal. Full500ml=15×33/34ml,four servings;
+  Vodka+24/serving,nominal96/full bottle before recovery/cap;Home100ml.
+  IDs/fills persist,max100refuses without spending;dose also feeds decay.
+  Pistol-path draw/stow owns jacket;left front arc opens/closes cap before stow.
+  Same rig/grip/scarf;DrinkGulp once/swallow. Equipment layer above gait or
+  bench/chair/sofa/game/counter+bus keeps parent root/pelvis/legs/camera;
+  carry above knees survives sit/stand. Bus cached sole IK follows tilted floor;
+  source import scale once. Inventory/sips:stable loop,no child/modal;
+  child waits visible stow,other contexts stow;car/cableway unsupported.
+  Last swallow debits1;eye-level neck-down look inside,exactly2shakes→resentful toss.
+  Surface/normal impact decides breakage;bus throw inherits motion,finite cabin/
+  door colliders. Finite glass debris pauses/clears. Consumables/equipment only;
   temporarily blocked actions disabled;
 - Home window/four-section glazed folding door/walkable balcony at4.7m in one
   scene; rails retain safety colliders. E uses shared hero actions/hand contacts;
