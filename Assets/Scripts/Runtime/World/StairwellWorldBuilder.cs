@@ -652,7 +652,7 @@ namespace BarPromenade
                 StreetDoor,
                 StairwellSurfaceKind.DoorPaint,
                 StairwellSurfaceProjection.BoxXY,
-                false);
+                true);
             BuildDoorFrame(
                 door,
                 Vector3.zero,
@@ -683,7 +683,7 @@ namespace BarPromenade
                 ApartmentDoor,
                 StairwellSurfaceKind.DoorPaint,
                 StairwellSurfaceProjection.BoxZY,
-                false);
+                true);
             BuildDoorFrame(
                 door,
                 Vector3.zero,

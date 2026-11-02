@@ -6,6 +6,11 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
+### 2026-11-02
+
+- Закрытые двери бара,квартиры,подъезда и церкви останавливают героя;
+  подход к действию E свободен. ClosedDoorCollisionTests passed.
+
 ### 2026-11-01
 
 - 0.1.1 Win/Mac:пол лабиринта/укрытие кафе/беседка. MacStairwellAscent passed.

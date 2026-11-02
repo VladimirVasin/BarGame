@@ -192,7 +192,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Area map art | City charcoal/Village brochure; separate plan/RU SHA+UV guards/RU labels/marks; Road/other seeds schematic. | `{City,AlpineVillage}MapArtResources`, `CityMapArtReferenceExport`, `CityMapIllustratedLabels` | Current |
 | Map XYZ inspection | Map points, fair/post/docks/arch/church-door places included, expose world coordinates and validated teleport targets. | `CityMapTeleport{Lattice,Grounds}`, `CityMapPointDescriptor` | Current |
 | Map arrival ground | Area-owned ground; City lot/XYZ arrivals re-sample land Y and move occupied markers to a clear street. | `ICityMapTeleportGround`, `CityMap{City,MountainRoad}TeleportGround` | Current |
-| Scene transition | Guarded direct/door loads own pending activation and terminal cleanup; failure handling is centralized. | `PlayerDoorAction{Plan,Controller,Target}`, `CityGameRoot` | Current |
+| Scene transition | Guarded loads/cleanup; closed entrance leaves stay solid and door-action docks clear. | `PlayerDoorAction{Plan,Controller,Target}`, `ApartmentEntranceDoor`, `CityGameRoot` | Current |
 | Area loading transition | One directed illustration and bottom bar; 20% load / 80% construction, owned until the destination is ready. | `AreaTravelService`, `AreaLoading{Root,ArtCatalog}` | Current |
 | Door transition presentation | A deterministic `1.6 s` unscaled fixed-camera door sequence in a black void, warm on entry and cold on exit. | `DoorTransition{Root,Timeline,Direction}`, `RuntimeSceneSetup` | Current |
 | Session state | Session facade delegates temporary vehicle ownership; resets and stale leases cannot leak ride state into a new game. | `GameSessionState`, `CityBlueprintCatalog` | Current |

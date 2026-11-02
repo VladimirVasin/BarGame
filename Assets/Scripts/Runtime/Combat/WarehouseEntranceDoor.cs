@@ -8,11 +8,6 @@ namespace BarPromenade
         public static GameObject Create(WarehouseArenaPlan plan, Transform parent, CombatTestRoot owner)
         {
             GameObject door = ApartmentEntranceDoor.Create(parent, plan.EntranceDoorPosition, "Warehouse Entrance Door");
-            BoxCollider blocker = door.AddComponent<BoxCollider>();
-            blocker.center = new Vector3(0f, 1.15f, 0f);
-            blocker.size = new Vector3(ApartmentEntranceDoor.FrameWidth, ApartmentEntranceDoor.FrameHeight,
-                ApartmentEntranceDoor.FrameDepth);
-
             var host = new GameObject("Warehouse Entrance Door Inspection");
             host.transform.SetParent(door.transform, false);
             var inspection = host.AddComponent<NarrativeInteraction>();

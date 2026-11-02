@@ -30,6 +30,13 @@ namespace BarPromenade
                 GameObject model = HomeAuthoredVisualFactory.Place(part, partName, door.transform,
                     part.Position, Vector3.one);
                 model.transform.localRotation = Quaternion.Euler(part.Rotation);
+                if (partName == "Home Exit Door")
+                {
+                    // Place() supplies visuals only. Keep the closed leaf solid
+                    // for every consumer, independently of its interaction trigger.
+                    BoxCollider leaf = model.AddComponent<BoxCollider>();
+                    leaf.size = part.Size;
+                }
             }
             return door;
         }

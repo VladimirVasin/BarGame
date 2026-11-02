@@ -78,9 +78,6 @@ namespace BarPromenade
             BuildFootProbes(wrapper.transform, plan);
             GameObject door = ApartmentEntranceDoor.Create(wrapper.transform, plan.DoorPosition, "Labyrinth Warehouse Door");
             door.transform.localRotation = Quaternion.Euler(0f,180f,0f);
-            BoxCollider leaf = door.AddComponent<BoxCollider>();
-            leaf.center = new Vector3(0f,1.115f,0f);
-            leaf.size = new Vector3(1.12f,2.16f,.052f);
             // The new placement aligns the existing hardware with the production DoorUseLoop.
             // Its mesh and leaf remain shared with Home/the warehouse.
             float handleLift = PlayerFactory.GroundedRootOffset + 1.1148247f - 1.065f;

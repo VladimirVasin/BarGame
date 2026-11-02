@@ -177,6 +177,10 @@ namespace BarPromenade
                 AddCollider(parent, $"Entrance Wall {side}",
                     new Vector3(side * (opening * .5f + sideWidth * .5f), h * .5f, room.yMin + t * .5f),
                     new Vector3(sideWidth, h, t), colliders);
+            AddCollider(parent, "Entrance Door",
+                new Vector3(0f, ChurchInteriorLayoutPlanner.DoorOpeningHeight * .5f,
+                    ChurchInteriorLayoutPlanner.DoorPlaneZ),
+                new Vector3(opening, ChurchInteriorLayoutPlanner.DoorOpeningHeight, .10f), colliders);
         }
 
         private static void BuildFixtureCollision(

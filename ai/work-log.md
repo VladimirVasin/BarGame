@@ -3,6 +3,16 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-02
+
+Closed entrances:bar/Home/church now block the hero;stairwell contact follows
+the leaf. Shared apartment assembly owns the solid for Home/warehouse/labyrinth,
+replacing caller duplicates. Interaction docks stay clear;shop/mother entrances
+are authored open. Physics probes move completed rooms because mirror/church
+construction envelopes assume scene axes. ClosedDoorCollisionTests passed.
+Rendering/material-motion/post-processing groups reviewed:collision-only fix,
+no added effects or recurring work. check-docs passed.
+
 ## 2026-11-01
 
 Desktop:provenance/lamp/API;Universal+adhoc;reports/Lit/diagnostics.

@@ -46,7 +46,7 @@ namespace BarPromenade.Tests.PlayMode
                 WarehouseArenaPlan plan = root.WarehousePlan;
                 NarrativeInteraction target = FindWarehouseEntranceInspection(root);
                 Transform door = target.SubjectRoot;
-                BoxCollider blocker = door.GetComponent<BoxCollider>();
+                BoxCollider blocker = door.Find("Home Exit Door").GetComponent<BoxCollider>();
                 AssertWarehouseEntranceAsset(target, plan);
                 Mesh[] sharedDoorMeshes = ApartmentEntranceDoor.PartNames.Select(name =>
                     door.Find(name).GetComponent<MeshFilter>().sharedMesh).ToArray();
@@ -232,10 +232,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(target.Staging.CameraMode, Is.EqualTo(NarrativeCameraMode.ObjectSide));
             Assert.That(Vector3.Distance(target.Staging.Entry.RootRotation * Vector3.forward, Vector3.back), Is.LessThan(.001f));
             AssertSharedApartmentEntrance(door);
-            BoxCollider blocker = door.GetComponent<BoxCollider>();
+            BoxCollider blocker = door.Find("Home Exit Door").GetComponent<BoxCollider>();
             Assert.That(blocker, Is.Not.Null);
-            Assert.That(blocker.center, Is.EqualTo(new Vector3(0f, 1.15f, 0f)));
-            Assert.That(blocker.size, Is.EqualTo(new Vector3(1.32f, 2.3f, .22f)));
+            Assert.That(blocker.center, Is.EqualTo(Vector3.zero));
+            Assert.That(blocker.size, Is.EqualTo(new Vector3(1.12f, 2.16f, .052f)));
+            Assert.That(door.GetComponentsInChildren<Collider>().Length, Is.EqualTo(1));
             Bounds visualBounds = door.GetComponentInChildren<Renderer>().bounds;
             foreach (Renderer renderer in door.GetComponentsInChildren<Renderer>()) visualBounds.Encapsulate(renderer.bounds);
             Assert.That(visualBounds.min.z, Is.EqualTo(-12f).Within(.001f), "The rear architrave meets the inner wall plane.");

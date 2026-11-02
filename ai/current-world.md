@@ -2180,8 +2180,8 @@ cemetery:own interiors/returns.
 - Home `12 x 8 x 2.9 m`, ceiling underside `2.86 m`, `X[-7,5]`: clear routes.
   Blender `home_interior_v1`/`interior_kit`: geometry; Unity: collision/actions/
   lights/cameras/live sleep deformation.
-  `ApartmentEntranceDoor` shares aged timber/four recessed panels, deep frame,
-  architraves/threshold/hardware with CombatTest; opening `1.32 m`.
+  `ApartmentEntranceDoor`:solid aged timber/four recessed panels,frame,
+  architraves/threshold/hardware for CombatTest/labyrinth;opening `1.32 m`.
   The same locked room is `13.04 m²`, `X[-2.80,1.46], Z[0.82,3.88]`;
   its west wall thickens to `X=-3.28`, meeting the stove without moving kitchen/inner bounds.
   Its door reports the missing key without opening or consuming keys.

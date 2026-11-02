@@ -115,6 +115,11 @@ namespace BarPromenade
             //  collision behind, and so the boxes hang off the room
             //  rather than off a model part.
             AddColliders(room, registry);
+            var entrance = new GameObject("Entrance Door Collision");
+            entrance.transform.SetParent(room, false);
+            BoxCollider entranceLeaf = entrance.AddComponent<BoxCollider>();
+            entranceLeaf.center = BarInteriorLayoutPlanner.EntranceDoorColliderCenter;
+            entranceLeaf.size = BarInteriorLayoutPlanner.EntranceDoorColliderSize;
             //  Before the registry goes with `instance`: the guard reads
             //  the carpet parts through it.
             AddCarpetOverlays(room, registry);

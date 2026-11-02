@@ -9,6 +9,10 @@ namespace BarPromenade
         public const float RoomDepth = 7.8f;
         public const float RoomHeight = 3f;
         public const float WallThickness = 0.3f;
+        // The stationary transition leaf still blocks ordinary movement.
+        // Matches the recessed leaf in build-bar-3d-model.py, in room metres.
+        public static readonly Vector3 EntranceDoorColliderCenter = new Vector3(0f, 1.17f, -3.705f);
+        public static readonly Vector3 EntranceDoorColliderSize = new Vector3(1.45f, 2.34f, .08f);
         public static readonly Vector3 JukeboxPosition = new Vector3(5f, 0f, -0.65f);
         public const float JukeboxYawDegrees = 180f;
         public static readonly Vector3 JukeboxColliderCenter = new Vector3(0f, 0.85f, 0f);
