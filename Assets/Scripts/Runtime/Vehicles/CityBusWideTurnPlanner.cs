@@ -54,7 +54,7 @@ namespace BarPromenade
                     outgoing.RoadEdge)
             };
             CityBusClearanceResult clearance = ValidateJunctionSamples(
-                layout, vehicle, samples, incoming, outgoing, allowed);
+                layout, vehicle, samples, incoming, outgoing, allowed, hasFullApron);
             clearance = ValidateStaticIntersectionFixtures(
                 layout,
                 vehicle,
@@ -253,6 +253,7 @@ namespace BarPromenade
             float cornerOffset = halfRoad - TurnTangentInset;
 
             Vector3 start = GetDeparturePosition(layout, incoming);
+            start = AlignToJunctionMouth(layout, incoming, start, junction);
             Vector3 incomingTangent = junction -
                 (incoming.Forward * cornerOffset);
             float incomingShiftLength = Vector3.Dot(
@@ -302,6 +303,7 @@ namespace BarPromenade
             int turnEndIndex = result.Count - 1;
 
             Vector3 end = GetArrivalPosition(layout, outgoing);
+            end = AlignToJunctionMouth(layout, outgoing, end, junction);
             float outgoingShiftLength = Vector3.Dot(
                 end - outgoingTangent,
                 outgoing.Forward);
@@ -354,11 +356,21 @@ namespace BarPromenade
                 end,
                 outgoing.Forward);
             minimumLaneShiftRadius = Mathf.Min(minimumLaneShiftRadius,
-                WarpCurvedStreetSamples(layout, incoming, result, 0, incomingEndIndex));
+                WarpCurvedStreetSamples(layout, incoming, result, 0, incomingEndIndex, incoming.To));
             minimumLaneShiftRadius = Mathf.Min(minimumLaneShiftRadius,
-                WarpCurvedStreetSamples(layout, outgoing, result, turnEndIndex, result.Count - 1));
+                WarpCurvedStreetSamples(layout, outgoing, result, turnEndIndex, result.Count - 1, outgoing.From));
             RebuildSampleDistances(result);
             return result;
+        }
+
+        private static Vector3 AlignToJunctionMouth(CityLayout layout, DirectedStreet street,
+            Vector3 position, Vector3 junction)
+        {
+            if (!layout.RoadGeometry.IsCurved(street.RoadEdge)) return position;
+            Vector3 aligned = junction + street.Forward * Vector3.Dot(position - junction, street.Forward) +
+                street.Right * street.LaneCenterOffset;
+            aligned.y = position.y;
+            return aligned;
         }
 
         private static void ApplyRoadGrade(

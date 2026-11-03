@@ -583,7 +583,9 @@ namespace BarPromenade
             {
                 CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
                 if (terraces.IsEnabled && (terraces.ReservedBounds.Overlaps(footprint) ||
-                    terraces.LowerPassBounds.Overlaps(footprint))) return false;
+                    terraces.LowerPassBounds.Overlaps(footprint) ||
+                    terraces.LowerCourtBounds.Overlaps(footprint) ||
+                    terraces.LowerCourtEntryBounds.Overlaps(footprint))) return false;
                 if (!Contains(container, footprint)) return false;
                 if (field.Blocks(footprint, zone != CityLitterZone.Sidewalk)) return false;
                 return !solid || !field.BlocksWalkLane(Expand(footprint, SolidWalkClearance));
@@ -636,8 +638,9 @@ namespace BarPromenade
                 if (layout.RoadGeometry != null)
                     foreach (RoadEdge edge in layout.RoadGeometry.CurvedEdges)
                         curvedRoads.AddRange(layout.RoadGeometry.Get(edge).Ribbon(layout.RoadWidth));
-                if (layout.RoadGeometry?.ObliqueJunction != null)
-                    curvedRoads.AddRange(layout.RoadGeometry.ObliqueJunction.RoadPolygons);
+                if (layout.RoadGeometry != null)
+                    foreach (CityRoadJunction junction in layout.RoadGeometry.Junctions)
+                        curvedRoads.AddRange(junction.RoadPolygons);
                 // The built boxes reach past the nominal road band: dead-end caps,
                 // corner pads and stair approaches. Ground litter keeps off them all.
                 foreach (RuntimeOrientedBox box in streets.StreetGeometry)

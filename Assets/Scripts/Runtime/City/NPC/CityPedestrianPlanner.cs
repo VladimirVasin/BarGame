@@ -183,11 +183,35 @@ namespace BarPromenade
                 lower,
                 graph.AddNode("terrace:lower-pass-start", terrace.LowerPassStartWorld, false),
                 lowerCrossing,
+                graph.AddNode("terrace:east-landing", terrace.LowerPassRampEndWorld, false),
                 graph.AddNode("terrace:east-outlet", terrace.LowerPassEndWorld, false),
                 eastStreet };
             for (int i = 1; i < through.Length; i++) AddLink("terrace:through:" + i, through[i - 1], through[i]);
             AddStairs("west", terrace.Pilot.WestRoute);
             AddStairs("east", terrace.Pilot.EastRoute);
+            int lowerStreet = graph.SplitTerraceStreetAt("terrace:lower-house-street",
+                XZ(terrace.LowerHouseStreetWorld), StreetHeight);
+            IReadOnlyList<Vector3> lowerRoute = terrace.LowerHouseRouteWorld;
+            var lowerNodes = new int[lowerRoute.Count];
+            int previousLower = lowerStreet;
+            for (int i = 0; i < lowerRoute.Count; i++)
+            {
+                int next = graph.AddNode("terrace:lower-house:" + i, lowerRoute[i], false);
+                AddLink("terrace:lower-house:walk:" + i, previousLower, next);
+                lowerNodes[i] = next; previousLower = next;
+            }
+            // A small supported loop lets the existing roaming population use
+            // the sunken court without pruning its sole street stem as a dead end.
+            float lowerY = terrace.LowerCourtArrivalWorld.y;
+            var loop = new[] { new Vector3(138.6f, lowerY, 58.8f),
+                new Vector3(140.2f, lowerY, 58.8f), new Vector3(140.2f, lowerY, 70.68f) };
+            int loopPrevious = lowerNodes[lowerNodes.Length - 2];
+            for (int i = 0; i < loop.Length; i++)
+            {
+                int next = graph.AddNode("terrace:lower-house:court:" + i, loop[i], false);
+                AddLink("terrace:lower-house:loop:" + i, loopPrevious, next); loopPrevious = next;
+            }
+            AddLink("terrace:lower-house:loop:close", loopPrevious, lowerNodes[9]);
 
             void AddStairs(string side, IReadOnlyList<Vector3> route)
             {
@@ -258,10 +282,10 @@ namespace BarPromenade
             for (int side = -1; side <= 1; side += 2)
             {
                 CityRoadPath lane = road.Offset(-GetSidewalkCenterOffset(layout) * side);
-                float firstDistance = (layout.RoadGeometry.ObliqueJunction?.Node == edge.A
+                float firstDistance = (layout.RoadGeometry.TryGetJunction(edge.A, out _)
                     ? layout.RoadGeometry.GetEndpointInset(edge, edge.A)
                     : ResolveSurfaceInset(connections[edge.A], halfRoad)) + AgentRadius;
-                float lastDistance = lane.Length - (layout.RoadGeometry.ObliqueJunction?.Node == edge.B
+                float lastDistance = lane.Length - (layout.RoadGeometry.TryGetJunction(edge.B, out _)
                     ? layout.RoadGeometry.GetEndpointInset(edge, edge.B)
                     : ResolveSurfaceInset(connections[edge.B], halfRoad)) - AgentRadius;
                 if (lastDistance <= firstDistance + GeometryTolerance) continue;
@@ -307,13 +331,13 @@ namespace BarPromenade
         {
             if (surfaces.SupportPlan != null && surfaces.SupportPlan.TrySampleTop(point, out float supportTop, out _))
                 return supportTop;
-            CityRoadJunction junction = layout.RoadGeometry.ObliqueJunction;
-            if (junction != null && layout.RoadGeometry.ContainsJunction(point))
+            foreach (CityRoadJunction junction in layout.RoadGeometry.Junctions)
             {
-                foreach (Vector2[] polygon in junction.SidewalkPolygons)
+                if (TrySampleJunctionPavement(layout, surfaces, junction, point, out float pavementTop))
+                    return pavementTop;
+                foreach (Vector2[] polygon in junction.RoadPolygons)
                     if (CityRoadPolygon.Contains(polygon, point))
-                        return layout.GetNodeWorldPosition(junction.Node).y + CityStreetSurfacePlanner.SidewalkTop;
-                return layout.GetNodeWorldPosition(junction.Node).y + CityStreetSurfacePlanner.RoadTop;
+                        return layout.GetNodeWorldPosition(junction.Node).y + CityStreetSurfacePlanner.RoadTop;
             }
             CityRoadPath road = layout.RoadGeometry.Get(edge);
             float distance = road.Project(point).DistanceAlong;
@@ -373,10 +397,10 @@ namespace BarPromenade
             Vector3 left = new Vector3(-tangent.z, 0f, tangent.x);
             float halfRoad = layout.RoadWidth * 0.5f;
             float sideOffset = GetSidewalkCenterOffset(layout);
-            float safeStart = (layout.RoadGeometry.ObliqueJunction?.Node == edge.A
+            float safeStart = (layout.RoadGeometry.TryGetJunction(edge.A, out _)
                 ? layout.RoadGeometry.GetEndpointInset(edge, edge.A)
                 : ResolveSurfaceInset(connections[edge.A], halfRoad)) + AgentRadius;
-            float safeEnd = length - (layout.RoadGeometry.ObliqueJunction?.Node == edge.B
+            float safeEnd = length - (layout.RoadGeometry.TryGetJunction(edge.B, out _)
                 ? layout.RoadGeometry.GetEndpointInset(edge, edge.B)
                 : ResolveSurfaceInset(connections[edge.B], halfRoad)) - AgentRadius;
             if (safeEnd - safeStart <= GeometryTolerance)
@@ -560,9 +584,9 @@ namespace BarPromenade
                 ConnectionInfo connection = connections[gridNode];
                 List<LaneEndpoint> endpoints = endpointsByNode[gridNode];
                 Vector3 center = layout.GetNodeWorldPosition(gridNode);
-                if (layout.RoadGeometry.ObliqueJunction?.Node == gridNode)
+                if (layout.RoadGeometry.TryGetJunction(gridNode, out CityRoadJunction junction))
                 {
-                    BuildObliqueJunction(layout, surfaces, endpoints, graph);
+                    BuildAuthoredJunction(layout, surfaces, junction, endpoints, graph);
                     continue;
                 }
                 if (connection.IsIntersectionCore &&
@@ -682,17 +706,17 @@ namespace BarPromenade
             }
         }
 
-        private static void BuildObliqueJunction(CityLayout layout,
-            CityStreetSurfacePlan surfaces, IReadOnlyList<LaneEndpoint> endpoints, GraphBuilder graph)
+        private static void BuildAuthoredJunction(CityLayout layout,
+            CityStreetSurfacePlan surfaces, CityRoadJunction junction,
+            IReadOnlyList<LaneEndpoint> endpoints, GraphBuilder graph)
         {
-            CityRoadJunction junction = layout.RoadGeometry.ObliqueJunction;
             Func<Vector2, float> sampleHeight = point => JunctionSidewalkHeight(layout, surfaces, junction, point);
             for (int i = 0; i < junction.SidewalkPaths.Count; i++)
             {
                 CityRoadPath sidewalk = junction.SidewalkPaths[i];
                 int first = NearestLaneEndpoint(endpoints, sidewalk.Vertices[0]);
                 int last = NearestLaneEndpoint(endpoints, sidewalk.Vertices[sidewalk.Vertices.Count - 1]);
-                if (first == last) throw new InvalidOperationException("An oblique pavement route must join two approaches.");
+                if (first == last) throw new InvalidOperationException("An authored pavement route must join two approaches.");
                 var points = new List<Vector2>();
                 void Append(Vector2 point)
                 {
@@ -720,7 +744,7 @@ namespace BarPromenade
                 if (distance < squared) { best = i; squared = distance; }
             }
             if (best < 0 || squared > 1f)
-                throw new InvalidOperationException("The oblique junction pavement does not meet its lane mouth.");
+                throw new InvalidOperationException("The authored junction pavement does not meet its lane mouth.");
             return best;
         }
 
@@ -729,9 +753,8 @@ namespace BarPromenade
         {
             if (surfaces.SupportPlan != null && surfaces.SupportPlan.TrySampleTop(point, out float supportTop, out _))
                 return supportTop;
-            foreach (Vector2[] polygon in junction.SidewalkPolygons)
-                if (CityRoadPolygon.Contains(polygon, point))
-                    return layout.GetNodeWorldPosition(junction.Node).y + CityStreetSurfacePlanner.SidewalkTop;
+            if (TrySampleJunctionPavement(layout, surfaces, junction, point, out float pavementTop))
+                return pavementTop;
             if (!layout.ElevationPlan.TrySampleSurface(point, CitySurfaceRole.RoadDatum, out float datum, out _))
                 throw new InvalidOperationException("The oblique pavement route has no supporting road datum.");
             float top = datum + CityStreetSurfacePlanner.RoadTop;
@@ -741,6 +764,25 @@ namespace BarPromenade
             foreach (RuntimeOrientedBox sidewalk in surfaces.SidewalkGeometry)
                 if (sidewalk.TrySampleTop(position, out float height)) top = Mathf.Max(top, height);
             return top;
+        }
+
+        private static bool TrySampleJunctionPavement(CityLayout layout, CityStreetSurfacePlan surfaces,
+            CityRoadJunction junction, Vector2 point, out float top)
+        {
+            // The same junction may have raised kerbs or a flush bus apron.
+            // Read its authored ribbon instead of inventing a sidewalk offset.
+            foreach (CityStreetRibbonDescriptor ribbon in surfaces.CurvedSidewalkRibbons)
+            {
+                if (ribbon.FlatNode != junction.Node) continue;
+                foreach (Vector2[] polygon in ribbon.Polygons)
+                    if (CityRoadPolygon.Contains(polygon, point))
+                    {
+                        top = layout.ElevationPlan.GetNodeElevation(junction.Node) + ribbon.TopOffset;
+                        return true;
+                    }
+            }
+            top = 0f;
+            return false;
         }
 
         /// <summary>

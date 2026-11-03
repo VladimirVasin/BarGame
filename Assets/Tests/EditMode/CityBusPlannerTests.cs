@@ -91,6 +91,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 plan.LoopLength,
                 Is.EqualTo(summedLength).Within(GeometryTolerance));
+            CityStreetSupportPlan support = CityStreetSupportPlan.ForLayout(layout);
             for (int index = 0; index < plan.Links.Count; index++)
             {
                 CityBusRouteLink current = plan.Links[index];
@@ -102,6 +103,17 @@ namespace BarPromenade.Tests.EditMode
                         next.Samples[0].Position),
                     Is.LessThanOrEqualTo(GeometryTolerance),
                     current.Id);
+                if (!current.Id.StartsWith("bus:road:")) continue;
+                foreach (CityBusPathSample sample in current.Samples)
+                {
+                    Assert.That(support.TrySampleTop(
+                            new Vector2(sample.Position.x, sample.Position.z),
+                            FootstepGroundKind.Concrete, out float physicalTop),
+                        Is.True, current.Id);
+                    Assert.That(sample.Position.y,
+                        Is.EqualTo(physicalTop).Within(GeometryTolerance),
+                        current.Id);
+                }
             }
         }
 

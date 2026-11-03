@@ -648,12 +648,7 @@ namespace BarPromenade
                 AddCurvedRoadSegment(layout, vehicle, street, accepted, failures);
                 return;
             }
-            Vector3 start = GetDeparturePosition(layout, street);
-            Vector3 end = GetArrivalPosition(layout, street);
-            List<CityBusPathSample> samples = CreateLinearSamples(
-                start,
-                end,
-                street.GradeForward);
+            List<CityBusPathSample> samples = CreateRoadSurfaceSamples(layout, street, out _);
             Rect carriageway = GetCarriagewayRect(layout, street.RoadEdge);
             CityBusClearanceResult clearance =
                 IsLinearRunProvablyClear(vehicle, samples, carriageway)
@@ -697,25 +692,7 @@ namespace BarPromenade
             CityLayout layout, CityBusDesignVehicle vehicle, DirectedStreet street,
             ICollection<TemporaryLink> accepted, ICollection<CityBusClearanceFailure> failures)
         {
-            CityRoadPath road = layout.RoadGeometry.Get(street.RoadEdge);
-            CityRoadPath lane = (street.From == street.RoadEdge.A ? road : road.Reversed())
-                .Offset(street.LaneCenterOffset);
-            float inset = layout.RoadWidth * .5f;
-            float run = lane.Length - 2f * inset;
-            int steps = Mathf.Max(1, Mathf.CeilToInt(run / PathSampleSpacing));
-            var samples = new List<CityBusPathSample>(steps + 1);
-            for (int i = 0; i <= steps; i++)
-            {
-                float along = inset + run * i / steps;
-                CityRoadSample sample = lane.SampleDistance(along);
-                float height = CurvedRoadHeight(layout, street.RoadEdge, road, sample.Position);
-                float before = Mathf.Max(0f, along - .05f);
-                float after = Mathf.Min(lane.Length, along + .05f);
-                float grade = (CurvedRoadHeight(layout, street.RoadEdge, road, lane.SampleDistance(after).Position) -
-                    CurvedRoadHeight(layout, street.RoadEdge, road, lane.SampleDistance(before).Position)) / (after - before);
-                AppendPoint(samples, new Vector3(sample.Position.x, height, sample.Position.y),
-                    new Vector3(sample.Tangent.x, grade, sample.Tangent.y));
-            }
+            List<CityBusPathSample> samples = CreateRoadSurfaceSamples(layout, street, out CityRoadPath lane);
             float radius = EstimateMinimumPathRadius(lane);
             List<Vector2[]> allowed = GetCarriagewayPolygons(layout, street.RoadEdge);
             CityBusClearanceResult clearance = ValidatePolygonSamples(vehicle, samples, allowed);
@@ -733,9 +710,46 @@ namespace BarPromenade
                     CityBusRouteLinkKind.Straight, samples, radius, clearance));
         }
 
-        private static float CurvedRoadHeight(CityLayout layout, RoadEdge edge, CityRoadPath road, Vector2 point)
+        private static List<CityBusPathSample> CreateRoadSurfaceSamples(
+            CityLayout layout, DirectedStreet street, out CityRoadPath lane)
         {
-            if (CityStreetSupportPlan.ForLayout(layout).TrySampleTop(point, FootstepGroundKind.Concrete, out float physicalTop))
+            CityRoadPath road = layout.RoadGeometry.Get(street.RoadEdge);
+            lane = (street.From == street.RoadEdge.A ? road : road.Reversed())
+                .Offset(street.LaneCenterOffset);
+            CityStreetSupportPlan support = CityStreetSupportPlan.ForLayout(layout);
+            float inset = layout.RoadWidth * .5f;
+            float run = lane.Length - 2f * inset;
+            int steps = Mathf.Max(1, Mathf.CeilToInt(run / PathSampleSpacing));
+            var samples = new List<CityBusPathSample>(steps + 1);
+            for (int i = 0; i <= steps; i++)
+            {
+                CityRoadSample sample = lane.SampleDistance(inset + run * i / steps);
+                float height = RoadSurfaceHeight(layout, support, street.RoadEdge, road, sample.Position);
+                AppendPoint(samples, new Vector3(sample.Position.x, height, sample.Position.y),
+                    new Vector3(sample.Tangent.x, 0f, sample.Tangent.y));
+            }
+            // Reuse the sampled heights for pitch: one indexed support query per
+            // position, including straight roads with a non-linear height profile.
+            for (int i = 0; i < samples.Count; i++)
+            {
+                int before = Mathf.Max(0, i - 1);
+                int after = Mathf.Min(samples.Count - 1, i + 1);
+                float horizontalRun = (after - before) * run / steps;
+                float grade = horizontalRun > GeometryTolerance
+                    ? (samples[after].Position.y - samples[before].Position.y) / horizontalRun
+                    : 0f;
+                CityBusPathSample sample = samples[i];
+                samples[i] = new CityBusPathSample(sample.Position,
+                    new Vector3(sample.Forward.x, grade, sample.Forward.z).normalized,
+                    sample.Distance);
+            }
+            return samples;
+        }
+
+        private static float RoadSurfaceHeight(CityLayout layout, CityStreetSupportPlan support,
+            RoadEdge edge, CityRoadPath road, Vector2 point)
+        {
+            if (support.TrySampleTop(point, FootstepGroundKind.Concrete, out float physicalTop))
                 return physicalTop;
             return layout.ElevationPlan.SampleRoadDatum(edge,
                 road.Project(point).DistanceAlong / road.Length) + CityStreetSurfacePlanner.RoadTop;
@@ -765,6 +779,11 @@ namespace BarPromenade
             // Stable cardinal node caps are the same paving used by straight streets.
             foreach (Vector2Int node in new[] { edge.A, edge.B })
             {
+                if (layout.RoadGeometry.TryGetJunction(node, out CityRoadJunction junction))
+                {
+                    polygons.AddRange(junction.RoadPolygons);
+                    continue;
+                }
                 Vector3 point = layout.GetNodeWorldPosition(node);
                 float half = layout.RoadWidth * .5f;
                 float halfWidth = width * .5f;
@@ -805,25 +824,75 @@ namespace BarPromenade
 
         private static CityBusClearanceResult ValidateJunctionSamples(CityLayout layout,
             CityBusDesignVehicle vehicle, IList<CityBusPathSample> samples,
-            DirectedStreet incoming, DirectedStreet outgoing, IList<Rect> rectangles)
+            DirectedStreet incoming, DirectedStreet outgoing, IList<Rect> rectangles,
+            bool hasFullApron = false)
         {
-            if (!layout.RoadGeometry.IsCurved(incoming.RoadEdge) && !layout.RoadGeometry.IsCurved(outgoing.RoadEdge))
+            bool authoredJunction = layout.RoadGeometry.TryGetJunction(incoming.To, out CityRoadJunction junction);
+            if (!authoredJunction && !layout.RoadGeometry.IsCurved(incoming.RoadEdge) && !layout.RoadGeometry.IsCurved(outgoing.RoadEdge))
                 return ValidateSamples(vehicle, samples, rectangles);
             List<Vector2[]> allowed = GetCarriagewayPolygons(layout, incoming.RoadEdge);
             allowed.AddRange(GetCarriagewayPolygons(layout, outgoing.RoadEdge));
-            // The first two rectangles were broad-phase street bounds; only authored apron extras are retained.
-            for (int i = 2; i < rectangles.Count; i++) allowed.Add(CityRoadPolygon.Rectangle(rectangles[i]));
-            return ValidatePolygonSamples(vehicle, samples, allowed);
+            // A selected compact apron shares flush paving with pedestrians.
+            // Its normal vehicle limits remain the eight-metre core/arms;
+            // the physical support pass below rejects any raised pavement.
+            if (!authoredJunction || hasFullApron)
+                for (int i = 2; i < rectangles.Count; i++) allowed.Add(CityRoadPolygon.Rectangle(rectangles[i]));
+            CityBusClearanceResult clearance = ValidatePolygonSamples(vehicle, samples, allowed);
+            return clearance.IsClear && authoredJunction
+                ? ValidatePhysicalJunctionSamples(layout, vehicle, samples, junction)
+                : clearance;
+        }
+
+        private static CityBusClearanceResult ValidatePhysicalJunctionSamples(CityLayout layout,
+            CityBusDesignVehicle vehicle, IList<CityBusPathSample> samples, CityRoadJunction junction)
+        {
+            CityStreetSupportPlan support = CityStreetSupportPlan.ForLayout(layout);
+            float halfLength = vehicle.InflatedLength * .5f;
+            float halfWidth = vehicle.InflatedWidth * .5f;
+            float halfRoad = layout.RoadWidth * .5f + GeometryTolerance;
+            float coreTop = layout.GetNodeWorldPosition(junction.Node).y + CityStreetSurfacePlanner.RoadTop;
+            int steps = Mathf.Max(2, Mathf.CeilToInt(vehicle.InflatedLength / .5f));
+            for (int i = 0; i < samples.Count; i++)
+            {
+                CityBusPathSample sample = samples[i];
+                Vector2 forward = new Vector2(sample.Forward.x, sample.Forward.z).normalized;
+                Vector2 right = new Vector2(forward.y, -forward.x);
+                for (int along = 0; along <= steps; along++)
+                for (int side = -1; side <= 1; side++)
+                {
+                    Vector2 point = new Vector2(sample.Position.x, sample.Position.z) +
+                        forward * Mathf.Lerp(-halfLength, halfLength, along / (float)steps) +
+                        right * (halfWidth * side);
+                    bool road = support.TrySampleTop(point, FootstepGroundKind.Concrete, out float roadTop);
+                    bool pavement = support.TrySampleTop(point, FootstepGroundKind.Stone, out float pavementTop);
+                    bool inCore = Mathf.Abs(point.x - junction.Center.x) <= halfRoad &&
+                        Mathf.Abs(point.y - junction.Center.y) <= halfRoad;
+                    bool clear = road && (!pavement || pavementTop <= roadTop + .01f) ||
+                        !road && pavement && inCore && Mathf.Abs(pavementTop - coreTop) <= .01f;
+                    if (!clear)
+                        return new CityBusClearanceResult(false,
+                            road || pavement ? CityBusClearanceFailureKind.SidewalkOverlap : CityBusClearanceFailureKind.OutsideStreetSurface,
+                            i, new Vector3(point.x, sample.Position.y, point.y), 0f);
+                }
+            }
+            return CreateClearResult(vehicle);
         }
 
         private static float WarpCurvedStreetSamples(CityLayout layout, DirectedStreet street,
-            IList<CityBusPathSample> samples, int first, int last)
+            IList<CityBusPathSample> samples, int first, int last, Vector2Int anchorNode)
         {
             if (!layout.RoadGeometry.IsCurved(street.RoadEdge)) return float.PositiveInfinity;
             CityRoadPath road = layout.RoadGeometry.Get(street.RoadEdge);
+            CityStreetSupportPlan support = CityStreetSupportPlan.ForLayout(layout);
             CityRoadPath unitOffset = road.Offset(1f);
-            Vector2 origin = road.Vertices[0];
-            Vector2 axis = (road.Vertices[road.Vertices.Count - 1] - origin).normalized;
+            Vector2 physicalOrigin = road.Vertices[0];
+            Vector2 axis = new Vector2(street.RoadEdge.B.x - street.RoadEdge.A.x,
+                street.RoadEdge.B.y - street.RoadEdge.A.y).normalized;
+            Vector3 anchor3 = layout.GetNodeWorldPosition(anchorNode);
+            Vector2 anchor = new Vector2(anchor3.x, anchor3.z);
+            // The logical lane shift is cardinal at its junction. Its remote
+            // endpoint may be laterally displaced by the physical road shape.
+            Vector2 origin = anchor + axis * Vector2.Dot(physicalOrigin - anchor, axis);
             Vector2 right = new Vector2(axis.y, -axis.x);
             Vector2 Warp(Vector2 point)
             {
@@ -831,9 +900,9 @@ namespace BarPromenade
                 float lateral = Vector2.Dot(point - origin, right);
                 int segment = 1;
                 while (segment < road.Vertices.Count - 1 &&
-                    Vector2.Dot(road.Vertices[segment] - origin, axis) < logical) segment++;
-                float before = Vector2.Dot(road.Vertices[segment - 1] - origin, axis);
-                float after = Vector2.Dot(road.Vertices[segment] - origin, axis);
+                    Vector2.Dot(road.Vertices[segment] - physicalOrigin, axis) < logical) segment++;
+                float before = Vector2.Dot(road.Vertices[segment - 1] - physicalOrigin, axis);
+                float after = Vector2.Dot(road.Vertices[segment] - physicalOrigin, axis);
                 float amount = Mathf.Clamp01((logical - before) / (after - before));
                 Vector2 center = Vector2.Lerp(road.Vertices[segment - 1], road.Vertices[segment], amount);
                 Vector2 normal = Vector2.Lerp(unitOffset.Vertices[segment - 1] - road.Vertices[segment - 1],
@@ -849,10 +918,10 @@ namespace BarPromenade
                 Vector2 before = Warp(source - forward * .025f);
                 Vector2 after = Warp(source + forward * .025f);
                 Vector3 tangent = new Vector3(after.x - before.x,
-                    CurvedRoadHeight(layout, street.RoadEdge, road, after) -
-                    CurvedRoadHeight(layout, street.RoadEdge, road, before), after.y - before.y);
+                    RoadSurfaceHeight(layout, support, street.RoadEdge, road, after) -
+                    RoadSurfaceHeight(layout, support, street.RoadEdge, road, before), after.y - before.y);
                 samples[i] = new CityBusPathSample(new Vector3(point.x,
-                    CurvedRoadHeight(layout, street.RoadEdge, road, point), point.y),
+                    RoadSurfaceHeight(layout, support, street.RoadEdge, road, point), point.y),
                     tangent.normalized, sample.Distance);
             }
             float radius = float.PositiveInfinity;
@@ -1058,7 +1127,7 @@ namespace BarPromenade
             }
 
             CityBusClearanceResult clearance = ValidateJunctionSamples(
-                layout, vehicle, samples, incoming, outgoing, allowed);
+                layout, vehicle, samples, incoming, outgoing, allowed, hasFullApron);
             clearance = ValidateStaticIntersectionFixtures(
                 layout,
                 vehicle,
@@ -1339,9 +1408,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// A road segment's samples are one linear run (see
-        /// <see cref="AppendLinear"/>): every position is a lerp between
-        /// the run's two ends and every sample carries the same forward.
+        /// A straight road's samples are collinear in XZ and carry the same
+        /// planar forward. Height and pitch do not affect this paving check.
         /// So every interior corner point lies on the segment between the
         /// corresponding end corners, within the few float ULPs a lerp can
         /// stray - well under a millimetre at city coordinates - and the
@@ -1511,11 +1579,8 @@ namespace BarPromenade
             RoadEdge edge)
         {
             Vector3 nodePosition = layout.GetNodeWorldPosition(node);
-            Vector3 otherPosition = layout.GetNodeWorldPosition(
-                edge.Other(node));
-            Vector3 outward = otherPosition - nodePosition;
-            outward.y = 0f;
-            outward.Normalize();
+            Vector2Int direction = edge.Other(node) - node;
+            Vector3 outward = new Vector3(direction.x, 0f, direction.y);
             float halfRoad = layout.RoadWidth * 0.5f;
             float length = CityStreetSurfacePlanner
                 .BusApproachApronLength;
@@ -1562,10 +1627,11 @@ namespace BarPromenade
             CityLayout layout,
             RoadEdge edge)
         {
-            // The pilot has an honest oblique pedestrian core, while bus turn
-            // templates still require cardinal approach frames and their aprons.
-            if (layout.RoadGeometry.ObliqueJunction != null &&
-                edge.Contains(layout.RoadGeometry.ObliqueJunction.Node)) return false;
+            // Turn templates require cardinal mouths; relocated cardinal
+            // junctions remain usable and prove their actual asphalt below.
+            if (layout.RoadGeometry.TryGetJunction(edge.A, out CityRoadJunction first) && !first.HasCardinalMouths ||
+                layout.RoadGeometry.TryGetJunction(edge.B, out CityRoadJunction second) && !second.HasCardinalMouths)
+                return false;
             if (layout.GetPathKind(edge) != CityPathKind.Street)
             {
                 return false;
@@ -1750,17 +1816,15 @@ namespace BarPromenade
                 LaneCenterOffset = laneCenterOffset;
                 Vector3 first = layout.GetNodeWorldPosition(from);
                 Vector3 second = layout.GetNodeWorldPosition(to);
-                Vector3 forward = second - first;
-                forward.y = 0f;
-                forward.Normalize();
-                Forward = forward;
+                CityRoadPath road = layout.RoadGeometry.Get(roadEdge);
+                Vector2 tangent = from == roadEdge.A
+                    ? road.SampleDistance(0f).Tangent
+                    : -road.SampleDistance(road.Length).Tangent;
+                Forward = new Vector3(tangent.x, 0f, tangent.y);
                 Right = new Vector3(Forward.z, 0f, -Forward.x);
                 float horizontalRun = Mathf.Max(
                     0f,
-                    new Vector2(
-                        second.x - first.x,
-                        second.z - first.z).magnitude -
-                    layout.RoadWidth);
+                    road.Length - layout.RoadWidth);
                 Vector3 gradeForward =
                     (Forward * horizontalRun) +
                     (Vector3.up * (second.y - first.y));

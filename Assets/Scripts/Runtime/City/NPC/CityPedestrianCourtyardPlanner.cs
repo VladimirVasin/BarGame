@@ -90,14 +90,14 @@ namespace BarPromenade
         private static float CourtyardHeight(CityLayout layout, CityStreetSurfacePlan surfaces,
             Vector2 point, RoadEdge? accessEdge)
         {
+            if (surfaces.SupportPlan != null && surfaces.SupportPlan.TrySampleTop(point, out float supportTop, out _))
+                return supportTop;
             var position = new Vector3(point.x, 0f, point.y);
             foreach (RuntimeOrientedBox sidewalk in surfaces.SidewalkGeometry)
                 if (sidewalk.TrySampleTop(position, out float top)) return top;
-            CityRoadJunction junction = layout.RoadGeometry.ObliqueJunction;
-            if (junction != null)
-                foreach (Vector2[] pavement in junction.SidewalkPolygons)
-                    if (CityRoadPolygon.Contains(pavement, point))
-                        return layout.GetNodeWorldPosition(junction.Node).y + CityStreetSurfacePlanner.SidewalkTop;
+            foreach (CityRoadJunction junction in layout.RoadGeometry.Junctions)
+                if (TrySampleJunctionPavement(layout, surfaces, junction, point, out float pavementTop))
+                    return pavementTop;
             foreach (Vector2[] pavement in surfaces.CurvedSidewalkPolygons)
                 if (CityRoadPolygon.Contains(pavement, point))
                 {

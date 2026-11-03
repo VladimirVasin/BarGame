@@ -253,14 +253,26 @@ namespace BarPromenade
             foreach (CitySurfaceDescriptor surface in layout.Surfaces)
             {
                 if (surface.AreaId != areaId) continue;
-                Rect r = surface.WorldBounds;
+                // A curved-ground source spans the whole cell so its mesh can
+                // subtract the road. That source envelope is not usable yard:
+                // using it here would shift the checkpoint onto the street.
+                if (layout.RoadGeometry.HasReplannedGround(surface.Cell))
+                {
+                    foreach (Vector2[] polygon in layout.RoadGeometry.GetGroundPolygons(surface.Cell))
+                        Include(CityRoadPolygon.Bounds(polygon));
+                }
+                else Include(surface.WorldBounds);
+            }
+            if (!found) throw new InvalidOperationException("Missing eastern yard " + areaId);
+            return result;
+
+            void Include(Rect r)
+            {
                 result = found ? Rect.MinMaxRect(Mathf.Min(result.xMin, r.xMin),
                     Mathf.Min(result.yMin, r.yMin), Mathf.Max(result.xMax, r.xMax),
                     Mathf.Max(result.yMax, r.yMax)) : r;
                 found = true;
             }
-            if (!found) throw new InvalidOperationException("Missing eastern yard " + areaId);
-            return result;
         }
 
         // Bypass the eastern grade while constructing its immutable plan.

@@ -1792,6 +1792,10 @@
       "value": "Нижний проход"
     },
     {
+      "key": "map.poi.terrace_lower_court",
+      "value": "Нижний двор"
+    },
+    {
       "key": "map.point.coordinates_layered",
       "value": "Мировые координаты\nX {0:0.0}   Y {2:0.0}   Z {1:0.0}"
     },

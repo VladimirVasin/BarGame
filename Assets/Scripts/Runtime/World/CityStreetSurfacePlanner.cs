@@ -353,10 +353,10 @@ namespace BarPromenade
                 float insetAmount = planarLength > GeometryTolerance
                     ? Mathf.Clamp01(endInset / planarLength)
                     : 0f;
-                float startAmount = layout.RoadGeometry.ObliqueJunction?.Node == edge.A
-                    ? CityRoadJunction.MouthInset / planarLength : insetAmount;
-                float endAmount = layout.RoadGeometry.ObliqueJunction?.Node == edge.B
-                    ? CityRoadJunction.MouthInset / planarLength : insetAmount;
+                float startAmount = layout.RoadGeometry.TryGetJunction(edge.A, out _)
+                    ? layout.RoadGeometry.GetEndpointInset(edge, edge.A) / planarLength : insetAmount;
+                float endAmount = layout.RoadGeometry.TryGetJunction(edge.B, out _)
+                    ? layout.RoadGeometry.GetEndpointInset(edge, edge.B) / planarLength : insetAmount;
                 Vector3 segmentStart = Vector3.Lerp(
                     start,
                     end,
@@ -418,7 +418,7 @@ namespace BarPromenade
 
             foreach (Vector2Int node in streetNodes)
             {
-                if (layout.RoadGeometry.ObliqueJunction?.Node == node) continue;
+                if (layout.RoadGeometry.TryGetJunction(node, out _)) continue;
                 Vector3 center = layout.GetNodeWorldPosition(node);
                 streetGeometry.Add(new RuntimeOrientedBox(
                     center,
@@ -631,8 +631,8 @@ namespace BarPromenade
                     (busIntersections.Contains(edge.B)
                         ? BusApproachApronLength
                         : 0f);
-                if (layout.RoadGeometry.ObliqueJunction?.Node == edge.A) startInset = CityRoadJunction.MouthInset;
-                if (layout.RoadGeometry.ObliqueJunction?.Node == edge.B) endInset = CityRoadJunction.MouthInset;
+                if (layout.RoadGeometry.TryGetJunction(edge.A, out _)) startInset = layout.RoadGeometry.GetEndpointInset(edge, edge.A);
+                if (layout.RoadGeometry.TryGetJunction(edge.B, out _)) endInset = layout.RoadGeometry.GetEndpointInset(edge, edge.B);
                 // A NEGATIVE inset (a dead end) extends the sidewalk
                 // PAST the node so the road cap gets its wrap - clamping
                 // it to zero used to stop the pavement at the node
@@ -953,9 +953,9 @@ namespace BarPromenade
             {
                 Vector2Int node = nodes[index];
                 NodeConnections nodeConnections = connections[node];
-                if (layout.RoadGeometry.ObliqueJunction?.Node == node)
+                if (layout.RoadGeometry.TryGetJunction(node, out CityRoadJunction junction))
                 {
-                    foreach (Vector2[] polygon in layout.RoadGeometry.ObliqueJunction.RoadPolygons)
+                    foreach (Vector2[] polygon in junction.RoadPolygons)
                         markingExclusions.Add(CityRoadPolygon.Bounds(polygon));
                     continue;
                 }
@@ -1296,10 +1296,12 @@ namespace BarPromenade
                 float roadEnd = layout.RoadGeometry.GetEndpointInset(edge, edge.B);
                 streets.Add(CreateStationedRibbon(layout, edge, roadStart, path.Length - roadEnd,
                     layout.RoadWidth, 0f, RoadTop, RoadSurfaceHeight));
-                float startInset = layout.RoadGeometry.ObliqueJunction?.Node == edge.A ? roadStart :
+                float startInset = layout.RoadGeometry.TryGetJunction(edge.A, out CityRoadJunction startJunction) &&
+                    !startJunction.HasCardinalMouths ? roadStart :
                     ResolveEndpointInset(connections[edge.A], halfRoad) +
                     (busIntersections.Contains(edge.A) ? BusApproachApronLength : 0f);
-                float endInset = layout.RoadGeometry.ObliqueJunction?.Node == edge.B ? roadEnd :
+                float endInset = layout.RoadGeometry.TryGetJunction(edge.B, out CityRoadJunction endJunction) &&
+                    !endJunction.HasCardinalMouths ? roadEnd :
                     ResolveEndpointInset(connections[edge.B], halfRoad) +
                     (busIntersections.Contains(edge.B) ? BusApproachApronLength : 0f);
                 for (int side = -1; side <= 1; side += 2)
@@ -1335,13 +1337,16 @@ namespace BarPromenade
                         MarkingHeight));
                 }
             }
-            CityRoadJunction junction = layout.RoadGeometry.ObliqueJunction;
-            if (junction != null)
+            foreach (CityRoadJunction junction in layout.RoadGeometry.Junctions)
             {
                 streets.Add(new CityStreetRibbonDescriptor(junction.OwnerEdge, junction.RoadPolygons,
                     RoadTop, RoadSurfaceHeight, junction.Node));
+                // A bus turn shares the existing flush paved apron. Its two-metre
+                // walking band remains continuous without a raised kerb in the swept body.
+                float pavementTop = junction.HasCardinalMouths && busIntersections.Contains(junction.Node)
+                    ? RoadTop : SidewalkTop;
                 sidewalks.Add(new CityStreetRibbonDescriptor(junction.OwnerEdge, junction.SidewalkPolygons,
-                    SidewalkTop, SidewalkHeight, junction.Node));
+                    pavementTop, junction.HasCardinalMouths ? PublicPavementThickness : SidewalkHeight, junction.Node));
             }
         }
 

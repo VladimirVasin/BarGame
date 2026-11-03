@@ -964,11 +964,12 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.Laundry,
                     CityMapPointOfInterestKind.DogPark,
                     CityMapPointOfInterestKind.TerraceCourts,
-                    CityMapPointOfInterestKind.TerraceUnderpass
+                    CityMapPointOfInterestKind.TerraceUnderpass,
+                    CityMapPointOfInterestKind.TerraceLowerCourt
                 };
                 var expectedIds = new[]
                 {
-                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass"
+                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court"
                 };
                 var expectedDistricts = new[]
                 {
@@ -977,6 +978,7 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.NorthWaterfront,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Church,
+                    CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
@@ -1064,11 +1066,13 @@ namespace BarPromenade.Tests.EditMode
                     }
 
                     Vector3 standing;
-                    if (place.Kind == CityMapPointOfInterestKind.TerraceUnderpass)
+                    if (place.Kind == CityMapPointOfInterestKind.TerraceUnderpass ||
+                        place.Kind == CityMapPointOfInterestKind.TerraceLowerCourt)
                     {
-                        Assert.That(label, Is.EqualTo("Нижний проход"), context);
+                        bool lowerCourt = place.Kind == CityMapPointOfInterestKind.TerraceLowerCourt;
+                        Assert.That(label, Is.EqualTo(lowerCourt ? "Нижний двор" : "Нижний проход"), context);
                         Assert.That(ground.TryClampArrival(place.WorldPosition, out standing), Is.True, context);
-                        Assert.That(Vector3.Distance(standing, terraces.LowerCrossingWorld +
+                        Assert.That(Vector3.Distance(standing, (lowerCourt ? terraces.LowerCourtArrivalWorld : terraces.LowerCrossingWorld) +
                             Vector3.up * PlayerFactory.GroundedRootOffset), Is.LessThan(.001f), context);
                         Assert.That(walkable.Contains(standing, CityGroundTraversalPlanner.MaximumAgentRadius), Is.True);
                     }

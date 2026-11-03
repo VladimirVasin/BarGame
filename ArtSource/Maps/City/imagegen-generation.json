@@ -1,15 +1,15 @@
 {
   "tool": "built-in image_gen",
-  "intent": "pub relocated one block north; current surveyed city redraw",
-  "prompt": "imagegen-bar-relocation-prompt.txt",
+  "intent": "final eastern inland junctions, level exit and lower residential courtyard redraw",
+  "prompt": "imagegen-inland-junction-prompt.txt",
   "references": [
     "map-reference.png",
     "CityMapImage.reference.png"
   ],
   "geography": "map-reference.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "02940c8ef34ba32d7ce0fd68fef0a1b89c17c9704bc387f6ad233a9f0df41299",
-  "fingerprint": "c8ac9d3d98853561542d0b5e864c4d9bdbf36fd032a6f20235b4a34c5d5faae4",
+  "image_sha256": "732327375bdbe6b61d759aa4c59a07d3d14aeb884aa19db94d6d0c6ba294de0d",
+  "fingerprint": "901a9606f7fab70d5b8a7f25b0dc4bb8e0ff337876f92f9d7cef36f60c42f6c0",
   "schemaVersion": 2,
   "width": 1422,
   "height": 1106

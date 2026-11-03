@@ -182,6 +182,8 @@ namespace BarPromenade
             {
                 obstacles.Add(CityRoadPolygon.Rectangle(terrace.ReservedBounds));
                 obstacles.Add(CityRoadPolygon.Rectangle(terrace.LowerPassBounds));
+                obstacles.Add(CityRoadPolygon.Rectangle(terrace.LowerCourtBounds));
+                obstacles.Add(CityRoadPolygon.Rectangle(terrace.LowerCourtEntryBounds));
             }
             CityLaundryPlan laundry = CityLaundryPlan.ForLayout(layout);
             if (laundry.IsEnabled) foreach (Rect body in laundry.BodyFootprints) obstacles.Add(CityRoadPolygon.Rectangle(body));
@@ -206,6 +208,14 @@ namespace BarPromenade
                 Vector3 outward = pose.Rotation * CityBuildingAssetProvider.GetExpectedEntranceOutward(lot.BuildingVariant);
                 if (terrace.IsReservedCell(lot.Cell))
                 {
+                    if (lot.Cell == CityTerraceDistrictPlan.LowerHouseCell)
+                    {
+                        var lowerRoute = new List<Vector3>(terrace.LowerHouseRouteWorld);
+                        lowerRoute.Reverse();
+                        result.Add(new CityResidentialEntranceDescriptor(lot, threshold, outward,
+                            lowerRoute, new List<CityEntranceForecourtPlan>()));
+                        continue;
+                    }
                     // The imported precinct owns this continuous route and its
                     // support. Keep the common entrance descriptor without
                     // constructing a second ramp through the terrace walls.

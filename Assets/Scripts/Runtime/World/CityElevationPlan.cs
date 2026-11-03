@@ -393,9 +393,9 @@ namespace BarPromenade
             out float height,
             out Vector3 normal)
         {
-            if (RoadGeometry.ContainsJunction(worldXZ))
+            if (RoadGeometry.TryGetJunctionAt(worldXZ, out CityRoadJunction junction))
             {
-                height = GetNodeElevation(RoadGeometry.ObliqueJunction.Node);
+                height = GetNodeElevation(junction.Node);
                 if (role == CitySurfaceRole.RoadTop) height += CityStreetSurfacePlanner.RoadTop;
                 else if (role == CitySurfaceRole.SidewalkTop) height += CityStreetSurfacePlanner.SidewalkTop;
                 normal = Vector3.up;
@@ -600,8 +600,7 @@ namespace BarPromenade
 
         private Vector2 GetNodeWorldXZ(Vector2Int node)
         {
-            return new Vector2(WorldOrigin.x, WorldOrigin.z) +
-                   SpatialPlan.GetCoordinateWorldOffset(node);
+            return RoadGeometry.GetNodePosition(node);
         }
 
         private Vector3 GetNodeWorldPosition(Vector2Int node)

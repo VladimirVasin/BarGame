@@ -25,6 +25,8 @@ namespace BarPromenade
                 foreach (Vector2Int cell in terraces.ReservedCells) protectedCells.Add(cell);
                 blocked.Add(terraces.ReservedBounds);
                 blocked.Add(terraces.LowerPassBounds);
+                blocked.Add(terraces.LowerCourtBounds);
+                blocked.Add(terraces.LowerCourtEntryBounds);
             }
             foreach (Vector2Int cell in layout.PrimaryLandmarkCells.Values) protectedCells.Add(cell);
             foreach (BuildingLot lot in layout.BuildingLots)

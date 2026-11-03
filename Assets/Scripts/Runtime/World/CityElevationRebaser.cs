@@ -296,15 +296,9 @@ namespace BarPromenade
             RoadEdge edge,
             Vector3 position)
         {
-            Vector2 start = NodeWorldXZ(elevation, edge.A);
-            Vector2 end = NodeWorldXZ(elevation, edge.B);
-            Vector2 delta = end - start;
+            CityRoadPath path = elevation.RoadGeometry.Get(edge);
             Vector2 point = new Vector2(position.x, position.z);
-            float amount = delta.sqrMagnitude > 0.000001f
-                ? Mathf.Clamp01(
-                    Vector2.Dot(point - start, delta) /
-                    delta.sqrMagnitude)
-                : 0f;
+            float amount = path.Project(point).DistanceAlong / path.Length;
             return elevation.SampleRoadDatum(edge, amount);
         }
 
@@ -368,15 +362,6 @@ namespace BarPromenade
             }
 
             return sum / cells.Count;
-        }
-
-        private static Vector2 NodeWorldXZ(
-            CityElevationPlan elevation,
-            Vector2Int node)
-        {
-            return new Vector2(
-                elevation.WorldOrigin.x, elevation.WorldOrigin.z) +
-                elevation.SpatialPlan.GetCoordinateWorldOffset(node);
         }
 
         private static Vector3 WithY(Vector3 value, float y)

@@ -27,11 +27,12 @@ namespace BarPromenade
             this.layout = layout; this.plan = plan; this.city = city;
             Rect west = plan.EntryBounds; west.xMin -= .8f;
             Rect east = plan.LowerPassBounds; east.xMax += .8f;
-            sockets.Add(west); sockets.Add(east);
+            Rect lowerEntry = plan.LowerCourtEntryBounds; lowerEntry.xMin -= .8f;
+            sockets.Add(west); sockets.Add(east); sockets.Add(lowerEntry);
             bounds = Rect.MinMaxRect(Mathf.Min(plan.ReservedBounds.xMin, west.xMin) - 1f,
                 Mathf.Min(plan.ReservedBounds.yMin, west.yMin) - 1f,
-                Mathf.Max(plan.ReservedBounds.xMax, east.xMax) + 1f,
-                Mathf.Max(plan.ReservedBounds.yMax, east.yMax) + 1f);
+                Mathf.Max(plan.ReservedBounds.xMax, east.xMax, plan.LowerCourtBounds.xMax) + 1f,
+                Mathf.Max(plan.ReservedBounds.yMax, east.yMax, plan.LowerCourtBounds.yMax) + 1f);
             var owned = new List<Rect>(plan.GroundCuts);
             owned.Add(plan.BridgeWorldBounds);
             ownedBounds = owned.ToArray();

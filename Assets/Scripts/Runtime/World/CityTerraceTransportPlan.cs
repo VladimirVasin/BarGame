@@ -352,7 +352,8 @@ namespace BarPromenade
             // every seed, so an altered layout cannot inherit a false clearance.
             // Paired offsets keep the relocated bar's private corner inside
             // the inner R6 arc, the church beyond the outer arc, and the shop
-            // clear of the southern return. Live geography stays unchanged.
+            // clear of the southern return. The two inland corner centers now
+            // have a bounded live junction section; this full climb stays a survey.
             Vector2[] coordinates = bank == CityTerraceTransportBank.West
                 ? new[] { new Vector2(-104,156), new Vector2(-104,130), new Vector2(-128,130),
                     new Vector2(-128,104), new Vector2(-51.75f,104), new Vector2(-51.75f,78), new Vector2(-156,78),
@@ -389,15 +390,18 @@ namespace BarPromenade
                 foreach (Vector2 endpoint in new[] { path.Vertices[0], path.Vertices[path.Vertices.Count - 1] })
                     Add(id, CityTerraceReservationKind.ExistingRoad,
                         CityRoadPolygon.Rectangle(new Rect(endpoint - Vector2.one * (width * .5f), Vector2.one * width)), road);
-                CityRoadJunction junction = layout.RoadGeometry.ObliqueJunction;
-                if (junction != null && road == junction.OwnerEdge)
-                    foreach (Vector2[] polygon in junction.RoadPolygons)
-                        Add(id, CityTerraceReservationKind.ExistingRoad, polygon, road);
+                foreach (CityRoadJunction junction in layout.RoadGeometry.Junctions)
+                    if (road == junction.OwnerEdge)
+                        foreach (Vector2[] polygon in junction.RoadPolygons)
+                            Add(id, CityTerraceReservationKind.ExistingRoad, polygon, road);
             }
             CityTerraceDistrictPlan terrace = CityTerraceDistrictPlan.ForLayout(layout);
             if (terrace.IsEnabled)
             {
                 Add("terrace:precinct", CityTerraceReservationKind.Terrace, CityRoadPolygon.Rectangle(terrace.ReservedBounds));
+                Add("terrace:lower-residence", CityTerraceReservationKind.Terrace, CityRoadPolygon.Rectangle(terrace.LowerCourtBounds));
+                Add("terrace:lower-residence-entry", CityTerraceReservationKind.Terrace,
+                    CityRoadPolygon.Rectangle(terrace.LowerCourtEntryBounds));
                 foreach (CityTerracePilotFloor floor in terrace.Floors)
                 {
                     Vector2[] polygon = CityRoadPolygon.Rectangle(terrace.WorldBounds(floor.Bounds));

@@ -118,12 +118,32 @@ namespace BarPromenade
                     foreach (Vector2[] polygon in polygons)
                     { writer.Write(polygon.Length); foreach (Vector2 point in polygon) Point(writer, point); }
                 }
+                // A road can be regraded without moving its XZ footprint or
+                // nearby doors. That still invalidates the drawn geography.
+                writer.Write(layout.Nodes.Count);
+                foreach (Vector2Int node in layout.Nodes)
+                {
+                    writer.Write(node.x); writer.Write(node.y);
+                    Scalar(writer, layout.ElevationPlan.GetNodeElevation(node));
+                }
                 writer.Write(layout.RoadEdges.Count);
                 foreach (RoadEdge edge in layout.RoadEdges)
                 {
                     writer.Write((int)layout.GetPathKind(edge));
-                    var vertices = layout.RoadGeometry.Get(edge).Vertices; writer.Write(vertices.Count);
-                    foreach (Vector2 point in vertices) Point(writer, point);
+                    CityRoadPath path = layout.RoadGeometry.Get(edge);
+                    writer.Write(path.Vertices.Count);
+                    float distance = 0f;
+                    for (int index = 0; index < path.Vertices.Count; index++)
+                    {
+                        if (index > 0) distance += Vector2.Distance(path.Vertices[index - 1], path.Vertices[index]);
+                        RoadPoint(writer, layout, edge, path.Vertices[index], distance / path.Length);
+                    }
+                    // Street surfaces break at the two level-junction insets
+                    // as well as path vertices; preserve their positions and Y.
+                    float start = layout.RoadGeometry.GetEndpointInset(edge, edge.A);
+                    float end = path.Length - layout.RoadGeometry.GetEndpointInset(edge, edge.B);
+                    RoadPoint(writer, layout, edge, path.SampleDistance(start).Position, start / path.Length);
+                    RoadPoint(writer, layout, edge, path.SampleDistance(end).Position, end / path.Length);
                 }
                 foreach (CityRoadPath path in layout.CourtyardPaths)
                 { writer.Write(path.Vertices.Count); foreach (Vector2 point in path.Vertices) Point(writer, point); }
@@ -158,7 +178,8 @@ namespace BarPromenade
                     Point(writer, terraces.EntryStartWorld); Point(writer, terraces.EntryEndWorld);
                     RectValue(writer, terraces.EntryBounds);
                     Point(writer, terraces.LowerArrivalWorld); Point(writer, terraces.UpperArrivalWorld);
-                    Point(writer, terraces.LowerPassStartWorld); Point(writer, terraces.LowerPassEndWorld);
+                    Point(writer, terraces.LowerPassStartWorld); Point(writer, terraces.LowerPassRampEndWorld);
+                    Point(writer, terraces.LowerPassEndWorld);
                     RectValue(writer, terraces.LowerPassBounds); RectValue(writer, terraces.BridgeWorldBounds);
                     Point(writer, terraces.LowerCrossingWorld); Point(writer, terraces.UpperCrossingWorld);
                 }
@@ -252,6 +273,8 @@ namespace BarPromenade
 
         private static void RectValue(BinaryWriter writer, Rect rect)
         { Scalar(writer, rect.x); Scalar(writer, rect.y); Scalar(writer, rect.width); Scalar(writer, rect.height); }
+        private static void RoadPoint(BinaryWriter writer, CityLayout layout, RoadEdge edge, Vector2 point, float amount)
+        { Point(writer, new Vector3(point.x, layout.ElevationPlan.SampleRoadDatum(edge, amount), point.y)); }
         private static void Point(BinaryWriter writer, Vector2 point) { Scalar(writer, point.x); Scalar(writer, point.y); }
         private static void Point(BinaryWriter writer, Vector3 point) { Scalar(writer, point.x); Scalar(writer, point.y); Scalar(writer, point.z); }
         // A map pixel spans much more than a millimetre. Quantization avoids

@@ -235,9 +235,9 @@ namespace BarPromenade
                     $"Node {node} lies outside the city grid.");
             }
 
-            Vector2 offset = SpatialPlan.GetCoordinateWorldOffset(node);
-            return WorldOrigin + new Vector3(
-                offset.x, ElevationPlan.GetNodeElevation(node), offset.y);
+            Vector2 position = RoadGeometry.GetNodePosition(node);
+            return new Vector3(position.x,
+                WorldOrigin.y + ElevationPlan.GetNodeElevation(node), position.y);
         }
 
         public Vector3 GetGridWorldPosition(Vector2Int coordinate)
@@ -924,9 +924,7 @@ namespace BarPromenade
                     nearestBarDistance = Mathf.Min(
                         nearestBarDistance,
                         CityTravelDistance.BetweenAnchors(
-                            Nodes,
-                            RoadEdges,
-                            GetNodeWorldPosition,
+                            this,
                             homeFrontage,
                             playerHome.ReturnPosition,
                             barFrontage,

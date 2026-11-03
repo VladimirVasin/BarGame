@@ -31,6 +31,7 @@ namespace BarPromenade
             new ConditionalWeakTable<CityEastExitPlan, CityEastLitterPlan>();
         private readonly CityEastExitPlan exit;
         private readonly List<Rect> exclusions = new List<Rect>();
+        private readonly List<CitySurfaceDescriptor> curvedGround = new List<CitySurfaceDescriptor>();
         public Rect Bounds { get; }
         public Rect PedestrianCorridor { get; }
         public IReadOnlyList<CityEastLitterPart> Parts { get; }
@@ -60,6 +61,9 @@ namespace BarPromenade
                 exit.CheckpointPosition.x - .40f, exit.NorthYardBounds.yMax - .6f);
             PedestrianCorridor = Rect.MinMaxRect(exit.YardBounds.xMin + 2f, Bounds.yMin,
                 exit.YardBounds.xMin + 5.5f, Bounds.yMax);
+            foreach (CitySurfaceDescriptor surface in exit.Layout.Surfaces)
+                if ((surface.AreaId == "yard-east" || surface.AreaId == "yard-north-east") &&
+                    exit.Layout.RoadGeometry.HasReplannedGround(surface.Cell)) curvedGround.Add(surface);
             exclusions.Add(Expand(exit.ClearanceBounds, .35f));
             exclusions.Add(Expand(exit.BoothPad, .35f));
             CityEastExitDressingPlan dressing = CityEastExitDressingPlan.Create(exit);
@@ -151,6 +155,25 @@ namespace BarPromenade
                 footprint.yMin < Bounds.yMin || footprint.yMax > Bounds.yMax || exit.Swale.OverlapsCrossing(footprint)) return false;
             foreach (Rect excluded in exclusions)
                 if (excluded.Overlaps(footprint)) return false;
+            foreach (CitySurfaceDescriptor surface in curvedGround)
+            {
+                Rect cell = surface.WorldBounds;
+                if (!cell.Overlaps(footprint)) continue;
+                Rect intersection = Rect.MinMaxRect(Mathf.Max(cell.xMin, footprint.xMin),
+                    Mathf.Max(cell.yMin, footprint.yMin), Mathf.Min(cell.xMax, footprint.xMax),
+                    Mathf.Min(cell.yMax, footprint.yMax));
+                // The whole rigid footprint needs earth beneath it, including
+                // where the new street mouth cuts a curved edge into this yard.
+                var remaining = new List<Vector2[]> { CityRoadPolygon.Rectangle(intersection) };
+                foreach (Vector2[] ground in exit.Layout.RoadGeometry.GetGroundPolygons(surface.Cell))
+                {
+                    var next = new List<Vector2[]>();
+                    foreach (Vector2[] piece in remaining) next.AddRange(CityRoadPolygon.Subtract(piece, ground));
+                    remaining = next;
+                    if (remaining.Count == 0) break;
+                }
+                if (remaining.Count != 0) return false;
+            }
             return !solid || !Expand(footprint, .4f).Overlaps(PedestrianCorridor);
         }
 

@@ -3,18 +3,19 @@
 ## Current facts
 
 - **Accepted architecture extension — 2026-11-03,user — terraced City:**
-  Target35–45m coastal rise;3–5-storey homes,low coast/port/river,
-  working west/residential east/park and short Home↔Bar remain.
-  Four stages:profile/transport→courtyard pilot→one upper crossing/rollout→anchors/map.
-  Two floors at one XZ require explicit layers/links/contacts;river cave stays
-  closed,no general tunnel permission. Live:4.8×2.4m bridge at+7.68 above a3m
-  alley to the east street;hero/NPC/map keep sharedXZ/distinctY.
-  Local rain shelter;no new population. Targets do not replace live heights.
-  User `2026-11-04`:map logic/labels/markers/selection/XYZ/arrivals each slice;
-  ImageGen once at final step if geometry/elevation changed. Stale art→scheme;
-  never retag its fingerprint. Common Blender/materials,bounded plans/indexes;
-  24FX/focused acceptance:[city-multilevel-plan.md](city-multilevel-plan.md).
-  Art9/story§16/21,weather/fog/control/NPC identities stay;no new lore.
+  Planned35–45m;low coast/port/river,3–5 floors,districts/short Home↔Bar stay.
+  Profile→pilot→crossing/rollout→anchors/map. Live4.8×2.4m bridge at+7.68
+  over3m alley:explicit layers/contacts,sharedXZ/distinctY,local rain shelter.
+  `2026-11-04`:nodes(12,8)/(13,8)→XZ(155.85,52.25)/(182.5,52.25),
+  oldY/4m flats/max5.6%;40m stays draft. East exit:level3×2.4m/side guards.
+  Cell(11,8):third ordinary house,existing3-floor model,3.84m below street;
+  ten fixed flights total. Roof12.883m<upper eye15.073m;production camera reviewed.
+  Separate cut/retaining walls;ground/collision/NPC/arrivals share surfaces.
+  Shared Blender/materials,bounded caches;24FX/art9/story§16/21/weather/control stay.
+  Map RU/markers/selection/XYZ each slice;node/profileY hashed;«Нижний двор».
+  Final ImageGen installed/binding matched;stale→scheme,never retag.
+  Proof:`LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap`.
+  No new lore/population/tunnels;river cave closed. [Acceptance](city-multilevel-plan.md).
 
 - **Accepted architecture exception — 2026-11-03,user — doubled calendar day:**
   Art §2/story §20:96 real minutes/day at ×1,four seconds/game minute.

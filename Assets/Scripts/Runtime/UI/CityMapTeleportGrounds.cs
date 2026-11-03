@@ -128,14 +128,8 @@ namespace BarPromenade
             bool found = false;
             foreach (RoadEdge edge in layout.RoadEdges)
             {
-                Vector3 startWorld = layout.GetNodeWorldPosition(edge.A);
-                Vector3 endWorld = layout.GetNodeWorldPosition(edge.B);
-                var start = new Vector2(startWorld.x, startWorld.z);
-                var segment = new Vector2(endWorld.x, endWorld.z) - start;
-                float amount = segment.sqrMagnitude > .000001f
-                    ? Mathf.Clamp01(Vector2.Dot(requested - start, segment) / segment.sqrMagnitude)
-                    : 0f;
-                if (!TryResolveStandingPosition(start + segment * amount, out Vector3 candidate))
+                CityRoadProjection projection = layout.RoadGeometry.Get(edge).Project(requested);
+                if (!TryResolveStandingPosition(projection.Position, out Vector3 candidate))
                     continue;
                 float distance = (new Vector2(candidate.x, candidate.z) - requested).sqrMagnitude;
                 if (distance >= bestDistance) continue;
@@ -168,6 +162,8 @@ namespace BarPromenade
                 top = eastExit.SampleRoadTop(worldXZ.x, worldXZ.y);
                 return true;
             }
+            if (CityStreetSupportPlan.ForLayout(layout).TrySampleTop(worldXZ, out top, out _))
+                return true;
             if (layout.ElevationPlan != null &&
                 layout.ElevationPlan.TrySampleSurface(
                     worldXZ,

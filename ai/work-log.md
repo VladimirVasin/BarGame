@@ -9,8 +9,9 @@ clear surveyed buildings/protected sites without moving them. East high-rise
 requests expose GradeLimit. Coastal junctions own disjoint road/pavement patches,
 flat mouths and retained coast profiles; route continuation has no duplicate
 old profile. Entrance plans pair actual forecourts/nearest pavement edges:
-XZ/Y gaps need access routes; thresholds stay, steep/incomplete aprons reject. Inland street/access heights, vehicle swept
-paths, supports and live rollout remain open.
+XZ/Y gaps need access routes; thresholds stay, steep/incomplete aprons reject.
+First eastern junctions now share surveyed paths, retained grades, ground cuts
+and physical bus aprons. Further uphill/citywide rollout remains open.
 CityTerraceTransportPlanTests OK: clearance, profiles, junction seams/ownership,
 entrance triangle grades and unchanged live anchors. Editor joins view reviewed.
 All24FX reviewed: existing City sources/materials/post owners retained.
@@ -22,6 +23,13 @@ clearance, current illustrated map, selection/XYZ and supported arrival;
 street/entrance/native map frames reviewed.
 User requested current-pass ImageGen redraw: new survey/art/provenance installed.
 Default final-step redraw rule retained; stale-art scheme fallback, no retagging.
+Eastern courtyard exit now has a level guarded landing, continuous ramp/layers
+and shared NPC/map arrivals. A lower ordinary house and its stair court put
+the neighbouring roof below the upper player view. Scheme/return/travel distances
+follow actual paths; map fingerprint includes heights. Bus checks use physical paving.
+LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap passed:
+continuous walks, ground/vehicle contacts, house docks, roof below ordinary camera,
+rain/layers and safe map arrivals. Final ImageGen redraw installed.
 check-docs.py/check-workspace.py/git diff --check.
 
 ## 2026-11-03

@@ -59,7 +59,7 @@ namespace BarPromenade
                 }
 
                 eligibleByCell.Add(surface.Cell, surface);
-                if (layout.RoadGeometry.IsReplannedCell(surface.Cell))
+                if (layout.RoadGeometry.HasReplannedGround(surface.Cell))
                     groundPolygons.AddRange(layout.RoadGeometry.GetGroundPolygons(surface.Cell));
                 else AddRiverClippedGround(layout, surface, ground);
             }
@@ -413,14 +413,14 @@ namespace BarPromenade
                     float half = layout.GetTravelWidth(edge) * .5f;
                     foreach (Vector2Int node in new[] { edge.A, edge.B })
                     {
-                        if (layout.RoadGeometry.ObliqueJunction?.Node == node) continue;
+                        if (layout.RoadGeometry.TryGetJunction(node, out _)) continue;
                         Vector3 position = layout.GetNodeWorldPosition(node);
                         area.Add(new Rect(position.x - half, position.z - half, half * 2f, half * 2f));
                     }
                 }
             }
-            if (layout.RoadGeometry.ObliqueJunction != null)
-                area.AddPolygons(layout.RoadGeometry.ObliqueJunction.RoadPolygons);
+            foreach (CityRoadJunction junction in layout.RoadGeometry.Junctions)
+                area.AddPolygons(junction.RoadPolygons);
             if (layout.SpatialPlan.IsCompactCoastal)
             {
                 // Compact City widens walking ground beyond the retained

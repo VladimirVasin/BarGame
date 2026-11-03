@@ -10,7 +10,11 @@ namespace BarPromenade
         {
             CityTerraceDistrictPlan plan = CityTerraceDistrictPlan.ForLayout(layout);
             Rect bounds = plan.ReservedBounds;
-            return plan.IsEnabled && (Inside(bounds) || Inside(plan.LowerPassBounds));
+            if (!plan.IsEnabled) return false;
+            if (Inside(bounds) || Inside(plan.LowerPassBounds) ||
+                Inside(plan.LowerCourtBounds) || Inside(plan.LowerCourtEntryBounds)) return true;
+            foreach (Rect cut in plan.GroundCuts) if (Inside(cut)) return true;
+            return false;
 
             bool Inside(Rect area) => position.x >= area.xMin - radius && position.x <= area.xMax + radius &&
                 position.z >= area.yMin - radius && position.z <= area.yMax + radius;
@@ -18,8 +22,7 @@ namespace BarPromenade
 
         internal static bool Overlaps(CityTerraceDistrictPlan plan, Rect bounds)
         {
-            if (!plan.IsEnabled || !plan.ReservedBounds.Overlaps(bounds, true) &&
-                !plan.LowerPassBounds.Overlaps(bounds, true)) return false;
+            if (!plan.IsEnabled) return false;
             foreach (Rect cut in plan.GroundCuts) if (cut.Overlaps(bounds, true)) return true;
             return false;
         }

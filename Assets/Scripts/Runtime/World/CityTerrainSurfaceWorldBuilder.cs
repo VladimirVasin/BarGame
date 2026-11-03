@@ -451,7 +451,7 @@ namespace BarPromenade
                     continue;
                 }
 
-                if (!seabedOnly && layout.RoadGeometry.IsReplannedCell(surface.Cell))
+                if (!seabedOnly && layout.RoadGeometry.HasReplannedGround(surface.Cell))
                 {
                     AppendCurvedCellGround(layout, surface, excavations, tileSize,
                         vertices, normals, uvs, triangles, worldBounds);

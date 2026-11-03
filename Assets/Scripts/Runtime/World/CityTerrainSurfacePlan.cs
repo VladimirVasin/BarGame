@@ -367,7 +367,7 @@ namespace BarPromenade
                     continue;
                 }
 
-                if (layout.RoadGeometry.IsReplannedCell(candidate.Cell))
+                if (layout.RoadGeometry.HasReplannedGround(candidate.Cell))
                 {
                     bool inside = false;
                     foreach (Vector2[] polygon in layout.RoadGeometry.GetGroundPolygons(candidate.Cell))

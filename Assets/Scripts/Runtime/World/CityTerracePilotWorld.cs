@@ -33,6 +33,13 @@ namespace BarPromenade
                 root.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
             }
             float foundationBottom = district == null ? -.30f : -3f;
+            if (district != null)
+            {
+                foreach (CityTerracePilotFloor floor in floors)
+                    foundationBottom = Mathf.Min(foundationBottom, floor.Center.y - floor.Thickness - .6f);
+                foreach (CityExteriorStairFlightDescriptor flight in flights)
+                    foundationBottom = Mathf.Min(foundationBottom, flight.BaseElevation - .85f);
+            }
             FootProbeSurface.EnsureRuntimePolicy();
             FootstepGround.Stamp(root, FootstepGroundKind.Stone);
             // Only this finite build owns references. The resource assets and
@@ -52,8 +59,14 @@ namespace BarPromenade
             foreach (CityTerracePilotFloor floor in floors)
             {
                 float thickness = floor.Thickness;
+                // Plain courtyard slabs already serve measured street aprons;
+                // the fixed stair, landing and bridge modules stay unscaled.
+                Vector3 floorScale = floor.ModelName == "TerraceCourt"
+                    ? new Vector3(floor.Size.x / CityTerracePilotPlan.CourtSize, 1f,
+                        floor.Size.y / CityTerracePilotPlan.CourtSize)
+                    : Vector3.one;
                 Model(templates[floor.ModelName], root.transform,
-                    floor.Id, floor.Center, Quaternion.identity, Vector3.one);
+                    floor.Id, floor.Center, Quaternion.identity, floorScale);
                 Box(root.transform, floor.Id + " ground", floor.Center - Vector3.up * thickness * .5f,
                     new Vector3(floor.Size.x, thickness, floor.Size.y), Quaternion.identity);
                 if (floor.HasFoundation)
@@ -105,7 +118,7 @@ namespace BarPromenade
                     new Vector3(district.EntryBounds.height, .30f, delta.magnitude), slope);
 
                 start = district.Local(district.LowerPassStartWorld);
-                end = district.Local(district.LowerPassEndWorld);
+                end = district.Local(district.LowerPassRampEndWorld);
                 delta = end - start;
                 slope = Quaternion.LookRotation(delta.normalized, Vector3.up);
                 center = (start + end) * .5f;
@@ -113,6 +126,23 @@ namespace BarPromenade
                     slope, new Vector3(1f, 1f, delta.magnitude / 21.5f));
                 Box(root.transform, "Terrace lower passage collision", center - slope * Vector3.up * .15f,
                     new Vector3(CityTerraceDistrictPlan.LowerPassWidth, .30f, delta.magnitude), slope);
+
+                start = district.Local(district.LowerHouseStreetWorld);
+                end = district.Local(district.LowerCourtEntryEndWorld);
+                delta = end - start;
+                slope = Quaternion.LookRotation(delta.normalized, Vector3.up);
+                center = (start + end) * .5f;
+                Model(templates["TerraceCourt"], root.transform, "Lower house street entry", center,
+                    slope, new Vector3(district.LowerCourtEntryBounds.height / 10f, 1f, delta.magnitude / 10f));
+                Box(root.transform, "Lower house street entry collision", center - slope * Vector3.up * .15f,
+                    new Vector3(district.LowerCourtEntryBounds.height, .30f, delta.magnitude), slope);
+                int wallIndex = 0;
+                foreach (RuntimeOrientedBox wall in district.LowerCourtRetainingWalls)
+                {
+                    Vector3 top = district.Local(wall.Center + Vector3.up * wall.Size.y * .5f);
+                    Support(templates["TerraceSupport"], root.transform, "Lower court retaining wall " + wallIndex++,
+                        top, new Vector2(wall.Size.z, wall.Size.x), top.y - wall.Size.y);
+                }
 
                 // The bounded trigger clears particles emitted beneath the
                 // deck as well as those falling from above. Its ceiling stops
@@ -253,6 +283,9 @@ namespace BarPromenade
                 {
                     AddOpening(district.Local(district.EntryEndWorld), district.EntryBounds.height);
                     AddOpening(district.Local(district.LowerPassStartWorld), CityTerraceDistrictPlan.LowerPassWidth);
+                    AddOpening(district.Local(district.LowerPassRampEndWorld), CityTerraceDistrictPlan.LowerPassWidth);
+                    AddOpening(district.Local(district.LowerPassEndWorld), CityTerraceDistrictPlan.LowerPassWidth);
+                    AddOpening(district.Local(district.LowerCourtEntryEndWorld), district.LowerCourtEntryBounds.height);
                     foreach (Vector3 door in district.HouseEntryWorld) AddOpening(district.Local(door), 1.8f);
                 }
                 gaps.Sort((a, b) => a.x.CompareTo(b.x));
@@ -283,7 +316,8 @@ namespace BarPromenade
                     {
                         float start = from + i * 2.4f;
                         float run = Mathf.Min(2.4f, to - start);
-                        Vector3 position = center + tangent * start - normal * .06f;
+                        float inset = floor.Id == CityTerraceDistrictPlan.EastLandingFloorId ? -.06f : .06f;
+                        Vector3 position = center + tangent * start - normal * inset;
                         Quaternion yaw = Quaternion.LookRotation(tangent);
                         Model(template, root, floor.Id + " edge rail", position, yaw, new Vector3(1f, 1f, run / 2.4f));
                         Box(root, floor.Id + " edge guard", position + tangent * run * .5f + Vector3.up * .525f,

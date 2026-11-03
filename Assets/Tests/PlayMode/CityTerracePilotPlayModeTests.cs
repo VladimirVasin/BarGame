@@ -9,7 +9,7 @@ using Object = UnityEngine.Object;
 
 namespace BarPromenade.Tests.PlayMode
 {
-    public sealed class CityTerracePilotPlayModeTests
+    public sealed partial class CityTerracePilotPlayModeTests
     {
         private const float FrameSeconds = .05f;
         private const int MaximumWaypointFrames = 160;
@@ -117,6 +117,10 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap()
         {
+#if UNITY_EDITOR
+            System.Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
+                .GetMethod("PrepareImportedImage", System.Type.EmptyTypes).Invoke(null, null);
+#endif
             Debug.Log("Live terrace verification: loading production City.");
             yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
             pilotScene = SceneManager.GetActiveScene();
@@ -142,6 +146,23 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Quaternion.Angle(world.rotation, plan.Rotation), Is.LessThan(.01f));
             Assert.That(plan.EntryGradePercent, Is.LessThanOrEqualTo(8.3f));
             Assert.That(plan.LowerPassGradePercent, Is.LessThanOrEqualTo(8.3f));
+            Assert.That(plan.EastLandingBounds.width, Is.EqualTo(2.4f).Within(.001f));
+            Assert.That(plan.EastLandingBounds.height, Is.EqualTo(3f).Within(.001f),
+                "The level exit must preserve the lower passage's clear width.");
+            Assert.That(plan.EastLandingBounds.xMin, Is.GreaterThan(plan.BridgeWorldBounds.xMax));
+            Assert.That(plan.LowerPassRampEndWorld.y, Is.EqualTo(plan.LowerPassEndWorld.y).Within(.001f));
+            foreach (float amount in new[] { .15f, .85f })
+            {
+                Vector3 landing = Vector3.Lerp(plan.LowerPassRampEndWorld, plan.LowerPassEndWorld, amount);
+                Assert.That(plan.TryResolveStandingSurface(new Vector2(landing.x, landing.z), landing.y, .30f,
+                    out CityTerraceSurfaceContact contact), Is.True);
+                Assert.That(contact.SurfaceId, Is.EqualTo(CityTerraceDistrictPlan.EastLandingFloorId));
+                Assert.That(contact.Height, Is.EqualTo(plan.LowerPassEndWorld.y).Within(.001f));
+                Vector3 requested = landing + Vector3.up * PlayerFactory.GroundedRootOffset;
+                Assert.That(new CityMapCityTeleportGround(city.Layout).TryClampArrival(requested, out Vector3 arrival), Is.True);
+                Assert.That(Vector3.Distance(arrival, requested), Is.LessThan(.001f),
+                    "The landing's level surface owns its safe map arrival.");
+            }
             int openLots = 0, houses = 0;
             foreach (BuildingLot lot in city.Layout.BuildingLots)
             {
@@ -150,7 +171,7 @@ namespace BarPromenade.Tests.PlayMode
                 if (lot.IsOrdinaryBuilding) houses++;
             }
             Assert.That(openLots, Is.EqualTo(2));
-            Assert.That(houses, Is.EqualTo(2));
+            Assert.That(houses, Is.EqualTo(3));
             Assert.That(city.Layout.BuildingLots.Count, Is.EqualTo(144), "Reservation retains the existing lot identities.");
 #if UNITY_EDITOR
             // Produce the geometry reference in the same live-world invocation,
@@ -158,6 +179,14 @@ namespace BarPromenade.Tests.PlayMode
             System.Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
                 .GetMethod("ExportCurrent", System.Type.EmptyTypes).Invoke(null, null);
 #endif
+            Texture2D mapTexture = Resources.Load<Texture2D>(CityMapArtResources.ResourcePath);
+            CityMapArtResources.Metadata mapMetadata = JsonUtility.FromJson<CityMapArtResources.Metadata>(
+                Resources.Load<TextAsset>(CityMapArtResources.ResourcePath).text);
+            Assert.That(CityMapArtResources.TryGet(city.Map, out _, out _), Is.True,
+                $"Final map: seed={city.Layout.Seed}, texture={mapTexture.width}x{mapTexture.height}, " +
+                $"metadata={mapMetadata.imageWidth}x{mapMetadata.imageHeight}, bounds={city.Map.DisplayWorldXZBounds}/{mapMetadata.worldBounds}, " +
+                $"hash={CityMapArtResources.CreateFingerprint(city.Map)}/{mapMetadata.fingerprint}");
+            AssertInlandStreetSection();
             AssertDistrictSurfaces(plan, world);
             AssertPedestrianLayerContacts(plan);
             // This fixture follows exact authored centre-lines rather than
@@ -189,8 +218,9 @@ namespace BarPromenade.Tests.PlayMode
                 CitySurfaceRole.RoadTop, out float eastStreetTop, out _), Is.True);
             eastStreet.y = eastStreetTop;
             IReadOnlyList<Vector3> lowerPass = new[] { plan.LowerArrivalWorld, plan.LowerPassStartWorld,
-                plan.LowerCrossingWorld, plan.LowerPassEndWorld, eastStreet };
+                plan.LowerCrossingWorld, plan.LowerPassRampEndWorld, plan.LowerPassEndWorld, eastStreet };
             yield return WalkCityRoute(lowerPass, false, "lower-pass-out", plan);
+            yield return WalkInlandStreetSection(plan, eastStreet);
             yield return WalkCityRoute(lowerPass, true, "lower-pass-return", plan);
             IReadOnlyList<Vector3> west = DistrictRoute(plan, plan.Pilot.WestRoute);
             IReadOnlyList<Vector3> east = DistrictRoute(plan, plan.Pilot.EastRoute);
@@ -247,6 +277,12 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(arrived, Is.True, name + " blocked by navigation or an old fence/prop at " +
                     motor.transform.position + " toward " + target);
                 Assert.That(motor.transform.position.y, Is.EqualTo(target.y).Within(.20f));
+                if (name == "lower-house-down" && index == 2)
+                    yield return CaptureLowerCourtPlayerView("live-09-lower-stairs-game-camera",
+                        new Vector3(136.2f, plan.LowerCourtArrivalWorld.y + 1f, 69.48f));
+                if (name == "lower-house-down" && index == route.Count - 3)
+                    yield return CaptureLowerCourtPlayerView("live-10-lower-court-game-camera",
+                        new Vector3(141.2f, plan.LowerCourtArrivalWorld.y + 2.5f, 65f));
                 if (name == "lower-pass-out" && index == 2)
                 {
                     yield return AssertCrossingContactAndCamera(plan, false);
@@ -411,7 +447,9 @@ namespace BarPromenade.Tests.PlayMode
             PlayerCameraFollow follow = city.Camera.GetComponent<PlayerCameraFollow>();
             float previousPitch = follow.TargetOrbitPitch;
             bool cinematic = follow.CinematicMotionEnabled;
-            float yawChange = Mathf.DeltaAngle(city.Camera.transform.eulerAngles.y, 90f);
+            Vector3 viewDirection = upper ? plan.LowerHouseRoofWorld - rootPosition : Vector3.right;
+            float desiredYaw = Mathf.Atan2(viewDirection.x, viewDirection.z) * Mathf.Rad2Deg;
+            float yawChange = Mathf.DeltaAngle(city.Camera.transform.eulerAngles.y, desiredYaw);
             try
             {
                 follow.SetCinematicMotionEnabled(false);
@@ -419,6 +457,16 @@ namespace BarPromenade.Tests.PlayMode
                 follow.Snap();
                 yield return null;
                 AssertCameraClearance(follow);
+                if (upper)
+                {
+                    Assert.That(plan.LowerHouseRoofWorld.y, Is.LessThan(rootPosition.y + 1.65f - 1f),
+                        "The neighbouring roof must be below an ordinary eye, without a flying camera");
+                    Vector3 roofInFrame = city.Camera.WorldToViewportPoint(plan.LowerHouseRoofWorld);
+                    Assert.That(roofInFrame.z, Is.InRange(.1f, city.Camera.farClipPlane));
+                    Assert.That(roofInFrame.x, Is.InRange(.08f, .92f));
+                    Assert.That(roofInFrame.y, Is.InRange(.08f, .92f));
+                    Assert.That(city.Camera.fieldOfView, Is.EqualTo(follow.FollowFieldOfView).Within(.1f));
+                }
                 AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "CityTerracePilot",
                     upper ? "live-08-upper-game-camera" : "live-07-underpass-game-camera", 1280, 720);
                 if (!upper)
@@ -460,8 +508,9 @@ namespace BarPromenade.Tests.PlayMode
                 Transform model = world.Find(floor.Id);
                 Assert.That(model, Is.Not.Null, floor.Id);
                 Bounds visible = LocalRendererBounds(model);
-                Assert.That(visible.size.x, Is.EqualTo(floor.Size.x).Within(.02f));
-                Assert.That(visible.size.z, Is.EqualTo(floor.Size.y).Within(.02f));
+                Vector3 placedSize = Vector3.Scale(visible.size, model.localScale);
+                Assert.That(placedSize.x, Is.EqualTo(floor.Size.x).Within(.02f));
+                Assert.That(placedSize.z, Is.EqualTo(floor.Size.y).Within(.02f));
                 Vector3 point = plan.World(floor.Center);
                 Assert.That(Physics.Raycast(point + Vector3.up, Vector3.down, out RaycastHit hit,
                     1.2f, ~(1 << FootProbeSurface.LayerIndex), QueryTriggerInteraction.Ignore), Is.True, floor.Id);
@@ -510,7 +559,8 @@ namespace BarPromenade.Tests.PlayMode
                 city.Map.SetMapPointInspectionEnabled(true);
                 foreach (var expected in new[] {
                     (Id: "city:poi:terrace-courts", Position: arrival),
-                    (Id: "city:poi:terrace-underpass", Position: plan.LowerCrossingWorld + Vector3.up * PlayerFactory.GroundedRootOffset) })
+                    (Id: "city:poi:terrace-underpass", Position: plan.LowerCrossingWorld + Vector3.up * PlayerFactory.GroundedRootOffset),
+                    (Id: "city:poi:terrace-lower-court", Position: plan.LowerCourtArrivalWorld + Vector3.up * PlayerFactory.GroundedRootOffset) })
                 {
                     int marker = -1;
                     for (int i = 0; i < city.Map.ActiveMapPoints.Count; i++)

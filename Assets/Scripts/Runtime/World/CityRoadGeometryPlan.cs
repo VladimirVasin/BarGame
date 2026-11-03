@@ -189,12 +189,26 @@ namespace BarPromenade
     public sealed class CityRoadJunction
     {
         internal CityRoadJunction(Vector2Int node, Vector2 center, RoadEdge ownerEdge,
-            IReadOnlyList<Vector2[]> road, IReadOnlyList<Vector2[]> sidewalk, IReadOnlyList<CityRoadPath> sidewalkPaths)
+            IReadOnlyList<Vector2[]> road, IReadOnlyList<Vector2[]> sidewalk, IReadOnlyList<CityRoadPath> sidewalkPaths,
+            float approachInset = MouthInset, bool hasCardinalMouths = false)
         {
             Node = node; Center = center; OwnerEdge = ownerEdge;
             RoadPolygons = road; SidewalkPolygons = sidewalk; SidewalkPaths = sidewalkPaths;
+            ApproachInset = approachInset;
+            HasCardinalMouths = hasCardinalMouths;
+            Vector2 minimum = center, maximum = center;
+            foreach (Vector2[] polygon in road)
+                foreach (Vector2 point in polygon)
+                { minimum = Vector2.Min(minimum, point); maximum = Vector2.Max(maximum, point); }
+            foreach (Vector2[] polygon in sidewalk)
+                foreach (Vector2 point in polygon)
+                { minimum = Vector2.Min(minimum, point); maximum = Vector2.Max(maximum, point); }
+            Bounds = Rect.MinMaxRect(minimum.x, minimum.y, maximum.x, maximum.y);
         }
         public const float MouthInset = 6f;
+        public float ApproachInset { get; }
+        public bool HasCardinalMouths { get; }
+        public Rect Bounds { get; }
         public Vector2Int Node { get; }
         public Vector2 Center { get; }
         public RoadEdge OwnerEdge { get; }
@@ -211,14 +225,17 @@ namespace BarPromenade
         private readonly Dictionary<Vector2Int, IReadOnlyList<Vector2[]>> ground = new Dictionary<Vector2Int, IReadOnlyList<Vector2[]>>();
         private readonly HashSet<Vector2Int> affected = new HashSet<Vector2Int>();
         private readonly HashSet<Vector2Int> replanned = new HashSet<Vector2Int>();
+        private readonly HashSet<Vector2Int> inlandGround = new HashSet<Vector2Int>();
         private readonly CitySpatialPlan spatial;
         private readonly Vector2 origin;
         private readonly float width;
+        private readonly bool inland;
         private CityRoadGeometryPlan(CitySpatialPlan spatial, Vector3 origin, float width,
             IEnumerable<RoadEdge> roads, bool pilot, CityBlueprint blueprint = null,
-            ISet<RoadEdge> preservedEdges = null)
+            ISet<RoadEdge> preservedEdges = null, bool inland = false)
         {
             this.spatial = spatial; this.origin = new Vector2(origin.x, origin.z); this.width = width;
+            this.inland = inland;
             paths = new Dictionary<RoadEdge, CityRoadPath>();
             var curves = new List<RoadEdge>();
             var districtCurves = new List<RoadEdge>();
@@ -231,6 +248,14 @@ namespace BarPromenade
             foreach (RoadEdge edge in roads)
             {
                 Vector2 start = Node(edge.A), end = Node(edge.B);
+                if (inland && CityTerraceInlandJunctionPlan.Contains(edge))
+                {
+                    paths.Add(edge, CityTerraceInlandJunctionPlan.CreateApproach(edge, start, end));
+                    curves.Add(edge);
+                    inlandGround.Add(edge.A);
+                    inlandGround.Add(edge.A + (edge.IsHorizontal ? Vector2Int.down : Vector2Int.left));
+                    continue;
+                }
                 float bulge = pilot ? PilotBulge(edge) : 0;
                 bool courtyardStreet = bulge != 0;
                 if (!courtyardStreet && blueprint != null && preservedEdges?.Contains(edge) != true)
@@ -259,6 +284,12 @@ namespace BarPromenade
             cells.Sort((a, b) => a.y != b.y ? a.y.CompareTo(b.y) : a.x.CompareTo(b.x));
             ReplannedCells = new ReadOnlyCollection<Vector2Int>(cells);
             if (pilot) ObliqueJunction = CreateJunction();
+            var junctions = new List<CityRoadJunction>();
+            if (ObliqueJunction != null) junctions.Add(ObliqueJunction);
+            if (inland)
+                foreach (Vector2Int node in CityTerraceInlandJunctionPlan.Nodes)
+                    junctions.Add(CreateInlandJunction(node));
+            Junctions = new ReadOnlyCollection<CityRoadJunction>(junctions);
         }
         private static CityRoadPath CreateBend(Vector2 start, Vector2 end, float roadWidth, float bulge)
         {
@@ -389,13 +420,82 @@ namespace BarPromenade
                 new ReadOnlyCollection<Vector2[]>(road), new ReadOnlyCollection<Vector2[]>(pavement),
                 new ReadOnlyCollection<CityRoadPath>(walks));
         }
+        private CityRoadJunction CreateInlandJunction(Vector2Int node)
+        {
+            const float inset = CityTerraceInlandJunctionPlan.ApproachInset;
+            float outerWidth = width + (CityStreetSurfacePlanner.PublicSidewalkWidth -
+                CityStreetSurfacePlanner.SidewalkWidth) * 2f;
+            float innerWidth = width - CityStreetSurfacePlanner.SidewalkWidth * 2f;
+            Vector2 center = Node(node);
+            var outer = new List<Vector2[]>();
+            var road = new List<Vector2[]>();
+            var directions = new[] { Vector2.up, Vector2.right, Vector2.down, Vector2.left };
+            var arms = new List<int>();
+            RoadEdge owner = default;
+            bool hasOwner = false;
+            foreach (RoadEdge edge in paths.Keys)
+            {
+                if (!edge.Contains(node)) continue;
+                if (!hasOwner || RoadEdge.Compare(edge, owner) < 0) { owner = edge; hasOwner = true; }
+                CityRoadPath path = edge.A == node ? Get(edge) : Get(edge).Reversed();
+                Vector2 direction = path.SampleDistance(0).Tangent;
+                var arm = new CityRoadPath(new[] { center, center + direction * inset });
+                AddUnion(outer, arm.Ribbon(outerWidth));
+                AddUnion(road, arm.Ribbon(innerWidth));
+                for (int index = 0; index < directions.Length; index++)
+                    if (Vector2.Dot(direction, directions[index]) > .99f) { arms.Add(index); break; }
+            }
+            var pavement = new List<Vector2[]>(outer);
+            foreach (Vector2[] polygon in road) pavement = SubtractAll(pavement, polygon);
+            arms.Sort();
+            float offset = innerWidth * .5f + CityStreetSurfacePlanner.PublicSidewalkWidth * .5f;
+            // Match the existing pedestrian lane's .35 m inset. The path
+            // centers use the two-metre pavement while old lanes remain safe
+            // inside that same pavement at their retained 3.5 m offset.
+            float mouth = inset + .35f;
+            var walks = new List<CityRoadPath>();
+            for (int index = 0; index < arms.Count; index++)
+            {
+                int first = arms[index];
+                int next = arms[(index + 1) % arms.Count];
+                int sectors = (next - first + directions.Length) % directions.Length;
+                if (sectors == 0) sectors = directions.Length;
+                Vector2 direction = directions[first];
+                Vector2 right = new Vector2(direction.y, -direction.x);
+                var vertices = new List<Vector2> { center + direction * mouth + right * offset };
+                for (int sector = 0; sector < sectors; sector++)
+                {
+                    direction = directions[(first + sector) % directions.Length];
+                    right = new Vector2(direction.y, -direction.x);
+                    vertices.Add(center + (direction + right) * offset);
+                }
+                direction = directions[next];
+                right = new Vector2(direction.y, -direction.x);
+                vertices.Add(center + direction * mouth - right * offset);
+                walks.Add(new CityRoadPath(vertices));
+            }
+            return new CityRoadJunction(node, center, owner,
+                new ReadOnlyCollection<Vector2[]>(road), new ReadOnlyCollection<Vector2[]>(pavement),
+                new ReadOnlyCollection<CityRoadPath>(walks), inset, hasCardinalMouths: true);
+        }
+        private static void AddUnion(List<Vector2[]> target, IEnumerable<Vector2[]> source)
+        {
+            foreach (Vector2[] polygon in source)
+            {
+                var pieces = new List<Vector2[]> { polygon };
+                foreach (Vector2[] existing in target) pieces = SubtractAll(pieces, existing);
+                target.AddRange(pieces);
+            }
+        }
         private static List<Vector2[]> SubtractAll(IEnumerable<Vector2[]> pieces, Vector2[] cut)
         {
             var result = new List<Vector2[]>();
             foreach (Vector2[] piece in pieces) result.AddRange(CityRoadPolygon.Subtract(piece, cut));
             return result;
         }
-        private Vector2 Node(Vector2Int node) => origin + spatial.GetCoordinateWorldOffset(node);
+        private Vector2 Node(Vector2Int node) => origin + spatial.GetCoordinateWorldOffset(node) +
+            (inland ? CityTerraceInlandJunctionPlan.Offset(node) : Vector2.zero);
+        public Vector2 GetNodePosition(Vector2Int node) => Node(node);
         public IReadOnlyList<RoadEdge> CurvedEdges { get; }
         /// <summary>District streets beyond the original four-cell courtyard.</summary>
         public IReadOnlyList<RoadEdge> ReplannedEdges { get; }
@@ -403,8 +503,16 @@ namespace BarPromenade
         public IReadOnlyList<Vector2Int> ReplannedCells { get; }
         internal IEnumerable<RoadEdge> Edges => paths.Keys;
         public CityRoadJunction ObliqueJunction { get; }
+        public IReadOnlyList<CityRoadJunction> Junctions { get; }
+        public bool TryGetJunction(Vector2Int node, out CityRoadJunction junction)
+        {
+            foreach (CityRoadJunction candidate in Junctions)
+                if (candidate.Node == node) { junction = candidate; return true; }
+            junction = null;
+            return false;
+        }
         public float GetEndpointInset(RoadEdge edge, Vector2Int node) =>
-            ObliqueJunction != null && node == ObliqueJunction.Node ? CityRoadJunction.MouthInset : width * .5f;
+            TryGetJunction(node, out CityRoadJunction junction) ? junction.ApproachInset : width * .5f;
         public CityRoadPath Get(RoadEdge edge) => paths[edge];
         public IReadOnlyList<Vector2[]> GetCorridor(RoadEdge edge)
         {
@@ -414,8 +522,7 @@ namespace BarPromenade
         }
         public bool ContainsRoad(RoadEdge edge, Vector2 point)
         {
-            if (ObliqueJunction != null && edge.Contains(ObliqueJunction.Node) &&
-                ContainsJunction(point)) return true;
+            if (TryGetJunctionAt(point, out CityRoadJunction junction) && edge.Contains(junction.Node)) return true;
             foreach (Vector2[] polygon in GetCorridor(edge))
                 if (CityRoadPolygon.Contains(polygon, point)) return true;
             CityRoadPath path = Get(edge);
@@ -425,15 +532,27 @@ namespace BarPromenade
             return false;
         }
         public bool ContainsJunction(Vector2 point)
+            => TryGetJunctionAt(point, out _);
+        public bool TryGetJunctionAt(Vector2 point, out CityRoadJunction junction)
         {
-            if (ObliqueJunction == null) return false;
-            foreach (Vector2[] polygon in ObliqueJunction.RoadPolygons)
-                if (CityRoadPolygon.Contains(polygon, point)) return true;
+            foreach (CityRoadJunction candidate in Junctions)
+            {
+                Rect bounds = candidate.Bounds;
+                if (point.x < bounds.xMin - .001f || point.x > bounds.xMax + .001f ||
+                    point.y < bounds.yMin - .001f || point.y > bounds.yMax + .001f) continue;
+                foreach (Vector2[] polygon in candidate.RoadPolygons)
+                    if (CityRoadPolygon.Contains(polygon, point)) { junction = candidate; return true; }
+                foreach (Vector2[] polygon in candidate.SidewalkPolygons)
+                    if (CityRoadPolygon.Contains(polygon, point)) { junction = candidate; return true; }
+            }
+            junction = null;
             return false;
         }
         public bool IsCurved(RoadEdge edge) => paths.TryGetValue(edge, out CityRoadPath path) && !path.IsStraight;
         public bool IsAffectedCell(Vector2Int cell) => affected.Contains(cell);
         public bool IsReplannedCell(Vector2Int cell) => replanned.Contains(cell);
+        /// <summary>Changed street cuts without changing the retained lot pose.</summary>
+        public bool HasReplannedGround(Vector2Int cell) => replanned.Contains(cell) || inlandGround.Contains(cell);
         internal static bool SupportsPilot(CityGenerationSettings settings)
         {
             if (settings.Blueprint?.Id != CityBlueprintCatalog.DefaultBlueprintId ||
@@ -462,7 +581,8 @@ namespace BarPromenade
         internal static CityRoadGeometryPlan Create(CityGenerationSettings settings, Vector3 origin, IList<RoadEdge> roads,
             ISet<RoadEdge> preservedEdges = null, bool replanDistricts = true) =>
             new CityRoadGeometryPlan(settings.SpatialPlan, origin, settings.RoadWidth, roads, SupportsPilot(settings),
-                replanDistricts && SupportsPilot(settings) ? settings.Blueprint : null, preservedEdges);
+                replanDistricts && SupportsPilot(settings) ? settings.Blueprint : null, preservedEdges,
+                CityTerraceInlandJunctionPlan.Supports(settings));
         internal static CityRoadGeometryPlan Straight(CitySpatialPlan spatial, Vector3 origin, float width, IEnumerable<RoadEdge> roads) =>
             new CityRoadGeometryPlan(spatial, origin, width, roads, false);
         public IReadOnlyList<Vector2[]> GetGroundPolygons(Vector2Int cell)
@@ -479,7 +599,11 @@ namespace BarPromenade
                 if (!bounds.Overlaps(reach)) continue;
                 cuts.AddRange(path.Ribbon(width));
                 foreach (Vector2Int node in new[] { entry.Key.A, entry.Key.B })
-                    if (ObliqueJunction != null && node == ObliqueJunction.Node) cuts.AddRange(ObliqueJunction.RoadPolygons);
+                    if (TryGetJunction(node, out CityRoadJunction junction))
+                    {
+                        cuts.AddRange(junction.RoadPolygons);
+                        cuts.AddRange(junction.SidewalkPolygons);
+                    }
                     else cuts.Add(CityRoadPolygon.Rectangle(new Rect(Node(node) - Vector2.one * width * .5f, Vector2.one * width)));
             }
             foreach (Vector2[] cut in cuts)

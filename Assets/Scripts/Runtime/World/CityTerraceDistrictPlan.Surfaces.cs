@@ -50,7 +50,9 @@ namespace BarPromenade
                 surfaces.Add(new Surface(flight.Id, WorldBounds(CityTerracePilotPlan.FlightBounds(flight)),
                     World(flight.Start), World(flight.End)));
             surfaces.Add(new Surface("street-approach", EntryBounds, EntryStartWorld, EntryEndWorld));
-            surfaces.Add(new Surface("lower-pass", LowerPassBounds, LowerPassStartWorld, LowerPassEndWorld));
+            surfaces.Add(new Surface("lower-pass", LowerPassRampBounds, LowerPassStartWorld, LowerPassRampEndWorld));
+            surfaces.Add(new Surface("lower-house-street-entry", LowerCourtEntryBounds,
+                LowerHouseStreetWorld, LowerCourtEntryEndWorld));
             for (int i = 0; i < throats.Count; i++)
                 surfaces.Add(new Surface("house-throat-" + i, throats[i], houseEntries[i], houseEntries[i]));
             standingSurfaces = surfaces.ToArray();
@@ -70,9 +72,22 @@ namespace BarPromenade
                 if (surface.Id == "street-approach")
                     pieces.Add(CityRoadPolygon.Rectangle(Rect.MinMaxRect(EntryBounds.xMin - .8f, EntryBounds.yMin,
                         EntryBounds.xMin + .8f, EntryBounds.yMax)));
-                else if (surface.Id == "lower-pass")
-                    pieces.Add(CityRoadPolygon.Rectangle(Rect.MinMaxRect(LowerPassBounds.xMax - .8f, LowerPassBounds.yMin,
-                        LowerPassBounds.xMax + .8f, LowerPassBounds.yMax)));
+                else if (surface.Id == EastLandingFloorId)
+                    pieces.Add(CityRoadPolygon.Rectangle(Rect.MinMaxRect(EastLandingBounds.xMax - .8f, EastLandingBounds.yMin,
+                        EastLandingBounds.xMax + .8f, EastLandingBounds.yMax)));
+                else if (surface.Id == "lower-house-street-entry")
+                    pieces.Add(CityRoadPolygon.Rectangle(Rect.MinMaxRect(LowerCourtEntryBounds.xMin - .8f,
+                        LowerCourtEntryBounds.yMin, LowerCourtEntryBounds.xMin + .8f, LowerCourtEntryBounds.yMax)));
+                foreach (RuntimeOrientedBox wall in LowerCourtRetainingWalls)
+                {
+                    Rect solid = new Rect(wall.Center.x - wall.Size.x * .5f, wall.Center.z - wall.Size.z * .5f,
+                        wall.Size.x, wall.Size.z);
+                    if (!surface.Bounds.Overlaps(solid, true)) continue;
+                    var remainder = new List<Vector2[]>();
+                    foreach (Vector2[] piece in pieces)
+                        remainder.AddRange(CityRoadPolygon.Subtract(piece, CityRoadPolygon.Rectangle(solid)));
+                    pieces = remainder;
+                }
                 surface.Clearance.AddPolygons(pieces);
             }
         }
@@ -129,7 +144,8 @@ namespace BarPromenade
             out CityTerraceSurfaceContact contact) => Resolve(point, previous.Height, radius, false, previous.SurfaceIndex, out contact);
 
         internal bool IsStreetSurface(CityTerraceSurfaceContact contact) =>
-            contact.SurfaceId == "street-approach" || contact.SurfaceId == "lower-pass";
+            contact.SurfaceId == "street-approach" || contact.SurfaceId == EastLandingFloorId ||
+            contact.SurfaceId == "lower-house-street-entry";
 
         internal bool TryClosestSurfacePoint(Vector3 position, float radius, out Vector3 closest)
         {

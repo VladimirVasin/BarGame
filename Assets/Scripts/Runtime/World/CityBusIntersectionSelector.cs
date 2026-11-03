@@ -36,7 +36,8 @@ namespace BarPromenade
             for (int index = 0; index < nodes.Count; index++)
             {
                 Vector2Int node = nodes[index];
-                if (layout.RoadGeometry.ObliqueJunction?.Node == node) continue;
+                if (layout.RoadGeometry.TryGetJunction(node, out CityRoadJunction junction) &&
+                    !junction.HasCardinalMouths) continue;
                 if (HasTurnCapableStreetIntersection(layout, node) &&
                     (HasSafeCornerSetbacks(layout, node) ||
                      HasSafeRiverBridgeSetbacks(layout, node)))

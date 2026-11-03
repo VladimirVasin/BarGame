@@ -1608,13 +1608,15 @@ namespace BarPromenade
                 RoadEdge edge = roads[index];
                 CityPathKind pathKind =
                     controller.Layout.GetPathKind(edge);
-                DrawLine(
-                    projection.WorldToScreen(
-                        controller.Layout.GetNodeWorldPosition(edge.A)),
-                    projection.WorldToScreen(
-                        controller.Layout.GetNodeWorldPosition(edge.B)),
-                    GetPathWidth(pathKind, roadWidth),
-                    GetPathColor(pathKind));
+                IReadOnlyList<Vector2> vertices = controller.Layout.RoadGeometry.Get(edge).Vertices;
+                float width = GetPathWidth(pathKind, roadWidth);
+                Color color = GetPathColor(pathKind);
+                for (int vertex = 1; vertex < vertices.Count; vertex++)
+                {
+                    Vector2 first = vertices[vertex - 1], last = vertices[vertex];
+                    DrawLine(projection.WorldToScreen(new Vector3(first.x, 0f, first.y)),
+                        projection.WorldToScreen(new Vector3(last.x, 0f, last.y)), width, color);
+                }
             }
             CityPortAccessPlan port = CityPortAccessPlan.ForLayout(controller.Layout);
             if (port != null)
@@ -3683,6 +3685,7 @@ namespace BarPromenade
                     }
                     break;
                 case CityMapPointOfInterestKind.TerraceCourts:
+                case CityMapPointOfInterestKind.TerraceLowerCourt:
                     // Three steps: the same ordinary stair silhouette on map and legend.
                     for (int step = 0; step < 3; step++)
                     {

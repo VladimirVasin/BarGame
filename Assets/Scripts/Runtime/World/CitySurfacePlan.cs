@@ -638,7 +638,7 @@ namespace BarPromenade
                 settings,
                 origin,
                 cell + Vector2Int.one);
-            if (settings.RoadGeometry?.IsReplannedCell(cell) == true)
+            if (settings.RoadGeometry?.HasReplannedGround(cell) == true)
                 return Rect.MinMaxRect(minimum.x, minimum.z, maximum.x, maximum.z);
             float halfRoad = settings.RoadWidth * 0.5f;
             float xMin = minimum.x +

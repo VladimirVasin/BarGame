@@ -33,7 +33,7 @@ namespace BarPromenade
             foreach (KeyValuePair<Vector2Int, int> pair in degrees)
             {
                 if (pair.Value < 3 || TouchesParkPath(layout, pair.Key) ||
-                    layout.RoadGeometry.ObliqueJunction?.Node == pair.Key)
+                    layout.RoadGeometry.TryGetJunction(pair.Key, out _))
                 {
                     continue;
                 }

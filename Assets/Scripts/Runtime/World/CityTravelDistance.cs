@@ -12,8 +12,8 @@ namespace BarPromenade
         // home-lot selection ask for hundreds of distances over the same
         // node/edge lists - rebuilding the weighted graph per call made
         // generation super-linear in bars and lots for nothing. Keyed by
-        // list identity plus counts, so a regrown list drops the cache.
-        // The five fields are one entry and are read and written under
+        // list identity plus counts and physical-layout identity, so a regrown
+        // list or a different geometry drops the cache. All fields form one entry under
         // CacheSync: a layout primed on a pool thread (CityLayoutCache)
         // validates itself there while the main thread may be reporting
         // or generating another, and a torn entry would pair one layout's
@@ -24,6 +24,7 @@ namespace BarPromenade
         private static int cachedNodeCount;
         private static int cachedEdgeCount;
         private static WeightedGraph cachedGraph;
+        private static CityLayout cachedLayout;
 
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -36,6 +37,7 @@ namespace BarPromenade
                 cachedNodeCount = 0;
                 cachedEdgeCount = 0;
                 cachedGraph = null;
+                cachedLayout = null;
             }
         }
 
@@ -59,13 +61,20 @@ namespace BarPromenade
                 nameof(second));
 
             return BetweenAnchors(
-                layout.Nodes,
-                layout.RoadEdges,
-                layout.GetNodeWorldPosition,
+                layout,
                 firstEdge,
                 first.ReturnPosition,
                 secondEdge,
                 second.ReturnPosition);
+        }
+
+        /// <summary>Measured travel over the layout's physical road paths and grades.</summary>
+        public static float BetweenAnchors(CityLayout layout,
+            RoadEdge firstEdge, Vector3 firstAnchor, RoadEdge secondEdge, Vector3 secondAnchor)
+        {
+            if (layout == null) throw new ArgumentNullException(nameof(layout));
+            return BetweenAnchors(layout.Nodes, layout.RoadEdges, layout.GetNodeWorldPosition,
+                firstEdge, firstAnchor, secondEdge, secondAnchor, layout);
         }
 
         internal static float BetweenAnchors(
@@ -76,6 +85,15 @@ namespace BarPromenade
             Vector3 firstAnchor,
             RoadEdge secondEdge,
             Vector3 secondAnchor)
+            => BetweenAnchors(nodes, edges, getNodeWorldPosition,
+                firstEdge, firstAnchor, secondEdge, secondAnchor, null);
+
+        private static float BetweenAnchors(
+            IReadOnlyList<Vector2Int> nodes,
+            IReadOnlyList<RoadEdge> edges,
+            Func<Vector2Int, Vector3> getNodeWorldPosition,
+            RoadEdge firstEdge, Vector3 firstAnchor,
+            RoadEdge secondEdge, Vector3 secondAnchor, CityLayout layout)
         {
             if (nodes == null)
             {
@@ -98,6 +116,7 @@ namespace BarPromenade
             {
                 if (ReferenceEquals(nodes, cachedNodes) &&
                     ReferenceEquals(edges, cachedEdges) &&
+                    ReferenceEquals(layout, cachedLayout) &&
                     nodes.Count == cachedNodeCount &&
                     edges.Count == cachedEdgeCount)
                 {
@@ -105,54 +124,67 @@ namespace BarPromenade
                 }
                 else
                 {
+                    Func<RoadEdge, float> getEdgeLength = null;
+                    if (layout != null)
+                        getEdgeLength = edge => RoadDistanceAt(layout, edge, layout.RoadGeometry.Get(edge).Length);
                     graph = WeightedGraph.Create(
                         nodes,
                         edges,
-                        getNodeWorldPosition);
+                        getNodeWorldPosition, getEdgeLength);
                     cachedNodes = nodes;
                     cachedEdges = edges;
                     cachedNodeCount = nodes.Count;
                     cachedEdgeCount = edges.Count;
                     cachedGraph = graph;
+                    cachedLayout = layout;
                 }
             }
 
-            Vector3 validatedFirstAnchor = ValidateAnchor(
-                graph,
-                firstEdge,
-                firstAnchor,
-                nameof(firstEdge),
-                nameof(firstAnchor));
-            Vector3 validatedSecondAnchor = ValidateAnchor(
-                graph,
-                secondEdge,
-                secondAnchor,
-                nameof(secondEdge),
-                nameof(secondAnchor));
+            float firstToA, firstToB, secondToA, secondToB, direct;
+            if (layout == null)
+            {
+                Vector3 validatedFirst = ValidateAnchor(graph, firstEdge, firstAnchor,
+                    nameof(firstEdge), nameof(firstAnchor));
+                Vector3 validatedSecond = ValidateAnchor(graph, secondEdge, secondAnchor,
+                    nameof(secondEdge), nameof(secondAnchor));
+                firstToA = Vector3.Distance(validatedFirst, graph.GetPosition(firstEdge.A));
+                firstToB = Vector3.Distance(validatedFirst, graph.GetPosition(firstEdge.B));
+                secondToA = Vector3.Distance(validatedSecond, graph.GetPosition(secondEdge.A));
+                secondToB = Vector3.Distance(validatedSecond, graph.GetPosition(secondEdge.B));
+                direct = Vector3.Distance(validatedFirst, validatedSecond);
+            }
+            else
+            {
+                firstToA = ValidatePathAnchor(layout, graph, firstEdge, firstAnchor,
+                    nameof(firstEdge), nameof(firstAnchor));
+                secondToA = ValidatePathAnchor(layout, graph, secondEdge, secondAnchor,
+                    nameof(secondEdge), nameof(secondAnchor));
+                firstToB = RoadDistanceAt(layout, firstEdge, layout.RoadGeometry.Get(firstEdge).Length) - firstToA;
+                secondToB = RoadDistanceAt(layout, secondEdge, layout.RoadGeometry.Get(secondEdge).Length) - secondToA;
+                direct = Mathf.Abs(firstToA - secondToA);
+            }
 
             float[] distances = CalculateDistances(
                 graph,
                 firstEdge,
-                validatedFirstAnchor);
+                firstToA, firstToB);
             float best = float.PositiveInfinity;
             if (firstEdge == secondEdge)
             {
-                best = Vector3.Distance(
-                    validatedFirstAnchor,
-                    validatedSecondAnchor);
+                best = direct;
             }
 
             ConsiderEndpoint(
                 graph,
                 distances,
                 secondEdge.A,
-                validatedSecondAnchor,
+                secondToA,
                 ref best);
             ConsiderEndpoint(
                 graph,
                 distances,
                 secondEdge.B,
-                validatedSecondAnchor,
+                secondToB,
                 ref best);
 
             if (float.IsPositiveInfinity(best))
@@ -245,10 +277,43 @@ namespace BarPromenade
             return anchor;
         }
 
+        private static float ValidatePathAnchor(CityLayout layout, WeightedGraph graph,
+            RoadEdge edge, Vector3 anchor, string edgeParameterName, string anchorParameterName)
+        {
+            if (!graph.Contains(edge))
+                throw new ArgumentException("The anchor edge does not belong to the road graph.", edgeParameterName);
+            if (!IsFinite(anchor))
+                throw new ArgumentOutOfRangeException(anchorParameterName,
+                    "A road anchor must contain only finite coordinates.");
+            CityRoadPath path = layout.RoadGeometry.Get(edge);
+            CityRoadProjection projection = path.Project(new Vector2(anchor.x, anchor.z));
+            float expectedHeight = layout.ElevationPlan.SampleRoadDatum(edge, projection.DistanceAlong / path.Length);
+            float heightError = expectedHeight - anchor.y;
+            if (projection.DistanceSquared + heightError * heightError > PointEpsilonSquared)
+                throw new ArgumentException("A road anchor must lie on its supplied edge.", anchorParameterName);
+            return RoadDistanceAt(layout, edge, projection.DistanceAlong);
+        }
+
+        private static float RoadDistanceAt(CityLayout layout, RoadEdge edge, float station)
+        {
+            // SampleRoadDatum owns a level mouth at each endpoint and one
+            // constant grade between them. Integrate that grade over physical
+            // XZ arclength, rather than taking a chord through a curved street.
+            float length = layout.RoadGeometry.Get(edge).Length;
+            station = Mathf.Clamp(station, 0f, length);
+            float start = Mathf.Min(length, layout.RoadGeometry.GetEndpointInset(edge, edge.A));
+            float end = Mathf.Max(start, length - layout.RoadGeometry.GetEndpointInset(edge, edge.B));
+            float run = end - start;
+            float rise = layout.ElevationPlan.GetNodeElevation(edge.B) - layout.ElevationPlan.GetNodeElevation(edge.A);
+            float factor = run > .0001f ? Mathf.Sqrt(1f + rise * rise / (run * run)) : 1f;
+            return Mathf.Min(station, start) + Mathf.Max(0f, Mathf.Min(station, end) - start) * factor +
+                Mathf.Max(0f, station - end);
+        }
+
         private static float[] CalculateDistances(
             WeightedGraph graph,
             RoadEdge firstEdge,
-            Vector3 firstAnchor)
+            float firstToA, float firstToB)
         {
             int count = graph.NodeCount;
             var distances = new float[count];
@@ -262,16 +327,12 @@ namespace BarPromenade
             SetMinimum(
                 distances,
                 graph.GetIndex(firstEdge.A),
-                Vector3.Distance(
-                    firstAnchor,
-                    graph.GetPosition(firstEdge.A)),
+                firstToA,
                 pending);
             SetMinimum(
                 distances,
                 graph.GetIndex(firstEdge.B),
-                Vector3.Distance(
-                    firstAnchor,
-                    graph.GetPosition(firstEdge.B)),
+                firstToB,
                 pending);
 
             while (pending.TryDequeue(out int current))
@@ -311,7 +372,7 @@ namespace BarPromenade
             WeightedGraph graph,
             float[] distances,
             Vector2Int node,
-            Vector3 targetAnchor,
+            float distanceToAnchor,
             ref float best)
         {
             int index = graph.GetIndex(node);
@@ -321,10 +382,7 @@ namespace BarPromenade
             }
 
             float candidate =
-                distances[index] +
-                Vector3.Distance(
-                    graph.GetPosition(node),
-                    targetAnchor);
+                distances[index] + distanceToAnchor;
             if (candidate < best)
             {
                 best = candidate;
@@ -555,7 +613,8 @@ namespace BarPromenade
             public static WeightedGraph Create(
                 IReadOnlyList<Vector2Int> nodes,
                 IReadOnlyList<RoadEdge> edges,
-                Func<Vector2Int, Vector3> getNodeWorldPosition)
+                Func<Vector2Int, Vector3> getNodeWorldPosition,
+                Func<RoadEdge, float> getEdgeLength = null)
             {
                 if (nodes.Count == 0)
                 {
@@ -624,7 +683,7 @@ namespace BarPromenade
                             nameof(edges));
                     }
 
-                    float length = Vector3.Distance(
+                    float length = getEdgeLength != null ? getEdgeLength(edge) : Vector3.Distance(
                         positions[firstIndex],
                         positions[secondIndex]);
                     if (!IsFinite(length) || length <= 0f)

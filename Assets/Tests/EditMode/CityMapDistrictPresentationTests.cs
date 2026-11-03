@@ -98,6 +98,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(CityMapPointOfInterestKind.DogPark, "map.poi.dog_park")]
         [TestCase(CityMapPointOfInterestKind.TerraceCourts, "map.poi.terrace_courts")]
         [TestCase(CityMapPointOfInterestKind.TerraceUnderpass, "map.poi.terrace_underpass")]
+        [TestCase(CityMapPointOfInterestKind.TerraceLowerCourt, "map.poi.terrace_lower_court")]
         public void PointOfInterestLocalizationKeys_AreStable(
             CityMapPointOfInterestKind kind,
             string expected)

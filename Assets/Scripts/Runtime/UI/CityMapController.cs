@@ -29,7 +29,8 @@ namespace BarPromenade
         Laundry = 10,
         DogPark = 11,
         TerraceCourts = 12,
-        TerraceUnderpass = 13
+        TerraceUnderpass = 13,
+        TerraceLowerCourt = 14
     }
 
     public readonly struct CityMapPointOfInterest
@@ -877,10 +878,11 @@ namespace BarPromenade
                      index++)
                 {
                     RoadEdge edge = Layout.RoadEdges[index];
-                    Vector3 candidate = ClosestPointOnPlanarSegment(
-                        target.Center,
-                        Layout.GetNodeWorldPosition(edge.A),
-                        Layout.GetNodeWorldPosition(edge.B));
+                    CityRoadPath path = Layout.RoadGeometry.Get(edge);
+                    CityRoadProjection projected = path.Project(new Vector2(target.Center.x, target.Center.z));
+                    Vector3 candidate = new Vector3(projected.Position.x,
+                        Layout.ElevationPlan.SampleRoadDatum(edge, projected.DistanceAlong / path.Length),
+                        projected.Position.y);
                     float squaredDistance =
                         (candidate - target.Center).sqrMagnitude;
                     if (squaredDistance < bestSquaredDistance)
@@ -892,27 +894,6 @@ namespace BarPromenade
             }
 
             return destination;
-        }
-
-        private static Vector3 ClosestPointOnPlanarSegment(
-            Vector3 point,
-            Vector3 start,
-            Vector3 end)
-        {
-            Vector2 pointXZ = new Vector2(point.x, point.z);
-            Vector2 startXZ = new Vector2(start.x, start.z);
-            Vector2 endXZ = new Vector2(end.x, end.z);
-            Vector2 segment = endXZ - startXZ;
-            float squaredLength = segment.sqrMagnitude;
-            if (squaredLength <= 0.0001f)
-            {
-                return start;
-            }
-
-            float progress = Mathf.Clamp01(
-                Vector2.Dot(pointXZ - startXZ, segment) /
-                squaredLength);
-            return Vector3.Lerp(start, end, progress);
         }
 
         internal static bool TryGetPointOfInterestLocalizationKey(
@@ -962,6 +943,9 @@ namespace BarPromenade
                     return true;
                 case CityMapPointOfInterestKind.TerraceUnderpass:
                     key = "map.poi.terrace_underpass";
+                    return true;
+                case CityMapPointOfInterestKind.TerraceLowerCourt:
+                    key = "map.poi.terrace_lower_court";
                     return true;
                 default:
                     key = string.Empty;
@@ -1491,6 +1475,9 @@ namespace BarPromenade
                 pointsOfInterest.Add(new CityMapPointOfInterest(
                     "terrace-underpass", CityMapPointOfInterestKind.TerraceUnderpass, CityDistrictKind.Residential,
                     terraces.LowerCrossingWorld + Vector3.up * rootOffset));
+                pointsOfInterest.Add(new CityMapPointOfInterest(
+                    "terrace-lower-court", CityMapPointOfInterestKind.TerraceLowerCourt, CityDistrictKind.Residential,
+                    terraces.LowerCourtArrivalWorld + Vector3.up * rootOffset));
             }
         }
 
