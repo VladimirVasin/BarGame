@@ -156,7 +156,7 @@ namespace BarPromenade
         {
             End();
             ReleasePreparation();
-            if (home == null || soapTransform == null || washPose == null ||
+            if (home == null || soapTransform == null || washPose == null || !washPose.IsInitialized ||
                 !(home.Player.Visual is Player3DCharacterPresentation visual) || visual.Registry == null) return false;
             registry = visual.Registry;
             eyeCamera = home.CameraFollow != null ? home.CameraFollow.Camera : null;
@@ -465,12 +465,12 @@ namespace BarPromenade
             return TryPickBodyCached(ray, out target);
         }
 
-        public bool TryGetRegionTarget(HomeShowerWashRegion region, out HomeShowerSoapTarget target)
+        public bool TryGetRegionTarget(HomeShowerWashRegion region, out HomeShowerSoapTarget target, bool requireCentreAim = false)
         {
             target = default;
             if (!IsInitialized) return false;
             RefreshSurfaces();
-            Vector3 eye = registry.Anchors.Mouth.position + Vector3.up * 0.068f;
+            Vector3 eye = wash.EyeWorldPosition;
             float best = float.PositiveInfinity;
             foreach (Surface surface in surfaces)
             {
@@ -480,6 +480,7 @@ namespace BarPromenade
                     Vector3 a = surface.Vertices[surface.Triangles[index]], b = surface.Vertices[surface.Triangles[index + 1]], c = surface.Vertices[surface.Triangles[index + 2]];
                     Vector3 point = (a + b + c) / 3f;
                     if (!IsInLookCone(point, eye)) continue;
+                    if (requireCentreAim && !IsInsideCentreAimCone(point, eye)) continue;
                     Vector3 normal = Vector3.Cross(b - a, c - a).normalized;
                     if (Vector3.Dot(normal, eye - point) < 0f) normal = -normal;
                     if (!CanContactPatch(surface, normal)) continue;
@@ -531,8 +532,22 @@ namespace BarPromenade
 
         public bool IsInLookCone(Vector3 point)
         {
-            return registry != null && IsInLookCone(point,
-                registry.Anchors.Mouth.position + Vector3.up * HomeShowerFirstPersonView.EyeHeightAboveMouth);
+            return IsInitialized && wash != null && wash.IsInitialized && IsInLookCone(point, wash.EyeWorldPosition);
+        }
+
+        private bool IsInsideCentreAimCone(Vector3 point, Vector3 eye)
+        {
+            Vector3 direction = actor.InverseTransformDirection(point - eye);
+            float yaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            float pitch = Mathf.Atan2(-direction.y, new Vector2(direction.x, direction.z).magnitude) * Mathf.Rad2Deg;
+            // Diagnostic target search must distinguish visible edge skin from
+            // a patch the fixed centre marker can actually reach without clamping.
+            return (Mathf.Abs(yaw) <= HomeShowerFirstPersonView.MaximumLookYawDegrees &&
+                    pitch >= HomeShowerFirstPersonView.MinimumViewPitchDegrees &&
+                    pitch <= HomeShowerFirstPersonView.MaximumViewPitchDegrees) ||
+                (Mathf.Abs(Mathf.DeltaAngle(0f, yaw + 180f)) <= HomeShowerFirstPersonView.MaximumLookYawDegrees &&
+                    180f - pitch >= HomeShowerFirstPersonView.MinimumViewPitchDegrees &&
+                    180f - pitch <= HomeShowerFirstPersonView.MaximumViewPitchDegrees);
         }
 
         private bool IsInLookCone(Vector3 point, Vector3 eye)

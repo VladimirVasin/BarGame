@@ -73,6 +73,8 @@ namespace BarPromenade
         private Transform chest;
         private Transform neck;
         private Transform head;
+        private Transform leftEye;
+        private Transform rightEye;
         private Transform pelvisAnchor;
         private Transform hotValve;
         private Transform coldValve;
@@ -97,7 +99,8 @@ namespace BarPromenade
         private Vector3 passiveRayForward, passiveRayRight, passiveRayUp;
         private int passiveObstacleRevision;
 
-        public bool IsInitialized => registry != null && actor != null;
+        public bool IsInitialized => registry != null && actor != null && leftEye != null && rightEye != null;
+        public Vector3 EyeWorldPosition => IsInitialized ? (leftEye.position + rightEye.position) * 0.5f : Vector3.zero;
         public bool IsCaptured => captured;
         public bool BridgesShown { get; private set; }
         private bool modularBareBody;
@@ -189,8 +192,11 @@ namespace BarPromenade
             spine = registry.Anchors.Spine;
             neck = ResolveBone(Player3DAnatomicalPart.Neck);
             head = ResolveBone(Player3DAnatomicalPart.Head);
+            Transform eyeRoot = registry.Anchors.Head;
+            leftEye = eyeRoot != null ? eyeRoot.Find("face.eye.L") : null;
+            rightEye = eyeRoot != null ? eyeRoot.Find("face.eye.R") : null;
             pelvisAnchor = registry.Anchors.Pelvis;
-            if (chest == null || neck == null || head == null || pelvisAnchor == null ||
+            if (chest == null || neck == null || head == null || leftEye == null || rightEye == null || pelvisAnchor == null ||
                 !left.Resolve(registry, false) ||
                 !right.Resolve(registry, true))
             {
@@ -245,7 +251,7 @@ namespace BarPromenade
             neutralEyePivots[1] = toActor * (chest.position - actor.position);
             neutralEyePivots[2] = toActor * (neck.position - actor.position);
             neutralEyePivots[3] = toActor * (head.position - actor.position);
-            neutralEyePivots[4] = toActor * (registry.Anchors.Mouth.position - actor.position);
+            neutralEyePivots[4] = toActor * (EyeWorldPosition - actor.position);
             captured = true;
         }
 
@@ -253,7 +259,7 @@ namespace BarPromenade
         /// Predict the eye at a grounded room-local dock before the actor
         /// arrives. Capture reads the locked Idle once; this method rotates
         /// only copied pivot positions, never a Transform or a hidden pose.
-        /// It matches ApplyBrace with zero sway and the view's world-up eye offset.
+        /// It matches ApplyBrace with zero sway at the production eye midpoint.
         /// </summary>
         public bool TryPredictEyeLocal(Vector3 groundedDockLocal, Vector3 facingLocal,
             float poseWeight, out Vector3 eyeLocal)
@@ -271,8 +277,7 @@ namespace BarPromenade
                     points[child] = points[pivot] + pitch * (points[child] - points[pivot]);
             }
             Quaternion facing = Quaternion.LookRotation(room.TransformDirection(facingLocal), Vector3.up);
-            Vector3 eyeWorld = room.TransformPoint(groundedDockLocal) + facing * points[4] +
-                Vector3.up * HomeShowerFirstPersonView.EyeHeightAboveMouth;
+            Vector3 eyeWorld = room.TransformPoint(groundedDockLocal) + facing * points[4];
             eyeLocal = room.InverseTransformPoint(eyeWorld);
             return true;
         }
@@ -489,6 +494,7 @@ namespace BarPromenade
             registry = null;
             modularBareBody = false;
             actor = null;
+            leftEye = rightEye = null;
         }
 
         private void RestoreNeutral()

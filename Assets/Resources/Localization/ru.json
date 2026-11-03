@@ -808,6 +808,10 @@
       "value": "E — взять мыло"
     },
     {
+      "key": "interaction.shower_washing_controls",
+      "value": "Мышь — обзор · Удерживать ЛКМ — мыть · Q — выйти"
+    },
+    {
       "key": "interaction.exit_shower",
       "value": "Q — выйти из душа"
     },

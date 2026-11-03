@@ -1083,7 +1083,10 @@ namespace BarPromenade
         private bool stepOutArrived;
         private float stepOutSettleElapsed;
         private const float StepOutSettleSeconds = 0.25f;
+        public const float FirstPersonNearClip = 0.015f;
         private Camera sceneCamera;
+        private float previousNearClip;
+        private bool nearClipCaptured;
         private Renderer[] exitVisibilityRenderers = Array.Empty<Renderer>();
         private readonly Plane[] exitFrustum = new Plane[6];
 
@@ -1241,6 +1244,9 @@ namespace BarPromenade
             stepOutArrived = false;
             stepOutSettleElapsed = 0f;
             sceneCamera = Home.CameraFollow.GetComponent<Camera>();
+            previousNearClip = sceneCamera.nearClipPlane;
+            nearClipCaptured = true;
+            sceneCamera.nearClipPlane = Mathf.Min(previousNearClip, FirstPersonNearClip);
             exitVisibilityRenderers = Home.Player.GameObject.GetComponentsInChildren<Renderer>(true);
             EntryCameraStartWorld = Home.CameraFollow.FixedBasePosition;
             EntryCameraStartRotation = Home.CameraFollow.FixedBaseRotation;
@@ -1578,10 +1584,10 @@ namespace BarPromenade
                 phase >= HomeShowerScenePhase.WaterOn &&
                 phase <= HomeShowerScenePhase.WaterOff;
             bool interactive = phase == HomeShowerScenePhase.Wash;
-            view.SetPointerMode(interactive && WashingPointerAvailable && !washingLookHeld);
+            view.SetPointerMode(interactive && ShowGamepadWashingPointer);
             float headBlend = timeline.IsInsideHead &&
                 (liveEyeReached || Vector3.Distance(TargetEyeWorld,
-                    registry.Anchors.Mouth.position + Vector3.up * HomeShowerFirstPersonView.EyeHeightAboveMouth) < 0.10f)
+                    view.EyeWorldPosition) < 0.10f)
                 ? 1f : 0f;
             if (exitCameraCaptured)
             {
@@ -1590,7 +1596,7 @@ namespace BarPromenade
                 EvaluateExitEye(out Vector3 parkedEye, out _);
                 bool parked = phase < HomeShowerScenePhase.CameraOut;
                 headBlend = parked && Vector3.Distance(parkedEye,
-                    registry.Anchors.Mouth.position + Vector3.up * HomeShowerFirstPersonView.EyeHeightAboveMouth) < 0.10f
+                    view.EyeWorldPosition) < 0.10f
                     ? 1f : 0f;
             }
             view.Tick(deltaTime, headBlend, timeline.ViewPitchDegrees,
@@ -1746,6 +1752,11 @@ namespace BarPromenade
             RestoreStep("view", () =>
             {
                 if (view != null) view.End();
+            });
+            RestoreStep("camera_optics", () =>
+            {
+                if (nearClipCaptured && sceneCamera != null) sceneCamera.nearClipPlane = previousNearClip;
+                nearClipCaptured = false;
             });
             RestoreStep("handoff", ReleaseHandoff);
             RestoreStep("occlusion", () =>

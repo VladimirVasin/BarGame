@@ -9,7 +9,7 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 ### 2026-11-03
 
 - Бар:предупреждение/просьба,доподача/допить/встать/выход;уборка.
-  Пауза держит срок,камера/меню целы. Бармен:подача→салфетка→зал;кадр/поза ждут речь.
+  Пауза/срок/камера/меню. Бармен:подача→салфетка→зал;кадр/поза ждут речь.
   LastGuest_ClosingPreservesMenuSipAndWalksToDoor.
 - Пиво/вино:E по трети→стойка,одна оплата/FX частями/зачёт в конце.
   Водка/коньяк разом.
@@ -23,11 +23,13 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   AreaCaptureFixture.Supermarket/Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures/
   DrinkContainers_PurchaseSipSwitch_PreserveFillOpeningAndContacts passed;
   rear-wall/checkout/face;bar/inventory doses.
-- Склад:боярышник:Use→автозакрыть→глоток,+30HP/+40опьянения;HP<100%/инвентарь.
-  Красный наплыв/стоп-кадр4с,гул2с;голова/бросок→прежний предмет;лут:жёлтый контур.
+- Склад:боярышник:Use→закрыть→глоток,+30HP/+40опьянения;HP<100%/инвентарь.
+  Красный наплыв/стоп4с,гул2с;голова/бросок→прежний предмет;жёлтый лут.
 CombatWarehouseHawthorn.
 - Зеркало:стекло билда.
   HomeBathroomMirrorPlayModeTests.
+- Душ:мышь/центр+ЛКМ;глаза/nearclip восстановлены.
+  Shower_CancelMidWashDressesHimAndShutsTheWater.
 - Туалет:анатомия при снятых штанах.
   SeatedAppearance_ShowsAttachedAnatomyAndHidesItOnExit.
 Checks passed;frames reviewed.

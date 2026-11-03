@@ -837,7 +837,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9a9fbeb520924e7bb7da7f20b14ddb89, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.SupermarketInteriorAssetRegistry
   modelRoot: {fileID: 5004775663176288582}
   anchors:
@@ -1037,7 +1037,7 @@ MonoBehaviour:
   - sourceName: Entrance Active Glass
     role: door_glass
     group: door
-    sheet:
+    sheet: 
     baseColor: {r: 0.24, g: 0.32, b: 0.29, a: 0.3}
     emissive: 0
     castsShadows: 0
@@ -1073,7 +1073,7 @@ MonoBehaviour:
   - sourceName: Entrance Fixed Glass
     role: door_glass
     group: door
-    sheet:
+    sheet: 
     baseColor: {r: 0.24, g: 0.32, b: 0.29, a: 0.3}
     emissive: 0
     castsShadows: 0
@@ -1109,7 +1109,7 @@ MonoBehaviour:
   - sourceName: Entrance Dark Backing
     role: door_backing
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.045, g: 0.057, b: 0.05, a: 1}
     emissive: 0
     castsShadows: 0
@@ -1136,7 +1136,7 @@ MonoBehaviour:
   - sourceName: Fluorescent Tube 01
     role: fluorescent_tube
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 1, g: 1, b: 0.92, a: 1}
     emissive: 1
     castsShadows: 0
@@ -1154,7 +1154,7 @@ MonoBehaviour:
   - sourceName: Fluorescent Tube 02
     role: fluorescent_tube
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 1, g: 1, b: 0.92, a: 1}
     emissive: 1
     castsShadows: 0
@@ -1172,7 +1172,7 @@ MonoBehaviour:
   - sourceName: Fluorescent Tube 03
     role: fluorescent_tube
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 1, g: 1, b: 0.92, a: 1}
     emissive: 1
     castsShadows: 0
@@ -1190,7 +1190,7 @@ MonoBehaviour:
   - sourceName: Fluorescent Tube 04
     role: fluorescent_tube
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 1, g: 1, b: 0.92, a: 1}
     emissive: 1
     castsShadows: 0
@@ -1298,7 +1298,7 @@ MonoBehaviour:
   - sourceName: Shelf Cold Interior Tube
     role: shelf_cold
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 1, g: 1, b: 0.92, a: 1}
     emissive: 1
     castsShadows: 0
@@ -1307,7 +1307,7 @@ MonoBehaviour:
   - sourceName: Shelf Cold Frost
     role: shelf_cold
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.6, g: 0.72, b: 0.69, a: 1}
     emissive: 0
     castsShadows: 0
@@ -1316,7 +1316,7 @@ MonoBehaviour:
   - sourceName: Shelf Dry Upright Slots
     role: shelf_dry
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.075, g: 0.085, b: 0.075, a: 1}
     emissive: 0
     castsShadows: 0
@@ -1334,7 +1334,7 @@ MonoBehaviour:
   - sourceName: Shelf Pantry Upright Slots
     role: shelf_pantry
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.075, g: 0.085, b: 0.075, a: 1}
     emissive: 0
     castsShadows: 0
@@ -1352,7 +1352,7 @@ MonoBehaviour:
   - sourceName: Cold Cabinet Toe Vent
     role: cold_vent
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.08, g: 0.105, b: 0.1, a: 1}
     emissive: 0
     castsShadows: 0
@@ -1388,7 +1388,7 @@ MonoBehaviour:
   - sourceName: Checkout Conveyor Belt
     role: checkout
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.075, g: 0.085, b: 0.075, a: 1}
     emissive: 0
     castsShadows: 1
@@ -1406,7 +1406,7 @@ MonoBehaviour:
   - sourceName: Checkout Register Keys
     role: register
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.56, g: 0.55, b: 0.45, a: 1}
     emissive: 0
     castsShadows: 0
@@ -1415,7 +1415,7 @@ MonoBehaviour:
   - sourceName: Checkout Register Display
     role: register
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.24, g: 0.31, b: 0.22, a: 1}
     emissive: 1
     castsShadows: 0
@@ -1505,7 +1505,7 @@ MonoBehaviour:
   - sourceName: Checkout Warm Practical Diffuser
     role: trim
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.76, g: 0.58, b: 0.32, a: 1}
     emissive: 1
     castsShadows: 0
@@ -1532,7 +1532,7 @@ MonoBehaviour:
   - sourceName: Entrance Basket Openings And Handles
     role: trim
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.12, g: 0.16, b: 0.13, a: 1}
     emissive: 0
     castsShadows: 0
@@ -1595,7 +1595,7 @@ MonoBehaviour:
   - sourceName: CCTV Head 01 Lens
     role: cctv_head
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.028, g: 0.032, b: 0.035, a: 1}
     emissive: 0
     castsShadows: 1
@@ -1604,7 +1604,7 @@ MonoBehaviour:
   - sourceName: CCTV Head 01 LED
     role: cctv_head
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.85, g: 0.12, b: 0.08, a: 1}
     emissive: 1
     castsShadows: 0
@@ -1631,7 +1631,7 @@ MonoBehaviour:
   - sourceName: CCTV Head 02 Lens
     role: cctv_head
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.028, g: 0.032, b: 0.035, a: 1}
     emissive: 0
     castsShadows: 1
@@ -1640,7 +1640,7 @@ MonoBehaviour:
   - sourceName: CCTV Head 02 LED
     role: cctv_head
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.85, g: 0.12, b: 0.08, a: 1}
     emissive: 1
     castsShadows: 0
@@ -1667,7 +1667,7 @@ MonoBehaviour:
   - sourceName: CCTV Head 03 Lens
     role: cctv_head
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.028, g: 0.032, b: 0.035, a: 1}
     emissive: 0
     castsShadows: 1
@@ -1676,7 +1676,7 @@ MonoBehaviour:
   - sourceName: CCTV Head 03 LED
     role: cctv_head
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.85, g: 0.12, b: 0.08, a: 1}
     emissive: 1
     castsShadows: 0
@@ -1703,7 +1703,7 @@ MonoBehaviour:
   - sourceName: CCTV Head 04 Lens
     role: cctv_head
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.028, g: 0.032, b: 0.035, a: 1}
     emissive: 0
     castsShadows: 1
@@ -1712,7 +1712,7 @@ MonoBehaviour:
   - sourceName: CCTV Head 04 LED
     role: cctv_head
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.85, g: 0.12, b: 0.08, a: 1}
     emissive: 1
     castsShadows: 0

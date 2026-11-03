@@ -2464,8 +2464,8 @@ cemetery:own interiors/returns.
   into the stall and closes it behind him. The lens starts a gentler flight on `E`,
   crosses the opening curtain and reaches the future eye position before
   the hero. Dressed approach/opening precede offscreen undress before StepIn;
-  he enters bare and joins the eye lens without drift. The feet stand farther from
-  the wall and the torso leans toward the water without automatic sway.
+  he enters bare. Lens follows the rig eye midpoint without drift;scoped nearclip
+  ≤15mm restores on exit/cancel. Feet farther from wall;torso leans without sway.
   Both palms rest on the tile. Before taking soap, the right hand opens
   the hot wheel, then the left opens the cold wheel. Each returns to its brace;
   each opening contributes half the final flow.
@@ -2477,14 +2477,13 @@ cemetery:own interiors/returns.
   Before soap, mouse/right stick look normally. `E` takes it regardless of cursor
   position or viewing direction. A localized prompt, yellow outline and
   connecting line appear beside the soap when it is visible; they do not
-  gate pickup. Pickup takes priority over exit. Pressing on
-  the body selects a surface point; holding left mouse repeats right-hand
-  strokes there with a stationary cursor. Release stops washing and safely
-  withdraws the hand; a new press selects another point. RMB/LT look pauses
-  rubbing. Arrow keys turn the view at `90°/s` alongside the
-  pointer, and held right mouse also enables look. Absolute pitch is bounded
-  to `−75°…115°`, allowing a view of the shower head and room to wash the
-  chest in view even with the bent head ahead of the torso.
+  gate pickup;pickup has exit priority. Mouse look continues after pickup.
+  A centre marker aims fresh LMB at skin;holding repeats right-hand strokes
+  at that anchor while the camera turns. Release stops/withdraws;another press
+  selects anew. A Russian action hint explains mouse look/LMB washing;
+  RMB is unnecessary,arrows remain an alternative at `90°/s`. Pitch is bounded
+  to `−75°…155°`, reaching the shower head and centre-aimed chest behind the
+  bent head rather than leaving chest skin at the view edge.
   The gamepad's interaction button picks up soap, right stick moves the
   pointer, right trigger holds washing, and left
   trigger changes the stick to look. Measured contact travel fills one shared

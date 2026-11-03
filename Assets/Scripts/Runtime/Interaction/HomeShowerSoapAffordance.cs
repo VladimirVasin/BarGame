@@ -19,7 +19,7 @@ namespace BarPromenade
         private HomeShowerInteraction interaction;
         private MeshFilter mesh;
         private MeshFilter exitMesh;
-        private Vector2 pointer;
+        private HomeShowerSoapTarget contactTarget;
         private bool contactVisible;
         private float regionAmount;
         private GUIStyle soapPromptStyle;
@@ -80,10 +80,10 @@ namespace BarPromenade
         }
 
         public void SetHighlight(bool enabled) => Highlighted = enabled;
-        public void ShowContact(Vector2 screenPosition, bool visible, float cleaned)
+        public void ShowContact(HomeShowerSoapTarget target, float cleaned)
         {
-            pointer = new Vector2(screenPosition.x, Screen.height - screenPosition.y);
-            contactVisible = visible;
+            contactTarget = target;
+            contactVisible = target.IsValid;
             regionAmount = Mathf.Clamp01(cleaned);
         }
         public void ClearContact() => contactVisible = false;
@@ -199,7 +199,7 @@ namespace BarPromenade
                         interaction.ExitPromptScreenPosition, true, out Vector2 leaderStart);
                     ExitPromptLeaderStart = leaderStart;
                 }
-                if (interaction.ShowGamepadWashingPointer && !contactVisible)
+                if (interaction.UsesMouseWashingAim || (interaction.ShowGamepadWashingPointer && !contactVisible))
                 {
                     Vector2 cursor = interaction.WashingPointer;
                     cursor.y = Screen.height - cursor.y;
@@ -207,8 +207,13 @@ namespace BarPromenade
                     DrawLine(cursor + Vector2.left * 4f, cursor + Vector2.right * 4f);
                     DrawLine(cursor + Vector2.down * 4f, cursor + Vector2.up * 4f);
                 }
-                if (contactVisible && interaction.WashingPointerAvailable)
+                if (contactVisible && contactTarget.IsValid && interaction.WashingPointerAvailable)
                 {
+                    // The view can turn after the stroke was presented. Project
+                    // the skin anchor with the final camera, not last frame's view.
+                    Vector3 projected = interaction.WashingCamera.WorldToScreenPoint(contactTarget.WorldPoint);
+                    if (projected.z <= 0f) return;
+                    Vector2 pointer = new Vector2(projected.x, Screen.height - projected.y);
                     GUI.color = RetroUiTheme.ToGuiColor(Color.Lerp(Color.white, HighlightColor, regionAmount));
                     DrawLine(pointer + new Vector2(-5f, -5f), pointer + new Vector2(5f, -5f));
                     DrawLine(pointer + new Vector2(5f, -5f), pointer + new Vector2(5f, 5f));

@@ -66,8 +66,10 @@ namespace BarPromenade
         public bool WashingPointerAvailable => soapStarted && !washingFinishRequested &&
             soapPhase == HomeShowerSoapPhase.Washing;
         public Camera WashingCamera => Home != null && Home.CameraFollow != null ? Home.CameraFollow.Camera : null;
+        public bool UsesMouseWashingAim => WashingPointerAvailable && !gamepadWashingPointer;
         public bool ShowGamepadWashingPointer => gamepadWashingPointer && WashingPointerAvailable && !washingLookHeld;
-        public Vector2 WashingPointer => scrubPointer;
+        public Vector2 WashingPointer => UsesMouseWashingAim && WashingCamera != null
+            ? WashingCamera.pixelRect.center : scrubPointer;
 
         private void InitializeWashing(Transform room)
         {
@@ -98,7 +100,7 @@ namespace BarPromenade
         private void AdvanceWashing(float seconds)
         {
             if (timeline.Phase != HomeShowerScenePhase.Wash || PauseMenuController.IsAnyPaused) return;
-            bool acceptsInput = GameInput.CanRead(GameInputContext.Contextual);
+            bool acceptsInput = GameCursor.ApplicationFocused && GameInput.CanRead(GameInputContext.Contextual);
             if (acceptsInput && Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame)
             {
                 RequestStopFromSceneInput();
@@ -126,20 +128,23 @@ namespace BarPromenade
 
             Mouse mouse = Mouse.current;
             Gamepad pad = Gamepad.current;
-            washingLookHeld = WashingPointerAvailable &&
-                ((mouse != null && mouse.rightButton.isPressed) || (pad != null && pad.leftTrigger.isPressed));
-            bool modeChanged = washingLookHeld != previousWashingLook;
-            previousWashingLook = washingLookHeld;
-            bool held = (mouse != null && mouse.leftButton.isPressed) || (pad != null && pad.rightTrigger.isPressed);
-            if (!held) pointerArmed = true;
             Vector2 mouseDelta = mouse != null ? mouse.delta.ReadValue() : Vector2.zero;
             Vector2 stick = pad != null ? pad.rightStick.ReadValue() : Vector2.zero;
-            if (!washingLookHeld && !modeChanged && mouse != null &&
+            if (mouse != null &&
                 (mouseDelta.sqrMagnitude > 0.25f || mouse.leftButton.wasPressedThisFrame))
                 gamepadWashingPointer = false;
             if (pad != null && (stick.sqrMagnitude > 0.01f || pad.rightTrigger.wasPressedThisFrame))
                 gamepadWashingPointer = true;
-            Vector2 pointer = !gamepadWashingPointer && mouse != null ? mouse.position.ReadValue() : scrubPointer;
+            // Mouse motion always looks around. Only the retained gamepad
+            // pointer needs a separate look mode; a mouse press aims centrally.
+            washingLookHeld = WashingPointerAvailable && gamepadWashingPointer && pad != null && pad.leftTrigger.isPressed;
+            bool modeChanged = washingLookHeld != previousWashingLook;
+            previousWashingLook = washingLookHeld;
+            bool held = gamepadWashingPointer ? pad != null && pad.rightTrigger.isPressed
+                : mouse != null && mouse.leftButton.isPressed;
+            if (!held) pointerArmed = true;
+            Vector2 pointer = !gamepadWashingPointer && WashingCamera != null
+                ? WashingCamera.pixelRect.center : scrubPointer;
             Vector2 delta = !gamepadWashingPointer ? mouseDelta : Vector2.zero;
             if (gamepadWashingPointer && stick.sqrMagnitude > 0.01f && !washingLookHeld)
             {
@@ -256,9 +261,7 @@ namespace BarPromenade
             previousStrokeTarget = target;
             if (target.IsValid)
             {
-                Vector3 projected = WashingCamera.WorldToScreenPoint(target.WorldPoint);
-                soapAffordance.ShowContact(projected, projected.z > 0f,
-                    washingProgress.GetRegionAmount(target.Region));
+                soapAffordance.ShowContact(target, washingProgress.GetRegionAmount(target.Region));
                 if (credited > 0f) soapAffordance.EmitFoam(target, credited);
             }
             else soapAffordance.ClearContact();

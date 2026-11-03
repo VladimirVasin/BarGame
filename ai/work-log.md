@@ -19,7 +19,7 @@ BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment/
 WineService_FullGlassTakesThreeSeparateSips/PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce/
 BeerService_WaitsForPhysicalArrivalAndExplicitDrink/BottleService_WaitsForEveryArrivalAndExplicitDrink
 passed;full/partial/empty frames.
-Shop:metal/glass door/contact/solid sweep;dense stock/shared surfaces,
+Shop:metal/glass door/contact/sweep;dense stock/shared surfaces,
 finite reflection;rear flush fixtures/cartons;metric beer/wine;atomic sale/receipt. Beer/wine/cognac stronger,stress kept;beer500ml=bar portion,
 wine750ml=three250ml;partial-dose rounding. Carried ID/fill/open;
 opaque Al can/tab,wine screw cap,wardrobe/weapon cleanup. Cashier:skin/clothUV,bulging3D face,rig-measured hands. R lane/scanner/
@@ -31,16 +31,18 @@ main-thread reflection buffers;bounded Al impact/surface,no glass audio.
 Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures,
 AreaCaptureFixture.Supermarket/DrinkContainers_PurchaseSipSwitch_PreserveFillOpeningAndContacts
 passed;bar/inventory doses+rear/palm/counter/customer contacts;
-rear-wall/checkout/face/door/grip frames/previews.
+rear-wall/checkout/face/door/grip frames.
 Hawthorn:seeded vials/ammo;yellow outline/shared pickup;Use→auto-close inventory→
 rig gulp,+30HP/+40intox/dose;HPHUD<max/inventory HP;full/defeated reject. Lip clear→.65s
 headshake/grimace→throw→prior hand;expressive gulp.
 Red4active-real s,last2:frozen-world drift/smear over live view;half-resRT/camera.
 Quiet swell2s;black/UI/halation,pause/retrigger/cleanup/intox kept;Blender vial/grips.
-Fixture:inactive-Docker ground isolation;baseline YAML ws.
+Fixture:inactive-Docker ground isolation/YAML ws.
 CombatWarehouseHawthorn passed.
 Mirror:packaged straight-alpha Lit glass/build gate.
 HomeBathroomMirrorPlayModeTests passed;asset/transmission.
+Shower:mouse/centre LMB;eyes/nearclip restore.
+Shower_CancelMidWashDressesHimAndShutsTheWater passed.
 Toilet:shared pelvis anatomy;down→show/up→hide;existing fill.
 SeatedAppearance_ShowsAttachedAnatomyAndHidesItOnExit passed.
 ChoicePlungeReturnsAndPreservesSmallAction:prior GEO_Pelvis fabric-endpoint failure.

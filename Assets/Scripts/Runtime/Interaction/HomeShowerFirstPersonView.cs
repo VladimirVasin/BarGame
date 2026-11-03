@@ -6,7 +6,7 @@ namespace BarPromenade
 {
     /// <summary>
     /// The shower from the hero's own eyes. The lens sits inside the head —
-    /// the measured mouth anchor plus the toilet's eye offset — so whatever
+    /// the midpoint of the production eye bones — so whatever
     /// wash pose the scene writes carries the camera with it. The interaction
     /// detaches that lens before straightening and keeps it parked while the
     /// hero walks out. Head visibility follows the actual lens separation.
@@ -26,9 +26,9 @@ namespace BarPromenade
         public const float HeadHideBlend = 0.90f;
         public const float MaximumLookYawDegrees = 75f;
         public const float MinimumViewPitchDegrees = -75f;
-        // The bent head sits ahead of the chest. Looking back down at that
-        // skin needs travel past vertical, with room for a visible stroke.
-        public const float MaximumViewPitchDegrees = 115f;
+        // The bent head sits ahead of the chest. Centre aim needs to reach
+        // skin that the former 115-degree view could show only at its edge.
+        public const float MaximumViewPitchDegrees = 155f;
         public const float KeyboardDegreesPerSecond = 90f;
 
         // Wash-relative limits are also used by the body picking/framing
@@ -45,6 +45,8 @@ namespace BarPromenade
         private HomeInteriorRoot home;
         private Player3DAssetRegistry registry;
         private Transform actor;
+        private Transform leftEye;
+        private Transform rightEye;
         private Player3DHeadVisibility hiddenHead;
         private bool wasLookAllowed;
         private float lookYaw;
@@ -53,7 +55,8 @@ namespace BarPromenade
         private Vector3 cameraPosition;
         private Quaternion cameraRotation;
 
-        public bool IsPrepared => registry != null && actor != null;
+        public bool IsPrepared => registry != null && actor != null && leftEye != null && rightEye != null;
+        public Vector3 EyeWorldPosition => IsPrepared ? (leftEye.position + rightEye.position) * 0.5f : Vector3.zero;
         public bool IsActive { get; private set; }
         public bool IsHeadHidden => hiddenHead != null;
         public bool IsPointerMode { get; private set; }
@@ -74,14 +77,18 @@ namespace BarPromenade
             home = homeRoot;
             registry = null;
             actor = null;
+            leftEye = rightEye = null;
             if (home.Player.GameObject == null ||
                 !(home.Player.Visual is Player3DCharacterPresentation visual) ||
                 visual.Registry == null ||
-                visual.Registry.Anchors.Mouth == null)
+                visual.Registry.Anchors.Head == null)
             {
                 return false;
             }
 
+            leftEye = visual.Registry.Anchors.Head.Find("face.eye.L");
+            rightEye = visual.Registry.Anchors.Head.Find("face.eye.R");
+            if (leftEye == null || rightEye == null) return false;
             registry = visual.Registry;
             actor = home.Player.GameObject.transform;
             return true;
@@ -97,8 +104,7 @@ namespace BarPromenade
                 return false;
             }
 
-            position = room.InverseTransformPoint(
-                registry.Anchors.Mouth.position + Vector3.up * EyeHeightAboveMouth);
+            position = room.InverseTransformPoint(EyeWorldPosition);
             forward = room.InverseTransformDirection(actor.forward);
             return true;
         }
@@ -143,7 +149,7 @@ namespace BarPromenade
 
             basePitch = basePitchDegrees;
             lookPitch = ClampLookPitch(lookPitch);
-            bool acceptsLook = lookAllowed && GameInput.CanRead(GameInputContext.Contextual) &&
+            bool acceptsLook = lookAllowed && GameCursor.ApplicationFocused && GameInput.CanRead(GameInputContext.Contextual) &&
                 IsFinite(deltaTime) && deltaTime > 0f;
             if (acceptsLook)
             {
@@ -206,8 +212,7 @@ namespace BarPromenade
 
         private void UpdateCameraPose()
         {
-            cameraPosition = registry.Anchors.Mouth.position +
-                Vector3.up * EyeHeightAboveMouth;
+            cameraPosition = EyeWorldPosition;
             cameraRotation = actor.rotation *
                 Quaternion.Euler(basePitch + lookPitch, lookYaw, 0f);
         }
@@ -229,8 +234,8 @@ namespace BarPromenade
                     (keyboard.upArrowKey.isPressed ? 1f : 0f)) * KeyboardDegreesPerSecond * deltaTime;
             }
 
-            // The soap pointer owns mouse/stick motion until its look mode
-            // is held. Arrow look stays available alongside that pointer.
+            // Mouse washing aims through the centre of this view. Only the
+            // retained gamepad pointer temporarily owns the look axes.
             if (!IsPointerMode)
             {
                 Mouse mouse = Mouse.current;

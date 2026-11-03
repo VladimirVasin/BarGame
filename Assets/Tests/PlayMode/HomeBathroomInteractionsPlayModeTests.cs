@@ -491,6 +491,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator Shower_FirstPersonNakedWashDripsAndRestores()
         {
             yield return LoadHome();
+            using var focusedInput = new FocusedInputScope();
             GameSessionState.UpdateNeeds(0, 50);
             GameSessionState.SetHeroMouthSoiled(true, "test");
             HomeShowerInteraction shower = home.ShowerScene;
@@ -992,7 +993,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(shower.View.HiddenHeadRendererCount, Is.GreaterThan(10));
                 Assert.That(Player3DHeadVisibility.IsHeadDrawn(registry), Is.False);
                 Assert.That(
-                    Vector3.Distance(camera.transform.position, registry.Anchors.Mouth.position + Vector3.up * HomeShowerFirstPersonView.EyeHeightAboveMouth),
+                    Vector3.Distance(camera.transform.position, ShowerEyeMidpoint(registry)),
                     Is.LessThan(0.03f),
                     "The lens sits at his eyes.");
                 Assert.That(Find(registry, "CLO_JacketBody").Renderer.enabled, Is.False);
@@ -1049,9 +1050,9 @@ namespace BarPromenade.Tests.PlayMode
                 AssertShowerSoapVisiblePastRightArm(camera, soap, registry);
                 Assert.That(FaceDown(registry) - restFaceDown, Is.GreaterThan(0.15f), "The head hangs under the water.");
                 Assert.That(
-                    Vector3.Distance(camera.transform.position, registry.Anchors.Mouth.position + Vector3.up * HomeShowerFirstPersonView.EyeHeightAboveMouth),
-                    Is.LessThan(0.08f),
-                    "The lens hangs with the head (plus the breathing drift).");
+                    Vector3.Distance(camera.transform.position, ShowerEyeMidpoint(registry)),
+                    Is.LessThan(0.002f),
+                    "The lens stays between the authored eyes as the head bends.");
                 Assert.That(Vector3.Dot(camera.transform.forward, Vector3.down), Is.GreaterThan(0.4f), "The eyes look down at the tray.");
                 Assert.That(Vector3.Dot(camera.transform.forward, hero.forward), Is.GreaterThan(0.3f), "...and forward, at the tile.");
                 Assert.That(home.Soundscape.ShowerWaterAmount, Is.EqualTo(1f).Within(0.01f));
@@ -1397,6 +1398,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator Shower_CancelMidWashDressesHimAndShutsTheWater()
         {
             yield return LoadHome();
+            using var focusedInput = new FocusedInputScope();
             Assert.That(GameSessionState.TryStartGameTimeFromWake(), Is.True,
                 "This standalone bathroom arrival must start the normal post-wake calendar before testing live world time.");
             GameSessionState.UpdateNeeds(0, 50);
@@ -1412,6 +1414,7 @@ namespace BarPromenade.Tests.PlayMode
             Quaternion soapRotation = soap.localRotation;
 
             Camera camera = home.CameraFollow.GetComponent<Camera>();
+            float nearClipBefore = camera.nearClipPlane;
             MeshFilter hotWheel = home.Room.Find(HomeShowerInteraction.HotHandleName).GetComponentInChildren<MeshFilter>();
             AssertShowerHardware(hotWheel);
 
@@ -1421,6 +1424,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Soundscape.ShowerWaterAmount, Is.GreaterThan(0.5f));
             Assert.That(HomeBathroomMirrorWorld.IsSelectable(HomeShowerWaterEffect.TrayWaterName), Is.False,
                 "Shower water stays outside the separate mirrored bathroom, as do the existing shower particles.");
+            yield return AtPresentation(() => AssertShowerEyeCamera(shower, camera, registry));
 
             Time.timeScale = 1f;
             yield return AssertShowerMouseLook(shower, camera, false);
@@ -1455,6 +1459,23 @@ namespace BarPromenade.Tests.PlayMode
             yield return PickUpShowerSoap(shower, camera, "HomeShowerHardware");
             Assert.That(shower.SoapHeld, Is.True, "The cancellation must exercise an actually held soap.");
             yield return AssertShowerMouseLook(shower, camera, true);
+            yield return ObserveSelectedShowerPoint(shower, camera, HomeShowerWashRegion.Torso, false, null);
+            Assert.That(showerContactFailures, Is.Empty, "The held-soap mouse controls must earn real contact progress." + ShowerContactFailureDetails);
+            float heldYaw = shower.View.LookYawDegrees, heldPitch = shower.View.LookPitchDegrees;
+            shower.View.ApplyLookDelta(-heldYaw, 35f - heldPitch);
+            yield return AtPresentation(() =>
+            {
+                AssertShowerEyeCamera(shower, camera, registry);
+                CaptureFrame("HomeShowerControls", "02-natural-down-look");
+            });
+            shower.View.ApplyLookDelta(-shower.View.LookYawDegrees,
+                HomeShowerFirstPersonView.MaximumLookPitchDegrees - shower.View.LookPitchDegrees);
+            yield return AtPresentation(() =>
+            {
+                AssertShowerEyeCamera(shower, camera, registry);
+                CaptureFrame("HomeShowerControls", "01-maximum-down-look");
+            });
+            shower.View.ApplyLookDelta(heldYaw - shower.View.LookYawDegrees, heldPitch - shower.View.LookPitchDegrees);
             yield return RequestShowerExitWithQ(shower, camera, false);
             Assert.That(shower.SoapPhase, Is.EqualTo(HomeShowerSoapPhase.PutDown), "Q returns held soap before either valve closes.");
             Assert.That(shower.Timeline.Phase, Is.EqualTo(HomeShowerScenePhase.Wash));
@@ -1465,6 +1486,8 @@ namespace BarPromenade.Tests.PlayMode
             AssertRigRestored(before, registry);
             Assert.That(Player3DHeadVisibility.IsHeadDrawn(registry), Is.True, "A cancelled wash never leaves him headless.");
             Assert.That(shower.View.IsActive, Is.False);
+            Assert.That(camera.nearClipPlane, Is.EqualTo(nearClipBefore).Within(0.000001f),
+                "Cancelling the shower restores the camera's prior clipping plane.");
             Assert.That(Cursor.lockState, Is.EqualTo(cursorBefore));
             Assert.That(home.Player.Motor.InputEnabled, Is.True);
             Assert.That(home.Soundscape.ShowerWaterAmount, Is.Zero.Within(0.001f));
@@ -1643,8 +1666,8 @@ namespace BarPromenade.Tests.PlayMode
             Time.timeScale = 1f;
             Assert.That(shower.Timeline.Phase, Is.EqualTo(HomeShowerScenePhase.Wash));
             Assert.That(shower.SoapPhase, Is.EqualTo(holdingSoap ? HomeShowerSoapPhase.Washing : HomeShowerSoapPhase.SelectSoap));
-            yield return AtPresentation(() => Assert.That(shower.View.IsPointerMode, Is.EqualTo(holdingSoap),
-                "Only the actual held-soap washing phase needs a body-selection pointer."));
+            yield return AtPresentation(() => Assert.That(shower.View.IsPointerMode, Is.False,
+                "Mouse look remains available before and after taking the soap."));
             float originalYaw = shower.View.LookYawDegrees, originalPitch = shower.View.LookPitchDegrees;
             Quaternion actorRotation = home.Player.GameObject.transform.rotation;
             float progress = shower.WashingProgress.Amount;
@@ -1656,7 +1679,6 @@ namespace BarPromenade.Tests.PlayMode
                 input.Setup();
                 mouse = InputSystem.AddDevice<Mouse>();
                 GameInput.HandleApplicationFocus(true);
-                if (holdingSoap) input.Press(mouse.rightButton, queueEventOnly: true);
                 yield return null;
                 yield return null; // Discard the cursor-ownership handoff delta.
                 float yaw = shower.View.LookYawDegrees, pitch = shower.View.LookPitchDegrees;
@@ -1666,17 +1688,16 @@ namespace BarPromenade.Tests.PlayMode
                 yield return AtPresentation(() =>
                 {
                     Assert.That(shower.View.LookYawDegrees, Is.GreaterThan(yaw + 5f),
-                        "Real mouse delta must turn the initial shower hold; the soap phase is " + shower.SoapPhase + ".");
+                        "Real mouse delta must turn the shower view without holding RMB; the soap phase is " + shower.SoapPhase + ".");
                     Assert.That(shower.View.LookPitchDegrees, Is.GreaterThan(pitch + 1f));
                     Assert.That(Quaternion.Angle(cameraBefore, camera.transform.rotation), Is.GreaterThan(3f));
                     Assert.That(Quaternion.Angle(actorRotation, home.Player.GameObject.transform.rotation), Is.LessThan(.01f),
                         "Looking from the shower must not rotate the planted body.");
                     Assert.That(shower.WashingProgress.Amount, Is.EqualTo(progress));
                 });
-                if (holdingSoap) input.Release(mouse.rightButton, queueEventOnly: true);
                 yield return null;
                 yield return null;
-                yield return AtPresentation(() => Assert.That(shower.View.IsPointerMode, Is.EqualTo(holdingSoap)));
+                yield return AtPresentation(() => Assert.That(shower.View.IsPointerMode, Is.False));
             }
             finally
             {
@@ -2137,8 +2158,8 @@ namespace BarPromenade.Tests.PlayMode
             {
                 input.Setup();
                 keyboard = InputSystem.AddDevice<Keyboard>();
-                Assert.That(shower.View.IsPointerMode, Is.EqualTo(shower.SoapPhase == HomeShowerSoapPhase.Washing),
-                    "Waiting for soap keeps ordinary look; held soap gives the mouse its washing pointer.");
+                Assert.That(shower.View.IsPointerMode, Is.False,
+                    "Arrow look remains an alternative to ordinary mouse look, including while holding soap.");
                 float beforeUp = shower.View.LookPitchDegrees;
                 input.Press(keyboard.upArrowKey, queueEventOnly: true);
                 float deadline = Time.realtimeSinceStartup + 2f;
@@ -2399,45 +2420,71 @@ namespace BarPromenade.Tests.PlayMode
                 mouse = InputSystem.AddDevice<Mouse>();
                 yield return AtPresentation(() =>
                 {
-                    Assert.That(shower.SoapPose.TryGetRegionTarget(region, out target), Is.True, region.ToString());
+                    Assert.That(shower.SoapPose.TryGetRegionTarget(region, out target, requireCentreAim: true), Is.True, region.ToString());
                     AimShowerAt(shower, camera, target.WorldPoint);
                 });
-                Vector2 stationaryPointer = default;
+                // Re-aim from the currently presented eyes while the posed
+                // body settles, without relaxing the look cone.
+                for (int pass = 0; pass < 2; pass++)
+                    yield return AtPresentation(() => AimShowerAt(shower, camera, target.WorldPoint));
+                Vector2 unrelatedPointer = default;
                 yield return AtPresentation(() =>
                 {
                     Vector3 viewport = camera.WorldToViewportPoint(target.WorldPoint);
-                    Assert.That(viewport.z > 0f && viewport.x > 0f && viewport.x < 1f && viewport.y > 0f && viewport.y < 1f,
-                        Is.True, $"Selected {region} must be visible: {viewport:F4}");
-                    stationaryPointer = camera.WorldToScreenPoint(target.WorldPoint);
-                    input.Set(mouse.position, stationaryPointer, queueEventOnly: true);
+                    Assert.That(viewport.z > 0f && Mathf.Abs(viewport.x - 0.5f) < 0.02f && Mathf.Abs(viewport.y - 0.5f) < 0.02f,
+                        Is.True, $"Selected {region} must be aimable at the camera centre inside the look cone: {viewport:F4}");
+                    Rect frame = camera.pixelRect;
+                    unrelatedPointer = new Vector2(frame.xMin + frame.width * 0.05f, frame.yMin + frame.height * 0.95f);
+                    input.Set(mouse.position, unrelatedPointer, queueEventOnly: true);
                     input.Press(mouse.leftButton, queueEventOnly: true);
                 });
                 yield return null;
                 yield return AtPresentation(() =>
                 {
                     Assert.That(mouse.leftButton.isPressed, Is.True);
+                    Assert.That(shower.UsesMouseWashingAim, Is.True);
+                    Assert.That(shower.View.IsPointerMode, Is.False);
+                    Assert.That(Vector2.Distance(shower.WashingPointer, camera.pixelRect.center), Is.LessThan(0.01f),
+                        "Mouse washing aims through the camera centre instead of the unrelated OS pointer.");
                     if (!shower.HasSelectedWashPoint) CaptureShower("29-selection-" + region + "-failed");
                     Assert.That(shower.HasSelectedWashPoint, Is.True,
-                        $"The actual mouse press selects {region}: pointer={stationaryPointer:F3}, livePointer={shower.WashingPointer:F3}, " +
+                        $"The actual mouse press selects {region}: osPointer={unrelatedPointer:F3}, livePointer={shower.WashingPointer:F3}, " +
                         $"targetViewport={camera.WorldToViewportPoint(target.WorldPoint):F4}, soapPhase={shower.SoapPhase}, scenePhase={shower.Timeline.Phase}; " +
                         shower.SelectionDiagnostic);
                     Assert.That(shower.SelectedWashTarget.Region, Is.EqualTo(region));
                     target = shower.SelectedWashTarget;
                 });
+                if (region == HomeShowerWashRegion.Torso)
+                {
+                    float yawBeforeHeldLook = shower.View.LookYawDegrees;
+                    input.Set(mouse.delta, new Vector2(yawBeforeHeldLook >= 0f ? -12f : 12f, 0f), queueEventOnly: true);
+                    input.Press(mouse.rightButton, queueEventOnly: true);
+                    yield return null;
+                    yield return AtPresentation(() =>
+                    {
+                        Assert.That(Mathf.Abs(Mathf.DeltaAngle(yawBeforeHeldLook, shower.View.LookYawDegrees)), Is.GreaterThan(1f),
+                            "Real mouse movement still turns the camera during a held washing stroke.");
+                        Assert.That(shower.SelectedWashTarget.Anchor, Is.SameAs(target.Anchor));
+                        Assert.That(Vector3.Distance(shower.SelectedWashTarget.LocalPoint, target.LocalPoint), Is.LessThan(0.001f),
+                            "Moving the view while LMB is held must retain the original skin point.");
+                    });
+                }
                 float deadline = Time.realtimeSinceStartup + (finishGauge
                     ? TimeoutSeconds + HomeShowerWashingProgress.MinimumActiveSeconds : 8f);
-                // Keep the physical LMB held, with no more mouse events or
-                // synthetic deltas. Only the automatic hand cycle can move.
+                // After the look probe, hold LMB without further mouse movement.
+                // Torso also holds RMB to prove it no longer pauses mouse washing.
                 yield return ObserveShowerPresentationUntil(() =>
                 {
                     HomeShowerSoapPose pose = shower.SoapPose;
                     Assert.That(mouse.leftButton.isPressed, Is.True);
-                    Assert.That(Vector2.Distance(mouse.position.ReadValue(), stationaryPointer), Is.LessThan(0.01f));
+                    if (region == HomeShowerWashRegion.Torso) Assert.That(mouse.rightButton.isPressed, Is.True,
+                        "RMB must stay held while real contact earns washing progress.");
+                    Assert.That(Vector2.Distance(mouse.position.ReadValue(), unrelatedPointer), Is.LessThan(0.01f));
                     Assert.That(shower.HasSelectedWashPoint, Is.True);
                     Assert.That(shower.SelectedWashTarget.Region, Is.EqualTo(region));
                     Assert.That(shower.SelectedWashTarget.Anchor, Is.SameAs(target.Anchor));
                     Assert.That(Vector3.Distance(shower.SelectedWashTarget.LocalPoint, target.LocalPoint), Is.LessThan(0.001f),
-                        "Holding LMB with a stationary cursor retains the chosen body point.");
+                        "Holding LMB retains the chosen body point independently of the camera and OS pointer.");
                     if (pose.IsContacting && pose.CurrentRegion == region)
                     {
                         contactFrames++;
@@ -2465,6 +2512,9 @@ namespace BarPromenade.Tests.PlayMode
                     lastPresentation = $"region={region}; progress={shower.WashingProgress.Amount:F4}; contactFrames={contactFrames}; contactSeconds={contactSeconds:F3}; " +
                         $"creditedFrames={creditedFrames}; actualTravel={actualTravel:F5}; target={target.SurfaceName}/{target.WorldPoint:F5}; " +
                         $"projected={camera.WorldToViewportPoint(target.WorldPoint):F4}; responseAngle={maximumResponseAngle:F4}; " +
+                        $"nearClip={camera.nearClipPlane:F5}; eye={shower.View.EyeWorldPosition:F5}; camera={camera.transform.position:F5}; " +
+                        $"eyeError={Vector3.Distance(camera.transform.position, shower.View.EyeWorldPosition):F5}; targetDepth={camera.WorldToViewportPoint(target.WorldPoint).z:F5}; " +
+                        $"lookYaw={shower.View.LookYawDegrees:F3}; viewPitch={shower.View.BasePitchDegrees + shower.View.LookPitchDegrees:F3}; " +
                         $"responseDisplacement={maximumResponseDisplacement:F5}; anchorError={maximumAnchorError:F5}; " +
                         "bodyViolation=" + (bodyViolation?.Invoke() ?? "none") + "; " + pose.ContactDiagnostic;
                     if (Time.realtimeSinceStartup >= nextLogAt)
@@ -2516,7 +2566,21 @@ namespace BarPromenade.Tests.PlayMode
                             "The active physical response must retain exact triangle checks while avoiding the old unfiltered work. " + performance);
                     }
                 }
-                input.Release(mouse.leftButton, queueEventOnly: true);
+                if (region == HomeShowerWashRegion.Torso && completed && !finishGauge)
+                {
+                    yield return AtPresentation(() =>
+                    {
+                        var presentation = home.Player.Visual as Player3DCharacterPresentation;
+                        AssertShowerEyeCamera(shower, camera, presentation.Registry);
+                        Assert.That(camera.WorldToViewportPoint(target.WorldPoint).z, Is.GreaterThan(camera.nearClipPlane),
+                            "The held torso contact must remain beyond the lens's clipping plane. " + lastPresentation);
+                        Debug.Log("Shower held-contact camera: " + lastPresentation);
+                    });
+                    yield return CaptureShowerUiFrame("HomeShowerControls", "00-centre-aim-held-look");
+                }
+                // One state clears both buttons. Two queued full-state releases
+                // would each retain the other button's not-yet-applied old value.
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = unrelatedPointer });
                 yield return null;
                 yield return AtPresentation(() => Assert.That(mouse.leftButton.isPressed, Is.False));
                 if (!finishGauge)
@@ -2621,6 +2685,36 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Vector3.Distance(soap.localPosition, position), Is.LessThan(0.0001f));
             Assert.That(Quaternion.Angle(soap.localRotation, rotation), Is.LessThan(0.01f));
             Assert.That(Vector3.Distance(soap.localScale, scale), Is.LessThan(0.0001f));
+        }
+
+        private static Vector3 ShowerEyeMidpoint(Player3DAssetRegistry registry)
+        {
+            Transform leftEye = registry.Anchors.Head.Find("face.eye.L");
+            Transform rightEye = registry.Anchors.Head.Find("face.eye.R");
+            Assert.That(leftEye, Is.Not.Null, "The production head must retain its authored left eye.");
+            Assert.That(rightEye, Is.Not.Null, "The production head must retain its authored right eye.");
+            return (leftEye.position + rightEye.position) * 0.5f;
+        }
+
+        private static void AssertShowerEyeCamera(HomeShowerInteraction shower, Camera camera, Player3DAssetRegistry registry)
+        {
+            Vector3 eyes = ShowerEyeMidpoint(registry);
+            Assert.That(Vector3.Distance(shower.View.EyeWorldPosition, eyes), Is.LessThan(0.0001f));
+            Assert.That(Vector3.Distance(shower.WashPose.EyeWorldPosition, eyes), Is.LessThan(0.0001f));
+            Assert.That(Vector3.Distance(camera.transform.position, eyes), Is.LessThan(0.002f),
+                "The washing lens must remain between the posed eyes rather than approaching the torso from a mouth offset.");
+            Assert.That(camera.nearClipPlane, Is.GreaterThan(0f).And.LessThanOrEqualTo(HomeShowerInteraction.FirstPersonNearClip + 0.000001f),
+                "The first-person clipping plane must preserve the nearby torso during downward looks.");
+        }
+
+        private sealed class FocusedInputScope : System.IDisposable
+        {
+            private readonly bool previousFocus = GameCursor.ApplicationFocused;
+
+            // Virtual device events model an active game window for this scenario.
+            public FocusedInputScope() => GameInput.HandleApplicationFocus(true);
+
+            public void Dispose() => GameInput.HandleApplicationFocus(previousFocus);
         }
 
         /// <summary>

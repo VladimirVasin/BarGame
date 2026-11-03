@@ -1,6 +1,18 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-11-03,user — shower mouse look and centre aim:**
+  Mouse look remains before/after soap and while washing. Centre marker+fresh
+  LMB select visible skin;hold repeats at that same anchor. Look never retargets.
+  Release stops/withdraws;new press selects. Arrows optional;RMB unnecessary.
+  Gamepad pointer/LT look/RT scrub kept;E soap/Q return-exit. RU action-HUD hint;
+  no speech/story. Pitch155° down/back;FOV/roll/yaw stay. View/predictor/pick share
+  cached face.eye.L/R midpoint,no orbit/offset. Scoped nearclip=min(saved,.015m);
+  every exit/cancel/disable restores. Same rig/contact/cleanup;focus/pause reset
+  stale input. All24FX reviewed:scene shaping,material/motion/accent and
+  postprocessing kept. Marker/hint+eye optics;no added skin solve/material instance.
+  Cost unmeasured;§16/21/art9.
+
 - **Accepted 2026-11-03,user — warehouse hawthorn:**
   §6/art15a:3seed/1floor+12ammo;session/no refill.
   Use→auto-close→1vial gulp:+30HP/+40intox/dose;HP<100/inventory HP.
@@ -6957,14 +6969,14 @@
   An already-inside start undresses behind the closed curtain. Release waits
   until the whole hero leaves the exit frame. `Player3DHeadVisibility` follows
   head/lens separation; `shower_redress_in_view` guards exit restoration.
-  `HomeShowerFirstPersonView` is the lens: the mouth anchor plus `0.068 m`,
+  `HomeShowerFirstPersonView` follows the rig's cached face.eye.L/R midpoint,
   the actor's yaw with the scene's wash base pitch (`38°` — the pose's
   neck + head) and a clamped
-  look (`±75°` yaw, absolute pitch `−75°…115°`) that never turns the body.
+  look (`±75°` yaw, absolute pitch `−75°…155°`) that never turns the body.
   The bent head sits ahead of the chest, so the downward limit passes
   vertical far enough to leave room for a visible washing stroke there.
-  Before soap, mouse/right stick look directly. Only Washing enables the pointer
-  and held RMB/LT look; arrows remain direct look at `90°/s`. The wash pose
+  The interactive control contract is recorded separately below;
+  arrows remain direct look at `90°/s`. The wash pose
   (`HomeShowerWashPose`) is unchanged in kind: Idle neutral captured under
   the handoff lock, spine/chest/neck/head pitched about the actor's world
   right axis, both palms on the tile in their default brace
@@ -7077,41 +7089,27 @@
   scene regression checks the imported arms against visible body geometry
   through all four curtain gestures and the wash/tap/straighten transitions.
 - **Accepted architecture exception — 2026-09-07, user-approved interactive
-  shower washing:** The existing wash gains a nested soap interaction on the
-  same production rig. This narrowly extends the bathroom wash/brushing
-  procedural-arm exception to measured right-hand soap pickup, body contact
-  and return to the shelf. The path keeps bounded movement,
-  zero-weight rendered endpoints, the shared neutral/handoff and idempotent
-  cleanup; it adds no root motion, snap, replacement hero or visibility fade.
-  The outer curtain actions retain their authored-clip contract.
-
-  The next explicit user-approved extension keeps the same procedural rig
-  and contact guard, but allows repeated right-hand rubbing at a selected
-  body point and a stronger bounded passive response to real soap contact.
-  In `SelectSoap`, `E` takes the known shelf soap independently of mouse,
-  viewing direction or look mode. Pickup takes priority over exit and
-  consumes the press until release; the stop footer stays hidden in that
-  phase. The localized prompt and its outline appear when the soap is
-  visible, without gating the action. This is action UI, not fictional speech;
-  it introduces no story line or change to the story bible's prohibitions.
-  Pressing on the body selects a skin-anchored stroke target; repeated
-  movement continues only while LMB is held, without requiring pointer travel.
-  Release stops strokes and credit and withdraws safely; a new press selects
-  another point. RMB look temporarily pauses rubbing, and pause freezes the action.
+  shower washing:** The bathroom procedural-arm exception permits nested
+  measured right-hand soap pickup,skin contact and shelf return on the same rig.
+  Bounded travel,zero-weight endpoints,neutral/handoff and idempotent cleanup
+  remain;no root motion,snap,replacement hero or fade. Curtain actions keep clips.
+  The user's extension permits repeated rubbing at one skin anchor and stronger
+  bounded passive anatomy response to real contact. Release stops strokes/credit
+  and withdraws;pause freezes. `SelectSoap`:E takes the shelf soap regardless of
+  cursor/view/look,beats exit and consumes the press until release;stop footer
+  hidden. Visible soap has the localized prompt/outline without gating pickup;
+  this is action UI,not speech or a story-bible exception.
   On a gamepad, the right stick moves the pointer or, with the look trigger,
   the view; the interaction button picks up soap and the scrub trigger holds
   rubbing at the selected point. Surface picking and measured contact use
   the visible body meshes. The soap and
   arm path must remain clear of other body geometry and travel between
-  targets with bounded movement. A later explicit user decision removes
-  handover entirely: the soap stays in the right hand, and all right-arm
-  surfaces are excluded from selection and washing. Any other reachable
-  region can still fill the whole gauge. `IsWashableRegion` shares that
-  exclusion across targets, credit and markers; `RightArm` remains a region
-  ID for body classification and clearance. Existing anatomy responds
-  passively to body motion and measured soap contact, with bounded displacement
-  and settling after release; this is ordinary washing without sexual behavior,
-  new narrative text, face-holding or a water-attention scene.
+  targets with bounded movement. By explicit user decision,soap never changes
+  hands;all right-arm skin is excluded. Any other reachable region fills the
+  gauge. `IsWashableRegion` shares exclusion across targets/credit/markers;
+  `RightArm` remains a body/clearance ID. Anatomy responds to body motion/real
+  soap contact with bounded displacement and settling after release;ordinary
+  washing,no sexual behavior,new story text,held face or water-attention scene.
 
   Bathroom audio follows the presented action. `HomeSoundscape` owns eight
   spatial sources and nine generated clips. Two short SfxWorld voices serve
