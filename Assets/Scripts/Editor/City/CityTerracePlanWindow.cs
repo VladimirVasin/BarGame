@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -20,7 +21,7 @@ namespace BarPromenade.Editor
 
         [SerializeField] private int seed = GameSessionState.DefaultCitySeed;
         [SerializeField] private float summit = 40f;
-        [SerializeField] private int view = 1;
+        [SerializeField] private int view = 3;
         private CityLayout layout;
         private CityTerraceMasterPlan plan;
         private CityTerraceTransportPlan transport;
@@ -33,6 +34,7 @@ namespace BarPromenade.Editor
         private GUIContent[] conflictLabels;
         private GUIContent[] crossingLabels;
         private GUIStyle smallLabel;
+        private readonly Vector3[] corridorQuad = new Vector3[4];
 
         [MenuItem("Bar Promenade/City/Multilevel Plan")]
         public static void Open()
@@ -142,8 +144,12 @@ namespace BarPromenade.Editor
             if (view >= 3 && transport != null)
             {
                 foreach (CityTerraceTransportRoute route in transport.Routes)
-                    EditorGUILayout.LabelField($"{route.Bank}: {route.TotalHorizontalLength:0} м; уклон ≤ {route.MaximumGradePercent:0.0}%; пересечений {route.Reservations.Count}");
-                EditorGUILayout.HelpBox("Не подключено к игровому городу. Нужны свободный коридор, дорожные стыки, габаритный проход машин и опоры на грунт. Разные Y не разрешают мост или тоннель.", MessageType.Warning);
+                    EditorGUILayout.LabelField($"{(route.Bank == CityTerraceTransportBank.West ? "Запад" : "Восток")}: {route.TotalHorizontalLength:0} м; уклон {route.MaximumGradePercent:0.0}%; верх ≤ {route.MaximumReachableSummitElevation:0.0} м");
+                EditorGUILayout.LabelField($"Полоса {CityTerraceTransportPlan.CorridorWidth:0} м · " +
+                    (transport.HasBuildingConflicts ? "есть пересечения с застройкой" : "застройка и защищённые дворы свободны"));
+                if (transport.OutstandingPlacementRequirements.HasFlag(CityTerracePlacementRequirement.GradeLimit))
+                    EditorGUILayout.HelpBox("Запрошенная высота превышает допустимый уклон. Уменьшите верхнюю отметку или удлините трассу.", MessageType.Error);
+                EditorGUILayout.HelpBox("Не подключено к игровому городу. Нужны дорожные стыки, подходы к входам, габаритный проход машин и опоры на грунт. Разные Y не разрешают мост или тоннель.", MessageType.Warning);
             }
 
             view = GUILayout.Toolbar(view, Views);
@@ -164,7 +170,7 @@ namespace BarPromenade.Editor
             EditorGUILayout.LabelField(view == 2
                 ? "Синий: запад. Охра: восток. Серый: текущие высоты. Разрез по внешним улицам ядра."
                 : view == 4 ? "По горизонтали — длина пути. Красный: две высоты дорожного пересечения. Серый: ровные участки."
-                : view == 3 ? "Синий: западная трасса. Охра: восточная. Белый: выбранное пересечение."
+                : view == 3 ? "Синий/охра: трассы. Серый: здания. Красный: нерешённые стыки. Белый: выбор."
                 : "Синий → охра: низко → высоко. Север и море сверху.", EditorStyles.miniLabel);
 
             if (selectedConflict >= 0 && selectedConflict < plan.RoadConflicts.Count)
@@ -396,6 +402,26 @@ namespace BarPromenade.Editor
 
                 if (view == 3 && transport != null)
                 {
+                    foreach (CityTerraceTransportFootprint footprint in transport.Footprints)
+                    {
+                        if (footprint.Kind == CityTerraceReservationKind.Coast || footprint.Kind == CityTerraceReservationKind.River) continue;
+                        Handles.color = footprint.Kind == CityTerraceReservationKind.Building
+                            ? new Color(.66f, .69f, .70f, .65f)
+                            : footprint.Kind == CityTerraceReservationKind.ProtectedAccess
+                                ? new Color(.5f, .75f, .55f, .65f) : new Color(.8f, .6f, .4f, .7f);
+                        for (int i = 0; i < footprint.Polygon.Count; i++)
+                            Handles.DrawLine(Map(footprint.Polygon[i]), Map(footprint.Polygon[(i + 1) % footprint.Polygon.Count]));
+                    }
+                    foreach (CityTerraceTransportRoute route in transport.Routes)
+                    {
+                        Color bankColor = route.Bank == CityTerraceTransportBank.West ? LowColor : HighColor;
+                        Handles.color = new Color(bankColor.r, bankColor.g, bankColor.b, .22f);
+                        foreach (IReadOnlyList<Vector2> polygon in route.CorridorPolygons)
+                        {
+                            for (int i = 0; i < 4; i++) corridorQuad[i] = Map(polygon[i]);
+                            Handles.DrawAAConvexPolygon(corridorQuad);
+                        }
+                    }
                     foreach (CityTerraceReservation reservation in transport.Reservations)
                     {
                         Vector2 topLeft = Map(new Vector2(reservation.Bounds.xMin, reservation.Bounds.yMax));
@@ -415,13 +441,7 @@ namespace BarPromenade.Editor
                         Vector2 point = Map(transport.RoadCrossings[selectedCrossing].WorldXZ);
                         EditorGUI.DrawRect(new Rect(point.x - 4f, point.y - 4f, 8f, 8f), Color.white);
                     }
-                    Rect pilot = transport.PilotCandidateBounds;
-                    Vector2 a = Map(new Vector2(pilot.xMin, pilot.yMin)), b = Map(new Vector2(pilot.xMax, pilot.yMax));
-                    Handles.color = EditorGUIUtility.isProSkin ? Color.white : Color.black;
-                    Handles.DrawLine(a, new Vector2(b.x, a.y));
-                    Handles.DrawLine(new Vector2(b.x, a.y), b);
-                    Handles.DrawLine(b, new Vector2(a.x, b.y));
-                    Handles.DrawLine(new Vector2(a.x, b.y), a);
+
                 }
 
                 // Stable survey labels, not additional in-fiction map labels.

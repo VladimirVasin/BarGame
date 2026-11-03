@@ -7,14 +7,14 @@ namespace BarPromenade
 {
     public enum CityTerraceTransportBank { West, East }
     public enum CityTerraceTransportSegmentKind { Climb, Approach, TurnLanding, StopLanding }
-    public enum CityTerraceReservationKind { Building, ProtectedPlace, Park, River, Coast, ExistingRoad, Terrace }
+    public enum CityTerraceReservationKind { Building, ProtectedPlace, Park, River, Coast, ExistingRoad, Terrace, ProtectedAccess }
     public enum CityTerraceRoadCrossingKind { CoastalAttachment, AtGradeUnresolved, GradeSeparatedUnresolved }
 
     [Flags]
     public enum CityTerracePlacementRequirement
     {
         None = 0, CorridorReservation = 1, RoadConnections = 2, VehicleSweptPath = 4,
-        TerrainTieIns = 8, FootprintConflicts = 16, UnresolvedRoadCrossings = 32
+        TerrainTieIns = 8, FootprintConflicts = 16, UnresolvedRoadCrossings = 32, GradeLimit = 64
     }
 
     /// <summary>
@@ -84,21 +84,40 @@ namespace BarPromenade
         public string Id { get; }
         public CityTerraceReservationKind Kind { get; }
         public Rect Bounds { get; }
-        public bool IsProtected => Kind != CityTerraceReservationKind.Building;
+        public bool IsProtected => Kind != CityTerraceReservationKind.Building &&
+            Kind != CityTerraceReservationKind.ExistingRoad && Kind != CityTerraceReservationKind.ProtectedAccess;
+    }
+
+    /// <summary>A fixed surveyed obstacle, including upper-building projection.</summary>
+    public sealed class CityTerraceTransportFootprint
+    {
+        internal CityTerraceTransportFootprint(string id, CityTerraceReservationKind kind, Vector2[] polygon)
+        { Id = id; Kind = kind; Polygon = Array.AsReadOnly((Vector2[])polygon.Clone()); }
+        public string Id { get; }
+        public CityTerraceReservationKind Kind { get; }
+        public IReadOnlyList<Vector2> Polygon { get; }
     }
 
     /// <summary>
-    /// A grade-feasible centreline study with flat turns and stops. Buildings,
-    /// terrace tie-ins and vehicle swept paths are not thereby approved.
+    /// A surveyed street corridor with flat turns and stops. Placement requirements
+    /// remain authoritative: geometry alone cannot approve junctions or vehicle paths.
     /// </summary>
     public sealed class CityTerraceTransportRoute
     {
         internal CityTerraceTransportRoute(string id, CityTerraceTransportBank bank,
             IList<CityTerraceRouteSample> samples, IList<CityTerraceTransportSegment> segments,
-            CityRoadElevationProfile elevationProfile, IList<CityTerraceReservation> reservations)
+            CityRoadElevationProfile elevationProfile, IList<CityTerraceReservation> reservations,
+            IReadOnlyList<Vector2[]> corridor)
         {
             Id = id; Bank = bank;
             ElevationProfile = elevationProfile;
+            var polygons = new List<IReadOnlyList<Vector2>>(corridor.Count);
+            foreach (Vector2[] polygon in corridor) polygons.Add(Array.AsReadOnly((Vector2[])polygon.Clone()));
+            CorridorPolygons = polygons.AsReadOnly();
+            float climb = 0f;
+            foreach (CityTerraceTransportSegment segment in segments)
+                if (segment.Kind == CityTerraceTransportSegmentKind.Climb) climb += segment.HorizontalLength;
+            MaximumReachableSummitElevation = samples[0].Position.y + climb * CityElevationPlan.MaximumBusGradePercent * .01f;
             Samples = new ReadOnlyCollection<CityTerraceRouteSample>(samples);
             Segments = new ReadOnlyCollection<CityTerraceTransportSegment>(segments);
             Reservations = new ReadOnlyCollection<CityTerraceReservation>(reservations);
@@ -109,22 +128,28 @@ namespace BarPromenade
         public IReadOnlyList<CityTerraceTransportSegment> Segments { get; }
         public IReadOnlyList<CityTerraceReservation> Reservations { get; }
         public CityRoadElevationProfile ElevationProfile { get; }
+        public IReadOnlyList<IReadOnlyList<Vector2>> CorridorPolygons { get; }
+        public float MaximumReachableSummitElevation { get; }
+        public bool IsGradeFeasible => MaximumGradePercent <= CityElevationPlan.MaximumBusGradePercent + .001f;
         public float TotalHorizontalLength => ElevationProfile.HorizontalLength;
         public float MaximumGradePercent => ElevationProfile.MaximumGradePercent;
     }
 
     /// <summary>
-    /// Editor-only consumer of the terrace proposal: two bounded switchbacks
-    /// and an explicit overlap inventory. No live city graph or surface changes.
+    /// Editor-only consumer of the terrace proposal: two bounded street routes
+    /// and a full-building overlap inventory. No live city graph or surface changes.
     /// </summary>
     public sealed class CityTerraceTransportPlan
     {
-        public const float TurnRadius = 15f;
-        public const float CorridorWidth = 12f;
+        public const float TurnRadius = CityBusPlanner.LeftTurnRadius;
+        // Six metre asphalt and both existing two metre public pavements.
+        // Retaining supports are still a separate, unresolved terrain contract.
+        public const float CorridorWidth = CityGenerationSettings.DefaultRoadWidth -
+            2f * CityStreetSurfacePlanner.SidewalkWidth + 2f * CityStreetSurfacePlanner.PublicSidewalkWidth;
         public const float StopLength = 12f;
         public const int MaximumRouteSamples = 192;
-        private const int ClimbLegs = 10, HalfTurnSegments = 12;
-        private const float FlatEndLength = 4f, EdgeClearance = 8f, FirstRowInset = 24f;
+        private const int QuarterTurnSegments = 6;
+        private const float FlatEndLength = 4f;
 
         private sealed class Footprint
         {
@@ -140,6 +165,11 @@ namespace BarPromenade
             BlueprintId = layout.BlueprintId; Seed = layout.Seed;
             TargetSummitElevation = master.TargetSummitElevation;
             List<Footprint> footprints = CollectFootprints(layout, master);
+            var surveyed = new List<CityTerraceTransportFootprint>();
+            foreach (Footprint footprint in footprints)
+                if (footprint.Kind != CityTerraceReservationKind.ExistingRoad)
+                    surveyed.Add(new CityTerraceTransportFootprint(footprint.Id, footprint.Kind, footprint.Polygon));
+            Footprints = surveyed.AsReadOnly();
             var routes = new List<CityTerraceTransportRoute>(2);
             routes.Add(CreateRoute(layout, master, CityTerraceTransportBank.West, footprints));
             routes.Add(CreateRoute(layout, master, CityTerraceTransportBank.East, footprints));
@@ -154,10 +184,13 @@ namespace BarPromenade
             var pilot = new List<CityTerraceReservation>();
             AppendOverlaps("east-courtyard-pilot", -1, CityRoadPolygon.Rectangle(PilotCandidateBounds), footprints, pilot);
             PilotReservations = new ReadOnlyCollection<CityTerraceReservation>(pilot);
-            reservations.AddRange(pilot);
             Reservations = new ReadOnlyCollection<CityTerraceReservation>(reservations);
             foreach (CityTerraceReservation reservation in reservations)
-                HasProtectedConflicts = HasProtectedConflicts || reservation.IsProtected;
+            {
+                HasProtectedConflicts |= reservation.IsProtected;
+                HasBuildingConflicts |= reservation.Kind == CityTerraceReservationKind.Building ||
+                    reservation.Kind == CityTerraceReservationKind.ProtectedPlace || reservation.Kind == CityTerraceReservationKind.Terrace;
+            }
             // No physical corridor, junction or swept-path proof exists yet.
             // Grade feasibility and an empty overlap list cannot activate it.
             OutstandingPlacementRequirements = CityTerracePlacementRequirement.CorridorReservation |
@@ -165,8 +198,11 @@ namespace BarPromenade
                 CityTerracePlacementRequirement.TerrainTieIns;
             foreach (CityTerraceTransportRoute route in routes)
                 foreach (CityTerraceReservation reservation in route.Reservations)
-                    if (reservation.Kind != CityTerraceReservationKind.ExistingRoad)
+                    if (reservation.Kind != CityTerraceReservationKind.ExistingRoad &&
+                        reservation.Kind != CityTerraceReservationKind.ProtectedAccess)
                         OutstandingPlacementRequirements |= CityTerracePlacementRequirement.FootprintConflicts;
+            foreach (CityTerraceTransportRoute route in routes)
+                if (!route.IsGradeFeasible) OutstandingPlacementRequirements |= CityTerracePlacementRequirement.GradeLimit;
             foreach (CityTerraceRoadCrossing crossing in RoadCrossings)
                 if (crossing.RequiresCrossingResolution)
                     OutstandingPlacementRequirements |= CityTerracePlacementRequirement.UnresolvedRoadCrossings;
@@ -181,6 +217,8 @@ namespace BarPromenade
         public CityTerracePlacementRequirement OutstandingPlacementRequirements { get; }
         public bool IsPlacementReady => OutstandingPlacementRequirements == CityTerracePlacementRequirement.None;
         public bool HasProtectedConflicts { get; }
+        public bool HasBuildingConflicts { get; }
+        public IReadOnlyList<CityTerraceTransportFootprint> Footprints { get; }
         public Rect PilotCandidateBounds { get; }
         public IReadOnlyList<CityTerraceReservation> PilotReservations { get; }
 
@@ -197,69 +235,71 @@ namespace BarPromenade
         private static CityTerraceTransportRoute CreateRoute(CityLayout layout, CityTerraceMasterPlan master,
             CityTerraceTransportBank bank, List<Footprint> footprints)
         {
-            bool west = bank == CityTerraceTransportBank.West;
-            string id = west ? "terrace-west-switchback" : "terrace-east-switchback";
-            Rect core = master.CoreWorldXZBounds;
-            CityRiverDefinition river = layout.Blueprint.River;
-            float riverX = layout.GetGridWorldPosition(new Vector2Int(river.CorridorCellX + (west ? 0 : 1), 0)).x;
-            float lowEdgeX = layout.GetGridWorldPosition(new Vector2Int(river.CorridorCellX + (west ? -1 : 2), 0)).x;
-            float direction = west ? 1f : -1f;
-            float outer = (west ? core.xMin : core.xMax) + direction * (EdgeClearance + TurnRadius);
-            float inner = lowEdgeX - direction * (EdgeClearance + TurnRadius);
-            float span = Mathf.Abs(inner - outer);
-            if (span <= StopLength + 2f * FlatEndLength || Mathf.Abs(riverX - lowEdgeX) < CorridorWidth)
-                throw new InvalidOperationException("The proposed bank cannot contain the switchback section.");
-            float firstZ = core.yMax - FirstRowInset;
-            if (firstZ - (ClimbLegs - 1) * 2f * TurnRadius - CorridorWidth * .5f < core.yMin)
-                throw new InvalidOperationException("The proposed switchback exceeds the southern core boundary.");
+            string id = bank == CityTerraceTransportBank.West ? "terrace-west-switchback" : "terrace-east-switchback";
+            Vector2[] waypoints = StreetWaypoints(layout, bank);
             var points = new List<Vector2>(MaximumRouteSamples);
             var kinds = new List<CityTerraceTransportSegmentKind>(MaximumRouteSamples - 1);
-            Vector2 start = new Vector2(outer - direction * TurnRadius, core.yMax);
-            points.Add(start);
+            points.Add(waypoints[0]);
             void Append(Vector2 point, CityTerraceTransportSegmentKind kind)
             {
-                if (points.Count >= MaximumRouteSamples || Vector2.Distance(points[points.Count - 1], point) < .001f)
-                    throw new InvalidOperationException("The bounded transport study contains an invalid segment.");
+                if (Vector2.Distance(points[points.Count - 1], point) < .001f) return;
+                if (points.Count >= MaximumRouteSamples)
+                    throw new InvalidOperationException("The bounded transport route exceeds its station budget.");
                 points.Add(point); kinds.Add(kind);
             }
-            Append(new Vector2(start.x, firstZ + TurnRadius), CityTerraceTransportSegmentKind.Approach);
-            for (int step = 1; step <= HalfTurnSegments / 2; step++)
+            // Place stops on the three longest straight runs, stably ordered.
+            // The rounded turns themselves are flat: extra arbitrary setbacks
+            // would discard usable climbing length twice at each junction.
+            var runs = new List<(int index, float length)>();
+            for (int i = 0; i < waypoints.Length - 1; i++)
+                runs.Add((i, Vector2.Distance(waypoints[i], waypoints[i + 1]) -
+                    (i == 0 ? FlatEndLength : TurnRadius) -
+                    (i == waypoints.Length - 2 ? FlatEndLength : TurnRadius)));
+            runs.Sort((a, b) => { int order = b.length.CompareTo(a.length); return order != 0 ? order : a.index.CompareTo(b.index); });
+            var stops = new HashSet<int>();
+            for (int i = 0; i < 3; i++)
             {
-                float angle = step * Mathf.PI / HalfTurnSegments;
-                Append(new Vector2(outer - direction * TurnRadius * Mathf.Cos(angle),
-                    firstZ + TurnRadius - TurnRadius * Mathf.Sin(angle)), CityTerraceTransportSegmentKind.TurnLanding);
+                if (runs[i].length < StopLength + 2f)
+                    throw new InvalidOperationException("The route has no room for its three flat stops.");
+                stops.Add(runs[i].index);
             }
-            for (int leg = 0; leg < ClimbLegs; leg++)
+            for (int i = 0; i < waypoints.Length - 1; i++)
             {
-                float travel = (leg & 1) == 0 ? direction : -direction;
-                Vector2 from = points[points.Count - 1];
-                Vector2 end = from + Vector2.right * (travel * span);
-                Append(from + Vector2.right * (travel * FlatEndLength), CityTerraceTransportSegmentKind.Approach);
-                if (leg == 2 || leg == 5 || leg == 8)
+                Vector2 direction = (waypoints[i + 1] - waypoints[i]).normalized;
+                if (i == 0) Append(points[0] + direction * FlatEndLength, CityTerraceTransportSegmentKind.Approach);
+                Vector2 end = waypoints[i + 1] - direction *
+                    (i == waypoints.Length - 2 ? FlatEndLength : TurnRadius);
+                if (stops.Contains(i))
                 {
-                    Vector2 middle = (from + end) * .5f;
-                    Append(middle - Vector2.right * (travel * StopLength * .5f), CityTerraceTransportSegmentKind.Climb);
-                    Append(middle + Vector2.right * (travel * StopLength * .5f), CityTerraceTransportSegmentKind.StopLanding);
+                    Vector2 middle = (points[points.Count - 1] + end) * .5f;
+                    Append(middle - direction * (StopLength * .5f), CityTerraceTransportSegmentKind.Climb);
+                    Append(middle + direction * (StopLength * .5f), CityTerraceTransportSegmentKind.StopLanding);
                 }
-                Append(end - Vector2.right * (travel * FlatEndLength), CityTerraceTransportSegmentKind.Climb);
-                Append(end, CityTerraceTransportSegmentKind.Approach);
-                if (leg == ClimbLegs - 1) continue;
-                for (int step = 1; step <= HalfTurnSegments; step++)
+                Append(end, CityTerraceTransportSegmentKind.Climb);
+                if (i == waypoints.Length - 2)
                 {
-                    float angle = step * Mathf.PI / HalfTurnSegments;
-                    Append(new Vector2(end.x + travel * TurnRadius * Mathf.Sin(angle),
-                        end.y - TurnRadius + TurnRadius * Mathf.Cos(angle)), CityTerraceTransportSegmentKind.TurnLanding);
+                    Append(waypoints[i + 1], CityTerraceTransportSegmentKind.Approach);
+                    continue;
+                }
+                Vector2 next = (waypoints[i + 2] - waypoints[i + 1]).normalized;
+                if (Mathf.Abs(Vector2.Dot(direction, next)) > .001f)
+                    throw new InvalidOperationException("Transport corners must be orthogonal before rounding.");
+                Vector2 center = end + next * TurnRadius;
+                for (int step = 1; step <= QuarterTurnSegments; step++)
+                {
+                    float angle = step * Mathf.PI * .5f / QuarterTurnSegments;
+                    Append(center - next * (TurnRadius * Mathf.Cos(angle)) +
+                        direction * (TurnRadius * Mathf.Sin(angle)), CityTerraceTransportSegmentKind.TurnLanding);
                 }
             }
+            Vector2 start = points[0];
             if (!layout.ElevationPlan.TrySampleSurface(start, CitySurfaceRole.RoadDatum, out float startY, out _))
-                throw new InvalidOperationException("The switchback's coastal attachment has no surveyed road support.");
+                throw new InvalidOperationException("The coastal attachment has no surveyed road support.");
             float climbingLength = 0f;
             for (int i = 0; i < kinds.Count; i++)
                 if (kinds[i] == CityTerraceTransportSegmentKind.Climb)
                     climbingLength += Vector2.Distance(points[i], points[i + 1]);
-            float grade = (master.TargetSummitElevation - startY) / climbingLength;
-            if (grade <= 0f || grade * 100f > CityElevationPlan.MaximumBusGradePercent)
-                throw new InvalidOperationException("The proposed switchback cannot reach the summit within six percent.");
+            float grade = (master.TargetSummitElevation - startY) / climbingLength * 100f;
             var stations = new CityRoadElevationStation[points.Count];
             stations[0] = new CityRoadElevationStation(0f, startY);
             float distance = 0f, climbed = 0f;
@@ -271,10 +311,13 @@ namespace BarPromenade
                 stations[i + 1] = new CityRoadElevationStation(distance,
                     Mathf.Lerp(startY, master.TargetSummitElevation, climbed / climbingLength));
             }
-            var profile = new CityRoadElevationProfile(stations, CityElevationPlan.MaximumBusGradePercent);
+            // An infeasible requested summit remains inspectable, but the
+            // explicit GradeLimit requirement prevents declaring it placed.
+            var profile = new CityRoadElevationProfile(stations, Mathf.Max(CityElevationPlan.MaximumBusGradePercent, grade));
             var samples = new List<CityTerraceRouteSample>(points.Count);
             var segments = new List<CityTerraceTransportSegment>(kinds.Count);
             var reservations = new List<CityTerraceReservation>();
+            IReadOnlyList<Vector2[]> corridor = new CityRoadPath(points).Ribbon(CorridorWidth);
             for (int i = 0; i < points.Count; i++)
             {
                 float stationDistance = profile.Stations[i].HorizontalDistance;
@@ -284,20 +327,35 @@ namespace BarPromenade
             for (int i = 0; i < kinds.Count; i++)
             {
                 segments.Add(new CityTerraceTransportSegment(samples[i].Position, samples[i + 1].Position, kinds[i]));
-                AppendOverlaps(id, i, CorridorPolygon(points[i], points[i + 1]), footprints, reservations);
+                AppendOverlaps(id, i, corridor[i], footprints, reservations);
             }
-            return new CityTerraceTransportRoute(id, bank, samples, segments, profile, reservations);
+            return new CityTerraceTransportRoute(id, bank, samples, segments, profile, reservations, corridor);
         }
 
-        private static Vector2[] CorridorPolygon(Vector2 start, Vector2 end)
+        private static Vector2[] StreetWaypoints(CityLayout layout, CityTerraceTransportBank bank)
         {
-            Vector2 along = (end - start).normalized * (CorridorWidth * .5f);
-            Vector2 across = new Vector2(-along.y, along.x);
-            // Square caps conservatively cover sampled turn joins; no gap may
-            // hide a footprint conflict between consecutive curve chords.
-            return CityRoadPolygon.CounterClockwise(new[] {
-                start - along - across, end + along - across,
-                end + along + across, start - along + across });
+            // Metres relative to the production coastal grid. Keep existing
+            // buildings fixed: the east route bypasses the northern rear house,
+            // loops around Home/Bar/shop, passes west of the fair, and skips the
+            // cafe's private north edge. Small corner offsets clear the actual
+            // fixed-metre envelopes; the inventory remains authoritative for
+            // every seed, so an altered layout cannot inherit a false clearance.
+            Vector2[] coordinates = bank == CityTerraceTransportBank.West
+                ? new[] { new Vector2(-104,156), new Vector2(-104,130), new Vector2(-128,130),
+                    new Vector2(-128,104), new Vector2(-51.75f,104), new Vector2(-51.75f,78), new Vector2(-156,78),
+                    new Vector2(-156,26), new Vector2(-78,26), new Vector2(-78,0), new Vector2(-156,0),
+                    new Vector2(-156,-26), new Vector2(-104,-26), new Vector2(-104,-78), new Vector2(-156,-78),
+                    new Vector2(-156,-104), new Vector2(-52,-104), new Vector2(-52,-130),
+                    new Vector2(-156,-130), new Vector2(-156,-156), new Vector2(-52,-156) }
+                : new[] { new Vector2(104,156), new Vector2(104,130), new Vector2(77.75f,130),
+                    new Vector2(77.75f,104), new Vector2(156,104), new Vector2(156,52.125f), new Vector2(182,52.125f),
+                    new Vector2(182,-53.375f), new Vector2(156,-53.375f), new Vector2(156,-26),
+                    new Vector2(130,-26), new Vector2(130,-52), new Vector2(77.75f,-52), new Vector2(77.75f,-78),
+                    new Vector2(156,-78), new Vector2(156,-103.875f), new Vector2(78,-103.875f),
+                    new Vector2(78,-156.25f), new Vector2(181,-156.25f) };
+            Vector3 zero = layout.GetGridWorldPosition(new Vector2Int(6, 6));
+            for (int i = 0; i < coordinates.Length; i++) coordinates[i] += new Vector2(zero.x, zero.z);
+            return coordinates;
         }
 
         private static List<Footprint> CollectFootprints(CityLayout layout, CityTerraceMasterPlan master)
@@ -354,9 +412,64 @@ namespace BarPromenade
                 bool protect = lot.IsPlayerHome || lot.IsBar || lot.IsSupermarket || lot.IsCafe || landmark;
                 string id = lot.IsPlayerHome ? "player-home" : lot.IsBar ? lot.BarId :
                     lot.IsSupermarket ? "supermarket" : (protect ? "landmark:" : "building:") + lot.Cell + ":" + massIndex;
-                if (protect) Add(id, CityTerraceReservationKind.ProtectedPlace, CityRoadPolygon.Rectangle(layout.GetCellWorldBounds(lot.Cell)));
-                else foreach (Vector2[] polygon in lot.CreateCollisionPolygons()) Add(id, CityTerraceReservationKind.Building, polygon);
+                CityTerraceReservationKind kind = protect
+                    ? CityTerraceReservationKind.ProtectedPlace : CityTerraceReservationKind.Building;
+                if (protect)
+                {
+                    // A grid cell reaches adjacent street centrelines. Keep
+                    // its private ground, without pretending that the existing
+                    // public pavement belongs to the building. Actual models
+                    // and entrance aprons below remain separate hard obstacles.
+                    Rect privateGround = layout.GetCellWorldBounds(lot.Cell);
+                    privateGround.xMin += TransportPrivateInset(layout, lot.Cell, Vector2Int.left);
+                    privateGround.xMax -= TransportPrivateInset(layout, lot.Cell, Vector2Int.right);
+                    privateGround.yMin += TransportPrivateInset(layout, lot.Cell, Vector2Int.down);
+                    privateGround.yMax -= TransportPrivateInset(layout, lot.Cell, Vector2Int.up);
+                    Add(id, kind, CityRoadPolygon.Rectangle(privateGround));
+                }
+                Add(id, kind, TransportBuildingEnvelope(lot));
+                if ((lot.IsPlayerHome || lot.IsBar || lot.IsSupermarket) && lot.HasRoadFrontage)
+                {
+                    float width = lot.IsSupermarket ? SupermarketEntranceGeometry.WalkwayWidth :
+                        lot.IsPlayerHome ? PlayerHomeEntranceGeometry.WalkwayWidth : BarEntranceGeometry.WalkwayWidth;
+                    CityEntranceForecourtPlan apron = CityStreetSurfacePlanner.CreateEntranceForecourt(layout, lot, width);
+                    Add(id + ":forecourt", CityTerraceReservationKind.ProtectedAccess,
+                        CityRoadPolygon.Rectangle(apron.Footprint));
+                }
                 massIndex++;
+            }
+            CityCafePlan cafe = CityCafePlan.Create(layout);
+            if (cafe != null)
+                Add("city-cafe:approach", CityTerraceReservationKind.ProtectedAccess,
+                    CityRoadPolygon.Rectangle(cafe.ApproachBounds));
+            CityLaundryPlan laundry = CityLaundryPlan.ForLayout(layout);
+            if (laundry.IsEnabled)
+            {
+                Add("city-laundry:site", CityTerraceReservationKind.ProtectedPlace,
+                    CityRoadPolygon.Rectangle(laundry.ReservationBounds));
+                int index = 0;
+                foreach (Vector2[] access in TransportAccessFootprints(laundry.AccessPath))
+                    Add("city-laundry:access:" + index++, CityTerraceReservationKind.ProtectedAccess, access);
+            }
+            CityDogParkPlan dogs = CityDogParkPlan.ForLayout(layout);
+            if (dogs.IsEnabled)
+            {
+                Add("city-dog-park:site", CityTerraceReservationKind.ProtectedPlace,
+                    CityRoadPolygon.Rectangle(dogs.ReservationBounds));
+                int index = 0;
+                foreach (Vector2[] access in TransportAccessFootprints(dogs.AccessPath))
+                    Add("city-dog-park:access:" + index++, CityTerraceReservationKind.ProtectedAccess, access);
+            }
+            CityFairGroundSitePlan fair = CityFairGroundSitePlan.ForLayout(layout);
+            if (fair.IsEnabled)
+                Add("city-fair:site", CityTerraceReservationKind.ProtectedPlace, CityRoadPolygon.Rectangle(fair.Bounds));
+            if (CityArchShelterPlacementResolver.TryCreate(layout, out CityArchShelterPlacement arch))
+            {
+                Bounds bounds = arch.StructureBounds;
+                Add("city-arch-shelter:structure", CityTerraceReservationKind.ProtectedPlace,
+                    CityRoadPolygon.Rectangle(Rect.MinMaxRect(bounds.min.x, bounds.min.z, bounds.max.x, bounds.max.z)));
+                Add("city-arch-shelter:passage", CityTerraceReservationKind.ProtectedPlace,
+                    CityRoadPolygon.Rectangle(arch.CommonFacadeFootprint));
             }
             foreach (CityDistrictPointOfInterestDescriptor point in layout.DistrictPointsOfInterest)
             {
@@ -383,7 +496,95 @@ namespace BarPromenade
             return result;
         }
 
-        private static void AppendOverlaps(string routeId, int segmentIndex, Vector2[] corridor,
+        private static Vector2[] TransportBuildingEnvelope(BuildingLot lot)
+        {
+            if (lot.IsPlayerHome)
+            {
+                // PlayerHomeExterior3D: the roof spans the entire 13 m front
+                // and reaches 2.30 m beyond the door, not just the balcony.
+                return TransportDoorEnvelope(lot, -6.5f, 6.5f, -12f,
+                    PlayerHomeBalconyGeometry.BalconyDepth);
+            }
+            if (lot.IsBar)
+            {
+                // BarFacade3D fixed parts plus the mounted projecting sign.
+                // Its authored +X faces the street; do not use a generic +Z
+                // building rotation or lose the canopy/service-wing envelope.
+                float width = lot.FrontageDirection.x != 0 ? lot.Size.y : lot.Size.x;
+                float depth = lot.FrontageDirection.x != 0 ? lot.Size.x : lot.Size.y;
+                return TransportDoorEnvelope(lot, -width * .5f - .08f,
+                    width * .5f + .08f, -depth, 1.4f);
+            }
+            if (lot.IsCafe)
+            {
+                // MountainRoadCafe3D includes up to .17 m of roof/trim beyond
+                // the logical five-sided wall footprint; its pose is unrotated.
+                return CityRoadPolygon.Rectangle(Rect.MinMaxRect(lot.Center.x - 5.44f,
+                    lot.Center.z - 4.73f, lot.Center.x + 4.65f, lot.Center.z + 5.56f));
+            }
+            if (lot.IsOrdinaryBuilding)
+            {
+                CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
+                Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(lot.District, lot.BuildingVariant);
+                var local = new[] { new Vector3(-envelope.x * .5f, 0f, -envelope.z * .5f),
+                    new Vector3(envelope.x * .5f, 0f, -envelope.z * .5f),
+                    new Vector3(envelope.x * .5f, 0f, envelope.z * .5f),
+                    new Vector3(-envelope.x * .5f, 0f, envelope.z * .5f) };
+                var points = new Vector2[local.Length];
+                for (int i = 0; i < local.Length; i++)
+                {
+                    Vector3 world = pose.TransformPoint(local[i]);
+                    points[i] = new Vector2(world.x, world.z);
+                }
+                // Ground collision alone omits upper arch spans/balconies.
+                return CityRoadPolygon.CounterClockwise(points);
+            }
+            // The shop's authored exterior stays inside its fixed 15.5 m body.
+            return lot.CreateCollisionPolygons()[0];
+        }
+
+        private static float TransportPrivateInset(CityLayout layout, Vector2Int cell, Vector2Int frontage)
+        {
+            RoadEdge edge = RoadEdge.ForCellFrontage(cell, frontage);
+            if (!layout.HasRoad(edge)) return 0f;
+            return layout.GetPathKind(edge) == CityPathKind.Street
+                ? CityStreetSurfacePlanner.GetPublicSidewalkOuterDistance(layout)
+                : layout.GetTravelWidth(edge) * .5f;
+        }
+
+        private static Vector2[] TransportDoorEnvelope(BuildingLot lot, float left,
+            float right, float rear, float front)
+        {
+            Vector3 forward = lot.FacadeForward;
+            Vector3 lateral = new Vector3(forward.z, 0f, -forward.x);
+            Vector3[] corners = {
+                lot.DoorPosition + lateral * left + forward * rear,
+                lot.DoorPosition + lateral * right + forward * rear,
+                lot.DoorPosition + lateral * right + forward * front,
+                lot.DoorPosition + lateral * left + forward * front };
+            var points = new Vector2[corners.Length];
+            for (int i = 0; i < corners.Length; i++) points[i] = new Vector2(corners[i].x, corners[i].z);
+            return CityRoadPolygon.CounterClockwise(points);
+        }
+
+        private static IEnumerable<Vector2[]> TransportAccessFootprints(IReadOnlyList<Vector3> access)
+        {
+            // The existing infill planners reserve an .8 m half-width for
+            // these paths. Preserve the whole public connection and its caps.
+            const float radius = .8f;
+            for (int i = 1; i < access.Count; i++)
+            {
+                Vector2 a = new Vector2(access[i - 1].x, access[i - 1].z);
+                Vector2 b = new Vector2(access[i].x, access[i].z);
+                Vector2 along = (b - a).normalized * radius;
+                Vector2 across = new Vector2(-along.y, along.x);
+                if ((b - a).sqrMagnitude < .000001f) continue;
+                yield return CityRoadPolygon.CounterClockwise(new[] {
+                    a - along - across, b + along - across, b + along + across, a - along + across });
+            }
+        }
+
+        private static void AppendOverlaps(string routeId, int segmentIndex, IReadOnlyList<Vector2> corridor,
             List<Footprint> footprints, List<CityTerraceReservation> output)
         {
             Rect bounds = CityRoadPolygon.Bounds(corridor);
@@ -406,7 +607,7 @@ namespace BarPromenade
                 CityTerraceTransportSegment segment = route.Segments[index];
                 Vector2 start = new Vector2(segment.Start.x, segment.Start.z);
                 Vector2 end = new Vector2(segment.End.x, segment.End.z);
-                Vector2[] corridor = CorridorPolygon(start, end);
+                IReadOnlyList<Vector2> corridor = route.CorridorPolygons[index];
                 Rect bounds = CityRoadPolygon.Bounds(corridor);
                 var included = new HashSet<RoadEdge>();
                 foreach (Footprint footprint in footprints)
@@ -436,7 +637,7 @@ namespace BarPromenade
             return result;
         }
 
-        private static bool TryOverlapPoint(Vector2[] first, Vector2[] second, out Vector2 point)
+        private static bool TryOverlapPoint(IReadOnlyList<Vector2> first, Vector2[] second, out Vector2 point)
         {
             var overlap = new List<Vector2>(first);
             for (int i = 0; i < second.Length && overlap.Count >= 3; i++)

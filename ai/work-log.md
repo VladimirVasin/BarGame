@@ -4,14 +4,18 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-04
-City transport study: shared bounded distance/height stations preserve flat
-turns/stops; sampled grades/tangents/normals, explicit road/terrace reservations
-and paired crossing elevations. Editor route profile/selection; clearance and
-live network integration remain unresolved. CityTerraceTransportPlanTests OK.
-Road profile and selected-crossing editor frames reviewed; details scroll with
-the list so selection cannot displace it from a short window.
-User map rule: logical map updates each slice; one final redraw after geometry/
-elevation changes, stale-art scheme fallback, no fingerprint retagging.
+City transport: bounded distance/height profiles preserve flat turns/stops;
+paired road elevations and editor route sections expose unresolved connections.
+Draft corridors now follow street gaps with full asphalt/public pavements,
+rounded flat turns and unchanged building poses. Full model/roof envelopes,
+private plots, rear houses, laundry/dog/fair/arch sites and terraces stay clear;
+entrance interfaces remain explicit. The east route supports the default rise;
+higher requests expose GradeLimit, not silent clearance. Live road/access joins,
+vehicle swept paths and terrain supports remain unresolved.
+CityTerraceTransportPlanTests OK: independent polygon clearance/self-overlap,
+profile limits and unchanged anchors/poses. Transport editor frame reviewed.
+User map rule: logic each slice; one final redraw after geometry/elevation
+changes, stale-art scheme fallback, no fingerprint retagging.
 check-docs.py/check-workspace.py/git diff --check.
 
 ## 2026-11-03

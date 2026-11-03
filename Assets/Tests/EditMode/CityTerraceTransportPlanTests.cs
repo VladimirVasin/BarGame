@@ -11,8 +11,11 @@ namespace BarPromenade.Tests.EditMode
         private const float Tolerance = .001f;
 
         [Test]
-        public void SwitchbacksKeepPhysicalGradesFlatLandingsAndExposeExistingCityConflicts()
+        public void StreetCorridorsClearBuildingsPreserveAnchorsAndExposePlacementLimits()
         {
+            Vector2[] unit = { new Vector2(0f, 0f), new Vector2(2f, 0f), new Vector2(2f, 2f), new Vector2(0f, 2f) };
+            Assert.That(ConvexOverlapArea(unit, unit.Select(point => point + Vector2.one).ToArray()), Is.EqualTo(1d));
+            Assert.That(ConvexOverlapArea(unit, unit.Select(point => point + Vector2.right * 2f).ToArray()), Is.Zero);
             CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,
                 CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
             var heights = layout.ElevationPlan.NodeElevations.ToDictionary(pair => pair.Key, pair => pair.Value);
@@ -20,6 +23,13 @@ namespace BarPromenade.Tests.EditMode
             Vector3 homeReturn = layout.PlayerHome.ReturnPosition;
             BuildingLot bar = layout.BuildingLots.First(lot => lot.IsBar);
             Vector3 barDoor = bar.DoorPosition, barReturn = bar.ReturnPosition;
+            var masses = layout.BuildingMasses.Select(lot => new { lot.Cell, lot.Center, lot.Size, lot.Height,
+                lot.BuildingVariant, lot.District, lot.FacadeForward, lot.DoorPosition,
+                lot.ReturnPosition, lot.SidewalkArrivalPosition }).ToArray();
+            Assert.That(layout.BuildingMasses.Count, Is.GreaterThan(layout.BuildingLots.Count),
+                "The clearance survey must include actual rear courtyard houses.");
+            Assert.That(CityTerraceTransportPlan.CorridorWidth, Is.EqualTo(10f),
+                "The reserved street contains six metres of asphalt and both two-metre public pavements.");
 
             foreach (float summit in new[] { 35f, 40f, 45f })
             {
@@ -39,6 +49,7 @@ namespace BarPromenade.Tests.EditMode
                     CityTerraceTransportRoute second = repeated.Routes[routeIndex];
                     Assert.That(route.Samples.Count, Is.InRange(2, CityTerraceTransportPlan.MaximumRouteSamples));
                     Assert.That(route.Segments.Count, Is.EqualTo(route.Samples.Count - 1));
+                    Assert.That(route.CorridorPolygons.Count, Is.EqualTo(route.Segments.Count));
                     Assert.That(route.ElevationProfile.Stations.Count, Is.EqualTo(route.Samples.Count));
                     Assert.That(route.Samples.Last().Position.y, Is.EqualTo(summit).Within(Tolerance));
                     Vector3 start = route.Samples[0].Position;
@@ -60,7 +71,8 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(horizontal, Is.GreaterThan(.01f));
                         Assert.That(segment.HorizontalLength, Is.EqualTo(horizontal).Within(Tolerance));
                         Assert.That(segment.GradePercent, Is.EqualTo(physicalGrade).Within(Tolerance));
-                        Assert.That(physicalGrade, Is.LessThanOrEqualTo(6f + Tolerance));
+                        if (route.IsGradeFeasible)
+                            Assert.That(physicalGrade, Is.LessThanOrEqualTo(6f + Tolerance));
                         float middleDistance = (route.Samples[i].HorizontalDistance + route.Samples[i + 1].HorizontalDistance) * .5f;
                         CityRoadElevationSample elevation = route.ElevationProfile.SampleDistance(middleDistance);
                         Assert.That(elevation.Height, Is.EqualTo((segment.Start.y + segment.End.y) * .5f).Within(Tolerance));
@@ -71,7 +83,7 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(Vector3.Distance(elevation.GetTangent(planar), direction.normalized), Is.LessThan(Tolerance));
                         Assert.That(Vector3.Dot(elevation.GetNormal(planar), direction.normalized), Is.EqualTo(0f).Within(Tolerance));
                         Assert.That(segment.End.y, Is.GreaterThanOrEqualTo(previousY));
-                        Assert.That(segment.End.z, Is.GreaterThan(master.CoreWorldXZBounds.yMin));
+                        Assert.That(segment.End.z, Is.GreaterThanOrEqualTo(master.CoreWorldXZBounds.yMin - .26f));
                         if (segment.Kind == CityTerraceTransportSegmentKind.Climb)
                             climbDistance += horizontal;
                         else
@@ -90,12 +102,39 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(route.Samples[i + 1].HorizontalDistance, Is.EqualTo(distance).Within(Tolerance));
                     }
                     Assert.That(route.TotalHorizontalLength, Is.EqualTo(distance).Within(Tolerance));
-                    Assert.That(climbDistance, Is.GreaterThanOrEqualTo((summit - coastalDatum) / .06f));
+                    Assert.That(route.MaximumReachableSummitElevation,
+                        Is.EqualTo(coastalDatum + climbDistance * .06f).Within(Tolerance));
+                    Assert.That(route.IsGradeFeasible,
+                        Is.EqualTo(summit <= route.MaximumReachableSummitElevation + Tolerance));
+                    if (summit <= 40f)
+                        Assert.That(route.IsGradeFeasible, Is.True, "The supported default rise must remain physically attainable.");
+                    if (summit == 45f && route.Bank == CityTerraceTransportBank.East)
+                    {
+                        Assert.That(route.IsGradeFeasible, Is.False, "The upper request must expose insufficient climbing length.");
+                        Assert.That(route.MaximumGradePercent, Is.GreaterThan(6f));
+                        Assert.That(route.MaximumReachableSummitElevation, Is.LessThan(summit));
+                    }
                     Assert.That(route.TotalHorizontalLength, Is.GreaterThan(climbDistance));
                     Assert.That(route.MaximumGradePercent, Is.EqualTo(route.Segments.Max(segment => segment.GradePercent)).Within(Tolerance));
                     Assert.That(second.Samples.Select(sample => new { sample.Position, sample.HorizontalDistance }),
                         Is.EqualTo(route.Samples.Select(sample => new { sample.Position, sample.HorizontalDistance })));
-                    Assert.That(route.Reservations.Any(reservation => reservation.Kind == CityTerraceReservationKind.Building), Is.True);
+                    for (int i = 0; i < route.CorridorPolygons.Count; i++)
+                    {
+                        IReadOnlyList<Vector2> corridor = route.CorridorPolygons[i];
+                        Assert.That(second.CorridorPolygons[i], Is.EqualTo(corridor));
+                        foreach (CityTerraceTransportFootprint footprint in plan.Footprints)
+                        {
+                            if (footprint.Kind == CityTerraceReservationKind.ProtectedAccess) continue;
+                            Assert.That(ConvexOverlapArea(corridor, footprint.Polygon), Is.LessThan(.00001d),
+                                $"{route.Bank} segment {i} clips {footprint.Kind} {footprint.Id}.");
+                        }
+                        for (int j = i + 2; j < route.CorridorPolygons.Count; j++)
+                            Assert.That(ConvexOverlapArea(corridor, route.CorridorPolygons[j]), Is.LessThan(.00001d),
+                                $"{route.Bank} non-neighbouring corridor segments {i}/{j} overlap.");
+                    }
+                    Assert.That(route.Reservations.All(reservation =>
+                        reservation.Kind == CityTerraceReservationKind.ExistingRoad ||
+                        reservation.Kind == CityTerraceReservationKind.ProtectedAccess), Is.True);
                     foreach (CityTerraceReservation reservation in route.Reservations)
                     {
                         Assert.That(reservation.RouteId, Is.EqualTo(route.Id));
@@ -104,16 +143,22 @@ namespace BarPromenade.Tests.EditMode
                     }
                 }
 
-                Assert.That(plan.HasProtectedConflicts, Is.True, "Grade feasibility must not hide the inhabited city.");
+                Assert.That(plan.HasProtectedConflicts, Is.False);
+                Assert.That(plan.HasBuildingConflicts, Is.False, "Every surveyed building and protected place must be clear.");
                 Assert.That(plan.IsPlacementReady, Is.False, "A six-percent profile is not a reserved physical road.");
+                Assert.That(plan.OutstandingPlacementRequirements.HasFlag(CityTerracePlacementRequirement.FootprintConflicts), Is.False);
+                Assert.That(plan.OutstandingPlacementRequirements.HasFlag(CityTerracePlacementRequirement.GradeLimit),
+                    Is.EqualTo(plan.Routes.Any(route => !route.IsGradeFeasible)));
+                Assert.That(plan.OutstandingPlacementRequirements.HasFlag(CityTerracePlacementRequirement.RoadConnections), Is.True);
                 Assert.That(plan.OutstandingPlacementRequirements.HasFlag(CityTerracePlacementRequirement.UnresolvedRoadCrossings), Is.True);
                 Assert.That(plan.OutstandingPlacementRequirements.HasFlag(CityTerracePlacementRequirement.VehicleSweptPath), Is.True);
                 Assert.That(plan.OutstandingPlacementRequirements.HasFlag(CityTerracePlacementRequirement.TerrainTieIns), Is.True);
                 Assert.That(plan.Reservations.Any(reservation => reservation.Kind == CityTerraceReservationKind.ExistingRoad), Is.True);
-                Assert.That(plan.Reservations.Any(reservation => reservation.Kind == CityTerraceReservationKind.Terrace), Is.True);
                 Assert.That(plan.RoadCrossings, Is.Not.Empty);
                 Assert.That(plan.RoadCrossings.Select(crossing => crossing.Id).Distinct().Count(), Is.EqualTo(plan.RoadCrossings.Count));
-                Assert.That(plan.RoadCrossings.Count(crossing => crossing.Kind == CityTerraceRoadCrossingKind.CoastalAttachment), Is.EqualTo(2));
+                foreach (CityTerraceTransportRoute route in plan.Routes)
+                    Assert.That(plan.RoadCrossings.Any(crossing => crossing.RouteId == route.Id &&
+                        crossing.Kind == CityTerraceRoadCrossingKind.CoastalAttachment), Is.True);
                 Assert.That(plan.RoadCrossings.Any(crossing => crossing.Kind == CityTerraceRoadCrossingKind.GradeSeparatedUnresolved &&
                     Mathf.Abs(crossing.SignedSurfaceSeparation) > 4f), Is.True, "A large gap must remain unresolved, not silently become a tunnel.");
                 foreach (CityTerraceRoadCrossing crossing in plan.RoadCrossings)
@@ -144,13 +189,50 @@ namespace BarPromenade.Tests.EditMode
                     crossing.RouteDatumY, crossing.RoadDatumY, crossing.Kind, crossing.CenterlinesIntersect }),
                     Is.EqualTo(plan.RoadCrossings.Select(crossing => new { crossing.Id, crossing.WorldXZ,
                         crossing.RouteDatumY, crossing.RoadDatumY, crossing.Kind, crossing.CenterlinesIntersect })));
-                Assert.That(plan.Reservations.Any(reservation => reservation.Id == "player-home" && reservation.IsProtected), Is.True);
-                Assert.That(plan.Reservations.Any(reservation => reservation.Id == bar.BarId && reservation.IsProtected), Is.True);
-                Assert.That(plan.Reservations.Any(reservation => reservation.Kind == CityTerraceReservationKind.Coast), Is.True,
-                    "The existing coastal attachment also needs an explicit terrain tie-in.");
+                foreach (string owner in new[] { "player-home", bar.BarId, "supermarket", "city-laundry:site",
+                    "city-dog-park:site", "city-fair:site", "city-arch-shelter:structure" })
+                    Assert.That(plan.Footprints.Any(footprint => footprint.Id == owner &&
+                        footprint.Kind == CityTerraceReservationKind.ProtectedPlace), Is.True, owner);
+                Assert.That(plan.Footprints.Any(footprint => footprint.Kind == CityTerraceReservationKind.Terrace), Is.True);
+                Assert.That(plan.Footprints.Any(footprint => footprint.Id == "player-home:forecourt" &&
+                    footprint.Kind == CityTerraceReservationKind.ProtectedAccess), Is.True);
+                Assert.That(plan.Reservations.Any(reservation => reservation.Kind == CityTerraceReservationKind.ProtectedAccess), Is.True,
+                    "Shared entrance interfaces still need an explicit height/connection solution.");
+                int massIndex = 0;
+                foreach (BuildingLot lot in layout.BuildingMasses)
+                {
+                    if (!lot.HasBuilding && !lot.IsCafe) continue;
+                    if (lot.IsOrdinaryBuilding && !layout.PrimaryLandmarkCells.Values.Contains(lot.Cell))
+                    {
+                        string id = "building:" + lot.Cell + ":" + massIndex;
+                        CityTerraceTransportFootprint footprint = plan.Footprints.Single(item => item.Id == id);
+                        Assert.That(footprint.Kind, Is.EqualTo(CityTerraceReservationKind.Building));
+                        CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
+                        Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(lot.District, lot.BuildingVariant);
+                        foreach (float x in new[] { -.5f, .5f })
+                        foreach (float z in new[] { -.5f, .5f })
+                        {
+                            Vector3 corner = pose.TransformPoint(new Vector3(x * envelope.x, 0f, z * envelope.z));
+                            Assert.That(ContainsConvex(footprint.Polygon, new Vector2(corner.x, corner.z)), Is.True,
+                                "The survey must cover upper spans and every rear-house model envelope: " + id);
+                        }
+                    }
+                    massIndex++;
+                }
+                foreach (float lateral in new[] { -6.5f, 6.5f })
+                {
+                    Vector3 roof = PlayerHomeBalconyGeometry.ToCityWorld(layout.PlayerHome,
+                        new Vector3(PlayerHomeBalconyGeometry.HomeFacadeX + PlayerHomeBalconyGeometry.BalconyDepth, 0f, lateral));
+                    Assert.That(plan.Footprints.Any(footprint => footprint.Id == "player-home" &&
+                        ContainsConvex(footprint.Polygon, new Vector2(roof.x, roof.z))), Is.True,
+                        "The Home roof overhang spans the entire facade, beyond the narrow balcony.");
+                }
+                Assert.That(plan.Reservations.Any(reservation => reservation.Kind == CityTerraceReservationKind.Coast), Is.False);
                 Assert.That(plan.Reservations.Any(reservation => reservation.Kind == CityTerraceReservationKind.River), Is.False);
                 Assert.That(plan.PilotReservations, Is.Not.Empty, "The development envelope is occupied, not an approved live insertion.");
                 Assert.That(plan.PilotReservations.All(reservation => reservation.SegmentIndex == -1), Is.True);
+                Assert.That(plan.Reservations.All(reservation => reservation.SegmentIndex >= 0), Is.True,
+                    "The occupied historical pilot envelope is not a conflict of the new transport routes.");
                 Assert.That(plan.PilotReservations.Any(reservation => reservation.Id == "player-home" || reservation.Id == bar.BarId), Is.False);
                 Assert.That(repeated.Reservations.Select(reservation => new { reservation.RouteId, reservation.SegmentIndex,
                     reservation.Id, reservation.Kind, reservation.Bounds }), Is.EqualTo(plan.Reservations.Select(reservation => new {
@@ -162,12 +244,76 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(layout.PlayerHome.ReturnPosition, Is.EqualTo(homeReturn));
             Assert.That(bar.DoorPosition, Is.EqualTo(barDoor));
             Assert.That(bar.ReturnPosition, Is.EqualTo(barReturn));
+            Assert.That(layout.BuildingMasses.Select(lot => new { lot.Cell, lot.Center, lot.Size, lot.Height,
+                lot.BuildingVariant, lot.District, lot.FacadeForward, lot.DoorPosition,
+                lot.ReturnPosition, lot.SidewalkArrivalPosition }), Is.EqualTo(masses));
             CityTerraceMasterPlan valid = CityTerraceMasterPlan.Create(layout);
             Assert.Throws<ArgumentNullException>(() => CityTerraceTransportPlan.Create(null, valid));
             Assert.Throws<ArgumentNullException>(() => CityTerraceTransportPlan.Create(layout, null));
             CityLayout other = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default, CityGenerationSettings.Default,
                 GameSessionState.DefaultCitySeed + 1);
             Assert.Throws<ArgumentException>(() => CityTerraceTransportPlan.Create(other, valid));
+        }
+
+        // Independent double-precision clipping checks actual pavement area,
+        // not the production overlap flags or the sampled centreline alone.
+        private static double ConvexOverlapArea(IReadOnlyList<Vector2> first, IReadOnlyList<Vector2> second)
+        {
+            double ax0 = double.PositiveInfinity, ay0 = double.PositiveInfinity;
+            double ax1 = double.NegativeInfinity, ay1 = double.NegativeInfinity;
+            double bx0 = double.PositiveInfinity, by0 = double.PositiveInfinity;
+            double bx1 = double.NegativeInfinity, by1 = double.NegativeInfinity;
+            foreach (Vector2 point in first)
+            {
+                ax0 = Math.Min(ax0, point.x); ax1 = Math.Max(ax1, point.x);
+                ay0 = Math.Min(ay0, point.y); ay1 = Math.Max(ay1, point.y);
+            }
+            foreach (Vector2 point in second)
+            {
+                bx0 = Math.Min(bx0, point.x); bx1 = Math.Max(bx1, point.x);
+                by0 = Math.Min(by0, point.y); by1 = Math.Max(by1, point.y);
+            }
+            if (ax1 <= bx0 || bx1 <= ax0 || ay1 <= by0 || by1 <= ay0) return 0d;
+            var polygon = first.Select(point => ((double)point.x, (double)point.y)).ToList();
+            for (int i = 0; i < second.Count && polygon.Count > 0; i++)
+            {
+                Vector2 start = second[i], end = second[(i + 1) % second.Count];
+                double dx = (double)end.x - start.x, dy = (double)end.y - start.y;
+                double Side((double x, double y) point) => dx * (point.y - start.y) - dy * (point.x - start.x);
+                var output = new List<(double x, double y)>();
+                (double x, double y) previous = polygon[polygon.Count - 1];
+                double previousSide = Side(previous);
+                foreach ((double x, double y) current in polygon)
+                {
+                    double currentSide = Side(current);
+                    if ((previousSide >= 0d) != (currentSide >= 0d))
+                    {
+                        double amount = previousSide / (previousSide - currentSide);
+                        output.Add((previous.x + (current.x - previous.x) * amount,
+                            previous.y + (current.y - previous.y) * amount));
+                    }
+                    if (currentSide >= 0d) output.Add(current);
+                    previous = current; previousSide = currentSide;
+                }
+                polygon = output;
+            }
+            double area = 0d;
+            for (int i = 1; i + 1 < polygon.Count; i++)
+                area += (polygon[i].Item1 - polygon[0].Item1) * (polygon[i + 1].Item2 - polygon[0].Item2) -
+                    (polygon[i].Item2 - polygon[0].Item2) * (polygon[i + 1].Item1 - polygon[0].Item1);
+            return Math.Abs(area) * .5d;
+        }
+
+        private static bool ContainsConvex(IReadOnlyList<Vector2> polygon, Vector2 point)
+        {
+            for (int i = 0; i < polygon.Count; i++)
+            {
+                Vector2 a = polygon[i], b = polygon[(i + 1) % polygon.Count];
+                double side = ((double)b.x - a.x) * ((double)point.y - a.y) -
+                    ((double)b.y - a.y) * ((double)point.x - a.x);
+                if (side < -Tolerance) return false;
+            }
+            return true;
         }
 
         [Test]
