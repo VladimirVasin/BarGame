@@ -1459,6 +1459,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return PickUpShowerSoap(shower, camera, "HomeShowerHardware");
             Assert.That(shower.SoapHeld, Is.True, "The cancellation must exercise an actually held soap.");
             yield return AssertShowerMouseLook(shower, camera, true);
+            yield return ObserveSelectedShowerPoint(shower, camera, HomeShowerWashRegion.Intimate, false, null);
             yield return ObserveSelectedShowerPoint(shower, camera, HomeShowerWashRegion.Torso, false, null);
             Assert.That(showerContactFailures, Is.Empty, "The held-soap mouse controls must earn real contact progress." + ShowerContactFailureDetails);
             float heldYaw = shower.View.LookYawDegrees, heldPitch = shower.View.LookPitchDegrees;
@@ -1698,6 +1699,23 @@ namespace BarPromenade.Tests.PlayMode
                 yield return null;
                 yield return null;
                 yield return AtPresentation(() => Assert.That(shower.View.IsPointerMode, Is.False));
+                foreach (float viewPitch in new[] { 85f, 95f, 125f, 155f })
+                {
+                    shower.View.ApplyLookDelta(-shower.View.LookYawDegrees,
+                        viewPitch - shower.View.BasePitchDegrees - shower.View.LookPitchDegrees);
+                    yield return AtPresentation(() => cameraBefore = camera.transform.rotation);
+                    input.Set(mouse.delta, new Vector2(70f, 0f), queueEventOnly: true);
+                    yield return null;
+                    yield return AtPresentation(() =>
+                    {
+                        Vector3 movement = camera.transform.forward - cameraBefore * Vector3.forward;
+                        Assert.That(Vector3.Dot(movement, cameraBefore * Vector3.right), Is.GreaterThan(.01f),
+                            $"Right mouse motion must turn screen-right at absolute pitch {viewPitch}, with soap={holdingSoap}.");
+                        Assert.That(Quaternion.Angle(actorRotation, home.Player.GameObject.transform.rotation), Is.LessThan(.01f));
+                        Assert.That(shower.WashingProgress.Amount, Is.EqualTo(progress));
+                    });
+                    yield return null;
+                }
             }
             finally
             {
@@ -2409,6 +2427,8 @@ namespace BarPromenade.Tests.PlayMode
             long maximumPassiveTicks = 0;
             long solveCountBefore = shower.SoapPose.ContactSolveCount;
             double solveMillisecondsBefore = shower.SoapPose.ContactSolveTotalMilliseconds;
+            long armCandidatesBefore = shower.SoapPose.CollisionTriangleCandidates;
+            long armTrianglesBefore = shower.SoapPose.CollisionTriangleTests;
             string lastPresentation = "No selected contact sampled.";
             bool completed = false;
             bool capturedCycle = false, capturedResponse = false;
@@ -2420,7 +2440,10 @@ namespace BarPromenade.Tests.PlayMode
                 mouse = InputSystem.AddDevice<Mouse>();
                 yield return AtPresentation(() =>
                 {
-                    Assert.That(shower.SoapPose.TryGetRegionTarget(region, out target, requireCentreAim: true), Is.True, region.ToString());
+                    Assert.That(shower.SoapPose.TryGetRegionTarget(region, out target, requireCentreAim: true,
+                        requiredSurfaceName: region == HomeShowerWashRegion.Intimate ? "Anatomy_Skin" : null), Is.True, region.ToString());
+                    if (region == HomeShowerWashRegion.Intimate)
+                        Assert.That(target.SurfaceName, Is.EqualTo("Anatomy_Skin"), "This regression must wash the shaft, rather than fall back to pelvis skin.");
                     AimShowerAt(shower, camera, target.WorldPoint);
                 });
                 // Re-aim from the currently presented eyes while the posed
@@ -2460,13 +2483,16 @@ namespace BarPromenade.Tests.PlayMode
                     input.Set(mouse.delta, new Vector2(yawBeforeHeldLook >= 0f ? -12f : 12f, 0f), queueEventOnly: true);
                     input.Press(mouse.rightButton, queueEventOnly: true);
                     yield return null;
+                    yield return null; // Retarget from the newly presented camera ray.
                     yield return AtPresentation(() =>
                     {
                         Assert.That(Mathf.Abs(Mathf.DeltaAngle(yawBeforeHeldLook, shower.View.LookYawDegrees)), Is.GreaterThan(1f),
                             "Real mouse movement still turns the camera during a held washing stroke.");
                         Assert.That(shower.SelectedWashTarget.Anchor, Is.SameAs(target.Anchor));
-                        Assert.That(Vector3.Distance(shower.SelectedWashTarget.LocalPoint, target.LocalPoint), Is.LessThan(0.001f),
-                            "Moving the view while LMB is held must retain the original skin point.");
+                        Assert.That(Vector3.Distance(shower.SelectedWashTarget.WorldPoint, target.WorldPoint), Is.GreaterThan(0.001f),
+                            "Moving the view while LMB is held must immediately move the washing point.");
+                        Assert.That(mouse.leftButton.isPressed, Is.True, "Retargeting must not need a button release.");
+                        target = shower.SelectedWashTarget;
                     });
                 }
                 float deadline = Time.realtimeSinceStartup + (finishGauge
@@ -2484,7 +2510,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(shower.SelectedWashTarget.Region, Is.EqualTo(region));
                     Assert.That(shower.SelectedWashTarget.Anchor, Is.SameAs(target.Anchor));
                     Assert.That(Vector3.Distance(shower.SelectedWashTarget.LocalPoint, target.LocalPoint), Is.LessThan(0.001f),
-                        "Holding LMB retains the chosen body point independently of the camera and OS pointer.");
+                        "Holding LMB with a stationary view keeps the selected stroke stable regardless of the OS pointer.");
                     if (pose.IsContacting && pose.CurrentRegion == region)
                     {
                         contactFrames++;
@@ -2545,6 +2571,8 @@ namespace BarPromenade.Tests.PlayMode
                     long vertices = shower.WashPose.PassiveObstacleVertexUpdates - passiveVerticesBefore;
                     long solves = shower.SoapPose.ContactSolveCount - solveCountBefore;
                     double solveMilliseconds = shower.SoapPose.ContactSolveTotalMilliseconds - solveMillisecondsBefore;
+                    long armCandidates = shower.SoapPose.CollisionTriangleCandidates - armCandidatesBefore;
+                    long armTriangles = shower.SoapPose.CollisionTriangleTests - armTrianglesBefore;
                     double passiveMilliseconds = ticks * 1000d / System.Diagnostics.Stopwatch.Frequency;
                     string performance = $"passiveCalls={calls}; passiveMeanMs={passiveMilliseconds / System.Math.Max(1L, calls):F4}; " +
                         $"passiveSampleMaxMs={maximumPassiveTicks * 1000d / System.Diagnostics.Stopwatch.Frequency:F4}; " +
@@ -2552,6 +2580,7 @@ namespace BarPromenade.Tests.PlayMode
                         $"triangleWorkRatio={(double)triangles / System.Math.Max(1L, candidates):F6}; obstacleVertexUpdates={vertices}; " +
                         $"stepHandCalls={solves}; stepHandMeanMs={solveMilliseconds / System.Math.Max(1L, solves):F4}; " +
                         $"stepHandLifetimeMaxMs={shower.SoapPose.ContactSolveMaxMilliseconds:F4}; " +
+                        $"armTriangleTests={armTriangles}; armTriangleCandidates={armCandidates}; " +
                         $"contactFrames={contactFrames}; contactSeconds={contactSeconds:F3}; contactTravel={actualTravel:F5}";
                     // These clocks are inside production code. The independent
                     // mesh-baking safety observer and captures are not timed.
@@ -2562,6 +2591,8 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(ticks, Is.GreaterThan(0), performance);
                         Assert.That(solves, Is.GreaterThan(0), performance);
                         Assert.That(candidates, Is.GreaterThan(0), performance);
+                        Assert.That(armTriangles, Is.GreaterThan(0).And.LessThan(armCandidates / 4),
+                            "Exact arm collision must prune the all-pairs triangle path during held shaft washing. " + performance);
                         Assert.That(triangles, Is.GreaterThan(0).And.LessThan(candidates),
                             "The active physical response must retain exact triangle checks while avoiding the old unfiltered work. " + performance);
                     }
@@ -2577,6 +2608,34 @@ namespace BarPromenade.Tests.PlayMode
                         Debug.Log("Shower held-contact camera: " + lastPresentation);
                     });
                     yield return CaptureShowerUiFrame("HomeShowerControls", "00-centre-aim-held-look");
+                }
+                if (region == HomeShowerWashRegion.Intimate && completed && !finishGauge)
+                {
+                    yield return AtPresentation(() =>
+                    {
+                        Assert.That(shower.SoapPose.TryGetRegionTarget(HomeShowerWashRegion.Torso, out var next,
+                            requireCentreAim: true), Is.True);
+                        AimShowerAt(shower, camera, next.WorldPoint);
+                    });
+                    yield return null;
+                    yield return null;
+                    yield return AtPresentation(() =>
+                    {
+                        Assert.That(mouse.leftButton.isPressed, Is.True);
+                        Assert.That(shower.HasSelectedWashPoint, Is.True, shower.SelectionDiagnostic);
+                        Assert.That(shower.SelectedWashTarget.Region, Is.EqualTo(HomeShowerWashRegion.Torso),
+                            "Held LMB must switch from shaft to torso without a fresh press.");
+                    });
+                    yield return ObserveShowerPresentationUntil(
+                        () => Assert.That(mouse.leftButton.isPressed, Is.True),
+                        () => shower.SoapPose.IsContacting && shower.SoapPose.CurrentRegion == HomeShowerWashRegion.Torso,
+                        Time.realtimeSinceStartup + 8f);
+                    yield return AtPresentation(() =>
+                    {
+                        Assert.That(shower.SoapPose.IsContacting, Is.True, shower.SoapPose.ContactDiagnostic);
+                        Assert.That(shower.SoapPose.CurrentRegion, Is.EqualTo(HomeShowerWashRegion.Torso));
+                        CaptureShower("30-held-retarget-torso");
+                    });
                 }
                 // One state clears both buttons. Two queued full-state releases
                 // would each retain the other button's not-yet-applied old value.

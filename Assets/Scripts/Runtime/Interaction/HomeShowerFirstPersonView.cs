@@ -255,6 +255,10 @@ namespace BarPromenade
                 }
             }
 
+            // Past straight down, positive body yaw moves the view towards
+            // screen-left. Keep physical right input screen-right throughout
+            // the down/back cone; authored ApplyLookDelta still uses body yaw.
+            if (Mathf.Cos((basePitch + lookPitch) * Mathf.Deg2Rad) < 0f) yaw = -yaw;
             ApplyLookDelta(yaw, pitch);
         }
 

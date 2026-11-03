@@ -29,7 +29,7 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 CombatWarehouseHawthorn.
 - Зеркало:стекло билда.
   HomeBathroomMirrorPlayModeTests.
-- Душ:мышь/центр+ЛКМ;глаза/nearclip восстановлены.
+- Душ:обзор/рука/контакт;ЛКМ держать и наводить.
   Shower_CancelMidWashDressesHimAndShutsTheWater.
 - Туалет:анатомия при снятых штанах.
   SeatedAppearance_ShowsAttachedAnatomyAndHidesItOnExit.

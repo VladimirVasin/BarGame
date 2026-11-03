@@ -21,7 +21,9 @@ namespace BarPromenade
         private bool soapStarted, soapStartRendered, soapEndRendered, washingFinishRequested;
         private bool washingLookHeld, scrubHeld, scrubSubmitted, previousWashingLook, pointerArmed;
         private bool gamepadWashingPointer, selectPointRequested;
+        private bool mouseAimSampled;
         private Vector2 scrubPointer;
+        private Vector3 sampledMouseAimDirection;
         private HomeShowerSoapTarget selectedWashTarget, previousStrokeTarget;
         private Vector3 strokeDirection;
         private float strokeRadius, strokeClock;
@@ -89,6 +91,7 @@ namespace BarPromenade
             soapStarted = soapStartRendered = soapEndRendered = washingFinishRequested = false;
             washingLookHeld = previousWashingLook = scrubHeld = scrubSubmitted = pointerArmed = false;
             gamepadWashingPointer = false;
+            mouseAimSampled = false;
             soapPhase = HomeShowerSoapPhase.SelectSoap;
             soapPhaseElapsed = 0f;
             scrubPointer = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
@@ -204,7 +207,24 @@ namespace BarPromenade
                     PresentSoapTransfer(false);
                     break;
                 case HomeShowerSoapPhase.Washing:
-                    if (selectPointRequested && !paused && !washingLookHeld) TrySelectWashPoint(scrubPointer);
+                    if (!paused && !washingLookHeld)
+                    {
+                        bool liveAim = scrubSubmitted && scrubHeld && !gamepadWashingPointer && WashingCamera != null;
+                        bool aimChanged = false;
+                        if (liveAim)
+                        {
+                            // The presented base pose follows look input;
+                            // eye shifts and camera reactions must not restart
+                            // a stationary stroke. Pick through the live lens.
+                            Vector3 direction = Home.CameraFollow.FixedBaseRotation * Vector3.forward;
+                            aimChanged = !mouseAimSampled ||
+                                (direction - sampledMouseAimDirection).sqrMagnitude > 0.0000000001f;
+                            sampledMouseAimDirection = direction;
+                        }
+                        mouseAimSampled = liveAim;
+                        if (selectPointRequested || aimChanged)
+                            SelectWashPoint(scrubPointer, liveAim && !selectPointRequested);
+                    }
                     PresentAutomaticWashing(step);
                     break;
             }
@@ -212,23 +232,36 @@ namespace BarPromenade
             selectPointRequested = false;
         }
 
-        /// <summary>Press selects visible skin; holding the button repeats a short right-hand washing stroke there.</summary>
-        public bool TrySelectWashPoint(Vector2 screenPosition)
+        /// <summary>Select visible skin; held mouse aim can move this point without restarting its stroke.</summary>
+        public bool TrySelectWashPoint(Vector2 screenPosition) => SelectWashPoint(screenPosition, false);
+
+        private bool SelectWashPoint(Vector2 screenPosition, bool continuous)
         {
-            SelectionDiagnostic = $"point={screenPosition:F2}, phase={soapPhase}, look={washingLookHeld}, paused={PauseMenuController.IsAnyPaused}";
+            if (!continuous)
+                SelectionDiagnostic = $"point={screenPosition:F2}, phase={soapPhase}, look={washingLookHeld}, paused={PauseMenuController.IsAnyPaused}";
             if (!OwnsScene || !soapStarted || washingFinishRequested || !GameInput.CanRead(GameInputContext.Contextual) ||
                 washingLookHeld || soapPhase != HomeShowerSoapPhase.Washing || WashingCamera == null ||
                 !float.IsFinite(screenPosition.x) || !float.IsFinite(screenPosition.y)) return false;
-            ClearWashSelection();
+            if (!continuous) ClearWashSelection();
             if (!WashingCamera.pixelRect.Contains(screenPosition))
-            { SelectionDiagnostic += "; outside camera rectangle"; return false; }
+            { ClearWashSelection(); SelectionDiagnostic = "Outside camera rectangle."; return false; }
             if (!soapPose.TryPickBody(WashingCamera.ScreenPointToRay(screenPosition), out HomeShowerSoapTarget target))
-            { SelectionDiagnostic += "; no exposed skin hit"; return false; }
-            SelectionDiagnostic += $"; skin={target.Region}/{target.SurfaceName}, point={target.WorldPoint:F5}, normal={target.WorldNormal:F4}";
-            if (!soapPose.TryPrepareWashStroke(target, out strokeDirection, out strokeRadius))
-            { SelectionDiagnostic += "; no stroke fits skin"; return false; }
+            { ClearWashSelection(); SelectionDiagnostic = "No exposed skin hit."; return false; }
+            bool sameSurface = selectedWashTarget.IsValid && selectedWashTarget.Anchor == target.Anchor &&
+                selectedWashTarget.SurfaceName == target.SurfaceName;
+            if (continuous && sameSurface &&
+                (selectedWashTarget.WorldPoint - target.WorldPoint).sqrMagnitude <= 0.000001f &&
+                Vector3.Dot(selectedWashTarget.WorldNormal, target.WorldNormal) > 0.995f) return true;
+            if (!continuous)
+                SelectionDiagnostic += $"; skin={target.Region}/{target.SurfaceName}, point={target.WorldPoint:F5}, normal={target.WorldNormal:F4}";
+            if (!soapPose.TryPrepareWashStroke(target, out Vector3 direction, out float radius))
+            { ClearWashSelection(); SelectionDiagnostic = "No stroke fits skin."; return false; }
+            if (!sameSurface) previousStrokeTarget = default;
             selectedWashTarget = target;
-            SelectionDiagnostic += $"; strokeRadius={strokeRadius:F4}";
+            strokeDirection = direction;
+            strokeRadius = radius;
+            if (continuous) SelectionDiagnostic = "Held mouse aim updated.";
+            else SelectionDiagnostic += $"; strokeRadius={strokeRadius:F4}";
             return true;
         }
 
@@ -295,6 +328,7 @@ namespace BarPromenade
             soapPhaseElapsed = 0f;
             soapStartRendered = soapEndRendered = false;
             selectPointRequested = false;
+            mouseAimSampled = false;
             scrubHeld = scrubSubmitted = false;
             ClearWashSelection();
             soapAffordance.ClearContact();

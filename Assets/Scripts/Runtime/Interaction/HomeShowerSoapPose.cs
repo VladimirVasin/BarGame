@@ -42,6 +42,7 @@ namespace BarPromenade
         private const float PickupContact = 0.58f;
         private const float PutDownContact = 0.68f;
         private const float TransferContactTolerance = 0.008f;
+        private static readonly float[] StrokeRadii = { 0.026f, 0.018f, 0.012f, 0.006f, 0.003f };
 
         private sealed class Surface
         {
@@ -109,6 +110,10 @@ namespace BarPromenade
         public long ContactSolveCount { get; private set; }
         public double ContactSolveTotalMilliseconds { get; private set; }
         public double ContactSolveMaxMilliseconds { get; private set; }
+        public long CollisionTriangleCandidates => (hands[0].Guard?.CollisionTriangleCandidates ?? 0) +
+            (hands[1].Guard?.CollisionTriangleCandidates ?? 0);
+        public long CollisionTriangleTests => (hands[0].Guard?.CollisionTriangleTests ?? 0) +
+            (hands[1].Guard?.CollisionTriangleTests ?? 0);
         public float HandError { get; private set; }
         public float BodyClearance => Mathf.Min(hands[0].Guard != null ? hands[0].Guard.BodyClearance : 0f,
             hands[1].Guard != null ? hands[1].Guard.BodyClearance : 0f);
@@ -204,6 +209,7 @@ namespace BarPromenade
             pickupContactFrame = putDownContactFrame = -1;
             pickupProgress = putDownProgress = 0f;
             wasContact = lastHeld = false;
+            previousTarget = currentTarget = default;
             for (int index = 0; index < hands.Length; index++)
             {
                 Hand hand = hands[index];
@@ -343,6 +349,7 @@ namespace BarPromenade
                 wash.ApplyPassiveSoapContact(Vector3.zero, dt);
                 StepHand(hand, HoverPoint(), FrameForContact(Vector3.up, actor.forward, false), dt);
                 FollowSoap(); wasContact = lastHeld = false;
+                previousTarget = default; routeStage = 0;
                 return;
             }
             Vector3 point = target.WorldPoint, normal = target.WorldNormal;
@@ -350,6 +357,11 @@ namespace BarPromenade
             bool changed = previousTarget.IsValid &&
                 (previousTarget.Region != target.Region || Vector3.Distance(previousTarget.WorldPoint, point) > 0.13f ||
                  Vector3.Dot(previousTarget.WorldNormal, normal) < 0.65f);
+            // The first selected low contact needs the same outside approach
+            // as a transfer from another patch. Going straight from the shelf
+            // hover toward hanging skin can hit the bent torso; the guarded
+            // solver then correctly retains the same blocked arm forever.
+            if (!previousTarget.IsValid && routeStage == 0) routeStage = 2;
             if ((changed || (!held && lastHeld)) && routeStage == 0)
             {
                 withdrawal = hand.Current + ApproachDirection(previousTarget.IsValid ? previousTarget : target) * WithdrawalDistance;
@@ -403,9 +415,10 @@ namespace BarPromenade
             localDirection = default; radius = 0f;
             if (!centre.IsValid) return false;
             RefreshSurfaces(centre);
-            foreach (float length in new[] { 0.026f, 0.018f, 0.012f, 0.006f, 0.003f })
-                foreach (Vector3 axis in new[] { actor.right, actor.up, actor.forward })
+            foreach (float length in StrokeRadii)
+                for (int axisIndex = 0; axisIndex < 3; axisIndex++)
                 {
+                    Vector3 axis = axisIndex == 0 ? actor.right : axisIndex == 1 ? actor.up : actor.forward;
                     Vector3 tangent = Vector3.ProjectOnPlane(axis, centre.WorldNormal);
                     if (tangent.sqrMagnitude < 0.01f) continue;
                     Vector3 direction = centre.Anchor.InverseTransformVector(tangent.normalized);
@@ -465,7 +478,8 @@ namespace BarPromenade
             return TryPickBodyCached(ray, out target);
         }
 
-        public bool TryGetRegionTarget(HomeShowerWashRegion region, out HomeShowerSoapTarget target, bool requireCentreAim = false)
+        public bool TryGetRegionTarget(HomeShowerWashRegion region, out HomeShowerSoapTarget target, bool requireCentreAim = false,
+            string requiredSurfaceName = null)
         {
             target = default;
             if (!IsInitialized) return false;
@@ -475,6 +489,7 @@ namespace BarPromenade
             foreach (Surface surface in surfaces)
             {
                 if (surface.Region != region || !CanPick(surface)) continue;
+                if (requiredSurfaceName != null && surface.Renderer.name != requiredSurfaceName) continue;
                 for (int index = 0; index < surface.Triangles.Length; index += 3)
                 {
                     Vector3 a = surface.Vertices[surface.Triangles[index]], b = surface.Vertices[surface.Triangles[index + 1]], c = surface.Vertices[surface.Triangles[index + 2]];

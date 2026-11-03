@@ -18,8 +18,21 @@ namespace BarPromenade
             public int[] Triangles;
             public Bounds Bounds;
             public Bounds[] TriangleBounds;
+            public TriangleNode[] Nodes;
+            public int[] TriangleOrder;
             public bool IsClosed;
             public bool TopologyChecked;
+        }
+        private struct TriangleNode
+        {
+            public Bounds Bounds;
+            public int Left, Right, Start, Count;
+        }
+        private sealed class TriangleComparer : IComparer<int>
+        {
+            public Bounds[] Bounds;
+            public int Axis;
+            public int Compare(int a, int b) => Bounds[a].center[Axis].CompareTo(Bounds[b].center[Axis]);
         }
         private sealed class ArmSurface
         {
@@ -41,6 +54,8 @@ namespace BarPromenade
         private Vector3 measuredHandCenterInHand;
         private Vector3 rightInActor, forwardInActor, faceRightInHead, faceUpInHead, faceForwardInHead, outsideInHead;
         private Quaternion[] safePose;
+        private readonly Quaternion[] contactPrevious = new Quaternion[7];
+        private readonly Quaternion[] contactDestination = new Quaternion[3];
         private float safeBend;
         private float safeValveLean;
         private float safeInspectionLean, safeInspectionYaw;
@@ -78,6 +93,8 @@ namespace BarPromenade
         /// <summary>First confirmed body surface, limb and intersection type in the current pose.</summary>
         public string BodyIntersectionDetail { get; private set; } = string.Empty;
         public string LastContactRejectReason { get; private set; } = string.Empty;
+        public long CollisionTriangleCandidates { get; private set; }
+        public long CollisionTriangleTests { get; private set; }
         /// <summary>Measured anatomical frame: forward is fingers, up is thumb.</summary>
         public Quaternion PhysicalHandFrame => hand.rotation * handFrameInHand;
         public Vector3 PalmCenter => hand.position + hand.rotation * measuredHandCenterInHand;
@@ -179,7 +196,8 @@ namespace BarPromenade
         {
             if (!captured || Effector == null) return false;
             LastContactRejectReason = string.Empty;
-            Quaternion[] previous = hasSafePose ? (Quaternion[])safePose.Clone() : null;
+            Quaternion[] previous = hasSafePose ? contactPrevious : null;
+            if (previous != null) System.Array.Copy(safePose, previous, safePose.Length);
             // ApplyBrace has already written this frame's neutral arm. The
             // contact path must resume the last accepted arm in the current
             // torso frame, otherwise CCD can choose the opposite elbow branch
@@ -195,7 +213,7 @@ namespace BarPromenade
             inputDrivenContact = true;
             try { SolveClearPose(wrist, rotation, hint, hand.position, hand.rotation, forearm.position); }
             finally { inputDrivenContact = false; }
-            Quaternion[] destination = new Quaternion[3];
+            Quaternion[] destination = contactDestination;
             for (int index = 0; index < 3; index++) destination[index] = bones[index + 4].localRotation;
             bool clear = BodyIntersectionCount == 0;
             if (!clear) LastContactRejectReason = "candidate: " + BodyIntersectionDetail;
@@ -581,6 +599,7 @@ namespace BarPromenade
                     surface.Triangles = source.triangles;
                     surface.TriangleBounds = new Bounds[surface.Triangles.Length / 3];
                     surface.TopologyChecked = false;
+                    surface.Nodes = null;
                 }
                 sampledVertices.CopyTo(surface.Vertices);
                 if (!surface.TopologyChecked)
@@ -597,7 +616,56 @@ namespace BarPromenade
                     bounds.Encapsulate(surface.Vertices[surface.Triangles[index + 2]]);
                     surface.TriangleBounds[index / 3] = bounds;
                 }
+                if (surface.Nodes == null)
+                {
+                    int count = surface.Triangles.Length / 3;
+                    surface.TriangleOrder = new int[count];
+                    for (int index = 0; index < count; index++) surface.TriangleOrder[index] = index;
+                    var nodes = new List<TriangleNode>(count * 2);
+                    if (count > 0)
+                        BuildTriangleTree(surface, nodes, 0, count, new TriangleComparer { Bounds = surface.TriangleBounds });
+                    surface.Nodes = nodes.ToArray();
+                }
+                else if (surface.Nodes.Length > 0) RefitTriangleTree(surface, 0);
             }
+        }
+        private static int BuildTriangleTree(BodySurface surface, List<TriangleNode> nodes, int start, int count,
+            TriangleComparer comparer)
+        {
+            int nodeIndex = nodes.Count;
+            nodes.Add(default);
+            Bounds bounds = surface.TriangleBounds[surface.TriangleOrder[start]];
+            for (int index = start + 1; index < start + count; index++)
+                bounds.Encapsulate(surface.TriangleBounds[surface.TriangleOrder[index]]);
+            var node = new TriangleNode { Bounds = bounds, Start = start, Count = count, Left = -1, Right = -1 };
+            if (count > 8)
+            {
+                Vector3 size = bounds.size;
+                comparer.Axis = size.x >= size.y && size.x >= size.z ? 0 : size.y >= size.z ? 1 : 2;
+                System.Array.Sort(surface.TriangleOrder, start, count, comparer);
+                int firstCount = count / 2;
+                node.Left = BuildTriangleTree(surface, nodes, start, firstCount, comparer);
+                node.Right = BuildTriangleTree(surface, nodes, start + firstCount, count - firstCount, comparer);
+            }
+            nodes[nodeIndex] = node;
+            return nodeIndex;
+        }
+        private static Bounds RefitTriangleTree(BodySurface surface, int index)
+        {
+            TriangleNode node = surface.Nodes[index];
+            if (node.Left >= 0)
+            {
+                node.Bounds = RefitTriangleTree(surface, node.Left);
+                node.Bounds.Encapsulate(RefitTriangleTree(surface, node.Right));
+            }
+            else
+            {
+                node.Bounds = surface.TriangleBounds[surface.TriangleOrder[node.Start]];
+                for (int other = node.Start + 1; other < node.Start + node.Count; other++)
+                    node.Bounds.Encapsulate(surface.TriangleBounds[surface.TriangleOrder[other]]);
+            }
+            surface.Nodes[index] = node;
+            return node.Bounds;
         }
         private void MeasureBodyClearance()
         {
@@ -648,22 +716,11 @@ namespace BarPromenade
                         Bounds bounds = new Bounds(a, Vector3.zero);
                         bounds.Encapsulate(b); bounds.Encapsulate(c); bounds.Expand(nearDistance * 2f);
                         if (!bounds.Intersects(body.Bounds)) continue;
-                        for (int other = 0; other < body.Triangles.Length; other += 3)
+                        CollisionTriangleCandidates += body.Triangles.Length / 3;
+                        if (TriangleMeshClearance(body, 0, bounds, a, b, c, ref minimumSquared))
                         {
-                            if (!bounds.Intersects(body.TriangleBounds[other / 3])) continue;
-                            Vector3 d = body.Vertices[body.Triangles[other]], e = body.Vertices[body.Triangles[other + 1]], f = body.Vertices[body.Triangles[other + 2]];
-                            float squared = SegmentTriangleSquared(a, b, d, e, f);
-                            squared = Mathf.Min(squared, SegmentTriangleSquared(b, c, d, e, f));
-                            squared = Mathf.Min(squared, SegmentTriangleSquared(c, a, d, e, f));
-                            squared = Mathf.Min(squared, SegmentTriangleSquared(d, e, a, b, c));
-                            squared = Mathf.Min(squared, SegmentTriangleSquared(e, f, a, b, c));
-                            squared = Mathf.Min(squared, SegmentTriangleSquared(f, d, a, b, c));
-                            if (squared < 0.0000000001f)
-                            {
-                                RecordBodyIntersection(body, kind, "triangle", (a + b + c) / 3f);
-                                return -0.00001f;
-                            }
-                            minimumSquared = Mathf.Min(minimumSquared, squared);
+                            RecordBodyIntersection(body, kind, "triangle", (a + b + c) / 3f);
+                            return -0.00001f;
                         }
                     }
                 }
@@ -686,21 +743,68 @@ namespace BarPromenade
                     BoundsDistanceSquared(segmentBounds, surface.Bounds) > possibleDistance * possibleDistance + .000000001f)
                     continue;
                 float distanceSquared = float.PositiveInfinity;
-                for (int index = 0; index < triangles.Length; index += 3)
-                {
-                    // Both bounds contain the exact queried shapes. Their gap
-                    // is a lower bound, so a farther pair cannot improve the
-                    // current minimum and needs no triangle-distance evaluation.
-                    if (BoundsDistanceSquared(segmentBounds, surface.TriangleBounds[index / 3]) > distanceSquared + .000000001f)
-                        continue;
-                    distanceSquared = Mathf.Min(distanceSquared, SegmentTriangleSquared(start, end,
-                        vertices[triangles[index]], vertices[triangles[index + 1]], vertices[triangles[index + 2]]));
-                }
+                CollisionTriangleCandidates += triangles.Length / 3;
+                SegmentMeshClearance(surface, 0, segmentBounds, start, end, ref distanceSquared);
                 float distance = Mathf.Sqrt(distanceSquared);
                 bool inside = IsInside(start, surface) || IsInside((start + end) * 0.5f, surface) || IsInside(end, surface);
                 closest = Mathf.Min(closest, (inside ? -distance : distance) - radius);
             }
             return closest;
+        }
+        private bool TriangleMeshClearance(BodySurface body, int nodeIndex, Bounds bounds,
+            Vector3 a, Vector3 b, Vector3 c, ref float minimumSquared)
+        {
+            if (body.Nodes.Length == 0) return false;
+            TriangleNode node = body.Nodes[nodeIndex];
+            if (!bounds.Intersects(node.Bounds)) return false;
+            if (node.Left >= 0)
+                return TriangleMeshClearance(body, node.Left, bounds, a, b, c, ref minimumSquared) ||
+                    TriangleMeshClearance(body, node.Right, bounds, a, b, c, ref minimumSquared);
+            for (int index = node.Start; index < node.Start + node.Count; index++)
+            {
+                int triangle = body.TriangleOrder[index];
+                if (!bounds.Intersects(body.TriangleBounds[triangle])) continue;
+                int other = triangle * 3;
+                Vector3 d = body.Vertices[body.Triangles[other]], e = body.Vertices[body.Triangles[other + 1]], f = body.Vertices[body.Triangles[other + 2]];
+                CollisionTriangleTests++;
+                float squared = SegmentTriangleSquared(a, b, d, e, f);
+                squared = Mathf.Min(squared, SegmentTriangleSquared(b, c, d, e, f));
+                squared = Mathf.Min(squared, SegmentTriangleSquared(c, a, d, e, f));
+                squared = Mathf.Min(squared, SegmentTriangleSquared(d, e, a, b, c));
+                squared = Mathf.Min(squared, SegmentTriangleSquared(e, f, a, b, c));
+                squared = Mathf.Min(squared, SegmentTriangleSquared(f, d, a, b, c));
+                if (squared < 0.0000000001f) return true;
+                minimumSquared = Mathf.Min(minimumSquared, squared);
+            }
+            return false;
+        }
+        private void SegmentMeshClearance(BodySurface body, int nodeIndex, Bounds segmentBounds,
+            Vector3 start, Vector3 end, ref float minimumSquared)
+        {
+            if (body.Nodes.Length == 0) return;
+            TriangleNode node = body.Nodes[nodeIndex];
+            if (BoundsDistanceSquared(segmentBounds, node.Bounds) > minimumSquared + .000000001f) return;
+            if (node.Left >= 0)
+            {
+                // Visit the nearer child first so its exact distance prunes
+                // the farther branch. Bounds only reject impossible minima.
+                int first = node.Left, second = node.Right;
+                if (BoundsDistanceSquared(segmentBounds, body.Nodes[second].Bounds) <
+                    BoundsDistanceSquared(segmentBounds, body.Nodes[first].Bounds))
+                { first = node.Right; second = node.Left; }
+                SegmentMeshClearance(body, first, segmentBounds, start, end, ref minimumSquared);
+                SegmentMeshClearance(body, second, segmentBounds, start, end, ref minimumSquared);
+                return;
+            }
+            for (int index = node.Start; index < node.Start + node.Count; index++)
+            {
+                int triangle = body.TriangleOrder[index];
+                if (BoundsDistanceSquared(segmentBounds, body.TriangleBounds[triangle]) > minimumSquared + .000000001f) continue;
+                int other = triangle * 3;
+                CollisionTriangleTests++;
+                minimumSquared = Mathf.Min(minimumSquared, SegmentTriangleSquared(start, end,
+                    body.Vertices[body.Triangles[other]], body.Vertices[body.Triangles[other + 1]], body.Vertices[body.Triangles[other + 2]]));
+            }
         }
         private void RecordBodyIntersection(BodySurface body, int kind, string intersection, Vector3 point)
         {
@@ -743,17 +847,35 @@ namespace BarPromenade
             edges.TryGetValue(edge, out int count);
             edges[edge] = count + 1;
         }
-        private static bool IsInside(Vector3 point, BodySurface surface)
+        private bool IsInside(Vector3 point, BodySurface surface)
         {
             // An open garment has a surface but does not enclose a volume.
             if (!surface.IsClosed || !surface.Bounds.Contains(point)) return false;
-            Vector3 direction = InsideRayDirection;
-            int crossings = 0;
-            for (int index = 0; index < surface.Triangles.Length; index += 3)
-                if (RayTriangle(point, direction, surface.Vertices[surface.Triangles[index]],
-                    surface.Vertices[surface.Triangles[index + 1]], surface.Vertices[surface.Triangles[index + 2]], out float distance) && distance > 0.000001f)
-                    crossings++;
+            CollisionTriangleCandidates += surface.Triangles.Length / 3;
+            int crossings = CountInsideCrossings(point, new Ray(point, InsideRayDirection), surface, 0);
             return (crossings & 1) != 0;
+        }
+        private int CountInsideCrossings(Vector3 point, Ray ray, BodySurface surface, int nodeIndex)
+        {
+            TriangleNode node = surface.Nodes[nodeIndex];
+            Bounds rayBounds = node.Bounds;
+            // A conservative micrometre pad keeps a grazing ray eligible
+            // despite bounds-centre rounding; exact triangle tolerances below
+            // still decide whether it crosses the surface.
+            rayBounds.Expand(0.000002f);
+            if (!rayBounds.IntersectRay(ray)) return 0;
+            if (node.Left >= 0)
+                return CountInsideCrossings(point, ray, surface, node.Left) + CountInsideCrossings(point, ray, surface, node.Right);
+            int crossings = 0;
+            for (int index = node.Start; index < node.Start + node.Count; index++)
+            {
+                int other = surface.TriangleOrder[index] * 3;
+                CollisionTriangleTests++;
+                if (RayTriangle(point, InsideRayDirection, surface.Vertices[surface.Triangles[other]],
+                    surface.Vertices[surface.Triangles[other + 1]], surface.Vertices[surface.Triangles[other + 2]], out float distance) && distance > 0.000001f)
+                    crossings++;
+            }
+            return crossings;
         }
         private static float BoundsDistanceSquared(Bounds a, Bounds b)
         {

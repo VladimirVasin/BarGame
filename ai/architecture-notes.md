@@ -37,9 +37,9 @@
   §6/16/21/art15a/9. Lab:corpses0–2/def2/unused→oldest;Std1/Ebody.
 
 - **Accepted 2026-11-03,user — shower mouse look and centre aim:**
-  Mouse look before/after soap/washing. Centre marker+fresh LMB picks visible
-  skin;hold repeats fixed anchor. Release withdraws;fresh press retargets.
-  Arrows optional;RMB unnecessary.
+  Mouse look before/after soap/washing. Held LMB washes visible skin at the
+  centre marker; moving aim retargets without release. Release withdraws.
+  Arrows optional;RMB unnecessary. Horizontal input stays screen-right past90°.
   Gamepad pointer/LT look/RT scrub kept;E soap/Q return-exit. RU action-HUD hint;
   no speech/story. Pitch155° down/back;FOV/roll/yaw stay. View/predictor/pick share
   cached face.eye.L/R midpoint,no orbit/offset. Scoped nearclip=min(saved,.015m);
@@ -7100,7 +7100,7 @@
   measured right-hand soap pickup,skin contact and shelf return on the same rig.
   Bounded travel,zero-weight endpoints,neutral/handoff and idempotent cleanup
   remain;no root motion,snap,replacement hero or fade. Curtain actions keep clips.
-  The user's extension permits repeated rubbing at one skin anchor and stronger
+  The user's extension permits repeated rubbing on selected skin and stronger
   bounded passive anatomy response to real contact. Release stops strokes/credit
   and withdraws;pause freezes. `SelectSoap`:E takes the shelf soap regardless of
   cursor/view/look,beats exit and consumes the press until release;stop footer
@@ -7172,20 +7172,17 @@
   cue is emitted only for credited scrubbing. Runtime verification of this
   addition is recorded separately in the work log.
 
-- **Accepted — Interactive shower contact-path optimization:** Physical checks
-  remain unchanged. `HomeShowerWashPose` caches obstacle vertices and prepared ray-triangle
-  data until exact bone/actor transforms change, and invalidates exposed
-  samples when their obstacle revision or rest frame changes. Bounds in
-  the ray's perpendicular plane reject impossible triangle hits. The
-  four intermediate angular samples, five backoff iterations and `12°`
-  limit remain. `HomeShowerSoapPose` refreshes only the selected mesh when
-  reprojecting a held stroke; a new body pick still refreshes all eligible
-  surfaces. Static attachments read their shared mesh directly instead of
-  uploading vertices through a temporary native mesh. The shared arm
-  guard rejects inside tests outside the body's bounding box and skips
-  capsule/triangle distances only when bounding boxes prove they cannot
-  improve the current minimum. Actual contact and intersection tests keep
-  their tolerances; this is reduced redundant work, not disabled physics.
+- **Accepted — Interactive shower contact-path optimization:** Exact contacts,
+  tolerances, four angular samples/five backoffs/12° limit stay.
+  `HomeShowerWashPose` caches obstacle vertices/ray triangles by exact bone/actor
+  transforms; exposed samples invalidate with obstacle revision/rest frame.
+  Ray-perpendicular bounds reject impossible hits. `HomeShowerSoapPose`
+  refreshes selected skin for held strokes/all eligible skin on a fresh pick;
+  static attachments read shared meshes without temporary uploads. The shared
+  arm guard refits a setup-built BVH for exact capsule, triangle-pair and
+  inside-ray checks; empty meshes stay valid. Contact pose buffers are reused.
+  First contact approaches outside skin before closing; missing targets clear
+  stale routing. Production counters/timing exclude observer/capture work.
 
 - **Accepted — User-requested shower water presentation:** Imported Blender
   water sheet and a real perforated `0.15 m` corner drain at local

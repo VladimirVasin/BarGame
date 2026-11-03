@@ -2476,12 +2476,12 @@ cemetery:own interiors/returns.
   position or viewing direction. A localized prompt, yellow outline and
   connecting line appear beside the soap when it is visible; they do not
   gate pickup;pickup has exit priority. Mouse look continues after pickup.
-  A centre marker aims fresh LMB at skin;holding repeats right-hand strokes
-  at that anchor while the camera turns. Release stops/withdraws;another press
-  selects anew. A Russian action hint explains mouse look/LMB washing;
+  Held LMB repeats right-hand strokes at the centre marker. Moving aim
+  retargets available skin without release. Release stops/withdraws.
+  A Russian action hint explains mouse look/LMB washing;
   RMB is unnecessary,arrows remain an alternative at `90°/s`. Pitch is bounded
   to `−75°…155°`, reaching the shower head and centre-aimed chest behind the
-  bent head rather than leaving chest skin at the view edge.
+  bent head; horizontal input stays screen-right past vertical.
   The gamepad's interaction button picks up soap, right stick moves the
   pointer, right trigger holds washing, and left
   trigger changes the stick to look. Measured contact travel fills one shared

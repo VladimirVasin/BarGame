@@ -40,12 +40,13 @@ cleanup/intox kept;Blender vial/grips;inactive-Docker ground isolation.
 CombatWarehouseHawthorn passed.
 Mirror:packaged straight-alpha Lit glass/build gate.
 HomeBathroomMirrorPlayModeTests passed.
-Shower:mouse/centre LMB;eyes/nearclip restore.
-Shower_CancelMidWashDressesHimAndShutsTheWater passed.
+Shower:aim/BVH
+Shower_CancelMidWashDressesHimAndShutsTheWater
+Brushing_MirrorSceneGatesReliefPerDay:jacket fail
 Toilet:shared pelvis anatomy;down→show/up→hide;existing fill.
 SeatedAppearance_ShowsAttachedAnatomyAndHidesItOnExit passed.
 ChoicePlungeReturnsAndPreservesSmallAction:prior GEO_Pelvis fabric-endpoint failure.
-Frames reviewed;24FX kept;cost unmeasured.
+Frames/24FX checked;cost unknown.
 City/balcony:grade-24day→-30night;fractional clock/clone/indoor/pause kept.
 CityNightSaturation passed;frames reviewed.
 City:denser fog/wind;post skyline fade;24FX/§6.
