@@ -15,6 +15,172 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class AreaCaptureFixture
     {
+        [UnityTest]
+        [Explicit("City/balcony continuous night saturation, profile isolation and rendered day/dusk/night pairs.")]
+        public IEnumerator CityNightSaturation()
+        {
+            GameTimeRuntime clock = null;
+            bool clockEnabled = true;
+            try
+            {
+                GameSessionState.BeginNewGame("Test night saturation");
+                Assert.That(GameSessionState.TryStartGameTimeAt(7 * 60), Is.True);
+                yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
+                CityGameRoot city = null;
+                yield return WaitHomeBalcony(() =>
+                {
+                    city = Object.FindAnyObjectByType<CityGameRoot>();
+                    return city != null && city.IsInitialized;
+                }, "City saturation composition");
+                clock = Object.FindAnyObjectByType<GameTimeRuntime>();
+                Assert.That(clock, Is.Not.Null);
+                clockEnabled = clock.enabled;
+                clock.enabled = false;
+                city.Player.Motor.SetInputEnabled(false);
+                Camera camera = Camera.main;
+                camera.GetComponent<PlayerCameraFollow>().enabled = false;
+                Volume cityVolume = null;
+                foreach (Volume volume in Object.FindObjectsByType<Volume>())
+                    if (volume.sharedProfile != null && volume.sharedProfile.name == "CityNoirVolumeProfile")
+                        cityVolume = volume;
+                Assert.That(cityVolume, Is.Not.Null);
+                Assert.That(cityVolume.profile.TryGet(out ColorAdjustments color), Is.True);
+                Assert.That(cityVolume.sharedProfile.TryGet(out ColorAdjustments authored), Is.True);
+                BuildingLot bar = null;
+                foreach (BuildingLot lot in city.Layout.BuildingLots) if (lot.IsBar) { bar = lot; break; }
+                Assert.That(bar, Is.Not.Null);
+                Shot street = FrameSpecialEntrance("Night saturation", bar, 9f);
+                camera.transform.SetPositionAndRotation(street.Position,
+                    Quaternion.LookRotation(street.Target - street.Position));
+                camera.fieldOfView = street.FieldOfView;
+                foreach (int minute in new[] { 12 * 60, 18 * 60 + 30, 19 * 60 })
+                {
+                    AdvanceNightGradeClock(minute);
+                    city.DayNight.ApplyCurrentTime();
+                    yield return null;
+                    AssertNightGrade(color, minute == 720 ? -24f : minute == 1110 ? -27f : -30f);
+                    Assert.That(authored.saturation.value, Is.EqualTo(-24f), "The authored asset stays unchanged.");
+                    Assert.That(RenderSettings.fogDensity, Is.EqualTo(RuntimeSceneSetup.CityFogDensity));
+                    Assert.That(camera.farClipPlane, Is.EqualTo(RuntimeSceneSetup.CityFarClipPlane));
+                    CaptureCurrentCamera(camera, SceneIds.City, "night-grade-" + minute);
+                    if (minute == 1110)
+                    {
+                        float midpoint = color.saturation.value;
+                        AdvanceNightGradeClock(1110.25);
+                        yield return null;
+                        Assert.That(color.saturation.value, Is.LessThan(midpoint));
+                        float fractional = color.saturation.value;
+                        int applications = city.DayNight.VisualApplicationCount;
+                        AdvanceNightGradeClock(1110.5);
+                        yield return null;
+                        Assert.That(color.saturation.value, Is.LessThan(fractional));
+                        Assert.That(city.DayNight.VisualApplicationCount, Is.EqualTo(applications),
+                            "Fractional grading must not refresh the fixture/probe work.");
+                        using (GameTimeScaleRuntime.AcquirePause())
+                        {
+                            clock.enabled = true;
+                            float paused = color.saturation.value;
+                            yield return null;
+                            yield return null;
+                            Assert.That(color.saturation.value, Is.EqualTo(paused));
+                            clock.enabled = false;
+                        }
+                    }
+                }
+                color.saturation.value = -24f;
+                CaptureCurrentCamera(camera, SceneIds.City, "night-grade-1140-before");
+                city.DayNight.ApplyCurrentTime();
+                CaptureCurrentCamera(camera, SceneIds.City, "night-grade-1140-after");
+                AdvanceNightGradeClock(390);
+                yield return null;
+                AssertNightGrade(color, -27f);
+                AdvanceNightGradeClock(420);
+                yield return null;
+                AssertNightGrade(color, -24f);
+
+                GameSessionState.PrepareHomeArrival(HomeArrivalKind.Normal);
+                GameSessionState.EnterHome();
+                yield return SceneManager.LoadSceneAsync(SceneIds.HomeInterior, LoadSceneMode.Single);
+                HomeInteriorRoot home = null;
+                yield return WaitHomeBalcony(() =>
+                {
+                    home = Object.FindAnyObjectByType<HomeInteriorRoot>();
+                    return home != null && home.IsInitialized;
+                }, "Home saturation composition");
+                home.Player.Motor.SetInputEnabled(false);
+                Assert.That(home.Atmosphere.RuntimeProfile.TryGet(out ColorAdjustments indoor), Is.True);
+                Assert.That(home.ExteriorAtmosphere.RuntimeCityProfile.TryGet(out color), Is.True);
+                Rect activation = home.BalconyLayout.BalconyCameraActivationBounds;
+                Vector3 balcony = new Vector3(activation.center.x, home.Layout.PlayerSpawn.y, activation.center.y);
+                home.Player.Motor.Teleport(balcony);
+                yield return null;
+                yield return null;
+                Assert.That(home.ExteriorAtmosphere.IsBalconyVisibilityActive, Is.True);
+                foreach (int minute in new[] { 720, 1110, 1140 })
+                {
+                    AdvanceNightGradeClock(minute);
+                    home.DayNight.RefreshImmediate();
+                    yield return null;
+                    AssertNightGrade(color, minute == 720 ? -24f : minute == 1110 ? -27f : -30f);
+                    Assert.That(indoor.saturation.value, Is.EqualTo(-16f));
+                    CaptureCurrentCamera(Camera.main, SceneIds.HomeInterior, "night-grade-balcony-" + minute);
+                    if (minute == 1110)
+                    {
+                        AdvanceNightGradeClock(1110.25);
+                        yield return null;
+                        float fractional = color.saturation.value;
+                        int applications = home.DayNight.VisualApplicationCount;
+                        Assert.That(fractional, Is.LessThan(-27f));
+                        AdvanceNightGradeClock(1110.5);
+                        yield return null;
+                        Assert.That(color.saturation.value, Is.LessThan(fractional));
+                        Assert.That(home.DayNight.VisualApplicationCount, Is.EqualTo(applications));
+                    }
+                }
+                color.saturation.value = -24f;
+                CaptureCurrentCamera(Camera.main, SceneIds.HomeInterior, "night-grade-balcony-before");
+                home.ExteriorAtmosphere.RefreshImmediate();
+                CaptureCurrentCamera(Camera.main, SceneIds.HomeInterior, "night-grade-balcony-after");
+                home.Player.Motor.Teleport(home.Layout.PlayerSpawn);
+                yield return null;
+                yield return null;
+                Assert.That(home.ExteriorAtmosphere.CityPostProcessVolume.weight, Is.Zero);
+                Assert.That(indoor.saturation.value, Is.EqualTo(-16f));
+                CaptureCurrentCamera(Camera.main, SceneIds.HomeInterior, "night-grade-indoor-return");
+                AdvanceNightGradeClock(720);
+                home.Player.Motor.Teleport(balcony);
+                yield return null;
+                yield return null;
+                AssertNightGrade(color, -24f);
+                home.ExteriorAtmosphere.enabled = false;
+                Assert.That(home.ExteriorAtmosphere.CityPostProcessVolume.weight, Is.Zero);
+                AdvanceNightGradeClock(1140);
+                home.ExteriorAtmosphere.enabled = true;
+                AssertNightGrade(color, -30f);
+                Assert.That(home.ExteriorAtmosphere.CityPostProcessVolume.weight, Is.EqualTo(1f));
+                Assert.That(indoor.saturation.value, Is.EqualTo(-16f));
+            }
+            finally
+            {
+                if (clock != null) clock.enabled = clockEnabled;
+                GameSessionState.BeginNewGame("Test night saturation cleanup");
+            }
+        }
+
+        private static void AdvanceNightGradeClock(double minute)
+        {
+            double delta = minute - GameSessionState.GameTimeOfDayMinutes;
+            if (delta < 0) delta += GameTimeDayNightRules.MinutesPerDay;
+            GameSessionState.AdvanceGameTime((float)(delta / GameTimeState.GameMinutesPerRealSecond));
+        }
+
+        private static void AssertNightGrade(ColorAdjustments color, float expected)
+        {
+            Assert.That(color.saturation.value, Is.EqualTo(expected).Within(.0001f));
+            Assert.That(color.postExposure.value, Is.EqualTo(.62f));
+            Assert.That(color.colorFilter.value, Is.EqualTo(new Color(.94f, 1f, .97f, 1f)));
+        }
+
         [UnityTest, Timeout(600000)]
         [Explicit("Focused grain/vignette A/B, shared item focus ownership, preview MSAA and real native gradient review.")]
         public IEnumerator PostProcessingPolish()

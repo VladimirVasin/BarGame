@@ -607,7 +607,8 @@ cemetery:own interiors/returns.
   separately. Bar, Supermarket and Stairwell lighting are unchanged. The
   `0.070` exponential-squared luminous gray-green fog,
   fog-matched terminal camera backdrop, City-only `48 m` visibility cap,
-  `CityFogField` and `CityNoirVolumeProfile` stay fixed across the cycle. The
+  `CityFogField` stay fixed. City/balcony saturation `-24` day→`-30` night follows
+  clock; authored grade/Home interior unchanged. The
   Windows player retains the runtime-only Exp2 shader variant;
 
 ### Weather, sky and presentation

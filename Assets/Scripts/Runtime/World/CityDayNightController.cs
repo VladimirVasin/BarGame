@@ -1,5 +1,8 @@
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using Object = UnityEngine.Object;
 
 namespace BarPromenade
 {
@@ -7,6 +10,7 @@ namespace BarPromenade
     public sealed class CityDayNightController : MonoBehaviour
     {
         private CityNightWorldResult night;
+        private ColorAdjustments colorAdjustments;
         private int appliedDayIndex = int.MinValue;
         private int appliedMinute = int.MinValue;
         private bool hasAppliedSample;
@@ -21,6 +25,17 @@ namespace BarPromenade
         {
             night = nightWorld ??
                 throw new ArgumentNullException(nameof(nightWorld));
+            // Reuse the volume's existing runtime clone; never change the asset.
+            foreach (Volume volume in Object.FindObjectsByType<Volume>())
+            {
+                if (volume.gameObject.scene == gameObject.scene &&
+                    volume.isGlobal && volume.sharedProfile != null &&
+                    volume.sharedProfile.name == "CityNoirVolumeProfile")
+                {
+                    volume.profile.TryGet(out colorAdjustments);
+                    break;
+                }
+            }
             ApplyCurrentTime(true);
         }
 
@@ -33,6 +48,15 @@ namespace BarPromenade
 
             double timeOfDayMinutes =
                 GameSessionState.GameTimeOfDayMinutes;
+            // Only sun pose and one cached grade parameter follow fractional
+            // time. Fixture/probe work remains behind the game-minute gate.
+            DayNightVisualSample nextSample =
+                GameTimeDayNightRules.Evaluate(timeOfDayMinutes);
+            RuntimeSceneSetup.ApplyCityExteriorSaturation(
+                colorAdjustments, nextSample.NightFactor);
+            Light sun = RenderSettings.sun;
+            if (sun != null && sun.type == LightType.Directional)
+                sun.transform.rotation = nextSample.DirectionalLightRotation;
             int dayIndex = GameSessionState.GameDayIndex;
             int minute = GameSessionState.GameMinuteOfDay;
             if (!force &&
@@ -42,8 +66,6 @@ namespace BarPromenade
                 return;
             }
 
-            DayNightVisualSample nextSample =
-                GameTimeDayNightRules.Evaluate(timeOfDayMinutes);
             bool shouldApply =
                 force ||
                 !hasAppliedSample ||
@@ -66,40 +88,9 @@ namespace BarPromenade
             VisualApplicationCount++;
         }
 
-        /// <summary>
-        /// The sun's POSE alone, every frame.
-        ///
-        /// Everything else in this controller is correctly gated on
-        /// the game minute, and must stay that way - the street lamp
-        /// property blocks and the environment probe are not free. But
-        /// a game minute is a real second, and once the sun actually
-        /// moves, a quarter degree per second reads as a jump at the
-        /// end of a long evening shadow. Six field writes buy a sun
-        /// that slides instead.
-        /// </summary>
-        private void ApplyContinuousSun()
-        {
-            if (night == null)
-            {
-                return;
-            }
-
-            Light sun = RenderSettings.sun;
-            if (sun == null || sun.type != LightType.Directional)
-            {
-                return;
-            }
-
-            sun.transform.rotation =
-                GameTimeDayNightRules.Evaluate(
-                    GameSessionState.GameTimeOfDayMinutes)
-                    .DirectionalLightRotation;
-        }
-
         private void Update()
         {
             ApplyCurrentTime();
-            ApplyContinuousSun();
         }
     }
 }

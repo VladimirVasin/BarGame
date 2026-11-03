@@ -96,6 +96,8 @@ namespace BarPromenade
         public const float PlayerMeshShadowNormalBias = 0.25f;
         public const float PlayerMeshShadowNearPlane = 0.10f;
         public const float IndoorGaussianMaxRadius = 0.55f;
+        public const float CityDaySaturation = -24f;
+        public const float CityNightSaturation = -30f;
 
         public static Camera EnsureCityNight()
         {
@@ -524,6 +526,17 @@ namespace BarPromenade
             }
         }
 
+        public static void ApplyCityExteriorSaturation(
+            ColorAdjustments color,
+            float nightFactor)
+        {
+            if (color == null) return;
+            float saturation = Mathf.Lerp(
+                CityDaySaturation, CityNightSaturation, nightFactor);
+            if (color.saturation.value != saturation)
+                color.saturation.value = saturation;
+        }
+
         public static VolumeProfile CreateCityNoirRuntimeProfile()
         {
             VolumeProfile profile =
@@ -546,7 +559,7 @@ namespace BarPromenade
                 profile.Add<ColorAdjustments>(true);
             color.postExposure.Override(0.62f);
             color.contrast.Override(-10f);
-            color.saturation.Override(-24f);
+            color.saturation.Override(CityDaySaturation);
             color.colorFilter.Override(
                 new Color(0.94f, 1.00f, 0.97f, 1f));
 

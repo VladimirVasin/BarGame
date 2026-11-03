@@ -22,8 +22,7 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   WineService_FullGlassTakesThreeSeparateSips.
 - Магазин:выкладка/дверь/фактуры/касса;кассир:руки/3D-лицо.
   Напитки:покупка/питьё/остаток/доза по мл;банка/звук.
-  AreaCaptureFixture.Supermarket/Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures/
-  DrinkContainers_PurchaseSipSwitch_PreserveFillOpeningAndContacts passed;
+  AreaCaptureFixture.Supermarket passed;
   rear-wall/checkout/face;bar/inventory doses.
 - Склад:боярышник:Use→закрыть→глоток,+30HP/+40опьянения;HP<100%/инвентарь.
   Красный наплыв/стоп4с,гул2с;голова/бросок→прежний предмет;жёлтый лут.
@@ -35,6 +34,8 @@ CombatWarehouseHawthorn.
 - Туалет:анатомия при снятых штанах.
   SeatedAppearance_ShowsAttachedAnatomyAndHidesItOnExit.
 Checks passed;frames reviewed.
+- Город/балкон:краски плавно тускнеют к ночи;квартира прежняя.
+  CityNightSaturation.
 
 
 ### 2026-11-02

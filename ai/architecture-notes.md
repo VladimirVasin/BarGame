@@ -1,6 +1,13 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-11-03,user — City/balcony night saturation:**
+  Runtime grades:day `-24`→night `-30`, shared dawn/dusk/fractional clock.
+  Cached parameter;City reuses sun sample;fixtures keep minute gates.
+  Authored/Home indoor profiles unchanged;balcony weight/cleanup restores indoors.
+  Pause follows clock. All 24FX reviewed:grade only;no new pass/LUT/TAA,
+  recurring search/allocation;cost unmeasured. CityNightSaturation;frames reviewed.
+
 - **Accepted exception 2026-11-03,user — session checkpoint:**
   `SessionCheckpointService`:1RAM/deep progress+world;successful gameplay arrival
   incl.resident replaces;repeat same;NewGame/menu/exit clears;disk0. Entry modes/
@@ -5994,28 +6001,18 @@
   preserving the primitive collider contract. No per-instance mesh or
   material is created.
 - **Accepted — Shared MVP exterior day/night lighting:**
-  `GameTimeDayNightRules` returns night before `06:00`, a smooth dawn from
-  `06:00-07:00`, day through `18:00`, a smooth dusk from `18:00-19:00`, and
-  night from `19:00`. `CityDayNightController` applies its directional color,
-  intensity/rotation, ambient, reflection and shadow sample, while
-  `CityNightAtmosphere` scales the bounded lamps, bar lights, emissive bulbs
-  and halos with the sample's night factor. `HomeDayNightController` applies
-  the same sample to the apartment window shaft and reconstructed Balcony
-  exterior. The neighbour-wall yard Spot is the explicit City-local exception:
-  it lives with the open-area composition, outside `Night.Root`, and remains
-  enabled at its authored intensity at every sample. Bar, Supermarket and
-  Stairwell visual profiles remain unchanged.
-  Presentation updates are change-driven: stable day/night samples perform no
-  lighting work, ordinary dawn/dusk updates do not regenerate the environment
-  cubemap. The street-light pool used to skip its anchor scan at a zero
-  night factor; the §20 always-lit law repealed that optimisation - the
-  pool leases and burns at the day floor too.
-  Forced setup and Home Balcony entry/restore retain their complete refresh.
-  This cycle does not own visibility: `0.070` luminous gray-green Exp2 fog,
-  the matching terminal camera color, `48 m` far clip, `CityFogField` and
-  dedicated `CityNoirVolumeProfile` stay unchanged at every hour. Custom fog
-  stripping still retains the runtime Exp2 variant, and interiors keep their
-  existing fog/range contracts.
+  `GameTimeDayNightRules`:night→dawn `06–07`→day→dusk `18–19`→night.
+  `CityDayNightController` owns directional color/intensity/rotation,
+  ambient/reflection/shadows;`CityNightAtmosphere`:bounded lamps/bar/bulbs/halos.
+  `HomeDayNightController` shares the sample with the window shaft/balcony.
+  Yard Spot stays outside `Night.Root`, always at authored intensity;
+  Bar/Supermarket/Stairwell profiles stay. Minute/change gates retain fixture
+  budgets;ordinary dawn/dusk never recaptures environment. The pool leases/burns
+  at §20's daytime floor. Forced setup/balcony entry/restore refresh fully.
+  Visibility stays:gray-green Exp2 `.070`,matching backdrop,far clip `48 m`,
+  `CityFogField`. Authored `CityNoirVolumeProfile` stays;runtime saturation:
+  accepted `2026-11-03` decision. Runtime Exp2 variant survives stripping;
+  interior fog/range contracts stay.
 - **Accepted architecture exception — 2026-08-29, explicit user request —
   the barrel fire under the [10;5]–[11;5] arch is one strong realtime local
   light:** this supersedes the shelter draft's temporary “emissive only” rule

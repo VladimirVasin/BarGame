@@ -21,8 +21,7 @@ pre-close late-crowd departure failure.
 Beer/wine:E sips,docked remainder,one payment,prorated FX;
 last sip counts;seat/rig/camera/contacts/full wine safe;spirits once.
 BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment/
-WineService_FullGlassTakesThreeSeparateSips/PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce/
-BeerService_WaitsForPhysicalArrivalAndExplicitDrink/BottleService_WaitsForEveryArrivalAndExplicitDrink
+WineService_FullGlassTakesThreeSeparateSips/PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce
 passed;full/partial/empty frames.
 Shop:metal/glass door/contact,dense stock/shared surfaces/reflection,rear flush cartons,
 R checkout/scanner/packing/snacks/anchors;wear/baskets/cables/vents.
@@ -48,6 +47,8 @@ Toilet:shared pelvis anatomy;down→show/up→hide;existing fill.
 SeatedAppearance_ShowsAttachedAnatomyAndHidesItOnExit passed.
 ChoicePlungeReturnsAndPreservesSmallAction:prior GEO_Pelvis fabric-endpoint failure.
 Frames reviewed;24FX kept;cost unmeasured.
+City/balcony:saturation-24day→-30night;fractional clock;clone/indoor/pause kept.
+CityNightSaturation passed;frames reviewed.
 
 ## 2026-11-02
 

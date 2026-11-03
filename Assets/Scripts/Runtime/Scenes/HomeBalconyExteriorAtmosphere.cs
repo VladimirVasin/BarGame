@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using Object = UnityEngine.Object;
 
 namespace BarPromenade
@@ -54,6 +55,7 @@ namespace BarPromenade
         private VisibilitySnapshot homeVisibility;
         private LightingSnapshot homeLighting;
         private VolumeProfile runtimeCityProfile;
+        private ColorAdjustments cityColorAdjustments;
         private DayNightVisualSample exteriorLightingSample;
         private bool hasExteriorLightingSample;
         private long lastThunderStrikeId = long.MinValue;
@@ -212,6 +214,8 @@ namespace BarPromenade
         {
             exteriorLightingSample = sample;
             hasExteriorLightingSample = true;
+            RuntimeSceneSetup.ApplyCityExteriorSaturation(
+                cityColorAdjustments, sample.NightFactor);
             if (!IsInitialized || !IsBalconyVisibilityActive)
             {
                 return;
@@ -513,6 +517,11 @@ namespace BarPromenade
                 fixedCamera.IsInitialized &&
                 fixedCamera.ActiveShotKind ==
                 HomeCameraShotKind.Balcony;
+            if (useCityVisibility || force)
+                RuntimeSceneSetup.ApplyCityExteriorSaturation(
+                    cityColorAdjustments,
+                    GameTimeDayNightRules.Evaluate(
+                        GameSessionState.GameTimeOfDayMinutes).NightFactor);
             if (!force &&
                 useCityVisibility ==
                 IsBalconyVisibilityActive)
@@ -669,6 +678,7 @@ namespace BarPromenade
                 RuntimeSceneSetup
                     .CreateCityNoirRuntimeProfile();
             CityPostProcessVolume.profile = runtimeCityProfile;
+            runtimeCityProfile.TryGet(out cityColorAdjustments);
             volumeObject
                 .AddComponent<DepthOfFieldSettingsBinder>()
                 .Initialize(runtimeCityProfile);
@@ -696,6 +706,7 @@ namespace BarPromenade
             }
 
             runtimeCityProfile = null;
+            cityColorAdjustments = null;
         }
 
         private readonly struct VisibilitySnapshot
