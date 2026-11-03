@@ -8,7 +8,7 @@ namespace BarPromenade
         private bool weaponInventorySubscribed, inventoryWeaponPending, recordingInventoryWeapon;
         private CombatWeaponId? inventoryWeapon, observedHeldWeapon;
         private CombatWeaponId? bottleQueuedWeapon;
-        private bool BottleOwnsCombatHand => GameSessionState.IsInventoryItemEquipped(InventoryItemId.VodkaBottle) ||
+        private bool BottleOwnsCombatHand => GameSessionState.EquippedDrinkItem != InventoryItemId.None ||
             Hero != null && PlayerVodkaBottleController.IsHandOccupied(Hero.gameObject);
 
         private static CombatWeaponId? ReadInventoryWeapon() =>
@@ -24,7 +24,7 @@ namespace BarPromenade
             weaponInventorySubscribed = true;
             inventoryWeapon = ReadInventoryWeapon();
             observedHeldWeapon = HeldInventoryWeapon;
-            inventoryWeaponPending = IsStoryContinuation || GameSessionState.IsInventoryItemEquipped(InventoryItemId.VodkaBottle);
+            inventoryWeaponPending = IsStoryContinuation || GameSessionState.EquippedDrinkItem != InventoryItemId.None;
             GameSessionState.InventoryEquipmentChanged += OnWeaponInventoryChanged;
         }
 
@@ -125,7 +125,8 @@ namespace BarPromenade
                 }
                 if (requested.HasValue && Hero.LoadoutSelection.Contains(requested.Value))
                 {
-                    GameSessionState.TrySetInventoryItemEquipped(InventoryItemId.VodkaBottle, false);
+                    if (GameSessionState.EquippedDrinkItem != InventoryItemId.None)
+                        GameSessionState.TrySetInventoryItemEquipped(GameSessionState.EquippedDrinkItem, false);
                     RecordWeaponEquipment(requested);
                     bottleQueuedWeapon = requested;
                     inventoryWeaponPending = true;

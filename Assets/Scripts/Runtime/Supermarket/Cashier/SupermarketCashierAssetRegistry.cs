@@ -71,10 +71,13 @@ namespace BarPromenade
             Shader.PropertyToID("_BaseMap");
         private static readonly int LegacyMapId =
             Shader.PropertyToID("_MainTex");
+        private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
+        private static readonly int MetallicId = Shader.PropertyToID("_Metallic");
 
         /// <summary>
-        /// The `256 px` greyscale sheet that multiplies under the flat
-        /// palette. Null on a build that predates it, and everything
+        /// The normal clerk's 512 px surface sheet or the retained Watcher's
+        /// 256 px detail sheet multiplies under the palette. Null on a build
+        /// that predates it, and everything
         /// still renders - it only stops being detailed.
         /// </summary>
         [SerializeField] private Texture2D detailAtlas;
@@ -223,6 +226,13 @@ namespace BarPromenade
                 binding.Renderer.GetPropertyBlock(properties);
                 properties.SetColor(BaseColorId, binding.BaseColor);
                 properties.SetColor(LegacyColorId, binding.BaseColor);
+                if (neckMode == SupermarketCashierNeckMode.FixedHuman)
+                {
+                    // Shared lit material, authored per surface. No material
+                    // instances or changes to the normal crowd/Watcher shader.
+                    properties.SetFloat(SmoothnessId, SurfaceSmoothness(binding.PaletteName));
+                    properties.SetFloat(MetallicId, binding.PaletteName == "button" ? 0.25f : 0f);
+                }
 
                 // One shared material serves every authored part, so the atlas
                 // rides the property block beside the colour. Parts
@@ -237,6 +247,25 @@ namespace BarPromenade
 
                 binding.Renderer.SetPropertyBlock(properties);
                 properties.Clear();
+            }
+        }
+
+        public static float SurfaceSmoothness(string paletteName)
+        {
+            switch (paletteName)
+            {
+                case "eye": return 0.48f;
+                case "pupil": return 0.54f;
+                case "skin":
+                case "skin_light":
+                case "skin_shadow":
+                case "neck_skin": return 0.17f;
+                case "hair": return 0.12f;
+                case "leather": return 0.23f;
+                case "button": return 0.30f;
+                case "tag": return 0.18f;
+                case "sole": return 0.05f;
+                default: return 0.08f;
             }
         }
 

@@ -45,6 +45,8 @@ namespace BarPromenade
     {
         private static readonly InventoryConsumableDefinition[] definitions =
         {
+            CreateAlcohol(InventoryItemId.BeerCan, DrinkId.LightBeer, 1d),
+            CreateAlcohol(InventoryItemId.WineBottle, DrinkId.RedWine, 3d),
             CreateAlcohol(
                 InventoryItemId.VodkaBottle,
                 DrinkId.Vodka,

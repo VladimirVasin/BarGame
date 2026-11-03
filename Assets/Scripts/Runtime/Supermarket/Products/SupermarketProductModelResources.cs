@@ -12,6 +12,8 @@ namespace BarPromenade
         {
             switch (itemId)
             {
+                case InventoryItemId.BeerCan:
+                case InventoryItemId.WineBottle:
                 case InventoryItemId.InstantNoodles:
                 case InventoryItemId.DayOldLoaf:
                 case InventoryItemId.VodkaBottle:
@@ -28,6 +30,8 @@ namespace BarPromenade
         {
             switch (itemId)
             {
+                case InventoryItemId.BeerCan: return ResourceFolder + "BeerCan3D";
+                case InventoryItemId.WineBottle: return ResourceFolder + "WineBottle3D";
                 case InventoryItemId.InstantNoodles:
                     return ResourceFolder + "InstantNoodles3D";
                 case InventoryItemId.DayOldLoaf:
@@ -132,7 +136,7 @@ namespace BarPromenade
             instance.transform.localRotation = Quaternion.identity;
             instance.transform.localScale = Vector3.one * scale;
             registry.ApplyAppearance();
-            if (itemId == InventoryItemId.VodkaBottle) VodkaBottleView.Bind(wrapper.transform);
+            if (DrinkContainerCatalog.IsDrink(itemId)) VodkaBottleView.Bind(wrapper.transform);
             return wrapper.transform;
         }
 
@@ -140,6 +144,8 @@ namespace BarPromenade
         {
             switch (itemId)
             {
+                case InventoryItemId.BeerCan: return "Beer Can";
+                case InventoryItemId.WineBottle: return "Wine Bottle";
                 case InventoryItemId.InstantNoodles:
                     return "Instant Noodles";
                 case InventoryItemId.DayOldLoaf:

@@ -27,14 +27,32 @@ namespace BarPromenade
         public const int FullMl = 500;
         public const int FullBottleSipCount = 15;
         public const int RefrigeratorMl = 100;
+        private readonly int fullMl, sipCount;
         private readonly int[] ids = new int[Capacity];
         private readonly int[] remaining = new int[Capacity];
         private readonly int[] sipPhases = new int[Capacity];
+        private readonly bool[] opened = new bool[Capacity];
         private int nextId, activeId, alcoholRemainder, stressRemainder, servingRemainder;
         public int Count { get; private set; }
         public int ActiveId => activeId;
         public int ActiveRemainingMl => GetRemainingMl(activeId);
         public int PreviewRemainingMl => Count == 0 ? 0 : remaining[SelectionIndex()];
+        public bool ActiveOpened => Find(activeId) >= 0 && opened[Find(activeId)];
+        public bool PreviewOpened => Count > 0 && opened[SelectionIndex()];
+
+        public VodkaBottleState(int fullVolumeMl = FullMl, int fullSipCount = FullBottleSipCount)
+        {
+            if (fullVolumeMl <= 0 || fullSipCount <= 0 || fullSipCount > fullVolumeMl)
+                throw new ArgumentOutOfRangeException(nameof(fullVolumeMl));
+            fullMl = fullVolumeMl; sipCount = fullSipCount;
+        }
+
+        public bool SetOpened(int expectedId, bool value)
+        {
+            int index = Find(expectedId);
+            if (index < 0 || expectedId != activeId) return false;
+            opened[index] = value; return true;
+        }
 
         public int GetRemainingMl(int id)
         {
@@ -46,14 +64,16 @@ namespace BarPromenade
         {
             Array.Clear(ids, 0, ids.Length); Array.Clear(remaining, 0, remaining.Length);
             Array.Clear(sipPhases, 0, sipPhases.Length);
+            Array.Clear(opened, 0, opened.Length);
             Count = 0; activeId = 0;
             alcoholRemainder = stressRemainder = servingRemainder = 0;
             // IDs are not reused on an inventory reset: stale prepared swallows remain invalid.
         }
 
-        public bool TryAdd(int count, int initialMl = FullMl)
+        public bool TryAdd(int count, int initialMl = -1)
         {
-            if (count <= 0 || count > Capacity - Count || initialMl <= 0 || initialMl > FullMl) return false;
+            if (initialMl == -1) initialMl = fullMl;
+            if (count <= 0 || count > Capacity - Count || initialMl <= 0 || initialMl > fullMl) return false;
             for (int i = 0; i < count; i++)
             {
                 nextId = nextId == int.MaxValue ? 1 : nextId + 1;
@@ -94,7 +114,7 @@ namespace BarPromenade
             // finish 500 ml exactly, and a 100 ml source finishes in three.
             // Keep each bottle's phase through stow/switch rather than restarting its rounding.
             int phase = sipPhases[index];
-            int nominalVolume = (phase + 1) * FullMl / FullBottleSipCount - phase * FullMl / FullBottleSipCount;
+            int nominalVolume = (phase + 1) * fullMl / sipCount - phase * fullMl / sipCount;
             int volume = Math.Min(nominalVolume, before);
             int after = before - volume;
             int alcohol = TakeDose(ref alcoholRemainder, volume, fullAlcoholDose);
@@ -107,11 +127,11 @@ namespace BarPromenade
             return true;
         }
 
-        private static int TakeDose(ref int remainder, int volume, int fullDose)
+        private int TakeDose(ref int remainder, int volume, int fullDose)
         {
             long numerator = remainder + (long)volume * fullDose;
-            remainder = (int)(numerator % FullMl);
-            return (int)(numerator / FullMl);
+            remainder = (int)(numerator % fullMl);
+            return (int)(numerator / fullMl);
         }
 
         private int Find(int id)
@@ -125,7 +145,7 @@ namespace BarPromenade
         {
             int active = Find(activeId);
             if (active >= 0) return active;
-            for (int i = 0; i < Count; i++) if (remaining[i] < FullMl) return i;
+            for (int i = 0; i < Count; i++) if (opened[i] || remaining[i] < fullMl) return i;
             return 0;
         }
 
@@ -133,8 +153,8 @@ namespace BarPromenade
         {
             if (ids[index] == activeId) activeId = 0;
             for (int i = index; i < Count - 1; i++)
-            { ids[i] = ids[i + 1]; remaining[i] = remaining[i + 1]; sipPhases[i] = sipPhases[i + 1]; }
-            Count--; ids[Count] = 0; remaining[Count] = 0; sipPhases[Count] = 0;
+            { ids[i] = ids[i + 1]; remaining[i] = remaining[i + 1]; sipPhases[i] = sipPhases[i + 1]; opened[i] = opened[i + 1]; }
+            Count--; ids[Count] = 0; remaining[Count] = 0; sipPhases[Count] = 0; opened[Count] = false;
         }
     }
 }

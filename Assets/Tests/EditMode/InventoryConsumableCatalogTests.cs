@@ -8,6 +8,8 @@ namespace BarPromenade.Tests.EditMode
     {
         private static readonly object[] expectedDefinitions =
         {
+            new object[] { InventoryItemId.BeerCan, InventoryConsumableKind.Alcohol, 0, 0, DrinkId.LightBeer, 1d, 6 },
+            new object[] { InventoryItemId.WineBottle, InventoryConsumableKind.Alcohol, 0, 0, DrinkId.RedWine, 3d, 36 },
             new object[]
             {
                 InventoryItemId.VodkaBottle,

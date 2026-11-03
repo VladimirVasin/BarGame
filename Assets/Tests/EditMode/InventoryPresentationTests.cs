@@ -8,6 +8,8 @@ namespace BarPromenade.Tests.EditMode
     {
         [TestCase(InventoryItemId.ApartmentKeys)]
         [TestCase(InventoryItemId.Lighter)]
+        [TestCase(InventoryItemId.BeerCan)]
+        [TestCase(InventoryItemId.WineBottle)]
         [TestCase(InventoryItemId.VodkaBottle)]
         [TestCase(InventoryItemId.ChickenEgg)]
         [TestCase(InventoryItemId.OpenStewCan)]
@@ -87,6 +89,8 @@ namespace BarPromenade.Tests.EditMode
 
         [TestCase(InventoryItemId.ApartmentKeys)]
         [TestCase(InventoryItemId.Lighter)]
+        [TestCase(InventoryItemId.BeerCan)]
+        [TestCase(InventoryItemId.WineBottle)]
         [TestCase(InventoryItemId.VodkaBottle)]
         [TestCase(InventoryItemId.ChickenEgg)]
         [TestCase(InventoryItemId.OpenStewCan)]

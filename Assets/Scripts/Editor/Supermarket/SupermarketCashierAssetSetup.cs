@@ -32,6 +32,8 @@ namespace BarPromenade.Editor
             "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         public const string SharedMaterialPath =
             "Assets/Player3D/Materials/Player3DLit.mat";
+        public const string NormalMaterialPath =
+            "Assets/Resources/Materials/RuntimePrimitiveLit.mat";
         public const string PrefabPath =
             "Assets/Supermarket/Cashier/Prefabs/SupermarketCashier.prefab";
         public const string WatcherPrefabPath =
@@ -49,6 +51,9 @@ namespace BarPromenade.Editor
         public const string DetailAtlasPath =
             "Assets/Supermarket/Cashier/Textures/" +
             "SupermarketCashier3DDetailAtlas.png";
+        public const string NormalDetailAtlasPath =
+            "Assets/Supermarket/Cashier/Textures/" +
+            "SupermarketCashier3DSurfaceAtlas.png";
 
         private const string ExpectedPose = "apose";
         private const string ExpectedEyeDesign =
@@ -132,7 +137,8 @@ namespace BarPromenade.Editor
         public static bool SourcesExist()
         {
             if (!File.Exists(PlayerModelPath) ||
-                !File.Exists(SharedMaterialPath))
+                !File.Exists(SharedMaterialPath) ||
+                !File.Exists(NormalMaterialPath))
             {
                 return false;
             }
@@ -232,7 +238,9 @@ namespace BarPromenade.Editor
                     BuildPrefab(
                         variant,
                         modelAsset,
-                        sharedMaterial,
+                        variant.NeckMode == SupermarketCashierNeckMode.FixedHuman
+                            ? AssetDatabase.LoadAssetAtPath<Material>(NormalMaterialPath)
+                            : sharedMaterial,
                         manifest);
                 }
 
@@ -267,7 +275,9 @@ namespace BarPromenade.Editor
                 ValidateVariantOrThrow(
                     variants[index],
                     playerAvatar,
-                    expectedMaterial);
+                    variants[index].NeckMode == SupermarketCashierNeckMode.FixedHuman
+                        ? AssetDatabase.LoadAssetAtPath<Material>(NormalMaterialPath)
+                        : expectedMaterial);
             }
 
             GameObject activePrefab =
@@ -378,7 +388,7 @@ namespace BarPromenade.Editor
                 {
                     throw new InvalidOperationException(
                         "Every cashier renderer must reference the one " +
-                        "shared Player3DLit material.");
+                        "shared material assigned to its variant.");
                 }
             }
 
@@ -508,7 +518,7 @@ namespace BarPromenade.Editor
                 manifest.triangle_count < (variant.NeckMode ==
                     SupermarketCashierNeckMode.FixedHuman ? 4500 : MinimumTriangleCount) ||
                 manifest.triangle_count > (variant.NeckMode ==
-                    SupermarketCashierNeckMode.FixedHuman ? 8000 : MaximumTriangleCount) ||
+                    SupermarketCashierNeckMode.FixedHuman ? 12000 : MaximumTriangleCount) ||
                 manifest.pool_eligible)
             {
                 throw new InvalidOperationException(
@@ -523,13 +533,14 @@ namespace BarPromenade.Editor
                 manifest.animation_count != 0 ||
                 !string.Equals(
                     manifest.material_asset,
-                    SharedMaterialPath,
+                    variant.NeckMode == SupermarketCashierNeckMode.FixedHuman
+                        ? NormalMaterialPath : SharedMaterialPath,
                     StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
                     "Supermarket cashier must be non-emissive, " +
                     "collider/light/Rigidbody-free, animation-free and " +
-                    "reuse Player3DLit.");
+                    "reuse its shared lit material.");
             }
 
             if (!manifest.pivot_names.SequenceEqual(
@@ -724,9 +735,9 @@ namespace BarPromenade.Editor
                 }
 
                 // Which parts the generator actually laid into the atlas.
-                // Anything absent keeps the plain flat palette colour,
-                // which is a legitimate state - the head and the neck are
-                // deliberately not in the sheet.
+                // Unmapped eye/face solids keep the plain palette colour.
+                // The active clerk's skin and clothes use his own sheet;
+                // the retained Watcher keeps its original atlas unchanged.
                 var atlasRenderers = new HashSet<string>(
                     StringComparer.Ordinal);
                 Texture2D detailAtlas = null;
@@ -735,14 +746,21 @@ namespace BarPromenade.Editor
                 {
                     SupermarketCashierManifestTextureBinding sheet =
                         manifest.texture_bindings[0];
+                    string atlasPath = variant.NeckMode == SupermarketCashierNeckMode.FixedHuman
+                        ? NormalDetailAtlasPath : DetailAtlasPath;
+                    if (!string.Equals(sheet.texture_asset, atlasPath, StringComparison.Ordinal))
+                    {
+                        throw new InvalidOperationException("Cashier atlas differs from its variant contract.");
+                    }
+                    AssetDatabase.ImportAsset(atlasPath, ImportAssetOptions.ForceSynchronousImport);
                     detailAtlas =
                         AssetDatabase.LoadAssetAtPath<Texture2D>(
-                            DetailAtlasPath);
+                            atlasPath);
                     if (detailAtlas == null)
                     {
                         throw new InvalidOperationException(
                             "The cashier manifest declares a detail " +
-                            $"atlas but '{DetailAtlasPath}' is missing.");
+                            $"atlas but '{atlasPath}' is missing.");
                     }
 
                     if (sheet.regions != null)

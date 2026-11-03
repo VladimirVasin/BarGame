@@ -162,7 +162,7 @@ namespace BarPromenade
             if (!parryHeld) parryRelease = false;
             ReadWeaponSelectionInput();
             ApplyEquipmentRequest(attackHeld, parryHeld);
-            if (GameSessionState.IsInventoryItemEquipped(InventoryItemId.VodkaBottle) ||
+            if (GameSessionState.EquippedDrinkItem != InventoryItemId.None ||
                 PlayerVodkaBottleController.IsHandOccupied(gameObject))
             {
                 pending = PendingCommand.None;

@@ -1,0 +1,54 @@
+{
+  "design_id": "supermarket_response_v1",
+  "channels": [
+    "slope_u",
+    "slope_v",
+    "roughness",
+    "cavity"
+  ],
+  "resident_bc7_mip_bytes": 2097152,
+  "sheets": [
+    {
+      "kind": "Linoleum",
+      "metres_per_tile": 2.4,
+      "size": 512,
+      "mean_roughness": 0.82,
+      "sha256": "d08f4df7872235167384f0de06070f8828b367eac4a02afe9a8c1feb6644ac26"
+    },
+    {
+      "kind": "WallPaint",
+      "metres_per_tile": 2.6,
+      "size": 512,
+      "mean_roughness": 0.94,
+      "sha256": "a33612e0093eb2e527fab0451892655810367d3bee2682bebc7601d5488de4a4"
+    },
+    {
+      "kind": "Ceiling",
+      "metres_per_tile": 3.0,
+      "size": 512,
+      "mean_roughness": 0.96,
+      "sha256": "a7c963268f16f1bbfca79e1cbb2785951cf93b1332060163bbfff71be9b16c90"
+    },
+    {
+      "kind": "ShelfMetal",
+      "metres_per_tile": 1.3,
+      "size": 512,
+      "mean_roughness": 0.66,
+      "sha256": "c8abbcdcc7be6f88960187abbecc03b9c983ebf2cef7a61d317e5ddae86debb6"
+    },
+    {
+      "kind": "Counter",
+      "metres_per_tile": 1.2,
+      "size": 512,
+      "mean_roughness": 0.67,
+      "sha256": "7e183d2c339ad5c308ba57a7a2595003a3e84ee2ce549d8092991fa1252e19cf"
+    },
+    {
+      "kind": "Cardboard",
+      "metres_per_tile": 0.9,
+      "size": 512,
+      "mean_roughness": 0.97,
+      "sha256": "f8e6785b4982a401fc184eb2f1eac6f6739378c675f332c8d49b0cc74ab11956"
+    }
+  ]
+}

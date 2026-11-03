@@ -17,6 +17,8 @@ namespace BarPromenade.Tests.EditMode
             GameSessionState.BeginNewGame();
         }
 
+        [TestCase(InventoryItemId.BeerCan, 6)]
+        [TestCase(InventoryItemId.WineBottle, 22)]
         [TestCase(InventoryItemId.ChickenEgg, 2)]
         [TestCase(InventoryItemId.VodkaBottle, 28)]
         [TestCase(InventoryItemId.ClosedStewCan, 11)]
@@ -56,9 +58,9 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Catalog_HasExactlyFiveUniqueInventoryProducts()
+        public void Catalog_HasExactlySevenUniqueInventoryProducts()
         {
-            Assert.That(SupermarketProductCatalog.Offers, Has.Count.EqualTo(5));
+            Assert.That(SupermarketProductCatalog.Offers, Has.Count.EqualTo(7));
             var ids = new HashSet<InventoryItemId>();
             for (int index = 0;
                  index < SupermarketProductCatalog.Offers.Count;
@@ -73,6 +75,8 @@ namespace BarPromenade.Tests.EditMode
                     Is.True);
             }
 
+            Assert.That(ids, Does.Contain(InventoryItemId.BeerCan));
+            Assert.That(ids, Does.Contain(InventoryItemId.WineBottle));
             Assert.That(ids, Does.Contain(InventoryItemId.ChickenEgg));
             Assert.That(ids, Does.Contain(InventoryItemId.VodkaBottle));
             Assert.That(ids, Does.Contain(InventoryItemId.ClosedStewCan));
@@ -114,6 +118,8 @@ namespace BarPromenade.Tests.EditMode
                 SupermarketPurchaseStatus.InventoryFull);
         }
 
+        [TestCase(InventoryItemId.BeerCan, 6)]
+        [TestCase(InventoryItemId.WineBottle, 22)]
         [TestCase(InventoryItemId.ChickenEgg, 2)]
         [TestCase(InventoryItemId.VodkaBottle, 28)]
         [TestCase(InventoryItemId.ClosedStewCan, 11)]

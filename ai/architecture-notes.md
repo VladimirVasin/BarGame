@@ -1,6 +1,34 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-11-03,user — supermarket remodel and carried drinks:**
+  Seven dense repeatable offers:BeerCan500ml/6,WineBottle750ml/22 and existing
+  five;stack9. Passive copies share assets;one selection/sale per SKU.
+  Empty labels;open stew Home/cat only. Kit room/metal-glass entrance use shared
+  door action/authored contacts;protected aisles kept.
+  Rear cold cabinet/stockroom/cartons meet wall without daylight gap.
+  Right-wall checkout faces hall;cashier stands in rear work aisle. Conveyor,
+  scanner,cashier-facing keys,packing/bags and decorative text-free snacks form
+  one passive kit;no snack SKU/prompts or checkout purchase mechanic.
+  Authored palms/customer/light anchors bind pose,approach and warm practical.
+  Baskets,cables,vents and causal wear share static meshes/materials.
+  One drink owner:container ID/fill/open state,
+  dose proportional to volume,one swallow commit;wine screw cap,beer retained tab.
+  Shared gains:LightBeer10/DarkBeer12/WhiteWine17/RedWine20/CognacVs22/Vsop24;
+  vodka24/stress unchanged. Beer500ml=one bar portion;wine750ml=three250ml
+  portions;partial dose rounds cumulatively from shared base gains.
+  Opaque can shows fill via opening/inventory;glass via gravity surface.
+  Aluminium never fractures or owns glass audio;bounded metal/surface impact cues.
+  Existing rig/input/wardrobe/weapon/seat/cleanup owners retained.
+  Explicit Normal-face exception:cashier keeps separate protruding 3D eyes,
+  brows,nose,mouth;ordinary stature/fixed neck/28-degree gaze/blink/identity kept.
+  Shop surfaces use bounded shared response/normal maps and local reflection;
+  six practical lights/cold hall/warm checkout retained. All24FX reviewed:
+  source fill/SSAO/shadows/Neutral/probe/material contacts;scoped DOF/SMAA/lens;
+  SSR/SSGI/SCGI,bakedGI,water/fog/rays/wind/particles/grain/flares/blur deferred.
+  No new speech/story/surveillance action;§6 registry,§16/21/art9 apply.
+  CPU/GPU costs unmeasured;bounded populations/capture/cache/cleanup.
+
 - **Accepted 2026-11-03,user — daily closing departure:**
   01:30:«Через полчаса закрываемся.»;02:00:existing gates close.
   Grace60 calendar-rate active seconds from close/latest hero delivery.
@@ -37,7 +65,7 @@
   §16/21/art9 kept. Cached contacts/bounded solver;CPU/GPU unmeasured.
 
 - **Accepted 2026-11-02 — replenishable supermarket, user:**
-  Five offers repeat;prices/stack9 kept. TryPurchaseWorldItem:item/price1×,
+  Seven offers repeat;existing prices/stack9 kept. TryPurchaseWorldItem:item/price1×,
   no collection history;unique pickups kept. Shelf model/tag/collider persist.
   Shared receipt preflights before commit;borrows modal,one temp model;
   close resumes selection. Escape/disable/unload never grant/refund;close cannot rebuy.
@@ -5508,65 +5536,36 @@
   relief/minimum20;no effect at/below floor. Preflight→remove one→relief/fraction
   atomically;stale/no-effect use changes nothing. Fridge Use unavailable:Take first.
 - **Accepted — Separate supermarket interior:**
-  `SupermarketInterior` owns one validated `16 x 11 x 3.6 m` room with
-  protected aisles, three shelf sections, a stockroom facade and a decorative
-  checkout staffed by the separate normal supermarket cashier. The register does not
-  process sales. Each shelf owns an authored fixed camera and one interaction
-  station.
-  One modal browser cycles available products in deterministic shelf/slot order,
-  skips empty shelves and retains player/camera ownership between shelves. The selected shelf keeps
-  its authored camera position and field of view while the rotation targets the
-  combined world renderer bounds of the selected product. Muted clickable
-  previous/next arrows follow the product's projected screen bounds; pointer,
-  keyboard and gamepad all use the same navigation path. The browser takes
-  owner-scoped renderer-only visibility leases over both hero and cashier
-  presentations: gameplay roots stay active, and ordinary exit, failed
-  open, disable and destroy restore each captured renderer state exactly.
-  `SupermarketProductCatalog` owns the five physical offers:chicken egg,vodka,
-  closed stew,instant noodles and day-old loaf. Purchase lifetime/receipt use
-  the accepted replenishable-supermarket decision above. `ClosedStewCan` is distinct
-  from the refrigerator's `OpenStewCan`, so buying sealed stew cannot satisfy
-  the cat-feeding requirement. Entry and exit use the shared DoorTransition and
-  restore the supermarket's own City return point. The City entrance alone
-  configures the common door action with a calculated `0.242 m` initial vertical
-  tolerance covering the complete visible prompt reach across road grade and
-  curb; its approach remains a constrained walk to the grounded dock, while
-  all other doors keep the shared `0.02 m` default.
-- **Accepted — Passive Blender supermarket interior:** The fixed shell,
-  entrance, ceiling grid and fluorescent housings, three profiled shelf bodies,
-  recessed cold cabinet, checkout, stockroom facade and four CCTV
-  mount/head-pivot assemblies come from the deterministic
-  `supermarket_interior_v1` Blender asset. Its measured manifest owns semantic
-  parts, metre bounds, shared surface sheets, a build signature and anchors
-  checked against `SupermarketInteriorLayoutPlanner`; the prefab itself owns no
-  Collider, Light, Camera, Rigidbody, AudioSource or Animator. Unity continues
-  to own shell/fixture collision,shelf triggers,five retained offers/selection
-  colliders,practical lights,flicker,cashier,CCTV servo,UI and transitions.
-  CCTV rotates authored head pivots;each retained offer owns its price tag.
-  Five counter-clockwise perimeter-skirting
-  sweeps bury rear and bottom faces `3 mm` into their neighbouring wall/floor
-  surfaces and trim corner joins, removing all coplanar render pairs while
-  preserving the visible profile.
+  Validated16×11×3.6m room:protected aisles,three shelf sections,stockroom,
+  separate ordinary cashier;checkout decorative. Each shelf:fixed camera/station.
+  One modal cycles stocked shelf/slot order,aims at selected model bounds,
+  positions muted clickable arrows beside it. Renderer-only owner leases hide
+  hero/cashier without disabling roots;exit/failure/off/destroy restore exact
+  renderer/camera/input/HUD state. Catalog owns7 offers;repeat purchases use the
+  replenishable decision. ClosedStewCan cannot satisfy OpenStewCan cat requirement.
+  Shared DoorTransition restores own City point;City entrance initial vertical
+  tolerance0.242m covers prompt/curb;grounded constrained approach remains.
+  Other doors retain0.02m default.
+- **Accepted — Passive Blender supermarket interior:** Deterministic
+  `supermarket_interior_v1` owns shell,entrance,ceiling/fluorescent housings,
+  three profiled shelves,recessed cold cabinet,checkout,stockroom and four CCTV
+  mounts/head pivots. Manifest measures semantic parts,metre bounds,shared sheets,
+  signature and anchors against `SupermarketInteriorLayoutPlanner`.
+  Passive prefab has no Collider/Light/Camera/Rigidbody/AudioSource/Animator.
+  Unity owns collision,triggers,seven offer colliders/tags,practicals,flicker,
+  cashier,CCTV servo,UI/transitions. Five counter-clockwise skirting sweeps
+  bury rear/bottom3mm,trim corners and preserve visible profile without coplanar pairs.
 - **Accepted — Shared passive Blender supermarket product pack:**
-  `tools/build-supermarket-products-3d-model.py` owns one deterministic
-  `supermarket_product_pack_v1` source under
-  `ArtSource/Supermarket/Products` and exports
-  `Assets/Supermarket/Products/Models/SupermarketProducts3D.{fbx,json}`.
-  The pack contains six coincident bottom-centre item roots — instant noodles,
-  day-old loaf, vodka bottle, closed stew can, open stew can and chicken egg —
-  with measured mesh/triangle budgets/signature in the manifest. Generic:
-  `authored_text`/`brands` empty;no imported Collider/material/Light/Camera/
-  Rigidbody/AudioSource/animation.
-  `SupermarketProductAssetSetup` extracts one passive Resources prefab per
-  item; `SupermarketProductModelResources` and `InventoryItemModelFactory`
-  reuse those same render models on shop shelves, in live inventory previews,
-  inside the Home refrigerator and during the cat-feeding flow. Runtime keeps
-  ownership of selection collision, sizing and item lifetime. Only five item
-  IDs are supermarket offers: their bottom pivots bind to exact tier anchors
-  in the interior asset. `OpenStewCan` has only the Home refrigerator/cat world
-  source and never becomes a supermarket offer. The vodka source is
-  about `0.299 m` tall;its `0.37 m` top-tier fit envelope keeps selected bounds
-  below the `2.05 m` shelving top. Closed stew occupies the first tier.
+  `tools/build-supermarket-products-3d-model.py`:deterministic
+  `supermarket_product_pack_v1`;ArtSource/Supermarket/Products source,
+  Assets/Supermarket/Products/Models/SupermarketProducts3D.{fbx,json}.
+  Eight bottom-centre roots:seven offers plus Home/cat-only OpenStewCan.
+  Manifest measures meshes/budgets/signature;no authored text/brands or imported
+  physics/material/light/camera/audio/animation. SupermarketProductAssetSetup
+  extracts passive Resources prefabs;ModelResources/InventoryItemModelFactory
+  share them across shelves/inventory/Home/cat. Runtime owns collision/sizing/
+  lifetime. Tier anchors support real bounds;vodka≈0.299m/top-tier envelope0.37m
+  remains below2.05m shelf during selection;closed stew first tier.
 - **Accepted — Reusable inventory-backed target interaction:** A target-specific
   adapter supplies one validated `InventoryItemRequirement`, localized Talk,
   confirmation and missing-item keys, and an idempotent
@@ -6384,7 +6383,7 @@
 - **Accepted by explicit user decision, 2026-09-02 — the active cashier is
   normal and the Watcher is retained, not deleted:** the production provider
   now selects `supermarket_cashier_v1`, an ordinary-proportioned `1.75 m`
-  version of the same clerk (`1.0.0`, `40` meshes / `1,244` triangles). Uniform,
+  version of the same clerk (current measured manifest owns mesh budgets). Uniform,
   detail atlas, attentive face, planted checkout pose, blink, `28°` bounded
   eye/head tracking and talk stub remain; the neck has ordinary
   human length, never scales, and the head never leaves the body. The active

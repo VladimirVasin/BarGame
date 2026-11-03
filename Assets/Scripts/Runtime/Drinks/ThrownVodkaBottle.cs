@@ -26,6 +26,9 @@ namespace BarPromenade
         public bool IsSubmerged { get; private set; }
         public bool IsBroken { get; private set; }
         public int ImpactCount { get; private set; }
+        public FootstepGroundKind LastCanImpactSurface { get; private set; }
+        public RetroSfxId LastCanImpactCue { get; private set; }
+        public float LastCanMetalVolume { get; private set; }
         public Rigidbody Body { get; private set; }
         public int ActiveShardCount { get { int count = 0; foreach (Rigidbody shard in shards) if (shard != null && shard.gameObject.activeSelf) count++; return count; } }
         public static int ActiveCount => Live.Count;
@@ -55,22 +58,27 @@ namespace BarPromenade
             owner.vehicleHull = ignoredVehicleHull;
             owner.heroColliders = ignoredHero != null ? ignoredHero.GetComponentsInChildren<Collider>(true) : Array.Empty<Collider>();
             var lower = bottle.gameObject.AddComponent<CapsuleCollider>();
-            lower.direction = 1; lower.center = Vector3.up * VodkaBottleDimensions.LowerColliderCentre;
-            lower.radius = VodkaBottleDimensions.BodyRadius; lower.height = VodkaBottleDimensions.LowerColliderHeight;
+            DrinkContainerProfile profile = bottle.Profile;
+            bool vodka = profile.ItemId == InventoryItemId.VodkaBottle;
+            lower.direction = 1; lower.center = Vector3.up * (vodka ? VodkaBottleDimensions.LowerColliderCentre : profile.Height * .35f);
+            lower.radius = profile.Radius; lower.height = vodka ? VodkaBottleDimensions.LowerColliderHeight : profile.Height * .70f;
             var neck = bottle.gameObject.AddComponent<CapsuleCollider>();
-            neck.direction = 1; neck.center = Vector3.up * VodkaBottleDimensions.NeckColliderCentre;
-            neck.radius = VodkaBottleDimensions.NeckColliderRadius; neck.height = VodkaBottleDimensions.NeckColliderHeight;
+            neck.direction = 1; neck.center = Vector3.up * (vodka ? VodkaBottleDimensions.NeckColliderCentre : profile.Height * .78f);
+            neck.radius = profile.IsCan ? profile.Radius : .0165f; neck.height = vodka ? VodkaBottleDimensions.NeckColliderHeight : profile.Height * .44f;
             owner.bottleColliders = new Collider[] { lower, neck };
             owner.Body = bottle.gameObject.AddComponent<Rigidbody>();
-            owner.Body.mass = .38f; owner.Body.centerOfMass = Vector3.up * VodkaBottleDimensions.CentreOfMass;
+            owner.Body.mass = profile.IsCan ? .016f : .38f; owner.Body.centerOfMass = Vector3.up * (vodka ? VodkaBottleDimensions.CentreOfMass : profile.Height * .36f);
             owner.Body.linearDamping = .025f; owner.Body.angularDamping = .12f;
             owner.Body.interpolation = RigidbodyInterpolation.Interpolate;
             owner.Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             foreach (Collider collider in owner.bottleColliders) owner.IgnoreHero(collider);
             owner.Body.linearVelocity = velocity; owner.Body.angularVelocity = angularVelocity;
-            owner.glassAudio = bottle.gameObject.AddComponent<WarehouseFishLampBurstAudio>();
-            owner.glassAudio.Initialize(bottle.transform);
-            owner.glassAudio.Source.minDistance = .6f; owner.glassAudio.Source.maxDistance = 16f;
+            if (!profile.IsCan)
+            {
+                owner.glassAudio = bottle.gameObject.AddComponent<WarehouseFishLampBurstAudio>();
+                owner.glassAudio.Initialize(bottle.transform);
+                owner.glassAudio.Source.minDistance = .6f; owner.glassAudio.Source.maxDistance = 16f;
+            }
             owner.previousWaterPoint = owner.Body.worldCenterOfMass;
             owner.released = true; Live.Add(owner);
             owner.SetPaused(GameTimeScaleRuntime.IsPaused || PauseMenuController.IsAnyPaused || !GameCursor.ApplicationFocused);
@@ -84,6 +92,34 @@ namespace BarPromenade
                 surface is FootstepGroundKind.Wood or FootstepGroundKind.Carpet ? 4f : 2.5f;
             return normalSpeed >= threshold;
         }
+
+        public static bool ShouldBreak(InventoryItemId item, FootstepGroundKind surface, float normalSpeed) =>
+            !DrinkContainerCatalog.Get(item).IsCan && ShouldBreak(surface, normalSpeed);
+
+        public static RetroSfxId CanImpactSurfaceCue(FootstepGroundKind surface) => surface switch
+        {
+            FootstepGroundKind.Metal => RetroSfxId.FootstepMetal,
+            FootstepGroundKind.Wood => RetroSfxId.FootstepWood,
+            FootstepGroundKind.Soil => RetroSfxId.FootstepSoil,
+            FootstepGroundKind.Grass => RetroSfxId.FootstepGrass,
+            FootstepGroundKind.Sand => RetroSfxId.FootstepSand,
+            FootstepGroundKind.Snow => RetroSfxId.FootstepSnow,
+            FootstepGroundKind.Carpet => RetroSfxId.FootstepCarpet,
+            FootstepGroundKind.Puddle => RetroSfxId.FootstepPuddle,
+            FootstepGroundKind.Tile => RetroSfxId.FootstepTile,
+            FootstepGroundKind.Stone => RetroSfxId.FootstepStone,
+            _ => RetroSfxId.FootstepConcrete
+        };
+
+        public static float CanMetalImpactVolume(FootstepGroundKind surface) => surface switch
+        {
+            FootstepGroundKind.Metal => .85f,
+            FootstepGroundKind.Wood => .24f,
+            FootstepGroundKind.Soil or FootstepGroundKind.Grass or FootstepGroundKind.Sand or
+                FootstepGroundKind.Snow or FootstepGroundKind.Carpet => .065f,
+            FootstepGroundKind.Puddle => .12f,
+            _ => .52f
+        };
 
         private void OnCollisionEnter(Collision collision)
         {
@@ -99,12 +135,27 @@ namespace BarPromenade
             if (speed < .3f) return;
             ImpactCount++;
             FootstepGroundKind kind = ResolveSurface(collision.collider, contact.point, contact.normal);
-            if (ShouldBreak(kind, speed)) { Shatter(contact.point, collision.relativeVelocity); return; }
+            if (ShouldBreak(view.ItemId, kind, speed)) { Shatter(contact.point, collision.relativeVelocity); return; }
             if (age - lastContact > .14f && ImpactCount <= 8)
             {
                 lastContact = age;
-                // The shared short stone click is a quiet intact-glass contact; fracture has its own cue.
-                RetroAudio.PlayAt(RetroSfxId.FootstepStone, contact.point);
+                if (view.Profile.IsCan)
+                {
+                    // One thin-metal transient plus its struck surface, at most two shared
+                    // pooled voices. Soft ground damps the ring; it never substitutes glass.
+                    float impact = Mathf.Clamp(speed / 4f, .18f, 1f);
+                    LastCanImpactSurface = kind;
+                    LastCanImpactCue = CanImpactSurfaceCue(kind);
+                    LastCanMetalVolume = CanMetalImpactVolume(kind) * impact;
+                    RetroAudio.PlayAt(RetroSfxId.FootstepMetal, contact.point, LastCanMetalVolume);
+                    if (LastCanImpactCue != RetroSfxId.FootstepMetal)
+                        RetroAudio.PlayAt(LastCanImpactCue, contact.point, .36f * impact);
+                }
+                else
+                {
+                    // Quiet intact-glass contact; fracture has its own cue.
+                    RetroAudio.PlayAt(RetroSfxId.FootstepStone, contact.point);
+                }
             }
         }
 
@@ -123,7 +174,7 @@ namespace BarPromenade
 
         private void Shatter(Vector3 point, Vector3 impactVelocity)
         {
-            if (IsBroken) return;
+            if (IsBroken || view.Profile.IsCan) return;
             IsBroken = true; brokenAge = 0f; view.HideNonGlass();
             Vector3 carriedVelocity = Body.linearVelocity, carriedSpin = Body.angularVelocity;
             Body.collisionDetectionMode = CollisionDetectionMode.Discrete; Body.isKinematic = true;
@@ -173,8 +224,7 @@ namespace BarPromenade
         private bool IsVisible()
         {
             if (view == null) return false;
-            foreach (Renderer cell in view.GlassCells) if (cell != null && cell.isVisible) return true;
-            return false;
+            return view.BodyIsVisible;
         }
         private void FixedUpdate()
         {

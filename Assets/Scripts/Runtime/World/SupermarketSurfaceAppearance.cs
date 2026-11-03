@@ -59,6 +59,26 @@ namespace BarPromenade
         private static readonly int MetallicId =
             Shader.PropertyToID("_Metallic");
 
+        private static readonly int ResponseId = Shader.PropertyToID("_SceneMaterialResponse");
+        private static readonly int ResponseStrengthId = Shader.PropertyToID("_SceneResponseStrength");
+        private static readonly int NormalStrengthId = Shader.PropertyToID("_SceneNormalStrength");
+        private static Material physicalMaterial;
+        private static Texture2D[] responses = new Texture2D[SurfaceCount];
+        public static Material SharedMaterial => physicalMaterial != null ? physicalMaterial :
+            physicalMaterial = Resources.Load<Material>("Materials/SupermarketPhysicalSurface") ??
+                throw new InvalidOperationException("Missing supermarket physical surface material.");
+
+        internal static void ApplyResponse(MaterialPropertyBlock properties, SupermarketSurfaceKind kind)
+        {
+            int index = ValidateKind(kind);
+            if (responses[index] == null)
+                responses[index] = Resources.Load<Texture2D>("Supermarket/Textures/Supermarket" + kind + "Response");
+            if (responses[index] == null) throw new InvalidOperationException("Missing supermarket response: " + kind);
+            properties.SetTexture(ResponseId, responses[index]);
+            properties.SetFloat(ResponseStrengthId, 1f);
+            properties.SetFloat(NormalStrengthId, .65f);
+        }
+
         private static Texture2D[] cachedTextures =
             new Texture2D[SurfaceCount];
 
@@ -150,7 +170,7 @@ namespace BarPromenade
 
             HomeSurfaceRecipe recipe = GetRecipe(kind);
             renderer.sharedMaterial =
-                RuntimePrimitiveFactory.DefaultMaterial;
+                SharedMaterial;
             var properties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(properties);
             properties.SetTexture(BaseMapId, GetTexture(kind));
@@ -162,6 +182,7 @@ namespace BarPromenade
                 CreateBaseMapTransform(renderer, kind, projection));
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
+            ApplyResponse(properties, kind);
             renderer.SetPropertyBlock(properties);
         }
 
@@ -211,6 +232,8 @@ namespace BarPromenade
         private static void ResetCachedResources()
         {
             cachedTextures = new Texture2D[SurfaceCount];
+            responses = new Texture2D[SurfaceCount];
+            physicalMaterial = null;
         }
     }
 }

@@ -8,14 +8,14 @@ namespace BarPromenade.Tests.EditMode
     {
         private static readonly object[] definitions =
         {
-            new object[] { DrinkId.LightBeer, DrinkFamily.Beer, 8, 6 },
-            new object[] { DrinkId.DarkBeer, DrinkFamily.Beer, 10, 8 },
-            new object[] { DrinkId.WhiteWine, DrinkFamily.Wine, 11, 10 },
-            new object[] { DrinkId.RedWine, DrinkFamily.Wine, 13, 12 },
+            new object[] { DrinkId.LightBeer, DrinkFamily.Beer, 10, 6 },
+            new object[] { DrinkId.DarkBeer, DrinkFamily.Beer, 12, 8 },
+            new object[] { DrinkId.WhiteWine, DrinkFamily.Wine, 17, 10 },
+            new object[] { DrinkId.RedWine, DrinkFamily.Wine, 20, 12 },
             new object[] { DrinkId.Vodka, DrinkFamily.Vodka, 24, 12 },
             new object[] { DrinkId.PepperVodka, DrinkFamily.Vodka, 20, 14 },
-            new object[] { DrinkId.CognacVs, DrinkFamily.Cognac, 16, 16 },
-            new object[] { DrinkId.CognacVsop, DrinkFamily.Cognac, 18, 20 },
+            new object[] { DrinkId.CognacVs, DrinkFamily.Cognac, 22, 16 },
+            new object[] { DrinkId.CognacVsop, DrinkFamily.Cognac, 24, 20 },
             new object[] { DrinkId.Water, DrinkFamily.Water, 0, 0 },
             new object[] { DrinkId.Moonshine, DrinkFamily.Vodka, 24, 8 }
         };

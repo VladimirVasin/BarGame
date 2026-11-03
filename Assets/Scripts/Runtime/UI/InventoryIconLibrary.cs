@@ -128,6 +128,14 @@ namespace BarPromenade
                     painter.FillRect(8, 20, 17, 1, ink);
                     painter.FillRect(7, 19, 3, 3, metal);
                     break;
+                case InventoryItemId.BeerCan:
+                    painter.FillRect(10, 6, 13, 21, metal);
+                    painter.OutlineRect(9, 5, 15, 23, ink);
+                    painter.FillRect(10, 11, 13, 10, amber);
+                    painter.FillRect(11, 25, 11, 2, pale);
+                    painter.OutlineRect(14, 25, 5, 2, ink);
+                    break;
+                case InventoryItemId.WineBottle:
                 case InventoryItemId.VodkaBottle:
                     painter.FillRect(13, 22, 6, 5, metal);
                     painter.FillRect(11, 9, 10, 14, pale);

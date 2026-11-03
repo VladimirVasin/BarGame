@@ -31,7 +31,7 @@ namespace BarPromenade.Editor
         private const string ExpectedLayoutMode =
             "coincident_identity_item_roots_for_extraction";
         private const string ExpectedPivotKind = "bottom_centre";
-        private const int ExpectedItemCount = 6;
+        private const int ExpectedItemCount = 8;
         private const int MaximumRenderers = 64;
         private const int MaximumTriangles = 12000;
         private const int MaximumItemTriangles = 4000;
@@ -72,6 +72,8 @@ namespace BarPromenade.Editor
                 "ITEM_chicken_egg",
                 InventoryItemId.ChickenEgg,
                 "ChickenEgg3D"),
+            new ProductContract("beer_can", "ITEM_beer_can", InventoryItemId.BeerCan, "BeerCan3D"),
+            new ProductContract("wine_bottle", "ITEM_wine_bottle", InventoryItemId.WineBottle, "WineBottle3D"),
         };
 
         private static bool buildQueued;
@@ -184,6 +186,16 @@ namespace BarPromenade.Editor
             {
                 EnsureAssetFolder(PrefabFolder);
                 EnsureVodkaLiquidMaterial();
+                const string surfacePath = PrefabFolder + "/ProductSurface.png";
+                AssetDatabase.ImportAsset(surfacePath, ImportAssetOptions.ForceSynchronousImport);
+                if (AssetImporter.GetAtPath(surfacePath) is TextureImporter surface)
+                {
+                    surface.textureType = TextureImporterType.Default; surface.sRGBTexture = true;
+                    surface.mipmapEnabled = true; surface.isReadable = false;
+                    surface.wrapMode = TextureWrapMode.Repeat; surface.filterMode = FilterMode.Bilinear;
+                    surface.maxTextureSize = 128; surface.textureCompression = TextureImporterCompression.Compressed;
+                    surface.SaveAndReimport();
+                }
                 ImportSources();
                 SupermarketProductManifest manifest =
                     LoadAndValidateManifest();
@@ -787,13 +799,13 @@ namespace BarPromenade.Editor
                     binding.Color != ToColor(source.base_color) ||
                     !rendererSet.Add(binding.Renderer) ||
                     binding.Renderer.sharedMaterials.Length != 1 ||
-                    binding.Renderer.sharedMaterial != (contract.ItemId == InventoryItemId.VodkaBottle
+                    binding.Renderer.sharedMaterial != (DrinkContainerCatalog.IsDrink(contract.ItemId)
                         ? VodkaBottleView.MaterialFor(binding.Role) : sharedLit) ||
                     binding.Renderer.shadowCastingMode != ShadowCastingMode.On ||
                     !binding.Renderer.receiveShadows)
                 {
                     throw new InvalidOperationException(
-                        $"Product '{item.id}' has an invalid renderer binding.");
+                        $"Product '{item.id}' has an invalid renderer binding '{binding?.SourceName}' ({binding?.Role}).");
                 }
             }
         }

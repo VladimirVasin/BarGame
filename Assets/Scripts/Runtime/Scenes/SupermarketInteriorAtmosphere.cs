@@ -97,7 +97,7 @@ namespace BarPromenade
     /// The supermarket's explicit light budget. The scene setup keeps
     /// one directional key; this adds six shadowless practicals — one
     /// cold point under each of the four fluorescent rows, a warm
-    /// accent over the checkout and the Watcher Cashier, and a cool
+    /// accent over the checkout and its cashier, and a cool
     /// spill by the cold shelf — plus one flickering row. Everything
     /// is deterministic and shadowless, so the single-shadow budget of
     /// the scene is untouched.
@@ -123,7 +123,7 @@ namespace BarPromenade
         private static readonly Color FluorescentColor =
             new Color(0.72f, 0.86f, 0.78f);
         private static readonly Color CheckoutColor =
-            new Color(0.92f, 0.78f, 0.55f);
+            new Color(0.92f, 0.80f, 0.62f);
         private static readonly Color ColdShelfColor =
             new Color(0.58f, 0.74f, 0.90f);
         private static readonly Color FlickerTubeColor =
@@ -174,19 +174,28 @@ namespace BarPromenade
                     FluorescentRange);
             }
 
-            // Warm accent over the register: the one pool of warmth in
-            // the hall sits exactly where the Watcher Cashier waits.
+            // The visible lamp owns the source position. Read its world
+            // position so the imported FBX unit scale cannot move the light.
+            // The no-asset authoring/test path follows the same cashier pose.
+            Vector3 checkoutLightPosition = assetRegistry != null
+                ? root.transform.InverseTransformPoint(
+                    assetRegistry.GetAnchor("checkout_light").position)
+                : plan.Cashier.Position +
+                    Quaternion.Euler(0f, plan.Cashier.YawDegrees, 0f) *
+                    new Vector3(0.15f, 2.55f, 0.95f);
             lights[4] = CreatePractical(
                 root.transform,
                 "Checkout Accent Light",
-                new Vector3(5.5f, 2.55f, -3.2f),
+                checkoutLightPosition,
                 CheckoutColor,
                 CheckoutIntensity,
-                5.2f);
+                4.6f);
+            if (!plan.TryGetShelf(SupermarketInteriorLayoutPlanner.ColdShelfId, out SupermarketShelfPlan coldShelf))
+                throw new InvalidOperationException("The cold practical requires its authored shelf.");
             lights[5] = CreatePractical(
                 root.transform,
                 "Cold Shelf Spill Light",
-                new Vector3(-0.05f, 2.35f, 3.9f),
+                coldShelf.RootPosition + new Vector3(0f, 2.35f, -0.675f),
                 ColdShelfColor,
                 ColdShelfIntensity,
                 4.4f);

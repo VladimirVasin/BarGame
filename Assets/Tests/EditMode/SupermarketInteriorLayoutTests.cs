@@ -1,3 +1,4 @@
+using UnityEngine;
 using System.Collections.Generic;
 using NUnit.Framework;
 
@@ -30,6 +31,7 @@ namespace BarPromenade.Tests.EditMode
             var sourceIds = new HashSet<string>();
             var itemIds = new HashSet<InventoryItemId>();
             int productCount = 0;
+            int visualStockCount = 0;
             for (int shelfIndex = 0;
                  shelfIndex < first.Shelves.Count;
                  shelfIndex++)
@@ -49,6 +51,15 @@ namespace BarPromenade.Tests.EditMode
                     SupermarketProductSlotPlan product =
                         shelf.Products[productIndex];
                     productCount++;
+                    var positions = SupermarketStockDisplay.Positions(shelf, product);
+                    visualStockCount += positions.Count;
+                    CollectionAssert.AreEqual(positions, SupermarketStockDisplay.Positions(shelf, product));
+                    foreach (Vector3 position in positions)
+                    {
+                        Assert.That(Mathf.Abs(position.x), Is.LessThan(shelf.Size.x * .5f));
+                        Assert.That(Mathf.Abs(position.z), Is.LessThan(shelf.Size.z * .5f));
+                        Assert.That(position.y, Is.InRange(0f, shelf.Height));
+                    }
                     Assert.That(sourceIds.Add(product.SourceId), Is.True);
                     Assert.That(itemIds.Add(product.ItemId), Is.True);
                     Assert.That(
@@ -58,7 +69,8 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            Assert.That(productCount, Is.EqualTo(5));
+            Assert.That(productCount, Is.EqualTo(7));
+            Assert.That(visualStockCount, Is.InRange(100, SupermarketStockDisplay.MaximumCopyCount));
             CollectionAssert.AreEquivalent(
                 new[]
                 {
@@ -66,7 +78,9 @@ namespace BarPromenade.Tests.EditMode
                     InventoryItemId.VodkaBottle,
                     InventoryItemId.ClosedStewCan,
                     InventoryItemId.InstantNoodles,
-                    InventoryItemId.DayOldLoaf
+                    InventoryItemId.DayOldLoaf,
+                    InventoryItemId.BeerCan,
+                    InventoryItemId.WineBottle
                 },
                 itemIds);
         }

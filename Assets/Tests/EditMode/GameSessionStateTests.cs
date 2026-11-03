@@ -1029,7 +1029,7 @@ namespace BarPromenade.Tests.EditMode
         public void TryPurchaseDrink_CommitsSuccessfulResultAtomically()
         {
             GameSessionState.UpdateDrinkingProgress(
-                91,
+                89,
                 DrinkId.RedWine,
                 2);
             GameSessionState.UpdateNeeds(0, 20);
@@ -1066,14 +1066,14 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(DrinkId.DarkBeer));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(4));
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(6));
-            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(18),
-                "Both full authored doses count, including nine dark-beer points beyond the live cap.");
+            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(22),
+                "Both full authored doses count, including eleven dark-beer points beyond the live cap.");
         }
 
-        [TestCase(DrinkId.LightBeer, 8, 6, 2, 5, 2, 4)]
-        [TestCase(DrinkId.DarkBeer, 10, 8, 3, 6, 2, 5)]
-        [TestCase(DrinkId.WhiteWine, 11, 10, 3, 7, 3, 6)]
-        [TestCase(DrinkId.RedWine, 13, 12, 4, 8, 4, 8)]
+        [TestCase(DrinkId.LightBeer, 10, 6, 3, 6, 2, 4)]
+        [TestCase(DrinkId.DarkBeer, 12, 8, 4, 8, 2, 5)]
+        [TestCase(DrinkId.WhiteWine, 17, 10, 5, 11, 3, 6)]
+        [TestCase(DrinkId.RedWine, 20, 12, 6, 13, 4, 8)]
         public void PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce(DrinkId drink,
             int fullDose, int fullRelief, int firstDose, int secondDose, int firstRelief, int secondRelief)
         {

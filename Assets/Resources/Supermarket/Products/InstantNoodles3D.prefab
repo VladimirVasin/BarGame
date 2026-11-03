@@ -190,12 +190,12 @@ MonoBehaviour:
     color: {r: 0.38, g: 0.185, b: 0.055, a: 1}
     renderer: {fileID: 5153112974528610100}
   localBounds:
-    m_Center: {x: 0, y: 0.045499995, z: 0.000000007450581}
-    m_Extent: {x: 0.178, y: 0.04550001, z: 0.124}
+    m_Center: {x: 0, y: 0.023759997, z: 0}
+    m_Extent: {x: 0.110360004, y: 0.023760006, z: 0.07687999}
   sourceTriangleCount: 348
-  sourceGeneratorVersion: 1.4.0
+  sourceGeneratorVersion: 2.0.1
   designId: supermarket_product_pack_v1
-  buildSignature: ada6ce10ed71c84163ed979567b028956160d1e9f51b18f00abb457c0cc9312a
+  buildSignature: bf825145024af27f0e0e7866837f6db2aeedec26d03f8871f492a93bd6f01b8e
 --- !u!1 &4502926195663137638
 GameObject:
   m_ObjectHideFlags: 0

@@ -217,7 +217,7 @@ namespace BarPromenade.Tests.EditMode
                         kind);
                 Assert.That(
                     renderer.sharedMaterial,
-                    Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                    Is.SameAs(SupermarketSurfaceAppearance.SharedMaterial));
                 Assert.That(
                     properties.GetTexture(BaseMapId),
                     Is.SameAs(
@@ -225,6 +225,9 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     properties.GetVector(BaseMapTransformId),
                     Is.EqualTo(expectedTransform));
+                Assert.That(properties.GetTexture("_SceneMaterialResponse"), Is.Not.Null);
+                Assert.That(properties.GetFloat("_SceneResponseStrength"), Is.EqualTo(1f));
+                Assert.That(properties.GetFloat("_SceneNormalStrength"), Is.EqualTo(.65f));
                 Assert.That(expectedTransform.x, Is.GreaterThan(0f));
                 Assert.That(expectedTransform.y, Is.GreaterThan(0f));
                 AssertColorApproximatelyEqual(

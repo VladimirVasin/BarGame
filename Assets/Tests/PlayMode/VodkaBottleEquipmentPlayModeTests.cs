@@ -160,6 +160,134 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator DrinkContainers_PurchaseSipSwitch_PreserveFillOpeningAndContacts()
+        {
+            DrinkId[] balancedDrinks = { DrinkId.LightBeer, DrinkId.DarkBeer, DrinkId.WhiteWine,
+                DrinkId.RedWine, DrinkId.CognacVs, DrinkId.CognacVsop };
+            int[] balancedDoses = { 10, 12, 17, 20, 22, 24 };
+            for (int index = 0; index < balancedDrinks.Length; index++)
+            {
+                GameSessionState.BeginNewGame();
+                GameSessionState.UpdateNeeds(0, 50);
+                DrinkPurchaseResult bar = GameSessionState.TryOrderDrink(balancedDrinks[index], out DrinkOrderToken order);
+                Assert.That(bar.Succeeded, Is.True);
+                Assert.That(GameSessionState.IntoxicationLevel, Is.Zero, "Ordering alone must not apply the increased dose.");
+                for (int portion = 1; portion <= order.PortionCount; portion++)
+                    Assert.That(GameSessionState.TryConsumeOrderedDrinkPortion(order, portion), Is.True);
+                Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(balancedDoses[index]));
+                Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(balancedDoses[index]));
+                Assert.That(GameSessionState.StressLevel, Is.EqualTo(50 - DrinkRules.GetStressRelief(balancedDrinks[index])));
+                Assert.That(GameSessionState.TryConsumeOrderedDrink(order), Is.False, "A completed bar order cannot apply its dose twice.");
+            }
+            GameSessionState.BeginNewGame();
+            foreach (InventoryItemId item in new[] { InventoryItemId.BeerCan, InventoryItemId.WineBottle, InventoryItemId.VodkaBottle })
+            {
+                DrinkContainerProfile profile = DrinkContainerCatalog.Get(item);
+                InventoryConsumableDefinition definition = InventoryConsumableCatalog.Get(item);
+                int expectedDose = PlayerNeedsRules.ScaleRelief(DrinkRules.GetIntoxicationGain(definition.DrinkId), definition.Servings);
+                var doses = new InventoryState();
+                Assert.That(doses.TryAdd(item, 1), Is.True); Assert.That(doses.TrySetEquipped(item, true), Is.True);
+                int doseId = doses.DrinkContainerId(item), totalDose = 0, totalStress = 0, totalServings = 0;
+                DrinkPurchaseResult barPortion = DrinkPurchaseRules.Evaluate(definition.DrinkId, 999, 0, DrinkId.None, 0);
+                for (int sip = 0; sip < profile.SipCount; sip++)
+                {
+                    Assert.That(doses.TryDrinkContainerSip(item, doseId, out var amount), Is.True);
+                    totalDose += amount.AlcoholDose; totalStress += amount.StressRelief; totalServings += amount.Servings;
+                    // At each complete serving boundary the same amount of
+                    // drink has the same dose at the bar and from its package.
+                    int scaledPortions = (sip + 1) * (int)definition.Servings;
+                    if (scaledPortions % profile.SipCount == 0)
+                        Assert.That(totalDose, Is.EqualTo(barPortion.ActualIntoxicationDelta * scaledPortions / profile.SipCount));
+                }
+                Assert.That(totalDose, Is.EqualTo(expectedDose)); Assert.That(totalStress, Is.EqualTo(definition.StressRelief));
+                Assert.That(totalServings, Is.EqualTo((int)definition.Servings)); Assert.That(doses.GetCount(item), Is.Zero);
+                Assert.That(doses.TryDrinkContainerSip(item, doseId, out _), Is.False, "An empty package cannot commit again.");
+
+                int initialCount = GameSessionState.GetInventoryItemCount(item);
+                int initialCash = GameSessionState.CashBalance;
+                Assert.That(GameSessionState.TryPurchaseWorldItem("test.drink." + item, item).Succeeded, Is.True);
+                Assert.That(GameSessionState.GetInventoryItemCount(item), Is.EqualTo(initialCount + 1));
+                Assert.That(GameSessionState.CashBalance, Is.EqualTo(initialCash - SupermarketProductCatalog.GetOffer(item).Price));
+                yield return InventoryToggle(true, itemId: item);
+                yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Opening && bottle.PhaseProgress >= .62f,
+                    "A newly bought sealed drink must visibly open.");
+                yield return new WaitForEndOfFrame();
+                Capture("drink-" + item + "-opening", true, bottle.Bottle.Cap.position, new Vector3(1f,1f,1f), .18f);
+                yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying && bottle.ItemId == item,
+                    "The selected drink never reached the original hero hand.");
+                Assert.That(bottle.Bottle.ItemId, Is.EqualTo(item));
+                Assert.That(bottle.Bottle.IsOpened, Is.True);
+                int id = GameSessionState.DrinkContainerId(item);
+                Assert.That(GameSessionState.DrinkRemainingMl(item), Is.EqualTo(profile.FullMl));
+                NpcHandPose hands = presentation.Registry.GetComponent<NpcHandPose>();
+                Assert.That(hands.GetGripKind(false), Is.EqualTo(profile.GripKind));
+                Assert.That(Vector3.Distance(hands.AnatomicalCylinderCentre(false), bottle.Bottle.Grip.position), Is.LessThan(.015f));
+                if (profile.IsCan)
+                {
+                    Assert.That(bottle.Bottle.Cap.gameObject.activeSelf, Is.True, "The ring remains attached after opening.");
+                    SupermarketProductAssetRegistry registry = bottle.Bottle.GetComponentInChildren<SupermarketProductAssetRegistry>();
+                    foreach (SupermarketProductPartBinding part in registry.Parts)
+                        if (part.Role == "can_body") Assert.That(part.Renderer.sharedMaterial.renderQueue, Is.LessThan(2500), "Aluminium stays opaque.");
+                }
+                Capture("drink-" + item + "-carry", true);
+                int sips = bottle.CompletedSips;
+                input.Press(mouse.leftButton, queueEventOnly: true); yield return null;
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Sipping, "Drink failed to reach the mouth.");
+                yield return new WaitForEndOfFrame();
+                Assert.That(bottle.MouthContactError, Is.LessThan(.015f));
+                Capture("drink-" + item + "-mouth", true, bottle.Bottle.Mouth.position, new Vector3(1f,.25f,1f), .20f);
+                yield return Await(() => bottle.CompletedSips == sips + 1 && bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying,
+                    "One click must commit exactly one swallow.");
+                int remaining = GameSessionState.DrinkRemainingMl(item);
+                Assert.That(remaining, Is.EqualTo(profile.FullMl - profile.FullMl / profile.SipCount));
+                Assert.That(GameSessionState.TryDrinkContainerSip(item, id, profile.FullMl, out _), Is.False, "A stale swallow cannot debit twice.");
+                yield return InventoryToggle(false, itemId: item);
+                Assert.That(GameSessionState.DrinkRemainingMl(item), Is.EqualTo(remaining));
+                Assert.That(GameSessionState.TryDrinkContainerSip(item, id, remaining, out _), Is.False, "An unequipped drink cannot consume.");
+                if (profile.IsCan) Assert.That(GameSessionState.DrinkOpened(item), Is.True);
+                yield return InventoryToggle(true, itemId: item);
+                yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying, "Re-equipped drink lost its carry state.");
+                Assert.That(GameSessionState.DrinkContainerId(item), Is.EqualTo(id));
+                Assert.That(bottle.Bottle.Remaining, Is.EqualTo((float)remaining / profile.FullMl).Within(.001f));
+                bottle.enabled = false; yield return null; bottle.enabled = true;
+                yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying, "Presentation cleanup lost the session container.");
+                Assert.That(GameSessionState.DrinkRemainingMl(item), Is.EqualTo(remaining));
+                Assert.That(GameSessionState.DrinkContainerId(item), Is.EqualTo(id));
+                yield return InventoryToggle(false, itemId: item);
+            }
+            Assert.That(player.GameObject.GetComponents<PlayerVodkaBottleController>(), Has.Length.EqualTo(1));
+            FootstepGroundKind[] canSurfaces = { FootstepGroundKind.Concrete, FootstepGroundKind.Metal,
+                FootstepGroundKind.Wood, FootstepGroundKind.Soil };
+            RetroSfxId[] surfaceCues = { RetroSfxId.FootstepConcrete, RetroSfxId.FootstepMetal,
+                RetroSfxId.FootstepWood, RetroSfxId.FootstepSoil };
+            for (int index = 0; index < canSurfaces.Length; index++)
+            {
+                FootstepGroundKind kind = canSurfaces[index];
+                Assert.That(ThrownVodkaBottle.ShouldBreak(InventoryItemId.BeerCan, kind, 100f), Is.False);
+                Vector3 drop = new Vector3(2204f + index * 2f, 0f, 2200f);
+                MakeFloor("Can drop " + kind, drop + Vector3.up * .15f, new Vector3(1.5f, .3f, 1.5f), kind);
+                VodkaBottleView can = VodkaBottleView.Create(fixture.transform, InventoryItemId.BeerCan);
+                can.transform.position = drop + Vector3.up * 2f;
+                ThrownVodkaBottle released = ThrownVodkaBottle.Release(can, Vector3.down * 8f, Vector3.right * 2f,
+                    player.GameObject.transform);
+                Physics.SyncTransforms();
+                yield return Await(() => released.ImpactCount > 0, "Can failed to contact " + kind);
+                Assert.That(released.IsBroken, Is.False, "Aluminium cannot become glass shards.");
+                Assert.That(released.ActiveShardCount, Is.Zero);
+                Assert.That(released.GetComponent<WarehouseFishLampBurstAudio>(), Is.Null, "A can must not own the glass fracture audio.");
+                Assert.That(released.LastCanImpactSurface, Is.EqualTo(kind));
+                Assert.That(released.LastCanImpactCue, Is.EqualTo(surfaceCues[index]));
+                Assert.That(released.LastCanMetalVolume, Is.GreaterThan(0f));
+                Object.Destroy(released.gameObject); yield return null;
+            }
+            Assert.That(ThrownVodkaBottle.CanMetalImpactVolume(FootstepGroundKind.Soil),
+                Is.LessThan(ThrownVodkaBottle.CanMetalImpactVolume(FootstepGroundKind.Wood)));
+            Assert.That(ThrownVodkaBottle.CanMetalImpactVolume(FootstepGroundKind.Wood),
+                Is.LessThan(ThrownVodkaBottle.CanMetalImpactVolume(FootstepGroundKind.Metal)));
+        }
+
+        [UnityTest]
         public IEnumerator InventoryWalkingSipPersistenceAndLastSipThrow()
         {
             AssertLiquidAndDoseContracts();
@@ -1004,12 +1132,12 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private IEnumerator InventoryToggle(bool equip, bool holdMouse = false)
+        private IEnumerator InventoryToggle(bool equip, bool holdMouse = false, InventoryItemId itemId = InventoryItemId.VodkaBottle)
         {
             Assert.That(inventory.Open(), Is.True);
             int item = -1;
             for (int i = 0; i < GameSessionState.InventoryItems.Count; i++)
-                if (GameSessionState.InventoryItems[i].ItemId == InventoryItemId.VodkaBottle) item = i;
+                if (GameSessionState.InventoryItems[i].ItemId == itemId) item = i;
             Assert.That(item, Is.GreaterThanOrEqualTo(0));
             if (inventory.SelectedItemIndex != item) Assert.That(inventory.SelectItem(item), Is.True);
             yield return null;

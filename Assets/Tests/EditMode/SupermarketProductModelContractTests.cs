@@ -69,10 +69,14 @@ namespace BarPromenade.Tests.EditMode
                 InventoryItemId.ChickenEgg,
                 "Chicken Egg",
                 new[] { "carton", "shell", "shell_mark" }),
+            new ProductContract("beer_can", "ITEM_beer_can", InventoryItemId.BeerCan, "Beer Can",
+                new[] { "can_body", "label", "rim", "cap", "can_seal", "liquid", "liquid_surface" }),
+            new ProductContract("wine_bottle", "ITEM_wine_bottle", InventoryItemId.WineBottle, "Wine Bottle",
+                new[] { "glass", "label", "cap", "liquid", "liquid_surface" }),
         };
 
         [Test]
-        public void Manifest_DeclaresSixGroundedPassiveBudgetedItems()
+        public void Manifest_DeclaresEightGroundedPassiveBudgetedItems()
         {
             ProductManifest manifest = LoadManifest();
 
@@ -287,7 +291,7 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(binding.Renderer.sharedMaterials,
                             Has.Length.EqualTo(1));
                         Assert.That(binding.Renderer.sharedMaterial,
-                            Is.SameAs(contract.ItemId == InventoryItemId.VodkaBottle
+                            Is.SameAs(DrinkContainerCatalog.IsDrink(contract.ItemId)
                                 ? VodkaBottleView.MaterialFor(binding.Role) : RuntimePrimitiveFactory.DefaultMaterial));
                         Assert.That(binding.Renderer.shadowCastingMode,
                             Is.EqualTo(ShadowCastingMode.On));
@@ -303,6 +307,7 @@ namespace BarPromenade.Tests.EditMode
                             if (binding.Role == "glass") expectedTint[3] = .18f;
                             if (binding.Role == "liquid" || binding.Role == "liquid_surface") expectedTint[3] = .48f;
                         }
+                        if (contract.ItemId == InventoryItemId.WineBottle && binding.Role == "glass") expectedTint[3] = .32f;
                         AssertColor(
                             block.GetColor(Shader.PropertyToID("_BaseColor")),
                             expectedTint,
@@ -317,7 +322,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Factory_UsesAllSixPrefabsAndKeepsSmallOpenCanFitSafe()
+        public void Factory_UsesAllEightPrefabsAndKeepsSmallOpenCanFitSafe()
         {
             var parent = new GameObject("Product Factory Contract Parent");
             try

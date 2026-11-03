@@ -1874,7 +1874,7 @@
     },
     {"key":"inventory.action.bottle.draw","value":"ВЗЯТЬ В РУКУ"},
     {"key":"inventory.action.bottle.stow","value":"УБРАТЬ"},
-    {"key":"inventory.use.failure.equip_bottle","value":"Сначала возьмите бутылку в руку."},
+    {"key":"inventory.use.failure.equip_bottle","value":"Сначала возьмите напиток в руку."},
     {"key":"inventory.bottle.remaining","value":"Осталось {0} мл"},
     {"key":"inventory.bottle.sip_hint","value":"ЛКМ — сделать глоток"},
     {
@@ -1969,6 +1969,10 @@
       "key": "inventory.item.lighter.description",
       "value": "Дешёвая металлическая зажигалка. Слабо пахнет табаком."
     },
+    {"key":"inventory.item.beer_can.name","value":"Банка пива"},
+    {"key":"inventory.item.beer_can.description","value":"Светлое пиво в жестяной банке. На крышке засохла пыль."},
+    {"key":"inventory.item.wine_bottle.name","value":"Бутылка вина"},
+    {"key":"inventory.item.wine_bottle.description","value":"Тёмное стекло и дешёвое креплёное вино. Крышка пахнет металлом."},
     {
       "key": "inventory.item.vodka_bottle.name",
       "value": "Бутылка водки"

@@ -110,7 +110,7 @@ namespace BarPromenade.Tests.PlayMode
                     var actor = Object.FindAnyObjectByType<SupermarketCashierAssetRegistry>();
                     Assert.That(actor, Is.Not.Null);
                     Assert.That(actor.DesignId, Is.EqualTo("supermarket_cashier_v1"));
-                    Assert.That(actor.SourceTriangleCount, Is.InRange(4500, 8000));
+                    Assert.That(actor.SourceTriangleCount, Is.InRange(4500, 12000));
                     return PrincipalActorShots("normal-cashier", actor.transform, actor.Head);
                 });
 

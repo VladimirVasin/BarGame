@@ -280,29 +280,20 @@ namespace BarPromenade.Tests.PlayMode
             AssertSelectedProductCentered(root, dryShelf);
             AssertNavigationArrowsFlankSelectedProduct(root);
 
-            Assert.That(root.ShelfShop.MoveSelection(1), Is.True);
-            Assert.That(root.ShelfShop.ActiveShelf, Is.SameAs(dryShelf));
-            Assert.That(root.ShelfShop.SelectedIndex, Is.EqualTo(1));
-            AssertSelectedProductCentered(root, dryShelf);
-
-            Assert.That(root.ShelfShop.MoveSelection(1), Is.True);
-            Assert.That(root.ShelfShop.ActiveShelf, Is.SameAs(pantryShelf));
-            Assert.That(root.ShelfShop.SelectedIndex, Is.Zero);
-            AssertSelectedProductCentered(root, pantryShelf);
-
-            Assert.That(root.ShelfShop.MoveSelection(1), Is.True);
-            Assert.That(root.ShelfShop.ActiveShelf, Is.SameAs(pantryShelf));
-            Assert.That(root.ShelfShop.SelectedIndex, Is.EqualTo(1));
-            AssertSelectedProductCentered(root, pantryShelf);
-
-            Assert.That(root.ShelfShop.MoveSelection(1), Is.True);
-            Assert.That(root.ShelfShop.ActiveShelf, Is.SameAs(coldShelf));
-            AssertSelectedProductCentered(root, coldShelf);
-
+            var ordered = new List<SupermarketProductView>();
+            foreach (SupermarketShelfView shelf in root.World.Shelves)
+                foreach (SupermarketProductView product in shelf.Products) ordered.Add(product);
+            Assert.That(ordered.Count, Is.EqualTo(SupermarketProductCatalog.Offers.Count));
+            for (int index = 1; index < ordered.Count; index++)
+            {
+                Assert.That(root.ShelfShop.MoveSelection(1), Is.True);
+                Assert.That(root.ShelfShop.SelectedProduct, Is.SameAs(ordered[index]));
+                AssertSelectedProductCentered(root, ordered[index].Shelf);
+                AssertNavigationArrowsFlankSelectedProduct(root);
+            }
             Assert.That(root.ShelfShop.MoveSelection(-1), Is.True);
-            Assert.That(root.ShelfShop.ActiveShelf, Is.SameAs(pantryShelf));
-            Assert.That(root.ShelfShop.SelectedIndex, Is.EqualTo(1));
-            AssertSelectedProductCentered(root, pantryShelf);
+            Assert.That(root.ShelfShop.SelectedProduct, Is.SameAs(ordered[ordered.Count - 2]));
+            AssertSelectedProductCentered(root, ordered[ordered.Count - 2].Shelf);
 
             root.ShelfShop.Exit();
             Assert.That(root.ShelfShop.IsOpen, Is.False);

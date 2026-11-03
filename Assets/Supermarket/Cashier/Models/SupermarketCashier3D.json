@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-supermarket-cashier-3d-model.py",
-  "generator_version": "2.0.0",
+  "generator_version": "3.1.0",
   "joint_surfaces": {
     "contract": "character_joint_surfaces_v1",
     "source_space": "blender_z_up_minus_y_forward",
@@ -787,7 +787,7 @@
       }
     ]
   },
-  "blender_version": "5.0.1",
+  "blender_version": "5.2.3 LTS",
   "design_id": "supermarket_cashier_v1",
   "display_name": "Supermarket Cashier",
   "seed": 731209,
@@ -801,31 +801,31 @@
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
   "mesh_count": 40,
-  "triangle_count": 6828,
+  "triangle_count": 9088,
   "triangle_budget": [
     4500,
-    8000
+    12000
   ],
   "pool_eligible": false,
   "pivot_names": [],
   "bounds_min": [
-    -0.770942,
+    -0.776524,
     -0.218566,
     0.0
   ],
   "bounds_max": [
-    0.772942,
-    0.137239,
+    0.778525,
+    0.139565,
     1.75
   ],
-  "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
+  "material_asset": "Assets/Resources/Materials/RuntimePrimitiveLit.mat",
   "emissive": false,
   "colliders": false,
   "lights": false,
   "rigidbodies": false,
   "animation_count": 0,
   "animations": [],
-  "build_signature": "bc4f0768cb821c1f5c4cc006a7a95ffd85afc83cb535a24eec937aab77d0586d",
+  "build_signature": "5b9748fa214227d489163f81180b20b29b685e5980a1e5ebd689249460a85c8e",
   "neck_design": "fixed_human_v1",
   "neck_segment_count": 0,
   "neck_rest_length_m": 0.127883,
@@ -834,23 +834,23 @@
   "eye_design": "wide_watcher_asymmetric",
   "texture_bindings": [
     {
-      "texture_asset": "Assets/Supermarket/Cashier/Textures/SupermarketCashier3DDetailAtlas.png",
-      "sha256": "078e23ee55612cb1408614c30a127f164d0e865a493d390e08146e48627a6db0",
+      "texture_asset": "Assets/Supermarket/Cashier/Textures/SupermarketCashier3DSurfaceAtlas.png",
+      "sha256": "f94472eb8438786adaafaa0bc13e3f91e7344ad8297f8df63d38dadf73407495",
       "size": [
-        256,
-        256
+        512,
+        512
       ],
       "regions": [
         {
           "name": "VestFront.L",
           "renderer": "CLO_VestFront.L",
           "rect_px": [
-            64,
             0,
-            64,
-            64
+            0,
+            128,
+            256
           ],
-          "kind": "box"
+          "kind": "surface"
         },
         {
           "name": "VestFront.R",
@@ -858,109 +858,329 @@
           "rect_px": [
             128,
             0,
-            64,
-            64
+            128,
+            256
           ],
-          "kind": "box"
+          "kind": "surface"
         },
         {
           "name": "VestBack",
           "renderer": "CLO_VestBack",
           "rect_px": [
-            192,
+            256,
             0,
-            64,
-            64
+            128,
+            256
           ],
-          "kind": "box"
+          "kind": "surface"
         },
         {
-          "name": "ShirtBib",
+          "name": "Shirt.GEO_Torso",
+          "renderer": "GEO_Torso",
+          "rect_px": [
+            384,
+            0,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Shirt.CLO_ShirtBib",
           "renderer": "CLO_ShirtBib",
           "rect_px": [
+            384,
             0,
-            64,
-            64,
-            64
+            128,
+            128
           ],
-          "kind": "box"
+          "kind": "surface"
         },
         {
-          "name": "Collar",
+          "name": "Shirt.CLO_TightCollar",
           "renderer": "CLO_TightCollar",
           "rect_px": [
-            64,
-            64,
-            64,
-            64
-          ],
-          "kind": "ring"
-        },
-        {
-          "name": "Sleeve.L",
-          "renderer": "GEO_Forearm.L",
-          "rect_px": [
-            128,
-            64,
-            64,
-            64
-          ],
-          "kind": "ring"
-        },
-        {
-          "name": "Sleeve.R",
-          "renderer": "GEO_Forearm.R",
-          "rect_px": [
-            192,
-            64,
-            64,
-            64
-          ],
-          "kind": "ring"
-        },
-        {
-          "name": "Trouser.L",
-          "renderer": "GEO_Thigh.L",
-          "rect_px": [
+            384,
             0,
             128,
-            64,
-            64
+            128
           ],
-          "kind": "ring"
+          "kind": "surface"
         },
         {
-          "name": "Trouser.R",
+          "name": "Shirt.GEO_UpperArm.L",
+          "renderer": "GEO_UpperArm.L",
+          "rect_px": [
+            384,
+            0,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Shirt.GEO_UpperArm.R",
+          "renderer": "GEO_UpperArm.R",
+          "rect_px": [
+            384,
+            0,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Shirt.GEO_Forearm.L",
+          "renderer": "GEO_Forearm.L",
+          "rect_px": [
+            384,
+            0,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Shirt.GEO_Forearm.R",
+          "renderer": "GEO_Forearm.R",
+          "rect_px": [
+            384,
+            0,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Trouser.GEO_Pelvis",
+          "renderer": "GEO_Pelvis",
+          "rect_px": [
+            384,
+            128,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Trouser.GEO_Thigh.L",
+          "renderer": "GEO_Thigh.L",
+          "rect_px": [
+            384,
+            128,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Trouser.GEO_Thigh.R",
           "renderer": "GEO_Thigh.R",
           "rect_px": [
-            64,
+            384,
             128,
-            64,
-            64
+            128,
+            128
           ],
-          "kind": "ring"
+          "kind": "surface"
         },
         {
-          "name": "Sole.L",
+          "name": "Trouser.GEO_Shin.L",
+          "renderer": "GEO_Shin.L",
+          "rect_px": [
+            384,
+            128,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Trouser.GEO_Shin.R",
+          "renderer": "GEO_Shin.R",
+          "rect_px": [
+            384,
+            128,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "HeadSkin",
+          "renderer": "GEO_Head",
+          "rect_px": [
+            0,
+            256,
+            256,
+            256
+          ],
+          "kind": "head"
+        },
+        {
+          "name": "Skin.GEO_Neck",
+          "renderer": "GEO_Neck",
+          "rect_px": [
+            256,
+            256,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Skin.GEO_Hand.L",
+          "renderer": "GEO_Hand.L",
+          "rect_px": [
+            256,
+            256,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Skin.GEO_Hand.R",
+          "renderer": "GEO_Hand.R",
+          "rect_px": [
+            256,
+            256,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Skin.GEO_Thumb.L",
+          "renderer": "GEO_Thumb.L",
+          "rect_px": [
+            256,
+            256,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Skin.GEO_Thumb.R",
+          "renderer": "GEO_Thumb.R",
+          "rect_px": [
+            256,
+            256,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Skin.FACE_Ear.L",
+          "renderer": "FACE_Ear.L",
+          "rect_px": [
+            256,
+            256,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Skin.FACE_Ear.R",
+          "renderer": "FACE_Ear.R",
+          "rect_px": [
+            256,
+            256,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Skin.FACE_Nose",
+          "renderer": "FACE_Nose",
+          "rect_px": [
+            256,
+            256,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Skin.FACE_Mouth",
+          "renderer": "FACE_Mouth",
+          "rect_px": [
+            256,
+            256,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "CombedHair",
+          "renderer": "HAIR_FlatCombover",
+          "rect_px": [
+            384,
+            256,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Leather.GEO_Foot.L",
+          "renderer": "GEO_Foot.L",
+          "rect_px": [
+            256,
+            384,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Leather.GEO_Foot.R",
+          "renderer": "GEO_Foot.R",
+          "rect_px": [
+            256,
+            384,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Leather.CLO_Belt",
+          "renderer": "CLO_Belt",
+          "rect_px": [
+            256,
+            384,
+            128,
+            128
+          ],
+          "kind": "surface"
+        },
+        {
+          "name": "Rubber.CLO_ShoeSole.L",
           "renderer": "CLO_ShoeSole.L",
           "rect_px": [
+            384,
+            384,
             128,
-            128,
-            64,
-            64
+            128
           ],
-          "kind": "box"
+          "kind": "surface"
         },
         {
-          "name": "Sole.R",
+          "name": "Rubber.CLO_ShoeSole.R",
           "renderer": "CLO_ShoeSole.R",
           "rect_px": [
-            192,
+            384,
+            384,
             128,
-            64,
-            64
+            128
           ],
-          "kind": "box"
+          "kind": "surface"
         }
       ]
     }
@@ -1472,8 +1692,8 @@
         0.355,
         1.0
       ],
-      "vertices": 98,
-      "triangles": 192
+      "vertices": 20,
+      "triangles": 36
     },
     {
       "name": "CLO_ShoeSole.L",
@@ -1528,8 +1748,8 @@
         0.1,
         1.0
       ],
-      "vertices": 98,
-      "triangles": 192
+      "vertices": 156,
+      "triangles": 308
     },
     {
       "name": "CLO_VestButton.01",
@@ -1542,8 +1762,8 @@
         0.22,
         1.0
       ],
-      "vertices": 26,
-      "triangles": 48
+      "vertices": 42,
+      "triangles": 80
     },
     {
       "name": "CLO_VestButton.02",
@@ -1556,8 +1776,8 @@
         0.22,
         1.0
       ],
-      "vertices": 26,
-      "triangles": 48
+      "vertices": 42,
+      "triangles": 80
     },
     {
       "name": "CLO_VestFront.L",
@@ -1570,8 +1790,8 @@
         0.135,
         1.0
       ],
-      "vertices": 230,
-      "triangles": 448
+      "vertices": 258,
+      "triangles": 468
     },
     {
       "name": "CLO_VestFront.R",
@@ -1584,8 +1804,8 @@
         0.18,
         1.0
       ],
-      "vertices": 230,
-      "triangles": 448
+      "vertices": 258,
+      "triangles": 468
     },
     {
       "name": "FACE_Brow.L",
@@ -1598,8 +1818,8 @@
         0.085,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 64,
+      "triangles": 112
     },
     {
       "name": "FACE_Brow.R",
@@ -1612,8 +1832,8 @@
         0.085,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 64,
+      "triangles": 112
     },
     {
       "name": "FACE_Ear.L",
@@ -1626,8 +1846,8 @@
         0.3,
         1.0
       ],
-      "vertices": 26,
-      "triangles": 48
+      "vertices": 206,
+      "triangles": 360
     },
     {
       "name": "FACE_Ear.R",
@@ -1640,8 +1860,8 @@
         0.3,
         1.0
       ],
-      "vertices": 26,
-      "triangles": 48
+      "vertices": 206,
+      "triangles": 360
     },
     {
       "name": "FACE_EyeWhite.L",
@@ -1654,8 +1874,8 @@
         0.825,
         1.0
       ],
-      "vertices": 26,
-      "triangles": 48
+      "vertices": 114,
+      "triangles": 224
     },
     {
       "name": "FACE_EyeWhite.R",
@@ -1668,8 +1888,8 @@
         0.825,
         1.0
       ],
-      "vertices": 26,
-      "triangles": 48
+      "vertices": 114,
+      "triangles": 224
     },
     {
       "name": "FACE_Mouth",
@@ -1682,8 +1902,8 @@
         0.3,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 84,
+      "triangles": 140
     },
     {
       "name": "FACE_Nose",
@@ -1696,8 +1916,8 @@
         0.47,
         1.0
       ],
-      "vertices": 26,
-      "triangles": 48
+      "vertices": 186,
+      "triangles": 356
     },
     {
       "name": "FACE_Pupil.L",
@@ -1710,8 +1930,8 @@
         0.022,
         1.0
       ],
-      "vertices": 26,
-      "triangles": 48
+      "vertices": 62,
+      "triangles": 120
     },
     {
       "name": "FACE_Pupil.R",
@@ -1724,8 +1944,8 @@
         0.022,
         1.0
       ],
-      "vertices": 26,
-      "triangles": 48
+      "vertices": 62,
+      "triangles": 120
     },
     {
       "name": "GEO_Foot.L",
@@ -1794,8 +2014,8 @@
         0.415,
         1.0
       ],
-      "vertices": 176,
-      "triangles": 332
+      "vertices": 252,
+      "triangles": 484
     },
     {
       "name": "GEO_Hand.R",
@@ -1808,8 +2028,8 @@
         0.415,
         1.0
       ],
-      "vertices": 176,
-      "triangles": 332
+      "vertices": 252,
+      "triangles": 484
     },
     {
       "name": "GEO_Head",
@@ -1822,8 +2042,8 @@
         0.415,
         1.0
       ],
-      "vertices": 200,
-      "triangles": 396
+      "vertices": 316,
+      "triangles": 596
     },
     {
       "name": "GEO_Neck",
@@ -1836,8 +2056,8 @@
         0.5,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 80,
+      "triangles": 156
     },
     {
       "name": "GEO_Pelvis",
@@ -1920,8 +2140,8 @@
         0.3,
         1.0
       ],
-      "vertices": 32,
-      "triangles": 60
+      "vertices": 48,
+      "triangles": 92
     },
     {
       "name": "GEO_Thumb.R",
@@ -1934,8 +2154,8 @@
         0.3,
         1.0
       ],
-      "vertices": 32,
-      "triangles": 60
+      "vertices": 48,
+      "triangles": 92
     },
     {
       "name": "GEO_Torso",
@@ -1948,8 +2168,8 @@
         0.355,
         1.0
       ],
-      "vertices": 304,
-      "triangles": 596
+      "vertices": 180,
+      "triangles": 356
     },
     {
       "name": "GEO_UpperArm.L",

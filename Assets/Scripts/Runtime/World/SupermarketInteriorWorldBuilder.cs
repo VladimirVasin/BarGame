@@ -76,8 +76,10 @@ namespace BarPromenade
 
                 Transform checkout = BuildCheckout(root, plan);
                 BuildStockroomFacade(root, plan);
+                Bounds baskets = SupermarketInteriorLayoutPlanner.EntranceBasketBounds;
+                CreatePhysicsBox("Entrance Basket Stack Collision", root, baskets.center, baskets.size);
 
-                // The 3D Watcher Cashier is built by the interior root
+                // The ordinary cashier is built by the interior root
                 // after the player exists — he needs a hero to stare at.
                 return new SupermarketInteriorWorldResult(
                     root,
@@ -117,6 +119,10 @@ namespace BarPromenade
             RequireAnchor(assetRegistry, "shelf_pantry");
             RequireAnchor(assetRegistry, "shelf_cold");
             RequireAnchor(assetRegistry, "checkout");
+            RequireAnchor(assetRegistry, "checkout_hand_a");
+            RequireAnchor(assetRegistry, "checkout_hand_b");
+            RequireAnchor(assetRegistry, "checkout_customer");
+            RequireAnchor(assetRegistry, "checkout_light");
             RequireAnchor(assetRegistry, "stockroom");
             RequireAnchor(assetRegistry, "cashier");
             RequireAnchor(assetRegistry, "product_instant_noodles");
@@ -124,6 +130,9 @@ namespace BarPromenade
             RequireAnchor(assetRegistry, "product_vodka_bottle");
             RequireAnchor(assetRegistry, "product_closed_stew_can");
             RequireAnchor(assetRegistry, "product_chicken_egg");
+            RequireAnchor(assetRegistry, "product_beer_can");
+            RequireAnchor(assetRegistry, "product_wine_bottle");
+            RequireAnchor(assetRegistry, "door_hinge");
             for (int index = 1; index <= 4; index++)
             {
                 RequireAnchor(assetRegistry, $"cctv_head_{index:00}");
@@ -612,6 +621,7 @@ namespace BarPromenade
                     selectionCollider,
                     shelfView);
                 shelfView.RegisterProduct(productView);
+                SupermarketStockDisplay.Build(shelfRoot, plan, slot, model, renderers);
                 BuildProductPriceTag(
                     shelfRoot,
                     model,
@@ -635,6 +645,10 @@ namespace BarPromenade
                     return "product_closed_stew_can";
                 case InventoryItemId.ChickenEgg:
                     return "product_chicken_egg";
+                case InventoryItemId.BeerCan:
+                    return "product_beer_can";
+                case InventoryItemId.WineBottle:
+                    return "product_wine_bottle";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(itemId),

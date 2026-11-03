@@ -1165,7 +1165,7 @@ namespace BarPromenade
                     itemCount);
             }
 
-            if (itemId == InventoryItemId.VodkaBottle)
+            if (DrinkContainerCatalog.IsDrink(itemId))
                 return CreateInventoryItemUseResult(InventoryItemUseStatus.RequiresEquipment, itemId,
                     definition.Kind, itemCount, itemCount);
 

@@ -28,6 +28,9 @@ namespace BarPromenade
         private IInteractable pendingInteraction;
         private float elapsed, displayedMl, beforeSipMl;
         private int bottleId, resumeAfterFrame;
+        private InventoryItemId itemId = InventoryItemId.VodkaBottle;
+        public InventoryItemId ItemId => itemId;
+        private DrinkContainerProfile Profile => DrinkContainerCatalog.Get(itemId);
         private bool freshClick = true, repeatWhileHeld, gulpPending, committed, released, rightCaptured, leftCaptured;
         private Vector3 gripLocal, mouthLocal, capLocal;
         private Quaternion capRotation;
@@ -83,7 +86,8 @@ namespace BarPromenade
         }
 
         private Transform Bone(Player3DAnatomicalPart part) => visual.Registry.TryGetPart(part, out var binding) ? binding.Bone : null;
-        private bool Equipped => GameSessionState.IsInventoryItemEquipped(InventoryItemId.VodkaBottle);
+        private bool Equipped => Phase == BottlePhase.Hidden ? GameSessionState.EquippedDrinkItem != InventoryItemId.None :
+            GameSessionState.EquippedDrinkItem == itemId;
         private bool Paused => GameTimeScaleRuntime.IsPaused || PauseMenuController.IsAnyPaused;
         private bool SeatedEquipment => interaction != null && interaction.AllowsHandEquipment;
         private bool SeatSipReady => SeatedEquipment && interaction.Phase == PlayerAnimatedInteractionPhase.Looping &&
@@ -159,9 +163,9 @@ namespace BarPromenade
             if (Phase == BottlePhase.Sipping && !committed && progress >= PlayerVodkaActions.SipCommitProgress)
             {
                 committed = true;
-                if (GameSessionState.TryDrinkVodkaSip(bottleId, Mathf.RoundToInt(beforeSipMl), out var result))
+                if (GameSessionState.TryDrinkContainerSip(itemId, bottleId, Mathf.RoundToInt(beforeSipMl), out var result))
                 { CompletedSips++; displayedMl = result.RemainingMl; emptyBottle = result.Emptied; gulpPending = true; }
-                else { displayedMl = GameSessionState.VodkaBottleRemainingMl; repeatWhileHeld = false; }
+                else { displayedMl = GameSessionState.DrinkRemainingMl(itemId); repeatWhileHeld = false; }
             }
             // Release is applied after this frame's final IK/contact pose in LateUpdate.
             if (Phase == BottlePhase.Throwing && progress >= PlayerVodkaActions.ThrowReleaseProgress) released = true;
@@ -173,10 +177,12 @@ namespace BarPromenade
             {
                 case BottlePhase.Drawing:
                     if (stowRequested) StartPhase(BottlePhase.Stowing, PlayerVodkaActions.StowClip);
+                    else if (Bottle.IsOpened) Carry();
                     else StartPhase(BottlePhase.Opening, PlayerVodkaActions.OpenClip);
                     break;
                 case BottlePhase.Opening:
                     Bottle.SetOpened(true);
+                    GameSessionState.SetDrinkOpened(itemId, bottleId, true);
                     if (stowRequested) BeginCloseOrStow(); else Carry();
                     break;
                 case BottlePhase.Raising:
@@ -184,7 +190,7 @@ namespace BarPromenade
                     else BeginSip();
                     break;
                 case BottlePhase.Sipping:
-                    if (!emptyBottle && !stowRequested && !pendingSeatHandoff && repeatWhileHeld && held && CanRead && GameSessionState.CanDrinkVodkaSip)
+                    if (!emptyBottle && !stowRequested && !pendingSeatHandoff && repeatWhileHeld && held && CanRead && GameSessionState.CanDrinkContainerSip(itemId))
                         BeginSip();
                     else StartPhase(BottlePhase.Lowering, PlayerVodkaActions.LowerClip);
                     break;
@@ -197,6 +203,7 @@ namespace BarPromenade
                 case BottlePhase.Closing:
                     Bottle.Cap.localPosition = capLocal; Bottle.Cap.localRotation = capRotation;
                     Bottle.SetOpened(false);
+                    GameSessionState.SetDrinkOpened(itemId, bottleId, false);
                     StartPhase(BottlePhase.Stowing, PlayerVodkaActions.StowClip);
                     break;
                 case BottlePhase.CheckingEmpty:
@@ -224,14 +231,17 @@ namespace BarPromenade
 
         private void BeginCloseOrStow()
         {
-            StartPhase(Bottle.IsOpened ? BottlePhase.Closing : BottlePhase.Stowing,
-                Bottle.IsOpened ? PlayerVodkaActions.CloseClip : PlayerVodkaActions.StowClip);
+            bool close = Bottle.IsOpened && !Profile.IsCan;
+            StartPhase(close ? BottlePhase.Closing : BottlePhase.Stowing,
+                close ? PlayerVodkaActions.CloseClip : PlayerVodkaActions.StowClip);
         }
 
         private bool Prepare()
         {
             if (!PlayerVodkaActions.TryAttach(visual.Registry)) return false;
-            if (Bottle == null) Bottle = VodkaBottleView.Create(transform);
+            itemId = GameSessionState.EquippedDrinkItem;
+            if (!DrinkContainerCatalog.IsDrink(itemId)) return false;
+            if (Bottle == null) Bottle = VodkaBottleView.Create(transform, itemId);
             if (Bottle == null) return false;
             if (coatDock == null)
             {
@@ -256,21 +266,22 @@ namespace BarPromenade
             equipmentContacts ??= visual.Registry.GetComponent<PlayerEquipmentContacts>() ??
                 visual.Registry.gameObject.AddComponent<PlayerEquipmentContacts>();
             equipmentContacts.Register(this, new[] { coatDock }, Bottle.gameObject);
-            bottleId = GameSessionState.VodkaBottleId;
+            bottleId = GameSessionState.DrinkContainerId(itemId);
             emptyBottle = stowRequested = pendingSeatHandoff = false;
-            displayedMl = GameSessionState.VodkaBottleRemainingMl;
+            displayedMl = GameSessionState.DrinkRemainingMl(itemId);
             gripLocal = Bottle.transform.InverseTransformPoint(Bottle.Grip.position);
             mouthLocal = Bottle.transform.InverseTransformPoint(Bottle.Mouth.position);
             if (Bottle.Cap != null)
             { capLocal = Bottle.Cap.localPosition; capRotation = Bottle.Cap.localRotation; }
-            Bottle.SetOpened(false); Bottle.SetRemaining(displayedMl / 500f);
-            rightCaptured = hands.TryCaptureGrip(this, false, NpcHandGripKind.Bottle, exclusive: true);
+            Bottle.SetOpened(GameSessionState.DrinkOpened(itemId)); Bottle.SetRemaining(displayedMl / Profile.FullMl);
+            rightFrame = hands.GetAnatomicalFrame(false, Profile.GripKind);
+            rightCaptured = hands.TryCaptureGrip(this, false, Profile.GripKind, exclusive: true);
             return rightCaptured;
         }
 
         public bool TrySip()
         {
-            if (Phase != BottlePhase.Carrying || !CanRead || !GameSessionState.CanDrinkVodkaSip) return false;
+            if (Phase != BottlePhase.Carrying || !CanRead || !GameSessionState.CanDrinkContainerSip(itemId)) return false;
             beforeSipMl = displayedMl; committed = false;
             repeatWhileHeld = GameInput.IsHeld(GameInputAction.VodkaSip, GameInputContext.Menu);
             mouthAccess ??= PlayerScarfController.RequireMouthAccess(player, this);
@@ -476,7 +487,7 @@ namespace BarPromenade
                 BottlePhase.Lowering => 1f - Smooth(0f, 1f, progress),
                 _ => 0f
             };
-            float depletion = Smooth(VodkaBottleState.FullMl, PlayerVodkaActions.LastSipPoseMl, shown);
+            float depletion = Smooth(Profile.FullMl, (Profile.FullMl + Profile.SipCount - 1) / Profile.SipCount, shown);
             if (sip > 0f) visual.ApplyEquipmentHeadPitch(this, PlayerVodkaActions.LastDrinkHeadPitchDegrees * depletion * sip);
             else visual.ClearEquipmentHeadPitch(this);
             // The carried bottle is upright; the original wrist follows its
@@ -577,7 +588,11 @@ namespace BarPromenade
                 Bottle.transform.position = grip - rotation * gripLocal;
             }
             hands.SetOwnedGrip(this, false, 1f);
-            if ((Phase == BottlePhase.Opening || Phase == BottlePhase.Closing) && Bottle.Cap != null)
+            if (Phase == BottlePhase.Opening && Profile.IsCan)
+            {
+                PresentCanOpening(progress);
+            }
+            else if ((Phase == BottlePhase.Opening || Phase == BottlePhase.Closing) && Bottle.Cap != null)
             {
                 bool closing = Phase == BottlePhase.Closing;
                 float capProgress = closing ? 1f - progress : progress;
@@ -592,6 +607,7 @@ namespace BarPromenade
                 // separate owners while the hand retrieves/replaces it.
                 Bottle.SetCapPresentation(capProgress >= PlayerVodkaActions.CapOpenProgress,
                     capProgress < PlayerVodkaActions.CapReleaseProgress);
+                GameSessionState.SetDrinkOpened(itemId, bottleId, Bottle.IsOpened);
                 if (touching)
                 {
                     if (!leftCaptured) leftCaptured = hands.TryCaptureGrip(this, true, NpcHandGripKind.Cylindrical, exclusive: true);
@@ -621,7 +637,7 @@ namespace BarPromenade
                 }
                 else if (leftCaptured) { hands.ReleaseGrip(this, true); leftCaptured = false; }
             }
-            Bottle.SetRemaining(shown / VodkaBottleState.FullMl);
+            Bottle.SetRemaining(shown / Profile.FullMl);
             Bottle.RefreshLiquid();
             if (gulpPending)
             {
@@ -642,6 +658,32 @@ namespace BarPromenade
                 ThrownBottles++;
             }
             MarkPresented();
+        }
+
+        private void PresentCanOpening(float progress)
+        {
+            // The retained ring pivots on the lid. The existing left hand reaches
+            // its actual position; there is no detached screw cap on a can.
+            float contact = Smooth(.28f, .44f, progress) * (1f - Smooth(.76f, .92f, progress));
+            bool open = progress >= .64f || GameSessionState.DrinkOpened(itemId);
+            Bottle.SetCapPresentation(open, true);
+            float lift = Smooth(.44f, .64f, progress) * (1f - Smooth(.70f, .88f, progress));
+            Bottle.Cap.localRotation = capRotation * Quaternion.AngleAxis(-70f * lift - (open ? 14f * (1f - lift) : 0f), Vector3.right);
+            if (open) GameSessionState.SetDrinkOpened(itemId, bottleId, true);
+            if (contact > 0f)
+            {
+                if (!leftCaptured) leftCaptured = hands.TryCaptureGrip(this, true, NpcHandGripKind.Cylindrical, exclusive: true);
+                Vector3 ring = Bottle.Cap.position + Bottle.Cap.TransformDirection(Vector3.forward) * .006f;
+                Vector3 outside = Vector3.ProjectOnPlane(leftUpper.position - upper.position, transform.up).normalized;
+                Quaternion wristRotation = leftFrame.ResolveHandRotation(-Bottle.transform.up, -Bottle.transform.forward);
+                Vector3 fingerContact = leftFrame.PalmCentreInHand + leftFrame.FingerDirectionInHand * .055f;
+                Vector3 wristPosition = ring - wristRotation * fingerContact;
+                LimbTwoBoneIk.Solve(leftUpper, leftLower, leftHand, wristPosition, wristRotation,
+                    leftUpper.position + outside * .24f + transform.forward * .22f - transform.up * .10f,
+                    contact, float.PositiveInfinity, true);
+                hands.SetOwnedGrip(this, true, .22f * contact);
+            }
+            else if (leftCaptured) { hands.ReleaseGrip(this, true); leftCaptured = false; }
         }
 
         private void MarkPresented()

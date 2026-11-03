@@ -27,6 +27,8 @@ namespace BarPromenade
     {
         private static readonly SupermarketProductOffer[] offers =
         {
+            new SupermarketProductOffer(InventoryItemId.BeerCan, "inventory.item.beer_can.name", "inventory.item.beer_can.description", 6),
+            new SupermarketProductOffer(InventoryItemId.WineBottle, "inventory.item.wine_bottle.name", "inventory.item.wine_bottle.description", 22),
             new SupermarketProductOffer(
                 InventoryItemId.ChickenEgg,
                 "inventory.item.chicken_egg.name",

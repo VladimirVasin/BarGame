@@ -9,6 +9,9 @@ namespace BarPromenade
         private sealed class InteriorWalkableArea : IWalkableArea
         {
             private readonly Rect bounds;
+            // Only the existing entrance reveal extends the usable floor toward
+            // the real handle. The solid leaf still owns its physical boundary.
+            private static readonly Rect EntranceReveal = new Rect(-1.15f, -5.37f, 2.30f, 1.02f);
 
             public InteriorWalkableArea(Rect walkableBounds)
             {
@@ -17,17 +20,19 @@ namespace BarPromenade
 
             public bool Contains(Vector3 position, float radius = 0f)
             {
-                return position.x >= bounds.xMin + radius &&
-                       position.x <= bounds.xMax - radius &&
-                       position.z >= bounds.yMin + radius &&
-                       position.z <= bounds.yMax - radius;
+                return Contains(bounds, position, radius) || Contains(EntranceReveal, position, radius);
             }
+
+            private static bool Contains(Rect region, Vector3 position, float radius) =>
+                position.x >= region.xMin + radius && position.x <= region.xMax - radius &&
+                position.z >= region.yMin + radius && position.z <= region.yMax - radius;
 
             public Vector3 Constrain(
                 Vector3 currentPosition,
                 Vector3 desiredPosition,
                 float radius)
             {
+                if (Contains(EntranceReveal, desiredPosition, radius)) return desiredPosition;
                 desiredPosition.x = Mathf.Clamp(
                     desiredPosition.x,
                     bounds.xMin + radius,
@@ -91,6 +96,9 @@ namespace BarPromenade
             get;
             private set;
         }
+        public SupermarketLightingPresentation LightingPresentation { get; private set; }
+        public InteriorHingedDoorInteraction EntranceDoor { get; private set; }
+        public BoxCollider EntranceDoorLeaf { get; private set; }
         public InventoryController Inventory { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
@@ -182,6 +190,8 @@ namespace BarPromenade
             phaseTimer.Restart();
             BuildStatus(ui, camera);
             BuildExit();
+            LightingPresentation = gameObject.AddComponent<SupermarketLightingPresentation>();
+            LightingPresentation.Initialize(this);
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(
                 Player,
@@ -220,7 +230,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The 3D Watcher Cashier takes the authored plan anchor behind
+        /// The ordinary cashier takes the authored plan anchor behind
         /// the checkout, tracking the hero; a separate talk-stub
         /// trigger stands on the customer side of the register.
         /// </summary>
@@ -274,7 +284,8 @@ namespace BarPromenade
                     ? playerRegistry.Anchors.Head
                     : null,
                 headLimits,
-                obstacles);
+                obstacles,
+                World.AssetRegistry);
 
             SupermarketCashierPlan plan = Layout.Cashier;
             Quaternion facing = Quaternion.Euler(
@@ -282,7 +293,7 @@ namespace BarPromenade
                 plan.YawDegrees,
                 0f);
             Vector3 forward = facing * Vector3.forward;
-            Vector3 standPosition = plan.Position + forward * 1.55f;
+            Vector3 standPosition = World.AssetRegistry.GetAnchor("checkout_customer").position;
             var trigger = new GameObject("Cashier Talk Stub");
             trigger.transform.SetParent(transform, false);
             trigger.transform.SetPositionAndRotation(
@@ -351,6 +362,30 @@ namespace BarPromenade
             trigger.isTrigger = true;
             trigger.size = Layout.ExitTriggerSize;
             Exit = exit.AddComponent<SupermarketExit>();
+            Transform hinge = World.AssetRegistry.GetAnchor("door_hinge");
+            Transform leaf = new GameObject("Supermarket Solid Entrance Leaf").transform;
+            leaf.position = World.Root.TransformPoint(new Vector3(-.55f, 1.455f, -5.49f));
+            leaf.rotation = World.Root.rotation;
+            leaf.SetParent(hinge, true);
+            EntranceDoorLeaf = leaf.gameObject.AddComponent<BoxCollider>();
+            EntranceDoorLeaf.size = new Vector3(1.08f, 2.85f, .075f);
+            Transform fixedLeaf = new GameObject("Supermarket Fixed Entrance Leaf Collision").transform;
+            fixedLeaf.SetParent(World.Root, false);
+            fixedLeaf.localPosition = new Vector3(.55f, 1.455f, -5.49f);
+            fixedLeaf.gameObject.AddComponent<BoxCollider>().size = new Vector3(1.08f, 2.85f, .075f);
+            // The shared door controller owns hand contact, swept collision and
+            // the complete neutral/enter/open/exit sequence. One E then travels.
+            var owner = new GameObject("Supermarket Entrance Door Action");
+            owner.transform.SetParent(World.Root, false);
+            EntranceDoor = owner.AddComponent<InteriorHingedDoorInteraction>();
+            EntranceDoor.Initialize(Player,
+                Player.GameObject.GetComponent<PlayerAnimatedInteractionController>(),
+                hinge, EntranceDoorLeaf,
+                World.AssetRegistry.GetAnchor("door_handle_outside"),
+                World.AssetRegistry.GetAnchor("door_handle_inside"),
+                World.Root.TransformPoint(new Vector3(-.12f, PlayerFactory.GroundedRootOffset, -4.92f)),
+                World.Root.TransformPoint(new Vector3(-.12f, PlayerFactory.GroundedRootOffset, -4.92f)), 90f);
+            Exit.Initialize(EntranceDoor);
             Vector3 localDock = new Vector3(
                 Layout.ExitPosition.x,
                 PlayerFactory.GroundedRootOffset,

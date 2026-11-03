@@ -33,6 +33,10 @@ namespace BarPromenade.Tests.EditMode
             "shelf_pantry",
             "shelf_cold",
             "checkout",
+            "checkout_hand_a",
+            "checkout_hand_b",
+            "checkout_customer",
+            "checkout_light",
             "stockroom",
             "cashier",
             "cctv_mount_01",
@@ -52,6 +56,11 @@ namespace BarPromenade.Tests.EditMode
             "product_vodka_bottle",
             "product_closed_stew_can",
             "product_chicken_egg",
+            "product_beer_can",
+            "product_wine_bottle",
+            "door_hinge",
+            "door_handle_inside",
+            "door_handle_outside",
         };
 
         private static readonly string[] RequiredPartRoles =
@@ -60,6 +69,12 @@ namespace BarPromenade.Tests.EditMode
             "ceiling",
             "wall",
             "entrance_frame",
+            "door_leaf",
+            "door_glass",
+            "door_handle",
+            "door_trim",
+            "door_backing",
+            "cold_vent",
             "ceiling_grid",
             "fluorescent_housing",
             "fluorescent_tube",
@@ -146,7 +161,7 @@ namespace BarPromenade.Tests.EditMode
             {
                 Assert.That(part.name, Is.Not.Null.And.Not.Empty);
                 Assert.That(part.role, Is.Not.Null.And.Not.Empty, part.name);
-                Assert.That(part.group, Is.EqualTo("fixed"), part.name);
+                Assert.That(part.group, Is.EqualTo("fixed").Or.EqualTo("door"), part.name);
                 Assert.That(
                     string.IsNullOrEmpty(part.sheet) ||
                     allowedSheets.Contains(part.sheet),
@@ -289,13 +304,17 @@ namespace BarPromenade.Tests.EditMode
                         ToColor(authored.base_color),
                         part.SourceName);
                     Assert.That(part.Renderer, Is.Not.Null, part.SourceName);
+                    Mesh mesh = part.Renderer.GetComponent<MeshFilter>().sharedMesh;
+                    Assert.That(mesh.HasVertexAttribute(VertexAttribute.TexCoord0), Is.True);
+                    Assert.That(mesh.HasVertexAttribute(VertexAttribute.TexCoord1), Is.True);
                     Assert.That(boundRenderers.Add(part.Renderer), Is.True,
                         $"Renderer '{part.Renderer.name}' is bound twice.");
                     Assert.That(part.Renderer.sharedMaterials,
                         Has.Length.EqualTo(1), part.SourceName);
                     Material expectedMaterial = part.Emissive
                         ? CityNightResources.EmissiveMaterial
-                        : RuntimePrimitiveFactory.DefaultMaterial;
+                        : part.Role == "door_glass" ? BarDrinkServiceResources.GlassMaterial
+                        : SupermarketSurfaceAppearance.SharedMaterial;
                     Assert.That(part.Renderer.sharedMaterial,
                         Is.SameAs(expectedMaterial), part.SourceName);
                     Assert.That(
@@ -468,7 +487,7 @@ namespace BarPromenade.Tests.EditMode
                     }
                 }
 
-                Assert.That(productCount, Is.EqualTo(5));
+                Assert.That(productCount, Is.EqualTo(7));
                 Assert.That(
                     result.Root.GetComponentsInChildren<Transform>(true)
                         .Count(candidate => candidate.name.StartsWith(

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the six passive Blender-authored supermarket product models."""
+"""Build the eight passive Blender-authored supermarket product models."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ import bar_parts as bp  # noqa: E402
 import interior_kit as kit  # noqa: E402
 
 GENERATOR = "tools/build-supermarket-products-3d-model.py"
-GENERATOR_VERSION = "1.4.0"
+GENERATOR_VERSION = "2.0.1"
 DESIGN_ID = "supermarket_product_pack_v1"
 DISPLAY_NAME = "Bar Promenade Supermarket Product Pack"
 ROOT_NAME = "ROOT_SupermarketProducts3D"
@@ -42,9 +42,13 @@ ITEM_IDS = (
     "closed_stew_can",
     "open_stew_can",
     "chicken_egg",
+    "beer_can",
+    "wine_bottle",
 )
 ROOT_NAMES = {item_id: f"ITEM_{item_id}" for item_id in ITEM_IDS}
 AVAILABLE_SIZES = {
+    "beer_can": (.10, .18, .10),
+    "wine_bottle": (.10, .32, .10),
     "instant_noodles": (0.48, 0.34, 0.30),
     "day_old_loaf": (0.56, 0.32, 0.34),
     "vodka_bottle": (0.27, 0.30, 0.25),
@@ -53,6 +57,8 @@ AVAILABLE_SIZES = {
     "chicken_egg": (0.48, 0.34, 0.36),
 }
 REQUIRED_ROLES = {
+    "beer_can": {"can_body", "label", "rim", "cap", "can_seal", "liquid", "liquid_surface"},
+    "wine_bottle": {"glass", "label", "cap", "liquid", "liquid_surface"},
     "instant_noodles": {"packet", "seal", "label"},
     "day_old_loaf": {"bread", "crumb", "score"},
     "vodka_bottle": {"glass", "label", "cap", "liquid", "liquid_surface"},
@@ -367,17 +373,17 @@ def build_instant_noodles(asset: AssetBuild) -> None:
     item = create_item(asset, "instant_noodles")
     add_part(
         asset, item, "Instant Noodles Packet",
-        packet_hull(0.306, 0.080, 0.238),
+        packet_hull(0.306, 0.060, 0.238),
         "packet", "paper", PACKET_ORANGE,
     )
     seams = [
-        bp.u_box((side * 0.164, 0.032, 0.0), (0.028, 0.064, 0.248), 0.010)
+        bp.u_box((side * 0.164, 0.020, 0.0), (0.028, 0.040, 0.248), 0.010)
         for side in (-1.0, 1.0)
     ]
     for side in (-1.0, 1.0):
         for offset in (-0.064, 0.0, 0.064):
             seams.append(bp.u_box(
-                (side * 0.166, 0.066, offset),
+                (side * 0.166, 0.041, offset),
                 (0.020, 0.010, 0.026),
                 0.003,
             ))
@@ -387,56 +393,46 @@ def build_instant_noodles(asset: AssetBuild) -> None:
     )
     add_part(
         asset, item, "Instant Noodles Blank Label",
-        bp.u_box((0.0, 0.084, 0.0), (0.192, 0.008, 0.145), 0.006),
+        bp.u_box((0.0, 0.062, 0.0), (0.192, 0.004, 0.145), 0.006),
         "label", "paper", PAPER_PALE,
     )
     add_part(
         asset, item, "Instant Noodles Colour Band",
-        bp.u_box((0.0, 0.089, -0.041), (0.136, 0.004, 0.025), 0.002),
+        bp.u_box((0.0, 0.065, -0.041), (0.136, 0.002, 0.025), 0.002),
         "label", "paper", BREAD_DARK,
     )
 
 
 def build_day_old_loaf(asset: AssetBuild) -> None:
     item = create_item(asset, "day_old_loaf")
-    profile = (
-        (-0.175, 0.040, 0.044),
-        (-0.142, 0.078, 0.094),
-        (0.115, 0.080, 0.100),
-        (0.156, 0.064, 0.078),
-        (0.175, 0.032, 0.038),
-    )
-    hull = ring_solid(profile, 12)
-    hull = bp.u_rotated(hull, (0.0, 0.0, -90.0))
-    hull = kit.translated(hull, (0.0, 0.080, 0.0))
-    add_part(
-        asset, item, "Day Old Loaf Crust", hull,
-        "bread", "bread", BREAD_DARK,
-    )
-    add_part(
-        asset, item, "Day Old Loaf Raised Top",
-        bp.u_box((0.015, 0.131, 0.0), (0.286, 0.055, 0.176), 0.024),
-        "bread", "bread", BREAD_TOP,
-    )
-    end = bp.u_cylinder((0.0, 0.080, 0.0), (0.112, 0.004, 0.146), 12)
-    end = bp.u_rotated_about(
-        end, (0.0, 0.0, 90.0), (0.0, 0.080, 0.0)
-    )
-    end = kit.translated(end, (-0.177, 0.0, 0.0))
-    add_part(
-        asset, item, "Day Old Loaf Cut End", end,
-        "crumb", "bread", BREAD_CRUMB,
-    )
-    scores = []
-    for x in (-0.075, 0.015, 0.105):
-        score = bp.u_box((x, 0.161, 0.0), (0.022, 0.010, 0.128), 0.004)
-        scores.append(bp.u_rotated_about(
-            score, (0.0, 0.0, -16.0), (x, 0.161, 0.0)
-        ))
-    add_part(
-        asset, item, "Day Old Loaf Scores", merge(scores),
-        "score", "bread", (0.275, 0.115, 0.030, 1.0),
-    )
+    # The cuts are depressions in the crust profile, not raised rectangular bars.
+    stations = [(-.175,.020),(-.160,.050),(-.130,.072),(-.095,.078),(-.084,.065),
+        (-.070,.079),(-.018,.081),(-.007,.067),(.007,.081),(.058,.079),(.070,.065),
+        (.084,.077),(.130,.070),(.160,.044),(.175,.020)]
+    verts=[]
+    sides=12
+    for x,radius in stations:
+        for i in range(sides):
+            a=math.tau*i/sides
+            base = .081 if abs(x)<.14 else radius
+            # A bread score cuts the crown only; the sides/bottom stay continuous.
+            groove = max(0., base-radius) * max(0., math.cos(a))**4
+            verts.append((x,.081+math.cos(a)*(base-groove),math.sin(a)*base*1.12))
+    faces=[tuple(reversed(range(sides))),tuple((len(stations)-1)*sides+i for i in range(sides))]
+    for row in range(len(stations)-1):
+        for i in range(sides):
+            j=(i+1)%sides
+            faces.append((row*sides+i,row*sides+j,(row+1)*sides+j,(row+1)*sides+i))
+    geom=(verts,faces)
+    if bp.signed_volume(geom)<0: geom=(verts,[tuple(reversed(f)) for f in faces])
+    add_part(asset,item,"Day Old Loaf Crust",geom,"bread","bread",BREAD_DARK)
+    end=bp.u_cylinder((0.,.081,0.),(.034,.0015,.038),12)
+    end=bp.u_rotated_about(end,(0.,0.,90.),(0.,.081,0.))
+    add_part(asset,item,"Day Old Loaf Cut End",kit.translated(end,(-.176,0.,0.)),"crumb","bread",BREAD_CRUMB)
+    cuts=[]
+    for x in (-.084,-.007,.070):
+        cuts.append(bp.u_box((x,.145,0.),(.012,.003,.063),.002))
+    add_part(asset,item,"Day Old Loaf Scored Crumb",merge(cuts),"score","bread",BREAD_TOP)
 
 
 VODKA_SOURCE_SCALE = .65
@@ -477,6 +473,8 @@ def bottle_cell(profile, sector, sides=16):
 
 def bottle_anchor(asset, item, name, point):
     anchor = bpy.data.objects.new(name, None)
+    if anchor.name != name:
+        raise ValueError(f"Duplicate globally-authored contact: {name} became {anchor.name}")
     asset.collection.objects.link(anchor)
     anchor.parent = item.root
     anchor.location = (point[0], point[2], point[1])
@@ -532,6 +530,81 @@ def build_vodka_bottle(asset: AssetBuild) -> None:
             for vertex in part.geometry[0]], part.geometry[1])
     for name in ("VodkaGrip", "VodkaMouth"):
         bpy.data.objects[name].location *= VODKA_SOURCE_SCALE
+
+
+def movable_pivot(part, unity_point):
+    offset = Vector((unity_point[0], unity_point[2], unity_point[1]))
+    for vertex in part.obj.data.vertices:
+        vertex.co -= offset
+    part.obj.location = offset
+
+
+def build_wine_bottle(asset):
+    item = create_item(asset, "wine_bottle")
+    profiles = (
+        ((0., .032), (.008, .0385), (.120, .0385), (.120, .035),
+         (.016, .035), (.009, .031), (.009, 0.), (0., 0.)),
+        ((.120, .0385), (.184, .0385), (.216, .0147796875), (.284, .0147796875),
+         (.294, .0165), (.294, .0125), (.284, .0125), (.216, .0125), (.184, .035), (.120, .035)),
+    )
+    for band, profile in enumerate(profiles):
+        for sector in range(4):
+            add_part(asset, item, f"Wine Bottle Glass Cell {band*4+sector:02}",
+                bottle_cell(profile, sector), "glass", "glass", (.16,.27,.13,1.))
+    add_part(asset, item, "Wine Bottle Faded Paper Label", bp.u_cylinder((0.,.115,0.),(.0778,.047,.0778),16),
+        "label", "paper", (.48,.42,.28,1.))
+    add_part(asset, item, "Wine Bottle Label Rule", bp.u_cylinder((0.,.115,0.),(.0782,.008,.0782),16),
+        "label", "paper", (.24,.12,.10,1.))
+    inner = ((.009,.031),(.016,.035),(.184,.035),(.216,.0125),(.249,.0125),(.284,.0125),(.292,.0125))
+    add_part(asset,item,"Wine Bottle Contents",ring_solid(tuple((y,r,r) for y,r in inner),16),
+        "liquid","glass",(.30,.035,.025,.78))
+    add_part(asset,item,"Wine Bottle Liquid Surface",bp.u_cylinder((0.,.175,0.),(.07,.0002,.07),32),
+        "liquid_surface","glass",(.34,.045,.028,.88))
+    add_part(asset,item,"Wine Bottle Screw Cap",bp.u_cylinder((0.,.297,0.),(.035,.008,.035),16),
+        "cap","metal",(.20,.16,.12,1.))
+    movable_pivot(item.parts[-1], (0.,.297,0.))
+    bottle_anchor(asset,item,"WineBottleGrip",(0.,.232,0.))
+    bottle_anchor(asset,item,"WineBottleMouth",(0.,.294,0.))
+
+
+def build_beer_can(asset):
+    item = create_item(asset, "beer_can")
+    wall = ((0.,.029),(.004,.033),(.012,.037),(.130,.037),(.145,.032),(.149,.032),
+        (.149,.030),(.140,.033),(.120,.0355),(.012,.0355),(.006,.030),(.006,0.),(0.,0.))
+    add_part(asset,item,"Beer Can Drawn Aluminium",merge(bottle_cell(wall,i,16) for i in range(4)),
+        "can_body","metal",(.34,.37,.32,1.))
+    add_part(asset,item,"Beer Can Faded Sleeve",bp.u_cylinder((0.,.076,0.),(.0742,.045,.0742),16),
+        "label","paper",(.37,.39,.20,1.))
+    add_part(asset,item,"Beer Can Blank Band",bp.u_cylinder((0.,.076,0.),(.0744,.008,.0744),16),
+        "label","paper",(.55,.50,.34,1.))
+    # A real off-centre opening. The top sheet connects its outer perimeter to the aperture.
+    vertices, faces = annulus(.149,.032,.0095,.0015,16)
+    vertices = [(x,y,z-.012 if index>=32 else z) for index,(x,y,z) in enumerate(vertices)]
+    lid = (vertices,faces)
+    add_part(asset,item,"Beer Can Rolled Top",merge((lid,annulus(.150,.033,.0305,.004,16))),
+        "rim","metal",METAL_LIGHT)
+    add_part(asset,item,"Beer Can Sealed Aperture",bp.u_cylinder((0.,.149,-.012),(.019,.0008,.019),16),
+        "can_seal","metal",METAL)
+    tab = kit.translated(annulus(.152,.007,.0035,.0015,12),(0.,0.,.006))
+    add_part(asset,item,"Beer Can Retained Ring",tab,"cap","metal",METAL_LIGHT)
+    movable_pivot(item.parts[-1], (0.,.152,0.))
+    inner=((.006,.030),(.012,.0355),(.035,.0355),(.075,.0355),(.120,.0355),(.140,.033),(.148,.030))
+    add_part(asset,item,"Beer Can Contents",ring_solid(tuple((y,r,r) for y,r in inner),16),
+        "liquid","glass",(.48,.28,.065,.95))
+    add_part(asset,item,"Beer Can Liquid Surface",bp.u_cylinder((0.,.125,0.),(.071,.0002,.071),32),
+        "liquid_surface","glass",(.63,.43,.14,.96))
+    bottle_anchor(asset,item,"BeerCanGrip",(0.,.080,0.))
+    bottle_anchor(asset,item,"BeerCanMouth",(0.,.149,-.012))
+
+
+def scale_item(item, factors):
+    # Convert geometry, not the runtime root. Bottom pivots stay measured metres.
+    scale=Vector((factors[0],factors[2],factors[1]))
+    for part in item.parts:
+        for vertex in part.obj.data.vertices:
+            vertex.co=Vector(tuple(vertex.co[a]*scale[a] for a in range(3)))
+        part.obj.location=Vector(tuple(part.obj.location[a]*scale[a] for a in range(3)))
+        part.geometry=([tuple(v[a]*scale[a] for a in range(3)) for v in part.geometry[0]],part.geometry[1])
 
 
 def build_closed_stew_can(asset: AssetBuild) -> None:
@@ -675,6 +748,13 @@ def build() -> AssetBuild:
     build_closed_stew_can(asset)
     build_open_stew_can(asset)
     build_chicken_egg(asset)
+    scale_item(asset.items["chicken_egg"], (.40,.40,.40))
+    scale_item(asset.items["closed_stew_can"], (.46,.46,.46))
+    scale_item(asset.items["open_stew_can"], (.46,.46,.46))
+    scale_item(asset.items["instant_noodles"], (.62,.72,.62))
+    scale_item(asset.items["day_old_loaf"], (.85,.85,.85))
+    build_beer_can(asset)
+    build_wine_bottle(asset)
     return asset
 
 
@@ -687,7 +767,7 @@ def validate(asset: AssetBuild) -> dict:
     if asset.root.name != ROOT_NAME:
         problems.append(f"pack root must be '{ROOT_NAME}'")
     if set(asset.items) != set(ITEM_IDS):
-        problems.append("pack item ids differ from the six-item contract")
+        problems.append("pack item ids differ from the eight-item contract")
     names: set[str] = set()
     item_reports = {}
     for item_id in ITEM_IDS:
@@ -725,6 +805,15 @@ def validate(asset: AssetBuild) -> dict:
                 anchor = bpy.data.objects.get(name)
                 if anchor is None or anchor.parent != root or abs(anchor.location.z - y) > 1e-6:
                     problems.append(f"vodka lost measured {name}")
+        contact_contracts = {
+            "beer_can": (("BeerCanGrip", (0., .080, 0.)), ("BeerCanMouth", (0., .149, -.012))),
+            "wine_bottle": (("WineBottleGrip", (0., .232, 0.)), ("WineBottleMouth", (0., .294, 0.))),
+        }
+        for name, unity_point in contact_contracts.get(item_id, ()):
+            anchor = bpy.data.objects.get(name)
+            expected = Vector((unity_point[0], unity_point[2], unity_point[1]))
+            if anchor is None or anchor.parent != root or (anchor.location - expected).length > 1e-6:
+                problems.append(f"{item_id} lost its exact named metre contact {name}")
         geometry = item_geometry(item)
         low, high = kit.bounds(geometry)
         unity_low = source_to_unity(low)
@@ -764,11 +853,11 @@ def validate(asset: AssetBuild) -> dict:
     geometry = merge(part.geometry for part in all_parts)
     low, high = kit.bounds(geometry)
     triangles = kit.triangle_count(geometry)
-    if len(all_parts) > 40:
+    if len(all_parts) > 64:
         problems.append(f"pack fragments into {len(all_parts)} meshes")
-    if triangles > 8000:
+    if triangles > 12000:
         problems.append(
-            f"pack costs {triangles} triangles against its 8000 cap"
+            f"pack costs {triangles} triangles against its 12000 cap"
         )
     source_types = {obj.type for obj in asset.collection.objects}
     if source_types - {"EMPTY", "MESH"}:
@@ -801,9 +890,9 @@ def signature_for(asset: AssetBuild) -> str:
     payload = {
         "design_id": DESIGN_ID,
         "generator_version": GENERATOR_VERSION,
-        "vodka_anchors": [{"name": name, "source_position":
+        "drink_anchors": [{"name": name, "source_position":
             [stable(value) for value in bpy.data.objects[name].location]}
-            for name in ("VodkaGrip", "VodkaMouth")],
+            for name in ("VodkaGrip", "VodkaMouth", "BeerCanGrip", "BeerCanMouth", "WineBottleGrip", "WineBottleMouth")],
         "items": [
             {
                 "id": item_id,
@@ -909,8 +998,8 @@ def manifest_for(asset: AssetBuild, report: dict, signature: str) -> dict:
         "unity_bounds_min": report["unity_bounds_min"],
         "unity_bounds_max": report["unity_bounds_max"],
         "budgets": {
-            "maximum_renderers": 40,
-            "maximum_triangles": 8000,
+            "maximum_renderers": 64,
+            "maximum_triangles": 12000,
         },
         "items": [
             {
@@ -993,8 +1082,8 @@ def render_preview(asset: AssetBuild, path: Path) -> None:
     )
     scene.collection.children.link(presentation)
     saved_transforms = {}
-    positions = (-1.68, -1.01, -0.34, 0.34, 1.01, 1.68)
-    angles = (-12.0, 9.0, -8.0, 11.0, -9.0, 10.0)
+    positions = tuple((i - 3.5) * .48 for i in range(8))
+    angles = (-12.0, 9.0, -8.0, 11.0, -9.0, 10.0, -12.0, 8.0)
     for item_id, x, angle in zip(ITEM_IDS, positions, angles):
         item_root = asset.items[item_id].root
         saved_transforms[item_id] = (
@@ -1077,6 +1166,25 @@ def render_preview(asset: AssetBuild, path: Path) -> None:
     bpy.data.worlds.remove(world)
 
 
+def write_product_surface():
+    # Shared neutral grain; per-role response and tint keep paper, metal and food distinct.
+    # Periodic integer hashing keeps it deterministic and tileable without image dependencies.
+    size=128
+    pixels=[]
+    for y in range(size):
+        for x in range(size):
+            noise=((x*73856093 ^ y*19349663 ^ (x*y)*83492791)&255)/255.
+            fibre=.5+.5*math.sin(math.tau*y/16.+.3*math.sin(math.tau*x/32.))
+            value=.83+.12*noise+.05*fibre
+            pixels.extend((value,value,value,1.))
+    image=bpy.data.images.new("ProductSurface",width=size,height=size,alpha=True)
+    image.pixels.foreach_set(pixels)
+    path=ROOT/"Assets/Resources/Supermarket/Products/ProductSurface.png"
+    path.parent.mkdir(parents=True,exist_ok=True)
+    image.filepath_raw=str(path); image.file_format="PNG"; image.save()
+    bpy.data.images.remove(image)
+
+
 def save_blend(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     bpy.context.preferences.filepaths.save_version = 0
@@ -1111,6 +1219,7 @@ def main() -> int:
             f"signature {signature[:16]}"
         )
         return 0
+    write_product_surface()
     payload = manifest_for(asset, report, signature)
     write_manifest(args.manifest, payload)
     export_fbx(asset, args.fbx)

@@ -33,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import atlas_kit  # noqa: E402
 from service_npc_detail import geometry_for, validate_hands  # noqa: E402
+import supermarket_cashier_geometry as cashier_geometry  # noqa: E402
 from supermarket_cashier_detail_atlas import (  # noqa: E402
     CASHIER_ATLAS_REGIONS,
     DetailAtlasReport,
@@ -40,6 +41,10 @@ from supermarket_cashier_detail_atlas import (  # noqa: E402
     DETAIL_ATLAS_REGION_PROP,
     DETAIL_ATLAS_SIZE,
     DETAIL_ATLAS_UV_INSET_PX,
+    NORMAL_DETAIL_ATLAS_NAME,
+    NORMAL_DETAIL_ATLAS_SIZE,
+    atlas_regions,
+    paint_normal_cashier_surface_atlas,
     paint_cashier_detail_atlas,
     texture_asset_path,
     write_detail_atlas,
@@ -85,6 +90,9 @@ SEED = 731209
 MIN_TRIANGLES = 1100
 MAX_TRIANGLES = 2200
 SHARED_MATERIAL_ASSET = "Assets/Player3D/Materials/Player3DLit.mat"
+NORMAL_SMOOTHNESS = {"eye": .48, "pupil": .54, "skin": .17,
+    "skin_light": .17, "skin_shadow": .17, "neck_skin": .17,
+    "hair": .12, "leather": .23, "button": .30, "tag": .18, "sole": .05}
 
 
 def load_character_build_base():
@@ -146,6 +154,7 @@ def activate_variant(variant: CashierVariant) -> None:
     global GENERATOR_VERSION, DESIGN_ID, DISPLAY_NAME
     global TOTAL_HEIGHT, SIGNATURE_ANATOMY
     global MIN_TRIANGLES, MAX_TRIANGLES
+    global SHARED_MATERIAL_ASSET
 
     ACTIVE_VARIANT = variant
     GENERATOR_VERSION = variant.generator_version
@@ -153,8 +162,10 @@ def activate_variant(variant: CashierVariant) -> None:
     DISPLAY_NAME = variant.display_name
     TOTAL_HEIGHT = variant.total_height
     SIGNATURE_ANATOMY = variant.signature_anatomy
-    MIN_TRIANGLES, MAX_TRIANGLES = ((4500, 8000)
+    MIN_TRIANGLES, MAX_TRIANGLES = ((4500, 12000)
         if variant.key == NORMAL_VARIANT.key else (1100, 2200))
+    SHARED_MATERIAL_ASSET = ("Assets/Resources/Materials/RuntimePrimitiveLit.mat"
+        if variant.key == NORMAL_VARIANT.key else "Assets/Player3D/Materials/Player3DLit.mat")
 
     base.GENERATOR_VERSION = GENERATOR_VERSION
     base.DESIGN_ID = DESIGN_ID
@@ -196,11 +207,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--atlas",
         type=Path,
-        default=Path(
-            "Assets/Supermarket/Cashier/Textures/"
-            "SupermarketCashier3DDetailAtlas.png"
-        ),
+        default=None,
     )
+    parser.add_argument("--detail-preview", type=Path)
     parser.add_argument("--no-preview", action="store_true")
     parser.add_argument("--validate-only", action="store_true")
     arguments = (
@@ -215,6 +224,8 @@ def parse_args() -> argparse.Namespace:
         "fbx": model_root / f"{variant.output_stem}.fbx",
         "manifest": model_root / f"{variant.output_stem}.json",
         "preview": source_root / f"{variant.output_stem}.png",
+        "atlas": Path("Assets/Supermarket/Cashier/Textures") / (
+            NORMAL_DETAIL_ATLAS_NAME if variant.key == NORMAL_VARIANT.key else DETAIL_ATLAS_NAME),
     }
     for field_name, default_path in defaults.items():
         if getattr(config, field_name) is None:
@@ -244,6 +255,7 @@ class CashierBuilder(base.PedestrianBuilder):
     def add_part(self, name, geometry, bone_name, role, palette_name, origin=None):
         if self.variant.key == NORMAL_VARIANT.key:
             geometry = geometry_for(base, name, geometry, cashier=True)
+            geometry = cashier_geometry.geometry_for(base, name, geometry)
         return super().add_part(name, geometry, bone_name, role, palette_name, origin)
 
     def attach_preview_atlas(self, material) -> None:
@@ -273,7 +285,7 @@ class CashierBuilder(base.PedestrianBuilder):
         image.pack()
         texture = nodes.new("ShaderNodeTexImage")
         texture.image = image
-        texture.interpolation = "Closest"
+        texture.interpolation = "Linear" if self.variant.key == NORMAL_VARIANT.key else "Closest"
         texture.extension = "CLIP"
         mix = nodes.new("ShaderNodeMix")
         mix.data_type = "RGBA"
@@ -301,6 +313,16 @@ class CashierBuilder(base.PedestrianBuilder):
         links.new(texture.outputs["Color"], color_b)
         links.new(result, shader.inputs["Base Color"])
         material["bp_detail_atlas"] = DETAIL_ATLAS_NAME
+        if self.variant.key == NORMAL_VARIANT.key:
+            # One preview material reads the same surface values as the
+            # runtime property blocks; no extra material per mesh or actor.
+            factor = nodes.new("ShaderNodeMath")
+            factor.operation = "MULTIPLY"
+            factor.inputs[1].default_value = .001
+            links.new(object_info.outputs["Object Index"], factor.inputs[0])
+            links.new(factor.outputs[0], shader.inputs["Roughness"])
+            for part in self.result.parts:
+                part.obj.pass_index = round((1-NORMAL_SMOOTHNESS.get(part.palette_name,.08))*1000)
 
     def assign_atlas_uvs(self) -> None:
         """Lay every declared region's part into its atlas sub-rect."""
@@ -310,7 +332,9 @@ class CashierBuilder(base.PedestrianBuilder):
         parts_by_name = {
             part.obj.name: part for part in self.result.parts
         }
-        for region in CASHIER_ATLAS_REGIONS:
+        normal = self.variant.key == NORMAL_VARIANT.key
+        atlas_size = NORMAL_DETAIL_ATLAS_SIZE if normal else DETAIL_ATLAS_SIZE
+        for region in atlas_regions(normal):
             part = parts_by_name.get(region.renderer)
             if part is None:
                 raise RuntimeError(
@@ -322,10 +346,12 @@ class CashierBuilder(base.PedestrianBuilder):
                 region.y,
                 region.width,
                 region.height,
-                DETAIL_ATLAS_SIZE,
+                atlas_size,
                 DETAIL_ATLAS_UV_INSET_PX,
             )
-            if region.kind == "ring":
+            if region.kind in ("surface", "head"):
+                cashier_geometry.assign_surface_uv(part.obj, region, atlas_size, DETAIL_ATLAS_REGION_PROP)
+            elif region.kind == "ring":
                 atlas_kit.assign_ring_strip_uv(
                     part.obj,
                     rect_uv,
@@ -344,7 +370,7 @@ class CashierBuilder(base.PedestrianBuilder):
                 atlas_kit.assign_box_panel_uv(
                     part.obj,
                     (region.x, region.y, region.width, region.height),
-                    DETAIL_ATLAS_SIZE,
+                    atlas_size,
                     region.name,
                     DETAIL_ATLAS_REGION_PROP,
                 )
@@ -353,6 +379,17 @@ class CashierBuilder(base.PedestrianBuilder):
                     f"Atlas region {region.name} has unknown kind "
                     f"{region.kind}"
                 )
+        if normal:
+            # Unmapped separate eyes/brows/buttons keep the untouched palette.
+            # An unconnected Blender image node otherwise falls back to
+            # generated coordinates on a mesh without UVs, unlike Unity's
+            # UsesDetailAtlas=false path.
+            for part in self.result.parts:
+                if part.obj.data.uv_layers:
+                    continue
+                white=part.obj.data.uv_layers.new(name="UVMap")
+                for uv in white.data:
+                    uv.uv=(1.5/atlas_size,1.5/atlas_size)
 
     def build(self):
         self.reset_scene()
@@ -401,6 +438,8 @@ class CashierBuilder(base.PedestrianBuilder):
         bpy.context.view_layer.update()
         self.assign_atlas_uvs()
         base.npc_joint_surfaces.apply(self.result)
+        if self.variant.key == NORMAL_VARIANT.key:
+            cashier_geometry.finish_surfaces(self.result)
         if self.atlas_path is not None:
             self.attach_preview_atlas(material)
         self.configure_scene_metadata()
@@ -970,6 +1009,14 @@ def validate_cashier_result(result, atlas, variant: CashierVariant):
             errors.append(f"{name} lacks its deterministic pivot marker")
 
     parts = {part.obj.name: part for part in result.parts}
+    if variant.key == NORMAL_VARIANT.key:
+        expected_receivers = {region.renderer for region in atlas_regions(True)}
+        for name in expected_receivers:
+            part=parts.get(name)
+            if part is None or not part.obj.data.uv_layers:
+                errors.append(f"Normal cashier surface {name} lost its authored UV/atlas binding")
+        if (atlas.width, atlas.height) != (NORMAL_DETAIL_ATLAS_SIZE, NORMAL_DETAIL_ATLAS_SIZE):
+            errors.append("Normal cashier surface atlas lost its 512 px density")
     required = {
         "GEO_Head",
         "FACE_EyeWhite.L",
@@ -1262,6 +1309,16 @@ def validate_cashier_result(result, atlas, variant: CashierVariant):
             for name, pivot in result.pivots.items()
         ],
     }
+    if variant.key == NORMAL_VARIANT.key:
+        signature_payload["material_asset"] = SHARED_MATERIAL_ASSET
+        signature_payload["surface_smoothness"] = NORMAL_SMOOTHNESS
+        signature_payload["smooth_surfaces"] = {
+            part.obj.name: [polygon.index for polygon in part.obj.data.polygons if polygon.use_smooth]
+            for part in result.parts}
+        signature_payload["surface_uvs"] = {
+            part.obj.name: [[base.stable_float(c) for c in uv.uv]
+                for uv in part.obj.data.uv_layers[0].data]
+            for part in result.parts if part.obj.data.uv_layers}
     import hashlib
 
     signature = hashlib.sha256(
@@ -1279,7 +1336,7 @@ def validate_cashier_result(result, atlas, variant: CashierVariant):
     )
 
 
-def render_preview(path: Path, result) -> None:
+def render_preview(path: Path, result, close_up=False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     scene = bpy.context.scene
     presentation = bpy.data.collections.get(
@@ -1288,17 +1345,18 @@ def render_preview(path: Path, result) -> None:
     if presentation is None:
         raise RuntimeError("Cashier preview collection is missing")
 
-    camera_data = bpy.data.cameras.new("CAM_SupermarketCashierPreview")
-    camera = bpy.data.objects.new(
-        "CAM_SupermarketCashierPreview", camera_data
-    )
-    presentation.objects.link(camera)
-    camera.location = (2.30, -4.05, 2.30)
-    target = Vector((0, -0.015, 1.15))
+    camera = bpy.data.objects.get("CAM_SupermarketCashierPreview")
+    if camera is None:
+        camera_data = bpy.data.cameras.new("CAM_SupermarketCashierPreview")
+        camera = bpy.data.objects.new("CAM_SupermarketCashierPreview", camera_data)
+        presentation.objects.link(camera)
+    camera_data = camera.data
+    camera.location = (.58, -1.65, 1.70) if close_up else (2.15, -3.80, 1.85)
+    target = Vector((0, -.02, 1.59) if close_up else (0, -.015, .95))
     camera.rotation_euler = (
         target - camera.location
     ).to_track_quat("-Z", "Y").to_euler()
-    camera_data.lens = 52
+    camera_data.lens = 105 if close_up else 70
     scene.camera = camera
 
     for name, location, energy, color, radius in (
@@ -1306,6 +1364,8 @@ def render_preview(path: Path, result) -> None:
         ("Rim", (2.5, 1.0, 3.4), 590.0, (0.34, 0.46, 0.47), 2.2),
         ("Face", (0.0, -2.4, 2.4), 320.0, (0.83, 0.62, 0.40), 1.4),
     ):
+        if bpy.data.objects.get(f"LIGHT_{name}") is not None:
+            continue
         light_data = bpy.data.lights.new(f"LIGHT_{name}", "AREA")
         light_data.energy = energy
         light_data.color = color
@@ -1318,14 +1378,15 @@ def render_preview(path: Path, result) -> None:
             target - light.location
         ).to_track_quat("-Z", "Y").to_euler()
 
-    ground_mesh = bpy.data.meshes.new("CashierPreviewGround_Mesh")
-    vertices, faces = base.make_box((0, 0.35, -0.035), (5.0, 5.0, 0.07))
-    ground_mesh.from_pydata(vertices, [], faces)
-    ground = bpy.data.objects.new("CashierPreviewGround", ground_mesh)
-    presentation.objects.link(ground)
-    ground_material = bpy.data.materials.new("MAT_CashierPreviewGround")
-    ground_material.diffuse_color = (0.026, 0.036, 0.033, 1)
-    ground.data.materials.append(ground_material)
+    if bpy.data.objects.get("CashierPreviewGround") is None:
+        ground_mesh = bpy.data.meshes.new("CashierPreviewGround_Mesh")
+        vertices, faces = base.make_box((0, 0.35, -0.035), (5.0, 5.0, 0.07))
+        ground_mesh.from_pydata(vertices, [], faces)
+        ground = bpy.data.objects.new("CashierPreviewGround", ground_mesh)
+        presentation.objects.link(ground)
+        ground_material = bpy.data.materials.new("MAT_CashierPreviewGround")
+        ground_material.diffuse_color = (0.026, 0.036, 0.033, 1)
+        ground.data.materials.append(ground_material)
 
     scene.render.filepath = str(path)
     bpy.ops.render.render(write_still=True)
@@ -1396,7 +1457,7 @@ def write_manifest(
                         ],
                         "kind": region.kind,
                     }
-                    for region in CASHIER_ATLAS_REGIONS
+                    for region in atlas_regions(variant.key == NORMAL_VARIANT.key)
                 ],
             }
         ],
@@ -1440,17 +1501,20 @@ def main() -> None:
     config = parse_args()
     variant = config.variant_spec
     activate_variant(variant)
+    paint_atlas = (paint_normal_cashier_surface_atlas
+        if variant.key == NORMAL_VARIANT.key else paint_cashier_detail_atlas)
+    atlas_size = NORMAL_DETAIL_ATLAS_SIZE if variant.key == NORMAL_VARIANT.key else DETAIL_ATLAS_SIZE
     # Painted before the build so the Blender review render samples the
     # very file Unity imports.
     if config.validate_only:
         import hashlib
-        payload = paint_cashier_detail_atlas().png_bytes()
+        payload = paint_atlas().png_bytes()
         if config.atlas.read_bytes() != payload:
             raise RuntimeError("Cashier atlas differs from its deterministic source")
         atlas = DetailAtlasReport(config.atlas, hashlib.sha256(payload).hexdigest(),
-                                  DETAIL_ATLAS_SIZE, DETAIL_ATLAS_SIZE)
+                                  atlas_size, atlas_size)
     else:
-        atlas = write_detail_atlas(paint_cashier_detail_atlas(), config.atlas)
+        atlas = write_detail_atlas(paint_atlas(), config.atlas, atlas_size)
     result = CashierBuilder(variant, atlas_path=config.atlas).build()
     report = validate_cashier_result(result, atlas, variant)
     if config.validate_only:
@@ -1461,6 +1525,8 @@ def main() -> None:
         return
     if not config.no_preview:
         render_preview(config.preview, result)
+        if config.detail_preview is not None:
+            render_preview(config.detail_preview.resolve(), result, close_up=True)
     base.export_fbx(config.fbx, result)
     write_manifest(config.manifest, result, report, atlas, variant)
     base.save_blend(config.output)

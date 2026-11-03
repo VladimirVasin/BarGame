@@ -7,7 +7,7 @@ namespace BarPromenade
     public static class SupermarketInteriorLayoutValidator
     {
         public const int RequiredShelfCount = 3;
-        public const int RequiredProductCount = 5;
+        public const int RequiredProductCount = 7;
         public const float MinimumProtectedClearance = 1.0f;
 
         private const float Tolerance = 0.001f;
@@ -25,6 +25,8 @@ namespace BarPromenade
             ValidateFixtures(plan);
             ValidateShelvesAndProducts(plan);
             ValidateCashier(plan);
+            Bounds baskets = SupermarketInteriorLayoutPlanner.EntranceBasketBounds;
+            AssertDoesNotBlockPaths("entrance-baskets", XzBounds(baskets.center, baskets.size), plan.Paths);
         }
 
         private static void ValidateRoom(
@@ -112,7 +114,7 @@ namespace BarPromenade
                     !kinds.Add(fixture.Kind) ||
                     !IsPositive(fixture.Bounds.size) ||
                     !IsPositiveFinite(fixture.Height) ||
-                    !Contains(plan.WalkableBounds, fixture.Bounds))
+                    !Contains(FixtureEnvelope(plan), fixture.Bounds))
                 {
                     throw new InvalidOperationException(
                         "Supermarket fixtures require unique finite data.");
@@ -143,6 +145,7 @@ namespace BarPromenade
             var sourceIds = new HashSet<string>(StringComparer.Ordinal);
             var itemIds = new HashSet<InventoryItemId>();
             int productCount = 0;
+            int visualStockCount = 0;
             for (int index = 0; index < plan.Shelves.Count; index++)
             {
                 SupermarketShelfPlan shelf = plan.Shelves[index];
@@ -180,6 +183,7 @@ namespace BarPromenade
                     }
 
                     ValidateProductFitsShelf(shelf, product);
+                    visualStockCount += SupermarketStockDisplay.Positions(shelf, product).Count;
                 }
             }
 
@@ -189,14 +193,18 @@ namespace BarPromenade
                 InventoryItemId.DayOldLoaf,
                 InventoryItemId.VodkaBottle,
                 InventoryItemId.ClosedStewCan,
-                InventoryItemId.ChickenEgg
+                InventoryItemId.ChickenEgg,
+                InventoryItemId.BeerCan,
+                InventoryItemId.WineBottle
             };
+            if (visualStockCount > SupermarketStockDisplay.MaximumCopyCount)
+                throw new InvalidOperationException("Supermarket passive stock exceeds its scene copy budget.");
             if (productCount != RequiredProductCount ||
                 !itemIds.SetEquals(expectedItems) ||
                 shelfKinds.Count != RequiredShelfCount)
             {
                 throw new InvalidOperationException(
-                    "The three shelves must expose exactly the five " +
+                    "The three shelves must expose exactly the seven " +
                     "authored supermarket products.");
             }
         }
@@ -292,7 +300,7 @@ namespace BarPromenade
                 shelf.CameraFieldOfView < 35f ||
                 shelf.CameraFieldOfView > 75f ||
                 shelf.Products.Count == 0 ||
-                !Contains(plan.WalkableBounds, shelf.Bounds) ||
+                !Contains(FixtureEnvelope(plan), shelf.Bounds) ||
                 !Contains(plan.WalkableBounds, shelf.TriggerCenter) ||
                 !Contains(plan.WalkableBounds, shelf.CameraPosition))
             {
@@ -347,7 +355,11 @@ namespace BarPromenade
             float checkoutDistance = DistanceToRect(
                 checkout.Bounds,
                 new Vector2(cashier.Position.x, cashier.Position.z));
-            if (checkoutDistance > 1.2f)
+            Vector3 towardCounter = checkout.Center - cashier.Position;
+            towardCounter.y = 0f;
+            Vector3 forward = Quaternion.Euler(0f, cashier.YawDegrees, 0f) * Vector3.forward;
+            if (checkoutDistance > 1.2f || checkoutDistance < 0.25f ||
+                Vector3.Dot(towardCounter.normalized, forward) < 0.8f)
             {
                 throw new InvalidOperationException(
                     "The decorative cashier must remain behind the checkout.");
@@ -398,6 +410,15 @@ namespace BarPromenade
                    inner.xMax <= outer.xMax + Tolerance &&
                    inner.yMin >= outer.yMin - Tolerance &&
                    inner.yMax <= outer.yMax + Tolerance;
+        }
+
+        // Furniture may meet the physical wall; walking and interaction points
+        // retain the smaller safe area reserved for the hero capsule.
+        private static Rect FixtureEnvelope(SupermarketInteriorLayoutPlan plan)
+        {
+            float halfWidth = (plan.RoomSize.x - plan.WallThickness) * 0.5f;
+            float halfDepth = (plan.RoomSize.y - plan.WallThickness) * 0.5f;
+            return Rect.MinMaxRect(-halfWidth, -halfDepth, halfWidth, halfDepth);
         }
 
         private static bool Contains(Rect bounds, Vector3 point)

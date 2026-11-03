@@ -25,7 +25,7 @@ namespace BarPromenade.Editor
         public const string PrefabPath =
             "Assets/Resources/Supermarket/SupermarketInterior3D.prefab";
         public const string SharedLitMaterialPath =
-            "Assets/Resources/Materials/RuntimePrimitiveLit.mat";
+            "Assets/Resources/Materials/SupermarketPhysicalSurface.mat";
         public const string SharedEmissionMaterialPath =
             "Assets/Resources/Materials/CityNoirEmission.mat";
 
@@ -49,6 +49,10 @@ namespace BarPromenade.Editor
             "shelf_pantry",
             "shelf_cold",
             "checkout",
+            "checkout_hand_a",
+            "checkout_hand_b",
+            "checkout_customer",
+            "checkout_light",
             "stockroom",
             "cctv_mount_01",
             "cctv_mount_02",
@@ -67,7 +71,12 @@ namespace BarPromenade.Editor
             "product_day_old_loaf",
             "product_vodka_bottle",
             "product_closed_stew_can",
-            "product_chicken_egg"
+            "product_chicken_egg",
+            "product_beer_can",
+            "product_wine_bottle",
+            "door_hinge",
+            "door_handle_inside",
+            "door_handle_outside"
         };
 
         private static readonly string[] RequiredPartRoles =
@@ -76,6 +85,12 @@ namespace BarPromenade.Editor
             "ceiling",
             "wall",
             "entrance_frame",
+            "door_leaf",
+            "door_glass",
+            "door_handle",
+            "door_trim",
+            "door_backing",
+            "cold_vent",
             "ceiling_grid",
             "fluorescent_housing",
             "fluorescent_tube",
@@ -190,6 +205,7 @@ namespace BarPromenade.Editor
             try
             {
                 EnsureFolderForAsset(PrefabPath);
+                EnsureSurfaceAssets();
                 ImportSources();
                 SupermarketInteriorManifest manifest =
                     LoadAndValidateManifest();
@@ -211,6 +227,72 @@ namespace BarPromenade.Editor
                 LoadAndValidateManifest();
             ValidateModelImporterOrThrow();
             ValidatePrefabOrThrow(manifest);
+        }
+
+        private static void EnsureSurfaceAssets()
+        {
+            Shader shader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Resources/Shaders/CitySurfaceLit.shader");
+            if (shader == null) throw new InvalidOperationException("Missing shared physical surface shader.");
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(SharedLitMaterialPath);
+            if (material == null)
+            {
+                material = new Material(shader) { name = "Supermarket Physical Surface", enableInstancing = true };
+                AssetDatabase.CreateAsset(material, SharedLitMaterialPath);
+            }
+            material.shader = shader;
+            material.enableInstancing = true;
+            material.SetFloat("_SceneResponseStrength", 1f);
+            material.SetFloat("_SceneNormalStrength", .65f);
+            EditorUtility.SetDirty(material);
+            foreach (string kind in new[] { "Linoleum", "WallPaint", "Ceiling", "ShelfMetal", "Counter", "Cardboard" })
+            {
+                string path = "Assets/Resources/Supermarket/Textures/Supermarket" + kind + "Response.png";
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+                var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                if (importer == null) throw new InvalidOperationException("Missing supermarket response map " + path);
+                ConfigureResponseTexture(importer);
+                importer.SaveAndReimport();
+                if (AssetDatabase.LoadAssetAtPath<Texture2D>(path) == null)
+                    throw new InvalidOperationException("Supermarket response must import as Texture2D: " + path);
+            }
+        }
+
+        internal static void ConfigureResponseTexture(TextureImporter importer)
+        {
+            importer.textureType = TextureImporterType.Default;
+            importer.textureShape = TextureImporterShape.Texture2D;
+            importer.sRGBTexture = false;
+            importer.mipmapEnabled = true;
+            importer.alphaSource = TextureImporterAlphaSource.FromInput;
+            importer.alphaIsTransparency = false;
+            importer.wrapMode = TextureWrapMode.Repeat;
+            importer.filterMode = FilterMode.Trilinear;
+            importer.anisoLevel = 4;
+            importer.maxTextureSize = 512;
+            importer.isReadable = false;
+            importer.textureCompression = TextureImporterCompression.CompressedHQ;
+            importer.SetPlatformTextureSettings(new TextureImporterPlatformSettings
+            {
+                name = "Standalone", overridden = true, maxTextureSize = 512,
+                format = TextureImporterFormat.BC7, compressionQuality = 100
+            });
+        }
+
+        private static void NormalizeDoorPivot(IReadOnlyDictionary<string, Transform> transforms)
+        {
+            Transform pivot = transforms["ANCHOR_door_hinge"];
+            foreach (string grip in new[] { "inside", "outside" })
+                transforms["ANCHOR_door_handle_" + grip].SetParent(pivot, true);
+            var children = new Transform[pivot.childCount];
+            var poses = new Pose[children.Length];
+            for (int i = 0; i < children.Length; i++)
+            {
+                children[i] = pivot.GetChild(i);
+                poses[i] = new Pose(children[i].position, children[i].rotation);
+            }
+            pivot.rotation = Quaternion.identity;
+            for (int i = 0; i < children.Length; i++)
+                children[i].SetPositionAndRotation(poses[i].position, poses[i].rotation);
         }
 
         private static void ImportSources()
@@ -258,6 +340,10 @@ namespace BarPromenade.Editor
                         $"Could not instantiate '{ModelPath}'.");
                 }
 
+                // Door grip anchors change parent while preserving their imported
+                // metre poses. Imported prefab instances forbid that structural edit.
+                PrefabUtility.UnpackPrefabInstance(model, PrefabUnpackMode.Completely,
+                    InteractionMode.AutomatedAction);
                 model.name = "Model";
                 model.transform.SetParent(wrapper.transform, false);
                 model.transform.localPosition = Vector3.zero;
@@ -296,6 +382,7 @@ namespace BarPromenade.Editor
                 }
 
                 ReparentCctvHeads(transforms, renderers);
+                NormalizeDoorPivot(transforms);
 
                 var partBindings =
                     new List<SupermarketInteriorPartBinding>();
@@ -306,7 +393,7 @@ namespace BarPromenade.Editor
                     bool castsShadows = ResolveCastsShadows(source);
                     renderer.sharedMaterials = new[]
                     {
-                        source.emissive ? sharedEmission : sharedLit
+                        source.emissive ? sharedEmission : source.role == "door_glass" ? BarDrinkServiceResources.GlassMaterial : sharedLit
                     };
                     renderer.shadowCastingMode = castsShadows
                         ? ShadowCastingMode.On
@@ -505,7 +592,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "The supermarket interior anchor names and roles must " +
-                    "be the exact published twenty-anchor set.");
+                    "be the exact published anchor set.");
             }
         }
 
@@ -531,10 +618,7 @@ namespace BarPromenade.Editor
                 if (part == null ||
                     string.IsNullOrWhiteSpace(part.name) ||
                     string.IsNullOrWhiteSpace(part.role) ||
-                    !string.Equals(
-                        part.group,
-                        "fixed",
-                        StringComparison.Ordinal) ||
+                    (part.group != "fixed" && part.group != "door") ||
                     !AllowedSheets.Contains(sheet) ||
                     !IsFiniteColor(part.base_color) ||
                     !IsFiniteVector(part.bounds_min) ||
@@ -772,6 +856,11 @@ namespace BarPromenade.Editor
                     continue;
                 }
 
+                Mesh mesh = binding.Renderer.GetComponent<MeshFilter>()?.sharedMesh;
+                if (mesh == null || !mesh.HasVertexAttribute(VertexAttribute.TexCoord0) ||
+                    !mesh.HasVertexAttribute(VertexAttribute.TexCoord1))
+                    problems.Add($"part '{binding.SourceName}' lost pigment or metre UVs");
+
                 if (!string.Equals(
                         binding.Role,
                         source.role,
@@ -787,7 +876,7 @@ namespace BarPromenade.Editor
                     binding.Emissive != source.emissive ||
                     binding.CastsShadows != ResolveCastsShadows(source) ||
                     binding.Renderer.sharedMaterial !=
-                        (source.emissive ? emission : lit))
+                        (source.emissive ? emission : source.role == "door_glass" ? BarDrinkServiceResources.GlassMaterial : lit))
                 {
                     problems.Add(
                         $"part binding '{binding.SourceName}' drifted");
@@ -1293,6 +1382,13 @@ namespace BarPromenade.Editor
     /// </summary>
     public sealed class SupermarketInteriorModelImporter : AssetPostprocessor
     {
+        private void OnPreprocessTexture()
+        {
+            if (assetPath.StartsWith("Assets/Resources/Supermarket/Textures/Supermarket", StringComparison.Ordinal) &&
+                assetPath.EndsWith("Response.png", StringComparison.Ordinal) && assetImporter is TextureImporter importer)
+                SupermarketInteriorAssetSetup.ConfigureResponseTexture(importer);
+        }
+
         private void OnPreprocessModel()
         {
             if (!SupermarketInteriorAssetSetup.IsModelPath(assetPath) ||

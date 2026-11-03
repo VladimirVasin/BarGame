@@ -63,8 +63,8 @@ namespace BarPromenade
             HasSelection && GameSessionState.IsInventoryItemEquipped(
                 SelectedStack.ItemId);
 
-        public string SelectedEquipmentStatusLabel => SelectedStack.ItemId == InventoryItemId.VodkaBottle
-            ? string.Format(LocalizationService.Get("inventory.bottle.remaining"), GameSessionState.VodkaBottlePreviewRemainingMl)
+        public string SelectedEquipmentStatusLabel => DrinkContainerCatalog.IsDrink(SelectedStack.ItemId)
+            ? string.Format(LocalizationService.Get("inventory.bottle.remaining"), GameSessionState.DrinkPreviewRemainingMl(SelectedStack.ItemId))
             : SelectedIsEquippable
                 ? LocalizationService.Get(SelectedIsEquipped ? "inventory.equipment.used" : "inventory.equipment.unused")
                 : string.Empty;
@@ -90,7 +90,7 @@ namespace BarPromenade
             {
                 if (SelectedIsEquippable)
                 {
-                    if (SelectedStack.ItemId == InventoryItemId.VodkaBottle)
+                    if (DrinkContainerCatalog.IsDrink(SelectedStack.ItemId))
                         return LocalizationService.Get(SelectedIsEquipped
                             ? "inventory.action.bottle.stow" : "inventory.action.bottle.draw");
                     if (SelectedStack.ItemId is InventoryItemId.CombatCrowbar or InventoryItemId.CombatPistol)

@@ -7,14 +7,14 @@ namespace BarPromenade
     {
         private static readonly DrinkDefinition[] definitions =
         {
-            new DrinkDefinition(DrinkId.LightBeer, DrinkFamily.Beer, 8, 6),
-            new DrinkDefinition(DrinkId.DarkBeer, DrinkFamily.Beer, 10, 8),
-            new DrinkDefinition(DrinkId.WhiteWine, DrinkFamily.Wine, 11, 10),
-            new DrinkDefinition(DrinkId.RedWine, DrinkFamily.Wine, 13, 12),
+            new DrinkDefinition(DrinkId.LightBeer, DrinkFamily.Beer, 10, 6),
+            new DrinkDefinition(DrinkId.DarkBeer, DrinkFamily.Beer, 12, 8),
+            new DrinkDefinition(DrinkId.WhiteWine, DrinkFamily.Wine, 17, 10),
+            new DrinkDefinition(DrinkId.RedWine, DrinkFamily.Wine, 20, 12),
             new DrinkDefinition(DrinkId.Vodka, DrinkFamily.Vodka, 24, 12),
             new DrinkDefinition(DrinkId.PepperVodka, DrinkFamily.Vodka, 20, 14),
-            new DrinkDefinition(DrinkId.CognacVs, DrinkFamily.Cognac, 16, 16),
-            new DrinkDefinition(DrinkId.CognacVsop, DrinkFamily.Cognac, 18, 20),
+            new DrinkDefinition(DrinkId.CognacVs, DrinkFamily.Cognac, 22, 16),
+            new DrinkDefinition(DrinkId.CognacVsop, DrinkFamily.Cognac, 24, 20),
             new DrinkDefinition(DrinkId.Water, DrinkFamily.Water, 0, 0),
             new DrinkDefinition(DrinkId.Moonshine, DrinkFamily.Vodka, 24, 8)
         };

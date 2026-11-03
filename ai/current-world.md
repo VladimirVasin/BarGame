@@ -813,8 +813,8 @@ cemetery:own interiors/returns.
   bodies exclude their skinned prop parts. The accepted `2026-09-29` ordinary
   refinement shapes anatomy, separate fingers, clothes and shoes on four models:
   fisherman `45` meshes / `7,760` triangles; mother `49` / `7,872`;
-  cashier `40` / `6,828`; driver `48` / `6,876`. Fisherman/mother retain
-  generator `4.5.2`; cashier `2.0.0`, driver `3.0.0`. Three share the palette-neutral `256 px`
+  cashier uses its measured manifest; driver `48` / `6,876`. Fisherman/mother retain
+  generator `4.5.2`; cashier `3.1.0`, driver `3.0.0`. Three share the palette-neutral `256 px`
   `OrdinaryCharacterDetailAtlas`; the cashier retains his own garment atlas.
   The mother's original expression grid remains, with its surface ahead of
   the skull. Shared rig/sockets remain; both fishing clips bring the left grip closer.
@@ -823,7 +823,8 @@ cemetery:own interiors/returns.
   head; fitted 3D moustache/beard/small hollow pipe and exhale meet the raised mouth. The closed
   hood clears the skull. Ember/light show
   only on inhale; shared mouth exhale follows clip phase. PNG faces are the Normal/default standard;
-  remaining solid Normal features await migration.
+  remaining solid Normal features await migration,except the cashier
+  whose separate3D face is retained by user decision2026-11-03.
   The inactive Watcher cashier (`2.2.0`,
   `2.05 m`, `44` meshes / `1,588` triangles) remain unchanged.
   Every modular `SkinnedMeshRenderer` is governed by
@@ -2121,61 +2122,56 @@ cemetery:own interiors/returns.
   Door excluded;hall air scoped;Neutral/dust/DOF keep warm dry pub.
   Matte Ø≈1.38m fan:Y2.55,20°/s;brass stem/beam gap6.5cm.
   Skippable `1.35 s` reveal→chase;no ordinary bar SSR/SCGI;
-- one separate `16 x 11 x 3.6 m` `SupermarketInterior` whose fixed shell,
-  profiled shelf bodies, recessed cold cabinet, checkout, stockroom facade,
-  fluorescent housings and articulated CCTV pivots are one deterministic
-  passive Blender asset. The validated layout plan still owns protected
-  aisles and the placement data for collision, product slots and interactions;
-  runtime composition owns colliders, retained shop offers,
-  practical lights and interaction objects. Five trimmed counter-clockwise
-  skirting sections bury their rear and bottom faces `3 mm` into the wall/floor
-  and meet without coplanar corner overlap. Its
-  decorative checkout is staffed by `supermarket_cashier_v1` — a passive
-  ordinary-proportioned `1.75 m`, `40`-mesh / `6,828`-triangle 3D clerk on the
-  shared `NpcHumanV2` 31-bone Hero V2 Avatar at a `0.835 m` rest pelvis. He keeps the former uniform, detail atlas,
-  attentive face, planted hands and hunch, but his ordinary neck never scales:
-  only the eyes and head follow the hero through a bounded `28°` turn while
-  the complete body remains behind the register. He retains the rare blink and
-  a separate `E — talk` placeholder. The former `watcher_cashier_v1` with its
-  five-segment `18 m` pursuit neck remains a named model/prefab asset but is not
-  provider-reachable or instantiated in ordinary gameplay. Four chunky
-  ceiling-corner CCTV units servo their lenses after the hero from the
-  first frame (fake-emissive recording LEDs, no colliders, no real
-  lights), and the hall runs on a fluorescent light budget: six
-  shadowless practicals under the directional fill — one per tube row, a
-  warm checkout accent, a cool cold-shelf spill — with one row
-  flickering deterministically. The checkout
-  is not a purchase station: activating a shelf opens its authored fixed product view centered on
-  the first available physical product. The modal browser keeps one continuous
-  lock while previous/next input cycles through every stocked shelf, skips
-  empty shelves and moves the camera to the selected shelf while aiming at the
-  selected model's visual bounds. Renderer-only owner leases hide the hero and
-  active cashier during this view without disabling either gameplay root, then
-  restore every renderer's captured state on all exit paths. Muted clickable
-  arrows sit directly beside the product instead of adding another footer hint;
-  keyboard and gamepad use the same navigation path;
-- one deterministic passive `supermarket_product_pack_v1` Blender asset owns
-  the six generic, unbranded and text-free product models shared by the shop,
-  inventory previews, Home refrigerator and cat-feeding flow: instant noodles,
-  day-old loaf, vodka bottle, closed stew can, open stew can and chicken egg.
-  Its `33` meshes / `2,276` triangles feed an asset setup responsible for one
-  Resources prefab per item; runtime supplies selection collision and lifetime.
-  The three shop shelves retain five repeatable offers: noodles and loaf,
-  vodka and closed stew, plus the egg on the cold shelf. Their
-  bottom-centre pivots sit on exact authored tier anchors instead of floating
-  or overhanging. The `0.299 m` vodka source uses a `0.37 m` shop fit envelope on
-  the unobstructed third/top tier and remains below the shelving-unit top during
-  selection; closed stew occupies the first tier. The open can's world source
-  remains the Home/cat flow, without a sixth store offer. Each guarded purchase
-  atomically deducts the unchanged price and adds one item within stack9;
-  insufficient funds/capacity mutate nothing. Shop sources never enter unique
-  collection history; models, colliders and price tags remain across reentry.
-  The shared received screen prepares one temporary model before commit,
-  borrows the browser's modal owner and returns to the same selection.
-  Closing/Escape/unload never credit or refund; the closing press cannot buy again.
-  Closed stew is
-  a separate `ClosedStewCan` item from the refrigerator's `OpenStewCan` and
-  therefore cannot satisfy the stairwell cat's feeding requirement;
+- `SupermarketInterior`:16×11×3.6m fixed-metre Blender/interior_kit shell,
+  constructed shelves/cold cabinet/stockroom/fluorescent housings/CCTV.
+  Cold cabinet/stockroom/cartons sit flush at rear wall:centreZ5.05;
+  cold back5.375,stockroom return buried5.377;no daylight gap.
+  Checkout faces hall along right wall:conveyor/scanner/register/packing/bags,
+  cashier-side keys,low decorative text-free sweets/chips;no snack offers/prompts.
+  Counter1.05m high,0.9×3.2m;centre(6.15,0,-2.30),cashier(7,0,-2.25)/270°.
+  Rear work aisle≈1.15m;authored palm/customer/light anchors own contacts/approach.
+  Baskets,cable channels,vents and local wear remain passive shared geometry.
+  Protected aisles/collision/interactions stay plan-owned. Five trimmed skirting
+  sections bury back/bottom3mm without coplanar overlap. Metal/glass entrance has
+  authored hinges/handle/solid leaf and shared same-rig door action before exit.
+  Shared response/normal surfaces preserve dry grey-green wear and warm checkout;
+  bounded local reflection;no ordinary shop SSR/SSGI/SCGI.
+  One normal1.75m `supermarket_cashier_v1`, shared31-bone HeroV2 Avatar/rest pelvis.835m:
+  refined anatomy,skin/cloth512px atlas with dedicated face/correct body UV,
+  separate protruding3D eyes/brows/nose/mouth
+  by user exception2026-11-03. Uniform/hunch/planted hands/blink kept;fixed neck,
+  eye/head tracking≤28°,body remains behind register. Separate E-talk placeholder.
+  Watcher18m neck asset remains inactive/provider-unreachable.
+  Four corner cameras track hero with emissive LEDs/no real lights or gameplay
+  surveillance. Six shadowless practicals:four cold ceiling rows,one warm checkout,
+  one cold cabinet spill;warm source follows checkout anchor/visible fixture.
+  One deterministic flicker row,directional fill retained.
+  Each shelf opens a fixed-camera modal browser;previous/next crosses stocked
+  shelves in deterministic order and aims at selected bounds. Muted arrows follow
+  projected item bounds. Owner-scoped renderer leases hide hero/cashier without
+  disabling gameplay roots;all exit paths restore exact renderer/input/camera/HUD.
+- `supermarket_product_pack_v1`:eight generic text/brand-free bottom-pivot models,
+  shared by shop/inventory/Home/cat via one Resources prefab per item. Seven repeatable
+  offers:egg2,vodka28,closed stew11,noodles3,loaf4,BeerCan500ml/6,WineBottle750ml/22;
+  stack9. Dense deterministic passive copies share meshes/materials without separate
+  item controllers/colliders/transactions;one selectable source/price per SKU.
+  Realistic-sized packages rest on authored tiers;vodka≈.299m/top fit.37m remains
+  below2.05m shelf during selection. OpenStewCan remains Home/cat-only;
+  ClosedStewCan cannot feed cat. Atomic price/item commit rejects funds/capacity
+  without mutation. Stock/price/colliders persist;no unique collection history.
+  Shared receipt preflights one temporary model,borrows browser modal,returns to
+  selection;close/Escape/unload cannot grant/refund/rebuy.
+  One hand controller handles vodka/beer/wine with per-container identity/fill/open
+  state. Shared bar/inventory gains:LightBeer10,DarkBeer12,WhiteWine17,RedWine20,
+  CognacVs22/CognacVsop24;Vodka24/PepperVodka20/Moonshine24,stress unchanged.
+  BeerCan500ml=one500ml beer serving(+10);WineBottle750ml=three250ml wine
+  servings(+60);partial swallows use cumulative volume rounding.
+  Exact volume dosing/stress rounding,one commit per swallow,weapon/wardrobe/
+  seat/bus owners retained. Wine screw cap closes;beer tab stays attached/open after
+  stow. Glass shows gravity-level liquid;opaque can shows opening liquid/inventory ml.
+  Empty glass may fracture;aluminium never fractures/owns glass audio. Its bounded
+  metallic impact follows metal/wood/hardfloor/softground. Session travel retains
+  state;process save remains deferred.
 - Home `12 x 8 x 2.9 m`, ceiling underside `2.86 m`, `X[-7,5]`: clear routes.
   Blender `home_interior_v1`/`interior_kit`: geometry; Unity: collision/actions/
   lights/cameras/live sleep deformation.

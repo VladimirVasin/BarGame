@@ -102,12 +102,15 @@ namespace BarPromenade
                     return BuildApartmentKeys(parent, rootPrefix);
                 case InventoryItemId.Lighter:
                     return BuildLighter(parent, rootPrefix);
+                case InventoryItemId.BeerCan:
+                case InventoryItemId.WineBottle:
                 case InventoryItemId.VodkaBottle:
                     Transform bottle = SupermarketProductModelResources.Instantiate(
                         itemId, parent, availableSize, rootPrefix);
                     VodkaBottleView bottleView = bottle.GetComponent<VodkaBottleView>();
                     bottleView.SetRemaining(rootPrefix == "Home Refrigerator" ? .2f :
-                        rootPrefix == "Inventory Preview" ? GameSessionState.VodkaBottlePreviewRemainingMl / 500f : 1f);
+                        rootPrefix == "Inventory Preview" ? (float)GameSessionState.DrinkPreviewRemainingMl(itemId) / DrinkContainerCatalog.Get(itemId).FullMl : 1f);
+                    if (rootPrefix == "Inventory Preview") bottleView.SetOpened(GameSessionState.DrinkPreviewOpened(itemId));
                     return bottle;
                 case InventoryItemId.ChickenEgg:
                     return SupermarketProductModelResources.Instantiate(

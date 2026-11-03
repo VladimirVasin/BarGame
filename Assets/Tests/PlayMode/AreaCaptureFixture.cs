@@ -69,6 +69,24 @@ namespace BarPromenade.Tests.PlayMode
         }
     }
 
+    public sealed class SupermarketRemodelAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            foreach (string owner in new[] { "SupermarketProductAssetSetup", "SupermarketInteriorAssetSetup" })
+            {
+                Type setup = Type.GetType("BarPromenade.Editor." + owner + ", BarPromenade.Editor", true);
+                setup.GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
+                setup.GetMethod("ValidateOrThrow", Type.EmptyTypes).Invoke(null, null);
+            }
+            Type cashier = Type.GetType("BarPromenade.Editor.SupermarketCashierAssetSetup, BarPromenade.Editor", true);
+            cashier.GetMethod("BuildNormalOrThrow", Type.EmptyTypes).Invoke(null, null);
+            cashier.GetMethod("ValidateNormalOrThrow", Type.EmptyTypes).Invoke(null, null);
+#endif
+        }
+    }
+
     public sealed partial class AreaCaptureFixture
     {
         private const int Width = 1280;
@@ -3201,6 +3219,7 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
+        [PrebuildSetup(typeof(SupermarketRemodelAssetsSetup))]
         public IEnumerator Supermarket()
         {
             GameSessionState.BeginNewGame("Test supermarket visual itinerary");
@@ -3230,6 +3249,46 @@ namespace BarPromenade.Tests.PlayMode
                         supermarketRoot.CameraFollow.enabled = false;
                         return SupermarketShots(supermarketRoot);
                     });
+                // Exercise the actual same-rig door owner without requesting a
+                // scene transition: the exit adapter is separately armed by E.
+                InteriorHingedDoorInteraction door = supermarketRoot.EntranceDoor;
+                Assert.That(door, Is.Not.Null);
+                supermarketRoot.Player.Motor.SetInputEnabled(true);
+                supermarketRoot.Player.Motor.Teleport(door.GroundedInsideDock);
+                Physics.SyncTransforms();
+                Assert.That(door.TrySetOpenFraction(0f), Is.True);
+                Camera camera = supermarketRoot.CameraFollow.Camera;
+                Vector3 eye = supermarketRoot.World.Root.TransformPoint(new Vector3(2.1f, 1.7f, -3.4f));
+                Vector3 target = supermarketRoot.World.Root.TransformPoint(new Vector3(-.35f, 1.25f, -5.49f));
+                camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye, Vector3.up));
+                camera.fieldOfView = 62f;
+                Assert.That(door.Begin(), Is.True, "The real shop entrance must accept a grounded door action.");
+                float deadline = Time.realtimeSinceStartup + 12f;
+                bool contact = false, opening = false;
+                while (door.OwnsActiveInteraction && Time.realtimeSinceStartup < deadline)
+                {
+                    yield return null;
+                    if (!contact && door.ContactWeight > .8f)
+                    {
+                        Assert.That(door.RightGrip, Is.Not.Null);
+                        Assert.That(door.RightWristDistance, Is.LessThanOrEqualTo(door.RightReachLimit + .02f));
+                        CaptureCurrentCamera(camera, SceneIds.SupermarketInterior, "door-hero-handle-contact");
+                        contact = true;
+                    }
+                    if (!opening && door.OpenFraction > .35f && door.OpenFraction < .9f)
+                    {
+                        CaptureCurrentCamera(camera, SceneIds.SupermarketInterior, "door-hero-opening");
+                        opening = true;
+                    }
+                }
+                Assert.That(door.OwnsActiveInteraction, Is.False, "Door action failed to release ownership.");
+                Assert.That(contact && opening && door.IsOpen, Is.True, "Door must visibly contact/open on the production hero.");
+                Assert.That(supermarketRoot.EntranceDoorLeaf.enabled, Is.True);
+                CaptureCurrentCamera(camera, SceneIds.SupermarketInterior, "door-hero-open-terminal");
+                GameSessionState.UpdateDrinkingProgress(100, DrinkId.Vodka, 4);
+                for (int frame = 0; frame < 18; frame++) yield return null;
+                CaptureCurrentCamera(camera, SceneIds.SupermarketInterior, "door-maximum-intoxication");
+                GameSessionState.UpdateDrinkingProgress(0, DrinkId.Vodka, 0);
             }
             finally
             {
@@ -3252,9 +3311,42 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(supermarketRoot.World.Shelves, Has.Count.EqualTo(3));
             Assert.That(supermarketRoot.Cashier, Is.Not.Null);
             Assert.That(supermarketRoot.SecurityCameras, Has.Count.EqualTo(4));
+            int offers = 0;
+            foreach (SupermarketShelfView shelf in supermarketRoot.World.Shelves) offers += shelf.Products.Count;
+            Assert.That(offers, Is.EqualTo(7), "Every purchased SKU must have one selectable shelf source.");
             Transform room = supermarketRoot.World.Root;
+            int stockCopies = 0;
+            foreach (Transform child in room.GetComponentsInChildren<Transform>(true))
+            {
+                if (!child.name.StartsWith(SupermarketStockDisplay.RootPrefix, StringComparison.Ordinal)) continue;
+                stockCopies += child.childCount;
+                Assert.That(child.GetComponentsInChildren<MonoBehaviour>(true), Is.Empty);
+                Assert.That(child.GetComponentsInChildren<Collider>(true), Is.Empty);
+            }
+            Assert.That(stockCopies, Is.InRange(120, SupermarketStockDisplay.MaximumCopyCount),
+                "Dense shelf stock must stay passive and bounded.");
             SupermarketInteriorLayoutPlan plan = supermarketRoot.Layout;
             SupermarketInteriorAssetRegistry assets = supermarketRoot.World.AssetRegistry;
+            Assert.That(Vector3.Distance(supermarketRoot.CashierTalk.InteractionPosition,
+                assets.GetAnchor("checkout_customer").position), Is.LessThan(.01f));
+            Assert.That(plan.TryGetFixture(SupermarketFixtureKind.Checkout, out SupermarketFixturePlan counter), Is.True);
+            Assert.That(plan.Cashier.Position.x, Is.GreaterThan(counter.Bounds.xMax + .25f),
+                "Cashier must occupy the staff side between the counter and right wall.");
+            Assert.That(counter.Bounds.xMin, Is.GreaterThan(5.5f), "Checkout must free the central floor.");
+            Bounds renderedCounter = assets.GetRendererByRole("checkout").bounds;
+            float rearWall = (plan.RoomSize.y - plan.WallThickness) * .5f;
+            foreach (string role in new[] { "shelf_cold", "stockroom_facade" })
+            {
+                Bounds fixtureBounds = assets.GetRendererByRole(role).bounds;
+                float back = room.InverseTransformPoint(fixtureBounds.max).z;
+                Assert.That(back, Is.EqualTo(rearWall).Within(.0035f),
+                    role + ": the actual rendered fixture must meet the rear wall without a visible gap.");
+            }
+            Vector3 counterMin = room.InverseTransformPoint(renderedCounter.min);
+            Vector3 counterMax = room.InverseTransformPoint(renderedCounter.max);
+            Assert.That(Mathf.Abs(counterMin.x - counter.Bounds.xMin) + Mathf.Abs(counterMax.x - counter.Bounds.xMax) +
+                Mathf.Abs(counterMin.z - counter.Bounds.yMin) + Mathf.Abs(counterMax.z - counter.Bounds.yMax),
+                Is.LessThan(.05f), "The visible counter and authoritative collision must occupy the same footprint.");
             IReadOnlyList<SupermarketShelfView> shelves = supermarketRoot.World.Shelves;
             var shots = new List<Shot>();
             bool CanStand(Vector3 eye)
@@ -3328,6 +3420,24 @@ namespace BarPromenade.Tests.PlayMode
                     if (elapsed < 12) return false;
                     Assert.That(Vector3.ProjectOnPlane(supermarketRoot.Player.GameObject.transform.position - observer, room.up).magnitude,
                         Is.LessThan(.01f), shot.Name + ": the observer left its authored shop-floor point.");
+                    if (shot.Name == "06-cashier-face")
+                    {
+                        var cashier = supermarketRoot.Cashier.Presentation.GetComponentInChildren<SupermarketCashierAssetRegistry>();
+                        Vector3 right = cashier.transform.right;
+                        Vector3 centre = cashier.Pelvis.position;
+                        Assert.That(Vector3.Dot(cashier.LeftUpperArm.position - centre, right) *
+                            Vector3.Dot(cashier.LeftHand.position - centre, right), Is.GreaterThan(0f), "Cashier left arm must stay on its anatomical side.");
+                        Assert.That(Vector3.Dot(cashier.RightUpperArm.position - centre, right) *
+                            Vector3.Dot(cashier.RightHand.position - centre, right), Is.GreaterThan(0f), "Cashier right arm must stay on its anatomical side.");
+                        Vector3 a = assets.GetAnchor("checkout_hand_a").position;
+                        Vector3 b = assets.GetAnchor("checkout_hand_b").position;
+                        Assert.That(Mathf.Min(Vector3.Distance(cashier.LeftHand.position, a),
+                            Vector3.Distance(cashier.LeftHand.position, b)), Is.LessThan(.045f),
+                            "Cashier left wrist must reach its real counter support.");
+                        Assert.That(Mathf.Min(Vector3.Distance(cashier.RightHand.position, a),
+                            Vector3.Distance(cashier.RightHand.position, b)), Is.LessThan(.045f),
+                            "Cashier right wrist must reach its real counter support.");
+                    }
                     if (trackingCamera != null)
                     {
                         Transform pivot = trackingCamera.HeadPivot;
@@ -3350,6 +3460,8 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 entrance = room.InverseTransformPoint(assets.GetAnchor("entrance").position);
             Standing("01-entrance-overview", entrance + new Vector3(0f, 1.65f, 1.1f),
                 assets.GetAnchor("room_centre").position + room.up * 1.15f, 62f);
+            Standing("01-entrance-door-closed", new Vector3(2.1f, 1.65f, -3.4f),
+                room.TransformPoint(new Vector3(0f, 1.4f, -5.49f)), 68f);
             shots.Add(SupermarketShot(ShelfShot("02-dry-products", shelves[0])));
             shots.Add(SupermarketShot(ShelfShot("03-pantry-products", shelves[1])));
             shots.Add(SupermarketShot(ShelfShot("04-cold-product", shelves[2])));
@@ -3359,9 +3471,15 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3.Lerp(head, assets.GetAnchor("checkout").position + room.up * 1.05f, .4f), 62f);
             Standing("06-cashier-face", plan.Cashier.Position + Quaternion.Euler(0f, plan.Cashier.YawDegrees, 0f) *
                 new Vector3(.15f, 1.65f, 1.85f), head, 30f);
+            Standing("06-cashier-face-surface", plan.Cashier.Position + Quaternion.Euler(0f, plan.Cashier.YawDegrees, 0f) *
+                new Vector3(.15f, 1.65f, 1.85f), head, 18f);
             Bounds register = assets.GetRendererByRole("register").bounds;
-            Standing("07-register-keys-and-support", new Vector3(room.InverseTransformPoint(register.center).x, 1.65f, checkout.z - 1.1f),
+            Vector3 registerEye = room.InverseTransformPoint(register.center) + Vector3.left * 1.35f;
+            registerEye.y = 1.65f;
+            Standing("07-register-keys-and-support", registerEye,
                 register.center, 48f);
+            Standing("07-checkout-customer-and-snacks", new Vector3(4.85f, 1.65f, -3.65f),
+                room.TransformPoint(new Vector3(6.15f, 1.12f, -2.45f)), 65f);
             Vector3 cold = room.InverseTransformPoint(assets.GetAnchor("shelf_cold").position);
             // The rear aisle is too close for the complete wide niche at a
             // normal lens. Two standing views retain both ends and its cavity.
@@ -3369,6 +3487,10 @@ namespace BarPromenade.Tests.PlayMode
                 Standing(side < 0f ? "08-cold-niche-left" : "09-cold-niche-right",
                     cold + new Vector3(side, 1.65f, -1.35f), room.TransformPoint(cold + new Vector3(side, 1.32f, 0f)), 80f);
             int number = 10;
+            Standing("09-cold-left-wall-contact", new Vector3(-3.9f, 1.65f, 4.6f),
+                room.TransformPoint(new Vector3(-3.15f, 1.3f, rearWall)), 62f);
+            Standing("09-stockroom-wall-contact", new Vector3(4.05f, 1.65f, 4.65f),
+                room.TransformPoint(new Vector3(4.68f, 1.3f, rearWall)), 68f);
             foreach (SupermarketShelfView shelf in shelves)
             {
                 Vector3 facing = shelf.transform.TransformDirection(shelf.Plan.FacingDirection).normalized;
@@ -3378,7 +3500,8 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3 eye = room.InverseTransformPoint(bounds.center + facing * 1.35f);
                     eye.y = 1.65f;
                     Standing($"{number++:00}-support-and-price-{product.ItemId}", eye,
-                        new Vector3(bounds.center.x, bounds.min.y + .04f, bounds.center.z), 36f);
+                        new Vector3(bounds.center.x, bounds.min.y + .04f, bounds.center.z),
+                        Mathf.Clamp(18f * bounds.size.magnitude / .32f, 12f, 36f));
                 }
             }
             for (int i = 0; i < supermarketRoot.SecurityCameras.Count; i++)

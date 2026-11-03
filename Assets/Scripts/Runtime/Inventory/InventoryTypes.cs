@@ -26,7 +26,9 @@ namespace BarPromenade
         RottenFishBellyCan = 18,
         RottenFishHeadCan = 19,
         WarehouseGateKey = 20,
-        ChestFlashlight = 21
+        ChestFlashlight = 21,
+        BeerCan = 22,
+        WineBottle = 23
     }
 
     public enum InventoryItemCategory
@@ -59,7 +61,7 @@ namespace BarPromenade
         public string DescriptionLocalizationKey { get; }
         public int MaximumStack { get; }
         public bool IsEquippable => Category == InventoryItemCategory.Clothing ||
-            Id is InventoryItemId.ChestFlashlight or InventoryItemId.CombatCrowbar or InventoryItemId.CombatPistol or InventoryItemId.VodkaBottle;
+            Id is InventoryItemId.ChestFlashlight or InventoryItemId.CombatCrowbar or InventoryItemId.CombatPistol or InventoryItemId.VodkaBottle or InventoryItemId.BeerCan or InventoryItemId.WineBottle;
     }
 
     public readonly struct InventoryItemStack
@@ -78,6 +80,10 @@ namespace BarPromenade
     {
         private static readonly InventoryItemDefinition[] Definitions =
         {
+            new InventoryItemDefinition(InventoryItemId.BeerCan, InventoryItemCategory.Consumable,
+                "inventory.item.beer_can.name", "inventory.item.beer_can.description", 9),
+            new InventoryItemDefinition(InventoryItemId.WineBottle, InventoryItemCategory.Consumable,
+                "inventory.item.wine_bottle.name", "inventory.item.wine_bottle.description", 9),
             new InventoryItemDefinition(
                 InventoryItemId.ApartmentKeys,
                 InventoryItemCategory.KeyItem,

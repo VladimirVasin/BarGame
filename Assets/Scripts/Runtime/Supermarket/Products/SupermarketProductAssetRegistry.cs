@@ -88,6 +88,10 @@ namespace BarPromenade
             buildSignature = configuredBuildSignature ?? string.Empty;
         }
 
+        private static Texture2D productGrain;
+        private static Texture2D ProductGrain => productGrain != null ? productGrain :
+            productGrain = Resources.Load<Texture2D>("Supermarket/Products/ProductSurface");
+
         public void ApplyAppearance()
         {
             var properties = new MaterialPropertyBlock();
@@ -100,20 +104,29 @@ namespace BarPromenade
                     continue;
                 }
 
-                renderer.sharedMaterial = itemId == InventoryItemId.VodkaBottle
+                renderer.sharedMaterial = DrinkContainerCatalog.IsDrink(itemId)
                     ? VodkaBottleView.MaterialFor(part.Role) : RuntimePrimitiveFactory.DefaultMaterial;
                 renderer.shadowCastingMode = ShadowCastingMode.On;
                 renderer.receiveShadows = true;
                 renderer.GetPropertyBlock(properties);
                 Color tint = part.Color;
-                if (itemId == InventoryItemId.VodkaBottle)
+                if (DrinkContainerCatalog.IsDrink(itemId))
                 {
-                    if (part.Role == "glass") tint.a = .18f;
+                    if (part.Role == "glass") tint.a = itemId == InventoryItemId.WineBottle ? .32f : .18f;
                     if (part.Role == "liquid" || part.Role == "liquid_surface")
                     {
-                        tint.a = .48f;
-                        VodkaBottleView.SetPassiveLiquid(renderer, transform, part.Role == "liquid_surface", properties);
+                        if (itemId == InventoryItemId.VodkaBottle) tint.a = .48f;
+                        VodkaBottleView.SetPassiveLiquid(renderer, transform, part.Role == "liquid_surface", properties, itemId);
                     }
+                }
+                bool metal = part.Role is "rim" or "pull_tab" or "cap" or "can_body" or "lid" or "can_seal";
+                properties.SetFloat("_Metallic", metal ? .72f : 0f);
+                properties.SetFloat("_Smoothness", metal ? .42f : part.Role == "shell" ? .24f : .12f);
+                if (part.Role != "glass" && part.Role != "liquid" && part.Role != "liquid_surface")
+                {
+                    Texture2D grain = ProductGrain;
+                    if (grain != null) properties.SetTexture("_BaseMap", grain);
+                    properties.SetVector("_BaseMap_ST", new Vector4(metal ? 9f : 18f, metal ? 9f : 18f, 0f, 0f));
                 }
                 properties.SetColor(BaseColorId, tint);
                 properties.SetColor(LegacyColorId, tint);
@@ -174,6 +187,22 @@ namespace BarPromenade
                     Vector3.Distance(transform.InverseTransformPoint(grip.position), Vector3.up * VodkaBottleDimensions.GripHeight) > .0005f ||
                     Vector3.Distance(transform.InverseTransformPoint(mouth.position), Vector3.up * VodkaBottleDimensions.MouthHeight) > .0005f)
                     throw new InvalidOperationException("Vodka grip/mouth anchors must match its measured metre contract.");
+            }
+
+            if (itemId is InventoryItemId.BeerCan or InventoryItemId.WineBottle)
+            {
+                DrinkContainerProfile profile = DrinkContainerCatalog.Get(itemId);
+                Transform grip = null, mouth = null;
+                foreach (Transform anchor in GetComponentsInChildren<Transform>(true))
+                {
+                    if (anchor.name == profile.GripAnchorName) grip = anchor;
+                    if (anchor.name == profile.MouthAnchorName) mouth = anchor;
+                }
+                if (grip == null || mouth == null ||
+                    Vector3.Distance(transform.InverseTransformPoint(grip.position), Vector3.up * profile.GripHeight) > .0005f ||
+                    Vector3.Distance(transform.InverseTransformPoint(mouth.position), profile.Mouth) > .0005f ||
+                    Mathf.Abs(localBounds.size.y - profile.Height) > .002f)
+                    throw new InvalidOperationException($"{itemId} lost its measured metre contacts: {profile.GripAnchorName}={grip != null}, {profile.MouthAnchorName}={mouth != null}, height={localBounds.size.y:F5}.");
             }
 
             for (int index = 0; index < parts.Length; index++)

@@ -5,41 +5,47 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-03
 
-Daily bar close:ordinary warning/request,accepted service grace,safe action
-finish/stand/visible walk/door return. Partial vessel remains for physical cleanup;
-no forced drink,refund or story event. Shared speech/rig/camera/24FX kept;
-bounded pause-aware state. Canon§6 records the daily speech/departure exception.
-Both lines focus bartender during menu selection too;shared camera/DOF suspension
-then exact pose/FOV/roll/menu return. Clear sight:in-place pan;obstructed:
-bounded validated hall cut/cutback,hero stays;no new FX.
-Worker finishes handoff/stows towel,visibly turns to hall;same-rig dedicated
-Enter/Loop/Exit:low elbow beside torso,palm moves forward/back at chest height;
-both lines/camera synchronized,no new model/FX.
-Full-text shared reading tail plus extra hold precedes camera/pose return.
-SpeechDelivery.StepElapsed avoids epoch precision loss;PCM terminal uses plan
-duration instead of native clip length. Pause shifts reading hold.
-build-city-pedestrian-3d-model.py --cafe-animation-only:
-BarClosingAddress posture/loop motion/seams/planted feet/repeated curves passed;
-source frames reviewed;model geometry kept.
+Bar daily close:ordinary warning/request,accepted-service grace,finish/stand/
+visible walk/door. Leftover remains for cleanup;pause holds deadlines.
+Shared speech/rig/camera/24FX;canon§6 records exception. Menu retains selection;
+clear sight pans,obstruction uses validated hall cut/back,hero stays.
+Worker finishes handoff/stows towel,turns to hall;dedicated same-rig address
+keeps elbow beside torso and moving chest-high palm. Full-text reading tail
+holds camera/pose;SpeechDelivery uses StepElapsed and planned PCM duration.
+build-city-pedestrian-3d-model.py --cafe-animation-only and
 ParkQuarrelTests.Delivery_StepsOncePerFrameAndBlipsOnLettersOnly passed.
-LastGuest_ClosingPreservesMenuSipAndWalksToDoor passed:both full-text holds/pause,
-low elbow/wrist/motion,exact menu/camera return,partial wine/full route.
-Warning/request full-text and walk frames reviewed.
+LastGuest_ClosingPreservesMenuSipAndWalksToDoor passed;frames reviewed.
 ActualBar_FillsAndEmptiesWithClockAndFinishesAcceptedServiceAfterClosing:
-existing late-crowd departure failed before new closing coverage.
-check-docs passed.
-
-Bar beer/wine:three separate E actions;partial vessel waits at same dock,
-shared gaze/outline and seated camera restored each return. Payment once;
-proportional existing alcohol/stress after each completed action,order count at last.
-Wine uses full safe authored fill;vodka/cognac stay single-action.
-Shared rig/timeline/contacts/cleanup;24FX providers/materials kept,
-liquid/glass/DOF/head-camera fit govern focused visual review;bounded state,
-CPU/GPU unmeasured.
+existing late-crowd departure failed before closing coverage.
+Bar beer/wine:separate E sips,partial vessel waits at dock;one payment,
+proportional existing effects,last sip counts order. Seated camera/rig/contact
+return kept;wine full safe fill,other spirits single-action.
 BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment/
-WineService_FullGlassTakesThreeSeparateSips passed;full/partial/empty frames reviewed.
-PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce/BeerService_WaitsForPhysicalArrivalAndExplicitDrink/
-BottleService_WaitsForEveryArrivalAndExplicitDrink passed.
+WineService_FullGlassTakesThreeSeparateSips/PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce/
+BeerService_WaitsForPhysicalArrivalAndExplicitDrink/BottleService_WaitsForEveryArrivalAndExplicitDrink
+passed;full/partial/empty frames reviewed.
+
+Supermarket:constructed metal/glass door with same-rig contact/solid sweep;
+dense stock/shared surfaces/bounded reflection;rear fixtures/cartons flush to wall.
+Real-sized beer/wine pack;atomic sale/shared receipt per SKU.
+Shared gains raised for beer/wine/cognac,stress kept. Beer500ml=one bar portion;
+wine750ml=three250ml portions;partial dose uses shared volume rounding.
+One carried-drink owner preserves per-container ID/fill/opening;retained can tab,
+opaque aluminium,wine screw cap,volume-dose rounding and wardrobe/weapon cleanup.
+Cashier skin/cloth UV refined;bulging3D face retained. Right-wall checkout:
+lane/scanner/register/packing/decor snacks;authored palms/customer/light anchors.
+Baskets/cables/vents/wear;seven offers/ordinary body/CCTV/light budget kept.
+Bibles/registry record user exceptions.
+All24FX reviewed;scoped probe/material/SSAO/grade/DOF/SMAA/lens,CPU/GPU unmeasured.
+Product/interior/cashier generation validators and supermarket_surface_response
+passed;source previews reviewed.
+Import fixes:unique beverage anchors,Texture2D response shape,unpacked door pivots;
+reflection native buffers initialize on main thread. Cashier hand sides measured
+from rig;aluminium uses bounded surface-dependent metal impact,no glass audio.
+Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures passed.
+AreaCaptureFixture.Supermarket/DrinkContainers_PurchaseSipSwitch_PreserveFillOpeningAndContacts
+passed;real bar/inventory dose rounding verified. Rear-wall/checkout/face/door/grip
+frames reviewed;rear/palm/counter/customer contacts match.
 
 ## 2026-11-02
 

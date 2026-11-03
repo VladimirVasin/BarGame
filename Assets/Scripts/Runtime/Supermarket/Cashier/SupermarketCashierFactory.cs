@@ -21,7 +21,8 @@ namespace BarPromenade
             Transform playerBody,
             Transform playerHead,
             Bounds headLimits,
-            IReadOnlyList<Bounds> obstacles)
+            IReadOnlyList<Bounds> obstacles,
+            SupermarketInteriorAssetRegistry counterAssets = null)
         {
             return Create(
                 parent,
@@ -30,7 +31,8 @@ namespace BarPromenade
                 playerHead,
                 headLimits,
                 obstacles,
-                SupermarketCashierProvider.Load());
+                SupermarketCashierProvider.Load(),
+                counterAssets);
         }
 
         public static SupermarketCashierActor Create(
@@ -40,7 +42,8 @@ namespace BarPromenade
             Transform playerHead,
             Bounds headLimits,
             IReadOnlyList<Bounds> obstacles,
-            SupermarketCashierProvider provider)
+            SupermarketCashierProvider provider,
+            SupermarketInteriorAssetRegistry counterAssets = null)
         {
             if (parent == null)
             {
@@ -87,9 +90,11 @@ namespace BarPromenade
             presentation.Initialize(registry);
             ConfigurePoseContext(
                 presentation,
+                registry,
                 root,
                 headLimits,
-                obstacles);
+                obstacles,
+                counterAssets);
 
             var actor = instance.AddComponent<SupermarketCashierActor>();
             actor.Initialize(presentation, playerBody, playerHead);
@@ -117,16 +122,34 @@ namespace BarPromenade
         /// </summary>
         private static void ConfigurePoseContext(
             SupermarketCashierPresentation presentation,
+            SupermarketCashierAssetRegistry registry,
             Transform root,
             Bounds headLimits,
-            IReadOnlyList<Bounds> obstacles)
+            IReadOnlyList<Bounds> obstacles,
+            SupermarketInteriorAssetRegistry counterAssets)
         {
             Vector3 forward = root.forward;
             Vector3 right = root.right;
             Vector3 counterEdge = root.position + forward * 0.30f;
+            // Imported anatomical sides are measured from the shared rig, not
+            // inferred from the presentation root's right axis.
+            float leftSide = Mathf.Sign(Vector3.Dot(registry.LeftUpperArm.position - root.position, right));
+            float rightSide = Mathf.Sign(Vector3.Dot(registry.RightUpperArm.position - root.position, right));
+            Vector3 leftContact = counterEdge + right * (leftSide * 0.22f) + Vector3.up * 1.07f;
+            Vector3 rightContact = counterEdge + right * (rightSide * 0.22f) + Vector3.up * 1.07f;
+            if (counterAssets != null)
+            {
+                Vector3 a = counterAssets.GetAnchor("checkout_hand_a").position;
+                Vector3 b = counterAssets.GetAnchor("checkout_hand_b").position;
+                // Assign the two authored contacts to the imported anatomical
+                // sides, which need not agree with the FBX root's right axis.
+                bool aIsLeft = Vector3.Dot(a - b, right) * leftSide > 0f;
+                leftContact = aIsLeft ? a : b;
+                rightContact = aIsLeft ? b : a;
+            }
             presentation.ConfigurePoseContext(
-                counterEdge + right * 0.22f + Vector3.up * 1.07f,
-                counterEdge - right * 0.22f + Vector3.up * 1.07f,
+                leftContact,
+                rightContact,
                 headLimits,
                 obstacles);
         }

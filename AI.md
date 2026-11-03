@@ -108,9 +108,9 @@ repository evidence. This does not require running every test layer.
   now the next complete fixed-metre user: its exterior comes from
   `tools/build-supermarket-exterior-3d-model.py`, while the passive interior
   shell, fixtures and CCTV pivots come from
-  `tools/build-supermarket-interior-3d-model.py`. Its six reusable generic,
+  `tools/build-supermarket-interior-3d-model.py`. Its eight reusable generic,
   unbranded and text-free product models come from the separate passive
-  `tools/build-supermarket-products-3d-model.py` pack: five repeatable shop
+  `tools/build-supermarket-products-3d-model.py` pack: seven repeatable shop
   offers; the open stew can enters the world only through the Home
   refrigerator/cat flow. Home and the metric church remodel use the kit;
   church openings/collision/light share placed exterior metres and anchors.

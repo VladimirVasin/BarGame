@@ -253,7 +253,10 @@ namespace BarPromenade
                 receiptModel = InventoryItemModelFactory.BuildPreviewModel(
                     product.ItemId, transform);
                 if (receiptModel.TryGetComponent(out VodkaBottleView bottle))
+                {
                     bottle.SetRemaining(1f);
+                    bottle.SetOpened(false);
+                }
                 presented = screen.TryPresentReceivedWithin(modalLock,
                     activeInteractor, product.ItemId, receiptModel,
                     ReceivedFeedbackKey,

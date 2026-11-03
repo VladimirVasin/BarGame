@@ -24,9 +24,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import bar_parts as bp  # noqa: E402
 import interior_kit as kit  # noqa: E402
+import supermarket_checkout_detail as checkout_detail  # noqa: E402
 
 GENERATOR = "tools/build-supermarket-interior-3d-model.py"
-GENERATOR_VERSION = "1.0.0"
+GENERATOR_VERSION = "1.2.1"
 DESIGN_ID = "supermarket_interior_v1"
 DISPLAY_NAME = "Bar Promenade Supermarket Interior"
 ROOM_WIDTH = 16.0
@@ -88,12 +89,12 @@ CAMERA_LENS = (0.028, 0.032, 0.035, 1.0)
 RECORDING_LED = (0.85, 0.12, 0.08, 1.0)
 DRY_SHELF = (-4.7, 0.0, 0.0, 1.0, 2.05, 5.30, 1.0)
 PANTRY_SHELF = (1.35, 0.0, 0.0, 1.0, 2.05, 4.70, -1.0)
-COLD_SHELF = (-0.05, 0.0, 4.575, 6.30, 2.25, 0.65)
-CHECKOUT_CENTRE = (5.50, 0.0, -3.525)
-CHECKOUT_SIZE = (2.80, 1.05, 0.95)
-STOCKROOM_CENTRE = (5.725, 0.0, 4.575)
+COLD_SHELF = (-0.05, 0.0, 5.05, 6.30, 2.25, 0.65)
+CHECKOUT_CENTRE = (6.15, 0.0, -2.30)
+CHECKOUT_SIZE = (0.90, 1.05, 3.20)
+STOCKROOM_CENTRE = (5.725, 0.0, 5.05)
 STOCKROOM_SIZE = (2.15, 2.35, 0.65)
-CASHIER_POSITION = (5.28, 0.0, -2.82)
+CASHIER_POSITION = (7.0, 0.0, -2.25)
 TUBE_X = (-5.20, -1.75, 1.75, 5.20)
 CCTV_X = 7.13
 CCTV_Z = 4.63
@@ -117,11 +118,18 @@ class AssetBuild:
     materials: dict[tuple, "bpy.types.Material"] = field(default_factory=dict)
 ANCHOR_UNITY_POSITIONS = {
     "entrance": (0.0, 0.0, -HALF_DEPTH),
+    "door_hinge": (-1.085, 0.0, -5.49),
+    "door_handle_inside": (-0.12, 1.05, -5.385),
+    "door_handle_outside": (-0.12, 1.05, -5.595),
     "room_centre": (0.0, 0.0, 0.0),
     "shelf_dry": (-4.70, 0.0, 0.0),
     "shelf_pantry": (1.35, 0.0, 0.0),
-    "shelf_cold": (-0.05, 0.0, 4.575),
+    "shelf_cold": COLD_SHELF[:3],
     "checkout": CHECKOUT_CENTRE,
+    "checkout_hand_a": (6.57, 1.07, -2.03),
+    "checkout_hand_b": (6.57, 1.07, -2.47),
+    "checkout_customer": (4.85, 0.0, -2.25),
+    "checkout_light": (6.05, 2.55, -2.10),
     "stockroom": STOCKROOM_CENTRE,
     "cctv_mount_01": (-CCTV_X, CCTV_MOUNT_Y, -CCTV_Z),
     "cctv_mount_02": (CCTV_X, CCTV_MOUNT_Y, -CCTV_Z),
@@ -140,7 +148,9 @@ ANCHOR_UNITY_POSITIONS = {
     "product_day_old_loaf": (-4.40, 1.0125, 1.18),
     "product_vodka_bottle": (1.07, 1.6125, -1.00),
     "product_closed_stew_can": (1.06, 0.4125, 1.02),
-    "product_chicken_egg": (0.40, 0.5725, 4.455),
+    "product_chicken_egg": (0.40, 0.5725, 4.93),
+    "product_beer_can": (-1.35, 1.1725, 4.93),
+    "product_wine_bottle": (1.07, 1.0125, -0.95),
 }
 
 def stable(value: float) -> float:
@@ -237,6 +247,7 @@ def material_for(
 
 def assign_world_uv(mesh: "bpy.types.Mesh", pitch: float) -> None:
     layer = mesh.uv_layers.new(name="UVMap")
+    metric = mesh.uv_layers.new(name="MetricUV")
     for polygon in mesh.polygons:
         axis = max(range(3), key=lambda index: abs(polygon.normal[index]))
         for loop_index in polygon.loop_indices:
@@ -248,6 +259,7 @@ def assign_world_uv(mesh: "bpy.types.Mesh", pitch: float) -> None:
             else:
                 uv = (point.x / pitch, point.y / pitch)
             layer.data[loop_index].uv = uv
+            metric.data[loop_index].uv = (uv[0] * pitch, uv[1] * pitch)
 
 def add_part(
     asset: AssetBuild,
@@ -460,6 +472,44 @@ def build_shell(asset: AssetBuild) -> None:
         casts_shadows=False,
     )
 
+def build_entrance_doors(asset: AssetBuild) -> None:
+    # Two old metal/glass leaves. The left leaf is the active exit; its authored
+    # hinge and grips are normalized once by the importer, without rescaling.
+    z = -5.49
+    for side, label in ((-1, "Active"), (1, "Fixed")):
+        cx = side * .55
+        parent = "door_hinge" if side < 0 else ""
+        frame = boxes((
+            ((cx-.495, 1.455, z), (.09, 2.85, .075)),
+            ((cx+.495, 1.455, z), (.09, 2.85, .075)),
+            ((cx, .075, z), (.90, .09, .075)),
+            ((cx, 2.835, z), (.90, .09, .075)),
+            ((cx, .54, z), (.90, .84, .075)),
+            ((cx, 1.005, z), (.90, .09, .075)),
+        ), .009)
+        add_part(asset, f"Entrance {label} Leaf", frame, "door_leaf", "ShelfMetal", COLD_METAL,
+                 group="door", parent_anchor=parent)
+        add_part(asset, f"Entrance {label} Glass", bp.u_box((cx, 1.935, z), (.89, 1.76, .014), .003),
+                 "door_glass", "", (.24, .32, .29, .30), group="door", parent_anchor=parent, casts_shadows=False)
+        add_part(asset, f"Entrance {label} Kick Plate", bp.u_box((cx, .29, z+.045), (.82, .40, .016), .006),
+                 "door_trim", "ShelfMetal", (.22, .245, .225, 1), group="door", parent_anchor=parent)
+        hx = -.12 if side < 0 else .12
+        handle = []
+        for face in (-1, 1):
+            hz = z + face*.105
+            handle.append(bp.u_cylinder((hx, 1.05, hz), (.016, .18, .016), 12))
+            for y in (.89, 1.21):
+                handle.append(cylinder_along_z((hx, y, z+face*.065), .028, .08, 10))
+        add_part(asset, f"Entrance {label} Handles", merge(handle), "door_handle", "ShelfMetal",
+                 (.47, .49, .43, 1), group="door", parent_anchor=parent)
+    add_part(asset, "Entrance Threshold", bp.u_box((0, .012, z), (2.18, .024, .20), .008),
+             "door_trim", "ShelfMetal", (.23, .25, .23, 1))
+    # A shallow dark vestibule behind glass avoids an exposed void without
+    # inventing an exterior vista in this isolated interior scene.
+    add_part(asset, "Entrance Dark Backing", bp.u_box((0, 1.45, -5.615), (2.18, 2.88, .018), .003),
+             "door_backing", "", (.045, .057, .050, 1), casts_shadows=False)
+
+
 def build_ceiling_grid(asset: AssetBuild) -> None:
     grid_parts: list[kit.Geometry] = []
     for x in (-6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0):
@@ -621,6 +671,23 @@ def build_gondola(
         casts_shadows=False,
     )
 
+def build_shelf_details(asset: AssetBuild) -> None:
+    for label, spec, role in (("Dry", DRY_SHELF, "shelf_dry"), ("Pantry", PANTRY_SHELF, "shelf_pantry")):
+        cx, _, cz, width, height, depth, facing = spec
+        slots, brackets = [], []
+        for end in (-1, 1):
+            z = cz + end*(depth*.5-.08)
+            for y in (.50, .70, .90, 1.10, 1.30, 1.50, 1.70, 1.90):
+                slots.append(bp.u_box((cx+facing*.458, y, z), (.008, .035, .024), .002))
+            for y in (.36, .96, 1.56):
+                brackets.append(bp.u_box((cx+facing*.24, y-.055, z), (.42, .025, .08), .004))
+        add_part(asset, f"Shelf {label} Upright Slots", merge(slots), role, "", (.075,.085,.075,1), casts_shadows=False)
+        add_part(asset, f"Shelf {label} Brackets", merge(brackets), role, "ShelfMetal", SHELF_FRAME)
+    vent_z = COLD_SHELF[2] - COLD_SHELF[5] * .5 - .008
+    vents = [bp.u_box((-2.85+i*.20, .125, vent_z), (.14,.035,.012), .002) for i in range(29)]
+    add_part(asset, "Cold Cabinet Toe Vent", merge(vents), "cold_vent", "", (.08,.105,.10,1), casts_shadows=False)
+
+
 def build_cold_shelf(asset: AssetBuild) -> None:
     cx, _, cz, width, height, depth = COLD_SHELF
     half_x = width * 0.5
@@ -713,163 +780,23 @@ def build_shelves(asset: AssetBuild) -> None:
     build_gondola(asset, "Dry", "shelf_dry", DRY_SHELF)
     build_gondola(asset, "Pantry", "shelf_pantry", PANTRY_SHELF)
     build_cold_shelf(asset)
+    build_shelf_details(asset)
 
 def build_checkout(asset: AssetBuild) -> None:
-    cx, _, cz = CHECKOUT_CENTRE
-    width, height, depth = CHECKOUT_SIZE
-    source_counter = kit.translated(
-        kit.counter_run(
-            width,
-            depth,
-            height,
-            top_thickness=0.075,
-            nosing=0.0,
-            plinth_inset=0.075,
-            chamfer=0.014,
-        ),
-        (cx, cz, 0.0),
-    )
-    add_part(
-        asset,
-        "Checkout Counter",
-        source_counter,
-        "checkout",
-        "Counter",
-        CHECKOUT_BASE,
-        unity_space=False,
-    )
-    add_part(
-        asset,
-        "Checkout Conveyor Belt",
-        bp.u_box(
-            (cx - 0.33, height + 0.026, cz - 0.02),
-            (width * 0.60, 0.052, depth * 0.73),
-            0.011,
-        ),
-        "checkout",
-        "",
-        BELT,
-    )
-    front_z = cz - depth * 0.5 + 0.025
-    panels = [
-        bp.u_box(
-            (cx - width * 0.31 + index * width * 0.31,
-             height * 0.57,
-             front_z),
-            (width * 0.25, height * 0.58, 0.035),
-            0.006,
-        )
-        for index in range(3)
-    ]
-    add_part(
-        asset,
-        "Checkout Front Panels",
-        merge(panels),
-        "checkout",
-        "Counter",
-        CHECKOUT_TRIM,
-        casts_shadows=False,
-    )
-    register_center = (cx + width * 0.31, height + 0.15, cz + 0.03)
-    register = boxes((
-        (register_center, (0.48, 0.30, 0.42)),
-        ((register_center[0], register_center[1] - 0.14,
-          register_center[2] + 0.03), (0.58, 0.08, 0.48)),
-    ), 0.018)
-    add_part(
-        asset,
-        "Checkout Register",
-        register,
-        "register",
-        "Counter",
-        (0.29, 0.31, 0.27, 1.0),
-    )
-    screen_center = (
-        register_center[0],
-        register_center[1] + 0.075,
-        register_center[2] - 0.216,
-    )
-    screen = bp.u_box(screen_center, (0.31, 0.11, 0.022), 0.004)
-    screen = bp.u_rotated_about(screen, (-12.0, 0.0, 0.0), screen_center)
-    add_part(
-        asset,
-        "Checkout Register Display",
-        screen,
-        "register",
-        "",
-        (0.74, 0.35, 0.16, 1.0),
-        emissive=True,
-        casts_shadows=False,
-    )
-    keys = []
-    for row in range(2):
-        for column in range(3):
-            keys.append(bp.u_box(
-                (
-                    register_center[0] - 0.12 + column * 0.12,
-                    register_center[1] - 0.07 + row * 0.07,
-                    register_center[2] - 0.224,
-                ),
-                (0.065, 0.042, 0.014),
-                0.003,
-            ))
-    add_part(
-        asset,
-        "Checkout Register Keys",
-        merge(keys),
-        "register",
-        "",
-        (0.50, 0.51, 0.43, 1.0),
-        casts_shadows=False,
-    )
-    rack_x = cx + 1.15
-    pole = bp.u_cylinder(
-        (rack_x, 1.30, cz + 0.27),
-        (0.055, 0.25, 0.055),
-        10,
-    )
-    add_part(
-        asset,
-        "Checkout Bag Rack",
-        pole,
-        "bag_rack",
-        "ShelfMetal",
-        SHELF_FRAME,
-    )
-    hooks = boxes((
-        ((rack_x - 0.11, 1.49, cz + 0.27), (0.22, 0.035, 0.035)),
-        ((rack_x + 0.11, 1.49, cz + 0.27), (0.22, 0.035, 0.035)),
-    ), 0.004)
-    add_part(
-        asset,
-        "Checkout Bag Rack Hooks",
-        hooks,
-        "bag_rack",
-        "ShelfMetal",
-        SHELF_FRAME,
-    )
-    bags = [
-        bp.u_box(
-            (rack_x - index * 0.025, 1.22, cz + 0.23 - index * 0.012),
-            (0.38, 0.30, 0.014),
-            0.004,
-        )
-        for index in range(3)
-    ]
-    add_part(
-        asset,
-        "Checkout Empty Bags",
-        merge(bags),
-        "bag_rack",
-        "",
-        (0.62, 0.67, 0.57, 1.0),
-        casts_shadows=False,
-    )
+    checkout_detail.build_checkout(asset, add_part, CHECKOUT_CENTRE, CHECKOUT_SIZE)
+    checkout_detail.build_environment(asset, add_part)
 
 def build_stockroom(asset: AssetBuild) -> None:
     cx, _, cz = STOCKROOM_CENTRE
     width, height, depth = STOCKROOM_SIZE
     front_z = cz - depth * 0.5 + 0.060
+    # The facade has real depth instead of an isolated front slab. Returns
+    # reach the rear wall; the final 2 mm are buried to prevent a light slit or
+    # two coplanar faces at the wall's visible inner plane.
+    rear_z = HALF_DEPTH - WALL_THICKNESS * .5 + .002
+    return_front = front_z + .058
+    return_depth = rear_z - return_front
+    return_centre = (rear_z + return_front) * .5
     door = boxes((
         ((cx, height * 0.5, front_z + 0.035),
          (width - 0.18, height - 0.15, 0.07)),
@@ -878,6 +805,14 @@ def build_stockroom(asset: AssetBuild) -> None:
          (0.15, height, 0.12)),
         ((cx + width * 0.5 - 0.075, height * 0.5, front_z),
          (0.15, height, 0.12)),
+        ((cx - width * .5 + .050, height * .5, return_centre),
+         (.10, height, return_depth)),
+        ((cx + width * .5 - .050, height * .5, return_centre),
+         (.10, height, return_depth)),
+        ((cx, height - .0375, return_centre),
+         (width, .075, return_depth)),
+        ((cx, height * .5, rear_z - .020),
+         (width, height, .040)),
     ), 0.012)
     add_part(
         asset,
@@ -999,6 +934,7 @@ def build() -> AssetBuild:
     for name, position in ANCHOR_UNITY_POSITIONS.items():
         add_anchor(asset, name, position)
     build_shell(asset)
+    build_entrance_doors(asset)
     build_ceiling_grid(asset)
     build_light_fixtures(asset)
     build_grime(asset)
@@ -1051,8 +987,8 @@ def validate(asset: AssetBuild) -> dict:
                 )
         if part.obj.type != "MESH":
             problems.append(f"'{part.name}' is not a mesh")
-        if len(part.obj.data.uv_layers) != 1:
-            problems.append(f"'{part.name}' does not have exactly one UV set")
+        if len(part.obj.data.uv_layers) != 2:
+            problems.append(f"'{part.name}' does not have pigment and metre UV sets")
     required_roles = {
         "floor", "ceiling", "wall", "entrance_frame", "ceiling_grid",
         "fluorescent_housing", "fluorescent_tube", "grime", "trim",
@@ -1126,7 +1062,7 @@ def validate(asset: AssetBuild) -> dict:
     shelf_contracts = {
         "shelf_dry": ((-5.20, -2.65, 0.0), (-4.20, 2.65, 2.05)),
         "shelf_pantry": ((0.85, -2.35, 0.0), (1.85, 2.35, 2.05)),
-        "shelf_cold": ((-3.20, 4.25, 0.0), (3.10, 4.90, 2.25)),
+        "shelf_cold": ((-3.20, 4.725, 0.0), (3.10, 5.375, 2.25)),
     }
     for role, (expected_low, expected_high) in shelf_contracts.items():
         validate_extent(
@@ -1141,18 +1077,23 @@ def validate(asset: AssetBuild) -> dict:
         if part.role in {"checkout", "register", "bag_rack"}
     ]
     checkout_low, checkout_high = bounds_for_parts(checkout_parts)
-    if (checkout_low[0] < 4.10 - 0.001 or checkout_high[0] > 6.90 + 0.001 or
-            checkout_low[1] < -4.00 - 0.001 or
-            checkout_high[1] > -3.05 + 0.001):
-        problems.append("checkout dressing escapes its 2.80 x 0.95 m footprint")
+    if (checkout_low[0] < 5.70 - 0.001 or checkout_high[0] > 6.60 + 0.001 or
+            checkout_low[1] < -3.90 - 0.001 or
+            checkout_high[1] > -0.70 + 0.001):
+        problems.append(f"checkout dressing escapes its wall-side 0.90 x 3.20 m footprint: {checkout_low}..{checkout_high}")
     stock_parts = [
         part for part in asset.parts if part.role == "stockroom_facade"
     ]
     stock_low, stock_high = bounds_for_parts(stock_parts)
     if (stock_low[0] < 4.65 - 0.001 or stock_high[0] > 6.80 + 0.001 or
-            stock_low[1] < 4.25 - 0.001 or stock_high[1] > 4.90 + 0.001 or
+            stock_low[1] < 4.725 - 0.001 or stock_high[1] > 5.378 or
             stock_low[2] < -0.001 or stock_high[2] > 2.35 + 0.001):
         problems.append("stockroom facade escapes its plan fixture bounds")
+    rear_inner = HALF_DEPTH - WALL_THICKNESS * .5
+    for role in ("shelf_cold", "stockroom_facade"):
+        _, rear_high = bounds_for_parts(part for part in asset.parts if part.role == role)
+        if not rear_inner - .001 <= rear_high[1] <= rear_inner + .003:
+            problems.append(f"{role} leaves a rear-wall gap or crosses the 3 mm wall bury")
     merged = merge(part.geometry for part in asset.parts)
     low, high = kit.bounds(merged)
     expected_low = (-HALF_WIDTH - WALL_THICKNESS * 0.5,
@@ -1287,6 +1228,7 @@ def manifest_for(asset: AssetBuild, report: dict, signature: str) -> dict:
         },
         "authored_text": [],
         "baked_products": False,
+        "decorative_snacks": {"count": 32, "interactive": False, "text": False},
         "source_axes": {"right": "+X", "forward": "+Y", "up": "+Z"},
         "unity_axes": {
             "right": "+X",

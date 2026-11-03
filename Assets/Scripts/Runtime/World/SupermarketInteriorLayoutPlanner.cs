@@ -21,6 +21,8 @@ namespace BarPromenade
         public const string DryGoodsShelfId = "shelf-dry-goods";
         public const string PantryShelfId = "shelf-pantry-spirits";
         public const string ColdShelfId = "shelf-cold";
+        public static readonly Bounds EntranceBasketBounds = new Bounds(
+            new Vector3(3.10f, 0.30f, -5.02f), new Vector3(0.56f, 0.60f, 0.42f));
 
         public static SupermarketInteriorLayoutPlan Generate(
             int citySeed,
@@ -40,8 +42,8 @@ namespace BarPromenade
             var shelves = CreateShelves(stableId);
             var cashier = new SupermarketCashierPlan(
                 "cashier-main",
-                new Vector3(5.28f, 0f, -2.82f),
-                180f,
+                new Vector3(7f, 0f, -2.25f),
+                270f,
                 1,
                 0.31f);
 
@@ -119,7 +121,7 @@ namespace BarPromenade
                 new SupermarketPathPlan(
                     "checkout-access",
                     SupermarketPathKind.CheckoutAccess,
-                    new Rect(2.15f, -4.75f, 1.60f, 2.60f),
+                    new Rect(2.15f, -4.75f, 3.20f, 3.05f),
                     1.60f)
             };
         }
@@ -131,13 +133,13 @@ namespace BarPromenade
                 new SupermarketFixturePlan(
                     "checkout-main",
                     SupermarketFixtureKind.Checkout,
-                    new Rect(4.10f, -4.00f, 2.80f, 0.95f),
+                    new Rect(5.70f, -3.90f, 0.90f, 3.20f),
                     1.05f,
                     true),
                 new SupermarketFixturePlan(
                     "stockroom-facade",
                     SupermarketFixtureKind.StockroomFacade,
-                    new Rect(4.65f, 4.25f, 2.15f, 0.65f),
+                    new Rect(4.65f, 4.725f, 2.15f, 0.65f),
                     2.35f,
                     true)
             };
@@ -207,6 +209,13 @@ namespace BarPromenade
                             new Vector3(0.42f, 0.37f, 0.38f)),
                         CreateProduct(
                             supermarketId,
+                            "wine-bottle",
+                            InventoryItemId.WineBottle,
+                            new Vector3(-0.28f, GondolaSecondTierTop, -0.95f),
+                            Quaternion.Euler(0f, 90f, 0f),
+                            new Vector3(0.12f, 0.37f, 0.12f)),
+                        CreateProduct(
+                            supermarketId,
                             "closed-stew-can",
                             InventoryItemId.ClosedStewCan,
                             new Vector3(
@@ -219,13 +228,13 @@ namespace BarPromenade
                 new SupermarketShelfPlan(
                     ColdShelfId,
                     SupermarketShelfKind.ColdShelf,
-                    new Rect(-3.20f, 4.25f, 6.30f, 0.65f),
+                    new Rect(-3.20f, 4.725f, 6.30f, 0.65f),
                     2.25f,
                     Vector3.back,
-                    new Vector3(-0.05f, 0.9f, 3.68f),
+                    new Vector3(-0.05f, 0.9f, 4.155f),
                     new Vector3(5.80f, 1.8f, 1.00f),
-                    new Vector3(-0.05f, 1.50f, 2.95f),
-                    new Vector3(-0.05f, 1.18f, 4.58f),
+                    new Vector3(-0.05f, 1.50f, 3.425f),
+                    new Vector3(-0.05f, 1.18f, 5.055f),
                     53f,
                     new[]
                     {
@@ -235,7 +244,14 @@ namespace BarPromenade
                             InventoryItemId.ChickenEgg,
                             new Vector3(0.45f, ColdFirstTierTop, -0.12f),
                             Quaternion.identity,
-                            new Vector3(0.48f, 0.34f, 0.36f))
+                            new Vector3(0.48f, 0.34f, 0.36f)),
+                        CreateProduct(
+                            supermarketId,
+                            "beer-can",
+                            InventoryItemId.BeerCan,
+                            new Vector3(-1.30f, ColdSecondTierTop, -0.12f),
+                            Quaternion.identity,
+                            new Vector3(0.12f, 0.22f, 0.12f))
                     })
             };
         }

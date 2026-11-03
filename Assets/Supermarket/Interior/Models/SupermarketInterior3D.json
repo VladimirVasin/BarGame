@@ -1,7 +1,7 @@
 {
   "generator": "tools/build-supermarket-interior-3d-model.py",
-  "generator_version": "1.0.0",
-  "blender_version": "5.0.1",
+  "generator_version": "1.2.1",
+  "blender_version": "5.2.3 LTS",
   "design_id": "supermarket_interior_v1",
   "display_name": "Bar Promenade Supermarket Interior",
   "dimensions_m": {
@@ -16,6 +16,11 @@
   },
   "authored_text": [],
   "baked_products": false,
+  "decorative_snacks": {
+    "count": 32,
+    "interactive": false,
+    "text": false
+  },
   "source_axes": {
     "right": "+X",
     "forward": "+Y",
@@ -65,8 +70,8 @@
     3.6,
     5.625
   ],
-  "mesh_count": 60,
-  "triangle_count": 4884,
+  "mesh_count": 86,
+  "triangle_count": 15776,
   "budgets": {
     "maximum_renderers": 90,
     "maximum_triangles": 30000,
@@ -80,14 +85,14 @@
       "name": "cashier",
       "role": "cashier",
       "local_position": [
-        5.28,
-        -2.82,
+        7.0,
+        -2.25,
         0.0
       ],
       "unity_local_position": [
-        5.28,
+        7.0,
         0.0,
-        -2.82
+        -2.25
       ]
     },
     {
@@ -206,14 +211,112 @@
       "name": "checkout",
       "role": "checkout",
       "local_position": [
-        5.5,
-        -3.525,
+        6.15,
+        -2.3,
         0.0
       ],
       "unity_local_position": [
-        5.5,
+        6.15,
         0.0,
-        -3.525
+        -2.3
+      ]
+    },
+    {
+      "name": "checkout_customer",
+      "role": "checkout_customer",
+      "local_position": [
+        4.85,
+        -2.25,
+        0.0
+      ],
+      "unity_local_position": [
+        4.85,
+        0.0,
+        -2.25
+      ]
+    },
+    {
+      "name": "checkout_hand_a",
+      "role": "checkout_hand_a",
+      "local_position": [
+        6.57,
+        -2.03,
+        1.07
+      ],
+      "unity_local_position": [
+        6.57,
+        1.07,
+        -2.03
+      ]
+    },
+    {
+      "name": "checkout_hand_b",
+      "role": "checkout_hand_b",
+      "local_position": [
+        6.57,
+        -2.47,
+        1.07
+      ],
+      "unity_local_position": [
+        6.57,
+        1.07,
+        -2.47
+      ]
+    },
+    {
+      "name": "checkout_light",
+      "role": "checkout_light",
+      "local_position": [
+        6.05,
+        -2.1,
+        2.55
+      ],
+      "unity_local_position": [
+        6.05,
+        2.55,
+        -2.1
+      ]
+    },
+    {
+      "name": "door_handle_inside",
+      "role": "door_handle_inside",
+      "local_position": [
+        -0.12,
+        -5.385,
+        1.05
+      ],
+      "unity_local_position": [
+        -0.12,
+        1.05,
+        -5.385
+      ]
+    },
+    {
+      "name": "door_handle_outside",
+      "role": "door_handle_outside",
+      "local_position": [
+        -0.12,
+        -5.595,
+        1.05
+      ],
+      "unity_local_position": [
+        -0.12,
+        1.05,
+        -5.595
+      ]
+    },
+    {
+      "name": "door_hinge",
+      "role": "door_hinge",
+      "local_position": [
+        -1.085,
+        -5.49,
+        0.0
+      ],
+      "unity_local_position": [
+        -1.085,
+        0.0,
+        -5.49
       ]
     },
     {
@@ -231,17 +334,31 @@
       ]
     },
     {
+      "name": "product_beer_can",
+      "role": "product_beer_can",
+      "local_position": [
+        -1.35,
+        4.93,
+        1.1725
+      ],
+      "unity_local_position": [
+        -1.35,
+        1.1725,
+        4.93
+      ]
+    },
+    {
       "name": "product_chicken_egg",
       "role": "product_chicken_egg",
       "local_position": [
         0.4,
-        4.455,
+        4.93,
         0.5725
       ],
       "unity_local_position": [
         0.4,
         0.5725,
-        4.455
+        4.93
       ]
     },
     {
@@ -301,6 +418,20 @@
       ]
     },
     {
+      "name": "product_wine_bottle",
+      "role": "product_wine_bottle",
+      "local_position": [
+        1.07,
+        -0.95,
+        1.0125
+      ],
+      "unity_local_position": [
+        1.07,
+        1.0125,
+        -0.95
+      ]
+    },
+    {
       "name": "room_centre",
       "role": "room_centre",
       "local_position": [
@@ -319,13 +450,13 @@
       "role": "shelf_cold",
       "local_position": [
         -0.05,
-        4.575,
+        5.05,
         0.0
       ],
       "unity_local_position": [
         -0.05,
         0.0,
-        4.575
+        5.05
       ]
     },
     {
@@ -361,13 +492,13 @@
       "role": "stockroom",
       "local_position": [
         5.725,
-        4.575,
+        5.05,
         0.0
       ],
       "unity_local_position": [
         5.725,
         0.0,
-        4.575
+        5.05
       ]
     },
     {
@@ -831,6 +962,456 @@
         7.8815,
         5.3815,
         1.19
+      ]
+    },
+    {
+      "name": "Entrance Active Leaf",
+      "role": "door_leaf",
+      "group": "door",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.38,
+        0.47,
+        0.45,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.38,
+          0.47,
+          0.45
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "door_hinge",
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -1.09,
+        -5.5275,
+        0.03
+      ],
+      "bounds_max": [
+        -0.01,
+        -5.4525,
+        2.88
+      ]
+    },
+    {
+      "name": "Entrance Active Glass",
+      "role": "door_glass",
+      "group": "door",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.24,
+        0.32,
+        0.29,
+        0.3
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.24,
+          0.32,
+          0.29
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "door_hinge",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -0.995,
+        -5.497,
+        1.055
+      ],
+      "bounds_max": [
+        -0.105,
+        -5.483,
+        2.815
+      ]
+    },
+    {
+      "name": "Entrance Active Kick Plate",
+      "role": "door_trim",
+      "group": "door",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.22,
+        0.245,
+        0.225,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.22,
+          0.245,
+          0.225
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "door_hinge",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -0.96,
+        -5.453,
+        0.09
+      ],
+      "bounds_max": [
+        -0.14,
+        -5.437,
+        0.49
+      ]
+    },
+    {
+      "name": "Entrance Active Handles",
+      "role": "door_handle",
+      "group": "door",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.47,
+        0.49,
+        0.43,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.47,
+          0.49,
+          0.43
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "door_hinge",
+      "colliders": [],
+      "vertices": 128,
+      "triangles": 232,
+      "bounds_min": [
+        -0.134,
+        -5.603,
+        0.87
+      ],
+      "bounds_max": [
+        -0.106,
+        -5.377,
+        1.23
+      ]
+    },
+    {
+      "name": "Entrance Fixed Leaf",
+      "role": "door_leaf",
+      "group": "door",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.38,
+        0.47,
+        0.45,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.38,
+          0.47,
+          0.45
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        0.01,
+        -5.5275,
+        0.03
+      ],
+      "bounds_max": [
+        1.09,
+        -5.4525,
+        2.88
+      ]
+    },
+    {
+      "name": "Entrance Fixed Glass",
+      "role": "door_glass",
+      "group": "door",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.24,
+        0.32,
+        0.29,
+        0.3
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.24,
+          0.32,
+          0.29
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        0.105,
+        -5.497,
+        1.055
+      ],
+      "bounds_max": [
+        0.995,
+        -5.483,
+        2.815
+      ]
+    },
+    {
+      "name": "Entrance Fixed Kick Plate",
+      "role": "door_trim",
+      "group": "door",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.22,
+        0.245,
+        0.225,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.22,
+          0.245,
+          0.225
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        0.14,
+        -5.453,
+        0.09
+      ],
+      "bounds_max": [
+        0.96,
+        -5.437,
+        0.49
+      ]
+    },
+    {
+      "name": "Entrance Fixed Handles",
+      "role": "door_handle",
+      "group": "door",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.47,
+        0.49,
+        0.43,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.47,
+          0.49,
+          0.43
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 128,
+      "triangles": 232,
+      "bounds_min": [
+        0.106,
+        -5.603,
+        0.87
+      ],
+      "bounds_max": [
+        0.134,
+        -5.377,
+        1.23
+      ]
+    },
+    {
+      "name": "Entrance Threshold",
+      "role": "door_trim",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.23,
+        0.25,
+        0.23,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.23,
+          0.25,
+          0.23
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -1.09,
+        -5.59,
+        0.0
+      ],
+      "bounds_max": [
+        1.09,
+        -5.39,
+        0.024
+      ]
+    },
+    {
+      "name": "Entrance Dark Backing",
+      "role": "door_backing",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.045,
+        0.057,
+        0.05,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.045,
+          0.057,
+          0.05
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -1.09,
+        -5.624,
+        0.01
+      ],
+      "bounds_max": [
+        1.09,
+        -5.606,
+        2.89
       ]
     },
     {
@@ -1634,12 +2215,12 @@
       "triangles": 140,
       "bounds_min": [
         -3.2,
-        4.25,
+        4.725,
         0.0
       ],
       "bounds_max": [
         3.1,
-        4.9,
+        5.375,
         2.25
       ]
     },
@@ -1679,12 +2260,12 @@
       "triangles": 28,
       "bounds_min": [
         -3.09,
-        4.7775,
+        5.2525,
         0.2175
       ],
       "bounds_max": [
         2.99,
-        4.8125,
+        5.2875,
         2.1675
       ]
     },
@@ -1724,12 +2305,12 @@
       "triangles": 224,
       "bounds_min": [
         -3.11,
-        4.255,
+        4.73,
         0.235
       ],
       "bounds_max": [
         3.01,
-        4.89,
+        5.365,
         2.085
       ]
     },
@@ -1769,12 +2350,12 @@
       "triangles": 28,
       "bounds_min": [
         -3.05,
-        4.2675,
+        4.7425,
         2.0825
       ],
       "bounds_max": [
         2.95,
-        4.3225,
+        4.7975,
         2.1575
       ]
     },
@@ -1814,13 +2395,238 @@
       "triangles": 56,
       "bounds_min": [
         -2.56,
-        4.254,
+        4.729,
         0.37
       ],
       "bounds_max": [
         2.14,
-        4.266,
+        4.741,
         1.45
+      ]
+    },
+    {
+      "name": "Shelf Dry Upright Slots",
+      "role": "shelf_dry",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.075,
+        0.085,
+        0.075,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.085,
+          0.075
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 256,
+      "triangles": 448,
+      "bounds_min": [
+        -4.246,
+        -2.582,
+        0.4825
+      ],
+      "bounds_max": [
+        -4.238,
+        2.582,
+        1.9175
+      ]
+    },
+    {
+      "name": "Shelf Dry Brackets",
+      "role": "shelf_dry",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.34,
+        0.36,
+        0.31,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.36,
+          0.31
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -4.67,
+        -2.61,
+        0.2925
+      ],
+      "bounds_max": [
+        -4.25,
+        2.61,
+        1.5175
+      ]
+    },
+    {
+      "name": "Shelf Pantry Upright Slots",
+      "role": "shelf_pantry",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.075,
+        0.085,
+        0.075,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.085,
+          0.075
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 256,
+      "triangles": 448,
+      "bounds_min": [
+        0.888,
+        -2.282,
+        0.4825
+      ],
+      "bounds_max": [
+        0.896,
+        2.282,
+        1.9175
+      ]
+    },
+    {
+      "name": "Shelf Pantry Brackets",
+      "role": "shelf_pantry",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.34,
+        0.36,
+        0.31,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.36,
+          0.31
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        0.9,
+        -2.31,
+        0.2925
+      ],
+      "bounds_max": [
+        1.32,
+        2.31,
+        1.5175
+      ]
+    },
+    {
+      "name": "Cold Cabinet Toe Vent",
+      "role": "cold_vent",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.08,
+        0.105,
+        0.1,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.08,
+          0.105,
+          0.1
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 464,
+      "triangles": 812,
+      "bounds_min": [
+        -2.92,
+        4.711,
+        0.1075
+      ],
+      "bounds_max": [
+        2.82,
+        4.723,
+        0.1425
       ]
     },
     {
@@ -1855,17 +2661,107 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 44,
-      "triangles": 76,
+      "vertices": 48,
+      "triangles": 84,
       "bounds_min": [
-        4.1,
-        -4.0,
+        5.7,
+        -3.9,
         0.0
       ],
       "bounds_max": [
-        6.9,
-        -3.05,
+        6.6,
+        -0.7,
         1.05
+      ]
+    },
+    {
+      "name": "Checkout Front Panels",
+      "role": "checkout",
+      "group": "fixed",
+      "sheet": "Counter",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.53,
+        0.49,
+        0.34,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.53,
+          0.49,
+          0.34
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        5.701,
+        -3.785,
+        0.25
+      ],
+      "bounds_max": [
+        5.727,
+        -0.815,
+        0.91
+      ]
+    },
+    {
+      "name": "Checkout Rails Scanner Tray And Bag Rack",
+      "role": "bag_rack",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.47,
+        0.49,
+        0.44,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.47,
+          0.49,
+          0.44
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 224,
+      "triangles": 392,
+      "bounds_min": [
+        5.7005,
+        -3.8925,
+        1.05
+      ],
+      "bounds_max": [
+        6.5995,
+        -0.7075,
+        1.3925
       ]
     },
     {
@@ -1900,39 +2796,39 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 64,
+      "triangles": 112,
       "bounds_min": [
-        4.33,
-        -3.89175,
-        1.05
+        5.78,
+        -3.84,
+        1.052
       ],
       "bounds_max": [
-        6.01,
-        -3.19825,
-        1.102
+        6.51,
+        -0.76,
+        1.137
       ]
     },
     {
-      "name": "Checkout Front Panels",
-      "role": "checkout",
+      "name": "Checkout Register",
+      "role": "register",
       "group": "fixed",
       "sheet": "Counter",
       "emissive": false,
-      "casts_shadows": false,
-      "shadows": false,
+      "casts_shadows": true,
+      "shadows": true,
       "base_color": [
-        0.67,
-        0.61,
-        0.38,
+        0.23,
+        0.26,
+        0.24,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.67,
-          0.61,
-          0.38
+          0.23,
+          0.26,
+          0.24
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1945,38 +2841,353 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 48,
-      "triangles": 84,
+      "vertices": 80,
+      "triangles": 140,
       "bounds_min": [
-        4.282,
-        -3.9925,
-        0.294
+        5.8075,
+        -1.735,
+        1.095
       ],
       "bounds_max": [
-        6.718,
-        -3.9575,
-        0.903
+        6.405,
+        -1.305,
+        1.605
       ]
     },
     {
-      "name": "Checkout Register",
+      "name": "Checkout Register Keys",
       "role": "register",
       "group": "fixed",
-      "sheet": "Counter",
+      "sheet": "",
       "emissive": false,
-      "casts_shadows": true,
-      "shadows": true,
+      "casts_shadows": false,
+      "shadows": false,
       "base_color": [
-        0.29,
+        0.56,
+        0.55,
+        0.45,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.56,
+          0.55,
+          0.45
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 192,
+      "triangles": 336,
+      "bounds_min": [
+        6.4095,
+        -1.6735,
+        1.1395
+      ],
+      "bounds_max": [
+        6.4225,
+        -1.4135,
+        1.2465
+      ]
+    },
+    {
+      "name": "Checkout Register Display",
+      "role": "register",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.24,
         0.31,
+        0.22,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.24,
+          0.31,
+          0.22
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        5.795,
+        -1.645,
+        1.38
+      ],
+      "bounds_max": [
+        6.282,
+        -1.355,
+        1.56
+      ]
+    },
+    {
+      "name": "Checkout Paper Bags And Till Rolls",
+      "role": "bag_rack",
+      "group": "fixed",
+      "sheet": "Cardboard",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.65,
+        0.64,
+        0.52,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.65,
+          0.64,
+          0.52
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 128,
+      "triangles": 224,
+      "bounds_min": [
+        6.187,
+        -3.665,
+        0.71
+      ],
+      "bounds_max": [
+        6.47,
+        -1.295,
+        1.35
+      ]
+    },
+    {
+      "name": "Checkout Decorative Snack Trays And Wire Rack",
+      "role": "checkout",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.24,
+        0.28,
+        0.25,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.24,
+          0.28,
+          0.25
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 128,
+      "triangles": 224,
+      "bounds_min": [
+        5.729,
+        -3.7,
+        0.325
+      ],
+      "bounds_max": [
+        6.185,
+        -2.02,
+        1.1935
+      ]
+    },
+    {
+      "name": "Checkout Decorative Snack Wrappers 01",
+      "role": "checkout",
+      "group": "fixed",
+      "sheet": "Cardboard",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.46,
+        0.29,
+        0.18,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.46,
+          0.29,
+          0.18
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 448,
+      "triangles": 864,
+      "bounds_min": [
+        5.7125,
+        -3.6765,
+        0.3825
+      ],
+      "bounds_max": [
+        6.165,
+        -2.004,
+        1.2485
+      ]
+    },
+    {
+      "name": "Checkout Decorative Snack Wrappers 02",
+      "role": "checkout",
+      "group": "fixed",
+      "sheet": "Cardboard",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.57,
+        0.47,
+        0.23,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.57,
+          0.47,
+          0.23
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 448,
+      "triangles": 864,
+      "bounds_min": [
+        5.7125,
+        -3.6765,
+        0.3825
+      ],
+      "bounds_max": [
+        6.165,
+        -2.004,
+        1.2485
+      ]
+    },
+    {
+      "name": "Checkout Decorative Snack Wrappers 03",
+      "role": "checkout",
+      "group": "fixed",
+      "sheet": "Cardboard",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.32,
+        0.4,
+        0.31,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.32,
+          0.4,
+          0.31
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 448,
+      "triangles": 864,
+      "bounds_min": [
+        5.7125,
+        -3.6765,
+        0.3825
+      ],
+      "bounds_max": [
+        6.165,
+        -2.304,
+        1.2485
+      ]
+    },
+    {
+      "name": "Checkout Decorative Snack Wrappers 04",
+      "role": "checkout",
+      "group": "fixed",
+      "sheet": "Cardboard",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.43,
+        0.26,
         0.27,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.29,
-          0.31,
+          0.43,
+          0.26,
           0.27
         ],
         "scale": 1.0,
@@ -1990,39 +3201,174 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 448,
+      "triangles": 864,
       "bounds_min": [
-        6.078,
-        -3.705,
-        1.02
+        5.7125,
+        -3.5895,
+        0.3825
       ],
       "bounds_max": [
-        6.658,
-        -3.225,
-        1.35
+        6.165,
+        -2.154,
+        1.2485
       ]
     },
     {
-      "name": "Checkout Register Display",
-      "role": "register",
+      "name": "Checkout Decorative Wrapper Seals",
+      "role": "checkout",
+      "group": "fixed",
+      "sheet": "Cardboard",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.64,
+        0.59,
+        0.43,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.64,
+          0.59,
+          0.43
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 512,
+      "triangles": 896,
+      "bounds_min": [
+        5.706,
+        -3.669,
+        0.495
+      ],
+      "bounds_max": [
+        6.098,
+        -2.0275,
+        1.2285
+      ]
+    },
+    {
+      "name": "Checkout Contact Wear And Cable Ports",
+      "role": "checkout",
+      "group": "fixed",
+      "sheet": "Counter",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.23,
+        0.25,
+        0.22,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.23,
+          0.25,
+          0.22
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min": [
+        5.7,
+        -3.54,
+        0.1425
+      ],
+      "bounds_max": [
+        6.595,
+        -0.96,
+        1.064
+      ]
+    },
+    {
+      "name": "Checkout Warm Practical Housing",
+      "role": "trim",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.27,
+        0.3,
+        0.27,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.27,
+          0.3,
+          0.27
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 112,
+      "triangles": 196,
+      "bounds_min": [
+        5.7875,
+        -2.3825,
+        2.55
+      ],
+      "bounds_max": [
+        6.3125,
+        -1.8175,
+        3.385
+      ]
+    },
+    {
+      "name": "Checkout Warm Practical Diffuser",
+      "role": "trim",
       "group": "fixed",
       "sheet": "",
       "emissive": true,
       "casts_shadows": false,
       "shadows": false,
       "base_color": [
-        0.74,
-        0.35,
-        0.16,
+        0.76,
+        0.58,
+        0.32,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.74,
-          0.35,
-          0.16
+          0.76,
+          0.58,
+          0.32
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2038,81 +3384,36 @@
       "vertices": 16,
       "triangles": 28,
       "bounds_min": [
-        6.213,
-        -3.732363,
-        1.219747
+        5.835,
+        -2.325,
+        2.6225
       ],
       "bounds_max": [
-        6.523,
-        -3.689637,
-        1.330253
+        6.265,
+        -1.875,
+        2.6475
       ]
     },
     {
-      "name": "Checkout Register Keys",
-      "role": "register",
-      "group": "fixed",
-      "sheet": "",
-      "emissive": false,
-      "casts_shadows": false,
-      "shadows": false,
-      "base_color": [
-        0.5,
-        0.51,
-        0.43,
-        1.0
-      ],
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.5,
-          0.51,
-          0.43
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "parent_anchor": "",
-      "colliders": [],
-      "vertices": 96,
-      "triangles": 168,
-      "bounds_min": [
-        6.2155,
-        -3.726,
-        1.109
-      ],
-      "bounds_max": [
-        6.5205,
-        -3.712,
-        1.221
-      ]
-    },
-    {
-      "name": "Checkout Bag Rack",
-      "role": "bag_rack",
+      "name": "Wall Service Conduit And Ventilation",
+      "role": "trim",
       "group": "fixed",
       "sheet": "ShelfMetal",
       "emissive": false,
       "casts_shadows": true,
       "shadows": true,
       "base_color": [
-        0.34,
-        0.36,
-        0.31,
+        0.35,
+        0.37,
+        0.32,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.34,
-          0.36,
-          0.31
+          0.35,
+          0.37,
+          0.32
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2125,39 +3426,39 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 20,
-      "triangles": 36,
+      "vertices": 304,
+      "triangles": 532,
       "bounds_min": [
-        6.6225,
-        -3.281154,
-        1.05
+        6.045,
+        -4.55,
+        0.275
       ],
       "bounds_max": [
-        6.6775,
-        -3.228846,
-        1.55
+        7.87,
+        3.2,
+        3.3675
       ]
     },
     {
-      "name": "Checkout Bag Rack Hooks",
-      "role": "bag_rack",
+      "name": "Entrance Stacked Shopping Baskets",
+      "role": "trim",
       "group": "fixed",
-      "sheet": "ShelfMetal",
+      "sheet": "Counter",
       "emissive": false,
       "casts_shadows": true,
       "shadows": true,
       "base_color": [
-        0.34,
-        0.36,
-        0.31,
+        0.29,
+        0.35,
+        0.3,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.34,
-          0.36,
-          0.31
+          0.29,
+          0.35,
+          0.3
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2170,39 +3471,39 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 400,
+      "triangles": 700,
       "bounds_min": [
-        6.43,
-        -3.2725,
-        1.4725
+        2.8225,
+        -5.2175,
+        0.1175
       ],
       "bounds_max": [
-        6.87,
-        -3.2375,
-        1.5075
+        3.3775,
+        -4.8225,
+        0.588
       ]
     },
     {
-      "name": "Checkout Empty Bags",
-      "role": "bag_rack",
+      "name": "Entrance Basket Openings And Handles",
+      "role": "trim",
       "group": "fixed",
       "sheet": "",
       "emissive": false,
       "casts_shadows": false,
       "shadows": false,
       "base_color": [
-        0.62,
-        0.67,
-        0.57,
+        0.12,
+        0.16,
+        0.13,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.62,
-          0.67,
-          0.57
+          0.12,
+          0.16,
+          0.13
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2215,17 +3516,17 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 48,
-      "triangles": 84,
+      "vertices": 448,
+      "triangles": 784,
       "bounds_min": [
-        6.41,
-        -3.326,
-        1.07
+        2.8675,
+        -5.227,
+        0.185
       ],
       "bounds_max": [
-        6.84,
-        -3.288,
-        1.37
+        3.3325,
+        -4.8275,
+        0.5625
       ]
     },
     {
@@ -2260,16 +3561,16 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 64,
-      "triangles": 112,
+      "vertices": 128,
+      "triangles": 224,
       "bounds_min": [
         4.65,
-        4.25,
+        4.725,
         0.0
       ],
       "bounds_max": [
         6.8,
-        4.38,
+        5.377,
         2.35
       ]
     },
@@ -2309,12 +3610,12 @@
       "triangles": 28,
       "bounds_min": [
         5.415,
-        4.2675,
+        4.7425,
         1.127
       ],
       "bounds_max": [
         6.035,
-        4.2925,
+        4.7675,
         1.317
       ]
     },
@@ -2354,12 +3655,12 @@
       "triangles": 56,
       "bounds_min": [
         4.755,
-        3.855,
+        4.33,
         0.0
       ],
       "bounds_max": [
         5.385,
-        4.325,
+        4.8,
         0.96
       ]
     },
@@ -2399,12 +3700,12 @@
       "triangles": 56,
       "bounds_min": [
         5.015,
-        3.87,
+        4.345,
         0.553
       ],
       "bounds_max": [
         5.1875,
-        4.31,
+        4.785,
         0.972
       ]
     },
@@ -3129,5 +4430,5 @@
       ]
     }
   ],
-  "build_signature": "bfd912a7867e8d8d72dc0f819530176483764e449a293c817a57e3aeedb7b928"
+  "build_signature": "c4f592b32ab08c1cce2eaf2352cae157bb9d3efc16371ba722b7567b515eb2bc"
 }

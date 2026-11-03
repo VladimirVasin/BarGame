@@ -353,7 +353,8 @@ namespace BarPromenade
                 Renderer renderer = part.Renderer;
                 renderer.sharedMaterial = part.Emissive
                     ? CityNightResources.EmissiveMaterial
-                    : RuntimePrimitiveFactory.DefaultMaterial;
+                    : part.Role == "door_glass" ? BarDrinkServiceResources.GlassMaterial
+                    : SupermarketSurfaceAppearance.SharedMaterial;
                 renderer.shadowCastingMode = part.CastsShadows
                     ? ShadowCastingMode.On
                     : ShadowCastingMode.Off;
@@ -377,6 +378,9 @@ namespace BarPromenade
                 else
                 {
                     ApplyFlatAppearance(properties, part.BaseColor);
+                    properties.SetFloat("_SceneResponseStrength", 0f);
+                    properties.SetFloat("_SceneNormalStrength", 0f);
+                    if (part.Role == "door_glass") properties.SetFloat("_Smoothness", .62f);
                 }
 
                 renderer.SetPropertyBlock(properties);
@@ -439,6 +443,7 @@ namespace BarPromenade
             properties.SetColor(LegacyColorId, displayTint);
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
+            SupermarketSurfaceAppearance.ApplyResponse(properties, kind);
         }
 
         private static void ApplyFlatAppearance(

@@ -6,11 +6,40 @@ namespace BarPromenade
         MonoBehaviour,
         IInteractable
     {
+        private InteriorHingedDoorInteraction door;
+        private PlayerInteractor pendingInteractor;
+
+        public void Initialize(InteriorHingedDoorInteraction configuredDoor)
+        {
+            if (door != null) door.InteractionFinished -= DoorFinished;
+            door = configuredDoor;
+            if (door != null) door.InteractionFinished += DoorFinished;
+        }
+
+        private void DoorFinished(bool completed)
+        {
+            PlayerInteractor interactor = pendingInteractor;
+            pendingInteractor = null;
+            if (completed && interactor != null && !CompleteDoorAction(interactor))
+                door.TrySetOpenFraction(0f);
+        }
+
+        private void OnDisable()
+        {
+            pendingInteractor = null;
+            door?.Cancel();
+        }
+        private void OnDestroy()
+        {
+            if (door != null) door.InteractionFinished -= DoorFinished;
+        }
+
         public string PromptKey => "interaction.exit_supermarket";
         public Vector3 InteractionPosition => transform.position;
 
         public bool CanInteract(PlayerInteractor interactor)
         {
+            if (door != null) return !SceneTransitionService.IsTransitioning && door.CanInteract(interactor);
             PlayerDoorActionTarget doorAction =
                 GetComponent<PlayerDoorActionTarget>();
             return !SceneTransitionService.IsTransitioning &&
@@ -25,6 +54,12 @@ namespace BarPromenade
                 return;
             }
 
+            if (door != null)
+            {
+                pendingInteractor = interactor;
+                if (!door.Begin()) pendingInteractor = null;
+                return;
+            }
             PlayerDoorActionTarget doorAction =
                 GetComponent<PlayerDoorActionTarget>();
             doorAction.TryBegin(
@@ -32,7 +67,7 @@ namespace BarPromenade
                 () => CompleteDoorAction(interactor));
         }
 
-        private static void CompleteDoorAction(
+        private static bool CompleteDoorAction(
             PlayerInteractor interactor)
         {
             PlayerMotor motor = interactor == null
@@ -57,6 +92,7 @@ namespace BarPromenade
                 "supermarket_exit_result",
                 GameLog.Field("accepted", accepted),
                 GameLog.Field("operation_id", operationId));
+            return accepted;
         }
     }
 }
