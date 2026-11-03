@@ -5,6 +5,8 @@ Shader "Bar Promenade/Combat Wound"
         [MainTexture] _BaseMap("Blood grain", 2D) = "white" {}
         _BulletWound("Projectile wound", Float) = 1
         _BulletHoleCount("Hole count", Float) = 0
+        [HideInInspector] _CorpseDecay("Corpse material decay", Range(0,1)) = 0
+        [HideInInspector] _CorpseSeed("Corpse material pattern", Float) = 0
     }
     SubShader
     {
@@ -34,7 +36,10 @@ Shader "Bar Promenade/Combat Wound"
                 float4 _BulletHoles[8];
                 float4 _BulletShapes[8];
                 float4 _BulletStates[8];
+                half _CorpseDecay;
+                float _CorpseSeed;
             CBUFFER_END
+            #include "WarehouseCorpseDecay.hlsl"
 
             struct Attributes
             {
@@ -148,6 +153,7 @@ Shader "Bar Promenade/Combat Wound"
                     if (alpha > surface.a) surface = half4(color, alpha);
                 }
                 clip(surface.a - .35);
+                surface.rgb *= WarehouseCorpseBreakup(input.uv);
                 return half4(MixFog(surface.rgb, input.fog), 1);
             }
             ENDHLSL

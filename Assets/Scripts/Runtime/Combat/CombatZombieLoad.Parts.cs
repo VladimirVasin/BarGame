@@ -31,6 +31,37 @@ namespace BarPromenade
         internal Transform GetBoardBone(int index) => boards[index].Bone;
         internal Rigidbody GetBoardBody(int index) => boards[index].Body;
         internal bool IsBoardDetached(int index) => boards[index].Detached;
+        internal bool CorpsePartsResting
+        {
+            get
+            {
+                // A paused proxy is kinematic while its saved velocity is live.
+                // Fish also keep their diminishing spasms/deformation before
+                // age five, even if a native body briefly falls asleep.
+                if (partsFrozen || simulationFrozen || !catchSpilledOnFall) return false;
+                foreach (Part part in boards)
+                    if (part.Detached && !part.Retired && !CorpseProxyResting(part.Body)) return false;
+                foreach (Fish fish in fishParts)
+                    if (fish != null && !fish.Retired && (fish.Pending || fish.Exiting ||
+                        fish.Released && (fish.Age < 5f || !CorpseProxyResting(fish.Body)))) return false;
+                return true;
+            }
+        }
+
+        private static bool CorpseProxyResting(Rigidbody body) => body == null || body.isKinematic || body.IsSleeping();
+
+        internal void CollectCorpseRenderers(List<Renderer> target)
+        {
+            // Released boards/fish retain their original skinned surfaces under
+            // Model. External debris hosts own only physics, not duplicate art.
+            RestoreReleasedPoses();
+            UpdatePartBounds();
+            if (woodSkin != null && woodSkin.enabled && woodSkin.gameObject.activeInHierarchy && !target.Contains(woodSkin))
+                target.Add(woodSkin);
+            if (catchSkin != null && catchSkin.enabled && catchSkin.gameObject.activeInHierarchy && !target.Contains(catchSkin))
+                target.Add(catchSkin);
+        }
+
         internal Vector3 CrateDimensions
         {
             get

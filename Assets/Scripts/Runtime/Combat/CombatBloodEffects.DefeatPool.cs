@@ -21,6 +21,14 @@ namespace BarPromenade
             public bool Active;
         }
 
+        internal void CollectCorpsePoolRenderers(CombatActor actor, System.Collections.Generic.List<Renderer> target)
+        {
+            if (!TryGetDefeatPool(actor, out DefeatPool pool)) return;
+            foreach (PoolLobe lobe in pool.Lobes)
+                if (lobe != null && lobe.Transform != null && lobe.Transform.gameObject.activeInHierarchy)
+                    target.Add(lobe.Transform.GetComponent<MeshRenderer>());
+        }
+
         public int DefeatPoolCount
         {
             get

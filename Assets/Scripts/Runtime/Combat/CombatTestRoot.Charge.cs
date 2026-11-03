@@ -134,6 +134,7 @@ namespace BarPromenade
         private void OnApplicationFocus(bool focused)
         {
             pistolApplicationFocused = focused;
+            CorpseDecay?.SetPaused(!focused || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused);
             roomTableau?.SetSoundPaused(!focused || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused);
             GameCursor.SetApplicationFocused(focused);
             if (IsInitialized)
@@ -155,6 +156,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            CorpseDecay?.Clear();
             Rendering.HawthornHealingPulse.Clear(CameraFollow != null ? CameraFollow.Camera : null);
             HawthornHealingAudio.Clear(CameraFollow != null ? CameraFollow.Camera : null);
             if (IsStoryContinuation) GameSessionState.CaptureStoryPistolState(Hero);

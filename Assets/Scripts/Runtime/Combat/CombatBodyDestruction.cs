@@ -1442,6 +1442,24 @@ namespace BarPromenade
             BodyDamageRegion.LeftFoot or BodyDamageRegion.RightFoot => 1f, _ => 8f
         };
 
+        internal bool CorpsePartsResting(CombatActor actor)
+        {
+            if (!bodies.TryGetValue(actor, out Body body)) return true;
+            foreach (Fragment fragment in body.Fragments)
+                if (fragment.PendingImpulse.sqrMagnitude > 0f || fragment.Body != null &&
+                    !fragment.Body.isKinematic && !fragment.Body.IsSleeping() &&
+                    (fragment.Body.linearVelocity.sqrMagnitude > .0144f || fragment.Body.angularVelocity.sqrMagnitude > .04f)) return false;
+            return true;
+        }
+
+        internal void CollectCorpseRenderers(CombatActor actor, List<Renderer> target)
+        {
+            if (!bodies.TryGetValue(actor, out Body body)) return;
+            foreach (Piece piece in body.Pieces)
+                if (piece.Released != null && piece.Released.enabled && piece.Released.gameObject.activeInHierarchy)
+                    target.Add(piece.Released);
+        }
+
         internal void Tick(float seconds)
         {
             if (seconds <= 0f || frozen) return;

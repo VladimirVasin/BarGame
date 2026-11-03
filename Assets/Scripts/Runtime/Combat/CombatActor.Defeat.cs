@@ -39,6 +39,8 @@ namespace BarPromenade
         public bool IsRagdollActive => Ragdoll != null && Ragdoll.IsActive;
         public string ActiveClipName => visibleClip;
         public bool IsWeaponDropped => activeCarry == null ? weaponDropped : activeCarry.Location == CombatWeaponCarryLocation.Dropped;
+        internal bool DroppedWeaponResting => !IsWeaponDropped || weaponBody == null || weaponBody.isKinematic ||
+            weaponBody.IsSleeping() || weaponBody.linearVelocity.sqrMagnitude <= .0144f && weaponBody.angularVelocity.sqrMagnitude <= .04f;
         /// <summary>The standing winner's bar waits in his closed left hand while the right one is busy.</summary>
         public bool IsWeaponInLeftHand { get; private set; }
         internal long ProjectileDefeatTicks { get; private set; }

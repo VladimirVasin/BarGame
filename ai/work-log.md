@@ -4,6 +4,9 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-03
+Warehouse:fall/hold→material collapse;independent snapshots retain wounds/parts/blood
+through reuse;moving/fullpool defer;finite flakes/local sound/pause/reset/fish clear.
+Warehouse_CorpseDecayPreservesDeathAndPoolLifecycle passed;frames reviewed.
 Bar close:warn/request,grace,finish/stand/walk/door;
 clean leftovers;pause keeps deadline;rig/camera/24FX/§6.
 Menu;clear→pan,blocked→validated hall cut/back;hero stays.
@@ -19,12 +22,11 @@ BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment/
 WineService_FullGlassTakesThreeSeparateSips/PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce/
 BeerService_WaitsForPhysicalArrivalAndExplicitDrink/BottleService_WaitsForEveryArrivalAndExplicitDrink
 passed;full/partial/empty frames.
-Shop:metal/glass door/contact/sweep;dense stock/shared surfaces,
-finite reflection;rear flush fixtures/cartons;metric beer/wine;atomic sale/receipt. Beer/wine/cognac stronger,stress kept;beer500ml=bar portion,
-wine750ml=three250ml;partial-dose rounding. Carried ID/fill/open;
-opaque Al can/tab,wine screw cap,wardrobe/weapon cleanup. Cashier:skin/clothUV,bulging3D face,rig-measured hands. R lane/scanner/
-register/packing/snacks;palms/customer/light anchors. Baskets/cables/vents/wear;
-7offers/body/CCTV/light budgets/§6 kept.
+Shop:metal/glass door/contact,dense stock/shared surfaces/reflection,rear flush cartons,
+R checkout/scanner/packing/snacks/anchors;wear/baskets/cables/vents.
+Atomic sale/receipt;beer/wine/cognac stronger,stress kept;beer=barportion/wine=three;
+ml-dose rounding,carried ID/fill/open,Al tab/wine cap,rig cleanup.
+Cashier:UV/3D face/rig-measured hands;offers/body/CCTV/light budgets/§6 kept.
 Product/interior/cashier validators+supermarket_surface_response passed.
 Import:unique drink anchors/Texture2D response/unpacked door pivots;
 main-thread reflection buffers;bounded Al impact/surface,no glass audio.
@@ -32,12 +34,10 @@ Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures,
 AreaCaptureFixture.Supermarket/DrinkContainers_PurchaseSipSwitch_PreserveFillOpeningAndContacts
 passed;bar/inventory doses+rear/palm/counter/customer contacts;
 rear-wall/checkout/face/door/grip frames.
-Hawthorn:seeded vials/ammo;yellow outline/shared pickup;Use→auto-close inventory→
-rig gulp,+30HP/+40intox/dose;HPHUD<max/inventory HP;full/defeated reject. Lip clear→.65s
-headshake/grimace→throw→prior hand;expressive gulp.
-Red4active-real s,last2:frozen-world drift/smear over live view;half-resRT/camera.
-Quiet swell2s;black/UI/halation,pause/retrigger/cleanup/intox kept;Blender vial/grips.
-Fixture:inactive-Docker ground isolation/YAML ws.
+Hawthorn:seed vials/ammo;yellow/shared pickup;Use→auto-close→rig gulp,+HP/intox/dose;
+HPHUD/inventoryHP;full/defeated reject. Lipclear→headshake/grimace→throw→hand.
+Red/frozen-world drift/smear/live/halfRT;gulp/swell;black/UI/halation,pause/retrigger/
+cleanup/intox kept;Blender vial/grips;inactive-Docker ground isolation.
 CombatWarehouseHawthorn passed.
 Mirror:packaged straight-alpha Lit glass/build gate.
 HomeBathroomMirrorPlayModeTests passed;asset/transmission.

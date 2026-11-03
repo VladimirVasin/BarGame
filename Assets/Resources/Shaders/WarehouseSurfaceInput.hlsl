@@ -39,6 +39,8 @@ half _WarehouseAnisotropy;
 half _WarehouseWetReflection;
 float4 _WarehouseAuxRect;
 half _WarehouseAuxiliary;
+half _CorpseDecay;
+float _CorpseSeed;
 CBUFFER_END
 
 // NOTE: Do not ifdef the properties for dots instancing, but ifdef the actual usage.
@@ -120,6 +122,18 @@ void SetupDOTSLitMaterialPropertyCaches()
 #define _DetailAlbedoMapScale   unity_DOTS_Sampled_DetailAlbedoMapScale
 #define _DetailNormalMapScale   unity_DOTS_Sampled_DetailNormalMapScale
 
+#endif
+
+#if defined(WAREHOUSE_CORPSE_DECAY)
+#include "WarehouseCorpseDecay.hlsl"
+
+half4 WarehouseCorpseAlbedo(float2 uv, TEXTURE2D_PARAM(albedoAlphaMap, sampler_albedoAlphaMap))
+{
+    half4 albedo = SampleAlbedoAlpha(uv, TEXTURE2D_ARGS(albedoAlphaMap, sampler_albedoAlphaMap));
+    albedo.rgb *= WarehouseCorpseBreakup(uv);
+    return albedo;
+}
+#define SampleAlbedoAlpha WarehouseCorpseAlbedo
 #endif
 
 TEXTURE2D(_ParallaxMap);        SAMPLER(sampler_ParallaxMap);

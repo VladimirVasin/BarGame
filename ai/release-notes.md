@@ -8,6 +8,8 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-03
 
+- Склад:тела осыпаются после падения и паузы;шорох/след.
+  Warehouse_CorpseDecayPreservesDeathAndPoolLifecycle.
 - Бар:предупреждение/просьба,доподача/допить/встать/выход;уборка.
   Пауза/срок/камера/меню. Бармен:подача→салфетка→зал;кадр/поза ждут речь.
   LastGuest_ClosingPreservesMenuSipAndWalksToDoor.
@@ -15,11 +17,9 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   Водка/коньяк разом.
   BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment/
   WineService_FullGlassTakesThreeSeparateSips.
-- Магазин:выкладка/дверь/фактура;шкафы у стены;касса справа:
-  лента/сканер/пакеты/снеки,опоры рук/света;корзины/кабели/вент;
-  кассир:фактура/раздельные руки/3D-лицо. Пиво/вино:покупка/питьё/остаток,
-  целая банка/звук поверхности;пиво/вино/коньяк крепче;
-  банка=порция/вино750мл=3/доза по мл.
+- Магазин:выкладка/дверь/фактура,шкафы у стены,касса справа/опоры;
+  кассир:руки/3D-лицо. Пиво/вино:покупка/питьё/остаток;
+  целая банка/металлический звук;крепче,банка=порция/вино=3/доза по мл.
   AreaCaptureFixture.Supermarket/Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures/
   DrinkContainers_PurchaseSipSwitch_PreserveFillOpeningAndContacts passed;
   rear-wall/checkout/face;bar/inventory doses.

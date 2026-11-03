@@ -4213,25 +4213,26 @@ Unity legacy:аварийный резерв. Заголовок/основно�
 
 ### Принятое исключение — боевой полигон
 
+`2026-11-03`/§6,user:warehouse «Оседание»:fall/spasm→hold→dark flakes/crumble→trace;
+Room plaster/cloth,Docker damp fibre;shadow/depth/SSR match. Hero/Crane regen/fish3
+kept;glow/light/camera/input/voice/lore0;§16/21/art9;arch.
 `2026-11-03`/§6:warehouse/3seed vials:brown glass/worn pale
 «Боярышника настойка»/screw cap;Use→auto-close inventory→rig gulp;
-lip clear→.65s rig headshake/grimace→empty throw→prior hand,no bottle check.
-Crimson/plum shadows/hot edges/peripheral wave/RGB→normal in4active-real s;
-last2:frozen-world snapshot periodically drifts/smears over live view.
-One half-resRT/camera;expressive gulp/low swell2s;pause holds;black/silhouettes/UI readable.
-Ammo/vials:thin yellow mesh contours,open/near/visible. No strobe/new light/lore;
-§16/21/art9;architecture.
+lip clear→.65s headshake/grimace→throw→hand/check0.
+Crimson/plum/hot edges/peripheral wave/RGB4active-real s;last2:frozen-world
+drift/smear over live view. 1halfRT/camera;gulp/swell2s;pause/black/silhouettes/UI kept.
+Ammo/vials:thin yellow meshline/open/near/visible;strobe/light/lore0;§16/21/art9;architecture.
 `2026-10-30`/§6:warehouse;stairs:materials;finale0.
 `2026-10-31`:GoalWall solid/4×3;red24→door/valve/dip≥.45;ambush36.
 `2026-11-01`:Bar=LMB1wideR→L/RMBparry;charge/combo/shove/step0;
 high-R/grip↑/L<R/fists;coil/arc/stop;low elbows;3hits→fall/rise;tissue/skull.
 
-`2026-10-19` user/§6:only CombatTest warehouse/fan-stopped→quiet rare insectclicks+wordless-indistinctwhisper;2ownerless textures/newrandom3D3–7m@hero/fixed-fullclip/mono/.8/LP2800/World echo-reverb/gaps;speaker/line/address/storyinfo0. Valve fullyopen→1heavy metal latch impact@drive;tail after inspection.
+`2026-10-19` user/§6:warehouse/fan0:quiet insectclicks+wordless whisper;2ownerless mono3D/newrandom3–7m@hero/fixedfullclip/.8/LP2800/World echo-reverb/gaps;speaker/line/address/info0. Valve open→1heavy metal latch@drive;postinspect tail.
 `2026-10-19`:Room×1.2/head1.35/longarms-hands/wideDutch1s;Lhead0→ret+2s/laugh5s→idle5s.
 Seat2→face;jelly:nonstrobe/squash/stretch/lag;neutral midflatbar axial↔;wet close/glugs/sticky pull sync;figures/anatomy/sex/voicebreath0;grayscale/§6.
 Chest:Spot+weakbodyPoint/spill-bounce;dust/fan/rare grit→settle/fog-glow0.
 UpperLbroken;ammo12/allbays;route-facing.
-Crane:hook6m/lift2m/5s/E6,physical struggle and fall damage;home/fatal3-regen10. Fish3 clears regular bodies;fan head/bridge/cables settle in well;wind creak/pause;§6.
+Crane:hook6m/up2m/5s/E6/struggle/fallHP;home/fatal3-regen10. Fish3:regular bodies0;fan head/bridge/cables→well;windcreak/pause;§6.
 `2026-11-01` (§6;2026-10-19/20):prep0/3+5s→safe shin hook.
 Front1.85m/red36/155°/shadow.35;hero solo hoist/deck→well/180°roll→aim/fire;
 pistol/∞reserve/R/switch0;Crane↑next→hits/finale0.

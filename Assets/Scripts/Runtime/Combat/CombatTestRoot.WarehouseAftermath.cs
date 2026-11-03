@@ -27,6 +27,7 @@ namespace BarPromenade
 
         private void ClearWarehouseOpponents(bool animate)
         {
+            CorpseDecay?.Clear();
             if (warehouseOpponentsCleared) return;
             warehouseOpponentsCleared = true;
             // The body retires immediately. The original empty suspension jumps

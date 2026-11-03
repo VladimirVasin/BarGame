@@ -58,7 +58,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Crane | Hook6m/up2m/hold5/E6/hoist-haul/bodycam/fall;home10;fatal3→regen10/kill0. | `Combat*.Crane*`,`CombatActor.Restraint` | Current |
 | Authored enemies | Bottles:glass fracture,flesh UV,held/snapped poses;all six:horror surfaces. | `CombatActor`,`Combat*Appearance`,`CombatZombieBottleDestruction` | Current |
 | Warehouse | Session/seed;fish→Docker/clear;gate/ammo;L3broken/A*;3hawthorn:autoUse/return,+HP/40intox/ghost4s. | `Warehouse*`,`CombatTestRoot` | Current |
-| Body destruction | Enemies:sever/crawl;hero:wounds/no detach;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatBodyAssetSetup` | Current |
+| Body destruction | Enemies:sever/crawl;warehouse:hold/decay/tail;hero wounds;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`WarehouseCorpseDecay` | Current |
 | New Game/Debug | Loading bar through staged Home/first frame; stopped12:00 until E. Debug time/starts/tools. | `StartMenu{Root,Model}`, `NewGameStartService`, `SceneTransitionService`, `AreaLoadingRoot` | Current |
 | Bar hours and crowd | Daily12-02/3-8; warning/grace/safe exit; accepted service and physical cleanup finish. | `BarBusinessHours`, `BarCrowdController`, `BarClosingController` | Current |
 | Russian vocalizer | Twelve M/F styles; menu A/B/free/window; shared phonetic text/face timing, bounded workers/PCM. | `RussianVocalizer{Lab,Synthesis,Voice,Plan}`, `RussianSpeechPhonetics` | Current |

@@ -1,26 +1,31 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted exception 2026-11-03,user — corpse settling:**
+  Warehouse:fall/spasm→hold6→clip/crumble3.5→tail5;dark flakes;
+  Room plaster/cloth,Docker fibre. Settled snapshots/parts;reuse waits/moving/fullpool;
+  bounded mesh/material/particles;pause/reset/unload;clip/shadow/depth/SSR match.
+  Hero/Crane regen/fish3 kept;camera/input/voice/lore/light0;24FX/cost unmeasured;
+  §6/16/21/art15a/9. Lab:corpses0–2/def2/unused→oldest;Std1/Ebody.
+
 - **Accepted 2026-11-03,user — shower mouse look and centre aim:**
-  Mouse look remains before/after soap and while washing. Centre marker+fresh
-  LMB select visible skin;hold repeats at that same anchor. Look never retargets.
-  Release stops/withdraws;new press selects. Arrows optional;RMB unnecessary.
+  Mouse look before/after soap/washing. Centre marker+fresh LMB picks visible
+  skin;hold repeats fixed anchor. Release withdraws;fresh press retargets.
+  Arrows optional;RMB unnecessary.
   Gamepad pointer/LT look/RT scrub kept;E soap/Q return-exit. RU action-HUD hint;
   no speech/story. Pitch155° down/back;FOV/roll/yaw stay. View/predictor/pick share
   cached face.eye.L/R midpoint,no orbit/offset. Scoped nearclip=min(saved,.015m);
   every exit/cancel/disable restores. Same rig/contact/cleanup;focus/pause reset
-  stale input. All24FX reviewed:scene shaping,material/motion/accent and
-  postprocessing kept. Marker/hint+eye optics;no added skin solve/material instance.
-  Cost unmeasured;§16/21/art9.
+  stale input. All24FX kept:marker/hint+eye optics;skin solve/materialinstance0;
+  cost unmeasured;§16/21/art9.
 
 - **Accepted 2026-11-03,user — warehouse hawthorn:**
-  §6/art15a:3seed/1floor+12ammo;session/no refill.
-  Use→auto-close→1vial gulp:+30HP/+40intox/dose;HP<100/inventory HP.
-  Lips clear→.65s rig headshake/grimace→throw→prior hand.
-  FullHP refuses/100intox allowed;action/wounds/decay kept.
-  Red4real s;last2:frozen-world drift/smear/live scene;1halfRT/camera/lens flag.
-  Pause/cleanup;UI/masks0;strong gulp/low swell2s;voice0.
-  Yellow:open/near/depth-tested;24FX/cost unmeasured;§16/21/art9.
+  §6/art15a:3seed/1floor+12ammo/session/refill0.
+  Use→auto-close→gulp:+30HP/+40intox/dose;HP<100/inventoryHP.
+  Lipclear→.65s rig headshake/grimace→throw→hand;fullHP refuses/100intox allowed.
+  Action/wounds/decay kept;red4real s,last2:frozen-world drift/smear/live;
+  1halfRT/camera/lens;pause/cleanup/UI/masks0;gulp/swell2s/voice0.
+  Yellow:open/near/depth;24FX/cost unmeasured;§16/21/art9.
 
 - **Accepted 2026-11-03,user — supermarket remodel and carried drinks:**
   Seven dense repeatable offers:Beer500ml/6,Wine750ml/22+existing5;stack9,
@@ -1071,7 +1076,12 @@
   Station-only1024×384/512×192 Rust/response;metric faceUV0/UV1 kept.
   Floor/walls/rim crisp;geometry/COL/source kept;all maps BC7+mips≤28MiB.
 - **Accepted exception 2026-10-19, warehouse post-fan audio — explicit user request:**
-  CombatTest:2ownerless wordless insectclicks/whispers;§6/art§15a/16;speech-story0. `CombatWarehouseAmbiencePlayer`:{warehouse_clicks,warehouse_whispers};2optional mono/bgStreaming;WAV|OGG|MP3/slot1;fan≥1;EOF→wait12–25/25–50s/firstsame/pitch.8/PCMcal/queue0. random3–7m@hero/root+1.35±.4/fixed/clearinside≤24tries/retry1s;2reused3D/linear2–16m/SfxWorld+LP2800/gain.30/.15/echo-reverb;empty0/ResetNewkeep/pause-ownerhold/unload0/unmeasured. Gate:moved→open=1heavy synthlatch/SfxWorld@valve;activity-tail/fullstop0.
+  CombatTest:2ownerless wordless insectclicks/whispers;§6/art15a/16;speech-story0.
+  `CombatWarehouseAmbiencePlayer`:{warehouse_clicks,warehouse_whispers};2optional mono/bgStreaming;
+  WAV|OGG|MP3/slot1;fan≥1;EOF12–25/25–50s/firstsame/.8/PCMcal/queue0.
+  Random3–7m@hero/root+1.35±.4/fixed/clear≤24tries/retry1s;2reused3D/linear2–16m/
+  World+LP2800/gain.30/.15/echo-reverb;empty0/ResetNewkeep/pausehold/unload0/cost unmeasured.
+  Gate:open→1heavy synthlatch/World@valve;activity-tail/fullstop0.
 - **Accepted 2026-10-19, ground navigation:** Warehouse:FindApproachRoute/A*;feet/cargo clearance;gate/railnodes/contactexit/retry;art15a/story6.
 - **Accepted 2026-10-19, warehouse atmosphere:** `WarehouseAtmosphere`:litdust/fan/grit→settle/192+32;fog-newL-game0;perf unmeasured.
 - **Accepted exception 2026-10-19, Crane capture:** CombatTest;§6/7/16.16/21/art§15a. Hook6m/lift2m/LOSprecast-release/puncture1/hold5s/6freshE. COLhaul-overrails/physical struggle/bodycam/fallHP/keptV. Others/spawns wait. Escape→homewatch10s;fatal→cryspasm3s/home/regen10s;sameactor/kill-reward-corpse0. Hero wounds kept/sever0;frontcrowbarparry(dot≥.35)/back0. Pause/modal/focus/reset/off/unload→owned input/rig/anchors/UI clear;story0.
@@ -1080,7 +1090,7 @@
 - **Accepted exception 2026-10-19, Room shadow:** §6/art§15a kept;jelly waves;mid flatbar axial in/out;wet closure/low glugs/sticky pull. `CombatRoomAttackTableau`:1Spot/24×256R8texels+mips≤2MiB/.64s;SFX3.6s;preload/layerrestore/pause-focus-exit clear/hotalloc0/extra shadowpass0.
 - **Accepted exception 2026-10-19, Room attack:** §6/7/16.16/art§15a;text0;Cam:focus.9/point1/chest.6/in1/seat2:wide→face/out.6/ret.8;P/C/I/S FOV/roll°:76→88/12→22,45/6,48/4,48→50/4→-4;out reverse/ret normal. Head-high indexray/headsize kept;3palmarfingers/thumb/wristroll. Skin/4frames/hole;weighted Player3DV2-chair-lamp/FBXscale;dupewalls0/up;cached plaster-threshold→LimbTwoBoneIk/boot-pelvis-chair/seatbackoff;warp-fade/hotbake-load-alloc0. HeroLhead0→ret+2s/input0;ret18HP1x/laugh5s;simlive/others+spawns idle→heroend. Vulnerable/hitcancel/HUDlock→HP3sunlock;Laughend-cancel→idle5s/remainder0;hits keep/hurt wins. Idle:planted/headcant/breath/lag-twitchhands/blend. Pause0;death-reset-disable-end-exit clear1x.
 - **Accepted 2026-10-19:** Room×1.2/bighead/longarms+hands
-- **Accepted 2026-11-01 — last-fridge Docker, user:** Warehouse≠Lab/legacyDocker;pool ID1/v1;reuse/+1;≤5regular,target1/2+1. Initial/refill0;2src→samecrate@lastRoomIndex;entry→reveal1×;Take≥revealend/defeat;Reset2=rearm/3=clear;Endless1–5/def3,Crane last/≤2corpses;Lab6/Zombie/def1target/≤6warm;§6/art15a/24FX kept.
+- **Accepted 2026-11-01 — last-fridge Docker, user:** Warehouse≠Lab/legacyDocker;pool ID1/v1;reuse/+1;≤5regular,target1/2+1. Initial/refill0;2src→samecrate@lastRoomIndex;entry→reveal1×;Take≥revealend/defeat;Reset2=rearm/3=clear;Endless1–5/def3,Crane last;Lab6/Zombie/def1target/≤6warm;§6/art15a/24FX kept.
 - **Accepted exception 2026-10-17, crane insect:** art§15a;sharedrig/yaw±100°/hang↓.25/rootkept. CraneBody/UV0/body-skull;ImageGen2KsRGB+1Klinear:RGslope/Brough/Acavity;WarehouseSurface/3shared/BC7mips<7MiB. 3floors/insetvoid/inertia-slack/pause-reset;§6/story0.
 - **Accepted exception 2026-10-17, endless endurance:** Crane/sharedlife/fishcutoff. EnemyHP/structure×.5;head-rear maxHPcap→scale/head2/torso8;hero1. Everyhit/repeats/woodchips-hole/bounded;§6/art§15a/story0.
 - **Accepted 2026-10-19, warehouse routes/stock:** upperLbroken/Ronly;3room6wall/27soloE/fridgecurve/hollowCOL/multiopen/ownbay→Take;seed12packs/6mag6shell/9banks/3bays/allfloors;reset-respawnkeep/Endlessrefill/shut;8/2+0reserve/wave-story0.
@@ -1185,9 +1195,6 @@
   Three port albedos:Windows BC7HQ/same512-mips-sampling;
   0world-story/FPSunmeasured.
 
-- **Accepted exception — 2026-10-13, bounded combat population:**
-  Corpses0–2(default2)/unused→oldest defeat;otherskept;Std1/Ebody;
-  FPSunmeasured.
 - **Accepted — 2026-10-10, carry mounts:**
   CombatTest:pistol Lchest/M65/holster0cloth/storedhidden-else seen;
   shotgun softsling-back;6stow-draw/rig-model-ammo/0hardmount.

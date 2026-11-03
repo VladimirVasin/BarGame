@@ -144,6 +144,8 @@ namespace BarPromenade
         private void OnApplicationQuit() { CloseDuelJournal("quit"); WriteMovementSummary(); }
         private void OnDestroy()
         {
+            CorpseDecay?.Dispose();
+            CorpseDecay = null;
             UnsubscribeWeaponInventory();
             Cutscenes?.Stop();
             CancelRoomAttackSequence();

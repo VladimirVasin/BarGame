@@ -510,6 +510,26 @@ namespace BarPromenade
             CombatCorpseTraversal.RegisterCollider(head.Actor, collider, detached: true);
         }
 
+        internal bool CorpsePartsResting(CombatActor actor)
+        {
+            if (!heads.TryGetValue(actor, out Head head)) return true;
+            foreach (Fragment fragment in head.Fragments)
+                if (fragment.Body != null && !fragment.Body.isKinematic && !fragment.Body.IsSleeping() &&
+                    (fragment.Body.linearVelocity.sqrMagnitude > .0144f || fragment.Body.angularVelocity.sqrMagnitude > .04f)) return false;
+            return true;
+        }
+
+        internal void CollectCorpseRenderers(CombatActor actor, List<Renderer> target)
+        {
+            if (!heads.TryGetValue(actor, out Head head)) return;
+            foreach (Sector sector in head.Sectors) foreach (Piece piece in sector.Pieces)
+                if (piece.Released != null && piece.Released.enabled && piece.Released.gameObject.activeInHierarchy)
+                    target.Add(piece.Released);
+            foreach (Piece piece in head.Brains)
+                if (piece.Released != null && piece.Released.enabled && piece.Released.gameObject.activeInHierarchy)
+                    target.Add(piece.Released);
+        }
+
         internal void Tick(float seconds)
         {
             if (seconds <= 0f || frozen) return;

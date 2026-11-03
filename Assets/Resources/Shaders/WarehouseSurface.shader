@@ -10,6 +10,8 @@ Shader "Bar Promenade/Warehouse Surface"
         _WarehouseWetReflection("Local wet reflection", Range(0,1)) = 0
         _WarehouseAuxRect("Bounded auxiliary surface patch", Vector) = (1,1,0,0)
         _WarehouseAuxiliary("Auxiliary surface coordinates", Float) = 0
+        [HideInInspector] _CorpseDecay("Corpse material decay", Range(0,1)) = 0
+        [HideInInspector] _CorpseSeed("Corpse material pattern", Float) = 0
         // Specular vs Metallic workflow
         _WorkflowMode("WorkflowMode", Float) = 1.0
 

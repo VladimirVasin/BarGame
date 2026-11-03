@@ -78,6 +78,7 @@ namespace BarPromenade
                 if (!slot.Spawned || slot.DefeatCounted || !slot.Actor.State.IsDefeated) continue;
                 slot.DefeatCounted = true;
                 slot.DefeatOrder = ++opponentDefeatOrder;
+                slot.CorpseAge = 0f;
                 defeated++;
                 duelJournal?.Record("endless_kill", actor: slot.Actor.JournalActorId,
                     f0: GameLog.Field("generation", slot.Generation));
@@ -108,6 +109,8 @@ namespace BarPromenade
             if (available == null)
                 available = OldestOpponentCorpse(forRespawn: true);
             if (available == null) { endless.DeferSpawn(); return false; }
+            if (available.Spawned && CorpseDecay != null && !CanCaptureCorpse(available))
+            { endless.DeferSpawn(); return false; }
             long started = System.Diagnostics.Stopwatch.GetTimestamp();
             bool found;
             Vector3 spawn;
@@ -124,7 +127,10 @@ namespace BarPromenade
             { endless.DeferSpawn(); return false; }
 
             CombatActor actor = available.Actor;
-            if (available.Spawned) RetireOpponentCorpse(available, "reuse");
+            if (available.Spawned)
+            {
+                if (!RetireOpponentCorpse(available, "reuse")) { endless.DeferSpawn(); return false; }
+            }
             else
             {
                 pistolProjectiles?.RetireActorContacts(actor);
@@ -145,6 +151,7 @@ namespace BarPromenade
             available.Spawned = true;
             available.DefeatCounted = false;
             available.DefeatOrder = 0;
+            available.CorpseAge = 0f;
             available.Generation++;
             ResetOpponentDecisions(actor, available.Ai);
             Physics.SyncTransforms();

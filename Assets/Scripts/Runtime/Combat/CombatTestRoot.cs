@@ -189,6 +189,7 @@ namespace BarPromenade
             CreateCombatOpponents();
             PrepareRoomAttackSequence();
             InitializeDamageEffects();
+            if (WarehousePlan != null && !IsLaboratory) CorpseDecay = new WarehouseCorpseDecay(this);
             SparkEffects = gameObject.AddComponent<CombatSparkEffects>();
             SparkEffects.Initialize(transform);
             SecondaryMotionBakeRuntime.Prewarm("stored-shotgun", "Idle");
@@ -235,6 +236,7 @@ namespace BarPromenade
 
         private void PlaceRound(bool focusOpponent)
         {
+            CorpseDecay?.Clear();
             Rendering.HawthornHealingPulse.Clear(CameraFollow != null ? CameraFollow.Camera : null);
             HawthornHealingAudio.Clear(CameraFollow != null ? CameraFollow.Camera : null);
             DoorAmbush?.ResetEpisode();
@@ -334,6 +336,9 @@ namespace BarPromenade
 
         private void Update()
         {
+            CorpseDecay?.SetPaused(!pistolApplicationFocused || PauseMenuController.IsAnyPaused ||
+                GameTimeScaleRuntime.IsPaused || SceneTransitionService.IsTransitioning ||
+                DoorAmbush != null && DoorAmbush.IsActive);
             BeginJournalFrame();
             if (!IsInitialized) return;
             UpdateHudInput();
@@ -383,12 +388,15 @@ namespace BarPromenade
             if (!IsInitialized || !isActiveAndEnabled) return;
             if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0f)
                 throw new ArgumentOutOfRangeException(nameof(seconds));
+            CorpseDecay?.SetPaused(!pistolApplicationFocused || PauseMenuController.IsAnyPaused ||
+                GameTimeScaleRuntime.IsPaused || SceneTransitionService.IsTransitioning);
             roomTableau?.SetSoundPaused(!pistolApplicationFocused || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused);
             if (!pistolApplicationFocused) return;
             if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused || SceneTransitionService.IsTransitioning) return;
             // Inspection owns player commands, never the world's combat/death clock.
             if (!RoomAttackCinematicActive && !DebugFreeCamera.BlocksWorldInput &&
                 !GameInput.CanRead(GameInputContext.Gameplay)) return;
+            AdvanceWarehouseCorpses(seconds);
             foreach (CombatActor actor in preparedOpponents)
                 actor.BeginRoomAttackGameplayFrame();
             AdvanceRoomAttackSequence(seconds);

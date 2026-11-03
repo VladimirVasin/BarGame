@@ -13,6 +13,7 @@ namespace BarPromenade
             internal bool Spawned, DefeatCounted;
             internal int Generation;
             internal long DefeatOrder;
+            internal float CorpseAge;
             internal int CrateAnchorId = -1;
         }
 
@@ -68,9 +69,10 @@ namespace BarPromenade
             return oldest;
         }
 
-        private void RetireOpponentCorpse(OpponentSlot slot, string reason)
+        private bool RetireOpponentCorpse(OpponentSlot slot, string reason)
         {
             CombatActor actor = slot.Actor;
+            if (CorpseDecay != null && (!CanCaptureCorpse(slot) || !CorpseDecay.Capture(actor))) return false;
             pistolProjectiles?.RetireActorContacts(actor);
             shotgunProjectiles?.RetireActorContacts(actor);
             actor.RetireDefeatedOpponent();
@@ -79,6 +81,7 @@ namespace BarPromenade
                 f0: GameLog.Field("generation", slot.Generation),
                 f1: GameLog.Field("reason", reason),
                 f2: GameLog.Field("corpses", CorpseCount));
+            return true;
         }
 
         private void EnforceCorpseLimit()
@@ -87,7 +90,7 @@ namespace BarPromenade
             {
                 OpponentSlot oldest = OldestOpponentCorpse();
                 if (oldest == null) break;
-                RetireOpponentCorpse(oldest, "corpse_limit");
+                if (!RetireOpponentCorpse(oldest, "corpse_limit")) break;
             }
         }
 

@@ -85,16 +85,14 @@ cemetery:own interiors/returns.
   toprear/playfill<bulb1.8;pourcans0→flatphys/drag-turn/seams→spasmSFX/die-key1/receipt;keyUIend+stairs↓:heat2s/riseSFX→popglass8phys.
   socket/restL-lens-amb0;red24→door/valve/dip≥.45+chest/silent;Escpause/Reset-Newkeep/Newinv0.
   D7fan/redshadows/deckblock/guards;M65Spot+weakbodyPoint/bounce/look/black12m/fog-sky0/warmhalo.
-  Hawthorn:3seed bays/session;Use→auto-close inventory→rig gulp+30HP/+40intox/dose.
-  HPHUD while<max;inventory Health bar/value;lip clear→.65s headshake/grimace→throw→prior hand.
-  FullHP refuses/100intox allowed.
-  Crimson4active-real s;last2:drifting/smeared frozen-world frame/live scene.
-  One half-resRT/camera;pause/cleanup;expressive gulp/low swell2s;UI/probes0.
-  Yellow ammo/vial contours:open/near/visible.
+  Hawthorn:3seed bays/session;Use→auto-close→rig gulp:+30HP/+40intox/dose.
+  HPHUD<max/inventory bar+value;lipclear→.65s headshake/grimace→throw→hand.
+  FullHP refuses/100intox allowed;crimson4active-real s,last2:frozen-world drift/smear/live.
+  1halfRT/camera;pause/cleanup;gulp/swell2s;UI/probes0;yellow ammo/vials:open/near/visible.
   Dust192+32/fan→settle/seed.
   SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync/stop/replay0/exitfade.
   Fan0:2mono3D/clicks-whisper/.3/.15/.8/LP2800/Worldwet;EOF12–25|25–50/startsame;newfixed3–7m;pause-ownerhold/ResetNewkeep/empty0/clear;§6/art15a.
-  Endless1–5/def3:Room/Crane;Docker2src→lastfridge crate/reveal→3rd;retry2same/3clear;≤5warm/2corpses.
+  Endless1–5/def3:Room/Crane;Docker2src→lastfridge crate/reveal→3rd;retry2same/3clear;≤5warm.
   Lab:Arena/6warm/1target/Zombie/reset-prepkept.
   Room×1.2/bighead/longarms/corridor;Lab:Imprint cast/LongExposure emulsion;Room:head0→ret+2s;lens1s/chest-seatface2s/ret18HP/laugh5s→idle5s;twin/IK/root;cam5;escape@rail;simlive/input0/others idle→headend;jelly/Lmidbar in/out;glugs/pull;§6.
   HP×.5;bar tissue.27/fatalhead3;guns structure×.5;wood1st hole-chips.
@@ -111,7 +109,8 @@ cemetery:own interiors/returns.
   Awakefocus/freeinput;unseenrefill3–7s/≥3m/freepath/0backlog;
   reset:Endless unseen/Std initial. Audio14/2voices/≤2groans/SfxWorld/wood-wet sync;
   Kill1x/heroend;injury-action-ammo-flights kept;
-  unused→oldest/excess retire;
+  Settled/death≥3s→independent hold6/decay3.5/bloodtail5;auto≥6s;
+  WarehouseCorpseDecay:8snapshots/512surfaces/32flakes;moving/fullpool→defer;
   bodydrop0/focus≠hits/Tab-E0.
   Hero:story acquiredbar/DebugAll3;deathdrop-pickup/drawresume.
   Docker:30slats40HP→holes/fused head-woodram;8fish/1skin/anyfallspill/finiteasync;

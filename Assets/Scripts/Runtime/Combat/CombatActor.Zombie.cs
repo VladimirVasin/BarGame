@@ -35,6 +35,8 @@ namespace BarPromenade
         private Transform zombieLeftShoulder, zombieRightShoulder;
         private Vector3 zombieHandFrom, zombieHandTo;
         private CombatZombieLoad zombieLoad;
+        internal bool CorpsePropsResting => zombieLoad == null || zombieLoad.CorpsePartsResting;
+        internal void CollectCorpsePropRenderers(List<Renderer> target) => zombieLoad?.CollectCorpseRenderers(target);
         private Pose zombieContactFrom, zombieContactTo;
         private Collider zombieHeadShape;
         private Vector3 zombieHeadFrom, zombieHeadTo;
