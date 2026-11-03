@@ -4,7 +4,7 @@ namespace BarPromenade
 {
     public sealed class GameTimeState
     {
-        public const float RealSecondsPerGameDay = 48f * 60f;
+        public const float RealSecondsPerGameDay = 96f * 60f;
         public const double GameMinutesPerRealSecond = MinutesPerDay / (double)RealSecondsPerGameDay;
 
         private const int MinutesPerHour = 60;

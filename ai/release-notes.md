@@ -34,8 +34,9 @@ CombatWarehouseHawthorn.
 - Туалет:анатомия при снятых штанах.
   SeatedAppearance_ShowsAttachedAnatomyAndHidesItOnExit.
 Checks passed;frames reviewed.
-- Город/балкон:ночью бледнее;туман гуще/по ветру;город вдали лишь у КПП.
+- Город/балкон:бледнее ночью;гуще туман по ветру;город у КПП.
   CityNightSaturation/CityFogCheckpoint.
+- Сутки ×2. GameTimeStateTests.
 
 
 ### 2026-11-02

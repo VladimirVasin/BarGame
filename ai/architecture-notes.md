@@ -1,6 +1,12 @@
 # Architecture notes
 
 ## Current facts
+
+- **Accepted architecture exception — 2026-11-03,user — doubled calendar day:**
+  Art §2/story §20:96 real minutes/day at ×1,four seconds/game minute.
+  Calendar-based needs/weather slow with it;world motion,alcohol recovery,
+  pause/debug factors keep their owners. Story acts/events remain action-driven.
+
 - **Accepted exception 2026-11-03,user — City fog A:**
   City/balcony:constant gray-green Exp2 `.090`;technical clip48m.
   Reading bands:art§3.3;art9/story§16/21 stay;global breathing/story signal0.
@@ -1630,10 +1636,6 @@
   `LifeSeconds`: holds run/pause freezes; shared materials/audio/no replay.
   Dressing `.29 m` clear; east wait/queued walks/side-public/west-staff cuts.
 
-- **Accepted architecture exception — 2026-09-11, doubled calendar day:**
-  User: art §2/story §20 now use 48 real minutes/day at ×1, two seconds/game
-  minute. Calendar-based needs/weather slow with it; world motion/debug factors stay.
-
 - **Accepted — 2026-09-11, debug time acceleration:**
   User-requested F9 flag only, default on. `DebugTimeControls`: `F1/F2/F3` =
   `3/5/10` in every gameplay scene/contextual action; same key returns `1`.
@@ -2640,7 +2642,7 @@
   scale and stays positive during pause. Bar movement, hand-contact service,
   drinking, refrigerator interaction/inspection and hero fall/rise/crawl share
   world time; camera input/UI/loading stay real-time. Outside debug acceleration,
-  calendar/needs advance half a game minute per unpaused real second (`48` real
+  calendar/needs advance a quarter game minute per unpaused real second (`96` real
   minutes/day); alcohol recovery retains its unscaled rate and modal/transition
   blockers. This supersedes earlier scaled-calendar/unscaled physical
   bar/refrigerator descriptions below.
@@ -4797,7 +4799,7 @@
   E starts prepared time; Debug starts its chosen minute. Legacy Wake/debug map
   skip starts06:00. Later bed interactions do not reset/pause the clock.
   `GameTimeRuntime` persists across Single-mode loads and advances through
-  `CalendarDeltaTime` at `0.5` game minute/real second: `2880 s` (`48 min`)/day
+  `CalendarDeltaTime` at `0.25` game minute/real second: `5760 s` (`96 min`)/day
   at ×1. Midnight increments the zero-based index; UI exposes one-based
   `DayNumber`. A top-centre label announces Wake/new days; inventory shows
   `DAY N · HH:MM`. F9 selects days `1–7`, preserving hour/running state/needs;

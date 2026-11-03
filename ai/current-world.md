@@ -137,8 +137,8 @@ cemetery:own interiors/returns.
 - session clock: New Game prepares actual day1/12:00 before Home composition,
   no elapsed needs; first E starts that same time. Debug confirms selected time
   (07:40 default). Legacy Home keeps05:59 until Wake/debug skip starts06:00.
-  Clock persists across Single loads: CalendarDeltaTime advances0.5game min/
-  real second,24h=2880s(48min). Midnight increments a zero-based index/display
+  Clock persists across Single loads: CalendarDeltaTime advances0.25game min/
+  real second,24h=5760s(96min). Midnight increments a zero-based index/display
   one-based DAY N. True pause stops it; intoxication slowdown does not.
   Home shows HH:MM, inventory Status DAY N · HH:MM; a persistent view announces
   day1 after Wake and every midnight;

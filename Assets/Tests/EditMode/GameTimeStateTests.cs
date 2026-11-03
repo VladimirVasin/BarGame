@@ -305,22 +305,22 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Exactly2880RealSeconds_AdvancesOneCompleteGameDay()
+        public void Exactly5760RealSeconds_AdvancesOneCompleteGameDay()
         {
             GameTimeState state = new GameTimeState();
             state.TryStartFromWake();
 
             state.Advance(GameTimeState.RealSecondsPerGameDay / 2f);
             Assert.That(state.DayIndex, Is.Zero);
-            Assert.That(state.Hour, Is.EqualTo(18), "24 real minutes now advance only half a day.");
+            Assert.That(state.Hour, Is.EqualTo(18), "48 real minutes now advance only half a day.");
             state.Advance(GameTimeState.RealSecondsPerGameDay / 2f);
 
             Assert.That(
                 GameTimeState.RealSecondsPerGameDay,
-                Is.EqualTo(2880f));
+                Is.EqualTo(5760f));
             Assert.That(
                 GameTimeState.GameMinutesPerRealSecond,
-                Is.EqualTo(0.5d));
+                Is.EqualTo(0.25d));
             Assert.That(state.DayIndex, Is.EqualTo(1));
             Assert.That(state.DayNumber, Is.EqualTo(2));
             Assert.That(state.Hour, Is.EqualTo(6));
