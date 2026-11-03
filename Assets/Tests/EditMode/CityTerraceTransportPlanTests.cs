@@ -6,9 +6,102 @@ using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
 {
-    public sealed class CityTerraceTransportPlanTests
+    public sealed partial class CityTerraceTransportPlanTests
     {
         private const float Tolerance = .001f;
+
+        [Test]
+        public void EntranceConnectionsMeasureRealSurfacesPreserveThresholdsAndRejectSteepAprons()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
+            CityTerraceTransportPlan plan = CityTerraceTransportPlan.Create(layout, CityTerraceMasterPlan.Create(layout));
+            Assert.That(plan.EntranceConnections, Is.Not.Empty);
+            Assert.That(plan.EntranceConnections.Select(item => item.Id).Distinct().Count(), Is.EqualTo(plan.EntranceConnections.Count));
+            Assert.That(plan.EntranceConnections.Any(item => item.MaximumHeightChange > 3f), Is.True,
+                "A raised road cannot silently keep the old entrance apron at street height.");
+            var homeSource = CityStreetSurfacePlanner.CreateEntranceForecourt(layout, layout.PlayerHome, PlayerHomeEntranceGeometry.WalkwayWidth);
+            Vector3 near = homeSource.Top[0], far = homeSource.Top[homeSource.Columns - 1];
+            Vector3 tangent = (homeSource.Top[(homeSource.Rows - 1) * homeSource.Columns] - near);
+            tangent.y = 0f; tangent.Normalize();
+            Vector3 towardStreet = far - near; towardStreet.y = 0f; towardStreet.Normalize();
+            Vector3 routeStart = far + towardStreet * 5f - tangent * 2f;
+            Vector3 routeEnd = homeSource.Top[homeSource.Top.Count - 1] + towardStreet * 5f + tangent * 2f;
+            routeStart.y = routeEnd.y = 100f;
+            float length = Vector3.Distance(routeStart, routeEnd);
+            var path = new CityRoadPath(new[] { new Vector2(routeStart.x, routeStart.z), new Vector2(routeEnd.x, routeEnd.z) });
+            var steepRoute = new CityTerraceTransportRoute("steep-test", CityTerraceTransportBank.East,
+                new[] { new CityTerraceRouteSample(routeStart, 0f), new CityTerraceRouteSample(routeEnd, length) },
+                new[] { new CityTerraceTransportSegment(routeStart, routeEnd, CityTerraceTransportSegmentKind.Approach) },
+                new CityRoadElevationProfile(new[] { new CityRoadElevationStation(0f, 100f),
+                    new CityRoadElevationStation(length, 100f) }, 6f), Array.Empty<CityTerraceReservation>(), path.Ribbon(10f));
+            CityTerraceEntranceConnectionPlan steep = CityTerraceEntranceConnectionPlan.Create(layout, new[] { steepRoute })
+                .Single(item => item.EntranceId == "player-home:forecourt");
+            Assert.That(steep.State, Is.EqualTo(CityTerraceEntranceConnectionState.RequiresStreetRegrading),
+                "Even a full straight pavement seam cannot approve an apron with an impossible walking slope.");
+            foreach (CityTerraceEntranceConnectionPlan connection in plan.EntranceConnections.Concat(new[] { steep }))
+            {
+                CityTerraceTransportRoute route = connection == steep ? steepRoute : plan.Routes.Single(item => item.Id == connection.RouteId);
+                CityEntranceForecourtPlan source = connection.ExistingSurface;
+                Assert.That(plan.Footprints.Any(item => item.Id == connection.EntranceId &&
+                    item.Kind == CityTerraceReservationKind.ProtectedAccess), Is.True);
+                TestContext.Progress.WriteLine($"Entrance {connection.EntranceId}: {connection.State}, gap={connection.MaximumHorizontalGap:0.00}, change={connection.MaximumHeightChange:0.00}, grade={connection.RequiredGradePercent:0.00}");
+                foreach (CityTerraceEntranceSeam seam in connection.Seams)
+                {
+                    Assert.That(seam.Existing, Is.EqualTo(source.Top[seam.Row * source.Columns + source.Columns - 1]));
+                    Assert.That(seam.Existing.y, Is.EqualTo(source.SampleTop(seam.Existing)).Within(Tolerance));
+                    Assert.That(seam.Proposed.y, Is.EqualTo(route.ElevationProfile.SampleDistance(seam.RouteDistance).Height +
+                        CityStreetSurfacePlanner.SidewalkTop).Within(Tolerance));
+                    Vector2 point = new Vector2(seam.Proposed.x, seam.Proposed.z);
+                    Assert.That(ContainsConvex(route.CorridorPolygons[seam.SegmentIndex], point), Is.True,
+                        "A straight seam must stay on the actual mitered pavement edge.");
+                    CityTerraceTransportSegment segment = route.Segments[seam.SegmentIndex];
+                    Vector2 start = new Vector2(segment.Start.x, segment.Start.z);
+                    Vector2 direction = new Vector2(segment.End.x - segment.Start.x, segment.End.z - segment.Start.z).normalized;
+                    Assert.That(Mathf.Abs(CityRoadPolygon.Cross(direction, point - start)), Is.EqualTo(5f).Within(Tolerance));
+                }
+                if (connection.State == CityTerraceEntranceConnectionState.PartialFrontage ||
+                    connection.State == CityTerraceEntranceConnectionState.RequiresAccessRoute)
+                {
+                    Assert.That(connection.ProposedTop, Is.Empty);
+                    continue;
+                }
+                Assert.That(connection.Seams.Count, Is.EqualTo(source.Rows));
+                Assert.That(connection.Seams.Select(item => item.SegmentIndex).Distinct().Count(), Is.EqualTo(1),
+                    "A missing profile knot between two rows cannot be accepted as a linear seam.");
+                Assert.That(connection.ProposedTop.Count, Is.EqualTo(source.Top.Count));
+                Assert.Throws<NotSupportedException>(() => ((IList<Vector3>)connection.ProposedTop)[0] = Vector3.zero);
+                for (int row = 0; row < source.Rows; row++)
+                {
+                    Assert.That(connection.ProposedTop[row * source.Columns], Is.EqualTo(source.Top[row * source.Columns]));
+                    Assert.That(connection.ProposedTop[row * source.Columns + source.Columns - 1], Is.EqualTo(connection.Seams[row].Proposed));
+                }
+                float maximum = 0f;
+                void Measure(int a, int b, int c)
+                {
+                    Vector3 ab = connection.ProposedTop[b] - connection.ProposedTop[a];
+                    Vector3 ac = connection.ProposedTop[c] - connection.ProposedTop[a];
+                    float determinant = ab.x * ac.z - ab.z * ac.x;
+                    float gradientX = (ab.y * ac.z - ac.y * ab.z) / determinant;
+                    float gradientZ = (ab.x * ac.y - ac.x * ab.y) / determinant;
+                    maximum = Mathf.Max(maximum, Mathf.Sqrt(gradientX * gradientX + gradientZ * gradientZ) * 100f);
+                }
+                for (int row = 0; row < source.Rows - 1; row++)
+                for (int column = 0; column < source.Columns - 1; column++)
+                {
+                    int a = row * source.Columns + column;
+                    Measure(a, a + 1, a + source.Columns + 1);
+                    Measure(a, a + source.Columns + 1, a + source.Columns);
+                }
+                Assert.That(connection.RequiredGradePercent, Is.EqualTo(maximum).Within(.01f));
+                Assert.That(connection.State == CityTerraceEntranceConnectionState.GradedApron,
+                    Is.EqualTo(maximum <= CityElevationPlan.MaximumPedestrianGradePercent + .001f));
+            }
+            Assert.That(plan.EntranceConnections.Any(item => item.State == CityTerraceEntranceConnectionState.RequiresAccessRoute), Is.True);
+            Assert.That(plan.OutstandingPlacementRequirements.HasFlag(CityTerracePlacementRequirement.RoadConnections), Is.True);
+            Assert.Throws<ArgumentNullException>(() => CityTerraceEntranceConnectionPlan.Create(null, plan.Routes));
+            Assert.Throws<ArgumentNullException>(() => CityTerraceEntranceConnectionPlan.Create(layout, null));
+        }
 
         [Test]
         public void StreetCorridorsClearBuildingsPreserveAnchorsAndExposePlacementLimits()

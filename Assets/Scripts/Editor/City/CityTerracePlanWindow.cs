@@ -13,7 +13,7 @@ namespace BarPromenade.Editor
     /// </summary>
     public sealed class CityTerracePlanWindow : EditorWindow
     {
-        private static readonly string[] Views = { "Сейчас", "Террасы", "Разрез", "Транспорт", "Профиль дороги" };
+        private static readonly string[] Views = { "Сейчас", "Террасы", "Разрез", "Транспорт", "Профиль дороги", "Стыки" };
         private static readonly string[] Banks = { "Запад", "Восток" };
         private static readonly Color LowColor = new Color(0.25f, 0.52f, 0.63f);
         private static readonly Color HighColor = new Color(0.88f, 0.67f, 0.30f);
@@ -21,7 +21,7 @@ namespace BarPromenade.Editor
 
         [SerializeField] private int seed = GameSessionState.DefaultCitySeed;
         [SerializeField] private float summit = 40f;
-        [SerializeField] private int view = 3;
+        [SerializeField] private int view = 5;
         private CityLayout layout;
         private CityTerraceMasterPlan plan;
         private CityTerraceTransportPlan transport;
@@ -29,12 +29,15 @@ namespace BarPromenade.Editor
         private int selectedConflict = -1;
         private int selectedCrossing = -1;
         private int selectedBank;
+        private int selectedConnection;
         private float routeDistance;
         private string failure;
         private GUIContent[] conflictLabels;
         private GUIContent[] crossingLabels;
+        private GUIContent[] connectionLabels;
         private GUIStyle smallLabel;
         private readonly Vector3[] corridorQuad = new Vector3[4];
+        private readonly Vector3[] surfaceTriangle = new Vector3[3];
 
         [MenuItem("Bar Promenade/City/Multilevel Plan")]
         public static void Open()
@@ -66,6 +69,7 @@ namespace BarPromenade.Editor
             transport = null;
             conflictLabels = null;
             crossingLabels = null;
+            connectionLabels = null;
         }
 
         private void Rebuild()
@@ -73,6 +77,7 @@ namespace BarPromenade.Editor
             failure = null;
             selectedConflict = -1;
             selectedCrossing = -1;
+            selectedConnection = 0;
             routeDistance = 0f;
             scroll = Vector2.zero;
             try
@@ -101,6 +106,12 @@ namespace BarPromenade.Editor
                         $"{(crossing.RouteId == transport.Routes[0].Id ? "Запад" : "Восток")} · {crossing.RoadEdge} · " +
                         $"Y {crossing.RouteDatumY:0.0} / {crossing.RoadDatumY:0.0} · {CrossingName(crossing.Kind)}", crossing.Id);
                 }
+                connectionLabels = new GUIContent[transport.CoastalJunctions.Count + transport.EntranceConnections.Count];
+                for (int i = 0; i < transport.CoastalJunctions.Count; i++)
+                    connectionLabels[i] = new GUIContent($"Берег · {Banks[i]}", transport.CoastalJunctions[i].Id);
+                for (int i = 0; i < transport.EntranceConnections.Count; i++)
+                    connectionLabels[transport.CoastalJunctions.Count + i] = new GUIContent(
+                        transport.EntranceConnections[i].EntranceId, transport.EntranceConnections[i].Id);
             }
             catch (Exception exception)
             {
@@ -109,6 +120,7 @@ namespace BarPromenade.Editor
                 transport = null;
                 conflictLabels = null;
                 crossingLabels = null;
+                connectionLabels = null;
                 failure = exception.Message;
             }
             Repaint();
@@ -153,6 +165,7 @@ namespace BarPromenade.Editor
             }
 
             view = GUILayout.Toolbar(view, Views);
+            if (view == 5) selectedConnection = EditorGUILayout.Popup(selectedConnection, connectionLabels);
             if (view == 4)
             {
                 int bank = GUILayout.Toolbar(selectedBank, Banks);
@@ -164,14 +177,24 @@ namespace BarPromenade.Editor
                     SegmentName(route.Segments[sample.SegmentIndex].Kind));
             }
             Rect drawing = GUILayoutUtility.GetRect(100f, Mathf.Clamp(position.height * 0.34f, 180f, 320f), GUILayout.ExpandWidth(true));
-            if (view == 2) DrawSection(drawing);
+            if (view == 5) DrawConnection(drawing);
+            else if (view == 2) DrawSection(drawing);
             else if (view == 4) DrawRouteProfile(drawing);
             else DrawPlan(drawing);
-            EditorGUILayout.LabelField(view == 2
+            EditorGUILayout.LabelField(view == 5 ? "Берег: серый асфальт, охра тротуар. Вход: серый сейчас, красный/зелёный проект."
+                : view == 2
                 ? "Синий: запад. Охра: восток. Серый: текущие высоты. Разрез по внешним улицам ядра."
                 : view == 4 ? "По горизонтали — длина пути. Красный: две высоты дорожного пересечения. Серый: ровные участки."
                 : view == 3 ? "Синий/охра: трассы. Серый: здания. Красный: нерешённые стыки. Белый: выбор."
                 : "Синий → охра: низко → высоко. Север и море сверху.", EditorStyles.miniLabel);
+
+            if (view == 5)
+            {
+                scroll = EditorGUILayout.BeginScrollView(scroll);
+                DrawConnectionDetails();
+                EditorGUILayout.EndScrollView();
+                return;
+            }
 
             if (selectedConflict >= 0 && selectedConflict < plan.RoadConflicts.Count)
             {
@@ -223,6 +246,92 @@ namespace BarPromenade.Editor
 
         private static string CrossingName(CityTerraceRoadCrossingKind kind) => kind == CityTerraceRoadCrossingKind.CoastalAttachment
             ? "береговой стык" : kind == CityTerraceRoadCrossingKind.AtGradeUnresolved ? "одна отметка, стык не решён" : "разные отметки, связь не решена";
+
+        private void DrawConnectionDetails()
+        {
+            if (selectedConnection < transport.CoastalJunctions.Count)
+            {
+                CityTerraceCoastalJunctionPlan junction = transport.CoastalJunctions[selectedConnection];
+                EditorGUILayout.LabelField($"Узел {junction.Node} · асфальт Y {junction.RoadTopY:0.00} · тротуар Y {junction.PavementTopY:0.00}");
+                foreach (CityTerraceCoastalJunctionArm arm in junction.Arms)
+                    EditorGUILayout.LabelField($"{arm.Edge}: " + (arm.ContinuesAsRoute ? "продолжение новой трассы" :
+                        $"сохранённая улица · уклон {arm.ElevationProfile.MaximumGradePercent:0.00}%"));
+                EditorGUILayout.HelpBox("Ровная площадка и береговые ветви согласованы. " +
+                    (junction.RequiresRemainingEdgeResolution ? "Остаток прежней улицы вдоль новой трассы ещё требует замены. " : "Новая трасса добавляет отдельную ветвь. ") +
+                    "Узел пока не включён в игру.", MessageType.Info);
+            }
+            else
+            {
+                CityTerraceEntranceConnectionPlan connection = transport.EntranceConnections[selectedConnection - transport.CoastalJunctions.Count];
+                EditorGUILayout.LabelField($"Разрыв XZ до {connection.MaximumHorizontalGap:0.00} м · перепад Y до {connection.MaximumHeightChange:0.00} м");
+                string verdict = connection.State == CityTerraceEntranceConnectionState.RequiresAccessRoute
+                    ? "До ближайшего тротуара нужна промежуточная улица или лестничный подход. Пунктир — измерение разрыва, проход ещё не спроектирован."
+                    : connection.State == CityTerraceEntranceConnectionState.PartialFrontage
+                    ? "Неполный прямой стык: нужна новая разбивка площадки у поворота или перелома профиля."
+                    : connection.State == CityTerraceEntranceConnectionState.RequiresStreetRegrading
+                        ? $"Уклон площадки {connection.RequiredGradePercent:0.0}% превышает {CityTerraceEntranceConnectionPlan.MaximumGradePercent:0.0}%. Нужны согласованные высоты улицы/здания или отдельная лестничная связь."
+                        : $"Площадка укладывается в {connection.RequiredGradePercent:0.0}%. Опоры и подключение к игровому городу ещё не выполнены.";
+                EditorGUILayout.HelpBox(verdict, connection.State == CityTerraceEntranceConnectionState.GradedApron ? MessageType.Info : MessageType.Warning);
+            }
+        }
+
+        private void DrawConnection(Rect rect)
+        {
+            if (Event.current.type != EventType.Repaint) return;
+            EditorGUI.DrawRect(rect, new Color(.13f, .13f, .13f));
+            Color previous = Handles.color;
+            Handles.BeginGUI();
+            try
+            {
+                if (selectedConnection < transport.CoastalJunctions.Count)
+                {
+                    CityTerraceCoastalJunctionPlan junction = transport.CoastalJunctions[selectedConnection];
+                    Vector3 center = layout.GetNodeWorldPosition(junction.Node);
+                    float scale = Mathf.Min(rect.width - 70f, rect.height - 50f) / (junction.HalfExtent * 2f);
+                    Vector2 Map(Vector2 point) => rect.center + new Vector2(point.x - center.x, center.z - point.y) * scale;
+                    void Surface(IReadOnlyList<IReadOnlyList<Vector2>> polygons, Color color)
+                    {
+                        Handles.color = color;
+                        foreach (IReadOnlyList<Vector2> polygon in polygons)
+                        for (int i = 1; i + 1 < polygon.Count; i++)
+                        {
+                            surfaceTriangle[0] = Map(polygon[0]); surfaceTriangle[1] = Map(polygon[i]);
+                            surfaceTriangle[2] = Map(polygon[i + 1]); Handles.DrawAAConvexPolygon(surfaceTriangle);
+                        }
+                    }
+                    Surface(junction.RoadPolygons, new Color(.39f, .42f, .45f));
+                    Surface(junction.PavementPolygons, HighColor);
+                    Handles.color = Color.white;
+                    Handles.DrawLine(Map(new Vector2(junction.RouteSeamStart.x, junction.RouteSeamStart.z)),
+                        Map(new Vector2(junction.RouteSeamEnd.x, junction.RouteSeamEnd.z)), 2f);
+                    GUI.Label(new Rect(rect.x + 8f, rect.y + 6f, rect.width - 16f, 20f), "Вид сверху · белый: край новой трассы", EditorStyles.miniLabel);
+                }
+                else
+                {
+                    CityTerraceEntranceConnectionPlan connection = transport.EntranceConnections[selectedConnection - transport.CoastalJunctions.Count];
+                    CityTerraceEntranceSeam seam = connection.Seams[connection.Seams.Count / 2];
+                    Vector3 inner = connection.ExistingSurface.Top[seam.Row * connection.ExistingSurface.Columns];
+                    float oldRun = Vector2.Distance(new Vector2(inner.x, inner.z), new Vector2(seam.Existing.x, seam.Existing.z));
+                    float newRun = Vector2.Distance(new Vector2(inner.x, inner.z), new Vector2(seam.Proposed.x, seam.Proposed.z));
+                    float low = Mathf.Min(inner.y, seam.Existing.y, seam.Proposed.y) - .2f;
+                    float high = Mathf.Max(inner.y, seam.Existing.y, seam.Proposed.y) + .2f;
+                    Rect plot = new Rect(rect.x + 75f, rect.y + 30f, rect.width - 175f, rect.height - 60f);
+                    Vector2 Map(float run, float y) => new Vector2(Mathf.Lerp(plot.xMin, plot.xMax, run / Mathf.Max(oldRun, newRun)),
+                        Mathf.Lerp(plot.yMax, plot.yMin, Mathf.InverseLerp(low, high, y)));
+                    Handles.color = Color.gray; Handles.DrawLine(Map(0f, inner.y), Map(oldRun, seam.Existing.y), 2f);
+                    Handles.color = connection.State == CityTerraceEntranceConnectionState.GradedApron ? Color.green : ConflictColor;
+                    if (connection.ProposedTop.Count == 0)
+                        Handles.DrawDottedLine(Map(oldRun, seam.Existing.y), Map(newRun, seam.Proposed.y), 4f);
+                    else Handles.DrawLine(Map(0f, inner.y), Map(newRun, seam.Proposed.y), 2f);
+                    GUI.Label(new Rect(rect.x + 8f, rect.y + 6f, rect.width - 16f, 20f),
+                        $"Разрез площадки · горизонтально {newRun:0.00} м · масштаб Y отдельный", EditorStyles.miniLabel);
+                    GUI.Label(new Rect(plot.xMin - 65f, Map(0f, inner.y).y - 8f, 65f, 20f), $"{inner.y:0.00} м", EditorStyles.miniLabel);
+                    GUI.Label(new Rect(plot.xMax + 6f, Map(newRun, seam.Proposed.y).y - 8f, 90f, 20f), $"{seam.Proposed.y:0.00} м", EditorStyles.miniLabel);
+                    GUI.Label(new Rect(plot.xMin, plot.yMax + 6f, plot.width, 20f), "Порог → тротуар · показана средняя из привязанных полос", EditorStyles.miniLabel);
+                }
+            }
+            finally { Handles.EndGUI(); Handles.color = previous; }
+        }
 
         private static string SegmentName(CityTerraceTransportSegmentKind kind) => kind == CityTerraceTransportSegmentKind.Climb
             ? "подъём" : kind == CityTerraceTransportSegmentKind.StopLanding ? "остановка" :

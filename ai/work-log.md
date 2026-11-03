@@ -4,18 +4,18 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-04
-City transport: bounded distance/height profiles preserve flat turns/stops;
-paired road elevations and editor route sections expose unresolved connections.
-Draft corridors now follow street gaps with full asphalt/public pavements,
-rounded flat turns and unchanged building poses. Full model/roof envelopes,
-private plots, rear houses, laundry/dog/fair/arch sites and terraces stay clear;
-entrance interfaces remain explicit. The east route supports the default rise;
-higher requests expose GradeLimit, not silent clearance. Live road/access joins,
-vehicle swept paths and terrain supports remain unresolved.
-CityTerraceTransportPlanTests OK: independent polygon clearance/self-overlap,
-profile limits and unchanged anchors/poses. Transport editor frame reviewed.
-User map rule: logic each slice; one final redraw after geometry/elevation
-changes, stale-art scheme fallback, no fingerprint retagging.
+City transport: bounded profiles/flat turns/stops; full asphalt/pavements
+clear surveyed buildings/protected sites without moving them. East high-rise
+requests expose GradeLimit. Coastal junctions own disjoint road/pavement patches,
+flat mouths and retained coast profiles; route continuation has no duplicate
+old profile. Entrance plans pair actual forecourts/nearest pavement edges:
+XZ/Y gaps need access routes; thresholds stay, steep/incomplete aprons reject. Inland street/access heights, vehicle swept
+paths, supports and live rollout remain open.
+CityTerraceTransportPlanTests OK: clearance, profiles, junction seams/ownership,
+entrance triangle grades and unchanged live anchors. Editor joins view reviewed.
+All24FX unchanged: authoring-only surfaces.
+User map rule: logic each slice; final geometry/elevation redraw once;
+stale-art scheme fallback, no fingerprint retagging.
 check-docs.py/check-workspace.py/git diff --check.
 
 ## 2026-11-03

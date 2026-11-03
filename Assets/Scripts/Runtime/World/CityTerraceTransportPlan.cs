@@ -150,6 +150,7 @@ namespace BarPromenade
         public const int MaximumRouteSamples = 192;
         private const int QuarterTurnSegments = 6;
         private const float FlatEndLength = 4f;
+        private const float CoastalApproachLength = CorridorWidth * .5f;
 
         private sealed class Footprint
         {
@@ -174,6 +175,11 @@ namespace BarPromenade
             routes.Add(CreateRoute(layout, master, CityTerraceTransportBank.West, footprints));
             routes.Add(CreateRoute(layout, master, CityTerraceTransportBank.East, footprints));
             Routes = new ReadOnlyCollection<CityTerraceTransportRoute>(routes);
+            var junctions = new List<CityTerraceCoastalJunctionPlan>(routes.Count);
+            foreach (CityTerraceTransportRoute route in routes)
+                junctions.Add(CityTerraceCoastalJunctionPlan.Create(layout, route));
+            CoastalJunctions = junctions.AsReadOnly();
+            EntranceConnections = CityTerraceEntranceConnectionPlan.Create(layout, routes);
             RoadCrossings = CollectRoadCrossings(layout, routes, footprints).AsReadOnly();
             var reservations = new List<CityTerraceReservation>();
             foreach (CityTerraceTransportRoute route in routes) reservations.AddRange(route.Reservations);
@@ -191,8 +197,8 @@ namespace BarPromenade
                 HasBuildingConflicts |= reservation.Kind == CityTerraceReservationKind.Building ||
                     reservation.Kind == CityTerraceReservationKind.ProtectedPlace || reservation.Kind == CityTerraceReservationKind.Terrace;
             }
-            // No physical corridor, junction or swept-path proof exists yet.
-            // Grade feasibility and an empty overlap list cannot activate it.
+            // Coastal surface plans do not resolve inland streets, entrance
+            // regrading, vehicle clearance or supports, and cannot activate it.
             OutstandingPlacementRequirements = CityTerracePlacementRequirement.CorridorReservation |
                 CityTerracePlacementRequirement.RoadConnections | CityTerracePlacementRequirement.VehicleSweptPath |
                 CityTerracePlacementRequirement.TerrainTieIns;
@@ -203,6 +209,8 @@ namespace BarPromenade
                         OutstandingPlacementRequirements |= CityTerracePlacementRequirement.FootprintConflicts;
             foreach (CityTerraceTransportRoute route in routes)
                 if (!route.IsGradeFeasible) OutstandingPlacementRequirements |= CityTerracePlacementRequirement.GradeLimit;
+            foreach (CityTerraceCoastalJunctionPlan junction in junctions)
+                if (!junction.IsGradeFeasible) OutstandingPlacementRequirements |= CityTerracePlacementRequirement.GradeLimit;
             foreach (CityTerraceRoadCrossing crossing in RoadCrossings)
                 if (crossing.RequiresCrossingResolution)
                     OutstandingPlacementRequirements |= CityTerracePlacementRequirement.UnresolvedRoadCrossings;
@@ -214,6 +222,8 @@ namespace BarPromenade
         public IReadOnlyList<CityTerraceTransportRoute> Routes { get; }
         public IReadOnlyList<CityTerraceReservation> Reservations { get; }
         public IReadOnlyList<CityTerraceRoadCrossing> RoadCrossings { get; }
+        public IReadOnlyList<CityTerraceCoastalJunctionPlan> CoastalJunctions { get; }
+        public IReadOnlyList<CityTerraceEntranceConnectionPlan> EntranceConnections { get; }
         public CityTerracePlacementRequirement OutstandingPlacementRequirements { get; }
         public bool IsPlacementReady => OutstandingPlacementRequirements == CityTerracePlacementRequirement.None;
         public bool HasProtectedConflicts { get; }
@@ -253,7 +263,7 @@ namespace BarPromenade
             var runs = new List<(int index, float length)>();
             for (int i = 0; i < waypoints.Length - 1; i++)
                 runs.Add((i, Vector2.Distance(waypoints[i], waypoints[i + 1]) -
-                    (i == 0 ? FlatEndLength : TurnRadius) -
+                    (i == 0 ? CoastalApproachLength : TurnRadius) -
                     (i == waypoints.Length - 2 ? FlatEndLength : TurnRadius)));
             runs.Sort((a, b) => { int order = b.length.CompareTo(a.length); return order != 0 ? order : a.index.CompareTo(b.index); });
             var stops = new HashSet<int>();
@@ -266,7 +276,7 @@ namespace BarPromenade
             for (int i = 0; i < waypoints.Length - 1; i++)
             {
                 Vector2 direction = (waypoints[i + 1] - waypoints[i]).normalized;
-                if (i == 0) Append(points[0] + direction * FlatEndLength, CityTerraceTransportSegmentKind.Approach);
+                if (i == 0) Append(points[0] + direction * CoastalApproachLength, CityTerraceTransportSegmentKind.Approach);
                 Vector2 end = waypoints[i + 1] - direction *
                     (i == waypoints.Length - 2 ? FlatEndLength : TurnRadius);
                 if (stops.Contains(i))
