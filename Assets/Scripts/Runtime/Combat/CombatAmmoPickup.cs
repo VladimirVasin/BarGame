@@ -5,7 +5,7 @@ namespace BarPromenade
 {
     /// <summary>One reusable authored pack, confirmed once through the hero's shared found-item screen.</summary>
     [DisallowMultipleComponent]
-    public sealed class CombatAmmoPickup : MonoBehaviour, IInteractable, IPrioritizedInteractable
+    public sealed class CombatAmmoPickup : MonoBehaviour, IInteractable, IPrioritizedInteractable, IWarehouseLockerStock
     {
         private const float WorldModelScale = 1.6f;
         private const float ShellSpacing = .045f;
@@ -22,11 +22,14 @@ namespace BarPromenade
         private Quaternion modelRotation;
         private bool interactionEnabled = true;
         private bool available, inspecting, accepted;
+        private CombatTestRoot sceneOwner;
+        private WarehouseLootOutline outline;
 
         public CombatWeaponId WeaponId { get; private set; }
         public Transform Model { get; private set; }
         public bool IsAvailable => available;
         public bool IsPresenting => inspecting;
+        public int RenderedOutlineCount => outline?.RenderedPartCount ?? 0;
         public int RoundsPerPickup => WeaponId == CombatWeaponId.Pistol ? 8 : 4;
         public float RespawnRemaining { get; private set; }
         public string PromptKey => WeaponId == CombatWeaponId.Pistol ? "combat.ammo.pickup_pistol" : "combat.ammo.pickup_shotgun";
@@ -38,6 +41,7 @@ namespace BarPromenade
         internal void Initialize(CombatActor hero, CombatWeaponId id, IFirearmState firearm, Vector3 worldPosition)
         {
             owner = hero;
+            sceneOwner = GetComponentInParent<CombatTestRoot>();
             ownerInteractor = hero.GetComponent<PlayerInteractor>();
             WeaponId = id;
             state = firearm;
@@ -132,6 +136,7 @@ namespace BarPromenade
             screen = WorldItemFoundScreen.For(interactor);
             if (screen == null || !screen.IsInitialized) { screen = null; return false; }
             inspecting = true;
+            outline?.Hide();
             accepted = false;
             interactionTrigger.enabled = false;
             InventoryItemId item = WeaponId == CombatWeaponId.Pistol ? InventoryItemId.CombatPistolAmmo : InventoryItemId.CombatShotgunAmmo;
@@ -203,7 +208,13 @@ namespace BarPromenade
         {
             sourceAvailable = availability;
             InteractionPriorityGroup = priorityGroup;
+            if (outline == null && availability != null && sceneOwner != null)
+                outline = new WarehouseLootOutline(Model);
         }
+
+        void IWarehouseLockerStock.SetSourceAvailability(Func<bool> availability, object priorityGroup) =>
+            SetSourceAvailability(availability, priorityGroup);
+        void IWarehouseLockerStock.CancelPickup() => CancelPickup();
 
         internal void CancelPickup()
         {
@@ -226,7 +237,17 @@ namespace BarPromenade
             if (interactionTrigger != null) interactionTrigger.enabled = interactionEnabled && available && !inspecting;
         }
 
-        private void OnDisable() => CancelPickup();
-        private void OnDestroy() => CancelPickup();
+        private void LateUpdate()
+        {
+            if (outline == null) return;
+            bool show = interactionEnabled && available && !inspecting && owner != null &&
+                owner.isActiveAndEnabled && !owner.State.IsDefeated && sceneOwner != null &&
+                sceneOwner.isActiveAndEnabled && (sourceAvailable == null || sourceAvailable());
+            outline.Present(sceneOwner != null ? sceneOwner.CameraFollow?.Camera : null,
+                owner != null ? owner.transform : null, show);
+        }
+
+        private void OnDisable() { outline?.Hide(); CancelPickup(); }
+        private void OnDestroy() { CancelPickup(); outline?.Dispose(); outline = null; }
     }
 }

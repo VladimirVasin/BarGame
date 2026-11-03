@@ -64,10 +64,10 @@ namespace BarPromenade
             lower.radius = profile.Radius; lower.height = vodka ? VodkaBottleDimensions.LowerColliderHeight : profile.Height * .70f;
             var neck = bottle.gameObject.AddComponent<CapsuleCollider>();
             neck.direction = 1; neck.center = Vector3.up * (vodka ? VodkaBottleDimensions.NeckColliderCentre : profile.Height * .78f);
-            neck.radius = profile.IsCan ? profile.Radius : .0165f; neck.height = vodka ? VodkaBottleDimensions.NeckColliderHeight : profile.Height * .44f;
+            neck.radius = profile.IsCan ? profile.Radius : Mathf.Min(.0165f, profile.Radius * .48f); neck.height = vodka ? VodkaBottleDimensions.NeckColliderHeight : profile.Height * .44f;
             owner.bottleColliders = new Collider[] { lower, neck };
             owner.Body = bottle.gameObject.AddComponent<Rigidbody>();
-            owner.Body.mass = profile.IsCan ? .016f : .38f; owner.Body.centerOfMass = Vector3.up * (vodka ? VodkaBottleDimensions.CentreOfMass : profile.Height * .36f);
+            owner.Body.mass = profile.IsCan ? .016f : profile.ItemId == InventoryItemId.HawthornTincture ? .065f : .38f; owner.Body.centerOfMass = Vector3.up * (vodka ? VodkaBottleDimensions.CentreOfMass : profile.Height * .36f);
             owner.Body.linearDamping = .025f; owner.Body.angularDamping = .12f;
             owner.Body.interpolation = RigidbodyInterpolation.Interpolate;
             owner.Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;

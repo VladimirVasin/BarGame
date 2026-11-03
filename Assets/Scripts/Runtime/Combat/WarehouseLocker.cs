@@ -64,9 +64,11 @@ namespace BarPromenade
             }
             WarehouseLockerDoor source = GetDoor(bay);
             for (int candidate = 0; candidate < DoorCount; candidate++)
-                if (candidate != bay) doors[candidate].UnbindAmmo(pickup);
-            source.BindAmmo(pickup);
+                if (candidate != bay) doors[candidate].UnbindStock(pickup);
+            source.BindStock(pickup);
         }
+
+        internal void BindStock(IWarehouseLockerStock pickup, int bay) => GetDoor(bay).BindStock(pickup);
 
         public bool CanInteract(PlayerInteractor interactor) => GetDoor(1).CanInteract(interactor);
         public void Interact(PlayerInteractor interactor) => GetDoor(1).Interact(interactor);

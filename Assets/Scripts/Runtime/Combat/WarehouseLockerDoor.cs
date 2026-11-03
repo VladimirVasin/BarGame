@@ -9,7 +9,7 @@ namespace BarPromenade
     public sealed class WarehouseLockerDoor : MonoBehaviour, IInteractable, IPrioritizedInteractable
     {
         private readonly HomeRefrigeratorInteractionTimeline timeline = new HomeRefrigeratorInteractionTimeline();
-        private readonly List<CombatAmmoPickup> ammunition = new List<CombatAmmoPickup>(3);
+        private readonly List<IWarehouseLockerStock> stock = new List<IWarehouseLockerStock>(3);
         private CombatTestRoot owner;
         private Quaternion closedRotationInBank;
         private Vector3 handlePositionInBank;
@@ -34,21 +34,21 @@ namespace BarPromenade
             Bay = bay;
             Pivot = pivot;
             closedRotationInBank = Quaternion.Inverse(bank.transform.rotation) * pivot.rotation;
-            sourceAvailability = AmmoAvailable;
+            sourceAvailability = StockAvailable;
             initialized = true;
             ResetState();
         }
 
-        internal void BindAmmo(CombatAmmoPickup pickup)
+        internal void BindStock(IWarehouseLockerStock pickup)
         {
-            if (ammunition.Contains(pickup)) return;
-            if (ammunition.Count >= 3) throw new InvalidOperationException("A locker compartment has a bounded ammunition shelf.");
-            ammunition.Add(pickup);
+            if (stock.Contains(pickup)) return;
+            if (stock.Count >= 3) throw new InvalidOperationException("A locker compartment has a bounded stock shelf.");
+            stock.Add(pickup);
             pickup.SetSourceAvailability(sourceAvailability, InteractionPriorityGroup);
         }
 
-        internal void UnbindAmmo(CombatAmmoPickup pickup) => ammunition.Remove(pickup);
-        private bool AmmoAvailable() => IsOpen && isActiveAndEnabled && Bank != null && Bank.isActiveAndEnabled;
+        internal void UnbindStock(IWarehouseLockerStock pickup) => stock.Remove(pickup);
+        private bool StockAvailable() => IsOpen && isActiveAndEnabled && Bank != null && Bank.isActiveAndEnabled;
 
         public bool CanInteract(PlayerInteractor interactor)
         {
@@ -91,8 +91,8 @@ namespace BarPromenade
         public bool BeginClose()
         {
             if (!initialized || !isActiveAndEnabled || Bank == null || !Bank.isActiveAndEnabled) return false;
-            for (int index = 0; index < ammunition.Count; index++)
-                if (ammunition[index] != null && ammunition[index].IsPresenting) return false;
+            for (int index = 0; index < stock.Count; index++)
+                if (stock[index] is Component item && item != null && stock[index].IsPresenting) return false;
             if (!timeline.BeginClose()) return false;
             RetroAudio.PlayAt(RetroSfxId.RefrigeratorHinge, InteractionPosition);
             return true;
@@ -116,7 +116,8 @@ namespace BarPromenade
 
         public void ResetState()
         {
-            for (int index = 0; index < ammunition.Count; index++) ammunition[index]?.CancelPickup();
+            for (int index = 0; index < stock.Count; index++)
+                if (stock[index] is Component item && item != null) stock[index].CancelPickup();
             timeline.Cancel();
             closingThunkPlayed = false;
             ApplyPose();

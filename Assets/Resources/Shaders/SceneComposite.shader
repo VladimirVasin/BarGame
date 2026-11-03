@@ -29,7 +29,7 @@ Shader "Hidden/BarPromenade/SceneComposite"
                     return float4(0.0, 0.0, 0.0, 1.0);
                 float2 targetUv = input.texcoord;
                 targetUv.x = (targetUv.x - halfBar) / _SceneAspectFraction;
-                float4 color = SampleSceneComposite(targetUv);
+                float4 color = SampleSceneComposite(targetUv, true);
                 return color;
             }
             ENDHLSL
@@ -55,6 +55,30 @@ Shader "Hidden/BarPromenade/SceneComposite"
                 float4 color = SAMPLE_TEXTURE2D_X_LOD(
                     _BlitTexture, sampler_LinearClamp, input.texcoord, 0.0);
                 return color;
+            }
+            ENDHLSL
+        }
+
+        // The light mask follows the same optics, but never the perceptual
+        // colour grade: grading it would tint and amplify halation twice.
+        Pass
+        {
+            Name "NativeLightSourceLens"
+            HLSLPROGRAM
+            #pragma target 3.0
+            #pragma vertex Vert
+            #pragma fragment FragLightSourceLens
+            #include "SceneComposite.hlsl"
+
+            float4 FragLightSourceLens(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                float halfBar = (1.0 - _SceneAspectFraction) * 0.5;
+                if (input.texcoord.x < halfBar || input.texcoord.x > 1.0 - halfBar)
+                    return float4(0.0, 0.0, 0.0, 1.0);
+                float2 targetUv = input.texcoord;
+                targetUv.x = (targetUv.x - halfBar) / _SceneAspectFraction;
+                return SampleSceneComposite(targetUv, false);
             }
             ENDHLSL
         }

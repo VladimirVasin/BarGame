@@ -1,17 +1,24 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted 2026-11-03,user — warehouse hawthorn:**
+  §6/art15a:3seed/1floor+12ammo;session/no refill.
+  Use→auto-close→1vial gulp:+30HP/+40intox/dose;HP<100/inventory HP.
+  Lips clear→.65s rig headshake/grimace→throw→prior hand.
+  FullHP refuses/100intox allowed;action/wounds/decay kept.
+  Red4real s;last2:frozen-world drift/smear/live scene;1halfRT/camera/lens flag.
+  Pause/cleanup;UI/masks0;strong gulp/low swell2s;voice0.
+  Yellow:open/near/depth-tested;24FX/cost unmeasured;§16/21/art9.
+
 - **Accepted 2026-11-03,user — supermarket remodel and carried drinks:**
-  Seven dense repeatable offers:BeerCan500ml/6,WineBottle750ml/22 and existing
-  five;stack9. Passive copies share assets;one selection/sale per SKU.
-  Empty labels;open stew Home/cat only. Kit room/metal-glass entrance use shared
-  door action/authored contacts;protected aisles kept.
-  Rear cold cabinet/stockroom/cartons meet wall without daylight gap.
-  Right-wall checkout faces hall;cashier stands in rear work aisle. Conveyor,
-  scanner,cashier-facing keys,packing/bags and decorative text-free snacks form
-  one passive kit;no snack SKU/prompts or checkout purchase mechanic.
-  Authored palms/customer/light anchors bind pose,approach and warm practical.
-  Baskets,cables,vents and causal wear share static meshes/materials.
+  Seven dense repeatable offers:Beer500ml/6,Wine750ml/22+existing5;stack9,
+  shared passive assets/one selection-sale per SKU. Blank labels;open stew Home/cat.
+  Kit room/metal-glass entrance:shared door action/contacts,protected aisles.
+  Rear cold cabinet/stockroom/cartons flush to wall. Right checkout faces hall;
+  cashier in rear aisle. Passive conveyor/scanner/cashier-facing keys/packing/
+  bags/text-free snacks;no snack SKU/prompt or checkout sale. Palm/customer/light
+  anchors bind pose/approach/warm practical. Baskets/cables/vents/causal wear
+  share static meshes/materials.
   One drink owner:container ID/fill/open state,
   dose proportional to volume,one swallow commit;wine screw cap,beer retained tab.
   Shared gains:LightBeer10/DarkBeer12/WhiteWine17/RedWine20/CognacVs22/Vsop24;
@@ -20,8 +27,8 @@
   Opaque can shows fill via opening/inventory;glass via gravity surface.
   Aluminium never fractures or owns glass audio;bounded metal/surface impact cues.
   Existing rig/input/wardrobe/weapon/seat/cleanup owners retained.
-  Explicit Normal-face exception:cashier keeps separate protruding 3D eyes,
-  brows,nose,mouth;ordinary stature/fixed neck/28-degree gaze/blink/identity kept.
+  Normal-face exception:cashier has separate protruding3D eyes/brows/nose/mouth;
+  ordinary stature/fixed neck/28°gaze/blink/identity kept.
   Shop surfaces use bounded shared response/normal maps and local reflection;
   six practical lights/cold hall/warm checkout retained. All24FX reviewed:
   source fill/SSAO/shadows/Neutral/probe/material contacts;scoped DOF/SMAA/lens;
@@ -5528,13 +5535,13 @@
   inventory so Escape sees the occupied lock, then inventory closes later in
   the same frame without leaking that press into pause.
 - **Accepted — Session needs and atomic inventory consumption:**
-  Session hunger/stress/fatigue:clamped integer0–100,start/reset0,scene-persistent.
-  Wake starts scaled clock;pure double fractions raise hunger100/1440 and
-  fatigue100/1080 game minutes,discard overflow at100. Pause/pre-Wake freeze;
-  ordinary actions/transitions preserve time. UI shows integers;no debuffs yet.
-  Completed sleep resets fatigue/fraction;cancel does not. Food catalog owns
-  relief/minimum20;no effect at/below floor. Preflight→remove one→relief/fraction
-  atomically;stale/no-effect use changes nothing. Fridge Use unavailable:Take first.
+  Session needs:int0–100/start0/persistent;Wake doubles:hunger100/1440,
+  fatigue100/1080 game minutes;overflow discarded.
+  Pause/pre-Wake freeze;actions/travel keep time;no debuffs. Completed sleep
+  clears fatigue/fraction;cancel keeps. Food relief/minimum20 in catalog;
+  preflight→one debit→relief/fraction atomic;stale/no-effect unchanged.
+  Fridge Take before Use.
+
 - **Accepted — Separate supermarket interior:**
   Validated16×11×3.6m room:protected aisles,three shelf sections,stockroom,
   separate ordinary cashier;checkout decorative. Each shelf:fixed camera/station.
@@ -5556,16 +5563,15 @@
   cashier,CCTV servo,UI/transitions. Five counter-clockwise skirting sweeps
   bury rear/bottom3mm,trim corners and preserve visible profile without coplanar pairs.
 - **Accepted — Shared passive Blender supermarket product pack:**
-  `tools/build-supermarket-products-3d-model.py`:deterministic
-  `supermarket_product_pack_v1`;ArtSource/Supermarket/Products source,
-  Assets/Supermarket/Products/Models/SupermarketProducts3D.{fbx,json}.
-  Eight bottom-centre roots:seven offers plus Home/cat-only OpenStewCan.
-  Manifest measures meshes/budgets/signature;no authored text/brands or imported
-  physics/material/light/camera/audio/animation. SupermarketProductAssetSetup
-  extracts passive Resources prefabs;ModelResources/InventoryItemModelFactory
-  share them across shelves/inventory/Home/cat. Runtime owns collision/sizing/
-  lifetime. Tier anchors support real bounds;vodka≈0.299m/top-tier envelope0.37m
-  remains below2.05m shelf during selection;closed stew first tier.
+  `tools/build-supermarket-products-3d-model.py`:supermarket_product_pack_v1;
+  ArtSource/Supermarket/Products→Assets/Supermarket/Products/Models FBX/JSON.
+  Eight bottom-centre roots:seven offers+Home/cat-only OpenStewCan.
+  Manifest:meshes/budgets/signature;no text/brands/physics/materials/lights/
+  cameras/audio/animation. SupermarketProductAssetSetup extracts
+  passive Resources prefabs;shared model factory serves shelves/inventory/Home/
+  cat. Runtime owns collision/sizing/lifetime. Tier anchors:vodka≈.299m,
+  upper envelope.37m<2.05m;closed stew first tier.
+
 - **Accepted — Reusable inventory-backed target interaction:** A target-specific
   adapter supplies one validated `InventoryItemRequirement`, localized Talk,
   confirmation and missing-item keys, and an idempotent

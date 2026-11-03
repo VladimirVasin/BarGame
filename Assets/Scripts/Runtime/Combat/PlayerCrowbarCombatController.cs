@@ -226,6 +226,7 @@ namespace BarPromenade
                 selected = Actor.WeaponId == CombatWeaponId.Crowbar && Actor.LoadoutSelection.Contains(CombatWeaponId.Pistol)
                     ? CombatWeaponId.Pistol : CombatWeaponId.Crowbar;
             if (!selected.HasValue) return;
+            GetComponent<PlayerVodkaBottleController>()?.CancelMedicineForHandSelection();
             RecordWeapon(selected);
             equipmentRequestPending = true;
             attackRelease = parryRelease = true;

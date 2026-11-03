@@ -11,6 +11,7 @@ namespace BarPromenade
         private const int MaximumParts = 16;
         private const int LayerCount = 3;
         private static Material[] sharedMaterials;
+        private static Material[] sharedLootMaterials;
         private static int users;
         private static readonly int ControlCenter = Shader.PropertyToID("_ControlCenterOS");
         private static readonly int ControlExtents = Shader.PropertyToID("_ControlExtentsOS");
@@ -22,11 +23,13 @@ namespace BarPromenade
         private Camera targetCamera;
         private int count, retainedOverlays;
         private bool disposed;
+        private readonly bool lootHighlight;
         public int RenderedPartCount { get; private set; }
         public int RetainedOverlayCount => disposed ? 0 : retainedOverlays;
 
-        public WorldControlOutlineView()
+        public WorldControlOutlineView(bool lootHighlight = false)
         {
+            this.lootHighlight = lootHighlight;
             if (sharedMaterials == null)
             {
                 Shader shader = Resources.Load<Shader>("Shaders/WorldControlOutline");
@@ -46,6 +49,35 @@ namespace BarPromenade
                     material.SetFloat("_OutlineWidth", width);
                     material.SetColor("_OverlayColor", color);
                     material.SetInt("_Cull", (int)cull);
+                    return material;
+                }
+            }
+            if (lootHighlight && sharedLootMaterials == null)
+            {
+                // URP leaves the low user bits available. Bit 2 (value 4) is
+                // separate from mirror aperture 2 and SMAA's private stencil 64.
+                // Clear our bit after the contour; transparent bottle cells then
+                // keep their ordinary colour/depth instead of becoming a wash.
+                sharedLootMaterials = new[]
+                {
+                    LootLayer("Silhouette Mask", 0f, 0, 4, CompareFunction.Always, StencilOp.Replace, 4, CullMode.Back, 2019),
+                    LootLayer("Yellow Contour", 1.5f, 15, 4, CompareFunction.NotEqual, StencilOp.Keep, 0, CullMode.Front, 2021),
+                    LootLayer("Silhouette Clear", 0f, 0, 0, CompareFunction.Always, StencilOp.Replace, 4, CullMode.Back, 2023)
+                };
+                Material LootLayer(string name, float width, int channels, int reference,
+                    CompareFunction comparison, StencilOp operation, int writeMask, CullMode cull, int queue)
+                {
+                    var material = new Material(sharedMaterials[0].shader)
+                    { name = "Shared Loot " + name, hideFlags = HideFlags.HideAndDontSave, renderQueue = queue };
+                    material.SetFloat("_OutlineWidth", width);
+                    material.SetColor("_OverlayColor", new Color(1f, .78f, .035f, 1f));
+                    material.SetInt("_Cull", (int)cull);
+                    material.SetInt("_ColorMask", channels);
+                    material.SetInt("_StencilRef", reference);
+                    material.SetInt("_StencilReadMask", 4);
+                    material.SetInt("_StencilWriteMask", writeMask);
+                    material.SetInt("_StencilComp", (int)comparison);
+                    material.SetInt("_StencilPass", (int)operation);
                     return material;
                 }
             }
@@ -75,7 +107,7 @@ namespace BarPromenade
                         var overlay = new GameObject("World Control Selection " + layer) { hideFlags = HideFlags.HideAndDontSave };
                         overlayMeshes[slot] = overlay.AddComponent<MeshFilter>();
                         overlays[slot] = overlay.AddComponent<MeshRenderer>();
-                        overlays[slot].sharedMaterial = sharedMaterials[layer];
+                        overlays[slot].sharedMaterial = (lootHighlight ? sharedLootMaterials : sharedMaterials)[layer];
                         overlays[slot].shadowCastingMode = ShadowCastingMode.Off;
                         overlays[slot].receiveShadows = false;
                         overlays[slot].lightProbeUsage = LightProbeUsage.Off;
@@ -119,7 +151,9 @@ namespace BarPromenade
 
         private void OnBeginCamera(ScriptableRenderContext context, Camera camera)
         {
-            bool allowed = camera == targetCamera;
+            bool allowed = camera == targetCamera &&
+                (!lootHighlight || camera.cameraType == CameraType.Game &&
+                    !camera.TryGetComponent(out Rendering.ScenePresentationExclusion _));
             for (int index = 0; index < count * LayerCount; index++)
                 if (overlays[index] != null) overlays[index].forceRenderingOff = !allowed;
         }
@@ -163,7 +197,9 @@ namespace BarPromenade
             }
             if (--users != 0) return;
             if (sharedMaterials != null) foreach (Material material in sharedMaterials) Release(material);
+            if (sharedLootMaterials != null) foreach (Material material in sharedLootMaterials) Release(material);
             sharedMaterials = null;
+            sharedLootMaterials = null;
             static void Release(UnityEngine.Object value)
             {
                 if (Application.isPlaying) UnityEngine.Object.Destroy(value);

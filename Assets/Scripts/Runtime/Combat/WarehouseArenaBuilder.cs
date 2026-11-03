@@ -91,6 +91,7 @@ namespace BarPromenade
                         fridge.Yaw, fridge.SourceId);
                 foreach (WarehouseLockerPlacement locker in plan.HallwayLockers)
                     WarehouseLockerFactory.Create(host.transform, owner, locker.Position, locker.Yaw);
+                CreateTinctureStock(plan, host.transform, owner);
                 host.AddComponent<WarehouseFishCratePopulation>().Initialize(plan);
                 var mechanisms = host.AddComponent<WarehouseArenaMechanisms>();
                 mechanisms.Initialize(plan, owner);
@@ -106,6 +107,27 @@ namespace BarPromenade
                 if (Application.isPlaying) UnityEngine.Object.Destroy(host);
                 else UnityEngine.Object.DestroyImmediate(host);
                 throw;
+            }
+        }
+
+        private static void CreateTinctureStock(WarehouseArenaPlan plan, Transform parent, CombatTestRoot owner)
+        {
+            WarehouseLocker[] lockers = parent.GetComponentsInChildren<WarehouseLocker>();
+            for (int floor = 0; floor < plan.TinctureAnchors.Count; floor++)
+            {
+                Vector3 position = plan.TinctureAnchors[floor];
+                WarehouseLocker bank = null;
+                int bay = -1;
+                foreach (WarehouseLocker candidate in lockers)
+                {
+                    for (int index = 0; index < WarehouseLocker.DoorCount; index++)
+                        if ((parent.InverseTransformPoint(candidate.ShelfPosition(index)) - position).sqrMagnitude < .0001f)
+                        { bank = candidate; bay = index; break; }
+                    if (bank != null) break;
+                }
+                if (bank == null) throw new InvalidOperationException("Tincture needs its authored locker shelf.");
+                WarehouseTincturePickup pickup = WarehouseTincturePickup.Create(parent, owner, floor, position);
+                if (pickup != null) bank.BindStock(pickup, bay);
             }
         }
 

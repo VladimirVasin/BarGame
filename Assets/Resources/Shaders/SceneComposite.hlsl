@@ -16,6 +16,11 @@ float _IntoxicationTime;
 // (calm disc radius, radial pull, core drift in internal pixels).
 float4 _IntoxicationVertigo;
 float4 _IntoxicationVertigoShape;
+// Colour envelope, edge pressure, optional lens separation, active seconds.
+float4 _HawthornPulse;
+TEXTURE2D_X(_HawthornSnapshot);
+// Opacity, seconds since the held scene was captured, drift sign, cue seconds.
+float4 _HawthornAfterimage;
 
 // The drunk vertigo whirlpool. The frame is wound around the
 // hero rather than around the middle of the screen: his own disc
@@ -78,7 +83,7 @@ float2 ApplyVertigoWhirlpool(float2 uv)
     return centre + delta * scale;
 }
 
-float4 SampleSceneComposite(float2 targetUv)
+float4 SampleSceneComposite(float2 targetUv, bool applySwallowGrade)
 {
     float2 centered = targetUv - 0.5;
     float wave =
@@ -117,6 +122,10 @@ float4 SampleSceneComposite(float2 targetUv)
         float2(
             sin(_IntoxicationTime * 0.83),
             cos(_IntoxicationTime * 1.07) * 0.55);
+    // Reuse the existing samples. The short cue has its own clock, so it
+    // still travels when the ordinary intoxication profile is stationary.
+    ghostOffset += _IntoxicationPixelSize.xy * _HawthornPulse.z *
+        float2(.85, -.25 + .35 * sin(_HawthornPulse.w * 3.2));
     float4 ghost =
         SAMPLE_TEXTURE2D_X_LOD(
             _BlitTexture,
@@ -124,7 +133,7 @@ float4 SampleSceneComposite(float2 targetUv)
             warpedUv + ghostOffset,
             0.0);
     float ghostWeight =
-        saturate(_IntoxicationGhostPixels / 3.0);
+        saturate(max(_IntoxicationGhostPixels / 3.0, _HawthornPulse.z * .65));
     source.rgb = lerp(
         source.rgb,
         (source.rgb + ghost.rgb) * 0.5,
@@ -165,6 +174,52 @@ float4 SampleSceneComposite(float2 targetUv)
         edge *
         edge *
         saturate(_IntoxicationVignette);
+
+    [branch] if (applySwallowGrade && _HawthornAfterimage.x > 0.0)
+    {
+        float age = saturate(_HawthornAfterimage.y / .48);
+        float sign = _HawthornAfterimage.z;
+        float2 drift = float2(sign * .017, -.0055) * age;
+        float2 smear = float2(sign * .008, .0025) * age;
+        float2 heldUv = (sourceUv - .5) * (1.0 - .018 * age) + .5 - drift;
+        // All three taps read a genuinely frozen earlier frame, not the live
+        // image. Its finite travelling smear grows between periodic captures.
+        float3 held = SAMPLE_TEXTURE2D_X_LOD(_HawthornSnapshot,
+            sampler_LinearClamp, heldUv, 0.0).rgb * .55;
+        held += SAMPLE_TEXTURE2D_X_LOD(_HawthornSnapshot,
+            sampler_LinearClamp, heldUv - smear, 0.0).rgb * .30;
+        held += SAMPLE_TEXTURE2D_X_LOD(_HawthornSnapshot,
+            sampler_LinearClamp, heldUv - smear * 2.0, 0.0).rgb * .15;
+        float rememberedLight = smoothstep(.012, .10, dot(held, float3(.2126, .7152, .0722)));
+        float perimeter = smoothstep(.10, .55, length(centered));
+        float opacity = _HawthornAfterimage.x * rememberedLight * lerp(.65, 1.0, perimeter);
+        source.rgb = lerp(source.rgb, held * float3(1.0, .92, .95), opacity);
+    }
+
+    [branch] if (applySwallowGrade && _HawthornPulse.x > 0.0)
+    {
+        float cueTime = _HawthornPulse.w;
+        float2 pressureCentre = centered - float2(-.055 + cueTime * .045, .025);
+        float perimeter = smoothstep(.14, .57,
+            length(pressureCentre * float2(.88, 1.0)));
+        // A single broad, slightly diagonal wave crosses the frame. It is a
+        // colour variation, not a flashing overlay or a new source of light.
+        float travellingBand = 1.0 - smoothstep(.10, .38,
+            abs(targetUv.x + targetUv.y * .16 - (-.16 + cueTime * 1.15)));
+        float brightest = max(source.r, max(source.g, source.b));
+        float luminance = dot(source.rgb, float3(.2126, .7152, .0722));
+        float3 crimson = lerp(float3(.57, .055, .25), float3(1.0, .035, .105),
+            smoothstep(.008, .12, luminance));
+        crimson = lerp(crimson, float3(1.0, .32, .105),
+            smoothstep(.28, .85, luminance));
+        float3 graded = source.rgb * .16 + brightest * crimson * .84;
+        // Pure black remains pure black, and fine shading remains in the
+        // original signal. The centre clears before the remaining edge tint.
+        float weight = saturate(_HawthornPulse.x *
+            (.68 + perimeter * .20 + travellingBand * _HawthornPulse.y * .12));
+        source.rgb = lerp(source.rgb, graded, weight);
+        source.rgb *= 1.0 - perimeter * perimeter * _HawthornPulse.y * .12;
+    }
 
     return source;
 }

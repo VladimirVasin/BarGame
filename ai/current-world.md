@@ -54,13 +54,11 @@ cemetery:own interiors/returns.
   the explicit atlas exception. Hearth/window/practical lighting, finite bounce,
   crackle, muffled wind/ticks/timber and one repaired listener remain scoped.
   Free sofa cushion has no patched throw; rocker/sitter share measured contact.
-  Scarf uses shared `WorldItemPickup`/found screen: confirm commits once, source
-  stays empty across visits that session; other upstairs furnishings are passive.
-  Mother uses shared attention/speech bubble: same door greeting, shuffled
-  domestic lines every `35–55 s` within `6 m` on her floor, E from the same bag.
-  Ten lines plus scarf request; separate first request raises quest, wearing
-  retires request, reload keeps bag. Empty hands/silent hero/no choice;
-  Cat/dinner/news remain outside this MVP.
+  Scarf:shared `WorldItemPickup`/receipt commits once;session source stays empty;
+  other upstairs furnishings passive. Mother:shared attention/bubble,door greeting,
+  ten shuffled domestic lines/35–55s/6m/same floor/E same bag;reload keeps bag.
+  First separate scarf request raises quest;wearing retires it. Empty hands,
+  silent hero/no choice;Cat/dinner/news outside MVP.
 - `MainMenu`:index0/EditorPlay; New Game/Debug/Quit. New Game directly loads
   fresh Home/day1/hero1/home1/open balcony at actual stopped12:00. Shared neutral
   loading screen: charcoal/«Загрузка»/percentage/bottom bar, 20% scene load and
@@ -87,6 +85,12 @@ cemetery:own interiors/returns.
   toprear/playfill<bulb1.8;pourcans0→flatphys/drag-turn/seams→spasmSFX/die-key1/receipt;keyUIend+stairs↓:heat2s/riseSFX→popglass8phys.
   socket/restL-lens-amb0;red24→door/valve/dip≥.45+chest/silent;Escpause/Reset-Newkeep/Newinv0.
   D7fan/redshadows/deckblock/guards;M65Spot+weakbodyPoint/bounce/look/black12m/fog-sky0/warmhalo.
+  Hawthorn:3seed bays/session;Use→auto-close inventory→rig gulp+30HP/+40intox/dose.
+  HPHUD while<max;inventory Health bar/value;lip clear→.65s headshake/grimace→throw→prior hand.
+  FullHP refuses/100intox allowed.
+  Crimson4active-real s;last2:drifting/smeared frozen-world frame/live scene.
+  One half-resRT/camera;pause/cleanup;expressive gulp/low swell2s;UI/probes0.
+  Yellow ammo/vial contours:open/near/visible.
   Dust192+32/fan→settle/seed.
   SFX/dryUI/theme.8/echo-wow-LP-vol/mechsync/stop/replay0/exitfade.
   Fan0:2mono3D/clicks-whisper/.3/.15/.8/LP2800/Worldwet;EOF12–25|25–50/startsame;newfixed3–7m;pause-ownerhold/ResetNewkeep/empty0/clear;§6/art15a.
@@ -2161,17 +2165,14 @@ cemetery:own interiors/returns.
   without mutation. Stock/price/colliders persist;no unique collection history.
   Shared receipt preflights one temporary model,borrows browser modal,returns to
   selection;close/Escape/unload cannot grant/refund/rebuy.
-  One hand controller handles vodka/beer/wine with per-container identity/fill/open
-  state. Shared bar/inventory gains:LightBeer10,DarkBeer12,WhiteWine17,RedWine20,
-  CognacVs22/CognacVsop24;Vodka24/PepperVodka20/Moonshine24,stress unchanged.
-  BeerCan500ml=one500ml beer serving(+10);WineBottle750ml=three250ml wine
-  servings(+60);partial swallows use cumulative volume rounding.
-  Exact volume dosing/stress rounding,one commit per swallow,weapon/wardrobe/
-  seat/bus owners retained. Wine screw cap closes;beer tab stays attached/open after
-  stow. Glass shows gravity-level liquid;opaque can shows opening liquid/inventory ml.
-  Empty glass may fracture;aluminium never fractures/owns glass audio. Its bounded
-  metallic impact follows metal/wood/hardfloor/softground. Session travel retains
-  state;process save remains deferred.
+  One carried owner:vodka/beer/wine/hawthorn;container ID/fill/open state.
+  Bar/inventory gains:LightBeer10,DarkBeer12,WhiteWine17,RedWine20,CognacVs22/
+  Vsop24,Vodka24/PepperVodka20/Moonshine24;stress kept. Beer500ml=bar portion(+10),
+  wine750ml=three250ml(+60);cumulative volume/stress rounding,one swallow commit.
+  Weapon/wardrobe/seat/bus owners retained. Wine cap closes;beer tab stays open/
+  attached after stow. Glass:gravity-level fill;opaque can:opening liquid/inventory ml.
+  Empty glass may fracture;aluminium never fractures/uses glass audio;bounded
+  metal/wood/hardfloor/softground impacts. Session travel retains state;save deferred.
 - Home `12 x 8 x 2.9 m`, ceiling underside `2.86 m`, `X[-7,5]`: clear routes.
   Blender `home_interior_v1`/`interior_kit`: geometry; Unity: collision/actions/
   lights/cameras/live sleep deformation.

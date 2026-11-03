@@ -97,10 +97,10 @@ namespace BarPromenade
                 Hero.Firearm.AimRequested && !Hero.State.IsDefeated, seconds);
             reloadHudFade = FadeHud(reloadHudFade, firearm && Hero.Firearm.IsReloading && !Hero.State.IsDefeated, seconds);
             healthHudHold = Mathf.Max(0f, healthHudHold - seconds);
-            if (Hero.State.Health < hudLastHealth) healthHudHold = 3f;
+            if (Hero.State.Health != hudLastHealth) healthHudHold = 3f;
             hudLastHealth = Hero.State.Health;
-            bool critical = Hero.State.Health <= Hero.State.Settings.MaxHealth * .25f;
-            healthHudFade = FadeHud(healthHudFade, healthHudHold > 0f || critical, seconds);
+            bool wounded = Hero.State.Health < Hero.State.Settings.MaxHealth;
+            healthHudFade = FadeHud(healthHudFade, healthHudHold > 0f || wounded, seconds);
             bool spent = Hero.State.Stamina < Hero.State.Settings.MaxStamina - .01f;
             staminaHudHold = spent ? 1f : Mathf.Max(0f, staminaHudHold - seconds);
             staminaHudFade = FadeHud(staminaHudFade, spent || staminaHudHold > 0f, seconds);

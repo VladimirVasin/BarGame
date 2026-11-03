@@ -65,6 +65,20 @@ namespace BarPromenade
             finally { recordingInventoryWeapon = false; inventoryWeapon = ReadInventoryWeapon(); }
         }
 
+        /// <summary>Return the actual borrowed hand weapon through its ordinary visible draw, including debug loadouts.</summary>
+        internal bool TryReturnHandWeaponAfterMedicine(CombatActor actor, CombatWeaponId weapon)
+        {
+            if (actor != Hero || BottleOwnsCombatHand || !Hero.LoadoutSelection.Contains(weapon) ||
+                Hero.CarriedWeapon(weapon) == null || Hero.CarriedWeaponLocation(weapon) == CombatWeaponCarryLocation.Dropped ||
+                !Hero.TrySelectWeapon(weapon)) return false;
+            RecordWeaponEquipment(weapon);
+            bottleQueuedWeapon = null;
+            inventoryWeaponPending = false;
+            observedHeldWeapon = HeldInventoryWeapon;
+            requireAttackRelease = requireParryRelease = true;
+            return true;
+        }
+
         private void ApplyWeaponInventoryRequest()
         {
             if (DoorAmbushCombatActive) return;
@@ -125,6 +139,7 @@ namespace BarPromenade
                 }
                 if (requested.HasValue && Hero.LoadoutSelection.Contains(requested.Value))
                 {
+                    Hero.GetComponent<PlayerVodkaBottleController>()?.CancelMedicineForHandSelection();
                     if (GameSessionState.EquippedDrinkItem != InventoryItemId.None)
                         GameSessionState.TrySetInventoryItemEquipped(GameSessionState.EquippedDrinkItem, false);
                     RecordWeaponEquipment(requested);
@@ -145,21 +160,27 @@ namespace BarPromenade
             bool selected = false;
             if (GameInput.WasPressed(GameInputAction.EquipPistol, GameInputContext.Gameplay))
             {
+                Hero.GetComponent<PlayerVodkaBottleController>()?.CancelMedicineForHandSelection();
                 selected = Hero.TrySelectWeapon(CombatWeaponId.Pistol);
                 if (selected) RecordWeaponEquipment(CombatWeaponId.Pistol);
             }
             else if (GameInput.WasPressed(GameInputAction.EquipCrowbar, GameInputContext.Gameplay))
             {
+                Hero.GetComponent<PlayerVodkaBottleController>()?.CancelMedicineForHandSelection();
                 selected = Hero.TrySelectWeapon(CombatWeaponId.Crowbar);
                 if (selected) RecordWeaponEquipment(CombatWeaponId.Crowbar);
             }
             else if (GameInput.WasPressed(GameInputAction.EquipShotgun, GameInputContext.Gameplay))
             {
+                Hero.GetComponent<PlayerVodkaBottleController>()?.CancelMedicineForHandSelection();
                 selected = Hero.TrySelectWeapon(CombatWeaponId.Shotgun);
                 if (selected) RecordWeaponEquipment(CombatWeaponId.Shotgun);
             }
             else if (GameInput.WasPressed(GameInputAction.CombatNextWeapon, GameInputContext.Gameplay))
+            {
+                Hero.GetComponent<PlayerVodkaBottleController>()?.CancelMedicineForHandSelection();
                 selected = Hero.TrySelectNextWeapon();
+            }
             if (selected) inventoryWeaponPending = false;
         }
 

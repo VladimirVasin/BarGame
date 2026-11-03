@@ -24,13 +24,17 @@ namespace BarPromenade
         public bool OwnsEquipmentPose(object owner) => owner != null && ReferenceEquals(equipmentPoseOwner, owner);
 
         /// <summary>Adds a bounded bend to the sampled world rig before a held item's lip/hand contacts are resolved.</summary>
-        internal void ApplyEquipmentHeadPitch(object owner, float degrees)
+        internal void ApplyEquipmentHeadPitch(object owner, float degrees) =>
+            ApplyEquipmentHeadRotation(owner, new Vector3(degrees, 0f, 0f));
+
+        /// <summary>Owner-scoped pitch, yaw and roll on the same head/neck; every sample restores the previous additive pose.</summary>
+        internal void ApplyEquipmentHeadRotation(object owner, Vector3 degrees)
         {
             if (owner == null || equipmentHeadPitchOwner != null && !ReferenceEquals(equipmentHeadPitchOwner, owner) ||
-                !float.IsFinite(degrees) || !EquipmentPosePhysicsAllowed ||
+                !float.IsFinite(degrees.x) || !float.IsFinite(degrees.y) || !float.IsFinite(degrees.z) || !EquipmentPosePhysicsAllowed ||
                 !(OwnsEquipmentPose(owner) || OwnsClip(owner)) || registry == null || actorFacingTransform == null) return;
             RestoreEquipmentHeadPitch();
-            if (Mathf.Abs(degrees) < .0001f) { equipmentHeadPitchOwner = null; return; }
+            if (degrees.sqrMagnitude < .00000001f) { equipmentHeadPitchOwner = null; return; }
             equipmentPitchNeck ??= GetPartBone(Player3DAnatomicalPart.Neck);
             Transform head = registry.Anchors.Head;
             if (equipmentPitchNeck == null || head == null) return;
@@ -38,10 +42,17 @@ namespace BarPromenade
             equipmentNeckBase = equipmentPitchNeck.localRotation;
             equipmentHeadBase = head.localRotation;
             equipmentHeadPitchApplied = true;
-            float pitch = Mathf.Clamp(degrees, -48f, 48f);
-            equipmentPitchNeck.rotation = Quaternion.AngleAxis(-pitch * .3f, actorFacingTransform.right) * equipmentPitchNeck.rotation;
-            head.rotation = Quaternion.AngleAxis(-pitch * .7f, actorFacingTransform.right) * head.rotation;
+            float pitch = Mathf.Clamp(degrees.x, -48f, 48f);
+            float yaw = Mathf.Clamp(degrees.y, -18f, 18f);
+            float roll = Mathf.Clamp(degrees.z, -8f, 8f);
+            equipmentPitchNeck.rotation = EquipmentHeadRotation(pitch, yaw, roll, .3f) * equipmentPitchNeck.rotation;
+            head.rotation = EquipmentHeadRotation(pitch, yaw, roll, .7f) * head.rotation;
         }
+
+        private Quaternion EquipmentHeadRotation(float pitch, float yaw, float roll, float weight) =>
+            Quaternion.AngleAxis(yaw * weight, actorFacingTransform.up) *
+            Quaternion.AngleAxis(roll * weight, actorFacingTransform.forward) *
+            Quaternion.AngleAxis(-pitch * weight, actorFacingTransform.right);
 
         internal void ClearEquipmentHeadPitch(object owner)
         {

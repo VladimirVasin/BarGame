@@ -182,7 +182,8 @@ namespace BarPromenade.Tests.PlayMode
             RenderComposite(1280, 720);
             Camera camera = cameraObject.GetComponent<Camera>();
             SceneCompositeRendererFeature feature = FindFeature();
-            Assert.That(feature.CompositeMaterial.passCount, Is.EqualTo(2));
+            Assert.That(feature.CompositeMaterial.passCount, Is.EqualTo(3));
+            Assert.That(feature.CompositeMaterial.FindPass("NativeLightSourceLens"), Is.EqualTo(2));
             Assert.That(feature.CompositeMaterial.FindPass("NativeComposite"), Is.Zero);
             Assert.That(feature.CompositeMaterial.FindPass("NativePresentation"), Is.EqualTo(1));
             Assert.That(CheckerContrast(), Is.GreaterThan(.8f),

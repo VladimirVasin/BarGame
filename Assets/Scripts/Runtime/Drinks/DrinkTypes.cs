@@ -12,7 +12,8 @@ namespace BarPromenade
         CognacVs,
         CognacVsop,
         Water,
-        Moonshine
+        Moonshine,
+        HawthornTincture
     }
 
     public enum DrinkFamily

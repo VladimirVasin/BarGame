@@ -18,6 +18,8 @@ namespace BarPromenade
             new InventoryMenuModel();
 
         private PlayerRuntime player;
+        private PlayerVodkaBottleController drinkController;
+        private CombatActor healthActor;
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView intoxicationHud;
         private Func<bool> additionalCanOpen;
@@ -35,6 +37,9 @@ namespace BarPromenade
         public string UseFeedbackMessage { get; private set; } =
             string.Empty;
         public bool UseFeedbackSucceeded { get; private set; }
+        public bool HasCombatHealth => healthActor != null;
+        public float Health => HasCombatHealth ? healthActor.State.Health : 100f;
+        public float MaximumHealth => HasCombatHealth ? healthActor.State.Settings.MaxHealth : 100f;
 
         public bool HasSelection =>
             SelectedItemIndex >= 0 &&
@@ -82,12 +87,16 @@ namespace BarPromenade
 
         public bool CanUseSelected =>
             HasSelectedUseAction &&
-            (SelectedIsEquippable || SelectedUseEvaluation.Succeeded);
+            (SelectedStack.ItemId == InventoryItemId.HawthornTincture
+                ? drinkController != null && drinkController.CanQueueMedicineUse
+                : SelectedIsEquippable || SelectedUseEvaluation.Succeeded);
 
         public string SelectedUseActionLabel
         {
             get
             {
+                if (HasSelection && SelectedStack.ItemId == InventoryItemId.HawthornTincture)
+                    return LocalizationService.Get("inventory.action.use");
                 if (SelectedIsEquippable)
                 {
                     if (DrinkContainerCatalog.IsDrink(SelectedStack.ItemId))
@@ -161,6 +170,8 @@ namespace BarPromenade
             }
 
             player = playerRuntime;
+            drinkController = playerRuntime.GameObject.GetComponent<PlayerVodkaBottleController>();
+            healthActor = playerRuntime.GameObject.GetComponent<CombatActor>();
             seatedInteraction = playerRuntime.GameObject.GetComponent<PlayerAnimatedInteractionController>();
             cameraFollow = follow;
             intoxicationHud = hud;
@@ -189,6 +200,7 @@ namespace BarPromenade
             timePause = GameTimeScaleRuntime.AcquirePause();
             ownsTimeState = true;
             activeController = this;
+            if (healthActor == null) healthActor = player.GameObject.GetComponent<CombatActor>();
             model.Open(GameSessionState.InventoryItems.Count);
             ClearUseFeedback();
             inputUnlockFrame = Time.frameCount + 1;
@@ -264,8 +276,19 @@ namespace BarPromenade
             }
 
             InventoryItemId itemId = SelectedStack.ItemId;
+            if (itemId == InventoryItemId.HawthornTincture)
+            {
+                bool queued = drinkController != null && drinkController.TryQueueMedicineUse(this);
+                ClearUseFeedback();
+                UseFeedbackSucceeded = queued;
+                RetroAudio.Play(queued ? RetroSfxId.UiConfirm : RetroSfxId.UiCancel);
+                if (queued) Close("user", false);
+                else View.RefreshPreview();
+                return queued;
+            }
             if (SelectedIsEquippable)
             {
+                drinkController?.CancelMedicineForHandSelection();
                 bool equipped = !SelectedIsEquipped;
                 bool succeeded = GameSessionState.TrySetInventoryItemEquipped(
                     itemId, equipped);
@@ -411,6 +434,8 @@ namespace BarPromenade
             {
                 activeController = null;
             }
+            if (reason == "user") drinkController?.ReleaseQueuedMedicineUse(this);
+            else drinkController?.CancelMedicineUse(this);
 
             if (playSound)
             {

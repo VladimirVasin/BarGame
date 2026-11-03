@@ -155,6 +155,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            Rendering.HawthornHealingPulse.Clear(CameraFollow != null ? CameraFollow.Camera : null);
+            HawthornHealingAudio.Clear(CameraFollow != null ? CameraFollow.Camera : null);
             if (IsStoryContinuation) GameSessionState.CaptureStoryPistolState(Hero);
             UnsubscribeWeaponInventory();
             if (DoorAmbush != null) DoorAmbush.enabled = false;
@@ -175,6 +177,9 @@ namespace BarPromenade
             Hero?.ClearWarehouseTorsoLook();
             flashlightEquipment?.SetPresentationSuppressed(true);
             AmmoSpawns?.SetInteractionEnabled(false);
+            if (combatLocation != null)
+                foreach (WarehouseLocker locker in combatLocation.GetComponentsInChildren<WarehouseLocker>())
+                    locker.ResetState();
             ResetPistolCrosshair();
             ClearWeaponPools();
             HeadEffects?.ResetRound();

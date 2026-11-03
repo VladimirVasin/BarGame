@@ -43,8 +43,10 @@ namespace BarPromenade
 
     public static class InventoryConsumableCatalog
     {
+        public const float HawthornHealthRestored = 30f;
         private static readonly InventoryConsumableDefinition[] definitions =
         {
+            CreateAlcohol(InventoryItemId.HawthornTincture, DrinkId.HawthornTincture, 1d),
             CreateAlcohol(InventoryItemId.BeerCan, DrinkId.LightBeer, 1d),
             CreateAlcohol(InventoryItemId.WineBottle, DrinkId.RedWine, 3d),
             CreateAlcohol(

@@ -7,6 +7,12 @@ Shader "BarPromenade/WorldControlOutline"
         [HideInInspector] _OutlineWidth("Pixel Width", Float) = 2
         [HideInInspector] _OverlayColor("Selection Color", Color) = (0.88, 0.84, 0.73, 1)
         [HideInInspector] _Cull("Cull", Float) = 1
+        [HideInInspector] _ColorMask("Colour Channels", Float) = 15
+        [HideInInspector] _StencilRef("Stencil Reference", Float) = 0
+        [HideInInspector] _StencilReadMask("Stencil Read Mask", Float) = 0
+        [HideInInspector] _StencilWriteMask("Stencil Write Mask", Float) = 0
+        [HideInInspector] _StencilComp("Stencil Comparison", Float) = 8
+        [HideInInspector] _StencilPass("Stencil Pass", Float) = 0
     }
     SubShader
     {
@@ -18,6 +24,15 @@ Shader "BarPromenade/WorldControlOutline"
             Cull [_Cull]
             ZWrite Off
             ZTest LEqual
+            ColorMask [_ColorMask]
+            Stencil
+            {
+                Ref [_StencilRef]
+                ReadMask [_StencilReadMask]
+                WriteMask [_StencilWriteMask]
+                Comp [_StencilComp]
+                Pass [_StencilPass]
+            }
             Blend SrcAlpha OneMinusSrcAlpha
             HLSLPROGRAM
             #pragma vertex Vert

@@ -54,10 +54,10 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Road lighting | Bounded air/snow/headlights/halos/metal/bounce; station reflections. | `MountainRoad{LightingPresentation,ReflectionController,MetalAppearance}` | Current |
 | Depth of field tiers | Gaussian far blur/interiors radius0.55; shared owned inspection Bokeh. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder`, `CinematicDepthOfField` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Combat | Bar tissue/skull/recoil;3hits→fall/rise;hero grace;HUD edges. Gap:pierce. | `CombatActor`,`CombatTestRoot`,`CombatHudLayout` | Partial |
+| Combat | Bar tissue/skull/recoil;3hits→fall/rise;hero grace;HUD HP<100. Gap:pierce. | `CombatActor`,`CombatTestRoot`,`CombatHudLayout` | Partial |
 | Crane | Hook6m/up2m/hold5/E6/hoist-haul/bodycam/fall;home10;fatal3→regen10/kill0. | `Combat*.Crane*`,`CombatActor.Restraint` | Current |
 | Authored enemies | Bottles:glass fracture,flesh UV,held/snapped poses;all six:horror surfaces. | `CombatActor`,`Combat*Appearance`,`CombatZombieBottleDestruction` | Current |
-| Warehouse | Story keeps session/seed;fish2→last-room Docker,3→foes0;gate/ammo;L3broken;A*. | `Warehouse*`,`CombatTestRoot` | Current |
+| Warehouse | Session/seed;fish→Docker/clear;gate/ammo;L3broken/A*;3hawthorn:autoUse/return,+HP/40intox/ghost4s. | `Warehouse*`,`CombatTestRoot` | Current |
 | Body destruction | Enemies:sever/crawl;hero:wounds/no detach;passable remains/rig feet. | `CombatBodyDestruction`,`CombatCorpseTraversal`,`CombatBodyAssetSetup` | Current |
 | New Game/Debug | Loading bar through staged Home/first frame; stopped12:00 until E. Debug time/starts/tools. | `StartMenu{Root,Model}`, `NewGameStartService`, `SceneTransitionService`, `AreaLoadingRoot` | Current |
 | Bar hours and crowd | Daily12-02/3-8; warning/grace/safe exit; accepted service and physical cleanup finish. | `BarBusinessHours`, `BarCrowdController`, `BarClosingController` | Current |
@@ -68,7 +68,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
 | Session day/time displays | Inventory/day announcements follow calendar; final7 clock display is an exception. | `HomeAlarmClock`, `InventoryView` | Current |
 | Pause / cutscene debug | Pause/replay/timecode;safe hoist→pistol∞reserve/reload→Crane rises/attacks. | `PauseMenu*`,`Cutscene*`,`WarehouseDoorAmbush*` | Current |
-| Hero inventory | Equip/fill;LMB1/held mouth-sips;close→stow;empty→eye-level look/2shakes/resentful toss. | `Inventory*`,`GameSessionState`,`PlayerVodkaBottleController` | Current |
+| Hero inventory | HP state;equip/fill;LMB1/held sips;close→stow;empty→eye look/2shakes/toss. | `Inventory*`,`GameSessionState`,`PlayerVodkaBottleController` | Current |
 | World item pickup and its found screen | Shared lit 3D turn/owned focus;one take;isolated lights;layers restored. | `WorldItem{PickupPlan,Pickup,PickupModel,FoundScreen,FoundView,InspectionPresenter}` | Current |
 | Hunger, stress, fatigue and consumption | Needs follow the pause-aware calendar; consumption/rest commit relief once. Gap: needs apply no gameplay debuff. | `PlayerNeedsProgressionState`, `PlayerNeedsRules` | Partial |
 | Inventory-backed target interactions | Shared item-backed target menus commit consumption once and refund failed startup. | `InventoryItemRequirement`, `InventoryTargetInteraction{Definition,Model,Controller}` | Current |

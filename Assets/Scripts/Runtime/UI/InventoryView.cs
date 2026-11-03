@@ -33,6 +33,8 @@ namespace BarPromenade
         private GUIStyle examineTitleStyle;
         private GUIStyle examineDescriptionStyle;
         private GUIStyle examineFeedbackStyle;
+        private int displayedHealth = -1, displayedMaximumHealth = -1;
+        private string healthValueText = string.Empty;
 
         public InventoryItemPreviewRenderer PreviewRenderer
         {
@@ -168,30 +170,45 @@ namespace BarPromenade
                 InventoryIconLibrary.HeroPortraitUv,
                 true);
 
+            const float needY = 62f;
+            const float rowStep = 19f;
+            const float rowHeight = 18f;
+            float health = controller.Health;
+            float maximum = controller.MaximumHealth;
+            int roundedHealth = Mathf.RoundToInt(health);
+            int roundedMaximum = Mathf.RoundToInt(maximum);
+            if (roundedHealth != displayedHealth || roundedMaximum != displayedMaximumHealth)
+            {
+                displayedHealth = roundedHealth;
+                displayedMaximumHealth = roundedMaximum;
+                healthValueText = $"{roundedHealth}/{roundedMaximum}";
+            }
+            DrawStatusBar(new Rect(94f, 43f, 58f, rowHeight), "combat.health",
+                health, maximum, healthValueText, valueAbove: true);
             DrawStatusBar(
-                new Rect(94f, 43f, 58f, 19f),
+                new Rect(94f, needY, 58f, rowHeight),
                 "inventory.status.intoxication",
                 GameSessionState.IntoxicationLevel);
             DrawStatusBar(
-                new Rect(94f, 64f, 58f, 19f),
+                new Rect(94f, needY + rowStep, 58f, rowHeight),
                 "inventory.status.hunger",
                 GameSessionState.HungerLevel);
             DrawStatusBar(
-                new Rect(94f, 85f, 58f, 19f),
+                new Rect(94f, needY + rowStep * 2f, 58f, rowHeight),
                 "inventory.status.stress",
                 GameSessionState.StressLevel);
             DrawStatusBar(
-                new Rect(94f, 106f, 58f, 19f),
+                new Rect(94f, needY + rowStep * 3f, 58f, rowHeight),
                 "inventory.status.fatigue",
                 GameSessionState.FatigueLevel);
             GUI.Label(
-                new Rect(23f, 130f, 128f, 18f),
+                new Rect(23f, 142f, 128f, 18f),
                 string.Format(
                     LocalizationService.Get("inventory.cash"),
                     GameSessionState.CashBalance),
                 statusStyle);
             GUI.Label(
-                new Rect(23f, 151f, 128f, 18f),
+                new Rect(23f, 161f, 128f, 18f),
                 CurrentGameDayTimeText,
                 statusStyle);
         }
@@ -199,17 +216,28 @@ namespace BarPromenade
         private void DrawStatusBar(
             Rect rect,
             string captionLocalizationKey,
-            int level)
+            int level) => DrawStatusBar(rect, captionLocalizationKey, level, 100f,
+                Mathf.Clamp(level, 0, 100).ToString());
+
+        private void DrawStatusBar(
+            Rect rect,
+            string captionLocalizationKey,
+            float level,
+            float maximum,
+            string value,
+            bool valueAbove = false)
         {
             GUI.Label(
-                new Rect(rect.x, rect.y, rect.width, 9f),
+                new Rect(rect.x, rect.y, valueAbove ? 32f : rect.width, 9f),
                 LocalizationService.Get(captionLocalizationKey),
                 statusCaptionStyle);
+            if (valueAbove)
+                GUI.Label(new Rect(rect.x + 32f, rect.y, rect.width - 32f, 9f), value, statusValueStyle);
             Rect track = new Rect(
                 rect.x,
                 rect.y + 10f,
                 rect.width,
-                9f);
+                rect.height - 10f);
             RetroUiTheme.FillRect(track, RetroUiTheme.Ink);
             RetroUiTheme.StrokeRect(
                 track,
@@ -220,7 +248,7 @@ namespace BarPromenade
                 track.y + 2f,
                 Mathf.Round(
                     (track.width - 4f) *
-                    Mathf.Clamp01(level / 100f)),
+                    Mathf.Clamp01(maximum > 0f ? level / maximum : 0f)),
                 track.height - 4f);
             if (fill.width > 0f)
             {
@@ -229,8 +257,7 @@ namespace BarPromenade
                     RetroUiTheme.SelectionText);
             }
 
-            GUI.Label(track, Mathf.Clamp(level, 0, 100).ToString(),
-                statusValueStyle);
+            if (!valueAbove) GUI.Label(track, value, statusValueStyle);
         }
 
         private void DrawItems()

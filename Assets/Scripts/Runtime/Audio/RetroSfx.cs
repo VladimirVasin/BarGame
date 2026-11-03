@@ -93,6 +93,7 @@ namespace BarPromenade
         HomeBedInhale,
         HomeBedExhale,
         HomeBedGasp,
+        HawthornHealingSwell,
         Count
     }
 
@@ -927,7 +928,11 @@ namespace BarPromenade
             new RetroSfxDefinition(RetroSfxId.HomeBedExhale, RetroSfxCategory.Bar,
                 .72f, .12f, .65f, 1, .3f, 1, 4096, 950f, 0f, 82, 2),
             new RetroSfxDefinition(RetroSfxId.HomeBedGasp, RetroSfxCategory.Bar,
-                .39f, .35f, .6f, 1, .5f, 1, 4096, 2200f, 0f, 65)
+                .39f, .35f, .6f, 1, .5f, 1, 4096, 2200f, 0f, 65),
+            // A subjective swallow cue follows the red perception envelope. Dry UI bypasses
+            // the world VHS bus; a presentation owner explicitly pauses this otherwise dry voice.
+            new RetroSfxDefinition(RetroSfxId.HawthornHealingSwell, RetroSfxCategory.Ui,
+                HawthornHealingAudio.DurationSeconds, .38f, 0f, 1, 0f, 1, 4096, 1100f, 0f, 92)
         };
 
         public static int Count => definitions.Length - 1;
@@ -1038,6 +1043,8 @@ namespace BarPromenade
 
             if (HomeBedSoundSynthesis.IsBedCue(id))
                 return HomeBedSoundSynthesis.GenerateSamples(definition, variant, SampleRate);
+            if (id == RetroSfxId.HawthornHealingSwell)
+                return HawthornHealingSoundSynthesis.GenerateSamples(SampleRate);
 
             int sampleCount = Mathf.Max(
                 1,

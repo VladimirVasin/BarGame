@@ -104,6 +104,7 @@ namespace BarPromenade
                     return BuildLighter(parent, rootPrefix);
                 case InventoryItemId.BeerCan:
                 case InventoryItemId.WineBottle:
+                case InventoryItemId.HawthornTincture:
                 case InventoryItemId.VodkaBottle:
                     Transform bottle = SupermarketProductModelResources.Instantiate(
                         itemId, parent, availableSize, rootPrefix);

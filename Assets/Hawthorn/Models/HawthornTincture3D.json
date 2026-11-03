@@ -1,0 +1,754 @@
+{
+  "generator": "tools/build-hawthorn-3d-model.py",
+  "generator_version": "1.0.0",
+  "design_id": "hawthorn_tincture_v1",
+  "root_name": "ROOT_HawthornTincture3D",
+  "build_signature": "432ad640d3c4911c8da1d2c2556197f54704d30f3f8e265a41be35341f311ba4",
+  "triangle_count": 2564,
+  "mesh_count": 18,
+  "parts": [
+    {
+      "name": "Hawthorn glass cell 00",
+      "item_id": "hawthorn_tincture",
+      "role": "glass",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.29,
+        0.105,
+        0.026,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 40,
+      "triangles": 76,
+      "bounds_min": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bounds_max": [
+        0.0185,
+        0.0185,
+        0.055
+      ],
+      "unity_bounds_min": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "unity_bounds_max": [
+        0.0185,
+        0.055,
+        0.0185
+      ]
+    },
+    {
+      "name": "Hawthorn glass cell 01",
+      "item_id": "hawthorn_tincture",
+      "role": "glass",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.29,
+        0.105,
+        0.026,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 40,
+      "triangles": 76,
+      "bounds_min": [
+        -0.0185,
+        0.0,
+        0.0
+      ],
+      "bounds_max": [
+        0.0,
+        0.0185,
+        0.055
+      ],
+      "unity_bounds_min": [
+        -0.0185,
+        0.0,
+        0.0
+      ],
+      "unity_bounds_max": [
+        0.0,
+        0.055,
+        0.0185
+      ]
+    },
+    {
+      "name": "Hawthorn glass cell 02",
+      "item_id": "hawthorn_tincture",
+      "role": "glass",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.29,
+        0.105,
+        0.026,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 40,
+      "triangles": 76,
+      "bounds_min": [
+        -0.0185,
+        -0.0185,
+        0.0
+      ],
+      "bounds_max": [
+        -0.0,
+        0.0,
+        0.055
+      ],
+      "unity_bounds_min": [
+        -0.0185,
+        0.0,
+        -0.0185
+      ],
+      "unity_bounds_max": [
+        -0.0,
+        0.055,
+        0.0
+      ]
+    },
+    {
+      "name": "Hawthorn glass cell 03",
+      "item_id": "hawthorn_tincture",
+      "role": "glass",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.29,
+        0.105,
+        0.026,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 40,
+      "triangles": 76,
+      "bounds_min": [
+        -0.0,
+        -0.0185,
+        0.0
+      ],
+      "bounds_max": [
+        0.0185,
+        -0.0,
+        0.055
+      ],
+      "unity_bounds_min": [
+        -0.0,
+        0.0,
+        -0.0185
+      ],
+      "unity_bounds_max": [
+        0.0185,
+        0.055,
+        -0.0
+      ]
+    },
+    {
+      "name": "Hawthorn glass cell 04",
+      "item_id": "hawthorn_tincture",
+      "role": "glass",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.29,
+        0.105,
+        0.026,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 50,
+      "triangles": 96,
+      "bounds_min": [
+        0.0,
+        0.0,
+        0.055
+      ],
+      "bounds_max": [
+        0.0185,
+        0.0185,
+        0.102
+      ],
+      "unity_bounds_min": [
+        0.0,
+        0.055,
+        0.0
+      ],
+      "unity_bounds_max": [
+        0.0185,
+        0.102,
+        0.0185
+      ]
+    },
+    {
+      "name": "Hawthorn glass cell 05",
+      "item_id": "hawthorn_tincture",
+      "role": "glass",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.29,
+        0.105,
+        0.026,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 50,
+      "triangles": 96,
+      "bounds_min": [
+        -0.0185,
+        0.0,
+        0.055
+      ],
+      "bounds_max": [
+        0.0,
+        0.0185,
+        0.102
+      ],
+      "unity_bounds_min": [
+        -0.0185,
+        0.055,
+        0.0
+      ],
+      "unity_bounds_max": [
+        0.0,
+        0.102,
+        0.0185
+      ]
+    },
+    {
+      "name": "Hawthorn glass cell 06",
+      "item_id": "hawthorn_tincture",
+      "role": "glass",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.29,
+        0.105,
+        0.026,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 50,
+      "triangles": 96,
+      "bounds_min": [
+        -0.0185,
+        -0.0185,
+        0.055
+      ],
+      "bounds_max": [
+        -0.0,
+        0.0,
+        0.102
+      ],
+      "unity_bounds_min": [
+        -0.0185,
+        0.055,
+        -0.0185
+      ],
+      "unity_bounds_max": [
+        -0.0,
+        0.102,
+        0.0
+      ]
+    },
+    {
+      "name": "Hawthorn glass cell 07",
+      "item_id": "hawthorn_tincture",
+      "role": "glass",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.29,
+        0.105,
+        0.026,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 50,
+      "triangles": 96,
+      "bounds_min": [
+        -0.0,
+        -0.0185,
+        0.055
+      ],
+      "bounds_max": [
+        0.0185,
+        -0.0,
+        0.102
+      ],
+      "unity_bounds_min": [
+        -0.0,
+        0.055,
+        -0.0185
+      ],
+      "unity_bounds_max": [
+        0.0185,
+        0.102,
+        -0.0
+      ]
+    },
+    {
+      "name": "Hawthorn paper label",
+      "item_id": "hawthorn_tincture",
+      "role": "label",
+      "group": "render",
+      "surface": "paper",
+      "sheet": "",
+      "base_color": [
+        0.69,
+        0.635,
+        0.48,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 32,
+      "triangles": 60,
+      "bounds_min": [
+        -0.01875,
+        -0.01875,
+        0.035
+      ],
+      "bounds_max": [
+        0.01875,
+        0.01875,
+        0.065
+      ],
+      "unity_bounds_min": [
+        -0.01875,
+        0.035,
+        -0.01875
+      ],
+      "unity_bounds_max": [
+        0.01875,
+        0.065,
+        0.01875
+      ]
+    },
+    {
+      "name": "Hawthorn paper wear 0",
+      "item_id": "hawthorn_tincture",
+      "role": "label",
+      "group": "render",
+      "surface": "paper",
+      "sheet": "",
+      "base_color": [
+        0.5,
+        0.437,
+        0.29,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -0.013,
+        -0.01886,
+        0.062725
+      ],
+      "bounds_max": [
+        -0.009,
+        -0.0188,
+        0.063275
+      ],
+      "unity_bounds_min": [
+        -0.013,
+        0.062725,
+        -0.01886
+      ],
+      "unity_bounds_max": [
+        -0.009,
+        0.063275,
+        -0.0188
+      ]
+    },
+    {
+      "name": "Hawthorn paper wear 1",
+      "item_id": "hawthorn_tincture",
+      "role": "label",
+      "group": "render",
+      "surface": "paper",
+      "sheet": "",
+      "base_color": [
+        0.5,
+        0.437,
+        0.29,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        0.007,
+        -0.01886,
+        0.035725
+      ],
+      "bounds_max": [
+        0.013,
+        -0.0188,
+        0.036275
+      ],
+      "unity_bounds_min": [
+        0.007,
+        0.035725,
+        -0.01886
+      ],
+      "unity_bounds_max": [
+        0.013,
+        0.036275,
+        -0.0188
+      ]
+    },
+    {
+      "name": "Hawthorn paper wear 2",
+      "item_id": "hawthorn_tincture",
+      "role": "label",
+      "group": "render",
+      "surface": "paper",
+      "sheet": "",
+      "base_color": [
+        0.5,
+        0.437,
+        0.29,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -0.0095,
+        -0.01886,
+        0.036725
+      ],
+      "bounds_max": [
+        -0.0065,
+        -0.0188,
+        0.037275
+      ],
+      "unity_bounds_min": [
+        -0.0095,
+        0.036725,
+        -0.01886
+      ],
+      "unity_bounds_max": [
+        -0.0065,
+        0.037275,
+        -0.0188
+      ]
+    },
+    {
+      "name": "Hawthorn amber contents",
+      "item_id": "hawthorn_tincture",
+      "role": "liquid",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.39,
+        0.155,
+        0.029,
+        0.86
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 112,
+      "triangles": 220,
+      "bounds_min": [
+        -0.016,
+        -0.016,
+        0.005
+      ],
+      "bounds_max": [
+        0.016,
+        0.016,
+        0.101
+      ],
+      "unity_bounds_min": [
+        -0.016,
+        0.005,
+        -0.016
+      ],
+      "unity_bounds_max": [
+        0.016,
+        0.101,
+        0.016
+      ]
+    },
+    {
+      "name": "Hawthorn liquid surface",
+      "item_id": "hawthorn_tincture",
+      "role": "liquid_surface",
+      "group": "render",
+      "surface": "glass",
+      "sheet": "",
+      "base_color": [
+        0.52,
+        0.245,
+        0.055,
+        0.88
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 64,
+      "triangles": 124,
+      "bounds_min": [
+        -0.016,
+        -0.016,
+        0.06096
+      ],
+      "bounds_max": [
+        0.016,
+        0.016,
+        0.06104
+      ],
+      "unity_bounds_min": [
+        -0.016,
+        0.06096,
+        -0.016
+      ],
+      "unity_bounds_max": [
+        0.016,
+        0.06104,
+        0.016
+      ]
+    },
+    {
+      "name": "Hawthorn screw cap",
+      "item_id": "hawthorn_tincture",
+      "role": "cap",
+      "group": "render",
+      "surface": "paper",
+      "sheet": "",
+      "base_color": [
+        0.3,
+        0.285,
+        0.225,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 48,
+      "triangles": 92,
+      "bounds_min": [
+        -0.01,
+        -0.01,
+        0.101
+      ],
+      "bounds_max": [
+        0.01,
+        0.01,
+        0.108
+      ],
+      "unity_bounds_min": [
+        -0.01,
+        0.101,
+        -0.01
+      ],
+      "unity_bounds_max": [
+        0.01,
+        0.108,
+        0.01
+      ]
+    },
+    {
+      "name": "Hawthorn label БОЯРЫШНИКА",
+      "item_id": "hawthorn_tincture",
+      "role": "label_print",
+      "group": "render",
+      "surface": "paper",
+      "sheet": "",
+      "base_color": [
+        0.105,
+        0.092,
+        0.067,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 608,
+      "triangles": 588,
+      "bounds_min": [
+        -0.009958,
+        -0.018892,
+        0.05786
+      ],
+      "bounds_max": [
+        0.010158,
+        -0.018868,
+        0.059951
+      ],
+      "unity_bounds_min": [
+        -0.009958,
+        0.05786,
+        -0.018892
+      ],
+      "unity_bounds_max": [
+        0.010158,
+        0.059951,
+        -0.018868
+      ]
+    },
+    {
+      "name": "Hawthorn label НАСТОЙКА",
+      "item_id": "hawthorn_tincture",
+      "role": "label_print",
+      "group": "render",
+      "surface": "paper",
+      "sheet": "",
+      "base_color": [
+        0.105,
+        0.092,
+        0.067,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 464,
+      "triangles": 440,
+      "bounds_min": [
+        -0.007276,
+        -0.018892,
+        0.05086
+      ],
+      "bounds_max": [
+        0.007499,
+        -0.018868,
+        0.0535
+      ],
+      "unity_bounds_min": [
+        -0.007276,
+        0.05086,
+        -0.018892
+      ],
+      "unity_bounds_max": [
+        0.007499,
+        0.0535,
+        -0.018868
+      ]
+    },
+    {
+      "name": "Hawthorn label 50 мл",
+      "item_id": "hawthorn_tincture",
+      "role": "label_print",
+      "group": "render",
+      "surface": "paper",
+      "sheet": "",
+      "base_color": [
+        0.105,
+        0.092,
+        0.067,
+        1.0
+      ],
+      "casts_shadows": true,
+      "shadows": true,
+      "vertices": 280,
+      "triangles": 268,
+      "bounds_min": [
+        -0.003601,
+        -0.018892,
+        0.03986
+      ],
+      "bounds_max": [
+        0.003665,
+        -0.018868,
+        0.041951
+      ],
+      "unity_bounds_min": [
+        -0.003601,
+        0.03986,
+        -0.018892
+      ],
+      "unity_bounds_max": [
+        0.003665,
+        0.041951,
+        -0.018868
+      ]
+    }
+  ],
+  "unity_bounds_min": [
+    -0.01875,
+    0.0,
+    -0.018892
+  ],
+  "unity_bounds_max": [
+    0.01875,
+    0.108,
+    0.01875
+  ],
+  "height_m": 0.108,
+  "radius_m": 0.0185,
+  "grip_m": [
+    0,
+    0.052,
+    0
+  ],
+  "mouth_m": [
+    0,
+    0.102,
+    0
+  ],
+  "inner_profile_m": [
+    [
+      0.005,
+      0.014
+    ],
+    [
+      0.009,
+      0.016
+    ],
+    [
+      0.065,
+      0.016
+    ],
+    [
+      0.079,
+      0.0065
+    ],
+    [
+      0.092,
+      0.0065
+    ],
+    [
+      0.098,
+      0.0065
+    ],
+    [
+      0.101,
+      0.0065
+    ]
+  ],
+  "authored_text": [
+    "БОЯРЫШНИКА",
+    "НАСТОЙКА",
+    "50 мл"
+  ],
+  "brands": [],
+  "passive": true
+}

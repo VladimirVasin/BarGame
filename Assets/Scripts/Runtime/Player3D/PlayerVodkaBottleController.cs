@@ -8,12 +8,13 @@ namespace BarPromenade
     public sealed class PlayerVodkaBottleController : MonoBehaviour
     {
         public enum BottlePhase
-        { Hidden, Drawing, Opening, Carrying, MouthAccess, Raising, Sipping, Lowering, Closing, CheckingEmpty, Stowing, Throwing }
+        { Hidden, Drawing, Opening, Carrying, MouthAccess, Raising, Sipping, Lowering, Closing, CheckingEmpty, Stowing, Throwing, Recoiling }
         private PlayerRuntime player;
         private Player3DCharacterPresentation visual;
         private PlayerAnimatedInteractionController interaction;
         private CityBusRideController busRide;
         private CombatActor combat;
+        private Camera viewCamera;
         private RetroAudioService audio;
         private PlayerEquipmentContacts equipmentContacts;
         private PlayerJacketCloth jacket;
@@ -28,9 +29,38 @@ namespace BarPromenade
         private IInteractable pendingInteraction;
         private float elapsed, displayedMl, beforeSipMl;
         private int bottleId, resumeAfterFrame;
+        private object medicineRequestOwner;
+        private bool medicineReleased, medicineUseStarted, changingMedicineEquipment;
+        private CombatTestRoot medicineCombatRoot;
+        private CombatWeaponId? medicineReturnWeapon;
+        private GameObject medicineReturnWeaponModel;
+        private InventoryItemId medicineReturnDrink;
+        private int medicineReturnBottleId, medicineReturnMl, medicineReturnSession;
+        private bool medicineReturnOpened, medicineReturnNeedsInventory;
         private InventoryItemId itemId = InventoryItemId.VodkaBottle;
         public InventoryItemId ItemId => itemId;
         private DrinkContainerProfile Profile => DrinkContainerCatalog.Get(itemId);
+        private bool IsMedicine => itemId == InventoryItemId.HawthornTincture;
+        private Vector3 SipLipPosition
+        {
+            get
+            {
+                Transform mouth = visual.Registry.Anchors.Mouth;
+                if (!IsMedicine || inspectionLeftEye == null || inspectionRightEye == null)
+                    return mouth.position + transform.forward * .008f;
+                // Hero V2's older mouth socket sits 41.5 mm in front of and
+                // 9.6 mm above the painted lips. A tiny vial exposes that gap.
+                // Retarget in the live anatomical face frame, including head
+                // pitch, with 2 mm clearance; do not alter other actions' socket.
+                Vector3 faceForward = mouth.up;
+                Vector3 eyeMidpoint = (inspectionLeftEye.position + inspectionRightEye.position) * .5f;
+                Vector3 faceUp = Vector3.ProjectOnPlane(eyeMidpoint - mouth.position, faceForward).normalized;
+                return mouth.position - faceForward * .0395f - faceUp * .0096f;
+            }
+        }
+        private float StepSeconds => IsMedicine ? Time.unscaledDeltaTime : Time.deltaTime;
+        private float ClipElapsed => IsMedicine && Phase != BottlePhase.Carrying && Phase != BottlePhase.MouthAccess
+            ? PhaseProgress * PlayerVodkaActions.Duration(activeActionClip) : elapsed;
         private bool freshClick = true, repeatWhileHeld, gulpPending, committed, released, rightCaptured, leftCaptured;
         private Vector3 gripLocal, mouthLocal, capLocal;
         private Quaternion capRotation;
@@ -57,16 +87,161 @@ namespace BarPromenade
         public int CompletedSips { get; private set; }
         public int ThrownBottles { get; private set; }
         public int CompletedEmptyShakes { get; private set; }
-        public bool OccupiesHand => Phase != BottlePhase.Hidden;
+        public bool OccupiesHand => Phase != BottlePhase.Hidden || medicineUseStarted;
+        public bool HasPendingMedicineUse => medicineRequestOwner != null && !medicineUseStarted;
+        public bool IsAutomaticMedicineUse => medicineUseStarted;
+        public bool HasPendingMedicineReturn => medicineReturnWeapon.HasValue || medicineReturnDrink != InventoryItemId.None;
+        private Vector3 MedicineRecoilHeadAngles => Phase == BottlePhase.Recoiling ? RecoilHeadAngles(PhaseProgress) : Vector3.zero;
+        public bool CanQueueMedicineUse
+        {
+            get
+            {
+                if (combat == null) combat = GetComponent<CombatActor>();
+                return isActiveAndEnabled && medicineRequestOwner == null && !HasPendingMedicineReturn && combat != null && combat.State.CanHeal &&
+                    !combat.IsKnockedDown && !combat.IsRagdollActive && !combat.IsRestrained &&
+                    GameSessionState.HasInventoryItem(InventoryItemId.HawthornTincture) && !SceneTransitionService.IsTransitioning;
+            }
+        }
+
+        public bool TryQueueMedicineUse(object inventoryOwner)
+        {
+            if (inventoryOwner == null || !CanQueueMedicineUse || !InventoryController.IsAnyOpen ||
+                !GameSessionState.TryQueueHawthornUse(this, combat.State)) return false;
+            medicineRequestOwner = inventoryOwner;
+            medicineReleased = medicineUseStarted = false;
+            return true;
+        }
+
+        public bool ReleaseQueuedMedicineUse(object inventoryOwner)
+        {
+            if (!ReferenceEquals(medicineRequestOwner, inventoryOwner) || !HasPendingMedicineUse) return false;
+            medicineReleased = true;
+            return true;
+        }
+
+        public void CancelMedicineUse(object inventoryOwner = null)
+        {
+            if (inventoryOwner != null && !ReferenceEquals(medicineRequestOwner, inventoryOwner)) return;
+            GameSessionState.CancelHawthornUse(this);
+            medicineRequestOwner = null;
+            medicineReleased = medicineUseStarted = false;
+            if (IsMedicine && Phase != BottlePhase.Hidden && !emptyBottle) RequestContextualStow();
+        }
+
+        /// <summary>A deliberate replacement wins over a temporary medicine handoff, including debug weapons.</summary>
+        public void CancelMedicineForHandSelection()
+        {
+            ClearMedicineReturn();
+            CancelMedicineUse();
+        }
+
+        private void OnMedicineEquipmentChanged()
+        {
+            if (!changingMedicineEquipment && !(IsMedicine && Phase == BottlePhase.Sipping && committed) &&
+                (medicineRequestOwner != null || HasPendingMedicineReturn)) CancelMedicineForHandSelection();
+        }
+
+        private void CaptureMedicineReturn()
+        {
+            ClearMedicineReturn();
+            medicineReturnSession = GameSessionState.SessionGeneration;
+            medicineCombatRoot = combat.GetComponentInParent<CombatTestRoot>();
+            if (combat.HasWeaponInHand)
+            {
+                medicineReturnWeapon = combat.WeaponId;
+                medicineReturnWeaponModel = combat.CarriedWeapon(combat.WeaponId);
+                medicineReturnNeedsInventory = medicineCombatRoot == null || medicineCombatRoot.IsStoryContinuation ||
+                    GameSessionState.HasInventoryItem(WeaponInventoryItem(combat.WeaponId));
+            }
+            else if (Phase != BottlePhase.Hidden && !IsMedicine && Bottle != null && !IsBottleConcealed &&
+                GameSessionState.EquippedDrinkItem == itemId)
+            {
+                medicineReturnDrink = GameSessionState.EquippedDrinkItem;
+                medicineReturnBottleId = GameSessionState.DrinkContainerId(medicineReturnDrink);
+                medicineReturnMl = GameSessionState.DrinkRemainingMl(medicineReturnDrink);
+                medicineReturnOpened = GameSessionState.DrinkOpened(medicineReturnDrink);
+            }
+            if (HasPendingMedicineReturn) combat.DamageReset += OnMedicineRecipientReset;
+        }
+
+        private static InventoryItemId WeaponInventoryItem(CombatWeaponId weapon) => weapon switch
+        {
+            CombatWeaponId.Pistol => InventoryItemId.CombatPistol,
+            CombatWeaponId.Crowbar => InventoryItemId.CombatCrowbar,
+            _ => InventoryItemId.None
+        };
+
+        private void ClearMedicineReturn()
+        {
+            if (combat != null) combat.DamageReset -= OnMedicineRecipientReset;
+            medicineReturnWeapon = null;
+            medicineReturnWeaponModel = null;
+            medicineReturnDrink = InventoryItemId.None;
+            medicineCombatRoot = null;
+        }
+
+        private void OnMedicineRecipientReset(CombatActor actor)
+        {
+            ClearMedicineReturn();
+            CancelMedicineUse();
+        }
+
+        private bool MedicineReturnContextInvalid => combat == null || !combat.isActiveAndEnabled ||
+            combat.State.IsDefeated || combat.IsKnockedDown || combat.IsRagdollActive || combat.IsRestrained ||
+            SceneTransitionService.IsTransitioning || medicineReturnSession != GameSessionState.SessionGeneration;
+
+        private void RestoreMedicineHandIfReady()
+        {
+            if (!HasPendingMedicineReturn || medicineRequestOwner != null || medicineUseStarted ||
+                Phase != BottlePhase.Hidden || Time.frameCount <= resumeAfterFrame || !CanRead || interaction.IsActive ||
+                combat.IsSwitchingWeapon) return;
+            // A newer selection or a lost item invalidates this one-use return record.
+            if (GameSessionState.EquippedDrinkItem != InventoryItemId.None ||
+                GameSessionState.IsInventoryItemEquipped(InventoryItemId.CombatPistol) ||
+                GameSessionState.IsInventoryItemEquipped(InventoryItemId.CombatCrowbar))
+            { ClearMedicineReturn(); return; }
+            if (medicineReturnWeapon is CombatWeaponId weapon)
+            {
+                if (medicineReturnWeaponModel == null || combat.CarriedWeapon(weapon) != medicineReturnWeaponModel ||
+                    combat.CarriedWeaponLocation(weapon) == CombatWeaponCarryLocation.Dropped ||
+                    medicineReturnNeedsInventory && !GameSessionState.HasInventoryItem(WeaponInventoryItem(weapon)) ||
+                    !combat.BodyDamage.CanUseRightHand || weapon != CombatWeaponId.Crowbar && !combat.BodyDamage.CanUseLeftHand ||
+                    combat.HasWeaponInHand && combat.WeaponId != weapon)
+                { ClearMedicineReturn(); return; }
+                bool returned;
+                changingMedicineEquipment = true;
+                try
+                {
+                    returned = medicineCombatRoot != null
+                        ? medicineCombatRoot.TryReturnHandWeaponAfterMedicine(combat, weapon)
+                        : GameSessionState.TrySetInventoryItemEquipped(WeaponInventoryItem(weapon), true);
+                }
+                finally { changingMedicineEquipment = false; }
+                if (returned) ClearMedicineReturn();
+                return;
+            }
+            if (combat.HasWeaponInHand || !GameSessionState.HasInventoryItem(medicineReturnDrink) ||
+                GameSessionState.DrinkContainerId(medicineReturnDrink) != medicineReturnBottleId ||
+                GameSessionState.DrinkRemainingMl(medicineReturnDrink) != medicineReturnMl)
+            { ClearMedicineReturn(); return; }
+            changingMedicineEquipment = true;
+            try
+            {
+                GameSessionState.SetDrinkOpened(medicineReturnDrink, medicineReturnBottleId, medicineReturnOpened);
+                GameSessionState.TrySetInventoryItemEquipped(medicineReturnDrink, true);
+            }
+            finally { changingMedicineEquipment = false; ClearMedicineReturn(); }
+        }
         public void BindBusRide(CityBusRideController ride) => busRide = ride;
         public static bool IsHandOccupied(GameObject actor) => actor != null &&
             actor.TryGetComponent(out PlayerVodkaBottleController owner) && owner.isActiveAndEnabled && owner.OccupiesHand;
 
-        public static PlayerVodkaBottleController Install(PlayerRuntime runtime)
+        public static PlayerVodkaBottleController Install(PlayerRuntime runtime, Camera camera = null)
         {
             if (!(runtime.Visual is Player3DCharacterPresentation presentation)) return null;
             var owner = runtime.GameObject.AddComponent<PlayerVodkaBottleController>();
             owner.player = runtime; owner.visual = presentation;
+            owner.viewCamera = camera;
             owner.interaction = runtime.GameObject.GetComponent<PlayerAnimatedInteractionController>();
             owner.hands = presentation.Registry.GetComponent<NpcHandPose>();
             owner.equipmentContacts = presentation.Registry.GetComponent<PlayerEquipmentContacts>();
@@ -86,8 +261,10 @@ namespace BarPromenade
         }
 
         private Transform Bone(Player3DAnatomicalPart part) => visual.Registry.TryGetPart(part, out var binding) ? binding.Bone : null;
-        private bool Equipped => Phase == BottlePhase.Hidden ? GameSessionState.EquippedDrinkItem != InventoryItemId.None :
-            GameSessionState.EquippedDrinkItem == itemId;
+        private bool Equipped => Phase == BottlePhase.Hidden
+            ? medicineUseStarted || GameSessionState.EquippedDrinkItem != InventoryItemId.None
+            : IsMedicine ? medicineUseStarted && (GameSessionState.IsHawthornUseOwned(this) || emptyBottle)
+            : GameSessionState.EquippedDrinkItem == itemId;
         private bool Paused => GameTimeScaleRuntime.IsPaused || PauseMenuController.IsAnyPaused;
         private bool SeatedEquipment => interaction != null && interaction.AllowsHandEquipment;
         private bool SeatSipReady => SeatedEquipment && interaction.Phase == PlayerAnimatedInteractionPhase.Looping &&
@@ -102,15 +279,33 @@ namespace BarPromenade
         private void Update()
         {
             if (visual == null) return;
+            if (HasPendingMedicineReturn && MedicineReturnContextInvalid) ClearMedicineReturn();
+            if (medicineRequestOwner != null &&
+                (medicineRequestOwner is Object source && source == null ||
+                 !GameSessionState.IsHawthornUseOwned(this) && !(IsMedicine && emptyBottle))) CancelMedicineUse();
             bool held = GameInput.IsHeld(GameInputAction.VodkaSip, GameInputContext.Menu);
             if (!CanRead || Paused) { freshClick = true; repeatWhileHeld = false; }
             else if (!held) { freshClick = false; repeatWhileHeld = false; }
             if (Paused || !GameCursor.ApplicationFocused) return;
+            if (medicineReleased && !medicineUseStarted && !InventoryController.IsAnyOpen)
+            {
+                changingMedicineEquipment = true;
+                medicineUseStarted = true;
+                bool started;
+                try
+                {
+                    if (CanPresent) CaptureMedicineReturn();
+                    started = CanPresent && GameSessionState.StartHawthornUse(this, combat?.State);
+                }
+                finally { changingMedicineEquipment = false; }
+                if (!started) { ClearMedicineReturn(); CancelMedicineUse(); }
+            }
             if (!CanPresent)
             {
                 // Higher-priority actions own this same rig. Never refund a swallowed dose.
                 Suspend(); return;
             }
+            RestoreMedicineHandIfReady();
             if (!SwitchPresentationMode(SeatedEquipment)) { Suspend(); return; }
             if (pendingInteraction is Object value && value == null) CancelPendingInteraction();
             if (Phase == BottlePhase.Hidden)
@@ -131,10 +326,14 @@ namespace BarPromenade
             {
                 if (pendingSeatHandoff) { FinishSeatHandoff(); return; }
                 if (stowRequested) { BeginCloseOrStow(); return; }
-                elapsed += Time.deltaTime;
+                elapsed += StepSeconds;
                 if (equipmentOverlay) visual.SampleEquipmentPose(this, elapsed);
                 else visual.UpdateCarryPose(this, elapsed);
-                if (!freshClick && CanRead && GameInput.WasPressed(GameInputAction.VodkaSip, GameInputContext.Gameplay))
+                if (IsMedicine && medicineUseStarted && CanRead)
+                {
+                    if (!TrySip()) CancelMedicineUse();
+                }
+                else if (!freshClick && CanRead && GameInput.WasPressed(GameInputAction.VodkaSip, GameInputContext.Gameplay))
                     TrySip();
                 return;
             }
@@ -148,7 +347,7 @@ namespace BarPromenade
             // A phase may leave only after its terminal pose was actually
             // presented. Empty-check landmarks also survive a long frame.
             if (terminalPresented) { CompletePhase(held); return; }
-            float next = Mathf.Min(Duration, elapsed + Mathf.Max(0f, Time.deltaTime));
+            float next = Mathf.Min(Duration, elapsed + Mathf.Max(0f, StepSeconds));
             float[] stops = Phase == BottlePhase.CheckingEmpty ? EmptyCheckStops :
                 Phase == BottlePhase.Opening ? OpenStops : Phase == BottlePhase.Closing ? CloseStops :
                 Phase == BottlePhase.Throwing ? ThrowStops : null;
@@ -158,14 +357,25 @@ namespace BarPromenade
                     { next = Mathf.Min(next, stop * Duration); break; }
             elapsed = next;
             float progress = Mathf.Clamp01(elapsed / Duration);
-            if (equipmentOverlay) visual.SampleEquipmentPose(this, elapsed);
+            if (equipmentOverlay) visual.SampleEquipmentPose(this, ClipElapsed);
             else visual.SampleOwnedClip(this, progress);
             if (Phase == BottlePhase.Sipping && !committed && progress >= PlayerVodkaActions.SipCommitProgress)
             {
                 committed = true;
-                if (GameSessionState.TryDrinkContainerSip(itemId, bottleId, Mathf.RoundToInt(beforeSipMl), out var result))
-                { CompletedSips++; displayedMl = result.RemainingMl; emptyBottle = result.Emptied; gulpPending = true; }
-                else { displayedMl = GameSessionState.DrinkRemainingMl(itemId); repeatWhileHeld = false; }
+                if (GameSessionState.TryDrinkContainerSip(itemId, bottleId, Mathf.RoundToInt(beforeSipMl), out var result, combat?.State, this))
+                {
+                    CompletedSips++; displayedMl = result.RemainingMl; emptyBottle = result.Emptied; gulpPending = true;
+                    if (itemId == InventoryItemId.HawthornTincture)
+                    {
+                        Rendering.HawthornHealingPulse.Trigger(viewCamera);
+                        HawthornHealingAudio.Play(viewCamera);
+                    }
+                }
+                else
+                {
+                    displayedMl = GameSessionState.DrinkRemainingMl(itemId); repeatWhileHeld = false;
+                    if (IsMedicine) CancelMedicineUse();
+                }
             }
             // Release is applied after this frame's final IK/contact pose in LateUpdate.
             if (Phase == BottlePhase.Throwing && progress >= PlayerVodkaActions.ThrowReleaseProgress) released = true;
@@ -190,12 +400,14 @@ namespace BarPromenade
                     else BeginSip();
                     break;
                 case BottlePhase.Sipping:
-                    if (!emptyBottle && !stowRequested && !pendingSeatHandoff && repeatWhileHeld && held && CanRead && GameSessionState.CanDrinkContainerSip(itemId))
+                    if (!IsMedicine && !emptyBottle && !stowRequested && !pendingSeatHandoff && repeatWhileHeld && held && CanRead && GameSessionState.CanDrinkContainerSip(itemId, combat?.State))
                         BeginSip();
                     else StartPhase(BottlePhase.Lowering, PlayerVodkaActions.LowerClip);
                     break;
                 case BottlePhase.Lowering:
-                    if (emptyBottle)
+                    if (emptyBottle && IsMedicine)
+                        StartPhase(BottlePhase.Recoiling, PlayerVodkaActions.CarryClip);
+                    else if (emptyBottle)
                     { CompletedEmptyShakes = 0; StartPhase(BottlePhase.CheckingEmpty, PlayerVodkaActions.EmptyCheckClip); }
                     else if (stowRequested) BeginCloseOrStow();
                     else Carry();
@@ -207,6 +419,7 @@ namespace BarPromenade
                     StartPhase(BottlePhase.Stowing, PlayerVodkaActions.StowClip);
                     break;
                 case BottlePhase.CheckingEmpty:
+                case BottlePhase.Recoiling:
                     StartPhase(BottlePhase.Throwing, PlayerVodkaActions.ThrowClip);
                     break;
                 case BottlePhase.Stowing:
@@ -239,7 +452,7 @@ namespace BarPromenade
         private bool Prepare()
         {
             if (!PlayerVodkaActions.TryAttach(visual.Registry)) return false;
-            itemId = GameSessionState.EquippedDrinkItem;
+            itemId = medicineUseStarted ? InventoryItemId.HawthornTincture : GameSessionState.EquippedDrinkItem;
             if (!DrinkContainerCatalog.IsDrink(itemId)) return false;
             if (Bottle == null) Bottle = VodkaBottleView.Create(transform, itemId);
             if (Bottle == null) return false;
@@ -263,6 +476,7 @@ namespace BarPromenade
             SetConcealed(true);
             audio = RetroAudioService.EnsureInstalled();
             audio?.GetClip(RetroSfxId.DrinkGulp);
+            if (IsMedicine) HawthornHealingAudio.Prepare(viewCamera);
             equipmentContacts ??= visual.Registry.GetComponent<PlayerEquipmentContacts>() ??
                 visual.Registry.gameObject.AddComponent<PlayerEquipmentContacts>();
             equipmentContacts.Register(this, new[] { coatDock }, Bottle.gameObject);
@@ -281,9 +495,9 @@ namespace BarPromenade
 
         public bool TrySip()
         {
-            if (Phase != BottlePhase.Carrying || !CanRead || !GameSessionState.CanDrinkContainerSip(itemId)) return false;
+            if (Phase != BottlePhase.Carrying || !CanRead || !GameSessionState.CanDrinkContainerSip(itemId, combat?.State, this)) return false;
             beforeSipMl = displayedMl; committed = false;
-            repeatWhileHeld = GameInput.IsHeld(GameInputAction.VodkaSip, GameInputContext.Menu);
+            repeatWhileHeld = !IsMedicine && GameInput.IsHeld(GameInputAction.VodkaSip, GameInputContext.Menu);
             mouthAccess ??= PlayerScarfController.RequireMouthAccess(player, this);
             Phase = BottlePhase.MouthAccess;
             return true;
@@ -291,7 +505,9 @@ namespace BarPromenade
 
         public bool TryPrepareInteraction(IInteractable target)
         {
-            if (!OccupiesHand || target == null) return false;
+            if (target == null) return false;
+            if (medicineRequestOwner != null) CancelMedicineUse();
+            if (!OccupiesHand) return false;
             if (pendingInteraction != null) return true;
             bool compatibleSeat = target is IHandEquipmentSeat seat && seat.AllowsHandEquipment && !emptyBottle &&
                 (Phase == BottlePhase.Carrying || Phase == BottlePhase.MouthAccess || IsDrinking);
@@ -333,11 +549,11 @@ namespace BarPromenade
             visual.ReleaseCarryPose(this);
             visual.ReleaseEquipmentPose(this);
             equipmentOverlay = overlay;
-            if (!OccupiesHand) return true;
+            if (Phase == BottlePhase.Hidden) return true;
             bool carry = Phase == BottlePhase.Carrying || Phase == BottlePhase.MouthAccess;
             string clip = carry ? PlayerVodkaActions.CarryClip : activeActionClip;
             if (overlay)
-                return visual.TryAcquireEquipmentPose(this, clip, rightArmOnly: carry) && visual.SampleEquipmentPose(this, elapsed);
+                return visual.TryAcquireEquipmentPose(this, clip, rightArmOnly: carry) && visual.SampleEquipmentPose(this, ClipElapsed);
             if (carry)
                 return visual.TryAcquireCarryPose(this, clip) && visual.UpdateCarryPose(this, elapsed);
             if (!visual.TryAcquireClip(this, clip)) return false;
@@ -348,12 +564,24 @@ namespace BarPromenade
         private void FinishHandoff()
         {
             IInteractable target = pendingInteraction;
-            CancelPendingInteraction(); Suspend(); resumeAfterFrame = Time.frameCount + 1;
+            bool continueMedicine = medicineUseStarted && !IsMedicine && target == null;
+            CancelPendingInteraction(); Suspend(continueMedicine); resumeAfterFrame = Time.frameCount + 1;
             if (target != null && (!(target is Object obj) || obj != null) && target.CanInteract(player.Interactor))
                 target.Interact(player.Interactor);
         }
 
-        private float Duration => Phase switch
+        public float PhaseDurationSeconds => Duration;
+        private float Duration => IsMedicine ? Phase switch
+        {
+            BottlePhase.Drawing => .60f,
+            BottlePhase.Opening or BottlePhase.Closing => .45f,
+            BottlePhase.Raising or BottlePhase.Lowering => .22f,
+            BottlePhase.Sipping => .30f,
+            BottlePhase.Recoiling => .65f,
+            BottlePhase.Stowing => .35f,
+            BottlePhase.Throwing => .45f,
+            _ => PlayerVodkaActions.CarrySeconds
+        } : Phase switch
         {
             BottlePhase.Drawing => PlayerVodkaActions.DrawSeconds,
             BottlePhase.Opening => PlayerVodkaActions.OpenSeconds,
@@ -382,7 +610,7 @@ namespace BarPromenade
             elapsed = presentedProgress = 0f; Phase = phase; released = terminalPresented = false;
             if (phase == BottlePhase.CheckingEmpty)
                 visual.TrySetContextualFacialExpression(this, PlayerFacialExpression.Watchful);
-            else if (phase == BottlePhase.Throwing)
+            else if (phase == BottlePhase.Throwing || phase == BottlePhase.Recoiling)
                 visual.TrySetContextualFacialExpression(this, PlayerFacialExpression.Tense);
             else visual.ReleaseContextualFacialExpression(this);
             if (equipmentOverlay) visual.SampleEquipmentPose(this, 0f);
@@ -412,7 +640,7 @@ namespace BarPromenade
 
         private float SeatedCarryAmount(float progress) => Phase switch
         {
-            BottlePhase.Carrying or BottlePhase.MouthAccess => 1f,
+            BottlePhase.Carrying or BottlePhase.MouthAccess or BottlePhase.Recoiling => 1f,
             BottlePhase.Drawing => Smooth(.76f, 1f, progress),
             BottlePhase.Opening => 1f - Smooth(0f, .22f, progress) + Smooth(.76f, 1f, progress),
             BottlePhase.Closing => 1f - Smooth(0f, .22f, 1f - progress) + Smooth(.76f, 1f, 1f - progress),
@@ -425,6 +653,12 @@ namespace BarPromenade
         };
 
         private static float Smooth(float from, float to, float value) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(from, to, value));
+        private static Vector3 RecoilHeadAngles(float progress)
+        {
+            float envelope = Smooth(0f, .12f, progress) * (1f - Smooth(.7f, 1f, progress));
+            float swing = Mathf.Sin(progress * Mathf.PI * 4f) * Mathf.Lerp(1f, .52f, progress);
+            return new Vector3(-4f * envelope, 14f * swing * envelope, 2f * swing * envelope);
+        }
         private static float EmptyCheckDownAmount(float progress) =>
             Smooth(0f, PlayerVodkaActions.EmptyCheckInspectProgress, progress) *
             (1f - Smooth(PlayerVodkaActions.EmptyCheckReturnProgress, 1f, progress));
@@ -487,8 +721,9 @@ namespace BarPromenade
                 BottlePhase.Lowering => 1f - Smooth(0f, 1f, progress),
                 _ => 0f
             };
-            float depletion = Smooth(Profile.FullMl, (Profile.FullMl + Profile.SipCount - 1) / Profile.SipCount, shown);
-            if (sip > 0f) visual.ApplyEquipmentHeadPitch(this, PlayerVodkaActions.LastDrinkHeadPitchDegrees * depletion * sip);
+            float depletion = IsMedicine ? 1f : Smooth(Profile.FullMl, (Profile.FullMl + Profile.SipCount - 1) / Profile.SipCount, shown);
+            if (sip > 0f) visual.ApplyEquipmentHeadPitch(this, PlayerVodkaActions.LastDrinkHeadPitchDegrees * depletion * sip * (IsMedicine ? .5f : 1f));
+            else if (Phase == BottlePhase.Recoiling) visual.ApplyEquipmentHeadRotation(this, MedicineRecoilHeadAngles);
             else visual.ClearEquipmentHeadPitch(this);
             // The carried bottle is upright; the original wrist follows its
             // neck frame instead of inheriting a sideways relaxed thumb.
@@ -530,7 +765,7 @@ namespace BarPromenade
                 tilt += 5f * gulp * (1f - depletion);
                 Vector3 drinkAxis = -levelForward * Mathf.Cos(tilt * Mathf.Deg2Rad) - Vector3.up * Mathf.Sin(tilt * Mathf.Deg2Rad);
                 Quaternion drinkRotation = Quaternion.LookRotation(Vector3.Cross(transform.right, drinkAxis), drinkAxis);
-                Vector3 lip = visual.Registry.Anchors.Mouth.position + transform.forward * .008f;
+                Vector3 lip = SipLipPosition;
                 Vector3 drinkPosition = lip - drinkRotation * mouthLocal;
                 rotation = Quaternion.Slerp(rotation, drinkRotation, sip);
                 position = Vector3.Lerp(position, drinkPosition, sip);
@@ -563,7 +798,7 @@ namespace BarPromenade
             if (busRide != null) position = busRide.ConstrainHeldBottlePosition(position, rotation);
             Bottle.transform.SetPositionAndRotation(position, rotation);
             if (sip > 0f)
-                MouthContactError = Vector3.Distance(Bottle.Mouth.position, visual.Registry.Anchors.Mouth.position + transform.forward * .008f);
+                MouthContactError = Vector3.Distance(Bottle.Mouth.position, SipLipPosition);
             // Imported contact empties retain the FBX authoring-root roll.
             // Their positions are measured anchors; the bottle wrapper owns
             // the physical cylinder axes used by both liquid and hand contact.
@@ -698,8 +933,9 @@ namespace BarPromenade
 
         private void CancelPendingInteraction()
         { pendingInteraction = null; pendingSeatHandoff = false; player.Interactor?.SetOwnedInteractKeyClaim(this, false); }
-        private void Suspend()
+        private void Suspend(bool preserveMedicineUse = false)
         {
+            if (!preserveMedicineUse) CancelMedicineUse();
             visual?.ClearEquipmentHeadPitch(this);
             visual?.ReleaseOwnedClip(this); visual?.ReleaseCarryPose(this); visual?.ReleaseEquipmentPose(this);
             visual?.ReleaseContextualFacialExpression(this);
@@ -715,11 +951,21 @@ namespace BarPromenade
             repeatWhileHeld = gulpPending = stowRequested = emptyBottle = terminalPresented = false;
             CancelPendingInteraction();
         }
-        private void OnDisable() { if (visual != null) Suspend(); }
+        private void OnDisable()
+        {
+            ClearMedicineReturn();
+            GameSessionState.InventoryEquipmentChanged -= OnMedicineEquipmentChanged;
+            Rendering.HawthornHealingPulse.Clear(viewCamera);
+            HawthornHealingAudio.Clear(viewCamera);
+            if (visual != null) Suspend();
+        }
         private void OnDestroy()
         {
+            ClearMedicineReturn();
             if (visual != null) Suspend();
             if (coatDock != null) Destroy(coatDock.gameObject);
         }
+
+        private void OnEnable() => GameSessionState.InventoryEquipmentChanged += OnMedicineEquipmentChanged;
     }
 }

@@ -235,6 +235,8 @@ namespace BarPromenade
 
         private void PlaceRound(bool focusOpponent)
         {
+            Rendering.HawthornHealingPulse.Clear(CameraFollow != null ? CameraFollow.Camera : null);
+            HawthornHealingAudio.Clear(CameraFollow != null ? CameraFollow.Camera : null);
             DoorAmbush?.ResetEpisode();
             CancelRoomAttackSequence();
             ClearOpponentAttackSuppression();

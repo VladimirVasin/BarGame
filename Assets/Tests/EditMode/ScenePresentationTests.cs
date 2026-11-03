@@ -17,7 +17,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(material, Is.Not.Null);
             Assert.That(material.shader, Is.Not.Null);
             Assert.That(material.shader.name, Is.EqualTo("Hidden/BarPromenade/SceneComposite"));
-            Assert.That(material.passCount, Is.EqualTo(2));
+            Assert.That(material.passCount, Is.EqualTo(3));
+            Assert.That(material.FindPass("NativeLightSourceLens"), Is.EqualTo(2));
         }
 
         [Test]

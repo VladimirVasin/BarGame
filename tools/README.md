@@ -114,14 +114,13 @@ python tools/run-blender.py tools/build-village-resident-doors-3d-model.py --exp
 Validate:`--validate-only`;retain `--phase-two` and earlier bodies/actions.
 `Bar Promenade/Default NPC/Rebuild Ordinary Worker`:12 face-hair atlases;
 Inspector:faces/hair/presets/slots.
-Register new IDs/constraints in `DefaultNpcPopulation`, use `CreateForCharacter`;
-global assignment avoids repeats and restores the same look across loads.
+`DefaultNpcPopulation` IDs/constraints + `CreateForCharacter`:stable nonrepeating appearance.
 Props: 17 recipes, first eleven preserved. Doors: three envelopes, real openings,
 six concealed docks behind vestibule turns.
 
 Source:`ArtSource/VillageLife`;review:`Captures/VillageLife`.
 `VillageLife`:bodies/props/doors/clearance/yielding/gusts/pause/returns.
-Judge at hero scale, not by counts.
+Judge hero scale.
 
 Workroom(close Unity):launcher + `build-village-workroom-3d-model.py`,
 `build-village-residents-3d-model.py --workroom`,
@@ -216,3 +215,5 @@ python tools/run-blender.py tools/build-player-scarf-3d-model.py --validate-only
 Views:front/lowered/rear→`ArtSource/PlayerScarf`;`-- --no-preview` skips.
 Validation:weights/geometry/shapes/determinism/face clearance.
 `PlayerScarfAssetSetup`:BuildOrThrow imports/measures;ValidateOrThrow:read-only gate.
+
+`build-hawthorn-3d-model.py`/`--validate-only`;`HawthornTinctureAssetSetup`.

@@ -13,6 +13,7 @@ namespace BarPromenade
             switch (itemId)
             {
                 case InventoryItemId.BeerCan:
+                case InventoryItemId.HawthornTincture:
                 case InventoryItemId.WineBottle:
                 case InventoryItemId.InstantNoodles:
                 case InventoryItemId.DayOldLoaf:
@@ -30,6 +31,7 @@ namespace BarPromenade
         {
             switch (itemId)
             {
+                case InventoryItemId.HawthornTincture: return "CombatWarehouse/HawthornTincture3D";
                 case InventoryItemId.BeerCan: return ResourceFolder + "BeerCan3D";
                 case InventoryItemId.WineBottle: return ResourceFolder + "WineBottle3D";
                 case InventoryItemId.InstantNoodles:
@@ -144,6 +146,7 @@ namespace BarPromenade
         {
             switch (itemId)
             {
+                case InventoryItemId.HawthornTincture: return "Hawthorn Tincture";
                 case InventoryItemId.BeerCan: return "Beer Can";
                 case InventoryItemId.WineBottle: return "Wine Bottle";
                 case InventoryItemId.InstantNoodles:

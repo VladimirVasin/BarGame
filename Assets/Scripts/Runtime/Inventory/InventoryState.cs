@@ -14,13 +14,14 @@ namespace BarPromenade
         private readonly VodkaBottleState vodkaBottles = new VodkaBottleState();
         private readonly VodkaBottleState beerCans = new VodkaBottleState(500, 10);
         private readonly VodkaBottleState wineBottles = new VodkaBottleState(750, 15);
+        private readonly VodkaBottleState hawthornBottles = new VodkaBottleState(50, 1);
         public InventoryItemId EquippedDrinkItem => IsEquipped(InventoryItemId.VodkaBottle) ? InventoryItemId.VodkaBottle :
             IsEquipped(InventoryItemId.BeerCan) ? InventoryItemId.BeerCan :
             IsEquipped(InventoryItemId.WineBottle) ? InventoryItemId.WineBottle : InventoryItemId.None;
         private VodkaBottleState Containers(InventoryItemId item) => item switch
         {
             InventoryItemId.VodkaBottle => vodkaBottles, InventoryItemId.BeerCan => beerCans,
-            InventoryItemId.WineBottle => wineBottles, _ => null
+            InventoryItemId.WineBottle => wineBottles, InventoryItemId.HawthornTincture => hawthornBottles, _ => null
         };
         public int DrinkContainerId(InventoryItemId item) => Containers(item)?.ActiveId ?? 0;
         public int DrinkRemainingMl(InventoryItemId item) => Containers(item)?.ActiveRemainingMl ?? 0;
@@ -51,7 +52,7 @@ namespace BarPromenade
         {
             items.Clear();
             equippedItems.Clear();
-            vodkaBottles.Clear(); beerCans.Clear(); wineBottles.Clear();
+            vodkaBottles.Clear(); beerCans.Clear(); wineBottles.Clear(); hawthornBottles.Clear();
         }
 
         public bool IsEquipped(InventoryItemId itemId)
@@ -77,6 +78,7 @@ namespace BarPromenade
                     equippedItems.Remove(InventoryItemId.VodkaBottle);
                     equippedItems.Remove(InventoryItemId.BeerCan);
                     equippedItems.Remove(InventoryItemId.WineBottle);
+                    equippedItems.Remove(InventoryItemId.HawthornTincture);
                 }
                 equippedItems.Add(itemId);
             }
@@ -101,6 +103,17 @@ namespace BarPromenade
             int index = FindIndex(itemId);
             int currentCount = index >= 0 ? items[index].Count : 0;
             return currentCount <= definition.MaximumStack - count;
+        }
+
+        internal bool SelectHawthornForUse() => GetCount(InventoryItemId.HawthornTincture) > 0 && hawthornBottles.SelectBottle();
+
+        internal void ClearHandEquipment()
+        {
+            equippedItems.Remove(InventoryItemId.CombatCrowbar);
+            equippedItems.Remove(InventoryItemId.CombatPistol);
+            equippedItems.Remove(InventoryItemId.VodkaBottle);
+            equippedItems.Remove(InventoryItemId.BeerCan);
+            equippedItems.Remove(InventoryItemId.WineBottle);
         }
 
         public bool TryAdd(InventoryItemId itemId, int count = 1, int initialVodkaMl = VodkaBottleState.FullMl)
@@ -166,11 +179,12 @@ namespace BarPromenade
         public bool TryDrinkVodkaSip(int expectedBottleId, out VodkaBottleSipResult result) =>
             TryDrinkContainerSip(InventoryItemId.VodkaBottle, expectedBottleId, out result);
 
-        public bool TryDrinkContainerSip(InventoryItemId itemId, int expectedId, out VodkaBottleSipResult result)
+        public bool TryDrinkContainerSip(InventoryItemId itemId, int expectedId, out VodkaBottleSipResult result,
+            bool ownedMedicineUse = false)
         {
             result = default;
             VodkaBottleState drink = Containers(itemId);
-            if (drink == null || !IsEquipped(itemId)) return false;
+            if (drink == null || (itemId == InventoryItemId.HawthornTincture ? !ownedMedicineUse : !IsEquipped(itemId))) return false;
             InventoryConsumableDefinition definition = InventoryConsumableCatalog.Get(itemId);
             if (!drink.TrySip(expectedId,
                 PlayerNeedsRules.ScaleRelief(DrinkRules.GetIntoxicationGain(definition.DrinkId), definition.Servings),

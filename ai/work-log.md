@@ -5,47 +5,49 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-03
 
-Bar daily close:ordinary warning/request,accepted-service grace,finish/stand/
-visible walk/door. Leftover remains for cleanup;pause holds deadlines.
-Shared speech/rig/camera/24FX;canon§6 records exception. Menu retains selection;
-clear sight pans,obstruction uses validated hall cut/back,hero stays.
-Worker finishes handoff/stows towel,turns to hall;dedicated same-rig address
-keeps elbow beside torso and moving chest-high palm. Full-text reading tail
-holds camera/pose;SpeechDelivery uses StepElapsed and planned PCM duration.
-build-city-pedestrian-3d-model.py --cafe-animation-only and
-ParkQuarrelTests.Delivery_StepsOncePerFrameAndBlipsOnLettersOnly passed.
+Bar close:warning/request,accepted-service grace,finish/stand/walk/door;
+leftover cleanup,pause holds deadline;shared speech/rig/camera/24FX;§6 exception.
+Menu kept;clear view pans,blocked→validated hall cut/back;hero stays.
+Worker:handoff/towel stow/turn;address elbow near torso/chest-high palm.
+Full-text tail holds camera/pose;SpeechDelivery StepElapsed/planned PCM. build-city-pedestrian-3d-model.py --cafe-animation-only,
+ParkQuarrelTests.Delivery_StepsOncePerFrameAndBlipsOnLettersOnly and
 LastGuest_ClosingPreservesMenuSipAndWalksToDoor passed;frames reviewed.
 ActualBar_FillsAndEmptiesWithClockAndFinishesAcceptedServiceAfterClosing:
 existing late-crowd departure failed before closing coverage.
-Bar beer/wine:separate E sips,partial vessel waits at dock;one payment,
-proportional existing effects,last sip counts order. Seated camera/rig/contact
-return kept;wine full safe fill,other spirits single-action.
+Beer/wine:separate E sips,docked remainder,one payment,proportional effects;
+last sip counts order. Seated rig/camera/contacts kept;safe full wine;
+other spirits single-action.
 BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment/
 WineService_FullGlassTakesThreeSeparateSips/PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce/
 BeerService_WaitsForPhysicalArrivalAndExplicitDrink/BottleService_WaitsForEveryArrivalAndExplicitDrink
 passed;full/partial/empty frames reviewed.
 
-Supermarket:constructed metal/glass door with same-rig contact/solid sweep;
-dense stock/shared surfaces/bounded reflection;rear fixtures/cartons flush to wall.
-Real-sized beer/wine pack;atomic sale/shared receipt per SKU.
-Shared gains raised for beer/wine/cognac,stress kept. Beer500ml=one bar portion;
-wine750ml=three250ml portions;partial dose uses shared volume rounding.
-One carried-drink owner preserves per-container ID/fill/opening;retained can tab,
-opaque aluminium,wine screw cap,volume-dose rounding and wardrobe/weapon cleanup.
-Cashier skin/cloth UV refined;bulging3D face retained. Right-wall checkout:
-lane/scanner/register/packing/decor snacks;authored palms/customer/light anchors.
-Baskets/cables/vents/wear;seven offers/ordinary body/CCTV/light budget kept.
-Bibles/registry record user exceptions.
-All24FX reviewed;scoped probe/material/SSAO/grade/DOF/SMAA/lens,CPU/GPU unmeasured.
-Product/interior/cashier generation validators and supermarket_surface_response
-passed;source previews reviewed.
-Import fixes:unique beverage anchors,Texture2D response shape,unpacked door pivots;
-reflection native buffers initialize on main thread. Cashier hand sides measured
-from rig;aluminium uses bounded surface-dependent metal impact,no glass audio.
-Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures passed.
+Shop:metal/glass door/rig-contact/solid sweep;dense shared stock/surfaces,
+finite reflection;rear fixtures/cartons flush. Metric beer/wine;atomic sale/
+shared receipt. Beer/wine/cognac gains raised,stress kept;beer500ml=bar portion,
+wine750ml=three250ml;shared partial-dose rounding. Carried owner:ID/fill/open,
+can tab/opaque aluminium,wine screw cap,wardrobe/weapon cleanup. Cashier:refined
+skin/clothUV,bulging3D face,rig-measured hands. Right checkout:lane/scanner/
+register/packing/snacks;palms/customer/light anchors. Baskets/cables/vents/wear;
+seven offers/ordinary body/CCTV/light budget kept;§6 exceptions.
+All24FX:probe/material/SSAO/grade/DOF/SMAA/lens;CPU/GPU unmeasured.
+Product/interior/cashier validators+supermarket_surface_response passed;previews reviewed.
+Import:unique beverage anchors/Texture2D response/unpacked door pivots;
+main-thread reflection buffers;aluminium:bounded surface-dependent metal impact,no glass audio.
+Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures,
 AreaCaptureFixture.Supermarket/DrinkContainers_PurchaseSipSwitch_PreserveFillOpeningAndContacts
-passed;real bar/inventory dose rounding verified. Rear-wall/checkout/face/door/grip
-frames reviewed;rear/palm/counter/customer contacts match.
+passed;bar/inventory doses and rear/palm/counter/customer contacts verified;
+rear-wall/checkout/face/door/grip frames reviewed.
+
+Hawthorn:seeded vials/ammo;yellow contours/shared pickup;Use→auto-close inventory→
+rig gulp,+30HP/+40intox/dose;HPHUD<max/inventory HP;full/defeated reject. Lip clear→.65s
+headshake/grimace→throw→prior hand;expressive gulp.
+Red4active-real s,last2:frozen-world drift/smear over live view;one half-resRT/camera.
+Quiet swell2s;black/UI/halation,pause/retrigger/cleanup/intox kept;Blender vial/grips/24FX;cost unmeasured.
+Fixture isolates existing inactive-Docker grounding.
+Baseline YAML ws kept.
+CombatWarehouseHawthorn passed;frames reviewed.
+
 
 ## 2026-11-02
 

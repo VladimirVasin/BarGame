@@ -135,6 +135,15 @@ namespace BarPromenade
                     painter.FillRect(11, 25, 11, 2, pale);
                     painter.OutlineRect(14, 25, 5, 2, ink);
                     break;
+                case InventoryItemId.HawthornTincture:
+                    painter.FillRect(10, 7, 12, 15, new Color32(99, 63, 39, 255));
+                    painter.OutlineRect(9, 6, 14, 17, ink);
+                    painter.FillRect(12, 23, 8, 4, metal);
+                    painter.OutlineRect(11, 22, 10, 6, ink);
+                    painter.FillRect(10, 11, 12, 8, pale);
+                    painter.FillRect(12, 16, 8, 1, ink);
+                    painter.FillRect(12, 13, 6, 1, ink);
+                    break;
                 case InventoryItemId.WineBottle:
                 case InventoryItemId.VodkaBottle:
                     painter.FillRect(13, 22, 6, 5, metal);

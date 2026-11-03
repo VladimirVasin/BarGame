@@ -1226,6 +1226,18 @@ namespace BarPromenade
             CancelAction();
         }
 
+        public bool CanHeal => !IsDefeated && Health < Settings.MaxHealth;
+
+        /// <summary>Restores only living health; action clocks and structural damage remain authoritative.</summary>
+        public float Heal(float points)
+        {
+            NonNegative(points, nameof(points));
+            if (IsDefeated || points == 0f) return 0f;
+            float restored = Math.Min(points, Settings.MaxHealth - Health);
+            Health += restored;
+            return restored;
+        }
+
         /// <summary>Restores a debug preview's ready-state vitals without resetting weapons or body damage.</summary>
         public void RestoreVitals(float health, float restoredStamina)
         {

@@ -2,7 +2,7 @@
 
 ## Статус
 
-Художественная спецификация Барного Променада.
+Художественная библия.
 
 - «Текущее состояние» — реализованные факты;остальное — утверждённое направление.
 - Решение `2026-10-27`: Жилой восточный/промышленно-рабочий западный районы
@@ -3940,25 +3940,13 @@ field с `35 мм` / `f/8`; доставка и обслуживание ост�
 
 ## 13. Данные и детерминизм
 
-Первый data-first слой уже реализован: `CityDistrictArtProfile` владеет
-frontage, mass, window, light, wear и transition-профилями, а чистый planner
-даёт стабильные ключи каждого канала и разрешает только соседние переходы в
-полосе одного квартала. Пока мир потребляет только window-ключ; остальные
-каналы являются подготовленными данными, а не описанием уже построенной
-геометрии. Полный профиль должен быть расширен до ограничений и весов:
-
-- диапазонами высоты и пятна;
-- skyline и facade families;
-- основной и вторичной палитрой;
-- типами окон;
-- light families;
-- roof, facade, frontage и roadside motifs;
-- primary landmark и отдельным типом открытого общественного места;
-- wear profile;
-- sound bed, anchors и событиями;
-- будущим NPC behavior profile;
-- переходами к соседям;
-- запретами и лимитами исключений.
+`CityDistrictArtProfile` хранит frontage/mass/window/light/wear/transition;
+чистый planner даёт стабильные ключи и соседние переходы в одном квартале.
+Мир потребляет только window;прочее — данные,пока не геометрия.
+Расширение:веса/пределы высоты и пятна,skyline/facade families,две палитры,
+окна/light families,roof/facade/frontage/roadside motifs,primary landmark/
+открытое общественное место,wear,sound bed/anchors/events,NPC behavior,
+соседние переходы,запреты/лимиты исключений.
 
 Порядок решения для лота:
 
@@ -4226,6 +4214,14 @@ Unity legacy:аварийный резерв. Заголовок/основно�
 
 ### Принятое исключение — боевой полигон
 
+`2026-11-03`/§6:warehouse/3seed vials:brown glass/worn pale
+«Боярышника настойка»/screw cap;Use→auto-close inventory→rig gulp;
+lip clear→.65s rig headshake/grimace→empty throw→prior hand,no bottle check.
+Crimson/plum shadows/hot edges/peripheral wave/RGB→normal in4active-real s;
+last2:frozen-world snapshot periodically drifts/smears over live view.
+One half-resRT/camera;expressive gulp/low swell2s;pause holds;black/silhouettes/UI readable.
+Ammo/vials:thin yellow mesh contours,open/near/visible. No strobe/new light/lore;
+§16/21/art9;architecture.
 `2026-10-30`/§6:warehouse;stairs:materials;finale0.
 `2026-10-31`:GoalWall solid/4×3;red24→door/valve/dip≥.45;ambush36.
 `2026-11-01`:Bar=LMB1wideR→L/RMBparry;charge/combo/shove/step0;
@@ -4255,7 +4251,7 @@ Shared body/skull/finite wounds/chips;§6.
 →outershldr/chest→Rgrip/Lforeend;0crossing/stow-rig-sling/2×.
 `2026-10-09`:nearmax/bodylaunch/head≤14/fastdebris-blood/falloff.Rig:chest-abdomen/arm-hand/leg-catch/skin/cloth-glove-boot/wet-dry/repeat.
 `2026-10-09`:torso→joined skel/0chunks;head-limbcuts/finiteparts;Survivor-corpse/crawl/reset.Pistolloweject;brain8:wetmutedjelly/squash/bone-tissue/cam-hide/loss.Darkblood/narrow-slow/finitepulse/rig-cut/stains-pool-debris;spasms≤2.35s/corpseimpulse/volley1react.Case/emptylock/mag-stash-seat-rack/SFX.World:chips-sparks/finiteholes;Shldrs↑/chin-in/breath-tremor/broadarc/brakedret;softknees/pelvis-grip-elbows↓.Heavy:≤2steps/brace;blocked world→drop/pickup;ret≠parry.Bar:batgrip/wallsparks-recoil;GunQ:dry/0finish;far pelvis-foot→/chest←;nearknee.Chestcontrast;wall-edge-end→hide.Win:walk/gun;barE:toilet §7 FP/barL/body-floorR/0react.
-`2026-10-15`HUD:charcoal/bone;aim ammo/reload;HP damage3s/≤25%;stamina full+1s;parry readiness/fade.15-.3;legacy enemyHP/counts. Screen:Lab↖/F8↗/result belowF8;bars/footer↓;render=input.
+`2026-10-15`HUD:charcoal/bone;aim ammo/reload;HP<100%/full fade/modal-pause0;inventory HP bar/value;stamina full+1s;parry readiness/fade.15-.3;legacy enemyHP/counts. Screen:Lab↖/F8↗/result belowF8;bars/footer↓;render=input.
 ### Принятое исключение — иллюстрации загрузки
 
 [Decision `2026-09-06`](architecture-notes.md): 4 static painterly `AreaLoading`

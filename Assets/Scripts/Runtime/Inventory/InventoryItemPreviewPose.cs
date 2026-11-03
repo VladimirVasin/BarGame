@@ -45,6 +45,7 @@ namespace BarPromenade
     {
         private static readonly InventoryItemPreviewPose[] Poses =
         {
+            new InventoryItemPreviewPose(InventoryItemId.HawthornTincture, Quaternion.Euler(0f, 0f, 0f), 1.65f),
             new InventoryItemPreviewPose(InventoryItemId.BeerCan, Quaternion.Euler(12f, -18f, 0f), 1.45f),
             new InventoryItemPreviewPose(InventoryItemId.WineBottle, Quaternion.Euler(0f, -18f, 0f), 1.30f),
             new InventoryItemPreviewPose(InventoryItemId.ChestFlashlight, Quaternion.Euler(12f, 152f, -8f), 1.10f),

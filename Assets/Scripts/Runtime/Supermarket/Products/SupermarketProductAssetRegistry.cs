@@ -112,7 +112,8 @@ namespace BarPromenade
                 Color tint = part.Color;
                 if (DrinkContainerCatalog.IsDrink(itemId))
                 {
-                    if (part.Role == "glass") tint.a = itemId == InventoryItemId.WineBottle ? .32f : .18f;
+                    if (part.Role == "glass") tint.a = itemId == InventoryItemId.HawthornTincture ? .58f :
+                        itemId == InventoryItemId.WineBottle ? .32f : .18f;
                     if (part.Role == "liquid" || part.Role == "liquid_surface")
                     {
                         if (itemId == InventoryItemId.VodkaBottle) tint.a = .48f;
@@ -121,7 +122,8 @@ namespace BarPromenade
                 }
                 bool metal = part.Role is "rim" or "pull_tab" or "cap" or "can_body" or "lid" or "can_seal";
                 properties.SetFloat("_Metallic", metal ? .72f : 0f);
-                properties.SetFloat("_Smoothness", metal ? .42f : part.Role == "shell" ? .24f : .12f);
+                properties.SetFloat("_Smoothness", metal ? .42f : part.Role == "glass" &&
+                    itemId == InventoryItemId.HawthornTincture ? .46f : part.Role == "shell" ? .24f : .12f);
                 if (part.Role != "glass" && part.Role != "liquid" && part.Role != "liquid_surface")
                 {
                     Texture2D grain = ProductGrain;
@@ -151,7 +153,7 @@ namespace BarPromenade
 
             if (!string.Equals(
                     designId,
-                    ExpectedDesignId,
+                    itemId == InventoryItemId.HawthornTincture ? "hawthorn_tincture_v1" : ExpectedDesignId,
                     StringComparison.Ordinal) ||
                 string.IsNullOrWhiteSpace(sourceGeneratorVersion) ||
                 string.IsNullOrWhiteSpace(buildSignature) ||
@@ -189,7 +191,7 @@ namespace BarPromenade
                     throw new InvalidOperationException("Vodka grip/mouth anchors must match its measured metre contract.");
             }
 
-            if (itemId is InventoryItemId.BeerCan or InventoryItemId.WineBottle)
+            if (itemId is InventoryItemId.BeerCan or InventoryItemId.WineBottle or InventoryItemId.HawthornTincture)
             {
                 DrinkContainerProfile profile = DrinkContainerCatalog.Get(itemId);
                 Transform grip = null, mouth = null;

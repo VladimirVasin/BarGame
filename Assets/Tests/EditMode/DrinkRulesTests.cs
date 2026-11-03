@@ -17,7 +17,8 @@ namespace BarPromenade.Tests.EditMode
             new object[] { DrinkId.CognacVs, DrinkFamily.Cognac, 22, 16 },
             new object[] { DrinkId.CognacVsop, DrinkFamily.Cognac, 24, 20 },
             new object[] { DrinkId.Water, DrinkFamily.Water, 0, 0 },
-            new object[] { DrinkId.Moonshine, DrinkFamily.Vodka, 24, 8 }
+            new object[] { DrinkId.Moonshine, DrinkFamily.Vodka, 24, 8 },
+            new object[] { DrinkId.HawthornTincture, DrinkFamily.Vodka, 40, 0 }
         };
 
         [TestCaseSource(nameof(definitions))]

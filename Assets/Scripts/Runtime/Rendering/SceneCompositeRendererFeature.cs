@@ -32,6 +32,11 @@ namespace BarPromenade.Rendering
 
         internal bool DebugCleanSmaaApplied => pass != null && pass.SmaaApplied;
         internal bool DebugCleanHalationApplied => pass != null && pass.HalationApplied;
+        internal int DebugHawthornSnapshotCount => pass?.HawthornHistory.CaptureCount ?? 0;
+        internal bool DebugHawthornSnapshotValid => pass != null && pass.HawthornHistory.HasSnapshot;
+        internal RenderTexture DebugHawthornSnapshotTexture => pass?.HawthornHistory.Texture;
+        internal float DebugHawthornSnapshotAge => pass?.HawthornHistory.AgeSeconds ?? 0f;
+        internal float DebugHawthornAfterimageStrength => pass?.HawthornHistory.Strength ?? 0f;
         internal bool DebugCleanVolumeApplied =>
             volumeScheduled && volumePass != null && volumePass.LastLightIndex >= 0 ||
             villageVolumeScheduled && villageVolumePass != null && villageVolumePass.LastSourceCount > 0 ||
@@ -102,6 +107,7 @@ namespace BarPromenade.Rendering
             ScriptableRenderer renderer,
             ref RenderingData renderingData)
         {
+            HawthornHealingPulse.AdvanceFrame();
             volumeScheduled = false;
             villageVolumeScheduled = false;
             mothersHouseVolumeScheduled = false;
@@ -369,8 +375,18 @@ namespace BarPromenade.Rendering
                 Shader.PropertyToID("_IntoxicationVertigo");
             private static readonly int IntoxicationVertigoShapeId =
                 Shader.PropertyToID("_IntoxicationVertigoShape");
+            private static readonly int HawthornPulseId = Shader.PropertyToID("_HawthornPulse");
+            private static readonly int HawthornAfterimageId = Shader.PropertyToID("_HawthornAfterimage");
+            private static readonly int HawthornSnapshotId = Shader.PropertyToID("_HawthornSnapshot");
             private readonly CleanSmaaPass smaa = new CleanSmaaPass();
             private readonly CleanHalationPass halation = new CleanHalationPass();
+            internal HawthornAfterimageHistory HawthornHistory { get; } = new HawthornAfterimageHistory();
+            private sealed class CompositeData
+            {
+                internal Material Material;
+                internal TextureHandle Source, Snapshot;
+                internal Vector4 Pulse, Afterimage;
+            }
             private Material material;
             private bool nativeEffectsNeeded, antialiasing, halationEnabled;
             private float currentAspect = 1f;
@@ -394,11 +410,13 @@ namespace BarPromenade.Rendering
                 antialiasing = cleanAntialiasing && smaa.IsAvailable;
                 SmaaApplied = false;
                 currentAspect = Mathf.Clamp(aspectFraction, 0.01f, 1f);
+                Vector4 hawthorn = HawthornHealingPulse.ForCamera(camera);
                 nativeEffectsNeeded = currentAspect < 1f ||
                     intoxication.VignetteStrength > 0f || intoxication.GhostPixels > 0f ||
                     intoxication.WarpStrength > 0f || intoxication.Warmth > 0f ||
                     intoxication.ExposurePulse > 0f || vertigo.w != 0f ||
-                    vertigoShape.z != 0f || vertigoShape.w != 0f;
+                    vertigoShape.z != 0f || vertigoShape.w != 0f || hawthorn.x > 0f;
+                material.SetVector(HawthornPulseId, hawthorn);
                 Vector4 referenceTexelSize = new Vector4(
                     1f / Mathf.Max(1, referenceResolution.x), 1f / Mathf.Max(1, referenceResolution.y),
                     referenceResolution.x, referenceResolution.y);
@@ -446,14 +464,17 @@ namespace BarPromenade.Rendering
                 TextureHandle live = source;
                 if (nativeEffectsNeeded)
                 {
+                    Camera camera = frameData.Get<UniversalCameraData>().camera;
+                    Vector4 pulse = HawthornHealingPulse.ForCamera(camera);
+                    TextureHandle snapshot = HawthornHistory.Prepare(graph, source, camera, pulse, out Vector4 afterimage);
                     live = CreateTexture(graph, source, "Clean Shared Effects");
-                    graph.AddBlitPass(new RenderGraphUtils.BlitMaterialParameters(
-                        source, live, material, 0), "Clean Shared Effects");
+                    RecordComposite(graph, source, live, snapshot, pulse, afterimage);
+                    HawthornHistory.RecordCapture(graph, source, pulse.w);
                     if (glow.IsValid())
                     {
                         TextureHandle warpedGlow = CreateTexture(graph, glow, "Clean Warped Light Sources");
                         graph.AddBlitPass(new RenderGraphUtils.BlitMaterialParameters(
-                            glow, warpedGlow, material, 0), "Clean Light Source Lens");
+                            glow, warpedGlow, material, 2), "Clean Light Source Lens");
                         glow = warpedGlow;
                     }
                 }
@@ -477,6 +498,32 @@ namespace BarPromenade.Rendering
                 resources.cameraColor = live;
             }
 
+            private void RecordComposite(RenderGraph graph, TextureHandle source, TextureHandle destination,
+                TextureHandle snapshot, Vector4 pulse, Vector4 afterimage)
+            {
+                using IRasterRenderGraphBuilder builder = graph.AddRasterRenderPass(
+                    "Clean Shared Effects", out CompositeData data);
+                data.Material = material;
+                data.Source = source;
+                data.Snapshot = snapshot;
+                data.Pulse = pulse;
+                data.Afterimage = afterimage;
+                builder.UseTexture(source, AccessFlags.Read);
+                if (snapshot.IsValid()) builder.UseTexture(snapshot, AccessFlags.Read);
+                builder.SetRenderAttachment(destination, 0, AccessFlags.WriteAll);
+                builder.SetRenderFunc(static (CompositeData pass, RasterGraphContext context) =>
+                {
+                    // Bind the held frame at execution, with its RenderGraph read
+                    // dependency declared above; another camera cannot replace it.
+                    pass.Material.SetVector(HawthornPulseId, pass.Pulse);
+                    pass.Material.SetVector(HawthornAfterimageId, pass.Afterimage);
+                    if (pass.Snapshot.IsValid()) pass.Material.SetTexture(HawthornSnapshotId, pass.Snapshot);
+                    else pass.Material.SetTexture(HawthornSnapshotId, Texture2D.blackTexture);
+                    Blitter.BlitTexture(context.cmd, (RTHandle)pass.Source,
+                        new Vector4(1f, 1f, 0f, 0f), pass.Material, 0);
+                });
+            }
+
             private static TextureHandle CreateTexture(RenderGraph graph, TextureHandle source, string name)
             {
                 TextureDesc descriptor = graph.GetTextureDesc(source);
@@ -491,6 +538,7 @@ namespace BarPromenade.Rendering
             {
                 smaa.Dispose();
                 halation.Dispose();
+                HawthornHistory.Dispose();
                 material = null;
             }
         }

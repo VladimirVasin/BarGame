@@ -25,7 +25,8 @@ namespace BarPromenade
         NoEffect,
         MaximumIntoxication,
         ReservedForQuest,
-        RequiresEquipment
+        RequiresEquipment,
+        RequiresPresentation
     }
 
     public readonly struct InventoryItemUseResult
@@ -121,6 +122,7 @@ namespace BarPromenade
             new PlayerNeedsProgressionState();
         private static float intoxicationRecoveryElapsed;
         private static int sessionGeneration;
+        internal static int SessionGeneration => sessionGeneration;
         private static long nextDrinkOrderSequence;
 
         public static int CitySeed { get; private set; } = DefaultCitySeed;
@@ -375,6 +377,8 @@ namespace BarPromenade
 
         public static void BeginNewGame(string reason = "new_game_start")
         {
+            Rendering.HawthornHealingPulse.Clear();
+            HawthornHealingAudio.ResetSession();
             ResetToDefaults();
             ThrownVodkaBottle.ClearForNewSession();
             GameTimeScaleRuntime.ResetSession();
@@ -556,6 +560,7 @@ namespace BarPromenade
 
         private static void ResetToDefaults()
         {
+            ClearHawthornUse();
             stairwellLabyrinthPuzzles.Reset();
             stairwellEncounter.Reset();
             CityFishSupplySession.ResetForNewGame();
@@ -988,6 +993,8 @@ namespace BarPromenade
 
             if (previous != equipped)
             {
+                if (itemId is InventoryItemId.CombatCrowbar or InventoryItemId.CombatPistol || DrinkContainerCatalog.IsDrink(itemId))
+                    ClearHawthornUse();
                 if (itemId == InventoryItemId.Scarf) ScarfRestingLowered = false;
                 // Wearing it is what she asked for, so wearing it is
                 // what closes the entry. Taking it off again does not
@@ -1165,6 +1172,9 @@ namespace BarPromenade
                     itemCount);
             }
 
+            if (itemId == InventoryItemId.HawthornTincture)
+                return CreateInventoryItemUseResult(InventoryItemUseStatus.RequiresPresentation, itemId,
+                    definition.Kind, itemCount, itemCount);
             if (DrinkContainerCatalog.IsDrink(itemId))
                 return CreateInventoryItemUseResult(InventoryItemUseStatus.RequiresEquipment, itemId,
                     definition.Kind, itemCount, itemCount);

@@ -1,5 +1,8 @@
 {
   "entries": [
+    {"key":"inventory.item.hawthorn.name","value":"Боярышника настойка"},
+    {"key":"inventory.item.hawthorn.description","value":"Тёмный аптечный флакон. Из-под крышки тянет спиртом."},
+    {"key":"interaction.take_hawthorn_tincture","value":"E — взять настойку"},
     {"key":"loading.progress","value":"Загрузка"},
     {"key":"interaction.karaoke","value":"E — петь"},
     {"key":"karaoke.title","value":"Караоке"},

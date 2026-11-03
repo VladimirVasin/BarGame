@@ -20,7 +20,7 @@ namespace BarPromenade
             public readonly float[] Y = new float[Slices], Radius = new float[Slices], Weight = new float[Slices];
             public float Capacity;
         }
-        private static readonly VolumeSamples[] Volumes = new VolumeSamples[3];
+        private static readonly VolumeSamples[] Volumes = new VolumeSamples[4];
         private static Material liquidMaterial;
         private MaterialPropertyBlock properties;
         private Renderer liquid, surface, canSeal;
@@ -224,7 +224,7 @@ namespace BarPromenade
         }
         private static VolumeSamples PrepareVolume(DrinkContainerProfile profile)
         {
-            int slot = profile.ItemId == InventoryItemId.BeerCan ? 1 : profile.ItemId == InventoryItemId.WineBottle ? 2 : 0;
+            int slot = profile.ItemId == InventoryItemId.HawthornTincture ? 3 : profile.ItemId == InventoryItemId.BeerCan ? 1 : profile.ItemId == InventoryItemId.WineBottle ? 2 : 0;
             if (Volumes[slot] != null) return Volumes[slot];
             var samples = new VolumeSamples();
             float dy = (profile.InnerTop - profile.InnerBottom) / Slices;
