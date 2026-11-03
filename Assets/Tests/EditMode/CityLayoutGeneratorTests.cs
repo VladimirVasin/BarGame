@@ -812,7 +812,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(layout.PlayerHome.Center.z, Is.EqualTo(-13f).Within(.001f));
             BuildingLot bar = layout.BuildingLots.Single(lot => lot.IsBar);
             Assert.That(bar.Cell, Is.EqualTo(new Vector2Int(12, 6)));
-            Assert.That(bar.ReturnPosition, Is.EqualTo(layout.PlayerHome.ReturnPosition));
+            Assert.That(bar.FrontageDirection, Is.EqualTo(Vector2Int.right));
+            Assert.That(bar.ReturnPosition, Is.Not.EqualTo(layout.PlayerHome.ReturnPosition));
 
             CityBuildingAssetProvider provider = CityBuildingAssetProvider.LoadOrThrow();
             var builtVariants = new HashSet<string>();
@@ -1144,7 +1145,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void DefaultCoastal_PlacesOneBarAcrossFromPlayerHome()
+        public void DefaultCoastal_PlacesOneBarOnNeighborStreetNearPlayerHome()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityBlueprintCatalog.Default,
@@ -1170,14 +1171,58 @@ namespace BarPromenade.Tests.EditMode
                 bar.BarActivity,
                 Is.EqualTo(BarActivityAssignment.DefaultHomeBarActivity));
             Assert.That(home.Cell, Is.EqualTo(new Vector2Int(12, 5)));
+            Assert.That(home.Center.x, Is.EqualTo(169f).Within(.001f));
+            Assert.That(home.Center.z, Is.EqualTo(-13f).Within(.001f));
+            Assert.That(home.FrontageDirection, Is.EqualTo(Vector2Int.up));
+            Assert.That(bar.Center.x, Is.EqualTo(168.65f).Within(.001f));
+            Assert.That(bar.Center.z, Is.EqualTo(13f).Within(.001f));
+            Assert.That(bar.FrontageDirection, Is.EqualTo(Vector2Int.right));
+            Assert.That(bar.FacadeForward, Is.EqualTo(Vector3.right));
+            Assert.That(bar.DoorPosition.x, Is.EqualTo(bar.Center.x + bar.Size.x * .5f).Within(.001f));
+            Assert.That(bar.DoorPosition.z, Is.EqualTo(bar.Center.z).Within(.001f));
+            Assert.That(bar.ReturnPosition.x, Is.EqualTo(182f).Within(.001f));
+            Assert.That(bar.ReturnPosition.z, Is.EqualTo(13f).Within(.001f));
+            Assert.That(bar.SidewalkArrivalPosition.x, Is.InRange(bar.DoorPosition.x, bar.ReturnPosition.x));
             Assert.That(
                 layout.TryGetFrontageEdge(bar, out RoadEdge barFrontage),
                 Is.True);
             Assert.That(
                 layout.TryGetFrontageEdge(home, out RoadEdge homeFrontage),
                 Is.True);
-            Assert.That(homeFrontage, Is.EqualTo(barFrontage));
-            Assert.That(home.ReturnPosition, Is.EqualTo(bar.ReturnPosition));
+            var corner = new Vector2Int(13, 6);
+            Assert.That(homeFrontage, Is.EqualTo(new RoadEdge(new Vector2Int(12, 6), corner)));
+            Assert.That(barFrontage, Is.EqualTo(new RoadEdge(corner, new Vector2Int(13, 7))));
+            Assert.That(homeFrontage, Is.Not.EqualTo(barFrontage));
+            Assert.That(home.FrontageDirection.x * bar.FrontageDirection.x +
+                home.FrontageDirection.y * bar.FrontageDirection.y, Is.Zero,
+                "The bar opens onto the neighboring perpendicular street, not opposite the home doorway.");
+            Assert.That(home.ReturnPosition, Is.Not.EqualTo(bar.ReturnPosition));
+            float routeDistance = CityTravelDistance.BetweenAnchors(layout.Nodes, layout.RoadEdges,
+                layout.GetNodeWorldPosition, homeFrontage, home.ReturnPosition, barFrontage, bar.ReturnPosition);
+            Assert.That(routeDistance, Is.GreaterThan(20f), "The route must include a meaningful walk around the corner.");
+            Assert.That(routeDistance, Is.LessThanOrEqualTo(CityLayoutGenerator.MaximumHomeBarRouteDistance + .001f));
+            Vector3 cornerWorld = layout.GetNodeWorldPosition(corner);
+            RoadWalkableArea walkable = RoadWalkableArea.FromLayout(layout);
+            foreach (Vector3 endpoint in new[] { home.ReturnPosition, bar.ReturnPosition })
+                for (int sample = 0; sample <= 8; sample++)
+                    Assert.That(walkable.Contains(Vector3.Lerp(endpoint, cornerWorld, sample / 8f), .32f), Is.True,
+                        "Both arms of the short corner walk need physical street clearance.");
+
+            // Rotating the facade must rotate its whole graded forecourt too;
+            // checking only the centre would miss a seam at either end.
+            CityEntranceForecourtPlan apron = CityStreetSurfacePlanner.CreateEntranceForecourt(
+                layout, bar, BarEntranceGeometry.WalkwayWidth);
+            Assert.That(apron.Rows, Is.GreaterThan(1));
+            for (int row = 0; row < apron.Rows; row++)
+            {
+                Vector3 inner = apron.Top[row * apron.Columns];
+                Vector3 outer = apron.Top[row * apron.Columns + apron.Columns - 1];
+                Assert.That(outer.x, Is.GreaterThan(inner.x), "The complete bar apron faces the eastern street.");
+                Assert.That(outer.z, Is.EqualTo(inner.z).Within(.001f));
+                Assert.That(CityStreetSurfacePlanner.TrySamplePublicSidewalkTop(layout,
+                    new Vector2(outer.x, outer.z), out float pavementTop), Is.True);
+                Assert.That(outer.y, Is.EqualTo(pavementTop).Within(.001f));
+            }
             Vector2Int[] retiredBarCells =
             {
                 new Vector2Int(2, 0),

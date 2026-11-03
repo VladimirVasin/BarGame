@@ -112,6 +112,7 @@ namespace BarPromenade
                 allEdges,
                 roads);
             EnsureAuthoredStreets(snapshot, allEdges, roads);
+            EnsureCanonicalHomeBarStreets(snapshot, seed, allEdges, roads);
             CityRoadGeometryPlan.EnsurePilotRoads(snapshot, roads);
             roads.Sort(RoadEdge.Compare);
 
@@ -1407,14 +1408,18 @@ namespace BarPromenade
                     canonicalBar.x,
                     canonicalBar.y,
                     settings.BlocksX);
-                RoadEdge sharedRoad = RoadEdge.ForCellFrontage(
+                RoadEdge barRoad = RoadEdge.ForCellFrontage(
                     canonicalBar,
                     barFrontage);
-                Vector2Int canonicalHomeFrontage = -barFrontage;
+                // The home keeps its north-facing entrance; the bar opens on
+                // the neighboring east street. Their short route turns at the
+                // shared street corner instead of crossing between two doors.
+                Vector2Int canonicalHomeFrontage = Vector2Int.up;
+                RoadEdge homeRoad = RoadEdge.ForCellFrontage(canonicalHome, canonicalHomeFrontage);
                 if (barLots.Contains(barLotIndex) &&
                     settings.CreatesLot(canonicalHome) && settings.RoadGeometry?.IsAffectedCell(canonicalHome) != true &&
-                    roadSet.Contains(sharedRoad) &&
-                    pathKinds[sharedRoad] == CityPathKind.Street &&
+                    roadSet.Contains(barRoad) && roadSet.Contains(homeRoad) &&
+                    pathKinds[barRoad] == CityPathKind.Street && pathKinds[homeRoad] == CityPathKind.Street &&
                     CanFitAuthoredPlayerHome(
                         settings,
                         canonicalHomeFrontage))
@@ -1624,7 +1629,7 @@ namespace BarPromenade
         {
             barCell = BarActivityAssignment.DefaultHomeBarCell;
             homeCell = new Vector2Int(12, 5);
-            barFrontage = Vector2Int.down;
+            barFrontage = Vector2Int.right;
             return seed == GameSessionState.DefaultCitySeed &&
                    settings.Blueprint?.River != null &&
                    string.Equals(
@@ -1633,6 +1638,21 @@ namespace BarPromenade
                        StringComparison.Ordinal) &&
                    settings.CreatesLot(barCell) &&
                    settings.CreatesLot(homeCell);
+        }
+
+        private static void EnsureCanonicalHomeBarStreets(CityGenerationSettings settings,
+            int seed, IReadOnlyCollection<RoadEdge> available, List<RoadEdge> roads)
+        {
+            if (!TryGetCanonicalRiverHomePair(settings, seed, out Vector2Int bar,
+                out Vector2Int home, out Vector2Int barFrontage)) return;
+            var availableEdges = new HashSet<RoadEdge>(available);
+            foreach (RoadEdge edge in new[] { RoadEdge.ForCellFrontage(bar, barFrontage),
+                RoadEdge.ForCellFrontage(home, Vector2Int.up) })
+            {
+                if (!availableEdges.Contains(edge))
+                    throw new InvalidOperationException("The neighboring Home/Bar streets require buildable public frontage.");
+                if (!roads.Contains(edge)) roads.Add(edge);
+            }
         }
 
         private static BarCandidate CreateBarCandidate(
@@ -1728,6 +1748,7 @@ namespace BarPromenade
                              requiredArea,
                              StringComparison.Ordinal)) ||
                         (preferHomePair &&
+                         !(hasAuthoredBar && candidate.Cell == canonicalBar) &&
                          !HasHomeAcrossFrontage(settings, candidate)))
                     {
                         continue;
@@ -1980,6 +2001,19 @@ namespace BarPromenade
                     maximumWidth,
                     maximumDepth,
                     ref random);
+            // The production bar is a fixed-metre imported building. Turning
+            // its doorway onto the neighboring street rotates the whole body,
+            // including its logical footprint, without rescaling the model or
+            // consuming another seeded draw.
+            if (isBar && frontage.x != 0 && TryGetCanonicalRiverHomePair(settings, seed,
+                out Vector2Int canonicalBar, out _, out _) && cell == canonicalBar)
+            {
+                size = new Vector2(size.y, size.x);
+                // The east-facing canopy projects 1.4 m from the door. A
+                // 35 cm inset keeps it behind the full x=177 pavement edge
+                // of the surveyed transport corridor, inside the same lot.
+                center.x -= .35f;
+            }
             float height = landUse != CityLandUseKind.Building
                 ? 0.1f
                 : isPlayerHome

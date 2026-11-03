@@ -13,7 +13,12 @@ XZ/Y gaps need access routes; thresholds stay, steep/incomplete aprons reject. I
 paths, supports and live rollout remain open.
 CityTerraceTransportPlanTests OK: clearance, profiles, junction seams/ownership,
 entrance triangle grades and unchanged live anchors. Editor joins view reviewed.
-All24FX unchanged: authoring-only surfaces.
+All24FX reviewed: existing City sources/materials/post owners retained.
+Home/Bar: neighboring streets, one corner; fixed-metre Bar turns east with
+canopy inset. Shared yard association keeps the west Bar/Shop gap, tree/light
+and wheelchair route fitted to actual walls. Home and Bar identity stay.
+CityHomeBarNeighborStreets passed: physical round trip, yard, transport
+clearance and map fallback; entrance/corner frames reviewed.
 User map rule: logic each slice; final geometry/elevation redraw once;
 stale-art scheme fallback, no fingerprint retagging.
 check-docs.py/check-workspace.py/git diff --check.

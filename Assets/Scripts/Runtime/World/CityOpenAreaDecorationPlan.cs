@@ -324,18 +324,12 @@ namespace BarPromenade
                 !site.Anchor.IsBar ||
                 !ReferenceEquals(site.Anchor, expectedAnchor) ||
                 site.AnchorCell != site.Anchor.Cell ||
-                site.AnchorCell !=
-                    site.HomeCell + site.Home.FrontageDirection ||
-                site.Anchor.FrontageDirection !=
-                    -site.Home.FrontageDirection ||
-                !layout.HasRoad(
-                    RoadEdge.ForCellFrontage(
-                        site.HomeCell,
-                        site.Home.FrontageDirection)))
+                !HomeYardSitePlanner.IsBarAssociatedWithHome(
+                    layout, site.Home, site.Anchor))
             {
                 throw new InvalidOperationException(
-                    "The yard site must reference the bar across the " +
-                    "player home's shared street frontage.");
+                    "The yard site must reference the selected bar " +
+                    "beside the player's home.");
             }
 
             if (site.DirectionFromAnchorToNeighbour != Vector2Int.left)

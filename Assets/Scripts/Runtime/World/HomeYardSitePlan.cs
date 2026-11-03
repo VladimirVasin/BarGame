@@ -202,7 +202,7 @@ namespace BarPromenade
                 BuildingLot anchor = layout.BuildingLots[index];
                 if (anchor == null ||
                     !anchor.IsBar ||
-                    !IsBarAcrossHomeFrontage(layout, home, anchor))
+                    !IsBarAssociatedWithHome(layout, home, anchor))
                 {
                     continue;
                 }
@@ -322,16 +322,32 @@ namespace BarPromenade
             return null;
         }
 
-        private static bool IsBarAcrossHomeFrontage(
+        internal static bool IsBarAssociatedWithHome(
             CityLayout layout,
             BuildingLot home,
             BuildingLot bar)
         {
             Vector2Int direction = bar.Cell - home.Cell;
-            return direction == home.FrontageDirection &&
-                   bar.FrontageDirection == -direction &&
-                   layout.HasRoad(
-                       RoadEdge.ForCellFrontage(home.Cell, direction));
+            if (direction != home.FrontageDirection ||
+                !layout.HasRoad(
+                    RoadEdge.ForCellFrontage(home.Cell, direction)))
+            {
+                return false;
+            }
+
+            if (bar.FrontageDirection == -direction)
+            {
+                return true;
+            }
+
+            // The canonical pair keeps its courtyard between the same
+            // building masses when the bar opens onto the next street.
+            // Other layouts retain their opposite-frontage selection.
+            return home.Cell == new Vector2Int(12, 5) &&
+                   BarActivityAssignment.IsDefaultHomeBar(
+                       layout.BlueprintId, layout.Seed, bar.Cell) &&
+                   layout.HasRoad(RoadEdge.ForCellFrontage(
+                       bar.Cell, bar.FrontageDirection));
         }
 
         private static bool TryGetCellSurface(

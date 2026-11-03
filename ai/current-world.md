@@ -573,7 +573,7 @@ cemetery:own interiors/returns.
   downward without moving their authored tops. The samplers are authoritative for node,
   cell, road, sidewalk, entrance, return, open-area and debug-teleport height;
 - one authored bar-side yard composition in the walkable roadless gap
-  immediately left of the bar across the player's home frontage, between the
+  immediately left of the home-adjacent bar, between the
   bar and its neighbouring supermarket and distinct from the five typed fringe
   `Yard` areas. A worn 24-segment ring surrounds the dead tree and
   carries the pipe-backed wheelchair rider. One fixed cold near-white Spot on
@@ -1581,8 +1581,8 @@ cemetery:own interiors/returns.
 - 144 core land-use lots include16 park,4 semantic and2 terrace OpenGround
   cells; plus34 northern beach/water,16 north-east yard and6 cemetery cells.
   The core contains
-  exactly one reachable Residential bar at `(12,6)`, one non-bar player home
-  across its shared street frontage at `(12,5)`, and exactly one ordinary
+  one Residential bar at `(12,6)` facing east, Home `(12,5)` facing north:
+  neighboring streets, a short corner walk; exactly one ordinary
   street-front supermarket. The retained bar keeps stable ID
   `bar-01352777-12-06` and `SplitTheG` activity assignment. Four semantic
   rooftop/facade landmarks survive independently of the two districts. Custom
@@ -1593,7 +1593,7 @@ cemetery:own interiors/returns.
   deck geometry;
 - when the opening route first reaches the City, the hero starts on the road
   node beside the deterministic player home and its neighboring bar, `13 m`
-  from their shared street approach under default spacing; custom-layout
+  from Home's street approach under default spacing; custom-layout
   fallback placement remains bounded to `48 m` by traversable street distance,
   and returning from a bar, home or supermarket interior restores that
   entrance's own sidewalk arrival point rather than the road centerline;

@@ -599,7 +599,7 @@
   fronts≤15.5m/wings10×6m/full padded fit; setback1.25–1.55m. Four domestic2.4m
   recesses:balcony/basket off pavement. Court gaps2.4m/passages3.6m/overhead
   collision; continuous safe grades to nav. Expanded oblique OldTown pilot
-  removed; home/bar12,5/12,6/BarId/SplitTheG/door return kept.
+  removed; home/bar12,5/12,6/BarId/SplitTheG kept.
   Route01 coverage loop:real turns/both-door stops/factory-shop truck access kept.
   Streets8m/asphalt6m/pavements2m; shared road-ground contours/Home triangle planes.
   Graded home/bar/shop forecourts/embedded skirts/fixture tops keep door datums;
@@ -3720,7 +3720,7 @@
   drift.
 - **Accepted — The bar-side yard is an inter-building gap, not a fringe Yard:**
   `CityOpenAreaDecorationPlanner` derives the authored composition from the
-  bar directly across `PlayerHome`'s shared street frontage, then occupies the
+  canonical bar near `PlayerHome`, then occupies the
   walkable roadless gap immediately left of that bar, between it and the
   neighbouring supermarket. The dead tree and sparse traces therefore stay
   beside the bar instead of using the large eastern `Yard` precinct; all five
@@ -3738,20 +3738,19 @@
   at constant intensity through day and night and never reads or tracks the
   runtime rider transform. The two `YardDeadLamp` geometry parts remain
   non-emissive and create no `Light`.
-- **Accepted — One home-adjacent production bar:** Buildable lots get street
-  frontage and bar return points are validated against it. The default coastal
-  city creates exactly one Residential bar at cell `(12,6)`, directly across
-  the shared frontage from the player home at `(12,5)`. Its stable ID remains
-  `bar-01352777-12-06`, its activity assignment remains `SplitTheG`, and the
-  three former district bar lots return to ordinary building use. Explicit
-  custom multi-bar layouts remain supported; their separation still uses
-  weighted street/park-path travel rather than straight-line distance.
+- **Accepted — One home-adjacent production bar:** Frontages own validated
+  returns. User `2026-11-04`: Residential Bar `(12,6)` faces east, Home `(12,5)`
+  north; their short walk turns at the common corner. Fixed-metre body/footprint
+  rotate together, inset `.35 m` west to clear the surveyed transport pavement.
+  The roadless west yard remains between Bar/Shop; its shared plan refits the
+  tree/light/wheelchair circuit to actual walls. Stable `bar-01352777-12-06` /
+  `SplitTheG`; three retired bars remain ordinary lots. Custom multiple bars
+  retain weighted street/park-path separation.
 - **Accepted — Bar-adjacent player home and fresh spawn:** With at least one
-  generated bar, one non-bar building lot becomes the player home. Selection
-  first prefers a residential lot across the selected bar's actual frontage,
-  placing the default fresh spawn `13 m` from their shared street approach.
-  If that placement is unavailable, the deterministic fallback still validates
-  a maximum traversable approach distance of `48 m`. The default home mass is
+  generated bar, one non-bar lot becomes Home. The default pair uses neighboring
+  streets with a `26 m` approach route; fresh spawn stays `13 m` from Home's
+  street approach. Other layouts prefer a residential lot across the bar,
+  then a deterministic fallback within `48 m` traversable distance. Home is
   `8.8 m` tall and its City facade uses the shared third-floor
   balcony/window/door geometry. A fresh city starts on that home's frontage
   node. Bar-free custom layouts retain the central-road fallback and no home.

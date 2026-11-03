@@ -115,13 +115,21 @@ namespace BarPromenade.Tests.EditMode
                     layout.PlayerHome.FrontageDirection));
             Assert.That(
                 site.Anchor.FrontageDirection,
-                Is.EqualTo(-layout.PlayerHome.FrontageDirection));
+                Is.EqualTo(Vector2Int.right));
             Assert.That(
                 layout.HasRoad(RoadEdge.ForCellFrontage(
                     layout.PlayerHome.Cell,
                     layout.PlayerHome.FrontageDirection)),
                 Is.True,
-                "The selected bar must share the player's home frontage.");
+                "The home keeps its original north street.");
+            Assert.That(
+                layout.HasRoad(RoadEdge.ForCellFrontage(
+                    site.Anchor.Cell,
+                    site.Anchor.FrontageDirection)),
+                Is.True,
+                "The bar opens onto the neighboring eastern street.");
+            Assert.That(site.AnchorCell, Is.EqualTo(new Vector2Int(12, 6)));
+            Assert.That(site.NeighbourCell, Is.EqualTo(new Vector2Int(11, 6)));
             Assert.That(site.HasNeighbourBuilding, Is.True);
             Assert.That(site.Neighbour, Is.Not.Null);
             Assert.That(site.Neighbour.IsSupermarket, Is.True);
@@ -160,6 +168,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 site.RingCenter.y,
                 Is.EqualTo(site.GroundY).Within(0.0001f));
+            YardWheelchairPlan circuit = YardWheelchairPlan.Create(first, layout.ElevationPlan);
+            Assert.That(circuit.IsPresent, Is.True);
+            Assert.That(circuit.Center.x, Is.EqualTo(site.RingCenter.x).Within(.001f));
+            Assert.That(circuit.Center.z, Is.EqualTo(site.RingCenter.z).Within(.001f));
+            Assert.That(circuit.Radius, Is.EqualTo(site.RingRadius).Within(.001f));
 
             Assert.That(
                 spotlight.StableId,
