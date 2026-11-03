@@ -24,7 +24,7 @@ v1.0.0:`Assets/Resources/City/CoastalInfrastructure/CityCoastalInfrastructure3D.
 `CityCoastalInfrastructureAssetSetup.{Build,Validate}OrThrow`.
 Street:`Assets/Resources/City/StreetProfile/CityStreetProfile3D.{fbx,json}`;
 `CityStreetSupportPlan`/`CityStreetSurfaceWorldBuilder`:tops/edges/metres.
-Terraces:5 FBXs/JSON→`Assets/Resources/CityTerraces`.
+Terraces:8 FBXs/JSON→`Assets/Resources/CityTerraces`.
 
 `build-city-litter-3d-model.py`:36 props;`--validate-only`:geometry/determinism.
 `build-city-laundry-3d-model.py --validate-only`:metres/sign+SHA.

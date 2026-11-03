@@ -422,12 +422,12 @@ cemetery:own interiors/returns.
   ≤6 props, shared paving/entry spine/open center/green edges and wall groups.
   Sheltered concrete dry; doorway light/seats/silent basket carrier retain
   identity/phase/pause/distance/disable. Home props/special places stay.
-  `CityTerraceDistrictPlan`:X83..125/Z31..73,5.743→13.423m,8 flights/two routes,
-  street approach7.992%. Four lot IDs remain:two relocated ordinary houses,
-  two OpenGround;144 IDs do not mean unchanged house count. Shared support/
-  navigation/house entries replace old ground/props locally; Home/Bar stay.
-  Map RU «Лестничные дворы» selects the upper arrival; image redraw pending.
-  Citywide35–45m rise/stacked passage planned; court props need no map redraw.
+  `CityTerraceDistrictPlan`:X83..125/Z31..73,5.743→13.423m/8 flights;entry7.992%.
+  Two houses moved/two OpenGround;144 IDs, fewer houses. Shared house contacts/
+  ground cuts;Home/Bar stay. A 4.8×2.4m bridge at+7.68 spans a3m lower alley
+  to the east street:X126.4. Explicit layers/links retain hero/NPC floor and IDs;
+  rain shelters below the deck. SameXZ/twoY map arrivals:
+  «Лестничные дворы»/«Нижний проход». Citywide35–45m rise/rollout planned.
   The expanded oblique/L pilot is absent. Metre bodies retain real fit; `10×6 m` rear wings require full padded clearance and a `2.4 m`
   court gap. `3.6 m` through passages remain walkable under separate overhead
   collision, height `3.2 m` (`4.2 m` Industrial). Court loops join the graph;

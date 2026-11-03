@@ -224,10 +224,12 @@ namespace BarPromenade.Editor
             if (terraces.IsEnabled)
             {
                 Box("terrace-entry", "promenade", terraces.EntryBounds);
+                Box("terrace-lower-pass", "promenade", terraces.LowerPassBounds);
                 foreach (CityTerracePilotFloor floor in terraces.Floors)
                 {
                     Rect rect = floor.Bounds;
-                    Poly("terrace:" + floor.Id, floor.IsCourt ? "terrace-court" : "terrace-landing", new[] {
+                    Poly("terrace:" + floor.Id, floor.Id == "upper-bridge" ? "bridge" :
+                        floor.IsCourt ? "terrace-court" : "terrace-landing", new[] {
                         XZ(terraces.World(new Vector3(rect.xMin, floor.Center.y, rect.yMin))),
                         XZ(terraces.World(new Vector3(rect.xMax, floor.Center.y, rect.yMin))),
                         XZ(terraces.World(new Vector3(rect.xMax, floor.Center.y, rect.yMax))),
@@ -245,6 +247,16 @@ namespace BarPromenade.Editor
                         Line("terrace:" + flight.Id + ":tread:" + step, "terrace-stair", .12f,
                             new[] { XZ(terraces.World(at - side)), XZ(terraces.World(at + side)) });
                     }
+                }
+                Rect crossing = terraces.BridgeWorldBounds;
+                // The lower alley continues beneath the solid upper outline.
+                // Short centre dashes distinguish the overlapping routes in plan.
+                for (int dash = 0; dash < 3; dash++)
+                {
+                    float first = Mathf.Lerp(crossing.xMin, crossing.xMax, dash / 3f);
+                    float last = Mathf.Lerp(crossing.xMin, crossing.xMax, (dash + .55f) / 3f);
+                    Line("terrace-underpass:" + dash, "terrace-underpass", .16f,
+                        new[] { new Vector2(first, crossing.center.y), new Vector2(last, crossing.center.y) });
                 }
             }
             foreach (RoadEdge edge in layout.RoadEdges)

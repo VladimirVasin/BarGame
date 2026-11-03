@@ -1,15 +1,14 @@
 {
   "tool": "built-in image_gen",
-  "intent": "live terraced residential courtyard redraw",
-  "prompt": "imagegen-terraces-prompt.txt",
+  "intent": "stacked pedestrian bridge and lower alley redraw",
+  "prompt": "imagegen-upperpass-prompt.txt",
   "references": [
-    "CityMapImage.reference.png",
-    "map-reference.png"
+    "CityMapImage.reference.png"
   ],
   "geography": "map-reference.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "f859eb12f53efd186a8939b9a274b75b5f03982841813b5c812266d86f003bb5",
-  "fingerprint": "625398142c03e12491eee392c4f8cfe8aadb1751316f1af1733faebb96323fcf",
+  "image_sha256": "43d094dea24ca430e9d39b679245c456e83e0a8a17f76a45abeeaad75fbb0052",
+  "fingerprint": "f4ec530ecb58bb1826d6fbbd83bdd036886e08a0f9c3eecb8b955ec7a2fe12d0",
   "schemaVersion": 2,
   "width": 1422,
   "height": 1106

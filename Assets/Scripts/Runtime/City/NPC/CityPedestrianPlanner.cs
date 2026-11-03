@@ -133,11 +133,16 @@ namespace BarPromenade
                 endpointsByNode,
                 graph);
             BuildCourtyardPaths(layout, streetSurfacePlan, graph);
-            if (terrace.IsEnabled) graph.ExcludeTerraceGround(terrace);
+            if (terrace.IsEnabled)
+            {
+                graph.ExcludeTerraceGround(terrace);
+                BuildTerracePaths(layout, streetSurfacePlan, terrace, graph);
+            }
             return graph.CreatePlan(
                 layout.Seed,
                 populationSeed,
-                stableSeed);
+                stableSeed,
+                terrace.IsEnabled ? layout : null);
         }
 
         public static RoadWalkableArea CreateWalkableArea(
@@ -150,7 +155,77 @@ namespace BarPromenade
 
             var area = new RoadWalkableArea(plan.NavigationRectangles);
             area.AddPolygons(plan.NavigationPolygons);
+            if (plan.TerraceLayout != null) area.AttachTerraceDistrict(plan.TerraceLayout);
             return area;
+        }
+
+        private static void BuildTerracePaths(CityLayout layout, CityStreetSurfacePlan surfaces,
+            CityTerraceDistrictPlan terrace, GraphBuilder graph)
+        {
+            float StreetHeight(Vector2 point)
+            {
+                if (surfaces.SupportPlan != null && surfaces.SupportPlan.TrySampleTop(point, out float top, out _))
+                    return top;
+                if (layout.ElevationPlan.TrySampleSurface(point, CitySurfaceRole.RoadTop, out top, out _)) return top;
+                if (CityTerrainSurfacePlan.TrySampleGroundTop(layout, point, out top, out _)) return top;
+                throw new InvalidOperationException("Terrace pedestrian access has no existing street support at " + point);
+            }
+
+            int westStreet = graph.SplitTerraceStreetAt("terrace:street-west", XZ(terrace.EntryStartWorld), StreetHeight);
+            int eastStreet = graph.SplitTerraceStreetAt("terrace:street-east", XZ(terrace.LowerPassEndWorld), StreetHeight);
+            int lower = graph.AddNode("terrace:lower-court", terrace.LowerArrivalWorld, false);
+            int upper = graph.AddNode("terrace:upper-crossing", terrace.UpperCrossingWorld, false);
+            int lowerCrossing = graph.AddNode("terrace:lower-crossing", terrace.LowerCrossingWorld, false);
+            var through = new[] {
+                westStreet,
+                graph.AddNode("terrace:west-entry", terrace.EntryStartWorld, false),
+                graph.AddNode("terrace:west-apron-end", terrace.EntryEndWorld, false),
+                lower,
+                graph.AddNode("terrace:lower-pass-start", terrace.LowerPassStartWorld, false),
+                lowerCrossing,
+                graph.AddNode("terrace:east-outlet", terrace.LowerPassEndWorld, false),
+                eastStreet };
+            for (int i = 1; i < through.Length; i++) AddLink("terrace:through:" + i, through[i - 1], through[i]);
+            AddStairs("west", terrace.Pilot.WestRoute);
+            AddStairs("east", terrace.Pilot.EastRoute);
+
+            void AddStairs(string side, IReadOnlyList<Vector3> route)
+            {
+                int previous = lower;
+                for (int i = 1; i < route.Count; i++)
+                {
+                    int next = i == route.Count - 1 ? upper :
+                        graph.AddNode("terrace:" + side + ":" + i, terrace.World(route[i]), false);
+                    AddLink("terrace:" + side + ":walk:" + i, previous, next);
+                    previous = next;
+                }
+            }
+
+            void AddLink(string id, int first, int last)
+            {
+                Vector3 a = graph.Nodes[first].Position, b = graph.Nodes[last].Position;
+                Vector2 axis = XZ(b) - XZ(a);
+                float squared = axis.sqrMagnitude;
+                if (squared < .000001f)
+                    throw new InvalidOperationException("A terrace walking link cannot change storeys at one XZ.");
+                var path = new CityRoadPath(new[] { XZ(a), XZ(b) });
+                float Height(Vector2 point)
+                {
+                    float amount = Mathf.Clamp01(Vector2.Dot(point - XZ(a), axis) / squared);
+                    float expected = Mathf.Lerp(a.y, b.y, amount);
+                    // The endpoint pair owns its level. In particular the
+                    // crossing's lower link can never sample the deck above.
+                    if (terrace.TryResolveStandingSurface(point, expected, 0f, out CityTerraceSurfaceContact contact))
+                        return contact.Height;
+                    return StreetHeight(point);
+                }
+                graph.AddLink(id, first, last, CityPedestrianLinkKind.Courtyard, false, path, Height);
+                float padding = AgentRadius + NavigationMargin;
+                graph.AddNavigationPolygons(path.Ribbon(padding * 2f));
+                graph.AddNavigationPolygons(new[] {
+                    CityRoadPolygon.Rectangle(new Rect(a.x - padding, a.z - padding, padding * 2f, padding * 2f)),
+                    CityRoadPolygon.Rectangle(new Rect(b.x - padding, b.z - padding, padding * 2f, padding * 2f)) });
+            }
         }
 
         public static float GetSidewalkCenterOffset(CityLayout layout)
@@ -1203,6 +1278,9 @@ namespace BarPromenade
                 sharedNavigationPolygons.AddRange(polygons);
             }
 
+            public int SplitTerraceStreetAt(string id, Vector2 arrival, Func<Vector2, float> sampleHeight) =>
+                SplitWalkingPathAt(id, CityPedestrianLinkKind.Sidewalk, "sidewalk:", arrival, sampleHeight, 8f * 8f);
+
             public void ExcludeTerraceGround(CityTerraceDistrictPlan terrace)
             {
                 // Clip only links entering actual replaced ground, not the
@@ -1335,7 +1413,8 @@ namespace BarPromenade
             public CityPedestrianPlan CreatePlan(
                 int layoutSeed,
                 int populationSeed,
-                uint stableSeed)
+                uint stableSeed,
+                CityLayout terraceLayout = null)
             {
                 FindTwoCore(
                     out bool[] retainedNodes,
@@ -1410,7 +1489,8 @@ namespace BarPromenade
                     safeLinks,
                     safeAnchors,
                     safeRectangles,
-                    safePolygons);
+                    safePolygons,
+                    terraceLayout);
             }
 
             private static Vector2[] PathEndCap(CityRoadSample sample, float padding)

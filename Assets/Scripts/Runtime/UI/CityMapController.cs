@@ -28,7 +28,8 @@ namespace BarPromenade
         Cafe = 9,
         Laundry = 10,
         DogPark = 11,
-        TerraceCourts = 12
+        TerraceCourts = 12,
+        TerraceUnderpass = 13
     }
 
     public readonly struct CityMapPointOfInterest
@@ -959,6 +960,9 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.TerraceCourts:
                     key = "map.poi.terrace_courts";
                     return true;
+                case CityMapPointOfInterestKind.TerraceUnderpass:
+                    key = "map.poi.terrace_underpass";
+                    return true;
                 default:
                     key = string.Empty;
                     return false;
@@ -1480,9 +1484,14 @@ namespace BarPromenade
 
             CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(Layout);
             if (terraces.IsEnabled)
+            {
                 pointsOfInterest.Add(new CityMapPointOfInterest(
                     "terrace-courts", CityMapPointOfInterestKind.TerraceCourts, CityDistrictKind.Residential,
                     terraces.UpperArrivalWorld + Vector3.up * rootOffset));
+                pointsOfInterest.Add(new CityMapPointOfInterest(
+                    "terrace-underpass", CityMapPointOfInterestKind.TerraceUnderpass, CityDistrictKind.Residential,
+                    terraces.LowerCrossingWorld + Vector3.up * rootOffset));
+            }
         }
 
         private Vector3 ResolveNamedPlaceArrival(Vector3 approach)

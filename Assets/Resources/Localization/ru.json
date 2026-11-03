@@ -1788,6 +1788,14 @@
       "value": "Лестничные дворы"
     },
     {
+      "key": "map.poi.terrace_underpass",
+      "value": "Нижний проход"
+    },
+    {
+      "key": "map.point.coordinates_layered",
+      "value": "Мировые координаты\nX {0:0.0}   Y {2:0.0}   Z {1:0.0}"
+    },
+    {
       "key": "map.poi.more",
       "value": "Ещё {0}"
     },

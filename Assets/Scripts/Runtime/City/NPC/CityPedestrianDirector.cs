@@ -1226,7 +1226,9 @@ namespace BarPromenade
                     continue;
                 }
 
-                if (!IsAheadWithin(
+                if (!VerticalCapsulesOverlap(actor.Position, CityPedestrianActor.CollisionHeight,
+                        other.transform, other.CharacterController, CityPedestrianActor.CollisionHeight,
+                        CollisionActivationPadding) || !IsAheadWithin(
                         actor.Position,
                         travel,
                         other.Position,

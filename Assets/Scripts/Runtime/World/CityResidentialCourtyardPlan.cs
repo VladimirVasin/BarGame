@@ -321,6 +321,7 @@ namespace BarPromenade
                 {
                     foreach (Vector2Int cell in terraces.ReservedCells) ProtectedCells.Add(cell);
                     ProtectedGround.Add(terraces.ReservedBounds);
+                    ProtectedGround.Add(terraces.LowerPassBounds);
                 }
                 Solids = ExistingSolids(layout);
                 foreach (BuildingLot mass in layout.BuildingMasses)

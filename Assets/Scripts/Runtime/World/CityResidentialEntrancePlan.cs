@@ -178,7 +178,11 @@ namespace BarPromenade
             var obstacles = new List<Vector2[]>();
             foreach (BuildingLot lot in masses)
                 if (lot.HasBuilding || lot.IsCafe) obstacles.AddRange(lot.CreateCollisionPolygons());
-            if (terrace.IsEnabled) obstacles.Add(CityRoadPolygon.Rectangle(terrace.ReservedBounds));
+            if (terrace.IsEnabled)
+            {
+                obstacles.Add(CityRoadPolygon.Rectangle(terrace.ReservedBounds));
+                obstacles.Add(CityRoadPolygon.Rectangle(terrace.LowerPassBounds));
+            }
             CityLaundryPlan laundry = CityLaundryPlan.ForLayout(layout);
             if (laundry.IsEnabled) foreach (Rect body in laundry.BodyFootprints) obstacles.Add(CityRoadPolygon.Rectangle(body));
             CityDogParkPlan dogs = CityDogParkPlan.ForLayout(layout);

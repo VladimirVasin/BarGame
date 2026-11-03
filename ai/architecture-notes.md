@@ -9,8 +9,10 @@
   crossing with layered navigation and rollout,existing anchors/routes/map.
   Step3 authorizes two walkable levels at one XZ only through explicit layer/
   height/connectivity and correct physical contacts;no traversable river cave
-  or general tunnel permission. Production remains single-surface until built.
-  Target authoring plans do not replace active elevation/collision early.
+  or general tunnel permission. Live:4.8×2.4m bridge at+7.68 above a3m alley
+  to the east street;explicit surfaces/links preserve sharedXZ/distinctY for
+  hero/NPC/map. Local rain shelter,physical contacts;no new population.
+  Target profiles do not replace active citywide elevation/collision early.
   Common Blender modules/materials,bounded plans/indexes;24FX and focused
   acceptance:[city-multilevel-plan.md](city-multilevel-plan.md).
   Art9/story§16/21,weather/fog/control/population identity stay;no new lore.
@@ -3779,9 +3781,9 @@
   pedestrians/debug teleports read the shared elevation/terrain sampler.
   Bridge decks cross non-walkable water;river stairs reach lower platforms.
   Southern promenade extensions are single-level footprints ending at physical
-  rock;the water cave/tunnels remain untraversable. Production navigation has
-  one walkable surface per XZ;the accepted `2026-11-03` terraced-City extension
-  separately scopes the future upper pedestrian crossing.
+  rock;water cave/tunnels remain untraversable. The `2026-11-03` terrace
+  crossing alone has two explicit connected levels at one XZ;ordinary City
+  ground keeps its indexed single-surface mask.
   Level nodes/stops keep `4 m` setbacks;Street/Route01≤`6%`,ParkPath≤`8.3%`.
   Bus routes exclude non-bus transitions,sample Y/tangent,pitch without roll,
   and ground stops locally. Each urban district has a sidewalk stair:

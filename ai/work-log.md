@@ -51,8 +51,9 @@ Clock/clone/indoor/pause/24FX/§6.
 CityNightSaturation/CityFogCheckpoint OK.
 Day×2;needs/weather:GameTimeStateTests.
 TerraceMasterPlan_StudiesProductionWithoutChangingLiveCity OK.
-CityTerraceTransportPlanTests/CityTerracePilotPlayModeTests:authoringOK.
-Terraces:live7.68m/2paths;houses moved/IDs kept;entry/nav/map/24FX.
+CityTerraceTransportPlanTests/CityTerracePilotPlayModeTests OK.
+Terraces:bridge/lowerpass;hero/NPC layers;map/rain/24FX.
+CITY TERRACE ART CONTRACT OK.
 LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap/
 ImageGenCityMap_PreservesPlanAndLivePlaces passed;frames reviewed.
 

@@ -684,9 +684,7 @@ namespace BarPromenade
             }
             foreach (Bounds solid in CityResidentialCourtyardPlan.ForLayout(layout).CollisionBounds)
                 area.Exclude(Rect.MinMaxRect(solid.min.x, solid.min.z, solid.max.x, solid.max.z));
-            CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
-            if (terraces.IsEnabled)
-                area.terraceDistrict = new CityTerraceDistrictWalkableArea(layout, terraces, area);
+            area.AttachTerraceDistrict(layout);
             return area;
         }
 
@@ -876,6 +874,13 @@ namespace BarPromenade
             ValidateRadius(radius);
             return terraceDistrict != null && terraceDistrict.IsNear(position, radius)
                 ? terraceDistrict.Contains(position, radius) : ContainsBase(position, radius);
+        }
+
+        internal void AttachTerraceDistrict(CityLayout layout)
+        {
+            CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
+            if (terraces.IsEnabled)
+                terraceDistrict = new CityTerraceDistrictWalkableArea(layout, terraces, this);
         }
 
         internal bool ContainsBase(Vector3 position, float radius = 0f)

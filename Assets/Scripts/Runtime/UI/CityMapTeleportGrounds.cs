@@ -58,26 +58,22 @@ namespace BarPromenade
             // edge or gap must never fall through to terrain below the slab.
             if (terraces.ContainsFootprint(worldXZ))
             {
-                if (!mask.Contains(probe, radius) ||
-                    !terraces.TrySampleStandingTop(worldXZ, 0f, out float terraceTop) ||
+                // An unhinted 2D lattice point has one deterministic default:
+                // the highest authored standing surface. Named arrivals below
+                // use their explicit Y instead.
+                if (!terraces.TrySampleStandingTop(worldXZ, 0f, out float terraceTop) ||
                     IsInsideObstacle(worldXZ)) return false;
                 standingPosition = new Vector3(worldXZ.x,
                     terraceTop + PlayerFactory.GroundedRootOffset, worldXZ.y);
-                return true;
+                return mask.Contains(standingPosition, radius);
             }
+            if (TryResolveSurfaceTop(worldXZ, out float probeTop))
+                probe.y = probeTop + PlayerFactory.GroundedRootOffset;
             Vector3 candidate = mask.Contains(probe, radius)
                 ? probe
                 : mask.ClosestPoint(probe, radius);
             var landing = new Vector2(candidate.x, candidate.z);
-            if (!mask.Contains(
-                    new Vector3(landing.x, 0f, landing.y),
-                    radius) ||
-                IsInsideObstacle(landing))
-            {
-                return false;
-            }
-
-            if (!TryResolveSurfaceTop(landing, out float top))
+            if (IsInsideObstacle(landing) || !TryResolveSurfaceTop(landing, out float top))
             {
                 return false;
             }
@@ -86,12 +82,26 @@ namespace BarPromenade
                 landing.x,
                 top + PlayerFactory.GroundedRootOffset,
                 landing.y);
-            return true;
+            return mask.Contains(standingPosition, radius);
         }
 
         public bool TryClampArrival(Vector3 arrival, out Vector3 destination)
         {
+            destination = default;
+            if (!CityTerracePilotPlan.Finite(arrival)) return false;
             var requested = new Vector2(arrival.x, arrival.z);
+            if (terraces.ContainsFootprint(requested))
+            {
+                // At a stacked crossing, XZ identifies two destinations. Keep
+                // the authored height; do not fall back to a different floor
+                // or a remote street if the selected contact is unsupported.
+                float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
+                if (!terraces.TryResolveStandingSurface(requested, arrival.y, radius, out var contact) ||
+                    IsInsideObstacle(requested)) return false;
+                destination = new Vector3(arrival.x,
+                    contact.Height + PlayerFactory.GroundedRootOffset, arrival.z);
+                return EnsureWalkableArea().Contains(destination, radius);
+            }
             // A map marker may name a building centre and carry the lot's
             // old datum. Even an XZ inside the mask needs obstacle and height
             // validation; the mask also contains the ground beneath buildings.

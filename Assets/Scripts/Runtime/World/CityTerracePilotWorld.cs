@@ -38,21 +38,27 @@ namespace BarPromenade
             // Only this finite build owns references. The resource assets and
             // City's material cache are shared, never destroyed per instance.
             var templates = new Dictionary<string, GameObject>();
-            foreach (string name in new[] { "TerraceFlight", "TerraceLanding", "TerraceCourt", "TerraceSupport", "TerraceRail" })
+            foreach (string name in new[] { "TerraceFlight", "TerraceSupport", "TerraceRail" }) LoadModel(name);
+            foreach (CityTerracePilotFloor floor in floors) LoadModel(floor.ModelName);
+            if (district != null) LoadModel("TerracePassage");
+
+            void LoadModel(string name)
             {
+                if (templates.ContainsKey(name)) return;
                 GameObject model = Resources.Load<GameObject>(ResourceFolder + name);
                 if (model == null) throw new InvalidOperationException("Missing terrace model: " + name);
                 templates.Add(name, model);
             }
             foreach (CityTerracePilotFloor floor in floors)
             {
-                float thickness = floor.IsCourt ? .30f : .25f;
-                Model(templates[floor.IsCourt ? "TerraceCourt" : "TerraceLanding"], root.transform,
+                float thickness = floor.Thickness;
+                Model(templates[floor.ModelName], root.transform,
                     floor.Id, floor.Center, Quaternion.identity, Vector3.one);
                 Box(root.transform, floor.Id + " ground", floor.Center - Vector3.up * thickness * .5f,
                     new Vector3(floor.Size.x, thickness, floor.Size.y), Quaternion.identity);
-                Support(templates["TerraceSupport"], root.transform, floor.Id + " support",
-                    floor.Center - Vector3.up * thickness, floor.Size, foundationBottom);
+                if (floor.HasFoundation)
+                    Support(templates["TerraceSupport"], root.transform, floor.Id + " support",
+                        floor.Center - Vector3.up * thickness, floor.Size, foundationBottom);
                 if (district == null || !floor.Id.StartsWith("residence-entry-", StringComparison.Ordinal))
                     BuildFloorRails(root.transform, templates["TerraceRail"], floors, flights, floor, district);
             }
@@ -97,6 +103,28 @@ namespace BarPromenade
                     slope, new Vector3(district.EntryBounds.height / 10f, 1f, delta.magnitude / 10f));
                 Box(root.transform, "Terrace street approach collision", center - slope * Vector3.up * .15f,
                     new Vector3(district.EntryBounds.height, .30f, delta.magnitude), slope);
+
+                start = district.Local(district.LowerPassStartWorld);
+                end = district.Local(district.LowerPassEndWorld);
+                delta = end - start;
+                slope = Quaternion.LookRotation(delta.normalized, Vector3.up);
+                center = (start + end) * .5f;
+                Model(templates["TerracePassage"], root.transform, "Terrace lower passage", center,
+                    slope, new Vector3(1f, 1f, delta.magnitude / 21.5f));
+                Box(root.transform, "Terrace lower passage collision", center - slope * Vector3.up * .15f,
+                    new Vector3(CityTerraceDistrictPlan.LowerPassWidth, .30f, delta.magnitude), slope);
+
+                // The bounded trigger clears particles emitted beneath the
+                // deck as well as those falling from above. Its ceiling stops
+                // below the upper walking surface, which stays exposed to rain.
+                float ceiling = district.Pilot.TotalRise - .35f;
+                float bottom = district.Local(district.LowerCrossingWorld).y - .30f;
+                BoxCollider shelter = Box(root.transform, "Terrace bridge rain shelter",
+                    new Vector3(0f, (bottom + ceiling) * .5f, 20.08f),
+                    new Vector3(4.8f, ceiling - bottom, 2.4f), Quaternion.identity);
+                shelter.gameObject.layer = 2; // IgnoreRaycast: atmosphere volume, never player geometry.
+                shelter.isTrigger = true;
+                root.AddComponent<CityTerraceWorldAnchors>().Initialize(shelter);
             }
             CitySurfaceLibrary.ApplyHierarchy(root.transform);
             Physics.SyncTransforms();
@@ -224,6 +252,7 @@ namespace BarPromenade
                 if (district != null)
                 {
                     AddOpening(district.Local(district.EntryEndWorld), district.EntryBounds.height);
+                    AddOpening(district.Local(district.LowerPassStartWorld), CityTerraceDistrictPlan.LowerPassWidth);
                     foreach (Vector3 door in district.HouseEntryWorld) AddOpening(district.Local(door), 1.8f);
                 }
                 gaps.Sort((a, b) => a.x.CompareTo(b.x));

@@ -8,7 +8,7 @@ namespace BarPromenade
 {
     /// <summary>The first occupied terrace precinct. All geometry is local to Origin;
     /// reservations, cuts, entrance contacts and height queries use world metres.</summary>
-    public sealed class CityTerraceDistrictPlan
+    public sealed partial class CityTerraceDistrictPlan
     {
         private static readonly ConditionalWeakTable<CityLayout, CityTerraceDistrictPlan> Plans =
             new ConditionalWeakTable<CityLayout, CityTerraceDistrictPlan>();
@@ -52,6 +52,32 @@ namespace BarPromenade
             if (EntryGradePercent > 8.3f + .001f)
                 throw new InvalidOperationException("Terrace street approach exceeds its 8.3% pedestrian grade.");
 
+            LowerPassStartWorld = World(new Vector3(0f, 0f, 5f));
+            var eastSocket = new Vector2(126.4f, OriginZ);
+            if (!layout.ElevationPlan.TrySampleSurface(eastSocket, CitySurfaceRole.RoadTop,
+                out float eastTop, out _))
+                throw new InvalidOperationException("The terrace lower passage needs its existing eastern street socket.");
+            LowerPassEndWorld = new Vector3(eastSocket.x, eastTop, eastSocket.y);
+            LowerPassBounds = Rect.MinMaxRect(LowerPassStartWorld.x, OriginZ - LowerPassWidth * .5f,
+                LowerPassEndWorld.x, OriginZ + LowerPassWidth * .5f);
+            LowerPassGradePercent = Mathf.Abs(LowerPassEndWorld.y - LowerPassStartWorld.y) /
+                (LowerPassEndWorld.x - LowerPassStartWorld.x) * 100f;
+            if (LowerPassGradePercent > 8.3f + .001f)
+                throw new InvalidOperationException("The terrace lower passage exceeds its 8.3% pedestrian grade.");
+            for (int i = 0; i < floors.Count; i++)
+            {
+                CityTerracePilotFloor floor = floors[i];
+                if (floor.Id != "west-upper-court" && floor.Id != "east-upper-court") continue;
+                floors[i] = new CityTerracePilotFloor(floor.Id,
+                    new Vector3(Mathf.Sign(floor.Center.x) * 6.2f, Pilot.TotalRise, 20.08f),
+                    new Vector2(7.6f, 10f), true, "TerraceUpperCourt");
+            }
+            var bridge = new CityTerracePilotFloor(BridgeFloorId,
+                new Vector3(0f, Pilot.TotalRise, 20.08f), new Vector2(4.8f, 2.4f), true,
+                "TerraceBridge", .35f, false);
+            floors.Add(bridge);
+            BridgeWorldBounds = WorldBounds(bridge.Bounds);
+
             foreach (int side in new[] { -1, 1 })
             {
                 floors.Add(new CityTerracePilotFloor("residence-court-" + side,
@@ -59,7 +85,8 @@ namespace BarPromenade
                 floors.Add(new CityTerracePilotFloor("residence-entry-" + side,
                     new Vector3(side * 13.04f, MiddleRise, -4.96f), Vector2.one * 2.4f, false));
             }
-            foreach (CityTerracePilotFloor floor in floors) cuts.Add(WorldBounds(floor.Bounds));
+            foreach (CityTerracePilotFloor floor in floors)
+                if (floor.HasFoundation) cuts.Add(WorldBounds(floor.Bounds));
             foreach (CityExteriorStairFlightDescriptor flight in Flights)
             {
                 Rect support = CityTerracePilotPlan.FlightBounds(flight);
@@ -69,6 +96,7 @@ namespace BarPromenade
                 cuts.Add(WorldBounds(support));
             }
             cuts.Add(EntryBounds);
+            cuts.Add(LowerPassBounds);
             foreach (BuildingLot lot in layout.BuildingLots)
             {
                 if (!IsReservedCell(lot.Cell) || !lot.HasBuilding) continue;
@@ -80,6 +108,7 @@ namespace BarPromenade
                     threshold.x, threshold.z + CityBuildingAssetProvider.EntranceClearWidth * .5f);
                 throats.Add(throat); cuts.Add(throat);
             }
+            InitializeSurfaces();
         }
 
         public bool IsEnabled { get; }
@@ -97,6 +126,16 @@ namespace BarPromenade
         public Vector3 EntryEndWorld { get; }
         public Rect EntryBounds { get; }
         public float EntryGradePercent { get; }
+        public const string BridgeFloorId = "upper-bridge";
+        public const float LowerPassWidth = 3f;
+        public Vector3 LowerPassStartWorld { get; }
+        public Vector3 LowerPassEndWorld { get; }
+        public Rect LowerPassBounds { get; }
+        public float LowerPassGradePercent { get; }
+        public Rect BridgeWorldBounds { get; }
+        public Vector3 UpperCrossingWorld => UpperArrivalWorld;
+        public Vector3 LowerCrossingWorld => Vector3.Lerp(LowerPassStartWorld, LowerPassEndWorld,
+            Mathf.InverseLerp(LowerPassStartWorld.x, LowerPassEndWorld.x, UpperCrossingWorld.x));
         public RoadEdge EntryRoadEdge => EntryEdge;
         public float EntryOpeningWidth => 10f;
         public Vector3 LowerArrivalWorld => World(new Vector3(0f, 0f, -2f));
@@ -124,56 +163,13 @@ namespace BarPromenade
                 Mathf.Max(first.x, last.x), Mathf.Max(first.z, last.z));
         }
 
-        public bool ContainsFootprint(Vector2 point)
-        {
-            if (!IsEnabled) return false;
-            foreach (Rect cut in cuts) if (CityTerracePilotPlan.Inside(cut, point.x, point.y)) return true;
-            return false;
-        }
-
-        public bool TryGetSurfaceHeight(Vector3 world, out float height) =>
-            TrySampleStandingTop(new Vector2(world.x, world.z), 0f, out height);
-
-        public bool TrySampleStandingTop(Vector2 point, float radius, out float height)
-        {
-            height = 0f;
-            if (!IsEnabled || !CityTerracePilotPlan.Finite(radius) || radius < 0f || !Sample(point, out height)) return false;
-            if (radius <= .0001f) return true;
-            return Sample(point + Vector2.right * radius, out _) && Sample(point - Vector2.right * radius, out _) &&
-                Sample(point + Vector2.up * radius, out _) && Sample(point - Vector2.up * radius, out _);
-        }
-
-        private bool Sample(Vector2 point, out float height)
-        {
-            height = 0f;
-            if (!CityTerracePilotPlan.Finite(point.x) || !CityTerracePilotPlan.Finite(point.y)) return false;
-            if (CityTerracePilotPlan.Inside(EntryBounds, point.x, point.y))
-            {
-                height = Mathf.Lerp(EntryStartWorld.y, EntryEndWorld.y,
-                    Mathf.InverseLerp(EntryStartWorld.x, EntryEndWorld.x, point.x));
-                return true;
-            }
-            foreach (Rect throat in throats)
-                if (CityTerracePilotPlan.Inside(throat, point.x, point.y))
-                { height = Origin.y + MiddleRise; return true; }
-            Vector3 local = Local(new Vector3(point.x, 0f, point.y));
-            bool found = Pilot.TryGetSurfaceHeight(local, out float top);
-            for (int index = Pilot.Floors.Count; index < Floors.Count; index++)
-            {
-                CityTerracePilotFloor floor = Floors[index];
-                if (!CityTerracePilotPlan.Inside(floor.Bounds, local.x, local.z)) continue;
-                top = found ? Mathf.Max(top, floor.Center.y) : floor.Center.y;
-                found = true;
-            }
-            if (found) height = Origin.y + top;
-            return found;
-        }
-
         internal static bool TryReserve(CityGenerationSettings settings, Vector3 origin,
             ISet<RoadEdge> roads, ISet<int> semanticLots)
         {
             if (settings.Blueprint?.Id != CityBlueprintCatalog.DefaultBlueprintId ||
-                settings.SpatialPlan?.IsCompactCoastal != true || !roads.Contains(EntryEdge)) return false;
+                settings.SpatialPlan?.IsCompactCoastal != true || !roads.Contains(EntryEdge) ||
+                !roads.Contains(new RoadEdge(new Vector2Int(11, 7), new Vector2Int(11, 8))) ||
+                !roads.Contains(new RoadEdge(new Vector2Int(11, 8), new Vector2Int(11, 9)))) return false;
             Vector2 node = settings.GetCoordinateOffset(new Vector2Int(10, 8));
             if (Mathf.Abs(origin.x + node.x - 104f) > .001f || Mathf.Abs(origin.z + node.y - 52f) > .001f) return false;
             foreach (Vector2Int cell in Cells)

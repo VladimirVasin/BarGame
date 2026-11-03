@@ -698,9 +698,8 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
-        /// A plan view has two coordinates. The readout printed three for a
-        /// while, which is a debug dump rather than a chart: height is the
-        /// one number the projection cannot show and nobody navigates by it.
+        /// Ordinary points retain XZ; an explicit stacked arrival also needs
+        /// its height to distinguish destinations at the same map position.
         /// </summary>
         [Test]
         public void PointCoordinates_ReadOutXAndZOnly()
@@ -716,6 +715,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 text.Split('\n').Last().Count(character => character == 'Z'),
                 Is.EqualTo(1));
+            Assert.That(CityMapView.FormatMapPointCoordinates(new Vector3(12.25f, 7.5f, -34.5f), true),
+                Does.Contain("Y 7.5"));
         }
 
         /// <summary>
@@ -962,11 +963,12 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.Cafe,
                     CityMapPointOfInterestKind.Laundry,
                     CityMapPointOfInterestKind.DogPark,
-                    CityMapPointOfInterestKind.TerraceCourts
+                    CityMapPointOfInterestKind.TerraceCourts,
+                    CityMapPointOfInterestKind.TerraceUnderpass
                 };
                 var expectedIds = new[]
                 {
-                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts"
+                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass"
                 };
                 var expectedDistricts = new[]
                 {
@@ -975,6 +977,7 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.NorthWaterfront,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Church,
+                    CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
@@ -1061,7 +1064,15 @@ namespace BarPromenade.Tests.EditMode
                     }
 
                     Vector3 standing;
-                    if (place.Kind == CityMapPointOfInterestKind.Docks)
+                    if (place.Kind == CityMapPointOfInterestKind.TerraceUnderpass)
+                    {
+                        Assert.That(label, Is.EqualTo("Нижний проход"), context);
+                        Assert.That(ground.TryClampArrival(place.WorldPosition, out standing), Is.True, context);
+                        Assert.That(Vector3.Distance(standing, terraces.LowerCrossingWorld +
+                            Vector3.up * PlayerFactory.GroundedRootOffset), Is.LessThan(.001f), context);
+                        Assert.That(walkable.Contains(standing, CityGroundTraversalPlanner.MaximumAgentRadius), Is.True);
+                    }
+                    else if (place.Kind == CityMapPointOfInterestKind.Docks)
                     {
                         Assert.That(Vector3.Distance(place.WorldPosition, worldPort.ArrivalWorld),
                             Is.LessThanOrEqualTo(0.001f), $"{context} must be the world's own deck arrival.");

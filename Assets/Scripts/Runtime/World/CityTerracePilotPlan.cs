@@ -6,8 +6,14 @@ namespace BarPromenade
 {
     public readonly struct CityTerracePilotFloor
     {
-        internal CityTerracePilotFloor(string id, Vector3 center, Vector2 size, bool isCourt)
-        { Id = id; Center = center; Size = size; IsCourt = isCourt; }
+        internal CityTerracePilotFloor(string id, Vector3 center, Vector2 size, bool isCourt,
+            string modelName = null, float thickness = 0f, bool hasFoundation = true)
+        {
+            Id = id; Center = center; Size = size; IsCourt = isCourt;
+            ModelName = modelName ?? (isCourt ? "TerraceCourt" : "TerraceLanding");
+            Thickness = thickness > 0f ? thickness : isCourt ? .30f : .25f;
+            HasFoundation = hasFoundation;
+        }
 
         public string Id { get; }
         /// <summary>The top plane, in metres above the prototype's zero datum.</summary>
@@ -15,6 +21,10 @@ namespace BarPromenade
         /// <summary>Planar X and Z dimensions.</summary>
         public Vector2 Size { get; }
         public bool IsCourt { get; }
+        public string ModelName { get; }
+        public float Thickness { get; }
+        /// <summary>An elevated bridge owns a deck, not the ground below it.</summary>
+        public bool HasFoundation { get; }
         public Rect Bounds => new Rect(Center.x - Size.x * .5f, Center.z - Size.y * .5f, Size.x, Size.y);
     }
 

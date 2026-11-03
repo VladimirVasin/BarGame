@@ -2,9 +2,10 @@
 """Build the passive terrace-pilot kit through tools/run-blender.py.
 
 Authored Unity metres: +Y up, +Z up the stair. Full FBX wrappers retain file
-units; runtime never resets their imported scale. Supports alone allow the
-declared dimension scaling: they are plain supporting masses, not stretched
-stairs or railings. Existing shared City surfaces supply their final material.
+units; runtime never resets their imported scale. Plain supports allow declared
+dimension scaling; the passage receives only the measured grade-length factor.
+Stairs and upper platforms retain their authored metres. Shared City surfaces
+supply their final material.
 """
 from __future__ import annotations
 
@@ -27,11 +28,12 @@ spec.loader.exec_module(port)
 
 MODEL_DIR = ROOT / "Assets/Resources/CityTerraces"
 MANIFEST = "CityTerrace3D.json"
-NAMES = ("TerraceFlight", "TerraceLanding", "TerraceRail", "TerraceSupport", "TerraceCourt")
+NAMES = ("TerraceFlight", "TerraceLanding", "TerraceRail", "TerraceSupport", "TerraceCourt",
+         "TerraceUpperCourt", "TerraceBridge", "TerracePassage")
 STEPS, RISE, TREAD, WIDTH = 12, .16, .32, 2.10
 LENGTH, HEIGHT = STEPS * TREAD, STEPS * RISE
 ROLES = ("Concrete", "ConcreteWall", "SteelDark")
-MAX_TRIANGLES = (6500, 1800, 2600, 100, 15000)
+MAX_TRIANGLES = (6500, 1800, 2600, 100, 15000, 12000, 1500, 10000)
 
 
 def geometry(role):
@@ -100,17 +102,19 @@ def flight(material):
 def slab(name, size, thickness, divisions, material):
     root = port.empty(name)
     stone = geometry("Concrete")
+    size_x, size_z = size if isinstance(size, tuple) else (size, size)
+    cols, rows = divisions if isinstance(divisions, tuple) else (divisions, divisions)
     box(stone, (0, -(thickness + .045) * .5, 0),
-        (size, thickness - .045, size), port.CONCRETE, .008)
-    pitch = size / divisions
-    for row in range(divisions):
-        for column in range(divisions):
+        (size_x, thickness - .045, size_z), port.CONCRETE, .008)
+    pitch_x, pitch_z = size_x / cols, size_z / rows
+    for row in range(rows):
+        for column in range(cols):
             # Shallow seams terminate in the continuous base. All walking tops
             # remain y=0 and the outer footprint is exactly the declared size.
-            low_x = -size * .5 + column * pitch + (.003 if column else 0)
-            high_x = -size * .5 + (column + 1) * pitch - (.003 if column < divisions - 1 else 0)
-            low_z = -size * .5 + row * pitch + (.003 if row else 0)
-            high_z = -size * .5 + (row + 1) * pitch - (.003 if row < divisions - 1 else 0)
+            low_x = -size_x * .5 + column * pitch_x + (.003 if column else 0)
+            high_x = -size_x * .5 + (column + 1) * pitch_x - (.003 if column < cols - 1 else 0)
+            low_z = -size_z * .5 + row * pitch_z + (.003 if row else 0)
+            high_z = -size_z * .5 + (row + 1) * pitch_z - (.003 if row < rows - 1 else 0)
             color = port.EDGE if (column * 3 + row * 7) % 17 == 4 else port.CONCRETE
             box(stone, ((low_x + high_x) * .5, -.0225, (low_z + high_z) * .5),
                 (high_x - low_x, .045, high_z - low_z), color, .003)
@@ -144,7 +148,10 @@ def support(material):
 def build():
     material = port.base.material("TerraceSharedSurfaceSource")
     return [flight(material), slab(NAMES[1], 2.4, .25, 3, material), rail(material),
-            support(material), slab(NAMES[4], 10.0, .30, 10, material)]
+            support(material), slab(NAMES[4], 10.0, .30, 10, material),
+            slab(NAMES[5], (7.6, 10.0), .30, (8, 10), material),
+            slab(NAMES[6], (4.8, 2.4), .35, (4, 2), material),
+            slab(NAMES[7], (3.0, 21.5), .30, (3, 22), material)]
 
 
 def manifest(roots):
@@ -178,7 +185,7 @@ def manifest(roots):
     if abs(models[0]["bounds_min"][2]) > 1e-5 or abs(models[0]["bounds_max"][2] - LENGTH) > 1e-5:
         raise RuntimeError("Stair rails escaped the lower/upper landing footprint")
     return {
-        "design_id": "city_terrace_pilot_kit_v1", "version": "1.0.0", "generator": Path(__file__).name,
+        "design_id": "city_terrace_pilot_kit_v1", "version": "1.1.0", "generator": Path(__file__).name,
         "coordinate_system": "Unity metres +Y up/+Z up-stair; swap YZ/reverse winding for Blender; retain full FBX wrapper units",
         "material_source": "Existing shared City concrete/wall/dark metal; no texture, light, animation or collider in source",
         "geometry_signature_includes": ["vertices", "faces", "colors", "uv0", "transforms"],
@@ -190,7 +197,12 @@ def manifest(roots):
             "rail": {"length": 2.4, "height": 1.05, "axis": "+Z"},
             "support": {"size": [2.4, 1.92, 2.4], "top_y": 0,
                         "permitted_dimension_scaling": "Plain support mass only; preserve wrapper scale and world-metre material mapping"},
-            "court": {"size": [10, .30, 10], "top_y": 0}},
+            "court": {"size": [10, .30, 10], "top_y": 0},
+            "upper_court": {"size": [7.6, .30, 10], "top_y": 0},
+            "bridge": {"size": [4.8, .35, 2.4], "top_y": 0,
+                       "support": "Span bears on the two upper-court abutments; no full-height mass below the span"},
+            "passage": {"size": [3.0, .30, 21.5], "top_y": 0,
+                        "permitted_dimension_scaling": "Local Z only: measured sloping length / 21.5; horizontal run and width remain fixed metres"}},
         "semantic_uv_tiles_metres": {role: port.SURFACE_TILES[role] for role in ROLES},
         "models": models, "assets": [name + ".fbx" for name in NAMES]}
 

@@ -68,6 +68,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(map.SetMapPointInspectionEnabled(true), Is.True);
                 int yard = -1;
                 int terrace = -1;
+                int underpass = -1;
                 bool laundry = false;
                 for (int i = 0; i < map.ActiveMapPoints.Count; i++)
                 {
@@ -82,6 +83,11 @@ namespace BarPromenade.Tests.PlayMode
                     {
                         terrace = i;
                         Assert.That(point.Label, Is.EqualTo("Лестничные дворы"));
+                    }
+                    if (point.StableId == "city:poi:terrace-underpass")
+                    {
+                        underpass = i;
+                        Assert.That(point.Label, Is.EqualTo("Нижний проход"));
                     }
                 }
                 Assert.That(laundry, Is.True);
@@ -114,7 +120,24 @@ namespace BarPromenade.Tests.PlayMode
                 yield return CaptureMapUi("imagegen-city-map-terrace-courts-xyz");
                 Assert.That(map.ConfirmMapPointTeleport(), Is.True);
                 Assert.That(Vector3.Distance(map.PlayerWorldPosition, expected), Is.LessThan(.001f));
-                Debug.Log("IMAGEGEN CITY MAP OK: current-plan art and metadata, bounded UI import, live places, supported upper-court teleport and native map/XYZ views.");
+                Assert.That(underpass, Is.GreaterThanOrEqualTo(0));
+                Assert.That(map.Open(), Is.True);
+                Assert.That(map.SetMapPointInspectionEnabled(true), Is.True);
+                Assert.That(map.SelectMapPoint(underpass), Is.True);
+                Assert.That(map.TryGetSelectedMapPoint(out selected, out selectedWorld), Is.True);
+                Vector3 lower = terraces.LowerCrossingWorld + Vector3.up * PlayerFactory.GroundedRootOffset;
+                Assert.That(Vector3.Distance(selectedWorld, lower), Is.LessThan(.001f));
+                Assert.That(selectedWorld.x, Is.EqualTo(expected.x).Within(.001f));
+                Assert.That(selectedWorld.z, Is.EqualTo(expected.z).Within(.001f));
+                Assert.That(selectedWorld.y, Is.LessThan(expected.y - 3f));
+                Assert.That(CityMapView.FormatMapPointCoordinates(selectedWorld, true), Does.Contain("Y "));
+                Assert.That(ground.TryClampArrival(selectedWorld, out arrival), Is.True);
+                Assert.That(Vector3.Distance(arrival, lower), Is.LessThan(.001f));
+                for (int frame = 0; frame < 5; frame++) yield return null;
+                yield return CaptureMapUi("imagegen-city-map-underpass-xyz");
+                Assert.That(map.ConfirmMapPointTeleport(), Is.True);
+                Assert.That(Vector3.Distance(map.PlayerWorldPosition, lower), Is.LessThan(.001f));
+                Debug.Log("IMAGEGEN CITY MAP OK: current-plan art and metadata, bounded UI import, two stacked arrivals, live places and native map/XYZ views.");
             }
             finally { map.Close(); }
         }

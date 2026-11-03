@@ -1646,6 +1646,7 @@ namespace BarPromenade
             if (!terraces.IsEnabled) return;
             Color ink = GetDistrictColor(CityDistrictKind.Residential);
             DrawSolidRect(ProjectWorldRect(projection, terraces.EntryBounds), PublicPlaceLand);
+            DrawSolidRect(ProjectWorldRect(projection, terraces.LowerPassBounds), PublicPlaceLand);
             for (int index = 0; index < terraces.Floors.Count; index++)
             {
                 CityTerracePilotFloor floor = terraces.Floors[index];
@@ -1657,6 +1658,14 @@ namespace BarPromenade
                 Rect screen = ProjectWorldRect(projection, world);
                 DrawSolidRect(screen, PublicPlaceLand);
                 RetroUiTheme.StrokeRect(screen, 1f, ink);
+            }
+            Rect crossing = terraces.BridgeWorldBounds;
+            for (int dash = 0; dash < 3; dash++)
+            {
+                float first = Mathf.Lerp(crossing.xMin, crossing.xMax, dash / 3f);
+                float last = Mathf.Lerp(crossing.xMin, crossing.xMax, (dash + .55f) / 3f);
+                DrawLine(projection.WorldToScreen(new Vector3(first, 0f, crossing.center.y)),
+                    projection.WorldToScreen(new Vector3(last, 0f, crossing.center.y)), 1f, ink);
             }
             for (int index = 0; index < terraces.Flights.Count; index++)
             {
@@ -3044,7 +3053,10 @@ namespace BarPromenade
                         panel.y + 101f,
                         panel.width - 18f,
                         48f),
-                    FormatMapPointCoordinates(worldPosition),
+                    FormatMapPointCoordinates(worldPosition,
+                        controller.SelectedArea == GameAreaId.City &&
+                        CityTerraceDistrictPlan.ForLayout(controller.Layout).BridgeWorldBounds.Contains(
+                            new Vector2(worldPosition.x, worldPosition.z))),
                     centeredStyle);
                 GUI.Label(
                     new Rect(
@@ -3219,20 +3231,17 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The two coordinates a map actually has.
-        ///
-        /// The readout used to print all three, which is a debug dump rather
-        /// than a chart: height is the one number a plan view cannot show,
-        /// nobody navigates by it, and on a city whose ground is graded
-        /// everywhere it is noise beside the two that locate the point.
+        /// Ordinary map points use XZ. At a stacked crossing the height
+        /// distinguishes two reachable destinations at the same map position.
         /// </summary>
-        internal static string FormatMapPointCoordinates(Vector3 position)
+        internal static string FormatMapPointCoordinates(Vector3 position, bool includeHeight = false)
         {
             return string.Format(
                 CultureInfo.InvariantCulture,
-                LocalizationService.Get("map.point.coordinates"),
+                LocalizationService.Get(includeHeight ? "map.point.coordinates_layered" : "map.point.coordinates"),
                 NormalizeMapCoordinate(position.x),
-                NormalizeMapCoordinate(position.z));
+                NormalizeMapCoordinate(position.z),
+                NormalizeMapCoordinate(position.y));
         }
 
         private static float NormalizeMapCoordinate(float value)
@@ -3684,6 +3693,14 @@ namespace BarPromenade
                         DrawLine(start, top, width, color);
                         DrawLine(top, top + Vector2.right * run, width, color);
                     }
+                    break;
+                case CityMapPointOfInterestKind.TerraceUnderpass:
+                    DrawLine(center + new Vector2(-halfSize, -halfSize),
+                        center + new Vector2(halfSize, -halfSize), width, color);
+                    DrawLine(center + new Vector2(-halfSize, -halfSize),
+                        center + new Vector2(-halfSize, halfSize), width, color);
+                    DrawLine(center + new Vector2(halfSize, -halfSize),
+                        center + new Vector2(halfSize, halfSize), width, color);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(

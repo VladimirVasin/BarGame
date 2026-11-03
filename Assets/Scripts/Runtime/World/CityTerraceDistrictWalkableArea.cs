@@ -4,9 +4,9 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Replaces the old ground only under one terraced precinct. There is one
-    /// standing surface per XZ; this is not a stacked-floor navigation system.
-    /// The city retains its original spatial index outside this bounded site.
+    /// Bounded layered navigation for one precinct. A sweep retains the surface
+    /// identity through authored seams; collision/gravity alone move the hero Y.
+    /// Other City ground keeps its existing spatial index and semantics.
     /// </summary>
     internal sealed class CityTerraceDistrictWalkableArea : IWalkableArea
     {
@@ -17,39 +17,24 @@ namespace BarPromenade
         private readonly CityLayout layout;
         private readonly CityTerraceDistrictPlan plan;
         private readonly RoadWalkableArea city;
-        private readonly RoadWalkableArea local = new RoadWalkableArea();
+        private readonly RoadWalkableArea sockets = new RoadWalkableArea();
         private readonly Rect bounds;
+        private readonly Rect[] ownedBounds;
         private readonly RuntimeOrientedBox[] nearbySidewalks;
 
         internal CityTerraceDistrictWalkableArea(CityLayout layout, CityTerraceDistrictPlan plan, RoadWalkableArea city)
         {
             this.layout = layout; this.plan = plan; this.city = city;
-            var polygons = new List<Vector2[]>();
-            foreach (CityTerracePilotFloor floor in plan.Floors)
-                polygons.Add(WorldRectangle(floor.Bounds));
-            foreach (CityExteriorStairFlightDescriptor flight in plan.Flights)
-                polygons.Add(WorldRectangle(CityTerracePilotPlan.FlightBounds(flight)));
-            polygons.Add(CityRoadPolygon.Rectangle(plan.EntryBounds));
-            foreach (Rect throat in plan.HouseThroats) polygons.Add(CityRoadPolygon.Rectangle(throat));
-
-            // The existing street remains the physical surface outside the
-            // apron. Overlap its socket so radius erosion cannot seal the seam.
-            Rect socket = plan.EntryBounds;
-            Vector3 forward = (plan.EntryEndWorld - plan.EntryStartWorld).normalized;
-            if (Mathf.Abs(forward.x) > .5f)
-            {
-                if (forward.x > 0f) socket.xMin -= .8f; else socket.xMax += .8f;
-            }
-            else
-            {
-                if (forward.z > 0f) socket.yMin -= .8f; else socket.yMax += .8f;
-            }
-            polygons.Add(CityRoadPolygon.Rectangle(socket));
-            local.AddPolygons(polygons);
-            bounds = Rect.MinMaxRect(Mathf.Min(plan.ReservedBounds.xMin, socket.xMin) - 1f,
-                Mathf.Min(plan.ReservedBounds.yMin, socket.yMin) - 1f,
-                Mathf.Max(plan.ReservedBounds.xMax, socket.xMax) + 1f,
-                Mathf.Max(plan.ReservedBounds.yMax, socket.yMax) + 1f);
+            Rect west = plan.EntryBounds; west.xMin -= .8f;
+            Rect east = plan.LowerPassBounds; east.xMax += .8f;
+            sockets.Add(west); sockets.Add(east);
+            bounds = Rect.MinMaxRect(Mathf.Min(plan.ReservedBounds.xMin, west.xMin) - 1f,
+                Mathf.Min(plan.ReservedBounds.yMin, west.yMin) - 1f,
+                Mathf.Max(plan.ReservedBounds.xMax, east.xMax) + 1f,
+                Mathf.Max(plan.ReservedBounds.yMax, east.yMax) + 1f);
+            var owned = new List<Rect>(plan.GroundCuts);
+            owned.Add(plan.BridgeWorldBounds);
+            ownedBounds = owned.ToArray();
             var sidewalks = new List<RuntimeOrientedBox>();
             foreach (RuntimeOrientedBox sidewalk in CityStreetSurfacePlanner.CreateCourtyardPaving(layout).SidewalkGeometry)
             {
@@ -71,8 +56,9 @@ namespace BarPromenade
         public bool Contains(Vector3 position, float radius = 0f)
         {
             if (!CityTerracePilotPlan.Finite(position) || !CityTerracePilotPlan.Finite(radius) || radius < 0f) return false;
-            if (local.Contains(position, radius))
-                return plan.ContainsFootprint(new Vector2(position.x, position.z)) || city.ContainsBase(position);
+            if (plan.ContainsFootprint(new Vector2(position.x, position.z)))
+                return plan.TryResolveRuntimeSurface(position, radius, out _);
+            if (sockets.Contains(position, radius) && city.ContainsBase(position)) return true;
             if (TouchesOwnedSurface(position, radius)) return false;
             return city.ContainsBase(position, radius);
         }
@@ -80,8 +66,8 @@ namespace BarPromenade
         public Vector3 Constrain(Vector3 currentPosition, Vector3 desiredPosition, float radius = 0f)
         {
             if (!CityTerracePilotPlan.Finite(desiredPosition) || !Contains(currentPosition, radius) ||
-                !TrySurface(currentPosition, out float currentTop) ||
-                currentPosition.y < currentTop - .35f || currentPosition.y > currentTop + 2.25f)
+                !TryContact(currentPosition, radius, out CityTerraceSurfaceContact current) ||
+                currentPosition.y < current.Height - .35f || currentPosition.y > current.Height + 2.25f)
                 return currentPosition;
             Vector3 result = Sweep(currentPosition, desiredPosition, radius);
             if (PlanarSquared(result, desiredPosition) < Epsilon * Epsilon) return result;
@@ -94,21 +80,18 @@ namespace BarPromenade
         {
             Vector3 baseline = city.ClosestPointBase(position, radius);
             if (!IsNear(position, radius) && !IsNear(baseline, radius)) return baseline;
-            Vector3 terrace = local.ClosestPoint(position, radius);
-            bool hasBase = Contains(baseline, radius), hasTerrace = Contains(terrace, radius);
+            bool hasBase = Contains(baseline, radius);
+            bool hasTerrace = plan.TryClosestSurfacePoint(position, radius, out Vector3 terrace);
             if (hasBase && (!hasTerrace || PlanarSquared(baseline, position) <= PlanarSquared(terrace, position))) return baseline;
-            if (hasTerrace) return terrace;
-            Vector3 fallback = plan.LowerArrivalWorld;
-            fallback.y = position.y;
-            return Contains(fallback, radius) ? fallback : position;
+            return hasTerrace ? terrace : position;
         }
 
         private Vector3 Sweep(Vector3 start, Vector3 desired, float radius)
         {
             Vector3 delta = new Vector3(desired.x - start.x, 0f, desired.z - start.z);
             float distance = delta.magnitude;
-            if (!CityTerracePilotPlan.Finite(distance) || !TrySurface(start, out float previousTop)) return start;
-            if (distance < Epsilon) return new Vector3(start.x, desired.y, start.z);
+            if (!CityTerracePilotPlan.Finite(distance) || !TryContact(start, radius, out CityTerraceSurfaceContact previous)) return start;
+            if (distance < Epsilon) return new Vector3(start.x, SafeY(start.y, desired.y, previous), start.z);
             float length = Mathf.Min(distance, MaximumSweepSteps * SweepSpacing);
             Vector3 end = start + delta * (length / distance);
             end.y = desired.y;
@@ -117,58 +100,68 @@ namespace BarPromenade
             for (int i = 1; i <= count; i++)
             {
                 Vector3 sample = Vector3.Lerp(start, end, i / (float)count);
-                if (Allowed(sample, previousTop, radius, out float nextTop))
-                { last = sample; previousTop = nextTop; continue; }
+                if (Allowed(sample, previous, radius, out CityTerraceSurfaceContact next))
+                { last = sample; previous = next; continue; }
                 Vector3 rejected = sample;
                 for (int iteration = 0; iteration < 12; iteration++)
                 {
                     Vector3 middle = (last + rejected) * .5f;
-                    if (Allowed(middle, previousTop, radius, out nextTop)) { last = middle; previousTop = nextTop; }
+                    if (Allowed(middle, previous, radius, out next)) { last = middle; previous = next; }
                     else rejected = middle;
                 }
-                last.y = desired.y;
+                last.y = SafeY(start.y, desired.y, previous);
                 return last;
             }
+            end.y = SafeY(start.y, desired.y, previous);
             return end;
         }
 
-        private bool Allowed(Vector3 point, float previousTop, float radius, out float top)
+        private static float SafeY(float currentY, float requestedY, CityTerraceSurfaceContact support) =>
+            requestedY >= support.Height - .35f && requestedY <= support.Height + 2.25f ? requestedY : currentY;
+
+        private bool Allowed(Vector3 point, CityTerraceSurfaceContact previous, float radius,
+            out CityTerraceSurfaceContact contact)
         {
-            top = 0f;
-            return Contains(point, radius) && TrySurface(point, out top) && Mathf.Abs(top - previousTop) <= MaximumStep + Epsilon;
+            contact = default;
+            Vector2 xz = new Vector2(point.x, point.z);
+            if (plan.ContainsFootprint(xz))
+            {
+                bool found = previous.SurfaceIndex >= 0
+                    ? plan.TryAdvanceSurface(xz, previous, radius, out contact)
+                    : plan.TryResolveStandingSurface(xz, previous.Height, radius, out contact);
+                if (!found || previous.SurfaceIndex < 0 && !plan.IsStreetSurface(contact)) return false;
+            }
+            else
+            {
+                if (previous.SurfaceIndex >= 0 && !plan.IsStreetSurface(previous) ||
+                    !Contains(point, radius) || !TryContact(point, radius, out contact)) return false;
+            }
+            return Mathf.Abs(contact.Height - previous.Height) <= MaximumStep + Epsilon;
         }
 
-        private bool TrySurface(Vector3 position, out float top)
+        private bool TryContact(Vector3 position, float radius, out CityTerraceSurfaceContact contact)
         {
             var point = new Vector2(position.x, position.z);
-            if (plan.ContainsFootprint(point)) return plan.TrySampleStandingTop(point, 0f, out top);
+            if (plan.ContainsFootprint(point)) return plan.TryResolveRuntimeSurface(position, radius, out contact);
             for (int i = 0; i < nearbySidewalks.Length; i++)
-                if (nearbySidewalks[i].TrySampleTop(position, out top)) return true;
-            if (layout.ElevationPlan.TrySampleSurface(point, CitySurfaceRole.RoadTop, out top, out _)) return true;
-            return CityTerrainSurfacePlan.TrySampleGroundTop(layout, point, out top, out _);
+                if (nearbySidewalks[i].TrySampleTop(position, out float sidewalkTop))
+                { contact = new CityTerraceSurfaceContact(-1, "city-ground", sidewalkTop); return true; }
+            bool found = layout.ElevationPlan.TrySampleSurface(point, CitySurfaceRole.RoadTop, out float top, out _) ||
+                CityTerrainSurfacePlan.TrySampleGroundTop(layout, point, out top, out _);
+            contact = new CityTerraceSurfaceContact(-1, "city-ground", top);
+            return found;
         }
 
         private bool TouchesOwnedSurface(Vector3 position, float radius)
         {
-            for (int i = 0; i < plan.GroundCuts.Count; i++)
+            for (int i = 0; i < ownedBounds.Length; i++)
             {
-                Rect cut = plan.GroundCuts[i];
+                Rect cut = ownedBounds[i];
                 float dx = position.x - Mathf.Clamp(position.x, cut.xMin, cut.xMax);
                 float dz = position.z - Mathf.Clamp(position.z, cut.yMin, cut.yMax);
                 if (dx * dx + dz * dz <= radius * radius + Epsilon * Epsilon) return true;
             }
             return false;
-        }
-
-        private Vector2[] WorldRectangle(Rect rectangle)
-        {
-            Vector2[] points = CityRoadPolygon.Rectangle(rectangle);
-            for (int i = 0; i < points.Length; i++)
-            {
-                Vector3 point = plan.World(new Vector3(points[i].x, 0f, points[i].y));
-                points[i] = new Vector2(point.x, point.z);
-            }
-            return points;
         }
 
         private static float PlanarSquared(Vector3 a, Vector3 b) =>

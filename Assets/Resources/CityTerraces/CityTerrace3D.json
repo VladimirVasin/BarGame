@@ -1,6 +1,6 @@
 {
   "design_id": "city_terrace_pilot_kit_v1",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "generator": "build-city-terrace-3d-model.py",
   "coordinate_system": "Unity metres +Y up/+Z up-stair; swap YZ/reverse winding for Blender; retain full FBX wrapper units",
   "material_source": "Existing shared City concrete/wall/dark metal; no texture, light, animation or collider in source",
@@ -62,6 +62,32 @@
         10
       ],
       "top_y": 0
+    },
+    "upper_court": {
+      "size": [
+        7.6,
+        0.3,
+        10
+      ],
+      "top_y": 0
+    },
+    "bridge": {
+      "size": [
+        4.8,
+        0.35,
+        2.4
+      ],
+      "top_y": 0,
+      "support": "Span bears on the two upper-court abutments; no full-height mass below the span"
+    },
+    "passage": {
+      "size": [
+        3.0,
+        0.3,
+        21.5
+      ],
+      "top_y": 0,
+      "permitted_dimension_scaling": "Local Z only: measured sloping length / 21.5; horizontal run and width remain fixed metres"
     }
   },
   "semantic_uv_tiles_metres": {
@@ -292,6 +318,120 @@
         "Concrete"
       ],
       "maximum_triangles": 15000
+    },
+    {
+      "name": "TerraceUpperCourt",
+      "bounds_min": [
+        -3.8,
+        -0.3,
+        -5.0
+      ],
+      "bounds_max": [
+        3.8,
+        0.0,
+        5.0
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Surface",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "PavingAndBase",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 2268,
+      "geometry_signature": "ecef83454258151e711c5e6e803c8923eb26de61eb2c1e7ad624ab2d7cef12b3",
+      "renderer_count": 1,
+      "material_roles": [
+        "Concrete"
+      ],
+      "maximum_triangles": 12000
+    },
+    {
+      "name": "TerraceBridge",
+      "bounds_min": [
+        -2.4,
+        -0.35,
+        -1.2
+      ],
+      "bounds_max": [
+        2.4,
+        0.0,
+        1.2
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Surface",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "PavingAndBase",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 252,
+      "geometry_signature": "0cceb53caae76ea1b6fa8569c98ca9518cf4beb3f7f00af972568b1778660512",
+      "renderer_count": 1,
+      "material_roles": [
+        "Concrete"
+      ],
+      "maximum_triangles": 1500
+    },
+    {
+      "name": "TerracePassage",
+      "bounds_min": [
+        -1.5,
+        -0.3,
+        -10.75
+      ],
+      "bounds_max": [
+        1.5,
+        0.0,
+        10.75
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Surface",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "PavingAndBase",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 1876,
+      "geometry_signature": "698a8ca79ccb95cbeae992ef0dbb9f7ca050dcfa23e371dbb735d79fd8741d1b",
+      "renderer_count": 1,
+      "material_roles": [
+        "Concrete"
+      ],
+      "maximum_triangles": 10000
     }
   ],
   "assets": [
@@ -299,6 +439,9 @@
     "TerraceLanding.fbx",
     "TerraceRail.fbx",
     "TerraceSupport.fbx",
-    "TerraceCourt.fbx"
+    "TerraceCourt.fbx",
+    "TerraceUpperCourt.fbx",
+    "TerraceBridge.fbx",
+    "TerracePassage.fbx"
   ]
 }

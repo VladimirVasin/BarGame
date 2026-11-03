@@ -17,6 +17,8 @@ namespace BarPromenade.Tests.PlayMode
         private CityGameRoot city;
         private Scene previousScene, pilotScene;
         private readonly List<GameObject> hiddenRoots = new List<GameObject>();
+        private readonly Dictionary<Collider, bool> ambientCollisionStates = new Dictionary<Collider, bool>();
+        private CharacterController isolatedHeroCapsule;
         private GameSessionState.CheckpointSnapshot previousSession;
         private CheckpointWorldState previousWorld;
         private float previousCaptureDelta, previousTimeScale;
@@ -60,6 +62,11 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            if (isolatedHeroCapsule != null)
+                foreach (KeyValuePair<Collider, bool> pair in ambientCollisionStates)
+                    if (pair.Key != null) Physics.IgnoreCollision(isolatedHeroCapsule, pair.Key, pair.Value);
+            ambientCollisionStates.Clear();
+            isolatedHeroCapsule = null;
             if (root != null) Object.Destroy(root.gameObject);
             // Live City owners use scene-unload lifecycle guards. Unloading
             // below must own their destruction, rather than an earlier root
@@ -134,6 +141,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Vector3.Distance(world.position, plan.Origin), Is.LessThan(.001f));
             Assert.That(Quaternion.Angle(world.rotation, plan.Rotation), Is.LessThan(.01f));
             Assert.That(plan.EntryGradePercent, Is.LessThanOrEqualTo(8.3f));
+            Assert.That(plan.LowerPassGradePercent, Is.LessThanOrEqualTo(8.3f));
             int openLots = 0, houses = 0;
             foreach (BuildingLot lot in city.Layout.BuildingLots)
             {
@@ -151,8 +159,15 @@ namespace BarPromenade.Tests.PlayMode
                 .GetMethod("ExportCurrent", System.Type.EmptyTypes).Invoke(null, null);
 #endif
             AssertDistrictSurfaces(plan, world);
-            AssertNoOldNpcLinks(plan);
+            AssertPedestrianLayerContacts(plan);
+            // This fixture follows exact authored centre-lines rather than
+            // steering around an ambient walker. Keep the population running
+            // and its world contacts; isolate only hero/walker collision pairs.
+            isolatedHeroCapsule = city.Player.Motor.GetComponent<CharacterController>();
+            IsolateAmbientCollisionPairs();
             AssertDistrictMap(plan);
+            AssertStackedCrossingBoundaries(plan);
+            AssertCrossingRainShelter(plan);
             city.Player.Motor.SetInputEnabled(false);
             city.Player.Interactor.SetInputEnabled(false);
             PlayerCameraFollow follow = city.Camera.GetComponent<PlayerCameraFollow>();
@@ -169,19 +184,29 @@ namespace BarPromenade.Tests.PlayMode
                 plan.World(new Vector3(0f, 4f, 7f)));
             yield return WalkCityRoute(new[] { street, plan.EntryStartWorld, plan.EntryEndWorld, plan.LowerArrivalWorld },
                 false, "street-entry", plan);
+            Vector3 eastStreet = plan.LowerPassEndWorld + Vector3.right * .5f;
+            Assert.That(city.Layout.ElevationPlan.TrySampleSurface(new Vector2(eastStreet.x, eastStreet.z),
+                CitySurfaceRole.RoadTop, out float eastStreetTop, out _), Is.True);
+            eastStreet.y = eastStreetTop;
+            IReadOnlyList<Vector3> lowerPass = new[] { plan.LowerArrivalWorld, plan.LowerPassStartWorld,
+                plan.LowerCrossingWorld, plan.LowerPassEndWorld, eastStreet };
+            yield return WalkCityRoute(lowerPass, false, "lower-pass-out", plan);
+            yield return WalkCityRoute(lowerPass, true, "lower-pass-return", plan);
             IReadOnlyList<Vector3> west = DistrictRoute(plan, plan.Pilot.WestRoute);
             IReadOnlyList<Vector3> east = DistrictRoute(plan, plan.Pilot.EastRoute);
             yield return WalkCityRoute(west, false, "west-up", plan, -1);
             CaptureCity("live-02-upper-court", plan.World(new Vector3(-6f, 10.8f, 24f)),
                 plan.World(new Vector3(-13f, 3.84f, 2f)));
-            yield return WalkCityRoute(west, true, "west-down", plan);
-            yield return WalkCityRoute(east, false, "east-up", plan, 1);
+            // Crossing from one stair route to the other traverses the whole
+            // upper deck. The return loop crosses it in the opposite direction.
             yield return WalkCityRoute(east, true, "east-down", plan);
+            yield return WalkCityRoute(east, false, "east-up", plan, 1);
+            yield return WalkCityRoute(west, true, "west-down", plan);
             yield return WalkCityRoute(new[] { plan.LowerArrivalWorld, plan.EntryEndWorld, plan.EntryStartWorld, street },
                 false, "street-return", plan);
             CaptureCity("live-03-residential-section", plan.World(new Vector3(17f, 6.5f, 9f)),
                 plan.World(new Vector3(13.04f, 5.4f, -5f)));
-            Debug.Log("Live terrace verification completed: street, both round trips, physical surfaces and upper map arrival.");
+            Debug.Log("Live terrace verification completed: street, lower passage, both upper loops, layered contacts, camera, rain and map arrivals.");
         }
 
         private IEnumerator WalkCityRoute(IReadOnlyList<Vector3> route, bool reverse, string name,
@@ -200,6 +225,7 @@ namespace BarPromenade.Tests.PlayMode
                     Mathf.CeilToInt(Vector3.Distance(motor.transform.position, target) / (2.6f * FrameSeconds)) + 60);
                 for (int frame = 0; frame < limit && !arrived; frame++)
                 {
+                    IsolateAmbientCollisionPairs();
                     Vector3 before = motor.transform.position;
                     arrived = motor.MoveTowardsApproachWaypoint(target, .035f, FrameSeconds);
                     yield return null;
@@ -214,10 +240,25 @@ namespace BarPromenade.Tests.PlayMode
                     }
                     Assert.That(presentation.LeftFootGround.HasSurface || presentation.RightFootGround.HasSurface,
                         Is.True, name + " lost both foot probes.");
+                    AssertFootNearActor(presentation.LeftFootGround, position.y, name + " left foot");
+                    AssertFootNearActor(presentation.RightFootGround, position.y, name + " right foot");
                 }
+                if (!arrived) LogBlockedRoute(name, target, capsule, plan);
                 Assert.That(arrived, Is.True, name + " blocked by navigation or an old fence/prop at " +
                     motor.transform.position + " toward " + target);
                 Assert.That(motor.transform.position.y, Is.EqualTo(target.y).Within(.20f));
+                if (name == "lower-pass-out" && index == 2)
+                {
+                    yield return AssertCrossingContactAndCamera(plan, false);
+                    CaptureCity("live-05-underpass", plan.LowerCrossingWorld + new Vector3(-3.5f, 1.65f, .35f),
+                        plan.UpperCrossingWorld + Vector3.up * .1f);
+                }
+                if (name == "west-up" && index == route.Count - 1)
+                {
+                    yield return AssertCrossingContactAndCamera(plan, true);
+                    CaptureCity("live-06-upper-crossing", plan.UpperCrossingWorld + new Vector3(.4f, 2.1f, -4.5f),
+                        plan.LowerCrossingWorld + new Vector3(3f, 1f, 0f));
+                }
                 if (residenceSide != 0 && index == 7)
                 {
                     if (residenceSide < 0)
@@ -242,6 +283,174 @@ namespace BarPromenade.Tests.PlayMode
                 if ((corner & 3) == 3) Debug.Log("Live terrace " + name + " corner " + index);
             }
             motor.CancelInteractionPoseMove();
+        }
+
+        private void IsolateAmbientCollisionPairs()
+        {
+            if (isolatedHeroCapsule == null || city == null || city.Pedestrians == null) return;
+            foreach (CityPedestrianActor actor in city.Pedestrians.Actors)
+            {
+                Collider body = actor != null ? actor.CharacterController : null;
+                if (body == null) continue;
+                if (!ambientCollisionStates.ContainsKey(body))
+                    ambientCollisionStates.Add(body, Physics.GetIgnoreCollision(isolatedHeroCapsule, body));
+                // Pooled bodies can be enabled later. Refresh the scoped pair
+                // immediately before the fixture moves, without stopping NPCs.
+                if (body.enabled && body.gameObject.activeInHierarchy &&
+                    !Physics.GetIgnoreCollision(isolatedHeroCapsule, body))
+                    Physics.IgnoreCollision(isolatedHeroCapsule, body, true);
+            }
+        }
+
+        private void LogBlockedRoute(string route, Vector3 target, CharacterController capsule, CityTerraceDistrictPlan plan)
+        {
+            Vector3 current = capsule.transform.position;
+            Vector3 direction = target - current; direction.y = 0f;
+            Vector3 desired = current + direction.normalized * .15f;
+            Vector3 constrained = city.World.WalkableArea.Constrain(current, desired, capsule.radius);
+            var text = new System.Text.StringBuilder("Terrace blocked diagnostics: ");
+            text.Append(route).Append(" current=").Append(current.ToString("F3"))
+                .Append(" desired=").Append(desired.ToString("F3"))
+                .Append(" constrained=").Append(constrained.ToString("F3"))
+                .Append(" flags=").Append(capsule.collisionFlags);
+            if (plan.TryResolveStandingSurface(new Vector2(current.x, current.z), current.y,
+                capsule.radius, out CityTerraceSurfaceContact contact))
+                text.Append(" surface=").Append(contact.SurfaceId).Append('@').Append(contact.Height.ToString("F3"));
+            else text.Append(" surface=none");
+            Vector3 center = capsule.transform.TransformPoint(capsule.center);
+            float halfLine = Mathf.Max(0f, capsule.height * .5f - capsule.radius) * Mathf.Abs(capsule.transform.lossyScale.y);
+            float radius = capsule.radius * Mathf.Max(Mathf.Abs(capsule.transform.lossyScale.x), Mathf.Abs(capsule.transform.lossyScale.z));
+            var seen = new HashSet<Collider>();
+            foreach (Vector3 offset in new[] { Vector3.zero, desired - current })
+                foreach (Collider hit in Physics.OverlapCapsule(center + offset + Vector3.up * halfLine,
+                    center + offset - Vector3.up * halfLine, radius + .08f, ~0, QueryTriggerInteraction.Ignore))
+                {
+                    if (hit == null || hit.transform.IsChildOf(capsule.transform) || !seen.Add(hit) || seen.Count > 24) continue;
+                    text.Append(" | ").Append(hit.name).Append('(').Append(hit.GetType().Name).Append(") parent=")
+                        .Append(hit.transform.parent != null ? hit.transform.parent.name : "<root>")
+                        .Append(" bounds=").Append(hit.bounds.ToString("F3"))
+                        .Append(" ignored=").Append(Physics.GetIgnoreCollision(capsule, hit));
+                }
+            Debug.Log(text.ToString());
+        }
+
+        private static void AssertFootNearActor(FootGroundSample sample, float rootY, string context)
+        {
+            if (!sample.HasSurface) return;
+            Assert.That(sample.HeelY - rootY, Is.InRange(-.40f, .33f), context + " chose another storey.");
+            if (sample.HasToeSurface)
+                Assert.That(sample.ToeY - rootY, Is.InRange(-.40f, .33f), context + " toe chose another storey.");
+        }
+
+        private void AssertStackedCrossingBoundaries(CityTerraceDistrictPlan plan)
+        {
+            Vector3 lower = plan.LowerCrossingWorld + Vector3.up * PlayerFactory.GroundedRootOffset;
+            Vector3 upper = plan.UpperCrossingWorld + Vector3.up * PlayerFactory.GroundedRootOffset;
+            Assert.That(new Vector2(lower.x, lower.z), Is.EqualTo(new Vector2(upper.x, upper.z)));
+            Assert.That(upper.y - lower.y, Is.GreaterThan(3f), "The lower alley needs a real clearance beneath the crossing.");
+            IWalkableArea area = city.World.WalkableArea;
+            float radius = city.Player.Motor.GetComponent<CharacterController>().radius;
+            Vector2 crossing = new Vector2(lower.x, lower.z);
+            Assert.That(plan.TryResolveStandingSurface(crossing, lower.y, radius, out CityTerraceSurfaceContact lowerContact), Is.True);
+            Assert.That(plan.TryResolveStandingSurface(crossing, upper.y, radius, out CityTerraceSurfaceContact upperContact), Is.True);
+            Assert.That(lowerContact.SurfaceId, Is.EqualTo("lower-pass"));
+            Assert.That(upperContact.SurfaceId, Is.EqualTo("upper-bridge"));
+            Assert.That(lowerContact.Height, Is.EqualTo(plan.LowerCrossingWorld.y).Within(.005f));
+            Assert.That(upperContact.Height, Is.EqualTo(plan.UpperCrossingWorld.y).Within(.005f));
+            Assert.That(area.Contains(lower, radius), Is.True, "The lower floor is independently navigable.");
+            Assert.That(area.Contains(upper, radius), Is.True, "The upper floor is independently navigable.");
+            Assert.That(area.Contains((lower + upper) * .5f, radius), Is.False, "Air between storeys is not a third floor.");
+            Assert.That(plan.TryGetSurfaceHeight(lower, out float lowerTop), Is.True);
+            Assert.That(plan.TryGetSurfaceHeight(upper, out float upperTop), Is.True);
+            Assert.That(lowerTop, Is.EqualTo(plan.LowerCrossingWorld.y).Within(.005f));
+            Assert.That(upperTop, Is.EqualTo(plan.UpperCrossingWorld.y).Within(.005f));
+
+            // The lower alley runs along world X; the upper bridge crosses it
+            // along world Z. A long move cannot borrow the other floor's mask.
+            Vector3 acrossLowerWall = area.Constrain(lower, lower + Vector3.forward * 4f, radius);
+            Assert.That(acrossLowerWall.z - lower.z, Is.LessThan(1.6f), "Lower motion escaped through an upper platform.");
+            Vector3 overUpperEdge = area.Constrain(upper, upper + Vector3.right * 4f, radius);
+            Assert.That(overUpperEdge.x - upper.x, Is.LessThan(1.3f), "Upper motion borrowed the alley below the bridge edge.");
+        }
+
+        private void AssertCrossingRainShelter(CityTerraceDistrictPlan plan)
+        {
+            Collider shelter = null;
+            Vector3 below = plan.LowerCrossingWorld + Vector3.up * 1.6f;
+            Vector3 above = plan.UpperCrossingWorld + Vector3.up * .1f;
+            foreach (Collider candidate in city.Rain.LocalShelters)
+            {
+                if (candidate == null) continue;
+                Assert.That(candidate.bounds.Contains(above), Is.False, "The exposed upper path must retain rain.");
+                if (candidate.bounds.Contains(below)) shelter = candidate;
+            }
+            Assert.That(shelter, Is.Not.Null, "The shared rain field needs a bounded volume under the deck.");
+            Assert.That(shelter.isTrigger, Is.True);
+            Assert.That(shelter.gameObject.layer, Is.EqualTo(LayerMask.NameToLayer("Ignore Raycast")));
+            Assert.That(shelter.bounds.max.y, Is.LessThanOrEqualTo(plan.UpperCrossingWorld.y + .001f));
+            Assert.That(shelter.bounds.Contains(plan.LowerPassStartWorld + Vector3.up * 1.6f), Is.False,
+                "The entrance and exposed alley must not become globally sheltered.");
+        }
+
+        private IEnumerator AssertCrossingContactAndCamera(CityTerraceDistrictPlan plan, bool upper)
+        {
+            for (int frame = 0; frame < 4; frame++) yield return null;
+            float expectedTop = upper ? plan.UpperCrossingWorld.y : plan.LowerCrossingWorld.y;
+            var presentation = (Player3DCharacterPresentation)city.Player.Visual;
+            foreach (FootGroundSample sample in new[] { presentation.LeftFootGround, presentation.RightFootGround })
+            {
+                Assert.That(sample.HasSurface, Is.True, "Both feet need support at the layered crossing.");
+                Assert.That(sample.HeelY, Is.EqualTo(expectedTop).Within(.12f));
+                if (sample.HasToeSurface) Assert.That(sample.ToeY, Is.EqualTo(expectedTop).Within(.12f));
+            }
+            Vector3 rootPosition = city.Player.Motor.transform.position;
+            Assert.That(Physics.Raycast(rootPosition + Vector3.up * .3f, Vector3.down, out RaycastHit ground,
+                .6f, ~(1 << FootProbeSurface.LayerIndex), QueryTriggerInteraction.Ignore), Is.True);
+            Assert.That(ground.point.y, Is.EqualTo(expectedTop).Within(.03f));
+
+            PlayerCameraFollow follow = city.Camera.GetComponent<PlayerCameraFollow>();
+            float previousPitch = follow.TargetOrbitPitch;
+            bool cinematic = follow.CinematicMotionEnabled;
+            float yawChange = Mathf.DeltaAngle(city.Camera.transform.eulerAngles.y, 90f);
+            try
+            {
+                follow.SetCinematicMotionEnabled(false);
+                follow.RotateYaw(yawChange);
+                follow.Snap();
+                yield return null;
+                AssertCameraClearance(follow);
+                AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "CityTerracePilot",
+                    upper ? "live-08-upper-game-camera" : "live-07-underpass-game-camera", 1280, 720);
+                if (!upper)
+                {
+                    Assert.That(Physics.Raycast(rootPosition + Vector3.up * 1.6f, Vector3.up, out RaycastHit roof,
+                        plan.UpperCrossingWorld.y - rootPosition.y,
+                        ~(1 << FootProbeSurface.LayerIndex), QueryTriggerInteraction.Ignore), Is.True,
+                        "The traversable lower floor must have a physical deck above it.");
+                    Assert.That(roof.normal.y, Is.LessThan(-.9f));
+                    follow.RotatePitch(follow.MaximumOrbitPitch - follow.TargetOrbitPitch);
+                    follow.Snap();
+                    yield return null;
+                    AssertCameraClearance(follow);
+                    Assert.That(city.Camera.transform.position.y + .2f, Is.LessThan(roof.point.y - .01f),
+                        "The standard camera sphere must stay under the bridge while looking down.");
+                }
+            }
+            finally
+            {
+                follow.RotateYaw(-yawChange);
+                follow.RotatePitch(previousPitch - follow.TargetOrbitPitch);
+                follow.SetCinematicMotionEnabled(cinematic);
+                follow.Snap();
+            }
+        }
+
+        private void AssertCameraClearance(PlayerCameraFollow follow)
+        {
+            Vector3 lens = city.Camera.transform.position;
+            foreach (Collider hit in Physics.OverlapSphere(lens, .19f, follow.CollisionLayerMask, QueryTriggerInteraction.Ignore))
+                Assert.That(hit.transform.IsChildOf(city.Player.GameObject.transform), Is.True,
+                    "The ordinary camera entered " + hit.name + " at " + lens);
         }
 
         private void AssertDistrictSurfaces(CityTerraceDistrictPlan plan, Transform world)
@@ -285,33 +494,48 @@ namespace BarPromenade.Tests.PlayMode
         {
             var ground = new CityMapCityTeleportGround(city.Layout);
             Vector3 upper = plan.UpperArrivalWorld;
-            Assert.That(ground.TryResolveStandingPosition(new Vector2(upper.x, upper.z), out Vector3 arrival), Is.True);
+            Assert.That(ground.TryClampArrival(upper + Vector3.up * PlayerFactory.GroundedRootOffset,
+                out Vector3 arrival), Is.True);
             Assert.That(Vector3.Distance(arrival, upper + Vector3.up * PlayerFactory.GroundedRootOffset), Is.LessThan(.01f));
-            Assert.That(ground.TryClampArrival(new Vector3(upper.x, 0f, upper.z), out Vector3 clamped), Is.True);
-            Assert.That(clamped.y, Is.EqualTo(arrival.y).Within(.01f), "A stale marker must not return the hero under the upper court.");
+            foreach (Vector3 point in new[] { plan.LowerCrossingWorld, plan.UpperCrossingWorld })
+            {
+                Vector3 requested = point + Vector3.up * PlayerFactory.GroundedRootOffset;
+                Assert.That(ground.TryClampArrival(requested + Vector3.up * .1f, out Vector3 clamped), Is.True);
+                Assert.That(Vector3.Distance(clamped, requested), Is.LessThan(.01f),
+                    "An authored arrival at a shared XZ must retain its own supported level.");
+            }
             bool inspection = city.Map.MapPointInspectionEnabled;
             try
             {
                 city.Map.SetMapPointInspectionEnabled(true);
-                int marker = -1;
-                for (int i = 0; i < city.Map.ActiveMapPoints.Count; i++)
-                    if (city.Map.ActiveMapPoints[i].StableId == "city:poi:terrace-courts") marker = i;
-                Assert.That(marker, Is.GreaterThanOrEqualTo(0));
-                Assert.That(city.Map.SelectMapPoint(marker), Is.True);
-                Assert.That(city.Map.TryGetSelectedMapPoint(out CityMapPointDescriptor _, out Vector3 selected), Is.True);
-                Assert.That(Vector3.Distance(selected, arrival), Is.LessThan(.01f));
+                foreach (var expected in new[] {
+                    (Id: "city:poi:terrace-courts", Position: arrival),
+                    (Id: "city:poi:terrace-underpass", Position: plan.LowerCrossingWorld + Vector3.up * PlayerFactory.GroundedRootOffset) })
+                {
+                    int marker = -1;
+                    for (int i = 0; i < city.Map.ActiveMapPoints.Count; i++)
+                        if (city.Map.ActiveMapPoints[i].StableId == expected.Id) marker = i;
+                    Assert.That(marker, Is.GreaterThanOrEqualTo(0), expected.Id);
+                    Assert.That(city.Map.SelectMapPoint(marker), Is.True);
+                    Assert.That(city.Map.TryGetSelectedMapPoint(out CityMapPointDescriptor _, out Vector3 selected), Is.True);
+                    Assert.That(Vector3.Distance(selected, expected.Position), Is.LessThan(.01f), expected.Id);
+                }
             }
             finally { city.Map.SetMapPointInspectionEnabled(inspection); }
         }
 
-        private void AssertNoOldNpcLinks(CityTerraceDistrictPlan terrace)
+        private void AssertPedestrianLayerContacts(CityTerraceDistrictPlan terrace)
         {
             CityPedestrianPlan pedestrians = city.PedestrianPlan;
             Assert.That(pedestrians.Links.Count, Is.GreaterThan(0), "The neighbouring population graph must remain active.");
+            int lowerNode = -1, upperNode = -1;
+            Vector2 crossing = new Vector2(terrace.UpperCrossingWorld.x, terrace.UpperCrossingWorld.z);
             foreach (CityPedestrianLink link in pedestrians.Links)
             {
                 Vector3 first = pedestrians.Nodes[link.FirstNodeIndex].Position;
                 Vector3 last = pedestrians.Nodes[link.SecondNodeIndex].Position;
+                if (link.Path == null && new Vector2(first.x - last.x, first.z - last.z).sqrMagnitude < .0001f)
+                    Assert.That(Mathf.Abs(first.y - last.y), Is.LessThan(.28f), link.Id + " directly joins different storeys.");
                 int segments = link.Path != null ? link.Path.Vertices.Count - 1 : 1;
                 for (int segment = 0; segment < segments; segment++)
                 {
@@ -319,18 +543,46 @@ namespace BarPromenade.Tests.PlayMode
                     Vector2 b = link.Path != null ? link.Path.Vertices[segment + 1] : new Vector2(last.x, last.z);
                     Rect span = Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y),
                         Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
-                    if (!span.Overlaps(terrace.ReservedBounds)) continue;
+                    if (!span.Overlaps(terrace.ReservedBounds) && !span.Overlaps(terrace.LowerPassBounds)) continue;
                     int samples = Mathf.Max(1, Mathf.CeilToInt(Vector2.Distance(a, b) / .1f));
+                    float previousY = 0f;
+                    bool previousOwned = false;
                     for (int sample = 0; sample <= samples; sample++)
                     {
                         Vector2 point = Vector2.Lerp(a, b, sample / (float)samples);
-                        foreach (Rect cut in terrace.GroundCuts)
-                            if (point.x > cut.xMin + .002f && point.x < cut.xMax - .002f &&
-                                point.y > cut.yMin + .002f && point.y < cut.yMax - .002f)
-                                Assert.Fail("Old NPC link " + link.Id + " still crosses replaced terrace ground at " + point);
+                        if (!terrace.ContainsFootprint(point)) { previousOwned = false; continue; }
+                        float amount = link.Path != null ? link.Path.Project(point).DistanceAlong / link.Path.Length
+                            : sample / (float)samples;
+                        float height = link.PathHeightSampler != null ? link.PathHeightSampler(point) : Mathf.Lerp(first.y, last.y, amount);
+                        Vector3 standing = new Vector3(point.x, height, point.y);
+                        Assert.That(terrace.TryGetSurfaceHeight(standing, out float top), Is.True,
+                            link.Id + " selects no supported terrace layer at " + standing);
+                        Assert.That(height, Is.EqualTo(top).Within(.08f), link.Id + " remains on replaced ground.");
+                        if (previousOwned) Assert.That(Mathf.Abs(height - previousY), Is.LessThanOrEqualTo(.28f),
+                            link.Id + " jumps between floors.");
+                        previousY = height; previousOwned = true;
+                        if (Vector2.Distance(point, crossing) > .15f) continue;
+                        if (Mathf.Abs(height - terrace.LowerCrossingWorld.y) < .08f) lowerNode = link.FirstNodeIndex;
+                        if (Mathf.Abs(height - terrace.UpperCrossingWorld.y) < .08f) upperNode = link.FirstNodeIndex;
                     }
                 }
             }
+            Assert.That(lowerNode, Is.GreaterThanOrEqualTo(0), "The NPC graph needs a supported lower route.");
+            Assert.That(upperNode, Is.GreaterThanOrEqualTo(0), "The NPC graph needs a separate supported upper route.");
+            Assert.That(upperNode, Is.Not.EqualTo(lowerNode), "Coincident XZ must not merge the two floors' nodes.");
+            var pending = new Queue<int>();
+            var visited = new HashSet<int> { lowerNode };
+            pending.Enqueue(lowerNode);
+            while (pending.Count > 0)
+            {
+                int node = pending.Dequeue();
+                foreach (int linkIndex in pedestrians.GetLinkIndices(node))
+                {
+                    int other = pedestrians.Links[linkIndex].Other(node);
+                    if (visited.Add(other)) pending.Enqueue(other);
+                }
+            }
+            Assert.That(visited.Contains(upperNode), Is.True, "The two NPC levels must connect through the physical stair loop.");
         }
 
         private static IReadOnlyList<Vector3> DistrictRoute(CityTerraceDistrictPlan plan, IReadOnlyList<Vector3> local)

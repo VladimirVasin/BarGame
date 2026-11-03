@@ -37,7 +37,7 @@ Checks OK;frames.
 - City/балкон:ночью бледнее;густой туман/ветер;город у КПП.
   CityNightSaturation/CityFogCheckpoint.
 - Сутки ×2. GameTimeStateTests.
-- City:лестничные дворы7,68м/два пути,жилые дома/вход/карта.
+- City:мост/нижний проход;два яруса героя/NPC/карты,дождь/камера.
   LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap/
   ImageGenCityMap_PreservesPlanAndLivePlaces passed;frames reviewed.
 

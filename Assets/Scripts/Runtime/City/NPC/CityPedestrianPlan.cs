@@ -202,11 +202,13 @@ namespace BarPromenade
             IList<CityPedestrianLink> sourceLinks,
             IList<CityPedestrianSpawnAnchor> sourceSpawnAnchors,
             IList<Rect> sourceNavigationRectangles,
-            IList<Vector2[]> sourceNavigationPolygons = null)
+            IList<Vector2[]> sourceNavigationPolygons = null,
+            CityLayout terraceLayout = null)
         {
             LayoutSeed = layoutSeed;
             PopulationSeed = populationSeed;
             StableSeed = stableSeed;
+            TerraceLayout = terraceLayout;
             if (!IsFinite(agentRadius) || agentRadius <= 0f)
             {
                 throw new ArgumentOutOfRangeException(nameof(agentRadius));
@@ -282,6 +284,9 @@ namespace BarPromenade
         public int PopulationSeed { get; }
         public uint StableSeed { get; }
         public float AgentRadius { get; }
+        // Only the production City retains this bounded layered extension.
+        // Transformed Home context and synthetic graphs keep their own masks.
+        internal CityLayout TerraceLayout { get; }
         public IReadOnlyList<CityPedestrianNode> Nodes => nodes;
         public IReadOnlyList<CityPedestrianLink> Links => links;
         public IReadOnlyList<CityPedestrianSpawnAnchor> SpawnAnchors =>
