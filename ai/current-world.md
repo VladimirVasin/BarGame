@@ -2588,12 +2588,12 @@ cemetery:own interiors/returns.
   `2.5 s`. Dressing starts immediately with that return and lasts `2 s`;
   lid closure waits until the camera is back.
   The lens passes the empty opening before seating and after the body rises.
-  `HomeToiletActorPresentation` samples nine independent Hero V2 clips;
-  `HomeToiletSeatedAppearance` owns ten skinned lower-body/garment renderers
-  and five `Lowered` shapes, using the production bones and garment proxies
-  that follow those bones. Bare pieces derive from anatomy, fabric pieces from
-  the separate trousers; the selected trousers supply their shared appearance.
-  Original garment endpoints, outfit and renderer flags restore.
+  `HomeToiletActorPresentation`: nine V2 clips. `HomeToiletSeatedAppearance`:
+  ten skinned lower-body/garment renderers, five `Lowered` shapes, production
+  bones/fabric proxies; bare anatomy and selected trousers supply skin/fabric.
+  Hero-only extras reuse `HomeToiletAction`'s `Anatomy`/`ScrotumLeft`/`ScrotumRight`
+  and shared skin, following the measured bare pelvis bone. Raised trousers/
+  completion/cancel/disable hide them; garment endpoints/outfit/flags restore.
   `HomeToiletBowelEffect` starts visible emission at seated `0.5 s`, releases
   at `1.05 s`, falls ballistically through air and slows under water. One
   contact produces a ripple, splash, bubbles and sound. The solid approaches

@@ -6484,17 +6484,17 @@
   the initial camera-only limits below on seating, clothing, lower anatomy,
   defecation, its water impact and local presentation light.
 
-  In both toilet branches the production hero's real hand visibly takes
-  the lid, opens it and later closes it. The large branch lowers his
-  trousers, seats the same hero over the real opening and presents lower
-  anatomy compatible with his body and proportions. Excrement visibly
-  separates from that anatomy and falls toward the underwater lens, with
-  a water impact and the scoped underwater background. The camera crosses
-  the empty opening before the hero completes sitting; the return crosses
-  it after he rises. Ordinary cancellation first makes that path clear
-  through the same visible bodily exit, then returns the camera, restores
-  clothing and closes the lid. Scene teardown still uses immediate,
-  idempotent owned cleanup.
+  Both branches visibly open/close the lid with the hero's real
+  hand. The large branch lowers trousers and seats him over the real opening
+  with proportionate anatomy. Hero-only extras reuse `HomeToiletAction`'s
+  `Anatomy`/`ScrotumLeft`/`ScrotumRight` and shared skin, attached to the measured
+  bare pelvis and following its bone; raised trousers/completion/cancel/disable
+  hide them. Excrement visibly
+  separates and falls toward the underwater lens, with water impact and scoped
+  underwater background. The camera crosses the empty opening before seating
+  and after rising. Ordinary cancellation clears that path through the visible
+  bodily exit, returns camera/clothing and closes the lid. Scene teardown uses
+  immediate idempotent cleanup.
 
   `HomeToiletActorPresentation` samples the independent Hero V2
   `HomeToiletSeatedActions` bank: nine authored in-place clips, `2 s`

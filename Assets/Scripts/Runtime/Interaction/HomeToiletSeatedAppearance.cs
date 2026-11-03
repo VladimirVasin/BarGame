@@ -46,6 +46,15 @@ namespace BarPromenade
         private Transform rightKnee;
         private Vector3 outletInPelvis;
         private Quaternion outletRotationInPelvis;
+        private Transform anatomyRoot;
+        private Transform anatomyAim;
+        private Vector3 anatomyBaseInPelvis;
+        private Quaternion anatomyFrameInPelvis;
+        private readonly List<Renderer> anatomyRenderers = new List<Renderer>(4);
+
+        // The lowered waistband clears the hanging meshes before they are
+        // revealed; the raised costume must never have anatomy through it.
+        public const float AnatomyRevealTrousersDown = .35f;
 
         public Transform Outlet { get; private set; }
         public bool IsActive { get; private set; }
@@ -53,6 +62,8 @@ namespace BarPromenade
         public float TrousersDown { get; private set; }
         public float OuterwearLiftWeight => IsActive && outerwearPelvisProxy != null ? TrousersDown : 0f;
         public IReadOnlyList<Renderer> Renderers => renderers;
+        public Transform AnatomyRoot => anatomyRoot;
+        public IReadOnlyList<Renderer> AnatomyRenderers => anatomyRenderers;
 
         public void Initialize(HomeInteriorRoot value) => Initialize(BathroomInteractionHost.FromHome(value));
 
@@ -271,6 +282,7 @@ namespace BarPromenade
                     beltSourceByReplacement.Add(pair.Key, pair.Value.Renderer);
                 }
                 PrepareOuterwearLift();
+                if (registry != null) PrepareAnatomy();
                 module.SetActive(false);
                 return true;
             }
@@ -382,11 +394,19 @@ namespace BarPromenade
             }
             Outlet.SetPositionAndRotation(pelvis.TransformPoint(outletInPelvis),
                 pelvis.rotation * outletRotationInPelvis);
+            if (anatomyRoot != null)
+            {
+                Vector3 attachment = pelvis.TransformPoint(anatomyBaseInPelvis);
+                anatomyRoot.SetPositionAndRotation(attachment, pelvis.rotation * anatomyFrameInPelvis);
+                anatomyRoot.position += attachment - anatomyAim.position;
+                anatomyRoot.gameObject.SetActive(TrousersDown >= AnatomyRevealTrousersDown);
+            }
         }
 
         public void End()
         {
             if (module != null) module.SetActive(false);
+            if (anatomyRoot != null) anatomyRoot.gameObject.SetActive(false);
             foreach (GarmentLiftPart part in outerwearLift)
                 if (part.Renderer != null) part.Renderer.bones = part.OriginalBones;
             foreach (Snapshot snapshot in snapshots) snapshot.Restore();
@@ -405,6 +425,13 @@ namespace BarPromenade
         public void ReleasePrepared() { End(); ReleaseModule(); }
         private void ReleaseModule()
         {
+            if (anatomyRoot != null)
+            {
+                anatomyRoot.gameObject.SetActive(false);
+                if (Application.isPlaying) Destroy(anatomyRoot.gameObject); else DestroyImmediate(anatomyRoot.gameObject);
+            }
+            anatomyRoot = anatomyAim = null;
+            anatomyRenderers.Clear();
             if (module != null)
             {
                 if (Application.isPlaying) Destroy(module); else DestroyImmediate(module);
@@ -414,6 +441,86 @@ namespace BarPromenade
             jointShapes.Clear(); jointDeformation = null;
             meshBindings = null; npcPigmentUv.Clear();
             outerwearLift.Clear(); outerwearPelvisProxy = null;
+        }
+
+        private void PrepareAnatomy()
+        {
+            Player3DMeshBinding skin = FindBodySource("GEO_Pelvis");
+            Player3DMeshBinding skinPalette = null;
+            foreach (Player3DMeshBinding binding in meshBindings)
+                if (binding?.Renderer != null && binding.PaletteMaterialName == Player3DBathingAppearance.SkinMaterialName)
+                { skinPalette = binding; break; }
+            if (!(skin?.Renderer is SkinnedMeshRenderer bare) || skinPalette?.Renderer.sharedMaterial == null)
+                throw new InvalidOperationException("The seated anatomy requires the production pelvis and skin.");
+
+            Transform actor = home.Player.GameObject.transform;
+            var sample = new Mesh();
+            try
+            {
+                bare.BakeMesh(sample, true);
+                float height = actor.InverseTransformPoint(registry.Anchors.Pelvis.position).y +
+                    HomeToiletFirstPersonView.AnatomyHeightAbovePelvis;
+                float front = float.NegativeInfinity;
+                foreach (Vector3 vertex in sample.vertices)
+                {
+                    Vector3 local = actor.InverseTransformPoint(bare.transform.TransformPoint(vertex));
+                    if (Mathf.Abs(local.y - height) <= .04f) front = Mathf.Max(front, local.z);
+                }
+                if (float.IsInfinity(front))
+                    throw new InvalidOperationException("The seated anatomy attachment has no measured bare pelvis surface.");
+                anatomyBaseInPelvis = pelvis.InverseTransformPoint(actor.TransformPoint(new Vector3(0, height, front - .008f)));
+                anatomyFrameInPelvis = Quaternion.Inverse(pelvis.rotation) * actor.rotation;
+            }
+            finally
+            {
+                if (Application.isPlaying) Destroy(sample); else DestroyImmediate(sample);
+            }
+
+            anatomyRoot = new GameObject("Home Toilet Seated Anatomy").transform;
+            anatomyRoot.SetParent(appearanceFrame, false);
+            anatomyRoot.gameObject.SetActive(false);
+            Transform shaft = CreateAnatomyPart("Anatomy", Vector3.zero,
+                HomeToiletFirstPersonView.RestAimPitchDegrees);
+            CreateAnatomyPart("ScrotumLeft", HomeToiletFirstPersonView.LeftScrotumAttachment,
+                HomeShowerWashPose.ScrotumRestPitchDegrees);
+            CreateAnatomyPart("ScrotumRight", HomeToiletFirstPersonView.RightScrotumAttachment,
+                HomeShowerWashPose.ScrotumRestPitchDegrees);
+            foreach (Transform anchor in shaft.GetComponentsInChildren<Transform>(true))
+                if (anchor.name == "AimPivot") { anatomyAim = anchor; break; }
+            if (anatomyAim == null) throw new InvalidOperationException("Missing authored seated anatomy pivot.");
+
+            var block = new MaterialPropertyBlock();
+            foreach (Renderer renderer in anatomyRoot.GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.gameObject.layer = actor.gameObject.layer;
+                renderer.sharedMaterial = skinPalette.Renderer.sharedMaterial;
+                renderer.shadowCastingMode = skin.Renderer.shadowCastingMode;
+                renderer.receiveShadows = skin.Renderer.receiveShadows;
+                renderer.renderingLayerMask = skin.Renderer.renderingLayerMask;
+                block.Clear();
+                Color tint = renderer.name == "Anatomy_Outlet" ? Player3DBathingAppearance.SkinDark : skinPalette.BaseColor;
+                block.SetColor(BaseColor, tint);
+                block.SetColor(ColorId, tint);
+                block.SetFloat("_BumpScale", 0f);
+                block.SetFloat("_Smoothness", 0f);
+                renderer.SetPropertyBlock(block);
+                anatomyRenderers.Add(renderer);
+            }
+            foreach (Collider collider in anatomyRoot.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+            if (anatomyRenderers.Count == 0) throw new InvalidOperationException("Missing authored seated anatomy meshes.");
+        }
+
+        private Transform CreateAnatomyPart(string name, Vector3 attachment, float pitch)
+        {
+            GameObject template = Resources.Load<GameObject>("HomeToiletAction/Models/" + name);
+            if (template == null) throw new InvalidOperationException("Missing authored seated anatomy: " + name);
+            var pivot = new GameObject("Seated " + name).transform;
+            pivot.SetParent(anatomyRoot, false);
+            pivot.localPosition = attachment;
+            pivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+            // Keep the imported model's own unit factor under the metre pivot.
+            Instantiate(template, pivot, false);
+            return pivot;
         }
 
         private static ClothPart BindBeltReplacement(SkinnedMeshRenderer replacement, Player3DMeshBinding source,

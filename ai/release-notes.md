@@ -8,28 +8,29 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-03
 
-- Бар:предупреждение/просьба уйти,доподача/допить/встать/выход;уборка остатка.
-  Пауза держит срок,камера/меню целы. Бармен:подача→салфетка→зал;
-  камера/поза ждут текст.
-  LastGuest_ClosingPreservesMenuSipAndWalksToDoor passed;frames reviewed.
-- Пиво/вино:E по трети→стойка,одна оплата;
-  эффекты по частям,зачёт в конце. Водка/коньяк за раз.
+- Бар:предупреждение/просьба,доподача/допить/встать/выход;уборка.
+  Пауза держит срок,камера/меню целы. Бармен:подача→салфетка→зал;кадр/поза ждут речь.
+  LastGuest_ClosingPreservesMenuSipAndWalksToDoor.
+- Пиво/вино:E по трети→стойка,одна оплата/FX частями/зачёт в конце.
+  Водка/коньяк разом.
   BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment/
-  WineService_FullGlassTakesThreeSeparateSips passed;frames reviewed.
-- Магазин:выкладка/дверь/фактура,шкафы у стены;касса справа:
-  лента/сканер/пакеты/снеки,опоры рук/света. Корзины/провода/вентиляция;
-  кассир:фактура/руки раздельно/3D-лицо. Пиво/вино:покупка/питьё/остаток,
-  целая банка/звук по поверхности;пиво/вино/коньяк крепче;
-  банка=порция,вино750мл=три,доза по мл.
+  WineService_FullGlassTakesThreeSeparateSips.
+- Магазин:выкладка/дверь/фактура;шкафы у стены;касса справа:
+  лента/сканер/пакеты/снеки,опоры рук/света;корзины/кабели/вент;
+  кассир:фактура/раздельные руки/3D-лицо. Пиво/вино:покупка/питьё/остаток,
+  целая банка/звук поверхности;пиво/вино/коньяк крепче;
+  банка=порция/вино750мл=3/доза по мл.
   AreaCaptureFixture.Supermarket/Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures/
   DrinkContainers_PurchaseSipSwitch_PreserveFillOpeningAndContacts passed;
-  rear-wall/checkout/face frames reviewed;bar/inventory doses verified.
-- Склад:боярышник:Использовать→автозакрыть→глоток,+30HP/+40опьянения;HP<100%/в инвентаре.
-  Красный наплыв/застывший кадр4с,гул2с;голова/бросок→прежний предмет.
-  Лут:жёлтый контур.
-CombatWarehouseHawthorn passed;frames reviewed.
-- Зеркало:стекло в билде.
-  HomeBathroomMirrorPlayModeTests passed;frames reviewed.
+  rear-wall/checkout/face;bar/inventory doses.
+- Склад:боярышник:Use→автозакрыть→глоток,+30HP/+40опьянения;HP<100%/инвентарь.
+  Красный наплыв/стоп-кадр4с,гул2с;голова/бросок→прежний предмет;лут:жёлтый контур.
+CombatWarehouseHawthorn.
+- Зеркало:стекло билда.
+  HomeBathroomMirrorPlayModeTests.
+- Туалет:анатомия при снятых штанах.
+  SeatedAppearance_ShowsAttachedAnatomyAndHidesItOnExit.
+Checks passed;frames reviewed.
 
 
 ### 2026-11-02

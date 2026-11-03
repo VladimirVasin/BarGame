@@ -106,7 +106,7 @@ namespace BarPromenade
             underwater.Begin(Host.transform, water);
             lighting.Begin(SubmergedPosition, Host.transform.right, Host.transform.forward,
                 bowl, water, Host.Toilet.Seat,
-                Host.Player.GameObject.transform, bowelEffect.transform);
+                Host.Player.GameObject.transform, appearance.AnatomyRoot, bowelEffect.transform);
         }
 
         protected override void OnSceneBegin()

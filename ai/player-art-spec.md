@@ -398,13 +398,13 @@ This opt-in applies only during the interaction handoff without an active clip.
   full-body actions on that rig: `BarDrinkPickupEnter` (`2 s`),
   `BarDrinkSipLoop` (`3 s`) and `BarDrinkReturnExit` (`2 s`). The vessel follows
   the world hands, and completion returns control to the owning seated loop.
-- `Player3DBathingAppearance` leases the current wardrobe, hides its garments
-  and reveals the same prefab's independent bare body without material swaps.
-  The body no longer needs the old shower shoulder/nape bridge overlays;
-  the toilet's authored anatomy remains attached to the measured bare pelvis.
-  Restoration returns the selected outfit and captured visibility. The seated
-  toilet module separately derives fabric from the trouser meshes and skin
-  from bare anatomy, borrowing the selected trousers' shared appearance.
+- `Player3DBathingAppearance` leases/hides the wardrobe and reveals the
+  prefab's bare body without swaps or shoulder/nape overlays; authored toilet
+  anatomy attaches to its measured pelvis. Restoration returns outfit/visibility.
+  Seated fabric derives from trousers with their shared appearance; skin from
+  bare anatomy. The hero's lowered trousers also reveal the shared toilet penis/
+  two scrotum meshes following that pelvis bone with shared skin. Raised trousers
+  and completion/cancel/disable hide them.
 - The bare-skin atlas is the generator's second `256 x 256` point-filtered
   texture, `Assets/Resources/Player/PlayerBareSkinAtlas.png`
   (`build_bare_skin_atlas`, manifest section `bare_skin_atlas`). Its pelvis,

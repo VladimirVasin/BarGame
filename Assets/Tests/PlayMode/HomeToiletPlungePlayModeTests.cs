@@ -240,6 +240,63 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator SeatedAppearance_ShowsAttachedAnatomyAndHidesItOnExit()
+        {
+            AsyncOperation load = SceneManager.LoadSceneAsync(SceneIds.HomeInterior, LoadSceneMode.Single);
+            while (load != null && !load.isDone) yield return null;
+            yield return WaitFor(() =>
+            {
+                home = Object.FindAnyObjectByType<HomeInteriorRoot>();
+                return home != null && home.IsInitialized;
+            }, "Home did not initialize.");
+            camera = home.CameraFollow.GetComponent<Camera>();
+            probe = home.gameObject.AddComponent<HomeBathroomPresentationProbe>();
+            Directory.CreateDirectory(CaptureDirectory);
+            yield return FindChoice();
+            OwnedState original = new OwnedState(home, camera);
+            Choose(HomeToiletChoice.Large);
+            yield return AtPresentationWhen(() => home.ToiletPlunge.Appearance.IsActive &&
+                home.ToiletPlunge.Appearance.TrousersDown < .1f, () =>
+                Assert.That(home.ToiletPlunge.Appearance.AnatomyRoot.gameObject.activeSelf, Is.False),
+                "The raised costume was never presented.");
+            Vector3 attachedInPelvis = Vector3.zero;
+            var registry = ((Player3DCharacterPresentation)home.Player.Visual).Registry;
+            Transform pelvis = registry.Anchors.Pelvis;
+            yield return AtPresentationWhen(() => home.ToiletPlunge.Sequence.Phase == HomeToiletSeatedPhase.Preparing &&
+                home.ToiletPlunge.Appearance.TrousersDown > .99f, () =>
+            {
+                AssertSeatedAnatomy();
+                attachedInPelvis = pelvis.InverseTransformPoint(home.ToiletPlunge.Appearance.AnatomyRoot.position);
+                CaptureWorld("anatomy-01-lowered");
+                CaptureAnatomyWitness("anatomy-02-lowered-front");
+            }, "The lowered costume never showed the authored anatomy.");
+            yield return AtPresentationWhen(() => home.ToiletPlunge.Sequence.Phase == HomeToiletSeatedPhase.Seated, () =>
+            {
+                AssertSeatedAnatomy();
+                Assert.That(Vector3.Distance(pelvis.InverseTransformPoint(home.ToiletPlunge.Appearance.AnatomyRoot.position),
+                    attachedInPelvis), Is.LessThan(.0001f), "Sitting must preserve the measured pelvis attachment.");
+                CaptureWorld("anatomy-03-seated-underwater");
+                CaptureAnatomyWitness("anatomy-04-seated-front");
+                home.ToiletPlunge.RequestStop();
+            }, "The seated pose never presented the attached anatomy.");
+            yield return WaitFor(() => !home.ToiletPlunge.IsActive, "Cancellation never restored the costume.");
+            yield return AtPresentationWhen(() => true, () => AssertRestored(original), "No restored frame.");
+            yield return WaitForAudioRestored(original);
+            yield return FindChoice();
+            original = new OwnedState(home, camera);
+            Choose(HomeToiletChoice.Large);
+            yield return AtPresentationWhen(() => home.ToiletPlunge.Appearance.IsActive &&
+                home.ToiletPlunge.Appearance.TrousersDown > .99f, () =>
+            {
+                AssertSeatedAnatomy();
+                home.ToiletPlunge.enabled = false;
+                AssertRestored(original);
+                home.ToiletPlunge.enabled = true;
+            }, "Repeat preparation never restored the anatomy for disable cleanup.");
+            yield return WaitForAudioRestored(original);
+        }
+
+        [UnityTest]
         public IEnumerator ChoicePlungeReturnsAndPreservesSmallAction()
         {
             AssertTimelineBoundaries();
@@ -299,7 +356,9 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Assert.That(home.ToiletPlunge.Appearance.Renderers.Count, Is.EqualTo(10));
                 Assert.That(home.ToiletPlunge.Appearance.TrousersDown, Is.GreaterThan(.99f));
+                AssertSeatedAnatomy();
                 CaptureWorld("02-trousers-lowered");
+                CaptureAnatomyWitness("02b-anatomy-lowered");
             }, "The real hero never lowered his trousers.");
             yield return AtPresentationWhen(() =>
                 home.ToiletPlunge.Timeline.Phase == HomeToiletPlungePhase.Entering &&
@@ -331,7 +390,9 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(home.ToiletPlunge.Lighting.Fill.enabled, Is.True);
                     Assert.That(home.ToiletPlunge.Lighting.Fill.intensity, Is.GreaterThan(.1f));
                     Assert.That(home.ToiletPlunge.Lighting.Fill.GetComponent<Renderer>(), Is.Null);
+                    AssertSeatedAnatomy();
                     CaptureWorld("04-seated-underwater");
+                    CaptureAnatomyWitness("04b-anatomy-seated");
                 }, "The plunge never held underwater looking up.");
             int entryCount = home.ToiletPlunge.Underwater.EntryPlayCount;
             float audioAmount = home.ToiletPlunge.Underwater.AudioAmount;
@@ -436,6 +497,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Assert.That(home.ToiletPlunge.Actor.ContactError, Is.LessThan(.012f));
                 Assert.That(home.ToiletPlunge.Appearance.IsActive, Is.False);
+                Assert.That(home.ToiletPlunge.Appearance.AnatomyRoot.gameObject.activeSelf, Is.False);
                 Assert.That(home.ToiletPlunge.Timeline.IsCompleted, Is.True);
                 Assert.That(home.ToiletPlunge.Vortex.RollDegrees, Is.EqualTo(720f).Within(.001f));
                 Assert.That(home.ToiletPlunge.BowelEffect.FlushPlayCount, Is.EqualTo(1));
@@ -556,6 +618,8 @@ namespace BarPromenade.Tests.PlayMode
 
         private void AssertClothingBasis()
         {
+            Assert.That(home.ToiletPlunge.Appearance.AnatomyRoot.gameObject.activeSelf, Is.False,
+                "Raised trousers must conceal the borrowed anatomy.");
             var registry = ((Player3DCharacterPresentation)home.Player.Visual).Registry;
             var sourceMesh = new Mesh();
             var replacementMesh = new Mesh();
@@ -729,6 +793,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.ToiletPlunge.Underwater.IsActive, Is.False);
             Assert.That(home.ToiletPlunge.Actor.IsActive, Is.False);
             Assert.That(home.ToiletPlunge.Appearance.IsActive, Is.False);
+            if (home.ToiletPlunge.Appearance.AnatomyRoot != null)
+                Assert.That(home.ToiletPlunge.Appearance.AnatomyRoot.gameObject.activeSelf, Is.False,
+                    "Completion, cancellation and disable must all hide the borrowed anatomy.");
             Assert.That(home.ToiletPlunge.BowelEffect.IsActive, Is.False);
             Assert.That(home.ToiletPlunge.BowelEffect.FloatingBody.IsActive, Is.False);
             Assert.That(home.ToiletPlunge.Lighting.IsActive, Is.False);
@@ -828,6 +895,49 @@ namespace BarPromenade.Tests.PlayMode
                    Time.realtimeSinceStartup < deadline) yield return null;
             Assert.That(File.Exists(path) && File.GetLastWriteTimeUtc(path) > previous, Is.True,
                 "The choice menu did not produce a fresh Game view capture.");
+        }
+
+        private void AssertSeatedAnatomy()
+        {
+            HomeToiletSeatedAppearance appearance = home.ToiletPlunge.Appearance;
+            var registry = ((Player3DCharacterPresentation)home.Player.Visual).Registry;
+            Assert.That(appearance.AnatomyRoot, Is.Not.Null);
+            Assert.That(appearance.AnatomyRoot.gameObject.activeInHierarchy, Is.True);
+            Assert.That(appearance.AnatomyRenderers.Count, Is.EqualTo(4));
+            Assert.That(Vector3.Distance(appearance.AnatomyRoot.position, registry.Anchors.Pelvis.position),
+                Is.LessThan(.16f), "The shared kit must stay attached to the live pelvis in both poses.");
+            foreach (Renderer renderer in appearance.AnatomyRenderers)
+            {
+                Assert.That(renderer.enabled, Is.True);
+                Assert.That(renderer.bounds.size.magnitude,
+                    renderer.name == "Anatomy_Outlet" ? Is.InRange(.001f, .005f) : Is.InRange(.015f, .23f),
+                    "The reused FBX must retain its fixed-metre import scale: " + renderer.name);
+                Assert.That(renderer.renderingLayerMask & (1u << 4), Is.Not.Zero,
+                    "The existing bowl fill must include the attached anatomy.");
+                Assert.That(registry.MeshBindings.Any(binding => binding.PaletteMaterialName ==
+                    Player3DBathingAppearance.SkinMaterialName && binding.Renderer.sharedMaterial == renderer.sharedMaterial), Is.True);
+            }
+        }
+
+        private void CaptureAnatomyWitness(string name)
+        {
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            float fov = camera.fieldOfView;
+            try
+            {
+                Transform actor = home.Player.GameObject.transform;
+                Vector3 target = home.ToiletPlunge.Appearance.AnatomyRoot.position;
+                camera.transform.position = target + actor.forward * .55f + actor.right * .16f + Vector3.up * .06f;
+                camera.transform.LookAt(target);
+                camera.fieldOfView = 55f;
+                CaptureWorld(name);
+            }
+            finally
+            {
+                camera.transform.SetPositionAndRotation(position, rotation);
+                camera.fieldOfView = fov;
+            }
         }
 
         private void CaptureWorld(string name)
