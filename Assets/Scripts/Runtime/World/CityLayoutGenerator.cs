@@ -7,6 +7,7 @@ namespace BarPromenade
     public static class CityLayoutGenerator
     {
         public const float MaximumHomeBarRouteDistance = 48f;
+        public const float MaximumCanonicalHomeBarRouteDistance = 64f;
         public const float DistrictPointApproachWidth = 5.2f;
         public const float MinimumDistrictPointLotDimension = 18f;
 
@@ -1212,6 +1213,7 @@ namespace BarPromenade
                     frontages[homeLotIndex]);
             }
 
+            bool preserveCanonicalShop = TryGetCanonicalRiverHomePair(settings, seed, out _, out _, out _);
             bool found = false;
             int bestLotIndex = -1;
             int bestDistrictPenalty = int.MaxValue;
@@ -1239,6 +1241,10 @@ namespace BarPromenade
                 {
                     continue;
                 }
+
+                // Relocating the pub must not make its vacated lot steal the
+                // existing shop and its rear delivery street.
+                if (preserveCanonicalShop && cell != new Vector2Int(12, 4)) continue;
 
                 // Deliveries still use the authored rear service door. Choose
                 // the compact shop together with its actual rear street,
@@ -1412,8 +1418,8 @@ namespace BarPromenade
                     canonicalBar,
                     barFrontage);
                 // The home keeps its north-facing entrance; the bar opens on
-                // the neighboring east street. Their short route turns at the
-                // shared street corner instead of crossing between two doors.
+                // neighboring east street one block farther north. The route
+                // turns at the Home street corner and follows the pavement.
                 Vector2Int canonicalHomeFrontage = Vector2Int.up;
                 RoadEdge homeRoad = RoadEdge.ForCellFrontage(canonicalHome, canonicalHomeFrontage);
                 if (barLots.Contains(barLotIndex) &&
@@ -2001,17 +2007,18 @@ namespace BarPromenade
                     maximumWidth,
                     maximumDepth,
                     ref random);
-            // The production bar is a fixed-metre imported building. Turning
-            // its doorway onto the neighboring street rotates the whole body,
-            // including its logical footprint, without rescaling the model or
-            // consuming another seeded draw.
-            if (isBar && frontage.x != 0 && TryGetCanonicalRiverHomePair(settings, seed,
-                out Vector2Int canonicalBar, out _, out _) && cell == canonicalBar)
+            // Lot coordinates no longer own the production pub's dimensions
+            // or identity. Keep its imported fixed-metre body when moving it.
+            bool authoredBar = isBar && BarActivityAssignment.IsDefaultHomeBar(
+                settings.Blueprint?.Id, seed, cell);
+            if (authoredBar)
             {
-                size = new Vector2(size.y, size.x);
+                size = frontage.x != 0
+                    ? new Vector2(BarEntranceGeometry.ExteriorDepth, BarEntranceGeometry.ExteriorWidth)
+                    : new Vector2(BarEntranceGeometry.ExteriorWidth, BarEntranceGeometry.ExteriorDepth);
                 // The east-facing canopy projects 1.4 m from the door. A
-                // 35 cm inset keeps it behind the full x=177 pavement edge
-                // of the surveyed transport corridor, inside the same lot.
+                // 35 cm inset retains clearance from the neighboring
+                // pavement while keeping the full canopy inside the lot.
                 center.x -= .35f;
             }
             float height = landUse != CityLandUseKind.Building
@@ -2033,6 +2040,7 @@ namespace BarPromenade
                         settings.MaximumOrdinaryBuildingHeight,
                         district,
                         ref random);
+            if (authoredBar) height = BarEntranceGeometry.ExteriorHeight;
             if (streetfront) center = streetfrontCenter;
 
             Vector3 direction = new Vector3(frontage.x, 0f, frontage.y);
@@ -2114,8 +2122,8 @@ namespace BarPromenade
                 isPlayerHome,
                 isSupermarket,
                 district);
-            string barId = isBar
-                ? $"bar-{unchecked((uint)seed):x8}-{cell.x:D2}-{cell.y:D2}"
+            string barId = authoredBar ? BarActivityAssignment.DefaultHomeBarId
+                : isBar ? $"bar-{unchecked((uint)seed):x8}-{cell.x:D2}-{cell.y:D2}"
                 : string.Empty;
 
             return new BuildingLot(

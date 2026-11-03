@@ -49,7 +49,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(home.Cell, Is.EqualTo(new Vector2Int(12, 5)));
             Assert.That(
                 layout.BuildingLots.Any(lot =>
-                    lot.IsBar && lot.Cell == new Vector2Int(12, 6)),
+                    lot.IsBar && lot.Cell == BarActivityAssignment.DefaultHomeBarCell),
                 Is.True);
         }
 

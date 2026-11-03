@@ -350,6 +350,9 @@ namespace BarPromenade
             // cafe's private north edge. Small corner offsets clear the actual
             // fixed-metre envelopes; the inventory remains authoritative for
             // every seed, so an altered layout cannot inherit a false clearance.
+            // Paired offsets keep the relocated bar's private corner inside
+            // the inner R6 arc, the church beyond the outer arc, and the shop
+            // clear of the southern return. Live geography stays unchanged.
             Vector2[] coordinates = bank == CityTerraceTransportBank.West
                 ? new[] { new Vector2(-104,156), new Vector2(-104,130), new Vector2(-128,130),
                     new Vector2(-128,104), new Vector2(-51.75f,104), new Vector2(-51.75f,78), new Vector2(-156,78),
@@ -358,8 +361,8 @@ namespace BarPromenade
                     new Vector2(-156,-104), new Vector2(-52,-104), new Vector2(-52,-130),
                     new Vector2(-156,-130), new Vector2(-156,-156), new Vector2(-52,-156) }
                 : new[] { new Vector2(104,156), new Vector2(104,130), new Vector2(77.75f,130),
-                    new Vector2(77.75f,104), new Vector2(156,104), new Vector2(156,52.125f), new Vector2(182,52.125f),
-                    new Vector2(182,-53.375f), new Vector2(156,-53.375f), new Vector2(156,-26),
+                    new Vector2(77.75f,104), new Vector2(155.85f,104), new Vector2(155.85f,52.25f), new Vector2(182.5f,52.25f),
+                    new Vector2(182.5f,-52.25f), new Vector2(155.5f,-52.25f), new Vector2(155.5f,-26),
                     new Vector2(130,-26), new Vector2(130,-52), new Vector2(77.75f,-52), new Vector2(77.75f,-78),
                     new Vector2(156,-78), new Vector2(156,-103.875f), new Vector2(78,-103.875f),
                     new Vector2(78,-156.25f), new Vector2(181,-156.25f) };

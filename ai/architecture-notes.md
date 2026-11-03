@@ -472,8 +472,8 @@
   geography/RU SHA;stale/nondefault→scheme. Live player/POIs/bus/selection/
   XYZ/safe arrivals;clamped nonreadable≤2K. Village independent SHA/mapUvRect;
   MountainRoad scheme. User `2026-11-04`:logical maps update each slice;
-  ImageGen redraw once at final step for geometry/elevation changes. Stale
-  art keeps scheme fallback;no fingerprint retagging. UI/all24 kept.
+  ImageGen redraw once at final geometry/elevation step; explicit Bar relocation
+  redraw requested this pass. Stale art→scheme;no retagging. UI/all24 kept.
 
 - **Accepted 2026-10-29 — residential dog park:**
   User:8×10m residual Residential:park-first after laundry/stable seed-cell
@@ -599,7 +599,7 @@
   fronts≤15.5m/wings10×6m/full padded fit; setback1.25–1.55m. Four domestic2.4m
   recesses:balcony/basket off pavement. Court gaps2.4m/passages3.6m/overhead
   collision; continuous safe grades to nav. Expanded oblique OldTown pilot
-  removed; home/bar12,5/12,6/BarId/SplitTheG kept.
+  removed; Home12,5/BarId/SplitTheG kept; Bar now12,7.
   Route01 coverage loop:real turns/both-door stops/factory-shop truck access kept.
   Streets8m/asphalt6m/pavements2m; shared road-ground contours/Home triangle planes.
   Graded home/bar/shop forecourts/embedded skirts/fixture tops keep door datums;
@@ -3720,16 +3720,15 @@
   drift.
 - **Accepted — The bar-side yard is an inter-building gap, not a fringe Yard:**
   `CityOpenAreaDecorationPlanner` derives the authored composition from the
-  canonical bar near `PlayerHome`, then occupies the
-  walkable roadless gap immediately left of that bar, between it and the
-  neighbouring supermarket. The dead tree and sparse traces therefore stay
-  beside the bar instead of using the large eastern `Yard` precinct; all five
+  Home-side anchor `(12,6)`, now an ordinary house, and its ordinary western
+  neighbour `(11,6)`. User `2026-11-04`: this roadless gap, dead tree and sparse
+  traces stay at the original site after Bar moves north; all five
   typed fringe yards remain separate authored edge areas and do not inherit
   the rider, ring or always-on light contract. The rider's circuit is deliberately
   unmarked — no drawn ring — and lives only in the yard site contract that
   the wheelchair plan, the slot clearances and the leaning utilities share. The same pure plan owns one
   stable wall-light descriptor. `CityOpenAreaWorldBuilder` mounts its static
-  cold near-white Spot on the supermarket's yard-facing wall at intensity `240`, twenty times the
+  cold near-white Spot on the western neighbour's wall at intensity `240`, twenty times the
   ordinary `12`-intensity street practical. Range is the greater of `1.5x` the
   sampled throw and sampled throw plus `3 m`; only `6°` of total cone feather
   keeps the full wheelchair circuit inside the bright inner cone. The one
@@ -3739,16 +3738,16 @@
   runtime rider transform. The two `YardDeadLamp` geometry parts remain
   non-emissive and create no `Light`.
 - **Accepted — One home-adjacent production bar:** Frontages own validated
-  returns. User `2026-11-04`: Residential Bar `(12,6)` faces east, Home `(12,5)`
-  north; their short walk turns at the common corner. Fixed-metre body/footprint
-  rotate together, inset `.35 m` west to clear the surveyed transport pavement.
-  The roadless west yard remains between Bar/Shop; its shared plan refits the
-  tree/light/wheelchair circuit to actual walls. Stable `bar-01352777-12-06` /
-  `SplitTheG`; three retired bars remain ordinary lots. Custom multiple bars
-  retain weighted street/park-path separation.
+  returns. User `2026-11-04`: Bar moves a block north to `(12,7)`, east-facing;
+  Home `(12,5)` remains north-facing. Authored body dimensions stay fixed,
+  inset `.35 m` west for canopy clearance. Draft turns clear the protected
+  Bar/shop/church corners. The old `(12,6)` site is ordinary;
+  its west yard keeps tree/light/wheelchair owners and refits to actual walls.
+  Stable `bar-01352777-12-06` / `SplitTheG`; retired bars remain ordinary.
+  Custom multiple bars retain weighted street/park-path separation.
 - **Accepted — Bar-adjacent player home and fresh spawn:** With at least one
   generated bar, one non-bar lot becomes Home. The default pair uses neighboring
-  streets with a `26 m` approach route; fresh spawn stays `13 m` from Home's
+  streets with a `52 m` approach route, capped at `64 m`; fresh spawn is `13 m` from Home's
   street approach. Other layouts prefer a residential lot across the bar,
   then a deterministic fallback within `48 m` traversable distance. Home is
   `8.8 m` tall and its City facade uses the shared third-floor
@@ -3756,8 +3755,8 @@
   node. Bar-free custom layouts retain the central-road fallback and no home.
 - **Accepted — One deterministic city supermarket:** After bars, the player
   home, district public places and primary landmarks are reserved, the default
-  layout chooses exactly one remaining street-front building lot. Selection
-  prefers Residential, then the shortest traversable route from the home, then
+  layout retains `(12,4)` after Bar moves. Other layouts choose one eligible
+  street-front lot, preferring Residential, then the shortest Home route, then
   a stable seeded rank. The supermarket cannot also be a bar, home, public
   place or primary landmark; a tiny custom layout may omit it when no ordinary
   eligible lot remains. Its branded storefront, walkable apron, interaction

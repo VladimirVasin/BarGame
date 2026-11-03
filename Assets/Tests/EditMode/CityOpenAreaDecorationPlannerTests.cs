@@ -69,7 +69,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void DefaultCity_DressesTheRoadlessGapDirectlyLeftOfABar()
+        public void DefaultCity_KeepsHomeYardWhenBarMovesFartherNorth()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityBlueprintCatalog.Default,
@@ -102,7 +102,8 @@ namespace BarPromenade.Tests.EditMode
                 first.YardSpotlight.Value;
             Assert.That(site.Home, Is.SameAs(layout.PlayerHome));
             Assert.That(site.Anchor, Is.Not.Null);
-            Assert.That(site.Anchor.IsBar, Is.True);
+            Assert.That(site.Anchor.IsBar, Is.False);
+            Assert.That(site.Anchor.IsOrdinaryBuilding, Is.True);
             Assert.That(
                 layout.BuildingLots.Single(lot =>
                     lot.Cell == site.AnchorCell),
@@ -113,9 +114,10 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(
                     layout.PlayerHome.Cell +
                     layout.PlayerHome.FrontageDirection));
-            Assert.That(
-                site.Anchor.FrontageDirection,
-                Is.EqualTo(Vector2Int.right));
+            BuildingLot bar = layout.BuildingLots.Single(lot => lot.IsBar);
+            Assert.That(bar.Cell, Is.EqualTo(new Vector2Int(12, 7)));
+            Assert.That(bar.FrontageDirection, Is.EqualTo(Vector2Int.right));
+            Assert.That(bar.Cell, Is.Not.EqualTo(site.AnchorCell));
             Assert.That(
                 layout.HasRoad(RoadEdge.ForCellFrontage(
                     layout.PlayerHome.Cell,
@@ -124,15 +126,16 @@ namespace BarPromenade.Tests.EditMode
                 "The home keeps its original north street.");
             Assert.That(
                 layout.HasRoad(RoadEdge.ForCellFrontage(
-                    site.Anchor.Cell,
-                    site.Anchor.FrontageDirection)),
+                    bar.Cell,
+                    bar.FrontageDirection)),
                 Is.True,
                 "The bar opens onto the neighboring eastern street.");
             Assert.That(site.AnchorCell, Is.EqualTo(new Vector2Int(12, 6)));
             Assert.That(site.NeighbourCell, Is.EqualTo(new Vector2Int(11, 6)));
             Assert.That(site.HasNeighbourBuilding, Is.True);
             Assert.That(site.Neighbour, Is.Not.Null);
-            Assert.That(site.Neighbour.IsSupermarket, Is.True);
+            Assert.That(site.Neighbour.IsSupermarket, Is.False);
+            Assert.That(site.Neighbour.IsOrdinaryBuilding, Is.True);
             Assert.That(site.Neighbour.Cell, Is.EqualTo(site.NeighbourCell));
             Vector2Int neighbourOffset =
                 site.NeighbourCell - site.AnchorCell;
@@ -147,19 +150,19 @@ namespace BarPromenade.Tests.EditMode
                     site.AnchorCell,
                     site.DirectionFromAnchorToNeighbour)),
                 Is.False,
-                "The authored yard must remain directly left of the bar " +
+                "The authored yard must remain directly left of its original anchor " +
                 "on its roadless side.");
             Assert.That(
                 site.Neighbour.Center.x,
                 Is.LessThan(site.Anchor.Center.x));
             float neighbourFace = site.Neighbour.Center.x +
                                   site.Neighbour.Size.x * 0.5f;
-            float barFace = site.Anchor.Center.x -
+            float anchorFace = site.Anchor.Center.x -
                             site.Anchor.Size.x * 0.5f;
             Assert.That(
                 site.GroundBounds.xMin,
                 Is.GreaterThan(neighbourFace));
-            Assert.That(site.GroundBounds.xMax, Is.LessThan(barFace));
+            Assert.That(site.GroundBounds.xMax, Is.LessThan(anchorFace));
             Assert.That(
                 site.GroundBounds.Contains(new Vector2(
                     site.RingCenter.x,
@@ -342,28 +345,28 @@ namespace BarPromenade.Tests.EditMode
                     $"{part.StableId} stands on the circuit.");
             }
 
-            // This is the yard against the bar's left wall: everything
+            // This yard remains against its original anchor wall: everything
             // must be within a few steps of it.
-            var bar = new Vector2(
+            var anchorPosition = new Vector2(
                 site.Anchor.Center.x,
                 site.Anchor.Center.z);
             foreach (CityOpenAreaDecorationDescriptor part in yardParts)
             {
                 float distance = Vector2.Distance(
-                    bar,
+                    anchorPosition,
                     new Vector2(part.Bounds.center.x, part.Bounds.center.z));
                 Assert.That(
                     distance,
                     Is.LessThan(22f),
-                    $"{part.StableId} is not directly left of the bar.");
+                    $"{part.StableId} is not directly left of the yard anchor.");
             }
 
             Assert.That(
                 Vector2.Distance(
-                    bar,
+                    anchorPosition,
                     new Vector2(trunk.Bounds.center.x, trunk.Bounds.center.z)),
                 Is.LessThan(16f),
-                "The dead tree must stand directly left of the bar.");
+                "The dead tree must stand directly left of the yard anchor.");
 
             GameObject owner = new GameObject("Home Yard Test World");
             try

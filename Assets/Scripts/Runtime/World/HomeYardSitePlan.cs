@@ -4,8 +4,8 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// The shared geometry contract for the small yard immediately left of
-    /// the selected bar. It keeps decoration, staged actors and facade
+    /// The shared geometry contract for the small yard near the player's
+    /// home. It keeps decoration, staged actors and facade
     /// fixtures on the same deterministically selected strip of ground.
     /// The historical type name is retained because stable decoration IDs
     /// and saved scene diagnostics already use the home-yard label.
@@ -201,8 +201,7 @@ namespace BarPromenade
             {
                 BuildingLot anchor = layout.BuildingLots[index];
                 if (anchor == null ||
-                    !anchor.IsBar ||
-                    !IsBarAssociatedWithHome(layout, home, anchor))
+                    !IsYardAnchorForHome(layout, home, anchor))
                 {
                     continue;
                 }
@@ -322,12 +321,12 @@ namespace BarPromenade
             return null;
         }
 
-        internal static bool IsBarAssociatedWithHome(
+        internal static bool IsYardAnchorForHome(
             CityLayout layout,
             BuildingLot home,
-            BuildingLot bar)
+            BuildingLot anchor)
         {
-            Vector2Int direction = bar.Cell - home.Cell;
+            Vector2Int direction = anchor.Cell - home.Cell;
             if (direction != home.FrontageDirection ||
                 !layout.HasRoad(
                     RoadEdge.ForCellFrontage(home.Cell, direction)))
@@ -335,19 +334,19 @@ namespace BarPromenade
                 return false;
             }
 
-            if (bar.FrontageDirection == -direction)
+            if (layout.BlueprintId == CityBlueprintCatalog.DefaultBlueprintId &&
+                layout.Seed == GameSessionState.DefaultCitySeed &&
+                home.Cell == new Vector2Int(12, 5))
             {
-                return true;
+                // The bar moved north, but the existing tree, wheelchair and
+                // neighbouring wall light still occupy the original yard.
+                // Fit that same gap to the ordinary house replacing the bar.
+                return anchor.Cell == new Vector2Int(12, 6) &&
+                       anchor.IsOrdinaryBuilding;
             }
 
-            // The canonical pair keeps its courtyard between the same
-            // building masses when the bar opens onto the next street.
-            // Other layouts retain their opposite-frontage selection.
-            return home.Cell == new Vector2Int(12, 5) &&
-                   BarActivityAssignment.IsDefaultHomeBar(
-                       layout.BlueprintId, layout.Seed, bar.Cell) &&
-                   layout.HasRoad(RoadEdge.ForCellFrontage(
-                       bar.Cell, bar.FrontageDirection));
+            // Other layouts retain their original bar-facing yard selection.
+            return anchor.IsBar && anchor.FrontageDirection == -direction;
         }
 
         private static bool TryGetCellSurface(

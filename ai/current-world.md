@@ -424,7 +424,7 @@ cemetery:own interiors/returns.
   identity/phase/pause/distance/disable. Home props/special places stay.
   `CityTerraceDistrictPlan`:X83..125/Z31..73,5.743→13.423m/8 flights;entry7.992%.
   Two houses moved/two OpenGround;144 IDs, fewer houses. Shared house contacts/
-  ground cuts;Home/Bar stay. A 4.8×2.4m bridge at+7.68 spans a3m lower alley
+  ground cuts;Home stays. A 4.8×2.4m bridge at+7.68 spans a3m lower alley
   to the east street:X126.4. Explicit layers/links retain hero/NPC floor and IDs;
   rain shelters below the deck. SameXZ/twoY map arrivals:
   «Лестничные дворы»/«Нижний проход». Citywide35–45m rise/rollout planned.
@@ -572,12 +572,12 @@ cemetery:own interiors/returns.
   `4 m` blended approaches. Buildings and public slabs extend their foundations
   downward without moving their authored tops. The samplers are authoritative for node,
   cell, road, sidewalk, entrance, return, open-area and debug-teleport height;
-- one authored bar-side yard composition in the walkable roadless gap
-  immediately left of the home-adjacent bar, between the
-  bar and its neighbouring supermarket and distinct from the five typed fringe
+- one authored home-yard composition in the walkable roadless gap between
+  ordinary houses `(12,6)` and `(11,6)`, retained when Bar moves north and
+  distinct from the five typed fringe
   `Yard` areas. A worn 24-segment ring surrounds the dead tree and
   carries the pipe-backed wheelchair rider. One fixed cold near-white Spot on
-  the supermarket's yard-facing wall runs at intensity `240`, twenty times the `12`-intensity
+  the neighbouring house's yard-facing wall runs at intensity `240`, twenty times the `12`-intensity
   street practical. Its bright inner cone contains the complete circuit with
   only `6°` total feather, while range is the greater of `1.5x` the sampled
   throw and sampled throw plus `3 m`. Hard shadows use `0.95` strength and high
@@ -1581,9 +1581,9 @@ cemetery:own interiors/returns.
 - 144 core land-use lots include16 park,4 semantic and2 terrace OpenGround
   cells; plus34 northern beach/water,16 north-east yard and6 cemetery cells.
   The core contains
-  one Residential bar at `(12,6)` facing east, Home `(12,5)` facing north:
-  neighboring streets, a short corner walk; exactly one ordinary
-  street-front supermarket. The retained bar keeps stable ID
+  one Residential bar at `(12,7)` facing east, Home `(12,5)` facing north:
+  neighboring streets, about 57m door-to-door/52m street route; supermarket
+  `(12,4)` stays. The relocated bar keeps stable ID
   `bar-01352777-12-06` and `SplitTheG` activity assignment. Four semantic
   rooftop/facade landmarks survive independently of the two districts. Custom
   generated layouts may still request multiple graph-separated bars;
@@ -1592,7 +1592,7 @@ cemetery:own interiors/returns.
   Home share the same `4.7 m` floor, door/window positions and `2.3 m` outward
   deck geometry;
 - when the opening route first reaches the City, the hero starts on the road
-  node beside the deterministic player home and its neighboring bar, `13 m`
+  node beside the deterministic player home, `13 m`
   from Home's street approach under default spacing; custom-layout
   fallback placement remains bounded to `48 m` by traversable street distance,
   and returning from a bar, home or supermarket interior restores that
@@ -1783,15 +1783,15 @@ cemetery:own interiors/returns.
   fair/post/docks/arch/church/cafe/laundry/dog yard),bounded localized legend/
   hover names. Public lots/fair use open ground,not buildings;locations come
   from validated memoised plans/port.
-  Default ImageGen `UI/Maps`:City charcoal/Silent Hill;Village worn tourist
-  brochure/red-crossed resort.
+  Default ImageGen `UI/Maps`:City charcoal/Silent Hill, redrawn for the relocated
+  bar;Village worn tourist brochure/red-crossed resort.
   LodgeApproach arrival;no3D change. Plan/RU SHA+bounds/size guard
   stale art;other seeds/MountainRoad→schematic. City SHA excludes Village
   keys;Village mapUvRect separates map/nonXYZ ad. Cached clamped nonreadable
   bitmap≤2K/area. Bounded RU cache:contrast plates/leaders/collision/clip;
   no anonymous yards/plate coords;named POIs/click→XYZ inspector;
-  player/POIs/bus/selection/XYZ/arrivals live. Authored edits/new objects→redraw;
-  live motion0.
+  player/POIs/bus/selection/XYZ/arrivals live. Geometry→final redraw unless
+  explicitly requested sooner;live motion0.
   It consumes `CityWorldResult.MountainBoundaryPlan`,
   expands display bounds only west and south, including the visible cave
   approach and the first `12 m` of tunnel, and draws each ridge as a
@@ -1804,7 +1804,7 @@ cemetery:own interiors/returns.
   as a pale neutral line, adds
   five numbered stop markers in the default layout with localized hover
   labels and keeps both symbols in a compact legend. The map has no live bus
-  marker. City and Mountain Road are separate schematics under the area tabs;
+  marker. City illustration and Mountain Road schematic have separate area tabs;
   the player marker is drawn only on the current area's tab. An observational
   `XYZ` mode opens on both tabs through the panel button, keyboard `C` or
   gamepad north/`Y`. A click selects the point under the pointer; Left/Right

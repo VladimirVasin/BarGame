@@ -933,14 +933,15 @@ namespace BarPromenade
                             bars[index].ReturnPosition));
                 }
 
-                if (nearestBarDistance >
-                    CityLayoutGenerator
-                        .MaximumHomeBarRouteDistance +
-                    0.001f)
+                float maximumHomeBarDistance = bars.Count == 1 &&
+                    BarActivityAssignment.IsDefaultHomeBar(BlueprintId, Seed, bars[0].Cell)
+                    ? CityLayoutGenerator.MaximumCanonicalHomeBarRouteDistance
+                    : CityLayoutGenerator.MaximumHomeBarRouteDistance;
+                if (nearestBarDistance > maximumHomeBarDistance + 0.001f)
                 {
                     throw new InvalidOperationException(
                         "The player home must be within " +
-                        $"{CityLayoutGenerator.MaximumHomeBarRouteDistance:0.##} m " +
+                        $"{maximumHomeBarDistance:0.##} m " +
                         "of a bar by traversable street distance.");
                 }
             }

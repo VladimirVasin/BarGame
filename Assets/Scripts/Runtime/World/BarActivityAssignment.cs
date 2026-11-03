@@ -6,7 +6,10 @@ namespace BarPromenade
     public static class BarActivityAssignment
     {
         public static readonly Vector2Int DefaultHomeBarCell =
-            new Vector2Int(12, 6);
+            new Vector2Int(12, 7);
+
+        // Persistent identity survives the physical move to the next block.
+        public const string DefaultHomeBarId = "bar-01352777-12-06";
 
         public const BarActivityKind DefaultHomeBarActivity =
             BarActivityKind.SplitTheG;

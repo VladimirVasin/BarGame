@@ -14,13 +14,14 @@ paths, supports and live rollout remain open.
 CityTerraceTransportPlanTests OK: clearance, profiles, junction seams/ownership,
 entrance triangle grades and unchanged live anchors. Editor joins view reviewed.
 All24FX reviewed: existing City sources/materials/post owners retained.
-Home/Bar: neighboring streets, one corner; fixed-metre Bar turns east with
-canopy inset. Shared yard association keeps the west Bar/Shop gap, tree/light
-and wheelchair route fitted to actual walls. Home and Bar identity stay.
-CityHomeBarNeighborStreets passed: physical round trip, yard, transport
-clearance and map fallback; entrance/corner frames reviewed.
-User map rule: logic each slice; final geometry/elevation redraw once;
-stale-art scheme fallback, no fingerprint retagging.
+Bar moved north onto the next block; fixed-metre body, stable identity/activity.
+Home/shop stay; the original yard refits its tree/light/wheelchair circuit
+between ordinary houses. Draft transport turns clear Bar/shop/church corners.
+CityHomeBarNeighborStreets passed: physical round trip, apron/yard/transport
+clearance, current illustrated map, selection/XYZ and supported arrival;
+street/entrance/native map frames reviewed.
+User requested current-pass ImageGen redraw: new survey/art/provenance installed.
+Default final-step redraw rule retained; stale-art scheme fallback, no retagging.
 check-docs.py/check-workspace.py/git diff --check.
 
 ## 2026-11-03

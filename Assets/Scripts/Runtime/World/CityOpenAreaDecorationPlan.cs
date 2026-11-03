@@ -321,14 +321,13 @@ namespace BarPromenade
             }
 
             if (site.Anchor == null ||
-                !site.Anchor.IsBar ||
                 !ReferenceEquals(site.Anchor, expectedAnchor) ||
                 site.AnchorCell != site.Anchor.Cell ||
-                !HomeYardSitePlanner.IsBarAssociatedWithHome(
+                !HomeYardSitePlanner.IsYardAnchorForHome(
                     layout, site.Home, site.Anchor))
             {
                 throw new InvalidOperationException(
-                    "The yard site must reference the selected bar " +
+                    "The yard site must reference its retained building " +
                     "beside the player's home.");
             }
 
@@ -336,7 +335,7 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "The yard must occupy the roadless ground directly " +
-                    "left of its bar.");
+                    "left of its anchor building.");
             }
 
             if (!IsPositiveFinite(site.GroundBounds.size) ||

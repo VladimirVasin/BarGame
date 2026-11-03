@@ -778,7 +778,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 layout.BuildingLots.Any(lot =>
                     lot.IsBar &&
-                    lot.Cell == new Vector2Int(12, 6)),
+                    lot.Cell == BarActivityAssignment.DefaultHomeBarCell),
                 Is.True);
             Assert.That(layout.DistrictPointsOfInterest, Has.Count.EqualTo(4));
             Assert.That(layout.Districts.Select(district => district.Kind), Is.EquivalentTo(new[] {
@@ -811,7 +811,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(layout.PlayerHome.Center.x, Is.EqualTo(169f).Within(.001f));
             Assert.That(layout.PlayerHome.Center.z, Is.EqualTo(-13f).Within(.001f));
             BuildingLot bar = layout.BuildingLots.Single(lot => lot.IsBar);
-            Assert.That(bar.Cell, Is.EqualTo(new Vector2Int(12, 6)));
+            Assert.That(bar.Cell, Is.EqualTo(new Vector2Int(12, 7)));
             Assert.That(bar.FrontageDirection, Is.EqualTo(Vector2Int.right));
             Assert.That(bar.ReturnPosition, Is.Not.EqualTo(layout.PlayerHome.ReturnPosition));
 
@@ -1145,7 +1145,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void DefaultCoastal_PlacesOneBarOnNeighborStreetNearPlayerHome()
+        public void DefaultCoastal_PlacesBarOneBlockFartherWithStableIdentity()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityBlueprintCatalog.Default,
@@ -1175,13 +1175,17 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(home.Center.z, Is.EqualTo(-13f).Within(.001f));
             Assert.That(home.FrontageDirection, Is.EqualTo(Vector2Int.up));
             Assert.That(bar.Center.x, Is.EqualTo(168.65f).Within(.001f));
-            Assert.That(bar.Center.z, Is.EqualTo(13f).Within(.001f));
+            Assert.That(bar.Center.z, Is.EqualTo(39f).Within(.001f));
             Assert.That(bar.FrontageDirection, Is.EqualTo(Vector2Int.right));
             Assert.That(bar.FacadeForward, Is.EqualTo(Vector3.right));
+            Assert.That(bar.Size.x, Is.EqualTo(BarEntranceGeometry.ExteriorDepth).Within(.001f));
+            Assert.That(bar.Size.y, Is.EqualTo(BarEntranceGeometry.ExteriorWidth).Within(.001f));
+            Assert.That(bar.Height, Is.EqualTo(BarEntranceGeometry.ExteriorHeight).Within(.001f));
+            Assert.That(layout.Supermarket.Cell, Is.EqualTo(new Vector2Int(12, 4)));
             Assert.That(bar.DoorPosition.x, Is.EqualTo(bar.Center.x + bar.Size.x * .5f).Within(.001f));
             Assert.That(bar.DoorPosition.z, Is.EqualTo(bar.Center.z).Within(.001f));
             Assert.That(bar.ReturnPosition.x, Is.EqualTo(182f).Within(.001f));
-            Assert.That(bar.ReturnPosition.z, Is.EqualTo(13f).Within(.001f));
+            Assert.That(bar.ReturnPosition.z, Is.EqualTo(39f).Within(.001f));
             Assert.That(bar.SidewalkArrivalPosition.x, Is.InRange(bar.DoorPosition.x, bar.ReturnPosition.x));
             Assert.That(
                 layout.TryGetFrontageEdge(bar, out RoadEdge barFrontage),
@@ -1191,7 +1195,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.True);
             var corner = new Vector2Int(13, 6);
             Assert.That(homeFrontage, Is.EqualTo(new RoadEdge(new Vector2Int(12, 6), corner)));
-            Assert.That(barFrontage, Is.EqualTo(new RoadEdge(corner, new Vector2Int(13, 7))));
+            Assert.That(barFrontage, Is.EqualTo(new RoadEdge(new Vector2Int(13, 7), new Vector2Int(13, 8))));
             Assert.That(homeFrontage, Is.Not.EqualTo(barFrontage));
             Assert.That(home.FrontageDirection.x * bar.FrontageDirection.x +
                 home.FrontageDirection.y * bar.FrontageDirection.y, Is.Zero,
@@ -1199,8 +1203,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(home.ReturnPosition, Is.Not.EqualTo(bar.ReturnPosition));
             float routeDistance = CityTravelDistance.BetweenAnchors(layout.Nodes, layout.RoadEdges,
                 layout.GetNodeWorldPosition, homeFrontage, home.ReturnPosition, barFrontage, bar.ReturnPosition);
-            Assert.That(routeDistance, Is.GreaterThan(20f), "The route must include a meaningful walk around the corner.");
-            Assert.That(routeDistance, Is.LessThanOrEqualTo(CityLayoutGenerator.MaximumHomeBarRouteDistance + .001f));
+            Assert.That(routeDistance, Is.EqualTo(52f).Within(.1f), "The bar is one block beyond the previous entrance.");
+            Assert.That(routeDistance, Is.LessThanOrEqualTo(CityLayoutGenerator.MaximumCanonicalHomeBarRouteDistance + .001f));
             Vector3 cornerWorld = layout.GetNodeWorldPosition(corner);
             RoadWalkableArea walkable = RoadWalkableArea.FromLayout(layout);
             foreach (Vector3 endpoint in new[] { home.ReturnPosition, bar.ReturnPosition })
@@ -1225,6 +1229,7 @@ namespace BarPromenade.Tests.EditMode
             }
             Vector2Int[] retiredBarCells =
             {
+                new Vector2Int(12, 6),
                 new Vector2Int(2, 0),
                 new Vector2Int(8, 0),
                 new Vector2Int(0, 11)

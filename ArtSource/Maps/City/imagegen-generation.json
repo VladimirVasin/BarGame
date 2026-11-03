@@ -1,14 +1,15 @@
 {
   "tool": "built-in image_gen",
-  "intent": "stacked pedestrian bridge and lower alley redraw",
-  "prompt": "imagegen-upperpass-prompt.txt",
+  "intent": "pub relocated one block north; current surveyed city redraw",
+  "prompt": "imagegen-bar-relocation-prompt.txt",
   "references": [
+    "map-reference.png",
     "CityMapImage.reference.png"
   ],
   "geography": "map-reference.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "43d094dea24ca430e9d39b679245c456e83e0a8a17f76a45abeeaad75fbb0052",
-  "fingerprint": "f4ec530ecb58bb1826d6fbbd83bdd036886e08a0f9c3eecb8b955ec7a2fe12d0",
+  "image_sha256": "02940c8ef34ba32d7ce0fd68fef0a1b89c17c9704bc387f6ad233a9f0df41299",
+  "fingerprint": "c8ac9d3d98853561542d0b5e864c4d9bdbf36fd032a6f20235b4a34c5d5faae4",
   "schemaVersion": 2,
   "width": 1422,
   "height": 1106
