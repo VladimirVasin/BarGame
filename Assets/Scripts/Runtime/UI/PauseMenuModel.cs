@@ -9,7 +9,8 @@ namespace BarPromenade
         Restart = 2,
         Quit = 3,
         Cutscenes = 4,
-        Count = 5
+        ReturnToCheckpoint = 5,
+        Count = 6
     }
 
     public enum PauseMenuPage
@@ -43,6 +44,7 @@ namespace BarPromenade
         Quit = 3,
         ToggleGraphicsOption = 4,
         StartCutscene = 5,
+        ReturnToCheckpoint = 6,
     }
 
     public sealed class PauseMenuModel
@@ -50,6 +52,7 @@ namespace BarPromenade
         private static readonly PauseMenuOption[] MainOptions =
         {
             PauseMenuOption.Resume,
+            PauseMenuOption.ReturnToCheckpoint,
             PauseMenuOption.Options,
             PauseMenuOption.Restart,
             PauseMenuOption.Quit
@@ -58,6 +61,7 @@ namespace BarPromenade
         private static readonly PauseMenuOption[] MainOptionsWithCutscenes =
         {
             PauseMenuOption.Resume,
+            PauseMenuOption.ReturnToCheckpoint,
             PauseMenuOption.Options,
             PauseMenuOption.Cutscenes,
             PauseMenuOption.Restart,
@@ -69,6 +73,7 @@ namespace BarPromenade
         public PauseMenuOption ConfirmationTarget { get; private set; }
         public bool ConfirmationYesSelected { get; private set; }
         public bool CutscenesAvailable { get; private set; }
+        public bool CheckpointAvailable { get; private set; }
         public int CutsceneCount { get; private set; }
         public int SelectedCutsceneIndex { get; private set; }
         public PauseMenuOptionsRow SelectedOptionsRow
@@ -108,6 +113,22 @@ namespace BarPromenade
                 if (SelectedOption == PauseMenuOption.Cutscenes)
                 {
                     SelectedOption = PauseMenuOption.Resume;
+                }
+            }
+        }
+
+        public void ConfigureCheckpoint(bool available)
+        {
+            CheckpointAvailable = available;
+            if (!available)
+            {
+                if (SelectedOption == PauseMenuOption.ReturnToCheckpoint)
+                    SelectedOption = PauseMenuOption.Resume;
+                if (Page == PauseMenuPage.Confirmation &&
+                    ConfirmationTarget == PauseMenuOption.ReturnToCheckpoint)
+                {
+                    Page = PauseMenuPage.Main;
+                    ConfirmationYesSelected = false;
                 }
             }
         }
@@ -161,6 +182,10 @@ namespace BarPromenade
                 next += count;
             }
 
+            if (options[next] == PauseMenuOption.ReturnToCheckpoint &&
+                !CheckpointAvailable)
+                next = (next + Math.Sign(delta) + count) % count;
+
             SelectedOption = options[next];
             return true;
         }
@@ -198,6 +223,7 @@ namespace BarPromenade
                 option < PauseMenuOption.Resume ||
                 option >= PauseMenuOption.Count ||
                 (option == PauseMenuOption.Cutscenes && !CutscenesAvailable) ||
+                (option == PauseMenuOption.ReturnToCheckpoint && !CheckpointAvailable) ||
                 SelectedOption == option)
             {
                 return false;
@@ -240,9 +266,19 @@ namespace BarPromenade
                     return PauseMenuAction.None;
                 }
 
-                return ConfirmationTarget == PauseMenuOption.Restart
-                    ? PauseMenuAction.Restart
-                    : PauseMenuAction.Quit;
+                switch (ConfirmationTarget)
+                {
+                    case PauseMenuOption.Restart:
+                        return PauseMenuAction.Restart;
+                    case PauseMenuOption.Quit:
+                        return PauseMenuAction.Quit;
+                    case PauseMenuOption.ReturnToCheckpoint:
+                        return CheckpointAvailable
+                            ? PauseMenuAction.ReturnToCheckpoint
+                            : PauseMenuAction.None;
+                    default:
+                        return PauseMenuAction.None;
+                }
             }
 
             if (Page == PauseMenuPage.Options)
@@ -271,6 +307,7 @@ namespace BarPromenade
                     return PauseMenuAction.None;
                 case PauseMenuOption.Restart:
                 case PauseMenuOption.Quit:
+                case PauseMenuOption.ReturnToCheckpoint:
                     ConfirmationTarget = SelectedOption;
                     ConfirmationYesSelected = false;
                     Page = PauseMenuPage.Confirmation;

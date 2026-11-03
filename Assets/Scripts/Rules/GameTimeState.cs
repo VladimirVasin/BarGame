@@ -30,6 +30,19 @@ namespace BarPromenade
         public double TimeOfDayMinutes => timeOfDayMinutes;
         public double DayFraction => timeOfDayMinutes / MinutesPerDay;
 
+        public readonly struct Checkpoint
+        {
+            internal readonly double Minutes;
+            internal readonly int Day;
+            internal readonly bool Running;
+            internal Checkpoint(GameTimeState state)
+            { Minutes = state.timeOfDayMinutes; Day = state.DayIndex; Running = state.IsRunning; }
+        }
+
+        public Checkpoint CaptureCheckpoint() => new Checkpoint(this);
+        public void RestoreCheckpoint(Checkpoint saved)
+        { timeOfDayMinutes = saved.Minutes; DayIndex = saved.Day; IsRunning = saved.Running; }
+
         public void Reset()
         {
             IsRunning = false;

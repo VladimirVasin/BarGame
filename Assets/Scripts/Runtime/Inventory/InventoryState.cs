@@ -41,6 +41,29 @@ namespace BarPromenade
 
         public IReadOnlyList<InventoryItemStack> Items => itemsView;
 
+        internal sealed class Checkpoint
+        {
+            internal readonly InventoryItemStack[] Items;
+            internal readonly InventoryItemId[] Equipped;
+            internal readonly VodkaBottleState.Checkpoint Vodka, Beer, Wine, Hawthorn;
+            internal Checkpoint(InventoryState state)
+            {
+                Items = state.items.ToArray();
+                Equipped = new InventoryItemId[state.equippedItems.Count]; state.equippedItems.CopyTo(Equipped);
+                Vodka = state.vodkaBottles.CaptureCheckpoint(); Beer = state.beerCans.CaptureCheckpoint();
+                Wine = state.wineBottles.CaptureCheckpoint(); Hawthorn = state.hawthornBottles.CaptureCheckpoint();
+            }
+        }
+        internal Checkpoint CaptureCheckpoint() => new Checkpoint(this);
+        internal void RestoreCheckpoint(Checkpoint saved)
+        {
+            if (saved == null) throw new ArgumentNullException(nameof(saved));
+            items.Clear(); items.AddRange(saved.Items);
+            equippedItems.Clear(); equippedItems.UnionWith(saved.Equipped);
+            vodkaBottles.RestoreCheckpoint(saved.Vodka); beerCans.RestoreCheckpoint(saved.Beer);
+            wineBottles.RestoreCheckpoint(saved.Wine); hawthornBottles.RestoreCheckpoint(saved.Hawthorn);
+        }
+
         public void ResetWithStarterItems()
         {
             Clear();

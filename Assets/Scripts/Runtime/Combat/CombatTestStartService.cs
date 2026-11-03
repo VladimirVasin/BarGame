@@ -33,7 +33,8 @@ namespace BarPromenade
         /// <summary>One scene consumes mode and kit atomically. Direct loads use the standard default kit.</summary>
         public static CombatTestSelection ConsumeSelection()
         {
-            CombatTestSelection selection = hasPendingSelection ? pendingSelection : CombatTestSelection.Default;
+            CombatTestSelection selection = SessionCheckpointService.TryGetCombatSelection(out CombatTestSelection checkpoint)
+                ? checkpoint : hasPendingSelection ? pendingSelection : CombatTestSelection.Default;
             hasPendingSelection = false;
             return selection;
         }

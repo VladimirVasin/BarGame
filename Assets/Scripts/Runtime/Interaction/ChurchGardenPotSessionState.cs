@@ -16,6 +16,19 @@ namespace BarPromenade
             docks[key] = dock;
         }
 
+        internal static KeyValuePair<string, int>[] CaptureCheckpoint()
+        {
+            var snapshot = new KeyValuePair<string, int>[docks.Count];
+            ((ICollection<KeyValuePair<string, int>>)docks).CopyTo(snapshot, 0);
+            return snapshot;
+        }
+
+        internal static void RestoreCheckpoint(KeyValuePair<string, int>[] snapshot)
+        {
+            docks.Clear();
+            foreach (var dock in snapshot) docks.Add(dock.Key, dock.Value);
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void ResetForNewSession() => docks.Clear();
     }

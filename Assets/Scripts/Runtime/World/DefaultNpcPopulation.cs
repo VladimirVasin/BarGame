@@ -127,6 +127,9 @@ namespace BarPromenade
         private static ulong visitSerial;
         public const int MaximumVisitGroupSize = 32;
 
+        internal static ulong CaptureCheckpointVisits() => visitSerial;
+        internal static void RestoreCheckpointVisits(ulong serial) => visitSerial = serial;
+
         public static string FairVendorId(int index) => FairIds[index];
         public static string FairVisitorId(int index)
         {

@@ -31,8 +31,12 @@ namespace BarPromenade
         public string ArtResourcePath { get; private set; } = string.Empty;
         public bool HasArtwork => artwork?.Texture != null;
         public bool IsNewGameLoading { get; private set; }
+        private bool isCheckpointLoading;
 
-        internal static AreaLoadingRoot CreateForNewGame()
+        internal static AreaLoadingRoot CreateForNewGame() => CreateCoveredLoading(false);
+        internal static AreaLoadingRoot CreateForCheckpoint() => CreateCoveredLoading(true);
+
+        private static AreaLoadingRoot CreateCoveredLoading(bool checkpoint)
         {
             // Bind before Awake: this overlay must not adopt/reconfigure the
             // menu camera or create a camera in the destination's place.
@@ -40,6 +44,7 @@ namespace BarPromenade
             host.SetActive(false);
             AreaLoadingRoot root = host.AddComponent<AreaLoadingRoot>();
             root.IsNewGameLoading = true;
+            root.isCheckpointLoading = checkpoint;
             root.IsBound = true;
             root.KeepDuringComposition();
             host.SetActive(true);
@@ -183,7 +188,7 @@ namespace BarPromenade
                 captionStyle = RetroUiTheme.CreateLabelStyle(10, TextAnchor.MiddleCenter, RetroUiTheme.Muted);
                 percentageStyle = RetroUiTheme.CreateLabelStyle(10, TextAnchor.LowerRight, RetroUiTheme.Muted);
                 loadingLabel = LocalizationService.Get("loading.progress");
-                newGameLabel = LocalizationService.Get("opening.new_game");
+                newGameLabel = isCheckpointLoading ? string.Empty : LocalizationService.Get("opening.new_game");
             }
 
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);

@@ -19,6 +19,16 @@ namespace BarPromenade
 
         internal static void SetLanternLit(bool lit) => LanternLit = lit;
 
+        internal static (bool Left, bool Right, bool Lantern) CaptureCheckpoint()
+            => (LeftDoorOpen, RightDoorOpen, LanternLit);
+
+        internal static void RestoreCheckpoint((bool Left, bool Right, bool Lantern) state)
+        {
+            LeftDoorOpen = state.Left;
+            RightDoorOpen = state.Right;
+            LanternLit = state.Lantern;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void ResetForNewSession()
         {

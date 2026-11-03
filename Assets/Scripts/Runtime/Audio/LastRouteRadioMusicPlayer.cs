@@ -141,6 +141,26 @@ namespace BarPromenade
             ReloadTheme();
         }
 
+        internal sealed class CheckpointSnapshot
+        {
+            internal float[] Playback;
+            internal string[] Clips;
+        }
+
+        internal static CheckpointSnapshot CaptureCheckpoint() => new CheckpointSnapshot
+        {
+            Playback = (float[])savedPlaybackSeconds.Clone(),
+            Clips = (string[])savedClipNames.Clone()
+        };
+
+        internal static void RestoreCheckpoint(CheckpointSnapshot snapshot)
+        {
+            // Old scene tails must not write into the newly restored tape state.
+            sessionGeneration = unchecked(sessionGeneration + 1);
+            System.Array.Copy(snapshot.Playback, savedPlaybackSeconds, savedPlaybackSeconds.Length);
+            System.Array.Copy(snapshot.Clips, savedClipNames, savedClipNames.Length);
+        }
+
         public static void ResetSession()
         {
             sessionGeneration = unchecked(sessionGeneration + 1);

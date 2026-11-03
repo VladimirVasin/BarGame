@@ -192,6 +192,8 @@ namespace BarPromenade
 
         private void RefreshCutscenes()
         {
+            model.ConfigureCheckpoint(SessionCheckpointService.HasCheckpoint &&
+                !SessionCheckpointService.IsRestoring);
             bool available = cutscenes != null &&
                 cutscenes.isActiveAndEnabled && cutscenes.Catalog != null;
             model.ConfigureCutscenes(
@@ -288,6 +290,7 @@ namespace BarPromenade
                    activeController == null &&
                    (!BarMinigameModalLock.IsAnyLocked || BarMinigameModalLock.AllowsPauseMenu) &&
                    !SceneTransitionService.IsTransitioning &&
+                   !SessionCheckpointService.IsRestoring &&
                    (additionalCanOpen == null ||
                     additionalCanOpen());
         }
@@ -303,6 +306,9 @@ namespace BarPromenade
                     return;
                 case PauseMenuAction.Restart:
                     RestartGame();
+                    return;
+                case PauseMenuAction.ReturnToCheckpoint:
+                    ReturnToCheckpoint();
                     return;
                 case PauseMenuAction.Quit:
                     QuitGame();
@@ -346,6 +352,21 @@ namespace BarPromenade
                 GameLog.Warning(
                     "pause",
                     "restart_rejected");
+            }
+        }
+
+        private void ReturnToCheckpoint()
+        {
+            if (!SessionCheckpointService.HasCheckpoint ||
+                SessionCheckpointService.IsRestoring)
+                return;
+
+            GameLog.Info("pause", "checkpoint_confirmed");
+            RestoreOwnedState("checkpoint");
+            if (!SessionCheckpointService.RequestRestore())
+            {
+                GameLog.Warning("pause", "checkpoint_rejected");
+                Open();
             }
         }
 
@@ -511,8 +532,8 @@ namespace BarPromenade
         {
             bool hasCutscenes = model.CutscenesAvailable;
             Rect panel = new Rect(
-                198f, hasCutscenes ? 32f : 52f,
-                244f, hasCutscenes ? 308f : 268f);
+                198f, hasCutscenes ? 14f : 32f,
+                244f, hasCutscenes ? 332f : 296f);
             RetroUiTheme.DrawPanel(
                 panel,
                 RetroUiTheme.PanelInset,
@@ -527,32 +548,37 @@ namespace BarPromenade
 
             DrawMainOption(
                 canvas,
-                new Rect(216f, panel.y + 66f, 208f, 32f),
+                new Rect(216f, panel.y + 58f, 208f, 32f),
                 PauseMenuOption.Resume,
                 "pause.resume");
             DrawMainOption(
                 canvas,
-                new Rect(216f, panel.y + 106f, 208f, 32f),
+                new Rect(216f, panel.y + 94f, 208f, 32f),
+                PauseMenuOption.ReturnToCheckpoint,
+                "pause.checkpoint");
+            DrawMainOption(
+                canvas,
+                new Rect(216f, panel.y + 130f, 208f, 32f),
                 PauseMenuOption.Options,
                 "pause.options");
             if (hasCutscenes)
             {
                 DrawMainOption(
                     canvas,
-                    new Rect(216f, panel.y + 146f, 208f, 32f),
+                    new Rect(216f, panel.y + 166f, 208f, 32f),
                     PauseMenuOption.Cutscenes,
                     "pause.cutscenes");
             }
 
-            float additionalHeight = hasCutscenes ? 40f : 0f;
+            float additionalHeight = hasCutscenes ? 36f : 0f;
             DrawMainOption(
                 canvas,
-                new Rect(216f, panel.y + 146f + additionalHeight, 208f, 32f),
+                new Rect(216f, panel.y + 166f + additionalHeight, 208f, 32f),
                 PauseMenuOption.Restart,
                 "pause.restart");
             DrawMainOption(
                 canvas,
-                new Rect(216f, panel.y + 186f + additionalHeight, 208f, 32f),
+                new Rect(216f, panel.y + 202f + additionalHeight, 208f, 32f),
                 PauseMenuOption.Quit,
                 "pause.quit");
 
@@ -957,9 +983,11 @@ namespace BarPromenade
             PauseMenuOption option,
             string localizationKey)
         {
+            bool available = option != PauseMenuOption.ReturnToCheckpoint ||
+                model.CheckpointAvailable;
             Vector2 mouse =
                 RetroUiTheme.LogicalMousePosition(canvas);
-            if (rect.Contains(mouse) &&
+            if (available && rect.Contains(mouse) &&
                 RetroUiInput.PointerMoved)
             {
                 model.SelectOption(option);
@@ -967,11 +995,15 @@ namespace BarPromenade
 
             bool selected = SelectedOption == option;
             DrawSelection(rect, selected);
-            if (RetroUiInput.Button(
+            bool previousEnabled = GUI.enabled;
+            GUI.enabled = previousEnabled && available;
+            bool clicked = RetroUiInput.Button(
                     rect,
                     (selected ? "> " : "  ") +
                     LocalizationService.Get(localizationKey),
-                    selected ? selectedStyle : optionStyle))
+                    selected ? selectedStyle : optionStyle);
+            GUI.enabled = previousEnabled;
+            if (clicked)
             {
                 model.SelectOption(option);
                 ConfirmSelection();
@@ -996,7 +1028,9 @@ namespace BarPromenade
             string messageKey =
                 ConfirmationTarget == PauseMenuOption.Restart
                     ? "pause.restart_confirm"
-                    : "pause.quit_confirm";
+                    : ConfirmationTarget == PauseMenuOption.ReturnToCheckpoint
+                        ? "pause.checkpoint_confirm"
+                        : "pause.quit_confirm";
             GUI.Label(
                 new Rect(178f, 139f, 284f, 56f),
                 LocalizationService.Get(messageKey),

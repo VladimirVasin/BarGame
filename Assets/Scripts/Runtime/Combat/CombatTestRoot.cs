@@ -80,6 +80,7 @@ namespace BarPromenade
         public bool IsInitialized { get; private set; }
         public bool IsStoryContinuation { get; private set; }
         private int storyWarehouseSeed;
+        internal int CheckpointWarehouseSeed => IsStoryContinuation ? storyWarehouseSeed : WarehousePlan?.Seed ?? 0;
         public PlayerRuntime Player { get; private set; }
         public CombatActor Hero { get; private set; }
         public CombatActor Opponent { get; private set; }

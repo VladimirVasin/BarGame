@@ -99,6 +99,17 @@ namespace BarPromenade
         /// </summary>
         public string FirstSealedPlotId => firstSealedPlotId;
 
+        internal sealed class Checkpoint
+        {
+            internal readonly CemeteryGraveWorkRecord[] Records;
+            internal readonly string FirstSealed;
+            internal Checkpoint(CemeteryGraveWorkLedger state)
+            { Records = state.records.ToArray(); FirstSealed = state.firstSealedPlotId; }
+        }
+        internal Checkpoint CaptureCheckpoint() => new Checkpoint(this);
+        internal void RestoreCheckpoint(Checkpoint saved)
+        { records.Clear(); records.AddRange(saved.Records); firstSealedPlotId = saved.FirstSealed; }
+
         public void Reset()
         {
             records.Clear();

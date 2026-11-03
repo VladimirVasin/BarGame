@@ -4,20 +4,22 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-03
-Warehouse:fall/hold→material collapse;independent snapshots retain wounds/parts/blood
-through reuse;moving/fullpool defer;finite flakes/local sound/pause/reset/fish clear.
+Checkpoint:one RAM arrival snapshot;deep progress/world/ammo;unload before
+restore;entry/seed/rides;stale tokens;RU pause/No.
+SessionCheckpointStateTests/SessionCheckpointPlayModeTests passed.
+Warehouse:fall/hold→collapse;reuse keeps wounds/parts/blood;moving/fullpool defer;
+finite flakes/sound/pause/reset/fish clear.
 Warehouse_CorpseDecayPreservesDeathAndPoolLifecycle passed;frames reviewed.
-Bar close:warn/request,grace,finish/stand/walk/door;
-clean leftovers;pause keeps deadline;rig/camera/24FX/§6.
+Bar:close warn/grace/finish/stand/exit;leftovers cleared;pause/rig/camera/24FX/§6.
 Menu;clear→pan,blocked→validated hall cut/back;hero stays.
-Worker:handoff/towel stow/turn;torso elbow/chest palm.
+Worker:handoff/stow/turn;elbow/palm contacts.
 Speech tail keeps camera/pose;StepElapsed/PCM plan. build-city-pedestrian-3d-model.py --cafe-animation-only,
 ParkQuarrelTests.Delivery_StepsOncePerFrameAndBlipsOnLettersOnly and
 LastGuest_ClosingPreservesMenuSipAndWalksToDoor passed.
 ActualBar_FillsAndEmptiesWithClockAndFinishesAcceptedServiceAfterClosing:
 pre-close late-crowd departure failure.
 Beer/wine:E sips,docked remainder,one payment,prorated FX;
-last sip counts order;seated rig/camera/contacts/full wine safe;spirits once.
+last sip counts;seat/rig/camera/contacts/full wine safe;spirits once.
 BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment/
 WineService_FullGlassTakesThreeSeparateSips/PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce/
 BeerService_WaitsForPhysicalArrivalAndExplicitDrink/BottleService_WaitsForEveryArrivalAndExplicitDrink
@@ -25,22 +27,21 @@ passed;full/partial/empty frames.
 Shop:metal/glass door/contact,dense stock/shared surfaces/reflection,rear flush cartons,
 R checkout/scanner/packing/snacks/anchors;wear/baskets/cables/vents.
 Atomic sale/receipt;beer/wine/cognac stronger,stress kept;beer=barportion/wine=three;
-ml-dose rounding,carried ID/fill/open,Al tab/wine cap,rig cleanup.
-Cashier:UV/3D face/rig-measured hands;offers/body/CCTV/light budgets/§6 kept.
+ml rounding/ID/fill/open/Al tab/wine cap/cleanup.
+Cashier:UV/3D face/rig hands;offers/body/CCTV/lights/§6.
 Product/interior/cashier validators+supermarket_surface_response passed.
 Import:unique drink anchors/Texture2D response/unpacked door pivots;
-main-thread reflection buffers;bounded Al impact/surface,no glass audio.
+main-thread reflection;bounded Al impact;glass silent.
 Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures,
 AreaCaptureFixture.Supermarket/DrinkContainers_PurchaseSipSwitch_PreserveFillOpeningAndContacts
-passed;bar/inventory doses+rear/palm/counter/customer contacts;
-rear-wall/checkout/face/door/grip frames.
+passed;dose/contacts;wall/checkout/face/door/grip frames.
 Hawthorn:seed vials/ammo;yellow/shared pickup;Use→auto-close→rig gulp,+HP/intox/dose;
-HPHUD/inventoryHP;full/defeated reject. Lipclear→headshake/grimace→throw→hand.
+HPHUD/inventoryHP;full/defeated reject;lipclear→grimace/throw→hand.
 Red/frozen-world drift/smear/live/halfRT;gulp/swell;black/UI/halation,pause/retrigger/
 cleanup/intox kept;Blender vial/grips;inactive-Docker ground isolation.
 CombatWarehouseHawthorn passed.
 Mirror:packaged straight-alpha Lit glass/build gate.
-HomeBathroomMirrorPlayModeTests passed;asset/transmission.
+HomeBathroomMirrorPlayModeTests passed.
 Shower:mouse/centre LMB;eyes/nearclip restore.
 Shower_CancelMidWashDressesHimAndShutsTheWater passed.
 Toilet:shared pelvis anatomy;down→show/up→hide;existing fill.

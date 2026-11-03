@@ -123,6 +123,29 @@ namespace BarPromenade
             return true;
         }
 
+        public sealed class Checkpoint
+        {
+            internal readonly int[] Logs, Stands;
+            internal readonly KeyValuePair<string, int>[] Clearings;
+            internal readonly bool ChairFixed;
+            internal readonly int WaterVisits;
+            internal Checkpoint(VillageHouseholdProgress state)
+            {
+                Logs = (int[])state.logBaskets.Clone(); Stands = (int[])state.deliveryStands.Clone();
+                Clearings = new KeyValuePair<string, int>[state.clearingStages.Count];
+                ((ICollection<KeyValuePair<string, int>>)state.clearingStages).CopyTo(Clearings, 0);
+                ChairFixed = state.ChairFixed; WaterVisits = state.CompletedWaterVisits;
+            }
+        }
+        public Checkpoint CaptureCheckpoint() => new Checkpoint(this);
+        public void RestoreCheckpoint(Checkpoint saved)
+        {
+            if (saved == null) throw new ArgumentNullException(nameof(saved));
+            saved.Logs.CopyTo(logBaskets, 0); saved.Stands.CopyTo(deliveryStands, 0);
+            clearingStages.Clear(); foreach (var pair in saved.Clearings) clearingStages.Add(pair.Key, pair.Value);
+            ChairFixed = saved.ChairFixed; CompletedWaterVisits = saved.WaterVisits;
+        }
+
         public void Reset()
         {
             for (int log = 0; log < LogCount; log++) logBaskets[log] = -1;

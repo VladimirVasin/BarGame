@@ -369,6 +369,7 @@ namespace BarPromenade
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Reset()
         {
+            SessionCheckpointService.Clear();
             InventoryEquipmentChanged = null;
             WorldItemsChanged = null;
             QuestLogChanged = null;
@@ -377,6 +378,7 @@ namespace BarPromenade
 
         public static void BeginNewGame(string reason = "new_game_start")
         {
+            SessionCheckpointService.Clear();
             Rendering.HawthornHealingPulse.Clear();
             HawthornHealingAudio.ResetSession();
             ResetToDefaults();

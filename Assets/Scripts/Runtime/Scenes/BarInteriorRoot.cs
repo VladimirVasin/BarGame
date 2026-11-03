@@ -207,7 +207,8 @@ namespace BarPromenade
             Karaoke.InitializeAudience();
             ApplyBusinessHours();
             IsInitialized = true;
-            if (!NewGameStartService.TryConsumeArrival(NewGameLocation.Bar))
+            if (!NewGameStartService.TryConsumeArrival(NewGameLocation.Bar) &&
+                !SessionCheckpointService.IsRestoringScene(SceneIds.BarInterior))
                 BuildArrivalPresentation(camera, follow);
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(

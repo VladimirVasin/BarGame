@@ -1,6 +1,13 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted exception 2026-11-03,user — session checkpoint:**
+  `SessionCheckpointService`:1RAM/deep progress+world;successful gameplay arrival
+  incl.resident replaces;repeat same;NewGame/menu/exit clears;disk0. Entry modes/
+  seed/rides replay. Neutral staging unloads old writers;generation guards tokens/
+  tails. Esc/No;historical decay rollback only (§6/8/16.13),in-story cure0.
+  Three FX groups reuse owners/cleanup/settings;renderer0;art9.
+
 - **Accepted exception 2026-11-03,user — corpse settling:**
   Warehouse:fall/spasm→hold6→clip/crumble3.5→tail5;dark flakes;
   Room plaster/cloth,Docker fibre. Settled snapshots/parts;reuse waits/moving/fullpool;
@@ -4762,13 +4769,9 @@
   consumes the request once; timeout consumes it and logs final lock/transition/
   attempt state, preventing later-load leakage. Fresh seed/cash/needs/starter
   inventory, legacy Wake/Quit and Home -> Stairwell -> City stay.
-- **Accepted — Persistent transition context:** Static subsystem-reset session
-  state carries the seed, active bar context, explicit
-  bar/home/supermarket city return kind, the next stairwell arrival side and
-  the consumed Home arrival kind, one-shot debug-map arrival request and
-  current game time/day index
-  between Single-mode scene loads. `BeginNewGame` restores all of those values
-  together with wallet, drinking and balance state.
+- **Accepted — Persistent transition context:** `GameSessionState`:seed,bar/district,
+  City return,Home/stairwell arrival,debug-map request,calendar survive loads;
+  `BeginNewGame` resets all,wallet/drinking/balance.
 - **Accepted — Wake-started scaled session clock:** `GameTimeState` resets to
   legacy frozen05:59; prepared New Game exposes stopped12:00 without aging.
   E starts prepared time; Debug starts its chosen minute. Legacy Wake/debug map
@@ -4784,15 +4787,12 @@
   `GameTimeState.Advance` also returns the actually elapsed
   game minutes so `GameSessionState` advances clock and needs from one delta;
   any owner that sets `timeScale` to zero naturally freezes both.
-- **Accepted — Separate classic door transition:** Building doors first run
-  the shared source-scene `DoorUseEnter/Loop/Exit` action from an explicit
-  grounded dock. Only its terminal neutral completion reserves the
-  transition guard for the `source -> DoorTransition -> destination` chain.
-  The door scene runs a deterministic `1.6 s` unscaled handle/door/camera
-  timeline in a black void while the destination preloads. Activation waits
-  for the sequence to end fully black; a missing presentation root falls
-  back to the destination. Direction only picks the warm/cold lighting and
-  owns no gameplay state. Accepted 2026-09-12: an interior door keeps its
+- **Accepted — Separate classic door transition:** Source `DoorUseEnter/Loop/Exit`
+  starts from a grounded dock;terminal neutral reserves the guard for
+  `source -> DoorTransition -> destination`. Deterministic1.6s/unscaled
+  handle/door/camera in black void overlaps preload;activation waits fully black.
+  Missing presentation falls back to destination. Direction:only warm/cold light,
+  no gameplay state. Accepted 2026-09-12: an interior door keeps its
   exterior (City, village) resident - root active; hierarchy, camera,
   listener, clock, weather off; door and interior load additively, the
   interior installed active once the door is gone; doors between its
@@ -5874,13 +5874,11 @@
   safe spawn: it is mutually exclusive with debug teleport and consumes map
   selection input without requesting cross-area travel
   or confirming a teleport. Those actions return only after `XYZ` is closed.
-- **Accepted — Shared-lock gameplay pause:** UI roots own
-  `PauseMenuController`; Esc/Start respects modals/transitions, Home opening
-  and Bar arrival; motor/interactor/orbit/cinematic/HUD/audio are captured.
-  World/non-UI audio freeze. Resume restores one frame later;
-  disable/destroy/restart/quit immediately. Localized `640x360`:
-  Resume, graphics Options, Start Over, Quit; restart/quit default to No.
-  Save/load remains deferred.
+- **Accepted — Shared-lock gameplay pause:** `PauseMenuController`/Esc/Start
+  respects modals/transitions/Home opening/Bar arrival. Captures motor/interactor/
+  orbit/cinematic/HUD/audio;world audio freezes. Resume:next frame;disable/destroy/
+  restart/quit:immediate. Localized640x360:Resume/checkpoint/Options/Start Over/Quit;
+  destructive actions:No. Disk saves deferred.
 - **Accepted — Tank-control player heading (supersedes independent heading):**
   Ordinary A/D:yaw `150°/s` × intoxication, never velocity-facing.
   W:own-forward;S:backpedal `1.4 m/s`;W±A/D:walk/run arcs.

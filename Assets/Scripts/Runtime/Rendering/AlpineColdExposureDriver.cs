@@ -65,6 +65,13 @@ namespace BarPromenade
                 ResetSession();
         }
 
+        internal void RestoreCheckpoint(double seconds)
+        {
+            Model.RestoreCheckpoint(seconds);
+            wasAdvancing = false;
+            frostAudio?.Reset();
+        }
+
         public void ResetSession()
         {
             Model.Reset();

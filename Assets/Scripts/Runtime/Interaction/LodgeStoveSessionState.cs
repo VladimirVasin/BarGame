@@ -42,6 +42,9 @@ namespace BarPromenade
             return true;
         }
 
+        internal static LodgeStoveStage CaptureCheckpoint() => Stage;
+        internal static void RestoreCheckpoint(LodgeStoveStage stage) => Stage = stage;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void ResetForNewSession() => Stage = LodgeStoveStage.Empty;
     }

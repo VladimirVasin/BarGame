@@ -44,9 +44,9 @@ Near-empty scenes compose validated plans. Blender/canon: [../AI.md](../AI.md).
 | `BarPromenade.EditModeTests`, `BarPromenade.PlayModeTests` | Pure/asset contracts and focused runtime scenarios |
 | `tools/` | Deterministic generators, pinned toolchain, staging/publishing and native-audio build |
 
-`GameSessionState`: session facade; separate calendar/`VehicleActivityState`
-ownership. Vehicle reset/ride leases cannot affect later sessions. Journey
-progress is distinct from temporary rides; no disk save/load.
+`GameSessionState`: time/progress; `VehicleActivityState`: ride leases.
+`SessionCheckpointService`: one RAM snapshot per scene entry; pause restores
+progress/world/arrival. New Game/exit clears it; disk saves deferred.
 
 `GameInput`/`GameInputPolicy`: bindings; pause/transition/modal priority.
 Input System only; shared UI pointer/text.

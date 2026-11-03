@@ -44,6 +44,15 @@ namespace BarPromenade
             }
         }
 
+        internal double CaptureCheckpoint() => exposureSeconds;
+
+        internal void RestoreCheckpoint(double seconds)
+        {
+            if (double.IsNaN(seconds) || double.IsInfinity(seconds) || seconds < 0d || seconds > FullExposureSeconds)
+                throw new ArgumentOutOfRangeException(nameof(seconds));
+            exposureSeconds = seconds;
+        }
+
         public void Reset() => exposureSeconds = 0d;
     }
 }

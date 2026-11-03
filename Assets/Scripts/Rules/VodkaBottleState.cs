@@ -47,6 +47,31 @@ namespace BarPromenade
             fullMl = fullVolumeMl; sipCount = fullSipCount;
         }
 
+        public sealed class Checkpoint
+        {
+            internal readonly int[] Ids, Remaining, Phases;
+            internal readonly bool[] Opened;
+            internal readonly int NextId, ActiveId, Count, AlcoholRemainder, StressRemainder, ServingRemainder;
+            internal Checkpoint(VodkaBottleState state)
+            {
+                Ids = (int[])state.ids.Clone(); Remaining = (int[])state.remaining.Clone();
+                Phases = (int[])state.sipPhases.Clone(); Opened = (bool[])state.opened.Clone();
+                NextId = state.nextId; ActiveId = state.activeId; Count = state.Count;
+                AlcoholRemainder = state.alcoholRemainder; StressRemainder = state.stressRemainder;
+                ServingRemainder = state.servingRemainder;
+            }
+        }
+        public Checkpoint CaptureCheckpoint() => new Checkpoint(this);
+        public void RestoreCheckpoint(Checkpoint saved)
+        {
+            if (saved == null) throw new ArgumentNullException(nameof(saved));
+            saved.Ids.CopyTo(ids, 0); saved.Remaining.CopyTo(remaining, 0);
+            saved.Phases.CopyTo(sipPhases, 0); saved.Opened.CopyTo(opened, 0);
+            nextId = saved.NextId; activeId = saved.ActiveId; Count = saved.Count;
+            alcoholRemainder = saved.AlcoholRemainder; stressRemainder = saved.StressRemainder;
+            servingRemainder = saved.ServingRemainder;
+        }
+
         public bool SetOpened(int expectedId, bool value)
         {
             int index = Find(expectedId);

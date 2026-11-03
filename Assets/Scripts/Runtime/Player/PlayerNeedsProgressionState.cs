@@ -80,6 +80,14 @@ namespace BarPromenade
             fatigue = level;
         }
 
+        internal readonly struct Checkpoint
+        {
+            internal readonly double Hunger, Fatigue;
+            internal Checkpoint(double hunger, double fatigue) { Hunger = hunger; Fatigue = fatigue; }
+        }
+        internal Checkpoint CaptureCheckpoint() => new Checkpoint(hunger, fatigue);
+        internal void RestoreCheckpoint(Checkpoint saved) { hunger = saved.Hunger; fatigue = saved.Fatigue; }
+
         public void Reset()
         {
             hunger = PlayerNeedsRules.MinimumLevel;

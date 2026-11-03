@@ -35,6 +35,22 @@ namespace BarPromenade
         public static string LineKey(int index) =>
             "lastroute.ride.quip." + (index + 1).ToString("00");
 
+        internal LastRouteRideSpeechState CopyForCheckpoint()
+        {
+            var copy = new LastRouteRideSpeechState(random)
+            {
+                cursor = cursor, lastLine = lastLine, random = random,
+                IsTripActive = IsTripActive, IsLineActive = false,
+                LinesThisTrip = LinesThisTrip,
+                SilenceRemaining = IsLineActive ? Mathf.Max(SilenceRemaining, SilenceMinimumSeconds) : SilenceRemaining,
+                RadioReactionRemaining = RadioReactionRemaining,
+                DislikedRadioStationIndex = DislikedRadioStationIndex,
+                HasReactedToRadioThisTrip = HasReactedToRadioThisTrip
+            };
+            System.Array.Copy(bag, copy.bag, bag.Length);
+            return copy;
+        }
+
         public void BeginTrip()
         {
             IsTripActive = true;
@@ -145,6 +161,10 @@ namespace BarPromenade
     {
         public static LastRouteRideSpeechState State { get; private set; } =
             new LastRouteRideSpeechState(unchecked((uint)System.Environment.TickCount));
+
+        internal static LastRouteRideSpeechState CaptureCheckpoint() => State.CopyForCheckpoint();
+        internal static void RestoreCheckpoint(LastRouteRideSpeechState snapshot)
+            => State = snapshot.CopyForCheckpoint();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void ResetSession()

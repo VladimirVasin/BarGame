@@ -642,17 +642,19 @@ cemetery:own interiors/returns.
 - DoF: shared setting, exterior Gaussian far blur;
   Bar/Supermarket/Stairwell/Home/Church/Mother's House radius`.55`:nearby people/furniture/gestures clear. Priority-10 Bokeh serves
   modal close-ups, then yields to the scene grade;
-- prompts/pause/start/inventory/shops/inspectors/journal/HUD/maps
-  use Input System pointer/text and crisp `640x360` IMGUI after the world: soot/charcoal/
-  dirty-bone, flat rectangular panels, thin nested frames, stable grain and
-  grayscale focus. Packaged `Roboto-Regular`: RU/EN, no OS fonts;
-  Unity legacy is emergency fallback. `J` opens a full-canvas scrolling
-  checklist above the selected quest description. Unread entries blink a top-right
-  notebook; its key persists until first opening, then appears for six seconds.
-  Menus, inspectors and map omit persistent key guides/footers;commands appear once. Contextual prompts
-  are full pointer targets for the same guarded keyboard/gamepad action. Loading
-  retains framing/progress and its separately accepted painterly illustration;
-- localized pause:Esc/Start/input-time-audio;Resume/Options/default-No restart/quit.
+- prompts/pause/start/inventory/shops/inspectors/journal/HUD/maps:
+  Input System pointer/text; crisp `640x360` IMGUI after world; soot/charcoal/bone,
+  flat panels/nested frames/stable grain/grayscale focus. Packaged Roboto RU/EN;
+  no OS fonts; Unity legacy fallback. `J`:fullscreen scrolling checklist over
+  selected quest description. Top-right unread notebook blinks; key until first
+  open, then six seconds. Menus/inspectors/maps omit persistent guides/footers;
+  commands once. Full prompt hitboxes share guarded keyboard/gamepad action.
+  Loading keeps framing/progress and accepted painterly illustration;
+- localized pause:Esc/Start/input-time-audio;Resume/Checkpoint/Options/restart/quit;
+  confirmations default-No. One RAM checkpoint at each ready gameplay entry,
+  including resident returns; no transition scenes. Full progress/world rollback,
+  entry pose/mode and firearms restored after old-scene unload; no repeated capture.
+  New Game/exit clears it; disk saves deferred. `SessionCheckpointService` owns it.
   Warehouse ambush;Lab0. Debug commits cans/fish/key/lamp/fan/gate;
   progress kept;doorE/3+5s→safe hook;
   Hero roof hoist/180°roll→aim/fire/pistol;switch0/∞reserve/R.
@@ -2236,14 +2238,12 @@ cemetery:own interiors/returns.
   disable and destroy restore the exact parent, sibling index, local transform,
   selection collider and original renderer colors without acquiring a second
   modal lock;
-- one localized fullscreen hero inventory in City, BarInterior,
-  SupermarketInterior, HomeInterior and StairwellInterior. `I` or gamepad North
-  captures the shared modal lock, freezes scaled time, hides the gameplay HUD
-  and preserves the ambient audio bed; Escape, the same toggle or gamepad East
-  restores the exact prior input, camera, HUD and time-scale state without
-  opening pause on the same frame. The logical `640x360` screen combines the production hero's transparent3D
-  portrait, four needs bars, cash, five-column icons, description and contextual
-  Use/Equip/Remove/Examine/Close. Hunger/stress/fatigue start0 and survive travel;
+- localized fullscreen inventory:City/Bar/Supermarket/Home/Stairwell.
+  `I`/gamepad North:shared modal lock,time freeze,HUD hidden,ambient bed kept.
+  Escape/toggle/gamepad East restores input/camera/HUD/time exactly, without
+  opening pause that frame. `640x360`:production hero transparent3D portrait,
+  four needs bars,cash,five-column icons,description,Use/Equip/Remove/Examine/Close.
+  Hunger/stress/fatigue start0 and survive travel;
   Wake starts hunger100/1440 and fatigue100/1080 game minutes,with double
   fractions. Pause freezes progression;intoxication slowdown does not. Food
   clears hunger fraction;completed sleep clears fatigue/fraction. No need

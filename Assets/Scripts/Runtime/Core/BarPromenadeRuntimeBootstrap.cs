@@ -88,6 +88,7 @@ namespace BarPromenade
                 return;
             }
 
+            SessionCheckpointService.PrepareDestination(scene.name);
             EnsureGameTimeRuntimeInstalled();
             IntoxicationAudioDriver.EnsureInstalled();
 
@@ -143,6 +144,7 @@ namespace BarPromenade
             {
                 EnsureCombatTestInstalled();
             }
+            if (!SceneTransitionService.IsTransitioning) SessionCheckpointService.DestinationReady(scene.name);
         }
 
         private static bool IsAllowListedScene(string sceneName)

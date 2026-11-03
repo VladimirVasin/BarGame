@@ -47,6 +47,28 @@ namespace BarPromenade
             if (!Awakened || Completed) return;
             defeated = 0; DefeatedCount = 0; Elapsed = 0f; FirstContactPassed = false; Retries++; Generation++;
         }
+        public readonly struct Checkpoint
+        {
+            internal readonly uint Defeated;
+            internal readonly bool Awakened, Completed, FirstContactPassed;
+            internal readonly float Elapsed;
+            internal readonly int Retries, DefeatedCount;
+            internal Checkpoint(StairwellEncounterState state)
+            {
+                Defeated = state.defeated; Awakened = state.Awakened; Completed = state.Completed;
+                FirstContactPassed = state.FirstContactPassed; Elapsed = state.Elapsed;
+                Retries = state.Retries; DefeatedCount = state.DefeatedCount;
+            }
+        }
+        public Checkpoint CaptureCheckpoint() => new Checkpoint(this);
+        public void RestoreCheckpoint(Checkpoint saved)
+        {
+            defeated = saved.Defeated; Awakened = saved.Awakened; Completed = saved.Completed;
+            FirstContactPassed = saved.FirstContactPassed; Elapsed = saved.Elapsed;
+            Retries = saved.Retries; DefeatedCount = saved.DefeatedCount;
+            Generation = Generation == int.MaxValue ? 1 : Generation + 1;
+        }
+
         public void Reset()
         {
             defeated = 0; DefeatedCount = Retries = 0; Elapsed = 0f;

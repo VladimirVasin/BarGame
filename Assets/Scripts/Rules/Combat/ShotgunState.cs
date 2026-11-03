@@ -15,6 +15,36 @@ namespace BarPromenade
             Reset();
         }
 
+        public readonly struct Snapshot
+        {
+            internal readonly bool Loaded0, Loaded1, Spent0, Spent1;
+            internal readonly int ReserveRounds, ShotSequence, LastFiredBarrel, ChamberMask, LoadMask;
+            internal readonly double ReloadElapsed, CooldownRemaining;
+            internal Snapshot(ShotgunState state)
+            {
+                Loaded0 = state.loaded[0]; Loaded1 = state.loaded[1];
+                Spent0 = state.spent[0]; Spent1 = state.spent[1];
+                ReserveRounds = state.ReserveRounds; ShotSequence = state.ShotSequence;
+                LastFiredBarrel = state.LastFiredBarrel; ChamberMask = state.ReloadChamberMask;
+                LoadMask = state.ReloadLoadMask; ReloadElapsed = state.reloadElapsed;
+                CooldownRemaining = state.cooldownRemaining;
+            }
+        }
+
+        // Preserve chambers and an interrupted physical reload, while releasing input intent.
+        public Snapshot Capture() => new Snapshot(this);
+        public void Restore(Snapshot saved)
+        {
+            loaded[0] = saved.Loaded0; loaded[1] = saved.Loaded1;
+            spent[0] = saved.Spent0; spent[1] = saved.Spent1;
+            ReserveRounds = Math.Max(0, Math.Min(ReserveCapacity, saved.ReserveRounds));
+            ShotSequence = saved.ShotSequence; LastFiredBarrel = saved.LastFiredBarrel;
+            ReloadChamberMask = saved.ChamberMask; ReloadLoadMask = saved.LoadMask;
+            reloadElapsed = Math.Max(0d, Math.Min(Settings.ReloadSeconds, saved.ReloadElapsed));
+            cooldownRemaining = Math.Max(0d, Math.Min(Settings.FireCooldownSeconds, saved.CooldownRemaining));
+            AimRequested = reloading = false; aimElapsed = 0d;
+        }
+
         public ShotgunSettings Settings { get; }
         FirearmSettings IFirearmState.Settings => Settings;
         public int Rounds => (loaded[0] ? 1 : 0) + (loaded[1] ? 1 : 0);

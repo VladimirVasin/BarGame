@@ -60,6 +60,16 @@ namespace BarPromenade
             walk = null;
         }
 
+        internal static (CityPedestrianInsultWalk Walk, int Salt, bool Salted) CaptureCheckpoint()
+            => (walk?.CopyForCheckpoint(), salt, salted);
+
+        internal static void RestoreCheckpoint((CityPedestrianInsultWalk Walk, int Salt, bool Salted) snapshot)
+        {
+            walk = snapshot.Walk?.CopyForCheckpoint();
+            salt = snapshot.Salt;
+            salted = snapshot.Salted;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void ResetForNewSession()
         {

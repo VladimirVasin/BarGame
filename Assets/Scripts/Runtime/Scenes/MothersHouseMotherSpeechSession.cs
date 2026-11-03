@@ -40,6 +40,18 @@ namespace BarPromenade
                 FirstMaximumSeconds);
         }
 
+        internal MothersHouseMotherSpeechState CopyForCheckpoint()
+        {
+            var copy = new MothersHouseMotherSpeechState(random)
+            {
+                cursor = cursor, lastLine = lastLine, random = random,
+                IsLineActive = false,
+                SilenceRemaining = IsLineActive ? Mathf.Max(SilenceRemaining, SilenceMinimumSeconds) : SilenceRemaining
+            };
+            System.Array.Copy(bag, copy.bag, bag.Length);
+            return copy;
+        }
+
         /// <summary>A line is on screen. Nothing is drawn and no
         /// silence is spent until it comes down.</summary>
         public bool IsLineActive { get; private set; }
@@ -199,6 +211,10 @@ namespace BarPromenade
             private set;
         } = new MothersHouseMotherSpeechState(
             unchecked((uint)System.Environment.TickCount));
+
+        internal static MothersHouseMotherSpeechState CaptureCheckpoint() => State.CopyForCheckpoint();
+        internal static void RestoreCheckpoint(MothersHouseMotherSpeechState snapshot)
+            => State = snapshot.CopyForCheckpoint();
 
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]

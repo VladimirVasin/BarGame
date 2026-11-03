@@ -27,6 +27,16 @@ namespace BarPromenade
             }
         }
 
+        internal CityPedestrianInsultWalk CopyForCheckpoint()
+        {
+            var copy = new CityPedestrianInsultWalk(state)
+            {
+                state = state, cursor = cursor, previousIndex = previousIndex
+            };
+            System.Array.Copy(order, copy.order, order.Length);
+            return copy;
+        }
+
         /// <summary>The line last taken, or <c>-1</c> before the first.</summary>
         public int PreviousIndex => previousIndex;
 

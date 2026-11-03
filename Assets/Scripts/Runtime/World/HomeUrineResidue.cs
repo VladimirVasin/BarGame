@@ -85,6 +85,39 @@ namespace BarPromenade
 
         public static bool SameScope(string a, string b) => string.Equals(a, b, StringComparison.Ordinal);
 
+        internal sealed class CheckpointSnapshot
+        {
+            internal Deposit[] Deposits;
+            internal int Replacement;
+            internal int Revision;
+        }
+
+        private static Deposit CopyDeposit(Deposit source) => new Deposit
+        {
+            SurfaceId = source.SurfaceId, Scope = source.Scope,
+            LocalPoint = source.LocalPoint, LocalNormal = source.LocalNormal,
+            Radius = source.Radius, Wall = source.Wall, Revision = source.Revision
+        };
+
+        internal static CheckpointSnapshot CaptureCheckpoint()
+        {
+            var copy = new Deposit[deposits.Count];
+            for (int i = 0; i < copy.Length; i++) copy[i] = CopyDeposit(deposits[i]);
+            return new CheckpointSnapshot
+            {
+                Deposits = copy, Replacement = replacement, Revision = revision
+            };
+        }
+
+        internal static void RestoreCheckpoint(CheckpointSnapshot snapshot)
+        {
+            deposits.Clear();
+            foreach (Deposit deposit in snapshot.Deposits) deposits.Add(CopyDeposit(deposit));
+            replacement = snapshot.Replacement;
+            revision = snapshot.Revision;
+            Generation++;
+        }
+
         public static void ResetSession()
         { deposits.Clear(); replacement = 0; revision = 0; Generation++; }
 

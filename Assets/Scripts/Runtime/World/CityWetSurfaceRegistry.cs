@@ -308,6 +308,16 @@ namespace BarPromenade
                     deltaTime));
         }
 
+        internal static (float Wetness, bool HasWeather, double LastMinutes) CaptureCheckpoint()
+            => (currentWetness, hasWeatherState, lastAbsoluteGameMinutes);
+
+        internal static void RestoreCheckpoint((float Wetness, bool HasWeather, double LastMinutes) state)
+        {
+            hasWeatherState = state.HasWeather;
+            lastAbsoluteGameMinutes = state.LastMinutes;
+            SetWetness(state.Wetness, true);
+        }
+
         internal static void ResetForTests()
         {
             Entries.Clear();

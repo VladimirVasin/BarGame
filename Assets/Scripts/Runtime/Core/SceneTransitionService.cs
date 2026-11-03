@@ -70,6 +70,38 @@ namespace BarPromenade
             return true;
         }
 
+        internal static bool RequestCheckpointLoad(string sceneName, Action afterUnload)
+        {
+            if (!TryReserveTransition(sceneName, CreateOperationId(), "checkpoint", string.Empty)) return false;
+            instance.StartCoroutine(instance.ExecuteSafely(instance.LoadCheckpoint(sceneName, afterUnload)));
+            return true;
+        }
+
+        private IEnumerator LoadCheckpoint(string sceneName, Action afterUnload)
+        {
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                bool previousAudioPause = AudioListener.pause;
+                AudioListener.pause = true;
+                try
+                {
+                    startupLoading = AreaLoadingRoot.CreateForCheckpoint();
+                    yield return ResidentExteriorPolicy.DiscardDormantExterior();
+                    // Single mode waits for every outgoing writer before restoring data.
+                    AsyncOperation staging = TryStartLoad(SceneIds.AreaLoading);
+                    if (staging == null)
+                    {
+                        FinishTransition("checkpoint_staging_failed", false);
+                        yield break;
+                    }
+                    while (!staging.isDone) yield return null;
+                    afterUnload();
+                    yield return LoadDirect(sceneName, true);
+                }
+                finally { AudioListener.pause = previousAudioPause; }
+            }
+        }
+
         public static bool RequestLoad(
             string sceneName,
             out string operationId)
@@ -213,6 +245,7 @@ namespace BarPromenade
             }
 
             EnsureInstance();
+            SessionCheckpointService.PrepareDestination(sceneName);
             IsTransitioning = true;
             activeOperationId = operationId;
             activeSourceScene = GetActiveSceneName();
@@ -260,7 +293,7 @@ namespace BarPromenade
 
         private IEnumerator LoadDirect(string sceneName, bool cover = false)
         {
-            if (cover) startupLoading = AreaLoadingRoot.CreateForNewGame();
+            if (cover && startupLoading == null) startupLoading = AreaLoadingRoot.CreateForNewGame();
             yield return null;
             yield return ResidentExteriorPolicy.DiscardDormantExterior();
             AsyncOperation operation = TryStartLoad(sceneName);
@@ -1134,6 +1167,8 @@ namespace BarPromenade
                 return;
             }
 
+            if (succeeded) SessionCheckpointService.DestinationReady(activeTargetScene);
+            else SessionCheckpointService.TransitionFailed();
             instance?.ReleasePendingLoad();
             // A door composition still running here is drained first, so
             // the duration below covers the build the player waited for.

@@ -44,6 +44,7 @@ namespace BarPromenade
         internal static bool TryConsume(out int seed)
         {
             // A failed/abandoned load cannot turn a later direct test load into a story arrival.
+            if (SessionCheckpointService.TryGetStoryWarehouse(out seed)) { ResetPending(); return true; }
             bool accepted = !string.IsNullOrEmpty(pendingOperationId) &&
                 SceneTransitionService.IsTransitioning &&
                 pendingOperationId == SceneTransitionService.CurrentOperationId;

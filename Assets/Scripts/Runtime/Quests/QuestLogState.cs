@@ -16,6 +16,10 @@ namespace BarPromenade
 
         public IReadOnlyList<QuestLogEntry> Entries => entriesView;
 
+        internal QuestLogEntry[] CaptureCheckpoint() => entries.ToArray();
+        internal void RestoreCheckpoint(QuestLogEntry[] saved)
+        { entries.Clear(); entries.AddRange(saved); }
+
         /// <summary>
         /// Empties the log for a new game. Nothing is put up here: the
         /// starter quest belongs to the calendar like every other

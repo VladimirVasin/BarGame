@@ -16,8 +16,8 @@ Read this file first, then use [ai/README.md](ai/README.md) as the documentation
   finishes; isolated synchronous builder entry points remain available.
 - `BarPromenade.Rules` owns engine-independent calendar, activity ownership and
   input-priority rules. Runtime, Editor and test assemblies have separate roles.
-- Session progress survives scene loads, not process exit. Save/load remains
-  deferred. Temporary ride ownership is reset with the session.
+- One in-memory checkpoint per scene entry; pause restores full progress.
+  New Game/exit clears it. Disk saves deferred; ride leases reset by session.
 - [Project overview](ai/project-overview.md) contains the current technical
   baseline; [current world](ai/current-world.md) holds detailed gameplay facts;
   [systems map](ai/systems-map.md) locates each owner. Read the relevant sections,

@@ -24,6 +24,20 @@ namespace BarPromenade
             instance.Bind(owner, camera, ready, sheltered);
         }
 
+        internal static double CaptureCheckpoint()
+            => instance != null ? instance.Model.CaptureCheckpoint() : 0d;
+
+        internal static void RestoreCheckpoint(double seconds)
+        {
+            if (instance == null && seconds > 0d)
+            {
+                var go = new GameObject("Alpine Cold Exposure");
+                UnityEngine.Object.DontDestroyOnLoad(go);
+                instance = go.AddComponent<AlpineColdExposureDriver>();
+            }
+            if (instance != null) instance.RestoreCheckpoint(seconds);
+        }
+
         public static void ResetSession()
         {
             if (instance != null) instance.ResetSession();

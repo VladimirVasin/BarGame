@@ -219,8 +219,18 @@ namespace BarPromenade
             DontDestroyOnLoad(serviceObject);
         }
 
+        internal static void PrepareCheckpointArrival(AreaTravelRequest request)
+        {
+            hasArrival = true;
+            arrivalArea = request.DestinationArea;
+            arrivalToken = request.ArrivalToken;
+            arrivalPosition = request.ArrivalPosition;
+            hasArrivalPosition = request.HasArrivalPosition;
+        }
+
         private static void Reserve(AreaTravelRequest request)
         {
+            SessionCheckpointService.PrepareDestination(AreaSceneCatalog.GetSceneName(request.DestinationArea), request);
             operationSequence++;
             activeOperationId = $"area-travel-{operationSequence}";
             Scene activeScene = SceneManager.GetActiveScene();
@@ -519,6 +529,7 @@ namespace BarPromenade
                 GameLog.Field(
                     "composition_frames",
                     compositionFrameCount));
+            SessionCheckpointService.DestinationReady(AreaSceneCatalog.GetSceneName(request.DestinationArea));
             ClearPending();
         }
 
@@ -542,6 +553,7 @@ namespace BarPromenade
             arrivalToken = default;
             arrivalPosition = default;
             hasArrivalPosition = false;
+            SessionCheckpointService.TransitionFailed();
             ClearPending();
         }
 

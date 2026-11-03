@@ -47,6 +47,16 @@ namespace BarPromenade
             return true;
         }
 
+        internal static (bool Started, double Working, double Last) CaptureCheckpoint()
+            => (HasStarted, WorkingSeconds, lastSessionSeconds);
+
+        internal static void RestoreCheckpoint((bool Started, double Working, double Last) state)
+        {
+            HasStarted = state.Started;
+            WorkingSeconds = state.Working;
+            lastSessionSeconds = state.Last;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void ResetForNewGame()
         {

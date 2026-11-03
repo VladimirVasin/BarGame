@@ -47,7 +47,9 @@ namespace BarPromenade
                 arenaBounds = new ArenaBounds();
                 return;
             }
-            int seed = IsStoryContinuation ? storyWarehouseSeed : WarehouseSeedForTests ?? ReadWarehouseSeed();
+            int seed = SessionCheckpointService.TryGetWarehouseSeed(out int checkpointSeed)
+                ? checkpointSeed
+                : IsStoryContinuation ? storyWarehouseSeed : WarehouseSeedForTests ?? ReadWarehouseSeed();
             WarehouseSeedForTests = null;
             WarehousePlan = WarehouseArenaPlanner.Create(seed);
             combatLocation = WarehouseArenaBuilder.Create(WarehousePlan, transform);

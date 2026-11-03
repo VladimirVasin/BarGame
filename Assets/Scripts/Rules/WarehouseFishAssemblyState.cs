@@ -138,6 +138,29 @@ namespace BarPromenade
             return true;
         }
 
+        public sealed class Checkpoint
+        {
+            internal readonly WarehouseFishPartPose[] Poses;
+            internal readonly WarehouseFishAssemblyPhase Phase;
+            internal readonly int LinkedMask;
+            internal readonly float PourElapsed, FinaleElapsed;
+            internal readonly bool RewardGranted, ReceiptPending;
+            internal Checkpoint(WarehouseFishAssemblyState state)
+            {
+                Poses = (WarehouseFishPartPose[])state.poses.Clone(); Phase = state.Phase;
+                LinkedMask = state.LinkedMask; PourElapsed = state.PourElapsed; FinaleElapsed = state.FinaleElapsed;
+                RewardGranted = state.RewardGranted; ReceiptPending = state.ReceiptPending;
+            }
+        }
+        public Checkpoint CaptureCheckpoint() => new Checkpoint(this);
+        public void RestoreCheckpoint(Checkpoint saved)
+        {
+            if (saved == null) throw new ArgumentNullException(nameof(saved));
+            saved.Poses.CopyTo(poses, 0); Phase = saved.Phase; LinkedMask = saved.LinkedMask;
+            PourElapsed = saved.PourElapsed; FinaleElapsed = saved.FinaleElapsed;
+            RewardGranted = saved.RewardGranted; ReceiptPending = saved.ReceiptPending;
+        }
+
         public void Reset()
         {
             Phase = WarehouseFishAssemblyPhase.WaitingForCans;

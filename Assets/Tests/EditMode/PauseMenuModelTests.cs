@@ -58,6 +58,50 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(PauseMenuOption.Resume));
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void CheckpointAvailability_ControlsSelectionWithoutChangingOtherActions(bool withCutscenes)
+        {
+            var model = new PauseMenuModel();
+            model.ConfigureCutscenes(withCutscenes, withCutscenes ? 1 : 0);
+            model.Open();
+
+            Assert.That(model.SelectOption(PauseMenuOption.ReturnToCheckpoint), Is.False);
+            model.MoveSelection(1);
+            Assert.That(model.SelectedOption, Is.EqualTo(PauseMenuOption.Options));
+            model.MoveSelection(-1);
+            Assert.That(model.SelectedOption, Is.EqualTo(PauseMenuOption.Resume));
+
+            model.ConfigureCheckpoint(true);
+            model.MoveSelection(1);
+            Assert.That(model.SelectedOption, Is.EqualTo(PauseMenuOption.ReturnToCheckpoint));
+            Assert.That(model.Confirm(), Is.EqualTo(PauseMenuAction.None));
+            Assert.That(model.Page, Is.EqualTo(PauseMenuPage.Confirmation));
+            Assert.That(model.ConfirmationTarget, Is.EqualTo(PauseMenuOption.ReturnToCheckpoint));
+            Assert.That(model.ConfirmationYesSelected, Is.False);
+            Assert.That(model.Confirm(), Is.EqualTo(PauseMenuAction.None));
+
+            model.SelectOption(PauseMenuOption.ReturnToCheckpoint);
+            model.Confirm();
+            model.SelectConfirmation(true);
+            Assert.That(model.Confirm(), Is.EqualTo(PauseMenuAction.ReturnToCheckpoint));
+
+            model.ConfigureCheckpoint(false);
+            Assert.That(model.Page, Is.EqualTo(PauseMenuPage.Main));
+            Assert.That(model.SelectedOption, Is.EqualTo(PauseMenuOption.Resume));
+            Assert.That(model.ConfirmationYesSelected, Is.False);
+
+            model.SelectOption(PauseMenuOption.Restart);
+            model.Confirm();
+            model.SelectConfirmation(true);
+            Assert.That(model.Confirm(), Is.EqualTo(PauseMenuAction.Restart));
+            model.Open();
+            model.SelectOption(PauseMenuOption.Quit);
+            model.Confirm();
+            model.SelectConfirmation(true);
+            Assert.That(model.Confirm(), Is.EqualTo(PauseMenuAction.Quit));
+        }
+
         [Test]
         public void Restart_RequiresExplicitYesConfirmation()
         {

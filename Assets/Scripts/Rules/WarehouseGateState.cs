@@ -31,6 +31,15 @@ namespace BarPromenade
             return true;
         }
 
+        public readonly struct Checkpoint
+        {
+            internal readonly double Elapsed;
+            internal readonly bool Unlocked;
+            internal Checkpoint(WarehouseGateState state) { Elapsed = state.elapsed; Unlocked = state.Unlocked; }
+        }
+        public Checkpoint CaptureCheckpoint() => new Checkpoint(this);
+        public void RestoreCheckpoint(Checkpoint saved) { elapsed = saved.Elapsed; Unlocked = saved.Unlocked; }
+
         public void Reset()
         {
             Unlocked = false;

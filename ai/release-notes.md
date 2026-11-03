@@ -8,18 +8,20 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-03
 
+- Чекпойнт при входе в сцену;Esc→возврат с откатом прогресса в сеансе.
+  SessionCheckpointStateTests/SessionCheckpointPlayModeTests.
+
 - Склад:тела осыпаются после падения и паузы;шорох/след.
   Warehouse_CorpseDecayPreservesDeathAndPoolLifecycle.
 - Бар:предупреждение/просьба,доподача/допить/встать/выход;уборка.
-  Пауза/срок/камера/меню. Бармен:подача→салфетка→зал;кадр/поза ждут речь.
+  Пауза/камера;бармен:подача/салфетка/зал;поза ждёт речь.
   LastGuest_ClosingPreservesMenuSipAndWalksToDoor.
 - Пиво/вино:E по трети→стойка,одна оплата/FX частями/зачёт в конце.
   Водка/коньяк разом.
   BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment/
   WineService_FullGlassTakesThreeSeparateSips.
-- Магазин:выкладка/дверь/фактура,шкафы у стены,касса справа/опоры;
-  кассир:руки/3D-лицо. Пиво/вино:покупка/питьё/остаток;
-  целая банка/металлический звук;крепче,банка=порция/вино=3/доза по мл.
+- Магазин:выкладка/дверь/фактуры/касса;кассир:руки/3D-лицо.
+  Напитки:покупка/питьё/остаток/доза по мл;банка/звук.
   AreaCaptureFixture.Supermarket/Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures/
   DrinkContainers_PurchaseSipSwitch_PreserveFillOpeningAndContacts passed;
   rear-wall/checkout/face;bar/inventory doses.

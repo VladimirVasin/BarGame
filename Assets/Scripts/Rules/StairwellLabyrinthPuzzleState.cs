@@ -102,6 +102,14 @@ namespace BarPromenade
         public bool TryCommit(int expectedRevision, StairwellLabyrinthPuzzleAction action) =>
             Revision == expectedRevision && TryApply(action);
 
+        public Snapshot CaptureCheckpoint() => snapshot;
+        public void RestoreCheckpoint(Snapshot saved)
+        {
+            snapshot = saved;
+            // Old prepared gestures cannot commit against the restored mechanisms.
+            Revision = Revision == int.MaxValue ? 1 : Revision + 1;
+        }
+
         public void Reset()
         {
             snapshot = Initial();
