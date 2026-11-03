@@ -3,19 +3,18 @@
 ## Current facts
 
 - **Accepted architecture extension — 2026-11-03,user — terraced City:**
-  Planned direction:35–45m coastal rise;3–5-storey homes,low coast/port/river,
+  Target35–45m coastal rise;3–5-storey homes,low coast/port/river,
   working west/residential east/park and short Home↔Bar remain.
-  Four stages:master profile/transport,6–8m courtyard pilot,one upper pedestrian
-  crossing with layered navigation and rollout,existing anchors/routes/map.
-  Step3 authorizes two walkable levels at one XZ only through explicit layer/
-  height/connectivity and correct physical contacts;no traversable river cave
-  or general tunnel permission. Live:4.8×2.4m bridge at+7.68 above a3m alley
-  to the east street;explicit surfaces/links preserve sharedXZ/distinctY for
-  hero/NPC/map. Local rain shelter,physical contacts;no new population.
-  Target profiles do not replace active citywide elevation/collision early.
-  Common Blender modules/materials,bounded plans/indexes;24FX and focused
-  acceptance:[city-multilevel-plan.md](city-multilevel-plan.md).
-  Art9/story§16/21,weather/fog/control/population identity stay;no new lore.
+  Four stages:profile/transport→courtyard pilot→one upper crossing/rollout→anchors/map.
+  Two floors at one XZ require explicit layers/links/contacts;river cave stays
+  closed,no general tunnel permission. Live:4.8×2.4m bridge at+7.68 above a3m
+  alley to the east street;hero/NPC/map keep sharedXZ/distinctY.
+  Local rain shelter;no new population. Targets do not replace live heights.
+  User `2026-11-04`:map logic/labels/markers/selection/XYZ/arrivals each slice;
+  ImageGen once at final step if geometry/elevation changed. Stale art→scheme;
+  never retag its fingerprint. Common Blender/materials,bounded plans/indexes;
+  24FX/focused acceptance:[city-multilevel-plan.md](city-multilevel-plan.md).
+  Art9/story§16/21,weather/fog/control/NPC identities stay;no new lore.
 
 - **Accepted architecture exception — 2026-11-03,user — doubled calendar day:**
   Art §2/story §20:96 real minutes/day at ×1,four seconds/game minute.
@@ -472,7 +471,9 @@
   User:built-in ImageGen/pure plans;City charcoal/Silent Hill;bounds/size/
   geography/RU SHA;stale/nondefault→scheme. Live player/POIs/bus/selection/
   XYZ/safe arrivals;clamped nonreadable≤2K. Village independent SHA/mapUvRect;
-  MountainRoad scheme. Authored map changes→redraw;live motion0/UI/all24 kept.
+  MountainRoad scheme. User `2026-11-04`:logical maps update each slice;
+  ImageGen redraw once at final step for geometry/elevation changes. Stale
+  art keeps scheme fallback;no fingerprint retagging. UI/all24 kept.
 
 - **Accepted 2026-10-29 — residential dog park:**
   User:8×10m residual Residential:park-first after laundry/stable seed-cell

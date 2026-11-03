@@ -7,7 +7,47 @@ namespace BarPromenade
 {
     public enum CityTerraceTransportBank { West, East }
     public enum CityTerraceTransportSegmentKind { Climb, Approach, TurnLanding, StopLanding }
-    public enum CityTerraceReservationKind { Building, ProtectedPlace, Park, River, Coast }
+    public enum CityTerraceReservationKind { Building, ProtectedPlace, Park, River, Coast, ExistingRoad, Terrace }
+    public enum CityTerraceRoadCrossingKind { CoastalAttachment, AtGradeUnresolved, GradeSeparatedUnresolved }
+
+    [Flags]
+    public enum CityTerracePlacementRequirement
+    {
+        None = 0, CorridorReservation = 1, RoadConnections = 2, VehicleSweptPath = 4,
+        TerrainTieIns = 8, FootprintConflicts = 16, UnresolvedRoadCrossings = 32
+    }
+
+    /// <summary>
+    /// A sampled overlap with one existing road. Surface separation is not
+    /// under-deck clearance: neither a bridge nor a tunnel is approved here.
+    /// A coastal attachment identifies the existing socket, not a built junction.
+    /// </summary>
+    public readonly struct CityTerraceRoadCrossing
+    {
+        internal CityTerraceRoadCrossing(string routeId, int segmentIndex, string reservationId,
+            RoadEdge roadEdge, Vector2 worldXZ, float routeDatum, float roadDatum,
+            bool centerlinesIntersect, CityTerraceRoadCrossingKind kind)
+        {
+            RouteId = routeId; SegmentIndex = segmentIndex; ReservationId = reservationId;
+            Id = routeId + ":crossing:" + segmentIndex + ":" + reservationId;
+            RoadEdge = roadEdge; WorldXZ = worldXZ; RouteDatumY = routeDatum; RoadDatumY = roadDatum;
+            CenterlinesIntersect = centerlinesIntersect; Kind = kind;
+        }
+        public string Id { get; }
+        public string RouteId { get; }
+        public int SegmentIndex { get; }
+        public string ReservationId { get; }
+        public RoadEdge RoadEdge { get; }
+        public Vector2 WorldXZ { get; }
+        public float RouteDatumY { get; }
+        public float RoadDatumY { get; }
+        public Vector3 RoutePosition => new Vector3(WorldXZ.x, RouteDatumY + CityStreetSurfacePlanner.RoadTop, WorldXZ.y);
+        public Vector3 RoadPosition => new Vector3(WorldXZ.x, RoadDatumY + CityStreetSurfacePlanner.RoadTop, WorldXZ.y);
+        public float SignedSurfaceSeparation => RouteDatumY - RoadDatumY;
+        public bool CenterlinesIntersect { get; }
+        public CityTerraceRoadCrossingKind Kind { get; }
+        public bool RequiresCrossingResolution => Kind != CityTerraceRoadCrossingKind.CoastalAttachment;
+    }
 
     public readonly struct CityTerraceRouteSample
     {
@@ -55,23 +95,22 @@ namespace BarPromenade
     {
         internal CityTerraceTransportRoute(string id, CityTerraceTransportBank bank,
             IList<CityTerraceRouteSample> samples, IList<CityTerraceTransportSegment> segments,
-            IList<CityTerraceReservation> reservations)
+            CityRoadElevationProfile elevationProfile, IList<CityTerraceReservation> reservations)
         {
             Id = id; Bank = bank;
+            ElevationProfile = elevationProfile;
             Samples = new ReadOnlyCollection<CityTerraceRouteSample>(samples);
             Segments = new ReadOnlyCollection<CityTerraceTransportSegment>(segments);
             Reservations = new ReadOnlyCollection<CityTerraceReservation>(reservations);
-            TotalHorizontalLength = samples[samples.Count - 1].HorizontalDistance;
-            foreach (CityTerraceTransportSegment segment in segments)
-                MaximumGradePercent = Mathf.Max(MaximumGradePercent, segment.GradePercent);
         }
         public string Id { get; }
         public CityTerraceTransportBank Bank { get; }
         public IReadOnlyList<CityTerraceRouteSample> Samples { get; }
         public IReadOnlyList<CityTerraceTransportSegment> Segments { get; }
         public IReadOnlyList<CityTerraceReservation> Reservations { get; }
-        public float TotalHorizontalLength { get; }
-        public float MaximumGradePercent { get; }
+        public CityRoadElevationProfile ElevationProfile { get; }
+        public float TotalHorizontalLength => ElevationProfile.HorizontalLength;
+        public float MaximumGradePercent => ElevationProfile.MaximumGradePercent;
     }
 
     /// <summary>
@@ -93,6 +132,7 @@ namespace BarPromenade
             internal CityTerraceReservationKind Kind;
             internal Vector2[] Polygon;
             internal Rect Bounds;
+            internal RoadEdge? RoadEdge;
         }
 
         private CityTerraceTransportPlan(CityLayout layout, CityTerraceMasterPlan master)
@@ -104,11 +144,12 @@ namespace BarPromenade
             routes.Add(CreateRoute(layout, master, CityTerraceTransportBank.West, footprints));
             routes.Add(CreateRoute(layout, master, CityTerraceTransportBank.East, footprints));
             Routes = new ReadOnlyCollection<CityTerraceTransportRoute>(routes);
+            RoadCrossings = CollectRoadCrossings(layout, routes, footprints).AsReadOnly();
             var reservations = new List<CityTerraceReservation>();
             foreach (CityTerraceTransportRoute route in routes) reservations.AddRange(route.Reservations);
 
-            // This reserves a development envelope only. The isolated playable
-            // prototype is not installed here until these conflicts are resolved.
+            // Historical study envelope, retained for comparison. It overlaps
+            // the now-built terrace precinct; it is not a vacant reservation.
             PilotCandidateBounds = new Rect(100f, 47f, 40f, 34f);
             var pilot = new List<CityTerraceReservation>();
             AppendOverlaps("east-courtyard-pilot", -1, CityRoadPolygon.Rectangle(PilotCandidateBounds), footprints, pilot);
@@ -117,6 +158,18 @@ namespace BarPromenade
             Reservations = new ReadOnlyCollection<CityTerraceReservation>(reservations);
             foreach (CityTerraceReservation reservation in reservations)
                 HasProtectedConflicts = HasProtectedConflicts || reservation.IsProtected;
+            // No physical corridor, junction or swept-path proof exists yet.
+            // Grade feasibility and an empty overlap list cannot activate it.
+            OutstandingPlacementRequirements = CityTerracePlacementRequirement.CorridorReservation |
+                CityTerracePlacementRequirement.RoadConnections | CityTerracePlacementRequirement.VehicleSweptPath |
+                CityTerracePlacementRequirement.TerrainTieIns;
+            foreach (CityTerraceTransportRoute route in routes)
+                foreach (CityTerraceReservation reservation in route.Reservations)
+                    if (reservation.Kind != CityTerraceReservationKind.ExistingRoad)
+                        OutstandingPlacementRequirements |= CityTerracePlacementRequirement.FootprintConflicts;
+            foreach (CityTerraceRoadCrossing crossing in RoadCrossings)
+                if (crossing.RequiresCrossingResolution)
+                    OutstandingPlacementRequirements |= CityTerracePlacementRequirement.UnresolvedRoadCrossings;
         }
 
         public string BlueprintId { get; }
@@ -124,6 +177,9 @@ namespace BarPromenade
         public float TargetSummitElevation { get; }
         public IReadOnlyList<CityTerraceTransportRoute> Routes { get; }
         public IReadOnlyList<CityTerraceReservation> Reservations { get; }
+        public IReadOnlyList<CityTerraceRoadCrossing> RoadCrossings { get; }
+        public CityTerracePlacementRequirement OutstandingPlacementRequirements { get; }
+        public bool IsPlacementReady => OutstandingPlacementRequirements == CityTerracePlacementRequirement.None;
         public bool HasProtectedConflicts { get; }
         public Rect PilotCandidateBounds { get; }
         public IReadOnlyList<CityTerraceReservation> PilotReservations { get; }
@@ -204,22 +260,33 @@ namespace BarPromenade
             float grade = (master.TargetSummitElevation - startY) / climbingLength;
             if (grade <= 0f || grade * 100f > CityElevationPlan.MaximumBusGradePercent)
                 throw new InvalidOperationException("The proposed switchback cannot reach the summit within six percent.");
-            var samples = new List<CityTerraceRouteSample>(points.Count);
-            var segments = new List<CityTerraceTransportSegment>(kinds.Count);
-            var reservations = new List<CityTerraceReservation>();
-            float y = startY, distance = 0f;
-            samples.Add(new CityTerraceRouteSample(new Vector3(start.x, y, start.y), distance));
+            var stations = new CityRoadElevationStation[points.Count];
+            stations[0] = new CityRoadElevationStation(0f, startY);
+            float distance = 0f, climbed = 0f;
             for (int i = 0; i < kinds.Count; i++)
             {
                 float length = Vector2.Distance(points[i], points[i + 1]);
-                if (kinds[i] == CityTerraceTransportSegmentKind.Climb) y += grade * length;
                 distance += length;
-                Vector3 next = new Vector3(points[i + 1].x, y, points[i + 1].y);
-                var segment = new CityTerraceTransportSegment(samples[i].Position, next, kinds[i]);
-                segments.Add(segment); samples.Add(new CityTerraceRouteSample(next, distance));
+                if (kinds[i] == CityTerraceTransportSegmentKind.Climb) climbed += length;
+                stations[i + 1] = new CityRoadElevationStation(distance,
+                    Mathf.Lerp(startY, master.TargetSummitElevation, climbed / climbingLength));
+            }
+            var profile = new CityRoadElevationProfile(stations, CityElevationPlan.MaximumBusGradePercent);
+            var samples = new List<CityTerraceRouteSample>(points.Count);
+            var segments = new List<CityTerraceTransportSegment>(kinds.Count);
+            var reservations = new List<CityTerraceReservation>();
+            for (int i = 0; i < points.Count; i++)
+            {
+                float stationDistance = profile.Stations[i].HorizontalDistance;
+                float height = profile.SampleDistance(stationDistance).Height;
+                samples.Add(new CityTerraceRouteSample(new Vector3(points[i].x, height, points[i].y), stationDistance));
+            }
+            for (int i = 0; i < kinds.Count; i++)
+            {
+                segments.Add(new CityTerraceTransportSegment(samples[i].Position, samples[i + 1].Position, kinds[i]));
                 AppendOverlaps(id, i, CorridorPolygon(points[i], points[i + 1]), footprints, reservations);
             }
-            return new CityTerraceTransportRoute(id, bank, samples, segments, reservations);
+            return new CityTerraceTransportRoute(id, bank, samples, segments, profile, reservations);
         }
 
         private static Vector2[] CorridorPolygon(Vector2 start, Vector2 end)
@@ -236,8 +303,48 @@ namespace BarPromenade
         private static List<Footprint> CollectFootprints(CityLayout layout, CityTerraceMasterPlan master)
         {
             var result = new List<Footprint>();
-            void Add(string id, CityTerraceReservationKind kind, Vector2[] polygon) => result.Add(
-                new Footprint { Id = id, Kind = kind, Polygon = polygon, Bounds = CityRoadPolygon.Bounds(polygon) });
+            void Add(string id, CityTerraceReservationKind kind, Vector2[] polygon, RoadEdge? road = null) => result.Add(
+                new Footprint { Id = id, Kind = kind, Polygon = polygon, Bounds = CityRoadPolygon.Bounds(polygon), RoadEdge = road });
+            var roads = new List<RoadEdge>(layout.RoadEdges);
+            roads.Sort(RoadEdge.Compare);
+            foreach (RoadEdge road in roads)
+            {
+                string id = $"existing-road:{road.A.x},{road.A.y}:{road.B.x},{road.B.y}";
+                CityRoadPath path = layout.RoadGeometry.Get(road);
+                float width = layout.GetTravelWidth(road);
+                foreach (Vector2[] polygon in path.Ribbon(width))
+                    Add(id, CityTerraceReservationKind.ExistingRoad, polygon, road);
+                // The existing road surface also owns flat endpoint squares.
+                foreach (Vector2 endpoint in new[] { path.Vertices[0], path.Vertices[path.Vertices.Count - 1] })
+                    Add(id, CityTerraceReservationKind.ExistingRoad,
+                        CityRoadPolygon.Rectangle(new Rect(endpoint - Vector2.one * (width * .5f), Vector2.one * width)), road);
+                CityRoadJunction junction = layout.RoadGeometry.ObliqueJunction;
+                if (junction != null && road == junction.OwnerEdge)
+                    foreach (Vector2[] polygon in junction.RoadPolygons)
+                        Add(id, CityTerraceReservationKind.ExistingRoad, polygon, road);
+            }
+            CityTerraceDistrictPlan terrace = CityTerraceDistrictPlan.ForLayout(layout);
+            if (terrace.IsEnabled)
+            {
+                Add("terrace:precinct", CityTerraceReservationKind.Terrace, CityRoadPolygon.Rectangle(terrace.ReservedBounds));
+                foreach (CityTerracePilotFloor floor in terrace.Floors)
+                {
+                    Vector2[] polygon = CityRoadPolygon.Rectangle(terrace.WorldBounds(floor.Bounds));
+                    Add("terrace:floor:" + floor.Id, CityTerraceReservationKind.Terrace, polygon);
+                    if (floor.HasFoundation)
+                        Add("terrace:foundation:" + floor.Id, CityTerraceReservationKind.Terrace, polygon);
+                }
+                foreach (CityExteriorStairFlightDescriptor flight in terrace.Flights)
+                {
+                    Rect support = CityTerracePilotPlan.FlightBounds(flight);
+                    if (Mathf.Abs(flight.Direction.x) > .5f) { support.yMin -= .15f; support.yMax += .15f; }
+                    else { support.xMin -= .15f; support.xMax += .15f; }
+                    Add("terrace:stair-support:" + flight.Id, CityTerraceReservationKind.Terrace,
+                        CityRoadPolygon.Rectangle(terrace.WorldBounds(support)));
+                }
+                Add("terrace:street-approach", CityTerraceReservationKind.Terrace, CityRoadPolygon.Rectangle(terrace.EntryBounds));
+                Add("terrace:lower-pass", CityTerraceReservationKind.Terrace, CityRoadPolygon.Rectangle(terrace.LowerPassBounds));
+            }
             int massIndex = 0;
             foreach (BuildingLot lot in layout.BuildingMasses)
             {
@@ -280,11 +387,83 @@ namespace BarPromenade
             List<Footprint> footprints, List<CityTerraceReservation> output)
         {
             Rect bounds = CityRoadPolygon.Bounds(corridor);
+            var included = new HashSet<string>(StringComparer.Ordinal);
             foreach (Footprint footprint in footprints)
             {
                 if (!bounds.Overlaps(footprint.Bounds) || !Intersects(corridor, footprint.Polygon)) continue;
+                if (!included.Add(footprint.Id)) continue;
                 output.Add(new CityTerraceReservation(routeId, segmentIndex, footprint.Id, footprint.Kind, footprint.Bounds));
             }
+        }
+
+        private static List<CityTerraceRoadCrossing> CollectRoadCrossings(CityLayout layout,
+            IReadOnlyList<CityTerraceTransportRoute> routes, IReadOnlyList<Footprint> footprints)
+        {
+            var result = new List<CityTerraceRoadCrossing>();
+            foreach (CityTerraceTransportRoute route in routes)
+            for (int index = 0; index < route.Segments.Count; index++)
+            {
+                CityTerraceTransportSegment segment = route.Segments[index];
+                Vector2 start = new Vector2(segment.Start.x, segment.Start.z);
+                Vector2 end = new Vector2(segment.End.x, segment.End.z);
+                Vector2[] corridor = CorridorPolygon(start, end);
+                Rect bounds = CityRoadPolygon.Bounds(corridor);
+                var included = new HashSet<RoadEdge>();
+                foreach (Footprint footprint in footprints)
+                {
+                    if (!footprint.RoadEdge.HasValue || !bounds.Overlaps(footprint.Bounds) ||
+                        !TryOverlapPoint(corridor, footprint.Polygon, out Vector2 point)) continue;
+                    RoadEdge road = footprint.RoadEdge.Value;
+                    if (!included.Add(road)) continue;
+                    CityRoadPath path = layout.RoadGeometry.Get(road);
+                    bool centerlinesIntersect = TryCenterlineCrossing(start, end, path, out Vector2 centerlinePoint);
+                    if (centerlinesIntersect) point = centerlinePoint;
+                    bool attachment = index == 0 && layout.RoadGeometry.ContainsRoad(road, start);
+                    if (attachment) point = start;
+                    CityRoadProjection projection = path.Project(point);
+                    float roadDatum = layout.ElevationPlan.SampleRoadDatum(road, projection.DistanceAlong / path.Length);
+                    float amount = Mathf.Clamp01(Vector2.Dot(point - start, end - start) / (end - start).sqrMagnitude);
+                    float routeDatum = route.ElevationProfile.SampleDistance(route.Samples[index].HorizontalDistance +
+                        segment.HorizontalLength * amount).Height;
+                    attachment &= Mathf.Abs(routeDatum - roadDatum) <= .02f;
+                    CityTerraceRoadCrossingKind kind = attachment ? CityTerraceRoadCrossingKind.CoastalAttachment :
+                        Mathf.Abs(routeDatum - roadDatum) <= .20f ? CityTerraceRoadCrossingKind.AtGradeUnresolved :
+                        CityTerraceRoadCrossingKind.GradeSeparatedUnresolved;
+                    result.Add(new CityTerraceRoadCrossing(route.Id, index, footprint.Id, road,
+                        point, routeDatum, roadDatum, centerlinesIntersect, kind));
+                }
+            }
+            return result;
+        }
+
+        private static bool TryOverlapPoint(Vector2[] first, Vector2[] second, out Vector2 point)
+        {
+            var overlap = new List<Vector2>(first);
+            for (int i = 0; i < second.Length && overlap.Count >= 3; i++)
+                overlap = CityRoadPolygon.Clip(overlap, second[i], second[(i + 1) % second.Length]);
+            point = Vector2.zero;
+            if (overlap.Count < 3 || CityRoadPolygon.Area(overlap) <= .00001f) return false;
+            foreach (Vector2 vertex in overlap) point += vertex;
+            point /= overlap.Count;
+            return true;
+        }
+
+        private static bool TryCenterlineCrossing(Vector2 start, Vector2 end, CityRoadPath path, out Vector2 point)
+        {
+            Vector2 along = end - start;
+            for (int i = 1; i < path.Vertices.Count; i++)
+            {
+                Vector2 roadStart = path.Vertices[i - 1], roadAlong = path.Vertices[i] - roadStart;
+                float denominator = CityRoadPolygon.Cross(along, roadAlong);
+                if (Mathf.Abs(denominator) <= .000001f) continue;
+                float t = CityRoadPolygon.Cross(roadStart - start, roadAlong) / denominator;
+                float u = CityRoadPolygon.Cross(roadStart - start, along) / denominator;
+                if (t < 0f || t > 1f || u < 0f || u > 1f) continue;
+                point = start + along * t;
+                return true;
+            }
+            point = default;
+            return false;
         }
 
         private static bool Intersects(IReadOnlyList<Vector2> first, IReadOnlyList<Vector2> second)

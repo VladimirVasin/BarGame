@@ -12,7 +12,8 @@ namespace BarPromenade.Editor
     /// </summary>
     public sealed class CityTerracePlanWindow : EditorWindow
     {
-        private static readonly string[] Views = { "Сейчас", "Террасы", "Разрез", "Транспорт" };
+        private static readonly string[] Views = { "Сейчас", "Террасы", "Разрез", "Транспорт", "Профиль дороги" };
+        private static readonly string[] Banks = { "Запад", "Восток" };
         private static readonly Color LowColor = new Color(0.25f, 0.52f, 0.63f);
         private static readonly Color HighColor = new Color(0.88f, 0.67f, 0.30f);
         private static readonly Color ConflictColor = new Color(0.93f, 0.34f, 0.31f);
@@ -25,15 +26,19 @@ namespace BarPromenade.Editor
         private CityTerraceTransportPlan transport;
         private Vector2 scroll;
         private int selectedConflict = -1;
+        private int selectedCrossing = -1;
+        private int selectedBank;
+        private float routeDistance;
         private string failure;
         private GUIContent[] conflictLabels;
+        private GUIContent[] crossingLabels;
         private GUIStyle smallLabel;
 
         [MenuItem("Bar Promenade/City/Multilevel Plan")]
         public static void Open()
         {
             var window = GetWindow<CityTerracePlanWindow>("Террасы города");
-            window.minSize = new Vector2(560f, 640f);
+            window.minSize = new Vector2(660f, 760f);
             window.Rebuild();
             window.Show();
         }
@@ -58,12 +63,15 @@ namespace BarPromenade.Editor
             plan = null;
             transport = null;
             conflictLabels = null;
+            crossingLabels = null;
         }
 
         private void Rebuild()
         {
             failure = null;
             selectedConflict = -1;
+            selectedCrossing = -1;
+            routeDistance = 0f;
             scroll = Vector2.zero;
             try
             {
@@ -83,6 +91,14 @@ namespace BarPromenade.Editor
                 plan = draft;
                 transport = routeDraft;
                 conflictLabels = labels;
+                crossingLabels = new GUIContent[transport.RoadCrossings.Count];
+                for (int i = 0; i < crossingLabels.Length; i++)
+                {
+                    CityTerraceRoadCrossing crossing = transport.RoadCrossings[i];
+                    crossingLabels[i] = new GUIContent(
+                        $"{(crossing.RouteId == transport.Routes[0].Id ? "Запад" : "Восток")} · {crossing.RoadEdge} · " +
+                        $"Y {crossing.RouteDatumY:0.0} / {crossing.RoadDatumY:0.0} · {CrossingName(crossing.Kind)}", crossing.Id);
+                }
             }
             catch (Exception exception)
             {
@@ -90,6 +106,7 @@ namespace BarPromenade.Editor
                 plan = null;
                 transport = null;
                 conflictLabels = null;
+                crossingLabels = null;
                 failure = exception.Message;
             }
             Repaint();
@@ -122,20 +139,32 @@ namespace BarPromenade.Editor
             EditorGUILayout.LabelField(
                 "Длина — нижняя оценка без ровных остановок, поворотов и проверки габаритов.", EditorStyles.wordWrappedMiniLabel);
 
-            if (view == 3 && transport != null)
+            if (view >= 3 && transport != null)
             {
                 foreach (CityTerraceTransportRoute route in transport.Routes)
                     EditorGUILayout.LabelField($"{route.Bank}: {route.TotalHorizontalLength:0} м; уклон ≤ {route.MaximumGradePercent:0.0}%; пересечений {route.Reservations.Count}");
-                EditorGUILayout.HelpBox("Трассы имеют допустимый уклон и ровные повороты/остановки. Красные участки заняты существующим городом: размещение ещё не принято.", MessageType.Warning);
+                EditorGUILayout.HelpBox("Не подключено к игровому городу. Нужны свободный коридор, дорожные стыки, габаритный проход машин и опоры на грунт. Разные Y не разрешают мост или тоннель.", MessageType.Warning);
             }
 
             view = GUILayout.Toolbar(view, Views);
-            Rect drawing = GUILayoutUtility.GetRect(100f, Mathf.Clamp(position.height * 0.42f, 220f, 380f), GUILayout.ExpandWidth(true));
+            if (view == 4)
+            {
+                int bank = GUILayout.Toolbar(selectedBank, Banks);
+                if (bank != selectedBank) { selectedBank = bank; selectedCrossing = -1; }
+                CityTerraceTransportRoute route = transport.Routes[selectedBank];
+                routeDistance = EditorGUILayout.Slider("Путь от берега, м", routeDistance, 0f, route.TotalHorizontalLength);
+                CityRoadElevationSample sample = route.ElevationProfile.SampleDistance(routeDistance);
+                EditorGUILayout.LabelField($"Y {sample.Height:0.00} м · уклон {sample.SignedGradePercent:0.00}% · " +
+                    SegmentName(route.Segments[sample.SegmentIndex].Kind));
+            }
+            Rect drawing = GUILayoutUtility.GetRect(100f, Mathf.Clamp(position.height * 0.34f, 180f, 320f), GUILayout.ExpandWidth(true));
             if (view == 2) DrawSection(drawing);
+            else if (view == 4) DrawRouteProfile(drawing);
             else DrawPlan(drawing);
             EditorGUILayout.LabelField(view == 2
                 ? "Синий: запад. Охра: восток. Серый: текущие высоты. Разрез по внешним улицам ядра."
-                : view == 3 ? "Синий: западная трасса. Охра: восточная. Белая рамка: резерв пилота."
+                : view == 4 ? "По горизонтали — длина пути. Красный: две высоты дорожного пересечения. Серый: ровные участки."
+                : view == 3 ? "Синий: западная трасса. Охра: восточная. Белый: выбранное пересечение."
                 : "Синий → охра: низко → высоко. Север и море сверху.", EditorStyles.miniLabel);
 
             if (selectedConflict >= 0 && selectedConflict < plan.RoadConflicts.Count)
@@ -146,12 +175,34 @@ namespace BarPromenade.Editor
                     $"Нужный горизонтальный путь с ровными концами: ≥ {conflict.RequiredHorizontalRun:0.0} м. " +
                     "Доступность транспорта и пешеходов ещё не подтверждена.", MessageType.Warning);
             }
-            EditorGUILayout.LabelField(view == 3 ? "Пересечения с существующей застройкой" : "Улицы для перепланировки", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(view >= 3 ? "Дорожные пересечения · выбрать для разреза" : "Улицы для перепланировки", EditorStyles.boldLabel);
             scroll = EditorGUILayout.BeginScrollView(scroll);
-            if (view == 3)
+            if (view >= 3)
             {
-                foreach (CityTerraceReservation reservation in transport.Reservations)
-                    EditorGUILayout.LabelField($"{reservation.RouteId}: {reservation.Kind} · {reservation.Id}", EditorStyles.miniLabel);
+                if (selectedCrossing >= 0 && selectedCrossing < transport.RoadCrossings.Count)
+                {
+                    CityTerraceRoadCrossing crossing = transport.RoadCrossings[selectedCrossing];
+                    EditorGUILayout.HelpBox($"{crossing.Id}\nX {crossing.WorldXZ.x:0.00} · Z {crossing.WorldXZ.y:0.00}; " +
+                        $"дорога проекта Y {crossing.RouteDatumY:0.00}, существующая Y {crossing.RoadDatumY:0.00}. " +
+                        $"Разница {crossing.SignedSurfaceSeparation:0.00} м — не высота свободного проезда.", MessageType.Info);
+                }
+                for (int i = 0; i < crossingLabels.Length; i++)
+                {
+                    CityTerraceRoadCrossing crossing = transport.RoadCrossings[i];
+                    if (view == 4 && crossing.RouteId != transport.Routes[selectedBank].Id) continue;
+                    if (!GUILayout.Button(crossingLabels[i], i == selectedCrossing ? EditorStyles.miniButton : EditorStyles.label)) continue;
+                    selectedCrossing = i;
+                    selectedBank = crossing.RouteId == transport.Routes[0].Id ? 0 : 1;
+                    routeDistance = CrossingDistance(transport.Routes[selectedBank], crossing);
+                    Repaint();
+                }
+                if (view == 3)
+                {
+                    EditorGUILayout.LabelField("Занятые участки", EditorStyles.boldLabel);
+                    foreach (CityTerraceReservation reservation in transport.Reservations)
+                        if (reservation.Kind != CityTerraceReservationKind.ExistingRoad)
+                            EditorGUILayout.LabelField($"{reservation.RouteId}: {reservation.Kind} · {reservation.Id}", EditorStyles.miniLabel);
+                }
             }
             else for (int i = 0; i < conflictLabels.Length; i++)
             {
@@ -162,6 +213,66 @@ namespace BarPromenade.Editor
                 }
             }
             EditorGUILayout.EndScrollView();
+        }
+
+        private static string CrossingName(CityTerraceRoadCrossingKind kind) => kind == CityTerraceRoadCrossingKind.CoastalAttachment
+            ? "береговой стык" : kind == CityTerraceRoadCrossingKind.AtGradeUnresolved ? "одна отметка, стык не решён" : "разные отметки, связь не решена";
+
+        private static string SegmentName(CityTerraceTransportSegmentKind kind) => kind == CityTerraceTransportSegmentKind.Climb
+            ? "подъём" : kind == CityTerraceTransportSegmentKind.StopLanding ? "остановка" :
+            kind == CityTerraceTransportSegmentKind.TurnLanding ? "ровный поворот" : "ровный подход";
+
+        private static float CrossingDistance(CityTerraceTransportRoute route, CityTerraceRoadCrossing crossing)
+        {
+            CityTerraceTransportSegment segment = route.Segments[crossing.SegmentIndex];
+            Vector2 a = new Vector2(segment.Start.x, segment.Start.z), b = new Vector2(segment.End.x, segment.End.z);
+            float t = Mathf.Clamp01(Vector2.Dot(crossing.WorldXZ - a, b - a) / (b - a).sqrMagnitude);
+            return route.Samples[crossing.SegmentIndex].HorizontalDistance + segment.HorizontalLength * t;
+        }
+
+        private void DrawRouteProfile(Rect rect)
+        {
+            if (Event.current.type != EventType.Repaint) return;
+            EditorGUI.DrawRect(rect, new Color(.13f, .13f, .13f));
+            Rect plot = new Rect(rect.x + 44f, rect.y + 16f, rect.width - 60f, rect.height - 44f);
+            CityTerraceTransportRoute route = transport.Routes[selectedBank];
+            Vector2 Point(float distance, float height) => new Vector2(
+                Mathf.Lerp(plot.xMin, plot.xMax, distance / route.TotalHorizontalLength),
+                Mathf.Lerp(plot.yMax, plot.yMin, height / 45f));
+            Color previous = Handles.color;
+            Handles.BeginGUI();
+            try
+            {
+                for (int height = 0; height <= 40; height += 10)
+                {
+                    float y = Point(0f, height).y;
+                    Handles.color = new Color(.5f, .5f, .5f, .3f);
+                    Handles.DrawLine(new Vector2(plot.xMin, y), new Vector2(plot.xMax, y));
+                    GUI.Label(new Rect(rect.x + 3f, y - 8f, 42f, 18f), $"{height} м", EditorStyles.miniLabel);
+                }
+                for (int i = 0; i < route.Segments.Count; i++)
+                {
+                    Handles.color = route.Segments[i].Kind == CityTerraceTransportSegmentKind.Climb
+                        ? (selectedBank == 0 ? LowColor : HighColor) : Color.gray;
+                    Handles.DrawLine(Point(route.Samples[i].HorizontalDistance, route.Samples[i].Position.y),
+                        Point(route.Samples[i + 1].HorizontalDistance, route.Samples[i + 1].Position.y), 2f);
+                }
+                if (selectedCrossing >= 0)
+                {
+                    CityTerraceRoadCrossing crossing = transport.RoadCrossings[selectedCrossing];
+                    if (crossing.RouteId == route.Id)
+                    {
+                        float distance = CrossingDistance(route, crossing);
+                        Handles.color = ConflictColor;
+                        Handles.DrawLine(Point(distance, crossing.RoadDatumY), Point(distance, crossing.RouteDatumY), 3f);
+                    }
+                }
+                Vector2 marker = Point(routeDistance, route.ElevationProfile.SampleDistance(routeDistance).Height);
+                EditorGUI.DrawRect(new Rect(marker.x - 3f, marker.y - 3f, 6f, 6f), Color.white);
+                GUI.Label(new Rect(plot.xMin, plot.yMax + 4f, 110f, 18f), "0 м · берег", EditorStyles.miniLabel);
+                GUI.Label(new Rect(plot.xMax - 110f, plot.yMax + 4f, 110f, 18f), $"{route.TotalHorizontalLength:0} м · верх", EditorStyles.miniLabel);
+            }
+            finally { Handles.EndGUI(); Handles.color = previous; }
         }
 
         private void DrawSection(Rect rect)
@@ -298,6 +409,11 @@ namespace BarPromenade.Editor
                         foreach (CityTerraceTransportSegment segment in route.Segments)
                             Handles.DrawLine(Map(new Vector2(segment.Start.x, segment.Start.z)),
                                 Map(new Vector2(segment.End.x, segment.End.z)), 2f);
+                    }
+                    if (selectedCrossing >= 0 && selectedCrossing < transport.RoadCrossings.Count)
+                    {
+                        Vector2 point = Map(transport.RoadCrossings[selectedCrossing].WorldXZ);
+                        EditorGUI.DrawRect(new Rect(point.x - 4f, point.y - 4f, 8f, 8f), Color.white);
                     }
                     Rect pilot = transport.PilotCandidateBounds;
                     Vector2 a = Map(new Vector2(pilot.xMin, pilot.yMin)), b = Map(new Vector2(pilot.xMax, pilot.yMax));

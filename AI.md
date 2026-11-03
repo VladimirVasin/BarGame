@@ -40,8 +40,8 @@ repository evidence. This does not require running every test layer.
 - New text is Russian only and new input targets keyboard/mouse. Preserve
   existing English/gamepad support; do not add translations, gamepad bindings,
   hints or parity checks unless explicitly requested. See AGENTS.md.
-- Maps: built-in ImageGen; City charcoal/Silent Hill, Village old brochure.
-  Redraw authored changes; courtyard props exempt. See AGENTS.md.
+- Maps: AGENTS.md owns styles/rules. Update logic each slice; final-step
+  ImageGen redraw only. Stale art→scheme; never retag its SHA.
 - Use the canonical workflow matching the task in `ai/prompt-templates.md`.
 - Fast targeted verification is the default. Complete suites require an
   explicit release/full-regression request. Create a player build only when it
@@ -153,7 +153,7 @@ repository evidence. This does not require running every test layer.
   appearance changed and open the frames. Numbers cannot see an object in the
   wrong place or a mesh at a hundredth of its size. Delete all capture output
   after review and task completion; recapture when needed.
-- Update the maps and work log when implementation changes project reality.
+- Update map logic and work log when facts change; defer art per AGENTS.md.
 - **Every document has a type and a byte budget** in `tools/docs-budget.json`.
   Run `python tools/check-docs.py` after any documentation change; it is the
   primary check for one. The type decides how you write: a `state` document is
