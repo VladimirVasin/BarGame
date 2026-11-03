@@ -521,8 +521,9 @@ cemetery:own interiors/returns.
   Pooled lamp + canopy/shed Spots: day floor/halos/hard shadows.
   `CityEastRoadProfile`: shared road/land/car/lamp datum; `RoadGroundCuts` bends.
   First mast joins pool `12`; later shells/lenses/halos/pools are passive.
-  `CityEastDistance*`: city/warm uneven steady glow dome on valley floor.
-  Source depth: clip's last `.20 m`; foreground/`48 m`/`.070` fog stay.
+  `CityEastDistance*`: valley-floor city/windows/glow fade together by camera
+  XZ distance to post: full≤12m, smooth→0 at30m. Road/valley stay.
+  Source depth: clip's last `.20 m`; foreground/48m clip stay.
   2 cars: exported lanes/session phase/pause/time guard;
   no gameplay/Light/physics/shadow/audio;
 - `CityEastGuardDuty`: one home, one three-point out-and-back patrol; swap
@@ -605,9 +606,9 @@ cemetery:own interiors/returns.
   church-garden uplights, remain separate from the twelve-light pool;
   the scene Directional and transient lightning Directional are counted
   separately. Bar, Supermarket and Stairwell lighting are unchanged. The
-  `0.070` exponential-squared luminous gray-green fog,
-  fog-matched terminal camera backdrop, City-only `48 m` visibility cap,
-  `CityFogField` stay fixed. City/balcony saturation `-24` day→`-30` night follows
+  City/balcony share constant `.090` gray-green Exp2 haze and a matching
+  backdrop;48m is the technical clip, not readable range. Local fog follows wind.
+  Saturation `-24` day→`-30` night follows
   clock; authored grade/Home interior unchanged. The
   Windows player retains the runtime-only Exp2 shader variant;
 
@@ -734,13 +735,10 @@ cemetery:own interiors/returns.
   warm/dark selection. At least one warm street-lamp-coloured pane reaches
   every floor and side, and a multi-pane row always retains darkness. Bar,
   Home and Supermarket panes retain their authored material families;
-- one player-following `CityFogField`, capped at 36 more visible slowly
-  drifting particles, plus depth-tested soft halos around lamps, bar lights
-  and active signals. The same field, unchanged, now also runs on the mountain
-  road and in the alpine village, where the area's own weather owner clears
-  and refills it under a roof instead of a second controller; only the Exp2
-  haze behind it stays per-area, and only the village's breathes with the
-  gale;
+- `CityFogField`:≤36 world particles/shared material;City/balcony use slow
+  wind-driven layers with absolute game-time phase/pause. Roofs clear/refill;
+  road/village retain their field profile and weather shelter owner. Exp2 is
+  per-area;only village haze breathes with gusts. Depth-tested soft halos stay;
 
 ### Streets, transport and sound
 

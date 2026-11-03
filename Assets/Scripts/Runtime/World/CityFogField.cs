@@ -21,6 +21,7 @@ namespace BarPromenade
             Shader.PropertyToID("_NoiseStrength");
         private static readonly int SoftParticleDistanceId =
             Shader.PropertyToID("_SoftParticleDistance");
+        private static readonly int FogMotionId = Shader.PropertyToID("_FogMotion");
 
         [SerializeField] private ParticleSystem particles;
         [SerializeField] private ParticleSystemRenderer fogRenderer;
@@ -28,8 +29,11 @@ namespace BarPromenade
         private Transform player;
         private Transform particleTransform;
         private bool isSheltered;
+        private MaterialPropertyBlock properties;
+        private Vector2 windDrift;
 
         public bool IsInitialized { get; private set; }
+        public bool CityLayers { get; private set; }
         public bool IsSheltered => isSheltered;
         public Transform Player => player;
         public ParticleSystem Particles => particles;
@@ -38,7 +42,8 @@ namespace BarPromenade
         public void Initialize(
             Transform playerTransform,
             Material fogMaterial,
-            int seed)
+            int seed,
+            bool useCityLayers = false)
         {
             player = playerTransform != null
                 ? playerTransform
@@ -48,10 +53,24 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(fogMaterial));
             }
 
+            CityLayers = useCityLayers;
             EnsureParticleSystem();
             PositionEmitter();
             ConfigureParticleSystem(fogMaterial, seed);
             IsInitialized = true;
+            RefreshMotion();
+        }
+
+        /// <summary>City air follows the same wind as rain, at a slower bounded drift.</summary>
+        public void SetWindDrift(Vector2 horizontalMetersPerSecond)
+        {
+            if (!IsInitialized || !CityLayers) return;
+            Vector2 next = Vector2.ClampMagnitude(horizontalMetersPerSecond * .14f, .45f);
+            if ((next - windDrift).sqrMagnitude < .0001f) return;
+            windDrift = next;
+            ParticleSystem.VelocityOverLifetimeModule velocity = particles.velocityOverLifetime;
+            velocity.x = new ParticleSystem.MinMaxCurve(next.x - .035f, next.x + .035f);
+            velocity.z = new ParticleSystem.MinMaxCurve(next.y - .035f, next.y + .035f);
         }
 
         /// <summary>
@@ -111,6 +130,19 @@ namespace BarPromenade
             }
 
             PositionEmitter();
+            RefreshMotion();
+        }
+
+        private void RefreshMotion()
+        {
+            if (!CityLayers || properties == null || isSheltered || !fogRenderer.enabled) return;
+            // Independent of scene uptime: the reconstructed balcony and City
+            // use the same slow phase, including pause and scene return.
+            double minutes = GameSessionState.GameDayIndex *
+                GameTimeDayNightRules.MinutesPerDay + GameSessionState.GameTimeOfDayMinutes;
+            float phase = (float)(minutes * .16 % (Math.PI * 2.0));
+            properties.SetVector(FogMotionId, new Vector4(Mathf.Sin(phase), Mathf.Cos(phase), 1f, 0f));
+            fogRenderer.SetPropertyBlock(properties);
         }
 
         private void EnsureParticleSystem()
@@ -160,11 +192,15 @@ namespace BarPromenade
             main.prewarm = false;
             main.playOnAwake = false;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.useUnscaledTime = true;
+            main.useUnscaledTime = !CityLayers;
             main.maxParticles = MaximumParticles;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(10f, 14f);
+            main.startLifetime = CityLayers
+                ? new ParticleSystem.MinMaxCurve(12f, 18f)
+                : new ParticleSystem.MinMaxCurve(10f, 14f);
             main.startSpeed = 0f;
-            main.startSize = new ParticleSystem.MinMaxCurve(7.0f, 12.5f);
+            main.startSize = CityLayers
+                ? new ParticleSystem.MinMaxCurve(6.5f, 14f)
+                : new ParticleSystem.MinMaxCurve(7.0f, 12.5f);
             main.startRotation = new ParticleSystem.MinMaxCurve(
                 0f,
                 Mathf.PI * 2f);
@@ -173,7 +209,7 @@ namespace BarPromenade
 
             ParticleSystem.EmissionModule emission = particles.emission;
             emission.enabled = true;
-            emission.rateOverTime = 2.8f;
+            emission.rateOverTime = CityLayers ? 2.2f : 2.8f;
             emission.rateOverDistance = 0f;
 
             ParticleSystem.ShapeModule shape = particles.shape;
@@ -253,10 +289,11 @@ namespace BarPromenade
                 MotionVectorGenerationMode.ForceNoMotion;
             fogRenderer.allowOcclusionWhenDynamic = true;
 
-            var properties = new MaterialPropertyBlock();
+            properties = new MaterialPropertyBlock();
             properties.SetFloat(EdgePowerId, 1.45f);
             properties.SetFloat(NoiseStrengthId, 0.58f);
             properties.SetFloat(SoftParticleDistanceId, 1.10f);
+            properties.SetVector(FogMotionId, Vector4.zero);
             fogRenderer.SetPropertyBlock(properties);
         }
 

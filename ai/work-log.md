@@ -4,14 +4,13 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-03
-Checkpoint:one RAM arrival snapshot;deep progress/world/ammo;unload before
-restore;entry/seed/rides;stale tokens;RU pause/No.
+Checkpoint:RAM/deep progress-world-ammo;unload→restore;entry/seed/rides/tokens;RU pause/No.
 SessionCheckpointStateTests/SessionCheckpointPlayModeTests passed.
 Warehouse:fall/hold→collapse;reuse keeps wounds/parts/blood;moving/fullpool defer;
 finite flakes/sound/pause/reset/fish clear.
 Warehouse_CorpseDecayPreservesDeathAndPoolLifecycle passed;frames reviewed.
-Bar:close warn/grace/finish/stand/exit;leftovers cleared;pause/rig/camera/24FX/§6.
-Menu;clear→pan,blocked→validated hall cut/back;hero stays.
+Bar:warn/grace/finish/stand/exit;leftovers0;pause/rig/camera/24FX/§6.
+Menu:clear→pan,blocked→hall cut/back;hero stays.
 Worker:handoff/stow/turn;elbow/palm contacts.
 Speech tail keeps camera/pose;StepElapsed/PCM plan. build-city-pedestrian-3d-model.py --cafe-animation-only,
 ParkQuarrelTests.Delivery_StepsOncePerFrameAndBlipsOnLettersOnly and
@@ -23,7 +22,7 @@ last sip counts;seat/rig/camera/contacts/full wine safe;spirits once.
 BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment/
 WineService_FullGlassTakesThreeSeparateSips/PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce
 passed;full/partial/empty frames.
-Shop:metal/glass door/contact,dense stock/shared surfaces/reflection,rear flush cartons,
+Shop:metal/glass door,dense stock/shared surfaces/reflection,rear flush cartons,
 R checkout/scanner/packing/snacks/anchors;wear/baskets/cables/vents.
 Atomic sale/receipt;beer/wine/cognac stronger,stress kept;beer=barportion/wine=three;
 ml rounding/ID/fill/open/Al tab/wine cap/cleanup.
@@ -47,8 +46,10 @@ Toilet:shared pelvis anatomy;down→show/up→hide;existing fill.
 SeatedAppearance_ShowsAttachedAnatomyAndHidesItOnExit passed.
 ChoicePlungeReturnsAndPreservesSmallAction:prior GEO_Pelvis fabric-endpoint failure.
 Frames reviewed;24FX kept;cost unmeasured.
-City/balcony:saturation-24day→-30night;fractional clock;clone/indoor/pause kept.
+City/balcony:grade-24day→-30night;fractional clock/clone/indoor/pause kept.
 CityNightSaturation passed;frames reviewed.
+City:denser fog/wind;post skyline fade;24FX/§6.
+CityFogCheckpoint passed;frames reviewed.
 
 ## 2026-11-02
 

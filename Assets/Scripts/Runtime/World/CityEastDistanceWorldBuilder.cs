@@ -14,6 +14,10 @@ namespace BarPromenade
         public const string ResourcePath = "City/EastExit/CityEastDistance3D";
         public const string ObjectName = "Distant Mainland Road and City";
         public const float DepthBandMeters = .20f;
+        public const float CheckpointCityFullDistance = 12f;
+        public const float CheckpointCityHiddenDistance = 30f;
+
+        private static readonly int CheckpointViewId = Shader.PropertyToID("_CheckpointView");
 
         private static readonly string[] Roles =
         {
@@ -55,6 +59,10 @@ namespace BarPromenade
             // Preserve the imported FBX root scale. Changing it to one would
             // reduce both road and city to one hundredth of their dimensions.
             int[] roleCounts = new int[Roles.Length];
+            var checkpointView = new MaterialPropertyBlock();
+            checkpointView.SetVector(CheckpointViewId, new Vector4(
+                plan.CheckpointPosition.x, plan.CheckpointPosition.z,
+                CheckpointCityFullDistance, CheckpointCityHiddenDistance));
             foreach (MeshRenderer renderer in instance.GetComponentsInChildren<MeshRenderer>(true))
             {
                 int role = RoleOf(renderer.name);
@@ -62,6 +70,10 @@ namespace BarPromenade
                     throw new InvalidOperationException("Unknown mainland mesh role: " + renderer.name);
                 roleCounts[role]++;
                 ConfigureRenderer(renderer, MaterialFor(role));
+                // Only the skyline, its windows and glow belong to this local
+                // sightline. Per-renderer data leaves the shared village
+                // profile and any other generated City's anchor untouched.
+                if (role >= 3 && role <= 5) renderer.SetPropertyBlock(checkpointView);
             }
             for (int i = 0; i < roleCounts.Length; i++)
                 if (roleCounts[i] == 0)

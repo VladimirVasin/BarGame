@@ -12,9 +12,8 @@ namespace BarPromenade
     /// It may also be handed the area's drifting fog sheets. The fog is not
     /// weather - it is the same at every hour and in every slot - but it is
     /// cleared by the same roof that gives the rain its dry core, and an area
-    /// should have exactly one owner of the question "is he under something".
-    /// The City keeps its own owner - the tunnel shelter controller, which
-    /// also hides the ridge shell - and passes no fog here.
+    /// shares its shelter predicate with the rain. City's predicate includes
+    /// the bus, diner and tunnel; the tunnel owner also hides the ridge shell.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CityWeatherController : MonoBehaviour
@@ -167,6 +166,8 @@ namespace BarPromenade
                 GameWeatherRules.WindSpeedAtFullStrength);
             rain.SetWindDrift(
                 new Vector2(velocity.x, velocity.z));
+            if (fog != null)
+                fog.SetWindDrift(new Vector2(velocity.x, velocity.z));
         }
 
         private void ApplyLightning()

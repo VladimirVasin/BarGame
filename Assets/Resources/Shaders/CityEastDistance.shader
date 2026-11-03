@@ -9,6 +9,7 @@ Shader "Bar Promenade/City East Distance"
         _DepthWrite("Opaque Panorama Depth", Float) = 1
         _ViewDirection("View Hemisphere", Vector) = (1, 0, 0, 0)
         _Visibility("Area Visibility", Range(0, 1)) = 1
+        _CheckpointView("Checkpoint XZ / Full / Hidden Distance", Vector) = (0, 0, 0, 0)
         _RockMap("Shared Weathered Stone", 2D) = "gray" {}
         _RoadMap("Shared Asphalt", 2D) = "gray" {}
     }
@@ -40,6 +41,7 @@ Shader "Bar Promenade/City East Distance"
                 float _DepthWrite;
                 float4 _ViewDirection;
                 float _Visibility;
+                float4 _CheckpointView;
             CBUFFER_END
 
             struct Attributes
@@ -93,6 +95,14 @@ Shader "Bar Promenade/City East Distance"
                 clip(dot(ray, _ViewDirection.xyz));
                 float d = length(ray);
                 half3 normal = normalize(input.normal);
+                // The skyline belongs to the checkpoint approach, not every
+                // east-facing street. Each rendering camera evaluates its own
+                // horizontal position; a zero band leaves the village alone.
+                half cityVisibility = 1.0h;
+                if (_Role > 2.5 && _Role < 5.5 && _CheckpointView.w > _CheckpointView.z)
+                    cityVisibility = 1.0h - (half)smoothstep(
+                        _CheckpointView.z, _CheckpointView.w,
+                        distance(_WorldSpaceCameraPos.xz, _CheckpointView.xy));
                 if (_Role > 13.5)
                 {
                     // Both the lens haze and the pool use source-space depth,
@@ -123,7 +133,7 @@ Shader "Bar Promenade/City East Distance"
                     float grain = 0.90 + 0.065 * sin(x * 18.0 + height * 9.0) +
                         0.035 * sin(x * 31.0 - height * 16.0);
                     float density = pools * sides * rise * ceiling * grain;
-                    return half4(_Tint.rgb, saturate(density * 0.42) * _Visibility);
+                    return half4(_Tint.rgb, saturate(density * 0.42) * _Visibility * cityVisibility);
                 }
 
                 half3 surface = _Tint.rgb;
@@ -134,7 +144,8 @@ Shader "Bar Promenade/City East Distance"
                 }
                 else if (_Role > 11.5)
                 {
-                    visibility = exp(-pow(d * 0.070, 2.0)) +
+                    float fogFactor = d * unity_FogParams.x;
+                    visibility = exp2(-fogFactor * fogFactor) +
                         0.22h * smoothstep(35.0, 130.0, d) * exp(-d / 850.0);
                 }
                 else if (_Role > 9.5)
@@ -175,7 +186,10 @@ Shader "Bar Promenade/City East Distance"
                     // The first decorative metres meet the real asphalt in
                     // its existing fog. Material detail and paint dissolve
                     // continuously into the broad distant road ribbon.
-                    half nearVisibility = exp(-pow(d * 0.070, 2.0));
+                    // Use the active Exp2 density so the authored road joins
+                    // the ordinary road through the same air after fog tuning.
+                    float fogFactor = d * unity_FogParams.x;
+                    half nearVisibility = exp2(-fogFactor * fogFactor);
                     half distantVisibility = (_Role > 1.5 ? 0.50h : 0.24h) * exp(-d / 3000.0) + 0.045h;
                     visibility = max(nearVisibility,
                         distantVisibility * (_Role > 1.5 ? smoothstep(32.0, 100.0, d) : smoothstep(35.0, 160.0, d)));
@@ -194,7 +208,10 @@ Shader "Bar Promenade/City East Distance"
                         surface = lerp(surface, half3(0.55, 0.54, 0.41), paint);
                     }
                 }
-                return half4(lerp(_HazeColor.rgb, surface, visibility * _Visibility), 1);
+                // Opaque skyline/window depth remains coherent while their
+                // contrast melts into haze. Alpha/discard would reveal distant
+                // surfaces through buildings or pop them at the outer bound.
+                return half4(lerp(_HazeColor.rgb, surface, visibility * _Visibility * cityVisibility), 1);
             }
             ENDHLSL
         }

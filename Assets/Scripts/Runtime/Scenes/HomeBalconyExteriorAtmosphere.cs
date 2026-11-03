@@ -276,6 +276,7 @@ namespace BarPromenade
                             GameWeatherRules.WindSpeedAtFullStrength));
             RainField.SetWindDrift(
                 new Vector2(windVelocity.x, windVelocity.z));
+            FogField.SetWindDrift(new Vector2(windVelocity.x, windVelocity.z));
             RainSound.SetIntensity(
                 IsBalconyVisibilityActive
                     ? weather.RainIntensity
@@ -350,7 +351,8 @@ namespace BarPromenade
             FogField.Initialize(
                 FogAnchor,
                 CityNightResources.AtmosphereMaterial,
-                citySeed);
+                citySeed,
+                useCityLayers: true);
 
             GameObject rainSoundObject = new GameObject(
                 "Home Exterior Rain Sound");

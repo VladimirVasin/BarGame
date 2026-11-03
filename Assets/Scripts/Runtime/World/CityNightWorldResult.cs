@@ -138,7 +138,8 @@ namespace BarPromenade
             FogField.Initialize(
                 player,
                 CityNightResources.AtmosphereMaterial,
-                citySeed);
+                citySeed,
+                useCityLayers: true);
         }
 
         public void InitializeAtmosphere(

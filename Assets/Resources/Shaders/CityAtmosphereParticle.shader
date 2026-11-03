@@ -6,6 +6,7 @@ Shader "Bar Promenade/City Atmosphere Particle"
         _EdgePower("Edge Power", Range(0.5, 6)) = 1.5
         _NoiseStrength("Noise Strength", Range(0, 1)) = 0
         _SoftParticleDistance("Depth Fade Distance", Range(0.01, 4)) = 1
+        _FogMotion("City Layer Motion", Vector) = (0, 0, 0, 0)
     }
 
     SubShader
@@ -50,6 +51,7 @@ Shader "Bar Promenade/City Atmosphere Particle"
                 half _EdgePower;
                 half _NoiseStrength;
                 half _SoftParticleDistance;
+                float4 _FogMotion;
             CBUFFER_END
 
             struct Attributes
@@ -109,13 +111,14 @@ Shader "Bar Promenade/City Atmosphere Particle"
                 envelope = smoothstep(0.0h, 1.0h, envelope);
                 envelope = pow(envelope, _EdgePower);
 
+                half2 flow = input.uv + _FogMotion.xy * (.18h * _FogMotion.z);
                 half firstWave =
-                    sin(input.uv.x * 13.1h +
-                        sin(input.uv.y * 7.3h) * 2.2h) *
+                    sin(flow.x * 13.1h +
+                        sin(flow.y * 7.3h) * 2.2h) *
                     0.5h + 0.5h;
                 half secondWave =
-                    sin(input.uv.y * 15.7h -
-                        input.uv.x * 5.1h) *
+                    sin(flow.y * 15.7h -
+                        flow.x * 5.1h) *
                     0.5h + 0.5h;
                 half noise =
                     saturate(0.46h + (firstWave + secondWave) * 0.27h);

@@ -79,7 +79,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Coastal utilities | Three passive utility buildings; bounded poles/wires clear routes; Home shares the plan. | `CityCoastalInfrastructure{Plan,WorldBuilder}` | Current |
 | City elevation and exterior stairs | Validated elevation plans keep external stairs and walkable ground consistent with collision. | `CityElevation{Plan,Planner,Validator,Rebaser,StairPlacement}`, `CityTerrainSurfacePlan` | Current |
 | City mountain boundary and open tunnel | `default-coastal` closes west/south around the non-traversable river cave and one gate-free `8 x 5.5 m` portal. | `CityMountainBoundary*`, `CityMountainBackdrop*` | Current |
-| Eastern mainland view | Closed post; shared descent/lamp/traffic datum, city on valley floor. One pooled mast, passive distance. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |
+| Eastern mainland view | Closed post; shared road/traffic datum; skyline/glow fade beyond checkpoint. One pooled mast. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |
 | City litter | 36 Blender variants off roads; dense east/no near repeats; solids block; finite shared palette per root. | `CityLitterCatalog`, `CityLitter{Plan,Planner,WorldBuilder,Instancer}`, `CityEastLitter*` | Current |
 | Eastern checkpoint guards | Distinct guards alternate physical patrols; shared pair/E bubbles, passive shoulder rifles, pause/cleanup. | `CityEastGuard{Duty,Plan,Controller}`, `EastGuardActor` | Current |
 | South tunnel travel stub | Walking triggers the authored refusal/return. Gap: no pedestrian transition to Mountain Road. | `CityTunnelTravel{Plan,Planner,Controller,CrossingModel}`, `InteractionPromptView` | Partial |

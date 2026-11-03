@@ -8,7 +8,7 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-03
 
-- Чекпойнт при входе в сцену;Esc→возврат с откатом прогресса в сеансе.
+- Чекпойнт входа;Esc→откат прогресса сеанса.
   SessionCheckpointStateTests/SessionCheckpointPlayModeTests.
 
 - Склад:тела осыпаются после падения и паузы;шорох/след.
@@ -34,8 +34,8 @@ CombatWarehouseHawthorn.
 - Туалет:анатомия при снятых штанах.
   SeatedAppearance_ShowsAttachedAnatomyAndHidesItOnExit.
 Checks passed;frames reviewed.
-- Город/балкон:краски плавно тускнеют к ночи;квартира прежняя.
-  CityNightSaturation.
+- Город/балкон:ночью бледнее;туман гуще/по ветру;город вдали лишь у КПП.
+  CityNightSaturation/CityFogCheckpoint.
 
 
 ### 2026-11-02

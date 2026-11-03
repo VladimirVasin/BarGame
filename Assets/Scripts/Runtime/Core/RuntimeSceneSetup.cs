@@ -38,7 +38,7 @@ namespace BarPromenade
         public static readonly Quaternion CityMoonlightRotation =
             Quaternion.Euler(48f, -34f, 0f);
 
-        public const float CityFogDensity = 0.070f;
+        public const float CityFogDensity = 0.090f;
         public const float CityFarClipPlane = 48f;
         public const float MountainRoadFogDensity = 0.026f;
         public const float MountainRoadFarClipPlane = 120f;

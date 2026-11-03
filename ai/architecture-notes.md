@@ -1,6 +1,20 @@
 # Architecture notes
 
 ## Current facts
+- **Accepted exception 2026-11-03,user — City fog A:**
+  City/balcony:constant gray-green Exp2 `.090`;technical clip48m.
+  Reading bands:art§3.3;art9/story§16/21 stay;global breathing/story signal0.
+  `CityFogField`:≤36 shared world particles;slow layered
+  drift:shared wind/absolute game time;Home maps axes. Pause/roof/
+  dormancy/return/unload retain ownership;road/village stay.
+  `CityEastDistance*`:camera XZ/post;skyline/windows/glow fade12→30m,full≤12/0≥30.
+  Road/valley/traffic/lighthouse stay.
+  Cached refs/MPB;recurring loads/material instances0;GPU unmeasured.
+  24FX:GI bounded bounce/SSAO/shadows/grade stay;fog changes,existing source
+  volumes reused,no City SSGI/SCGI. Probes/SSR/water/wetness/bevels/vertex colour/
+  decals/rim/outlines stay;wind drives particles. Bloom/DoF/SMAA/vignette/grain
+  stay;new dither only for proven banding,no flare/blur/chromatic/distortion.
+
 - **Accepted 2026-11-03,user — City/balcony night saturation:**
   Runtime grades:day `-24`→night `-30`, shared dawn/dusk/fractional clock.
   Cached parameter;City reuses sun sample;fixtures keep minute gates.
@@ -1500,7 +1514,7 @@
   User: story §6 `0`/art §10e: valley descent/city/halo, near/panorama seam;
   common road/land/car/lamp datum. First lamp: existing model/pool `12`;
   passive distant fixtures. Blender depth/cars pause/§20.
-  Fog `.070`/clip `48 m`, sea/west/south/post/paths, §16/§21/nine art checks hold.
+  Clip48m/sea/west/south/post/paths/§16/§21/nine art checks hold.
 
 - **Accepted — 2026-09-14, eastern fence relief and trees:**
   Art §10e: shared terrain relief replaces parallel track; sparse City misc
@@ -1539,10 +1553,9 @@
   replay. Closed road/church paths/§16/§21/nine art checks hold.
 
 - **Accepted architecture exception — 2026-09-13, eastern mainland road:**
-  Story §6/art §2.1a/§10e own closed post/paths/scrub/distant road/skyline/lights
-  and exclusions; guards own life. Projection within `48 m`,
-  haze; no remote collision/Light/shadow/map/navigation.
-  Imported/placed road/booth bounds verify metres/axes; §16/§21/nine art checks.
+  Story§6/art§2.1a/10e:closed post/paths/scrub/road/skyline/lights/exclusions;
+  guards separate. Clip48m/haze;remote collision/Light/shadow/map/navigation0.
+  Imported/placed road/booth metres/axes;§16/21/art9.
 
 - **Accepted — 2026-09-13, refined hero, M-65 and modular clothing:**
   Cannery-level Hero V2/Vietnam M-65/curtains/modular clothes;lean `1.75 m`/
@@ -3392,7 +3405,7 @@
   all three restore with mouth hysteresis on exit.
   Shell: `39.4-43.2 m` inside clip `48 m`; `CityMountainBackdropFollower`
   copies translation only. Shader skips distance fog, mixes `0.86` toward
-  `RuntimeSceneSetup.CityFogColor`, matching physical `0.10`/Exp2 `0.070`.
+  `RuntimeSceneSetup.CityFogColor`, matching physical `0.10`/shared Exp2.
   West/south only, closed above river mouth; no collider/Light/shadow/probe/
   navigation/map/world bounds or fog/grade/clip change. Map reads physical
   `CityWorldResult.MountainBoundaryPlan`: west/south toe→foot hatching,
@@ -6001,18 +6014,13 @@
   preserving the primitive collider contract. No per-instance mesh or
   material is created.
 - **Accepted — Shared MVP exterior day/night lighting:**
-  `GameTimeDayNightRules`:night→dawn `06–07`→day→dusk `18–19`→night.
-  `CityDayNightController` owns directional color/intensity/rotation,
-  ambient/reflection/shadows;`CityNightAtmosphere`:bounded lamps/bar/bulbs/halos.
-  `HomeDayNightController` shares the sample with the window shaft/balcony.
-  Yard Spot stays outside `Night.Root`, always at authored intensity;
-  Bar/Supermarket/Stairwell profiles stay. Minute/change gates retain fixture
-  budgets;ordinary dawn/dusk never recaptures environment. The pool leases/burns
-  at §20's daytime floor. Forced setup/balcony entry/restore refresh fully.
-  Visibility stays:gray-green Exp2 `.070`,matching backdrop,far clip `48 m`,
-  `CityFogField`. Authored `CityNoirVolumeProfile` stays;runtime saturation:
-  accepted `2026-11-03` decision. Runtime Exp2 variant survives stripping;
-  interior fog/range contracts stay.
+  `GameTimeDayNightRules`:night→dawn06–07→day→dusk18–19→night.
+  City:directional/ambient/reflection/shadows;bounded night lamps/bar/bulbs/halos.
+  Home shares window/balcony sample. Yard Spot outside `Night.Root` stays;
+  Bar/Shop/Stairwell profiles stay. Minute/change gates keep budgets/§20 floor;
+  dawn/dusk never recaptures;setup/balcony/restore refresh.
+  City fog/saturation:2026-11-03 decisions. Authored grade/interior range stay;
+  runtime Exp2 variant survives stripping.
 - **Accepted architecture exception — 2026-08-29, explicit user request —
   the barrel fire under the [10;5]–[11;5] arch is one strong realtime local
   light:** this supersedes the shelter draft's temporary “emissive only” rule
@@ -6090,13 +6098,10 @@
   curtains, blinds, stable brightness variants and dark panes prevent a
   uniform glowing grid. This City rule does not alter Alpine Village dimming.
 - **Accepted — Bounded local fog:** One seeded, player-following
-  `CityFogField`: slow world drift, ≤36 particles/`0.120` alpha, shared atmosphere
-  material; no collision/trails/particle lights. City/Home balcony/Mountain Road/
-  Alpine Village share tint/size/rate/gradient; only seed varies. Exp2 haze remains
-  per-area, mixed through `MixFog`. Outside City, `CityWeatherController` polls
-  shared snow/fog shelter (road tunnel/terminal, village station canopy), clearing/
-  refilling both. City's `CityTunnelShelterController` also hides the ridge shell;
-  its weather owner receives no fog.
+  `CityFogField`:≤36/shared material/collision-trails-lights0;per-area `MixFog`.
+  City/balcony:2026-11-03;road/village unchanged. Weather clears/refills snow/fog
+  under road tunnel/terminal/village canopy. City weather shares the shelter
+  mask with fog;the tunnel owner also hides the ridge.
 - **Accepted — One camera-relative cloud ceiling for every true exterior:**
   a deterministic Blender build owns one passive `220`-triangle unit
   hemisphere and one packed linear RGB density texture; runtime owns three
@@ -7647,8 +7652,8 @@
   retired style/console-effect keys are ignored. DoF changes runtime/cloned
   profiles only; disabled intoxication forces zero.
 - **Accepted — shared depth of field has two tiers:** the
-  scene tier is Gaussian: City `8/28/1.5`, inside its `48 m` far clip/exp² fog
-  `0.070`; six interiors retain radius `0.55`: Bar `6/18`, Home `5/14`, Stairwell
+  scene tier is Gaussian: City `8/28/1.5`, inside48m clip/shared Exp2;
+  six interiors retain radius `0.55`: Bar `6/18`, Home `5/14`, Stairwell
   `5/16`, Supermarket `7/20`, Church `5/13`, Mother's House `4.5/13`.
   Exteriors, including Road `20/92/0.65`, stay. Modal `CinematicDepthOfField`
   shares one priority-10 Bokeh volume above grades `4-5`, blending `0.35/0.45 s`.

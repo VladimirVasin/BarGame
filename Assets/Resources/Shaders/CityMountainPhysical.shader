@@ -7,7 +7,7 @@ Shader "Bar Promenade/City Mountain Physical"
         _GroundResponse("Linear rock response", 2D) = "white" {}
         _GroundRockLayers("Local rock wear", Float) = 0
         _HazeColor("City Haze Color", Color) = (0.330, 0.380, 0.355, 1)
-        _FogDensity("City Fog Density", Float) = 0.070
+        _FogDensity("City Fog Density", Float) = 0.090
         _VisibilityFloor("Distant Visibility Floor", Range(0, 1)) = 0.10
         _NativeFogNear("Native Fog Near", Float) = 9
         _NativeFogFar("Native Fog Far", Float) = 12
