@@ -220,6 +220,7 @@ namespace BarPromenade.Editor
         private static void ValidateCoreResources()
         {
             RequireAsset<Material>("Assets/Resources/Materials/RuntimePrimitiveLit.mat");
+            RequireAsset<Material>($"Assets/Resources/{HomeBathroomMirrorResources.GlassMaterialResourcePath}.mat");
             RequireAsset<Material>("Assets/Resources/Materials/SceneComposite.mat");
             RequireAsset<AudioMixer>("Assets/Resources/Audio/Mixers/BarPromenadeAudio.mixer");
             RequireAsset<Font>("Assets/Resources/Fonts/Roboto-Regular.ttf");

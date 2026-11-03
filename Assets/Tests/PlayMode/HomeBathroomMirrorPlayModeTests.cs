@@ -1,6 +1,7 @@
 using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
@@ -56,6 +57,28 @@ namespace BarPromenade.Tests.PlayMode
             HomeBathroomMirrorWorld mirror = home.BathroomMirror;
             Assert.That(mirror, Is.Not.Null, "The home builds its bathroom mirror.");
             Assert.That(mirror.IsInitialized, Is.True);
+            Material glass = Resources.Load<Material>(HomeBathroomMirrorResources.GlassMaterialResourcePath);
+            Assert.That(glass, Is.Not.Null, "The glass material must be a build-retained Resources asset.");
+            Assert.That(mirror.Opening.Glass.sharedMaterial, Is.SameAs(glass),
+                "The mirror uses the saved material, whose enabled shader variant is retained in player builds.");
+            Assert.That(glass.shader.name, Is.EqualTo("Bar Promenade/Lit"));
+            Assert.That(glass.IsKeywordEnabled("_SURFACE_TYPE_TRANSPARENT"), Is.True);
+            Assert.That(glass.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON"), Is.False,
+                "The pane uses straight alpha, matching its authored blend state.");
+            Assert.That(glass.renderQueue, Is.EqualTo((int)RenderQueue.Transparent));
+            Assert.That(glass.GetFloat("_Surface"), Is.EqualTo(1f));
+            Assert.That(glass.GetFloat("_SrcBlend"), Is.EqualTo((float)BlendMode.SrcAlpha));
+            Assert.That(glass.GetFloat("_DstBlend"), Is.EqualTo((float)BlendMode.OneMinusSrcAlpha));
+            Assert.That(glass.GetFloat("_SrcBlendAlpha"), Is.EqualTo((float)BlendMode.One));
+            Assert.That(glass.GetFloat("_DstBlendAlpha"), Is.EqualTo((float)BlendMode.OneMinusSrcAlpha));
+            Assert.That(glass.GetFloat("_ZWrite"), Is.Zero);
+            Assert.That(glass.GetFloat("_Cull"), Is.EqualTo((float)CullMode.Back));
+            Assert.That(glass.GetFloat("_Smoothness"), Is.EqualTo(0.35f).Within(0.0001f));
+            Color glassTint = glass.GetColor("_BaseColor");
+            Color expectedTint = HomeBathroomMirrorResources.GlassColor;
+            for (int channel = 0; channel < 4; channel++)
+                Assert.That(glassTint[channel], Is.EqualTo(expectedTint[channel]).Within(0.00001f),
+                    "The saved pane keeps its original tint and opacity.");
             string cloned = string.Join(" | ", mirror.ClonedSourceNames);
             Assert.That(mirror.StaticCloneCount, Is.GreaterThanOrEqualTo(45), "The bathroom is copied: " + cloned);
             foreach (string required in new[]
@@ -130,7 +153,9 @@ namespace BarPromenade.Tests.PlayMode
                         Quaternion.Angle(heroPart.Bone.localRotation, twinPart.Bone.localRotation),
                         Is.LessThan(0.01f),
                         part + " wears the hero's pose.");
-                    Assert.That(twinPart.Renderer.enabled, Is.True, part + " is drawn in the reflection.");
+                    bool expectedVisibility = part == Player3DAnatomicalPart.Head || heroPart.Renderer.enabled;
+                    Assert.That(twinPart.Renderer.enabled, Is.EqualTo(expectedVisibility),
+                        part + " follows the hero's wardrobe visibility, while the reflected head stays drawn.");
                 }
 
                 // The bones, not just the root: the head's world position must
@@ -340,19 +365,36 @@ namespace BarPromenade.Tests.PlayMode
         /// The proof that the trick actually renders: the same frame with the
         /// hole open and with the plate plugging it must differ inside the
         /// plate's rectangle and nowhere else. Object counts and transforms
-        /// cannot show this; only pixels can.
+        /// cannot show this; only pixels can. Toggling the reflected content
+        /// with and without the pane also proves that its transparency carries
+        /// the reflection instead of replacing it with an opaque surface.
         /// </summary>
         private void AssertTheHoleShowsSomethingElse(HomeBathroomMirrorWorld mirror, Camera camera)
         {
             Assert.That(mirror.Opening.IsMirrorActive, Is.True);
             Color32[] open = Render(camera, out int width, out int height);
-            mirror.Opening.SetMirrorActive(false);
-            Color32[] plugged = Render(camera, out _, out _);
-            mirror.Opening.SetMirrorActive(true);
+            Color32[] plugged, clear, emptyClear, emptyGlass;
+            try
+            {
+                mirror.Opening.SetMirrorActive(false);
+                plugged = Render(camera, out _, out _);
+                mirror.Opening.SetMirrorActive(true);
+                mirror.Opening.Glass.enabled = false;
+                clear = Render(camera, out _, out _);
+                mirror.Content.gameObject.SetActive(false);
+                emptyClear = Render(camera, out _, out _);
+                mirror.Opening.Glass.enabled = true;
+                emptyGlass = Render(camera, out _, out _);
+            }
+            finally
+            {
+                mirror.Content.gameObject.SetActive(true);
+                mirror.Opening.SetMirrorActive(true);
+            }
 
             Rect hole = HomeBathroomMirrorPlane.OpeningXY;
             var inside = new RectInt(width, height, 0, 0);
-            double insideSum = 0, outsideSum = 0;
+            double insideSum = 0, outsideSum = 0, clearContentSum = 0, glassContentSum = 0;
             long insideCount = 0, outsideCount = 0;
             int minX = width, minY = height, maxX = -1, maxY = -1;
             for (int corner = 0; corner < 4; corner++)
@@ -391,6 +433,8 @@ namespace BarPromenade.Tests.PlayMode
                         y > inside.yMin + 2 && y < inside.yMax - 2)
                     {
                         insideSum += difference;
+                        clearContentSum += ColorDifference(clear[index], emptyClear[index]);
+                        glassContentSum += ColorDifference(open[index], emptyGlass[index]);
                         insideCount++;
                     }
                     else if (!near)
@@ -412,7 +456,17 @@ namespace BarPromenade.Tests.PlayMode
                 outsideMean,
                 Is.LessThan(1.5),
                 $"Opening the hole changed the rest of the frame too ({outsideMean:F2}/765).");
+            double clearContentMean = clearContentSum / insideCount;
+            double glassContentMean = glassContentSum / insideCount;
+            Assert.That(clearContentMean, Is.GreaterThan(3.0),
+                "The clear opening must show enough reflected content to judge transmission.");
+            Assert.That(glassContentMean, Is.GreaterThan(clearContentMean * 0.4),
+                $"The pane erased the reflected content: response {glassContentMean:F2}/765 " +
+                $"through glass versus {clearContentMean:F2}/765 without it.");
         }
+
+        private static int ColorDifference(Color32 first, Color32 second) =>
+            Mathf.Abs(first.r - second.r) + Mathf.Abs(first.g - second.g) + Mathf.Abs(first.b - second.b);
 
         private static Color32[] Render(Camera camera, out int width, out int height)
         {
