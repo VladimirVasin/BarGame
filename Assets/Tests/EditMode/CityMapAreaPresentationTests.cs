@@ -961,11 +961,12 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.Church,
                     CityMapPointOfInterestKind.Cafe,
                     CityMapPointOfInterestKind.Laundry,
-                    CityMapPointOfInterestKind.DogPark
+                    CityMapPointOfInterestKind.DogPark,
+                    CityMapPointOfInterestKind.TerraceCourts
                 };
                 var expectedIds = new[]
                 {
-                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park"
+                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts"
                 };
                 var expectedDistricts = new[]
                 {
@@ -974,6 +975,7 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.NorthWaterfront,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Church,
+                    CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential
@@ -994,7 +996,9 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(cafe, Is.Not.Null);
                 CityLaundryPlan laundry = CityLaundryPlan.ForLayout(layout);
                 CityDogParkPlan dogPark = CityDogParkPlan.ForLayout(layout);
+                CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
                 Assert.That(laundry.IsEnabled && dogPark.IsEnabled, Is.True);
+                Assert.That(terraces.IsEnabled, Is.True);
                 // The world adds the fair ground to its mask after the
                 // buildings (CityWorldBuilder); the landing check needs the
                 // same mask the hero actually walks.
@@ -1048,6 +1052,13 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(label, Is.EqualTo(isDogPark ? "Собачья площадка" : "Прачечная"), context);
                         if (isDogPark) Assert.That(place.Footprint, Is.EqualTo(dogPark.Footprint), context);
                     }
+                    if (place.Kind == CityMapPointOfInterestKind.TerraceCourts)
+                    {
+                        Assert.That(label, Is.EqualTo("Лестничные дворы"), context);
+                        Assert.That(Vector3.Distance(place.WorldPosition,
+                            terraces.UpperArrivalWorld + Vector3.up * PlayerFactory.GroundedRootOffset),
+                            Is.LessThan(.001f), context);
+                    }
 
                     Vector3 standing;
                     if (place.Kind == CityMapPointOfInterestKind.Docks)
@@ -1080,6 +1091,14 @@ namespace BarPromenade.Tests.EditMode
                             Assert.That(standing.y,
                                 Is.EqualTo(eastExit.SampleRoadTop(xz.x, xz.y) + PlayerFactory.GroundedRootOffset)
                                     .Within(0.001f), $"{context} must stand on the side road.");
+                        }
+                        else if (place.Kind == CityMapPointOfInterestKind.TerraceCourts)
+                        {
+                            Assert.That(walkable.Contains(standing, CityGroundTraversalPlanner.MaximumAgentRadius),
+                                Is.True, $"{context} arrives outside the supported courts.");
+                            Assert.That(standing.y, Is.EqualTo(terraces.UpperArrivalWorld.y +
+                                PlayerFactory.GroundedRootOffset).Within(.001f),
+                                "The map must not send an upper-court arrival down to the replaced terrain.");
                         }
                         else
                         {

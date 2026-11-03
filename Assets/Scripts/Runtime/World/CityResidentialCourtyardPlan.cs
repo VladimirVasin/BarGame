@@ -316,6 +316,12 @@ namespace BarPromenade
             internal GroupContext(CityLayout layout)
             {
                 Layout = layout; Entrances = CityResidentialEntrancePlan.ForLayout(layout);
+                CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
+                if (terraces.IsEnabled)
+                {
+                    foreach (Vector2Int cell in terraces.ReservedCells) ProtectedCells.Add(cell);
+                    ProtectedGround.Add(terraces.ReservedBounds);
+                }
                 Solids = ExistingSolids(layout);
                 foreach (BuildingLot mass in layout.BuildingMasses)
                     if (mass.HasBuilding || mass.IsCafe) Bodies.AddRange(mass.CreateCollisionPolygons());

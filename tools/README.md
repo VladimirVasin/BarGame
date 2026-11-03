@@ -16,17 +16,15 @@ staged `--model-dir`/`--source-dir`/`--texture-dir`, `--no-preview`.
 source `ArtSource/City/EastExit`.
 `build-city-east-ground-texture.py --verify`: grass/soil seam.
 
-`build-city-buildings-3d-model.py` v4.0.0;
-`Assets/City/Models/CityBuildings3D.{fbx,json}`;
+`build-city-{buildings,coastal-infrastructure,street-profile,terrace}-3d-model.py`:
+launcher/`--validate-only`.
+v4.0.0:`Assets/City/Models/CityBuildings3D.{fbx,json}`;
 `CityBuildingAssetSetup.BuildOrThrow`.
-`build-city-coastal-infrastructure-3d-model.py` v1.0.0;
-`Assets/Resources/City/CoastalInfrastructure/CityCoastalInfrastructure3D.{fbx,json}`;
+v1.0.0:`Assets/Resources/City/CoastalInfrastructure/CityCoastalInfrastructure3D.{fbx,json}`;
 `CityCoastalInfrastructureAssetSetup.{Build,Validate}OrThrow`.
-Both:`--validate-only`.
-
-`build-city-street-profile-3d-model.py`:launcher/`--validate-only`;
-`Assets/Resources/City/StreetProfile/CityStreetProfile3D.{fbx,json}`.
-Top/edge:`CityStreetSupportPlan`; `CityStreetSurfaceWorldBuilder` measures metres.
+Street:`Assets/Resources/City/StreetProfile/CityStreetProfile3D.{fbx,json}`;
+`CityStreetSupportPlan`/`CityStreetSurfaceWorldBuilder`:tops/edges/metres.
+Terraces:5 FBXs/JSON→`Assets/Resources/CityTerraces`.
 
 `build-city-litter-3d-model.py`:36 props;`--validate-only`:geometry/determinism.
 `build-city-laundry-3d-model.py --validate-only`:metres/sign+SHA.

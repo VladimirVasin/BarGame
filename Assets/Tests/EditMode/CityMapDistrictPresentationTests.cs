@@ -96,6 +96,7 @@ namespace BarPromenade.Tests.EditMode
             "map.poi.church_entrance")]
         [TestCase(CityMapPointOfInterestKind.Laundry, "map.poi.laundry")]
         [TestCase(CityMapPointOfInterestKind.DogPark, "map.poi.dog_park")]
+        [TestCase(CityMapPointOfInterestKind.TerraceCourts, "map.poi.terrace_courts")]
         public void PointOfInterestLocalizationKeys_AreStable(
             CityMapPointOfInterestKind kind,
             string expected)

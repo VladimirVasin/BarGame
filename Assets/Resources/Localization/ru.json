@@ -1784,6 +1784,10 @@
       "value": "Собачья площадка"
     },
     {
+      "key": "map.poi.terrace_courts",
+      "value": "Лестничные дворы"
+    },
+    {
       "key": "map.poi.more",
       "value": "Ещё {0}"
     },

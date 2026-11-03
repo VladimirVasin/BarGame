@@ -17,6 +17,7 @@ namespace BarPromenade
         {
             EnsureTopology();
             CityStreetSupportPlan plan = CityStreetSupportPlan.FromStreetPlan(layout, street);
+            CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
             var vertices = new List<Vector3>();
             var normals = new List<Vector3>();
             var uvs = new List<Vector2>();
@@ -75,6 +76,16 @@ namespace BarPromenade
                     if (normal.y < .00001f) return;
                     var polygon = new List<Vector3>(3) { a, b, c };
                     if (home != null) polygon = ClipHome(polygon, home);
+                    if (polygon.Count < 3) return;
+                    Rect bounds = Rect.MinMaxRect(Mathf.Min(a.x, Mathf.Min(b.x, c.x)), Mathf.Min(a.z, Mathf.Min(b.z, c.z)),
+                        Mathf.Max(a.x, Mathf.Max(b.x, c.x)), Mathf.Max(a.z, Mathf.Max(b.z, c.z)));
+                    if (CityTerraceSurfaceCuts.Overlaps(terraces, bounds))
+                        foreach (Vector3[] face in CityTerraceSurfaceCuts.Outside(polygon, terraces)) AppendPolygon(face, normal);
+                    else AppendPolygon(polygon, normal);
+                }
+
+                void AppendPolygon(IReadOnlyList<Vector3> polygon, Vector3 normal)
+                {
                     for (int fan = 1; fan < polygon.Count - 1; fan++)
                     {
                         Vector3 first = polygon[0], second = polygon[fan], third = polygon[fan + 1];
@@ -99,6 +110,18 @@ namespace BarPromenade
                             if (ax < HomeExteriorViewBuilder.ContextMinimumX) a = intersection; else b = intersection;
                         }
                     }
+                    Rect bounds = Rect.MinMaxRect(Mathf.Min(a.x, b.x) - .001f, Mathf.Min(a.z, b.z) - .001f,
+                        Mathf.Max(a.x, b.x) + .001f, Mathf.Max(a.z, b.z) + .001f);
+                    if (CityTerraceSurfaceCuts.Overlaps(terraces, bounds))
+                    {
+                        foreach (Vector2 interval in CityTerraceSurfaceCuts.OutsideIntervals(a, b, terraces))
+                            AppendStripPart(Vector3.Lerp(a, b, interval.x), Vector3.Lerp(a, b, interval.y), depth);
+                    }
+                    else AppendStripPart(a, b, depth);
+                }
+
+                void AppendStripPart(Vector3 a, Vector3 b, float depth)
+                {
                     Vector3 normal = Vector3.Cross(b - a, Vector3.down).normalized;
                     int offset = vertices.Count;
                     foreach (Vector3 coefficient in stripTopology.Vertices)

@@ -153,11 +153,12 @@ namespace BarPromenade
             internal readonly List<Rect> Footprints = new List<Rect>();
             internal PrimaryReservations(CityLayout layout)
             {
+                CityTerraceDistrictPlan terrace = CityTerraceDistrictPlan.ForLayout(layout);
                 // This deliberately never reads BuildingMasses or terrain:
                 // those allocate the laundry and invoke decoration themselves.
                 foreach (BuildingLot lot in layout.BuildingLots)
                 {
-                    if (!IsResidential(lot)) continue;
+                    if (!IsResidential(lot) || terrace.IsReservedCell(lot.Cell)) continue;
                     CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
                     Vector3 threshold = pose.TransformPoint(CityBuildingAssetProvider.GetExpectedEntranceThreshold(lot.BuildingVariant));
                     Vector3 front = threshold + lot.FacadeForward * ApronRun;
@@ -173,9 +174,11 @@ namespace BarPromenade
             // Finish courtyard allocation before an infill lookup can enter
             // its ground sampler. Subsequent queries read the same identities.
             IReadOnlyList<BuildingLot> masses = layout.BuildingMasses;
+            CityTerraceDistrictPlan terrace = CityTerraceDistrictPlan.ForLayout(layout);
             var obstacles = new List<Vector2[]>();
             foreach (BuildingLot lot in masses)
                 if (lot.HasBuilding || lot.IsCafe) obstacles.AddRange(lot.CreateCollisionPolygons());
+            if (terrace.IsEnabled) obstacles.Add(CityRoadPolygon.Rectangle(terrace.ReservedBounds));
             CityLaundryPlan laundry = CityLaundryPlan.ForLayout(layout);
             if (laundry.IsEnabled) foreach (Rect body in laundry.BodyFootprints) obstacles.Add(CityRoadPolygon.Rectangle(body));
             CityDogParkPlan dogs = CityDogParkPlan.ForLayout(layout);
@@ -197,6 +200,22 @@ namespace BarPromenade
                 CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
                 Vector3 threshold = pose.TransformPoint(CityBuildingAssetProvider.GetExpectedEntranceThreshold(lot.BuildingVariant));
                 Vector3 outward = pose.Rotation * CityBuildingAssetProvider.GetExpectedEntranceOutward(lot.BuildingVariant);
+                if (terrace.IsReservedCell(lot.Cell))
+                {
+                    // The imported precinct owns this continuous route and its
+                    // support. Keep the common entrance descriptor without
+                    // constructing a second ramp through the terrace walls.
+                    float side = threshold.z < terrace.Origin.z ? 1f : -1f;
+                    IReadOnlyList<Vector3> ascent = side > 0f ? terrace.Pilot.EastRoute : terrace.Pilot.WestRoute;
+                    var terraceRoute = new List<Vector3> { threshold,
+                        terrace.World(new Vector3(side * 13.04f, CityTerracePilotPlan.FlightRise * 2f, .04f)) };
+                    for (int point = 7; point >= 0; point--) terraceRoute.Add(terrace.World(ascent[point]));
+                    terraceRoute.Add(terrace.EntryEndWorld);
+                    terraceRoute.Add(terrace.EntryStartWorld);
+                    result.Add(new CityResidentialEntranceDescriptor(lot, threshold, outward,
+                        terraceRoute, new List<CityEntranceForecourtPlan>()));
+                    continue;
+                }
                 Vector2 apron = XZ(threshold + outward * ApronRun);
                 var query = new RouteQuery(layout, lot, obstacles);
                 List<Vector2> route = query.Route(apron);
@@ -293,11 +312,12 @@ namespace BarPromenade
             internal SharedGradeField(CityLayout source, IReadOnlyList<BuildingLot> masses)
             {
                 layout = source;
+                CityTerraceDistrictPlan terrace = CityTerraceDistrictPlan.ForLayout(layout);
                 foreach (CitySurfaceDescriptor surface in layout.Surfaces)
                     if (CityTerrainSurfacePlan.UsesContinuousTop(surface)) ground.Add(surface);
                 foreach (BuildingLot lot in masses)
                 {
-                    if (!IsResidential(lot)) continue;
+                    if (!IsResidential(lot) || terrace.IsReservedCell(lot.Cell)) continue;
                     CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
                     anchors.Add(new GradeAnchor(pose.TransformPoint(CityBuildingAssetProvider.GetExpectedEntranceThreshold(lot.BuildingVariant)),
                         pose.Rotation * CityBuildingAssetProvider.GetExpectedEntranceOutward(lot.BuildingVariant)));

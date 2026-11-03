@@ -578,6 +578,7 @@ namespace BarPromenade
                 DrawMountainBoundary(projection);
                 DrawBuildings(projection);
                 DrawRoads(projection);
+                DrawTerraceCourts(projection);
                 DrawRiverBridges(projection);
                 DrawAreaOutlines(projection);
                 DrawMountainTunnel(projection);
@@ -1636,6 +1637,41 @@ namespace BarPromenade
                 Vector2 gate = projection.WorldToScreen(eastExit.CheckpointPosition);
                 DrawLine(gate + Vector2.up * 5f, gate - Vector2.up * 5f, 2f, new Color(.66f, .48f, .29f));
                 DrawSolidRect(ProjectWorldRect(projection, eastExit.BoothBounds), new Color(.48f, .47f, .36f));
+            }
+        }
+
+        private void DrawTerraceCourts(MapProjection projection)
+        {
+            CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(controller.Layout);
+            if (!terraces.IsEnabled) return;
+            Color ink = GetDistrictColor(CityDistrictKind.Residential);
+            DrawSolidRect(ProjectWorldRect(projection, terraces.EntryBounds), PublicPlaceLand);
+            for (int index = 0; index < terraces.Floors.Count; index++)
+            {
+                CityTerracePilotFloor floor = terraces.Floors[index];
+                Rect bounds = floor.Bounds;
+                Vector3 a = terraces.World(new Vector3(bounds.xMin, floor.Center.y, bounds.yMin));
+                Vector3 b = terraces.World(new Vector3(bounds.xMax, floor.Center.y, bounds.yMax));
+                Rect world = Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.z, b.z),
+                    Mathf.Max(a.x, b.x), Mathf.Max(a.z, b.z));
+                Rect screen = ProjectWorldRect(projection, world);
+                DrawSolidRect(screen, PublicPlaceLand);
+                RetroUiTheme.StrokeRect(screen, 1f, ink);
+            }
+            for (int index = 0; index < terraces.Flights.Count; index++)
+            {
+                CityExteriorStairFlightDescriptor flight = terraces.Flights[index];
+                Vector3 side = flight.Right * (flight.Width * .5f);
+                DrawLine(projection.WorldToScreen(terraces.World(flight.Start - side)),
+                    projection.WorldToScreen(terraces.World(flight.End - side)), 1f, ink);
+                DrawLine(projection.WorldToScreen(terraces.World(flight.Start + side)),
+                    projection.WorldToScreen(terraces.World(flight.End + side)), 1f, ink);
+                for (int step = 0; step <= flight.StepCount; step++)
+                {
+                    Vector3 at = Vector3.Lerp(flight.Start, flight.End, step / (float)flight.StepCount);
+                    DrawLine(projection.WorldToScreen(terraces.World(at - side)),
+                        projection.WorldToScreen(terraces.World(at + side)), 1f, ink);
+                }
             }
         }
 
@@ -3635,6 +3671,18 @@ namespace BarPromenade
                             -halfSize * (toe == 0 ? .9f : .6f));
                         DrawLine(at + Vector2.up * (halfSize * -.2f),
                             at + Vector2.up * (halfSize * .2f), width, color);
+                    }
+                    break;
+                case CityMapPointOfInterestKind.TerraceCourts:
+                    // Three steps: the same ordinary stair silhouette on map and legend.
+                    for (int step = 0; step < 3; step++)
+                    {
+                        float run = halfSize * (2f / 3f);
+                        Vector2 start = center + new Vector2(-halfSize + step * run,
+                            halfSize - step * run);
+                        Vector2 top = start - Vector2.up * run;
+                        DrawLine(start, top, width, color);
+                        DrawLine(top, top + Vector2.right * run, width, color);
                     }
                     break;
                 default:

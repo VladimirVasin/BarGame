@@ -168,6 +168,7 @@ namespace BarPromenade
             lots = CityElevationRebaser.RebaseLots(
                 elevationPlan,
                 lots);
+            CityTerraceDistrictPlan.RebaseReservedLots(elevationPlan, lots);
             park = CityElevationRebaser.RebasePark(
                 elevationPlan,
                 park);
@@ -1013,6 +1014,7 @@ namespace BarPromenade
                 reservedLots.Add(cafeLotIndex);
                 frontages[cafeLotIndex] = Vector2Int.down;
             }
+            bool terraceReservation = CityTerraceDistrictPlan.TryReserve(settings, origin, roadSet, reservedLots);
             HashSet<Vector2Int> domesticPockets = SelectCompactDomesticPocketLots(
                 settings, frontages, reservedLots);
             foreach (int index in reservedLots)
@@ -1088,6 +1090,7 @@ namespace BarPromenade
                 }
             }
 
+            if (terraceReservation) CityTerraceDistrictPlan.ReserveLots(lots);
             return lots;
         }
 

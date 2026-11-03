@@ -8,36 +8,38 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-03
 
-- Чекпойнт входа;Esc→откат прогресса сеанса.
+- Чекпойнт входа/Esc:откат сеанса.
   SessionCheckpointStateTests/SessionCheckpointPlayModeTests.
 
-- Склад:тела осыпаются после падения и паузы;шорох/след.
+- Склад:падение/пауза→тела осыпаются,шорох/след.
   Warehouse_CorpseDecayPreservesDeathAndPoolLifecycle.
 - Бар:предупреждение/просьба,доподача/допить/встать/выход;уборка.
-  Пауза/камера;бармен:подача/салфетка/зал;поза ждёт речь.
+  Пауза/камера;бармен:подача/салфетка/зал;поза→речь.
   LastGuest_ClosingPreservesMenuSipAndWalksToDoor.
-- Пиво/вино:E по трети→стойка,одна оплата/FX частями/зачёт в конце.
+- Пиво/вино:E по трети→стойка;оплата1/FX частями/зачёт в конце.
   Водка/коньяк разом.
   BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment/
   WineService_FullGlassTakesThreeSeparateSips.
-- Магазин:выкладка/дверь/фактуры/касса;кассир:руки/3D-лицо.
-  Напитки:покупка/питьё/остаток/доза по мл;банка/звук.
-  AreaCaptureFixture.Supermarket passed;
+- Shop:stock/door/materials/checkout;cashier hands/3D face.
+  Drinks:buy/sip/remainder/ml-dose/can/audio.
+  AreaCaptureFixture.Supermarket OK;
   rear-wall/checkout/face;bar/inventory doses.
-- Склад:боярышник:Use→закрыть→глоток,+30HP/+40опьянения;HP<100%/инвентарь.
-  Красный наплыв/стоп4с,гул2с;голова/бросок→прежний предмет;жёлтый лут.
+- Warehouse hawthorn:Use→close→sip,+30HP/+40intox;HP<100%/inventory.
+  Red swell/freeze4s,rumble2s;head/toss→prior item;yellow loot.
 CombatWarehouseHawthorn.
 - Зеркало:стекло билда.
   HomeBathroomMirrorPlayModeTests.
-- Душ:обзор/рука/контакт;ЛКМ держать и наводить.
+- Душ:обзор/рука/контакт;держать ЛКМ/наводить.
   Shower_CancelMidWashDressesHimAndShutsTheWater.
-- Туалет:анатомия при снятых штанах.
+- Туалет:штаны сняты→анатомия.
   SeatedAppearance_ShowsAttachedAnatomyAndHidesItOnExit.
-Checks passed;frames reviewed.
-- Город/балкон:бледнее ночью;гуще туман по ветру;город у КПП.
+Checks OK;frames.
+- City/балкон:ночью бледнее;густой туман/ветер;город у КПП.
   CityNightSaturation/CityFogCheckpoint.
 - Сутки ×2. GameTimeStateTests.
-
+- City:лестничные дворы7,68м/два пути,жилые дома/вход/карта.
+  LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap/
+  ImageGenCityMap_PreservesPlanAndLivePlaces passed;frames reviewed.
 
 ### 2026-11-02
 

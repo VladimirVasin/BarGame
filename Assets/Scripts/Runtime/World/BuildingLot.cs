@@ -91,6 +91,7 @@ namespace BarPromenade
         public bool IsDistrictPointOfInterest =>
             LandUse == CityLandUseKind.DistrictPointOfInterest;
         public bool IsCafe => LandUse == CityLandUseKind.Cafe;
+        public bool IsOpenGround => LandUse == CityLandUseKind.OpenGround;
         public bool IsBar { get; }
         public bool IsPlayerHome { get; }
         public bool IsSupermarket { get; }

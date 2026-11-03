@@ -220,6 +220,33 @@ namespace BarPromenade.Editor
                 for (int i = 0; i < laundry.BodyFootprints.Count; i++) Box("laundry:" + i, "building", laundry.BodyFootprints[i]);
             foreach (CityMapPointOfInterest place in controller.PointsOfInterest)
                 if (place.HasFootprint) Box("place:" + place.StableId, "public-ground", place.Footprint);
+            CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
+            if (terraces.IsEnabled)
+            {
+                Box("terrace-entry", "promenade", terraces.EntryBounds);
+                foreach (CityTerracePilotFloor floor in terraces.Floors)
+                {
+                    Rect rect = floor.Bounds;
+                    Poly("terrace:" + floor.Id, floor.IsCourt ? "terrace-court" : "terrace-landing", new[] {
+                        XZ(terraces.World(new Vector3(rect.xMin, floor.Center.y, rect.yMin))),
+                        XZ(terraces.World(new Vector3(rect.xMax, floor.Center.y, rect.yMin))),
+                        XZ(terraces.World(new Vector3(rect.xMax, floor.Center.y, rect.yMax))),
+                        XZ(terraces.World(new Vector3(rect.xMin, floor.Center.y, rect.yMax))) });
+                }
+                foreach (CityExteriorStairFlightDescriptor flight in terraces.Flights)
+                {
+                    Vector3 side = flight.Right * (flight.Width * .5f);
+                    Poly("terrace:" + flight.Id, "terrace-landing", new[] {
+                        XZ(terraces.World(flight.Start - side)), XZ(terraces.World(flight.Start + side)),
+                        XZ(terraces.World(flight.End + side)), XZ(terraces.World(flight.End - side)) });
+                    for (int step = 0; step <= flight.StepCount; step++)
+                    {
+                        Vector3 at = Vector3.Lerp(flight.Start, flight.End, step / (float)flight.StepCount);
+                        Line("terrace:" + flight.Id + ":tread:" + step, "terrace-stair", .12f,
+                            new[] { XZ(terraces.World(at - side)), XZ(terraces.World(at + side)) });
+                    }
+                }
+            }
             foreach (RoadEdge edge in layout.RoadEdges)
             {
                 CityRoadPath road = layout.RoadGeometry.Get(edge);
@@ -322,7 +349,8 @@ namespace BarPromenade.Editor
                             x + .5f < (p[j].x - p[i].x) * (y + .5f - p[i].y) / (p[j].y - p[i].y) + p[i].x) inside = !inside;
                     if (inside) Put(x, y, color);
                 }
-                if (role.EndsWith("building", StringComparison.Ordinal) || role == "bridge" || role == "public-ground")
+                if (role.EndsWith("building", StringComparison.Ordinal) || role == "bridge" || role == "public-ground" ||
+                    role == "terrace-court" || role == "terrace-landing")
                     for (int i = 0; i < p.Length; i++) Segment(p[i], p[(i + 1) % p.Length], 1.4f, Ink);
             }
             public void Stroke(Vector2[] source, float metres, string role)
@@ -382,6 +410,8 @@ namespace BarPromenade.Editor
                     case "promenade": return new Color32(92, 95, 85, 255);
                     case "bridge": return new Color32(133, 128, 107, 255);
                     case "public-ground": return new Color32(67, 76, 67, 255);
+                    case "terrace-court": return new Color32(89, 95, 83, 255);
+                    case "terrace-landing": return new Color32(111, 112, 96, 255);
                     case "building": return new Color32(91, 96, 88, 255);
                     case "home-building": return new Color32(165, 152, 112, 255);
                     case "bar-building": return new Color32(149, 125, 98, 255);

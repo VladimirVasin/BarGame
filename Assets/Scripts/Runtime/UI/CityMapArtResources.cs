@@ -136,6 +136,29 @@ namespace BarPromenade
                     writer.Write(entrance.Points.Count);
                     foreach (Vector3 point in entrance.Points) Point(writer, point);
                 }
+                CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
+                writer.Write(terraces.IsEnabled);
+                if (terraces.IsEnabled)
+                {
+                    writer.Write(terraces.Floors.Count);
+                    foreach (CityTerracePilotFloor floor in terraces.Floors)
+                    {
+                        writer.Write(floor.Id); writer.Write(floor.IsCourt);
+                        Point(writer, terraces.World(floor.Center)); Point(writer, floor.Size);
+                    }
+                    writer.Write(terraces.Flights.Count);
+                    foreach (CityExteriorStairFlightDescriptor flight in terraces.Flights)
+                    {
+                        writer.Write(flight.Id); Point(writer, terraces.World(flight.Start));
+                        Point(writer, terraces.World(flight.End)); Scalar(writer, flight.Width);
+                        writer.Write(flight.StepCount); Scalar(writer, flight.StepRise); Scalar(writer, flight.TreadDepth);
+                    }
+                    writer.Write(terraces.GroundCuts.Count);
+                    foreach (Rect cut in terraces.GroundCuts) RectValue(writer, cut);
+                    Point(writer, terraces.EntryStartWorld); Point(writer, terraces.EntryEndWorld);
+                    RectValue(writer, terraces.EntryBounds);
+                    Point(writer, terraces.LowerArrivalWorld); Point(writer, terraces.UpperArrivalWorld);
+                }
                 CityPortAccessPlan portAccess = CityPortAccessPlan.ForLayout(layout);
                 writer.Write(portAccess != null);
                 if (portAccess != null)

@@ -581,6 +581,8 @@ namespace BarPromenade
 
             private bool IsAllowed(Rect footprint, CityLitterZone zone, bool solid, Rect container)
             {
+                CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
+                if (terraces.IsEnabled && terraces.ReservedBounds.Overlaps(footprint)) return false;
                 if (!Contains(container, footprint)) return false;
                 if (field.Blocks(footprint, zone != CityLitterZone.Sidewalk)) return false;
                 return !solid || !field.BlocksWalkLane(Expand(footprint, SolidWalkClearance));

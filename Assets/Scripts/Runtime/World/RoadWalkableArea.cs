@@ -359,6 +359,7 @@ namespace BarPromenade
         private SpatialNode[] spatialNodes = Array.Empty<SpatialNode>();
         private int spatialRoot = -1;
         private bool spatialIndexDirty = true;
+        private CityTerraceDistrictWalkableArea terraceDistrict;
 
         public RoadWalkableArea()
         {
@@ -683,6 +684,9 @@ namespace BarPromenade
             }
             foreach (Bounds solid in CityResidentialCourtyardPlan.ForLayout(layout).CollisionBounds)
                 area.Exclude(Rect.MinMaxRect(solid.min.x, solid.min.z, solid.max.x, solid.max.z));
+            CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
+            if (terraces.IsEnabled)
+                area.terraceDistrict = new CityTerraceDistrictWalkableArea(layout, terraces, area);
             return area;
         }
 
@@ -870,6 +874,13 @@ namespace BarPromenade
         public bool Contains(Vector3 position, float radius = 0f)
         {
             ValidateRadius(radius);
+            return terraceDistrict != null && terraceDistrict.IsNear(position, radius)
+                ? terraceDistrict.Contains(position, radius) : ContainsBase(position, radius);
+        }
+
+        internal bool ContainsBase(Vector3 position, float radius = 0f)
+        {
+            ValidateRadius(radius);
             if (!IsFinite(position.x) || !IsFinite(position.z)) return false;
             if (IsPolygonExcluded(new Vector2(position.x, position.z), radius)) return false;
             EnsureSpatialIndex();
@@ -912,6 +923,8 @@ namespace BarPromenade
             float radius = 0f)
         {
             ValidateRadius(radius);
+            if (terraceDistrict != null && terraceDistrict.IntersectsMove(currentPosition, desiredPosition, radius))
+                return terraceDistrict.Constrain(currentPosition, desiredPosition, radius);
             if (Contains(desiredPosition, radius))
             {
                 return desiredPosition;
@@ -970,8 +983,12 @@ namespace BarPromenade
         public Vector3 ClosestPoint(Vector3 position, float radius = 0f)
         {
             ValidateRadius(radius);
+            if (terraceDistrict != null)
+                return terraceDistrict.ClosestPoint(position, radius);
             return ClosestPoint(position, radius, position);
         }
+
+        internal Vector3 ClosestPointBase(Vector3 position, float radius) => ClosestPoint(position, radius, position);
 
         private Vector3 ClosestPoint(
             Vector3 position,

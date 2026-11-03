@@ -82,6 +82,7 @@ namespace BarPromenade
             Transform world = new GameObject("Generated City").transform;
             world.SetParent(parent, false);
             CityGroundSurfaceSystem groundSurface = CityGroundSurfaceSystem.Begin(world);
+            CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
             Material emissiveMaterial = CityNightResources.EmissiveMaterial;
             RoadFencePlan fencePlan = plans.Fence;
             CityMountainBoundaryPlan mountainBoundaryPlan =
@@ -382,6 +383,7 @@ namespace BarPromenade
             GameObject residentialCourtyardRoot = CityResidentialCourtyardWorldBuilder.Build(world, residentialCourtyards);
             CityResidentialCourtyardLife courtyardLife = residentialCourtyardRoot.AddComponent<CityResidentialCourtyardLife>();
             courtyardLife.Initialize(residentialCourtyards, residentialCourtyardRoot.transform);
+            CityTerracePilotWorld.Build(world, terraces);
 
             GameObject decorationRoot =
                 CityDecorationWorldBuilder.Build(
@@ -953,6 +955,7 @@ namespace BarPromenade
                     layout,
                     layout.Seed,
                     fringeYardPlan));
+            puddles.RemoveAll(puddle => CityTerraceSurfaceCuts.Reserves(layout, puddle.Center, .5f));
             double puddlePlanMs = subTimer.Elapsed.TotalMilliseconds;
             CityPuddleWorldBuilder.Build(roads, puddles);
             ReportBlock(

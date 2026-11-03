@@ -764,6 +764,117 @@ namespace BarPromenade.Tests.EditMode
             AssertFlatFallback(custom.ElevationPlan);
         }
 
+        [Test]
+        public void TerraceMasterPlan_StudiesProductionWithoutChangingLiveCity()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
+            CityElevationPlan live = layout.ElevationPlan;
+            var nodesBefore = live.NodeElevations.ToDictionary(pair => pair.Key, pair => pair.Value);
+            var cellsBefore = live.CellElevations.ToDictionary(pair => pair.Key, pair => pair.Value);
+            Vector3[] anchorsBefore = layout.BuildingLots.SelectMany(lot => new[] {
+                lot.Center, lot.DoorPosition, lot.ReturnPosition, lot.SidewalkArrivalPosition }).ToArray();
+            Vector3[] accessesBefore = layout.OpenAreaAccesses.Select(access => access.Center).ToArray();
+            Vector3 spawnBefore = layout.SpawnWorldPosition;
+            Vector3 parkBefore = layout.Park.Center;
+
+            foreach (float summit in new[] { 35f, 40f, 45f })
+            {
+                CityTerraceMasterPlan plan = CityTerraceMasterPlan.Create(layout, summit);
+                CityTerraceMasterPlan repeated = CityTerraceMasterPlan.Create(layout, summit);
+                Assert.That(plan.BlueprintId, Is.EqualTo(layout.BlueprintId));
+                Assert.That(plan.Seed, Is.EqualTo(GameSessionState.DefaultCitySeed));
+                Assert.That(plan.TargetSummitElevation, Is.EqualTo(summit));
+                Assert.That(plan.NodeElevations.Keys, Is.EquivalentTo(layout.Nodes));
+                Assert.That(plan.CurrentMinimumElevation, Is.EqualTo(nodesBefore.Values.Min()));
+                Assert.That(plan.CurrentMaximumElevation, Is.EqualTo(nodesBefore.Values.Max()));
+                Assert.That(plan.TargetMinimumElevation, Is.EqualTo(plan.NodeElevations.Values.Min()));
+                Assert.That(plan.TargetMaximumElevation, Is.EqualTo(summit).Within(Tolerance));
+                Assert.That(plan.CoreWorldXZBounds.width, Is.EqualTo(338f).Within(Tolerance));
+                Assert.That(plan.CoreWorldXZBounds.height, Is.EqualTo(312f).Within(Tolerance));
+
+                foreach (Vector2Int node in layout.Nodes)
+                {
+                    float target = plan.GetNodeElevation(node);
+                    Assert.That(target, Is.EqualTo(repeated.GetNodeElevation(node)), node.ToString());
+                    Assert.That(target, Is.InRange(nodesBefore[node], summit), node.ToString());
+                    // Surveyed production core: 12 rows, 12 land columns and
+                    // the central river column. Its shore and first bank-side
+                    // road nodes remain low while both outer banks climb.
+                    if (node.x < 0 || node.x > 13 || node.y < 0 || node.y >= 12 ||
+                        node.x >= 5 && node.x <= 8)
+                        Assert.That(target, Is.EqualTo(nodesBefore[node]), "Protected node " + node);
+                }
+                foreach (int bankX in new[] { 0, 13 })
+                {
+                    Assert.That(plan.GetNodeElevation(new Vector2Int(bankX, 9)),
+                        Is.EqualTo(summit * .25f).Within(Tolerance), "Lower shelf");
+                    Assert.That(plan.GetNodeElevation(new Vector2Int(bankX, 5)),
+                        Is.EqualTo(summit * .60f).Within(Tolerance), "Middle shelf");
+                    Assert.That(plan.GetNodeElevation(new Vector2Int(bankX, 0)),
+                        Is.EqualTo(summit).Within(Tolerance), "Upper shelf");
+                }
+
+                var conflicts = plan.RoadConflicts.ToDictionary(conflict => conflict.Edge);
+                Assert.That(conflicts, Is.Not.Empty, "A steep proposal must expose its road conflicts.");
+                int expectedConflicts = 0;
+                foreach (RoadEdge edge in layout.RoadEdges)
+                {
+                    float setbacks = layout.RoadGeometry.GetEndpointInset(edge, edge.A) +
+                        layout.RoadGeometry.GetEndpointInset(edge, edge.B);
+                    float effectiveRun = layout.RoadGeometry.Get(edge).Length - setbacks;
+                    Assert.That(effectiveRun, Is.GreaterThan(0f), edge.ToString());
+                    float rise = Mathf.Abs(plan.GetNodeElevation(edge.B) - plan.GetNodeElevation(edge.A));
+                    float grade = 100f * rise / effectiveRun;
+                    float allowed = layout.GetPathKind(edge) == CityPathKind.Street ? 6f : 8.3f;
+                    bool exceeds = grade > allowed + Tolerance;
+                    Assert.That(conflicts.ContainsKey(edge), Is.EqualTo(exceeds), edge.ToString());
+                    if (!exceeds) continue;
+                    expectedConflicts++;
+                    CityTerraceRoadConflict conflict = conflicts[edge];
+                    Assert.That(conflict.ProposedGradePercent, Is.EqualTo(grade).Within(Tolerance));
+                    Assert.That(conflict.AllowedGradePercent, Is.EqualTo(allowed));
+                    Assert.That(conflict.CurrentGradePercent,
+                        Is.EqualTo(live.GetTransition(edge).GradePercent).Within(Tolerance));
+                    Assert.That(conflict.RequiredHorizontalRun,
+                        Is.EqualTo(rise * 100f / allowed + setbacks).Within(Tolerance));
+                    Assert.That(conflict.RequiredHorizontalRun,
+                        Is.GreaterThan(layout.RoadGeometry.Get(edge).Length));
+                }
+                Assert.That(conflicts.Count, Is.EqualTo(expectedConflicts));
+                Assert.That(repeated.RoadConflicts.Select(conflict => new {
+                    conflict.Edge, conflict.CurrentGradePercent, conflict.ProposedGradePercent,
+                    conflict.AllowedGradePercent, conflict.RequiredHorizontalRun }),
+                    Is.EqualTo(plan.RoadConflicts.Select(conflict => new {
+                        conflict.Edge, conflict.CurrentGradePercent, conflict.ProposedGradePercent,
+                        conflict.AllowedGradePercent, conflict.RequiredHorizontalRun })));
+
+                float coastalDatum = nodesBefore.Where(pair => pair.Key.y == 12 &&
+                    pair.Key.x >= 0 && pair.Key.x <= 13).Min(pair => pair.Value);
+                Assert.That(plan.TransportClimbStartElevation, Is.EqualTo(coastalDatum));
+                Assert.That(plan.MinimumTransportClimbLength,
+                    Is.EqualTo((summit - coastalDatum) / .06f).Within(Tolerance));
+                Assert.That(plan.MinimumTransportClimbLength, Is.GreaterThan(plan.CoreWorldXZBounds.height));
+            }
+
+            Assert.That(layout.ElevationPlan, Is.SameAs(live));
+            Assert.That(live.NodeElevations, Is.EquivalentTo(nodesBefore));
+            Assert.That(live.CellElevations, Is.EquivalentTo(cellsBefore));
+            Assert.That(layout.BuildingLots.SelectMany(lot => new[] {
+                lot.Center, lot.DoorPosition, lot.ReturnPosition, lot.SidewalkArrivalPosition }), Is.EqualTo(anchorsBefore));
+            Assert.That(layout.OpenAreaAccesses.Select(access => access.Center), Is.EqualTo(accessesBefore));
+            Assert.That(layout.SpawnWorldPosition, Is.EqualTo(spawnBefore));
+            Assert.That(layout.Park.Center, Is.EqualTo(parkBefore));
+            Assert.Throws<ArgumentNullException>(() => CityTerraceMasterPlan.Create(null));
+            foreach (float invalid in new[] { float.NaN, float.PositiveInfinity, float.NegativeInfinity, 34.99f, 45.01f })
+                Assert.Throws<ArgumentOutOfRangeException>(() => CityTerraceMasterPlan.Create(layout, invalid));
+            CityLayout legacy = CityLayoutGenerator.Generate(CityGenerationSettings.Default, Seed);
+            CityLayout custom = CityLayoutGenerator.Generate(CloneWithId(legacy.Blueprint, "custom-terrace-refusal"),
+                CityGenerationSettings.Default, Seed);
+            Assert.Throws<ArgumentException>(() => CityTerraceMasterPlan.Create(legacy));
+            Assert.Throws<ArgumentException>(() => CityTerraceMasterPlan.Create(custom));
+        }
+
         private static void AssertTransitionEqual(
             CityElevationTransitionDescriptor expected,
             CityElevationTransitionDescriptor actual)

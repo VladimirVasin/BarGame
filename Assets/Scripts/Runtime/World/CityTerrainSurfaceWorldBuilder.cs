@@ -611,6 +611,8 @@ namespace BarPromenade
             }
 
             var patches = new List<Rect> { surface.WorldBounds };
+            foreach (Rect cut in CityTerraceDistrictPlan.ForLayout(layout).GroundCuts)
+                SubtractFromPatches(patches, cut, surface.WorldBounds);
             // Runtime holes come out first. A dug grave is a rectangle
             // missing from the skin exactly like an authored stair cut,
             // and it has to survive everything the authored cuts do to
@@ -1214,6 +1216,7 @@ namespace BarPromenade
             }
             var cuts = new List<Rect>();
             if (excavations != null) cuts.AddRange(excavations);
+            cuts.AddRange(CityTerraceDistrictPlan.ForLayout(layout).GroundCuts);
             foreach (CityElevationStairDescriptor stair in layout.ElevationPlan.SignatureStairs)
                 cuts.Add(CityElevationStairPlacementPlanner.Create(layout, stair).GroundCutFootprint);
             foreach (CityRiverSegmentDescriptor river in layout.River.Segments) cuts.Add(river.WaterBounds);

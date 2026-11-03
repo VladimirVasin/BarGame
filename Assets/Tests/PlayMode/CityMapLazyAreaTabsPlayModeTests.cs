@@ -49,13 +49,25 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Assert.That(view.IsUsingIllustratedMap, Is.True, "The shipped city must use its current ImageGen artwork.");
                 Assert.That(view.IllustratedMapTexture.width, Is.GreaterThanOrEqualTo(1024));
+                Assert.That(view.IllustratedMapTexture.width, Is.LessThanOrEqualTo(2048));
+                Assert.That(view.IllustratedMapTexture.height, Is.LessThanOrEqualTo(2048));
                 Assert.That(view.IllustratedMapTexture.mipmapCount, Is.EqualTo(1));
                 Assert.That(view.IllustratedMapTexture.isReadable, Is.False);
+                Assert.That(view.IllustratedMapTexture.wrapMode, Is.EqualTo(TextureWrapMode.Clamp));
+                Assert.That(view.IllustratedMapTexture.filterMode, Is.EqualTo(FilterMode.Bilinear));
                 Assert.That(view.IllustratedMapBounds, Is.EqualTo(map.DisplayWorldXZBounds));
+                TextAsset source = Resources.Load<TextAsset>(CityMapArtResources.ResourcePath);
+                Assert.That(source, Is.Not.Null);
+                CityMapArtResources.Metadata metadata = JsonUtility.FromJson<CityMapArtResources.Metadata>(source.text);
+                Assert.That(metadata.schemaVersion, Is.EqualTo(CityMapArtResources.SchemaVersion));
+                Assert.That(metadata.fingerprint, Is.EqualTo(CityMapArtResources.CreateFingerprint(map)));
+                Assert.That(metadata.imageWidth, Is.EqualTo(view.IllustratedMapTexture.width));
+                Assert.That(metadata.imageHeight, Is.EqualTo(view.IllustratedMapTexture.height));
                 for (int frame = 0; frame < 5; frame++) yield return null;
                 yield return CaptureMapUi("imagegen-city-map");
                 Assert.That(map.SetMapPointInspectionEnabled(true), Is.True);
                 int yard = -1;
+                int terrace = -1;
                 bool laundry = false;
                 for (int i = 0; i < map.ActiveMapPoints.Count; i++)
                 {
@@ -66,6 +78,11 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(point.Label, Is.EqualTo("Собачья площадка"));
                     }
                     if (point.StableId == "city:poi:laundry") laundry = true;
+                    if (point.StableId == "city:poi:terrace-courts")
+                    {
+                        terrace = i;
+                        Assert.That(point.Label, Is.EqualTo("Лестничные дворы"));
+                    }
                 }
                 Assert.That(laundry, Is.True);
                 Assert.That(yard, Is.GreaterThanOrEqualTo(0));
@@ -77,7 +94,27 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(selected.StableId, Is.EqualTo("city:poi:dog-park"));
                 for (int frame = 0; frame < 5; frame++) yield return null;
                 yield return CaptureMapUi("imagegen-city-map-dog-yard-xyz");
-                Debug.Log("IMAGEGEN CITY MAP OK: current-plan art, imported UI texture, live dog-yard/laundry points and native map/XYZ views.");
+                Assert.That(terrace, Is.GreaterThanOrEqualTo(0));
+                Assert.That(map.SelectMapPoint(terrace), Is.True);
+                Assert.That(map.TryGetSelectedMapPoint(out selected, out selectedWorld), Is.True);
+                CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(city.Layout);
+                Assert.That(terraces.IsEnabled, Is.True);
+                Vector3 expected = terraces.UpperArrivalWorld + Vector3.up * PlayerFactory.GroundedRootOffset;
+                Assert.That(selected.StableId, Is.EqualTo("city:poi:terrace-courts"));
+                Assert.That(Vector3.Distance(selectedWorld, expected), Is.LessThan(.001f));
+                var ground = new CityMapCityTeleportGround(city.Layout);
+                Assert.That(ground.TryClampArrival(selectedWorld, out Vector3 arrival), Is.True);
+                Assert.That(Vector3.Distance(arrival, expected), Is.LessThan(.001f),
+                    "The terrace marker must retain its upper supported level.");
+                Assert.That(Physics.Raycast(expected + Vector3.up, Vector3.down, out RaycastHit hit,
+                    3f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True);
+                Assert.That(hit.point.y, Is.EqualTo(terraces.UpperArrivalWorld.y).Within(.03f),
+                    "The selected upper-court coordinate must match its built standing surface.");
+                for (int frame = 0; frame < 5; frame++) yield return null;
+                yield return CaptureMapUi("imagegen-city-map-terrace-courts-xyz");
+                Assert.That(map.ConfirmMapPointTeleport(), Is.True);
+                Assert.That(Vector3.Distance(map.PlayerWorldPosition, expected), Is.LessThan(.001f));
+                Debug.Log("IMAGEGEN CITY MAP OK: current-plan art and metadata, bounded UI import, live places, supported upper-court teleport and native map/XYZ views.");
             }
             finally { map.Close(); }
         }

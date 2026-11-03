@@ -1,7 +1,7 @@
 # AI memory index
 
-Start with [`AI.md`](../AI.md), then the overview, system index and relevant
-details. AI.md owns source order; entry documents do not catalogue the world.
+Start with [`AI.md`](../AI.md), then overview/system index and relevant details.
+AI.md owns source order; entry documents are not world catalogues.
 
 Document **types** and **byte budgets** come from
 [`tools/docs-budget.json`](../tools/docs-budget.json).
@@ -16,9 +16,10 @@ Document **types** and **byte budgets** come from
 | `current-world.md` | state | 208000 | Detailed current gameplay/MVP catalogue and deferred scope |
 | `project-audit-2026-10-28.md` | note | 24000 | Audit findings and focused evidence |
 | `audit-remediation-plan.md` | note | 16000 | Twelve accepted repair packages and measured outcomes |
-| `world-location-update-plan.md` | note | 30000 | Ordered audit/update checklist for every scene and location; effects and focused acceptance |
+| `world-location-update-plan.md` | note | 30000 | Location audit/update queue and acceptance |
+| `city-multilevel-plan.md` | note | 16000 | Four-stage coastal terraces/navigation/map plan |
 | `village-life-plan.md` | state | 12000 | The accepted four-part village household update; all four parts are implemented |
-| `village-narrative-plan.md` | note | 40000 | Place-based inspections, families, reusable object camera/text; acceptance contract |
+| `village-narrative-plan.md` | note | 40000 | Place inspections/families, shared camera/text, acceptance |
 | `city-lighting-plan.md` | note | 8000 | Nine City lighting stages and acceptance |
 | `city-texture-plan.md` | note | 8000 | Nine City material stages and acceptance |
 | `bar-dialogue-plan.md` | note | 64000 | Bar speech contract, paired conversations and Russian phrase bank |

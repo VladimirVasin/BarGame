@@ -560,6 +560,7 @@ namespace BarPromenade
             CityLayout layout,
             IReadOnlyDictionary<Vector2Int, int> coreCounts)
         {
+            CityTerraceDistrictPlan terrace = CityTerraceDistrictPlan.ForLayout(layout);
             for (int index = 0;
                  index < layout.BuildingLots.Count;
                  index++)
@@ -575,7 +576,9 @@ namespace BarPromenade
                     out int actual)
                     ? actual
                     : 0;
-                int expected = lot.HasFunctionalIndustrialPurpose ? 0 : 1;
+                // The terrace owner retains these residential models while
+                // excluding incidental lot dressing from its shared courts.
+                int expected = lot.HasFunctionalIndustrialPurpose || terrace.IsReservedCell(lot.Cell) ? 0 : 1;
                 if (count != expected)
                 {
                     throw new InvalidOperationException(

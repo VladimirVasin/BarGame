@@ -257,7 +257,7 @@ namespace BarPromenade
             CityLayout layout,
             Vector3 position)
         {
-            return layout.IsWater(position) ||
+            return CityTerraceSurfaceCuts.Reserves(layout, position, .5f) || layout.IsWater(position) ||
                    (layout.SpatialPlan.IsCompactCoastal && IntersectsCompactStreetOrBuilding(layout, position)) ||
                    IntersectsCourtyardReservation(layout, position) ||
                    IntersectsRiverReservation(layout, position) ||

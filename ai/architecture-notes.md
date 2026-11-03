@@ -2,6 +2,19 @@
 
 ## Current facts
 
+- **Accepted architecture extension — 2026-11-03,user — terraced City:**
+  Planned direction:35–45m coastal rise;3–5-storey homes,low coast/port/river,
+  working west/residential east/park and short Home↔Bar remain.
+  Four stages:master profile/transport,6–8m courtyard pilot,one upper pedestrian
+  crossing with layered navigation and rollout,existing anchors/routes/map.
+  Step3 authorizes two walkable levels at one XZ only through explicit layer/
+  height/connectivity and correct physical contacts;no traversable river cave
+  or general tunnel permission. Production remains single-surface until built.
+  Target authoring plans do not replace active elevation/collision early.
+  Common Blender modules/materials,bounded plans/indexes;24FX and focused
+  acceptance:[city-multilevel-plan.md](city-multilevel-plan.md).
+  Art9/story§16/21,weather/fog/control/population identity stay;no new lore.
+
 - **Accepted architecture exception — 2026-11-03,user — doubled calendar day:**
   Art §2/story §20:96 real minutes/day at ×1,four seconds/game minute.
   Calendar-based needs/weather slow with it;world motion,alcohol recovery,
@@ -3748,54 +3761,38 @@
   eligible lot remains. Its branded storefront, walkable apron, interaction
   trigger, fence opening and return point derive from the canonical lot and
   frontage data.
-- **Accepted — One deterministic city elevation plan:** The
-  existing 2D blueprint and road topology remain the first generation stage,
-  but the default coastal blueprint now creates one immutable
-  `CityElevationPlan` before lots and surfaces are spatially materialized.
-  Its river branch replaces the former north-profile/east-bias formula: each
-  bank starts `1.8 m` above the local water and terrain rises `0.98 m` per
-  node away from the channel. Default road nodes therefore span about
-  `8.1 m`, peak near `10.08 m`, and retain at least `1.5 m` within every urban
-  district. Sea water stays at datum `0`. The river descends
-  monotonically from `2.4 m` in the south to the sea datum. Legacy/custom
-  blueprints retain the exact flat fallback.
-  `CityTerrainSurfacePlan` owns `BuildableGround`, `ParkGround`, `OpenGround`
-  and `Beach` tops. Cell interiors interpolate road-node datums; margins take
-  the shared street boundary. Beach descent/sand relief remain local.
-  `CityTerrainSurfaceWorldBuilder` materializes that contract
-  as triangulated render meshes with matching mesh colliders; the beach's
-  shallow deformable visual skin sits over its separate fixed collider (see
-  the sand decision below), while declared
-  special-purpose flat surfaces keep their flat contracts. Building and public
-  place foundations extend downward without moving their authored tops. Park
-  plazas use closed terrain-conforming meshes; each district public place owns
-  an exact flat terrain pad under its slab and a `4 m` smooth blend back to the
-  continuous cell, so neither feature is pierced by the surrounding slope.
-  All node/cell positions, surface datums, doors, returns, stops, waiting
-  slots, pedestrians and debug teleports read the elevation or terrain sampler
-  rather than adding an absolute Y.
-  Declared bridge decks may cross non-walkable water and river stairs may
-  reach their own lower platforms. The two southern promenade extensions are
-  ordinary single-level walkable footprints ending against collidered rock;
-  the water cave beyond them is not traversable. Traversable tunnels and
-  overlapping walkable levels at the same XZ projection remain outside this
-  navigation architecture.
-  Level nodes/stops retain `4 m` setbacks; grades stay `6%` Street/Route 01,
-  `8.3%` ParkPath. Bus routes exclude non-bus transitions, sample Y/tangent,
-  pitch without roll and ground stops locally. Each urban district has a sidewalk
-  stair: `6-12` visible collider-free steps, `0.15-0.17 m` rise,
-  `0.30-0.34 m` tread, two `1.5 m` landings, physical rails/retaining walls
-  and exactly one continuous hidden ramp collider. A grade-safe roadway stays
-  beside it for Route 01. One shared `CityRoadGroundBoundaryPlan` classifies
-  every road-to-ground seam from its sampled endpoint heights: a span becomes
-  a radius-safe walkable connector only while the complete edge stays within
-  the `0.28 m` controller step, otherwise segmented physical guards follow the
-  actual terrain slope. Ground-to-ground connectors use the same sampled-edge
-  predicate. Signature stair footprints are the explicit guarded-cut
-  exception. The player
-  contact patch raycasts to the live surface normal, and balance checks refuse
-  to start above a `12°` surface angle so a stair flight cannot begin a fall
-  sequence it was never designed to recover on.
+- **Accepted — One deterministic city elevation plan:** After the 2D blueprint/
+  road topology,default coastal generation creates immutable `CityElevationPlan`
+  before materializing lots/surfaces. River banks start `1.8 m` over water and
+  rise `0.98 m` per node away from the channel:road span~`8.1 m`,peak~`10.08 m`,
+  each urban district≥`1.5 m`. Sea datum0;river descends monotonically south
+  `2.4 m`→sea. Legacy/custom blueprints retain exact flat fallback.
+  `CityTerrainSurfacePlan` owns BuildableGround/ParkGround/OpenGround/Beach
+  tops:interiors interpolate road nodes,margins share street boundaries;
+  beach descent/sand relief stay local. `CityTerrainSurfaceWorldBuilder`
+  builds matching triangulated render/collision meshes;the shallow deformable
+  beach skin uses a separate fixed collider (sand decision below).
+  Declared flat surfaces keep their contracts. Foundations extend downward
+  without moving authored tops;park plazas use closed terrain-conforming meshes.
+  Public-place slabs have exact flat pads and `4 m` smooth blends to the cell.
+  Node/cell positions,surface datums,doors/returns,stops/waiting slots,
+  pedestrians/debug teleports read the shared elevation/terrain sampler.
+  Bridge decks cross non-walkable water;river stairs reach lower platforms.
+  Southern promenade extensions are single-level footprints ending at physical
+  rock;the water cave/tunnels remain untraversable. Production navigation has
+  one walkable surface per XZ;the accepted `2026-11-03` terraced-City extension
+  separately scopes the future upper pedestrian crossing.
+  Level nodes/stops keep `4 m` setbacks;Street/Route01≤`6%`,ParkPath≤`8.3%`.
+  Bus routes exclude non-bus transitions,sample Y/tangent,pitch without roll,
+  and ground stops locally. Each urban district has a sidewalk stair:
+  `6–12` collider-free visible steps,rise`.15–.17 m`,tread`.30–.34 m`,two
+  `1.5 m` landings,physical rails/retaining walls,one continuous hidden ramp.
+  Grade-safe Route01 road runs beside it. `CityRoadGroundBoundaryPlan` samples
+  every road-ground edge:radius-safe connectors require the complete edge
+  within the `.28 m` controller step;otherwise segmented guards follow terrain.
+  Ground-ground connectors use the same predicate;signature stair footprints
+  are the explicit guarded-cut exception. Player contacts raycast the live
+  normal;balance cannot start above`12°`,preventing unsupported stair falls.
 - **Accepted — Data-driven indexed walkable mask:** Player motion is
   constrained to a spatially indexed union of XZ streets, park lawn,
   blueprint `OpenLand` and the complete logical `BuildableGround` regions.

@@ -20,6 +20,7 @@ namespace BarPromenade
     public sealed class CityMapCityTeleportGround : ICityMapTeleportGround
     {
         private readonly CityLayout layout;
+        private readonly CityTerraceDistrictPlan terraces;
         private readonly List<Rect> obstacleFootprints;
         private readonly List<Vector2[]> polygonBuildingObstacles = new List<Vector2[]>();
         private RoadWalkableArea walkableArea;
@@ -28,6 +29,7 @@ namespace BarPromenade
         {
             this.layout = layout ??
                           throw new ArgumentNullException(nameof(layout));
+            terraces = CityTerraceDistrictPlan.ForLayout(layout);
             var courtyardCells = new HashSet<Vector2Int>();
             foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
                 courtyardCells.Add(block.Cell);
@@ -44,12 +46,25 @@ namespace BarPromenade
             out Vector3 standingPosition)
         {
             standingPosition = default;
+            if (!CityTerracePilotPlan.Finite(worldXZ.x) || !CityTerracePilotPlan.Finite(worldXZ.y))
+                return false;
             CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
             if (eastExit.IsEnabled && (eastExit.ClosedGroundBounds.Contains(worldXZ) ||
                 eastExit.BoothBounds.Contains(worldXZ))) return false;
             float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
             var probe = new Vector3(worldXZ.x, 0f, worldXZ.y);
             RoadWalkableArea mask = EnsureWalkableArea();
+            // These supported courts replace their old ground. A rejected
+            // edge or gap must never fall through to terrain below the slab.
+            if (terraces.ContainsFootprint(worldXZ))
+            {
+                if (!mask.Contains(probe, radius) ||
+                    !terraces.TrySampleStandingTop(worldXZ, 0f, out float terraceTop) ||
+                    IsInsideObstacle(worldXZ)) return false;
+                standingPosition = new Vector3(worldXZ.x,
+                    terraceTop + PlayerFactory.GroundedRootOffset, worldXZ.y);
+                return true;
+            }
             Vector3 candidate = mask.Contains(probe, radius)
                 ? probe
                 : mask.ClosestPoint(probe, radius);
@@ -89,7 +104,8 @@ namespace BarPromenade
             // Retain that existing fallback only for unobstructed walkable
             // XZ; ordinary land and building markers never trust their old Y.
             if (EnsureWalkableArea().Contains(arrival, CityGroundTraversalPlanner.MaximumAgentRadius) &&
-                !IsInsideObstacle(requested) && !TryResolveSurfaceTop(requested, out _))
+                !terraces.ContainsFootprint(requested) && !IsInsideObstacle(requested) &&
+                !TryResolveSurfaceTop(requested, out _))
             {
                 destination = arrival;
                 return true;
@@ -122,12 +138,14 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Roads first, because the carriageway runs between the cells and
-        /// no cell surface covers it. This is the same order the whole-lot
-        /// teleport uses to put a hero on a frontage.
+        /// Authored replacement surfaces take precedence, then roads and
+        /// terrain. A terrace owns its height even where old ground remains
+        /// underneath its retaining mass.
         /// </summary>
         private bool TryResolveSurfaceTop(Vector2 worldXZ, out float top)
         {
+            if (terraces.ContainsFootprint(worldXZ))
+                return terraces.TrySampleStandingTop(worldXZ, 0f, out top);
             CityFairPlan fair = CityFairPlanner.Create(layout);
             if (fair.IsEnabled && fair.Bounds.Contains(worldXZ))
             {

@@ -155,7 +155,8 @@ namespace BarPromenade
             // Entrance approaches own their ground before incidental dressing.
             // During infill placement this reads only primary reservations;
             // the final composition also sees the cached rear-house routes.
-            descriptors.RemoveAll(descriptor => BlocksResidentialEntrance(layout, descriptor));
+            descriptors.RemoveAll(descriptor => BlocksResidentialEntrance(layout, descriptor) ||
+                CityTerraceSurfaceCuts.Reserves(layout, descriptor.Position, .8f));
             var plan = new CityDecorationPlan(layout.Seed, descriptors);
             CityDecorationValidator.ValidateOrThrow(
                 plan,
@@ -175,7 +176,7 @@ namespace BarPromenade
                  index++)
             {
                 BuildingLot lot = layout.BuildingLots[index];
-                if (lot.IsOrdinaryBuilding)
+                if (lot.IsOrdinaryBuilding && !CityTerraceDistrictPlan.ForLayout(layout).IsReservedCell(lot.Cell))
                 {
                     result.Add(lot);
                 }
@@ -1348,6 +1349,12 @@ namespace BarPromenade
             out Vector3 forward,
             float depthOverride = -1f)
         {
+            if (!lot.HasRoadFrontage)
+            {
+                position = default;
+                forward = lot.FacadeForward;
+                return false;
+            }
             forward = ResolveLotForward(
                 layout.Seed,
                 lot,

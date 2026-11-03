@@ -714,7 +714,8 @@ namespace BarPromenade
                 if (!lot.HasBuilding &&
                     !lot.IsPark &&
                     !lot.IsDistrictPointOfInterest &&
-                    !lot.IsCafe)
+                    !lot.IsCafe &&
+                    !lot.IsOpenGround)
                 {
                     throw new InvalidOperationException(
                         $"Lot {lot.Cell} has unsupported land use.");

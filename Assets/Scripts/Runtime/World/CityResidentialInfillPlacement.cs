@@ -19,6 +19,12 @@ namespace BarPromenade
         internal CityResidentialInfillPlacement(CityLayout source)
         {
             layout = source;
+            CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
+            if (terraces.IsEnabled)
+            {
+                foreach (Vector2Int cell in terraces.ReservedCells) protectedCells.Add(cell);
+                blocked.Add(terraces.ReservedBounds);
+            }
             foreach (Vector2Int cell in layout.PrimaryLandmarkCells.Values) protectedCells.Add(cell);
             foreach (BuildingLot lot in layout.BuildingLots)
             {

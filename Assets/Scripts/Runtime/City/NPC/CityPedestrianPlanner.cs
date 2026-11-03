@@ -83,6 +83,7 @@ namespace BarPromenade
                     : new Dictionary<RoadEdge, List<int>>();
             var crosswalkLaneNodes =
                 new Dictionary<CrosswalkLaneKey, int>();
+            CityTerraceDistrictPlan terrace = CityTerraceDistrictPlan.ForLayout(layout);
             for (int edgeIndex = 0;
                  edgeIndex < sortedEdges.Count;
                  edgeIndex++)
@@ -92,6 +93,9 @@ namespace BarPromenade
                 {
                     continue;
                 }
+                // This one dead-end is now the physical terrace approach.
+                // Its old sidewalk elevations must not survive underneath it.
+                if (terrace.IsEnabled && edge.Equals(terrace.EntryRoadEdge)) continue;
 
                 BuildEdgeLanes(
                     layout,
@@ -129,6 +133,7 @@ namespace BarPromenade
                 endpointsByNode,
                 graph);
             BuildCourtyardPaths(layout, streetSurfacePlan, graph);
+            if (terrace.IsEnabled) graph.ExcludeTerraceGround(terrace);
             return graph.CreatePlan(
                 layout.Seed,
                 populationSeed,
@@ -1196,6 +1201,63 @@ namespace BarPromenade
             public void AddNavigationPolygons(IEnumerable<Vector2[]> polygons)
             {
                 sharedNavigationPolygons.AddRange(polygons);
+            }
+
+            public void ExcludeTerraceGround(CityTerraceDistrictPlan terrace)
+            {
+                // Clip only links entering actual replaced ground, not the
+                // broad reservation: neighbouring streets keep their IDs and
+                // population. Two-core pruning removes any abandoned knots.
+                var removed = new HashSet<(int, int)>();
+                for (int i = links.Count - 1; i >= 0; i--)
+                {
+                    CityPedestrianLink link = links[i];
+                    if (!CrossesTerraceGround(link, terrace)) continue;
+                    removed.Add((Mathf.Min(link.FirstNodeIndex, link.SecondNodeIndex),
+                        Mathf.Max(link.FirstNodeIndex, link.SecondNodeIndex)));
+                    links.RemoveAt(i);
+                    navigationRectangles.RemoveAt(i);
+                    navigationPolygonOverrides.RemoveAt(i);
+                }
+                spawnAnchors.RemoveAll(anchor => removed.Contains((Mathf.Min(anchor.FirstNodeIndex, anchor.SecondNodeIndex),
+                    Mathf.Max(anchor.FirstNodeIndex, anchor.SecondNodeIndex))));
+            }
+
+            private bool CrossesTerraceGround(CityPedestrianLink link, CityTerraceDistrictPlan terrace)
+            {
+                int count = link.Path != null ? link.Path.Vertices.Count : 2;
+                Vector3 first = nodes[link.FirstNodeIndex].Position, last = nodes[link.SecondNodeIndex].Position;
+                for (int segment = 1; segment < count; segment++)
+                {
+                    Vector2 a = link.Path != null ? link.Path.Vertices[segment - 1] : new Vector2(first.x, first.z);
+                    Vector2 b = link.Path != null ? link.Path.Vertices[segment] : new Vector2(last.x, last.z);
+                    for (int cutIndex = 0; cutIndex < terrace.GroundCuts.Count; cutIndex++)
+                    {
+                        Rect cut = terrace.GroundCuts[cutIndex];
+                        // Merely touching a precinct edge does not remove an
+                        // external street. The centreline must enter the cut.
+                        cut.xMin += .001f; cut.xMax -= .001f; cut.yMin += .001f; cut.yMax -= .001f;
+                        Vector2 delta = b - a;
+                        float enter = 0f, leave = 1f;
+                        bool hit = true;
+                        for (int axis = 0; axis < 2; axis++)
+                        {
+                            float minimum = axis == 0 ? cut.xMin : cut.yMin;
+                            float maximum = axis == 0 ? cut.xMax : cut.yMax;
+                            if (Mathf.Abs(delta[axis]) < .000001f)
+                            {
+                                if (a[axis] < minimum || a[axis] > maximum) { hit = false; break; }
+                                continue;
+                            }
+                            float t0 = (minimum - a[axis]) / delta[axis], t1 = (maximum - a[axis]) / delta[axis];
+                            enter = Mathf.Max(enter, Mathf.Min(t0, t1));
+                            leave = Mathf.Min(leave, Mathf.Max(t0, t1));
+                            if (enter > leave) { hit = false; break; }
+                        }
+                        if (hit) return true;
+                    }
+                }
+                return false;
             }
 
             public int AddNode(

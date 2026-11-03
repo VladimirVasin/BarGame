@@ -27,7 +27,8 @@ namespace BarPromenade
         Church = 8,
         Cafe = 9,
         Laundry = 10,
-        DogPark = 11
+        DogPark = 11,
+        TerraceCourts = 12
     }
 
     public readonly struct CityMapPointOfInterest
@@ -955,6 +956,9 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.DogPark:
                     key = "map.poi.dog_park";
                     return true;
+                case CityMapPointOfInterestKind.TerraceCourts:
+                    key = "map.poi.terrace_courts";
+                    return true;
                 default:
                     key = string.Empty;
                     return false;
@@ -1473,6 +1477,12 @@ namespace BarPromenade
                 pointsOfInterest.Add(new CityMapPointOfInterest(
                     "dog-park", CityMapPointOfInterestKind.DogPark, CityDistrictKind.Residential,
                     ResolveNamedPlaceArrival(dogPark.ApproachWorld), dogPark.Footprint, true));
+
+            CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(Layout);
+            if (terraces.IsEnabled)
+                pointsOfInterest.Add(new CityMapPointOfInterest(
+                    "terrace-courts", CityMapPointOfInterestKind.TerraceCourts, CityDistrictKind.Residential,
+                    terraces.UpperArrivalWorld + Vector3.up * rootOffset));
         }
 
         private Vector3 ResolveNamedPlaceArrival(Vector3 approach)

@@ -415,18 +415,19 @@ cemetery:own interiors/returns.
 
 ### City generation and layout
 
-- Compact City: Industrial west/Residential east/open park; OldTown/Nightlife
-  remain compatibility IDs. `CitySpatialPlan.IsCompactCoastal`: 144 lots/`13×12`,
-  pitch `26 m`, land `137186 m²`/`−29.2%`; models/vehicles retain metres.
-  Short residential fronts/rear courts contrast with work streets.
-  Setback `1.25–1.55 m`; four domestic pockets retain `2.4 m` outside pavement.
-  `CityResidentialCourtyardPlan`: ≤6 courts/≤6 props; contour,
-  shared paving/entry-street spine/open center/green edges. Service/quiet/through
-  furniture groups back onto actual walls; clear connectors reach circulation.
-  Original ground planes/hard paths stay; sheltered concrete dry. Doorway pool
-  light/shared seats/permanent silent basket carrier retain phase/identity/
-  pause/distance/disable. Home:props; special sites/pockets stay.
-  Court props need no map/redraw.
+- Compact City: Industrial west/Residential east/park; OldTown/Nightlife are
+  compatibility IDs. `CitySpatialPlan.IsCompactCoastal`:144 lots/`13×12`,26m
+  pitch,137186m²/−29.2%; models/vehicles keep metres. Setbacks1.25–1.55m;
+  four domestic pockets keep2.4m. `CityResidentialCourtyardPlan`:≤6 courts/
+  ≤6 props, shared paving/entry spine/open center/green edges and wall groups.
+  Sheltered concrete dry; doorway light/seats/silent basket carrier retain
+  identity/phase/pause/distance/disable. Home props/special places stay.
+  `CityTerraceDistrictPlan`:X83..125/Z31..73,5.743→13.423m,8 flights/two routes,
+  street approach7.992%. Four lot IDs remain:two relocated ordinary houses,
+  two OpenGround;144 IDs do not mean unchanged house count. Shared support/
+  navigation/house entries replace old ground/props locally; Home/Bar stay.
+  Map RU «Лестничные дворы» selects the upper arrival; image redraw pending.
+  Citywide35–45m rise/stacked passage planned; court props need no map redraw.
   The expanded oblique/L pilot is absent. Metre bodies retain real fit; `10×6 m` rear wings require full padded clearance and a `2.4 m`
   court gap. `3.6 m` through passages remain walkable under separate overhead
   collision, height `3.2 m` (`4.2 m` Industrial). Court loops join the graph;
@@ -1577,9 +1578,9 @@ cemetery:own interiors/returns.
   water, unmapped cells and outside space stay excluded, while real building,
   prop, vegetation, pole, fence and pedestrian colliders decide local
   obstruction;
-- 144 land-use lots in the default urban core, including 16 park cells and
-  4 open semantic places, plus 34 northern beach/water surface
-  cells, 16 north-east yard cells and 6 cemetery cells. The core contains
+- 144 core land-use lots include16 park,4 semantic and2 terrace OpenGround
+  cells; plus34 northern beach/water,16 north-east yard and6 cemetery cells.
+  The core contains
   exactly one reachable Residential bar at `(12,6)`, one non-bar player home
   across its shared street frontage at `(12,5)`, and exactly one ordinary
   street-front supermarket. The retained bar keeps stable ID

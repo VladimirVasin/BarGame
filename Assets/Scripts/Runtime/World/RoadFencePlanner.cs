@@ -91,6 +91,7 @@ namespace BarPromenade
                 RoadFenceSegmentPurpose.DeadEnd,
                 layout);
             AddDefaultNorthEastCornerGuard(segments, layout);
+            segments.RemoveAll(segment => CityTerraceSurfaceCuts.Reserves(layout, segment.Center, .3f));
             segments.Sort(CompareSegments);
 
             return new RoadFencePlan(segments, openings);

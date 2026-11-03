@@ -201,7 +201,7 @@ namespace BarPromenade
             target.localScale = Vector3.one;
         }
 
-        private static void ApplyAppearance(
+        internal static void ApplyAppearance(
             CityBuildingAssetRegistry registry,
             BuildingLot lot,
             int citySeed)

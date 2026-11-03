@@ -220,7 +220,8 @@ namespace BarPromenade.Editor
         {
             if (state == PlayModeStateChange.ExitingEditMode)
             {
-                if (!TrySuppressStartSceneForTestBootstrap())
+                if (!TrySuppressStartSceneForTestBootstrap() &&
+                    !TrySuppressStartSceneForTerracePilot())
                 {
                     SetMainMenuAsPlayModeStartScene();
                 }
@@ -230,6 +231,24 @@ namespace BarPromenade.Editor
             {
                 SetMainMenuAsPlayModeStartScene();
             }
+        }
+
+        private static bool TrySuppressStartSceneForTerracePilot()
+        {
+            Scene activeScene = EditorSceneManager.GetActiveScene();
+            if (!activeScene.IsValid() || !string.IsNullOrEmpty(activeScene.path))
+                return false;
+
+            // Only the explicit, unsaved authoring prototype may bypass the
+            // normal MainMenu startup. Inspect once on entry to Play, not on
+            // every editor update, and preserve the existing exit restoration.
+            foreach (GameObject root in activeScene.GetRootGameObjects())
+            {
+                if (root.GetComponent<CityTerracePilotRoot>() == null) continue;
+                EditorSceneManager.playModeStartScene = null;
+                return true;
+            }
+            return false;
         }
 
         private static bool

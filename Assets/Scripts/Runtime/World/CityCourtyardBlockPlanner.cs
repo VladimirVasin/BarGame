@@ -92,8 +92,10 @@ namespace BarPromenade
         public static IReadOnlyList<CityCourtyardBlock> Create(CityLayout layout)
         {
             var result = new List<CityCourtyardBlock>();
+            CityTerraceDistrictPlan terrace = CityTerraceDistrictPlan.ForLayout(layout);
             foreach (BuildingLot lot in layout.BuildingLots)
             {
+                if (terrace.IsReservedCell(lot.Cell)) continue;
                 if (lot.Cell == OffsetPairCell && layout.RoadGeometry.ObliqueJunction != null &&
                     lot.District == CityDistrictKind.OldTown &&
                     layout.GetCellWorldBounds(lot.Cell).width >= 40f && layout.GetCellWorldBounds(lot.Cell).height >= 34f &&

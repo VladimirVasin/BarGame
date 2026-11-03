@@ -1,0 +1,304 @@
+{
+  "design_id": "city_terrace_pilot_kit_v1",
+  "version": "1.0.0",
+  "generator": "build-city-terrace-3d-model.py",
+  "coordinate_system": "Unity metres +Y up/+Z up-stair; swap YZ/reverse winding for Blender; retain full FBX wrapper units",
+  "material_source": "Existing shared City concrete/wall/dark metal; no texture, light, animation or collider in source",
+  "geometry_signature_includes": [
+    "vertices",
+    "faces",
+    "colors",
+    "uv0",
+    "transforms"
+  ],
+  "contracts": {
+    "flight": {
+      "steps": 12,
+      "rise": 0.16,
+      "tread": 0.32,
+      "total_rise": 1.92,
+      "run": 3.84,
+      "width": 2.1,
+      "clear_width_min": 1.86,
+      "bottom_y": -0.25,
+      "ramp_start": [
+        0,
+        0,
+        0
+      ],
+      "ramp_end": [
+        0,
+        1.92,
+        3.84
+      ],
+      "rail_ramp_datum_height": 1.12
+    },
+    "landing": {
+      "size": [
+        2.4,
+        0.25,
+        2.4
+      ],
+      "top_y": 0
+    },
+    "rail": {
+      "length": 2.4,
+      "height": 1.05,
+      "axis": "+Z"
+    },
+    "support": {
+      "size": [
+        2.4,
+        1.92,
+        2.4
+      ],
+      "top_y": 0,
+      "permitted_dimension_scaling": "Plain support mass only; preserve wrapper scale and world-metre material mapping"
+    },
+    "court": {
+      "size": [
+        10,
+        0.3,
+        10
+      ],
+      "top_y": 0
+    }
+  },
+  "semantic_uv_tiles_metres": {
+    "Concrete": 2.0,
+    "ConcreteWall": 2.0,
+    "SteelDark": 1.5
+  },
+  "models": [
+    {
+      "name": "TerraceFlight",
+      "bounds_min": [
+        -1.05,
+        -0.25,
+        0.0
+      ],
+      "bounds_max": [
+        1.05,
+        3.03736,
+        3.84
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Lower",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Upper",
+          "position": [
+            0.0,
+            1.92,
+            3.84
+          ]
+        },
+        {
+          "name": "FlightSteps",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "FlightSupportedRails",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 2312,
+      "geometry_signature": "14bbf19809ed052909782bd79a1645737d595966402fd9a9a6381204e13f0d98",
+      "renderer_count": 2,
+      "material_roles": [
+        "Concrete",
+        "SteelDark"
+      ],
+      "maximum_triangles": 6500
+    },
+    {
+      "name": "TerraceLanding",
+      "bounds_min": [
+        -1.2,
+        -0.25,
+        -1.2
+      ],
+      "bounds_max": [
+        1.2,
+        0.0,
+        1.2
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Surface",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "PavingAndBase",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 280,
+      "geometry_signature": "3e30fc576880cd79f9fc0f60529a49980b67e3e69f7b01d7e58df71ad9eda6de",
+      "renderer_count": 1,
+      "material_roles": [
+        "Concrete"
+      ],
+      "maximum_triangles": 1800
+    },
+    {
+      "name": "TerraceRail",
+      "bounds_min": [
+        -0.06,
+        0.0,
+        0.0
+      ],
+      "bounds_max": [
+        0.06,
+        1.05,
+        2.4
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_End",
+          "position": [
+            0.0,
+            0.0,
+            2.4
+          ]
+        },
+        {
+          "name": "ANCHOR_Start",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "SupportedRail",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 712,
+      "geometry_signature": "05f7998121c3fe76166253f41e58963f3270b1b0b8435138e31a0c288694f5c3",
+      "renderer_count": 1,
+      "material_roles": [
+        "SteelDark"
+      ],
+      "maximum_triangles": 2600
+    },
+    {
+      "name": "TerraceSupport",
+      "bounds_min": [
+        -1.2,
+        -1.92,
+        -1.2
+      ],
+      "bounds_max": [
+        1.2,
+        0.0,
+        1.2
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Base",
+          "position": [
+            0.0,
+            -1.92,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Top",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "RetainingMass",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 28,
+      "geometry_signature": "2fbaed9e05a69bb5f3cf883752d981490d73512f5c763b0c0af890aa51c512d5",
+      "renderer_count": 1,
+      "material_roles": [
+        "ConcreteWall"
+      ],
+      "maximum_triangles": 100
+    },
+    {
+      "name": "TerraceCourt",
+      "bounds_min": [
+        -5.0,
+        -0.3,
+        -5.0
+      ],
+      "bounds_max": [
+        5.0,
+        0.0,
+        5.0
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Surface",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "PavingAndBase",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 2828,
+      "geometry_signature": "1a6ae5983dbca0e89a7ee9dacac2acae67fc5634e18d20dd5855d639b4491eeb",
+      "renderer_count": 1,
+      "material_roles": [
+        "Concrete"
+      ],
+      "maximum_triangles": 15000
+    }
+  ],
+  "assets": [
+    "TerraceFlight.fbx",
+    "TerraceLanding.fbx",
+    "TerraceRail.fbx",
+    "TerraceSupport.fbx",
+    "TerraceCourt.fbx"
+  ]
+}

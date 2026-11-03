@@ -4,53 +4,57 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-03
-Checkpoint:RAM/deep progress-world-ammo;unload→restore;entry/seed/rides/tokens;RU pause/No.
-SessionCheckpointStateTests/SessionCheckpointPlayModeTests passed.
-Warehouse:fall/hold→collapse;reuse keeps wounds/parts/blood;moving/fullpool defer;
-finite flakes/sound/pause/reset/fish clear.
-Warehouse_CorpseDecayPreservesDeathAndPoolLifecycle passed;frames reviewed.
+Checkpoint:RAM deep progress/world/ammo;restore/entry/seed/rides/tokens;RU pause/No.
+SessionCheckpointStateTests/SessionCheckpointPlayModeTests OK.
+Warehouse:fall/hold→collapse;reuse:wounds/parts/blood;moving/fullpool defer;
+flakes/sound/pause/reset/fish-clear.
+Warehouse_CorpseDecayPreservesDeathAndPoolLifecycle OK.
 Bar:warn/grace/finish/stand/exit;leftovers0;pause/rig/camera/24FX/§6.
-Menu:clear→pan,blocked→hall cut/back;hero stays.
-Worker:handoff/stow/turn;elbow/palm contacts.
-Speech tail keeps camera/pose;StepElapsed/PCM plan. build-city-pedestrian-3d-model.py --cafe-animation-only,
-ParkQuarrelTests.Delivery_StepsOncePerFrameAndBlipsOnLettersOnly and
-LastGuest_ClosingPreservesMenuSipAndWalksToDoor passed.
+Menu:clear→pan,blocked→hall/back;hero kept.
+Worker:handoff/stow/turn;elbow/palm.
+Speech:camera/pose;StepElapsed/PCM;build-city-pedestrian-3d-model.py --cafe-animation-only,
+ParkQuarrelTests.Delivery_StepsOncePerFrameAndBlipsOnLettersOnly/
+LastGuest_ClosingPreservesMenuSipAndWalksToDoor OK.
 ActualBar_FillsAndEmptiesWithClockAndFinishesAcceptedServiceAfterClosing:
-pre-close late-crowd departure failure.
-Beer/wine:E sips,docked remainder,one payment,prorated FX;
-last sip counts;seat/rig/camera/contacts/full wine safe;spirits once.
+late crowd left pre-close:fail.
+Beer/wine:E sip/rest/pay1/proratedFX;last-sip count;
+seat/rig/camera/contacts/full-wine safe;spirits1.
 BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment/
 WineService_FullGlassTakesThreeSeparateSips/PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce
-passed;full/partial/empty frames.
-Shop:metal/glass door,dense stock/shared surfaces/reflection,rear flush cartons,
-R checkout/scanner/packing/snacks/anchors;wear/baskets/cables/vents.
-Atomic sale/receipt;beer/wine/cognac stronger,stress kept;beer=barportion/wine=three;
+OK;full/partial/empty frames.
+Shop:metal/glassdoor;shared/reflectedstock;rearcartons flush;
+R checkout/fixtures;anchors/wear.
+Atomic sale/receipt;beer/wine/cognac↑,stress kept;beer=bar/wine=3;
 ml rounding/ID/fill/open/Al tab/wine cap/cleanup.
-Cashier:UV/3D face/rig hands;offers/body/CCTV/lights/§6.
-Product/interior/cashier validators+supermarket_surface_response passed.
-Import:unique drink anchors/Texture2D response/unpacked door pivots;
-main-thread reflection;bounded Al impact;glass silent.
+Cashier:UV/3D face/hands;offers/body/CCTV/light/§6.
+Product/interior/cashier validators+supermarket_surface_response OK.
+Import:anchors/Texture2Dresponse/unpackedpivots;
+main-thread reflection;bounded Al impact/silentglass.
 Purchases_KeepStockAndReceiptOwnershipAcrossRepeatReloadAndFailures,
 AreaCaptureFixture.Supermarket/DrinkContainers_PurchaseSipSwitch_PreserveFillOpeningAndContacts
-passed;dose/contacts;wall/checkout/face/door/grip frames.
-Hawthorn:seed vials/ammo;yellow/shared pickup;Use→auto-close→rig gulp,+HP/intox/dose;
-HPHUD/inventoryHP;full/defeated reject;lipclear→grimace/throw→hand.
-Red/frozen-world drift/smear/live/halfRT;gulp/swell;black/UI/halation,pause/retrigger/
-cleanup/intox kept;Blender vial/grips;inactive-Docker ground isolation.
-CombatWarehouseHawthorn passed.
-Mirror:packaged straight-alpha Lit glass/build gate.
-HomeBathroomMirrorPlayModeTests passed.
+OK;dose/contacts;wall/checkout/face/door/grip frames.
+Hawthorn:seedvials/ammo;yellow/sharedpickup;Use→close→riggulp,+HP/intox/dose;
+HPHUD/inventoryHP;full/defeated reject;lipclear→grimace/throw/hand.
+Red/frozen drift/smear/live/halfRT;gulp/swell;black/UI/halation/pause/retrigger/
+cleanup/intox;Blender vial/grips;inactiveDocker ground-isolated.
+CombatWarehouseHawthorn OK.
+Mirror:straight-alpha Lit/build gate;HomeBathroomMirrorPlayModeTests OK.
 Shower:aim/BVH
 Shower_CancelMidWashDressesHimAndShutsTheWater
 Brushing_MirrorSceneGatesReliefPerDay:jacket fail
-Toilet:shared pelvis anatomy;down→show/up→hide;existing fill.
-SeatedAppearance_ShowsAttachedAnatomyAndHidesItOnExit passed.
-ChoicePlungeReturnsAndPreservesSmallAction:prior GEO_Pelvis fabric-endpoint failure.
-Frames/24FX checked;cost unknown.
-City:grade-24day→-30night;denser fog/wind;skyline fade.
-Clock/clone/indoor/pause/24FX/§6 kept.
-CityNightSaturation/CityFogCheckpoint passed;frames reviewed.
-Calendar doubled;needs/weather:GameTimeStateTests.
+Toilet:pelvis;down→anatomy/up→hide;fill.
+SeatedAppearance_ShowsAttachedAnatomyAndHidesItOnExit OK.
+ChoicePlungeReturnsAndPreservesSmallAction:prior GEO_Pelvis fabric-endpoint fail.
+Frames/24FX;cost?
+City:grade-24day→-30night;dense fog/wind;skyline fade.
+Clock/clone/indoor/pause/24FX/§6.
+CityNightSaturation/CityFogCheckpoint OK.
+Day×2;needs/weather:GameTimeStateTests.
+TerraceMasterPlan_StudiesProductionWithoutChangingLiveCity OK.
+CityTerraceTransportPlanTests/CityTerracePilotPlayModeTests:authoringOK.
+Terraces:live7.68m/2paths;houses moved/IDs kept;entry/nav/map/24FX.
+LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap/
+ImageGenCityMap_PreservesPlanAndLivePlaces passed;frames reviewed.
 
 ## 2026-11-02
 
