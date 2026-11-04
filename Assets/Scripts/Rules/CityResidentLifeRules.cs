@@ -180,6 +180,12 @@ namespace BarPromenade
             return Hash(residentIndex, seed, unchecked((uint)dayIndex * 0x9E3779B9u) ^ 0x53545245u);
         }
 
+        public static bool HasWorkSchedule(int residentIndex)
+        {
+            ValidateResident(residentIndex);
+            return GetRoutine(residentIndex) == WorkerRoutine;
+        }
+
         private static Destination[] GetRoutine(int residentIndex)
         {
             int cohort = residentIndex % 8;

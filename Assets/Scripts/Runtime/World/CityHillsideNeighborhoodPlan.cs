@@ -26,18 +26,20 @@ namespace BarPromenade
         // the footway along the outside wall; its axis never cuts a solid corner.
         internal CityHillsideBuilding(CityTerraceTransportBank bank, Vector2Int cell,
             float x, float streetZ, int side, float setback, int variant, Vector3 forward,
-            System.Func<float, float> pavement, bool summit = false)
+            System.Func<float, float> pavement, bool summit = false, bool playerHome = false)
         {
             Bank = bank;
             OnSummitStreet = summit;
             this.pavement = pavement;
             const CityDistrictKind residential = CityDistrictKind.Residential;
-            Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(residential, variant);
+            Vector3 envelope = playerHome ? new Vector3(13f, PlayerHomeBalconyGeometry.PreferredBuildingHeight, 12f)
+                : CityBuildingAssetProvider.GetExpectedEnvelope(residential, variant);
             bool gableEntry = Mathf.Abs(forward.x) > .5f;
             var footprint = gableEntry ? new Vector2(envelope.z, envelope.x) : new Vector2(envelope.x, envelope.z);
             float z = streetZ + side * (setback + footprint.y * .5f);
             Quaternion rotation = Quaternion.LookRotation(forward);
-            Vector3 entry = rotation * CityBuildingAssetProvider.GetExpectedEntranceThreshold(variant);
+            Vector3 entry = playerHome ? forward * (envelope.z * .5f)
+                : rotation * CityBuildingAssetProvider.GetExpectedEntranceThreshold(variant);
             float floor = pavement(x);
             ThresholdWorld = new Vector3(x + entry.x, floor, z + entry.z);
             DoorWorld = ThresholdWorld + forward * (gableEntry ? 1.45f : .52f);
@@ -64,13 +66,14 @@ namespace BarPromenade
                 DoorWorld.x + 1.2f, Mathf.Max(courtEdgeZ, StreetContactWorld.z));
             Lot = new BuildingLot(cell, centre, footprint, envelope.y,
                 bank == CityTerraceTransportBank.West ? new Color(.51f, .455f, .40f) : new Color(.46f, .50f, .49f),
-                "hillside-residential", residential, CityLandUseKind.Building, false, false, false,
-                string.Empty, BarActivityKind.None, Vector2Int.zero, ThresholdWorld,
-                StreetContactWorld, StreetContactWorld, variant, forward);
+                "hillside-residential", residential, CityLandUseKind.Building, false, playerHome, false,
+                string.Empty, BarActivityKind.None, playerHome ? Vector2Int.up : Vector2Int.zero, ThresholdWorld,
+                playerHome ? new Vector3(StreetContactWorld.x, floor - PavementRise, streetZ) : StreetContactWorld,
+                StreetContactWorld, variant, forward);
             MapFootprints = Lot.CreateCollisionFootprints();
         }
 
-        internal bool HasGlazedBay => Bank == CityTerraceTransportBank.West && Lot.BuildingVariant != 4;
+        internal bool HasGlazedBay => !Lot.IsPlayerHome && Bank == CityTerraceTransportBank.West && Lot.BuildingVariant != 4;
         // Two domestic airers share the two spare slots in the city residential
         // wind budget. Their pegs and scheduled fabric sound use the same point.
         internal bool HasAirer => Lot.Cell == new Vector2Int(41, -21) || Lot.Cell == new Vector2Int(21, -5);
@@ -163,8 +166,7 @@ namespace BarPromenade
                     -27f, lowerZ, 1, 7.6f, 0, Vector3.back, lower.PavementTopAt));
                 shared.Add(new CityHillsideBuilding(CityTerraceTransportBank.East, new Vector2Int(41, -21),
                     29f, lowerZ, 1, 8f, 4, Vector3.left, lower.PavementTopAt));
-                shared.Add(new CityHillsideBuilding(CityTerraceTransportBank.West, new Vector2Int(-41, -21),
-                    -28f, upperZ, -1, 8f, 1, Vector3.forward, upper.PavementTopAt, true));
+                shared.Add(layout.SummitHome ?? CreateWestSummitHouse(upper, false));
                 shared.Add(new CityHillsideBuilding(CityTerraceTransportBank.East, new Vector2Int(42, -21),
                     29f, upperZ, -1, 8.2f, 2, Vector3.forward, upper.PavementTopAt, true));
             }
@@ -174,6 +176,10 @@ namespace BarPromenade
             all.AddRange(shared);
             AllBuildings = all.AsReadOnly();
         }
+
+        internal static CityHillsideBuilding CreateWestSummitHouse(CityHillsideQuarterLink upper, bool playerHome) =>
+            new CityHillsideBuilding(CityTerraceTransportBank.West, new Vector2Int(-41, -21),
+                playerHome ? -25.5f : -28f, upper.WestGateWorld.z, -1, 8f, 1, Vector3.forward, upper.PavementTopAt, true, playerHome);
 
         private static bool HasClearance(CityHillsideBuilding house, List<CityHillsideBuilding> placed)
         {

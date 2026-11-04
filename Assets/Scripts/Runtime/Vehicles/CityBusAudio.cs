@@ -254,6 +254,8 @@ namespace BarPromenade
                 cabinBlend;
         }
 
+        internal void RestoreDoorPhase(CityBusDoorPhase phase) => previousDoorPhase = phase;
+
         public void ApplyDoorSample(
             CityBusDriverDoorSample sample,
             bool playerInside)

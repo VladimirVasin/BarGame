@@ -20,7 +20,11 @@ namespace BarPromenade
         private readonly double[] retainedAt = new double[CityResidentLifeRules.ResidentCount];
         private readonly double[] retainedActivity = new double[CityResidentLifeRules.ResidentCount];
         private readonly Vector3[] retainedPosition = new Vector3[CityResidentLifeRules.ResidentCount];
+        private readonly Dictionary<int, Address> homeAddresses = new Dictionary<int, Address>();
+        private readonly Dictionary<int, Address> workAddresses = new Dictionary<int, Address>();
         private readonly int[] components;
+        internal bool HasPavement => plan.Nodes.Count >= 2;
+        public CityResidentJourneyDirector Journeys { get; internal set; }
         private readonly int seed;
 
         public CityResidentWorld(CityPedestrianPlan pedestrianPlan, CityLayout layout = null)
@@ -40,9 +44,13 @@ namespace BarPromenade
                 {
                     if (lot.IsPlayerHome) continue;
                     if (lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.Residential)
-                        AddPlace(homes, lot.SidewalkArrivalPosition, 32);
+                    {
+                        var pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
+                        Vector3 entrance = pose.TransformPoint(CityBuildingAssetProvider.GetExpectedEntranceThreshold(lot.BuildingVariant));
+                        AddAddress(homes, homeAddresses, lot, lot.SidewalkArrivalPosition, entrance, 32);
+                    }
                     else if (lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.Industrial)
-                        AddPlace(work, lot.SidewalkArrivalPosition, 12);
+                        AddAddress(work, workAddresses, lot, lot.SidewalkArrivalPosition, lot.DoorPosition, 12);
                     else if (lot.IsSupermarket) AddPlace(shops, lot.SidewalkArrivalPosition, 4);
                     else if (lot.IsBar) AddPlace(walks, lot.SidewalkArrivalPosition, 4);
                 }
@@ -61,7 +69,11 @@ namespace BarPromenade
                 }
             }
             if (layout?.PlayerHome != null && CityBusStopWaitPlanner.TryFindNearestNode(plan,
-                layout.PlayerHome.SidewalkArrivalPosition, out int playerHomeNode)) homes.Remove(playerHomeNode);
+                layout.PlayerHome.SidewalkArrivalPosition, out int playerHomeNode))
+            {
+                homes.Remove(playerHomeNode);
+                hillHomes.Remove(playerHomeNode);
+            }
             // Graph-only fixtures and nonstandard layouts retain a valid fallback.
             if (homes.Count == 0)
                 for (int i = 0; i < plan.SpawnAnchors.Count && homes.Count < 32; i++)
@@ -78,6 +90,20 @@ namespace BarPromenade
                 bool livesUphill = hillHomes.Count > 0 && id % 11 == 0;
                 int home = livesUphill ? hillHomes[(int)((Hash(0, seed) + (uint)(id / 11)) % (uint)hillHomes.Count)] :
                     homes[(int)(hash % (uint)homes.Count)];
+                if (CityResidentLifeRules.HasWorkSchedule(id) && workAddresses.Count > 0 &&
+                    !HasConnectedAddress(home, work))
+                {
+                    // An isolated residential component cannot supply a work
+                    // commute. Choose a real home in a component with a job.
+                    for (int offset = 0; offset < homes.Count; offset++)
+                    {
+                        int alternate = homes[(int)((hash + (uint)offset) % (uint)homes.Count)];
+                        if (!HasConnectedAddress(alternate, work)) continue;
+                        home = alternate;
+                        livesUphill = false;
+                        break;
+                    }
+                }
                 places[id, (int)CityResidentActivity.Home] = home;
                 places[id, (int)CityResidentActivity.ReturningHome] = home;
                 places[id, (int)CityResidentActivity.Work] = SelectConnected(work, home, hash >> 5);
@@ -89,9 +115,37 @@ namespace BarPromenade
 
             void AddHillHome(CityHillsideBuilding house)
             {
+                if (house.Lot.IsPlayerHome) return;
                 Vector2 court = house.CourtBounds.center;
-                AddPlace(hillHomes, new Vector3(court.x, house.DoorWorld.y, court.y), 8);
+                AddAddress(hillHomes, homeAddresses, house.Lot,
+                    new Vector3(court.x, house.DoorWorld.y, court.y), house.ThresholdWorld, 8);
             }
+        }
+
+        public readonly struct Address
+        {
+            public readonly BuildingLot Building;
+            public readonly Vector3 Entrance;
+            public readonly int PavementNode;
+            internal Address(BuildingLot building, Vector3 entrance, int node)
+            { Building = building; Entrance = entrance; PavementNode = node; }
+        }
+
+        public Address Home(int resident) => AddressAt(homeAddresses, Destination(resident, CityResidentActivity.Home));
+        public Address Workplace(int resident) => AddressAt(workAddresses, Destination(resident, CityResidentActivity.Work));
+
+        private Address AddressAt(Dictionary<int, Address> addresses, int node)
+        {
+            if (addresses.TryGetValue(node, out Address address)) return address;
+            return HasPavement ? new Address(null, plan.Nodes[node].Position, node) : new Address(null, Vector3.zero, -1);
+        }
+
+        private void AddAddress(List<int> nodes, Dictionary<int, Address> addresses, BuildingLot lot,
+            Vector3 approach, Vector3 entrance, int maximum)
+        {
+            if (nodes.Count >= maximum || !CityBusStopWaitPlanner.TryFindNearestNode(plan, approach, out int node)) return;
+            AddUnique(nodes, node);
+            if (!addresses.ContainsKey(node)) addresses.Add(node, new Address(lot, entrance, node));
         }
 
         public CityResidentLifeSample Schedule(int resident, int day, double minute) =>
@@ -112,6 +166,7 @@ namespace BarPromenade
         {
             sample = default;
             if (plan.Nodes.Count < 2) return false;
+            if (Journeys != null) return Journeys.TrySample(resident, day * 1440d + minute, out sample);
             CityResidentLifeSample schedule = Schedule(resident, day, minute);
             int destination = Destination(resident, schedule.Activity);
             double now = day * 1440d + minute;
@@ -157,6 +212,14 @@ namespace BarPromenade
                 travelled = returning ? 2d * circuit.Length - phase : phase;
                 route = circuit; prefix = 0f; retainedStart = null;
             }
+            return SampleRoute(route, travelled, retainedStart, returning, schedule, out sample);
+        }
+
+        internal bool SampleRoute(Route route, double travelled, Vector3? retainedStart, bool returning,
+            CityResidentLifeSample schedule, out StreetSample sample)
+        {
+            sample = default;
+            float prefix = retainedStart.HasValue ? PrefixLength(route, retainedStart.Value) : 0f;
             if (prefix > .001f && travelled < prefix)
             {
                 Vector3 position = SamplePrefix(route, retainedStart.Value, (float)travelled, prefix);
@@ -192,6 +255,11 @@ namespace BarPromenade
         public void Retain(int resident, CityPedestrianActor actor, int day, double minute)
         {
             if (actor.TargetNodeIndex < 0 || actor.PreviousNodeIndex < 0 || actor.IsAttachedToVehicle) return;
+            if (Journeys != null)
+            {
+                Journeys.RetainWalk(resident, actor, day * 1440d + minute);
+                return;
+            }
             CityResidentLifeSample schedule = Schedule(resident, day, minute);
             int goal = actor.ResidentDestinationNode >= 0 ? actor.ResidentDestinationNode : Destination(resident, schedule.Activity);
             Route remaining = BuildRoute(actor.TargetNodeIndex, goal);
@@ -202,11 +270,30 @@ namespace BarPromenade
             retainedActivity[resident] = schedule.StartedAt;
         }
 
-        private Route BuildRoute(int start, int goal)
+        // A public outing near its destination follows an actual adjacent
+        // pavement. Never send a worker back to the home district just to
+        // keep walking while the calendar still says shopping or leisure.
+        internal int LocalWalkNode(int node)
+        {
+            int nearest = node;
+            float best = float.PositiveInfinity;
+            foreach (int index in plan.GetLinkIndices(node))
+            {
+                var link = plan.Links[index];
+                float length = LinkLength(link);
+                if (length < .01f || length >= best) continue;
+                nearest = link.Other(node);
+                best = length;
+            }
+            return nearest;
+        }
+
+        internal Route BuildRoute(int start, int goal) => BuildRoute(plan, start, goal, DistancesTo(goal));
+
+        internal static Route BuildRoute(CityPedestrianPlan plan, int start, int goal, IReadOnlyList<float> distance)
         {
             var nodes = new List<int> { start };
             var links = new List<int>();
-            IReadOnlyList<float> distance = DistancesTo(goal);
             int current = start;
             float total = 0f;
             for (int guard = 0; current != goal && guard < plan.Nodes.Count; guard++)
@@ -217,13 +304,13 @@ namespace BarPromenade
                 {
                     CityPedestrianLink link = plan.Links[linkIndex];
                     int other = link.Other(current);
-                    float next = LinkLength(link) + distance[other];
+                    float next = LinkLength(plan, link) + distance[other];
                     if (next < cost) { cost = next; best = linkIndex; }
                 }
                 if (best < 0 || float.IsPositiveInfinity(cost)) break;
                 CityPedestrianLink selected = plan.Links[best];
                 current = selected.Other(current);
-                nodes.Add(current); links.Add(best); total += LinkLength(selected);
+                nodes.Add(current); links.Add(best); total += LinkLength(plan, selected);
             }
             return new Route(nodes.ToArray(), links.ToArray(), total);
         }
@@ -234,7 +321,7 @@ namespace BarPromenade
                 if (plan.Links[index].Other(route.Nodes[0]) == route.StartPrevious) return plan.Links[index];
             return null;
         }
-        private float PrefixLength(Route route, Vector3 start)
+        internal float PrefixLength(Route route, Vector3 start)
         {
             CityPedestrianLink link = PrefixLink(route);
             if (link?.Path == null) return Vector3.Distance(start, plan.Nodes[route.Nodes[0]].Position);
@@ -250,6 +337,13 @@ namespace BarPromenade
             Vector2 point = link.Path.SampleDistance(along + (forward ? travelled : -travelled)).Position;
             float height = link.PathHeightSampler != null ? link.PathHeightSampler(point) : Mathf.Lerp(start.y, plan.Nodes[route.Nodes[0]].Position.y, travelled / length);
             return new Vector3(point.x, height, point.y);
+        }
+
+        private bool HasConnectedAddress(int home, List<int> candidates)
+        {
+            foreach (int node in candidates)
+                if (node != home && components[node] == components[home]) return true;
+            return false;
         }
 
         private int SelectConnected(List<int> candidates, int home, uint hash)
@@ -268,7 +362,8 @@ namespace BarPromenade
             if (CityBusStopWaitPlanner.TryFindNearestNode(plan, position, out int node)) AddUnique(list, node);
         }
         private static void AddUnique(List<int> list, int node) { if (!list.Contains(node)) list.Add(node); }
-        private float LinkLength(CityPedestrianLink link) => link.Path?.Length ??
+        private float LinkLength(CityPedestrianLink link) => LinkLength(plan, link);
+        private static float LinkLength(CityPedestrianPlan plan, CityPedestrianLink link) => link.Path?.Length ??
             Vector3.ProjectOnPlane(plan.Nodes[link.FirstNodeIndex].Position - plan.Nodes[link.SecondNodeIndex].Position, Vector3.up).magnitude;
         private int[] CreateComponents()
         {
@@ -294,7 +389,7 @@ namespace BarPromenade
             return result;
         }
         private static uint Hash(int id, int seed) => CityPedestrianStableHash.Combine(unchecked((uint)seed), unchecked((uint)id + 0xC171u));
-        private sealed class Route
+        internal sealed class Route
         {
             public readonly int[] Nodes, Links;
             public readonly float Length;

@@ -153,7 +153,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(BarActivityAssignment.DefaultHomeBarCell));
             Assert.That(
                 cityRoot.Layout.PlayerHome.Cell,
-                Is.EqualTo(new Vector2Int(12, 5)));
+                Is.EqualTo(cityRoot.Layout.SummitHome.Lot.Cell));
             Vector3 playerSpawn =
                 cityRoot.Player.GameObject.transform.position;
             Assert.That(
@@ -171,27 +171,6 @@ namespace BarPromenade.Tests.PlayMode
                     playerSpawn,
                     playerController.radius),
                 Is.True);
-            float nearestBarDistance = float.PositiveInfinity;
-            for (int index = 0; index < barLots.Count; index++)
-            {
-                Vector3 doorside = barLots[index].ReturnPosition;
-                doorside.y = playerSpawn.y;
-                nearestBarDistance = Mathf.Min(
-                    nearestBarDistance,
-                    Vector3.Distance(playerSpawn, doorside));
-            }
-
-            // Half a block, plus the road to cross to reach a door. The
-            // guarantee being made is "you wake up within a block of a
-            // bar", and crossing one carriageway is part of that.
-            Assert.That(
-                nearestBarDistance,
-                Is.LessThanOrEqualTo(
-                    (Mathf.Max(
-                        cityRoot.Layout.NodeSpacing.x,
-                        cityRoot.Layout.NodeSpacing.y) *
-                     0.5f) +
-                    cityRoot.Layout.RoadWidth));
             Assert.That(
                 cityRoot.World.Bars[0].BarActivity,
                 Is.EqualTo(BarActivityAssignment.DefaultHomeBarActivity));
@@ -290,8 +269,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(cityRoot.BusPlans.Select(p => p.Number), Is.EqualTo(new[] { 1, 2, 3 }));
             Assert.That(cityRoot.BusStops.transform.childCount,
                 Is.EqualTo(CityBusNetworkFurniture.Stops(cityRoot.BusPlans).Count()));
-            Assert.That(cityRoot.BusLines.Count, Is.EqualTo(cityRoot.BusPlans.Count));
-            foreach (var line in cityRoot.BusLines)
+            Assert.That(cityRoot.BusVehicles.Count, Is.EqualTo(cityRoot.BusPlans.Count * CityBusDirector.VehiclesPerLine));
+            foreach (var line in cityRoot.BusVehicles)
             {
                 Assert.That(line.IsInitialized && line.Actor.HasRoutePhase, Is.True);
                 Assert.That(line.Plan.IsEmpty, Is.False);
@@ -300,7 +279,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(line.PoolCapacity, Is.EqualTo(1));
                 Assert.That(line.Actor.gameObject.layer, Is.EqualTo(CityBusCollision.LayerIndex));
             }
-            Assert.That(cityRoot.BusLines.Sum(l => l.ActiveCount), Is.InRange(0, CityBusDirector.MaximumActiveModels));
+            Assert.That(cityRoot.BusVehicles.Sum(l => l.ActiveCount), Is.InRange(0, CityBusDirector.MaximumActiveModels));
             Assert.That(
                 Physics.GetIgnoreLayerCollision(
                     CityBusCollision.DefaultLayerIndex,
@@ -314,7 +293,7 @@ namespace BarPromenade.Tests.PlayMode
 
             // Visibility follows the scheduled vehicle. Stand beside an actual phase,
             // outside both its hull and the truck's delivery reservation.
-            var inspected = cityRoot.BusLines.First(l => !l.CanneryBlocksSpawn(l.Actor.Position, l.Actor.Rotation));
+            var inspected = cityRoot.BusVehicles.First(l => !l.CanneryBlocksSpawn(l.Actor.Position, l.Actor.Rotation));
             Vector3 returnPosition = cityRoot.Player.GameObject.transform.position;
             cityRoot.Player.Motor.Teleport(inspected.Actor.Position + inspected.Actor.transform.right * 8f);
             inspected.Advance(.20f);
@@ -1588,6 +1567,11 @@ namespace BarPromenade.Tests.PlayMode
             BarEntrance entrance = firstCity.World.Bars[0];
             string expectedBarId = entrance.BarId;
             BarActivityKind expectedBarActivity = entrance.BarActivity;
+            Assert.That(firstCity.Layout.HasSummitHome, Is.True);
+            var homeShell = firstCity.World.Root.GetComponentsInChildren<PlayerHomeExteriorAssetRegistry>(true).Single();
+            Assert.That(HasPlayerHomeExteriorPart(homeShell, "Player Home Entrance Door"), Is.True);
+            Assert.That(Vector3.Distance(firstCity.Layout.PlayerHome.DoorPosition, entrance.InteractionPosition),
+                Is.LessThan(1.5f), "The entry interaction belongs to the summit facade.");
             Vector3 expectedReturn = entrance.ReturnPosition;
             int expectedSeed = firstCity.Layout.Seed;
             const int expectedIntoxication = 37;
@@ -1775,6 +1759,11 @@ namespace BarPromenade.Tests.PlayMode
 
             HomeEntrance entrance = firstCity.World.PlayerHome;
             Assert.That(entrance, Is.Not.Null);
+            Assert.That(firstCity.Layout.HasSummitHome, Is.True);
+            var homeShell = firstCity.World.Root.GetComponentsInChildren<PlayerHomeExteriorAssetRegistry>(true).Single();
+            Assert.That(HasPlayerHomeExteriorPart(homeShell, "Player Home Entrance Door"), Is.True);
+            Assert.That(Vector3.Distance(firstCity.Layout.PlayerHome.DoorPosition, entrance.InteractionPosition),
+                Is.LessThan(1.5f), "The entry interaction belongs to the summit facade.");
             Vector3 expectedReturn = entrance.ReturnPosition;
             int expectedSeed = firstCity.Layout.Seed;
             RoadEdge[] expectedRoads =
@@ -1791,7 +1780,11 @@ namespace BarPromenade.Tests.PlayMode
                 37,
                 DrinkId.RedWine,
                 2);
-            PlacePlayerAtDoor(firstCity.Player, entrance);
+            firstCity.Player.Motor.Teleport(expectedReturn);
+            yield return WalkSummitWaypoints(firstCity, new[] { entrance.GetComponent<PlayerDoorActionTarget>().Plan.EntryRootPosition });
+            firstCity.Player.Motor.transform.rotation = entrance.GetComponent<PlayerDoorActionTarget>().Plan.EntryRotation;
+            Physics.SyncTransforms();
+            Assert.That(entrance.CanInteract(firstCity.Player.Interactor), Is.True);
             entrance.Interact(firstCity.Player.Interactor);
 
             DoorTransitionRoot enteringDoor = null;
@@ -1858,10 +1851,13 @@ namespace BarPromenade.Tests.PlayMode
                     !SceneTransitionService.IsTransitioning,
                 "Home transition did not settle.");
 
+            Assert.That(home.ExteriorContext.HomeBusNumber, Is.EqualTo(3));
+            Assert.That(home.ExteriorContext.PlayerHome.Cell, Is.EqualTo(home.ExteriorContext.Layout.SummitHome.Lot.Cell));
+            Assert.That(home.ExteriorView.Find("Summit street from home/Shared residential hillside"), Is.Not.Null);
             Assert.That(home.Room, Is.Not.Null);
             Assert.That(home.Player.GameObject, Is.Not.Null);
             Assert.That(home.Exit, Is.Not.Null);
-            Assert.That(home.Layout.Furniture, Has.Count.EqualTo(9));
+            Assert.That(home.Layout.Furniture.Select(f => f.Kind), Is.EquivalentTo(HomeInteriorLayoutPlanner.Generate().Furniture.Select(f => f.Kind)));
             Assert.That(
                 home.Layout.TryGetFurniture(
                     HomeFurnitureKind.Toilet,
@@ -1905,7 +1901,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(
                 home.Atmosphere.PracticalLights,
-                Has.Count.EqualTo(2));
+                Has.Count.EqualTo(HomeInteriorAtmosphere.MaximumPracticalLights));
             Assert.That(
                 home.FixedCamera,
                 Is.Not.Null);
@@ -2061,12 +2057,154 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.IntoxicationLevel,
                 Is.InRange(34, 37));
+            Assert.That(actualPosition.y, Is.EqualTo(expectedReturn.y).Within(.16f));
+            yield return WalkSummitWaypoints(returnedCity, SummitHomeStopWaypoints(returnedCity));
             PlayerCameraFollow returnedFollow =
                 Camera.main.GetComponent<PlayerCameraFollow>();
             Assert.That(returnedFollow, Is.Not.Null);
             Assert.That(
                 returnedFollow.FixedPoseActive,
                 Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator SummitHome_BalconyAndApartmentDoorLookDownIntoTheCity()
+        {
+            Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60), Is.True);
+            GameSessionState.EnterHome();
+            GameSessionState.PrepareHomeArrival(HomeArrivalKind.Normal);
+            HomeInteriorRoot home = null;
+            yield return LoadSceneAndWaitForRoot<HomeInteriorRoot>(SceneIds.HomeInterior, HomeRootName, root => home = root);
+            yield return WaitUntil(() => home.IsInitialized, "Summit apartment did not finish loading.");
+            Assert.That(home.ExteriorContext.Layout.HasSummitHome, Is.True);
+            var room = home.Room;
+            var balcony = home.BalconyLayout;
+            Camera camera = Camera.main;
+            var actor = home.Player.GameObject.transform;
+            var feet = new Vector3(balcony.BalconyBounds.xMax - .65f, PlayerFactory.GroundedRootOffset, balcony.DoorCenter.z);
+            Vector3 insideDoor = new Vector3(balcony.DoorCenter.x - 1.1f, feet.y, feet.z);
+            Assert.That(home.BalconyDoor.TrySetOpenFraction(1f), Is.True);
+            home.Player.Motor.Teleport(room.TransformPoint(insideDoor));
+            Physics.SyncTransforms();
+            yield return CrossDoor(feet);
+            yield return WaitUntil(() => home.ExteriorAtmosphere.IsBalconyVisibilityActive, "Balcony city visibility never activated.");
+            for (int frame = 0; frame < 8; frame++) yield return null;
+            var chosen = new Pose(camera.transform.position, camera.transform.rotation);
+            Assert.That(Vector3.Distance(chosen.position, room.TransformPoint(new Vector3(5.58f, 2.02f, .22f))), Is.LessThan(.005f));
+            Assert.That(camera.fieldOfView, Is.EqualTo(70f).Within(.01f));
+            Assert.That(Quaternion.Angle(chosen.rotation, room.rotation * Quaternion.Euler(26.61676f, 128.17090f, 0f)), Is.LessThan(.04f));
+            Debug.Log($"Home balcony framing: position {chosen.position:F4}, rotation {chosen.rotation.eulerAngles:F6}, FOV {camera.fieldOfView:F2}.");
+            var outward = room.TransformDirection(Vector3.right);
+            Assert.That(RenderSettings.fog && camera.GetUniversalAdditionalCameraData().renderPostProcessing, Is.True);
+            Assert.That(Vector3.Dot(camera.transform.forward, outward), Is.GreaterThan(.64f));
+            var bridge = CityHillsideQuarterPlan.ForLayout(home.ExteriorContext.Layout).Bridges[1];
+            foreach (Vector3 landmark in new[] { bridge.DeckCenterWorld, home.ExteriorContext.Layout.Park.Center })
+            {
+                Vector3 landmarkLocal = PlayerHomeBalconyGeometry.ToHomeLocal(home.ExteriorContext.PlayerHome, landmark);
+                Vector3 screen = camera.WorldToViewportPoint(room.TransformPoint(landmarkLocal));
+                Assert.That(screen.z, Is.Positive);
+                Assert.That(screen.x, Is.InRange(.03f, .97f), "Landmark outside summit field of view at " + landmark);
+                Assert.That(screen.y, Is.InRange(.03f, .97f));
+            }
+            Assert.That(home.ExteriorView.Find("Summit street from home/Upper ravine bridge"), Is.Not.Null);
+            if (Environment.GetEnvironmentVariable("BAR_PROMENADE_SUMMIT_HOME") == "1")
+            {
+                AreaCaptureFixture.CaptureCurrentCamera(camera, "SummitHome", "01-gameplay-balcony");
+                Pose saved = new Pose(camera.transform.position, camera.transform.rotation);
+                try
+                {
+                    // Stand just ahead of the hero's face at playable standing height, beside the rail.
+                    Vector3 eye = feet + new Vector3(.24f, 1.59f, 0f);
+                    camera.transform.SetPositionAndRotation(room.TransformPoint(eye), saved.rotation);
+                    AreaCaptureFixture.CaptureCurrentCamera(camera, "SummitHome", "02-standing-balcony");
+                    var inside = new Vector3(balcony.DoorCenter.x - .88f, 1.58f, balcony.DoorCenter.z + .12f);
+                    camera.transform.SetPositionAndRotation(room.TransformPoint(inside),
+                        saved.rotation);
+                    AreaCaptureFixture.CaptureCurrentCamera(camera, "SummitHome", "03-apartment-door");
+#if UNITY_EDITOR
+                    Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
+                        .GetMethod("ExportCurrent").Invoke(null, null);
+#endif
+                }
+                finally { camera.transform.SetPositionAndRotation(saved.position, saved.rotation); }
+            }
+            yield return CrossDoor(insideDoor);
+            yield return WaitUntil(() => home.FixedCamera.ActiveShotKind != HomeCameraShotKind.Balcony, "Returning indoors kept the balcony camera.");
+            yield return CrossDoor(feet);
+            yield return WaitUntil(() => home.FixedCamera.ActiveShotKind == HomeCameraShotKind.Balcony, "Second entry did not select the balcony frame.");
+            Assert.That(Vector3.Distance(camera.transform.position, chosen.position), Is.LessThan(.005f));
+            Assert.That(Quaternion.Angle(camera.transform.rotation, chosen.rotation), Is.LessThan(.05f));
+
+            IEnumerator CrossDoor(Vector3 target)
+            {
+                for (int i = 0; i < 150; i++)
+                {
+                    if (home.Player.Motor.MoveTowardsApproachWaypoint(room.TransformPoint(target), .012f, .04f))
+                    {
+                        home.Player.Motor.CancelInteractionPoseMove();
+                        yield break;
+                    }
+                    yield return null;
+                }
+                Assert.Fail($"Could not walk through the folding door from {actor.position} to {target}.");
+            }
+        }
+
+        internal static List<Vector3> SummitHomeStopWaypoints(CityGameRoot city)
+        {
+            var hill = city.Layout.SummitHome;
+            var graph = city.PedestrianPlan;
+            var stops = city.BusPlans[2].Stops;
+            var stop = stops.Single(s => s.TargetKind == CityBusStopTargetKind.PlayerHome);
+            Assert.That(stop.SequenceIndex, Is.EqualTo(3));
+            Assert.That(city.LineWaitPlans[2].TryGetWaitPoint(stop.SequenceIndex, out var wait), Is.True);
+            Assert.That(CityBusStopWaitPlanner.TryFindNearestNode(graph, hill.StreetContactWorld, out var first), Is.True);
+            var world = city.Pedestrians.Residents;
+            var route = world.BuildRoute(first, wait.PedestrianNodeIndex);
+            Assert.That(route.Nodes.Last(), Is.EqualTo(wait.PedestrianNodeIndex));
+            Assert.That(route.Length, Is.InRange(5f, 120f), "The local stop must be reachable from the upper street.");
+            var lift = Vector3.up * PlayerFactory.GroundedRootOffset;
+            var points = new List<Vector3> { hill.StreetContactWorld + lift, graph.Nodes[first].Position + lift };
+            for (float along = 1f; along < route.Length; along += 1f)
+            {
+                Assert.That(world.SampleRoute(route, along, null, false, default, out var sample), Is.True);
+                points.Add(sample.Position + lift);
+            }
+            points.Add(graph.Nodes[wait.PedestrianNodeIndex].Position + lift);
+            return points;
+        }
+
+        private static IEnumerator WalkSummitWaypoints(CityGameRoot city, IEnumerable<Vector3> points)
+        {
+            PlayerMotor motor = city.Player.Motor;
+            var capsule = motor.GetComponent<CharacterController>();
+            foreach (var point in points)
+            {
+                bool reached = false;
+                for (int i = 0; i < 120 && !reached; i++)
+                {
+                    var before = motor.transform.position;
+                    reached = motor.MoveTowardsApproachWaypoint(point, .04f, .05f);
+                    Assert.That(Vector3.Distance(before, motor.transform.position), Is.LessThan(.35f));
+                    yield return null;
+                }
+                if (!reached)
+                {
+                    Vector3 at = motor.transform.position;
+                    Vector3 direction = Vector3.ProjectOnPlane(point - at, Vector3.up).normalized;
+                    Vector3 center = at + capsule.center;
+                    Vector3 extent = Vector3.up * (capsule.height * .5f - capsule.radius - .08f);
+                    var obstacles = Physics.CapsuleCastAll(center - extent, center + extent, capsule.radius, direction,
+                        1f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                    var constrained = city.World.WalkableArea.Constrain(at, at + direction * .15f, capsule.radius);
+                    Assert.Fail($"Blocked at {at:F3} toward {point:F3}; allowed {constrained:F3}, " +
+                        string.Join(", ", obstacles.Where(h => h.collider != capsule)
+                            .Select(h => h.collider.name + " at " + h.collider.bounds.center.ToString("F2"))));
+                }
+                Assert.That(city.World.WalkableArea.Contains(motor.transform.position, capsule.radius), Is.True);
+                Assert.That(motor.transform.position.y, Is.EqualTo(point.y).Within(.20f));
+            }
+            motor.CancelInteractionPoseMove();
         }
 
         private static void AssertMapPointsOfInterest(

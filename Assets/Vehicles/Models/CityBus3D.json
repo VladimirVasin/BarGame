@@ -1,7 +1,7 @@
 {
   "generator": "tools/build-city-bus-3d-model.py",
-  "generator_version": "1.4.0",
-  "blender_version": "5.0.1",
+  "generator_version": "1.8.0",
+  "blender_version": "5.2.3 LTS",
   "design_id": "road_v2_midibus_v1",
   "display_name": "Road v2 City Midibus",
   "seed": 260811,
@@ -14,8 +14,8 @@
     "wheelbase": 4.5,
     "wheel_radius": 0.43
   },
-  "mesh_count": 47,
-  "triangle_count": 4176,
+  "mesh_count": 48,
+  "triangle_count": 4906,
   "bounds_min": [
     -1.36,
     -4.183,
@@ -30,8 +30,9 @@
   "animation_count": 0,
   "animations": [],
   "visible_interior": true,
-  "passenger_seat_count": 12,
-  "build_signature": "16152b5ed9eb2e51fc2d4f9d8ef7d09fec3ec69b285ce29141aa5f5c4c90d907",
+  "passenger_seat_count": 10,
+  "standing_place_count": 3,
+  "build_signature": "dce118804dca3a01fe70fa2abf1fd5ed22db6192263a1fa6c550c70b5f11bf8b",
   "parts": [
     {
       "name": "GEO_BodyAccent",
@@ -326,8 +327,8 @@
       "role": "handrails",
       "material_slot": "Rail",
       "parent": "ROOT_Body",
-      "vertices": 572,
-      "triangles": 1064
+      "vertices": 808,
+      "triangles": 1484
     },
     {
       "name": "INT_InteriorSurfaces",
@@ -342,16 +343,24 @@
       "role": "passenger_seats",
       "material_slot": "Seat",
       "parent": "ROOT_Body",
-      "vertices": 192,
-      "triangles": 288
+      "vertices": 128,
+      "triangles": 192
+    },
+    {
+      "name": "INT_RearBench",
+      "role": "rear_bench",
+      "material_slot": "Seat",
+      "parent": "ROOT_Body",
+      "vertices": 77,
+      "triangles": 150
     },
     {
       "name": "INT_SeatFrames",
       "role": "seat_frames",
       "material_slot": "Metal",
       "parent": "ROOT_Body",
-      "vertices": 288,
-      "triangles": 480
+      "vertices": 192,
+      "triangles": 320
     },
     {
       "name": "INT_SteeringColumn",
@@ -366,8 +375,8 @@
       "role": "steering_wheel",
       "material_slot": "Trim",
       "parent": "PIVOT_SteeringWheel",
-      "vertices": 100,
-      "triangles": 184
+      "vertices": 308,
+      "triangles": 600
     },
     {
       "name": "LGT_CabinLampBulbs",
@@ -485,7 +494,7 @@
       "parent": "ROOT_Body",
       "local_position": [
         0.66,
-        -1.82,
+        -1.65,
         1.08
       ],
       "local_rotation_degrees": [
@@ -519,7 +528,7 @@
       "parent": "ROOT_Body",
       "local_position": [
         0.66,
-        0.18,
+        0.04,
         1.08
       ],
       "local_rotation_degrees": [
@@ -536,7 +545,7 @@
       "parent": "ROOT_Body",
       "local_position": [
         0.66,
-        1.18,
+        1.8,
         1.08
       ],
       "local_rotation_degrees": [
@@ -553,7 +562,7 @@
       "parent": "ROOT_Body",
       "local_position": [
         0.66,
-        2.18,
+        2.56,
         1.08
       ],
       "local_rotation_degrees": [
@@ -569,8 +578,8 @@
       "role": "passenger_seat_anchor",
       "parent": "ROOT_Body",
       "local_position": [
-        0.66,
-        3.12,
+        0.34,
+        3.44,
         1.08
       ],
       "local_rotation_degrees": [
@@ -637,42 +646,8 @@
       "role": "passenger_seat_anchor",
       "parent": "ROOT_Body",
       "local_position": [
-        -0.66,
-        3.24,
-        1.08
-      ],
-      "local_rotation_degrees": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "runtime_axis_local": "",
-      "travel_m": 0.0
-    },
-    {
-      "name": "ANCHOR_PassengerSeat_11",
-      "role": "passenger_seat_anchor",
-      "parent": "ROOT_Body",
-      "local_position": [
-        -0.22,
-        3.48,
-        1.08
-      ],
-      "local_rotation_degrees": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "runtime_axis_local": "",
-      "travel_m": 0.0
-    },
-    {
-      "name": "ANCHOR_PassengerSeat_12",
-      "role": "passenger_seat_anchor",
-      "parent": "ROOT_Body",
-      "local_position": [
-        0.22,
-        3.48,
+        -0.34,
+        3.44,
         1.08
       ],
       "local_rotation_degrees": [
@@ -701,18 +676,120 @@
       "travel_m": 0.0
     },
     {
-      "name": "ANCHOR_SteeringGrip.L",
-      "role": "left_steering_grip",
-      "parent": "PIVOT_SteeringWheel",
+      "name": "ANCHOR_StandingFloor_01",
+      "role": "standing_floor",
+      "parent": "ROOT_Body",
       "local_position": [
-        0.14,
-        -0.113137,
-        0.02
+        0.69,
+        -2.61,
+        0.67
       ],
       "local_rotation_degrees": [
         0.0,
         0.0,
-        -38.94244
+        0.0
+      ],
+      "runtime_axis_local": "",
+      "travel_m": 0.0
+    },
+    {
+      "name": "ANCHOR_StandingFloor_02",
+      "role": "standing_floor",
+      "parent": "ROOT_Body",
+      "local_position": [
+        -0.69,
+        -1.78,
+        0.67
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "",
+      "travel_m": 0.0
+    },
+    {
+      "name": "ANCHOR_StandingFloor_03",
+      "role": "standing_floor",
+      "parent": "ROOT_Body",
+      "local_position": [
+        0.69,
+        0.74,
+        0.67
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "",
+      "travel_m": 0.0
+    },
+    {
+      "name": "ANCHOR_StandingGrip_01",
+      "role": "standing_grip",
+      "parent": "ROOT_Body",
+      "local_position": [
+        0.44,
+        -2.79,
+        2.094405
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "",
+      "travel_m": 0.0
+    },
+    {
+      "name": "ANCHOR_StandingGrip_02",
+      "role": "standing_grip",
+      "parent": "ROOT_Body",
+      "local_position": [
+        -0.94,
+        -1.96,
+        2.094405
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "",
+      "travel_m": 0.0
+    },
+    {
+      "name": "ANCHOR_StandingGrip_03",
+      "role": "standing_grip",
+      "parent": "ROOT_Body",
+      "local_position": [
+        0.44,
+        0.56,
+        2.094405
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "",
+      "travel_m": 0.0
+    },
+    {
+      "name": "ANCHOR_SteeringGrip.L",
+      "role": "left_steering_grip",
+      "parent": "PIVOT_SteeringWheel",
+      "local_position": [
+        0.18,
+        0.0,
+        0.0
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
       ],
       "runtime_axis_local": "",
       "travel_m": 0.0
@@ -722,14 +799,14 @@
       "role": "right_steering_grip",
       "parent": "PIVOT_SteeringWheel",
       "local_position": [
-        -0.14,
-        -0.113137,
-        0.02
+        -0.18,
+        0.0,
+        0.0
       ],
       "local_rotation_degrees": [
         0.0,
         0.0,
-        -141.057559
+        180.000005
       ],
       "runtime_axis_local": "",
       "travel_m": 0.0
@@ -739,9 +816,9 @@
       "role": "door_button",
       "parent": "ROOT_Body",
       "local_position": [
-        0.3,
-        -3.335,
-        1.5
+        0.35,
+        -3.59,
+        1.47
       ],
       "local_rotation_degrees": [
         0.0,
@@ -824,12 +901,12 @@
       "role": "steering_wheel",
       "parent": "ROOT_Body",
       "local_position": [
-        0.6,
-        -3.32,
+        0.68,
+        -3.6,
         1.57
       ],
       "local_rotation_degrees": [
-        -90.000003,
+        -65.000001,
         0.0,
         0.0
       ],

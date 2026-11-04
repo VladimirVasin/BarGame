@@ -196,7 +196,7 @@ namespace BarPromenade
             }
         }
 
-        public static void BuildHillsideShortcuts(Transform parent, CityHillsideAccessPlan access)
+        public static void BuildHillsideShortcuts(Transform parent, CityHillsideAccessPlan access, Rect? retained = null)
         {
             if (access.Shortcuts.Count == 0) return;
             FootProbeSurface.EnsureRuntimePolicy();
@@ -206,6 +206,7 @@ namespace BarPromenade
             GameObject rail = Resources.Load<GameObject>(ResourceFolder + "TerraceRail");
             foreach (CityHillsideShortcut stair in access.AllStairs)
             {
+                if (retained.HasValue && !retained.Value.Overlaps(stair.Bounds)) continue;
                 var root = new GameObject("Hillside stairs " + stair.Id);
                 root.transform.SetParent(parent, false);
                 FootstepGround.Stamp(root, FootstepGroundKind.Stone);

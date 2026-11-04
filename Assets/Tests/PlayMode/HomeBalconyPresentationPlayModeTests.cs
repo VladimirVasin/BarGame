@@ -172,15 +172,10 @@ namespace BarPromenade.Tests.PlayMode
                 ceiling.GetComponent<Collider>(),
                 Is.Null);
 
-            Transform southReturn =
-                AssertRequiredObject(
-                    home.Room,
-                    "Home South Exterior Return Wall");
-            Assert.That(home.Room.Find("Home North Exterior Return Wall"), Is.Null,
-                "The optional north screen must not hide the city during the right orbit.");
-            AssertExteriorReturnSealsCorner(
-                southReturn,
-                home.Layout);
+            Transform southReturn = home.Room.Find("Home South Exterior Return Wall");
+            Assert.That(home.Room.Find("Home North Exterior Return Wall"), Is.Null);
+            Assert.That(southReturn, Is.Not.Null, "The right-hand concrete return frames the balcony view.");
+            AssertExteriorReturnSealsCorner(southReturn, home.Layout);
 
             AssertPhysicalSurface(
                 home.Balcony,
@@ -297,7 +292,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.ExteriorAtmosphere
                     .FogField.FogRenderer.enabled,
-                Is.True);
+                Is.EqualTo(!home.ExteriorContext.Layout.HasSummitHome));
             Assert.That(
                 home.ExteriorAtmosphere
                     .CityPostProcessVolume.weight,
@@ -312,7 +307,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 RenderSettings.fogDensity,
                 Is.EqualTo(
-                        RuntimeSceneSetup.CityFogDensity)
+                        home.ExteriorContext.Layout.HasSummitHome ? HomeSummitOutlook.FogDensity : RuntimeSceneSetup.CityFogDensity)
                     .Within(0.0001f));
             Assert.That(
                 RenderSettings.fogColor,
@@ -325,7 +320,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 camera.farClipPlane,
                 Is.EqualTo(
-                        RuntimeSceneSetup.CityFarClipPlane)
+                        home.ExteriorContext.Layout.HasSummitHome ? HomeSummitOutlook.FarPlane : RuntimeSceneSetup.CityFarClipPlane)
                     .Within(0.001f));
             AssertCityLighting(
                 homeSun,
@@ -415,7 +410,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.ExteriorAtmosphere
                     .FogField.FogRenderer.enabled,
-                Is.True);
+                Is.EqualTo(!home.ExteriorContext.Layout.HasSummitHome));
             Assert.That(
                 home.ExteriorAtmosphere
                     .CityPostProcessVolume.weight,

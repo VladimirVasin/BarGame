@@ -211,7 +211,7 @@ namespace BarPromenade
                     var candidates = CreateStopCandidates(layout, vehicle, target, nodes, links, entrances, true);
                     var c = candidates.Find(candidate => graph.Contains(candidate.Source));
                     if (c == null || selected.Exists(s => s.Source.RoadEdge == c.Source.RoadEdge ||
-                        target.Kind != CityBusStopTargetKind.PlayerHome &&
+                        !IsResidentialFrontage(target.Kind) &&
                         XzDistance(s.ShelterPosition, c.ShelterPosition) < MinimumStopSpacing &&
                         DistrictWalkDistance(layout, s.Source.RoadEdge, s.ShelterPosition, c.Source.RoadEdge,
                             c.ShelterPosition) + c.ReferenceDistance <= MaximumStopWalkDistance)) continue;

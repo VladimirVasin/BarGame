@@ -147,9 +147,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 first.NearbyDecorations,
                 Is.EqualTo(second.NearbyDecorations));
-            Assert.That(
-                first.NearbyRoads,
-                Does.Contain(first.FrontageEdge));
+            Assert.That(first.FrontageEdge.HasValue, Is.False);
+            Assert.That(first.Layout.SummitHome.Lot, Is.SameAs(first.PlayerHome));
             Assert.That(
                 first.NearbyLots.Any(
                     lot => lot.IsPlayerHome),
@@ -231,20 +230,11 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(stopCollection, Is.Not.Null);
                 Assert.That(stopCollection.childCount, Is.EqualTo(1));
                 Transform localStop = stopCollection.GetChild(0);
-                // Clipped to the exterior half-space, like every other
-                // thing in this diorama: the stop that belongs to this home
-                // sits against the block's own footprint, and drawn at its
-                // raw converted position its shelter would stand inside the
-                // bedroom. `ClipStopToExterior` is the builder's own rule,
-                // asked here rather than restated.
-                Assert.That(
-                    Vector3.Distance(
-                        localStop.localPosition,
-                        HomeExteriorViewBuilder.ClipStopToExterior(
-                            PlayerHomeBalconyGeometry.ToHomeLocal(
-                                context.PlayerHome,
-                                stop.ShelterPosition))),
-                    Is.LessThan(0.001f));
+                Assert.That(context.HomeBusNumber, Is.EqualTo(3));
+                Assert.That(stop.SequenceIndex, Is.EqualTo(3));
+                Assert.That(exterior.Find("Summit street from home/Shared residential hillside"), Is.Not.Null);
+                Assert.That(Vector3.Distance(localStop.localPosition,
+                    PlayerHomeBalconyGeometry.ToHomeLocal(context.PlayerHome, stop.ShelterPosition)), Is.LessThan(.001f));
                 Assert.That(
                     localStop.localPosition.x,
                     Is.GreaterThanOrEqualTo(

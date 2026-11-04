@@ -16,6 +16,8 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.DefaultCityBlueprintId), CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
             var lines = CityDistrictBusPlanner.Create(layout);
             CollectionAssert.AreEqual(new[] { 1, 2, 3 }, lines.Select(line => line.Number));
+            var surfaces = CityStreetSurfacePlanner.Create(layout);
+            Assert.That(lines.Sum(line => line.Stops.Count), Is.EqualTo(20));
             foreach (var line in lines)
             {
                 var intervals = line.Stops.Select((stop, i) =>
@@ -46,7 +48,14 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(line.Stops.Select(s => s.Id).Distinct().Count(), Is.EqualTo(line.Stops.Count));
                 Assert.That(line.Stops.Select(s => s.DistanceAlongLoop), Is.Ordered);
                 foreach (var stop in line.Stops)
+                {
                     Assert.That(CityBusPlatformClearance.ForLayout(layout).Allows(stop), Is.True, stop.Id);
+                    Assert.That(surfaces.TryGetStopCrossing(stop.Id, out var zebra), Is.True, stop.Id);
+                    Assert.That(Vector3.ProjectOnPlane(stop.Position - zebra.Center, Vector3.up).magnitude,
+                        Is.LessThan(26.2f), stop.Id);
+                    Assert.That(zebra.Bounds.Overlaps(CityBusStopWorldBuilder.DescribeFurnitureFootprint(stop)), Is.False, stop.Id);
+                    AssertStopPaint(zebra, surfaces);
+                }
                 foreach (int index in line.OrderedLinkIndices)
                 {
                     var link = line.Links[index];
@@ -61,9 +70,53 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
             Assert.That(lines[2].Stops.Any(s => s.ShelterPosition.y > 39f), Is.True);
-            Assert.That(lines[2].Stops.Count(s => s.TargetId.StartsWith("west-terrace-")), Is.InRange(3, 4));
+            Assert.That(lines[2].Stops.Count(s => s.Id.Contains(":west-terrace-")), Is.InRange(3, 4));
             Assert.That(lines[2].Stops.Count(s => s.TargetId.StartsWith("east-terrace-")), Is.InRange(2, 3));
-            Assert.That(lines.SelectMany(line => line.Stops).Any(s => s.TargetKind == CityBusStopTargetKind.PlayerHome), Is.True);
+            var home = lines.SelectMany(line => line.Stops).Single(stop => stop.TargetKind == CityBusStopTargetKind.PlayerHome);
+            Assert.That(home, Is.SameAs(lines[2].Stops[3]));
+            Assert.That(home.TargetCell, Is.EqualTo(layout.PlayerHome.Cell));
+            Assert.That(home.TargetId, Is.EqualTo("player-home:" + layout.BlueprintId + ":" + home.TargetCell.x + ":" + home.TargetCell.y));
+            Assert.That(home.NameLocalizationKey, Is.EqualTo("bus.stop.default_coastal.home"));
+            Assert.That(Vector3.Distance(home.ShelterPosition, layout.PlayerHome.SidewalkArrivalPosition), Is.LessThan(55f));
+            var lower = lines[1].Stops[1];
+            Assert.That(lower.TargetKind, Is.EqualTo(CityBusStopTargetKind.ResidentialBlock));
+            Assert.That(lower.TargetCell, Is.EqualTo(layout.LowerResidentialLot.Cell));
+            Assert.That(lower.NameLocalizationKey, Is.EqualTo("bus.stop.default_coastal.residential_block"));
+        }
+
+        private static void AssertStopPaint(CityBusStopCrossing site, CityStreetSurfacePlan surfaces)
+        {
+            var path = site.WalkPath;
+            foreach (Vector3 kerb in new[] { path[0], path[3] })
+            {
+                Assert.That(surfaces.SupportPlan.TrySampleTop(new Vector2(kerb.x, kerb.z),
+                    FootstepGroundKind.Stone, out float top), Is.True, site.Id);
+                Assert.That(kerb.y, Is.EqualTo(top).Within(.015f), site.Id);
+            }
+            Vector3 across = Vector3.ProjectOnPlane(path[3] - path[0], Vector3.up).normalized;
+            float previous = float.NegativeInfinity;
+            Assert.That(site.Stripes, Has.Count.EqualTo(6), site.Id);
+            foreach (var stripe in site.Stripes)
+            {
+                float position = Vector3.Dot(stripe.Center - site.Center, across);
+                Assert.That(position, Is.GreaterThan(previous + stripe.Size.x), site.Id + " asphalt between stripes");
+                previous = position;
+                Vector3 longSide = Vector3.ProjectOnPlane(stripe.Rotation * Vector3.forward, Vector3.up).normalized;
+                Assert.That(Mathf.Abs(Vector3.Dot(longSide, across)), Is.LessThan(.02f), site.Id + " long edge follows traffic");
+                Assert.That(stripe.Size.z, Is.InRange(2.38f, 2.55f), site.Id);
+                Assert.That(stripe.Size.x, Is.InRange(.45f, .62f), site.Id);
+                foreach (int x in new[] { -1, 1 })
+                foreach (int z in new[] { -1, 1 })
+                {
+                    Vector3 corner = stripe.Center + stripe.Rotation * new Vector3(
+                        stripe.Size.x * .5f * x, .5f * stripe.Size.y, stripe.Size.z * .5f * z);
+                    Assert.That(surfaces.SupportPlan.TrySampleTop(new Vector2(corner.x, corner.z),
+                        FootstepGroundKind.Concrete, out float asphalt), Is.True, site.Id);
+                    Assert.That(corner.y - asphalt, Is.InRange(-.003f, .035f), site.Id + " paint follows road");
+                }
+            }
+            Assert.That(Vector3.Dot(site.Stripes[0].Center - site.Center, across), Is.LessThan(-2f), site.Id);
+            Assert.That(previous, Is.GreaterThan(2f), site.Id);
         }
 
         [Test]
@@ -232,11 +285,11 @@ namespace BarPromenade.Tests.EditMode
                 Is.False);
             foreach (CityBusStopDescriptor stop in plan.Stops)
             {
-                if (stop.TargetKind == CityBusStopTargetKind.PlayerHome)
+                if (stop.TargetKind == CityBusStopTargetKind.ResidentialBlock)
                 {
                     Assert.That(
                         layout.TryGetFrontageEdge(
-                            layout.PlayerHome,
+                            layout.LowerResidentialLot,
                             out RoadEdge homeFrontage),
                         Is.True);
                     Assert.That(
@@ -550,8 +603,10 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(layout.DistrictPointsOfInterest.Count));
             Assert.That(
                 plan.Stops.Count(stop => stop.TargetKind ==
-                    CityBusStopTargetKind.PlayerHome),
+                    CityBusStopTargetKind.ResidentialBlock),
                 Is.EqualTo(1));
+            Assert.That(CityDistrictBusPlanner.Create(layout)[2].Stops.Count(stop => stop.TargetKind ==
+                CityBusStopTargetKind.PlayerHome && stop.TargetCell == layout.PlayerHome.Cell), Is.EqualTo(1));
             // Coverage stop counts are bounded, not pinned: stops that
             // land closer than the minimum spacing to a neighbour are
             // coalesced into it, and the coverage tests prove the
@@ -735,13 +790,13 @@ namespace BarPromenade.Tests.EditMode
                     stop.Id);
             }
 
-            BuildingLot home = layout.PlayerHome;
+            BuildingLot home = layout.LowerResidentialLot;
             CityBusStopDescriptor homeStop = plan.Stops.Single(stop =>
-                stop.TargetKind == CityBusStopTargetKind.PlayerHome);
+                stop.TargetKind == CityBusStopTargetKind.ResidentialBlock);
             Assert.That(homeStop.TargetCell, Is.EqualTo(home.Cell));
             Assert.That(
                 homeStop.NameLocalizationKey,
-                Is.EqualTo("bus.stop.default_coastal.home"));
+                Is.EqualTo("bus.stop.default_coastal.residential_block"));
             Assert.That(
                 layout.TryGetFrontageEdge(home, out RoadEdge homeFrontage),
                 Is.True);
@@ -823,7 +878,7 @@ namespace BarPromenade.Tests.EditMode
         /// twice, once per road bridge.
         /// </summary>
         [Test]
-        public void ServedOrder_IsABankContiguousLoopStartingAtHome()
+        public void ServedOrder_IsABankContiguousLoopStartingAtTheLowerResidentialBlock()
         {
             CreateContext(
                 out CityLayout layout,
@@ -833,9 +888,8 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 plan.Stops[0].TargetKind,
-                Is.EqualTo(CityBusStopTargetKind.PlayerHome),
-                "A closed loop has no last stop, so numbering starts at the " +
-                "one place the hero can name.");
+                Is.EqualTo(CityBusStopTargetKind.ResidentialBlock),
+                "The grid service keeps its established first residential platform.");
 
             // Stops follow the loop, and the loop may cross the river only
             // over the two road bridges, each exactly once — so the served

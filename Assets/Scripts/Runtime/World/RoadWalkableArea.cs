@@ -706,11 +706,11 @@ namespace BarPromenade
             area.ExcludePolygons(quarter.ExposedRavinePolygons);
             foreach (var link in quarter.Links)
                 area.AddPolygons(new[] { CityRoadPolygon.Rectangle(link.Bounds) });
-            var sharedCourt = CityHillsideAccessPlan.ForLayout(layout).SharedCourt;
-            if (sharedCourt != null)
-                foreach (Rect piece in sharedCourt.WalkableBounds) area.Add(piece);
-            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).Shortcuts)
-                area.Add(stair.Bounds);
+            var hillsideAccess = CityHillsideAccessPlan.ForLayout(layout);
+            foreach (var stair in hillsideAccess.Shortcuts) area.Add(stair.Bounds);
+            foreach (var stair in hillsideAccess.Transfers) area.Add(stair.Bounds);
+            if (hillsideAccess.SharedCourt != null)
+                foreach (Rect piece in hillsideAccess.SharedCourt.WalkableBounds) area.Add(piece);
             foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
             {
                 // Both halves of the entrance share their full-width seam. The

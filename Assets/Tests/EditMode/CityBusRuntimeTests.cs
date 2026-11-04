@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
@@ -8,6 +9,150 @@ namespace BarPromenade.Tests.EditMode
     public sealed class CityBusRuntimeTests
     {
         private const float VisibleEncounterDistance = 24f;
+
+        [Test]
+        public void TrafficLog_IdentifiesFirstBlockedBusAndFollowingVehicle()
+        {
+            var plan = CreateDirectedApproachPlan(80f, true, farZ: 160f, routeId: "test:route-02");
+            var lead = RuntimeFixture.Create("Lead bus", plan);
+            var follower = RuntimeFixture.Create("Following bus", plan);
+            string path = Path.Combine(Path.GetTempPath(), "bus-queue-" + System.Guid.NewGuid().ToString("N") + ".log");
+            try
+            {
+                GameLog.Initialize(new GameLogSettings(GameLogProfile.Verbose, path), new SystemGameLogClock(), "queue-test", false);
+                // The higher fleet index encounters the obstruction first.
+                CityBusDirector.ConnectPair(new[] { follower.Director, lead.Director }, 0);
+                lead.Actor.ApplyDetachedPhase(new CityBusTimetable.Sample(0, 28f, 0f, -1, 0f, -1), 0);
+                follower.Actor.ApplyDetachedPhase(new CityBusTimetable.Sample(0, 18f, 0f, -1, 0f, -1), 0);
+                Vector3 leadPosition = lead.Actor.Position;
+                Vector3 followerPosition = follower.Actor.Position;
+                lead.Player.position = follower.Player.position = leadPosition + Vector3.forward * 5f;
+                lead.Director.Advance(.2f);
+                for (int i = 0; i < 22; i++)
+                {
+                    lead.Director.Advance(.2f);
+                    follower.Director.Advance(.2f);
+                }
+                Assert.That(lead.Actor.IsYielding && follower.Actor.IsYielding, Is.True);
+
+                // Walking out of range clears the front bus and returns both to the background simulation.
+                lead.Player.position = follower.Player.position = Vector3.right * 1000f;
+                for (int i = 0; i < 40; i++)
+                {
+                    lead.Director.Advance(.2f);
+                    follower.Director.Advance(.2f);
+                }
+                Assert.That(lead.Actor.IsSpawned || follower.Actor.IsSpawned, Is.False);
+                Assert.That(follower.Actor.Position.z, Is.GreaterThan(followerPosition.z + 2f));
+
+                GameLog.Shutdown("queue-test", false);
+                var records = File.ReadAllLines(path).Select(JsonUtility.FromJson<BusLogRecord>)
+                    .Where(r => r.category == "bus").ToArray();
+                var starts = records.Where(r => r.@event == "yield_started").Select(r => r.data).ToArray();
+                var warnings = records.Where(r => r.@event == "approach_stalled").Select(r => r.data).ToArray();
+                var releases = records.Where(r => r.@event == "approach_released").Select(r => r.data).ToArray();
+                Assert.That(starts.Select(r => r.vehicle_index), Is.EqualTo(new[] { 1, 0 }));
+                Assert.That(warnings.Select(r => r.vehicle_index), Is.EqualTo(new[] { 1, 0 }));
+                Assert.That(releases.Select(r => r.vehicle_index), Is.EqualTo(new[] { 1, 0 }));
+                for (int i = 0; i < 2; i++)
+                {
+                    Assert.That(warnings[i].route_id, Is.EqualTo(plan.RouteId));
+                    Assert.That(warnings[i].link_id, Is.EqualTo(plan.Links[0].Id));
+                    Assert.That(warnings[i].z, Is.EqualTo(i == 0 ? leadPosition.z : followerPosition.z).Within(.01f));
+                    Assert.That(warnings[i].blocker_kind, Is.EqualTo(i == 0 ? "player" : "bus_body"));
+                    Assert.That(warnings[i].blocker_index, Is.EqualTo(i == 0 ? -1 : starts[0].vehicle_index));
+                    Assert.That(warnings[i].blocker_id, Is.EqualTo(i == 0 ? "player" : starts[0].route_id));
+                    Assert.That(warnings[i].blocker_stall_id, Is.EqualTo(i == 0 ? 0 : starts[0].stall_id));
+                    Assert.That(warnings[i].route_number, Is.EqualTo(2));
+                    Assert.That(warnings[i].bus_on_line, Is.EqualTo(i == 0 ? 2 : 1));
+                    Assert.That(warnings[i].nearest_stop, Does.StartWith("02-"));
+                    Assert.That(warnings[i].stall_id, Is.GreaterThan(0));
+                    Assert.That(starts[i].stall_id, Is.EqualTo(warnings[i].stall_id));
+                    Assert.That(releases[i].stall_id, Is.EqualTo(starts[i].stall_id));
+                }
+            }
+            finally
+            {
+                GameLog.Shutdown("queue-test cleanup", false);
+                File.Delete(path);
+                follower.Destroy();
+                lead.Destroy();
+            }
+        }
+
+        [System.Serializable]
+        private sealed class BusLogRecord
+        {
+            public string category = "", @event = "";
+            public BusLogData data = null;
+        }
+
+        [System.Serializable]
+        private sealed class BusLogData
+        {
+            public string route_id = "", link_id = "", blocker_kind = "", blocker_id = "";
+            public int vehicle_index = -1, blocker_index = -1, route_number = 0, bus_on_line = 0;
+            public long stall_id = 0, blocker_stall_id = 0;
+            public string nearest_stop = "";
+            public float z = 0f;
+        }
+
+        [Test]
+        public void PairedFleet_FarServiceAndCheckpointKeepLapAndStopOrdinal()
+        {
+            var plan = CreateDirectedApproachPlan(80.4f, true, firstLinkRise: 4f);
+            var first = RuntimeFixture.Create("First bus", plan);
+            var second = RuntimeFixture.Create("Second bus", plan);
+            try
+            {
+                var bus = first.Director;
+                CityBusDirector.ConnectPair(new[] { bus, second.Director }, 0);
+                Assert.That(second.Director.VehicleIndexOnLine, Is.EqualTo(1));
+                Assert.That(Mathf.Repeat(second.Director.DistanceAlongLoop - bus.DistanceAlongLoop, plan.LoopLength),
+                    Is.EqualTo(plan.LoopLength * .5f).Within(.002f));
+
+                var before = bus.CapturePhase();
+                double until = bus.SecondsUntilNextService;
+                Assert.That(until, Is.GreaterThan(0d));
+                int events = 0;
+                first.Actor.ServiceStarted += stop =>
+                {
+                    Assert.That(first.Actor.CurrentStopIndex, Is.EqualTo(stop));
+                    Assert.That(first.Actor.IsSpawned, Is.False);
+                    events++;
+                };
+
+                bus.AdvanceDetached(until + 2.5d);
+                Assert.That(events, Is.EqualTo(1));
+                Assert.That(first.Actor.DwellElapsed, Is.EqualTo(2.5f).Within(.0001f));
+                Assert.That(first.Actor.CurrentStopIndex, Is.EqualTo(0));
+                var during = bus.CapturePhase();
+                double toNextLap = bus.SecondsUntilNextService;
+                bus.RestorePhase(before);
+                Assert.That(first.Actor.ServiceOrdinal, Is.Zero);
+                Assert.That(bus.AdvanceToNextService(), Is.EqualTo(0));
+                Assert.That(first.Actor.DwellElapsed, Is.Zero);
+                Assert.That(first.Actor.ServiceOrdinal, Is.EqualTo(1));
+                Assert.That(events, Is.EqualTo(1), "Catch-up changes the berth without replaying live transfers.");
+
+                double lap = bus.SecondsUntilNextService;
+                bus.AdvanceDetached(1000d * lap + 1.5d, false);
+                Assert.That(first.Actor.ServiceOrdinal, Is.EqualTo(1001));
+                Assert.That(first.Actor.DwellElapsed, Is.EqualTo(1.5f).Within(.001f));
+                bus.RestorePhase(during);
+                Assert.That(bus.SecondsUntilNextService, Is.EqualTo(toNextLap).Within(.00001d));
+                Assert.That(first.Actor.DwellElapsed, Is.EqualTo(2.5f).Within(.0001f));
+                first.Player.position = first.Actor.Position + Vector3.right * 10f;
+                bus.Advance(0f);
+                Assert.That(first.Actor.IsSpawned && first.Actor.DoorsFullyOpen, Is.True);
+                Assert.That(events, Is.EqualTo(1), "Revealing a berth cannot serve the same queue twice.");
+            }
+            finally
+            {
+                first.Destroy();
+                second.Destroy();
+            }
+        }
 
         [Test]
         public void SamePlanAndAdvanceSequence_RepeatsBusLifecycle()
@@ -972,8 +1117,7 @@ namespace BarPromenade.Tests.EditMode
                     Is.True);
                 Assert.That(heroSeat, Is.EqualTo(CityBusActor.PlayerSeatIndex));
 
-                // Ambient passengers always leave one place for the hero, so
-                // the cabin never carries more than three.
+                // Seat 07 stays available even with every NPC place occupied.
                 var ambient = new List<object>();
                 for (int index = 0;
                      index < CityBusActor.CabinCapacity + 1;
@@ -1113,17 +1257,35 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(CityBusActor.CabinCapacity));
                 Assert.That(fixture.Actor.HasPlayerPassenger, Is.True);
 
-                // Seats stay distinct, so nobody is ever seated on anybody.
-                var seats = new HashSet<int> { heroSeat };
-                for (int index = 0; index < ambient.Count; index++)
+                var places = new HashSet<int> { heroSeat };
+                Assert.That(ambient.Count, Is.EqualTo(12));
+                Assert.That(places.Count + ambient.Count, Is.EqualTo(13));
+                for (int slot = 0; slot < ambient.Count; slot++)
                 {
-                    Assert.That(
-                        fixture.Actor.TryGetOccupantSeatIndex(
-                            ambient[index],
-                            out int seat),
-                        Is.True);
-                    Assert.That(seats.Add(seat), Is.True);
+                    Assert.That(fixture.Actor.TryGetOccupantPlaceIndex(ambient[slot], out int place), Is.True);
+                    Assert.That(places.Add(place), Is.True);
+                    Assert.That(place, Is.EqualTo(CityBusActor.NpcPlaceIndices[slot]));
+                    Assert.That(CityBusActor.IsStandingPlace(place), Is.EqualTo(slot >= 9));
+                    Assert.That(fixture.Actor.TryGetOccupantSeatIndex(ambient[slot], out _), Is.EqualTo(slot < 9));
                 }
+
+                // Handoff from an animated walker to its cabin-only presentation
+                // keeps the same station, even when a seat becomes available.
+                int last = ambient.Count - 1;
+                int station = CityBusActor.NpcPlaceIndices[last];
+                object cabinView = new object();
+                Assert.That(fixture.Actor.TransferNpcPlace(ambient[last], ambient[0], station), Is.False);
+                Assert.That(fixture.Actor.TransferNpcPlace(hero, cabinView, heroSeat), Is.False);
+                Assert.That(fixture.Actor.TransferNpcPlace(ambient[last], cabinView, station - 1), Is.False);
+                Assert.That(fixture.Actor.TransferNpcPlace(ambient[last], cabinView, station), Is.True);
+                Assert.That(fixture.Actor.IsOccupant(ambient[last]), Is.False);
+                ambient[last] = cabinView;
+                Assert.That(fixture.Actor.ReleasePassenger(ambient[0]), Is.True);
+                Assert.That(fixture.Actor.TryAttachNpcPassenger(ambient[last], out int retained), Is.True);
+                Assert.That(retained, Is.EqualTo(station));
+                ambient[0] = new object();
+                Assert.That(fixture.Actor.TryAttachNpcPassenger(ambient[0], out int firstSeat), Is.True);
+                Assert.That(firstSeat, Is.EqualTo(CityBusActor.NpcPlaceIndices[0]));
 
                 for (int index = 0; index < ambient.Count; index++)
                 {
@@ -1942,7 +2104,8 @@ namespace BarPromenade.Tests.EditMode
             float farZ = 100.4f,
             bool markEveryLinkAsJunction = false,
             bool placeStopAtSpawnBand = false,
-            float firstLinkRise = 0f)
+            float firstLinkRise = 0f,
+            string routeId = "")
         {
             Vector3 anchor = new Vector3(0f, 0.08f, anchorZ);
             Vector3 farNorth = new Vector3(
@@ -2051,6 +2214,9 @@ namespace BarPromenade.Tests.EditMode
                 11,
                 17,
                 0x42555332u,
+                routeId,
+                Enumerable.Range(0, links.Count).ToArray(),
+                links.Sum(link => link.Length),
                 1.5f,
                 CityBusDesignVehicle.Default,
                 nodes,

@@ -265,6 +265,10 @@ namespace BarPromenade.Editor
                 }
             }
 
+            var grip = prefab.GetComponent<NpcHandPose>();
+            if (grip == null || grip.Hands.Count != 2 || grip.ShapeName != manifest.hand_grip.shape ||
+                Mathf.Abs(grip.CylinderRadius - manifest.hand_grip.tube_radius_m) > .0001f)
+                throw new InvalidOperationException("Driver wheel-grip bindings differ from the imported hand geometry.");
             ValidateEyeBindings(registry.RendererBindings);
             if (registry.DetailAtlas != OrdinaryCharacterDetailAtlas.LoadOrThrow())
             {
@@ -391,7 +395,7 @@ namespace BarPromenade.Editor
             if (Mathf.Abs(manifest.height_m - ExpectedHeight) > 0.0001f ||
                 manifest.mesh_count != manifest.parts.Length ||
                 manifest.mesh_count < 24 ||
-                manifest.mesh_count > 48 ||
+                manifest.mesh_count > 56 ||
                 manifest.bones.Length != 31 ||
                 manifest.triangle_count < MinimumTriangleCount ||
                 manifest.triangle_count > MaximumTriangleCount)
@@ -425,6 +429,10 @@ namespace BarPromenade.Editor
                     "City bus driver manifest lacks deterministic source " +
                     "metadata.");
             }
+
+            if (manifest.hand_grip == null || manifest.hand_grip.shape != "CylindricalGrip" ||
+                Mathf.Abs(manifest.hand_grip.tube_radius_m - .022f) > .0001f)
+                throw new InvalidOperationException("The driver's authored grip must wrap the 22 mm wheel tube.");
 
             HashSet<string> partNames =
                 new HashSet<string>(StringComparer.Ordinal);
@@ -616,12 +624,27 @@ namespace BarPromenade.Editor
                 driverTransforms,
                 "root",
                 "driver");
-            if (boneRoot.GetComponentsInChildren<Transform>(true).Length !=
-                manifest.bones.Length)
+            int markers = 0;
+            foreach (string side in new[] { "L", "R" })
             {
-                throw new InvalidOperationException(
-                    "Driver armature has added or missing Generic bones.");
+                Transform hand = driverTransforms["hand." + side];
+                foreach (string label in new[] { "GripCentre", "GripAxis", "GripPalm", "ThumbRoot", "ThumbTip" }) Check(label);
+                for (int finger = 0; finger < 4; finger++)
+                {
+                    Check("Finger" + finger + "Root");
+                    Check("Finger" + finger + "Tip");
+                }
+                if (side == "R") Check("IndexOpenTip");
+                void Check(string label)
+                {
+                    Transform marker = RequireTransform(driverTransforms, "ANCHOR_Driver" + label + "." + side, "driver grip");
+                    if (marker.parent != hand || marker.childCount != 0)
+                        throw new InvalidOperationException("Driver grip marker must be a passive leaf on its hand: " + marker.name);
+                    markers++;
+                }
             }
+            if (boneRoot.GetComponentsInChildren<Transform>(true).Length != manifest.bones.Length + markers)
+                throw new InvalidOperationException("Driver armature has an unknown bone or contact marker.");
 
             Renderer[] renderers =
                 model.GetComponentsInChildren<Renderer>(true);
@@ -811,6 +834,18 @@ namespace BarPromenade.Editor
                     manifest.build_signature,
                     OrdinaryCharacterDetailAtlas.LoadOrThrow());
 
+                var grip = new NpcHandPose.HandBinding[2];
+                for (int side = 0; side < 2; side++)
+                {
+                    string suffix = side == 0 ? ".L" : ".R";
+                    var parts = new[] { "GEO_Hand", "GEO_HandFinger0", "GEO_HandFinger1",
+                        "GEO_HandFinger2", "GEO_HandFinger3", "GEO_Thumb" };
+                    grip[side] = new NpcHandPose.HandBinding(side == 0, Joint("hand"), Joint("SOCKET_Grip"),
+                        Joint("ANCHOR_DriverGripCentre"), Joint("ANCHOR_DriverGripAxis"), Joint("ANCHOR_DriverGripPalm"),
+                        parts.Select(name => renderersByName[name + suffix] as SkinnedMeshRenderer).ToArray());
+                    Transform Joint(string prefix) => RequireTransform(transformsByName, prefix + suffix, "driver hand");
+                }
+                prefabRoot.AddComponent<NpcHandPose>().Configure(grip, manifest.hand_grip.shape, manifest.hand_grip.tube_radius_m);
                 CharacterJointDeformation.Configure(prefabRoot);
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
@@ -1111,9 +1146,17 @@ namespace BarPromenade.Editor
             public string build_signature;
             public string head_design;
             public string eye_design;
+            public CityBusDriverManifestHandGrip hand_grip;
             public CityBusDriverManifestBone[] bones;
             public CityBusDriverManifestPart[] parts;
             public OrdinaryCharacterDetailAtlas.Binding[] texture_bindings;
+        }
+
+        [Serializable]
+        private sealed class CityBusDriverManifestHandGrip
+        {
+            public string shape;
+            public float tube_radius_m;
         }
 
         [Serializable]

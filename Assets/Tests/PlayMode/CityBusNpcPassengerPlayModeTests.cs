@@ -17,7 +17,7 @@ namespace BarPromenade.Tests.PlayMode
     /// planners, the occupancy rules and the asset contracts passing, because
     /// nothing walked a passenger from the pavement into a seat and back out.
     /// </summary>
-    public sealed class CityBusNpcPassengerPlayModeTests
+    public sealed partial class CityBusNpcPassengerPlayModeTests
     {
         private const float Step = 0.05f;
 
@@ -31,6 +31,435 @@ namespace BarPromenade.Tests.PlayMode
         private const float BoardSeconds = 90f;
         private const float AlightSeconds = 200f;
         private const int FrameCap = 40000;
+
+        [UnityTest]
+        public IEnumerator FullCabin_StandingRidersGripTheMovingBusAndLeaveThroughBothDoors()
+        {
+            var root = new GameObject("Full production midibus");
+            var people = new List<CityPedestrianActor>();
+            var seatedFailures = new List<string>();
+            var places = CityBusActor.NpcPlaceIndices;
+            var road = new AlwaysWalkableArea();
+            try
+            {
+                var registry = CityBusResources.Instantiate(root.transform);
+                var view = registry.GetComponent<CityBusPresentation>() ?? registry.gameObject.AddComponent<CityBusPresentation>();
+                view.Initialize(registry);
+                var bus = new GameObject("Fleet service").AddComponent<CityBusActor>();
+                bus.transform.SetParent(root.transform, false);
+                bus.Initialize(registry.LocalBounds, registry.Dimensions);
+                var route = CreateTwoStopRoute();
+                bus.PrepareSpawn(route, route.SpawnAnchors[0], 71);
+                bus.BindPresentation(view);
+                var driver = CityBusDriverResources.Instantiate(root.transform);
+                view.AttachDriver(driver);
+                AdvanceActorUntil(bus, () => bus.DoorsFullyOpen);
+                var donor = CityPedestrianResources.LoadStreetClipDonor();
+                var byHeight = Enumerable.Range(0, DefaultNpcPopulation.PedestrianCount)
+                    .Select(DefaultNpcPopulation.PedestrianId).OrderBy(id => DefaultNpcPopulation.GetAssignment(id).HeightCm).ToArray();
+                var standees = new[] { byHeight[0], byHeight[byHeight.Length / 2], byHeight[byHeight.Length - 1] };
+                // Include the two short proportions that used to drive the
+                // knees downward into the cushion, then cover the height range.
+                var shortRiders = new[] { DefaultNpcPopulation.PedestrianId(52), DefaultNpcPopulation.PedestrianId(58) };
+                var remainder = byHeight.Except(standees).Except(shortRiders).ToArray();
+                int otherSeats = CityBusActor.SeatCount - 1 - shortRiders.Length;
+                var identities = shortRiders.Concat(Enumerable.Range(0, otherSeats).Select(
+                    i => remainder[i * (remainder.Length - 1) / (otherSeats - 1)])).Concat(standees).ToArray();
+                for (int slot = 0; slot < places.Count; slot++)
+                {
+                    int place = places[slot];
+                    var door = slot % 2 == 0 ? CityBusPassengerDoor.Front : CityBusPassengerDoor.Rear;
+                    Assert.That(CityBusRidePlan.TryCreate(bus, road, Vector3.up * .835f, .35f, door,
+                        null, place, 0f, false, out var boarding), Is.True, "place " + place);
+                    var walker = new GameObject("Resident " + slot).AddComponent<CityPedestrianActor>();
+                    walker.transform.SetParent(root.transform, false);
+                    people.Add(walker);
+                    Vector3 dock = boarding.EntryPose.RootPosition;
+                    var graph = CreatePedestrianPlan(dock, bus.TravelDirection);
+                    walker.Initialize(road, graph.AgentRadius);
+                    walker.PrepareSpawn(graph, new CityPedestrianSpawnAnchor("boarding", dock, 0, 1),
+                        0, .82f, 1f, 0f, 0, (uint)(slot + 1));
+                    string id = identities[slot];
+                    var model = CityPedestrianDefaultNpcBody.Create(root.transform, id, donor);
+                    var body = model.gameObject.AddComponent<CityPedestrianPresentation>();
+                    body.Initialize(model);
+                    model.Animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                    walker.BindPresentation(body);
+                    Assert.That(bus.TryAttachNpcPassengerAtPlace(walker, place), Is.True);
+                    if (CityBusActor.IsStandingPlace(place))
+                    {
+                        Assert.That(walker.BeginStopApproach(0, dock, bus.TravelDirection, new[] {0f, 6f, 12f}), Is.True);
+                        walker.Advance(Step);
+                        Assert.That(walker.MotionState, Is.EqualTo(CityPedestrianMotionState.WaitingAtStop));
+                        Assert.That(bus.TryAcquireServiceHold(walker), Is.True);
+                        Vector3 floor = registry.StandingFloorAnchors[place - CityBusActor.SeatCount].position;
+                        CityBusNpcPassengerController.GetAislePath(bus, boarding.DoorAnchor.position, floor, out var aisleDoor, out var aislePlace);
+                        Assert.That(walker.BeginTransfer(true, boarding.DoorAnchor.position, floor, bus.Rotation, aisleDoor, aislePlace), Is.True);
+                        FinishTransfer(walker);
+                        Assert.That(bus.ReleaseServiceHold(walker), Is.True);
+                        Assert.That(CityBusNpcPassengerController.BeginPassengerRide(walker, bus, place, false), Is.True, id);
+                    }
+                    else
+                    {
+                        walker.transform.SetPositionAndRotation(bus.transform.TransformPoint(boarding.RideRootLocalPosition), bus.Rotation);
+                        Assert.That(CityBusNpcPassengerController.BeginPassengerRide(walker, bus, place, true), Is.True, id);
+                    }
+                }
+                var hero = new object();
+                Assert.That(bus.TryAttachPassenger(hero), Is.True);
+                Assert.That(bus.OccupantCount, Is.EqualTo(CityBusActor.CabinCapacity));
+                Assert.That(bus.TryAttachNpcPassenger(new object(), out _), Is.False);
+                if (System.Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_FULL_BUS") == "1")
+                    CaptureFullCabin(root, bus, registry);
+                foreach (var door in new[] { CityBusPassengerDoor.Front, CityBusPassengerDoor.Rear })
+                {
+                    Assert.That(CityBusRidePlan.TryCreate(bus, road, Vector3.up * .835f, .32f, door, out var heroPlan), Is.True);
+                    CityBusRidePlayModeTests.AssertHeroPathClearsCabin(heroPlan, registry, .32f);
+                }
+                for (int step = 0; step < 4; step++)
+                {
+                    bus.transform.SetPositionAndRotation(new Vector3(12 + step, 3, 9), Quaternion.Euler(step * 2, 80 + step * 9, step));
+                    for (int slot = 0; slot < places.Count; slot++)
+                    {
+                        int place = places[slot];
+                        Assert.That(CityBusNpcPassengerController.TryGetCabinRootPose(bus, place, out var local, out var rotation), Is.True);
+                        var walker = people[slot];
+                        walker.SetRidePose(bus.transform.TransformPoint(local), bus.Rotation * rotation);
+                        walker.Presentation.Advance(.11f, false);
+                        if (CityBusActor.IsStandingPlace(place))
+                            CheckStandingContacts(walker.Presentation, registry, view.CabinUp, place - CityBusActor.SeatCount);
+                        else
+                        {
+                            try { CheckSeatedResident(walker.Presentation, registry.PassengerSeatAnchors[place],
+                                registry.FrontDoorEntryAnchor.position, view.CabinUp, bus.TravelDirection); }
+                            catch (AssertionException failure) { seatedFailures.Add($"place {place} sample {step}: " + failure.Message); }
+                        }
+                    }
+                }
+                // Return to the physical stop before opening the other doors.
+                AdvanceActorUntil(bus, () => bus.ServiceOrdinal > 1 && bus.DoorsFullyOpen);
+                for (int slot = places.Count - 3; slot < places.Count; slot++)
+                {
+                    int place = places[slot];
+                    var walker = people[slot];
+                    var door = slot % 2 == 0 ? CityBusPassengerDoor.Rear : CityBusPassengerDoor.Front;
+                    Assert.That(CityBusRidePlan.TryCreate(bus, road, Vector3.up * .835f, .35f, door, null,
+                        place, 0f, false, out var exit), Is.True);
+                    walker.SetRidePose(bus.transform.TransformPoint(exit.RideRootLocalPosition), bus.Rotation);
+                    CityBusNpcPassengerController.GetAislePath(bus, exit.DoorAnchor.position, walker.Position, out var aisleDoor, out var aislePlace);
+                    Assert.That(walker.BeginTransfer(false, aislePlace, exit.ExitPose.RootPosition, exit.ExitPose.RootRotation,
+                        aisleDoor, exit.DoorAnchor.position), Is.True);
+                    FinishTransfer(walker);
+                    Assert.That(walker.Presentation.IsStandingInBus, Is.False);
+                    Assert.That(walker.Presentation.GetComponentInChildren<NpcHandPose>().RightGripWeight, Is.Zero);
+                    Assert.That(Vector3.Distance(walker.Position, exit.ExitPose.RootPosition), Is.LessThan(.01f));
+                    Assert.That(bus.ReleasePassenger(walker), Is.True);
+                    walker.ResumeRoaming(0);
+                }
+                Assert.That(bus.OccupantCount, Is.EqualTo(CityBusActor.SeatCount));
+                Assert.That(seatedFailures, Is.Empty, string.Join("\n", seatedFailures));
+                yield return null;
+            }
+            finally { Object.DestroyImmediate(root); }
+
+            void FinishTransfer(CityPedestrianActor walker)
+            {
+                for (int i = 0; i < 360 && !walker.TransferCompleted; i++) walker.Advance(Step);
+                Assert.That(walker.TransferCompleted, Is.True, "Complete the physical doorway and aisle path");
+            }
+        }
+
+        private static void CheckSeatedResident(CityPedestrianPresentation body, Transform seat,
+            Vector3 floorPoint, Vector3 up, Vector3 forward)
+        {
+            forward = Vector3.ProjectOnPlane(forward, up).normalized;
+            Vector3 right = Vector3.Cross(up, forward);
+            var pelvis = body.Registry.PelvisAnchor;
+            string id = body.Registry.GetComponent<CityPedestrianDefaultNpcBody>().CharacterId;
+            var fingers = body.GetComponentInChildren<NpcHandPose>();
+            var mesh = new Mesh();
+            try
+            {
+                Vector3[] cloth = null;
+                SkinnedMeshRenderer wornTrousers = null;
+                int[] clothTriangles = null;
+                float[] thighWeight = null;
+                float gap = float.PositiveInfinity, buttockGap = float.PositiveInfinity;
+                float pelvisDepth = Vector3.Dot(pelvis.position - seat.position, forward);
+                foreach (var render in SeatedSupportRenderers(body.Registry.Renderers))
+                {
+                    if (!(render is SkinnedMeshRenderer skin)) continue;
+                    var support = SeatedSupportWeights(skin);
+                    Vector3[] vertices = CalibratedBakedWorldVertices(skin, mesh);
+                    int[] triangles = mesh.triangles;
+                    if (support != null) { cloth = vertices; clothTriangles = triangles; thighWeight = support; wornTrousers = skin; }
+
+                    for (int i = 0; i < triangles.Length; i += 3)
+                    {
+                        var polygon = new List<Vector3>(3);
+                        var weights = new float[3];
+                        for (int v = 0; v < 3; v++)
+                        {
+                            int index = triangles[i + v];
+                            Vector3 world = vertices[index] - seat.position;
+                            polygon.Add(new Vector3(Vector3.Dot(world, right), Vector3.Dot(world, up), Vector3.Dot(world, forward)));
+                            weights[v] = support == null ? 1f : support[index];
+                        }
+                        polygon = ClipSeatedSupportWeights(polygon, weights);
+                        polygon = ClipSeatPolygon(polygon, 0, -.21f, true);
+                        polygon = ClipSeatPolygon(polygon, 0, .21f, false);
+                        polygon = ClipSeatPolygon(polygon, 2, -.18f, true);
+                        polygon = ClipSeatPolygon(polygon, 2, .18f, false);
+                        foreach (Vector3 point in polygon) gap = Mathf.Min(gap, point.y);
+                        polygon = ClipSeatPolygon(polygon, 2, pelvisDepth + .065f, false);
+                        foreach (Vector3 point in polygon) buttockGap = Mathf.Min(buttockGap, point.y);
+                    }
+                }
+                if (gap < -.013f || gap > .018f)
+                {
+                    var actual = new CitySeatedCushionContact(body.Registry);
+                    actual.Bind();
+                    Assert.Fail($"{id} {seat.name}: actual hip/thigh clearance {gap:F5} m; target -.013..+.018 m, " +
+                        $"weighted residual {actual.MeasureCorrection(seat.position, up, forward, .21f, .18f):F5} m.");
+                }
+                Assert.That(buttockGap, Is.InRange(-.013f, .027f), $"{id} worn buttocks at the rearward support patch");
+                for (int side = 0; side < 2; side++)
+                {
+                    bool left = side == 0;
+                    Transform ankle = left ? body.Registry.LeftFoot : body.Registry.RightFoot;
+                    Transform knee = ankle.parent, hip = knee.parent;
+                    var wrist = CityPedestrianHandProps.FindSocket(body.Registry.ModelRoot, left ? "hand.L" : "hand.R");
+                    Vector3 palm = wrist.position + wrist.rotation * fingers.GetAnatomicalFrame(left).PalmCentreInHand;
+                    Assert.That(Vector3.Dot(knee.position - pelvis.position, forward), Is.GreaterThan(.20f),
+                        $"{id} knee in front of cushion; thigh/shin {Vector3.Distance(hip.position, knee.position):F3}/" +
+                        $"{Vector3.Distance(knee.position, ankle.position):F3}, hip/knee/ankle above floor " +
+                        $"{Vector3.Dot(hip.position - floorPoint, up):F3}/{Vector3.Dot(knee.position - floorPoint, up):F3}/" +
+                        $"{Vector3.Dot(ankle.position - floorPoint, up):F3}");
+                    Assert.That(Vector3.Dot(wrist.position - pelvis.position, forward), Is.GreaterThan(.055f), id + " wrist in front of backrest");
+                    Assert.That(Vector3.Dot(wrist.parent.position - seat.position, forward), Is.GreaterThan(-.17f), id + " elbow clear of backrest");
+                    var frame = fingers.GetAnatomicalFrame(left);
+                    Assert.That(Vector3.Dot(wrist.rotation * frame.PalmNormalInHand, -up), Is.GreaterThan(.55f), id + " inward palm faces cloth");
+                    string suffix = left ? "Palm.L" : "Palm.R";
+                    var skin = body.Registry.Renderers.OfType<SkinnedMeshRenderer>().First(r => r.enabled &&
+                        r.gameObject.activeInHierarchy && r.name.EndsWith(suffix, System.StringComparison.Ordinal));
+                    float palmGap = float.PositiveInfinity;
+                    foreach (Vector3 handVertex in CalibratedBakedWorldVertices(skin, mesh))
+                    {
+                        // Intersect a downward ray through the real hand mesh
+                        // against the upper surface of the deformed trousers.
+                        Vector3 origin = handVertex + up * .35f;
+                        Ray ray = new Ray(origin, -up);
+                        for (int face = 0; face < clothTriangles.Length; face += 3)
+                        {
+                            int ia = clothTriangles[face], ib = clothTriangles[face + 1], ic = clothTriangles[face + 2];
+                            if (thighWeight[ia] < .5f && thighWeight[ib] < .5f && thighWeight[ic] < .5f) continue;
+                            Vector3 a = cloth[ia], b = cloth[ib], c = cloth[ic];
+                            Plane plane = new Plane(a, b, c);
+                            if (!plane.Raycast(ray, out float travel)) continue;
+                            Vector3 hit = ray.GetPoint(travel);
+                            if (Vector3.Dot(Vector3.Cross(b - a, hit - a), plane.normal) < -.000001f ||
+                                Vector3.Dot(Vector3.Cross(c - b, hit - b), plane.normal) < -.000001f ||
+                                Vector3.Dot(Vector3.Cross(a - c, hit - c), plane.normal) < -.000001f) continue;
+                            palmGap = Mathf.Min(palmGap, travel - .35f);
+                        }
+                    }
+                    Vector3 thighPlan = Vector3.ProjectOnPlane(knee.position - hip.position, up);
+                    // The separate mesh test measures vertical hand contact.
+                    // In plan view the palm has to lie over the thigh between
+                    // hip and knee, even where that thigh slopes steeply down.
+                    float along = Vector3.Dot(Vector3.ProjectOnPlane(palm - hip.position, up), thighPlan) / thighPlan.sqrMagnitude;
+                    Assert.That(along, Is.InRange(.20f, .95f), id + " palm rests along its own thigh");
+                    int thigh = System.Array.IndexOf(wornTrousers.bones, hip);
+                    BoneWeight[] skinWeights = wornTrousers.sharedMesh.boneWeights;
+                    float hitHeight = float.NegativeInfinity, contactWeight = 0f;
+                    for (int j = 0; j < clothTriangles.Length; j += 3)
+                    {
+                        int a = clothTriangles[j], b = clothTriangles[j + 1], c = clothTriangles[j + 2];
+                        Vector3 ab = cloth[b] - cloth[a], ac = cloth[c] - cloth[a];
+                        float det = Vector3.Dot(Vector3.Cross(ab, ac), up);
+                        if (Mathf.Abs(det) < .000001f) continue;
+                        Vector3 ap = palm - cloth[a];
+                        float u = Vector3.Dot(Vector3.Cross(ap, ac), up) / det;
+                        float v = Vector3.Dot(Vector3.Cross(ab, ap), up) / det;
+                        if (u < 0f || v < 0f || u + v > 1f) continue;
+                        float h = Vector3.Dot(cloth[a] + ab * u + ac * v, up);
+                        if (h <= hitHeight) continue;
+                        hitHeight = h;
+                        contactWeight = (1f - u - v) * Weight(a) + u * Weight(b) + v * Weight(c);
+                    }
+                    Assert.That(contactWeight, Is.GreaterThan(.45f), $"{id} palm over the corresponding thigh mesh ({suffix}, at {along:F2})");
+                    Assert.That(palmGap, Is.InRange(-.014f, .018f), id + " worn " + suffix + " to actual trouser surface");
+                    CheckSoleGap(body, mesh, left ? "Sole.L" : "Sole.R", floorPoint, up);
+                    float Weight(int vertex)
+                    {
+                        var w = skinWeights[vertex];
+                        return (w.boneIndex0 == thigh ? w.weight0 : 0f) + (w.boneIndex1 == thigh ? w.weight1 : 0f) +
+                            (w.boneIndex2 == thigh ? w.weight2 : 0f) + (w.boneIndex3 == thigh ? w.weight3 : 0f);
+                    }
+                }
+            }
+            finally { Object.DestroyImmediate(mesh); }
+        }
+
+        private static void CheckSoleGap(CityPedestrianPresentation body, Mesh mesh, string suffix,
+            Vector3 floor, Vector3 up)
+        {
+            float gap = float.PositiveInfinity;
+            foreach (var skin in body.Registry.Renderers.OfType<SkinnedMeshRenderer>())
+            {
+                if (!skin.enabled || !skin.gameObject.activeInHierarchy ||
+                    !skin.name.EndsWith(suffix, System.StringComparison.Ordinal)) continue;
+                foreach (Vector3 vertex in CalibratedBakedWorldVertices(skin, mesh))
+                    gap = Mathf.Min(gap, Vector3.Dot(vertex - floor, up));
+            }
+            Assert.That(gap, Is.InRange(-.018f, .024f), body.Registry.DesignId + " " + suffix + " floor gap");
+        }
+
+        // Compare the native deformation to the full set of weighted world bind
+        // matrices, including body and joint morphs. This checks the scale
+        // convention on the actual resident's renderer rather than assuming a
+        // uniform scale of one. The resulting external measurement uses BakeMesh.
+        private static readonly HashSet<int> ReportedBakeModes = new HashSet<int>();
+
+        private static Vector3[] CalibratedBakedWorldVertices(SkinnedMeshRenderer skin, Mesh baked)
+        {
+            Vector3[] reference = CityPedestrianShoeContacts.SkinWorldVertices(skin);
+            var candidates = new Vector3[2][];
+            var errors = new float[4];
+            for (int flag = 0; flag <= 1; flag++)
+            {
+                skin.BakeMesh(baked, flag != 0);
+                Vector3[] vertices = candidates[flag] = baked.vertices;
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    var rigid = skin.transform.position + skin.transform.rotation * vertices[i];
+                    var full = skin.transform.TransformPoint(vertices[i]);
+                    errors[flag * 2] = Mathf.Max(errors[flag * 2], (rigid - reference[i]).magnitude);
+                    errors[flag * 2 + 1] = Mathf.Max(errors[flag * 2 + 1], (full - reference[i]).magnitude);
+                }
+            }
+            int best = System.Array.IndexOf(errors, errors.Min());
+            if (ReportedBakeModes.Add(best))
+                Debug.Log($"Passenger mesh {skin.name} scale {skin.transform.lossyScale:F3}, BakeMesh world mode {best}; " +
+                    $"maximum vertex error (false-rigid/false-full/true-rigid/true-full) {string.Join("/", errors.Select(e => e.ToString("F5")))} m");
+            Assert.That(errors[best], Is.LessThan(.003f), skin.name + " native baked mesh against world-space skin on the live bones");
+            Vector3[] selected = candidates[best / 2];
+            for (int i = 0; i < selected.Length; i++)
+                selected[i] = (best & 1) != 0 ? skin.transform.TransformPoint(selected[i]) :
+                    skin.transform.position + skin.transform.rotation * selected[i];
+            return selected;
+        }
+
+        private static void CheckStandingContacts(CityPedestrianPresentation body, CityBusAssetRegistry bus, Vector3 up, int bay)
+        {
+            var hands = body.Registry.GetComponentInChildren<NpcHandPose>();
+            Assert.That(hands.RightGripWeight, Is.EqualTo(1f));
+            Assert.That(Vector3.Distance(hands.CylinderCentre(false), bus.StandingGripAnchors[bay].position),
+                Is.LessThan(.026f), body.Registry.DesignId + " palm at rail in bay " + bay);
+            var sole = new Mesh();
+            try
+            {
+                foreach (string suffix in new[] {"Sole.L", "Sole.R"})
+                    CheckSoleGap(body, sole, suffix, bus.StandingFloorAnchors[bay].position, up);
+            }
+            finally { Object.DestroyImmediate(sole); }
+        }
+
+        private static void CaptureFullCabin(GameObject root, CityBusActor bus, CityBusAssetRegistry registry)
+        {
+            var camera = new GameObject("Full cabin section").AddComponent<Camera>();
+            camera.transform.SetParent(root.transform, false);
+            camera.enabled = false;
+            camera.nearClipPlane = .025f;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(.18f, .21f, .23f);
+            var lamp = new GameObject("Section light").AddComponent<Light>();
+            lamp.transform.SetParent(root.transform, false);
+            lamp.type = LightType.Directional; lamp.intensity = 2.0f;
+            lamp.transform.rotation = bus.Rotation * Quaternion.Euler(38, 45, 0);
+            Vector3 focus = bus.Position + bus.transform.up * 1.35f;
+            camera.transform.position = focus + bus.Rotation * new Vector3(-9f, 2.7f, -1.4f);
+            camera.transform.LookAt(focus, bus.transform.up);
+            camera.orthographic = true; camera.orthographicSize = 2.7f;
+            camera.aspect = 16f / 9f;
+            SetSeatedCaptureLayer(root);
+            camera.cullingMask = 1 << 31;
+            var keptParts = new HashSet<string> { "INT_Handrails", "INT_PassengerSeats", "INT_RearBench", "INT_SeatFrames", "INT_DriverSeat", "INT_SteeringWheel" };
+            var visible = new HashSet<Renderer>(registry.RendererBindings.Where(part => keptParts.Contains(part.SourceName))
+                .Select(part => part.Renderer));
+            visible.UnionWith(bus.Presentation.DriverPresentation.Registry.Renderers);
+            foreach (var rider in registry.GetComponentsInChildren<CityPedestrianPresentation>(true))
+                visible.UnionWith(rider.Registry.Renderers);
+            // Runtime glass overlays and number panels are outside the imported registry.
+            // Exclude those too, including from the inside and rear-bench cameras.
+            var hidden = registry.GetComponentsInChildren<Renderer>(true)
+                .Where(part => part.enabled && !visible.Contains(part)).ToArray();
+            var target = new RenderTexture(1440, 810, 24);
+            var pixels = new Texture2D(1440, 810, TextureFormat.RGB24, false);
+            var previous = RenderTexture.active;
+            try
+            {
+                foreach (var part in hidden) part.enabled = false;
+                string output = Path.GetFullPath("Captures/BusFullCabin");
+                Directory.CreateDirectory(output);
+                camera.targetTexture = target;
+                Save("standing-section");
+                camera.transform.position = focus + bus.Rotation * new Vector3(8.5f, 2.3f, 3.9f);
+                camera.transform.LookAt(focus, bus.transform.up);
+                Save("opposite-section");
+
+                Vector3 floor = registry.StandingFloorAnchors[0].position;
+                Vector3 grip = registry.StandingGripAnchors[0].position;
+                Vector3 eye = Vector3.Lerp(floor, grip, .62f);
+                camera.orthographicSize = 1.05f;
+                camera.transform.position = eye + bus.Rotation * new Vector3(.86f, .19f, 1.16f);
+                camera.transform.LookAt(eye, bus.transform.up);
+                Save("right-hand-standing");
+
+                camera.orthographic = false;
+                camera.fieldOfView = 65f;
+                camera.transform.position = registry.PassengerSeatAnchors[CityBusActor.PlayerSeatIndex].position +
+                    bus.transform.up * .75f + bus.transform.right * .05f;
+                camera.transform.LookAt(registry.StandingGripAnchors[1].position - bus.transform.up * .25f, bus.transform.up);
+                Save("from-seat-07");
+
+                // Eye inside the aisle, aimed past both pairs of shoes at the bench.
+                // Level the view to the cabin so the rig contacts read even on a grade.
+                Vector3 bench = (registry.PassengerSeatAnchors[5].position + registry.PassengerSeatAnchors[9].position) * .5f;
+                Vector3 up = bus.Presentation.CabinUp;
+                Vector3 forward = Vector3.ProjectOnPlane(bus.TravelDirection, up).normalized;
+                Vector3 right = Vector3.Cross(up, forward);
+                camera.transform.position = bench + forward * 1.48f + up * .52f + right * .05f;
+                camera.transform.LookAt(bench + up * .25f, up);
+                camera.fieldOfView = 64f;
+                var benchFill = new GameObject("Rear cabin review fill").AddComponent<Light>();
+                benchFill.transform.SetParent(root.transform, false);
+                benchFill.transform.position = camera.transform.position + up * .23f;
+                benchFill.transform.LookAt(bench + up * .15f, up);
+                benchFill.type = LightType.Spot;
+                benchFill.spotAngle = 96f;
+                benchFill.innerSpotAngle = 65f;
+                benchFill.range = 3.2f;
+                benchFill.intensity = 2.2f;
+                benchFill.shadows = LightShadows.None;
+                benchFill.cullingMask = camera.cullingMask;
+                Save("rear-bench-from-aisle");
+                benchFill.enabled = false;
+
+                void Save(string name)
+                {
+                    camera.Render(); RenderTexture.active = target;
+                    pixels.ReadPixels(new Rect(0, 0, 1440, 810), 0, 0); pixels.Apply();
+                    File.WriteAllBytes(Path.Combine(output, name + ".png"), pixels.EncodeToPNG());
+                }
+            }
+            finally
+            {
+                foreach (var part in hidden) if (part != null) part.enabled = true;
+                camera.targetTexture = null; RenderTexture.active = previous;
+                Object.DestroyImmediate(pixels); Object.DestroyImmediate(target);
+            }
+        }
 
         [UnityTest]
         public IEnumerator SeatedPassengers_StayOnActualCushionsAcrossAnimationAndBusMotion()
@@ -145,7 +574,8 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(support.Length, Is.EqualTo(defaultBody ? 1 : 3),
                             archetype.DesignId + " visible pelvis and upper thighs");
                         Assert.That(Vector3.Distance(busPresentation.CabinUp, passengerFrame.Up), Is.LessThan(.0001f));
-                        Assert.That(actor.BeginSeatedRide(seat, archetype.SeatedRide, busPresentation.CabinUp), Is.True);
+                        Assert.That(actor.BeginSeatedRide(seat, archetype.SeatedRide, busPresentation.CabinUp,
+                            bus.FrontDoorEntryAnchor.position, busActor.TravelDirection), Is.True);
 
                         // Must already be seated before either the next tick or a
                         // frame yield. A standing graph can have a correct pelvis
@@ -230,9 +660,21 @@ namespace BarPromenade.Tests.PlayMode
             Renderer cushion, Renderer[] support, string phase, SeatedMeshReport report,
             List<string> failures)
         {
-            Vector3 expected = frame.Seat.position + frame.Up * archetype.SeatedRide.SeatLift -
-                Vector3.ProjectOnPlane(actor.transform.forward, frame.Up).normalized * archetype.SeatedRide.SeatBackOffset;
-            float error = Vector3.Distance(npc.PelvisAnchor.position, expected);
+            var defaultBody = npc.GetComponent<CityPedestrianDefaultNpcBody>();
+            float error;
+            if (defaultBody != null)
+            {
+                // Stature sets the fore/aft fit. Keep the pelvis on that
+                // exact live contact as both the rig and cushion move.
+                Vector3 position = frame.Coordinates(npc.PelvisAnchor.position);
+                error = new Vector2(position.x, position.z - actor.Presentation.SeatedPelvisForward).magnitude;
+            }
+            else
+            {
+                Vector3 expected = frame.Seat.position + frame.Up * archetype.SeatedRide.SeatLift -
+                    Vector3.ProjectOnPlane(actor.transform.forward, frame.Up).normalized * archetype.SeatedRide.SeatBackOffset;
+                error = Vector3.Distance(npc.PelvisAnchor.position, expected);
+            }
             if (error > .001f)
                 failures.Add($"{archetype.DesignId}/{phase}: pelvis missed live seat by {error:F4} m.");
             MeasureSeatedSurface(archetype.DesignId, phase, frame, cushion, support, report, failures);
@@ -479,6 +921,8 @@ namespace BarPromenade.Tests.PlayMode
             // The bus driver, rails, dashboard and shell otherwise obscure the
             // contact from an interior camera. Restore every visibility flag.
             var visible = new HashSet<Renderer>(occupant) { cushion };
+            if (frame.Seat == bus.DriverSeatAnchor)
+                visible.Add(bus.RendererBindings.Single(part => part.SourceName == "INT_SteeringWheel").Renderer);
             Renderer[] hidden = camera.transform.root.GetComponentsInChildren<Renderer>(true)
                 .Where(renderer => renderer.enabled && !visible.Contains(renderer)).ToArray();
             Vector3 right = frame.Right;

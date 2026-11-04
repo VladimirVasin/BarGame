@@ -139,11 +139,60 @@ namespace BarPromenade
                 BuildTerracePaths(layout, streetSurfacePlan, terrace, graph);
             }
             BuildHillsidePaths(layout, streetSurfacePlan, graph);
+            if (supportsCrosswalkNavigation) BuildPlatformCrossings(layout, streetSurfacePlan, graph);
             return graph.CreatePlan(
                 layout.Seed,
                 populationSeed,
                 stableSeed,
                 terrace.IsEnabled ? layout : null);
+        }
+
+        private static void BuildPlatformCrossings(CityLayout layout, CityStreetSurfacePlan streets, GraphBuilder graph)
+        {
+            if (streets.StopCrossings.Count == 0) return;
+            foreach (var platform in CityBusNetworkFurniture.Platforms(CityDistrictBusPlanner.CreateRoadRouting(layout)))
+            {
+                var stop = platform.stop;
+                if (stop.RoadEdge.A == stop.RoadEdge.B) continue; // hillside lanes already have their boarding node
+                Vector3 curb = CityBusStopWaitPlanner.StandingPosition(platform.line, stop, layout);
+                graph.SplitSidewalkAt("platform-boarding:" + stop.Id, stop.RoadEdge, XZ(curb),
+                    p => streets.SupportPlan.TrySampleTop(p, out float top, out _) ? top : curb.y);
+            }
+            foreach (var site in streets.StopCrossings)
+            {
+                if (site.ExistingCrosswalkIndex >= 0) continue;
+                string id = "platform-crossing:" + site.Id;
+                var path = site.WalkPath;
+                int near = Gate(0, ":near"), far = Gate(3, ":far");
+                int roadNear = graph.AddNode(id + ":road-near", path[1], false);
+                int roadFar = graph.AddNode(id + ":road-far", path[2], false);
+                AddLeg(near, roadNear, ":near-curb");
+                AddLeg(roadNear, roadFar, ":carriageway");
+                AddLeg(roadFar, far, ":far-curb");
+
+                int Gate(int end, string suffix)
+                {
+                    Vector3 curb = path[end];
+                    float Height(Vector2 p) => streets.SupportPlan != null && streets.SupportPlan.TrySampleTop(p, out float top, out _) ? top : curb.y;
+                    int gate = site.HillsideBank.HasValue ?
+                        graph.SplitHillsideLane(id + suffix, "hill:" + site.HillsideBank.Value + ":pavement:", XZ(curb), Height) :
+                        graph.SplitSidewalkAt(id + suffix, site.Edge, XZ(curb), Height);
+                    graph.MarkCrosswalkEntry(gate);
+                    return gate;
+                }
+
+                void AddLeg(int from, int to, string suffix)
+                {
+                    Vector3 a = graph.Nodes[from].Position, b = graph.Nodes[to].Position;
+                    Vector2 origin = XZ(a), delta = XZ(b) - origin;
+                    float squared = delta.sqrMagnitude;
+                    if (squared <= GeometryTolerance * GeometryTolerance)
+                        throw new InvalidOperationException("Degenerate pedestrian crossing " + id + suffix);
+                    graph.AddLink(id + suffix, from, to, CityPedestrianLinkKind.Crosswalk, false,
+                        new CityRoadPath(new[] { origin, XZ(b) }),
+                        p => Mathf.Lerp(a.y, b.y, Vector2.Dot(p - origin, delta) / squared));
+                }
+            }
         }
 
         public static RoadWalkableArea CreateWalkableArea(
@@ -1342,6 +1391,12 @@ namespace BarPromenade
                 new HashSet<LinkKey>();
 
             public IReadOnlyList<CityPedestrianNode> Nodes => nodes;
+
+            public void MarkCrosswalkEntry(int i)
+            {
+                var node = nodes[i];
+                if (!node.IsCrosswalkEntry) nodes[i] = new CityPedestrianNode(node.Id, node.Position, true);
+            }
 
             public void AddNavigationPolygons(IEnumerable<Vector2[]> polygons)
             {

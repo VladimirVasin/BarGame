@@ -19,9 +19,17 @@ namespace BarPromenade
         }
 
         private readonly Key[] keys;
+        private readonly bool movingStart, movingEnd;
 
         public PlayerAnimatedInteractionPelvisPath(params Key[] authoredKeys)
+            : this(false, false, authoredKeys) { }
+
+        // A moving seat supplies its live contact to the final (or first) segment.
+        // The opposite handoff and all authored intermediate points remain fixed.
+        internal PlayerAnimatedInteractionPelvisPath(bool movingStart, bool movingEnd, params Key[] authoredKeys)
         {
+            this.movingStart = movingStart;
+            this.movingEnd = movingEnd;
             if (authoredKeys == null || authoredKeys.Length < 2)
                 throw new ArgumentException("A pelvis path needs both endpoints.", nameof(authoredKeys));
             keys = (Key[])authoredKeys.Clone();
@@ -40,8 +48,8 @@ namespace BarPromenade
         public Vector3 Evaluate(Vector3 start, Vector3 end, float progress)
         {
             // A path cannot conceal a mismatch at the ordinary-rig handoff.
-            if ((keys[0].Position - start).sqrMagnitude > 0.000001f ||
-                (keys[keys.Length - 1].Position - end).sqrMagnitude > 0.000001f)
+            if ((!movingStart && (keys[0].Position - start).sqrMagnitude > 0.000001f) ||
+                (!movingEnd && (keys[keys.Length - 1].Position - end).sqrMagnitude > 0.000001f))
                 throw new InvalidOperationException("Pelvis path endpoints must match the interaction plan.");
             if (progress <= 0f) return start;
             for (int index = 1; index < keys.Length; index++)
@@ -51,7 +59,9 @@ namespace BarPromenade
                 Key previous = keys[index - 1];
                 float blend = Mathf.SmoothStep(0f, 1f,
                     (progress - previous.Progress) / (next.Progress - previous.Progress));
-                return Vector3.LerpUnclamped(previous.Position, next.Position, blend);
+                Vector3 from = movingStart && index == 1 ? start : previous.Position;
+                Vector3 to = movingEnd && index == keys.Length - 1 ? end : next.Position;
+                return Vector3.LerpUnclamped(from, to, blend);
             }
             return end;
         }

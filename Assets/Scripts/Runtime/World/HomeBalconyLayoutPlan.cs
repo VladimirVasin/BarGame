@@ -42,7 +42,7 @@ namespace BarPromenade
 
         public Rect BalconyCameraActivationBounds =>
             Rect.MinMaxRect(
-                PlayerHomeBalconyGeometry.HomeFacadeX + 0.18f,
+                PlayerHomeBalconyGeometry.HomeFacadeX + PlayerHomeBalconyGeometry.WallThickness * .5f,
                 BalconyBounds.yMin + 0.12f,
                 BalconyBounds.xMax - 0.18f,
                 BalconyBounds.yMax - 0.12f);

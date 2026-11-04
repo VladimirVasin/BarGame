@@ -2719,13 +2719,13 @@ namespace BarPromenade.Tests.PlayMode
                     city.Pedestrians.enabled = false;
                 }
 
-                if (city.BusLines != null)
+                if (city.BusVehicles != null)
                 {
-                    busEnabled = new bool[city.BusLines.Count];
+                    busEnabled = new bool[city.BusVehicles.Count];
                     for (int i = 0; i < busEnabled.Length; i++)
                     {
-                        busEnabled[i] = city.BusLines[i].enabled;
-                        city.BusLines[i].enabled = false;
+                        busEnabled[i] = city.BusVehicles[i].enabled;
+                        city.BusVehicles[i].enabled = false;
                     }
                 }
 
@@ -3036,7 +3036,7 @@ namespace BarPromenade.Tests.PlayMode
                     Time.captureDeltaTime = savedCaptureDelta;
                     if (city.BalconySmokers != null) city.BalconySmokers.enabled = smokersEnabled;
                     if (busEnabled != null)
-                        for (int i = 0; i < busEnabled.Length; i++) city.BusLines[i].enabled = busEnabled[i];
+                        for (int i = 0; i < busEnabled.Length; i++) city.BusVehicles[i].enabled = busEnabled[i];
                     if (city.Pedestrians != null) city.Pedestrians.enabled = pedestriansEnabled;
                 });
                 Step(() =>

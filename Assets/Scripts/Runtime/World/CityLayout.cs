@@ -92,8 +92,8 @@ namespace BarPromenade
                 new List<Vector2Int>(nodes));
             RoadEdges = new ReadOnlyCollection<RoadEdge>(
                 new List<RoadEdge>(roadEdges));
-            BuildingLots = new ReadOnlyCollection<BuildingLot>(
-                new List<BuildingLot>(buildingLots));
+            var gridLots = new List<BuildingLot>(buildingLots);
+            BuildingLots = new ReadOnlyCollection<BuildingLot>(gridLots);
             for (int index = 0; index < BuildingLots.Count; index++)
             {
                 BuildingLot lot = BuildingLots[index];
@@ -192,6 +192,18 @@ namespace BarPromenade
                     Mathf.Max(hill.yMax, mapWorldXZBounds.yMax));
             }
             MapWorldXZBounds = mapWorldXZBounds;
+            var highStreets = CityHillsideQuarterPlan.ForLayout(this).Links;
+            if (PlayerHome != null && highStreets.Count != 0)
+            {
+                // Grid zoning and its random sequence remain intact. The former
+                // address has an ordinary residential frontage on the bank line.
+                int index = gridLots.IndexOf(PlayerHome);
+                LowerResidentialLot = PlayerHome.AsOrdinaryResidence();
+                gridLots[index] = LowerResidentialLot;
+                SummitHome = CityHillsideNeighborhoodPlan.CreateWestSummitHouse(highStreets[1], true);
+                PlayerHome = SummitHome.Lot;
+                SpawnWorldPosition = PlayerHome.SidewalkArrivalPosition;
+            }
         }
 
         public int Seed { get; }
@@ -213,6 +225,9 @@ namespace BarPromenade
         public IReadOnlyList<BuildingLot> BuildingLots { get; }
         public IReadOnlyList<BuildingLot> Lots => BuildingLots;
         public BuildingLot PlayerHome { get; }
+        public CityHillsideBuilding SummitHome { get; }
+        public bool HasSummitHome => SummitHome != null;
+        public BuildingLot LowerResidentialLot { get; }
         public BuildingLot Supermarket { get; }
         public IReadOnlyList<CityDistrictDescriptor> Districts { get; }
         public CityParkPlan Park { get; }
@@ -227,6 +242,8 @@ namespace BarPromenade
         public Rect MapWorldXZBounds { get; }
         public Vector2Int SpawnNode { get; }
         public Vector3 SpawnWorldPosition { get; }
+        internal Vector3 StandingSpawnPosition => SpawnWorldPosition + Vector3.up *
+            (PlayerFactory.GroundedRootOffset + (HasSummitHome ? 0f : CityStreetSurfacePlanner.RoadTop));
 
         // Boundary hedges only stand on a flat city: over terraced ground
         // they would float, so a terraced park has no fence at all and its
@@ -894,7 +911,10 @@ namespace BarPromenade
             ValidatePrimaryLandmarkCells(lotsByCell);
             ValidateDistrictPointsOfInterest(lotsByCell);
 
-            if (!ReferenceEquals(PlayerHome, playerHome))
+            if (HasSummitHome ? playerHome != null || !ReferenceEquals(PlayerHome, SummitHome.Lot) ||
+                !SummitHome.OnSummitStreet || !PlayerHome.IsPlayerHome ||
+                !lotsByCell.TryGetValue(LowerResidentialLot.Cell, out var lowerHome) || lowerHome != LowerResidentialLot :
+                !ReferenceEquals(PlayerHome, playerHome))
             {
                 throw new InvalidOperationException(
                     "The player home descriptor is inconsistent.");

@@ -233,6 +233,13 @@ namespace BarPromenade
                     foreach (var point in link.NorthSidewalk) Point(writer, point);
                     foreach (var point in link.SouthSidewalk) Point(writer, point);
                 }
+                var paintedCrossings = CityStreetSurfacePlanner.Create(layout).CrosswalkMarkingGeometry;
+                writer.Write(paintedCrossings.Count);
+                foreach (var stripe in paintedCrossings)
+                {
+                    CrosswalkStroke(stripe, out var a, out var b, out float width);
+                    Point(writer, a); Point(writer, b); Scalar(writer, width);
+                }
                 foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)
                 {
                     writer.Write(stair.Id); writer.Write(stair.WalkableBounds.Count);
@@ -242,6 +249,7 @@ namespace BarPromenade
                 }
                 foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
                 {
+                    writer.Write(building.Lot.IsPlayerHome);
                     writer.Write(building.Lot.BuildingVariant); Scalar(writer, building.Lot.Height);
                     foreach (Vector2[] body in building.Lot.CreateCollisionPolygons())
                         foreach (Vector2 vertex in body) Point(writer, vertex);
@@ -343,6 +351,14 @@ namespace BarPromenade
                     return text.ToString();
                 }
             }
+        }
+
+        internal static void CrosswalkStroke(RuntimeOrientedBox stripe, out Vector3 a, out Vector3 b, out float width)
+        {
+            bool alongX = stripe.Size.x > stripe.Size.z;
+            Vector3 half = stripe.Rotation * (alongX ? Vector3.right * stripe.Size.x : Vector3.forward * stripe.Size.z) * .5f;
+            a = stripe.Center - half; b = stripe.Center + half;
+            width = Mathf.Min(stripe.Size.x, stripe.Size.z);
         }
 
         private static void RectValue(BinaryWriter writer, Rect rect)

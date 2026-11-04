@@ -215,8 +215,7 @@ namespace BarPromenade
         /// stays on the pavement. A blanket ban would be dishonest and a
         /// blanket allowance would seat a design that cannot sit: the hopper
         /// crosses ground in two-footed bounds and wears the one working light
-        /// the pedestrian contract allows, neither of which belongs in a
-        /// twelve-seat cabin.
+        /// the pedestrian contract allows. This design stays on the pavement.
         /// </summary>
         public CityPedestrianSeatedRide SeatedRide { get; }
 

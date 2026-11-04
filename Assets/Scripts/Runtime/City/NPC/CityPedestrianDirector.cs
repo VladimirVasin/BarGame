@@ -251,6 +251,7 @@ namespace BarPromenade
             CityCanneryController canneryController, LastRouteCarDriver carDriver)
         {
             vehicleTraffic = new CityPedestrianVehicleTraffic(busDirector, canneryController, carDriver);
+            residentFleet = busDirector;
         }
 
         public bool IsActorPresented(int actorIndex)
@@ -270,7 +271,7 @@ namespace BarPromenade
                 return;
             }
 
-            vehicleTraffic?.Refresh();
+            vehicleTraffic?.Refresh(actors);
             if (HasResidentLife)
             {
                 using (ResidentSimulationMarker.Auto())
@@ -626,7 +627,8 @@ namespace BarPromenade
             Vector3 facing,
             int waitNodeIndex,
             IReadOnlyList<float> waitNodeDistances,
-            uint spawnSeed)
+            uint spawnSeed,
+            int resident = -1)
         {
             if (!IsInitialized ||
                 plan == null ||
@@ -636,14 +638,14 @@ namespace BarPromenade
                 return null;
             }
 
+            if (resident >= 0 && !CanUseStreetSlot()) return null;
             int actorIndex = FindAvailableActorIndex();
             if (actorIndex < 0)
             {
                 return null;
             }
 
-            CityPedestrianPresentation available =
-                HasResidentLife ? AcquireTransitResident(slotPosition, spawnSeed) : FindAvailableRidingPresentation(spawnSeed);
+            CityPedestrianPresentation available = TransitPresentation(resident, slotPosition, spawnSeed);
             if (available == null)
             {
                 return null;
@@ -692,7 +694,8 @@ namespace BarPromenade
             Vector3 position,
             Quaternion rotation,
             int rejoinNodeIndex,
-            uint spawnSeed)
+            uint spawnSeed,
+            int resident = -1)
         {
             if (!IsInitialized ||
                 plan == null ||
@@ -703,13 +706,14 @@ namespace BarPromenade
             }
 
             int actorIndex = FindAvailableActorIndex();
+            if (actorIndex < 0 && resident >= 0)
+                actorIndex = ReclaimHiddenStreetSlot();
             if (actorIndex < 0)
             {
                 return null;
             }
 
-            CityPedestrianPresentation available =
-                HasResidentLife ? AcquireTransitResident(position, spawnSeed) : FindAvailableRidingPresentation(spawnSeed);
+            CityPedestrianPresentation available = TransitPresentation(resident, position, spawnSeed);
             if (available == null)
             {
                 return null;
@@ -736,6 +740,15 @@ namespace BarPromenade
             CityPedestrianActor actor = actors[actorIndex];
             actor.transform.rotation = rotation;
             return actor;
+        }
+
+        private CityPedestrianPresentation TransitPresentation(int resident, Vector3 position, uint seed)
+        {
+            if (resident < 0)
+                return HasResidentLife ? AcquireTransitResident(position, seed) : FindAvailableRidingPresentation(seed);
+            if (!HasResidentLife || IsResidentPresented(resident)) return null;
+            var body = AcquireResidentPresentation(resident);
+            return CanRideBus(body) ? body : null;
         }
 
         /// <summary>

@@ -280,9 +280,9 @@ namespace BarPromenade
                 stopping + carSpeed + 4f);
 
             float conflict = float.PositiveInfinity;
-            for (int i = 0; buses != null && i < buses.LineCount; i++)
+            for (int i = 0; buses != null && i < buses.VehicleCount; i++)
             {
-                CityBusActor bus = buses.GetLine(i).Actor;
+                CityBusActor bus = buses.GetVehicle(i).Actor;
                 if (bus == null || !bus.HasRoutePhase) continue;
                 conflict = Mathf.Min(conflict, FindBusPathConflict(
                     road,
@@ -306,7 +306,7 @@ namespace BarPromenade
                     if (walker == null ||
                         !walker.IsSpawned ||
                         walker.IsAttachedToVehicle ||
-                        (walker.IsRouteBound && !walker.IsYieldingToVehicle))
+                        (walker.IsRouteBound && !walker.IsYieldingToVehicle && !walker.IsCrossingRoad))
                     {
                         continue;
                     }
@@ -331,9 +331,9 @@ namespace BarPromenade
 
         private bool IsBusCrossing()
         {
-            for (int i = 0; buses != null && i < buses.LineCount; i++)
+            for (int i = 0; buses != null && i < buses.VehicleCount; i++)
             {
-                CityBusActor bus = buses.GetLine(i).Actor;
+                CityBusActor bus = buses.GetVehicle(i).Actor;
                 if (bus != null && bus.HasRoutePhase && IsCrossedByVehicle(crossing, approach,
                     bus.Position, bus.TravelDirection, bus.Speed, ResolveHalfLength(bus))) return true;
             }
@@ -357,7 +357,7 @@ namespace BarPromenade
                 if (walker == null ||
                     !walker.IsSpawned ||
                     walker.IsAttachedToVehicle ||
-                    (walker.IsRouteBound && !walker.IsYieldingToVehicle))
+                    (walker.IsRouteBound && !walker.IsYieldingToVehicle && !walker.IsCrossingRoad))
                 {
                     continue;
                 }

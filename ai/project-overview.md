@@ -88,9 +88,9 @@ Repair/publication: [../tools/README.md](../tools/README.md).
   Hero:wounds/no detach;bar:hit/parry;skin/aim.
   Gap:pierce/balance. [World](current-world.md)
 - City:west work/east homes3–5storeys+park;144lots/courts/wings.
-  Courts/seats/carrier;bus 01 west/02 east/03 hills, transfers;dog3/owners2.
-  NPC192/≤36/cache48;Home5/2.
-  Eight industry sites own roofs/gear/surfaces/pooled task light;
+  2 buses/ring, transfer stairs, stop zebras. 10 seats+3 stands.
+  NPC192/≤36/cache48, home/work, Home5/2, dog3/owners2.
+  8 industry sites: roofs/gear/surfaces/task lights;
   substation/municipal/port workshops remain passive.
   First unpaused dock entry starts port→factory→shop supply;
   catch-up spans scene changes, excluding pre-entry time. Three units,

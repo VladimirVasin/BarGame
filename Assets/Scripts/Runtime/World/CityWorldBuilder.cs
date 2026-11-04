@@ -385,6 +385,9 @@ namespace BarPromenade
             courtyardLife.Initialize(residentialCourtyards, residentialCourtyardRoot.transform);
             CityTerracePilotWorld.Build(world, terraces);
             CityHillsideNeighborhoodWorld.Build(world, layout);
+            if (layout.HasSummitHome)
+                BuildBuilding(world, layout, layout.PlayerHome, layout.Seed, emissiveMaterial,
+                    walkableArea, bars, ref playerHome, ref supermarket);
             CityHillsideQuarterGround.Build(world, layout);
 
             GameObject decorationRoot =
@@ -1798,16 +1801,25 @@ namespace BarPromenade
                 new Vector3(-direction.z, 0f, direction.x);
             bool frontageIsX =
                 Mathf.Abs(direction.x) > 0.5f;
-            CityEntranceForecourtPlan apron = CityStreetSurfacePlanner.CreateEntranceForecourt(
-                layout, lot, PlayerHomeEntranceGeometry.WalkwayWidth);
-            BuildEntranceForecourt("Home Entrance Walkway",parent,apron);
-            walkableArea.Add(apron.Footprint);
+            CityEntranceForecourtPlan apron = null;
+            if (!layout.HasSummitHome)
+            {
+                apron = CityStreetSurfacePlanner.CreateEntranceForecourt(layout, lot, PlayerHomeEntranceGeometry.WalkwayWidth);
+                BuildEntranceForecourt("Home Entrance Walkway", parent, apron);
+                walkableArea.Add(apron.Footprint);
+            }
+            float EntranceTop(Vector3 point)
+            {
+                if (apron != null) return apron.SampleTop(point);
+                return layout.SummitHome.TrySampleApproach(new Vector2(point.x, point.z), out float top)
+                    ? top : lot.DoorPosition.y;
+            }
 
             Vector3 mailboxBase =
                 lot.DoorPosition +
                 (direction * 1.05f) +
                 (tangent * 1.35f);
-            if(apron.IsGraded)mailboxBase.y=apron.SampleTop(mailboxBase);
+            if (apron == null || apron.IsGraded) mailboxBase.y = EntranceTop(mailboxBase);
             RuntimePrimitiveFactory.CreateCylinder(
                 "Home Mailbox Post",
                 parent,
@@ -1852,7 +1864,7 @@ namespace BarPromenade
             playerHome.Configure(
                 lot.SidewalkArrivalPosition +
                 (Vector3.up *
-                 (CityStreetSurfacePlanner.SidewalkTop +
+                 ((layout.HasSummitHome ? 0f : CityStreetSurfacePlanner.SidewalkTop) +
                   PlayerFactory.GroundedRootOffset)));
             PlayerDoorActionTarget doorAction =
                 entranceObject.AddComponent<PlayerDoorActionTarget>();
@@ -1860,7 +1872,7 @@ namespace BarPromenade
                 lot.DoorPosition +
                 direction * 0.72f;
             doorDock.y =
-                apron.SampleTop(doorDock) +
+                EntranceTop(doorDock) +
                 PlayerFactory.GroundedRootOffset;
             doorAction.Configure(
                 PlayerDoorActionPlan.CreateStationary(

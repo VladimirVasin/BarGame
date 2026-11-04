@@ -35,7 +35,7 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "1.4.0"
+GENERATOR_VERSION = "1.8.0"
 DESIGN_ID = "road_v2_midibus_v1"
 DISPLAY_NAME = "Road v2 City Midibus"
 SEED = 260811
@@ -76,15 +76,34 @@ DOORWAY_SPECS = (
     ),
 )
 
-STEERING_WHEEL_CENTER = (0.60, -3.32, 1.57)
+# Source coordinates in metres. Seat 07 and the two doorways keep their
+# original contacts. Indices 06 and 10 share the transverse rear bench.
+REAR_BENCH_Y = 3.44
+REAR_SEAT_SPAN = 0.68
+REAR_BENCH_HALF_WIDTH = 0.65
+SEAT_POSITIONS = (
+    (0.66, -1.65), (0.66, -0.82), (0.66, 0.04),
+    (0.66, 1.80), (0.66, 2.56), (REAR_SEAT_SPAN * 0.5, REAR_BENCH_Y),
+    (-0.66, -0.72), (-0.66, 0.18), (-0.66, 2.52), (-REAR_SEAT_SPAN * 0.5, REAR_BENCH_Y),
+)
+CABIN_FLOOR_TOP = 0.67
+STANDING_BAYS = ((0.69, -2.61), (-0.69, -1.78), (0.69, 0.74))
+HAND_RING_HEIGHT = 2.18
+HAND_RING_RADIUS = 0.09
+HAND_RING_TUBE = 0.014
+HAND_RING_SEGMENTS = 10
+# The lower edge of the decagonal ring is horizontal. Its midpoint is
+# the centre of the tube inside the grasp, not the empty centre of a ring.
+HAND_GRIP_HEIGHT = HAND_RING_HEIGHT - HAND_RING_RADIUS * math.sin(2 * math.tau / HAND_RING_SEGMENTS)
+STANDING_GRIPS = tuple((x - 0.25, y - 0.18, HAND_GRIP_HEIGHT) for x, y in STANDING_BAYS)
+VERTICAL_RAILS = ((-0.98, -1.40), (-0.98, 0.40), (-0.98, 2.24),
+                  (0.98, -1.55), (0.98, 1.15), (0.98, 2.45))
+
+STEERING_WHEEL_CENTER = (0.68, -3.60, 1.57)
+STEERING_COLUMN_TILT = math.radians(-65.0)
 STEERING_WHEEL_MAJOR_RADIUS = 0.18
 STEERING_WHEEL_MINOR_RADIUS = 0.022
-STEERING_GRIP_X = 0.14
-STEERING_GRIP_TOP = math.sqrt(
-    STEERING_WHEEL_MAJOR_RADIUS ** 2 - STEERING_GRIP_X ** 2
-)
-STEERING_GRIP_AXIS_OFFSET = 0.020
-DOOR_BUTTON_CENTER = (0.30, -3.335, 1.50)
+DOOR_BUTTON_CENTER = (0.35, -3.59, 1.47)
 DOOR_BUTTON_DEPTH = 0.045
 DOOR_BUTTON_TRAVEL = 0.012
 DRIVER_DOOR_LOOK_POSITION = (-0.90, -3.05, 2.12)
@@ -703,28 +722,26 @@ class CityBusBuilder:
                 ((0.0, 0.0, 0.62), (2.08, 7.70, 0.10)),
                 ((0.0, 0.0, 2.75), (2.06, 7.68, 0.06)),
                 ((0.0, 3.76, 1.13), (2.05, 0.12, 0.95)),
-                ((0.0, -3.70, 0.83), (2.05, 0.10, 0.40)),
-                ((0.0, 3.35, 0.80), (2.04, 0.78, 0.34)),
+                ((0.0, -3.97, 0.83), (2.05, 0.10, 0.40)),
+                # The bench base begins behind its front lip. Shoes on the
+                # rear row land on the same drawn floor as all other riders.
+                ((0.0, REAR_BENCH_Y + 0.06, 0.805), (1.16, 0.32, 0.27)),
             ],
             "interior_shell",
             "Interior",
         )
 
-        seat_positions = [
-            (0.66, -1.82), (0.66, -0.82), (0.66, 0.18),
-            (0.66, 1.18), (0.66, 2.18), (0.66, 3.12),
-            (-0.66, -0.72), (-0.66, 0.18),
-            (-0.66, 2.52), (-0.66, 3.24),
-            (-0.22, 3.48), (0.22, 3.48),
-        ]
         seats = MeshAccumulator()
         frames = MeshAccumulator()
-        for x, y in seat_positions:
+        for x, y in SEAT_POSITIONS:
+            if y == REAR_BENCH_Y:
+                continue
             seats.add_box((x, y, 1.01), (0.52, 0.48, 0.14))
             seats.add_box((x, y + 0.20, 1.36), (0.52, 0.12, 0.62))
             frames.add_cylinder_between((x, y + 0.10, 0.67), (x, y + 0.10, 0.94), 0.028, 6)
             frames.add_cylinder_between((x, y - 0.10, 0.67), (x, y - 0.10, 0.94), 0.028, 6)
         self.add_accumulator("INT_PassengerSeats", seats, "passenger_seats", "Seat")
+        self._build_rear_bench()
         self.add_accumulator("INT_SeatFrames", frames, "seat_frames", "Metal")
 
         self.add_boxes(
@@ -740,10 +757,10 @@ class CityBusBuilder:
         self.add_boxes(
             "INT_Dashboard",
             [
-                ((0.0, -3.72, 1.22), (2.02, 0.48, 0.34)),
-                ((0.57, -3.55, 1.43), (0.62, 0.36, 0.16)),
+                ((0.0, -3.82, 1.42), (2.02, 0.32, 0.16)),
+                ((0.67, -3.85, 1.49), (0.62, 0.22, 0.14)),
                 ((-0.64, -3.48, 1.30), (0.36, 0.28, 0.55)),
-                ((0.57, -3.37, 1.50), (0.28, 0.04, 0.13)),
+                ((0.35, -3.66, 1.46), (0.18, 0.10, 0.13)),
             ],
             "dashboard",
             "Dashboard",
@@ -751,7 +768,7 @@ class CityBusBuilder:
         steering_column = MeshAccumulator()
         steering_column.add_cylinder_between(
             STEERING_WHEEL_CENTER,
-            (0.60, -3.52, 1.36),
+            (0.68, -3.84, 1.458),
             0.035,
             8,
         )
@@ -767,7 +784,7 @@ class CityBusBuilder:
             "steering_wheel",
             self.body,
             STEERING_WHEEL_CENTER,
-            (-math.pi * 0.5, 0.0, 0.0),
+            (STEERING_COLUMN_TILT, 0.0, 0.0),
             "+Z",
         )
         steering = MeshAccumulator()
@@ -775,8 +792,8 @@ class CityBusBuilder:
             (0.0, 0.0, 0.0),
             STEERING_WHEEL_MAJOR_RADIUS,
             STEERING_WHEEL_MINOR_RADIUS,
-            12,
-            4,
+            32,
+            8,
         )
         steering.add_cylinder_between(
             (0.0, 0.0, -0.018),
@@ -810,15 +827,15 @@ class CityBusBuilder:
             steering_pivot,
         )
         for side, role_prefix, x in (
-            ("L", "left", STEERING_GRIP_X),
-            ("R", "right", -STEERING_GRIP_X),
+            ("L", "left", STEERING_WHEEL_MAJOR_RADIUS),
+            ("R", "right", -STEERING_WHEEL_MAJOR_RADIUS),
         ):
-            grip_angle = math.atan2(-STEERING_GRIP_TOP, x)
+            grip_angle = 0.0 if x > 0 else math.pi
             self.add_pivot(
                 f"ANCHOR_SteeringGrip.{side}",
                 f"{role_prefix}_steering_grip",
                 steering_pivot,
-                (x, -STEERING_GRIP_TOP, STEERING_GRIP_AXIS_OFFSET),
+                (x, 0.0, 0.0),
                 (0.0, 0.0, grip_angle),
             )
 
@@ -855,12 +872,54 @@ class CityBusBuilder:
         rails.add_cylinder_between((0.50, -2.90, 2.54), (0.50, 3.45, 2.54), 0.025, 8)
         for y in (-2.82, -1.25, 0.40, 2.02, 3.28):
             rails.add_cylinder_between((-0.50, y, 2.54), (0.50, y, 2.54), 0.025, 8)
-        for x, y in ((-0.70, -1.40), (-0.70, 0.58), (-0.70, 2.08), (0.70, -1.55), (0.70, 0.75), (0.70, 2.45)):
-            rails.add_cylinder_between((x, y, 0.65), (x, y, 2.56), 0.027, 8)
-        for y in (-2.45, -1.65, -0.85, -0.05, 0.75, 1.55, 2.35):
-            rails.add_cylinder_between((-0.40, y, 2.52), (-0.40, y, 2.28), 0.018, 6)
-            rails.add_torus_y((-0.40, y, 2.18), 0.09, 0.014, 10, 4)
+        for x, y in VERTICAL_RAILS:
+            rails.add_cylinder_between((x, y, 0.65), (x, y, 2.54), 0.027, 8)
+            rails.add_cylinder_between((x, y, 2.54), (math.copysign(0.5, x), y, 2.54), 0.025, 8)
+        rings = [(x, y) for x, y, _ in STANDING_GRIPS]
+        rings.extend((-0.40, y) for y in (-0.85, -0.05, 1.55, 2.35))
+        for x, y in rings:
+            # A short transverse bracket seats each hanger on the longitudinal rail.
+            rail_x = math.copysign(0.50, x)
+            rails.add_cylinder_between((rail_x, y, 2.54), (x, y, 2.54), 0.018, 8)
+            rails.add_cylinder_between((x, y, 2.54), (x, y, 2.26), 0.018, 8)
+            rails.add_torus_y((x, y, HAND_RING_HEIGHT), HAND_RING_RADIUS, HAND_RING_TUBE, HAND_RING_SEGMENTS, 4)
         self.add_accumulator("INT_Handrails", rails, "handrails", "Rail")
+
+    def _build_rear_bench(self) -> None:
+        # Sweep one upholstered profile from the front bolster into the
+        # sloped shared backrest. A shallow stitched channel divides the two
+        # contact areas but never cuts through the cushion.
+        profile = (
+            (-0.25, 0.97), (-0.21, 0.94), (0.24, 0.94),
+            (0.25, 1.59), (0.22, 1.66), (0.15, 1.68),
+            (0.11, 1.64), (0.07, 1.16), (0.035, 1.08),
+            (-0.20, 1.08), (-0.25, 1.05),
+        )
+        half = REAR_BENCH_HALF_WIDTH
+        stations = (-half, -half + 0.035, -0.023, 0.0, 0.023, half - 0.035, half)
+        shell = MeshAccumulator()
+        count = len(profile)
+        for x in stations:
+            end = abs(x) == half
+            for depth, height in profile:
+                if end:
+                    depth *= 0.90
+                    height = 1.30 + (height - 1.30) * 0.93
+                elif x == 0.0:
+                    if height >= 1.05:
+                        height -= 0.009
+                    if height >= 1.15:
+                        depth += 0.008
+                shell.vertices.append((x, REAR_BENCH_Y + depth, height))
+        shell.faces.append(tuple(reversed(range(count))))
+        for row in range(len(stations) - 1):
+            start = row * count
+            for i in range(count):
+                j = (i + 1) % count
+                shell.faces.append((start + i, start + j, start + count + j, start + count + i))
+        start = (len(stations) - 1) * count
+        shell.faces.append(tuple(start + i for i in range(count)))
+        self.add_accumulator("INT_RearBench", shell, "rear_bench", "Seat")
 
     def _build_doors(self) -> None:
         for doorway_name, doorway_y, leaf_specs in DOORWAY_SPECS:
@@ -1101,20 +1160,19 @@ class CityBusBuilder:
             self.body,
             DRIVER_DOOR_LOOK_POSITION,
         )
-        seat_positions = [
-            (0.66, -1.82), (0.66, -0.82), (0.66, 0.18),
-            (0.66, 1.18), (0.66, 2.18), (0.66, 3.12),
-            (-0.66, -0.72), (-0.66, 0.18),
-            (-0.66, 2.52), (-0.66, 3.24),
-            (-0.22, 3.48), (0.22, 3.48),
-        ]
-        for index, (x, y) in enumerate(seat_positions, start=1):
+        for index, (x, y) in enumerate(SEAT_POSITIONS, start=1):
             self.add_pivot(
                 f"ANCHOR_PassengerSeat_{index:02d}",
                 "passenger_seat_anchor",
                 self.body,
                 (x, y, 1.08),
             )
+
+        for i, ((x, y), grip) in enumerate(zip(STANDING_BAYS, STANDING_GRIPS), start=1):
+            self.add_pivot(f"ANCHOR_StandingFloor_{i:02d}", "standing_floor",
+                           self.body, (x, y, CABIN_FLOOR_TOP))
+            self.add_pivot(f"ANCHOR_StandingGrip_{i:02d}", "standing_grip",
+                           self.body, grip)
 
 
 def triangulated_count(mesh: bpy.types.Mesh) -> int:
@@ -1267,7 +1325,7 @@ def validate_result(result: BuildResult) -> ValidationReport:
         "steering_wheel",
         result.body,
         STEERING_WHEEL_CENTER,
-        (-math.pi * 0.5, 0.0, 0.0),
+        (STEERING_COLUMN_TILT, 0.0, 0.0),
         "+Z",
     )
     if steering_pivot is not None:
@@ -1280,15 +1338,15 @@ def validate_result(result: BuildResult) -> ValidationReport:
                 "PIVOT_SteeringWheel must directly own the steering-wheel mesh"
             )
         for side, role_prefix, x in (
-            ("L", "left", STEERING_GRIP_X),
-            ("R", "right", -STEERING_GRIP_X),
+            ("L", "left", STEERING_WHEEL_MAJOR_RADIUS),
+            ("R", "right", -STEERING_WHEEL_MAJOR_RADIUS),
         ):
-            grip_angle = math.atan2(-STEERING_GRIP_TOP, x)
+            grip_angle = 0.0 if x > 0 else math.pi
             validate_control_pivot(
                 f"ANCHOR_SteeringGrip.{side}",
                 f"{role_prefix}_steering_grip",
                 steering_pivot.obj,
-                (x, -STEERING_GRIP_TOP, STEERING_GRIP_AXIS_OFFSET),
+                (x, 0.0, 0.0),
                 (0.0, 0.0, grip_angle),
             )
 
@@ -1376,6 +1434,32 @@ def validate_result(result: BuildResult) -> ValidationReport:
             errors.append(
                 f"Door leaf pivot {name} must own one panel, frame and glass mesh"
             )
+    # Test the full projected body, rather than just a clear centre point.
+    # Keep the central 0.70 m passage and access from both doorways clear;
+    # the seated envelope extends ahead of the cushion to the shins and shoes.
+    body_radius = 0.30
+    for i, ((x, y), grip) in enumerate(zip(STANDING_BAYS, STANDING_GRIPS), start=1):
+        validate_control_pivot(f"ANCHOR_StandingFloor_{i:02d}", "standing_floor", result.body,
+                               (x, y, CABIN_FLOOR_TOP))
+        validate_control_pivot(f"ANCHOR_StandingGrip_{i:02d}", "standing_grip", result.body, grip)
+        if abs(x) - body_radius < 0.35 or abs(x) + body_radius > 1.04:
+            errors.append(f"Standing bay {i} encroaches on the aisle or cabin wall")
+        # Both doorways cross to the aisle at their own longitudinal station.
+        # The open two-leaf sweep stays inside the two fixed outer posts.
+        for _, door_y, _ in DOORWAY_SPECS:
+            if x < 0 and abs(y - door_y) < DOOR_HINGE_OFFSET + body_radius:
+                errors.append(f"Standing bay {i} overlaps the doorway")
+        for sx, sy in SEAT_POSITIONS:
+            dx = max(abs(x - sx) - 0.26, 0)
+            dy = max(sy - 0.60 - y, y - sy - 0.26, 0)
+            if math.hypot(dx, dy) < body_radius:
+                errors.append(f"Standing bay {i} overlaps seated legs or a cushion")
+        for px, py in VERTICAL_RAILS:
+            if math.hypot(x - px, y - py) < body_radius + 0.027:
+                errors.append(f"Standing bay {i} overlaps a pole")
+        if math.hypot(max(abs(x - 0.68) - 0.275, 0), max(-3.54 - y, y + 2.975, 0)) < body_radius:
+            errors.append(f"Standing bay {i} overlaps the driver")
+
     for legacy_name in ("PIVOT_FrontDoor", "PIVOT_RearDoor"):
         if legacy_name in pivots_by_name:
             errors.append(f"Legacy central doorway pivot {legacy_name} is not allowed")
@@ -1384,8 +1468,29 @@ def validate_result(result: BuildResult) -> ValidationReport:
         part.obj.parent is not result.body for part in door_posts
     ):
         errors.append("Both fixed doorway-post meshes must be parented to ROOT_Body")
-    if sum(pivot.role == "passenger_seat_anchor" for pivot in result.pivots) < 10:
-        errors.append("Bus interior needs at least ten passenger seat anchors")
+    seats = [p for p in result.pivots if p.role == "passenger_seat_anchor"]
+    rear = [p.obj for p in seats if p.obj.location.y > 3.0]
+    if len(seats) != 10 or {p.name for p in rear} != {"ANCHOR_PassengerSeat_06", "ANCHOR_PassengerSeat_10"}:
+        errors.append("The cabin requires eight side seats and exactly two rear bench contacts")
+    bench = next(part.obj for part in result.parts if part.role == "rear_bench")
+    # Raycast the actual continuous cushion along both large occupants' hip
+    # support areas and through the stitched centre. The edge of the seat has
+    # room for the outside trouser leg; neither person needs to overlap the other.
+    if len(rear) == 2:
+        a, b = sorted(p.location.x for p in rear)
+        if b - a < 0.66:
+            errors.append("Rear bench lacks shoulder room for its two passengers")
+        for x in (a - 0.26, a, a + 0.26, 0.0, b - 0.26, b, b + 0.26):
+            hit, contact, normal, _ = bench.ray_cast(Vector((x, REAR_BENCH_Y, 1.20)), Vector((0, 0, -1)))
+            if not hit or abs(contact.z - 1.08) > 0.012 or normal.z < 0.85:
+                errors.append(f"Rear bench has no continuous cushion contact at {x:.3f} m")
+    interior = next(part.obj for part in result.parts if part.role == "interior_shell")
+    for seat in rear:
+        for foot in (-0.12, 0.12):
+            x = seat.location.x + foot
+            hit, contact, _, _ = interior.ray_cast(Vector((x, REAR_BENCH_Y - 0.40, 1.05)), Vector((0, 0, -1)))
+            if not hit or abs(contact.z - CABIN_FLOOR_TOP) > 0.003:
+                errors.append(f"Raised rear panel blocks the bench footwell at {x:.3f} m")
 
     bounds_min, bounds_max = mesh_world_bounds(part.obj for part in result.parts)
     size = bounds_max - bounds_min
@@ -1522,6 +1627,7 @@ def write_manifest(path: Path, result: BuildResult, report: ValidationReport) ->
         "passenger_seat_count": sum(
             pivot.role == "passenger_seat_anchor" for pivot in result.pivots
         ),
+        "standing_place_count": len(STANDING_BAYS),
         "build_signature": report.build_signature,
         "parts": [
             {

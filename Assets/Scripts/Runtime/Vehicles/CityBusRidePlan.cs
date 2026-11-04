@@ -77,7 +77,7 @@ namespace BarPromenade
             RideRootLocalPosition = rideRootLocalPosition;
             RideRootLocalRotation = rideRootLocalRotation;
             ExitPose = exitPose;
-            PelvisTransition = transition;
+            doorTransition = transition;
         }
 
         public CityBusStopDescriptor Stop { get; }
@@ -92,9 +92,28 @@ namespace BarPromenade
         public Vector3 RideRootLocalPosition { get; }
         public Quaternion RideRootLocalRotation { get; }
         public PlayerAnimatedInteractionPose ExitPose { get; }
+        private readonly PlayerAnimatedInteractionPelvisTransition doorTransition;
         public PlayerAnimatedInteractionPelvisTransition PelvisTransition
         {
-            get;
+            get
+            {
+                if (SeatIndex != PassengerSeatIndex) return doorTransition;
+                // Build the keyed path only when an interaction starts. Looking for
+                // a prompt every frame needs only the exterior dock. Keep the body
+                // upright along the aisle and lower the pelvis on the final turn.
+                Vector3 right = ActorRoot.right;
+                Vector3 aisleAtDoor = DoorHipPosition - right * Vector3.Dot(DoorHipPosition - ActorRoot.position, right);
+                Vector3 aisleAtSeat = aisleAtDoor + ActorRoot.forward *
+                    Vector3.Dot(SeatAnchor.position - DoorHipPosition, ActorRoot.forward);
+                var enter = new PlayerAnimatedInteractionPelvisPath(false, true,
+                    new(0f, EntryPose.HipPosition), new(.23f, DoorHipPosition), new(.37f, aisleAtDoor),
+                    new(.77f, aisleAtSeat), new(1f, ActionHipPosition));
+                var exit = new PlayerAnimatedInteractionPelvisPath(true, false,
+                    new(0f, ActionHipPosition), new(.23f, aisleAtSeat), new(.63f, aisleAtDoor),
+                    new(.77f, DoorHipPosition), new(1f, ExitPose.HipPosition));
+                return new PlayerAnimatedInteractionPelvisTransition(DoorHipPosition, .23f, .23f, .77f, .77f,
+                    authoredEnterPath: enter, authoredExitPath: exit);
+            }
         }
 
         public Vector3 InteractionPosition => EntryPose.RootPosition;
@@ -204,14 +223,12 @@ namespace BarPromenade
             if (registry.Body == null ||
                 registry.DriverSeatAnchor == null ||
                 registry.FrontDoorEntryAnchor == null ||
-                registry.RearDoorEntryAnchor == null ||
-                registry.PassengerSeatAnchors == null ||
-                registry.PassengerSeatAnchors.Count <= seatIndex)
+                registry.RearDoorEntryAnchor == null)
             {
                 return false;
             }
 
-            Transform seat = registry.PassengerSeatAnchors[seatIndex];
+            Transform seat = PlaceAnchor(registry, seatIndex);
             if (seat == null)
             {
                 return false;
@@ -236,14 +253,8 @@ namespace BarPromenade
             float passengerSide = Vector3.Dot(
                 seat.position - actorRoot.position,
                 actorRight);
-            if (Mathf.Abs(driverSide) <= 0.01f ||
-                Mathf.Abs(passengerSide) <= 0.01f)
-            {
-                return false;
-            }
-
             if (requireOppositeDriverSide &&
-                driverSide * passengerSide >= 0f)
+                (Mathf.Abs(driverSide) <= .01f || Mathf.Abs(passengerSide) <= .01f || driverSide * passengerSide >= 0f))
             {
                 return false;
             }
@@ -332,6 +343,7 @@ namespace BarPromenade
                 up * Vector3.Dot(
                     doorRoot - seat.position,
                     up);
+            if (CityBusActor.IsStandingPlace(seatIndex)) seatFloor = seat.position;
             Vector3 rideRootLocal =
                 actorRoot.InverseTransformPoint(seatFloor);
             Quaternion rideRootLocalRotation =
@@ -395,14 +407,12 @@ namespace BarPromenade
             }
 
             CityBusAssetRegistry registry = actor.Presentation.Registry;
-            if (registry.PassengerSeatAnchors == null ||
-                registry.PassengerSeatAnchors.Count <= seatIndex ||
-                registry.FrontDoorEntryAnchor == null)
+            if (registry.FrontDoorEntryAnchor == null)
             {
                 return false;
             }
 
-            Transform seat = registry.PassengerSeatAnchors[seatIndex];
+            Transform seat = PlaceAnchor(registry, seatIndex);
             if (seat == null)
             {
                 return false;
@@ -415,11 +425,21 @@ namespace BarPromenade
             Vector3 floorReference = registry.FrontDoorEntryAnchor.position;
             Vector3 seatFloor = seat.position +
                 up * Vector3.Dot(floorReference - seat.position, up);
+            if (CityBusActor.IsStandingPlace(seatIndex)) seatFloor = seat.position;
             rideRootLocalPosition =
                 actorRoot.InverseTransformPoint(seatFloor);
             rideRootLocalRotation = Quaternion.identity;
             seatAnchor = seat;
             return true;
+        }
+
+        internal static Transform PlaceAnchor(CityBusAssetRegistry registry, int place)
+        {
+            if (registry == null || place < 0) return null;
+            bool standing = CityBusActor.IsStandingPlace(place);
+            var anchors = standing ? registry.StandingFloorAnchors : registry.PassengerSeatAnchors;
+            int index = standing ? place - CityBusActor.SeatCount : place;
+            return anchors != null && index >= 0 && index < anchors.Count ? anchors[index] : null;
         }
 
         public void EvaluateRideCamera(

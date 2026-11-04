@@ -8,7 +8,9 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityBusDirector : MonoBehaviour
     {
-        public const int MaximumActiveModels = 3;
+        public const int MaximumLines = 3;
+        public const int VehiclesPerLine = 2;
+        public const int MaximumActiveModels = MaximumLines * VehiclesPerLine;
         private const float BackgroundStep = 0.20f;
         public const float MinimumSpawnDistance = 76f;
         public const float MaximumSpawnDistance = 86f;
@@ -61,55 +63,210 @@ namespace BarPromenade
 
         private IReadOnlyList<CityBusDirector> network;
         private CityGameRoot city;
-        private int lineIndex;
         private float backgroundTime;
+        private CityBusTimetable timetable;
+        private double detachedPhase = double.NaN;
+        private CityBusSpawnAnchor initialAnchor;
+        private Func<CityBusPresentation> createModel;
 
-        public int LineCount => network == null ? 1 : network.Count;
-        public CityBusDirector GetLine(int index)
+        public int VehicleIndex { get; private set; }
+        public int VehicleIndexOnLine => VehicleIndex % VehiclesPerLine;
+        public int LineIndex => VehicleIndex / VehiclesPerLine;
+        public int VehicleCount => network?.Count ?? 1;
+        public int LineCount => network == null ? 1 : network.Count / VehiclesPerLine;
+        public CityBusDirector GetLine(int index) => GetVehicle(index * VehiclesPerLine);
+        public CityBusDirector GetVehicle(int index)
         {
             if (network != null) return network[index];
             if (index != 0) throw new ArgumentOutOfRangeException(nameof(index));
             return this;
         }
 
-        /// <summary>Start one persistent simulation per line; only its model sleeps in the fog.</summary>
-        public void ConnectNetwork(IReadOnlyList<CityBusDirector> lines, int index)
+        internal static void ConnectPair(CityBusDirector[] fleet, int index)
         {
-            if (lines == null || index < 0 || index >= lines.Count ||
-                lines.Count > MaximumActiveModels || lines[index] != this ||
-                !IsInitialized || network != null)
-                throw new ArgumentException("Invalid bus line registration.", nameof(lines));
-            network = lines;
-            lineIndex = index;
-            if (!plan.IsEmpty)
+            var first = fleet[index];
+            var second = fleet[index + 1];
+            var plan = first.plan;
+            var schedule = plan.IsEmpty ? null : CityBusTimetable.ForPlan(plan);
+            for (int i = index; i <= index + 1; i++)
             {
-                actor.RunsWithoutModel = true;
-                StartLine();
+                var vehicle = fleet[i];
+                vehicle.network = fleet;
+                vehicle.VehicleIndex = i;
+                vehicle.timetable = schedule;
+                if (vehicle.actor != null)
+                {
+                    vehicle.actor.RunsWithoutModel = true;
+                    vehicle.actor.FleetVehicleIndex = i;
+                }
+            }
+            if (plan.IsEmpty) return;
+
+            // Evaluate both bodies together: an interchange conflict moves the pair by
+            // the same amount, preserving the half-lap even on a folded, graded route.
+            var anchor = plan.SpawnAnchors[(int)(plan.StableSeed % (uint)plan.SpawnAnchors.Count)];
+            float origin = first.loopStartByLinkIndex[anchor.LinkIndex] + anchor.DistanceAlongLink;
+            int candidates = Mathf.Max(1, Mathf.CeilToInt(plan.LoopLength / SpawnCandidateSpacing));
+            for (int i = 0; i < candidates; i++)
+            {
+                float start = origin + i * (plan.LoopLength / candidates);
+                var a = first.AnchorAt(start);
+                var b = second.AnchorAt(start + .5f * plan.LoopLength);
+                if ((a.Position - b.Position).sqrMagnitude < 12f * 12f ||
+                    !Clear(a.Position) || !Clear(b.Position)) continue;
+                first.initialAnchor = a;
+                second.initialAnchor = b;
+                first.actor.PrepareSpawn(plan, a, plan.StableSeed);
+                second.actor.PrepareSpawn(plan, b, plan.StableSeed ^ SpawnBehaviorSalt);
+                return;
+            }
+            throw new InvalidOperationException("No clear pair of bus phases for " + plan.RouteId);
+
+            bool Clear(Vector3 position)
+            {
+                for (int i = 0; i < index; i++)
+                {
+                    var other = fleet[i].actor;
+                    if (other != null && other.HasRoutePhase && (other.Position - position).sqrMagnitude < 12f * 12f) return false;
+                }
+                return true;
             }
         }
 
-        private void StartLine()
+        private CityBusSpawnAnchor AnchorAt(float metres)
         {
-            // Pick separated deterministic phases before the City becomes visible. A shared
-            // platform is never occupied twice at initialization, even for identical seeds.
-            int count = plan.SpawnAnchors.Count;
-            int start = (int)((plan.StableSeed % (uint)count + (uint)(count * lineIndex / network.Count)) % (uint)count);
-            for (int i = 0; i < count; i++)
+            float distance = Mathf.Repeat(metres, loopLength);
+            int slot = Array.BinarySearch(orderedLoopLinkStarts, distance);
+            if (slot < 0) slot = ~slot - 1;
+            int index = orderedLoopLinkIndices[slot];
+            var link = plan.Links[index];
+            float along = distance - orderedLoopLinkStarts[slot];
+            CityBusActor.EvaluateLink(link, along, out var position, out var forward);
+            return new CityBusSpawnAnchor(plan.RouteId + ":vehicle:" + VehicleIndexOnLine,
+                index, along, position, forward, plan.Nodes[link.FromNodeIndex].RoadEdge);
+        }
+
+        public float DistanceAlongLoop => actor != null && actor.HasRoutePhase ?
+            loopStartByLinkIndex[actor.CurrentLinkIndex] + actor.DistanceAlongLink : 0f;
+
+        public float DistanceToStop(int stopIndex)
+        {
+            var stop = plan.Stops[stopIndex];
+            return Mathf.Repeat(loopStartByLinkIndex[stop.LinkIndex] + stop.DistanceAlongLink - DistanceAlongLoop, loopLength);
+        }
+
+        private double Phase
+        {
+            get
             {
-                var anchor = plan.SpawnAnchors[(start + i) % count];
-                bool clear = true;
-                for (int j = 0; j < network.Count; j++)
-                {
-                    var other = network[j]?.Actor;
-                    if (other != null && other != actor && other.HasRoutePhase &&
-                        (other.Position - anchor.Position).sqrMagnitude < 12f * 12f)
-                    { clear = false; break; }
-                }
-                if (!clear) continue;
-                actor.PrepareSpawn(plan, anchor, plan.StableSeed);
-                return;
+                if (!actor.HasRoutePhase) return timetable.TimeAt(initialAnchor.LinkIndex, initialAnchor.DistanceAlongLink);
+                return double.IsNaN(detachedPhase) ? CityBusTimetable.Wrap(timetable.TimeAt(actor), timetable.Duration) : detachedPhase;
             }
-            throw new InvalidOperationException("No clear initial phase for " + plan.RouteId);
+        }
+        public double SecondsUntilNextService => timetable != null ? timetable.NextService(Phase, out _) : double.PositiveInfinity;
+        public double EstimatedSecondsToStop(int stopIndex) => timetable == null ? double.PositiveInfinity :
+            actor.CurrentStopIndex == stopIndex ? 0d : timetable.UntilService(Phase, stopIndex);
+
+        public readonly struct PhaseSnapshot
+        {
+            internal readonly string Route;
+            internal readonly int Vehicle, Ordinal;
+            internal readonly double Phase;
+            internal readonly CityBusTimetable.Sample State;
+            internal readonly float Remainder;
+            internal PhaseSnapshot(CityBusDirector bus)
+            {
+                Route = bus.plan.RouteId;
+                Vehicle = bus.VehicleIndex;
+                Phase = bus.timetable != null ? bus.Phase : 0d;
+                Ordinal = bus.actor != null ? bus.actor.ServiceOrdinal : 0;
+                Remainder = bus.backgroundTime;
+                var actor = bus.actor;
+                if (bus.timetable == null) { State = default; return; }
+                var timed = bus.timetable.At(Phase);
+                State = !actor.HasRoutePhase ? timed : new CityBusTimetable.Sample(actor.CurrentLinkIndex, actor.DistanceAlongLink,
+                    actor.Speed, actor.CurrentStopIndex, actor.DwellElapsed, actor.LastServedStopIndex);
+            }
+        }
+
+        public PhaseSnapshot CapturePhase() => new PhaseSnapshot(this);
+
+        public void PrepareForDetachedTravel()
+        {
+            if (actor?.IsSpawned == true) ReleaseActor(true, preserveRoute: true);
+        }
+
+        public void RestorePhase(PhaseSnapshot saved)
+        {
+            if (saved.Route != plan.RouteId || saved.Vehicle != VehicleIndex)
+                throw new ArgumentException("Checkpoint belongs to another bus.", nameof(saved));
+            PrepareForDetachedTravel();
+            detachedPhase = saved.Phase;
+            backgroundTime = saved.Remainder;
+            if (timetable == null) return;
+            EnsurePrepared();
+            actor.ApplyDetachedPhase(saved.State, saved.Ordinal, "checkpoint_restore");
+        }
+
+        /// <summary>Advance a dormant vehicle without simulating elapsed frames. In silent mode
+        /// whole laps are counted arithmetically. Callers merging vehicles can stop on each next
+        /// service and process its berth at the exact simulated time.</summary>
+        public void AdvanceDetached(double seconds, bool notifyServices = true)
+        {
+            if (timetable == null || seconds <= 0d) return;
+            if (double.IsNaN(seconds) || double.IsInfinity(seconds) || actor.IsSpawned)
+                throw new InvalidOperationException("Detached travel requires finite time and a pooled bus.");
+            EnsurePrepared();
+            double phase = Phase;
+            if (notifyServices)
+            {
+                double until = timetable.NextService(phase, out int stop);
+                while (seconds >= until)
+                {
+                    seconds -= until;
+                    SetServicePhase(stop);
+                    actor.NotifyDetachedService(stop);
+                    phase = detachedPhase;
+                    until = timetable.NextService(phase, out stop);
+                }
+            }
+            long visits = notifyServices ? 0L : timetable.Visits(phase, seconds);
+            detachedPhase = CityBusTimetable.Wrap(phase + seconds, timetable.Duration);
+            actor.ApplyDetachedPhase(timetable.At(detachedPhase), (int)Math.Min(int.MaxValue, visits + actor.ServiceOrdinal));
+        }
+
+        internal int AdvanceToNextService()
+        {
+            if (timetable == null) return -1;
+            if (actor.IsSpawned) throw new InvalidOperationException("Cannot seek an occupied street scene.");
+            EnsurePrepared();
+            timetable.NextService(Phase, out int stop);
+            if (stop >= 0) SetServicePhase(stop);
+            return stop;
+        }
+
+        private void EnsurePrepared()
+        {
+            if (!actor.HasRoutePhase)
+                actor.PrepareSpawn(plan, initialAnchor, plan.StableSeed);
+        }
+
+        private void SetServicePhase(int stop)
+        {
+            detachedPhase = timetable.Arrival(stop);
+            var visit = plan.Stops[stop];
+            actor.ApplyDetachedPhase(new CityBusTimetable.Sample(visit.LinkIndex, visit.DistanceAlongLink,
+                0f, stop, 0f, stop), actor.ServiceOrdinal + 1);
+        }
+
+        private float CirculationPace()
+        {
+            var other = network[VehicleIndex ^ 1];
+            if (other.actor == null || !other.actor.HasRoutePhase) return 1f;
+            double gap = CityBusTimetable.Wrap(other.Phase - Phase, timetable.Duration);
+            // Keep ordinary speeds while the gap is healthy; the follower eases off by at
+            // most 18%, leaving the leader room after a hold without skipping a platform.
+            return .82f + .18f * Mathf.Clamp01((float)(gap / timetable.Duration) / .45f);
         }
 
         private CityBusPlan plan;
@@ -142,7 +299,7 @@ namespace BarPromenade
         public CityBusPlan Plan => plan;
         public CityBusActor Actor => actor;
         public int Count => actor != null ? 1 : 0;
-        public int PoolCapacity => presentation != null ? 1 : 0;
+        public int PoolCapacity => presentation != null || createModel != null ? 1 : 0;
         public int ActiveCount => actor != null && actor.IsSpawned ? 1 : 0;
         public float TimeUntilNextSpawn => spawnCooldown;
         public bool IsInInitialApproach =>
@@ -185,7 +342,7 @@ namespace BarPromenade
             CityPedestrianDirector pedestrianDirector,
             Transform presentationPoolRoot,
             Func<float> runtimeNightFactorProvider = null,
-            Func<float> runtimeRainIntensityProvider = null)
+            Func<float> runtimeRainIntensityProvider = null, Func<CityBusPresentation> deferredModel = null)
         {
             if (IsInitialized)
             {
@@ -209,9 +366,9 @@ namespace BarPromenade
                 GetSessionRainIntensity;
 
             bool hasRuntimeSlot = routeActor != null ||
-                                  pooledPresentation != null;
+                                  pooledPresentation != null || deferredModel != null;
             if (hasRuntimeSlot &&
-                (routeActor == null || pooledPresentation == null))
+                (routeActor == null || (pooledPresentation == null && deferredModel == null)))
             {
                 throw new ArgumentException(
                     "The city bus actor and presentation must be supplied " +
@@ -239,6 +396,7 @@ namespace BarPromenade
                     nameof(pooledPresentation));
             }
 
+            createModel = deferredModel;
             actor = routeActor;
             presentation = pooledPresentation;
             BuildFixedLoopMetadata();
@@ -325,35 +483,55 @@ namespace BarPromenade
             }
         }
 
+        internal CityBusPresentation GetOrCreatePresentation()
+        {
+            if (presentation == null && createModel != null)
+            {
+                presentation = createModel();
+                presentation.SetDriverFocusTarget(player);
+                createModel = null;
+            }
+            return presentation;
+        }
+
         private void AdvanceLine(float deltaTime)
         {
             if (actor == null || !actor.HasRoutePhase) return;
             float distance = actor.GetClosestPlanarBodyDistance(player.position);
             if (!actor.IsSpawned && distance <= MaximumSpawnDistance && CanRevealLine())
             {
-                actor.BindPresentation(presentation);
+                actor.BindPresentation(GetOrCreatePresentation());
                 initialApproachCompleted = true;
             }
-            else if (actor.IsSpawned && distance >= RecycleDistance && !actor.HasPlayerPassenger)
+            else if (actor.IsSpawned && distance >= RecycleDistance && !actor.HasPlayerPassenger && !actor.HasServiceHold)
                 ReleaseActor(true, preserveRoute: true);
 
-            if (!actor.IsSpawned)
+            if (actor.IsSpawned)
             {
-                backgroundTime += deltaTime;
-                if (backgroundTime < BackgroundStep) return;
-                // At normal Unity frame rates at most two steps are due. Keeping the
-                // remainder preserves the clock, including dwell and service ordinals.
-                while (backgroundTime >= BackgroundStep)
-                {
-                    backgroundTime -= BackgroundStep;
-                    actor.Advance(BackgroundStep, distance <= MaximumSpawnDistance ?
-                        ResolveObstacleState() : DistantObstacleState(), 0f);
-                }
+                actor.CirculationSpeedFactor = CirculationPace();
+                detachedPhase = double.NaN;
+                actor.Advance(deltaTime + backgroundTime, ResolveObstacleState(), GetNightFactor(), GetRainIntensity());
+                backgroundTime = 0f;
                 return;
             }
 
-            actor.Advance(deltaTime + backgroundTime, ResolveObstacleState(), GetNightFactor(), GetRainIntensity());
-            backgroundTime = 0f;
+            backgroundTime += deltaTime;
+            while (backgroundTime >= BackgroundStep)
+            {
+                backgroundTime -= BackgroundStep;
+                var obstacles = distance <= MaximumSpawnDistance ? ResolveObstacleState() : DistantObstacleState();
+                float pace = CirculationPace();
+                if (!obstacles.MustStop && distance > MaximumSpawnDistance)
+                {
+                    AdvanceDetached(BackgroundStep * (actor.CurrentStopIndex < 0 ? pace : 1f));
+                }
+                else
+                {
+                    detachedPhase = double.NaN;
+                    actor.CirculationSpeedFactor = pace;
+                    actor.Advance(BackgroundStep, obstacles, 0f);
+                }
+            }
         }
 
         private bool CanRevealLine()
@@ -367,7 +545,7 @@ namespace BarPromenade
             for (int i = 0; i < walkers.Count; i++)
             {
                 var walker = walkers[i];
-                if (walker.IsSpawned && !walker.IsRouteBound &&
+                if (walker.IsSpawned && (!walker.IsRouteBound || walker.IsCrossingRoad) &&
                     OverlapsOccupiedCapsule(walker.Position, walker.AgentRadius)) return false;
             }
             return true;
@@ -382,29 +560,31 @@ namespace BarPromenade
 
         private CityBusObstacleState DistantObstacleState()
         {
-            float clearance = float.PositiveInfinity;
-            AccumulateOtherBuses(MinimumObstacleLookAhead, ref clearance);
-            CanneryTraffic?.AccumulateObstacle(actor, MinimumObstacleLookAhead, ref clearance);
-            return float.IsPositiveInfinity(clearance) ? CityBusObstacleState.Clear : new CityBusObstacleState(true, clearance);
+            var obstacle = CityBusObstacleState.Clear;
+            AccumulateOtherBuses(MinimumObstacleLookAhead, ref obstacle);
+            CanneryTraffic?.AccumulateObstacle(actor, MinimumObstacleLookAhead, ref obstacle);
+            return obstacle;
         }
 
-        private void AccumulateOtherBuses(float lookAhead, ref float clearance)
+        private void AccumulateOtherBuses(float lookAhead, ref CityBusObstacleState obstacle)
         {
             if (network == null) return;
             for (int i = 0; i < network.Count; i++)
             {
-                var other = network[i].Actor;
+                var otherVehicle = network[i];
+                var other = otherVehicle.Actor;
                 if (other == null || other == actor || !other.HasRoutePhase ||
                     (other.Position - actor.Position).sqrMagnitude > 36f * 36f) continue;
                 var bounds = other.LocalVisualBounds;
                 float radius = bounds.extents.x;
                 float end = Mathf.Max(0f, bounds.extents.z - radius);
+                string routeId = otherVehicle.Plan.RouteId;
                 // Overlapping samples cover the nose, cabin and tail. Actual occupancy always
                 // wins, even against a higher-priority line. Parallel lanes stay open.
                 for (int station = -2; station <= 2; station++)
                     CheckObstacle(other.Position + other.TravelDirection * (station * .5f * end),
-                        radius, lookAhead, ref clearance);
-                if (i >= lineIndex || other.MotionState == CityBusMotionState.Dwelling ||
+                        radius, lookAhead, ref obstacle, CityBusBlockerKind.BusBody, routeId, i, other);
+                if (i >= VehicleIndex || other.MotionState == CityBusMotionState.Dwelling ||
                     Mathf.Abs(Vector3.Dot(other.TravelDirection, actor.TravelDirection)) > .9f) continue;
                 // Lower line number claims a crossing before its nose enters it. If
                 // we already occupy its way out, finish clearing instead of deadlocking.
@@ -414,7 +594,8 @@ namespace BarPromenade
                 for (float step = 2f; step < ahead + 2f; step += 2f)
                 {
                     other.SampleAhead(step, out Vector3 position, out _);
-                    CheckObstacle(position, radius, lookAhead, ref clearance);
+                    CheckObstacle(position, radius, lookAhead, ref obstacle,
+                        CityBusBlockerKind.BusPrediction, routeId, i, other);
                 }
             }
         }
@@ -764,9 +945,9 @@ namespace BarPromenade
             float lookAhead = Mathf.Max(
                 MinimumObstacleLookAhead,
                 actor.GetRequiredStoppingDistance() + actor.Speed + 2f);
-            float clearance = float.PositiveInfinity;
-            AccumulateOtherBuses(lookAhead, ref clearance);
-            CanneryTraffic?.AccumulateObstacle(actor, lookAhead, ref clearance);
+            var obstacle = CityBusObstacleState.Clear;
+            AccumulateOtherBuses(lookAhead, ref obstacle);
+            CanneryTraffic?.AccumulateObstacle(actor, lookAhead, ref obstacle);
             if (!actor.HasPlayerPassenger)
             {
                 float playerRadius = GetPlayerRadius();
@@ -774,7 +955,7 @@ namespace BarPromenade
                     player.position,
                     playerRadius,
                     lookAhead,
-                    ref clearance);
+                    ref obstacle, CityBusBlockerKind.Player, "player");
                 if (playerVelocity.sqrMagnitude > 0.0001f)
                 {
                     CheckObstacle(
@@ -782,7 +963,7 @@ namespace BarPromenade
                         (playerVelocity * PlayerPredictionSeconds),
                         playerRadius,
                         lookAhead,
-                        ref clearance);
+                        ref obstacle, CityBusBlockerKind.PlayerPrediction, "player");
                 }
             }
 
@@ -807,16 +988,19 @@ namespace BarPromenade
                     // That is `0.26 m`, and a walker's own `0.15 m`
                     // shoulder-shift spends most of it.
                     if (!pedestrian.IsSpawned || pedestrian.IsAttachedToVehicle ||
-                        (pedestrian.IsRouteBound && !pedestrian.IsYieldingToVehicle))
+                        (pedestrian.IsRouteBound && !pedestrian.IsYieldingToVehicle && !pedestrian.IsCrossingRoad))
                     {
                         continue;
                     }
 
+                    int resident = pedestrians.ResidentAtSlot(index);
+                    string pedestrianId = resident >= 0 ? "resident" : "pedestrian_slot";
+                    int pedestrianIndex = resident >= 0 ? resident : index;
                     CheckObstacle(
                         pedestrian.Position,
                         pedestrian.AgentRadius,
                         lookAhead,
-                        ref clearance);
+                        ref obstacle, CityBusBlockerKind.Pedestrian, pedestrianId, pedestrianIndex);
                     Vector3 travel = pedestrian.TravelDirection;
                     if (travel.sqrMagnitude > 0.0001f)
                     {
@@ -827,31 +1011,31 @@ namespace BarPromenade
                              PedestrianPredictionSeconds),
                             pedestrian.AgentRadius,
                             lookAhead,
-                            ref clearance);
+                            ref obstacle, CityBusBlockerKind.PedestrianPrediction, pedestrianId, pedestrianIndex);
                     }
                 }
             }
 
-            return float.IsPositiveInfinity(clearance)
-                ? CityBusObstacleState.Clear
-                : new CityBusObstacleState(true, clearance);
+            return obstacle;
         }
 
         private void CheckObstacle(
             Vector3 position,
             float radius,
             float lookAhead,
-            ref float minimumClearance)
+            ref CityBusObstacleState nearest,
+            CityBusBlockerKind kind,
+            string id,
+            int index = -1,
+            CityBusActor bus = null)
         {
             if (actor.TryGetPathObstacleClearance(
                     position,
                     radius,
                     lookAhead,
-                    out float clearance))
+                    out float clearance) && clearance < nearest.ForwardClearance)
             {
-                minimumClearance = Mathf.Min(
-                    minimumClearance,
-                    clearance);
+                nearest = new CityBusObstacleState(true, clearance, kind, position, id, index, bus);
             }
         }
 

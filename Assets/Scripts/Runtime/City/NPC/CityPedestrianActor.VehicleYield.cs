@@ -15,10 +15,67 @@ namespace BarPromenade
         private bool hasVehicleRefuge;
         private float refugeRetry;
         private float vehicleMoveBlocked;
+        private int crossingExit = -1;
+        private bool crossingCommitted;
+        private float crossingCheckDelay;
 
         public bool IsYieldingToVehicle { get; private set; }
+        public bool IsWaitingToCross { get; private set; }
+        public bool IsCrossingRoad => crossingCommitted && crossingExit >= 0;
         public bool IsReturningFromVehicle { get; private set; }
         public Vector3 VehicleReturnPosition { get; private set; }
+
+        private void ClearCrossing()
+        {
+            crossingExit = -1;
+            crossingCommitted = false;
+            IsWaitingToCross = false;
+            crossingCheckDelay = 0f;
+        }
+
+        private void SetWalkingLeg(int from, int to, CityPedestrianLinkKind kind)
+        {
+            previousNodeIndex = from;
+            targetNodeIndex = to;
+            incomingLinkKind = kind;
+            if (kind != CityPedestrianLinkKind.Crosswalk) { ClearCrossing(); return; }
+            if (crossingExit >= 0) return;
+            // Each painted crossing runs from one pavement to the other via
+            // two kerb nodes. A restored resident may already be on that chain.
+            int previous = from, current = to;
+            for (int i = 0; i < 3 && !plan.Nodes[current].IsCrosswalkEntry; i++)
+            {
+                int next = -1;
+                foreach (int linkIndex in plan.GetLinkIndices(current))
+                {
+                    var link = plan.Links[linkIndex];
+                    if (link.Kind == CityPedestrianLinkKind.Crosswalk && link.Other(current) != previous)
+                        { next = link.Other(current); break; }
+                }
+                if (next < 0) break;
+                previous = current; current = next;
+            }
+            crossingExit = current;
+            crossingCommitted = !plan.Nodes[from].IsCrosswalkEntry;
+        }
+
+        private bool WaitForCrossingGap(float deltaTime, CityPedestrianVehicleTraffic traffic)
+        {
+            if (crossingExit < 0 || crossingCommitted || IsYieldingToVehicle || IsPersonalSpaceReacting ||
+                (MotionState != CityPedestrianMotionState.Walking && MotionState != CityPedestrianMotionState.ApproachingStop &&
+                 MotionState != CityPedestrianMotionState.ApproachingBench)) return false;
+            if (traffic != null && traffic.PhysicallyBlocks(Position, agentRadius))
+            {
+                IsWaitingToCross = false;
+                return false; // The occupied kerb needs the normal safe-refuge reaction.
+            }
+            crossingCheckDelay -= deltaTime;
+            if (IsWaitingToCross && crossingCheckDelay > 0f) return true;
+            IsWaitingToCross = traffic != null && traffic.BlocksCrossing(Position, plan.Nodes[crossingExit].Position, agentRadius, speed);
+            crossingCheckDelay = .2f;
+            crossingCommitted = !IsWaitingToCross;
+            return IsWaitingToCross;
+        }
 
         // Keep the graph state and wait/bench/resident destination intact. An
         // excursion owns movement until the actor has walked back to its feet.
@@ -35,7 +92,8 @@ namespace BarPromenade
             if (!IsYieldingToVehicle)
             {
                 if (traffic == null || deltaTime <= 0f ||
-                    !traffic.Blocks(Position, agentRadius)) return false;
+                    !(IsCrossingRoad ? traffic.PhysicallyBlocks(Position, agentRadius) :
+                        traffic.Blocks(Position, agentRadius))) return false;
                 VehicleReturnPosition = Position;
                 IsYieldingToVehicle = true;
                 refugeRetry = 0f;

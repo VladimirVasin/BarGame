@@ -117,6 +117,8 @@ namespace BarPromenade
         [SerializeField] private Transform rearDoorEntryAnchor;
         [SerializeField] private Transform[] passengerSeatAnchors =
             Array.Empty<Transform>();
+        [SerializeField] private Transform[] standingFloorAnchors = Array.Empty<Transform>();
+        [SerializeField] private Transform[] standingGripAnchors = Array.Empty<Transform>();
         [SerializeField] private Renderer[] renderers =
             Array.Empty<Renderer>();
         [SerializeField] private CityBusRendererBinding[] rendererBindings =
@@ -161,6 +163,8 @@ namespace BarPromenade
         public Transform RearDoorEntryAnchor => rearDoorEntryAnchor;
         public IReadOnlyList<Transform> PassengerSeatAnchors =>
             passengerSeatAnchors;
+        public IReadOnlyList<Transform> StandingFloorAnchors => standingFloorAnchors;
+        public IReadOnlyList<Transform> StandingGripAnchors => standingGripAnchors;
         public IReadOnlyList<Renderer> Renderers => renderers;
         public IReadOnlyList<CityBusRendererBinding> RendererBindings =>
             rendererBindings;
@@ -214,7 +218,9 @@ namespace BarPromenade
             Transform configuredDoorButtonPressAnchor = null,
             Transform configuredDriverDoorLookAnchor = null,
             Transform configuredLeftWiperPivot = null,
-            Transform configuredRightWiperPivot = null)
+            Transform configuredRightWiperPivot = null,
+            Transform[] configuredStandingFloors = null,
+            Transform[] configuredStandingGrips = null)
         {
             modelRoot = configuredModelRoot;
             body = configuredBody;
@@ -255,6 +261,8 @@ namespace BarPromenade
             rearDoorEntryAnchor = configuredRearDoorEntryAnchor;
             passengerSeatAnchors = configuredPassengerSeatAnchors ??
                 Array.Empty<Transform>();
+            standingFloorAnchors = configuredStandingFloors ?? Array.Empty<Transform>();
+            standingGripAnchors = configuredStandingGrips ?? Array.Empty<Transform>();
             renderers = configuredRenderers ?? Array.Empty<Renderer>();
             rendererBindings = configuredRendererBindings ??
                 Array.Empty<CityBusRendererBinding>();

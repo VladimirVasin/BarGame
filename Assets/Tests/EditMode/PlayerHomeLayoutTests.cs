@@ -8,6 +8,37 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class PlayerHomeLayoutTests
     {
+        [Test]
+        public void DefaultCoastal_HomeStandsBesideTheHighestBridgeAndOpensOntoItsFootway()
+        {
+            var layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
+            var home = layout.SummitHome;
+            var quarter = CityHillsideQuarterPlan.ForLayout(layout);
+            var bridge = quarter.Bridges.Single(item => item.Id == "summit");
+            Assert.That(home.Lot, Is.SameAs(layout.PlayerHome));
+            Assert.That(CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings.Count(h => h.Lot.IsPlayerHome), Is.EqualTo(1));
+            Assert.That(layout.BuildingLots.Any(lot => lot.IsPlayerHome), Is.False);
+            Assert.That(layout.LowerResidentialLot.IsOrdinaryBuilding, Is.True);
+            Assert.That(home.OnSummitStreet, Is.True);
+            Assert.That(home.ApproachBounds.xMax, Is.LessThan(bridge.WestBearingWorld.x), "Public way around the parapet");
+            Assert.That(home.Lot.SidewalkArrivalPosition, Is.EqualTo(layout.SpawnWorldPosition));
+            Assert.That(layout.StandingSpawnPosition, Is.EqualTo(home.Lot.SidewalkArrivalPosition +
+                Vector3.up * PlayerFactory.GroundedRootOffset));
+            Assert.That(home.ThresholdWorld.y, Is.EqualTo(CityHillsideStreetRoute.SummitTop +
+                CityHillsideBuilding.PavementRise).Within(.001f));
+            var soil = CityHillsideGroundGrid.ForLayout(layout);
+            foreach (var footprint in home.MapFootprints)
+            foreach (var corner in CityRoadPolygon.Rectangle(footprint))
+            {
+                Assert.That(quarter.IsExposedRavine(corner, .30f), Is.False, $"Foundation above ravine at {corner}");
+                float y = quarter.SampleSoil(corner);
+                if (!quarter.TerrainBounds.Contains(corner))
+                    Assert.That(soil.Any(bank => bank.TryHeight(corner, out y)), Is.True, $"No support at {corner}");
+                Assert.That(y, Is.InRange(home.Lot.Center.y - .9f, home.ThresholdWorld.y + .02f), $"Soil at {corner}");
+            }
+        }
+
         [TestCase(GameSessionState.DefaultCitySeed)]
         [TestCase(73119)]
         [TestCase(-99123)]

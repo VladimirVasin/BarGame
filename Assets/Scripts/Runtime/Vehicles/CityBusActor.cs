@@ -15,33 +15,9 @@ namespace BarPromenade
         RouteEnded
     }
 
-    public readonly struct CityBusObstacleState
-    {
-        public static CityBusObstacleState Clear =>
-            new CityBusObstacleState(false, float.PositiveInfinity);
-
-        public CityBusObstacleState(
-            bool mustStop,
-            float forwardClearance)
-        {
-            MustStop = mustStop;
-            ForwardClearance = mustStop && IsFinite(forwardClearance)
-                ? Mathf.Max(0f, forwardClearance)
-                : float.PositiveInfinity;
-        }
-
-        public bool MustStop { get; }
-        public float ForwardClearance { get; }
-
-        private static bool IsFinite(float value)
-        {
-            return !float.IsNaN(value) && !float.IsInfinity(value);
-        }
-    }
-
     [RequireComponent(typeof(BoxCollider), typeof(Rigidbody))]
     [DisallowMultipleComponent]
-    public sealed class CityBusActor : MonoBehaviour
+    public sealed partial class CityBusActor : MonoBehaviour
     {
         private readonly HashSet<string> servedStopIds =
             new HashSet<string>(StringComparer.Ordinal);
@@ -50,38 +26,32 @@ namespace BarPromenade
         private readonly List<CabinOccupant> occupants =
             new List<CabinOccupant>(CabinCapacity);
 
-        /// <summary>
-        /// Places in the cabin, counting the hero. Twelve seats are modelled,
-        /// but a bus that fills up reads as a crowd rather than as the quiet
-        /// city this game is; three is the whole occupancy contract.
-        /// </summary>
-        public const int CabinCapacity = 3;
+        // Eight individual seats and two places on the rear bench.
+        public const int SeatCount = 10;
+        public const int StandingPlaceStart = SeatCount;
+        public const int StandingPlaceCount = 3;
+        public const int CabinCapacity = SeatCount + StandingPlaceCount;
 
-        /// <summary>
-        /// Seat `07` (zero-based `6`): the first window seat on the lateral
-        /// side opposite the driver. It stays reserved for the hero, so
-        /// ambient passengers can never lock him out of his own bus.
-        /// </summary>
+        // Seat 07 (index 6) is opposite the driver and belongs to the hero.
         public const int PlayerSeatIndex = 6;
-
-        /// <summary>
-        /// Ambient passengers leave one place free for the hero at all times.
-        /// </summary>
         public const int MaximumNpcOccupants = CabinCapacity - 1;
 
-        /// <summary>
-        /// Stable seat preference for ambient passengers, biased to the
-        /// driver-side row and the rear bench: those are the seats a hero in
-        /// seat `07` actually sees. Seat index <see cref="PlayerSeatIndex"/>
-        /// is deliberately absent.
-        /// </summary>
-        private static readonly int[] OrderedNpcSeatIndices =
+        // Logical cabin slots use a stable preference order. Window and rear
+        // seats fill first, then the three individual standing rail stations.
+        private static readonly int[] OrderedNpcPlaces =
         {
-            2, 4, 1, 10, 3, 8, 0, 5, 11, 9, 7
+            2, 4, 1, 3, 8, 0, 5, 9, 7,
+            StandingPlaceStart, StandingPlaceStart + 1, StandingPlaceStart + 2
         };
 
-        private static readonly IReadOnlyList<int> ReadOnlyNpcSeatIndices =
-            Array.AsReadOnly(OrderedNpcSeatIndices);
+        public static IReadOnlyList<int> NpcPlaceIndices { get; } = Array.AsReadOnly(OrderedNpcPlaces);
+        public static IReadOnlyList<int> NpcSeatIndices { get; } =
+            new System.Collections.ObjectModel.ReadOnlyCollection<int>(
+                new ArraySegment<int>(OrderedNpcPlaces, 0, SeatCount - 1));
+
+        public static int NpcSlotForPlace(int placeIndex) => Array.IndexOf(OrderedNpcPlaces, placeIndex);
+        public static bool IsStandingPlace(int placeIndex) =>
+            placeIndex >= StandingPlaceStart && placeIndex < CabinCapacity;
 
         public const float CruiseSpeed = 6f;
         public const float JunctionSpeed = 3.2f;
@@ -122,7 +92,7 @@ namespace BarPromenade
         public const float EngineIdleVolume = 0.32f;
         public const float EngineMaximumVolume = 0.52f;
 
-        private const float DistanceTolerance = 0.02f;
+        internal const float DistanceTolerance = 0.02f;
         private const float ObstacleProbeStep = 0.65f;
         private const int MaximumObstacleProbeLinkDepth = 8;
         private const uint RandomFallbackSeed = 0xA341316Cu;
@@ -136,6 +106,7 @@ namespace BarPromenade
         private int currentLinkIndex = -1;
         private int loopBoundaryLinkIndex = -1;
         private int currentStopIndex = -1;
+        internal int LastServedStopIndex { get; private set; } = -1;
         private float distanceAlongLink;
         private float speed;
         private float distanceSinceSpawn;
@@ -143,8 +114,6 @@ namespace BarPromenade
         private float dwellDuration;
         private float serviceHoldElapsed;
         private float pendingTravel;
-        private float approachStallElapsed;
-        private bool approachStallReported;
         private uint randomState;
         private bool isPrepared;
 
@@ -185,6 +154,8 @@ namespace BarPromenade
         public float CurrentDwellDuration => dwellDuration;
         public int DwellCount { get; private set; }
         public int ServiceOrdinal => DwellCount;
+        public event Action<int> ServiceStarted;
+        internal float CirculationSpeedFactor { get; set; } = 1f;
         public bool DoorsFullyOpen =>
             MotionState == CityBusMotionState.Dwelling &&
             presentation != null &&
@@ -197,11 +168,6 @@ namespace BarPromenade
         public int NpcOccupantCount => CountOccupants(false);
         public bool HasPlayerPassenger => CountOccupants(true) > 0;
 
-        /// <summary>
-        /// Seat preference order for ambient passengers, most visible first.
-        /// </summary>
-        public static IReadOnlyList<int> NpcSeatIndices =>
-            ReadOnlyNpcSeatIndices;
         public string SpawnAnchorId { get; private set; } = string.Empty;
         public Bounds LocalVisualBounds => localVisualBounds;
         public Bounds WorldBodyBounds => CreateWorldBounds(
@@ -211,7 +177,7 @@ namespace BarPromenade
 
         public void Initialize(
             Bounds fullVisualBounds,
-            CityBusDimensions busDimensions)
+            CityBusDimensions busDimensions, bool deferAudio = false)
         {
             if (IsInitialized)
             {
@@ -243,7 +209,7 @@ namespace BarPromenade
             rigidBody.collisionDetectionMode =
                 CollisionDetectionMode.ContinuousSpeculative;
             rigidBody.constraints = RigidbodyConstraints.FreezeRotationZ;
-            InitializeEngineAudio();
+            if (!deferAudio) InitializeEngineAudio();
             IsInitialized = true;
         }
 
@@ -307,6 +273,7 @@ namespace BarPromenade
             dwellElapsed = 0f;
             dwellDuration = 0f;
             currentStopIndex = -1;
+            LastServedStopIndex = -1;
             servedStopIds.Clear();
             DwellCount = 0;
             IsYielding = false;
@@ -347,10 +314,19 @@ namespace BarPromenade
             visual.localScale = Vector3.one;
             presentation.ResetForPool();
             presentation.gameObject.SetActive(true);
+            if (audioPresentation == null) InitializeEngineAudio();
             audioPresentation.BindPresentation(presentation);
+            rigidBody.position = transform.position;
+            rigidBody.rotation = transform.rotation;
             rigidBody.detectCollisions = true;
             bodyCollider.enabled = true;
             StartEngineAudio();
+            if (currentStopIndex >= 0)
+            {
+                var sample = CityBusDriverDoorTimeline.SampleDwell(dwellElapsed, dwellDuration, DoorTransitionDuration);
+                audioPresentation.RestoreDoorPhase(sample.DoorPhase);
+                presentation.SetDriverDoorSample(sample);
+            }
         }
 
         public CityBusPresentation ReleasePresentation(Transform poolRoot) =>
@@ -416,6 +392,7 @@ namespace BarPromenade
             }
 
             serviceHoldOwners.RemoveAt(index);
+            if (serviceHoldOwners.Count == 0) serviceHoldElapsed = 0f;
             return true;
         }
 
@@ -433,15 +410,31 @@ namespace BarPromenade
             return attached;
         }
 
-        /// <summary>
-        /// Attaches an ambient passenger to the most visible free seat that is
-        /// not the hero's. Fails once <see cref="MaximumNpcOccupants"/> are
-        /// aboard, which keeps total occupancy at or below
-        /// <see cref="CabinCapacity"/> even when the hero boards later.
-        /// </summary>
-        public bool TryAttachNpcPassenger(object owner, out int seatIndex)
+        public bool TryAttachNpcPassenger(object owner, out int placeIndex)
         {
-            return TryAttachOccupant(owner, false, out seatIndex);
+            return TryAttachOccupant(owner, false, out placeIndex);
+        }
+
+        public bool TryAttachNpcPassengerAtPlace(object owner, int placeIndex)
+        {
+            return placeIndex >= 0 && placeIndex < CabinCapacity && placeIndex != PlayerSeatIndex &&
+                TryAttachOccupant(owner, false, out _, placeIndex);
+        }
+
+        public bool TryAttachNpcPassengerAtSeat(object owner, int seatIndex)
+        {
+            return seatIndex < SeatCount && TryAttachNpcPassengerAtPlace(owner, seatIndex);
+        }
+
+        public bool TransferNpcPlace(object currentOwner, object newOwner, int place)
+        {
+            if (currentOwner == null || newOwner == null) return false;
+            int index = IndexOfOccupant(currentOwner);
+            if (index < 0 || occupants[index].IsPlayer || occupants[index].PlaceIndex != place) return false;
+            if (ReferenceEquals(currentOwner, newOwner)) return true;
+            if (IndexOfOccupant(newOwner) >= 0) return false;
+            occupants[index] = new CabinOccupant(newOwner, place, false);
+            return true;
         }
 
         public bool ReleasePassenger(object owner)
@@ -472,91 +465,66 @@ namespace BarPromenade
             return owner != null && IndexOfHold(owner) >= 0;
         }
 
-        public bool TryGetOccupantSeatIndex(object owner, out int seatIndex)
+        public bool TryGetOccupantPlaceIndex(object owner, out int placeIndex)
         {
             int index = owner != null ? IndexOfOccupant(owner) : -1;
-            seatIndex = index >= 0 ? occupants[index].SeatIndex : -1;
+            placeIndex = index >= 0 ? occupants[index].PlaceIndex : -1;
             return index >= 0;
         }
 
-        public bool IsSeatOccupied(int seatIndex)
+        public bool TryGetOccupantSeatIndex(object owner, out int seatIndex)
         {
-            for (int index = 0; index < occupants.Count; index++)
-            {
-                if (occupants[index].SeatIndex == seatIndex)
-                {
-                    return true;
-                }
-            }
-
+            if (TryGetOccupantPlaceIndex(owner, out seatIndex) && seatIndex < SeatCount) return true;
+            seatIndex = -1;
             return false;
         }
 
-        private bool TryAttachOccupant(
-            object owner,
-            bool isPlayer,
-            out int seatIndex)
+        public bool IsSeatOccupied(int seatIndex) =>
+            seatIndex >= 0 && seatIndex < SeatCount && IsPlaceOccupied(seatIndex);
+
+        public bool IsPlaceOccupied(int placeIndex)
         {
-            seatIndex = -1;
-            if (owner == null || !IsSpawned)
+            for (int index = 0; index < occupants.Count; index++)
             {
-                return false;
+                if (occupants[index].PlaceIndex == placeIndex) return true;
             }
+            return false;
+        }
+
+        private bool TryAttachOccupant(object owner, bool isPlayer, out int placeIndex, int requestedPlace = -1)
+        {
+            placeIndex = -1;
+            if (owner == null || !IsSpawned) return false;
 
             int existing = IndexOfOccupant(owner);
             if (existing >= 0)
             {
-                seatIndex = occupants[existing].SeatIndex;
+                CabinOccupant occupant = occupants[existing];
+                if (occupant.IsPlayer != isPlayer ||
+                    requestedPlace >= 0 && requestedPlace != occupant.PlaceIndex) return false;
+                placeIndex = occupant.PlaceIndex;
                 return true;
             }
 
-            if (occupants.Count >= CabinCapacity)
+            if (isPlayer || requestedPlace >= 0)
             {
-                return false;
-            }
-
-            if (isPlayer)
-            {
-                if (IsSeatOccupied(PlayerSeatIndex))
-                {
-                    return false;
-                }
-
-                seatIndex = PlayerSeatIndex;
+                int requested = isPlayer ? PlayerSeatIndex : requestedPlace;
+                if (IsPlaceOccupied(requested)) return false;
+                placeIndex = requested;
             }
             else
             {
-                if (CountOccupants(false) >= MaximumNpcOccupants ||
-                    !TryReserveNpcSeat(out seatIndex))
+                foreach (int candidate in OrderedNpcPlaces)
                 {
-                    return false;
+                    if (IsPlaceOccupied(candidate)) continue;
+                    placeIndex = candidate;
+                    break;
                 }
+                if (placeIndex < 0) return false;
             }
 
-            occupants.Add(new CabinOccupant(owner, seatIndex, isPlayer));
+            occupants.Add(new CabinOccupant(owner, placeIndex, isPlayer));
             return true;
-        }
-
-        /// <summary>
-        /// Reserves a place logically. Whether the model actually carries that
-        /// seat anchor is the transfer plan's question, not the cabin's:
-        /// <see cref="CityBusRidePlan"/> already refuses a seat index the
-        /// registry cannot resolve.
-        /// </summary>
-        private bool TryReserveNpcSeat(out int seatIndex)
-        {
-            for (int index = 0; index < OrderedNpcSeatIndices.Length; index++)
-            {
-                int candidate = OrderedNpcSeatIndices[index];
-                if (!IsSeatOccupied(candidate))
-                {
-                    seatIndex = candidate;
-                    return true;
-                }
-            }
-
-            seatIndex = -1;
-            return false;
         }
 
         private int CountOccupants(bool player)
@@ -601,15 +569,15 @@ namespace BarPromenade
 
         private readonly struct CabinOccupant
         {
-            public CabinOccupant(object owner, int seatIndex, bool isPlayer)
+            public CabinOccupant(object owner, int placeIndex, bool isPlayer)
             {
                 Owner = owner;
-                SeatIndex = seatIndex;
+                PlaceIndex = placeIndex;
                 IsPlayer = isPlayer;
             }
 
             public object Owner { get; }
-            public int SeatIndex { get; }
+            public int PlaceIndex { get; }
             public bool IsPlayer { get; }
         }
 
@@ -888,8 +856,8 @@ namespace BarPromenade
 
             float speedLimit = CurrentLink.Kind ==
                                CityBusRouteLinkKind.Straight
-                ? CruiseSpeed
-                : JunctionSpeed;
+                ? CruiseSpeed * CirculationSpeedFactor
+                : JunctionSpeed * CirculationSpeedFactor;
             bool approachingStop = TryGetNextStop(
                 out int stopIndex,
                 out float stopDistance);
@@ -1096,74 +1064,11 @@ namespace BarPromenade
             return totalTravelled;
         }
 
-        /// <summary>
-        /// A bus that is stationary short of a stop looks identical to a bus
-        /// waiting with its doors shut, and nothing in this runtime used to
-        /// say which it was. One record separates every explanation: whether
-        /// it is yielding to somebody, how much travel the frame produced, and
-        /// at what frame time.
-        /// </summary>
-        private void ReportApproachStall(
-            float travelled,
-            float requestedTravel,
-            float deltaTime,
-            bool approachingStop,
-            int stopIndex,
-            float stopDistance,
-            CityBusObstacleState obstacles)
-        {
-            bool halted = MotionState == CityBusMotionState.ApproachingStop ||
-                          MotionState == CityBusMotionState.Yielding;
-            if (!halted || travelled > 0f)
-            {
-                if (approachStallReported)
-                {
-                    GameLog.Info(
-                        "bus",
-                        "approach_released",
-                        GameLog.Field("stalled_s", approachStallElapsed),
-                        GameLog.Field("delta_time", deltaTime),
-                        GameLog.Field("travelled", travelled));
-                }
-
-                approachStallElapsed = 0f;
-                approachStallReported = false;
-                return;
-            }
-
-            approachStallElapsed += deltaTime;
-            if (approachStallReported ||
-                approachStallElapsed < ApproachStallReportSeconds)
-            {
-                return;
-            }
-
-            approachStallReported = true;
-            GameLog.Warning(
-                "bus",
-                "approach_stalled",
-                GameLog.Field("state", MotionState.ToString()),
-                GameLog.Field("stop_index", approachingStop ? stopIndex : -1),
-                GameLog.Field(
-                    "distance_to_stop",
-                    approachingStop
-                        ? stopDistance - distanceAlongLink
-                        : -1f),
-                GameLog.Field("speed", speed),
-                GameLog.Field("requested_travel", requestedTravel),
-                GameLog.Field("pending_travel", pendingTravel),
-                GameLog.Field("delta_time", deltaTime),
-                GameLog.Field("must_stop", obstacles.MustStop),
-                GameLog.Field(
-                    "forward_clearance",
-                    obstacles.MustStop ? obstacles.ForwardClearance : -1f),
-                GameLog.Field("stalled_s", approachStallElapsed));
-        }
-
         private void BeginDwell(int stopIndex)
         {
             CityBusStopDescriptor stop = plan.Stops[stopIndex];
             currentStopIndex = stopIndex;
+            LastServedStopIndex = stopIndex;
             servedStopIds.Add(GetStopServiceKey(stop));
             DwellCount++;
             dwellElapsed = 0f;
@@ -1180,7 +1085,35 @@ namespace BarPromenade
                     0f,
                     dwellDuration,
                     DoorTransitionDuration));
+            EndStall("arrived_at_stop");
+            ServiceStarted?.Invoke(stopIndex);
         }
+
+        internal void ApplyDetachedPhase(CityBusTimetable.Sample sample, int ordinal, string reason = "detached_timetable")
+        {
+            EndStall(reason);
+            currentLinkIndex = sample.Link;
+            distanceAlongLink = sample.Along;
+            currentStopIndex = sample.Stop;
+            LastServedStopIndex = sample.LastStop;
+            DwellCount = ordinal;
+            dwellElapsed = sample.Dwell;
+            dwellDuration = currentStopIndex >= 0 ? DwellDuration : 0f;
+            speed = sample.Speed;
+            pendingTravel = 0f;
+            serviceHoldElapsed = 0f;
+            distanceSinceSpawn = EnteringTravelDistance;
+            IsYielding = false;
+            IsBraking = currentStopIndex >= 0;
+            MotionState = currentStopIndex >= 0 ? CityBusMotionState.Dwelling : CityBusMotionState.Cruising;
+            servedStopIds.Clear();
+            if (sample.LastStop >= 0)
+                servedStopIds.Add(GetStopServiceKey(plan.Stops[sample.LastStop]));
+            EvaluateLink(CurrentLink, distanceAlongLink, out var position, out var forward);
+            SetPose(position, forward);
+        }
+
+        internal void NotifyDetachedService(int stopIndex) => ServiceStarted?.Invoke(stopIndex);
 
         private void AdvanceDwell(float deltaTime)
         {
@@ -1296,6 +1229,7 @@ namespace BarPromenade
             if (selected == loopBoundaryLinkIndex)
             {
                 servedStopIds.Clear();
+                LastServedStopIndex = -1;
             }
 
             currentLinkIndex = selected;
@@ -1347,8 +1281,11 @@ namespace BarPromenade
                 ? Quaternion.LookRotation(forward.normalized, Vector3.up)
                 : transform.rotation;
             transform.SetPositionAndRotation(position, rotation);
-            rigidBody.position = position;
-            rigidBody.rotation = rotation;
+            if (IsSpawned)
+            {
+                rigidBody.position = position;
+                rigidBody.rotation = rotation;
+            }
         }
 
         internal static void EvaluateLink(
@@ -1427,10 +1364,12 @@ namespace BarPromenade
 
         private void ResetSpawnState()
         {
+            EndStall("route_reset");
             plan = null;
             currentLinkIndex = -1;
             loopBoundaryLinkIndex = -1;
             currentStopIndex = -1;
+            LastServedStopIndex = -1;
             distanceAlongLink = 0f;
             speed = 0f;
             distanceSinceSpawn = 0f;
@@ -1438,8 +1377,6 @@ namespace BarPromenade
             dwellDuration = 0f;
             serviceHoldElapsed = 0f;
             pendingTravel = 0f;
-            approachStallElapsed = 0f;
-            approachStallReported = false;
             randomState = 0u;
             isPrepared = false;
             serviceHoldOwners.Clear();

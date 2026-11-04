@@ -60,6 +60,7 @@ namespace BarPromenade
         private bool hasExteriorLightingSample;
         private long lastThunderStrikeId = long.MinValue;
         private BuildingLot homeLot;
+        private bool summitHome;
         private CityLightingPresentation localLighting;
 
         public bool IsInitialized { get; private set; }
@@ -140,6 +141,7 @@ namespace BarPromenade
             }
 
             homeLot = exteriorContext.PlayerHome;
+            summitHome = exteriorContext.Layout.HasSummitHome;
             homeVisibility = VisibilitySnapshot.Capture(targetCamera);
             homeLighting = LightingSnapshot.Capture();
             BuildExteriorFog(balcony, citySeed);
@@ -533,8 +535,12 @@ namespace BarPromenade
 
             if (useCityVisibility)
             {
-                RuntimeSceneSetup.ApplyCityExteriorVisibility(
-                    targetCamera);
+                RuntimeSceneSetup.ApplyCityExteriorVisibility(targetCamera);
+                if (summitHome)
+                {
+                    targetCamera.farClipPlane = HomeSummitOutlook.FarPlane;
+                    RenderSettings.fogDensity = HomeSummitOutlook.FogDensity;
+                }
                 SetExteriorLightingEnabled(true);
                 if (hasExteriorLightingSample)
                 {
@@ -545,7 +551,9 @@ namespace BarPromenade
                 {
                     RuntimeSceneSetup.ApplyCityExteriorLighting();
                 }
-                FogField.FogRenderer.enabled = true;
+                // Air at pavement height stays in the ravine below the summit.
+                // The elevated observer already sees continuous depth fog over the city.
+                FogField.FogRenderer.enabled = !summitHome;
                 RainField.RainRenderer.enabled = true;
                 Clouds.SetVisible(true);
                 CityPostProcessVolume.weight = 1f;
@@ -679,6 +687,7 @@ namespace BarPromenade
             runtimeCityProfile =
                 RuntimeSceneSetup
                     .CreateCityNoirRuntimeProfile();
+            if (summitHome) RuntimeSceneSetup.AddGaussianDepthOfField(runtimeCityProfile, 65f, 235f, .58f);
             CityPostProcessVolume.profile = runtimeCityProfile;
             runtimeCityProfile.TryGet(out cityColorAdjustments);
             volumeObject

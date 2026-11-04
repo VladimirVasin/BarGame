@@ -204,6 +204,7 @@ namespace BarPromenade
                 seat.SeatTopCenter.x,
                 seat.GroundY,
                 seat.SeatTopCenter.z);
+            FloorPosition = seatGround;
             SideDockDistance =
                 seat.SeatWidth * 0.5f + BoardSeatSideClearance;
             Vector3 entryRoot = seatGround + GetDockOffset(seat);
@@ -353,6 +354,7 @@ namespace BarPromenade
         /// it: they are entered from the front.
         /// </summary>
         public float SideDockDistance { get; }
+        public Vector3 FloorPosition { get; }
         public float SeatWidth { get; }
         public float SeatDepth { get; }
         public float ApproachClearance { get; }

@@ -52,6 +52,9 @@ namespace BarPromenade
         private int authoredActionInputIndex = -1;
         private float authoredActionWeight;
         private Transform seatAnchor;
+        private CityBusStandingPose standing;
+        private CityPedestrianShoeContacts shoes;
+        private CityPedestrianSeatedPose seatedPose;
         private Vector3 seatLocalUp;
         private CityPedestrianSeatedRide seatedRide;
         private CityPedestrianAssetRegistry registry;
@@ -86,6 +89,8 @@ namespace BarPromenade
         public bool IsInitialized { get; private set; }
         public bool IsMoving { get; private set; }
         public bool IsSeated => seatAnchor != null;
+        internal float SeatedPelvisForward => seatedPose != null && seatedPose.IsBound ? seatedPose.PelvisForward : 0f;
+        public bool IsStandingInBus => standing != null && standing.IsBound;
         public float WalkWeight { get; private set; }
         public float AnimationSpeed => animationSpeed;
         public CityPedestrianAssetRegistry Registry => registry;
@@ -178,6 +183,8 @@ namespace BarPromenade
             BuildGraph(animator);
             IsInitialized = true;
             ConfigureCycle(animationSpeed, 0f);
+            if (defaultBody != null && registry.LeftFoot != null && registry.RightFoot != null)
+                shoes = new CityPedestrianShoeContacts(registry, transform.rotation);
             BindLegLayer();
             BindAttentionBones();
             SetMoving(false);
@@ -269,6 +276,13 @@ namespace BarPromenade
         }
 
         public bool TrySeat(Transform anchor, CityPedestrianSeatedRide ride, Vector3 surfaceUp)
+            => BindSeat(anchor, ride, surfaceUp, null, transform.forward);
+
+        public bool TrySeat(Transform anchor, CityPedestrianSeatedRide ride, Vector3 surfaceUp,
+            Vector3 floorPoint, Vector3 facing) => BindSeat(anchor, ride, surfaceUp, floorPoint, facing);
+
+        private bool BindSeat(Transform anchor, CityPedestrianSeatedRide ride, Vector3 surfaceUp,
+            Vector3? floorPoint, Vector3 facing)
         {
             if (!IsInitialized ||
                 anchor == null ||
@@ -283,6 +297,13 @@ namespace BarPromenade
             }
 
             FlushPendingEvaluation();
+            standing?.Release();
+            seatedPose?.Release();
+            if (floorPoint.HasValue && shoes != null)
+            {
+                seatedPose ??= new CityPedestrianSeatedPose(registry, shoes);
+                if (!seatedPose.Bind(anchor, surfaceUp.normalized, facing, floorPoint.Value)) return false;
+            }
             seatAnchor = anchor;
             // Imported FBX empty axes need not match the cushion plane.
             // The owner supplies its physical normal; retain it in anchor
@@ -297,8 +318,27 @@ namespace BarPromenade
             return true;
         }
 
+        internal bool TryStandInBus(Transform floor, Transform grip, Vector3 up)
+        {
+            if (!IsInitialized || floor == null || grip == null || up.sqrMagnitude < .5f) return false;
+            ClearSeat();
+            ClearAttention();
+            SetMoving(false);
+            RestoreModelBasePosition();
+            legLayer.Restore();
+            graph.Evaluate(0f);
+            standing ??= new CityBusStandingPose(this, shoes);
+            return standing.Bind(floor, grip, up.normalized);
+        }
+
         public void ClearSeat()
         {
+            seatedPose?.Release();
+            if (IsStandingInBus)
+            {
+                standing.Release();
+                RestoreModelBasePosition();
+            }
             if (seatAnchor == null && seatedRide == null)
             {
                 return;
@@ -408,7 +448,7 @@ namespace BarPromenade
             }
 
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
-            SetMoving(IsSeated ? false : moving, immediately);
+            SetMoving(IsSeated || IsStandingInBus ? false : moving, immediately);
             if (!immediately &&
                 Mathf.Abs(WalkWeight - targetWalkWeight) > 0.0001f)
             {
@@ -454,6 +494,8 @@ namespace BarPromenade
                 return;
             }
 
+            standing?.Release();
+            seatedPose?.Release();
             RestoreModelBasePosition();
             if (graph.IsValid())
             {
@@ -586,12 +628,20 @@ namespace BarPromenade
             }
 
             RestoreModelBasePosition();
+            standing?.RestoreBones();
+            seatedPose?.RestoreBones();
             legLayer.Restore();
             attention.Restore();
             graph.Evaluate(deltaTime);
+            if (IsStandingInBus)
+            {
+                standing.Apply();
+                return;
+            }
             if (IsSeated)
             {
                 AlignPelvisToSeat();
+                if (seatedPose != null && seatedPose.IsBound) seatedPose.Apply(deltaTime);
                 return;
             }
 
@@ -634,10 +684,16 @@ namespace BarPromenade
                 transform.up, seatUp) * baseRotation;
             Vector3 forward = Vector3.ProjectOnPlane(
                 transform.forward, seatUp).normalized;
+            bool supported = seatedPose != null && seatedPose.IsBound;
+            if (supported)
+            {
+                model.rotation = seatedPose.Basis * Quaternion.Inverse(transform.rotation) * baseRotation;
+                forward = seatedPose.Basis * Vector3.forward;
+            }
             float statureRatio = defaultBodyShape != null ? defaultBodyShape.HeightRatio : 1f;
             Vector3 target = seatAnchor.position +
-                (seatUp * (seatedRide.SeatLift * statureRatio)) -
-                (forward * (seatedRide.SeatBackOffset * statureRatio));
+                (seatUp * (seatedRide.SeatLift * statureRatio)) +
+                forward * (supported ? seatedPose.PelvisForward : -seatedRide.SeatBackOffset * statureRatio);
             registry.ModelRoot.position +=
                 target - registry.PelvisAnchor.position;
         }
@@ -647,9 +703,12 @@ namespace BarPromenade
         // advancing the graph here would tick animation and effects twice.
         internal void SynchronizeSeatContact()
         {
+            if (IsStandingInBus) standing.FollowFloor();
             if (IsInitialized && IsSeated)
             {
                 AlignPelvisToSeat();
+                if (seatedPose != null && seatedPose.IsBound)
+                    registry.ModelRoot.position += seatedPose.Basis * Vector3.up * seatedPose.Correction;
             }
         }
 
@@ -724,6 +783,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            standing?.Release();
+            seatedPose?.Release();
             IsMoving = false;
             WalkWeight = 0f;
             targetWalkWeight = 0f;

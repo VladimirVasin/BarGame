@@ -211,7 +211,7 @@ namespace BarPromenade
                 }
                 if (float.IsInfinity(best))
                     throw new CityDistrictServiceUnavailable("No hillside pavement dock for " + target);
-                AddStop(index, chosen, target, key, chosenPole);
+                AddStop(index, chosen, target, key, chosenPole, home: crest && layout.HasSummitHome ? layout.PlayerHome : null);
             }
         }
 
@@ -289,16 +289,24 @@ namespace BarPromenade
             AddStop(index, new CityBusPathSample(position, forward, site.distance), target, key, site.pole, site.edge);
         }
 
-        private void AddStop(int index, CityBusPathSample sample, string target, string key, Vector3 pole, RoadEdge? roadEdge = null)
+        private void AddStop(int index, CityBusPathSample sample, string target, string key, Vector3 pole, RoadEdge? roadEdge = null,
+            BuildingLot home = null)
         {
             Vector3 right = Vector3.Cross(Vector3.up, sample.Forward).normalized;
             if (CityBusPlatformClearance.ForLayout(layout).TryHeight(pole, out float ground)) pole.y = ground;
             var node = nodes[index];
             var kind = target.StartsWith("transfer:", StringComparison.Ordinal)
                 ? CityBusStopTargetKind.Transfer : CityBusStopTargetKind.LoopSpacing;
-            stops.Add(new CityBusStopDescriptor(routeId + ":" + target, "", key, stops.Count,
+            string platformId = routeId + ":" + target;
+            if (home != null)
+            {
+                kind = CityBusStopTargetKind.PlayerHome;
+                key = "bus.stop." + layout.BlueprintId.Replace('-', '_') + ".home";
+                target = "player-home:" + layout.BlueprintId + ":" + home.Cell.x + ":" + home.Cell.y;
+            }
+            stops.Add(new CityBusStopDescriptor(platformId, "", key, stops.Count,
                 starts[index] + sample.Distance, CityDistrictKind.Residential, pole, -right, index,
-                sample.Distance, sample.Position, sample.Forward, roadEdge ?? node.RoadEdge, kind, target, node.ToGridNode));
+                sample.Distance, sample.Position, sample.Forward, roadEdge ?? node.RoadEdge, kind, target, home?.Cell ?? node.ToGridNode));
         }
 
         private void AddHillLink(List<Vector3> points, float radius, CityBusRouteLinkKind kind, bool closes = false)

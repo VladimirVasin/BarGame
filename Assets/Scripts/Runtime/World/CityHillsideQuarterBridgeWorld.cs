@@ -5,7 +5,7 @@ namespace BarPromenade
 {
     internal static class CityHillsideQuarterBridgeWorld
     {
-        public static void Build(Transform parent, CityHillsideQuarterPlan quarter)
+        public static void Build(Transform parent, CityHillsideQuarterPlan quarter, Rect? retained = null)
         {
             if (quarter.Bridges.Count == 0) return;
             GameObject deck = Template("TerraceBridge");
@@ -15,6 +15,7 @@ namespace BarPromenade
             GameObject head = Fitting("UpperBridgeParapetHead");
             foreach (var bridge in quarter.Bridges)
             {
+                if (retained.HasValue && !retained.Value.Overlaps(bridge.DeckBounds)) continue;
                 var root = new GameObject(bridge.Id == "summit" ? "Upper ravine bridge" : "Court ravine bridge").transform;
                 root.SetParent(parent, false);
                 Vector3 start = bridge.WestBearingWorld, end = bridge.EastBearingWorld;

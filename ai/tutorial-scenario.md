@@ -25,12 +25,11 @@ This is the first manual acceptance path for the vertical slice.
    dressing.
 6. Use the apartment exit, descend through the stairwell and use its street
    door. Confirm the player reaches the generated city beside their distinct
-   home and near its neighboring bar.
+   home on Ridge Street, west of the upper bridge and near bus stop 03-04.
 7. Observe a large connected city with Old Town, Residential, Industrial and
    Nightlife districts surrounding a central park.
 8. Open the map and confirm that district labels, green park land, sand-colored
-   park paths, the one Residential bar and the labeled house directly across
-   its street are all visible.
+   park paths, the lower Residential bar and the labeled home on Ridge Street are visible.
 9. Move with `WASD` along streets (the arrows orbit the camera). While moving
    forward, hold either Shift key and confirm that the hero accelerates smoothly
    from the ordinary walk into the separate Run gait; releasing it while `W`

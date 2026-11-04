@@ -75,7 +75,7 @@ namespace BarPromenade
         private static int DistrictStopRank(CityBusStopTargetKind kind)
         {
             if (kind == CityBusStopTargetKind.Transfer) return 0;
-            if (kind == CityBusStopTargetKind.PlayerHome) return 1;
+            if (IsResidentialFrontage(kind)) return 1;
             if (kind == CityBusStopTargetKind.DistrictPointOfInterest) return 2;
             if (kind == CityBusStopTargetKind.Supermarket) return 3;
             return 4;

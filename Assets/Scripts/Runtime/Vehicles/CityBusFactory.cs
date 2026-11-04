@@ -45,22 +45,27 @@ namespace BarPromenade
         public static CityBusDirector[] CreateNetwork(Transform parent, IReadOnlyList<CityBusPlan> plans,
             Transform player, CityPedestrianDirector pedestrians, Func<float> nightFactorProvider)
         {
-            if (plans == null || plans.Count == 0 || plans.Count > CityBusDirector.MaximumActiveModels)
+            if (plans == null || plans.Count == 0 || plans.Count > CityBusDirector.MaximumLines)
                 throw new ArgumentException("Expected one to three bus lines.", nameof(plans));
             GameObject model = CityBusResources.LoadPrefab();
             GameObject driver = CityBusDriverResources.LoadPrefab();
-            var lines = new CityBusDirector[plans.Count];
+            var fleet = new CityBusDirector[plans.Count * CityBusDirector.VehiclesPerLine];
             try
             {
-                for (int i = 0; i < lines.Length; i++)
-                    lines[i] = Create(parent, plans[i], player, pedestrians, model, driver, nightFactorProvider);
-                for (int i = 0; i < lines.Length; i++) lines[i].ConnectNetwork(lines, i);
-                return lines;
+                for (int i = 0; i < fleet.Length; i++)
+                {
+                    int line = i / CityBusDirector.VehiclesPerLine;
+                    fleet[i] = Create(parent, plans[line], player, pedestrians, model, driver, nightFactorProvider,
+                        deferPresentation: i % CityBusDirector.VehiclesPerLine != 0);
+                }
+                for (int i = 0; i < fleet.Length; i += CityBusDirector.VehiclesPerLine)
+                    CityBusDirector.ConnectPair(fleet, i);
+                return fleet;
             }
             catch
             {
-                foreach (var line in lines)
-                    if (line != null) CityBusResources.DestroyObject(line.gameObject);
+                foreach (var vehicle in fleet)
+                    if (vehicle != null) CityBusResources.DestroyObject(vehicle.gameObject);
                 throw;
             }
         }
@@ -111,7 +116,7 @@ namespace BarPromenade
             CityPedestrianDirector pedestrians,
             GameObject presentationPrefab,
             GameObject driverPrefab,
-            Func<float> nightFactorProvider)
+            Func<float> nightFactorProvider, bool deferPresentation = false)
         {
             if (parent == null)
             {
@@ -156,76 +161,60 @@ namespace BarPromenade
                 Stopwatch timer = Stopwatch.StartNew();
                 CityBusActor actor = null;
                 CityBusPresentation presentation = null;
+                Func<CityBusPresentation> deferredModel = null;
                 if (!plan.IsEmpty)
                 {
-                    if (!CityBusResources.TryInstantiate(
-                            presentationPrefab,
-                            modelPoolRoot,
-                            out CityBusAssetRegistry registry))
-                    {
-                        throw new InvalidOperationException(
-                            "The city bus prefab must own a " +
-                            "CityBusAssetRegistry on its root.");
-                    }
+                    var template = presentationPrefab.GetComponent<CityBusAssetRegistry>();
+                    if (template == null) throw new InvalidOperationException("Bus prefab is missing its registry.");
+                    CityBusPresentation CreateModel() => BuildPresentation(presentationPrefab, driverPrefab, modelPoolRoot, plan);
+                    if (deferPresentation) deferredModel = CreateModel;
+                    else presentation = CreateModel();
 
-                    ValidatePassivePresentation(registry);
-                    ValidateRegistry(registry, plan.Vehicle);
-                    registry.gameObject.name = $"City Bus Model {plan.Number:00}";
-                    presentation = registry.GetComponent<
-                        CityBusPresentation>();
-                    if (presentation == null)
-                    {
-                        presentation = registry.gameObject.AddComponent<
-                            CityBusPresentation>();
-                    }
-
-                    presentation.Initialize(registry);
-                    presentation.SetRouteNumber(plan.Number);
-                    if (!CityBusDriverResources.TryInstantiate(
-                            driverPrefab,
-                            registry.transform,
-                            out CityBusDriverAssetRegistry driverRegistry))
-                    {
-                        throw new InvalidOperationException(
-                            "The city bus driver prefab must own a " +
-                            "CityBusDriverAssetRegistry on its root.");
-                    }
-
-                    ValidatePassiveDriver(driverRegistry);
-                    presentation.AttachDriver(driverRegistry);
-                    presentation.gameObject.SetActive(false);
-
-                    GameObject actorObject =
-                        new GameObject($"City Bus Slot {plan.Number:00}");
+                    GameObject actorObject = new GameObject($"City Bus Slot {plan.Number:00}");
                     actorObject.layer = CityBusCollision.LayerIndex;
                     actorObject.transform.SetParent(routeRoot, false);
                     actor = actorObject.AddComponent<CityBusActor>();
-                    actor.Initialize(
-                        registry.LocalBounds,
-                        registry.Dimensions);
+                    actor.Initialize(template.LocalBounds, template.Dimensions, deferAudio: deferPresentation);
                 }
 
-                CityBusPlanner.ReportPhase(
-                    "bus_model",
-                    timer,
-                    GameLog.Field("pooled", actor != null));
+                CityBusPlanner.ReportPhase("bus_model", timer, GameLog.Field("pooled", presentation != null));
                 timer.Restart();
-                CityBusDirector director =
-                    runtimeRoot.AddComponent<CityBusDirector>();
-                director.Initialize(
-                    plan,
-                    actor,
-                    presentation,
-                    player,
-                    pedestrians,
-                    modelPoolRoot,
-                    nightFactorProvider);
+                CityBusDirector director = runtimeRoot.AddComponent<CityBusDirector>();
+                director.Initialize(plan, actor, presentation, player, pedestrians, modelPoolRoot, nightFactorProvider,
+                    deferredModel: deferredModel);
                 CityBusPlanner.ReportPhase("bus_director", timer);
                 return director;
             }
             catch
             {
                 CityBusResources.DestroyObject(runtimeRoot);
+                throw;
+            }
+        }
+
+        private static CityBusPresentation BuildPresentation(GameObject model, GameObject driver, Transform poolRoot, CityBusPlan plan)
+        {
+            if (!CityBusResources.TryInstantiate(model, poolRoot, out var registry))
+                throw new InvalidOperationException("Bus prefab is missing its registry.");
+            try
+            {
+                ValidatePassivePresentation(registry);
+                ValidateRegistry(registry, plan.Vehicle);
+                registry.gameObject.name = $"City Bus Model {plan.Number:00}";
+                var presentation = registry.GetComponent<CityBusPresentation>();
+                if (presentation == null) presentation = registry.gameObject.AddComponent<CityBusPresentation>();
+                presentation.Initialize(registry);
+                presentation.SetRouteNumber(plan.Number);
+                if (!CityBusDriverResources.TryInstantiate(driver, registry.transform, out var driverRegistry))
+                    throw new InvalidOperationException("Bus driver prefab is missing its registry.");
+                ValidatePassiveDriver(driverRegistry);
+                presentation.AttachDriver(driverRegistry);
+                presentation.gameObject.SetActive(false);
+                return presentation;
+            }
+            catch
+            {
+                CityBusResources.DestroyObject(registry.gameObject);
                 throw;
             }
         }

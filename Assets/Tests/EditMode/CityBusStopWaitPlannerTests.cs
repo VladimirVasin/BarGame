@@ -335,23 +335,22 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 CityBusActor.MaximumNpcOccupants,
                 Is.EqualTo(CityBusActor.CabinCapacity - 1),
-                "Ambient passengers always leave one place for the hero, so " +
-                "the cabin never carries more than three.");
+                "Ambient passengers always leave one place for the hero.");
         }
 
         /// <summary>
         /// A bus that has been running its loop before the hero saw it should
         /// not always arrive empty, but a spawned cabin must still leave him
-        /// a place: the preload draws from `0` to the ambient capacity, never
-        /// past it.
+        /// a place. Standalone buses start with at most two seated walkers;
+        /// production buses receive the actual resident manifest.
         /// </summary>
         [Test]
         public void CabinPreload_NeverFillsThePlaceReservedForTheHero()
         {
             Assert.That(
                 CityBusNpcPassengerController.MaximumPreloadedPassengers,
-                Is.EqualTo(CityBusActor.MaximumNpcOccupants),
-                "The preload may seat ambient passengers only.");
+                Is.EqualTo(2),
+                "The isolated bus fixture has a small pedestrian pool.");
             Assert.That(
                 CityBusNpcPassengerController.MaximumPreloadedPassengers,
                 Is.LessThan(CityBusActor.CabinCapacity),
@@ -421,7 +420,7 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(driverX, Is.Not.EqualTo(0f));
             var seatX = new List<float>(seatXByName.Values);
-            Assert.That(seatX.Count, Is.GreaterThanOrEqualTo(12));
+            Assert.That(seatX.Count, Is.EqualTo(CityBusActor.SeatCount));
 
             Assert.That(
                 seatX[CityBusActor.PlayerSeatIndex] * driverX,

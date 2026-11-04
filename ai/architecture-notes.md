@@ -21,7 +21,7 @@
   Low coast/port/river; two streets extend south of the grid at ≤6% to Y40.
   Seven traverses/side, level R13 turns; outer widening .75m at R13/.90m at R9
   clears bus overhang. Streets/earth/houses/NPC/map share stations.
-  Original river cave/tunnel; Home–Bar ~57m. Lower terrace: +7.68m bridge,
+  Original river cave and traffic tunnel. Lower terrace: +7.68m bridge,
   sheltered 3m alley below; first 104m gain3.84m, dog yard/window landing/Lower
   Court. Rebase lots first; logical map follows geometry, redraw once. Shared
   fog/post/camera; story §§16/21, art acceptance.
@@ -33,7 +33,7 @@
   pause/debug factors keep their owners. Story acts/events remain action-driven.
 
 - **Accepted exception 2026-11-03,user — City fog A:**
-  City/balcony:constant gray-green Exp2 `.090`;technical clip48m.
+  City streets use constant gray-green Exp2 `.090` with a 48 m clip. The summit apartment outlook has its own range.
   Reading bands:art§3.3;art9/story§16/21 stay;global breathing/story signal0.
   `CityFogField`:≤36 shared world particles;slow layered
   drift:shared wind/absolute game time;Home maps axes. Pause/roof/
@@ -440,7 +440,7 @@
 - **Accepted 2026-10-29 — City resident life:**
   User:more simultaneous street people by hour, prototype daily life.
   `CityResidentLifeRules` owns192 permanent resident schedules; runtime assigns
-  logical home/work/shop/walk places on the actual pavement graph. No new
+  stable home and work entrances, shop and outing destinations on the pavement graph. No new
   interior, economy, speech/model/light, death or story timer. Target caps:
   00–06:5/06–10:28/10–17:22/17–22:36/22–24:10, smooth30min ramps;
   eligible routes/clearance may leave fewer. ≤36 actors/cache48 lazy default
@@ -610,7 +610,7 @@
   fronts≤15.5m/wings10×6m/full padded fit; setback1.25–1.55m. Four domestic2.4m
   recesses:balcony/basket off pavement. Court gaps2.4m/passages3.6m/overhead
   collision; continuous safe grades to nav. Expanded oblique OldTown pilot
-  removed; Home12,5/BarId/SplitTheG kept; Bar now12,7.
+  removed; bar at (12,7) retains its ID and SplitTheG.
   Route01 coverage loop:real turns/both-door stops/factory-shop truck access kept.
   Streets8m/asphalt6m/pavements2m; shared road-ground contours/Home triangle planes.
   Graded home/bar/shop forecourts/embedded skirts/fixture tops keep door datums;
@@ -3749,22 +3749,23 @@
   at constant intensity through day and night and never reads or tracks the
   runtime rider transform. The two `YardDeadLamp` geometry parts remain
   non-emissive and create no `Light`.
-- **Accepted — One home-adjacent production bar:** Frontages own validated
+- **Accepted — One production bar in the lower residential district:** Frontages own validated
   returns. User `2026-11-04`: Bar moves a block north to `(12,7)`, east-facing;
-  Home `(12,5)` remains north-facing. Authored body dimensions stay fixed,
+  Lot `(12,5)` is ordinary housing. Authored bar dimensions stay fixed,
   inset `.35 m` west for canopy clearance. Draft turns clear the protected
   Bar/shop/church corners. The old `(12,6)` site is ordinary;
   its west yard keeps tree/light/wheelchair owners and refits to actual walls.
   Stable `bar-01352777-12-06` / `SplitTheG`; retired bars remain ordinary.
   Custom multiple bars retain weighted street/park-path separation.
-- **Accepted — Bar-adjacent player home and fresh spawn:** With at least one
-  generated bar, one non-bar lot becomes Home. The default pair uses neighboring
-  streets with a `52 m` approach route, capped at `64 m`; fresh spawn is `13 m` from Home's
-  street approach. Other layouts prefer a residential lot across the bar,
+- **Accepted 2026-11-04 — Player home on the summit street:** The compact city's
+  one Home entrance opens onto Ridge Street west of its upper bridge, near 03-04.
+  The balcony opens to the approved fixed 70° frame behind the hero: truss bridge left, ravine below, concrete return at right. `HomeSummitOutlook`
+  uses the surveyed building footprints and bridge; a longer fog range is local to the summit view.
+  The lower residential site retains its neighbourhood courtyard and platform 02-02. Other layouts prefer a residential lot across the bar,
   then a deterministic fallback within `48 m` traversable distance. Home is
   `8.8 m` tall and its City facade uses the shared third-floor
-  balcony/window/door geometry. A fresh city starts on that home's frontage
-  node. Bar-free custom layouts retain the central-road fallback and no home.
+  balcony/window/door geometry. The first City arrival uses the home's street approach.
+  Bar-free custom layouts retain the central-road fallback and no home.
 - **Accepted — One deterministic city supermarket:** After bars, the player
   home, district public places and primary landmarks are reserved, the default
   layout retains `(12,4)` after Bar moves. Other layouts choose one eligible
@@ -3825,7 +3826,7 @@
   `CitySpatialPlan` owns nominal `26 m` spans; settings reject nonpositive
   carriageways. Shared stations retain level nodes, graded spans, corner/radius
   queries and paint exclusions. Up to six Street-only degree-3+ nodes have
-  four-stripe zebras/signals, clear of ParkPath and blocked public space.
+  signalized crossings clear of ParkPath and blocked public space.
   Road v2.1 selects supported building-free turns/nodes, moves corner pads
   outward and cuts raised kerbs back `4.5 m`, keeping `8 x 8 m` asphalt and
   flush walking aprons. Corner links follow pads; inflated bus bodies clear
@@ -3835,8 +3836,13 @@
   Art §2 and story §6 level 0. The production city operates three independent
   one-way rings. West 01 and east 02 stay on their river banks. Hillside 03
   uses the full west ascent, summit bridge, east descent and Works bridge.
-  Stable transfer IDs join the two hill entrances to their bank lines and
-  opposite pavements at the mouth bridge. Riders leave and enter at live doors.
+  Stable transfer IDs pair 01-01 with 03-01 and 02-01 with 03-07. The lower and upper
+  pavements meet at surveyed flights. `CityHillsideAccessPlan.Transfers` supplies their floors,
+  ramps, treads, rails, pedestrian path and map strokes. Ground cuts and fence openings keep the
+  route continuous. Stop zebras use existing crossings or join both paved sides outside the
+  stopped vehicle. Six white rectangles run parallel to traffic with asphalt gaps across the road.
+  Each stripe and the pedestrian links follow surveyed heights.
+  The mouth transfer follows its bridge. Riders leave and enter at live doors.
   Stops favour useful destinations, room for the shelter and a clear walking
   strip serving both doors. After changes to a stop, its service or obstacles
   along its approach, check every active stop code in the built City. Keep the
@@ -3846,8 +3852,9 @@
   riding the assigned bus. Check each boarding place at a transfer. Record the PlayMode proof.
   Nearby destinations may share a stop. A shared
   kerb has one shelter, bench and map platform. The abandoned island stays clear.
-  Each line has a bounded actor slot. Nearby services coexist, distant services
-  advance their phase through stops with presentation and collision turned off.
+  Each line has two vehicles starting half a lap apart. A following bus eases its pace
+  when the gap closes. Distant services use route timing and resident stop events;
+  models, lights, cabin audio and collision bind within the fog band.
   One graph for both banks and the hill return checks full-body clearance.
   The hill uses the same widened bends, height samples and crest road as the
   physical street. World reservations, truck, map, balcony and ride use these
@@ -3858,11 +3865,23 @@
   Buses display their route number on the front, sides and rear. Fog, materials and post
   retain City settings. Headlights, sound and interaction follow visible buses.
 
+- **Accepted 2026-11-04 — City resident journeys and background service.**
+  Every ordinary resident keeps one home address. Worker agendas include a fixed
+  workplace. Walking competes with a transit itinerary including access, expected
+  wait, travel, an optional transfer and egress. Service commits the actual person
+  and destination to one vehicle. Distant visits release seats before boarding.
+  A scene-entry checkpoint captures residents and vehicle phases. Waking the City
+  merges historical service calls in time order; long jumps reconstruct the last day.
+  Staged workers retain their existing workplace activity owners.
+
 - **Accepted — Route 01 driver and sprung presentation:** The separate passive
   `CityBusDriver3D` uses `Player3DLit`, the exact 31-bone rig and a normal
-  low-poly head with long horizontal eyes. Seated IK holds wheel grips;
-  opening/closing moves only the right hand to the dashboard button's `12 mm`
-  press, left stays on wheel. Driver looks toward front door during Opening,
+  low-poly head with long horizontal eyes. The driver sits on the cushion with each
+  knee and foot on its own side. The column carries the wheel forward of the seat;
+  upright hands hold the sides of the rim and change grip on large turns.
+  Four fingers wrap each rim tube; both thumbs point toward the other hand.
+  The right hand opens to press the dashboard button (`12 mm`) with its index
+  finger while the left keeps its grip. Driver looks toward front door during Opening,
   holds through open, returns during Closing. Four eye renderers blink from
   a deterministic pool. A hero in the door-side `2.25–2.75 m` band overrides
   the static look target; connected neck/head extend at most `0.10 m`/`1.35x`.
@@ -3875,8 +3894,7 @@
   Steering/wheel travel animate; synthesized engine is `22050 Hz`. Motion/night
   drive head/tail/brake/cabin emission. Two shadowless headlight Spots plus two
   soft shadowless cabin Spots follow shared `NightFactor`, disable at zero and
-  pool-reset off. They are outside the 12-light city-atmosphere pool: subtotal
-  16; helmet and yard Spots make worst-case 18 local realtime lights. Scene/
+  pool-reset off. They are outside the 12-light city-atmosphere pool: each visible vehicle contributes at most four local realtime lights. Scene/
   lightning Directionals are separate.
 
 - **Accepted — City-only Route 01 passenger MVP:** Default-layer triggers:
@@ -3897,64 +3915,35 @@
 
   Passenger blocks pooling;director cleans shutdown. Exit:later service ordinal,
   reacquire hold,detach moving-frame,freeze seat target;BusAlightExit via retained
-  door/grounded dock,camera→chase. Completion/cancel/lifecycle restore motor/
+  door/grounded dock via the centre aisle,camera→chase. Completion/cancel/lifecycle restore motor/
   controller/shadow/camera once,release both owners,no hierarchy mutation.
-  Failed exit:last safe exterior dock. Fares/destinations/passenger persistence/
+  Failed exit:last safe exterior dock. Fares/hero destinations/
   signals/live tracking deferred.
 
-- **Accepted — A three-place cabin counting the hero, with declared seated
-  riders:** `CityBusActor` owns `CabinCapacity = 3` occupants and a shared
-  per-owner service hold. Both replace single-owner fields, and both had to:
-  with one exclusive hold, an ambient passenger stepping through the doorway
-  would silently have made the hero's own `E` prompt fail, and
-  `CityBusDirector`'s passenger cleanup would have thrown on its second
-  registrant. Cleanup is therefore multicast, while the release
-  post-condition is unchanged — no occupant may remain when the presentation
-  is pooled. Ambient passengers may take at most `CabinCapacity - 1` places, so
-  seat `07` stays reserved and the hero is never locked out of his own bus;
-  they fill a stable order of the other eleven anchors biased to the
-  driver-side row and rear bench, which are the seats a hero in `07` actually
-  sees. The cabin reserves a place logically and lets
-  `CityBusRidePlan` refuse a seat index the registry cannot resolve, rather
-  than duplicating that check. Recycling keys on `HasPlayerPassenger`, not
-  `HasPassenger`: only the hero pins the occupied line slot to the world, and
-  blocking it for a rider `92 m` away behind fog would strand the bus for a
-  whole lap, so ambient passengers are released with it through the same
-  cleanup. `CityBusRidePlan.TryCreate` proved agent-agnostic apart from two
+- **Accepted 2026-11-04 — Ten seated passengers and three standing places.**
+  The driver is separate. Eight individual seats and one continuous two-person rear bench
+  include seat 07 for the hero. Residents fill the nine other places before standing. A standing place pairs two contacts on the sprung
+  model: the floor and the lower bar of an individually reachable overhead ring.
+  The central aisle serves both doors. The hero reaches 07 through this aisle.
+  When all resident places are taken, the remaining queue waits for another bus.
+  The journey manifest retains the same place across fog, dormant City and rollback.
+  Nearby cabins borrow the resident's dressed presentation. It has no street
+  controller or path search; the physical walker takes that same body at its exit.
+  Hidden cabins service demand without bodies. Door transfers share the service hold.
+  `CityBusRidePlan.TryCreate` proved agent-agnostic apart from two
   hard-coded facts; parameterising seat index, agent radius and grounded-root
   offset reuses the whole validated dock ladder — including the
   `CityStreetSurfacePlan` curb/apron height resolution — for a walker whose
   root already sits on the pavement surface.
-  `CityBusStopWaitPlanner` derives one wait point per stop that has usable
-  pavement: the sidewalk centreline `RoadsidePoleOutsideRoadEdge +
-  SidewalkWidth * 0.5 = 0.70 m` road-ward of the route pole, because the
-  pole itself stands outside the walkable strip and carries a collider. Two
-  slots per stop queue along the lane at `+0.30 m` and `+1.40 m` from the halt
-  pose — never abreast, since a `1 m` pavement minus a `0.35 m` agent is the
-  same geometry that already rules out passing, and both offsets lie in the
-  clear span between the `+3.05 m` front and `-1.34 m` rear door entries. Each
-  wait point also owns a single-source Dijkstra field over the pedestrian
-  graph. Stops never move, so that search is solved once in the plan instead
-  of being re-run every `4 m` the way player guidance must be, and routing then
-  reuses the director's existing `approachTarget` and node-distance guidance
-  seeded at the stop.
-  A newly activated bus seats a seeded `0-2` ambient passengers before it is
-  ever seen. It spawns in the same fixed-fog `76-86 m` band the population
-  director already proved hides an appearing walker, so there is no visible
-  pop, and a bus that has notionally been running its loop for a while does not
-  always arrive empty. That preload needs no stop and no dock:
-  `CityBusRidePlan.TryCreateSeatedPose` resolves the actor-local seat floor
-  from the seat anchor and the cabin-floor door anchor alone, because a full
-  ride plan requires a served stop and two validated roadside docks that do not
-  exist while the bus is cruising. The static clearance probe is skipped for
-  exactly these spawns — the capsule overlaps the bus body on purpose, which is
-  what the probe exists to reject everywhere else. The draw spans `0` to
-  `MaximumNpcOccupants` inclusive, so an empty bus stays a real outcome and the
-  hero's place is never taken.
-  `CityBusNpcPassengerController` recruits an ordinary roaming walker within
-  `55 m` of a stop along the graph so the hero can watch the whole approach,
-  and activates a waiter straight onto its slot only where the stop is already
-  beyond the proven `76 m` fog band. Boarding takes the shared hold, runs a
+  Each usable platform has two waiting places along its kerb and a distance
+  field on the actual pavement graph. On the switchbacks a node on the boarding
+  side marks each stop. Both queue positions stand 0.80 m from the public
+  walking line on the same pavement. The final approach settles at the slot.
+  City service draws passengers from the city's resident agendas. Waiting residents
+  use the first suitable one-way service with space. Approaches and final walks
+  use the pedestrian graph. Both vehicles on a line share its queue. Bind the
+  passenger already assigned to each logical seat when a bus becomes visible.
+  Boarding takes the shared hold, runs a
   short scripted doorway walk whose budget is measured rather than assumed: a
   flat constant cannot serve an aisle leg of `1.16-2.56 m` walked at
   `0.72-1.30 m/s`, so it is derived per transfer from the real
@@ -3965,20 +3954,19 @@
   the aisle where `2.56 m` is available. Authored pace is kept rather than
   hurried, because each design owns its cadence and speeding the root reads as
   foot-sliding. An overrun aborts back to the pavement rather than stalling
-  the fixed `10 s` dwell; alighting draws a seeded
-  strictly later service ordinal, the same rule the hero's exit prompt already
-  enforces. NPC transfers deliberately do not use
+  the fixed `10 s` dwell. The resident leaves at the planned stop. NPC transfers deliberately do not use
   `PlayerAnimatedInteractionController`: it is bound to `PlayerRuntime` and
   `IPlayerClipPresentation`, and `ai/contextual-animation-standard.md`
   explicitly does not govern NPC animation. A route-bound walker is exempt from
   the `88 m` pedestrian recycle rule, from distant simulation acceleration and
   from the bus's own pedestrian yielding, which would otherwise make the bus
   stop for its own passenger.
-  `CityPedestrianPresentation` aligns the shared 31-bone pelvis to the seat,
-  with per-body lift measured from seated hips/thighs and 1 cm compression.
-  Weigher/watchman lifts are `0.056/0.052 m`. Sit samples immediately; owners
-  bind the physical cushion normal independently of FBX axes. After bus movement,
-  `SetRidePose` restores contact without advancing animation/effects twice.
+  Ordinary residents use the same seated pose on city benches and in the bus.
+  The worn hip and upper thigh surfaces settle on the cushion or plank. Both
+  knees point out in front, boots take the ground or cabin floor, and hands
+  rest over the thighs. The doorways hand off the same body, with the hero's
+  transfer through the clear aisle to seat 07. Staged designs retain declared
+  seat corrections and their authored actions.
 - **Accepted — Declared seated rides over a blanket allowance:** a design may
   ride only by declaring `CityPedestrianArchetype.SeatedRide`, which owns its
   pelvis lift, back offset and headroom, and by owning an authored `Sit` loop

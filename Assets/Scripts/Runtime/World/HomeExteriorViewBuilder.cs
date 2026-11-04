@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace BarPromenade
@@ -72,6 +73,7 @@ namespace BarPromenade
             BuildTerminalEnvironment(root, balcony, context);
             BuildRoads(root, context);
             BuildBuildings(root, context);
+            if (context.Layout.HasSummitHome) BuildSummitNeighborhood(root, context);
             CityDistrictPointOfInterestWorldBuilder
                 .BuildHomeExterior(root, context);
             CityDecorationWorldBuilder.BuildHomeExterior(
@@ -96,6 +98,35 @@ namespace BarPromenade
             return root;
         }
 
+        private static void BuildSummitNeighborhood(Transform parent, HomeExteriorContextPlan context)
+        {
+            // The same terrain cuts, stairs and domestic frontages seen outside the
+            // apartment. Assemble in the city's frame, then place under the balcony.
+            var frame = new GameObject("Summit street from home").transform;
+            var home = context.PlayerHome;
+            float radius = HomeExteriorContextPlanner.ViewRadius;
+            var window = new Rect(home.DoorPosition.x - radius, home.DoorPosition.z - radius, radius * 2f, radius * 2f);
+            CityHillsideQuarterGround.Build(frame, context.Layout, window);
+            foreach (var grid in CityHillsideGroundGrid.ForLayout(context.Layout))
+                if (window.Overlaps(CityHillsideNeighborhoodPlan.TerrainBounds(grid.Road)))
+                    CityHillsideNeighborhoodWorld.BuildGround(frame, grid, window);
+            var district = CityHillsideNeighborhoodPlan.ForLayout(context.Layout);
+            var paving = Resources.Load<GameObject>(CityTerracePilotWorld.ResourceFolder + "TerraceCourt");
+            foreach (var house in district.AllBuildings)
+            {
+                if (!window.Overlaps(house.FoundationBounds) && !window.Overlaps(house.ApproachBounds)) continue;
+                if (!house.Lot.IsPlayerHome)
+                    CityHillsideNeighborhoodWorld.BuildHouse(frame, house, context.Layout.Seed);
+                if (district.SharedCourtBuildings.Contains(house))
+                    CityHillsideHousePresentation.BuildApron(frame, paving, house);
+            }
+            CityTerracePilotWorld.BuildHillsideShortcuts(frame, CityHillsideAccessPlan.ForLayout(context.Layout), window);
+            HomeSummitOutlook.Build(frame, context, window);
+            frame.SetParent(parent, false);
+            frame.localPosition = PlayerHomeBalconyGeometry.ToHomeLocal(home, Vector3.zero);
+            frame.localRotation = Quaternion.LookRotation(PlayerHomeBalconyGeometry.ToHomeLocalDirection(home, Vector3.forward));
+        }
+
         private static Transform BuildHomeBusStop(
             Transform parent,
             HomeExteriorContextPlan context)
@@ -110,7 +141,7 @@ namespace BarPromenade
                 context.PlayerHome,
                 stop.ShelterPosition);
 
-            localShelter = ClipStopToExterior(localShelter);
+            if (!context.Layout.HasSummitHome) localShelter = ClipStopToExterior(localShelter);
 
             Transform root = new GameObject("Home Bus Stops").transform;
             root.SetParent(parent, false);
@@ -139,6 +170,7 @@ namespace BarPromenade
                 PlayerHomeBalconyGeometry.HomeFacadeX;
             float groundWidth = radius * 2.5f;
             CityHomeGroundWorldBuilder.Build(parent, context);
+            if (context.Layout.HasSummitHome) return; // The actual descending city and sky form the horizon.
 
             float horizonX = facadeX + radius + 22f;
             float horizonHeight = 25f;
@@ -208,10 +240,26 @@ namespace BarPromenade
                     road.xMax + reach, road.yMax + reach));
             }
 
+            if (context.Layout.HasSummitHome)
+            {
+                foreach (var link in CityHillsideQuarterPlan.ForLayout(context.Layout).Links)
+                    nearbyRoadRectangles.Add(link.Bounds);
+                foreach (var road in CityHillsideStreetPlan.ForLayout(context.Layout).Routes)
+                    foreach (var patch in road.SurfacePatches)
+                        if (patch.Kind == CityStreetSupportKind.Asphalt && RectContainsContext(patch.Bounds))
+                            nearbyRoadRectangles.Add(patch.Bounds);
+                bool RectContainsContext(Rect r)
+                {
+                    var door = context.PlayerHome.DoorPosition;
+                    float dx = Mathf.Clamp(door.x, r.xMin, r.xMax) - door.x;
+                    float dz = Mathf.Clamp(door.z, r.yMin, r.yMax) - door.z;
+                    return dx * dx + dz * dz <= HomeExteriorContextPlanner.ViewRadius * HomeExteriorContextPlanner.ViewRadius;
+                }
+            }
             CityStreetSurfaceWorldBuilder.Build("Home Exterior Unified Street", parent, context.Layout, plan, context);
             CityResidentialEntranceWorldBuilder.Build(parent, context.Layout, context);
             foreach (BuildingLot lot in context.NearbyLots)
-                if (lot.IsBar || lot.IsPlayerHome || lot.IsSupermarket)
+                if (lot.IsBar || (lot.IsPlayerHome && !context.Layout.HasSummitHome) || lot.IsSupermarket)
                     CityEntranceForecourtWorldBuilder.Build("Home Exterior Entrance " + lot.Cell, parent,
                         CityStreetSurfacePlanner.CreateEntranceForecourt(context.Layout, lot, 3f), context);
             var centerMarkings = new List<Bounds>();
@@ -246,6 +294,9 @@ namespace BarPromenade
             for (int index = 0; index < source.Count; index++)
             {
                 Bounds cityBounds = source[index];
+                if (context.Layout.HasSummitHome &&
+                    (cityBounds.ClosestPoint(context.PlayerHome.DoorPosition) - context.PlayerHome.DoorPosition).sqrMagnitude >
+                    HomeExteriorContextPlanner.ViewRadius * HomeExteriorContextPlanner.ViewRadius) continue;
                 if (!TouchesAnyRoad(
                         cityBounds,
                         nearbyRoadRectangles))

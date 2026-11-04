@@ -222,7 +222,8 @@ namespace BarPromenade
                     rest.Point.SeatPosition,
                     anchor.transform.rotation,
                     anchor.transform,
-                    archetype.SeatedRide))
+                    archetype.SeatedRide,
+                    rest.Point.FloorPosition))
             {
                 Destroy(anchor);
                 return false;

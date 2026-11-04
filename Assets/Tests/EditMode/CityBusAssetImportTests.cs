@@ -32,7 +32,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.mesh_count, Is.EqualTo(manifest.parts.Length));
             Assert.That(manifest.pivots, Is.Not.Null.And.Not.Empty);
             Assert.That(manifest.triangle_count, Is.InRange(900, 12000));
-            Assert.That(manifest.passenger_seat_count, Is.GreaterThanOrEqualTo(10));
+            Assert.That(manifest.passenger_seat_count, Is.EqualTo(10));
+            Assert.That(manifest.standing_place_count, Is.EqualTo(3));
             Assert.That(manifest.dimensions_m.length, Is.EqualTo(8.25f));
             Assert.That(manifest.dimensions_m.width, Is.EqualTo(2.38f));
             Assert.That(manifest.dimensions_m.height, Is.EqualTo(2.95f));
@@ -47,10 +48,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(steeringSource.travel_m, Is.Zero);
             AssertSourceVector(
                 steeringSource.local_position,
-                new Vector3(0.60f, -3.32f, 1.57f));
+                new Vector3(0.68f, -3.60f, 1.57f));
             AssertSourceVector(
                 steeringSource.local_rotation_degrees,
-                new Vector3(-90f, 0f, 0f));
+                new Vector3(-65f, 0f, 0f));
             AssertPivotSource(
                 manifest,
                 "ANCHOR_SteeringGrip.L",
@@ -71,7 +72,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(buttonSource.travel_m, Is.EqualTo(0.012f));
             AssertSourceVector(
                 buttonSource.local_position,
-                new Vector3(0.30f, -3.335f, 1.50f));
+                new Vector3(0.35f, -3.59f, 1.47f));
             AssertPivotSource(
                 manifest,
                 "ANCHOR_DoorButtonPress",
@@ -179,6 +180,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     registry.PassengerSeatAnchors.Count,
                     Is.EqualTo(manifest.passenger_seat_count));
+                AssertStandingPlaces(registry);
+                AssertRearBench(registry);
                 Assert.That(registry.Renderers.Count, Is.EqualTo(manifest.mesh_count));
                 Assert.That(registry.Headlights, Is.Not.Empty);
                 Assert.That(registry.TailLights, Is.Not.Empty);
@@ -352,6 +355,10 @@ namespace BarPromenade.Tests.EditMode
                 offset,
                 axis);
             Assert.That(radial.magnitude, Is.EqualTo(0.18f).Within(0.001f));
+            Assert.That(Mathf.Abs(Vector3.Dot(offset, axis)), Is.LessThan(.001f),
+                "The finger curl surrounds the tube centreline.");
+            Assert.That(Mathf.Abs(Vector3.Dot(offset, steeringWheel.root.up)), Is.LessThan(.002f),
+                "Both rest grips meet the lateral rim at hub height.");
         }
 
         [Test]
@@ -842,7 +849,7 @@ namespace BarPromenade.Tests.EditMode
                     out Vector3 columnAxis);
                 float signedColumnRoll = columnAngle * Vector3.Dot(
                     columnAxis,
-                    -root.forward);
+                    -(columnBefore * registry.SteeringWheelAxisLocal));
                 Assert.That(
                     signedColumnRoll,
                     Is.EqualTo(presentation.SteeringWheelAngle)
@@ -1286,6 +1293,82 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        private static void AssertRearBench(CityBusAssetRegistry bus)
+        {
+            Transform[] rear = bus.PassengerSeatAnchors.Where(anchor =>
+                bus.transform.InverseTransformPoint(anchor.position).z < -3f).ToArray();
+            Assert.That(rear.Select(anchor => anchor.name), Is.EqualTo(new[] { "ANCHOR_PassengerSeat_06", "ANCHOR_PassengerSeat_10" }));
+            Vector3 a = bus.transform.InverseTransformPoint(rear[0].position);
+            Vector3 b = bus.transform.InverseTransformPoint(rear[1].position);
+            Assert.That(b.x - a.x, Is.InRange(.66f, .70f), "Allow two broad shoulders on the back row.");
+            Assert.That(a.z, Is.EqualTo(b.z).Within(.002f));
+            var bench = bus.RendererBindings.Single(binding => binding.Role == "rear_bench").Renderer;
+            var mesh = bench.GetComponent<MeshFilter>().sharedMesh;
+            using var data = MeshUtility.AcquireReadOnlyMeshData(mesh);
+            using var positions = new Unity.Collections.NativeArray<Vector3>(data[0].vertexCount, Unity.Collections.Allocator.Temp);
+            using var indices = new Unity.Collections.NativeArray<int>(data[0].GetSubMesh(0).indexCount, Unity.Collections.Allocator.Temp);
+            data[0].GetVertices(positions);
+            data[0].GetIndices(indices, 0);
+            var cabin = new Vector3[positions.Length];
+            for (int i = 0; i < positions.Length; i++)
+                cabin[i] = bus.transform.InverseTransformPoint(bench.transform.TransformPoint(positions[i]));
+            // Measure the imported, sprung upholstery under both hips and continuously
+            // through its middle; two individual seat meshes with a gap would fail.
+            for (int station = 0; station <= 24; station++)
+            {
+                float x = Mathf.Lerp(a.x - .26f, b.x + .26f, station / 24f);
+                bool supported = false;
+                for (int tri = 0; tri < indices.Length && !supported; tri += 3)
+                {
+                    var p = cabin[indices[tri]];
+                    var u = cabin[indices[tri + 1]] - p;
+                    var v = cabin[indices[tri + 2]] - p;
+                    float det = u.x * v.z - v.x * u.z;
+                    if (Mathf.Abs(det) < .000001f) continue;
+                    float dx = x - p.x, dz = a.z - p.z;
+                    float t = (dx * v.z - v.x * dz) / det, q = (u.x * dz - dx * u.z) / det;
+                    if (t < -.0001f || q < -.0001f || t + q > 1.0001f) continue;
+                    supported = Mathf.Abs(p.y + u.y * t + v.y * q - a.y) < .012f;
+                }
+                Assert.That(supported, Is.True, $"Missing rear bench cushion beneath X={x:F3}.");
+            }
+        }
+
+        private static void AssertStandingPlaces(CityBusAssetRegistry bus)
+        {
+            Assert.That(bus.StandingFloorAnchors.Count, Is.EqualTo(3));
+            Assert.That(bus.StandingGripAnchors.Count, Is.EqualTo(3));
+            var rail = bus.RendererBindings.Single(binding => binding.Role == "handrails").Renderer;
+            using var data = MeshUtility.AcquireReadOnlyMeshData(rail.GetComponent<MeshFilter>().sharedMesh);
+            using var vertices = new Unity.Collections.NativeArray<Vector3>(data[0].vertexCount, Unity.Collections.Allocator.Temp);
+            data[0].GetVertices(vertices);
+            for (int i = 0; i < bus.StandingFloorAnchors.Count; i++)
+            {
+                var floor = bus.StandingFloorAnchors[i];
+                var grip = bus.StandingGripAnchors[i];
+                Assert.That(floor.parent, Is.SameAs(bus.Body));
+                Assert.That(grip.parent, Is.SameAs(bus.Body));
+                Vector3 feet = bus.transform.InverseTransformPoint(floor.position);
+                Vector3 hand = bus.transform.InverseTransformPoint(grip.position);
+                Assert.That(feet.y, Is.EqualTo(.67f).Within(.002f));
+                Assert.That(Mathf.Abs(feet.x) - .30f, Is.GreaterThanOrEqualTo(.35f), "Keep the central passage open.");
+                Assert.That(hand.y - feet.y, Is.InRange(1.41f, 1.44f));
+                Assert.That(hand.x - feet.x, Is.InRange(.24f, .26f), "The authored right palm must reach the ring.");
+                // The imported mesh's two stations at the bottom of the decagonal
+                // ring bracket the hand on the same horizontal tube. A target
+                // inside the empty centre or on the next strap fails this check.
+                bool left = false, right = false;
+                for (int v = 0; v < vertices.Length; v++)
+                {
+                    Vector3 p = bus.transform.InverseTransformPoint(rail.transform.TransformPoint(vertices[v])) - hand;
+                    if (Mathf.Abs(p.y) > .016f || Mathf.Abs(p.z) > .016f || Mathf.Abs(p.x) > .036f) continue;
+                    left |= p.x < -.018f;
+                    right |= p.x > .018f;
+                }
+                Assert.That(left && right, Is.True, grip.name + " must be on the mesh's lower bar.");
+            }
+        }
+
         private static float AssertDoorLeafPose(
             Transform leaf,
             Quaternion closedRotation,
@@ -1357,6 +1440,7 @@ namespace BarPromenade.Tests.EditMode
             public int animation_count;
             public bool visible_interior;
             public int passenger_seat_count;
+            public int standing_place_count;
             public CityBusPartManifest[] parts;
             public CityBusPivotManifest[] pivots;
         }

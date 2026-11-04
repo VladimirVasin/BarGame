@@ -71,14 +71,16 @@ namespace BarPromenade
         public CityPedestrianPlan PedestrianPlan { get; private set; }
         public CityPedestrianDirector Pedestrians { get; private set; }
         public IReadOnlyList<CityBusPlan> BusPlans { get; private set; }
-        public IReadOnlyList<CityBusDirector> BusLines { get; private set; }
+        public IReadOnlyList<CityBusDirector> BusVehicles { get; private set; }
+        public CityResidentJourneyDirector ResidentJourneys { get; private set; }
+        private CityResidentTransitSession transitSession;
         public IReadOnlyList<CityBusRideController> BusRides { get; private set; }
         public IReadOnlyList<CityBusStopWaitPlan> LineWaitPlans { get; private set; }
-        public IReadOnlyList<CityBusNpcPassengerController> LinePassengers { get; private set; }
+        public IReadOnlyList<CityBusNpcPassengerController> VehiclePassengers { get; private set; }
         // The first line remains available to tools that inspect one actor in isolation.
         public CityBusPlan BusPlan => BusPlans?.Count > 0 ? BusPlans[0] : null;
         public GameObject BusStops { get; private set; }
-        public CityBusDirector Bus => BusLines?.Count > 0 ? BusLines[0] : null;
+        public CityBusDirector Bus => BusVehicles?.Count > 0 ? BusVehicles[0] : null;
         public CityBusRideController BusRide
         {
             get
@@ -90,7 +92,7 @@ namespace BarPromenade
             }
         }
         public CityBusStopWaitPlan BusStopWaits => LineWaitPlans?.Count > 0 ? LineWaitPlans[0] : null;
-        public CityBusNpcPassengerController BusPassengers => LinePassengers?.Count > 0 ? LinePassengers[0] : null;
+        public CityBusNpcPassengerController BusPassengers => VehiclePassengers?.Count > 0 ? VehiclePassengers[0] : null;
         public YardWheelchairActor YardWheelchair { get; private set; }
         public IReadOnlyList<DryingYardBabushkaPresentation>
             DryingYardBabushkas { get; private set; }
@@ -449,10 +451,9 @@ namespace BarPromenade
             ui.transform.SetParent(transform, false);
             InteractionPromptView prompt = ui.AddComponent<InteractionPromptView>();
 
-            Vector3 spawnPosition = Layout.SpawnWorldPosition;
+            Vector3 spawnPosition = Layout.StandingSpawnPosition;
             string spawnSource = "default";
             string returnBarId = string.Empty;
-            bool spawnOnSidewalk = false;
             Vector3 arrivalForward = Vector3.zero;
             PlayerDoorArrivalPose? exteriorDoorArrival = null;
             bool hasAreaArrival = AreaTravelService.TryConsumeArrival(
@@ -467,7 +468,6 @@ namespace BarPromenade
             {
                 spawnPosition = startingPosition;
                 arrivalForward = startingForward;
-                spawnOnSidewalk = true;
                 spawnSource = "new_game_" + startingLocation.ToString().ToLowerInvariant();
             }
             else if (hasAreaArrival &&
@@ -485,12 +485,7 @@ namespace BarPromenade
                      areaArrivalPoint,
                      out pointSpawn)))
             {
-                // The map asked for a place on this tab, not for the city.
-                // The height is already the one the chart resolved, so this
-                // arrival is finished and must not take the road-top lift
-                // the default spawn gets.
                 spawnPosition = pointSpawn;
-                spawnOnSidewalk = true;
                 spawnSource = "area_map_point";
             }
             else if (hasAreaArrival)
@@ -499,7 +494,8 @@ namespace BarPromenade
                 {
                     CityTunnelForecourtDescriptor forecourt =
                         World.FringeYardPlan.TunnelForecourt;
-                    spawnPosition = forecourt.StreetAnchor;
+                    spawnPosition = forecourt.StreetAnchor + Vector3.up *
+                        (CityStreetSurfacePlanner.RoadTop + PlayerFactory.GroundedRootOffset);
                     arrivalForward = -forecourt.Axis;
                     spawnSource = "area_" +
                                   areaArrivalToken
@@ -525,19 +521,12 @@ namespace BarPromenade
                 spawnPosition = doorArrival.RootPosition;
                 exteriorDoorArrival = doorArrival;
                 spawnSource = doorSource;
-                spawnOnSidewalk = true;
             }
             else if (doorSource != null)
             {
                 spawnSource = doorSource;
             }
 
-            if (!spawnOnSidewalk)
-            {
-                spawnPosition.y +=
-                    CityStreetSurfacePlanner.RoadTop +
-                    PlayerFactory.GroundedRootOffset;
-            }
             bool spawnIsWalkable =
                 World.WalkableArea.Contains(spawnPosition);
             GameLog.Info(
@@ -629,8 +618,12 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 pedestrianWalkableArea);
             Pedestrians.ConfigureResidentPlaces(Layout);
-            while (Pedestrians.WarmResidentPopulation())
-                yield return new CompositionStep("resident_population", 0.75f);
+            var waits = new CityBusStopWaitPlan[BusPlans.Count];
+            for (int i = 0; i < waits.Length; i++)
+                waits[i] = CityBusStopWaitPlanner.Create(BusPlans[i], PedestrianPlan, pedestrianWalkableArea, Layout);
+            LineWaitPlans = waits;
+            ResidentJourneys = new CityResidentJourneyDirector(Pedestrians.Residents, BusPlans, waits);
+            Pedestrians.ConfigureResidentJourneys(ResidentJourneys);
             GameLogPhases.Report("city", "pedestrian_pool", stepTimer);
             stepTimer.Restart();
             var lowLampAnchors = new List<Transform>(World.RiverQuayLampAnchors);
@@ -653,11 +646,13 @@ namespace BarPromenade
             DayNight = gameObject.AddComponent<CityDayNightController>();
             DayNight.Initialize(Night);
             GameLogPhases.Report("city", "night_lighting", stepTimer);
-            yield return new CompositionStep("player_and_pedestrians", 0.76f);
             stepTimer.Restart();
-            var lines = CityBusFactory.CreateNetwork(transform, BusPlans, Player.GameObject.transform,
+            var vehicles = CityBusFactory.CreateNetwork(transform, BusPlans, Player.GameObject.transform,
                 Pedestrians, () => Night.NightFactor);
-            BusLines = lines;
+            BusVehicles = vehicles;
+            transitSession = new CityResidentTransitSession(this);
+            transitSession.Attach();
+            yield return new CompositionStep("player_and_pedestrians", 0.76f);
             GameLogPhases.Report("city", "bus", stepTimer);
             stepTimer.Restart();
             // The yard rider is authored, not ambient: one staged NPC on
@@ -1018,25 +1013,23 @@ namespace BarPromenade
             }
             Pedestrians.ConfigureVehicleTraffic(Bus, Cannery,
                 LastRouteCar != null ? LastRouteCar.GetComponentInParent<LastRouteCarDriver>() : null);
-            var rides = new CityBusRideController[lines.Length];
-            var waits = new CityBusStopWaitPlan[lines.Length];
-            var passengers = new CityBusNpcPassengerController[lines.Length];
-            int waitPointCount = 0;
-            for (int i = 0; i < lines.Length; i++)
+            var rides = new CityBusRideController[vehicles.Length];
+            var passengers = new CityBusNpcPassengerController[vehicles.Length];
+            for (int i = 0; i < vehicles.Length; i++)
             {
-                rides[i] = CityBusRideController.Create(lines[i], Player, World.WalkableArea, camera,
+                rides[i] = CityBusRideController.Create(vehicles[i], Player, World.WalkableArea, camera,
                     follow, pedestrianStreetSurfacePlan);
-                waits[i] = CityBusStopWaitPlanner.Create(BusPlans[i], PedestrianPlan, pedestrianWalkableArea, Layout);
-                waitPointCount += waits[i].Count;
-                passengers[i] = CityBusNpcPassengerController.Create(lines[i], Pedestrians, waits[i],
+                passengers[i] = CityBusNpcPassengerController.Create(vehicles[i], Pedestrians, waits[vehicles[i].LineIndex],
                     World.WalkableArea, pedestrianStreetSurfacePlan, Player.GameObject.transform,
                     unchecked(GameSessionState.CitySeed + 104729 * i));
+                passengers[i].ConfigureResidentJourneys(ResidentJourneys, i);
             }
             BusRides = rides;
-            LineWaitPlans = waits;
-            LinePassengers = passengers;
+            VehiclePassengers = passengers;
             foreach (var controller in passengers) controller.ShareWaitingPlaces(passengers);
-            GameLog.Info("city", "bus_stop_waits_planned", GameLog.Field("wait_points", waitPointCount));
+            foreach (var controller in passengers) controller.WarmResidentWaiters();
+            while (Pedestrians.WarmResidentPopulation())
+                yield return new CompositionStep("resident_population", 0.76f);
             GameLogPhases.Report("city", "interactions_and_rides", stepTimer);
             // The city sound layer is composed only after every moving
             // physical owner exists. Its plan contains no anonymous fallback
@@ -1278,7 +1271,7 @@ namespace BarPromenade
                 intoxicationHud,
                 BusPlans,
                 World.MountainBoundaryPlan,
-                World.SeacoastPlan);
+                World.SeacoastPlan, PedestrianPlan);
             GameLogPhases.Report("city", "map_initialize", stepTimer);
             // The two foreign tabs chart pure plans that take over a second
             // to build and are looked at only with the map open on them, so
@@ -1513,6 +1506,7 @@ namespace BarPromenade
                 return false;
             }
 
+            transitSession?.Suspend();
             IsDormant = true;
             dormantObjects.Clear();
             dormantBehaviours.Clear();
@@ -1582,6 +1576,7 @@ namespace BarPromenade
                 return;
             }
 
+            transitSession?.Resume();
             if (dormantListener != null)
             {
                 dormantListener.enabled = true;
@@ -1659,6 +1654,7 @@ namespace BarPromenade
                 IntoxicationStatus.Initialize(Player, follow, intoxicationHud);
             }
 
+            foreach (var controller in VehiclePassengers) controller.WarmResidentWaiters();
             RestoreMusicAfterDormancy();
             if (Map != null)
             {
@@ -2025,6 +2021,15 @@ namespace BarPromenade
             }
             throw new System.InvalidOperationException("The City diner has no hero seat.");
         }
+
+        private void Update()
+        {
+            if (IsInitialized && !IsDormant) transitSession?.Tick();
+        }
+
+        private void OnDisable() => transitSession?.Detach();
+
+        private void OnEnable() => transitSession?.Attach();
 
         private void OnDestroy()
         {

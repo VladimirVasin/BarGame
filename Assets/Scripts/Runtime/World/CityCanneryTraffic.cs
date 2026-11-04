@@ -17,6 +17,7 @@ namespace BarPromenade
         private readonly CityBusDirector director;
         private readonly List<Vector3> candidate = new List<Vector3>(400);
         private readonly List<Vector3> reserved = new List<Vector3>(400);
+        private Bounds reservedBounds;
         private int reservedTrip = -1;
         public bool HasReservation => reservedTrip >= 0;
         public int ReservedTrip => reservedTrip;
@@ -33,20 +34,23 @@ namespace BarPromenade
             int trip = TripIndex(snapshot.Stage);
             if (trip < 0) { Release(); return true; }
             CreateSweep(snapshot, candidate);
-            for (int i = 0; director != null && i < director.LineCount; i++)
+            Bounds sweepBounds = PointBounds(candidate);
+            for (int i = 0; director != null && i < director.VehicleCount; i++)
             {
-                CityBusActor bus = director.GetLine(i).Actor;
+                CityBusActor bus = director.GetVehicle(i).Actor;
                 if (bus == null || !bus.HasRoutePhase) continue;
+                float reach = bus.LocalVisualBounds.size.magnitude + bus.GetRequiredStoppingDistance() + BodyRadius + 1f;
+                if (candidate.Count == 0 || sweepBounds.SqrDistance(bus.Position) > reach * reach) continue;
                 // The bus owns space it already occupies. A moving bus also
                 // keeps its emergency stopping corridor. A stopped bus can
                 // wait at the boundary while the truck clears the crossing.
                 bool occupied = Overlaps(candidate, BodyRadius + SweepPadding,
                     bus.Position, bus.Rotation, bus.LocalVisualBounds);
-                float clearance = float.PositiveInfinity;
+                var obstacle = CityBusObstacleState.Clear;
                 if (!occupied && bus.Speed > .05f)
                     Accumulate(bus, candidate, BodyRadius + SweepPadding,
-                        bus.GetRequiredStoppingDistance() + .75f, ref clearance);
-                if (occupied || !float.IsPositiveInfinity(clearance))
+                        bus.GetRequiredStoppingDistance() + .75f, ref obstacle);
+                if (occupied || obstacle.MustStop)
                 {
                     // Let the priority bus cross our future path. It still
                     // sees the actual truck through AccumulateObstacle.
@@ -56,6 +60,7 @@ namespace BarPromenade
             }
             reserved.Clear();
             reserved.AddRange(candidate);
+            reservedBounds = sweepBounds;
             reservedTrip = trip;
             return true;
         }
@@ -96,11 +101,34 @@ namespace BarPromenade
 
         public void AccumulateObstacle(CityBusActor bus, float lookAhead, ref float clearance)
         {
+            var obstacle = CityBusObstacleState.Clear;
+            AccumulateObstacle(bus, lookAhead, ref obstacle);
+            if (obstacle.MustStop) clearance = Mathf.Min(clearance, obstacle.ForwardClearance);
+        }
+
+        internal void AccumulateObstacle(CityBusActor bus, float lookAhead, ref CityBusObstacleState obstacle)
+        {
             if (owner == null || !owner.isActiveAndEnabled || owner.Truck == null || !owner.HasSpawnedTruck) return;
-            for (int i = 0; i <= BodyIntervals; i++)
-                Accumulate(bus, BodyPoint(owner.Truck.position, owner.Truck.rotation, i),
-                    BodyRadius, lookAhead, ref clearance);
-            Accumulate(bus, reserved, BodyRadius + SweepPadding, lookAhead, ref clearance);
+            float reach = lookAhead + bus.LocalVisualBounds.size.magnitude + BodyRadius + SweepPadding;
+            Vector3 axle = owner.Truck.position;
+            float bodyReach = reach + Mathf.Max(Mathf.Abs(CityCanneryTruckDimensions.Rear), Mathf.Abs(CityCanneryTruckDimensions.Front)) + 1.4f;
+            if ((axle - bus.Position).sqrMagnitude <= bodyReach * bodyReach)
+            {
+                Quaternion rotation = owner.Truck.rotation;
+                for (int i = 0; i <= BodyIntervals; i++)
+                    Accumulate(bus, BodyPoint(axle, rotation, i), BodyRadius, lookAhead,
+                        CityBusBlockerKind.CanneryTruck, ref obstacle);
+            }
+            if (reserved.Count != 0 && reservedBounds.SqrDistance(bus.Position) <= reach * reach)
+                Accumulate(bus, reserved, BodyRadius + SweepPadding, lookAhead, ref obstacle);
+        }
+
+        private static Bounds PointBounds(List<Vector3> points)
+        {
+            if (points.Count == 0) return default;
+            var bounds = new Bounds(points[0], Vector3.zero);
+            for (int i = 1; i < points.Count; i++) bounds.Encapsulate(points[i]);
+            return bounds;
         }
 
         private void CreateSweep(CityFishSupplySnapshot snapshot, List<Vector3> points)
@@ -144,18 +172,20 @@ namespace BarPromenade
         }
 
         private static void Accumulate(CityBusActor bus, List<Vector3> points, float radius,
-            float lookAhead, ref float clearance)
+            float lookAhead, ref CityBusObstacleState obstacle)
         {
-            foreach (Vector3 point in points) Accumulate(bus, point, radius, lookAhead, ref clearance);
+            foreach (Vector3 point in points)
+                Accumulate(bus, point, radius, lookAhead, CityBusBlockerKind.CanneryReservation, ref obstacle);
         }
 
         private static void Accumulate(CityBusActor bus, Vector3 point, float radius,
-            float lookAhead, ref float clearance)
+            float lookAhead, CityBusBlockerKind kind, ref CityBusObstacleState obstacle)
         {
             float reach = lookAhead + bus.LocalVisualBounds.size.magnitude + radius;
             if ((point - bus.Position).sqrMagnitude > reach * reach) return;
-            if (bus.TryGetPathObstacleClearance(point, radius, lookAhead, out float candidate))
-                clearance = Mathf.Min(clearance, candidate);
+            if (bus.TryGetPathObstacleClearance(point, radius, lookAhead, out float candidate) &&
+                candidate < obstacle.ForwardClearance)
+                obstacle = new CityBusObstacleState(true, candidate, kind, point, "cannery_truck");
         }
     }
 }

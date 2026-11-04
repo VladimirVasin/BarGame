@@ -9,8 +9,7 @@ edge/bar;direct map:last leg;Village warm/inhabited;text/portrait/spoiler/newfac
 ## Implemented MVP
 
 Runtime-composed coastal City/MountainRoad/Village/cableway/upper-house;
-modular low-poly 3D hero/streets-climb-lane. Bar/shop/home/church north of
-cemetery:own interiors/returns.
+modular 3D hero. The summit home, lower-town bar and shop, and church each have an interior and street return.
 
 
 ### Areas and scenes
@@ -602,14 +601,14 @@ cemetery:own interiors/returns.
   It blends directional/ambient/reflection lighting and the bounded City/Home
   exterior night fixtures; the fixed neighbour-wall yard Spot is
   outside `NightFactor` and stays on. The atmosphere pool remains capped at
-  `12` local realtime lights. Each visible bus may add `4` (one vehicle per line), the pooled
+  `12` local realtime lights. Each visible bus may add `4` (up to two vehicles per line), the pooled
   helmet-lamp pedestrian `1`, the yard `1` and the drying yard's night-only
   pole floodlight `1`. Fixed site lights, including the cemetery and the ten
   church-garden uplights, remain separate from the twelve-light pool;
   the scene Directional and transient lightning Directional are counted
   separately. Bar, Supermarket and Stairwell lighting are unchanged. The
-  City/balcony share constant `.090` gray-green Exp2 haze and a matching
-  backdrop;48m is the technical clip, not readable range. Local fog follows wind.
+  City streets use constant `.090` gray-green Exp2 haze and a 48 m clip. Wind carries the fog layers.
+  The summit apartment and balcony look past the upper bridge and dry ravine to roofs on the descending streets.
   Saturation `-24` day→`-30` night follows
   clock; authored grade/Home interior unchanged. The
   Windows player retains the runtime-only Exp2 shader variant;
@@ -758,12 +757,13 @@ cemetery:own interiors/returns.
   suppress; overlap priority is active interaction→nearest;
 - one radius-safe sidewalk/crosswalk/Courtyard graph; courtyard knots use
   exact free ground holes/heights and .35 m radius. Street spawn anchors stay.
-  City has `192` permanent default residents with seeded daily home/work/shop/
-  walk/return destinations on this graph. Destinations are logical states,
-  not new interiors, purchases or jobs. Four staggered routine cohorts read
-  absolute session day/time directly after a jump or return. Offscreen routes
-  advance without scene objects; nearby actors continue their actual routes.
-  The local population target is a cap, not a guaranteed head count:
+  Each of the `192` permanent residents has a home entrance and a daily agenda.
+  Working residents have a fixed industrial address. Trips compare walking with
+  the approach, wait, ride, optional platform change and walk from the exit.
+  Stop visits exchange resident IDs, including during absences from City.
+  Nearby actors continue the same journeys on the pavement and through the doors.
+  On city benches and bus seats the clothed hips and thighs rest on the surface, hands
+  on the thighs and feet on the local floor. Local population caps by time of day:
   `00–06` → `5`, `06–10` → `28`, `10–17` → `22`, `17–22` → `36`,
   `22–24` → `10`, with smooth half-hour boundary ramps. Clearance, connected
   journeys and eligible residents can leave fewer people present.
@@ -824,8 +824,8 @@ cemetery:own interiors/returns.
   bodies exclude their skinned prop parts. The accepted `2026-09-29` ordinary
   refinement shapes anatomy, separate fingers, clothes and shoes on four models:
   fisherman `45` meshes / `7,760` triangles; mother `49` / `7,872`;
-  cashier uses its measured manifest; driver `48` / `6,876`. Fisherman/mother retain
-  generator `4.5.2`; cashier `3.1.0`, driver `3.0.0`. Three share the palette-neutral `256 px`
+  cashier uses its measured manifest; driver `56` / `7,196`. Fisherman/mother retain
+  generator `4.5.2`; cashier `3.1.0`, driver `3.1.1`. Three share the palette-neutral `256 px`
   `OrdinaryCharacterDetailAtlas`; the cashier retains his own garment atlas.
   The mother's original expression grid remains, with its surface ahead of
   the skull. Shared rig/sockets remain; both fishing clips bring the left grip closer.
@@ -858,17 +858,20 @@ cemetery:own interiors/returns.
   not place them in City, Home or the bus population. Home transforms the shared pavement
   graph into its local exterior, retaining a bounded `100 m` approach context
   beyond the facade while rendering its `48 m` street slice;
-- one independently circulating midibus per district line. The production
+- two circulating midibuses per district line, starting half a circuit apart. The production
   model uses its real `8.25 x 2.38 x 2.95 m` body and `4.5 m` wheelbase rather
-  than a hidden gameplay scale, and exposes a modeled driver area, twelve
-  passenger seats, rails, dashboard, two animated double-leaf doors, rolling
+  than a hidden gameplay scale, and exposes a modeled driver area, passenger
+  seats, overhead rings, dashboard, two animated double-leaf doors, rolling
   wheels and front steering. Each door keeps its outer posts fixed while its
   two independently hinged leaves fold inward around the bus vertical. The
   separate passive `CityBusDriver3D` uses the shared `Player3DLit` material
   and the `NpcHumanV2` rig/Avatar copied from Hero V2, with a normal low-poly
   head and its canonical long horizontal eyes.
-  Passengers follow the cushion plane after bus movement; lifts match seated mesh depth.
-  Procedural seated IK keeps both hands on the rotating wheel grips. For each
+  A two-person rear bench and eight individual seats include the hero’s 07. Residents fill nine seats, then three standing
+  places with real floor and ring contacts. Aboard, dressed bodies follow the sprung
+  cabin without a street actor; they regain one on leaving by either door.
+  The driver sits clear of the backrest with boots in the footwell. Each hand
+  steers from its own side of the rim through turns. For each
   door command, a deterministic timeline moves only the right hand to the
   dashboard button with `12 mm` travel while the left stays planted, and turns
   the driver toward the front door for the open-door hold before returning
@@ -894,17 +897,15 @@ cemetery:own interiors/returns.
   Each line has sheltered local stops on straight sections. A walk from either
   end of the sidewalk reaches the shelter and both passenger doors, including
   on the switchbacks. Queues stand back from the through path. Infill and litter
-  reserve the shelter, waiting places and door approaches. Transfer platforms
-  serve the two hill approaches and a river crossing shown on the map. Platform sharing
-  depends on the physical pole position. Two separate boarding places retain
-  both poles. Each face gives the line and stop (03-02), with a second code for transfers.
+  reserve the shelter, waiting places and door approaches. Each stop has a zebra to the opposite pavement. At the foot of the slopes, concrete stairs and
+  landings link 01-01 to 03-01 on the west and 02-01 to 03-07 on the east. Residents and the hero use
+  the same walk between buses. The river-mouth transfer follows the bridge. The map distinguishes each physical pole. Each face gives the line and stop (03-02), with a second code for transfers.
   Two short-range, shadowless spots from the street pool light the nearest pole from above, one per face.
   The bus displays dark digits on its pale front panel and light digits on the sides and rear.
   In drizzle and light rain, scattered small drops cling to its panes. Drops run down the glass in heavy rain.
   Each bus serves its own ordered stops, opens both doors and dwells for ten
-  seconds. Offscreen travel advances the same route and dwell clock. Each
-  line has one model, bound within the fog approach and released at a body
-  distance of 92 m unless the hero is aboard. Nearby buses keep their own
+  seconds. Offscreen travel advances the same route and dwell clock. Models bind within the fog approach and release at a body
+  distance of 92 m after doorway transfers finish and the hero has left. Nearby buses keep their own
   driver, cabin and passengers and yield around conflicting movements.
   Suspension, wheel/steering articulation, button travel, driver hands/look, the
   door timeline, a synthesized engine loop and night-scaled head, tail and cabin
@@ -938,7 +939,7 @@ cemetery:own interiors/returns.
   Normal completion and cancellation, scene teardown or forced actor cleanup
   restore the player motor, `CharacterController`, contact shadow and camera
   exactly once without mutating its hierarchy, with a safe exterior fallback
-  when needed. Each line carries its own waiting and riding NPCs. The hero
+  when needed. Each vehicle retains its own seated residents. Its line shares the waiting places. The hero
   transfers by alighting onto a pavement, then boarding the next line. At
   Home the balcony places a static collider-free sign from the actual home
   line and platform. Active transport runs in City.
@@ -1537,9 +1538,9 @@ cemetery:own interiors/returns.
 - 144 core land-use lots include16 park,4 semantic and2 terrace OpenGround
   cells; plus34 northern beach/water,16 north-east yard and6 cemetery cells.
   The core contains
-  one Residential bar at `(12,7)` facing east, Home `(12,5)` facing north:
-  neighboring streets, about 57m door-to-door/52m street route; supermarket
-  `(12,4)` stays. The relocated bar keeps stable ID
+  one Residential bar at `(12,7)` facing east, an ordinary home at `(12,5)` and
+  the supermarket at `(12,4)`. The player's home faces the highest street west
+  of its bridge, near platform 03-04. The lower bar keeps stable ID
   `bar-01352777-12-06` and `SplitTheG` activity assignment. Four semantic
   rooftop/facade landmarks survive independently of the two districts. Custom
   generated layouts may still request multiple graph-separated bars;
@@ -1547,9 +1548,8 @@ cemetery:own interiors/returns.
   gallery, open balcony door and one lit window to its street-left; City and
   Home share the same `4.7 m` floor, door/window positions and `2.3 m` outward
   deck geometry;
-- when the opening route first reaches the City, the hero starts on the road
-  node beside the deterministic player home, `13 m`
-  from Home's street approach under default spacing; custom-layout
+- when the opening route first reaches the City, the hero starts by the home
+  entrance on Ridge Street. Custom-layout
   fallback placement remains bounded to `48 m` by traversable street distance,
   and returning from a bar, home or supermarket interior restores that
   entrance's own sidewalk arrival point rather than the road centerline;
@@ -2798,8 +2798,7 @@ cemetery:own interiors/returns.
   volumetric light shafts.
 - Player-drivable vehicles, a broader traffic simulation, or skating physics;
   the City passenger service follows its district rings. Fares
-  and payment, destination selection, passenger persistence and live map
-  tracking are deferred. `CityBusNpcPassengerController` handles ambient riders.
+  and payment, hero destination selection and live map tracking are deferred. `CityBusNpcPassengerController` handles ambient riders.
 - Multiple bespoke bar interiors.
 - Mobile quality/render-profile parity; the current Windows/PC-targeted project
   retains only its PC quality level, render-pipeline asset and renderer.

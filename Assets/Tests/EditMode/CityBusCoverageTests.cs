@@ -519,7 +519,7 @@ namespace BarPromenade.Tests.EditMode
         private static bool IsMandatoryStopKind(
             CityBusStopTargetKind kind)
         {
-            return kind == CityBusStopTargetKind.PlayerHome ||
+            return kind == CityBusStopTargetKind.PlayerHome || kind == CityBusStopTargetKind.ResidentialBlock ||
                    kind ==
                    CityBusStopTargetKind.DistrictPointOfInterest;
         }

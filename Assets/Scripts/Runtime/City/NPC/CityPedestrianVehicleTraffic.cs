@@ -35,14 +35,31 @@ namespace BarPromenade
             carBounds = collider != null ? new Bounds(collider.center, collider.size) : default;
         }
 
-        public void Refresh()
+        public void Refresh(IReadOnlyList<CityPedestrianActor> walkers = null)
         {
             ClearFootprints();
-            for (int i = 0; buses != null && buses.isActiveAndEnabled && i < buses.LineCount; i++)
+            Bounds neighbourhood = default;
+            bool anyWalker = false;
+            if (walkers != null)
+                for (int i = 0; i < walkers.Count; i++)
+                {
+                    var walker = walkers[i];
+                    if (!walker.IsSpawned || walker.IsAttachedToVehicle) continue;
+                    if (!anyWalker) neighbourhood = new Bounds(walker.Position, Vector3.zero);
+                    else neighbourhood.Encapsulate(walker.Position);
+                    if (walker.IsYieldingToVehicle) neighbourhood.Encapsulate(walker.VehicleReturnPosition);
+                    anyWalker = true;
+                }
+            // Include the entire bus path, hull, a walker's capsule and the five-metre
+            // refuge search. No distant bus can intersect a query outside this envelope.
+            const float walkerMargin = 8f;
+            for (int i = 0; buses != null && buses.isActiveAndEnabled && i < buses.VehicleCount; i++)
             {
-                CityBusDirector line = buses.GetLine(i);
+                CityBusDirector line = buses.GetVehicle(i);
                 CityBusActor bus = line != null && line.isActiveAndEnabled ? line.Actor : null;
                 if (bus == null || !bus.isActiveAndEnabled || !bus.HasRoutePhase || bus.BodyCollider == null) continue;
+                float range = MaximumLookAhead + bus.LocalVisualBounds.center.magnitude + bus.LocalVisualBounds.extents.magnitude + walkerMargin;
+                if (walkers != null && (!anyWalker || neighbourhood.SqrDistance(bus.Position) > range * range)) continue;
                 Bounds bounds = new Bounds(bus.BodyCollider.center, bus.BodyCollider.size);
                 AddFootprint(bus.Position, bus.Rotation, bounds);
                 if (bus.MotionState == CityBusMotionState.Dwelling ||
@@ -52,7 +69,7 @@ namespace BarPromenade
                 for (float ahead = PathStep; ahead < reach + PathStep; ahead += PathStep)
                 {
                     bus.SampleAhead(Mathf.Min(ahead, reach), out Vector3 point, out Vector3 forward);
-                    AddFootprint(point, Rotation(forward, bus.Rotation), bounds);
+                    AddFootprint(point, Rotation(forward, bus.Rotation), bounds, predicted: true);
                 }
             }
 
@@ -72,7 +89,7 @@ namespace BarPromenade
                         if (!future.IsDriving || CityCanneryTraffic.TripIndex(future.Stage) != trip) break;
                         CityPortTruckPose pose = cannery.TruckPose(future);
                         // The route supplies the body's rotation even in reverse.
-                        AddFootprint(pose.RearAxle, pose.Rotation, bounds);
+                        AddFootprint(pose.RearAxle, pose.Rotation, bounds, predicted: true);
                     }
                 }
             }
@@ -88,7 +105,7 @@ namespace BarPromenade
             {
                 model.Path.Sample(car.Distance + Mathf.Min(ahead, carReach),
                     out Vector3 point, out Vector3 forward);
-                AddFootprint(point, Rotation(forward, car.transform.rotation), carBounds);
+                AddFootprint(point, Rotation(forward, car.transform.rotation), carBounds, predicted: true);
             }
         }
 
@@ -97,6 +114,73 @@ namespace BarPromenade
             float clearance = Mathf.Max(0f, radius) + ClearancePadding;
             for (int i = 0; i < footprints.Count; i++)
                 if (footprints[i].Blocks(point, clearance)) return true;
+            return false;
+        }
+
+        internal bool PhysicallyBlocks(Vector3 point, float radius)
+        {
+            float clearance = Mathf.Max(0f, radius) + ClearancePadding;
+            foreach (var body in footprints)
+                if (!body.Predicted && body.Blocks(point, clearance)) return true;
+            return false;
+        }
+
+        internal bool BlocksCrossing(Vector3 from, Vector3 to, float radius, float walkerSpeed)
+        {
+            float clearance = Mathf.Max(0f, radius) + ClearancePadding;
+            foreach (var body in footprints)
+                if (body.IntersectsSegment(from, to, clearance)) return true;
+
+            // The daily walker needs several seconds to clear both lanes. Only
+            // an actual decision at a kerb needs this longer prediction; ordinary
+            // street avoidance continues to use the shorter frame snapshot.
+            float length = Vector3.Distance(from, to);
+            float seconds = Mathf.Min(20f, (length + clearance) / Mathf.Max(.35f, walkerSpeed) + .5f);
+            Vector3 middle = (from + to) * .5f;
+            const float spacing = 1.5f;
+            for (int i = 0; buses != null && buses.isActiveAndEnabled && i < buses.VehicleCount; i++)
+            {
+                var bus = buses.GetVehicle(i).Actor;
+                if (bus == null || !bus.HasRoutePhase || bus.MotionState == CityBusMotionState.Dwelling ||
+                    bus.MotionState == CityBusMotionState.RouteEnded) continue;
+                float reach = Mathf.Min(CityBusActor.CruiseSpeed * seconds,
+                    bus.Speed * seconds + .5f * CityBusActor.Acceleration * seconds * seconds);
+                Bounds bounds = bus.LocalVisualBounds;
+                float broad = reach + length * .5f + bounds.center.magnitude + bounds.extents.magnitude + clearance;
+                if ((bus.Position - middle).sqrMagnitude > broad * broad) continue;
+                for (float d = MinimumLookAhead; d < reach + spacing; d += spacing)
+                {
+                    bus.SampleAhead(Mathf.Min(d, reach), out var point, out var direction);
+                    if (new Footprint(point, Rotation(direction, bus.Rotation), bounds).IntersectsSegment(from, to, clearance))
+                        return true;
+                }
+            }
+            if (car != null && car.isActiveAndEnabled && car.IsDriving && car.Model != null && !car.HasArrived)
+            {
+                var model = car.Model;
+                float reach = Mathf.Min(model.Path.Length - car.Distance, model.Profile.CruiseSpeed * seconds);
+                float broad = reach + length + carBounds.extents.magnitude + clearance;
+                if ((car.transform.position - middle).sqrMagnitude <= broad * broad)
+                    for (float d = MinimumLookAhead; d < reach + spacing; d += spacing)
+                    {
+                        model.Path.Sample(car.Distance + Mathf.Min(d, reach), out var point, out var direction);
+                        if (new Footprint(point, Rotation(direction, car.transform.rotation), carBounds).IntersectsSegment(from, to, clearance))
+                            return true;
+                    }
+            }
+            if (cannery != null && cannery.isActiveAndEnabled && cannery.IsInitialized &&
+                cannery.HasSpawnedTruck && cannery.Snapshot.IsDriving)
+            {
+                int trip = CityCanneryTraffic.TripIndex(cannery.Snapshot.Stage);
+                var bounds = new Bounds(CityCanneryTruckDimensions.BodyCenter, CityCanneryTruckDimensions.BodySize);
+                for (float t = TruckLookAheadSeconds; t <= seconds; t += TruckSampleSeconds)
+                {
+                    var future = cannery.Cycle.Sample(cannery.WorkingSeconds + t);
+                    if (!future.IsDriving || CityCanneryTraffic.TripIndex(future.Stage) != trip) break;
+                    var pose = cannery.TruckPose(future);
+                    if (new Footprint(pose.RearAxle, pose.Rotation, bounds).IntersectsSegment(from, to, clearance)) return true;
+                }
+            }
             return false;
         }
 
@@ -139,8 +223,8 @@ namespace BarPromenade
 
         internal void ClearFootprints() => footprints.Clear();
 
-        internal void AddFootprint(Vector3 position, Quaternion rotation, Bounds bounds) =>
-            footprints.Add(new Footprint(position, rotation, bounds));
+        internal void AddFootprint(Vector3 position, Quaternion rotation, Bounds bounds, bool predicted = false) =>
+            footprints.Add(new Footprint(position, rotation, bounds, predicted));
 
         private static Quaternion Rotation(Vector3 forward, Quaternion fallback) =>
             forward.sqrMagnitude > .0001f ? Quaternion.LookRotation(forward, Vector3.up) : fallback;
@@ -151,12 +235,14 @@ namespace BarPromenade
             public readonly Quaternion Rotation;
             public readonly Quaternion InverseRotation;
             public readonly Bounds Bounds;
+            public readonly bool Predicted;
             private readonly float minimumY;
             private readonly float maximumY;
             private readonly float reach;
 
-            public Footprint(Vector3 position, Quaternion rotation, Bounds bounds)
+            public Footprint(Vector3 position, Quaternion rotation, Bounds bounds, bool predicted = false)
             {
+                Predicted = predicted;
                 Position = position;
                 Rotation = rotation;
                 InverseRotation = Quaternion.Inverse(rotation);

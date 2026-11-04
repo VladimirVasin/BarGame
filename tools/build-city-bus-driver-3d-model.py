@@ -25,7 +25,8 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from service_npc_detail import geometry_for, validate_hands
+from service_npc_detail import geometry_for
+import city_bus_driver_hands
 import npc_detail_atlas
 
 try:
@@ -37,7 +38,7 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "3.0.0"
+GENERATOR_VERSION = "3.1.1"
 DESIGN_ID = "long_eyes_driver_v1"
 DISPLAY_NAME = "Long-Eyed Route Driver"
 SEED = 241103
@@ -143,8 +144,15 @@ class DriverBuilder(base.PedestrianBuilder):
     def __init__(self):
         super().__init__(spec=None)
 
+    def remap_geometry_point(self, point, bone_name, role, name):
+        if role in {"hand_palm", "hand_finger", "hand_thumb"}:
+            return Vector(point)  # Grips are authored directly in the V2 bind frame.
+        return super().remap_geometry_point(point, bone_name, role, name)
+
     def add_part(self, name, geometry, bone_name, role, palette_name, origin=None):
-        obj = super().add_part(name, geometry_for(base, name, geometry),
+        if role not in {"hand_palm", "hand_finger", "hand_thumb"}:
+            geometry = geometry_for(base, name, geometry)
+        obj = super().add_part(name, geometry,
                                bone_name, role, palette_name, origin)
         kind = ("hair" if palette_name == "hair" else
                 "leather" if palette_name in {"leather", "sole"} else
@@ -307,39 +315,7 @@ class DriverBuilder(base.PedestrianBuilder):
                 "body",
                 "uniform" if side == "L" else "uniform_light",
             )
-            self.add_part(
-                f"GEO_Hand.{side}",
-                base.make_ellipsoid(
-                    tuple((base.v(wrist) + base.v(hand)) * 0.5),
-                    (0.047, 0.034, 0.060),
-                    10,
-                    5,
-                ),
-                f"hand.{side}",
-                "hand_palm",
-                "skin",
-            )
-            thumb_center = (
-                (0.727, -0.057, 1.045)
-                if side == "L"
-                else (-0.727, -0.057, 1.045)
-            )
-            self.add_part(
-                f"GEO_Thumb.{side}",
-                base.make_tapered_box(
-                    thumb_center,
-                    (
-                        thumb_center[0] + (0.030 if side == "L" else -0.030),
-                        thumb_center[1] - 0.010,
-                        thumb_center[2] - 0.035,
-                    ),
-                    (0.032, 0.028, 0),
-                    (0.026, 0.024, 0),
-                ),
-                f"hand.{side}",
-                "hand_thumb",
-                "skin_shadow",
-            )
+            city_bus_driver_hands.build(self, base, side)
             self.add_part(
                 f"GEO_Thigh.{side}",
                 base.make_frustum_between(hip, knee, 0.092, 0.073, 12),
@@ -564,7 +540,7 @@ class DriverBuilder(base.PedestrianBuilder):
             "CLO_BroadCuff.L",
             base.make_frustum_between(
                 (0.603, -0.016, 1.113),
-                (0.685, -0.019, 1.071),
+                (0.667, -0.018, 1.080),
                 0.058,
                 0.050,
                 12,
@@ -577,7 +553,7 @@ class DriverBuilder(base.PedestrianBuilder):
             "CLO_TightCuff.R",
             base.make_frustum_between(
                 (-0.630, -0.017, 1.100),
-                (-0.687, -0.019, 1.071),
+                (-0.669, -0.018, 1.080),
                 0.049,
                 0.043,
                 12,
@@ -709,7 +685,7 @@ def validate_driver_result(result):
     """Standalone NpcHumanV2 contract check for the bespoke driver."""
 
     bpy.context.view_layer.update()
-    validate_hands(result)
+    city_bus_driver_hands.validate(result)
     errors: list[str] = []
 
     bones = list(result.rig.data.bones)
@@ -847,9 +823,9 @@ def validate_driver_result(result):
             f"Triangle budget is {triangle_count}; expected "
             f"{MIN_TRIANGLES}-{MAX_TRIANGLES}"
         )
-    if mesh_count < 24 or mesh_count > 52:
+    if mesh_count < 24 or mesh_count > 56:
         errors.append(
-            f"Mesh count is {mesh_count}; expected 24-52 parts"
+            f"Mesh count is {mesh_count}; expected 24-56 parts"
         )
 
     if not world_vertices:
@@ -915,6 +891,8 @@ def validate_driver_result(result):
         ],
         "parts": signature_parts,
         "pivots": [],
+        "hand_anchors": {name: [base.stable_float(c) for c in anchor.matrix_world.translation]
+                         for name, anchor in sorted(result.anchors.items())},
         "joint_surfaces": base.npc_joint_surfaces.joints.manifest(result),
     }
     signature = hashlib.sha256(
@@ -1015,6 +993,9 @@ def write_manifest(path: Path, result, report) -> None:
         "build_signature": report.build_signature,
         "head_design": "ordinary_low_poly_human",
         "eye_design": "two_long_horizontal_eyes_with_visible_pupils",
+        "hand_grip": {"shape": city_bus_driver_hands.SHAPE, "tube_radius_m": city_bus_driver_hands.RIM_RADIUS,
+                      "anchors": {name: [base.stable_float(c) for c in anchor.matrix_world.translation]
+                                  for name, anchor in sorted(result.anchors.items())}},
         "bones": [
             {
                 "name": spec.name,

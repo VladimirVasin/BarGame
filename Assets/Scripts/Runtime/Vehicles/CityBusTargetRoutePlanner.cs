@@ -236,6 +236,9 @@ namespace BarPromenade
             return fallback;
         }
 
+        private static bool IsResidentialFrontage(CityBusStopTargetKind kind) =>
+            kind == CityBusStopTargetKind.PlayerHome || kind == CityBusStopTargetKind.ResidentialBlock;
+
         private static List<StopTarget> CreateStopTargets(CityLayout layout)
         {
             var points = new List<CityDistrictPointOfInterestDescriptor>(
@@ -279,14 +282,15 @@ namespace BarPromenade
                     true));
             }
 
-            BuildingLot home = layout.PlayerHome;
+            BuildingLot home = layout.LowerResidentialLot ?? layout.PlayerHome;
+            bool lowerBlock = layout.LowerResidentialLot != null;
             if (home != null &&
                 layout.TryGetFrontageEdge(home, out RoadEdge homeFrontage))
             {
                 Bounds bounds = home.WorldBounds;
                 result.Add(new StopTarget(
-                    CityBusStopTargetKind.PlayerHome,
-                    "player-home:" + layout.BlueprintId + ":" +
+                    lowerBlock ? CityBusStopTargetKind.ResidentialBlock : CityBusStopTargetKind.PlayerHome,
+                    (lowerBlock ? "residential-block:" : "player-home:") + layout.BlueprintId + ":" +
                     home.Cell.x + ":" + home.Cell.y,
                     home.Cell,
                     home.District,
@@ -304,7 +308,7 @@ namespace BarPromenade
                             bounds.max.x,
                             bounds.max.z)
                     },
-                    "home",
+                    lowerBlock ? "residential_block" : "home",
                     true));
             }
 
@@ -645,7 +649,7 @@ namespace BarPromenade
                 bool forbidTargetCellKerb =
                     target.Kind ==
                         CityBusStopTargetKind.DistrictPointOfInterest ||
-                    target.Kind == CityBusStopTargetKind.PlayerHome;
+                    IsResidentialFrontage(target.Kind);
                 if (forbidTargetCellKerb && roadsideCell == target.Cell)
                 {
                     continue;

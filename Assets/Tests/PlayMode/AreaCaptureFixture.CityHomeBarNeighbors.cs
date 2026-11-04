@@ -12,8 +12,8 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
-        [Explicit("Home/Bar next block: physical round trip, production-camera frames and a native illustrated-map capture. Requires visible Game view.")]
-        public IEnumerator CityHomeBarNeighborStreets()
+        [Explicit("Preserved lower-city bar approach: physical round trip, production-camera frames and a native illustrated-map capture. Requires visible Game view.")]
+        public IEnumerator CityBarCornerApproach()
         {
             const float frameSeconds = .05f;
             float previousCaptureDelta = Time.captureDeltaTime;
@@ -81,24 +81,23 @@ namespace BarPromenade.Tests.PlayMode
                         groundHits, "bar facade viewpoint");
                     return new[]
                     {
-                        Shot.At("home-bar-neighbors-01-home-street", eye,
+                        Shot.At("bar-corner-01-street", eye,
                             route[2] + Vector3.up * 1.1f, 76f),
-                        Shot.At("home-bar-neighbors-02-next-block", approachEye,
+                        Shot.At("bar-corner-02-next-block", approachEye,
                             bar.DoorPosition + Vector3.up * 1.8f, 78f),
-                        Shot.At("home-bar-neighbors-03-bar-facade", closeFoot + Vector3.up * EyeHeight,
+                        Shot.At("bar-corner-03-facade", closeFoot + Vector3.up * EyeHeight,
                             bar.DoorPosition + Vector3.up * 1.5f, 76f)
                     };
                 });
 
-                // The sole setup teleport chooses the Home door dock. Both
-                // entrance aprons and the public corner are walked thereafter.
+                // Start on the lower-city pavement and walk the corner to the bar.
                 IsolateHomeBarWalkers(city, capsule, collisionStates);
                 city.Player.Motor.Teleport(route[0]);
                 for (int frame = 0; frame < 5; frame++) yield return null;
                 yield return WalkHomeBarNeighbors(city, route, false, capsule, collisionStates, groundHits, frameSeconds);
                 yield return WalkHomeBarNeighbors(city, route, true, capsule, collisionStates, groundHits, frameSeconds);
                 Assert.That(Vector3.Distance(city.Player.Motor.transform.position, route[0]), Is.LessThan(.20f),
-                    "The capsule must return to the Home door through both real entrance aprons.");
+                    "The capsule must return along the public pavement.");
                 yield return CaptureHomeBarRelocationMap(city, groundHits);
             }
             finally
@@ -124,32 +123,11 @@ namespace BarPromenade.Tests.PlayMode
         private static Vector3[] HomeBarNeighborRoute(CityGameRoot city, RaycastHit[] hits)
         {
             CityLayout layout = city.Layout;
-            BuildingLot home = layout.PlayerHome;
             BuildingLot bar = layout.BuildingLots.Single(lot => lot.IsBar);
-            Assert.That(home.Cell, Is.EqualTo(new Vector2Int(12, 5)));
-            Assert.That(home.FrontageDirection, Is.EqualTo(Vector2Int.up));
-            Assert.That(bar.Cell, Is.EqualTo(new Vector2Int(12, 7)));
             Assert.That(bar.Cell, Is.EqualTo(BarActivityAssignment.DefaultHomeBarCell));
-            Assert.That(bar.FrontageDirection, Is.EqualTo(Vector2Int.right));
             Assert.That(bar.BarId, Is.EqualTo("bar-01352777-12-06"));
             Assert.That(bar.BarActivity, Is.EqualTo(BarActivityAssignment.DefaultHomeBarActivity));
-            RoadEdge homeStreet = RoadEdge.ForCellFrontage(home.Cell, home.FrontageDirection);
-            RoadEdge barStreet = RoadEdge.ForCellFrontage(bar.Cell, bar.FrontageDirection);
-            Vector2Int cornerNode = new Vector2Int(13, 6);
-            Assert.That(homeStreet, Is.Not.EqualTo(barStreet));
-            RoadEdge connectingStreet = new RoadEdge(cornerNode, new Vector2Int(13, 7));
-            Assert.That(homeStreet.Contains(cornerNode), Is.True);
-            Assert.That(barStreet.Contains(connectingStreet.B), Is.True);
-            foreach (RoadEdge street in new[] { homeStreet, connectingStreet, barStreet })
-            {
-                Assert.That(layout.HasRoad(street), Is.True);
-                Assert.That(layout.GetPathKind(street), Is.EqualTo(CityPathKind.Street));
-            }
-            Vector3 streetCorner = layout.GetNodeWorldPosition(cornerNode);
-            float graphDistance = Vector3.Distance(home.ReturnPosition, streetCorner) +
-                Vector3.Distance(streetCorner, bar.ReturnPosition);
-            Assert.That(graphDistance, Is.EqualTo(52f).Within(.2f));
-            Assert.That(graphDistance, Is.LessThanOrEqualTo(64f));
+            Vector3 streetCorner = layout.GetNodeWorldPosition(new Vector2Int(13, 6));
             Assert.That(city.World.TryGetBar(bar.BarId, out BarEntrance entrance), Is.True);
             Assert.That(entrance.BarActivity, Is.EqualTo(bar.BarActivity));
             Assert.That(Vector3.Distance(entrance.transform.position,
@@ -157,9 +135,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Vector3.Distance(entrance.ReturnPosition, bar.SidewalkArrivalPosition +
                 Vector3.up * (CityStreetSurfacePlanner.SidewalkTop + PlayerFactory.GroundedRootOffset)), Is.LessThan(.001f));
 
-            PlayerDoorActionTarget homeDoor = city.World.PlayerHome.GetComponent<PlayerDoorActionTarget>();
             PlayerDoorActionTarget barDoor = entrance.GetComponent<PlayerDoorActionTarget>();
-            Assert.That(homeDoor != null && homeDoor.IsConfigured && barDoor != null && barDoor.IsConfigured, Is.True);
+            Assert.That(barDoor != null && barDoor.IsConfigured, Is.True);
             // Trigger orientation is intentionally unspecified; the action
             // owns the actual doorward facing and grounded handoff pose.
             Assert.That(Vector3.Angle(barDoor.Plan.EntryFacingDirection, Vector3.left), Is.LessThan(.01f));
@@ -179,7 +156,7 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 expectedDock = bar.DoorPosition + Vector3.right * .72f;
             expectedDock.y = barApron.SampleTop(expectedDock) + PlayerFactory.GroundedRootOffset;
             Assert.That(Vector3.Distance(barDoor.Plan.EntryRootPosition, expectedDock), Is.LessThan(.001f));
-            Assert.That(city.Map.PlayerHome, Is.SameAs(home));
+            Assert.That(city.Map.PlayerHome, Is.SameAs(layout.SummitHome.Lot));
             int barIndex = city.Map.FindBarIndex(bar.BarId);
             Assert.That(barIndex, Is.GreaterThanOrEqualTo(0));
             Assert.That(city.Map.Bars[barIndex], Is.SameAs(bar));
@@ -198,27 +175,20 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(city.YardWheelchair.IsInitialized && city.YardWheelchair.isActiveAndEnabled, Is.True,
                 "The neighboring-street route must retain the live yard wheelchair.");
 
-            Vector3 homeArrival = home.SidewalkArrivalPosition + Vector3.up * CityStreetSurfacePlanner.SidewalkTop;
+            Vector3 approach = streetCorner + new Vector3(-12f, CityStreetSurfacePlanner.SidewalkTop, -4f);
             Vector3 barArrival = bar.SidewalkArrivalPosition + Vector3.up * CityStreetSurfacePlanner.SidewalkTop;
             // Keep the inside corner a full metre from the outer pavement
             // boundary. Source arrival anchors retain their own exact XZ.
             Vector3 corner = streetCorner + new Vector3(-4f, CityStreetSurfacePlanner.SidewalkTop, -4f);
             Vector3[] floor =
             {
-                homeDoor.Plan.EntryRootPosition - Vector3.up * PlayerFactory.GroundedRootOffset,
-                homeArrival, corner, barArrival,
+                approach, Vector3.Lerp(approach, corner, .5f), corner, barArrival,
                 barDoor.Plan.EntryRootPosition - Vector3.up * PlayerFactory.GroundedRootOffset
             };
             var route = new Vector3[floor.Length];
             for (int index = 0; index < floor.Length; index++)
                 route[index] = HomeBarSupportedPoint(city, floor[index], hits, "route waypoint " + index) +
                     Vector3.up * PlayerFactory.GroundedRootOffset;
-            float publicDistance = Vector3.Distance(route[1], route[2]) + Vector3.Distance(route[2], route[3]);
-            float completeDistance = publicDistance + Vector3.Distance(route[0], route[1]) +
-                Vector3.Distance(route[3], route[4]);
-            Assert.That(publicDistance, Is.InRange(51f, 53f));
-            Assert.That(completeDistance, Is.InRange(53f, 64f), "The bar must be distinctly farther while retaining a short walk.");
-            Debug.Log($"Home/Bar neighboring streets: centerline={graphDistance:F2}m, sidewalk={publicDistance:F2}m, door-to-door={completeDistance:F2}m.");
             return route;
         }
 
@@ -226,7 +196,7 @@ namespace BarPromenade.Tests.PlayMode
             CharacterController capsule, Dictionary<Collider, bool> collisionStates, RaycastHit[] hits, float frameSeconds)
         {
             PlayerMotor motor = city.Player.Motor;
-            string leg = reverse ? "Bar to Home" : "Home to Bar";
+            string leg = reverse ? "bar to corner" : "corner to bar";
             float distance = 0f;
             for (int ordinal = 1; ordinal < route.Count; ordinal++)
             {
@@ -256,8 +226,6 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(motor.transform.position.y, Is.EqualTo(target.y).Within(.20f));
             }
             motor.CancelInteractionPoseMove();
-            Assert.That(distance, Is.InRange(53f, 64f),
-                leg + " must be an actual short walk, including the entrance aprons.");
             Debug.Log($"Home/Bar physical {leg}: {distance:F2}m.");
         }
 

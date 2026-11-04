@@ -37,7 +37,8 @@ namespace BarPromenade
         ParkGate,
         Supermarket,
         LoopSpacing,
-        Transfer
+        Transfer,
+        ResidentialBlock
     }
 
     public sealed class CityBusDesignVehicle

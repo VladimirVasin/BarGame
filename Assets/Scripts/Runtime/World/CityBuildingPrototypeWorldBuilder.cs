@@ -309,7 +309,10 @@ namespace BarPromenade
             float foundationDepth,
             string name)
         {
-            if (lot.BuildingVariant > 0 || lot.District == CityDistrictKind.Residential)
+            // The player's surveyed shell is a solid 13 x 12 m body with a
+            // contextual exterior door. Ordinary apartment wings and their
+            // recessed entrance probes belong only to their own prototype.
+            if (!lot.IsPlayerHome && (lot.BuildingVariant > 0 || lot.District == CityDistrictKind.Residential))
             {
                 for (int index = 0; index < registry.ColliderBounds.Count; index++)
                 {

@@ -69,8 +69,24 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(AnimatorCullingMode.AlwaysAnimate));
 
             Assert.That(registry.DesignId, Is.EqualTo("long_eyes_driver_v1"));
-            Assert.That(registry.SourceTriangleCount, Is.EqualTo(6876));
-            Assert.That(registry.Renderers.Count, Is.EqualTo(48));
+            Assert.That(registry.SourceTriangleCount, Is.EqualTo(7196));
+            Assert.That(registry.Renderers.Count, Is.EqualTo(56));
+            var hands = registry.GetComponent<NpcHandPose>();
+            Assert.That(hands, Is.Not.Null);
+            Assert.That(hands.Hands.Count, Is.EqualTo(2));
+            Assert.That(hands.CylinderRadius, Is.EqualTo(.022f).Within(.0001f));
+            foreach (var hand in hands.Hands)
+            {
+                string suffix = hand.IsLeft ? ".L" : ".R";
+                Assert.That(hand.Hand, Is.SameAs(hand.IsLeft ? registry.LeftHand : registry.RightHand));
+                Assert.That(hand.Renderers.Select(r => r.name), Is.EquivalentTo(
+                    new[] { "GEO_Hand", "GEO_HandFinger0", "GEO_HandFinger1", "GEO_HandFinger2", "GEO_HandFinger3", "GEO_Thumb" }
+                    .Select(name => name + suffix)));
+                foreach (var renderer in hand.Renderers)
+                    Assert.That(CharacterJointDeformation.FindShape(renderer.sharedMesh, hands.ShapeName),
+                        Is.GreaterThanOrEqualTo(0), renderer.name);
+                Assert.That(hand.CentreAnchor.IsChildOf(hand.Hand), Is.True);
+            }
             Assert.That(registry.DetailAtlas, Is.Not.Null);
             Assert.That(registry.DetailAtlas, Is.EqualTo(
                 AssetDatabase.LoadAssetAtPath<Texture2D>(
@@ -88,8 +104,8 @@ namespace BarPromenade.Tests.EditMode
                 registry.ModelRoot
                     .GetComponentsInChildren<Transform>(true)
                     .Single(transform => transform.name == "root")
-                    .GetComponentsInChildren<Transform>(true).Length,
-                Is.EqualTo(31));
+                    .GetComponentsInChildren<Transform>(true).Count(t => !t.name.StartsWith("ANCHOR_Driver", StringComparison.Ordinal)),
+                Is.EqualTo(31), "Grip measurement leaves are not deform bones.");
 
             Assert.That(
                 prefab.GetComponentsInChildren<Collider>(true),

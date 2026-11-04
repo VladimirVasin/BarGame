@@ -83,17 +83,25 @@ namespace BarPromenade
         // Start beyond the solid pole, between the two doorways. A stationary
         // passenger must give a walking player a whole capsule of passing space.
         private const float QueueSetback = 1.05f;
+        // Hillside footways are two metres wide. At 1.05 m from their middle
+        // the verge drops 26 cm, above a walker's 20 cm step. Keep the feet on
+        // the raised paving while leaving space past a waiting pair of capsules.
+        private const float HillsideQueueSetback = .80f;
         private const float FirstQueueSlot = .90f;
         private const float QueueSpacing = 1.05f;
+
+        private static float QueueDepth(CityBusPlan plan, CityBusStopDescriptor stop) =>
+            plan.Number == 3 && stop.RoadEdge.A == stop.RoadEdge.B ? HillsideQueueSetback : QueueSetback;
 
         internal static Rect QueueApron(CityBusPlan plan, CityBusStopDescriptor stop, CityLayout layout)
         {
             var along = Vector3.ProjectOnPlane(stop.Forward, Vector3.up).normalized;
             var away = -Vector3.ProjectOnPlane(stop.RoadsideForward, Vector3.up).normalized;
             var curb = StandingPosition(plan, stop, layout, FirstQueueSlot + QueueSpacing * .5f);
-            var center = curb + away * (QueueSetback * .5f);
+            float setback = QueueDepth(plan, stop);
+            var center = curb + away * (setback * .5f);
             float radius = CityPedestrianPlanner.AgentRadius + .12f;
-            float depth = QueueSetback * .5f + radius;
+            float depth = setback * .5f + radius;
             float halfWidth = QueueSpacing * .5f + radius;
             float x = Mathf.Abs(along.x) * halfWidth + Mathf.Abs(away.x) * depth;
             float z = Mathf.Abs(along.z) * halfWidth + Mathf.Abs(away.z) * depth;
@@ -162,7 +170,7 @@ namespace BarPromenade
                     else
                     {
                         Vector3 curb = StandingPosition(busPlan, stop, layout, FirstQueueSlot + offset * QueueSpacing);
-                        candidate = curb - toRoad * QueueSetback;
+                        candidate = curb - toRoad * QueueDepth(busPlan, stop);
                         if (!CityBusPlatformClearance.ForLayout(layout).TryQueueGround(curb, candidate, out float ground))
                             continue;
                         candidate.y = ground;

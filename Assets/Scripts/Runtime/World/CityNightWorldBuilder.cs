@@ -155,7 +155,7 @@ namespace BarPromenade
 
         // Reuse the municipal bulb geometry, day floor and moving pool. Place poles
         // at the outside of the paving; never consume a stair or a doorway as an anchor.
-        private static void AppendHillsideLamps(CityLayout layout, List<StreetLampDescriptor> lamps)
+        internal static void AppendHillsideLamps(CityLayout layout, List<StreetLampDescriptor> lamps)
         {
             int first = lamps.Count;
             foreach (var road in CityHillsideStreetPlan.ForLayout(layout).Routes)
@@ -197,6 +197,14 @@ namespace BarPromenade
                 {
                     float x = (side < 0 ? deck.xMin : deck.xMax) + side * 1.4f;
                     var link = bridge.Link;
+                    if (side < 0 && link.Id == "summit" && layout.HasSummitHome)
+                    {
+                        // Keep the same lamp on the landfall but leave the full
+                        // door apron and an approaching capsule clear of its plinth.
+                        float poleRadius = CityStaticCollisionBuilder.CreateLowerPoleBounds(Vector3.zero).extents.x;
+                        x = Mathf.Min(x, layout.SummitHome.ApproachBounds.xMin -
+                            poleRadius - CityPedestrianPlanner.AgentRadius - .10f);
+                    }
                     Add(new Vector3(x, link.PavementTopAt(x), deck.center.y + side * 4.68f),
                         new Vector3(0,0,-side));
                 }

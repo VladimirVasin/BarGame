@@ -342,7 +342,7 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 CreateCameraShots(
                     Layout,
-                    BalconyLayout));
+                    BalconyLayout, ExteriorContext));
             DiningSeat = HomeDiningSeatPlan.Build(Room, Layout, Player, camera);
             Painting = HomeWallPainting.Build(Room);
             GameLogPhases.Report("home", "player_and_camera", phaseTimer);
@@ -618,8 +618,11 @@ namespace BarPromenade
         private static IReadOnlyList<HomeCameraShot>
             CreateCameraShots(
                 HomeInteriorLayoutPlan plan,
-                HomeBalconyLayoutPlan balcony)
+                HomeBalconyLayoutPlan balcony, HomeExteriorContextPlan context)
         {
+            bool summitHome = context.Layout.HasSummitHome;
+            Vector3 balconyEye = summitHome ? HomeSummitOutlook.CameraPosition : new Vector3(5.28f, 3.05f, -3.12f);
+            Quaternion balconyFacing = summitHome ? HomeSummitOutlook.CameraRotation : Quaternion.Euler(36f, 32f, 0f);
             Rect walkable = plan.WalkableBounds;
             Rect bathroom = plan.BathroomBounds;
             const float livingDivisionX = -1.10f;
@@ -712,8 +715,8 @@ namespace BarPromenade
                     HomeCameraShotKind.Balcony,
                     balconyActivation,
                     balconyHold,
-                    new Vector3(5.28f, 3.05f, -3.12f),
-                    new Vector3(36f, 32f, 0f),
+                    balconyEye,
+                    balconyFacing,
                     70f)
             };
         }

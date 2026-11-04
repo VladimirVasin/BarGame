@@ -381,6 +381,7 @@ namespace BarPromenade
             // Reserve the complete carriageway and both pavements before the shared
             // world, collision and Home exterior builders consume these descriptors.
             if (ownsTunnel || kind == CityFringeYardKind.SouthFloodWorks)
+            {
                 foreach (var street in CityHillsideStreetPlan.ForLayout(layout).Routes)
                 {
                     Vector2 mouth = street.Path.Vertices[0];
@@ -390,6 +391,10 @@ namespace BarPromenade
                     if (bounds.Overlaps(crossing))
                         parts.RemoveAll(part => part.BlocksMovement && part.Footprint.Overlaps(crossing));
                 }
+                foreach (var stair in CityHillsideAccessPlan.ForLayout(layout).Transfers)
+                    if (bounds.Overlaps(stair.Bounds))
+                        parts.RemoveAll(part => part.BlocksMovement && part.Footprint.Overlaps(stair.Bounds));
+            }
 
             return new CityFringeYardDescriptor(
                 $"fringe-{areaId}",

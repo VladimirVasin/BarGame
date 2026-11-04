@@ -1490,6 +1490,7 @@
     {"key": "map.bus.line.west", "value": "01 · Западный берег"},
     {"key": "map.bus.line.east", "value": "02 · Восточный берег"},
     {"key": "map.bus.line.hills", "value": "03 · Серпантины"},
+    {"key": "bus.stop.default_coastal.residential_block", "value": "Остановка «Жилой квартал»"},
     {"key": "bus.stop.default_coastal.home_supermarket", "value": "Остановка «Дом и универсам»"},
     {"key": "map.bus.transfer.legend", "value": "Пересадка"},
     {"key": "map.bus.transfer.west_slope", "value": "Западный подъём"},

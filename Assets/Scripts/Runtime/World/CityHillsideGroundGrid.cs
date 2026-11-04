@@ -52,8 +52,18 @@ namespace BarPromenade
                 AddBreaks(house.ApproachBounds);
             }
             var cuts = new List<Rect>();
-            foreach (var stair in CityHillsideAccessPlan.ForLayout(layout).Shortcuts)
+            var access = CityHillsideAccessPlan.ForLayout(layout);
+            foreach (var stair in access.Shortcuts)
                 if (stair.Bank == road.Bank) { cuts.Add(stair.Bounds); AddBreaks(stair.Bounds); }
+            foreach (var stair in access.Transfers)
+                if (stair.Bank == road.Bank)
+                {
+                    // The lower apron spans the seam onto the existing city ground.
+                    Rect cut = stair.Bounds;
+                    cut.yMax = Mathf.Min(cut.yMax, bounds.yMax);
+                    cuts.Add(cut);
+                    AddBreaks(cut);
+                }
             for (int i = 0; i < CityHillsideStreetRoute.LaneCount; i++)
             {
                 zs.Add(road.GetLaneZ(i) - CityHillsideStreetRoute.OuterHalfWidth);

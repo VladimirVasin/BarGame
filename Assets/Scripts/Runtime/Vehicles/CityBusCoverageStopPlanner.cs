@@ -497,7 +497,7 @@ namespace BarPromenade
                 BuildingLot lot = layout.BuildingLots[index];
                 if (lot.IsBar ||
                     lot.IsSupermarket ||
-                    lot == layout.PlayerHome)
+                    lot == (layout.LowerResidentialLot ?? layout.PlayerHome))
                 {
                     result.Add(lot.SidewalkArrivalPosition);
                 }
@@ -841,7 +841,7 @@ namespace BarPromenade
             int homeIndex = -1;
             for (int index = 0; index < targets.Count; index++)
             {
-                if (targets[index].Kind == CityBusStopTargetKind.PlayerHome)
+                if (IsResidentialFrontage(targets[index].Kind))
                 {
                     homeIndex = index;
                     break;
@@ -1208,6 +1208,7 @@ namespace BarPromenade
             switch (kind)
             {
                 case CityBusStopTargetKind.PlayerHome:
+                case CityBusStopTargetKind.ResidentialBlock:
                 case CityBusStopTargetKind.DistrictPointOfInterest:
                     return 0;
                 case CityBusStopTargetKind.OpenAreaAccess:

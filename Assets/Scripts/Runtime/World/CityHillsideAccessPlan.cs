@@ -129,6 +129,53 @@ namespace BarPromenade
             return stair;
         }
 
+        internal static CityHillsideShortcut CreateTransfer(CityLayout layout, CityHillsideStreetRoute street)
+        {
+            // Both public approaches open beside their shelters. Survey the corridor
+            // from the two streets before bus furnishing or pedestrian routing exists.
+            bool west = street.Bank == CityTerraceTransportBank.West;
+            float x = west ? -99f : 84f;
+            float roadZ = layout.RoadGeometry.GetNodePosition(street.MouthNode).y;
+            float bottomZ = roadZ, bottomY = 0f;
+            foreach (var patch in CityStreetSupportPlan.ForLayout(layout).Patches)
+            {
+                float edge = patch.Bounds.yMin;
+                if (patch.Kind != CityStreetSupportKind.Sidewalk || edge >= bottomZ ||
+                    edge < roadZ - layout.RoadWidth || x < patch.Bounds.xMin || x > patch.Bounds.xMax) continue;
+                if (patch.TrySampleTop(new Vector2(x, edge), out float height))
+                {
+                    bottomZ = edge;
+                    bottomY = height;
+                }
+            }
+            if (bottomZ >= roadZ) throw new InvalidOperationException("Missing lower transfer pavement on " + street.Bank);
+            float topZ = street.GetLaneZ(0) + CityHillsideStreetRoute.OuterHalfWidth;
+            if (!street.TrySampleTop(new Vector2(x, topZ), out float topY, out var kind) ||
+                kind != CityStreetSupportKind.Sidewalk)
+                throw new InvalidOperationException("Missing upper transfer pavement on " + street.Bank);
+
+            float rise = topY - bottomY;
+            int count = Mathf.Max(1, Mathf.RoundToInt(rise / CityTerracePilotPlan.FlightRise),
+                Mathf.CeilToInt(rise / (CityTerracePilotPlan.StepsPerFlight * .18f)));
+            float run = count * CityTerracePilotPlan.FlightRun + (count - 1) * LandingLength;
+            float bankEdge = CityHillsideNeighborhoodPlan.TerrainBounds(street).yMax;
+            float flat = bottomZ - topZ - run;
+            const float minimumApron = 1.2f;
+            if (rise <= 0f || flat < 2f * minimumApron)
+                throw new InvalidOperationException($"Transfer on {street.Bank}: lower ({x},{bottomY},{bottomZ}), " +
+                    $"upper ({x},{topY},{topZ}), rise {rise}, {count} flights, {flat} m for both aprons.");
+            // The steeper east bank needs its first flight on the forecourt
+            // below the old soil seam. Both sidewalk entries stay level.
+            float upperApron = Mathf.Clamp((bankEdge - topZ - run) * .5f,
+                minimumApron, flat - minimumApron);
+            var stair = new CityHillsideShortcut(street.Bank, -1, west ? "transfer-west" : "transfer-east",
+                new Vector3(x, bottomY, bottomZ));
+            stair.Flat(Vector3.back, flat - upperApron);
+            stair.FlightRun(Vector3.back, count, rise / count, LandingLength);
+            stair.Flat(Vector3.back, upperApron);
+            return stair;
+        }
+
         private void FlightRun(Vector3 direction, int count, float rise, float landing)
         {
             for (int i = 0; i < count; i++)
@@ -187,17 +234,24 @@ namespace BarPromenade
     {
         private static readonly ConditionalWeakTable<CityLayout, CityHillsideAccessPlan> Plans = new();
         public IReadOnlyList<CityHillsideShortcut> Shortcuts { get; }
+        public IReadOnlyList<CityHillsideShortcut> Transfers { get; }
         public CityHillsideShortcut SharedCourt { get; }
         public IReadOnlyList<CityHillsideShortcut> AllStairs { get; }
         private CityHillsideAccessPlan(CityLayout layout)
         {
             var slopes = new List<CityHillsideShortcut>();
+            var transfers = new List<CityHillsideShortcut>(2);
             foreach (CityHillsideStreetRoute street in CityHillsideStreetPlan.ForLayout(layout).Routes)
+            {
                 for (int lane = 0; lane + 1 < CityHillsideStreetRoute.LaneCount; lane++)
                     slopes.Add(CityHillsideShortcut.Create(street, lane));
+                transfers.Add(CityHillsideShortcut.CreateTransfer(layout, street));
+            }
             Shortcuts = slopes.AsReadOnly();
+            Transfers = transfers.AsReadOnly();
             SharedCourt = CityHillsideShortcut.CreateShared(CityHillsideQuarterPlan.ForLayout(layout));
             var all = new List<CityHillsideShortcut>(slopes);
+            all.AddRange(transfers);
             if (SharedCourt != null) all.Add(SharedCourt);
             AllStairs = all.AsReadOnly();
         }

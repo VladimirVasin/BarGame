@@ -317,9 +317,9 @@ namespace BarPromenade
 
         public void InitializeNetwork(CityLayout layout, PlayerRuntime playerRuntime, PlayerCameraFollow follow,
             IntoxicationHudView hud, IReadOnlyList<CityBusPlan> plans, CityMountainBoundaryPlan mountainBoundaryPlan = null,
-            CitySeacoastPlan seacoastPlan = null)
+            CitySeacoastPlan seacoastPlan = null, CityPedestrianPlan footways = null)
         {
-            InitializeWithOverlay(layout, playerRuntime, follow, hud, CityMapBusOverlayBuilder.CreateNetwork(plans, layout),
+            InitializeWithOverlay(layout, playerRuntime, follow, hud, CityMapBusOverlayBuilder.CreateNetwork(plans, layout, footways),
                 mountainBoundaryPlan, seacoastPlan);
         }
 

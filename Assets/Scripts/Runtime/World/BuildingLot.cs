@@ -68,6 +68,15 @@ namespace BarPromenade
 
         public Vector2Int Cell { get; }
 
+        internal BuildingLot AsOrdinaryResidence()
+        {
+            Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(CityDistrictKind.Residential, 0);
+            var size = FrontageDirection.x == 0 ? new Vector2(envelope.x, envelope.z) : new Vector2(envelope.z, envelope.x);
+            return new BuildingLot(Cell, Center, size, envelope.y, Color, AreaId, District,
+                LandUse, false, false, false, string.Empty, BarActivityKind.None, FrontageDirection,
+                Center + FacadeForward * (envelope.z * .5f), ReturnPosition, SidewalkArrivalPosition, 0, FacadeForward);
+        }
+
         // Center lies on the ground plane. Builders add Height / 2 on Y for a cube.
         public Vector3 Center { get; }
 

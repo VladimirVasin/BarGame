@@ -56,18 +56,21 @@ namespace BarPromenade
     public sealed class CityMapBusOverlay
     {
         internal CityMapBusOverlay(IReadOnlyList<CityMapBusLine> lines,
-            IReadOnlyList<CityMapBusStopMarker> stops, IReadOnlyList<Vector2Int> transferPairs)
+            IReadOnlyList<CityMapBusStopMarker> stops, IReadOnlyList<Vector2Int> transferPairs,
+            IReadOnlyList<IReadOnlyList<Vector3>> transferWalks)
         {
             Lines = lines;
             Stops = stops;
             TransferPairs = transferPairs;
+            TransferWalks = transferWalks;
         }
 
         public static CityMapBusOverlay Empty { get; } = new CityMapBusOverlay(
-            Array.Empty<CityMapBusLine>(), Array.Empty<CityMapBusStopMarker>(), Array.Empty<Vector2Int>());
+            Array.Empty<CityMapBusLine>(), Array.Empty<CityMapBusStopMarker>(), Array.Empty<Vector2Int>(), Array.Empty<IReadOnlyList<Vector3>>());
         public IReadOnlyList<CityMapBusLine> Lines { get; }
         public IReadOnlyList<CityMapBusStopMarker> Stops { get; }
         public IReadOnlyList<Vector2Int> TransferPairs { get; }
+        public IReadOnlyList<IReadOnlyList<Vector3>> TransferWalks { get; }
         public bool IsEmpty => Lines.Count == 0;
     }
 
@@ -81,7 +84,8 @@ namespace BarPromenade
         public static CityMapBusOverlay Create(CityBusPlan plan) => plan == null
             ? CityMapBusOverlay.Empty : CreateNetwork(new[] { plan });
 
-        public static CityMapBusOverlay CreateNetwork(IReadOnlyList<CityBusPlan> plans, CityLayout layout = null)
+        public static CityMapBusOverlay CreateNetwork(IReadOnlyList<CityBusPlan> plans, CityLayout layout = null,
+            CityPedestrianPlan footways = null)
         {
             if (plans == null || plans.Count == 0) return CityMapBusOverlay.Empty;
             var lines = new List<CityMapBusLine>(plans.Count);
@@ -113,7 +117,36 @@ namespace BarPromenade
                 }
                 stops.Add(marker);
             }
-            return new CityMapBusOverlay(lines.AsReadOnly(), stops.AsReadOnly(), pairs.AsReadOnly());
+            var walks = new List<IReadOnlyList<Vector3>>(pairs.Count);
+            if (pairs.Count > 0 && footways == null && layout != null)
+                footways = CityPedestrianPlanner.Create(layout, layout.Seed);
+            foreach (var pair in pairs) walks.Add(TransferWalk(footways, stops[pair.x], stops[pair.y]));
+            return new CityMapBusOverlay(lines.AsReadOnly(), stops.AsReadOnly(), pairs.AsReadOnly(), walks.AsReadOnly());
+        }
+
+        private static IReadOnlyList<Vector3> TransferWalk(CityPedestrianPlan footways, CityMapBusStopMarker from,
+            CityMapBusStopMarker to)
+        {
+            if (footways == null) return new[] { from.WorldPosition, to.WorldPosition };
+            if (!CityBusStopWaitPlanner.TryFindNearestNode(footways, from.StandingPosition, out int a) ||
+                !CityBusStopWaitPlanner.TryFindNearestNode(footways, to.StandingPosition, out int b)) return Array.Empty<Vector3>();
+            var route = CityResidentWorld.BuildRoute(footways, a, b, CityBusStopWaitPlanner.CreateNodeDistances(footways, b));
+            if (route.Nodes[route.Nodes.Length - 1] != b) return Array.Empty<Vector3>();
+            var points = new List<Vector3> { from.WorldPosition, footways.Nodes[a].Position };
+            for (int i = 0; i < route.Links.Length; i++)
+            {
+                var link = footways.Links[route.Links[i]];
+                var vertices = link.Path?.Vertices;
+                if (vertices != null)
+                    for (int n = 1; n < vertices.Count - 1; n++)
+                    {
+                        Vector2 point = vertices[link.FirstNodeIndex == route.Nodes[i] ? n : vertices.Count - 1 - n];
+                        points.Add(new Vector3(point.x, link.PathHeightSampler?.Invoke(point) ?? 0f, point.y));
+                    }
+                points.Add(footways.Nodes[route.Nodes[i + 1]].Position);
+            }
+            points.Add(to.WorldPosition);
+            return points.AsReadOnly();
         }
 
         internal static IReadOnlyList<Vector3> SimplifyClosed(

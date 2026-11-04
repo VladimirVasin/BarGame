@@ -180,7 +180,7 @@ namespace BarPromenade
         public int StopWaitNodeIndex { get; private set; } = -1;
         public int CrosswalkDecisionCount { get; private set; }
         public int CrosswalksTaken { get; private set; }
-        public Vector3 TravelDirection => GetTravelDirection();
+        public Vector3 TravelDirection => IsWaitingToCross ? Vector3.zero : GetTravelDirection();
         public float LateralOffset => lateralOffset;
         public float BlockedTime => blockedTime;
         public int DetourCount { get; private set; }
@@ -316,6 +316,15 @@ namespace BarPromenade
                 : anchor.FirstNodeIndex;
             targetNodeIndex = firstTargetNodeIndex;
             incomingLinkKind = CityPedestrianLinkKind.Sidewalk;
+            foreach (int index in plan.GetLinkIndices(previousNodeIndex))
+            {
+                var link = plan.Links[index];
+                if (link.Other(previousNodeIndex) != targetNodeIndex) continue;
+                SetWalkingLeg(previousNodeIndex, targetNodeIndex, link.Kind);
+                if (crossingExit >= 0 && Vector3.Distance(Position, plan.Nodes[previousNodeIndex].Position) > ArrivalRadius)
+                    crossingCommitted = true; // A resident restored in the carriageway continues to the opposite kerb.
+                break;
+            }
             speed = movementSpeed;
             animationSpeed = cycleSpeed;
             animationPhase01 = Mathf.Repeat(cyclePhase01, 1f);
@@ -428,6 +437,15 @@ namespace BarPromenade
             approachTarget = initialApproachTarget;
             approachNodeDistances = initialApproachNodeDistances;
             LastDisplacement = Vector3.zero;
+            if (WaitForCrossingGap(safeDeltaTime, vehicleTraffic))
+            {
+                IsYielding = true;
+                blockedTime = 0f;
+                approachTarget = null;
+                approachNodeDistances = null;
+                if (safeDeltaTime > 0f) presentation.Advance(safeDeltaTime, false);
+                return;
+            }
             if (AdvanceVehicleYield(safeDeltaTime, vehicleTraffic, out bool vehicleMoving))
             {
                 IsYielding = IsYieldingToVehicle;
@@ -560,7 +578,8 @@ namespace BarPromenade
             IReadOnlyList<float> waitNodeDistances)
         {
             if (!IsSpawned ||
-                MotionState != CityPedestrianMotionState.Walking ||
+                (MotionState != CityPedestrianMotionState.Walking &&
+                 MotionState != CityPedestrianMotionState.WaitingAtDestination) ||
                 waitNodeIndex < 0 ||
                 IsPersonalSpaceReacting ||
                 IsYieldingToVehicle ||
@@ -697,22 +716,25 @@ namespace BarPromenade
             Vector3 seatPosition,
             Quaternion seatRotation,
             Transform seatAnchor,
-            CityPedestrianSeatedRide seatedRide)
+            CityPedestrianSeatedRide seatedRide,
+            Vector3? floorPosition = null)
         {
-            if (!IsSpawned ||
-                MotionState != CityPedestrianMotionState.WaitingAtBench ||
-                !presentation.TrySeat(seatAnchor, seatedRide))
+            if (!IsSpawned || MotionState != CityPedestrianMotionState.WaitingAtBench) return false;
+
+            // The authored seat and its ground come from the same placed bench.
+            // Establish the neutral root before solving contact against the plank.
+            var previous = new Pose(transform.position, transform.rotation);
+            transform.SetPositionAndRotation(floorPosition ?? seatPosition, seatRotation);
+            bool bound = floorPosition.HasValue
+                ? presentation.TrySeat(seatAnchor, seatedRide, Vector3.up, floorPosition.Value, seatRotation * Vector3.forward)
+                : presentation.TrySeat(seatAnchor, seatedRide);
+            if (!bound)
             {
+                transform.SetPositionAndRotation(previous.position, previous.rotation);
                 return false;
             }
-
-            if (characterController != null)
-            {
-                characterController.enabled = false;
-            }
-
+            if (characterController != null) characterController.enabled = false;
             blockedTime = 0f;
-            transform.SetPositionAndRotation(seatPosition, seatRotation);
             MotionState = CityPedestrianMotionState.SittingOnBench;
             presentation.SynchronizeSeatContact();
             return true;
@@ -780,7 +802,9 @@ namespace BarPromenade
             bool boarding,
             Vector3 waypoint,
             Vector3 destination,
-            Quaternion destinationRotation)
+            Quaternion destinationRotation,
+            Vector3? secondWaypoint = null,
+            Vector3? thirdWaypoint = null)
         {
             if (!IsSpawned || IsYieldingToVehicle)
             {
@@ -801,6 +825,8 @@ namespace BarPromenade
             }
 
             transferWaypoint = waypoint;
+            transferNextWaypoint = secondWaypoint;
+            transferLastWaypoint = thirdWaypoint;
             transferDestination = destination;
             transferRotation = destinationRotation;
             transferPassedWaypoint = false;
@@ -819,6 +845,22 @@ namespace BarPromenade
             return true;
         }
 
+        private Vector3? transferNextWaypoint, transferLastWaypoint;
+
+        internal bool BeginStandingRide(Transform floor, Transform grip, Vector3 up, bool preloaded)
+        {
+            var expected = preloaded ? CityPedestrianMotionState.Walking : CityPedestrianMotionState.Boarding;
+            if (!IsSpawned || IsYieldingToVehicle || MotionState != expected ||
+                !presentation.TryStandInBus(floor, grip, up)) return false;
+            if (characterController != null) characterController.enabled = false;
+            waitSlot = null;
+            stopApproachNodeDistances = null;
+            blockedTime = 0f;
+            TransferCompleted = false;
+            MotionState = CityPedestrianMotionState.Riding;
+            return true;
+        }
+
         /// <summary>
         /// Hands the seated pose to the passenger controller. The walker stops
         /// simulating: its root is late-synchronised to the actor-local seat
@@ -827,11 +869,11 @@ namespace BarPromenade
         public bool BeginRide(
             Transform seatAnchor,
             CityPedestrianSeatedRide seatedRide,
-            Vector3? surfaceUp = null)
+            Vector3? surfaceUp = null, Vector3? floor = null, Vector3? facing = null)
         {
             if (!IsSpawned ||
                 MotionState != CityPedestrianMotionState.Boarding ||
-                !presentation.TrySeat(seatAnchor, seatedRide, surfaceUp ?? transform.up))
+                !BindPassengerSeat(seatAnchor, seatedRide, surfaceUp, floor, facing))
             {
                 return false;
             }
@@ -855,11 +897,11 @@ namespace BarPromenade
         public bool BeginSeatedRide(
             Transform seatAnchor,
             CityPedestrianSeatedRide seatedRide,
-            Vector3? surfaceUp = null)
+            Vector3? surfaceUp = null, Vector3? floor = null, Vector3? facing = null)
         {
             if (!IsSpawned || IsYieldingToVehicle ||
                 MotionState != CityPedestrianMotionState.Walking ||
-                !presentation.TrySeat(seatAnchor, seatedRide, surfaceUp ?? transform.up))
+                !BindPassengerSeat(seatAnchor, seatedRide, surfaceUp, floor, facing))
             {
                 return false;
             }
@@ -876,6 +918,11 @@ namespace BarPromenade
             MotionState = CityPedestrianMotionState.Riding;
             return true;
         }
+
+        private bool BindPassengerSeat(Transform anchor, CityPedestrianSeatedRide ride, Vector3? normal,
+            Vector3? floor, Vector3? facing) => floor.HasValue
+            ? presentation.TrySeat(anchor, ride, normal ?? transform.up, floor.Value, facing ?? transform.forward)
+            : presentation.TrySeat(anchor, ride, normal ?? transform.up);
 
         /// <summary>
         /// Places this walker back on the pavement and resumes ordinary
@@ -898,6 +945,7 @@ namespace BarPromenade
             if (fromNodeIndex >= 0 && plan != null &&
                 fromNodeIndex < plan.Nodes.Count)
             {
+                ClearCrossing();
                 previousNodeIndex = -1;
                 targetNodeIndex = fromNodeIndex;
                 incomingLinkKind = CityPedestrianLinkKind.Sidewalk;
@@ -947,6 +995,14 @@ namespace BarPromenade
             {
                 if (!transferPassedWaypoint)
                 {
+                    if ((MotionState == CityPedestrianMotionState.Boarding || MotionState == CityPedestrianMotionState.Alighting) &&
+                        transferNextWaypoint.HasValue)
+                    {
+                        transferWaypoint = transferNextWaypoint.Value;
+                        transferNextWaypoint = transferLastWaypoint;
+                        transferLastWaypoint = null;
+                        return true;
+                    }
                     transferPassedWaypoint = true;
                     return true;
                 }
@@ -998,7 +1054,9 @@ namespace BarPromenade
             bool curvedWalking = !directToWaitSlot && TryGetCurvedWalkingLink(out curvedLink);
             // Courtyard corners can sit close to a real wall. Reach the knot
             // before selecting the next leg instead of rounding it early.
-            float arrivalRadius = curvedLink?.Kind == CityPedestrianLinkKind.Courtyard
+            // Stop inside the reserved slot: the street's ordinary arrival
+            // tolerance can leave the waiter's shoulder in the through footway.
+            float arrivalRadius = directToWaitSlot || curvedLink?.Kind == CityPedestrianLinkKind.Courtyard
                 ? 0.025f : ArrivalRadius;
             if (distance <= arrivalRadius)
             {
@@ -1021,8 +1079,9 @@ namespace BarPromenade
                 lateralOffset,
                 requestedLateralBias * MaximumLateralOffset,
                 LateralOffsetSpeed * deltaTime);
+            float shoulder = directToWaitSlot ? lateralOffset * Mathf.Clamp01(distance) : lateralOffset;
             Vector3 steerOffset =
-                (target + (right * lateralOffset)) - current;
+                (target + (right * shoulder)) - current;
             steerOffset.y = 0f;
             float steerDistance = steerOffset.magnitude;
             Vector3 steerDirection = steerDistance > 0.0001f
@@ -1159,6 +1218,7 @@ namespace BarPromenade
         private void ReachTargetNode()
         {
             int reachedNode = targetNodeIndex;
+            if (reachedNode == crossingExit) ClearCrossing();
             if (MotionState == CityPedestrianMotionState.ApproachingBench &&
                 reachedNode == benchNodeIndex)
             {
@@ -1166,10 +1226,18 @@ namespace BarPromenade
                 return;
             }
 
-            if (MotionState == CityPedestrianMotionState.Walking &&
+            bool goingToStop = MotionState == CityPedestrianMotionState.ApproachingStop;
+            if (goingToStop && reachedNode == StopWaitNodeIndex)
+            {
+                // Both ends now refer to this sidewalk. The last metres into
+                // the recessed waiting place no longer belong to a crosswalk.
+                SetWalkingLeg(reachedNode, reachedNode, CityPedestrianLinkKind.Sidewalk);
+                return;
+            }
+            if (goingToStop || MotionState == CityPedestrianMotionState.Walking &&
                 ResidentDestinationNode >= 0 && residentNodeDistances != null)
             {
-                if (reachedNode == ResidentDestinationNode)
+                if (!goingToStop && reachedNode == ResidentDestinationNode)
                 {
                     MotionState = CityPedestrianMotionState.WaitingAtDestination;
                     blockedTime = 0f;
@@ -1181,7 +1249,8 @@ namespace BarPromenade
                 // A destination can be a dead end or lie behind the walker.
                 // Unlike roaming, use every link, including the one just
                 // traversed, and measure curved links by their physical path.
-                int destinationLink = SelectResidentDestinationLink(reachedNode);
+                int destinationLink = SelectDestinationLink(reachedNode,
+                    goingToStop ? stopApproachNodeDistances : residentNodeDistances);
                 if (destinationLink < 0)
                 {
                     targetNodeIndex = -1;
@@ -1190,9 +1259,7 @@ namespace BarPromenade
                 }
 
                 CityPedestrianLink next = plan.Links[destinationLink];
-                previousNodeIndex = reachedNode;
-                targetNodeIndex = next.Other(reachedNode);
-                incomingLinkKind = next.Kind;
+                SetWalkingLeg(reachedNode, next.Other(reachedNode), next.Kind);
                 return;
             }
 
@@ -1255,12 +1322,10 @@ namespace BarPromenade
             }
 
             CityPedestrianLink selected = plan.Links[selectedLink];
-            previousNodeIndex = reachedNode;
-            targetNodeIndex = selected.Other(reachedNode);
-            incomingLinkKind = selected.Kind;
+            SetWalkingLeg(reachedNode, selected.Other(reachedNode), selected.Kind);
         }
 
-        private int SelectResidentDestinationLink(int reachedNode)
+        private int SelectDestinationLink(int reachedNode, IReadOnlyList<float> distances)
         {
             int selected = -1;
             float bestDistance = float.PositiveInfinity;
@@ -1269,7 +1334,7 @@ namespace BarPromenade
             {
                 CityPedestrianLink link = plan.Links[links[index]];
                 int other = link.Other(reachedNode);
-                float remaining = residentNodeDistances[other];
+                float remaining = distances[other];
                 if (!IsFinite(remaining)) continue;
                 Vector3 offset = plan.Nodes[other].Position - plan.Nodes[reachedNode].Position;
                 offset.y = 0f;
@@ -1288,14 +1353,15 @@ namespace BarPromenade
         {
             slot = default;
             if (MotionState != CityPedestrianMotionState.ApproachingStop ||
-                !waitSlot.HasValue)
+                !waitSlot.HasValue || incomingLinkKind == CityPedestrianLinkKind.Crosswalk ||
+                previousNodeIndex != StopWaitNodeIndex && targetNodeIndex != StopWaitNodeIndex)
             {
                 return false;
             }
 
             Vector3 offset = waitSlot.Value - current;
             offset.y = 0f;
-            if (offset.sqrMagnitude >
+            if ((previousNodeIndex != StopWaitNodeIndex || targetNodeIndex != StopWaitNodeIndex) && offset.sqrMagnitude >
                 DirectWaitSlotDistance * DirectWaitSlotDistance)
             {
                 return false;
@@ -1334,8 +1400,11 @@ namespace BarPromenade
             }
 
             int reached = targetNodeIndex;
-            targetNodeIndex = previousNodeIndex;
-            previousNodeIndex = reached;
+            int reversed = previousNodeIndex;
+            bool onRoad = IsCrossingRoad;
+            ClearCrossing();
+            SetWalkingLeg(reached, reversed, incomingLinkKind);
+            if (onRoad && crossingExit >= 0) crossingCommitted = true;
             DetourCount++;
             FaceTargetImmediately();
         }
@@ -1495,6 +1564,7 @@ namespace BarPromenade
         private void ResetSpawnState()
         {
             ResetVehicleYield();
+            ClearCrossing();
             plan = null;
             previousNodeIndex = -1;
             targetNodeIndex = -1;

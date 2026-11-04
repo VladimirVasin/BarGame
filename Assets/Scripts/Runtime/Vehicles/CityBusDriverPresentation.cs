@@ -7,7 +7,9 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityBusDriverPresentation : MonoBehaviour
     {
-        public const float MaximumHeadYaw = 68f;
+        // The front door is slightly aft of the seated eyes. Share this turn
+        // between the neck and head while the shoulders stay on the controls.
+        public const float MaximumHeadYaw = 74f;
         public const float MaximumHeadPitch = 12f;
         public const float MaximumGripError = 0.02f;
         public const float PlayerFocusFullDistance = 2.25f;
@@ -28,10 +30,12 @@ namespace BarPromenade
         /// to the cushion independently of this body placement.
         /// </summary>
         private const float DriverSeatLift = 0.060f;
-        private const float DriverSeatBackOffset = 0.20f;
-        private const float FootForwardOffset = 0.35f;
+        // At the relaxed torso angle the visible lower back projects 12.76 cm
+        // behind the pelvis. The chair's front face is 15.5 cm behind the datum.
+        private const float DriverSeatBackOffset = 0.023f;
+        private const float FootForwardOffset = 0.325f;
         private const float FootSideOffset = 0.14f;
-        private const float AnkleDropFromSeat = 0.311f;
+        private const float DoorSillToCabinFloor = .01f;
         private const float KneeForwardOffset = 0.30f;
         private const float KneeSideOffset = 0.14f;
         private const float KneeHintLift = 0.10f;
@@ -51,6 +55,12 @@ namespace BarPromenade
         private CityBusDriverAssetRegistry registry;
         private CityBusAssetRegistry busRegistry;
         private Transform presentationRoot;
+        private CityBusPresentation busPresentation;
+        private NpcHandPose fingers;
+        private Transform rightIndexTip;
+        private Quaternion rightIndexFrame;
+        private Vector3 rightIndexOffset;
+        private Vector3 leftRimContact, rightRimContact;
         private Transform playerFocusRoot;
         private Transform playerFocusHead;
         private Renderer[] blinkRenderers = Array.Empty<Renderer>();
@@ -111,13 +121,13 @@ namespace BarPromenade
 
             Transform driverRoot = registry.transform;
             driverRoot.SetParent(busRegistry.Body, true);
-            driverRoot.rotation = presentationRoot.rotation;
+            busPresentation = presentationRoot.GetComponent<CityBusPresentation>();
+            Vector3 cabinUp = busPresentation != null ? busPresentation.CabinUp : presentationRoot.up;
+            driverRoot.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(presentationRoot.forward, cabinUp), cabinUp);
             Vector3 seatTarget = busRegistry.DriverSeatAnchor.position +
-                presentationRoot.up * DriverSeatLift -
-                presentationRoot.forward * DriverSeatBackOffset;
+                driverRoot.up * DriverSeatLift - driverRoot.forward * DriverSeatBackOffset;
             driverRoot.position += seatTarget - registry.Pelvis.position;
 
-            CaptureBaseBonePoses();
             leftHandAttachment = new SeatedArmHandAttachment(
                 registry.LeftHand,
                 registry.LeftGripSocket);
@@ -131,6 +141,16 @@ namespace BarPromenade
                     driverRoot.rotation) *
                 registry.RightFoot.rotation;
 
+            fingers = registry.GetComponent<NpcHandPose>();
+            rightIndexTip = CityPedestrianHandProps.FindSocket(registry.ModelRoot, "ANCHOR_DriverIndexOpenTip.R");
+            if (fingers == null || rightIndexTip == null)
+                throw new InvalidOperationException("The bus driver needs both authored rim grips and the open index fingertip.");
+            rightIndexOffset = Quaternion.Inverse(registry.RightHand.rotation) * (rightIndexTip.position - registry.RightHand.position);
+            rightIndexFrame = MeasureHandFrame(registry.RightHand, rightIndexTip);
+            // Solve the fixed seat and pedals once. These bones and the driver root
+            // follow the sprung cabin; breathing, steering and looks move above them.
+            ApplySeatedPose();
+            CaptureBaseBonePoses();
             IsInitialized = true;
             ResetForPool();
         }
@@ -174,7 +194,6 @@ namespace BarPromenade
             UpdatePlayerFocus(safeDeltaTime);
 
             RestoreBaseBonePoses();
-            ApplySeatedPose();
             ApplyBreathing();
             ApplyLookAt(
                 busRegistry.DriverDoorLookAnchor.position,
@@ -223,7 +242,6 @@ namespace BarPromenade
             FocusStretchDistance = 0f;
             NeckStretchRatio = 1f;
             RestoreBaseBonePoses();
-            ApplySeatedPose();
             ApplyLookAt(
                 busRegistry.DriverDoorLookAnchor.position,
                 0f);
@@ -375,33 +393,17 @@ namespace BarPromenade
             // bend direction, not a knee target: putting it below the cushion
             // and too far sideways lowers the outer thigh into the seat even
             // when the pelvis rises. Keep both knees forward over the feet.
-            Vector3 seat = busRegistry.DriverSeatAnchor.position - forward * DriverSeatBackOffset;
-
-            ApplyLegPose(
-                registry.LeftThigh,
-                registry.LeftShin,
-                registry.LeftFoot,
-                seat +
-                right * FootSideOffset +
-                forward * FootForwardOffset -
-                up * AnkleDropFromSeat,
-                seat +
-                right * KneeSideOffset +
-                forward * KneeForwardOffset +
-                up * KneeHintLift,
+            Vector3 seat = busRegistry.DriverSeatAnchor.position;
+            Vector3 floor = seat + up * (Vector3.Dot(busRegistry.FrontDoorEntryAnchor.position - seat, up) + DoorSillToCabinFloor);
+            float leftAnkle = driverRoot.InverseTransformPoint(registry.LeftFoot.position).y - registry.LocalBounds.min.y;
+            float rightAnkle = driverRoot.InverseTransformPoint(registry.RightFoot.position).y - registry.LocalBounds.min.y;
+            ApplyLegPose(registry.LeftThigh, registry.LeftShin, registry.LeftFoot,
+                floor - right * FootSideOffset + forward * FootForwardOffset + up * leftAnkle,
+                seat - right * KneeSideOffset + forward * KneeForwardOffset + up * KneeHintLift,
                 driverRoot.rotation * leftFootRotationInDriver);
-            ApplyLegPose(
-                registry.RightThigh,
-                registry.RightShin,
-                registry.RightFoot,
-                seat -
-                right * FootSideOffset +
-                forward * (FootForwardOffset + 0.025f) -
-                up * AnkleDropFromSeat,
-                seat -
-                right * KneeSideOffset +
-                forward * KneeForwardOffset +
-                up * (KneeHintLift - 0.015f),
+            ApplyLegPose(registry.RightThigh, registry.RightShin, registry.RightFoot,
+                floor + right * FootSideOffset + forward * (FootForwardOffset + .025f) + up * rightAnkle,
+                seat + right * KneeSideOffset + forward * KneeForwardOffset + up * KneeHintLift,
                 driverRoot.rotation * rightFootRotationInDriver);
 
             registry.Spine.rotation = Quaternion.AngleAxis(
@@ -697,81 +699,74 @@ namespace BarPromenade
                    (clamped * (clamped * 6f - 15f) + 10f);
         }
 
+        // Measure the visible fingers' rest direction and thumb side once rather
+        // than assuming the FBX hand or rim pivot has an anatomical up axis.
+        private Quaternion MeasureHandFrame(Transform hand, Transform grip) =>
+            Quaternion.Inverse(Quaternion.LookRotation(grip.position - hand.position, registry.transform.forward)) * hand.rotation;
+
         private void ApplySteeringHands(float buttonBlend)
         {
-            SeatedArmTargetPose leftGrip = new SeatedArmTargetPose(
-                busRegistry.LeftSteeringGrip.position,
-                busRegistry.LeftSteeringGrip.rotation);
-            SeatedArmTargetPose rightGrip = new SeatedArmTargetPose(
-                busRegistry.RightSteeringGrip.position,
-                busRegistry.RightSteeringGrip.rotation);
-            SeatedArmTargetPose button = new SeatedArmTargetPose(
-                busRegistry.DoorButtonPressAnchor.position,
-                busRegistry.DoorButtonPressAnchor.rotation);
-            float arc = Mathf.Sin(buttonBlend * Mathf.PI) * ReachArcHeight;
-            SeatedArmTargetPose rightTarget = new SeatedArmTargetPose(
-                Vector3.Lerp(rightGrip.Position, button.Position, buttonBlend) +
-                registry.transform.up * arc,
-                Quaternion.Slerp(
-                    rightGrip.Rotation,
-                    button.Rotation,
-                    buttonBlend));
+            Transform wheel = busRegistry.SteeringWheelPivot;
+            Vector3 shaft = -wheel.TransformDirection(busRegistry.SteeringWheelAxisLocal).normalized;
+            float angle = busPresentation != null ? busPresentation.SteeringWheelAngle : 0f;
+            // Read a rotating material point until the hand reaches the side of
+            // its short stroke. Feed the rim back under that palm while the other
+            // hand pulls, alternating the feed without turning either wrist over.
+            leftRimContact = RimPoint(busRegistry.LeftSteeringGrip, angle >= 0f ? 12f : 27f);
+            rightRimContact = RimPoint(busRegistry.RightSteeringGrip, angle >= 0f ? 27f : 12f);
+            Pose left = WheelWrist(true, leftRimContact, leftHandAttachment);
+            Pose right = WheelWrist(false, rightRimContact, rightHandAttachment);
+            if (fingers.LeftGripWeight < 1f) fingers.SetGrip(true, 1f);
+            float rightGrip = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(buttonBlend / .25f));
+            if (!Mathf.Approximately(fingers.RightGripWeight, rightGrip)) fingers.SetGrip(false, rightGrip);
 
-            ApplyArmPose(
-                registry.LeftUpperArm,
-                registry.LeftForearm,
-                registry.LeftHand,
-                leftHandAttachment,
-                leftGrip,
-                registry.transform.right);
-            ApplyArmPose(
-                registry.RightUpperArm,
-                registry.RightForearm,
-                registry.RightHand,
-                rightHandAttachment,
-                rightTarget,
-                -registry.transform.right);
+            Vector3 button = busRegistry.DoorButtonPressAnchor.position;
+            Vector3 pressDirection = (busRegistry.DoorButtonPivot.position - button).normalized;
+            Quaternion buttonRotation = Quaternion.LookRotation(pressDirection, -registry.transform.right) * rightIndexFrame;
+            Vector3 buttonWrist = button - buttonRotation * rightIndexOffset;
+            Vector3 reach = Vector3.Lerp(right.position, buttonWrist, buttonBlend) +
+                registry.transform.up * (Mathf.Sin(buttonBlend * Mathf.PI) * ReachArcHeight);
+            ApplyArmPose(registry.LeftUpperArm, registry.LeftForearm, registry.LeftHand, left.position, left.rotation, -registry.transform.right);
+            ApplyArmPose(registry.RightUpperArm, registry.RightForearm, registry.RightHand, reach,
+                Quaternion.Slerp(right.rotation, buttonRotation, buttonBlend), registry.transform.right);
+
+            Vector3 RimPoint(Transform anchor, float firstFeed)
+            {
+                const float stroke = 30f, feedDuration = 12f;
+                float past = Mathf.Abs(angle) - firstFeed;
+                if (past <= 0f) return anchor.position;
+                int completed = Mathf.FloorToInt(past / stroke);
+                float inFeed = Mathf.Clamp01((past - completed * stroke) / feedDuration);
+                float correction = -Mathf.Sign(angle) * stroke * (completed + Mathf.SmoothStep(0f, 1f, inFeed));
+                return wheel.position + Quaternion.AngleAxis(correction, shaft) * (anchor.position - wheel.position);
+            }
+
+            Pose WheelWrist(bool isLeft, Vector3 centre, SeatedArmHandAttachment attachment)
+            {
+                Vector3 inward = Vector3.ProjectOnPlane(wheel.position - centre, shaft).normalized;
+                Vector3 tangent = Vector3.Cross(shaft, inward);
+                if (Vector3.Dot(tangent, registry.transform.up) < 0f) tangent = -tangent;
+                // The authored cylinder's positive axis is the index end of
+                // either fist. Its palm reference points along the opposed thumb,
+                // so the two thumbs face each other across the wheel's hub.
+                Pose socket = fingers.GetSocketPose(isLeft, centre, tangent, inward);
+                return new Pose(socket.position - socket.rotation * attachment.SocketPositionInHand, socket.rotation);
+            }
         }
 
-        private void ApplyArmPose(
-            Transform upperArm,
-            Transform forearm,
-            Transform hand,
-            SeatedArmHandAttachment attachment,
-            SeatedArmTargetPose socketTarget,
-            Vector3 elbowSide)
+        private void ApplyArmPose(Transform upperArm, Transform forearm, Transform hand, Vector3 wrist,
+            Quaternion handRotation, Vector3 elbowSide)
         {
-            Quaternion handRotation =
-                socketTarget.Rotation *
-                Quaternion.Inverse(attachment.SocketRotationInHand);
-            Vector3 handPosition =
-                socketTarget.Position -
-                handRotation * attachment.SocketPositionInHand;
-            Vector3 elbowHint =
-                upperArm.position +
-                elbowSide * 0.32f +
-                registry.transform.forward * 0.08f -
-                registry.transform.up * 0.08f;
-            SeatedArmIk.SolveTwoBone(
-                upperArm,
-                forearm,
-                hand,
-                handPosition,
-                handRotation,
-                elbowHint);
+            Vector3 elbowHint = upperArm.position + elbowSide * .085f -
+                registry.transform.forward * .06f - registry.transform.up * .30f;
+            SeatedArmIk.SolveTwoBone(upperArm, forearm, hand, wrist, handRotation, elbowHint);
         }
 
         private void RefreshContactDiagnostics()
         {
-            LeftGripDistance = Vector3.Distance(
-                registry.LeftGripSocket.position,
-                busRegistry.LeftSteeringGrip.position);
-            RightGripDistance = Vector3.Distance(
-                registry.RightGripSocket.position,
-                busRegistry.RightSteeringGrip.position);
-            RightHandButtonDistance = Vector3.Distance(
-                registry.RightGripSocket.position,
-                busRegistry.DoorButtonPressAnchor.position);
+            LeftGripDistance = Vector3.Distance(fingers.CylinderCentre(true), leftRimContact);
+            RightGripDistance = Vector3.Distance(fingers.CylinderCentre(false), rightRimContact);
+            RightHandButtonDistance = Vector3.Distance(rightIndexTip.position, busRegistry.DoorButtonPressAnchor.position);
         }
 
         private static float Sanitize01(float value)

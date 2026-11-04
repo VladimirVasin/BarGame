@@ -10,12 +10,28 @@ namespace BarPromenade
         {
             var access = CityHillsideAccessPlan.ForLayout(layout);
             var district = CityHillsideNeighborhoodPlan.ForLayout(layout);
-            foreach (var road in CityHillsideStreetPlan.ForLayout(layout).Routes)
+            var hillside = CityHillsideStreetPlan.ForLayout(layout);
+            if (hillside.Routes.Count == 0) return;
+            CityBusPlan hillLine = null;
+            foreach (var line in CityDistrictBusPlanner.CreateRoadRouting(layout))
+                if (line.Number == 3) hillLine = line;
+            foreach (var road in hillside.Routes)
             {
                 string prefix = "hill:" + road.Bank + ":";
                 string pavement = prefix + "pavement:";
                 int right = AddPavement(road.SidewalkPath, "right");
                 int left = AddPavement(road.OppositeSidewalkPath, "left");
+                // House and stair gates may lie across the street or beyond the
+                // walker's seven-metre final approach. Cut the actual boarding-side
+                // footway at its platform, retaining both surrounding pavement legs.
+                if (hillLine != null)
+                    foreach (var stop in hillLine.Stops)
+                    {
+                        if (!road.TrySampleTop(XZ(stop.Position), out _, out var surface) || surface != CityStreetSupportKind.Asphalt) continue;
+                        var curb = CityBusStopWaitPlanner.StandingPosition(hillLine, stop, layout);
+                        string side = road.Bank == CityTerraceTransportBank.West ? "right" : "left";
+                        Gate(prefix + "bus:" + stop.SequenceIndex, pavement + side, curb);
+                    }
                 Connect(prefix + "summit-crossing", right, left, CityPedestrianLinkKind.Crosswalk, StreetHeight);
                 foreach (var stair in access.Shortcuts)
                     if (stair.Bank == road.Bank) AddStair(stair, prefix + "stair:" + stair.LowerLane, pavement, pavement);
@@ -54,6 +70,14 @@ namespace BarPromenade
                 string prefix = house.OnSummitStreet ? "hill:quarter:summit:" : "hill:quarter:court:";
                 AddHouse(house, prefix, prefix + (house.ThresholdWorld.z > house.StreetContactWorld.z ? "north" : "south"));
             }
+            foreach (var transfer in access.Transfers)
+            {
+                string id = "hill:" + transfer.Id;
+                int lower = graph.SplitTerraceStreetAt(id + ":lower", XZ(transfer.RouteWorld[0]), StreetHeight);
+                string upperPavement = transfer.Bank == CityTerraceTransportBank.West ?
+                    "hill:West:pavement:left" : "hill:East:pavement:right";
+                AddStairFrom(lower, transfer, id, upperPavement);
+            }
 
             int Gate(string id, string pavement, Vector3 point) =>
                 graph.SplitHillsideLane(id, pavement, XZ(point), StreetHeight);
@@ -68,7 +92,7 @@ namespace BarPromenade
             {
                 var shape = new List<Vector2>(points.Count);
                 foreach (var point in points) shape.Add(XZ(point));
-                graph.AddLink(id, from, to, CityPedestrianLinkKind.Sidewalk, false, new CityRoadPath(shape), StreetHeight);
+                graph.AddLink(id, from, to, CityPedestrianLinkKind.Sidewalk, true, new CityRoadPath(shape), StreetHeight);
             }
 
             void Connect(string id, int from, int to, CityPedestrianLinkKind kind, Func<Vector2, float> height)
@@ -88,8 +112,13 @@ namespace BarPromenade
 
             void AddStair(CityHillsideShortcut stair, string id, string lowerPavement, string upperPavement)
             {
+                int lower = Gate(id + ":lower", lowerPavement, stair.RouteWorld[0]);
+                AddStairFrom(lower, stair, id, upperPavement);
+            }
+
+            void AddStairFrom(int previous, CityHillsideShortcut stair, string id, string upperPavement)
+            {
                 var points = stair.RouteWorld;
-                int previous = Gate(id + ":lower", lowerPavement, points[0]);
                 for (int i = 0; i < points.Count; i++)
                     previous = JoinPoint(id + ":" + i, previous, points[i], Height);
                 int upper = Gate(id + ":upper", upperPavement, points[points.Count - 1]);

@@ -66,9 +66,9 @@ MonoBehaviour:
   leftWiperPivot: {fileID: 3722088061606003539}
   rightWiperPivot: {fileID: 8765186456523538481}
   steeringWheelAxisLocal: {x: 0, y: 0, z: 1}
-  doorButtonTravelLocal: {x: 1.0490732e-11, y: -0.00011999999, z: 1.8626451e-11}
-  doorButtonRestLocalPosition: {x: 0.003, y: -0.03335, z: -0.015}
-  steeringWheelRestLocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071067}
+  doorButtonTravelLocal: {x: -2.5941965e-10, y: -0.00011999999, z: 1.8626451e-11}
+  doorButtonRestLocalPosition: {x: 0.0034999999, y: -0.035899997, z: -0.0147}
+  steeringWheelRestLocalRotation: {x: 0.53729963, y: 0, z: 0, w: 0.8433914}
   doorButtonRestLocalRotation: {x: 0, y: -0, z: 1, w: -0.0000000754979}
   driverSeatAnchor: {fileID: 1659239685656588377}
   frontDoorEntryAnchor: {fileID: 2890993935501852732}
@@ -84,8 +84,14 @@ MonoBehaviour:
   - {fileID: 4264110899537584748}
   - {fileID: 1924912028257845095}
   - {fileID: 8407248209590522491}
-  - {fileID: 987706335652387155}
-  - {fileID: 2234194069617241776}
+  standingFloorAnchors:
+  - {fileID: 2961220183392531911}
+  - {fileID: 3797152460293425105}
+  - {fileID: 565106942018170057}
+  standingGripAnchors:
+  - {fileID: 6273943607463588698}
+  - {fileID: 7125272488272295481}
+  - {fileID: 8332345551980225210}
   renderers:
   - {fileID: 6376342082774209517}
   - {fileID: 8380477016283072793}
@@ -126,6 +132,7 @@ MonoBehaviour:
   - {fileID: 2031112113486794635}
   - {fileID: 2420833694891340352}
   - {fileID: 5488917768034781958}
+  - {fileID: 2404429533488288102}
   - {fileID: 7221068596960256051}
   - {fileID: 2752549483012584387}
   - {fileID: 4088396211754975934}
@@ -291,6 +298,10 @@ MonoBehaviour:
     role: passenger_seats
     materialSlot: 7
     renderer: {fileID: 5488917768034781958}
+  - sourceName: INT_RearBench
+    role: rear_bench
+    materialSlot: 7
+    renderer: {fileID: 2404429533488288102}
   - sourceName: INT_SeatFrames
     role: seat_frames
     materialSlot: 4
@@ -340,10 +351,10 @@ MonoBehaviour:
     height: 2.95
     wheelbase: 4.5
     wheelRadius: 0.43
-  sourceTriangleCount: 4176
-  sourceGeneratorVersion: 1.4.0
+  sourceTriangleCount: 4906
+  sourceGeneratorVersion: 1.8.0
   designId: road_v2_midibus_v1
-  buildSignature: 16152b5ed9eb2e51fc2d4f9d8ef7d09fec3ec69b285ce29141aa5f5c4c90d907
+  buildSignature: dce118804dca3a01fe70fa2abf1fd5ed22db6192263a1fa6c550c70b5f11bf8b
 --- !u!1001 &1144640046979756358
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -536,6 +547,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 580472b9b0237c94886d4e1affc48f2b, type: 2}
+    - target: {fileID: 3367755621484797984, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: e3146e27c78fd4945b6b29d4c66e2f68, type: 2}
     - target: {fileID: 3769921588120190544, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -624,6 +639,11 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -8621188999772161697, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
   m_PrefabInstance: {fileID: 1144640046979756358}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &565106942018170057 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 591446872065023375, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
+  m_PrefabInstance: {fileID: 1144640046979756358}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &605784124465567405 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
@@ -632,11 +652,6 @@ Transform:
 --- !u!4 &972421908142464341 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 188069935548312595, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
-  m_PrefabInstance: {fileID: 1144640046979756358}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &987706335652387155 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -9054595201374574571, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
   m_PrefabInstance: {fileID: 1144640046979756358}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &1401123964163345359 stripped
@@ -689,14 +704,14 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1348296655325585948, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
   m_PrefabInstance: {fileID: 1144640046979756358}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &2234194069617241776 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -8006301013906825226, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
-  m_PrefabInstance: {fileID: 1144640046979756358}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &2378913477203242467 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3377995742491483301, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
+  m_PrefabInstance: {fileID: 1144640046979756358}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &2404429533488288102 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3367755621484797984, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
   m_PrefabInstance: {fileID: 1144640046979756358}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &2420833694891340352 stripped
@@ -739,6 +754,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -6371433381667733439, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
   m_PrefabInstance: {fileID: 1144640046979756358}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &2961220183392531911 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -6414592481802976127, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
+  m_PrefabInstance: {fileID: 1144640046979756358}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &3001587345019368961 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -6465669574149421241, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
@@ -767,6 +787,11 @@ Transform:
 --- !u!23 &3786363777144822878 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -4942338002569024232, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
+  m_PrefabInstance: {fileID: 1144640046979756358}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3797152460293425105 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4949273447891962217, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
   m_PrefabInstance: {fileID: 1144640046979756358}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &4088396211754975934 stripped
@@ -889,6 +914,11 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 6693784877296434137, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
   m_PrefabInstance: {fileID: 1144640046979756358}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &6273943607463588698 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6409486995853738524, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
+  m_PrefabInstance: {fileID: 1144640046979756358}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6315236679367194493 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -2862408914625313221, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
@@ -917,6 +947,11 @@ Transform:
 --- !u!4 &7048227771490387368 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -1282749783474146066, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
+  m_PrefabInstance: {fileID: 1144640046979756358}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7125272488272295481 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7854446650876446591, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
   m_PrefabInstance: {fileID: 1144640046979756358}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &7163421120665135467 stripped
@@ -972,6 +1007,11 @@ MeshRenderer:
 --- !u!23 &8060518902111690008 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 6935019177247403102, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
+  m_PrefabInstance: {fileID: 1144640046979756358}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8332345551980225210 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -269965096246291460, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
   m_PrefabInstance: {fileID: 1144640046979756358}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &8342058099799632314 stripped

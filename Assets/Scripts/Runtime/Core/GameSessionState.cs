@@ -566,6 +566,7 @@ namespace BarPromenade
             stairwellLabyrinthPuzzles.Reset();
             stairwellEncounter.Reset();
             CityFishSupplySession.ResetForNewGame();
+            CityResidentTransitSession.RestoreCheckpoint(null);
             WarehouseStoryEntryService.ResetPending();
             WarehouseStorySeed = null;
             sessionGeneration = sessionGeneration == int.MaxValue

@@ -170,6 +170,8 @@ namespace BarPromenade.Tests.PlayMode
                         CityBusPassengerDoor.Rear,
                         out CityBusRidePlan rearBoardingPlan),
                     Is.True);
+                AssertHeroPathClearsCabin(frontBoardingPlan, registry, characterController.radius);
+                AssertHeroPathClearsCabin(rearBoardingPlan, registry, characterController.radius);
                 player.Motor.Teleport(
                     frontBoardingPlan.EntryPose.RootPosition);
                 player.GameObject.transform.rotation =
@@ -935,6 +937,41 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3.up);
         }
 
+        // The aisle serves the same hero seat from either live doorway. Sweep the
+        // real keyed pelvis path against the horizontal space of every other rider.
+        internal static void AssertHeroPathClearsCabin(CityBusRidePlan plan, CityBusAssetRegistry registry, float heroRadius)
+        {
+            var transition = plan.PelvisTransition;
+            foreach (var stand in registry.StandingFloorAnchors) CheckOccupant(stand, .30f);
+            foreach (var seat in registry.PassengerSeatAnchors)
+                if (seat != plan.SeatAnchor) CheckOccupant(seat, .26f);
+
+            void CheckOccupant(Transform place, float radius)
+            {
+                Vector3 entered = plan.EntryPose.HipPosition, exited = plan.ActionHipPosition;
+                float minimum = float.PositiveInfinity;
+                for (int i = 1; i <= 100; i++)
+                {
+                    float t = i * .01f;
+                    Vector3 entering = transition.EvaluateEntering(plan.EntryPose.HipPosition, plan.ActionHipPosition, t);
+                    Vector3 exiting = transition.EvaluateExiting(plan.ActionHipPosition, plan.ExitPose.HipPosition, t);
+                    minimum = Mathf.Min(minimum, Clearance(entered, entering), Clearance(exited, exiting));
+                    entered = entering;
+                    exited = exiting;
+                }
+                Assert.That(minimum, Is.GreaterThan(heroRadius + radius),
+                    $"{plan.PassengerDoor} passage to/from seat 07 crosses {place.name}");
+
+                float Clearance(Vector3 a, Vector3 b)
+                {
+                    Vector3 segment = Vector3.ProjectOnPlane(b - a, registry.transform.up);
+                    Vector3 toPlace = Vector3.ProjectOnPlane(place.position - a, registry.transform.up);
+                    float station = segment.sqrMagnitude > .000001f ? Mathf.Clamp01(Vector3.Dot(toPlace, segment) / segment.sqrMagnitude) : 0f;
+                    return (toPlace - segment * station).magnitude;
+                }
+            }
+        }
+
         [UnityTest]
         public IEnumerator Passenger_TransfersFromWestToHillsideAtTheSharedStop()
         {
@@ -991,14 +1028,14 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     // Drive the real fleet clock explicitly so a whole circuit takes a few frames.
                     lines[i].enabled = false;
-                    var busModel = lines[i].GetComponentInChildren<CityBusPresentation>(true);
+                    var busModel = lines[i].GetOrCreatePresentation();
                     Assert.That(busModel.RouteLabels.Count, Is.EqualTo(4));
                     var normals = new[] { busModel.transform.forward, busModel.transform.right,
                         -busModel.transform.forward, -busModel.transform.right };
                     for (int face = 0; face < busModel.RouteLabels.Count; face++)
                     {
                         var sign = busModel.RouteLabels[face];
-                        Assert.That(sign.text, Is.EqualTo(plans[i].Number.ToString("00")));
+                        Assert.That(sign.text, Is.EqualTo(lines[i].Plan.Number.ToString("00")));
                         Assert.That(Vector3.Dot(-sign.transform.forward, normals[face]), Is.GreaterThan(.99f));
                         if (face == 0)
                         {
@@ -1014,7 +1051,8 @@ namespace BarPromenade.Tests.PlayMode
                     rides[i] = CityBusRideController.Create(lines[i], player, areas, camera, follow, surfaces);
                 }
                 var first = lines[0].Actor;
-                var second = lines[2].Actor;
+                int hillVehicle = System.Array.FindIndex(lines, bus => bus.Plan == plans[2]);
+                var second = lines[hillVehicle].Actor;
                 first.ReleasePresentation(lines[0].transform);
                 first.PrepareSpawn(west, new CityBusSpawnAnchor("test-start", before.LinkIndex,
                     before.DistanceAlongLink, before.Position, before.Forward, before.RoadEdge), 5);
@@ -1075,14 +1113,14 @@ namespace BarPromenade.Tests.PlayMode
                     CaptureTransfer(root.transform, second, hillTransfer);
 
                 yield return WalkTo(Door(second).EntryPose.RootPosition, "03 front door");
-                Assert.That(rides[2].PromptKey, Is.EqualTo("interaction.board_bus.03"));
-                yield return UseDoor(rides[2], CityBusRideState.Riding);
+                Assert.That(rides[hillVehicle].PromptKey, Is.EqualTo("interaction.board_bus.03"));
+                yield return UseDoor(rides[hillVehicle], CityBusRideState.Riding);
                 Assert.That(second.HasPlayerPassenger, Is.True);
                 Assert.That(first.HasPlayerPassenger, Is.False);
                 int boardedService = second.ServiceOrdinal;
                 AdvanceFleetUntil(() => second.DoorsFullyOpen && second.ServiceOrdinal > boardedService, 20000);
                 Assert.That(second.CurrentStop.Id, Is.Not.EqualTo(hillTransfer.Id));
-                yield return UseDoor(rides[2], CityBusRideState.Outside);
+                yield return UseDoor(rides[hillVehicle], CityBusRideState.Outside);
                 Assert.That(second.HasPlayerPassenger || second.HasServiceHold, Is.False);
 
                 CityBusRidePlan Door(CityBusActor actor)

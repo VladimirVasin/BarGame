@@ -97,7 +97,7 @@ namespace BarPromenade
             IList<CityStreetRibbonDescriptor> curvedSidewalkRibbons = null,
             IList<CityStreetRibbonDescriptor> curvedCenterMarkingRibbons = null,
             float publicSidewalkWidth = CityStreetSurfacePlanner.SidewalkWidth,
-            IList<int> sidewalkClosureGeometryIndices = null)
+            IList<int> sidewalkClosureGeometryIndices = null, IList<CityBusStopCrossing> stopCrossings = null)
         {
             if (float.IsNaN(carriagewayWidth) ||
                 float.IsInfinity(carriagewayWidth) ||
@@ -126,6 +126,9 @@ namespace BarPromenade
                 crosswalkWalkableRectangles);
             CrosswalkNodes = Copy(crosswalkNodes);
             Crosswalks = Copy(crosswalks);
+            StopCrossings = Copy(stopCrossings ?? Array.Empty<CityBusStopCrossing>());
+            foreach (var site in StopCrossings)
+                foreach (string id in site.StopIds) crossingByStop.Add(id, site);
             CurvedStreetRibbons = Copy(curvedStreetRibbons ?? new List<CityStreetRibbonDescriptor>());
             CurvedSidewalkRibbons = Copy(curvedSidewalkRibbons ?? new List<CityStreetRibbonDescriptor>());
             CurvedCenterMarkingRibbons = Copy(curvedCenterMarkingRibbons ?? new List<CityStreetRibbonDescriptor>());
@@ -160,6 +163,9 @@ namespace BarPromenade
         }
         public IReadOnlyList<Rect> SidewalkWalkableRectangles { get; }
         public IReadOnlyList<Rect> CrosswalkWalkableRectangles { get; }
+        private readonly Dictionary<string, CityBusStopCrossing> crossingByStop = new Dictionary<string, CityBusStopCrossing>(StringComparer.Ordinal);
+        public IReadOnlyList<CityBusStopCrossing> StopCrossings { get; }
+        public bool TryGetStopCrossing(string stopId, out CityBusStopCrossing site) => crossingByStop.TryGetValue(stopId, out site);
         public IReadOnlyList<Vector2Int> CrosswalkNodes { get; }
         public IReadOnlyList<CityCrosswalkDescriptor> Crosswalks { get; }
         public IReadOnlyList<CityStreetRibbonDescriptor> CurvedStreetRibbons { get; }

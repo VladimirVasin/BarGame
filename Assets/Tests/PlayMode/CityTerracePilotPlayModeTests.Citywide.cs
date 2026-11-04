@@ -152,6 +152,132 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator LiveCity_DormantMorningAdvancesEveryServiceAndPreservesResidentOwnership()
+        {
+            yield return LoadProductionCity();
+            GameSessionState.TryStartGameTimeFromWake();
+            int[] ordinals = city.BusVehicles.Select(bus => bus.Actor.ServiceOrdinal).ToArray();
+            Assert.That(city.EnterDormant(), Is.True);
+            var services = city.BusVehicles;
+            Assert.That(services.All(bus => !bus.Actor.IsSpawned), Is.True);
+            GameSessionState.AdvanceGameTime((float)(90d / GameTimeState.GameMinutesPerRealSecond));
+            city.ResumeFromDormant();
+            var riders = new HashSet<int>();
+            for (int vehicle = 0; vehicle < services.Count; vehicle++)
+            {
+                Assert.That(services[vehicle].Actor.ServiceOrdinal, Is.GreaterThan(ordinals[vehicle]),
+                    "Service must advance while the City hierarchy is disabled.");
+                for (int slot = 0; slot < CityBusActor.MaximumNpcOccupants; slot++)
+                {
+                    int id = city.ResidentJourneys.RiderAt(vehicle, slot);
+                    if (id < 0) continue;
+                    Assert.That(riders.Add(id), Is.True);
+                    Assert.That(city.ResidentJourneys.GetState(id).Vehicle, Is.EqualTo(vehicle));
+                }
+            }
+            for (int id = 0; id < CityResidentLifeRules.ResidentCount; id++)
+                Assert.That(city.ResidentJourneys.GetState(id).Phase == CityResidentJourneyPhase.Riding,
+                    Is.EqualTo(riders.Contains(id)), "Resident " + id);
+
+            // Look beside a real commuter's moving vehicle after hidden service.
+            // Arrival times can vary; poll the morning, never inject a rider into the test.
+            int rider = -1;
+            for (int step = 0; step < 48 && rider < 0; step++)
+            {
+                for (int id = 0; id < CityResidentLifeRules.ResidentCount; id++)
+                {
+                    var state = city.ResidentJourneys.GetState(id);
+                    if (state.Activity != CityResidentActivity.Work || state.Phase != CityResidentJourneyPhase.Riding)
+                        continue;
+                    var bus = services[state.Vehicle];
+                    int vehicle = state.Vehicle;
+                    int slot = CityBusActor.NpcSlotForPlace(state.PlaceIndex);
+                    if (bus.Actor.CurrentStopIndex == state.ExitStop || bus.EstimatedSecondsToStop(state.ExitStop) < 6d ||
+                        bus.CanneryBlocksSpawn(bus.Actor.Position, bus.Actor.Rotation)) continue;
+                    // Follow the first passenger due at that exit so another person's
+                    // doorway animation cannot consume the test's bounded wait.
+                    bool precedes = Enumerable.Range(0, slot).Select(i => city.ResidentJourneys.RiderAt(vehicle, i))
+                        .Any(other => other >= 0 && city.ResidentJourneys.GetState(other).ExitStop == state.ExitStop);
+                    if (precedes) continue;
+                    rider = id;
+                    break;
+                }
+                if (rider < 0)
+                {
+                    GameSessionState.AdvanceGameTime((float)(3d / GameTimeState.GameMinutesPerRealSecond));
+                    yield return null;
+                }
+            }
+            Assert.That(rider, Is.GreaterThanOrEqualTo(0), "Expected an assigned worker on a morning service.");
+            var commute = city.ResidentJourneys.GetState(rider);
+            var service = services[commute.Vehicle];
+            var passengers = city.VehiclePassengers[commute.Vehicle];
+            int cabinSlot = CityBusActor.NpcSlotForPlace(commute.PlaceIndex);
+            city.Player.Motor.Teleport(service.Actor.Position + service.Actor.transform.right * 15f);
+            for (int frame = 0; frame < 25 && passengers.GetCabinBody(rider) == null; frame++)
+                yield return null;
+            Assert.That(service.Actor.IsSpawned, Is.True);
+            AssertCabinView();
+            var checkpoint = CityResidentTransitSession.CaptureCheckpoint();
+            Assert.That(checkpoint.Residents.Seats[commute.Vehicle, cabinSlot], Is.EqualTo(rider));
+
+            // Let the trip continue offscreen, then stand on the public pavement
+            // before the same vehicle opens its doors at the assigned destination.
+            double remaining = service.EstimatedSecondsToStop(commute.ExitStop);
+            Assert.That(city.EnterDormant(), Is.True);
+            Assert.That(passengers.GetCabinBody(rider), Is.Null);
+            if (remaining > 4d) GameSessionState.AdvanceGameTime((float)(remaining - 4d));
+            city.ResumeFromDormant();
+            var exit = service.Plan.Stops[commute.ExitStop];
+            city.Player.Motor.Teleport(CityBusStopWaitPlanner.StandingPosition(service.Plan, exit, city.Layout, 8f));
+            float previousStep = Time.captureDeltaTime;
+            try
+            {
+                Time.captureDeltaTime = .1f;
+                CityPedestrianPresentation beforeExit = null;
+                CityPedestrianActor exiting = null;
+                for (int frame = 0; frame < 300; frame++)
+                {
+                    yield return null;
+                    if (beforeExit == null && passengers.GetCabinBody(rider) != null)
+                    {
+                        AssertCabinView();
+                        beforeExit = passengers.GetCabinBody(rider);
+                    }
+                    if (exiting == null)
+                        exiting = city.Pedestrians.Actors.SingleOrDefault(w => w.IsSpawned &&
+                            city.Pedestrians.ResidentIndex(w) == rider);
+                    if (exiting != null && city.ResidentJourneys.GetState(rider).Vehicle < 0) break;
+                }
+                Assert.That(beforeExit, Is.Not.Null, "The manifest must restore the cabin view before the stop.");
+                Assert.That(exiting, Is.Not.Null, "The same resident must take a physical pedestrian slot at the open door.");
+                Assert.That(exiting.Presentation, Is.SameAs(beforeExit), "Keep the actual body through the doorway handoff.");
+                Assert.That(passengers.GetCabinBody(rider), Is.Null);
+                Assert.That(city.Pedestrians.Actors.Count(w => w.IsSpawned && city.Pedestrians.ResidentIndex(w) == rider),
+                    Is.EqualTo(1));
+                Assert.That(city.ResidentJourneys.GetState(rider).Vehicle, Is.EqualTo(-1));
+                Assert.That(city.ResidentJourneys.RiderAt(commute.Vehicle, cabinSlot), Is.Not.EqualTo(rider));
+                Assert.That(checkpoint.Residents.Seats[commute.Vehicle, cabinSlot], Is.EqualTo(rider),
+                    "A later alighting must not change the checkpoint taken aboard.");
+            }
+            finally { Time.captureDeltaTime = previousStep; }
+
+            void AssertCabinView()
+            {
+                var body = passengers.GetCabinBody(rider);
+                Assert.That(body, Is.Not.Null);
+                Assert.That(body.transform.IsChildOf(service.Actor.Presentation.SuspensionVisual), Is.True);
+                Assert.That(body.IsStandingInBus, Is.EqualTo(CityBusActor.IsStandingPlace(commute.PlaceIndex)));
+                if (!body.IsStandingInBus)
+                    Assert.That(body.SeatAnchor, Is.SameAs(service.Actor.Presentation.Registry.PassengerSeatAnchors[commute.PlaceIndex]));
+                Assert.That(city.ResidentJourneys.GetState(rider).PlaceIndex, Is.EqualTo(commute.PlaceIndex));
+                Assert.That(city.ResidentJourneys.GetState(rider).ExitStop, Is.EqualTo(commute.ExitStop));
+                Assert.That(city.Pedestrians.Actors.Any(w => w.IsSpawned && city.Pedestrians.ResidentIndex(w) == rider),
+                    Is.False, "A visible cabin body cannot simultaneously be a walker on the street.");
+            }
+        }
+
+        [UnityTest]
         public IEnumerator LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement()
         {
             yield return LoadProductionCity();
@@ -179,6 +305,7 @@ namespace BarPromenade.Tests.PlayMode
             bool previousFocus = GameInput.MovementFocused;
             int interval = OnDemandRendering.renderFrameInterval;
             int boarded = 0;
+            CityPedestrianActor placedWaiter = null;
             try
             {
                 GameInput.HandleApplicationFocus(true);
@@ -187,37 +314,51 @@ namespace BarPromenade.Tests.PlayMode
                 OnDemandRendering.renderFrameInterval = 24;
                 // Own the fleet clock only. Keep actual world colliders, outdoor population,
                 // player motion, interaction discovery and the production boarding animation.
-                foreach (var line in city.BusLines) line.enabled = false;
-                for (int lineIndex = 0; lineIndex < city.BusLines.Count; lineIndex++)
+                foreach (var vehicle in city.BusVehicles) ResetService(vehicle);
+                Assert.That(city.BusVehicles.Count, Is.EqualTo(city.BusPlans.Count * CityBusDirector.VehiclesPerLine));
+                for (int lineIndex = 0; lineIndex < city.BusPlans.Count; lineIndex++)
                 {
-                    var line = city.BusLines[lineIndex];
-                    var ride = city.BusRides[lineIndex];
-                    var actor = line.Actor;
-                    foreach (var stop in line.Plan.Stops)
+                    foreach (var stop in city.BusPlans[lineIndex].Stops)
                     foreach (var door in doors)
                     {
-                        string stage = $"{line.Plan.Number:00}-{stop.SequenceIndex + 1:00}/{door}";
+                        int vehicleSlot = (stop.SequenceIndex + (door == CityBusPassengerDoor.Front ? 0 : 1)) % CityBusDirector.VehiclesPerLine;
+                        int vehicle = lineIndex * CityBusDirector.VehiclesPerLine + vehicleSlot;
+                        var line = city.BusVehicles[vehicle];
+                        var ride = city.BusRides[vehicle];
+                        var actor = line.Actor;
+                        string stage = $"{line.Plan.Number:00}-{stop.SequenceIndex + 1:00}/{door} vehicle {vehicleSlot + 1}";
+                        if (placedWaiter != null) city.Pedestrians.ReleaseRouteBoundActor(placedWaiter);
+                        placedWaiter = null;
+                        var queue = city.LineWaitPlans[lineIndex].WaitPoints.Single(point => point.StopId == stop.Id);
+                        Assert.That(surfaces.TryGetStopCrossing(stop.Id, out var zebra), Is.True, stage + " zebra");
+                        Assert.That(zebra.Stripes.Count, Is.GreaterThanOrEqualTo(4), stage + " painted stripes");
+                        // Independent cases approach from alternate kerbs. The
+                        // ordinary motor must walk the painted surface at its actual grade.
+                        var path = zebra.WalkPath;
+                        bool reverse = door == CityBusPassengerDoor.Rear;
+                        motor.Teleport(path[reverse ? path.Count - 1 : 0] + Vector3.up * (PlayerFactory.GroundedRootOffset + .035f));
+                        Physics.SyncTransforms();
+                        for (int p = 1; p < path.Count; p++)
+                        {
+                            var point = path[reverse ? path.Count - 1 - p : p];
+                            yield return Walk(point + Vector3.up * PlayerFactory.GroundedRootOffset, stage + " zebra");
+                            Assert.That(motor.transform.position.y, Is.EqualTo(point.y + PlayerFactory.GroundedRootOffset).Within(.22f),
+                                stage + " crossing elevation at " + point);
+                        }
                         if (door == CityBusPassengerDoor.Front)
                         {
                             Debug.Log($"Bus boarding audit {stage}, seated so far {boarded}, failures {failures.Count}.");
-                            var queue = city.LineWaitPlans[lineIndex].WaitPoints.SingleOrDefault(point => point.StopId == stop.Id);
-                            // A live passenger occupied 02-01 in the original reproduction.
-                            if (line.Plan.Number == 2 && stop.SequenceIndex == 0 && (queue == null || queue.WaitSlots.Count == 0))
-                                Fail(stage + " lost its waiting passengers");
-                            if (queue != null)
+                            foreach (Vector3 slot in queue.WaitSlots)
                             {
-                                foreach (Vector3 slot in queue.WaitSlots)
-                                {
-                                    // Sample the public footway at the same longitudinal location,
-                                    // including the hillside's curved, graded pavement.
-                                    Vector3 forward = Vector3.ProjectOnPlane(stop.Forward, Vector3.up).normalized;
-                                    Vector3 center = CityBusStopWaitPlanner.StandingPosition(line.Plan, stop, city.Layout);
-                                    float alongLane = Vector3.Dot(slot - center, forward);
-                                    Vector3 passage = CityBusStopWaitPlanner.StandingPosition(line.Plan, stop, city.Layout, alongLane);
-                                    float separation = Vector3.ProjectOnPlane(slot - passage, Vector3.up).magnitude;
-                                    if (separation < capsule.radius + city.PedestrianPlan.AgentRadius)
-                                        Fail($"{stage} occupied wait slot {slot:F2} blocks public pavement {passage:F2}, clearance {separation:F2}");
-                                }
+                                // Sample the public footway at the same longitudinal location,
+                                // including the hillside's curved, graded pavement.
+                                Vector3 forward = Vector3.ProjectOnPlane(stop.Forward, Vector3.up).normalized;
+                                Vector3 center = CityBusStopWaitPlanner.StandingPosition(line.Plan, stop, city.Layout);
+                                float alongLane = Vector3.Dot(slot - center, forward);
+                                Vector3 passage = CityBusStopWaitPlanner.StandingPosition(line.Plan, stop, city.Layout, alongLane);
+                                float separation = Vector3.ProjectOnPlane(slot - passage, Vector3.up).magnitude;
+                                if (separation < capsule.radius + city.PedestrianPlan.AgentRadius)
+                                    Fail($"{stage} occupied wait slot {slot:F2} blocks public pavement {passage:F2}, clearance {separation:F2}");
                             }
                         }
                         ResetService(line);
@@ -233,6 +374,24 @@ namespace BarPromenade.Tests.PlayMode
                             door == CityBusPassengerDoor.Front ? 6.5f : -6.5f);
                         motor.Teleport(start + Vector3.up * (PlayerFactory.GroundedRootOffset + .035f));
                         Physics.SyncTransforms();
+                        // Occupy a real waiting place with a solid resident, even when this
+                        // particular stop has no naturally scheduled demand at the test hour.
+                        bool hasWaiter = city.Pedestrians.Actors.Any(walker => walker.IsSpawned &&
+                            walker.MotionState == CityPedestrianMotionState.WaitingAtStop &&
+                            queue.WaitSlots.Any(slot => Vector3.Distance(walker.Position, slot) < .4f));
+                        if (!hasWaiter)
+                        {
+                            int id = Enumerable.Range(0, CityResidentLifeRules.ResidentCount).First(candidate =>
+                                !city.ResidentJourneys.IsStreetPresented(candidate) &&
+                                city.ResidentJourneys.GetState(candidate).Phase == CityResidentJourneyPhase.AtDestination);
+                            foreach (var slot in queue.WaitSlots)
+                            {
+                                placedWaiter = city.Pedestrians.TrySpawnStopWaiter(slot, queue.Facing,
+                                    queue.PedestrianNodeIndex, queue.NodeDistances, 7u, id);
+                                if (placedWaiter != null) break;
+                            }
+                            Assert.That(placedWaiter, Is.Not.Null, stage + " cannot host a real waiting pedestrian.");
+                        }
                         yield return null;
                         int before = failures.Count;
                         yield return Walk(curbAtShelter, stage + " public pavement");
@@ -291,8 +450,8 @@ namespace BarPromenade.Tests.PlayMode
                         if (ride.State != CityBusRideState.Riding || !actor.HasPlayerPassenger || ride.ActivePlan.PassengerDoor != door)
                             Fail($"{stage} E did not seat the hero through the selected door: {ride.State}; {press}");
                         else boarded++;
+                        ResetService(line);
                     }
-                    ResetService(line);
                 }
                 Assert.That(failures, Is.Empty, string.Join("\n", failures));
                 Assert.That(boarded, Is.EqualTo(city.BusPlans.Sum(plan => plan.Stops.Count) * doors.Length));
@@ -300,6 +459,7 @@ namespace BarPromenade.Tests.PlayMode
             }
             finally
             {
+                if (placedWaiter != null) city.Pedestrians.ReleaseRouteBoundActor(placedWaiter);
                 motor.CancelInteractionPoseMove();
                 foreach (var ride in city.BusRides) ride.ForceReleaseForBusLifecycle();
                 input.TearDown();

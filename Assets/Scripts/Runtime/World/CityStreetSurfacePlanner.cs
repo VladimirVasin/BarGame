@@ -260,6 +260,7 @@ namespace BarPromenade
                 publicPavement);
 
             IReadOnlyList<Vector2Int> selectedNodes = Array.Empty<Vector2Int>();
+            List<CityBusStopCrossing> stopCrossings = null;
             if (includeCrosswalks)
             {
                 selectedNodes = CityStreetIntersectionSelector.Select(layout, MaximumCrosswalkIntersections);
@@ -274,6 +275,28 @@ namespace BarPromenade
                     crosswalkWalkableRectangles,
                     crosswalks,
                     markingExclusions);
+                stopCrossings = CityBusStopCrossingPlanner.Create(layout, crosswalks);
+                foreach (var site in stopCrossings)
+                {
+                    markingExclusions.Add(site.Bounds);
+                    if (site.ExistingCrosswalkIndex < 0)
+                        crosswalkWalkableRectangles.Add(site.Bounds);
+                    int stripeIndex = site.ExistingCrosswalkIndex * CrosswalkStripeCount;
+                    for (int stripeNumber = 0; stripeNumber < site.Stripes.Count; stripeNumber++)
+                    {
+                        RuntimeOrientedBox stripe = site.Stripes[stripeNumber];
+                        if (site.ExistingCrosswalkIndex >= 0 && stripeNumber < CrosswalkStripeCount)
+                        {
+                            crosswalkMarkingGeometry[stripeIndex] = stripe;
+                            crosswalkMarkings[stripeIndex++] = CalculateBounds(stripe);
+                        }
+                        else
+                        {
+                            crosswalkMarkingGeometry.Add(stripe);
+                            crosswalkMarkings.Add(CalculateBounds(stripe));
+                        }
+                    }
+                }
                 CreateCenterMarkings(
                     layout,
                     sortedEdges,
@@ -307,7 +330,7 @@ namespace BarPromenade
                 crosswalks,
                 curvedStreets, curvedSidewalks, curvedMarkings,
                 layout.SpatialPlan.IsCompactCoastal ? PublicSidewalkWidth : SidewalkWidth,
-                sidewalkClosureGeometryIndices);
+                sidewalkClosureGeometryIndices, stopCrossings);
             CityStreetSupportPlan.FromStreetPlan(layout, plan);
             return plan;
         }

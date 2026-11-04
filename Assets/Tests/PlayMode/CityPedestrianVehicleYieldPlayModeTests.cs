@@ -252,7 +252,34 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(actor.CollisionEnabled, Is.True);
         }
 
-        private void CreateActor(IWalkableArea area)
+        [UnityTest]
+        public IEnumerator Walker_WaitsAtKerbThenClearsCrossingBeforeBoarding()
+        {
+            CreateActor(new FlatArea(), atKerb: true);
+            yield return null;
+            Vector3 kerb = actor.Position;
+            Vector3 far = plan.Nodes[1].Position;
+            Assert.That(actor.BeginStopApproach(1, far + Vector3.right * .45f, Vector3.left, new[] { 8f, 0f }), Is.True);
+            traffic.AddFootprint(Origin, Quaternion.Euler(0f, 90f, 0f), VehicleBody, predicted: true);
+            for (int i = 0; i < 40; i++) actor.Advance(Step, vehicleTraffic: traffic);
+            Assert.That(actor.IsWaitingToCross, Is.True);
+            Assert.That(actor.IsYieldingToVehicle, Is.False);
+            Assert.That(actor.TravelDirection, Is.EqualTo(Vector3.zero), "Stationary passenger must not brake the passing driver.");
+            AssertPlanarDistance(actor.Position, kerb, .03f, "Wait on the pavement.");
+
+            traffic.ClearFootprints();
+            for (int i = 0; i < 32; i++) actor.Advance(Step, vehicleTraffic: traffic);
+            Assert.That(actor.IsCrossingRoad, Is.True);
+            // A new future sweep does not send a pedestrian back into traffic.
+            traffic.AddFootprint(Origin, Quaternion.Euler(0f, 90f, 0f), VehicleBody, predicted: true);
+            for (int i = 0; i < 480 && actor.MotionState != CityPedestrianMotionState.WaitingAtStop; i++)
+                actor.Advance(Step, vehicleTraffic: traffic);
+            Assert.That(actor.MotionState, Is.EqualTo(CityPedestrianMotionState.WaitingAtStop));
+            Assert.That(actor.IsCrossingRoad, Is.False);
+            AssertPlanarDistance(actor.Position, far + Vector3.right * .45f, .04f, "Finish at the assigned queue on the far side.");
+        }
+
+        private void CreateActor(IWalkableArea area, bool atKerb = false)
         {
             root = new GameObject("Pedestrian Vehicle Yield Test");
             GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -262,11 +289,11 @@ namespace BarPromenade.Tests.PlayMode
             plan = new CityPedestrianPlan(1, 2, 3u, CityPedestrianPlanner.AgentRadius,
                 new[]
                 {
-                    new CityPedestrianNode("before", Origin + Vector3.back * 10f, false),
-                    new CityPedestrianNode("after", Origin + Vector3.forward * 10f, false)
+                    new CityPedestrianNode("before", Origin + Vector3.back * (atKerb ? 4f : 10f), atKerb),
+                    new CityPedestrianNode("after", Origin + Vector3.forward * (atKerb ? 4f : 10f), atKerb)
                 },
                 new[] { new CityPedestrianLink("street", 0, 1, CityPedestrianLinkKind.Crosswalk) },
-                new[] { new CityPedestrianSpawnAnchor("spawn", Origin, 0, 1) },
+                new[] { new CityPedestrianSpawnAnchor("spawn", atKerb ? Origin + Vector3.back * 4f : Origin, 0, 1) },
                 new[] { Rect.MinMaxRect(Origin.x - 20f, Origin.z - 20f,
                     Origin.x + 20f, Origin.z + 20f) });
             CityPedestrianAssetRegistry registry = CityPedestrianDefaultNpcBody.Create(

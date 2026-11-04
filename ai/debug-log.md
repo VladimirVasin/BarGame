@@ -1,7 +1,5 @@
 # Session diagnostics
 
-`debug.log`:context/actions/pending/Unity faults;`DuelJournal`:CombatTest rounds.
-
 ## Profiles
 
 Editor:`verbose`→root `debug.log`;Player dev/release:`verbose`/`basic`→
@@ -12,24 +10,24 @@ F8:snapshot (CombatTest:legacy HUD);Shift+F8:log directory. API keeps duel marks
 
 ## Format
 
-NDJSON/UTF-8:schema_version/utc/mono_ms/seq/level/category/event/
-session_id/scene/city_seed/data(typed). Order:utc/mono/seq;
+UTF-8 NDJSON: schema_version/utc/mono_ms/seq/level/category/event/session_id/scene/city_seed/data.
 Join:operation_id(transition)/sequence(balance)/snapshot_id(support).
 Snapshot:hunger/stress/fatigue/intoxication/cash/drinking.
 
 | Category | Events |
 | --- | --- |
-| `session` | start/end/seed/bar/return/drinking;drink purchases/cash before-after |
+| `session` | lifecycle/seed/bar/drinking/purchases and cash |
 | `needs`, `inventory` | visible progression/explicit needs/committed alcohol-item use |
 | `scene` | load/ready/transition;composition_frames:frames/path/budget/CPU-wall;door time incl.build |
 | World | world/layout/spawn/initialize_phase;cemetery_first_grave_sealed/cemetery_raven_*;raven_roost_* provider/plot |
-| Outdoor (verbose) | world_build_block/terrain mesh-cook/grid/water/cloth/inventory/cannery;city_plans_prime started/finished/joined:pool-thread City plans |
+| Outdoor (verbose) | build blocks/terrain/grid/water/cloth/inventory/cannery;city_plans_prime:pool thread |
 | `primitive` (verbose) | `combined_mesh`: source count/vertices/combine/collider time |
 | `interaction`, `map` | entrance/exit/map lifecycle/City test-teleport mode-results |
 | `intoxication`, `balance` | stages, scheduling/start/result/fall/recovery/cancellation |
-| `combat` | Cached movement_summary before close/disable/exit:keys/request/focus/gates/motor/capsule/phase/scale/speed/turn;min-scale requires has_request_sample |
+| `combat` | movement_summary on exit/disable;min-scale requires has_request_sample |
 | `diagnostics` | snapshots/directory |
 | `unity` | warnings/assertions/errors/exceptions + stacks |
+| `bus` | yield_started → yield_blocker_changed / approach_stalled (2s) → approach_released. Order by seq; join stall_id. Follow blocker_stall_id or blocker_id/index → route_id/vehicle_index; nearest_stop + XYZ locate the bus. Release retains last blocker. |
 | `bar` | `patron_cleanup_phase/reach_retry/deferred`: anchor, phase, contact error, correction or blocker |
 
 session/new_game_started:menu_reset=menu;combat_test_start=range;

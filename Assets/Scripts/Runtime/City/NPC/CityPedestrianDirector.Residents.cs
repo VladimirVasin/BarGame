@@ -19,6 +19,19 @@ namespace BarPromenade
         public bool HasResidentLife => createResidentPresentation != null;
         public CityResidentWorld Residents => residentWorld;
         public int LogicalResidentCount => HasResidentLife ? CityResidentLifeRules.ResidentCount : 0;
+        private CityResidentJourneyDirector journeys;
+        private CityBusDirector residentFleet;
+
+        public void ConfigureResidentJourneys(CityResidentJourneyDirector director)
+        {
+            journeys = director ?? throw new ArgumentNullException(nameof(director));
+        }
+
+        public void ReleaseResidentPresentationsForTimeJump()
+        {
+            personalSpace?.Reset();
+            ReleaseAllActors();
+        }
 
         private void InitializeResidentLife(Func<int, CityPedestrianPresentation> factory)
         {
@@ -54,6 +67,8 @@ namespace BarPromenade
             return -1;
         }
 
+        internal int ResidentAtSlot(int slot) => HasResidentLife ? actorResidents[slot] : -1;
+
         private void AdvanceResidentLife(float deltaTime, bool warming)
         {
             if (deltaTime <= 0f && !warming) return;
@@ -74,7 +89,19 @@ namespace BarPromenade
                     CityResidentLifeSample schedule = residentWorld.Schedule(resident, day, minute);
                     // Change goals at schedule boundaries. Public out-and-back
                     // walks reverse only after physically reaching their end.
-                    if (actorActivityStarts[i] != schedule.StartedAt)
+                    if (journeys != null)
+                    {
+                        var leg = journeys.GetState(resident);
+                        if (leg.Phase == CityResidentJourneyPhase.Walking && actor.IsAtResidentDestination &&
+                            actor.ResidentDestinationNode == leg.DestinationNode)
+                        {
+                            journeys.MarkWalkArrived(resident);
+                            leg = journeys.GetState(resident);
+                        }
+                        if (leg.DestinationNode >= 0 && actor.ResidentDestinationNode != leg.DestinationNode)
+                            actor.SetResidentDestination(leg.DestinationNode, residentWorld.DistancesTo(leg.DestinationNode));
+                    }
+                    else if (actorActivityStarts[i] != schedule.StartedAt)
                     {
                         actorActivityStarts[i] = schedule.StartedAt;
                         int goal = residentWorld.Destination(resident, schedule.Activity);
@@ -102,7 +129,8 @@ namespace BarPromenade
                 // excess/finished visits retire under the existing fog contract.
                 bool hidden = squaredDistance >= MinimumConnectedSpawnDistance * MinimumConnectedSpawnDistance;
                 bool indoors = resident >= 0 && actor.IsAtResidentDestination &&
-                    !IsPublicResidentActivity(residentWorld.Schedule(resident, day, minute).Activity);
+                    (journeys != null ? journeys.GetState(resident).Phase == CityResidentJourneyPhase.AtDestination :
+                        !IsPublicResidentActivity(residentWorld.Schedule(resident, day, minute).Activity));
                 bool activityOwned = actor.IsRouteBound || actor.IsPersonalSpaceReacting || actor.IsYieldingToVehicle ||
                     (actor.MotionState != CityPedestrianMotionState.Walking &&
                      actor.MotionState != CityPedestrianMotionState.WaitingAtDestination &&
@@ -123,6 +151,7 @@ namespace BarPromenade
 
         private bool TrySpawnResident(bool allowNear)
         {
+            if (!CanUseStreetSlot()) return false;
             int slot = FindAvailableActorIndex();
             if (slot < 0) return false;
             int best = -1;
@@ -157,6 +186,50 @@ namespace BarPromenade
             return true;
         }
 
+        // Only residents who will actually step down near the hero need a street
+        // slot. Riders staying on the vehicle have a cabin presentation of their own.
+        private bool CanUseStreetSlot()
+        {
+            if (journeys == null || residentFleet == null) return true;
+            int free = actors.Count - ActiveCount;
+            if (free <= 0) return false;
+            int needed = 0;
+            for (int i = 0; i < residentFleet.VehicleCount; i++)
+            {
+                var bus = residentFleet.GetVehicle(i);
+                if (bus.Actor == null || !bus.Actor.HasRoutePhase) continue;
+                for (int slot = 0; slot < CityBusActor.MaximumNpcOccupants; slot++)
+                {
+                    int id = journeys.RiderAt(i, slot);
+                    if (id < 0) continue;
+                    int stop = journeys.GetState(id).ExitStop;
+                    if (stop < 0 || PlanarSquaredDistance(player.position, bus.Plan.Stops[stop].Position) >
+                        CityBusDirector.MaximumSpawnDistance * CityBusDirector.MaximumSpawnDistance) continue;
+                    if (bus.EstimatedSecondsToStop(stop) <= 30d && ++needed >= free) return false;
+                }
+            }
+            return true;
+        }
+
+        private int ReclaimHiddenStreetSlot()
+        {
+            float farthest = CityBusDirector.FogHiddenDistance * CityBusDirector.FogHiddenDistance;
+            int chosen = -1;
+            for (int i = 0; i < actors.Count; i++)
+            {
+                var walker = actors[i];
+                if (!walker.IsSpawned || walker.IsPersonalSpaceReacting || walker.IsYieldingToVehicle ||
+                    (walker.MotionState != CityPedestrianMotionState.Walking &&
+                     walker.MotionState != CityPedestrianMotionState.WaitingAtDestination)) continue;
+                float distance = PlanarSquaredDistance(walker.Position, player.position);
+                if (distance <= farthest) continue;
+                farthest = distance;
+                chosen = i;
+            }
+            if (chosen >= 0) ReleaseActor(chosen);
+            return chosen;
+        }
+
         private bool HasResidentClearance(CityResidentWorld.StreetSample sample)
         {
             int laneCount = 0, destinationCount = 0;
@@ -183,20 +256,27 @@ namespace BarPromenade
         {
             foreach (KeyValuePair<CityPedestrianPresentation, int> entry in residentIds)
                 if (entry.Value == id) return IsPresentationInUse(entry.Key) ? null : entry.Key;
-            if (presentationPool.Count >= profile.PoolSize)
-            {
-                int free = -1;
-                for (int i = 0; i < presentationPool.Count; i++)
-                    if (!IsPresentationInUse(presentationPool[i])) { free = i; break; }
-                if (free < 0) return null;
-                CityPedestrianPresentation removed = presentationPool[free];
-                residentIds.Remove(removed); presentationPool.RemoveAt(free);
-                removed.Shutdown(); CityPedestrianResources.DestroyObject(removed.gameObject);
-            }
+            if (!MakeRoomInBodyCache()) return null;
             CityPedestrianPresentation result = createResidentPresentation(id);
             result.transform.SetParent(poolRoot, false);
             presentationPool.Add(result); residentIds.Add(result, id);
             return result;
+        }
+
+        private bool MakeRoomInBodyCache()
+        {
+            if (presentationPool.Count < profile.PoolSize) return true;
+            for (int i = 0; i < presentationPool.Count; i++)
+            {
+                var spare = presentationPool[i];
+                if (IsPresentationInUse(spare)) continue;
+                presentationPool.RemoveAt(i);
+                residentIds.Remove(spare);
+                spare.Shutdown();
+                CityPedestrianResources.DestroyObject(spare.gameObject);
+                return true;
+            }
+            return false;
         }
 
         private CityPedestrianPresentation AcquireTransitResident(Vector3 position, uint hash)
@@ -218,16 +298,28 @@ namespace BarPromenade
         {
             if (!HasResidentLife || !residentIds.TryGetValue(body, out int id)) return;
             actorResidents[slot] = id;
+            journeys?.SetStreetPresented(id, true);
             CityResidentLifeSample schedule = residentWorld.Schedule(id, GameSessionState.GameDayIndex, GameSessionState.GameTimeOfDayMinutes);
             actorActivityStarts[slot] = schedule.StartedAt;
-            int goal = residentWorld.Destination(id, schedule.Activity);
-            actors[slot].SetResidentDestination(goal, residentWorld.DistancesTo(goal));
+            int goal = journeys != null ? journeys.GetState(id).DestinationNode : residentWorld.Destination(id, schedule.Activity);
+            if (goal >= 0) actors[slot].SetResidentDestination(goal, residentWorld.DistancesTo(goal));
+        }
+
+        internal void RetainPresentedJourneys()
+        {
+            if (journeys == null) return;
+            int day = GameSessionState.GameDayIndex;
+            double minute = GameSessionState.GameTimeOfDayMinutes;
+            for (int i = 0; i < actors.Count; i++)
+                if (actorResidents[i] >= 0 && actors[i] != null && actors[i].IsSpawned)
+                    residentWorld.Retain(actorResidents[i], actors[i], day, minute);
         }
 
         private void RetainResident(int slot)
         {
             if (!HasResidentLife || actorResidents[slot] < 0) return;
             residentWorld.Retain(actorResidents[slot], actors[slot], GameSessionState.GameDayIndex, GameSessionState.GameTimeOfDayMinutes);
+            journeys?.SetStreetPresented(actorResidents[slot], false);
             actorResidents[slot] = -1;
         }
     }

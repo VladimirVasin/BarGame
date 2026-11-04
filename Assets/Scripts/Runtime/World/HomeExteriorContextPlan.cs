@@ -10,7 +10,7 @@ namespace BarPromenade
         internal HomeExteriorContextPlan(
             CityLayout layout,
             BuildingLot playerHome,
-            RoadEdge frontageEdge,
+            RoadEdge? frontageEdge,
             IList<RoadEdge> nearbyRoads,
             IList<BuildingLot> nearbyLots,
             IList<CityDistrictPointOfInterestDescriptor>
@@ -55,7 +55,7 @@ namespace BarPromenade
 
         public CityLayout Layout { get; }
         public BuildingLot PlayerHome { get; }
-        public RoadEdge FrontageEdge { get; }
+        public RoadEdge? FrontageEdge { get; }
         public IReadOnlyList<RoadEdge> NearbyRoads { get; }
         public IReadOnlyList<BuildingLot> NearbyLots { get; }
         public IReadOnlyList<CityDistrictPointOfInterestDescriptor>
@@ -132,10 +132,8 @@ namespace BarPromenade
             }
 
             BuildingLot home = layout.PlayerHome;
-            if (home == null ||
-                !layout.TryGetFrontageEdge(
-                    home,
-                    out RoadEdge frontage))
+            RoadEdge? frontage = layout.TryGetFrontageEdge(home, out RoadEdge gridEdge) ? gridEdge : (RoadEdge?)null;
+            if (home == null || (!frontage.HasValue && !layout.HasSummitHome))
             {
                 throw new InvalidOperationException(
                     "A home exterior context requires a player home with street frontage.");
@@ -183,6 +181,8 @@ namespace BarPromenade
                 }
             }
 
+            if (layout.HasSummitHome && !lots.Contains(home)) lots.Add(home);
+
             var districtPointsOfInterest =
                 new List<
                     CityDistrictPointOfInterestDescriptor>();
@@ -218,6 +218,15 @@ namespace BarPromenade
                 {
                     lamps.Add(lamp);
                 }
+            }
+
+            if (layout.HasSummitHome)
+            {
+                var upperLamps = new List<StreetLampDescriptor>();
+                CityNightWorldBuilder.AppendHillsideLamps(layout, upperLamps);
+                foreach (var lamp in upperLamps)
+                    if (PlanarSquaredDistance(lamp.Position, home.DoorPosition) <= ViewRadius * ViewRadius)
+                        lamps.Add(lamp);
             }
 
             var signals =
@@ -379,11 +388,30 @@ namespace BarPromenade
             for (int index = 0; index < cityPlan.Links.Count; index++)
             {
                 CityPedestrianLink source = cityPlan.Links[index];
+                CityRoadPath localPath = null;
+                Func<Vector2, float> localHeight = null;
+                if (source.Path != null)
+                {
+                    var vertices = new List<Vector2>(source.Path.Vertices.Count);
+                    foreach (var vertex in source.Path.Vertices)
+                    {
+                        var point = PlayerHomeBalconyGeometry.ToHomeLocal(context.PlayerHome, new Vector3(vertex.x, 0f, vertex.y));
+                        vertices.Add(new Vector2(point.x, point.z));
+                    }
+                    localPath = new CityRoadPath(vertices);
+                    if (source.PathHeightSampler != null)
+                        localHeight = point =>
+                        {
+                            var cityPoint = PlayerHomeBalconyGeometry.ToCityWorld(context.PlayerHome, new Vector3(point.x, 0f, point.y));
+                            return source.PathHeightSampler(new Vector2(cityPoint.x, cityPoint.z)) - context.PlayerHome.DoorPosition.y -
+                                   PlayerHomeBalconyGeometry.ApartmentFloorElevation;
+                        };
+                }
                 links.Add(new CityPedestrianLink(
                     source.Id,
                     source.FirstNodeIndex,
                     source.SecondNodeIndex,
-                    source.Kind));
+                    source.Kind, localPath, localHeight));
             }
 
             var anchors = new List<CityPedestrianSpawnAnchor>();
@@ -425,6 +453,18 @@ namespace BarPromenade
                         cityPlan.NavigationRectangles[index]));
             }
 
+            var polygons = new List<Vector2[]>(cityPlan.NavigationPolygons.Count);
+            foreach (var polygon in cityPlan.NavigationPolygons)
+            {
+                var transformed = new Vector2[polygon.Length];
+                for (int i = 0; i < polygon.Length; i++)
+                {
+                    var p = PlayerHomeBalconyGeometry.ToHomeLocal(context.PlayerHome, new Vector3(polygon[i].x, 0f, polygon[i].y));
+                    transformed[i] = new Vector2(p.x, p.z);
+                }
+                polygons.Add(transformed);
+            }
+
             return new CityPedestrianPlan(
                 cityPlan.LayoutSeed,
                 cityPlan.PopulationSeed,
@@ -433,7 +473,7 @@ namespace BarPromenade
                 nodes,
                 links,
                 anchors,
-                navigationRectangles);
+                navigationRectangles, polygons);
         }
 
         private static bool IsEligibleExteriorAnchor(

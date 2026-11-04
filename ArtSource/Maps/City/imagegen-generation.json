@@ -1,56 +1,28 @@
 {
   "tool": "built-in image_gen",
-  "intent": "Through streets on both banks. Surveyed terrace stairs, public park walks and southern residential switchbacks.",
-  "prompt": "imagegen-through-streets-prompt.txt",
+  "intent": "Upper bridge home, both hillside transfer stairs and the physical street crossings at bus platforms.",
+  "prompt": "imagegen-transfer-stairs-prompt.txt",
   "references": [
-    "map-reference.png",
-    "CityMapImage.reference.png"
+    "CityMapImage.reference.png",
+    "map-reference.png"
   ],
   "geography": "map-reference.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "2a6e20feb8dd2cdbca61e32ec74d22594a3568eaf4662273e00b0a0339fcc011",
-  "runtime_image_sha256": "abd287d69368d78432adaa1ef29d331922b2c86786fb329b9a64a051db87f0eb",
+  "image_sha256": "e0ef7ab66373fcff919bb581b4f89aa85abe955cab142fa2e3b148e5e1896bee",
+  "runtime_image_sha256": "e0ef7ab66373fcff919bb581b4f89aa85abe955cab142fa2e3b148e5e1896bee",
   "registration": {
-    "description": "Full-bleed raster registration in independent X/Y intervals, fitted to outer grid streets and the southern bridge crossings. Top-left coordinates. Applied before importing the artwork.",
+    "description": "North-up, full-bleed edit in the surveyed world frame. Native pixels are displayed over the measured world bounds.",
     "source_size": [
-      1122,
-      1402
+      1173,
+      1341
     ],
     "survey_size": [
       1792,
       2048
-    ],
-    "source_x": [
-      0,
-      215,
-      963,
-      1122
-    ],
-    "survey_x": [
-      0,
-      407,
-      1536,
-      1792
-    ],
-    "source_y": [
-      0,
-      137,
-      842,
-      1174,
-      1264,
-      1402
-    ],
-    "survey_y": [
-      0,
-      200,
-      1241,
-      1745,
-      1875,
-      2048
     ]
   },
-  "fingerprint": "06d1815260801734bedfc6708618b7ec0594d1203601942c5258bb513fbeb7f4",
+  "fingerprint": "832ee61984ebfde2d9ccb59b697c21d30afd035bd1003505c4d84d458efeef7d",
   "schemaVersion": 2,
-  "width": 1176,
-  "height": 1344
+  "width": 1173,
+  "height": 1341
 }

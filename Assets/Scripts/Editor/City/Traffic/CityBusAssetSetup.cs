@@ -267,7 +267,7 @@ namespace BarPromenade.Editor
                 manifest.triangle_count > MaximumTriangleCount ||
                 manifest.bounds_min.Length != 3 ||
                 manifest.bounds_max.Length != 3 ||
-                manifest.passenger_seat_count < 10 ||
+                manifest.passenger_seat_count != CityBusActor.SeatCount || manifest.standing_place_count != CityBusActor.StandingPlaceCount ||
                 string.IsNullOrWhiteSpace(manifest.generator_version) ||
                 string.IsNullOrWhiteSpace(manifest.build_signature) ||
                 manifest.build_signature.Length != 64)
@@ -374,11 +374,11 @@ namespace BarPromenade.Editor
                 "ROOT_Body");
             AssertVectorNear(
                 steering.local_position,
-                new Vector3(0.60f, -3.32f, 1.57f),
+                new Vector3(0.68f, -3.60f, 1.57f),
                 "steering-wheel source position");
             AssertVectorNear(
                 steering.local_rotation_degrees,
-                new Vector3(-90f, 0f, 0f),
+                new Vector3(-65f, 0f, 0f),
                 "steering-wheel source rotation");
             if (!string.Equals(
                     steering.runtime_axis_local,
@@ -390,7 +390,6 @@ namespace BarPromenade.Editor
                     "City bus steering-wheel local-axis contract is invalid.");
             }
 
-            float gripTop = Mathf.Sqrt(0.18f * 0.18f - 0.14f * 0.14f);
             CityBusManifestPivot leftGrip = RequireManifestPivot(
                 pivotsByName,
                 "ANCHOR_SteeringGrip.L",
@@ -403,11 +402,11 @@ namespace BarPromenade.Editor
                 "PIVOT_SteeringWheel");
             AssertVectorNear(
                 leftGrip.local_position,
-                new Vector3(0.14f, -gripTop, 0.020f),
+                new Vector3(0.18f, 0f, 0f),
                 "left steering-grip source position");
             AssertVectorNear(
                 rightGrip.local_position,
-                new Vector3(-0.14f, -gripTop, 0.020f),
+                new Vector3(-0.18f, 0f, 0f),
                 "right steering-grip source position");
 
             CityBusManifestPivot doorButton = RequireManifestPivot(
@@ -417,7 +416,7 @@ namespace BarPromenade.Editor
                 "ROOT_Body");
             AssertVectorNear(
                 doorButton.local_position,
-                new Vector3(0.30f, -3.335f, 1.50f),
+                new Vector3(0.35f, -3.59f, 1.47f),
                 "door-button source position");
             AssertVectorNear(
                 doorButton.local_rotation_degrees,
@@ -653,8 +652,8 @@ namespace BarPromenade.Editor
                     }
                 }
 
-                Transform[] passengerSeats = manifest.pivots
-                    .Where(pivot => pivot.role == "passenger_seat_anchor")
+                Transform[] Anchors(string role) => manifest.pivots
+                    .Where(pivot => pivot.role == role)
                     .OrderBy(pivot => pivot.name, StringComparer.Ordinal)
                     .Select(pivot => RequireTransform(transformsByName, pivot.name))
                     .ToArray();
@@ -685,7 +684,7 @@ namespace BarPromenade.Editor
                     RequireTransform(transformsByName, "ANCHOR_DriverSeat"),
                     RequireTransform(transformsByName, "ANCHOR_FrontDoorEntry"),
                     RequireTransform(transformsByName, "ANCHOR_RearDoorEntry"),
-                    passengerSeats,
+                    Anchors("passenger_seat_anchor"),
                     rendererArray,
                     bindings.ToArray(),
                     headlights.ToArray(),
@@ -725,7 +724,8 @@ namespace BarPromenade.Editor
                         "PIVOT_WiperL"),
                     RequireTransform(
                         transformsByName,
-                        "PIVOT_WiperR"));
+                        "PIVOT_WiperR"),
+                    Anchors("standing_floor"), Anchors("standing_grip"));
                 registry.ResetArticulation();
 
                 PrefabUtility.SaveAsPrefabAsset(
@@ -859,6 +859,8 @@ namespace BarPromenade.Editor
             if (required.Any(item => item == null) ||
                 registry.PassengerSeatAnchors.Count !=
                     manifest.passenger_seat_count ||
+                registry.StandingFloorAnchors.Count != manifest.standing_place_count ||
+                registry.StandingGripAnchors.Count != manifest.standing_place_count ||
                 registry.Renderers.Count != manifest.mesh_count ||
                 registry.RendererBindings.Count != manifest.mesh_count ||
                 registry.Headlights.Count == 0 ||
@@ -868,6 +870,23 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "City bus prefab is missing an articulation, seat, light " +
                     "or renderer binding.");
+            }
+
+            for (int i = 0; i < registry.StandingFloorAnchors.Count; i++)
+            {
+                VerifyStandingAnchor(registry.StandingFloorAnchors[i], "StandingFloor", i);
+                VerifyStandingAnchor(registry.StandingGripAnchors[i], "StandingGrip", i);
+            }
+            void VerifyStandingAnchor(Transform anchor, string kind, int i)
+            {
+                string id = $"ANCHOR_{kind}_{i + 1:00}";
+                if (anchor == null || anchor.name != id || anchor.parent != registry.Body)
+                    throw new InvalidOperationException($"Standing contact {id} has lost its sprung body.");
+                float[] source = manifest.pivots.Single(pivot => pivot.name == id).local_position;
+                // The prefab rotates the imported vehicle 180 degrees about Y.
+                var metres = new Vector3(-source[0], source[2], -source[1]);
+                if (Vector3.Distance(metres, registry.transform.InverseTransformPoint(anchor.position)) > .003f)
+                    throw new InvalidOperationException($"Standing contact {id} is mis-scaled or mirrored.");
             }
 
             if (registry.FrontDoorForwardLeaf.parent != registry.Body ||
@@ -1461,6 +1480,8 @@ namespace BarPromenade.Editor
             "front_door_entry",
             "rear_door_entry",
             "passenger_seat_anchor",
+            "standing_floor",
+            "standing_grip",
             "left_wiper",
             "right_wiper"
         };
@@ -1481,6 +1502,7 @@ namespace BarPromenade.Editor
             public int animation_count;
             public bool visible_interior;
             public int passenger_seat_count;
+            public int standing_place_count;
             public string build_signature;
             public CityBusManifestPart[] parts;
             public CityBusManifestPivot[] pivots;

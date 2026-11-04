@@ -7,7 +7,7 @@ namespace BarPromenade
     {
         // Same terrain skin as the adjacent switchbacks. All stair openings and
         // existing bank break lines are vertices in the visual and physical mesh.
-        public static void Build(Transform parent, CityLayout layout)
+        public static void Build(Transform parent, CityLayout layout, Rect? retained = null)
         {
             var plan = CityHillsideQuarterPlan.ForLayout(layout);
             if (plan.Links.Count == 0) return;
@@ -65,6 +65,8 @@ namespace BarPromenade
                     float midZ = (point.y + zAxis[j + 1]) * .5f;
                     float templateX = (xAxis[i] + xAxis[i + 1]) * .5f;
                     var centre = new Vector2(CityHillsideQuarterRavine.MeshX(templateX, section), midZ);
+                    if (retained.HasValue && !retained.Value.Overlaps(Rect.MinMaxRect(
+                        point.x, point.y, CityHillsideQuarterRavine.MeshX(xAxis[i + 1], section), zAxis[j + 1]))) continue;
                     bool opening = false;
                     foreach (Rect cut in court.WalkableBounds)
                         if (cut.Contains(centre)) { opening = true; break; }
@@ -88,13 +90,13 @@ namespace BarPromenade
             renderer.sharedMaterials = new[] { RuntimePrimitiveFactory.DefaultMaterial, RuntimePrimitiveFactory.DefaultMaterial };
             CityExteriorAppearance.ApplyGroundSurface(renderer, new Color(.49f, .50f, .43f), 0);
             CityMountainSurfaceAppearance.ApplyCombined(renderer, new Color(.36f, .375f, .355f), 1);
-            ground.AddComponent<MeshCollider>().sharedMesh = mesh;
+            if (!retained.HasValue) ground.AddComponent<MeshCollider>().sharedMesh = mesh;
             ground.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
             var kinds = new FootstepGroundKind[(faces.Count + rock.Count) / 3];
             for (int i = 0; i < kinds.Length; i++)
                 kinds[i] = i < faces.Count / 3 ? FootstepGroundKind.Soil : FootstepGroundKind.Stone;
             FootstepGround.Stamp(ground, FootstepGroundKind.Soil).SetTriangleKinds(kinds);
-            CityHillsideQuarterBridgeWorld.Build(parent, plan);
+            CityHillsideQuarterBridgeWorld.Build(parent, plan, retained);
         }
     }
 }

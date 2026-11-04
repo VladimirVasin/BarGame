@@ -44,9 +44,8 @@ namespace BarPromenade.Tests.EditMode
                     Is.False);
             }
 
-            BuildingLot home = layout.BuildingLots.Single(
-                lot => lot.IsPlayerHome);
-            Assert.That(home.Cell, Is.EqualTo(new Vector2Int(12, 5)));
+            Assert.That(layout.LowerResidentialLot.Cell, Is.EqualTo(new Vector2Int(12, 5)));
+            Assert.That(layout.SummitHome.Lot, Is.SameAs(layout.PlayerHome));
             Assert.That(
                 layout.BuildingLots.Any(lot =>
                     lot.IsBar && lot.Cell == BarActivityAssignment.DefaultHomeBarCell),

@@ -51,8 +51,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(cannery, Is.Not.Null);
             cannery.AutoAdvance = false;
             cannery.ForcePresentation = true;
-            foreach (var passengerLine in city.LinePassengers) passengerLine.enabled = false;
-            foreach (var line in city.BusLines)
+            foreach (var passengerLine in city.VehiclePassengers) passengerLine.enabled = false;
+            foreach (var line in city.BusVehicles)
             {
                 line.enabled = false;
                 line.Actor.ReleasePresentation(line.transform);
@@ -999,7 +999,7 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3 forward = truck.Rotation * Vector3.forward;
                     if (Quaternion.Angle(truck.Rotation, cannery.TruckPose(cannery.Cycle.Sample(time - 2d)).Rotation) > 1f ||
                         Quaternion.Angle(truck.Rotation, cannery.TruckPose(cannery.Cycle.Sample(time + 2d)).Rotation) > 1f) continue;
-                    foreach (var line in city.BusLines)
+                    foreach (var line in city.BusVehicles)
                     foreach (int index in line.Plan.OrderedLinkIndices)
                     {
                         CityBusRouteLink link = line.Plan.Links[index];
@@ -1020,7 +1020,7 @@ namespace BarPromenade.Tests.PlayMode
                 "A real shared street must carry opposite bus/truck routes with three metres between lane centres."));
             if (meetingLink < 0) yield break;
             var bus = meetingLine.Actor;
-            var presentation = meetingLine.GetComponentInChildren<CityBusPresentation>(true);
+            var presentation = meetingLine.GetOrCreatePresentation();
             Assert.That(presentation, Is.Not.Null);
             CityBusRouteLink entry = meetingLine.Plan.Links[meetingLink];
             CityBusPathSample spawn = entry.Samples[0];

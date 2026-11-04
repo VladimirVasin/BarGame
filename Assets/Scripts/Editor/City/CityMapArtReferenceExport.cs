@@ -360,7 +360,7 @@ namespace BarPromenade.Editor
                 Box(id + ":entry", "promenade", building.ApproachBounds);
                 int part = 0;
                 foreach (Vector2[] body in building.Lot.CreateCollisionPolygons())
-                    Poly(id + ":" + part++, "building", body);
+                    Poly(id + ":" + part++, building.Lot.IsPlayerHome ? "home-building" : "building", body);
             }
             CityPortAccessPlan access = CityPortAccessPlan.ForLayout(layout);
             if (access != null)
@@ -398,6 +398,12 @@ namespace BarPromenade.Editor
                     Poly(part.StableId, part.Kind == CitySeacoastPartKind.Hut ? "building" : "promenade",
                         new[] { XZ(part.Center + a), XZ(part.Center + b), XZ(part.Center + c), XZ(part.Center + d) });
                 }
+            }
+            var stripes = CityStreetSurfacePlanner.Create(layout).CrosswalkMarkingGeometry;
+            for (int i = 0; i < stripes.Count; i++)
+            {
+                CityMapArtResources.CrosswalkStroke(stripes[i], out var a, out var b, out float widthMetres);
+                Line("zebra:" + i, "crosswalk", widthMetres, new[] { XZ(a), XZ(b) });
             }
             var places = new List<Place>();
             for (int i = 0; i < controller.PointsOfInterest.Count; i++)

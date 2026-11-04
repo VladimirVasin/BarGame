@@ -75,6 +75,7 @@ namespace BarPromenade
             int nodeIndex,
             Vector3 standSlot,
             Vector3 seatPosition,
+            Vector3 floorPosition,
             Vector3 sitFacing,
             IReadOnlyList<float> nodeDistances)
         {
@@ -82,6 +83,7 @@ namespace BarPromenade
             NodeIndex = nodeIndex;
             StandSlot = standSlot;
             SeatPosition = seatPosition;
+            FloorPosition = floorPosition;
             SitFacing = sitFacing;
             NodeDistances = nodeDistances;
         }
@@ -94,6 +96,7 @@ namespace BarPromenade
 
         /// <summary>Seat-top centre the sitter is planted on.</summary>
         public Vector3 SeatPosition { get; }
+        public Vector3 FloorPosition { get; }
 
         /// <summary>Direction the seated body faces.</summary>
         public Vector3 SitFacing { get; }
@@ -226,6 +229,7 @@ namespace BarPromenade
                     nodeIndex,
                     standSlot,
                     bench.InteractionPosition,
+                    bench.FloorPosition,
                     sitFacing.normalized,
                     CityBusStopWaitPlanner.CreateNodeDistances(
                         pedestrianPlan,

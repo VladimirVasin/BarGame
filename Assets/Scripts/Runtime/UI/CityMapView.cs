@@ -594,6 +594,12 @@ namespace BarPromenade
                 DrawHillsideStreets(projection);
                 DrawTerraceCourts(projection);
                 DrawRiverBridges(projection);
+                float pixelsPerMetre = projection.ScreenRect.width / (projection.MaximumX - projection.MinimumX);
+                foreach (var stripe in CityStreetSurfacePlanner.Create(controller.Layout).CrosswalkMarkingGeometry)
+                {
+                    CityMapArtResources.CrosswalkStroke(stripe, out var a, out var b, out float width);
+                    DrawLine(projection.WorldToScreen(a), projection.WorldToScreen(b), Mathf.Max(.6f, width * pixelsPerMetre), RetroUiTheme.Text);
+                }
                 DrawAreaOutlines(projection);
                 DrawMountainTunnel(projection);
                 DrawSeacoastLandmarks(projection);
@@ -2337,16 +2343,21 @@ namespace BarPromenade
                     untilArrow -= distance;
                 }
             }
-            for (int index = 0; index < overlay.TransferPairs.Count; index++)
+            foreach (var walk in overlay.TransferWalks)
             {
-                Vector2Int pair = overlay.TransferPairs[index];
-                Vector2 start = projection.WorldToScreen(overlay.Stops[pair.x].WorldPosition);
-                Vector2 delta = projection.WorldToScreen(overlay.Stops[pair.y].WorldPosition) - start;
-                float length = delta.magnitude;
-                if (length <= 1f) continue;
-                Vector2 heading = delta / length;
-                for (float at = 0f; at < length; at += 7f)
-                    DrawLine(start + heading * at, start + heading * Mathf.Min(at + 3f, length), 2f, RetroUiTheme.Text);
+                float phase = 0f;
+                for (int i = 1; i < walk.Count; i++)
+                {
+                    Vector2 start = projection.WorldToScreen(walk[i - 1]);
+                    Vector2 delta = projection.WorldToScreen(walk[i]) - start;
+                    float length = delta.magnitude;
+                    if (length < .001f) continue;
+                    Vector2 heading = delta / length;
+                    for (float at = -phase; at < length; at += 7f)
+                        if (at + 3f > 0f) DrawLine(start + heading * Mathf.Max(0f, at),
+                            start + heading * Mathf.Min(at + 3f, length), 2f, RetroUiTheme.Text);
+                    phase = Mathf.Repeat(phase + length, 7f);
+                }
             }
         }
 

@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-bus-driver-3d-model.py",
-  "generator_version": "3.0.0",
+  "generator_version": "3.1.1",
   "joint_surfaces": {
     "contract": "character_joint_surfaces_v1",
     "source_space": "blender_z_up_minus_y_forward",
@@ -788,7 +788,7 @@
       }
     ]
   },
-  "blender_version": "5.0.1",
+  "blender_version": "5.2.3 LTS",
   "design_id": "long_eyes_driver_v1",
   "display_name": "Long-Eyed Route Driver",
   "seed": 241103,
@@ -801,7 +801,7 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 48,
+  "mesh_count": 56,
   "texture_bindings": [
     {
       "texture_asset": "Assets/Pedestrians/Textures/OrdinaryCharacterDetailAtlas.png",
@@ -1094,6 +1094,70 @@
           "height_px": 128
         },
         {
+          "name": "GEO_HandFinger0.L:skin_white",
+          "renderer": "GEO_HandFinger0.L",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_HandFinger0.R:skin_white",
+          "renderer": "GEO_HandFinger0.R",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_HandFinger1.L:skin_white",
+          "renderer": "GEO_HandFinger1.L",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_HandFinger1.R:skin_white",
+          "renderer": "GEO_HandFinger1.R",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_HandFinger2.L:skin_white",
+          "renderer": "GEO_HandFinger2.L",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_HandFinger2.R:skin_white",
+          "renderer": "GEO_HandFinger2.R",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_HandFinger3.L:skin_white",
+          "renderer": "GEO_HandFinger3.L",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_HandFinger3.R:skin_white",
+          "renderer": "GEO_HandFinger3.R",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
           "name": "GEO_Head:skin_white",
           "renderer": "GEO_Head",
           "x_px": 0,
@@ -1208,14 +1272,14 @@
       ]
     }
   ],
-  "triangle_count": 6876,
+  "triangle_count": 7196,
   "bounds_min": [
-    -0.770942,
+    -0.78718,
     -0.218566,
     0.0
   ],
   "bounds_max": [
-    0.772942,
+    0.78918,
     0.129166,
     1.75
   ],
@@ -1226,9 +1290,150 @@
   "rigidbodies": false,
   "animation_count": 0,
   "animations": [],
-  "build_signature": "0cec24752959a2ea006ee3b62d66d9b3ed11e75e4f778df59e16708d0c844231",
+  "build_signature": "d511090e8d2cc057102f490498fe2e9ddd19442a611511da861a14fc65ecd8f5",
   "head_design": "ordinary_low_poly_human",
   "eye_design": "two_long_horizontal_eyes_with_visible_pupils",
+  "hand_grip": {
+    "shape": "CylindricalGrip",
+    "tube_radius_m": 0.022,
+    "anchors": {
+      "ANCHOR_DriverFinger0Root.L": [
+        0.732764,
+        -0.048758,
+        1.034154
+      ],
+      "ANCHOR_DriverFinger0Root.R": [
+        -0.730764,
+        -0.044758,
+        1.028154
+      ],
+      "ANCHOR_DriverFinger0Tip.L": [
+        0.709733,
+        -0.049021,
+        0.983582
+      ],
+      "ANCHOR_DriverFinger0Tip.R": [
+        -0.707733,
+        -0.045021,
+        0.977582
+      ],
+      "ANCHOR_DriverFinger1Root.L": [
+        0.734701,
+        -0.031778,
+        1.035728
+      ],
+      "ANCHOR_DriverFinger1Root.R": [
+        -0.732701,
+        -0.027779,
+        1.029728
+      ],
+      "ANCHOR_DriverFinger1Tip.L": [
+        0.703373,
+        -0.031734,
+        0.985831
+      ],
+      "ANCHOR_DriverFinger1Tip.R": [
+        -0.701373,
+        -0.027734,
+        0.979831
+      ],
+      "ANCHOR_DriverFinger2Root.L": [
+        0.735072,
+        -0.012791,
+        1.034986
+      ],
+      "ANCHOR_DriverFinger2Root.R": [
+        -0.733072,
+        -0.008791,
+        1.028986
+      ],
+      "ANCHOR_DriverFinger2Tip.L": [
+        0.709366,
+        -0.012963,
+        0.984273
+      ],
+      "ANCHOR_DriverFinger2Tip.R": [
+        -0.707366,
+        -0.008963,
+        0.978273
+      ],
+      "ANCHOR_DriverFinger3Root.L": [
+        0.733946,
+        0.004205,
+        1.032241
+      ],
+      "ANCHOR_DriverFinger3Root.R": [
+        -0.731946,
+        0.008205,
+        1.026241
+      ],
+      "ANCHOR_DriverFinger3Tip.L": [
+        0.717322,
+        0.003746,
+        0.983133
+      ],
+      "ANCHOR_DriverFinger3Tip.R": [
+        -0.715322,
+        0.007746,
+        0.977133
+      ],
+      "ANCHOR_DriverGripAxis.L": [
+        0.711864,
+        -0.072473,
+        1.013777
+      ],
+      "ANCHOR_DriverGripAxis.R": [
+        -0.709864,
+        -0.068473,
+        1.007777
+      ],
+      "ANCHOR_DriverGripCentre.L": [
+        0.71363,
+        -0.022516,
+        1.012713
+      ],
+      "ANCHOR_DriverGripCentre.R": [
+        -0.71163,
+        -0.018516,
+        1.006713
+      ],
+      "ANCHOR_DriverGripPalm.L": [
+        0.68783,
+        -0.022516,
+        0.969884
+      ],
+      "ANCHOR_DriverGripPalm.R": [
+        -0.68583,
+        -0.018516,
+        0.963884
+      ],
+      "ANCHOR_DriverIndexOpenTip.R": [
+        -0.784019,
+        -0.047251,
+        0.999508
+      ],
+      "ANCHOR_DriverThumbRoot.L": [
+        0.695705,
+        -0.045927,
+        1.058534
+      ],
+      "ANCHOR_DriverThumbRoot.R": [
+        -0.693705,
+        -0.041927,
+        1.052534
+      ],
+      "ANCHOR_DriverThumbTip.L": [
+        0.681797,
+        -0.053599,
+        1.004213
+      ],
+      "ANCHOR_DriverThumbTip.R": [
+        -0.679797,
+        -0.049599,
+        0.998213
+      ]
+    }
+  },
   "bones": [
     {
       "name": "root",
@@ -2189,8 +2394,8 @@
         0.315,
         1.0
       ],
-      "vertices": 176,
-      "triangles": 332
+      "vertices": 48,
+      "triangles": 92
     },
     {
       "name": "GEO_Hand.R",
@@ -2204,8 +2409,128 @@
         0.315,
         1.0
       ],
-      "vertices": 176,
-      "triangles": 332
+      "vertices": 48,
+      "triangles": 92
+    },
+    {
+      "name": "GEO_HandFinger0.L",
+      "role": "hand_finger",
+      "bone": "hand.L",
+      "palette_name": "skin",
+      "atlas_region": "GEO_HandFinger0.L:skin_white",
+      "base_color": [
+        0.515,
+        0.39,
+        0.315,
+        1.0
+      ],
+      "vertices": 48,
+      "triangles": 92
+    },
+    {
+      "name": "GEO_HandFinger0.R",
+      "role": "hand_finger",
+      "bone": "hand.R",
+      "palette_name": "skin",
+      "atlas_region": "GEO_HandFinger0.R:skin_white",
+      "base_color": [
+        0.515,
+        0.39,
+        0.315,
+        1.0
+      ],
+      "vertices": 48,
+      "triangles": 92
+    },
+    {
+      "name": "GEO_HandFinger1.L",
+      "role": "hand_finger",
+      "bone": "hand.L",
+      "palette_name": "skin",
+      "atlas_region": "GEO_HandFinger1.L:skin_white",
+      "base_color": [
+        0.515,
+        0.39,
+        0.315,
+        1.0
+      ],
+      "vertices": 48,
+      "triangles": 92
+    },
+    {
+      "name": "GEO_HandFinger1.R",
+      "role": "hand_finger",
+      "bone": "hand.R",
+      "palette_name": "skin",
+      "atlas_region": "GEO_HandFinger1.R:skin_white",
+      "base_color": [
+        0.515,
+        0.39,
+        0.315,
+        1.0
+      ],
+      "vertices": 48,
+      "triangles": 92
+    },
+    {
+      "name": "GEO_HandFinger2.L",
+      "role": "hand_finger",
+      "bone": "hand.L",
+      "palette_name": "skin",
+      "atlas_region": "GEO_HandFinger2.L:skin_white",
+      "base_color": [
+        0.515,
+        0.39,
+        0.315,
+        1.0
+      ],
+      "vertices": 48,
+      "triangles": 92
+    },
+    {
+      "name": "GEO_HandFinger2.R",
+      "role": "hand_finger",
+      "bone": "hand.R",
+      "palette_name": "skin",
+      "atlas_region": "GEO_HandFinger2.R:skin_white",
+      "base_color": [
+        0.515,
+        0.39,
+        0.315,
+        1.0
+      ],
+      "vertices": 48,
+      "triangles": 92
+    },
+    {
+      "name": "GEO_HandFinger3.L",
+      "role": "hand_finger",
+      "bone": "hand.L",
+      "palette_name": "skin",
+      "atlas_region": "GEO_HandFinger3.L:skin_white",
+      "base_color": [
+        0.515,
+        0.39,
+        0.315,
+        1.0
+      ],
+      "vertices": 48,
+      "triangles": 92
+    },
+    {
+      "name": "GEO_HandFinger3.R",
+      "role": "hand_finger",
+      "bone": "hand.R",
+      "palette_name": "skin",
+      "atlas_region": "GEO_HandFinger3.R:skin_white",
+      "base_color": [
+        0.515,
+        0.39,
+        0.315,
+        1.0
+      ],
+      "vertices": 48,
+      "triangles": 92
     },
     {
       "name": "GEO_Head",
@@ -2316,31 +2641,31 @@
       "name": "GEO_Thumb.L",
       "role": "hand_thumb",
       "bone": "hand.L",
-      "palette_name": "skin_shadow",
+      "palette_name": "skin",
       "atlas_region": "GEO_Thumb.L:skin_white",
       "base_color": [
-        0.335,
-        0.24,
-        0.205,
+        0.515,
+        0.39,
+        0.315,
         1.0
       ],
-      "vertices": 32,
-      "triangles": 60
+      "vertices": 48,
+      "triangles": 92
     },
     {
       "name": "GEO_Thumb.R",
       "role": "hand_thumb",
       "bone": "hand.R",
-      "palette_name": "skin_shadow",
+      "palette_name": "skin",
       "atlas_region": "GEO_Thumb.R:skin_white",
       "base_color": [
-        0.335,
-        0.24,
-        0.205,
+        0.515,
+        0.39,
+        0.315,
         1.0
       ],
-      "vertices": 32,
-      "triangles": 60
+      "vertices": 48,
+      "triangles": 92
     },
     {
       "name": "GEO_Torso",

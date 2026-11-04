@@ -345,15 +345,8 @@ namespace BarPromenade.Tests.PlayMode
             finally { city.Map.SetMapPointInspectionEnabled(inspection); }
             BuildingLot bar = layout.BuildingLots.Single(lot => lot.IsBar);
             Assert.That(city.World.TryGetBar(bar.BarId, out BarEntrance entrance), Is.True);
-            BuildingLot home = layout.PlayerHome;
-            Vector3 corner = layout.GetNodeWorldPosition(new Vector2Int(13, 6)) - new Vector3(4f, 0f, 4f);
-            Vector3 GroundAt(Vector3 p) => InlandGround(new Vector2(p.x, p.z));
-            var shortWalk = new[] {
-                city.World.PlayerHome.GetComponent<PlayerDoorActionTarget>().Plan.EntryRootPosition - Vector3.up * PlayerFactory.GroundedRootOffset,
-                GroundAt(home.SidewalkArrivalPosition), GroundAt(corner), GroundAt(bar.SidewalkArrivalPosition),
-                entrance.GetComponent<PlayerDoorActionTarget>().Plan.EntryRootPosition - Vector3.up * PlayerFactory.GroundedRootOffset };
-            Assert.That(WalkLength(shortWalk), Is.InRange(55f, 60f), "Home–Bar should still take about 57 metres door to door");
-            foreach (Vector3 point in new[] { shortWalk[1], shortWalk[3], GroundAt(layout.Supermarket.SidewalkArrivalPosition) })
+            foreach (Vector3 point in new[] { InlandGround(new Vector2(bar.SidewalkArrivalPosition.x, bar.SidewalkArrivalPosition.z)),
+                InlandGround(new Vector2(layout.Supermarket.SidewalkArrivalPosition.x, layout.Supermarket.SidewalkArrivalPosition.z)) })
             {
                 Vector3 root = point + Vector3.up * PlayerFactory.GroundedRootOffset;
                 Assert.That(ground.TryClampArrival(root, out Vector3 supported), Is.True);

@@ -16,6 +16,7 @@ namespace BarPromenade
         private (float Wetness, bool HasWeather, double LastMinutes) wetness;
         private HomeUrineResidue.CheckpointSnapshot deposits;
         private double coldExposure;
+        private CityResidentTransitSession.Snapshot residentTransit;
         private (CityPedestrianInsultWalk Walk, int Salt, bool Salted) streetSpeech;
         private LastRouteRideSpeechState roadSpeech;
         private MothersHouseMotherSpeechState motherSpeech;
@@ -33,6 +34,7 @@ namespace BarPromenade
             wetness = CityWetSurfaceRegistry.CaptureCheckpoint(),
             deposits = HomeUrineResidue.CaptureCheckpoint(),
             coldExposure = AlpineColdExposure.CaptureCheckpoint(),
+            residentTransit = CityResidentTransitSession.CaptureCheckpoint(),
             streetSpeech = CityPedestrianInsultSessionState.CaptureCheckpoint(),
             roadSpeech = LastRouteRideSpeechSession.CaptureCheckpoint(),
             motherSpeech = MothersHouseMotherSpeechSession.CaptureCheckpoint(),
@@ -49,6 +51,7 @@ namespace BarPromenade
             CityWetSurfaceRegistry.RestoreCheckpoint(wetness);
             HomeUrineResidue.RestoreCheckpoint(deposits);
             AlpineColdExposure.RestoreCheckpoint(coldExposure);
+            CityResidentTransitSession.RestoreCheckpoint(residentTransit);
             CityPedestrianInsultSessionState.RestoreCheckpoint(streetSpeech);
             LastRouteRideSpeechSession.RestoreCheckpoint(roadSpeech);
             MothersHouseMotherSpeechSession.RestoreCheckpoint(motherSpeech);

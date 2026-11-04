@@ -188,8 +188,7 @@ namespace BarPromenade
                     }
                     else
                     {
-                        position = layout.SpawnWorldPosition + Vector3.up *
-                            (CityStreetSurfacePlanner.RoadTop + PlayerFactory.GroundedRootOffset);
+                        position = layout.StandingSpawnPosition;
                     }
                     break;
                 case NewGameLocation.Docks:

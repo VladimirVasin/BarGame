@@ -31,13 +31,13 @@ namespace BarPromenade
             var paving = Resources.Load<GameObject>(CityTerracePilotWorld.ResourceFolder + "TerraceCourt");
             foreach (var house in district.SharedCourtBuildings)
             {
-                BuildHouse(court, house, layout.Seed);
+                if (!house.Lot.IsPlayerHome) BuildHouse(court, house, layout.Seed);
                 CityHillsideHousePresentation.BuildApron(court, paving, house);
             }
             CityTerracePilotWorld.BuildHillsideShortcuts(root, access);
         }
 
-        private static void BuildHouse(Transform parent, CityHillsideBuilding house, int seed)
+        internal static void BuildHouse(Transform parent, CityHillsideBuilding house, int seed)
         {
             Transform placed = new GameObject("Building " + house.Lot.Cell).transform;
             placed.SetParent(parent, false);
@@ -45,7 +45,7 @@ namespace BarPromenade
             CityHillsideHousePresentation.Build(placed, house, building);
         }
 
-        private static void BuildGround(Transform parent, CityHillsideGroundGrid grid)
+        internal static void BuildGround(Transform parent, CityHillsideGroundGrid grid, Rect? retained = null)
         {
             int columns = grid.Columns;
             var vertices = new Vector3[columns * grid.Rows];
@@ -60,6 +60,11 @@ namespace BarPromenade
                 vertices[i] = p;
                 uv[i] = new Vector2(p.x, p.z) * .35f;
                 if (col + 1 == columns || row + 1 == grid.Rows) continue;
+                if (retained.HasValue)
+                {
+                    Vector3 far = grid.Vertex(col + 1, row + 1);
+                    if (!retained.Value.Overlaps(Rect.MinMaxRect(p.x, p.z, far.x, far.z))) continue;
+                }
                 var surface = grid.CellSurface(col, row);
                 if (surface != CityHillsideGroundGrid.Surface.Cut)
                     grid.AppendCellTriangles(surface == CityHillsideGroundGrid.Surface.Concrete ? concrete : earth, col, row);
@@ -79,7 +84,7 @@ namespace BarPromenade
             CityExteriorAppearance.ApplyGroundSurface(renderer, grid.Road.Bank == CityTerraceTransportBank.East
                 ? new Color(.51f, .53f, .43f) : new Color(.49f, .46f, .40f), 0);
             GroundAuthoredSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Concrete, 1, true);
-            go.AddComponent<MeshCollider>().sharedMesh = mesh;
+            if (!retained.HasValue) go.AddComponent<MeshCollider>().sharedMesh = mesh;
             go.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
             var kinds = new FootstepGroundKind[(earth.Count + concrete.Count) / 3];
             for (int i = 0; i < kinds.Length; i++) kinds[i] = i < earth.Count / 3 ? FootstepGroundKind.Soil : FootstepGroundKind.Concrete;

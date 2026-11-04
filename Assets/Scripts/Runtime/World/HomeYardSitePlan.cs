@@ -326,6 +326,9 @@ namespace BarPromenade
             BuildingLot home,
             BuildingLot anchor)
         {
+            // The original residential yard stays with its street and neighbours
+            // when the player's active entrance moves up to the summit.
+            if (layout.HasSummitHome && home == layout.PlayerHome) home = layout.LowerResidentialLot;
             Vector2Int direction = anchor.Cell - home.Cell;
             if (direction != home.FrontageDirection ||
                 !layout.HasRoad(

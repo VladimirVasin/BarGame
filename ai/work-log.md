@@ -6,11 +6,11 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 ## 2026-11-04
 Unity 6000.6.8f1: checkpoint/test searches use current overloads; GameView resolves
 from Editor assembly. Live Editor Refresh: Console clear.
-CityTerraceTransportPlanTests: draft switchbacks/protected places, coastal street
-junctions, measured aprons and guarded eastern landing.
+CityTerraceTransportPlanTests: switchbacks, coastal junctions, aprons and guarded landing.
 LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap: hero/vehicle
-contacts, rain/layers and lower roof. Bar moved north; Home/shop/yard/dog gate
-keep locations. CityHomeBarNeighborStreets: round trip/arrivals.
+contacts, rain/layers and lower roof. Lower bar moved north; shop/yard/dog gate keep their sites.
+Summit home and lower residential bus addresses: DistrictNetwork_ClosesEachLineAndServesItsTransfers.
+SummitHome_BalconyAndApartmentDoorLookDownIntoTheCity: upper bridge, ravine and descending roofs.
 LiveCity_CoastalAscentAndStairShortcutShareSupportedRoutes: shore ascent,
 cut-throughs, windows and lit steps in rain. Prior R6 survey clears court;
 art follows final geography, scheme fallback/full-height fingerprint.
@@ -20,22 +20,27 @@ LiveCity_CitywideSlopesKeepSupportedRoutesAndArrivals: original ascents;
 bus overhang sets bends, level eastern Route01 approach, far valley hill fade.
 LiveCity_UpperQuarterJoinsBothSlopesThroughTheLitCourt: residential ravine bridges,
 streets/stairs/passage. ImageGenCityMap_PreservesPlanAndLivePlaces: bridge arrivals.
-District rings serve banks/slopes, marked walking transfers and clear pavement.
-DistrictNetwork_ClosesEachLineAndServesItsTransfers/
+Residents retain home, work, vehicle and place. HiddenServices_CarryResidentsToWorkAndHomeAndRestoreTheirSeats;
+LiveCity_DormantMorningAdvancesEveryServiceAndPreservesResidentOwnership.
+PairedFleet_FarServiceAndCheckpointKeepLapAndStopOrdinal; seats and rail holds:
+FullBus_LeavesWaitingResidentsAndRestoresStandingPlaces.
+Joined rear bench; seats/planks support clothed thighs, hands rest on lap.
+CityBench_ResidentRestsOnThePlankWithHandsForward /
+FullCabin_StandingRidersGripTheMovingBusAndLeaveThroughBothDoors.
+Driver_SitsOnTheDrawnSeatAndWorksWheelAndButtonWithoutCrossingLimbs: cushion, soles, curled fingers/inward thumbs, button fingertip.
 DistrictRings_ShowClosedLinesAndEveryBoardingPlatform: map/service.
 Passenger_TransfersFromWestToHillsideAtTheSharedStop: doors/feet/pooled bus numbers.
-LiveCity_AllBusPlatformsHaveClearSheltersAndDoorApproaches: clearance/map/pole
-codes and real lights on both faces. Hillside shelters join walking bounds;
-queues leave pavement clear. LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement:
-walk both directions/E at either door; required for stop changes.
+LiveCity_AllBusPlatformsHaveClearSheltersAndDoorApproaches: pole codes, lights, queues.
+TransferStairsJoinTheTwoPavedStreetsAcrossEachBank: kerbs, landings and rises. Stop zebras join both footways.
+Checks: LiveCity_BothTransferStairsCarryPedestriansBetweenBuses,
+LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
 GlassRain_OverlaysCoverEveryPaneAndFollowIntensity: sparse light-rain beads,
 heavy-rain runoff independent of wipers.
 LiveCity_OrdinaryStreetsContinuePastFormerFenceCaps: both banks, terrace walks,
 bus circuits and matching charcoal sheet.
-Pedestrians clear road vehicles, retain the interrupted point, wait for tails/
-following traffic, then return/resume. Refuge checks preserve walls/walkable
-bounds and driver braking. CityPedestrianVehicleYieldPlayModeTests covers the
-excursion, pause, unavailable refuge, pooling and doorway exclusion.
+CityPedestrianVehicleYieldPlayModeTests: walkers clear vehicles, wait for tails/followers,
+resume their route; refuge, wall, brake, pause, pool and door checks.
+TrafficLog_IdentifiesFirstBlockedBusAndFollowingVehicle: ordered queue causes and background release.
 
 ## 2026-11-03
 Checkpoint:RAM deep progress/world/ammo;restore/entry/seed/rides/tokens;RU pause/No.

@@ -11,6 +11,40 @@ namespace BarPromenade.Tests.EditMode
         private const float Tolerance = .001f;
 
         [Test]
+        public void TransferStairsJoinTheTwoPavedStreetsAcrossEachBank()
+        {
+            var layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
+            var access = CityHillsideAccessPlan.ForLayout(layout);
+            var paving = CityStreetSupportPlan.ForLayout(layout);
+            Assert.That(access.Transfers.Select(s => s.Bank), Is.EquivalentTo(new[] {
+                CityTerraceTransportBank.West, CityTerraceTransportBank.East }));
+            foreach (var stair in access.Transfers)
+            {
+                Assert.That(access.AllStairs, Does.Contain(stair));
+                var route = stair.RouteWorld;
+                Vector3 low = route[0], high = route[route.Count - 1];
+                Assert.That(high.y, Is.GreaterThan(low.y));
+                foreach (Vector3 gate in new[] { low, high })
+                {
+                    Assert.That(paving.TrySampleTop(new Vector2(gate.x, gate.z), out float y, out var surface), Is.True);
+                    Assert.That(surface, Is.EqualTo(FootstepGroundKind.Stone));
+                    Assert.That(y, Is.EqualTo(gate.y).Within(Tolerance));
+                }
+                foreach (var flight in stair.Flights)
+                    Assert.That(flight.StepRise, Is.InRange(.10f, .18f));
+                for (int i = 1; i < route.Count; i++)
+                {
+                    Vector3 a = route[i - 1], b = route[i];
+                    Assert.That(b.y, Is.GreaterThanOrEqualTo(a.y));
+                    Vector3 mid = (a + b) * .5f;
+                    Assert.That(stair.TrySampleTop(new Vector2(mid.x, mid.z), out float y), Is.True);
+                    Assert.That(y, Is.EqualTo(mid.y).Within(Tolerance));
+                }
+            }
+        }
+
+        [Test]
         public void EntranceConnectionsMeasureRealSurfacesPreserveThresholdsAndRejectSteepAprons()
         {
             CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,

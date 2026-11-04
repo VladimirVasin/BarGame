@@ -310,6 +310,9 @@ namespace BarPromenade
                     balcony,
                     halfDepth,
                     wallThickness);
+                CreateExteriorReturnWall("Home South Exterior Return Wall", room,
+                    PlayerHomeBalconyGeometry.HomeFacadeX, -halfDepth, plan.RoomHeight,
+                    PlayerHomeBalconyGeometry.BalconyDepth + .65f, wallThickness);
             }
             HomeSurfacePrimitives.CreateBox(
                 "Home Entry Wall Left",
@@ -505,20 +508,6 @@ namespace BarPromenade
                 wallThickness,
                 balcony.DoorSize.y);
 
-            float exteriorReturnDepth =
-                PlayerHomeBalconyGeometry.BalconyDepth +
-                0.65f;
-            CreateExteriorReturnWall(
-                "Home South Exterior Return Wall",
-                room,
-                facadeX,
-                -halfDepth,
-                plan.RoomHeight,
-                exteriorReturnDepth,
-                wallThickness);
-            // The north return was only a visual screen outside the actual
-            // apartment shell. It blocked the right-side city view; the real
-            // north wall, deck and safety guards retain their own geometry.
         }
 
         private static void CreateExteriorReturnWall(
