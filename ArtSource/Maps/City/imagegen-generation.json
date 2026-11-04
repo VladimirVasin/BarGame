@@ -1,16 +1,16 @@
 {
   "tool": "built-in image_gen",
-  "intent": "both occupied hillside districts and their continuous streets from the coast to the 40 m summits",
-  "prompt": "imagegen-citywide-slopes-prompt.txt",
+  "intent": "a single residential upper quarter, a dry ravine crossed by two road bridges, inhabited switchbacks and stair routes",
+  "prompt": "imagegen-upper-quarter-prompt.txt",
   "references": [
     "map-reference.png",
     "CityMapImage.reference.png"
   ],
   "geography": "map-reference.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "b1aff522f88207c85a8c1a101ad7868de3968b19c919df8db768664722f37faa",
-  "fingerprint": "5349747aa95314751ec6d8b621e8528fa917dfeaa766c614074e630bfdbb4d7f",
+  "image_sha256": "a82712607916a86a913f1dc5cf802e3517fd419980ba24be6c48e18f7eb186a3",
+  "fingerprint": "7798e216f29dbbd2d84605778f18182cc642bbe8d83c49846f351be9da433a78",
   "schemaVersion": 2,
-  "width": 1174,
-  "height": 1340
+  "width": 1173,
+  "height": 1341
 }

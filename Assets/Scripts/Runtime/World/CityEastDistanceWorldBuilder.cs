@@ -72,6 +72,16 @@ namespace BarPromenade
                 hillView.SetVector(id, zone);
                 checkpointView.SetVector(id, zone);
             }
+            var quarter = CityHillsideQuarterPlan.ForLayout(plan.Layout);
+            if (quarter.Links.Count > 0)
+            {
+                // Overlap the two side masks so the distant valley cannot flash at the seams.
+                Rect shared = quarter.TerrainBounds;
+                var zone = new Vector4(shared.xMin - 24f, shared.xMax + 24f, shared.yMax, 12f);
+                int id = Shader.PropertyToID("_QuarterView");
+                hillView.SetVector(id, zone);
+                checkpointView.SetVector(id, zone);
+            }
             checkpointView.SetVector(CheckpointViewId, new Vector4(
                 plan.CheckpointPosition.x, plan.CheckpointPosition.z,
                 CheckpointCityFullDistance, CheckpointCityHiddenDistance));

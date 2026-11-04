@@ -11,6 +11,7 @@ Shader "Bar Promenade/City East Distance"
         _Visibility("Area Visibility", Range(0, 1)) = 1
         _CheckpointView("Checkpoint XZ / Full / Hidden Distance", Vector) = (0, 0, 0, 0)
         [HideInInspector] _EastHillView("Eastern Hillside", Vector) = (0, 0, 0, 0)
+        [HideInInspector] _QuarterView("Joined upper streets", Vector) = (0, 0, 0, 0)
         [HideInInspector] _WestHillView("Western Hillside", Vector) = (0, 0, 0, 0)
         _RockMap("Shared Weathered Stone", 2D) = "gray" {}
         _RoadMap("Shared Asphalt", 2D) = "gray" {}
@@ -46,6 +47,7 @@ Shader "Bar Promenade/City East Distance"
                 float4 _CheckpointView;
                 float4 _EastHillView;
                 float4 _WestHillView;
+                float4 _QuarterView;
             CBUFFER_END
 
             struct Attributes
@@ -95,7 +97,7 @@ Shader "Bar Promenade/City East Distance"
                     clipPosition.z = clipPosition.w * (1.0 -
                         (1.0 - band.z / band.w) * fraction);
                 #endif
-                output.panoramaAlpha = 1.0h - max(HillsideCoverage(_EastHillView), HillsideCoverage(_WestHillView));
+                output.panoramaAlpha = 1.0h - max(HillsideCoverage(_QuarterView), max(HillsideCoverage(_EastHillView), HillsideCoverage(_WestHillView)));
                 output.positionCS = clipPosition;
                 output.uv = input.uv;
                 output.world = world;

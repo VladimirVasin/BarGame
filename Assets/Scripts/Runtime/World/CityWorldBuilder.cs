@@ -385,6 +385,7 @@ namespace BarPromenade
             courtyardLife.Initialize(residentialCourtyards, residentialCourtyardRoot.transform);
             CityTerracePilotWorld.Build(world, terraces);
             CityHillsideNeighborhoodWorld.Build(world, layout);
+            CityHillsideQuarterGround.Build(world, layout);
 
             GameObject decorationRoot =
                 CityDecorationWorldBuilder.Build(

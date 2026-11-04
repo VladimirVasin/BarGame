@@ -62,11 +62,21 @@ namespace BarPromenade.Tests.EditMode
                 else if (lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.Residential) homes.Add(node);
                 else if (lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.Industrial) work.Add(node);
             }
+            var hillHomes = new HashSet<int>();
+            foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
+            {
+                Vector2 court = house.CourtBounds.center;
+                if (CityBusStopWaitPlanner.TryFindNearestNode(plan, new Vector3(court.x, house.DoorWorld.y, court.y), out int node))
+                    hillHomes.Add(node);
+            }
+            homes.UnionWith(hillHomes);
+            bool occupiedUphill = false;
             Assert.That(homes, Is.Not.Empty);
             Assert.That(work, Is.Not.Empty);
             for (int resident = 0; resident < CityResidentLifeRules.ResidentCount; resident++)
             {
                 int home = world.Destination(resident, CityResidentActivity.Home);
+                occupiedUphill |= hillHomes.Contains(home);
                 Assert.That(homes.Contains(home), Is.True, "A resident home is an existing residential frontage.");
                 Assert.That(home, Is.Not.EqualTo(playerHome), "The hero's home is not an ambient resident home.");
                 Assert.That(world.Destination(resident, CityResidentActivity.ReturningHome), Is.EqualTo(home));
@@ -77,6 +87,7 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(work.Contains(world.Destination(resident, CityResidentActivity.Work)), Is.True,
                         "A reachable workplace uses an industrial frontage.");
             }
+            Assert.That(occupiedUphill, Is.True, "Upper residential courts must supply occupied home addresses.");
             AssertConnectedDestinations(world, plan);
         }
 

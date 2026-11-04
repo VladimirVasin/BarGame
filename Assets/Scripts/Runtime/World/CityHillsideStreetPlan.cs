@@ -17,13 +17,16 @@ namespace BarPromenade
             var routes = new List<CityHillsideStreetRoute>(2);
             Routes = routes.AsReadOnly();
             if (!CityCoastalAscentPlan.IsEnabled(layout)) return;
+            var banks = new List<(CityTerraceTransportBank bank, Vector2Int mouth)>();
             foreach (CityTerraceTransportBank bank in new[] { CityTerraceTransportBank.West, CityTerraceTransportBank.East })
             {
                 var mouth = new Vector2Int(bank == CityTerraceTransportBank.West ? 1 : 12, 0);
                 if (!layout.HasRoad(new RoadEdge(mouth - Vector2Int.right, mouth)) ||
                     !layout.HasRoad(new RoadEdge(mouth, mouth + Vector2Int.right))) continue;
-                routes.Add(new CityHillsideStreetRoute(layout, bank, mouth));
+                banks.Add((bank, mouth));
             }
+            foreach (var entry in banks)
+                routes.Add(new CityHillsideStreetRoute(layout, entry.bank, entry.mouth, banks.Count == 2));
         }
 
         public IReadOnlyList<CityHillsideStreetRoute> Routes { get; }
@@ -42,7 +45,7 @@ namespace BarPromenade
         private readonly int[] laneStarts = new int[LaneCount], laneEnds = new int[LaneCount];
         private readonly CityStreetSupportPlan supports;
 
-        internal CityHillsideStreetRoute(CityLayout layout, CityTerraceTransportBank bank, Vector2Int mouth)
+        internal CityHillsideStreetRoute(CityLayout layout, CityTerraceTransportBank bank, Vector2Int mouth, bool connectedQuarter)
         {
             Bank = bank;
             MouthNode = mouth;
@@ -134,6 +137,7 @@ namespace BarPromenade
                 innerLeft[i] = points[i] - normal * (RoadHalfWidth + leftWidening);
                 innerRight[i] = points[i] + normal * (RoadHalfWidth + rightWidening);
             }
+            CourtApex = laneEnds[4] + 8;
             var patches = new List<CityStreetSupportPatch>((points.Count - 1) * 3);
             var corridor = new List<Vector2[]>(points.Count - 1);
             for (int i = 0; i < points.Count; i++)
@@ -149,9 +153,41 @@ namespace BarPromenade
                 void Band(IReadOnlyList<Vector2> a, IReadOnlyList<Vector2> b, float rise,
                     CityStreetSupportKind kind, float thickness, int priority)
                 {
+                    if (connectedQuarter && kind == CityStreetSupportKind.Sidewalk &&
+                        i > CourtApex - 8 && i <= CourtApex + 8 &&
+                        (west ? a[i].x > points[i].x : a[i].x < points[i].x))
+                    {
+                        float z = points[CourtApex].y;
+                        float lo = z - RoadHalfWidth, hi = z + RoadHalfWidth;
+                        Vector2[] quad = CityRoadPolygon.CounterClockwise(new[] { a[i - 1], b[i - 1], b[i], a[i] });
+                        Rect box = CityRoadPolygon.Bounds(quad);
+                        if (box.yMin < hi && box.yMax > lo)
+                        {
+                            // Only the outer curb opens. Asphalt fills its old footprint
+                            // down to the carriageway, preserving the full turning radius.
+                            var northCut = new Vector2(0f, hi);
+                            var southCut = new Vector2(0f, lo);
+                            AddFlat(CityRoadPolygon.Clip(quad, northCut, northCut + Vector2.right), true);
+                            AddFlat(CityRoadPolygon.Clip(quad, southCut, southCut + Vector2.left), true);
+                            var middle = CityRoadPolygon.Clip(quad, southCut, southCut + Vector2.right);
+                            AddFlat(CityRoadPolygon.Clip(middle, northCut, northCut + Vector2.left), false);
+                            return;
+                        }
+                    }
+
                     patches.Add(new CityStreetSupportPatch(new[] { Point(a[i - 1], i - 1, rise),
                         Point(b[i - 1], i - 1, rise), Point(b[i], i, rise), Point(a[i], i, rise) },
                         kind, thickness, priority, roadFrame: Path));
+
+                    void AddFlat(IReadOnlyList<Vector2> piece, bool pavement)
+                    {
+                        if (CityRoadPolygon.Area(piece) < .00001f) return;
+                        var top = new Vector3[piece.Count];
+                        for (int j = 0; j < top.Length; j++)
+                            top[j] = new Vector3(piece[j].x, stations[i].Height + (pavement ? SidewalkRise : 0f), piece[j].y);
+                        patches.Add(new CityStreetSupportPatch(top, pavement ? kind : CityStreetSupportKind.Asphalt,
+                            pavement ? thickness : .20f, pavement ? priority : 20, roadFrame: Path));
+                    }
                 }
             }
             SurfacePatches = patches.AsReadOnly();
@@ -188,6 +224,7 @@ namespace BarPromenade
         public float LaneMinX { get; }
         public float LaneMaxX { get; }
         internal Rect MouthCut { get; }
+        internal int CourtApex { get; }
         public float GetLaneZ(int lane) => FirstLaneZ - 2f * TurnRadius * lane;
         public float SampleLaneTop(int lane, float worldX)
         {

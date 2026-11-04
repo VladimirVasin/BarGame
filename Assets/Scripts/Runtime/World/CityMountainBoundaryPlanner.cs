@@ -121,6 +121,20 @@ namespace BarPromenade
                 new Vector2(southEastBounds.xMax, southEastBounds.yMin),
                 southEastSurfaces);
             ridges.Add(southEast);
+            var quarter = CityHillsideQuarterPlan.ForLayout(layout);
+            if (quarter.Links.Count > 0)
+            {
+                // The continuous south face and the old portal headland turn in
+                // opposite directions. Each seam lies on one straight rock face.
+                ridges.Add(CreateHillsideRidge(layout, "mountain-south-west-portal-shoulder",
+                    CityMountainBoundaryDefinition.SouthWestAreaId, CityTerraceTransportBank.West,
+                    southWestStart, new Vector2(tunnel.PortalBounds.xMin, southWestBounds.yMin),
+                    southWestSurfaces, true));
+                ridges.Add(CreateHillsideRidge(layout, "mountain-south-east-outer-rim",
+                    CityMountainBoundaryDefinition.SouthEastAreaId, CityTerraceTransportBank.East,
+                    new Vector2(southEastBounds.xMin, southEastBounds.yMin),
+                    new Vector2(southEastBounds.xMax, southEastBounds.yMin), southEastSurfaces, true));
+            }
 
             CityMountainRidgeDescriptor southWestJoin = CreateSouthWestJoin(
                 layout,
@@ -265,7 +279,8 @@ namespace BarPromenade
         }
 
         private static CityMountainRidgeDescriptor CreateHillsideRidge(CityLayout layout, string id, string area,
-            CityTerraceTransportBank bank, Vector2 start, Vector2 end, IReadOnlyList<CitySurfaceDescriptor> surfaces)
+            CityTerraceTransportBank bank, Vector2 start, Vector2 end, IReadOnlyList<CitySurfaceDescriptor> surfaces,
+            bool otherHalf = false)
         {
             CityHillsideStreetRoute road = null;
             foreach (CityHillsideStreetRoute candidate in CityHillsideStreetPlan.ForLayout(layout).Routes)
@@ -273,34 +288,69 @@ namespace BarPromenade
             if (road == null) return CreateLinearRidge(layout, id, area, CityMountainBoundarySide.South,
                 start, end, Vector3.back, surfaces, false);
 
-            // The old corner, cave and tunnel still own their exact end sections.
-            // Chamfer the four shoulders outside the streets and follow the same
-            // hillside terrain up and back down to the original portal level.
             Rect land = CityHillsideNeighborhoodPlan.TerrainBounds(road);
-            var corners = new List<Vector2> { start };
-            if (start.x < land.xMin) corners.Add(new Vector2(land.xMin, start.y));
-            corners.Add(new Vector2(land.xMin, land.yMax - 12f));
-            corners.Add(new Vector2(land.xMin, land.yMin + 8f));
-            corners.Add(new Vector2(land.xMin + 8f, land.yMin));
-            corners.Add(new Vector2(land.xMax - 8f, land.yMin));
-            corners.Add(new Vector2(land.xMax, land.yMin + 8f));
-            if (bank == CityTerraceTransportBank.West)
+            var quarter = CityHillsideQuarterPlan.ForLayout(layout);
+            Rect saddle = quarter.TerrainBounds;
+            bool connected = quarter.Links.Count != 0;
+            bool west = bank == CityTerraceTransportBank.West;
+            var corners = new List<Vector2>();
+            if (!otherHalf)
             {
-                // The old tunnel stays open beneath its own roof. Keep even
-                // the outer rock foot outside its first physical carriageway.
-                float clearX = end.x - CityMountainBoundaryDefinition.RidgeMaximumDepth - 2f;
-                corners.Add(new Vector2(land.xMax, land.yMax - 30f));
-                corners.Add(new Vector2(clearX, land.yMax - 14f));
-                corners.Add(new Vector2(clearX, end.y));
+                corners.Add(start);
+                if (start.x < land.xMin) corners.Add(new Vector2(land.xMin, start.y));
+                if (!connected || west) corners.Add(new Vector2(land.xMin, land.yMax - 12f));
+                if (connected && !west)
+                {
+                    corners.Add(new Vector2(land.xMin, saddle.yMax));
+                    corners.Add(new Vector2(saddle.center.x, saddle.yMax));
+                }
+                else
+                {
+                    corners.Add(new Vector2(land.xMin, land.yMin + 8f));
+                    corners.Add(new Vector2(land.xMin + 8f, land.yMin));
+                    if (connected)
+                    {
+                        corners.Add(new Vector2(land.xMax, land.yMin));
+                        corners.Add(new Vector2(saddle.center.x, land.yMin));
+                    }
+                }
             }
-            else
+            if (connected && otherHalf)
             {
-                corners.Add(new Vector2(land.xMax, land.yMax - 12f));
-                if (end.x > land.xMax) corners.Add(new Vector2(land.xMax, end.y));
+                if (west)
+                {
+                    corners.Add(new Vector2(saddle.center.x, saddle.yMax));
+                    corners.Add(new Vector2(land.xMax, saddle.yMax));
+                }
+                else
+                {
+                    corners.Add(new Vector2(saddle.center.x, land.yMin));
+                    corners.Add(new Vector2(land.xMin, land.yMin));
+                }
             }
-            corners.Add(end);
-
-            var toes = new List<Vector2> { start };
+            if (!connected || otherHalf)
+            {
+                if (!connected || !west)
+                {
+                    corners.Add(new Vector2(land.xMax - 8f, land.yMin));
+                    corners.Add(new Vector2(land.xMax, land.yMin + 8f));
+                }
+                if (west)
+                {
+                    // The separate road tunnel still owns its original corridor.
+                    float clearX = end.x - CityMountainBoundaryDefinition.RidgeMaximumDepth - 2f;
+                    corners.Add(new Vector2(land.xMax, land.yMax - 30f));
+                    corners.Add(new Vector2(clearX, land.yMax - 14f));
+                    corners.Add(new Vector2(clearX, end.y));
+                }
+                else
+                {
+                    corners.Add(new Vector2(land.xMax, land.yMax - 12f));
+                    if (end.x > land.xMax) corners.Add(new Vector2(land.xMax, end.y));
+                }
+                corners.Add(end);
+            }
+            var toes = new List<Vector2> { corners[0] };
             for (int i = 1; i < corners.Count; i++)
             {
                 Vector2 a = corners[i - 1], b = corners[i];
@@ -329,10 +379,10 @@ namespace BarPromenade
             for (int i = 0; i < toes.Count; i++)
             {
                 Vector2 point = toes[i];
-                bool originalGround = point.y >= start.y - .001f && point.x >= start.x && point.x <= end.x;
-                float y = originalGround ? SampleAreaTop(layout, surfaces, point) :
-                    CityHillsideNeighborhoodPlan.SampleBank(layout, road, point);
-                Vector3 outside = Vector3.back;
+                if (!CityMountainBoundaryValidator.TrySampleAreaTop(layout, area, point, out float y))
+                    throw new InvalidOperationException($"Mountain ridge {id} has no ground at {point}.");
+                Vector3 outside = connected && Mathf.Abs(point.x - saddle.center.x) < .001f &&
+                    Mathf.Abs(point.y - saddle.yMax) < .001f ? Vector3.forward : Vector3.back;
                 if (i > 0 && i + 1 < toes.Count)
                 {
                     Vector2 along = ((point - toes[i - 1]).normalized + (toes[i + 1] - point).normalized).normalized;

@@ -167,7 +167,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(index, Is.GreaterThanOrEqualTo(0), id);
                     Assert.That(map.SelectMapPoint(index), Is.True);
                     Assert.That(map.TryGetSelectedMapPoint(out selected, out selectedWorld), Is.True);
-                    Assert.That(selected.Label, Is.EqualTo(east ? "Верхняя жилая улица" : "Верхняя рабочая улица"));
+                    Assert.That(selected.Label, Is.EqualTo(east ? "Верхняя улица: восток" : "Верхняя улица: запад"));
                     Vector3 summit = hill.SummitArrivalWorld + Vector3.up * PlayerFactory.GroundedRootOffset;
                     Assert.That(Vector3.Distance(selectedWorld, summit), Is.LessThan(.005f), id);
                     Assert.That(view.FormatInspectedCoordinates(selectedWorld),
@@ -180,7 +180,27 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(map.ConfirmMapPointTeleport(), Is.True);
                     Assert.That(Vector3.Distance(map.PlayerWorldPosition, summit), Is.LessThan(.06f), id);
                 }
-                Debug.Log("IMAGEGEN CITY MAP OK: current-plan art and metadata, bounded UI import, two stacked arrivals, live places and native map/XYZ views.");
+                foreach (var bridge in CityHillsideQuarterPlan.ForLayout(city.Layout).Bridges)
+                {
+                    Assert.That(map.Open() && map.SetMapPointInspectionEnabled(true), Is.True);
+                    string id = "city:poi:upper-" + bridge.Id + "-bridge";
+                    int index = -1;
+                    for (int i = 0; i < map.ActiveMapPoints.Count; i++)
+                        if (map.ActiveMapPoints[i].StableId == id) index = i;
+                    Assert.That(index, Is.GreaterThanOrEqualTo(0), id);
+                    Assert.That(map.SelectMapPoint(index), Is.True);
+                    Assert.That(map.TryGetSelectedMapPoint(out selected, out selectedWorld), Is.True);
+                    Assert.That(selected.Label, Is.EqualTo(bridge.Id == "court" ? "Дворовый мост" : "Мост Верхней улицы"));
+                    Assert.That(bridge.DeckBounds.Contains(new Vector2(selectedWorld.x, selectedWorld.z)), Is.True);
+                    if (bridge.Id == "summit")
+                    {
+                        for (int frame = 0; frame < 5; frame++) yield return null;
+                        yield return CaptureMapUi("imagegen-upper-bridge");
+                    }
+                    Assert.That(map.ConfirmMapPointTeleport(), Is.True);
+                    Assert.That(Vector3.Distance(map.PlayerWorldPosition, selectedWorld), Is.LessThan(.06f), id);
+                }
+                Debug.Log("IMAGEGEN CITY MAP OK: current-plan art, upper bridge arrivals, stacked arrivals and native map/XYZ views.");
             }
             finally { map.Close(); }
         }

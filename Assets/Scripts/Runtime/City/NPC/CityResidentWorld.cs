@@ -32,6 +32,8 @@ namespace BarPromenade
             var work = new List<int>();
             var shops = new List<int>();
             var walks = new List<int>();
+            var hillHomes = new List<int>(8);
+            var hillWalks = new List<int>(2);
             if (layout != null)
             {
                 foreach (BuildingLot lot in layout.BuildingLots)
@@ -43,6 +45,19 @@ namespace BarPromenade
                         AddPlace(work, lot.SidewalkArrivalPosition, 12);
                     else if (lot.IsSupermarket) AddPlace(shops, lot.SidewalkArrivalPosition, 4);
                     else if (lot.IsBar) AddPlace(walks, lot.SidewalkArrivalPosition, 4);
+                }
+                var quarter = CityHillsideNeighborhoodPlan.ForLayout(layout);
+                foreach (var house in quarter.SharedCourtBuildings)
+                    AddHillHome(house);
+                // Draw a few addresses across the entire rise instead of filling
+                // the home pool with consecutive houses on the first street.
+                for (int i = 1; i <= 4 && quarter.Buildings.Count > 0; i++)
+                    AddHillHome(quarter.Buildings[(quarter.Buildings.Count - 1) * i / 4]);
+                var passage = CityHillsideAccessPlan.ForLayout(layout).SharedCourt;
+                if (passage != null)
+                {
+                    AddPlace(hillWalks, passage.RouteWorld[0], 2);
+                    AddPlace(hillWalks, passage.RouteWorld[passage.RouteWorld.Count - 1], 2);
                 }
             }
             if (layout?.PlayerHome != null && CityBusStopWaitPlanner.TryFindNearestNode(plan,
@@ -58,13 +73,24 @@ namespace BarPromenade
             for (int id = 0; id < CityResidentLifeRules.ResidentCount && homes.Count > 0; id++)
             {
                 uint hash = Hash(id, seed);
-                int home = homes[(int)(hash % (uint)homes.Count)];
+                // The same residents keep their normal schedules and presentation
+                // budget. A stable subset lives in the houses on the new streets.
+                bool livesUphill = hillHomes.Count > 0 && id % 11 == 0;
+                int home = livesUphill ? hillHomes[(int)((Hash(0, seed) + (uint)(id / 11)) % (uint)hillHomes.Count)] :
+                    homes[(int)(hash % (uint)homes.Count)];
                 places[id, (int)CityResidentActivity.Home] = home;
                 places[id, (int)CityResidentActivity.ReturningHome] = home;
                 places[id, (int)CityResidentActivity.Work] = SelectConnected(work, home, hash >> 5);
                 places[id, (int)CityResidentActivity.Shopping] = SelectConnected(shops, home, hash >> 10);
-                places[id, (int)CityResidentActivity.Walking] = SelectConnected(walks, home, hash >> 15);
+                places[id, (int)CityResidentActivity.Walking] = SelectConnected(
+                    livesUphill && hillWalks.Count > 0 ? hillWalks : walks, home, hash >> 15);
                 retainedActivity[id] = double.NaN;
+            }
+
+            void AddHillHome(CityHillsideBuilding house)
+            {
+                Vector2 court = house.CourtBounds.center;
+                AddPlace(hillHomes, new Vector3(court.x, house.DoorWorld.y, court.y), 8);
             }
         }
 

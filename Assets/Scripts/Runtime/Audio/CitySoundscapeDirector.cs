@@ -184,7 +184,9 @@ namespace BarPromenade
                     $"loop voices, but the pool owns {LoopVoiceCount}.");
             }
 
-            occlusionGeometry = CitySoundOcclusion.Capture(layout.BuildingMasses);
+            var lots = new List<BuildingLot>(layout.BuildingMasses);
+            foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings) lots.Add(house.Lot);
+            occlusionGeometry = CitySoundOcclusion.Capture(lots);
             weighbridgeNeedle = needle;
             nightFactorProvider = nightProvider;
             previousWeighbridgeDeflection =

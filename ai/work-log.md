@@ -20,17 +20,12 @@ in rain. The prior R6 survey clears the completed court. Art follows final
 geography, with scheme fallback and full-height fingerprint.
 Map fills the viewport with one selected place label and a scrollable list.
 ImageGenVillageBrochure_PreservesResortAndLivePlaces checked the regional UI.
-Two southern streets climb into occupied residential and working districts.
-River shortcuts constrain the existing grid, so the climb continues inside
-a reshaped mountain rim that retains its tunnel and river ends. Each upper
-street has a connected stair and local door courts. Actual bus overhang sets
-the widened bends. Keeping the final eastern approach level retains Route 01.
-LiveCity_CitywideSlopesKeepSupportedRoutesAndArrivals passed. Both banks
-walked from the shore and back. Vehicle bodies clear both lanes; doors, stairs
-and summits are supported. Ordinary camera frames reviewed. Matched hillside
-views isolated a forced-depth valley edge; the far panorama fades in the new
-districts. Final survey keeps existing named locations. ImageGenCityMap_PreservesPlanAndLivePlaces
-checks the final illustrated sheet, displayed XYZ and both summit arrivals.
+LiveCity_CitywideSlopesKeepSupportedRoutesAndArrivals verified both original ascents;
+bus overhang sets bend widths, a level eastern approach retains Route 01. The far
+valley fades on the hills. Bridges cross the dry ravine in one upper residential
+quarter. LiveCity_UpperQuarterJoinsBothSlopesThroughTheLitCourt covers its
+streets, stairs and passage. ImageGenCityMap_PreservesPlanAndLivePlaces verified
+both bridge arrivals on the redrawn City sheet.
 
 ## 2026-11-03
 Checkpoint:RAM deep progress/world/ammo;restore/entry/seed/rides/tokens;RU pause/No.

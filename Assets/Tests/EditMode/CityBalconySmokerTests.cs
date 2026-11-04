@@ -103,14 +103,20 @@ namespace BarPromenade.Tests.EditMode
                 GetResidentialRegistry();
 
             IReadOnlyList<CityBalconySmokerDescriptor> first =
-                CityBalconySmokerPlan.CreateCandidates(layout, registry);
+                CityBalconySmokerPlan.CreateCandidates(layout, registry, includeUpperQuarter: true);
             IReadOnlyList<CityBalconySmokerDescriptor> second =
-                CityBalconySmokerPlan.CreateCandidates(layout, registry);
+                CityBalconySmokerPlan.CreateCandidates(layout, registry, includeUpperQuarter: true);
             int eligible = layout.BuildingLots.Count(item =>
                 item.IsOrdinaryBuilding &&
-                item.District == CityDistrictKind.Residential);
+                item.District == CityDistrictKind.Residential) + CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings.Count;
 
             Assert.That(first.Count, Is.EqualTo(eligible));
+            foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings.Where(h => h.HasAirer))
+            {
+                var occupied = first.Single(d => d.LotCell == house.Lot.Cell);
+                Assert.That(registry.BalconySlots.Single(s => s.StableId == occupied.BalconySlotStableId)
+                    .LocalNpcDock.x, Is.LessThan(0f), "the right balcony carries the drying rack");
+            }
             Assert.That(first.Count,
                 Is.GreaterThan(CityBalconySmokerPlan.MaximumSmokerCount),
                 "The runtime must choose from the current player area, not " +

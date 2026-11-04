@@ -141,6 +141,7 @@ namespace BarPromenade
                 CutMouth(patches, route.MouthCut);
                 patches.AddRange(route.SurfacePatches);
             }
+            foreach (var link in CityHillsideQuarterPlan.ForLayout(layout).Links) patches.AddRange(link.SurfacePatches);
             var result = new CityStreetSupportPlan(patches.AsReadOnly());
             plan.SupportPlan = result;
             return result;

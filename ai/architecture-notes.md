@@ -2,19 +2,20 @@
 
 ## Current facts
 
+- **Accepted exception — 2026-11-04,user — upper residential City:** art §§2.2/7/8,
+  story §18: the lower west keeps its workplaces; both upper slopes are housing.
+  The court lane and 40m crest street cross a dry ravine on separate bridges.
+  Stairs join every tier behind the original river cave and traffic tunnel.
+  One south ridge encloses the quarter. No new service or story event.
+
 - **Accepted architecture extension — 2026-11-03,user — terraced City:**
-  Low coast, port and river. Occupied 3–5-storey east and working west rise
-  to asphalt Y40. The river-crossing grid limits grades, so both streets
-  continue south of the original blocks on solid ground inside the rim.
-  Each bank has seven traverses, level R13 turns, two pavements and a
-  two-flight shortcut. The outer curve widens .75m for the measured bus
-  overhang at R13 and .90m at the tighter R9 entry. Earth, houses, doors, NPCs and map share the street station data.
-  River cave and tunnel stay at the original low endpoints. Home–Bar ~57m.
-  Earlier terrace: +7.68m bridge, sheltered 3m alley at the same XZ, lower
-  house below the street. The first 104m ascent gains3.84m, passes the dog
-  yard and connects via the window landing to Lower Court. Street heights
-  rebase lots before construction. Map logic follows geometry, final art once.
-  Shared fog/post/camera; story §§16/21 and art acceptance apply.
+  Low coast/port/river; two streets extend south of the grid at ≤6% to Y40.
+  Seven traverses/side, level R13 turns; outer widening .75m at R13/.90m at R9
+  clears bus overhang. Streets/earth/houses/NPC/map share stations.
+  Original river cave/tunnel; Home–Bar ~57m. Lower terrace: +7.68m bridge,
+  sheltered 3m alley below; first 104m gain3.84m, dog yard/window landing/Lower
+  Court. Rebase lots first; logical map follows geometry, redraw once. Shared
+  fog/post/camera; story §§16/21, art acceptance.
   [Acceptance and named checks](city-multilevel-plan.md).
 
 - **Accepted architecture exception — 2026-11-03,user — doubled calendar day:**

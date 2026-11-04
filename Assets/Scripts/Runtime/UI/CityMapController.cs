@@ -34,7 +34,10 @@ namespace BarPromenade
         TerraceShortcut = 15,
         TerraceLanding = 16,
         ResidentialSummit = 17,
-        IndustrialSummit = 18
+        IndustrialSummit = 18, // Stable key for the western approach.
+        UpperSharedCourt = 19,
+        UpperCourtBridge = 20,
+        UpperSummitBridge = 21
     }
 
     public readonly struct CityMapPointOfInterest
@@ -960,6 +963,15 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.IndustrialSummit:
                     key = "map.poi.industrial_summit";
                     return true;
+                case CityMapPointOfInterestKind.UpperCourtBridge:
+                    key = "map.poi.upper_court_bridge";
+                    return true;
+                case CityMapPointOfInterestKind.UpperSummitBridge:
+                    key = "map.poi.upper_summit_bridge";
+                    return true;
+                case CityMapPointOfInterestKind.UpperSharedCourt:
+                    key = "map.poi.upper_shared_court";
+                    return true;
                 case CityMapPointOfInterestKind.TerraceLowerCourt:
                     key = "map.poi.terrace_lower_court";
                     return true;
@@ -1509,9 +1521,25 @@ namespace BarPromenade
                     bool east = bank == CityTerraceTransportBank.East;
                     pointsOfInterest.Add(new CityMapPointOfInterest(east ? "residential-summit" : "industrial-summit",
                         east ? CityMapPointOfInterestKind.ResidentialSummit : CityMapPointOfInterestKind.IndustrialSummit,
-                        east ? CityDistrictKind.Residential : CityDistrictKind.Industrial,
+                        CityDistrictKind.Residential,
                         route.SummitArrivalWorld + Vector3.up * rootOffset));
                 }
+            }
+            var court = CityHillsideAccessPlan.ForLayout(Layout).SharedCourt;
+            if (court != null)
+                pointsOfInterest.Add(new CityMapPointOfInterest("upper-shared-court", CityMapPointOfInterestKind.UpperSharedCourt,
+                    CityDistrictKind.Residential, court.RouteWorld[0] + Vector3.up * rootOffset));
+            var quarter = CityHillsideQuarterPlan.ForLayout(Layout);
+            for (int i = 0; i < quarter.Bridges.Count; i++)
+            {
+                var bridge = quarter.Bridges[i];
+                var link = bridge.Link;
+                bool summit = link.Id == "summit";
+                Vector3 centre = bridge.DeckCenterWorld;
+                Vector3 foot = new Vector3(centre.x, link.PavementTopAt(centre.x), link.NorthSidewalk[0].z);
+                pointsOfInterest.Add(new CityMapPointOfInterest("upper-" + link.Id + "-bridge",
+                    summit ? CityMapPointOfInterestKind.UpperSummitBridge : CityMapPointOfInterestKind.UpperCourtBridge,
+                    CityDistrictKind.Residential, foot + Vector3.up * rootOffset, bridge.DeckBounds, true));
             }
         }
 

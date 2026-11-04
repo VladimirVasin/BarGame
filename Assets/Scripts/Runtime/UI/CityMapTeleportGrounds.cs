@@ -21,6 +21,7 @@ namespace BarPromenade
     {
         private readonly CityLayout layout;
         private readonly CityTerraceDistrictPlan terraces;
+        private readonly CityHillsideQuarterPlan quarter;
         private readonly List<Rect> obstacleFootprints;
         private readonly List<Vector2[]> polygonBuildingObstacles = new List<Vector2[]>();
         private RoadWalkableArea walkableArea;
@@ -30,10 +31,13 @@ namespace BarPromenade
             this.layout = layout ??
                           throw new ArgumentNullException(nameof(layout));
             terraces = CityTerraceDistrictPlan.ForLayout(layout);
+            quarter = CityHillsideQuarterPlan.ForLayout(layout);
             var courtyardCells = new HashSet<Vector2Int>();
             foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
                 courtyardCells.Add(block.Cell);
             obstacleFootprints = CollectObstacleFootprints(layout, courtyardCells);
+            foreach (var building in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
+                polygonBuildingObstacles.AddRange(building.Lot.CreateCollisionPolygons());
             foreach (BuildingLot lot in layout.BuildingMasses)
                 if (lot.HasBuilding && (lot.HasFacadeRotation || courtyardCells.Contains(lot.Cell)))
                     polygonBuildingObstacles.AddRange(lot.CreateCollisionPolygons());
@@ -52,6 +56,9 @@ namespace BarPromenade
             if (eastExit.IsEnabled && (eastExit.ClosedGroundBounds.Contains(worldXZ) ||
                 eastExit.BoothBounds.Contains(worldXZ))) return false;
             float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
+            // A chart click in the cut must never borrow the height of the
+            // buried rock or silently snap to a road on the other bank.
+            if (quarter.IsExposedRavine(worldXZ, radius)) return false;
             var probe = new Vector3(worldXZ.x, 0f, worldXZ.y);
             RoadWalkableArea mask = EnsureWalkableArea();
             // These supported courts replace their old ground. A rejected
@@ -73,7 +80,8 @@ namespace BarPromenade
                 ? probe
                 : mask.ClosestPoint(probe, radius);
             var landing = new Vector2(candidate.x, candidate.z);
-            if (IsInsideObstacle(landing) || !TryResolveSurfaceTop(landing, out float top))
+            if (quarter.IsExposedRavine(landing, radius) || IsInsideObstacle(landing) ||
+                !TryResolveSurfaceTop(landing, out float top))
             {
                 return false;
             }
@@ -90,6 +98,7 @@ namespace BarPromenade
             destination = default;
             if (!CityTerracePilotPlan.Finite(arrival)) return false;
             var requested = new Vector2(arrival.x, arrival.z);
+            if (quarter.IsExposedRavine(requested, CityGroundTraversalPlanner.MaximumAgentRadius)) return false;
             if (terraces.ContainsFootprint(requested))
             {
                 // At a stacked crossing, XZ identifies two destinations. Keep
@@ -150,9 +159,9 @@ namespace BarPromenade
         {
             if (terraces.ContainsFootprint(worldXZ))
                 return terraces.TrySampleStandingTop(worldXZ, 0f, out top);
-            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).Shortcuts)
+            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)
                 if (stair.TrySampleTop(worldXZ, out top)) return true;
-            foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(layout).Buildings)
+            foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
                 if (building.TrySampleApproach(worldXZ, out top)) return true;
             CityFairPlan fair = CityFairPlanner.Create(layout);
             if (fair.IsEnabled && fair.Bounds.Contains(worldXZ))

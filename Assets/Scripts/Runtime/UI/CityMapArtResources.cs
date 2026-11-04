@@ -203,12 +203,44 @@ namespace BarPromenade
                         Scalar(writer, road.Profile.Stations[i].Height);
                     }
                 }
-                foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).Shortcuts)
+                var quarter = CityHillsideQuarterPlan.ForLayout(layout);
+                RectValue(writer, quarter.TerrainBounds);
+                writer.Write(quarter.RavineOutline.Count);
+                foreach (Vector2 edge in quarter.RavineOutline) Point(writer, edge);
+                if (quarter.Bridges.Count > 0)
                 {
-                    RectValue(writer, stair.Bounds);
-                    foreach (Vector3 point in stair.RouteWorld) Point(writer, point);
+                    // Moving an intermediate rock ledge changes the surveyed
+                    // elevation even if the two bridge centres stay put.
+                    foreach (var section in CityHillsideQuarterRavine.Sections)
+                        foreach (var station in CityHillsideQuarterRavine.Profile)
+                        {
+                            var at = new Vector2(Mathf.Lerp(section.y,section.z,station.x), section.x);
+                            Point(writer, new Vector3(at.x,quarter.SampleSoil(at),at.y));
+                        }
                 }
-                foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(layout).Buildings)
+                writer.Write(quarter.Bridges.Count);
+                foreach (var bridge in quarter.Bridges)
+                {
+                    writer.Write(bridge.Id);
+                    RectValue(writer, bridge.DeckBounds);
+                    Point(writer, bridge.WestBearingWorld); Point(writer, bridge.EastBearingWorld);
+                    Point(writer, bridge.DeckCenterWorld); Point(writer, bridge.BottomWorld);
+                }
+                foreach (var link in quarter.Links)
+                {
+                    writer.Write(link.Id); Scalar(writer, CityHillsideQuarterLink.CarriagewayWidth);
+                    foreach (var point in link.Centreline) Point(writer, point);
+                    foreach (var point in link.NorthSidewalk) Point(writer, point);
+                    foreach (var point in link.SouthSidewalk) Point(writer, point);
+                }
+                foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)
+                {
+                    writer.Write(stair.Id); writer.Write(stair.WalkableBounds.Count);
+                    foreach (Rect footprint in stair.WalkableBounds) RectValue(writer, footprint);
+                    foreach (Vector3 point in stair.RouteWorld) Point(writer, point);
+                    foreach (var flight in stair.Flights) { writer.Write(flight.StepCount); Scalar(writer, flight.Width); }
+                }
+                foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
                 {
                     writer.Write(building.Lot.BuildingVariant); Scalar(writer, building.Lot.Height);
                     foreach (Vector2[] body in building.Lot.CreateCollisionPolygons())

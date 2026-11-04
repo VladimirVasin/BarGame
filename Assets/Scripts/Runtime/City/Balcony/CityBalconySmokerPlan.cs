@@ -190,9 +190,8 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(layout));
             }
 
-            return CreateCandidates(
-                layout,
-                ResolveResidentialRegistry(), true);
+            return CreateCandidates(layout, ResolveResidentialRegistry(),
+                useLotVariants: true, includeUpperQuarter: true);
         }
 
         internal static CityBalconySmokerPlan Create(
@@ -222,7 +221,7 @@ namespace BarPromenade
             CreateCandidates(
                 CityLayout layout,
                 CityBuildingAssetRegistry residentialRegistry,
-                bool useLotVariants = false)
+                bool useLotVariants = false, bool includeUpperQuarter = false)
         {
             if (layout == null)
             {
@@ -261,16 +260,29 @@ namespace BarPromenade
             {
                 { 0, residentialRegistry }
             };
-            for (int index = 0;
-                 index < layout.BuildingLots.Count;
-                 index++)
+            foreach (var lot in layout.BuildingLots) Add(lot, false);
+            if (includeUpperQuarter)
+                foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
+                    Add(house.Lot, house.HasAirer);
+
+            candidates.Sort(CompareCandidates);
+            var descriptors = new List<CityBalconySmokerDescriptor>(
+                candidates.Count);
+            for (int index = 0; index < candidates.Count; index++)
             {
-                BuildingLot lot = layout.BuildingLots[index];
+                descriptors.Add(candidates[index].Descriptor);
+            }
+
+            return new ReadOnlyCollection<CityBalconySmokerDescriptor>(
+                descriptors);
+
+            void Add(BuildingLot lot, bool hasAirer)
+            {
                 if (lot == null ||
                     !lot.IsOrdinaryBuilding ||
                     lot.District != CityDistrictKind.Residential)
                 {
-                    continue;
+                    return;
                 }
 
                 CityBuildingAssetRegistry registry = residentialRegistry;
@@ -283,8 +295,17 @@ namespace BarPromenade
                         variants.Add(lot.BuildingVariant, registry);
                     }
                     lotSlots = ResolveReadableBalconySlots(registry.BalconySlots);
-                    if (lotSlots.Count == 0) continue;
                 }
+                if (hasAirer)
+                {
+                    // The folding rack stands on the right-hand lowest balcony.
+                    // The same building still offers its unobstructed left dock.
+                    var free = new List<CityBuildingBalconySlot>(lotSlots.Count);
+                    foreach (var slot in lotSlots)
+                        if (slot.LocalNpcDock.x < 0f) free.Add(slot);
+                    lotSlots = free;
+                }
+                if (lotSlots.Count == 0) return;
                 candidates.Add(CreateCandidate(
                     layout.Seed,
                     lot,
@@ -292,17 +313,6 @@ namespace BarPromenade
                     lotSlots,
                     archetypeDesignIds));
             }
-
-            candidates.Sort(CompareCandidates);
-            var descriptors = new List<CityBalconySmokerDescriptor>(
-                candidates.Count);
-            for (int index = 0; index < candidates.Count; index++)
-            {
-                descriptors.Add(candidates[index].Descriptor);
-            }
-
-            return new ReadOnlyCollection<CityBalconySmokerDescriptor>(
-                descriptors);
         }
 
         internal static CityBalconySmokerPlan CreateSelection(

@@ -23,9 +23,9 @@ namespace BarPromenade.Tests.EditMode
                     layout,
                     decorationPlan);
 
-            Assert.That(plan.Sources, Has.Count.EqualTo(9));
-            Assert.That(plan.LoopingSources, Has.Count.EqualTo(4));
-            Assert.That(plan.ScheduledSources, Has.Count.EqualTo(3));
+            Assert.That(plan.Sources, Has.Count.EqualTo(11));
+            Assert.That(plan.LoopingSources, Has.Count.EqualTo(5));
+            Assert.That(plan.ScheduledSources, Has.Count.EqualTo(4));
             Assert.That(plan.TriggeredSources, Has.Count.EqualTo(2));
 
             var owners = new HashSet<CitySoundPhysicalOwnerKind>();
@@ -45,7 +45,6 @@ namespace BarPromenade.Tests.EditMode
                 new[]
                 {
                     CitySourceSoundId.DryingYardCarpetStrike,
-                    CitySourceSoundId.IndustrialMetalStress,
                     CitySourceSoundId.ParkSwingCreak
                 },
                 GetCues(plan.TriggeredSources));
@@ -75,7 +74,9 @@ namespace BarPromenade.Tests.EditMode
                     CitySoundPhysicalOwnerKind.ResidentialDryingYard,
                     CitySoundPhysicalOwnerKind.NightlifeLastRouteIsland,
                     CitySoundPhysicalOwnerKind.ParkFountainAndStatue,
-                    CitySoundPhysicalOwnerKind.ParkPlayground
+                    CitySoundPhysicalOwnerKind.ParkPlayground,
+                    CitySoundPhysicalOwnerKind.HillsideDownpipe,
+                    CitySoundPhysicalOwnerKind.HillsideBalconyAirer
                 },
                 owners);
         }

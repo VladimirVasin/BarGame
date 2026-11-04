@@ -377,6 +377,11 @@ namespace BarPromenade
                 : ridge.Side == CityMountainBoundarySide.West
                     ? Vector3.left
                     : Vector3.back;
+            var quarter = CityHillsideQuarterPlan.ForLayout(layout);
+            Rect saddle = quarter.TerrainBounds;
+            if (ridge.Side == CityMountainBoundarySide.South && quarter.Links.Count != 0 &&
+                Mathf.Abs(station.WorldXZ.x - saddle.center.x) < .001f && Mathf.Abs(station.WorldXZ.y - saddle.yMax) < .001f)
+                expectedOutward = Vector3.forward;
             if (ridge.Side == CityMountainBoundarySide.South && stationIndex > 0 && stationIndex + 1 < ridge.Stations.Count)
             {
                 Vector2 before = station.WorldXZ - ridge.Stations[stationIndex - 1].WorldXZ;
@@ -845,6 +850,13 @@ namespace BarPromenade
                     ? CityMountainBoundaryDefinition.SouthWestAreaId : CityMountainBoundaryDefinition.SouthEastAreaId;
                 if (areaId != owner || !ContainsInclusive(CityHillsideNeighborhoodPlan.TerrainBounds(road), worldXZ)) continue;
                 topY = CityHillsideNeighborhoodPlan.SampleBank(layout, road, worldXZ);
+                return true;
+            }
+            var quarter = CityHillsideQuarterPlan.ForLayout(layout);
+            if (quarter.Links.Count > 0 && ContainsInclusive(quarter.TerrainBounds, worldXZ) &&
+                (areaId == CityMountainBoundaryDefinition.SouthWestAreaId || areaId == CityMountainBoundaryDefinition.SouthEastAreaId))
+            {
+                topY = quarter.SampleSoil(worldXZ);
                 return true;
             }
             topY = 0f;

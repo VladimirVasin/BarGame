@@ -108,6 +108,171 @@ namespace BarPromenade.Tests.PlayMode
 #endif
         }
 
+        // Exercise the new district directly instead of replaying the unchanged coast.
+        [UnityTest, Timeout(360000)]
+        public IEnumerator LiveCity_UpperQuarterJoinsBothSlopesThroughTheLitCourt()
+        {
+            GameSessionState.TryStartGameTimeAt(12 * 60);
+            yield return LoadProductionCity();
+            var layout = city.Layout;
+#if UNITY_EDITOR
+            if (System.Environment.GetEnvironmentVariable("BARGAME_EXPORT_UPPER_MAP") == "1")
+                System.Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
+                    .GetMethod("ExportCurrent", System.Type.EmptyTypes).Invoke(null, null);
+#endif
+            var area = CityTerraceDistrictPlan.ForLayout(layout);
+            var quarter = CityHillsideQuarterPlan.ForLayout(layout);
+            var access = CityHillsideAccessPlan.ForLayout(layout);
+            var housing = CityHillsideNeighborhoodPlan.ForLayout(layout);
+            var graph = city.PedestrianPlan;
+            var ground = new CityMapCityTeleportGround(layout);
+            Assert.That(quarter.Links.Select(l => l.Id), Is.EquivalentTo(new[] { "court", "summit" }));
+            Assert.That(housing.AllBuildings.All(h => h.Lot.District == CityDistrictKind.Residential), Is.True);
+            Assert.That(housing.SharedCourtBuildings.Count, Is.GreaterThan(0));
+            foreach (var road in CityHillsideStreetPlan.ForLayout(layout).Routes)
+            {
+                Assert.That(access.Shortcuts.Where(s => s.Bank == road.Bank).Select(s => s.LowerLane),
+                    Is.EquivalentTo(Enumerable.Range(0, CityHillsideStreetRoute.LaneCount - 1)));
+                AssertMappedSummit(road);
+            }
+            foreach (var stair in access.AllStairs)
+            {
+                for (int i = 1; i < stair.RouteWorld.Count; i++)
+                {
+                    var a = stair.RouteWorld[i - 1]; var b = stair.RouteWorld[i];
+                    for (int j = 0, n = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(a, b))); j <= n; j++)
+                    {
+                        var foot = Vector3.Lerp(a, b, j / (float)n);
+                        Assert.That(city.World.WalkableArea.Contains(foot, .3f), Is.True, "Stair walk mask " + foot);
+                        AssertHillsideCollider(new Vector2(foot.x, foot.z), foot.y);
+                    }
+                }
+            }
+            foreach (var link in quarter.Links)
+            {
+                for (int i = 1; i < link.Centreline.Count; i++)
+                {
+                    var a = link.Centreline[i - 1]; var b = link.Centreline[i];
+                    for (int j = 0, n = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(a, b))); j <= n; j++)
+                    {
+                        var p = Vector3.Lerp(a, b, j / (float)n);
+                        AssertHillsideCollider(new Vector2(p.x, p.z), p.y);
+                    }
+                }
+                if (link.Id == "court")
+                {
+                    var streets = CityStreetSupportPlan.ForLayout(layout);
+                    foreach (var joint in new[] { link.WestGateWorld + Vector3.right * 4f, link.EastGateWorld + Vector3.left * 4f })
+                    {
+                        Assert.That(streets.TrySampleTop(new Vector2(joint.x, joint.z), out _, out var surface), Is.True);
+                        Assert.That(surface, Is.EqualTo(FootstepGroundKind.Concrete), "A kerb still closes the T-junction.");
+                    }
+                }
+                Assert.That(city.Night.Plan.StreetLamps.Any(l => link.Bounds.Contains(new Vector2(l.Position.x,l.Position.z))),
+                    Is.True, "No municipal lighting on " + link.Id);
+            }
+            var courtMarker = city.Map.ActiveMapPoints.Single(p => p.StableId == "city:poi:upper-shared-court");
+            Assert.That(ground.TryClampArrival(courtMarker.WorldPosition, out var safe), Is.True);
+            Assert.That(Vector3.Distance(courtMarker.WorldPosition, safe), Is.LessThan(.06f));
+            Assert.That(quarter.Bridges.Select(b => b.Id), Is.EquivalentTo(quarter.Links.Select(l => l.Id)));
+            foreach (var bridge in quarter.Bridges)
+            {
+                Vector3 deck = bridge.DeckCenterWorld;
+                AssertHillsideCollider(new Vector2(deck.x, deck.z), deck.y);
+                Assert.That(Physics.Raycast(deck - Vector3.up * 3f, Vector3.down, out var rock,
+                    50f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True, bridge.Id);
+                Assert.That(deck.y - rock.point.y, Is.GreaterThan(8f), "There must be open space under " + bridge.Id);
+                Assert.That(rock.point.y, Is.EqualTo(bridge.BottomWorld.y).Within(.25f));
+                // Step off the deck footprint toward the middle of the cut.
+                var beside = new Vector2(deck.x, deck.z + (bridge.Id == "court" ? -1f : 1f) *
+                    (bridge.DeckBounds.height * .5f + 1.5f));
+                Assert.That(ground.TryResolveStandingPosition(beside, out _), Is.False, "Map arrival over open rock.");
+                var marker = city.Map.ActiveMapPoints.Single(p => p.StableId == "city:poi:upper-" + bridge.Id + "-bridge");
+                Assert.That(ground.TryClampArrival(marker.WorldPosition, out safe), Is.True);
+                Assert.That(Vector3.Distance(marker.WorldPosition, safe), Is.LessThan(.06f));
+            }
+
+            city.Player.Motor.SetInputEnabled(false);
+            city.Player.Interactor.SetInputEnabled(false);
+            city.Camera.GetComponent<PlayerCameraFollow>().SetOrbitInputEnabled(false);
+            isolatedHeroCapsule = city.Player.Motor.GetComponent<CharacterController>();
+            int interval = OnDemandRendering.renderFrameInterval;
+            try
+            {
+                Time.captureDeltaTime = .1f;
+                OnDemandRendering.renderFrameInterval = 24;
+                foreach (var road in CityHillsideStreetPlan.ForLayout(layout).Routes)
+                {
+                    bool westBank = road.Bank == CityTerraceTransportBank.West;
+                    var home = housing.Buildings.Where(h => h.Bank == road.Bank &&
+                            h.Lot.BuildingVariant == (westBank ? 0 : 2))
+                        .OrderBy(h => Mathf.Abs(road.SummitArrivalWorld.y - h.DoorWorld.y - 4f)).First();
+                    Vector3 vantage = home.StreetContactWorld;
+                    float x = Mathf.MoveTowards(vantage.x, (road.LaneMinX + road.LaneMaxX) * .5f, 7.5f);
+                    float z = vantage.z + Mathf.Sign(vantage.z - home.DoorWorld.z) * 6f;
+                    if (road.TrySampleTop(new Vector2(x,z),out float y,out _)) vantage = new Vector3(x,y,z);
+                    yield return Stand(vantage, home.DoorWorld);
+                    yield return CapturePlayerView("upper-quarter-" + road.Bank, home.DoorWorld + Vector3.up * 4.3f);
+                }
+                var shared = access.SharedCourt.RouteWorld;
+                var court = quarter.Links.Single(l => l.Id == "court");
+                var summit = quarter.Links.Single(l => l.Id == "summit");
+                var west = summit.NorthSidewalk[0];
+                var east = summit.NorthSidewalk[summit.NorthSidewalk.Count-1];
+                foreach (var bridge in quarter.Bridges)
+                {
+                    var link = bridge.Link;
+                    bool high = bridge.Id == "summit";
+                    float x = high ? bridge.EastBearingWorld.x - 5.8f : bridge.WestBearingWorld.x + 5.8f;
+                    float side = high ? 1f : -1f;
+                    var sight = new Vector3(x + side * 3.1f, link.PavementTopAt(x) - 4.3f,
+                        bridge.DeckCenterWorld.z + side * 10f);
+                    yield return Stand(new Vector3(x, link.PavementTopAt(x), bridge.DeckCenterWorld.z + side * 4f), sight);
+                    yield return CapturePlayerView("upper-quarter-bridge-" + bridge.Id, sight);
+                    if (!high)
+                    {
+                        float approach = bridge.EastBearingWorld.x + 2.5f;
+                        var truss = new Vector3(approach - 10f,link.RoadTopAt(approach) + 1.5f,bridge.DeckCenterWorld.z - 4f);
+                        yield return Stand(new Vector3(approach,link.PavementTopAt(approach),bridge.DeckCenterWorld.z + 4f),truss);
+                        yield return CapturePlayerView("upper-quarter-bridge-approach", truss);
+                    }
+                }
+                // The two dry connections belong to the same live pedestrian graph.
+                var loop = new[] { west, east, court.SouthSidewalk[court.SouthSidewalk.Count-1], court.SouthSidewalk[0], west };
+                for (int i=1; i<loop.Length; i++)
+                    Assert.That(StreetWalk(graph, NearestSidewalkNode(graph, loop[i-1], 3f),
+                        NearestSidewalkNode(graph, loop[i], 3f)).Count, Is.GreaterThan(1));
+                yield return Stand(shared[0], shared[1]);
+                yield return CapturePlayerView("upper-quarter-passage-day", shared[1] + Vector3.up * 1.6f);
+                yield return WalkCityRoute(shared, false, "upper-quarter-through-house", area);
+                yield return Stand(court.SouthSidewalk[0]);
+                yield return WalkCityRoute(court.SouthSidewalk, false, "upper-quarter-court-west-to-east", area);
+                // Show the actual lighting clock at night on the same route.
+                GameSessionState.AdvanceGameTime((float)((22 * 60 - GameSessionState.GameTimeOfDayMinutes + 1440) % 1440 /
+                    GameTimeState.GameMinutesPerRealSecond));
+                city.DayNight.ApplyCurrentTime(true);
+                yield return Stand(shared[shared.Count-1]);
+                yield return WalkCityRoute(shared, true, "upper-quarter-down-at-night", area);
+                yield return CapturePlayerView("upper-quarter-passage-night", shared[1] + Vector3.up * 1.6f);
+                yield return Stand(west);
+                yield return WalkCityRoute(summit.NorthSidewalk, false, "upper-quarter-west-to-east", area);
+                var crestBridge = quarter.Bridges.Single(b => b.Id == "summit");
+                var centre = crestBridge.DeckCenterWorld;
+                yield return Stand(new Vector3(centre.x,summit.PavementTopAt(centre.x),centre.z + 3.85f),
+                    centre + new Vector3(4f,0f,12f));
+                yield return CapturePlayerView("upper-quarter-bridge-night", centre + new Vector3(4f,-5f,12f));
+            }
+            finally { OnDemandRendering.renderFrameInterval = interval; }
+
+            IEnumerator Stand(Vector3 floor, Vector3? facing = null)
+            {
+                city.Player.Motor.Teleport(floor + Vector3.up * PlayerFactory.GroundedRootOffset);
+                if (facing.HasValue)
+                    city.Player.Motor.transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(facing.Value - floor, Vector3.up));
+                for (int i = 0; i < 4; i++) yield return null;
+            }
+        }
+
         private List<Vector3> SurveyedEasternPavement(CityHillsideStreetRoute hill)
         {
             IReadOnlyList<Vector2Int> nodes = hill.CoastApproachNodes;
@@ -267,7 +432,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private IEnumerator WalkHillsideDown(CityHillsideStreetRoute road, CityTerraceDistrictPlan district)
         {
-            CityHillsideShortcut stair = CityHillsideAccessPlan.ForLayout(city.Layout).Shortcuts.Single(s => s.Bank == road.Bank);
+            CityHillsideShortcut stair = CityHillsideAccessPlan.ForLayout(city.Layout).Shortcuts.Single(s => s.Bank == road.Bank && s.LowerLane == CityHillsideStreetRoute.LaneCount - 2);
             var path = road.SidewalkPath;
             var stairs = stair.RouteWorld;
             Vector3 high = stairs[stairs.Count - 1];

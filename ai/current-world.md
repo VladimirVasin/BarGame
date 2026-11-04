@@ -426,9 +426,9 @@ cemetery:own interiors/returns.
   Two raised houses/two OpenGround,144 IDs. House11,8 sits3.84m below street,
   roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
-  Coast streets rise to Lower Court or the two upper districts at 40m.
-  Seven traverses per bank, level widened turns, stair shortcuts, supported
-  houses/workshops and mapped summits.
+  Coast streets reach Lower Court and upper housing. Two seven-tier climbs
+  join on two streets bridging a dry ravine. Stairs link all tiers and the through court to the crest.
+  West stepped homes and eastern balcony courts meet the same south ridge.
   `10×6 m` rear wings require padded clearance and a `2.4 m`
   court gap. `3.6 m` through passages remain walkable under separate overhead
   collision, height `3.2 m` (`4.2 m` Industrial). Court loops join the graph;

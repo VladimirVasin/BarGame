@@ -7,52 +7,91 @@ namespace BarPromenade
     /// <summary>A fixed-metre building on a cut-and-fill bench, with a continuous public approach.</summary>
     public sealed class CityHillsideBuilding
     {
-        private readonly CityHillsideStreetRoute street;
-        private readonly int lane;
+        private readonly System.Func<float, float> pavement;
+        private readonly float courtEdgeZ;
         public BuildingLot Lot { get; }
-        public CityTerraceTransportBank Bank => street.Bank;
+        public CityTerraceTransportBank Bank { get; }
+        public bool OnSummitStreet { get; }
         public Rect FoundationBounds { get; }
+        public IReadOnlyList<Rect> MapFootprints { get; }
         public Rect ApproachBounds { get; }
         public Rect CourtBounds { get; }
         public Vector3 StreetContactWorld { get; }
         public Vector3 DoorWorld { get; }
+        public Vector3 ThresholdWorld { get; }
+        internal float PavementEdgeZ => StreetContactWorld.z + Mathf.Sign(DoorWorld.z - StreetContactWorld.z);
         internal const float PavementRise = CityStreetSurfacePlanner.SidewalkTop - CityStreetSurfacePlanner.RoadTop;
 
-        internal CityHillsideBuilding(CityHillsideStreetRoute street, int lane, int parcel, float x, int variant)
+        // side = -1 on the south side of this street. A gable entry reaches
+        // the footway along the outside wall; its axis never cuts a solid corner.
+        internal CityHillsideBuilding(CityTerraceTransportBank bank, Vector2Int cell,
+            float x, float streetZ, int side, float setback, int variant, Vector3 forward,
+            System.Func<float, float> pavement, bool summit = false)
         {
-            this.street = street;
-            this.lane = lane;
-            bool housing = street.Bank == CityTerraceTransportBank.East;
-            var district = housing ? CityDistrictKind.Residential : CityDistrictKind.Industrial;
-            Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(district, variant);
-            float laneZ = street.GetLaneZ(lane);
-            float top = street.SampleLaneTop(lane, x) + PavementRise;
-            float front = laneZ - 8f;
-            Vector3 center = new Vector3(x, top - CityFacadeGrid.MassBaseElevation, front - envelope.z * .5f);
-            var size = new Vector2(envelope.x, envelope.z);
-            FoundationBounds = new Rect(new Vector2(center.x, center.z) - size * .5f, size);
-            StreetContactWorld = new Vector3(x, top, laneZ - 4f);
-            // The residential front anchor includes the shallow balcony projection.
-            // A courier reaches the exterior face of the actual entry on its own level.
-            float doorZ = front - (housing ? 1.2f : 0f);
-            DoorWorld = new Vector3(x, top, doorZ + .5f);
-            CourtBounds = Rect.MinMaxRect(x - 3.3f, doorZ + .02f, x + 3.3f, laneZ - 6.8f);
-            ApproachBounds = Rect.MinMaxRect(x - 1.2f, CourtBounds.yMax, x + 1.2f, StreetContactWorld.z);
-            var cell = new Vector2Int(housing ? 21 + parcel : -21 - parcel, -2 - lane);
-            Lot = new BuildingLot(cell, center, size, envelope.y,
-                housing ? new Color(.46f, .49f, .48f) : new Color(.42f, .41f, .38f),
-                housing ? "hillside-residential" : "hillside-workshops", district, CityLandUseKind.Building,
-                false, false, false, string.Empty, BarActivityKind.None, Vector2Int.zero,
-                new Vector3(x, top, doorZ), StreetContactWorld, StreetContactWorld, variant, Vector3.forward);
+            Bank = bank;
+            OnSummitStreet = summit;
+            this.pavement = pavement;
+            const CityDistrictKind residential = CityDistrictKind.Residential;
+            Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(residential, variant);
+            bool gableEntry = Mathf.Abs(forward.x) > .5f;
+            var footprint = gableEntry ? new Vector2(envelope.z, envelope.x) : new Vector2(envelope.x, envelope.z);
+            float z = streetZ + side * (setback + footprint.y * .5f);
+            Quaternion rotation = Quaternion.LookRotation(forward);
+            Vector3 entry = rotation * CityBuildingAssetProvider.GetExpectedEntranceThreshold(variant);
+            float floor = pavement(x);
+            ThresholdWorld = new Vector3(x + entry.x, floor, z + entry.z);
+            DoorWorld = ThresholdWorld + forward * (gableEntry ? 1.45f : .52f);
+            StreetContactWorld = new Vector3(DoorWorld.x, pavement(DoorWorld.x), streetZ + side * 4f);
+            var centre = new Vector3(x, floor - CityFacadeGrid.MassBaseElevation, z);
+            FoundationBounds = new Rect(new Vector2(x, z) - footprint * .5f, footprint);
+            float nearZ = streetZ + side * (setback - 1.3f);
+            if (gableEntry)
+            {
+                float outside = ThresholdWorld.x + forward.x * 3.0f;
+                float inside = ThresholdWorld.x + forward.x * .02f;
+                CourtBounds = Rect.MinMaxRect(Mathf.Min(inside, outside), z - 2.6f,
+                    Mathf.Max(inside, outside), z + 2.6f);
+            }
+            else
+            {
+                float atDoor = ThresholdWorld.z + forward.z * .02f;
+                float halfCourt = variant == 3 ? 2.35f : 3.25f;
+                CourtBounds = Rect.MinMaxRect(DoorWorld.x - halfCourt, Mathf.Min(atDoor, nearZ),
+                    DoorWorld.x + halfCourt, Mathf.Max(atDoor, nearZ));
+            }
+            courtEdgeZ = side < 0 ? CourtBounds.yMax : CourtBounds.yMin;
+            ApproachBounds = Rect.MinMaxRect(DoorWorld.x - 1.2f, Mathf.Min(courtEdgeZ, StreetContactWorld.z),
+                DoorWorld.x + 1.2f, Mathf.Max(courtEdgeZ, StreetContactWorld.z));
+            Lot = new BuildingLot(cell, centre, footprint, envelope.y,
+                bank == CityTerraceTransportBank.West ? new Color(.51f, .455f, .40f) : new Color(.46f, .50f, .49f),
+                "hillside-residential", residential, CityLandUseKind.Building, false, false, false,
+                string.Empty, BarActivityKind.None, Vector2Int.zero, ThresholdWorld,
+                StreetContactWorld, StreetContactWorld, variant, forward);
+            MapFootprints = Lot.CreateCollisionFootprints();
         }
+
+        internal bool HasGlazedBay => Bank == CityTerraceTransportBank.West && Lot.BuildingVariant != 4;
+        // Two domestic airers share the two spare slots in the city residential
+        // wind budget. Their pegs and scheduled fabric sound use the same point.
+        internal bool HasAirer => Lot.Cell == new Vector2Int(41, -21) || Lot.Cell == new Vector2Int(21, -5);
+        internal Vector3 AirerOrigin
+        {
+            get
+            {
+                Vector3 size = CityBuildingAssetProvider.GetExpectedEnvelope(Lot.District, Lot.BuildingVariant);
+                Vector3 inRoom = new Vector3(size.x * .28f + .37f, 2.8f, size.z * .5f - .6f);
+                return CityBuildingPrototypePlacement.ResolveExpectedCityPose(Lot).TransformPoint(inRoom);
+            }
+        }
+        internal Vector3 PegWorld => AirerOrigin + Lot.FacadeRotation * new Vector3(0f, .94f, .19f);
 
         public bool TrySampleApproach(Vector2 point, out float top)
         {
             top = DoorWorld.y;
             if (Inside(CourtBounds, point)) return true;
             if (!Inside(ApproachBounds, point)) return false;
-            float t = Mathf.InverseLerp(ApproachBounds.yMin, ApproachBounds.yMax, point.y);
-            top = Mathf.Lerp(top, street.SampleLaneTop(lane, point.x) + PavementRise, t);
+            float t = Mathf.InverseLerp(courtEdgeZ, PavementEdgeZ, point.y);
+            top = Mathf.Lerp(top, pavement(point.x), t);
             return true;
         }
 
@@ -66,6 +105,9 @@ namespace BarPromenade
             new ConditionalWeakTable<CityLayout, CityHillsideNeighborhoodPlan>();
         public IReadOnlyList<CityHillsideBuilding> Buildings { get; }
 
+        public IReadOnlyList<CityHillsideBuilding> SharedCourtBuildings { get; }
+        public IReadOnlyList<CityHillsideBuilding> AllBuildings { get; }
+
         private CityHillsideNeighborhoodPlan(CityLayout layout)
         {
             var buildings = new List<CityHillsideBuilding>();
@@ -73,29 +115,75 @@ namespace BarPromenade
             foreach (var road in CityHillsideStreetPlan.ForLayout(layout).Routes)
             {
                 bool east = road.Bank == CityTerraceTransportBank.East;
-                int parcelsPerStreet = east ? 3 : 2;
-                for (int lane = 0; lane < CityHillsideStreetRoute.LaneCount; lane++)
+                for (int shelf = 0; shelf < CityHillsideStreetRoute.LaneCount; shelf++)
                 {
-                    // The first street starts at the tangent of a 90-degree entry.
-                    // Near the hairpins a front or roof stays in the next fog band.
                     float min = road.LaneMinX, max = road.LaneMaxX;
-                    if (lane == 0)
+                    if (shelf == 0)
                     {
-                        if (east) max = layout.RoadGeometry.GetNodePosition(road.MouthNode).x - 9f;
-                        else min = layout.RoadGeometry.GetNodePosition(road.MouthNode).x + 9f;
+                        float mouthX = layout.RoadGeometry.GetNodePosition(road.MouthNode).x;
+                        if (east) max = mouthX - 9f;
+                        else min = mouthX + 9f;
                     }
-                    for (int parcel = 0; parcel < parcelsPerStreet; parcel++)
+                    bool reversed = (shelf & 1) != 0;
+                    // Paired west sections step up in height. East wings turn
+                    // their gables into the common space between short fronts.
+                    for (int parcel = 0; parcel < 3; parcel++)
                     {
-                        float inset = 9f + 2.1f * ((lane + parcel) % 3);
-                        float x = Mathf.Lerp(min + inset, max - inset, parcel / (float)(parcelsPerStreet - 1));
-                        int variant = east ? ((lane + parcel) % 3 == 0 ? 4 : (lane + parcel) % 2)
-                            : ((lane + parcel) % 3 == 0 ? 7 : parcel == 0 ? 4 : 1);
-                        var building = new CityHillsideBuilding(road, lane, parcel, x, variant);
-                        if (!BlocksStair(building, access)) buildings.Add(building);
+                        bool backStreet = shelf < CityHillsideStreetRoute.LaneCount - 1 && parcel == 1;
+                        int lane = backStreet ? shelf + 1 : shelf;
+                        int side = backStreet ? 1 : -1;
+                        int variant = east ? (parcel == 1 ? 4 : parcel == 0 ? 2 : 0)
+                            : (parcel == 1 ? 4 : parcel == 0 ? 0 : 1);
+                        float fraction = parcel == 0 ? .14f : parcel == 1 ? (east ? .48f : .34f) : .84f;
+                        float x = Mathf.Lerp(min, max, reversed ? 1f - fraction : fraction);
+                        Vector3 forward = east && parcel == 1 ? (reversed ? Vector3.left : Vector3.right)
+                            : Vector3.back * side;
+                        var cell = new Vector2Int((east ? 1 : -1) * (21 + parcel), -2 - shelf);
+                        var building = new CityHillsideBuilding(road.Bank, cell, x, road.GetLaneZ(lane), side,
+                            7.4f + (parcel == 1 ? .65f : 0f), variant, forward,
+                            at => road.SampleLaneTop(lane, at) + CityHillsideBuilding.PavementRise);
+                        if (!BlocksStair(building, access) && HasClearance(building, buildings)) buildings.Add(building);
                     }
                 }
             }
             Buildings = buildings.AsReadOnly();
+            var shared = new List<CityHillsideBuilding>();
+            var links = CityHillsideQuarterPlan.ForLayout(layout).Links;
+            if (links.Count != 0)
+            {
+                var lower = links[0];
+                var upper = links[1];
+                float lowerZ = lower.WestGateWorld.z;
+                float upperZ = upper.WestGateWorld.z;
+                // The centreline of the 3.6 m opening belongs to the through walk.
+                // The residential entry has its own threshold 3.6 m to the west.
+                shared.Add(new CityHillsideBuilding(CityTerraceTransportBank.East, new Vector2Int(40, -21),
+                    8f, lowerZ, -1, 6.25f, 3, Vector3.forward, lower.PavementTopAt));
+                shared.Add(new CityHillsideBuilding(CityTerraceTransportBank.West, new Vector2Int(-40, -21),
+                    -27f, lowerZ, 1, 7.6f, 0, Vector3.back, lower.PavementTopAt));
+                shared.Add(new CityHillsideBuilding(CityTerraceTransportBank.East, new Vector2Int(41, -21),
+                    29f, lowerZ, 1, 8f, 4, Vector3.left, lower.PavementTopAt));
+                shared.Add(new CityHillsideBuilding(CityTerraceTransportBank.West, new Vector2Int(-41, -21),
+                    -28f, upperZ, -1, 8f, 1, Vector3.forward, upper.PavementTopAt, true));
+                shared.Add(new CityHillsideBuilding(CityTerraceTransportBank.East, new Vector2Int(42, -21),
+                    29f, upperZ, -1, 8.2f, 2, Vector3.forward, upper.PavementTopAt, true));
+            }
+            SharedCourtBuildings = shared.AsReadOnly();
+            var all = new List<CityHillsideBuilding>(buildings.Count + shared.Count);
+            all.AddRange(buildings);
+            all.AddRange(shared);
+            AllBuildings = all.AsReadOnly();
+        }
+
+        private static bool HasClearance(CityHillsideBuilding house, List<CityHillsideBuilding> placed)
+        {
+            Rect body = house.FoundationBounds;
+            body = Rect.MinMaxRect(body.xMin - .5f, body.yMin - .5f, body.xMax + .5f, body.yMax + .5f);
+            foreach (var other in placed)
+                if (body.Overlaps(other.FoundationBounds) || body.Overlaps(other.ApproachBounds) ||
+                    body.Overlaps(other.CourtBounds) || other.FoundationBounds.Overlaps(house.ApproachBounds) ||
+                    other.FoundationBounds.Overlaps(house.CourtBounds)) return false;
+            return true;
         }
 
         private static bool BlocksStair(CityHillsideBuilding b, CityHillsideAccessPlan access)

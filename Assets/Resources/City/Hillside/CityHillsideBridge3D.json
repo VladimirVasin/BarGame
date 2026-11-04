@@ -1,0 +1,81 @@
+{
+  "design_id": "upper_road_bridge_fittings_v1",
+  "span_m": 21.5,
+  "bays": 6,
+  "models": [
+    {
+      "name": "CourtBridgeTruss",
+      "bounds_min": [
+        0.0,
+        0.0,
+        -0.125
+      ],
+      "bounds_max": [
+        21.5,
+        2.3275,
+        0.127
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_End",
+          "position": [
+            21.5,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Start",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "GussetPlatesAndBolts",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "RolledChordsBracesAndHandrail",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 4144,
+      "geometry_signature": "59baf39c30893ebd8896e9d550c20d719ae6b50735297191976ba9e48245a35e"
+    },
+    {
+      "name": "UpperBridgeParapetHead",
+      "bounds_min": [
+        -0.5,
+        0.0,
+        -0.1675
+      ],
+      "bounds_max": [
+        0.5,
+        1.072,
+        0.1675
+      ],
+      "anchors": [
+        {
+          "name": "RakedConcreteHead",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 104,
+      "geometry_signature": "f5750f3cfb225019c1f5002ee192201e1f7aeeebeb7d02947fe16d79477d3257"
+    }
+  ]
+}

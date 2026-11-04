@@ -1797,11 +1797,23 @@
     },
     {
       "key": "map.poi.residential_summit",
-      "value": "Верхняя жилая улица"
+      "value": "Верхняя улица: восток"
+    },
+    {
+      "key": "map.poi.upper_shared_court",
+      "value": "Проходной двор"
+    },
+    {
+      "key": "map.poi.upper_court_bridge",
+      "value": "Дворовый мост"
+    },
+    {
+      "key": "map.poi.upper_summit_bridge",
+      "value": "Мост Верхней улицы"
     },
     {
       "key": "map.poi.industrial_summit",
-      "value": "Верхняя рабочая улица"
+      "value": "Верхняя улица: запад"
     },
     {
       "key": "map.poi.terrace_landing",

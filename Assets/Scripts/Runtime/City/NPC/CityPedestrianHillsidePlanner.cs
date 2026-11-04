@@ -6,92 +6,123 @@ namespace BarPromenade
 {
     public static partial class CityPedestrianPlanner
     {
-        // Both end-to-end pavements and the flat crossing at the summit form
-        // a loop in the city's existing graph. Residents reach it on foot.
         private static void BuildHillsidePaths(CityLayout layout, CityStreetSurfacePlan streets, GraphBuilder graph)
         {
-            foreach (CityHillsideStreetRoute route in CityHillsideStreetPlan.ForLayout(layout).Routes)
+            var access = CityHillsideAccessPlan.ForLayout(layout);
+            var district = CityHillsideNeighborhoodPlan.ForLayout(layout);
+            foreach (var road in CityHillsideStreetPlan.ForLayout(layout).Routes)
             {
-                string prefix = "hill:" + route.Bank + ":";
-                int right = AddPavement(route.SidewalkPath, "right");
-                int left = AddPavement(route.OppositeSidewalkPath, "left");
-                Connect("summit-crossing", right, left, CityPedestrianLinkKind.Crosswalk, Height);
+                string prefix = "hill:" + road.Bank + ":";
+                string pavement = prefix + "pavement:";
+                int right = AddPavement(road.SidewalkPath, "right");
+                int left = AddPavement(road.OppositeSidewalkPath, "left");
+                Connect(prefix + "summit-crossing", right, left, CityPedestrianLinkKind.Crosswalk, StreetHeight);
+                foreach (var stair in access.Shortcuts)
+                    if (stair.Bank == road.Bank) AddStair(stair, prefix + "stair:" + stair.LowerLane, pavement, pavement);
+                foreach (var house in district.Buildings)
+                    if (house.Bank == road.Bank) AddHouse(house, prefix, pavement);
 
-                foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).Shortcuts)
+                int AddPavement(IReadOnlyList<Vector3> points, string side)
                 {
-                    if (stair.Bank != route.Bank) continue;
-                    var points = stair.RouteWorld;
-                    int previous = LaneGate("lower-stair", points[0]);
-                    for (int i = 0; i < points.Count; i++)
-                    {
-                        int next = graph.AddNode(prefix + "stair:" + i, points[i], false);
-                        Connect("stair:walk:" + i, previous, next, CityPedestrianLinkKind.Sidewalk,
-                            point => stair.TrySampleTop(point, out float top) ? top : Height(point));
-                        previous = next;
-                    }
-                    Connect("upper-stair-join", previous, LaneGate("upper-stair", points[points.Count - 1]),
-                        CityPedestrianLinkKind.Sidewalk, Height);
-                }
-
-                int houseIndex = 0;
-                foreach (CityHillsideBuilding house in CityHillsideNeighborhoodPlan.ForLayout(layout).Buildings)
-                {
-                    if (house.Bank != route.Bank) continue;
-                    string key = "house:" + houseIndex++ + ":";
-                    int gate = LaneGate(key + "gate", house.StreetContactWorld);
-                    Rect court = house.CourtBounds;
-                    // A short turnaround inside the court keeps the entrance
-                    // usable by the two-core roaming graph as well as the hero.
-                    Vector2 center = court.center;
-                    float dx = Mathf.Min(.65f, court.width * .5f - AgentRadius - NavigationMargin);
-                    float dz = Mathf.Min(.65f, court.height * .5f - AgentRadius - NavigationMargin);
-                    if (dx <= 0f || dz <= 0f) continue;
-                    int door = CourtNode("entry", center);
-                    int a = CourtNode("walk", center + new Vector2(dx, -dz));
-                    int b = CourtNode("turn", center + new Vector2(-dx, -dz));
-                    int street = (XZ(graph.Nodes[gate].Position) - XZ(house.StreetContactWorld)).sqrMagnitude < .000001f ? gate :
-                        graph.AddNode(prefix + key + "street", house.StreetContactWorld, false);
-                    if (street != gate) Connect(key + "pavement", gate, street, CityPedestrianLinkKind.Sidewalk, HouseHeight);
-                    Connect(key + "approach", street, door, CityPedestrianLinkKind.Sidewalk, HouseHeight);
-                    Connect(key + "court-a", door, a, CityPedestrianLinkKind.Sidewalk, HouseHeight);
-                    Connect(key + "court-b", a, b, CityPedestrianLinkKind.Sidewalk, HouseHeight);
-                    Connect(key + "court-c", b, door, CityPedestrianLinkKind.Sidewalk, HouseHeight);
-
-                    int CourtNode(string id, Vector2 pos) => graph.AddNode(prefix + key + id,
-                        new Vector3(pos.x, HouseHeight(pos), pos.y), false);
-                    float HouseHeight(Vector2 p) => house.TrySampleApproach(p, out float y) ? y : Height(p);
-                }
-
-                int AddPavement(IReadOnlyList<Vector3> vertices, string side)
-                {
-                    var shape = new List<Vector2>(vertices.Count);
-                    foreach (Vector3 vertex in vertices) shape.Add(XZ(vertex));
-                    var path = new CityRoadPath(shape);
-                    Vector3 first = vertices[0], last = vertices[vertices.Count - 1];
-                    int street = graph.SplitTerraceStreetAt(prefix + side + ":mouth", XZ(first), Height);
-                    int start = (XZ(graph.Nodes[street].Position) - shape[0]).sqrMagnitude < .000001f ? street :
-                        graph.AddNode(prefix + side + ":from", first, false);
-                    int end = graph.AddNode(prefix + side + ":to", last, false);
-                    Connect(side + ":join", street, start, CityPedestrianLinkKind.Sidewalk, Height);
-                    graph.AddLink(prefix + "pavement:" + side, start, end, CityPedestrianLinkKind.Sidewalk, false, path, Height);
+                    int street = graph.SplitTerraceStreetAt(prefix + side + ":mouth", XZ(points[0]), StreetHeight);
+                    int start = JoinPoint(prefix + side + ":from", street, points[0], StreetHeight);
+                    int end = graph.AddNode(prefix + side + ":to", points[points.Count - 1], false);
+                    AddPath(pavement + side, start, end, points);
                     return end;
                 }
-                int LaneGate(string id, Vector3 point) => graph.SplitHillsideLane(prefix + id,
-                    prefix + "pavement:", XZ(point), Height);
-                float Height(Vector2 point)
+            }
+
+            foreach (var link in CityHillsideQuarterPlan.ForLayout(layout).Links)
+            {
+                string prefix = "hill:quarter:" + link.Id + ":";
+                AddSide(link.NorthSidewalk, "north");
+                AddSide(link.SouthSidewalk, "south");
+
+                void AddSide(IReadOnlyList<Vector3> points, string side)
                 {
-                    if (route.TrySampleTop(point, out float y, out _) ||
-                        streets.SupportPlan.TrySampleTop(point, out y, out _)) return y;
-                    throw new InvalidOperationException("Hillside pavement has no physical support at " + point);
+                    string id = prefix + side;
+                    int west = Gate(id + ":west", "hill:West:pavement:", points[0]);
+                    int east = Gate(id + ":east", "hill:East:pavement:", points[points.Count - 1]);
+                    AddPath(id, west, east, points);
                 }
-                void Connect(string id, int from, int to, CityPedestrianLinkKind kind, Func<Vector2, float> height)
-                {
-                    if (from == to) return;
-                    Vector2 xz = XZ(graph.Nodes[from].Position), yz = XZ(graph.Nodes[to].Position);
-                    if ((xz - yz).sqrMagnitude < .000001f)
-                        throw new InvalidOperationException("Coincident hillside pedestrian gates at " + prefix + id);
-                    graph.AddLink(prefix + id, from, to, kind, false, new CityRoadPath(new[] { xz, yz }), height);
-                }
+            }
+
+            if (access.SharedCourt != null)
+                AddStair(access.SharedCourt, "hill:quarter:passage", "hill:quarter:court:south", "hill:quarter:summit:north");
+            foreach (var house in district.SharedCourtBuildings)
+            {
+                string prefix = house.OnSummitStreet ? "hill:quarter:summit:" : "hill:quarter:court:";
+                AddHouse(house, prefix, prefix + (house.ThresholdWorld.z > house.StreetContactWorld.z ? "north" : "south"));
+            }
+
+            int Gate(string id, string pavement, Vector3 point) =>
+                graph.SplitHillsideLane(id, pavement, XZ(point), StreetHeight);
+
+            float StreetHeight(Vector2 point)
+            {
+                if (streets.SupportPlan.TrySampleTop(point, out float y, out _)) return y;
+                throw new InvalidOperationException("Hillside pavement has no support at " + point);
+            }
+
+            void AddPath(string id, int from, int to, IReadOnlyList<Vector3> points)
+            {
+                var shape = new List<Vector2>(points.Count);
+                foreach (var point in points) shape.Add(XZ(point));
+                graph.AddLink(id, from, to, CityPedestrianLinkKind.Sidewalk, false, new CityRoadPath(shape), StreetHeight);
+            }
+
+            void Connect(string id, int from, int to, CityPedestrianLinkKind kind, Func<Vector2, float> height)
+            {
+                if (from == to) return;
+                Vector2 a = XZ(graph.Nodes[from].Position), b = XZ(graph.Nodes[to].Position);
+                graph.AddLink(id, from, to, kind, false, new CityRoadPath(new[] { a, b }), height);
+            }
+
+            int JoinPoint(string id, int from, Vector3 point, Func<Vector2, float> height)
+            {
+                if ((XZ(graph.Nodes[from].Position) - XZ(point)).sqrMagnitude < .000001f) return from;
+                int next = graph.AddNode(id, point, false);
+                Connect(id + ":walk", from, next, CityPedestrianLinkKind.Sidewalk, height);
+                return next;
+            }
+
+            void AddStair(CityHillsideShortcut stair, string id, string lowerPavement, string upperPavement)
+            {
+                var points = stair.RouteWorld;
+                int previous = Gate(id + ":lower", lowerPavement, points[0]);
+                for (int i = 0; i < points.Count; i++)
+                    previous = JoinPoint(id + ":" + i, previous, points[i], Height);
+                int upper = Gate(id + ":upper", upperPavement, points[points.Count - 1]);
+                Connect(id + ":upper-join", previous, upper, CityPedestrianLinkKind.Sidewalk, Height);
+                float Height(Vector2 p) => stair.TrySampleTop(p, out float y) ? y : StreetHeight(p);
+            }
+
+            void AddHouse(CityHillsideBuilding house, string prefix, string pavement)
+            {
+                string id = prefix + "house:" + house.Lot.Cell.x + ":" + house.Lot.Cell.y;
+                // A small loop in the entrance court survives two-core pruning while
+                // residents can actually walk between their street and their front door.
+                Rect court = house.CourtBounds;
+                Vector2 center = court.center;
+                float dx = Mathf.Min(.65f, court.width * .5f - AgentRadius - NavigationMargin);
+                float dz = Mathf.Min(.65f, court.height * .5f - AgentRadius - NavigationMargin);
+                if (dx <= 0f || dz <= 0f) return;
+                int gate = Gate(id + ":gate", pavement, house.StreetContactWorld);
+                int start = JoinPoint(id + ":street", gate, house.StreetContactWorld, Height);
+                int a = CourtNode("walk", center + new Vector2(dx, -dz));
+                int b = CourtNode("turn", center + new Vector2(-dx, -dz));
+                // The long axis of a gable-facing entrance is offset from its porch centre.
+                // Stay on the apron until reaching the court.
+                Vector3 elbow = new Vector3(house.StreetContactWorld.x, house.DoorWorld.y, center.y);
+                int approach = JoinPoint(id + ":apron", start, elbow, Height);
+                // The usual front-facing approach already reached the exact entry centre.
+                int entry = JoinPoint(id + ":entry", approach, GroundedPoint(center, Height), Height);
+                Connect(id + ":court-a", entry, a, CityPedestrianLinkKind.Sidewalk, Height);
+                Connect(id + ":court-b", a, b, CityPedestrianLinkKind.Sidewalk, Height);
+                Connect(id + ":court-c", b, entry, CityPedestrianLinkKind.Sidewalk, Height);
+
+                int CourtNode(string suffix, Vector2 p) => graph.AddNode(id + ":" + suffix, GroundedPoint(p, Height), false);
+                float Height(Vector2 p) => house.TrySampleApproach(p, out float y) ? y : StreetHeight(p);
             }
         }
 

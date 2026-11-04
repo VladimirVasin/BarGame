@@ -403,7 +403,7 @@ namespace BarPromenade
                 transform,
                 nightPlan,
                 World.Bars,
-                eastExit: World.EastExitPlan);
+                eastExit: World.EastExitPlan, cityLayout: Layout);
             GameLogPhases.Report("city", "night_build", phaseTimer);
             yield return new CompositionStep("night", 0.68f);
             GameLog.Info(
@@ -1074,9 +1074,8 @@ namespace BarPromenade
             if (World.Gazebo != null) rainShelters.AddRange(World.Gazebo.RainShelters);
             if (laundry != null) rainShelters.AddRange(laundry.RainShelters);
             if (World.CafeRainShelter != null) rainShelters.Add(World.CafeRainShelter);
-            CityTerraceWorldAnchors terraceAnchors = World.Root.GetComponentInChildren<CityTerraceWorldAnchors>();
-            if (terraceAnchors != null && terraceAnchors.RainShelter != null)
-                rainShelters.Add(terraceAnchors.RainShelter);
+            foreach (var terraceAnchors in World.Root.GetComponentsInChildren<CityTerraceWorldAnchors>())
+                if (terraceAnchors.RainShelter != null) rainShelters.Add(terraceAnchors.RainShelter);
             Rain.SetLocalShelters(rainShelters);
             if (World.MountainBoundaryPlan.HasTunnel)
             {

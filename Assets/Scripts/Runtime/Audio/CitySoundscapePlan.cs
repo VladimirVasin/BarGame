@@ -110,6 +110,7 @@ namespace BarPromenade
             Create(
                 "city.sound.residential",
                 CityDistrictKind.Residential,
+                CitySourceSoundId.WaterworksDrip,
                 CitySourceSoundId.DryingYardClothLoop,
                 CitySourceSoundId.DryingYardRopeCreak,
                 CitySourceSoundId.DryingYardCarpetStrike,

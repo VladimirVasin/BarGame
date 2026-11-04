@@ -13,11 +13,10 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - У берега за домом есть лестница, из тупика через окна и Верхнюю площадку
   можно спуститься к нижнему дому. Прогулка и высоты карты проверены в
   LiveCity_CoastalAscentAndStairShortcutShareSupportedRoutes.
-- Оба берега получили улицы до отметки 40 м. На востоке окна жилья,
-  на западе дворы мастерских. У верхних поворотов лестницы срезают дорогу.
-  Верхние улицы доступны на карте. Проверены проходы и прибытия:
-  LiveCity_CitywideSlopesKeepSupportedRoutesAndArrivals и
-  ImageGenCityMap_PreservesPlanAndLivePlaces.
+- Оба серпантина ведут к жилью у горы. Два моста пересекают сухой обрыв
+  между ступенчатыми домами и балконными дворами. Лестницы освещены,
+  из проходного двора можно подняться на Верхнюю улицу. Оба моста есть
+  на карте: ImageGenCityMap_PreservesPlanAndLivePlaces.
 - Карта во весь экран. Клик в списке справа показывает название с линией
   к месту, повтор скрывает. Стрелка героя крупнее и контрастнее.
   ImageGenVillageBrochure_PreservesResortAndLivePlaces.

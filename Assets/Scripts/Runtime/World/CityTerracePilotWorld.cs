@@ -164,10 +164,10 @@ namespace BarPromenade
         }
 
         private static void BuildFlight(Transform root, CityExteriorStairFlightDescriptor flight,
-            GameObject flightModel, GameObject supportModel, float foundationBottom)
+            GameObject flightModel, GameObject supportModel, float foundationBottom, float riseScale = 1f)
         {
             Quaternion yaw = Quaternion.LookRotation(flight.Direction);
-            Model(flightModel, root, flight.Id, flight.Start, yaw, Vector3.one);
+            Model(flightModel, root, flight.Id, flight.Start, yaw, new Vector3(1f, riseScale, 1f));
             Vector3 delta = flight.End - flight.Start;
             Quaternion slope = Quaternion.LookRotation(delta.normalized, Vector3.up);
             Box(root, flight.Id + " continuous ramp",
@@ -179,15 +179,19 @@ namespace BarPromenade
             Support(supportModel, root, flight.Id + " support", supportTop, supportSize, foundationBottom);
             for (int side = -1; side <= 1; side += 2)
                 Box(root, flight.Id + " rail " + side,
-                    (flight.Start + flight.End) * .5f + Vector3.up * .55f + flight.Right * (side * .99f),
-                    new Vector3(.12f, 1.05f, delta.magnitude), slope);
+                    (flight.Start + flight.End) * .5f + Vector3.up * (.55f * riseScale) + flight.Right * (side * .99f),
+                    new Vector3(.12f, 1.05f * riseScale, delta.magnitude), slope);
+            // Feet see each real tread. Keep the probes on one transform per imported flight.
+            var probes = new GameObject(flight.Id + " tread probes");
+            probes.transform.SetParent(root, false);
+            probes.transform.localPosition = flight.Start;
+            probes.transform.localRotation = yaw;
+            probes.layer = FootProbeSurface.LayerIndex;
             for (int step = 0; step < flight.StepCount; step++)
             {
-                Vector3 top = flight.Start + flight.Direction * ((step + .5f) * flight.TreadDepth) +
-                    Vector3.up * ((step + 1) * flight.StepRise);
-                BoxCollider probe = Box(root, flight.Id + " tread " + step,
-                    top - Vector3.up * .025f, new Vector3(flight.Width, .05f, flight.TreadDepth), yaw);
-                probe.gameObject.layer = FootProbeSurface.LayerIndex;
+                var probe = probes.AddComponent<BoxCollider>();
+                probe.center = new Vector3(0f, (step + 1) * flight.StepRise - .025f, (step + .5f) * flight.TreadDepth);
+                probe.size = new Vector3(flight.Width, .05f, flight.TreadDepth);
                 probe.isTrigger = true;
             }
         }
@@ -200,38 +204,26 @@ namespace BarPromenade
             GameObject support = Resources.Load<GameObject>(ResourceFolder + "TerraceSupport");
             GameObject flightModel = Resources.Load<GameObject>(ResourceFolder + "TerraceFlight");
             GameObject rail = Resources.Load<GameObject>(ResourceFolder + "TerraceRail");
-            foreach (CityHillsideShortcut stair in access.Shortcuts)
+            foreach (CityHillsideShortcut stair in access.AllStairs)
             {
-                var root = new GameObject("Hillside stairs " + stair.Bank);
+                var root = new GameObject("Hillside stairs " + stair.Id);
                 root.transform.SetParent(parent, false);
                 FootstepGround.Stamp(root, FootstepGroundKind.Stone);
-                var points = stair.RouteWorld;
-                float baseY = points[0].y - 1f;
-                for (int i = 1; i < points.Count; i++)
+                float baseY = stair.RouteWorld[0].y - 1f;
+                foreach (var flight in stair.Flights)
+                    BuildFlight(root.transform, flight, flightModel, support, baseY, flight.StepRise / CityTerracePilotPlan.StepRise);
+                foreach (var floor in stair.Floors)
                 {
-                    Vector3 a = points[i - 1], b = points[i];
-                    string id = stair.Bank + " stair part " + i;
-                    if (b.y - a.y > 1f)
-                    {
-                        BuildFlight(root.transform, new CityExteriorStairFlightDescriptor(id, a, Vector3.back,
-                            CityTerracePilotPlan.FlightWidth, CityTerracePilotPlan.StepsPerFlight,
-                            CityTerracePilotPlan.StepRise, CityTerracePilotPlan.TreadDepth, CityExteriorStairDropSide.Both),
-                            flightModel, support, baseY);
-                        continue;
-                    }
-                    float width = CityHillsideShortcut.Width, length = a.z - b.z;
-                    Vector3 middle = (a + b) * .5f;
-                    Vector2 size = new Vector2(width, length);
-                    Model(court, root.transform, id, middle, Quaternion.identity, new Vector3(
-                        width / CityTerracePilotPlan.CourtSize, 1f, length / CityTerracePilotPlan.CourtSize));
-                    Box(root.transform, id + " paving", middle - Vector3.up * .15f,
-                        new Vector3(width, .30f, length), Quaternion.identity);
-                    Support(support, root.transform, id + " foundation", middle - Vector3.up * .30f, size, baseY);
-                    for (int side = -1; side <= 1; side += 2)
-                    {
-                        Vector3 offset = Vector3.right * (side * (width * .5f - .06f));
-                        BuildRailRun(root.transform, rail, id + " rail", a + offset, b + offset);
-                    }
+                    Vector3 top = floor.Center;
+                    Vector2 size = floor.Size;
+                    Model(court, root.transform, floor.Id, top, Quaternion.identity,
+                        new Vector3(size.x / CityTerracePilotPlan.CourtSize, 1f, size.y / CityTerracePilotPlan.CourtSize));
+                    Box(root.transform, floor.Id + " paving", top - Vector3.up * .15f,
+                        new Vector3(size.x, .30f, size.y), Quaternion.identity);
+                    Support(support, root.transform, floor.Id + " foundation", top - Vector3.up * .30f, size, baseY);
+                    // The passage through the apartment building is flush with its courtyard.
+                    if (stair == access.SharedCourt && floor.Id == stair.Floors[0].Id) continue;
+                    BuildFloorRails(root.transform, rail, stair.Floors, stair.Flights, floor, null, stair);
                 }
                 CitySurfaceLibrary.ApplyHierarchy(root.transform);
             }
@@ -322,7 +314,7 @@ namespace BarPromenade
                 new Vector3(size.x, depth, size.y), Quaternion.identity);
         }
 
-        private static GameObject Model(GameObject template, Transform parent, string name,
+        internal static GameObject Model(GameObject template, Transform parent, string name,
             Vector3 position, Quaternion rotation, Vector3 scale)
         {
             // A unit wrapper owns the placed metres; the FBX's imported unit
@@ -350,7 +342,7 @@ namespace BarPromenade
             return wrapper;
         }
 
-        private static BoxCollider Box(Transform parent, string name, Vector3 center, Vector3 size, Quaternion rotation)
+        internal static BoxCollider Box(Transform parent, string name, Vector3 center, Vector3 size, Quaternion rotation)
         {
             var body = new GameObject(name);
             body.transform.SetParent(parent, false);
@@ -363,7 +355,7 @@ namespace BarPromenade
 
         private static void BuildFloorRails(Transform root, GameObject template,
             IReadOnlyList<CityTerracePilotFloor> floors, IReadOnlyList<CityExteriorStairFlightDescriptor> flights,
-            CityTerracePilotFloor floor, CityTerraceDistrictPlan district)
+            CityTerracePilotFloor floor, CityTerraceDistrictPlan district, CityHillsideShortcut stair = null)
         {
             for (int axis = 0; axis < 2; axis++)
             for (int sign = -1; sign <= 1; sign += 2)
@@ -398,6 +390,11 @@ namespace BarPromenade
                     float at = Vector3.Dot(relative, tangent);
                     float half = (alongZ ? other.Size.y : other.Size.x) * .5f;
                     gaps.Add(new Vector2(at - half, at + half));
+                }
+                if (stair != null)
+                {
+                    AddOpening(stair.RouteWorld[0], CityTerracePilotPlan.LandingSize);
+                    AddOpening(stair.RouteWorld[stair.RouteWorld.Count - 1], CityTerracePilotPlan.LandingSize);
                 }
                 if (district != null)
                 {

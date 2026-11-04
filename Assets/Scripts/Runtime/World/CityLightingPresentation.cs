@@ -696,7 +696,11 @@ namespace BarPromenade
                     default: return Zone.Residential;
                 }
             }
-            return Zone.Fringe;
+            var xz = new Vector2(position.x, position.z);
+            var slopes = CityHillsideStreetPlan.ForLayout(layout).Routes;
+            for (int i = 0; i < slopes.Count; i++)
+                if (CityHillsideNeighborhoodPlan.TerrainBounds(slopes[i]).Contains(xz)) return Zone.Residential;
+            return CityHillsideQuarterPlan.ForLayout(layout).TerrainBounds.Contains(xz) ? Zone.Residential : Zone.Fringe;
         }
 
         private static bool IsLit(Light light) => light != null && light.isActiveAndEnabled && light.intensity > .001f;

@@ -51,7 +51,8 @@ namespace BarPromenade
             CityNightFixturePlan plan,
             IReadOnlyList<BarEntrance> bars,
             bool buildCollision = true,
-            CityEastExitPlan eastExit = null)
+            CityEastExitPlan eastExit = null,
+            CityLayout cityLayout = null)
         {
             if (parent == null)
             {
@@ -68,16 +69,18 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(bars));
             }
 
-            if (eastExit != null && eastExit.IsEnabled)
+            if ((eastExit != null && eastExit.IsEnabled) || cityLayout != null)
             {
                 // The first valley mast is another location in the existing
                 // street pool. Its shell, bulb, halo and lifetime follow the
                 // same owner as every city lamp; no fixed Light is added.
                 var lamps = new List<StreetLampDescriptor>(plan.StreetLamps);
-                foreach (CityEastRoadProfile.Lamp lamp in eastExit.RoadProfile.Lamps)
-                    if (lamp.real)
-                        lamps.Add(new StreetLampDescriptor(default, 0f, StreetLampSide.Right,
-                            eastExit.RoadEnd + lamp.Position, lamp.Forward));
+                if (eastExit != null && eastExit.IsEnabled)
+                    foreach (CityEastRoadProfile.Lamp lamp in eastExit.RoadProfile.Lamps)
+                        if (lamp.real)
+                            lamps.Add(new StreetLampDescriptor(default, 0f, StreetLampSide.Right,
+                                eastExit.RoadEnd + lamp.Position, lamp.Forward));
+                if (cityLayout != null) AppendHillsideLamps(cityLayout, lamps);
                 plan = new CityNightFixturePlan(lamps, new List<TrafficSignalDescriptor>(plan.TrafficSignals));
             }
 
@@ -148,6 +151,87 @@ namespace BarPromenade
                 barLightPositions,
                 streetLampBulbRenderers,
                 LampGlow);
+        }
+
+        // Reuse the municipal bulb geometry, day floor and moving pool. Place poles
+        // at the outside of the paving; never consume a stair or a doorway as an anchor.
+        private static void AppendHillsideLamps(CityLayout layout, List<StreetLampDescriptor> lamps)
+        {
+            int first = lamps.Count;
+            foreach (var road in CityHillsideStreetPlan.ForLayout(layout).Routes)
+            foreach (var stair in CityHillsideAccessPlan.ForLayout(layout).Shortcuts)
+            {
+                if (stair.Bank != road.Bank) continue;
+                for (int end = 0; end < 2; end++)
+                {
+                    Vector3 gate = stair.RouteWorld[end == 0 ? 0 : stair.RouteWorld.Count - 1];
+                    float side = end == 0 ? 1f : -1f;
+                    var foot = new Vector2(gate.x + side * (CityHillsideShortcut.Width * .5f + 1.1f), gate.z + side * .32f);
+                    if (road.TrySampleTop(foot, out float y, out var kind) && kind == CityStreetSupportKind.Sidewalk)
+                        Add(new Vector3(foot.x, y, foot.y), new Vector3(-side, 0, side).normalized);
+                }
+            }
+            var shared = CityHillsideAccessPlan.ForLayout(layout).SharedCourt;
+            if (shared != null)
+            {
+                // An ordinary street lamp at each turn carries the route into the
+                // open court beyond the covered doorway. The outer corners are
+                // outside both connecting flights and stay clear of the walker.
+                int turnIndex = 0;
+                foreach (var floor in shared.Floors)
+                {
+                    if (Mathf.Abs(floor.Size.x - CityTerracePilotPlan.LandingSize) > .01f ||
+                        Mathf.Abs(floor.Size.y - CityTerracePilotPlan.LandingSize) > .01f) continue;
+                    Vector3 corner = (turnIndex++ == 0 ? new Vector3(-1,0,-1) : new Vector3(1,0,1));
+                    Vector3 foot = floor.Center + corner * .80f;
+                    Add(foot, -corner.normalized);
+                }
+            }
+            var quarter = CityHillsideQuarterPlan.ForLayout(layout);
+            foreach (var bridge in quarter.Bridges)
+            {
+                // A lamp at each landfall silhouettes the parapet without
+                // illuminating the entire cut. Use the common municipal pool.
+                var deck = bridge.DeckBounds;
+                foreach (int side in new[] { -1, 1 })
+                {
+                    float x = (side < 0 ? deck.xMin : deck.xMax) + side * 1.4f;
+                    var link = bridge.Link;
+                    Add(new Vector3(x, link.PavementTopAt(x), deck.center.y + side * 4.68f),
+                        new Vector3(0,0,-side));
+                }
+            }
+            foreach (var link in quarter.Links)
+            {
+                bool crest = link.Id == "summit";
+                Vector3 turn = shared.RouteWorld[crest ? shared.RouteWorld.Count - 1 : 0];
+                var entry = new Vector3(turn.x + 2.4f, link.PavementTopAt(turn.x + 2.4f), turn.z + (crest ? -.32f : .32f));
+                Add(entry, Vector3.ProjectOnPlane(turn - entry, Vector3.up).normalized);
+                // The street is east-west; service both sides alternately.
+                int stations = Mathf.Max(1, Mathf.RoundToInt((link.EastGateWorld.x - link.WestGateWorld.x) / 23f));
+                for (int i = 0; i < stations; i++)
+                {
+                    bool north = (i & 1) == 0;
+                    var walk = north ? link.NorthSidewalk : link.SouthSidewalk;
+                    float x = Mathf.Lerp(walk[0].x, walk[walk.Count - 1].x, (i + .5f) / stations);
+                    for (int j = 1; j < walk.Count; j++)
+                    {
+                        if (walk[j].x < x || walk[j].x <= walk[j - 1].x) continue;
+                        Vector3 foot = Vector3.Lerp(walk[j - 1], walk[j], Mathf.InverseLerp(walk[j - 1].x, walk[j].x, x));
+                        foot.z += north ? .72f : -.72f;
+                        if (link.TrySampleTop(new Vector2(foot.x, foot.z), out foot.y, out var kind) && kind == CityStreetSupportKind.Sidewalk)
+                            Add(foot, north ? Vector3.back : Vector3.forward);
+                        break;
+                    }
+                }
+            }
+
+            void Add(Vector3 foot, Vector3 forward)
+            {
+                for (int i = first; i < lamps.Count; i++)
+                    if ((lamps[i].Position - foot).sqrMagnitude < 36f) return;
+                lamps.Add(new StreetLampDescriptor(default, 0f, StreetLampSide.Right, foot, forward));
+            }
         }
 
         private static Transform CreateStreetLampAnchor(

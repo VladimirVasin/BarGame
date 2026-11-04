@@ -16,20 +16,34 @@ namespace BarPromenade
             foreach (var road in streets.Routes)
             {
                 var bank = new GameObject(road.Bank == CityTerraceTransportBank.East
-                    ? "Upper Residential Streets" : "Upper Working Streets").transform;
+                    ? "Balcony Courts" : "Stepped Residences").transform;
                 bank.SetParent(root, false);
                 var houses = new List<CityHillsideBuilding>();
                 foreach (var house in district.Buildings)
                 {
                     if (house.Bank != road.Bank) continue;
                     houses.Add(house);
-                    Transform placed = new GameObject("Building " + house.Lot.Cell).transform;
-                    placed.SetParent(bank, false);
-                    CityBuildingPrototypeWorldBuilder.BuildCity(placed, house.Lot, layout.Seed, .9f);
+                    BuildHouse(bank, house, layout.Seed);
                 }
                 BuildGround(bank, layout, road, houses, access);
             }
+            var court = new GameObject("Shared passage court").transform;
+            court.SetParent(root, false);
+            var paving = Resources.Load<GameObject>(CityTerracePilotWorld.ResourceFolder + "TerraceCourt");
+            foreach (var house in district.SharedCourtBuildings)
+            {
+                BuildHouse(court, house, layout.Seed);
+                CityHillsideHousePresentation.BuildApron(court, paving, house);
+            }
             CityTerracePilotWorld.BuildHillsideShortcuts(root, access);
+        }
+
+        private static void BuildHouse(Transform parent, CityHillsideBuilding house, int seed)
+        {
+            Transform placed = new GameObject("Building " + house.Lot.Cell).transform;
+            placed.SetParent(parent, false);
+            var building = CityBuildingPrototypeWorldBuilder.BuildCity(placed, house.Lot, seed, .9f);
+            CityHillsideHousePresentation.Build(placed, house, building);
         }
 
         private static void BuildGround(Transform parent, CityLayout layout, CityHillsideStreetRoute road,
@@ -77,7 +91,7 @@ namespace BarPromenade
                         {
                             // The inner metre overlaps the existing pavement; recess the
                             // apron there while matching the exact outer edge at five metres.
-                            float edgeZ = house.StreetContactWorld.z - 1f;
+                            float edgeZ = house.PavementEdgeZ;
                             y = apron - .10f * Mathf.InverseLerp(edgeZ, house.StreetContactWorld.z, point.y);
                             break;
                         }

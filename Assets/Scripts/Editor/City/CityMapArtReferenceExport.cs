@@ -182,6 +182,26 @@ namespace BarPromenade.Editor
             }
             foreach (CityHillsideStreetRoute road in CityHillsideStreetPlan.ForLayout(layout).Routes)
                 Box("hill-ground:" + road.Bank, "ground", CityHillsideNeighborhoodPlan.TerrainBounds(road));
+            var quarter = CityHillsideQuarterPlan.ForLayout(layout);
+            if (quarter.Links.Count > 0) Box("hill-ground:quarter", "ground", quarter.TerrainBounds);
+            var rim = quarter.RavineOutline;
+            if (rim.Count > 2)
+            {
+                Poly("upper-ravine", "dry-rock", new List<Vector2>(rim));
+                for (int i = 0; i < rim.Count; i++)
+                {
+                    Vector2 a = rim[i], b = rim[(i + 1) % rim.Count];
+                    Line("upper-ravine:rim:" + i, "rock-rim", .35f, new[] { a, b });
+                    Vector2 inward = new Vector2(a.y - b.y, b.x - a.x).normalized;
+                    int marks = Mathf.FloorToInt(Vector2.Distance(a, b) / 3f);
+                    for (int j = 0; j < marks; j++)
+                    {
+                        Vector2 at = Vector2.Lerp(a, b, (j + .5f) / marks);
+                        Line("upper-ravine:hatch:" + i + ":" + j, "rock-hatch", .22f,
+                            new[] { at, at + inward * 1.25f });
+                    }
+                }
+            }
             CityMountainBoundaryPlan mountain = controller.MountainBoundaryPlan;
             foreach (CityMountainRidgeDescriptor ridge in mountain.Ridges)
             {
@@ -289,24 +309,51 @@ namespace BarPromenade.Editor
                     Poly(id + ":paving:" + i, "promenade", road.WalkablePolygons[i]);
                 Line(id, "road", CityHillsideStreetRoute.RoadHalfWidth * 2f, new List<Vector2>(road.Path.Vertices));
             }
-            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).Shortcuts)
+            foreach (var link in quarter.Links)
             {
-                string id = "hill-stair:" + stair.Bank;
-                Box(id, "terrace-landing", stair.Bounds);
-                for (int i = 1; i < stair.RouteWorld.Count; i++)
+                var road = new List<Vector2>(link.Centreline.Count);
+                foreach (Vector3 point in link.Centreline) road.Add(XZ(point));
+                Line("upper-street:" + link.Id, "road", CityHillsideQuarterLink.CarriagewayWidth, road);
+                foreach (var side in new[] {link.NorthSidewalk, link.SouthSidewalk})
                 {
-                    Vector3 a = stair.RouteWorld[i - 1], b = stair.RouteWorld[i];
-                    if (b.y - a.y < 1f) continue;
-                    for (int step = 0; step <= CityTerracePilotPlan.StepsPerFlight; step++)
+                    var path = new List<Vector2>(side.Count);
+                    foreach (Vector3 point in side) path.Add(XZ(point));
+                    Line("upper-pavement:" + link.Id + (side == link.NorthSidewalk ? ":north" : ":south"), "promenade", 2f, path);
+                }
+            }
+            foreach (var bridge in quarter.Bridges)
+            {
+                Rect deck = bridge.DeckBounds;
+                string id = "upper-bridge:" + bridge.Id;
+                float parapet = bridge.Id == "summit" ? .55f : .3f;
+                Box(id, "bridge", deck);
+                // The separate road and sidewalk strokes are drawn across the span.
+                // Dark parapets and the short bearing seams sit above those strokes.
+                Line(id + ":north-parapet", "bridge-parapet", parapet, new[] {
+                    new Vector2(deck.xMin, deck.yMax), new Vector2(deck.xMax, deck.yMax) });
+                Line(id + ":south-parapet", "bridge-parapet", parapet, new[] {
+                    new Vector2(deck.xMin, deck.yMin), new Vector2(deck.xMax, deck.yMin) });
+                foreach (float x in new[] { bridge.WestBearingWorld.x, bridge.EastBearingWorld.x })
+                    Line(id + (x == bridge.WestBearingWorld.x ? ":west-bearing" : ":east-bearing"), "bridge-joint", .22f,
+                        new[] { new Vector2(x, deck.yMin), new Vector2(x, deck.yMax) });
+            }
+            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)
+            {
+                string id = "hill-stair:" + stair.Id;
+                for (int i = 0; i < stair.WalkableBounds.Count; i++)
+                    Box(id + ":floor:" + i, "terrace-landing", stair.WalkableBounds[i]);
+                foreach (var flight in stair.Flights)
+                {
+                    Vector2 side = XZ(Vector3.Cross(Vector3.up, flight.Direction)) * (flight.Width * .5f);
+                    for (int step = 0; step <= flight.StepCount; step++)
                     {
-                        Vector2 mid = XZ(Vector3.Lerp(a, b, step / (float)CityTerracePilotPlan.StepsPerFlight));
-                        Vector2 side = Vector2.right * (CityTerracePilotPlan.FlightWidth * .5f);
-                        Line(id + ":" + i + ":tread:" + step, "terrace-stair", .14f, new[] { mid - side, mid + side });
+                        Vector2 mid = XZ(Vector3.Lerp(flight.Start, flight.End, step / (float)flight.StepCount));
+                        Line(id + ":" + flight.Id + ":tread:" + step, "terrace-stair", .14f, new[] { mid - side, mid + side });
                     }
                 }
             }
             int hillsideHouse = 0;
-            foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(layout).Buildings)
+            foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
             {
                 string id = "hill-building:" + building.Bank + ":" + hillsideHouse++;
                 Box(id + ":court", "terrace-court", building.CourtBounds);
@@ -411,7 +458,8 @@ namespace BarPromenade.Editor
                     DrawPath(Mathf.Max(2f, size + 1.5f), Ink);
                     DrawPath(Mathf.Max(1f, size - 1.5f), new Color32(85, 88, 80, 255));
                 }
-                else DrawPath(Mathf.Max(1f, size), role == "tunnel" ? Void : Ink);
+                else DrawPath(Mathf.Max(1f, size), role == "tunnel" || role == "bridge-parapet" ||
+                    role == "bridge-joint" || role == "rock-rim" ? Void : Ink);
 
                 void DrawPath(float thickness, Color32 color)
                 {
@@ -458,6 +506,7 @@ namespace BarPromenade.Editor
                     case "water": return new Color32(25, 36, 37, 255);
                     case "park": return new Color32(45, 61, 47, 255);
                     case "beach": return new Color32(79, 76, 61, 255);
+                    case "dry-rock": return new Color32(67, 57, 48, 255);
                     case "mountain": return new Color32(35, 39, 36, 255);
                     case "promenade": return new Color32(92, 95, 85, 255);
                     case "bridge": return new Color32(133, 128, 107, 255);

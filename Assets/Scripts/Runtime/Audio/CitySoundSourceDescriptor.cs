@@ -16,7 +16,9 @@ namespace BarPromenade
         NightlifeLastRouteIsland = 4,
         ParkFountainAndStatue = 5,
         ParkPlayground = 6,
-        Count = 7
+        HillsideDownpipe = 7,
+        HillsideBalconyAirer = 8,
+        Count = 9
     }
 
     /// <summary>
@@ -239,6 +241,8 @@ namespace BarPromenade
                 case CitySoundPhysicalOwnerKind.OldTownWaterworksCourt:
                     return CityDistrictKind.OldTown;
                 case CitySoundPhysicalOwnerKind.ResidentialDryingYard:
+                case CitySoundPhysicalOwnerKind.HillsideDownpipe:
+                case CitySoundPhysicalOwnerKind.HillsideBalconyAirer:
                     return CityDistrictKind.Residential;
                 case CitySoundPhysicalOwnerKind.IndustrialCannery:
                     return CityDistrictKind.Industrial;
@@ -262,6 +266,10 @@ namespace BarPromenade
                 case CitySoundPhysicalOwnerKind.OldTownWaterworksCourt:
                     return cue == CitySourceSoundId.WaterworksPipeLoop ||
                            cue == CitySourceSoundId.WaterworksDrip;
+                case CitySoundPhysicalOwnerKind.HillsideDownpipe:
+                    return cue == CitySourceSoundId.WaterworksDrip;
+                case CitySoundPhysicalOwnerKind.HillsideBalconyAirer:
+                    return cue == CitySourceSoundId.DryingYardClothLoop;
                 case CitySoundPhysicalOwnerKind.ResidentialDryingYard:
                     return cue == CitySourceSoundId.DryingYardClothLoop ||
                            cue == CitySourceSoundId.DryingYardRopeCreak ||
@@ -332,7 +340,8 @@ namespace BarPromenade
             (district == CityDistrictKind.Industrial &&
              (cue == CitySourceSoundId.WaterworksPipeLoop || cue == CitySourceSoundId.WaterworksDrip)) ||
             (district == CityDistrictKind.Residential &&
-             (cue == CitySourceSoundId.LastRouteRelayLoop || cue == CitySourceSoundId.LastRouteIncompleteChime));
+             (cue == CitySourceSoundId.LastRouteRelayLoop || cue == CitySourceSoundId.LastRouteIncompleteChime ||
+              cue == CitySourceSoundId.WaterworksDrip));
 
         private static void RequireDefinedDistrict(CityDistrictKind district)
         {

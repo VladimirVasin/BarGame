@@ -969,11 +969,15 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.TerraceShortcut,
                     CityMapPointOfInterestKind.TerraceLanding,
                     CityMapPointOfInterestKind.ResidentialSummit,
-                    CityMapPointOfInterestKind.IndustrialSummit
+                    CityMapPointOfInterestKind.IndustrialSummit,
+                    CityMapPointOfInterestKind.UpperSharedCourt,
+                    CityMapPointOfInterestKind.UpperCourtBridge,
+                    CityMapPointOfInterestKind.UpperSummitBridge
                 };
                 var expectedIds = new[]
                 {
-                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court", "terrace-shortcut", "terrace-landing", "residential-summit", "industrial-summit"
+                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court", "terrace-shortcut", "terrace-landing", "residential-summit", "industrial-summit", "upper-shared-court",
+                    "upper-court-bridge", "upper-summit-bridge"
                 };
                 var expectedDistricts = new[]
                 {
@@ -991,7 +995,10 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
-                    CityDistrictKind.Industrial
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Residential
                 };
                 int lotCount = layout.DistrictPointsOfInterest.Count;
                 Assert.That(controller.PointsOfInterest, Has.Count.EqualTo(lotCount + expectedKinds.Length));
@@ -1018,6 +1025,7 @@ namespace BarPromenade.Tests.EditMode
                 walkable.Add(fair.Bounds);
 
                 var terraceArrivals = new Dictionary<CityMapPointOfInterestKind, (string Label, Vector3 Floor)> {
+                    { CityMapPointOfInterestKind.UpperSharedCourt, ("Проходной двор", CityHillsideAccessPlan.ForLayout(layout).SharedCourt.RouteWorld[0]) },
                     { CityMapPointOfInterestKind.TerraceCourts, ("Лестничные дворы", terraces.UpperArrivalWorld) },
                     { CityMapPointOfInterestKind.TerraceUnderpass, ("Нижний проход", terraces.LowerCrossingWorld) },
                     { CityMapPointOfInterestKind.TerraceLowerCourt, ("Нижний двор", terraces.LowerCourtArrivalWorld) },
@@ -1028,7 +1036,16 @@ namespace BarPromenade.Tests.EditMode
                 {
                     bool east = route.Bank == CityTerraceTransportBank.East;
                     terraceArrivals.Add(east ? CityMapPointOfInterestKind.ResidentialSummit : CityMapPointOfInterestKind.IndustrialSummit,
-                        (east ? "Верхняя жилая улица" : "Верхняя рабочая улица", route.SummitArrivalWorld));
+                        (east ? "Верхняя улица: восток" : "Верхняя улица: запад", route.SummitArrivalWorld));
+                }
+                var upper = CityHillsideQuarterPlan.ForLayout(layout);
+                foreach (var bridge in upper.Bridges)
+                {
+                    bool crest = bridge.Id == "summit";
+                    var deck = bridge.DeckCenterWorld;
+                    var link = bridge.Link;
+                    terraceArrivals.Add(crest ? CityMapPointOfInterestKind.UpperSummitBridge : CityMapPointOfInterestKind.UpperCourtBridge,
+                        (crest ? "Мост Верхней улицы" : "Дворовый мост", new Vector3(deck.x, link.PavementTopAt(deck.x), deck.z + 4f)));
                 }
                 var standingByIndex = new Dictionary<int, Vector3>();
                 for (int offset = 0; offset < expectedKinds.Length; offset++)
@@ -1045,8 +1062,13 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(label, Does.Not.StartWith("map."), $"{context} is not localized.");
 
                     var xz = new Vector2(place.WorldPosition.x, place.WorldPosition.z);
-                    Assert.That(place.HasFootprint, Is.EqualTo(place.Kind == CityMapPointOfInterestKind.Fair ||
+                    bool bridgePlace = place.Kind == CityMapPointOfInterestKind.UpperCourtBridge ||
+                        place.Kind == CityMapPointOfInterestKind.UpperSummitBridge;
+                    Assert.That(place.HasFootprint, Is.EqualTo(bridgePlace || place.Kind == CityMapPointOfInterestKind.Fair ||
                         place.Kind == CityMapPointOfInterestKind.Cafe || place.Kind == CityMapPointOfInterestKind.DogPark), context);
+                    if (bridgePlace)
+                        Assert.That(place.Footprint, Is.EqualTo(upper.Bridges.Single(b => b.Id ==
+                            (place.Kind == CityMapPointOfInterestKind.UpperCourtBridge ? "court" : "summit")).DeckBounds));
                     if (place.Kind == CityMapPointOfInterestKind.Fair)
                     {
                         Assert.That(place.Footprint, Is.EqualTo(fair.Bounds), context);

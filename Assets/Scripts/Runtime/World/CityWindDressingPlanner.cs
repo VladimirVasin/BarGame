@@ -367,6 +367,15 @@ namespace BarPromenade
                 chosenCenters.Add(center);
                 lineOrdinal++;
             }
+
+            // The two quarter rack locations use the remaining two residential
+            // slots. Unlike yard lines the folded rack already owns its supports.
+            foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
+                if (house.HasAirer)
+                    cloths.Add(new CityWindDressingClothDescriptor("upper-balcony-" + house.Lot.Cell,
+                        CityWindDressingKind.CourtyardLaundry, CityWindDressingZone.Residential,
+                        house.PegWorld, YawFromForward(house.Lot.FacadeForward), .80f, .63f,
+                        house.Lot.Cell.y == -21 ? LaundryLinen : LaundryBlue, 0, 4, 5, false));
         }
 
         /// <summary>

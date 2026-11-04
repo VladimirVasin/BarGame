@@ -17,14 +17,12 @@ source `ArtSource/City/EastExit`.
 `build-city-east-ground-texture.py --verify`: grass/soil seam.
 
 `build-city-{buildings,coastal-infrastructure,street-profile,terrace}-3d-model.py`:
-launcher/`--validate-only`.
-v4.0.0:`Assets/City/Models/CityBuildings3D.{fbx,json}`;
-`CityBuildingAssetSetup.BuildOrThrow`.
-v1.0.0:`Assets/Resources/City/CoastalInfrastructure/CityCoastalInfrastructure3D.{fbx,json}`;
+launcher/`--validate-only`. Buildings: `Assets/City/Models/CityBuildings3D.{fbx,json}`;
+`CityBuildingAssetSetup.BuildOrThrow`. Coast: `Resources/City/CoastalInfrastructure`;
 `CityCoastalInfrastructureAssetSetup.{Build,Validate}OrThrow`.
-Street:`Assets/Resources/City/StreetProfile/CityStreetProfile3D.{fbx,json}`;
-`CityStreetSupportPlan`/`CityStreetSurfaceWorldBuilder`:tops/edges/metres.
-Terraces:8 FBXs/JSON→`Assets/Resources/CityTerraces`.
+`Resources/City/StreetProfile`: metre tops/edges for `CityStreetSupportPlan`.
+Terraces: `Assets/Resources/CityTerraces`. Upper City: `build-city-hillside-{house,bridge}-3d-model.py`
+writes measured FBXs and manifests to `Assets/Resources/City/Hillside`.
 
 `build-city-litter-3d-model.py`:36 props;`--validate-only`:geometry/determinism.
 `build-city-laundry-3d-model.py --validate-only`:metres/sign+SHA.

@@ -35,6 +35,23 @@ namespace BarPromenade
                     sources);
             }
 
+            foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).SharedCourtBuildings)
+            {
+                if (house.OnSummitStreet && house.HasGlazedBay)
+                {
+                    // The sound comes from the shoe of the actual downpipe.
+                    Vector3 shoe = house.ThresholdWorld + house.Lot.FacadeRotation * new Vector3(1.12f, .12f, .37f);
+                    sources.Add(new CitySoundSourceDescriptor("upper.stair-bay.downpipe", CityDistrictKind.Residential,
+                        CitySoundPhysicalOwnerKind.HillsideDownpipe, CitySourceSoundId.WaterworksDrip,
+                        shoe, new Bounds(shoe, new Vector3(.09f, .11f, .12f)), 7f,
+                        CitySourceSoundPlayback.OneShot, new CitySoundScheduleInterval(19f, 47f)));
+                }
+                if (house.HasAirer)
+                    sources.Add(new CitySoundSourceDescriptor("upper.balcony.linen", CityDistrictKind.Residential,
+                        CitySoundPhysicalOwnerKind.HillsideBalconyAirer, CitySourceSoundId.DryingYardClothLoop,
+                        house.PegWorld, new Bounds(house.PegWorld - Vector3.up * .30f, new Vector3(.80f, .64f, .18f)),
+                        8f, CitySourceSoundPlayback.Loop, CitySoundScheduleInterval.None));
+            }
             AddFountains(layout, decorationPlan, sources);
             AddPlaygrounds(layout, decorationPlan, sources);
             return CitySoundscapePlanner.Create(layout.Seed, sources);

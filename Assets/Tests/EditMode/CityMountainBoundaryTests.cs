@@ -19,13 +19,13 @@ namespace BarPromenade.Tests.EditMode
                 CityMountainBoundaryPlanner.Create(layout);
 
             Assert.That(first.IsEnabled, Is.True);
-            Assert.That(first.RidgeCount, Is.EqualTo(6));
+            Assert.That(first.RidgeCount, Is.EqualTo(8));
             Assert.That(
                 first.GetRidgeCount(CityMountainBoundarySide.West),
                 Is.EqualTo(3));
             Assert.That(
                 first.GetRidgeCount(CityMountainBoundarySide.South),
-                Is.EqualTo(3));
+                Is.EqualTo(5));
             Assert.That(first.HasRiverCave, Is.True);
             Assert.That(first.HasTunnel, Is.True);
             Assert.That(
@@ -488,7 +488,7 @@ namespace BarPromenade.Tests.EditMode
                 layout.Surfaces.Any(surface =>
                     surface.Cell == closure.VoidCell),
                 Is.False);
-            Assert.That(plan.RidgeCount, Is.EqualTo(6));
+            Assert.That(plan.RidgeCount, Is.EqualTo(8));
 
             float[] westCoordinates =
             {

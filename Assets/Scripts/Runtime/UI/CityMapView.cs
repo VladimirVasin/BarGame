@@ -585,6 +585,8 @@ namespace BarPromenade
                 DrawRiver(projection);
                 foreach (CityHillsideStreetRoute road in CityHillsideStreetPlan.ForLayout(controller.Layout).Routes)
                     DrawSolidRect(ProjectWorldRect(projection, CityHillsideNeighborhoodPlan.TerrainBounds(road)), MapGround);
+                Rect sharedLand = CityHillsideQuarterPlan.ForLayout(controller.Layout).TerrainBounds;
+                if (sharedLand.width > 0f) DrawSolidRect(ProjectWorldRect(projection, sharedLand), MapGround);
                 DrawMountainBoundary(projection);
                 DrawBuildings(projection);
                 DrawRoads(projection);
@@ -1655,10 +1657,26 @@ namespace BarPromenade
 
         private void DrawHillsideStreets(MapProjection projection)
         {
-            foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(controller.Layout).Buildings)
+            var quarter = CityHillsideQuarterPlan.ForLayout(controller.Layout);
+            // The teeth point down into the dry rock cut. They stop underneath a
+            // deck when its solid surface is drawn on top in the following pass.
+            var rim = quarter.RavineOutline;
+            for (int i = 0; i < rim.Count; i++)
             {
-                DrawSolidRect(ProjectWorldRect(projection, building.FoundationBounds),
-                    building.Bank == CityTerraceTransportBank.East ? ResidentialBuilding : IndustrialBuilding);
+                Vector2 a = rim[i], b = rim[(i + 1) % rim.Count];
+                Vector2 inward = new Vector2(a.y - b.y, b.x - a.x).normalized;
+                DrawLine(Project(a), Project(b), 2f, MountainToe);
+                int teeth = Mathf.FloorToInt(Vector2.Distance(a, b) / 3f);
+                for (int j = 0; j < teeth; j++)
+                {
+                    Vector2 from = Vector2.Lerp(a, b, (j + .5f) / teeth);
+                    DrawLine(Project(from), Project(from + inward * 1.25f), 1f, MountainHatch);
+                }
+            }
+            foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(controller.Layout).AllBuildings)
+            {
+                foreach (Rect body in building.MapFootprints)
+                    DrawSolidRect(ProjectWorldRect(projection, body), ResidentialBuilding);
                 DrawSolidRect(ProjectWorldRect(projection, building.CourtBounds), PublicPlaceLand);
                 DrawSolidRect(ProjectWorldRect(projection, building.ApproachBounds), PublicPlaceLand);
             }
@@ -1674,22 +1692,45 @@ namespace BarPromenade
                         projection.WorldToScreen(new Vector3(b.x, 0f, b.y)), width, GetPathColor(CityPathKind.Street));
                 }
             }
-            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(controller.Layout).Shortcuts)
+            foreach (var link in quarter.Links)
             {
-                DrawSolidRect(ProjectWorldRect(projection, stair.Bounds), PublicPlaceLand);
-                for (int i = 1; i < stair.RouteWorld.Count; i++)
+                var line = link.Centreline;
+                for (int i = 1; i < line.Count; i++)
+                    DrawLine(projection.WorldToScreen(line[i - 1]), projection.WorldToScreen(line[i]), width, GetPathColor(CityPathKind.Street));
+            }
+            foreach (var bridge in quarter.Bridges)
+            {
+                Rect deck = ProjectWorldRect(projection, bridge.DeckBounds);
+                float parapet = bridge.Id == "summit" ? 2f : 1f;
+                DrawSolidRect(deck, MouthBridge);
+                DrawLine(new Vector2(deck.xMin, deck.yMin), new Vector2(deck.xMax, deck.yMin), parapet, RetroUiTheme.Ink);
+                DrawLine(new Vector2(deck.xMin, deck.yMax), new Vector2(deck.xMax, deck.yMax), parapet, RetroUiTheme.Ink);
+                Joint(bridge.WestBearingWorld.x);
+                Joint(bridge.EastBearingWorld.x);
+
+                void Joint(float x)
                 {
-                    Vector3 a = stair.RouteWorld[i - 1], b = stair.RouteWorld[i];
-                    if (b.y - a.y < 1f) continue;
-                    for (int step = 0; step <= CityTerracePilotPlan.StepsPerFlight; step++)
+                    float screenX = projection.WorldToScreen(new Vector3(x, 0f, bridge.DeckCenterWorld.z)).x;
+                    DrawLine(new Vector2(screenX, deck.yMin), new Vector2(screenX, deck.yMax), 1f, MountainHatch);
+                }
+            }
+            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(controller.Layout).AllStairs)
+            {
+                foreach (var patch in stair.WalkableBounds)
+                    DrawSolidRect(ProjectWorldRect(projection, patch), PublicPlaceLand);
+                foreach (var flight in stair.Flights)
+                {
+                    Vector3 side = Vector3.Cross(Vector3.up, flight.Direction) * (flight.Width * .5f);
+                    for (int step = 0; step <= flight.StepCount; step++)
                     {
-                        Vector3 mid = Vector3.Lerp(a, b, step / (float)CityTerracePilotPlan.StepsPerFlight);
-                        Vector3 side = Vector3.right * CityTerracePilotPlan.FlightWidth * .5f;
+                        Vector3 mid = Vector3.Lerp(flight.Start, flight.End, step / (float)flight.StepCount);
                         DrawLine(projection.WorldToScreen(mid - side), projection.WorldToScreen(mid + side),
                             1f, GetPathColor(CityPathKind.ParkPath));
                     }
                 }
             }
+
+            Vector2 Project(Vector2 xz) => projection.WorldToScreen(new Vector3(xz.x, 0f, xz.y));
         }
 
         private void DrawTerraceCourts(MapProjection projection)
@@ -2512,7 +2553,9 @@ namespace BarPromenade
                     pointsOfInterest[index];
                 Color districtColor =
                     GetDistrictColor(pointOfInterest.District);
-                if (drawGround && pointOfInterest.HasFootprint)
+                if (drawGround && pointOfInterest.HasFootprint &&
+                    pointOfInterest.Kind != CityMapPointOfInterestKind.UpperCourtBridge &&
+                    pointOfInterest.Kind != CityMapPointOfInterestKind.UpperSummitBridge)
                 {
                     // A place squeezed between two ordinary lots: their
                     // drawn rects follow lot.Size and overrun the built
@@ -3276,6 +3319,8 @@ namespace BarPromenade
         {
             if (controller.SelectedArea != GameAreaId.City) return FormatMapPointCoordinates(position);
             Vector2 xz = new Vector2(position.x, position.z);
+            if (CityHillsideQuarterPlan.ForLayout(controller.Layout).TerrainBounds.Contains(xz))
+                return FormatMapPointCoordinates(position, true);
             var hills = CityHillsideStreetPlan.ForLayout(controller.Layout).Routes;
             for (int i = 0; i < hills.Count; i++)
                 if (CityHillsideNeighborhoodPlan.TerrainBounds(hills[i]).Contains(xz))
@@ -3705,6 +3750,18 @@ namespace BarPromenade
                             at + Vector2.up * (halfSize * .2f), width, color);
                     }
                     break;
+                case CityMapPointOfInterestKind.UpperCourtBridge:
+                case CityMapPointOfInterestKind.UpperSummitBridge:
+                    DrawLine(center + new Vector2(-halfSize, -halfSize * .4f),
+                        center + new Vector2(halfSize, -halfSize * .4f), width, color);
+                    for (int bank = -1; bank <= 1; bank += 2)
+                    {
+                        float x = center.x + bank * halfSize * .7f;
+                        DrawLine(new Vector2(x, center.y - halfSize * .4f),
+                            new Vector2(x, center.y + halfSize * .65f), width, color);
+                    }
+                    break;
+                case CityMapPointOfInterestKind.UpperSharedCourt:
                 case CityMapPointOfInterestKind.TerraceCourts:
                 case CityMapPointOfInterestKind.TerraceShortcut:
                 case CityMapPointOfInterestKind.TerraceLanding:

@@ -1,0 +1,580 @@
+{
+  "design_id": "upper_quarter_house_fittings_v1",
+  "models": [
+    {
+      "name": "GlazedStairBay",
+      "bounds_min": [
+        -1.12,
+        0.0,
+        -0.04
+      ],
+      "bounds_max": [
+        1.195,
+        8.77,
+        1.165
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Pipe",
+          "position": [
+            1.12,
+            1.32,
+            0.14
+          ]
+        },
+        {
+          "name": "FoldedBayCap",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "LandingGlazing",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "LandingsAndSteps",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "MullionsAndRainwater",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "StairBrickPiers",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 2464,
+      "geometry_signature": "a17c67bc7270053baff1a7f04ada5e8c7637ce5819d619888811f349dbd22d05"
+    },
+    {
+      "name": "BalconyAirer",
+      "bounds_min": [
+        -0.58,
+        -0.00797,
+        -0.24725
+      ],
+      "bounds_max": [
+        0.58,
+        0.986,
+        0.24725
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Linen",
+          "position": [
+            0.0,
+            0.94,
+            0.19
+          ]
+        },
+        {
+          "name": "FoldingDryingRack",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "TwoPegs",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 324,
+      "geometry_signature": "5c2435ecbaeca8b7976f2fb0e15c566e5b74ad0dd7c900a3fc67ac1f8330f639"
+    },
+    {
+      "name": "SteppedClerestory",
+      "bounds_min": [
+        -3.395,
+        0.0,
+        -1.72
+      ],
+      "bounds_max": [
+        3.355,
+        1.0,
+        1.72
+      ],
+      "anchors": [
+        {
+          "name": "ClerestoryFrames",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ClerestoryGlass",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "RoofStepBrickwork",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "SteppedCap",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 392,
+      "geometry_signature": "b42ee956768f05f50abd9b3b5464e86cf4921237fee2819223738f51e6855f93"
+    },
+    {
+      "name": "BalconyGallery0",
+      "bounds_min": [
+        -4.75856,
+        0.0,
+        -0.152
+      ],
+      "bounds_max": [
+        4.69356,
+        11.18,
+        2.0075
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Pier_-1_-1",
+          "position": [
+            -4.49356,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "ANCHOR_Pier_-1_1",
+          "position": [
+            -2.00356,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "ANCHOR_Pier_1_-1",
+          "position": [
+            2.06856,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "ANCHOR_Pier_1_1",
+          "position": [
+            4.42856,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "CantileverSlabs",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "CreamWindowJambs",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DeepCanopies",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "PiersAndBalustrades",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "RepairedGalleryPanels",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "TieBars",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "VerandaSashes",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 3384,
+      "geometry_signature": "f82bcefbe2f5e1aaf96e063bf12cb97e15e3fa55f462fa321c0b8dab777ec10e"
+    },
+    {
+      "name": "BalconyGallery2",
+      "bounds_min": [
+        -5.71,
+        0.0,
+        -0.152
+      ],
+      "bounds_max": [
+        5.645,
+        11.18,
+        2.0075
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Pier_-1_-1",
+          "position": [
+            -5.445,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "ANCHOR_Pier_-1_1",
+          "position": [
+            -2.955,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "ANCHOR_Pier_1_-1",
+          "position": [
+            3.02,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "ANCHOR_Pier_1_1",
+          "position": [
+            5.38,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "CantileverSlabs",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "CreamWindowJambs",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DeepCanopies",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "PiersAndBalustrades",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "RepairedGalleryPanels",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "TieBars",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "VerandaSashes",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 3384,
+      "geometry_signature": "88b64360cf642d40388ef4caf18d18dc49e47359dd5f9a0dec777340901bf086"
+    },
+    {
+      "name": "BalconyGallery3",
+      "bounds_min": [
+        -5.85,
+        0.0,
+        -0.152
+      ],
+      "bounds_max": [
+        5.785,
+        13.98,
+        2.0075
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Pier_-1_-1",
+          "position": [
+            -5.585,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "ANCHOR_Pier_-1_1",
+          "position": [
+            -2.54,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "ANCHOR_Pier_1_-1",
+          "position": [
+            3.16,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "ANCHOR_Pier_1_1",
+          "position": [
+            5.52,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "CantileverSlabs",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "CreamWindowJambs",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DeepCanopies",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "PiersAndBalustrades",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "RepairedGalleryPanels",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "TieBars",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "VerandaSashes",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 4168,
+      "geometry_signature": "5939336e5a2b7fa410ae2b17004c741aedd21c90844f61c248815a91531a58c8"
+    },
+    {
+      "name": "BalconyGallery4",
+      "bounds_min": [
+        -4.31,
+        0.0,
+        -0.152
+      ],
+      "bounds_max": [
+        4.245,
+        8.38,
+        2.0075
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Pier_-1_-1",
+          "position": [
+            -4.045,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "ANCHOR_Pier_-1_1",
+          "position": [
+            -1.555,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "ANCHOR_Pier_1_-1",
+          "position": [
+            1.62,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "ANCHOR_Pier_1_1",
+          "position": [
+            3.98,
+            1.38,
+            0.92
+          ]
+        },
+        {
+          "name": "CantileverSlabs",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "CreamWindowJambs",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DeepCanopies",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "PiersAndBalustrades",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "RepairedGalleryPanels",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "TieBars",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "VerandaSashes",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 2544,
+      "geometry_signature": "e0cc22c7b0aed381315c6bade8acb25d4d56707c22728a5006a49915b1a2372a"
+    }
+  ]
+}
