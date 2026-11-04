@@ -153,7 +153,6 @@ namespace BarPromenade
                         throw new ArgumentNullException(
                             nameof(openAreaAccesses))));
             WorldXZBounds = worldXZBounds;
-            MapWorldXZBounds = mapWorldXZBounds;
             SpawnNode = spawnNode;
             SpawnWorldPosition = GetNodeWorldPosition(spawnNode);
             nodeSet = new HashSet<Vector2Int>(Nodes);
@@ -183,6 +182,16 @@ namespace BarPromenade
                     districtsByKind.Add(district.Kind, district);
                 }
             }
+            // The town's surveyed core still sets shore/river geometry. The chart
+            // also covers the built streets and houses farther up each bank.
+            foreach (CityHillsideStreetRoute road in CityHillsideStreetPlan.ForLayout(this).Routes)
+            {
+                Rect hill = CityHillsideNeighborhoodPlan.TerrainBounds(road);
+                mapWorldXZBounds = Rect.MinMaxRect(Mathf.Min(hill.xMin, mapWorldXZBounds.xMin),
+                    Mathf.Min(hill.yMin, mapWorldXZBounds.yMin), Mathf.Max(hill.xMax, mapWorldXZBounds.xMax),
+                    Mathf.Max(hill.yMax, mapWorldXZBounds.yMax));
+            }
+            MapWorldXZBounds = mapWorldXZBounds;
         }
 
         public int Seed { get; }

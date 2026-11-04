@@ -377,6 +377,13 @@ namespace BarPromenade
                 : ridge.Side == CityMountainBoundarySide.West
                     ? Vector3.left
                     : Vector3.back;
+            if (ridge.Side == CityMountainBoundarySide.South && stationIndex > 0 && stationIndex + 1 < ridge.Stations.Count)
+            {
+                Vector2 before = station.WorldXZ - ridge.Stations[stationIndex - 1].WorldXZ;
+                Vector2 after = ridge.Stations[stationIndex + 1].WorldXZ - station.WorldXZ;
+                Vector2 tangent = (before.normalized + after.normalized).normalized;
+                expectedOutward = new Vector3(tangent.y, 0f, -tangent.x);
+            }
             if (Vector3.Dot(
                     station.OutwardNormal,
                     expectedOutward) < 0.995f)
@@ -807,7 +814,7 @@ namespace BarPromenade
             return false;
         }
 
-        private static bool TrySampleAreaTop(
+        internal static bool TrySampleAreaTop(
             CityLayout layout,
             string areaId,
             Vector2 worldXZ,
@@ -832,6 +839,14 @@ namespace BarPromenade
                 return true;
             }
 
+            foreach (CityHillsideStreetRoute road in CityHillsideStreetPlan.ForLayout(layout).Routes)
+            {
+                string owner = road.Bank == CityTerraceTransportBank.West
+                    ? CityMountainBoundaryDefinition.SouthWestAreaId : CityMountainBoundaryDefinition.SouthEastAreaId;
+                if (areaId != owner || !ContainsInclusive(CityHillsideNeighborhoodPlan.TerrainBounds(road), worldXZ)) continue;
+                topY = CityHillsideNeighborhoodPlan.SampleBank(layout, road, worldXZ);
+                return true;
+            }
             topY = 0f;
             return false;
         }

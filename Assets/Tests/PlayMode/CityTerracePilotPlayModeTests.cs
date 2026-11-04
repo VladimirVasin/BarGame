@@ -247,6 +247,7 @@ namespace BarPromenade.Tests.PlayMode
         private IEnumerator WalkCityRoute(IReadOnlyList<Vector3> route, bool reverse, string name,
             CityTerraceDistrictPlan plan, int residenceSide = 0)
         {
+            float frameSeconds = Time.captureDeltaTime;
             PlayerMotor motor = city.Player.Motor;
             CharacterController capsule = motor.GetComponent<CharacterController>();
             var presentation = (Player3DCharacterPresentation)city.Player.Visual;
@@ -257,18 +258,18 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3 target = route[index] + Vector3.up * PlayerFactory.GroundedRootOffset;
                 bool arrived = false;
                 int limit = Mathf.Max(MaximumWaypointFrames,
-                    Mathf.CeilToInt(Vector3.Distance(motor.transform.position, target) / (2.6f * FrameSeconds)) + 60);
+                    Mathf.CeilToInt(Vector3.Distance(motor.transform.position, target) / (2.6f * frameSeconds)) + 60);
                 for (int frame = 0; frame < limit && !arrived; frame++)
                 {
                     IsolateAmbientCollisionPairs();
                     Vector3 before = motor.transform.position;
-                    arrived = motor.MoveTowardsApproachWaypoint(target, .035f, FrameSeconds);
+                    arrived = motor.MoveTowardsApproachWaypoint(target, .035f, frameSeconds);
                     if (frame == limit - 1 && !arrived)
                     {
                         Vector3 direction = Vector3.ProjectOnPlane(target - before, Vector3.up).normalized;
-                        Vector3 desired = before + direction * (2.6f * FrameSeconds);
+                        Vector3 desired = before + direction * (2.6f * frameSeconds);
                         Vector3 allowed = city.World.WalkableArea.Constrain(before, desired, capsule.radius);
-                        Debug.Log($"Last guided step {name}: before={before:F4} moved={motor.transform.position:F4} " +
+                        Debug.Log($"Last guided step {name} station {index}/{route.Count - 1} to {target:F4}: before={before:F4} moved={motor.transform.position:F4} " +
                             $"allowed={allowed:F4} yawError={Vector3.Angle(motor.transform.forward, direction):F1} " +
                             $"horizontalFlags={capsule.collisionFlags}");
                     }
@@ -343,16 +344,19 @@ namespace BarPromenade.Tests.PlayMode
         private void IsolateAmbientCollisionPairs()
         {
             if (isolatedHeroCapsule == null || city == null || city.Pedestrians == null) return;
+            Vector3 heroPosition = isolatedHeroCapsule.transform.position;
             foreach (CityPedestrianActor actor in city.Pedestrians.Actors)
             {
-                Collider body = actor != null ? actor.CharacterController : null;
-                if (body == null) continue;
+                // Only nearby active actors can meet the next 0.26 m motor step.
+                if (actor == null || !actor.isActiveAndEnabled ||
+                    (actor.transform.position - heroPosition).sqrMagnitude > 16f) continue;
+                Collider body = actor.CharacterController;
+                if (body == null || !body.enabled) continue;
                 if (!ambientCollisionStates.ContainsKey(body))
                     ambientCollisionStates.Add(body, Physics.GetIgnoreCollision(isolatedHeroCapsule, body));
                 // Pooled bodies can be enabled later. Refresh the scoped pair
                 // immediately before the fixture moves, without stopping NPCs.
-                if (body.enabled && body.gameObject.activeInHierarchy &&
-                    !Physics.GetIgnoreCollision(isolatedHeroCapsule, body))
+                if (!Physics.GetIgnoreCollision(isolatedHeroCapsule, body))
                     Physics.IgnoreCollision(isolatedHeroCapsule, body, true);
             }
         }

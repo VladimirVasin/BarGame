@@ -32,7 +32,9 @@ namespace BarPromenade
         TerraceUnderpass = 13,
         TerraceLowerCourt = 14,
         TerraceShortcut = 15,
-        TerraceLanding = 16
+        TerraceLanding = 16,
+        ResidentialSummit = 17,
+        IndustrialSummit = 18
     }
 
     public readonly struct CityMapPointOfInterest
@@ -952,6 +954,12 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.TerraceLanding:
                     key = "map.poi.terrace_landing";
                     return true;
+                case CityMapPointOfInterestKind.ResidentialSummit:
+                    key = "map.poi.residential_summit";
+                    return true;
+                case CityMapPointOfInterestKind.IndustrialSummit:
+                    key = "map.poi.industrial_summit";
+                    return true;
                 case CityMapPointOfInterestKind.TerraceLowerCourt:
                     key = "map.poi.terrace_lower_court";
                     return true;
@@ -1492,6 +1500,18 @@ namespace BarPromenade
                 if (terraces.HasCourtyardLink) pointsOfInterest.Add(new CityMapPointOfInterest(
                     "terrace-landing", CityMapPointOfInterestKind.TerraceLanding, CityDistrictKind.Residential,
                     terraces.CourtyardLinkArrivalWorld + Vector3.up * rootOffset));
+            }
+            foreach (var bank in new[] { CityTerraceTransportBank.East, CityTerraceTransportBank.West })
+            {
+                foreach (CityHillsideStreetRoute route in CityHillsideStreetPlan.ForLayout(Layout).Routes)
+                {
+                    if (route.Bank != bank) continue;
+                    bool east = bank == CityTerraceTransportBank.East;
+                    pointsOfInterest.Add(new CityMapPointOfInterest(east ? "residential-summit" : "industrial-summit",
+                        east ? CityMapPointOfInterestKind.ResidentialSummit : CityMapPointOfInterestKind.IndustrialSummit,
+                        east ? CityDistrictKind.Residential : CityDistrictKind.Industrial,
+                        route.SummitArrivalWorld + Vector3.up * rootOffset));
+                }
             }
         }
 

@@ -63,9 +63,9 @@ namespace BarPromenade.Tests.PlayMode
             camera = null;
             reviewCamera = null;
             yield return null;
-            Assert.That(Object.FindObjectsByType<BarCrowdController>(FindObjectsSortMode.None), Is.Empty);
-            Assert.That(Object.FindObjectsByType<BarWashroomAccess>(FindObjectsSortMode.None), Is.Empty);
-            Assert.That(Object.FindObjectsByType<BarAisleTraffic>(FindObjectsSortMode.None), Is.Empty);
+            Assert.That(Object.FindObjectsByType<BarCrowdController>(), Is.Empty);
+            Assert.That(Object.FindObjectsByType<BarWashroomAccess>(), Is.Empty);
+            Assert.That(Object.FindObjectsByType<BarAisleTraffic>(), Is.Empty);
         }
 
         [Test]

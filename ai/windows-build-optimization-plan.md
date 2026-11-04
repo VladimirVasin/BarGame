@@ -169,7 +169,7 @@ ZIP публикуется после сравнения file size/CRC с исх
 Каждый build запускается только по запросу. Пример версии editor текущего проекта:
 
 ```sh
-unity_editor=/Applications/Unity/Hub/Editor/6000.6.7f1/Unity.app/Contents/MacOS/Unity
+unity_editor=/Applications/Unity/Hub/Editor/6000.6.8f1/Unity.app/Contents/MacOS/Unity
 "$unity_editor" -batchmode -quit -projectPath "$PWD" -buildTarget Win64 -executeMethod BarPromenade.Editor.ProjectSceneSetup.BuildWindows -logFile /tmp/bargame-windows-build.log
 "$unity_editor" -batchmode -quit -projectPath "$PWD" -buildTarget OSXUniversal -executeMethod BarPromenade.Editor.ProjectSceneSetup.BuildMacOS -logFile /tmp/bargame-macos-build.log
 python3 tools/report-unity-build.py --log /tmp/bargame-windows-build.log --output Build/reports/windows.json --configuration-id win64-mono-dx11dx12-scenes13-v1 --machine-id local-host --cache-state warm

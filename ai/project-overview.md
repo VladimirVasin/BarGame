@@ -4,7 +4,7 @@
 
 - Windows x64/macOS Universal; runtime-composed city/road/village/interiors.
   [World](current-world.md).
-- Unity `6000.6.7f1`, URP `17.6.0`, Input System `1.20.1`, Navigation `2.0.16`:
+- Unity `6000.6.8f1`, URP `17.6.0`, Input System `1.20.1`, Navigation `2.0.16`:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
 - 16:9/native/SMAA/savedFX;4:3 unsupported;City/balcony Soft,bar/church Neutral.

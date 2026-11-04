@@ -180,6 +180,8 @@ namespace BarPromenade.Editor
                 }
                 else Box("surface:" + surface.AreaId + ":" + surface.Cell, role, surface.WorldBounds);
             }
+            foreach (CityHillsideStreetRoute road in CityHillsideStreetPlan.ForLayout(layout).Routes)
+                Box("hill-ground:" + road.Bank, "ground", CityHillsideNeighborhoodPlan.TerrainBounds(road));
             CityMountainBoundaryPlan mountain = controller.MountainBoundaryPlan;
             foreach (CityMountainRidgeDescriptor ridge in mountain.Ridges)
             {
@@ -280,6 +282,39 @@ namespace BarPromenade.Editor
             }
             foreach (CityRiverBridgeDescriptor bridge in layout.River.Bridges)
                 Box("bridge:" + bridge.Definition.Id, "bridge", bridge.DeckBounds);
+            foreach (CityHillsideStreetRoute road in CityHillsideStreetPlan.ForLayout(layout).Routes)
+            {
+                string id = "hill-street:" + road.Bank;
+                for (int i = 0; i < road.WalkablePolygons.Count; i++)
+                    Poly(id + ":paving:" + i, "promenade", road.WalkablePolygons[i]);
+                Line(id, "road", CityHillsideStreetRoute.RoadHalfWidth * 2f, new List<Vector2>(road.Path.Vertices));
+            }
+            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).Shortcuts)
+            {
+                string id = "hill-stair:" + stair.Bank;
+                Box(id, "terrace-landing", stair.Bounds);
+                for (int i = 1; i < stair.RouteWorld.Count; i++)
+                {
+                    Vector3 a = stair.RouteWorld[i - 1], b = stair.RouteWorld[i];
+                    if (b.y - a.y < 1f) continue;
+                    for (int step = 0; step <= CityTerracePilotPlan.StepsPerFlight; step++)
+                    {
+                        Vector2 mid = XZ(Vector3.Lerp(a, b, step / (float)CityTerracePilotPlan.StepsPerFlight));
+                        Vector2 side = Vector2.right * (CityTerracePilotPlan.FlightWidth * .5f);
+                        Line(id + ":" + i + ":tread:" + step, "terrace-stair", .14f, new[] { mid - side, mid + side });
+                    }
+                }
+            }
+            int hillsideHouse = 0;
+            foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(layout).Buildings)
+            {
+                string id = "hill-building:" + building.Bank + ":" + hillsideHouse++;
+                Box(id + ":court", "terrace-court", building.CourtBounds);
+                Box(id + ":entry", "promenade", building.ApproachBounds);
+                int part = 0;
+                foreach (Vector2[] body in building.Lot.CreateCollisionPolygons())
+                    Poly(id + ":" + part++, "building", body);
+            }
             CityPortAccessPlan access = CityPortAccessPlan.ForLayout(layout);
             if (access != null)
             {

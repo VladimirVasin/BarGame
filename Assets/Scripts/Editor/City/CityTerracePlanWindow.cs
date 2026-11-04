@@ -15,7 +15,7 @@ namespace BarPromenade.Editor
     {
         private static readonly string[] Views = { "Сейчас", "Террасы", "Разрез", "Транспорт", "Профиль дороги", "Стыки", "Жилой подъём" };
         private static readonly string[] Banks = { "Запад", "Восток" };
-        private static readonly string[] LiveSections = { "От берега", "Через дворы", "Объезд" };
+        private static readonly string[] LiveSections = { "От берега", "Через дворы", "Объезд", "Запад до верха", "Восток до верха" };
         private static readonly Color LowColor = new Color(0.25f, 0.52f, 0.63f);
         private static readonly Color HighColor = new Color(0.88f, 0.67f, 0.30f);
         private static readonly Color ConflictColor = new Color(0.93f, 0.34f, 0.31f);
@@ -28,6 +28,7 @@ namespace BarPromenade.Editor
         private CityTerraceTransportPlan transport;
         private CityRoadElevationProfile liveAscent;
         private CityRoadElevationProfile liveBypass;
+        private readonly CityRoadElevationProfile[] hillsideSections = new CityRoadElevationProfile[2];
         private CityRoadElevationStation[] courtyardSection;
         private int selectedLiveSection;
         private Vector2 scroll;
@@ -72,6 +73,7 @@ namespace BarPromenade.Editor
             layout = null;
             liveAscent = null;
             liveBypass = null;
+            Array.Clear(hillsideSections, 0, hillsideSections.Length);
             courtyardSection = null;
             plan = null;
             transport = null;
@@ -104,6 +106,19 @@ namespace BarPromenade.Editor
                 }
                 liveAscent = MeasureRoad(candidate, CityCoastalAscentPlan.RouteNodes);
                 liveBypass = MeasureRoad(candidate, CityCoastalAscentPlan.TerraceBypassNodes);
+                Array.Clear(hillsideSections, 0, hillsideSections.Length);
+                foreach (CityHillsideStreetRoute route in CityHillsideStreetPlan.ForLayout(candidate).Routes)
+                {
+                    if (route.CoastApproachNodes.Count < 2) continue;
+                    CityRoadElevationProfile approach = MeasureRoad(candidate, route.CoastApproachNodes);
+                    if (approach == null) continue;
+                    var stations = new List<CityRoadElevationStation>(approach.Stations);
+                    float joinDistance = approach.HorizontalLength + Vector2.Distance(
+                        candidate.RoadGeometry.GetNodePosition(route.MouthNode), route.Path.Vertices[0]);
+                    foreach (CityRoadElevationStation sample in route.Profile.Stations)
+                        stations.Add(new CityRoadElevationStation(joinDistance + sample.HorizontalDistance, sample.Height));
+                    hillsideSections[(int)route.Bank] = new CityRoadElevationProfile(stations, CityElevationPlan.MaximumBusGradePercent);
+                }
                 courtyardSection = MeasureWalk(CityTerraceDistrictPlan.ForLayout(candidate).CourtyardLinkRouteWorld);
                 layout = candidate;
                 plan = draft;
@@ -141,7 +156,7 @@ namespace BarPromenade.Editor
         {
             EditorGUILayout.LabelField("Этап 1 · профиль и перепланировка улиц", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Жилой подъём показывает действующие улицы и лестницы. Проектные схемы показывают дальнейший подъём города к выбранной верхней отметке.",
+                "В разделе «Жилой подъём» доступны разрезы действующих улиц от берега до обеих верхних площадок. Ползунок меняет проектный профиль старой сетки.",
                 MessageType.Info);
             seed = EditorGUILayout.IntField("Seed", seed);
             summit = EditorGUILayout.Slider("Верхняя отметка, м", summit, 35f, 45f);
@@ -164,7 +179,7 @@ namespace BarPromenade.Editor
             EditorGUILayout.LabelField(
                 $"Рассчитано: seed {plan.Seed}, верхняя отметка {plan.TargetSummitElevation:0.0} м");
             EditorGUILayout.LabelField(
-                $"Отметки улиц: сейчас {plan.CurrentMinimumElevation:0.0}–{plan.CurrentMaximumElevation:0.0} м; " +
+                $"Исходная сетка улиц {plan.CurrentMinimumElevation:0.0}–{plan.CurrentMaximumElevation:0.0} м, " +
                 $"предложение {plan.TargetMinimumElevation:0.0}–{plan.TargetMaximumElevation:0.0} м.");
             EditorGUILayout.LabelField(
                 $"Улиц с превышением уклона: {plan.RoadConflicts.Count}. Подъём транспорта: ≥ {plan.MinimumTransportClimbLength:0} м.");
@@ -409,16 +424,18 @@ namespace BarPromenade.Editor
         {
             selectedLiveSection = GUILayout.Toolbar(selectedLiveSection, LiveSections);
             bool walking = selectedLiveSection == 1;
-            CityRoadElevationProfile road = selectedLiveSection == 2 ? liveBypass : liveAscent;
+            bool hillside = selectedLiveSection >= 3;
+            CityRoadElevationProfile road = hillside ? hillsideSections[selectedLiveSection - 3] :
+                selectedLiveSection == 2 ? liveBypass : liveAscent;
             IReadOnlyList<CityRoadElevationStation> stations = walking ? courtyardSection : road?.Stations;
             if (stations == null || stations.Count < 2)
             {
                 EditorGUILayout.HelpBox("Для этой планировки маршрут недоступен.", MessageType.Info);
                 return;
             }
-            bool fromCoast = selectedLiveSection == 0;
-            string endName = fromCoast ? "Тупик" : walking ? "Нижний двор" : "Перекрёсток";
-            EditorGUILayout.LabelField(fromCoast ? "От набережной до жилого квартала" : walking
+            bool fromCoast = selectedLiveSection == 0 || hillside;
+            string endName = hillside ? "Верхняя улица" : fromCoast ? "Тупик" : walking ? "Нижний двор" : "Перекрёсток";
+            EditorGUILayout.LabelField(hillside ? "От набережной до верхней улицы" : fromCoast ? "От набережной до жилого квартала" : walking
                 ? "От тупика через лестничную площадку в нижний двор"
                 : "От тупика по улицам до перекрёстка у нижнего двора", EditorStyles.boldLabel);
             CityRoadElevationStation first = stations[0], last = stations[stations.Count - 1];

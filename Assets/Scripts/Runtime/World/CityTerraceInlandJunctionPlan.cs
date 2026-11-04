@@ -6,8 +6,8 @@ namespace BarPromenade
 {
     /// <summary>
     /// The first live eastern transport alignment. Stable grid identities and
-    /// existing terrace heights remain authoritative; the forty-metre ascent
-    /// is still the separate transport survey, not an active elevation field.
+    /// existing terrace heights remain authoritative. The forty-metre upper
+    /// neighbourhoods connect to the core at their southern street mouths.
     /// </summary>
     public static class CityTerraceInlandJunctionPlan
     {

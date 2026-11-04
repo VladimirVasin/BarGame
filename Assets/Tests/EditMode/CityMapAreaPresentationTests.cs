@@ -967,11 +967,13 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.TerraceUnderpass,
                     CityMapPointOfInterestKind.TerraceLowerCourt,
                     CityMapPointOfInterestKind.TerraceShortcut,
-                    CityMapPointOfInterestKind.TerraceLanding
+                    CityMapPointOfInterestKind.TerraceLanding,
+                    CityMapPointOfInterestKind.ResidentialSummit,
+                    CityMapPointOfInterestKind.IndustrialSummit
                 };
                 var expectedIds = new[]
                 {
-                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court", "terrace-shortcut", "terrace-landing"
+                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court", "terrace-shortcut", "terrace-landing", "residential-summit", "industrial-summit"
                 };
                 var expectedDistricts = new[]
                 {
@@ -987,7 +989,9 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
-                    CityDistrictKind.Residential
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Industrial
                 };
                 int lotCount = layout.DistrictPointsOfInterest.Count;
                 Assert.That(controller.PointsOfInterest, Has.Count.EqualTo(lotCount + expectedKinds.Length));
@@ -1020,6 +1024,12 @@ namespace BarPromenade.Tests.EditMode
                     { CityMapPointOfInterestKind.TerraceShortcut, ("Проход за домом", terraces.ShortcutCourtArrivalWorld) },
                     { CityMapPointOfInterestKind.TerraceLanding, ("Верхняя площадка", terraces.CourtyardLinkArrivalWorld) }
                 };
+                foreach (CityHillsideStreetRoute route in CityHillsideStreetPlan.ForLayout(layout).Routes)
+                {
+                    bool east = route.Bank == CityTerraceTransportBank.East;
+                    terraceArrivals.Add(east ? CityMapPointOfInterestKind.ResidentialSummit : CityMapPointOfInterestKind.IndustrialSummit,
+                        (east ? "Верхняя жилая улица" : "Верхняя рабочая улица", route.SummitArrivalWorld));
+                }
                 var standingByIndex = new Dictionary<int, Vector3>();
                 for (int offset = 0; offset < expectedKinds.Length; offset++)
                 {

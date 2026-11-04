@@ -88,6 +88,7 @@ namespace BarPromenade
                     templates.Add(renderer.transform);
             if (templates.Count != 4)
                 throw new InvalidOperationException("The valley needs its four authored car surfaces.");
+            var visibility = new MaterialPropertyBlock();
             vehicles = new Transform[2];
             for (int i = 0; i < vehicles.Length; i++)
             {
@@ -105,6 +106,8 @@ namespace BarPromenade
                     part.SetPositionAndRotation(origin, template.rotation);
                     part.localScale = template.lossyScale;
                     part.SetParent(actor, true);
+                    template.GetComponent<MeshRenderer>().GetPropertyBlock(visibility);
+                    part.GetComponent<MeshRenderer>().SetPropertyBlock(visibility);
                     part.gameObject.SetActive(true);
                 }
             }

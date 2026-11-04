@@ -1905,7 +1905,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(GameSessionState.IsWorldItemCollected(continuityItem), Is.True);
                 CollectionAssert.AreEqual(inventory, GameSessionState.InventoryItems);
                 CollectionAssert.AreEqual(quests, GameSessionState.Quests);
-                Assert.That(Object.FindObjectsByType<PlayerMotor>(FindObjectsSortMode.None), Has.Length.EqualTo(1));
+                Assert.That(Object.FindObjectsByType<PlayerMotor>(), Has.Length.EqualTo(1));
                 Assert.That(Object.FindAnyObjectByType<StairwellInteriorRoot>(), Is.Null);
                 Assert.That(warehouse.Player.Motor.InputEnabled && warehouse.Player.Interactor.InputEnabled, Is.True);
                 Assert.That(warehouse.CameraFollow.FixedPoseActive, Is.False);

@@ -138,6 +138,7 @@ namespace BarPromenade
                 graph.ExcludeTerraceGround(terrace);
                 BuildTerracePaths(layout, streetSurfacePlan, terrace, graph);
             }
+            BuildHillsidePaths(layout, streetSurfacePlan, graph);
             return graph.CreatePlan(
                 layout.Seed,
                 populationSeed,

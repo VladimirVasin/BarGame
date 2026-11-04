@@ -10,6 +10,8 @@ Shader "Bar Promenade/City East Distance"
         _ViewDirection("View Hemisphere", Vector) = (1, 0, 0, 0)
         _Visibility("Area Visibility", Range(0, 1)) = 1
         _CheckpointView("Checkpoint XZ / Full / Hidden Distance", Vector) = (0, 0, 0, 0)
+        [HideInInspector] _EastHillView("Eastern Hillside", Vector) = (0, 0, 0, 0)
+        [HideInInspector] _WestHillView("Western Hillside", Vector) = (0, 0, 0, 0)
         _RockMap("Shared Weathered Stone", 2D) = "gray" {}
         _RoadMap("Shared Asphalt", 2D) = "gray" {}
     }
@@ -42,6 +44,8 @@ Shader "Bar Promenade/City East Distance"
                 float4 _ViewDirection;
                 float _Visibility;
                 float4 _CheckpointView;
+                float4 _EastHillView;
+                float4 _WestHillView;
             CBUFFER_END
 
             struct Attributes
@@ -57,8 +61,18 @@ Shader "Bar Promenade/City East Distance"
                 float2 uv : TEXCOORD0;
                 float3 world : TEXCOORD1;
                 float3 normal : TEXCOORD2;
+                half panoramaAlpha : TEXCOORD3;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
+
+            half HillsideCoverage(float4 zone)
+            {
+                if (zone.w <= 0) return 0;
+                float2 camera = _WorldSpaceCameraPos.xz;
+                float inside = min(zone.z - camera.y,
+                    min(camera.x - zone.x, zone.y - camera.x));
+                return (half)smoothstep(0.0, zone.w, inside);
+            }
 
             Varyings DistanceVertex(Attributes input)
             {
@@ -81,6 +95,7 @@ Shader "Bar Promenade/City East Distance"
                     clipPosition.z = clipPosition.w * (1.0 -
                         (1.0 - band.z / band.w) * fraction);
                 #endif
+                output.panoramaAlpha = 1.0h - max(HillsideCoverage(_EastHillView), HillsideCoverage(_WestHillView));
                 output.positionCS = clipPosition;
                 output.uv = input.uv;
                 output.world = world;
@@ -91,6 +106,7 @@ Shader "Bar Promenade/City East Distance"
             half4 DistanceFragment(Varyings input) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                clip(input.panoramaAlpha - 0.0001h);
                 float3 ray = input.world - _WorldSpaceCameraPos;
                 clip(dot(ray, _ViewDirection.xyz));
                 float d = length(ray);
@@ -113,7 +129,7 @@ Shader "Bar Promenade/City East Distance"
                     float soft = exp(-radius * 4.5) * (1.0 - smoothstep(0.55, 1.0, radius));
                     float reach = exp(-d / (_Role > 14.5 ? 1100.0 : 2400.0));
                     float alpha = soft * reach * (_Role > 14.5 ? 0.23 : 0.12);
-                    return half4(_Tint.rgb, alpha * _Visibility);
+                    return half4(_Tint.rgb, alpha * _Visibility * input.panoramaAlpha);
                 }
                 if (_Role > 4.5 && _Role < 5.5)
                 {
@@ -133,7 +149,7 @@ Shader "Bar Promenade/City East Distance"
                     float grain = 0.90 + 0.065 * sin(x * 18.0 + height * 9.0) +
                         0.035 * sin(x * 31.0 - height * 16.0);
                     float density = pools * sides * rise * ceiling * grain;
-                    return half4(_Tint.rgb, saturate(density * 0.42) * _Visibility * cityVisibility);
+                    return half4(_Tint.rgb, saturate(density * 0.42) * _Visibility * cityVisibility * input.panoramaAlpha);
                 }
 
                 half3 surface = _Tint.rgb;
@@ -211,7 +227,7 @@ Shader "Bar Promenade/City East Distance"
                 // Opaque skyline/window depth remains coherent while their
                 // contrast melts into haze. Alpha/discard would reveal distant
                 // surfaces through buildings or pop them at the outer bound.
-                return half4(lerp(_HazeColor.rgb, surface, visibility * _Visibility * cityVisibility), 1);
+                return half4(lerp(_HazeColor.rgb, surface, visibility * _Visibility * cityVisibility), input.panoramaAlpha);
             }
             ENDHLSL
         }

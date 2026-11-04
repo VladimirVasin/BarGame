@@ -159,7 +159,7 @@ namespace BarPromenade
             {
                 motor.Teleport(saved.Position);
                 motor.transform.rotation = saved.Rotation;
-                foreach (PlayerCameraFollow follow in Object.FindObjectsByType<PlayerCameraFollow>(FindObjectsSortMode.None))
+                foreach (PlayerCameraFollow follow in Object.FindObjectsByType<PlayerCameraFollow>())
                     if (follow.gameObject.scene == motor.gameObject.scene)
                         follow.Snap();
             }
@@ -176,7 +176,7 @@ namespace BarPromenade
 
         private static PlayerMotor FindPlayer(string scene)
         {
-            foreach (PlayerMotor motor in Object.FindObjectsByType<PlayerMotor>(FindObjectsSortMode.None))
+            foreach (PlayerMotor motor in Object.FindObjectsByType<PlayerMotor>())
                 if (motor.gameObject.scene.name == scene) return motor;
             return null;
         }

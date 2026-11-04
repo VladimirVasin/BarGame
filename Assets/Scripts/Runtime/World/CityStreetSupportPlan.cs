@@ -17,7 +17,7 @@ namespace BarPromenade
         internal const float ContactTolerance = .001f;
         internal CityStreetSupportPatch(IReadOnlyList<Vector3> topVertices,
             CityStreetSupportKind kind, float thickness, int priority,
-            RoadEdge? edge = null, Vector2Int? flatNode = null, bool isSupport = true)
+            RoadEdge? edge = null, Vector2Int? flatNode = null, bool isSupport = true, CityRoadPath roadFrame = null)
         {
             if (topVertices == null || topVertices.Count < 3)
                 throw new ArgumentException("A street patch needs at least three vertices.", nameof(topVertices));
@@ -32,7 +32,7 @@ namespace BarPromenade
             }
             TopVertices = Array.AsReadOnly(copy);
             Kind = kind; Thickness = thickness; Priority = priority;
-            Edge = edge; FlatNode = flatNode; IsSupport = isSupport;
+            Edge = edge; FlatNode = flatNode; IsSupport = isSupport; RoadFrame = roadFrame;
             Bounds = Rect.MinMaxRect(minimum.x, minimum.y, maximum.x, maximum.y);
         }
 
@@ -42,6 +42,7 @@ namespace BarPromenade
         public Vector2Int? FlatNode { get; }
         // Buried closure skirts contribute side faces, never an upper floor.
         public bool IsSupport { get; }
+        internal CityRoadPath RoadFrame { get; }
         public FootstepGroundKind FootstepKind => Kind == CityStreetSupportKind.Sidewalk
             ? FootstepGroundKind.Stone : Kind == CityStreetSupportKind.ParkPath
                 ? FootstepGroundKind.Soil : FootstepGroundKind.Concrete;
@@ -96,7 +97,7 @@ namespace BarPromenade
         private const float BucketSize = 16f;
         private readonly Dictionary<Vector2Int, List<int>> buckets = new Dictionary<Vector2Int, List<int>>();
 
-        private CityStreetSupportPlan(IReadOnlyList<CityStreetSupportPatch> patches)
+        internal CityStreetSupportPlan(IReadOnlyList<CityStreetSupportPatch> patches)
         {
             Patches = patches;
             for (int index = 0; index < patches.Count; index++)
@@ -135,6 +136,11 @@ namespace BarPromenade
             AddBoxes(plan.ParkPathGeometry, CityStreetSupportKind.ParkPath, 20);
             AddBoxes(plan.SidewalkGeometry, CityStreetSupportKind.Sidewalk, 30, plan.SidewalkClosureGeometryIndices);
             AddRibbons(plan.CurvedSidewalkRibbons, CityStreetSupportKind.Sidewalk, 30);
+            foreach (CityHillsideStreetRoute route in CityHillsideStreetPlan.ForLayout(layout).Routes)
+            {
+                CutMouth(patches, route.MouthCut);
+                patches.AddRange(route.SurfacePatches);
+            }
             var result = new CityStreetSupportPlan(patches.AsReadOnly());
             plan.SupportPlan = result;
             return result;
@@ -167,6 +173,36 @@ namespace BarPromenade
                     patches.Add(new CityStreetSupportPatch(
                         CityStreetSurfacePlanner.GetRibbonTop(layout, ribbon, index), kind, ribbon.Thickness, priority,
                         ribbon.Edge, ribbon.FlatNode));
+            }
+        }
+
+        // Open the actual street rim at each T-junction before adding its new
+        // carriageway. Preserve the old patch plane and ownership on either side.
+        private static void CutMouth(List<CityStreetSupportPatch> patches, Rect mouth)
+        {
+            Vector2[] opening = CityRoadPolygon.Rectangle(mouth);
+            for (int i = patches.Count - 1; i >= 0; i--)
+            {
+                CityStreetSupportPatch patch = patches[i];
+                if (!patch.Bounds.Overlaps(mouth)) continue;
+                var xz = new Vector2[patch.TopVertices.Count];
+                for (int j = 0; j < xz.Length; j++)
+                    xz[j] = new Vector2(patch.TopVertices[j].x, patch.TopVertices[j].z);
+                patches.RemoveAt(i);
+                foreach (Vector2[] remainder in CityRoadPolygon.Subtract(CityRoadPolygon.CounterClockwise(xz), opening))
+                {
+                    if (Mathf.Abs(CityRoadPolygon.Area(remainder)) < .00001f) continue;
+                    var world = new Vector3[remainder.Length];
+                    for (int j = 0; j < remainder.Length; j++)
+                    {
+                        Vector2 point = remainder[j];
+                        if (!CityStreetSupportPatch.TrySampleTop(patch.TopVertices, point, out float y))
+                            throw new InvalidOperationException("A hillside street cut escaped the original pavement.");
+                        world[j] = new Vector3(point.x, y, point.y);
+                    }
+                    patches.Insert(i, new CityStreetSupportPatch(world, patch.Kind, patch.Thickness, patch.Priority,
+                        patch.Edge, patch.FlatNode, patch.IsSupport, patch.RoadFrame));
+                }
             }
         }
 

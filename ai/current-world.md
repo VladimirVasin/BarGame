@@ -426,9 +426,9 @@ cemetery:own interiors/returns.
   Two raised houses/two OpenGround,144 IDs. House11,8 sits3.84m below street,
   roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
-  Junctions12,8/13,8 retain Y. The street gains3.84m to dead end12,10;
-  a rear stair cuts the bend. A window landing links the dead end to Lower Court.
-  Citywide35–45m planned.
+  Coast streets rise to Lower Court or the two upper districts at 40m.
+  Seven traverses per bank, level widened turns, stair shortcuts, supported
+  houses/workshops and mapped summits.
   `10×6 m` rear wings require padded clearance and a `2.4 m`
   court gap. `3.6 m` through passages remain walkable under separate overhead
   collision, height `3.2 m` (`4.2 m` Industrial). Court loops join the graph;
@@ -523,9 +523,9 @@ cemetery:own interiors/returns.
   Pooled lamp + canopy/shed Spots: day floor/halos/hard shadows.
   `CityEastRoadProfile`: shared road/land/car/lamp datum; `RoadGroundCuts` bends.
   First mast joins pool `12`; later shells/lenses/halos/pools are passive.
-  `CityEastDistance*`: valley-floor city/windows/glow fade together by camera
-  XZ distance to post: full≤12m, smooth→0 at30m. Road/valley stay.
-  Source depth: clip's last `.20 m`; foreground/48m clip stay.
+  East valley skyline/windows/glow fade 12–30m from post. Far-depth (.20m)
+  panorama and traffic fade on entering either southern hill over 12m.
+  Local geometry and 48m clip stay.
   2 cars: exported lanes/session phase/pause/time guard;
   no gameplay/Light/physics/shadow/audio;
 - `CityEastGuardDuty`: one home, one three-point out-and-back patrol; swap
@@ -554,8 +554,8 @@ cemetery:own interiors/returns.
   batches. Cast bollards replace cylinders with matching physical bounds;
   the existing routes, openings, lamp anchors and water owners remain;
 - one immutable `CityElevationPlan` produced after 2D topology and before any
-  lot, surface or access is materialized. The default coastal blueprint spans
-  about `8.1 m` across its generated road nodes, peaks near `10.08 m`, gives
+  lot, surface or access is materialized. The original grid spans
+  about `8.1 m` below the two 40m upper streets and gives
   every urban district at least `1.5 m` of local elevation variation, keeps
   the sea at datum `0` and gives the river a monotonic descent into it.
   The seacoast's raised decks — the mol, the sea pier and the mouth

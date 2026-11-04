@@ -61,7 +61,7 @@ namespace BarPromenade.Tests.PlayMode
             // A preceding scene test can leave its production hero loaded.
             // Only this fixture's hero may read the synthetic input or mutate
             // the shared session bottle; restore the prior actors afterward.
-            previousPlayers = Object.FindObjectsByType<PlayerVodkaBottleController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            previousPlayers = Object.FindObjectsByType<PlayerVodkaBottleController>(FindObjectsInactive.Include);
             previousPlayerStates = new bool[previousPlayers.Length];
             for (int i = 0; i < previousPlayers.Length; i++)
             {
@@ -1170,7 +1170,7 @@ namespace BarPromenade.Tests.PlayMode
                     name + ": the actual palm must remain on the visible bottle, including the mouth-contact correction.");
             }
             foreach (Transform child in fixture.GetComponentsInChildren<Transform>(true)) child.gameObject.layer = CaptureLayer;
-            foreach (ThrownVodkaBottle thrown in Object.FindObjectsByType<ThrownVodkaBottle>(FindObjectsSortMode.None))
+            foreach (ThrownVodkaBottle thrown in Object.FindObjectsByType<ThrownVodkaBottle>())
                 foreach (Transform child in thrown.GetComponentsInChildren<Transform>(true)) child.gameObject.layer = CaptureLayer;
             Transform body = player.GameObject.transform;
             bool handClose = name.Contains("thumb-and-four-fingers");

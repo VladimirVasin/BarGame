@@ -3,19 +3,18 @@
 ## Current facts
 
 - **Accepted architecture extension — 2026-11-03,user — terraced City:**
-  Low coast/port/river,3–5 floors,short Home↔Bar. Citywide target35–45m.
-  Bridge4.8×2.4m at+7.68 above3m alley, shared XZ/distinct Y, rain shelter.
-  `2026-11-04` inland junctions12,8/13,8 retain datum,4m flats and5.6% limit.
-  Level east exit3×2.4m. House11,8 is3.84m below street, roof below upper eye.
-  `CityCoastalAscentPlan` fits existing graph before lot rebase. From (10,12)
-  to (12,10), four streets gain3.84m in104m, side ties≤5.9%. The level north
-  frontage of11,10 feeds a single1.92m flight behind its inhabited house.
-  The walking link rounds the second road end, rises to a window landing and
-  descends into Lower Court. Paving, cuts, guards, NPC links and map heights
-  share the terrace plan and Blender kit. The future eastern R6 goes north
-  around both passages. Fog, post and ordinary camera apply.
-  A shallow earth bench keeps the dog yard at (10,9) and connects its north gate
-  to pavement. Map geometry/XYZ updates each slice, ImageGen once at final geometry.
+  Low coast, port and river. Occupied 3–5-storey east and working west rise
+  to asphalt Y40. The river-crossing grid limits grades, so both streets
+  continue south of the original blocks on solid ground inside the rim.
+  Each bank has seven traverses, level R13 turns, two pavements and a
+  two-flight shortcut. The outer curve widens .75m for the measured bus
+  overhang at R13 and .90m at the tighter R9 entry. Earth, houses, doors, NPCs and map share the street station data.
+  River cave and tunnel stay at the original low endpoints. Home–Bar ~57m.
+  Earlier terrace: +7.68m bridge, sheltered 3m alley at the same XZ, lower
+  house below the street. The first 104m ascent gains3.84m, passes the dog
+  yard and connects via the window landing to Lower Court. Street heights
+  rebase lots before construction. Map logic follows geometry, final art once.
+  Shared fog/post/camera; story §§16/21 and art acceptance apply.
   [Acceptance and named checks](city-multilevel-plan.md).
 
 - **Accepted architecture exception — 2026-11-03,user — doubled calendar day:**
@@ -30,7 +29,7 @@
   drift:shared wind/absolute game time;Home maps axes. Pause/roof/
   dormancy/return/unload retain ownership;road/village stay.
   `CityEastDistance*`:camera XZ/post;skyline/windows/glow fade12→30m,full≤12/0≥30.
-  Road/valley/traffic/lighthouse stay.
+  Far panorama/traffic fade over the first 12m inside either southern hill.
   Cached refs/MPB;recurring loads/material instances0;GPU unmeasured.
   24FX:GI bounded bounce/SSAO/shadows/grade stay;fog changes,existing source
   volumes reused,no City SSGI/SCGI. Probes/SSR/water/wetness/bevels/vertex colour/
@@ -2664,7 +2663,7 @@
   minutes/day); alcohol recovery retains its unscaled rate and modal/transition
   blockers. This supersedes earlier scaled-calendar/unscaled physical
   bar/refrigerator descriptions below.
-- **Accepted:** Unity `6000.6.7f1`, AI Navigation `2.0.16`, Input System `1.20.1` (settings, 2026-10-23), URP `17.6.0`; test framework `1.8.0`, Timeline `6.6.0`, uGUI `2.6.0`.
+- **Accepted:** Unity `6000.6.8f1`, AI Navigation `2.0.16`, Input System `1.20.1` (settings, 2026-10-23), URP `17.6.0`; test framework `1.8.0`, Timeline `6.6.0`, uGUI `2.6.0`.
 - **Accepted — New Input System:** `RetroUiInput` retains bounded button
   edges/scroll via `onAfterUpdate` until first readable Repaint; fixed press/
   release coordinates. Held capture survives repaint gaps. Focus/scene/device/

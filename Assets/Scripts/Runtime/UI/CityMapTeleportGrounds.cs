@@ -150,6 +150,10 @@ namespace BarPromenade
         {
             if (terraces.ContainsFootprint(worldXZ))
                 return terraces.TrySampleStandingTop(worldXZ, 0f, out top);
+            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).Shortcuts)
+                if (stair.TrySampleTop(worldXZ, out top)) return true;
+            foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(layout).Buildings)
+                if (building.TrySampleApproach(worldXZ, out top)) return true;
             CityFairPlan fair = CityFairPlanner.Create(layout);
             if (fair.IsEnabled && fair.Bounds.Contains(worldXZ))
             {

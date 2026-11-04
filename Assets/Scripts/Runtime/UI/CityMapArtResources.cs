@@ -191,6 +191,32 @@ namespace BarPromenade
                         Point(writer, terraces.CourtyardLinkArrivalWorld);
                     }
                 }
+                foreach (CityHillsideStreetRoute road in CityHillsideStreetPlan.ForLayout(layout).Routes)
+                {
+                    writer.Write((int)road.Bank);
+                    writer.Write(road.Path.Vertices.Count);
+                    foreach (var paving in road.WalkablePolygons)
+                        foreach (Vector2 point in paving) Point(writer, point);
+                    for (int i = 0; i < road.Path.Vertices.Count; i++)
+                    {
+                        Point(writer, road.Path.Vertices[i]);
+                        Scalar(writer, road.Profile.Stations[i].Height);
+                    }
+                }
+                foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).Shortcuts)
+                {
+                    RectValue(writer, stair.Bounds);
+                    foreach (Vector3 point in stair.RouteWorld) Point(writer, point);
+                }
+                foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(layout).Buildings)
+                {
+                    writer.Write(building.Lot.BuildingVariant); Scalar(writer, building.Lot.Height);
+                    foreach (Vector2[] body in building.Lot.CreateCollisionPolygons())
+                        foreach (Vector2 vertex in body) Point(writer, vertex);
+                    RectValue(writer, building.FoundationBounds); RectValue(writer, building.CourtBounds);
+                    RectValue(writer, building.ApproachBounds); Point(writer, building.DoorWorld);
+                    Point(writer, building.StreetContactWorld);
+                }
                 CityPortAccessPlan portAccess = CityPortAccessPlan.ForLayout(layout);
                 writer.Write(portAccess != null);
                 if (portAccess != null)

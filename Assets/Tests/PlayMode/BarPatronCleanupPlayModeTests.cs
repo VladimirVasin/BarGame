@@ -71,7 +71,7 @@ namespace BarPromenade.Tests.PlayMode
             choreography = null;
             playerAction = null;
             yield return null;
-            Assert.That(Object.FindObjectsByType<BarCrowdController>(FindObjectsSortMode.None), Is.Empty);
+            Assert.That(Object.FindObjectsByType<BarCrowdController>(), Is.Empty);
         }
 
         [UnityTest]

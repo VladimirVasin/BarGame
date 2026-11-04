@@ -100,6 +100,8 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(CityMapPointOfInterestKind.TerraceUnderpass, "map.poi.terrace_underpass")]
         [TestCase(CityMapPointOfInterestKind.TerraceShortcut, "map.poi.terrace_shortcut")]
         [TestCase(CityMapPointOfInterestKind.TerraceLanding, "map.poi.terrace_landing")]
+        [TestCase(CityMapPointOfInterestKind.ResidentialSummit, "map.poi.residential_summit")]
+        [TestCase(CityMapPointOfInterestKind.IndustrialSummit, "map.poi.industrial_summit")]
         [TestCase(CityMapPointOfInterestKind.TerraceLowerCourt, "map.poi.terrace_lower_court")]
         public void PointOfInterestLocalizationKeys_AreStable(
             CityMapPointOfInterestKind kind,

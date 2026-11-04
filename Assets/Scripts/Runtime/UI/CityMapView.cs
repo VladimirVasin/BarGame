@@ -583,9 +583,12 @@ namespace BarPromenade
                 DrawSurfaces(projection);
                 DrawAreaGrounds(projection);
                 DrawRiver(projection);
+                foreach (CityHillsideStreetRoute road in CityHillsideStreetPlan.ForLayout(controller.Layout).Routes)
+                    DrawSolidRect(ProjectWorldRect(projection, CityHillsideNeighborhoodPlan.TerrainBounds(road)), MapGround);
                 DrawMountainBoundary(projection);
                 DrawBuildings(projection);
                 DrawRoads(projection);
+                DrawHillsideStreets(projection);
                 DrawTerraceCourts(projection);
                 DrawRiverBridges(projection);
                 DrawAreaOutlines(projection);
@@ -1647,6 +1650,45 @@ namespace BarPromenade
                 Vector2 gate = projection.WorldToScreen(eastExit.CheckpointPosition);
                 DrawLine(gate + Vector2.up * 5f, gate - Vector2.up * 5f, 2f, new Color(.66f, .48f, .29f));
                 DrawSolidRect(ProjectWorldRect(projection, eastExit.BoothBounds), new Color(.48f, .47f, .36f));
+            }
+        }
+
+        private void DrawHillsideStreets(MapProjection projection)
+        {
+            foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(controller.Layout).Buildings)
+            {
+                DrawSolidRect(ProjectWorldRect(projection, building.FoundationBounds),
+                    building.Bank == CityTerraceTransportBank.East ? ResidentialBuilding : IndustrialBuilding);
+                DrawSolidRect(ProjectWorldRect(projection, building.CourtBounds), PublicPlaceLand);
+                DrawSolidRect(ProjectWorldRect(projection, building.ApproachBounds), PublicPlaceLand);
+            }
+            float metresToPixels = projection.ScreenRect.width / (projection.MaximumX - projection.MinimumX);
+            float width = Mathf.Max(2f, metresToPixels * CityHillsideStreetRoute.RoadHalfWidth * 2f);
+            foreach (CityHillsideStreetRoute route in CityHillsideStreetPlan.ForLayout(controller.Layout).Routes)
+            {
+                var path = route.Path.Vertices;
+                for (int i = 1; i < path.Count; i++)
+                {
+                    Vector2 a = path[i - 1], b = path[i];
+                    DrawLine(projection.WorldToScreen(new Vector3(a.x, 0f, a.y)),
+                        projection.WorldToScreen(new Vector3(b.x, 0f, b.y)), width, GetPathColor(CityPathKind.Street));
+                }
+            }
+            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(controller.Layout).Shortcuts)
+            {
+                DrawSolidRect(ProjectWorldRect(projection, stair.Bounds), PublicPlaceLand);
+                for (int i = 1; i < stair.RouteWorld.Count; i++)
+                {
+                    Vector3 a = stair.RouteWorld[i - 1], b = stair.RouteWorld[i];
+                    if (b.y - a.y < 1f) continue;
+                    for (int step = 0; step <= CityTerracePilotPlan.StepsPerFlight; step++)
+                    {
+                        Vector3 mid = Vector3.Lerp(a, b, step / (float)CityTerracePilotPlan.StepsPerFlight);
+                        Vector3 side = Vector3.right * CityTerracePilotPlan.FlightWidth * .5f;
+                        DrawLine(projection.WorldToScreen(mid - side), projection.WorldToScreen(mid + side),
+                            1f, GetPathColor(CityPathKind.ParkPath));
+                    }
+                }
             }
         }
 
@@ -3056,10 +3098,7 @@ namespace BarPromenade
                         panel.y + 101f,
                         panel.width - 18f,
                         48f),
-                    FormatMapPointCoordinates(worldPosition,
-                        controller.SelectedArea == GameAreaId.City &&
-                        CityTerraceDistrictPlan.ForLayout(controller.Layout).ContainsFootprint(
-                            new Vector2(worldPosition.x, worldPosition.z))),
+                    FormatInspectedCoordinates(worldPosition),
                     centeredStyle);
                 GUI.Label(
                     new Rect(
@@ -3231,6 +3270,17 @@ namespace BarPromenade
             {
                 controller.QueueToggleMapPointInspection();
             }
+        }
+
+        internal string FormatInspectedCoordinates(Vector3 position)
+        {
+            if (controller.SelectedArea != GameAreaId.City) return FormatMapPointCoordinates(position);
+            Vector2 xz = new Vector2(position.x, position.z);
+            var hills = CityHillsideStreetPlan.ForLayout(controller.Layout).Routes;
+            for (int i = 0; i < hills.Count; i++)
+                if (CityHillsideNeighborhoodPlan.TerrainBounds(hills[i]).Contains(xz))
+                    return FormatMapPointCoordinates(position, true);
+            return FormatMapPointCoordinates(position, CityTerraceDistrictPlan.ForLayout(controller.Layout).ContainsFootprint(xz));
         }
 
         /// <summary>
@@ -3669,6 +3719,12 @@ namespace BarPromenade
                         DrawLine(start, top, width, color);
                         DrawLine(top, top + Vector2.right * run, width, color);
                     }
+                    break;
+                case CityMapPointOfInterestKind.ResidentialSummit:
+                case CityMapPointOfInterestKind.IndustrialSummit:
+                    Vector2 crest = center + new Vector2(0f, -halfSize * .6f);
+                    DrawLine(center + new Vector2(-halfSize, halfSize * .6f), crest, width, color);
+                    DrawLine(crest, crest + Vector2.right * halfSize, width, color);
                     break;
                 case CityMapPointOfInterestKind.TerraceUnderpass:
                     DrawLine(center + new Vector2(-halfSize, -halfSize),

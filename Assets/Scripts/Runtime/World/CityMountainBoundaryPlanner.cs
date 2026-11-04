@@ -83,18 +83,16 @@ namespace BarPromenade
                 southWestBounds.xMin,
                 southWestBounds.yMin);
             CityMountainRidgeDescriptor southWestBeforeTunnel =
-                CreateLinearRidge(
+                CreateHillsideRidge(
                     layout,
                     "mountain-south-west-before-tunnel",
                     CityMountainBoundaryDefinition.SouthWestAreaId,
-                    CityMountainBoundarySide.South,
+                    CityTerraceTransportBank.West,
                     southWestStart,
                     new Vector2(
                         tunnel.PortalBounds.xMin,
                         southWestBounds.yMin),
-                    Vector3.back,
-                    southWestSurfaces,
-                    false);
+                    southWestSurfaces);
             ridges.Add(southWestBeforeTunnel);
 
             CityMountainRidgeDescriptor southWestAfterTunnel =
@@ -114,16 +112,14 @@ namespace BarPromenade
                     false);
             ridges.Add(southWestAfterTunnel);
 
-            CityMountainRidgeDescriptor southEast = CreateLinearRidge(
+            CityMountainRidgeDescriptor southEast = CreateHillsideRidge(
                 layout,
                 "mountain-south-east",
                 CityMountainBoundaryDefinition.SouthEastAreaId,
-                CityMountainBoundarySide.South,
+                CityTerraceTransportBank.East,
                 new Vector2(southEastBounds.xMin, southEastBounds.yMin),
                 new Vector2(southEastBounds.xMax, southEastBounds.yMin),
-                Vector3.back,
-                southEastSurfaces,
-                false);
+                southEastSurfaces);
             ridges.Add(southEast);
 
             CityMountainRidgeDescriptor southWestJoin = CreateSouthWestJoin(
@@ -266,6 +262,86 @@ namespace BarPromenade
             }
 
             return result;
+        }
+
+        private static CityMountainRidgeDescriptor CreateHillsideRidge(CityLayout layout, string id, string area,
+            CityTerraceTransportBank bank, Vector2 start, Vector2 end, IReadOnlyList<CitySurfaceDescriptor> surfaces)
+        {
+            CityHillsideStreetRoute road = null;
+            foreach (CityHillsideStreetRoute candidate in CityHillsideStreetPlan.ForLayout(layout).Routes)
+                if (candidate.Bank == bank) road = candidate;
+            if (road == null) return CreateLinearRidge(layout, id, area, CityMountainBoundarySide.South,
+                start, end, Vector3.back, surfaces, false);
+
+            // The old corner, cave and tunnel still own their exact end sections.
+            // Chamfer the four shoulders outside the streets and follow the same
+            // hillside terrain up and back down to the original portal level.
+            Rect land = CityHillsideNeighborhoodPlan.TerrainBounds(road);
+            var corners = new List<Vector2> { start };
+            if (start.x < land.xMin) corners.Add(new Vector2(land.xMin, start.y));
+            corners.Add(new Vector2(land.xMin, land.yMax - 12f));
+            corners.Add(new Vector2(land.xMin, land.yMin + 8f));
+            corners.Add(new Vector2(land.xMin + 8f, land.yMin));
+            corners.Add(new Vector2(land.xMax - 8f, land.yMin));
+            corners.Add(new Vector2(land.xMax, land.yMin + 8f));
+            if (bank == CityTerraceTransportBank.West)
+            {
+                // The old tunnel stays open beneath its own roof. Keep even
+                // the outer rock foot outside its first physical carriageway.
+                float clearX = end.x - CityMountainBoundaryDefinition.RidgeMaximumDepth - 2f;
+                corners.Add(new Vector2(land.xMax, land.yMax - 30f));
+                corners.Add(new Vector2(clearX, land.yMax - 14f));
+                corners.Add(new Vector2(clearX, end.y));
+            }
+            else
+            {
+                corners.Add(new Vector2(land.xMax, land.yMax - 12f));
+                if (end.x > land.xMax) corners.Add(new Vector2(land.xMax, end.y));
+            }
+            corners.Add(end);
+
+            var toes = new List<Vector2> { start };
+            for (int i = 1; i < corners.Count; i++)
+            {
+                Vector2 a = corners[i - 1], b = corners[i];
+                var stops = new SortedSet<float> { 1f };
+                int count = Mathf.CeilToInt(Vector2.Distance(a, b) / CityMountainBoundaryDefinition.RidgeStationSpacing);
+                for (int step = 1; step < count; step++) stops.Add(step / (float)count);
+                // Include break lines in the actual soil profile, so interpolation
+                // across a ridge mesh never floats over a level street shoulder.
+                if (Mathf.Abs(b.y - a.y) > .01f)
+                {
+                    for (int lane = 0; lane < CityHillsideStreetRoute.LaneCount; lane++)
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        float t = (road.GetLaneZ(lane) + side * 5f - a.y) / (b.y - a.y);
+                        if (t > 0f && t < 1f) stops.Add(t);
+                    }
+                }
+                foreach (float t in stops)
+                {
+                    Vector2 point = Vector2.Lerp(a, b, t);
+                    if ((point - toes[toes.Count - 1]).sqrMagnitude > .0005f) toes.Add(point);
+                }
+            }
+
+            var stations = new List<CityMountainRidgeStation>(toes.Count);
+            for (int i = 0; i < toes.Count; i++)
+            {
+                Vector2 point = toes[i];
+                bool originalGround = point.y >= start.y - .001f && point.x >= start.x && point.x <= end.x;
+                float y = originalGround ? SampleAreaTop(layout, surfaces, point) :
+                    CityHillsideNeighborhoodPlan.SampleBank(layout, road, point);
+                Vector3 outside = Vector3.back;
+                if (i > 0 && i + 1 < toes.Count)
+                {
+                    Vector2 along = ((point - toes[i - 1]).normalized + (toes[i + 1] - point).normalized).normalized;
+                    outside = new Vector3(along.y, 0f, -along.x);
+                }
+                stations.Add(CreateStation(layout.Seed, $"{id}-station-{i:00}", point, y,
+                    ResolveHeight(layout.Seed, point), outside));
+            }
+            return new CityMountainRidgeDescriptor(id, area, CityMountainBoundarySide.South, stations, false);
         }
 
         private static CityMountainRidgeDescriptor CreateLinearRidge(

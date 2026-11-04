@@ -59,7 +59,19 @@ namespace BarPromenade
             // Preserve the imported FBX root scale. Changing it to one would
             // reduce both road and city to one hundredth of their dimensions.
             int[] roleCounts = new int[Roles.Length];
+            var hillView = new MaterialPropertyBlock();
             var checkpointView = new MaterialPropertyBlock();
+            foreach (var route in CityHillsideStreetPlan.ForLayout(plan.Layout).Routes)
+            {
+                Rect land = CityHillsideNeighborhoodPlan.TerrainBounds(route);
+                // Source valley geometry is authored from the original city bowl.
+                // Its lateral cut edge would be exposed from the new southern streets.
+                int id = route.Bank == CityTerraceTransportBank.East
+                    ? Shader.PropertyToID("_EastHillView") : Shader.PropertyToID("_WestHillView");
+                var zone = new Vector4(land.xMin, land.xMax, land.yMax, 12f);
+                hillView.SetVector(id, zone);
+                checkpointView.SetVector(id, zone);
+            }
             checkpointView.SetVector(CheckpointViewId, new Vector4(
                 plan.CheckpointPosition.x, plan.CheckpointPosition.z,
                 CheckpointCityFullDistance, CheckpointCityHiddenDistance));
@@ -73,7 +85,7 @@ namespace BarPromenade
                 // Only the skyline, its windows and glow belong to this local
                 // sightline. Per-renderer data leaves the shared village
                 // profile and any other generated City's anchor untouched.
-                if (role >= 3 && role <= 5) renderer.SetPropertyBlock(checkpointView);
+                renderer.SetPropertyBlock(role >= 3 && role <= 5 ? checkpointView : hillView);
             }
             for (int i = 0; i < roleCounts.Length; i++)
                 if (roleCounts[i] == 0)

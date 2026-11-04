@@ -28,6 +28,10 @@ namespace BarPromenade
         public static IReadOnlyList<Vector2Int> TerraceBypassNodes { get; } = System.Array.AsReadOnly(new[] {
             Stations[4], Stations[3], new Vector2Int(11, 9), new Vector2Int(11, 8), new Vector2Int(12, 8)
         });
+        // Three continuous through-streets from the coastal bend to the inland junction.
+        public static IReadOnlyList<Vector2Int> EasternThroughNodes { get; } = System.Array.AsReadOnly(new[] {
+            new Vector2Int(13, 11), new Vector2Int(13, 10), new Vector2Int(13, 9), new Vector2Int(13, 8)
+        });
         public static bool IsEnabled(CityLayout layout) => layout?.ElevationPlan?.HasCoastalAscent == true;
 
         internal static bool TryApply(CityGenerationSettings settings, IReadOnlyList<RoadEdge> roads,
@@ -48,16 +52,14 @@ namespace BarPromenade
             };
             TieToOriginal(WestTie);
             TieToOriginal(EastTie);
+            AddEasternThroughGrade();
 
             // The blueprint may be reused with different streets or spacing.
             // Check all incident branches before changing any original height.
             foreach (RoadEdge edge in roads)
             {
                 if (!targets.ContainsKey(edge.A) && !targets.ContainsKey(edge.B)) continue;
-                float maximum = kinds[edge] == CityPathKind.Street
-                    ? CityElevationPlan.MaximumBusGradePercent : CityElevationPlan.MaximumPedestrianGradePercent;
-                if (Mathf.Abs(Height(edge.A) - Height(edge.B)) > SlopedRun(edge) * maximum * .01f + .00001f)
-                    return false;
+                if (Mathf.Abs(Height(edge.A) - Height(edge.B)) > MaximumRise(edge)) return false;
             }
             for (int i = 1; i < Stations.Length; i++)
                 if (Height(Stations[i]) <= Height(Stations[i - 1])) return false;
@@ -77,6 +79,48 @@ namespace BarPromenade
             float Height(Vector2Int node) => targets.TryGetValue(node, out float target) ? target : elevations[node];
             float SlopedRun(RoadEdge edge) => Mathf.Max(0f, geometry.Get(edge).Length -
                 geometry.GetEndpointInset(edge, edge.A) - geometry.GetEndpointInset(edge, edge.B));
+
+            float MaximumRise(RoadEdge edge) => SlopedRun(edge) * .01f * (kinds[edge] == CityPathKind.Street
+                ? CityElevationPlan.MaximumBusGradePercent : CityElevationPlan.MaximumPedestrianGradePercent) + .00001f;
+
+            void AddEasternThroughGrade()
+            {
+                var chain = EasternThroughNodes;
+                var spur = new Vector2Int(12, 8);
+                if (!IsStreet(chain[0], NorthFrontageEnd) || !IsStreet(chain[3], spur)) return;
+                float available = 0f;
+                for (int i = 1; i < chain.Count; i++)
+                {
+                    if (!IsStreet(chain[i - 1], chain[i])) return;
+                    available += SlopedRun(new RoadEdge(chain[i - 1], chain[i]));
+                }
+                // Through Route 01's offset inland junction, the outer wheels
+                // use the physical approach apron. Preserve both ends of its
+                // last span; a steeper approach loses this southbound movement.
+                int lastRegraded = chain.Count - 2;
+                available -= SlopedRun(new RoadEdge(chain[lastRegraded], chain[lastRegraded + 1]));
+                float end = Height(chain[lastRegraded]);
+                if (available <= 0f || end <= lower || end - lower > available * TieGradePercent * .01f) return;
+                float travelled = 0f;
+                var through = new Dictionary<Vector2Int, float> { [chain[0]] = lower };
+                for (int i = 1; i <= lastRegraded; i++)
+                {
+                    travelled += SlopedRun(new RoadEdge(chain[i - 1], chain[i]));
+                    through[chain[i]] = Mathf.Lerp(lower, end, travelled / available);
+                }
+                // A different seed can have an additional side street. Decline
+                // just this extension if its connection is too short.
+                foreach (RoadEdge edge in roads)
+                {
+                    bool changedA = through.TryGetValue(edge.A, out float a);
+                    bool changedB = through.TryGetValue(edge.B, out float b);
+                    if (!changedA && !changedB) continue;
+                    if (!changedA) a = Height(edge.A);
+                    if (!changedB) b = Height(edge.B);
+                    if (Mathf.Abs(a - b) > MaximumRise(edge)) return;
+                }
+                foreach (var station in through) targets[station.Key] = station.Value;
+            }
 
             void TieToOriginal(Vector2Int[] chain)
             {

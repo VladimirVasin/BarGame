@@ -684,6 +684,17 @@ namespace BarPromenade
             }
             foreach (Bounds solid in CityResidentialCourtyardPlan.ForLayout(layout).CollisionBounds)
                 area.Exclude(Rect.MinMaxRect(solid.min.x, solid.min.z, solid.max.x, solid.max.z));
+            foreach (CityHillsideStreetRoute route in CityHillsideStreetPlan.ForLayout(layout).Routes)
+                area.AddPolygons(route.WalkablePolygons);
+            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).Shortcuts)
+                area.Add(stair.Bounds);
+            foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(layout).Buildings)
+            {
+                // Both halves of the entrance share their full-width seam. The
+                // last courts lie beyond the road ribbons' spatial envelope.
+                area.AddPolygons(new[] { CityRoadPolygon.Rectangle(building.ApproachBounds),
+                    CityRoadPolygon.Rectangle(building.CourtBounds) });
+            }
             area.AttachTerraceDistrict(layout);
             return area;
         }

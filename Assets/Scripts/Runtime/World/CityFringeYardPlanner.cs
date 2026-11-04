@@ -377,6 +377,20 @@ namespace BarPromenade
                     parts);
             }
 
+            // The southern streets cross the old retaining/drainage strip at grade.
+            // Reserve the complete carriageway and both pavements before the shared
+            // world, collision and Home exterior builders consume these descriptors.
+            if (ownsTunnel || kind == CityFringeYardKind.SouthFloodWorks)
+                foreach (var street in CityHillsideStreetPlan.ForLayout(layout).Routes)
+                {
+                    Vector2 mouth = street.Path.Vertices[0];
+                    float half = CityHillsideStreetRoute.OuterHalfWidth + .35f;
+                    Rect crossing = Rect.MinMaxRect(mouth.x - half, bounds.yMin - .5f,
+                        mouth.x + half, mouth.y + .5f);
+                    if (bounds.Overlaps(crossing))
+                        parts.RemoveAll(part => part.BlocksMovement && part.Footprint.Overlaps(crossing));
+                }
+
             return new CityFringeYardDescriptor(
                 $"fringe-{areaId}",
                 areaId,

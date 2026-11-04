@@ -1436,20 +1436,9 @@ namespace BarPromenade.Tests.EditMode
                             buried,
                             $"{station.StableId} buried seam");
 
-                        CitySurfaceDescriptor owner = layout.Surfaces.First(
-                            surface =>
-                                surface.Kind ==
-                                CitySurfaceKind.OpenGround &&
-                                surface.AreaId == ridge.SourceAreaId &&
-                                ContainsInclusive(
-                                    surface.WorldBounds,
-                                    new Vector2(
-                                        buried.x,
-                                        buried.z)));
-                        float terrainTop = CityTerrainSurfacePlan.SampleTop(
-                            layout,
-                            owner,
-                            new Vector2(buried.x, buried.z));
+                        Assert.That(CityMountainBoundaryValidator.TrySampleAreaTop(layout, ridge.SourceAreaId,
+                            new Vector2(buried.x, buried.z), out float terrainTop), Is.True,
+                            $"{station.StableId} has no ground under its buried seam.");
                         Assert.That(
                             terrainTop - buried.y,
                             Is.GreaterThanOrEqualTo(0.02f),

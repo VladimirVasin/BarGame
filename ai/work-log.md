@@ -4,46 +4,33 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-04
-City transport: bounded profiles/flat turns/stops; full asphalt/pavements
-clear surveyed buildings/protected sites without moving them. East high-rise
-requests expose GradeLimit. Coastal junctions own disjoint road/pavement patches,
-flat mouths and retained coast profiles; route continuation has no duplicate
-old profile. Entrance plans pair actual forecourts/nearest pavement edges:
-XZ/Y gaps need access routes; thresholds stay, steep/incomplete aprons reject.
-First eastern junctions now share surveyed paths, retained grades, ground cuts
-and physical bus aprons. The first ascent now connects the shore to housing.
-CityTerraceTransportPlanTests OK: clearance, profiles, junction seams/ownership,
-entrance triangle grades and unchanged live anchors. Editor joins view reviewed.
-All24FX reviewed: existing City sources/materials/post owners retained.
-Bar moved north onto the next block; fixed-metre body, stable identity/activity.
-Home/shop stay; the original yard refits its tree/light/wheelchair circuit
-between ordinary houses. Draft transport turns clear Bar/shop/church corners.
-CityHomeBarNeighborStreets passed: physical round trip, apron/yard/transport
-clearance, current illustrated map, selection/XYZ and supported arrival;
-street/entrance/native map frames reviewed.
-Map art follows final surveyed geometry; stale art yields to scheme.
-Eastern courtyard exit now has a level guarded landing, continuous ramp/layers
-and shared NPC/map arrivals. A lower ordinary house and its stair court put
-the neighbouring roof below the upper player view. Scheme/return/travel distances
-follow actual paths; map fingerprint includes heights. Bus checks use physical paving.
-LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap passed:
-continuous walks, ground/vehicle contacts, house docks, roof below ordinary camera,
-rain/layers and safe map arrivals.
-Coastal street heights now rebase the adjacent ground, doors and junctions.
-The passage behind the house clears the bus shelter. The dead-end stair link
-rounds the second street tip to reach the lower house court; every landing,
-ramp and flight shares physical ground, NPC routing and map positions.
-Rear-wing placement shares the curved transport reservation. Its eastern leg now
-rounds the two occupied stair passages to the north.
-A bounded local cut/fill keeps the dog yard and its gate on their surveyed parcel.
-LiveCity_CoastalAscentAndStairShortcutShareSupportedRoutes passed. Production
-walks, physical bus/hero contacts, gate and mapped arrivals verified. Reviewed
-the stair reveal, bus below and the descent under rain. Final ImageGen redraw and
-RU map binding verified by ImageGenCityMap_PreservesPlanAndLivePlaces.
-check-docs.py/check-workspace.py/git diff --check.
-Map fills viewport;scrollable right places select one plaque/leader/square,
-no hover names;larger outlined hero arrow. City/Road/Village frames reviewed;
-ImageGenVillageBrochure_PreservesResortAndLivePlaces passed.
+Unity 6000.6.8f1. Checkpoint and test object searches use the current overloads;
+the input UI fixture resolves GameView from the editor assembly. Live Editor
+Refresh recompiled scripts; Console showed no warnings or errors.
+CityTerraceTransportPlanTests: both draft switchbacks clear rigid envelopes and
+protected places. Coastal junctions share the original streets, apron proposals
+measure actual threshold gaps. The eastern courtyard exit has a guarded landing.
+LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap verified
+ordinary hero/vehicle contacts, rain/layers and the lower roof from above.
+Bar moved north. Home, supermarket, original yard and dog gate keep their
+locations. CityHomeBarNeighborStreets covered the short round trip and arrivals.
+LiveCity_CoastalAscentAndStairShortcutShareSupportedRoutes verified the
+shore ascent and both cut-throughs, windows above the lower house and lit steps
+in rain. The prior R6 survey clears the completed court. Art follows final
+geography, with scheme fallback and full-height fingerprint.
+Map fills the viewport with one selected place label and a scrollable list.
+ImageGenVillageBrochure_PreservesResortAndLivePlaces checked the regional UI.
+Two southern streets climb into occupied residential and working districts.
+River shortcuts constrain the existing grid, so the climb continues inside
+a reshaped mountain rim that retains its tunnel and river ends. Each upper
+street has a connected stair and local door courts. Actual bus overhang sets
+the widened bends. Keeping the final eastern approach level retains Route 01.
+LiveCity_CitywideSlopesKeepSupportedRoutesAndArrivals passed. Both banks
+walked from the shore and back. Vehicle bodies clear both lanes; doors, stairs
+and summits are supported. Ordinary camera frames reviewed. Matched hillside
+views isolated a forced-depth valley edge; the far panorama fades in the new
+districts. Final survey keeps existing named locations. ImageGenCityMap_PreservesPlanAndLivePlaces
+checks the final illustrated sheet, displayed XYZ and both summit arrivals.
 
 ## 2026-11-03
 Checkpoint:RAM deep progress/world/ammo;restore/entry/seed/rides/tokens;RU pause/No.

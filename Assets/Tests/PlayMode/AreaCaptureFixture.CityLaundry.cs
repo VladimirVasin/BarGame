@@ -41,7 +41,7 @@ namespace BarPromenade.Tests.PlayMode
                     return city != null && city.IsInitialized && !CompositionDriver.IsComposing ? city : null;
                 }, () =>
                 {
-                    var facilities = Object.FindObjectsByType<CityLaundryController>(FindObjectsSortMode.None);
+                    var facilities = Object.FindObjectsByType<CityLaundryController>();
                     Assert.That(facilities.Length, Is.EqualTo(1));
                     laundry = facilities[0];
                     Assert.That(laundry.Plan, Is.SameAs(planned));

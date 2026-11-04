@@ -156,6 +156,30 @@ namespace BarPromenade.Tests.PlayMode
                 yield return CaptureMapUi("imagegen-city-map-courtyard-link-xyz");
                 Assert.That(map.ConfirmMapPointTeleport(), Is.True);
                 Assert.That(Vector3.Distance(map.PlayerWorldPosition, outlook), Is.LessThan(.001f));
+                foreach (CityHillsideStreetRoute hill in CityHillsideStreetPlan.ForLayout(city.Layout).Routes)
+                {
+                    bool east = hill.Bank == CityTerraceTransportBank.East;
+                    string id = east ? "city:poi:residential-summit" : "city:poi:industrial-summit";
+                    Assert.That(map.Open() && map.SetMapPointInspectionEnabled(true), Is.True);
+                    int index = -1;
+                    for (int i = 0; i < map.ActiveMapPoints.Count; i++)
+                        if (map.ActiveMapPoints[i].StableId == id) index = i;
+                    Assert.That(index, Is.GreaterThanOrEqualTo(0), id);
+                    Assert.That(map.SelectMapPoint(index), Is.True);
+                    Assert.That(map.TryGetSelectedMapPoint(out selected, out selectedWorld), Is.True);
+                    Assert.That(selected.Label, Is.EqualTo(east ? "Верхняя жилая улица" : "Верхняя рабочая улица"));
+                    Vector3 summit = hill.SummitArrivalWorld + Vector3.up * PlayerFactory.GroundedRootOffset;
+                    Assert.That(Vector3.Distance(selectedWorld, summit), Is.LessThan(.005f), id);
+                    Assert.That(view.FormatInspectedCoordinates(selectedWorld),
+                        Is.EqualTo(CityMapView.FormatMapPointCoordinates(summit, true)));
+                    if (east)
+                    {
+                        for (int frame = 0; frame < 5; frame++) yield return null;
+                        yield return CaptureMapUi("imagegen-city-map-residential-summit");
+                    }
+                    Assert.That(map.ConfirmMapPointTeleport(), Is.True);
+                    Assert.That(Vector3.Distance(map.PlayerWorldPosition, summit), Is.LessThan(.06f), id);
+                }
                 Debug.Log("IMAGEGEN CITY MAP OK: current-plan art and metadata, bounded UI import, two stacked arrivals, live places and native map/XYZ views.");
             }
             finally { map.Close(); }

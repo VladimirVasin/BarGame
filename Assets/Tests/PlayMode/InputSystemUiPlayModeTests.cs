@@ -39,12 +39,7 @@ namespace BarPromenade.Tests.PlayMode
             Time.captureDeltaTime = 1f / 30f;
 #if UNITY_EDITOR
             previousFocused = UnityEditor.EditorWindow.focusedWindow;
-            System.Type viewType = null;
-            foreach (System.Reflection.Assembly assembly in System.AppDomain.CurrentDomain.GetAssemblies())
-            {
-                viewType = assembly.GetType("UnityEditor.GameView");
-                if (viewType != null) break;
-            }
+            System.Type viewType = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.GameView");
             Assert.That(viewType, Is.Not.Null);
             Object[] windows = Resources.FindObjectsOfTypeAll(viewType);
             createdGameView = windows.Length == 0;

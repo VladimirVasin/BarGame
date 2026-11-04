@@ -52,7 +52,7 @@ gamepad bindings/hints or require their parity/coverage unless explicitly reques
 
 ## Current baseline
 
-- Unity `6000.6.7f1`, URP `17.6.0`, Input System `1.20.1`, AI Navigation `2.0.16`.
+- Unity `6000.6.8f1`, URP `17.6.0`, Input System `1.20.1`, AI Navigation `2.0.16`.
 - Runtime composition builds near-empty scenes from validated pure plans.
 - Thirteen build scenes under `Assets/Scenes/`, all `.unity`, in build order:
   `MainMenu` (index `0`), `City`, `DoorTransition`, `BarInterior`,

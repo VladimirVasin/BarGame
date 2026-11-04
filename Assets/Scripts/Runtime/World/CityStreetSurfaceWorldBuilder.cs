@@ -34,7 +34,7 @@ namespace BarPromenade
                 float tile = patch.Kind == CityStreetSupportKind.Asphalt ? CityExteriorAppearance.RoadTextureTileSize :
                     patch.Kind == CityStreetSupportKind.Sidewalk ? CityExteriorAppearance.SidewalkTextureTileSize :
                     CityParkSurfaceAppearance.GetRecipe(CityParkSurfaceKind.Path).MetersPerTile;
-                CityRoadPath frame = null;
+                CityRoadPath frame = patch.RoadFrame;
                 bool junction = false;
                 if (patch.Kind == CityStreetSupportKind.Asphalt)
                 {
@@ -42,7 +42,7 @@ namespace BarPromenade
                     if (patch.Edge.HasValue) frame = layout.RoadGeometry.Get(patch.Edge.Value);
                     foreach (var candidate in frames)
                     {
-                        if (patch.Edge.HasValue) break;
+                        if (patch.Edge.HasValue || patch.RoadFrame != null) break;
                         float distance = candidate.path.Project(patch.Bounds.center).DistanceSquared;
                         if (distance >= nearest) continue;
                         nearest = distance; frame = candidate.path;

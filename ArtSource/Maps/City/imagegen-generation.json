@@ -1,16 +1,16 @@
 {
   "tool": "built-in image_gen",
-  "intent": "coastal dead-end stair connection to Lower Court via the upper landing",
-  "prompt": "imagegen-courtyard-link-prompt.txt",
+  "intent": "both occupied hillside districts and their continuous streets from the coast to the 40 m summits",
+  "prompt": "imagegen-citywide-slopes-prompt.txt",
   "references": [
-    "CityMapImage.reference.png",
-    "map-reference.png"
+    "map-reference.png",
+    "CityMapImage.reference.png"
   ],
   "geography": "map-reference.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "205d8acc766f872e0d442549ffcbbc25770d59126564e3efece844f17907bd30",
-  "fingerprint": "089945242c603adf9789b77bd410f92c10f3fdd43ddfcc08dd77a15c85adbf7f",
+  "image_sha256": "b1aff522f88207c85a8c1a101ad7868de3968b19c919df8db768664722f37faa",
+  "fingerprint": "5349747aa95314751ec6d8b621e8528fa917dfeaa766c614074e630bfdbb4d7f",
   "schemaVersion": 2,
-  "width": 1422,
-  "height": 1106
+  "width": 1174,
+  "height": 1340
 }
