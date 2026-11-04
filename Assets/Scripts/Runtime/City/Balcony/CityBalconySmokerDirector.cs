@@ -24,6 +24,7 @@ namespace BarPromenade
         public const float MaximumVisibleSpawnDistance =
             RuntimeSceneSetup.CityFarClipPlane - 2f;
         public const float DespawnDistance = 36f;
+        private CityAltitudeVisibility streetVisibility;
         public const float BacksideDespawnDistance = 18f;
         public const float MinimumFrontFacingDot = 0.05f;
         public const float MinimumInitialSpawnDelay = 0.5f;
@@ -79,7 +80,7 @@ namespace BarPromenade
             Transform parent,
             int seed,
             IReadOnlyList<CityBalconySmokerDescriptor> source,
-            Transform playerTransform)
+            Transform playerTransform, CityAltitudeVisibility visibility = null)
         {
             if (parent == null)
             {
@@ -97,6 +98,7 @@ namespace BarPromenade
                     source,
                     playerTransform,
                     0u);
+                director.streetVisibility = visibility;
                 return director;
             }
             catch
@@ -341,7 +343,8 @@ namespace BarPromenade
                         candidate.Position - player.position) >
                     MaximumVisibleSpawnDistance *
                     MaximumVisibleSpawnDistance ||
-                    !FacesPlayer(candidate))
+                    !FacesPlayer(candidate) ||
+                    (streetVisibility != null && !streetVisibility.CanChangeBodyAt(candidate.Position)))
                 {
                     continue;
                 }
@@ -476,7 +479,8 @@ namespace BarPromenade
                     (distanceSquared > backsideSquared &&
                      !FacesPlayer(pair.Value.Descriptor)))
                 {
-                    releaseBuffer.Add(pair.Key);
+                    if (streetVisibility == null || streetVisibility.CanChangeBodyAt(pair.Value.Descriptor.Position))
+                        releaseBuffer.Add(pair.Key);
                 }
             }
 

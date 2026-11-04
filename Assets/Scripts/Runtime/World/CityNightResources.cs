@@ -9,6 +9,7 @@ namespace BarPromenade
             "Materials/CityNoirEmission";
         public const string AtmosphereShaderResourcePath =
             "Shaders/CityAtmosphereParticle";
+        internal static readonly int ReceiveSkyFillId = Shader.PropertyToID("_ReceiveCitySkyFill");
 
         private static Material emissiveMaterial;
         private static Material atmosphereMaterial;

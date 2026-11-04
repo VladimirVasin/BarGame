@@ -3,6 +3,11 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-05
+CityAltitudeAndNightStreet follows the quay, court bridge and crest back down. Elevation thins street
+air and shifts focus outwards. Lower streets retain more haze than roofs. Midnight street frames
+compare the previous fill and the darker sky on the same wet road under a working lamp.
+
 ## 2026-11-04
 Unity 6000.6.8f1: checkpoint/test searches use current overloads; GameView resolves
 from Editor assembly. Live Editor Refresh: Console clear.

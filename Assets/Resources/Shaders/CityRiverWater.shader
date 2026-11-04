@@ -183,6 +183,7 @@ Shader "Bar Promenade/City River Water"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
+            #include "CitySkyFill.hlsl"
 
             TEXTURE2D(_RippleMap);
             SAMPLER(sampler_RippleMap);
@@ -247,6 +248,7 @@ Shader "Bar Promenade/City River Water"
             #include "WarehouseCleanCommon.hlsl"
             #include "SceneWaterReflection.hlsl"
             #include "CityOffshoreBoatWater.hlsl"
+            #include "CityValleyFog.hlsl"
 
             struct Attributes
             {
@@ -644,7 +646,7 @@ Shader "Bar Promenade/City River Water"
                     body,
                     _DeepColor.rgb * 0.72h,
                     sink * _CrestShading);
-                half3 color = lerp(background, body, absorption);
+                half3 color = lerp(background, body * CitySkyFill(), absorption);
 
                 float3 viewDirWS = normalize(
                     GetWorldSpaceViewDir(input.positionWS));
@@ -812,7 +814,7 @@ Shader "Bar Promenade/City River Water"
                     4.0);
                 color = lerp(
                     color,
-                    _HighlightColor.rgb * lerp(0.85h, 0.30h, _NightFactor),
+                    _HighlightColor.rgb * (lerp(0.85h, 0.30h, _NightFactor) * CitySkyFill()),
                     fresnel * _FresnelStrength);
 
 
@@ -846,7 +848,7 @@ Shader "Bar Promenade/City River Water"
                     (foamMask * 1.5h + 0.25h) *
                     (0.85h + 0.35h * _RainIntensity) * _EdgeFoamStrength);
                 foam = floor(foam * steps) / steps;
-                half foamTone = lerp(1.0h, 0.55h, _NightFactor);
+                half foamTone = lerp(1.0h, 0.55h, _NightFactor) * CitySkyFill();
                 color = lerp(
                     color,
                     _FoamColor.rgb * foamTone,
@@ -881,11 +883,11 @@ Shader "Bar Promenade/City River Water"
                     time * 4.0) * 0.5h + 0.5h;
                 color += _HighlightColor.rgb *
                          (_RainIntensity * (floor(chop * steps) / steps) *
-                          0.10h);
+                          0.10h * CitySkyFill());
 
                 half fogFactor = ComputeFogFactorZ0ToFar(
                     max(input.viewZ - _ProjectionParams.y, 0));
-                color = MixFog(color, fogFactor);
+                color = MixFog(color, CityValleyFogFactor(fogFactor, input.positionWS.y));
                 color += OffshoreBoatWater(input.positionWS, normalWS, viewDirWS,
                     _OffshoreHull0, _OffshoreCourse0, _OffshoreLamp0, _OffshoreBeam0);
                 color += OffshoreBoatWater(input.positionWS, normalWS, viewDirWS,

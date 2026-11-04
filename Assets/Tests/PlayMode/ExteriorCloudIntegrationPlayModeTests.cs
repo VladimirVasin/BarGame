@@ -53,7 +53,8 @@ namespace BarPromenade.Tests.PlayMode
             AssertOutdoorField(
                 city.Clouds,
                 ExteriorCloudProfileKind.City,
-                RuntimeSceneSetup.CityFarClipPlane);
+                Mathf.Lerp(RuntimeSceneSetup.CityFarClipPlane, CityAltitudeVisibility.SummitFarPlane,
+                    CityAltitudeVisibility.HeightFactor(city.Player.GameObject.transform.position.y)));
             CaptureSky("City", city.Clouds);
             ExteriorCloudMotionSample cityPhase = city.Clouds.Phase;
             ExteriorCloudField previousField = city.Clouds;
@@ -141,7 +142,7 @@ namespace BarPromenade.Tests.PlayMode
             AssertOutdoorField(
                 homeClouds,
                 ExteriorCloudProfileKind.City,
-                RuntimeSceneSetup.CityFarClipPlane);
+                home.ExteriorContext.Layout.HasSummitHome ? HomeSummitOutlook.FarPlane : RuntimeSceneSetup.CityFarClipPlane);
             AssertPhasesEqual(cityPhase, homeClouds.Phase);
             CaptureSky("HomeBalcony", homeClouds);
 
@@ -186,9 +187,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 camera.farClipPlane,
                 Is.EqualTo(expectedFarPlane).Within(FarPlaneTolerance));
-            Assert.That(
-                expectedFarPlane - field.Profile.ShellRadius,
-                Is.InRange(0.5f, 2f));
+            // City's physical cloud dome is authored for the lowland profile.
+            // Elevated gameplay pushes its rendered depth behind the longer view.
+            float nominalFar = expectedKind == ExteriorCloudProfileKind.City ? RuntimeSceneSetup.CityFarClipPlane : expectedFarPlane;
+            Assert.That(nominalFar - field.Profile.ShellRadius, Is.InRange(0.5f, 2f));
+            Assert.That(field.Profile.ShellRadius, Is.LessThan(expectedFarPlane));
             Assert.That(RenderSettings.fog, Is.True);
             Assert.That(
                 camera.backgroundColor,

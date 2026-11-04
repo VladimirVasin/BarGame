@@ -7,6 +7,7 @@ Shader "Bar Promenade/City Atmosphere Particle"
         _NoiseStrength("Noise Strength", Range(0, 1)) = 0
         _SoftParticleDistance("Depth Fade Distance", Range(0.01, 4)) = 1
         _FogMotion("City Layer Motion", Vector) = (0, 0, 0, 0)
+        _ReceiveCitySkyFill("Weather receives City sky fill", Float) = 0
     }
 
     SubShader
@@ -45,6 +46,7 @@ Shader "Bar Promenade/City Atmosphere Particle"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RealtimeLights.hlsl"
             #define BAR_PROMENADE_LOCAL_LIGHT_SHADOWS 1
             #include "AlpineVillageLocalLighting.hlsl"
+            #include "CitySkyFill.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
@@ -52,6 +54,7 @@ Shader "Bar Promenade/City Atmosphere Particle"
                 half _NoiseStrength;
                 half _SoftParticleDistance;
                 float4 _FogMotion;
+                half _ReceiveCitySkyFill;
             CBUFFER_END
 
             struct Attributes
@@ -134,11 +137,13 @@ Shader "Bar Promenade/City Atmosphere Particle"
                     (sceneEyeDepth - input.eyeDepth) /
                     max(_SoftParticleDistance, 0.01h));
 
-                half alpha = input.color.a * shape * depthFade;
+                half alpha = input.color.a * shape * depthFade * (1.0h - _FogMotion.w);
                 half3 lighting = _AlpineLocalLightingPerPixel != 0 ?
                     AlpineLocalParticleLighting(input.positionWS, true) : input.localLighting;
-                half3 color =
-                    MixFog(input.color.rgb + lighting * input.color.rgb, input.fogFactor);
+                // Weather carries sky scatter and a lamp still lights it locally.
+                // Emissive bulb halos sharing this material preserve their energy.
+                half ambient = 1.0h - _ReceiveCitySkyFill * _CitySkyFillLoss;
+                half3 color = MixFog(input.color.rgb * (ambient + lighting), input.fogFactor);
                 return half4(color, alpha);
             }
             ENDHLSL

@@ -47,6 +47,7 @@ Shader "Bar Promenade/Exterior Cloud"
             #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "CityValleyFog.hlsl"
 
             TEXTURE2D(_CloudTex);
             SAMPLER(sampler_CloudTex);
@@ -91,6 +92,8 @@ Shader "Bar Promenade/Exterior Cloud"
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
                 output.positionCS = TransformObjectToHClip(
                     input.positionOS.xyz);
+                if (_CityValleyFog.w > 0)
+                    output.positionCS.z = output.positionCS.w * UNITY_RAW_FAR_CLIP_VALUE;
                 output.uv = input.uv;
                 output.domeHeight = saturate(
                     normalize(input.positionOS.xyz).y);

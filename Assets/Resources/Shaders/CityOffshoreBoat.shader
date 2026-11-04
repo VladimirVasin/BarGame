@@ -22,6 +22,7 @@ Shader "Bar Promenade/City Offshore Boat"
             #pragma fragment Frag
             #pragma multi_compile_instancing
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "CitySkyFill.hlsl"
             CBUFFER_START(UnityPerMaterial)
                 half4 _HazeColor;
                 half _Presence;
@@ -65,7 +66,7 @@ Shader "Bar Promenade/City Offshore Boat"
                 half shade = 0.78h + 0.22h * saturate(dot(normalize(input.normalWS),
                     normalize(half3(-0.35h, 0.8h, -0.4h))));
                 half3 body = input.color.rgb * shade * lerp(1.0h, 0.73h, _NightFactor);
-                return half4(lerp(body, _HazeColor.rgb, haze), alpha);
+                return half4(lerp(body, _HazeColor.rgb, haze) * CitySkyFill(), alpha);
             }
             ENDHLSL
         }

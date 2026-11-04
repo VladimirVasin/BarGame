@@ -39,6 +39,7 @@ namespace BarPromenade
         public ChurchGardenPotInteraction ChurchGardenPot { get; private set; }
         public CityNightWorldResult Night { get; private set; }
         public CityDayNightController DayNight { get; private set; }
+        public CityAltitudeVisibility Visibility { get; private set; }
         public CityLightingPresentation Lighting { get; private set; }
         public CityRainField Rain { get; private set; }
         public CityRainSoundPlayer RainSound { get; private set; }
@@ -644,7 +645,10 @@ namespace BarPromenade
                     World.FringePracticalAnchors);
             }
             DayNight = gameObject.AddComponent<CityDayNightController>();
-            DayNight.Initialize(Night);
+            DayNight.Initialize(Night, camera);
+            Visibility = Night.Root.AddComponent<CityAltitudeVisibility>();
+            Visibility.Initialize(camera, Night.FogField, DayNight.SceneDepthOfField);
+            Pedestrians.StreetVisibility = Visibility;
             GameLogPhases.Report("city", "night_lighting", stepTimer);
             stepTimer.Restart();
             var vehicles = CityBusFactory.CreateNetwork(transform, BusPlans, Player.GameObject.transform,
@@ -687,7 +691,7 @@ namespace BarPromenade
                 transform,
                 Layout.Seed,
                 CityBalconySmokerPlan.CreateCandidates(Layout),
-                Player.GameObject.transform);
+                Player.GameObject.transform, Visibility);
             GameLogPhases.Report("city", "staged_npcs", stepTimer);
             stepTimer.Restart();
             if (World.ArchShelterPlan.IsEnabled)
@@ -1142,6 +1146,7 @@ namespace BarPromenade
                 camera,
                 ExteriorCloudProfiles.City,
                 GameSessionState.CitySeed);
+            DayNight.BindClouds(Clouds);
             // Lines spoken by somebody who is not talking to the hero.
             // Raised here rather than with the two men because it needs
             // the camera, which does not exist until this far down.
@@ -1640,6 +1645,7 @@ namespace BarPromenade
                 spawnSource = doorSource;
             }
 
+            Visibility.Refresh(true);
             Player.Motor.SetInputEnabled(true);
             PlayerCameraFollow follow =
                 camera.GetComponent<PlayerCameraFollow>();

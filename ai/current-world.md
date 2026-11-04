@@ -524,7 +524,7 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   First mast joins pool `12`; later shells/lenses/halos/pools are passive.
   East valley skyline/windows/glow fade 12–30m from post. Far-depth (.20m)
   panorama and traffic fade on entering either southern hill over 12m.
-  Local geometry and 48m clip stay.
+  The checkpoint uses the lowland visibility band.
   2 cars: exported lanes/session phase/pause/time guard;
   no gameplay/Light/physics/shadow/audio;
 - `CityEastGuardDuty`: one home, one three-point out-and-back patrol; swap
@@ -606,8 +606,9 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   pole floodlight `1`. Fixed site lights, including the cemetery and the ten
   church-garden uplights, remain separate from the twelve-light pool;
   the scene Directional and transient lightning Directional are counted
-  separately. Bar, Supermarket and Stairwell lighting are unchanged. The
-  City streets use constant `.090` gray-green Exp2 haze and a 48 m clip. Wind carries the fog layers.
+  separately. Bar, Supermarket and Stairwell lighting are unchanged. On City streets the hero climbs from lowland Exp2 `.090`/48 m to `.025`/110 m at the crest.
+  Lower streets stay hazy below the rooflines. Wind carries the local fog. Night dims the sky, haze,
+  ambient and directional fill, leaving pools of light and their wet reflections visible.
   The summit apartment and balcony look past the upper bridge and dry ravine to roofs on the descending streets.
   Saturation `-24` day→`-30` night follows
   clock; authored grade/Home interior unchanged. The
@@ -625,9 +626,8 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   and one packed linear density texture feed three property-block profiles;
   City/Home reuse the same seed, canonical frame and absolute-time phase, while
   the road and village only change density, scale and colour. The shell follows
-  camera translation, so its `47 / 119 / 109 m` radii inside the current
-  `48 / 120 / 110 m` far planes are render distance rather than low physical
-  altitude. It owns no fog, grade, Light, shadow or collider, and Home disables
+  camera translation. Its mesh radii are `47 / 119 / 109 m`; on upper City streets
+  the sky renders behind the expanded exterior view. It owns no fog, grade, Light, shadow or collider, and Home disables
   it everywhere except the balcony;
 - 16:9;4:3 unsupported.SMAA High/on:3passes after native/intoxication;
   crop/UI last;previews/probes off.Flags:`SceneLightingPresentation` (4 owners).
@@ -2269,11 +2269,12 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   outside/threshold occupancy waits for the capsule fully inside. Debug1–6
   restores ordinary use/materials. Home omits eave/north screen; real shell/
   City roof/rain shelter stay. Passive City scenery spans64m around the door,
-  including behind Home; the48m camera has margin for its orbit. Facade rain/
+  including behind Home. Summit views extend it with distant silhouettes. Facade rain/
   stop/pedestrian limits stay separate. Same seed/ground/street/facade/pub recipes:
   asphalt/sidewalks/markings/lots/windows/lamps/signals; the home line
-  stop pole is Home-local/collider-free. Balcony borrows City's Exp2 fog/
-  background/48m cap/current lighting/grade/local fog/12-light street-bar pool;
+  stop pole is Home-local/collider-free. Home has its own exterior lighting and shared saturation.
+  The summit outlook uses `.0048`/410 m. Other balcony views use `.090`/48 m with local fog.
+  Both share the 12-light street/bar pool;
   MainRoom/Bathroom/disable/destroy restore captured Home visibility/light.
   Only that shot runs5day/2night distance-managed pedestrians in the fog band;
   leaving pools them. The static stop activates no bus/director: no complete-body,

@@ -337,7 +337,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(city.ParkChessLamp.GetComponentsInChildren<Light>(true), Is.Not.Empty);
             // The presentation itself must never become another physical lamp.
             Assert.That(city.Lighting.GetComponents<Light>(), Is.Empty);
-            Assert.That(city.Camera.farClipPlane, Is.EqualTo(48f).Within(.01f));
+            Assert.That(city.Camera.farClipPlane, Is.InRange(RuntimeSceneSetup.CityFarClipPlane, CityAltitudeVisibility.SummitFarPlane));
             Assert.That(RenderSettings.fog, Is.True);
         }
 

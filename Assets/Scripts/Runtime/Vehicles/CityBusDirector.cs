@@ -498,12 +498,15 @@ namespace BarPromenade
         {
             if (actor == null || !actor.HasRoutePhase) return;
             float distance = actor.GetClosestPlanarBodyDistance(player.position);
-            if (!actor.IsSpawned && distance <= MaximumSpawnDistance && CanRevealLine())
+            float extraRange = city != null && city.Camera != null
+                ? Mathf.Max(0f, city.Camera.farClipPlane - RuntimeSceneSetup.CityFarClipPlane) : 0f;
+            float revealRange = MaximumSpawnDistance + extraRange;
+            if (!actor.IsSpawned && distance <= revealRange && CanRevealLine())
             {
                 actor.BindPresentation(GetOrCreatePresentation());
                 initialApproachCompleted = true;
             }
-            else if (actor.IsSpawned && distance >= RecycleDistance && !actor.HasPlayerPassenger && !actor.HasServiceHold)
+            else if (actor.IsSpawned && distance >= RecycleDistance + extraRange && !actor.HasPlayerPassenger && !actor.HasServiceHold)
                 ReleaseActor(true, preserveRoute: true);
 
             if (actor.IsSpawned)
@@ -519,9 +522,9 @@ namespace BarPromenade
             while (backgroundTime >= BackgroundStep)
             {
                 backgroundTime -= BackgroundStep;
-                var obstacles = distance <= MaximumSpawnDistance ? ResolveObstacleState() : DistantObstacleState();
+                var obstacles = distance <= revealRange ? ResolveObstacleState() : DistantObstacleState();
                 float pace = CirculationPace();
-                if (!obstacles.MustStop && distance > MaximumSpawnDistance)
+                if (!obstacles.MustStop && distance > revealRange)
                 {
                     AdvanceDetached(BackgroundStep * (actor.CurrentStopIndex < 0 ? pace : 1f));
                 }

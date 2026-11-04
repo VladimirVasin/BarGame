@@ -38,6 +38,7 @@ Shader "Bar Promenade/City Lighthouse Island"
             #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "CitySkyFill.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _HazeColor;
@@ -110,7 +111,7 @@ Shader "Bar Promenade/City Lighthouse Island"
                     _FadeStartDistance,
                     _FadeEndDistance,
                     dist);
-                return half4(color, fade);
+                return half4(color * CitySkyFill(), fade);
             }
             ENDHLSL
         }

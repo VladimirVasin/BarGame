@@ -44,6 +44,8 @@ Shader "Bar Promenade/City Mountain Physical"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "CitySkyFill.hlsl"
+            #include "CityValleyFog.hlsl"
 
             TEXTURE2D(_BaseMap);
             SAMPLER(sampler_BaseMap);
@@ -146,16 +148,16 @@ Shader "Bar Promenade/City Mountain Physical"
                     mainLight.direction));
                 half3 ambient = max(
                     SampleSH(normalWS),
-                    half3(0.055h, 0.060h, 0.057h));
+                    half3(0.055h, 0.060h, 0.057h) * CitySkyFill());
                 half3 direct = mainLight.color *
                     lambert *
                     mainLight.distanceAttenuation *
                     mainLight.shadowAttenuation;
                 half3 litColor = albedo * max(
                     ambient + direct,
-                    half3(0.12h, 0.12h, 0.12h));
+                    half3(0.12h, 0.12h, 0.12h) * CitySkyFill());
 
-                half fogTerm = _FogDensity * cameraDistance;
+                half fogTerm = CityValleyFogFactor(_FogDensity * cameraDistance, input.positionWS.y);
                 half nativeVisibility = exp2(
                     -1.442695h * fogTerm * fogTerm);
                 half floorBlend = smoothstep(
@@ -167,7 +169,7 @@ Shader "Bar Promenade/City Mountain Physical"
                     max(nativeVisibility, _VisibilityFloor),
                     floorBlend);
                 half3 color = lerp(
-                    _HazeColor.rgb,
+                    _HazeColor.rgb * CitySkyFill(),
                     litColor,
                     visibility);
                 if (_StableHazeHandoff >= 0.5h)
@@ -178,7 +180,7 @@ Shader "Bar Promenade/City Mountain Physical"
                         horizontalDistance);
                     color = lerp(
                         color,
-                        _HazeColor.rgb,
+                        _HazeColor.rgb * CitySkyFill(),
                         hazeHandoff);
                 }
                 return half4(color, 1.0h);

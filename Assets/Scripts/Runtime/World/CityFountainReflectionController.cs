@@ -127,6 +127,7 @@ namespace BarPromenade
             }
 
             lastRenderedNight = CityWaterResources.NightFactor;
+            reflectionCamera.backgroundColor = RenderSettings.fogColor;
             using (MirrorMarker.Auto())
             using (RuntimePerformanceCapture.MeasureReflection())
             {

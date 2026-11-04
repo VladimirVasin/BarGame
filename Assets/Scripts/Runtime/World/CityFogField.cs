@@ -38,6 +38,12 @@ namespace BarPromenade
         public Transform Player => player;
         public ParticleSystem Particles => particles;
         public ParticleSystemRenderer FogRenderer => fogRenderer;
+        public float LayerOpacityMultiplier { get; private set; } = 1f;
+
+        internal void SetLayerOpacity(float multiplier)
+        {
+            LayerOpacityMultiplier = Mathf.Clamp01(multiplier);
+        }
 
         public void Initialize(
             Transform playerTransform,
@@ -141,7 +147,7 @@ namespace BarPromenade
             double minutes = GameSessionState.GameDayIndex *
                 GameTimeDayNightRules.MinutesPerDay + GameSessionState.GameTimeOfDayMinutes;
             float phase = (float)(minutes * .16 % (Math.PI * 2.0));
-            properties.SetVector(FogMotionId, new Vector4(Mathf.Sin(phase), Mathf.Cos(phase), 1f, 0f));
+            properties.SetVector(FogMotionId, new Vector4(Mathf.Sin(phase), Mathf.Cos(phase), 1f, 1f - LayerOpacityMultiplier));
             fogRenderer.SetPropertyBlock(properties);
         }
 
@@ -290,6 +296,7 @@ namespace BarPromenade
             fogRenderer.allowOcclusionWhenDynamic = true;
 
             properties = new MaterialPropertyBlock();
+            properties.SetFloat(CityNightResources.ReceiveSkyFillId, 1f);
             properties.SetFloat(EdgePowerId, 1.45f);
             properties.SetFloat(NoiseStrengthId, 0.58f);
             properties.SetFloat(SoftParticleDistanceId, 1.10f);

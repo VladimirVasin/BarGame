@@ -40,6 +40,7 @@ Shader "Bar Promenade/City Building Window Slots"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "CityValleyFog.hlsl"
 
             TEXTURE2D(_BaseMap);
             SAMPLER(sampler_BaseMap);
@@ -163,7 +164,7 @@ Shader "Bar Promenade/City Building Window Slots"
                 surface.alpha = 1.0h;
 
                 half4 color = UniversalFragmentPBR(inputData, surface);
-                color.rgb = MixFog(color.rgb, inputData.fogCoord);
+                color.rgb = MixFog(color.rgb, CityValleyFogFactor(inputData.fogCoord, input.positionWS.y));
                 color.a = 1.0h;
                 return color;
             }

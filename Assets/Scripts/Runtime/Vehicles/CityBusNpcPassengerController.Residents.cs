@@ -107,7 +107,8 @@ namespace BarPromenade
                 if (point.WaitSlots.Count == 0) continue;
                 float squared = PlanarSquaredDistance(point.WaitSlots[0], player.position);
                 if (squared > CityPedestrianDirector.MaximumSpawnDistance * CityPedestrianDirector.MaximumSpawnDistance ||
-                    (!covered && squared < RuntimeSceneSetup.CityFarClipPlane * RuntimeSceneSetup.CityFarClipPlane)) continue;
+                    (!covered && (squared < RuntimeSceneSetup.CityFarClipPlane * RuntimeSceneSetup.CityFarClipPlane ||
+                                  !pedestrians.CanChangeStreetBodyAt(point.WaitSlots[0])))) continue;
                 while (NetworkWaiters() < MaximumWaiters && TryReserveSlot(point, out Vector3 slot))
                 {
                     int id = journeys.NextWaiting(vehicleIndex, point.StopIndex, excludePresented: true);
@@ -130,7 +131,8 @@ namespace BarPromenade
                 return false;
             }
             if (PlanarSquaredDistance(waiter.Walker.Position, player.position) >
-                CityPedestrianDirector.DespawnDistance * CityPedestrianDirector.DespawnDistance)
+                CityPedestrianDirector.DespawnDistance * CityPedestrianDirector.DespawnDistance &&
+                pedestrians.CanChangeStreetBodyAt(waiter.Walker.Position))
             {
                 pedestrians.ReleaseRouteBoundActor(waiter.Walker);
                 return false;

@@ -18,10 +18,14 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator CityNight_CreatesFogSharedGlowAndBudgetedFixtures()
         {
             GameSessionState.BeginNewGame();
+            Assert.That(GameSessionState.TryStartGameTimeAt(0), Is.True);
             CityGameRoot city = null;
             yield return LoadSceneAndWaitForRoot<CityGameRoot>(
                 SceneIds.City,
                 root => city = root);
+            var quay = city.Layout.River.Promenades[0];
+            city.Player.Motor.Teleport(new Vector3(quay.Bounds.center.x,
+                (quay.SouthY + quay.NorthY) * .5f + PlayerFactory.GroundedRootOffset, quay.Bounds.center.y));
             yield return null;
 
             Assert.That(city.IsInitialized, Is.True);
@@ -39,10 +43,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 RenderSettings.fogDensity,
                 Is.EqualTo(RuntimeSceneSetup.CityFogDensity).Within(0.0001f));
-            Assert.That(RenderSettings.fogDensity, Is.InRange(0.065f, 0.075f));
-            Assert.That(
-                RenderSettings.fogColor.maxColorComponent,
-                Is.GreaterThan(0.20f));
             Assert.That(Camera.main, Is.Not.Null);
             Assert.That(
                 Camera.main.clearFlags,
@@ -59,7 +59,7 @@ namespace BarPromenade.Tests.PlayMode
                 "terminal fog instead of exposing a dark world edge.");
             Assert.That(
                 Camera.main.backgroundColor.maxColorComponent,
-                Is.InRange(0.35f, 0.40f));
+                Is.GreaterThan(0f).And.LessThan(RuntimeSceneSetup.CityFogColor.maxColorComponent));
             Assert.That(RenderSettings.sun, Is.Not.Null);
             Assert.That(
                 RenderSettings.sun.shadowStrength,
@@ -333,7 +333,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator CityDayNight_ChangesLightingWithoutChangingFog()
+        public IEnumerator CityDayNight_ChangesLightingAndHazeColourAtFixedDensity()
         {
             Time.timeScale = 0f;
             GameSessionState.BeginNewGame();
@@ -358,7 +358,6 @@ namespace BarPromenade.Tests.PlayMode
             FogMode fogMode = RenderSettings.fogMode;
             float fogDensity = RenderSettings.fogDensity;
             Camera cityCamera = Camera.main;
-            Color backgroundColor = cityCamera.backgroundColor;
             float farClipPlane = cityCamera.farClipPlane;
             Light directional = RenderSettings.sun;
             Assert.That(directional.shadows, Is.EqualTo(LightShadows.Soft));
@@ -547,7 +546,7 @@ namespace BarPromenade.Tests.PlayMode
             city.Night.SetNightFactor(0.000095f);
             Assert.That(
                 city.Night.Atmosphere.BarLights[0].enabled,
-                Is.False);
+                Is.True, "The bar entrance fixture stays on across the night pool refresh threshold.");
             int thresholdReassignmentCount =
                 city.Night.Atmosphere.ReassignmentCount;
             city.Night.SetNightFactor(0.000104f);
@@ -564,17 +563,16 @@ namespace BarPromenade.Tests.PlayMode
             signal.ApplyTime(-signal.PhaseOffset);
             Assert.That(signal.IsLit, Is.True);
             Assert.That(signal.AmberHalos[0].IsVisible, Is.True);
-            AssertCityFogUnchanged(
+            AssertCityFogAtFixedElevation(
                 city,
                 fogField,
                 fogParticles,
                 fogMaterial,
                 fogEnabled,
-                fogColor,
+                RuntimeSceneSetup.CityFogColor,
                 fogMode,
                 fogDensity,
                 cityCamera,
-                backgroundColor,
                 farClipPlane);
 
             GameSessionState.AdvanceGameTime((float)(479f / GameTimeState.GameMinutesPerRealSecond));
@@ -610,7 +608,7 @@ namespace BarPromenade.Tests.PlayMode
                     .GetComponentInChildren<CityLightHalo>(true);
             Assert.That(restoredBarHalo.IntensityFactor, Is.EqualTo(1f));
             Assert.That(restoredBarHalo.IsVisible, Is.True);
-            AssertCityFogUnchanged(
+            AssertCityFogAtFixedElevation(
                 city,
                 fogField,
                 fogParticles,
@@ -620,7 +618,6 @@ namespace BarPromenade.Tests.PlayMode
                 fogMode,
                 fogDensity,
                 cityCamera,
-                backgroundColor,
                 farClipPlane);
         }
 
@@ -940,7 +937,7 @@ namespace BarPromenade.Tests.PlayMode
             while (Time.realtimeSinceStartup < deadline)
             {
                 T root = UnityEngine.Object.FindAnyObjectByType<T>();
-                if (root != null)
+                if (root != null && (!(root is CityGameRoot city) || city.IsInitialized))
                 {
                     capture(root);
                     yield break;
@@ -953,7 +950,7 @@ namespace BarPromenade.Tests.PlayMode
                 $"Scene '{sceneName}' did not create {typeof(T).Name}.");
         }
 
-        private static void AssertCityFogUnchanged(
+        private static void AssertCityFogAtFixedElevation(
             CityGameRoot city,
             CityFogField fogField,
             ParticleSystem fogParticles,
@@ -963,7 +960,6 @@ namespace BarPromenade.Tests.PlayMode
             FogMode fogMode,
             float fogDensity,
             Camera cityCamera,
-            Color backgroundColor,
             float farClipPlane)
         {
             Assert.That(city.Night.FogField, Is.SameAs(fogField));
@@ -980,7 +976,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Camera.main, Is.SameAs(cityCamera));
             Assert.That(
                 cityCamera.backgroundColor,
-                Is.EqualTo(backgroundColor));
+                Is.EqualTo(fogColor));
             Assert.That(
                 cityCamera.farClipPlane,
                 Is.EqualTo(farClipPlane).Within(0.0001f));

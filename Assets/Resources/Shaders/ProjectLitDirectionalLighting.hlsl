@@ -6,6 +6,7 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 #include "WarehouseAmbientVisibility.hlsl"
 #include "SceneSurfaceReflection.hlsl"
+#include "CityValleyFog.hlsl"
 
 // Stock Lit reserves these CBUFFER slots for clear coat, which it never shades.
 // Their explicit project meanings are opt-in anisotropy and its matte contact
@@ -27,8 +28,10 @@ void ProjectLitSurfaceData(float2 uv, out SurfaceData surfaceData)
             saturate(_WarehouseCleanEffects.y));
 }
 
-half4 ProjectLitFragmentPBR(InputData inputData, SurfaceData surfaceData)
+half4 ProjectLitFragmentPBR(inout InputData inputData, SurfaceData surfaceData)
 {
+    // URP applies this coordinate after shading, including the reflection.
+    inputData.fogCoord = CityValleyFogFactor(inputData.fogCoord, inputData.positionWS.y);
     directionalMetalAmount = min(_ClearCoatMask, .3h) * _WarehouseCleanEffects.y;
     [branch] if (directionalMetalAmount > 0)
     {

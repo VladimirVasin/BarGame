@@ -33,6 +33,8 @@ Shader "Bar Promenade/City Mountain Backdrop"
             #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "CityValleyFog.hlsl"
+            #include "CitySkyFill.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _HazeColor;
@@ -62,6 +64,10 @@ Shader "Bar Promenade/City Mountain Backdrop"
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
                 output.positionCS = TransformObjectToHClip(
                     input.positionOS.xyz);
+                // This camera-centred shell is scenery behind the physical
+                // city. Preserve its angular silhouette as the city opens up.
+                if (_CityValleyFog.w > 0)
+                    output.positionCS.z = output.positionCS.w * UNITY_RAW_FAR_CLIP_VALUE;
                 output.color = input.color;
                 output.uv = input.uv;
                 return output;
@@ -82,7 +88,7 @@ Shader "Bar Promenade/City Mountain Backdrop"
                     input.color.rgb,
                     _HazeColor.rgb,
                     baseHaze);
-                return half4(color, input.color.a);
+                return half4(color * CitySkyFill(), input.color.a);
             }
             ENDHLSL
         }

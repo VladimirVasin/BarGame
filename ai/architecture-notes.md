@@ -32,8 +32,11 @@
   Calendar-based needs/weather slow with it;world motion,alcohol recovery,
   pause/debug factors keep their owners. Story acts/events remain action-driven.
 
-- **Accepted exception 2026-11-03,user — City fog A:**
-  City streets use constant gray-green Exp2 `.090` with a 48 m clip. The summit apartment outlook has its own range.
+- **Accepted exceptions 2026-11-03 and 2026-11-05, user — City street visibility and night:**
+  Below Y5 streets retain gray-green Exp2 `.090`/48 m. By Y40 the hero sees `.025`/110 m.
+  Descending sightlines accumulate denser air towards the low streets. Sky and ridge shells lie behind roofs.
+  The City night sample lowers diffuse sky, directional fill, haze and environment reflections.
+  Practical lamps keep their local spill. The summit apartment outlook has its own range.
   Reading bands:art§3.3;art9/story§16/21 stay;global breathing/story signal0.
   `CityFogField`:≤36 shared world particles;slow layered
   drift:shared wind/absolute game time;Home maps axes. Pause/roof/
@@ -41,10 +44,9 @@
   `CityEastDistance*`:camera XZ/post;skyline/windows/glow fade12→30m,full≤12/0≥30.
   Far panorama/traffic fade over the first 12m inside either southern hill.
   Cached refs/MPB;recurring loads/material instances0;GPU unmeasured.
-  24FX:GI bounded bounce/SSAO/shadows/grade stay;fog changes,existing source
-  volumes reused,no City SSGI/SCGI. Probes/SSR/water/wetness/bevels/vertex colour/
-  decals/rim/outlines stay;wind drives particles. Bloom/DoF/SMAA/vignette/grain
-  stay;new dither only for proven banding,no flare/blur/chromatic/distortion.
+  The same wind field, probes/SSR, water, practical bounce and volumetric lights serve both heights.
+  Existing forward fog and Gaussian focus handle the extra range. SSAO, soft shadows, surface detail,
+  bloom, SMAA, vignette and grain keep their owners. No extra pass, SSGI/SCGI or lens effect.
 
 - **Accepted 2026-11-03,user — City/balcony night saturation:**
   Runtime grades:day `-24`→night `-30`, shared dawn/dusk/fractional clock.
@@ -2608,7 +2610,7 @@
   coastal visit starts its own clock with the first boat mid-pass and a fresh
   `90–150 s` horn wait, independent of time spent inland. The controller
   samples the sea's existing wave model for water contact. Hull self-haze and
-  camera-distance fading keep City's `48 m` far plane and fixed fog intact.
+  camera-distance fading follow the lowland shore's 48 m viewing range.
   Each warm downward working beam and cabin light retain a two-thirds daytime
   floor without adding a realtime `Light`; the water has `0–2` bounded moving
   glint/wake slots separate from the lighthouse's existing virtual lamp.
@@ -5995,7 +5997,7 @@
   Home shares window/balcony sample. Yard Spot outside `Night.Root` stays;
   Bar/Shop/Stairwell profiles stay. Minute/change gates keep budgets/§20 floor;
   dawn/dusk never recaptures;setup/balcony/restore refresh.
-  City fog/saturation:2026-11-03 decisions. Authored grade/interior range stay;
+  City altitude fog/night sky and shared saturation follow the street visibility decisions above.
   runtime Exp2 variant survives stripping.
 - **Accepted architecture exception — 2026-08-29, explicit user request —
   the barrel fire under the [10;5]–[11;5] arch is one strong realtime local
@@ -7625,7 +7627,7 @@
   retired style/console-effect keys are ignored. DoF changes runtime/cloned
   profiles only; disabled intoxication forces zero.
 - **Accepted — shared depth of field has two tiers:** the
-  scene tier is Gaussian: City `8/28/1.5`, inside48m clip/shared Exp2;
+  scene tier is Gaussian: City `8/28` at the shore to `35/90` on the crest, radius `1.5`;
   six interiors retain radius `0.55`: Bar `6/18`, Home `5/14`, Stairwell
   `5/16`, Supermarket `7/20`, Church `5/13`, Mother's House `4.5/13`.
   Exteriors, including Road `20/92/0.65`, stay. Modal `CinematicDepthOfField`

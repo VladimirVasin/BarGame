@@ -33,6 +33,7 @@ Shader "Bar Promenade/City East Distance"
             #pragma fragment DistanceFragment
             #pragma multi_compile_instancing
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "CitySkyFill.hlsl"
 
             TEXTURE2D(_RockMap); SAMPLER(sampler_RockMap);
             TEXTURE2D(_RoadMap); SAMPLER(sampler_RoadMap);
@@ -229,7 +230,9 @@ Shader "Bar Promenade/City East Distance"
                 // Opaque skyline/window depth remains coherent while their
                 // contrast melts into haze. Alpha/discard would reveal distant
                 // surfaces through buildings or pop them at the outer bound.
-                return half4(lerp(_HazeColor.rgb, surface, visibility * _Visibility * cityVisibility), input.panoramaAlpha);
+                bool emissive = (_Role >= 4 && _Role <= 5) || (_Role >= 10 && _Role <= 11) || _Role >= 13;
+                surface *= emissive ? 1.0h : CitySkyFill();
+                return half4(lerp(_HazeColor.rgb * CitySkyFill(), surface, visibility * _Visibility * cityVisibility), input.panoramaAlpha);
             }
             ENDHLSL
         }

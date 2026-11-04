@@ -115,6 +115,15 @@ namespace BarPromenade
             }
         }
 
+        internal static void SetCityVisibility(float density, float farPlane)
+        {
+            if (physicalRidgeMaterial == null) return;
+            float scale = farPlane / RuntimeSceneSetup.CityFarClipPlane;
+            physicalRidgeMaterial.SetFloat(FogDensityId, density);
+            physicalRidgeMaterial.SetFloat(HandoffNearId, PhysicalHandoffNearDistance * scale);
+            physicalRidgeMaterial.SetFloat(HandoffFarId, PhysicalHandoffFarDistance * scale);
+        }
+
         public static HomeSurfaceRecipe GetRecipe()
         {
             return new HomeSurfaceRecipe(

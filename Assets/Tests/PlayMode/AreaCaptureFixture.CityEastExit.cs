@@ -31,6 +31,8 @@ namespace BarPromenade.Tests.PlayMode
             }, () =>
             {
                 CityEastExitPlan p = CityEastExitPlanner.Create(city.Layout);
+                city.Player.Motor.Teleport(p.ApproachStart + Vector3.up * PlayerFactory.GroundedRootOffset);
+                city.Visibility.Refresh(true);
                 if (panoramaOnly)
                 {
                     Vector3 panoramaEye = p.CheckpointPosition + new Vector3(-2.1f, EyeHeight, 0f);
@@ -283,6 +285,9 @@ namespace BarPromenade.Tests.PlayMode
                 city.Player.Motor.SetInputEnabled(false);
                 foreach (Renderer renderer in city.Player.GameObject.GetComponentsInChildren<Renderer>())
                     renderer.enabled = false;
+                CityEastExitPlan exit = city.World.EastExitPlan;
+                city.Player.Motor.Teleport(exit.ApproachStart + Vector3.up * PlayerFactory.GroundedRootOffset);
+                city.Visibility.Refresh(true);
                 CityFogField fog = city.Night.FogField;
                 Assert.That(fog.CityLayers, Is.True);
                 Assert.That(fog.Particles.main.maxParticles, Is.EqualTo(CityFogField.MaximumParticles));
@@ -309,7 +314,6 @@ namespace BarPromenade.Tests.PlayMode
                         "The moving sheets must freeze with gameplay pause.");
                 }
 
-                CityEastExitPlan exit = city.World.EastExitPlan;
                 GameObject panorama = GameObject.Find(CityEastDistanceWorldBuilder.ObjectName);
                 var properties = new MaterialPropertyBlock();
                 foreach (MeshRenderer renderer in panorama.GetComponentsInChildren<MeshRenderer>(true))
@@ -390,8 +394,11 @@ namespace BarPromenade.Tests.PlayMode
                     AdvanceNightGradeClock(minute);
                     home.DayNight.RefreshImmediate();
                     yield return null;
-                    Assert.That(RenderSettings.fogDensity, Is.EqualTo(.090f).Within(.0001f));
-                    Assert.That(Camera.main.farClipPlane, Is.EqualTo(48f));
+                    bool summit = home.ExteriorContext.Layout.HasSummitHome;
+                    Assert.That(RenderSettings.fogDensity, Is.EqualTo(summit ?
+                        HomeSummitOutlook.FogDensity : RuntimeSceneSetup.CityFogDensity).Within(.0001f));
+                    Assert.That(Camera.main.farClipPlane, Is.EqualTo(summit ?
+                        HomeSummitOutlook.FarPlane : RuntimeSceneSetup.CityFarClipPlane));
                     CaptureCurrentCamera(Camera.main, SceneIds.HomeInterior, "fog-balcony-" + minute);
                 }
                 home.Player.Motor.Teleport(home.Layout.PlayerSpawn);

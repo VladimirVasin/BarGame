@@ -50,9 +50,10 @@ namespace BarPromenade.Tests.PlayMode
                 foreach (BuildingLot lot in city.Layout.BuildingLots) if (lot.IsBar) { bar = lot; break; }
                 Assert.That(bar, Is.Not.Null);
                 Shot street = FrameSpecialEntrance("Night saturation", bar, 9f);
-                camera.transform.SetPositionAndRotation(street.Position,
-                    Quaternion.LookRotation(street.Target - street.Position));
-                camera.fieldOfView = street.FieldOfView;
+                MoveCityLightingObserver(city, street);
+                city.Visibility.Refresh(true);
+                float streetDensity = RenderSettings.fogDensity;
+                float streetFarPlane = camera.farClipPlane;
                 foreach (int minute in new[] { 12 * 60, 18 * 60 + 30, 19 * 60 })
                 {
                     AdvanceNightGradeClock(minute);
@@ -60,8 +61,8 @@ namespace BarPromenade.Tests.PlayMode
                     yield return null;
                     AssertNightGrade(color, minute == 720 ? -24f : minute == 1110 ? -27f : -30f);
                     Assert.That(authored.saturation.value, Is.EqualTo(-24f), "The authored asset stays unchanged.");
-                    Assert.That(RenderSettings.fogDensity, Is.EqualTo(RuntimeSceneSetup.CityFogDensity));
-                    Assert.That(camera.farClipPlane, Is.EqualTo(RuntimeSceneSetup.CityFarClipPlane));
+                    Assert.That(RenderSettings.fogDensity, Is.EqualTo(streetDensity).Within(.0001f));
+                    Assert.That(camera.farClipPlane, Is.EqualTo(streetFarPlane).Within(.01f));
                     CaptureCurrentCamera(camera, SceneIds.City, "night-grade-" + minute);
                     if (minute == 1110)
                     {

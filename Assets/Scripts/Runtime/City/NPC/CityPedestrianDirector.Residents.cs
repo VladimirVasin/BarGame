@@ -21,6 +21,10 @@ namespace BarPromenade
         public int LogicalResidentCount => HasResidentLife ? CityResidentLifeRules.ResidentCount : 0;
         private CityResidentJourneyDirector journeys;
         private CityBusDirector residentFleet;
+        internal CityAltitudeVisibility StreetVisibility { get; set; }
+
+        internal bool CanChangeStreetBodyAt(Vector3 feet) =>
+            StreetVisibility == null || StreetVisibility.CanChangeBodyAt(feet);
 
         public void ConfigureResidentJourneys(CityResidentJourneyDirector director)
         {
@@ -136,7 +140,8 @@ namespace BarPromenade
                      actor.MotionState != CityPedestrianMotionState.WaitingAtDestination &&
                      actor.MotionState != CityPedestrianMotionState.RouteEnded);
                 if (!activityOwned && (squaredDistance > DespawnDistance * DespawnDistance ||
-                    hidden && (indoors || ActiveCount > CurrentActiveLimit))) ReleaseActor(i);
+                    hidden && (indoors || ActiveCount > CurrentActiveLimit)) && CanChangeStreetBodyAt(actor.Position))
+                    ReleaseActor(i);
             }
             spawnCooldown = Mathf.Max(0f, spawnCooldown - deltaTime);
             if (ActiveCount < GetEffectivePopulationLimit() && spawnCooldown <= 0f)
@@ -166,6 +171,7 @@ namespace BarPromenade
                 if (blockedResidentsUntil[id] > residentSpawnTime || IsResidentPresented(id) || !residentWorld.TrySample(id, day, minute, out CityResidentWorld.StreetSample sample)) continue;
                 float distance = PlanarSquaredDistance(sample.Position, player.position);
                 if (distance < minimumSquared || distance > MaximumSpawnDistance * MaximumSpawnDistance) continue;
+                if (!allowNear && !CanChangeStreetBodyAt(sample.Position)) continue;
                 if (!HasResidentClearance(sample)) continue;
                 uint priority = CityResidentLifeRules.StreetPriority(id, day, plan.PopulationSeed);
                 if (best < 0 || priority < bestPriority) { best = id; chosen = sample; bestPriority = priority; }
@@ -222,7 +228,7 @@ namespace BarPromenade
                     (walker.MotionState != CityPedestrianMotionState.Walking &&
                      walker.MotionState != CityPedestrianMotionState.WaitingAtDestination)) continue;
                 float distance = PlanarSquaredDistance(walker.Position, player.position);
-                if (distance <= farthest) continue;
+                if (distance <= farthest || !CanChangeStreetBodyAt(walker.Position)) continue;
                 farthest = distance;
                 chosen = i;
             }

@@ -746,6 +746,7 @@ namespace BarPromenade
             rainRenderer.allowOcclusionWhenDynamic = true;
 
             var properties = new MaterialPropertyBlock();
+            properties.SetFloat(CityNightResources.ReceiveSkyFillId, 1f);
             properties.SetFloat(EdgePowerId, profile.EdgePower);
             properties.SetFloat(
                 NoiseStrengthId,
