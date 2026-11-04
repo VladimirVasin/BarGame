@@ -868,8 +868,9 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   and the `NpcHumanV2` rig/Avatar copied from Hero V2, with a normal low-poly
   head and its canonical long horizontal eyes.
   A two-person rear bench and eight individual seats include the hero’s 07. Residents fill nine seats, then three standing
-  places with real floor and ring contacts. Aboard, dressed bodies follow the sprung
-  cabin without a street actor; they regain one on leaving by either door.
+  places with floor and ring contacts. Residents walk from the pavement to the door sill and along the cabin deck;
+  both doors admit or discharge riders together if their aisle paths are clear. The bus waits for both crossings.
+  On board, dressed bodies follow the sprung cabin without a street actor; on the pavement their feet return to street grounding.
   The driver sits clear of the backrest with boots in the footwell. Each hand
   steers from its own side of the rim through turns. For each
   door command, a deterministic timeline moves only the right hand to the
@@ -931,7 +932,7 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   The exit prompt is withheld until
   `ServiceOrdinal` exceeds the boarding value, so it is available at the next
   or any later stop. A second service hold keeps the doors open while the
-  three-second `BusAlightExit` uses the same selected live doorway waypoint and
+  three-second `BusAlightExit` prefers the original door and can use the other clear door with
   an independent validated grounded roadside exit pose, then blends back to the
   ordinary chase camera. Entry and exit root heights are resolved from the same
   deterministic street-surface plan that builds the physical raised sidewalks

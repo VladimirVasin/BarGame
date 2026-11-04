@@ -223,7 +223,8 @@ namespace BarPromenade
             if (registry.Body == null ||
                 registry.DriverSeatAnchor == null ||
                 registry.FrontDoorEntryAnchor == null ||
-                registry.RearDoorEntryAnchor == null)
+                registry.RearDoorEntryAnchor == null ||
+                registry.StandingFloorAnchors.Count == 0 || registry.StandingFloorAnchors[0] == null)
             {
                 return false;
             }
@@ -339,11 +340,7 @@ namespace BarPromenade
             Vector3 doorRoot = door.position;
             Vector3 doorHip = doorRoot +
                 facing * neutralPelvisLocalPosition;
-            Vector3 seatFloor = seat.position +
-                up * Vector3.Dot(
-                    doorRoot - seat.position,
-                    up);
-            if (CityBusActor.IsStandingPlace(seatIndex)) seatFloor = seat.position;
+            Vector3 seatFloor = actor.Presentation.PassengerFloor.ClosestPointOnPlane(seat.position);
             Vector3 rideRootLocal =
                 actorRoot.InverseTransformPoint(seatFloor);
             Quaternion rideRootLocalRotation =
@@ -407,7 +404,7 @@ namespace BarPromenade
             }
 
             CityBusAssetRegistry registry = actor.Presentation.Registry;
-            if (registry.FrontDoorEntryAnchor == null)
+            if (registry.StandingFloorAnchors.Count == 0 || registry.StandingFloorAnchors[0] == null)
             {
                 return false;
             }
@@ -419,13 +416,7 @@ namespace BarPromenade
             }
 
             Transform actorRoot = actor.transform;
-            Vector3 up = actorRoot.up;
-            // The door entry anchor sits on the cabin floor, which is the same
-            // plane a seated passenger's root stands on.
-            Vector3 floorReference = registry.FrontDoorEntryAnchor.position;
-            Vector3 seatFloor = seat.position +
-                up * Vector3.Dot(floorReference - seat.position, up);
-            if (CityBusActor.IsStandingPlace(seatIndex)) seatFloor = seat.position;
+            Vector3 seatFloor = actor.Presentation.PassengerFloor.ClosestPointOnPlane(seat.position);
             rideRootLocalPosition =
                 actorRoot.InverseTransformPoint(seatFloor);
             rideRootLocalRotation = Quaternion.identity;

@@ -21,8 +21,14 @@ namespace BarPromenade
     {
         private readonly HashSet<string> servedStopIds =
             new HashSet<string>(StringComparer.Ordinal);
-        private readonly List<object> serviceHoldOwners =
-            new List<object>(CabinCapacity);
+        private struct ServiceHold
+        {
+            internal object Owner;
+            internal CityBusPassengerDoor? Door;
+            internal Vector2 Aisle;
+            internal float Elapsed;
+        }
+        private readonly List<ServiceHold> serviceHolds = new List<ServiceHold>(CabinCapacity);
         private readonly List<CabinOccupant> occupants =
             new List<CabinOccupant>(CabinCapacity);
 
@@ -70,9 +76,9 @@ namespace BarPromenade
         /// strands the bus at a stop with its doors **wide open** — not shut.
         /// Stating that precisely matters: an earlier version of this comment
         /// claimed the opposite and sent an investigation of genuinely shut
-        /// doors chasing hold leaks for hours. Every legitimate transfer
-        /// finishes well inside one dwell, so anything past this is a leak;
-        /// the hold is broken and reported rather than left to strand the
+        /// doors chasing hold leaks for hours. Each transfer has its own
+        /// clock, including the longer walk through the alternate door.
+        /// An expired hold is broken and reported rather than left to strand the
         /// route for the rest of the session.
         /// </summary>
         public const float MaximumServiceHoldDuration = DwellDuration + 5f;
@@ -112,7 +118,6 @@ namespace BarPromenade
         private float distanceSinceSpawn;
         private float dwellElapsed;
         private float dwellDuration;
-        private float serviceHoldElapsed;
         private float pendingTravel;
         private uint randomState;
         private bool isPrepared;
@@ -162,7 +167,7 @@ namespace BarPromenade
             presentation.DriverDoorSample.DoorPhase ==
                 CityBusDoorPhase.Open &&
             presentation.DoorOpenness >= 0.9999f;
-        public bool HasServiceHold => serviceHoldOwners.Count > 0;
+        public bool HasServiceHold => serviceHolds.Count > 0;
         public bool HasPassenger => occupants.Count > 0;
         public int OccupantCount => occupants.Count;
         public int NpcOccupantCount => CountOccupants(false);
@@ -377,9 +382,51 @@ namespace BarPromenade
 
             if (IndexOfHold(owner) < 0)
             {
-                serviceHoldOwners.Add(owner);
+                serviceHolds.Add(new ServiceHold { Owner = owner });
             }
 
+            return true;
+        }
+
+        internal bool CanUsePassengerDoor(object owner, CityBusPassengerDoor door, int place = PlayerSeatIndex)
+            => TryGetFreeAisle(owner, door, place, out _);
+
+        internal bool TryAcquireDoorHold(object owner, CityBusPassengerDoor door, int place = PlayerSeatIndex)
+        {
+            if (!TryGetFreeAisle(owner, door, place, out var aisle)) return false;
+            int index = IndexOfHold(owner);
+            var hold = new ServiceHold { Owner = owner, Door = door, Aisle = aisle };
+            if (index < 0) serviceHolds.Add(hold);
+            else if (!serviceHolds[index].Door.HasValue) serviceHolds[index] = hold;
+            return true;
+        }
+
+        private bool TryGetFreeAisle(object owner, CityBusPassengerDoor door, int place, out Vector2 aisle)
+        {
+            aisle = default;
+            if (owner == null || !DoorsFullyOpen) return false;
+            var registry = presentation.Registry;
+            var target = CityBusRidePlan.PlaceAnchor(registry, place);
+            var threshold = door == CityBusPassengerDoor.Front ? registry.FrontDoorEntryAnchor : registry.RearDoorEntryAnchor;
+            if (!target || !threshold) return false;
+            Vector3 forward = TravelDirection;
+            float entry = Vector3.Dot(threshold.position - Position, forward);
+            float end = Vector3.Dot(target.position - Position, forward);
+            aisle = new Vector2(Mathf.Min(entry, end), Mathf.Max(entry, end));
+            // The centre aisle admits one body across. Opposite doors can run
+            // together when the two walks leave room between their endpoints.
+            const float clearance = 2f * CityPedestrianPlanner.AgentRadius;
+            foreach (var hold in serviceHolds)
+            {
+                if (!hold.Door.HasValue) continue;
+                if (ReferenceEquals(hold.Owner, owner))
+                {
+                    if (hold.Door != door) return false;
+                    continue;
+                }
+                if (hold.Door == door || (aisle.x < hold.Aisle.y + clearance &&
+                                          aisle.y > hold.Aisle.x - clearance)) return false;
+            }
             return true;
         }
 
@@ -391,8 +438,7 @@ namespace BarPromenade
                 return false;
             }
 
-            serviceHoldOwners.RemoveAt(index);
-            if (serviceHoldOwners.Count == 0) serviceHoldElapsed = 0f;
+            serviceHolds.RemoveAt(index);
             return true;
         }
 
@@ -556,9 +602,9 @@ namespace BarPromenade
 
         private int IndexOfHold(object owner)
         {
-            for (int index = 0; index < serviceHoldOwners.Count; index++)
+            for (int index = 0; index < serviceHolds.Count; index++)
             {
-                if (ReferenceEquals(serviceHoldOwners[index], owner))
+                if (ReferenceEquals(serviceHolds[index].Owner, owner))
                 {
                     return index;
                 }
@@ -1101,7 +1147,6 @@ namespace BarPromenade
             dwellDuration = currentStopIndex >= 0 ? DwellDuration : 0f;
             speed = sample.Speed;
             pendingTravel = 0f;
-            serviceHoldElapsed = 0f;
             distanceSinceSpawn = EnteringTravelDistance;
             IsYielding = false;
             IsBraking = currentStopIndex >= 0;
@@ -1119,26 +1164,25 @@ namespace BarPromenade
         {
             if (!HasServiceHold)
             {
-                serviceHoldElapsed = 0f;
                 dwellElapsed = Mathf.Min(
                     dwellDuration,
                     dwellElapsed + deltaTime);
             }
             else
             {
-                serviceHoldElapsed += deltaTime;
-                if (serviceHoldElapsed >= MaximumServiceHoldDuration)
+                // Overlapping passengers can keep this stop busy longer than
+                // any single crossing. Expire only the owner that stopped responding.
+                int expired = 0;
+                for (int i = serviceHolds.Count - 1; i >= 0; i--)
                 {
-                    int leaked = serviceHoldOwners.Count;
-                    serviceHoldOwners.Clear();
-                    serviceHoldElapsed = 0f;
-                    GameLog.Warning(
-                        "bus",
-                        "service_hold_expired",
-                        GameLog.Field("stop_index", currentStopIndex),
-                        GameLog.Field("owners", leaked),
-                        GameLog.Field("occupants", occupants.Count));
+                    var hold = serviceHolds[i];
+                    hold.Elapsed += deltaTime;
+                    if (hold.Elapsed < MaximumServiceHoldDuration) serviceHolds[i] = hold;
+                    else { serviceHolds.RemoveAt(i); expired++; }
                 }
+                if (expired > 0)
+                    GameLog.Warning("bus", "service_hold_expired", GameLog.Field("stop_index", currentStopIndex),
+                        GameLog.Field("owners", expired), GameLog.Field("occupants", occupants.Count));
             }
 
             ApplyDriverDoorSample(
@@ -1375,11 +1419,10 @@ namespace BarPromenade
             distanceSinceSpawn = 0f;
             dwellElapsed = 0f;
             dwellDuration = 0f;
-            serviceHoldElapsed = 0f;
             pendingTravel = 0f;
             randomState = 0u;
             isPrepared = false;
-            serviceHoldOwners.Clear();
+            serviceHolds.Clear();
             occupants.Clear();
             servedStopIds.Clear();
             DwellCount = 0;

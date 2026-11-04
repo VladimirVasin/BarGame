@@ -509,7 +509,9 @@ namespace BarPromenade.Tests.EditMode
             // Pavement leg: the wait slot stands one door clearance plus a
             // capsule off the body, and the doors are along the same kerb.
             const float PavementLeg = 3f;
-            float worstPath = PavementLeg + worstAisle;
+            // A concurrent rider can own the nearer door: allow the additional
+            // kerb walk between the two authored doorways at normal gait speed.
+            float worstPath = PavementLeg + Vector2.Distance(front, rear) + worstAisle;
             for (int index = 0;
                  index < CityPedestrianResources.Archetypes.Count;
                  index++)
@@ -539,8 +541,8 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 CityBusNpcPassengerController.MaximumTransferBudget,
-                Is.LessThanOrEqualTo(CityBusActor.DwellDuration),
-                "A transfer that outlasts a whole dwell is stuck, not slow.");
+                Is.LessThan(CityBusActor.MaximumServiceHoldDuration),
+                "Finish or return the passenger to the pavement before their service hold expires.");
         }
 
         /// <summary>

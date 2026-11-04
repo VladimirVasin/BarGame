@@ -79,6 +79,7 @@ namespace BarPromenade
         private readonly Player3DProceduralLocomotionLayer legLayer =
             new Player3DProceduralLocomotionLayer();
         private bool legLayerBound;
+        private bool walkingThroughBusDoor;
         // The Silent Hill head, mirrored: the same additive neck-and-head
         // turn the hero makes toward a passer-by, made by the passer-by
         // toward him. The layer is shared with every staged NPC that
@@ -305,6 +306,7 @@ namespace BarPromenade
                 if (!seatedPose.Bind(anchor, surfaceUp.normalized, facing, floorPoint.Value)) return false;
             }
             seatAnchor = anchor;
+            walkingThroughBusDoor = false;
             // Imported FBX empty axes need not match the cushion plane.
             // The owner supplies its physical normal; retain it in anchor
             // space so subsequent suspension/seat motion carries that plane.
@@ -333,6 +335,7 @@ namespace BarPromenade
 
         public void ClearSeat()
         {
+            walkingThroughBusDoor = false;
             seatedPose?.Release();
             if (IsStandingInBus)
             {
@@ -350,6 +353,16 @@ namespace BarPromenade
             {
                 ApplyMixerWeights();
             }
+        }
+
+        internal void BeginBusTransfer()
+        {
+            ClearSeat();
+            walkingThroughBusDoor = true;
+            legLayer.UseRouteGroundReference();
+            // Sample the upright gait at the handoff itself, even if the next
+            // distance-limited animation tick falls after the first step.
+            EvaluateGraph(0f);
         }
 
         /// <summary>
@@ -504,6 +517,7 @@ namespace BarPromenade
 
             IsInitialized = false;
             IsMoving = false;
+            walkingThroughBusDoor = false;
             seatAnchor = null;
             seatedRide = null;
             hasSitPlayable = false;
@@ -645,6 +659,17 @@ namespace BarPromenade
                 return;
             }
 
+            if (walkingThroughBusDoor)
+            {
+                // The scripted root carries the pavement, threshold and aisle
+                // heights. Keep the clip's relative foot lift and put the
+                // supporting shoe on that path, above the road collider.
+                if (legLayerBound && legLayer.TryGetRenderedSoleHeight(out float plantedSole))
+                    registry.ModelRoot.position += Vector3.up * (transform.position.y - plantedSole);
+                else GroundFeetToPresentationRoot();
+                return;
+            }
+
             if (legLayerBound && !registry.PreservesAirborneMotion)
             {
                 ApplyLegLayer(deltaTime);
@@ -783,6 +808,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            walkingThroughBusDoor = false;
             standing?.Release();
             seatedPose?.Release();
             IsMoving = false;

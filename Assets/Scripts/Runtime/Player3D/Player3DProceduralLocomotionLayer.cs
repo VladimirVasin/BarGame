@@ -446,12 +446,8 @@ namespace BarPromenade
             for (int index = 0; index < legs.Length; index++)
             {
                 legs[index].Calibrate(actorForward);
-                // A rebind or a teleport leaves a smoothed target that
-                // belongs to another room; the next frame probes afresh.
-                legs[index].HasSmoothedTarget = false;
             }
-
-            hasSmoothedPlaneDelta = false;
+            ClearGroundHistory();
 
             Vector3 actorRight = Vector3.Cross(Vector3.up, actorForward);
             arms[0].Calibrate(actorRight, actorForward);
@@ -467,6 +463,29 @@ namespace BarPromenade
             groundedFootHeightOffset = lowestSole - actorRoot.position.y;
             groundedOffsetCaptured = true;
             CaptureSoleClearance(lowestSole);
+        }
+
+        /// <summary>The bus route puts the pedestrian root on its support.
+        /// A body first sampled above the road can otherwise keep the whole
+        /// cabin height as its shoe clearance after returning to the street.</summary>
+        internal void UseRouteGroundReference()
+        {
+            soleClearance = probe != null && probe.HasSoleRenderers
+                ? 0f : Mathf.Max(0f, groundedFootHeightOffset);
+            soleClearanceCaptured = true;
+            ClearGroundHistory();
+        }
+
+        private void ClearGroundHistory()
+        {
+            for (int i = 0; i < legs.Length; i++) legs[i].HasSmoothedTarget = false;
+            hasSmoothedPlaneDelta = false;
+        }
+
+        internal bool TryGetRenderedSoleHeight(out float height)
+        {
+            height = 0f;
+            return probe != null && probe.TryGetLowestSoleHeight(out height);
         }
 
         /// <summary>

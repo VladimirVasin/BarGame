@@ -137,16 +137,16 @@ namespace BarPromenade
             }
             if (waiter.Walker.MotionState != CityPedestrianMotionState.WaitingAtStop) return true;
             if (leg.Phase == CityResidentJourneyPhase.ApproachingStop && !journeys.MarkAtStop(waiter.Resident)) return true;
-            if (lines == null) return true;
+            if (lines == null || !IsFirstVisibleWaiter(waiter)) return true;
             for (int i = 0; i < lines.Count; i++)
             {
                 var controller = lines[i];
                 var actor = controller.busDirector.Actor;
                 if (controller.busDirector.LineIndex != leg.Line || actor == null || !actor.IsSpawned ||
-                    !actor.DoorsFullyOpen || actor.CurrentStopIndex != waiter.StopIndex ||
-                    controller.ResidentTransferPending() || !IsFirstVisibleWaiter(waiter)) continue;
+                    !actor.DoorsFullyOpen || actor.CurrentStopIndex != waiter.StopIndex) continue;
                 controller.TryBeginBoarding(waiter, actor);
-                if (waiter.Walker.MotionState != CityPedestrianMotionState.Boarding || controller == this) return true;
+                if (waiter.Walker.MotionState != CityPedestrianMotionState.Boarding) continue;
+                if (controller == this) return true;
                 controller.waiters.Add(waiter);
                 return false;
             }
@@ -165,33 +165,6 @@ namespace BarPromenade
                     (leg.ReadyAt < readyAt || (leg.ReadyAt == readyAt && other.Resident < candidate.Resident))) return false;
             }
             return true;
-        }
-
-        private bool ResidentTransferPending()
-        {
-            // Finish alighting first, and assign one new seat at a time so
-            // physical and logical first-free-seat order agree.
-            for (int slot = 0; slot < CityBusActor.MaximumNpcOccupants; slot++)
-            {
-                int id = journeys.RiderAt(vehicleIndex, slot);
-                if (id >= 0 && journeys.GetState(id).ExitStop == busDirector.Actor.CurrentStopIndex) return true;
-            }
-            foreach (var rider in waiters)
-                if (rider.Walker.MotionState == CityPedestrianMotionState.Boarding ||
-                    rider.Walker.MotionState == CityPedestrianMotionState.Alighting) return true;
-            return false;
-        }
-
-        private bool TryReserveResidentSeat(Waiter waiter, CityBusActor actor, out int seatIndex)
-        {
-            for (int slot = 0; slot < CityBusActor.MaximumNpcOccupants; slot++)
-            {
-                if (journeys.RiderAt(vehicleIndex, slot) >= 0) continue;
-                seatIndex = CityBusActor.NpcPlaceIndices[slot];
-                return actor.TryAttachNpcPassengerAtPlace(waiter, seatIndex);
-            }
-            seatIndex = -1;
-            return false;
         }
     }
 }

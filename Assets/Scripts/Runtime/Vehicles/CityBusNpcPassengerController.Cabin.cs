@@ -73,7 +73,7 @@ namespace BarPromenade
             // A distant approaching service has several seconds to construct its
             // occupied places behind the fog. A warp/close reveal binds before render.
             int bindBudget = distance > CityBusDirector.FogHiddenDistance ? 1 : cabin.Length;
-            bool canExit = deltaTime > 0f && actor.DoorsFullyOpen && !HasWalkingPassenger();
+            bool canExit = deltaTime > 0f && actor.DoorsFullyOpen;
             for (int slot = 0; slot < cabin.Length; slot++)
             {
                 int resident = journeys.RiderAt(vehicleIndex, slot);
@@ -102,7 +102,16 @@ namespace BarPromenade
         private bool BeginCabinExit(CityBusActor actor, int slot, CabinView view)
         {
             int place = CityBusActor.NpcPlaceIndices[slot];
-            if (!waitPlan.TryGetWaitPoint(actor.CurrentStopIndex, out var stop) ||
+            var bus = actor.Presentation.Registry;
+            if (!waitPlan.TryGetWaitPoint(actor.CurrentStopIndex, out var stop) || stop.WaitSlots.Count == 0)
+                return false;
+            // All riders land on this stop's validated pavement places. Only
+            // their order of preference varies with the door. A busy aisle
+            // or a full landing leaves the resident on the sprung cabin rig.
+            Transform door = actor.CanUsePassengerDoor(view, CityBusPassengerDoor.Front, place)
+                ? bus.FrontDoorEntryAnchor
+                : actor.CanUsePassengerDoor(view, CityBusPassengerDoor.Rear, place) ? bus.RearDoorEntryAnchor : null;
+            if (door == null || !TryChooseExit(stop, door.position, null, out _) ||
                 !TryGetCabinRootPose(actor, place, out var local, out var rotation)) return false;
             var walker = pedestrians.TryStartCabinExit(view.Resident, view.Body, stop.PedestrianNodeIndex,
                 actor.transform.TransformPoint(local), actor.Rotation * rotation);
@@ -123,6 +132,9 @@ namespace BarPromenade
                 return false;
             }
             waiters.Add(waiter);
+            // Claim this exit before the queue on either vehicle attempts to
+            // use the same stretch of aisle later in this service tick.
+            AdvanceRide(waiter, actor);
             return true;
         }
 

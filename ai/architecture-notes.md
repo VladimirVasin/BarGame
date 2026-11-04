@@ -3901,7 +3901,7 @@
   front/rear doors,seat07(anchor6) opposite driver;solid CityBus excluded from
   interaction queries. Shared PlayerInteractor/InteractionPromptView E/Enter/
   gamepad/pointer. Fully open dwell boarding;nearest valid door's deterministic
-  walkable dock outside obstacle corridor retained for exit. Grounding:
+  walkable dock outside obstacle corridor; its door is preferred on exit. Grounding:
   CityStreetSurfacePlan.Sidewalks Bounds.max.y or cut-back RoadTop+root offset;
   curb delta≤live stepOffset.
 
@@ -3914,11 +3914,16 @@
   transactions restore camera exactly.
 
   Passenger blocks pooling;director cleans shutdown. Exit:later service ordinal,
-  reacquire hold,detach moving-frame,freeze seat target;BusAlightExit via retained
+  reacquire hold,detach moving-frame,freeze seat target;BusAlightExit via open
   door/grounded dock via the centre aisle,camera→chase. Completion/cancel/lifecycle restore motor/
   controller/shadow/camera once,release both owners,no hierarchy mutation.
   Failed exit:last safe exterior dock. Fares/hero destinations/
   signals/live tracking deferred.
+
+- **Accepted 2026-11-04 — Parallel bus doors.** Either door serves either direction.
+  Hero and residents reserve one doorway and its stretch of centre aisle per transfer.
+  Separate paths can run together. Seats and pavement landings stay distinct;
+  the bus holds until the last passenger finishes.
 
 - **Accepted 2026-11-04 — Ten seated passengers and three standing places.**
   The driver is separate. Eight individual seats and one continuous two-person rear bench
@@ -3943,18 +3948,9 @@
   use the first suitable one-way service with space. Approaches and final walks
   use the pedestrian graph. Both vehicles on a line share its queue. Bind the
   passenger already assigned to each logical seat when a bus becomes visible.
-  Boarding takes the shared hold, runs a
-  short scripted doorway walk whose budget is measured rather than assumed: a
-  flat constant cannot serve an aisle leg of `1.16-2.56 m` walked at
-  `0.72-1.30 m/s`, so it is derived per transfer from the real
-  `pavement -> door -> seat` path and that walker's own pace and clamped to
-  `3 s` up to one whole dwell. The door is chosen by the whole journey, not by
-  which one the walker stands nearer: the doors are `4.39 m` apart on the same
-  kerb, and choosing by the outside leg alone sends a passenger `6.60 m` down
-  the aisle where `2.56 m` is available. Authored pace is kept rather than
-  hurried, because each design owns its cadence and speeding the root reads as
-  foot-sliding. An overrun aborts back to the pavement rather than stalling
-  the fixed `10 s` dwell. The resident leaves at the planned stop. NPC transfers deliberately do not use
+  Boarding budgets the queue, dock, sill and aisle at the walker's own pace.
+  A longer walk to the other door may outlast the normal dwell. The budget stays
+  below the individual hold watchdog; an overrun returns the walker to the pavement. The resident leaves at the planned stop. NPC transfers deliberately do not use
   `PlayerAnimatedInteractionController`: it is bound to `PlayerRuntime` and
   `IPlayerClipPresentation`, and `ai/contextual-animation-standard.md`
   explicitly does not govern NPC animation. A route-bound walker is exempt from

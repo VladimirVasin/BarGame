@@ -804,7 +804,8 @@ namespace BarPromenade
             Vector3 destination,
             Quaternion destinationRotation,
             Vector3? secondWaypoint = null,
-            Vector3? thirdWaypoint = null)
+            Vector3? thirdWaypoint = null,
+            Vector3? fourthWaypoint = null)
         {
             if (!IsSpawned || IsYieldingToVehicle)
             {
@@ -825,8 +826,11 @@ namespace BarPromenade
             }
 
             transferWaypoint = waypoint;
-            transferNextWaypoint = secondWaypoint;
-            transferLastWaypoint = thirdWaypoint;
+            transferStopCount = 0;
+            transferStopIndex = 0;
+            if (secondWaypoint.HasValue) remainingTransferStops[transferStopCount++] = secondWaypoint.Value;
+            if (thirdWaypoint.HasValue) remainingTransferStops[transferStopCount++] = thirdWaypoint.Value;
+            if (fourthWaypoint.HasValue) remainingTransferStops[transferStopCount++] = fourthWaypoint.Value;
             transferDestination = destination;
             transferRotation = destinationRotation;
             transferPassedWaypoint = false;
@@ -838,14 +842,15 @@ namespace BarPromenade
                 characterController.enabled = false;
             }
 
-            presentation.ClearSeat();
+            presentation.BeginBusTransfer();
             MotionState = boarding
                 ? CityPedestrianMotionState.Boarding
                 : CityPedestrianMotionState.Alighting;
             return true;
         }
 
-        private Vector3? transferNextWaypoint, transferLastWaypoint;
+        private readonly Vector3[] remainingTransferStops = new Vector3[3];
+        private int transferStopIndex, transferStopCount;
 
         internal bool BeginStandingRide(Transform floor, Transform grip, Vector3 up, bool preloaded)
         {
@@ -991,16 +996,16 @@ namespace BarPromenade
                 : transferWaypoint;
             Vector3 offset = target - current;
             float distance = offset.magnitude;
-            if (distance <= TransferArrivalRadius)
+            bool busTransfer = MotionState == CityPedestrianMotionState.Boarding || MotionState == CityPedestrianMotionState.Alighting;
+            // Reach the sill before turning into the aisle or stepping down.
+            // The looser bench arrival radius would cut the corner below the deck.
+            if (distance <= (busTransfer ? .001f : TransferArrivalRadius))
             {
                 if (!transferPassedWaypoint)
                 {
-                    if ((MotionState == CityPedestrianMotionState.Boarding || MotionState == CityPedestrianMotionState.Alighting) &&
-                        transferNextWaypoint.HasValue)
+                    if (busTransfer && transferStopIndex < transferStopCount)
                     {
-                        transferWaypoint = transferNextWaypoint.Value;
-                        transferNextWaypoint = transferLastWaypoint;
-                        transferLastWaypoint = null;
+                        transferWaypoint = remainingTransferStops[transferStopIndex++];
                         return true;
                     }
                     transferPassedWaypoint = true;

@@ -78,6 +78,7 @@ namespace BarPromenade
         private Vector3 doorTriggerBusPosition;
         private Quaternion doorTriggerBusRotation;
         private CityBusStopDescriptor doorTriggerStop;
+        private (bool front, bool rear) doorTriggerAvailability;
         private Vector3 cameraBlendStartPosition;
         private Quaternion cameraBlendStartRotation;
         private float cameraBlendStartFieldOfView;
@@ -426,7 +427,7 @@ namespace BarPromenade
                 interaction.Phase !=
                     PlayerAnimatedInteractionPhase.Idle ||
                 !TryBuildClosestPlan(out CityBusRidePlan plan) ||
-                !actor.TryAcquireServiceHold(this))
+                !actor.TryAcquireDoorHold(this, plan.PassengerDoor))
             {
                 return false;
             }
@@ -476,7 +477,7 @@ namespace BarPromenade
                 !actor.DoorsFullyOpen ||
                 actor.ServiceOrdinal <= boardedServiceOrdinal ||
                 !TryBuildAlightingPlan(out CityBusRidePlan exitPlan) ||
-                !actor.TryAcquireServiceHold(this))
+                !actor.TryAcquireDoorHold(this, exitPlan.PassengerDoor))
             {
                 return false;
             }
@@ -831,6 +832,8 @@ namespace BarPromenade
             CityBusPassengerDoor passengerDoor,
             out CityBusRidePlan plan)
         {
+            plan = null;
+            if (actor == null || !actor.CanUsePassengerDoor(this, passengerDoor)) return false;
             return CityBusRidePlan.TryCreate(
                 actor,
                 walkableArea,
@@ -885,7 +888,9 @@ namespace BarPromenade
                 return false;
             }
 
-            return TryBuildPlan(activePlan.PassengerDoor, out plan);
+            var preferred = activePlan.PassengerDoor;
+            var alternate = preferred == CityBusPassengerDoor.Front ? CityBusPassengerDoor.Rear : CityBusPassengerDoor.Front;
+            return TryBuildPlan(preferred, out plan) || TryBuildPlan(alternate, out plan);
         }
 
         private float GetBoardingVerticalTolerance()
@@ -932,11 +937,14 @@ namespace BarPromenade
             // Bind the prompts to this service's walkable docks when they open.
             CityBusStopDescriptor stop = State == CityBusRideState.Outside && actor != null &&
                 actor.IsSpawned && actor.DoorsFullyOpen ? actor.CurrentStop : null;
-            if (stop != doorTriggerStop || stop != null &&
+            var available = (front: stop != null && actor.CanUsePassengerDoor(this, CityBusPassengerDoor.Front),
+                rear: stop != null && actor.CanUsePassengerDoor(this, CityBusPassengerDoor.Rear));
+            if (stop != doorTriggerStop || available != doorTriggerAvailability || stop != null &&
                 ((actor.Position - doorTriggerBusPosition).sqrMagnitude > .000001f ||
                  Quaternion.Angle(actor.Rotation, doorTriggerBusRotation) > .01f))
             {
                 doorTriggerStop = stop;
+                doorTriggerAvailability = available;
                 if (stop != null)
                 {
                     doorTriggerBusPosition = actor.Position;

@@ -38,24 +38,12 @@ namespace BarPromenade
         public const float MaximumWaiterDelay = 18f;
         public const float NightWaiterDelayScale = 3f;
 
-        /// <summary>
-        /// A transfer holds the doors open, so it may not run indefinitely.
-        /// Its budget is measured, not assumed: the walk is `pavement -> door
-        /// -> seat`, which runs from `1.16 m` to `2.56 m` inside the cabin
-        /// depending on the seat, and the four riding designs walk at
-        /// `0.72`-`1.30 m/s`. One constant cannot fit that spread — a `2.5 s`
-        /// timeout was shorter than every real transfer, so every ambient
-        /// passenger aborted at the doorway and none ever sat down.
-        /// </summary>
+        // The walk includes the outside dock, sill, aisle and final turn.
+        // An alternate door can add the distance between doors along the kerb.
         public const float TransferBudgetSlack = 1.6f;
         public const float TransferBudgetPadding = 1f;
         public const float MinimumTransferBudget = 3f;
-
-        /// <summary>
-        /// A transfer that cannot finish within one whole dwell is stuck, not
-        /// slow.
-        /// </summary>
-        public const float MaximumTransferBudget = CityBusActor.DwellDuration;
+        public const float MaximumTransferBudget = CityBusActor.MaximumServiceHoldDuration - TransferBudgetPadding;
 
         /// <summary>
         /// Simultaneous physical queue placements across the network. Logical
@@ -417,43 +405,14 @@ namespace BarPromenade
                 return true;
             }
 
-            int seatIndex;
-            bool hasSeat = journeys == null ? actor.TryAttachNpcPassenger(waiter, out seatIndex) :
-                TryReserveResidentSeat(waiter, actor, out seatIndex);
-            if (!hasSeat)
+            if (!TryReserveBoarding(waiter, actor, out var plan))
             {
-                ReportBoardingBlocked(waiter, "no_free_seat");
+                ReportBoardingBlocked(waiter, "no_free_door_or_place");
                 return true;
             }
+            int seatIndex = plan.SeatIndex;
 
-            if (!TryBuildPlan(
-                    waiter,
-                    actor,
-                    seatIndex,
-                    SelectBestDoor(waiter.Walker.Position, actor, seatIndex),
-                    out CityBusRidePlan plan))
-            {
-                actor.ReleasePassenger(waiter);
-                ReportBoardingBlocked(waiter, "no_door_dock");
-                return true;
-            }
-
-            if (HasWalkingPassenger() || !actor.TryAcquireServiceHold(waiter))
-            {
-                actor.ReleasePassenger(waiter);
-                ReportBoardingBlocked(waiter, "no_service_hold");
-                return true;
-            }
-
-            Transform actorRoot = actor.transform;
-            Vector3 seatFloor =
-                actorRoot.TransformPoint(plan.RideRootLocalPosition);
-            GetAislePath(actor, plan.DoorAnchor.position, seatFloor, out var aisleDoor, out var aislePlace);
-            if (!waiter.Walker.BeginTransfer(
-                    true,
-                    plan.DoorAnchor.position,
-                    seatFloor,
-                    actorRoot.rotation * plan.RideRootLocalRotation, aisleDoor, aislePlace))
+            if (!BeginDoorTransfer(waiter.Walker, actor, plan, true, waiter.Walker.Position, out float path))
             {
                 actor.ReleaseServiceHold(waiter);
                 actor.ReleasePassenger(waiter);
@@ -461,7 +420,6 @@ namespace BarPromenade
                 return true;
             }
 
-            float path = DoorTransferLength(waiter.Walker.Position, plan.DoorAnchor.position, aisleDoor, aislePlace, seatFloor);
             waiter.BlockedReason = null;
             waiter.Plan = plan;
             waiter.RideRootLocalPosition = plan.RideRootLocalPosition;
@@ -481,6 +439,41 @@ namespace BarPromenade
                 GameLog.Field("budget_s", waiter.TransferBudget));
             return true;
         }
+
+        private bool TryReserveBoarding(Waiter waiter, CityBusActor actor, out CityBusRidePlan plan)
+        {
+            plan = null;
+            // A body walking to its seat already owns it even though the resident
+            // manifest commits only when they sit. Try the next compatible place.
+            var places = CityBusActor.NpcPlaceIndices;
+            bool freeSeat = false;
+            for (int slot = 0; slot < places.Count; slot++)
+            {
+                int place = places[slot];
+                if (CityBusActor.IsStandingPlace(place) && freeSeat) break;
+                if (actor.IsPlaceOccupied(place) || (journeys != null && journeys.RiderAt(vehicleIndex, slot) >= 0))
+                    continue;
+                freeSeat |= !CityBusActor.IsStandingPlace(place);
+                var preferred = SelectBestDoor(waiter.Walker.Position, actor, place);
+                if (!TryOpenPlan(waiter, actor, place, preferred, out plan) &&
+                    !TryOpenPlan(waiter, actor, place, OtherDoor(preferred), out plan)) continue;
+                if (!actor.TryAttachNpcPassengerAtPlace(waiter, place)) continue;
+                if (actor.TryAcquireDoorHold(waiter, plan.PassengerDoor, place)) return true;
+                actor.ReleasePassenger(waiter);
+            }
+            plan = null;
+            return false;
+        }
+
+        private bool TryOpenPlan(Waiter waiter, CityBusActor actor, int place, CityBusPassengerDoor door,
+            out CityBusRidePlan plan)
+        {
+            plan = null;
+            return actor.CanUsePassengerDoor(waiter, door, place) && TryBuildPlan(waiter, actor, place, door, out plan);
+        }
+
+        private static CityBusPassengerDoor OtherDoor(CityBusPassengerDoor door) => door == CityBusPassengerDoor.Front
+            ? CityBusPassengerDoor.Rear : CityBusPassengerDoor.Front;
 
         private bool AdvanceBoarding(
             Waiter waiter,
@@ -529,30 +522,15 @@ namespace BarPromenade
                 journeys.GetState(waiter.Resident).ExitStop == actor.CurrentStopIndex : served >= waiter.RideStopCount;
             if (!destinationReached ||
                 !actor.DoorsFullyOpen ||
-                actor.CurrentStop == null || HasWalkingPassenger())
+                actor.CurrentStop == null)
             {
                 return true;
             }
 
-            // A passenger who boarded keeps the door it came through; one that
-            // was already aboard at spawn has no history, so it takes the
-            // nearer door from its seat.
-            CityBusPassengerDoor exitDoor = waiter.Plan != null
-                ? waiter.Plan.PassengerDoor
-                : SelectBestDoor(
-                    waiter.Walker.Position,
-                    actor,
-                    waiter.SeatIndex);
-            if (!TryBuildPlan(
-                    waiter,
-                    actor,
-                    waiter.SeatIndex,
-                    exitDoor,
-                    out CityBusRidePlan exitPlan) ||
-                !actor.TryAcquireServiceHold(waiter))
-            {
-                return true;
-            }
+            var preferred = waiter.Plan?.PassengerDoor ?? SelectBestDoor(waiter.Walker.Position, actor, waiter.SeatIndex);
+            if (!TryOpenPlan(waiter, actor, waiter.SeatIndex, preferred, out var exitPlan) &&
+                !TryOpenPlan(waiter, actor, waiter.SeatIndex, OtherDoor(preferred), out exitPlan)) return true;
+            if (!actor.TryAcquireDoorHold(waiter, exitPlan.PassengerDoor, waiter.SeatIndex)) return true;
 
             // The hero may step down onto the carriageway dock; a walker
             // belongs on the pavement, and the stop's own wait slot is
@@ -570,21 +548,18 @@ namespace BarPromenade
                 }
             }
 
-            GetAislePath(actor, exitPlan.DoorAnchor.position, waiter.Walker.Position, out var aisleDoor, out var aislePlace);
-            if (!waiter.Walker.BeginTransfer(false, aislePlace, exitRoot, exitPlan.ExitPose.RootRotation,
-                    aisleDoor, exitPlan.DoorAnchor.position))
+            if (!BeginDoorTransfer(waiter.Walker, actor, exitPlan, false, exitRoot, out float path))
             {
                 actor.ReleaseServiceHold(waiter);
                 return true;
             }
 
+            waiter.ExitLanding = exitRoot;
             waiter.Plan = exitPlan;
             waiter.StopIndex = actor.CurrentStopIndex;
             waiter.StopId = actor.CurrentStop.Id;
             waiter.TransferElapsed = 0f;
-            waiter.TransferBudget = ResolveTransferBudget(
-                DoorTransferLength(exitRoot, exitPlan.DoorAnchor.position, aisleDoor, aislePlace, waiter.Walker.Position),
-                waiter.Walker.MovementSpeed);
+            waiter.TransferBudget = ResolveTransferBudget(path, waiter.Walker.MovementSpeed);
             return true;
         }
 
@@ -609,16 +584,8 @@ namespace BarPromenade
                 out CityBusStopWaitPoint point)
                 ? point.PedestrianNodeIndex
                 : -1;
-            if (!completed &&
-                point != null &&
-                point.WaitSlots.Count > 0)
-            {
-                // A timed-out crossing strands the walker mid-doorway on
-                // the carriageway with his collider back on - stand him
-                // on the wait slot first, the way an aborted transfer
-                // already does.
-                waiter.Walker.transform.position = point.WaitSlots[0];
-            }
+            // The landing remains reserved until this transfer releases it.
+            if (!completed) waiter.Walker.transform.position = waiter.ExitLanding;
 
             waiter.Walker.ResumeRoaming(rejoinNode);
             GameLog.Info(
@@ -815,14 +782,12 @@ namespace BarPromenade
             for (int index = 0; index < waiters.Count; index++)
             {
                 Waiter waiter = waiters[index];
-                if (waiter.IsAboard)
-                {
-                    continue;
-                }
-
-                Vector3 offset = waiter.Slot - slot;
+                bool leaving = waiter.Walker != null && waiter.Walker.MotionState == CityPedestrianMotionState.Alighting;
+                if (waiter.IsAboard && !leaving) continue;
+                Vector3 reserved = leaving ? waiter.ExitLanding : waiter.Slot;
+                Vector3 offset = reserved - slot;
                 offset.y = 0f;
-                if (offset.sqrMagnitude < .70f * .70f && Mathf.Abs(waiter.Slot.y - slot.y) < 1f)
+                if (offset.sqrMagnitude < .70f * .70f && Mathf.Abs(reserved.y - slot.y) < 1f)
                 {
                     return true;
                 }
@@ -948,20 +913,21 @@ namespace BarPromenade
             // The two waiting places may both be occupied. The passenger can
             // step back onto the surveyed through sidewalk and continue there.
             destination = pedestrians.Plan.Nodes[point.PedestrianNodeIndex].Position;
-            return Clear(destination);
+            return !IsSlotTakenOnAnyLine(destination) && Clear(destination);
 
             bool Clear(Vector3 p)
             {
-                float radius = passenger.AgentRadius + .35f;
+                float passengerRadius = passenger != null ? passenger.AgentRadius : pedestrians.Plan.AgentRadius;
+                float radius = passengerRadius + .35f;
                 if (Mathf.Abs(player.position.y - p.y) < 1.8f && PlanarSquaredDistance(p, player.position) < radius * radius)
                     return false;
                 var actors = pedestrians.Actors;
                 for (int i = 0; i < actors.Count; i++)
                 {
                     var walker = actors[i];
-                    if (!walker.IsSpawned || walker == passenger || walker.IsAttachedToVehicle ||
+                    if (!walker.IsSpawned || walker == passenger || walker.MotionState == CityPedestrianMotionState.Riding ||
                         Mathf.Abs(walker.Position.y - p.y) >= 1.8f) continue;
-                    float gap = passenger.AgentRadius + walker.AgentRadius;
+                    float gap = passengerRadius + walker.AgentRadius;
                     if (PlanarSquaredDistance(p, walker.Position) < gap * gap) return false;
                 }
                 return true;
@@ -1087,16 +1053,26 @@ namespace BarPromenade
             aislePlace = place - side * Vector3.Dot(place - origin, side);
         }
 
-        private static float DoorTransferLength(Vector3 pavement, Vector3 door, Vector3 aisleDoor,
-            Vector3 aislePlace, Vector3 place) => Vector3.Distance(pavement, door) +
-            Vector3.Distance(door, aisleDoor) + Vector3.Distance(aisleDoor, aislePlace) + Vector3.Distance(aislePlace, place);
-
-        private bool HasWalkingPassenger()
+        internal static bool BeginDoorTransfer(CityPedestrianActor walker, CityBusActor actor, CityBusRidePlan plan,
+            bool boarding, Vector3 pavement, out float path)
         {
-            foreach (Waiter waiter in waiters)
-                if (waiter.Walker.MotionState == CityPedestrianMotionState.Boarding ||
-                    waiter.Walker.MotionState == CityPedestrianMotionState.Alighting) return true;
-            return false;
+            var registry = actor.Presentation.Registry;
+            Plane floor = actor.Presentation.PassengerFloor;
+            // The entry marker is inset into the aisle. The two stationary hinge
+            // pivots mark the outer edge where the passenger must already be up.
+            bool front = plan.PassengerDoor == CityBusPassengerDoor.Front;
+            Transform first = front ? registry.FrontDoorForwardLeaf : registry.RearDoorForwardLeaf;
+            Transform last = front ? registry.FrontDoorRearwardLeaf : registry.RearDoorRearwardLeaf;
+            Vector3 sill = floor.ClosestPointOnPlane((first.position + last.position) * .5f);
+            Vector3 place = floor.ClosestPointOnPlane(plan.SeatAnchor.position);
+            Vector3 dock = boarding ? plan.EntryPose.RootPosition : plan.ExitPose.RootPosition;
+            GetAislePath(actor, sill, place, out var aisleDoor, out var aislePlace);
+            path = Vector3.Distance(pavement, dock) + Vector3.Distance(dock, sill) +
+                Vector3.Distance(sill, aisleDoor) + Vector3.Distance(aisleDoor, aislePlace) +
+                Vector3.Distance(aislePlace, place);
+            return boarding
+                ? walker.BeginTransfer(true, dock, place, actor.Rotation * plan.RideRootLocalRotation, sill, aisleDoor, aislePlace)
+                : walker.BeginTransfer(false, aislePlace, pavement, plan.ExitPose.RootRotation, aisleDoor, sill, dock);
         }
 
         internal static bool TryGetCabinRootPose(CityBusActor actor, int place, out Vector3 local, out Quaternion rotation) =>
@@ -1109,7 +1085,7 @@ namespace BarPromenade
             if (CityBusActor.IsStandingPlace(place))
                 return body.TryStandInBus(anchor, registry.StandingGripAnchors[place - CityBusActor.SeatCount], actor.Presentation.CabinUp);
             return CityPedestrianResources.TryGetArchetype(body.Registry.DesignId, out var archetype) &&
-                body.TrySeat(anchor, archetype.SeatedRide, actor.Presentation.CabinUp, registry.FrontDoorEntryAnchor.position,
+                body.TrySeat(anchor, archetype.SeatedRide, actor.Presentation.CabinUp, registry.StandingFloorAnchors[0].position,
                     actor.TravelDirection);
         }
 
@@ -1121,7 +1097,7 @@ namespace BarPromenade
             if (CityBusActor.IsStandingPlace(place))
                 return walker.BeginStandingRide(anchor, registry.StandingGripAnchors[place - CityBusActor.SeatCount], up, preloaded);
             var archetype = CityPedestrianDirector.GetActorArchetype(walker);
-            Vector3 floor = registry.FrontDoorEntryAnchor.position, facing = actor.TravelDirection;
+            Vector3 floor = registry.StandingFloorAnchors[0].position, facing = actor.TravelDirection;
             return archetype != null && (preloaded ? walker.BeginSeatedRide(anchor, archetype.SeatedRide, up, floor, facing) :
                 walker.BeginRide(anchor, archetype.SeatedRide, up, floor, facing));
         }
@@ -1282,6 +1258,7 @@ namespace BarPromenade
             public Vector3 Slot { get; }
             public CityBusRidePlan Plan { get; set; }
             public int SeatIndex { get; set; } = -1;
+            public Vector3 ExitLanding { get; set; }
             public Vector3 RideRootLocalPosition { get; set; }
             public Quaternion RideRootLocalRotation { get; set; } =
                 Quaternion.identity;

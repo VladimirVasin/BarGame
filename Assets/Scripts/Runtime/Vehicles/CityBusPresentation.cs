@@ -148,6 +148,10 @@ namespace BarPromenade
         public Vector3 CabinUp => IsInitialized && suspensionVisual != null
             ? (suspensionVisual.rotation * Quaternion.Inverse(suspensionRotationInPresentation)) * Vector3.up
             : transform.up;
+
+        // The standing bays are authored on the top face of the cabin deck.
+        // Use that sprung plane for walking and seated passengers as well.
+        internal Plane PassengerFloor => new Plane(CabinUp, registry.StandingFloorAnchors[0].position);
         public float SuspensionHeave => suspensionHeave;
         public float SuspensionPitch => suspensionPitch;
         public float SuspensionRoll => suspensionRoll;

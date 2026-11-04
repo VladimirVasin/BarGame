@@ -27,11 +27,13 @@ FullBus_LeavesWaitingResidentsAndRestoresStandingPlaces.
 Joined rear bench; seats/planks support clothed thighs, hands rest on lap.
 CityBench_ResidentRestsOnThePlankWithHandsForward /
 FullCabin_StandingRidersGripTheMovingBusAndLeaveThroughBothDoors.
-Driver_SitsOnTheDrawnSeatAndWorksWheelAndButtonWithoutCrossingLimbs: cushion, soles, curled fingers/inward thumbs, button fingertip.
-DistrictRings_ShowClosedLinesAndEveryBoardingPlatform: map/service.
+Driver_SitsOnTheDrawnSeatAndWorksWheelAndButtonWithoutCrossingLimbs: cushion, soles, wheel and button.
+PassengerFeet_FollowDoorwayAndAisleInBothDirections: sill/deck to pavement.
+Residents_UseOppositeDoorsDuringTheSameStop: shared dwell.
+DistrictRings_ShowClosedLinesAndEveryBoardingPlatform: map.
 Passenger_TransfersFromWestToHillsideAtTheSharedStop: doors/feet/pooled bus numbers.
 LiveCity_AllBusPlatformsHaveClearSheltersAndDoorApproaches: pole codes, lights, queues.
-TransferStairsJoinTheTwoPavedStreetsAcrossEachBank: kerbs, landings and rises. Stop zebras join both footways.
+TransferStairsJoinTheTwoPavedStreetsAcrossEachBank: kerbs, landings, rises; stop zebras.
 Checks: LiveCity_BothTransferStairsCarryPedestriansBetweenBuses,
 LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
 GlassRain_OverlaysCoverEveryPaneAndFollowIntensity: sparse light-rain beads,

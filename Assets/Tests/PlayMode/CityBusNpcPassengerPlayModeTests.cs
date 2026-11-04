@@ -32,6 +32,272 @@ namespace BarPromenade.Tests.PlayMode
         private const float AlightSeconds = 200f;
         private const int FrameCap = 40000;
 
+        [Test]
+        public void PassengerFeet_FollowDoorwayAndAisleInBothDirections()
+        {
+            const float terraceHeight = 12f;
+            float pavementY = terraceHeight + CityStreetSurfacePlanner.RoadTop;
+            var root = new GameObject("Passenger doorway foot contact");
+            var mesh = new Mesh();
+            try
+            {
+                var road = new AlwaysWalkableArea();
+                CreateGround(root.transform, terraceHeight);
+                var registry = CityBusResources.Instantiate(root.transform);
+                var view = registry.GetComponent<CityBusPresentation>() ??
+                    registry.gameObject.AddComponent<CityBusPresentation>();
+                view.Initialize(registry);
+                var bus = new GameObject("Bus at raised stop").AddComponent<CityBusActor>();
+                bus.gameObject.layer = CityBusCollision.LayerIndex;
+                bus.transform.SetParent(root.transform, false);
+                bus.Initialize(registry.LocalBounds, registry.Dimensions);
+                var route = CreateTwoStopRoute(terraceHeight);
+                bus.PrepareSpawn(route, route.SpawnAnchors[0], 71);
+                bus.BindPresentation(view);
+                AdvanceActorUntil(bus, () => bus.DoorsFullyOpen);
+                Physics.SyncTransforms();
+
+                int seat = CityBusActor.NpcSeatIndices[2];
+                CityBusRidePlan DoorPlan(CityBusPassengerDoor door)
+                {
+                    Assert.That(CityBusRidePlan.TryCreate(bus, road, Vector3.up * .835f, .35f,
+                        door, null, seat, 0f, false, out var plan), Is.True);
+                    return plan;
+                }
+                var entry = DoorPlan(CityBusPassengerDoor.Front);
+                var exit = DoorPlan(CityBusPassengerDoor.Rear);
+                var walker = new GameObject("Resident at stop").AddComponent<CityPedestrianActor>();
+                walker.gameObject.layer = CityPedestrianCollision.LayerIndex;
+                walker.transform.SetParent(root.transform, false);
+                Vector3 dock = entry.EntryPose.RootPosition;
+                var graph = CreatePedestrianPlan(dock, bus.TravelDirection);
+                walker.Initialize(road, graph.AgentRadius);
+                walker.PrepareSpawn(graph, new CityPedestrianSpawnAnchor("boarding", dock, 0, 1),
+                    0, .82f, 1f, 0f, 0, 1u);
+                var model = CityPedestrianDefaultNpcBody.Create(root.transform,
+                    DefaultNpcPopulation.PedestrianId(52), CityPedestrianResources.LoadStreetClipDonor());
+                var body = model.gameObject.AddComponent<CityPedestrianPresentation>();
+                body.Initialize(model);
+                model.Animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                walker.BindPresentation(body);
+                var soles = new[] { "Sole.L", "Sole.R" }.Select(suffix => model.Renderers
+                    .OfType<SkinnedMeshRenderer>().Single(s => s.enabled && s.gameObject.activeInHierarchy &&
+                        s.name.EndsWith(suffix, System.StringComparison.Ordinal))).ToArray();
+                Camera camera = null;
+                if (System.Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_BUS_TRANSFER") == "1")
+                {
+                    camera = new GameObject("Doorway review").AddComponent<Camera>();
+                    camera.transform.SetParent(root.transform, false);
+                    camera.enabled = false;
+                    camera.nearClipPlane = .04f;
+                    camera.fieldOfView = 40f;
+                    camera.clearFlags = CameraClearFlags.SolidColor;
+                    camera.backgroundColor = new Color(.18f, .21f, .23f);
+                    var light = camera.gameObject.AddComponent<Light>();
+                    light.type = LightType.Directional;
+                    light.intensity = 1.8f;
+                }
+                Assert.That(walker.BeginStopApproach(0, dock, bus.TravelDirection, new[] { 0f, 6f, 12f }), Is.True);
+                walker.Advance(Step);
+                CheckTransfer(entry, true, dock);
+                Assert.That(CityBusNpcPassengerController.BeginPassengerRide(walker, bus, seat, false), Is.True);
+                walker.Advance(Step);
+                CheckTransfer(exit, false, exit.ExitPose.RootPosition);
+                walker.ResumeRoaming(0);
+                for (int i = 0; i < 4; i++)
+                {
+                    walker.Advance(Step);
+                    CheckFeet(pavementY, "walking after alighting");
+                }
+
+                void CheckTransfer(CityBusRidePlan plan, bool boarding, Vector3 pavement)
+                {
+                    Assert.That(CityBusNpcPassengerController.BeginDoorTransfer(walker, bus, plan, boarding,
+                        pavement, out _), Is.True);
+                    bool crossedAisle = false;
+                    bool captured = false;
+                    for (int i = 0; i < 360 && !walker.TransferCompleted; i++)
+                    {
+                        walker.Advance(Step);
+                        float side = Mathf.Abs(bus.transform.InverseTransformPoint(walker.Position).x);
+                        // The model's cabin deck is 2.08 m wide. Once both feet have
+                        // cleared the lip, their support is the deck above the road.
+                        bool onDeck = side < .85f;
+                        crossedAisle |= onDeck;
+                        float floor = onDeck ? registry.StandingFloorAnchors[0].position.y : walker.Position.y;
+                        if (camera != null && !captured && side > 1f && side < 1.15f)
+                        {
+                            captured = true;
+                            Vector3 focus = walker.Position + Vector3.up * .8f;
+                            Vector3 outward = Vector3.ProjectOnPlane(pavement - plan.DoorAnchor.position,
+                                Vector3.up).normalized;
+                            camera.transform.position = focus + outward * 3.8f + bus.TravelDirection * .8f + Vector3.up * .4f;
+                            camera.transform.LookAt(focus);
+                            AreaCaptureFixture.CaptureCurrentCamera(camera, "BusDoorTransfer", plan.PassengerDoor.ToString(), 960, 720);
+                        }
+                        CheckFeet(floor, $"{plan.PassengerDoor} {walker.MotionState} sample {i} side {side:F2}");
+                    }
+                    Assert.That(walker.TransferCompleted && crossedAisle, Is.True);
+                    if (!boarding) CheckFeet(pavementY, "landed on pavement");
+                }
+
+                void CheckFeet(float floor, string phase)
+                {
+                    Assert.That(Mathf.Max(model.LeftFoot.position.y, model.RightFoot.position.y),
+                        Is.LessThan(model.PelvisAnchor.position.y - .2f), phase + ": ankle above walking pelvis");
+                    float planted = float.PositiveInfinity;
+                    foreach (var sole in soles)
+                    {
+                        float gap = CalibratedBakedWorldVertices(sole, mesh).Min(p => p.y) - floor;
+                        Assert.That(gap, Is.InRange(-.035f, .32f), $"{phase}: {sole.name} above support");
+                        planted = Mathf.Min(planted, gap);
+                    }
+                    Assert.That(planted, Is.LessThan(.09f), $"{phase}: the supporting shoe floats");
+                }
+            }
+            finally { Object.DestroyImmediate(mesh); Object.DestroyImmediate(root); }
+        }
+
+        [Test]
+        public void Residents_UseOppositeDoorsDuringTheSameStop()
+        {
+            var root = new GameObject("Two-door resident service");
+            CityBusNpcPassengerController passengers = null;
+            CityPedestrianDirector pedestrians = null;
+            CityBusDirector director = null;
+            try
+            {
+                var road = new AlwaysWalkableArea();
+                CreateGround(root.transform);
+                var route = CreateTwoStopRoute();
+                var registry = CityBusResources.Instantiate(root.transform);
+                var view = registry.GetComponent<CityBusPresentation>() ??
+                    registry.gameObject.AddComponent<CityBusPresentation>();
+                view.Initialize(registry);
+                var bus = new GameObject("Service bus").AddComponent<CityBusActor>();
+                bus.transform.SetParent(root.transform, false);
+                bus.gameObject.layer = CityBusCollision.LayerIndex;
+                bus.Initialize(registry.LocalBounds, registry.Dimensions);
+                var player = new GameObject("Observer").transform;
+                player.SetParent(root.transform, false);
+                director = root.AddComponent<CityBusDirector>();
+                director.Initialize(route, bus, view, player, null, root.transform, () => 0f);
+                bus.PrepareSpawn(route, route.SpawnAnchors[0], 71);
+                bus.BindPresentation(view);
+                AdvanceActorUntil(bus, () => bus.DoorsFullyOpen);
+                Physics.SyncTransforms();
+
+                Vector3 outward = Vector3.ProjectOnPlane(registry.FrontDoorEntryAnchor.position -
+                    bus.Position, bus.TravelDirection).normalized;
+                outward.y = 0f;
+                outward.Normalize();
+                Vector3 Dock(Transform door)
+                {
+                    Vector3 point = door.position + outward * 1.8f;
+                    point.y = CityStreetSurfacePlanner.RoadTop;
+                    return point;
+                }
+                Vector3 front = Dock(registry.FrontDoorEntryAnchor), rear = Dock(registry.RearDoorEntryAnchor);
+                player.position = front + outward * 5f;
+                var pavement = CreatePedestrianPlan(front, bus.TravelDirection, serviceCrowd: true);
+                pedestrians = CityPedestrianFactory.Create(root.transform, pavement, player, road,
+                    CityPedestrianPopulationProfile.City, () => false);
+                Assert.That(pedestrians.Actors.Count, Is.EqualTo(3), "Two waiting walkers plus the alighting resident need street slots.");
+                var world = pedestrians.Residents;
+                var waits = new CityBusStopWaitPlan(new[] {
+                    new CityBusStopWaitPoint(0, route.Stops[0].Id, 0, -outward,
+                        new[] { front, front + outward * 1.2f, rear }, world.DistancesTo(0)),
+                    new CityBusStopWaitPoint(1, route.Stops[1].Id, 2, -outward,
+                        new[] { pavement.Nodes[2].Position }, world.DistancesTo(2))
+                });
+                var journeys = new CityResidentJourneyDirector(world, new[] { route }, new[] { waits });
+                journeys.Reset(600d);
+                var setup = journeys.Capture();
+                for (int id = 3; id < setup.Residents.Length; id++)
+                    setup.Residents[id].Phase = CityResidentJourneyPhase.AtDestination;
+                for (int id = 0; id < 3; id++)
+                {
+                    ref var r = ref setup.Residents[id];
+                    r.Phase = CityResidentJourneyPhase.Waiting;
+                    r.Leg = id == 0 ? new CityResidentBusLeg(0, 1, 0) : new CityResidentBusLeg(0, 0, 1);
+                    r.HasTransfer = false;
+                    r.Goal = id == 0 ? 0 : 2;
+                    r.ArrivesAt = 595d + id;
+                }
+                journeys.Restore(setup);
+                Assert.That(journeys.TryBoard(0, 0, 1, CityBusActor.NpcSlotForPlace(8)), Is.True);
+                pedestrians.ConfigureResidentJourneys(journeys);
+                passengers = CityBusNpcPassengerController.Create(director, pedestrians, waits, road, null, player, 71);
+                passengers.ConfigureResidentJourneys(journeys, 0);
+                passengers.ShareWaitingPlaces(new[] { passengers });
+                passengers.Advance(Step); // The rear rider starts for the open doors.
+                passengers.WarmResidentWaiters();
+                Assert.That(passengers.WaiterCount, Is.EqualTo(2),
+                    $"Active street walkers {pedestrians.ActiveCount}, next waiting resident {journeys.NextWaiting(0, 0, true)}.");
+
+                var crossed = new CityBusPassengerDoor?[3];
+                int simultaneousBoarder = -1;
+                var stranger = new object();
+                for (int tick = 0; tick < 600; tick++)
+                {
+                    bus.Advance(Step, CityBusObstacleState.Clear, 0f);
+                    foreach (var walker in pedestrians.Actors)
+                        if (walker.IsSpawned && walker.IsRouteBound) walker.Advance(Step);
+                    passengers.Advance(Step);
+                    int active = 0, boarder = -1;
+                    bool exiting = false;
+                    foreach (var walker in pedestrians.Actors)
+                    {
+                        if (!walker.IsSpawned) continue;
+                        var state = walker.MotionState;
+                        if (state != CityPedestrianMotionState.Boarding && state != CityPedestrianMotionState.Alighting) continue;
+                        int id = pedestrians.ResidentIndex(walker);
+                        Assert.That(id, Is.InRange(0, 2));
+                        active++;
+                        if (state == CityPedestrianMotionState.Alighting) exiting = true;
+                        else boarder = id;
+                        float side = Mathf.Abs(bus.transform.InverseTransformPoint(walker.Position).x);
+                        if (side < 1f || side > 1.30f) continue;
+                        float frontAlong = Mathf.Abs(Vector3.Dot(walker.Position - registry.FrontDoorEntryAnchor.position, bus.TravelDirection));
+                        float rearAlong = Mathf.Abs(Vector3.Dot(walker.Position - registry.RearDoorEntryAnchor.position, bus.TravelDirection));
+                        Assert.That(Mathf.Min(frontAlong, rearAlong), Is.LessThan(.85f), "Passenger crossed the side outside either doorway.");
+                        var door = frontAlong < rearAlong ? CityBusPassengerDoor.Front : CityBusPassengerDoor.Rear;
+                        crossed[id] = door;
+                        Assert.That(bus.CanUsePassengerDoor(stranger, door), Is.False, "A second passenger could claim an occupied doorway.");
+                    }
+                    Assert.That(active, Is.LessThanOrEqualTo(2));
+                    if (exiting && boarder >= 0 && simultaneousBoarder < 0) simultaneousBoarder = boarder;
+                    if (active > 0)
+                    {
+                        Assert.That(bus.HasServiceHold, Is.True);
+                        Assert.That(bus.CurrentStopIndex, Is.EqualTo(0));
+                        Assert.That(bus.DoorsFullyOpen, Is.True);
+                    }
+                    if (journeys.GetState(1).Phase == CityResidentJourneyPhase.Riding &&
+                        journeys.GetState(2).Phase == CityResidentJourneyPhase.Riding && !bus.HasServiceHold) break;
+                }
+                Assert.That(simultaneousBoarder, Is.EqualTo(1), "The first queued resident boards while the earlier rider is still leaving.");
+                Assert.That(crossed[0], Is.EqualTo(CityBusPassengerDoor.Rear));
+                Assert.That(crossed[1], Is.EqualTo(CityBusPassengerDoor.Front));
+                Assert.That(crossed[2].HasValue, Is.True, "The waiting resident eventually crossed a doorway.");
+                Assert.That(journeys.GetState(0).Phase, Is.Not.EqualTo(CityResidentJourneyPhase.Riding));
+                Assert.That(passengers.GetCabinBody(1), Is.Not.Null);
+                Assert.That(passengers.GetCabinBody(2), Is.Not.Null);
+                Assert.That(bus.NpcOccupantCount, Is.EqualTo(2));
+                Assert.That(journeys.GetState(1).PlaceIndex, Is.Not.EqualTo(journeys.GetState(2).PlaceIndex));
+                Assert.That(bus.HasServiceHold, Is.False);
+                AdvanceActorUntil(bus, () => bus.CurrentStopIndex != 0);
+                Assert.That(bus.CurrentStopIndex, Is.Not.EqualTo(0), "Bus can finish its dwell after the last crossing.");
+            }
+            finally
+            {
+                passengers?.Shutdown();
+                pedestrians?.Shutdown();
+                director?.Shutdown();
+                Object.DestroyImmediate(root);
+            }
+        }
+
         [UnityTest]
         public IEnumerator FullCabin_StandingRidersGripTheMovingBusAndLeaveThroughBothDoors()
         {
@@ -1377,7 +1643,8 @@ namespace BarPromenade.Tests.PlayMode
 
         private static CityPedestrianPlan CreatePedestrianPlan(
             Vector3 slot,
-            Vector3 along)
+            Vector3 along,
+            bool serviceCrowd = false)
         {
             Vector3 planar = new Vector3(along.x, 0f, along.z).normalized;
             var nodes = new List<CityPedestrianNode>
@@ -1413,6 +1680,11 @@ namespace BarPromenade.Tests.PlayMode
                     0,
                     1)
             };
+            if (serviceCrowd)
+            {
+                anchors.Add(new CityPedestrianSpawnAnchor("npc-near-anchor", slot + planar * 3f, 0, 1));
+                anchors.Add(new CityPedestrianSpawnAnchor("npc-far-anchor", slot + planar * 9f, 1, 2));
+            }
             var rectangles = new List<Rect>
             {
                 Rect.MinMaxRect(
@@ -1432,11 +1704,11 @@ namespace BarPromenade.Tests.PlayMode
                 rectangles);
         }
 
-        private static CityBusPlan CreateTwoStopRoute()
+        private static CityBusPlan CreateTwoStopRoute(float elevation = 0f)
         {
             Vector3 start = new Vector3(
                 0f,
-                CityStreetSurfacePlanner.RoadTop,
+                elevation + CityStreetSurfacePlanner.RoadTop,
                 0f);
             Vector3 east = start + (Vector3.right * 30f);
             Vector3 southEast = east + (Vector3.back * 20f);
@@ -1535,7 +1807,7 @@ namespace BarPromenade.Tests.PlayMode
                 edge);
         }
 
-        private static void CreateGround(Transform parent)
+        private static void CreateGround(Transform parent, float elevation = 0f)
         {
             GameObject ground = GameObject.CreatePrimitive(
                 PrimitiveType.Cube);
@@ -1555,7 +1827,7 @@ namespace BarPromenade.Tests.PlayMode
             // there was ever wrong.
             ground.transform.position = new Vector3(
                 10f,
-                CityStreetSurfacePlanner.RoadTop * 0.5f,
+                elevation + CityStreetSurfacePlanner.RoadTop * 0.5f,
                 -10f);
             ground.transform.localScale = new Vector3(
                 160f,
