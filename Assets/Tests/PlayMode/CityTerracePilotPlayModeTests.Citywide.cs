@@ -425,7 +425,7 @@ namespace BarPromenade.Tests.PlayMode
                         if (failures.Count != before) continue;
                         yield return null;
                         yield return null;
-                        if (player.Interactor.ActiveInteractable != ride || !ride.CanInteract(player.Interactor))
+                        if (!ReferenceEquals(player.Interactor.ActiveInteractable, ride) || !ride.CanInteract(player.Interactor))
                         {
                             Fail($"{stage} no boarding prompt at {hero.position}, active {player.Interactor.ActiveInteractable}, open {actor.DoorsFullyOpen}");
                             continue;
