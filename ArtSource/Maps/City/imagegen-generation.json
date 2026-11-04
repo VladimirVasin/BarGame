@@ -1,15 +1,15 @@
 {
   "tool": "built-in image_gen",
-  "intent": "final eastern coastal street ascent and pedestrian shortcut behind the house",
-  "prompt": "imagegen-coastal-ascent-prompt.txt",
+  "intent": "coastal dead-end stair connection to Lower Court via the upper landing",
+  "prompt": "imagegen-courtyard-link-prompt.txt",
   "references": [
-    "map-reference.png",
-    "CityMapImage.reference.png"
+    "CityMapImage.reference.png",
+    "map-reference.png"
   ],
   "geography": "map-reference.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "469209f516a9abcc4e20c650120c051964300eac54e114e511473753af524368",
-  "fingerprint": "010754c166caffa72cea917ab282b5801a404459d2dccaf1b767e5c346ec6e37",
+  "image_sha256": "205d8acc766f872e0d442549ffcbbc25770d59126564e3efece844f17907bd30",
+  "fingerprint": "089945242c603adf9789b77bd410f92c10f3fdd43ddfcc08dd77a15c85adbf7f",
   "schemaVersion": 2,
   "width": 1422,
   "height": 1106

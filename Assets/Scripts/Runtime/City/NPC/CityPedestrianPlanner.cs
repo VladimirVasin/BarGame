@@ -216,14 +216,28 @@ namespace BarPromenade
             if (terrace.HasShortcut)
             {
                 var route = terrace.ShortcutRouteWorld;
-                int previous = graph.SplitTerraceStreetAt("terrace:shortcut:north", XZ(route[0]), StreetHeight);
+                int entry = graph.SplitTerraceStreetAt("terrace:shortcut:north", XZ(route[0]), StreetHeight);
+                int exit = graph.SplitTerraceStreetAt("terrace:shortcut:south", XZ(route[route.Count - 1]), StreetHeight);
+                AddRoute("terrace:shortcut", route, entry, exit);
+            }
+            if (terrace.HasCourtyardLink)
+            {
+                var route = terrace.CourtyardLinkRouteWorld;
+                int entry = graph.SplitTerraceStreetAt("terrace:courtyard-link:street", XZ(route[0]), StreetHeight);
+                AddRoute("terrace:courtyard-link", route, entry, lowerNodes[9]);
+            }
+
+            void AddRoute(string id, IReadOnlyList<Vector3> route, int previous, int exit)
+            {
                 for (int i = 0; i < route.Count; i++)
                 {
-                    int next = graph.AddNode("terrace:shortcut:" + i, route[i], false);
-                    AddLink("terrace:shortcut:walk:" + i, previous, next); previous = next;
+                    if (i == 0 && (graph.Nodes[previous].Position - route[i]).sqrMagnitude < .000001f) continue;
+                    int next = i == route.Count - 1 && (graph.Nodes[exit].Position - route[i]).sqrMagnitude < .000001f
+                        ? exit : graph.AddNode(id + ":" + i, route[i], false);
+                    AddLink(id + ":walk:" + i, previous, next);
+                    previous = next;
                 }
-                int exit = graph.SplitTerraceStreetAt("terrace:shortcut:south", XZ(route[route.Count - 1]), StreetHeight);
-                AddLink("terrace:shortcut:out", previous, exit);
+                if (previous != exit) AddLink(id + ":out", previous, exit);
             }
 
             void AddStairs(string side, IReadOnlyList<Vector3> route)

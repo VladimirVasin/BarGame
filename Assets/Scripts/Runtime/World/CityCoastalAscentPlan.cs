@@ -23,6 +23,11 @@ namespace BarPromenade
         private static readonly Vector2Int[] EastTie = { NorthFrontageEnd, new Vector2Int(13, 11) };
 
         public static IReadOnlyList<Vector2Int> RouteNodes { get; } = System.Array.AsReadOnly(Stations);
+        // A vehicle leaving the upper cul-de-sac reaches the terrace junction by
+        // returning to (11,10). The interior blocks have no through carriageway.
+        public static IReadOnlyList<Vector2Int> TerraceBypassNodes { get; } = System.Array.AsReadOnly(new[] {
+            Stations[4], Stations[3], new Vector2Int(11, 9), new Vector2Int(11, 8), new Vector2Int(12, 8)
+        });
         public static bool IsEnabled(CityLayout layout) => layout?.ElevationPlan?.HasCoastalAscent == true;
 
         internal static bool TryApply(CityGenerationSettings settings, IReadOnlyList<RoadEdge> roads,

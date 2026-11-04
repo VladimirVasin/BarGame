@@ -125,7 +125,7 @@ namespace BarPromenade
             // and keeps its own edge guards. Trim only these actual floor
             // footprints; neighbouring drops keep their original protection.
             var terraces = CityTerraceDistrictPlan.ForLayout(layout);
-            foreach (Rect floor in terraces.ShortcutFootprints)
+            foreach (Rect floor in terraces.PassageFootprints)
             {
                 var cleared = new List<Bounds>(rails.Count);
                 foreach (Bounds rail in rails)

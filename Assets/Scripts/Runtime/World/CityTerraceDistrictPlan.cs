@@ -98,6 +98,11 @@ namespace BarPromenade
             }
             InitializeLowerCourt(layout, floors, flights);
             InitializeShortcut(layout, floors, flights);
+            InitializeCourtyardLink(layout, floors, flights);
+            BuildLowerCourtRetainingWalls(layout);
+            var passages = new List<Rect>(ShortcutFootprints);
+            passages.AddRange(CourtyardLinkFootprints);
+            PassageFootprints = passages.AsReadOnly();
             foreach (CityTerracePilotFloor floor in floors)
                 if (floor.HasFoundation) cuts.Add(WorldBounds(floor.Bounds));
             foreach (CityExteriorStairFlightDescriptor flight in Flights)
@@ -134,6 +139,7 @@ namespace BarPromenade
         public IReadOnlyList<CityTerracePilotFloor> Floors { get; }
         public IReadOnlyList<CityExteriorStairFlightDescriptor> Flights { get; }
         public IReadOnlyList<Rect> GroundCuts { get; }
+        internal IReadOnlyList<Rect> PassageFootprints { get; } = Array.Empty<Rect>();
         public IReadOnlyList<Rect> HouseThroats { get; }
         public IReadOnlyList<Vector3> HouseEntryWorld { get; }
         public Vector3 EntryStartWorld { get; }
@@ -200,17 +206,6 @@ namespace BarPromenade
                 new Vector3(136.2f, lower, 69.48f), new Vector3(136.2f, lower, 70.68f),
                 LowerCourtArrivalWorld, new Vector3(138.6f, lower, 65f), new Vector3(141.2f, lower, 65f) });
             cuts.Add(LowerCourtBounds); cuts.Add(LowerCourtEntryBounds);
-            var walls = new List<RuntimeOrientedBox>();
-            float westTop = layout.ElevationPlan.GetNodeElevation(new Vector2Int(11, 8)) + CityStreetSurfacePlanner.SidewalkTop;
-            float eastTop = layout.ElevationPlan.GetNodeElevation(new Vector2Int(12, 8)) + CityStreetSurfacePlanner.SidewalkTop;
-            // The walls sit inside the excavation; their tops cover the old
-            // terrain seam. The western entry alone stays open at street Y.
-            Wall(Rect.MinMaxRect(135f, 59.4f, 135.3f, 72.2f), westTop);
-            Wall(Rect.MinMaxRect(137.4f, 57f, 146.3f, 57.3f), eastTop);
-            Wall(Rect.MinMaxRect(146f, 57.3f, 146.3f, 72.2f), eastTop);
-            Wall(Rect.MinMaxRect(135.3f, 71.9f, 146f, 72.2f), eastTop);
-            LowerCourtRetainingWalls = walls.AsReadOnly();
-
             void AddFloor(string id, Vector3 top, Vector2 worldSize)
             {
                 floors.Add(new CityTerracePilotFloor(id, Local(top), new Vector2(worldSize.y, worldSize.x),
@@ -222,9 +217,29 @@ namespace BarPromenade
                     CityTerracePilotPlan.FlightWidth, CityTerracePilotPlan.StepsPerFlight,
                     CityTerracePilotPlan.StepRise, CityTerracePilotPlan.TreadDepth, CityExteriorStairDropSide.Both));
             }
+        }
+
+        private void BuildLowerCourtRetainingWalls(CityLayout layout)
+        {
+            var walls = new List<RuntimeOrientedBox>();
+            float westTop = layout.ElevationPlan.GetNodeElevation(new Vector2Int(11, 8)) + CityStreetSurfacePlanner.SidewalkTop;
+            float eastTop = layout.ElevationPlan.GetNodeElevation(new Vector2Int(12, 8)) + CityStreetSurfacePlanner.SidewalkTop;
+            // The walls sit inside the excavation; their tops cover the old
+            // terrain seam. The western entry alone stays open at street Y.
+            Wall(Rect.MinMaxRect(135f, 59.4f, 135.3f, 72.2f), westTop);
+            Wall(Rect.MinMaxRect(137.4f, 57f, 146.3f, 57.3f), eastTop);
+            if (HasCourtyardLink)
+            {
+                Wall(Rect.MinMaxRect(146f, 57.3f, 146.3f, LinkGateZ - LinkHalfWidth), eastTop);
+                Wall(Rect.MinMaxRect(146f, LinkGateZ + LinkHalfWidth, 146.3f, 72.2f), eastTop);
+            }
+            else Wall(Rect.MinMaxRect(146f, 57.3f, 146.3f, 72.2f), eastTop);
+            Wall(Rect.MinMaxRect(135.3f, 71.9f, 146f, 72.2f), eastTop);
+            LowerCourtRetainingWalls = walls.AsReadOnly();
+
             void Wall(Rect bounds, float top)
             {
-                float bottom = lower - .6f;
+                float bottom = LowerCourtArrivalWorld.y - .6f;
                 walls.Add(new RuntimeOrientedBox(new Vector3(bounds.center.x, (top + bottom) * .5f, bounds.center.y),
                     Quaternion.identity, new Vector3(bounds.width, top - bottom, bounds.height)));
             }

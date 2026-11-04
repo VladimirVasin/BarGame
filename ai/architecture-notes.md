@@ -10,9 +10,10 @@
   `CityCoastalAscentPlan` fits existing graph before lot rebase. From (10,12)
   to (12,10), four streets gain3.84m in104m, side ties≤5.9%. The level north
   frontage of11,10 feeds a single1.92m flight behind its inhabited house.
-  Existing terrace floors/guards, NPC links and map arrivals own both sockets.
-  Separate cuts protect roads and houses. Blender kit, shared materials, bounded
-  plan queries. Fog, post, ordinary camera and story§§16/21/art9 apply.
+  The walking link rounds the second road end, rises to a window landing and
+  descends into Lower Court. Paving, cuts, guards, NPC links and map heights
+  share the terrace plan and Blender kit. The future eastern R6 goes north
+  around both passages. Fog, post and ordinary camera apply.
   A shallow earth bench keeps the dog yard at (10,9) and connects its north gate
   to pavement. Map geometry/XYZ updates each slice, ImageGen once at final geometry.
   [Acceptance and named checks](city-multilevel-plan.md).

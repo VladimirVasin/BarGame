@@ -274,7 +274,7 @@ namespace BarPromenade
                 XZ(center - right * halfWidth + forward * halfDepth) };
             if (!RegionFitsGround(CityRoadPolygon.CounterClockwise(padded), ground)) return false;
             Rect candidate = CityRoadPolygon.Bounds(padded);
-            foreach (Rect path in CityTerraceDistrictPlan.ForLayout(layout).ShortcutFootprints)
+            foreach (Rect path in CityTerraceDistrictPlan.ForLayout(layout).PassageFootprints)
                 if (candidate.Overlaps(path)) return false;
             // The court may acquire a new buildable wing when terrain grades
             // change. Its entire rigid envelope, including the upper mass, must

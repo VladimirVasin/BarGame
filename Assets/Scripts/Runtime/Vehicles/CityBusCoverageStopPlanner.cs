@@ -623,7 +623,6 @@ namespace BarPromenade
                 paths.AddRange(layout.CourtyardPaths);
                 // Test the whole roof/bench/pole envelope at candidate
                 // placement time, including when a different seed slides a stop.
-                approaches.AddRange(CityTerraceDistrictPlan.ForLayout(layout).ShortcutFootprints);
                 foreach (CityOpenAreaAccessDescriptor access in layout.OpenAreaAccesses)
                     approaches.Add(access.ApproachBounds);
                 foreach (CityDistrictPointOfInterestDescriptor point in layout.DistrictPointsOfInterest)

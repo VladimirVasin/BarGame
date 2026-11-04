@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
@@ -17,11 +19,13 @@ namespace BarPromenade.Tests.PlayMode
             CityTerraceDistrictPlan district = CityTerraceDistrictPlan.ForLayout(layout);
             Assert.That(CityCoastalAscentPlan.IsEnabled(layout), Is.True);
             Assert.That(district.HasShortcut, Is.True, "The default City needs both street sockets and its rear stair");
+            Assert.That(district.HasCourtyardLink, Is.True, "The coastal dead end must open into the established terrace precinct");
             IReadOnlyList<Vector2Int> nodes = CityCoastalAscentPlan.RouteNodes;
             CityStreetSupportPlan support = CityStreetSupportPlan.ForLayout(layout);
             AssertCoastalAscent(layout, support, nodes);
             AssertShortcutMapAndDestinations(district);
-            AssertPedestrianShortcut(district);
+            AssertPedestrianPassage(district, "terrace:shortcut:", false);
+            AssertPedestrianPassage(district, "terrace:courtyard-link:", true);
 
             IReadOnlyList<Vector3> shortcut = district.ShortcutRouteWorld;
             Vector3 low = shortcut[0], high = shortcut[shortcut.Count - 1];
@@ -71,15 +75,111 @@ namespace BarPromenade.Tests.PlayMode
             yield return WalkCityRoute(streetDetour, false, "coastal-street-up", district);
             yield return WalkCityRoute(shortcut, true, "coastal-shortcut-down", district);
             yield return WalkCityRoute(shortcut, false, "coastal-shortcut-up", district);
+            yield return WalkCourtyardConnection(district, high);
             yield return WalkCityRoute(streetDetour, true, "coastal-street-down", district);
             yield return WalkCityRoute(coastApproach, true, "coastal-street-return", district);
             Assert.That(Vector3.Distance(city.Player.Motor.transform.position,
                 coastApproach[0] + Vector3.up * PlayerFactory.GroundedRootOffset), Is.LessThan(.20f));
             Debug.Log($"Coastal ascent walked both ways: rise {high.y - coastApproach[0].y:F2}m, street {outside:F2}m, stairs {inside:F2}m.");
+            CityTerraceTransportPlan planned = CityTerraceTransportPlan.Create(layout, CityTerraceMasterPlan.Create(layout, 40f));
+            foreach (CityTerraceTransportRoute road in planned.Routes)
+                Assert.That(road.Segments.Max(segment => segment.GradePercent), Is.LessThanOrEqualTo(6.001f),
+                    road.Id + " must carry the 40 m summit with every constructed profile span within the bus grade");
+            Assert.That(planned.HasProtectedConflicts || planned.HasBuildingConflicts, Is.False,
+                "The built ascent and stair court must retain the measured transport reservation: " +
+                string.Join("; ", planned.Reservations.Where(item => item.IsProtected || item.Kind == CityTerraceReservationKind.Building)
+                    .Select(item => $"{item.RouteId}/{item.SegmentIndex}: {item.Kind} {item.Id} {item.Bounds}")));
 #if UNITY_EDITOR
             System.Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
                 .GetMethod("ExportCurrent", System.Type.EmptyTypes).Invoke(null, null);
 #endif
+        }
+
+        private IEnumerator WalkCourtyardConnection(CityTerraceDistrictPlan district, Vector3 coastSummitPavement)
+        {
+            IReadOnlyList<Vector3> link = district.CourtyardLinkRouteWorld;
+            Assert.That(Vector3.Distance(link[link.Count - 1], district.LowerCourtArrivalWorld), Is.LessThan(.02f),
+                "The landing must open into the existing lower court");
+            int stairTop = Enumerable.Range(1, link.Count - 1).First(i =>
+                link[i].y - link[i - 1].y >= CityTerracePilotPlan.FlightRise - .02f);
+            int outlook = Enumerable.Range(0, link.Count).Single(i =>
+                Vector3.Distance(link[i], district.CourtyardLinkArrivalWorld) < .02f);
+            Assert.That(outlook, Is.GreaterThan(stairTop));
+            Assert.That(link[outlook].y, Is.GreaterThan(coastSummitPavement.y),
+                "The passage must take the player above the street before descending into the lower court");
+            var crossing = new[] { coastSummitPavement, link[0] };
+            var approach = link.Take(stairTop).ToArray();
+            var toOutlook = link.Skip(stairTop - 1).Take(outlook - stairTop + 2).ToArray();
+            var toCourt = link.Skip(outlook).ToArray();
+            var oldRoute = district.LowerHouseRouteWorld;
+            int oldCourt = Enumerable.Range(0, oldRoute.Count).Single(i =>
+                Vector3.Distance(link[link.Count - 1], oldRoute[i]) < .02f);
+            var oldStreetToCourt = oldRoute.Take(oldCourt + 1).ToArray();
+            yield return WalkCityRoute(crossing, false, "coastal-dead-end-crossing", district);
+            yield return WalkCityRoute(approach, false, "window-court-approach", district);
+            yield return CapturePlayerView("window-court-stair", link[stairTop] + Vector3.up);
+            yield return WalkCityRoute(toOutlook, false, "window-court-up", district);
+            yield return WalkCityRoute(toCourt, false, "window-court-to-lower-court", district);
+            yield return WalkCityRoute(oldStreetToCourt, true, "window-court-exit-to-street", district);
+            yield return WalkCityRoute(oldStreetToCourt, false, "window-court-from-public-street", district);
+            yield return WalkCityRoute(toCourt, true, "window-court-outlook-return", district);
+            // Face downhill by walking to the edge of the first flight. From
+            // here the second landing turns west, directly below the player.
+            yield return WalkCityRoute(new[] { toCourt[1] }, false, "window-court-look-downstairs", district);
+            Vector3 lowerTurn = toCourt.First(point => point.y <= link[outlook].y - 3f &&
+                Mathf.Abs(point.x - link[outlook].x) > 1f);
+            yield return CapturePlayerView("window-court-outlook-return", lowerTurn);
+            yield return CaptureWetOutlook(district, Vector3.Lerp(link[stairTop - 1], link[stairTop], .5f), lowerTurn);
+            yield return WalkCityRoute(toOutlook, true, "window-court-back-to-stair", district);
+            yield return WalkCityRoute(approach, true, "window-court-back-to-coast", district);
+            yield return WalkCityRoute(crossing, true, "coastal-dead-end-return", district);
+            Debug.Log($"Coastal terrace link walked in both directions: {WalkLength(link):F2}m, " +
+                $"street {link[0].y:F2}m, upper outlook {link[outlook].y:F2}m, lower court {link[link.Count - 1].y:F2}m.");
+        }
+
+        private IEnumerator CaptureWetOutlook(CityTerraceDistrictPlan district, Vector3 firstFlight, Vector3 lowerTurn)
+        {
+            Assert.That(city.Camera.GetUniversalAdditionalCameraData().renderPostProcessing, Is.True);
+            Assert.That(RenderSettings.fog, Is.True);
+            Transform world = city.World.Root.transform.Find("Terraced Courtyards");
+            var properties = new MaterialPropertyBlock();
+            foreach (Vector3 point in new[] { firstFlight, district.CourtyardLinkArrivalWorld })
+            {
+                Assert.That(district.TryResolveStandingSurface(new Vector2(point.x, point.z), point.y, 0f,
+                    out CityTerraceSurfaceContact surface), Is.True);
+                Transform piece = world.Find(surface.SurfaceId);
+                Assert.That(piece, Is.Not.Null, surface.SurfaceId);
+                bool respondsToRain = false;
+                foreach (Renderer renderer in piece.GetComponentsInChildren<Renderer>())
+                {
+                    Assert.That(renderer.shadowCastingMode, Is.EqualTo(ShadowCastingMode.On), renderer.name);
+                    Assert.That(renderer.receiveShadows, Is.True, renderer.name);
+                    Assert.That(renderer.reflectionProbeUsage, Is.EqualTo(ReflectionProbeUsage.BlendProbes), renderer.name);
+                    renderer.GetPropertyBlock(properties);
+                    respondsToRain |= properties.GetFloat("_GroundCityClimate") > .9f &&
+                        properties.GetTexture("_GroundResponse") != null;
+                }
+                Assert.That(respondsToRain, Is.True, surface.SurfaceId + " needs exterior concrete with the shared wetness response");
+            }
+            bool weatherEnabled = city.Weather.enabled;
+            float rain = city.Rain.Intensity, water = CityWaterResources.RainIntensity;
+            var wetness = CityWetSurfaceRegistry.CaptureCheckpoint();
+            try
+            {
+                city.Weather.enabled = false;
+                city.Rain.SetIntensity(1f);
+                CityWaterResources.SetRainIntensity(1f);
+                CityWetSurfaceRegistry.SetImmediate(1f);
+                for (int frame = 0; frame < 16; frame++) yield return null;
+                yield return CapturePlayerView("window-court-outlook-rain", lowerTurn);
+            }
+            finally
+            {
+                CityWetSurfaceRegistry.RestoreCheckpoint(wetness);
+                CityWaterResources.SetRainIntensity(water);
+                city.Rain.SetIntensity(rain);
+                city.Weather.enabled = weatherEnabled;
+            }
         }
 
         private void AssertCoastalAscent(CityLayout layout, CityStreetSupportPlan support, IReadOnlyList<Vector2Int> nodes)
@@ -108,6 +208,19 @@ namespace BarPromenade.Tests.PlayMode
             }
             var affected = new HashSet<RoadEdge>(layout.RoadEdges.Where(edge =>
                 (nodes.Contains(edge.A) || nodes.Contains(edge.B)) && layout.GetPathKind(edge) == CityPathKind.Street));
+            var bypass = CityCoastalAscentPlan.TerraceBypassNodes;
+            Assert.That(bypass[0], Is.EqualTo(nodes[nodes.Count - 1]), "The vehicle bypass must leave the coastal dead end");
+            Assert.That(CityTerraceInlandJunctionPlan.Contains(bypass[bypass.Count - 1]), Is.True,
+                "The bypass must reach the built inland street");
+            var bypassEdges = new HashSet<RoadEdge>();
+            for (int i = 1; i < bypass.Count; i++)
+            {
+                var edge = new RoadEdge(bypass[i - 1], bypass[i]);
+                Assert.That(layout.HasRoad(edge) && layout.GetPathKind(edge) == CityPathKind.Street, Is.True,
+                    "The vehicle bypass needs a continuous built street at " + edge);
+                Assert.That(bypassEdges.Add(edge), Is.True, "Vehicle bypass repeats " + edge);
+                affected.Add(edge);
+            }
             foreach (RoadEdge edge in affected) AssertStreetProfileContacts(layout, support, edge);
             CityBusPlan bus = city.BusPlan;
             Assert.That(bus.IsEmpty, Is.False, "Route 01 must survive the new elevation");
@@ -130,10 +243,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(contacts, Is.GreaterThan(0), "A real Route 01 link must cover a branch of the ascent");
             foreach (CityBusStopDescriptor stop in bus.Stops)
             {
-                if (!routeEdges.Contains(stop.RoadEdge)) continue;
+                if (!routeEdges.Contains(stop.RoadEdge) && !bypassEdges.Contains(stop.RoadEdge)) continue;
                 Assert.That(support.TrySampleTop(new Vector2(stop.Position.x, stop.Position.z),
                     FootstepGroundKind.Concrete, out float roadY), Is.True, stop.Id);
                 Assert.That(stop.Position.y, Is.EqualTo(roadY).Within(.025f), stop.Id);
+                if (!routeEdges.Contains(stop.RoadEdge)) continue;
                 CityRoadPath path = layout.RoadGeometry.Get(stop.RoadEdge);
                 float center = path.Project(new Vector2(stop.Position.x, stop.Position.z)).DistanceAlong;
                 float axle = bus.Vehicle.Wheelbase * .5f;
@@ -141,20 +255,16 @@ namespace BarPromenade.Tests.PlayMode
                 float front = layout.ElevationPlan.SampleRoadDatum(stop.RoadEdge, (center + axle) / path.Length);
                 Assert.That(front, Is.EqualTo(rear).Within(.015f), stop.Id + " must dock on level ground");
             }
-            CityTerraceTransportPlan planned = CityTerraceTransportPlan.Create(layout, CityTerraceMasterPlan.Create(layout));
-            Assert.That(planned.HasProtectedConflicts || planned.HasBuildingConflicts, Is.False,
-                "The built ascent and stair court must retain the measured transport reservation: " +
-                string.Join("; ", planned.Reservations.Where(item => item.IsProtected || item.Kind == CityTerraceReservationKind.Building)
-                    .Select(item => $"{item.RouteId}/{item.SegmentIndex}: {item.Kind} {item.Id} {item.Bounds}")));
         }
 
-        private void AssertPedestrianShortcut(CityTerraceDistrictPlan district)
+        private void AssertPedestrianPassage(CityTerraceDistrictPlan district, string prefix, bool endsInLowerCourt)
         {
             CityPedestrianPlan pedestrians = city.PedestrianPlan;
             var joins = pedestrians.Links.Where(link => link.Kind == CityPedestrianLinkKind.Courtyard &&
-                link.Id.StartsWith("terrace:shortcut:")).ToList();
-            Assert.That(joins, Is.Not.Empty, "The pedestrian graph lost the shortcut during street clipping");
+                link.Id.StartsWith(prefix)).ToList();
+            Assert.That(joins, Is.Not.Empty, "The pedestrian graph lost " + prefix + " during street clipping");
             var linkedSockets = new HashSet<int>();
+            var passageNodes = new HashSet<int>();
             foreach (CityPedestrianLink link in joins)
             {
                 Vector3 first = pedestrians.Nodes[link.FirstNodeIndex].Position;
@@ -171,10 +281,28 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(height, Is.EqualTo(contact.Height).Within(.03f));
                 }
                 foreach (int node in new[] { link.FirstNodeIndex, link.SecondNodeIndex })
+                {
+                    passageNodes.Add(node);
                     if (pedestrians.GetLinkIndices(node).Any(index => pedestrians.Links[index].Kind == CityPedestrianLinkKind.Sidewalk))
                         linkedSockets.Add(node);
+                }
             }
-            Assert.That(linkedSockets.Count, Is.EqualTo(2), "The stair path must enter the pavement graph at both ends");
+            Assert.That(linkedSockets.Count, Is.EqualTo(endsInLowerCourt ? 1 : 2), prefix + " must meet its public pavements");
+            var pending = new Queue<int>();
+            var reached = new HashSet<int>();
+            pending.Enqueue(linkedSockets.First());
+            while (pending.Count > 0)
+            {
+                int node = pending.Dequeue();
+                if (!reached.Add(node)) continue;
+                foreach (int index in pedestrians.GetLinkIndices(node))
+                    if (pedestrians.Links[index].Id.StartsWith(prefix)) pending.Enqueue(pedestrians.Links[index].Other(node));
+            }
+            Assert.That(reached.SetEquals(passageNodes), Is.True, prefix + " has a gap between its pavement and landing");
+            if (endsInLowerCourt)
+                Assert.That(reached.Any(node => Vector3.Distance(pedestrians.Nodes[node].Position, district.LowerCourtArrivalWorld) < .02f &&
+                    pedestrians.GetLinkIndices(node).Any(index => pedestrians.Links[index].Id.StartsWith("terrace:lower-house:"))),
+                    Is.True, "Pedestrians must enter the existing lower-court graph at its own floor level");
         }
 
         private void AssertShortcutMapAndDestinations(CityTerraceDistrictPlan district)
@@ -193,18 +321,26 @@ namespace BarPromenade.Tests.PlayMode
                     Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore).Any(hit => hit.normal.y > .8f &&
                     Mathf.Abs(hit.point.y - (yardArrival.y - PlayerFactory.GroundedRootOffset)) < .08f),
                 Is.True, "The dog yard gate needs physical ground at its mapped arrival");
-            Vector3 arrival = district.ShortcutCourtArrivalWorld + Vector3.up * PlayerFactory.GroundedRootOffset;
             bool inspection = city.Map.MapPointInspectionEnabled;
             try
             {
                 city.Map.SetMapPointInspectionEnabled(true);
-                int index = Enumerable.Range(0, city.Map.ActiveMapPoints.Count)
-                    .Single(i => city.Map.ActiveMapPoints[i].StableId == "city:poi:terrace-shortcut");
-                Assert.That(city.Map.SelectMapPoint(index), Is.True);
-                Assert.That(city.Map.TryGetSelectedMapPoint(out CityMapPointDescriptor _, out Vector3 selected), Is.True);
-                Assert.That(Vector3.Distance(selected, arrival), Is.LessThan(.01f));
-                Assert.That(ground.TryClampArrival(selected, out Vector3 supported), Is.True);
-                Assert.That(Vector3.Distance(supported, arrival), Is.LessThan(.01f));
+                foreach (var place in new[] {
+                    (Id: "city:poi:terrace-shortcut", Floor: district.ShortcutCourtArrivalWorld),
+                    (Id: "city:poi:terrace-landing", Floor: district.CourtyardLinkArrivalWorld) })
+                {
+                    Vector3 arrival = place.Floor + Vector3.up * PlayerFactory.GroundedRootOffset;
+                    int index = Enumerable.Range(0, city.Map.ActiveMapPoints.Count)
+                        .Single(i => city.Map.ActiveMapPoints[i].StableId == place.Id);
+                    Assert.That(city.Map.SelectMapPoint(index), Is.True);
+                    Assert.That(city.Map.TryGetSelectedMapPoint(out CityMapPointDescriptor _, out Vector3 selected), Is.True);
+                    Assert.That(Vector3.Distance(selected, arrival), Is.LessThan(.01f), place.Id);
+                    Assert.That(ground.TryClampArrival(selected, out Vector3 supported), Is.True);
+                    Assert.That(Vector3.Distance(supported, arrival), Is.LessThan(.01f), place.Id);
+                    Assert.That(Physics.Raycast(place.Floor + Vector3.up * .4f, Vector3.down, out RaycastHit hit, .8f,
+                        Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True, place.Id);
+                    Assert.That(hit.point.y, Is.EqualTo(place.Floor.y).Within(.04f), place.Id + " physical ground");
+                }
             }
             finally { city.Map.SetMapPointInspectionEnabled(inspection); }
             BuildingLot bar = layout.BuildingLots.Single(lot => lot.IsBar);

@@ -966,11 +966,12 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.TerraceCourts,
                     CityMapPointOfInterestKind.TerraceUnderpass,
                     CityMapPointOfInterestKind.TerraceLowerCourt,
-                    CityMapPointOfInterestKind.TerraceShortcut
+                    CityMapPointOfInterestKind.TerraceShortcut,
+                    CityMapPointOfInterestKind.TerraceLanding
                 };
                 var expectedIds = new[]
                 {
-                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court", "terrace-shortcut"
+                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court", "terrace-shortcut", "terrace-landing"
                 };
                 var expectedDistricts = new[]
                 {
@@ -979,6 +980,7 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.NorthWaterfront,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Church,
+                    CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
@@ -1011,6 +1013,13 @@ namespace BarPromenade.Tests.EditMode
                 // same mask the hero actually walks.
                 walkable.Add(fair.Bounds);
 
+                var terraceArrivals = new Dictionary<CityMapPointOfInterestKind, (string Label, Vector3 Floor)> {
+                    { CityMapPointOfInterestKind.TerraceCourts, ("Лестничные дворы", terraces.UpperArrivalWorld) },
+                    { CityMapPointOfInterestKind.TerraceUnderpass, ("Нижний проход", terraces.LowerCrossingWorld) },
+                    { CityMapPointOfInterestKind.TerraceLowerCourt, ("Нижний двор", terraces.LowerCourtArrivalWorld) },
+                    { CityMapPointOfInterestKind.TerraceShortcut, ("Проход за домом", terraces.ShortcutCourtArrivalWorld) },
+                    { CityMapPointOfInterestKind.TerraceLanding, ("Верхняя площадка", terraces.CourtyardLinkArrivalWorld) }
+                };
                 var standingByIndex = new Dictionary<int, Vector3>();
                 for (int offset = 0; offset < expectedKinds.Length; offset++)
                 {
@@ -1059,23 +1068,14 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(label, Is.EqualTo(isDogPark ? "Собачья площадка" : "Прачечная"), context);
                         if (isDogPark) Assert.That(place.Footprint, Is.EqualTo(dogPark.Footprint), context);
                     }
-                    if (place.Kind == CityMapPointOfInterestKind.TerraceCourts)
-                    {
-                        Assert.That(label, Is.EqualTo("Лестничные дворы"), context);
-                        Assert.That(Vector3.Distance(place.WorldPosition,
-                            terraces.UpperArrivalWorld + Vector3.up * PlayerFactory.GroundedRootOffset),
-                            Is.LessThan(.001f), context);
-                    }
-
                     Vector3 standing;
-                    if (place.Kind == CityMapPointOfInterestKind.TerraceUnderpass ||
-                        place.Kind == CityMapPointOfInterestKind.TerraceLowerCourt)
+                    if (terraceArrivals.TryGetValue(place.Kind, out var terraceArrival))
                     {
-                        bool lowerCourt = place.Kind == CityMapPointOfInterestKind.TerraceLowerCourt;
-                        Assert.That(label, Is.EqualTo(lowerCourt ? "Нижний двор" : "Нижний проход"), context);
+                        Vector3 expected = terraceArrival.Floor + Vector3.up * PlayerFactory.GroundedRootOffset;
+                        Assert.That(label, Is.EqualTo(terraceArrival.Label), context);
+                        Assert.That(Vector3.Distance(place.WorldPosition, expected), Is.LessThan(.001f), context);
                         Assert.That(ground.TryClampArrival(place.WorldPosition, out standing), Is.True, context);
-                        Assert.That(Vector3.Distance(standing, (lowerCourt ? terraces.LowerCourtArrivalWorld : terraces.LowerCrossingWorld) +
-                            Vector3.up * PlayerFactory.GroundedRootOffset), Is.LessThan(.001f), context);
+                        Assert.That(Vector3.Distance(standing, expected), Is.LessThan(.001f), context);
                         Assert.That(walkable.Contains(standing, CityGroundTraversalPlanner.MaximumAgentRadius), Is.True);
                     }
                     else if (place.Kind == CityMapPointOfInterestKind.Docks)
@@ -1108,14 +1108,6 @@ namespace BarPromenade.Tests.EditMode
                             Assert.That(standing.y,
                                 Is.EqualTo(eastExit.SampleRoadTop(xz.x, xz.y) + PlayerFactory.GroundedRootOffset)
                                     .Within(0.001f), $"{context} must stand on the side road.");
-                        }
-                        else if (place.Kind == CityMapPointOfInterestKind.TerraceCourts)
-                        {
-                            Assert.That(walkable.Contains(standing, CityGroundTraversalPlanner.MaximumAgentRadius),
-                                Is.True, $"{context} arrives outside the supported courts.");
-                            Assert.That(standing.y, Is.EqualTo(terraces.UpperArrivalWorld.y +
-                                PlayerFactory.GroundedRootOffset).Within(.001f),
-                                "The map must not send an upper-court arrival down to the replaced terrain.");
                         }
                         else
                         {

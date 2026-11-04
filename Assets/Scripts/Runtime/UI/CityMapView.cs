@@ -1657,6 +1657,8 @@ namespace BarPromenade
             Color ink = GetDistrictColor(CityDistrictKind.Residential);
             DrawSolidRect(ProjectWorldRect(projection, terraces.EntryBounds), PublicPlaceLand);
             DrawSolidRect(ProjectWorldRect(projection, terraces.LowerPassBounds), PublicPlaceLand);
+            if (terraces.HasCourtyardLink)
+                DrawSolidRect(ProjectWorldRect(projection, terraces.CourtyardLinkRampBounds), PublicPlaceLand);
             for (int index = 0; index < terraces.Floors.Count; index++)
             {
                 CityTerracePilotFloor floor = terraces.Floors[index];
@@ -3056,7 +3058,7 @@ namespace BarPromenade
                         48f),
                     FormatMapPointCoordinates(worldPosition,
                         controller.SelectedArea == GameAreaId.City &&
-                        CityTerraceDistrictPlan.ForLayout(controller.Layout).BridgeWorldBounds.Contains(
+                        CityTerraceDistrictPlan.ForLayout(controller.Layout).ContainsFootprint(
                             new Vector2(worldPosition.x, worldPosition.z))),
                     centeredStyle);
                 GUI.Label(
@@ -3655,6 +3657,7 @@ namespace BarPromenade
                     break;
                 case CityMapPointOfInterestKind.TerraceCourts:
                 case CityMapPointOfInterestKind.TerraceShortcut:
+                case CityMapPointOfInterestKind.TerraceLanding:
                 case CityMapPointOfInterestKind.TerraceLowerCourt:
                     // Three steps: the same ordinary stair silhouette on map and legend.
                     for (int step = 0; step < 3; step++)

@@ -15,6 +15,7 @@ namespace BarPromenade.Editor
     {
         private static readonly string[] Views = { "Сейчас", "Террасы", "Разрез", "Транспорт", "Профиль дороги", "Стыки", "Жилой подъём" };
         private static readonly string[] Banks = { "Запад", "Восток" };
+        private static readonly string[] LiveSections = { "От берега", "Через дворы", "Объезд" };
         private static readonly Color LowColor = new Color(0.25f, 0.52f, 0.63f);
         private static readonly Color HighColor = new Color(0.88f, 0.67f, 0.30f);
         private static readonly Color ConflictColor = new Color(0.93f, 0.34f, 0.31f);
@@ -26,6 +27,9 @@ namespace BarPromenade.Editor
         private CityTerraceMasterPlan plan;
         private CityTerraceTransportPlan transport;
         private CityRoadElevationProfile liveAscent;
+        private CityRoadElevationProfile liveBypass;
+        private CityRoadElevationStation[] courtyardSection;
+        private int selectedLiveSection;
         private Vector2 scroll;
         private int selectedConflict = -1;
         private int selectedCrossing = -1;
@@ -67,6 +71,8 @@ namespace BarPromenade.Editor
             // No scene callbacks, objects, textures or persistent cache to own.
             layout = null;
             liveAscent = null;
+            liveBypass = null;
+            courtyardSection = null;
             plan = null;
             transport = null;
             conflictLabels = null;
@@ -96,7 +102,9 @@ namespace BarPromenade.Editor
                         $"{conflict.Edge}: {conflict.ProposedGradePercent:0.0}% / допуск {conflict.AllowedGradePercent:0.0}%",
                         "Выделить улицу на схеме. Это диагностика исходной трассы, а не готовый новый маршрут.");
                 }
-                liveAscent = MeasureAscent(candidate);
+                liveAscent = MeasureRoad(candidate, CityCoastalAscentPlan.RouteNodes);
+                liveBypass = MeasureRoad(candidate, CityCoastalAscentPlan.TerraceBypassNodes);
+                courtyardSection = MeasureWalk(CityTerraceDistrictPlan.ForLayout(candidate).CourtyardLinkRouteWorld);
                 layout = candidate;
                 plan = draft;
                 transport = routeDraft;
@@ -133,7 +141,7 @@ namespace BarPromenade.Editor
         {
             EditorGUILayout.LabelField("Этап 1 · профиль и перепланировка улиц", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Жилой подъём показывает действующую улицу. Проектные схемы показывают дальнейший подъём города к выбранной верхней отметке.",
+                "Жилой подъём показывает действующие улицы и лестницы. Проектные схемы показывают дальнейший подъём города к выбранной верхней отметке.",
                 MessageType.Info);
             seed = EditorGUILayout.IntField("Seed", seed);
             summit = EditorGUILayout.Slider("Верхняя отметка, м", summit, 35f, 45f);
@@ -354,16 +362,16 @@ namespace BarPromenade.Editor
             return route.Samples[crossing.SegmentIndex].HorizontalDistance + segment.HorizontalLength * t;
         }
 
-        private static CityRoadElevationProfile MeasureAscent(CityLayout city)
+        private static CityRoadElevationProfile MeasureRoad(CityLayout city, IReadOnlyList<Vector2Int> nodes)
         {
             if (!CityCoastalAscentPlan.IsEnabled(city)) return null;
-            IReadOnlyList<Vector2Int> nodes = CityCoastalAscentPlan.RouteNodes;
             var stations = new List<CityRoadElevationStation>(1 + 3 * (nodes.Count - 1));
             float distance = 0f;
             for (int i = 1; i < nodes.Count; i++)
             {
                 Vector2Int from = nodes[i - 1], to = nodes[i];
                 RoadEdge edge = new RoadEdge(from, to);
+                if (!city.HasRoad(edge) || city.GetPathKind(edge) != CityPathKind.Street) return null;
                 float length = city.GetRoadLength(edge);
                 if (i == 1) Add(0f);
                 Add(city.RoadGeometry.GetEndpointInset(edge, from));
@@ -381,23 +389,56 @@ namespace BarPromenade.Editor
             return new CityRoadElevationProfile(stations, CityElevationPlan.MaximumBusGradePercent);
         }
 
+        private static CityRoadElevationStation[] MeasureWalk(IReadOnlyList<Vector3> route)
+        {
+            var stations = new CityRoadElevationStation[route.Count];
+            float distance = 0f;
+            for (int i = 0; i < route.Count; i++)
+            {
+                if (i > 0)
+                {
+                    Vector3 step = route[i] - route[i - 1];
+                    distance += new Vector2(step.x, step.z).magnitude;
+                }
+                stations[i] = new CityRoadElevationStation(distance, route[i].y);
+            }
+            return stations;
+        }
+
         private void DrawLiveAscent()
         {
-            if (liveAscent == null)
+            selectedLiveSection = GUILayout.Toolbar(selectedLiveSection, LiveSections);
+            bool walking = selectedLiveSection == 1;
+            CityRoadElevationProfile road = selectedLiveSection == 2 ? liveBypass : liveAscent;
+            IReadOnlyList<CityRoadElevationStation> stations = walking ? courtyardSection : road?.Stations;
+            if (stations == null || stations.Count < 2)
             {
-                EditorGUILayout.HelpBox("Для этой планировки прибрежный маршрут недоступен.", MessageType.Info);
+                EditorGUILayout.HelpBox("Для этой планировки маршрут недоступен.", MessageType.Info);
                 return;
             }
-            var stations = liveAscent.Stations;
-            float low = stations[0].Height, high = stations[stations.Count - 1].Height;
-            EditorGUILayout.LabelField("От набережной до жилого квартала", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField($"Длина {liveAscent.HorizontalLength:0.0} м     Перепад {high - low:0.00} м     Предельный уклон участка {liveAscent.MaximumGradePercent:0.00}%");
+            bool fromCoast = selectedLiveSection == 0;
+            string endName = fromCoast ? "Тупик" : walking ? "Нижний двор" : "Перекрёсток";
+            EditorGUILayout.LabelField(fromCoast ? "От набережной до жилого квартала" : walking
+                ? "От тупика через лестничную площадку в нижний двор"
+                : "От тупика по улицам до перекрёстка у нижнего двора", EditorStyles.boldLabel);
+            CityRoadElevationStation first = stations[0], last = stations[stations.Count - 1];
+            float gain = 0f, loss = 0f, low = first.Height, high = first.Height;
+            for (int i = 1; i < stations.Count; i++)
+            {
+                float change = stations[i].Height - stations[i - 1].Height;
+                gain += Mathf.Max(0f, change);
+                loss += Mathf.Max(0f, -change);
+                low = Mathf.Min(low, stations[i].Height);
+                high = Mathf.Max(high, stations[i].Height);
+            }
+            EditorGUILayout.LabelField($"Длина в плане {last.HorizontalDistance:0.0} м     Набор {gain:0.00} м     Спуск {loss:0.00} м");
+            if (!walking) EditorGUILayout.LabelField($"Максимальный уклон дороги {road.MaximumGradePercent:0.00}%");
             Rect rect = GUILayoutUtility.GetRect(100f, 190f, GUILayout.ExpandWidth(true));
             if (Event.current.type != EventType.Repaint) return;
             EditorGUI.DrawRect(rect, new Color(.13f, .13f, .13f));
             Rect plot = new Rect(rect.x + 12f, rect.y + 30f, rect.width - 24f, rect.height - 72f);
             Vector2 Point(CityRoadElevationStation station) => new Vector2(
-                Mathf.Lerp(plot.xMin, plot.xMax, station.HorizontalDistance / liveAscent.HorizontalLength),
+                Mathf.Lerp(plot.xMin, plot.xMax, station.HorizontalDistance / last.HorizontalDistance),
                 Mathf.Lerp(plot.yMax, plot.yMin, Mathf.InverseLerp(low, high, station.Height)));
             Color previous = Handles.color;
             Handles.BeginGUI();
@@ -408,8 +449,10 @@ namespace BarPromenade.Editor
                     Handles.color = Mathf.Approximately(stations[i].Height, stations[i - 1].Height) ? Color.gray : HighColor;
                     Handles.DrawLine(Point(stations[i - 1]), Point(stations[i]), 3f);
                 }
-                GUI.Label(new Rect(plot.xMin, plot.yMax + 5f, 180f, 20f), $"Берег  ·  {low:0.00} м", EditorStyles.miniLabel);
-                GUI.Label(new Rect(plot.xMax - 115f, plot.yMin - 23f, 120f, 20f), $"Квартал  ·  {high:0.00} м", EditorStyles.miniLabel);
+                GUI.Label(new Rect(plot.xMin, Point(first).y + 3f, 180f, 20f),
+                    $"{(fromCoast ? "Берег" : "Тупик")}  ·  {first.Height:0.00} м", EditorStyles.miniLabel);
+                GUI.Label(new Rect(plot.xMax - 135f, Point(last).y - 23f, 140f, 20f),
+                    $"{endName}  ·  {last.Height:0.00} м", EditorStyles.miniLabel);
             }
             finally { Handles.EndGUI(); Handles.color = previous; }
         }

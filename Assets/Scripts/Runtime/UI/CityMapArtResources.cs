@@ -183,6 +183,13 @@ namespace BarPromenade
                     RectValue(writer, terraces.LowerPassBounds); RectValue(writer, terraces.BridgeWorldBounds);
                     Point(writer, terraces.LowerCrossingWorld); Point(writer, terraces.UpperCrossingWorld);
                     foreach (Vector3 point in terraces.ShortcutRouteWorld) Point(writer, point);
+                    if (terraces.HasCourtyardLink)
+                    {
+                        writer.Write(terraces.CourtyardLinkRouteWorld.Count);
+                        foreach (Vector3 point in terraces.CourtyardLinkRouteWorld) Point(writer, point);
+                        RectValue(writer, terraces.CourtyardLinkRampBounds);
+                        Point(writer, terraces.CourtyardLinkArrivalWorld);
+                    }
                 }
                 CityPortAccessPlan portAccess = CityPortAccessPlan.ForLayout(layout);
                 writer.Write(portAccess != null);

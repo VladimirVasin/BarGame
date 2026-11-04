@@ -1796,6 +1796,10 @@
       "value": "Проход за домом"
     },
     {
+      "key": "map.poi.terrace_landing",
+      "value": "Верхняя площадка"
+    },
+    {
       "key": "map.poi.terrace_lower_court",
       "value": "Нижний двор"
     },

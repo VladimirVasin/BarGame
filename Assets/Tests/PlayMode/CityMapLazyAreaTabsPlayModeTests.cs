@@ -71,6 +71,7 @@ namespace BarPromenade.Tests.PlayMode
                 int yard = -1;
                 int terrace = -1;
                 int underpass = -1;
+                int landing = -1;
                 bool laundry = false;
                 for (int i = 0; i < map.ActiveMapPoints.Count; i++)
                 {
@@ -90,6 +91,11 @@ namespace BarPromenade.Tests.PlayMode
                     {
                         underpass = i;
                         Assert.That(point.Label, Is.EqualTo("Нижний проход"));
+                    }
+                    if (point.StableId == "city:poi:terrace-landing")
+                    {
+                        landing = i;
+                        Assert.That(point.Label, Is.EqualTo("Верхняя площадка"));
                     }
                 }
                 Assert.That(laundry, Is.True);
@@ -139,6 +145,17 @@ namespace BarPromenade.Tests.PlayMode
                 yield return CaptureMapUi("imagegen-city-map-underpass-xyz");
                 Assert.That(map.ConfirmMapPointTeleport(), Is.True);
                 Assert.That(Vector3.Distance(map.PlayerWorldPosition, lower), Is.LessThan(.001f));
+                Assert.That(landing, Is.GreaterThanOrEqualTo(0));
+                Assert.That(map.Open(), Is.True);
+                Assert.That(map.SetMapPointInspectionEnabled(true), Is.True);
+                Assert.That(map.SelectMapPoint(landing), Is.True);
+                Assert.That(map.TryGetSelectedMapPoint(out selected, out selectedWorld), Is.True);
+                Vector3 outlook = terraces.CourtyardLinkArrivalWorld + Vector3.up * PlayerFactory.GroundedRootOffset;
+                Assert.That(Vector3.Distance(selectedWorld, outlook), Is.LessThan(.001f));
+                for (int frame = 0; frame < 5; frame++) yield return null;
+                yield return CaptureMapUi("imagegen-city-map-courtyard-link-xyz");
+                Assert.That(map.ConfirmMapPointTeleport(), Is.True);
+                Assert.That(Vector3.Distance(map.PlayerWorldPosition, outlook), Is.LessThan(.001f));
                 Debug.Log("IMAGEGEN CITY MAP OK: current-plan art and metadata, bounded UI import, two stacked arrivals, live places and native map/XYZ views.");
             }
             finally { map.Close(); }

@@ -151,6 +151,26 @@ namespace BarPromenade
                         top, new Vector2(wall.Size.z, wall.Size.x), top.y - wall.Size.y);
                 }
 
+                if (district.HasCourtyardLink)
+                {
+                    BuildCourtyardLinkRamp(root.transform, district, templates, foundationBottom);
+                    foreach (RuntimeOrientedBox wall in district.CourtyardLinkWalls)
+                    {
+                        Vector3 top = district.Local(wall.Center + Vector3.up * wall.Size.y * .5f);
+                        Support(templates["TerraceSupport"], root.transform, "Link retaining wall " + wallIndex++,
+                            top, new Vector2(wall.Size.z, wall.Size.x), top.y - wall.Size.y);
+                        // .4 m is buried below the paving. Guard the public
+                        // soil edge wherever the exposed fall exceeds .6 m.
+                        if (wall.Size.y > 1f)
+                        {
+                            Vector3 run = wall.Size.z >= wall.Size.x
+                                ? Vector3.right * wall.Size.z : Vector3.forward * wall.Size.x;
+                            BuildRailRun(root.transform, templates["TerraceRail"], "Link excavation edge",
+                                top - run * .5f, top + run * .5f);
+                        }
+                    }
+                }
+
                 // The bounded trigger clears particles emitted beneath the
                 // deck as well as those falling from above. Its ceiling stops
                 // below the upper walking surface, which stays exposed to rain.
@@ -166,6 +186,50 @@ namespace BarPromenade
             CitySurfaceLibrary.ApplyHierarchy(root.transform);
             Physics.SyncTransforms();
             return root;
+        }
+
+        private static void BuildCourtyardLinkRamp(Transform root, CityTerraceDistrictPlan district,
+            IReadOnlyDictionary<string, GameObject> templates, float foundationBottom)
+        {
+            Vector3 start = district.Local(district.CourtyardLinkRampStartWorld);
+            Vector3 end = district.Local(district.CourtyardLinkRampEndWorld);
+            Vector3 delta = end - start;
+            Quaternion slope = Quaternion.LookRotation(delta.normalized, Vector3.up);
+            Vector3 center = (start + end) * .5f;
+            float width = district.CourtyardLinkRampBounds.width;
+            Model(templates["TerraceCourt"], root, "Pitched residential alley", center, slope,
+                new Vector3(width / CityTerracePilotPlan.CourtSize, 1f, delta.magnitude / CityTerracePilotPlan.CourtSize));
+            Box(root, "Pitched alley paving", center - slope * Vector3.up * .15f,
+                new Vector3(width, .30f, delta.magnitude), slope);
+            // Successive short supports meet its underside throughout the run.
+            int spans = Mathf.CeilToInt(delta.magnitude / CityTerracePilotPlan.LandingSize);
+            Vector3 span = delta / spans;
+            for (int i = 0; i < spans; i++)
+            {
+                Vector3 from = start + span * i;
+                Vector3 top = from + span * .5f;
+                top.y = Mathf.Max(from.y, from.y + span.y) - .29f;
+                Support(templates["TerraceSupport"], root, "Pitched alley retaining plinth " + i, top,
+                    new Vector2(Mathf.Abs(span.x), width), foundationBottom);
+            }
+            Vector3 inset = slope * Vector3.right * (width * .5f - .06f);
+            BuildRailRun(root, templates["TerraceRail"], "Pitched alley rail", start + inset, end + inset);
+            BuildRailRun(root, templates["TerraceRail"], "Pitched alley rail", start - inset, end - inset);
+        }
+
+        private static void BuildRailRun(Transform root, GameObject template, string name, Vector3 start, Vector3 end)
+        {
+            Vector3 delta = end - start;
+            Quaternion rotation = Quaternion.LookRotation(delta.normalized);
+            int count = Mathf.CeilToInt(delta.magnitude / CityTerracePilotPlan.LandingSize);
+            Vector3 part = delta / count;
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 foot = start + part * i;
+                Model(template, root, name, foot, rotation, new Vector3(1f, 1f, part.magnitude / 2.4f));
+                Box(root, name + " guard", foot + part * .5f + rotation * Vector3.up * .525f,
+                    new Vector3(.12f, 1.05f, part.magnitude), rotation);
+            }
         }
 
         private static void BuildResidentialContext(Transform root, GameObject support)
@@ -298,6 +362,12 @@ namespace BarPromenade
                         var route = district.ShortcutRouteWorld;
                         AddOpening(district.Local(route[0]), district.ShortcutLowSocket.width);
                         AddOpening(district.Local(route[route.Count - 1]), district.ShortcutHighSocket.width);
+                    }
+                    if (district.HasCourtyardLink)
+                    {
+                        AddOpening(district.Local(district.CourtyardLinkRouteWorld[0]), district.CourtyardLinkSocket.width);
+                        AddOpening(district.Local(district.CourtyardLinkRampStartWorld), district.CourtyardLinkRampBounds.width);
+                        AddOpening(district.Local(district.CourtyardLinkRampEndWorld), district.CourtyardLinkRampBounds.width);
                     }
                     foreach (Vector3 door in district.HouseEntryWorld) AddOpening(district.Local(door), 1.8f);
                 }

@@ -586,7 +586,7 @@ namespace BarPromenade
                     terraces.LowerPassBounds.Overlaps(footprint) ||
                     terraces.LowerCourtBounds.Overlaps(footprint) ||
                     terraces.LowerCourtEntryBounds.Overlaps(footprint))) return false;
-                foreach (Rect piece in terraces.ShortcutFootprints) if (piece.Overlaps(footprint)) return false;
+                foreach (Rect piece in terraces.PassageFootprints) if (piece.Overlaps(footprint)) return false;
                 if (!Contains(container, footprint)) return false;
                 if (field.Blocks(footprint, zone != CityLitterZone.Sidewalk)) return false;
                 return !solid || !field.BlocksWalkLane(Expand(footprint, SolidWalkClearance));

@@ -225,6 +225,8 @@ namespace BarPromenade.Editor
             {
                 Box("terrace-entry", "promenade", terraces.EntryBounds);
                 Box("terrace-lower-pass", "promenade", terraces.LowerPassBounds);
+                if (terraces.HasCourtyardLink)
+                    Box("terrace:courtyard-link-ramp", "promenade", terraces.CourtyardLinkRampBounds);
                 foreach (CityTerracePilotFloor floor in terraces.Floors)
                 {
                     Rect rect = floor.Bounds;

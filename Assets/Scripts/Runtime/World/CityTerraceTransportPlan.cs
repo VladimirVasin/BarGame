@@ -333,11 +333,17 @@ namespace BarPromenade
             // Place stops on the three longest straight runs, stably ordered.
             // The rounded turns themselves are flat: extra arbitrary setbacks
             // would discard usable climbing length twice at each junction.
+            var insets = new float[waypoints.Length];
+            insets[0] = CoastalApproachLength;
+            insets[insets.Length - 1] = FlatEndLength;
+            for (int i = 1; i < waypoints.Length - 1; i++)
+            {
+                float turn = Vector2.Angle(waypoints[i] - waypoints[i - 1], waypoints[i + 1] - waypoints[i]);
+                insets[i] = TurnRadius * Mathf.Tan(turn * .5f * Mathf.Deg2Rad);
+            }
             var runs = new List<(int index, float length)>();
             for (int i = 0; i < waypoints.Length - 1; i++)
-                runs.Add((i, Vector2.Distance(waypoints[i], waypoints[i + 1]) -
-                    (i == 0 ? CoastalApproachLength : TurnRadius) -
-                    (i == waypoints.Length - 2 ? FlatEndLength : TurnRadius)));
+                runs.Add((i, Vector2.Distance(waypoints[i], waypoints[i + 1]) - insets[i] - insets[i + 1]));
             runs.Sort((a, b) => { int order = b.length.CompareTo(a.length); return order != 0 ? order : a.index.CompareTo(b.index); });
             var stops = new HashSet<int>();
             for (int i = 0; i < 3; i++)
@@ -350,8 +356,7 @@ namespace BarPromenade
             {
                 Vector2 direction = (waypoints[i + 1] - waypoints[i]).normalized;
                 if (i == 0) Append(points[0] + direction * CoastalApproachLength, CityTerraceTransportSegmentKind.Approach);
-                Vector2 end = waypoints[i + 1] - direction *
-                    (i == waypoints.Length - 2 ? FlatEndLength : TurnRadius);
+                Vector2 end = waypoints[i + 1] - direction * insets[i + 1];
                 if (stops.Contains(i))
                 {
                     Vector2 middle = (points[points.Count - 1] + end) * .5f;
@@ -365,13 +370,14 @@ namespace BarPromenade
                     continue;
                 }
                 Vector2 next = (waypoints[i + 2] - waypoints[i + 1]).normalized;
-                if (Mathf.Abs(Vector2.Dot(direction, next)) > .001f)
-                    throw new InvalidOperationException("Transport corners must be orthogonal before rounding.");
-                Vector2 center = end + next * TurnRadius;
-                for (int step = 1; step <= QuarterTurnSegments; step++)
+                float turn = Vector2.SignedAngle(direction, next);
+                Vector2 inward = Vector2.Perpendicular(direction) * Mathf.Sign(turn);
+                Vector2 center = end + inward * TurnRadius;
+                int steps = Mathf.Max(1, Mathf.CeilToInt(Mathf.Abs(turn) * QuarterTurnSegments / 90f));
+                for (int step = 1; step <= steps; step++)
                 {
-                    float angle = step * Mathf.PI * .5f / QuarterTurnSegments;
-                    Append(center - next * (TurnRadius * Mathf.Cos(angle)) +
+                    float angle = Mathf.Abs(turn) * Mathf.Deg2Rad * step / steps;
+                    Append(center - inward * (TurnRadius * Mathf.Cos(angle)) +
                         direction * (TurnRadius * Mathf.Sin(angle)), CityTerraceTransportSegmentKind.TurnLanding);
                 }
             }
@@ -391,8 +397,9 @@ namespace BarPromenade
             // every seed, so an altered layout cannot inherit a false clearance.
             // Paired offsets keep the relocated bar's private corner inside
             // the inner R6 arc, the church beyond the outer arc, and the shop
-            // clear of the southern return. The two inland corner centers now
-            // have a bounded live junction section; this full climb stays a survey.
+            // clear of the southern return. North of the new court link two
+            // shallow R6 bends pass between the older stair landing and the
+            // projecting house. The eastern leg rejoins the live (13,8) junction.
             Vector2[] coordinates = bank == CityTerraceTransportBank.West
                 ? new[] { new Vector2(-104,156), new Vector2(-104,130), new Vector2(-128,130),
                     new Vector2(-128,104), new Vector2(-51.75f,104), new Vector2(-51.75f,78), new Vector2(-156,78),
@@ -401,7 +408,8 @@ namespace BarPromenade
                     new Vector2(-156,-104), new Vector2(-52,-104), new Vector2(-52,-130),
                     new Vector2(-156,-130), new Vector2(-156,-156), new Vector2(-52,-156) }
                 : new[] { new Vector2(104,156), new Vector2(104,130), new Vector2(77.75f,130),
-                    new Vector2(77.75f,104), new Vector2(155.85f,104), new Vector2(155.85f,52.25f), new Vector2(182.5f,52.25f),
+                    new Vector2(77.75f,104), new Vector2(130,104), new Vector2(130,131.25f),
+                    new Vector2(151.5f,131.25f), new Vector2(162,130), new Vector2(182.5f,130),
                     new Vector2(182.5f,-52.25f), new Vector2(155.5f,-52.25f), new Vector2(155.5f,-26),
                     new Vector2(130,-26), new Vector2(130,-52), new Vector2(77.75f,-52), new Vector2(77.75f,-78),
                     new Vector2(156,-78), new Vector2(156,-103.875f), new Vector2(78,-103.875f),
@@ -441,6 +449,9 @@ namespace BarPromenade
                 Add("terrace:lower-residence", CityTerraceReservationKind.Terrace, CityRoadPolygon.Rectangle(terrace.LowerCourtBounds));
                 Add("terrace:lower-residence-entry", CityTerraceReservationKind.Terrace,
                     CityRoadPolygon.Rectangle(terrace.LowerCourtEntryBounds));
+                if (terrace.HasCourtyardLink)
+                    Add("terrace:courtyard-link-ramp", CityTerraceReservationKind.Terrace,
+                        CityRoadPolygon.Rectangle(terrace.CourtyardLinkRampBounds));
                 foreach (CityTerracePilotFloor floor in terrace.Floors)
                 {
                     Vector2[] polygon = CityRoadPolygon.Rectangle(terrace.WorldBounds(floor.Bounds));

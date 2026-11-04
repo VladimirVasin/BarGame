@@ -49,6 +49,9 @@ namespace BarPromenade
             foreach (CityExteriorStairFlightDescriptor flight in Flights)
                 surfaces.Add(new Surface(flight.Id, WorldBounds(CityTerracePilotPlan.FlightBounds(flight)),
                     World(flight.Start), World(flight.End)));
+            if (HasCourtyardLink)
+                surfaces.Add(new Surface("link-pitched-alley", CourtyardLinkRampBounds,
+                    CourtyardLinkRampStartWorld, CourtyardLinkRampEndWorld));
             surfaces.Add(new Surface("street-approach", EntryBounds, EntryStartWorld, EntryEndWorld));
             surfaces.Add(new Surface("lower-pass", LowerPassRampBounds, LowerPassStartWorld, LowerPassRampEndWorld));
             surfaces.Add(new Surface("lower-house-street-entry", LowerCourtEntryBounds,
@@ -80,6 +83,9 @@ namespace BarPromenade
                         LowerCourtEntryBounds.yMin, LowerCourtEntryBounds.xMin + .8f, LowerCourtEntryBounds.yMax)));
                 else if (surface.Id == ShortcutLower || surface.Id == ShortcutUpper)
                     pieces.Add(CityRoadPolygon.Rectangle(surface.Id == ShortcutLower ? ShortcutLowSocket : ShortcutHighSocket));
+                else if (surface.Id == LinkEntry)
+                    pieces.Add(CityRoadPolygon.Rectangle(CourtyardLinkSocket));
+                SubtractSolids(CourtyardLinkWalls);
                 SubtractSolids(LowerCourtRetainingWalls);
                 SubtractSolids(ShortcutWalls);
                 surface.Clearance.AddPolygons(pieces);
@@ -153,7 +159,7 @@ namespace BarPromenade
 
         internal bool IsStreetSurface(CityTerraceSurfaceContact contact) =>
             contact.SurfaceId == "street-approach" || contact.SurfaceId == EastLandingFloorId ||
-            contact.SurfaceId == "lower-house-street-entry" || contact.SurfaceId == ShortcutLower || contact.SurfaceId == ShortcutUpper;
+            contact.SurfaceId == "lower-house-street-entry" || contact.SurfaceId == LinkEntry || contact.SurfaceId == ShortcutLower || contact.SurfaceId == ShortcutUpper;
 
         internal bool TryClosestSurfacePoint(Vector3 position, float radius, out Vector3 closest)
         {

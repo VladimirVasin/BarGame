@@ -21,8 +21,7 @@ between ordinary houses. Draft transport turns clear Bar/shop/church corners.
 CityHomeBarNeighborStreets passed: physical round trip, apron/yard/transport
 clearance, current illustrated map, selection/XYZ and supported arrival;
 street/entrance/native map frames reviewed.
-User requested current-pass ImageGen redraw: new survey/art/provenance installed.
-Default final-step redraw rule retained; stale-art scheme fallback, no retagging.
+Map art follows final surveyed geometry; stale art yields to scheme.
 Eastern courtyard exit now has a level guarded landing, continuous ramp/layers
 and shared NPC/map arrivals. A lower ordinary house and its stair court put
 the neighbouring roof below the upper player view. Scheme/return/travel distances
@@ -31,12 +30,15 @@ LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap passed:
 continuous walks, ground/vehicle contacts, house docks, roof below ordinary camera,
 rain/layers and safe map arrivals.
 Coastal street heights now rebase the adjacent ground, doors and junctions.
-The passage behind the house shortens the walk and clears the bus shelter.
-Rear-wing placement shares the measured curved transport reservation.
+The passage behind the house clears the bus shelter. The dead-end stair link
+rounds the second street tip to reach the lower house court; every landing,
+ramp and flight shares physical ground, NPC routing and map positions.
+Rear-wing placement shares the curved transport reservation. Its eastern leg now
+rounds the two occupied stair passages to the north.
 A bounded local cut/fill keeps the dog yard and its gate on their surveyed parcel.
 LiveCity_CoastalAscentAndStairShortcutShareSupportedRoutes passed. Production
 walks, physical bus/hero contacts, gate and mapped arrivals verified. Reviewed
-the stair reveal and return view of the bus below. Final ImageGen redraw and
+the stair reveal, bus below and the descent under rain. Final ImageGen redraw and
 RU map binding verified by ImageGenCityMap_PreservesPlanAndLivePlaces.
 check-docs.py/check-workspace.py/git diff --check.
 Map fills viewport;scrollable right places select one plaque/leader/square,
