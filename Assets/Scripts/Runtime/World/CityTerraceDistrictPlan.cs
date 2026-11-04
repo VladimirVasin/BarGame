@@ -16,6 +16,19 @@ namespace BarPromenade
             new Vector2Int(9, 7), new Vector2Int(10, 7),
             new Vector2Int(9, 8), new Vector2Int(10, 8), new Vector2Int(11, 8) };
         private static readonly RoadEdge EntryEdge = new RoadEdge(new Vector2Int(9, 8), new Vector2Int(10, 8));
+        private static readonly RoadEdge LowerCourtWalk = new RoadEdge(new Vector2Int(11, 9), new Vector2Int(12, 9));
+        // The west approach is replaced by the stepped precinct. The other
+        // walk serves the houses beside its excavated ramp. Neither carries cars.
+        internal static bool IsPedestrianApproach(CityGenerationSettings settings, int seed, RoadEdge edge) =>
+            IsPedestrianMouth(settings, seed, edge.B) && (edge.Equals(EntryEdge) || edge.Equals(LowerCourtWalk));
+
+        internal static bool UsesAuthoredWalks(CityGenerationSettings settings, int seed) =>
+            seed == GameSessionState.DefaultCitySeed && CityTerraceInlandJunctionPlan.Supports(settings) &&
+            settings.LoopChance == CityGenerationSettings.DefaultLoopChance;
+
+        internal static bool IsPedestrianMouth(CityGenerationSettings settings, int seed, Vector2Int node) =>
+            UsesAuthoredWalks(settings, seed) && (node == EntryEdge.B || node == LowerCourtWalk.B);
+
         private const float OriginX = 99.9f;
         private const float OriginZ = 52f;
         private const float HouseCenterX = 89.19f;

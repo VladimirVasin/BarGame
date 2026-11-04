@@ -541,6 +541,21 @@ namespace BarPromenade
             CitySeacoastPlan seacoastPlan = null,
             CityChurchCourtyardPlan churchCourtyardPlan = null)
         {
+            if (busPlan == null) throw new ArgumentNullException(nameof(busPlan));
+            return CreateAll(layout, decorations, cemeteryPlan, new[] { busPlan }, streetDecorations,
+                streetSurfacePlan, seacoastPlan, churchCourtyardPlan);
+        }
+
+        public static List<CityBenchSitPlan> CreateAll(
+            CityLayout layout,
+            CityOpenAreaDecorationPlan decorations,
+            CityCemeteryPlan cemeteryPlan,
+            IReadOnlyList<CityBusPlan> busPlans,
+            CityDecorationPlan streetDecorations,
+            CityStreetSurfacePlan streetSurfacePlan,
+            CitySeacoastPlan seacoastPlan = null,
+            CityChurchCourtyardPlan churchCourtyardPlan = null)
+        {
             if (layout == null)
             {
                 throw new ArgumentNullException(nameof(layout));
@@ -551,9 +566,9 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(decorations));
             }
 
-            if (busPlan == null)
+            if (busPlans == null)
             {
-                throw new ArgumentNullException(nameof(busPlan));
+                throw new ArgumentNullException(nameof(busPlans));
             }
 
             if (streetDecorations == null)
@@ -568,8 +583,7 @@ namespace BarPromenade
                     nameof(streetSurfacePlan));
             }
 
-            var plans = new List<CityBenchSitPlan>(
-                17 + busPlan.Stops.Count);
+            var plans = new List<CityBenchSitPlan>();
             if (TryCreateHomeYardSeat(
                     decorations,
                     out CityBenchSeat yardSeat))
@@ -601,9 +615,7 @@ namespace BarPromenade
                 }
             }
 
-            for (int index = 0;
-                 index < busPlan.Stops.Count;
-                 index++)
+            foreach (var stop in CityBusNetworkFurniture.Stops(busPlans))
             {
                 Add(
                     plans,
@@ -611,7 +623,7 @@ namespace BarPromenade
                         layout,
                         streetSurfacePlan,
                         CityBusStopWorldBuilder.DescribeShelterBenchSeat(
-                            busPlan.Stops[index])));
+                            stop)));
             }
 
             var decorationSeats = new List<CityBenchSeat>(4);

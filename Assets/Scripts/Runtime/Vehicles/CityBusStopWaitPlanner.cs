@@ -27,6 +27,46 @@ namespace BarPromenade
             return poleOffset - plan.LaneCenterOffset - CityStreetSurfacePlanner.SidewalkWidth * .5f;
         }
 
+        /// <summary>The playable wait point is on the pavement, independent of how
+        /// far back its shelter stands. The hillside's two-metre footway widens
+        /// around each hairpin; it is the same surveyed path that walkers follow.</summary>
+        public static Vector3 StandingPosition(CityBusPlan plan, CityBusStopDescriptor stop,
+            CityLayout layout, float offsetAlongLane = 0f)
+        {
+            Vector3 forward = Vector3.ProjectOnPlane(stop.Forward, Vector3.up).normalized;
+            Vector3 toRoad = Vector3.ProjectOnPlane(stop.RoadsideForward, Vector3.up).normalized;
+            Vector3 center = stop.ShelterPosition + toRoad * GetPoleToSidewalkCenter(plan, stop) +
+                forward * offsetAlongLane;
+            if (layout == null) return center;
+            if (plan.Number == 3)
+            {
+                var halt = new Vector2(stop.Position.x, stop.Position.z);
+                foreach (var hill in CityHillsideStreetPlan.ForLayout(layout).Routes)
+                {
+                    if (!hill.TrySampleTop(halt, out _, out CityStreetSupportKind kind) ||
+                        kind != CityStreetSupportKind.Asphalt) continue;
+                    var path = hill.Bank == CityTerraceTransportBank.West ? hill.SidewalkPath : hill.OppositeSidewalkPath;
+                    float nearest = float.PositiveInfinity;
+                    Vector3 standing = center;
+                    for (int i = 1; i < path.Count; i++)
+                    {
+                        Vector3 segment = path[i] - path[i - 1];
+                        float length = segment.x * segment.x + segment.z * segment.z;
+                        if (length <= .00001f) continue;
+                        Vector3 from = center - path[i - 1];
+                        float t = Mathf.Clamp01((from.x * segment.x + from.z * segment.z) / length);
+                        Vector3 projected = path[i - 1] + segment * t;
+                        float error = (projected - center).sqrMagnitude;
+                        if (error < nearest) { nearest = error; standing = projected; }
+                    }
+                    return standing;
+                }
+            }
+            if (CityStreetSupportPlan.ForLayout(layout).TrySampleTop(new Vector2(center.x, center.z),
+                out float y, out _)) center.y = y;
+            return center;
+        }
+
         /// <summary>
         /// A `1 m` pavement minus a `0.35 m` agent cannot fit two walkers
         /// abreast, so wait slots queue along the lane instead. Both offsets
@@ -40,6 +80,26 @@ namespace BarPromenade
             1.40f
         };
 
+        // Start beyond the solid pole, between the two doorways. A stationary
+        // passenger must give a walking player a whole capsule of passing space.
+        private const float QueueSetback = 1.05f;
+        private const float FirstQueueSlot = .90f;
+        private const float QueueSpacing = 1.05f;
+
+        internal static Rect QueueApron(CityBusPlan plan, CityBusStopDescriptor stop, CityLayout layout)
+        {
+            var along = Vector3.ProjectOnPlane(stop.Forward, Vector3.up).normalized;
+            var away = -Vector3.ProjectOnPlane(stop.RoadsideForward, Vector3.up).normalized;
+            var curb = StandingPosition(plan, stop, layout, FirstQueueSlot + QueueSpacing * .5f);
+            var center = curb + away * (QueueSetback * .5f);
+            float radius = CityPedestrianPlanner.AgentRadius + .12f;
+            float depth = QueueSetback * .5f + radius;
+            float halfWidth = QueueSpacing * .5f + radius;
+            float x = Mathf.Abs(along.x) * halfWidth + Mathf.Abs(away.x) * depth;
+            float z = Mathf.Abs(along.z) * halfWidth + Mathf.Abs(away.z) * depth;
+            return Rect.MinMaxRect(center.x - x, center.z - z, center.x + x, center.z + z);
+        }
+
         /// <summary>
         /// A stop whose nearest pedestrian node is farther than this has no
         /// pavement a walker could reach, and is skipped rather than faked.
@@ -51,7 +111,7 @@ namespace BarPromenade
         public static CityBusStopWaitPlan Create(
             CityBusPlan busPlan,
             CityPedestrianPlan pedestrianPlan,
-            IWalkableArea walkableArea)
+            IWalkableArea walkableArea, CityLayout layout = null)
         {
             if (busPlan == null)
             {
@@ -88,15 +148,25 @@ namespace BarPromenade
 
                 toRoad.Normalize();
                 along.Normalize();
-                Vector3 laneCenter = stop.ShelterPosition +
-                                     (toRoad * GetPoleToSidewalkCenter(busPlan, stop));
+                Vector3 laneCenter = StandingPosition(busPlan, stop, layout);
                 slots.Clear();
                 for (int offset = 0;
                      offset < SlotLongitudinalOffsets.Length;
                      offset++)
                 {
-                    Vector3 candidate = laneCenter +
-                        (along * SlotLongitudinalOffsets[offset]);
+                    Vector3 candidate;
+                    if (layout == null)
+                    {
+                        candidate = StandingPosition(busPlan, stop, null, SlotLongitudinalOffsets[offset]);
+                    }
+                    else
+                    {
+                        Vector3 curb = StandingPosition(busPlan, stop, layout, FirstQueueSlot + offset * QueueSpacing);
+                        candidate = curb - toRoad * QueueSetback;
+                        if (!CityBusPlatformClearance.ForLayout(layout).TryQueueGround(curb, candidate, out float ground))
+                            continue;
+                        candidate.y = ground;
+                    }
                     if (walkableArea.Contains(
                             candidate,
                             CityPedestrianPlanner.AgentRadius))

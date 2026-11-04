@@ -642,6 +642,7 @@ namespace BarPromenade
                 null,
                 cityMountains,
                 null);
+            Map.DeferCityBusNetwork();
             GameLogPhases.Report("mountain_road", "map_initialize", uiTimer);
             uiTimer.Restart();
             // The map is handed THIS scene's walkable mask. Without it the

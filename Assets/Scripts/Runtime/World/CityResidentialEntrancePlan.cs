@@ -197,8 +197,8 @@ namespace BarPromenade
             CityNightFixturePlan night = CityNightFixturePlanner.CreatePlan(layout);
             foreach (StreetLampDescriptor lamp in night.StreetLamps) AddPole(lamp.Position);
             foreach (TrafficSignalDescriptor signal in night.TrafficSignals) AddPole(signal.Position);
-            foreach (CityBusStopDescriptor stop in CityBusPlanner.CreateRoadRouting(layout).Stops)
-                obstacles.Add(CityRoadPolygon.Rectangle(CityBusStopWorldBuilder.DescribeFurnitureFootprint(stop)));
+            foreach (Rect footprint in CityBusNetworkFurniture.Reservations(CityDistrictBusPlanner.CreateRoadRouting(layout), layout))
+                obstacles.Add(CityRoadPolygon.Rectangle(footprint));
 
             var grade = new SharedGradeField(layout, masses);
             var result = new List<CityResidentialEntranceDescriptor>();

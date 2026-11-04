@@ -36,7 +36,8 @@ namespace BarPromenade
         OpenAreaAccess,
         ParkGate,
         Supermarket,
-        LoopSpacing
+        LoopSpacing,
+        Transfer
     }
 
     public sealed class CityBusDesignVehicle
@@ -246,6 +247,40 @@ namespace BarPromenade
         public RoadEdge RoadEdge { get; }
     }
 
+    internal readonly struct CityBusStopLabel
+    {
+        internal CityBusStopLabel(int route, int ordinal, int transferRoute = 0, int transferOrdinal = 0, bool shared = false)
+        {
+            Code = Format(route, ordinal);
+            MarkerText = Code;
+            PlateText = Code;
+            DescriptionPrefix = Code;
+            if (transferRoute <= 0) return;
+
+            string partner = transferOrdinal > 0 ? Format(transferRoute, transferOrdinal) :
+                transferRoute.ToString("00", System.Globalization.CultureInfo.InvariantCulture);
+            if (shared)
+            {
+                MarkerText = Code + "\n" + partner;
+                PlateText = MarkerText;
+                DescriptionPrefix = Code + " / " + partner;
+            }
+            else
+            {
+                PlateText = Code + "\n> " + partner;
+                DescriptionPrefix = Code + " → " + partner;
+            }
+        }
+
+        internal string Code { get; }
+        internal string MarkerText { get; }
+        internal string PlateText { get; }
+        internal string DescriptionPrefix { get; }
+
+        private static string Format(int route, int ordinal) =>
+            FormattableString.Invariant($"{route:00}-{ordinal:00}");
+    }
+
     public sealed class CityBusStopDescriptor
     {
         internal CityBusStopDescriptor(
@@ -344,6 +379,9 @@ namespace BarPromenade
             RoadEdge = roadEdge;
             TargetKind = targetKind;
             TargetId = targetId ?? string.Empty;
+            if (TargetId == "transfer:west-slope") TransferNumber = Id.Contains(":route-03") ? 1 : 3;
+            if (TargetId == "transfer:east-slope") TransferNumber = Id.Contains(":route-03") ? 2 : 3;
+            if (TargetId == "transfer:mouth") TransferNumber = Id.Contains(":route-02") ? 1 : 2;
             TargetCell = targetCell;
         }
 
@@ -368,6 +406,7 @@ namespace BarPromenade
         public RoadEdge RoadEdge { get; }
         public CityBusStopTargetKind TargetKind { get; }
         public string TargetId { get; }
+        public int TransferNumber { get; }
         public Vector2Int TargetCell { get; }
     }
 
@@ -426,6 +465,8 @@ namespace BarPromenade
             DecorationSeed = decorationSeed;
             StableSeed = stableSeed;
             RouteId = routeId ?? string.Empty;
+            Number = RouteId.EndsWith(":route-03", StringComparison.Ordinal) ? 3
+                : RouteId.EndsWith(":route-02", StringComparison.Ordinal) ? 2 : 1;
             OrderedLinkIndices = Copy(orderedLinkIndices);
             LoopLength = loopLength;
             LaneCenterOffset = laneCenterOffset;
@@ -465,6 +506,7 @@ namespace BarPromenade
             DecorationSeed = decorationSeed;
             StableSeed = source.StableSeed;
             RouteId = source.RouteId;
+            Number = source.Number;
             OrderedLinkIndices = source.OrderedLinkIndices;
             LoopLength = source.LoopLength;
             LaneCenterOffset = source.LaneCenterOffset;
@@ -487,6 +529,7 @@ namespace BarPromenade
         public int DecorationSeed { get; }
         public uint StableSeed { get; }
         public string RouteId { get; }
+        public int Number { get; }
         public IReadOnlyList<int> OrderedLinkIndices { get; }
         public float LoopLength { get; }
         public float LaneCenterOffset { get; }

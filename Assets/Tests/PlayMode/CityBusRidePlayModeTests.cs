@@ -816,7 +816,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static void AssertPassengerSoles(Player3DAssetRegistry registry, Vector3 floorPoint,
-            Vector3 floorNormal, string phase)
+            Vector3 floorNormal, string phase, float minimumClearance = -.005f, float maximumClearance = .025f)
         {
             int soleCount = 0;
             foreach (Player3DMeshBinding binding in registry.MeshBindings)
@@ -857,8 +857,8 @@ namespace BarPromenade.Tests.PlayMode
                         skin[w.boneIndex3].MultiplyPoint3x4(point) * w.weight3;
                     minimum = Mathf.Min(minimum, Vector3.Dot(world - floorPoint, floorNormal));
                 }
-                Assert.That(minimum, Is.InRange(-.005f, .025f),
-                    phase + "/" + binding.MeshName + ": the live skinned sole must touch the cabin floor without crossing it.");
+                Assert.That(minimum, Is.InRange(minimumClearance, maximumClearance),
+                    phase + "/" + binding.MeshName + ": live skinned boot height above the measured floor.");
                 soleCount++;
             }
             Assert.That(soleCount, Is.EqualTo(2), "The production hero must expose both authored boot soles.");
@@ -933,6 +933,292 @@ namespace BarPromenade.Tests.PlayMode
                 fromPlanar,
                 toPlanar,
                 Vector3.up);
+        }
+
+        [UnityTest]
+        public IEnumerator Passenger_TransfersFromWestToHillsideAtTheSharedStop()
+        {
+            const int seed = 20260727;
+            GameObject root = new GameObject("West to hillside bus transfer");
+            var input = new InputTestFixture();
+            input.Setup();
+            Keyboard keyboard = InputSystem.AddDevice<Keyboard>();
+            float oldScale = Time.timeScale;
+            bool oldFocus = GameInput.MovementFocused;
+            var cursor = new object();
+            passengerCleanup = () =>
+            {
+                Object.DestroyImmediate(root);
+                input.TearDown();
+                GameCursor.Release(cursor);
+                GameInput.HandleApplicationFocus(oldFocus);
+                GameSessionState.BeginNewGame();
+                Time.timeScale = oldScale;
+            };
+            try
+            {
+                GameSessionState.BeginNewGame();
+                GameInput.HandleApplicationFocus(true);
+                GameCursor.Capture(cursor, CursorLockMode.Locked, false, 0);
+                Time.timeScale = 8f;
+                var layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default, CityGenerationSettings.Default, seed);
+                var areas = RoadWalkableArea.FromLayout(layout);
+                var surfaces = CityStreetSurfacePlanner.Create(layout);
+                var plans = CityDistrictBusPlanner.Create(layout);
+                Assert.That(plans.Select(p => p.Number), Is.EqualTo(new[] { 1, 2, 3 }));
+                var west = plans[0];
+                var westTransfer = west.Stops.Single(s => s.TransferNumber == 3);
+                var hillTransfer = plans[2].Stops.Single(s => s.TargetId == westTransfer.TargetId);
+                var before = west.Stops[(westTransfer.SequenceIndex + west.Stops.Count - 1) % west.Stops.Count];
+
+                // Build the production street and the stop furniture. This focused world
+                // has its own physics surface in place of the whole-city ground compositor.
+                var streets = CityStreetSurfaceWorldBuilder.Build("Street surface", root.transform, layout, surfaces);
+                var streetCollider = streets.AddComponent<MeshCollider>();
+                streetCollider.sharedMesh = streets.GetComponent<MeshFilter>().sharedMesh;
+                CityBusStopWorldBuilder.Build(root.transform, plans);
+                var camera = new GameObject("Passenger camera").AddComponent<Camera>();
+                camera.gameObject.AddComponent<AudioListener>();
+                camera.transform.SetParent(root.transform, false);
+                camera.enabled = false;
+                var prompt = root.AddComponent<InteractionPromptView>();
+                var player = PlayerFactory.Create(root.transform, before.ShelterPosition + Vector3.up, camera, areas, prompt);
+                var follow = camera.gameObject.AddComponent<PlayerCameraFollow>();
+                follow.Initialize(camera, player.GameObject.transform, false);
+                var lines = CityBusFactory.CreateNetwork(root.transform, plans, player.GameObject.transform, null, () => 0f);
+                var rides = new CityBusRideController[lines.Length];
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    // Drive the real fleet clock explicitly so a whole circuit takes a few frames.
+                    lines[i].enabled = false;
+                    var busModel = lines[i].GetComponentInChildren<CityBusPresentation>(true);
+                    Assert.That(busModel.RouteLabels.Count, Is.EqualTo(4));
+                    var normals = new[] { busModel.transform.forward, busModel.transform.right,
+                        -busModel.transform.forward, -busModel.transform.right };
+                    for (int face = 0; face < busModel.RouteLabels.Count; face++)
+                    {
+                        var sign = busModel.RouteLabels[face];
+                        Assert.That(sign.text, Is.EqualTo(plans[i].Number.ToString("00")));
+                        Assert.That(Vector3.Dot(-sign.transform.forward, normals[face]), Is.GreaterThan(.99f));
+                        if (face == 0)
+                        {
+                            float inkHeight = CityBusPresentation.DigitInkBounds(sign).size.y;
+                            Assert.That(sign.transform.TransformVector(Vector3.up * inkHeight).magnitude,
+                                Is.EqualTo(.26f).Within(.008f), "Two-thirds of the backlit header is printed with real ink.");
+                            Assert.That(Mathf.Max(sign.color.r, sign.color.g, sign.color.b), Is.LessThan(.1f),
+                                "The backlit destination panel needs dark glyphs even at dusk.");
+                        }
+                        else Assert.That(sign.transform.TransformVector(Vector3.up * sign.textBounds.size.y).magnitude,
+                            Is.GreaterThan(.44f), sign.name + " must fill the panel in real metres.");
+                    }
+                    rides[i] = CityBusRideController.Create(lines[i], player, areas, camera, follow, surfaces);
+                }
+                var first = lines[0].Actor;
+                var second = lines[2].Actor;
+                first.ReleasePresentation(lines[0].transform);
+                first.PrepareSpawn(west, new CityBusSpawnAnchor("test-start", before.LinkIndex,
+                    before.DistanceAlongLink, before.Position, before.Forward, before.RoadEdge), 5);
+                AdvanceFleetUntil(() => first.DoorsFullyOpen, 80);
+                var origin = Door(first);
+                player.Motor.Teleport(origin.EntryPose.RootPosition);
+                player.GameObject.transform.rotation = origin.EntryPose.RootRotation;
+                Physics.SyncTransforms();
+                yield return UseDoor(rides[0], CityBusRideState.Riding);
+                Assert.That(first.HasPlayerPassenger, Is.True);
+                AdvanceFleetUntil(() => first.CurrentStop == westTransfer && first.DoorsFullyOpen, 20000);
+                yield return UseDoor(rides[0], CityBusRideState.Outside);
+                Assert.That(first.HasPlayerPassenger, Is.False);
+                Assert.That(first.HasServiceHold, Is.False);
+                Assert.That(player.Motor.InputEnabled && player.Motor.enabled, Is.True);
+                yield return CheckStandingContact("exit from 01");
+                AdvanceFleetUntil(() => Vector3.Distance(first.Position, westTransfer.Position) > 12f, 1600);
+
+                // When the lines use different kerbs the hero follows their connected
+                // pavement through the interchange using the ordinary character motor.
+                Vector3 wait = CityBusStopWaitPlanner.StandingPosition(plans[2], hillTransfer, layout, .8f);
+                if (Vector3.Distance(player.GameObject.transform.position, wait) > 6f)
+                {
+                    var pedestrians = CityLayoutCache.GetOrCreatePedestrianPlan(layout, seed);
+                    Assert.That(CityBusStopWaitPlanner.TryFindNearestNode(pedestrians,
+                        player.GameObject.transform.position, out int node), Is.True);
+                    Assert.That(CityBusStopWaitPlanner.TryFindNearestNode(pedestrians, wait, out int goal), Is.True);
+                    var distances = CityBusStopWaitPlanner.CreateNodeDistances(pedestrians, goal);
+                    Assert.That(float.IsInfinity(distances[node]), Is.False, "Transfer kerbs need a walkable connection.");
+                    yield return WalkTo(pedestrians.Nodes[node].Position, pedestrians.Nodes[node].Id);
+                    while (node != goal)
+                    {
+                        var shortest = pedestrians.GetLinkIndices(node).Select(i => pedestrians.Links[i])
+                            .OrderBy(link => distances[link.Other(node)] + (link.Path?.Length ??
+                                Vector3.Distance(pedestrians.Nodes[node].Position, pedestrians.Nodes[link.Other(node)].Position))).First();
+                        int next = shortest.Other(node);
+                        Assert.That(distances[next], Is.LessThan(distances[node]));
+                        if (shortest.Path != null)
+                        {
+                            var points = shortest.Path.Vertices;
+                            var originXZ = new Vector2(pedestrians.Nodes[node].Position.x, pedestrians.Nodes[node].Position.z);
+                            bool reverse = (originXZ - points[points.Count - 1]).sqrMagnitude < (originXZ - points[0]).sqrMagnitude;
+                            for (int i = 1; i < points.Count; i++)
+                            {
+                                Vector2 point = points[reverse ? points.Count - 1 - i : i];
+                                yield return WalkTo(new Vector3(point.x, wait.y, point.y), shortest.Id);
+                            }
+                        }
+                        yield return WalkTo(pedestrians.Nodes[next].Position, pedestrians.Nodes[next].Id);
+                        node = next;
+                    }
+                }
+                yield return WalkTo(wait, "03 waiting spot");
+                AdvanceFleetUntil(() => second.CurrentStop == hillTransfer && second.DoorsFullyOpen, 20000);
+                yield return CheckStandingContact("wait for 03");
+                if (System.Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_BUS_TRANSFER") == "1" &&
+                    SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null)
+                    CaptureTransfer(root.transform, second, hillTransfer);
+
+                yield return WalkTo(Door(second).EntryPose.RootPosition, "03 front door");
+                Assert.That(rides[2].PromptKey, Is.EqualTo("interaction.board_bus.03"));
+                yield return UseDoor(rides[2], CityBusRideState.Riding);
+                Assert.That(second.HasPlayerPassenger, Is.True);
+                Assert.That(first.HasPlayerPassenger, Is.False);
+                int boardedService = second.ServiceOrdinal;
+                AdvanceFleetUntil(() => second.DoorsFullyOpen && second.ServiceOrdinal > boardedService, 20000);
+                Assert.That(second.CurrentStop.Id, Is.Not.EqualTo(hillTransfer.Id));
+                yield return UseDoor(rides[2], CityBusRideState.Outside);
+                Assert.That(second.HasPlayerPassenger || second.HasServiceHold, Is.False);
+
+                CityBusRidePlan Door(CityBusActor actor)
+                {
+                    var visual = (Player3DCharacterPresentation)player.Visual;
+                    var pelvis = player.GameObject.transform.InverseTransformPoint(visual.Registry.Anchors.Pelvis.position);
+                    Assert.That(CityBusRidePlan.TryCreate(actor, areas, pelvis, player.Motor.GetComponent<CharacterController>().radius,
+                        CityBusPassengerDoor.Front, surfaces, out var dock), Is.True, actor.CurrentStop?.Id);
+                    return dock;
+                }
+
+                void AdvanceFleetUntil(System.Func<bool> arrived, int maxSteps)
+                {
+                    for (int i = 0; i < maxSteps && !arrived(); i++)
+                    {
+                        foreach (var line in lines) line.Advance(.20f);
+                        foreach (var ride in rides) if (ride.IsPassengerAboard) ride.RefreshPassengerPose();
+                    }
+                    Assert.That(arrived(), Is.True, "Service missed requested stop. " + string.Join(" / ",
+                        lines.Select(line => line.Plan.RouteId + " " + line.Actor.MotionState + " " + line.Actor.CurrentStop?.Id)));
+                }
+
+                IEnumerator WalkTo(Vector3 point, string segment)
+                {
+                    bool reached = false;
+                    for (int i = 0; i < 800 && !reached; i++)
+                    {
+                        reached = player.Motor.MoveTowardsApproachWaypoint(point, .16f, Mathf.Clamp(Time.deltaTime, .025f, .10f));
+                        // The ordinary motor grounds its capsule in Update. A series of
+                        // horizontal moves in one frame can leave the hero above a descending walk.
+                        yield return null;
+                    }
+                    player.Motor.CancelInteractionPoseMove();
+                    if (!reached)
+                    {
+                        Vector3 at = player.GameObject.transform.position;
+                        Vector3 direction = Vector3.ProjectOnPlane(point - at, Vector3.up).normalized;
+                        var hits = Physics.CapsuleCastAll(at + Vector3.up * .35f, at + Vector3.up * 1.2f,
+                            .32f, direction, 1.5f, ~0, QueryTriggerInteraction.Ignore);
+                        Assert.Fail("Blocked interchange walk " + segment + " at " + point + " from " + at +
+                            "; platform " + hillTransfer.ShelterPosition + "; colliders " +
+                            string.Join(", ", hits.Select(h => h.collider.name).Distinct()));
+                    }
+                }
+
+                IEnumerator CheckStandingContact(string stage)
+                {
+                    // Give the rig its normal LateUpdate after the accelerated vehicle clock,
+                    // then check both the capsule and the visible mesh against the street.
+                    yield return null;
+                    yield return null;
+                    Vector3 position = player.GameObject.transform.position;
+                    Assert.That(streetCollider.Raycast(new Ray(position + Vector3.up * 4f, Vector3.down),
+                        out RaycastHit floor, 12f), Is.True, stage + " needs real pavement");
+                    Assert.That(position.y, Is.EqualTo(floor.point.y + PlayerFactory.GroundedRootOffset).Within(.10f),
+                        stage + " standing root " + position + " versus pavement " + floor.point);
+                    var registry = ((Player3DCharacterPresentation)player.Visual).Registry;
+                    AssertPassengerSoles(registry, floor.point, floor.normal, stage, -.10f, .18f);
+                    TestContext.WriteLine(stage + ": standing root " + position.ToString("F3") +
+                        ", physical pavement " + floor.point.ToString("F3"));
+                }
+
+                IEnumerator UseDoor(CityBusRideController ride, CityBusRideState expected)
+                {
+                    Physics.SyncTransforms();
+                    yield return null;
+                    yield return null;
+                    Assert.That(player.Interactor.ActiveInteractable, Is.SameAs(ride));
+                    Assert.That(prompt.IsClickable, Is.True);
+                    input.Press(keyboard.eKey, queueEventOnly: true);
+                    yield return null;
+                    input.Release(keyboard.eKey, queueEventOnly: true);
+                    yield return WaitForState(ride, expected);
+                }
+            }
+            finally { CleanupPassengerFixture(); }
+        }
+
+        private static void CaptureTransfer(Transform parent, CityBusActor actor, CityBusStopDescriptor stop)
+        {
+            var cameraObject = new GameObject("Transfer platform camera");
+            cameraObject.transform.SetParent(parent, false);
+            var key = new GameObject("Transfer proof light").AddComponent<Light>();
+            key.transform.SetParent(parent, false);
+            key.type = LightType.Directional;
+            key.transform.rotation = Quaternion.Euler(48f, -36f, 0f);
+            key.intensity = 1.6f;
+            var camera = cameraObject.AddComponent<Camera>();
+            camera.enabled = false;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(.22f, .25f, .29f);
+            Vector3 focus = Vector3.Lerp(stop.ShelterPosition, actor.Position, .55f) + Vector3.up * 1.4f;
+            camera.transform.position = focus + actor.TravelDirection * 10f + actor.transform.right * 7f + Vector3.up * 2f;
+            camera.transform.LookAt(focus);
+            var target = RenderTexture.GetTemporary(1024, 576, 24);
+            var previous = RenderTexture.active;
+            var frame = new Texture2D(1024, 576, TextureFormat.RGB24, false);
+            try
+            {
+                camera.targetTexture = target;
+                string folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", "BusTransfer");
+                Directory.CreateDirectory(folder);
+                WriteFrame("west-to-hillside");
+                string[] views = { "front", "doors", "rear" };
+                for (int i = 0; i < views.Length; i++)
+                {
+                    var label = actor.Presentation.RouteLabels[i];
+                    Vector3 centre = label.transform.TransformPoint(label.textBounds.center);
+                    Vector3 outward = -label.transform.forward;
+                    // Photograph at a passenger's standing height, beside the kerb for the
+                    // doors and on the lane axis for the arriving/departing bus.
+                    Vector3 position = centre + outward * (i == 1 ? 3.6f : 5f);
+                    position.y = actor.Position.y + 1.70f;
+                    camera.transform.position = position;
+                    camera.transform.LookAt(centre);
+                    camera.fieldOfView = 35f;
+                    WriteFrame("03-" + views[i]);
+                }
+
+                void WriteFrame(string name)
+                {
+                    camera.Render();
+                    RenderTexture.active = target;
+                    frame.ReadPixels(new Rect(0, 0, target.width, target.height), 0, 0);
+                    File.WriteAllBytes(Path.Combine(folder, name + ".png"), frame.EncodeToPNG());
+                }
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                camera.targetTexture = null;
+                RenderTexture.ReleaseTemporary(target);
+                Object.DestroyImmediate(frame);
+                Object.DestroyImmediate(cameraObject);
+                Object.DestroyImmediate(key.gameObject);
+            }
         }
 
         [UnityTest]

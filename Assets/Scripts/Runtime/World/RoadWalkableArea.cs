@@ -684,8 +684,24 @@ namespace BarPromenade
             }
             foreach (Bounds solid in CityResidentialCourtyardPlan.ForLayout(layout).CollisionBounds)
                 area.Exclude(Rect.MinMaxRect(solid.min.x, solid.min.z, solid.max.x, solid.max.z));
-            foreach (CityHillsideStreetRoute route in CityHillsideStreetPlan.ForLayout(layout).Routes)
+            var hillsideStreets = CityHillsideStreetPlan.ForLayout(layout).Routes;
+            foreach (CityHillsideStreetRoute route in hillsideStreets)
                 area.AddPolygons(route.WalkablePolygons);
+            if (hillsideStreets.Count != 0)
+            {
+                // Curbside shelters stand on surveyed ground outside the switchback
+                // pavement. Admit their reserved aprons so a full player capsule
+                // can leave the footway, reach the bench and return to either door.
+                // Upstream routing already owns their XZ footprint. The final
+                // grounding pass only rebases the poles against the built street.
+                var service = CityDistrictBusPlanner.CreateRoadRouting(layout);
+                foreach (var stop in CityBusNetworkFurniture.Stops(service))
+                {
+                    if (stop.RoadEdge.A != stop.RoadEdge.B) continue;
+                    area.Add(CityBusPlatformClearance.PassengerAccess(stop.Position, stop.Forward,
+                        stop.ShelterPosition, stop.RoadsideForward));
+                }
+            }
             var quarter = CityHillsideQuarterPlan.ForLayout(layout);
             area.ExcludePolygons(quarter.ExposedRavinePolygons);
             foreach (var link in quarter.Links)

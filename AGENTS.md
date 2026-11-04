@@ -83,6 +83,9 @@ gamepad bindings/hints or require their parity/coverage unless explicitly reques
   at final step if geometry/elevation changed; stale art→scheme, no SHA
   retagging. Courtyard props exempt (`2026-10-29`).
 - Reuse shared materials and assets; avoid per-instance material creation.
+- Keep bus queues clear of the through sidewalk. After stop, route or scenery
+  changes, test every platform in PlayMode, transfers included. Walk from both
+  sidewalk directions past waiting NPCs to the shelter and board with `E` at each door.
 - New/changed item interactions reuse [the standard](ai/item-interaction-standard.md):
   keyed prompts, shared 3D pickup/receipt UI, one grant, input/cleanup.
   Exceptions require a recorded user decision.
@@ -136,11 +139,8 @@ Fix growing writers or shorten retention; never raise it.
 ## Quality and documentation
 
 - Make the smallest coherent change and preserve unrelated user work.
-- Prefer reusing or extending focused/parameterized coverage. Add a new test
-  only for a distinct contract or regression that existing coverage cannot
-  express.
-- Follow minimal verification below: a focused test compiles dependencies;
-  do not stack compilation and both Unity test layers.
+- Extend focused tests unless the existing coverage cannot express the regression.
+- A focused Unity test compiles dependencies. Skip a separate compilation.
 - Update `ai/project-overview.md` or `ai/systems-map.md` when their facts change.
   Use `git ls-files`/`rg` as the path reference; do not keep a copied file tree.
 - Keep both bibles current; World canon governs changes.
@@ -217,7 +217,6 @@ invocations for a shared framework.
   change—an affected scene test, a manual smoke or a player build. Do not stack
   them by default.
 
-Never redundantly build dependent projects or stack full test suites, player
-builds and smoke checks in ordinary work. Test counts do not justify a full run.
+Test counts do not justify a full run.
 
 Record unrelated failures; continue without broadening checks or repairs.

@@ -21,12 +21,12 @@ namespace BarPromenade
         internal IReadOnlyList<Rect> CourtyardLinkFootprints { get; private set; } = Array.Empty<Rect>();
         internal IReadOnlyList<RuntimeOrientedBox> CourtyardLinkWalls { get; private set; } = Array.Empty<RuntimeOrientedBox>();
 
-        // Both streets end at X156. The alley rounds the eastern side of the
-        // middle cul-de-sac and returns into the excavated courtyard at its door level.
+        // The alley leaves the south pavement of the upper street and rounds
+        // the east side of the lower residential walk before descending to the court.
         private void InitializeCourtyardLink(CityLayout layout, List<CityTerracePilotFloor> floors,
             List<CityExteriorStairFlightDescriptor> flights)
         {
-            if (!HasShortcut || !MatchesStreetEnd(10, 104f) || !MatchesStreetEnd(9, 78f)) return;
+            if (!HasShortcut || !MatchesFrontage(10, 104f) || !MatchesFrontage(9, 78f)) return;
             float rise = CityTerracePilotPlan.FlightRise;
             float street = ShortcutRouteWorld[ShortcutRouteWorld.Count - 1].y;
             float window = street + rise, bottom = LowerCourtArrivalWorld.y, outlook = bottom + 4f * rise;
@@ -90,11 +90,11 @@ namespace BarPromenade
             CourtyardLinkBounds = Rect.MinMaxRect(LowerCourtBounds.xMin, LinkGateZ - LinkHalfWidth, 163.44f, 100f);
             CourtyardLinkWalls = CreateLinkRetainingWalls(layout, footprints, bases);
 
-            bool MatchesStreetEnd(int row, float z)
+            bool MatchesFrontage(int row, float z)
             {
                 var node = new Vector2Int(12, row);
                 return layout.HasRoad(node, node + Vector2Int.left) &&
-                    !layout.HasRoad(node, node + Vector2Int.right) &&
+                    (row == 10 || !layout.HasRoad(node, node + Vector2Int.right)) &&
                     !layout.HasRoad(node, node + Vector2Int.up) &&
                     !layout.HasRoad(node, node + Vector2Int.down) &&
                     (layout.RoadGeometry.GetNodePosition(node) - new Vector2(156f, z)).sqrMagnitude < .000001f;

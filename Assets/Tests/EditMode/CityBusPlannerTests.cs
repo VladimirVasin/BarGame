@@ -10,6 +10,63 @@ namespace BarPromenade.Tests.EditMode
         private const float GeometryTolerance = 0.001f;
 
         [Test]
+        public void DistrictNetwork_ClosesEachLineAndServesItsTransfers()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Resolve(
+                GameSessionState.DefaultCityBlueprintId), CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
+            var lines = CityDistrictBusPlanner.Create(layout);
+            CollectionAssert.AreEqual(new[] { 1, 2, 3 }, lines.Select(line => line.Number));
+            foreach (var line in lines)
+            {
+                var intervals = line.Stops.Select((stop, i) =>
+                    (i + 1 == line.Stops.Count ? line.LoopLength + line.Stops[0].DistanceAlongLoop :
+                    line.Stops[i + 1].DistanceAlongLoop) - stop.DistanceAlongLoop).ToArray();
+                TestContext.Out.WriteLine($"{line.RouteId}: {line.LoopLength:F0} m, {line.Stops.Count} stops, " +
+                    $"{intervals.Min():F0}–{intervals.Max():F0} m apart. " + string.Join(", ",
+                    line.Stops.Select(s => $"{s.TargetId} {s.ShelterPosition:F0}")));
+            }
+            var transferPlatforms = lines.SelectMany(line => line.Stops.Where(stop => stop.TransferNumber > 0)
+                .Select(stop => (line.Number, stop))).GroupBy(entry => entry.stop.TargetId).ToArray();
+            CollectionAssert.AreEquivalent(new[] { "transfer:west-slope", "transfer:east-slope", "transfer:mouth" },
+                transferPlatforms.Select(group => group.Key));
+            foreach (var group in transferPlatforms)
+            {
+                var pair = group.ToArray();
+                Assert.That(pair.Length, Is.EqualTo(2), group.Key);
+                Assert.That(pair[0].stop.TransferNumber, Is.EqualTo(pair[1].Number), group.Key);
+                Assert.That(pair[1].stop.TransferNumber, Is.EqualTo(pair[0].Number), group.Key);
+                Assert.That(Vector3.Distance(pair[0].stop.ShelterPosition, pair[1].stop.ShelterPosition),
+                    Is.LessThan(85f), group.Key + " requires a short walk between " + pair[0].stop.ShelterPosition + " and " + pair[1].stop.ShelterPosition);
+            }
+            float westEdge = layout.RoadGeometry.GetNodePosition(new Vector2Int(layout.River.Definition.CorridorCellX, 1)).x;
+            float eastEdge = layout.RoadGeometry.GetNodePosition(new Vector2Int(layout.River.Definition.CorridorCellX + 1, 1)).x;
+            foreach (var line in lines)
+            {
+                Assert.That(line.Stops.Count(s => s.TransferNumber == 0), Is.GreaterThan(2), line.RouteId);
+                Assert.That(line.Stops.Select(s => s.Id).Distinct().Count(), Is.EqualTo(line.Stops.Count));
+                Assert.That(line.Stops.Select(s => s.DistanceAlongLoop), Is.Ordered);
+                foreach (var stop in line.Stops)
+                    Assert.That(CityBusPlatformClearance.ForLayout(layout).Allows(stop), Is.True, stop.Id);
+                foreach (int index in line.OrderedLinkIndices)
+                {
+                    var link = line.Links[index];
+                    var next = line.Links[line.GetNextOrderedLinkIndex(index)];
+                    Assert.That(Vector3.Distance(link.Samples[link.Samples.Count - 1].Position,
+                        next.Samples[0].Position), Is.LessThan(.15f), link.Id);
+                    Assert.That(link.Clearance.IsClear, Is.True, link.Id);
+                    if (line.Number == 1)
+                        Assert.That(link.Samples.Max(p => p.Position.x), Is.LessThanOrEqualTo(westEdge + layout.RoadWidth));
+                    if (line.Number == 2)
+                        Assert.That(link.Samples.Min(p => p.Position.x), Is.GreaterThanOrEqualTo(eastEdge - layout.RoadWidth));
+                }
+            }
+            Assert.That(lines[2].Stops.Any(s => s.ShelterPosition.y > 39f), Is.True);
+            Assert.That(lines[2].Stops.Count(s => s.TargetId.StartsWith("west-terrace-")), Is.InRange(3, 4));
+            Assert.That(lines[2].Stops.Count(s => s.TargetId.StartsWith("east-terrace-")), Is.InRange(2, 3));
+            Assert.That(lines.SelectMany(line => line.Stops).Any(s => s.TargetKind == CityBusStopTargetKind.PlayerHome), Is.True);
+        }
+
+        [Test]
         public void DefaultRoadV21_CreatesDeterministicNonEmptyPlan()
         {
             CreateContext(

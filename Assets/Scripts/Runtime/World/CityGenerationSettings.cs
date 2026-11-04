@@ -7,6 +7,7 @@ namespace BarPromenade
     public sealed class CityGenerationSettings
     {
         public const float DefaultRoadWidth = 8f;
+        public const float DefaultLoopChance = 0.28f;
         public const int DefaultBarCount = 1;
         public const float DefaultMinimumOrdinaryBuildingHeight = 8f;
         public const float DefaultMaximumOrdinaryBuildingHeight = 28f;
@@ -20,7 +21,7 @@ namespace BarPromenade
         [Min(1f)] public float BlockWidth = 18f;
         [Min(1f)] public float BlockDepth = 18f;
         [Min(2.01f)] public float RoadWidth = DefaultRoadWidth;
-        [Range(0f, 1f)] public float LoopChance = 0.28f;
+        [Range(0f, 1f)] public float LoopChance = DefaultLoopChance;
         [Min(0f)] public float BuildingInset = 1.25f;
         // Bars retain this original 5-13 m range. Fixed-metre landmarks use
         // their authored heights and are omitted when this ceiling cannot

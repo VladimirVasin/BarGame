@@ -62,11 +62,10 @@ namespace BarPromenade
         private CityCanneryTruckRoute(CityLayout layout, CityCanneryPlan site, CityPortAccessPlan port)
         {
             this.layout = layout; this.site = site; this.port = port;
-            CityBusPlan busPlan = layout.BlueprintId == CityBlueprintCatalog.DefaultBlueprintId
-                ? CityBusPlanner.CreateRoadRouting(layout) : null;
-            busRoads = CityBusPlanner.ServiceRoadEdges(busPlan);
-            if (busPlan != null)
-                foreach (CityBusStopDescriptor stop in busPlan.Stops)
+            var lines = layout.BlueprintId == CityBlueprintCatalog.DefaultBlueprintId
+                ? CityDistrictBusPlanner.CreateRoadRouting(layout) : Array.Empty<CityBusPlan>();
+            busRoads = CityBusNetworkFurniture.ServiceRoads(lines);
+            foreach (CityBusStopDescriptor stop in CityBusNetworkFurniture.Stops(lines))
                     streetFurniture.Add(CityBusStopWorldBuilder.DescribeFurnitureFootprint(stop));
             foreach (CityElevationStairDescriptor stair in layout.ElevationPlan.SignatureStairs)
             {

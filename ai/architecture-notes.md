@@ -6,7 +6,7 @@
   story §18: the lower west keeps its workplaces; both upper slopes are housing.
   The court lane and 40m crest street cross a dry ravine on separate bridges.
   Stairs join every tier behind the original river cave and traffic tunnel.
-  One south ridge encloses the quarter. No new service or story event.
+  One south ridge encloses the quarter. The bridges and stairs serve the residential quarter.
 
 - **Accepted architecture extension — 2026-11-03,user — terraced City:**
   Low coast/port/river; two streets extend south of the grid at ≤6% to Y40.
@@ -3033,7 +3033,8 @@
   bridges join west/east into one outer circuit. Grid-validated `AuthoredStreets`
   (`CityBlueprintBuilder.WithAuthoredStreet`) append last by the same rule.
   Authored `(10,4)-(10,5)` (`2026-09-16`):Nightlife x=10 lane reaches crossroads
-  `(10,5)`,not a stub between `(9,4)`/`(10,4)`;seven other stubs stay seeded.
+  `(10,5)`. Default City joins street ends to neighbouring carriageways after
+  choosing frontages. Its two stair-court approaches carry pedestrians.
   Legacy/custom graph policy stays.
 - **Accepted — Stable blueprint identity over position:** An immutable
   `CityBlueprint` owns stable area IDs, category, reusable visual archetype,
@@ -3821,45 +3822,32 @@
   flush walking aprons. Corner links follow pads; inflated bus bodies clear
   actual poles by `0.30 m` or `StaticFixtureOverlap` rejects the turn.
   Shared material regions and collision-free Home slices use actual support.
-- **Accepted — One route-driven real-scale bus on canonical Route 01:**
-  Immutable `bus-route:default-coastal:route-01` is a deterministic right-hand,
-  Street-only closed loop through existing district POIs plus `PlayerHome`.
-  Order is the shortest closed tour over target centres, not district enum:
-  fix one target/permute the rest through eight targets; beyond eight use
-  nearest neighbour + 2-opt. Ordered IDs break ties and fix direction;
-  rotate Home first. Default: Home, Residential, Old Town, Industrial, Nightlife.
-  Stops use a safe frontage straight or one connected edge away. River-layout
-  POIs may use the nearest cyclic Street in their district within five edges/
-  `120 m` of public access. Their cell and blue `01` pole stay outside the
-  target cell, POI/access bounds and Home footprint.
-
-  One accepted-link graph admits straights and `6 m` left arcs after full-body
-  surface/fixture checks. Selected Road v2.1 nodes allow safe-right macros:
-  long symmetric S-merges around a `4.5 m` core quarter-turn, reserving both
-  physical edges without bypassing a stop edge. Unselected `3 m` right turns
-  fail `CurvatureTooTight`. Sample paths every `0.1 m` against the inflated
-  `8.25 x 2.38 x 2.95 m` body, `4.5 m` wheelbase, `0.1 m` clearance. Repeated
-  physical links get unique ordered link/node IDs and one successor. No random
-  branches or player pursuit. Five default stops own stable IDs/localization/
-  lap distances/poses, each served once per lap. Dwell is `10 s`, including
-  `0.70 s` opening and closing of both doors. Clear service set at loop seam.
-  Random decoration creates no shelters. Last Route Island's working pole
-  stays outside the abandoned public ground/approaches.
-
-  Exactly one reusable actor/model slot. Obstacle-safe activation prefers
-  `76–86 m` fog, falling back to `56–86 m` only if forward loop travel approaches
-  an encounter sample. Recycle only when the closest oriented-body point is
-  at least `92 m` from the hero; camera/frustum/far clip never decide lifetime.
-  Empty intervals are valid. Yield to predicted hero/pedestrian motion:
-  horizon `0.75 s`, hero smoothing `0.2 s`, velocity cap `5.2 m/s`, displacement
-  over `4 m` treated as teleport/zero velocity. Carry sub-`DistanceTolerance`
-  travel into the next frame to prevent braking short of a stop. Omit the
-  attached hero from prediction; retain pedestrian yielding.
-  Kinematic `CityBus` box collides with hero/pedestrians, ignores other buses
-  and stays outside camera/interaction queries. Passive prefab has no colliders
-  or Lights, preserves real scale and models driver/dashboard/rails/twelve
-  seats/two double-leaf doors. City map uses the immutable simplified loop,
-  five numbered localized stops and legend; no live marker.
+- **Accepted exception — user, 2026-11-04 — City district bus service.**
+  Art §2 and story §6 level 0. The production city operates three independent
+  one-way rings. West 01 and east 02 stay on their river banks. Hillside 03
+  uses the full west ascent, summit bridge, east descent and Works bridge.
+  Stable transfer IDs join the two hill entrances to their bank lines and
+  opposite pavements at the mouth bridge. Riders leave and enter at live doors.
+  Stops favour useful destinations, room for the shelter and a clear walking
+  strip serving both doors. After changes to a stop, its service or obstacles
+  along its approach, check every active stop code in the built City. Keep the
+  through sidewalk clear when NPCs wait. Walk the production player with collisions
+  from both directions along that sidewalk, through the waiting area to each
+  open passenger door in turn. Press `E` and confirm the player is
+  riding the assigned bus. Check each boarding place at a transfer. Record the PlayMode proof.
+  Nearby destinations may share a stop. A shared
+  kerb has one shelter, bench and map platform. The abandoned island stays clear.
+  Each line has a bounded actor slot. Nearby services coexist, distant services
+  advance their phase through stops with presentation and collision turned off.
+  One graph for both banks and the hill return checks full-body clearance.
+  The hill uses the same widened bends, height samples and crest road as the
+  physical street. World reservations, truck, map, balcony and ride use these
+  plans. Poles and map use route number plus one-based stop order (03-02);
+  shared platforms carry both codes and split transfers identify the partner.
+  The closest pole borrows two street spots for warm light along both plates, fading
+  with distance and following the daylight floor. City and the Home balcony share the pool.
+  Buses display their route number on the front, sides and rear. Fog, materials and post
+  retain City settings. Headlights, sound and interaction follow visible buses.
 
 - **Accepted — Route 01 driver and sprung presentation:** The separate passive
   `CityBusDriver3D` uses `Player3DLit`, the exact 31-bone rig and a normal
@@ -3920,7 +3908,7 @@
   sees. The cabin reserves a place logically and lets
   `CityBusRidePlan` refuse a seat index the registry cannot resolve, rather
   than duplicating that check. Recycling keys on `HasPlayerPassenger`, not
-  `HasPassenger`: only the hero pins the single actor slot to the world, and
+  `HasPassenger`: only the hero pins the occupied line slot to the world, and
   blocking it for a rider `92 m` away behind fog would strand the bus for a
   whole lap, so ambient passengers are released with it through the same
   cleanup. `CityBusRidePlan.TryCreate` proved agent-agnostic apart from two
@@ -3930,7 +3918,7 @@
   root already sits on the pavement surface.
   `CityBusStopWaitPlanner` derives one wait point per stop that has usable
   pavement: the sidewalk centreline `RoadsidePoleOutsideRoadEdge +
-  SidewalkWidth * 0.5 = 0.70 m` road-ward of the blue `01` pole, because the
+  SidewalkWidth * 0.5 = 0.70 m` road-ward of the route pole, because the
   pole itself stands outside the walkable strip and carries a collider. Two
   slots per stop queue along the lane at `+0.30 m` and `+1.40 m` from the halt
   pose — never abreast, since a `1 m` pavement minus a `0.35 m` agent is the
@@ -3997,11 +3985,7 @@
   spare.
   The moving runtime remains City-only. A valid Home/Balcony route would
   require a real Street pass-through whose two complete-body seams both lie at
-  or beyond the fog-hidden `56 m` boundary; none exists, and the default home
-  facade faces a visible road terminal. Extending that road only for
-  presentation would falsify the generated city, while enabling or pooling a
-  bus with the Balcony camera would create a visible camera-dependent pop and
-  violate the lifecycle contract. Home therefore keeps its pedestrian exterior
+  or beyond the fog-hidden `56 m` boundary. Home keeps its pedestrian exterior
   runtime and reconstructs the nearby Home stop as a static collider-free pole,
   but composes no bus actor or director.
 - **Accepted — a contextual effect reads its host clip's phase, never its own
@@ -4631,9 +4615,8 @@
   keeps the player four storeys above from blocking walkers on the street below.
 - **Accepted — Logical terminal road boundary:** A pure planner retains rails
   only along street-union intervals whose outward side is water, unmapped or
-  outside the active non-water footprint, plus full-road-width caps at true
-  degree-one Street terminals. Degree counts both Street and ParkPath edges,
-  so a street continuing into the park is never mistaken for a dead end.
+  outside the active non-water footprint. The playable city joins drivable
+  street ends across blocks. Legacy layouts retain caps on true terminals.
   River promenades count as supporting travel surfaces, and declared bridge
   edges are support-only rather than generic fence sources: the river builder
   alone owns their parapets, trims them before the bank-road pads and preserves
@@ -4677,7 +4660,7 @@
   Optional frontage, roadside and park clusters use per-kind footprint
   clearances around entrances, gates, lamps, signals, trees and benches. The
   ordinary random roadside selector deliberately omits `RoadsideBusShelter`;
-  visible Route 01 poles are built from the bus plan, so stop identity cannot
+  visible route poles are built from the bus network, so stop identity cannot
   drift away from service. The 24-family catalog retains the legacy shelter
   recipe for compatibility. Recipes orient to actual road frontage and expand
   as light-free, shadowless visuals in at most six shared-material batches per

@@ -848,9 +848,10 @@ namespace BarPromenade.Tests.PlayMode
         {
             Assert.That(city.Bus,Is.Not.Null);
             Assert.That(cannery.Traffic,Is.Not.Null);
-            HashSet<RoadEdge> served=CityBusPlanner.ServiceRoadEdges(city.BusPlan);
-            Assert.That(served.SetEquals(CityBusPlanner.ServiceRoadEdges(
-                CityBusPlanner.CreateRoadRouting(city.Layout))),Is.True,"Pure service routing matches the actual bus loop.");
+            HashSet<RoadEdge> served=CityBusNetworkFurniture.ServiceRoads(city.BusPlans);
+            Assert.That(served.SetEquals(CityBusNetworkFurniture.ServiceRoads(
+                CityDistrictBusPlanner.CreateRoadRouting(city.Layout))), Is.True,
+                "Truck planning must reserve the public streets served by every actual bus line.");
             int shared=0;
             foreach(RoadEdge edge in cannery.Route.StreetEdges)if(served.Contains(edge))shared++;
             Assert.That(shared,Is.EqualTo(cannery.Route.SharedBusStreetCount));
@@ -893,20 +894,23 @@ namespace BarPromenade.Tests.PlayMode
             for(int trip=0;trip<4;trip++)
             {
                 CityFishSupplySnapshot departure=cannery.Cycle.Sample(CanneryTime(cannery,starts[trip],0));
-                bool holdingPose=false;
-                foreach(int index in city.BusPlan.OrderedLinkIndices)
+                foreach(var line in city.BusPlans)
                 {
-                    IReadOnlyList<CityBusPathSample> samples=city.BusPlan.Links[index].Samples;
-                    for(int sample=0;sample<samples.Count;sample+=40)
+                    bool holdingPose=false;
+                    foreach(int index in line.OrderedLinkIndices)
                     {
-                        CityBusPathSample pose=samples[sample];
-                        if(!traffic.CanReserveAt(departure,pose.Position,
-                            Quaternion.LookRotation(pose.Forward),busBounds))continue;
-                        holdingPose=true;break;
+                        IReadOnlyList<CityBusPathSample> samples=line.Links[index].Samples;
+                        for(int sample=0;sample<samples.Count;sample+=40)
+                        {
+                            CityBusPathSample pose=samples[sample];
+                            if(!traffic.CanReserveAt(departure,pose.Position,
+                                Quaternion.LookRotation(pose.Forward),busBounds))continue;
+                            holdingPose=true;break;
+                        }
+                        if(holdingPose)break;
                     }
-                    if(holdingPose)break;
+                    Assert.That(holdingPose,Is.True,$"Trip {trip} must leave a real holding pose on {line.RouteId} outside its sweep.");
                 }
-                Assert.That(holdingPose,Is.True,$"Trip {trip} must leave a real bus holding pose outside its sweep.");
                 CityPortTruckPose crossing=cannery.TruckPose(cannery.Cycle.Sample(CanneryTime(cannery,starts[trip],0)+3d));
                 Assert.That(traffic.CanReserveAt(departure,crossing.RearAxle,crossing.Rotation,busBounds),Is.False,
                     "Reservation cannot be granted over a bus already occupying the truck corridor.");

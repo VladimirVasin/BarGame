@@ -200,6 +200,36 @@ namespace BarPromenade
             Rect.MinMaxRect(road.LaneMinX - 26f, road.GetLaneZ(CityHillsideStreetRoute.LaneCount - 1) - 28f,
                 road.LaneMaxX + 26f, -168f);
 
+        // One height recipe for physical ground vertices and early shelter placement.
+        internal static float SampleBuiltGround(CityLayout layout, CityHillsideStreetRoute road, Vector2 point,
+            IReadOnlyList<CityHillsideBuilding> houses)
+        {
+            float y = SampleBank(layout, road, point);
+            var projection = road.Path.Project(point);
+            if (projection.DistanceSquared < 49f)
+                y = Mathf.Min(y, road.Profile.SampleDistance(projection.DistanceAlong).Height - .18f);
+            for (int index = 0; index < houses.Count; index++)
+            {
+                var house = houses[index];
+                if (house.Bank != road.Bank) continue;
+                if (house.TrySampleApproach(point, out float apron))
+                {
+                    // The inner metre overlaps the existing pavement; recess the
+                    // apron there while matching the exact outer edge at five metres.
+                    float edgeZ = house.PavementEdgeZ;
+                    y = apron - .10f * Mathf.InverseLerp(edgeZ, house.StreetContactWorld.z, point.y);
+                    break;
+                }
+                Rect body = house.FoundationBounds;
+                float dx = Mathf.Max(0f, Mathf.Max(body.xMin - point.x, point.x - body.xMax));
+                float dz = Mathf.Max(0f, Mathf.Max(body.yMin - point.y, point.y - body.yMax));
+                float shoulder = Mathf.Max(dx, dz);
+                if (shoulder < 1.3f)
+                    y = Mathf.Lerp(house.DoorWorld.y - .10f, y, shoulder / 1.3f);
+            }
+            return y;
+        }
+
         // Interior of the hillside between two parallel streets. Level shoulders
         // meet sloping cross-banks in the sixteen metres between pavements.
         internal static float SampleBank(CityLayout layout, CityHillsideStreetRoute road, Vector2 p)

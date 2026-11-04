@@ -51,8 +51,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(cannery, Is.Not.Null);
             cannery.AutoAdvance = false;
             cannery.ForcePresentation = true;
-            city.BusPassengers.enabled = false;
-            city.Bus.enabled = false;
+            foreach (var passengerLine in city.LinePassengers) passengerLine.enabled = false;
+            foreach (var line in city.BusLines)
+            {
+                line.enabled = false;
+                line.Actor.ReleasePresentation(line.transform);
+            }
             CityPortController port = city.World.Root.GetComponentInChildren<CityPortController>();
             CityPortCrew crew = port.GetComponentInChildren<CityPortCrew>();
             port.AutoAdvance = false;
@@ -978,9 +982,7 @@ namespace BarPromenade.Tests.PlayMode
         private IEnumerator CaptureCanneryBusPassing(CityGameRoot city, CityCanneryController cannery,
             Camera camera, List<Exception> failures)
         {
-            CityBusActor bus = city.Bus.Actor;
-            CityBusPresentation presentation = city.Bus.GetComponentInChildren<CityBusPresentation>(true);
-            Assert.That(presentation, Is.Not.Null);
+            CityBusDirector meetingLine = null;
             double meeting = -1, bestTruckTime = -1;
             int meetingLink = -1, bestBusLink = -1;
             CityBusPathSample meetingSample = default;
@@ -997,9 +999,10 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3 forward = truck.Rotation * Vector3.forward;
                     if (Quaternion.Angle(truck.Rotation, cannery.TruckPose(cannery.Cycle.Sample(time - 2d)).Rotation) > 1f ||
                         Quaternion.Angle(truck.Rotation, cannery.TruckPose(cannery.Cycle.Sample(time + 2d)).Rotation) > 1f) continue;
-                    foreach (int index in city.BusPlan.OrderedLinkIndices)
+                    foreach (var line in city.BusLines)
+                    foreach (int index in line.Plan.OrderedLinkIndices)
                     {
-                        CityBusRouteLink link = city.BusPlan.Links[index];
+                        CityBusRouteLink link = line.Plan.Links[index];
                         if (link.Kind != CityBusRouteLinkKind.Straight) continue;
                         CityBusPathSample sample = link.Samples[link.Samples.Count / 2];
                         if (Vector3.Dot(forward, sample.Forward) > -.999f) continue;
@@ -1008,6 +1011,7 @@ namespace BarPromenade.Tests.PlayMode
                             Mathf.Abs(Mathf.Abs(Vector3.Dot(delta, truck.Rotation * Vector3.right)) - 3f) > .06f) continue;
                         if (link.Length <= bestScore) continue;
                         bestScore = link.Length;
+                        meetingLine = line;
                         meeting = time; meetingLink = index; meetingSample = sample; heading = forward;
                     }
                 }
@@ -1015,12 +1019,15 @@ namespace BarPromenade.Tests.PlayMode
             DeferCanneryContract(failures, "opposing lanes exist", () => Assert.That(meeting, Is.GreaterThan(0),
                 "A real shared street must carry opposite bus/truck routes with three metres between lane centres."));
             if (meetingLink < 0) yield break;
-            CityBusRouteLink entry = city.BusPlan.Links[meetingLink];
+            var bus = meetingLine.Actor;
+            var presentation = meetingLine.GetComponentInChildren<CityBusPresentation>(true);
+            Assert.That(presentation, Is.Not.Null);
+            CityBusRouteLink entry = meetingLine.Plan.Links[meetingLink];
             CityBusPathSample spawn = entry.Samples[0];
             foreach (CityBusPathSample sample in entry.Samples)
                 if (sample.Distance <= meetingSample.Distance - 4f) spawn = sample;
-            bus.PrepareSpawn(city.BusPlan, new CityBusSpawnAnchor("compact-passing", meetingLink, spawn.Distance,
-                spawn.Position, spawn.Forward, city.BusPlan.Nodes[entry.FromNodeIndex].RoadEdge), 0x50415353u);
+            bus.PrepareSpawn(meetingLine.Plan, new CityBusSpawnAnchor("compact-passing", meetingLink, spawn.Distance,
+                spawn.Position, spawn.Forward, meetingLine.Plan.Nodes[entry.FromNodeIndex].RoadEdge), 0x50415353u);
             bus.BindPresentation(presentation);
             MeshCollider truckBody = cannery.Truck.GetComponentInChildren<MeshCollider>();
             Assert.That(truckBody, Is.Not.Null);
@@ -1047,9 +1054,9 @@ namespace BarPromenade.Tests.PlayMode
                 if (distance < closest)
                 {
                     closest = distance; bestTruckTime = working; bestBusLink = bus.CurrentLinkIndex;
-                    CityBusRouteLink current = city.BusPlan.Links[bestBusLink];
+                    CityBusRouteLink current = meetingLine.Plan.Links[bestBusLink];
                     bestBus = new CityBusSpawnAnchor("compact-abreast", bestBusLink, bus.DistanceAlongLink,
-                        bus.Position, bus.TravelDirection, city.BusPlan.Nodes[current.FromNodeIndex].RoadEdge);
+                        bus.Position, bus.TravelDirection, meetingLine.Plan.Nodes[current.FromNodeIndex].RoadEdge);
                 }
                 if (distance < 4f && truckClear && bus.Speed > .3f) metWhileMoving = true;
                 if (metWhileMoving && Vector3.Dot(delta, heading) < -12f &&
@@ -1066,16 +1073,16 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(Vector3.Distance(truckStart, cannery.Truck.position), Is.GreaterThan(8f));
             });
             Debug.Log($"CANNERY BUS PASS: closest={closest:F3}, moving={metWhileMoving}, passed={passed}, penetration={penetration}, waits={truckWaits}, link={meetingLink}");
-            bus.ReleasePresentation(city.Bus.transform);
+            bus.ReleasePresentation(meetingLine.transform);
             if (bestBus != null)
             {
-                bus.PrepareSpawn(city.BusPlan, bestBus, 0x50415353u);
+                bus.PrepareSpawn(meetingLine.Plan, bestBus, 0x50415353u);
                 bus.BindPresentation(presentation);
                 cannery.ApplyAt(bestTruckTime);
                 yield return CaptureCannery(camera, city, cannery, bestTruckTime, "driver-05-bus-passing",
                     cannery.Truck.TransformPoint(new Vector3(-1.5f, 5.2f, 10.5f)),
                     (cannery.Truck.position + bus.Position) * .5f + Vector3.up * 1.2f);
-                bus.ReleasePresentation(city.Bus.transform);
+                bus.ReleasePresentation(meetingLine.transform);
             }
             cannery.Traffic.Release();
         }

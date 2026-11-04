@@ -440,9 +440,8 @@ namespace BarPromenade
             internal readonly List<Rect> Furniture = new List<Rect>();
             internal ClearanceContext(CityLayout layout)
             {
-                CityBusPlan bus=CityBusPlanner.CreateRoadRouting(layout);
-                for(int stop=0;stop<bus.Stops.Count;stop++)
-                    Furniture.Add(CityBusStopWorldBuilder.DescribeFurnitureFootprint(bus.Stops[stop]));
+                foreach (Rect footprint in CityBusNetworkFurniture.Reservations(CityDistrictBusPlanner.CreateRoadRouting(layout), layout))
+                    Furniture.Add(footprint);
                 for (int i = 0; i < layout.BuildingMasses.Count; i++)
                 {
                     BuildingLot lot = layout.BuildingMasses[i];

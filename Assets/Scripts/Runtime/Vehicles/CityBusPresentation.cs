@@ -20,7 +20,10 @@ namespace BarPromenade
         private const float MinimumWiperHertz = 0.35f;
         private const float MaximumWiperHertz = 1.15f;
         private const float WiperParkDegreesPerSecond = 110f;
-        private const float MinimumGlassRainIntensity = 0.02f;
+        // Weather blends between slots. Runoff begins only on the heavy side
+        // of that blend; the wipers still use the actual rain even in drizzle.
+        private const float GlassRunoffThreshold =
+            (GameWeatherRules.LightRainIntensity + GameWeatherRules.HeavyRainIntensity) * .5f;
         private const string GlassRainShaderName =
             "Bar Promenade/City Bus Glass Rain";
 
@@ -49,6 +52,8 @@ namespace BarPromenade
             Shader.PropertyToID("_EmissionColor");
         private static readonly int RainIntensityId =
             Shader.PropertyToID("_RainIntensity");
+        private static readonly int RunoffIntensityId =
+            Shader.PropertyToID("_RunoffIntensity");
         private static readonly int WiperAId =
             Shader.PropertyToID("_WiperA");
         private static readonly int WiperBId =
@@ -168,6 +173,102 @@ namespace BarPromenade
             CreateGlassRainOverlays();
             IsInitialized = true;
             ResetForPool();
+        }
+
+        // Numerals on the front destination box, both bodysides and the rear cap.
+        // Their anchors stay on the sprung body. A pool cycle never rebuilds a sign.
+        private readonly TMPro.TextMeshPro[] routeLabels = new TMPro.TextMeshPro[4];
+        private int displayedRouteNumber;
+        internal IReadOnlyList<TMPro.TextMeshPro> RouteLabels => routeLabels;
+
+        public void SetRouteNumber(int number)
+        {
+            if (number < 1 || number > 3) throw new ArgumentOutOfRangeException(nameof(number));
+            if (displayedRouteNumber == number) return;
+            bool first = displayedRouteNumber == 0;
+            string digits = number.ToString("00");
+            if (first) BuildRouteLabels(digits);
+            for (int i = 0; i < routeLabels.Length; i++)
+            {
+                var label = routeLabels[i];
+                var frame = label.transform;
+                Vector3 centre = first ? frame.position : frame.TransformPoint(BoundsForFace(label, i).center);
+                label.text = digits;
+                label.fontSize = 8f;
+                label.ForceMeshUpdate(ignoreActiveState: true);
+                float targetHeight = i == 0 ? .26f : .48f;
+                float height = frame.TransformVector(Vector3.up * BoundsForFace(label, i).size.y).magnitude;
+                if (height < .001f) throw new InvalidOperationException("The city bus route number has no visible glyphs.");
+                label.fontSize *= targetHeight / height;
+                label.ForceMeshUpdate(ignoreActiveState: true);
+                frame.position += centre - frame.TransformPoint(BoundsForFace(label, i).center);
+            }
+            displayedRouteNumber = number;
+        }
+
+        // TMP textBounds includes the font's ascenders and descenders. On the
+        // narrow front display, fit the actual ink to two thirds of its 38 cm face.
+        private static Bounds BoundsForFace(TMPro.TextMeshPro label, int face) =>
+            face == 0 ? DigitInkBounds(label) : label.textBounds;
+
+        internal static Bounds DigitInkBounds(TMPro.TextMeshPro label)
+        {
+            Bounds bounds = new Bounds();
+            bool first = true;
+            for (int i = 0; i < label.textInfo.characterCount; i++)
+            {
+                var c = label.textInfo.characterInfo[i];
+                if (!c.isVisible) continue;
+                var metrics = c.textElement.glyph.metrics;
+                Vector3 upperLeft = new Vector3(c.origin + metrics.horizontalBearingX * c.scale,
+                    c.baseLine + metrics.horizontalBearingY * c.scale, 0f);
+                Vector3 lowerRight = upperLeft + new Vector3(metrics.width, -metrics.height, 0f) * c.scale;
+                if (first) { bounds = new Bounds(upperLeft, Vector3.zero); first = false; }
+                bounds.Encapsulate(upperLeft);
+                bounds.Encapsulate(lowerRight);
+            }
+            return bounds;
+        }
+
+        private void BuildRouteLabels(string digits)
+        {
+            Renderer destination = null;
+            foreach (var binding in registry.RendererBindings)
+                if (binding.MaterialSlot == CityBusMaterialSlot.Destination) { destination = binding.Renderer; break; }
+            if (destination == null) throw new InvalidOperationException("The imported bus is missing its destination panel.");
+
+            // The model's 1.48 m display sits in a 0.42 m tall solid header.
+            // Grow only its height about its measured centre, clear of the glass.
+            var panel = destination.transform;
+            var mount = new GameObject("Front route display").transform;
+            mount.SetPositionAndRotation(panel.TransformPoint(destination.localBounds.center), transform.rotation);
+            mount.SetParent(panel.parent, true);
+            panel.SetParent(mount, true);
+            var scale = mount.localScale;
+            scale.y *= .38f / .27f;
+            mount.localScale = scale;
+
+            Color32 cream = new Color32(247, 235, 205, 255);
+            routeLabels[0] = Create("Route number - front", mount.position + transform.forward * .019f,
+                transform.forward, new Vector2(1.3f, .36f), new Color32(19, 20, 19, 255));
+            // The door and wheel openings end outside this solid bay; the painted
+            // accent starts at 1.38 m. The back number is above the bumper, between lamps.
+            routeLabels[1] = Create("Route number - doors", transform.TransformPoint(new Vector3(1.201f, 1.04f, .70f)),
+                transform.right, new Vector2(1f, .56f), cream);
+            routeLabels[2] = Create("Route number - rear", transform.TransformPoint(new Vector3(0f, 1.32f, -4.133f)),
+                -transform.forward, new Vector2(1f, .56f), cream);
+            routeLabels[3] = Create("Route number - left", transform.TransformPoint(new Vector3(-1.201f, 1.04f, .70f)),
+                -transform.right, new Vector2(1f, .56f), cream);
+
+            TMPro.TextMeshPro Create(string name, Vector3 centre, Vector3 facing, Vector2 size, Color32 ink)
+            {
+                var label = CityBusPlateLettering.Create(registry.Body, centre, facing, transform.up, digits, size, ink);
+                label.gameObject.name = name;
+                label.enableAutoSizing = false;
+                label.fontStyle = TMPro.FontStyles.Bold;
+                label.overflowMode = TMPro.TextOverflowModes.Overflow;
+                return label;
+            }
         }
 
         public void AttachDriver(CityBusDriverAssetRegistry driverRegistry)
@@ -735,8 +836,7 @@ namespace BarPromenade
         /// Pushes the droplet state for this frame: intensity plus the
         /// wipe mask that trails the visible blades, so the drops
         /// vanish exactly where a blade has just squeegeed and regrow
-        /// toward its return stroke. Dry glass turns the overlays off
-        /// entirely.
+        /// toward its return stroke. Light rain leaves beads; only heavy rain runs.
         /// </summary>
         private void ApplyGlassRain()
         {
@@ -745,10 +845,7 @@ namespace BarPromenade
                 return;
             }
 
-            float intensity =
-                RainIntensity < MinimumGlassRainIntensity
-                    ? 0f
-                    : RainIntensity;
+            float intensity = RainIntensity;
             if (intensity <= 0f)
             {
                 if (Mathf.Approximately(appliedGlassRainIntensity, 0f))
@@ -771,6 +868,7 @@ namespace BarPromenade
             }
 
             appliedGlassRainIntensity = intensity;
+            float runoff = Mathf.InverseLerp(GlassRunoffThreshold, GameWeatherRules.HeavyRainIntensity, intensity);
             Vector3 busForward = transform.forward;
             Vector3 acrossAxis = Vector3.Cross(
                 busForward,
@@ -825,6 +923,7 @@ namespace BarPromenade
                 MaterialPropertyBlock properties =
                     glassRainOverlayProperties[index];
                 properties.SetFloat(RainIntensityId, intensity);
+                properties.SetFloat(RunoffIntensityId, runoff);
                 properties.SetVector(WiperMaskId, mask);
                 if (wiping)
                 {

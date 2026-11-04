@@ -54,6 +54,9 @@ namespace BarPromenade
         internal static Color StreetLampColor => StreetLightColor;
 
         private Transform player;
+        private Transform[] busStopPoles = Array.Empty<Transform>();
+        private const float PlateFadeStart = 15f, PlateFadeEnd = 28f;
+        private static readonly Color PlateLampColor = new Color(1f, .89f, .73f);
         private Transform[] lampAnchors = Array.Empty<Transform>();
         private CityFringePracticalAnchor[] practicalAnchors =
             Array.Empty<CityFringePracticalAnchor>();
@@ -116,7 +119,7 @@ namespace BarPromenade
             IReadOnlyList<Vector3> barLightPositions,
             IReadOnlyList<CityFringePracticalAnchor>
                 fringePracticalAnchors = null,
-            IReadOnlyList<Transform> quayLampAnchors = null)
+            IReadOnlyList<Transform> quayLampAnchors = null, Transform busStops = null)
         {
             player = playerTransform != null
                 ? playerTransform
@@ -218,8 +221,13 @@ namespace BarPromenade
                     out barLightHalos[index]);
             }
 
+            if (busStops != null)
+            {
+                busStopPoles = new Transform[busStops.childCount];
+                for (int i = 0; i < busStopPoles.Length; i++) busStopPoles[i] = busStops.GetChild(i);
+            }
             int streetLightCount = Mathf.Min(
-                lampAnchors.Length,
+                lampAnchors.Length + (busStopPoles.Length > 0 ? 2 : 0),
                 MaximumRealtimeLights - barLightCount);
             streetLightPool = new Light[streetLightCount];
             streetLightHalos = new CityLightHalo[streetLightCount];
@@ -392,6 +400,9 @@ namespace BarPromenade
                 streetLightPool.Length > 0;
             int streetSlotCount = streetLightPool.Length -
                                   (IsPracticalSlotLeased ? 1 : 0);
+            Transform pole = FindNearestPlate(playerPosition, out float plateStrength);
+            int plateSlots = pole != null ? Mathf.Min(2, streetSlotCount) : 0;
+            streetSlotCount -= plateSlots;
 
             if (nightVisible)
             {
@@ -420,6 +431,14 @@ namespace BarPromenade
                     AssignPracticalLight(
                         index,
                         practicalAnchors[activePracticalIndex]);
+                    continue;
+                }
+
+                if (index >= streetSlotCount && index < streetSlotCount + plateSlots)
+                {
+                    int side = index == streetSlotCount ? 1 : -1;
+                    AssignPlateLight(index, pole, side, plateStrength);
+                    AssignedStreetLightCount++;
                     continue;
                 }
 
@@ -472,6 +491,37 @@ namespace BarPromenade
             lastAssignmentPosition = playerPosition;
             nextReassignmentTime = now + ReassignmentInterval;
             ReassignmentCount++;
+        }
+
+        private Transform FindNearestPlate(Vector3 focus, out float strength)
+        {
+            Transform nearest = null;
+            float best = PlateFadeEnd * PlateFadeEnd;
+            foreach (Transform pole in busStopPoles)
+            {
+                if (pole == null || !pole.gameObject.activeInHierarchy) continue;
+                float distance = (pole.position - focus).sqrMagnitude;
+                if (distance >= best) continue;
+                best = distance;
+                nearest = pole;
+            }
+            strength = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(PlateFadeStart, PlateFadeEnd, Mathf.Sqrt(best)));
+            return nearest;
+        }
+
+        private void AssignPlateLight(int slot, Transform pole, int side, float strength)
+        {
+            // Two grazing beams from the top rim, one per face. Reuse street slots
+            // only within reading distance, with no shadow map or fog halo.
+            Vector3 face = pole.TransformPoint(new Vector3(0f, 2.18f, .101f * side));
+            Vector3 source = face + pole.up * .31f + pole.forward * (.22f * side);
+            ApplyPooledLightProfile(slot, PlateLampColor, .16f * strength, .95f, 124f, 82f,
+                .1f, .2f, Color.clear, Color.clear);
+            var light = streetLightPool[slot];
+            light.transform.SetPositionAndRotation(source, Quaternion.LookRotation(face - source, pole.up));
+            light.enabled = true;
+            pooledHaloVisible[slot] = false;
+            streetLightHalos[slot].SetVisible(false);
         }
 
         private void InsertNearest(

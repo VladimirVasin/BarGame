@@ -126,7 +126,7 @@ namespace BarPromenade
                 fringeYardPlan,
                 settings,
                 seacoastPlan != null,
-                DescribeBoundaryStreetFurniture(layout, decorationPlan),
+                DescribeBoundaryStreetFurniture(layout),
                 out GameObject parkLawn,
                 out CityCemeteryGroundExcavation cemeteryExcavation);
             ReportBlock("ground", blockTimer);
@@ -521,20 +521,9 @@ namespace BarPromenade
         /// physical, so asking for the plan this early is safe and the
         /// memo hands the same instance to the stop builder later.
         /// </summary>
-        private static IReadOnlyList<Rect> DescribeBoundaryStreetFurniture(
-            CityLayout layout,
-            CityDecorationPlan decorationPlan)
+        private static IReadOnlyList<Rect> DescribeBoundaryStreetFurniture(CityLayout layout)
         {
-            CityBusPlan busPlan = CityBusPlanner.Create(layout, decorationPlan);
-            var footprints = new List<Rect>(busPlan.Stops.Count);
-            for (int index = 0; index < busPlan.Stops.Count; index++)
-            {
-                footprints.Add(
-                    CityBusStopWorldBuilder.DescribeFurnitureFootprint(
-                        busPlan.Stops[index]));
-            }
-
-            return footprints;
+            return new List<Rect>(CityBusNetworkFurniture.Reservations(CityDistrictBusPlanner.Create(layout), layout));
         }
 
         private static Bounds BuildGround(
@@ -1194,6 +1183,21 @@ namespace BarPromenade
             Transform parent,
             CityParkPlan plan)
         {
+            List<Bounds> hedges = DescribeParkHedges(plan);
+            BuildParkSurfaceBoxesIfAny(
+                "Park Boundary Hedges",
+                parent,
+                hedges,
+                CityParkSurfaceKind.Foliage,
+                ParkHedge);
+            CityStaticCollisionBuilder.AddColliderGroup(
+                parent,
+                "Park Hedge Colliders",
+                hedges);
+        }
+
+        internal static List<Bounds> DescribeParkHedges(CityParkPlan plan)
+        {
             var hedges = new List<Bounds>(plan.Regions.Count * 8);
             for (int index = 0; index < plan.Regions.Count; index++)
             {
@@ -1237,16 +1241,7 @@ namespace BarPromenade
                     region.Center.y);
             }
 
-            BuildParkSurfaceBoxesIfAny(
-                "Park Boundary Hedges",
-                parent,
-                hedges,
-                CityParkSurfaceKind.Foliage,
-                ParkHedge);
-            CityStaticCollisionBuilder.AddColliderGroup(
-                parent,
-                "Park Hedge Colliders",
-                hedges);
+            return hedges;
         }
 
         private static void AddHorizontalBoundaryParts(

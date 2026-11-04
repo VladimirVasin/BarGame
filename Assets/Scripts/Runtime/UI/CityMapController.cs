@@ -311,11 +311,43 @@ namespace BarPromenade
             CityMountainBoundaryPlan mountainBoundaryPlan = null,
             CitySeacoastPlan seacoastPlan = null)
         {
+            InitializeWithOverlay(layout, playerRuntime, follow, hud, CityMapBusOverlayBuilder.Create(busPlan),
+                mountainBoundaryPlan, seacoastPlan);
+        }
+
+        public void InitializeNetwork(CityLayout layout, PlayerRuntime playerRuntime, PlayerCameraFollow follow,
+            IntoxicationHudView hud, IReadOnlyList<CityBusPlan> plans, CityMountainBoundaryPlan mountainBoundaryPlan = null,
+            CitySeacoastPlan seacoastPlan = null)
+        {
+            InitializeWithOverlay(layout, playerRuntime, follow, hud, CityMapBusOverlayBuilder.CreateNetwork(plans, layout),
+                mountainBoundaryPlan, seacoastPlan);
+        }
+
+        // Foreign-area scenes defer these routes until the player opens the City tab.
+        private bool loadBusNetworkOnCityTab;
+
+        internal void DeferCityBusNetwork() => loadBusNetworkOnCityTab = true;
+
+        private void LoadDeferredCityBusNetwork()
+        {
+            if (!loadBusNetworkOnCityTab) return;
+            BusOverlay = CityMapBusOverlayBuilder.CreateNetwork(CityDistrictBusPlanner.Create(Layout), Layout);
+            busStopLabelCache = null;
+            RebuildMapPointCatalogs();
+            View.Initialize(this);
+            loadBusNetworkOnCityTab = false;
+        }
+
+        private void InitializeWithOverlay(CityLayout layout, PlayerRuntime playerRuntime, PlayerCameraFollow follow,
+            IntoxicationHudView hud, CityMapBusOverlay overlay, CityMountainBoundaryPlan mountainBoundaryPlan,
+            CitySeacoastPlan seacoastPlan)
+        {
             Layout = layout ?? throw new ArgumentNullException(nameof(layout));
             player = playerRuntime;
             cameraFollow = follow;
             intoxicationHud = hud;
-            BusOverlay = CityMapBusOverlayBuilder.Create(busPlan);
+            BusOverlay = overlay;
+            loadBusNetworkOnCityTab = false;
             areaRegions = CityMapAreaOverlayBuilder.Create(Layout);
             CollectMapAreaTargets();
             SeacoastPlan = seacoastPlan;
@@ -361,12 +393,7 @@ namespace BarPromenade
                 GameLog.Field(
                     "point_of_interest_count",
                     pointsOfInterest.Count),
-                GameLog.Field(
-                    "bus_route_id",
-                    BusOverlay.RouteId),
-                GameLog.Field(
-                    "bus_route_point_count",
-                    BusOverlay.RoutePoints.Count),
+                GameLog.Field("bus_route_count", BusOverlay.Lines.Count),
                 GameLog.Field(
                     "bus_stop_count",
                     BusOverlay.Stops.Count));
@@ -641,23 +668,11 @@ namespace BarPromenade
         {
             CityMapBusStopMarker marker =
                 BusOverlay.Stops[busStopIndex];
-            if (!string.IsNullOrWhiteSpace(
-                    marker.LabelLocalizationKey))
-            {
-                string localized = LocalizationService.Get(
-                    marker.LabelLocalizationKey);
-                if (!string.Equals(
-                        localized,
-                        marker.LabelLocalizationKey,
-                        StringComparison.Ordinal))
-                {
-                    return localized;
-                }
-            }
-
-            return string.Format(
-                LocalizationService.Get("map.bus.stop"),
-                marker.Ordinal);
+            string label = string.IsNullOrEmpty(marker.LabelLocalizationKey) ? string.Empty :
+                LocalizationService.Get(marker.LabelLocalizationKey);
+            return string.IsNullOrEmpty(label) || label == marker.LabelLocalizationKey
+                ? marker.Label.DescriptionPrefix
+                : $"{marker.Label.DescriptionPrefix} · {label}";
         }
 
         public string GetMapObjectLabel(int mapObjectIndex)

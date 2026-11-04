@@ -33,9 +33,10 @@ namespace BarPromenade
             int trip = TripIndex(snapshot.Stage);
             if (trip < 0) { Release(); return true; }
             CreateSweep(snapshot, candidate);
-            CityBusActor bus = director != null ? director.Actor : null;
-            if (bus != null && bus.IsSpawned)
+            for (int i = 0; director != null && i < director.LineCount; i++)
             {
+                CityBusActor bus = director.GetLine(i).Actor;
+                if (bus == null || !bus.HasRoutePhase) continue;
                 // The bus owns space it already occupies. A moving bus also
                 // keeps its emergency stopping corridor. A stopped bus can
                 // wait at the boundary while the truck clears the crossing.

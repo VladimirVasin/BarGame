@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
+using UnityEngine.Rendering;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
@@ -34,6 +36,8 @@ namespace BarPromenade
             new Color32(91, 143, 209, 255);
         private static readonly Color PlateInsetColor =
             new Color32(202, 218, 220, 255);
+        private static readonly Color StopPlateEnamel = new Color32(30, 51, 69, 255);
+        private static readonly Color StopPlateInk = new Color32(249, 244, 223, 255);
         private static readonly Color ShelterPanelColor =
             new Color32(63, 70, 74, 255);
         private static readonly Color ShelterRoofColor =
@@ -45,36 +49,29 @@ namespace BarPromenade
             Transform parent,
             CityBusPlan plan)
         {
-            if (parent == null)
-            {
-                throw new ArgumentNullException(nameof(parent));
-            }
+            if (plan == null) throw new ArgumentNullException(nameof(plan));
+            return Build(parent, new[] { plan });
+        }
 
-            if (plan == null)
-            {
-                throw new ArgumentNullException(nameof(plan));
-            }
-
+        public static GameObject Build(Transform parent, IReadOnlyList<CityBusPlan> plans)
+        {
+            if (parent == null) throw new ArgumentNullException(nameof(parent));
+            if (plans == null) throw new ArgumentNullException(nameof(plans));
             Stopwatch timer = Stopwatch.StartNew();
             Transform root = new GameObject("City Bus Stops").transform;
             root.SetParent(parent, false);
             CityMiscAssetProvider miscProvider =
                 CityMiscAssetProvider.Load();
-            for (int index = 0; index < plan.Stops.Count; index++)
-            {
-                CityBusStopDescriptor stop = plan.Stops[index];
-                BuildStop(
-                    root,
-                    stop,
-                    miscProvider);
-            }
+            foreach (var platform in CityBusNetworkFurniture.Platforms(plans))
+                BuildStop(root, platform.stop, miscProvider, new CityBusStopLabel(platform.line.Number,
+                    platform.ordinal, platform.stop.TransferNumber, platform.transferOrdinal, platform.shared));
 
             // One row for the whole roster: every shelter combines the
             // imported pole and shell parts into meshes of its own.
             CityBusPlanner.ReportPhase(
                 "stop_world",
                 timer,
-                GameLog.Field("stops", plan.Stops.Count),
+                GameLog.Field("stops", root.childCount),
                 GameLog.Field("imported", miscProvider != null));
             return root.gameObject;
         }
@@ -82,7 +79,7 @@ namespace BarPromenade
         private static GameObject BuildStop(
             Transform parent,
             CityBusStopDescriptor stop,
-            CityMiscAssetProvider miscProvider)
+            CityMiscAssetProvider miscProvider, CityBusStopLabel label)
         {
             Transform root = CreateStopRoot(parent, stop);
             root.SetPositionAndRotation(
@@ -90,7 +87,7 @@ namespace BarPromenade
                 ResolveRotation(
                     stop.Forward,
                     stop.RoadsideForward));
-            BuildStopVisual(root, true, miscProvider);
+            BuildStopVisual(root, true, miscProvider, label);
             return root.gameObject;
         }
 
@@ -100,7 +97,7 @@ namespace BarPromenade
             Vector3 localShelterPosition,
             Vector3 localRouteForward,
             Vector3 localRoadsideForward,
-            bool collider)
+            bool collider, int routeNumber)
         {
             Transform root = CreateStopRoot(parent, stop);
             root.localPosition = localShelterPosition;
@@ -110,7 +107,7 @@ namespace BarPromenade
             BuildStopVisual(
                 root,
                 collider,
-                CityMiscAssetProvider.Load());
+                CityMiscAssetProvider.Load(), new CityBusStopLabel(routeNumber, stop.SequenceIndex + 1, stop.TransferNumber));
             return root.gameObject;
         }
 
@@ -210,34 +207,27 @@ namespace BarPromenade
         private static void BuildStopVisual(
             Transform root,
             bool collider,
-            CityMiscAssetProvider miscProvider)
+            CityMiscAssetProvider miscProvider, CityBusStopLabel label)
         {
-            bool importedPole = BuildPole(
-                root,
-                collider,
-                miscProvider);
+            bool importedPole = BuildPole(root, collider, miscProvider);
             BuildShelter(root, collider, miscProvider);
-            if (importedPole)
+            // The old imported digits are geometry. Pull its enamel insert beyond
+            // the raised strokes and face each inscription toward its own reader.
+            foreach (int side in PlateSides)
             {
-                return;
+                Vector3 normal = root.forward * side;
+                CityBusPlateLettering.Create(root, root.TransformPoint(new Vector3(0f, 2.18f, .101f * side)),
+                    normal, root.up, label.PlateText, new Vector2(.57f, .35f), StopPlateInk);
             }
-
-            RuntimePrimitiveFactory.CreateBox(
-                "Route Plate",
-                root,
-                new Vector3(0f, 2.18f, 0f),
-                new Vector3(0.76f, 0.56f, 0.10f),
-                RouteColor,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Route Plate Inset",
-                root,
-                new Vector3(0f, 2.18f, 0.056f),
-                new Vector3(0.58f, 0.38f, 0.025f),
-                PlateInsetColor,
-                false);
-            BuildRouteNumber(root);
+            if (importedPole) return;
+            RuntimePrimitiveFactory.CreateBox("Route Plate", root, new Vector3(0f, 2.18f, 0f),
+                new Vector3(.76f, .56f, .10f), RouteColor, false);
+            foreach (int side in PlateSides)
+                RuntimePrimitiveFactory.CreateBox("Route Plate Inset", root, new Vector3(0f, 2.18f, .085f * side),
+                    new Vector3(.58f, .38f, .025f), StopPlateEnamel, false);
         }
+
+        private static readonly int[] PlateSides = { 1, -1 };
 
         /// <summary>
         /// The waiting shelter, adapted from the retired roadside
@@ -351,7 +341,7 @@ namespace BarPromenade
                     CityMiscKind.Route01PoleShell,
                     Vector3.zero,
                     "Imported Route 01 Pole Shell",
-                    ResolvePolePartColor))
+                    ResolvePolePartColor, true))
             {
                 if (collider)
                 {
@@ -383,7 +373,7 @@ namespace BarPromenade
                 case CityMiscMeshRole.Street:
                     return RouteColor;
                 case CityMiscMeshRole.Residential:
-                    return PlateInsetColor;
+                    return StopPlateEnamel;
                 default:
                     return PoleColor;
             }
@@ -440,7 +430,7 @@ namespace BarPromenade
             CityMiscKind kind,
             Vector3 localPosition,
             string name,
-            Func<CityMiscMeshRole, Color> resolveColor)
+            Func<CityMiscMeshRole, Color> resolveColor, bool coverBakedDigits = false)
         {
             if (provider == null ||
                 !CityMiscAssetProvider.Supports(kind))
@@ -485,17 +475,12 @@ namespace BarPromenade
             for (int index = 0; index < parts.Count; index++)
             {
                 CityMiscMeshPart part = parts[index];
-                RuntimePrimitiveFactory.CreateCombinedMeshes(
-                    $"{name} {part.Role}",
-                    root,
-                    new[]
-                    {
-                        new RuntimeMeshPlacement(
-                            part.Mesh,
-                            localPosition,
-                            Quaternion.identity)
-                    },
-                    resolveColor(part.Role));
+                var placements = coverBakedDigits && part.Role == CityMiscMeshRole.Residential
+                    ? new[] {
+                        new RuntimeMeshPlacement(part.Mesh, localPosition + Vector3.forward * .03f, Quaternion.identity),
+                        new RuntimeMeshPlacement(part.Mesh, localPosition + Vector3.back * .03f, Quaternion.Euler(0f, 180f, 0f)) }
+                    : new[] { new RuntimeMeshPlacement(part.Mesh, localPosition, Quaternion.identity) };
+                RuntimePrimitiveFactory.CreateCombinedMeshes($"{name} {part.Role}", root, placements, resolveColor(part.Role));
             }
 
             return true;
@@ -518,49 +503,30 @@ namespace BarPromenade
             }
         }
 
-        private static void BuildRouteNumber(Transform parent)
-        {
-            const float z = 0.075f;
-            CreateDigitStroke(
-                "Zero Top",
-                parent,
-                new Vector3(-0.16f, 2.30f, z),
-                new Vector3(0.18f, 0.045f, 0.018f));
-            CreateDigitStroke(
-                "Zero Bottom",
-                parent,
-                new Vector3(-0.16f, 2.06f, z),
-                new Vector3(0.18f, 0.045f, 0.018f));
-            CreateDigitStroke(
-                "Zero Left",
-                parent,
-                new Vector3(-0.25f, 2.18f, z),
-                new Vector3(0.045f, 0.28f, 0.018f));
-            CreateDigitStroke(
-                "Zero Right",
-                parent,
-                new Vector3(-0.07f, 2.18f, z),
-                new Vector3(0.045f, 0.28f, 0.018f));
-            CreateDigitStroke(
-                "One",
-                parent,
-                new Vector3(0.18f, 2.18f, z),
-                new Vector3(0.05f, 0.30f, 0.018f));
-        }
+    }
 
-        private static void CreateDigitStroke(
-            string name,
-            Transform parent,
-            Vector3 position,
-            Vector3 size)
+    internal static class CityBusPlateLettering
+    {
+        internal static TextMeshPro Create(Transform parent, Vector3 center, Vector3 facing, Vector3 up,
+            string number, Vector2 size, Color ink)
         {
-            RuntimePrimitiveFactory.CreateBox(
-                name,
-                parent,
-                position,
-                size,
-                PoleColor,
-                false);
+            var host = new GameObject("Route Number", typeof(RectTransform));
+            Transform frame = host.transform;
+            frame.SetPositionAndRotation(center, Quaternion.LookRotation(-facing, up));
+            // Imported bus meshes keep their FBX scale. Size the letters in world metres.
+            frame.SetParent(parent, true);
+            TextMeshPro label = host.AddComponent<TextMeshPro>();
+            label.font = CemeteryPlaqueFont.Get();
+            label.alignment = TextAlignmentOptions.Center;
+            label.color = ink;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.enableAutoSizing = true;
+            label.fontSizeMin = .6f;
+            label.fontSizeMax = 3.8f;
+            label.rectTransform.sizeDelta = size;
+            label.text = number;
+            label.renderer.shadowCastingMode = ShadowCastingMode.Off;
+            return label;
         }
     }
 }

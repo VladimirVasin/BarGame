@@ -1207,16 +1207,15 @@ namespace BarPromenade.Tests.PlayMode
 
             private void BusStops()
             {
-                if (city.BusPlan == null)
+                if (city.BusPlans == null)
                 {
                     Skip("bus stops");
                     return;
                 }
 
-                IReadOnlyList<CityBusStopDescriptor> stops = city.BusPlan.Stops;
-                for (int index = 0; index < stops.Count; index++)
+                int index = 0;
+                foreach (CityBusStopDescriptor stop in CityBusNetworkFurniture.Stops(city.BusPlans))
                 {
-                    CityBusStopDescriptor stop = stops[index];
                     Vector3 forward = stop.Forward;
                     forward.y = 0f;
                     if (forward.sqrMagnitude < 0.001f)
@@ -1227,7 +1226,7 @@ namespace BarPromenade.Tests.PlayMode
                     forward.Normalize();
                     Vector3 target = (stop.HasMappedShelter ? stop.ShelterPosition : stop.Position)
                         + Vector3.up * 1.2f;
-                    Add("busstop-" + AuditInt(index), stop.Position - forward * 8f, target, true);
+                    Add("busstop-" + AuditInt(index++), stop.Position - forward * 8f, target, true);
                 }
             }
 
@@ -2613,7 +2612,7 @@ namespace BarPromenade.Tests.PlayMode
             private readonly bool cloudsVisible;
             private readonly bool fogFieldActive;
             private readonly bool pedestriansEnabled;
-            private readonly bool busEnabled;
+            private readonly bool[] busEnabled;
             private readonly bool smokersEnabled;
             private readonly bool followEnabled;
             private readonly bool postProcessing;
@@ -2720,10 +2719,14 @@ namespace BarPromenade.Tests.PlayMode
                     city.Pedestrians.enabled = false;
                 }
 
-                if (city.Bus != null)
+                if (city.BusLines != null)
                 {
-                    busEnabled = city.Bus.enabled;
-                    city.Bus.enabled = false;
+                    busEnabled = new bool[city.BusLines.Count];
+                    for (int i = 0; i < busEnabled.Length; i++)
+                    {
+                        busEnabled[i] = city.BusLines[i].enabled;
+                        city.BusLines[i].enabled = false;
+                    }
                 }
 
                 if (city.BalconySmokers != null)
@@ -3032,7 +3035,8 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     Time.captureDeltaTime = savedCaptureDelta;
                     if (city.BalconySmokers != null) city.BalconySmokers.enabled = smokersEnabled;
-                    if (city.Bus != null) city.Bus.enabled = busEnabled;
+                    if (busEnabled != null)
+                        for (int i = 0; i < busEnabled.Length; i++) city.BusLines[i].enabled = busEnabled[i];
                     if (city.Pedestrians != null) city.Pedestrians.enabled = pedestriansEnabled;
                 });
                 Step(() =>

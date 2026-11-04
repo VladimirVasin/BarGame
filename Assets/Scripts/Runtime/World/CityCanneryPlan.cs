@@ -38,7 +38,7 @@ namespace BarPromenade
             CityDistrictPointOfInterestAccessDescriptor best = descriptor.Accesses[0];
             float groundDatum = ResolveGroundDatum(layout, descriptor);
             HashSet<RoadEdge> busRoads = layout.BlueprintId == CityBlueprintCatalog.DefaultBlueprintId
-                ? CityBusPlanner.ServiceRoadEdges(CityBusPlanner.CreateRoadRouting(layout))
+                ? CityBusNetworkFurniture.ServiceRoads(CityDistrictBusPlanner.CreateRoadRouting(layout))
                 : new HashSet<RoadEdge>();
             float minimumRise = float.PositiveInfinity;
             foreach (CityDistrictPointOfInterestAccessDescriptor access in descriptor.Accesses)

@@ -77,7 +77,7 @@ namespace BarPromenade
         private CameraPhase cameraPhase;
         private Vector3 doorTriggerBusPosition;
         private Quaternion doorTriggerBusRotation;
-        private bool hasDoorTriggerPose;
+        private CityBusStopDescriptor doorTriggerStop;
         private Vector3 cameraBlendStartPosition;
         private Quaternion cameraBlendStartRotation;
         private float cameraBlendStartFieldOfView;
@@ -185,7 +185,8 @@ namespace BarPromenade
 
         public string PromptKey => State == CityBusRideState.Riding
             ? ExitPromptKey
-            : BoardPromptKey;
+            : director?.Plan.Number == 2 ? "interaction.board_bus.02"
+            : director?.Plan.Number == 3 ? "interaction.board_bus.03" : BoardPromptKey;
         public Vector3 InteractionPosition
         {
             get
@@ -345,7 +346,6 @@ namespace BarPromenade
             seatTriggerObject = CreateTrigger("Passenger Seat Interaction");
             RefreshTriggers();
             IsInitialized = true;
-            player.GameObject.GetComponent<PlayerVodkaBottleController>()?.BindBusRide(this);
         }
 
         public bool CanInteract(PlayerInteractor interactorToUse)
@@ -431,6 +431,7 @@ namespace BarPromenade
                 return false;
             }
 
+            player.GameObject.GetComponent<PlayerVodkaBottleController>()?.BindBusRide(this);
             CapturePlayerOwnership(plan.EntryPose);
             activePlan = plan;
             boardedServiceOrdinal = actor.ServiceOrdinal;
@@ -905,6 +906,7 @@ namespace BarPromenade
                 SphereCollider>();
             trigger.isTrigger = true;
             trigger.radius = TriggerRadius;
+            triggerObject.SetActive(false);
             return triggerObject;
         }
 
@@ -917,14 +919,6 @@ namespace BarPromenade
                 return;
             }
 
-            frontDoorTriggerObject.SetActive(
-                actor != null &&
-                actor.IsSpawned &&
-                State == CityBusRideState.Outside);
-            rearDoorTriggerObject.SetActive(
-                actor != null &&
-                actor.IsSpawned &&
-                State == CityBusRideState.Outside);
             seatTriggerObject.SetActive(
                 actor != null &&
                 actor.IsSpawned &&
@@ -934,52 +928,24 @@ namespace BarPromenade
 
         private void RefreshTriggerPositions()
         {
-            if (actor == null || !actor.IsSpawned)
+            // Doors can open after the bus has already reached its final pose.
+            // Bind the prompts to this service's walkable docks when they open.
+            CityBusStopDescriptor stop = State == CityBusRideState.Outside && actor != null &&
+                actor.IsSpawned && actor.DoorsFullyOpen ? actor.CurrentStop : null;
+            if (stop != doorTriggerStop || stop != null &&
+                ((actor.Position - doorTriggerBusPosition).sqrMagnitude > .000001f ||
+                 Quaternion.Angle(actor.Rotation, doorTriggerBusRotation) > .01f))
             {
-                hasDoorTriggerPose = false;
-                return;
-            }
-
-            // The door plans scan the city's sidewalk geometry, and the
-            // bus spends its dwell parked: rebuild them only when the bus
-            // has actually moved since the last build, and only while the
-            // door triggers exist to stand at (outside the ride).
-            bool doorsRelevant = State == CityBusRideState.Outside;
-            bool busMoved = !hasDoorTriggerPose ||
-                (actor.Position - doorTriggerBusPosition)
-                    .sqrMagnitude > 0.000001f ||
-                Quaternion.Angle(
-                    actor.Rotation,
-                    doorTriggerBusRotation) > 0.01f;
-            if (doorsRelevant && busMoved)
-            {
-                doorTriggerBusPosition = actor.Position;
-                doorTriggerBusRotation = actor.Rotation;
-                hasDoorTriggerPose = true;
-                if (TryBuildPlan(
-                        CityBusPassengerDoor.Front,
-                        out CityBusRidePlan frontPlan) &&
-                    frontDoorTriggerObject != null)
+                doorTriggerStop = stop;
+                if (stop != null)
                 {
-                    frontDoorTriggerObject.transform.position =
-                        frontPlan.EntryPose.RootPosition +
-                        Vector3.up * 0.80f;
+                    doorTriggerBusPosition = actor.Position;
+                    doorTriggerBusRotation = actor.Rotation;
                 }
-
-                if (TryBuildPlan(
-                        CityBusPassengerDoor.Rear,
-                        out CityBusRidePlan rearPlan) &&
-                    rearDoorTriggerObject != null)
-                {
-                    rearDoorTriggerObject.transform.position =
-                        rearPlan.EntryPose.RootPosition +
-                        Vector3.up * 0.80f;
-                }
+                BindDoor(frontDoorTriggerObject, CityBusPassengerDoor.Front);
+                BindDoor(rearDoorTriggerObject, CityBusPassengerDoor.Rear);
             }
-            else if (!doorsRelevant)
-            {
-                hasDoorTriggerPose = false;
-            }
+            if (actor == null || !actor.IsSpawned) return;
 
             CityBusAssetRegistry registry =
                 actor.Presentation?.Registry;
@@ -994,6 +960,16 @@ namespace BarPromenade
                 {
                     seatTriggerObject.transform.position = seat.position;
                 }
+            }
+
+            void BindDoor(GameObject trigger, CityBusPassengerDoor door)
+            {
+                if (stop != null && TryBuildPlan(door, out CityBusRidePlan plan))
+                {
+                    trigger.transform.position = plan.EntryPose.RootPosition + Vector3.up * .80f;
+                    trigger.SetActive(true);
+                }
+                else trigger.SetActive(false);
             }
         }
 

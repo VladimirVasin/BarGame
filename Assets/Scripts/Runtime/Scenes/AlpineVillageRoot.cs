@@ -1201,6 +1201,7 @@ namespace BarPromenade
                 null,
                 cityMountains,
                 null);
+            Map.DeferCityBusNetwork();
             GameLogPhases.Report("alpine_village", "map_initialize", uiTimer);
             uiTimer.Restart();
 

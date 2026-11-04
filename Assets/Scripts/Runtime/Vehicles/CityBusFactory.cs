@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
@@ -40,6 +41,29 @@ namespace BarPromenade
     public static class CityBusFactory
     {
         public const string RuntimeRootName = "City Bus Runtime";
+
+        public static CityBusDirector[] CreateNetwork(Transform parent, IReadOnlyList<CityBusPlan> plans,
+            Transform player, CityPedestrianDirector pedestrians, Func<float> nightFactorProvider)
+        {
+            if (plans == null || plans.Count == 0 || plans.Count > CityBusDirector.MaximumActiveModels)
+                throw new ArgumentException("Expected one to three bus lines.", nameof(plans));
+            GameObject model = CityBusResources.LoadPrefab();
+            GameObject driver = CityBusDriverResources.LoadPrefab();
+            var lines = new CityBusDirector[plans.Count];
+            try
+            {
+                for (int i = 0; i < lines.Length; i++)
+                    lines[i] = Create(parent, plans[i], player, pedestrians, model, driver, nightFactorProvider);
+                for (int i = 0; i < lines.Length; i++) lines[i].ConnectNetwork(lines, i);
+                return lines;
+            }
+            catch
+            {
+                foreach (var line in lines)
+                    if (line != null) CityBusResources.DestroyObject(line.gameObject);
+                throw;
+            }
+        }
 
         public static CityBusDirector Create(
             Transform parent,
@@ -146,7 +170,7 @@ namespace BarPromenade
 
                     ValidatePassivePresentation(registry);
                     ValidateRegistry(registry, plan.Vehicle);
-                    registry.gameObject.name = "City Bus Model 01";
+                    registry.gameObject.name = $"City Bus Model {plan.Number:00}";
                     presentation = registry.GetComponent<
                         CityBusPresentation>();
                     if (presentation == null)
@@ -156,6 +180,7 @@ namespace BarPromenade
                     }
 
                     presentation.Initialize(registry);
+                    presentation.SetRouteNumber(plan.Number);
                     if (!CityBusDriverResources.TryInstantiate(
                             driverPrefab,
                             registry.transform,
@@ -171,7 +196,7 @@ namespace BarPromenade
                     presentation.gameObject.SetActive(false);
 
                     GameObject actorObject =
-                        new GameObject("City Bus Slot 01");
+                        new GameObject($"City Bus Slot {plan.Number:00}");
                     actorObject.layer = CityBusCollision.LayerIndex;
                     actorObject.transform.SetParent(routeRoot, false);
                     actor = actorObject.AddComponent<CityBusActor>();

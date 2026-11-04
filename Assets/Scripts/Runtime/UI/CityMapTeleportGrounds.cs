@@ -267,6 +267,9 @@ namespace BarPromenade
                     footprints.Add(Expand(footprint, radius));
             }
 
+            foreach (var stop in CityBusNetworkFurniture.Stops(CityDistrictBusPlanner.CreateRoadRouting(layout)))
+                footprints.Add(Expand(CityBusStopWorldBuilder.DescribeFurnitureFootprint(stop), radius));
+
             CityChurchPlan church = CityChurchPlanner.Create(layout);
             CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
             if (eastExit.IsEnabled)

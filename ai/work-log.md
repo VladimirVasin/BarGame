@@ -26,6 +26,18 @@ valley fades on the hills. Bridges cross the dry ravine in one upper residential
 quarter. LiveCity_UpperQuarterJoinsBothSlopesThroughTheLitCourt covers its
 streets, stairs and passage. ImageGenCityMap_PreservesPlanAndLivePlaces verified
 both bridge arrivals on the redrawn City sheet.
+District bus rings serve both banks and the upper slopes, with marked walking interchanges.
+Docks share clear verges with the public pavement. DistrictNetwork_ClosesEachLineAndServesItsTransfers
+and DistrictRings_ShowClosedLinesAndEveryBoardingPlatform verify the map and service.
+Passenger_TransfersFromWestToHillsideAtTheSharedStop checks doors, footing and the route numbers on the pooled buses.
+LiveCity_AllBusPlatformsHaveClearSheltersAndDoorApproaches checks the clearances, matching map and pole codes and real lights on both faces.
+Hillside shelters join the walking boundary and waiting passengers leave the sidewalk clear.
+LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement verified the walk from both directions
+and boarding each line with E at either door. This is required for stop changes.
+GlassRain_OverlaysCoverEveryPaneAndFollowIntensity checks that light rain leaves small, sparse
+beads on bus glass and that runoff follows heavy rain independently of the wipers.
+
+LiveCity_OrdinaryStreetsContinuePastFormerFenceCaps checks both banks, terrace walks and bus circuits. The charcoal sheet follows the same streets.
 
 ## 2026-11-03
 Checkpoint:RAM deep progress/world/ammo;restore/entry/seed/rides/tokens;RU pause/No.

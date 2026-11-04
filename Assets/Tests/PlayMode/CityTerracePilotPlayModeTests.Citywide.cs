@@ -4,12 +4,475 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.InputSystem;
+using UnityEngine.TestTools.Utils;
 using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CityTerracePilotPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator LiveCity_OrdinaryStreetsContinuePastFormerFenceCaps()
+        {
+            yield return LoadProductionCity();
+            CityLayout layout = city.Layout;
+            RoadEdge[] streets = layout.RoadEdges.Where(edge => layout.GetPathKind(edge) == CityPathKind.Street).ToArray();
+            var deadEnds = streets.SelectMany(edge => new[] { edge.A, edge.B }).GroupBy(node => node)
+                .Where(incident => incident.Count() == 1).Select(incident => incident.Key).ToArray();
+            Assert.That(deadEnds, Is.Empty, "Driving into these street nodes requires a U-turn: " + string.Join(", ", deadEnds));
+            Assert.That(city.World.FencePlan.Segments.Any(segment => segment.Purpose == RoadFenceSegmentPurpose.DeadEnd),
+                Is.False, "A physical fence still spans the end of a city carriageway.");
+
+            var terrace = CityTerraceDistrictPlan.ForLayout(layout);
+            Assert.That(terrace.IsEnabled && terrace.HasShortcut && terrace.HasCourtyardLink &&
+                CityCoastalAscentPlan.IsEnabled(layout), Is.True, "The coast, stair court and both pedestrian passages must remain connected.");
+            Assert.That(city.BusPlans.Select(plan => plan.Number), Is.EquivalentTo(new[] { 1, 2, 3 }));
+            foreach (CityBusPlan route in city.BusPlans)
+            {
+                Assert.That(route.IsEmpty, Is.False);
+                var order = route.OrderedLinkIndices;
+                Assert.That(order, Is.Not.Empty);
+                for (int i = 0; i < order.Count; i++)
+                    Assert.That(route.Links[order[i]].ToNodeIndex, Is.EqualTo(route.Links[order[(i + 1) % order.Count]].FromNodeIndex),
+                        $"Route {route.Number} no longer closes through {route.Links[order[i]].Id}");
+            }
+
+            bool capture = System.Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_ROAD_CONNECTIONS") == "1" &&
+                SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null;
+            if (capture)
+            {
+                double untilNoon = (2160d - GameSessionState.GameTimeOfDayMinutes) % 1440d;
+                GameSessionState.AdvanceGameTime((float)(untilNoon / GameTimeState.GameMinutesPerRealSecond));
+                yield return null;
+            }
+            Physics.SyncTransforms();
+            foreach (Vector3 mouth in new[] { terrace.EntryStartWorld, terrace.EntryEndWorld,
+                terrace.LowerPassStartWorld, terrace.LowerPassEndWorld, terrace.CourtyardLinkRouteWorld[0] })
+                AssertNoRoadRail(mouth);
+            var roadIssues = new List<string>();
+            // Surveyed before and after the reconnect. Exercise only the new carriageways.
+            RoadEdge[] connections = {
+                East(1, 2), East(1, 4), East(1, 8), East(1, 10), East(3, 2), East(3, 10),
+                North(3, 4), North(3, 7), East(5, 2), North(5, 9), North(8, 2), East(8, 9),
+                North(8, 10), North(10, 1), East(10, 7), North(10, 10), East(12, 1), East(12, 7), East(12, 10)
+            };
+            foreach (RoadEdge edge in connections)
+            {
+                Assert.That(streets, Does.Contain(edge));
+                InspectNewCarriageway(edge);
+            }
+            Assert.That(roadIssues, Is.Empty, string.Join("\n", roadIssues));
+            // The previous map ended these two western streets and the eastern quay branch at full-width rails.
+            foreach (var site in new[] {
+                (node: new Vector2Int(1, 2), approach: new Vector2Int(1, 1)),
+                (node: new Vector2Int(2, 4), approach: new Vector2Int(2, 5)),
+                (node: new Vector2Int(8, 2), approach: new Vector2Int(7, 2)) })
+            {
+                RoadEdge approach = new RoadEdge(site.node, site.approach);
+                Assert.That(streets, Does.Contain(approach));
+                if (capture)
+                {
+                    Vector3 junction = layout.GetNodeWorldPosition(site.node);
+                    Vector3 towardApproach = (layout.GetNodeWorldPosition(site.approach) - junction).normalized;
+                    Vector3 eye = junction + towardApproach * 10f + Vector3.up * 4.2f;
+                    city.Camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(junction - eye));
+                    AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "CityRoadConnections",
+                        $"junction-{site.node.x}-{site.node.y}", 1024, 576);
+                }
+            }
+#if UNITY_EDITOR
+            if (System.Environment.GetEnvironmentVariable("BAR_PROMENADE_EXPORT_CITY_MAP") == "1")
+                System.Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
+                    .GetMethod("ExportCurrent", System.Type.EmptyTypes).Invoke(null, null);
+#endif
+
+            RoadEdge East(int x, int z) => new RoadEdge(new Vector2Int(x, z), new Vector2Int(x + 1, z));
+            RoadEdge North(int x, int z) => new RoadEdge(new Vector2Int(x, z), new Vector2Int(x, z + 1));
+
+            void InspectNewCarriageway(RoadEdge edge)
+            {
+                CityRoadPath path = layout.RoadGeometry.Get(edge);
+                CityBusDesignVehicle vehicle = CityBusDesignVehicle.Default;
+                float lane = (layout.RoadWidth - 2f * CityStreetSurfacePlanner.SidewalkWidth) * .25f;
+                float halfBody = vehicle.BodyWidth * .5f;
+                float wheelOffset = halfBody - .25f;
+                float[] tracks = { -lane - wheelOffset, -lane + wheelOffset, 0f, lane - wheelOffset, lane + wheelOffset };
+                int intervals = Mathf.CeilToInt(path.Length / .65f);
+                var reported = new HashSet<string>();
+                for (int i = 0; i <= intervals; i++)
+                {
+                    float amount = (float)i / intervals;
+                    CityRoadSample sample = path.SampleDistance(path.Length * amount);
+                    float top = layout.ElevationPlan.SampleRoadDatum(edge, amount) + CityStreetSurfacePlanner.RoadTop;
+                    Vector3 middle = new Vector3(sample.Position.x, top, sample.Position.y);
+                    Vector3 right = new Vector3(sample.Right.x, 0f, sample.Right.y);
+                    foreach (float track in tracks)
+                    {
+                        Vector3 contact = middle + right * track;
+                        RaycastHit[] hits = Physics.RaycastAll(contact + Vector3.up * .4f, Vector3.down, .8f,
+                            Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                        bool paved = hits.Any(hit => Mathf.Abs(hit.point.y - top) < .07f &&
+                            hit.collider.TryGetComponent(out FootstepGround ground) &&
+                            ground.ResolveKind(hit.triangleIndex) == FootstepGroundKind.Concrete);
+                        if (!paved && reported.Add("pavement " + track))
+                            roadIssues.Add($"{edge} missing asphalt on track {track:F2} at {contact:F2}; hits " +
+                                string.Join(", ", hits.Select(hit => hit.collider.name + "@" + hit.point.y.ToString("F2"))));
+                    }
+
+                    // Adjacent boxes overlap along the path. Together the two lane envelopes include
+                    // the centre line, up to roof height, while clearing the sloping road deck.
+                    const float clearance = .23f;
+                    float halfHeight = (vehicle.BodyHeight - clearance) * .5f;
+                    Quaternion heading = Quaternion.LookRotation(new Vector3(sample.Tangent.x, 0f, sample.Tangent.y));
+                    var area = new Vector3(lane + halfBody, halfHeight, .38f);
+                    foreach (Collider hit in Physics.OverlapBox(middle + Vector3.up * (clearance + halfHeight),
+                        area, heading, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                    {
+                        if (hit.transform.IsChildOf(city.Player.GameObject.transform) ||
+                            hit.GetComponentInParent<CityBusActor>() != null || hit.GetComponentInParent<CityPedestrianActor>() != null ||
+                            city.LastRouteCar != null && hit.transform.IsChildOf(city.LastRouteCar.transform) ||
+                            city.Cannery != null && city.Cannery.Truck != null && hit.transform.IsChildOf(city.Cannery.Truck)) continue;
+                        string obstacle = hit.name;
+                        for (Transform parent = hit.transform.parent; parent != null && parent != city.transform; parent = parent.parent)
+                            obstacle = parent.name + "/" + obstacle;
+                        if (reported.Add(obstacle))
+                            roadIssues.Add($"{edge} carriageway blocked at {middle:F2} by {obstacle}");
+                    }
+                }
+            }
+
+            void AssertNoRoadRail(Vector3 floor)
+            {
+                Collider[] obstructions = Physics.OverlapSphere(floor + Vector3.up * .78f, .48f,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                Assert.That(obstructions.Where(hit => hit.name == "Safety Rails"), Is.Empty,
+                    $"Fence blocks the through route at {floor}");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement()
+        {
+            yield return LoadProductionCity();
+            var metadata = JsonUtility.FromJson<CityMapArtResources.Metadata>(
+                Resources.Load<TextAsset>(CityMapArtResources.ResourcePath).text);
+            Debug.Log($"Bus boarding map: illustrated {CityMapArtResources.TryGet(city.Map, out _, out _)}, " +
+                $"current {CityMapArtResources.CreateFingerprint(city.Map)}, artwork {metadata.fingerprint}");
+            bool capture = System.Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_BUS_BOARDING") == "1" &&
+                SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null;
+            var player = city.Player;
+            var motor = player.Motor;
+            var hero = player.GameObject.transform;
+            var capsule = hero.GetComponent<CharacterController>();
+            var visual = (Player3DCharacterPresentation)player.Visual;
+            var areas = city.World.WalkableArea;
+            var surfaces = CityStreetSurfacePlanner.Create(city.Layout);
+            var failures = new List<string>();
+            var input = new InputTestFixture();
+            input.Setup();
+            var keyboard = InputSystem.AddDevice<Keyboard>();
+            keyboard.MakeCurrent();
+            var cursor = new object();
+            var prompt = city.GetComponentInChildren<InteractionPromptView>(true);
+            var doors = new[] { CityBusPassengerDoor.Front, CityBusPassengerDoor.Rear };
+            bool previousFocus = GameInput.MovementFocused;
+            int interval = OnDemandRendering.renderFrameInterval;
+            int boarded = 0;
+            try
+            {
+                GameInput.HandleApplicationFocus(true);
+                GameCursor.Capture(cursor, CursorLockMode.Locked, false, 0);
+                Time.captureDeltaTime = .10f;
+                OnDemandRendering.renderFrameInterval = 24;
+                // Own the fleet clock only. Keep actual world colliders, outdoor population,
+                // player motion, interaction discovery and the production boarding animation.
+                foreach (var line in city.BusLines) line.enabled = false;
+                for (int lineIndex = 0; lineIndex < city.BusLines.Count; lineIndex++)
+                {
+                    var line = city.BusLines[lineIndex];
+                    var ride = city.BusRides[lineIndex];
+                    var actor = line.Actor;
+                    foreach (var stop in line.Plan.Stops)
+                    foreach (var door in doors)
+                    {
+                        string stage = $"{line.Plan.Number:00}-{stop.SequenceIndex + 1:00}/{door}";
+                        if (door == CityBusPassengerDoor.Front)
+                        {
+                            Debug.Log($"Bus boarding audit {stage}, seated so far {boarded}, failures {failures.Count}.");
+                            var queue = city.LineWaitPlans[lineIndex].WaitPoints.SingleOrDefault(point => point.StopId == stop.Id);
+                            // A live passenger occupied 02-01 in the original reproduction.
+                            if (line.Plan.Number == 2 && stop.SequenceIndex == 0 && (queue == null || queue.WaitSlots.Count == 0))
+                                Fail(stage + " lost its waiting passengers");
+                            if (queue != null)
+                            {
+                                foreach (Vector3 slot in queue.WaitSlots)
+                                {
+                                    // Sample the public footway at the same longitudinal location,
+                                    // including the hillside's curved, graded pavement.
+                                    Vector3 forward = Vector3.ProjectOnPlane(stop.Forward, Vector3.up).normalized;
+                                    Vector3 center = CityBusStopWaitPlanner.StandingPosition(line.Plan, stop, city.Layout);
+                                    float alongLane = Vector3.Dot(slot - center, forward);
+                                    Vector3 passage = CityBusStopWaitPlanner.StandingPosition(line.Plan, stop, city.Layout, alongLane);
+                                    float separation = Vector3.ProjectOnPlane(slot - passage, Vector3.up).magnitude;
+                                    if (separation < capsule.radius + city.PedestrianPlan.AgentRadius)
+                                        Fail($"{stage} occupied wait slot {slot:F2} blocks public pavement {passage:F2}, clearance {separation:F2}");
+                                }
+                            }
+                        }
+                        ResetService(line);
+                        var bench = CityBusStopWorldBuilder.DescribeShelterBenchSeat(stop);
+                        Vector3 atShelter = bench.SeatTopCenter + bench.FaceDirection * .86f;
+                        atShelter.y = stop.ShelterPosition.y;
+                        Vector3 curbAtShelter = CityBusStopWaitPlanner.StandingPosition(line.Plan, stop, city.Layout,
+                            CityBusStopWorldBuilder.ShelterOffsetAlongLane);
+                        Vector3 wait = CityBusStopWaitPlanner.StandingPosition(line.Plan, stop, city.Layout, .8f);
+                        // Simulate arriving from each end of the public pavement in turn. The
+                        // only player warp is the independent case setup, outside the whole roof.
+                        Vector3 start = CityBusStopWaitPlanner.StandingPosition(line.Plan, stop, city.Layout,
+                            door == CityBusPassengerDoor.Front ? 6.5f : -6.5f);
+                        motor.Teleport(start + Vector3.up * (PlayerFactory.GroundedRootOffset + .035f));
+                        Physics.SyncTransforms();
+                        yield return null;
+                        int before = failures.Count;
+                        yield return Walk(curbAtShelter, stage + " public pavement");
+                        if (failures.Count == before) yield return Walk(atShelter, stage + " inside shelter");
+                        if (failures.Count == before) yield return Walk(curbAtShelter, stage + " shelter exit");
+                        if (failures.Count == before) yield return Walk(wait, stage + " waiting place");
+                        if (failures.Count != before) continue;
+
+                        float along = Mathf.Max(0f, stop.DistanceAlongLink - 8f);
+                        CityBusActor.EvaluateLink(line.Plan.Links[stop.LinkIndex], along, out var spawn, out var heading);
+                        actor.PrepareSpawn(line.Plan, new CityBusSpawnAnchor("approaching-platform",
+                            stop.LinkIndex, along, spawn, heading, stop.RoadEdge), 7u);
+                        int ticks = 0;
+                        while (ticks++ < 220 && !(actor.CurrentStop == stop && actor.DoorsFullyOpen))
+                        {
+                            line.Advance(.1f);
+                            if (ticks % 5 == 0) yield return null;
+                        }
+                        if (!actor.IsSpawned || !actor.DoorsFullyOpen || actor.CurrentStop != stop)
+                        {
+                            Fail($"{stage} bus failed to serve waiting hero: {actor.MotionState}, {actor.Position}, stop {actor.CurrentStop?.Id}");
+                            continue;
+                        }
+                        Vector3 pelvis = hero.InverseTransformPoint(visual.Registry.Anchors.Pelvis.position);
+                        if (!CityBusRidePlan.TryCreate(actor, areas, pelvis, capsule.radius, door, surfaces, out var dock))
+                        {
+                            Fail(stage + " open bus has no grounded dock");
+                            continue;
+                        }
+                        yield return Walk(dock.EntryPose.RootPosition, stage + " open doorway", line);
+                        if (failures.Count != before) continue;
+                        yield return null;
+                        yield return null;
+                        if (player.Interactor.ActiveInteractable != ride || !ride.CanInteract(player.Interactor))
+                        {
+                            Fail($"{stage} no boarding prompt at {hero.position}, active {player.Interactor.ActiveInteractable}, open {actor.DoorsFullyOpen}");
+                            continue;
+                        }
+                        if (capture && stop.SequenceIndex == 0 && line.Plan.Number >= 2 && door == CityBusPassengerDoor.Front)
+                        {
+                            Transform lens = city.Camera.transform;
+                            var pose = new Pose(lens.position, lens.rotation);
+                            Vector3 target = Vector3.Lerp(atShelter, hero.position, .65f) + Vector3.up;
+                            Vector3 eye = hero.position + stop.Forward * 6.5f - stop.RoadsideForward * .8f + Vector3.up * 2.3f;
+                            lens.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye));
+                            try { AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "BusBoarding", $"{line.Plan.Number:00}-01", 960, 540); }
+                            finally { lens.SetPositionAndRotation(pose.position, pose.rotation); }
+                        }
+                        input.Press(keyboard.eKey, queueEventOnly: true);
+                        yield return null;
+                        string press = $"phase on E {ride.State}, key down {keyboard.eKey.isPressed}, " +
+                            $"key frame {keyboard.eKey.wasPressedThisFrame}, world E {GameInput.WasPressed(GameInputAction.Interact, GameInputContext.Contextual)}, " +
+                            $"clickable {prompt?.IsClickable}, feedback {prompt?.IsFeedbackVisible}, focus {GameInput.MovementFocused}";
+                        input.Release(keyboard.eKey, queueEventOnly: true);
+                        for (int frame = 0; frame < 65 && ride.State != CityBusRideState.Riding; frame++) yield return null;
+                        if (ride.State != CityBusRideState.Riding || !actor.HasPlayerPassenger || ride.ActivePlan.PassengerDoor != door)
+                            Fail($"{stage} E did not seat the hero through the selected door: {ride.State}; {press}");
+                        else boarded++;
+                    }
+                    ResetService(line);
+                }
+                Assert.That(failures, Is.Empty, string.Join("\n", failures));
+                Assert.That(boarded, Is.EqualTo(city.BusPlans.Sum(plan => plan.Stops.Count) * doors.Length));
+                Assert.That(city.BusPlans.Sum(plan => plan.Stops.Count), Is.EqualTo(20));
+            }
+            finally
+            {
+                motor.CancelInteractionPoseMove();
+                foreach (var ride in city.BusRides) ride.ForceReleaseForBusLifecycle();
+                input.TearDown();
+                GameCursor.Release(cursor);
+                GameInput.HandleApplicationFocus(previousFocus);
+                OnDemandRendering.renderFrameInterval = interval;
+            }
+
+            void ResetService(CityBusDirector line)
+            {
+                // The production director asks all riders (including active NPCs) to
+                // release their seats before returning the shared model to its pool.
+                line.enabled = true;
+                line.enabled = false;
+                line.Actor.ReleasePresentation(line.transform);
+            }
+
+            void Fail(string detail)
+            {
+                Debug.Log("Bus boarding audit: " + detail);
+                failures.Add(detail);
+            }
+
+            IEnumerator Walk(Vector3 target, string stage, CityBusDirector arrivingLine = null)
+            {
+                for (int step = 0; step < 120; step++)
+                {
+                    if (motor.MoveTowardsApproachWaypoint(target, .14f, .08f))
+                    {
+                        motor.CancelInteractionPoseMove();
+                        yield break;
+                    }
+                    arrivingLine?.Advance(.08f);
+                    if (step % 3 == 2) yield return null;
+                }
+                motor.CancelInteractionPoseMove();
+                Vector3 position = hero.position;
+                Vector3 direction = Vector3.ProjectOnPlane(target - position, Vector3.up).normalized;
+                var obstacles = Physics.CapsuleCastAll(position + Vector3.up * .36f, position + Vector3.up * 1.35f,
+                    capsule.radius, direction, 1.5f, Physics.AllLayers, QueryTriggerInteraction.Ignore);
+                Fail($"{stage} blocked at {position:F2} toward {target:F2}: " +
+                    $"inside walkable region {areas.Contains(target, capsule.radius)}; " +
+                    string.Join(", ", obstacles.Where(hit => !hit.collider.transform.IsChildOf(hero)).Select(hit =>
+                    {
+                        var walker = hit.collider.GetComponentInParent<CityPedestrianActor>();
+                        return walker == null ? $"{hit.collider.transform.parent?.name}/{hit.collider.name} hit {hit.distance:F2}m" :
+                            $"{walker.name} {walker.MotionState} at {walker.Position:F2} yielding {walker.IsYielding}";
+                    }).Distinct()));
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator LiveCity_AllBusPlatformsHaveClearSheltersAndDoorApproaches()
+        {
+            yield return LoadProductionCity();
+            Physics.SyncTransforms();
+            var obstacles = new HashSet<string>();
+            int index = 0;
+            bool capture = System.Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_BUS_PLATFORMS") == "1";
+            if (capture)
+            {
+                double untilNoon = (2160d - GameSessionState.GameTimeOfDayMinutes) % 1440d;
+                GameSessionState.AdvanceGameTime((float)(untilNoon / GameTimeState.GameMinutesPerRealSecond));
+            }
+            foreach (var platform in CityBusNetworkFurniture.Platforms(city.BusPlans))
+            {
+                var stop = platform.stop;
+                Transform structure = city.BusStops.transform.GetChild(index++);
+                string code = $"{platform.line.Number:00}-{stop.SequenceIndex + 1:00}";
+                string expectedPlate = code;
+                if (stop.TransferNumber > 0)
+                {
+                    var otherLine = city.BusPlans.Single(line => line.Number == stop.TransferNumber);
+                    var otherStop = otherLine.Stops.Single(other => other.TargetId == stop.TargetId);
+                    string otherCode = $"{otherLine.Number:00}-{otherStop.SequenceIndex + 1:00}";
+                    expectedPlate += (platform.shared ? "\n" : "\n> ") + otherCode;
+                }
+                var faces = structure.GetComponentsInChildren<TMPro.TextMeshPro>();
+                Assert.That(faces.Length, Is.EqualTo(2), code);
+                Assert.That(Vector3.Dot(faces[0].transform.forward, faces[1].transform.forward), Is.LessThan(-.99f), code);
+                foreach (var face in faces)
+                {
+                    face.ForceMeshUpdate();
+                    Assert.That(face.text, Is.EqualTo(expectedPlate), stop.Id);
+                    Assert.That(face.textBounds.size.x, Is.InRange(.01f, face.rectTransform.rect.width + .01f), code);
+                    Assert.That(face.textBounds.size.y, Is.InRange(.01f, face.rectTransform.rect.height + .01f), code);
+                }
+                int mapIndex = city.Map.BusOverlay.Stops.ToList().FindIndex(marker => marker.StableId == stop.Id);
+                Assert.That(mapIndex, Is.GreaterThanOrEqualTo(0), code);
+                Assert.That(city.Map.GetBusStopLabel(mapIndex), Does.StartWith(code), stop.Id);
+                Vector3 f = Vector3.ProjectOnPlane(stop.Forward, Vector3.up).normalized;
+                Vector3 road = stop.RoadsideForward.normalized;
+                // Ignore the platform's own colliders, but include every neighbouring
+                // platform, signal, fence, tree and placed decoration in the live scene.
+                Check("shelter", stop.ShelterPosition + f * -2.25f, new Vector3(.78f, 1.18f, 2.85f));
+                Vector3 wait = CityBusStopWaitPlanner.StandingPosition(platform.line, stop, city.Layout);
+                Check("boarding strip", wait, new Vector3(.45f, .83f, 4.2f));
+                // A recessed shelter also needs a clear walk from its front to the kerb.
+                Vector3 front = stop.ShelterPosition + road * .85f;
+                float recess = Vector3.Dot(wait - front, road);
+                if (recess > .5f)
+                    Check("walk from shelter to pavement", (front + wait) * .5f + f * .9f,
+                        new Vector3(recess * .5f, .83f, .46f));
+                Vector3 target = stop.ShelterPosition - f * 1.6f + Vector3.up * 1.15f;
+                Vector3 eye = target + road * 8.2f + f * 2f + Vector3.up * 2.2f;
+                city.Player.Motor.Teleport(eye + road * 4f);
+                yield return null;
+                var lighting = city.Night.Atmosphere;
+                lighting.RefreshImmediate();
+                Assert.That(lighting.RealtimeLightCount, Is.LessThanOrEqualTo(CityNightAtmosphere.MaximumRealtimeLights));
+                var spots = lighting.StreetLightPool.Where(light => light.enabled && light.type == LightType.Spot &&
+                    (light.transform.position - faces[0].transform.position).sqrMagnitude < .9f).ToArray();
+                Assert.That(spots.Length, Is.EqualTo(2), code);
+                foreach (var face in faces)
+                    Assert.That(spots.Any(light => light.intensity > 0f && light.shadows == LightShadows.None &&
+                        light.range < 1f && Vector3.Dot(light.transform.forward,
+                            (face.transform.position - light.transform.position).normalized) > .999f), Is.True, code);
+                if (capture && SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null)
+                {
+                    var previous = new Pose(city.Camera.transform.position, city.Camera.transform.rotation);
+                    city.Camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye));
+                    AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "BusPlatforms",
+                        $"{platform.line.Number:00}-{stop.SequenceIndex + 1:00}", 800, 450);
+                    if (platform.line.Number == 3 && platform.ordinal <= 2)
+                    {
+                        Vector3 plaque = faces[0].transform.position;
+                        Vector3 portraitEye = plaque + road * 2.2f + f * .35f;
+                        city.Camera.transform.SetPositionAndRotation(portraitEye, Quaternion.LookRotation(plaque - portraitEye));
+                        AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "BusPlatforms", code + "-plate", 800, 450);
+                        if (platform.ordinal == 1)
+                        {
+                            foreach (var spot in spots) spot.enabled = false;
+                            try { AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "BusPlatforms", code + "-unlit", 800, 450); }
+                            finally { foreach (var spot in spots) spot.enabled = true; }
+                        }
+                    }
+                    city.Camera.transform.SetPositionAndRotation(previous.position, previous.rotation);
+                }
+
+                void Check(string area, Vector3 basePoint, Vector3 half)
+                {
+                    var colliders = Physics.OverlapBox(basePoint + Vector3.up * (half.y + .32f), half,
+                        Quaternion.LookRotation(f), Physics.AllLayers, QueryTriggerInteraction.Ignore);
+                    foreach (Collider hit in colliders)
+                    {
+                        if (hit.transform.IsChildOf(structure) ||
+                            hit.transform.IsChildOf(city.Player.GameObject.transform) ||
+                            hit.GetComponentInParent<CityPedestrianActor>() != null ||
+                            hit.GetComponentInParent<CityBusActor>() != null) continue;
+                        string path = hit.name;
+                        for (Transform par = hit.transform.parent; par != null && par != city.transform; par = par.parent)
+                            path = par.name + "/" + path;
+                        obstacles.Add($"{stop.Id} {area} at {basePoint}: {path}");
+                    }
+                }
+            }
+            Assert.That(index, Is.EqualTo(city.BusStops.transform.childCount));
+            Assert.That(obstacles, Is.Empty, string.Join("\n", obstacles));
+            if (capture && SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null)
+            {
+                Assert.That(city.Map.Open(), Is.True);
+                try
+                {
+                    yield return null;
+                    // Native IMGUI screenshots need a visible Game view. The live
+                    // marker/title checks above also run in batch mode.
+                    if (!Application.isBatchMode)
+                        yield return CityMapLazyAreaTabsPlayModeTests.CaptureMapUi("bus-stop-codes");
+                }
+                finally { city.Map.Close(); }
+            }
+        }
+
         // Both coast-to-summit round trips use the normal 2.6 m/s motor and
         // include the city approaches, six hairpins per side and two stair loops.
         [UnityTest, Timeout(900000)]

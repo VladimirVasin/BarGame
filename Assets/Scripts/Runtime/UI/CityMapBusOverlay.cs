@@ -7,60 +7,68 @@ namespace BarPromenade
 {
     public readonly struct CityMapBusStopMarker
     {
-        internal CityMapBusStopMarker(
-            string stableId,
-            int ordinal,
-            Vector3 worldPosition,
-            string labelLocalizationKey)
+        internal CityMapBusStopMarker(CityBusPlan plan, CityBusStopDescriptor stop, int ordinal,
+            int transferOrdinal, bool shared, CityLayout layout)
         {
-            StableId = stableId ?? string.Empty;
+            StableId = stop.Id;
             Ordinal = ordinal;
-            WorldPosition = worldPosition;
-            LabelLocalizationKey = labelLocalizationKey ?? string.Empty;
+            RouteNumber = plan.Number;
+            TransferNumber = transferOrdinal > 0 ? stop.TransferNumber : 0;
+            TransferId = TransferNumber > 0 ? stop.TargetId : string.Empty;
+            WorldPosition = stop.ShelterPosition;
+            StandingPosition = CityBusStopWaitPlanner.StandingPosition(plan, stop, layout, .8f);
+            SharedPlatform = shared;
+            LabelLocalizationKey = stop.NameLocalizationKey;
+            Label = new CityBusStopLabel(RouteNumber, ordinal, TransferNumber, transferOrdinal, shared);
+            string text = Label.MarkerText;
+            int lineBreak = text.IndexOf('\n');
+            int width = lineBreak < 0 ? text.Length : Math.Max(lineBreak, text.Length - lineBreak - 1);
+            MarkerSize = new Vector2(6f + 5.25f * width, shared ? 24f : 14f);
         }
 
         public string StableId { get; }
         public int Ordinal { get; }
+        public int RouteNumber { get; }
+        public int TransferNumber { get; }
+        public string TransferId { get; }
         public Vector3 WorldPosition { get; }
+        public Vector3 StandingPosition { get; }
+        public bool SharedPlatform { get; }
         public string LabelLocalizationKey { get; }
+        internal CityBusStopLabel Label { get; }
+        internal Vector2 MarkerSize { get; }
+    }
+
+    public sealed class CityMapBusLine
+    {
+        internal CityMapBusLine(CityBusPlan plan, IReadOnlyList<Vector3> points)
+        {
+            RouteId = plan.RouteId;
+            Number = plan.Number;
+            Points = points;
+        }
+
+        public string RouteId { get; }
+        public int Number { get; }
+        public IReadOnlyList<Vector3> Points { get; }
     }
 
     public sealed class CityMapBusOverlay
     {
-        private static readonly IReadOnlyList<Vector3> NoRoutePoints =
-            new ReadOnlyCollection<Vector3>(new List<Vector3>());
-        private static readonly IReadOnlyList<CityMapBusStopMarker> NoStops =
-            new ReadOnlyCollection<CityMapBusStopMarker>(
-                new List<CityMapBusStopMarker>());
-
-        internal CityMapBusOverlay(
-            string routeId,
-            IList<Vector3> routePoints,
-            IList<CityMapBusStopMarker> stops)
+        internal CityMapBusOverlay(IReadOnlyList<CityMapBusLine> lines,
+            IReadOnlyList<CityMapBusStopMarker> stops, IReadOnlyList<Vector2Int> transferPairs)
         {
-            RouteId = routeId ?? string.Empty;
-            RoutePoints = new ReadOnlyCollection<Vector3>(
-                new List<Vector3>(routePoints ??
-                    throw new ArgumentNullException(nameof(routePoints))));
-            Stops = new ReadOnlyCollection<CityMapBusStopMarker>(
-                new List<CityMapBusStopMarker>(stops ??
-                    throw new ArgumentNullException(nameof(stops))));
+            Lines = lines;
+            Stops = stops;
+            TransferPairs = transferPairs;
         }
 
-        private CityMapBusOverlay()
-        {
-            RouteId = string.Empty;
-            RoutePoints = NoRoutePoints;
-            Stops = NoStops;
-        }
-
-        public static CityMapBusOverlay Empty { get; } =
-            new CityMapBusOverlay();
-
-        public string RouteId { get; }
-        public IReadOnlyList<Vector3> RoutePoints { get; }
+        public static CityMapBusOverlay Empty { get; } = new CityMapBusOverlay(
+            Array.Empty<CityMapBusLine>(), Array.Empty<CityMapBusStopMarker>(), Array.Empty<Vector2Int>());
+        public IReadOnlyList<CityMapBusLine> Lines { get; }
         public IReadOnlyList<CityMapBusStopMarker> Stops { get; }
-        public bool IsEmpty => RoutePoints.Count < 4;
+        public IReadOnlyList<Vector2Int> TransferPairs { get; }
+        public bool IsEmpty => Lines.Count == 0;
     }
 
     public static class CityMapBusOverlayBuilder
@@ -70,40 +78,42 @@ namespace BarPromenade
         private const float DuplicatePointTolerance = 0.0001f;
         private const float RouteSeamTolerance = 0.25f;
 
-        public static CityMapBusOverlay Create(CityBusPlan plan)
+        public static CityMapBusOverlay Create(CityBusPlan plan) => plan == null
+            ? CityMapBusOverlay.Empty : CreateNetwork(new[] { plan });
+
+        public static CityMapBusOverlay CreateNetwork(IReadOnlyList<CityBusPlan> plans, CityLayout layout = null)
         {
-            if (plan == null ||
-                plan.Links.Count == 0 ||
-                plan.OrderedLinkIndices.Count == 0)
+            if (plans == null || plans.Count == 0) return CityMapBusOverlay.Empty;
+            var lines = new List<CityMapBusLine>(plans.Count);
+            var validPlans = new List<CityBusPlan>(plans.Count);
+            foreach (CityBusPlan plan in plans)
             {
-                return CityMapBusOverlay.Empty;
+                if (plan == null || plan.IsEmpty) continue;
+                List<Vector3> rawRoute = BuildOrderedClosedRoute(plan);
+                IReadOnlyList<Vector3> points = SimplifyClosed(rawRoute, RouteSimplificationTolerance);
+                if (points.Count < 4) continue;
+                lines.Add(new CityMapBusLine(plan, points));
+                validPlans.Add(plan);
             }
+            if (lines.Count == 0) return CityMapBusOverlay.Empty;
 
-            List<Vector3> rawRoute = BuildOrderedClosedRoute(plan);
-            if (rawRoute.Count < 4)
+            var stops = new List<CityMapBusStopMarker>();
+            var transfers = new Dictionary<string, int>(StringComparer.Ordinal);
+            var pairs = new List<Vector2Int>();
+            foreach (var platform in CityBusNetworkFurniture.Platforms(validPlans))
             {
-                return CityMapBusOverlay.Empty;
+                if (!IsFinite(platform.stop.ShelterPosition)) continue;
+                var marker = new CityMapBusStopMarker(platform.line, platform.stop, platform.ordinal,
+                    platform.transferOrdinal, platform.shared, layout);
+                if (marker.TransferNumber > 0 && !marker.SharedPlatform)
+                {
+                    if (transfers.TryGetValue(marker.TransferId, out int partner))
+                        pairs.Add(new Vector2Int(partner, stops.Count));
+                    else transfers.Add(marker.TransferId, stops.Count);
+                }
+                stops.Add(marker);
             }
-
-            IReadOnlyList<Vector3> simplified = SimplifyClosed(
-                rawRoute,
-                RouteSimplificationTolerance);
-            if (simplified.Count < 4)
-            {
-                return CityMapBusOverlay.Empty;
-            }
-
-            var routePoints = new List<Vector3>(simplified.Count);
-            for (int index = 0; index < simplified.Count; index++)
-            {
-                routePoints.Add(simplified[index]);
-            }
-
-            List<CityMapBusStopMarker> stops = CreateStopMarkers(plan);
-            return new CityMapBusOverlay(
-                plan.RouteId,
-                routePoints,
-                stops);
+            return new CityMapBusOverlay(lines.AsReadOnly(), stops.AsReadOnly(), pairs.AsReadOnly());
         }
 
         internal static IReadOnlyList<Vector3> SimplifyClosed(
@@ -237,44 +247,6 @@ namespace BarPromenade
 
             points[points.Count - 1] = points[0];
             return points;
-        }
-
-        private static List<CityMapBusStopMarker> CreateStopMarkers(
-            CityBusPlan plan)
-        {
-            var orderedStops = new List<CityBusStopDescriptor>(plan.Stops);
-            orderedStops.Sort(CompareStops);
-            var markers = new List<CityMapBusStopMarker>(
-                orderedStops.Count);
-            for (int index = 0; index < orderedStops.Count; index++)
-            {
-                CityBusStopDescriptor stop = orderedStops[index];
-                if (!IsFinite(stop.Position))
-                {
-                    continue;
-                }
-
-                markers.Add(new CityMapBusStopMarker(
-                    stop.Id,
-                    stop.SequenceIndex >= 0
-                        ? stop.SequenceIndex + 1
-                        : index + 1,
-                    stop.Position,
-                    stop.NameLocalizationKey));
-            }
-
-            return markers;
-        }
-
-        private static int CompareStops(
-            CityBusStopDescriptor left,
-            CityBusStopDescriptor right)
-        {
-            int sequenceComparison =
-                left.SequenceIndex.CompareTo(right.SequenceIndex);
-            return sequenceComparison != 0
-                ? sequenceComparison
-                : string.CompareOrdinal(left.Id, right.Id);
         }
 
         private static int FindFarthestPointIndex(

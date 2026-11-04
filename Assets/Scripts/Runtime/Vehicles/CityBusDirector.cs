@@ -8,7 +8,8 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityBusDirector : MonoBehaviour
     {
-        public const int MaximumActiveModels = 1;
+        public const int MaximumActiveModels = 3;
+        private const float BackgroundStep = 0.20f;
         public const float MinimumSpawnDistance = 76f;
         public const float MaximumSpawnDistance = 86f;
         public const float RecycleDistance = 92f;
@@ -57,6 +58,59 @@ namespace BarPromenade
         private const uint RandomFallbackSeed = 0xA341316Cu;
         private const uint RuntimeSequenceSalt = 0x42555352u;
         private const uint SpawnBehaviorSalt = 0x42555342u;
+
+        private IReadOnlyList<CityBusDirector> network;
+        private CityGameRoot city;
+        private int lineIndex;
+        private float backgroundTime;
+
+        public int LineCount => network == null ? 1 : network.Count;
+        public CityBusDirector GetLine(int index)
+        {
+            if (network != null) return network[index];
+            if (index != 0) throw new ArgumentOutOfRangeException(nameof(index));
+            return this;
+        }
+
+        /// <summary>Start one persistent simulation per line; only its model sleeps in the fog.</summary>
+        public void ConnectNetwork(IReadOnlyList<CityBusDirector> lines, int index)
+        {
+            if (lines == null || index < 0 || index >= lines.Count ||
+                lines.Count > MaximumActiveModels || lines[index] != this ||
+                !IsInitialized || network != null)
+                throw new ArgumentException("Invalid bus line registration.", nameof(lines));
+            network = lines;
+            lineIndex = index;
+            if (!plan.IsEmpty)
+            {
+                actor.RunsWithoutModel = true;
+                StartLine();
+            }
+        }
+
+        private void StartLine()
+        {
+            // Pick separated deterministic phases before the City becomes visible. A shared
+            // platform is never occupied twice at initialization, even for identical seeds.
+            int count = plan.SpawnAnchors.Count;
+            int start = (int)((plan.StableSeed % (uint)count + (uint)(count * lineIndex / network.Count)) % (uint)count);
+            for (int i = 0; i < count; i++)
+            {
+                var anchor = plan.SpawnAnchors[(start + i) % count];
+                bool clear = true;
+                for (int j = 0; j < network.Count; j++)
+                {
+                    var other = network[j]?.Actor;
+                    if (other != null && other != actor && other.HasRoutePhase &&
+                        (other.Position - anchor.Position).sqrMagnitude < 12f * 12f)
+                    { clear = false; break; }
+                }
+                if (!clear) continue;
+                actor.PrepareSpawn(plan, anchor, plan.StableSeed);
+                return;
+            }
+            throw new InvalidOperationException("No clear initial phase for " + plan.RouteId);
+        }
 
         private CityBusPlan plan;
         private CityBusActor actor;
@@ -139,6 +193,7 @@ namespace BarPromenade
                     "The city bus director is already initialized.");
             }
 
+            city = GetComponentInParent<CityGameRoot>();
             plan = busPlan ?? throw new ArgumentNullException(nameof(busPlan));
             player = playerTransform != null
                 ? playerTransform
@@ -214,6 +269,11 @@ namespace BarPromenade
 
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
             RefreshPlayerVelocity(safeDeltaTime);
+            if (network != null)
+            {
+                AdvanceLine(safeDeltaTime);
+                return;
+            }
             if (actor != null && actor.IsSpawned)
             {
                 if (!initialApproachCompleted)
@@ -265,6 +325,100 @@ namespace BarPromenade
             }
         }
 
+        private void AdvanceLine(float deltaTime)
+        {
+            if (actor == null || !actor.HasRoutePhase) return;
+            float distance = actor.GetClosestPlanarBodyDistance(player.position);
+            if (!actor.IsSpawned && distance <= MaximumSpawnDistance && CanRevealLine())
+            {
+                actor.BindPresentation(presentation);
+                initialApproachCompleted = true;
+            }
+            else if (actor.IsSpawned && distance >= RecycleDistance && !actor.HasPlayerPassenger)
+                ReleaseActor(true, preserveRoute: true);
+
+            if (!actor.IsSpawned)
+            {
+                backgroundTime += deltaTime;
+                if (backgroundTime < BackgroundStep) return;
+                // At normal Unity frame rates at most two steps are due. Keeping the
+                // remainder preserves the clock, including dwell and service ordinals.
+                while (backgroundTime >= BackgroundStep)
+                {
+                    backgroundTime -= BackgroundStep;
+                    actor.Advance(BackgroundStep, distance <= MaximumSpawnDistance ?
+                        ResolveObstacleState() : DistantObstacleState(), 0f);
+                }
+                return;
+            }
+
+            actor.Advance(deltaTime + backgroundTime, ResolveObstacleState(), GetNightFactor(), GetRainIntensity());
+            backgroundTime = 0f;
+        }
+
+        private bool CanRevealLine()
+        {
+            if (CanneryBlocksSpawn(actor.Position, actor.Rotation)) return false;
+            // A debug warp or a scene arrival can move a pedestrian directly
+            // onto a hidden line. Never switch its physical hull on inside them.
+            if (OverlapsOccupiedCapsule(player.position, GetPlayerRadius())) return false;
+            if (pedestrians == null) return true;
+            var walkers = pedestrians.Actors;
+            for (int i = 0; i < walkers.Count; i++)
+            {
+                var walker = walkers[i];
+                if (walker.IsSpawned && !walker.IsRouteBound &&
+                    OverlapsOccupiedCapsule(walker.Position, walker.AgentRadius)) return false;
+            }
+            return true;
+        }
+
+        private bool OverlapsOccupiedCapsule(Vector3 point, float radius)
+        {
+            Bounds hull = actor.WorldBodyBounds;
+            return point.y + 2f >= hull.min.y && point.y <= hull.max.y &&
+                actor.GetClosestPlanarBodyDistance(point) < radius + .05f;
+        }
+
+        private CityBusObstacleState DistantObstacleState()
+        {
+            float clearance = float.PositiveInfinity;
+            AccumulateOtherBuses(MinimumObstacleLookAhead, ref clearance);
+            CanneryTraffic?.AccumulateObstacle(actor, MinimumObstacleLookAhead, ref clearance);
+            return float.IsPositiveInfinity(clearance) ? CityBusObstacleState.Clear : new CityBusObstacleState(true, clearance);
+        }
+
+        private void AccumulateOtherBuses(float lookAhead, ref float clearance)
+        {
+            if (network == null) return;
+            for (int i = 0; i < network.Count; i++)
+            {
+                var other = network[i].Actor;
+                if (other == null || other == actor || !other.HasRoutePhase ||
+                    (other.Position - actor.Position).sqrMagnitude > 36f * 36f) continue;
+                var bounds = other.LocalVisualBounds;
+                float radius = bounds.extents.x;
+                float end = Mathf.Max(0f, bounds.extents.z - radius);
+                // Overlapping samples cover the nose, cabin and tail. Actual occupancy always
+                // wins, even against a higher-priority line. Parallel lanes stay open.
+                for (int station = -2; station <= 2; station++)
+                    CheckObstacle(other.Position + other.TravelDirection * (station * .5f * end),
+                        radius, lookAhead, ref clearance);
+                if (i >= lineIndex || other.MotionState == CityBusMotionState.Dwelling ||
+                    Mathf.Abs(Vector3.Dot(other.TravelDirection, actor.TravelDirection)) > .9f) continue;
+                // Lower line number claims a crossing before its nose enters it. If
+                // we already occupy its way out, finish clearing instead of deadlocking.
+                if (other.TryGetPathObstacleClearance(actor.Position, actor.LocalVisualBounds.extents.x,
+                    other.GetRequiredStoppingDistance() + 1f, out _)) continue;
+                float ahead = Mathf.Max(5f, other.GetRequiredStoppingDistance() + 4f);
+                for (float step = 2f; step < ahead + 2f; step += 2f)
+                {
+                    other.SampleAhead(step, out Vector3 position, out _);
+                    CheckObstacle(position, radius, lookAhead, ref clearance);
+                }
+            }
+        }
+
         public void Shutdown()
         {
             if (!IsInitialized)
@@ -291,7 +445,7 @@ namespace BarPromenade
         {
             if (IsInitialized)
             {
-                ReleaseActor(true);
+                ReleaseActor(true, preserveRoute: network != null);
             }
         }
 
@@ -539,7 +693,7 @@ namespace BarPromenade
         }
 
         private CityCanneryTraffic CanneryTraffic =>
-            GetComponentInParent<CityGameRoot>()?.Cannery?.Traffic;
+            city?.Cannery?.Traffic;
 
         public bool CanneryBlocksSpawn(Vector3 position, Quaternion rotation) =>
             actor != null && CanneryTraffic != null &&
@@ -611,6 +765,7 @@ namespace BarPromenade
                 MinimumObstacleLookAhead,
                 actor.GetRequiredStoppingDistance() + actor.Speed + 2f);
             float clearance = float.PositiveInfinity;
+            AccumulateOtherBuses(lookAhead, ref clearance);
             CanneryTraffic?.AccumulateObstacle(actor, lookAhead, ref clearance);
             if (!actor.HasPlayerPassenger)
             {
@@ -878,9 +1033,9 @@ namespace BarPromenade
             return result;
         }
 
-        private void ReleaseActor(bool forcePassengerCleanup)
+        private void ReleaseActor(bool forcePassengerCleanup, bool preserveRoute = false)
         {
-            if (actor != null && actor.IsSpawned)
+            if (actor != null && actor.HasRoutePhase)
             {
                 if (forcePassengerCleanup)
                 {
@@ -893,7 +1048,7 @@ namespace BarPromenade
                     }
                 }
 
-                actor.ReleasePresentation(poolRoot);
+                actor.ReleasePresentation(poolRoot, preserveRoute);
             }
 
             initialApproachCompleted = false;

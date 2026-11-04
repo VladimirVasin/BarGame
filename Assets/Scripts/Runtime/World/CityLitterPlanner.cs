@@ -658,12 +658,15 @@ namespace BarPromenade
                 }
                 foreach (Rect crossing in streets.CrosswalkWalkableRectangles) { blocked.Add(Expand(crossing, .25f)); walkLanes.Add(crossing); }
                 foreach (Rect sidewalk in streets.SidewalkWalkableRectangles) walkLanes.Add(sidewalk);
-                // Route 01's shelters and poles stand where the bus plan puts them,
-                // a lane's length from the decoration that seeded them.
-                foreach (CityBusStopDescriptor stop in CityBusPlanner.Create(layout, decoration).Stops)
+                foreach (var platform in CityBusNetworkFurniture.Platforms(CityDistrictBusPlanner.Create(layout)))
                 {
+                    var stop = platform.stop;
+                    blocked.Add(CityBusStopWaitPlanner.QueueApron(platform.line, stop, layout));
                     circles.Add(new Circle(XZ(stop.ShelterPosition), 5.5f));
                     circles.Add(new Circle(XZ(stop.Position), 1.5f));
+                    blocked.Add(CityBusPlatformClearance.PassengerAccess(stop.Position, stop.Forward,
+                        stop.ShelterPosition, stop.RoadsideForward));
+                    blocked.Add(CityBusPlatformClearance.PavementApproach(stop.Position, stop.Forward, stop.RoadsideForward));
                 }
                 var courtyardCells = new HashSet<Vector2Int>();
                 foreach (CityCourtyardBlock block in layout.CourtyardBlocks)

@@ -116,6 +116,10 @@ namespace BarPromenade
             EnsureCanonicalHomeBarStreets(snapshot, seed, allEdges, roads);
             CityRoadGeometryPlan.EnsurePilotRoads(snapshot, roads);
             roads.Sort(RoadEdge.Compare);
+            // Existing addresses and landmark entrances keep their original frontages.
+            // Meshes, ground cuts and traffic use the completed street network.
+            List<RoadEdge> frontageRoads = roads;
+            roads = ConnectStreetEnds(snapshot, seed, nodes, allEdges, frontageRoads);
 
             Vector2 originOffset = anchorAtBlueprintCenter
                 ? -snapshot.GetCoordinateOffset(blueprint.CenterNode)
@@ -123,7 +127,7 @@ namespace BarPromenade
                     snapshot.BlocksX * 0.5f, snapshot.BlocksZ * 0.5f));
             Vector3 origin = new Vector3(originOffset.x, 0f, originOffset.y);
             Dictionary<RoadEdge, CityPathKind> pathKinds =
-                CreatePathKinds(snapshot, roads);
+                CreatePathKinds(snapshot, seed, roads);
             // Reserve the existing semantic places before bending ordinary
             // neighbourhood streets; their addresses and public approaches
             // do not depend on the physical street variations.
@@ -141,6 +145,7 @@ namespace BarPromenade
                 seed,
                 origin,
                 nodes,
+                frontageRoads,
                 roads,
                 pathKinds,
                 out List<CityDistrictPointOfInterestDescriptor>
@@ -822,6 +827,7 @@ namespace BarPromenade
 
         private static Dictionary<RoadEdge, CityPathKind> CreatePathKinds(
             CityGenerationSettings settings,
+            int seed,
             IReadOnlyList<RoadEdge> roads)
         {
             var result =
@@ -829,27 +835,78 @@ namespace BarPromenade
             for (int index = 0; index < roads.Count; index++)
             {
                 RoadEdge edge = roads[index];
-                if (settings.Blueprint?.River != null &&
-                    settings.Blueprint.River.TryGetBridge(
-                        edge,
-                        out CityBridgeDefinition bridge))
-                {
-                    result.Add(
-                        edge,
-                        bridge.Role == CityBridgeRole.ParkFootbridge
-                            ? CityPathKind.ParkPath
-                            : CityPathKind.Street);
-                    continue;
-                }
-
-                result.Add(
-                    edge,
-                    IsInteriorParkEdge(settings, edge)
-                        ? CityPathKind.ParkPath
-                        : CityPathKind.Street);
+                result.Add(edge, GetPathKind(settings, seed, edge));
             }
 
             return result;
+        }
+
+        private static CityPathKind GetPathKind(CityGenerationSettings settings, int seed, RoadEdge edge)
+        {
+            if (settings.Blueprint?.River != null && settings.Blueprint.River.TryGetBridge(edge, out var bridge))
+                return bridge.Role == CityBridgeRole.ParkFootbridge ? CityPathKind.ParkPath : CityPathKind.Street;
+            return IsInteriorParkEdge(settings, edge) || CityTerraceDistrictPlan.IsPedestrianApproach(settings, seed, edge)
+                ? CityPathKind.ParkPath : CityPathKind.Street;
+        }
+
+        private static List<RoadEdge> ConnectStreetEnds(CityGenerationSettings settings, int seed,
+            IReadOnlyList<Vector2Int> nodes, IReadOnlyList<RoadEdge> available, List<RoadEdge> original)
+        {
+            if (settings.Blueprint?.Id != CityBlueprintCatalog.DefaultBlueprintId) return original;
+
+            var result = new List<RoadEdge>(original);
+            var selected = new HashSet<RoadEdge>(original);
+            var candidates = new HashSet<RoadEdge>(available);
+            var degree = new Dictionary<Vector2Int, int>(nodes.Count);
+            foreach (var node in nodes) degree.Add(node, 0);
+            foreach (RoadEdge edge in original)
+            {
+                if (GetPathKind(settings, seed, edge) != CityPathKind.Street) continue;
+                degree[edge.A]++;
+                degree[edge.B]++;
+            }
+
+            // At the stair shortcut only the eastward continuation clears both landings.
+            var upperStreet = new Vector2Int(12, 10);
+            var coastalLink = new RoadEdge(upperStreet, upperStreet + Vector2Int.right);
+            if (CityTerraceDistrictPlan.UsesAuthoredWalks(settings, seed) && candidates.Contains(coastalLink) &&
+                !selected.Contains(coastalLink) && degree[upperStreet] == 1)
+                Connect(coastalLink);
+
+            foreach (var node in nodes)
+            {
+                if (degree[node] != 1) continue;
+                RoadEdge best = default;
+                int bestScore = int.MaxValue;
+                foreach (var direction in CardinalDirections)
+                {
+                    var edge = new RoadEdge(node, node + direction);
+                    if (!candidates.Contains(edge) || selected.Contains(edge) ||
+                        GetPathKind(settings, seed, edge) != CityPathKind.Street ||
+                        CityTerraceDistrictPlan.IsPedestrianMouth(settings, seed, node + direction)) continue;
+                    // Join two blind ends when possible, then prefer extending the
+                    // existing alignment into a quiet junction over a fourth arm.
+                    int neighbours = degree[node + direction];
+                    if (neighbours == 0) continue;
+                    int score = neighbours * 2 + (selected.Contains(new RoadEdge(node, node - direction)) ? 0 : 1);
+                    if (score >= bestScore) continue;
+                    best = edge;
+                    bestScore = score;
+                }
+                if (bestScore == int.MaxValue)
+                    throw new InvalidOperationException($"No drivable continuation for the street at {node}.");
+                Connect(best);
+            }
+            result.Sort(RoadEdge.Compare);
+            return result;
+
+            void Connect(RoadEdge edge)
+            {
+                result.Add(edge);
+                selected.Add(edge);
+                degree[edge.A]++;
+                degree[edge.B]++;
+            }
         }
 
         private static bool IsInteriorParkEdge(
@@ -876,6 +933,7 @@ namespace BarPromenade
             Vector3 origin,
             IReadOnlyList<Vector2Int> nodes,
             List<RoadEdge> roads,
+            List<RoadEdge> throughRoads,
             IReadOnlyDictionary<RoadEdge, CityPathKind> pathKinds,
             out List<CityDistrictPointOfInterestDescriptor>
                 districtPointsOfInterest,
@@ -1031,7 +1089,7 @@ namespace BarPromenade
                 settings.Blueprint, settings, seed, origin, nodes, roads, pathKinds);
             foreach (CityElevationStairDescriptor stair in baselineElevation.SignatureStairs)
                 preservedStreets.Add(stair.Edge);
-            settings.RoadGeometry = CityRoadGeometryPlan.Create(settings, origin, roads,
+            settings.RoadGeometry = CityRoadGeometryPlan.Create(settings, origin, throughRoads,
                 preservedStreets);
 
             var lots = new List<BuildingLot>(lotCount);

@@ -70,16 +70,27 @@ namespace BarPromenade
         public CityTunnelShelterController TunnelShelter { get; private set; }
         public CityPedestrianPlan PedestrianPlan { get; private set; }
         public CityPedestrianDirector Pedestrians { get; private set; }
-        public CityBusPlan BusPlan { get; private set; }
+        public IReadOnlyList<CityBusPlan> BusPlans { get; private set; }
+        public IReadOnlyList<CityBusDirector> BusLines { get; private set; }
+        public IReadOnlyList<CityBusRideController> BusRides { get; private set; }
+        public IReadOnlyList<CityBusStopWaitPlan> LineWaitPlans { get; private set; }
+        public IReadOnlyList<CityBusNpcPassengerController> LinePassengers { get; private set; }
+        // The first line remains available to tools that inspect one actor in isolation.
+        public CityBusPlan BusPlan => BusPlans?.Count > 0 ? BusPlans[0] : null;
         public GameObject BusStops { get; private set; }
-        public CityBusDirector Bus { get; private set; }
-        public CityBusRideController BusRide { get; private set; }
-        public CityBusStopWaitPlan BusStopWaits { get; private set; }
-        public CityBusNpcPassengerController BusPassengers
+        public CityBusDirector Bus => BusLines?.Count > 0 ? BusLines[0] : null;
+        public CityBusRideController BusRide
         {
-            get;
-            private set;
+            get
+            {
+                if (BusRides == null || BusRides.Count == 0) return null;
+                for (int i = 0; i < BusRides.Count; i++)
+                    if (BusRides[i] != null && BusRides[i].State != CityBusRideState.Outside) return BusRides[i];
+                return BusRides[0];
+            }
         }
+        public CityBusStopWaitPlan BusStopWaits => LineWaitPlans?.Count > 0 ? LineWaitPlans[0] : null;
+        public CityBusNpcPassengerController BusPassengers => LinePassengers?.Count > 0 ? LinePassengers[0] : null;
         public YardWheelchairActor YardWheelchair { get; private set; }
         public IReadOnlyList<DryingYardBabushkaPresentation>
             DryingYardBabushkas { get; private set; }
@@ -607,6 +618,9 @@ namespace BarPromenade
                 GameSessionState.CitySeed);
             RoadWalkableArea pedestrianWalkableArea =
                 CityPedestrianPlanner.CreateWalkableArea(PedestrianPlan);
+            BusPlans = CityDistrictBusPlanner.Create(Layout);
+            foreach (var platform in CityBusNetworkFurniture.Platforms(BusPlans))
+                pedestrianWalkableArea.Add(CityBusStopWaitPlanner.QueueApron(platform.line, platform.stop, Layout));
             GameLogPhases.Report("city", "pedestrian_plan", stepTimer);
             stepTimer.Restart();
             Pedestrians = CityPedestrianFactory.Create(
@@ -621,6 +635,8 @@ namespace BarPromenade
             stepTimer.Restart();
             var lowLampAnchors = new List<Transform>(World.RiverQuayLampAnchors);
             if (World.Fair != null) lowLampAnchors.AddRange(World.Fair.LampAnchors);
+            BusStops = CityBusStopWorldBuilder.Build(transform, BusPlans);
+            Night.BusStopPoles = BusStops.transform;
             Night.InitializeLighting(
                 Player.GameObject.transform,
                 Layout.Seed,
@@ -639,18 +655,9 @@ namespace BarPromenade
             GameLogPhases.Report("city", "night_lighting", stepTimer);
             yield return new CompositionStep("player_and_pedestrians", 0.76f);
             stepTimer.Restart();
-            BusPlan = CityBusPlanner.Create(
-                Layout,
-                World.DecorationPlan);
-            BusStops = CityBusStopWorldBuilder.Build(
-                transform,
-                BusPlan);
-            Bus = CityBusFactory.Create(
-                transform,
-                BusPlan,
-                Player.GameObject.transform,
-                Pedestrians,
-                () => Night.NightFactor);
+            var lines = CityBusFactory.CreateNetwork(transform, BusPlans, Player.GameObject.transform,
+                Pedestrians, () => Night.NightFactor);
+            BusLines = lines;
             GameLogPhases.Report("city", "bus", stepTimer);
             stepTimer.Restart();
             // The yard rider is authored, not ambient: one staged NPC on
@@ -842,7 +849,7 @@ namespace BarPromenade
                     Layout,
                     World.OpenAreaDecorationPlan,
                     World.CemeteryPlan,
-                    BusPlan,
+                    BusPlans,
                     World.DecorationPlan,
                     pedestrianStreetSurfacePlan,
                     World.SeacoastPlan,
@@ -1009,32 +1016,25 @@ namespace BarPromenade
                     () => TunnelShelter != null && TunnelShelter.IsSheltered,
                     LastRouteCarRoadSurface.WetAsphalt);
             }
-            BusRide = CityBusRideController.Create(
-                Bus,
-                Player,
-                World.WalkableArea,
-                camera,
-                follow,
-                pedestrianStreetSurfacePlan);
-            BusStopWaits = CityBusStopWaitPlanner.Create(
-                BusPlan,
-                PedestrianPlan,
-                pedestrianWalkableArea);
-            BusPassengers = CityBusNpcPassengerController.Create(
-                Bus,
-                Pedestrians,
-                BusStopWaits,
-                // The same road-inclusive area the hero boards through: the
-                // outward door dock lands just past the curb line and never
-                // validates against the sidewalk-only pedestrian graph.
-                World.WalkableArea,
-                pedestrianStreetSurfacePlan,
-                Player.GameObject.transform,
-                GameSessionState.CitySeed);
-            GameLog.Info(
-                "city",
-                "bus_stop_waits_planned",
-                GameLog.Field("wait_points", BusStopWaits.Count));
+            var rides = new CityBusRideController[lines.Length];
+            var waits = new CityBusStopWaitPlan[lines.Length];
+            var passengers = new CityBusNpcPassengerController[lines.Length];
+            int waitPointCount = 0;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                rides[i] = CityBusRideController.Create(lines[i], Player, World.WalkableArea, camera,
+                    follow, pedestrianStreetSurfacePlan);
+                waits[i] = CityBusStopWaitPlanner.Create(BusPlans[i], PedestrianPlan, pedestrianWalkableArea, Layout);
+                waitPointCount += waits[i].Count;
+                passengers[i] = CityBusNpcPassengerController.Create(lines[i], Pedestrians, waits[i],
+                    World.WalkableArea, pedestrianStreetSurfacePlan, Player.GameObject.transform,
+                    unchecked(GameSessionState.CitySeed + 104729 * i));
+            }
+            BusRides = rides;
+            LineWaitPlans = waits;
+            LinePassengers = passengers;
+            foreach (var controller in passengers) controller.ShareWaitingPlaces(passengers);
+            GameLog.Info("city", "bus_stop_waits_planned", GameLog.Field("wait_points", waitPointCount));
             GameLogPhases.Report("city", "interactions_and_rides", stepTimer);
             // The city sound layer is composed only after every moving
             // physical owner exists. Its plan contains no anonymous fallback
@@ -1269,12 +1269,12 @@ namespace BarPromenade
                 intoxicationHud);
             stepTimer.Restart();
             Map = ui.AddComponent<CityMapController>();
-            Map.Initialize(
+            Map.InitializeNetwork(
                 Layout,
                 Player,
                 follow,
                 intoxicationHud,
-                BusPlan,
+                BusPlans,
                 World.MountainBoundaryPlan,
                 World.SeacoastPlan);
             GameLogPhases.Report("city", "map_initialize", stepTimer);
@@ -1378,24 +1378,7 @@ namespace BarPromenade
                 GameLog.Field(
                     "pedestrian_pool_capacity",
                     Pedestrians.PoolCapacity),
-                GameLog.Field(
-                    "bus_route_link_count",
-                    BusPlan.Links.Count),
-                GameLog.Field(
-                    "bus_route_id",
-                    BusPlan.RouteId),
-                GameLog.Field(
-                    "bus_loop_length",
-                    BusPlan.LoopLength),
-                GameLog.Field(
-                    "bus_spawn_anchor_count",
-                    BusPlan.SpawnAnchors.Count),
-                GameLog.Field(
-                    "bus_stop_count",
-                    BusPlan.Stops.Count),
-                GameLog.Field(
-                    "bus_clearance_rejection_count",
-                    BusPlan.ClearanceFailures.Count),
+                GameLog.Field("bus_route_count", BusPlans.Count),
                 GameLog.Field(
                     "bus_active_cap",
                     CityBusDirector.MaximumActiveModels),

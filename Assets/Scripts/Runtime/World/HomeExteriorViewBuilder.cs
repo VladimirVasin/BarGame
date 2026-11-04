@@ -82,8 +82,9 @@ namespace BarPromenade
             CityLaundryWorldBuilder.BuildHomeExterior(root, context);
             CityResidentialCourtyardPlan courtyards = CityResidentialCourtyardPlan.ForLayout(context.Layout);
             CityResidentialCourtyardWorldBuilder.BuildHomeExterior(root, courtyards, context);
-            BuildHomeBusStop(root, context);
+            var poles = BuildHomeBusStop(root, context);
             night = BuildNightFixtures(root, context);
+            night.BusStopPoles = poles;
             ground.SetBuildingPerimeters(CityBuildingPerimeterPlan.ForLayout(context.Layout), context);
             ground.SetResidentialCourtyards(courtyards, context);
             ground.FinalizeSurface();
@@ -95,14 +96,14 @@ namespace BarPromenade
             return root;
         }
 
-        private static void BuildHomeBusStop(
+        private static Transform BuildHomeBusStop(
             Transform parent,
             HomeExteriorContextPlan context)
         {
             CityBusStopDescriptor stop = context.HomeBusStop;
             if (stop == null)
             {
-                return;
+                return null;
             }
 
             Vector3 localShelter = PlayerHomeBalconyGeometry.ToHomeLocal(
@@ -123,7 +124,8 @@ namespace BarPromenade
                 PlayerHomeBalconyGeometry.ToHomeLocalDirection(
                     context.PlayerHome,
                     stop.RoadsideForward),
-                false);
+                false, context.HomeBusNumber);
+            return root;
         }
 
         private static void BuildTerminalEnvironment(

@@ -88,12 +88,12 @@ Repair/publication: [../tools/README.md](../tools/README.md).
   Hero:wounds/no detach;bar:hit/parry;skin/aim.
   Gap:pierce/balance. [World](current-world.md)
 - City:west work/east homes3–5storeys+park;144lots/courts/wings.
-  Courts/light/seats/carrier;Route01;dog3/owners2.
+  Courts/seats/carrier;bus 01 west/02 east/03 hills, transfers;dog3/owners2.
   NPC192/≤36/cache48;Home5/2.
-  Eight industrial functions own roofs/equipment/surfaces and pooled task light;
+  Eight industry sites own roofs/gear/surfaces/pooled task light;
   substation/municipal/port workshops remain passive.
-  First unpaused dock entry starts finite port→factory→shop supply once;
-  catch-up survives scenes/reentry, excluding pre-entry time. Three units,
+  First unpaused dock entry starts port→factory→shop supply;
+  catch-up spans scene changes, excluding pre-entry time. Three units,
   two cranes, crews and a
   `6.481 x 2.4 x 3.2 m` closed truck/full cab share the cycle.
   After its existing central factory-exit turn, it keeps/parks right and yields
@@ -101,7 +101,7 @@ Repair/publication: [../tools/README.md](../tools/README.md).
   turns avoid street furniture. Street reservations stay `8 m`/asphalt `6 m`;
   `2 m` pavements/stops follow the layout.
   Truck spawns on unseen road, parks with first crate; later trips leave factory.
-  Two soft arrival horns, reverse beeper/ajar door/look-back steering. Cranes
+  Two soft arrival horns, reverse beeper/ajar door/look-back. Cranes
   continue while the driver yields at the store entrance. Local carts go to
   cargo/return; doors→guided lift unfolds/lowers, closing reverses above ground.
   Store clearance releases driver; jamb bumpers stay outside.
@@ -135,7 +135,7 @@ Repair/publication: [../tools/README.md](../tools/README.md).
 - Home toilet choices share actual hand-operated lid actions; the seated
   branch coordinates the original rig, lowered clothing, inspection/flush
   and an underwater camera that returns while the hero dresses.
-- ImageGen City/Village maps;localized menus;warehouse ambush/debug/forced pistol∞reserve+reload.
+- City charcoal map/Village brochure;localized menus;warehouse ambush/debug/forced pistol∞reserve+reload.
 - Shared style/causal audio/bounded diagnostics.
 
 ## Deferred

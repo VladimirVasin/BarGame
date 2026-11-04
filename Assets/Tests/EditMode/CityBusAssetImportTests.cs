@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
@@ -620,34 +621,92 @@ namespace BarPromenade.Tests.EditMode
                         Is.EqualTo("Bar Promenade/City Bus Glass Rain"));
                 }
 
-                presentation.AdvanceWipers(0.8f, 1f / 60f);
                 var block = new MaterialPropertyBlock();
-                foreach (Renderer overlay in
-                         presentation.GlassRainOverlays)
-                {
-                    Assert.That(
-                        overlay.enabled,
-                        Is.True,
-                        "Rain must light the droplet overlays up.");
-                    overlay.GetPropertyBlock(block);
-                    Assert.That(
-                        block.GetFloat("_RainIntensity"),
-                        Is.EqualTo(0.8f).Within(0.0001f));
-                }
-
+                CheckWetGlass(CityEternalRainShaper.DrizzleIntensity, Is.Zero);
+                CheckWetGlass(GameWeatherRules.LightRainIntensity, Is.Zero);
+                // During a slot transition the drops start running before
+                // the downpour peaks, then stop again as the rain subsides.
+                float strengthening = Mathf.Lerp(GameWeatherRules.LightRainIntensity,
+                    GameWeatherRules.HeavyRainIntensity, .75f);
+                CheckWetGlass(strengthening, Is.GreaterThan(0f).And.LessThan(1f));
+                CheckWetGlass(GameWeatherRules.HeavyRainIntensity, Is.EqualTo(1f).Within(.0001f));
+                CheckWetGlass(GameWeatherRules.LightRainIntensity, Is.Zero);
                 presentation.AdvanceWipers(0f, 1f / 60f);
-                foreach (Renderer overlay in
-                         presentation.GlassRainOverlays)
+                Assert.That(presentation.GlassRainOverlays.All(overlay => !overlay.enabled), Is.True,
+                    "Dry glass must stop rendering both settled drops and runoff.");
+                CheckWetGlass(GameWeatherRules.ThunderstormIntensity, Is.EqualTo(1f).Within(.0001f));
+                presentation.ResetForPool();
+                Assert.That(presentation.GlassRainOverlays.All(overlay => !overlay.enabled), Is.True,
+                    "A pooled bus must not retain a storm on its glass.");
+                CheckWetGlass(CityEternalRainShaper.DrizzleIntensity, Is.Zero);
+
+                if (Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_BUS_GLASS") == "1")
+                    CaptureGlassWeather(bus, presentation);
+
+                void CheckWetGlass(float rain, NUnit.Framework.Constraints.IResolveConstraint runoff)
                 {
-                    Assert.That(
-                        overlay.enabled,
-                        Is.False,
-                        "The droplets must dry off with the rain.");
+                    presentation.AdvanceWipers(rain, 1f / 60f);
+                    foreach (Renderer overlay in presentation.GlassRainOverlays)
+                    {
+                        Assert.That(overlay.enabled, Is.True, overlay.name);
+                        overlay.GetPropertyBlock(block);
+                        Assert.That(block.GetFloat("_RainIntensity"), Is.EqualTo(rain).Within(.0001f), overlay.name);
+                        Assert.That(block.GetFloat("_RunoffIntensity"), runoff, overlay.name);
+                    }
                 }
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(bus);
+            }
+        }
+
+        private static void CaptureGlassWeather(GameObject bus, CityBusPresentation presentation)
+        {
+            var camera = new GameObject("Side window camera").AddComponent<Camera>();
+            var key = new GameObject("Window daylight").AddComponent<Light>();
+            var target = RenderTexture.GetTemporary(640, 360, 24);
+            var frame = new Texture2D(target.width, target.height, TextureFormat.RGB24, false);
+            RenderTexture previous = RenderTexture.active;
+            try
+            {
+                camera.enabled = false;
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = new Color(.20f, .25f, .27f);
+                camera.fieldOfView = 34f;
+                camera.farClipPlane = 12f;
+                camera.targetTexture = target;
+                key.type = LightType.Directional;
+                key.transform.rotation = Quaternion.LookRotation(-bus.transform.right + Vector3.down * .6f);
+                key.intensity = 1.35f;
+                var panes = presentation.GlassRainOverlays.Single(overlay => overlay.transform.parent.name == "GLS_Windows");
+                Vector3 right = bus.transform.right;
+                Vector3 focus = panes.bounds.center + right * panes.bounds.extents.x + bus.transform.forward * .5f;
+                camera.transform.position = focus + right * 2.05f;
+                camera.transform.LookAt(focus);
+                string directory = Path.Combine("Captures", "BusGlass");
+                Directory.CreateDirectory(directory);
+                WriteFrame("heavy", GameWeatherRules.HeavyRainIntensity);
+                WriteFrame("light-after-heavy", GameWeatherRules.LightRainIntensity);
+
+                void WriteFrame(string name, float rain)
+                {
+                    presentation.AdvanceWipers(rain, 1f / 60f);
+                    camera.Render();
+                    RenderTexture.active = target;
+                    frame.ReadPixels(new Rect(0, 0, target.width, target.height), 0, 0);
+                    frame.Apply();
+                    File.WriteAllBytes(Path.Combine(directory, name + ".png"), frame.EncodeToPNG());
+                }
+            }
+            finally
+            {
+                camera.targetTexture = null;
+                RenderTexture.active = previous;
+                RenderTexture.ReleaseTemporary(target);
+                UnityEngine.Object.DestroyImmediate(frame);
+                UnityEngine.Object.DestroyImmediate(key.gameObject);
+                UnityEngine.Object.DestroyImmediate(camera.gameObject);
             }
         }
 

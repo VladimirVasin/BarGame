@@ -86,7 +86,8 @@ namespace BarPromenade
                     if (prop?.PropRoot != null) AddDynamic(prop.PropRoot);
             }
             if (root.Player.GameObject != null) AddDynamic(root.Player.GameObject.transform);
-            if (root.Bus != null) AddDynamic(root.Bus.transform);
+            if (root.BusLines != null)
+                foreach (var line in root.BusLines) AddDynamic(line.transform);
             if (root.Pedestrians != null) AddDynamic(root.Pedestrians.transform);
             if (root.LastRouteCar != null) AddDynamic(root.LastRouteCar.transform);
             if (root.World.ArchShelter != null)

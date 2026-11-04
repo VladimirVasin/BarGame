@@ -396,7 +396,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
         }
 
-        private static IEnumerator CaptureMapUi(string name)
+        internal static IEnumerator CaptureMapUi(string name)
         {
             string directory = Path.Combine(Directory.GetCurrentDirectory(), "Captures", "CityMap");
             Directory.CreateDirectory(directory);

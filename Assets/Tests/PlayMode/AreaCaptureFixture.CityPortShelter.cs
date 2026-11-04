@@ -31,7 +31,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(city != null && city.IsInitialized, Is.True);
             city.Cannery.AutoAdvance = false;
             city.Cannery.ForcePresentation = true;
-            city.BusPassengers.enabled = city.Bus.enabled = false;
+            foreach (var line in city.LinePassengers) line.enabled = false;
+            foreach (var line in city.BusLines) line.enabled = false;
             city.Player.Motor.SetInputEnabled(false);
             foreach (Renderer renderer in city.Player.GameObject.GetComponentsInChildren<Renderer>(true)) renderer.enabled = false;
             var port = city.World.Root.GetComponentInChildren<CityPortController>();

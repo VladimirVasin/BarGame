@@ -543,8 +543,8 @@ cemetery:own interiors/returns.
   faces; the railed waterside stays open. Quay fronts project `0.03 m` beyond
   Paving/Bed faces on main spans, lower frontages and the cave approach,
   retaining the landward rail seat. River parapets preserve stair openings and
-  bank-road pads; road-edge fences treat decks as support-only. Route01 uses
-  road bridges, never timber. In `default-coastal`, water/bed continue over
+  bank-road pads; road-edge fences treat decks as support-only. Route 03 crosses Works.
+  The mapped bridge walk connects routes 01 and 02. In `default-coastal`, water/bed continue over
   `48 m` behind the southern mountain. Both walks extend from `Z=-182` to
   rock stops at `Z=-208`; cave water/space behind them remain outside nav.
   Low lanterns at `13 m` pitch keep emissive lenses/halos; pooled spill and
@@ -602,7 +602,7 @@ cemetery:own interiors/returns.
   It blends directional/ambient/reflection lighting and the bounded City/Home
   exterior night fixtures; the fixed neighbour-wall yard Spot is
   outside `NightFactor` and stays on. The atmosphere pool remains capped at
-  `12` local realtime lights. One active bus may add `4`, the single pooled
+  `12` local realtime lights. Each visible bus may add `4` (one vehicle per line), the pooled
   helmet-lamp pedestrian `1`, the yard `1` and the drying yard's night-only
   pole floodlight `1`. Fixed site lights, including the cemetery and the ten
   church-garden uplights, remain separate from the twelve-light pool;
@@ -850,10 +850,10 @@ cemetery:own interiors/returns.
   The five withdrawn library walkers retain their authored silhouettes, clips,
   kettle/lid/steam and declared-light metadata as inspectable assets; none is
   instantiated by the default street catalog. Their staged availability does
-  not place them in City, Home or Route 01. Home transforms the shared pavement
+  not place them in City, Home or the bus population. Home transforms the shared pavement
   graph into its local exterior, retaining a bounded `100 m` approach context
   beyond the facade while rendering its `48 m` street slice;
-- one route-driven ambient midibus with a strict single-slot cap. The production
+- one independently circulating midibus per district line. The production
   model uses its real `8.25 x 2.38 x 2.95 m` body and `4.5 m` wheelbase rather
   than a hidden gameplay scale, and exposes a modeled driver area, twelve
   passenger seats, rails, dashboard, two animated double-leaf doors, rolling
@@ -883,66 +883,24 @@ cemetery:own interiors/returns.
   only for the hero aboard. The front and rear
   doorways each own a dedicated spatial pneumatic voice; opening and closing
   clips are fired once from the actual door-phase edges and pool cleanly with
-  the actor. Canonical Route 01 is an immutable right-hand, Street-only
-  closed grand city loop. Its target planner serves every district point of
-  interest and `PlayerHome`, and on a dressed layout adds coverage targets:
-  every open-area access gate (cemetery, all yards, the waterfront), two
-  eastern waterfront spread anchors so the whole `400 m` beach front is
-  driven, the outermost park gate on each river bank and the supermarket.
-  Targets are ordered by their station along the road-grid perimeter,
-  counter-clockwise from home, so the right-hand doors face the outer
-  precincts and the served sequence crosses the river exactly twice — once
-  per road bridge. Coverage targets prefer the kerb that faces their
-  precinct over raw edge adjacency, anchor beside the gate rather than in
-  its `8.8 m` approach throat, may drift up to four road edges and `120 m`
-  when their own frontage ends in a river-flank or map-corner stub, and are
-  dropped (never fatal) if no cycle-capable candidate survives. District
-  POIs keep their bounded same-district river fallback and Home stays on
-  its frontage or one edge away. Connectors are length-weighted shortest
-  paths that may not drive any selected stop's own direction — the bus
-  never cruises past its own pole — while the opposite direction of a stop
-  street stays open, as on any real carriageway. Stop furniture keeps
-  `7 m` of clearance (pole and shelter wall centre) from every bar, home
-  and supermarket door sidewalk point: a blocked placement slides along
-  its link to the nearest clear spot and a link with no clear spot is
-  rejected, so no shelter ever crowds an entrance. After the ring closes,
-  a coalescing pass drops the less essential stop of any pair closer than
-  `80 m` along the loop (home and the district POIs are never dropped; the
-  surviving pole serves both destinations), then a spacing pass walks the
-  loop and inserts plain kerbside stops wherever the along-loop gap exceeds
-  `200 m`, aiming at `150 m` and never landing two inserted stops closer
-  than `80 m` or on a directed street the loop drives twice. A second,
-  planar coalesce enforces a `35 m` floor between any two poles anywhere
-  on the map — the loop folds back on itself, and along-loop distance
-  cannot see two shelters sharing a corner. The veto is empirical, not
-  predictive: a drop is tried, the spacing pass refills the torn
-  stretch, and only if some gap still exceeds three ideal intervals is
-  the drop rolled back (then the pair's other member, then protection). Full-body-clear ordinary straights and proven `6 m`-radius left
-  turns enter the loop. At selected Road v2.1 nodes only — whose corner
-  pads may now stand on open yard ground, which is what lets the loop turn
-  along the city fringe — a clearance-proven two-edge right-turn macro uses
-  a long S-merge across the full incoming Street, a `4.5 m` quarter-turn in
-  the clear core and a symmetric S-return across the outgoing Street;
-  ordinary tight `3 m` right turns remain rejected. A physical street link
-  may recur in a connector, but every ordered occurrence receives a unique
-  route link/node ID. Route selection has no random branch or player
-  pursuit. The compact production loop recalculates semantic, gate and
-  numbered street stops from coverage and spacing, with no fixed stop count.
-  Each has a physical blue `01` pole, served once per lap by that
-  deterministic door/driver timeline with a fixed `10 s` total dwell,
-  including `0.70 s` opening and `0.70 s` closing transitions for both
-  doors. Random roadside decoration does not emit bus shelters.
-  The residential last-route island has a working pole
-  nearby but outside its public ground and approaches, leaving the abandoned
-  island structures distinct from the live stop. A pooled actor prefers
-  obstacle-safe fog-hidden route poses `76-86 m` from the player and falls back
-  to `56-86 m` only when forward travel on the same loop can approach the
-  player. The cap means at most one bus can be active or potentially visible
-  rather than guaranteeing that one is always on screen. While the hero is
-  outside, it yields to the player and pedestrians and recycles only when its
-  full body is at least `92 m` away. While the hero is attached as a passenger,
-  the director omits that hero from bus-obstacle prediction and prevents
-  recycling or slot release, while pedestrian yielding remains active.
+  the actor. The default City has three one-way rings. Lines 01 and 02 stay
+  on the west and east banks. Line 03 climbs the western switchbacks, crosses
+  Summit Street Bridge, descends the eastern streets and returns via Works Bridge.
+  Each line has sheltered local stops on straight sections. A walk from either
+  end of the sidewalk reaches the shelter and both passenger doors, including
+  on the switchbacks. Queues stand back from the through path. Infill and litter
+  reserve the shelter, waiting places and door approaches. Transfer platforms
+  serve the two hill approaches and a river crossing shown on the map. Platform sharing
+  depends on the physical pole position. Two separate boarding places retain
+  both poles. Each face gives the line and stop (03-02), with a second code for transfers.
+  Two short-range, shadowless spots from the street pool light the nearest pole from above, one per face.
+  The bus displays dark digits on its pale front panel and light digits on the sides and rear.
+  In drizzle and light rain, scattered small drops cling to its panes. Drops run down the glass in heavy rain.
+  Each bus serves its own ordered stops, opens both doors and dwells for ten
+  seconds. Offscreen travel advances the same route and dwell clock. Each
+  line has one model, bound within the fog approach and released at a body
+  distance of 92 m unless the hero is aboard. Nearby buses keep their own
+  driver, cabin and passengers and yield around conflicting movements.
   Suspension, wheel/steering articulation, button travel, driver hands/look, the
   door timeline, a synthesized engine loop and night-scaled head, tail and cabin
   emission reset with the pool. Two
@@ -975,18 +933,10 @@ cemetery:own interiors/returns.
   Normal completion and cancellation, scene teardown or forced actor cleanup
   restore the player motor, `CharacterController`, contact shadow and camera
   exactly once without mutating its hierarchy, with a safe exterior fallback
-  when needed. This passenger runtime remains City-only and uses the first
-  fixed opposite-driver seat; it has no fare, destination picker, NPC
-  passengers, passenger
-  persistence or live map marker.
-  Home's bounded exterior regenerates
-  the same route plan and reconstructs the nearby Home stop as a static
-  collider-free pole, but it has no bus actor or director: no real Street
-  pass-through offers both complete-body seams at or beyond the fog-hidden
-  `56 m` boundary, and the default facade faces a visible road terminal. A
-  fabricated continuation or
-  Balcony-camera-owned activation would create a visible pop, so neither is
-  introduced;
+  when needed. Each line carries its own waiting and riding NPCs. The hero
+  transfers by alighting onto a pavement, then boarding the next line. At
+  Home the balcony places a static collider-free sign from the actual home
+  line and platform. Active transport runs in City.
 - deterministic street lamps with geometry batched into `48 m` spatial
   chunks, focused lower-pole collision proxies, shadowless spot-light pools
   and slow out-of-phase amber traffic signals generated from the road graph;
@@ -1361,7 +1311,7 @@ cemetery:own interiors/returns.
   queues/legacy shelter/phone booths/roadworks/fountain-statue/bandstand/chess/
   playground. Only the two swings remain unbatched: hinged rigid seats hang
   from the top beam and move on hero contact. Random roadside excludes bus
-  shelters; Route 01 owns target-derived physical stop poles. Ground frontage/
+  shelters; the bus network owns stop poles and shelters. Ground frontage/
   roadside descriptors sample final XZ rendered terrain; geometry/collision/
   interaction docks share pavement heights, not lot datums;
 - Residential pockets:≤four facade sites/depth≤`1.05 m`; six imports:Nardi/
@@ -1399,7 +1349,7 @@ cemetery:own interiors/returns.
   semantic kinds resolve to `145` assemblies, `305` role meshes and
   `57,218` triangles. It covers the 24-family
   decoration layer and park landmarks, street lamps and signal housings,
-  Route 01 shelters/poles, the eastern yard, cemetery graves and vegetation,
+  bus shelters/poles, the eastern yard, cemetery graves and vegetation,
     the church-yard surfaces and planting plus the modified cemetery
     north-fence posts and rails,
   seacoast hut/pier/esplanade joints, cemetery hut/gates, boats/barge/driftwood,
@@ -1569,8 +1519,8 @@ cemetery:own interiors/returns.
   the old City misc shell remains compatibility-only;
 - deterministic ochre guard rails, batched into `48 m` spatial chunks, only
   where a street faces water, unmapped space or the active map boundary, plus
-  full-width caps at true degree-one street dead ends. Street-to-park
-  continuations count as connected and are not capped. Rails are physical;
+  terminal caps in legacy layouts. City connects the ends of its carriageways
+  and keeps the stepped courtyard approaches pedestrian. Rails are physical;
   their narrow posts remain visual-only, and all former entrance/gate/public
   opening descriptors remain available as decoration-clearance metadata;
 - player navigation includes complete logical `BuildableGround` regions
@@ -1784,8 +1734,8 @@ cemetery:own interiors/returns.
   fair/post/docks/arch/church/cafe/laundry/dog yard),bounded localized legend/
   selectable places. Public lots/fair use open ground,not buildings;locations come
   from validated memoised plans/port.
-  Default ImageGen `UI/Maps`:City charcoal/Silent Hill, redrawn for the relocated
-  bar;Village worn tourist brochure/red-crossed resort.
+  The charcoal City sheet follows the through streets on both banks.
+  Village uses the worn tourist brochure with a red-crossed resort.
   LodgeApproach arrival;no3D change. Plan/RU SHA+bounds/size guard
   stale art;other seeds/MountainRoad→schematic. City SHA excludes Village
   keys;Village mapUvRect separates map/nonXYZ ad. Cached clamped nonreadable
@@ -1802,11 +1752,11 @@ cemetery:own interiors/returns.
   map space. The open portal uses a fixed `19 x 17` uncrossed arch marker
   in the place list; outside the scrolling viewport the marker
   clamps to the visible edge as a direction indicator. North and east keep
-  the layout's original map maxima. It also draws the canonical Route 01 loop
-  as a pale neutral line, adds
-  five numbered stop markers in the default layout with names in the right
-  list and keeps both symbols in a compact legend. The map has no live bus
-  marker. City illustration and Mountain Road schematic have separate area tabs;
+  the layout's original map maxima. Yellow, red and green arrows follow lines
+  01, 02 and 03. Each marker shows its route-stop code (03-02) and selectable waiting
+  position on the pavement. A split marker shows a transfer and a dotted
+  link joins the two platforms where a walk is required. The City sheet
+  and Mountain Road schematic have separate area tabs;
   the player marker is drawn only on the current area's tab. An observational
   `XYZ` mode opens on both tabs through the panel button, keyboard `C` or
   gamepad north/`Y`. A click selects the point under the pointer; Left/Right
@@ -2315,7 +2265,7 @@ cemetery:own interiors/returns.
   City roof/rain shelter stay. Passive City scenery spans64m around the door,
   including behind Home; the48m camera has margin for its orbit. Facade rain/
   stop/pedestrian limits stay separate. Same seed/ground/street/facade/pub recipes:
-  asphalt/sidewalks/markings/lots/windows/lamps/signals; target-derived blue01
+  asphalt/sidewalks/markings/lots/windows/lamps/signals; the home line
   stop pole is Home-local/collider-free. Balcony borrows City's Exp2 fog/
   background/48m cap/current lighting/grade/local fog/12-light street-bar pool;
   MainRoom/Bathroom/disable/destroy restore captured Home visibility/light.
@@ -2842,11 +2792,9 @@ cemetery:own interiors/returns.
   weather-driven ambient lighting or grading changes, wind-driven debris and
   volumetric light shafts.
 - Player-drivable vehicles, a broader traffic simulation, or skating physics;
-  the implemented City-only Route 01 passenger MVP remains route-driven. Fares
+  the City passenger service follows its district rings. Fares
   and payment, destination selection, passenger persistence and live map
-  tracking are deferred. Ambient NPC passengers are **not** deferred: two
-  places are occupied by `CityBusNpcPassengerController`, and the systems map
-  states the remaining gap.
+  tracking are deferred. `CityBusNpcPassengerController` handles ambient riders.
 - Multiple bespoke bar interiors.
 - Mobile quality/render-profile parity; the current Windows/PC-targeted project
   retains only its PC quality level, render-pipeline asset and renderer.

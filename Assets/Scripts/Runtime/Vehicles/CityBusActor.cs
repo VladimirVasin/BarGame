@@ -150,6 +150,8 @@ namespace BarPromenade
 
         public bool IsInitialized { get; private set; }
         public bool IsSpawned => presentation != null;
+        internal bool RunsWithoutModel { get; set; }
+        internal bool HasRoutePhase => isPrepared && (RunsWithoutModel || IsSpawned);
         public bool IsYielding { get; private set; }
         public bool IsBraking { get; private set; }
         public CityBusMotionState MotionState { get; private set; } =
@@ -351,7 +353,10 @@ namespace BarPromenade
             StartEngineAudio();
         }
 
-        public CityBusPresentation ReleasePresentation(Transform poolRoot)
+        public CityBusPresentation ReleasePresentation(Transform poolRoot) =>
+            ReleasePresentation(poolRoot, preserveRoute: false);
+
+        internal CityBusPresentation ReleasePresentation(Transform poolRoot, bool preserveRoute)
         {
             if (HasPassenger)
             {
@@ -375,7 +380,7 @@ namespace BarPromenade
                 released.transform.localScale = Vector3.one;
             }
 
-            ResetSpawnState();
+            if (!preserveRoute) ResetSpawnState();
             return released;
         }
 
@@ -614,14 +619,11 @@ namespace BarPromenade
             float nightFactor,
             float rainIntensity = 0f)
         {
-            if (!IsSpawned)
-            {
-                return;
-            }
+            if (!HasRoutePhase) return;
 
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
-            presentation.SetNightFactor(nightFactor);
-            presentation.AdvanceWipers(rainIntensity, safeDeltaTime);
+            presentation?.SetNightFactor(nightFactor);
+            presentation?.AdvanceWipers(rainIntensity, safeDeltaTime);
             if (MotionState == CityBusMotionState.Dwelling)
             {
                 AdvanceDwell(safeDeltaTime);
@@ -634,14 +636,14 @@ namespace BarPromenade
                 IsBraking = true;
                 speed = 0f;
                 ApplyDriverDoorSample(default);
-                presentation.SetMotion(
+                presentation?.SetMotion(
                     0f,
                     0f,
                     0f,
                     0f,
                     true,
                     safeDeltaTime);
-                audioPresentation.SyncPhysicalAnchors();
+                if (IsSpawned) audioPresentation.SyncPhysicalAnchors();
                 UpdateEngineAudio(safeDeltaTime);
                 return;
             }
@@ -665,7 +667,7 @@ namespace BarPromenade
             out float clearance)
         {
             clearance = float.PositiveInfinity;
-            if (!IsSpawned ||
+            if (!HasRoutePhase ||
                 currentLinkIndex < 0 ||
                 currentLinkIndex >= plan.Links.Count ||
                 !IsFinite(targetRadius) ||
@@ -689,6 +691,12 @@ namespace BarPromenade
                                  ObstacleLateralPadding;
             float probeLimit = Mathf.Max(0f, lookAheadDistance) +
                                halfLength + targetRadius;
+            // Every sampled point is at most probeLimit metres along the road
+            // from here. Reject faraway vehicles and walkers before sampling.
+            float reach = probeLimit + lateralLimit + DistanceTolerance;
+            Vector3 planarOffset = targetPosition - Position;
+            if (planarOffset.x * planarOffset.x + planarOffset.z * planarOffset.z > reach * reach)
+                return false;
             bool found = false;
             float remainingOnCurrent = Mathf.Max(
                 0f,
@@ -868,7 +876,7 @@ namespace BarPromenade
         {
             if (deltaTime <= 0f)
             {
-                presentation.SetMotion(
+                presentation?.SetMotion(
                     0f,
                     speed,
                     0f,
@@ -893,7 +901,7 @@ namespace BarPromenade
                 speed <= DistanceTolerance)
             {
                 BeginDwell(stopIndex);
-                presentation.SetMotion(
+                presentation?.SetMotion(
                     0f,
                     0f,
                     0f,
@@ -1001,14 +1009,14 @@ namespace BarPromenade
                     : default;
                 ApplyDriverDoorSample(driverDoor);
             }
-            presentation.SetMotion(
+            presentation?.SetMotion(
                 travelled,
                 speed,
                 (speed - previousSpeed) / deltaTime,
                 ResolveSteeringAngle(),
                 IsBraking,
                 deltaTime);
-            audioPresentation.SyncPhysicalAnchors();
+            if (IsSpawned) audioPresentation.SyncPhysicalAnchors();
             UpdateEngineAudio(deltaTime);
         }
 
@@ -1082,8 +1090,7 @@ namespace BarPromenade
                     return totalTravelled;
                 }
 
-                nextStopIndex = -1;
-                nextStopDistance = float.PositiveInfinity;
+                TryGetNextStop(out nextStopIndex, out nextStopDistance);
             }
 
             return totalTravelled;
@@ -1206,14 +1213,14 @@ namespace BarPromenade
                     dwellElapsed,
                     dwellDuration,
                     DoorTransitionDuration));
-            presentation.SetMotion(
+            presentation?.SetMotion(
                 0f,
                 0f,
                 0f,
                 0f,
                 true,
                 deltaTime);
-            audioPresentation.SyncPhysicalAnchors();
+            if (IsSpawned) audioPresentation.SyncPhysicalAnchors();
             UpdateEngineAudio(deltaTime);
             if (dwellElapsed < dwellDuration)
             {
@@ -1318,6 +1325,20 @@ namespace BarPromenade
                 Vector3.up);
         }
 
+        // Used only when two lines approach the same intersection. Follow the
+        // actual bent road, including its elevation, instead of projecting a ray.
+        internal void SampleAhead(float metres, out Vector3 position, out Vector3 forward)
+        {
+            int index = currentLinkIndex;
+            float distance = distanceAlongLink + metres;
+            for (int i = 0; i < plan.OrderedLinkIndices.Count && distance > plan.Links[index].Length; i++)
+            {
+                distance -= plan.Links[index].Length;
+                index = plan.GetNextOrderedLinkIndex(index);
+            }
+            EvaluateLink(plan.Links[index], distance, out position, out forward);
+        }
+
         private CityBusRouteLink CurrentLink => plan.Links[currentLinkIndex];
 
         private void SetPose(Vector3 position, Vector3 forward)
@@ -1330,7 +1351,7 @@ namespace BarPromenade
             rigidBody.rotation = rotation;
         }
 
-        private static void EvaluateLink(
+        internal static void EvaluateLink(
             CityBusRouteLink link,
             float distance,
             out Vector3 position,
@@ -1480,6 +1501,7 @@ namespace BarPromenade
         private void ApplyDriverDoorSample(
             CityBusDriverDoorSample sample)
         {
+            if (!IsSpawned) return;
             presentation.SetDriverDoorSample(sample);
             audioPresentation?.ApplyDoorSample(
                 sample,

@@ -84,6 +84,23 @@ namespace BarPromenade
         private readonly List<Waiter> waiters = new List<Waiter>(MaximumWaiters);
 
         private CityBusDirector busDirector;
+        private IReadOnlyList<CityBusNpcPassengerController> lines;
+
+        // All lines draw from the same bounded population. A shared platform
+        // owns one queue in physical space even when two routes call there.
+        internal void ShareWaitingPlaces(IReadOnlyList<CityBusNpcPassengerController> lineControllers)
+        {
+            lines = lineControllers;
+        }
+
+        private int NetworkWaiters()
+        {
+            if (lines == null) return WaiterCount;
+            int count = 0;
+            for (int i = 0; i < lines.Count; i++) count += lines[i].WaiterCount;
+            return count;
+        }
+
         private CityPedestrianDirector pedestrians;
         private CityBusStopWaitPlan waitPlan;
         private IWalkableArea transferArea;
@@ -741,7 +758,8 @@ namespace BarPromenade
 
         private void TryAddWaiter()
         {
-            if (WaiterCount >= MaximumWaiters ||
+            if ((lines != null && WaiterCount >= Mathf.CeilToInt(MaximumWaiters / (float)lines.Count)) ||
+                NetworkWaiters() >= MaximumWaiters ||
                 waitPlan.Count == 0)
             {
                 return;
@@ -772,7 +790,7 @@ namespace BarPromenade
             for (int index = 0; index < point.WaitSlots.Count; index++)
             {
                 Vector3 candidate = point.WaitSlots[index];
-                if (!IsSlotTaken(candidate))
+                if (!IsSlotTakenOnAnyLine(candidate))
                 {
                     slot = candidate;
                     return true;
@@ -780,6 +798,14 @@ namespace BarPromenade
             }
 
             slot = default;
+            return false;
+        }
+
+        private bool IsSlotTakenOnAnyLine(Vector3 slot)
+        {
+            if (lines == null) return IsSlotTaken(slot);
+            for (int i = 0; i < lines.Count; i++)
+                if (lines[i].IsSlotTaken(slot)) return true;
             return false;
         }
 
@@ -795,7 +821,7 @@ namespace BarPromenade
 
                 Vector3 offset = waiter.Slot - slot;
                 offset.y = 0f;
-                if (offset.sqrMagnitude <= 0.0001f)
+                if (offset.sqrMagnitude < .70f * .70f && Mathf.Abs(waiter.Slot.y - slot.y) < 1f)
                 {
                     return true;
                 }

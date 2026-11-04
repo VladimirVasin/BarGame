@@ -11,99 +11,110 @@ namespace BarPromenade.Tests.EditMode
         private const float GeometryTolerance = 0.002f;
 
         [Test]
-        public void ProductionRing_BuildsClosedSimplifiedMapOverlayAndStops()
+        public void DistrictRings_ShowClosedLinesAndEveryBoardingPlatform()
         {
-            CreateProductionContext(
-                out CityLayout layout,
-                out CityDecorationPlan decorations);
-            CityBusPlan plan = CityBusPlanner.Create(
-                layout,
-                decorations);
+            CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Resolve(
+                GameSessionState.DefaultCityBlueprintId), CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
+            IReadOnlyList<CityBusPlan> network = CityDistrictBusPlanner.Create(layout);
             var mapObject = new GameObject("City Map Bus Overlay Test");
             try
             {
                 CityMapController controller =
                     mapObject.AddComponent<CityMapController>();
-                controller.Initialize(
-                    layout,
-                    default,
-                    null,
-                    null,
-                    plan);
+                controller.InitializeNetwork(layout, default, null, null, network);
                 CityMapBusOverlay overlay = controller.BusOverlay;
-                List<Vector3> rawRoute = CreateRawOrderedRoute(plan);
-
-                Assert.That(overlay.IsEmpty, Is.False);
-                Assert.That(overlay.RouteId, Is.EqualTo(plan.RouteId));
-                Assert.That(
-                    overlay.RoutePoints.Count,
-                    Is.LessThan(rawRoute.Count));
-                Assert.That(
-                    PlanarDistance(
-                        overlay.RoutePoints[0],
-                        overlay.RoutePoints[
-                            overlay.RoutePoints.Count - 1]),
-                    Is.LessThanOrEqualTo(GeometryTolerance));
-
+                Assert.That(overlay.Lines.Count, Is.EqualTo(3));
+                Assert.That(overlay.Stops.Select(stop => stop.StableId), Is.Unique);
+                Assert.That(overlay.Stops.Where(stop => stop.TransferNumber > 0)
+                    .Select(stop => stop.TransferId).Distinct().Count(), Is.EqualTo(3));
                 Rect bounds = layout.MapWorldXZBounds;
-                for (int index = 0;
-                     index < overlay.RoutePoints.Count;
-                     index++)
+                for (int lineIndex = 0; lineIndex < network.Count; lineIndex++)
                 {
-                    Vector3 point = overlay.RoutePoints[index];
-                    Assert.That(IsFinite(point), Is.True, index.ToString());
+                    CityBusPlan plan = network[lineIndex];
+                    CityMapBusLine line = overlay.Lines[lineIndex];
+                    List<Vector3> rawRoute = CreateRawOrderedRoute(plan);
+                    Assert.That(overlay.IsEmpty, Is.False);
+                    Assert.That(line.RouteId, Is.EqualTo(plan.RouteId));
                     Assert.That(
-                        point.x,
-                        Is.InRange(
-                            bounds.xMin - GeometryTolerance,
-                            bounds.xMax + GeometryTolerance),
-                        index.ToString());
+                        line.Points.Count,
+                        Is.LessThan(rawRoute.Count));
                     Assert.That(
-                        point.z,
-                        Is.InRange(
-                            bounds.yMin - GeometryTolerance,
-                            bounds.yMax + GeometryTolerance),
-                        index.ToString());
+                        PlanarDistance(
+                            line.Points[0],
+                            line.Points[
+                                line.Points.Count - 1]),
+                        Is.LessThanOrEqualTo(GeometryTolerance));
+
+                    for (int index = 0;
+                         index < line.Points.Count;
+                         index++)
+                    {
+                        Vector3 point = line.Points[index];
+                        Assert.That(IsFinite(point), Is.True, index.ToString());
+                        Assert.That(
+                            point.x,
+                            Is.InRange(
+                                bounds.xMin - GeometryTolerance,
+                                bounds.xMax + GeometryTolerance),
+                            index.ToString());
+                        Assert.That(
+                            point.z,
+                            Is.InRange(
+                                bounds.yMin - GeometryTolerance,
+                                bounds.yMax + GeometryTolerance),
+                            index.ToString());
+                    }
+
+                    float maximumError = rawRoute.Max(point =>
+                        DistanceToPolyline(
+                            point,
+                            line.Points));
+                    Assert.That(
+                        maximumError,
+                        Is.LessThanOrEqualTo(
+                            CityMapBusOverlayBuilder
+                                .RouteSimplificationTolerance +
+                            GeometryTolerance));
+
+                    foreach (CityBusStopDescriptor source in plan.Stops)
+                    {
+                        CityMapBusStopMarker marker = overlay.Stops.First(stop => stop.StableId == source.Id ||
+                            (source.TransferNumber > 0 && stop.TransferId == source.TargetId &&
+                             CityBusNetworkFurniture.SamePlatform(stop.WorldPosition, source.ShelterPosition)));
+                        Assert.That(CityBusNetworkFurniture.SamePlatform(marker.WorldPosition, source.ShelterPosition), Is.True);
+                        Assert.That(marker.LabelLocalizationKey, Is.EqualTo(source.NameLocalizationKey));
+                        if (marker.RouteNumber == plan.Number) Assert.That(marker.Ordinal, Is.EqualTo(source.SequenceIndex + 1));
+                    }
                 }
-
-                float maximumError = rawRoute.Max(point =>
-                    DistanceToPolyline(
-                        point,
-                        overlay.RoutePoints));
-                Assert.That(
-                    maximumError,
-                    Is.LessThanOrEqualTo(
-                        CityMapBusOverlayBuilder
-                            .RouteSimplificationTolerance +
-                        GeometryTolerance));
-
-                CityBusStopDescriptor[] orderedStops = plan.Stops
-                    .OrderBy(stop => stop.SequenceIndex)
-                    .ThenBy(stop => stop.Id, StringComparer.Ordinal)
-                    .ToArray();
-                Assert.That(
-                    overlay.Stops.Count,
-                    Is.EqualTo(orderedStops.Length));
-                for (int index = 0; index < orderedStops.Length; index++)
+                var places = controller.GetMapPoints(GameAreaId.City)
+                    .Where(p => p.Kind == CityMapPointKind.BusStop).ToDictionary(p => p.StableId);
+                Assert.That(places.Count, Is.EqualTo(overlay.Stops.Count));
+                for (int i = 0; i < overlay.Stops.Count; i++)
                 {
-                    CityBusStopDescriptor source = orderedStops[index];
-                    CityMapBusStopMarker marker = overlay.Stops[index];
-                    Assert.That(marker.StableId, Is.EqualTo(source.Id));
-                    Assert.That(
-                        marker.Ordinal,
-                        Is.EqualTo(source.SequenceIndex + 1));
-                    Assert.That(
-                        marker.WorldPosition,
-                        Is.EqualTo(source.Position));
-                    Assert.That(
-                        marker.LabelLocalizationKey,
-                        Is.EqualTo(source.NameLocalizationKey));
-                    Assert.That(
-                        controller.GetBusStopLabel(index),
-                        Is.Not.Empty);
-                    Assert.That(
-                        controller.GetBusStopLabel(index),
-                        Is.Not.EqualTo(marker.LabelLocalizationKey));
+                    var marker = overlay.Stops[i];
+                    var plan = network.Single(line => line.Number == marker.RouteNumber);
+                    var stop = plan.Stops.Single(s => s.Id == marker.StableId);
+                    string code = $"{plan.Number:00}-{stop.SequenceIndex + 1:00}";
+                    string markerText = code, prefix = code;
+                    if (stop.TransferNumber > 0)
+                    {
+                        var other = network.Single(line => line.Number == stop.TransferNumber).Stops
+                            .Single(s => s.TargetId == stop.TargetId);
+                        string partner = $"{stop.TransferNumber:00}-{other.SequenceIndex + 1:00}";
+                        bool shared = CityBusNetworkFurniture.SamePlatform(stop.ShelterPosition, other.ShelterPosition);
+                        prefix += (shared ? " / " : " → ") + partner;
+                        if (shared) markerText += "\n" + partner;
+                    }
+                    Assert.That(marker.Label.MarkerText, Is.EqualTo(markerText));
+                    Assert.That(marker.Label.DescriptionPrefix, Is.EqualTo(prefix));
+                    string name = LocalizationService.Get(stop.NameLocalizationKey);
+                    Assert.That(name, Is.Not.EqualTo(stop.NameLocalizationKey), "A published stop must name a place.");
+                    string caption = controller.GetBusStopLabel(i);
+                    Assert.That(caption, Is.EqualTo(prefix + " · " + name));
+                    var entry = places["city:bus-stop:" + stop.Id];
+                    Assert.That(entry.Label, Is.EqualTo(caption));
+                    Assert.That(entry.ScreenHitSize, Is.EqualTo(marker.MarkerSize));
+                    Assert.That(marker.MarkerSize.y, Is.GreaterThanOrEqualTo(markerText.Contains("\n") ? 22f : 12f));
                 }
             }
             finally
@@ -154,26 +165,8 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(overlay, Is.SameAs(CityMapBusOverlay.Empty));
             Assert.That(overlay.IsEmpty, Is.True);
-            Assert.That(overlay.RoutePoints, Is.Empty);
+            Assert.That(overlay.Lines, Is.Empty);
             Assert.That(overlay.Stops, Is.Empty);
-        }
-
-        private static void CreateProductionContext(
-            out CityLayout layout,
-            out CityDecorationPlan decorations)
-        {
-            layout = CityLayoutGenerator.Generate(
-                CityBlueprintCatalog.Resolve(
-                    GameSessionState.DefaultCityBlueprintId),
-                CityGenerationSettings.Default,
-                GameSessionState.DefaultCitySeed);
-            RoadFencePlan fences = RoadFencePlanner.CreatePlan(layout);
-            CityNightFixturePlan night =
-                CityNightFixturePlanner.CreatePlan(layout);
-            decorations = CityDecorationPlanner.CreatePlan(
-                layout,
-                fences,
-                night);
         }
 
         private static List<Vector3> CreateRawOrderedRoute(

@@ -36,7 +36,7 @@ namespace BarPromenade.Editor
                 var player = new PlayerRuntime(playerHost, playerHost.AddComponent<PlayerMotor>(),
                     playerHost.AddComponent<PlayerInteractor>(), null);
                 CityMapController controller = host.AddComponent<CityMapController>();
-                controller.Initialize(layout, player, null, null, CityBusPlanner.Create(layout),
+                controller.InitializeNetwork(layout, player, null, null, CityDistrictBusPlanner.Create(layout),
                     CityMountainBoundaryPlanner.Create(layout), CitySeacoastPlanner.Create(layout));
                 Reference current = Collect(controller);
                 string regionalFingerprint = current.fingerprint;
@@ -105,7 +105,7 @@ namespace BarPromenade.Editor
                 var player = new PlayerRuntime(playerHost, playerHost.AddComponent<PlayerMotor>(),
                     playerHost.AddComponent<PlayerInteractor>(), null);
                 CityMapController controller = host.AddComponent<CityMapController>();
-                controller.Initialize(layout, player, null, null, CityBusPlanner.Create(layout), mountain, coast);
+                controller.InitializeNetwork(layout, player, null, null, CityDistrictBusPlanner.Create(layout), mountain, coast);
                 Reference data = Collect(controller);
                 Directory.CreateDirectory(SourceFolder);
                 File.WriteAllText(Path.Combine(SourceFolder, "map-reference.json"), JsonUtility.ToJson(data, true));

@@ -3,6 +3,7 @@ Shader "Bar Promenade/City Bus Glass Rain"
     Properties
     {
         _RainIntensity("Rain Intensity", Range(0, 1)) = 0
+        _RunoffIntensity("Heavy Rain Runoff", Range(0, 1)) = 0
         _DropColor("Drop Color", Color) =
             (0.66, 0.74, 0.82, 0.55)
     }
@@ -38,6 +39,7 @@ Shader "Bar Promenade/City Bus Glass Rain"
 
             CBUFFER_START(UnityPerMaterial)
                 half _RainIntensity;
+                half _RunoffIntensity;
                 half4 _DropColor;
                 // Wiper state, pushed per frame by the presentation in
                 // THIS pane's own coordinates: xy = pivot in pane
@@ -136,11 +138,27 @@ Shader "Bar Promenade/City Bus Glass Rain"
                 return output;
             }
 
-            half4 RainFragment(Varyings input) : SV_Target
+            // A few millimetres across, fixed to the pane. Keep the same
+            // candidates as rain strengthens so the whole pattern never jumps.
+            half StillBeads(float2 pane)
             {
-                float u = input.pane.x;
-                float v = input.pane.y;
+                const float Cell = 0.16;
+                float2 grid = pane / Cell;
+                float key = dot(floor(grid), float2(59.0, 113.0));
+                float2 centre = 0.12 + 0.76 * float2(Hash(key + 4.0), Hash(key + 81.0));
+                float2 delta = (frac(grid) - centre) * Cell;
+                float radius = lerp(0.0020, 0.0045, Hash(key + 137.0));
+                float pixel = max(0.0001, max(fwidth(pane.x), fwidth(pane.y)));
+                float edge = pixel * 0.5;
+                float drop = 1.0 - smoothstep(max(0.0, radius - edge), radius + edge, length(delta));
+                float density = 0.36 * _RainIntensity;
+                return step(Hash(key + 27.0), density) * drop * saturate(2.0 * radius / pixel);
+            }
 
+            half RunningDrops(float2 pane, out float head)
+            {
+                float u = pane.x;
+                float v = pane.y;
                 // Runners: sparse columns of drops sliding down the
                 // glass. Each column owns a hashed phase, speed and
                 // wobble; heavier rain wakes more columns. Sizes are
@@ -154,7 +172,7 @@ Shader "Bar Promenade/City Bus Glass Rain"
                 float speed = lerp(0.4, 1.1, Hash(column + 17.0));
                 float w = frac(
                     v * 1.3 + seed * 9.0 + _Time.y * speed);
-                float head = smoothstep(0.16, 0.0, w);
+                head = smoothstep(0.16, 0.0, w);
                 float trail = pow(saturate(1.0 - w), 5.0) * 0.45;
                 float wobble =
                     sin(v * 9.0 + seed * 21.0) * 0.012;
@@ -165,14 +183,21 @@ Shader "Bar Promenade/City Bus Glass Rain"
                     0.045,
                     0.015,
                     abs(u - uCenter));
-                float runner = across * active *
-                    saturate(head + trail);
+                return across * active * saturate(head + trail);
+            }
 
+            half4 RainFragment(Varyings input) : SV_Target
+            {
+                float head = 0.0;
+                half pattern = 0.0h;
+                if (_RunoffIntensity < 1.0h)
+                    pattern = StillBeads(input.pane) * (1.0h - _RunoffIntensity);
+                if (_RunoffIntensity > 0.0h)
+                    pattern = max(pattern, RunningDrops(input.pane, head) * _RunoffIntensity);
                 // The windshield behind a running blade is freshly
                 // squeegeed: suppress the drops in the wiped sector and
                 // let them regrow toward the return stroke. Only panes
                 // facing the bus's own forward carry wipers.
-                half pattern = saturate(runner);
                 if (_WiperMask.w > 0.5 &&
                     dot(normalize(input.normalWS),
                         _BusForwardWS.xyz) > 0.6)

@@ -287,24 +287,20 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(CityPedestrianCollision.LayerIndex));
             }
 
-            Assert.That(cityRoot.BusPlan, Is.Not.Null);
-            Assert.That(cityRoot.BusPlan.IsEmpty, Is.False);
-            Assert.That(cityRoot.BusPlan.SpawnAnchors, Is.Not.Empty);
-            Assert.That(cityRoot.BusStops, Is.Not.Null);
-            Assert.That(
-                cityRoot.BusStops.transform.childCount,
-                Is.EqualTo(cityRoot.BusPlan.Stops.Count));
-            Assert.That(cityRoot.Bus, Is.Not.Null);
-            Assert.That(cityRoot.Bus.IsInitialized, Is.True);
-            Assert.That(cityRoot.Bus.Count, Is.EqualTo(1));
-            Assert.That(cityRoot.Bus.PoolCapacity, Is.EqualTo(1));
-            Assert.That(
-                cityRoot.Bus.ActiveCount,
-                Is.InRange(0, CityBusDirector.MaximumActiveModels));
-            Assert.That(cityRoot.Bus.Actor, Is.Not.Null);
-            Assert.That(
-                cityRoot.Bus.Actor.gameObject.layer,
-                Is.EqualTo(CityBusCollision.LayerIndex));
+            Assert.That(cityRoot.BusPlans.Select(p => p.Number), Is.EqualTo(new[] { 1, 2, 3 }));
+            Assert.That(cityRoot.BusStops.transform.childCount,
+                Is.EqualTo(CityBusNetworkFurniture.Stops(cityRoot.BusPlans).Count()));
+            Assert.That(cityRoot.BusLines.Count, Is.EqualTo(cityRoot.BusPlans.Count));
+            foreach (var line in cityRoot.BusLines)
+            {
+                Assert.That(line.IsInitialized && line.Actor.HasRoutePhase, Is.True);
+                Assert.That(line.Plan.IsEmpty, Is.False);
+                Assert.That(line.Plan.SpawnAnchors, Is.Not.Empty);
+                Assert.That(line.Count, Is.EqualTo(1));
+                Assert.That(line.PoolCapacity, Is.EqualTo(1));
+                Assert.That(line.Actor.gameObject.layer, Is.EqualTo(CityBusCollision.LayerIndex));
+            }
+            Assert.That(cityRoot.BusLines.Sum(l => l.ActiveCount), Is.InRange(0, CityBusDirector.MaximumActiveModels));
             Assert.That(
                 Physics.GetIgnoreLayerCollision(
                     CityBusCollision.DefaultLayerIndex,
@@ -316,14 +312,14 @@ namespace BarPromenade.Tests.PlayMode
                     CityBusCollision.LayerIndex),
                 Is.False);
 
-            cityRoot.Bus.Advance(
-                cityRoot.Bus.TimeUntilNextSpawn + 0.01f);
-            Assert.That(
-                cityRoot.Bus.ActiveCount,
-                Is.EqualTo(1),
-                "The production City bus must find a fog-hidden route " +
-                "anchor from the default home-return spawn instead of " +
-                "retrying invisibly forever.");
+            // Visibility follows the scheduled vehicle. Stand beside an actual phase,
+            // outside both its hull and the truck's delivery reservation.
+            var inspected = cityRoot.BusLines.First(l => !l.CanneryBlocksSpawn(l.Actor.Position, l.Actor.Rotation));
+            Vector3 returnPosition = cityRoot.Player.GameObject.transform.position;
+            cityRoot.Player.Motor.Teleport(inspected.Actor.Position + inspected.Actor.transform.right * 8f);
+            inspected.Advance(.20f);
+            Assert.That(inspected.ActiveCount, Is.EqualTo(1), "An approaching real line must expose its model.");
+            cityRoot.Player.Motor.Teleport(returnPosition);
 
             Transform homeRoot =
                 cityRoot.World.Root.transform.Find("Player Home");

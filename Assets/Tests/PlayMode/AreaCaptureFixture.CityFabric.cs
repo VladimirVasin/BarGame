@@ -90,7 +90,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(LastRouteCarPlan.Create(layout).IsPresent, Is.True);
             Assert.That(city.World.PortPlan?.Access, Is.Not.Null);
             Assert.That(city.World.ChurchPlan, Is.Not.Null);
-            Assert.That(city.BusPlan.Stops.Select(stop => stop.Id).Distinct().Count(), Is.EqualTo(city.BusPlan.Stops.Count));
+            var stopIds = city.BusPlans.SelectMany(line => line.Stops.Select(stop => stop.Id)).ToArray();
+            Assert.That(stopIds.Distinct().Count(), Is.EqualTo(stopIds.Length));
             CityCoastalInfrastructurePlan infrastructure = CityCoastalInfrastructurePlan.ForLayout(layout);
             Assert.That(infrastructure.Facilities.Count, Is.EqualTo(3));
             Assert.That(infrastructure.CableSpans.Count, Is.GreaterThan(10));

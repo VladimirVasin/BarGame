@@ -591,7 +591,7 @@ namespace BarPromenade
             StopTarget target,
             IReadOnlyList<TemporaryNode> nodes,
             IList<TemporaryLink> acceptedLinks,
-            IReadOnlyList<Vector3> entrancePoints)
+            IReadOnlyList<Vector3> entrancePoints, bool districtLine = false)
         {
             var result = new List<StopCandidate>();
             int roadCandidates = 0, nearCandidates = 0, kerbCandidates = 0,
@@ -604,7 +604,7 @@ namespace BarPromenade
             {
                 TemporaryLink link = acceptedLinks[linkIndex];
                 if (!link.IsRoadSegment ||
-                    layout.IsBusFurnitureExcluded(link.RoadEdge) ||
+                    (districtLine ? layout.IsRiverBridgeEdge(link.RoadEdge) : layout.IsBusFurnitureExcluded(link.RoadEdge)) ||
                     link.Length <=
                         (safeEndDistance + CandidateEndInset) * 2f)
                 {
@@ -674,7 +674,7 @@ namespace BarPromenade
                         districtPenalty,
                         safeEndDistance,
                         entrancePoints,
-                        out StopCandidate candidate))
+                        out StopCandidate candidate, districtLine))
                 {
                     continue;
                 }
@@ -796,7 +796,7 @@ namespace BarPromenade
             int districtPenalty,
             float safeEndDistance,
             IReadOnlyList<Vector3> entrancePoints,
-            out StopCandidate candidate)
+            out StopCandidate candidate, bool districtLine = false)
         {
             float minimumDistance = safeEndDistance + CandidateEndInset;
             float maximumDistance = link.Length - minimumDistance;
@@ -842,13 +842,12 @@ namespace BarPromenade
             // door slides along the link to the nearest clear spot; the
             // reference distance is re-measured afterwards so the
             // candidate sort judges the pole where it actually stands.
-            if (!TryClearBuildingEntrances(
-                    layout,
-                    entrancePoints,
-                    link.Samples,
-                    minimumDistance,
-                    maximumDistance,
-                    ref bestDistanceAlongLink))
+            Vector3 districtPole = default;
+            bool placed = districtLine ? TryDistrictPlatform(layout, link.Samples, entrancePoints,
+                minimumDistance, maximumDistance, ref bestDistanceAlongLink, out districtPole, target) :
+                TryClearBuildingEntrances(layout, entrancePoints, link.Samples, minimumDistance,
+                    maximumDistance, ref bestDistanceAlongLink);
+            if (!placed)
             {
                 candidate = null;
                 return false;
@@ -863,10 +862,7 @@ namespace BarPromenade
                 stopForward.z,
                 0f,
                 -stopForward.x).normalized;
-            Vector3 shelterPosition = GetShelterPosition(
-                layout,
-                stopPosition,
-                stopRight);
+            Vector3 shelterPosition = districtLine ? districtPole : GetShelterPosition(layout, stopPosition, stopRight);
             if (IsInsideAny(shelterPosition, target.ExcludedBounds))
             {
                 candidate = null;

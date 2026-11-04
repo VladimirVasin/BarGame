@@ -23,8 +23,8 @@ namespace BarPromenade
         private static readonly Vector2Int[] EastTie = { NorthFrontageEnd, new Vector2Int(13, 11) };
 
         public static IReadOnlyList<Vector2Int> RouteNodes { get; } = System.Array.AsReadOnly(Stations);
-        // A vehicle leaving the upper cul-de-sac reaches the terrace junction by
-        // returning to (11,10). The interior blocks have no through carriageway.
+        // The upper street continues east to the coast road. The established
+        // western bypass also leads from its terrace mouth to the inland junction.
         public static IReadOnlyList<Vector2Int> TerraceBypassNodes { get; } = System.Array.AsReadOnly(new[] {
             Stations[4], Stations[3], new Vector2Int(11, 9), new Vector2Int(11, 8), new Vector2Int(12, 8)
         });
@@ -51,6 +51,9 @@ namespace BarPromenade
                 [NorthFrontageEnd] = lower
             };
             TieToOriginal(WestTie);
+            var westEnd = WestTie[WestTie.Length - 1];
+            var westContinuation = westEnd + Vector2Int.left;
+            if (IsStreet(westEnd, westContinuation)) TieNext(westEnd, westContinuation);
             TieToOriginal(EastTie);
             AddEasternThroughGrade();
 
@@ -108,6 +111,15 @@ namespace BarPromenade
                     travelled += SlopedRun(new RoadEdge(chain[i - 1], chain[i]));
                     through[chain[i]] = Mathf.Lerp(lower, end, travelled / available);
                 }
+                // Where the upper street meets the eastern road, keep both
+                // carriageway grades within their usable run between flat mouths.
+                var upperConnection = new RoadEdge(Stations[4], chain[1]);
+                if (IsStreet(Stations[4], chain[1]))
+                {
+                    float capacity = SlopedRun(upperConnection) * TieGradePercent * .01f;
+                    through[chain[1]] = Mathf.Clamp(through[chain[1]],
+                        Height(Stations[4]) - capacity, Height(Stations[4]) + capacity);
+                }
                 // A different seed can have an additional side street. Decline
                 // just this extension if its connection is too short.
                 foreach (RoadEdge edge in roads)
@@ -125,12 +137,14 @@ namespace BarPromenade
             void TieToOriginal(Vector2Int[] chain)
             {
                 for (int i = 1; i < chain.Length; i++)
-                {
-                    Vector2Int previous = chain[i - 1], next = chain[i];
-                    float previousHeight = Height(previous);
-                    float capacity = SlopedRun(new RoadEdge(previous, next)) * TieGradePercent * .01f;
-                    targets[next] = Mathf.Clamp(elevations[next], previousHeight - capacity, previousHeight + capacity);
-                }
+                    TieNext(chain[i - 1], chain[i]);
+            }
+
+            void TieNext(Vector2Int previous, Vector2Int next)
+            {
+                float previousHeight = Height(previous);
+                float capacity = SlopedRun(new RoadEdge(previous, next)) * TieGradePercent * .01f;
+                targets[next] = Mathf.Clamp(elevations[next], previousHeight - capacity, previousHeight + capacity);
             }
         }
     }

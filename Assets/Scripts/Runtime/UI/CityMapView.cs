@@ -248,10 +248,9 @@ namespace BarPromenade
             RetroUiTheme.MapRoad;
         private static readonly Color ParkPath =
             RetroUiTheme.Muted;
-        private static readonly Color BusRoute =
-            RetroUiTheme.Text;
-        private static readonly Color BusStop =
-            RetroUiTheme.AccentPale;
+        private static readonly Color WestBusLine = new Color32(240, 203, 81, 255);
+        private static readonly Color EastBusLine = new Color32(234, 112, 94, 255);
+        private static readonly Color HillBusLine = new Color32(121, 201, 132, 255);
         private static readonly Color BarMarker =
             RetroUiTheme.MapBar;
         private static readonly Color Player =
@@ -276,7 +275,8 @@ namespace BarPromenade
         private static readonly Color TeleportDeadSquareScrim =
             RetroUiTheme.WithAlpha(RetroUiTheme.Ink, 0.36f);
 
-        internal static Color BusRouteColor => BusRoute;
+        internal static Color BusRouteColor(int number) => number == 3 ? HillBusLine :
+            number == 2 ? EastBusLine : WestBusLine;
 
         // Every marker plus one background target per visible area cell.
         // Reused across IMGUI events: identical number strings and a
@@ -323,6 +323,7 @@ namespace BarPromenade
         private GUIStyle centeredStyle;
         private GUIStyle markerButtonStyle;
         private GUIStyle ordinalBadgeStyle;
+        private GUIStyle busCodeStyle;
         private GUIStyle hintStyle;
         private GUIStyle smallButtonStyle;
         private GUIStyle pointOfInterestTitleStyle;
@@ -2311,23 +2312,42 @@ namespace BarPromenade
 
         private void DrawBusRoute(MapProjection projection)
         {
-            IReadOnlyList<Vector3> points =
-                controller.BusOverlay.RoutePoints;
-            if (points.Count < 2)
+            var overlay = controller.BusOverlay;
+            for (int index = 0; index < overlay.Lines.Count; index++)
             {
-                return;
+                CityMapBusLine line = overlay.Lines[index];
+                Color color = BusRouteColor(line.Number);
+                DrawBusRoutePass(projection, line.Points, 4f, RetroUiTheme.Ink);
+                DrawBusRoutePass(projection, line.Points, 2f, color);
+                float untilArrow = 46f;
+                for (int sample = 1; sample < line.Points.Count; sample++)
+                {
+                    Vector2 start = projection.WorldToScreen(line.Points[sample - 1]);
+                    Vector2 delta = projection.WorldToScreen(line.Points[sample]) - start;
+                    float distance = delta.magnitude;
+                    while (untilArrow <= distance)
+                    {
+                        Vector2 heading = delta / distance;
+                        Vector2 tip = start + heading * untilArrow;
+                        Vector2 side = new Vector2(-heading.y, heading.x) * 2.5f;
+                        DrawLine(tip - heading * 5f + side, tip, 2f, color);
+                        DrawLine(tip - heading * 5f - side, tip, 2f, color);
+                        untilArrow += 108f;
+                    }
+                    untilArrow -= distance;
+                }
             }
-
-            DrawBusRoutePass(
-                projection,
-                points,
-                4f,
-                RetroUiTheme.Ink);
-            DrawBusRoutePass(
-                projection,
-                points,
-                2f,
-                BusRoute);
+            for (int index = 0; index < overlay.TransferPairs.Count; index++)
+            {
+                Vector2Int pair = overlay.TransferPairs[index];
+                Vector2 start = projection.WorldToScreen(overlay.Stops[pair.x].WorldPosition);
+                Vector2 delta = projection.WorldToScreen(overlay.Stops[pair.y].WorldPosition) - start;
+                float length = delta.magnitude;
+                if (length <= 1f) continue;
+                Vector2 heading = delta / length;
+                for (float at = 0f; at < length; at += 7f)
+                    DrawLine(start + heading * at, start + heading * Mathf.Min(at + 3f, length), 2f, RetroUiTheme.Text);
+            }
         }
 
         private void DrawBusRoutePass(
@@ -2355,14 +2375,9 @@ namespace BarPromenade
                 CityMapBusStopMarker stop = stops[index];
                 Vector2 position = projection.WorldToScreen(
                     stop.WorldPosition);
-                RegisterHoverTarget(
-                    CreateCenteredRect(position, 17f, 17f),
-                    position,
-                    controller.GetBusStopLabel(index),
-                    BusStopHoverPriority);
-                DrawBusStopMarker(
-                    position,
-                    GetNumberLabel(stop.Ordinal));
+                Rect marker = CreateCenteredRect(position, stop.MarkerSize.x, stop.MarkerSize.y);
+                RegisterHoverTarget(marker, position, controller.GetBusStopLabel(index), BusStopHoverPriority);
+                DrawBusStopMarker(marker, stop.Label.MarkerText, stop.RouteNumber, stop.TransferNumber, stop.SharedPlatform);
             }
         }
 
@@ -2384,23 +2399,19 @@ namespace BarPromenade
             return numberLabelCache[value] ??= value.ToString();
         }
 
-        private void DrawBusStopMarker(
-            Vector2 center,
-            string ordinal)
+        private void DrawBusStopMarker(Rect marker, string text, int number, int transferNumber, bool shared)
         {
-            Rect marker = CreateCenteredRect(center, 11f, 11f);
             DrawSolidRect(marker, RetroUiTheme.Ink);
-            DrawSolidRect(
-                new Rect(
-                    marker.x + 2f,
-                    marker.y + 2f,
-                    marker.width - 4f,
-                    marker.height - 4f),
-                BusStop);
-            if (!string.IsNullOrEmpty(ordinal))
+            Rect inside = Expand(marker, -1f);
+            DrawSolidRect(inside, BusRouteColor(number));
+            if (transferNumber > 0)
             {
-                GUI.Label(marker, ordinal, ordinalBadgeStyle);
+                Rect stripe = shared
+                    ? new Rect(inside.x, inside.center.y, inside.width, inside.height * .5f)
+                    : new Rect(inside.xMax - 2f, inside.y, 2f, inside.height);
+                DrawSolidRect(stripe, BusRouteColor(transferNumber));
             }
+            if (!string.IsNullOrEmpty(text)) GUI.Label(marker, text, busCodeStyle);
         }
 
         private void DrawBusLegend()
@@ -2411,10 +2422,7 @@ namespace BarPromenade
                 return;
             }
 
-            bool includeStop = overlay.Stops.Count > 0;
-            Rect legend = CreateBusLegendRect(
-                mapLineClipRect,
-                includeStop);
+            Rect legend = CreateBusLegendRect(mapLineClipRect, overlay.Stops.Count > 0, overlay.Lines.Count);
             hoverBlockRect = new Rect(
                 legend.position + hoverCoordinateOffset,
                 legend.size);
@@ -2426,54 +2434,37 @@ namespace BarPromenade
                 1f,
                 RetroUiTheme.BorderMuted);
 
-            float routeY = legend.y + 9f;
-            DrawLine(
-                new Vector2(legend.x + 7f, routeY),
-                new Vector2(legend.x + 25f, routeY),
-                4f,
-                RetroUiTheme.Ink);
-            DrawLine(
-                new Vector2(legend.x + 7f, routeY),
-                new Vector2(legend.x + 25f, routeY),
-                2f,
-                BusRoute);
-            GUI.Label(
-                new Rect(
-                    legend.x + 31f,
-                    legend.y + 2f,
-                    legend.width - 35f,
-                    14f),
-                LocalizationService.Get("map.bus.route"),
-                pointOfInterestItemStyle);
-
-            if (!includeStop)
+            for (int index = 0; index < overlay.Lines.Count; index++)
             {
-                return;
+                int number = overlay.Lines[index].Number;
+                float y = legend.y + 9f + 15f * index;
+                DrawLine(new Vector2(legend.x + 7f, y), new Vector2(legend.x + 25f, y), 3f, BusRouteColor(number));
+                string numberLabel = number == 3 ? "03" : number == 2 ? "02" : "01";
+                string key = overlay.Lines.Count == 1 ? "map.bus.route" :
+                    number == 3 ? "map.bus.line.hills" : number == 2 ? "map.bus.line.east" : "map.bus.line.west";
+                string title = LocalizationService.Get(key);
+                GUI.Label(new Rect(legend.x + 31f, y - 7f, legend.width - 32f, 14f),
+                    title == key ? numberLabel : title, pointOfInterestItemStyle);
             }
-
-            float stopY = legend.y + 24f;
-            DrawBusStopMarker(
-                new Vector2(legend.x + 16f, stopY),
-                string.Empty);
-            GUI.Label(
-                new Rect(
-                    legend.x + 31f,
-                    legend.y + 17f,
-                    legend.width - 35f,
-                    14f),
-                LocalizationService.Get("map.bus.stop_legend"),
-                pointOfInterestItemStyle);
+            if (overlay.Stops.Count == 0) return;
+            float stopY = legend.y + 9f + 15f * overlay.Lines.Count;
+            DrawBusStopMarker(CreateCenteredRect(new Vector2(legend.x + 16f, stopY), 15f, 11f),
+                string.Empty, 1, overlay.Lines.Count > 1 ? 3 : 0, true);
+            string stopKey = overlay.Lines.Count > 1 ? "map.bus.transfer.legend" : "map.bus.stop_legend";
+            string stopLabel = LocalizationService.Get(stopKey);
+            GUI.Label(new Rect(legend.x + 31f, stopY - 7f, legend.width - 32f, 14f),
+                stopLabel == stopKey ? "01 ↔ 03" : stopLabel, pointOfInterestItemStyle);
         }
 
         internal static Rect CreateBusLegendRect(
             Rect visibleMapRect,
-            bool includeStop)
+            bool includeStop, int lineCount = 1)
         {
             const float margin = 5f;
             float width = Mathf.Min(
                 132f,
                 Mathf.Max(1f, visibleMapRect.width - margin * 2f));
-            float requestedHeight = includeStop ? 33f : 18f;
+            float requestedHeight = 3f + 15f * (lineCount + (includeStop ? 1 : 0));
             float height = Mathf.Min(
                 requestedHeight,
                 Mathf.Max(1f, visibleMapRect.height - margin * 2f));
@@ -4237,6 +4228,8 @@ namespace BarPromenade
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Ink,
                 true);
+            busCodeStyle = RetroUiTheme.CreateLabelStyle(9, TextAnchor.MiddleCenter, RetroUiTheme.Ink, true);
+            busCodeStyle.padding = new RectOffset(1, 1, 0, 0);
             hintStyle = RetroUiTheme.CreateButtonStyle(
                 9,
                 TextAnchor.MiddleCenter,

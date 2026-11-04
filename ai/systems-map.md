@@ -136,9 +136,9 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Pedestrian street insults | Insult responses need the authored proximity/facing gates; the twenty-line bag deals once a round, surviving reloads. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
 | City/Home pedestrians | City:192 schedules/≤36 actors/cache48; Home5/2, first8. | `CityResidentLifeRules`, `CityResidentWorld`, `CityPedestrianDirector` | Current |
 | NPC Human V2 anatomy, appearance and visibility | Shared rigs; joint fields/volume and shaped hands/clothes retain UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `CharacterJointDeformation` | Current |
-| City Route 01 bus | One validated route and pooled bus run in City. Gap: no Home simulation or live map vehicle marker. | `Runtime/Vehicles`, `CityBus{Plan,Planner,Actor,Audio,Director,Presentation,Factory,AssetRegistry}` | Partial |
+| City district buses | West/east/hill rings with local stops and physical transfers. Gap: no Home service or live map vehicle marker. | `CityDistrictBusPlanner`, `CityHillsideBusPlanner`, `CityBus{Director,Actor,Factory}` | Partial |
 | Pedestrian bench rests | Eligible walkers reserve benches, play owned sit/rest/stand actions and return to their route. | `CityBenchRest{Plan,Planner}`, `CityBenchNpcRestController` | Current |
-| Route 01 passengers | Hero plus two ambient passenger places. Gap: fares, destination choice, persistence and live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |
+| City bus passengers | Hero plus two ambient passenger places. Gap: fares, destination choice, persistence and live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |
 | City visual diversity and collision proxies | Deterministic visual variants share simple semantic collision proxies and reusable resources. | `CityDecoration{Descriptor,Plan,Planner,Validator,WorldBuilder}`, `CityDecorationCollisionCatalog` | Current |
 | Road-edge fences | Plan-owned fences protect boundaries while preserving every validated road/waterside opening. | `RoadFence{Planner,Plan,WorldBuilder}`, `CitySurfaceDescriptor` | Current |
 | Supermarket and repeatable purchases | Seven offers/dense passive stock; atomic cash/item and shared receipt; stock survives reload. | `SupermarketShelfShopController`, `WorldItemFoundScreen`, `SupermarketPurchaseRules` | Current |
@@ -190,7 +190,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Structured session diagnostics | 20MiB/adaptive samples/end reserve/32-action tail;CPU/cloth/ammo/carry/input/F8. | `Runtime/Diagnostics`, `DuelJournal` | Current |
 | Bar activity flavour | Legacy activity identity still selects bar flavour; the removed sprite minigames remain absent. | `BarActivityKind`, `BarActivityAssignment` | Current |
 | Area map UI | Fullscreen;scrollable place list→one plaque/line/square;large hero arrow;travel/XYZ. | `CityMap{Controller,View,AreaController,AreaView,MountainRoadOverlay,AlpineVillageOverlay}` | Current |
-| Area map art | City charcoal/Village brochure; separate plan/RU SHA+UV guards/RU labels/marks; Road/other seeds schematic. | `{City,AlpineVillage}MapArtResources`, `CityMapArtReferenceExport`, `CityMapIllustratedLabels` | Current |
+| Area map art | City charcoal through streets; Village brochure; plan/RU SHA+UV guards; Road/other seeds schematic. | `{City,AlpineVillage}MapArtResources`, `CityMapArtReferenceExport`, `CityMapIllustratedLabels` | Current |
 | Map XYZ inspection | Map points, fair/post/docks/arch/church-door places included, expose world coordinates and validated teleport targets. | `CityMapTeleport{Lattice,Grounds}`, `CityMapPointDescriptor` | Current |
 | Map arrival ground | Area-owned ground; City lot/XYZ arrivals re-sample land Y and move occupied markers to a clear street. | `ICityMapTeleportGround`, `CityMap{City,MountainRoad}TeleportGround` | Current |
 | Scene transition | Guarded loads/cleanup; closed entrance leaves stay solid and door-action docks clear. | `PlayerDoorAction{Plan,Controller,Target}`, `ApartmentEntranceDoor`, `CityGameRoot` | Current |
@@ -245,7 +245,7 @@ MainMenu (index 0)
 Legacy API only: 05:59 -> Wake/Quit -> 06:00 -> Home -> City
 
 blueprint + seed -> validated plans -> surfaces/navigation/map/night/decor/fences
-  -> pedestrian population; Route 01 -> stops/poles -> pooled bus -> board/ride/alight
+  -> pedestrian population; district rings -> platforms -> line actors -> board/ride/alight/transfer
 clock -> day announcement/needs/day-night; weather -> rain/lightning/thunder
 map/travel -> AreaLoading -> destination Single (20%) -> staged composition (80%)
   -> ready -> restore audio/time/input

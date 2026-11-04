@@ -519,13 +519,13 @@ namespace BarPromenade
             IReadOnlyList<CityBusPathSample> samples,
             float minimumDistance,
             float maximumDistance,
-            ref float distanceAlongLink)
+            ref float distanceAlongLink, bool districtLine = false)
         {
             if (IsEntranceClearPlacement(
                     layout,
                     entrancePoints,
                     samples,
-                    distanceAlongLink))
+                    distanceAlongLink, districtLine))
             {
                 return true;
             }
@@ -542,7 +542,7 @@ namespace BarPromenade
                             layout,
                             entrancePoints,
                             samples,
-                            forward))
+                            forward, districtLine))
                     {
                         distanceAlongLink = forward;
                         return true;
@@ -557,7 +557,7 @@ namespace BarPromenade
                             layout,
                             entrancePoints,
                             samples,
-                            backward))
+                            backward, districtLine))
                     {
                         distanceAlongLink = backward;
                         return true;
@@ -575,7 +575,7 @@ namespace BarPromenade
             CityLayout layout,
             IReadOnlyList<Vector3> entrancePoints,
             IReadOnlyList<CityBusPathSample> samples,
-            float distanceAlongLink)
+            float distanceAlongLink, bool districtLine)
         {
             EvaluateSamples(
                 samples,
@@ -586,6 +586,14 @@ namespace BarPromenade
             forward.Normalize();
             Vector3 right = new Vector3(forward.z, 0f, -forward.x);
             Vector3 pole = GetShelterPosition(layout, position, right);
+            return IsClearPoleSite(layout, entrancePoints, position, forward, right, pole, districtLine);
+        }
+
+        private static bool IsClearPoleSite(CityLayout layout, IReadOnlyList<Vector3> entrancePoints,
+            Vector3 position, Vector3 forward, Vector3 right, Vector3 pole, bool districtLine)
+        {
+            if (districtLine && !DistrictPlatformSites.GetValue(layout, value => new DistrictPlatformSite(value))
+                    .IsOpen(position, forward, pole, right)) return false;
             Vector3 wall = pole + (forward *
                 CityBusStopWorldBuilder.ShelterOffsetAlongLane);
             if (CityResidentialEntrancePlan.IntersectsPrimaryApproach(layout,
@@ -1258,11 +1266,11 @@ namespace BarPromenade
             IList<RouteLinkMetadata> metadata,
             IReadOnlyList<CityBusRouteLink> finalLinks,
             float loopLength,
-            List<CityBusStopDescriptor> stops)
+            List<CityBusStopDescriptor> stops, bool districtLine = false)
         {
             if (stops.Count < 2 ||
                 metadata.Count == 0 ||
-                loopLength <= MaximumStopGap)
+                loopLength <= (districtLine ? DistrictStopMaximum : MaximumStopGap))
             {
                 return stops;
             }
@@ -1309,7 +1317,7 @@ namespace BarPromenade
                     gap += loopLength;
                 }
 
-                if (gap <= MaximumStopGap)
+                if (gap <= (districtLine ? DistrictStopMaximum : MaximumStopGap))
                 {
                     continue;
                 }
@@ -1331,7 +1339,7 @@ namespace BarPromenade
                     maximum,
                     entrancePoints,
                     suffixCounts,
-                    inserted);
+                    inserted, districtLine);
             }
 
             if (inserted.Count == 0)
@@ -1411,7 +1419,7 @@ namespace BarPromenade
             Vector2 boundsMaximum,
             IReadOnlyList<Vector3> entrancePoints,
             Dictionary<string, int> suffixCounts,
-            List<CityBusStopDescriptor> inserted)
+            List<CityBusStopDescriptor> inserted, bool districtLine)
         {
             // Stations measure from the gap's start stop so the wrap gap
             // (last stop back to home) stays monotonic.
@@ -1437,8 +1445,9 @@ namespace BarPromenade
                 gapStations.Add(station);
             }
 
-            int insertCount =
+            int insertCount = districtLine ? Mathf.Max(1, Mathf.RoundToInt(gap / DistrictStopIdeal) - 1) :
                 Mathf.CeilToInt(gap / TargetStopSpacing) - 1;
+            float minimumSpacing = districtLine ? DistrictStopMinimum : MinimumStopSpacing;
             float previousStation = gapStart.DistanceAlongLoop;
             float nextStation = gapStart.DistanceAlongLoop + gap;
             for (int slot = 1; slot <= insertCount; slot++)
@@ -1447,6 +1456,7 @@ namespace BarPromenade
                               (gap * slot / (insertCount + 1f));
                 int bestGapIndex = -1;
                 float bestPlacement = 0f;
+                Vector3? bestPole = null;
                 float bestStation = 0f;
                 float bestScore = float.PositiveInfinity;
                 for (int gapIndex = 0;
@@ -1457,8 +1467,8 @@ namespace BarPromenade
                     RouteLinkMetadata entry = metadata[metadataIndex];
                     if (!entry.Source.IsRoadSegment ||
                         usedLinkIndices.Contains(entry.FinalLinkIndex) ||
-                        layout.IsBusFurnitureExcluded(
-                            entry.Source.RoadEdge))
+                        (districtLine ? layout.IsRiverBridgeEdge(entry.Source.RoadEdge) :
+                            layout.IsBusFurnitureExcluded(entry.Source.RoadEdge)))
                     {
                         continue;
                     }
@@ -1486,23 +1496,19 @@ namespace BarPromenade
                         ideal - gapStations[gapIndex],
                         minimumEndInset,
                         link.Length - minimumEndInset);
-                    if (!TryClearBuildingEntrances(
-                            layout,
-                            entrancePoints,
-                            link.Samples,
-                            minimumEndInset,
-                            link.Length - minimumEndInset,
-                            ref placement))
-                    {
-                        continue;
-                    }
+                    Vector3 districtPole = default;
+                    bool placed = districtLine ? TryDistrictPlatform(layout, link.Samples, entrancePoints, minimumEndInset,
+                        link.Length - minimumEndInset, ref placement, out districtPole) :
+                        TryClearBuildingEntrances(layout, entrancePoints, link.Samples, minimumEndInset,
+                            link.Length - minimumEndInset, ref placement);
+                    if (!placed) continue;
 
                     float candidateStation =
                         gapStations[gapIndex] + placement;
                     if (candidateStation - previousStation <
-                        MinimumStopSpacing ||
+                        minimumSpacing ||
                         nextStation - candidateStation <
-                        MinimumStopSpacing)
+                        minimumSpacing)
                     {
                         continue;
                     }
@@ -1513,7 +1519,8 @@ namespace BarPromenade
                     // clearance against every pole already planned keeps
                     // the planar coalesce from having to drop this
                     // insertion right back out.
-                    if (!IsPlanarClearOfStops(
+                    if (districtLine ? !IsPlanarClearOf(districtPole, existingStops) || !IsPlanarClearOf(districtPole, inserted) :
+                        !IsPlanarClearOfStops(
                             layout,
                             finalLinks[entry.FinalLinkIndex],
                             placement,
@@ -1529,6 +1536,7 @@ namespace BarPromenade
                         bestScore = score;
                         bestGapIndex = gapIndex;
                         bestPlacement = placement;
+                        bestPole = districtLine ? districtPole : (Vector3?)null;
                         bestStation = candidateStation;
                     }
                 }
@@ -1550,7 +1558,7 @@ namespace BarPromenade
                         : bestStation,
                     boundsMinimum,
                     boundsMaximum,
-                    suffixCounts);
+                    suffixCounts, bestPole);
                 inserted.Add(stop);
                 usedLinkIndices.Add(stop.LinkIndex);
                 previousStation = bestStation;
@@ -1605,7 +1613,7 @@ namespace BarPromenade
             float distanceAlongLoop,
             Vector2 boundsMinimum,
             Vector2 boundsMaximum,
-            Dictionary<string, int> suffixCounts)
+            Dictionary<string, int> suffixCounts, Vector3? placedPole = null)
         {
             EvaluateSamples(
                 link.Samples,
@@ -1616,7 +1624,7 @@ namespace BarPromenade
                 forward.z,
                 0f,
                 -forward.x).normalized;
-            Vector3 shelter = GetShelterPosition(layout, position, right);
+            Vector3 shelter = placedPole ?? GetShelterPosition(layout, position, right);
             TemporaryNode node = nodes[entry.Source.FromNodeIndex];
             Vector2Int rightCell = GetRightSideCell(
                 node.FromGridNode,

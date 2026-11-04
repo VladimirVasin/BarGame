@@ -281,11 +281,19 @@ namespace BarPromenade
                 CityDogParkPlan park = CityDogParkPlan.ForLayout(layout);
                 writer.Write(park.IsEnabled);
                 if (park.IsEnabled) RectValue(writer, park.Footprint);
-                writer.Write(controller.BusOverlay.RouteId); writer.Write(controller.BusOverlay.RoutePoints.Count);
-                foreach (Vector3 point in controller.BusOverlay.RoutePoints) Point(writer, point);
+                writer.Write(controller.BusOverlay.Lines.Count);
+                foreach (CityMapBusLine line in controller.BusOverlay.Lines)
+                {
+                    writer.Write(line.RouteId); writer.Write(line.Number); writer.Write(line.Points.Count);
+                    foreach (Vector3 point in line.Points) Point(writer, point);
+                }
                 writer.Write(controller.BusOverlay.Stops.Count);
                 foreach (CityMapBusStopMarker stop in controller.BusOverlay.Stops)
-                { writer.Write(stop.StableId); writer.Write(stop.Ordinal); Point(writer, stop.WorldPosition); writer.Write(stop.LabelLocalizationKey); }
+                {
+                    writer.Write(stop.StableId); writer.Write(stop.Ordinal); Point(writer, stop.WorldPosition);
+                    writer.Write(stop.LabelLocalizationKey); writer.Write(stop.RouteNumber); writer.Write(stop.TransferNumber);
+                    writer.Write(stop.TransferId); Point(writer, stop.StandingPosition);
+                }
                 CitySeacoastPlan coast = controller.SeacoastPlan ?? CitySeacoastPlanner.Create(layout);
                 writer.Write(coast != null);
                 if (coast != null)

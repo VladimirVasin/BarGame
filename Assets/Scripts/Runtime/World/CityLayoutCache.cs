@@ -248,7 +248,7 @@ namespace BarPromenade
                 long worldPlansMs = Restart(stage);
                 plans.GetLitter(night);
                 long litterMs = Restart(stage);
-                CityBusPlanner.Create(layout, decoration);
+                CityDistrictBusPlanner.Create(layout);
                 long busMs = Restart(stage);
                 CityStreetSurfacePlanner.Create(layout);
                 long streetMs = Restart(stage);

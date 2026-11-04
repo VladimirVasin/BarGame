@@ -280,17 +280,18 @@ namespace BarPromenade
                 stopping + carSpeed + 4f);
 
             float conflict = float.PositiveInfinity;
-            CityBusActor bus = buses != null ? buses.Actor : null;
-            if (bus != null && bus.IsSpawned)
+            for (int i = 0; buses != null && i < buses.LineCount; i++)
             {
-                conflict = FindBusPathConflict(
+                CityBusActor bus = buses.GetLine(i).Actor;
+                if (bus == null || !bus.HasRoutePhase) continue;
+                conflict = Mathf.Min(conflict, FindBusPathConflict(
                     road,
                     carDistance,
                     horizon,
                     bus.Position,
                     bus.TravelDirection,
                     bus.Speed,
-                    ResolveHalfLength(bus));
+                    ResolveHalfLength(bus)));
             }
 
             if (pedestrians != null)
@@ -329,19 +330,13 @@ namespace BarPromenade
 
         private bool IsBusCrossing()
         {
-            CityBusActor bus = buses != null ? buses.Actor : null;
-            if (bus == null || !bus.IsSpawned)
+            for (int i = 0; buses != null && i < buses.LineCount; i++)
             {
-                return false;
+                CityBusActor bus = buses.GetLine(i).Actor;
+                if (bus != null && bus.HasRoutePhase && IsCrossedByVehicle(crossing, approach,
+                    bus.Position, bus.TravelDirection, bus.Speed, ResolveHalfLength(bus))) return true;
             }
-
-            return IsCrossedByVehicle(
-                crossing,
-                approach,
-                bus.Position,
-                bus.TravelDirection,
-                bus.Speed,
-                ResolveHalfLength(bus));
+            return false;
         }
 
         private bool IsAnyoneCrossing()

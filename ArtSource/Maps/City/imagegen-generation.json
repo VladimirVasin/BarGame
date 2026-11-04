@@ -1,16 +1,56 @@
 {
   "tool": "built-in image_gen",
-  "intent": "a single residential upper quarter, a dry ravine crossed by two road bridges, inhabited switchbacks and stair routes",
-  "prompt": "imagegen-upper-quarter-prompt.txt",
+  "intent": "Through streets on both banks. Surveyed terrace stairs, public park walks and southern residential switchbacks.",
+  "prompt": "imagegen-through-streets-prompt.txt",
   "references": [
     "map-reference.png",
     "CityMapImage.reference.png"
   ],
   "geography": "map-reference.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "a82712607916a86a913f1dc5cf802e3517fd419980ba24be6c48e18f7eb186a3",
-  "fingerprint": "7798e216f29dbbd2d84605778f18182cc642bbe8d83c49846f351be9da433a78",
+  "image_sha256": "2a6e20feb8dd2cdbca61e32ec74d22594a3568eaf4662273e00b0a0339fcc011",
+  "runtime_image_sha256": "abd287d69368d78432adaa1ef29d331922b2c86786fb329b9a64a051db87f0eb",
+  "registration": {
+    "description": "Full-bleed raster registration in independent X/Y intervals, fitted to outer grid streets and the southern bridge crossings. Top-left coordinates. Applied before importing the artwork.",
+    "source_size": [
+      1122,
+      1402
+    ],
+    "survey_size": [
+      1792,
+      2048
+    ],
+    "source_x": [
+      0,
+      215,
+      963,
+      1122
+    ],
+    "survey_x": [
+      0,
+      407,
+      1536,
+      1792
+    ],
+    "source_y": [
+      0,
+      137,
+      842,
+      1174,
+      1264,
+      1402
+    ],
+    "survey_y": [
+      0,
+      200,
+      1241,
+      1745,
+      1875,
+      2048
+    ]
+  },
+  "fingerprint": "06d1815260801734bedfc6708618b7ec0594d1203601942c5258bb513fbeb7f4",
   "schemaVersion": 2,
-  "width": 1173,
-  "height": 1341
+  "width": 1176,
+  "height": 1344
 }

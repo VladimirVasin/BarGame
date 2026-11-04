@@ -203,7 +203,7 @@ namespace BarPromenade
             Vector2 size = new Vector2(width, style.CalcHeight(label.Content, width - 16f) + 12f);
             if (size.y > illustratedLabelClipRect.height) return;
             Rect legend = controller.SelectedArea == GameAreaId.City && !controller.BusOverlay.IsEmpty
-                ? CreateBusLegendRect(mapLineClipRect, controller.BusOverlay.Stops.Count > 0) : Rect.zero;
+                ? CreateBusLegendRect(mapLineClipRect, controller.BusOverlay.Stops.Count > 0, controller.BusOverlay.Lines.Count) : Rect.zero;
             // Only one label: bounded candidate search keeps it close to its
             // square without covering that square, the hero or the bus legend.
             for (int ring = 0; ring < 8; ring++)

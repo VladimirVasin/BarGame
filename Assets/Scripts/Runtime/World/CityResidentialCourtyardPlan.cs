@@ -870,8 +870,8 @@ namespace BarPromenade
                 result.Add(CityStaticCollisionBuilder.CreateLowerPoleBounds(lamp.Position));
             foreach (TrafficSignalDescriptor signal in night.TrafficSignals)
                 result.Add(CityStaticCollisionBuilder.CreateLowerPoleBounds(signal.Position));
-            foreach (CityBusStopDescriptor stop in CityBusPlanner.CreateRoadRouting(layout).Stops)
-                Add(CityBusStopWorldBuilder.DescribeFurnitureFootprint(stop));
+            foreach (Rect footprint in CityBusNetworkFurniture.Reservations(CityDistrictBusPlanner.CreateRoadRouting(layout), layout))
+                Add(footprint);
             foreach (Rect footprint in CityCoastalInfrastructurePlan.ForLayout(layout).SolidFootprints) Add(footprint);
             CityLaundryPlan laundry = CityLaundryPlan.ForLayout(layout);
             if (laundry.IsEnabled) Add(laundry.ReservationBounds);

@@ -75,8 +75,8 @@ namespace BarPromenade
             CityNightFixturePlan night = CityNightFixturePlanner.CreatePlan(layout);
             foreach (StreetLampDescriptor lamp in night.StreetLamps) AddSolid(Around(lamp.Position,.65f));
             foreach (TrafficSignalDescriptor signal in night.TrafficSignals) AddSolid(Around(signal.Position,.65f));
-            foreach (CityBusStopDescriptor stop in CityBusPlanner.CreateRoadRouting(layout).Stops)
-                AddSolid(Expanded(CityBusStopWorldBuilder.DescribeFurnitureFootprint(stop), .6f));
+            foreach (Rect footprint in CityBusNetworkFurniture.Reservations(CityDistrictBusPlanner.CreateRoadRouting(layout), layout))
+                AddSolid(Expanded(footprint, .6f));
             foreach (Rect footprint in CityCoastalInfrastructurePlan.ForLayout(layout).SolidFootprints)
                 AddSolid(Expanded(footprint,.25f));
             // Preserve the already selected pocket tableaux and other

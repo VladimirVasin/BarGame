@@ -147,11 +147,14 @@ namespace BarPromenade
         // Unity's Editor UI overlay writes to an sRGB target even when the
         // legacy GL.sRGBWrite flag is false. Convert authored display colours
         // at the drawing boundary; keep the palette and player output intact.
-        internal static readonly bool UsesLinearGuiOutput =
 #if UNITY_EDITOR
-            QualitySettings.activeColorSpace == ColorSpace.Linear;
+        // Palette constants are also read while Unity constructs MonoBehaviours.
+        // Query the native setting only when IMGUI first needs a converted colour.
+        private static bool? editorLinearOutput;
+        internal static bool UsesLinearGuiOutput =>
+            editorLinearOutput ??= QualitySettings.activeColorSpace == ColorSpace.Linear;
 #else
-            false;
+        internal static bool UsesLinearGuiOutput => false;
 #endif
 
         public static Color ToGuiColor(Color authoredColor) =>
@@ -649,6 +652,9 @@ namespace BarPromenade
 
             ditherTexture = null;
             interfaceFont = null;
+#if UNITY_EDITOR
+            editorLinearOutput = null;
+#endif
         }
     }
 }

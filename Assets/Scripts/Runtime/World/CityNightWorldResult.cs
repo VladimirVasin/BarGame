@@ -51,6 +51,7 @@ namespace BarPromenade
         public IReadOnlyList<TrafficSignalController> TrafficSignals { get; }
         public IReadOnlyList<Renderer> StreetLampBulbRenderers { get; }
         public CityNightAtmosphere Atmosphere { get; private set; }
+        internal Transform BusStopPoles { private get; set; }
         public CityFogField FogField { get; private set; }
         public float NightFactor => nightFactor;
 
@@ -165,7 +166,8 @@ namespace BarPromenade
                 LampAnchors,
                 lightPositions,
                 fringePracticalAnchors,
-                quayLampAnchors);
+                quayLampAnchors,
+                BusStopPoles);
             Atmosphere.SetNightFactor(nightFactor);
         }
     }

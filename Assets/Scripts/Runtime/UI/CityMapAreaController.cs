@@ -438,6 +438,7 @@ namespace BarPromenade
                 return false;
             }
 
+            if (area == GameAreaId.City) LoadDeferredCityBusNetwork();
             bool changed = selectedArea != area;
             selectedArea = area;
             SelectedMapObjectIndex = -1;
@@ -1316,9 +1317,9 @@ namespace BarPromenade
                     GameAreaId.City,
                     CityMapPointKind.BusStop,
                     GetBusStopLabel(index),
-                    stop.WorldPosition,
+                    stop.StandingPosition,
                     15,
-                    new Vector2(17f, 17f));
+                    stop.MarkerSize);
             }
 
             if (MountainBoundaryPlan != null &&

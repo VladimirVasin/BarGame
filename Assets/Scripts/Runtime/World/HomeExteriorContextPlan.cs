@@ -15,7 +15,7 @@ namespace BarPromenade
             IList<BuildingLot> nearbyLots,
             IList<CityDistrictPointOfInterestDescriptor>
                 nearbyDistrictPointsOfInterest,
-            CityBusStopDescriptor homeBusStop,
+            CityBusStopDescriptor homeBusStop, int homeBusNumber,
             IList<StreetLampDescriptor> nearbyStreetLamps,
             IList<TrafficSignalDescriptor> nearbyTrafficSignals,
             IList<CityDecorationDescriptor> nearbyDecorations)
@@ -38,6 +38,7 @@ namespace BarPromenade
                         CityDistrictPointOfInterestDescriptor>(
                         nearbyDistrictPointsOfInterest));
             HomeBusStop = homeBusStop;
+            HomeBusNumber = homeBusNumber;
             NearbyStreetLamps =
                 new ReadOnlyCollection<StreetLampDescriptor>(
                     new List<StreetLampDescriptor>(
@@ -63,6 +64,7 @@ namespace BarPromenade
             get;
         }
         public CityBusStopDescriptor HomeBusStop { get; }
+        public int HomeBusNumber { get; }
         public IReadOnlyList<StreetLampDescriptor> NearbyStreetLamps
         {
             get;
@@ -242,11 +244,15 @@ namespace BarPromenade
                     layout,
                     fence,
                     night);
-            CityBusPlan busPlan = CityBusPlanner.Create(
-                layout,
-                cityDecorations);
-            CityBusStopDescriptor homeBusStop =
-                FindHomeBusStop(busPlan, home);
+            CityBusStopDescriptor homeBusStop = null;
+            int homeBusNumber = 0;
+            foreach (CityBusPlan line in CityDistrictBusPlanner.Create(layout))
+            {
+                homeBusStop = FindHomeBusStop(line, home);
+                if (homeBusStop == null) continue;
+                homeBusNumber = line.Number;
+                break;
+            }
             var decorations =
                 new List<CityDecorationDescriptor>();
             for (int index = 0;
@@ -271,7 +277,7 @@ namespace BarPromenade
                 roads,
                 lots,
                 districtPointsOfInterest,
-                homeBusStop,
+                homeBusStop, homeBusNumber,
                 lamps,
                 signals,
                 decorations);

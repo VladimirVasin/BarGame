@@ -227,93 +227,8 @@ namespace BarPromenade
                     StableSeedSalt,
                     CityPedestrianStableHash.String(layout.BlueprintId)));
 
-            var busIntersections = new HashSet<Vector2Int>(
-                CityBusIntersectionSelector.Select(layout));
-            var trafficSignalIntersections = new HashSet<Vector2Int>(
-                CityStreetIntersectionSelector.Select(layout));
-            ReportPhase(
-                "intersections",
-                timer,
-                GameLog.Field("bus_aprons", busIntersections.Count),
-                GameLog.Field("signals", trafficSignalIntersections.Count));
-            timer.Restart();
-            List<DirectedStreet> streets = CreateDirectedStreets(
-                layout,
-                laneCenterOffset);
-            var streetByDirection = new Dictionary<
-                DirectedKey,
-                DirectedStreet>();
-            for (int index = 0; index < streets.Count; index++)
-            {
-                DirectedStreet street = streets[index];
-                streetByDirection.Add(
-                    new DirectedKey(street.From, street.To),
-                    street);
-            }
-
-            var nodes = new List<TemporaryNode>(streets.Count * 2);
-            for (int index = 0; index < streets.Count; index++)
-            {
-                DirectedStreet street = streets[index];
-                street.DepartureNodeIndex = nodes.Count;
-                nodes.Add(CreateNode(street, true, layout));
-                street.ArrivalNodeIndex = nodes.Count;
-                nodes.Add(CreateNode(street, false, layout));
-            }
-
-            Dictionary<Vector2Int, List<RoadEdge>> streetEdgesByNode =
-                CreateStreetEdgesByNode(layout);
-            ReportPhase(
-                "streets",
-                timer,
-                GameLog.Field("directed_streets", streets.Count));
-            timer.Restart();
-            var acceptedLinks = new List<TemporaryLink>();
-            var failures = new List<CityBusClearanceFailure>();
-            for (int index = 0; index < streets.Count; index++)
-            {
-                DirectedStreet street = streets[index];
-                AddRoadSegment(
-                    layout,
-                    vehicle,
-                    street,
-                    acceptedLinks,
-                    failures);
-            }
-
-            int roadSegmentCount = acceptedLinks.Count;
-            int roadFailureCount = failures.Count;
-            ReportPhase(
-                "road_segments",
-                timer,
-                GameLog.Field("accepted", roadSegmentCount),
-                GameLog.Field("rejected", roadFailureCount));
-            timer.Restart();
-            for (int index = 0; index < streets.Count; index++)
-            {
-                AddJunctionManeuvers(
-                    layout,
-                    vehicle,
-                    streets[index],
-                    streetByDirection,
-                    streetEdgesByNode,
-                    busIntersections,
-                    trafficSignalIntersections,
-                    laneCenterOffset,
-                    acceptedLinks,
-                    failures);
-            }
-
-            ReportPhase(
-                "junctions",
-                timer,
-                GameLog.Field(
-                    "accepted",
-                    acceptedLinks.Count - roadSegmentCount),
-                GameLog.Field(
-                    "rejected",
-                    failures.Count - roadFailureCount));
-            timer.Restart();
+            BuildRoutingGraph(layout, vehicle, laneCenterOffset, timer, out var nodes,
+                out var acceptedLinks, out var failures, out int streetCount);
             List<RouteOccurrence> route = CreateTargetRoute(
                 layout,
                 vehicle,
@@ -428,7 +343,7 @@ namespace BarPromenade
                 anchors,
                 stops,
                 failures,
-                streets.Count,
+                streetCount,
                 acceptedLinks.Count);
             ReportPhase("assemble_routing", timer);
             ReportPhase(
@@ -439,6 +354,101 @@ namespace BarPromenade
                 GameLog.Field("stops", stops.Count),
                 GameLog.Field("rejected", failures.Count));
             return plan;
+        }
+
+        private static void BuildRoutingGraph(CityLayout layout, CityBusDesignVehicle vehicle,
+            float laneCenterOffset, Stopwatch timer, out List<TemporaryNode> nodes,
+            out List<TemporaryLink> acceptedLinks, out List<CityBusClearanceFailure> failures,
+            out int streetCount)
+        {
+            var busIntersections = new HashSet<Vector2Int>(
+                CityBusIntersectionSelector.Select(layout));
+            var trafficSignalIntersections = new HashSet<Vector2Int>(
+                CityStreetIntersectionSelector.Select(layout));
+            ReportPhase(
+                "intersections",
+                timer,
+                GameLog.Field("bus_aprons", busIntersections.Count),
+                GameLog.Field("signals", trafficSignalIntersections.Count));
+            timer.Restart();
+            List<DirectedStreet> streets = CreateDirectedStreets(
+                layout,
+                laneCenterOffset);
+            var streetByDirection = new Dictionary<
+                DirectedKey,
+                DirectedStreet>();
+            for (int index = 0; index < streets.Count; index++)
+            {
+                DirectedStreet street = streets[index];
+                streetByDirection.Add(
+                    new DirectedKey(street.From, street.To),
+                    street);
+            }
+
+            nodes = new List<TemporaryNode>(streets.Count * 2);
+            for (int index = 0; index < streets.Count; index++)
+            {
+                DirectedStreet street = streets[index];
+                street.DepartureNodeIndex = nodes.Count;
+                nodes.Add(CreateNode(street, true, layout));
+                street.ArrivalNodeIndex = nodes.Count;
+                nodes.Add(CreateNode(street, false, layout));
+            }
+
+            Dictionary<Vector2Int, List<RoadEdge>> streetEdgesByNode =
+                CreateStreetEdgesByNode(layout);
+            ReportPhase(
+                "streets",
+                timer,
+                GameLog.Field("directed_streets", streets.Count));
+            timer.Restart();
+            acceptedLinks = new List<TemporaryLink>();
+            failures = new List<CityBusClearanceFailure>();
+            for (int index = 0; index < streets.Count; index++)
+            {
+                DirectedStreet street = streets[index];
+                AddRoadSegment(
+                    layout,
+                    vehicle,
+                    street,
+                    acceptedLinks,
+                    failures);
+            }
+
+            int roadSegmentCount = acceptedLinks.Count;
+            int roadFailureCount = failures.Count;
+            ReportPhase(
+                "road_segments",
+                timer,
+                GameLog.Field("accepted", roadSegmentCount),
+                GameLog.Field("rejected", roadFailureCount));
+            timer.Restart();
+            for (int index = 0; index < streets.Count; index++)
+            {
+                AddJunctionManeuvers(
+                    layout,
+                    vehicle,
+                    streets[index],
+                    streetByDirection,
+                    streetEdgesByNode,
+                    busIntersections,
+                    trafficSignalIntersections,
+                    laneCenterOffset,
+                    acceptedLinks,
+                    failures);
+            }
+
+            ReportPhase(
+                "junctions",
+                timer,
+                GameLog.Field(
+                    "accepted",
+                    acceptedLinks.Count - roadSegmentCount),
+                GameLog.Field(
+                    "rejected",
+                    failures.Count - roadFailureCount));
+            timer.Restart();
+            streetCount = streets.Count;
         }
 
         /// <summary>

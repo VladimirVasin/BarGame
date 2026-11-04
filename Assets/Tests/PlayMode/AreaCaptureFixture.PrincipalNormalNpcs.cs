@@ -55,7 +55,7 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(bus, Is.Not.Null);
                         if (!city.Bus.Actor.IsSpawned)
                         {
-                            city.Bus.Actor.PrepareSpawn(city.BusPlan, city.BusPlan.SpawnAnchors[0], 0x504f5254u);
+                            Assert.That(city.Bus.Actor.HasRoutePhase, Is.True);
                             city.Bus.Actor.BindPresentation(bus);
                         }
                         var driver = bus.DriverPresentation;
