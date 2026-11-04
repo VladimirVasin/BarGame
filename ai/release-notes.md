@@ -21,6 +21,10 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - От набережной улица поднимается к жилью. У остановки «Проход за домом»
   сокращает путь по лестнице. С площадки видны павильон и автобус внизу.
   LiveCity_CoastalAscentAndStairShortcutShareSupportedRoutes.
+- Карта во весь экран. Справа — прокручиваемый список: клик показывает одно
+  название с линией к квадрату; повтор скрывает. Стрелка героя крупнее и
+  контрастнее. Проверка кликов/кадров всех вкладок:
+  ImageGenVillageBrochure_PreservesResortAndLivePlaces.
 
 ### 2026-11-03
 

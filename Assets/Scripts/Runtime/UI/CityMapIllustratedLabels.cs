@@ -6,43 +6,58 @@ namespace BarPromenade
 {
     public sealed partial class CityMapView
     {
-        private const float IllustratedLabelFontSize = 8f;
-        private const float IllustratedLabelMaximumWidth = 108f;
-        private const float IllustratedLabelGap = 2f;
-        private const float IllustratedLabelGridStep = 4f;
-        private static readonly Color CityIllustratedLabelPaper = new Color(.075f, .10f, .10f, .97f);
-        private static readonly Color VillageIllustratedLabelPaper = new Color(.94f, .90f, .78f, .98f);
+        private static readonly Color CityIllustratedLabelPaper = new Color(.075f, .10f, .10f, 1f);
+        private static readonly Color VillageIllustratedLabelPaper = new Color(.94f, .90f, .78f, 1f);
         private static readonly Color CityIllustratedLabelInk = new Color(.97f, .96f, .88f, 1f);
 
         private struct IllustratedMapLabel
         {
             public int PointIndex, Priority;
             public GUIContent Content;
-            public Vector2 Size, Anchor;
-            public Rect Bounds;
-            public bool Candidate, Placed;
+            public Vector2 Anchor;
+            public Rect Bounds, RowBounds;
+            public bool Placed;
         }
 
+        // Retained semantic catalog shared by the right-hand list and its one
+        // selected callout. It is independent of the illustrated/schematic backing.
         private IllustratedMapLabel[] illustratedMapLabels = new IllustratedMapLabel[64];
         private int[] illustratedMapLabelOrder = new int[64];
         private IReadOnlyList<CityMapPointDescriptor> illustratedLabelCatalog;
         private int illustratedLabelCatalogPointCount = -1;
-        private int illustratedLabelCatalogCount, illustratedLabelCandidateCount, illustratedLabelPlacedCount;
-        private Rect illustratedLabelProjectionRect, illustratedLabelClipRect, illustratedLabelLegendRect;
-        private bool illustratedLabelLayoutValid, illustratedLabelOverflowReported;
+        private int illustratedLabelCatalogCount, illustratedLabelPlacedCount;
+        private int selectedPlaceSlot = -1, firstVisiblePlaceRow;
+        private bool focusSelectedPlace;
+        private Rect illustratedLabelClipRect;
         private GUIStyle cityIllustratedLabelStyle, villageIllustratedLabelStyle;
 
+        internal Rect FullscreenPanelRect { get; private set; }
+        internal Rect PlayerMarkerRect { get; private set; }
+        internal Rect PointOfInterestListRect { get; private set; }
+        internal int PointOfInterestRowCount => illustratedLabelCatalogCount;
         internal int IllustratedMapLabelCount => illustratedLabelPlacedCount;
-        internal int IllustratedMapLabelCandidateCount => illustratedLabelCandidateCount;
-        internal int UnplacedIllustratedMapLabelCount => illustratedLabelCandidateCount - illustratedLabelPlacedCount;
+        internal int IllustratedMapLabelCandidateCount => illustratedLabelPlacedCount;
+        internal int UnplacedIllustratedMapLabelCount => 0;
         internal Rect IllustratedMapLabelClipRect => illustratedLabelClipRect;
+
+        internal bool TryGetPointOfInterestRow(int index, out int pointIndex, out Rect bounds)
+        {
+            if (index >= 0 && index < illustratedLabelCatalogCount)
+            {
+                IllustratedMapLabel label = illustratedMapLabels[illustratedMapLabelOrder[index]];
+                pointIndex = label.PointIndex;
+                bounds = label.RowBounds;
+                return bounds.width > 0f;
+            }
+            pointIndex = -1; bounds = default;
+            return false;
+        }
 
         internal bool TryGetIllustratedMapLabelLayout(int index, out int pointIndex, out Rect bounds, out Vector2 anchor)
         {
-            for (int slot = 0; slot < illustratedLabelCatalogCount; slot++)
+            if (index == 0 && illustratedLabelPlacedCount == 1)
             {
-                IllustratedMapLabel label = illustratedMapLabels[slot];
-                if (!label.Placed || index-- != 0) continue;
+                IllustratedMapLabel label = illustratedMapLabels[selectedPlaceSlot];
                 pointIndex = label.PointIndex; bounds = label.Bounds; anchor = label.Anchor;
                 return true;
             }
@@ -52,80 +67,31 @@ namespace BarPromenade
 
         internal bool TryGetIllustratedMapLabelText(int index, out string text)
         {
-            for (int slot = 0; slot < illustratedLabelCatalogCount; slot++)
-            {
-                IllustratedMapLabel label = illustratedMapLabels[slot];
-                if (!label.Placed || index-- != 0) continue;
-                text = label.Content.text;
-                return true;
-            }
-            text = string.Empty;
-            return false;
+            text = index == 0 && illustratedLabelPlacedCount == 1
+                ? illustratedMapLabels[selectedPlaceSlot].Content.text : string.Empty;
+            return text.Length > 0;
         }
 
         private void ResetIllustratedMapLabels()
         {
             illustratedLabelCatalog = null;
             illustratedLabelCatalogPointCount = -1;
-            illustratedLabelCatalogCount = illustratedLabelCandidateCount = illustratedLabelPlacedCount = 0;
-            illustratedLabelLayoutValid = illustratedLabelOverflowReported = false;
+            illustratedLabelCatalogCount = illustratedLabelPlacedCount = 0;
+            ClearSelectedPlace();
         }
 
-        private bool HasIllustratedMapLabels => IsUsingIllustratedMap || IsUsingIllustratedVillageMap;
-
-        private void PrepareIllustratedMapLabels(MapProjection projection)
+        private void ClearSelectedPlace()
         {
-            if (!HasIllustratedMapLabels)
-            {
-                illustratedLabelCandidateCount = illustratedLabelPlacedCount = 0;
-                return;
-            }
+            selectedPlaceSlot = -1;
+            firstVisiblePlaceRow = illustratedLabelPlacedCount = 0;
+            focusSelectedPlace = false;
+        }
+
+        private void EnsurePlaceCatalog()
+        {
             EnsureIllustratedMapLabelStyles();
             IReadOnlyList<CityMapPointDescriptor> points = controller.ActiveMapPoints;
-            if (!ReferenceEquals(illustratedLabelCatalog, points) || illustratedLabelCatalogPointCount != points.Count)
-                RebuildIllustratedMapLabelCatalog(points);
-
-            // Scroll indicators paint after the group; keep name plaques
-            // inside the ground that remains visible beside their tracks.
-            Rect unobscuredViewport = new Rect(mapLineClipRect.position, new Vector2(
-                Mathf.Max(0f, mapLineClipRect.width - (mapViewport.CanScrollVertical ? 10f : 0f)),
-                Mathf.Max(0f, mapLineClipRect.height - (mapViewport.CanScrollHorizontal ? 10f : 0f))));
-            Rect clip = Intersect(projection.ScreenRect, unobscuredViewport);
-            clip = new Rect(clip.x + 2f, clip.y + 2f, Mathf.Max(0f, clip.width - 4f), Mathf.Max(0f, clip.height - 4f));
-            Rect legend = IsUsingIllustratedMap && !controller.BusOverlay.IsEmpty
-                ? CreateBusLegendRect(mapLineClipRect, controller.BusOverlay.Stops.Count > 0) : Rect.zero;
-            if (!illustratedLabelLayoutValid || illustratedLabelProjectionRect != projection.ScreenRect ||
-                illustratedLabelClipRect != clip || illustratedLabelLegendRect != legend)
-            {
-                illustratedLabelProjectionRect = projection.ScreenRect;
-                illustratedLabelClipRect = clip;
-                illustratedLabelLegendRect = legend;
-                RebuildIllustratedMapLabelLayout(projection, points);
-                illustratedLabelLayoutValid = true;
-            }
-
-            // Claim only the plate's left click before broad map/lot controls.
-            // Existing right/middle drags remain owned by the viewport.
-            for (int slot = 0; slot < illustratedLabelCatalogCount; slot++)
-            {
-                IllustratedMapLabel label = illustratedMapLabels[slot];
-                if (!label.Placed || !RetroUiInput.Button(label.Bounds, GUIContent.none, GUIStyle.none)) continue;
-                if (!controller.MapPointInspectionEnabled) controller.QueueToggleMapPointInspection();
-                controller.QueueSelectMapPoint(label.PointIndex, false);
-            }
-        }
-
-        private void EnsureIllustratedMapLabelStyles()
-        {
-            if (cityIllustratedLabelStyle != null) return;
-            cityIllustratedLabelStyle = RetroUiTheme.CreateLabelStyle((int)IllustratedLabelFontSize,
-                TextAnchor.MiddleLeft, CityIllustratedLabelInk, true, true);
-            villageIllustratedLabelStyle = RetroUiTheme.CreateLabelStyle((int)IllustratedLabelFontSize,
-                TextAnchor.MiddleLeft, AlpineVillageBrochureInk, true, true);
-        }
-
-        private void RebuildIllustratedMapLabelCatalog(IReadOnlyList<CityMapPointDescriptor> points)
-        {
+            if (ReferenceEquals(illustratedLabelCatalog, points) && illustratedLabelCatalogPointCount == points.Count) return;
             int required = 0;
             for (int index = 0; index < points.Count; index++)
                 if (ShouldLabelIllustratedMapPoint(points[index])) required++;
@@ -135,6 +101,7 @@ namespace BarPromenade
                 Array.Resize(ref illustratedMapLabels, capacity);
                 Array.Resize(ref illustratedMapLabelOrder, capacity);
             }
+            ClearSelectedPlace();
             illustratedLabelCatalogCount = 0;
             for (int index = 0; index < points.Count; index++)
             {
@@ -145,15 +112,10 @@ namespace BarPromenade
                 label.PointIndex = index;
                 label.Priority = IllustratedMapLabelPriority(point.Kind);
                 label.Content ??= new GUIContent();
-                // An area's coordinate-bearing debug name remains available
-                // in its inspector. The paper prints only its authored name.
                 label.Content.text = TryGetIllustratedOpenAreaRegion(point, out CityMapAreaRegion region)
                     ? LocalizationService.Get(region.LocalizationKey) : point.Label;
-                Vector2 natural = cityIllustratedLabelStyle.CalcSize(label.Content);
-                float width = Mathf.Clamp(natural.x + 6f, 24f, IllustratedLabelMaximumWidth);
-                label.Size = new Vector2(width, Mathf.Ceil(cityIllustratedLabelStyle.CalcHeight(label.Content, width - 6f)) + 4f);
-                // Stable priority insertion, without a comparison delegate or a
-                // temporary list. Every authored named point retains a slot.
+                label.Placed = false;
+                label.RowBounds = Rect.zero;
                 int order = slot;
                 while (order > 0 && illustratedMapLabels[illustratedMapLabelOrder[order - 1]].Priority < label.Priority)
                 { illustratedMapLabelOrder[order] = illustratedMapLabelOrder[order - 1]; order--; }
@@ -161,12 +123,20 @@ namespace BarPromenade
             }
             illustratedLabelCatalog = points;
             illustratedLabelCatalogPointCount = points.Count;
-            illustratedLabelLayoutValid = false;
+        }
+
+        private void EnsureIllustratedMapLabelStyles()
+        {
+            if (cityIllustratedLabelStyle != null) return;
+            cityIllustratedLabelStyle = RetroUiTheme.CreateLabelStyle(10,
+                TextAnchor.MiddleLeft, CityIllustratedLabelInk, true, true);
+            villageIllustratedLabelStyle = RetroUiTheme.CreateLabelStyle(10,
+                TextAnchor.MiddleLeft, AlpineVillageBrochureInk, true, true);
         }
 
         private bool ShouldLabelIllustratedMapPoint(CityMapPointDescriptor point) =>
             !string.IsNullOrWhiteSpace(point.Label) && point.Kind != CityMapPointKind.Player &&
-            point.Kind != CityMapPointKind.GroundSquare && point.Kind != CityMapPointKind.BusStop &&
+            point.Kind != CityMapPointKind.GroundSquare &&
             !(point.Kind == CityMapPointKind.MapObject && point.StableId.StartsWith("city:lot:", StringComparison.Ordinal)) &&
             !(TryGetIllustratedOpenAreaRegion(point, out CityMapAreaRegion region) &&
                 region.Feature == CityAreaFeatureKind.Yard && region.LocalizationKey == "map.district.yard");
@@ -211,147 +181,73 @@ namespace BarPromenade
             }
         }
 
-        private void RebuildIllustratedMapLabelLayout(MapProjection projection, IReadOnlyList<CityMapPointDescriptor> points)
+        private void PrepareIllustratedMapLabels(MapProjection projection)
         {
-            illustratedLabelCandidateCount = illustratedLabelPlacedCount = 0;
-            for (int slot = 0; slot < illustratedLabelCatalogCount; slot++)
-            {
-                ref IllustratedMapLabel label = ref illustratedMapLabels[slot];
-                label.Anchor = projection.WorldToScreen(controller.ResolveMapPointWorldPosition(points[label.PointIndex]));
-                label.Candidate = illustratedLabelClipRect.Contains(label.Anchor);
-                label.Placed = false;
-                if (label.Candidate) illustratedLabelCandidateCount++;
-            }
-            for (int order = 0; order < illustratedLabelCatalogCount; order++)
-            {
-                int slot = illustratedMapLabelOrder[order];
-                ref IllustratedMapLabel label = ref illustratedMapLabels[slot];
-                if (!label.Candidate) continue;
-                if (TryPlaceIllustratedMapLabel(slot, true) || TryPlaceIllustratedMapLabel(slot, false))
-                    illustratedLabelPlacedCount++;
-            }
-            if (illustratedLabelPlacedCount < illustratedLabelCandidateCount)
-                RepackIllustratedMapLabelRows();
-            if (UnplacedIllustratedMapLabelCount > 0 && !illustratedLabelOverflowReported)
-            {
-                illustratedLabelOverflowReported = true;
-                GameLog.Warning("map", "illustrated_label_layout_has_no_free_space",
-                    GameLog.Field("unplaced", UnplacedIllustratedMapLabelCount));
-            }
-        }
-
-        private bool TryPlaceIllustratedMapLabel(int slot, bool nearby)
-        {
-            ref IllustratedMapLabel label = ref illustratedMapLabels[slot];
-            if (label.Size.x > illustratedLabelClipRect.width || label.Size.y > illustratedLabelClipRect.height) return false;
-            if (nearby)
-            {
-                for (int ring = 0; ring < 8; ring++)
-                    for (int direction = 0; direction < 8; direction++)
-                    {
-                        float radius = 10f + ring * 18f;
-                        Vector2 offset;
-                        switch (direction)
-                        {
-                            case 0: offset = new Vector2(radius, -label.Size.y * .5f); break;
-                            case 1: offset = new Vector2(-radius - label.Size.x, -label.Size.y * .5f); break;
-                            case 2: offset = new Vector2(-label.Size.x * .5f, -radius - label.Size.y); break;
-                            case 3: offset = new Vector2(-label.Size.x * .5f, radius); break;
-                            case 4: offset = new Vector2(radius, -radius - label.Size.y); break;
-                            case 5: offset = new Vector2(-radius - label.Size.x, radius); break;
-                            case 6: offset = new Vector2(radius, radius); break;
-                            default: offset = new Vector2(-radius - label.Size.x, -radius - label.Size.y); break;
-                        }
-                        Rect candidate = ClampIllustratedMapLabel(new Rect(label.Anchor + offset, label.Size));
-                        if (AcceptIllustratedMapLabel(slot, candidate, true)) return true;
-                    }
-                return false;
-            }
-            // A finite scan offers free rows/columns when local clusters fill.
-            for (float y = illustratedLabelClipRect.yMin; y <= illustratedLabelClipRect.yMax - label.Size.y; y += IllustratedLabelGridStep)
-                for (float x = illustratedLabelClipRect.xMin; x <= illustratedLabelClipRect.xMax - label.Size.x; x += IllustratedLabelGridStep)
-                    if (AcceptIllustratedMapLabel(slot, new Rect(new Vector2(x, y), label.Size), true)) return true;
-            return false;
-        }
-
-        private Rect ClampIllustratedMapLabel(Rect rectangle) => new Rect(
-            Mathf.Clamp(rectangle.x, illustratedLabelClipRect.xMin, illustratedLabelClipRect.xMax - rectangle.width),
-            Mathf.Clamp(rectangle.y, illustratedLabelClipRect.yMin, illustratedLabelClipRect.yMax - rectangle.height),
-            rectangle.width, rectangle.height);
-
-        private bool AcceptIllustratedMapLabel(int slot, Rect candidate, bool preserveMarkers)
-        {
-            Rect clearance = Expand(candidate, IllustratedLabelGap * .5f);
-            if (clearance.Overlaps(illustratedLabelLegendRect)) return false;
-            for (int other = 0; other < illustratedLabelCatalogCount; other++)
-            {
-                if (other != slot && illustratedMapLabels[other].Placed && clearance.Overlaps(illustratedMapLabels[other].Bounds)) return false;
-                if (preserveMarkers && illustratedMapLabels[other].Candidate &&
-                    clearance.Overlaps(CreateCenteredRect(illustratedMapLabels[other].Anchor, 10f, 10f))) return false;
-            }
-            illustratedMapLabels[slot].Bounds = candidate;
-            illustratedMapLabels[slot].Placed = true;
-            return true;
-        }
-
-        private void RepackIllustratedMapLabelRows()
-        {
-            for (int slot = 0; slot < illustratedLabelCatalogCount; slot++) illustratedMapLabels[slot].Placed = false;
             illustratedLabelPlacedCount = 0;
-            float x = illustratedLabelClipRect.xMin, y = illustratedLabelClipRect.yMin, rowHeight = 0f;
-            for (int order = 0; order < illustratedLabelCatalogCount; order++)
-            {
-                int slot = illustratedMapLabelOrder[order];
-                ref IllustratedMapLabel label = ref illustratedMapLabels[slot];
-                if (!label.Candidate) continue;
-                if (x + label.Size.x > illustratedLabelClipRect.xMax)
-                { x = illustratedLabelClipRect.xMin; y += rowHeight + IllustratedLabelGap; rowHeight = 0f; }
-                Rect candidate = new Rect(new Vector2(x, y), label.Size);
-                if (candidate.yMax > illustratedLabelClipRect.yMax || candidate.xMax > illustratedLabelClipRect.xMax) continue;
-                if (candidate.Overlaps(illustratedLabelLegendRect))
-                { y = illustratedLabelLegendRect.yMax + IllustratedLabelGap; candidate.y = y; }
-                if (candidate.yMax > illustratedLabelClipRect.yMax) continue;
-                if (!AcceptIllustratedMapLabel(slot, candidate, false)) continue;
-                x = candidate.xMax + IllustratedLabelGap;
-                rowHeight = Mathf.Max(rowHeight, label.Size.y);
-                illustratedLabelPlacedCount++;
-            }
+            PlayerMarkerRect = controller.ShouldDrawPlayerOnSelectedArea
+                ? CreateCenteredRect(projection.WorldToScreen(controller.PlayerWorldPosition), 34f, 34f) : Rect.zero;
+            Rect clip = Intersect(projection.ScreenRect, new Rect(Vector2.zero, new Vector2(
+                Mathf.Max(0f, mapLineClipRect.width - (mapViewport.CanScrollVertical ? 10f : 0f)),
+                Mathf.Max(0f, mapLineClipRect.height - (mapViewport.CanScrollHorizontal ? 10f : 0f)))));
+            illustratedLabelClipRect = new Rect(clip.x + 4f, clip.y + 4f,
+                Mathf.Max(0f, clip.width - 8f), Mathf.Max(0f, clip.height - 8f));
+            if (selectedPlaceSlot < 0) return;
+            ref IllustratedMapLabel label = ref illustratedMapLabels[selectedPlaceSlot];
+            label.Placed = false;
+            label.Anchor = projection.WorldToScreen(controller.ResolveMapPointWorldPosition(
+                illustratedLabelCatalog[label.PointIndex]));
+            if (!illustratedLabelClipRect.Contains(label.Anchor)) return;
+            GUIStyle style = IsUsingIllustratedVillageMap ? villageIllustratedLabelStyle : cityIllustratedLabelStyle;
+            float width = Mathf.Min(illustratedLabelClipRect.width,
+                Mathf.Clamp(style.CalcSize(label.Content).x + 16f, 64f, 174f));
+            Vector2 size = new Vector2(width, style.CalcHeight(label.Content, width - 16f) + 12f);
+            if (size.y > illustratedLabelClipRect.height) return;
+            Rect legend = controller.SelectedArea == GameAreaId.City && !controller.BusOverlay.IsEmpty
+                ? CreateBusLegendRect(mapLineClipRect, controller.BusOverlay.Stops.Count > 0) : Rect.zero;
+            // Only one label: bounded candidate search keeps it close to its
+            // square without covering that square, the hero or the bus legend.
+            for (int ring = 0; ring < 8; ring++)
+                for (int direction = 0; direction < 4; direction++)
+                {
+                    float gap = 20f + ring * 18f;
+                    Vector2 offset = direction == 0 ? new Vector2(gap, -size.y * .5f) :
+                        direction == 1 ? new Vector2(-gap - size.x, -size.y * .5f) :
+                        direction == 2 ? new Vector2(-size.x * .5f, -gap - size.y) :
+                        new Vector2(-size.x * .5f, gap);
+                    Rect candidate = new Rect(label.Anchor + offset, size);
+                    candidate.x = Mathf.Clamp(candidate.x, illustratedLabelClipRect.xMin, illustratedLabelClipRect.xMax - size.x);
+                    candidate.y = Mathf.Clamp(candidate.y, illustratedLabelClipRect.yMin, illustratedLabelClipRect.yMax - size.y);
+                    if (candidate.Overlaps(legend) || candidate.Overlaps(PlayerMarkerRect) ||
+                        candidate.Overlaps(CreateCenteredRect(label.Anchor, 14f, 14f))) continue;
+                    label.Bounds = candidate;
+                    label.Placed = true;
+                    illustratedLabelPlacedCount = 1;
+                    return;
+                }
         }
 
-        private bool IsPointerOverIllustratedMapLabel(Vector2 localPointer)
-        {
-            if (!HasIllustratedMapLabels) return false;
-            for (int slot = 0; slot < illustratedLabelCatalogCount; slot++)
-                if (illustratedMapLabels[slot].Placed && illustratedMapLabels[slot].Bounds.Contains(localPointer)) return true;
-            return false;
-        }
+        private bool IsPointerOverIllustratedMapLabel(Vector2 localPointer) =>
+            illustratedLabelPlacedCount == 1 && illustratedMapLabels[selectedPlaceSlot].Bounds.Contains(localPointer);
 
         private void DrawIllustratedMapLabels()
         {
-            if (!HasIllustratedMapLabels) return;
+            if (illustratedLabelPlacedCount != 1) return;
+            IllustratedMapLabel label = illustratedMapLabels[selectedPlaceSlot];
             Color ink = IsUsingIllustratedVillageMap ? AlpineVillageBrochureInk : CityIllustratedLabelInk;
             Color paper = IsUsingIllustratedVillageMap ? VillageIllustratedLabelPaper : CityIllustratedLabelPaper;
             GUIStyle style = IsUsingIllustratedVillageMap ? villageIllustratedLabelStyle : cityIllustratedLabelStyle;
-            for (int slot = 0; slot < illustratedLabelCatalogCount; slot++)
-            {
-                IllustratedMapLabel label = illustratedMapLabels[slot];
-                if (!label.Placed) continue;
-                Vector2 endpoint = new Vector2(Mathf.Clamp(label.Anchor.x, label.Bounds.xMin, label.Bounds.xMax),
-                    Mathf.Clamp(label.Anchor.y, label.Bounds.yMin, label.Bounds.yMax));
-                DrawLine(label.Anchor, endpoint, 1f, ink);
-                DrawOpenOctagonOutline(label.Anchor, 2f, 1f, ink);
-            }
-            for (int slot = 0; slot < illustratedLabelCatalogCount; slot++)
-            {
-                IllustratedMapLabel label = illustratedMapLabels[slot];
-                if (!label.Placed) continue;
-                DrawSolidRect(label.Bounds, paper);
-                RetroUiTheme.StrokeRect(label.Bounds, 1f, ink);
-                GUI.Label(new Rect(label.Bounds.x + 3f, label.Bounds.y + 2f,
-                    label.Bounds.width - 6f, label.Bounds.height - 4f), label.Content, style);
-                RegisterHoverTarget(label.Bounds, label.Bounds.center, label.Content.text,
-                    PlayerHoverPriority + 10, label.PointIndex);
-            }
+            Vector2 endpoint = new Vector2(Mathf.Clamp(label.Anchor.x, label.Bounds.xMin, label.Bounds.xMax),
+                Mathf.Clamp(label.Anchor.y, label.Bounds.yMin, label.Bounds.yMax));
+            DrawLine(label.Anchor, endpoint, 3f, paper);
+            DrawLine(label.Anchor, endpoint, 1.25f, ink);
+            Rect marker = CreateCenteredRect(label.Anchor, 8f, 8f);
+            DrawSolidRect(Expand(marker, 2f), paper);
+            DrawSolidRect(marker, ink);
+            RetroUiTheme.StrokeRect(marker, 1f, paper);
+            DrawSolidRect(label.Bounds, paper);
+            RetroUiTheme.StrokeRect(label.Bounds, 1f, ink);
+            GUI.Label(new Rect(label.Bounds.x + 8f, label.Bounds.y + 6f,
+                label.Bounds.width - 16f, label.Bounds.height - 12f), label.Content, style);
         }
     }
 }

@@ -189,7 +189,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Debug controls | F4: busy/defeat flight, live timelines. F9: day/intoxication/truck; F1–F3: speed. | `DebugFreeCamera`, `MinigameDebugWindow`, `DebugTimeControls`, `HomeDebugCityMapShortcut` | Current |
 | Structured session diagnostics | 20MiB/adaptive samples/end reserve/32-action tail;CPU/cloth/ammo/carry/input/F8. | `Runtime/Diagnostics`, `DuelJournal` | Current |
 | Bar activity flavour | Legacy activity identity still selects bar flavour; the removed sprite minigames remain absent. | `BarActivityKind`, `BarActivityAssignment` | Current |
-| Area map UI | City twelve glyphs/Village groups incl. former resort; shared legend/travel/XYZ. | `CityMap{Controller,View,AreaController,AreaView,MountainRoadOverlay,AlpineVillageOverlay}` | Current |
+| Area map UI | Fullscreen;scrollable place list→one plaque/line/square;large hero arrow;travel/XYZ. | `CityMap{Controller,View,AreaController,AreaView,MountainRoadOverlay,AlpineVillageOverlay}` | Current |
 | Area map art | City charcoal/Village brochure; separate plan/RU SHA+UV guards/RU labels/marks; Road/other seeds schematic. | `{City,AlpineVillage}MapArtResources`, `CityMapArtReferenceExport`, `CityMapIllustratedLabels` | Current |
 | Map XYZ inspection | Map points, fair/post/docks/arch/church-door places included, expose world coordinates and validated teleport targets. | `CityMapTeleport{Lattice,Grounds}`, `CityMapPointDescriptor` | Current |
 | Map arrival ground | Area-owned ground; City lot/XYZ arrivals re-sample land Y and move occupied markers to a clear street. | `ICityMapTeleportGround`, `CityMap{City,MountainRoad}TeleportGround` | Current |

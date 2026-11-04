@@ -1776,22 +1776,23 @@ cemetery:own interiors/returns.
 
 ### Map, transitions and shared interaction
 
-- City map:full-screen blueprint-centred;cell labels/area colours. Park/beach/sea/river/promenade/cemetery surfaces
+- City map:full viewport, including ultrawide;cell labels/area colours. Park/beach/sea/river/promenade/cemetery surfaces
   and paths; cemetery–church passage cuts both outlines without street gate/
   teleport anchor. Coast:mol/pier/hut/piles/barge,lighthouse dot on the north
   border at true easting; Works/Mouth/timber bridges have distinct treatments.
   Player/home-bar/home/grocery markers;twelve POI glyphs (four lots,
   fair/post/docks/arch/church/cafe/laundry/dog yard),bounded localized legend/
-  hover names. Public lots/fair use open ground,not buildings;locations come
+  selectable places. Public lots/fair use open ground,not buildings;locations come
   from validated memoised plans/port.
   Default ImageGen `UI/Maps`:City charcoal/Silent Hill, redrawn for the relocated
   bar;Village worn tourist brochure/red-crossed resort.
   LodgeApproach arrival;no3D change. Plan/RU SHA+bounds/size guard
   stale art;other seeds/MountainRoad→schematic. City SHA excludes Village
   keys;Village mapUvRect separates map/nonXYZ ad. Cached clamped nonreadable
-  bitmap≤2K/area. Bounded RU cache:contrast plates/leaders/collision/clip;
-  no anonymous yards/plate coords;named POIs/click→XYZ inspector;
-  player/POIs/bus/selection/XYZ/arrivals live. Geometry→final redraw unless
+  bitmap≤2K/area. Cached right-list places/all tabs:click centres one
+  plaque/leader/square;repeat/tab/reopen clears it;hover names0.
+  Anonymous yards/plate coords0. Larger notched hero arrow draws last;
+  plaque avoids hero/legend. Player/POIs/bus/selection/XYZ/arrivals live. Geometry→final redraw unless
   explicitly requested sooner;live motion0.
   It consumes `CityWorldResult.MountainBoundaryPlan`,
   expands display bounds only west and south, including the visible cave
@@ -1799,12 +1800,12 @@ cemetery:own interiors/returns.
   toe-to-outer-foot hatch carrying only the visible narrow river approach
   into its mountain mouth. The hidden cave continuation is not drawn as open
   map space. The open portal uses a fixed `19 x 17` uncrossed arch marker
-  with a localized hover label; outside the scrolling viewport the marker
+  in the place list; outside the scrolling viewport the marker
   clamps to the visible edge as a direction indicator. North and east keep
   the layout's original map maxima. It also draws the canonical Route 01 loop
   as a pale neutral line, adds
-  five numbered stop markers in the default layout with localized hover
-  labels and keeps both symbols in a compact legend. The map has no live bus
+  five numbered stop markers in the default layout with names in the right
+  list and keeps both symbols in a compact legend. The map has no live bus
   marker. City illustration and Mountain Road schematic have separate area tabs;
   the player marker is drawn only on the current area's tab. An observational
   `XYZ` mode opens on both tabs through the panel button, keyboard `C` or

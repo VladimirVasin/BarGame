@@ -402,11 +402,8 @@ namespace BarPromenade
                 RetroUiTheme.BeginCanvas(canvas);
             try
             {
-                Rect panel = new Rect(
-                    8f,
-                    8f,
-                    RetroUiTheme.LogicalWidth - 16f,
-                    RetroUiTheme.LogicalHeight - 16f);
+                Rect panel = canvas.ViewportRect;
+                FullscreenPanelRect = panel;
                 RetroUiTheme.DrawPanel(
                     panel,
                     RetroUiTheme.Panel,
@@ -441,7 +438,7 @@ namespace BarPromenade
                     panel.x + outerMargin,
                     panel.y + headerHeight,
                     panel.width - outerMargin * 2f,
-                    panel.height - headerHeight);
+                    panel.height - headerHeight - outerMargin);
                 Rect mapArea = new Rect(
                     content.x,
                     content.y,
@@ -470,6 +467,7 @@ namespace BarPromenade
                 if (!wasOpen ||
                     lastPresentedArea != controller.SelectedArea)
                 {
+                    ClearSelectedPlace();
                     mapViewport.CenterOnWorld(
                         controller.ShouldDrawPlayerOnSelectedArea
                             ? controller.PlayerWorldPosition
@@ -493,6 +491,13 @@ namespace BarPromenade
 
                 lastMapPointFocusRevision =
                     controller.MapPointFocusRevision;
+                EnsurePlaceCatalog();
+                if (focusSelectedPlace && selectedPlaceSlot >= 0)
+                {
+                    mapViewport.CenterOnWorld(controller.ResolveMapPointWorldPosition(
+                        illustratedLabelCatalog[illustratedMapLabels[selectedPlaceSlot].PointIndex]), viewportWorldBounds);
+                    focusSelectedPlace = false;
+                }
 
                 HandlePointerScrolling(mapArea, logicalPointer);
                 hoverTargets.Clear();
@@ -543,6 +548,8 @@ namespace BarPromenade
             {
                 DrawMountainRoadMap(projection);
                 DrawMapPointInspectionPass(projection);
+                DrawIllustratedMapLabels();
+                DrawPlayer(projection);
                 return;
             }
 
@@ -551,6 +558,7 @@ namespace BarPromenade
                 DrawAlpineVillageMap(projection);
                 DrawMapPointInspectionPass(projection);
                 DrawIllustratedMapLabels();
+                DrawPlayer(projection);
                 return;
             }
 
@@ -590,12 +598,12 @@ namespace BarPromenade
             DrawSupermarket(projection);
             DrawBars(projection);
             DrawPlayerHome(projection);
-            DrawPlayer(projection);
             DrawMountainTunnelMarker(projection);
             DrawBusLegend();
             DrawAreaSelectionPass(projection);
             DrawMapPointInspectionPass(projection);
             DrawIllustratedMapLabels();
+            DrawPlayer(projection);
         }
 
         /// <summary>
@@ -2559,18 +2567,21 @@ namespace BarPromenade
             screenForward.Normalize();
             // One solid arrowhead standing on the player's own position
             // and pointing where they face, outlined so it survives over
-            // pale ground. The name it carries belongs to the tooltip.
-            const float ahead = 8f;
-            const float behind = 5f;
-            const float halfBase = 5.5f;
+            // pale ground, with a notched tail to make its heading clear.
+            const float ahead = 15f;
+            const float behind = 9f;
+            const float halfBase = 9f;
             Vector2 tip = position + screenForward * ahead;
             Vector2 tail = position - screenForward * behind;
             FillArrowhead(
-                tip + screenForward,
-                tail - screenForward,
-                halfBase + 1.4f,
+                tip + screenForward * 2f,
+                tail - screenForward * 2f,
+                halfBase + 2.5f,
                 IsUsingIllustratedVillageMap ? AlpineVillageBrochureInk : RetroUiTheme.Ink);
             FillArrowhead(tip, tail, halfBase, Player);
+            // A dark notch separates the long nose from the broad tail.
+            FillArrowhead(position - screenForward * 2f, tail + screenForward,
+                3.5f, RetroUiTheme.Ink);
             RegisterHoverTarget(
                 CreateCenteredRect(position, 17f, 17f),
                 position,
@@ -2715,20 +2726,14 @@ namespace BarPromenade
             Rect mapBounds,
             Vector2 logicalPointer)
         {
-            if (hoverBlockRect.Contains(logicalPointer))
+            if (!controller.MapPointInspectionEnabled || hoverBlockRect.Contains(logicalPointer))
             {
                 return;
             }
 
-            string label = ResolveHoveredLabel(
-                hoverTargets,
-                logicalPointer);
-            if (string.IsNullOrEmpty(label))
-            {
-                // Nothing named is here, so the ground answers - the same
-                // last-resort square a click would pick.
-                label = ResolveHoveredTeleportSquareLabel(logicalPointer);
-            }
+            // Place names belong only to the right-list selection. XYZ
+            // keeps its observational coordinate hover without a second name.
+            string label = ResolveHoveredTeleportSquareLabel(logicalPointer);
 
             if (string.IsNullOrEmpty(label))
             {
@@ -2988,14 +2993,7 @@ namespace BarPromenade
                 return;
             }
 
-            if (!controller.IsCityMapInteractionActive)
-            {
-                DrawAreaTravelPanel(panel);
-                DrawMapPointModeButton(panel);
-                return;
-            }
-
-            if (controller.DebugTeleportEnabled)
+            if (controller.IsCityMapInteractionActive && controller.DebugTeleportEnabled)
             {
                 DrawDebugTeleportPanel(panel);
                 DrawMapPointModeButton(panel);
@@ -3003,6 +3001,7 @@ namespace BarPromenade
             }
 
             DrawPointOfInterestLegend(panel);
+            if (!controller.IsCityMapInteractionActive) DrawAreaTravelPanel(panel);
             DrawMapPointModeButton(panel);
         }
 
@@ -3316,82 +3315,52 @@ namespace BarPromenade
 
         private void DrawPointOfInterestLegend(Rect panel)
         {
-            int entryCount = controller.PointsOfInterest.Count;
-            if (entryCount == 0)
+            GUI.Label(new Rect(panel.x + 8f, panel.y + 5f, panel.width - 58f, 18f),
+                LocalizationService.Get("map.poi.title"), pointOfInterestTitleStyle);
+            float footer = !controller.IsCityMapInteractionActive
+                ? (controller.IsSelectedAreaCurrent ? 26f : 76f) : 6f;
+            Rect list = new Rect(panel.x + 5f, panel.y + 29f, panel.width - 10f,
+                Mathf.Max(0f, panel.height - 29f - footer));
+            PointOfInterestListRect = list;
+            for (int slot = 0; slot < illustratedLabelCatalogCount; slot++)
+                illustratedMapLabels[slot].RowBounds = Rect.zero;
+            if (illustratedLabelCatalogCount == 0 || list.height < 48f) return;
+            int maximumFirst = Mathf.Max(0, illustratedLabelCatalogCount - 1);
+            firstVisiblePlaceRow = Mathf.Clamp(firstVisiblePlaceRow, 0, maximumFirst);
+            if (list.Contains(RetroUiInput.MousePosition) && RetroUiInput.ScrollDelta.y != 0f)
             {
-                return;
+                firstVisiblePlaceRow = Mathf.Clamp(firstVisiblePlaceRow +
+                    (RetroUiInput.ScrollDelta.y > 0f ? 1 : -1), 0, maximumFirst);
+                RetroUiInput.ConsumeScroll();
             }
-
-            int visibleCount = ResolvePointOfInterestLegendVisibleEntries(
-                panel,
-                entryCount);
-            if (visibleCount == 0)
+            Rect up = new Rect(list.x, list.y, list.width, 15f);
+            Rect down = new Rect(list.x, list.yMax - 15f, list.width, 15f);
+            if (firstVisiblePlaceRow > 0 && RetroUiInput.Button(up, "↑", smallButtonStyle))
+                firstVisiblePlaceRow--;
+            float y = up.yMax + 2f;
+            int next = firstVisiblePlaceRow;
+            for (; next < illustratedLabelCatalogCount; next++)
             {
-                return;
+                int slot = illustratedMapLabelOrder[next];
+                ref IllustratedMapLabel label = ref illustratedMapLabels[slot];
+                float height = Mathf.Max(24f, pointOfInterestItemStyle.CalcHeight(label.Content, list.width - 20f) + 10f);
+                if (y + height > down.y - 2f) break;
+                Rect row = new Rect(list.x, y, list.width, height);
+                label.RowBounds = row;
+                RetroUiTheme.DrawSelection(row, selectedPlaceSlot == slot);
+                RetroUiTheme.StrokeRect(row, 1f, RetroUiTheme.BorderMuted);
+                if (RetroUiInput.Button(row, GUIContent.none, GUIStyle.none))
+                {
+                    selectedPlaceSlot = selectedPlaceSlot == slot ? -1 : slot;
+                    focusSelectedPlace = selectedPlaceSlot >= 0;
+                }
+                DrawSolidRect(new Rect(row.x + 5f, row.center.y - 2f, 4f, 4f), RetroUiTheme.Text);
+                GUI.Label(new Rect(row.x + 15f, row.y + 5f, row.width - 20f, height - 10f),
+                    label.Content, pointOfInterestItemStyle);
+                y += height + 3f;
             }
-
-            bool overflows = visibleCount < entryCount;
-            Rect legend = CreatePointOfInterestLegendRect(
-                panel,
-                visibleCount + (overflows ? 1 : 0));
-            DrawSolidRect(
-                legend,
-                RetroUiTheme.WithAlpha(RetroUiTheme.MapGround, 0.55f));
-            RetroUiTheme.StrokeRect(
-                legend,
-                1f,
-                RetroUiTheme.BorderMuted);
-            GUI.Label(
-                new Rect(
-                    legend.x + 4f,
-                    legend.y + 2f,
-                    legend.width - 8f,
-                    16f),
-                LocalizationService.Get("map.poi.title"),
-                pointOfInterestTitleStyle);
-
-            const float rowHeight = PointOfInterestLegendRowHeight;
-            float rowY = legend.y + 19f;
-            for (int index = 0; index < visibleCount; index++)
-            {
-                CityMapPointOfInterest pointOfInterest =
-                    controller.PointsOfInterest[index];
-                Vector2 markerCenter = new Vector2(
-                    legend.x + 9f,
-                    rowY + rowHeight * 0.5f);
-                DrawPointOfInterestMarker(
-                    pointOfInterest.Kind,
-                    markerCenter,
-                    GetDistrictColor(pointOfInterest.District),
-                    3.5f,
-                    2f,
-                    1f);
-                GUI.Label(
-                    new Rect(
-                        legend.x + 17f,
-                        rowY,
-                        legend.width - 21f,
-                        rowHeight),
-                    controller.GetPointOfInterestLabel(index),
-                    pointOfInterestItemStyle);
-                rowY += rowHeight;
-            }
-
-            if (overflows)
-            {
-                // The rows that did not fit are still on the chart and
-                // still answer hover; the legend only says they exist.
-                GUI.Label(
-                    new Rect(
-                        legend.x + 17f,
-                        rowY,
-                        legend.width - 21f,
-                        rowHeight),
-                    string.Format(
-                        LocalizationService.Get("map.poi.more"),
-                        entryCount - visibleCount),
-                    pointOfInterestItemStyle);
-            }
+            if (next < illustratedLabelCatalogCount && RetroUiInput.Button(down, "↓", smallButtonStyle))
+                firstVisiblePlaceRow = Mathf.Min(maximumFirst, firstVisiblePlaceRow + 1);
         }
 
         internal const float PointOfInterestLegendRowHeight = 12f;
@@ -4163,14 +4132,15 @@ namespace BarPromenade
                 RetroUiTheme.Text,
                 true);
             pointOfInterestTitleStyle = RetroUiTheme.CreateLabelStyle(
-                8,
+                10,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.AccentPale,
                 true);
             pointOfInterestItemStyle = RetroUiTheme.CreateLabelStyle(
-                7,
+                9,
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.Text,
+                true,
                 true);
             tooltipStyle = RetroUiTheme.CreateLabelStyle(
                 9,

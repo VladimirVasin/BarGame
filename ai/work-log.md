@@ -39,6 +39,9 @@ walks, physical bus/hero contacts, gate and mapped arrivals verified. Reviewed
 the stair reveal and return view of the bus below. Final ImageGen redraw and
 RU map binding verified by ImageGenCityMap_PreservesPlanAndLivePlaces.
 check-docs.py/check-workspace.py/git diff --check.
+Map fills viewport;scrollable right places select one plaque/leader/square,
+no hover names;larger outlined hero arrow. City/Road/Village frames reviewed;
+ImageGenVillageBrochure_PreservesResortAndLivePlaces passed.
 
 ## 2026-11-03
 Checkpoint:RAM deep progress/world/ammo;restore/entry/seed/rides/tokens;RU pause/No.

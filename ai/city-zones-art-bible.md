@@ -4199,12 +4199,13 @@ Unity legacy:аварийный резерв. Заголовок/основно�
   Пересечения: цель действия→ближайший. Деревня/мать исключены.
 - Инвентарь/магазин/осмотр/журнал: рамка/деления/выбор; сетка без цветных плиток.
   `2026-10-14`:3D lit/world kept; `2026-10-15`:compact text-buttons/smaller centered model.
-- Maps:built-in ImageGen/current plans;redraw at final step or user request. City:charcoal/
-  Silent Hill;Village:user `2026-10-29`/сюж.§6/12/21 exception—worn tourist
-  brochure,cream/blue/green/ochre;former resort hand-crossed red. Historical
-  paper only,no 3D/pistes;wear/grain/ink baked. Geography/RU/live markers/XYZ
-  kept;districts/water/roads/routes/POIs differ by value/weight/hatch/silhouette;
-  tab/player/selection read without colour. Other UI/all24 effects kept.
+- Maps:ImageGen/plans;final-step redraw/user request. City charcoal/Silent Hill;
+  Village:user `2026-10-29`/сюж.§6/12/21—worn cream/blue/green/ochre tourist
+  brochure,former resort hand-crossed red. Paper only,no3D/pistes;
+  wear/grain/ink baked. Geo/RU/live marks/XYZ kept;districts/water/roads/
+  routes/POIs:value/weight/hatch/silhouette;tab/player/selection:grayscale.
+  User `2026-11-04`:fullscreen;right-list click→one name/leader/square;
+  hover0;larger notched hero above marks. UI/all24 kept.
 - Пауза/старт дня:центр/список/одна шкала. `2026-11-03`/сюж.§6:
   чекпойнт/«Нет» по умолчанию;возврат через угольную загрузку;мир/24FX/§16 прежние.
 - Загрузка: нижняя полоса до готового кадра, без задержки. Между областями —

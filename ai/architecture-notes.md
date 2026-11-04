@@ -5849,24 +5849,15 @@
   itinerary, its Dijkstra path over the road graph, the distance readout and
   the «Очистить маршрут» button were removed as obsolete on the user's
   request; bars stay on the map as numbered, named markers.
-- **Accepted — Modal schematic city map:** A runtime IMGUI overlay fits the
-  complete finite city in one view, colors and labels all five districts,
-  distinguishes park land and paths, exposes mouse/keyboard/gamepad selection,
-  and temporarily suspends motor, interaction, camera orbit, cinematic camera
-  motion and the HUD. It consumes `CityLayout.DistrictPointsOfInterest`
-  directly, draws those lots as open public ground and gives the waterworks,
-  drying yard, cannery and last-route island distinct
-  marker shapes plus a localized name legend. The same overlay reads the
-  canonical `CityLayout.Supermarket`, draws it as a grocery-shop
-  landmark and resolves pointer hover across bars, home, shop and POIs by
-  nearest marker, with deterministic priority ties. It also consumes the
-  immutable bus plan and draws Route 01 as a
-  pale neutral closed winding loop, with five numbered localized stop
-  markers in the default layout and a compact route/stop legend; it does not
-  track the live pooled bus. Localized
-  hover names use one high-contrast tooltip that flips and clamps inside the
-  map. POIs independently own nearby Route 01 stop targets; the landmark
-  markers are context only.
+- **Accepted — Modal schematic city map:** Runtime IMGUI charts the finite
+  city/five districts, park ground/paths and mouse/keyboard/gamepad selection.
+  Modal ownership suspends motor/interactor/orbit/cinematic/HUD.
+  `CityLayout.DistrictPointsOfInterest` supplies open public lots:waterworks,
+  drying yard,cannery,last-route island have distinct glyphs.
+  `CityLayout.Supermarket` supplies the grocery landmark. Inspection resolves
+  bars/home/shop/POIs by nearest marker with deterministic priority ties.
+  Immutable Route01:neutral winding loop/five numbered stops/compact legend;
+  no live pooled bus. POIs own separate stop targets;landmarks stay context.
   The City composition also passes the already validated
   `CityWorldResult.MountainBoundaryPlan` into the overlay. Map projection uses
   a separate display envelope that may grow only to the physical western and
@@ -5875,6 +5866,13 @@
   approach ends in its dark mountain mouth without drawing the hidden cave as
   open territory, and the tunnel is an uncrossed open arch with only its first
   `12 m` drawn rather than a traversable destination.
+- **Accepted 2026-11-04 — fullscreen map place selection:**
+  User:fill the viewport including ultrawide;names only after right-list click.
+  One cached semantic catalog serves every tab/backing;scroll/buttons expose
+  every named place. Click centres one contrasting plaque/leader/square;
+  repeat/tab/reopen clears it. Larger outlined/notched hero arrow draws last;
+  plaque placement avoids it and the bus legend. XYZ/coordinate hover/travel
+  remain separate. Art/geography/canon/all24 effects retained.
 - **Accepted — Observational two-area map-point inspection:**
   `CityMapPointDescriptor` is the common stable-ID, area, kind, localized-label
   and world-position contract for semantic points on both map tabs. The `XYZ`

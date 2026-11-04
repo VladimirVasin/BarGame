@@ -143,7 +143,6 @@ namespace BarPromenade
 
             DrawAlpineVillageLandmarkMarkers(projection);
             DrawMothersHouseMark(projection);
-            DrawPlayer(projection);
         }
 
         private void DrawAlpineVillageLandmarkMarkers(MapProjection projection)
@@ -225,7 +224,6 @@ namespace BarPromenade
             DrawMountainRoadHairpins(projection, overlay);
             DrawMountainRoadTerminalLandmarks(projection, overlay);
             DrawMountainRoadTunnel(projection, overlay);
-            DrawPlayer(projection);
         }
 
         private void DrawMountainRoadHatches(
@@ -493,17 +491,7 @@ namespace BarPromenade
 
         private void DrawAreaTravelPanel(Rect panel)
         {
-            string areaName = controller.GetAreaLabel(
-                controller.SelectedArea);
-            GUI.Label(
-                new Rect(
-                    panel.x + 6f,
-                    panel.y + 5f,
-                    panel.width - 58f,
-                    18f),
-                areaName,
-                subtitleStyle);
-
+            string areaName = controller.GetAreaLabel(controller.SelectedArea);
             string message = controller.IsSelectedAreaCurrent
                 ? LocalizationService.Get("map.area.current")
                 : string.Format(
@@ -512,9 +500,9 @@ namespace BarPromenade
             GUI.Label(
                 new Rect(
                     panel.x + 9f,
-                    panel.y + 39f,
+                    panel.yMax - (controller.IsSelectedAreaCurrent ? 24f : 72f),
                     panel.width - 18f,
-                    62f),
+                    controller.IsSelectedAreaCurrent ? 20f : 36f),
                 message,
                 centeredStyle);
 
@@ -525,9 +513,9 @@ namespace BarPromenade
 
             Rect travelButton = new Rect(
                 panel.x + 14f,
-                panel.y + 119f,
+                panel.yMax - 31f,
                 panel.width - 28f,
-                26f);
+                24f);
             RetroUiTheme.DrawPanel(
                 travelButton,
                 RetroUiTheme.PanelRaised,

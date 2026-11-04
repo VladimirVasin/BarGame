@@ -2,6 +2,8 @@ using System.Collections;
 using System.IO;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
@@ -143,40 +145,76 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        [Explicit("Focused ImageGen village brochure with native UI captures. Requires a visible Game view: run without -batchmode.")]
+        [Explicit("Focused fullscreen map and right-list selection with native UI captures. Requires a visible Game view: run without -batchmode.")]
         public IEnumerator ImageGenVillageBrochure_PreservesResortAndLivePlaces()
         {
+            Assert.That(Application.isBatchMode, Is.False, "The map readability contract requires a rendered Game view.");
 #if UNITY_EDITOR
             System.Type.GetType("BarPromenade.Editor.AlpineVillageMapArtReferenceExport, BarPromenade.Editor", true)
                 .GetMethod("PrepareImportedImage", System.Type.EmptyTypes).Invoke(null, null);
 #endif
-            GameSessionState.BeginNewGame();
-            yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
-            CityGameRoot city = null;
-            float deadline = Time.realtimeSinceStartup + DeadlineSeconds;
-            while (city == null || !city.IsInitialized)
-            {
-                Assert.That(Time.realtimeSinceStartup, Is.LessThan(deadline), "City initialization timed out.");
-                city = Object.FindAnyObjectByType<CityGameRoot>();
-                yield return null;
-            }
-            CityMapController map = city.Map;
-            CityMapView view = map.GetComponent<CityMapView>();
-#if UNITY_EDITOR
-            System.Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
-                .GetMethod("FocusGameViewForCapture", System.Type.EmptyTypes).Invoke(null, null);
-#endif
-            Assert.That(map.Open(), Is.True);
+            var devices = new InputTestFixture();
+            devices.Setup();
+            InputSystem.AddDevice<Keyboard>();
+            Mouse mouse = InputSystem.AddDevice<Mouse>();
+            InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+            InputSystem.settings.editorInputBehaviorInPlayMode =
+                InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+            float previousCaptureDelta = Time.captureDeltaTime;
+            Time.captureDeltaTime = 1f / 30f;
+            CityMapController map = null;
             try
             {
+                GameSessionState.BeginNewGame();
+                yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
+                CityGameRoot city = null;
+                float deadline = Time.realtimeSinceStartup + DeadlineSeconds;
+                while (city == null || !city.IsInitialized)
+                {
+                    Assert.That(Time.realtimeSinceStartup, Is.LessThan(deadline), "City initialization timed out.");
+                    city = Object.FindAnyObjectByType<CityGameRoot>();
+                    yield return null;
+                }
+                map = city.Map;
+                CityMapView view = map.GetComponent<CityMapView>();
+#if UNITY_EDITOR
+                System.Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
+                    .GetMethod("FocusGameViewForCapture", System.Type.EmptyTypes).Invoke(null, null);
+#endif
+                GameInput.HandleApplicationFocus(true);
+                RetroUiInput.Reset();
+                Assert.That(map.Open(), Is.True);
+                yield return MapUiPointer(mouse, Vector2.zero);
                 Assert.That(view.IsUsingIllustratedMap, Is.True,
-                    "Regional labels must not invalidate the unchanged City illustration.");
-                for (int frame = 0; frame < 5; frame++) yield return null;
-                yield return CaptureMapUi("imagegen-city-readable-labels");
-                AssertIllustratedMapLabels(map, view, "city:poi:dog-park", "city:poi:laundry",
-                    "city:poi:city-poi-01352777-district-00");
+                    "Presentation changes must retain the current City illustration.");
+                AssertFullscreenMap(view);
+                Assert.That(view.IllustratedMapLabelCount, Is.Zero, "Opening the map must leave every place name hidden.");
+                Assert.That(Mathf.Max(view.PlayerMarkerRect.width, view.PlayerMarkerRect.height), Is.GreaterThanOrEqualTo(28f),
+                    "The hero needs a substantially larger direction marker than the old 17-pixel hitbox.");
+                Assert.That(Mathf.Min(view.PlayerMarkerRect.width, view.PlayerMarkerRect.height), Is.GreaterThanOrEqualTo(20f));
+                yield return CaptureMapUi("fullscreen-city-map-clear");
+
+                yield return ClickMapPlaceRow(mouse, map, view, "city:home");
+                AssertSelectedMapLabel(map, view, "city:home");
+                Assert.That(view.TryGetIllustratedMapLabelLayout(0, out _, out Rect homePlaque, out _), Is.True);
+                Assert.That(homePlaque.Overlaps(view.PlayerMarkerRect), Is.False,
+                    "The selected home plaque must keep the hero's nearby arrow visible.");
+                yield return ClickMapPlaceRow(mouse, map, view, "city:supermarket");
+                AssertSelectedMapLabel(map, view, "city:supermarket");
+                yield return CaptureMapUi("fullscreen-city-map-selected-place");
+
+                Assert.That(map.SelectArea(GameAreaId.MountainRoad), Is.True);
+                yield return MapUiPointer(mouse, Vector2.zero);
+                AssertFullscreenMap(view);
+                Assert.That(view.IllustratedMapLabelCount, Is.Zero, "Changing tabs must clear the previous place plaque.");
+                yield return ClickMapPlaceRow(mouse, map, view, "mountain-road:tunnel-exit");
+                AssertSelectedMapLabel(map, view, "mountain-road:tunnel-exit");
+                yield return CaptureMapUi("fullscreen-mountain-map-selected-place");
+
                 Assert.That(map.SelectArea(GameAreaId.AlpineVillage), Is.True);
-                for (int frame = 0; frame < 5; frame++) yield return null;
+                yield return MapUiPointer(mouse, Vector2.zero);
+                AssertFullscreenMap(view);
+                Assert.That(view.IllustratedMapLabelCount, Is.Zero);
                 Assert.That(view.IsUsingIllustratedVillageMap, Is.True);
                 Assert.That(view.IllustratedVillageMapTexture.width, Is.InRange(1024, 2048));
                 Assert.That(view.IllustratedVillageMapTexture.mipmapCount, Is.EqualTo(1));
@@ -193,69 +231,108 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 Assert.That(AlpineVillageMapArtResources.TryGet(AlpineVillagePlanner.Create(plan.Seed + 1),
                     out _, out _, out _), Is.False, "Another generated plan must retain its schematic fallback.");
-                yield return CaptureMapUi("imagegen-village-brochure");
-                AssertIllustratedMapLabels(map, view, "alpine-village:ski-resort");
-
-                Assert.That(map.SetMapPointInspectionEnabled(true), Is.True);
-                int resort = -1;
-                for (int i = 0; i < map.ActiveMapPoints.Count; i++)
-                {
-                    CityMapPointDescriptor point = map.ActiveMapPoints[i];
-                    if (point.StableId != "alpine-village:ski-resort") continue;
-                    Assert.That(point.Label, Is.EqualTo("Горнолыжный курорт"));
-                    resort = i;
-                }
-                Assert.That(resort, Is.GreaterThanOrEqualTo(0));
-                Assert.That(map.SelectMapPoint(resort), Is.True);
-                Assert.That(map.TryGetSelectedMapPoint(out CityMapPointDescriptor selected, out Vector3 target), Is.True);
+                yield return ClickMapPlaceRow(mouse, map, view, "alpine-village:ski-resort");
+                AssertSelectedMapLabel(map, view, "alpine-village:ski-resort");
+                Assert.That(view.TryGetIllustratedMapLabelLayout(0, out int resort, out _, out _), Is.True);
+                CityMapPointDescriptor selected = map.ActiveMapPoints[resort];
+                Assert.That(selected.Label, Is.EqualTo("Горнолыжный курорт"));
+                Vector3 target = map.ResolveMapPointWorldPosition(selected);
                 Assert.That(target, Is.EqualTo(plan.Expansion.LodgeApproach));
-                Assert.That(selected.StableId, Is.EqualTo("alpine-village:ski-resort"));
                 var walkable = new AlpineVillageWalkableArea(plan);
                 var ground = new CityMapAlpineVillageTeleportGround(walkable);
                 Assert.That(ground.TryClampArrival(target, out Vector3 landing), Is.True);
                 Assert.That(walkable.Contains(landing, .32f), Is.True,
                     "The crossed-out resort still needs a safe arrival at its existing base.");
-                for (int frame = 0; frame < 5; frame++) yield return null;
-                yield return CaptureMapUi("imagegen-village-brochure-resort-xyz");
-                Debug.Log("IMAGEGEN MAP LABELS AND VILLAGE BROCHURE OK: readable non-overlapping live City/Village labels, current-plan paper, bounded UI texture, full avalanche, live resort point and safe base arrival; native City/map/XYZ views.");
+                yield return CaptureMapUi("fullscreen-village-map-selected-resort");
+
+                Assert.That(map.Close(), Is.True);
+                yield return null;
+                Assert.That(map.Open(), Is.True);
+                yield return MapUiPointer(mouse, Vector2.zero);
+                Assert.That(view.IllustratedMapLabelCount, Is.Zero, "Reopening starts with a clear map.");
+                Debug.Log("FULLSCREEN MAP READABILITY OK: native full-canvas City/Road/Village, names only after real right-list clicks, one replacing plaque and connector, clear reopen and larger hero arrow; current brochure and safe resort arrival retained.");
             }
-            finally { map.Close(); }
+            finally
+            {
+                if (map != null) map.Close();
+                GameInput.HandleApplicationFocus(true);
+                RetroUiInput.Reset();
+                devices.TearDown();
+                Time.captureDeltaTime = previousCaptureDelta;
+            }
         }
 
-        private static void AssertIllustratedMapLabels(CityMapController map, CityMapView view, params string[] requiredIds)
+        private static void AssertFullscreenMap(CityMapView view)
         {
-            Assert.That(view.IllustratedMapLabelCount, Is.GreaterThan(0));
-            Assert.That(view.UnplacedIllustratedMapLabelCount, Is.Zero, "A visible named place must not silently lose its label.");
+            Rect viewport = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height).ViewportRect;
+            Assert.That(view.FullscreenPanelRect.xMin, Is.EqualTo(viewport.xMin).Within(.01f));
+            Assert.That(view.FullscreenPanelRect.yMin, Is.EqualTo(viewport.yMin).Within(.01f));
+            Assert.That(view.FullscreenPanelRect.xMax, Is.EqualTo(viewport.xMax).Within(.01f));
+            Assert.That(view.FullscreenPanelRect.yMax, Is.EqualTo(viewport.yMax).Within(.01f));
+        }
+
+        private static void AssertSelectedMapLabel(CityMapController map, CityMapView view, string stableId)
+        {
+            Assert.That(view.IllustratedMapLabelCount, Is.EqualTo(1), "Only the clicked right-list place receives a plaque.");
+            Assert.That(view.UnplacedIllustratedMapLabelCount, Is.Zero);
+            Assert.That(view.TryGetIllustratedMapLabelLayout(0, out int pointIndex, out Rect rect, out Vector2 anchor), Is.True);
+            Assert.That(pointIndex, Is.InRange(0, map.ActiveMapPoints.Count - 1));
+            Assert.That(map.ActiveMapPoints[pointIndex].StableId, Is.EqualTo(stableId));
+            Assert.That(view.TryGetIllustratedMapLabelText(0, out string text), Is.True);
+            Assert.That(text, Is.Not.Empty);
+            Assert.That(text, Does.Not.Match(@"\[\s*-?\d+\s*,\s*-?\d+\s*\]"),
+                "Coordinate suffixes belong in the XYZ panel, not place-name plaques.");
             Rect clip = view.IllustratedMapLabelClipRect;
-            var found = new bool[requiredIds.Length];
-            for (int i = 0; i < view.IllustratedMapLabelCount; i++)
+            Assert.That(rect.xMin, Is.GreaterThanOrEqualTo(clip.xMin - .01f));
+            Assert.That(rect.yMin, Is.GreaterThanOrEqualTo(clip.yMin - .01f));
+            Assert.That(rect.xMax, Is.LessThanOrEqualTo(clip.xMax + .01f));
+            Assert.That(rect.yMax, Is.LessThanOrEqualTo(clip.yMax + .01f));
+            Assert.That(clip.Contains(anchor), Is.True, "The connecting line must terminate on a visible map marker.");
+            Assert.That(rect.Contains(anchor), Is.False, "The plaque must leave its connected square visible.");
+        }
+
+        private static IEnumerator ClickMapPlaceRow(Mouse mouse, CityMapController map, CityMapView view, string stableId)
+        {
+            for (int attempt = 0; attempt < 80; attempt++)
             {
-                Assert.That(view.TryGetIllustratedMapLabelLayout(i, out int pointIndex, out Rect rect, out Vector2 anchor), Is.True);
-                Assert.That(pointIndex, Is.InRange(0, map.ActiveMapPoints.Count - 1));
-                Assert.That(map.ActiveMapPoints[pointIndex].Label, Is.Not.Empty);
-                Assert.That(view.TryGetIllustratedMapLabelText(i, out string text), Is.True);
-                Assert.That(text, Does.Not.Match(@"\[\s*-?\d+\s*,\s*-?\d+\s*\]"),
-                    "Coordinate suffixes belong in the XYZ panel, not place-name plaques.");
-                foreach (CityMapAreaTarget area in map.MapAreaTargets)
-                    if (map.ActiveMapPoints[pointIndex].StableId == "city:open-area:" + area.Region.AreaId)
-                        Assert.That(area.Region.Feature == CityAreaFeatureKind.Yard &&
-                            area.Region.LocalizationKey == "map.district.yard", Is.False,
-                            "Anonymous yards must not receive separate name plaques.");
-                Assert.That(rect.xMin, Is.GreaterThanOrEqualTo(clip.xMin - .01f));
-                Assert.That(rect.yMin, Is.GreaterThanOrEqualTo(clip.yMin - .01f));
-                Assert.That(rect.xMax, Is.LessThanOrEqualTo(clip.xMax + .01f));
-                Assert.That(rect.yMax, Is.LessThanOrEqualTo(clip.yMax + .01f));
-                Assert.That(clip.Contains(anchor), Is.True);
-                for (int j = 0; j < i; j++)
+                for (int row = 0; row < view.PointOfInterestRowCount; row++)
                 {
-                    Assert.That(view.TryGetIllustratedMapLabelLayout(j, out _, out Rect previous, out _), Is.True);
-                    Assert.That(rect.Overlaps(previous), Is.False, "Place names must remain readable in dense clusters.");
+                    if (!view.TryGetPointOfInterestRow(row, out int pointIndex, out Rect bounds) ||
+                        map.ActiveMapPoints[pointIndex].StableId != stableId ||
+                        !view.PointOfInterestListRect.Contains(bounds.center)) continue;
+                    int labelsBeforeHover = view.IllustratedMapLabelCount;
+                    yield return MapUiPointer(mouse, bounds.center);
+                    Assert.That(view.IllustratedMapLabelCount, Is.EqualTo(labelsBeforeHover),
+                        "Hovering a row must not reveal or replace a place name.");
+                    yield return MapUiPointer(mouse, bounds.center, 1);
+                    Assert.That(view.IllustratedMapLabelCount, Is.EqualTo(labelsBeforeHover),
+                        "A place row activates on a completed click.");
+                    yield return MapUiPointer(mouse, bounds.center);
+                    // The click is completed in the side panel after the map
+                    // pass. Let the next repaint place its plaque before inspecting it.
+                    yield return new WaitForEndOfFrame();
+                    yield return null;
+                    yield break;
                 }
-                for (int id = 0; id < requiredIds.Length; id++)
-                    if (map.ActiveMapPoints[pointIndex].StableId == requiredIds[id]) found[id] = true;
+                yield return MapUiPointer(mouse, view.PointOfInterestListRect.center, 0, new Vector2(0f, -240f));
             }
-            for (int id = 0; id < requiredIds.Length; id++)
-                Assert.That(found[id], Is.True, "Missing readable label: " + requiredIds[id]);
+            Assert.Fail("No clickable place row found: " + stableId);
+        }
+
+        private static IEnumerator MapUiPointer(Mouse mouse, Vector2 logicalPoint, ushort buttons = 0, Vector2 wheel = default)
+        {
+            GameInput.HandleApplicationFocus(true);
+            RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
+            Vector2 pixelPoint = canvas.LogicalToScreen(logicalPoint);
+            InputSystem.QueueStateEvent(mouse, new MouseState
+            {
+                position = new Vector2(pixelPoint.x, Screen.height - pixelPoint.y),
+                buttons = buttons,
+                scroll = wheel
+            });
+            yield return null;
+            yield return new WaitForEndOfFrame();
+            yield return null;
         }
 
         private static IEnumerator CaptureMapUi(string name)
