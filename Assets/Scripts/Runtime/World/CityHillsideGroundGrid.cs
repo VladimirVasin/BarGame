@@ -15,6 +15,7 @@ namespace BarPromenade
         private readonly float[] x, z, heights;
         private readonly Surface[] surfaces;
         internal CityHillsideStreetRoute Road { get; }
+        internal CityLayout Layout { get; }
         internal int Columns => x.Length;
         internal int Rows => z.Length;
 
@@ -38,6 +39,7 @@ namespace BarPromenade
 
         private CityHillsideGroundGrid(CityLayout layout, CityHillsideStreetRoute road, List<CityHillsideBuilding> houses)
         {
+            Layout = layout;
             Road = road;
             Rect bounds = CityHillsideNeighborhoodPlan.TerrainBounds(road);
             var xs = new SortedSet<float>();

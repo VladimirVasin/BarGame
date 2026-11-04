@@ -97,6 +97,7 @@ namespace BarPromenade
         }
 
         internal IReadOnlyList<CityBuildingPerimeterFootprint> Footprints { get; }
+        internal IReadOnlyList<GroundSurfacePartitioner.Footprint> Bands(int footprint) => bands[footprint];
 
         /// <summary>City supplies its already-built cemetery. A Home-first
         /// composition resolves the same deterministic lodge from its plan.</summary>
@@ -198,6 +199,13 @@ namespace BarPromenade
                 if (!lot.HasBuilding && !lot.IsCafe) continue;
                 string id = $"lot-{lot.Cell.x}-{lot.Cell.y}-{index}";
                 foreach (Vector2[] polygon in lot.CreateCollisionPolygons()) Add(id, polygon, result);
+            }
+            // The switchbacks and the saddle have their own ground meshes and
+            // physical lots. They are outside the original City block grid.
+            foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
+            {
+                string id = $"hillside-{house.Lot.Cell.x}-{house.Lot.Cell.y}";
+                foreach (Vector2[] polygon in house.Lot.CreateCollisionPolygons()) Add(id, polygon, result);
             }
 
             CityWorldPlans world = CityWorldPlans.GetOrCreate(layout);

@@ -2107,6 +2107,17 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(screen.y, Is.InRange(.03f, .97f));
             }
             Assert.That(home.ExteriorView.Find("Summit street from home/Upper ravine bridge"), Is.Not.Null);
+            Transform retainedSites = home.ExteriorView.Find("Summit street from home/Residential terrace edges");
+            Assert.That(retainedSites, Is.Not.Null);
+            var homeDoor = home.ExteriorContext.PlayerHome.DoorPosition;
+            const float radius = HomeExteriorContextPlanner.ViewRadius;
+            var window = new Rect(homeDoor.x - radius, homeDoor.z - radius, radius * 2f, radius * 2f);
+            var expectedTrees = CityHillsideSiteDetails.ForLayout(home.ExteriorContext.Layout)
+                .Where(s => s.Part == CityHillsideSiteDetails.Kind.YardTree && window.Overlaps(s.Bounds)).Select(s => s.Origin).ToArray();
+            Assert.That(expectedTrees, Is.Not.Empty, "The balcony must retain the near yard trees.");
+            var actualTrees = retainedSites.Cast<Transform>().Where(t => t.name == "RidgeYardTree").ToArray();
+            Assert.That(actualTrees.Select(t => t.localPosition), Is.EquivalentTo(expectedTrees));
+            Assert.That(actualTrees.Any(t => t.GetComponentsInChildren<Collider>(true).Any(c => c.enabled)), Is.False);
             if (Environment.GetEnvironmentVariable("BAR_PROMENADE_SUMMIT_HOME") == "1")
             {
                 AreaCaptureFixture.CaptureCurrentCamera(camera, "SummitHome", "01-gameplay-balcony");
@@ -2121,13 +2132,14 @@ namespace BarPromenade.Tests.PlayMode
                     camera.transform.SetPositionAndRotation(room.TransformPoint(inside),
                         saved.rotation);
                     AreaCaptureFixture.CaptureCurrentCamera(camera, "SummitHome", "03-apartment-door");
-#if UNITY_EDITOR
-                    Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
-                        .GetMethod("ExportCurrent").Invoke(null, null);
-#endif
                 }
                 finally { camera.transform.SetPositionAndRotation(saved.position, saved.rotation); }
             }
+#if UNITY_EDITOR
+            if (Environment.GetEnvironmentVariable("BARGAME_EXPORT_UPPER_MAP") == "1")
+                Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
+                    .GetMethod("ExportCurrent", Type.EmptyTypes).Invoke(null, null);
+#endif
             yield return CrossDoor(insideDoor);
             yield return WaitUntil(() => home.FixedCamera.ActiveShotKind != HomeCameraShotKind.Balcony, "Returning indoors kept the balcony camera.");
             yield return CrossDoor(feet);

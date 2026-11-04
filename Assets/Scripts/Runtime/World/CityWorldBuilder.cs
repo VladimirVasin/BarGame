@@ -389,6 +389,7 @@ namespace BarPromenade
                 BuildBuilding(world, layout, layout.PlayerHome, layout.Seed, emissiveMaterial,
                     walkableArea, bars, ref playerHome, ref supermarket);
             CityHillsideQuarterGround.Build(world, layout);
+            CityHillsideSiteDetails.Build(world, layout);
 
             GameObject decorationRoot =
                 CityDecorationWorldBuilder.Build(

@@ -427,7 +427,11 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
   Coast streets reach Lower Court and upper housing. Two seven-tier climbs
   join on two streets bridging a dry ravine. Stairs link all tiers and the through court to the crest.
-  West stepped homes and eastern balcony courts meet the same south ridge.
+  Hillside homes share the city's residential soil and wet asphalt skirts. Worn turf, gravel, broken stones
+  and a shrub line the walk from 03-04 to the house. Small groups of deciduous trees stand beside gables.
+  Stepped concrete walls with drains hold the west banks; low kerbs, grass and boot scrapers edge the eastern gallery courts.
+  The player’s house has a patched plinth. Loose rock sits below the bridge bearings above the gravel bed.
+  The nearby City and apartment views share these placements.
   `10×6 m` rear wings require padded clearance and a `2.4 m`
   court gap. `3.6 m` through passages remain walkable under separate overhead
   collision, height `3.2 m` (`4.2 m` Industrial). Court loops join the graph;

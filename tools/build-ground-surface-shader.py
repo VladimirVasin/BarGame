@@ -41,6 +41,7 @@ def outputs():
         _GroundWetness("Local weather amount", Range(0,1)) = 0
         _GroundCityClimate("City ground weather", Float) = 0
         _GroundRoadCoordinates("Authored road coordinates", Float) = 0
+        _GroundVergeTileRatio("Soil to verge texture pitch", Float) = 0
         _GroundVertexData("Existing snow state", Float) = 0''')
     shader = shader.replace('#pragma target 2.0', '#pragma target 3.5', 1)
     shader = replace_once(shader,

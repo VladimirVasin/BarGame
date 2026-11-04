@@ -58,7 +58,7 @@ namespace BarPromenade
                 int i = row * columns + col;
                 Vector3 p = grid.Vertex(col, row);
                 vertices[i] = p;
-                uv[i] = new Vector2(p.x, p.z) * .35f;
+                uv[i] = new Vector2(p.x, p.z) / CityExteriorAppearance.GroundTextureTileSize;
                 if (col + 1 == columns || row + 1 == grid.Rows) continue;
                 if (retained.HasValue)
                 {
@@ -70,25 +70,25 @@ namespace BarPromenade
                     grid.AppendCellTriangles(surface == CityHillsideGroundGrid.Surface.Concrete ? concrete : earth, col, row);
             }
 
-            var mesh = new Mesh { name = "Hillside banks and door aprons", subMeshCount = 2 };
-            mesh.vertices = vertices;
-            mesh.uv = uv;
-            mesh.SetTriangles(earth, 0); mesh.SetTriangles(concrete, 1);
-            mesh.RecalculateNormals(); mesh.RecalculateBounds();
+            var mesh = CityHillsidePerimeterSurface.Build(grid.Layout, "Hillside banks and door aprons",
+                vertices, uv, earth, concrete);
             var go = new GameObject("Terraced ground and courts");
             go.transform.SetParent(parent, false);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var renderer = go.AddComponent<MeshRenderer>();
-            renderer.sharedMaterials = new[] { RuntimePrimitiveFactory.DefaultMaterial,
-                CityPortAssetProvider.GetSurfaceMaterial("Concrete") };
-            CityExteriorAppearance.ApplyGroundSurface(renderer, grid.Road.Bank == CityTerraceTransportBank.East
-                ? new Color(.51f, .53f, .43f) : new Color(.49f, .46f, .40f), 0);
+            var material = RuntimePrimitiveFactory.DefaultMaterial;
+            renderer.sharedMaterials = new[] { material, CityPortAssetProvider.GetSurfaceMaterial("Concrete"),
+                material, material, material };
+            CityExteriorAppearance.ApplyGroundSurface(renderer, CityHillsidePerimeterSurface.ResidentialSoil, 0);
             GroundAuthoredSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Concrete, 1, true);
+            // The same two-metre PortConcrete tiles continue onto the imported porch.
+            CityHillsidePerimeterSurface.SetTilePitch(renderer, 1, CityExteriorAppearance.GroundTextureTileSize, 2f);
+            CityExteriorAppearance.ApplyRoadSurface(renderer, 2);
+            CityHillsidePerimeterSurface.ApplyVerges(renderer, 3, 4);
             if (!retained.HasValue) go.AddComponent<MeshCollider>().sharedMesh = mesh;
             go.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
-            var kinds = new FootstepGroundKind[(earth.Count + concrete.Count) / 3];
-            for (int i = 0; i < kinds.Length; i++) kinds[i] = i < earth.Count / 3 ? FootstepGroundKind.Soil : FootstepGroundKind.Concrete;
-            FootstepGround.Stamp(go, FootstepGroundKind.Soil).SetTriangleKinds(kinds);
+            if (!retained.HasValue) CityHillsidePerimeterSurface.Stamp(go, mesh, FootstepGroundKind.Soil,
+                FootstepGroundKind.Concrete, FootstepGroundKind.Concrete, FootstepGroundKind.Grass, FootstepGroundKind.Stone);
 
         }
     }

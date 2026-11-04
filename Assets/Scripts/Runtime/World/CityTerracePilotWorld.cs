@@ -217,17 +217,67 @@ namespace BarPromenade
                 {
                     Vector3 top = floor.Center;
                     Vector2 size = floor.Size;
-                    Model(court, root.transform, floor.Id, top, Quaternion.identity,
-                        new Vector3(size.x / CityTerracePilotPlan.CourtSize, 1f, size.y / CityTerracePilotPlan.CourtSize));
+                    bool throughHouse = stair == access.SharedCourt && floor.Id == stair.Floors[0].Id;
+                    if (throughHouse) BuildPassagePaving(root.transform, access.Layout, floor);
+                    else Model(court, root.transform, floor.Id, top, Quaternion.identity,
+                            new Vector3(size.x / CityTerracePilotPlan.CourtSize, 1f, size.y / CityTerracePilotPlan.CourtSize));
                     Box(root.transform, floor.Id + " paving", top - Vector3.up * .15f,
                         new Vector3(size.x, .30f, size.y), Quaternion.identity);
                     Support(support, root.transform, floor.Id + " foundation", top - Vector3.up * .30f, size, baseY);
                     // The passage through the apartment building is flush with its courtyard.
-                    if (stair == access.SharedCourt && floor.Id == stair.Floors[0].Id) continue;
+                    if (throughHouse) continue;
                     BuildFloorRails(root.transform, rail, stair.Floors, stair.Flights, floor, null, stair);
                 }
                 CitySurfaceLibrary.ApplyHierarchy(root.transform);
             }
+        }
+
+        private static void BuildPassagePaving(Transform parent, CityLayout layout, CityTerracePilotFloor floor)
+        {
+            Rect walk = floor.Bounds;
+            foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).SharedCourtBuildings)
+            {
+                if (house.Lot.BuildingVariant != 3) continue;
+                var passage = CityBuildingPrototypePlacement.TransformBounds(
+                    CityBuildingAssetProvider.GetExpectedPassageBounds(house.Lot.District, house.Lot.BuildingVariant),
+                    CityBuildingPrototypePlacement.ResolveExpectedCityPose(house.Lot));
+                if (walk.xMin < passage.min.x || walk.xMax > passage.max.x ||
+                    walk.yMin >= passage.max.z || walk.yMax <= passage.min.z) continue;
+                float back = Mathf.Max(walk.yMin, passage.min.z);
+                float front = Mathf.Min(walk.yMax, passage.max.z);
+                var landing = Resources.Load<GameObject>(ResourceFolder + "TerraceLanding");
+                var root = new GameObject(floor.Id).transform;
+                root.SetParent(parent, false);
+                Pave(walk.yMin, back, "Courtyard threshold", true);
+                Pave(back, front, "Covered passage paving", false);
+                Pave(front, walk.yMax, "Street threshold", true);
+                // The grate receives the exposed paving at the rear drip line.
+                // Only its rim and bars stand above the continuous walking plane.
+                Vector3 drain = new Vector3(walk.xMax - .33f, floor.Center.y - .014f, back - .36f);
+                if (drain.z - .325f > walk.yMin)
+                    CityResidentialCourtyardAssetProvider.Create(root, CityResidentialCourtyardPropKind.Drain,
+                        root.TransformPoint(drain), root.rotation);
+                return;
+
+                void Pave(float from, float to, string label, bool exposed)
+                {
+                    float length = to - from;
+                    if (length < .001f) return;
+                    float tile = CityTerracePilotPlan.LandingSize;
+                    int count = Mathf.Max(1, Mathf.RoundToInt(length / tile));
+                    float run = length / count;
+                    for (int i = 0; i < count; i++)
+                    {
+                        var center = new Vector3(floor.Center.x, floor.Center.y, from + (i + .5f) * run);
+                        var scale = new Vector3(walk.width / tile, floor.Thickness / .25f, run / tile);
+                        // The Blender top face is XZ / 2. Restore world metres and the same texture
+                        // phase on both sides of the drip line while retaining the authored bevels.
+                        var uv = new Vector4(scale.x, scale.z, center.x * .5f, center.z * .5f);
+                        Model(landing, root, label + " " + i, center, Quaternion.identity, scale, exposed, uv);
+                    }
+                }
+            }
+            throw new InvalidOperationException("The shared court paving must pass through its covered residential opening.");
         }
 
         private static void BuildCourtyardLinkRamp(Transform root, CityTerraceDistrictPlan district,
@@ -316,7 +366,7 @@ namespace BarPromenade
         }
 
         internal static GameObject Model(GameObject template, Transform parent, string name,
-            Vector3 position, Quaternion rotation, Vector3 scale)
+            Vector3 position, Quaternion rotation, Vector3 scale, bool cityClimate = true, Vector4? pavingUv = null)
         {
             // A unit wrapper owns the placed metres; the FBX's imported unit
             // factor stays on its original root, including for scaled supports.
@@ -338,7 +388,16 @@ namespace BarPromenade
                 renderer.receiveShadows = true;
                 renderer.reflectionProbeUsage = ReflectionProbeUsage.BlendProbes;
                 if (role == "Concrete" || role == "ConcreteWall")
-                    GroundAuthoredSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Concrete, cityClimate: true);
+                {
+                    GroundAuthoredSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Concrete, cityClimate: cityClimate);
+                    if (pavingUv.HasValue)
+                    {
+                        var properties = new MaterialPropertyBlock();
+                        renderer.GetPropertyBlock(properties);
+                        properties.SetVector("_BaseMap_ST", pavingUv.Value);
+                        renderer.SetPropertyBlock(properties);
+                    }
+                }
             }
             return wrapper;
         }

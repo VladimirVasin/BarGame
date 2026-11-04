@@ -749,6 +749,7 @@ namespace BarPromenade.Tests.PlayMode
             var housing = CityHillsideNeighborhoodPlan.ForLayout(layout);
             var graph = city.PedestrianPlan;
             var ground = new CityMapCityTeleportGround(layout);
+            var missingTreeViews = new List<string>();
             Assert.That(quarter.Links.Select(l => l.Id), Is.EquivalentTo(new[] { "court", "summit" }));
             Assert.That(housing.AllBuildings.All(h => h.Lot.District == CityDistrictKind.Residential), Is.True);
             Assert.That(housing.SharedCourtBuildings.Count, Is.GreaterThan(0));
@@ -806,6 +807,7 @@ namespace BarPromenade.Tests.PlayMode
                     50f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True, bridge.Id);
                 Assert.That(deck.y - rock.point.y, Is.GreaterThan(8f), "There must be open space under " + bridge.Id);
                 Assert.That(rock.point.y, Is.EqualTo(bridge.BottomWorld.y).Within(.25f));
+                AssertGroundCoating(rock, GroundSurfaceKind.Gravel, FootstepGroundKind.Stone);
                 // Step off the deck footprint toward the middle of the cut.
                 var beside = new Vector2(deck.x, deck.z + (bridge.Id == "court" ? -1f : 1f) *
                     (bridge.DeckBounds.height * .5f + 1.5f));
@@ -842,6 +844,38 @@ namespace BarPromenade.Tests.PlayMode
                 var summit = quarter.Links.Single(l => l.Id == "summit");
                 var west = summit.NorthSidewalk[0];
                 var east = summit.NorthSidewalk[summit.NorthSidewalk.Count-1];
+                var summitHome = layout.SummitHome;
+                var bus = city.BusPlans.Single(line => line.Number == 3);
+                var stop = bus.Stops.Single(s => s.SequenceIndex == 3);
+                Vector3 wait = CityBusStopWaitPlanner.StandingPosition(bus, stop, layout);
+                Vector3 door = summitHome.DoorWorld + Vector3.up * 1.3f;
+                Debug.Log($"Ridge approach 03-04 {stop.ShelterPosition:F2}, waiting {wait:F2}, " +
+                    $"home {summitHome.ThresholdWorld:F2}, pole to threshold {Vector3.Distance(stop.ShelterPosition, summitHome.ThresholdWorld):F2}m.");
+                yield return Stand(wait, door);
+                yield return CapturePlayerView("upper-quarter-stop-to-home", door, camera => CheckTreeView(camera, "03-04"));
+                var homeWall = city.World.Root.transform.Find("Residential terrace edges").Cast<Transform>()
+                    .Where(t => t.name == "RidgeRetainingEnd")
+                    .OrderBy(t => Vector3.Distance(t.position, summitHome.DoorWorld)).First();
+                float along = Mathf.Clamp(homeWall.position.x - 4f, summit.Bounds.xMin + 2f, summit.Bounds.xMax - 2f);
+                var acrossStreet = new Vector3(along, summit.PavementTopAt(along), summit.WestGateWorld.z + 4f);
+                Vector3 frontage = Vector3.Lerp(homeWall.position, door, .35f) + Vector3.up * .65f;
+                yield return Stand(acrossStreet, frontage);
+                yield return CapturePlayerView("upper-quarter-home-frontage", frontage);
+                var upperBridge = quarter.Bridges.Single(b => b.Id == "summit");
+                Vector3 parapet = upperBridge.WestBearingWorld + Vector3.up;
+                yield return Stand(summitHome.StreetContactWorld, parapet);
+                yield return CapturePlayerView("upper-quarter-home-to-abutment", parapet);
+                yield return Stand(summitHome.StreetContactWorld, door);
+                yield return CaptureSurfaceWeather("upper-quarter-home-entry-dry", door, 0f);
+                yield return CaptureSurfaceWeather("upper-quarter-home-entry-rain", door, 1f);
+                var dryingCourt = housing.SharedCourtBuildings.Single(h => h.Lot.Cell == new Vector2Int(41, -21));
+                Vector3 eastEdge = city.World.Root.transform.Find("Residential terrace edges").Cast<Transform>()
+                    .Where(t => t.name == "RidgeCourtEdge").OrderBy(t =>
+                        Vector3.Distance(t.position, dryingCourt.Lot.Center)).First().position;
+                float courtX = eastEdge.x - 4f;
+                Vector3 eastFront = Vector3.Lerp(eastEdge, dryingCourt.DoorWorld + Vector3.up * 2f, .36f);
+                yield return Stand(new Vector3(courtX, court.PavementTopAt(courtX), court.WestGateWorld.z - 4f), eastFront);
+                yield return CapturePlayerView("upper-quarter-east-court-edge", eastFront, camera => CheckTreeView(camera, "east court"));
                 foreach (var bridge in quarter.Bridges)
                 {
                     var link = bridge.Link;
@@ -886,6 +920,53 @@ namespace BarPromenade.Tests.PlayMode
                 yield return CapturePlayerView("upper-quarter-bridge-night", centre + new Vector3(4f,-5f,12f));
             }
             finally { OnDemandRendering.renderFrameInterval = interval; }
+            AssertPlacedRidgeDetails(layout, quarter, housing);
+            Assert.That(missingTreeViews, Is.Empty, "A mid-distance yard tree should be framed from each public approach.");
+            // The west side of Home crosses the seam from the saddle onto the bank grid.
+            Rect foundation = layout.SummitHome.FoundationBounds;
+            Vector3 plinth = new Vector3(foundation.xMin - .7f, layout.SummitHome.ThresholdWorld.y + 8f, foundation.center.y);
+            var bankGround = city.World.Root.transform.Find("Stepped Residences/Terraced ground and courts")
+                .GetComponent<MeshCollider>();
+            Assert.That(bankGround.Raycast(new Ray(plinth, Vector3.down), out var band, 25f), Is.True, plinth.ToString());
+            AssertGroundCoating(band, GroundSurfaceKind.Asphalt, FootstepGroundKind.Concrete);
+            var upper = quarter.Links.Single(l => l.Id == "summit");
+            float vergeX = Mathf.Lerp(upper.WestGateWorld.x + 2f, foundation.xMin - CityBuildingPerimeterPlan.Width, .5f);
+            AssertVerge(3.3f, GroundSurfaceKind.Lawn, FootstepGroundKind.Grass);
+            AssertVerge(.24f, GroundSurfaceKind.Gravel, FootstepGroundKind.Stone);
+
+            void AssertVerge(float depth, GroundSurfaceKind coating, FootstepGroundKind step)
+            {
+                var origin = new Vector3(vergeX, plinth.y, upper.Bounds.yMin - depth);
+                Assert.That(bankGround.Raycast(new Ray(origin, Vector3.down), out var surface, 25f), Is.True, origin.ToString());
+                AssertGroundCoating(surface, coating, step);
+            }
+
+            void CheckTreeView(Camera camera, string view)
+            {
+                var trees = city.World.Root.transform.Find("Residential terrace edges").Cast<Transform>()
+                    .Where(t => t.name == "RidgeYardTree");
+                bool framed = trees.Any(tree =>
+                {
+                    Bounds crown = tree.GetComponentsInChildren<MeshRenderer>().OrderByDescending(r => r.bounds.max.y).First().bounds;
+                    Vector3 screen = camera.WorldToViewportPoint(crown.center);
+                    return screen.z > 2f && screen.z < 60f && screen.x > .01f && screen.x < .99f &&
+                        screen.y > 0f && screen.y < 1f;
+                });
+                if (!framed) missingTreeViews.Add(view);
+            }
+
+            void AssertGroundCoating(RaycastHit hit, GroundSurfaceKind coating, FootstepGroundKind step)
+            {
+                var mesh = ((MeshCollider)hit.collider).sharedMesh;
+                int index = hit.triangleIndex * 3;
+                int slot = Enumerable.Range(0, mesh.subMeshCount).Single(i =>
+                    index >= mesh.GetIndexStart(i) && index < mesh.GetIndexStart(i) + mesh.GetIndexCount(i));
+                var properties = new MaterialPropertyBlock();
+                hit.collider.GetComponent<Renderer>().GetPropertyBlock(properties, slot);
+                Assert.That(properties.HasFloat("_GroundKind"), Is.True, hit.point.ToString());
+                Assert.That(properties.GetFloat("_GroundKind"), Is.EqualTo((float)coating), hit.point.ToString());
+                Assert.That(hit.collider.GetComponent<FootstepGround>().ResolveKind(hit.triangleIndex), Is.EqualTo(step));
+            }
 
             IEnumerator Stand(Vector3 floor, Vector3? facing = null)
             {
@@ -893,6 +974,94 @@ namespace BarPromenade.Tests.PlayMode
                 if (facing.HasValue)
                     city.Player.Motor.transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(facing.Value - floor, Vector3.up));
                 for (int i = 0; i < 4; i++) yield return null;
+            }
+        }
+
+        private void AssertPlacedRidgeDetails(CityLayout layout, CityHillsideQuarterPlan quarter,
+            CityHillsideNeighborhoodPlan housing)
+        {
+            Transform root = city.World.Root.transform.Find("Residential terrace edges");
+            var placed = root.Cast<Transform>().ToList();
+            var sites = CityHillsideSiteDetails.ForLayout(layout);
+            Assert.That(placed.Count, Is.EqualTo(sites.Count));
+            foreach (var site in sites)
+                Assert.That(placed.Any(t => t.name == "Ridge" + site.Part &&
+                    Vector3.Distance(t.position, site.Origin) < .01f && Quaternion.Angle(t.rotation, site.Rotation) < .1f),
+                    Is.True, "Missing placed " + site.Part + " at " + site.Origin);
+
+            var home = layout.SummitHome;
+            var store = placed.Single(t => t.name == "RidgeYardShelter");
+            Assert.That(store.GetComponent<BoxCollider>().enabled, Is.True);
+            foreach (var tree in placed.Where(t => t.name == "RidgeYardTree"))
+            {
+                float top = tree.GetComponentsInChildren<MeshRenderer>().Max(r => r.bounds.max.y);
+                Assert.That(top - tree.position.y, Is.InRange(3.5f, 7f), "Yard tree height in imported metres.");
+                Assert.That(tree.GetComponent<BoxCollider>().enabled, Is.True);
+            }
+            var stop = city.BusPlans.Single(line => line.Number == 3).Stops.Single(s => s.SequenceIndex == 3);
+            var verge = placed.Single(t => t.name == "RidgeGardenVerge" &&
+                t.position.x > stop.ShelterPosition.x && t.position.x < home.ThresholdWorld.x);
+            var crown = verge.GetComponentsInChildren<MeshRenderer>().Single(r => r.name.Contains("__Foliage"));
+            Assert.That(crown.bounds.max.y - verge.position.y, Is.InRange(1.25f, 1.8f), "Visible shrub in world metres.");
+            Rect vergeBounds = sites.Single(s => s.Origin == verge.position).Bounds;
+            Rect boarding = CityBusPlatformClearance.PassengerAccess(stop.Position, stop.Forward,
+                stop.ShelterPosition, stop.RoadsideForward);
+            Assert.That(vergeBounds.Overlaps(boarding), Is.False);
+            Assert.That(vergeBounds.Overlaps(CityBusStopWorldBuilder.DescribeFurnitureFootprint(stop)), Is.False);
+            Transform retaining = Nearest("RidgeRetainingEnd", home.DoorWorld, 15f);
+            Nearest("RidgePlinthRepair", home.ThresholdWorld, 5f);
+            var court = housing.SharedCourtBuildings.Single(h => h.Lot.Cell == new Vector2Int(41, -21));
+            Nearest("RidgeCourtEdge", court.Lot.Center, 16f);
+            var eastEdges = placed.Where(t => t.name == "RidgeCourtEdge").ToList();
+            Assert.That(housing.Buildings.Any(h => h.Bank == CityTerraceTransportBank.East &&
+                eastEdges.Any(edge => Vector3.Distance(edge.position, h.Lot.Center) < 16f)), Is.True,
+                "The eastern slope needs its own domestic frontage beyond the shared court.");
+            var meshes = retaining.GetComponentsInChildren<MeshRenderer>();
+            Bounds wall = meshes.Single(r => r.name.Contains("__ConcreteWall")).bounds;
+            Bounds bank = meshes.Single(r => r.name.Contains("__Soil")).bounds;
+            Assert.That(wall.size.x, Is.InRange(5.8f, 6.1f), "West retaining wall in imported metres.");
+            Assert.That(wall.size.y, Is.InRange(1.5f, 1.9f));
+            Assert.That(bank.size.z, Is.GreaterThan(2f), "Filled bank must meet the back of the wall.");
+            Assert.That(bank.max.y, Is.GreaterThan(wall.min.y + 1f));
+            var stairs = CityHillsideAccessPlan.ForLayout(layout).SharedCourt;
+            var flight = stairs.Flights[0];
+            Nearest("RidgeRetainingEnd", flight.Start, 5f);
+            var passage = city.World.Root.transform.Find("Hillside stairs " + stairs.Id + "/" + stairs.Floors[0].Id);
+            foreach (var strip in new[] { "Street threshold", "Covered passage paving", "Courtyard threshold" })
+            {
+                var tile = passage.Find(strip + " 0");
+                Assert.That(tile, Is.Not.Null, strip);
+                var surfaces = tile.GetComponentsInChildren<MeshRenderer>();
+                var properties = new MaterialPropertyBlock();
+                bool foundConcrete = false;
+                foreach (var surface in surfaces)
+                {
+                    surface.GetPropertyBlock(properties, 0);
+                    if (properties.isEmpty) surface.GetPropertyBlock(properties);
+                    if (!properties.GetTexture("_GroundResponse")) continue;
+                    Assert.That(properties.GetFloat("_GroundCityClimate"), Is.EqualTo(
+                        strip == "Covered passage paving" ? 0f : 1f), strip);
+                    foundConcrete = true;
+                }
+                Assert.That(foundConcrete, Is.True, strip + " requires a textured ground receiver.");
+            }
+            var terrain = city.World.Root.transform.Find("Shared residential hillside").GetComponent<MeshCollider>();
+            foreach (var bridge in quarter.Bridges)
+            {
+                Transform ledge = Nearest("RidgeBearingTalus", bridge.Id == "summit" ?
+                    bridge.WestBearingWorld : bridge.EastBearingWorld, 18f);
+                Assert.That(terrain.Raycast(new Ray(ledge.position + Vector3.up * 4f, Vector3.down), out var contact, 8f), Is.True);
+                Assert.That(Mathf.Abs(contact.point.y - ledge.position.y), Is.LessThan(.4f), bridge.Id + " rock contact");
+                var shelf = ledge.GetComponentInChildren<MeshRenderer>().bounds;
+                Assert.That(shelf.min.y, Is.LessThan(contact.point.y));
+                Assert.That(shelf.max.y, Is.GreaterThan(contact.point.y + .1f));
+            }
+
+            Transform Nearest(string part, Vector3 target, float radius)
+            {
+                Transform match = placed.Where(t => t.name == part).OrderBy(t => Vector3.Distance(t.position, target)).First();
+                Assert.That(Vector3.Distance(match.position, target), Is.LessThan(radius), part + " near " + target);
+                return match;
             }
         }
 

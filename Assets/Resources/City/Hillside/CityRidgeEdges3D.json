@@ -1,0 +1,257 @@
+{
+  "design_id": "city_ridge_passive_edges_v1",
+  "generator": "build-city-ridge-edges-3d-model.py",
+  "axes": "Unity metres, X along edge, +Z to low side, ground at root Y=0",
+  "semantic_uv_tiles_metres": {
+    "Bark": 1.2,
+    "Concrete": 2.0,
+    "ConcreteWall": 2.0,
+    "DampMortar": 2.0,
+    "Foliage": 1.6,
+    "RepairMortar": 2.0,
+    "Rock": 6.0,
+    "Soil": 12.0,
+    "SteelDark": 1.5
+  },
+  "models": [
+    {
+      "name": "RidgeRetainingEnd",
+      "bounds_min": [
+        -2.996,
+        -0.55,
+        -2.65
+      ],
+      "bounds_max": [
+        2.996,
+        1.22,
+        0.57
+      ],
+      "anchors": [
+        {
+          "name": "BatteredConcrete",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DripCapsAndChannel",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "GrateBars",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "RecastCap",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "RetainedBank",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 820,
+      "geometry_signature": "c992413842178b7bec98b8e027239b63c53a0eb994a6eb17bded72b7faa527c4",
+      "material_roles": [
+        "Concrete",
+        "ConcreteWall",
+        "RepairMortar",
+        "Soil",
+        "SteelDark"
+      ]
+    },
+    {
+      "name": "RidgeCourtEdge",
+      "bounds_min": [
+        -1.9,
+        -0.28,
+        -0.33706
+      ],
+      "bounds_max": [
+        1.9,
+        0.48,
+        0.36
+      ],
+      "anchors": [
+        {
+          "name": "BeddingEdgeAndThresholdStone",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "FixedBootScraper",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ReplacementEdging",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ShelteredGrass",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 636,
+      "geometry_signature": "1971f7ef6d3368f533bbc1bd33d6ab46ee817cb0d685a6e8310292e1c73cc373",
+      "material_roles": [
+        "Concrete",
+        "Foliage",
+        "RepairMortar",
+        "SteelDark"
+      ]
+    },
+    {
+      "name": "RidgeBearingTalus",
+      "bounds_min": [
+        -1.46629,
+        -0.45,
+        -0.72478
+      ],
+      "bounds_max": [
+        1.3101,
+        0.5769,
+        0.71577
+      ],
+      "anchors": [
+        {
+          "name": "BedrockAndShaleFlakes",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 924,
+      "geometry_signature": "afeb68aa19ccde6f5211d3dc4fdf7e4dd893f37ad9076c14c2f92a15b5c8099f",
+      "material_roles": [
+        "Rock"
+      ]
+    },
+    {
+      "name": "RidgePlinthRepair",
+      "bounds_min": [
+        -1.03,
+        0.0,
+        0.0
+      ],
+      "bounds_max": [
+        1.03,
+        0.78,
+        0.036
+      ],
+      "anchors": [
+        {
+          "name": "BaseSeam",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "TrowelledPlinth",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 168,
+      "geometry_signature": "96d3240e1a4b178f70557354994a8aa65dc44f0805509f2ae602cadaa3d93c48",
+      "material_roles": [
+        "DampMortar",
+        "RepairMortar"
+      ]
+    },
+    {
+      "name": "RidgeGardenVerge",
+      "bounds_min": [
+        -4.79,
+        -0.55,
+        -1.29
+      ],
+      "bounds_max": [
+        4.79,
+        1.515,
+        1.12409
+      ],
+      "anchors": [
+        {
+          "name": "BrokenBeddingStones",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ForkedBrushwood",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "LeafSpraysAndRoughGrass",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "RootedSoil",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 3870,
+      "geometry_signature": "19aa3be325c42c795dafa763cfb102943f0c28334d817ebeb776230fc4976975",
+      "material_roles": [
+        "Bark",
+        "Foliage",
+        "Rock",
+        "Soil"
+      ]
+    }
+  ]
+}

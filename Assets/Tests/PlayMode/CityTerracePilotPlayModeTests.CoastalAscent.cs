@@ -161,17 +161,22 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 Assert.That(respondsToRain, Is.True, surface.SurfaceId + " needs exterior concrete with the shared wetness response");
             }
+            yield return CaptureSurfaceWeather("window-court-outlook-rain", lowerTurn, 1f);
+        }
+
+        private IEnumerator CaptureSurfaceWeather(string name, Vector3 target, float intensity)
+        {
             bool weatherEnabled = city.Weather.enabled;
             float rain = city.Rain.Intensity, water = CityWaterResources.RainIntensity;
             var wetness = CityWetSurfaceRegistry.CaptureCheckpoint();
             try
             {
                 city.Weather.enabled = false;
-                city.Rain.SetIntensity(1f);
-                CityWaterResources.SetRainIntensity(1f);
-                CityWetSurfaceRegistry.SetImmediate(1f);
+                city.Rain.SetIntensity(intensity);
+                CityWaterResources.SetRainIntensity(intensity);
+                CityWetSurfaceRegistry.SetImmediate(intensity);
                 for (int frame = 0; frame < 16; frame++) yield return null;
-                yield return CapturePlayerView("window-court-outlook-rain", lowerTurn);
+                yield return CapturePlayerView(name, target);
             }
             finally
             {

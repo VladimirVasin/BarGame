@@ -4,6 +4,10 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-05
+City and the apartment share the crest's residential ground, courtyard trees and retaining walls.
+Turf and gravel edge the pavement; asphalt follows the house footprints. The passage roof
+splits dry paving from wet thresholds. LiveCity_UpperQuarterJoinsBothSlopesThroughTheLitCourt
+checks the shrub, walkable surfaces and rock contacts; SummitHome_BalconyAndApartmentDoorLookDownIntoTheCity checks the outlook.
 CityAltitudeAndNightStreet follows the quay, court bridge and crest back down. Elevation thins street
 air and shifts focus outwards. Lower streets retain more haze than roofs. Midnight street frames
 compare the previous fill and the darker sky on the same wet road under a working lamp.

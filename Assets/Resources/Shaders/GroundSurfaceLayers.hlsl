@@ -17,6 +17,7 @@ float _GroundKind;
 float _GroundWetness;
 float _GroundRoadCoordinates;
 float _GroundVertexData;
+float _GroundVergeTileRatio;
 float _GroundCityClimate;
 float _CityGroundWetness;
 half4 _GroundSubstrateColor;
@@ -87,6 +88,27 @@ void ApplyGroundLayers(float2 uv, float3 world, half3 normal,
     half broad = GroundNoise(plane * 0.19);
     half wetness = saturate(max(_GroundWetness, _CityGroundWetness * _GroundCityClimate));
     half damp = smoothstep(0.30h, 0.75h, broad) * wetness;
+    half turfRelief = 0.5h;
+    [branch] if (_GroundVergeTileRatio > 0.0)
+    {
+        // Affine distances to the surveyed edges interpolate exactly on the original terrain.
+        // These parcels carry the same registered, wet, 12 m soil below both cover materials.
+        float4 distances = min(road, vertexData * 16.0);
+        float edge = min(min(distances.x, distances.y), min(distances.z, distances.w));
+        float2 city = uv * 12.0;
+        float wear = GroundNoise(city * .57) * .66 + GroundNoise(city * 1.71) * .34;
+        bool turf = _GroundKind > 2.5;
+        float width = turf ? 1.35 : .34;
+        half cover = smoothstep(width * (.07 + .31 * wear), width * (.66 + .50 * wear), edge) *
+            lerp(.38h, .83h, smoothstep(.18h, .78h, wear));
+        float2 coverUv = uv * _GroundVergeTileRatio;
+        half3 pigment = SAMPLE_TEXTURE2D(_GroundSubstrateMap, sampler_GroundSubstrateMap, coverUv).rgb;
+        half3 coatResponse = SAMPLE_TEXTURE2D(_GroundSubstrateResponse, sampler_GroundSubstrateResponse, coverUv).rgb;
+        surface.albedo = lerp(surface.albedo, pigment * _GroundSubstrateColor.rgb * lerp(1.0h, .88h, wetness), cover);
+        surface.smoothness = lerp(surface.smoothness, lerp(.035h, .20h, wetness), cover);
+        response = lerp(response, coatResponse, cover);
+        turfRelief = lerp(1.0h, .5h, cover);
+    }
     // The street registry already owns the road's tint and scalar. Other
     // city grounds share its clock on the GPU, without thousands of entries.
     if (_GroundCityClimate > 0.5)
@@ -166,7 +188,7 @@ void ApplyGroundLayers(float2 uv, float3 world, half3 normal,
         half joints = response.b * lerp(0.025h, 0.085h, damp);
         surface.albedo *= 1.0h - joints;
         if (_GroundKind > 6.5 && _GroundKind < 7.5) relief *= 0.4h; // sand
-        if (_GroundKind > 2.5 && _GroundKind < 3.5) relief *= 0.5h; // lawn
+        if (_GroundKind > 2.5 && _GroundKind < 3.5) relief *= turfRelief; // lawn
         if (_GroundKind > 9.5) relief = 0; // paint / soft silt
     }
     surface.metallic = 0;

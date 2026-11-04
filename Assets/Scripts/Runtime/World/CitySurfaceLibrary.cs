@@ -179,6 +179,15 @@ namespace BarPromenade
             return ground || foliage || shader == "Bar Promenade/Lit";
         }
 
+        internal static void BindGroundCover(MaterialPropertyBlock target, Texture2D source)
+        {
+            _ = Manifest;
+            if (!TryResolve(source, out var sheet) || string.IsNullOrEmpty(sheet.ground_response))
+                throw new InvalidOperationException("Missing City ground cover sheet for " + source);
+            target.SetTexture("_GroundSubstrateMap", Load(sheet.albedo));
+            target.SetTexture("_GroundSubstrateResponse", Load(sheet.ground_response));
+        }
+
         private static bool TryResolve(Texture source, out CitySurfaceSheet sheet)
         {
             sheet = null;

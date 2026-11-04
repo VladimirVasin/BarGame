@@ -237,8 +237,10 @@ namespace BarPromenade
         public IReadOnlyList<CityHillsideShortcut> Transfers { get; }
         public CityHillsideShortcut SharedCourt { get; }
         public IReadOnlyList<CityHillsideShortcut> AllStairs { get; }
+        internal CityLayout Layout { get; }
         private CityHillsideAccessPlan(CityLayout layout)
         {
+            Layout = layout;
             var slopes = new List<CityHillsideShortcut>();
             var transfers = new List<CityHillsideShortcut>(2);
             foreach (CityHillsideStreetRoute street in CityHillsideStreetPlan.ForLayout(layout).Routes)

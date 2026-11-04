@@ -121,6 +121,7 @@ namespace BarPromenade
                     CityHillsideHousePresentation.BuildApron(frame, paving, house);
             }
             CityTerracePilotWorld.BuildHillsideShortcuts(frame, CityHillsideAccessPlan.ForLayout(context.Layout), window);
+            CityHillsideSiteDetails.Build(frame, context.Layout, window);
             HomeSummitOutlook.Build(frame, context, window);
             frame.SetParent(parent, false);
             frame.localPosition = PlayerHomeBalconyGeometry.ToHomeLocal(home, Vector3.zero);

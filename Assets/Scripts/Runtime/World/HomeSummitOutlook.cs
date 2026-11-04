@@ -95,7 +95,7 @@ namespace BarPromenade
                     !street.TrySampleTop(p, out y, out _)) continue;
                 valid[i] = true;
                 vertices[i] = new Vector3(p.x, y - .18f, p.y);
-                uv[i] = p * .12f;
+                uv[i] = p / CityExteriorAppearance.GroundTextureTileSize;
                 if (row == 0 || col == 0 || fullDetail.Contains(p - Vector2.one * (step * .5f))) continue;
                 int a = i - across - 1;
                 if (valid[a] && valid[i - 1] && valid[i - across])
@@ -114,7 +114,7 @@ namespace BarPromenade
             var renderer = land.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
-            CityExteriorAppearance.ApplyGroundSurface(renderer, new Color(.45f, .46f, .40f));
+            CityExteriorAppearance.ApplyGroundSurface(renderer, CityHillsidePerimeterSurface.ResidentialSoil);
 
             void Add(BuildingLot lot)
             {

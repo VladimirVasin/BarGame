@@ -45,6 +45,7 @@ namespace BarPromenade
             var uv = new Vector2[vertices.Length];
             var faces = new List<int>();
             var rock = new List<int>();
+            var scree = new List<int>();
             for (int j = 0; j < zAxis.Count; j++)
             {
                 var section = CityHillsideQuarterRavine.At(zAxis[j]);
@@ -54,7 +55,7 @@ namespace BarPromenade
                     Vector2 point = new Vector2(CityHillsideQuarterRavine.MeshX(xAxis[i], section), zAxis[j]);
                     float height = plan.SampleSoil(point);
                     vertices[a] = vertices[a + gridSize] = new Vector3(point.x, height, point.y);
-                    uv[a] = point * .35f;
+                    uv[a] = point / CityExteriorAppearance.GroundTextureTileSize;
                     // Distance along the gully and across its section, in metres.
                     // Walls retain texture scale where their X span nearly vanishes.
                     float u = Mathf.InverseLerp(section.y, section.z, point.x);
@@ -72,30 +73,40 @@ namespace BarPromenade
                         if (cut.Contains(centre)) { opening = true; break; }
                     if (opening) continue;
                     bool isRock = CityHillsideQuarterRavine.IsOpenRockColumn(templateX, midZ);
-                    var triangles = isRock ? rock : faces;
+                    // Loose chips settle on the relatively flat bottom of the cut.
+                    // Its benches and the exposed steep walls keep the layered rock.
+                    float across = Mathf.InverseLerp(CityHillsideQuarterRavine.TemplateWest,
+                        CityHillsideQuarterRavine.TemplateEast, templateX);
+                    bool looseFloor = isRock && section.w > 4f && across > .37f &&
+                        across < .61f + .035f * Mathf.Sin(midZ * .21f);
+                    var triangles = looseFloor ? scree : isRock ? rock : faces;
                     if (isRock) a += gridSize;
                     int b = a + columns;
                     triangles.Add(a); triangles.Add(b); triangles.Add(a + 1);
                     triangles.Add(a + 1); triangles.Add(b); triangles.Add(b + 1);
                 }
             }
-            var mesh = new Mesh { name = "Upper quarter saddle and dry rock cut", vertices = vertices, uv = uv, subMeshCount = 2 };
-            mesh.SetTriangles(faces, 0);
-            mesh.SetTriangles(rock, 1);
-            mesh.RecalculateNormals();
+            var mesh = CityHillsidePerimeterSurface.Build(layout, "Upper quarter saddle and dry rock cut",
+                vertices, uv, faces, rock, scree);
             var ground = new GameObject("Shared residential hillside");
             ground.transform.SetParent(parent, false);
             ground.AddComponent<MeshFilter>().sharedMesh = mesh;
             var renderer = ground.AddComponent<MeshRenderer>();
-            renderer.sharedMaterials = new[] { RuntimePrimitiveFactory.DefaultMaterial, RuntimePrimitiveFactory.DefaultMaterial };
-            CityExteriorAppearance.ApplyGroundSurface(renderer, new Color(.49f, .50f, .43f), 0);
+            var material = RuntimePrimitiveFactory.DefaultMaterial;
+            renderer.sharedMaterials = new[] { material, material, material, material, material, material };
+            CityExteriorAppearance.ApplyGroundSurface(renderer, CityHillsidePerimeterSurface.ResidentialSoil, 0);
             CityMountainSurfaceAppearance.ApplyCombined(renderer, new Color(.36f, .375f, .355f), 1);
+            CityCemeterySurfaceAppearance.ApplyCombined(renderer, CityCemeterySurfaceKind.Gravel,
+                new Color(.31f, .305f, .28f), 2);
+            CityHillsidePerimeterSurface.SetTilePitch(renderer, 2, CityMountainSurfaceAppearance.MetersPerTile,
+                CityCemeterySurfaceAppearance.GetRecipe(CityCemeterySurfaceKind.Gravel).MetersPerTile);
+            CityExteriorAppearance.ApplyRoadSurface(renderer, 3);
+            CityHillsidePerimeterSurface.ApplyVerges(renderer, 4, 5);
             if (!retained.HasValue) ground.AddComponent<MeshCollider>().sharedMesh = mesh;
             ground.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
-            var kinds = new FootstepGroundKind[(faces.Count + rock.Count) / 3];
-            for (int i = 0; i < kinds.Length; i++)
-                kinds[i] = i < faces.Count / 3 ? FootstepGroundKind.Soil : FootstepGroundKind.Stone;
-            FootstepGround.Stamp(ground, FootstepGroundKind.Soil).SetTriangleKinds(kinds);
+            if (!retained.HasValue) CityHillsidePerimeterSurface.Stamp(ground, mesh, FootstepGroundKind.Soil,
+                FootstepGroundKind.Stone, FootstepGroundKind.Stone, FootstepGroundKind.Concrete,
+                FootstepGroundKind.Grass, FootstepGroundKind.Stone);
             CityHillsideQuarterBridgeWorld.Build(parent, plan, retained);
         }
     }

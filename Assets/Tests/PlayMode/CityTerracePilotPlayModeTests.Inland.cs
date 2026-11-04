@@ -176,7 +176,7 @@ namespace BarPromenade.Tests.PlayMode
                 eastStreet + new Vector3(5f, 1f, 0f));
         }
 
-        private IEnumerator CapturePlayerView(string name, Vector3 target)
+        private IEnumerator CapturePlayerView(string name, Vector3 target, System.Action<Camera> check = null)
         {
             PlayerCameraFollow follow = city.Camera.GetComponent<PlayerCameraFollow>();
             float previousPitch = follow.TargetOrbitPitch;
@@ -195,6 +195,7 @@ namespace BarPromenade.Tests.PlayMode
                 AssertCameraClearance(follow);
                 Assert.That(city.Camera.fieldOfView, Is.EqualTo(follow.FollowFieldOfView).Within(.1f));
                 AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "CityTerracePilot", name, 1280, 720);
+                check?.Invoke(city.Camera);
             }
             finally
             {

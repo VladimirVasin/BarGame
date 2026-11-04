@@ -17,6 +17,7 @@ Shader "Bar Promenade/Layered Ground"
         _GroundWetness("Local weather amount", Range(0,1)) = 0
         _GroundCityClimate("City ground weather", Float) = 0
         _GroundRoadCoordinates("Authored road coordinates", Float) = 0
+        _GroundVergeTileRatio("Soil to verge texture pitch", Float) = 0
         _GroundVertexData("Existing snow state", Float) = 0
         // Specular vs Metallic workflow
         _WorkflowMode("WorkflowMode", Float) = 1.0
