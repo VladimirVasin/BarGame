@@ -97,6 +97,7 @@ namespace BarPromenade
                     new Vector3(side * 13.04f, MiddleRise, -4.96f), Vector2.one * 2.4f, false));
             }
             InitializeLowerCourt(layout, floors, flights);
+            InitializeShortcut(layout, floors, flights);
             foreach (CityTerracePilotFloor floor in floors)
                 if (floor.HasFoundation) cuts.Add(WorldBounds(floor.Bounds));
             foreach (CityExteriorStairFlightDescriptor flight in Flights)

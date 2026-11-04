@@ -1,15 +1,15 @@
 {
   "tool": "built-in image_gen",
-  "intent": "final eastern inland junctions, level exit and lower residential courtyard redraw",
-  "prompt": "imagegen-inland-junction-prompt.txt",
+  "intent": "final eastern coastal street ascent and pedestrian shortcut behind the house",
+  "prompt": "imagegen-coastal-ascent-prompt.txt",
   "references": [
     "map-reference.png",
     "CityMapImage.reference.png"
   ],
   "geography": "map-reference.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "732327375bdbe6b61d759aa4c59a07d3d14aeb884aa19db94d6d0c6ba294de0d",
-  "fingerprint": "901a9606f7fab70d5b8a7f25b0dc4bb8e0ff337876f92f9d7cef36f60c42f6c0",
+  "image_sha256": "469209f516a9abcc4e20c650120c051964300eac54e114e511473753af524368",
+  "fingerprint": "010754c166caffa72cea917ab282b5801a404459d2dccaf1b767e5c346ec6e37",
   "schemaVersion": 2,
   "width": 1422,
   "height": 1106

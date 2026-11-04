@@ -18,6 +18,7 @@ namespace BarPromenade
         public const float MaximumGroundSpread = .28f;
         public const int StationsPerAxis = 13;
         public const int MaximumCandidatesPerLot = StationsPerAxis * StationsPerAxis * 4;
+        private static readonly Vector2Int RetainedCell = new Vector2Int(10, 9);
         private const float GroundBlend = .45f;
         private static readonly Vector3 LocalApproach = new Vector3(0f, 0f, 5.95f);
         private static readonly ConditionalWeakTable<CityLayout, CityDogParkPlan> Plans =
@@ -151,6 +152,18 @@ namespace BarPromenade
             foreach (BuildingLot lot in layout.BuildingLots)
                 if (lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.Residential &&
                     !context.ProtectedCell(lot.Cell)) lots.Add(lot);
+            if (UsesRetainedPlot(layout))
+            {
+                // This is an existing mapped place in the canonical City.
+                // Keep its surveyed station and north-facing gate under regrading.
+                Vector2Int cell = RetainedCell;
+                if (!lots.Exists(lot => lot.Cell == cell))
+                    throw new InvalidOperationException("The existing dog yard lost its residential parcel.");
+                var retained = Place(cell, layout.GetCellWorldBounds(cell), 1, 6, 0, true);
+                if (retained == null)
+                    throw new InvalidOperationException("The existing dog yard lost its clear entrance or .28 m foundation.");
+                return retained;
+            }
             lots.Sort((a, b) =>
             {
                 int order = DistanceToPark(layout, a.Center).CompareTo(DistanceToPark(layout, b.Center));
@@ -167,20 +180,35 @@ namespace BarPromenade
                 for (int x = 0; x < StationsPerAxis; x++)
                 for (int side = 0; side < 4; side++)
                 {
-                    Vector3 position = new Vector3(Mathf.Lerp(cell.xMin + .25f, cell.xMax - .25f,
-                        x / (StationsPerAxis - 1f)), 0f, Mathf.Lerp(cell.yMin + .25f, cell.yMax - .25f,
-                        z / (StationsPerAxis - 1f)));
-                    Quaternion rotation = Quaternion.Euler(0f, side * 90f, 0f);
-                    Rect footprint = RectAt(position, rotation, -4f, -5f, 4f, 5f);
-                    Rect approach = RectAt(position, rotation, -.95f, 4.9f, .95f, 6.9f);
-                    if (!context.Fits(footprint, approach, position, rotation, LocalApproach, out Vector3 access)) continue;
-                    if (!context.Foundation(footprint, out float top, MaximumGroundSpread)) continue;
-                    position.y = top + .025f;
-                    return new CityDogParkPlan(lot.Cell, position, rotation, access);
+                    var plan = Place(lot.Cell, cell, x, z, side, false);
+                    if (plan != null) return plan;
                 }
             }
             if (layout.Seed != GameSessionState.DefaultCitySeed) return Absent;
             throw new InvalidOperationException("No residual residential site fits the dog park without replacing buildings or blocking routes.");
+
+            CityDogParkPlan Place(Vector2Int parcel, Rect cell, int x, int z, int side, bool retainGate)
+            {
+                Vector3 position = Station(cell, x, z);
+                Quaternion rotation = Quaternion.Euler(0f, side * 90f, 0f);
+                Rect footprint = RectAt(position, rotation, -4f, -5f, 4f, 5f);
+                Rect approach = RectAt(position, rotation, -.95f, 4.9f, .95f, 6.9f);
+                if (!context.Fits(footprint, approach, position, rotation, LocalApproach, out Vector3 access) ||
+                    !context.Foundation(footprint, out float top, MaximumGroundSpread))
+                    return null;
+                if (retainGate)
+                {
+                    // The owned level earth pad follows the gate instead of
+                    // extending the highest corner out over the public approach.
+                    Vector3 entry = position + rotation * LocalApproach;
+                    if (!context.RawTop(new Vector2(entry.x, entry.z), out top)) return null;
+                    float run = Vector2.Distance(new Vector2(entry.x, entry.z), new Vector2(access.x, access.z));
+                    if (Mathf.Abs(access.y - top) > run * CityElevationPlan.MaximumPedestrianGradePercent * .01f + .001f)
+                        throw new InvalidOperationException("The existing dog yard entrance exceeds its pedestrian grade.");
+                }
+                position.y = top + .025f;
+                return new CityDogParkPlan(parcel, position, rotation, access);
+            }
         }
 
         private static CityResidentialInfillPlacement CreateContext(CityLayout layout)
@@ -196,8 +224,67 @@ namespace BarPromenade
             // is silently removed to make the new yard fit.
             foreach (Vector3 tree in layout.Park.TreePositions)
                 context.Reserve(new Rect(tree.x - .5f, tree.z - .5f, 1f, 1f), .3f);
+            if (UsesRetainedPlot(layout))
+            {
+                // The gate faces the pavement of the northern dead end even
+                // when no neighbouring house has its own door on that edge.
+                Vector3 cap = layout.GetNodeWorldPosition(RetainedCell + Vector2Int.up);
+                float pavementZ = cap.z - layout.RoadWidth * .5f;
+                for (int x = -6; x <= 4; x += 2)
+                    context.OfferPavementAccess(new Vector2(cap.x + x, pavementZ));
+            }
             return context;
         }
+
+        private static Vector3 Station(Rect cell, int x, int z) => new Vector3(
+            Mathf.Lerp(cell.xMin + .25f, cell.xMax - .25f, x / (StationsPerAxis - 1f)), 0f,
+            Mathf.Lerp(cell.yMin + .25f, cell.yMax - .25f, z / (StationsPerAxis - 1f)));
+
+        // Resolve the little earth bench before fitting any house or infill.
+        // The same context goes into the visible terrain skin and its collider.
+        internal static RetainedEarthwork FoundationForSurface(CityLayout layout, CitySurfaceDescriptor surface)
+        {
+            if (surface.Kind != CitySurfaceKind.BuildableGround || surface.Cell.y != RetainedCell.y ||
+                (surface.Cell.x != RetainedCell.x && surface.Cell.x != RetainedCell.x - 1) || !UsesRetainedPlot(layout))
+                return default;
+            Vector3 station = Station(layout.GetCellWorldBounds(RetainedCell), 1, 6);
+            float datum = (layout.ElevationPlan.GetNodeElevation(RetainedCell) +
+                layout.ElevationPlan.GetNodeElevation(RetainedCell + Vector2Int.up)) * .5f;
+            return new RetainedEarthwork(new Vector2(station.x, station.z), datum);
+        }
+
+        internal readonly struct RetainedEarthwork
+        {
+            private readonly bool enabled;
+            private readonly Vector2 center;
+            private readonly float datum;
+            private const float Shoulder = 1.5f;
+            private const float MaximumCutOrFill = .30f;
+
+            internal RetainedEarthwork(Vector2 center, float datum)
+            { enabled = true; this.center = center; this.datum = datum; }
+
+            internal float Apply(Vector2 point, float original)
+            {
+                if (!enabled) return original;
+                Vector2 local = point - center;
+                float squared = Mathf.Min(OutsideSquared(local, Width * .5f, Depth * .5f),
+                    OutsideSquared(local - new Vector2(0f, 5.9f), .95f, 1f));
+                if (squared >= Shoulder * Shoulder) return original;
+                float weight = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Sqrt(squared) / Shoulder);
+                return original + weight * Mathf.Clamp(datum - original, -MaximumCutOrFill, MaximumCutOrFill);
+            }
+
+            private static float OutsideSquared(Vector2 point, float halfWidth, float halfDepth)
+            {
+                float x = Mathf.Max(0f, Mathf.Abs(point.x) - halfWidth);
+                float z = Mathf.Max(0f, Mathf.Abs(point.y) - halfDepth);
+                return x * x + z * z;
+            }
+        }
+
+        private static bool UsesRetainedPlot(CityLayout layout) =>
+            layout.Seed == GameSessionState.DefaultCitySeed && CityCoastalAscentPlan.IsEnabled(layout);
 
         private static float DistanceToPark(CityLayout layout, Vector3 point)
         {

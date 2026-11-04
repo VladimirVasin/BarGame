@@ -18,7 +18,7 @@ namespace BarPromenade
         private readonly CityTerraceDistrictPlan plan;
         private readonly RoadWalkableArea city;
         private readonly RoadWalkableArea sockets = new RoadWalkableArea();
-        private readonly Rect bounds;
+        private readonly Rect bounds, shortcutBounds;
         private readonly Rect[] ownedBounds;
         private readonly RuntimeOrientedBox[] nearbySidewalks;
 
@@ -33,6 +33,13 @@ namespace BarPromenade
                 Mathf.Min(plan.ReservedBounds.yMin, west.yMin) - 1f,
                 Mathf.Max(plan.ReservedBounds.xMax, east.xMax, plan.LowerCourtBounds.xMax) + 1f,
                 Mathf.Max(plan.ReservedBounds.yMax, east.yMax, plan.LowerCourtBounds.yMax) + 1f);
+            if (plan.HasShortcut)
+            {
+                shortcutBounds = plan.ShortcutBounds;
+                shortcutBounds = Rect.MinMaxRect(shortcutBounds.xMin - 1f, shortcutBounds.yMin - 1f,
+                    shortcutBounds.xMax + 1f, shortcutBounds.yMax + 1f);
+                sockets.Add(plan.ShortcutLowSocket); sockets.Add(plan.ShortcutHighSocket);
+            }
             var owned = new List<Rect>(plan.GroundCuts);
             owned.Add(plan.BridgeWorldBounds);
             ownedBounds = owned.ToArray();
@@ -41,16 +48,19 @@ namespace BarPromenade
             {
                 Bounds box = CityBuildingPrototypePlacement.TransformBounds(new Bounds(Vector3.zero, sidewalk.Size),
                     new CityBuildingPrototypePose(sidewalk.Center, sidewalk.Rotation));
-                if (bounds.Overlaps(Rect.MinMaxRect(box.min.x, box.min.z, box.max.x, box.max.z))) sidewalks.Add(sidewalk);
+                Rect footprint = Rect.MinMaxRect(box.min.x, box.min.z, box.max.x, box.max.z);
+                if (bounds.Overlaps(footprint) || plan.HasShortcut && shortcutBounds.Overlaps(footprint)) sidewalks.Add(sidewalk);
             }
             nearbySidewalks = sidewalks.ToArray();
         }
 
         internal bool IsNear(Vector3 position, float radius) =>
-            position.x >= bounds.xMin - radius && position.x <= bounds.xMax + radius &&
-            position.z >= bounds.yMin - radius && position.z <= bounds.yMax + radius;
+            InRegion(position, position, radius, bounds) || plan.HasShortcut && InRegion(position, position, radius, shortcutBounds);
 
         internal bool IntersectsMove(Vector3 start, Vector3 end, float radius) =>
+            InRegion(start, end, radius, bounds) || plan.HasShortcut && InRegion(start, end, radius, shortcutBounds);
+
+        private static bool InRegion(Vector3 start, Vector3 end, float radius, Rect bounds) =>
             Mathf.Min(start.x, end.x) <= bounds.xMax + radius && Mathf.Max(start.x, end.x) >= bounds.xMin - radius &&
             Mathf.Min(start.z, end.z) <= bounds.yMax + radius && Mathf.Max(start.z, end.z) >= bounds.yMin - radius;
 

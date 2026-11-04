@@ -368,15 +368,18 @@ namespace BarPromenade.Editor
             public void Stroke(Vector2[] source, float metres, string role)
             {
                 float size = metres * width / world.width;
-                for (int i = 1; i < source.Length; i++)
+                if (role == "road")
                 {
-                    Vector2 a = Pixel(source[i - 1]), b = Pixel(source[i]);
-                    if (role == "road")
-                    {
-                        Segment(a, b, Mathf.Max(2, size + 1.5f), Ink);
-                        Segment(a, b, Mathf.Max(1, size - 1.5f), new Color32(85, 88, 80, 255));
-                    }
-                    else Segment(a, b, Mathf.Max(1, size), role == "tunnel" ? Void : Ink);
+                    // Outline the complete path so interior survey stations do not resemble stairs.
+                    DrawPath(Mathf.Max(2f, size + 1.5f), Ink);
+                    DrawPath(Mathf.Max(1f, size - 1.5f), new Color32(85, 88, 80, 255));
+                }
+                else DrawPath(Mathf.Max(1f, size), role == "tunnel" ? Void : Ink);
+
+                void DrawPath(float thickness, Color32 color)
+                {
+                    for (int i = 1; i < source.Length; i++)
+                        Segment(Pixel(source[i - 1]), Pixel(source[i]), thickness, color);
                 }
             }
             private void Segment(Vector2 a, Vector2 b, float size, Color32 color)

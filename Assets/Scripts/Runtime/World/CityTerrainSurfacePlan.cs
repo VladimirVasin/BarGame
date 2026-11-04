@@ -43,7 +43,8 @@ namespace BarPromenade
                 CityPortAccessPlan access,
                 CityTerrainStreetBoundaryPlan.SurfaceBoundaryContext streetBoundary = null,
                 CityLaundryPlan laundry = null,
-                CityDogParkPlan dogPark = null)
+                CityDogParkPlan dogPark = null,
+                CityDogParkPlan.RetainedEarthwork dogYardGround = default)
             {
                 SouthWest = southWest;
                 SouthEast = southEast;
@@ -53,6 +54,7 @@ namespace BarPromenade
                 StreetBoundary = streetBoundary;
                 Laundry = laundry;
                 DogPark = dogPark;
+                DogYardGround = dogYardGround;
             }
 
             internal float SouthWest { get; }
@@ -63,6 +65,7 @@ namespace BarPromenade
             internal CityTerrainStreetBoundaryPlan.SurfaceBoundaryContext StreetBoundary { get; }
             internal CityLaundryPlan Laundry { get; }
             internal CityDogParkPlan DogPark { get; }
+            internal CityDogParkPlan.RetainedEarthwork DogYardGround { get; }
         }
 
         internal static SurfaceContext ResolveSurfaceContext(
@@ -99,7 +102,8 @@ namespace BarPromenade
                 access,
                 CityTerrainStreetBoundaryPlan.ForSurface(layout, surface),
                 CityLaundryPlan.CachedForSurface(layout, surface),
-                CityDogParkPlan.CachedForSurface(layout, surface));
+                CityDogParkPlan.CachedForSurface(layout, surface),
+                CityDogParkPlan.FoundationForSurface(layout, surface));
         }
 
         public static float SampleDatum(
@@ -178,6 +182,7 @@ namespace BarPromenade
                 worldXZ,
                 baseDatum);
             datum = ApplyCompactSouthWestCornerGrade(layout, surface, worldXZ, datum);
+            datum = context.DogYardGround.Apply(worldXZ, datum);
             // The street's actual outer seam owns the shared edge. The
             // old curved-only radial datum could not follow widened paving,
             // junction aprons or road grade breaks.

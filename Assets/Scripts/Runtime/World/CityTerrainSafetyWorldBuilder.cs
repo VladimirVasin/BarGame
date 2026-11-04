@@ -121,6 +121,17 @@ namespace BarPromenade
                     AddWithSuppression(rail, rail.size.x >= rail.size.z, cleared, eastExit.RoadBounds);
                 rails = cleared;
             }
+            // The authored shortcut replaces a piece of each straight frontage
+            // and keeps its own edge guards. Trim only these actual floor
+            // footprints; neighbouring drops keep their original protection.
+            var terraces = CityTerraceDistrictPlan.ForLayout(layout);
+            foreach (Rect floor in terraces.ShortcutFootprints)
+            {
+                var cleared = new List<Bounds>(rails.Count);
+                foreach (Bounds rail in rails)
+                    AddWithSuppression(rail, rail.size.x >= rail.size.z, cleared, floor);
+                rails = cleared;
+            }
             if (rails.Count == 0 && orientedRails.Count == 0)
             {
                 return null;

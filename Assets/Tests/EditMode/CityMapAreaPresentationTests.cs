@@ -965,11 +965,12 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.DogPark,
                     CityMapPointOfInterestKind.TerraceCourts,
                     CityMapPointOfInterestKind.TerraceUnderpass,
-                    CityMapPointOfInterestKind.TerraceLowerCourt
+                    CityMapPointOfInterestKind.TerraceLowerCourt,
+                    CityMapPointOfInterestKind.TerraceShortcut
                 };
                 var expectedIds = new[]
                 {
-                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court"
+                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court", "terrace-shortcut"
                 };
                 var expectedDistricts = new[]
                 {
@@ -978,6 +979,7 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.NorthWaterfront,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Church,
+                    CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,

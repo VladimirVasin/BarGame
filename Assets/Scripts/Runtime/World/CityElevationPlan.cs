@@ -183,7 +183,8 @@ namespace BarPromenade
                 sourceProfiles,
             IList<CityElevationStairDescriptor> signatureStairs,
             CitySpatialPlan spatialPlan = null,
-            CityRoadGeometryPlan roadGeometry = null)
+            CityRoadGeometryPlan roadGeometry = null,
+            bool hasCoastalAscent = false)
         {
             BlueprintId = blueprintId ?? string.Empty;
             Seed = seed;
@@ -192,6 +193,7 @@ namespace BarPromenade
             SpatialPlan = spatialPlan ?? CitySpatialPlan.Uniform(nodeSpacing);
             RoadWidth = roadWidth;
             IsElevated = isElevated;
+            HasCoastalAscent = hasCoastalAscent;
             nodeElevations = new ReadOnlyDictionary<Vector2Int, float>(
                 new Dictionary<Vector2Int, float>(
                     sourceNodeElevations ??
@@ -256,6 +258,7 @@ namespace BarPromenade
         public CityRoadGeometryPlan RoadGeometry { get; }
         public float RoadWidth { get; }
         public bool IsElevated { get; }
+        public bool HasCoastalAscent { get; }
         public float MinimumElevation { get; private set; }
         public float MaximumElevation { get; private set; }
         public IReadOnlyDictionary<Vector2Int, float> NodeElevations =>

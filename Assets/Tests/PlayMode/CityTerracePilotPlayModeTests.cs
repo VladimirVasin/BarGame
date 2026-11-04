@@ -121,23 +121,7 @@ namespace BarPromenade.Tests.PlayMode
             System.Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
                 .GetMethod("PrepareImportedImage", System.Type.EmptyTypes).Invoke(null, null);
 #endif
-            Debug.Log("Live terrace verification: loading production City.");
-            yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
-            pilotScene = SceneManager.GetActiveScene();
-            float deadline = Time.realtimeSinceStartup + 90f;
-            float nextProgress = Time.realtimeSinceStartup + 5f;
-            while (city == null || !city.IsInitialized)
-            {
-                Assert.That(Time.realtimeSinceStartup, Is.LessThan(deadline), "Production City did not become ready.");
-                city = Object.FindAnyObjectByType<CityGameRoot>();
-                if (Time.realtimeSinceStartup >= nextProgress)
-                {
-                    Debug.Log("Live terrace initialization: world=" + (city != null && city.World != null) +
-                        ", hero=" + (city != null && city.Player.GameObject != null));
-                    nextProgress = Time.realtimeSinceStartup + 5f;
-                }
-                yield return null;
-            }
+            yield return LoadProductionCity();
             CityTerraceDistrictPlan plan = CityTerraceDistrictPlan.ForLayout(city.Layout);
             Assert.That(plan.IsEnabled, Is.True);
             Transform world = city.World.Root.transform.Find("Terraced Courtyards");
@@ -239,6 +223,27 @@ namespace BarPromenade.Tests.PlayMode
             Debug.Log("Live terrace verification completed: street, lower passage, both upper loops, layered contacts, camera, rain and map arrivals.");
         }
 
+        private IEnumerator LoadProductionCity()
+        {
+            Debug.Log("Live terrace verification: loading production City.");
+            yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
+            pilotScene = SceneManager.GetActiveScene();
+            float deadline = Time.realtimeSinceStartup + 90f;
+            float nextProgress = Time.realtimeSinceStartup + 5f;
+            while (city == null || !city.IsInitialized)
+            {
+                Assert.That(Time.realtimeSinceStartup, Is.LessThan(deadline), "Production City did not become ready.");
+                city = Object.FindAnyObjectByType<CityGameRoot>();
+                if (Time.realtimeSinceStartup >= nextProgress)
+                {
+                    Debug.Log("Live terrace initialization: world=" + (city != null && city.World != null) +
+                        ", hero=" + (city != null && city.Player.GameObject != null));
+                    nextProgress = Time.realtimeSinceStartup + 5f;
+                }
+                yield return null;
+            }
+        }
+
         private IEnumerator WalkCityRoute(IReadOnlyList<Vector3> route, bool reverse, string name,
             CityTerraceDistrictPlan plan, int residenceSide = 0)
         {
@@ -258,6 +263,15 @@ namespace BarPromenade.Tests.PlayMode
                     IsolateAmbientCollisionPairs();
                     Vector3 before = motor.transform.position;
                     arrived = motor.MoveTowardsApproachWaypoint(target, .035f, FrameSeconds);
+                    if (frame == limit - 1 && !arrived)
+                    {
+                        Vector3 direction = Vector3.ProjectOnPlane(target - before, Vector3.up).normalized;
+                        Vector3 desired = before + direction * (2.6f * FrameSeconds);
+                        Vector3 allowed = city.World.WalkableArea.Constrain(before, desired, capsule.radius);
+                        Debug.Log($"Last guided step {name}: before={before:F4} moved={motor.transform.position:F4} " +
+                            $"allowed={allowed:F4} yawError={Vector3.Angle(motor.transform.forward, direction):F1} " +
+                            $"horizontalFlags={capsule.collisionFlags}");
+                    }
                     yield return null;
                     Vector3 position = motor.transform.position;
                     Assert.That(Vector3.Distance(before, position), Is.LessThan(.35f), name + " teleported.");
@@ -277,11 +291,16 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(arrived, Is.True, name + " blocked by navigation or an old fence/prop at " +
                     motor.transform.position + " toward " + target);
                 Assert.That(motor.transform.position.y, Is.EqualTo(target.y).Within(.20f));
+                if (name == "coastal-shortcut-up" && index == 1)
+                    yield return CapturePlayerView("coastal-shortcut-reveal", plan.ShortcutCourtArrivalWorld + Vector3.up);
+                if (name == "coastal-shortcut-down" &&
+                    Vector3.Distance(route[index], plan.ShortcutCourtArrivalWorld) < .02f)
+                    yield return CapturePlayerView("coastal-shortcut-return", route[0] + Vector3.up);
                 if (name == "lower-house-down" && index == 2)
-                    yield return CaptureLowerCourtPlayerView("live-09-lower-stairs-game-camera",
+                    yield return CapturePlayerView("live-09-lower-stairs-game-camera",
                         new Vector3(136.2f, plan.LowerCourtArrivalWorld.y + 1f, 69.48f));
                 if (name == "lower-house-down" && index == route.Count - 3)
-                    yield return CaptureLowerCourtPlayerView("live-10-lower-court-game-camera",
+                    yield return CapturePlayerView("live-10-lower-court-game-camera",
                         new Vector3(141.2f, plan.LowerCourtArrivalWorld.y + 2.5f, 65f));
                 if (name == "lower-pass-out" && index == 2)
                 {
@@ -367,6 +386,32 @@ namespace BarPromenade.Tests.PlayMode
                         .Append(" bounds=").Append(hit.bounds.ToString("F3"))
                         .Append(" ignored=").Append(Physics.GetIgnoreCollision(capsule, hit));
                 }
+            // The ordinary vertical motor runs after a guided step, so its
+            // Below flag alone cannot identify an internal kerb or sector seam.
+            Vector3 forward = direction.normalized;
+            foreach (RaycastHit sweep in Physics.CapsuleCastAll(center + Vector3.up * (halfLine + .03f),
+                center + Vector3.up * (.03f - halfLine), radius - .015f, forward, .5f,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                if (!sweep.transform.IsChildOf(capsule.transform))
+                    text.Append($" | sweep {sweep.collider.name} t={sweep.triangleIndex} at={sweep.point:F3} n={sweep.normal:F2}");
+            Vector3 foot = new Vector3(current.x, capsule.bounds.min.y, current.z);
+            foreach (float lift in new[] { .015f, .05f, .16f, .35f, .75f })
+                foreach (RaycastHit face in Physics.RaycastAll(foot + Vector3.up * lift, forward,
+                    radius + .5f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                    if (!face.transform.IsChildOf(capsule.transform))
+                        text.Append($" | face@{lift:F2} {face.collider.name} t={face.triangleIndex} " +
+                            $"at={face.point:F3} n={face.normal:F2}");
+            foreach (float offset in new[] { -.3f, 0f, .15f, .4f, .7f })
+            {
+                Vector3 point = current + forward * offset;
+                bool sampled = CityStreetSupportPlan.ForLayout(city.Layout).TrySampleTop(
+                    new Vector2(point.x, point.z), out float expected, out _);
+                text.Append($" | top@{point.x:F3},{point.z:F3} expected={(sampled ? expected : float.NaN):F3}");
+                foreach (RaycastHit floor in Physics.RaycastAll(point + Vector3.up * 2f, Vector3.down,
+                    3f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                    if (!floor.transform.IsChildOf(capsule.transform))
+                        text.Append($" {floor.collider.name}={floor.point.y:F3}/{floor.triangleIndex}");
+            }
             Debug.Log(text.ToString());
         }
 

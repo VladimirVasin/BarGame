@@ -3,19 +3,19 @@
 ## Current facts
 
 - **Accepted architecture extension — 2026-11-03,user — terraced City:**
-  Planned35–45m;low coast/port/river,3–5 floors,districts/short Home↔Bar stay.
-  Profile→pilot→crossing/rollout→anchors/map. Live4.8×2.4m bridge at+7.68
-  over3m alley:explicit layers/contacts,sharedXZ/distinctY,local rain shelter.
-  `2026-11-04`:nodes(12,8)/(13,8)→XZ(155.85,52.25)/(182.5,52.25),
-  oldY/4m flats/max5.6%;40m stays draft. East exit:level3×2.4m/side guards.
-  Cell(11,8):third ordinary house,existing3-floor model,3.84m below street;
-  ten fixed flights total. Roof12.883m<upper eye15.073m;production camera reviewed.
-  Separate cut/retaining walls;ground/collision/NPC/arrivals share surfaces.
-  Shared Blender/materials,bounded caches;24FX/art9/story§16/21/weather/control stay.
-  Map RU/markers/selection/XYZ each slice;node/profileY hashed;«Нижний двор».
-  Final ImageGen installed/binding matched;stale→scheme,never retag.
-  Proof:`LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap`.
-  No new lore/population/tunnels;river cave closed. [Acceptance](city-multilevel-plan.md).
+  Low coast/port/river,3–5 floors,short Home↔Bar. Citywide target35–45m.
+  Bridge4.8×2.4m at+7.68 above3m alley, shared XZ/distinct Y, rain shelter.
+  `2026-11-04` inland junctions12,8/13,8 retain datum,4m flats and5.6% limit.
+  Level east exit3×2.4m. House11,8 is3.84m below street, roof below upper eye.
+  `CityCoastalAscentPlan` fits existing graph before lot rebase. From (10,12)
+  to (12,10), four streets gain3.84m in104m, side ties≤5.9%. The level north
+  frontage of11,10 feeds a single1.92m flight behind its inhabited house.
+  Existing terrace floors/guards, NPC links and map arrivals own both sockets.
+  Separate cuts protect roads and houses. Blender kit, shared materials, bounded
+  plan queries. Fog, post, ordinary camera and story§§16/21/art9 apply.
+  A shallow earth bench keeps the dog yard at (10,9) and connects its north gate
+  to pavement. Map geometry/XYZ updates each slice, ImageGen once at final geometry.
+  [Acceptance and named checks](city-multilevel-plan.md).
 
 - **Accepted architecture exception — 2026-11-03,user — doubled calendar day:**
   Art §2/story §20:96 real minutes/day at ×1,four seconds/game minute.

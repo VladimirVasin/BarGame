@@ -144,6 +144,13 @@ namespace BarPromenade
                         top, new Vector2(wall.Size.z, wall.Size.x), top.y - wall.Size.y);
                 }
 
+                foreach (RuntimeOrientedBox wall in district.ShortcutWalls)
+                {
+                    Vector3 top = district.Local(wall.Center + Vector3.up * wall.Size.y * .5f);
+                    Support(templates["TerraceSupport"], root.transform, "Rear stair retaining wall " + wallIndex++,
+                        top, new Vector2(wall.Size.z, wall.Size.x), top.y - wall.Size.y);
+                }
+
                 // The bounded trigger clears particles emitted beneath the
                 // deck as well as those falling from above. Its ceiling stops
                 // below the upper walking surface, which stays exposed to rain.
@@ -286,6 +293,12 @@ namespace BarPromenade
                     AddOpening(district.Local(district.LowerPassRampEndWorld), CityTerraceDistrictPlan.LowerPassWidth);
                     AddOpening(district.Local(district.LowerPassEndWorld), CityTerraceDistrictPlan.LowerPassWidth);
                     AddOpening(district.Local(district.LowerCourtEntryEndWorld), district.LowerCourtEntryBounds.height);
+                    if (district.HasShortcut)
+                    {
+                        var route = district.ShortcutRouteWorld;
+                        AddOpening(district.Local(route[0]), district.ShortcutLowSocket.width);
+                        AddOpening(district.Local(route[route.Count - 1]), district.ShortcutHighSocket.width);
+                    }
                     foreach (Vector3 door in district.HouseEntryWorld) AddOpening(district.Local(door), 1.8f);
                 }
                 gaps.Sort((a, b) => a.x.CompareTo(b.x));

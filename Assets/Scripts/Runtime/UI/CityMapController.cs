@@ -30,7 +30,8 @@ namespace BarPromenade
         DogPark = 11,
         TerraceCourts = 12,
         TerraceUnderpass = 13,
-        TerraceLowerCourt = 14
+        TerraceLowerCourt = 14,
+        TerraceShortcut = 15
     }
 
     public readonly struct CityMapPointOfInterest
@@ -944,6 +945,9 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.TerraceUnderpass:
                     key = "map.poi.terrace_underpass";
                     return true;
+                case CityMapPointOfInterestKind.TerraceShortcut:
+                    key = "map.poi.terrace_shortcut";
+                    return true;
                 case CityMapPointOfInterestKind.TerraceLowerCourt:
                     key = "map.poi.terrace_lower_court";
                     return true;
@@ -1478,6 +1482,9 @@ namespace BarPromenade
                 pointsOfInterest.Add(new CityMapPointOfInterest(
                     "terrace-lower-court", CityMapPointOfInterestKind.TerraceLowerCourt, CityDistrictKind.Residential,
                     terraces.LowerCourtArrivalWorld + Vector3.up * rootOffset));
+                if (terraces.HasShortcut) pointsOfInterest.Add(new CityMapPointOfInterest(
+                    "terrace-shortcut", CityMapPointOfInterestKind.TerraceShortcut, CityDistrictKind.Residential,
+                    terraces.ShortcutCourtArrivalWorld + Vector3.up * rootOffset));
             }
         }
 

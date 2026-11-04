@@ -18,6 +18,10 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   «Нижний двор» добавлен на карту. Проверка прохода/опор/камеры:
   LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap.
 
+- От набережной улица поднимается к жилью. У остановки «Проход за домом»
+  сокращает путь по лестнице. С площадки видны павильон и автобус внизу.
+  LiveCity_CoastalAscentAndStairShortcutShareSupportedRoutes.
+
 ### 2026-11-03
 
 - Чекпойнт входа/Esc:откат сеанса.

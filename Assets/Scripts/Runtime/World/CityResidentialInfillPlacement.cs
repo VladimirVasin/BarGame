@@ -15,6 +15,7 @@ namespace BarPromenade
         private readonly List<Rect> paths = new List<Rect>();
         private readonly List<Vector3> accesses = new List<Vector3>();
         private readonly HashSet<Vector2Int> protectedCells = new HashSet<Vector2Int>();
+        private CityStreetSupportPlan accessPaving;
 
         internal CityResidentialInfillPlacement(CityLayout source)
         {
@@ -27,6 +28,7 @@ namespace BarPromenade
                 blocked.Add(terraces.LowerPassBounds);
                 blocked.Add(terraces.LowerCourtBounds);
                 blocked.Add(terraces.LowerCourtEntryBounds);
+                blocked.AddRange(terraces.ShortcutFootprints);
             }
             foreach (Vector2Int cell in layout.PrimaryLandmarkCells.Values) protectedCells.Add(cell);
             foreach (BuildingLot lot in layout.BuildingLots)
@@ -91,6 +93,19 @@ namespace BarPromenade
         }
 
         internal bool ProtectedCell(Vector2Int cell) => protectedCells.Contains(cell);
+
+        internal void OfferPavementAccess(Vector2 point)
+        {
+            accessPaving = CityStreetSupportPlan.ForLayout(layout);
+            if (accessPaving.TrySampleTop(point, FootstepGroundKind.Stone, out float top))
+                accesses.Add(new Vector3(point.x, top, point.y));
+        }
+
+        private bool AccessTop(Vector2 point, out float height)
+        {
+            if (accessPaving != null && accessPaving.TrySampleTop(point, FootstepGroundKind.Stone, out height)) return true;
+            return RawTop(point, out height);
+        }
         internal bool Fits(Rect footprint, Rect approach, Vector3 position, Quaternion rotation, Vector3 localEntry, out Vector3 access)
         {
             access = default;
@@ -111,8 +126,8 @@ namespace BarPromenade
                 access = target; best = distance;
             }
             if (best >= 14f*14f) return false;
-            if (!RawTop(XZ(entry),out float y)) return false;
-            access.y = RawTop(XZ(access),out float targetY) ? targetY : y;
+            if (!AccessTop(XZ(entry),out float y)) return false;
+            access.y = AccessTop(XZ(access),out float targetY) ? targetY : y;
             return true;
         }
 
@@ -129,7 +144,7 @@ namespace BarPromenade
                 foreach (Rect obstacle in connectorObstacles) if (body.Overlaps(obstacle)) return false;
                 // Public paving and existing walking routes are allowed
                 // connector destinations; furnishing and special grounds are not.
-                if (!RawTop(XZ(point),out float top) || (step>0 && Mathf.Abs(top-previous)>.22f)) return false;
+                if (!AccessTop(XZ(point),out float top) || (step>0 && Mathf.Abs(top-previous)>.22f)) return false;
                 previous=top;
             }
             return true;
@@ -151,7 +166,7 @@ namespace BarPromenade
             return top-low<=maximumSpread;
         }
 
-        private bool RawTop(Vector2 point,out float top)
+        internal bool RawTop(Vector2 point,out float top)
         {
             foreach(CitySurfaceDescriptor surface in layout.Surfaces)
                 if(!surface.IsWater && surface.WorldBounds.Contains(point))

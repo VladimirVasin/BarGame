@@ -184,6 +184,7 @@ namespace BarPromenade
                 obstacles.Add(CityRoadPolygon.Rectangle(terrace.LowerPassBounds));
                 obstacles.Add(CityRoadPolygon.Rectangle(terrace.LowerCourtBounds));
                 obstacles.Add(CityRoadPolygon.Rectangle(terrace.LowerCourtEntryBounds));
+                foreach (Rect piece in terrace.ShortcutFootprints) obstacles.Add(CityRoadPolygon.Rectangle(piece));
             }
             CityLaundryPlan laundry = CityLaundryPlan.ForLayout(layout);
             if (laundry.IsEnabled) foreach (Rect body in laundry.BodyFootprints) obstacles.Add(CityRoadPolygon.Rectangle(body));

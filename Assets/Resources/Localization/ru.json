@@ -1792,6 +1792,10 @@
       "value": "Нижний проход"
     },
     {
+      "key": "map.poi.terrace_shortcut",
+      "value": "Проход за домом"
+    },
+    {
       "key": "map.poi.terrace_lower_court",
       "value": "Нижний двор"
     },

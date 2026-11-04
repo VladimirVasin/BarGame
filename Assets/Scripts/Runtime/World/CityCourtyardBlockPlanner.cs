@@ -273,6 +273,19 @@ namespace BarPromenade
                 XZ(center + right * halfWidth + forward * halfDepth),
                 XZ(center - right * halfWidth + forward * halfDepth) };
             if (!RegionFitsGround(CityRoadPolygon.CounterClockwise(padded), ground)) return false;
+            Rect candidate = CityRoadPolygon.Bounds(padded);
+            foreach (Rect path in CityTerraceDistrictPlan.ForLayout(layout).ShortcutFootprints)
+                if (candidate.Overlaps(path)) return false;
+            // The court may acquire a new buildable wing when terrain grades
+            // change. Its entire rigid envelope, including the upper mass, must
+            // still clear the proposed streets; keep the same open-court fallback.
+            if (layout.BlueprintId == CityBlueprintCatalog.DefaultBlueprintId && layout.SpatialPlan.IsCompactCoastal)
+            {
+                Vector3 hw = right * (envelope.x * .5f), hd = forward * (envelope.z * .5f);
+                var body = new[] { XZ(center - hw - hd), XZ(center + hw - hd),
+                    XZ(center + hw + hd), XZ(center - hw + hd) };
+                if (CityTerraceTransportPlan.OverlapsSurveyedStreet(layout, body)) return false;
+            }
             if (!CityTerrainSurfacePlan.TrySampleGroundTop(layout, XZ(center), out float top, out _)) return false;
             center.y = top - CityElevationPlan.GroundTopOffset;
             Vector3 door = center + forward * (envelope.z * .5f);

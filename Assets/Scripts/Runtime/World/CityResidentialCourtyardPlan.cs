@@ -324,6 +324,7 @@ namespace BarPromenade
                     ProtectedGround.Add(terraces.LowerPassBounds);
                     ProtectedGround.Add(terraces.LowerCourtBounds);
                     ProtectedGround.Add(terraces.LowerCourtEntryBounds);
+                    foreach (Rect piece in terraces.ShortcutFootprints) ProtectedGround.Add(piece);
                 }
                 Solids = ExistingSolids(layout);
                 foreach (BuildingLot mass in layout.BuildingMasses)

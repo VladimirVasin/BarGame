@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace BarPromenade
@@ -246,6 +247,78 @@ namespace BarPromenade
             CityTerraceTransportBank bank, List<Footprint> footprints)
         {
             string id = bank == CityTerraceTransportBank.West ? "terrace-west-switchback" : "terrace-east-switchback";
+            Alignment alignment = StreetAlignments.GetValue(layout, BuildAlignments)[(int)bank];
+            var points = alignment.Points;
+            var kinds = alignment.Kinds;
+            Vector2 start = points[0];
+            if (!layout.ElevationPlan.TrySampleSurface(start, CitySurfaceRole.RoadDatum, out float startY, out _))
+                throw new InvalidOperationException("The coastal attachment has no surveyed road support.");
+            float climbingLength = 0f;
+            for (int i = 0; i < kinds.Count; i++)
+                if (kinds[i] == CityTerraceTransportSegmentKind.Climb)
+                    climbingLength += Vector2.Distance(points[i], points[i + 1]);
+            float grade = (master.TargetSummitElevation - startY) / climbingLength * 100f;
+            var stations = new CityRoadElevationStation[points.Count];
+            stations[0] = new CityRoadElevationStation(0f, startY);
+            float distance = 0f, climbed = 0f;
+            for (int i = 0; i < kinds.Count; i++)
+            {
+                float length = Vector2.Distance(points[i], points[i + 1]);
+                distance += length;
+                if (kinds[i] == CityTerraceTransportSegmentKind.Climb) climbed += length;
+                stations[i + 1] = new CityRoadElevationStation(distance,
+                    Mathf.Lerp(startY, master.TargetSummitElevation, climbed / climbingLength));
+            }
+            // An infeasible requested summit remains inspectable, but the
+            // explicit GradeLimit requirement prevents declaring it placed.
+            var profile = new CityRoadElevationProfile(stations, Mathf.Max(CityElevationPlan.MaximumBusGradePercent, grade));
+            var samples = new List<CityTerraceRouteSample>(points.Count);
+            var segments = new List<CityTerraceTransportSegment>(kinds.Count);
+            var reservations = new List<CityTerraceReservation>();
+            IReadOnlyList<Vector2[]> corridor = alignment.Corridor;
+            for (int i = 0; i < points.Count; i++)
+            {
+                float stationDistance = profile.Stations[i].HorizontalDistance;
+                float height = profile.SampleDistance(stationDistance).Height;
+                samples.Add(new CityTerraceRouteSample(new Vector3(points[i].x, height, points[i].y), stationDistance));
+            }
+            for (int i = 0; i < kinds.Count; i++)
+            {
+                segments.Add(new CityTerraceTransportSegment(samples[i].Position, samples[i + 1].Position, kinds[i]));
+                AppendOverlaps(id, i, corridor[i], footprints, reservations);
+            }
+            return new CityTerraceTransportRoute(id, bank, samples, segments, profile, reservations, corridor);
+        }
+
+        // A rear wing is chosen before the inventory of final building masses
+        // exists. Share just the XZ street ribbons with that placement step;
+        // deriving its obstacle from Create(layout, master) would recurse.
+        private sealed class Alignment
+        {
+            internal List<Vector2> Points;
+            internal List<CityTerraceTransportSegmentKind> Kinds;
+            internal IReadOnlyList<Vector2[]> Corridor;
+            internal Rect[] Bounds;
+        }
+
+        private static readonly ConditionalWeakTable<CityLayout, Alignment[]> StreetAlignments =
+            new ConditionalWeakTable<CityLayout, Alignment[]>();
+
+        private static Alignment[] BuildAlignments(CityLayout layout) => new[] {
+            BuildAlignment(layout, CityTerraceTransportBank.West), BuildAlignment(layout, CityTerraceTransportBank.East) };
+
+        internal static bool OverlapsSurveyedStreet(CityLayout layout, IReadOnlyList<Vector2> body)
+        {
+            if (layout.BlueprintId != CityBlueprintCatalog.DefaultBlueprintId || !layout.SpatialPlan.IsCompactCoastal) return false;
+            Rect bounds = CityRoadPolygon.Bounds(body);
+            foreach (Alignment alignment in StreetAlignments.GetValue(layout, BuildAlignments))
+                for (int i = 0; i < alignment.Corridor.Count; i++)
+                    if (bounds.Overlaps(alignment.Bounds[i]) && Intersects(body, alignment.Corridor[i])) return true;
+            return false;
+        }
+
+        private static Alignment BuildAlignment(CityLayout layout, CityTerraceTransportBank bank)
+        {
             Vector2[] waypoints = StreetWaypoints(layout, bank);
             var points = new List<Vector2>(MaximumRouteSamples);
             var kinds = new List<CityTerraceTransportSegmentKind>(MaximumRouteSamples - 1);
@@ -302,44 +375,10 @@ namespace BarPromenade
                         direction * (TurnRadius * Mathf.Sin(angle)), CityTerraceTransportSegmentKind.TurnLanding);
                 }
             }
-            Vector2 start = points[0];
-            if (!layout.ElevationPlan.TrySampleSurface(start, CitySurfaceRole.RoadDatum, out float startY, out _))
-                throw new InvalidOperationException("The coastal attachment has no surveyed road support.");
-            float climbingLength = 0f;
-            for (int i = 0; i < kinds.Count; i++)
-                if (kinds[i] == CityTerraceTransportSegmentKind.Climb)
-                    climbingLength += Vector2.Distance(points[i], points[i + 1]);
-            float grade = (master.TargetSummitElevation - startY) / climbingLength * 100f;
-            var stations = new CityRoadElevationStation[points.Count];
-            stations[0] = new CityRoadElevationStation(0f, startY);
-            float distance = 0f, climbed = 0f;
-            for (int i = 0; i < kinds.Count; i++)
-            {
-                float length = Vector2.Distance(points[i], points[i + 1]);
-                distance += length;
-                if (kinds[i] == CityTerraceTransportSegmentKind.Climb) climbed += length;
-                stations[i + 1] = new CityRoadElevationStation(distance,
-                    Mathf.Lerp(startY, master.TargetSummitElevation, climbed / climbingLength));
-            }
-            // An infeasible requested summit remains inspectable, but the
-            // explicit GradeLimit requirement prevents declaring it placed.
-            var profile = new CityRoadElevationProfile(stations, Mathf.Max(CityElevationPlan.MaximumBusGradePercent, grade));
-            var samples = new List<CityTerraceRouteSample>(points.Count);
-            var segments = new List<CityTerraceTransportSegment>(kinds.Count);
-            var reservations = new List<CityTerraceReservation>();
-            IReadOnlyList<Vector2[]> corridor = new CityRoadPath(points).Ribbon(CorridorWidth);
-            for (int i = 0; i < points.Count; i++)
-            {
-                float stationDistance = profile.Stations[i].HorizontalDistance;
-                float height = profile.SampleDistance(stationDistance).Height;
-                samples.Add(new CityTerraceRouteSample(new Vector3(points[i].x, height, points[i].y), stationDistance));
-            }
-            for (int i = 0; i < kinds.Count; i++)
-            {
-                segments.Add(new CityTerraceTransportSegment(samples[i].Position, samples[i + 1].Position, kinds[i]));
-                AppendOverlaps(id, i, corridor[i], footprints, reservations);
-            }
-            return new CityTerraceTransportRoute(id, bank, samples, segments, profile, reservations, corridor);
+            var corridor = new CityRoadPath(points).Ribbon(CorridorWidth);
+            var bounds = new Rect[corridor.Count];
+            for (int i = 0; i < bounds.Length; i++) bounds[i] = CityRoadPolygon.Bounds(corridor[i]);
+            return new Alignment { Points = points, Kinds = kinds, Corridor = corridor, Bounds = bounds };
         }
 
         private static Vector2[] StreetWaypoints(CityLayout layout, CityTerraceTransportBank bank)

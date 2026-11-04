@@ -3685,6 +3685,7 @@ namespace BarPromenade
                     }
                     break;
                 case CityMapPointOfInterestKind.TerraceCourts:
+                case CityMapPointOfInterestKind.TerraceShortcut:
                 case CityMapPointOfInterestKind.TerraceLowerCourt:
                     // Three steps: the same ordinary stair silhouette on map and legend.
                     for (int step = 0; step < 3; step++)

@@ -78,17 +78,25 @@ namespace BarPromenade
                 else if (surface.Id == "lower-house-street-entry")
                     pieces.Add(CityRoadPolygon.Rectangle(Rect.MinMaxRect(LowerCourtEntryBounds.xMin - .8f,
                         LowerCourtEntryBounds.yMin, LowerCourtEntryBounds.xMin + .8f, LowerCourtEntryBounds.yMax)));
-                foreach (RuntimeOrientedBox wall in LowerCourtRetainingWalls)
-                {
-                    Rect solid = new Rect(wall.Center.x - wall.Size.x * .5f, wall.Center.z - wall.Size.z * .5f,
-                        wall.Size.x, wall.Size.z);
-                    if (!surface.Bounds.Overlaps(solid, true)) continue;
-                    var remainder = new List<Vector2[]>();
-                    foreach (Vector2[] piece in pieces)
-                        remainder.AddRange(CityRoadPolygon.Subtract(piece, CityRoadPolygon.Rectangle(solid)));
-                    pieces = remainder;
-                }
+                else if (surface.Id == ShortcutLower || surface.Id == ShortcutUpper)
+                    pieces.Add(CityRoadPolygon.Rectangle(surface.Id == ShortcutLower ? ShortcutLowSocket : ShortcutHighSocket));
+                SubtractSolids(LowerCourtRetainingWalls);
+                SubtractSolids(ShortcutWalls);
                 surface.Clearance.AddPolygons(pieces);
+
+                void SubtractSolids(IReadOnlyList<RuntimeOrientedBox> walls)
+                {
+                    foreach (RuntimeOrientedBox wall in walls)
+                    {
+                        Rect solid = new Rect(wall.Center.x - wall.Size.x * .5f, wall.Center.z - wall.Size.z * .5f,
+                            wall.Size.x, wall.Size.z);
+                        if (!surface.Bounds.Overlaps(solid, true)) continue;
+                        var remainder = new List<Vector2[]>();
+                        foreach (Vector2[] piece in pieces)
+                            remainder.AddRange(CityRoadPolygon.Subtract(piece, CityRoadPolygon.Rectangle(solid)));
+                        pieces = remainder;
+                    }
+                }
             }
         }
 
@@ -145,7 +153,7 @@ namespace BarPromenade
 
         internal bool IsStreetSurface(CityTerraceSurfaceContact contact) =>
             contact.SurfaceId == "street-approach" || contact.SurfaceId == EastLandingFloorId ||
-            contact.SurfaceId == "lower-house-street-entry";
+            contact.SurfaceId == "lower-house-street-entry" || contact.SurfaceId == ShortcutLower || contact.SurfaceId == ShortcutUpper;
 
         internal bool TryClosestSurfacePoint(Vector3 position, float radius, out Vector3 closest)
         {

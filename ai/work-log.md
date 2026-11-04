@@ -11,7 +11,7 @@ flat mouths and retained coast profiles; route continuation has no duplicate
 old profile. Entrance plans pair actual forecourts/nearest pavement edges:
 XZ/Y gaps need access routes; thresholds stay, steep/incomplete aprons reject.
 First eastern junctions now share surveyed paths, retained grades, ground cuts
-and physical bus aprons. Further uphill/citywide rollout remains open.
+and physical bus aprons. The first ascent now connects the shore to housing.
 CityTerraceTransportPlanTests OK: clearance, profiles, junction seams/ownership,
 entrance triangle grades and unchanged live anchors. Editor joins view reviewed.
 All24FX reviewed: existing City sources/materials/post owners retained.
@@ -29,7 +29,15 @@ the neighbouring roof below the upper player view. Scheme/return/travel distance
 follow actual paths; map fingerprint includes heights. Bus checks use physical paving.
 LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap passed:
 continuous walks, ground/vehicle contacts, house docks, roof below ordinary camera,
-rain/layers and safe map arrivals. Final ImageGen redraw installed.
+rain/layers and safe map arrivals.
+Coastal street heights now rebase the adjacent ground, doors and junctions.
+The passage behind the house shortens the walk and clears the bus shelter.
+Rear-wing placement shares the measured curved transport reservation.
+A bounded local cut/fill keeps the dog yard and its gate on their surveyed parcel.
+LiveCity_CoastalAscentAndStairShortcutShareSupportedRoutes passed. Production
+walks, physical bus/hero contacts, gate and mapped arrivals verified. Reviewed
+the stair reveal and return view of the bus below. Final ImageGen redraw and
+RU map binding verified by ImageGenCityMap_PreservesPlanAndLivePlaces.
 check-docs.py/check-workspace.py/git diff --check.
 
 ## 2026-11-03

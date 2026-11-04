@@ -13,7 +13,7 @@ namespace BarPromenade.Editor
     /// </summary>
     public sealed class CityTerracePlanWindow : EditorWindow
     {
-        private static readonly string[] Views = { "Сейчас", "Террасы", "Разрез", "Транспорт", "Профиль дороги", "Стыки" };
+        private static readonly string[] Views = { "Сейчас", "Террасы", "Разрез", "Транспорт", "Профиль дороги", "Стыки", "Жилой подъём" };
         private static readonly string[] Banks = { "Запад", "Восток" };
         private static readonly Color LowColor = new Color(0.25f, 0.52f, 0.63f);
         private static readonly Color HighColor = new Color(0.88f, 0.67f, 0.30f);
@@ -21,10 +21,11 @@ namespace BarPromenade.Editor
 
         [SerializeField] private int seed = GameSessionState.DefaultCitySeed;
         [SerializeField] private float summit = 40f;
-        [SerializeField] private int view = 5;
+        [SerializeField] private int view = 6;
         private CityLayout layout;
         private CityTerraceMasterPlan plan;
         private CityTerraceTransportPlan transport;
+        private CityRoadElevationProfile liveAscent;
         private Vector2 scroll;
         private int selectedConflict = -1;
         private int selectedCrossing = -1;
@@ -65,6 +66,7 @@ namespace BarPromenade.Editor
         {
             // No scene callbacks, objects, textures or persistent cache to own.
             layout = null;
+            liveAscent = null;
             plan = null;
             transport = null;
             conflictLabels = null;
@@ -94,6 +96,7 @@ namespace BarPromenade.Editor
                         $"{conflict.Edge}: {conflict.ProposedGradePercent:0.0}% / допуск {conflict.AllowedGradePercent:0.0}%",
                         "Выделить улицу на схеме. Это диагностика исходной трассы, а не готовый новый маршрут.");
                 }
+                liveAscent = MeasureAscent(candidate);
                 layout = candidate;
                 plan = draft;
                 transport = routeDraft;
@@ -130,7 +133,7 @@ namespace BarPromenade.Editor
         {
             EditorGUILayout.LabelField("Этап 1 · профиль и перепланировка улиц", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Авторский черновик. Игровой город и его карта не изменяются. Красные улицы требуют новой трассы или отдельной пешей связи.",
+                "Жилой подъём показывает действующую улицу. Проектные схемы показывают дальнейший подъём города к выбранной верхней отметке.",
                 MessageType.Info);
             seed = EditorGUILayout.IntField("Seed", seed);
             summit = EditorGUILayout.Slider("Верхняя отметка, м", summit, 35f, 45f);
@@ -139,6 +142,13 @@ namespace BarPromenade.Editor
                 if (GUILayout.Button("Пройти пилот дворов · 7,68 м")) PlayPilot();
             if (!string.IsNullOrEmpty(failure)) EditorGUILayout.HelpBox(failure, MessageType.Error);
             if (plan == null) return;
+
+            view = GUILayout.Toolbar(view, Views);
+            if (view == 6)
+            {
+                DrawLiveAscent();
+                return;
+            }
 
             if (seed != plan.Seed || !Mathf.Approximately(summit, plan.TargetSummitElevation))
                 EditorGUILayout.HelpBox("Параметры изменены. Схема показывает последний расчёт.", MessageType.Warning);
@@ -164,7 +174,6 @@ namespace BarPromenade.Editor
                 EditorGUILayout.HelpBox("Не подключено к игровому городу. Нужны дорожные стыки, подходы к входам, габаритный проход машин и опоры на грунт. Разные Y не разрешают мост или тоннель.", MessageType.Warning);
             }
 
-            view = GUILayout.Toolbar(view, Views);
             if (view == 5) selectedConnection = EditorGUILayout.Popup(selectedConnection, connectionLabels);
             if (view == 4)
             {
@@ -343,6 +352,66 @@ namespace BarPromenade.Editor
             Vector2 a = new Vector2(segment.Start.x, segment.Start.z), b = new Vector2(segment.End.x, segment.End.z);
             float t = Mathf.Clamp01(Vector2.Dot(crossing.WorldXZ - a, b - a) / (b - a).sqrMagnitude);
             return route.Samples[crossing.SegmentIndex].HorizontalDistance + segment.HorizontalLength * t;
+        }
+
+        private static CityRoadElevationProfile MeasureAscent(CityLayout city)
+        {
+            if (!CityCoastalAscentPlan.IsEnabled(city)) return null;
+            IReadOnlyList<Vector2Int> nodes = CityCoastalAscentPlan.RouteNodes;
+            var stations = new List<CityRoadElevationStation>(1 + 3 * (nodes.Count - 1));
+            float distance = 0f;
+            for (int i = 1; i < nodes.Count; i++)
+            {
+                Vector2Int from = nodes[i - 1], to = nodes[i];
+                RoadEdge edge = new RoadEdge(from, to);
+                float length = city.GetRoadLength(edge);
+                if (i == 1) Add(0f);
+                Add(city.RoadGeometry.GetEndpointInset(edge, from));
+                Add(length - city.RoadGeometry.GetEndpointInset(edge, to));
+                Add(length);
+                distance += length;
+
+                void Add(float along)
+                {
+                    float fraction = along / length;
+                    float height = city.ElevationPlan.SampleRoadDatum(edge, from == edge.A ? fraction : 1f - fraction);
+                    stations.Add(new CityRoadElevationStation(distance + along, height + CityStreetSurfacePlanner.RoadTop));
+                }
+            }
+            return new CityRoadElevationProfile(stations, CityElevationPlan.MaximumBusGradePercent);
+        }
+
+        private void DrawLiveAscent()
+        {
+            if (liveAscent == null)
+            {
+                EditorGUILayout.HelpBox("Для этой планировки прибрежный маршрут недоступен.", MessageType.Info);
+                return;
+            }
+            var stations = liveAscent.Stations;
+            float low = stations[0].Height, high = stations[stations.Count - 1].Height;
+            EditorGUILayout.LabelField("От набережной до жилого квартала", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"Длина {liveAscent.HorizontalLength:0.0} м     Перепад {high - low:0.00} м     Предельный уклон участка {liveAscent.MaximumGradePercent:0.00}%");
+            Rect rect = GUILayoutUtility.GetRect(100f, 190f, GUILayout.ExpandWidth(true));
+            if (Event.current.type != EventType.Repaint) return;
+            EditorGUI.DrawRect(rect, new Color(.13f, .13f, .13f));
+            Rect plot = new Rect(rect.x + 12f, rect.y + 30f, rect.width - 24f, rect.height - 72f);
+            Vector2 Point(CityRoadElevationStation station) => new Vector2(
+                Mathf.Lerp(plot.xMin, plot.xMax, station.HorizontalDistance / liveAscent.HorizontalLength),
+                Mathf.Lerp(plot.yMax, plot.yMin, Mathf.InverseLerp(low, high, station.Height)));
+            Color previous = Handles.color;
+            Handles.BeginGUI();
+            try
+            {
+                for (int i = 1; i < stations.Count; i++)
+                {
+                    Handles.color = Mathf.Approximately(stations[i].Height, stations[i - 1].Height) ? Color.gray : HighColor;
+                    Handles.DrawLine(Point(stations[i - 1]), Point(stations[i]), 3f);
+                }
+                GUI.Label(new Rect(plot.xMin, plot.yMax + 5f, 180f, 20f), $"Берег  ·  {low:0.00} м", EditorStyles.miniLabel);
+                GUI.Label(new Rect(plot.xMax - 115f, plot.yMin - 23f, 120f, 20f), $"Квартал  ·  {high:0.00} м", EditorStyles.miniLabel);
+            }
+            finally { Handles.EndGUI(); Handles.color = previous; }
         }
 
         private void DrawRouteProfile(Rect rect)

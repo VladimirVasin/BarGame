@@ -213,6 +213,19 @@ namespace BarPromenade
             }
             AddLink("terrace:lower-house:loop:close", loopPrevious, lowerNodes[9]);
 
+            if (terrace.HasShortcut)
+            {
+                var route = terrace.ShortcutRouteWorld;
+                int previous = graph.SplitTerraceStreetAt("terrace:shortcut:north", XZ(route[0]), StreetHeight);
+                for (int i = 0; i < route.Count; i++)
+                {
+                    int next = graph.AddNode("terrace:shortcut:" + i, route[i], false);
+                    AddLink("terrace:shortcut:walk:" + i, previous, next); previous = next;
+                }
+                int exit = graph.SplitTerraceStreetAt("terrace:shortcut:south", XZ(route[route.Count - 1]), StreetHeight);
+                AddLink("terrace:shortcut:out", previous, exit);
+            }
+
             void AddStairs(string side, IReadOnlyList<Vector3> route)
             {
                 int previous = lower;

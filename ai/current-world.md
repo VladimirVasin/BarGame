@@ -422,14 +422,13 @@ cemetery:own interiors/returns.
   ≤6 props, shared paving/entry spine/open center/green edges and wall groups.
   Sheltered concrete dry; doorway light/seats/silent basket carrier retain
   identity/phase/pause/distance/disable. Home props/special places stay.
-  `CityTerraceDistrictPlan`:upper parcelX83..125/Z31..73,5.743→13.423m;
-  entry7.992%. Two raised houses/two OpenGround,144 IDs. Lower cell11,8:
-  three-storey house below street3.84m; roof12.883 below upper eye15.073.
-  Ten fixed flights; separate cuts/retaining walls/house contacts. Home stays.
-  Bridge4.8×2.4m over3m alley; level guarded3×2.4m east exit atX126.4.
-  Hero/NPC layers/IDs retained; rain shelter below. Map:upper/lower pass/court.
-  Inland nodes12,8/13,8 use surveyedXZ, oldY, shared ground/vehicle support.
-  Citywide35–45m rise/rollout planned.
+  `CityTerraceDistrictPlan` X83..125/Z31..73,5.743→13.423m,entry7.992%.
+  Two raised houses/two OpenGround,144 IDs. House11,8 sits3.84m below street,
+  roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
+  guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
+  Surveyed inland junctions12,8/13,8 retain Y. From (10,12) the eastern street
+  climbs3.84m to (12,10). A flight behind house11,10 cuts the road bend.
+  Citywide35–45m rise planned.
   `10×6 m` rear wings require padded clearance and a `2.4 m`
   court gap. `3.6 m` through passages remain walkable under separate overhead
   collision, height `3.2 m` (`4.2 m` Industrial). Court loops join the graph;

@@ -88,6 +88,8 @@ namespace BarPromenade
                         : 0f);
             }
 
+            bool coastalAscent = elevated &&
+                CityCoastalAscentPlan.TryApply(settings, roads, pathKinds, nodeElevations);
             var cellElevations = new Dictionary<Vector2Int, float>();
             for (int index = 0; index < blueprint.Cells.Count; index++)
             {
@@ -152,7 +154,8 @@ namespace BarPromenade
                 profiles,
                 stairs,
                 spatialPlan,
-                settings.RoadGeometry);
+                settings.RoadGeometry,
+                coastalAscent);
             CityElevationValidator.ValidateOrThrow(
                 plan,
                 blueprint,

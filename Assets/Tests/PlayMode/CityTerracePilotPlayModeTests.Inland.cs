@@ -33,28 +33,11 @@ namespace BarPromenade.Tests.PlayMode
             foreach (RoadEdge edge in layout.RoadEdges)
             {
                 if (!edge.Contains(InlandWest) && !edge.Contains(InlandEast)) continue;
-                CityRoadPath path = layout.RoadGeometry.Get(edge);
-                float before = layout.ElevationPlan.SampleRoadDatum(edge, 0f);
-                int samples = Mathf.CeilToInt(path.Length / .25f);
-                for (int index = 0; index <= samples; index++)
-                {
-                    float distance = path.Length * index / samples;
-                    CityRoadSample station = path.SampleDistance(distance);
-                    float datum = layout.ElevationPlan.SampleRoadDatum(edge, distance / path.Length);
-                    if (index > 0)
-                        Assert.That(Mathf.Abs(datum - before) / (path.Length / samples) * 100f,
-                            Is.LessThanOrEqualTo(6.01f), edge + " exceeds the street grade");
-                    before = datum;
-                    Assert.That(support.TrySampleTop(station.Position, FootstepGroundKind.Concrete, out float top),
-                        Is.True, edge + " has an unsupported road seam at " + distance);
-                    Assert.That(top, Is.EqualTo(datum + CityStreetSurfacePlanner.RoadTop).Within(.025f));
-                    if (index % 8 != 0) continue;
-                    Assert.That(Physics.Raycast(new Vector3(station.Position.x, top + .4f, station.Position.y),
-                        Vector3.down, out RaycastHit hit, .7f, Physics.DefaultRaycastLayers,
-                        QueryTriggerInteraction.Ignore), Is.True, "Road skin has no physical support");
-                    Assert.That(hit.point.y, Is.EqualTo(top).Within(.04f), "Old terrain/road overlaps the replacement skin");
-                }
+                AssertStreetProfileContacts(layout, support, edge);
             }
+            Vector2 west = layout.RoadGeometry.GetNodePosition(InlandWest);
+            Vector2 east = layout.RoadGeometry.GetNodePosition(InlandEast);
+            bool NearInlandJunction(Vector2 center) => (center - west).sqrMagnitude <= 144f || (center - east).sqrMagnitude <= 144f;
             CityBusPlan bus = CityBusPlanner.Create(layout);
             Assert.That(bus.IsEmpty, Is.False, "The changed junctions must retain Route 01");
             int sweptContacts = 0;
@@ -77,7 +60,7 @@ namespace BarPromenade.Tests.PlayMode
                         FootstepGroundKind.Concrete, out float top), Is.True, link.Id);
                     Assert.That(sample.Position.y, Is.EqualTo(top).Within(.01f), link.Id + " missed the physical road profile");
                 }
-                sweptContacts += AssertInlandBusBodyContacts(layout, support, bus.Vehicle, link);
+                sweptContacts += AssertBusBodyContacts(support, bus.Vehicle, link, NearInlandJunction);
             }
             Assert.That(sweptContacts, Is.GreaterThan(0),
                 "Route 01 must actually traverse the changed section for this vehicle proof");
@@ -86,8 +69,33 @@ namespace BarPromenade.Tests.PlayMode
                 "The live section must preserve the surveyed full-corridor clearance");
         }
 
-        private static int AssertInlandBusBodyContacts(CityLayout layout, CityStreetSupportPlan support,
-            CityBusDesignVehicle vehicle, CityBusRouteLink link)
+        private static void AssertStreetProfileContacts(CityLayout layout, CityStreetSupportPlan support, RoadEdge edge)
+        {
+            CityRoadPath path = layout.RoadGeometry.Get(edge);
+            float before = layout.ElevationPlan.SampleRoadDatum(edge, 0f);
+            int samples = Mathf.CeilToInt(path.Length / .25f);
+            for (int index = 0; index <= samples; index++)
+            {
+                float distance = path.Length * index / samples;
+                CityRoadSample station = path.SampleDistance(distance);
+                float datum = layout.ElevationPlan.SampleRoadDatum(edge, distance / path.Length);
+                if (index > 0)
+                    Assert.That(Mathf.Abs(datum - before) / (path.Length / samples) * 100f,
+                        Is.LessThanOrEqualTo(6.01f), edge + " exceeds the street grade");
+                before = datum;
+                Assert.That(support.TrySampleTop(station.Position, FootstepGroundKind.Concrete, out float top),
+                    Is.True, edge + " has an unsupported road seam at " + distance);
+                Assert.That(top, Is.EqualTo(datum + CityStreetSurfacePlanner.RoadTop).Within(.025f), edge + " road height at " + station.Position);
+                if (index % 8 != 0) continue;
+                Assert.That(Physics.Raycast(new Vector3(station.Position.x, top + .4f, station.Position.y),
+                    Vector3.down, out RaycastHit hit, .7f, Physics.DefaultRaycastLayers,
+                    QueryTriggerInteraction.Ignore), Is.True, edge + " road skin has no physical support at " + station.Position);
+                Assert.That(hit.point.y, Is.EqualTo(top).Within(.04f), edge + " old terrain/road overlaps the replacement skin at " + station.Position);
+            }
+        }
+
+        private static int AssertBusBodyContacts(CityStreetSupportPlan support, CityBusDesignVehicle vehicle,
+            CityBusRouteLink link, System.Predicate<Vector2> inSection)
         {
             int contacts = 0;
             int bodySteps = Mathf.CeilToInt(vehicle.InflatedLength / .5f);
@@ -95,9 +103,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 CityBusPathSample sample = link.Samples[index];
                 Vector2 center = new Vector2(sample.Position.x, sample.Position.z);
-                Vector2 west = layout.RoadGeometry.GetNodePosition(InlandWest);
-                Vector2 east = layout.RoadGeometry.GetNodePosition(InlandEast);
-                if ((center - west).sqrMagnitude > 144f && (center - east).sqrMagnitude > 144f) continue;
+                if (!inSection(center)) continue;
                 Vector2 forward = new Vector2(sample.Forward.x, sample.Forward.z).normalized;
                 Vector2 right = new Vector2(forward.y, -forward.x);
                 for (int body = 0; body <= bodySteps; body++)
@@ -170,7 +176,7 @@ namespace BarPromenade.Tests.PlayMode
                 eastStreet + new Vector3(5f, 1f, 0f));
         }
 
-        private IEnumerator CaptureLowerCourtPlayerView(string name, Vector3 target)
+        private IEnumerator CapturePlayerView(string name, Vector3 target)
         {
             PlayerCameraFollow follow = city.Camera.GetComponent<PlayerCameraFollow>();
             float previousPitch = follow.TargetOrbitPitch;
