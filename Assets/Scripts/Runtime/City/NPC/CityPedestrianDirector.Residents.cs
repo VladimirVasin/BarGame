@@ -69,7 +69,7 @@ namespace BarPromenade
                 CityPedestrianActor actor = actors[i];
                 if (!actor.IsSpawned) continue;
                 int resident = actorResidents[i];
-                if (resident >= 0 && !actor.IsRouteBound)
+                if (resident >= 0 && !actor.IsRouteBound && !actor.IsYieldingToVehicle)
                 {
                     CityResidentLifeSample schedule = residentWorld.Schedule(resident, day, minute);
                     // Change goals at schedule boundaries. Public out-and-back
@@ -91,10 +91,11 @@ namespace BarPromenade
                 }
                 float squaredDistance = PlanarSquaredDistance(actor.Position, player.position);
                 bool ordinaryWalk = (actor.MotionState == CityPedestrianMotionState.Walking ||
-                    actor.MotionState == CityPedestrianMotionState.WaitingAtDestination) && !actor.IsPersonalSpaceReacting;
+                    actor.MotionState == CityPedestrianMotionState.WaitingAtDestination) && !actor.IsPersonalSpaceReacting &&
+                    !actor.IsYieldingToVehicle;
                 actor.Presentation.MinimumEvaluationInterval = !ordinaryWalk || squaredDistance < 24f * 24f
                     ? 0f : squaredDistance < 48f * 48f ? 1f / 15f : 1f / 8f;
-                actor.Advance(deltaTime, ResolveAvoidance(actor, i), null, null, heroHead);
+                actor.Advance(deltaTime, ResolveAvoidance(actor, i), null, null, heroHead, vehicleTraffic);
                 pedestrianIndex.Update(i, actor);
                 squaredDistance = PlanarSquaredDistance(actor.Position, player.position);
                 // Arrival never makes somebody vanish within view. Distant
@@ -102,7 +103,7 @@ namespace BarPromenade
                 bool hidden = squaredDistance >= MinimumConnectedSpawnDistance * MinimumConnectedSpawnDistance;
                 bool indoors = resident >= 0 && actor.IsAtResidentDestination &&
                     !IsPublicResidentActivity(residentWorld.Schedule(resident, day, minute).Activity);
-                bool activityOwned = actor.IsRouteBound || actor.IsPersonalSpaceReacting ||
+                bool activityOwned = actor.IsRouteBound || actor.IsPersonalSpaceReacting || actor.IsYieldingToVehicle ||
                     (actor.MotionState != CityPedestrianMotionState.Walking &&
                      actor.MotionState != CityPedestrianMotionState.WaitingAtDestination &&
                      actor.MotionState != CityPedestrianMotionState.RouteEnded);

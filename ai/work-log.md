@@ -4,40 +4,38 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-04
-Unity 6000.6.8f1. Checkpoint and test object searches use the current overloads;
-the input UI fixture resolves GameView from the editor assembly. Live Editor
-Refresh recompiled scripts; Console showed no warnings or errors.
-CityTerraceTransportPlanTests: both draft switchbacks clear rigid envelopes and
-protected places. Coastal junctions share the original streets, apron proposals
-measure actual threshold gaps. The eastern courtyard exit has a guarded landing.
-LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap verified
-ordinary hero/vehicle contacts, rain/layers and the lower roof from above.
-Bar moved north. Home, supermarket, original yard and dog gate keep their
-locations. CityHomeBarNeighborStreets covered the short round trip and arrivals.
-LiveCity_CoastalAscentAndStairShortcutShareSupportedRoutes verified the
-shore ascent and both cut-throughs, windows above the lower house and lit steps
-in rain. The prior R6 survey clears the completed court. Art follows final
-geography, with scheme fallback and full-height fingerprint.
-Map fills the viewport with one selected place label and a scrollable list.
-ImageGenVillageBrochure_PreservesResortAndLivePlaces checked the regional UI.
-LiveCity_CitywideSlopesKeepSupportedRoutesAndArrivals verified both original ascents;
-bus overhang sets bend widths, a level eastern approach retains Route 01. The far
-valley fades on the hills. Bridges cross the dry ravine in one upper residential
-quarter. LiveCity_UpperQuarterJoinsBothSlopesThroughTheLitCourt covers its
-streets, stairs and passage. ImageGenCityMap_PreservesPlanAndLivePlaces verified
-both bridge arrivals on the redrawn City sheet.
-District bus rings serve both banks and the upper slopes, with marked walking interchanges.
-Docks share clear verges with the public pavement. DistrictNetwork_ClosesEachLineAndServesItsTransfers
-and DistrictRings_ShowClosedLinesAndEveryBoardingPlatform verify the map and service.
-Passenger_TransfersFromWestToHillsideAtTheSharedStop checks doors, footing and the route numbers on the pooled buses.
-LiveCity_AllBusPlatformsHaveClearSheltersAndDoorApproaches checks the clearances, matching map and pole codes and real lights on both faces.
-Hillside shelters join the walking boundary and waiting passengers leave the sidewalk clear.
-LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement verified the walk from both directions
-and boarding each line with E at either door. This is required for stop changes.
-GlassRain_OverlaysCoverEveryPaneAndFollowIntensity checks that light rain leaves small, sparse
-beads on bus glass and that runoff follows heavy rain independently of the wipers.
-
-LiveCity_OrdinaryStreetsContinuePastFormerFenceCaps checks both banks, terrace walks and bus circuits. The charcoal sheet follows the same streets.
+Unity 6000.6.8f1: checkpoint/test searches use current overloads; GameView resolves
+from Editor assembly. Live Editor Refresh: Console clear.
+CityTerraceTransportPlanTests: draft switchbacks/protected places, coastal street
+junctions, measured aprons and guarded eastern landing.
+LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap: hero/vehicle
+contacts, rain/layers and lower roof. Bar moved north; Home/shop/yard/dog gate
+keep locations. CityHomeBarNeighborStreets: round trip/arrivals.
+LiveCity_CoastalAscentAndStairShortcutShareSupportedRoutes: shore ascent,
+cut-throughs, windows and lit steps in rain. Prior R6 survey clears court;
+art follows final geography, scheme fallback/full-height fingerprint.
+Map: viewport sheet, selected place label/scroll list.
+ImageGenVillageBrochure_PreservesResortAndLivePlaces: regional UI.
+LiveCity_CitywideSlopesKeepSupportedRoutesAndArrivals: original ascents;
+bus overhang sets bends, level eastern Route01 approach, far valley hill fade.
+LiveCity_UpperQuarterJoinsBothSlopesThroughTheLitCourt: residential ravine bridges,
+streets/stairs/passage. ImageGenCityMap_PreservesPlanAndLivePlaces: bridge arrivals.
+District rings serve banks/slopes, marked walking transfers and clear pavement.
+DistrictNetwork_ClosesEachLineAndServesItsTransfers/
+DistrictRings_ShowClosedLinesAndEveryBoardingPlatform: map/service.
+Passenger_TransfersFromWestToHillsideAtTheSharedStop: doors/feet/pooled bus numbers.
+LiveCity_AllBusPlatformsHaveClearSheltersAndDoorApproaches: clearance/map/pole
+codes and real lights on both faces. Hillside shelters join walking bounds;
+queues leave pavement clear. LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement:
+walk both directions/E at either door; required for stop changes.
+GlassRain_OverlaysCoverEveryPaneAndFollowIntensity: sparse light-rain beads,
+heavy-rain runoff independent of wipers.
+LiveCity_OrdinaryStreetsContinuePastFormerFenceCaps: both banks, terrace walks,
+bus circuits and matching charcoal sheet.
+Pedestrians clear road vehicles, retain the interrupted point, wait for tails/
+following traffic, then return/resume. Refuge checks preserve walls/walkable
+bounds and driver braking. CityPedestrianVehicleYieldPlayModeTests covers the
+excursion, pause, unavailable refuge, pooling and doorway exclusion.
 
 ## 2026-11-03
 Checkpoint:RAM deep progress/world/ammo;restore/entry/seed/rides/tokens;RU pause/No.

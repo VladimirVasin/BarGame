@@ -1016,6 +1016,8 @@ namespace BarPromenade
                     () => TunnelShelter != null && TunnelShelter.IsSheltered,
                     LastRouteCarRoadSurface.WetAsphalt);
             }
+            Pedestrians.ConfigureVehicleTraffic(Bus, Cannery,
+                LastRouteCar != null ? LastRouteCar.GetComponentInParent<LastRouteCarDriver>() : null);
             var rides = new CityBusRideController[lines.Length];
             var waits = new CityBusStopWaitPlan[lines.Length];
             var passengers = new CityBusNpcPassengerController[lines.Length];

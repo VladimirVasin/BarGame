@@ -49,7 +49,7 @@ namespace BarPromenade
 
     [RequireComponent(typeof(CharacterController))]
     [DisallowMultipleComponent]
-    public sealed class CityPedestrianActor : MonoBehaviour
+    public sealed partial class CityPedestrianActor : MonoBehaviour
     {
         public const float CollisionHeight = 1.7f;
         public const float CollisionCenterHeight = 0.85f;
@@ -416,7 +416,8 @@ namespace BarPromenade
             bool shouldYield = false,
             Vector3? initialApproachTarget = null,
             IReadOnlyList<float> initialApproachNodeDistances = null,
-            Vector3? attentionCandidate = null)
+            Vector3? attentionCandidate = null,
+            CityPedestrianVehicleTraffic vehicleTraffic = null)
         {
             if (!IsSpawned)
             {
@@ -427,6 +428,17 @@ namespace BarPromenade
             approachTarget = initialApproachTarget;
             approachNodeDistances = initialApproachNodeDistances;
             LastDisplacement = Vector3.zero;
+            if (AdvanceVehicleYield(safeDeltaTime, vehicleTraffic, out bool vehicleMoving))
+            {
+                IsYielding = IsYieldingToVehicle;
+                blockedTime = 0f;
+                approachTarget = null;
+                approachNodeDistances = null;
+                presentation.SetAttentionFocus(attention.Resolve(
+                    transform.position, transform.eulerAngles.y, attentionCandidate));
+                if (safeDeltaTime > 0f) presentation.Advance(safeDeltaTime, vehicleMoving);
+                return;
+            }
             if (IsPersonalSpaceReacting)
             {
                 // An intentional stop must not trigger the jam/detour timer.
@@ -510,7 +522,7 @@ namespace BarPromenade
         {
             if (!IsSpawned || !isActiveAndEnabled ||
                 MotionState != CityPedestrianMotionState.Walking ||
-                IsPersonalSpaceReacting || PersonalSpaceEncounterUsed)
+                IsPersonalSpaceReacting || IsYieldingToVehicle || PersonalSpaceEncounterUsed)
             {
                 return false;
             }
@@ -551,6 +563,7 @@ namespace BarPromenade
                 MotionState != CityPedestrianMotionState.Walking ||
                 waitNodeIndex < 0 ||
                 IsPersonalSpaceReacting ||
+                IsYieldingToVehicle ||
                 targetNodeIndex < 0 ||
                 plan == null ||
                 waitNodeDistances == null ||
@@ -611,6 +624,7 @@ namespace BarPromenade
                 MotionState != CityPedestrianMotionState.Walking ||
                 targetNodeIndex < 0 ||
                 IsPersonalSpaceReacting ||
+                IsYieldingToVehicle ||
                 plan == null ||
                 benchNode < 0 ||
                 benchNode >= plan.Nodes.Count ||
@@ -768,7 +782,7 @@ namespace BarPromenade
             Vector3 destination,
             Quaternion destinationRotation)
         {
-            if (!IsSpawned)
+            if (!IsSpawned || IsYieldingToVehicle)
             {
                 return false;
             }
@@ -843,7 +857,7 @@ namespace BarPromenade
             CityPedestrianSeatedRide seatedRide,
             Vector3? surfaceUp = null)
         {
-            if (!IsSpawned ||
+            if (!IsSpawned || IsYieldingToVehicle ||
                 MotionState != CityPedestrianMotionState.Walking ||
                 !presentation.TrySeat(seatAnchor, seatedRide, surfaceUp ?? transform.up))
             {
@@ -1480,6 +1494,7 @@ namespace BarPromenade
 
         private void ResetSpawnState()
         {
+            ResetVehicleYield();
             plan = null;
             previousNodeIndex = -1;
             targetNodeIndex = -1;

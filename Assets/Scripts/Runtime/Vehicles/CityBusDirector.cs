@@ -806,7 +806,8 @@ namespace BarPromenade
                     // the road centre against a corridor edge at `3.24 m`.
                     // That is `0.26 m`, and a walker's own `0.15 m`
                     // shoulder-shift spends most of it.
-                    if (!pedestrian.IsSpawned || pedestrian.IsRouteBound)
+                    if (!pedestrian.IsSpawned || pedestrian.IsAttachedToVehicle ||
+                        (pedestrian.IsRouteBound && !pedestrian.IsYieldingToVehicle))
                     {
                         continue;
                     }

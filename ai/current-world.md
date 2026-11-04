@@ -773,6 +773,11 @@ cemetery:own interiors/returns.
   movement keeps its `.82 m/s` pace; distant idle/walk sampling is bounded while
   time, collision and immediate interactions stay live. A spatial index limits
   peer-avoidance queries. Active bus/rest ownership retains the same person.
+  `CityPedestrianVehicleTraffic` shares current/near-future bus, Ferryman-car
+  and cannery-truck footprints. Walkers step to a reachable clear refuge, wait
+  for tails and following traffic, return to their interrupted point, then
+  resume the same route. Walkable bounds/collision remain authoritative; without
+  a safe refuge the vehicle keeps braking. Pooling clears temporary ownership.
   Each resident keeps `city.pedestrian.NN`, catalog model, face, hair and street
   clothes across scene loads; new IDs allocate after the original cast so
   existing appearances remain. The six library residents do not roam.

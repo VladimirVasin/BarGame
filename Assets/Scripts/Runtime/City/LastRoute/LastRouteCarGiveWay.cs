@@ -305,7 +305,8 @@ namespace BarPromenade
                     // the crossing's own exclusion for the same reason.
                     if (walker == null ||
                         !walker.IsSpawned ||
-                        walker.IsRouteBound)
+                        walker.IsAttachedToVehicle ||
+                        (walker.IsRouteBound && !walker.IsYieldingToVehicle))
                     {
                         continue;
                     }
@@ -355,7 +356,8 @@ namespace BarPromenade
                 // same reasoning: he is not going anywhere near the road.
                 if (walker == null ||
                     !walker.IsSpawned ||
-                    walker.IsRouteBound)
+                    walker.IsAttachedToVehicle ||
+                    (walker.IsRouteBound && !walker.IsYieldingToVehicle))
                 {
                     continue;
                 }

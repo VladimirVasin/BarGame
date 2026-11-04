@@ -89,6 +89,7 @@ namespace BarPromenade
         private bool playerControllerCached;
         private HeroAttentionFocus heroFocus;
         private CityPedestrianPersonalSpaceController personalSpace;
+        private CityPedestrianVehicleTraffic vehicleTraffic;
         private Vector3 approachRefreshPosition;
         private bool hasApproachRefreshPosition;
         private int[] initialApproachComponentByNode = Array.Empty<int>();
@@ -105,6 +106,7 @@ namespace BarPromenade
         public bool IsInitialized { get; private set; }
         internal bool AutomaticUpdatesSuspended { get; set; }
         public CityPedestrianPersonalSpaceController PersonalSpace => personalSpace;
+        public CityPedestrianVehicleTraffic VehicleTraffic => vehicleTraffic;
         public CityPedestrianPlan Plan => plan;
         public IReadOnlyList<CityPedestrianActor> Actors => actors;
         public CityPedestrianPopulationProfile Profile => profile;
@@ -245,6 +247,12 @@ namespace BarPromenade
             InitializeResidentLife(residentPresentationFactory);
         }
 
+        public void ConfigureVehicleTraffic(CityBusDirector busDirector,
+            CityCanneryController canneryController, LastRouteCarDriver carDriver)
+        {
+            vehicleTraffic = new CityPedestrianVehicleTraffic(busDirector, canneryController, carDriver);
+        }
+
         public bool IsActorPresented(int actorIndex)
         {
             if (actorIndex < 0 || actorIndex >= actors.Count)
@@ -262,6 +270,7 @@ namespace BarPromenade
                 return;
             }
 
+            vehicleTraffic?.Refresh();
             if (HasResidentLife)
             {
                 using (ResidentSimulationMarker.Auto())
@@ -301,7 +310,8 @@ namespace BarPromenade
                     initialApproachCompleted[index]
                         ? null
                         : initialApproachNodeDistances,
-                    heroHead);
+                    heroHead,
+                    vehicleTraffic);
                 pedestrianIndex.Update(index, actor);
                 RefreshInitialApproachState(index, actor.Position);
             }
@@ -445,7 +455,7 @@ namespace BarPromenade
                 // A walker that belongs to Route 01 leaves through the
                 // passenger controller, not through the distance rule: pooling
                 // a seated passenger would empty a moving bus mid-lap.
-                if (!actor.IsSpawned || actor.IsRouteBound)
+                if (!actor.IsSpawned || actor.IsRouteBound || actor.IsYieldingToVehicle)
                 {
                     continue;
                 }
@@ -1790,7 +1800,7 @@ namespace BarPromenade
             // hero is.
             if (isNightSpawnMode ||
                 deltaTime <= 0f ||
-                actor.IsAttachedToVehicle)
+                actor.IsAttachedToVehicle || actor.IsYieldingToVehicle)
             {
                 return deltaTime;
             }

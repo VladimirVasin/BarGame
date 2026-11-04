@@ -2,6 +2,15 @@
 
 ## Current facts
 
+- **Accepted 2026-11-04,user — pedestrian vehicle passage:** City walkers
+  clear the three bus lines, Ferryman car and cannery truck silently, wait for
+  full bodies/following traffic, walk back to the interrupted point, then resume.
+  `CityPedestrianVehicleTraffic` samples existing paths/bodies once per step;
+  actor refuge checks retain walkable bounds/collision and existing braking.
+  No safe refuge means the driver waits. Route goals survive; pooling resets
+  the excursion. Ordinary motion/rig and all three effects groups, including
+  post-processing, retain their owners; no new light, sound, text or canon signal.
+
 - **Accepted exception — 2026-11-04,user — upper residential City:** art §§2.2/7/8,
   story §18: the lower west keeps its workplaces; both upper slopes are housing.
   The court lane and 40m crest street cross a dry ravine on separate bridges.
