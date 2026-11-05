@@ -37,7 +37,8 @@ namespace BarPromenade
         IndustrialSummit = 18, // Stable key for the western approach.
         UpperSharedCourt = 19,
         UpperCourtBridge = 20,
-        UpperSummitBridge = 21
+        UpperSummitBridge = 21,
+        RidgeKiosk = 22
     }
 
     public readonly struct CityMapPointOfInterest
@@ -954,6 +955,9 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.Cafe:
                     key = "map.mountain_road.cafe";
                     return true;
+                case CityMapPointOfInterestKind.RidgeKiosk:
+                    key = "map.poi.ridge_kiosk";
+                    return true;
                 case CityMapPointOfInterestKind.Laundry:
                     key = "map.poi.laundry";
                     return true;
@@ -1556,6 +1560,9 @@ namespace BarPromenade
                     summit ? CityMapPointOfInterestKind.UpperSummitBridge : CityMapPointOfInterestKind.UpperCourtBridge,
                     CityDistrictKind.Residential, foot + Vector3.up * rootOffset, bridge.DeckBounds, true));
             }
+            if (RidgeKioskSitePlan.TryCreate(Layout, out var kiosk))
+                pointsOfInterest.Add(new CityMapPointOfInterest("ridge-kiosk", CityMapPointOfInterestKind.RidgeKiosk,
+                    CityDistrictKind.Residential, kiosk.Approach + Vector3.up * rootOffset, kiosk.Bounds, true));
         }
 
         private Vector3 ResolveNamedPlaceArrival(Vector3 approach)

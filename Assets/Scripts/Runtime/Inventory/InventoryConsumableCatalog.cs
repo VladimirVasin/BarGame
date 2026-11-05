@@ -57,7 +57,8 @@ namespace BarPromenade
             CreateFood(InventoryItemId.OpenStewCan, 35),
             CreateFood(InventoryItemId.ClosedStewCan, 35),
             CreateFood(InventoryItemId.InstantNoodles, 22),
-            CreateFood(InventoryItemId.DayOldLoaf, 18)
+            CreateFood(InventoryItemId.DayOldLoaf, 18),
+            CreateFood(InventoryItemId.PotatoPirozhok, 24)
         };
 
         private static readonly IReadOnlyList<InventoryConsumableDefinition>

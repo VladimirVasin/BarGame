@@ -1336,7 +1336,8 @@ namespace BarPromenade
 
         public static SupermarketPurchaseResult TryPurchaseWorldItem(
             string sourceId,
-            InventoryItemId itemId)
+            InventoryItemId itemId,
+            RetailStock stock = RetailStock.Supermarket)
         {
             string normalizedSourceId = string.IsNullOrWhiteSpace(sourceId)
                 ? string.Empty
@@ -1347,7 +1348,7 @@ namespace BarPromenade
                     normalizedSourceId,
                     itemId,
                     CashBalance,
-                    itemCountBefore);
+                    itemCountBefore, stock);
             if (!result.Succeeded)
             {
                 LogWorldItemPurchase(result);
@@ -1360,7 +1361,7 @@ namespace BarPromenade
                     normalizedSourceId,
                     itemId,
                     CashBalance,
-                    inventory.GetCount(itemId));
+                    inventory.GetCount(itemId), stock);
                 LogWorldItemPurchase(result);
                 return result;
             }

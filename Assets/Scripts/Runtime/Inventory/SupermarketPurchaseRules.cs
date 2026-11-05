@@ -50,7 +50,8 @@ namespace BarPromenade
             string sourceId,
             InventoryItemId itemId,
             int cashBalance,
-            int currentItemCount)
+            int currentItemCount,
+            RetailStock stock = RetailStock.Supermarket)
         {
             if (cashBalance < 0)
             {
@@ -78,7 +79,7 @@ namespace BarPromenade
             }
 
             if (!SupermarketProductCatalog.TryGetOffer(
-                    itemId,
+                    stock, itemId,
                     out SupermarketProductOffer offer))
             {
                 return CreateFailure(

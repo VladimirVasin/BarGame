@@ -241,7 +241,9 @@ namespace BarPromenade.Editor
             if (laundry.IsEnabled)
                 for (int i = 0; i < laundry.BodyFootprints.Count; i++) Box("laundry:" + i, "building", laundry.BodyFootprints[i]);
             foreach (CityMapPointOfInterest place in controller.PointsOfInterest)
-                if (place.HasFootprint) Box("place:" + place.StableId, "public-ground", place.Footprint);
+                if (place.HasFootprint) Box("place:" + place.StableId,
+                    place.Kind == CityMapPointOfInterestKind.RidgeKiosk ? "shop-building" : "public-ground", place.Footprint);
+            if (RidgeKioskSitePlan.TryCreate(layout, out var kiosk)) Box("ridge-kiosk:apron", "promenade", kiosk.Apron);
             CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
             if (terraces.IsEnabled)
             {

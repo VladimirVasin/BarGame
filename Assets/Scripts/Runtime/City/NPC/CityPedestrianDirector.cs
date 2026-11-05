@@ -42,7 +42,6 @@ namespace BarPromenade
         public const float DaytimeDistantSimulationFullDistance =
             MinimumSpawnDistance;
         public const float MaximumDaytimeDistantSimulationMultiplier = 2.75f;
-        public const float PlayerAvoidanceDistance = 0.95f;
         public const float PedestrianAvoidanceDistance = 0.78f;
 
         /// <summary>
@@ -242,6 +241,7 @@ namespace BarPromenade
             previousPlayerPosition = player.position;
             hasPreviousPlayerPosition = true;
             spawnCooldown = GetNextInitialSpawnDelay();
+            passingWidths = new PassingWidth[actors.Count];
             IsInitialized = true;
             personalSpace = new CityPedestrianPersonalSpaceController(player, actors);
             InitializeResidentLife(residentPresentationFactory);
@@ -271,6 +271,7 @@ namespace BarPromenade
                 return;
             }
 
+            passingClock += SanitizeDeltaTime(deltaTime);
             vehicleTraffic?.Refresh(actors);
             if (HasResidentLife)
             {
@@ -302,9 +303,10 @@ namespace BarPromenade
                 }
 
                 RefreshInitialApproachState(index, actor.Position);
+                SetEncounterMovement(actor, index);
                 actor.Advance(
                     GetActorSimulationDeltaTime(actor, safeDeltaTime),
-                    ResolveAvoidance(actor, index),
+                    false,
                     initialApproachCompleted[index]
                         ? null
                         : player.position,
@@ -1195,132 +1197,6 @@ namespace BarPromenade
         /// the useful answers are along the lane: lean aside, drop to the pace
         /// of whoever is in front, and only stop when neither will do.
         /// </summary>
-        private bool ResolveAvoidance(
-            CityPedestrianActor actor,
-            int actorIndex)
-        {
-            actor.SetAvoidance(1f, 0f);
-            if (!actor.IsSpawned ||
-                (actor.MotionState != CityPedestrianMotionState.Walking &&
-                 actor.MotionState !=
-                     CityPedestrianMotionState.ApproachingStop))
-            {
-                return false;
-            }
-
-            Vector3 travel = actor.TravelDirection;
-            if (travel.sqrMagnitude <= 0.0001f)
-            {
-                return false;
-            }
-
-            bool yield = false;
-            float speedScale = 1f;
-            float lateralBias = 0f;
-            if (VerticalCapsulesOverlap(
-                    actor.Position,
-                    CityPedestrianActor.CollisionHeight,
-                    player,
-                    GetPlayerController(),
-                    CityPedestrianActor.CollisionHeight,
-                    CollisionActivationPadding) &&
-                IsAheadWithin(
-                    actor.Position,
-                    travel,
-                    player.position,
-                    PlayerAvoidanceDistance))
-            {
-                // The hero is not a walker and does not take turns, so a
-                // walker steps aside and waits rather than negotiating.
-                lateralBias += SideOf(actor.Position, travel, player.position);
-                yield = true;
-            }
-
-            int nearbyCount = pedestrianIndex.Query(
-                actor.Position, PedestrianAvoidanceDistance);
-            for (int nearby = 0; nearby < nearbyCount; nearby++)
-            {
-                int index = pedestrianIndex.GetActorIndex(nearby);
-                CityPedestrianActor other = actors[index];
-                if (other == actor ||
-                    !other.IsSpawned ||
-                    other.IsAttachedToVehicle)
-                {
-                    continue;
-                }
-
-                if (!VerticalCapsulesOverlap(actor.Position, CityPedestrianActor.CollisionHeight,
-                        other.transform, other.CharacterController, CityPedestrianActor.CollisionHeight,
-                        CollisionActivationPadding) || !IsAheadWithin(
-                        actor.Position,
-                        travel,
-                        other.Position,
-                        PedestrianAvoidanceDistance))
-                {
-                    continue;
-                }
-
-                lateralBias += SideOf(
-                    actor.Position,
-                    travel,
-                    other.Position);
-                Vector3 otherTravel = other.TravelDirection;
-                float alignment = otherTravel.sqrMagnitude > 0.0001f
-                    ? Vector3.Dot(travel, otherTravel)
-                    : 0f;
-                if (alignment > 0.20f)
-                {
-                    // Travelling the same way: queue at the leader's pace
-                    // instead of stopping dead and setting off again, which
-                    // reads as stuttering rather than walking behind someone.
-                    float leaderSpeed = other.IsYielding
-                        ? 0f
-                        : other.MovementSpeed;
-                    speedScale = Mathf.Min(
-                        speedScale,
-                        actor.MovementSpeed > 0.0001f
-                            ? leaderSpeed / actor.MovementSpeed
-                            : 0f);
-                    continue;
-                }
-
-                bool meetingHeadOn = alignment < -0.20f;
-                if (!meetingHeadOn || actorIndex > index)
-                {
-                    yield = true;
-                }
-            }
-
-            actor.SetAvoidance(
-                speedScale,
-                Mathf.Clamp(-lateralBias, -1f, 1f));
-            return yield;
-        }
-
-        /// <summary>
-        /// `+1` when the obstruction lies to the walker's right, so leaning by
-        /// the negated value moves away from it.
-        /// </summary>
-        private static float SideOf(
-            Vector3 origin,
-            Vector3 forward,
-            Vector3 obstruction)
-        {
-            Vector3 offset = obstruction - origin;
-            offset.y = 0f;
-            Vector3 right = new Vector3(forward.z, 0f, -forward.x);
-            float side = Vector3.Dot(right, offset);
-            if (Mathf.Abs(side) <= 0.05f)
-            {
-                // Dead ahead: pick a side deterministically instead of
-                // dithering, and make it the same side every walker picks so
-                // two meeting head-on lean apart rather than into each other.
-                return 1f;
-            }
-
-            return Mathf.Sign(side);
-        }
-
         private void ReleaseActor(int actorIndex)
         {
             RetainResident(actorIndex);
@@ -1895,22 +1771,6 @@ namespace BarPromenade
                 minimum,
                 maximum,
                 CityPedestrianStableHash.ToUnitFloat(hash));
-        }
-
-        private static bool IsAheadWithin(
-            Vector3 origin,
-            Vector3 forward,
-            Vector3 target,
-            float distance)
-        {
-            Vector3 offset = target - origin;
-            offset.y = 0f;
-            float squaredDistance = offset.sqrMagnitude;
-            return squaredDistance > 0.0001f &&
-                   squaredDistance < distance * distance &&
-                   Vector3.Dot(
-                       forward,
-                       offset / Mathf.Sqrt(squaredDistance)) > 0.20f;
         }
 
         private static float PlanarSquaredDistance(

@@ -70,7 +70,8 @@ namespace BarPromenade.Tests.EditMode
                 DrinkId.None,
                 0d,
                 0
-            }
+            },
+            new object[] { InventoryItemId.PotatoPirozhok, InventoryConsumableKind.Food, 24, 20, DrinkId.None, 0d, 0 }
         };
 
         [Test]

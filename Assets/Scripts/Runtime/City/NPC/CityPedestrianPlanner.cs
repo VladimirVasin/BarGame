@@ -1398,6 +1398,8 @@ namespace BarPromenade
                 if (!node.IsCrosswalkEntry) nodes[i] = new CityPedestrianNode(node.Id, node.Position, true);
             }
 
+            public void AddNavigationPolygon(Vector2[] polygon) => sharedNavigationPolygons.Add(polygon);
+
             public void AddNavigationPolygons(IEnumerable<Vector2[]> polygons)
             {
                 sharedNavigationPolygons.AddRange(polygons);

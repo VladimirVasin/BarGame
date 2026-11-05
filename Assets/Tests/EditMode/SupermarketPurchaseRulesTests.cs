@@ -175,6 +175,37 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GameSessionState.CashBalance, Is.EqualTo(GameSessionState.DefaultCash));
         }
 
+        [Test]
+        public void RidgeKiosk_SellsOnlyItsThreeGoodsAndThePieFeedsTheHero()
+        {
+            const string source = "city.ridge.kiosk.pirozhok";
+            const InventoryItemId pie = InventoryItemId.PotatoPirozhok;
+            AssertFailure(GameSessionState.TryPurchaseWorldItem("supermarket", pie),
+                SupermarketPurchaseStatus.NotOffered);
+            AssertFailure(GameSessionState.TryPurchaseWorldItem(source, InventoryItemId.WineBottle, RetailStock.RidgeKiosk),
+                SupermarketPurchaseStatus.NotOffered);
+            AssertFailure(SupermarketPurchaseRules.Evaluate(source, pie, 4, 0, RetailStock.RidgeKiosk),
+                SupermarketPurchaseStatus.InsufficientFunds);
+            AssertFailure(SupermarketPurchaseRules.Evaluate(source, pie, 5, 9, RetailStock.RidgeKiosk),
+                SupermarketPurchaseStatus.InventoryFull);
+
+            int cash = GameSessionState.CashBalance;
+            foreach (var item in new[] { InventoryItemId.BeerCan, InventoryItemId.VodkaBottle, pie })
+            {
+                Assert.That(GameSessionState.TryPurchaseWorldItem(source, item, RetailStock.RidgeKiosk).Succeeded, Is.True);
+                Assert.That(GameSessionState.GetInventoryItemCount(item), Is.EqualTo(1));
+            }
+            Assert.That(GameSessionState.CashBalance, Is.EqualTo(cash - 6 - 28 - 5));
+            Assert.That(GameSessionState.TryConsumeInventoryItem(pie).Succeeded, Is.False);
+            Assert.That(GameSessionState.GetInventoryItemCount(pie), Is.EqualTo(1),
+                "A full hero keeps the pastry until hungry.");
+            GameSessionState.UpdateNeeds(56, 40);
+            Assert.That(GameSessionState.TryConsumeInventoryItem(pie).Succeeded, Is.True);
+            Assert.That(GameSessionState.GetInventoryItemCount(pie), Is.Zero);
+            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(32));
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(40));
+        }
+
         private static void AssertFailure(
             SupermarketPurchaseResult result,
             SupermarketPurchaseStatus expectedStatus)

@@ -180,6 +180,14 @@ namespace BarPromenade
                     painter.FillRect(6, 8, 2, 16, metal);
                     painter.FillRect(24, 8, 2, 16, metal);
                     break;
+                case InventoryItemId.PotatoPirozhok:
+                    painter.Ellipse(16, 17, 12, 7, amber);
+                    painter.EllipseOutline(16, 17, 12, 7, ink);
+                    painter.FillRect(6, 9, 13, 6, pale);
+                    painter.FillRect(5, 15, 8, 3, pale);
+                    painter.FillRect(10, 11, 3, 1, metal);
+                    painter.FillRect(18, 19, 5, 1, ink);
+                    break;
                 case InventoryItemId.DayOldLoaf:
                     painter.FillRect(6, 9, 20, 14, amber);
                     painter.FillRect(8, 22, 16, 3, pale);

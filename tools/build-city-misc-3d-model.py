@@ -51,7 +51,7 @@ import city_river_parts as river_parts  # noqa: E402
 import city_coastal_site_parts as coastal_site_parts  # noqa: E402
 
 
-GENERATOR_VERSION = "4.14.0"
+GENERATOR_VERSION = "4.15.0"
 DESIGN_ID = "city_misc_citywide_v4"
 DISPLAY_NAME = (
     "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + "
@@ -190,6 +190,7 @@ class PartSpec:
     geometry: Geometry
     placement_mode: str = "recipe_local_rigid"
     normalized_height_m: float | None = None
+    authored_uvs: list[Vec2] | None = None
 
     @property
     def surface_kind(self) -> str:
@@ -536,6 +537,7 @@ def make_named_part(
     *geometries: Geometry,
     placement_mode: str = "recipe_local_rigid",
     normalized_height_m: float | None = None,
+    authored_uvs: list[Vec2] | None = None,
 ) -> PartSpec:
     return PartSpec(
         f"GEO_CMM_{kind}_Variant{variant + 1:02d}_{suffix}",
@@ -545,6 +547,7 @@ def make_named_part(
         kit.merge(*geometries),
         placement_mode,
         normalized_height_m,
+        authored_uvs,
     )
 
 
@@ -2607,12 +2610,17 @@ def build_park_playground() -> AssemblySpec:
 
 # ---------------------------------------------- citywide v3 catalog --
 
+def route_metal_part(kind: str, role: str, shapes: Sequence[Geometry]) -> PartSpec:
+    return make_named_part(kind, 0, role, role, *shapes, authored_uvs=[
+        uv for shape in shapes for uv in box_projected_uvs(shape)
+    ])
+
 
 def build_route01_shelter_shell() -> AssemblySpec:
     kind, variant = "Route01ShelterShell", 0
     x = -2.55
+    panel = local_box(x, 1.32, -0.48, 4.25, 2.45, 0.10, 0.025)
     fixture = [
-        local_box(x, 1.32, -0.48, 4.25, 2.45, 0.10, 0.025),
         local_box(x, 2.62, 0.0, 4.65, 0.18, 1.18, 0.04),
         *(local_vertical_solid(x + side * 2.05, 0.0, 2.60, 0.0,
                               0.08, 0.08, top_scale=0.92, sides=8)
@@ -2628,10 +2636,26 @@ def build_route01_shelter_shell() -> AssemblySpec:
         local_box(x - 0.90, 0.34, 0.05, 0.14, 0.68, 0.14, 0.02),
         local_box(x + 0.90, 0.34, 0.05, 0.14, 0.68, 0.14, 0.02),
     ]
+    # Long boards follow local X, upright supports follow Z (Unity Y).
+    timber_uvs = [
+        uv for index, board in enumerate(timber)
+        for uv in box_projected_uvs(board, grain_along_x=index < 2)
+    ]
+    # Both painted faces sample the same wall elevation. Narrow cut edges
+    # inherit their adjacent pigment at the actual height above the foot.
+    low, high = geometry_bounds(panel)
+    wall_uvs = [
+        ((panel[0][index][0] - low[0]) / (high[0] - low[0]),
+         (panel[0][index][2] - low[2]) / (high[2] - low[2]))
+        for face in panel[1] for index in face
+    ]
     return AssemblySpec(
         kind, variant,
-        (make_part(kind, variant, "Fixture", *fixture),
-         make_part(kind, variant, "Timber", *timber)),
+        (route_metal_part(kind, "Fixture", fixture),
+         make_named_part(kind, variant, "Timber", "Timber", *timber,
+                         authored_uvs=timber_uvs),
+         make_named_part(kind, variant, "Residential", "Residential_PaintedMetal",
+                         panel, authored_uvs=wall_uvs)),
         unity_owned_parts=("WaitSlots", "SitDock", "CollisionProxy"),
         root_derivation="CityBusStopRoot@stop.ShelterPosition",
         coordinate_profile="root_local_direct",
@@ -2654,14 +2678,14 @@ def build_route01_pole_shell() -> AssemblySpec:
     ]
     street = [local_box(
         0.0, 2.18, 0.0, 0.76, 0.56, 0.10, 0.025)]
-    residential = [
-        local_box(0.0, 2.18, 0.056, 0.58, 0.38, 0.025, 0.005),
-    ]
+    # The enamel inserts cover the raised legacy strokes on both faces.
+    residential = [local_box(0.0, 2.18, side * 0.086, 0.58, 0.38, 0.025, 0.005)
+                   for side in (-1, 1)]
     return AssemblySpec(
         kind, variant,
-        (make_part(kind, variant, "Fixture", *fixture),
-         make_part(kind, variant, "Street", *street),
-         make_part(kind, variant, "Residential", *residential)),
+        (route_metal_part(kind, "Fixture", fixture),
+         route_metal_part(kind, "Street", street),
+         route_metal_part(kind, "Residential", residential)),
         unity_owned_parts=("CollisionProxy",),
         root_derivation="CityBusStopRoot@stop.ShelterPosition",
         coordinate_profile="root_local_direct",
@@ -5798,7 +5822,7 @@ def signed_volume(geometry: Geometry) -> float:
     return total / 6.0
 
 
-def geometry_uvs(geometry: Geometry) -> list[Vec2]:
+def box_projected_uvs(geometry: Geometry, grain_along_x: bool = False) -> list[Vec2]:
     vertices, faces = geometry
     raw: list[Vec2] = []
     for face in faces:
@@ -5809,9 +5833,16 @@ def geometry_uvs(geometry: Geometry) -> list[Vec2]:
             if dominant == 0:
                 raw.append((y, z))
             elif dominant == 1:
-                raw.append((x, z))
+                raw.append((z, x) if grain_along_x else (x, z))
             else:
-                raw.append((x, y))
+                raw.append((y, x) if grain_along_x else (x, y))
+    return raw
+
+
+def part_uvs(part: PartSpec) -> list[Vec2]:
+    if part.authored_uvs is not None:
+        return part.authored_uvs
+    raw = box_projected_uvs(part.geometry)
     low_u = min(value[0] for value in raw)
     high_u = max(value[0] for value in raw)
     low_v = min(value[1] for value in raw)
@@ -5824,8 +5855,7 @@ def geometry_uvs(geometry: Geometry) -> list[Vec2]:
     ]
 
 
-def uv_bounds(geometry: Geometry) -> tuple[Vec2, Vec2]:
-    uvs = geometry_uvs(geometry)
+def uv_bounds(uvs: Sequence[Vec2]) -> tuple[Vec2, Vec2]:
     return (
         (min(uv[0] for uv in uvs), min(uv[1] for uv in uvs)),
         (max(uv[0] for uv in uvs), max(uv[1] for uv in uvs)),
@@ -5982,7 +6012,7 @@ EXPECTED_ROLES = {
     ("ParkPlayground", 0): (
         "Residential_PaintedMetal", "Masonry_Timber",
         "Street_PaintedMetal"),
-    ("Route01ShelterShell", 0): ("Fixture", "Timber"),
+    ("Route01ShelterShell", 0): ("Fixture", "Timber", "Residential_PaintedMetal"),
     ("Route01PoleShell", 0):
         ("Fixture", "Street", "Residential"),
     ("TrafficSignalShell", 0): ("Fixture",),
@@ -6093,6 +6123,7 @@ EXPECTED_MESH_SUFFIXES = {
     **{(kind, 0): suffixes for kind, suffixes in river_parts.PART_SUFFIXES.items()},
     **{(kind, variant): suffixes for kind, suffixes in coastal_site_parts.PART_SUFFIXES.items()
        for variant in range(coastal_site_parts.VARIANTS[kind])},
+    ("Route01ShelterShell", 0): ("Fixture", "Timber", "Residential"),
     ("ParkBin", 0): (
         "Basket_Residential_PaintedMetal", "Cradle_Street_PaintedMetal"),
     ("ParkNoticeBoard", 0): (
@@ -6225,14 +6256,17 @@ def validate_geometry(
     if any(high[axis] - low[axis] <= BOUNDS_EPSILON for axis in range(3)):
         problems.append(f"{part.mesh} has a collapsed bound")
 
-    uvs = geometry_uvs(part.geometry)
+    uvs = part_uvs(part)
     if len(uvs) != sum(len(face) for face in faces):
         problems.append(f"{part.mesh} has incomplete UV loops")
-    if any(not math.isfinite(value) or value < -UV_EPSILON or
-           value > 1.0 + UV_EPSILON for uv in uvs for value in uv):
+    if any(not math.isfinite(value) for uv in uvs for value in uv):
+        problems.append(f"{part.mesh} has a non-finite UV")
+    if part.authored_uvs is None and any(value < -UV_EPSILON or
+            value > 1.0 + UV_EPSILON for uv in uvs for value in uv):
         problems.append(f"{part.mesh} has UVs outside [0,1]")
-    uv_low, uv_high = uv_bounds(part.geometry)
-    if uv_high[0] - uv_low[0] < 0.98 or uv_high[1] - uv_low[1] < 0.98:
+    uv_low, uv_high = uv_bounds(uvs)
+    minimum_span = 0.98 if part.authored_uvs is None else UV_EPSILON
+    if min(uv_high[i] - uv_low[i] for i in range(2)) < minimum_span:
         problems.append(f"{part.mesh} has a collapsed UV span")
 
 
@@ -6885,8 +6919,8 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
     if len(assemblies) != 145:
         problems.append(
             f"assembly count is {len(assemblies)}, expected 145")
-    if len(names) != 305:
-        problems.append(f"mesh count is {len(names)}, expected 305")
+    if len(names) != 306:
+        problems.append(f"mesh count is {len(names)}, expected 306")
     validate_mirror_bounds(assemblies, "IndustrialCargo", problems)
     validate_mirror_bounds(
         assemblies, "RoadsideRoadworkAndBicycle", problems)
@@ -7003,7 +7037,7 @@ def signature_payload(
                                      for vertex in part.geometry[0]],
                         "faces": [list(face) for face in part.geometry[1]],
                         "uv": [[stable(value) for value in uv]
-                               for uv in geometry_uvs(part.geometry)],
+                               for uv in part_uvs(part)],
                     }
                     for part in assembly.parts
                 ],
@@ -7095,12 +7129,12 @@ def create_material(role: str) -> bpy.types.Material:
     return material
 
 
-def assign_uv(mesh: bpy.types.Mesh, geometry: Geometry) -> None:
+def assign_uv(mesh: bpy.types.Mesh, part: PartSpec) -> None:
     layer = mesh.uv_layers.new(name="UVMap")
     face_uvs: list[list[Vec2]] = []
-    all_uvs = geometry_uvs(geometry)
+    all_uvs = part_uvs(part)
     cursor = 0
-    for face in geometry[1]:
+    for face in part.geometry[1]:
         face_uvs.append(all_uvs[cursor:cursor + len(face)])
         cursor += len(face)
     for polygon, values in zip(mesh.polygons, face_uvs):
@@ -7119,7 +7153,7 @@ def create_part_object(
     mesh = bpy.data.meshes.new(part.mesh)
     mesh.from_pydata(part.geometry[0], [], part.geometry[1])
     mesh.update(calc_edges=True)
-    assign_uv(mesh, part.geometry)
+    assign_uv(mesh, part)
     obj = bpy.data.objects.new(part.mesh, mesh)
     source.objects.link(obj)
     obj.parent = root
@@ -7207,7 +7241,7 @@ def manifest_for(
     part_records = []
     for part in parts:
         low, high = geometry_bounds(part.geometry)
-        uv_low, uv_high = uv_bounds(part.geometry)
+        uv_low, uv_high = uv_bounds(part_uvs(part))
         part_records.append({
             "mesh": part.mesh,
             "kind": part.kind,

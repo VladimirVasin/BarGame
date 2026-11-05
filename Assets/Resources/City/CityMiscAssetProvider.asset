@@ -613,6 +613,12 @@ MonoBehaviour:
     role: 6
     surface: 0
     mesh: {fileID: 7585110251180480349, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 26
+    variant: 0
+    component: Residential
+    role: 7
+    surface: 3
+    mesh: {fileID: 3714185552807035286, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
   - kind: 27
     variant: 0
     component: Fixture
@@ -1843,4 +1849,4 @@ MonoBehaviour:
     role: 2
     surface: 1
     mesh: {fileID: 8952813868899882856, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
-  buildSignature: 68c43ebeb61cadb86c6d8d2ce5887c133de775bfd9310ae3cfa383cf62319ed2
+  buildSignature: d90d2485a303bcffdb9c78e07206dc69c5a6a4d258b246e0060050af4eead9ef

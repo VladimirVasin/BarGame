@@ -972,12 +972,13 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.IndustrialSummit,
                     CityMapPointOfInterestKind.UpperSharedCourt,
                     CityMapPointOfInterestKind.UpperCourtBridge,
-                    CityMapPointOfInterestKind.UpperSummitBridge
+                    CityMapPointOfInterestKind.UpperSummitBridge,
+                    CityMapPointOfInterestKind.RidgeKiosk
                 };
                 var expectedIds = new[]
                 {
                     "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court", "terrace-shortcut", "terrace-landing", "residential-summit", "industrial-summit", "upper-shared-court",
-                    "upper-court-bridge", "upper-summit-bridge"
+                    "upper-court-bridge", "upper-summit-bridge", "ridge-kiosk"
                 };
                 var expectedDistricts = new[]
                 {
@@ -986,6 +987,7 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.NorthWaterfront,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Church,
+                    CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
@@ -1038,6 +1040,8 @@ namespace BarPromenade.Tests.EditMode
                     terraceArrivals.Add(east ? CityMapPointOfInterestKind.ResidentialSummit : CityMapPointOfInterestKind.IndustrialSummit,
                         (east ? "Верхняя улица: восток" : "Верхняя улица: запад", route.SummitArrivalWorld));
                 }
+                Assert.That(RidgeKioskSitePlan.TryCreate(layout, out var kiosk), Is.True);
+                terraceArrivals.Add(CityMapPointOfInterestKind.RidgeKiosk, ("Ларёк", kiosk.Approach));
                 var upper = CityHillsideQuarterPlan.ForLayout(layout);
                 foreach (var bridge in upper.Bridges)
                 {
@@ -1065,7 +1069,9 @@ namespace BarPromenade.Tests.EditMode
                     bool bridgePlace = place.Kind == CityMapPointOfInterestKind.UpperCourtBridge ||
                         place.Kind == CityMapPointOfInterestKind.UpperSummitBridge;
                     Assert.That(place.HasFootprint, Is.EqualTo(bridgePlace || place.Kind == CityMapPointOfInterestKind.Fair ||
-                        place.Kind == CityMapPointOfInterestKind.Cafe || place.Kind == CityMapPointOfInterestKind.DogPark), context);
+                        place.Kind == CityMapPointOfInterestKind.Cafe || place.Kind == CityMapPointOfInterestKind.DogPark ||
+                        place.Kind == CityMapPointOfInterestKind.RidgeKiosk), context);
+                    if (place.Kind == CityMapPointOfInterestKind.RidgeKiosk) Assert.That(place.Footprint, Is.EqualTo(kiosk.Bounds));
                     if (bridgePlace)
                         Assert.That(place.Footprint, Is.EqualTo(upper.Bridges.Single(b => b.Id ==
                             (place.Kind == CityMapPointOfInterestKind.UpperCourtBridge ? "court" : "summit")).DeckBounds));

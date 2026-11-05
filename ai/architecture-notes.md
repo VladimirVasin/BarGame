@@ -2,6 +2,11 @@
 
 ## Current facts
 
+- **Accepted 2026-11-05 — Ridge Street kiosk.** One permanent shopkeeper serves through the window near Home.
+  Story §6/§21 permits his first two voluntary exchanges, each about the goods. Retail at the window uses
+  the session till and receipt. Beer and vodka travel sealed, the potato pie feeds the hero. The kiosk must
+  cease alcohol sales for the permanent bar closure in Act V, independently of ordinary daily hours.
+
 - **Accepted 2026-11-04,user — pedestrian vehicle passage:** City walkers
   clear the three bus lines, Ferryman car and cannery truck silently, wait for
   full bodies/following traffic, walk back to the interrupted point, then resume.
@@ -4587,19 +4592,11 @@
   becomes physical only after a successful spawn and presentation bind, and
   is disabled before pooling. The dedicated `CityPedestrian` layer collides
   with the player but not other pedestrians; camera collision and interaction
-  queries ignore it. Stable slot order still owns head-on yielding, but
-  yielding is the last answer rather than the only one. A `1 m` sidewalk minus
-  a `0.35 m` agent leaves `±0.15 m` of lateral room, and two walkers would need
-  `0.70 m` of separation to pass, so walking around each other across the lane
-  is geometrically impossible and avoidance works along it instead: a walker
-  leans away from an obstruction by up to that `0.15 m` shoulder-shift and
-  re-centres itself once clear; one travelling the same way drops to the pace
-  of whoever is in front and queues rather than stopping and restarting; and a
-  walker that wants to move but does not — pinned against a prop or nose to
-  nose with another walker, which are indistinguishable from the actor's side —
-  turns back after `1.5 s`. Turning back is the only resolution the pavement
-  affords, and it is self-clearing: the node behind offers its other branches
-  because ordinary continuation already refuses to backtrack. Walkers retain no
+  queries ignore it. The local spatial index detects approaching bodies before contact. On a
+  two-way flight the actors take opposing shoulders inside the surveyed pavement and stair width.
+  The hero has priority. A walker in single file follows its route back to a reachable opening,
+  waits clear of the centreline and walks back to its interrupted route. The same-direction follower queues.
+  Vehicle manoeuvres, personal space, transfers and pause retain ownership of their motion. Walkers retain no
   prompts, persistence or gameplay reactions, and their four muted palettes
   use the shared material through property blocks. Home transforms this same
   graph and navigation mask through `PlayerHomeBalconyGeometry`, filters spawn

@@ -11,8 +11,17 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - От 03-04 к дому на Гребне вдоль тротуара тянутся щебень и трава, за низким каменным краем растёт куст.
   У торцов домов видны группы деревьев. На западе насыпи удерживают подпорки, у восточных галерей — дворовые бортики. Под крышей проходного двора сухо.
   LiveCity_UpperQuarterJoinsBothSlopesThroughTheLitCourt.
+- На свободном тротуаре и лестнице Гребня пешеходы сохраняют шаг и доходят до конца маршрута.
+  LiveCity_SummitResidentWalksSidewalkAndSharedStairsAtFrameCadence.
 - От набережной к Гребню туман редеет. С верхнего моста проступают крыши над ущельем.
   Ночью тёмные участки улицы разделяют пятна света на мокром асфальте. CityAltitudeAndNightStreet.
+- На всех автобусных остановках видны стыки крашеных стальных листов, следы брызг у земли и волокна дерева вдоль лавки. Светлые номера читаются на синей эмали.
+  LiveCity_AllBusPlatformsHaveClearSheltersAndDoorApproaches.
+
+- У дома на Гребне открылся ларёк. У окошка можно купить пиво, водку или пирожок с картошкой,
+  а у продавца — спросить про товар. LiveCity_RidgeKioskTradesAndTalksOffTheSummitSidewalk.
+
+- Прохожие расходятся на марше и уступают в тесном проходе. LiveCity_SharedStairPassesPlayerAndOpposingResidents.
 
 ### 2026-11-04
 

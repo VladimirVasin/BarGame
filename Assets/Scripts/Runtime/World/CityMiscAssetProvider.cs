@@ -204,10 +204,10 @@ namespace BarPromenade
     public sealed partial class CityMiscAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "City/CityMiscAssetProvider";
-        public const string GeneratorVersion = "4.14.0";
+        public const string GeneratorVersion = "4.15.0";
         public const string DesignId = "city_misc_citywide_v4";
         public const int ExpectedAssemblyCount = 145;
-        public const int ExpectedMeshCount = 305;
+        public const int ExpectedMeshCount = 306;
         public const int SupportedKindCount = 104;
 
         private const float GroundTolerance = 0.003f;
@@ -504,10 +504,11 @@ namespace BarPromenade
                 CityMiscSurfaceKind.PaintedMetal)
         };
 
-        private static readonly ExpectedPartSpec[] FixtureTimberParts =
+        private static readonly ExpectedPartSpec[] RouteShelterParts =
         {
             P("Fixture", CityMiscMeshRole.Fixture),
-            P("Timber", CityMiscMeshRole.Timber)
+            P("Timber", CityMiscMeshRole.Timber),
+            P("Residential", CityMiscMeshRole.Residential, CityMiscSurfaceKind.PaintedMetal)
         };
         private static readonly ExpectedPartSpec[] FixtureStreetResidentialParts =
         {
@@ -1244,7 +1245,7 @@ namespace BarPromenade
                 case CityMiscKind.ParkPlayground:
                     return PlaygroundParts;
                 case CityMiscKind.Route01ShelterShell:
-                    return FixtureTimberParts;
+                    return RouteShelterParts;
                 case CityMiscKind.Route01PoleShell:
                     return FixtureStreetResidentialParts;
                 case CityMiscKind.TrafficSignalShell:

@@ -1073,6 +1073,7 @@ namespace BarPromenade
             if (World.Gazebo != null) rainShelters.AddRange(World.Gazebo.RainShelters);
             if (laundry != null) rainShelters.AddRange(laundry.RainShelters);
             if (World.CafeRainShelter != null) rainShelters.Add(World.CafeRainShelter);
+            rainShelters.AddRange(World.KioskRainShelters);
             foreach (var terraceAnchors in World.Root.GetComponentsInChildren<CityTerraceWorldAnchors>())
                 if (terraceAnchors.RainShelter != null) rainShelters.Add(terraceAnchors.RainShelter);
             Rain.SetLocalShelters(rainShelters);

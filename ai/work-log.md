@@ -8,9 +8,26 @@ City and the apartment share the crest's residential ground, courtyard trees and
 Turf and gravel edge the pavement; asphalt follows the house footprints. The passage roof
 splits dry paving from wet thresholds. LiveCity_UpperQuarterJoinsBothSlopesThroughTheLitCourt
 checks the shrub, walkable surfaces and rock contacts; SummitHome_BalconyAndApartmentDoorLookDownIntoTheCity checks the outlook.
+Pedestrian path following budgets the horizontal stride separately from capsule height correction.
+LiveCity_SummitResidentWalksSidewalkAndSharedStairsAtFrameCadence checks the crest pavement and stairs both ways.
+Verbose route_blocked events locate a walker when a blocked route reverses.
 CityAltitudeAndNightStreet follows the quay, court bridge and crest back down. Elevation thins street
 air and shifts focus outwards. Lower streets retain more haze than roofs. Midnight street frames
 compare the previous fill and the darker sky on the same wet road under a working lamp.
+City bus shelters share imported meshes and materials across the network and Home balcony.
+The full-wall steel map puts road splash at the foot of each panel. Metric UVs follow the bench grain.
+LiveCity_AllBusPlatformsHaveClearSheltersAndDoorApproaches checks surface bindings, stop codes and pavement clearance.
+LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement verifies both approaches and doors.
+
+The Ridge Street kiosk shares its site with the apartment view and map. One till handles food and sealed
+drinks, while aiming at the seller opens a voluntary exchange. LiveCity_RidgeKioskTradesAndTalksOffTheSummitSidewalk
+covers the approach, shelf samples, receipt and return to the sidewalk.
+City walkers keep separate shoulders on the actual stair surface. In single file the yielding actor can
+clear the centreline via a reachable bay and return to its trip. LiveCity_SharedStairPassesPlayerAndOpposingResidents
+and SingleFileResidentRetreatsIntoBayForPlayerAndResumesHisRoute exercise the physical encounters.
+The macOS Hub launch reserves 256 MiB for BarGame’s Metal graphics ring. The smaller ring overflowed
+during threaded Game View rendering in City. CityGameView_ThreadedMetalRingBuffer follows the residential
+hillside with the production camera and checks intoxicated rendering for the reported warning.
 
 ## 2026-11-04
 Unity 6000.6.8f1: checkpoint/test searches use current overloads; GameView resolves

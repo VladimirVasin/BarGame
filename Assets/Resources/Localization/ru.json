@@ -4783,6 +4783,20 @@
     {"key":"bar.speech.ht23.a","value":"На работе форму обратно требуют."},
     {"key":"bar.speech.ht23.b","value":"Я свою после стирки отвезу. В таком виде не отдам."},
     {"key":"bar.speech.ht24.a","value":"На следующей неделе опять встретимся?"},
-    {"key":"bar.speech.ht24.b","value":"Да. Только в среду у меня дела."}
+    {"key":"bar.speech.ht24.b","value":"Да. Только в среду у меня дела."},
+    {"key":"map.poi.ridge_kiosk","value":"Ларёк"},
+    {"key":"kiosk.talk.prompt","value":"E — поговорить с продавцом"},
+    {"key":"kiosk.talk.pies","value":"Пирожки ещё тёплые?"},
+    {"key":"kiosk.reply.pies","value":"Из середины возьми."},
+    {"key":"kiosk.talk.beer","value":"Пиво холодное?"},
+    {"key":"kiosk.reply.beer","value":"У задней стенки холоднее."},
+    {"key":"inventory.item.potato_pirozhok.name","value":"Пирожок с картошкой"},
+    {"key":"inventory.item.potato_pirozhok.description","value":"Жареный пирожок. Масло проступило сквозь бумагу."},
+    {"key":"kiosk.buy.beer.prompt","value":"E — купить банку пива · $6"},
+    {"key":"kiosk.buy.beer.confirm","value":"Купить банку пива за $6?"},
+    {"key":"kiosk.buy.vodka.prompt","value":"E — купить бутылку водки · $28"},
+    {"key":"kiosk.buy.vodka.confirm","value":"Купить бутылку водки за $28?"},
+    {"key":"kiosk.buy.pirozhok.prompt","value":"E — купить пирожок · $5"},
+    {"key":"kiosk.buy.pirozhok.confirm","value":"Купить пирожок за $5?"}
   ]
 }

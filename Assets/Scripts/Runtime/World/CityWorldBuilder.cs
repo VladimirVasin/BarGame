@@ -390,6 +390,9 @@ namespace BarPromenade
                     walkableArea, bars, ref playerHome, ref supermarket);
             CityHillsideQuarterGround.Build(world, layout);
             CityHillsideSiteDetails.Build(world, layout);
+            Collider[] kioskRainShelters = Array.Empty<Collider>();
+            if (RidgeKioskSitePlan.TryCreate(layout, out var ridgeKiosk))
+                RidgeKioskWorld.Build(world, ridgeKiosk, true, out kioskRainShelters);
 
             GameObject decorationRoot =
                 CityDecorationWorldBuilder.Build(
@@ -488,7 +491,7 @@ namespace BarPromenade
                 cafeSite,
                 cafeRainShelter,
                 residentialCourtyards,
-                residentialCourtyardRoot));
+                residentialCourtyardRoot, kioskRainShelters));
             ReportBlock(
                 "world_complete",
                 blockTimer,

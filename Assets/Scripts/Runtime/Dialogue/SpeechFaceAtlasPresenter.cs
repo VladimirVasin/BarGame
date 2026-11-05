@@ -27,10 +27,12 @@ namespace BarPromenade
         private Renderer renderer;
         private Texture2D texture;
         private int rows;
+        private Rect sourceUv;
         public bool IsConfigured => renderer != null && texture != null;
 
-        public bool Configure(Renderer target, string resourcePath, bool hasSoiledFaces)
+        public bool Configure(Renderer target, string resourcePath, bool hasSoiledFaces, Rect? sourceRegion = null)
         {
+            sourceUv = sourceRegion ?? new Rect(0, 0, 1, 1);
             renderer = target;
             texture = Resources.Load<Texture2D>(resourcePath);
             rows = hasSoiledFaces ? 8 : 4;
@@ -51,6 +53,11 @@ namespace BarPromenade
             // Authoring counts rows from the image top; Unity counts from the bottom.
             Vector4 transform = new Vector4(1f / 8f, 1f / rows,
                 (cell % 8) / 8f, (rows - 1 - cell / 8) / (float)rows);
+            // Some actors map their face into one tile on a wardrobe atlas.
+            transform.x /= sourceUv.width;
+            transform.y /= sourceUv.height;
+            transform.z -= sourceUv.x * transform.x;
+            transform.w -= sourceUv.y * transform.y;
             renderer.GetPropertyBlock(properties);
             Texture2D selected = textureOverride != null ? textureOverride : texture;
             properties.SetTexture(BaseMap, selected); properties.SetTexture(MainTex, selected);

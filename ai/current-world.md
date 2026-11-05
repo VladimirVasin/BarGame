@@ -776,7 +776,8 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   Replacements use distance/clearance rather than camera direction. Ordinary
   movement keeps its `.82 m/s` pace; distant idle/walk sampling is bounded while
   time, collision and immediate interactions stay live. A spatial index limits
-  peer-avoidance queries. Active bus/rest ownership retains the same person.
+  peer-avoidance queries. Oncoming walkers use separate shoulders on the hillside stairs. In single file
+  a walker can step back to a landing, clear the way and return to the same trip. Bus/rest ownership retains the same person.
   `CityPedestrianVehicleTraffic` shares current/near-future bus, Ferryman-car
   and cannery-truck footprints. Walkers step to a reachable clear refuge, wait
   for tails and following traffic, return to their interrupted point, then
@@ -899,7 +900,8 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   the actor. The default City has three one-way rings. Lines 01 and 02 stay
   on the west and east banks. Line 03 climbs the western switchbacks, crosses
   Summit Street Bridge, descends the eastern streets and returns via Works Bridge.
-  Each line has sheltered local stops on straight sections. A walk from either
+  Each line has shelters on straight sections. The City and Home balcony share the painted steel frame,
+  jointed rear sheets, lengthwise timber grain and enamel stop codes. A walk from either
   end of the sidewalk reaches the shelter and both passenger doors, including
   on the switchbacks. Queues stand back from the through path. Infill and litter
   reserve the shelter, waiting places and door approaches. Each stop has a zebra to the opposite pavement. At the foot of the slopes, concrete stairs and
@@ -1356,9 +1358,9 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   collision/avoidance,calendar phases/30Hz poses/distance sleep;pause/disable/unload cleanup.
   Dog bark reuses village synthesis;shared soft paws.No new light/text/quest/story;
 - one deterministic `city_misc_citywide_v4` mesh library at generator version
-  `4.14.0` supplies the passive visuals for the broad City misc pass: `104`
-  semantic kinds resolve to `145` assemblies, `305` role meshes and
-  `57,218` triangles. It covers the 24-family
+  `4.15.0` supplies the passive visuals for the broad City misc pass: `104`
+  semantic kinds resolve to `145` assemblies, `306` role meshes and
+  `57,246` triangles. It covers the 24-family
   decoration layer and park landmarks, street lamps and signal housings,
   bus shelters/poles, the eastern yard, cemetery graves and vegetation,
     the church-yard surfaces and planting plus the modified cemetery
@@ -1554,7 +1556,8 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   Home share the same `4.7 m` floor, door/window positions and `2.3 m` outward
   deck geometry;
 - when the opening route first reaches the City, the hero starts by the home
-  entrance on Ridge Street. Custom-layout
+  entrance on Ridge Street. A metal kiosk by 03-04 sells beer, vodka and a potato pie by gaze and E.
+  Aiming at its seller opens two optional exchanges through the window. Custom-layout
   fallback placement remains bounded to `48 m` by traversable street distance,
   and returning from a bar, home or supermarket interior restores that
   entrance's own sidewalk arrival point rather than the road centerline;

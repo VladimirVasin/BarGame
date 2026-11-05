@@ -1,7 +1,7 @@
 {
     "schemaVersion": 1,
     "blueprintId": "default-coastal",
-    "fingerprint": "832ee61984ebfde2d9ccb59b697c21d30afd035bd1003505c4d84d458efeef7d",
+    "fingerprint": "40fc50f8bbd90964b73ce38ad41371df296b66c1c30cce3708edfab49060dbf9",
     "citySeed": 20260727,
     "worldBounds": {
         "serializedVersion": "2",
@@ -19079,6 +19079,50 @@
                 {
                     "x": -24.200000762939453,
                     "y": -341.0
+                }
+            ]
+        },
+        {
+            "id": "place:ridge-kiosk",
+            "role": "shop-building",
+            "points": [
+                {
+                    "x": -54.0,
+                    "y": -355.6499938964844
+                },
+                {
+                    "x": -51.0,
+                    "y": -355.6499938964844
+                },
+                {
+                    "x": -51.0,
+                    "y": -353.1499938964844
+                },
+                {
+                    "x": -54.0,
+                    "y": -353.1499938964844
+                }
+            ]
+        },
+        {
+            "id": "ridge-kiosk:apron",
+            "role": "promenade",
+            "points": [
+                {
+                    "x": -54.0,
+                    "y": -353.16998291015625
+                },
+                {
+                    "x": -51.0,
+                    "y": -353.16998291015625
+                },
+                {
+                    "x": -51.0,
+                    "y": -351.0
+                },
+                {
+                    "x": -54.0,
+                    "y": -351.0
                 }
             ]
         },
@@ -60971,6 +61015,25 @@
                 "y": -351.0,
                 "width": 25.400001525878906,
                 "height": 10.0
+            }
+        },
+        {
+            "id": "ridge-kiosk",
+            "kind": "RidgeKiosk",
+            "label": "Ларёк",
+            "referenceNumber": 23,
+            "position": {
+                "x": -52.5,
+                "y": 40.10000228881836,
+                "z": -352.17999267578125
+            },
+            "hasFootprint": true,
+            "footprint": {
+                "serializedVersion": "2",
+                "x": -54.0,
+                "y": -355.6499938964844,
+                "width": 3.0,
+                "height": 2.5
             }
         }
     ]

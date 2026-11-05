@@ -126,7 +126,8 @@ namespace BarPromenade
                     !actor.IsYieldingToVehicle;
                 actor.Presentation.MinimumEvaluationInterval = !ordinaryWalk || squaredDistance < 24f * 24f
                     ? 0f : squaredDistance < 48f * 48f ? 1f / 15f : 1f / 8f;
-                actor.Advance(deltaTime, ResolveAvoidance(actor, i), null, null, heroHead, vehicleTraffic);
+                SetEncounterMovement(actor, i);
+                actor.Advance(deltaTime, attentionCandidate: heroHead, vehicleTraffic: vehicleTraffic);
                 pedestrianIndex.Update(i, actor);
                 squaredDistance = PlanarSquaredDistance(actor.Position, player.position);
                 // Arrival never makes somebody vanish within view. Distant

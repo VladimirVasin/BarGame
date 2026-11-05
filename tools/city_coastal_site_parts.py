@@ -207,13 +207,14 @@ def make_assemblies(api):
 
 
 def validate(api, assemblies, problems):
-    # The gazebo landing is this package's one deliberate correction to an
-    # earlier mesh. Every other prior assembly stays frozen byte-for-byte.
-    unchanged = tuple(a for a in assemblies[:134] if a.kind != "ParkBandstand")
+    # Preserve the pre-coastal catalog except the remodelled gazebo and
+    # the two bus stop assemblies recharted for the surface pass.
+    changed = {"ParkBandstand", "Route01ShelterShell", "Route01PoleShell"}
+    unchanged = tuple(a for a in assemblies[:134] if a.kind not in changed)
     previous = api.hashlib.sha256(api.json.dumps(api.signature_payload(
         unchanged, generator_version="4.13.0"), sort_keys=True,
         separators=(",", ":")).encode("utf-8")).hexdigest()
-    if previous != "002065fa8a2053e2dacbf3a6567b06ce18f131ab7ce468f661f32ef17261ad83":
+    if previous != "d6b416102b2f6d4a79df399f8d5a9bac5c6e3cb3a16eb13ebee6db2b9de5cc0c":
         problems.append("Coastal site package changed a previously authored City misc mesh")
     selected = [a for a in assemblies if a.kind in KINDS]
     total = sum(api.triangle_count(p.geometry) for a in selected for p in a.parts)

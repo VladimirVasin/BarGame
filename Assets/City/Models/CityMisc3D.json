@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-misc-3d-model.py",
-  "generator_version": "4.14.0",
+  "generator_version": "4.15.0",
   "blender_version": "5.2.3 LTS",
   "design_id": "city_misc_citywide_v4",
   "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + Residential Courtyard Life + Park Gazebo and Furniture + River Fittings + Cemetery Entrance and Closed Boat Station",
@@ -80,9 +80,9 @@
   "materials": false,
   "preview_materials_in_presentation_only": true,
   "animation_count": 0,
-  "mesh_count": 305,
+  "mesh_count": 306,
   "assembly_count": 145,
-  "triangle_count": 57218,
+  "triangle_count": 57246,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -1769,7 +1769,8 @@
       "expected_source_min_z": 0.0,
       "part_meshes": [
         "GEO_CMM_Route01ShelterShell_Variant01_Fixture",
-        "GEO_CMM_Route01ShelterShell_Variant01_Timber"
+        "GEO_CMM_Route01ShelterShell_Variant01_Timber",
+        "GEO_CMM_Route01ShelterShell_Variant01_Residential"
       ],
       "bounds_min_source": [
         -4.875,
@@ -10499,8 +10500,8 @@
       "tint_role": "Fixture",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 96,
-      "triangles": 168,
+      "vertices": 80,
+      "triangles": 140,
       "bounds_min_source": [
         -4.875,
         -0.59,
@@ -10522,12 +10523,12 @@
         0.59
       ],
       "uv_min": [
-        0.0,
-        0.0
+        -4.875,
+        -0.56
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.59,
+        2.71
       ]
     },
     {
@@ -10560,6 +10561,46 @@
         -1.225,
         1.41,
         0.36
+      ],
+      "uv_min": [
+        -3.52,
+        -3.875
+      ],
+      "uv_max": [
+        1.41,
+        1.41
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_Route01ShelterShell_Variant01_Residential",
+      "kind": "Route01ShelterShell",
+      "variant": 0,
+      "part_role": "Residential_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Residential_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -4.675,
+        -0.53,
+        0.095
+      ],
+      "bounds_max_source": [
+        -0.425,
+        -0.43,
+        2.545
+      ],
+      "bounds_min_unity": [
+        -4.675,
+        0.095,
+        -0.53
+      ],
+      "bounds_max_unity": [
+        -0.425,
+        2.545,
+        -0.43
       ],
       "uv_min": [
         0.0,
@@ -10602,12 +10643,12 @@
         0.108329
       ],
       "uv_min": [
-        0.0,
-        0.0
+        -0.2725,
+        -0.108329
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.205,
+        2.4
       ]
     },
     {
@@ -10642,12 +10683,12 @@
         0.05
       ],
       "uv_min": [
-        0.0,
-        0.0
+        -0.38,
+        -0.05
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.38,
+        2.44
       ]
     },
     {
@@ -10659,35 +10700,35 @@
       "tint_role": "Residential",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 32,
+      "triangles": 56,
       "bounds_min_source": [
         -0.29,
-        0.0435,
+        -0.0985,
         1.99
       ],
       "bounds_max_source": [
         0.29,
-        0.0685,
+        0.0985,
         2.37
       ],
       "bounds_min_unity": [
         -0.29,
         1.99,
-        0.0435
+        -0.0985
       ],
       "bounds_max_unity": [
         0.29,
         2.37,
-        0.0685
+        0.0985
       ],
       "uv_min": [
-        0.0,
-        0.0
+        -0.29,
+        -0.0985
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.29,
+        2.365
       ]
     },
     {
@@ -18771,5 +18812,5 @@
       ]
     }
   ],
-  "build_signature": "68c43ebeb61cadb86c6d8d2ce5887c133de775bfd9310ae3cfa383cf62319ed2"
+  "build_signature": "d90d2485a303bcffdb9c78e07206dc69c5a6a4d258b246e0060050af4eead9ef"
 }

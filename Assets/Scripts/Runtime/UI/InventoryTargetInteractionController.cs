@@ -52,6 +52,9 @@ namespace BarPromenade
             activeController != null && activeController.IsOpen;
         public bool IsInitialized { get; private set; }
         public bool IsOpen { get; private set; }
+        internal PlayerInteractor InteractorForHandler(IInventoryTargetInteractionHandler owner) =>
+            ReferenceEquals(handler, owner) ? sourceInteractor : null;
+
         public bool IsExecuting =>
             IsOpen &&
             model.State == InventoryTargetInteractionState.Executing;

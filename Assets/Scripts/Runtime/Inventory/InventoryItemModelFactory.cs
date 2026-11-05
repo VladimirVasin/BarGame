@@ -85,6 +85,16 @@ namespace BarPromenade
 
             switch (itemId)
             {
+                case InventoryItemId.PotatoPirozhok:
+                    const string pieResource = "RidgeKiosk/PotatoPie";
+                    var pastry = Resources.Load<GameObject>(pieResource);
+                    if (pastry == null) throw new InvalidOperationException("Missing authored " + pieResource);
+                    // Keep the FBX conversion on the child. Only its metre-space wrapper fits the shelf.
+                    Transform pie = CreateRoot(rootPrefix + " Potato Pirozhok", parent);
+                    UnityEngine.Object.Instantiate(pastry, pie, false);
+                    pie.localScale = Vector3.one * Mathf.Min(1f,
+                        Mathf.Min(availableSize.x / .155f, Mathf.Min(availableSize.y / .06f, availableSize.z / .095f)));
+                    return pie;
                 case InventoryItemId.ChestFlashlight:
                     GameObject flashlight = CombatFlashlightAssetProvider.CreateUnbound(parent);
                     CombatFlashlightAssetProvider.SetLensLit(CombatFlashlightAssetProvider.FindLensRenderer(flashlight), false);

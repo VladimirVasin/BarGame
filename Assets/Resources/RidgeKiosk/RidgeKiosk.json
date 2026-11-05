@@ -1,0 +1,72 @@
+{
+  "front": "+Z",
+  "unit": "metre",
+  "palette_sha256": "419b29d47654cec52c6972202509f6b1b31ae334456bfa8279aabe32defc21bc",
+  "anchors": {
+    "KioskVendor": [
+      0,
+      0.08,
+      0.45
+    ],
+    "KioskLamp": [
+      0,
+      2.13,
+      0.93
+    ],
+    "KioskBeer": [
+      -1.04,
+      1.04,
+      1.36
+    ],
+    "KioskVodka": [
+      -0.42,
+      1.04,
+      1.36
+    ],
+    "KioskPie": [
+      0.78,
+      1.04,
+      1.36
+    ],
+    "KioskTalk": [
+      0,
+      1.63,
+      1.17
+    ],
+    "KioskApproach": [
+      0,
+      0,
+      2.22
+    ]
+  },
+  "models": {
+    "RidgeKiosk": {
+      "bounds_min": [
+        -1.6,
+        -0.5,
+        -1.32
+      ],
+      "bounds_max": [
+        1.57,
+        2.62094,
+        3.4
+      ],
+      "triangles": 6752,
+      "geometry_sha256": "63b9e049a6c547f1756701909d73b74a999ed155066820f0e1b68878645fbf7a"
+    },
+    "PotatoPie": {
+      "bounds_min": [
+        -0.0805,
+        0.0,
+        -0.0483
+      ],
+      "bounds_max": [
+        0.07497,
+        0.06072,
+        0.0475
+      ],
+      "triangles": 1658,
+      "geometry_sha256": "61adcb694ef114c3ff3b6c37da05a24eea6df366db8b03433f756d725ebfac54"
+    }
+  }
+}

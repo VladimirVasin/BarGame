@@ -17,6 +17,7 @@ namespace BarPromenade
                 if (line.Number == 3) hillLine = line;
             foreach (var road in hillside.Routes)
             {
+                AddPavedShoulders(road.SurfacePatches);
                 string prefix = "hill:" + road.Bank + ":";
                 string pavement = prefix + "pavement:";
                 int right = AddPavement(road.SidewalkPath, "right");
@@ -50,6 +51,7 @@ namespace BarPromenade
 
             foreach (var link in CityHillsideQuarterPlan.ForLayout(layout).Links)
             {
+                AddPavedShoulders(link.SurfacePatches);
                 string prefix = "hill:quarter:" + link.Id + ":";
                 AddSide(link.NorthSidewalk, "north");
                 AddSide(link.SouthSidewalk, "south");
@@ -77,6 +79,19 @@ namespace BarPromenade
                 string upperPavement = transfer.Bank == CityTerraceTransportBank.West ?
                     "hill:West:pavement:left" : "hill:East:pavement:right";
                 AddStairFrom(lower, transfer, id, upperPavement);
+            }
+
+            // Route centrelines guide the feet. For passing, expose the actual
+            // paved band, including its widened bends, without admitting traffic lanes.
+            void AddPavedShoulders(IReadOnlyList<CityStreetSupportPatch> patches)
+            {
+                foreach (var patch in patches)
+                {
+                    if (!patch.IsSupport || patch.Kind != CityStreetSupportKind.Sidewalk) continue;
+                    var polygon = new Vector2[patch.TopVertices.Count];
+                    for (int i = 0; i < polygon.Length; i++) polygon[i] = XZ(patch.TopVertices[i]);
+                    graph.AddNavigationPolygon(CityRoadPolygon.CounterClockwise(polygon));
+                }
             }
 
             int Gate(string id, string pavement, Vector3 point) =>
@@ -118,6 +133,15 @@ namespace BarPromenade
 
             void AddStairFrom(int previous, CityHillsideShortcut stair, string id, string upperPavement)
             {
+                foreach (var floor in stair.Floors)
+                    graph.AddNavigationPolygon(CityRoadPolygon.Rectangle(floor.Bounds));
+                foreach (var flight in stair.Flights)
+                {
+                    Vector3 side = flight.Right * (flight.Width * .5f);
+                    graph.AddNavigationPolygon(CityRoadPolygon.CounterClockwise(new[] {
+                        XZ(flight.Start - side), XZ(flight.Start + side),
+                        XZ(flight.End + side), XZ(flight.End - side) }));
+                }
                 var points = stair.RouteWorld;
                 for (int i = 0; i < points.Count; i++)
                     previous = JoinPoint(id + ":" + i, previous, points[i], Height);

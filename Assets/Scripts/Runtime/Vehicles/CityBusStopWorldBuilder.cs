@@ -30,20 +30,7 @@ namespace BarPromenade
         // 4.25 m, so the detour swings wider than around open timber.
         public const float ShelterApproachClearance = 1.30f;
 
-        private static readonly Color PoleColor =
-            new Color32(45, 49, 54, 255);
-        private static readonly Color RouteColor =
-            new Color32(91, 143, 209, 255);
-        private static readonly Color PlateInsetColor =
-            new Color32(202, 218, 220, 255);
-        private static readonly Color StopPlateEnamel = new Color32(30, 51, 69, 255);
         private static readonly Color StopPlateInk = new Color32(249, 244, 223, 255);
-        private static readonly Color ShelterPanelColor =
-            new Color32(63, 70, 74, 255);
-        private static readonly Color ShelterRoofColor =
-            new Color32(52, 58, 63, 255);
-        private static readonly Color ShelterBenchColor =
-            new Color32(97, 56, 26, 255);
 
         public static GameObject Build(
             Transform parent,
@@ -60,26 +47,23 @@ namespace BarPromenade
             Stopwatch timer = Stopwatch.StartNew();
             Transform root = new GameObject("City Bus Stops").transform;
             root.SetParent(parent, false);
-            CityMiscAssetProvider miscProvider =
-                CityMiscAssetProvider.Load();
+            var assets = new StopAssets();
             foreach (var platform in CityBusNetworkFurniture.Platforms(plans))
-                BuildStop(root, platform.stop, miscProvider, new CityBusStopLabel(platform.line.Number,
+                BuildStop(root, platform.stop, assets, new CityBusStopLabel(platform.line.Number,
                     platform.ordinal, platform.stop.TransferNumber, platform.transferOrdinal, platform.shared));
 
-            // One row for the whole roster: every shelter combines the
-            // imported pole and shell parts into meshes of its own.
             CityBusPlanner.ReportPhase(
                 "stop_world",
                 timer,
                 GameLog.Field("stops", root.childCount),
-                GameLog.Field("imported", miscProvider != null));
+                GameLog.Field("imported", assets.Shelter.Length > 0 && assets.Pole.Length > 0));
             return root.gameObject;
         }
 
         private static GameObject BuildStop(
             Transform parent,
             CityBusStopDescriptor stop,
-            CityMiscAssetProvider miscProvider, CityBusStopLabel label)
+            StopAssets assets, CityBusStopLabel label)
         {
             Transform root = CreateStopRoot(parent, stop);
             root.SetPositionAndRotation(
@@ -87,7 +71,7 @@ namespace BarPromenade
                 ResolveRotation(
                     stop.Forward,
                     stop.RoadsideForward));
-            BuildStopVisual(root, true, miscProvider, label);
+            BuildStopVisual(root, true, assets, label);
             return root.gameObject;
         }
 
@@ -107,7 +91,7 @@ namespace BarPromenade
             BuildStopVisual(
                 root,
                 collider,
-                CityMiscAssetProvider.Load(), new CityBusStopLabel(routeNumber, stop.SequenceIndex + 1, stop.TransferNumber));
+                new StopAssets(), new CityBusStopLabel(routeNumber, stop.SequenceIndex + 1, stop.TransferNumber));
             return root.gameObject;
         }
 
@@ -207,12 +191,11 @@ namespace BarPromenade
         private static void BuildStopVisual(
             Transform root,
             bool collider,
-            CityMiscAssetProvider miscProvider, CityBusStopLabel label)
+            StopAssets assets, CityBusStopLabel label)
         {
-            bool importedPole = BuildPole(root, collider, miscProvider);
-            BuildShelter(root, collider, miscProvider);
-            // The old imported digits are geometry. Pull its enamel insert beyond
-            // the raised strokes and face each inscription toward its own reader.
+            bool importedPole = BuildPole(root, collider, assets);
+            BuildShelter(root, collider, assets);
+            // The model carries two enamel faces. Each inscription faces its own reader.
             foreach (int side in PlateSides)
             {
                 Vector3 normal = root.forward * side;
@@ -220,11 +203,11 @@ namespace BarPromenade
                     normal, root.up, label.PlateText, new Vector2(.57f, .35f), StopPlateInk);
             }
             if (importedPole) return;
-            RuntimePrimitiveFactory.CreateBox("Route Plate", root, new Vector3(0f, 2.18f, 0f),
-                new Vector3(.76f, .56f, .10f), RouteColor, false);
+            assets.CreateFallbackBox("Route Plate", root, new Vector3(0f, 2.18f, 0f),
+                new Vector3(.76f, .56f, .10f), assets.SignRim, false);
             foreach (int side in PlateSides)
-                RuntimePrimitiveFactory.CreateBox("Route Plate Inset", root, new Vector3(0f, 2.18f, .085f * side),
-                    new Vector3(.58f, .38f, .025f), StopPlateEnamel, false);
+                assets.CreateFallbackBox("Route Plate Inset", root, new Vector3(0f, 2.18f, .085f * side),
+                    new Vector3(.58f, .38f, .025f), assets.SignFace, false);
         }
 
         private static readonly int[] PlateSides = { 1, -1 };
@@ -239,17 +222,12 @@ namespace BarPromenade
         private static void BuildShelter(
             Transform root,
             bool collider,
-            CityMiscAssetProvider miscProvider)
+            StopAssets assets)
         {
             const float x = ShelterOffsetAlongLane;
-            if (TryBuildImportedShell(
-                    root,
-                    miscProvider,
-                    CityMiscKind.Route01ShelterShell,
-                    Vector3.zero,
-                    "Imported Route 01 Shelter Shell",
-                    ResolveShelterColor))
+            if (assets.Shelter.Length > 0)
             {
+                assets.Place(root, assets.Shelter, "Imported Route 01 Shelter Shell");
                 if (collider)
                 {
                     AddShelterColliders(root);
@@ -258,42 +236,42 @@ namespace BarPromenade
                 return;
             }
 
-            RuntimePrimitiveFactory.CreateBox(
+            assets.CreateFallbackBox(
                 "Shelter Back Wall",
                 root,
                 new Vector3(x, 1.32f, -0.48f),
                 new Vector3(4.25f, 2.45f, 0.10f),
-                ShelterPanelColor,
+                assets.BackPanel,
                 collider);
-            RuntimePrimitiveFactory.CreateBox(
+            assets.CreateFallbackBox(
                 "Shelter Roof",
                 root,
                 new Vector3(x, 2.62f, 0f),
                 new Vector3(4.65f, 0.18f, 1.18f),
-                ShelterRoofColor,
+                assets.Frame,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            assets.CreateFallbackBox(
                 "Shelter Post West",
                 root,
                 new Vector3(x - 2.05f, 1.30f, 0f),
                 new Vector3(0.16f, 2.60f, 0.16f),
-                PoleColor,
+                assets.Frame,
                 collider);
-            RuntimePrimitiveFactory.CreateBox(
+            assets.CreateFallbackBox(
                 "Shelter Post Back",
                 root,
                 new Vector3(x, 1.30f, -0.48f),
                 new Vector3(0.16f, 2.60f, 0.16f),
-                PoleColor,
+                assets.Frame,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            assets.CreateFallbackBox(
                 "Shelter Post East",
                 root,
                 new Vector3(x + 2.05f, 1.30f, 0f),
                 new Vector3(0.16f, 2.60f, 0.16f),
-                PoleColor,
+                assets.Frame,
                 collider);
-            RuntimePrimitiveFactory.CreateBox(
+            assets.CreateFallbackBox(
                 "Shelter Bench Seat",
                 root,
                 new Vector3(
@@ -305,44 +283,39 @@ namespace BarPromenade
                     ShelterBenchSeatWidth,
                     ShelterBenchSeatThickness,
                     ShelterBenchSeatDepth),
-                ShelterBenchColor,
+                assets.Bench,
                 collider);
-            RuntimePrimitiveFactory.CreateBox(
+            assets.CreateFallbackBox(
                 "Shelter Bench Backrest",
                 root,
                 new Vector3(x, 1.10f, -0.20f),
                 new Vector3(2.65f, 0.62f, 0.14f),
-                ShelterBenchColor,
+                assets.Bench,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            assets.CreateFallbackBox(
                 "Shelter Bench Leg West",
                 root,
                 new Vector3(x - 0.90f, 0.34f, 0.05f),
                 new Vector3(0.14f, 0.68f, 0.14f),
-                PoleColor,
+                assets.Frame,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            assets.CreateFallbackBox(
                 "Shelter Bench Leg East",
                 root,
                 new Vector3(x + 0.90f, 0.34f, 0.05f),
                 new Vector3(0.14f, 0.68f, 0.14f),
-                PoleColor,
+                assets.Frame,
                 false);
         }
 
         private static bool BuildPole(
             Transform root,
             bool collider,
-            CityMiscAssetProvider miscProvider)
+            StopAssets assets)
         {
-            if (TryBuildImportedShell(
-                    root,
-                    miscProvider,
-                    CityMiscKind.Route01PoleShell,
-                    Vector3.zero,
-                    "Imported Route 01 Pole Shell",
-                    ResolvePolePartColor, true))
+            if (assets.Pole.Length > 0)
             {
+                assets.Place(root, assets.Pole, "Imported Route 01 Pole Shell");
                 if (collider)
                 {
                     AddProxy(
@@ -355,28 +328,14 @@ namespace BarPromenade
                 return true;
             }
 
-            RuntimePrimitiveFactory.CreateBox(
+            assets.CreateFallbackBox(
                 "Pole",
                 root,
                 new Vector3(0f, 1.20f, 0f),
                 new Vector3(0.12f, 2.40f, 0.12f),
-                PoleColor,
+                assets.Frame,
                 collider);
             return false;
-        }
-
-        private static Color ResolvePolePartColor(
-            CityMiscMeshRole role)
-        {
-            switch (role)
-            {
-                case CityMiscMeshRole.Street:
-                    return RouteColor;
-                case CityMiscMeshRole.Residential:
-                    return StopPlateEnamel;
-                default:
-                    return PoleColor;
-            }
         }
 
         private static void AddShelterColliders(Transform root)
@@ -424,85 +383,90 @@ namespace BarPromenade
             collider.size = size;
         }
 
-        private static bool TryBuildImportedShell(
-            Transform root,
-            CityMiscAssetProvider provider,
-            CityMiscKind kind,
-            Vector3 localPosition,
-            string name,
-            Func<CityMiscMeshRole, Color> resolveColor, bool coverBakedDigits = false)
+        // Resolve the catalog once per City or balcony build. Identical platforms
+        // then reference the imported meshes and material assets directly.
+        private sealed class StopAssets
         {
-            if (provider == null ||
-                !CityMiscAssetProvider.Supports(kind))
+            public readonly Material Frame = LoadMaterial("Frame");
+            public readonly Material Bench = LoadMaterial("Bench");
+            public readonly Material BackPanel = LoadMaterial("BackPanel");
+            public readonly Material SignRim = LoadMaterial("SignRim");
+            public readonly Material SignFace = LoadMaterial("SignFace");
+            public readonly CityMiscMeshPart[] Shelter;
+            public readonly CityMiscMeshPart[] Pole;
+
+            public StopAssets()
             {
-                return false;
+                var provider = CityMiscAssetProvider.Load();
+                Shelter = LoadParts(provider, CityMiscKind.Route01ShelterShell);
+                Pole = LoadParts(provider, CityMiscKind.Route01PoleShell);
             }
 
-            var parts = new List<CityMiscMeshPart>();
-            try
+            private static Material LoadMaterial(string suffix)
             {
-                int partCount = CityMiscAssetProvider.GetPartCount(kind);
-                if (partCount < 1)
+                var material = Resources.Load<Material>("Materials/BusStop" + suffix);
+                if (material == null)
+                    throw new InvalidOperationException($"Missing bus stop material '{suffix}'.");
+                return material;
+            }
+
+            private static CityMiscMeshPart[] LoadParts(CityMiscAssetProvider provider, CityMiscKind kind)
+            {
+                if (provider == null) return Array.Empty<CityMiscMeshPart>();
+                var parts = new CityMiscMeshPart[CityMiscAssetProvider.GetPartCount(kind)];
+                try
                 {
-                    return false;
+                    for (int i = 0; i < parts.Length; i++)
+                        parts[i] = provider.GetPartOrThrow(kind, 0, i);
                 }
-
-                for (int partIndex = 0;
-                     partIndex < partCount;
-                     partIndex++)
+                catch (InvalidOperationException)
                 {
-                    CityMiscMeshPart part = provider.GetPartOrThrow(
-                        kind,
-                        0,
-                        partIndex);
-                    if (part.Mesh == null)
-                    {
-                        return false;
-                    }
+                    return Array.Empty<CityMiscMeshPart>();
+                }
+                return parts;
+            }
 
-                    parts.Add(part);
+            public void Place(Transform root, CityMiscMeshPart[] parts, string name)
+            {
+                foreach (var part in parts)
+                {
+                    var host = new GameObject($"{name} {part.Role}");
+                    host.transform.SetParent(root, false);
+                    host.AddComponent<MeshFilter>().sharedMesh = part.Mesh;
+                    host.AddComponent<MeshRenderer>().sharedMaterial = ResolveMaterial(part);
                 }
             }
-            catch (InvalidOperationException)
-            {
-                return false;
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                return false;
-            }
 
-            for (int index = 0; index < parts.Count; index++)
+            private Material ResolveMaterial(CityMiscMeshPart part)
             {
-                CityMiscMeshPart part = parts[index];
-                var placements = coverBakedDigits && part.Role == CityMiscMeshRole.Residential
-                    ? new[] {
-                        new RuntimeMeshPlacement(part.Mesh, localPosition + Vector3.forward * .03f, Quaternion.identity),
-                        new RuntimeMeshPlacement(part.Mesh, localPosition + Vector3.back * .03f, Quaternion.Euler(0f, 180f, 0f)) }
-                    : new[] { new RuntimeMeshPlacement(part.Mesh, localPosition, Quaternion.identity) };
-                RuntimePrimitiveFactory.CreateCombinedMeshes($"{name} {part.Role}", root, placements, resolveColor(part.Role));
+                switch (part.Role)
+                {
+                    case CityMiscMeshRole.Fixture: return Frame;
+                    case CityMiscMeshRole.Timber: return Bench;
+                    case CityMiscMeshRole.Street: return SignRim;
+                    case CityMiscMeshRole.Residential:
+                        return part.Kind == CityMiscKind.Route01PoleShell ? SignFace : BackPanel;
+                    default: throw new InvalidOperationException($"Unexpected bus stop part '{part.Component}'.");
+                }
             }
 
-            return true;
-        }
-
-        private static Color ResolveShelterColor(
-            CityMiscMeshRole role)
-        {
-            switch (role)
+            public void CreateFallbackBox(string name, Transform root, Vector3 center, Vector3 size,
+                Material material, bool collider)
             {
-                case CityMiscMeshRole.Timber:
-                    return ShelterBenchColor;
-                case CityMiscMeshRole.Residential:
-                case CityMiscMeshRole.Masonry:
-                    return ShelterPanelColor;
-                case CityMiscMeshRole.BacklitSign:
-                    return PlateInsetColor;
-                default:
-                    return ShelterRoofColor;
+                // The built-in cube has normalized face UVs. Its vertical texture
+                // axis runs along the plank when the unit cube is laid on its side.
+                bool lengthwise = material == Bench && size.x > size.y;
+                Vector3 dimensions = lengthwise ? new Vector3(size.y, size.x, size.z) : size;
+                var box = RuntimePrimitiveFactory.CreateMaterialBox(name, root, center, dimensions, material, collider);
+                if (lengthwise) box.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                if (material == BackPanel) return;
+                var renderer = box.GetComponent<Renderer>();
+                var properties = new MaterialPropertyBlock();
+                properties.SetVector("_BaseMap_ST", SurfaceAppearanceCore.CreateBaseMapTransform(renderer,
+                    1f / material.mainTextureScale.x, .02f, SurfaceAppearanceCore.ResolveBoxProjection(renderer), 0));
+                renderer.SetPropertyBlock(properties);
             }
         }
-
     }
 
     internal static class CityBusPlateLettering

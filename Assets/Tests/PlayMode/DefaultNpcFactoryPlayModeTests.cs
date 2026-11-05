@@ -508,9 +508,9 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertPopulationAllocation(Transform parent)
         {
             string[] ids = DefaultNpcPopulation.Characters.Select(character => character.Id).ToArray();
-            Assert.That(ids.Length, Is.EqualTo(24 + DefaultNpcPopulation.CombatTestOpponentCount +
+            Assert.That(ids.Length, Is.EqualTo(29 + StairwellEncounterState.Population + DefaultNpcPopulation.CombatTestOpponentCount +
                 DefaultNpcPopulation.FairVisitorCount + DefaultNpcPopulation.PedestrianCount),
-                "Placed workers/bartender, ordinary/scripted combat opponents, fair visitors and permanent City walkers.");
+                "Placed staff, stairwell and combat opponents, fair visitors and permanent City walkers.");
             Assert.That(ids.Distinct().Count(), Is.EqualTo(ids.Length));
             var remembered = new System.Collections.Generic.Dictionary<string, string>();
             var visibleLooks = new System.Collections.Generic.HashSet<string>();

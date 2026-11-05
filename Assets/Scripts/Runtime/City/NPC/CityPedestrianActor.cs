@@ -104,6 +104,7 @@ namespace BarPromenade
         private float requestedLateralBias;
         private float requestedSpeedScale = 1f;
         private float blockedTime;
+        private float nextBlockedLogTime;
         private float? forcedCrosswalkRoll;
         private Vector3? approachTarget;
         private IReadOnlyList<float> approachNodeDistances;
@@ -504,6 +505,17 @@ namespace BarPromenade
                     ResumeRoaming(resumeNode);
                 }
             }
+            else if (AdvancePassingRetreat(safeDeltaTime, vehicleTraffic, out bool retreatMoving))
+            {
+                moving = retreatMoving;
+                IsYielding = true;
+                blockedTime = 0f;
+            }
+            else if ((HasPassingRequest || returningToLaneCentre) && TryAdvancePassingLane(safeDeltaTime, shouldYield, out bool passingMoving))
+            {
+                moving = passingMoving;
+                IsYielding = (shouldYield || holdPassingProgress) && !moving;
+            }
             else if (!IsYielding && roaming)
             {
                 moving = AdvanceWalking(safeDeltaTime);
@@ -528,9 +540,7 @@ namespace BarPromenade
                     attentionCandidate));
             presentation.Advance(
                 safeDeltaTime,
-                (roaming || transferring) &&
-                !IsYielding &&
-                (moving || safeDeltaTime <= 0f));
+                moving || ((roaming || transferring) && !IsYielding && safeDeltaTime <= 0f));
         }
 
         /// <summary>
@@ -1115,18 +1125,13 @@ namespace BarPromenade
                 if (curvedLink.Kind == CityPedestrianLinkKind.Courtyard)
                     pathLateralOffset *= Mathf.Clamp01(forward ? path.Length - next : next);
                 Vector2 point = sample.Position + laneRight * pathLateralOffset;
-                float pathHeight = curvedLink.PathHeightSampler != null
-                    ? curvedLink.PathHeightSampler(point)
-                    : Mathf.Lerp(plan.Nodes[curvedLink.FirstNodeIndex].Position.y,
-                        plan.Nodes[curvedLink.SecondNodeIndex].Position.y, next / path.Length);
-                Vector3 onPath = new Vector3(point.x, pathHeight, point.y);
-                if (curvedLink.Kind == CityPedestrianLinkKind.Courtyard)
+                Vector2 currentXZ = new Vector2(current.x, current.z);
+                float stride = step;
+                bool courtyard = curvedLink.Kind == CityPedestrianLinkKind.Courtyard;
+                if (courtyard)
                 {
-                    // Walking speed is measured on the ground plane. The
-                    // controller's contact gap must not consume that budget.
-                    Vector2 currentXZ = new Vector2(current.x, current.z);
                     Vector2 requested = point - currentXZ;
-                    float facingScale = 0f;
+                    stride = 0f;
                     if (requested.sqrMagnitude > 0.0000001f)
                     {
                         // At a courtyard corner, turn before stepping into the
@@ -1135,24 +1140,26 @@ namespace BarPromenade
                         transform.rotation = Quaternion.RotateTowards(transform.rotation,
                             Quaternion.LookRotation(facing, Vector3.up), TurnSpeedDegrees * deltaTime);
                         float angle = Vector3.Angle(transform.forward, facing);
-                        facingScale = Mathf.SmoothStep(0f, 1f,
+                        stride = step * Mathf.SmoothStep(0f, 1f,
                             Mathf.Clamp01(1f - angle / CourtyardWalkingFacingAngle));
                     }
-                    Vector2 moved = Vector2.MoveTowards(currentXZ, point, step * facingScale);
-                    desired = new Vector3(moved.x,
-                        curvedLink.PathHeightSampler != null
-                            ? curvedLink.PathHeightSampler(moved) : pathHeight,
-                        moved.y);
-                    intended = Vector2.Distance(currentXZ, moved);
                 }
                 else
                 {
-                    desired = Vector3.MoveTowards(current, onPath, step);
-                    intended = Mathf.Min(step, Vector3.Distance(current, onPath));
                     steerDirection = new Vector3(tangent.x, 0f, tangent.y);
                     transform.rotation = Quaternion.RotateTowards(transform.rotation,
                         Quaternion.LookRotation(steerDirection, Vector3.up), TurnSpeedDegrees * deltaTime);
                 }
+                // Collision can hold the capsule above the sampled pavement.
+                // Correct its height separately so that gap never consumes the stride.
+                Vector2 moved = Vector2.MoveTowards(currentXZ, point, stride);
+                float pathHeight = curvedLink.PathHeightSampler != null
+                    ? curvedLink.PathHeightSampler(courtyard ? moved : point)
+                    : Mathf.Lerp(plan.Nodes[curvedLink.FirstNodeIndex].Position.y,
+                        plan.Nodes[curvedLink.SecondNodeIndex].Position.y, next / path.Length);
+                desired = new Vector3(moved.x,
+                    courtyard ? pathHeight : Mathf.MoveTowards(current.y, pathHeight, step), moved.y);
+                intended = Vector2.Distance(currentXZ, moved);
             }
             Vector3 constrained = walkableArea.Constrain(
                 current,
@@ -1397,6 +1404,7 @@ namespace BarPromenade
         /// </summary>
         private void TakeDetour()
         {
+            float blockedSeconds = blockedTime;
             blockedTime = 0f;
             lateralOffset = 0f;
             if (previousNodeIndex < 0 || targetNodeIndex < 0)
@@ -1406,6 +1414,16 @@ namespace BarPromenade
 
             int reached = targetNodeIndex;
             int reversed = previousNodeIndex;
+            if (GameLog.IsVerbose && Time.unscaledTime >= nextBlockedLogTime)
+            {
+                nextBlockedLogTime = Time.unscaledTime + 15f;
+                Vector3 feet = Position;
+                GameLog.Debug("pedestrian", "route_blocked",
+                    GameLog.Field("spawn", SpawnAnchorId), GameLog.Field("state", MotionState.ToString()),
+                    GameLog.Field("from", plan.Nodes[previousNodeIndex].Id), GameLog.Field("to", plan.Nodes[targetNodeIndex].Id),
+                    GameLog.Field("x", feet.x), GameLog.Field("y", feet.y), GameLog.Field("z", feet.z),
+                    GameLog.Field("blocked_s", blockedSeconds), GameLog.Field("yielding", IsYielding));
+            }
             bool onRoad = IsCrossingRoad;
             ClearCrossing();
             SetWalkingLeg(reached, reversed, incomingLinkKind);
@@ -1568,6 +1586,9 @@ namespace BarPromenade
 
         private void ResetSpawnState()
         {
+            SetPassingLane(0f, false);
+            returningToLaneCentre = false;
+            ResetPassingRetreat();
             ResetVehicleYield();
             ClearCrossing();
             plan = null;
@@ -1584,6 +1605,7 @@ namespace BarPromenade
             requestedLateralBias = 0f;
             requestedSpeedScale = 1f;
             blockedTime = 0f;
+            nextBlockedLogTime = 0f;
             forcedCrosswalkRoll = null;
             approachTarget = null;
             approachNodeDistances = null;

@@ -9,6 +9,65 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class CityTerracePilotPlayModeTests
     {
         [UnityTest]
+        public IEnumerator LiveCity_SummitResidentWalksSidewalkAndSharedStairsAtFrameCadence()
+        {
+            yield return LoadProductionCity();
+            var graph = city.PedestrianPlan;
+            var world = city.Pedestrians.Residents;
+            var stair = CityHillsideAccessPlan.ForLayout(city.Layout).SharedCourt;
+            int lower = graph.Links.Single(l => l.Id == "hill:quarter:passage:0:walk").FirstNodeIndex;
+            int upper = graph.Links.Single(l => l.Id == "hill:quarter:passage:upper-join").SecondNodeIndex;
+            var sidewalk = graph.GetLinkIndices(upper).Select(i => graph.Links[i])
+                .Where(l => l.Id.StartsWith("hill:quarter:summit:north") && l.Path.Length > 3f)
+                .OrderBy(l => l.Path.Length).First();
+            int summit = sidewalk.Other(upper);
+
+            var walker = new GameObject("Summit walking regression").AddComponent<CityPedestrianActor>();
+            walker.gameObject.layer = CityPedestrianCollision.LayerIndex;
+            walker.Initialize(CityPedestrianPlanner.CreateWalkableArea(graph), graph.AgentRadius);
+            var model = CityPedestrianDefaultNpcBody.Create(walker.transform, DefaultNpcPopulation.PedestrianId(0),
+                CityPedestrianResources.LoadStreetClipDonor());
+            var body = model.gameObject.AddComponent<CityPedestrianPresentation>();
+            body.Initialize(model);
+            var route = world.BuildRoute(lower, summit);
+            walker.PrepareSpawn(graph, new CityPedestrianSpawnAnchor("lower-gate", graph.Nodes[lower].Position,
+                lower, route.Nodes[1]), route.Nodes[1], CityResidentWorld.WalkingSpeed, 1f, 0f, 0, 41u);
+            walker.BindPresentation(body);
+            // Exercise static City collision in isolation, without random crowd encounters.
+            foreach (var other in city.Pedestrians.Actors)
+                if (other.CollisionEnabled) Physics.IgnoreCollision(walker.CharacterController, other.CharacterController);
+            Physics.IgnoreCollision(walker.CharacterController, city.Player.Motor.GetComponent<CharacterController>());
+            Physics.SyncTransforms();
+
+            WalkTo(summit);
+            WalkTo(lower);
+
+            void WalkTo(int destination)
+            {
+                const float tick = 1f / 60f;
+                walker.SetResidentDestination(destination, world.DistancesTo(destination));
+                int budget = Mathf.CeilToInt((route.Length * 1.35f / walker.MovementSpeed + 2f) / tick);
+                bool onFlight = false;
+                for (int frame = 0; frame < budget && !walker.IsAtResidentDestination; frame++)
+                {
+                    walker.Advance(tick);
+                    var feet = walker.Position;
+                    if (stair.TrySampleTop(new Vector2(feet.x, feet.z), out float height) &&
+                        height > stair.RouteWorld[0].y + .5f && height < stair.RouteWorld[stair.RouteWorld.Count - 1].y - .5f)
+                    {
+                        onFlight = true;
+                        Assert.That(Mathf.Abs(feet.y - height), Is.LessThan(.22f), "Resident lost stair support");
+                    }
+                    if (walker.DetourCount != 0)
+                        Assert.Fail($"Unobstructed resident turned back at {feet:F3} on the way to {graph.Nodes[destination].Id}");
+                }
+                Assert.That(walker.IsAtResidentDestination, Is.True,
+                    $"Resident missed walking pace to {graph.Nodes[destination].Id} at {walker.Position:F3}, target {walker.TargetNodeIndex}");
+                Assert.That(onFlight, Is.True, "Resident must physically cross the shared stair flights");
+            }
+        }
+
+        [UnityTest]
         public IEnumerator LiveCity_SummitHomeFacesTownBesideTheUpperBridge()
         {
             yield return LoadProductionCity();

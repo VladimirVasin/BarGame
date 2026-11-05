@@ -517,6 +517,16 @@ namespace BarPromenade.Tests.PlayMode
             yield return LoadProductionCity();
             Physics.SyncTransforms();
             var obstacles = new HashSet<string>();
+            var sharedSurfaces = new Dictionary<string, Material>();
+            var shelterParts = new[]
+            {
+                ("Imported Route 01 Shelter Shell Residential", "BusShelterPaintedMetal"),
+                ("Imported Route 01 Shelter Shell Fixture", "CityPoiPaintedMetal"),
+                ("Imported Route 01 Shelter Shell Timber", "CityPoiTimber"),
+                ("Imported Route 01 Pole Shell Fixture", "CityPoiPaintedMetal"),
+                ("Imported Route 01 Pole Shell Street", "ArchEnamel"),
+                ("Imported Route 01 Pole Shell Residential", "ArchEnamel")
+            };
             int index = 0;
             bool capture = System.Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_BUS_PLATFORMS") == "1";
             if (capture)
@@ -529,6 +539,20 @@ namespace BarPromenade.Tests.PlayMode
                 var stop = platform.stop;
                 Transform structure = city.BusStops.transform.GetChild(index++);
                 string code = $"{platform.line.Number:00}-{stop.SequenceIndex + 1:00}";
+                foreach (var (part, surface) in shelterParts)
+                {
+                    var mesh = structure.Find(part);
+                    Assert.That(mesh, Is.Not.Null, code + " " + part);
+                    var material = mesh.GetComponent<MeshRenderer>().sharedMaterial;
+                    Assert.That(material, Is.Not.Null, part);
+                    Assert.That(material.shader.name, Is.EqualTo("Bar Promenade/City Surface"), part);
+                    Assert.That(material.GetTexture("_BaseMap")?.name, Is.EqualTo(surface + "Albedo"), part);
+                    Assert.That(material.GetTexture("_SceneMaterialResponse")?.name, Is.EqualTo(surface + "Response"), part);
+                    Assert.That(material.GetFloat("_SceneResponseStrength"), Is.EqualTo(1f), part);
+                    if (sharedSurfaces.TryGetValue(part, out var first))
+                        Assert.That(material, Is.SameAs(first), code + " " + part);
+                    else sharedSurfaces.Add(part, material);
+                }
                 string expectedPlate = code;
                 if (stop.TransferNumber > 0)
                 {
@@ -583,6 +607,14 @@ namespace BarPromenade.Tests.PlayMode
                     city.Camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye));
                     AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "BusPlatforms",
                         $"{platform.line.Number:00}-{stop.SequenceIndex + 1:00}", 800, 450);
+                    if (platform.ordinal == 2)
+                    {
+                        var bench = CityBusStopWorldBuilder.DescribeShelterBenchSeat(stop);
+                        Vector3 detail = bench.SeatTopCenter + structure.right * .55f + Vector3.up * .32f;
+                        Vector3 detailEye = detail + road * 2.05f + structure.right * .85f + Vector3.up * .48f;
+                        city.Camera.transform.SetPositionAndRotation(detailEye, Quaternion.LookRotation(detail - detailEye));
+                        AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "BusPlatforms", code + "-surfaces", 1280, 720);
+                    }
                     if (platform.line.Number == 3 && platform.ordinal <= 2)
                     {
                         Vector3 plaque = faces[0].transform.position;

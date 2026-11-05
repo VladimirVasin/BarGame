@@ -23,6 +23,7 @@ namespace BarPromenade
         private readonly CityTerraceDistrictPlan terraces;
         private readonly CityHillsideQuarterPlan quarter;
         private readonly List<Rect> obstacleFootprints;
+        private readonly RidgeKioskSitePlan ridgeKiosk;
         private readonly List<Vector2[]> polygonBuildingObstacles = new List<Vector2[]>();
         private RoadWalkableArea walkableArea;
 
@@ -36,6 +37,8 @@ namespace BarPromenade
             foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
                 courtyardCells.Add(block.Cell);
             obstacleFootprints = CollectObstacleFootprints(layout, courtyardCells);
+            if (RidgeKioskSitePlan.TryCreate(layout, out ridgeKiosk))
+                obstacleFootprints.Add(Expand(ridgeKiosk.Bounds, CityGroundTraversalPlanner.MaximumAgentRadius));
             foreach (var building in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
                 polygonBuildingObstacles.AddRange(building.Lot.CreateCollisionPolygons());
             foreach (BuildingLot lot in layout.BuildingMasses)
@@ -157,6 +160,11 @@ namespace BarPromenade
         /// </summary>
         private bool TryResolveSurfaceTop(Vector2 worldXZ, out float top)
         {
+            if (ridgeKiosk != null && ridgeKiosk.Apron.Contains(worldXZ))
+            {
+                top = ridgeKiosk.Origin.y;
+                return true;
+            }
             if (terraces.ContainsFootprint(worldXZ))
                 return terraces.TrySampleStandingTop(worldXZ, 0f, out top);
             foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)

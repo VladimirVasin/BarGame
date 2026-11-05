@@ -724,7 +724,7 @@ namespace BarPromenade
                 GameInputAction.Cancel, GameInputContext.Menu);
         }
 
-        private static string GetFailureKey(
+        internal static string GetFailureKey(
             SupermarketPurchaseStatus status)
         {
             switch (status)

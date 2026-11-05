@@ -718,6 +718,15 @@ namespace BarPromenade
                 area.AddPolygons(new[] { CityRoadPolygon.Rectangle(building.ApproachBounds),
                     CityRoadPolygon.Rectangle(building.CourtBounds) });
             }
+            if (RidgeKioskSitePlan.TryCreate(layout, out var kiosk))
+            {
+                // Eroded mask members must overlap by a capsule diameter.
+                // The overlap is on the existing paved sidewalk at the same height.
+                Rect apron = kiosk.Apron;
+                apron.yMax += CityGroundTraversalPlanner.MaximumAgentRadius * 2f + .10f;
+                area.Add(apron);
+                area.Exclude(kiosk.Bounds);
+            }
             area.AttachTerraceDistrict(layout);
             return area;
         }

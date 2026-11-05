@@ -2272,7 +2272,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void HeadOnActors_UseStableSlotOrderToAvoidMutualYield()
+        public void HeadOnActors_OnAWidePavementTakeOppositeShoulders()
         {
             GameObject root = new GameObject("Yield Priority Test Root");
             CityPedestrianDirector director = null;
@@ -2308,14 +2308,12 @@ namespace BarPromenade.Tests.EditMode
                     Is.LessThan(-0.9f));
                 director.Advance(0.1f);
 
-                Assert.That(director.Actors[0].IsYielding, Is.False);
-                Assert.That(
-                    director.Actors[0].LastDisplacement.sqrMagnitude,
-                    Is.GreaterThan(0f));
-                Assert.That(director.Actors[1].IsYielding, Is.True);
-                Assert.That(
-                    director.Actors[1].LastDisplacement,
-                    Is.EqualTo(Vector3.zero));
+                CityPedestrianActor first = director.Actors[0];
+                CityPedestrianActor second = director.Actors[1];
+                Assert.That(first.LastDisplacement.sqrMagnitude, Is.GreaterThan(0f));
+                Assert.That(second.LastDisplacement.sqrMagnitude, Is.GreaterThan(0f));
+                Assert.That(first.LastDisplacement.z * second.LastDisplacement.z, Is.LessThan(0f),
+                    "Opposing walkers should step onto different halves of this two-metre pavement.");
             }
             finally
             {

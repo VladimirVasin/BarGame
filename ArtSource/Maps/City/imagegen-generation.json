@@ -1,17 +1,17 @@
 {
   "tool": "built-in image_gen",
-  "intent": "Upper bridge home, both hillside transfer stairs and the physical street crossings at bus platforms.",
-  "prompt": "imagegen-transfer-stairs-prompt.txt",
+  "intent": "Ridge Street kiosk roof and front apron below the crossing west of the summit home.",
+  "prompt": "imagegen-ridge-kiosk-prompt.txt",
   "references": [
     "CityMapImage.reference.png",
     "map-reference.png"
   ],
   "geography": "map-reference.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "e0ef7ab66373fcff919bb581b4f89aa85abe955cab142fa2e3b148e5e1896bee",
-  "runtime_image_sha256": "e0ef7ab66373fcff919bb581b4f89aa85abe955cab142fa2e3b148e5e1896bee",
+  "image_sha256": "09141548f74ac4169bb84bb83882538ff5c52f2802cb393c7546e7fa99207bf3",
+  "runtime_image_sha256": "09141548f74ac4169bb84bb83882538ff5c52f2802cb393c7546e7fa99207bf3",
   "registration": {
-    "description": "North-up, full-bleed edit in the surveyed world frame. Native pixels are displayed over the measured world bounds.",
+    "description": "North-up full-bleed edit at the previous native resolution. Street junctions, bridges, transfer stairs, the summit home and the south edge match without pixel translation. The roof occupies the surveyed strip south of the crossing.",
     "source_size": [
       1173,
       1341
@@ -19,9 +19,13 @@
     "survey_size": [
       1792,
       2048
+    ],
+    "kiosk_roof_normalized_center_from_top": [
+      0.42071,
+      0.92916
     ]
   },
-  "fingerprint": "832ee61984ebfde2d9ccb59b697c21d30afd035bd1003505c4d84d458efeef7d",
+  "fingerprint": "40fc50f8bbd90964b73ce38ad41371df296b66c1c30cce3708edfab49060dbf9",
   "schemaVersion": 2,
   "width": 1173,
   "height": 1341

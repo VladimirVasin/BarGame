@@ -142,6 +142,17 @@ namespace BarPromenade
             if (outerModal == null || !outerModal.IsLocked ||
                 !BarMinigameModalLock.IsAnyLocked)
                 return false;
+            return TryPresentConfirmedPurchase(interactor, itemId, model, receivedFeedbackKey,
+                commitReceived, onFinished, outerModal);
+        }
+
+        // A standalone receipt takes its own lock after the confirmation menu closes.
+        // In either mode the purchase commits only after its model and screen are ready.
+        internal bool TryPresentConfirmedPurchase(
+            PlayerInteractor interactor, InventoryItemId itemId, Transform model, string receivedFeedbackKey,
+            Func<bool> commitReceived, Action<bool> onFinished, BarMinigameModalLock outerModal = null)
+        {
+            if (commitReceived == null) throw new ArgumentNullException(nameof(commitReceived));
             if (!TryPresentCore(interactor, itemId, model, () => true,
                     onFinished, outerModal))
                 return false;

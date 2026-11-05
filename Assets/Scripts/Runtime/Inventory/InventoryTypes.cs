@@ -29,7 +29,8 @@ namespace BarPromenade
         ChestFlashlight = 21,
         BeerCan = 22,
         WineBottle = 23,
-        HawthornTincture = 24
+        HawthornTincture = 24,
+        PotatoPirozhok = 25
     }
 
     public enum InventoryItemCategory
@@ -82,6 +83,8 @@ namespace BarPromenade
     {
         private static readonly InventoryItemDefinition[] Definitions =
         {
+            new InventoryItemDefinition(InventoryItemId.PotatoPirozhok, InventoryItemCategory.Consumable,
+                "inventory.item.potato_pirozhok.name", "inventory.item.potato_pirozhok.description", 9),
             new InventoryItemDefinition(InventoryItemId.HawthornTincture, InventoryItemCategory.Consumable,
                 "inventory.item.hawthorn.name", "inventory.item.hawthorn.description", 9),
             new InventoryItemDefinition(InventoryItemId.BeerCan, InventoryItemCategory.Consumable,

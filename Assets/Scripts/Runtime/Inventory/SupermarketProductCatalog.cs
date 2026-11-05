@@ -23,6 +23,8 @@ namespace BarPromenade
         public int Price { get; }
     }
 
+    public enum RetailStock { Supermarket, RidgeKiosk }
+
     public static class SupermarketProductCatalog
     {
         private static readonly SupermarketProductOffer[] offers =
@@ -62,21 +64,38 @@ namespace BarPromenade
         public static IReadOnlyList<SupermarketProductOffer> Offers =>
             offersView;
 
+        private static readonly SupermarketProductOffer[] kioskOffers =
+        {
+            GetOffer(InventoryItemId.BeerCan),
+            GetOffer(InventoryItemId.VodkaBottle),
+            new SupermarketProductOffer(InventoryItemId.PotatoPirozhok, "inventory.item.potato_pirozhok.name",
+                "inventory.item.potato_pirozhok.description", 5)
+        };
+
+        public static bool TryGetOffer(
+            RetailStock stock, InventoryItemId itemId, out SupermarketProductOffer offer)
+        {
+            var assortment = stock switch
+            {
+                RetailStock.Supermarket => offers,
+                RetailStock.RidgeKiosk => kioskOffers,
+                _ => throw new ArgumentOutOfRangeException(nameof(stock))
+            };
+            foreach (var candidate in assortment)
+            {
+                if (candidate.ItemId != itemId) continue;
+                offer = candidate;
+                return true;
+            }
+            offer = default;
+            return false;
+        }
+
         public static bool TryGetOffer(
             InventoryItemId itemId,
             out SupermarketProductOffer offer)
         {
-            for (int index = 0; index < offers.Length; index++)
-            {
-                if (offers[index].ItemId == itemId)
-                {
-                    offer = offers[index];
-                    return true;
-                }
-            }
-
-            offer = default;
-            return false;
+            return TryGetOffer(RetailStock.Supermarket, itemId, out offer);
         }
 
         public static SupermarketProductOffer GetOffer(

@@ -48,12 +48,14 @@ namespace BarPromenade
             MountainRoadTerminalSitePlan cafeSite = null,
             Collider cafeRainShelter = null,
             CityResidentialCourtyardPlan residentialCourtyards = null,
-            GameObject residentialCourtyardRoot = null)
+            GameObject residentialCourtyardRoot = null,
+            IReadOnlyList<Collider> kioskRainShelters = null)
         {
             Root = root;
             Cafe = cafe;
             CafeSite = cafeSite;
             CafeRainShelter = cafeRainShelter;
+            KioskRainShelters = kioskRainShelters ?? Array.Empty<Collider>();
             ResidentialCourtyards = residentialCourtyards;
             ResidentialCourtyardRoot = residentialCourtyardRoot;
             Fair = root != null ? root.GetComponentInChildren<CityFairWorld>(true) : null;
@@ -137,6 +139,7 @@ namespace BarPromenade
         public MountainRoadCafeWorldResult Cafe { get; }
         public MountainRoadTerminalSitePlan CafeSite { get; }
         public Collider CafeRainShelter { get; }
+        public IReadOnlyList<Collider> KioskRainShelters { get; }
         public CityFairWorld Fair { get; }
         public CityResidentialCourtyardPlan ResidentialCourtyards { get; }
         public GameObject ResidentialCourtyardRoot { get; }
