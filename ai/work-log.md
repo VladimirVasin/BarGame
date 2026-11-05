@@ -3,6 +3,18 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-06
+Ridge poles aim along real stair/deck surfaces; terminal beams reach the 03-04 approach.
+The Home lens now leases a doorstep source instead of emission alone. Imported household
+pendants light the covered court through the same pool. Pole collision, stops and the global night profile stay.
+LiveCity_RidgeLightingKeepsDoorStairsAndBridgeLitAcrossTheClock checks the actual leases,
+walking surfaces, day floor and game-camera views with shared effects. check-docs/diff-check.
+The kiosk lamp now lights its interior and casts a warm pool through the open window onto the street.
+Its original beam struck the counter; independent inward/outward lobes share the same visible lens and pool.
+The same named check covers seller/shelves, aperture shadows and the brighter street pool, with a rendered source-on/off comparison.
+LiveCity_RidgeKioskDialogueRetainsFacesAndClothesWithBrightStreet exercises real speaker cuts: the street beam
+targets static receivers while people retain soft light and their street shadows. Scoped layer ownership resets with leases and teardown.
+
 ## 2026-11-05
 City and the apartment share the crest's residential ground, courtyard trees and retaining walls.
 Turf and gravel edge the pavement; asphalt follows the house footprints. The passage roof

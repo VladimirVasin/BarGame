@@ -430,8 +430,11 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   Hillside homes share the city's residential soil and wet asphalt skirts. Worn turf, gravel, broken stones
   and a shrub line the walk from 03-04 to the house. Small groups of deciduous trees stand beside gables.
   Stepped concrete walls with drains hold the west banks; low kerbs, grass and boot scrapers edge the eastern gallery courts.
-  The player’s house has a patched plinth. Loose rock sits below the bridge bearings above the gravel bed.
-  The nearby City and apartment views share these placements.
+  The player’s house has a patched plinth and a real pooled doorstep light. Existing upper poles aim along stairs and bridge footways;
+  ceiling pendants light the covered court. These fixtures retain the shared pool and daylight floor. Loose rock sits below the bridge bearings above the gravel bed.
+  The kiosk's warm lamp lights its seller and shelves and spills through the window onto the street;
+  two shadowed pooled lobes share one emissive lens. The strong street beam reaches static surfaces;
+  softer ordinary light retains the seller and dialogue hero's face/clothing detail. The nearby City and apartment views share these placements.
   `10×6 m` rear wings require padded clearance and a `2.4 m`
   court gap. `3.6 m` through passages remain walkable under separate overhead
   collision, height `3.2 m` (`4.2 m` Industrial). Court loops join the graph;

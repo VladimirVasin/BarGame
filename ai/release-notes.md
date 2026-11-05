@@ -6,6 +6,16 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
+### 2026-11-06
+
+- На Гребне свет падает на порог дома, ступени, тротуары моста и подход к 03-04.
+  В крытом проходном дворе горят потолочные лампы. Между пятнами света остаётся темно.
+  LiveCity_RidgeLightingKeepsDoorStairsAndBridgeLitAcrossTheClock.
+- В ларьке ярче видны продавец и полки. Тёплый свет из окна ложится на прилавок, тротуар и дорогу впереди.
+  LiveCity_RidgeLightingKeepsDoorStairsAndBridgeLitAcrossTheClock.
+  Лица и одежда продавца и героя в разговоре сохраняют детали при ярком свете на улице.
+  LiveCity_RidgeKioskDialogueRetainsFacesAndClothesWithBrightStreet.
+
 ### 2026-11-05
 
 - От 03-04 к дому на Гребне вдоль тротуара тянутся щебень и трава, за низким каменным краем растёт куст.

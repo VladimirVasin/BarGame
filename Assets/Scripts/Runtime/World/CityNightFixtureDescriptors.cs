@@ -17,13 +17,15 @@ namespace BarPromenade
             float edgeT,
             StreetLampSide side,
             Vector3 position,
-            Vector3 forward)
+            Vector3 forward,
+            Vector3? lightTarget = null)
         {
             Edge = edge;
             EdgeT = edgeT;
             Side = side;
             Position = position;
             Forward = forward;
+            LightTarget = lightTarget;
         }
 
         public RoadEdge Edge { get; }
@@ -31,6 +33,8 @@ namespace BarPromenade
         public StreetLampSide Side { get; }
         public Vector3 Position { get; }
         public Vector3 Forward { get; }
+        // An authored surface target changes the beam, never the pole or bulb position.
+        public Vector3? LightTarget { get; }
 
         public bool Equals(StreetLampDescriptor other)
         {
@@ -38,7 +42,8 @@ namespace BarPromenade
                    EdgeT.Equals(other.EdgeT) &&
                    Side == other.Side &&
                    Position == other.Position &&
-                   Forward == other.Forward;
+                   Forward == other.Forward &&
+                   Nullable.Equals(LightTarget, other.LightTarget);
         }
 
         public override bool Equals(object obj)
@@ -56,6 +61,7 @@ namespace BarPromenade
                 hash = (hash * 31) + (int)Side;
                 hash = (hash * 31) + Position.GetHashCode();
                 hash = (hash * 31) + Forward.GetHashCode();
+                if (LightTarget.HasValue) hash = (hash * 31) + LightTarget.Value.GetHashCode();
                 return hash;
             }
         }

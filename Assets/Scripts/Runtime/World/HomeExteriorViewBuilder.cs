@@ -859,7 +859,9 @@ namespace BarPromenade
                     PlayerHomeBalconyGeometry
                         .ToHomeLocalDirection(
                             context.PlayerHome,
-                            source.Forward)));
+                            source.Forward),
+                    source.LightTarget.HasValue ? PlayerHomeBalconyGeometry.ToHomeLocal(
+                        context.PlayerHome, source.LightTarget.Value) : (Vector3?)null));
             }
 
             var signals =

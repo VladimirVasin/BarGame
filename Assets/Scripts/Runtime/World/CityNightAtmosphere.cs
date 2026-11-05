@@ -23,6 +23,7 @@ namespace BarPromenade
         // correspondingly further.
         private const float StreetLightIntensity = 31f;
         private const float StreetLightRange = 16.5f;
+        private const float HillsideLightRange = 22f;
         private const float BarLightIntensity = 8f;
         private const float VisibleFactorThreshold = 0.0001f;
 
@@ -82,6 +83,9 @@ namespace BarPromenade
         private bool[] industrialUseShadows = Array.Empty<bool>();
         private float[] industrialIntensityScales = Array.Empty<float>();
         private float[] industrialRangeLimits = Array.Empty<float>();
+        private float[] industrialSpotAngles = Array.Empty<float>();
+        private float[] industrialInnerSpotAngles = Array.Empty<float>();
+        private bool[] industrialStreetOnly = Array.Empty<bool>();
         private UniversalAdditionalLightData[] pooledShadowData = Array.Empty<UniversalAdditionalLightData>();
         private CityLightHalo[] industrialFixtureHalos = Array.Empty<CityLightHalo>();
         public int IndustrialTaskLightCount => industrialPurposes.Length;
@@ -145,6 +149,9 @@ namespace BarPromenade
             industrialUseShadows = new bool[taskAnchors.Length];
             industrialIntensityScales = new float[taskAnchors.Length];
             industrialRangeLimits = new float[taskAnchors.Length];
+            industrialSpotAngles = new float[taskAnchors.Length];
+            industrialInnerSpotAngles = new float[taskAnchors.Length];
+            industrialStreetOnly = new bool[taskAnchors.Length];
             industrialFixtureHalos = new CityLightHalo[taskAnchors.Length];
             for (int index = 0; index < taskAnchors.Length; index++)
             {
@@ -159,8 +166,31 @@ namespace BarPromenade
                     case "RidgeKiosk":
                         industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
                         industrialUseShadows[index] = true;
-                        industrialIntensityScales[index] = .105f;
-                        industrialRangeLimits[index] = 3.5f; break;
+                        industrialIntensityScales[index] = 6f;
+                        industrialRangeLimits[index] = 14f;
+                        industrialSpotAngles[index] = 120f;
+                        industrialInnerSpotAngles[index] = 50f;
+                        industrialStreetOnly[index] = true;
+                        taskAnchors[index].GetComponentInParent<RidgeKioskStreetLightReceivers>()
+                            .Initialize(transform.parent, taskAnchors[index].position, industrialRangeLimits[index]);
+                        break;
+                    case "RidgeKioskInterior":
+                        industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = .03f;
+                        industrialRangeLimits[index] = 4.2f;
+                        industrialSpotAngles[index] = 165f;
+                        industrialInnerSpotAngles[index] = 150f; break;
+                    case "HomeEntrance":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = .28f;
+                        industrialRangeLimits[index] = 4.5f; break;
+                    case "RidgePassage":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = .20f;
+                        industrialRangeLimits[index] = 5.5f; break;
                     case "LaundryWork":
                         industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
                         industrialIntensityScales[index] = .75f;
@@ -189,6 +219,8 @@ namespace BarPromenade
                         break;
                 }
                 PracticalLightProfile profile = GetIndustrialProfile(industrialPurposes[index]);
+                // Two lobes describe one kiosk diffuser, with one visible halo.
+                if (purposeName == "RidgeKioskInterior") continue;
                 // Imported anchors inherit the FBX unit factor. Keep particle
                 // sizes in world metres and move their soft depth fade clear
                 // of the fixture housing and the adjacent opaque facade.
@@ -200,8 +232,8 @@ namespace BarPromenade
                 industrialFixtureHalos[index] = CityLightHalo.CreateAlwaysBurning(haloOwner, Vector3.zero,
                     profile.HaloInnerSize * (industrialUseShadows[index] ? .5f : 1f),
                     profile.HaloOuterSize * (industrialUseShadows[index] ? .5f : 1f),
-                    profile.HaloInnerColor * industrialIntensityScales[index],
-                    profile.HaloOuterColor * industrialIntensityScales[index]);
+                    profile.HaloInnerColor * Mathf.Min(industrialIntensityScales[index], 2f),
+                    profile.HaloOuterColor * Mathf.Min(industrialIntensityScales[index], 2f));
             }
             practicalAnchors = CopyPracticalAnchors(
                 fringePracticalAnchors);
@@ -454,7 +486,9 @@ namespace BarPromenade
                 {
                     int taskIndex = anchorIndex - industrialAnchorStartIndex;
                     ApplyIndustrialProfile(index, industrialPurposes[taskIndex], industrialUseShadows[taskIndex],
-                        industrialIntensityScales[taskIndex], industrialRangeLimits[taskIndex]);
+                        industrialIntensityScales[taskIndex], industrialRangeLimits[taskIndex],
+                        industrialSpotAngles[taskIndex], industrialInnerSpotAngles[taskIndex],
+                        industrialStreetOnly[taskIndex]);
                 }
                 else if (isQuay)
                 {
@@ -462,7 +496,8 @@ namespace BarPromenade
                 }
                 else
                 {
-                    ApplyStreetProfile(index);
+                    ApplyStreetProfile(index, anchorIndex >= 0 && anchorIndex < lampAnchors.Length &&
+                        lampAnchors[anchorIndex] != null && lampAnchors[anchorIndex].forward.y < -.05f);
                 }
 
                 Light light = streetLightPool[index];
@@ -628,18 +663,22 @@ namespace BarPromenade
         }
 
         private void ApplyIndustrialProfile(int poolIndex, CityIndustrialPurpose purpose, bool useShadows,
-            float intensityScale, float rangeLimit)
+            float intensityScale, float rangeLimit, float spotAngle, float innerSpotAngle, bool streetOnly)
         {
             PracticalLightProfile profile = GetIndustrialProfile(purpose);
+            // An authored kiosk beam owns its full range. The legacy workshop
+            // profile's seven-metre ceiling must not truncate the street spill.
+            float range = spotAngle > 0f ? rangeLimit : Mathf.Min(profile.Range, rangeLimit);
             ApplyPooledLightProfile(poolIndex, profile.Color, profile.Intensity * intensityScale,
-                Mathf.Min(profile.Range, rangeLimit),
-                useShadows ? 165f : profile.SpotAngle, useShadows ? 20f : profile.InnerSpotAngle,
+                range,
+                spotAngle > 0f ? spotAngle : useShadows ? 165f : profile.SpotAngle,
+                spotAngle > 0f ? innerSpotAngle : useShadows ? 20f : profile.InnerSpotAngle,
                 profile.HaloInnerSize, profile.HaloOuterSize,
                 profile.HaloInnerColor * intensityScale, profile.HaloOuterColor * intensityScale);
             if (!useShadows) return;
             Light light = streetLightPool[poolIndex];
             light.shadows = LightShadows.Soft;
-            light.shadowStrength = .85f;
+            light.shadowStrength = spotAngle > 0f ? 1f : .85f;
             light.shadowBias = .015f;
             light.shadowNormalBias = .06f;
             light.shadowNearPlane = .05f;
@@ -647,6 +686,13 @@ namespace BarPromenade
             if (data == null)
                 pooledShadowData[poolIndex] = data = light.GetUniversalAdditionalLightData();
             data.usePipelineSettings = false;
+            if (streetOnly)
+            {
+                data.renderingLayers = RidgeKioskStreetLightReceivers.StreetLayer;
+                // People and the opaque shell still shadow the pavement.
+                data.customShadowLayers = true;
+                data.shadowRenderingLayers = 1u;
+            }
             // The pinned PC asset's Low tier is 256. URP rejects its public
             // tier setter outside Play mode; edit-time composition retains
             // valid geometry and shadows with the pipeline's default tier.
@@ -710,15 +756,15 @@ namespace BarPromenade
             return result.ToArray();
         }
 
-        private void ApplyStreetProfile(int poolIndex)
+        private void ApplyStreetProfile(int poolIndex, bool aimedAtSurface = false)
         {
             ApplyPooledLightProfile(
                 poolIndex,
                 StreetLightColor,
                 StreetLightIntensity,
-                StreetLightRange,
-                105f,
-                55f,
+                aimedAtSurface ? HillsideLightRange : StreetLightRange,
+                aimedAtSurface ? 165f : 105f,
+                aimedAtSurface ? 95f : 55f,
                 1.15f,
                 3.10f,
                 StreetHaloInner,
@@ -760,7 +806,13 @@ namespace BarPromenade
             light.innerSpotAngle = innerSpotAngle;
             light.shadows = LightShadows.None;
             if (pooledShadowData[poolIndex] != null)
-                pooledShadowData[poolIndex].usePipelineSettings = true;
+            {
+                var data = pooledShadowData[poolIndex];
+                data.usePipelineSettings = true;
+                data.customShadowLayers = false;
+                data.renderingLayers = 1u;
+                data.shadowRenderingLayers = 1u;
+            }
             pooledLightBaseIntensities[poolIndex] = intensity;
             light.intensity =
                 intensity * GetPooledIntensityFactor(poolIndex);
@@ -942,6 +994,10 @@ namespace BarPromenade
 
         private static Quaternion CreateStreetLightRotation(Transform anchor)
         {
+            // Hillside poles retain their physical lens and an authored beam
+            // towards the actual stair/deck datum. Ordinary streets keep the
+            // original downward profile.
+            if (anchor.forward.y < -.05f) return anchor.rotation;
             Vector3 roadDirection = Vector3.ProjectOnPlane(
                 anchor.forward,
                 Vector3.up).normalized;

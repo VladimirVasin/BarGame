@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
@@ -20,9 +21,19 @@ namespace BarPromenade
             if (template == null) throw new InvalidOperationException("Ridge kiosk model is missing.");
             Transform model = UnityEngine.Object.Instantiate(template, root, false).transform;
             model.localPosition = Vector3.zero;
+            root.gameObject.AddComponent<RidgeKioskStreetLightReceivers>().Configure(model);
             var anchors = new Dictionary<string, Transform>(StringComparer.Ordinal);
             foreach (var part in model.GetComponentsInChildren<Transform>(true))
                 if (part.name.StartsWith("Kiosk", StringComparison.Ordinal)) anchors[part.name] = part;
+
+            foreach (var renderer in model.GetComponentsInChildren<MeshRenderer>())
+                if (renderer.name == "RidgeKiosk_KioskLampGlass")
+                {
+                    renderer.sharedMaterial = CityNightResources.EmissiveMaterial;
+                    renderer.shadowCastingMode = ShadowCastingMode.Off;
+                    renderer.receiveShadows = false;
+                    CityNightGlowRegistry.Register(renderer, new Color(3.8f, 2.3f, .9f));
+                }
 
             Transform approach = anchors["KioskApproach"];
             RidgeKioskOffers.Build(root, anchors["KioskBeer"], anchors["KioskVodka"], anchors["KioskPie"], approach, interactive);
@@ -30,8 +41,15 @@ namespace BarPromenade
             // Empty's local axes. Both City and the passive balcony share its lens.
             var lamp = new GameObject(CityNightAtmosphere.IndustrialTaskLightPrefix + "RidgeKiosk").transform;
             lamp.SetParent(root, false);
-            lamp.position = anchors["KioskLamp"].position;
-            lamp.rotation = root.rotation * Quaternion.LookRotation(new Vector3(0f, -1f, .32f), Vector3.forward);
+            // Put both lobes just below the real diffuser. The outward axis
+            // clears the sill before meeting the pavement; the old steep axis
+            // spent its energy on the counter. Walls/hood retain full shadows.
+            lamp.position = anchors["KioskLamp"].position - root.up * .04f;
+            lamp.rotation = root.rotation * Quaternion.LookRotation(new Vector3(0f, -.55f, 1.6f), Vector3.forward);
+            var interior = new GameObject(CityNightAtmosphere.IndustrialTaskLightPrefix + "RidgeKioskInterior").transform;
+            interior.SetParent(root, false);
+            interior.position = lamp.position;
+            interior.rotation = root.rotation * Quaternion.LookRotation(Vector3.down, Vector3.forward);
 
             if (interactive)
             {

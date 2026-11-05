@@ -2,6 +2,19 @@
 
 ## Current facts
 
+- **Accepted 2026-11-06,user — kiosk light:** one warm lens/halo;
+  soft interior+bright street lobe in shared12/day floor. Static ground/shell
+  use rendering bit3;people retain ordinary light and cast street shadows.
+  Bounded128 receivers restore on disable/destroy;leases reset masks.
+  Route-light check below.
+
+- **Accepted 2026-11-06,user — Ridge route light:** existing poles aim at
+  stairs/decks;upper beams165°/95°,22m. Home lens and covered-court Blender
+  pendants lease the same12-Light pool;shadows contain household spill.
+  Pole collision/stop routes unchanged;day floor retained. All24FX reviewed:
+  existing bounce/air/SSR/material/post owners;no new pass/GI/grade/fog.
+  GPU cost unmeasured. LiveCity_RidgeLightingKeepsDoorStairsAndBridgeLitAcrossTheClock.
+
 - **Accepted 2026-11-05 — Ridge Street kiosk.** One permanent shopkeeper serves through the window near Home.
   Story §6/§21 permits his first two voluntary exchanges, each about the goods. Retail at the window uses
   the session till and receipt. Beer and vodka travel sealed, the potato pie feeds the hero. The kiosk must

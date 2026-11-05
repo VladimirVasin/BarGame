@@ -1913,7 +1913,7 @@ namespace BarPromenade
                 new Vector3(0.16f, 0.10f, 0.16f),
                 HomeDoor,
                 false);
-            Color lampColor = new Color(1.35f, 0.95f, 0.55f);
+            Color lampColor = new Color(1.10f, 1.15f, .97f);
             GameObject lamp = RuntimePrimitiveFactory.CreateBox(
                 "Home Entrance Lamp",
                 parent,
@@ -1927,6 +1927,14 @@ namespace BarPromenade
             CityNightGlowRegistry.Register(
                 lamp.GetComponent<Renderer>(),
                 lampColor);
+
+            // The existing lens used to glow without lighting its doorstep.
+            // Lease its surface light from the city pool instead of adding a
+            // permanent Light outside it.
+            Transform source = new GameObject(CityNightAtmosphere.IndustrialTaskLightPrefix + "HomeEntrance").transform;
+            source.SetParent(parent, true);
+            source.position = lamp.transform.position - Vector3.up * .055f;
+            source.rotation = Quaternion.LookRotation(Vector3.down + direction * .28f, direction);
 
             // The Soviet enamel plaque: deep blue, lit from within.
             Vector3 plaqueCenter =

@@ -168,7 +168,11 @@ namespace BarPromenade
                     float side = end == 0 ? 1f : -1f;
                     var foot = new Vector2(gate.x + side * (CityHillsideShortcut.Width * .5f + 1.1f), gate.z + side * .32f);
                     if (road.TrySampleTop(foot, out float y, out var kind) && kind == CityStreetSupportKind.Sidewalk)
-                        Add(new Vector3(foot.x, y, foot.y), new Vector3(-side, 0, side).normalized);
+                    {
+                        Vector3 intoFlight = stair.RouteWorld[end == 0 ? 2 : stair.RouteWorld.Count - 3];
+                        Add(new Vector3(foot.x, y, foot.y), new Vector3(-side, 0, side).normalized,
+                            Vector3.Lerp(gate, intoFlight, .65f));
+                    }
                 }
             }
             var shared = CityHillsideAccessPlan.ForLayout(layout).SharedCourt;
@@ -184,7 +188,17 @@ namespace BarPromenade
                         Mathf.Abs(floor.Size.y - CityTerracePilotPlan.LandingSize) > .01f) continue;
                     Vector3 corner = (turnIndex++ == 0 ? new Vector3(-1,0,-1) : new Vector3(1,0,1));
                     Vector3 foot = floor.Center + corner * .80f;
-                    Add(foot, -corner.normalized);
+                    // The source stays on its original pole, but looks along
+                    // the flight rather than across an imaginary level street.
+                    Vector3 target = floor.Center;
+                    foreach (var flight in shared.Flights)
+                        if (Vector3.Distance(flight.Start, floor.Center) < 4f ||
+                            Vector3.Distance(flight.End, floor.Center) < 4f)
+                        {
+                            target = Vector3.Lerp(flight.Start, flight.End, .5f);
+                            break;
+                        }
+                    Add(foot, -corner.normalized, target);
                 }
             }
             var quarter = CityHillsideQuarterPlan.ForLayout(layout);
@@ -206,7 +220,8 @@ namespace BarPromenade
                             poleRadius - CityPedestrianPlanner.AgentRadius - .10f);
                     }
                     Add(new Vector3(x, link.PavementTopAt(x), deck.center.y + side * 4.68f),
-                        new Vector3(0,0,-side));
+                        new Vector3(0,0,-side), new Vector3(x,
+                            link.PavementTopAt(x), deck.center.y + side * 3.8f));
                 }
             }
             foreach (var link in quarter.Links)
@@ -214,7 +229,7 @@ namespace BarPromenade
                 bool crest = link.Id == "summit";
                 Vector3 turn = shared.RouteWorld[crest ? shared.RouteWorld.Count - 1 : 0];
                 var entry = new Vector3(turn.x + 2.4f, link.PavementTopAt(turn.x + 2.4f), turn.z + (crest ? -.32f : .32f));
-                Add(entry, Vector3.ProjectOnPlane(turn - entry, Vector3.up).normalized);
+                Add(entry, Vector3.ProjectOnPlane(turn - entry, Vector3.up).normalized, turn);
                 // The street is east-west; service both sides alternately.
                 int stations = Mathf.Max(1, Mathf.RoundToInt((link.EastGateWorld.x - link.WestGateWorld.x) / 23f));
                 for (int i = 0; i < stations; i++)
@@ -228,17 +243,25 @@ namespace BarPromenade
                         Vector3 foot = Vector3.Lerp(walk[j - 1], walk[j], Mathf.InverseLerp(walk[j - 1].x, walk[j].x, x));
                         foot.z += north ? .72f : -.72f;
                         if (link.TrySampleTop(new Vector2(foot.x, foot.z), out foot.y, out var kind) && kind == CityStreetSupportKind.Sidewalk)
-                            Add(foot, north ? Vector3.back : Vector3.forward);
+                        {
+                            Vector3 forward = north ? Vector3.back : Vector3.forward;
+                            // A broad downward beam serves both directions of
+                            // the footway. A lateral aim towards the terminal
+                            // left a blind gap immediately behind the bulb.
+                            Vector3 aim = foot + forward * 1.07f;
+                            Add(foot, forward, aim);
+                        }
                         break;
                     }
                 }
             }
 
-            void Add(Vector3 foot, Vector3 forward)
+            void Add(Vector3 foot, Vector3 forward, Vector3? target = null)
             {
                 for (int i = first; i < lamps.Count; i++)
                     if ((lamps[i].Position - foot).sqrMagnitude < 36f) return;
-                lamps.Add(new StreetLampDescriptor(default, 0f, StreetLampSide.Right, foot, forward));
+                lamps.Add(new StreetLampDescriptor(default, 0f, StreetLampSide.Right, foot, forward,
+                    target ?? foot + forward * 2.5f));
             }
         }
 
@@ -257,6 +280,11 @@ namespace BarPromenade
                 descriptor.Position +
                 (rotation * new Vector3(0f, 4.70f, 1.07f));
             anchor.localRotation = rotation;
+            if (descriptor.LightTarget.HasValue)
+            {
+                Vector3 aim = descriptor.LightTarget.Value - anchor.localPosition;
+                if (aim.y < -.1f) anchor.localRotation = Quaternion.LookRotation(aim, Vector3.up);
+            }
             return anchor;
         }
 

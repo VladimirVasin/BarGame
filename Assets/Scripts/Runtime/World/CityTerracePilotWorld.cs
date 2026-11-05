@@ -251,6 +251,7 @@ namespace BarPromenade
                 Pave(walk.yMin, back, "Courtyard threshold", true);
                 Pave(back, front, "Covered passage paving", false);
                 Pave(front, walk.yMax, "Street threshold", true);
+                BuildPassageLights(root, passage, back, front);
                 // The grate receives the exposed paving at the rear drip line.
                 // Only its rim and bars stand above the continuous walking plane.
                 Vector3 drain = new Vector3(walk.xMax - .33f, floor.Center.y - .014f, back - .36f);
@@ -278,6 +279,43 @@ namespace BarPromenade
                 }
             }
             throw new InvalidOperationException("The shared court paving must pass through its covered residential opening.");
+        }
+
+        private static void BuildPassageLights(Transform root, Bounds passage, float back, float front)
+        {
+            // A household pendant already authored in Blender fits below the
+            // ceiling. Reuse its meshes/materials; the opening stays unobstructed.
+            var provider = CityMiscAssetProvider.LoadOrThrow();
+            int count = Mathf.CeilToInt((front - back) / 5f);
+            if (count > 4) throw new InvalidOperationException("The covered court exceeds its fixture budget.");
+            for (int index = 0; index < count; index++)
+            {
+                var fitting = new GameObject("Passage ceiling lamp " + index).transform;
+                fitting.SetParent(root, false);
+                fitting.localPosition = new Vector3(passage.center.x, passage.max.y - .70f,
+                    Mathf.Lerp(back, front, (index + .5f) / count));
+                for (int partIndex = 0; partIndex < CityMiscAssetProvider.GetPartCount(CityMiscKind.ParkChessLampPendant); partIndex++)
+                {
+                    var part = provider.GetPartOrThrow(CityMiscKind.ParkChessLampPendant, 0, partIndex);
+                    var mesh = new GameObject(part.Component);
+                    mesh.transform.SetParent(fitting, false);
+                    mesh.AddComponent<MeshFilter>().sharedMesh = part.Mesh;
+                    var renderer = mesh.AddComponent<MeshRenderer>();
+                    bool bulb = part.Role == CityMiscMeshRole.Neon;
+                    renderer.sharedMaterial = bulb ? CityNightResources.EmissiveMaterial :
+                        CityPortAssetProvider.GetSurfaceMaterial("SteelDark");
+                    if (bulb)
+                    {
+                        CityNightGlowRegistry.Register(renderer, new Color(1.10f, 1.15f, .97f));
+                        renderer.shadowCastingMode = ShadowCastingMode.Off;
+                        renderer.receiveShadows = false;
+                    }
+                }
+                var source = new GameObject(CityNightAtmosphere.IndustrialTaskLightPrefix + "RidgePassage").transform;
+                source.SetParent(fitting, false);
+                source.localPosition = Vector3.up * .025f;
+                source.localRotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+            }
         }
 
         private static void BuildCourtyardLinkRamp(Transform root, CityTerraceDistrictPlan district,
