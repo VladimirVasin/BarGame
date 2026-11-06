@@ -4,6 +4,16 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-06
+Ridge earth now connects streets, yards and house perimeters through the same sampled triangles.
+Graded shoulders retain pavement contacts; a real soil approach reaches the bridge-side Home bench.
+Home's logical collider follows its authored footprint. Finite reused view benches, bins and booths
+keep shared seating/utility owners and City/Home placements; trunks, solids and the dry cut stay closed.
+LiveCity_RidgeGroundAndViewBenchesKeepSupportedWalksAndArrivals covers physical walks, map heights,
+the Home collider and E sit/stand; seated day/night views reviewed.
+LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement passes with the final ground.
+The final ImageGen redraw keeps surveyed registration: RidgeMapSurveyRegistration.
+Shared City light/material/post owners remain; costs unmeasured. check-docs/diff-check.
+
 Ridge poles aim along real stair/deck surfaces; terminal beams reach the 03-04 approach.
 The Home lens now leases a doorstep source instead of emission alone. Imported household
 pendants light the covered court through the same pool. Pole collision, stops and the global night profile stay.

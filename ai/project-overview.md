@@ -88,6 +88,7 @@ Repair/publication: [../tools/README.md](../tools/README.md).
   Hero:wounds/no detach;bar:hit/parry;skin/aim.
   Gap:pierce/balance. [World](current-world.md)
 - City:west work/east homes3–5storeys+park;144lots/courts/wings.
+  Hillside earth/yards,view benches/bins/booths share finite plans/contacts.
   2 buses/ring, transfer stairs, stop zebras. 10 seats+3 stands.
   NPC192/≤36/cache48, home/work, Home5/2, dog3/owners2.
   8 industry sites: roofs/gear/surfaces/task lights;
@@ -140,9 +141,8 @@ Repair/publication: [../tools/README.md](../tools/README.md).
 
 ## Deferred
 
-Long-term saves, broader economy/story progression, release certification and
-other omissions are itemized in [current-world.md#deferred](current-world.md#deferred).
-A `Partial` system states its own gap in the systems map. Coverage does not imply a fresh run.
+Disk saves/economy/story/release gaps: [World](current-world.md#deferred).
+`Partial` rows name their gaps; coverage is not a fresh run.
 
 ## Verification policy
 

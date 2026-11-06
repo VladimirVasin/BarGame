@@ -184,6 +184,9 @@ namespace BarPromenade.Editor
                 Box("hill-ground:" + road.Bank, "ground", CityHillsideNeighborhoodPlan.TerrainBounds(road));
             var quarter = CityHillsideQuarterPlan.ForLayout(layout);
             if (quarter.Links.Count > 0) Box("hill-ground:quarter", "ground", quarter.TerrainBounds);
+            int hillsideYard = 0;
+            foreach (Vector2[] piece in CityHillsideGroundPlan.ForLayout(layout).WalkablePolygons)
+                Poly("hill-yard:" + hillsideYard++, "walkable-ground", piece);
             var rim = quarter.RavineOutline;
             if (rim.Count > 2)
             {
@@ -519,6 +522,7 @@ namespace BarPromenade.Editor
                     case "promenade": return new Color32(92, 95, 85, 255);
                     case "bridge": return new Color32(133, 128, 107, 255);
                     case "public-ground": return new Color32(67, 76, 67, 255);
+                    case "walkable-ground": return new Color32(68, 73, 62, 255);
                     case "terrace-court": return new Color32(89, 95, 83, 255);
                     case "terrace-landing": return new Color32(111, 112, 96, 255);
                     case "building": return new Color32(91, 96, 88, 255);

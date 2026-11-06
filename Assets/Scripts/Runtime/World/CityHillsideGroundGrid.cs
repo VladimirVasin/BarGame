@@ -26,12 +26,15 @@ namespace BarPromenade
         {
             var roads = CityHillsideStreetPlan.ForLayout(layout).Routes;
             var grids = new CityHillsideGroundGrid[roads.Count];
-            var buildings = CityHillsideNeighborhoodPlan.ForLayout(layout).Buildings;
+            var buildings = CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings;
             for (int i = 0; i < roads.Count; i++)
             {
                 var houses = new List<CityHillsideBuilding>();
+                Rect bounds = CityHillsideNeighborhoodPlan.TerrainBounds(roads[i]);
                 foreach (var house in buildings)
-                    if (house.Bank == roads[i].Bank) houses.Add(house);
+                    if (house.Bank == roads[i].Bank &&
+                        (bounds.Overlaps(house.FoundationBounds) || bounds.Overlaps(house.ApproachBounds) || bounds.Overlaps(house.CourtBounds)))
+                        houses.Add(house);
                 grids[i] = new CityHillsideGroundGrid(layout, roads[i], houses);
             }
             return grids;
@@ -44,6 +47,9 @@ namespace BarPromenade
             Rect bounds = CityHillsideNeighborhoodPlan.TerrainBounds(road);
             var xs = new SortedSet<float>();
             var zs = new SortedSet<float>();
+            var pads = CityHillsideFurniturePlan.GroundPads(layout);
+            var ramps = CityHillsideFurniturePlan.GroundRamps(layout);
+            var seams = CityHillsideGroundSeamPlan.ForLayout(layout);
             for (float at = bounds.xMin; at < bounds.xMax; at += 3f) xs.Add(at);
             for (float at = bounds.yMin; at < bounds.yMax; at += 3f) zs.Add(at);
             AddBreaks(bounds);
@@ -71,6 +77,9 @@ namespace BarPromenade
                 zs.Add(road.GetLaneZ(i) - CityHillsideStreetRoute.OuterHalfWidth);
                 zs.Add(road.GetLaneZ(i) + CityHillsideStreetRoute.OuterHalfWidth);
             }
+            CityHillsideGroundPlan.AddPadBreaks(bounds, pads, xs, zs);
+            CityHillsideGroundPlan.AddRampBreaks(bounds, ramps, xs, zs);
+            seams.AddBreaks(bounds, xs, zs);
             x = new float[xs.Count]; xs.CopyTo(x);
             z = new float[zs.Count]; zs.CopyTo(z);
             heights = new float[Columns * Rows];
@@ -79,7 +88,9 @@ namespace BarPromenade
             for (int col = 0; col < Columns; col++)
             {
                 var p = new Vector2(x[col], z[row]);
-                heights[row * Columns + col] = CityHillsideNeighborhoodPlan.SampleBuiltGround(layout, road, p, houses);
+                heights[row * Columns + col] = CityHillsideGroundPlan.ApplyRamps(p,
+                    CityHillsideGroundPlan.ApplyPads(p,
+                        seams.Apply(p, CityHillsideNeighborhoodPlan.SampleBuiltGround(layout, road, p, houses)), pads), ramps);
                 if (col + 1 == Columns || row + 1 == Rows) continue;
                 var center = new Vector2((p.x + x[col + 1]) * .5f, (p.y + z[row + 1]) * .5f);
                 surfaces[row * (Columns - 1) + col] = Classify(center);
@@ -93,7 +104,11 @@ namespace BarPromenade
             }
             void AddBreaks(Rect area)
             {
-                xs.Add(area.xMin); xs.Add(area.xMax); zs.Add(area.yMin); zs.Add(area.yMax);
+                if (!bounds.Overlaps(area) && area != bounds) return;
+                xs.Add(Mathf.Clamp(area.xMin, bounds.xMin, bounds.xMax));
+                xs.Add(Mathf.Clamp(area.xMax, bounds.xMin, bounds.xMax));
+                zs.Add(Mathf.Clamp(area.yMin, bounds.yMin, bounds.yMax));
+                zs.Add(Mathf.Clamp(area.yMax, bounds.yMin, bounds.yMax));
             }
         }
 

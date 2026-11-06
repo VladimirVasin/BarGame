@@ -427,7 +427,9 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
   Coast streets reach Lower Court and upper housing. Two seven-tier climbs
   join on two streets bridging a dry ravine. Stairs link all tiers and the through court to the crest.
-  Hillside homes share the city's residential soil and wet asphalt skirts. Worn turf, gravel, broken stones
+  Safe off-road earth joins hillside yards; its triangles own collision, walking and map arrival heights.
+  Level pockets carry shared sittable view benches, dumpsters and phone booths. Home's bench faces
+  the truss bridge, dry ravine and descending roofs. Hillside homes share residential soil and wet asphalt skirts. Worn turf, gravel, broken stones
   and a shrub line the walk from 03-04 to the house. Small groups of deciduous trees stand beside gables.
   Stepped concrete walls with drains hold the west banks; low kerbs, grass and boot scrapers edge the eastern gallery courts.
   The player’s house has a patched plinth and a real pooled doorstep light. Existing upper poles aim along stairs and bridge footways;

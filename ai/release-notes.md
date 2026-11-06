@@ -8,6 +8,12 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-06
 
+- На Гребне можно сходить с улиц на землю, проходить дворы и обходить дом. Убрана невидимая преграда сбоку дома.
+  У верхнего моста появилась скамья: сидя видны нижний мост, сухой лог и дома в тумане. `E` — сесть/встать.
+  По улицам расставлены другие видовые скамьи, баки и телефонные будки.
+  LiveCity_RidgeGroundAndViewBenchesKeepSupportedWalksAndArrivals.
+  Подходы к остановкам и посадка проверены: LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
+  Карта перерисована по окончательной геометрии: RidgeMapSurveyRegistration.
 - На Гребне свет падает на порог дома, ступени, тротуары моста и подход к 03-04.
   В крытом проходном дворе горят потолочные лампы. Между пятнами света остаётся темно.
   LiveCity_RidgeLightingKeepsDoorStairsAndBridgeLitAcrossTheClock.

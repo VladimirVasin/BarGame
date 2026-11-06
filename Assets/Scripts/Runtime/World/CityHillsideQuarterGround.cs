@@ -11,80 +11,40 @@ namespace BarPromenade
         {
             var plan = CityHillsideQuarterPlan.ForLayout(layout);
             if (plan.Links.Count == 0) return;
-            Rect bounds = plan.TerrainBounds;
-            var xs = new SortedSet<float> { bounds.xMin, bounds.xMax, bounds.xMin + 9f, bounds.xMax - 9f };
-            var zs = new SortedSet<float> { bounds.yMin, bounds.yMax, plan.Links[0].WestGateWorld.z - 20f };
-            for (float x = bounds.xMin; x <= bounds.xMax; x += 3f) xs.Add(x);
-            for (float z = bounds.yMin; z <= bounds.yMax; z += 3f) zs.Add(z);
-            var bank = CityHillsideStreetPlan.ForLayout(layout).Routes[0];
-            for (int i = 0; i < CityHillsideStreetRoute.LaneCount; i++)
-            {
-                float z = bank.GetLaneZ(i);
-                if (z - 5f > bounds.yMin && z - 5f < bounds.yMax) zs.Add(z - 5f);
-                if (z + 5f > bounds.yMin && z + 5f < bounds.yMax) zs.Add(z + 5f);
-            }
-            foreach (var link in plan.Links) { zs.Add(link.Bounds.yMin); zs.Add(link.Bounds.yMax); }
-            var court = CityHillsideAccessPlan.ForLayout(layout).SharedCourt;
-            foreach (Rect cut in court.WalkableBounds)
-            {
-                xs.Add(cut.xMin); xs.Add(cut.xMax);
-                zs.Add(cut.yMin); zs.Add(cut.yMax);
-            }
-            // Fixed template columns bend with the cut. The outermost columns and
-            // the court stay on the original mesh, including both bank seams.
-            xs.Add(CityHillsideQuarterRavine.MeshWest);
-            xs.Add(CityHillsideQuarterRavine.MeshEast);
-            foreach (var p in CityHillsideQuarterRavine.Profile)
-                xs.Add(Mathf.Lerp(CityHillsideQuarterRavine.TemplateWest, CityHillsideQuarterRavine.TemplateEast, p.x));
-            foreach (var section in CityHillsideQuarterRavine.Sections) zs.Add(section.x);
-            var xAxis = new List<float>(xs);
-            var zAxis = new List<float>(zs);
-            int columns = xAxis.Count;
-            int gridSize = columns * zAxis.Count;
+            var grid = CityHillsideQuarterGroundGrid.ForLayout(layout);
+            int columns = grid.Columns;
+            int gridSize = columns * grid.Rows;
             var vertices = new Vector3[gridSize * 2];
             var uv = new Vector2[vertices.Length];
             var faces = new List<int>();
             var rock = new List<int>();
             var scree = new List<int>();
-            for (int j = 0; j < zAxis.Count; j++)
+            for (int row = 0; row < grid.Rows; row++)
+            for (int col = 0; col < columns; col++)
             {
-                var section = CityHillsideQuarterRavine.At(zAxis[j]);
-                for (int i = 0; i < columns; i++)
-                {
-                    int a = j * columns + i;
-                    Vector2 point = new Vector2(CityHillsideQuarterRavine.MeshX(xAxis[i], section), zAxis[j]);
-                    float height = plan.SampleSoil(point);
-                    vertices[a] = vertices[a + gridSize] = new Vector3(point.x, height, point.y);
-                    uv[a] = point / CityExteriorAppearance.GroundTextureTileSize;
-                    // Distance along the gully and across its section, in metres.
-                    // Walls retain texture scale where their X span nearly vanishes.
-                    float u = Mathf.InverseLerp(section.y, section.z, point.x);
-                    float depth = CityHillsideQuarterRavine.Drop(point);
-                    uv[a + gridSize] = new Vector2(point.y,
-                        point.x + (u < .5f ? depth : 2f * section.w - depth)) / CityMountainSurfaceAppearance.MetersPerTile;
-                    if (i + 1 == columns || j + 1 == zAxis.Count) continue;
-                    float midZ = (point.y + zAxis[j + 1]) * .5f;
-                    float templateX = (xAxis[i] + xAxis[i + 1]) * .5f;
-                    var centre = new Vector2(CityHillsideQuarterRavine.MeshX(templateX, section), midZ);
-                    if (retained.HasValue && !retained.Value.Overlaps(Rect.MinMaxRect(
-                        point.x, point.y, CityHillsideQuarterRavine.MeshX(xAxis[i + 1], section), zAxis[j + 1]))) continue;
-                    bool opening = false;
-                    foreach (Rect cut in court.WalkableBounds)
-                        if (cut.Contains(centre)) { opening = true; break; }
-                    if (opening) continue;
-                    bool isRock = CityHillsideQuarterRavine.IsOpenRockColumn(templateX, midZ);
-                    // Loose chips settle on the relatively flat bottom of the cut.
-                    // Its benches and the exposed steep walls keep the layered rock.
-                    float across = Mathf.InverseLerp(CityHillsideQuarterRavine.TemplateWest,
-                        CityHillsideQuarterRavine.TemplateEast, templateX);
-                    bool looseFloor = isRock && section.w > 4f && across > .37f &&
-                        across < .61f + .035f * Mathf.Sin(midZ * .21f);
-                    var triangles = looseFloor ? scree : isRock ? rock : faces;
-                    if (isRock) a += gridSize;
-                    int b = a + columns;
-                    triangles.Add(a); triangles.Add(b); triangles.Add(a + 1);
-                    triangles.Add(a + 1); triangles.Add(b); triangles.Add(b + 1);
-                }
+                int a = row * columns + col;
+                Vector3 vertex = grid.Vertex(col, row);
+                Vector2 point = new(vertex.x, vertex.z);
+                vertices[a] = vertices[a + gridSize] = vertex;
+                uv[a] = point / CityExteriorAppearance.GroundTextureTileSize;
+                var section = CityHillsideQuarterRavine.At(point.y);
+                float u = Mathf.InverseLerp(section.y, section.z, point.x);
+                float depth = CityHillsideQuarterRavine.Drop(point);
+                uv[a + gridSize] = new Vector2(point.y,
+                    point.x + (u < .5f ? depth : 2f * section.w - depth)) / CityMountainSurfaceAppearance.MetersPerTile;
+                if (col + 1 == columns || row + 1 == grid.Rows) continue;
+                var kind = grid.CellSurface(col, row);
+                if (kind == CityHillsideQuarterGroundGrid.Surface.Cut) continue;
+                Vector3 far = grid.Vertex(col + 1, row + 1);
+                if (retained.HasValue && !retained.Value.Overlaps(Rect.MinMaxRect(
+                    Mathf.Min(vertex.x, grid.Vertex(col, row + 1).x), point.y,
+                    Mathf.Max(grid.Vertex(col + 1, row).x, far.x), far.z))) continue;
+                bool stone = kind == CityHillsideQuarterGroundGrid.Surface.Rock || kind == CityHillsideQuarterGroundGrid.Surface.Scree;
+                var triangles = kind == CityHillsideQuarterGroundGrid.Surface.Scree ? scree : stone ? rock : faces;
+                if (stone) a += gridSize;
+                int b = a + columns;
+                triangles.Add(a); triangles.Add(b); triangles.Add(a + 1);
+                triangles.Add(a + 1); triangles.Add(b); triangles.Add(b + 1);
             }
             var mesh = CityHillsidePerimeterSurface.Build(layout, "Upper quarter saddle and dry rock cut",
                 vertices, uv, faces, rock, scree);

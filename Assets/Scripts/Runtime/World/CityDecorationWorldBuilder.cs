@@ -90,6 +90,15 @@ namespace BarPromenade
             return root.gameObject;
         }
 
+        internal static GameObject BuildDescriptors(Transform parent, CityLayout layout,
+            IReadOnlyList<CityDecorationDescriptor> descriptors)
+        {
+            var root = new GameObject("Ridge Street Utilities").transform;
+            root.SetParent(parent, false);
+            BuildGeometry(root, layout, descriptors, null);
+            return root.gameObject;
+        }
+
         public static GameObject BuildHomeExterior(
             Transform parent,
             HomeExteriorContextPlan context,

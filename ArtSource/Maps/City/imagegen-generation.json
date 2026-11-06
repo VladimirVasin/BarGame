@@ -1,17 +1,18 @@
 {
   "tool": "built-in image_gen",
-  "intent": "Ridge Street kiosk roof and front apron below the crossing west of the summit home.",
-  "prompt": "imagegen-ridge-kiosk-prompt.txt",
+  "intent": "Final Ridge walkable earth, connected yards and furniture pockets; existing streets, bridges, ravine, Home and kiosk remain registered.",
+  "prompt": "imagegen-ridge-ground-prompt.txt",
   "references": [
     "CityMapImage.reference.png",
     "map-reference.png"
   ],
   "geography": "map-reference.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "09141548f74ac4169bb84bb83882538ff5c52f2802cb393c7546e7fa99207bf3",
-  "runtime_image_sha256": "09141548f74ac4169bb84bb83882538ff5c52f2802cb393c7546e7fa99207bf3",
+  "image_sha256": "d9b6aa0782e82654bd7dbef3fd7b45e7b52811ee55584ed6ca358e9655895ee3",
+  "runtime_image_sha256": "d9b6aa0782e82654bd7dbef3fd7b45e7b52811ee55584ed6ca358e9655895ee3",
+  "previous_image_sha256": "09141548f74ac4169bb84bb83882538ff5c52f2802cb393c7546e7fa99207bf3",
   "registration": {
-    "description": "North-up full-bleed edit at the previous native resolution. Street junctions, bridges, transfer stairs, the summit home and the south edge match without pixel translation. The roof occupies the surveyed strip south of the crossing.",
+    "description": "Unchanged full-bleed north-up world bounds; one final redraw after terrain construction. Road landmarks retain their normalized coordinates.",
     "source_size": [
       1173,
       1341
@@ -19,13 +20,9 @@
     "survey_size": [
       1792,
       2048
-    ],
-    "kiosk_roof_normalized_center_from_top": [
-      0.42071,
-      0.92916
     ]
   },
-  "fingerprint": "40fc50f8bbd90964b73ce38ad41371df296b66c1c30cce3708edfab49060dbf9",
+  "fingerprint": "5564b6278a37019fcb54552b080b97a873510704f5a0d1d55ee5ea395b667444",
   "schemaVersion": 2,
   "width": 1173,
   "height": 1341

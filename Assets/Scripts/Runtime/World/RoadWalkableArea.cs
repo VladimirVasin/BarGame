@@ -684,6 +684,9 @@ namespace BarPromenade
             }
             foreach (Bounds solid in CityResidentialCourtyardPlan.ForLayout(layout).CollisionBounds)
                 area.Exclude(Rect.MinMaxRect(solid.min.x, solid.min.z, solid.max.x, solid.max.z));
+            // Streets, courts and earth form one union before capsule erosion.
+            // Adjoining soil is physical terrain, not an invisible road fence.
+            area.AddPolygons(CityHillsideGroundPlan.ForLayout(layout).WalkablePolygons);
             var hillsideStreets = CityHillsideStreetPlan.ForLayout(layout).Routes;
             foreach (CityHillsideStreetRoute route in hillsideStreets)
                 area.AddPolygons(route.WalkablePolygons);
@@ -727,6 +730,10 @@ namespace BarPromenade
                 area.Add(apron);
                 area.Exclude(kiosk.Bounds);
             }
+            // Final furniture samples the completed earth; never make its raw
+            // level-pad recipe depend on this mask. Oriented footprints keep
+            // the sit/stand and utility docks clear beside diagonal benches.
+            area.ExcludePolygons(CityHillsideFurniturePlan.ForLayout(layout).SolidPolygons);
             area.AttachTerraceDistrict(layout);
             return area;
         }

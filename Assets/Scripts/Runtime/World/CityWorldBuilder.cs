@@ -390,6 +390,7 @@ namespace BarPromenade
                     walkableArea, bars, ref playerHome, ref supermarket);
             CityHillsideQuarterGround.Build(world, layout);
             CityHillsideSiteDetails.Build(world, layout);
+            CityHillsideFurnitureWorld.Build(world, layout);
             Collider[] kioskRainShelters = Array.Empty<Collider>();
             if (RidgeKioskSitePlan.TryCreate(layout, out var ridgeKiosk))
                 RidgeKioskWorld.Build(world, ridgeKiosk, true, out kioskRainShelters);

@@ -1,8 +1,7 @@
 {
-  "schemaVersion": 2,
   "blueprintId": "default-coastal",
   "citySeed": 20260727,
-  "fingerprint": "40fc50f8bbd90964b73ce38ad41371df296b66c1c30cce3708edfab49060dbf9",
+  "fingerprint": "5564b6278a37019fcb54552b080b97a873510704f5a0d1d55ee5ea395b667444",
   "worldBounds": {
     "serializedVersion": "2",
     "x": -278.0,
@@ -10,6 +9,7 @@
     "width": 536.0,
     "height": 613.8925170898438
   },
+  "schemaVersion": 2,
   "imageWidth": 1173,
   "imageHeight": 1341
 }

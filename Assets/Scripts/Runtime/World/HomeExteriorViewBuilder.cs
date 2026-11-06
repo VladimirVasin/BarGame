@@ -122,6 +122,7 @@ namespace BarPromenade
             }
             CityTerracePilotWorld.BuildHillsideShortcuts(frame, CityHillsideAccessPlan.ForLayout(context.Layout), window);
             CityHillsideSiteDetails.Build(frame, context.Layout, window);
+            CityHillsideFurnitureWorld.Build(frame, context.Layout, window);
             if (RidgeKioskSitePlan.TryCreate(context.Layout, out var ridgeKiosk) && window.Overlaps(ridgeKiosk.Bounds))
                 RidgeKioskWorld.Build(frame, ridgeKiosk, false);
             HomeSummitOutlook.Build(frame, context, window);

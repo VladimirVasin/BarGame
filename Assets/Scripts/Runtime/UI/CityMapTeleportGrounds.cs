@@ -185,6 +185,8 @@ namespace BarPromenade
             }
             if (CityStreetSupportPlan.ForLayout(layout).TrySampleTop(worldXZ, out top, out _))
                 return true;
+            if (CityHillsideGroundPlan.ForLayout(layout).TrySampleTop(worldXZ, out top))
+                return true;
             if (layout.ElevationPlan != null &&
                 layout.ElevationPlan.TrySampleSurface(
                     worldXZ,

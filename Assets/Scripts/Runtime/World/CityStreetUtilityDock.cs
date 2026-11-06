@@ -87,6 +87,7 @@ namespace BarPromenade
                     docks);
             }
 
+            foreach (CityStreetUtilityDock dock in CityHillsideFurniturePlan.ForLayout(layout).UtilityDocks) docks.Add(dock);
             return docks;
         }
     }

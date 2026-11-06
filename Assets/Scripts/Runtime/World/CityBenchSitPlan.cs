@@ -649,6 +649,7 @@ namespace BarPromenade
                 }
             }
 
+            foreach (CityBenchSeat seat in CityHillsideFurniturePlan.ForLayout(layout).Seats) Add(plans, seat);
             return plans;
         }
 

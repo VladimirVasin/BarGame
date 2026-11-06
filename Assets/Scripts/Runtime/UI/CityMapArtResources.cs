@@ -204,6 +204,39 @@ namespace BarPromenade
                     }
                 }
                 var quarter = CityHillsideQuarterPlan.ForLayout(layout);
+                // Off-road yards are part of the surveyed walking geography too.
+                // Hash their actual triangle heights, not only the surrounding roads.
+                var hillsideGround = CityHillsideGroundPlan.ForLayout(layout);
+                Scalar(writer, CityHillsideGroundSeamPlan.BlendDistance);
+                Scalar(writer, CityHillsideGroundSeamPlan.SurfaceRecess);
+                var groundPads = CityHillsideFurniturePlan.GroundPads(layout);
+                writer.Write(groundPads.Count);
+                foreach (var pad in groundPads)
+                {
+                    RectValue(writer, pad.Bounds);
+                    Scalar(writer, pad.TopY);
+                    Scalar(writer, pad.BlendDistance);
+                }
+                var groundRamps = CityHillsideFurniturePlan.GroundRamps(layout);
+                writer.Write(groundRamps.Count);
+                foreach (var ramp in groundRamps)
+                {
+                    RectValue(writer, ramp.Bounds);
+                    Scalar(writer, ramp.StartZ); Scalar(writer, ramp.EndZ);
+                    Scalar(writer, ramp.StartY); Scalar(writer, ramp.EndY);
+                    Scalar(writer, ramp.BlendDistance);
+                }
+                writer.Write(hillsideGround.WalkablePolygons.Count);
+                foreach (Vector2[] piece in hillsideGround.WalkablePolygons)
+                {
+                    writer.Write(piece.Length);
+                    foreach (Vector2 point in piece)
+                    {
+                        Point(writer, point);
+                        hillsideGround.TrySampleTop(point, out float top);
+                        Scalar(writer, top);
+                    }
+                }
                 RectValue(writer, quarter.TerrainBounds);
                 writer.Write(quarter.RavineOutline.Count);
                 foreach (Vector2 edge in quarter.RavineOutline) Point(writer, edge);

@@ -2,18 +2,22 @@
 
 ## Current facts
 
-- **Accepted 2026-11-06,user — kiosk light:** one warm lens/halo;
-  soft interior+bright street lobe in shared12/day floor. Static ground/shell
-  use rendering bit3;people retain ordinary light and cast street shadows.
-  Bounded128 receivers restore on disable/destroy;leases reset masks.
-  Route-light check below.
+- **Accepted 2026-11-06,user — Ridge ground/furniture:** safe off-road yards
+  share terrain triangles, walk mask and map heights; ravine/steep banks/solids
+  stay closed. Level furniture pockets retain road/stair contacts. Reused
+  sittable benches face bridges/log/descending roofs, especially by Home;
+  walking intervals guide benches40–60m, bins40–65m, booths70–90m, with site/view
+  priority. Shared rig/sit/utility owners; finite plans/materials, no Update work.
+  Final map redraw follows geometry. All24FX keep City owners; no added GI/pass/
+  light/grade/fog. Costs unmeasured. Canon level0;art9/story16/21.
 
-- **Accepted 2026-11-06,user — Ridge route light:** existing poles aim at
-  stairs/decks;upper beams165°/95°,22m. Home lens and covered-court Blender
-  pendants lease the same12-Light pool;shadows contain household spill.
-  Pole collision/stop routes unchanged;day floor retained. All24FX reviewed:
-  existing bounce/air/SSR/material/post owners;no new pass/GI/grade/fog.
-  GPU cost unmeasured. LiveCity_RidgeLightingKeepsDoorStairsAndBridgeLitAcrossTheClock.
+- **Accepted 2026-11-06,user — Ridge/kiosk light:** poles aim at stairs/decks;
+  upper beams165°/95°/22m. Home lens/Blender court pendants share12 pooled lights,
+  daylight floor/shadows;collision/stops retained. Kiosk warm lens/halo feeds soft
+  inside/bright street lobes. Static receivers bit3,people ordinary light/street
+  shadows;≤128 receivers restore on disable/destroy,leases reset masks.
+  All24FX keep bounce/air/SSR/material/post owners;no new pass/GI/grade/fog;
+  GPU unmeasured. LiveCity_RidgeLightingKeepsDoorStairsAndBridgeLitAcrossTheClock.
 
 - **Accepted 2026-11-05 — Ridge Street kiosk.** One permanent shopkeeper serves through the window near Home.
   Story §6/§21 permits his first two voluntary exchanges, each about the goods. Retail at the window uses
@@ -29,21 +33,18 @@
   the excursion. Ordinary motion/rig and all three effects groups, including
   post-processing, retain their owners; no new light, sound, text or canon signal.
 
-- **Accepted exception — 2026-11-04,user — upper residential City:** art §§2.2/7/8,
-  story §18: the lower west keeps its workplaces; both upper slopes are housing.
-  The court lane and 40m crest street cross a dry ravine on separate bridges.
-  Stairs join every tier behind the original river cave and traffic tunnel.
-  One south ridge encloses the quarter. The bridges and stairs serve the residential quarter.
+- **Accepted exception — 2026-11-04,user — upper residential City:** art2.2/7/8,
+  story18: lower west keeps work;both upper slopes are housing. Court/40m crest
+  roads bridge one dry ravine;stairs join all tiers behind the original cave/
+  tunnel. One south ridge encloses the quarter;bridges/stairs serve its homes.
 
 - **Accepted architecture extension — 2026-11-03,user — terraced City:**
-  Low coast/port/river; two streets extend south of the grid at ≤6% to Y40.
-  Seven traverses/side, level R13 turns; outer widening .75m at R13/.90m at R9
-  clears bus overhang. Streets/earth/houses/NPC/map share stations.
-  Original river cave and traffic tunnel. Lower terrace: +7.68m bridge,
-  sheltered 3m alley below; first 104m gain3.84m, dog yard/window landing/Lower
-  Court. Rebase lots first; logical map follows geometry, redraw once. Shared
-  fog/post/camera; story §§16/21, art acceptance.
-  [Acceptance and named checks](city-multilevel-plan.md).
+  Low coast/port/river;two south streets≤6%→Y40;seven traverses/side.
+  Level R13 turns;outer widening .75m/R13,.90m/R9 clears buses. Street/earth/
+  homes/NPC/map share stations;original cave/tunnel. Lower bridge+7.68m over
+  sheltered3m alley;first104m rise3.84m;dog yard/window landing/Lower Court.
+  Lots rebased;map follows geometry,one redraw;shared fog/post/camera,
+  story16/21/art9. [Proof](city-multilevel-plan.md).
 
 - **Accepted architecture exception — 2026-11-03,user — doubled calendar day:**
   Art §2/story §20:96 real minutes/day at ×1,four seconds/game minute.
@@ -51,11 +52,10 @@
   pause/debug factors keep their owners. Story acts/events remain action-driven.
 
 - **Accepted exceptions 2026-11-03 and 2026-11-05, user — City street visibility and night:**
-  Below Y5 streets retain gray-green Exp2 `.090`/48 m. By Y40 the hero sees `.025`/110 m.
-  Descending sightlines accumulate denser air towards the low streets. Sky and ridge shells lie behind roofs.
-  The City night sample lowers diffuse sky, directional fill, haze and environment reflections.
-  Practical lamps keep their local spill. The summit apartment outlook has its own range.
-  Reading bands:art§3.3;art9/story§16/21 stay;global breathing/story signal0.
+  Y≤5:gray-green Exp2 `.090`/48m;Y40:`.025`/110m. Descending sightlines add
+  lowland haze;sky/ridge shells behind roofs. Night lowers diffuse sky/fill/
+  haze/reflections;practical spill remains. Home summit outlook has its range.
+  Art3.3/9,story16/21;global breathing/story signal0.
   `CityFogField`:≤36 shared world particles;slow layered
   drift:shared wind/absolute game time;Home maps axes. Pause/roof/
   dormancy/return/unload retain ownership;road/village stay.
