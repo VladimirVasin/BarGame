@@ -147,6 +147,8 @@ namespace BarPromenade
             {
                 parts.Clear();
                 CityDecorationDescriptor descriptor = descriptors[index];
+                if (descriptor.Kind == CityDecorationKind.RoadsidePhoneBooth)
+                    BuildPhoneBoothLightAnchor(root, layout, descriptor, homeContext);
                 bool imported = homeContext == null &&
                     TryAppendImportedDecoration(
                         root,
@@ -223,6 +225,26 @@ namespace BarPromenade
             }
 
             BuildChunks(root, chunks);
+        }
+
+        private static void BuildPhoneBoothLightAnchor(Transform root, CityLayout layout,
+            CityDecorationDescriptor descriptor, HomeExteriorContextPlan homeContext)
+        {
+            GetDecorationFrame(layout, descriptor, out Vector3 origin, out _, out Vector3 forward);
+            // Just outside the fluorescent panel's front face: the roof fascia
+            // must not shadow its own doorway. The .82 depth is the shared booth recipe.
+            Vector3 position = origin + Vector3.up * 2.65f + forward * (.725f * .82f + .035f);
+            Vector3 direction = (Vector3.down + forward * .38f).normalized;
+            if (homeContext != null)
+            {
+                position = PlayerHomeBalconyGeometry.ToHomeLocal(homeContext.PlayerHome, position);
+                direction = PlayerHomeBalconyGeometry.ToHomeLocalDirection(homeContext.PlayerHome, direction);
+                if (position.x < HomeExteriorViewBuilder.ExteriorMinimumX) return;
+            }
+            var anchor = new GameObject(CityNightAtmosphere.IndustrialTaskLightPrefix + "PhoneBooth").transform;
+            anchor.SetParent(root, false);
+            anchor.localPosition = position;
+            anchor.localRotation = Quaternion.LookRotation(direction, Vector3.up);
         }
 
         private static bool TryAppendImportedDecoration(

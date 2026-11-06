@@ -10,7 +10,8 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 - На Гребне можно сходить с улиц на землю, проходить дворы и обходить дом. Убрана невидимая преграда сбоку дома.
   У верхнего моста появилась скамья: сидя видны нижний мост, сухой лог и дома в тумане. `E` — сесть/встать.
-  По улицам расставлены другие видовые скамьи, баки и телефонные будки.
+  На улицах — видовые скамьи, баки и будки. Верхние панели будок освещают вход/землю:
+  LiveCity_PhoneBoothPanelsLightEntriesAndForecourts.
   LiveCity_RidgeGroundAndViewBenchesKeepSupportedWalksAndArrivals.
   Подходы к остановкам и посадка проверены: LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
   Карта перерисована по окончательной геометрии: RidgeMapSurveyRegistration.

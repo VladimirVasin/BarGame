@@ -8,16 +8,17 @@
   sittable benches face bridges/log/descending roofs, especially by Home;
   walking intervals guide benches40–60m, bins40–65m, booths70–90m, with site/view
   priority. Shared rig/sit/utility owners; finite plans/materials, no Update work.
-  Final map redraw follows geometry. All24FX keep City owners; no added GI/pass/
-  light/grade/fog. Costs unmeasured. Canon level0;art9/story16/21.
+  Final map follows geometry. City FX owners retained; no new GI/pass/grade/fog.
+  Costs unmeasured. Canon level0;art9/story16/21.
 
 - **Accepted 2026-11-06,user — Ridge/kiosk light:** poles aim at stairs/decks;
   upper beams165°/95°/22m. Home lens/Blender court pendants share12 pooled lights,
-  daylight floor/shadows;collision/stops retained. Kiosk warm lens/halo feeds soft
+  daylight floor/shadows. Kiosk lens/halo feeds soft
   inside/bright street lobes. Static receivers bit3,people ordinary light/street
   shadows;≤128 receivers restore on disable/destroy,leases reset masks.
-  All24FX keep bounce/air/SSR/material/post owners;no new pass/GI/grade/fog;
-  GPU unmeasured. LiveCity_RidgeLightingKeepsDoorStairsAndBridgeLitAcrossTheClock.
+  Booth panels cast neutral shadowed light down/out onto entry and forecourt;
+  City/Home:shared12/day floor,6.5m/130°. No per-booth Light.
+  All24FX retain owners;no new GI/pass/grade/fog;GPU unmeasured.
 
 - **Accepted 2026-11-05 — Ridge Street kiosk.** One permanent shopkeeper serves through the window near Home.
   Story §6/§21 permits his first two voluntary exchanges, each about the goods. Retail at the window uses

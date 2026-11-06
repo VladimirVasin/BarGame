@@ -4,6 +4,10 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-06
+Phone booth panels now cast neutral shadowed light down/out onto the entry and forecourt,
+sharing City/Home anchors and the existing pool/daylight floor. LiveCity_PhoneBoothPanelsLightEntriesAndForecourts
+checks leases, source-on/off views and surface exposure. check-docs/diff-check.
+
 Ridge earth now connects streets, yards and house perimeters through the same sampled triangles.
 Graded shoulders retain pavement contacts; a real soil approach reaches the bridge-side Home bench.
 Home's logical collider follows its authored footprint. Finite reused view benches, bins and booths

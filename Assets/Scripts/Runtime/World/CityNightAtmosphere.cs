@@ -163,6 +163,13 @@ namespace BarPromenade
                     case "Substation": industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse; break;
                     case "MunicipalWorkshop": industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop; break;
                     case "PortWorkshop": industrialPurposes[index] = CityIndustrialPurpose.MetalWorkshop; break;
+                    case "PhoneBooth":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = .7f;
+                        industrialRangeLimits[index] = 6.5f;
+                        industrialSpotAngles[index] = 130f;
+                        industrialInnerSpotAngles[index] = 85f; break;
                     case "RidgeKiosk":
                         industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
                         industrialUseShadows[index] = true;
