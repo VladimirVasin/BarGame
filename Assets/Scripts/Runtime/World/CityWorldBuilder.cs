@@ -394,6 +394,15 @@ namespace BarPromenade
             Collider[] kioskRainShelters = Array.Empty<Collider>();
             if (RidgeKioskSitePlan.TryCreate(layout, out var ridgeKiosk))
                 RidgeKioskWorld.Build(world, ridgeKiosk, true, out kioskRainShelters);
+            if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
+            {
+                CityPawnshopWorld.Build(world, pawnshop, true, out var pawnshopRainShelter);
+                CityPawnshopWorld.BuildForecourt(world, layout, pawnshop, true);
+                var shelters = new Collider[kioskRainShelters.Length + 1];
+                Array.Copy(kioskRainShelters, shelters, kioskRainShelters.Length);
+                shelters[shelters.Length - 1] = pawnshopRainShelter;
+                kioskRainShelters = shelters;
+            }
 
             GameObject decorationRoot =
                 CityDecorationWorldBuilder.Build(
@@ -925,14 +934,20 @@ namespace BarPromenade
                 plan.CurvedCenterMarkingRibbons, Color.white, false,
                 CityExteriorAppearance.RoadMarkingTextureTileSize, CityExteriorAppearance.ApplyRoadMarkingSurface,
                 FootstepGroundKind.None, false);
+            var pawnshopPaint = CityPawnshopCrosswalkPlan.ForLayout(layout).Markings;
+            var legacyCrossings = new List<RuntimeOrientedBox>(plan.CrosswalkMarkingGeometry.Count - pawnshopPaint.Count);
+            // The planner appends the new imported paint after the unchanged legacy zebras.
+            for (int i = 0; i < plan.CrosswalkMarkingGeometry.Count - pawnshopPaint.Count; i++)
+                legacyCrossings.Add(plan.CrosswalkMarkingGeometry[i]);
             BuildOrientedSurfaceBoxesIfAny(
                 "Pedestrian Crossings",
                 roads,
-                plan.CrosswalkMarkingGeometry,
+                legacyCrossings,
                 Color.white,
                 false,
                 CityExteriorAppearance.RoadMarkingTextureTileSize,
                 CityExteriorAppearance.ApplyRoadMarkingSurface);
+            CityStreetSurfaceWorldBuilder.BuildPaint("Pawnshop Pedestrian Crossings", roads, pawnshopPaint);
             ReportBlock(
                 "roads_and_river/markings",
                 subTimer,

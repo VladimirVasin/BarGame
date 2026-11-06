@@ -15,6 +15,7 @@ namespace BarPromenade
         // Added after existing allocation identities: preserve their appearances.
         public const string BarBartender = "zzz.bar.bartender";
         public const string RidgeKioskSeller = "ridge.kiosk.seller";
+        public const string PawnshopClerk = "city.pawnshop.clerk";
         public const string CityLaundryWorker = "zzzz.city.laundry.worker";
         public const string CityDogParkStandingOwner = "zzzzz.city.dog-park.standing";
         public const string CityDogParkSeatedOwner = "zzzzz.city.dog-park.seated";
@@ -317,6 +318,14 @@ namespace BarPromenade
                 new SlotConstraint("gloves", new string[] { null }),
                 new SlotConstraint("scarf", new string[] { null }),
                 new SlotConstraint("apron", "apron.work")));
+            // Append after the complete allocated cast: a new shop cannot change existing faces.
+            roster.Add(new CharacterDefinition(PawnshopClerk, model,
+                new SlotConstraint("outerwear", "outerwear.everyday"),
+                new SlotConstraint("boots", "boots.everyday"),
+                new SlotConstraint("headwear", new string[] { null }),
+                new SlotConstraint("gloves", new string[] { null }),
+                new SlotConstraint("scarf", new string[] { null }),
+                new SlotConstraint("apron", new string[] { null })));
             return roster.ToArray();
         }
 

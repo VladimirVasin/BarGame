@@ -173,6 +173,52 @@ namespace BarPromenade
             return result;
         }
 
+        /// <summary>Deforms the existing Blender patch topology into paint. The
+        /// shared ground compositor clips it onto real support, including grade breaks.</summary>
+        internal static GameObject BuildPaint(string name, Transform parent, IReadOnlyList<RuntimeOrientedBox> stripes)
+        {
+            if (stripes.Count == 0) return null;
+            EnsureTopology();
+            var vertices = new List<Vector3>(stripes.Count * patchTopology.Vertices.Length * 2);
+            var normals = new List<Vector3>(vertices.Capacity);
+            var uvs = new List<Vector2>(vertices.Capacity);
+            var triangles = new List<int>(stripes.Count * patchTopology.Indices.Length * 2);
+            float tile = CityExteriorAppearance.RoadMarkingTextureTileSize;
+            foreach (RuntimeOrientedBox stripe in stripes)
+            {
+                Vector3 half = stripe.Size * .5f;
+                Vector3 a = stripe.Center + stripe.Rotation * new Vector3(-half.x, half.y, -half.z);
+                Vector3 b = stripe.Center + stripe.Rotation * new Vector3(half.x, half.y, -half.z);
+                Vector3 c = stripe.Center + stripe.Rotation * new Vector3(half.x, half.y, half.z);
+                Vector3 d = stripe.Center + stripe.Rotation * new Vector3(-half.x, half.y, half.z);
+                Face(a, b, c); Face(a, c, d);
+            }
+            var mesh = new Mesh { name = name + " Mesh", indexFormat = vertices.Count > ushort.MaxValue ? IndexFormat.UInt32 : IndexFormat.UInt16 };
+            mesh.SetVertices(vertices); mesh.SetNormals(normals); mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(triangles, 0); mesh.RecalculateBounds();
+            var host = new GameObject(name); host.transform.SetParent(parent, false);
+            host.AddComponent<MeshFilter>().sharedMesh = mesh;
+            host.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
+            var renderer = host.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            CityExteriorAppearance.ApplyRoadMarkingSurface(renderer);
+            CityGroundSurfaceSystem.Register(host, 100, paint: true);
+            return host;
+
+            void Face(Vector3 a, Vector3 b, Vector3 c)
+            {
+                Vector3 normal = Vector3.Cross(c - a, b - a).normalized;
+                int start = vertices.Count;
+                foreach (Vector3 coefficient in patchTopology.Vertices)
+                {
+                    Vector3 point = a + (b - a) * coefficient.x + (c - a) * coefficient.z;
+                    vertices.Add(point); normals.Add(normal); uvs.Add(new Vector2(point.x, point.z) / tile);
+                }
+                foreach (int index in patchTopology.Indices) triangles.Add(start + index);
+            }
+        }
+
         private static bool InHomeRange(Rect bounds, HomeExteriorContextPlan home)
         {
             Vector3 anchor = home.PlayerHome.DoorPosition;

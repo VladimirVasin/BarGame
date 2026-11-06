@@ -1,0 +1,10 @@
+Use case: precise-object-edit / style-transfer.
+Asset type: actual opaque in-game City map background.
+Image 1 is the EDIT TARGET: the existing finished charcoal paper city map. Image 2 is the AUTHORITATIVE UPDATED GEOMETRY SURVEY, north-up and edge-to-edge over the same exact world bounds. Keep Image 1's exact entire-city registration, coastline, roads, bridges, river, dry ravine, houses, hillside courts, heights expressed by ordinary hatching, and subtle worn-paper style. Do not redesign or expand the city.
+
+Make the final local geography update: on the inner island of the WEST hillside hairpin at normalized x=41.8%, y=85.2%, add the small ROTATED RECTANGULAR PAWNSHOP footprint exactly as shown in Image 2. Preserve the curving road and its clear inside footway around it. Add the TWO small zebra pedestrian crossings shown by the updated survey, crossing the road legs beside that island at approximately x=41.4%, y=83.1% and y=87.3%. Six narrow ink stripes per crossing, precise placement/width from the survey. The pavilion is 8 by 9 world metres and faces northeast. Do not create a new road or close the existing turn.
+Outside this small affected lower-left island area, preserve the edit target's geometry, alignment and drawing as closely as possible.
+
+Style: tactile old municipal map on charcoal paper, dirty bone and gray ink, restrained graphite hatching and wear, readable grayscale. Very restrained muted olive only in the parks. Keep the current dark charcoal, ordinary aged-paper feeling; no bright colour, glow, decorative rust, horror symbols, buildings in perspective, cinematic shadows, 3D-rendered bevels or extra annotations.
+
+Remove ALL reference numbers, labels, letters, icons and markers from the survey. In particular do NOT bake the number 24 or the word Ломбард into this background; the game overlays current Russian labels and live markers. No title, legend, compass, border, desk or mockup. Full bleed, no crop, added margins, rotation or perspective. Match the survey's 1792 by 2048 portrait aspect ratio while preserving normalized locations exactly. Output only the finished usable opaque map.

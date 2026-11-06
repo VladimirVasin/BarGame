@@ -2322,6 +2322,119 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void PassingActors_AtTurnoutCornerReachDestinationsWithoutTurningBack(bool obstacleOnExit)
+        {
+            GameObject root = new GameObject("Turnout Corner Passing Test");
+            CityPedestrianDirector director = null;
+            CityPedestrianActor guest = null, yielding = null;
+            CityPedestrianPresentation guestPresentation = null, yieldingPresentation = null;
+            try
+            {
+                CityPedestrianCollision.EnsureRuntimePolicy();
+                var plan = new CityPedestrianPlan(1, 2, 3u, CityPedestrianPlanner.AgentRadius,
+                    new[]
+                    {
+                        new CityPedestrianNode("north", new Vector3(0f, 0f, 3f), false),
+                        new CityPedestrianNode("corner", Vector3.zero, false),
+                        new CityPedestrianNode("east", new Vector3(4f, 0f, 0f), false)
+                    },
+                    new[]
+                    {
+                        new CityPedestrianLink("north-corner", 0, 1, CityPedestrianLinkKind.Sidewalk),
+                        new CityPedestrianLink("corner-east", 1, 2, CityPedestrianLinkKind.Sidewalk)
+                    },
+                    new[]
+                    {
+                        new CityPedestrianSpawnAnchor("guest", new Vector3(0f, 0f, 2f), 0, 1),
+                        new CityPedestrianSpawnAnchor("yielding", new Vector3(0f, 0f, .75f), 1, 0)
+                    },
+                    new[] { Rect.MinMaxRect(-1.2f, -1.2f, 5f, 4f) });
+                guest = CreateBoundActor(root.transform, plan, plan.SpawnAnchors[0], 1, out guestPresentation);
+                yielding = CreateBoundActor(root.transform, plan, plan.SpawnAnchors[1], 0, out yieldingPresentation);
+                guest.ReleasePresentation(root.transform);
+                yielding.ReleasePresentation(root.transform);
+                Transform player = CreatePlayer(root.transform);
+                player.position = new Vector3(0f, 0f, 20f);
+                director = root.AddComponent<CityPedestrianDirector>();
+                director.Initialize(plan, new[] { guest, yielding },
+                    new[] { guestPresentation, yieldingPresentation }, player, root.transform, () => false);
+                guest.PrepareSpawn(plan, plan.SpawnAnchors[0], 1, 1f, .91f, 0f, 0, 1u);
+                guest.BindPresentation(guestPresentation);
+                yielding.PrepareSpawn(plan, plan.SpawnAnchors[1], 0, 1f, .91f, 0f, 0, 2u);
+                yielding.BindPresentation(yieldingPresentation);
+                guest.SetResidentDestination(2, CityBusStopWaitPlanner.CreateNodeDistances(plan, 2));
+                yielding.SetResidentDestination(0, CityBusStopWaitPlanner.CreateNodeDistances(plan, 0));
+                Physics.SyncTransforms();
+
+                // The northbound walker backs into the genuine east-side turnout.
+                // Its guest then turns east at the corner, across that parked body.
+                Assert.That(yielding.TryBeginPassingRetreat(guest.transform, .75f), Is.True);
+                const float step = .05f;
+                for (int frame = 0; frame < 80; frame++) yielding.Advance(step);
+                Assert.That(yielding.IsPassingRetreat, Is.True);
+                Assert.That(yielding.Position.x, Is.GreaterThan(.75f));
+                Assert.That(Mathf.Abs(yielding.Position.z), Is.LessThan(.05f));
+                Assert.That(yielding.LastDisplacement.sqrMagnitude, Is.LessThan(.000001f));
+
+                if (obstacleOnExit)
+                {
+                    GameObject obstacle = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    obstacle.name = "Exit Path Obstacle";
+                    obstacle.transform.SetParent(root.transform, false);
+                    obstacle.transform.position = new Vector3(2f, 1f, 0f);
+                    obstacle.transform.localScale = new Vector3(.6f, 2f, .7f);
+                    Physics.SyncTransforms();
+                }
+
+                var trajectory = new List<string>(14);
+                float minimumGap = PlanarDistance(guest.Position, yielding.Position);
+                int frames = 0;
+                Record(0);
+                for (; frames < 240 &&
+                    (!guest.IsAtResidentDestination || !yielding.IsAtResidentDestination); frames++)
+                {
+                    director.Advance(step);
+                    minimumGap = Mathf.Min(minimumGap, PlanarDistance(guest.Position, yielding.Position));
+                    if ((frames + 1) % 20 == 0) Record(frames + 1);
+                    Assert.That(guest.ResidentDestinationNode, Is.EqualTo(2));
+                    Assert.That(yielding.ResidentDestinationNode, Is.EqualTo(0));
+                    Assert.That(guest.DetourCount, Is.Zero, "Passing must preserve the guest's forward journey.");
+                    Assert.That(yielding.DetourCount, Is.Zero, "The turnout must resume the same journey.");
+                    Assert.That(PlanarDistance(guest.Position, yielding.Position),
+                        Is.GreaterThanOrEqualTo(guest.AgentRadius + yielding.AgentRadius - .025f),
+                        "Passing walkers must keep their capsules apart.");
+                }
+
+                Record(frames);
+                string progress = $"Obstacle={obstacleOnExit}; frames={frames}; minimumGap={minimumGap:F4}\n" +
+                    string.Join("\n", trajectory);
+                Assert.That(guest.IsAtResidentDestination, Is.True,
+                    "The guest must pass the occupied turnout and reach the east destination.\n" + progress);
+                Assert.That(yielding.IsAtResidentDestination, Is.True,
+                    "The yielding walker must leave its bay and reach the north destination.\n" + progress);
+
+                void Record(int frame) => trajectory.Add($"frame={frame}: guest {State(guest)}; yielding {State(yielding)}");
+
+                string State(CityPedestrianActor actor) =>
+                    $"pos={actor.Position:F3} state={actor.MotionState} leg={actor.PreviousNodeIndex}->{actor.TargetNodeIndex}" +
+                    $" destination={actor.ResidentDestinationNode} yield={actor.IsYielding} retreat={actor.IsPassingRetreat}" +
+                    $" displacement={actor.LastDisplacement:F4} lateral={actor.LateralOffset:F4}" +
+                    $" blocked={actor.BlockedTime:F3} detours={actor.DetourCount}";
+            }
+            finally
+            {
+                if (director != null && director.IsInitialized) director.Shutdown();
+                else
+                {
+                    ReleaseBoundActor(guest, guestPresentation, root.transform);
+                    ReleaseBoundActor(yielding, yieldingPresentation, root.transform);
+                }
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
         [Test]
         public void CollisionLayer_IsPhysicalButExcludedFromQueries()
         {

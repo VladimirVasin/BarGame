@@ -1687,10 +1687,44 @@ namespace BarPromenade
                 DrawSolidRect(ProjectWorldRect(projection, building.CourtBounds), PublicPlaceLand);
                 DrawSolidRect(ProjectWorldRect(projection, building.ApproachBounds), PublicPlaceLand);
             }
+            foreach (var pocket in CityHillsideBenchPocketPlan.ForLayout(controller.Layout).Pockets)
+            {
+                DrawSolidRect(ProjectWorldRect(projection, pocket.Placement.AccessBounds), PublicPlaceLand);
+                float pathPixels = CityHillsideBenchPocketPlan.PathWidth * projection.ScreenRect.width /
+                    (projection.MaximumX - projection.MinimumX);
+                for (int i = 1; i < pocket.ApproachPath.Count; i++)
+                    DrawLine(projection.WorldToScreen(pocket.ApproachPath[i - 1]),
+                        projection.WorldToScreen(pocket.ApproachPath[i]), Mathf.Max(1f, pathPixels), PublicPlaceLand);
+            }
+            var benchTerrace=CityPawnshopBenchTerracePlan.ForLayout(controller.Layout);
+            if(benchTerrace.IsEnabled)
+            {
+                DrawSolidRect(ProjectWorldRect(projection,benchTerrace.UpperLanding.Bounds),PublicPlaceLand);
+                DrawSolidRect(ProjectWorldRect(projection,benchTerrace.StairFootprint),PublicPlaceLand);
+                DrawSolidRect(ProjectWorldRect(projection,benchTerrace.LowerLandingBounds),PublicPlaceLand);
+                var flight=benchTerrace.Flight;
+                for(int step=0;step<=flight.StepCount;step++)
+                {
+                    Vector3 center=flight.Start+flight.Direction*(step*flight.TreadDepth);
+                    Vector3 side=flight.Right*(flight.Width*.5f);
+                    DrawLine(projection.WorldToScreen(center-side),projection.WorldToScreen(center+side),1f,GetPathColor(CityPathKind.ParkPath));
+                }
+            }
             if (RidgeKioskSitePlan.TryCreate(controller.Layout, out var kiosk))
             {
                 DrawSolidRect(ProjectWorldRect(projection, kiosk.Bounds), ResidentialBuilding);
                 DrawSolidRect(ProjectWorldRect(projection, kiosk.Apron), PublicPlaceLand);
+            }
+            if (CityPawnshopPlan.TryCreate(controller.Layout, out var pawnshop))
+            {
+                float pathPixels = CityPawnshopPlan.ApproachWidth * projection.ScreenRect.width /
+                    (projection.MaximumX - projection.MinimumX);
+                DrawLine(projection.WorldToScreen(pawnshop.ApproachPath[0]),
+                    projection.WorldToScreen(pawnshop.DoorWorld), Mathf.Max(1f, pathPixels), PublicPlaceLand);
+                Vector2 front = projection.WorldToScreen(pawnshop.Origin + pawnshop.DoorOutward * (CityPawnshopPlan.Depth * .5f));
+                Vector2 back = projection.WorldToScreen(pawnshop.Origin - pawnshop.DoorOutward * (CityPawnshopPlan.Depth * .5f));
+                float pixelsPerMetre = projection.ScreenRect.width / (projection.MaximumX - projection.MinimumX);
+                DrawLine(front, back, CityPawnshopPlan.Width * pixelsPerMetre, ResidentialBuilding);
             }
             float metresToPixels = projection.ScreenRect.width / (projection.MaximumX - projection.MinimumX);
             float width = Mathf.Max(2f, metresToPixels * CityHillsideStreetRoute.RoadHalfWidth * 2f);
@@ -2562,6 +2596,7 @@ namespace BarPromenade
                     GetDistrictColor(pointOfInterest.District);
                 if (drawGround && pointOfInterest.HasFootprint &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.RidgeKiosk &&
+                    pointOfInterest.Kind != CityMapPointOfInterestKind.Pawnshop &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.UpperCourtBridge &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.UpperSummitBridge)
                 {
@@ -3737,6 +3772,7 @@ namespace BarPromenade
                         color);
                     break;
                 case CityMapPointOfInterestKind.RidgeKiosk:
+                case CityMapPointOfInterestKind.Pawnshop:
                     RetroUiTheme.StrokeRect(new Rect(center.x - halfSize * .76f, center.y - halfSize * .48f,
                         halfSize * 1.52f, halfSize * 1.4f), width, color);
                     DrawLine(center + new Vector2(-halfSize, -halfSize * .68f),

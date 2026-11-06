@@ -13,7 +13,7 @@ namespace BarPromenade
 
         public static bool IsGameplayScene(string sceneName) =>
             sceneName == SceneIds.City || sceneName == SceneIds.BarInterior ||
-            sceneName == SceneIds.SupermarketInterior || sceneName == SceneIds.StairwellInterior ||
+            sceneName == SceneIds.SupermarketInterior || sceneName == SceneIds.PawnshopInterior || sceneName == SceneIds.StairwellInterior ||
             sceneName == SceneIds.HomeInterior || sceneName == SceneIds.MountainRoad ||
             sceneName == SceneIds.ChurchInterior || sceneName == SceneIds.AlpineVillage ||
             sceneName == SceneIds.MothersHouseInterior;

@@ -1,0 +1,79 @@
+{
+  "design_id": "city_bench_access_stair_v1",
+  "version": "1.0.0",
+  "generator": "build-city-bench-access-stair-3d-model.py",
+  "coordinate_system": "Unity metres +Y up/+Z up-stair; swap YZ and reverse winding; retain FBX units",
+  "contract": {
+    "width": 10.4,
+    "steps": 6,
+    "rise": 0.16,
+    "tread": 0.36,
+    "total_rise": 0.96,
+    "run": 2.16,
+    "bottom_y": -0.25,
+    "lower": [
+      0,
+      0,
+      0
+    ],
+    "upper": [
+      0,
+      0.96,
+      2.16
+    ],
+    "material_roles": [
+      "Concrete",
+      "SteelDark"
+    ],
+    "placement": "fixed metres; no dimension scaling"
+  },
+  "model": {
+    "name": "BenchAccessStair",
+    "bounds_min": [
+      -5.2,
+      -0.25,
+      0.0
+    ],
+    "bounds_max": [
+      5.2,
+      2.08062,
+      2.16
+    ],
+    "anchors": [
+      {
+        "name": "ANCHOR_Lower",
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "ANCHOR_Upper",
+        "position": [
+          0.0,
+          0.96,
+          2.16
+        ]
+      },
+      {
+        "name": "BenchAccessRails",
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "BenchAccessSteps",
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "triangles": 1568,
+    "geometry_signature": "967034a84430b762eeb73dc8fff1a633ddf1e0ad802c49df11ab69a388c79da9"
+  }
+}

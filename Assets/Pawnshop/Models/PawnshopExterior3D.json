@@ -1,0 +1,516 @@
+{
+  "schema_version": 1,
+  "design_id": "pawnshop_exterior_v1",
+  "generator_version": "1.0.0",
+  "build_signature": "112fc185694190414ef3832d0661b9ef5a362d49290fb5999b2e8c8dfa80716b",
+  "bounds_m": {
+    "min": [
+      -4.31,
+      -0.35,
+      -6.24567
+    ],
+    "max": [
+      4.31,
+      4.045,
+      4.81
+    ]
+  },
+  "triangle_count": 4620,
+  "vertex_count": 2640,
+  "parts": [
+    {
+      "name": "PART_Foundation",
+      "material": "Concrete",
+      "shadows": true
+    },
+    {
+      "name": "PART_FrontWall",
+      "material": "Plaster",
+      "shadows": true
+    },
+    {
+      "name": "PART_SideWalls",
+      "material": "Plaster",
+      "shadows": true
+    },
+    {
+      "name": "PART_Plinth",
+      "material": "Concrete",
+      "shadows": true
+    },
+    {
+      "name": "PART_Roof",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_Parapet",
+      "material": "Concrete",
+      "shadows": true
+    },
+    {
+      "name": "PART_RoofCap",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_DoorLeaf",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_DoorKickPlate",
+      "material": "PaleMetal",
+      "shadows": true
+    },
+    {
+      "name": "PART_DoorPullOutside",
+      "material": "PaleMetal",
+      "shadows": true
+    },
+    {
+      "name": "PART_DoorPullInside",
+      "material": "PaleMetal",
+      "shadows": true
+    },
+    {
+      "name": "PART_EntranceFrame",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_WindowFrame0",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_WindowGlass0",
+      "material": "Glass",
+      "shadows": false
+    },
+    {
+      "name": "PART_WindowBacking0",
+      "material": "Dark",
+      "shadows": true
+    },
+    {
+      "name": "PART_WindowGrille0",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_WindowShelf0",
+      "material": "Wood",
+      "shadows": true
+    },
+    {
+      "name": "PART_WindowFrame1",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_WindowGlass1",
+      "material": "Glass",
+      "shadows": false
+    },
+    {
+      "name": "PART_WindowBacking1",
+      "material": "Dark",
+      "shadows": true
+    },
+    {
+      "name": "PART_WindowGrille1",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_WindowShelf1",
+      "material": "Wood",
+      "shadows": true
+    },
+    {
+      "name": "PART_SignField",
+      "material": "MatteSign",
+      "shadows": true
+    },
+    {
+      "name": "PART_SignLetters",
+      "material": "MatteLetters",
+      "shadows": true
+    },
+    {
+      "name": "PART_Canopy",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_EntrancePractical",
+      "material": "WarmLight",
+      "shadows": false
+    },
+    {
+      "name": "PART_Drainpipe",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_ServiceDoor",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_ServiceDoorFrame",
+      "material": "PaleMetal",
+      "shadows": true
+    },
+    {
+      "name": "PART_Vent",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_Repairs",
+      "material": "Cream",
+      "shadows": true
+    },
+    {
+      "name": "PART_FacadeHoodLeft",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_FacadeMountLeft",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_FacadePracticalLeft",
+      "material": "Light",
+      "shadows": false
+    },
+    {
+      "name": "PART_FacadeHoodRight",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_FacadeMountRight",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_FacadePracticalRight",
+      "material": "Light",
+      "shadows": false
+    },
+    {
+      "name": "PART_FacadeHoodRear",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_FacadeMountRear",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_FacadePracticalRear",
+      "material": "Light",
+      "shadows": false
+    },
+    {
+      "name": "PART_SignHoodLeft",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_SignPracticalLeft",
+      "material": "Light",
+      "shadows": false
+    },
+    {
+      "name": "PART_SignMountLeft",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_SignHoodRight",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_SignPracticalRight",
+      "material": "Light",
+      "shadows": false
+    },
+    {
+      "name": "PART_SignMountRight",
+      "material": "Metal",
+      "shadows": true
+    }
+  ],
+  "anchors": [
+    {
+      "name": "ANCHOR_DoorPivot",
+      "position": [
+        -0.7,
+        0,
+        -4.5
+      ]
+    },
+    {
+      "name": "ANCHOR_DoorHandle",
+      "position": [
+        0.5599999999999999,
+        1.05,
+        -4.565
+      ]
+    },
+    {
+      "name": "ANCHOR_FacadeLightLeft",
+      "position": [
+        -4.12,
+        3.25,
+        0
+      ]
+    },
+    {
+      "name": "ANCHOR_FacadeLightRight",
+      "position": [
+        4.12,
+        3.25,
+        0
+      ]
+    },
+    {
+      "name": "ANCHOR_FacadeLightRear",
+      "position": [
+        0,
+        3.25,
+        4.62
+      ]
+    },
+    {
+      "name": "ANCHOR_SignLightLeft",
+      "position": [
+        -1.25,
+        3.85,
+        -6.0
+      ]
+    },
+    {
+      "name": "ANCHOR_SignLightRight",
+      "position": [
+        1.25,
+        3.85,
+        -6.0
+      ]
+    },
+    {
+      "name": "ANCHOR_Entrance",
+      "position": [
+        0,
+        0,
+        -4.5
+      ]
+    },
+    {
+      "name": "ANCHOR_EntryLight",
+      "position": [
+        0,
+        2.45,
+        -4.95
+      ]
+    },
+    {
+      "name": "ANCHOR_Spawn",
+      "position": [
+        0,
+        0,
+        -5.35
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "Plaster",
+      "color": [
+        0.48,
+        0.54,
+        0.49,
+        1
+      ],
+      "texture": "SupermarketWallPaint",
+      "smoothness": 0.1,
+      "metallic": 0
+    },
+    {
+      "name": "Cream",
+      "color": [
+        0.76,
+        0.75,
+        0.63,
+        1
+      ],
+      "texture": "SupermarketWallPaint",
+      "smoothness": 0.1,
+      "metallic": 0
+    },
+    {
+      "name": "Concrete",
+      "color": [
+        0.32,
+        0.35,
+        0.33,
+        1
+      ],
+      "texture": "CityFringeConcrete",
+      "smoothness": 0.1,
+      "metallic": 0
+    },
+    {
+      "name": "Metal",
+      "color": [
+        0.18,
+        0.23,
+        0.21,
+        1
+      ],
+      "texture": "SupermarketShelfMetal",
+      "smoothness": 0.23,
+      "metallic": 0.4
+    },
+    {
+      "name": "PaleMetal",
+      "color": [
+        0.56,
+        0.59,
+        0.52,
+        1
+      ],
+      "texture": "SupermarketShelfMetal",
+      "smoothness": 0.3,
+      "metallic": 0.5
+    },
+    {
+      "name": "Floor",
+      "color": [
+        0.6,
+        0.64,
+        0.58,
+        1
+      ],
+      "texture": "SupermarketLinoleum",
+      "smoothness": 0.16,
+      "metallic": 0
+    },
+    {
+      "name": "Wood",
+      "color": [
+        0.33,
+        0.25,
+        0.19,
+        1
+      ],
+      "texture": "SupermarketCounter",
+      "smoothness": 0.28,
+      "metallic": 0
+    },
+    {
+      "name": "Cardboard",
+      "color": [
+        0.65,
+        0.56,
+        0.41,
+        1
+      ],
+      "texture": "SupermarketCardboard",
+      "smoothness": 0.06,
+      "metallic": 0
+    },
+    {
+      "name": "Glass",
+      "color": [
+        0.32,
+        0.43,
+        0.39,
+        0.2
+      ],
+      "texture": "",
+      "smoothness": 0.64,
+      "metallic": 0
+    },
+    {
+      "name": "Dark",
+      "color": [
+        0.07,
+        0.09,
+        0.085,
+        1
+      ],
+      "texture": "",
+      "smoothness": 0.13,
+      "metallic": 0
+    },
+    {
+      "name": "Letters",
+      "color": [
+        0.83,
+        0.81,
+        0.65,
+        1
+      ],
+      "texture": "",
+      "smoothness": 0.16,
+      "metallic": 0
+    },
+    {
+      "name": "Light",
+      "color": [
+        0.88,
+        0.91,
+        0.79,
+        1
+      ],
+      "texture": "",
+      "smoothness": 0.1,
+      "metallic": 0
+    },
+    {
+      "name": "WarmLight",
+      "color": [
+        0.96,
+        0.77,
+        0.47,
+        1
+      ],
+      "texture": "",
+      "smoothness": 0.12,
+      "metallic": 0
+    },
+    {
+      "name": "MatteSign",
+      "color": [
+        0.18,
+        0.23,
+        0.21,
+        1
+      ],
+      "texture": "SupermarketShelfMetal",
+      "smoothness": 0.03,
+      "metallic": 0
+    },
+    {
+      "name": "MatteLetters",
+      "color": [
+        0.83,
+        0.81,
+        0.65,
+        1
+      ],
+      "texture": "",
+      "smoothness": 0.03,
+      "metallic": 0
+    }
+  ]
+}

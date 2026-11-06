@@ -125,6 +125,11 @@ namespace BarPromenade
             CityHillsideFurnitureWorld.Build(frame, context.Layout, window);
             if (RidgeKioskSitePlan.TryCreate(context.Layout, out var ridgeKiosk) && window.Overlaps(ridgeKiosk.Bounds))
                 RidgeKioskWorld.Build(frame, ridgeKiosk, false);
+            if (CityPawnshopPlan.TryCreate(context.Layout, out var pawnshop) && window.Overlaps(pawnshop.Bounds))
+            {
+                CityPawnshopWorld.Build(frame, pawnshop, false);
+                CityPawnshopWorld.BuildForecourt(frame, context.Layout, pawnshop, false);
+            }
             HomeSummitOutlook.Build(frame, context, window);
             frame.SetParent(parent, false);
             frame.localPosition = PlayerHomeBalconyGeometry.ToHomeLocal(home, Vector3.zero);
@@ -268,6 +273,7 @@ namespace BarPromenade
                         CityStreetSurfacePlanner.CreateEntranceForecourt(context.Layout, lot, 3f), context);
             var centerMarkings = new List<Bounds>();
             var crosswalkMarkings = new List<Bounds>();
+            var pawnshopMarkings = CityPawnshopCrosswalkPlan.ForLayout(context.Layout).Markings;
             AddHomeLocalStreetGeometry(
                 plan.CenterMarkings,
                 nearbyRoadRectangles,
@@ -277,7 +283,8 @@ namespace BarPromenade
                 plan.CrosswalkMarkings,
                 nearbyRoadRectangles,
                 context,
-                crosswalkMarkings);
+                crosswalkMarkings,
+                plan.CrosswalkMarkings.Count - pawnshopMarkings.Count);
 
             BuildRoadMarkingBoxesIfAny(
                 "Home Exterior Road Center Markings",
@@ -287,15 +294,32 @@ namespace BarPromenade
                 "Home Exterior Pedestrian Crossings",
                 parent,
                 crosswalkMarkings);
+            var importedPaint = new List<RuntimeOrientedBox>(pawnshopMarkings.Count);
+            foreach (var stripe in pawnshopMarkings)
+                if ((stripe.Center - context.PlayerHome.DoorPosition).sqrMagnitude <=
+                    HomeExteriorContextPlanner.ViewRadius * HomeExteriorContextPlanner.ViewRadius)
+                    importedPaint.Add(stripe);
+            if (importedPaint.Count > 0)
+            {
+                // The imported patch keeps its City-metre UVs while this frame
+                // places it under the passive Home exterior's shared compositor.
+                var frame = new GameObject("Home Exterior Pawnshop Crossing Frame").transform;
+                frame.SetParent(parent, false);
+                frame.localPosition = PlayerHomeBalconyGeometry.ToHomeLocal(context.PlayerHome, Vector3.zero);
+                frame.localRotation = Quaternion.LookRotation(PlayerHomeBalconyGeometry.ToHomeLocalDirection(
+                    context.PlayerHome, Vector3.forward));
+                CityStreetSurfaceWorldBuilder.BuildPaint("Home Exterior Pawnshop Pedestrian Crossings", frame, importedPaint);
+            }
         }
 
         private static void AddHomeLocalStreetGeometry(
             IReadOnlyList<Bounds> source,
             IReadOnlyList<Rect> nearbyRoadRectangles,
             HomeExteriorContextPlan context,
-            ICollection<Bounds> target)
+            ICollection<Bounds> target,
+            int maximumCount = int.MaxValue)
         {
-            for (int index = 0; index < source.Count; index++)
+            for (int index = 0; index < source.Count && index < maximumCount; index++)
             {
                 Bounds cityBounds = source[index];
                 if (context.Layout.HasSummitHome &&

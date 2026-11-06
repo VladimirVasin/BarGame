@@ -9,7 +9,7 @@ Read this file first, then use [ai/README.md](ai/README.md) as the documentation
 - Target16:9;native resolution,saved SMAA/lens/local-light effects,crisp UI;legacy4:3 unsupported.
 - Every scene change/visual task reviews all three groups, including
   post-processing: [effects standard](ai/visual-effects-standard.md).
-- Thirteen scenes contain ten gameplay roots, including `CombatTest`.
+- 14 scenes/11 gameplay roots: `PawnshopInterior`, `CombatTest` included.
   Roots compose validated plans and use `Resources/Player/Player3DV2.prefab`.
 - City, Mountain Road and Alpine Village occupy separate Single-loaded scenes.
   Area travel keeps its loading overlay until incremental world construction

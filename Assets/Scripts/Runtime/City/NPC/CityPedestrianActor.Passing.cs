@@ -93,12 +93,25 @@ namespace BarPromenade
                 ? link.PathHeightSampler(point) : Mathf.Lerp(start.y, end.y, along / Length);
         }
 
-        /// <summary>Reject clipped or unsupported side positions before promising a clear lane.</summary>
-        internal bool CanOccupyPassingPoint(Vector3 candidate)
+        // Scenery and support decide which shoulder leads somewhere; the director
+        // negotiates the moving capsules separately. Probe the authored curve,
+        // rather than extending a tangent through the next railing or corner.
+        internal bool CanWalkPassingLane(float signedMetres, float lookAhead)
         {
-            if (!walkableArea.Contains(candidate, agentRadius) || !TryGetPassingLeg(out var leg)) return false;
-            candidate.y = leg.Sample(leg.Progress, out _).y;
-            return CanWalkVehicleSegment(Position, candidate);
+            if (!TryGetPassingLeg(out var leg)) return false;
+            Vector3 centre = leg.Sample(leg.Progress, out Vector3 direction);
+            Vector3 previous = centre + Vector3.Cross(Vector3.up, direction) * signedMetres;
+            if (!CanWalkVehicleSegment(Position, previous, true)) return false;
+            float end = Mathf.Min(leg.Length, leg.Progress + lookAhead);
+            const int probes = 4;
+            for (int i = 1; i <= probes; i++)
+            {
+                centre = leg.Sample(Mathf.Lerp(leg.Progress, end, i / (float)probes), out direction);
+                Vector3 next = centre + Vector3.Cross(Vector3.up, direction) * signedMetres;
+                if (!CanWalkVehicleSegment(previous, next, true)) return false;
+                previous = next;
+            }
+            return true;
         }
 
         private bool TryAdvancePassingLane(float deltaTime, bool shouldYield, out bool moving)
@@ -141,7 +154,10 @@ namespace BarPromenade
             Vector3 step = LastDisplacement;
             step.y = 0f;
             moving = step.sqrMagnitude > .000001f;
-            blockedTime = 0f;
+            // A requested shoulder is not proof that both capsules fit. Keep
+            // the existing jam escape live when courtesy produces no movement.
+            blockedTime = moving || MotionState == CityPedestrianMotionState.WaitingAtDestination
+                ? 0f : blockedTime + deltaTime;
             return true;
         }
 

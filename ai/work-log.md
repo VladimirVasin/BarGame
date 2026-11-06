@@ -4,27 +4,34 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-06
-Covered building passages share seeded plans, Blender utilities/fluorescent fixtures and a matte ImageGen graffiti atlas.
-Each wall has independent occupied/vacant slots near/between/far from its mouths; graffiti and repairs are not paired.
-Each opening retains one independently phased contact fault. Lens/halo/pooled spill match,
-with steady neighbouring light and City/Home metre poses. Accepted story exceptions scope graffiti/daytime dips.
+Pawnshop:secure clerk/Buy-Sell stubs,zebras/door path,even sign/HDR hall.
+Local aligned benches/asphalt/mirrored light/wide stair/pigeon/flowers.
+CityPawnshop_EnterOpenBothStubsAndReturn;CityPawnshopLightingAndBenchPockets_UniformAndConnected.
+Final ImageGen:City final pawnshop map registration / fresh ImageGen bytes / terrace contract.
+LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement:crosswalk yield uses capsule gap/sidewalk bay;goals retained.
+
+Corner bypass. PassingActors_AtTurnoutCornerReachDestinationsWithoutTurningBack; LiveCity_SharedStairPassesPlayerAndOpposingResidents.
+
+Covered passages share seeded plans,Blender utilities/fluorescents/matte ImageGen graffiti.
+Independent occupied/vacant wall slots near/between/far mouths;paint/repairs unpaired.
+One independently phased contact fault/opening,lens/halo/pooled spill match steady neighbours;
+City/Home metre poses. Accepted exceptions scope graffiti/daytime dips.
 LiveCity_CoveredPassagesKeepUniqueDressingLightAndClearRoutes covers inventory, dressing bounds, existing routes,
 Home reconstruction, real light/fault/lifecycle/lease reset; both entrance views reviewed day/night.
-Rendered review caught paint behind thick repairs; lighter patches and paint outside the measured imported front face fix it.
-The model generator's metric/normal/UV/determinism validator passes; check-docs/diff-check/workspace checks.
+Frames caught paint behind thick repairs;lighter patches/paint outside measured front face fix it.
+Generator metric/normal/UV/determinism validator;check-docs/diff-check/workspace.
 
 Phone booth panels cast neutral shadowed light onto entry/forecourt through the shared pool/day floor.
 LiveCity_PhoneBoothPanelsLightEntriesAndForecourts checks leases and rendered on/off surface exposure.
 
-Ridge earth joins streets/yards/house perimeters through shared terrain triangles and graded shoulders.
-A soil approach reaches the bridge-side Home bench; Home collision follows its real footprint.
-Finite reused view benches/bins/booths retain seating/utilities/City/Home poses; trunks/solids/ravine stay closed.
+Ridge earth joins streets/yards/house perimeters via shared triangles/graded shoulders.
+Soil reaches bridge-side Home bench;Home collision follows footprint. Finite shared benches/bins/booths:
+seating/utilities/City-Home poses;trunks/solids/ravine closed.
 LiveCity_RidgeGroundAndViewBenchesKeepSupportedWalksAndArrivals covers walks, map heights, Home collider and E sit/stand;
-seated day/night views reviewed. LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement passes on final ground.
-The final ImageGen map retains survey registration: RidgeMapSurveyRegistration.
+seated day/night views reviewed. LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement passed Ridge-stage ground.
 
-Ridge poles aim along stairs/decks to 03-04; Home lens leases a doorstep source. The covered court has real light.
-Kiosk inward/outward lobes share one lens, lighting seller/shelves and street through the window with aperture shadows.
+Ridge poles→stairs/decks/03-04;Home lens leases doorstep light;covered court lit.
+Kiosk inward/outward lobes share lens/aperture shadows across seller/shelves/street.
 LiveCity_RidgeLightingKeepsDoorStairsAndBridgeLitAcrossTheClock checks leases, surfaces, day floor and on/off views.
 LiveCity_RidgeKioskDialogueRetainsFacesAndClothesWithBrightStreet covers real speaker cuts: static street receivers,
 softly lit faces/clothes and street shadows. Scoped receivers/leases restore on cleanup.

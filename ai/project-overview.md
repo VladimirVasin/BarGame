@@ -10,7 +10,7 @@
 - 16:9/native/SMAA/savedFX;4:3 unsupported;City/balcony Soft,bar/church Neutral.
   Maps/response/cubes; City/Home/bar UV0+1;house air/bar WC mirror.
   Pilots:coastal stems(City crowns static),roadRGB,pistol normals;fountain foam/mips.
-- Thirteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
+- Fourteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
 
 | Index | Scene | Role |
 | --- | --- | --- |
@@ -27,8 +27,9 @@
 | 10 | `AlpineVillage` | Gameplay |
 | 11 | `MothersHouseInterior` | Gameplay |
 | 12 | `CombatTest` | Warehouse / weapon test |
+| 13 | `PawnshopInterior` | Pawnshop prototype |
 
-All ten gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
+All eleven gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
 one rig/wardrobe; seven drink-dose appearances share shape/hair/wear and
 mirror/FP/portrait state. Hair retained; jacket rig-only, CombatTest scarf/sling too.
 Near-empty scenes compose validated plans. Blender/canon: [../AI.md](../AI.md).
@@ -88,7 +89,7 @@ Repair/publication: [../tools/README.md](../tools/README.md).
   Hero:wounds/no detach;bar:hit/parry;skin/aim.
   Gap:pierce/balance. [World](current-world.md)
 - City:west work/east homes3–5storeys+park;144lots/courts/wings.
-  Hillside earth/yards,view benches/bins/booths share finite plans/contacts.
+  Hillside yards/lit bench paths near pawnshop/bins/booths share plans/contacts.
   2 buses/ring, transfer stairs, stop zebras. 10 seats+3 stands.
   NPC192/≤36/cache48, home/work, Home5/2, dog3/owners2.
   8 industry sites: roofs/gear/surfaces/task lights;
@@ -97,10 +98,8 @@ Repair/publication: [../tools/README.md](../tools/README.md).
   catch-up spans scene changes, excluding pre-entry time. Three units,
   two cranes, crews and a
   `6.481 x 2.4 x 3.2 m` closed truck/full cab share the cycle.
-  After its existing central factory-exit turn, it keeps/parks right and yields
-  locally to the bus. Six-second traffic access protects actual bodies; graph
-  turns avoid street furniture. Street reservations stay `8 m`/asphalt `6 m`;
-  `2 m` pavements/stops follow the layout.
+  Truck keeps/parks right after the factory turn and yields to buses; six-second
+  body access/graph turns keep furniture clear. Roads:8m/asphalt6m/pavements2m.
   Truck spawns on unseen road, parks with first crate; later trips leave factory.
   Two soft arrival horns, reverse beeper/ajar door/look-back. Cranes
   continue while the driver yields at the store entrance. Local carts go to
@@ -120,6 +119,7 @@ Repair/publication: [../tools/README.md](../tools/README.md).
   `CityWorkAudio`; the shared Music bus is reduced by `6 dB`.
 - Diner cast/seat/menu/shelter/light;mountain brink/car/cableway;church metric kit/light.
   Shop:7 offers/stack9,dense stock/door;wall checkout/decor snacks;shared receipt.
+- Pawnshop:turn-island pavilion/separate scene,silent clerk behind grille;buy/sell stubs, no transactions.
 - Six named village neighbours; household help persists across visits.
   27 silent RU/EN inspections: props side/bokeh, paper/photos close-up.
   Lodge minibar/chairs; group photo inspect/pickup, shared receipt/session state.

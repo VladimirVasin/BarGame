@@ -108,6 +108,10 @@ namespace BarPromenade
             {
                 EnsureSupermarketInteriorInstalled();
             }
+            else if (scene.name == SceneIds.PawnshopInterior)
+            {
+                EnsurePawnshopInteriorInstalled();
+            }
             else if (scene.name == SceneIds.ChurchInterior)
             {
                 EnsureChurchInteriorInstalled();
@@ -153,6 +157,7 @@ namespace BarPromenade
                    sceneName == SceneIds.City ||
                    sceneName == SceneIds.BarInterior ||
                    sceneName == SceneIds.SupermarketInterior ||
+                   sceneName == SceneIds.PawnshopInterior ||
                    sceneName == SceneIds.ChurchInterior ||
                    sceneName == SceneIds.HomeInterior ||
                    sceneName == SceneIds.StairwellInterior ||
@@ -311,6 +316,19 @@ namespace BarPromenade
             {
                 creating = false;
             }
+        }
+
+        public static PawnshopInteriorRoot EnsurePawnshopInteriorInstalled()
+        {
+            PawnshopInteriorRoot existing = Object.FindAnyObjectByType<PawnshopInteriorRoot>();
+            if (existing != null) return existing;
+            creating = true;
+            try
+            {
+                var root = new GameObject("[Bar Promenade] Pawnshop Interior Runtime");
+                return root.AddComponent<PawnshopInteriorRoot>();
+            }
+            finally { creating = false; }
         }
 
         public static DoorTransitionRoot EnsureDoorTransitionInstalled()

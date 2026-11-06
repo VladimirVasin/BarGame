@@ -1202,6 +1202,7 @@ namespace BarPromenade
             RetainResident(actorIndex);
             actors[actorIndex].ReleasePresentation(poolRoot);
             initialApproachCompleted[actorIndex] = false;
+            passingWidths[actorIndex] = default;
         }
 
         private void RefreshInitialApproachState(

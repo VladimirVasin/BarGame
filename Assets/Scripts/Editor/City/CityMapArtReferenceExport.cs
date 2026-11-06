@@ -187,6 +187,26 @@ namespace BarPromenade.Editor
             int hillsideYard = 0;
             foreach (Vector2[] piece in CityHillsideGroundPlan.ForLayout(layout).WalkablePolygons)
                 Poly("hill-yard:" + hillsideYard++, "walkable-ground", piece);
+            foreach (var pocket in CityHillsideBenchPocketPlan.ForLayout(layout).Pockets)
+            {
+                int patch = 0;
+                foreach (Vector2[] piece in pocket.SurfacePolygons)
+                    Poly("bench-path:" + pocket.Placement.Id + ":" + patch++, "sidewalk", piece);
+            }
+            var benchTerrace=CityPawnshopBenchTerracePlan.ForLayout(layout);
+            if(benchTerrace.IsEnabled)
+            {
+                int patch=0;
+                foreach(Vector2[] piece in benchTerrace.Footprints) Poly("bench-terrace:"+patch++,"sidewalk",piece);
+                var flight=benchTerrace.Flight;
+                for(int step=0;step<=flight.StepCount;step++)
+                {
+                    Vector3 center=flight.Start+flight.Direction*(step*flight.TreadDepth);
+                    Vector3 side=flight.Right*(flight.Width*.5f);
+                    Line("bench-stair:"+step,"stairs",.12f,new[] {new Vector2(center.x-side.x,center.z-side.z),
+                        new Vector2(center.x+side.x,center.z+side.z)});
+                }
+            }
             var rim = quarter.RavineOutline;
             if (rim.Count > 2)
             {
@@ -244,8 +264,13 @@ namespace BarPromenade.Editor
             if (laundry.IsEnabled)
                 for (int i = 0; i < laundry.BodyFootprints.Count; i++) Box("laundry:" + i, "building", laundry.BodyFootprints[i]);
             foreach (CityMapPointOfInterest place in controller.PointsOfInterest)
-                if (place.HasFootprint) Box("place:" + place.StableId,
+                if (place.HasFootprint && place.Kind != CityMapPointOfInterestKind.Pawnshop) Box("place:" + place.StableId,
                     place.Kind == CityMapPointOfInterestKind.RidgeKiosk ? "shop-building" : "public-ground", place.Footprint);
+            if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
+            {
+                Poly("pawnshop:building", "shop-building", pawnshop.Footprint);
+                Poly("pawnshop:approach", "sidewalk", pawnshop.ApproachFootprint);
+            }
             if (RidgeKioskSitePlan.TryCreate(layout, out var kiosk)) Box("ridge-kiosk:apron", "promenade", kiosk.Apron);
             CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
             if (terraces.IsEnabled)
@@ -523,6 +548,7 @@ namespace BarPromenade.Editor
                     case "bridge": return new Color32(133, 128, 107, 255);
                     case "public-ground": return new Color32(67, 76, 67, 255);
                     case "walkable-ground": return new Color32(68, 73, 62, 255);
+                    case "sidewalk": return new Color32(108, 112, 99, 255);
                     case "terrace-court": return new Color32(89, 95, 83, 255);
                     case "terrace-landing": return new Color32(111, 112, 96, 255);
                     case "building": return new Color32(91, 96, 88, 255);

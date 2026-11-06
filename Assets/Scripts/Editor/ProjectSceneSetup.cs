@@ -35,6 +35,7 @@ namespace BarPromenade.Editor
         private const string MothersHouseInteriorScenePath =
             "Assets/Scenes/MothersHouseInterior.unity";
         private const string CombatTestScenePath = "Assets/Scenes/CombatTest.unity";
+        private const string PawnshopInteriorScenePath = "Assets/Scenes/PawnshopInterior.unity";
         private const string TestBootstrapScenePrefix =
             "Assets/InitTestScene";
 
@@ -52,7 +53,8 @@ namespace BarPromenade.Editor
             ChurchInteriorScenePath,
             AlpineVillageScenePath,
             MothersHouseInteriorScenePath,
-            CombatTestScenePath
+            CombatTestScenePath,
+            PawnshopInteriorScenePath
         };
 
         private static SceneAsset mainMenuStartScene;
@@ -82,6 +84,7 @@ namespace BarPromenade.Editor
             EnsureDoorTransitionScene();
             EnsureInteriorScene();
             EnsureSupermarketInteriorScene();
+            EnsurePawnshopInteriorScene();
             EnsureStairwellInteriorScene();
             EnsureHomeInteriorScene();
             EnsureMountainRoadScene();
@@ -457,6 +460,15 @@ namespace BarPromenade.Editor
             EnsureCombatTestScene();
             ConfigureBuildScenes();
             AssetDatabase.SaveAssets();
+        }
+
+        public static void EnsurePawnshopInteriorScene() => EnsureEmptyAdditiveScene(PawnshopInteriorScenePath);
+
+        [MenuItem("Bar Promenade/Configure Pawnshop Scene")]
+        public static void ConfigurePawnshopScene()
+        {
+            EnsurePawnshopInteriorScene();
+            ConfigureBuildScenes();
         }
 
         private static void EnsureEmptyAdditiveScene(string scenePath)

@@ -252,6 +252,19 @@ namespace BarPromenade
             return camera;
         }
 
+        public static Camera EnsurePawnshopInterior()
+        {
+            Camera camera = EnsureCamera(new Color(.065f, .075f, .065f));
+            SetPostProcessing(camera, true);
+            camera.farClipPlane = 28f;
+            ConfigureDirectionalLighting(new Color(.77f, .82f, .73f), .34f,
+                new Color(.19f, .21f, .18f), .70f);
+            RenderSettings.fog = false;
+            RenderSettings.reflectionIntensity = .32f;
+            DynamicGI.UpdateEnvironment();
+            return camera;
+        }
+
         public static Camera EnsureChurchInterior()
         {
             Camera camera = EnsureCamera(

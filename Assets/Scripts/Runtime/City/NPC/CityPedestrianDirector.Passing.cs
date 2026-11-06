@@ -10,6 +10,7 @@ namespace BarPromenade
         private const float HalfLane = .43f;
         private const float FullLane = .77f;
         private const float BodyMargin = .05f;
+        private const float ObstacleLookAhead = 1.2f;
 
         private struct PassingWidth
         {
@@ -17,6 +18,11 @@ namespace BarPromenade
             public Vector3 Centre;
             public double RecheckAt;
             public float Left, Right;
+            public bool CentreClear;
+            public bool SidesMeasured;
+            public float ObstacleLane;
+            public int EncounterPlusOne;
+            public string EncounterSpawn;
         }
 
         private PassingWidth[] passingWidths;
@@ -31,9 +37,22 @@ namespace BarPromenade
 
             float heroDistance = PlanarSquaredDistance(actor.Position, player.position);
             int nearby = pedestrianIndex.Query(actor.Position, PassingLookAhead);
-            if (heroDistance > PassingLookAhead * PassingLookAhead && nearby <= 1) return;
             if (!actor.TryGetPassingFrame(out Vector3 centre, out Vector3 travel)) return;
             Vector3 right = Vector3.Cross(Vector3.up, travel);
+            ref var memory = ref passingWidths[slot];
+            int retained = memory.EncounterPlusOne - 1;
+            float retainedRange = PassingLookAhead + FullLane;
+            if (retained >= 0 && (!actors[retained].IsSpawned ||
+                actors[retained].SpawnAnchorId != memory.EncounterSpawn ||
+                PlanarSquaredDistance(actor.Position, actors[retained].Position) > retainedRange * retainedRange))
+                retained = -1;
+            if (heroDistance > PassingLookAhead * PassingLookAhead && nearby <= 1 && retained < 0)
+            {
+                memory.EncounterPlusOne = 0;
+                memory.EncounterSpawn = null;
+                SetObstacleMovement(actor, slot, centre);
+                return;
+            }
             var heroBody = GetPlayerController();
             if (heroDistance <= PassingLookAhead * PassingLookAhead &&
                 VerticalCapsulesOverlap(actor.Position, CityPedestrianActor.CollisionHeight, player,
@@ -54,9 +73,12 @@ namespace BarPromenade
 
             int encounter = -1;
             float nearest = float.PositiveInfinity, pace = 1f;
-            for (int i = 0; i < nearby; i++)
+            // A shoulder step can put the same peer just outside the broad-phase
+            // radius. Retain that encounter until the bodies clear, rather than
+            // alternating a passing lane with a return to the centre every frame.
+            for (int i = 0; i < nearby + (retained >= 0 ? 1 : 0); i++)
             {
-                int otherSlot = pedestrianIndex.GetActorIndex(i);
+                int otherSlot = i < nearby ? pedestrianIndex.GetActorIndex(i) : retained;
                 var other = actors[otherSlot];
                 if (other == actor || !VerticalCapsulesOverlap(actor.Position, CityPedestrianActor.CollisionHeight,
                         other.transform, other.CharacterController, CityPedestrianActor.CollisionHeight, CollisionActivationPadding))
@@ -64,7 +86,8 @@ namespace BarPromenade
                 Vector3 delta = other.Position - actor.Position;
                 float along = Vector3.Dot(delta, travel);
                 float clearance = actor.AgentRadius + other.AgentRadius + BodyMargin;
-                if (along < -clearance || Mathf.Abs(Vector3.Dot(delta, right)) > clearance + FullLane) continue;
+                float lateralRange = clearance + FullLane + (otherSlot == retained ? FullLane : 0f);
+                if (along < -clearance || Mathf.Abs(Vector3.Dot(delta, right)) > lateralRange) continue;
                 bool walking = !other.IsPassingRetreat && !other.IsAtResidentDestination &&
                     other.TryGetPassingFrame(out _, out Vector3 otherTravel) && Vector3.Dot(travel, otherTravel) > .35f;
                 if (walking)
@@ -80,7 +103,13 @@ namespace BarPromenade
                 encounter = otherSlot;
             }
             actor.SetAvoidance(pace, 0f);
-            if (encounter < 0) return;
+            memory.EncounterPlusOne = encounter + 1;
+            memory.EncounterSpawn = encounter >= 0 ? actors[encounter].SpawnAnchorId : null;
+            if (encounter < 0)
+            {
+                SetObstacleMovement(actor, slot, centre);
+                return;
+            }
             var peer = actors[encounter];
             float bodyGap = actor.AgentRadius + peer.AgentRadius + BodyMargin;
             float longitudinal = Vector3.Dot(peer.Position - actor.Position, travel);
@@ -92,8 +121,8 @@ namespace BarPromenade
             {
                 // Both choose their right (or, together, their left). Their two
                 // physical shoulders fit even when a whole body-width to one side does not.
-                var own = MeasureWidth(actor, slot, centre, right);
-                var theirs = MeasureWidth(peer, encounter, otherCentre, Vector3.Cross(Vector3.up, peerTravel));
+                var own = MeasureWidth(actor, slot, centre);
+                var theirs = MeasureWidth(peer, encounter, otherCentre);
                 int sign = own.Right >= HalfLane && theirs.Right >= HalfLane ? 1 :
                     own.Left >= HalfLane && theirs.Left >= HalfLane ? -1 : 0;
                 if (sign != 0)
@@ -105,17 +134,22 @@ namespace BarPromenade
 
             // A stationary worker on a narrow path can also make room. Otherwise
             // the same slot always yields first, so neither side waits for its mirror.
-            if (!peer.IsPassingRetreat && (actor.IsAtResidentDestination || slot > encounter ||
-                    !peer.TryGetPassingFrame(out _, out _)))
+            if (peer.IsPassingRetreat)
+                // A turnout may border the guest's next leg at a corner. Let
+                // the guest walk around that parked body; a second retreat
+                // would make both wait for each other to finish first.
+                GiveWayTo(actor, slot, centre, right, peer.transform, longitudinal, bodyGap, false);
+            else if (actor.IsAtResidentDestination || slot > encounter ||
+                    !peer.TryGetPassingFrame(out _, out _))
                 GiveWayTo(actor, slot, centre, right, peer.transform, longitudinal, bodyGap);
             else if (hold)
                 actor.SetPassingLane(actor.LateralOffset, true);
         }
 
         private void GiveWayTo(CityPedestrianActor actor, int slot, Vector3 centre, Vector3 right,
-            Transform priority, float along, float clearance)
+            Transform priority, float along, float clearance, bool allowRetreat = true)
         {
-            var room = MeasureWidth(actor, slot, centre, right);
+            var room = MeasureWidth(actor, slot, centre);
             float theirSide = Vector3.Dot(priority.position - centre, right);
             // Prefer moving away from their track. On a turn one side may end
             // against a railing, so try the other when it leaves a larger gap.
@@ -123,34 +157,69 @@ namespace BarPromenade
             float offset = goRight ? room.Right : -room.Left;
             float separation = Mathf.Abs(offset - theirSide);
             bool close = Mathf.Abs(along) <= clearance + .23f;
-            // A two-way flight can fit a walker on either half although the
-            // handrail prevents a whole body-width of offset from its centre.
-            // Hold that shoulder for the other walker. Backtrack only in single file.
-            if (Mathf.Abs(offset) < HalfLane && separation < clearance &&
+            // Opposing walkers negotiate paired half-lanes above. Here the
+            // priority body's actual track needs a complete capsule gap; a
+            // nominal half-lane alone cannot clear a centred hero.
+            if (allowRetreat && separation < clearance &&
                 actor.TryBeginPassingRetreat(priority, clearance)) return;
             bool hold = close && Mathf.Abs(Vector3.Dot(priority.position - actor.Position, right)) < clearance;
             actor.SetPassingLane(offset, hold);
         }
 
-        private PassingWidth MeasureWidth(CityPedestrianActor actor, int slot, Vector3 centre, Vector3 right)
+        private void SetObstacleMovement(CityPedestrianActor actor, int slot, Vector3 centre)
+        {
+            if (actor.IsAtResidentDestination) return;
+            var room = MeasureWidth(actor, slot, centre, false);
+            ref var width = ref passingWidths[slot];
+            if (room.CentreClear)
+            {
+                width.ObstacleLane = 0f;
+                return;
+            }
+            // Keep the chosen shoulder until the centre corridor is clear, so
+            // approaching a prop does not alternate between left and right.
+            float lane = width.ObstacleLane;
+            if (lane > 0f && room.Right < lane || lane < 0f && room.Left < -lane) lane = 0f;
+            if (lane == 0f)
+                lane = room.Right >= HalfLane ? room.Right : room.Left >= HalfLane ? -room.Left : 0f;
+            width.ObstacleLane = lane;
+            if (lane != 0f) actor.SetPassingLane(lane, false);
+        }
+
+        private PassingWidth MeasureWidth(CityPedestrianActor actor, int slot, Vector3 centre,
+            bool requireSides = true)
         {
             ref var width = ref passingWidths[slot];
             if (width.RecheckAt > passingClock && width.From == actor.PreviousNodeIndex &&
-                width.To == actor.TargetNodeIndex && (width.Centre - centre).sqrMagnitude < .20f * .20f) return width;
+                width.To == actor.TargetNodeIndex && (width.Centre - centre).sqrMagnitude < .20f * .20f)
+            {
+                if (!requireSides || width.SidesMeasured) return width;
+            }
+            else
+            {
+                if (width.From != actor.PreviousNodeIndex || width.To != actor.TargetNodeIndex)
+                    width.ObstacleLane = 0f;
+                width.SidesMeasured = false;
+                width.CentreClear = actor.CanWalkPassingLane(0f, ObstacleLookAhead);
+                width.Left = width.Right = 0f;
+            }
             width.From = actor.PreviousNodeIndex;
             width.To = actor.TargetNodeIndex;
             width.Centre = centre;
             width.RecheckAt = passingClock + .18f;
-            width.Right = Available(1f);
-            width.Left = Available(-1f);
+            if (requireSides || !width.CentreClear)
+            {
+                width.Right = Available(1f);
+                width.Left = Available(-1f);
+                width.SidesMeasured = true;
+            }
             return width;
 
             float Available(float sign)
             {
-                Vector3 axis = right * sign;
-                if (actor.CanOccupyPassingPoint(centre + axis * FullLane)) return FullLane;
-                if (actor.CanOccupyPassingPoint(centre + axis * HalfLane)) return HalfLane;
-                if (actor.CanOccupyPassingPoint(centre + axis * CityPedestrianActor.MaximumLateralOffset))
+                if (actor.CanWalkPassingLane(sign * FullLane, ObstacleLookAhead)) return FullLane;
+                if (actor.CanWalkPassingLane(sign * HalfLane, ObstacleLookAhead)) return HalfLane;
+                if (actor.CanWalkPassingLane(sign * CityPedestrianActor.MaximumLateralOffset, ObstacleLookAhead))
                     return CityPedestrianActor.MaximumLateralOffset;
                 return 0f;
             }

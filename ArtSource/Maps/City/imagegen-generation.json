@@ -1,18 +1,18 @@
 {
   "tool": "built-in image_gen",
-  "intent": "Final Ridge walkable earth, connected yards and furniture pockets; existing streets, bridges, ravine, Home and kiosk remain registered.",
-  "prompt": "imagegen-ridge-ground-prompt.txt",
+  "intent": "Final continuous asphalt upper bench terrace, broad stair and door path west of the pawnshop; other city geography retained.",
+  "prompt": "imagegen-pawnshop-terrace-prompt.txt",
   "references": [
     "CityMapImage.reference.png",
     "map-reference.png"
   ],
   "geography": "map-reference.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "d9b6aa0782e82654bd7dbef3fd7b45e7b52811ee55584ed6ca358e9655895ee3",
-  "runtime_image_sha256": "d9b6aa0782e82654bd7dbef3fd7b45e7b52811ee55584ed6ca358e9655895ee3",
-  "previous_image_sha256": "09141548f74ac4169bb84bb83882538ff5c52f2802cb393c7546e7fa99207bf3",
+  "image_sha256": "e52c9bf5785f28e318d400a098ad082dafb1345624e5e99558809979cc8a2d23",
+  "runtime_image_sha256": "e52c9bf5785f28e318d400a098ad082dafb1345624e5e99558809979cc8a2d23",
+  "previous_image_sha256": "c6a60b5238a3355e8289c36bba0a60675bacba0efb027e3ce3e7dfb239df4a31",
   "registration": {
-    "description": "Unchanged full-bleed north-up world bounds; one final redraw after terrain construction. Road landmarks retain their normalized coordinates.",
+    "description": "Full-bleed north-up bounds unchanged. Shared bench terrace near normalized (0.355,0.850), pawnshop at (0.418,0.852). Russian labels/live markers remain runtime overlays; courtyard statue, lamps and flowerbeds are exempt from map art.",
     "source_size": [
       1173,
       1341
@@ -22,7 +22,7 @@
       2048
     ]
   },
-  "fingerprint": "5564b6278a37019fcb54552b080b97a873510704f5a0d1d55ee5ea395b667444",
+  "fingerprint": "d52e98f01e04ab6901c056b3001cff7a840e82bd6f79648694523b955f35663c",
   "schemaVersion": 2,
   "width": 1173,
   "height": 1341

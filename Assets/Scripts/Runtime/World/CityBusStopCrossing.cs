@@ -145,27 +145,7 @@ namespace BarPromenade
 
                     // Paint alternating white rectangles from kerb to kerb. The long
                     // side follows the traffic lane, pitched to the asphalt under it.
-                    var paint = new RuntimeOrientedBox[ZebraStripes];
-                    float pitch = (half - .10f) * 2f / paint.Length;
-                    float halfWidth = pitch * .27f;
-                    for (int stripe = 0; stripe < paint.Length; stripe++)
-                    {
-                        Vector2 mid = at.Position + at.Right * ((stripe + .5f - paint.Length * .5f) * pitch);
-                        Vector2 width = at.Right * halfWidth, length = at.Tangent * depth;
-                        if (!Sample(mid - width - length, FootstepGroundKind.Concrete, out var a) ||
-                            !Sample(mid + width - length, FootstepGroundKind.Concrete, out var b) ||
-                            !Sample(mid - width + length, FootstepGroundKind.Concrete, out var c) ||
-                            !Sample(mid + width + length, FootstepGroundKind.Concrete, out var d) ||
-                            !Sample(mid, FootstepGroundKind.Concrete, out var asphalt)) return null;
-                        Vector3 forward = ((c - a) + (d - b)) * .5f;
-                        Vector3 right = ((b - a) + (d - c)) * .5f;
-                        Vector3 normal = Vector3.Cross(forward, right).normalized;
-                        Vector3 middle = (a + b + c + d) * .25f;
-                        if (normal.y < .8f || Mathf.Abs(Vector3.Dot(asphalt - middle, normal)) > .012f ||
-                            Mathf.Abs(Vector3.Dot(a - middle, normal)) > .012f) return null;
-                        paint[stripe] = new RuntimeOrientedBox(middle + normal * .008f,
-                            Quaternion.LookRotation(forward, normal), new Vector3(right.magnitude, .012f, forward.magnitude));
-                    }
+                    if (!TryCreatePaint(ground, at.Position, at.Right, at.Tangent, half, half, out var paint)) return null;
                     return new CityBusStopCrossing(reuse < 0 ? "zebra:" + stop.Id : "junction-zebra:" + reuse,
                         stop.RoadEdge, hill?.Bank, reuse, center, path, paint, bounds);
                 }
@@ -181,6 +161,41 @@ namespace BarPromenade
                 }
                 point = default;
                 return false;
+            }
+        }
+
+        /// <summary>The same six stripes serve stops and bounded landmark crossings.
+        /// Unequal side widths preserve the real outside apron beside a bend.</summary>
+        internal static bool TryCreatePaint(CityStreetSupportPlan ground, Vector2 center, Vector2 across,
+            Vector2 along, float negativeHalf, float positiveHalf, out RuntimeOrientedBox[] paint)
+        {
+            paint = new RuntimeOrientedBox[ZebraStripes];
+            float pitch = (negativeHalf + positiveHalf - .20f) / paint.Length;
+            float halfWidth = pitch * .27f;
+            float depth = CityStreetSurfacePlanner.CrosswalkDepth * .5f;
+            for (int stripe = 0; stripe < paint.Length; stripe++)
+            {
+                Vector2 mid = center + across * (-negativeHalf + .10f + (stripe + .5f) * pitch);
+                Vector2 width = across * halfWidth, length = along * depth;
+                if (!Sample(mid - width - length, out var a) || !Sample(mid + width - length, out var b) ||
+                    !Sample(mid - width + length, out var c) || !Sample(mid + width + length, out var d) ||
+                    !Sample(mid, out var asphalt)) return false;
+                Vector3 forward = ((c - a) + (d - b)) * .5f;
+                Vector3 right = ((b - a) + (d - c)) * .5f;
+                Vector3 normal = Vector3.Cross(forward, right).normalized;
+                Vector3 middle = (a + b + c + d) * .25f;
+                if (normal.y < .8f || Mathf.Abs(Vector3.Dot(asphalt - middle, normal)) > .012f ||
+                    Mathf.Abs(Vector3.Dot(a - middle, normal)) > .012f) return false;
+                paint[stripe] = new RuntimeOrientedBox(middle + normal * .008f,
+                    Quaternion.LookRotation(forward, normal), new Vector3(right.magnitude, .012f, forward.magnitude));
+            }
+            return true;
+
+            bool Sample(Vector2 point, out Vector3 result)
+            {
+                if (ground.TrySampleTop(point, out float top, out var kind) && kind == FootstepGroundKind.Concrete)
+                { result = new Vector3(point.x, top, point.y); return true; }
+                result = default; return false;
             }
         }
 

@@ -54,12 +54,12 @@ gamepad bindings/hints or require their parity/coverage unless explicitly reques
 
 - Unity `6000.6.8f1`, URP `17.6.0`, Input System `1.20.1`, AI Navigation `2.0.16`.
 - Runtime composition builds near-empty scenes from validated pure plans.
-- Thirteen build scenes under `Assets/Scenes/`, all `.unity`, in build order:
+- Fourteen `.unity` build scenes under `Assets/Scenes/`, in order:
   `MainMenu` (index `0`), `City`, `DoorTransition`, `BarInterior`,
   `SupermarketInterior`, `StairwellInterior`, `HomeInterior`, `MountainRoad`,
   `AreaLoading`, `ChurchInterior`, `AlpineVillage`, `MothersHouseInterior`,
-  `CombatTest`.
-  Ten gameplay roots exclude MainMenu, DoorTransition and AreaLoading; each instantiates
+  `CombatTest`, `PawnshopInterior`.
+  Eleven gameplay roots exclude MainMenu, DoorTransition and AreaLoading; all use
   `Resources/Player/Player3DV2.prefab` through `PlayerFactory`.
 - `Assets/Scripts/Rules/` owns engine-independent rules and contracts;
   `Assets/Scripts/Runtime/` owns gameplay, `Assets/Scripts/Editor/` owns

@@ -99,9 +99,17 @@ namespace BarPromenade
                     if (!ground.TrySampleTop(corner, out float y) || Mathf.Abs(y - top) > .085f)
                     { clear = false; if (candidate.Id == HomeBenchId) homeFailure = $"ground corner {corner}: {y:F4} versus {top:F4}"; }
                 if (!clear) continue;
+                // The two benches share the new straight terrace frontage.
+                // Keep the surveyed earth/reservation recipe unchanged: its
+                // larger level pads also contain these smaller aligned docks.
+                bool straightBench=candidate.Id==CityPawnshopBenchTerracePlan.LeftBenchId ||
+                    candidate.Id==CityPawnshopBenchTerracePlan.RightBenchId;
+                Vector3 forward=straightBench?Vector3.forward:candidate.Forward;
+                Rect body=straightBench?RotatedBounds(point,forward,new Vector2(1.18f,.40f),Vector2.zero):candidate.Bounds;
+                Rect access=straightBench?RotatedBounds(point,forward,new Vector2(1.88f,1.35f),new Vector2(0f,.55f)):candidate.AccessBounds;
+                Vector3 target=straightBench?new Vector3(point.x,candidate.ViewTarget.y,point.y+55f):candidate.ViewTarget;
                 var placed = new CityHillsideFurniturePlacement(candidate.Id, candidate.Kind,
-                    new Vector3(point.x, top, point.y), candidate.Forward, candidate.ViewTarget,
-                    candidate.Bounds, candidate.AccessBounds, candidate.Variant);
+                    new Vector3(point.x, top, point.y), forward, target,body,access,candidate.Variant);
                 placements.Add(placed);
                 solids.Add(placed.Bounds);
                 Vector2 half = placed.Kind == CityMiscKind.ParkBench ? new Vector2(1.15f, .36f)

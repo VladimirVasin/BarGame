@@ -56,6 +56,7 @@ namespace BarPromenade
                 CityParkSurfaceAppearance.ApplyCombined(geometry.GetComponent<Renderer>(), CityParkSurfaceKind.Timber, color);
             }
             if (utilities.Count != 0) CityDecorationWorldBuilder.BuildDescriptors(root, layout, utilities);
+            CityHillsideBenchPocketWorld.Build(root, layout, retained);
         }
     }
 }

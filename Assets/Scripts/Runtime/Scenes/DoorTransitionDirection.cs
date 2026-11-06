@@ -9,6 +9,8 @@ namespace BarPromenade
         EnterApartment = 4,
         ExitApartment = 5,
         EnterChurch = 6,
-        ExitChurch = 7
+        ExitChurch = 7,
+        EnterPawnshop = 8,
+        ExitPawnshop = 9
     }
 }

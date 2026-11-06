@@ -180,7 +180,7 @@ namespace BarPromenade
             return false;
         }
 
-        private bool CanWalkVehicleSegment(Vector3 from, Vector3 to)
+        private bool CanWalkVehicleSegment(Vector3 from, Vector3 to, bool ignoreWalkerBodies = false)
         {
             Vector3 offset = to - from;
             int steps = Mathf.Max(1, Mathf.CeilToInt(offset.magnitude / .2f));
@@ -211,7 +211,7 @@ namespace BarPromenade
                     Array.Resize(ref vehicleYieldHits, vehicleYieldHits.Length * 2);
                 }
                 for (int i = 0; i < count; i++)
-                    if (IsVehicleWalkObstacle(vehicleYieldHits[i].collider)) return false;
+                    if (IsVehicleWalkObstacle(vehicleYieldHits[i].collider, ignoreWalkerBodies)) return false;
             }
             CapsuleAt(to, out bottom, out top, out radius);
             if (vehicleYieldOverlaps == null) vehicleYieldOverlaps = new Collider[16];
@@ -224,12 +224,13 @@ namespace BarPromenade
                 Array.Resize(ref vehicleYieldOverlaps, vehicleYieldOverlaps.Length * 2);
             }
             for (int i = 0; i < overlaps; i++)
-                if (IsVehicleWalkObstacle(vehicleYieldOverlaps[i])) return false;
+                if (IsVehicleWalkObstacle(vehicleYieldOverlaps[i], ignoreWalkerBodies)) return false;
             return true;
         }
 
-        private bool IsVehicleWalkObstacle(Collider hit) => hit != null &&
-            hit != characterController && !hit.transform.IsChildOf(transform);
+        private bool IsVehicleWalkObstacle(Collider hit, bool ignoreWalkerBodies = false) => hit != null &&
+            hit != characterController && !hit.transform.IsChildOf(transform) &&
+            (!ignoreWalkerBodies || !(hit is CharacterController));
 
         private void CapsuleAt(Vector3 position, out Vector3 bottom,
             out Vector3 top, out float radius)

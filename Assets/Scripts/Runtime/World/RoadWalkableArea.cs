@@ -730,10 +730,19 @@ namespace BarPromenade
                 area.Add(apron);
                 area.Exclude(kiosk.Bounds);
             }
+            if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
+                area.ExcludePolygons(new[] { pawnshop.Footprint });
             // Final furniture samples the completed earth; never make its raw
             // level-pad recipe depend on this mask. Oriented footprints keep
             // the sit/stand and utility docks clear beside diagonal benches.
             area.ExcludePolygons(CityHillsideFurniturePlan.ForLayout(layout).SolidPolygons);
+            var benchTerrace=CityPawnshopBenchTerracePlan.ForLayout(layout);
+            if(benchTerrace.IsEnabled)
+            {
+                area.AddPolygons(benchTerrace.Footprints);
+                area.ExcludePolygons(benchTerrace.DecorationSolidPolygons);
+            }
+            area.ExcludePolygons(CityHillsideBenchPocketPlan.ForLayout(layout).SolidPolygons);
             area.AttachTerraceDistrict(layout);
             return area;
         }

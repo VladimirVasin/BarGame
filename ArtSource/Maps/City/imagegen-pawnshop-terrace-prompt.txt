@@ -1,0 +1,9 @@
+Use case: precise-object-edit / style-transfer.
+Asset type: final opaque in-game City map background.
+Image 1 is the EDIT TARGET: the existing finished charcoal city map. Image 2 is the AUTHORITATIVE FINAL GEOMETRY SURVEY over identical north-up world bounds. Preserve Image 1's entire-city registration, roads, bridges, coastline, river, dry ravine, houses, hillside courts, pawnshop pavilion, direct door path, two zebra crossings, and broad six-step bench stair.
+
+ONE SMALL LOCAL FINAL CHANGE: the viewing-bench terrace immediately WEST/LEFT of the pawnshop, around normalized x=35.5%, y=85.0%. Match Image 2's updated complete rectangular UPPER ASPHALT LANDING behind the existing wide staircase. It extends a little farther back than in Image 1 and fills the previous irregular grass notch between the bench pads, making one simple continuous asphalt platform. Preserve the short wide 10.4m six-tread flight, lower landing and sidewalk seam exactly. Do not turn it into a road or bridge. Keep the nearby paths; exact landing outline comes from the survey. All other parts of Image 1 should stay unchanged.
+
+Style: usable top-down charcoal map, muted dirty-bone/gray strokes, tactile worn paper, restrained graphite hatching, subdued olive parks. Keep the edit target's palette and density. The enlarged landing is an ordinary paved gray municipal surface with existing thin stair hatches. No bright color, glow, perspective or cast cinematic shadows.
+
+Remove ALL survey numbers, labels, letters, icons and markers. Do not add statue/flowerbed symbols or advertisements: these small courtyard props are omitted from map art and the game overlays its own labels/live markers. No title, legend, compass, border, desk, mockup, added margins, crop or rotation. Full bleed opaque game map matching the survey's 1792 by 2048 aspect ratio and exact normalized registration.

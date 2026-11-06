@@ -1,5 +1,16 @@
 {
   "entries": [
+    {"key":"interaction.enter_pawnshop","value":"E — войти в ломбард"},
+    {"key":"map.poi.pawnshop","value":"Ломбард"},
+    {"key":"pawnshop.trade.prompt","value":"E — обратиться"},
+    {"key":"pawnshop.trade.title","value":"Ломбард"},
+    {"key":"pawnshop.trade.buy","value":"Купить"},
+    {"key":"pawnshop.trade.sell","value":"Продать"},
+    {"key":"pawnshop.trade.unavailable_buy","value":"Покупка недоступна."},
+    {"key":"pawnshop.trade.unavailable_sell","value":"Приём вещей недоступен."},
+    {"key":"pawnshop.trade.select","value":"Выберите действие."},
+    {"key":"pawnshop.trade.close","value":"Закрыть"},
+    {"key":"pawnshop.exit.prompt","value":"E — выйти из ломбарда"},
     {"key":"inventory.item.hawthorn.name","value":"Боярышника настойка"},
     {"key":"inventory.item.hawthorn.description","value":"Тёмный аптечный флакон. Из-под крышки тянет спиртом."},
     {"key":"interaction.take_hawthorn_tincture","value":"E — взять настойку"},

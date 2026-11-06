@@ -47,13 +47,13 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | Residential laundry | Residual L-shell; silent worker folds/carries the same cloth/basket; enamel sign/shared light/hum. | `CityLaundry{Plan,AssetProvider,Controller,WorldBuilder}`, `build-city-laundry-3d-model.py` | Current |
 | Residential dog park | Residual fenced yard; three articulated dogs, two permanent owners; open entry and local voices. | `CityDogPark{Plan,AssetProvider,Controller,WorldBuilder}`, `CityDogPose`, `CityDogActivity` | Current |
-| City Blender low-rise landmarks | Ridge Street home by stop 03-04. The lower bar and shop retain fixed-metre facades. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
-| Unity URP foundation | 13 scenes; PC Neutral/Bloom/Vignette. | `6000.6.8f1`, `17.6.0` | Current |
+| City Blender low-rise landmarks | Ridge Home03-04/lower bar/shop retain fixed-metre facades. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
+| Unity URP foundation | 14 scenes; PC Neutral/Bloom/Vignette. | `6000.6.8f1`, `17.6.0` | Current |
 | Scene presentation | 16:9/native/SMAA;4:3 unsupported;Editor gamma;City/warehouse SSR. | `Scene*Feature`, `GraphicsEffectsSettings` | Current |
 | Village local lighting | Real emitters; bounded air/snow/bounce, metal and spring reflections. | `AlpineVillageLightingPresentation`, `SceneReflectionCapture` | Current |
 | Road lighting | Bounded air/snow/headlights/halos/metal/bounce; station reflections. | `MountainRoad{LightingPresentation,ReflectionController,MetalAppearance}` | Current |
 | Depth of field tiers | Gaussian far blur/interiors radius0.55; shared owned inspection Bokeh. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder`, `CinematicDepthOfField` | Current |
-| Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
+| Runtime area composition | 11 roots;four staged builders;doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat | Bar tissue/skull/recoil;3hits→fall/rise;hero grace;HUD HP<100. Gap:pierce. | `CombatActor`,`CombatTestRoot`,`CombatHudLayout` | Partial |
 | Crane | Hook6m/up2m/hold5/E6/hoist-haul/bodycam/fall;home10;fatal3→regen10/kill0. | `Combat*.Crane*`,`CombatActor.Restraint` | Current |
 | Authored enemies | Bottles:glass fracture,flesh UV,held/snapped poses;all six:horror surfaces. | `CombatActor`,`Combat*Appearance`,`CombatZombieBottleDestruction` | Current |
@@ -78,7 +78,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City blueprint/roads | Two districts+park;144 IDs/−29.2% land; fronts/courts share ground/navigation. | `City{Layout,SpatialPlan,RoadGeometryPlan,CourtyardBlockPlanner}`, `BuildingLot` | Current |
 | Coastal utilities | Three passive buildings; bounded poles/wires clear routes; shared Home plan. | `CityCoastalInfrastructure{Plan,WorldBuilder}` | Current |
 | City elevation/stairs | Shared heights align stairs, ground and collision. | `CityElevation*`, `CityTerrainSurfacePlan` | Current |
-| Terraced City | Walkable yards; view benches/bins/booths; bridges/stairs join homes and bus lines. | `CityHillside*`,`CityTerrace*` | Current |
+| Terraced City | Yards;paved/lit bench paths near pawnshop;bins/booths;bridges/stairs join homes/buses. | `CityHillside*`,`CityTerrace*` | Current |
 | City mountain boundary and open tunnel | `default-coastal` closes west/south around the non-traversable river cave and one gate-free `8 x 5.5 m` portal. | `CityMountainBoundary*`, `CityMountainBackdrop*` | Current |
 | Eastern mainland view | Closed post; shared road/traffic datum; skyline/glow fade beyond checkpoint. One pooled mast. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |
 | City litter | 36 Blender variants off roads; dense east/no near repeats; solids block; finite shared palette per root. | `CityLitterCatalog`, `CityLitter{Plan,Planner,WorldBuilder,Instancer}`, `CityEastLitter*` | Current |
@@ -134,18 +134,19 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Central Park surfaces | The divided park uses shared gravel, paths and bridge geometry from its pure surface plan. | `CityParkSurfaceAppearance`, `CityWorldBuilder` | Current |
 | Pedestrian personal space | Above alcohol `60`: guarding palm; above `80`: close shove. | `CityPedestrianPersonalSpace{Rules,Controller}`, `PlayerMotor` | Current |
 | Pedestrian street insults | Insult responses need the authored proximity/facing gates; the twenty-line bag deals once a round, surviving reloads. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
-| City/Home pedestrians | 192 itineraries; ≤36 actors/cache48. Home5/2. Walkers pass or yield at a landing. | `CityResidentWorld`, `CityResidentJourneyDirector`, `CityPedestrianDirector` | Current |
+| City/Home pedestrians | 192 itineraries;≤36/cache48;Home5/2. Turnout/prop bypass keeps goals; narrow paths use landings. | `CityResidentWorld`, `CityResidentJourneyDirector`, `CityPedestrianDirector` | Current |
 | NPC Human V2 anatomy, appearance and visibility | Shared rigs; joint fields/volume and shaped hands/clothes retain UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `CharacterJointDeformation` | Current |
 | City district buses | Two buses per ring with shared platforms and transfers. Gap: no Home service or live map vehicle marker. | `CityDistrictBusPlanner`, `CityHillsideBusPlanner`, `CityBus{Director,Actor,Factory}` | Partial |
 | Pedestrian bench rests | Eligible walkers reserve benches, play owned sit/rest/stand actions and return to their route. | `CityBenchRest{Plan,Planner}`, `CityBenchNpcRestController` | Current |
 | City bus passengers | Two doors serve clear aisle paths; 10 seats, 3 standing. Remote service. Gap: fares/live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |
 | City visual diversity and collision proxies | Deterministic visual variants share simple semantic collision proxies and reusable resources. | `CityDecoration{Descriptor,Plan,Planner,Validator,WorldBuilder}`, `CityDecorationCollisionCatalog` | Current |
 | Road-edge fences | Plan-owned fences protect boundaries while preserving every validated road/waterside opening. | `RoadFence{Planner,Plan,WorldBuilder}`, `CitySurfaceDescriptor` | Current |
-| Shops | Kiosk at 03-04: three goods and a conversation. Supermarket: seven goods. Atomic sales and 3D receipts. | `RidgeKioskWorld`, `SupermarketShelfShopController`, `SupermarketPurchaseRules` | Current |
+| Shops | Kiosk3goods/talk;supermarket7goods. Atomic sales/3D receipts. | `RidgeKioskWorld`, `SupermarketShelfShopController`, `SupermarketPurchaseRules` | Current |
+| Pawnshop | Island pavilion/secure clerk. Gap:trade stubs have no transactions. | `CityPawnshop*`, `PawnshopInterior*`, `PawnshopTradeController` | Partial |
 | Supermarket cashier | Wall checkout/decor snacks;anchored palms/light;ordinary cashier,bulging 3D face/shared rig. | `SupermarketCashier{Provider,AssetRegistry,Factory,Presentation,Actor,SurveillanceState,BlinkState,Interaction}` | Current |
 | Supermarket CCTV corner cameras | Four authored corner cameras follow the hero without gameplay surveillance. | `SupermarketInteriorAssetRegistry`, `SupermarketSecurityCamera{,WorldBuilder}` | Current |
 | Supermarket fluorescent atmosphere | Visible fixtures own the store's restrained light, flicker and sound within explicit shared-resource budgets. | `SupermarketInteriorAtmosphere`, `SupermarketFluorescentFlicker` | Current |
-| City day/night presentation | Height opens views; night dims sky/fill. Booth entries/forecourts share12/day floor. | `CityNightAtmosphere`, `CityAltitudeVisibility`, `CityDayNightController`, `HomeBalconyExteriorAtmosphere` | Current |
+| City day/night presentation | Height opens views;night dims sky/fill. Booths/pawnshop benches share12/day floor. | `CityNightAtmosphere`, `CityAltitudeVisibility`, `CityDayNightController`, `HomeBalconyExteriorAtmosphere` | Current |
 | Deterministic exterior weather | Shared weather drives area rain/snow/wetness and causal audio. Gap: rain does not dim ambient light or alter grading. | `GameWeatherRules`, `CityWeatherController` | Partial |
 | Exterior cloud ceiling | A passive shared-density shell supplies a camera-relative cloud ceiling with bounded horizon coverage. | `ExteriorCloud{AssetMetadata,Profile,MotionRules,Resources,Field,CaptureCamera}`, `ExteriorCloud.shader` | Current |
 | Runtime cloth rags | Visible cloth uses shared bounded wind response and explicit attachment constraints. | `ClothPanelFactory`, `CityClothWindRegistry` | Current |
@@ -186,7 +187,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Interaction/UI | Prompts/input; nearest family;locker Take > open > close > distance; look/debug local. | `PlayerInteractor`, `IPrioritizedInteractable`, `InteractionPromptView` | Current |
 | Spoken text | Translucent shared bubbles/RU vocalizer incl. E/hero; EN clicks, silent bottom; bounded jobs/pause/cleanup. | `SpeechDelivery`, `NpcSpeechBubbleView`, `NpcSpeechVoice` | Current |
 | NPC role labels | Eleven roles (east guards share one), excluding village/Mother; 6–4 m, depth occlusion, speech/modal priority. | `NpcNameplateTarget`, `NpcNameplateContext`, `NpcNameplatePolicy` | Current |
-| Debug controls | F4: busy/defeat flight, live timelines. F9: day/intoxication/truck; F1–F3: speed. | `DebugFreeCamera`, `MinigameDebugWindow`, `DebugTimeControls`, `HomeDebugCityMapShortcut` | Current |
+| Debug controls | F4 busy/defeat flight;F9 day/intoxication/truck;F1/F2/F3 speed. | `DebugFreeCamera`,`MinigameDebugWindow`,`DebugTimeControls`,`HomeDebugCityMapShortcut` | Current |
 | Structured session diagnostics | 20MiB/adaptive samples/end reserve/32-action tail;CPU/cloth/ammo/carry/input/F8. | `Runtime/Diagnostics`, `DuelJournal` | Current |
 | Bar activity flavour | Legacy activity identity still selects bar flavour; the removed sprite minigames remain absent. | `BarActivityKind`, `BarActivityAssignment` | Current |
 | Area map UI | Fullscreen;scrollable place list→one plaque/line/square;large hero arrow;travel/XYZ. | `CityMap{Controller,View,AreaController,AreaView,MountainRoadOverlay,AlpineVillageOverlay}` | Current |
@@ -195,7 +196,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Map arrival ground | Area-owned ground; City lot/XYZ arrivals re-sample land Y and move occupied markers to a clear street. | `ICityMapTeleportGround`, `CityMap{City,MountainRoad}TeleportGround` | Current |
 | Scene transition | Guarded loads/cleanup; closed entrance leaves stay solid and door-action docks clear. | `PlayerDoorAction{Plan,Controller,Target}`, `ApartmentEntranceDoor`, `CityGameRoot` | Current |
 | Area loading transition | One directed illustration and bottom bar; 20% load / 80% construction, owned until the destination is ready. | `AreaTravelService`, `AreaLoading{Root,ArtCatalog}` | Current |
-| Door transition presentation | A deterministic `1.6 s` unscaled fixed-camera door sequence in a black void, warm on entry and cold on exit. | `DoorTransition{Root,Timeline,Direction}`, `RuntimeSceneSetup` | Current |
+| Door transition presentation | Deterministic1.6s/unscaled door shot:black void,warm entry/cold exit. | `DoorTransition{Root,Timeline,Direction}`, `RuntimeSceneSetup` | Current |
 | Session state / checkpoint | Latest scene-entry RAM snapshot; pause restores progress/world. New Game/exit clears; no disk save. | `GameSessionState`, `SessionCheckpointService`, `CheckpointWorldState` | Current |
 | Bar drink service | Menu/repeat/receipt;beer/wine three portions,full wine;guest FIFO/look/nod. | `BarDrink*`, `BarRepeatGesture`, `BarBartenderServiceQueue` | Current |
 | Intoxication stages and presentation | Vodka+24;reversible FX/body;recovery4.5–18s/point,higher→slower. | `IntoxicationStageRules`,`IntoxicationStatusController` | Current |
@@ -250,7 +251,7 @@ clock -> day announcement/needs/day-night; weather -> rain/lightning/thunder
 map/travel -> AreaLoading -> destination Single (20%) -> staged composition (80%)
   -> ready -> restore audio/time/input
 
-ten gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
+11 gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
   -> locomotion/balance/ragdoll/rise/contextual actions/inventory portrait
 interaction -> SceneTransitionService -> DoorTransition -> destination
   -> Bar: seated service; Supermarket: repeatable stock/shared receipt

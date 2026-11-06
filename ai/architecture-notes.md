@@ -2,38 +2,48 @@
 
 ## Current facts
 
+- **Accepted 2026-11-06,user — bench pockets:** pawnshop≤45mXZ;origins fixed;west pair faces+Z.
+  Plaza1.6m paths/mirrored outer lamps3.2m/pool12. Asphalt upper landing/side flowerbeds;
+  10.4m6-step stair/earth cut/ramp/tread probes/nav/map/Home one plan.
+  Concrete pigeon/plinth1.98m between benches,rearward;no text/story.
+
+- **Accepted 2026-11-06,user — pawnshop:** west island/2zebras/2.4m path→door,face hero;
+  `PawnshopInterior`/secure grille room/permanent silent clerk. Buy/Sell stubs,
+  no cash/item mutation. Shared DoorUse/dormant City/modal cleanup;
+  shielded pair→even matte sign/halo0,6tasks/pool12. Hall3HDRdiffusers/1shadow256;
+  ambient/exposure/bloom kept;24FX/cleanup.
+  unmeasured;ordinary0–5. Art§7.
+
 - **Accepted 2026-11-06,user — covered passages:** City/Home:
-  independent occupied/vacant wall slots for graffiti/repairs/utilities;lamps.
-  Blender/atlas/materials shared;routes clear. One lamp:absolute day/night dips;
-  others steady;pool12/lens/halo/spill;lease/pause/disable cleanup.
-  Story6/19/20 exception:text/clues/hero reaction/fast strobe0;24FX owners;
-  art9/story16/21.
+  independent occupied/vacant graffiti/repair/utility slots;shared Blender/
+  atlas/materials,clear routes. One lamp:absolute day/night dips;others steady.
+  Pool12/lens/halo/spill;lease/pause/disable cleanup. Story6/19/20 exception:
+  text/clues/hero reaction/strobe0;24FX/art9/story16/21.
 
 - **Accepted 2026-11-06,user — Ridge ground/furniture:** shared earth triangles/
-  collision/walk/map;ravine/steep banks/solids closed. Level pockets retain road/
-  stair contacts. Shared rigs/seats/utilities;view benches40–60m,bins40–65m,
-  booths70–90m favour sites/views;Home bench by bridge faces city. Final map
-  follows geometry;finite plans/materials,no Update;costs unmeasured;level0.
+  collision/walk/map;ravine/steep banks/solids closed;level road/stair contacts,
+  shared rigs/seats/utilities. Benches40–60m/bins40–65m/booths70–90m favour sites/
+  views;Home bench by bridge faces city. Map follows geometry;finite plans/
+  materials,no Update;cost unmeasured;level0.
 
-- **Accepted 2026-11-06,user — Ridge/kiosk light:** poles aim stairs/decks,
-  165°/95°/22m. Home/court/booths share12/day floor/shadows;booths6.5m/130° down/out.
-  Kiosk lens/halo:soft inside/bright street;static bit3,people ordinary/street
-  shadows;≤128 receivers restore disable/destroy,leases reset masks. 24FX;
-  no new GI/pass/grade/fog;GPU unmeasured.
+- **Accepted 2026-11-06,user — Ridge/kiosk light:** poles→stairs/decks165°/95°/22m.
+  Home/court/booths share12/day floor/shadows;booths6.5m/130° down/out. Kiosk
+  lens/halo:soft inside/bright street;static bit3,people ordinary/street shadows.
+  ≤128 receivers restore disable/destroy;leases reset masks. 24FX;new GI/pass/
+  grade/fog0;GPU unmeasured.
 
-- **Accepted 2026-11-05 — Ridge Street kiosk.** One permanent shopkeeper serves through the window near Home.
-  Story §6/§21 permits his first two voluntary exchanges, each about the goods. Retail at the window uses
-  the session till and receipt. Beer and vodka travel sealed, the potato pie feeds the hero. The kiosk must
-  cease alcohol sales for the permanent bar closure in Act V, independently of ordinary daily hours.
+- **Accepted 2026-11-05 — Ridge Street kiosk.** Permanent window seller near Home.
+  Story§6/21:first two voluntary goods exchanges. Session till/receipt;sealed beer/
+  vodka,potato pie feeds hero. Permanent ActV bar closure stops alcohol sales,
+  independently of daily hours.
 
-- **Accepted 2026-11-04,user — pedestrian vehicle passage:** City walkers
-  clear the three bus lines, Ferryman car and cannery truck silently, wait for
-  full bodies/following traffic, walk back to the interrupted point, then resume.
-  `CityPedestrianVehicleTraffic` samples existing paths/bodies once per step;
-  actor refuge checks retain walkable bounds/collision and existing braking.
-  No safe refuge means the driver waits. Route goals survive; pooling resets
-  the excursion. Ordinary motion/rig and all three effects groups, including
-  post-processing, retain their owners; no new light, sound, text or canon signal.
+- **Accepted 2026-11-04,user — pedestrian vehicle passage:** silent City walkers
+  yield3bus lines/Ferryman/cannery truck;body/following gaps.
+  `CityPedestrianVehicleTraffic`:once/step paths/bodies. Crosswalks:
+  capsule gap→sidewalk bay→interrupted point/goal;bounds/collision/braking
+  kept,unsafe→driver waits.
+  Goals kept,pooling resets excursion;ordinary rig/motion/24FX keep owners;
+  new light/sound/text/canon0.
 
 - **Accepted exception — 2026-11-04,user — upper residential City:** art2.2/7/8,
   story18: lower west keeps work;both upper slopes are housing. Court/40m crest
@@ -49,24 +59,20 @@
   story16/21/art9. [Proof](city-multilevel-plan.md).
 
 - **Accepted architecture exception — 2026-11-03,user — doubled calendar day:**
-  Art §2/story §20:96 real minutes/day at ×1,four seconds/game minute.
-  Calendar-based needs/weather slow with it;world motion,alcohol recovery,
-  pause/debug factors keep their owners. Story acts/events remain action-driven.
+  Art2/story20:96real min/day×1=4s/game minute;needs/weather scale,
+  world motion/alcohol recovery/pause/debug owners stay;story acts/events action-driven.
 
 - **Accepted exceptions 2026-11-03 and 2026-11-05, user — City street visibility and night:**
-  Y≤5:gray-green Exp2 `.090`/48m;Y40:`.025`/110m. Descending sightlines add
-  lowland haze;sky/ridge shells behind roofs. Night lowers diffuse sky/fill/
-  haze/reflections;practical spill remains. Home summit outlook has its range.
-  Art3.3/9,story16/21;global breathing/story signal0.
-  `CityFogField`:≤36 shared world particles;slow layered
-  drift:shared wind/absolute game time;Home maps axes. Pause/roof/
-  dormancy/return/unload retain ownership;road/village stay.
-  `CityEastDistance*`:camera XZ/post;skyline/windows/glow fade12→30m,full≤12/0≥30.
-  Far panorama/traffic fade over the first 12m inside either southern hill.
-  Cached refs/MPB;recurring loads/material instances0;GPU unmeasured.
-  The same wind field, probes/SSR, water, practical bounce and volumetric lights serve both heights.
-  Existing forward fog and Gaussian focus handle the extra range. SSAO, soft shadows, surface detail,
-  bloom, SMAA, vignette and grain keep their owners. No extra pass, SSGI/SCGI or lens effect.
+  Y≤5:gray-green Exp2`.090`/48m;Y40:`.025`/110m;downhill haze,sky/ridge behind
+  roofs. Night dims sky/fill/haze/reflections,keeps practical spill/Home summit
+  range. Art3.3/9/story16/21;global breathing/story0. `CityFogField`:≤36 shared
+  world particles/slow layered wind/absolute time/Home axes;pause/roof/dormancy/
+  return/unload owners;road/village kept. `CityEastDistance*`:cameraXZ/post;
+  skyline/windows/glow12→30m(full≤12/0≥30);far panorama/traffic fade first12m of
+  either south hill. Cached refs/MPB;recurring loads/material instances0;GPU
+  unmeasured. Both heights share wind/probes/SSR/water/bounce/volumetrics/fog/
+  Gaussian focus;SSAO/soft shadows/surface detail/bloom/SMAA/vignette/grain owners;
+  new pass/SSGI/SCGI/lens0.
 
 - **Accepted 2026-11-03,user — City/balcony night saturation:**
   Runtime grades:day `-24`→night `-30`, shared dawn/dusk/fractional clock.

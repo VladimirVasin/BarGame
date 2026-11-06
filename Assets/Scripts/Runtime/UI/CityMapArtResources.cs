@@ -226,6 +226,35 @@ namespace BarPromenade
                     Scalar(writer, ramp.StartY); Scalar(writer, ramp.EndY);
                     Scalar(writer, ramp.BlendDistance);
                 }
+                var benchPockets = CityHillsideBenchPocketPlan.ForLayout(layout).Pockets;
+                var benchTerrace=CityPawnshopBenchTerracePlan.ForLayout(layout);
+                writer.Write(benchTerrace.IsEnabled);
+                if(benchTerrace.IsEnabled)
+                {
+                    Point(writer,benchTerrace.Flight.Start);Point(writer,benchTerrace.Flight.End);
+                    Scalar(writer,benchTerrace.Width);writer.Write(benchTerrace.StairCount);
+                    Scalar(writer,benchTerrace.Rise);Scalar(writer,benchTerrace.Tread);
+                    foreach(Vector2[] piece in benchTerrace.Footprints)
+                    {
+                        writer.Write(piece.Length);
+                        foreach(Vector2 point in piece) Point(writer,point);
+                    }
+                    Scalar(writer,benchTerrace.UpperLanding.Center.y);
+                    foreach(Vector3 point in benchTerrace.LowerLandingTopVertices) Point(writer,point);
+                }
+                if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
+                    foreach (Vector2 point in pawnshop.ApproachFootprint) Point(writer, point);
+                writer.Write(benchPockets.Count);
+                foreach (var pocket in benchPockets)
+                {
+                    writer.Write(pocket.Placement.Id);
+                    writer.Write(pocket.SurfacePolygons.Count);
+                    foreach (Vector2[] surface in pocket.SurfacePolygons)
+                    {
+                        writer.Write(surface.Length);
+                        foreach (Vector2 point in surface) Point(writer, point);
+                    }
+                }
                 writer.Write(hillsideGround.WalkablePolygons.Count);
                 foreach (Vector2[] piece in hillsideGround.WalkablePolygons)
                 {

@@ -9,7 +9,7 @@ edge/bar;direct map:last leg;Village warm/inhabited;text/portrait/spoiler/newfac
 ## Implemented MVP
 
 Runtime-composed coastal City/MountainRoad/Village/cableway/upper-house;
-modular 3D hero. The summit home, lower-town bar and shop, and church each have an interior and street return.
+modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns.
 
 
 ### Areas and scenes
@@ -425,19 +425,24 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   Two raised houses/two OpenGround,144 IDs. House11,8 sits3.84m below street,
   roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
-  Coast streets reach Lower Court and upper housing. Two seven-tier climbs
-  join on two streets bridging a dry ravine. Stairs link all tiers and the through court to the crest.
-  Safe off-road earth joins hillside yards; its triangles own collision, walking and map arrival heights.
-  Level pockets carry shared sittable view benches, dumpsters and phone booths. Their fluorescent panels
-  light the entry and forecourt through shadowed 6.5m/130° leases in the existing 12-light pool, day/night. Home's bench faces
-  the truss bridge, dry ravine and descending roofs. Hillside homes share residential soil and wet asphalt skirts. Worn turf, gravel, broken stones
-  and a shrub line the walk from 03-04 to the house. Small groups of deciduous trees stand beside gables.
-  Stepped concrete walls with drains hold the west banks; low kerbs, grass and boot scrapers edge the eastern gallery courts.
-  The player’s house has a patched plinth and a real pooled doorstep light. Existing upper poles aim along stairs and bridge footways;
-  Covered passages use the shared fixtures below. Loose rock lies below bridge bearings above gravel.
-  The kiosk's warm lamp lights its seller and shelves and spills through the window onto the street;
-  two shadowed pooled lobes share one emissive lens. The strong street beam reaches static surfaces;
-  softer ordinary light retains the seller and dialogue hero's face/clothing detail. The nearby City and apartment views share these placements.
+  Coast→Lower Court/upper housing;two seven-tier climbs join streets
+  over dry ravine. Stairs join tiers/through court/crest. Off-road earth
+  joins yards;terrain/stair plans own collision/walk/map heights. Level pockets carry
+  view benches/bins/booths;panels light entries/forecourts via
+  shadowed6.5m/130° leases,pool12/day-night. Home bench→truss/ravine/lower roofs.
+  `CityHillsideBenchPocketPlan`:pawnshop≤45mXZ;origins fixed;West11/13 face+Z/new docks.
+  Plaza/stone paths1.6m→footways. Upper landing:continuous AsphaltRoad/Concrete cue.
+  Stair10.4m(6×.16/.36m)/warped lower landing→street grade.
+  Earth render/collider cut;landings/capsule ramp/tread probes/nav/map/Home
+  Outer lamps3.2m→docks:RidgeBench37.5/r11/soft256/pool12/dayfloor.
+  Concrete pigeon/plinth1.98m,rearward;side flowerbeds;solid/nav clear.
+  Homes share soil/wet asphalt skirts;worn turf/gravel/broken stone/shrub edge
+  03-04→Home,deciduous groups by gables. West:stepped concrete/drains;east:low
+  kerbs/grass/boot scrapers. Home patched plinth/pooled doorstep;upper poles aim
+  stairs/bridge footways;covered fixtures below. Loose rock/gravel below bridge bearings.
+  Kiosk:one warm emissive lens/two shadowed pooled lobes light seller/shelves,
+  through-window street spill. Strong beam reaches statics;soft ordinary source
+  keeps seller/dialogue hero faces/clothes. City/Home share placements.
   `10×6 m` rear wings retain padded clearance/`2.4 m` court gap. `3.6 m` through openings
   keep their collision/route, height `3.2 m` (`4.2 m` Industrial). City/Home share
   `CityCoveredPassagePlan/World`: independent occupied/vacant wall slots for matte graffiti, repairs and Blender utilities.
@@ -785,7 +790,7 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   movement keeps its `.82 m/s` pace; distant idle/walk sampling is bounded while
   time, collision and immediate interactions stay live. A spatial index limits
   peer-avoidance queries. Oncoming walkers use separate shoulders on the hillside stairs. In single file
-  a walker can step back to a landing, clear the way and return to the same trip. Bus/rest ownership retains the same person.
+  a walker uses a landing then resumes. At corners guests skirt parked yielders; bounded curved-lane probes bypass props, retaining goals. Bus/rest keeps identity.
   `CityPedestrianVehicleTraffic` shares current/near-future bus, Ferryman-car
   and cannery-truck footprints. Walkers step to a reachable clear refuge, wait
   for tails and following traffic, return to their interrupted point, then
@@ -1751,11 +1756,11 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   and paths; cemetery–church passage cuts both outlines without street gate/
   teleport anchor. Coast:mol/pier/hut/piles/barge,lighthouse dot on the north
   border at true easting; Works/Mouth/timber bridges have distinct treatments.
-  Player/home-bar/home/grocery markers;twelve POI glyphs (four lots,
-  fair/post/docks/arch/church/cafe/laundry/dog yard),bounded localized legend/
+  Player/home-bar/home/grocery markers;POI glyphs (district lots,
+  fair/post/docks/arch/church/cafe/laundry/dog yard/terraces/kiosk/pawnshop),bounded localized legend/
   selectable places. Public lots/fair use open ground,not buildings;locations come
   from validated memoised plans/port.
-  The charcoal City sheet follows the through streets on both banks.
+  Final ImageGen charcoal sheet follows both banks/pawnshop/zebras;survey registered.
   Village uses the worn tourist brochure with a red-crossed resort.
   LodgeApproach arrival;no3D change. Plan/RU SHA+bounds/size guard
   stale art;other seeds/MountainRoad→schematic. City SHA excludes Village
@@ -2100,34 +2105,34 @@ modular 3D hero. The summit home, lower-town bar and shop, and church each have 
   Door excluded;hall air scoped;Neutral/dust/DOF keep warm dry pub.
   Matte Ø≈1.38m fan:Y2.55,20°/s;brass stem/beam gap6.5cm.
   Skippable `1.35 s` reveal→chase;no ordinary bar SSR/SCGI;
-- `SupermarketInterior`:16×11×3.6m fixed-metre Blender/interior_kit shell,
-  constructed shelves/cold cabinet/stockroom/fluorescent housings/CCTV.
-  Cold cabinet/stockroom/cartons sit flush at rear wall:centreZ5.05;
-  cold back5.375,stockroom return buried5.377;no daylight gap.
-  Checkout faces hall along right wall:conveyor/scanner/register/packing/bags,
-  cashier-side keys,low decorative text-free sweets/chips;no snack offers/prompts.
-  Counter1.05m high,0.9×3.2m;centre(6.15,0,-2.30),cashier(7,0,-2.25)/270°.
-  Rear work aisle≈1.15m;authored palm/customer/light anchors own contacts/approach.
-  Baskets,cable channels,vents and local wear remain passive shared geometry.
-  Protected aisles/collision/interactions stay plan-owned. Five trimmed skirting
-  sections bury back/bottom3mm without coplanar overlap. Metal/glass entrance has
-  authored hinges/handle/solid leaf and shared same-rig door action before exit.
-  Shared response/normal surfaces preserve dry grey-green wear and warm checkout;
-  bounded local reflection;no ordinary shop SSR/SSGI/SCGI.
-  One normal1.75m `supermarket_cashier_v1`, shared31-bone HeroV2 Avatar/rest pelvis.835m:
-  refined anatomy,skin/cloth512px atlas with dedicated face/correct body UV,
-  separate protruding3D eyes/brows/nose/mouth
-  by user exception2026-11-03. Uniform/hunch/planted hands/blink kept;fixed neck,
-  eye/head tracking≤28°,body remains behind register. Separate E-talk placeholder.
-  Watcher18m neck asset remains inactive/provider-unreachable.
-  Four corner cameras track hero with emissive LEDs/no real lights or gameplay
-  surveillance. Six shadowless practicals:four cold ceiling rows,one warm checkout,
-  one cold cabinet spill;warm source follows checkout anchor/visible fixture.
-  One deterministic flicker row,directional fill retained.
-  Each shelf opens a fixed-camera modal browser;previous/next crosses stocked
-  shelves in deterministic order and aims at selected bounds. Muted arrows follow
-  projected item bounds. Owner-scoped renderer leases hide hero/cashier without
-  disabling gameplay roots;all exit paths restore exact renderer/input/camera/HUD.
+- `SupermarketInterior`:16×11×3.6m Blender/interior_kit shell/shelves/cold cabinet/
+  stockroom/fluorescents/CCTV. Rear cabinet/stockroom/cartons:Z5.05,back5.375,
+  return buried5.377;no gap. Right-wall checkout faces hall:conveyor/scanner/
+  register/packing/bags/cashier keys;passive text-free sweets/chips,no offers.
+  Counter1.05m/0.9×3.2m@(6.15,0,-2.30);cashier(7,0,-2.25)/270°;rear aisle≈1.15m.
+  Palm/customer/light anchors own contacts;plan owns aisles/collision/interactions.
+  Baskets/channels/vents/wear passive;five skirtings bury back/bottom3mm,no overlap.
+  Metal/glass door:authored hinges/handle/solid leaf/shared same-rig exit action.
+  Shared response/normals:dry grey-green/warm checkout;bounded reflection,no SSR/SSGI/SCGI.
+  Normal1.75m `supermarket_cashier_v1`:HeroV2/31bones/pelvis.835m;refined anatomy,
+  skin/cloth512px,dedicated face/correct bodyUV;separate protruding3D eyes/brows/
+  nose/mouth(user2026-11-03). Uniform/hunch/planted palms/blink;fixed neck,
+  eyes/head≤28°,body behind register;E-talk stub. Watcher18m inactive/unreachable.
+  Four tracking corner cameras:emissive LEDs,no lights/gameplay surveillance.
+  Six shadowless practicals:four cold rows/warm anchored checkout/cold cabinet;
+  one deterministic flicker row/directional fill. Fixed-camera shelf modal:
+  deterministic previous/next,selected bounds/projected muted arrows. Scoped
+  leases hide hero/cashier renderers,not roots;all exits restore rendering/input/camera/HUD.
+- `PawnshopInterior`:island pavilion8×9m at west turn(-54,-307),door faces the
+  reference hero(-45.5,-301.3);zebras from both roads/direct2.4m paved door path,
+  road contour unchanged. Shared DoorUse retains
+  dormant City/safe return. Kit room7.4×8.4×3m:counter/grille/locked staff door,
+  two display cases;silent permanent `city.pawnshop.clerk` stands in secure rear room.
+  E opens shared-style Buy/Sell stubs;Escape/disable/unload restore input/cursor,
+  no cash/item mutation. Six pooled exterior tasks:paired shielded projectors/
+  matte sign,entry/side/rear washes. Hall3visible HDRdiffusers/local24/24/18
+  lights/one256shadow;ambient/exposure/bloom unchanged. Shared textures/finite
+  bounce/bounded reflection;art§7.
 - `supermarket_product_pack_v1`:eight generic text/brand-free bottom-pivot models,
   shared by shop/inventory/Home/cat via one Resources prefab per item. Seven repeatable
   offers:egg2,vodka28,closed stew11,noodles3,loaf4,BeerCan500ml/6,WineBottle750ml/22;

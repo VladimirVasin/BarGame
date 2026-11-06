@@ -8,18 +8,21 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-06
 
-- В сквозных проходах граффити, заплаты и коммуникации занимают разные места вдоль стен; есть пустые участки.
-  Плафоны светят на пол/стены;
-  отдельные лампы независимо мигают, соседний свет сохраняет путь.
+- Ломбард/зебры/путь до двери;торговля:заглушка. Вывеска без блика/яркий зал.
+  У скамей:асфальт/свет/лестница/голубь/клумбы.
+  CityPawnshopLightingAndBenchPockets_UniformAndConnected;
+  City final pawnshop map registration / fresh ImageGen bytes / terrace contract.
+- NPC обходят занятый карман/помехи без смены цели. PassingActors_AtTurnoutCornerReachDestinationsWithoutTurningBack.
+- Проходы:граффити/заплаты/коммуникации раздельно;плафоны→пол/стены.
+  Лампы мигают независимо,соседний свет сохраняет путь.
   LiveCity_CoveredPassagesKeepUniqueDressingLightAndClearRoutes.
-- Гребень: проходимая земля/дворы/обход дома, убрана невидимая преграда. У верхнего моста скамья
-  смотрит на нижний мост, лог и крыши; `E` — сесть/встать. На улицах видовые скамьи, баки/будки.
+- Гребень: земля/дворы/обход дома открыты. Скамья у верхнего моста→нижний мост/лог/крыши;
+  `E` — сесть/встать; на улицах видовые скамьи/баки/будки.
   LiveCity_RidgeGroundAndViewBenchesKeepSupportedWalksAndArrivals.
   Подходы/посадка: LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
-  Карта перерисована: RidgeMapSurveyRegistration.
 - Панели будок освещают вход/землю: LiveCity_PhoneBoothPanelsLightEntriesAndForecourts.
-- Порог дома, ступени, тротуары моста, подход к 03-04 и крытый двор освещены.
-  Ларёк: видны продавец/полки, тёплый свет из окна на прилавке/тротуаре/дороге.
+- Порог/ступени/тротуары моста/03-04/крытый двор освещены.
+  Ларёк: видны продавец/полки, свет окна на прилавке/тротуаре/дороге.
   LiveCity_RidgeLightingKeepsDoorStairsAndBridgeLitAcrossTheClock.
   Детали лиц/одежды героя и продавца в разговоре сохранены:
   LiveCity_RidgeKioskDialogueRetainsFacesAndClothesWithBrightStreet.

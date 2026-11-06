@@ -72,6 +72,7 @@ namespace BarPromenade
 
             var mesh = CityHillsidePerimeterSurface.Build(grid.Layout, "Hillside banks and door aprons",
                 vertices, uv, earth, concrete);
+            CityPawnshopBenchTerraceWorld.CutGroundMesh(grid.Layout,mesh);
             var go = new GameObject("Terraced ground and courts");
             go.transform.SetParent(parent, false);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;

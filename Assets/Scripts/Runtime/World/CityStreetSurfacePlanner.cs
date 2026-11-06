@@ -297,6 +297,18 @@ namespace BarPromenade
                         }
                     }
                 }
+                // Append the two island zebras last. Their geometry also feeds
+                // the shared map/export/hash; their imported paint is built separately.
+                foreach (var crossing in CityPawnshopCrosswalkPlan.ForLayout(layout).Crossings)
+                {
+                    markingExclusions.Add(crossing.Bounds);
+                    crosswalkWalkableRectangles.Add(crossing.Bounds);
+                    foreach (RuntimeOrientedBox stripe in crossing.Stripes)
+                    {
+                        crosswalkMarkingGeometry.Add(stripe);
+                        crosswalkMarkings.Add(CalculateBounds(stripe));
+                    }
+                }
                 CreateCenterMarkings(
                     layout,
                     sortedEdges,

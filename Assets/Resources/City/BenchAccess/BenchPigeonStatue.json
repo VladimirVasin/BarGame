@@ -1,0 +1,87 @@
+{
+  "design_id": "city_bench_pigeon_statue_v1",
+  "version": "1.0.0",
+  "generator": "build-city-bench-pigeon-statue-3d-model.py",
+  "coordinate_system": "Unity metres +Y up/+Z forward; swap YZ and reverse winding; retain FBX unit root",
+  "contract": {
+    "base_size": [
+      0.86,
+      0.48,
+      0.86
+    ],
+    "base_center": [
+      0,
+      0.24,
+      0
+    ],
+    "height": 1.64737,
+    "forward": [
+      0,
+      0,
+      1
+    ],
+    "material_roles": [
+      "Concrete",
+      "Plaster",
+      "SteelDark"
+    ],
+    "no_animation_text_light_or_collision": true
+  },
+  "model": {
+    "name": "BenchPigeonStatue",
+    "bounds_min": [
+      -0.43,
+      0.0,
+      -0.43
+    ],
+    "bounds_max": [
+      0.43,
+      1.64737,
+      0.43
+    ],
+    "anchors": [
+      {
+        "name": "ANCHOR_Ground",
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "ANCHOR_PlinthTop",
+        "position": [
+          0.0,
+          0.48,
+          0.0
+        ]
+      },
+      {
+        "name": "PigeonConcrete",
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "PigeonEyePaint",
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "PigeonOldPaint",
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "triangles": 1474,
+    "geometry_signature": "66ccf5a27d5a09135842065752954ef534ff687505da1c8732df2d4df75e3b0e"
+  }
+}

@@ -41,6 +41,8 @@ namespace BarPromenade
                 obstacleFootprints.Add(Expand(ridgeKiosk.Bounds, CityGroundTraversalPlanner.MaximumAgentRadius));
             foreach (var building in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
                 polygonBuildingObstacles.AddRange(building.Lot.CreateCollisionPolygons());
+            if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
+                polygonBuildingObstacles.Add(pawnshop.Footprint);
             foreach (BuildingLot lot in layout.BuildingMasses)
                 if (lot.HasBuilding && (lot.HasFacadeRotation || courtyardCells.Contains(lot.Cell)))
                     polygonBuildingObstacles.AddRange(lot.CreateCollisionPolygons());
@@ -160,6 +162,7 @@ namespace BarPromenade
         /// </summary>
         private bool TryResolveSurfaceTop(Vector2 worldXZ, out float top)
         {
+            if(CityPawnshopBenchTerracePlan.ForLayout(layout).TrySampleTop(worldXZ,out top)) return true;
             if (ridgeKiosk != null && ridgeKiosk.Apron.Contains(worldXZ))
             {
                 top = ridgeKiosk.Origin.y;

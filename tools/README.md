@@ -10,6 +10,9 @@ Church:`build-church-3d-model.py`+`church_metric_geometry.py`/kit:
 Garden:`build-church-garden-3d-model.py`:geometry/contacts/response/determinism;
 staged `--model-dir`/`--source-dir`/`--texture-dir`, `--no-preview`.
 `Church{,Garden}AssetSetup.BuildOrThrow`:import/bounds/materials.
+`build-pawnshop-3d-model.py`/`--validate-only`:anchors/HDRdiffusers.
+`PawnshopAssetSetup.EnsureAssetsReady`:import/bounds/materials.
+Bench:`build-city-bench-{access-stair,pigeon-statue,flowerbed}-3d-model.py`
 
 `build-city-east-{exit,guards}-3d-model.py`: `--near-only`, `--distance-only`
 (`city_east_distance.py`), `--dressing-only`; `Assets/Resources/City/EastExit`,
@@ -104,19 +107,17 @@ python tools/run-blender.py tools/build-village-residents-3d-model.py `
   --expect Assets/Resources/VillageLife/BasketVisitor.fbx `
   --expect Assets/Resources/VillageLife/VillageResidentLifeActions.fbx `
   --expect Assets/Resources/VillageLife/VillageResidentLifeActions.json -- --phase-two --no-preview
-python tools/run-blender.py tools/build-village-resident-doors-3d-model.py --expect Assets/Resources/VillageLife/VillageResidentDoors3D.fbx --expect Assets/Resources/VillageLife/VillageResidentDoors3D.json -- --no-preview
 ```
 
 Validate:`--validate-only`;retain `--phase-two` and earlier bodies/actions.
 `Bar Promenade/Default NPC/Rebuild Ordinary Worker`:12 face-hair atlases;
 Inspector:faces/hair/presets/slots.
 `DefaultNpcPopulation` IDs/constraints + `CreateForCharacter`:stable nonrepeating appearance.
-Props: 17 recipes, first eleven preserved. Doors: three envelopes, real openings,
+Props:17 recipes,first eleven kept. `build-village-resident-doors-3d-model.py`:three envelopes,real openings,
 six concealed docks behind vestibule turns.
 
-Source:`ArtSource/VillageLife`;review:`Captures/VillageLife`.
-`VillageLife`:bodies/props/doors/clearance/yielding/gusts/pause/returns.
-Judge hero scale.
+`ArtSource/VillageLife`;temporary review:`Captures/VillageLife`.
+`VillageLife`:bodies/props/doors/clearance/yield/gust/pause/return;judge hero scale.
 
 Workroom(close Unity):launcher + `build-village-workroom-3d-model.py`,
 `build-village-residents-3d-model.py --workroom`,
@@ -139,9 +140,8 @@ Ordinary:`principal_npc_detail.py`/`service_npc_detail.py`/`npc_detail_geometry.
 Cashier:`supermarket_cashier_geometry.py`:normal/3D face;Watcher kept.
 Shop:`supermarket_surface_response.py --validate-only`:6maps/hash.
 
-Empty `Captures/Tooling`:repeat `--stage-output=--model-dir=Assets/path`;
-other args kept;`--expect`:destinations. Publish checked/Unity closed;
-keep `.meta`/rollback;import non-atomic.
+Empty `Captures/Tooling`:repeat `--stage-output=--model-dir=Assets/path`/other args kept;
+`--expect`:destinations. Publish checked/Unity closed,keep `.meta`/rollback;import non-atomic.
 
 VHS:Windows `tools/audio-vhs/build.ps1`;Mac `tools/audio-vhs/build-macos.py`.
 Both:ABI/DSP;compile-only keeps temporary output.

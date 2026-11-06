@@ -71,7 +71,7 @@ namespace BarPromenade
         /// <summary>
         /// The exterior an interior's doors lead back to, or null when the
         /// scene is not an interior. The mother's house exits to the village
-        /// only; the five city interiors exit to the City only, and the
+        /// only; the city interiors exit to the City only, and the
         /// stairwell and the flat exit to each other on the way.
         /// </summary>
         internal static string GetExteriorOfInterior(string sceneName)
@@ -83,6 +83,7 @@ namespace BarPromenade
                 case SceneIds.StairwellInterior:
                 case SceneIds.HomeInterior:
                 case SceneIds.ChurchInterior:
+                case SceneIds.PawnshopInterior:
                     return SceneIds.City;
                 case SceneIds.MothersHouseInterior:
                     return SceneIds.AlpineVillage;

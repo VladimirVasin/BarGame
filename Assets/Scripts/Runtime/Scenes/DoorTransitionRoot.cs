@@ -405,7 +405,8 @@ namespace BarPromenade
             return direction == DoorTransitionDirection.EnterBar ||
                    direction ==
                    DoorTransitionDirection.EnterApartment ||
-                   direction == DoorTransitionDirection.EnterChurch;
+                   direction == DoorTransitionDirection.EnterChurch ||
+                   direction == DoorTransitionDirection.EnterPawnshop;
         }
 
         private static void DisableCollider(GameObject target)

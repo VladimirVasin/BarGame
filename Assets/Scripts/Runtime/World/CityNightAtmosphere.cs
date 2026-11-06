@@ -197,6 +197,37 @@ namespace BarPromenade
                         industrialUseShadows[index] = true;
                         industrialIntensityScales[index] = .28f;
                         industrialRangeLimits[index] = 4.5f; break;
+                    case "PawnshopEntrance":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = 2f;
+                        industrialRangeLimits[index] = 12f;
+                        industrialSpotAngles[index] = 150f;
+                        industrialInnerSpotAngles[index] = 100f; break;
+                    case "PawnshopSignLeft":
+                    case "PawnshopSignRight":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = 1.2f;
+                        industrialRangeLimits[index] = 8f;
+                        industrialSpotAngles[index] = 145f;
+                        industrialInnerSpotAngles[index] = 125f; break;
+                    case "PawnshopFacadeLeft":
+                    case "PawnshopFacadeRight":
+                    case "PawnshopFacadeRear":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = 4f;
+                        industrialRangeLimits[index] = 15f;
+                        industrialSpotAngles[index] = 150f;
+                        industrialInnerSpotAngles[index] = 105f; break;
+                    case "RidgeBench":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = 2.5f;
+                        industrialRangeLimits[index] = 11f;
+                        industrialSpotAngles[index] = 145f;
+                        industrialInnerSpotAngles[index] = 110f; break;
                     case "CoveredPassage":
                         industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
                         industrialUseShadows[index] = true;
@@ -236,8 +267,10 @@ namespace BarPromenade
                         break;
                 }
                 PracticalLightProfile profile = GetIndustrialProfile(industrialPurposes[index]);
-                // Two lobes describe one kiosk diffuser, with one visible halo.
-                if (purposeName == "RidgeKioskInterior") continue;
+                // Two lobes describe one kiosk diffuser. The sign projectors
+                // are hooded toward their board, so only their real lenses glow.
+                if (purposeName == "RidgeKioskInterior" || purposeName == "PawnshopSignLeft" ||
+                    purposeName == "PawnshopSignRight") continue;
                 // Imported anchors inherit the FBX unit factor. Keep particle
                 // sizes in world metres and move their soft depth fade clear
                 // of the fixture housing and the adjacent opaque facade.

@@ -46,7 +46,7 @@ namespace BarPromenade
             return true;
         }
 
-        private bool CanRetreat() => CollisionEnabled && !IsCrossingRoad && !IsYieldingToVehicle &&
+        private bool CanRetreat() => CollisionEnabled && !IsYieldingToVehicle &&
             !IsPersonalSpaceReacting && previousNodeIndex >= 0 && targetNodeIndex >= 0 &&
             targetNodeIndex != previousNodeIndex &&
             (MotionState == CityPedestrianMotionState.Walking || MotionState == CityPedestrianMotionState.ApproachingStop ||
@@ -57,13 +57,16 @@ namespace BarPromenade
             int toward = retreatBack ? previousNodeIndex : targetNodeIndex;
             int away = retreatBack ? targetNodeIndex : previousNodeIndex;
             Vector3 start = Position;
-            // Prefer the route back down the corridor. Never choose a road crossing as a refuge.
+            // A committed walker may already occupy the painted crossing.
+            // Clear that same chain to a pavement bay; never enter a fresh
+            // crossing or park a yielding capsule in the carriageway.
+            bool clearingCrossing=IsCrossingRoad;
             for (int legs = 0; legs < 12 && count < MaximumRetreatPoints - 1; legs++)
             {
                 CityPedestrianLink link = null;
                 foreach (int id in plan.GetLinkIndices(toward))
                     if (plan.Links[id].Other(toward) == away) { link = plan.Links[id]; break; }
-                if (link == null || link.Kind == CityPedestrianLinkKind.Crosswalk) return false;
+                if (link == null || link.Kind == CityPedestrianLinkKind.Crosswalk && !clearingCrossing) return false;
 
                 Vector3 from = plan.Nodes[link.FirstNodeIndex].Position;
                 Vector3 to = plan.Nodes[link.SecondNodeIndex].Position;
@@ -90,6 +93,7 @@ namespace BarPromenade
                     if (count >= MaximumRetreatPoints - 1) return false;
                     if (Vector2.Distance(XZ(retreatPoints[count - 1]), xz) > .035f)
                         retreatPoints[count++] = centre;
+                    if(link.Kind==CityPedestrianLinkKind.Crosswalk) continue;
                     Vector3 side = new Vector3(-backwards.y, 0f, backwards.x);
                     if (Vector3.Dot(guest - centre, side) > 0f) side = -side;
                     for (int attempt = 0; attempt < 2; attempt++, side = -side)
@@ -111,13 +115,14 @@ namespace BarPromenade
                 }
                 while (along != end);
 
+                if(plan.Nodes[toward].IsCrosswalkEntry) clearingCrossing=false;
                 int next = -1;
                 float best = -1f;
                 foreach (int id in plan.GetLinkIndices(toward))
                 {
                     CityPedestrianLink candidate = plan.Links[id];
                     int other = candidate.Other(toward);
-                    if (other == away || candidate.Kind == CityPedestrianLinkKind.Crosswalk) continue;
+                    if (other == away || candidate.Kind == CityPedestrianLinkKind.Crosswalk && !clearingCrossing) continue;
                     Vector2 direction = (XZ(plan.Nodes[other].Position) - XZ(plan.Nodes[toward].Position)).normalized;
                     float alignment = Vector2.Dot(backwards, direction);
                     if (alignment > best) { next = other; best = alignment; }
