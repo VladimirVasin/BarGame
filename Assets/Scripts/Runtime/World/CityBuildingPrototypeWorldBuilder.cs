@@ -55,6 +55,7 @@ namespace BarPromenade
                 parent,
                 lot,
                 logicalFoundationDepth);
+            CityCoveredPassageWorld.Build(parent, lot, citySeed, pose);
             return registry;
         }
 
@@ -114,6 +115,7 @@ namespace BarPromenade
                 lot,
                 foundationDepth,
                 "Exterior " + FoundationObjectName);
+            CityCoveredPassageWorld.Build(parent, lot, context.Layout.Seed, homePose);
             return registry;
         }
 

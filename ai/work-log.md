@@ -4,30 +4,31 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-06
-Phone booth panels now cast neutral shadowed light down/out onto the entry and forecourt,
-sharing City/Home anchors and the existing pool/daylight floor. LiveCity_PhoneBoothPanelsLightEntriesAndForecourts
-checks leases, source-on/off views and surface exposure. check-docs/diff-check.
+Covered building passages share seeded plans, Blender utilities/fluorescent fixtures and a matte ImageGen graffiti atlas.
+Each wall has independent occupied/vacant slots near/between/far from its mouths; graffiti and repairs are not paired.
+Each opening retains one independently phased contact fault. Lens/halo/pooled spill match,
+with steady neighbouring light and City/Home metre poses. Accepted story exceptions scope graffiti/daytime dips.
+LiveCity_CoveredPassagesKeepUniqueDressingLightAndClearRoutes covers inventory, dressing bounds, existing routes,
+Home reconstruction, real light/fault/lifecycle/lease reset; both entrance views reviewed day/night.
+Rendered review caught paint behind thick repairs; lighter patches and paint outside the measured imported front face fix it.
+The model generator's metric/normal/UV/determinism validator passes; check-docs/diff-check/workspace checks.
 
-Ridge earth now connects streets, yards and house perimeters through the same sampled triangles.
-Graded shoulders retain pavement contacts; a real soil approach reaches the bridge-side Home bench.
-Home's logical collider follows its authored footprint. Finite reused view benches, bins and booths
-keep shared seating/utility owners and City/Home placements; trunks, solids and the dry cut stay closed.
-LiveCity_RidgeGroundAndViewBenchesKeepSupportedWalksAndArrivals covers physical walks, map heights,
-the Home collider and E sit/stand; seated day/night views reviewed.
-LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement passes with the final ground.
-The final ImageGen redraw keeps surveyed registration: RidgeMapSurveyRegistration.
-Shared City light/material/post owners remain; costs unmeasured. check-docs/diff-check.
+Phone booth panels cast neutral shadowed light onto entry/forecourt through the shared pool/day floor.
+LiveCity_PhoneBoothPanelsLightEntriesAndForecourts checks leases and rendered on/off surface exposure.
 
-Ridge poles aim along real stair/deck surfaces; terminal beams reach the 03-04 approach.
-The Home lens now leases a doorstep source instead of emission alone. Imported household
-pendants light the covered court through the same pool. Pole collision, stops and the global night profile stay.
-LiveCity_RidgeLightingKeepsDoorStairsAndBridgeLitAcrossTheClock checks the actual leases,
-walking surfaces, day floor and game-camera views with shared effects. check-docs/diff-check.
-The kiosk lamp now lights its interior and casts a warm pool through the open window onto the street.
-Its original beam struck the counter; independent inward/outward lobes share the same visible lens and pool.
-The same named check covers seller/shelves, aperture shadows and the brighter street pool, with a rendered source-on/off comparison.
-LiveCity_RidgeKioskDialogueRetainsFacesAndClothesWithBrightStreet exercises real speaker cuts: the street beam
-targets static receivers while people retain soft light and their street shadows. Scoped layer ownership resets with leases and teardown.
+Ridge earth joins streets/yards/house perimeters through shared terrain triangles and graded shoulders.
+A soil approach reaches the bridge-side Home bench; Home collision follows its real footprint.
+Finite reused view benches/bins/booths retain seating/utilities/City/Home poses; trunks/solids/ravine stay closed.
+LiveCity_RidgeGroundAndViewBenchesKeepSupportedWalksAndArrivals covers walks, map heights, Home collider and E sit/stand;
+seated day/night views reviewed. LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement passes on final ground.
+The final ImageGen map retains survey registration: RidgeMapSurveyRegistration.
+
+Ridge poles aim along stairs/decks to 03-04; Home lens leases a doorstep source. The covered court has real light.
+Kiosk inward/outward lobes share one lens, lighting seller/shelves and street through the window with aperture shadows.
+LiveCity_RidgeLightingKeepsDoorStairsAndBridgeLitAcrossTheClock checks leases, surfaces, day floor and on/off views.
+LiveCity_RidgeKioskDialogueRetainsFacesAndClothesWithBrightStreet covers real speaker cuts: static street receivers,
+softly lit faces/clothes and street shadows. Scoped receivers/leases restore on cleanup.
+Shared City effects owners remain; costs unmeasured.
 
 ## 2026-11-05
 City and the apartment share the crest's residential ground, courtyard trees and retaining walls.

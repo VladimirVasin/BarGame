@@ -1,0 +1,162 @@
+{
+  "asset": "GraffitiAtlas",
+  "created_client_date": "2026-11-06",
+  "purpose": "Four-by-two transparent unreadable municipal paint fragments for covered City building passages.",
+  "tool": "image_gen.imagegen",
+  "mode": "built-in generation, colour-edge correction, and one targeted graphic-identity revision",
+  "model": "not reported by built-in tool",
+  "transparent_background": true,
+  "generation_prompt": "Create a production GAME TEXTURE ATLAS, not a scene: a 4-column by 2-row regular grid of EIGHT isolated worn graffiti paint marks on a fully TRANSPARENT alpha background. Wide landscape atlas exactly 2:1 aspect ratio; each equal rectangular cell has generous transparent padding on all four sides, no marks crossing cells, no visible grid or borders. Flat orthographic front view, zero lighting or shadows or wall background. Each cell is a distinct low-key fragment of mundane old municipal underpass graffiti: 1 muted dusty turquoise looping unreadable strokes; 2 faded brick-red broad illegible zigzag marks partly whitewashed; 3 dark gray short overlapping angular paint strokes; 4 desaturated mustard and cream scraped brush marks; 5 charcoal soft aerosol loops with worn holes; 6 muted olive and gray layered fragments half scrubbed away; 7 dusty burgundy broken curved marks under faded paint; 8 blue-gray broad overlapping unreadable strokes with drips. Realistic chalky peeling spray paint pigment, patchy opacity, ragged abrasion and partial erasure, restrained saturation, physically plausible old use rather than disaster. All artwork abstract and NON-SEMANTIC. Absolutely NO readable letters, words, numbers, dates, names, logos, symbols, badges, flags, arrows, people, faces, eyes, skulls, animals, religious or mystical images, clues, stickers, paper, bricks, concrete, scenery or added shadows. The paint strokes themselves are the only visible pixels. Preserve real transparent negative space inside and around each paint cluster. Distinct compositions in all eight cells, intended to be mapped separately to 1\u20132 metre plaster-wall patches in a dense damp low-poly residential city.",
+  "edit_prompt": "Edit this exact transparent 4x2 graffiti atlas. Preserve the eight abstract shapes, worn paint texture, cell alignment, transparent background, and 2:1 aspect ratio. Correct ONLY the edge colour contamination: remove every bright cyan, lime green, saturated red, magenta, bright yellow and electric blue fringe. Replace those fringes with the same subdued dusty grey-turquoise, grey-burgundy, charcoal, ochre or muted olive pigment belonging to each cluster. All paint must be muted, weathered, low saturation. Make the outer 7% margin of every individual grid cell transparent so artwork remains isolated in all four columns and both rows. No grid lines, no words, letters, numbers, symbols or new marks. Keep true alpha transparency and all transparent gaps inside the marks. This is a source texture, not a preview image; no checkerboard or background.",
+  "generated_input": "/Users/vladimirvasin/.codex/generated_images/01a1adb6-1536-7923-a0cb-9de41b14ff34/exec-5ef6ea7e-9200-47cf-b9ef-4aecdb82b516.png",
+  "selected_output": "/Users/vladimirvasin/.codex/generated_images/01a1adb6-1536-7923-a0cb-9de41b14ff34/exec-1be60077-4065-451d-98b1-a86917656270.png",
+  "source_copy": "ArtSource/CityCoveredPassage/GraffitiAtlas.imagegen.png",
+  "runtime_copy": "Assets/Resources/City/CoveredPassage/GraffitiAtlas.png",
+  "copy_policy": "Byte-identical copies of selected native built-in output; no raster processing.",
+  "atlas": {
+    "columns": 4,
+    "rows": 2,
+    "uv_origin": "bottom-left",
+    "size_pixels": [
+      1774,
+      887
+    ],
+    "channels": "RGBA",
+    "aspect_ratio": 2,
+    "cells": [
+      {
+        "top_row": 0,
+        "column": 0,
+        "visible_alpha_gt_half_bounds_local_pixels": [
+          35,
+          82,
+          413,
+          388
+        ],
+        "alpha_gt_half_pixels": 65264
+      },
+      {
+        "top_row": 0,
+        "column": 1,
+        "visible_alpha_gt_half_bounds_local_pixels": [
+          38,
+          88,
+          385,
+          384
+        ],
+        "alpha_gt_half_pixels": 18036
+      },
+      {
+        "top_row": 0,
+        "column": 2,
+        "visible_alpha_gt_half_bounds_local_pixels": [
+          29,
+          101,
+          402,
+          373
+        ],
+        "alpha_gt_half_pixels": 57344
+      },
+      {
+        "top_row": 0,
+        "column": 3,
+        "visible_alpha_gt_half_bounds_local_pixels": [
+          27,
+          85,
+          409,
+          375
+        ],
+        "alpha_gt_half_pixels": 55466
+      },
+      {
+        "top_row": 1,
+        "column": 0,
+        "visible_alpha_gt_half_bounds_local_pixels": [
+          39,
+          59,
+          409,
+          391
+        ],
+        "alpha_gt_half_pixels": 21150
+      },
+      {
+        "top_row": 1,
+        "column": 1,
+        "visible_alpha_gt_half_bounds_local_pixels": [
+          29,
+          74,
+          408,
+          364
+        ],
+        "alpha_gt_half_pixels": 63257
+      },
+      {
+        "top_row": 1,
+        "column": 2,
+        "visible_alpha_gt_half_bounds_local_pixels": [
+          17,
+          74,
+          420,
+          379
+        ],
+        "alpha_gt_half_pixels": 60686
+      },
+      {
+        "top_row": 1,
+        "column": 3,
+        "visible_alpha_gt_half_bounds_local_pixels": [
+          21,
+          77,
+          400,
+          341
+        ],
+        "alpha_gt_half_pixels": 7334
+      }
+    ]
+  },
+  "review": {
+    "content": "Eight distinct matte spray-paint styles: angular interlocks, thin loops, stepped blocks, two-tone ribbons, slender drips, broad broken bands, round overlapping strokes, fine crosshatching. No readable words or narrative symbols.",
+    "alpha": "Transparent negative space retained. Extreme near-primary edge contamination (RGB range>220/255, max>235/255, min<20/255) occurs only at alpha\u22643/255; ordinary runtime alpha clipping removes it. Ochre paint legitimately has broader RGB range than the grey/teal cells.",
+    "visible_palette": "Mean visible RGB range 54.04/255 at alpha>128/255. Main paint is flat matte pigment with sparse edge wear.",
+    "grid": "Four equal UV columns and two rows; native odd dimensions are preserved. Transparent cell gutters isolate mip samples.",
+    "alpha_statistics": [
+      {
+        "alpha_above": 16,
+        "visible_pixels": 381369,
+        "rgb_range_above_100_pixels": 76568,
+        "mean_rgb_range": 53.32525978776461
+      },
+      {
+        "alpha_above": 64,
+        "visible_pixels": 363194,
+        "rgb_range_above_100_pixels": 75730,
+        "mean_rgb_range": 53.74011409880119
+      },
+      {
+        "alpha_above": 128,
+        "visible_pixels": 348537,
+        "rgb_range_above_100_pixels": 74542,
+        "mean_rgb_range": 54.036590089430966
+      },
+      {
+        "alpha_above": 240,
+        "visible_pixels": 291001,
+        "rgb_range_above_100_pixels": 63233,
+        "mean_rgb_range": 54.416424685825824
+      }
+    ],
+    "extreme_fringe": {
+      "definition": "RGB range>220/255, max>235/255, min<20/255",
+      "maximum_alpha": 3,
+      "count_above_alpha64": 0
+    }
+  },
+  "sha256": "66e2e84baaf3c9d53e6667e0e7723c47913e2647c579bd28752f8a241d4bb701",
+  "graphic_identity_revision": {
+    "prompt": "Revise this production transparent graffiti texture atlas. Keep EXACTLY the transparent background and 4 columns x 2 rows equal-cell layout, landscape 2:1 aspect ratio. REPLACE the eight chalky plaster blobs with eight clearly DISTINCT graffiti graphic styles and silhouettes, keeping every design fully isolated within its own cell with at least 8% transparent padding. This is FLAT SPRAY PAINT pigment for a game wall decal, not stone, plaster, concrete, a physical object, or distressed paper. Crisp readable major paint strokes, opaque matte pigment inside the strokes, restrained slight overspray at edges, only subtle sparse wear removing at most 10% of paint. No white plaster-chip texture, no embossed relief, no lighting or shadows, no wall/background of any kind.\n\nCell order left-to-right, top row then bottom:\n1. Broad angular interlocking abstract shapes, dusty brick red with charcoal edging only on parts.\n2. Thin looping gestural tag strokes, muted dark slate blue, airy open negative space; illegible non-alphabetic strokes.\n3. Chunky stepped block abstract composition, muted ochre with one dark grey secondary stroke; strong rectilinear silhouette, no arrow.\n4. Two-tone intertwined layered ribbon strokes, subdued teal and grey-beige, no letters.\n5. Slender vertical calligraphic tag-like strokes plus three short paint drips, dark charcoal with a little brick red; no actual writing.\n6. Broad broken geometric chevron-like bands in weathered olive and muted ochre, avoid a directional arrow or sign.\n7. Overlapping round letter-like loops in dusty burgundy and slate grey, deliberately NON-ALPHABETIC with no readable word.\n8. Thin crosshatched abstract scribble in dark teal-grey, much airier and lower paint coverage than the other cells.\n\nThe eight designs must NOT share the same shape, stroke width, density, or overall silhouette. Recognizable major marks at a 3 metre game viewing distance under a dim municipal lamp. Muted urban palette: matte dusty brick, ochre, slate, desaturated teal, charcoal. No neon RGB fringes; outer alpha pixels should carry the same pigment hue. Absolutely no readable letters, words, numbers, dates, names, logos, brands, arrows, symbols, people, faces, eyes, skulls, animals, mystic/religious imagery, narrative clues or decorative frames. Transparent negative space inside and around paint strokes; no checkerboard. Preferred exact pixel size 2048 x 1024 if supported.",
+    "input_runtime_path": "Assets/Resources/City/CoveredPassage/GraffitiAtlas.png",
+    "input_source": "/Users/vladimirvasin/.codex/generated_images/01a1adb6-1536-7923-a0cb-9de41b14ff34/exec-59f92c19-6c38-4b12-b67f-295c6734d1cf.png",
+    "selected_output": "/Users/vladimirvasin/.codex/generated_images/01a1adb6-1536-7923-a0cb-9de41b14ff34/exec-1be60077-4065-451d-98b1-a86917656270.png",
+    "reason": "Replace chalk/plaster-like weathering with eight distinct readable matte spray-paint silhouettes."
+  }
+}

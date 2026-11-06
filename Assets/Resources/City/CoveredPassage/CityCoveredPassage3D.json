@@ -1,0 +1,369 @@
+{
+  "design_id": "city_covered_passage_kit_v1",
+  "version": "1.0.0",
+  "generator": "build-city-covered-passage-3d-model.py",
+  "coordinate_system": "Unity metres, +Y up, wall +Z outward; lamp root at ceiling Y0 extends down",
+  "geometry_signature_includes": [
+    "vertices",
+    "faces",
+    "colors",
+    "uv0",
+    "transforms"
+  ],
+  "models": [
+    {
+      "name": "PassageLamp",
+      "bounds_min": [
+        -0.59,
+        -0.14,
+        -0.12
+      ],
+      "bounds_max": [
+        0.59,
+        0.0,
+        0.12
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_CeilingMount",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_LightSource",
+          "position": [
+            0.0,
+            -0.145,
+            0.0
+          ]
+        },
+        {
+          "name": "FoldedCeilingChassis",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "OpalFluorescentDiffuser",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "TamperCapsAndProtectiveCage",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 312,
+      "geometry_signature": "8fe84129257f980a4c1e419db225dd8f148c12967dd027f0011bf985fcafdf61",
+      "material_roles": [
+        "Lens",
+        "Steel",
+        "SteelDark"
+      ],
+      "renderer_count": 3,
+      "maximum_triangles": 3500
+    },
+    {
+      "name": "JunctionBox",
+      "bounds_min": [
+        -0.25,
+        -0.31,
+        0.0
+      ],
+      "bounds_max": [
+        0.25,
+        0.31,
+        0.142
+      ],
+      "anchors": [
+        {
+          "name": "FastenersAndCableGlands",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "RepaintedServiceCaseAndLid",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 220,
+      "geometry_signature": "a459f1452e79eaf017a94a2f56c33b997e27f82dd9a97ac67a4718da0e9237d1",
+      "material_roles": [
+        "Steel",
+        "SteelDark"
+      ],
+      "renderer_count": 2,
+      "maximum_triangles": 2200
+    },
+    {
+      "name": "ConduitRun",
+      "bounds_min": [
+        -0.045,
+        -0.9,
+        0.0
+      ],
+      "bounds_max": [
+        0.045,
+        0.9,
+        0.06
+      ],
+      "anchors": [
+        {
+          "name": "ContinuousVerticalConduit",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "WallSaddlesAndBolts",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 232,
+      "geometry_signature": "75f1908b7ad75f84242c21868be07e32d1e5aa6161f20d57038adbc0ca3a1abe",
+      "material_roles": [
+        "Steel",
+        "SteelDark"
+      ],
+      "renderer_count": 2,
+      "maximum_triangles": 2000
+    },
+    {
+      "name": "CableTray",
+      "bounds_min": [
+        -1.0,
+        -0.08,
+        0.0
+      ],
+      "bounds_max": [
+        1.0,
+        0.065,
+        0.15
+      ],
+      "anchors": [
+        {
+          "name": "FoldedOpenServiceTray",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ThreeSupportedCableRuns",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "TrayBearingClips",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 200,
+      "geometry_signature": "7d466c161fb2933eb0a59240626f849978476919c58b7ec84c2fc24f5f7bd4d8",
+      "material_roles": [
+        "Rubber",
+        "Steel",
+        "SteelDark"
+      ],
+      "renderer_count": 3,
+      "maximum_triangles": 3000
+    },
+    {
+      "name": "VentGrille",
+      "bounds_min": [
+        -0.31,
+        -0.23,
+        0.0
+      ],
+      "bounds_max": [
+        0.31,
+        0.23,
+        0.08
+      ],
+      "anchors": [
+        {
+          "name": "BoltedVentFrame",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "SeparateVentLouvres",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "VentRecessAndFasteners",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 416,
+      "geometry_signature": "f41f78f6434e191e157aaa40270be4e0b890a0b8c14a2204ab9d3113d4f9d4c1",
+      "material_roles": [
+        "Steel",
+        "SteelDark",
+        "SteelLight"
+      ],
+      "renderer_count": 3,
+      "maximum_triangles": 2600
+    },
+    {
+      "name": "CornerGuard",
+      "bounds_min": [
+        -0.06,
+        -0.6,
+        0.0
+      ],
+      "bounds_max": [
+        0.06,
+        0.6,
+        0.12
+      ],
+      "anchors": [
+        {
+          "name": "FoldedLSectionEdgeGuard",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "GuardFixings",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 116,
+      "geometry_signature": "cfcea19797627d20bf9a527cdacb967c0533119c0f37ca796f063482ec4c4ae3",
+      "material_roles": [
+        "Steel",
+        "SteelDark"
+      ],
+      "renderer_count": 2,
+      "maximum_triangles": 1500
+    },
+    {
+      "name": "PlasterPatch",
+      "bounds_min": [
+        -0.85,
+        -0.575,
+        0.0
+      ],
+      "bounds_max": [
+        0.85,
+        0.575,
+        0.012
+      ],
+      "anchors": [
+        {
+          "name": "IrregularTrowelledRepair",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 92,
+      "geometry_signature": "36d7ba3e75a6b9015662219e0f5f2a5683f3fe9bbd4a0e6091f1492bf641c3fc",
+      "material_roles": [
+        "Plaster"
+      ],
+      "renderer_count": 1,
+      "maximum_triangles": 400
+    },
+    {
+      "name": "GraffitiPanel",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.0
+      ],
+      "anchors": [
+        {
+          "name": "GraffitiSurface",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 2,
+      "geometry_signature": "50278f6665619fe455d5ce206be212274f12616a1ee699b64d5a29bb8d03e416",
+      "material_roles": [
+        "Graffiti"
+      ],
+      "renderer_count": 1,
+      "maximum_triangles": 2
+    }
+  ],
+  "assets": [
+    "PassageLamp.fbx",
+    "JunctionBox.fbx",
+    "ConduitRun.fbx",
+    "CableTray.fbx",
+    "VentGrille.fbx",
+    "CornerGuard.fbx",
+    "PlasterPatch.fbx",
+    "GraffitiPanel.fbx"
+  ],
+  "graffiti_atlas": {
+    "columns": 4,
+    "rows": 2,
+    "uv_origin": "bottom-left",
+    "cell_padding_fraction": 0.07
+  },
+  "runtime_contract": "Retain imported FBX authoring wrapper and units; shared semantic materials; no collision, text, Light or behaviour authored in the models"
+}

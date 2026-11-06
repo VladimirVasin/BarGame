@@ -88,6 +88,8 @@ namespace BarPromenade
         private bool[] industrialStreetOnly = Array.Empty<bool>();
         private UniversalAdditionalLightData[] pooledShadowData = Array.Empty<UniversalAdditionalLightData>();
         private CityLightHalo[] industrialFixtureHalos = Array.Empty<CityLightHalo>();
+        private CityCoveredPassageLight[] coveredPassageLights = Array.Empty<CityCoveredPassageLight>();
+        private bool[] industrialIsCoveredPassage = Array.Empty<bool>();
         public int IndustrialTaskLightCount => industrialPurposes.Length;
         private float nextReassignmentTime;
         private Vector3 lastAssignmentPosition;
@@ -153,6 +155,8 @@ namespace BarPromenade
             industrialInnerSpotAngles = new float[taskAnchors.Length];
             industrialStreetOnly = new bool[taskAnchors.Length];
             industrialFixtureHalos = new CityLightHalo[taskAnchors.Length];
+            coveredPassageLights = new CityCoveredPassageLight[taskAnchors.Length];
+            industrialIsCoveredPassage = new bool[taskAnchors.Length];
             for (int index = 0; index < taskAnchors.Length; index++)
             {
                 string purposeName = taskAnchors[index].name.Substring(IndustrialTaskLightPrefix.Length);
@@ -193,11 +197,17 @@ namespace BarPromenade
                         industrialUseShadows[index] = true;
                         industrialIntensityScales[index] = .28f;
                         industrialRangeLimits[index] = 4.5f; break;
-                    case "RidgePassage":
+                    case "CoveredPassage":
                         industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
                         industrialUseShadows[index] = true;
-                        industrialIntensityScales[index] = .20f;
-                        industrialRangeLimits[index] = 5.5f; break;
+                        industrialIntensityScales[index] = .60f;
+                        industrialRangeLimits[index] = 7f;
+                        industrialSpotAngles[index] = 150f;
+                        industrialInnerSpotAngles[index] = 105f;
+                        industrialIsCoveredPassage[index] = true;
+                        coveredPassageLights[index] = taskAnchors[index].GetComponent<CityCoveredPassageLight>() ??
+                            throw new InvalidOperationException("A covered passage source needs its fixed fixture marker.");
+                        break;
                     case "LaundryWork":
                         industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
                         industrialIntensityScales[index] = .75f;
@@ -241,6 +251,7 @@ namespace BarPromenade
                     profile.HaloOuterSize * (industrialUseShadows[index] ? .5f : 1f),
                     profile.HaloInnerColor * Mathf.Min(industrialIntensityScales[index], 2f),
                     profile.HaloOuterColor * Mathf.Min(industrialIntensityScales[index], 2f));
+                if (coveredPassageLights[index] != null) coveredPassageLights[index].BindHalo(industrialFixtureHalos[index]);
             }
             practicalAnchors = CopyPracticalAnchors(
                 fringePracticalAnchors);
@@ -303,11 +314,13 @@ namespace BarPromenade
         private void Update()
         {
             RefreshStreetLights(false);
+            RefreshCoveredPassagePower();
         }
 
         public void RefreshImmediate()
         {
             RefreshStreetLights(true);
+            RefreshCoveredPassagePower();
         }
 
         public void SetNightFactor(
@@ -337,8 +350,9 @@ namespace BarPromenade
             // belongs to the hour - the refresh cadence, the pool scan.
             float fixtureFactor =
                 GameTimeDayNightRules.FixtureFactor(nightFactor);
-            foreach (CityLightHalo halo in industrialFixtureHalos)
-                if (halo != null) halo.SetIntensityFactor(fixtureFactor);
+            for (int index = 0; index < industrialFixtureHalos.Length; index++)
+                if (industrialFixtureHalos[index] != null && !industrialIsCoveredPassage[index])
+                    industrialFixtureHalos[index].SetIntensityFactor(fixtureFactor);
             for (int index = 0; index < barLights.Length; index++)
             {
                 barLights[index].intensity =
@@ -373,6 +387,50 @@ namespace BarPromenade
                 (force || firstApplication || wasVisible != visible))
             {
                 RefreshStreetLights(true);
+            }
+            RefreshCoveredPassagePower();
+        }
+
+        private void RefreshCoveredPassagePower()
+        {
+            if (!isActiveAndEnabled) { RestoreCoveredPassagePower(); return; }
+            double absoluteSeconds = CityCoveredPassageFlickerEvaluator.AbsoluteSeconds;
+            float fixtureFactor = GameTimeDayNightRules.FixtureFactor(nightFactor);
+            for (int index = 0; index < coveredPassageLights.Length; index++)
+            {
+                if (!industrialIsCoveredPassage[index]) continue;
+                var source = coveredPassageLights[index];
+                if (source != null && source.gameObject.activeInHierarchy) source.ApplyAt(absoluteSeconds, fixtureFactor);
+                else if ((source == null || !source.gameObject.activeInHierarchy) && industrialFixtureHalos[index] != null)
+                    industrialFixtureHalos[index].SetVisible(false);
+            }
+            // A contact fault must not be quantized to lease periods. Apply the
+            // sampled lens/halo factor at frame cadence, without reassigning or
+            // repeatedly multiplying the stored full-power intensity.
+            for (int slot = 0; slot < streetLightPool.Length; slot++)
+            {
+                if (IsActivePracticalPoolIndex(slot)) continue;
+                int task = selectedAnchorIndices[slot] - industrialAnchorStartIndex;
+                if (task < 0 || task >= industrialIsCoveredPassage.Length || !industrialIsCoveredPassage[task]) continue;
+                float factor = GetPooledIntensityFactor(slot);
+                streetLightPool[slot].intensity = pooledLightBaseIntensities[slot] * factor;
+                streetLightPool[slot].enabled = IsAnchorAvailable(selectedAnchorIndices[slot]) && factor > VisibleFactorThreshold;
+            }
+        }
+
+        private void OnDisable() => RestoreCoveredPassagePower();
+        private void OnDestroy() => RestoreCoveredPassagePower();
+
+        private void RestoreCoveredPassagePower()
+        {
+            float fixtureFactor = GameTimeDayNightRules.FixtureFactor(nightFactor);
+            foreach (var source in coveredPassageLights) if (source != null) source.RestoreSteady(fixtureFactor);
+            for (int slot = 0; slot < streetLightPool.Length; slot++)
+            {
+                if (IsActivePracticalPoolIndex(slot)) continue;
+                int task = selectedAnchorIndices[slot] - industrialAnchorStartIndex;
+                if (task >= 0 && task < industrialIsCoveredPassage.Length && industrialIsCoveredPassage[task] && streetLightPool[slot] != null)
+                    streetLightPool[slot].intensity = pooledLightBaseIntensities[slot] * fixtureFactor;
             }
         }
 
@@ -455,7 +513,7 @@ namespace BarPromenade
                      anchorIndex++)
                 {
                     Transform anchor = lampAnchors[anchorIndex];
-                    float distance = anchor != null
+                    float distance = anchor != null && IsAnchorAvailable(anchorIndex)
                         ? (anchor.position - playerPosition).sqrMagnitude
                         : float.PositiveInfinity;
                     InsertNearest(
@@ -511,7 +569,7 @@ namespace BarPromenade
                 bool hasAnchor =
                     anchorIndex >= 0 &&
                     anchorIndex < lampAnchors.Length &&
-                    lampAnchors[anchorIndex] != null;
+                    lampAnchors[anchorIndex] != null && IsAnchorAvailable(anchorIndex);
                 bool visible =
                     hasAnchor &&
                     nightVisible;
@@ -865,11 +923,27 @@ namespace BarPromenade
         {
             if (!IsActivePracticalPoolIndex(poolIndex))
             {
-                return GameTimeDayNightRules.FixtureFactor(nightFactor);
+                float fixtureFactor = GameTimeDayNightRules.FixtureFactor(nightFactor);
+                int task = selectedAnchorIndices[poolIndex] - industrialAnchorStartIndex;
+                if (task >= 0 && task < industrialIsCoveredPassage.Length && industrialIsCoveredPassage[task])
+                {
+                    var source = coveredPassageLights[task];
+                    if (source == null || !source.gameObject.activeInHierarchy) return 0f;
+                    return fixtureFactor * (source.isActiveAndEnabled ? source.PowerMultiplier : 1f);
+                }
+                return fixtureFactor;
             }
 
             return GetPracticalIntensityFactor(
                 practicalAnchors[activePracticalIndex].Kind);
+        }
+
+        private bool IsAnchorAvailable(int anchorIndex)
+        {
+            int task = anchorIndex - industrialAnchorStartIndex;
+            if (task < 0 || task >= industrialIsCoveredPassage.Length || !industrialIsCoveredPassage[task]) return true;
+            var source = coveredPassageLights[task];
+            return source != null && source.gameObject.activeInHierarchy;
         }
 
         private float GetPracticalIntensityFactor(

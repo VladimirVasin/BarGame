@@ -2,23 +2,24 @@
 
 ## Current facts
 
-- **Accepted 2026-11-06,user — Ridge ground/furniture:** safe off-road yards
-  share terrain triangles, walk mask and map heights; ravine/steep banks/solids
-  stay closed. Level furniture pockets retain road/stair contacts. Reused
-  sittable benches face bridges/log/descending roofs, especially by Home;
-  walking intervals guide benches40–60m, bins40–65m, booths70–90m, with site/view
-  priority. Shared rig/sit/utility owners; finite plans/materials, no Update work.
-  Final map follows geometry. City FX owners retained; no new GI/pass/grade/fog.
-  Costs unmeasured. Canon level0;art9/story16/21.
+- **Accepted 2026-11-06,user — covered passages:** City/Home:
+  independent occupied/vacant wall slots for graffiti/repairs/utilities;lamps.
+  Blender/atlas/materials shared;routes clear. One lamp:absolute day/night dips;
+  others steady;pool12/lens/halo/spill;lease/pause/disable cleanup.
+  Story6/19/20 exception:text/clues/hero reaction/fast strobe0;24FX owners;
+  art9/story16/21.
 
-- **Accepted 2026-11-06,user — Ridge/kiosk light:** poles aim at stairs/decks;
-  upper beams165°/95°/22m. Home lens/Blender court pendants share12 pooled lights,
-  daylight floor/shadows. Kiosk lens/halo feeds soft
-  inside/bright street lobes. Static receivers bit3,people ordinary light/street
-  shadows;≤128 receivers restore on disable/destroy,leases reset masks.
-  Booth panels cast neutral shadowed light down/out onto entry and forecourt;
-  City/Home:shared12/day floor,6.5m/130°. No per-booth Light.
-  All24FX retain owners;no new GI/pass/grade/fog;GPU unmeasured.
+- **Accepted 2026-11-06,user — Ridge ground/furniture:** shared earth triangles/
+  collision/walk/map;ravine/steep banks/solids closed. Level pockets retain road/
+  stair contacts. Shared rigs/seats/utilities;view benches40–60m,bins40–65m,
+  booths70–90m favour sites/views;Home bench by bridge faces city. Final map
+  follows geometry;finite plans/materials,no Update;costs unmeasured;level0.
+
+- **Accepted 2026-11-06,user — Ridge/kiosk light:** poles aim stairs/decks,
+  165°/95°/22m. Home/court/booths share12/day floor/shadows;booths6.5m/130° down/out.
+  Kiosk lens/halo:soft inside/bright street;static bit3,people ordinary/street
+  shadows;≤128 receivers restore disable/destroy,leases reset masks. 24FX;
+  no new GI/pass/grade/fog;GPU unmeasured.
 
 - **Accepted 2026-11-05 — Ridge Street kiosk.** One permanent shopkeeper serves through the window near Home.
   Story §6/§21 permits his first two voluntary exchanges, each about the goods. Retail at the window uses
@@ -4082,7 +4083,7 @@
   dated to a level, in the story bible's §6 registry, and nowhere else; seven
   registry entries exist and the permanent list (skeletons, blood, monsters, sirens,
   cults, otherworld transitions, rust-as-aesthetic, daytime flickering
-  lanterns, local fog, screamers) is never lifted at any level. The binding
+  outside covered passages (user `2026-11-06`), local fog, screamers) is never lifted at any level. The binding
   constraint is that **every level must still pass all nine of the art bible's
   own §16 acceptance checks**, so a level change alters the behaviour of
   objects already standing and almost never their form. The scale is driven by

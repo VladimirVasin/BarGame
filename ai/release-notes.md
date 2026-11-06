@@ -8,19 +8,20 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-06
 
-- На Гребне можно сходить с улиц на землю, проходить дворы и обходить дом. Убрана невидимая преграда сбоку дома.
-  У верхнего моста появилась скамья: сидя видны нижний мост, сухой лог и дома в тумане. `E` — сесть/встать.
-  На улицах — видовые скамьи, баки и будки. Верхние панели будок освещают вход/землю:
-  LiveCity_PhoneBoothPanelsLightEntriesAndForecourts.
+- В сквозных проходах граффити, заплаты и коммуникации занимают разные места вдоль стен; есть пустые участки.
+  Плафоны светят на пол/стены;
+  отдельные лампы независимо мигают, соседний свет сохраняет путь.
+  LiveCity_CoveredPassagesKeepUniqueDressingLightAndClearRoutes.
+- Гребень: проходимая земля/дворы/обход дома, убрана невидимая преграда. У верхнего моста скамья
+  смотрит на нижний мост, лог и крыши; `E` — сесть/встать. На улицах видовые скамьи, баки/будки.
   LiveCity_RidgeGroundAndViewBenchesKeepSupportedWalksAndArrivals.
-  Подходы к остановкам и посадка проверены: LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
-  Карта перерисована по окончательной геометрии: RidgeMapSurveyRegistration.
-- На Гребне свет падает на порог дома, ступени, тротуары моста и подход к 03-04.
-  В крытом проходном дворе горят потолочные лампы. Между пятнами света остаётся темно.
+  Подходы/посадка: LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
+  Карта перерисована: RidgeMapSurveyRegistration.
+- Панели будок освещают вход/землю: LiveCity_PhoneBoothPanelsLightEntriesAndForecourts.
+- Порог дома, ступени, тротуары моста, подход к 03-04 и крытый двор освещены.
+  Ларёк: видны продавец/полки, тёплый свет из окна на прилавке/тротуаре/дороге.
   LiveCity_RidgeLightingKeepsDoorStairsAndBridgeLitAcrossTheClock.
-- В ларьке ярче видны продавец и полки. Тёплый свет из окна ложится на прилавок, тротуар и дорогу впереди.
-  LiveCity_RidgeLightingKeepsDoorStairsAndBridgeLitAcrossTheClock.
-  Лица и одежда продавца и героя в разговоре сохраняют детали при ярком свете на улице.
+  Детали лиц/одежды героя и продавца в разговоре сохранены:
   LiveCity_RidgeKioskDialogueRetainsFacesAndClothesWithBrightStreet.
 
 ### 2026-11-05
