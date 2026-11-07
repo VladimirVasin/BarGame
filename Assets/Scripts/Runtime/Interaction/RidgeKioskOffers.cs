@@ -1,20 +1,24 @@
+using System;
 using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>The same three physical samples stand on the counter in both views of the ridge.</summary>
+    /// <summary>Each kiosk keeps its three replenishable samples and its own stable till sources.</summary>
     public static class RidgeKioskOffers
     {
         public static void Build(Transform kiosk, Transform beerAnchor, Transform vodkaAnchor,
-            Transform foodAnchor, Transform approachAnchor, bool interactive)
+            Transform foodAnchor, Transform approachAnchor, bool interactive, string siteStableId = "ridge-kiosk")
         {
-            BuildOffer(kiosk, beerAnchor, approachAnchor, InventoryItemId.BeerCan, "beer", interactive);
-            BuildOffer(kiosk, vodkaAnchor, approachAnchor, InventoryItemId.VodkaBottle, "vodka", interactive);
-            BuildOffer(kiosk, foodAnchor, approachAnchor, InventoryItemId.PotatoPirozhok, "pirozhok", interactive);
+            if (string.IsNullOrWhiteSpace(siteStableId))
+                throw new ArgumentException("A kiosk needs its permanent site ID.", nameof(siteStableId));
+            string sourcePrefix = siteStableId == "ridge-kiosk" ? "city.ridge.kiosk" : "city.kiosk." + siteStableId;
+            BuildOffer(kiosk, beerAnchor, approachAnchor, InventoryItemId.BeerCan, "beer", interactive, sourcePrefix);
+            BuildOffer(kiosk, vodkaAnchor, approachAnchor, InventoryItemId.VodkaBottle, "vodka", interactive, sourcePrefix);
+            BuildOffer(kiosk, foodAnchor, approachAnchor, InventoryItemId.PotatoPirozhok, "pirozhok", interactive, sourcePrefix);
         }
 
         private static void BuildOffer(Transform kiosk, Transform anchor, Transform approach,
-            InventoryItemId item, string key, bool interactive)
+            InventoryItemId item, string key, bool interactive, string sourcePrefix)
         {
             // FBX anchors can carry the importer's unit scale. The product and trigger use metres.
             var host = new GameObject("Kiosk offer " + item).transform;
@@ -34,7 +38,7 @@ namespace BarPromenade
             trigger.center = focus.localPosition;
             trigger.size = new Vector3(.3f, Mathf.Max(.25f, height), .3f);
             var target = RidgeKioskTarget.Attach(kiosk, host, focus, approach);
-            host.gameObject.AddComponent<RidgeKioskPurchase>().Initialize(item, key, target, focus);
+            host.gameObject.AddComponent<RidgeKioskPurchase>().Initialize(item, key, target, focus, sourcePrefix);
         }
     }
 }

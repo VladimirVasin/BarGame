@@ -294,7 +294,7 @@ namespace BarPromenade
             return RoadDistanceAt(layout, edge, projection.DistanceAlong);
         }
 
-        private static float RoadDistanceAt(CityLayout layout, RoadEdge edge, float station)
+        internal static float RoadDistanceAt(CityLayout layout, RoadEdge edge, float station)
         {
             // SampleRoadDatum owns a level mouth at each endpoint and one
             // constant grade between them. Integrate that grade over physical

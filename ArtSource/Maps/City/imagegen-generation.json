@@ -1,18 +1,18 @@
 {
   "tool": "built-in image_gen",
-  "intent": "Final continuous asphalt upper bench terrace, broad stair and door path west of the pawnshop; other city geography retained.",
-  "prompt": "imagegen-pawnshop-terrace-prompt.txt",
+  "intent": "Two additional street kiosks in lower Residential and Industrial; existing city geography retained.",
+  "prompt": "imagegen-district-kiosks-prompt.txt",
   "references": [
     "CityMapImage.reference.png",
     "map-reference.png"
   ],
-  "geography": "map-reference.json",
+  "geography": "CityMapImage.accepted-geography.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "e52c9bf5785f28e318d400a098ad082dafb1345624e5e99558809979cc8a2d23",
-  "runtime_image_sha256": "e52c9bf5785f28e318d400a098ad082dafb1345624e5e99558809979cc8a2d23",
-  "previous_image_sha256": "c6a60b5238a3355e8289c36bba0a60675bacba0efb027e3ce3e7dfb239df4a31",
+  "image_sha256": "8d9aa62e81ce67fde6f6add4b92ecf4e6cba9644143dcae98063d64fe1a147d8",
+  "runtime_image_sha256": "8d9aa62e81ce67fde6f6add4b92ecf4e6cba9644143dcae98063d64fe1a147d8",
+  "previous_image_sha256": "e52c9bf5785f28e318d400a098ad082dafb1345624e5e99558809979cc8a2d23",
   "registration": {
-    "description": "Full-bleed north-up bounds unchanged. Shared bench terrace near normalized (0.355,0.850), pawnshop at (0.418,0.852). Russian labels/live markers remain runtime overlays; courtyard statue, lamps and flowerbeds are exempt from map art.",
+    "description": "Full-bleed north-up bounds unchanged. Residential kiosk centre normalized (0.627612,0.503345), Industrial (0.288060,0.588051); Ridge retained (0.420709,0.929153). Names and shop glyphs remain live overlays.",
     "source_size": [
       1173,
       1341
@@ -22,8 +22,17 @@
       2048
     ]
   },
-  "fingerprint": "d52e98f01e04ab6901c056b3001cff7a840e82bd6f79648694523b955f35663c",
+  "fingerprint": "175c2b0e687d3ce16062ba4a906283213ee82cdd647061b6f3e8e598a59c59c3",
   "schemaVersion": 2,
   "width": 1173,
-  "height": 1341
+  "height": 1341,
+  "current_geography": "map-reference.json",
+  "pending_redraw": {
+    "reason": "Descent ImageGen candidates failed measured footprint/registration review; runtime keeps the authoritative live scheme while accepted illustration metadata is stale.",
+    "current_fingerprint": "beb3fe13c41757878a0b1b45ef0bfa059edeb3477ab08ad41b70382afdc39913",
+    "prompt": "imagegen-pawnshop-descent-prompt.txt",
+    "registered_guide": "map-descent-registered-guide.png",
+    "guide_sha256": "bcd670d7bf7437aea9c991d074332444562f1b29c3501849e7eebd62fa3c0696",
+    "historical_reference_note": "references lists paths used for the accepted kiosk generation; map-reference.png now contains the current descent survey. Its accepted geography is archived in geography."
+  }
 }

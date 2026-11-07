@@ -2,10 +2,11 @@
 
 ## Current facts
 
-- **Accepted 2026-11-06,user — bench pockets:** pawnshop≤45mXZ;origins fixed;west pair faces+Z.
-  Plaza1.6m paths/mirrored outer lamps3.2m/pool12. Asphalt upper landing/side flowerbeds;
-  10.4m6-step stair/earth cut/ramp/tread probes/nav/map/Home one plan.
-  Concrete pigeon/plinth1.98m between benches,rearward;no text/story.
+- **Accepted 2026-11-06/2026-11-07,user — bench access:** pawnshop≤45mXZ;origins fixed;west pair+Z.
+  Plaza1.6m/asphalt/flowerbeds;mirrored outer lamps3.2m/pool12. West10.4m6-step;
+  Home bench→2×12 TerraceFlight1.8m/.32m+landing2.4m→footway/zebra/door.
+  Earth cut/ramp/tread/nav/map/Home shared;2pooled lamps. Concrete
+  pigeon/plinth1.98m between benches,rearward.
 
 - **Accepted 2026-11-06,user — pawnshop:** west island/2zebras/2.4m path→door,face hero;
   `PawnshopInterior`/secure grille room/permanent silent clerk. Buy/Sell stubs,
@@ -21,10 +22,9 @@
   text/clues/hero reaction/strobe0;24FX/art9/story16/21.
 
 - **Accepted 2026-11-06,user — Ridge ground/furniture:** shared earth triangles/
-  collision/walk/map;ravine/steep banks/solids closed;level road/stair contacts,
-  shared rigs/seats/utilities. Benches40–60m/bins40–65m/booths70–90m favour sites/
-  views;Home bench by bridge faces city. Map follows geometry;finite plans/
-  materials,no Update;cost unmeasured;level0.
+  collision/walk/map;ravine/steep/solids closed;level road/stair contacts;
+  shared rigs/seats/utilities. Benches40–60/bins40–65/booths70–90m→sites/
+  views;Home bridge bench→city. Map=geometry;bounded plans/materials/Update0;level0.
 
 - **Accepted 2026-11-06,user — Ridge/kiosk light:** poles→stairs/decks165°/95°/22m.
   Home/court/booths share12/day floor/shadows;booths6.5m/130° down/out. Kiosk
@@ -32,10 +32,10 @@
   ≤128 receivers restore disable/destroy;leases reset masks. 24FX;new GI/pass/
   grade/fog0;GPU unmeasured.
 
-- **Accepted 2026-11-05 — Ridge Street kiosk.** Permanent window seller near Home.
-  Story§6/21:first two voluntary goods exchanges. Session till/receipt;sealed beer/
-  vodka,potato pie feeds hero. Permanent ActV bar closure stops alcohol sales,
-  independently of daily hours.
+- **Accepted 2026-11-05/2026-11-07,user — City kiosks.** Ridge+lower Residential/
+  Industrial;shared beer/vodka/pie/receipt/light. Unique IDs/looks/map marks.
+  Ridge-only speech (§6/21);others silent. ActV contract:permanent bar closure
+  ends alcohol,regardless of hours.
 
 - **Accepted 2026-11-04,user — pedestrian vehicle passage:** silent City walkers
   yield3bus lines/Ferryman/cannery truck;body/following gaps.

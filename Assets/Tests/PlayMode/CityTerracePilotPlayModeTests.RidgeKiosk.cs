@@ -33,7 +33,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Vector3.Distance(vendor.Actor.transform.position,
                 site.Origin + new Vector3(0f, .08f, .45f)), Is.LessThan(.01f));
 
-            var point = city.Map.PointsOfInterest.Single(p => p.Kind == CityMapPointOfInterestKind.RidgeKiosk);
+            var point = city.Map.PointsOfInterest.Single(p => p.StableId == "ridge-kiosk");
             Vector3 standing = site.Approach + Vector3.up * PlayerFactory.GroundedRootOffset;
             var ground = new CityMapCityTeleportGround(city.Layout);
             Assert.That(ground.TryClampArrival(point.WorldPosition, out var safe), Is.True);

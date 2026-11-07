@@ -56,6 +56,7 @@ namespace BarPromenade
             BuildMesh("Bench lamp lenses",root,lenses,true);
             BuildPaving(root,layout,polygons,"Maintained bench paving",!retained.HasValue);
             CityPawnshopBenchTerraceWorld.Build(root,layout,retained);
+            CityPawnshopDescentWorld.Build(root,layout,retained);
         }
 
         internal static void BuildPaving(Transform root,CityLayout layout,IReadOnlyList<Vector2[]> footprints,
@@ -65,6 +66,7 @@ namespace BarPromenade
             var faces=new List<Vector3[]>();
             var streets=CityHillsideStreetPlan.ForLayout(layout).Routes;
             var terrace=CityPawnshopBenchTerracePlan.ForLayout(layout);
+            var descent=CityPawnshopDescentPlan.ForLayout(layout);
             foreach(var grid in CityHillsideGroundGrid.ForLayout(layout))
             for(int row=0;row+1<grid.Rows;row++)
             for(int col=0;col+1<grid.Columns;col++)
@@ -103,6 +105,14 @@ namespace BarPromenade
                     var remaining=new List<Vector2[]> {new List<Vector2>(piece).ToArray()};
                     if(terrace.IsEnabled)
                         foreach(var cut in terrace.Footprints)
+                        {
+                            if(!bounds.Overlaps(CityRoadPolygon.Bounds(cut))) continue;
+                            var next=new List<Vector2[]>();
+                            foreach(var part in remaining) next.AddRange(CityRoadPolygon.Subtract(part,cut));
+                            remaining=next;
+                        }
+                    if(descent.IsEnabled)
+                        foreach(var cut in descent.GroundCuts)
                         {
                             if(!bounds.Overlaps(CityRoadPolygon.Bounds(cut))) continue;
                             var next=new List<Vector2[]>();

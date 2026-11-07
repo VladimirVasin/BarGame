@@ -721,14 +721,12 @@ namespace BarPromenade
                 area.AddPolygons(new[] { CityRoadPolygon.Rectangle(building.ApproachBounds),
                     CityRoadPolygon.Rectangle(building.CourtBounds) });
             }
-            if (RidgeKioskSitePlan.TryCreate(layout, out var kiosk))
+            foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(layout).Sites)
             {
                 // Eroded mask members must overlap by a capsule diameter.
                 // The overlap is on the existing paved sidewalk at the same height.
-                Rect apron = kiosk.Apron;
-                apron.yMax += CityGroundTraversalPlanner.MaximumAgentRadius * 2f + .10f;
-                area.Add(apron);
-                area.Exclude(kiosk.Bounds);
+                area.AddPolygons(kiosk.WalkableApronPolygons);
+                area.ExcludePolygons(new[] { kiosk.Footprint });
             }
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
                 area.ExcludePolygons(new[] { pawnshop.Footprint });
@@ -737,6 +735,12 @@ namespace BarPromenade
             // the sit/stand and utility docks clear beside diagonal benches.
             area.ExcludePolygons(CityHillsideFurniturePlan.ForLayout(layout).SolidPolygons);
             var benchTerrace=CityPawnshopBenchTerracePlan.ForLayout(layout);
+            var pawnshopDescent=CityPawnshopDescentPlan.ForLayout(layout);
+            if(pawnshopDescent.IsEnabled)
+            {
+                area.AddPolygons(pawnshopDescent.SurfacePolygons);
+                area.ExcludePolygons(pawnshopDescent.SolidPolygons);
+            }
             if(benchTerrace.IsEnabled)
             {
                 area.AddPolygons(benchTerrace.Footprints);

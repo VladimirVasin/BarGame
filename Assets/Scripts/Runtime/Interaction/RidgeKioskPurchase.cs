@@ -8,6 +8,7 @@ namespace BarPromenade
     {
         public InventoryItemId ItemId { get; private set; }
         public string PromptKey { get; private set; }
+        public string SourceId => sourceId;
         public Vector3 InteractionPosition => focus.position;
 
         private string confirmationKey, sourceId;
@@ -16,12 +17,13 @@ namespace BarPromenade
         private InventoryTargetInteractionController confirmation;
         private WorldItemFoundScreen receipt;
 
-        internal void Initialize(InventoryItemId item, string key, RidgeKioskTarget selector, Transform centre)
+        internal void Initialize(InventoryItemId item, string key, RidgeKioskTarget selector, Transform centre,
+            string sourcePrefix = "city.ridge.kiosk")
         {
             ItemId = item;
             PromptKey = "kiosk.buy." + key + ".prompt";
             confirmationKey = "kiosk.buy." + key + ".confirm";
-            sourceId = "city.ridge.kiosk." + key;
+            sourceId = sourcePrefix + "." + key;
             target = selector;
             focus = centre;
         }

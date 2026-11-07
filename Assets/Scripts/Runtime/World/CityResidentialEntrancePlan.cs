@@ -177,6 +177,8 @@ namespace BarPromenade
             IReadOnlyList<BuildingLot> masses = layout.BuildingMasses;
             CityTerraceDistrictPlan terrace = CityTerraceDistrictPlan.ForLayout(layout);
             var obstacles = new List<Vector2[]>();
+            foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(layout).Sites)
+                obstacles.Add(kiosk.Footprint);
             foreach (BuildingLot lot in masses)
                 if (lot.HasBuilding || lot.IsCafe) obstacles.AddRange(lot.CreateCollisionPolygons());
             if (terrace.IsEnabled)

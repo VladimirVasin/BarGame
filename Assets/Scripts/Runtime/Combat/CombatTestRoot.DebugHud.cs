@@ -28,6 +28,10 @@ namespace BarPromenade
                 LocalizationService.Get(Mode == CombatTestMode.Endless ? "combat.new_run" : "combat.reset"))) ResetRound();
             if (DrawToolbarButton(canvas, CombatHudLayout.Row(panel, 230, 25, 60), "combat-menu",
                 LocalizationService.Get("combat.menu"))) ReturnToMenu();
+            if (DrawToolbarButton(canvas, CombatHudLayout.Row(panel, 6, 47, 284), "combat-coordinates",
+                (PlayerCoordinatesHud.CoordinatesEnabled ? "[X] " : "[ ] ") +
+                LocalizationService.Get("debug.player_coordinates")))
+                PlayerCoordinatesHud.CoordinatesEnabled = !PlayerCoordinatesHud.CoordinatesEnabled;
             DrawFighterHud(layout.Hero, "combat.health", Hero);
             if (Opponent.gameObject.activeInHierarchy)
                 DrawFighterHud(layout.Opponent, "combat.opponent", Opponent);

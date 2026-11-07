@@ -57,6 +57,9 @@ namespace BarPromenade
             layout.RoadWidth * .5f +
             (layout.SpatialPlan.IsCompactCoastal ? PublicSidewalkWidth - SidewalkWidth : 0f);
 
+        internal static float GetPublicSidewalkWidth(CityLayout layout, RoadEdge edge, int rightSign) =>
+            GetPublicPavement(layout).Width(edge, rightSign);
+
         private static float PavementThickness(float width) =>
             width > SidewalkWidth ? PublicPavementThickness : SidewalkHeight;
 

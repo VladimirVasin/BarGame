@@ -11,8 +11,8 @@ namespace BarPromenade
             float left = viewport.xMin + 8f, right = viewport.xMax - 8f;
             float top = viewport.yMin + 8f, bottom = viewport.yMax - 8f;
             Laboratory = new Rect(left, top, 304f, 46f);
-            Toolbar = new Rect(right - 296f, top, 296f, 46f);
-            Result = new Rect(right - 216f, top + (debug ? 52f : 0f), 216f, 46f);
+            Toolbar = new Rect(right - 296f, top, 296f, 68f);
+            Result = new Rect(right - 216f, top + (debug ? 74f : 0f), 216f, 46f);
             Help = new Rect(left, bottom - 14f, right - left, 14f);
             LaboratoryHelp = new Rect(left, bottom - (debug ? 28f : 14f), right - left, 14f);
             float metersBottom = bottom - (debug ? 18f : 0f) - (laboratory ? 16f : 0f);

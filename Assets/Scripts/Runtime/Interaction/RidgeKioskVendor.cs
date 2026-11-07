@@ -18,7 +18,9 @@ namespace BarPromenade
 
         public VillageResidentPresentation Actor { get; private set; }
         public DialogueSessionController Session { get; private set; }
-        private readonly SpeechFaceAtlasPresenter facePresenter = new SpeechFaceAtlasPresenter();
+        public string CharacterId { get; private set; }
+        public bool HasDialogue => Session != null;
+        private SpeechFaceAtlasPresenter facePresenter;
         private MaterialPropertyBlock ordinaryFace;
         private Renderer face;
         private object faceOwner;
@@ -31,29 +33,41 @@ namespace BarPromenade
         public Vector3 InteractionPosition => transform.position;
 
         public static RidgeKioskVendor Build(Transform kiosk, Transform sellerAnchor,
-            Transform talkAnchor, Transform approachAnchor)
+            Transform talkAnchor, Transform approachAnchor,
+            string characterId = DefaultNpcPopulation.RidgeKioskSeller, bool hasDialogue = true)
         {
-            var actor = DefaultNpcFactory.CreateForCharacter(kiosk, DefaultNpcPopulation.RidgeKioskSeller);
-            actor.name = "Ridge kiosk seller";
+            if (hasDialogue && characterId != DefaultNpcPopulation.RidgeKioskSeller)
+                throw new ArgumentException("Only the existing Ridge seller owns this conversation.", nameof(characterId));
+            var actor = DefaultNpcFactory.CreateForCharacter(kiosk, characterId);
+            actor.name = characterId == DefaultNpcPopulation.RidgeKioskSeller ? "Ridge kiosk seller" : "City kiosk seller";
             actor.transform.SetPositionAndRotation(sellerAnchor.position, kiosk.rotation);
             CityPortCrew.AlignWorkerModelWithPlacement(actor);
             NpcFootstepSources.Unregister(actor.transform); // The seller stays behind the counter.
 
-            Transform host = new GameObject("Talk through window").transform;
+            Transform host = new GameObject(hasDialogue ? "Talk through window" : "Silent kiosk seller").transform;
             host.SetParent(kiosk, false);
             host.position = talkAnchor.position;
-            var trigger = host.gameObject.AddComponent<SphereCollider>();
-            trigger.radius = .34f;
-            trigger.isTrigger = true;
             var seller = host.gameObject.AddComponent<RidgeKioskVendor>();
             seller.kiosk = kiosk;
             seller.approach = approachAnchor;
             seller.Actor = actor;
+            seller.CharacterId = characterId;
+            // New city sellers retain a standing idle and hand contact only.
+            // They own no speech presentation, talk target or dialogue session.
+            if (!hasDialogue)
+            {
+                seller.SamplePose();
+                return seller;
+            }
+            var trigger = host.gameObject.AddComponent<SphereCollider>();
+            trigger.radius = .34f;
+            trigger.isTrigger = true;
             seller.Session = host.gameObject.AddComponent<DialogueSessionController>();
             seller.target = RidgeKioskTarget.Attach(kiosk, host, actor.Head, approachAnchor);
             seller.face = CityPedestrianHandProps.FindSocket(actor.ModelRoot, "GEO_FaceSurface").GetComponent<Renderer>();
             seller.ordinaryFace = new MaterialPropertyBlock();
             seller.face.GetPropertyBlock(seller.ordinaryFace);
+            seller.facePresenter = new SpeechFaceAtlasPresenter();
             string atlas = actor.GetComponent<DefaultNpcAppearance>().CurrentAtlas.name;
             // The original 128-pixel face sits at the bottom right of the 512-pixel wardrobe atlas.
             if (!seller.facePresenter.Configure(seller.face, "Dialogue/Faces/Workers/" + atlas, false,
@@ -64,7 +78,7 @@ namespace BarPromenade
         }
 
         public bool CanInteract(PlayerInteractor player) =>
-            isActiveAndEnabled && player != null && player.InputEnabled &&
+            isActiveAndEnabled && HasDialogue && player != null && player.InputEnabled &&
             !Session.IsActive && !SceneTransitionService.IsTransitioning &&
             !BarMinigameModalLock.IsAnyLocked && !CounterMenuInput.IsBlockedByOtherUi() &&
             target.IsAvailable(player);
@@ -84,7 +98,7 @@ namespace BarPromenade
                 facing, ground + facing * PlayerDialogueActions.ExitPelvisFromGround);
             var staging = new DialogueStagingPlan(entry, ground + facing * PlayerDialogueActions.ActionPelvisFromGround, exit);
             Session.Begin(Conversation, staging, new DialogueParticipant(this, Actor.transform, Actor.Head,
-                DefaultNpcPopulation.RidgeKioskSeller), player, null, null);
+                CharacterId), player, null, null);
         }
 
         private void LateUpdate()
@@ -92,14 +106,16 @@ namespace BarPromenade
             if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused || Time.time < nextIdleSample) return;
             if (streetCamera == null) streetCamera = Camera.main;
             float distance = streetCamera != null ? (streetCamera.transform.position - transform.position).sqrMagnitude : 0f;
-            nextIdleSample = Time.time + (Session.IsActive || distance < 64f ? 0f : distance < 900f ? .12f : .65f);
-            if (distance < 3600f || Session.IsActive) SamplePose();
+            bool talking = Session != null && Session.IsActive;
+            nextIdleSample = Time.time + (talking || distance < 64f ? 0f : distance < 900f ? .12f : .65f);
+            if (distance < 3600f || talking) SamplePose();
         }
 
         private void SamplePose()
         {
-            Actor.ApplyIdleVariation(Time.time, false, Session.IsActive ? 1f : 0f,
-                Session.IsActive && Session.HeroHead != null ? Session.HeroHead.position : (Vector3?)null);
+            bool talking = Session != null && Session.IsActive;
+            Actor.ApplyIdleVariation(Time.time, false, talking ? 1f : 0f,
+                talking && Session.HeroHead != null ? Session.HeroHead.position : (Vector3?)null);
             // One hand rests on the rear lip. The other keeps the worker's ordinary idle.
             Actor.ApplyHandContacts(kiosk.TransformPoint(new Vector3(.24f, 1.05f, .92f)), null);
         }
@@ -108,6 +124,7 @@ namespace BarPromenade
 
         public bool TrySetSpeechFace(object owner, SpeechFacePose pose)
         {
+            if (!HasDialogue || facePresenter == null) return false;
             if (faceOwner != null && !ReferenceEquals(owner, faceOwner)) return false;
             faceOwner = owner;
             return facePresenter.Apply(pose);

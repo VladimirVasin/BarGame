@@ -1,0 +1,9 @@
+Use case: precise-object-edit
+Asset type: registered full-bleed north-up illustrated neighborhood map.
+Primary request: update the edit target with exactly two tiny street kiosk roofs and their small western forecourt aprons, following the new surveyed reference. No other geography has changed.
+Input images: Image 1 is the edit target, the existing final charcoal map. Image 2 is the exact current geometry survey, for kiosk location/footprint registration only. Do not copy its technical labels or flat colors.
+Style: retain Image 1's charcoal cartographic drawing, muted cream/brown outlines and soft dark paper texture. Preserve every existing road, building, park, river, bridge, cliff, hill switchback, pawnshop, wide stair and terrace exactly.
+Composition: exact same full-bleed bounds and aspect as Image 1 (1173 by 1341); north up, no margins, crop, rotation or perspective.
+Changes only: add a 2.5m east-west by 3m north-south kiosk roof at normalized image (u=0.627612,v=0.503345) in the Residential district, and another same tiny roof at (u=0.288060,v=0.588051) in the Industrial district. At the original pixel scale these centers are approximately (736,675) and (338,789), roofs about 5.5 by 6.6 pixels. Both customer windows face west (image left); a short modest paved apron lies immediately to their west, joining the existing sidewalk. Follow the geometry survey exactly. Keep the old Ridge kiosk at normalized (0.420709,0.929153) unchanged. The new roofs are modest small kiosks, never large houses or landmarks.
+Text: none. All Russian names, point numbers, shop glyphs, player markers and route overlays are rendered live by the game. Remove no existing geometry and add no extra details.
+Constraints: preserve all other pixels and map registration as closely as possible. Do not restyle, rearrange, simplify, enlarge the shops, invent roads, draw circles/arrows/labels/numbers or add a border/watermark.

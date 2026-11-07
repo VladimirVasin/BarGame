@@ -20,6 +20,8 @@ namespace BarPromenade
         internal CityResidentialInfillPlacement(CityLayout source)
         {
             layout = source;
+            foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(layout).Sites)
+                blocked.Add(kiosk.ReservedBounds);
             CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
             if (terraces.IsEnabled)
             {

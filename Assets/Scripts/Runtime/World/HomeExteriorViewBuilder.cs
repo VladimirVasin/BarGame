@@ -74,6 +74,7 @@ namespace BarPromenade
             BuildRoads(root, context);
             BuildBuildings(root, context);
             if (context.Layout.HasSummitHome) BuildSummitNeighborhood(root, context);
+            BuildKiosks(root, context);
             CityDistrictPointOfInterestWorldBuilder
                 .BuildHomeExterior(root, context);
             CityDecorationWorldBuilder.BuildHomeExterior(
@@ -123,8 +124,6 @@ namespace BarPromenade
             CityTerracePilotWorld.BuildHillsideShortcuts(frame, CityHillsideAccessPlan.ForLayout(context.Layout), window);
             CityHillsideSiteDetails.Build(frame, context.Layout, window);
             CityHillsideFurnitureWorld.Build(frame, context.Layout, window);
-            if (RidgeKioskSitePlan.TryCreate(context.Layout, out var ridgeKiosk) && window.Overlaps(ridgeKiosk.Bounds))
-                RidgeKioskWorld.Build(frame, ridgeKiosk, false);
             if (CityPawnshopPlan.TryCreate(context.Layout, out var pawnshop) && window.Overlaps(pawnshop.Bounds))
             {
                 CityPawnshopWorld.Build(frame, pawnshop, false);
@@ -134,6 +133,25 @@ namespace BarPromenade
             frame.SetParent(parent, false);
             frame.localPosition = PlayerHomeBalconyGeometry.ToHomeLocal(home, Vector3.zero);
             frame.localRotation = Quaternion.LookRotation(PlayerHomeBalconyGeometry.ToHomeLocalDirection(home, Vector3.forward));
+        }
+
+        private static void BuildKiosks(Transform parent, HomeExteriorContextPlan context)
+        {
+            float radius = HomeExteriorContextPlanner.ViewRadius;
+            Vector3 home = context.PlayerHome.DoorPosition;
+            var window = new Rect(home.x - radius, home.z - radius, radius * 2f, radius * 2f);
+            Transform frame = null;
+            foreach (CityKioskSitePlan site in CityKioskSites.ForLayout(context.Layout).Sites)
+            {
+                if (!window.Overlaps(site.ReservedBounds)) continue;
+                if (frame == null) frame = new GameObject("Street kiosks from home").transform;
+                RidgeKioskWorld.Build(frame, site, false);
+            }
+            if (frame == null) return;
+            frame.SetParent(parent, false);
+            frame.localPosition = PlayerHomeBalconyGeometry.ToHomeLocal(context.PlayerHome, Vector3.zero);
+            frame.localRotation = Quaternion.LookRotation(
+                PlayerHomeBalconyGeometry.ToHomeLocalDirection(context.PlayerHome, Vector3.forward));
         }
 
         private static Transform BuildHomeBusStop(

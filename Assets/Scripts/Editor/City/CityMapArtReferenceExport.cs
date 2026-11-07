@@ -207,6 +207,24 @@ namespace BarPromenade.Editor
                         new Vector2(center.x+side.x,center.z+side.z)});
                 }
             }
+            var pawnshopDescent = CityPawnshopDescentPlan.ForLayout(layout);
+            if (pawnshopDescent.IsEnabled)
+            {
+                for (int i = 0; i < pawnshopDescent.SurfacePolygons.Count; i++)
+                    Poly("pawnshop-descent:surface:" + i, "sidewalk", pawnshopDescent.SurfacePolygons[i]);
+                int stair = 0;
+                foreach (var flight in pawnshopDescent.FlightsWorld)
+                {
+                    for (int step = 0; step <= flight.StepCount; step++)
+                    {
+                        Vector3 center = flight.Start + flight.Direction * (step * flight.TreadDepth);
+                        Vector3 side = flight.Right * (flight.Width * .5f);
+                        Line("pawnshop-descent:flight:" + stair + ":step:" + step, "stairs", .12f,
+                            new[] { XZ(center - side), XZ(center + side) });
+                    }
+                    stair++;
+                }
+            }
             var rim = quarter.RavineOutline;
             if (rim.Count > 2)
             {
@@ -264,14 +282,20 @@ namespace BarPromenade.Editor
             if (laundry.IsEnabled)
                 for (int i = 0; i < laundry.BodyFootprints.Count; i++) Box("laundry:" + i, "building", laundry.BodyFootprints[i]);
             foreach (CityMapPointOfInterest place in controller.PointsOfInterest)
-                if (place.HasFootprint && place.Kind != CityMapPointOfInterestKind.Pawnshop) Box("place:" + place.StableId,
-                    place.Kind == CityMapPointOfInterestKind.RidgeKiosk ? "shop-building" : "public-ground", place.Footprint);
+                if (place.HasFootprint && place.Kind != CityMapPointOfInterestKind.Pawnshop &&
+                    place.Kind != CityMapPointOfInterestKind.RidgeKiosk)
+                    Box("place:" + place.StableId, "public-ground", place.Footprint);
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
             {
                 Poly("pawnshop:building", "shop-building", pawnshop.Footprint);
                 Poly("pawnshop:approach", "sidewalk", pawnshop.ApproachFootprint);
             }
-            if (RidgeKioskSitePlan.TryCreate(layout, out var kiosk)) Box("ridge-kiosk:apron", "promenade", kiosk.Apron);
+            foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(layout).Sites)
+            {
+                Poly(kiosk.StableId + ":building", "shop-building", kiosk.Footprint);
+                for (int i = 0; i < kiosk.ApronPolygons.Count; i++)
+                    Poly(kiosk.StableId + ":apron:" + i, "sidewalk", kiosk.ApronPolygons[i]);
+            }
             CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
             if (terraces.IsEnabled)
             {

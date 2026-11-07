@@ -39,7 +39,8 @@ namespace BarPromenade
         UpperCourtBridge = 20,
         UpperSummitBridge = 21,
         RidgeKiosk = 22,
-        Pawnshop = 23
+        Pawnshop = 23,
+        PawnshopDescent = 24
     }
 
     public readonly struct CityMapPointOfInterest
@@ -635,8 +636,14 @@ namespace BarPromenade
                 return string.Empty;
             }
 
+            CityMapPointOfInterest point = pointsOfInterest[pointOfInterestIndex];
+            if (point.Kind == CityMapPointOfInterestKind.RidgeKiosk)
+            {
+                if (point.StableId == "residential-kiosk") return LocalizationService.Get("map.poi.residential_kiosk");
+                if (point.StableId == "industrial-kiosk") return LocalizationService.Get("map.poi.industrial_kiosk");
+            }
             return TryGetPointOfInterestLocalizationKey(
-                    pointsOfInterest[pointOfInterestIndex].Kind,
+                    point.Kind,
                     out string key)
                 ? LocalizationService.Get(key)
                 : string.Empty;
@@ -961,6 +968,9 @@ namespace BarPromenade
                     return true;
                 case CityMapPointOfInterestKind.Pawnshop:
                     key = "map.poi.pawnshop";
+                    return true;
+                case CityMapPointOfInterestKind.PawnshopDescent:
+                    key = "map.poi.pawnshop_descent";
                     return true;
                 case CityMapPointOfInterestKind.Laundry:
                     key = "map.poi.laundry";
@@ -1564,12 +1574,16 @@ namespace BarPromenade
                     summit ? CityMapPointOfInterestKind.UpperSummitBridge : CityMapPointOfInterestKind.UpperCourtBridge,
                     CityDistrictKind.Residential, foot + Vector3.up * rootOffset, bridge.DeckBounds, true));
             }
-            if (RidgeKioskSitePlan.TryCreate(Layout, out var kiosk))
-                pointsOfInterest.Add(new CityMapPointOfInterest("ridge-kiosk", CityMapPointOfInterestKind.RidgeKiosk,
-                    CityDistrictKind.Residential, kiosk.Approach + Vector3.up * rootOffset, kiosk.Bounds, true));
+            foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(Layout).Sites)
+                pointsOfInterest.Add(new CityMapPointOfInterest(kiosk.StableId, CityMapPointOfInterestKind.RidgeKiosk,
+                    kiosk.District, kiosk.Approach + Vector3.up * rootOffset, kiosk.Bounds, true));
             if (CityPawnshopPlan.TryCreate(Layout, out var pawnshop))
                 pointsOfInterest.Add(new CityMapPointOfInterest("pawnshop", CityMapPointOfInterestKind.Pawnshop,
                     CityDistrictKind.Residential, pawnshop.ReturnWorld, pawnshop.Bounds, true));
+            var descent = CityPawnshopDescentPlan.ForLayout(Layout);
+            if (descent.IsEnabled)
+                pointsOfInterest.Add(new CityMapPointOfInterest("pawnshop-descent", CityMapPointOfInterestKind.PawnshopDescent,
+                    CityDistrictKind.Residential, descent.UpperArrivalWorld + Vector3.up * rootOffset));
         }
 
         private Vector3 ResolveNamedPlaceArrival(Vector3 approach)

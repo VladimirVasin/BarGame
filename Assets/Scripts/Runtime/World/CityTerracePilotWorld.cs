@@ -163,7 +163,7 @@ namespace BarPromenade
             return root;
         }
 
-        private static void BuildFlight(Transform root, CityExteriorStairFlightDescriptor flight,
+        internal static void BuildFlight(Transform root, CityExteriorStairFlightDescriptor flight,
             GameObject flightModel, GameObject supportModel, float foundationBottom, float riseScale = 1f)
         {
             Quaternion yaw = Quaternion.LookRotation(flight.Direction);
@@ -309,7 +309,7 @@ namespace BarPromenade
             BuildRailRun(root, templates["TerraceRail"], "Pitched alley rail", start - inset, end - inset);
         }
 
-        private static void BuildRailRun(Transform root, GameObject template, string name, Vector3 start, Vector3 end)
+        internal static void BuildRailRun(Transform root, GameObject template, string name, Vector3 start, Vector3 end)
         {
             Vector3 delta = end - start;
             Quaternion rotation = Quaternion.LookRotation(delta.normalized);
@@ -354,7 +354,7 @@ namespace BarPromenade
             if (placed != 3) throw new InvalidOperationException("The terrace pilot needs three existing residential prototypes.");
         }
 
-        private static void Support(GameObject template, Transform root, string name, Vector3 top, Vector2 size,
+        internal static void Support(GameObject template, Transform root, string name, Vector3 top, Vector2 size,
             float bottom = -.30f)
         {
             float depth = top.y - bottom;

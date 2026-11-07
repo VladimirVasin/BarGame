@@ -425,22 +425,23 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Two raised houses/two OpenGround,144 IDs. House11,8 sits3.84m below street,
   roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
-  Coast→Lower Court/upper housing;two seven-tier climbs join streets
-  over dry ravine. Stairs join tiers/through court/crest. Off-road earth
-  joins yards;terrain/stair plans own collision/walk/map heights. Level pockets carry
-  view benches/bins/booths;panels light entries/forecourts via
-  shadowed6.5m/130° leases,pool12/day-night. Home bench→truss/ravine/lower roofs.
+  Coast→Lower Court/upper housing;2seven-tier climbs join streets over dry ravine.
+  Stairs→tiers/through court/crest;off-road earth joins yards.
+  Level pockets:benches/bins/booths;panels→entry/forecourt,shadowed pool12/dayfloor.
+  Home bench→truss/ravine/lower roofs.
   `CityHillsideBenchPocketPlan`:pawnshop≤45mXZ;origins fixed;West11/13 face+Z/new docks.
-  Plaza/stone paths1.6m→footways. Upper landing:continuous AsphaltRoad/Concrete cue.
+  Plaza/stone paths1.6m→footways. West landing:solid AsphaltRoad/Concrete cue.
   Stair10.4m(6×.16/.36m)/warped lower landing→street grade.
-  Earth render/collider cut;landings/capsule ramp/tread probes/nav/map/Home
-  Outer lamps3.2m→docks:RidgeBench37.5/r11/soft256/pool12/dayfloor.
-  Concrete pigeon/plinth1.98m,rearward;side flowerbeds;solid/nav clear.
-  Homes share soil/wet asphalt skirts;worn turf/gravel/broken stone/shrub edge
-  03-04→Home,deciduous groups by gables. West:stepped concrete/drains;east:low
-  kerbs/grass/boot scrapers. Home patched plinth/pooled doorstep;upper poles aim
-  stairs/bridge footways;covered fixtures below. Loose rock/gravel below bridge bearings.
-  Kiosk:one warm emissive lens/two shadowed pooled lobes light seller/shelves,
+  CityPawnshopDescentPlan:Home bench→2×12 TerraceFlight(1.8/.32m),
+  derived rise/2.4m landing+pads→footway/Lane5 zebra/door.
+  Bank/quarter earth render/collider cuts;landings/capsule ramp/tread/nav/map/Home shared.
+  Outer/descent lamps:RidgeBench37.5/r11/soft256/pool12/dayfloor.
+  Pigeon/plinth1.98m,rear;side beds;solid/nav clear.
+  Homes:soil/wet asphalt skirts;worn turf/gravel/broken stone/shrub03-04→Home;
+  deciduous gable groups. W:stepped concrete/drains;E:low kerbs/grass/boot
+  scrapers. Home patched plinth/pooled doorstep;upper poles→stairs/bridge footways;
+  covered fixtures below;loose rock/gravel under bridge bearings.
+  Each kiosk:one warm emissive lens/two shadowed pooled lobes light seller/shelves,
   through-window street spill. Strong beam reaches statics;soft ordinary source
   keeps seller/dialogue hero faces/clothes. City/Home share placements.
   `10×6 m` rear wings retain padded clearance/`2.4 m` court gap. `3.6 m` through openings
@@ -1568,12 +1569,13 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   gallery, open balcony door and one lit window to its street-left; City and
   Home share the same `4.7 m` floor, door/window positions and `2.3 m` outward
   deck geometry;
-- when the opening route first reaches the City, the hero starts by the home
-  entrance on Ridge Street. A metal kiosk by 03-04 sells beer, vodka and a potato pie by gaze and E.
-  Aiming at its seller opens two optional exchanges through the window. Custom-layout
-  fallback placement remains bounded to `48 m` by traversable street distance,
-  and returning from a bar, home or supermarket interior restores that
-  entrance's own sidewalk arrival point rather than the road centerline;
+- City opening:Home/Ridge entrance;custom fallback≤48m street walk.
+  Interior returns→own sidewalk arrival,not road centre.
+  `CityKioskSites`:Ridge/lower Residential/Industrial share metal kit,
+  beer6/vodka28/potato pie5/gaze+E/atomic cash/inventory/3D receipt/cleanup.
+  Unique permanent sellers/looks/sources/map marks;only Ridge has two optional
+  exchanges,new sellers silent. Residential≥120m graded route/≥60mXZ from any bar,
+  maximises min route distance;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
 
@@ -1598,7 +1600,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Mirror/FP copy applied appearance; the inventory selects the authored portrait
   for the same stage. F9 developer selector permits exact reverse
   inspection. No gameplay decay meter or new fiction text.
-- sole `Resources/Player/Player3DV2` in ten roots;arms/portrait.
+- sole `Resources/Player/Player3DV2` in eleven roots;arms/portrait.
   Lean `1.75 m`:31 body bones/55 actions/tapered torso/male hips-two buttocks/
   slim arms/refined hands. Loose M-65/right patch; separate trousers/knee folds,
   burgundy1460 boots/ankle-ball flex.
@@ -1757,10 +1759,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   teleport anchor. Coast:mol/pier/hut/piles/barge,lighthouse dot on the north
   border at true easting; Works/Mouth/timber bridges have distinct treatments.
   Player/home-bar/home/grocery markers;POI glyphs (district lots,
-  fair/post/docks/arch/church/cafe/laundry/dog yard/terraces/kiosk/pawnshop),bounded localized legend/
+  fair/post/docks/arch/church/cafe/laundry/dog yard/terraces/kiosks/pawnshop/descent),bounded localized legend/
   selectable places. Public lots/fair use open ground,not buildings;locations come
   from validated memoised plans/port.
-  Final ImageGen charcoal sheet follows both banks/pawnshop/zebras;survey registered.
+  City:live scheme;descent made kiosk-stage ImageGen art stale,not retagged.
   Village uses the worn tourist brochure with a red-crossed resort.
   LodgeApproach arrival;no3D change. Plan/RU SHA+bounds/size guard
   stale art;other seeds/MountainRoad→schematic. City SHA excludes Village

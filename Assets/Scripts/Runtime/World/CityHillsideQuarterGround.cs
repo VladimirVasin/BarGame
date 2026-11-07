@@ -48,6 +48,7 @@ namespace BarPromenade
             }
             var mesh = CityHillsidePerimeterSurface.Build(layout, "Upper quarter saddle and dry rock cut",
                 vertices, uv, faces, rock, scree);
+            CityPawnshopBenchTerraceWorld.CutGroundMesh(layout,mesh);
             var ground = new GameObject("Shared residential hillside");
             ground.transform.SetParent(parent, false);
             ground.AddComponent<MeshFilter>().sharedMesh = mesh;

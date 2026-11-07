@@ -391,9 +391,13 @@ namespace BarPromenade
             CityHillsideQuarterGround.Build(world, layout);
             CityHillsideSiteDetails.Build(world, layout);
             CityHillsideFurnitureWorld.Build(world, layout);
-            Collider[] kioskRainShelters = Array.Empty<Collider>();
-            if (RidgeKioskSitePlan.TryCreate(layout, out var ridgeKiosk))
-                RidgeKioskWorld.Build(world, ridgeKiosk, true, out kioskRainShelters);
+            var kioskShelters = new List<Collider>(6);
+            foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(layout).Sites)
+            {
+                RidgeKioskWorld.Build(world, kiosk, true, out var shelters);
+                kioskShelters.AddRange(shelters);
+            }
+            Collider[] kioskRainShelters = kioskShelters.ToArray();
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
             {
                 CityPawnshopWorld.Build(world, pawnshop, true, out var pawnshopRainShelter);

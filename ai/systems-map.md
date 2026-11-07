@@ -78,7 +78,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City blueprint/roads | Two districts+park;144 IDs/−29.2% land; fronts/courts share ground/navigation. | `City{Layout,SpatialPlan,RoadGeometryPlan,CourtyardBlockPlanner}`, `BuildingLot` | Current |
 | Coastal utilities | Three passive buildings; bounded poles/wires clear routes; shared Home plan. | `CityCoastalInfrastructure{Plan,WorldBuilder}` | Current |
 | City elevation/stairs | Shared heights align stairs, ground and collision. | `CityElevation*`, `CityTerrainSurfacePlan` | Current |
-| Terraced City | Yards;paved/lit bench paths near pawnshop;bins/booths;bridges/stairs join homes/buses. | `CityHillside*`,`CityTerrace*` | Current |
+| Terraced City | Yards/bench paths;Home bench→pawnshop steps;bins/booths/bridges. | `CityHillside*`,`CityTerrace*`,`CityPawnshopDescent*` | Current |
 | City mountain boundary and open tunnel | `default-coastal` closes west/south around the non-traversable river cave and one gate-free `8 x 5.5 m` portal. | `CityMountainBoundary*`, `CityMountainBackdrop*` | Current |
 | Eastern mainland view | Closed post; shared road/traffic datum; skyline/glow fade beyond checkpoint. One pooled mast. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |
 | City litter | 36 Blender variants off roads; dense east/no near repeats; solids block; finite shared palette per root. | `CityLitterCatalog`, `CityLitter{Plan,Planner,WorldBuilder,Instancer}`, `CityEastLitter*` | Current |
@@ -141,7 +141,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City bus passengers | Two doors serve clear aisle paths; 10 seats, 3 standing. Remote service. Gap: fares/live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |
 | City visual diversity and collision proxies | Deterministic visual variants share simple semantic collision proxies and reusable resources. | `CityDecoration{Descriptor,Plan,Planner,Validator,WorldBuilder}`, `CityDecorationCollisionCatalog` | Current |
 | Road-edge fences | Plan-owned fences protect boundaries while preserving every validated road/waterside opening. | `RoadFence{Planner,Plan,WorldBuilder}`, `CitySurfaceDescriptor` | Current |
-| Shops | Kiosk3goods/talk;supermarket7goods. Atomic sales/3D receipts. | `RidgeKioskWorld`, `SupermarketShelfShopController`, `SupermarketPurchaseRules` | Current |
+| Shops | 3kiosks/3goods/map marks/Ridge-only talk;shop7goods. Atomic sales/3D receipts. | `CityKioskSites`, `RidgeKiosk*`, `SupermarketPurchaseRules` | Current |
 | Pawnshop | Island pavilion/secure clerk. Gap:trade stubs have no transactions. | `CityPawnshop*`, `PawnshopInterior*`, `PawnshopTradeController` | Partial |
 | Supermarket cashier | Wall checkout/decor snacks;anchored palms/light;ordinary cashier,bulging 3D face/shared rig. | `SupermarketCashier{Provider,AssetRegistry,Factory,Presentation,Actor,SurveillanceState,BlinkState,Interaction}` | Current |
 | Supermarket CCTV corner cameras | Four authored corner cameras follow the hero without gameplay surveillance. | `SupermarketInteriorAssetRegistry`, `SupermarketSecurityCamera{,WorldBuilder}` | Current |
@@ -187,11 +187,11 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Interaction/UI | Prompts/input; nearest family;locker Take > open > close > distance; look/debug local. | `PlayerInteractor`, `IPrioritizedInteractable`, `InteractionPromptView` | Current |
 | Spoken text | Translucent shared bubbles/RU vocalizer incl. E/hero; EN clicks, silent bottom; bounded jobs/pause/cleanup. | `SpeechDelivery`, `NpcSpeechBubbleView`, `NpcSpeechVoice` | Current |
 | NPC role labels | Eleven roles (east guards share one), excluding village/Mother; 6–4 m, depth occlusion, speech/modal priority. | `NpcNameplateTarget`, `NpcNameplateContext`, `NpcNameplatePolicy` | Current |
-| Debug controls | F4 busy/defeat flight;F9 day/intoxication/truck;F1/F2/F3 speed. | `DebugFreeCamera`,`MinigameDebugWindow`,`DebugTimeControls`,`HomeDebugCityMapShortcut` | Current |
+| Debug controls | F4 flight; F9 tools; F1–F3 speed. F9/F8: default-on scene/XYZ flag. | `DebugFreeCamera`, `MinigameDebugWindow`, `DebugTimeControls`, `PlayerCoordinatesHud` | Current |
 | Structured session diagnostics | 20MiB/adaptive samples/end reserve/32-action tail;CPU/cloth/ammo/carry/input/F8. | `Runtime/Diagnostics`, `DuelJournal` | Current |
 | Bar activity flavour | Legacy activity identity still selects bar flavour; the removed sprite minigames remain absent. | `BarActivityKind`, `BarActivityAssignment` | Current |
 | Area map UI | Fullscreen;scrollable place list→one plaque/line/square;large hero arrow;travel/XYZ. | `CityMap{Controller,View,AreaController,AreaView,MountainRoadOverlay,AlpineVillageOverlay}` | Current |
-| Area map art | City charcoal through streets; Village brochure; plan/RU SHA+UV guards; Road/other seeds schematic. | `{City,AlpineVillage}MapArtResources`, `CityMapArtReferenceExport`, `CityMapIllustratedLabels` | Current |
+| Area map art | City live scheme. Gap:stale descent illustration. Village brochure;Road/other seeds schematic. | `{City,AlpineVillage}MapArtResources`, `CityMapArtReferenceExport`, `CityMapIllustratedLabels` | Partial |
 | Map XYZ inspection | Map points, fair/post/docks/arch/church-door places included, expose world coordinates and validated teleport targets. | `CityMapTeleport{Lattice,Grounds}`, `CityMapPointDescriptor` | Current |
 | Map arrival ground | Area-owned ground; City lot/XYZ arrivals re-sample land Y and move occupied markers to a clear street. | `ICityMapTeleportGround`, `CityMap{City,MountainRoad}TeleportGround` | Current |
 | Scene transition | Guarded loads/cleanup; closed entrance leaves stay solid and door-action docks clear. | `PlayerDoorAction{Plan,Controller,Target}`, `ApartmentEntranceDoor`, `CityGameRoot` | Current |

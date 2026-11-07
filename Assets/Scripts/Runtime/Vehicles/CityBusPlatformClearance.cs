@@ -229,6 +229,9 @@ namespace BarPromenade
             }
         }
 
+        // Shared upstream reservation query; does not ask the bus network or final ground mask.
+        internal bool IsStaticFootprintClear(Rect rect) => IsClear(rect);
+
         private bool IsClear(Rect rect)
         {
             Vector2Int min = Cell(rect.min), max = Cell(rect.max);

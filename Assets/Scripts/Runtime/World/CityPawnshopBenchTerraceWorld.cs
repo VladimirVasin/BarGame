@@ -135,16 +135,22 @@ namespace BarPromenade
         internal static void CutGroundMesh(CityLayout layout,Mesh mesh)
         {
             var plan=CityPawnshopBenchTerracePlan.ForLayout(layout);
-            if(!plan.IsEnabled) return;
+            if(plan.IsEnabled) CutGroundMesh(mesh,plan.Footprints,plan.Bounds);
+            var descent=CityPawnshopDescentPlan.ForLayout(layout);
+            if(descent.IsEnabled) CutGroundMesh(mesh,descent.GroundCuts,descent.Bounds);
+        }
+
+        private static void CutGroundMesh(Mesh mesh,IReadOnlyList<Vector2[]> footprints,Rect bounds)
+        {
             Rect meshBounds=Rect.MinMaxRect(mesh.bounds.min.x,mesh.bounds.min.z,mesh.bounds.max.x,mesh.bounds.max.z);
-            if(!meshBounds.Overlaps(plan.Bounds)) return;
+            if(!meshBounds.Overlaps(bounds)) return;
             var positions=new List<Vector3>(mesh.vertices);var normals=new List<Vector3>(mesh.normals);
             var uv=new List<Vector2>(mesh.uv);var colors=new List<Color>(mesh.colors);
             var road=new List<Vector4>();mesh.GetUVs(GroundSurfaceCoordinates.Channel,road);
             while(colors.Count<positions.Count) colors.Add(Color.white);
             while(road.Count<positions.Count) road.Add(Vector4.zero);
             var cuts=new List<GroundSurfacePartitioner.Footprint>();
-            foreach(var polygon in plan.Footprints) cuts.Add(new GroundSurfacePartitioner.Footprint(polygon));
+            foreach(var polygon in footprints) cuts.Add(new GroundSurfacePartitioner.Footprint(polygon));
             var layers=new List<int>[mesh.subMeshCount];
             for(int slot=0;slot<layers.Length;slot++)
             {

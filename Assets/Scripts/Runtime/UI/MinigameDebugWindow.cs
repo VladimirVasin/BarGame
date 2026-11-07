@@ -413,7 +413,7 @@ namespace BarPromenade
                     RetroUiTheme.Backdrop,
                     0.92f));
 
-            Rect panel = new Rect(112f, 24f, 416f, 292f);
+            Rect panel = new Rect(112f, 24f, 416f, 312f);
             RetroUiTheme.DrawPanel(
                 panel,
                 RetroUiTheme.Panel,
@@ -446,12 +446,13 @@ namespace BarPromenade
             DrawVomitControl();
             DrawSpeedSelectionControl();
             DrawHeroCorruptionControls();
+            DrawCoordinatesControl();
             if (cannery != null) DrawCanneryTruckControl();
 
             if (!string.IsNullOrEmpty(LastLaunchErrorKey))
             {
                 GUI.Label(
-                    new Rect(132f, 283f, 376f, 20f),
+                    new Rect(132f, 307f, 376f, 20f),
                     LocalizationService.Get(LastLaunchErrorKey),
                     footerStyle);
             }
@@ -494,6 +495,20 @@ namespace BarPromenade
             if (RetroUiInput.Button(button, label, rowStyle))
             {
                 GameTimeScaleRuntime.SetDebugSpeedSelectionEnabled(!enabled);
+                RetroAudio.Play(RetroSfxId.UiMove);
+            }
+        }
+
+        private void DrawCoordinatesControl()
+        {
+            bool enabled = PlayerCoordinatesHud.CoordinatesEnabled;
+            Rect button = new Rect(132f, 276f, 376f, 24f);
+            RetroUiTheme.DrawPanel(button, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted);
+            RetroUiTheme.DrawSelection(button, enabled);
+            if (RetroUiInput.Button(button, (enabled ? "[X] " : "[ ] ") +
+                    LocalizationService.Get("debug.player_coordinates"), rowStyle))
+            {
+                PlayerCoordinatesHud.CoordinatesEnabled = !enabled;
                 RetroAudio.Play(RetroSfxId.UiMove);
             }
         }

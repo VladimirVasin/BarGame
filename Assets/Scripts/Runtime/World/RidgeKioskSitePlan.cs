@@ -6,22 +6,12 @@ namespace BarPromenade
 {
     /// <summary>One small shop on the house side of Ridge Street. The window faces the road
     /// across its own concrete apron; the public pavement remains full width.</summary>
-    public sealed class RidgeKioskSitePlan
+    public sealed class RidgeKioskSitePlan : CityKioskSitePlan
     {
         private static readonly ConditionalWeakTable<CityLayout, RidgeKioskSitePlan> Sites = new();
         private static readonly RidgeKioskSitePlan Missing = new(Vector3.zero);
-        internal const float WallHalfWidth = 1.50f, WallHalfDepth = 1.25f;
-        internal const float ApronFront = 3.40f, ApronBack = 1.23f;
-
-        public Vector3 Origin { get; }
-        public Quaternion Rotation => Quaternion.identity;
-        public Vector3 Approach => Origin + Vector3.forward * 2.22f;
-        public Rect Bounds => Rect.MinMaxRect(Origin.x - WallHalfWidth, Origin.z - WallHalfDepth,
-            Origin.x + WallHalfWidth, Origin.z + WallHalfDepth);
-        public Rect Apron => Rect.MinMaxRect(Origin.x - WallHalfWidth, Origin.z + ApronBack,
-            Origin.x + WallHalfWidth, Origin.z + ApronFront);
-
-        private RidgeKioskSitePlan(Vector3 origin) => Origin = origin;
+        private RidgeKioskSitePlan(Vector3 origin) : base("ridge-kiosk", CityDistrictKind.Residential,
+            origin, Quaternion.identity, DefaultNpcPopulation.RidgeKioskSeller, true) { }
 
         public static bool TryCreate(CityLayout layout, out RidgeKioskSitePlan site)
         {

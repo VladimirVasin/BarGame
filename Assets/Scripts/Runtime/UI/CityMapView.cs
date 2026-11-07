@@ -1710,10 +1710,25 @@ namespace BarPromenade
                     DrawLine(projection.WorldToScreen(center-side),projection.WorldToScreen(center+side),1f,GetPathColor(CityPathKind.ParkPath));
                 }
             }
-            if (RidgeKioskSitePlan.TryCreate(controller.Layout, out var kiosk))
+            foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(controller.Layout).Sites)
             {
-                DrawSolidRect(ProjectWorldRect(projection, kiosk.Bounds), ResidentialBuilding);
-                DrawSolidRect(ProjectWorldRect(projection, kiosk.Apron), PublicPlaceLand);
+                DrawGroundQuad(kiosk.Footprint,
+                    kiosk.District == CityDistrictKind.Industrial ? IndustrialBuilding : ResidentialBuilding);
+                foreach (Vector2[] apron in kiosk.ApronPolygons) DrawGroundQuad(apron, PublicPlaceLand);
+            }
+            var pawnshopDescent = CityPawnshopDescentPlan.ForLayout(controller.Layout);
+            if (pawnshopDescent.IsEnabled)
+            {
+                foreach (Vector2[] polygon in pawnshopDescent.SurfacePolygons)
+                    DrawGroundQuad(polygon, PublicPlaceLand);
+                foreach (var flight in pawnshopDescent.FlightsWorld)
+                for (int step = 0; step <= flight.StepCount; step++)
+                {
+                    Vector3 center = flight.Start + flight.Direction * (step * flight.TreadDepth);
+                    Vector3 side = flight.Right * (flight.Width * .5f);
+                    DrawLine(projection.WorldToScreen(center - side), projection.WorldToScreen(center + side),
+                        1f, GetPathColor(CityPathKind.ParkPath));
+                }
             }
             if (CityPawnshopPlan.TryCreate(controller.Layout, out var pawnshop))
             {
@@ -1725,6 +1740,15 @@ namespace BarPromenade
                 Vector2 back = projection.WorldToScreen(pawnshop.Origin - pawnshop.DoorOutward * (CityPawnshopPlan.Depth * .5f));
                 float pixelsPerMetre = projection.ScreenRect.width / (projection.MaximumX - projection.MinimumX);
                 DrawLine(front, back, CityPawnshopPlan.Width * pixelsPerMetre, ResidentialBuilding);
+            }
+            void DrawGroundQuad(Vector2[] polygon, Color color)
+            {
+                // A thick centre line preserves the rotated rectangle, unlike its axis-aligned bounds.
+                Vector2 a = Project((polygon[0] + polygon[1]) * .5f);
+                Vector2 b = Project((polygon[2] + polygon[3]) * .5f);
+                float width = Vector2.Distance(Project(polygon[0]), Project(polygon[1]));
+                DrawLine(a, b, width, color);
+                Vector2 Project(Vector2 point) => projection.WorldToScreen(new Vector3(point.x, 0f, point.y));
             }
             float metresToPixels = projection.ScreenRect.width / (projection.MaximumX - projection.MinimumX);
             float width = Mathf.Max(2f, metresToPixels * CityHillsideStreetRoute.RoadHalfWidth * 2f);
@@ -3816,6 +3840,7 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.UpperSharedCourt:
                 case CityMapPointOfInterestKind.TerraceCourts:
                 case CityMapPointOfInterestKind.TerraceShortcut:
+                case CityMapPointOfInterestKind.PawnshopDescent:
                 case CityMapPointOfInterestKind.TerraceLanding:
                 case CityMapPointOfInterestKind.TerraceLowerCourt:
                     // Three steps: the same ordinary stair silhouette on map and legend.

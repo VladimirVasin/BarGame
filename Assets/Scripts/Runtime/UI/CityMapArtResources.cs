@@ -242,6 +242,34 @@ namespace BarPromenade
                     Scalar(writer,benchTerrace.UpperLanding.Center.y);
                     foreach(Vector3 point in benchTerrace.LowerLandingTopVertices) Point(writer,point);
                 }
+                var pawnshopDescent = CityPawnshopDescentPlan.ForLayout(layout);
+                writer.Write(pawnshopDescent.IsEnabled);
+                if (pawnshopDescent.IsEnabled)
+                {
+                    writer.Write(pawnshopDescent.FlightsWorld.Count);
+                    foreach (var flight in pawnshopDescent.FlightsWorld)
+                    {
+                        Point(writer, flight.Start); Point(writer, flight.End); Scalar(writer, flight.Width);
+                        writer.Write(flight.StepCount); Scalar(writer, flight.StepRise); Scalar(writer, flight.TreadDepth);
+                    }
+                    writer.Write(pawnshopDescent.FloorsWorld.Count);
+                    foreach (var floor in pawnshopDescent.FloorsWorld)
+                    {
+                        writer.Write(floor.TopVertices.Count);
+                        foreach (Vector3 point in floor.TopVertices) Point(writer, point);
+                    }
+                    writer.Write(pawnshopDescent.ApproachLandings.Count);
+                    foreach (var approach in pawnshopDescent.ApproachLandings)
+                    {
+                        writer.Write(approach.TopVertices.Count);
+                        foreach (Vector3 point in approach.TopVertices) Point(writer, point);
+                    }
+                    writer.Write(pawnshopDescent.RouteWorld.Count);
+                    foreach (Vector3 point in pawnshopDescent.RouteWorld) Point(writer, point);
+                    writer.Write(pawnshopDescent.SurfacePolygons.Count);
+                    foreach (Vector2[] polygon in pawnshopDescent.SurfacePolygons)
+                    { writer.Write(polygon.Length); foreach (Vector2 point in polygon) Point(writer, point); }
+                }
                 if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
                     foreach (Vector2 point in pawnshop.ApproachFootprint) Point(writer, point);
                 writer.Write(benchPockets.Count);
@@ -339,6 +367,17 @@ namespace BarPromenade
                 foreach (CityRiverSegmentDescriptor segment in layout.River.Segments) RectValue(writer, segment.WaterBounds);
                 writer.Write(layout.River.Bridges.Count);
                 foreach (CityRiverBridgeDescriptor bridge in layout.River.Bridges) RectValue(writer, bridge.DeckBounds);
+                var kiosks = CityKioskSites.ForLayout(layout).Sites;
+                writer.Write(kiosks.Count);
+                foreach (CityKioskSitePlan kiosk in kiosks)
+                {
+                    writer.Write(kiosk.StableId); Point(writer, kiosk.Origin);
+                    writer.Write(kiosk.Footprint.Length);
+                    foreach (Vector2 point in kiosk.Footprint) Point(writer, point);
+                    writer.Write(kiosk.ApronPolygons.Count);
+                    foreach (Vector2[] apron in kiosk.ApronPolygons)
+                    { writer.Write(apron.Length); foreach (Vector2 point in apron) Point(writer, point); }
+                }
                 writer.Write(controller.PointsOfInterest.Count);
                 foreach (CityMapPointOfInterest point in controller.PointsOfInterest)
                 {

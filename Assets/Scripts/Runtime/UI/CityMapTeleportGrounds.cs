@@ -23,7 +23,7 @@ namespace BarPromenade
         private readonly CityTerraceDistrictPlan terraces;
         private readonly CityHillsideQuarterPlan quarter;
         private readonly List<Rect> obstacleFootprints;
-        private readonly RidgeKioskSitePlan ridgeKiosk;
+        private readonly IReadOnlyList<CityKioskSitePlan> kiosks;
         private readonly List<Vector2[]> polygonBuildingObstacles = new List<Vector2[]>();
         private RoadWalkableArea walkableArea;
 
@@ -37,12 +37,13 @@ namespace BarPromenade
             foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
                 courtyardCells.Add(block.Cell);
             obstacleFootprints = CollectObstacleFootprints(layout, courtyardCells);
-            if (RidgeKioskSitePlan.TryCreate(layout, out ridgeKiosk))
-                obstacleFootprints.Add(Expand(ridgeKiosk.Bounds, CityGroundTraversalPlanner.MaximumAgentRadius));
+            kiosks = CityKioskSites.ForLayout(layout).Sites;
+            foreach (CityKioskSitePlan kiosk in kiosks) polygonBuildingObstacles.Add(kiosk.Footprint);
             foreach (var building in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
                 polygonBuildingObstacles.AddRange(building.Lot.CreateCollisionPolygons());
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
                 polygonBuildingObstacles.Add(pawnshop.Footprint);
+            polygonBuildingObstacles.AddRange(CityPawnshopDescentPlan.ForLayout(layout).SolidPolygons);
             foreach (BuildingLot lot in layout.BuildingMasses)
                 if (lot.HasBuilding && (lot.HasFacadeRotation || courtyardCells.Contains(lot.Cell)))
                     polygonBuildingObstacles.AddRange(lot.CreateCollisionPolygons());
@@ -162,12 +163,10 @@ namespace BarPromenade
         /// </summary>
         private bool TryResolveSurfaceTop(Vector2 worldXZ, out float top)
         {
+            if(CityPawnshopDescentPlan.ForLayout(layout).TrySampleTop(worldXZ,out top)) return true;
             if(CityPawnshopBenchTerracePlan.ForLayout(layout).TrySampleTop(worldXZ,out top)) return true;
-            if (ridgeKiosk != null && ridgeKiosk.Apron.Contains(worldXZ))
-            {
-                top = ridgeKiosk.Origin.y;
-                return true;
-            }
+            foreach (CityKioskSitePlan kiosk in kiosks)
+                if (kiosk.TrySampleApronTop(worldXZ, out top)) return true;
             if (terraces.ContainsFootprint(worldXZ))
                 return terraces.TrySampleStandingTop(worldXZ, 0f, out top);
             foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)

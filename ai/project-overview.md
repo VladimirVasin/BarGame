@@ -118,7 +118,7 @@ Repair/publication: [../tools/README.md](../tools/README.md).
   Hero observes; shop stock stays. Anchored port/factory voices use local reverb via
   `CityWorkAudio`; the shared Music bus is reduced by `6 dB`.
 - Diner cast/seat/menu/shelter/light;mountain brink/car/cableway;church metric kit/light.
-  Shop:7 offers/stack9,dense stock/door;wall checkout/decor snacks;shared receipt.
+  Shop7/stack9/dense/door/wall till/decor snacks;kiosks3×3/Ridge talk/map;shared receipt.
 - Pawnshop:turn-island pavilion/separate scene,silent clerk behind grille;buy/sell stubs, no transactions.
 - Six named village neighbours; household help persists across visits.
   27 silent RU/EN inspections: props side/bokeh, paper/photos close-up.

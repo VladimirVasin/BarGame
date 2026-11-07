@@ -7,13 +7,13 @@ namespace BarPromenade
 {
     public static class RidgeKioskWorld
     {
-        public static Transform Build(Transform parent, RidgeKioskSitePlan site, bool interactive) =>
+        public static Transform Build(Transform parent, CityKioskSitePlan site, bool interactive) =>
             Build(parent, site, interactive, out _);
 
-        internal static Transform Build(Transform parent, RidgeKioskSitePlan site, bool interactive, out Collider[] rainShelters)
+        internal static Transform Build(Transform parent, CityKioskSitePlan site, bool interactive, out Collider[] rainShelters)
         {
             rainShelters = Array.Empty<Collider>();
-            var root = new GameObject("Ridge Kiosk").transform;
+            var root = new GameObject(site.IsRidge ? "Ridge Kiosk" : "Kiosk " + site.StableId).transform;
             root.SetParent(parent, false);
             root.localPosition = site.Origin;
             root.localRotation = site.Rotation;
@@ -36,7 +36,8 @@ namespace BarPromenade
                 }
 
             Transform approach = anchors["KioskApproach"];
-            RidgeKioskOffers.Build(root, anchors["KioskBeer"], anchors["KioskVodka"], anchors["KioskPie"], approach, interactive);
+            RidgeKioskOffers.Build(root, anchors["KioskBeer"], anchors["KioskVodka"], anchors["KioskPie"], approach,
+                interactive, site.StableId);
             // Direction is owned by this metre-space frame, not by the imported
             // Empty's local axes. Both City and the passive balcony share its lens.
             var lamp = new GameObject(CityNightAtmosphere.IndustrialTaskLightPrefix + "RidgeKiosk").transform;
@@ -54,7 +55,8 @@ namespace BarPromenade
             if (interactive)
             {
                 rainShelters = BuildCollision(root);
-                RidgeKioskVendor.Build(root, anchors["KioskVendor"], anchors["KioskTalk"], approach);
+                RidgeKioskVendor.Build(root, anchors["KioskVendor"], anchors["KioskTalk"], approach,
+                    site.CharacterId, site.HasDialogue);
             }
             return root;
         }

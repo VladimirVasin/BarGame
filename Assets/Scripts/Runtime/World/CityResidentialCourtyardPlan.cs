@@ -316,6 +316,8 @@ namespace BarPromenade
             internal GroupContext(CityLayout layout)
             {
                 Layout = layout; Entrances = CityResidentialEntrancePlan.ForLayout(layout);
+                foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(layout).Sites)
+                    ProtectedGround.Add(kiosk.ReservedBounds);
                 CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
                 if (terraces.IsEnabled)
                 {

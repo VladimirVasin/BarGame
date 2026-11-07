@@ -188,6 +188,7 @@ namespace BarPromenade
             registry.GetComponent<PlayerJacketCloth>()?.BindRuntime(runtime);
             registry.GetComponent<PlayerHair>()?.BindRuntime(runtime);
             if (camera != null) player.AddComponent<DebugFreeCamera>().Initialize(runtime, camera);
+            player.AddComponent<PlayerCoordinatesHud>().Initialize(promptView);
             return runtime;
         }
     }

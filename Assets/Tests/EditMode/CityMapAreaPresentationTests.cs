@@ -973,12 +973,16 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.UpperSharedCourt,
                     CityMapPointOfInterestKind.UpperCourtBridge,
                     CityMapPointOfInterestKind.UpperSummitBridge,
-                    CityMapPointOfInterestKind.RidgeKiosk
+                    CityMapPointOfInterestKind.RidgeKiosk,
+                    CityMapPointOfInterestKind.RidgeKiosk,
+                    CityMapPointOfInterestKind.RidgeKiosk,
+                    CityMapPointOfInterestKind.Pawnshop,
+                    CityMapPointOfInterestKind.PawnshopDescent
                 };
                 var expectedIds = new[]
                 {
                     "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court", "terrace-shortcut", "terrace-landing", "residential-summit", "industrial-summit", "upper-shared-court",
-                    "upper-court-bridge", "upper-summit-bridge", "ridge-kiosk"
+                    "upper-court-bridge", "upper-summit-bridge", "ridge-kiosk", "residential-kiosk", "industrial-kiosk", "pawnshop", "pawnshop-descent"
                 };
                 var expectedDistricts = new[]
                 {
@@ -999,6 +1003,10 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Industrial,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential
                 };
@@ -1040,8 +1048,18 @@ namespace BarPromenade.Tests.EditMode
                     terraceArrivals.Add(east ? CityMapPointOfInterestKind.ResidentialSummit : CityMapPointOfInterestKind.IndustrialSummit,
                         (east ? "Верхняя улица: восток" : "Верхняя улица: запад", route.SummitArrivalWorld));
                 }
-                Assert.That(RidgeKioskSitePlan.TryCreate(layout, out var kiosk), Is.True);
-                terraceArrivals.Add(CityMapPointOfInterestKind.RidgeKiosk, ("Ларёк", kiosk.Approach));
+                var kiosks = CityKioskSites.ForLayout(layout).Sites.ToDictionary(site => site.StableId);
+                var namedArrivals = new Dictionary<string, (string Label, Vector3 Floor)> {
+                    { "ridge-kiosk", ("Ларёк на Гребне", kiosks["ridge-kiosk"].Approach) },
+                    { "residential-kiosk", ("Ларёк в Жилом", kiosks["residential-kiosk"].Approach) },
+                    { "industrial-kiosk", ("Ларёк в Рабочем", kiosks["industrial-kiosk"].Approach) }
+                };
+                Assert.That(CityPawnshopPlan.TryCreate(layout, out var pawnshop), Is.True);
+                namedArrivals.Add("pawnshop", ("Ломбард",
+                    pawnshop.ReturnWorld - Vector3.up * PlayerFactory.GroundedRootOffset));
+                var descent = CityPawnshopDescentPlan.ForLayout(layout);
+                Assert.That(descent.IsEnabled, Is.True);
+                namedArrivals.Add("pawnshop-descent", ("Спуск к ломбарду", descent.UpperDock));
                 var upper = CityHillsideQuarterPlan.ForLayout(layout);
                 foreach (var bridge in upper.Bridges)
                 {
@@ -1070,8 +1088,20 @@ namespace BarPromenade.Tests.EditMode
                         place.Kind == CityMapPointOfInterestKind.UpperSummitBridge;
                     Assert.That(place.HasFootprint, Is.EqualTo(bridgePlace || place.Kind == CityMapPointOfInterestKind.Fair ||
                         place.Kind == CityMapPointOfInterestKind.Cafe || place.Kind == CityMapPointOfInterestKind.DogPark ||
-                        place.Kind == CityMapPointOfInterestKind.RidgeKiosk), context);
-                    if (place.Kind == CityMapPointOfInterestKind.RidgeKiosk) Assert.That(place.Footprint, Is.EqualTo(kiosk.Bounds));
+                        place.Kind == CityMapPointOfInterestKind.RidgeKiosk ||
+                        place.Kind == CityMapPointOfInterestKind.Pawnshop), context);
+                    if (place.Kind == CityMapPointOfInterestKind.RidgeKiosk)
+                    {
+                        CityKioskSitePlan kiosk = kiosks[place.StableId];
+                        Assert.That(place.Footprint, Is.EqualTo(kiosk.Bounds), context);
+                        Assert.That(CityRoadPolygon.Contains(kiosk.Footprint, xz), Is.False, context);
+                        Assert.That(kiosk.TrySampleApronTop(xz, out _), Is.True, context);
+                    }
+                    if (place.Kind == CityMapPointOfInterestKind.Pawnshop)
+                    {
+                        Assert.That(place.Footprint, Is.EqualTo(pawnshop.Bounds), context);
+                        Assert.That(CityRoadPolygon.Contains(pawnshop.Footprint, xz), Is.False, context);
+                    }
                     if (bridgePlace)
                         Assert.That(place.Footprint, Is.EqualTo(upper.Bridges.Single(b => b.Id ==
                             (place.Kind == CityMapPointOfInterestKind.UpperCourtBridge ? "court" : "summit")).DeckBounds));
@@ -1107,7 +1137,8 @@ namespace BarPromenade.Tests.EditMode
                         if (isDogPark) Assert.That(place.Footprint, Is.EqualTo(dogPark.Footprint), context);
                     }
                     Vector3 standing;
-                    if (terraceArrivals.TryGetValue(place.Kind, out var terraceArrival))
+                    if (terraceArrivals.TryGetValue(place.Kind, out var terraceArrival) ||
+                        namedArrivals.TryGetValue(place.StableId, out terraceArrival))
                     {
                         Vector3 expected = terraceArrival.Floor + Vector3.up * PlayerFactory.GroundedRootOffset;
                         Assert.That(label, Is.EqualTo(terraceArrival.Label), context);

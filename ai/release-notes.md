@@ -6,6 +6,18 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
+### 2026-11-07
+
+- От верхней видовой скамьи к ломбарду ведёт освещённая лестница со смотровой площадкой.
+  Мощёный боковой вход открыт;внизу — тротуар и прежняя зебра к двери.
+  Карта сейчас схематичная:прежняя иллюстрация не учитывает новый спуск.
+  LiveCity_PawnshopDescentWalksBothWaysWithSupportedStepsRailsAndMapArrivals.
+- В Жилом и Рабочем районах работают ларьки с водкой,пивом и пирожком;
+  ларёк на Гребне сохранён. Все отмечены на карте,жилой — вдали от бара.
+  Покупка/квитанция общие;продавцы отличаются лицами/одеждой,новые молчат.
+  Карта перерисована;все ларьки доступны из списка.
+  LiveCity_DistrictKiosksKeepDistinctSellersSafeApproachesAndAtomicVodkaSales.
+
 ### 2026-11-06
 
 - Ломбард/зебры/путь до двери;торговля:заглушка. Вывеска без блика/яркий зал.
@@ -13,6 +25,8 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   CityPawnshopLightingAndBenchPockets_UniformAndConnected;
   City final pawnshop map registration / fresh ImageGen bytes / terrace contract.
 - NPC обходят занятый карман/помехи без смены цели. PassingActors_AtTurnoutCornerReachDestinationsWithoutTurningBack.
+- Сцена/XYZ справа внизу; вкл.,флаг F9/полигонной F8.
+  Coordinates_DefaultOnInvariantAndPassive_AcrossPlayerReplacement.
 - Проходы:граффити/заплаты/коммуникации раздельно;плафоны→пол/стены.
   Лампы мигают независимо,соседний свет сохраняет путь.
   LiveCity_CoveredPassagesKeepUniqueDressingLightAndClearRoutes.

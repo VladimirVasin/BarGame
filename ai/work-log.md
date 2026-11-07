@@ -3,6 +3,31 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-07
+Upper Home-view bench now reaches the pawnshop through imported flights/view landing,
+outer footway and existing zebra. Paved side entry has a real guard opening;bench/tree
+stay. Bank/quarter render and collision cuts share ramp/tread/height/nav/map/passive Home
+plans;practical lenses lease the existing light pool. Existing materials/air/post owners stay.
+LiveCity_PawnshopDescentWalksBothWaysWithSupportedStepsRailsAndMapArrivals covers the
+complete walk and return,imported anchors/treads/guards,supported contacts and map arrivals;
+native upper/side day/night views reviewed.
+Descent ImageGen candidates rejected for shape/registration;accepted kiosk bitmap/metadata
+kept. Current map uses live geometry scheme/POI;no SHA retag. Fallback artifact contract.
+
+City kiosks retain Ridge and cover lower Residential/Industrial with unique permanent
+sellers,source prefixes,map marks and arrivals. Residential chooses the farthest valid
+graded route from bars;existing public footways stay clear.
+Shared beer/vodka/pie,atomic session cash/inventory purchase and common receipt/cleanup.
+Only Ridge keeps its voluntary exchanges;new vendors are silent. ActV cutoff remains
+a story contract,not implemented progression.
+Distinct faces/headwear/clothes use the global population and existing worker kit;
+Ridge's bare head/apron stay. New looks:cardigan/knit cap/scarf and work jacket/peaked cap.
+LiveCity_DistrictKiosksKeepDistinctSellersSafeApproachesAndAtomicVodkaSales covers sites,
+contacts,identity,active outfits,map selection/registration and transactions;
+native day/night/window/portrait/map frames reviewed. Kiosk-stage ImageGen sheet/provenance
+retain their earlier registered geography.
+LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
+
 ## 2026-11-06
 Pawnshop:secure clerk/Buy-Sell stubs,zebras/door path,even sign/HDR hall.
 Local aligned benches/asphalt/mirrored light/wide stair/pigeon/flowers.
@@ -11,6 +36,12 @@ Final ImageGen:City final pawnshop map registration / fresh ImageGen bytes / ter
 LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement:crosswalk yield uses capsule gap/sidewalk bay;goals retained.
 
 Corner bypass. PassingActors_AtTurnoutCornerReachDestinationsWithoutTurningBack; LiveCity_SharedStairPassesPlayerAndOpposingResidents.
+
+PlayerCoordinatesHud:default-on scene/XYZ reports;F9/rangeF8 flag;player-owned across scenes/F4,
+hidden in pause/modal/travel. Cached rounded text,bottom-right above prompts/combat;
+shared charcoal/bone UI,world/material/post unchanged.
+Coordinates_DefaultOnInvariantAndPassive_AcrossPlayerReplacement proves lifecycle/layout/locale;
+bright/dark Game View frames reviewed. check-docs/diff-check.
 
 Covered passages share seeded plans,Blender utilities/fluorescents/matte ImageGen graffiti.
 Independent occupied/vacant wall slots near/between/far mouths;paint/repairs unpaired.

@@ -2185,6 +2185,10 @@
       "value": "Выбор скорости: F1 / F2 / F3"
     },
     {
+      "key": "debug.player_coordinates",
+      "value": "Координаты игрока"
+    },
+    {
       "key": "debug.teleport.disabled",
       "value": "ТЕСТОВАЯ ТЕЛЕПОРТАЦИЯ: ВЫКЛ"
     },
@@ -4795,7 +4799,10 @@
     {"key":"bar.speech.ht23.b","value":"Я свою после стирки отвезу. В таком виде не отдам."},
     {"key":"bar.speech.ht24.a","value":"На следующей неделе опять встретимся?"},
     {"key":"bar.speech.ht24.b","value":"Да. Только в среду у меня дела."},
-    {"key":"map.poi.ridge_kiosk","value":"Ларёк"},
+    {"key":"map.poi.ridge_kiosk","value":"Ларёк на Гребне"},
+    {"key":"map.poi.residential_kiosk","value":"Ларёк в Жилом"},
+    {"key":"map.poi.industrial_kiosk","value":"Ларёк в Рабочем"},
+    {"key":"map.poi.pawnshop_descent","value":"Спуск к ломбарду"},
     {"key":"kiosk.talk.prompt","value":"E — поговорить с продавцом"},
     {"key":"kiosk.talk.pies","value":"Пирожки ещё тёплые?"},
     {"key":"kiosk.reply.pies","value":"Из середины возьми."},
