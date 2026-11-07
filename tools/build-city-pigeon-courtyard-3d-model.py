@@ -27,7 +27,15 @@ NAME = "PigeonCourtyard"
 OUT = ROOT / "Assets/Resources/City/PigeonCourtyard"
 SOURCE = ROOT / "ArtSource/City/PigeonCourtyard"
 TEXTURE = ROOT / "Assets/Resources/City/PigeonLoft/PigeonLoftSurface.png"
-ANCHORS = {"Bath": {"PerchBath": (0, .105, -.49), "BathDrink": (0, .086, -.37)}}
+PIVOTS = {"ViceHandle": (.615, .946, .46), "GrainLid": (-.29, .76, .03)}
+PARENTS = {"BathWater": "Bath", "HandLampGlass": "HandLamp",
+           "ViceHandle": "Workbench", "GrainLid": "GrainStore"}
+ANCHORS = {
+    "Bath": {"PerchBath": (0, .105, -.49), "BathDrink": (0, .086, -.37)},
+    "ViceHandle": {"ViceGrip": (.10, 0, 0)},
+    "GrainLid": {"GrainLidGripRight": (.12, .045, 0), "GrainLidGripLeft": (-.12, .045, 0),
+                 "GrainLidHandle": (0, .065, 0)},
+}
 
 
 def fence(length, gate=False, repaired=False):
@@ -84,9 +92,10 @@ def workbench():
     for z in (.145,.337):
         m.box("zinc",(.61,1.035,z),(.26,.06,.05),.003)
     m.bar("iron",(.61,.946,.30),(.61,.946,.46),.034)
-    m.bar("bare",(.48,.946,.46),(.75,.946,.46),.020)
+    handle = Assembly()
+    handle.bar("bare",(.48,.946,.46),(.75,.946,.46),.020)
     for x in (.48,.75):
-        m.disk("rust",(x,.946,.46),.015,.029,8)
+        handle.disk("rust",(x,.946,.46),.015,.029,8)
     # Galvanized mesh roll and two short frame offcuts rest on the low shelf.
     for z in (-.12,.12):
         for i in range(12):
@@ -100,7 +109,7 @@ def workbench():
               (-.37+math.cos(a)*.13,.385+math.sin(a)*.13,.15),.006,.006,0)
     m.box("bare",(.33,.285,-.12),(.50,.044,.055),.003)
     m.box("fade",(.33,.332,-.16),(.43,.045,.043),.003)
-    return m
+    return m, at_pivot(handle, PIVOTS["ViceHandle"])
 
 
 def grain_store():
@@ -109,18 +118,35 @@ def grain_store():
         m.box("tar",(x,.045,0),(.10,.09,.76),.004)
     for z in (-.30,-.15,0,.15,.30):
         m.box("bare",(0,.115,z),(1.12,.045,.13),.005)
-    m.turned("zinc",(-.29,.14,.03),[(.16,0),(.185,.025),(.19,.59),(.18,.62)],24)
+    # Preserve the outside silhouette while returning down the inner wall.
+    # The lifted lid reveals a real rim, depth and ordinary stored grain.
+    m.turned("zinc",(-.29,.14,.03),[(.16,0),(.185,.025),(.19,.59),(.18,.62),
+        (.17,.62),(.18,.59),(.175,.03),(.15,.025)],24)
+    m.turned("grain",(-.29,.55,.03),[(.165,0),(.17,.012)],24)
     for y in (.22,.42,.66):
-        m.turned("iron",(-.29,y,.03),[(.19,0),(.198,.009),(.198,.022),(.19,.029)],24)
-    m.turned("zinc",(-.29,.76,.03),[(.184,0),(.20,.012),(.20,.03),(.176,.05),(.015,.05)],24)
-    m.bar("iron",(-.36,.825,.03),(-.22,.825,.03),.017,.025)
+        ring, faces = kit.lathe([(.19,0),(.198,.009),(.198,.022),(.19,.029),
+            (.186,.029),(.186,0),(.19,0)], 24)
+        # A closed annular profile owns its underside. Lathe's generic end
+        # disks would otherwise seal the whole opening at every reinforcing band.
+        m.add("iron",kit.translated(([(x,h,z) for x,z,h in ring],faces[:-2]),(-.29,y,.03)))
+    lid = Assembly()
+    lid.turned("zinc",(-.29,.76,.03),[(.184,0),(.20,.012),(.20,.03),(.176,.05),(.015,.05)],24)
+    lid.bar("iron",(-.36,.825,.03),(-.22,.825,.03),.017,.025)
     m.box("straw",(.29,.365,-.07),(.35,.45,.36),.072)
     m.box("bare",(.29,.60,-.07),(.25,.038,.115),.015)
     # A closed sack and a spare scoop are protected beneath the loft.
     m.box("straw",(.24,.28,.27),(.37,.27,.21),.065)
     m.box("zinc",(.26,.43,.27),(.13,.016,.12),.003)
     m.bar("bare",(.26,.45,.24),(.26,.45,.43),.025,.03)
-    return m
+    return m, at_pivot(lid, PIVOTS["GrainLid"])
+
+
+def at_pivot(assembly, pivot):
+    result = Assembly()
+    offset = tuple(-value for value in pivot)
+    for surface, solid in assembly.solids:
+        result.add(surface, kit.translated(solid, offset))
+    return result
 
 
 def bath():
@@ -173,18 +199,35 @@ def hand_lamp():
 def build():
     basin, water = bath()
     lamp, glass = hand_lamp()
+    bench, handle = workbench()
+    grain, lid = grain_store()
     pieces={"FencePanel":fence(1),"FencePanelRepair":fence(1,repaired=True),"FencePost":post(),
-            "Gate":fence(1.45,gate=True),"Workbench":workbench(),"GrainStore":grain_store(),
+            "Gate":fence(1.45,gate=True),"Workbench":bench,"ViceHandle":handle,
+            "GrainStore":grain,"GrainLid":lid,
             "Bath":basin,"BathWater":water,"GravelPatch":gravel_patch(),
             "HandLamp":lamp,"HandLampGlass":glass}
     record={"design":"ridge_pigeon_courtyard_v1","units":"Unity metres; props face +Z; fences extend +X",
             "pieces":{key:loft.metrics(value) for key,value in pieces.items()},"anchors":ANCHORS,
+            "pivots": PIVOTS, "parents": PARENTS,
             "shared_material":"City/PigeonLoft/PigeonLoftSurface"}
     lamp_bounds=record["pieces"]["HandLamp"]
     assert lamp_bounds["min"]==[-.07,0,-.07] and lamp_bounds["max"]==[.07,.298,.07]
     assert record["pieces"]["Gate"]["max"][0]<1.49
     assert record["pieces"]["GrainStore"]["max"][1]<1
     assert record["pieces"]["Bath"]["max"][1]<.15
+    # The vice retains its resting topology. The bin's added inner wall and
+    # grain bed stay inside the original exterior and below the separate lid.
+    assert record["pieces"]["Workbench"]["triangles"] + record["pieces"]["ViceHandle"]["triangles"] == 1464
+    assert record["pieces"]["GrainLid"]["triangles"] == 264
+    assert record["pieces"]["GrainStore"]["triangles"] < 1900
+    for child in PIVOTS:
+        for surface, solid in pieces[child].solids:
+            restored = kit.translated(solid, PIVOTS[child])
+            assert parts.signed_volume(restored) > 0, (child, surface)
+    grain_tree = BVHTree.FromPolygons(*kit.merge_all(solid for _, solid in grain.solids))
+    for dx, dz in ((0, 0), (.08, 0), (0, .08), (-.08, -.08)):
+        hit = grain_tree.ray_cast(Vector((-.29 + dx, .90, .03 + dz)), Vector((0, -1, 0)), .6)[0]
+        assert hit is not None and abs(hit.y - .562) < .001, ("Open grain bin", hit)
     mesh=kit.merge_all(solid for _,solid in pieces["Bath"].solids)
     tree=BVHTree.FromPolygons(*mesh)
     x,y,z=ANCHORS["Bath"]["PerchBath"]
@@ -212,8 +255,10 @@ def emit(pieces,model_dir,source_dir):
     objects={}
     for name,piece in pieces.items():
         obj=loft.mesh_object(name,piece.solids,material)
-        parent_name={"BathWater":"Bath","HandLampGlass":"HandLamp"}.get(name)
+        parent_name=PARENTS.get(name)
         obj.parent=objects[parent_name] if parent_name else root
+        pivot = PIVOTS.get(name, (0, 0, 0))
+        obj.location = (pivot[0], pivot[2], pivot[1])
         objects[name]=obj
         for anchor,point in ANCHORS.get(name,{}).items():
             loft.empty(anchor,obj,point)

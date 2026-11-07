@@ -13,10 +13,16 @@
   All three FX groups reviewed:motion only;existing light/material/post owners
   unchanged. No new text,sound,lore or registry exception;story16/art9 stay.
 
-- **Accepted 2026-11-07,user — Ridge loft:** loft/6pigeons/keeper;
-  grille/bench/dim pier lamp/grain/bath;phone+dock uphill;fixed loft/map/Home.
-  Keeper21→(-23,-7)/06→loft;stairs/grip/E;sampled docks;occluded home.
-  Ordinary0–5,story6/17/art7;[24FX](city-multilevel-plan.md).
+- **Accepted 2026-11-07,user — Ridge loft:** loft6/yard/Home/map;phone+dock uphill.
+  Keeper21→(-23,-7)/06→loft,stairs/gate/E;occluded home.
+  User2026-11-08 day rail6s/grain/vice/grille/bath/sweep;lid/handle/hollow bin;
+  upper50s=20feed+4watch+25water+1settle.Ground fits final pre17/21 cycle;late seek same.
+  Local preE keeps calendar;pause/cull/tools/rig cleanup.
+  Shared speech45–75first/120–180next active s;ground cry120–180first/
+  240–360next,10–14s;20s separation.Same rig/feet/tools;no audio/camera/control/music.
+  Own wife's loss/suicidal struggle veiled as birdkeeping;§17/21 exception.
+  No methods/romantic death/crime/water/Cat/exposition;ordinary0–5;§16/art9;
+  [24FX](city-multilevel-plan.md).
 
 - **Accepted 2026-11-07,user — illuminated bus platforms:** City/Home share
   recessed neutral perimeter diffuser;4rail Spots→bench/back/waiting,pole→boarding,

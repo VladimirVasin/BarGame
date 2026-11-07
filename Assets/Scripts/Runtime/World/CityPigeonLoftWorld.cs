@@ -81,6 +81,11 @@ namespace BarPromenade
                 keeper.Initialize(root, anchors["Feeder"], anchors["Water"],
                     anchors["Scoop"], anchors["KeeperWorkAnchor"]);
                 keeper.ConfigureCommute(CityPigeonKeeperPlan.ForLayout(layout), gate);
+                Transform courtyardRoot = bath.parent;
+                keeper.ConfigureDayProps(
+                    CityPedestrianHandProps.FindSocket(courtyardRoot, "ViceHandle"),
+                    CityPedestrianHandProps.FindSocket(courtyardRoot, "GrainLid"), bath,
+                    courtyardRoot.Find("Workbench"));
                 Transform bathPerch = null, bathDrink = null;
                 foreach (Transform point in bath.GetComponentsInChildren<Transform>())
                 {

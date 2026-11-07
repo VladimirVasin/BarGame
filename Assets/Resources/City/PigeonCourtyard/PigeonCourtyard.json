@@ -67,10 +67,24 @@
       "max": [
         0.96,
         1.39464,
-        0.475
+        0.46
       ],
-      "triangles": 1464,
-      "sha256": "5e72928fc47df7f5e98408c9de713d9053a682eb98a2fe47166c6fed66a43ae0"
+      "triangles": 1380,
+      "sha256": "c3a9ff714b63646ce9925d75e8da9df7674d53e0ab101f9a4b290231c8e65e12"
+    },
+    "ViceHandle": {
+      "min": [
+        -0.15,
+        -0.0145,
+        -0.015
+      ],
+      "max": [
+        0.15,
+        0.0145,
+        0.015
+      ],
+      "triangles": 84,
+      "sha256": "317cd48eddec89204db0634d74b9ea6e4e9e2593b89f118832117ed33f5f67fa"
     },
     "GrainStore": {
       "min": [
@@ -80,11 +94,25 @@
       ],
       "max": [
         0.56,
-        0.8335,
+        0.76,
         0.43
       ],
-      "triangles": 1380,
-      "sha256": "b91ee2649a4807efbf6aea18c3803d0bcfc17e8106d8006b473acc7d82bf0a6a"
+      "triangles": 1700,
+      "sha256": "0b56a509babd0d604e698bf881d382ac642ee9c4fd5f17b9971040c498ddee46"
+    },
+    "GrainLid": {
+      "min": [
+        -0.2,
+        0.0,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        0.0735,
+        0.2
+      ],
+      "triangles": 264,
+      "sha256": "3ae0c1bf8d6007ba358ec595cfd25d20b41e670c317648fc925debe14d7280f3"
     },
     "Bath": {
       "min": [
@@ -169,7 +197,49 @@
         0.086,
         -0.37
       ]
+    },
+    "ViceHandle": {
+      "ViceGrip": [
+        0.1,
+        0,
+        0
+      ]
+    },
+    "GrainLid": {
+      "GrainLidGripRight": [
+        0.12,
+        0.045,
+        0
+      ],
+      "GrainLidGripLeft": [
+        -0.12,
+        0.045,
+        0
+      ],
+      "GrainLidHandle": [
+        0,
+        0.065,
+        0
+      ]
     }
+  },
+  "pivots": {
+    "ViceHandle": [
+      0.615,
+      0.946,
+      0.46
+    ],
+    "GrainLid": [
+      -0.29,
+      0.76,
+      0.03
+    ]
+  },
+  "parents": {
+    "BathWater": "Bath",
+    "HandLampGlass": "HandLamp",
+    "ViceHandle": "Workbench",
+    "GrainLid": "GrainStore"
   },
   "shared_material": "City/PigeonLoft/PigeonLoftSurface",
   "atlas_sha256": "e5d5c8afeb7bb0b1abc9cd79540df52f96677b3cd34fa55e61c626cc535774d4"

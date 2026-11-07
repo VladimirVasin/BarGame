@@ -135,11 +135,12 @@ LiveCity_RidgeGroundAndViewBenchesKeepSupportedWalksAndArrivals.
 
 ## Голубятня западного разворота
 
-`2026-11-07`,user loft6/keeper/grille/tools/grain/bath;phone up.
-Keeper21→home/06→work,stairs/gate grip;E both sides;occluded vestibule retirement.
-Dim pier lamp6/r8/shadow0/day≥2/3.24FX Current/shared;cost unmeasured.
-1GI/SSGI/SCGI,2SSAO(moving gate),3fog,4air,5shadows,6grade,7probes/SSR.
+`2026-11-07` loft6/yard/phone uphill;`2026-11-08` day chores/cry.
+Rail/grain/vice/grille/bath/sweep;brief upper feed/water;ground cry.
+21→home/06→loft;gate hand/E;occluded home;local preE/calendar fixed.
+Lamp6/r8/shadow0/day≥2/3;24FX Current/shared,cost unknown.
+1GI/SSGI/SCGI,2SSAO/5shadows parts,3fog,4air,6grade,7probes/SSR.
 8bath atlas,9wetness,10bevels/normals,11vertex colour0,12wind/rigid,
-13gravel contacts,14rain,15source rim,16utility outline.
-17Bloom/18DoF/19SMAA(grid)/20vignette/21grain-dither/22flares/23blur/
-24CA-distortion share City profiles;Home/map/rig/pause/cleanup.
+13gravel,14rain,15source rim,16utility outline.
+17Bloom/18DoF/19SMAA/20vignette/21grain-dither/22flares/23blur/
+24CA-distortion City;rig/pause/cleanup.

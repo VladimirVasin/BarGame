@@ -4,13 +4,15 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>The keeper works from the loft's landing. The same absolute clock
-    /// drives his hands, the real utensils, and the flock's invitation to feed.</summary>
+    /// <summary>The keeper tends the loft and its yard with the shared body rig.
+    /// Timed visits, tools and the flock's feeding invitation share one owner.</summary>
     [DefaultExecutionOrder(205)]
     [DisallowMultipleComponent]
-    public sealed class CityPigeonKeeper : MonoBehaviour
+    public sealed partial class CityPigeonKeeper : MonoBehaviour
     {
-        public const float CycleSeconds = 192f;
+        public const float CycleSeconds = 50f;
+        private const float WorkRestPhase = 192f;
+        public const float RestStandOff = .19f;
         public Transform PresentationObserver { get; set; }
         public bool AutoAdvance { get; set; } = true;
         public VillageResidentPresentation Worker { get; private set; }
@@ -130,6 +132,7 @@ namespace BarPromenade
             renderers = Worker.GetComponentsInChildren<Renderer>(true);
             visible = new bool[renderers.Length];
             for (int i = 0; i < renderers.Length; i++) visible[i] = renderers[i].enabled;
+            InitializeStablePoseCache();
             tapSound = feeder.gameObject.AddComponent<AudioSource>();
             tapSound.playOnAwake = false;
             tapSound.volume = .18f;
@@ -153,11 +156,22 @@ namespace BarPromenade
             double day = seconds % GameTimeState.RealSecondsPerGameDay;
             double morning = day - 360d / GameTimeState.GameMinutesPerRealSecond;
             double evening = day - 1020d / GameTimeState.GameMinutesPerRealSecond;
-            // Each real visit has a continuous resting entry and exit. Between
-            // the morning and evening chores the keeper watches the birds.
-            if (morning >= 0d && morning < CycleSeconds) return (float)morning;
-            if (evening >= 0d && evening < CycleSeconds) return (float)evening;
-            return CycleSeconds;
+            // Calendar visits remain anchored at dawn and late afternoon.
+            // The independent daytime circuit fills the intervals between them.
+            if (morning >= 0d && morning < CycleSeconds) return WorkPosePhase((float)morning);
+            if (evening >= 0d && evening < CycleSeconds) return WorkPosePhase((float)evening);
+            return WorkRestPhase;
+        }
+
+        // Keep the scoop's complete entry/contact/exit and the water visit.
+        // The long feeding observation, redundant deck sweep and idle tail
+        // belong to the yard circuit now, rather than holding him upstairs.
+        private static float WorkPosePhase(float elapsed)
+        {
+            if (elapsed < 20f) return elapsed;
+            if (elapsed < 24f) return 20f + (elapsed - 20f) * (35f / 4f);
+            if (elapsed < 49f) return 55f + (elapsed - 24f) * (33f / 25f);
+            return WorkRestPhase;
         }
 
         public void ApplyAt(double seconds)
@@ -170,6 +184,7 @@ namespace BarPromenade
             insideHidden = false;
             exitOpening = false;
             nextHomeVisibility = seconds;
+            ResetDayActivity(seconds);
             Sample(seconds, WorkPhase(seconds), true);
             forceRoutine = false;
         }
@@ -177,11 +192,14 @@ namespace BarPromenade
         private void LateUpdate()
         {
             if (Worker == null) return;
-            AdvanceAt(AutoAdvance ? Calendar() : lastClock);
+            AdvanceAt(AutoAdvance ? Calendar() : lastClock, AutoAdvance ? Time.deltaTime : 0f);
+            ReapplyStablePose();
         }
 
         /// <summary>Advance the ordinary calendar path, retaining blocked-gate waits.</summary>
-        public void AdvanceAt(double clock)
+        public void AdvanceAt(double clock) => AdvanceAt(clock, 0f);
+
+        public void AdvanceAt(double clock, float presentationDelta)
         {
             if (Worker == null || double.IsNaN(clock) || double.IsInfinity(clock) || clock < 0d)
                 throw new ArgumentOutOfRangeException(nameof(clock));
@@ -203,31 +221,39 @@ namespace BarPromenade
             {
                 present = show;
                 for (int i = 0; i < renderers.Length; i++) renderers[i].enabled = show && visible[i];
-                if (!show) Worker.ReleaseAnimation();
+                if (!show) { Worker.ReleaseAnimation(); heldPoseValid = false; }
             }
-            if (clock == lastClock && !changed) return;
-            float phase = WorkPhase(clock);
+            double calendarDelta = double.IsNaN(lastClock) ? 0d : Math.Max(0d, clock - lastClock);
+            float activityDelta = GameSessionState.IsGameTimeRunning ? (float)calendarDelta : presentationDelta;
+            if (activityDelta < 0f || activityDelta > .5f) activityDelta = 0f;
+            bool dayAdvanced = AdvanceDayClock(clock, activityDelta);
+            if (clock == lastClock && !changed && !dayAdvanced) return;
+            float phase = EffectiveWorkPhase(clock);
             bool close = distance < 16f * 16f;
-            if (close && !changed && clock > lastClock && clock - lastClock < .5d)
+            if (!dayActive && close && !changed && clock > lastClock && clock - lastClock < .5d)
             {
-                float previous = WorkPhase(lastClock);
-                if ((previous < 8.30f && phase >= 8.30f || previous < 9.18f && phase >= 9.18f) &&
-                    phase < 10f && Application.isPlaying)
-                {
-                    if (tapSound.clip == null)
-                        tapSound.clip = RetroAudioService.EnsureInstalled().GetClip(RetroSfxId.Clink);
-                    tapSound.Play();
-                }
+                PlayScoopTap(EffectiveWorkPhase(lastClock), phase);
             }
             sampleDelta = double.IsNaN(lastClock) ? 0d : Math.Max(0d, clock - lastClock);
             if (clock < lastClock || sampleDelta > .5d) { commuteDelay = 0d; exitOpening = false; }
             lastClock = clock;
             double interval = close ? 1d / 30d : 1d / 12d;
-            Sample(clock, phase, show && (changed || clock < lastPose || clock - lastPose >= interval));
+            Sample(clock, phase, show && (changed || clock < lastPose || clock - lastPose >= interval ||
+                dayAdvanced && DayPoseDue(interval)));
         }
 
         private static float Ease(float x, float a, float b) =>
             Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(a, b, x));
+
+        private void PlayScoopTap(float previous, float phase)
+        {
+            if ((previous < 8.30f && phase >= 8.30f || previous < 9.18f && phase >= 9.18f) &&
+                phase < 10f && Application.isPlaying)
+            {
+                if (tapSound.clip == null) tapSound.clip = RetroAudioService.EnsureInstalled().GetClip(RetroSfxId.Clink);
+                tapSound.Play();
+            }
+        }
 
         private static float Window(float phase, float start, float arrive, float leave, float finish) =>
             Ease(phase, start, arrive) - Ease(phase, leave, finish);
@@ -240,14 +266,32 @@ namespace BarPromenade
 
         private void Sample(double seconds, float phase, bool pose)
         {
-            if (CommutePlan != null && SampleCommute(seconds, pose)) return;
-            IsAtHome = IsCommuting = false;
-            IsUsingGate = gateActionActive = false;
-            insideHidden = false;
-            commuteToolsRestored = false;
-            if (bodyCollider != null) bodyCollider.enabled = true;
-            if (forceRoutine && gate != null) gate.TrySetOpenness(1f);
-            SampleWork(seconds, phase, pose);
+            if (pose) RestoreGriefAdditive();
+            try
+            {
+                if (DayActivityHoldsDeparture(seconds))
+                {
+                    commuteDelay += sampleDelta;
+                    if (SampleDayActivity(seconds, pose)) { ApplyGriefPose(pose); return; }
+                }
+                if (CommutePlan != null && SampleCommute(seconds, pose))
+                {
+                    CurrentDayTask = null;
+                    return;
+                }
+                IsAtHome = IsCommuting = false;
+                IsUsingGate = gateActionActive = false;
+                insideHidden = false;
+                commuteToolsRestored = false;
+                if (bodyCollider != null) bodyCollider.enabled = true;
+                if (forceRoutine && gate != null) gate.TrySetOpenness(1f);
+                if (SampleDayActivity(seconds, pose)) { ApplyGriefPose(pose); return; }
+                SampleWork(seconds, phase, pose);
+            }
+            finally
+            {
+                if (pose) CaptureStablePose();
+            }
         }
 
         private bool SampleCommute(double seconds, bool pose)
@@ -416,12 +460,13 @@ namespace BarPromenade
             if (reverse) direction = -direction;
             if (!forceRoutine && HeroBlocksStep(position))
             {
-                if (exitOpening) exitOpenElapsed -= (float)sampleDelta;
+                if (samplingDay) HoldDayActivity();
+                else if (exitOpening) exitOpenElapsed -= (float)sampleDelta;
                 else commuteDelay += sampleDelta;
                 if (pose)
                 {
                     lastPose = seconds;
-                    Worker.ApplyLocomotion(0f, false, (float)(seconds % 1200d), PresentationObserver.position + Vector3.up * 1.2f);
+                    Worker.ApplyLocomotion(0f, false, PresentationSeconds(seconds), PresentationObserver.position + Vector3.up * 1.2f);
                 }
                 return;
             }
@@ -429,7 +474,7 @@ namespace BarPromenade
             if (!pose) return;
             lastPose = seconds;
             float speed = CommuteSpeed * Mathf.Clamp01(Mathf.Min(t, duration - t) / ramp);
-            Worker.ApplyLocomotion(speed, false, (float)(seconds % 1200d), position + direction * 2f + Vector3.up * 1.2f);
+            Worker.ApplyLocomotion(speed, false, PresentationSeconds(seconds), position + direction * 2f + Vector3.up * 1.2f);
             HandContactError = 0f;
         }
 
@@ -478,11 +523,12 @@ namespace BarPromenade
         {
             bodyCollider.enabled = !insideHidden;
             for (int i = 0; i < renderers.Length; i++) renderers[i].enabled = !insideHidden && present && visible[i];
-            if (insideHidden) Worker.ReleaseAnimation();
+            if (insideHidden) { Worker.ReleaseAnimation(); heldPoseValid = false; }
         }
 
         private void RestoreTools()
         {
+            RestoreDayProps();
             if (tapSound != null && tapSound.isPlaying) tapSound.Stop();
             if (scoop != null) scoop.SetPositionAndRotation(scoopRest.position, scoopRest.rotation);
             if (water != null) water.SetPositionAndRotation(waterRest.position, waterRest.rotation);
@@ -501,10 +547,10 @@ namespace BarPromenade
             float sweepX = Vector3.Dot(broomRest.position - work, right);
             float sideSpeed = waterX * (Velocity(phase, 55, 59) - Velocity(phase, 84, 88)) +
                 sweepX * (Velocity(phase, 99, 104) - Velocity(phase, 130, 135));
-            float forwardSpeed = .25f * (Velocity(phase, 0, 3) - Velocity(phase, 17, 20) +
+            float forwardSpeed = RestStandOff * (Velocity(phase, 0, 3) - Velocity(phase, 17, 20) +
                 Velocity(phase, 55, 59) - Velocity(phase, 84, 88) +
                 Velocity(phase, 99, 104) - Velocity(phase, 130, 135));
-            float standOff = -.25f * (1f - feedVisit - waterVisit - sweepVisit);
+            float standOff = -RestStandOff * (1f - feedVisit - waterVisit - sweepVisit);
             Vector3 body = work + forward * standOff + right * (waterX * waterVisit + sweepX * sweepVisit);
             Quaternion heading = Quaternion.AngleAxis(Mathf.Clamp(sideSpeed * 260f, -88f, 88f), Vector3.up) * facing;
             Worker.transform.SetPositionAndRotation(body, heading);
@@ -555,7 +601,7 @@ namespace BarPromenade
             Vector3 gaze = lookingAt.position;
             if (phase >= 20 && phase < 53) gaze += right * (.55f * Mathf.Sin((phase - 20) * .27f));
             Worker.ApplyLocomotion(Mathf.Sqrt(sideSpeed * sideSpeed + forwardSpeed * forwardSpeed),
-                false, (float)(seconds % 1200d), gaze);
+                false, PresentationSeconds(seconds), gaze);
             Pose? leftHand = null, rightHand = null;
             float contact;
             HandContactError = 0f;
@@ -613,6 +659,10 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            heldPoseValid = false;
+            CancelGrief();
+            dayActive = false;
+            CurrentDayTask = null;
             RestoreTools();
             if (Worker != null) Worker.ReleaseAnimation();
             IsFeeding = false;

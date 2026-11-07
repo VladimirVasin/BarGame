@@ -4,6 +4,19 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-08
+Keeper spends daytime rounds in the yard;brief upper feed/water visits and
+short rail stops replace long landing waits. Ground chores fill the last round
+before timed returns;late loading samples that same cycle. Local preE keeps calendar.
+Vice handle and hollow grain bin lid move with the same hand rig;grille/bath/
+sweep stops share authored routes and contacts. Night commute/gate stay owned.
+More frequent shared speech veils loss/suicidal struggle as birdkeeping under
+the accepted register exception. Crying stays on safe ground chores,apart from
+speech;rig/feet/tools persist. CityPigeonLoft proves revised upper/ground tempo,
+contacts/pause/night life,speech ownership and crying cleanup.
+Animator stream writes erased held IK between samples;the bounded body-pose
+cache retains contacts on rendered frames,including pause. Native-frame views
+confirm broom/face contacts;manual camera rendering reused stale skinned vertices.
+
 Stair loss of balance can fall through shared ragdoll/rise;marked physical
 ramps retain their real normal,unmarked slopes retain the fall limit.
 Unsupported balance returned before its step/pose timers:release step/brace/

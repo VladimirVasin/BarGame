@@ -1,6 +1,13 @@
 {
   "entries": [
     {"key":"map.poi.pigeon_loft","value":"Голубятня"},
+    {"key":"city.pigeon_keeper.line.01","value":"Всё по две горсти сыплю. Одной бы хватило."},
+    {"key":"city.pigeon_keeper.line.02","value":"Она им свистела. У меня так и не выходит."},
+    {"key":"city.pigeon_keeper.line.03","value":"Здесь бы всё закрыть. Ещё не все вернулись."},
+    {"key":"city.pigeon_keeper.line.04","value":"Зерно на утро отмерил. Ладно, приду."},
+    {"key":"city.pigeon_keeper.line.05","value":"Ну, клюйте. Я постою ещё."},
+    {"key":"city.pigeon_keeper.line.06","value":"Вторую жердочку пока оставлю. Не мешает."},
+    {"key":"city.pigeon_keeper.line.07","value":"С утра вас слышно. Так бы и лежал."},
     {"key":"interaction.enter_pawnshop","value":"E — войти в ломбард"},
     {"key":"map.poi.pawnshop","value":"Ломбард"},
     {"key":"pawnshop.trade.prompt","value":"E — обратиться"},

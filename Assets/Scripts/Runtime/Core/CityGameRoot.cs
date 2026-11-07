@@ -1159,6 +1159,9 @@ namespace BarPromenade
             SpeechBubbles.Initialize(
                 camera,
                 Player.GameObject.transform);
+            var pigeonKeeper = World.Root.GetComponentInChildren<CityPigeonKeeper>(true);
+            if (pigeonKeeper != null)
+                pigeonKeeper.gameObject.AddComponent<CityPigeonKeeperSpeech>().Initialize(pigeonKeeper, SpeechBubbles);
             EastGuards = CityEastGuardWorldBuilder.Build(transform, World.EastExitPlan,
                 Player.GameObject.transform, camera, Layout.Seed);
             // The two men at the barrel and the sleeper under the arch talk

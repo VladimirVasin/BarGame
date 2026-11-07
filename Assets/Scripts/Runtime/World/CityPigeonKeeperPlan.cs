@@ -5,8 +5,8 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>The keeper's fixed address and sole route between the loft deck
-    /// and his residential vestibule. Both commutes traverse these same feet in reverse.</summary>
+    /// <summary>The keeper's fixed home, measured commute and closed work circuit.
+    /// Both commutes traverse the same foot stations in reverse.</summary>
     public sealed class CityPigeonKeeperPlan
     {
         private static readonly ConditionalWeakTable<CityLayout, CityPigeonKeeperPlan> Plans = new();
@@ -20,6 +20,7 @@ namespace BarPromenade
         public IReadOnlyList<Vector3> OutdoorRoute { get; } = Array.Empty<Vector3>();
         public IReadOnlyList<Vector3> WorkToGate { get; } = Array.Empty<Vector3>();
         public IReadOnlyList<Vector3> GateToHome { get; } = Array.Empty<Vector3>();
+        public IReadOnlyList<CityPigeonKeeperDayStop> DayStops { get; } = Array.Empty<CityPigeonKeeperDayStop>();
 
         public static CityPigeonKeeperPlan ForLayout(CityLayout layout) =>
             Plans.GetValue(layout, value => new CityPigeonKeeperPlan(value));
@@ -46,15 +47,22 @@ namespace BarPromenade
             GateOutsideStand = Earth(hinge + across * .42f + outward * .40f);
             var toGate = new List<Vector3>(27)
             {
-                LoftPoint(0f, 2f, -2.0f), LoftPoint(-2.02f, 2f, -1.75f)
+                LoftPoint(0f, 2f, -1.75f - CityPigeonKeeper.RestStandOff), LoftPoint(-2.02f, 2f, -1.75f)
             };
             // The centre of each of the twelve imported treads. Upper deck, turn
             // and bottom footing are measured independently from the rig's stride.
             for (int step = 11; step >= 0; step--)
                 toGate.Add(LoftPoint(-2.02f, (step + 1) / 6f, 1.70f - (step + .5f) * .25f));
-            for (int i = yard.WalkPath.Count - 1; i >= 1; i--) toGate.Add(yard.WalkPath[i]);
+            int firstGroundWaypoint = toGate.Count;
+            // Step clear of the bottom guard before turning north. The
+            // public path alone cuts diagonally through its last upright.
+            Vector3 stairApron = Earth(LoftPoint(-2.02f, 0f, 2.05f));
+            toGate.Add(stairApron);
+            toGate.Add(Earth(new Vector3(stairApron.x, 0f, yard.WalkPath[yard.WalkPath.Count - 2].z)));
+            for (int i = yard.WalkPath.Count - 2; i >= 1; i--) toGate.Add(yard.WalkPath[i]);
             toGate.Add(GateOutsideStand);
             WorkToGate = toGate.AsReadOnly();
+            DayStops = CityPigeonKeeperDayStop.CreateLoop(ground, loft, toGate, firstGroundWaypoint);
 
             CityHillsideStreetRoute west = null;
             foreach (var route in CityHillsideStreetPlan.ForLayout(layout).Routes)

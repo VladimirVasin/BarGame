@@ -51,7 +51,7 @@ namespace BarPromenade
             GateLeafEnd = Foot(hinge + inward * 1.55f);
             Arrival = Foot(gate + inward * 1.15f);
             Workbench = Foot(new Vector2(-146.0f, -327.60f));
-            GrainStore = Foot(new Vector2(-142.85f, -334.40f));
+            GrainStore = Foot(new Vector2(-143.25f, -334.40f));
             Bath = Foot(new Vector2(-147.25f, -336.65f));
             // Imported mesh bounds at the workbench's south-facing and store's
             // west-facing orientations. The bath's stepping stones sit off centre.
