@@ -3,10 +3,10 @@
 ## Current facts
 
 - **Accepted 2026-11-06/2026-11-07,user — bench access:** pawnshop≤45mXZ;origins fixed;west pair+Z.
-  Plaza1.6m/asphalt/flowerbeds;mirrored outer lamps3.2m/pool12. West10.4m6-step;
-  Home bench→2×12 TerraceFlight1.8m/.32m+landing2.4m→footway/zebra/door.
-  Earth cut/ramp/tread/nav/map/Home shared;2pooled lamps. Concrete
-  pigeon/plinth1.98m between benches,rearward.
+  Plaza1.6m/asphalt/flowerbeds;mirrored outer lamps3.2m;West10.4m6-step;
+  concrete pigeon/plinth1.98m between benches,rear.
+  Road→3×12→bench35.553→2×12/landing2.4m→footway/zebra/door.
+  1.8/.32m;bench spur;rails off walk;4lamps/pool12;cuts/ramp/tread/nav/map/Home.
 
 - **Accepted 2026-11-06,user — pawnshop:** west island/2zebras/2.4m path→door,face hero;
   `PawnshopInterior`/secure grille room/permanent silent clerk. Buy/Sell stubs,

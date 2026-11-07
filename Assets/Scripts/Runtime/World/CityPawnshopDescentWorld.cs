@@ -21,20 +21,29 @@ namespace BarPromenade
             FootProbeSurface.EnsureRuntimePolicy();
             foreach(var world in plan.Flights)
             {
-                var local=new CityExteriorStairFlightDescriptor(world.Id,Local(world.Start),Vector3.back,
+                // Each imported module owns its own yaw. The summit flights
+                // turn relative to the retained lower stair and its bench.
+                var flightRoot=new GameObject(world.Id).transform;flightRoot.SetParent(root,false);
+                flightRoot.localPosition=Local(world.Start);
+                flightRoot.localRotation=Quaternion.LookRotation(Quaternion.Inverse(plan.Rotation)*world.Direction);
+                var local=new CityExteriorStairFlightDescriptor(world.Id,Vector3.zero,Vector3.forward,
                     world.Width,world.StepCount,world.StepRise,world.TreadDepth,world.DropSides);
-                CityTerracePilotWorld.BuildFlight(root,local,flightModel,support,foundation,
+                CityTerracePilotWorld.BuildFlight(flightRoot,local,flightModel,support,foundation-flightRoot.localPosition.y,
                     local.StepRise/CityTerracePilotPlan.StepRise);
             }
             foreach(var landing in plan.Landings)
             {
-                Vector3 start=Local(landing.Start),end=Local(landing.End),center=(start+end)*.5f;
+                var landingRoot=new GameObject(landing.Id).transform;landingRoot.SetParent(root,false);
+                landingRoot.localPosition=Local(landing.Start);
+                landingRoot.localRotation=Quaternion.LookRotation(Quaternion.Inverse(plan.Rotation)*(landing.End-landing.Start));
+                Vector3 start=Vector3.zero,end=Vector3.forward*landing.Length,center=(start+end)*.5f;
                 var size=new Vector2(landing.Width,landing.Length);
-                CityTerracePilotWorld.Model(court,root,landing.Id,center,Quaternion.identity,
+                CityTerracePilotWorld.Model(court,landingRoot,landing.Id,center,Quaternion.identity,
                     new Vector3(size.x/CityTerracePilotPlan.CourtSize,1f,size.y/CityTerracePilotPlan.CourtSize));
-                CityTerracePilotWorld.Box(root,landing.Id+" support",center-Vector3.up*.15f,
+                CityTerracePilotWorld.Box(landingRoot,landing.Id+" support",center-Vector3.up*.15f,
                     new Vector3(size.x,.30f,size.y),Quaternion.identity);
-                CityTerracePilotWorld.Support(support,root,landing.Id+" foundation",center-Vector3.up*.30f,size,foundation);
+                CityTerracePilotWorld.Support(support,landingRoot,landing.Id+" foundation",center-Vector3.up*.30f,size,
+                    foundation-landingRoot.localPosition.y);
                 for(int side=-1;side<=1;side+=2)
                 {
                     Vector3 offset=Vector3.right*(side*(landing.Width*.5f-.06f));
@@ -42,8 +51,24 @@ namespace BarPromenade
                     // Every flight and the remaining landing edges retain guards.
                     Vector3 railStart=landing==plan.Landings[0] && side==1
                         ?start+Vector3.forward*Mathf.Min(1.2f,landing.Length):start;
-                    if(Vector3.Distance(railStart,end)>.03f)
-                        CityTerracePilotWorld.BuildRailRun(root,rail,landing.Id+" rail "+side,railStart+offset,end+offset);
+                    Vector3 railEnd=end;
+                    if(landing.Id=="Descent summit apron 0")
+                    {
+                        Vector3 forward=(landing.End-landing.Start).normalized;
+                        Vector3 worldSide=Vector3.Cross(Vector3.up,forward)*offset.x;
+                        // Both the imported guard and its collider begin beyond
+                        // the pavement. The public through sidewalk stays open.
+                        float clearRun=(plan.SummitPavementNorthEdge+.12f-landing.Start.z-worldSide.z)/forward.z;
+                        railStart=Vector3.forward*Mathf.Clamp(clearRun,0f,landing.Length);
+                    }
+                    // Open the inside of the turn, where the two apron edges
+                    // meet. Full side guards would obstruct the joined route.
+                    if(side==-1 && landing.Id=="Descent summit bench apron")
+                        railEnd-=Vector3.forward*Mathf.Min(1.2f,landing.Length);
+                    if(side==-1 && landing.Id=="Descent summit bench join")
+                        railStart+=Vector3.forward*Mathf.Min(2.4f,landing.Length);
+                    if(railEnd.z-railStart.z>.03f)
+                        CityTerracePilotWorld.BuildRailRun(landingRoot,rail,landing.Id+" rail "+side,railStart+offset,railEnd+offset);
                 }
             }
             foreach(var approach in plan.ApproachLandings)
@@ -104,15 +129,15 @@ namespace BarPromenade
         private static void BuildLights(Transform root,CityPawnshopDescentPlan plan,bool passive)
         {
             var part=CityMiscAssetProvider.LoadOrThrow().GetPartOrThrow(CityMiscKind.StreetLampShell,0,0);
-            var placements=new List<RuntimeMeshPlacement>(2);var lenses=new List<Vector3[]>(4);
+            var placements=new List<RuntimeMeshPlacement>(plan.LampFeet.Count);var lenses=new List<Vector3[]>(plan.LampFeet.Count*2);
             for(int i=0;i<plan.LampFeet.Count;i++)
             {
                 Vector3 foot=Local(plan.LampFeet[i]);
-                Vector3 target=Local(i==0?plan.StairRoute[2]:plan.StairRoute[4]);
+                Vector3 target=Local(plan.LampTargets[i]);
                 Vector3 forward=Vector3.ProjectOnPlane(target-foot,Vector3.up).normalized;
                 Quaternion rotation=Quaternion.LookRotation(forward);
                 placements.Add(new RuntimeMeshPlacement(part.Mesh,foot,rotation,Vector3.one*.64f));
-                var fixture=new GameObject(i==0?"Descent upper lamp":"Descent landing lamp").transform;
+                var fixture=new GameObject("Descent lamp "+i).transform;
                 fixture.SetParent(root,false);
                 Vector3 source=foot+Vector3.up*3.2f+forward*.6848f;
                 var anchor=new GameObject(CityHillsideBenchPocketPlan.LightAnchorName).transform;

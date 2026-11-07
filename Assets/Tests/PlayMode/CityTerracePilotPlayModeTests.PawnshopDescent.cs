@@ -43,10 +43,21 @@ namespace BarPromenade.Tests.PlayMode
                 var plan = CityPawnshopDescentPlan.ForLayout(city.Layout);
                 Assert.That(plan.IsEnabled, Is.True);
                 Assert.That(CityPawnshopDescentPlan.BenchId, Is.EqualTo(CityHillsideFurniturePlan.HomeBenchId));
-                Assert.That(plan.Flights.Count, Is.EqualTo(2));
-                Assert.That(plan.Landings.Count, Is.EqualTo(3));
-                Assert.That(plan.Landings[1].Length, Is.GreaterThanOrEqualTo(2.4f - .001f));
-                Assert.That(plan.UpperDock.y - plan.LowerDock.y, Is.InRange(3.7f, 4.3f));
+                Assert.That(plan.Flights.Count, Is.EqualTo(5));
+                Assert.That(plan.Landings.Count, Is.EqualTo(8));
+                Assert.That(plan.Landings.Single(landing => landing.Id == "Descent view landing").Length,
+                    Is.GreaterThanOrEqualTo(2.4f - .001f));
+                Assert.That(plan.UpperDock.y - plan.LowerDock.y, Is.InRange(8.2f, 8.8f));
+                var summit = CityHillsideQuarterPlan.ForLayout(city.Layout).Links.Single(link => link.Id == "summit");
+                Assert.That(summit.TrySampleTop(new Vector2(plan.UpperDock.x, plan.UpperDock.z),
+                    out float summitTop, out var summitKind), Is.True,
+                    "The upper entrance must reach the actual public street, beyond the bench pocket.");
+                Assert.That(summitKind, Is.EqualTo(CityStreetSupportKind.Sidewalk));
+                Assert.That(plan.UpperDock.y, Is.EqualTo(summitTop).Within(.001f));
+                Assert.That(plan.UpperDock.y, Is.EqualTo(40.06f).Within(.01f));
+                Assert.That(plan.UpperDock.z, Is.EqualTo(summit.NorthSidewalk[0].z + .5f).Within(.001f));
+                Assert.That(plan.UpperDock.y - plan.BenchLandingDock.y, Is.GreaterThan(4f),
+                    "The old bench landing must not stand in for the upper-road entrance.");
                 Transform world = city.World.Root.GetComponentsInChildren<Transform>()
                     .SingleOrDefault(part => part.name == "Pawnshop hillside descent");
                 Assert.That(world, Is.Not.Null);
@@ -59,7 +70,13 @@ namespace BarPromenade.Tests.PlayMode
                 foreach (Vector3 crossingPoint in crossing.WalkPath)
                     Assert.That(plan.PawnshopRoute.Any(point => Vector3.Distance(point, crossingPoint) < .02f), Is.True,
                         "The descent must reach the shop by the existing zebra, rather than cutting the road bend.");
-                Assert.That(Vector3.Distance(plan.PawnshopRoute[0], plan.BenchDock), Is.LessThan(.01f));
+                Assert.That(Vector3.Distance(plan.PawnshopRoute[0], plan.UpperDock), Is.LessThan(.01f));
+                Assert.That(Vector3.Distance(plan.BenchRoute[0], plan.BenchDock), Is.LessThan(.01f));
+                Assert.That(Vector3.Distance(plan.BenchRoute[plan.BenchRoute.Count - 1], plan.BenchLandingDock),
+                    Is.LessThan(.01f));
+                int benchLandingIndex = plan.PawnshopRoute.ToList().FindIndex(point =>
+                    Vector3.Distance(point, plan.BenchLandingDock) < .01f);
+                Assert.That(benchLandingIndex, Is.GreaterThan(0), "The full descent must retain the bench junction.");
                 Assert.That(Vector3.Distance(plan.PawnshopRoute[plan.PawnshopRoute.Count - 1] +
                     Vector3.up * PlayerFactory.GroundedRootOffset, pawnshop.ReturnWorld), Is.LessThan(.03f));
                 Assert.That(plan.RouteWorld.Any(point => Vector3.Distance(point, plan.LowerDock) < .02f), Is.True,
@@ -84,9 +101,11 @@ namespace BarPromenade.Tests.PlayMode
 
                 var mapGround = new CityMapCityTeleportGround(city.Layout);
                 AssertDescentGeometry(plan, world, motor.transform);
+                AssertSummitSidewalkClear(summit, plan, world);
                 foreach (var landing in plan.Landings)
                     AssertDescentArrival(landing.Center);
                 AssertDescentArrival(plan.UpperDock);
+                AssertDescentArrival(plan.BenchLandingDock);
                 AssertDescentArrival(plan.LowerDock);
                 var mapPoint = city.Map.PointsOfInterest.Single(point => point.StableId == "pawnshop-descent");
                 Assert.That(mapPoint.Kind, Is.EqualTo(CityMapPointOfInterestKind.PawnshopDescent));
@@ -110,30 +129,52 @@ namespace BarPromenade.Tests.PlayMode
                     $"lower={plan.LowerDock:F3} flights={plan.Flights.Count} route={plan.PawnshopRoute.Count} " +
                     $"mapFingerprint={geography} artCurrent={hasArt}");
 
-                // One initial placement selects the existing bench. The entire
-                // descent, public footway, zebra, door and return are walked.
-                motor.Teleport(plan.BenchDock + Vector3.up * PlayerFactory.GroundedRootOffset);
+                // Start along the existing sidewalk, so the walk crosses the
+                // upper-road entrance seam in both directions.
+                Vector3 summitStart = plan.UpperDock + Vector3.right * 1.2f;
+                Assert.That(summit.TrySampleTop(new Vector2(summitStart.x, summitStart.z),
+                    out float startTop, out var startKind), Is.True);
+                Assert.That(startKind, Is.EqualTo(CityStreetSupportKind.Sidewalk));
+                summitStart.y = startTop;
+                var fullRoute = new List<Vector3> { summitStart };
+                fullRoute.AddRange(plan.PawnshopRoute);
+                motor.Teleport(summitStart + Vector3.up * PlayerFactory.GroundedRootOffset);
                 Physics.SyncTransforms();
                 for (int frame = 0; frame < 5; frame++) yield return null;
                 if (capture)
                 {
-                    Vector3 eye = new Vector3(-33.6f, 35.7f, -334.9f) + Vector3.up * 1.55f;
-                    Vector3 target = plan.Landings[1].Center + Vector3.up * .3f;
+                    Vector3 eye = new Vector3(-30.3f, 41.65f, -342.8f);
+                    Vector3 target = (plan.UpperDock + plan.BenchLandingDock) * .5f + Vector3.up * .3f;
                     follow.SetFixedPose(eye, Quaternion.LookRotation(target - eye), 60f);
-                    yield return DescentPresentationAt(720, "01-upper-bench-day");
-                    yield return DescentPresentationAt(0, "02-upper-bench-night");
+                    yield return DescentPresentationAt(720, "01-upper-road-connection-day");
+                    yield return DescentPresentationAt(0, "02-upper-road-connection-night");
                     Vector3 center = (plan.UpperDock + plan.LowerDock) * .5f;
                     Vector3 side = Vector3.Cross(Vector3.up, plan.UpperDock - plan.LowerDock).normalized;
-                    eye = center + side * 9f + Vector3.up * 3.2f;
+                    eye = center + side * 18f + Vector3.up * 6f;
                     follow.SetFixedPose(eye, Quaternion.LookRotation(center + Vector3.up * .4f - eye), 60f);
                     yield return DescentPresentationAt(720, "03-stair-side-profile-day");
                     yield return DescentPresentationAt(0, "04-stair-side-profile-night");
                 }
-                yield return WalkDescent(plan.PawnshopRoute, false, "bench-to-pawnshop");
+                float sidewalkWest = Mathf.Max(summit.Bounds.xMin + .4f, plan.UpperDock.x - 2.4f);
+                var sidewalkRoute = new[] {
+                    new Vector3(sidewalkWest, summitTop, summit.NorthSidewalk[0].z),
+                    new Vector3(plan.UpperDock.x + 5f, summitTop, summit.NorthSidewalk[0].z)};
+                yield return WalkDescent(sidewalkRoute, false, "summit-sidewalk-west-to-east");
+                yield return WalkDescent(sidewalkRoute, true, "summit-sidewalk-east-to-west");
+                yield return WalkDescent(new[] { summitStart }, false, "summit-sidewalk-to-entrance");
+                yield return WalkDescent(fullRoute, false, "summit-to-pawnshop");
                 Assert.That(Vector3.Distance(motor.transform.position, pawnshop.ReturnWorld), Is.LessThan(.12f));
-                yield return WalkDescent(plan.PawnshopRoute, true, "pawnshop-to-bench");
+                yield return WalkDescent(plan.PawnshopRoute.Skip(benchLandingIndex).ToArray(), true,
+                    "pawnshop-to-bench-junction");
+                yield return WalkDescent(plan.BenchRoute, true, "junction-to-bench");
                 Assert.That(Vector3.Distance(motor.transform.position,
                     bench.Plan.EntryRootPosition), Is.LessThan(.12f));
+                yield return WalkDescent(plan.BenchRoute, false, "bench-to-junction");
+                yield return WalkDescent(fullRoute.Take(benchLandingIndex + 2).ToArray(), true,
+                    "bench-junction-to-summit");
+                Assert.That(Vector3.Distance(motor.transform.position,
+                    summitStart + Vector3.up * PlayerFactory.GroundedRootOffset), Is.LessThan(.12f),
+                    "The complete return must finish on the existing upper-road sidewalk.");
 
                 void AssertDescentArrival(Vector3 floor)
                 {
@@ -166,7 +207,17 @@ namespace BarPromenade.Tests.PlayMode
                             if (plan.ContainsFootprint(new Vector2(current.x, current.z)))
                             {
                                 Assert.That(plan.TrySampleTop(new Vector2(current.x, current.z), out float top), Is.True);
-                                Assert.That(current.y - top, Is.InRange(-.06f, .28f), stage + " lost capsule support.");
+                                if(current.y-top < -.06f || current.y-top > .28f)
+                                {
+                                    var contacts=Physics.OverlapSphere(current+Vector3.up*.1f,.45f,
+                                        Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore)
+                                        .Where(hit=>!hit.transform.IsChildOf(motor.transform))
+                                        .Select(hit=>$"{hit.name} ({hit.GetType().Name})");
+                                    Debug.Log("Descent support contacts: "+string.Join("; ",contacts));
+                                }
+                                Assert.That(current.y - top, Is.InRange(-.06f, .28f),
+                                    $"{stage} lost capsule support at {current:F4}, target={target:F4}, " +
+                                    $"station={index}, top={top:F4}, grounded={motor.IsGrounded}, flags={capsule.collisionFlags}.");
                             }
                             Assert.That(visual.LeftFootGround.HasSurface || visual.RightFootGround.HasSurface, Is.True,
                                 stage + " lost both production boot probes.");
@@ -219,12 +270,68 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        private static void AssertSummitSidewalkClear(CityHillsideQuarterLink summit,
+            CityPawnshopDescentPlan plan, Transform world)
+        {
+            int guards = 0, visibleRails = 0;
+            foreach (var guard in world.GetComponentsInChildren<BoxCollider>())
+            {
+                if (!IsRail(guard.transform) || guard.bounds.max.y <= plan.UpperDock.y + .1f) continue;
+                guards++;
+                AssertOutsidePavement(guard.transform, new Bounds(guard.center, guard.size), guard.name);
+            }
+            foreach (var mesh in world.GetComponentsInChildren<MeshFilter>())
+            {
+                if (mesh.sharedMesh == null || !IsRail(mesh.transform)) continue;
+                var renderer = mesh.GetComponent<MeshRenderer>();
+                if (renderer == null || !renderer.enabled || renderer.bounds.max.y <= plan.UpperDock.y + .1f) continue;
+                visibleRails++;
+                AssertOutsidePavement(mesh.transform, mesh.sharedMesh.bounds, mesh.name);
+            }
+            Assert.That(guards, Is.GreaterThan(0), "The summit landing must retain its outer physical guards.");
+            Assert.That(visibleRails, Is.GreaterThan(0), "The summit landing must retain visible imported rails.");
+
+            float west = Mathf.Max(summit.Bounds.xMin + .4f, plan.UpperDock.x - 2.4f);
+            float east = plan.UpperDock.x + 5f;
+            for (float z = summit.Bounds.yMax - 1.9f; z < summit.Bounds.yMax; z += .3f)
+            foreach (float height in new[] { .35f, .9f })
+            foreach (bool reverse in new[] { false, true })
+            {
+                var origin = new Vector3(reverse ? east : west, plan.UpperDock.y + height, z);
+                Assert.That(Physics.RaycastAll(origin, reverse ? Vector3.left : Vector3.right, east - west,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore).Any(hit => hit.transform.IsChildOf(world)),
+                    Is.False, "The stair must leave the whole upper sidewalk clear at " + origin);
+            }
+
+            bool IsRail(Transform part)
+            {
+                for (Transform at = part; at != null && at != world; at = at.parent)
+                    if (at.name.IndexOf("rail", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        at.name.IndexOf("guard", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                return false;
+            }
+
+            void AssertOutsidePavement(Transform part, Bounds local, string label)
+            {
+                for (int x = -1; x <= 1; x++)
+                for (int y = -1; y <= 1; y += 2)
+                for (int z = -1; z <= 1; z++)
+                {
+                    Vector3 point = part.TransformPoint(local.center + Vector3.Scale(local.extents, new Vector3(x, y, z)));
+                    if (point.y <= plan.UpperDock.y + .1f || point.z >= summit.Bounds.yMax - .01f) continue;
+                    bool pavement = summit.TrySampleTop(new Vector2(point.x, point.z), out _, out var kind) &&
+                        kind == CityStreetSupportKind.Sidewalk;
+                    Assert.That(pavement, Is.False, label + " projects onto the public upper sidewalk at " + point);
+                }
+            }
+        }
+
         private static void AssertDescentGeometry(CityPawnshopDescentPlan plan, Transform world, Transform hero)
         {
             foreach (CityExteriorStairFlightDescriptor flight in plan.Flights)
             {
                 Assert.That(flight.StepCount, Is.EqualTo(12));
-                Assert.That(flight.StepRise, Is.InRange(.15f, .18f));
+                Assert.That(flight.StepRise, Is.InRange(.12f, .18f));
                 Assert.That(flight.TreadDepth, Is.GreaterThanOrEqualTo(.28f));
                 Assert.That(flight.Width, Is.GreaterThanOrEqualTo(1.8f));
                 Transform model = world.Find(flight.Id);
@@ -235,6 +342,15 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(Vector3.Distance(upper.position, flight.End), Is.LessThan(.015f));
                 Assert.That(model.GetComponentsInChildren<MeshRenderer>().Any(renderer => renderer.enabled &&
                     renderer.GetComponent<MeshFilter>()?.sharedMesh != null), Is.True);
+                foreach (Vector3 seam in new[] { flight.Start, flight.End })
+                foreach (int sign in new[] { -1, 1 })
+                {
+                    Vector3 origin = seam + flight.Direction * (.5f * sign) + Vector3.up * .35f;
+                    Assert.That(Physics.RaycastAll(origin, flight.Direction * -sign, 1f,
+                        Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore).Any(hit =>
+                            hit.transform.IsChildOf(world) && hit.normal.y < .5f), Is.False,
+                        "An internal retaining face must not cross the clear stair seam at " + seam);
+                }
                 for (int step = 0; step < flight.StepCount; step++)
                 {
                     float run = (step + .5f) * flight.TreadDepth;

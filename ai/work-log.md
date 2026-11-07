@@ -4,13 +4,13 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-07
-Upper Home-view bench now reaches the pawnshop through imported flights/view landing,
-outer footway and existing zebra. Paved side entry has a real guard opening;bench/tree
-stay. Bank/quarter render and collision cuts share ramp/tread/height/nav/map/passive Home
-plans;practical lenses lease the existing light pool. Existing materials/air/post owners stay.
+Pawnshop stair now joins the actual summit footway; the previous route began below it at the
+Home bench. Imported upper flights and a full turning pad keep the tree/bench branch.
+Overlapping ground cuts remove native-earth seam slivers; visible/physical guards stop
+outside the public sidewalk. Shared ramp/tread/nav/map/Home plans and pooled lamps remain.
 LiveCity_PawnshopDescentWalksBothWaysWithSupportedStepsRailsAndMapArrivals covers the
-complete walk and return,imported anchors/treads/guards,supported contacts and map arrivals;
-native upper/side day/night views reviewed.
+street seam, full walk/return, bench branch, clear sidewalk both ways, imported contacts
+and map arrivals; native upper/side day/night views reviewed. Existing effects retained.
 Descent ImageGen candidates rejected for shape/registration;accepted kiosk bitmap/metadata
 kept. Current map uses live geometry scheme/POI;no SHA retag. Fallback artifact contract.
 

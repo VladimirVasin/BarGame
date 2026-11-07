@@ -430,12 +430,12 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Level pockets:benches/bins/booths;panels→entry/forecourt,shadowed pool12/dayfloor.
   Home bench→truss/ravine/lower roofs.
   `CityHillsideBenchPocketPlan`:pawnshop≤45mXZ;origins fixed;West11/13 face+Z/new docks.
-  Plaza/stone paths1.6m→footways. West landing:solid AsphaltRoad/Concrete cue.
+  Plaza/stone1.6m→footways;West landing:solid AsphaltRoad/Concrete.
   Stair10.4m(6×.16/.36m)/warped lower landing→street grade.
-  CityPawnshopDescentPlan:Home bench→2×12 TerraceFlight(1.8/.32m),
-  derived rise/2.4m landing+pads→footway/Lane5 zebra/door.
-  Bank/quarter earth render/collider cuts;landings/capsule ramp/tread/nav/map/Home shared.
-  Outer/descent lamps:RidgeBench37.5/r11/soft256/pool12/dayfloor.
+  CityPawnshopDescentPlan:40.06m→3×12(.1252/.32m),aprons→bench35.553m→
+  2×12(.166/.32m),landing2.4m→footway/Lane5 zebra/door;imported1.8m/bench branch.
+  Cuts/ramp/treads/nav/map/Home;POI at summit/stale art→scheme;walk clear.
+  Outer+4descent lamps:RidgeBench37.5/r11/soft256/pool12/dayfloor.
   Pigeon/plinth1.98m,rear;side beds;solid/nav clear.
   Homes:soil/wet asphalt skirts;worn turf/gravel/broken stone/shrub03-04→Home;
   deciduous gable groups. W:stepped concrete/drains;E:low kerbs/grass/boot
