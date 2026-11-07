@@ -479,7 +479,7 @@ namespace BarPromenade.Tests.PlayMode
         private static void LogCityVisibleLightBudget(Camera camera, string view)
         {
             Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
-            Light[] all = Object.FindObjectsByType<Light>(FindObjectsSortMode.None);
+            Light[] all = Object.FindObjectsByType<Light>();
             int permanentActive = 0, conservativeVisible = 0;
             foreach (Light light in all)
             {
