@@ -344,6 +344,58 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void StairExit_UnsupportedToppleReleasesTheStepAndPose()
+        {
+            PlayerBalanceModel model = new PlayerBalanceModel(Seed);
+            model.InjectPerturbation(new Vector2(3f, 0f));
+            model.Advance(Frame, PlayerBalanceInput.Quiet(1f));
+            Assert.That(model.Phase, Is.EqualTo(BalancePhase.Toppling));
+            Assert.That(model.StepActive, Is.True);
+            float initialLean = Mathf.Abs(model.Output.LeanRollDegrees);
+            Assert.That(initialLean, Is.GreaterThan(0f));
+
+            var unsupported = new PlayerBalanceInput(
+                1f, new Vector2(0f, 1f), 0f, 0f, false, Vector2.zero,
+                false, Vector2.zero, 1f, 1f, 0f, false, false, Vector2.zero, false);
+            model.Advance(Frame, unsupported);
+            Assert.That(model.Phase, Is.EqualTo(BalancePhase.Recovering));
+            Assert.That(model.Output.Step.Active, Is.False,
+                "A boot cannot remain planted in a recovery step without ground.");
+            for (int frame = 0; frame < 120; frame++)
+            {
+                model.Advance(Frame, unsupported);
+            }
+
+            Assert.That(model.Phase, Is.EqualTo(BalancePhase.Steady));
+            Assert.That(model.BraceWeight, Is.Zero);
+            Assert.That(Mathf.Abs(model.Output.LeanRollDegrees), Is.LessThan(initialLean * 0.01f));
+            Assert.That(model.Output.ArmReaction, Is.LessThan(0.01f));
+            Assert.That(model.LostBalance, Is.False);
+
+            model.Advance(Frame, PlayerBalanceInput.Quiet(1f, fallAllowed: false));
+            Assert.That(model.Phase, Is.EqualTo(BalancePhase.Steady),
+                "Landing must resume the stagger rather than the cancelled topple.");
+        }
+
+        [Test]
+        public void StairExit_UnsupportedLatchedFallStillBelongsToTheStatusController()
+        {
+            PlayerBalanceModel model = new PlayerBalanceModel(Seed);
+            model.ForceLoseBalance(1f);
+            var unsupported = new PlayerBalanceInput(
+                1f, Vector2.zero, 0f, 0f, false, Vector2.zero,
+                false, Vector2.zero, 1f, 1f, 0f, false, false, Vector2.zero, false);
+            for (int frame = 0; frame < 120; frame++)
+            {
+                model.Advance(Frame, unsupported);
+            }
+
+            Assert.That(model.Phase, Is.EqualTo(BalancePhase.Fallen));
+            Assert.That(model.LostBalance, Is.True,
+                "Only the status controller may consume an already latched fall.");
+        }
+
+        [Test]
         public void Grace_PreventsTheTopple()
         {
             PlayerBalanceInput input = PlayerBalanceInput.Quiet(1f);

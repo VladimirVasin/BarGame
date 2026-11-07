@@ -299,13 +299,12 @@ namespace BarPromenade
             Vector3 forward = Planar(root.forward, Vector3.forward);
             Vector3 right = Planar(root.right, Vector3.right);
 
-            SurfaceAngleDegrees = SampleSurface(out Vector3 downhill);
+            SurfaceAngleDegrees = SampleSurface(root, out Vector3 downhill, out bool supportsFall);
             bool grounded = motor.IsGrounded;
             FallAllowedNow = fallsAllowedByLevel &&
                              grounded &&
                              model.GraceSeconds <= 0f &&
-                             SurfaceAngleDegrees <=
-                             PlayerBalanceRules.MaximumBalanceSurfaceAngle;
+                             supportsFall;
 
             Vector2 velocity = ToLocal(motor.PlanarVelocity, right, forward);
             Vector2 slope = ToLocal(downhill, right, forward) *
@@ -498,11 +497,15 @@ namespace BarPromenade
             balancePresentation?.SetBalance(PlayerBalancePose.Neutral);
         }
 
-        private float SampleSurface(out Vector3 downhill)
+        internal static float SampleSurface(
+            Transform actor,
+            out Vector3 downhill,
+            out bool supportsFall)
         {
             downhill = Vector3.zero;
-            Vector3 origin = root.position +
+            Vector3 origin = actor.position +
                              Vector3.up * SurfaceProbeStartHeight;
+            RaycastHit[] surfaceHits = Hits;
             int count = Physics.RaycastNonAlloc(
                 origin,
                 Vector3.down,
@@ -510,13 +513,21 @@ namespace BarPromenade
                 SurfaceProbeDistance,
                 Physics.DefaultRaycastLayers,
                 QueryTriggerInteraction.Ignore);
+            if (count == Hits.Length)
+            {
+                // A saturated buffer cannot identify the nearest support.
+                surfaceHits = Physics.RaycastAll(origin, Vector3.down, SurfaceProbeDistance,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                count = surfaceHits.Length;
+            }
             float closest = float.PositiveInfinity;
             Vector3 normal = Vector3.up;
+            Collider support = null;
             for (int index = 0; index < count; index++)
             {
-                RaycastHit hit = Hits[index];
+                RaycastHit hit = surfaceHits[index];
                 if (hit.collider == null ||
-                    hit.collider.transform.IsChildOf(root) ||
+                    hit.collider.transform.IsChildOf(actor) ||
                     hit.normal.y <= 0.001f ||
                     hit.distance >= closest)
                 {
@@ -525,9 +536,12 @@ namespace BarPromenade
 
                 closest = hit.distance;
                 normal = hit.normal.normalized;
+                support = hit.collider;
             }
 
             float angle = Vector3.Angle(normal, Vector3.up);
+            supportsFall = angle <= PlayerBalanceRules.MaximumBalanceSurfaceAngle ||
+                           (support != null && support.TryGetComponent<StairWalkableSurface>(out _));
             if (angle > 0.5f)
             {
                 downhill = Vector3.ProjectOnPlane(normal, Vector3.up);

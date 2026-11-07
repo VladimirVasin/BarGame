@@ -53,6 +53,8 @@ namespace BarPromenade
                     MeshCollider collider = renderer.gameObject.AddComponent<MeshCollider>();
                     collider.sharedMesh = renderer.GetComponent<MeshFilter>().sharedMesh;
                     FootstepGround.Stamp(collider, part.stage == 1 ? FootstepGroundKind.Concrete : FootstepGroundKind.Metal);
+                    // Authored route chunks merge the stair ramps with their flat landings.
+                    if (part.role == "Collision") StairWalkableSurface.Stamp(collider);
                     stairColliders.Add(collider);
                     continue;
                 }

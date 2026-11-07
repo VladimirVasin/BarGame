@@ -640,8 +640,54 @@ namespace BarPromenade
 
             if (!input.Grounded || phase == BalancePhase.Fallen)
             {
-                comVelocity *= Mathf.Max(0f, 1f - 4f * h);
-                com *= Mathf.Max(0f, 1f - 4f * h);
+                float retention = Mathf.Max(0f, 1f - 4f * h);
+                comVelocity *= retention;
+                com *= retention;
+                if (phase != BalancePhase.Fallen)
+                {
+                    // Leaving a stair can briefly remove support. The
+                    // motor owns that motion; a planted recovery step
+                    // cannot keep its boot, brace and topple frozen in
+                    // mid-air, suppressing the ordinary gait forever.
+                    stepActive = false;
+                    stepDrift = Vector2.zero;
+                    stepIsLunge = false;
+                    gatherTimer = 0f;
+                    tripTimer = 0f;
+                    tripAcceleration = 0f;
+                    stanceWaitTimer = 0f;
+                    blockedTimer = 0f;
+                    wallSupport = false;
+                    RecentreFeet();
+                    leftFoot = Vector2.Lerp(DefaultLeftFoot, leftFoot, retention);
+                    rightFoot = Vector2.Lerp(DefaultRightFoot, rightFoot, retention);
+                    cop *= retention;
+                    flywheelAngle *= retention;
+                    flywheelVelocity *= retention;
+                    flywheelCommand *= retention;
+                    leanVector *= retention;
+                    leanReference *= retention;
+                    supportCentre *= retention;
+                    leanDegrees = PlayerBalanceRules.LeanDegrees(
+                        leanVector.magnitude, settings.ComHeight);
+                    instability *= retention;
+                    braceWeight = Mathf.MoveTowards(braceWeight, 0f,
+                        h / PlayerBalanceRules.BraceReleaseSeconds);
+                    if (phase == BalancePhase.Toppling)
+                    {
+                        phase = BalancePhase.Recovering;
+                        recoveringTimer = PlayerBalanceRules.RecoveringSeconds;
+                        lungesTaken = 0;
+                        toppleElapsed = 0f;
+                    }
+
+                    if (phase == BalancePhase.Recovering)
+                    {
+                        recoveringTimer = Mathf.Max(0f, recoveringTimer - h);
+                        if (recoveringTimer <= 0f) phase = BalancePhase.Steady;
+                    }
+                }
+
                 if (!stepActive)
                 {
                     RecentreFeet();

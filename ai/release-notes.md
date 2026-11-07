@@ -6,6 +6,14 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
+### 2026-11-08
+
+- Пьяный герой может упасть на лестнице. При утрате опоры спасительный шаг
+  отпускается,тело возвращается к ходьбе;отрезвление не оставляет застывшее падение.
+  Проверено:StairExit_UnsupportedToppleReleasesTheStepAndPose;
+  StairExit_LevelDropsBelowThresholdReleasesTheLatchedFallAndGait;
+  StairExit_StairRampAllowsACompleteFallAndRecovery.
+
 ### 2026-11-07
 
 - Двор голубятни/купальня/тусклая лампа;будка наверху.

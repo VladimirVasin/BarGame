@@ -64,8 +64,8 @@ namespace BarPromenade
             FootProbeSurface.EnsureRuntimePolicy();
             Vector3 delta=plan.Flight.End-plan.Flight.Start;
             Quaternion slope=Quaternion.LookRotation(delta.normalized,Vector3.up);
-            Collider("Bench stair continuous capsule support",(plan.Flight.Start+plan.Flight.End)*.5f-
-                slope*Vector3.up*.06f,new Vector3(plan.Width,.12f,delta.magnitude),slope);
+            StairWalkableSurface.Stamp(Collider("Bench stair continuous capsule support",(plan.Flight.Start+plan.Flight.End)*.5f-
+                slope*Vector3.up*.06f,new Vector3(plan.Width,.12f,delta.magnitude),slope));
             for(int side=-1;side<=1;side+=2)
                 Collider("Bench stair outer guard " + side,(plan.Flight.Start+plan.Flight.End)*.5f+
                     Vector3.up*.55f+plan.Flight.Right*(side*(plan.Width*.5f-.12f)),
@@ -122,12 +122,13 @@ namespace BarPromenade
                     retaining.Add(new[] {highA,lowA,lowB});retaining.Add(new[] {highA,lowB,highB});
                 }
             }
-            void Collider(string name,Vector3 center,Vector3 size,Quaternion rotation)
+            BoxCollider Collider(string name,Vector3 center,Vector3 size,Quaternion rotation)
             {
                 var host=new GameObject(name);host.transform.SetParent(root,false);
                 host.transform.localPosition=center;host.transform.localRotation=rotation;
-                host.AddComponent<BoxCollider>().size=size;
+                BoxCollider collider=host.AddComponent<BoxCollider>();collider.size=size;
                 FootstepGround.Stamp(host,FootstepGroundKind.Stone);
+                return collider;
             }
         }
 

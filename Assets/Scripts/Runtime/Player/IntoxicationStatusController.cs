@@ -13,7 +13,7 @@ namespace BarPromenade
     /// <see cref="PlayerBalanceController"/> runs its model continuously
     /// while the hero is on his feet; this controller tells it whether a
     /// fall is allowed (level above the threshold, grace elapsed, footing
-    /// not a stair), freezes it while a fall plays, reseeds it for the
+    /// supported by ordinary ground or stairs), freezes it while a fall plays, reseeds it for the
     /// next episode, and keeps the session's grace timer so a scene
     /// change mid-grace keeps its promise.
     /// </summary>
@@ -34,11 +34,6 @@ namespace BarPromenade
 
         /// <summary>Instability above which the hero counts as staggering.</summary>
         public const float StaggerThreshold = 0.5f;
-
-        private const float BalanceSurfaceProbeStartHeight = 0.35f;
-        private const float BalanceSurfaceProbeDistance = 1f;
-
-        private static readonly RaycastHit[] SurfaceHits = new RaycastHit[16];
 
         /// <summary>The rise model's seed is the episode's, salted.</summary>
         private const int RiseSeedSalt = 0x51AE;
@@ -499,6 +494,12 @@ namespace BarPromenade
                 sawExternalBlock = false;
                 GameSessionState.SetBalanceCheckDelay(0f);
                 balance?.SetFallsAllowedByLevel(false);
+                if (balance != null && balance.Model != null && balance.Model.LostBalance)
+                {
+                    // Balance ran before the level/recovery update and
+                    // may have latched with the previous frame's gate.
+                    balance.ResetModel();
+                }
                 return;
             }
 
@@ -554,7 +555,7 @@ namespace BarPromenade
                 !HasStableBalanceSurface())
             {
                 // Latched somewhere a fall was never allowed to play out
-                // (a stair, a slope, mid-air): stand him back up in the
+                // (a steep unwalkable slope, mid-air): stand him back up in the
                 // model and carry on staggering.
                 balance.ResetModel();
                 return;
@@ -1099,36 +1100,8 @@ namespace BarPromenade
 
         private bool HasStableBalanceSurface()
         {
-            int count = Physics.RaycastNonAlloc(
-                motor.transform.position +
-                Vector3.up * BalanceSurfaceProbeStartHeight,
-                Vector3.down,
-                SurfaceHits,
-                BalanceSurfaceProbeDistance,
-                Physics.DefaultRaycastLayers,
-                QueryTriggerInteraction.Ignore);
-            float closestDistance = float.PositiveInfinity;
-            Vector3 closestNormal = Vector3.up;
-            bool found = false;
-            for (int index = 0; index < count; index++)
-            {
-                RaycastHit hit = SurfaceHits[index];
-                if (hit.collider == null ||
-                    hit.collider.transform.IsChildOf(motor.transform) ||
-                    hit.normal.y <= 0.001f ||
-                    hit.distance >= closestDistance)
-                {
-                    continue;
-                }
-
-                found = true;
-                closestDistance = hit.distance;
-                closestNormal = hit.normal;
-            }
-
-            return !found ||
-                   Vector3.Angle(closestNormal, Vector3.up) <=
-                   PlayerBalanceRules.MaximumBalanceSurfaceAngle;
+            PlayerBalanceController.SampleSurface(motor.transform, out _, out bool supportsFall);
+            return supportsFall;
         }
 
         private void ApplyPresentation()

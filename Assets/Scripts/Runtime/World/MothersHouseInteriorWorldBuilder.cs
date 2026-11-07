@@ -541,6 +541,7 @@ namespace BarPromenade
                 flight.Width,
                 rampThickness,
                 slopeDirection.magnitude);
+            StairWalkableSurface.Stamp(collider);
             colliders.Add(collider);
             return collider;
         }

@@ -401,7 +401,9 @@ namespace BarPromenade
                 renderer.enabled = false;
             }
 
-            return ramp.GetComponent<Collider>();
+            Collider collider = ramp.GetComponent<Collider>();
+            StairWalkableSurface.Stamp(collider);
+            return collider;
         }
 
         private static void BuildLandings(

@@ -80,6 +80,7 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        private GameObject testRootObject;
         private GameObject groundObject;
         private GameObject cameraObject;
         private GameObject playerObject;
@@ -112,6 +113,7 @@ namespace BarPromenade.Tests.PlayMode
             Time.captureDeltaTime = PinnedFrameSeconds;
             ResetSession();
             GameSessionState.SetCitySeed(TestCitySeed);
+            testRootObject = new GameObject("Balance Test Root");
 
             groundObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
             groundObject.name = "Balance Test Ground";
@@ -132,7 +134,7 @@ namespace BarPromenade.Tests.PlayMode
             // capsule created exactly on the floor is depenetrated upward
             // by the first move that touches it, which reads as a climb.
             runtime = PlayerFactory.Create(
-                null,
+                testRootObject.transform,
                 Vector3.up * PlayerFactory.GroundedRootOffset,
                 camera,
                 area,
@@ -191,9 +193,9 @@ namespace BarPromenade.Tests.PlayMode
                 Object.Destroy(cameraObject);
             }
 
-            if (playerObject != null)
+            if (testRootObject != null)
             {
-                Object.Destroy(playerObject);
+                Object.Destroy(testRootObject);
             }
 
             if (groundObject != null)
@@ -870,6 +872,61 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator StairExit_LevelDropsBelowThresholdReleasesTheLatchedFallAndGait()
+        {
+            yield return Prepare(100, 0f);
+            Assert.That(status.DebugForceLoseBalance(1f), Is.True);
+            Assert.That(status.Balance.Model.Phase, Is.EqualTo(BalancePhase.Fallen));
+            GameSessionState.UpdateDrinkingProgress(60, DrinkId.Vodka, 5);
+            yield return Frames(3);
+
+            Assert.That(status.IsFalling, Is.False);
+            Assert.That(status.Balance.Model.LostBalance, Is.False);
+            Assert.That(status.Balance.Model.Phase, Is.EqualTo(BalancePhase.Steady));
+            Assert.That(presentation.BalancePose.Phase, Is.EqualTo(BalancePhase.Steady));
+            presentation.SetMotion(new PlayerMotionSample(Vector3.forward, 1f, 0f, 0f));
+            Assert.That(presentation.CurrentLocomotionState, Is.EqualTo(Player3DLocomotionState.Walk),
+                "The hero must walk again after an ineligible fall is discarded.");
+            Assert.That(motor.InputEnabled, Is.True);
+            Assert.That(GameSessionState.BalanceCheckSequence, Is.Zero,
+                "Discarding a stale latch must not consume a fall episode.");
+        }
+
+        [UnityTest]
+        public IEnumerator StairExit_StairRampAllowsACompleteFallAndRecovery()
+        {
+            yield return Prepare(100, 0f);
+            wallObject = new GameObject("Balance Test City Stair");
+            CityExteriorStairPlan plan = CityExteriorStairPlanner.CreateStraightFlight(
+                "balance-stair-exit", new Vector3(0f, 0f, -1.28f), Vector3.forward, 2.4f, 8);
+            CityExteriorStairWorldResult stair = CityExteriorStairWorldBuilder.Build(wallObject.transform, plan);
+            Assert.That(stair.RampColliders[0].GetComponent<StairWalkableSurface>(), Is.Not.Null);
+            motor.Teleport(Vector3.up * 0.94f);
+            Physics.SyncTransforms();
+            yield return WaitForGrounded();
+            for (int frame = 0; frame < 30 &&
+                 (!status.Balance.FallAllowedNow || !motor.IsGrounded); frame++)
+            {
+                yield return null;
+            }
+
+            Assert.That(status.Balance.SurfaceAngleDegrees,
+                Is.GreaterThan(PlayerBalanceRules.MaximumBalanceSurfaceAngle));
+            Assert.That(status.Balance.FallAllowedNow, Is.True,
+                $"A stair's physical ramp must allow falls without discarding its slope normal. " +
+                $"grounded={motor.IsGrounded}, root={root.position}, phase={status.Balance.Model.Phase}, " +
+                $"fall={status.BalanceStateName}, grace={status.Balance.Model.GraceSeconds}.");
+            CaptureStairPose("standing");
+            yield return RunForcedFall(1f, captureStair: true);
+
+            Assert.That(status.Balance.Model.LostBalance, Is.False);
+            Assert.That(GameSessionState.BalanceCheckSequence, Is.EqualTo(1));
+            Assert.That(presentation.BalancePose.Phase, Is.Not.EqualTo(BalancePhase.Fallen));
+            Assert.That(motor.InputEnabled, Is.True);
+            CaptureStairPose("recovered");
+        }
+
+        [UnityTest]
         public IEnumerator ForcedFall_NextEpisodeGetsAFreshSeed()
         {
             yield return Prepare(100, 0f);
@@ -904,7 +961,7 @@ namespace BarPromenade.Tests.PlayMode
         /// clock leaves alone, so the budget is a frame count large enough
         /// for a few real seconds of batch-mode frames.
         /// </summary>
-        private IEnumerator RunForcedFall(float direction)
+        private IEnumerator RunForcedFall(float direction, bool captureStair = false)
         {
             Assert.That(motor.IsGrounded, Is.True);
             Assert.That(motor.InputEnabled, Is.True);
@@ -952,6 +1009,11 @@ namespace BarPromenade.Tests.PlayMode
                    Time.realtimeSinceStartup < fallDeadline)
             {
                 yield return null;
+                if (captureStair && status.BalanceStateName == "Down")
+                {
+                    CaptureStairPose("fallen");
+                    captureStair = false;
+                }
             }
 
             Assert.That(
@@ -960,6 +1022,42 @@ namespace BarPromenade.Tests.PlayMode
                 "The fall must finish within ten real seconds " +
                 $"(state {status.BalanceStateName}).");
             Assert.That(motor.InputEnabled, Is.True);
+        }
+
+        private void CaptureStairPose(string name)
+        {
+            Camera camera = cameraObject.GetComponent<Camera>();
+            RenderTexture previousTarget = camera.targetTexture;
+            RenderTexture previousActive = RenderTexture.active;
+            var previousAmbient = RenderSettings.ambientMode;
+            Color previousLight = RenderSettings.ambientLight;
+            RenderTexture target = RenderTexture.GetTemporary(960, 540, 24);
+            var frame = new Texture2D(960, 540, TextureFormat.RGB24, false);
+            try
+            {
+                RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+                RenderSettings.ambientLight = Color.gray;
+                camera.transform.position = root.position + new Vector3(4f, 2.5f, -4f);
+                camera.transform.LookAt(root.position + Vector3.up * 0.7f);
+                camera.targetTexture = target;
+                camera.Render();
+                RenderTexture.active = target;
+                frame.ReadPixels(new Rect(0, 0, 960, 540), 0, 0);
+                frame.Apply();
+                string directory = System.IO.Path.GetFullPath(
+                    System.IO.Path.Combine(Application.dataPath, "..", "Captures", "balance-stair-exit"));
+                System.IO.Directory.CreateDirectory(directory);
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(directory, name + ".png"), frame.EncodeToPNG());
+            }
+            finally
+            {
+                camera.targetTexture = previousTarget;
+                RenderTexture.active = previousActive;
+                RenderSettings.ambientMode = previousAmbient;
+                RenderSettings.ambientLight = previousLight;
+                RenderTexture.ReleaseTemporary(target);
+                Object.Destroy(frame);
+            }
         }
 
         /// <summary>

@@ -2,6 +2,17 @@
 
 ## Current facts
 
+- **Accepted 2026-11-08,user — lost balance may cause a fall on stairs:**
+  `StairWalkableSurface` marks physical stair ramps;labyrinth route collision
+  chunks include their landings. Shared balance/status support sampling keeps
+  the real normal/downhill force and permits marked stairs above `12°`;
+  unmarked slopes retain that limit. The existing ragdoll/rise owns the fall.
+  An unsupported unlatched topple releases its step/brace/trip and decays into
+  recovery;an ineligible fall latch at level `60` or below clears without an
+  episode. No pose may remain stuck between a saved balance and a fall.
+  All three FX groups reviewed:motion only;existing light/material/post owners
+  unchanged. No new text,sound,lore or registry exception;story16/art9 stay.
+
 - **Accepted 2026-11-07,user — Ridge loft:** loft/6pigeons/keeper;
   grille/bench/dim pier lamp/grain/bath;phone+dock uphill;fixed loft/map/Home.
   Keeper21→(-23,-7)/06→loft;stairs/grip/E;sampled docks;occluded home.
@@ -3835,7 +3846,7 @@
   within the `.28 m` controller step;otherwise segmented guards follow terrain.
   Ground-ground connectors use the same predicate;signature stair footprints
   are the explicit guarded-cut exception. Player contacts raycast the live
-  normal;balance cannot start above`12°`,preventing unsupported stair falls.
+  normal;physical stair support is explicitly marked for the balance owner.
 - **Accepted — Data-driven indexed walkable mask:** Player motion is
   constrained to a spatially indexed union of XZ streets, park lawn,
   blueprint `OpenLand` and the complete logical `BuildableGround` regions.
@@ -7715,47 +7726,31 @@
   supersedes the rigid torso skin and 13-body count, without changing hero
   silhouette, costume, contextual ownership or world meaning.
 - **Accepted and implemented 2026-09-03 — the drunk hero is a continuous
-  balance model, not a scheduled check; feet are solved onto the ground:** the
-  modal arrow challenge (`BalanceChallengeModel`, `BalanceCheckView`, its
-  interval schedule and `BarMinigameModalLockOptions.BalanceCheck` capture at
-  the check) is removed by the user's decision. `PlayerBalanceModel` is a pure,
-  seeded, fixed-step (`1/120 s`) linear inverted pendulum in the hero's frame:
-  seeded sways and filtered noise scaled by the level push the centre of mass,
-  the centre of pressure chases the capture point with a level-dependent delay,
-  A/D shifts it toward the pressed side (leaning into the fall is the
-  recovery, and tank yaw is scaled down while unstable so the recovery does not
-  spin him), a capture point outside the two boots' polygon plans a recovery
-  step past it, a wall within reach on the tipping side becomes support once
-  the hand holds it, and a kerb under the swinging boot is a forward trip.
-  Sober is bit-exactly inert. The model's drift moves the CAPSULE: `PlayerMotor`
-  carries it as a second `Move` through the same `IWalkableArea` constraint and
-  never folds it into the player's own momentum, so the capsule, the camera and
-  the body cannot disagree and a wall that stops the drift cannot fling him.
-  `IntoxicationStatusController` keeps the Fall clip -> ragdoll -> Rise pipeline
-  unchanged and starts it only when the model latches a fall above level `60`,
-  after the session's grace, grounded and on a surface under `12°`; on a stair
-  the model is pinned to the recoverable polygon and only staggers.
-  `GameSessionState.BalanceCheckDelayRemaining` now means the grace before
-  balance can be lost again and `BalanceCheckSequence` the episode counter, so
-  the session format is unchanged. Feet: `Player3DProceduralLocomotionLayer`
-  is the one late bone writer after the clip — restore, lean, per-foot heel/toe
-  probes (`Physics.DefaultRaycastLayers`, triggers accepted only on the
-  `FootProbe` layer), pelvis to the lower boot (run-released), `LimbTwoBoneIk`
-  per leg (the seated-arm solver moved out of `SeatedArmIk` and given an
-  analytic law-of-cosines pre-bend, because CCD aims but cannot shorten a
-  nearly straight leg), stance-foot locks during recovery steps, and the wall
-  hand. Stair treads in the stairwell and the city exterior stairs are
-  render-only boxes over a hidden ramp, so each tread now also carries a
-  raycast-only TRIGGER `BoxCollider` on the `FootProbe` layer (user layer 10):
-  the physics matrix hides it from the hero, the ragdoll, pedestrians and the
-  bus, every obstacle sweep in the project ignores triggers, and only the foot
-  probes see it. City walkers adopt the legs-only layer with bones found by
-  the shared names; airborne designs and seated riders keep their old paths.
+  balance model, not a scheduled check; feet are solved onto the ground:**
+  the user removed the modal arrow challenge (`BalanceChallengeModel`,
+  `BalanceCheckView`, interval schedule and check-time modal capture).
+  `PlayerBalanceModel`:pure seeded fixed-step (`1/120 s`) inverted pendulum
+  in the hero frame. Level-scaled sways/filtered noise push COM;COP chases the
+  capture point late. A/D toward the lean recovers;instability reduces tank
+  yaw. A point beyond the boots plans a step past it;the held wall hand adds
+  support;a kerb under the swinging boot trips forward. Sober is bit-exact inert.
+  `PlayerMotor` carries drift through a second constrained capsule `Move`,
+  separate from player momentum,keeping body/camera/collision together.
+  `IntoxicationStatusController` owns Fall→ragdoll→Rise above `60`,after grace
+  while grounded. `BalanceCheckDelayRemaining` is grace;`BalanceCheckSequence`
+  is the episode counter;session format stays. `Player3DProceduralLocomotionLayer`
+  is the shared late writer:restore,lean,heel/toe probes,run-released pelvis,
+  analytic law-of-cosines pre-bent `LimbTwoBoneIk` per leg,recovery foot locks
+  and wall hand. The arm solver moved out of `SeatedArmIk`;CCD cannot shorten
+  a near-straight leg. Render-only stair treads over hidden ramps carry trigger
+  boxes on `FootProbe` layer10. Physics hides these from hero/ragdoll/NPC/bus;
+  obstacle sweeps ignore triggers;foot probes accept only that trigger layer
+  through `Physics.DefaultRaycastLayers`. City walkers share the legs-only
+  layer via shared bone names;airborne designs/seated riders retain their paths.
 - **Accepted and implemented 2026-09-04 — Stairs: the pelvis follows the
-  capsule's ground, the boots follow the treads.** The rule above — pelvis to
-  the LOWER BOOT, each boot's probed surface smoothed as an absolute world
-  height — is correct on a floor and wrong on a slope, and the stairwell showed
-  both failures at once. Absolute smoothing rate-limits the body's own descent:
+  capsule's ground, the boots follow the treads.** Floor-style pelvis to the
+  lower boot and absolute world-height foot smoothing fail on slopes;
+  the stairwell exposed both failures. Absolute smoothing rate-limits the body's own descent:
   the presentation floors the Walk's plants at `0.68`, so in a walk both feet
   always count as planted, the `0.6 m/s` cap fought a controller descending the
   hidden ramp at `1.083 m/s`, and after one `16`-step flight the targets sat

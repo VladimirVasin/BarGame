@@ -3,6 +3,19 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-08
+Stair loss of balance can fall through shared ragdoll/rise;marked physical
+ramps retain their real normal,unmarked slopes retain the fall limit.
+Unsupported balance returned before its step/pose timers:release step/brace/
+trip and recover. Clear a below-threshold latch left by update ordering.
+StairExit_UnsupportedToppleReleasesTheStepAndPose proves model cleanup;
+StairExit_UnsupportedLatchedFallStillBelongsToTheStatusController preserves ownership.
+StairExit_LevelDropsBelowThresholdReleasesTheLatchedFallAndGait proves threshold cleanup.
+StairExit_StairRampAllowsACompleteFallAndRecovery proves an actual exterior
+stair's fall/ragdoll/rise/input;standing/fallen/recovered views reviewed.
+Three FX groups reviewed;motion only,light/material/post owners unchanged.
+check-docs/diff-check.
+
 ## 2026-11-07
 Ridge loft adds grille yard/workbench/grain/bath;phone+dock uphill,loft fixed.
 Lamp spill/glass/halo reduced after overexposure. Keeper walks21→home/06→work

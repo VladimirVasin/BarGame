@@ -170,9 +170,10 @@ namespace BarPromenade
             Model(flightModel, root, flight.Id, flight.Start, yaw, new Vector3(1f, riseScale, 1f));
             Vector3 delta = flight.End - flight.Start;
             Quaternion slope = Quaternion.LookRotation(delta.normalized, Vector3.up);
-            Box(root, flight.Id + " continuous ramp",
+            BoxCollider ramp = Box(root, flight.Id + " continuous ramp",
                 (flight.Start + flight.End) * .5f - slope * Vector3.up * .06f,
                 new Vector3(flight.Width, .12f, delta.magnitude), slope);
+            StairWalkableSurface.Stamp(ramp);
             Vector3 supportTop = flight.Start + flight.Direction * (flight.RunLength * .5f) - Vector3.up * .25f;
             Vector2 supportSize = Mathf.Abs(flight.Direction.z) > .5f
                 ? new Vector2(2.1f, flight.RunLength) : new Vector2(flight.RunLength, 2.1f);

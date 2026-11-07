@@ -1725,13 +1725,12 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   bodies; intoxication leaves calendar, needs and recovery at their intended
   real-time rates. Explicit debug speed multiplies world/calendar progression;
   UI/input keep real-time response, true pause freezes progression;
-- above `60` the hero is balanced by a continuous seeded model rather than a
-  check: the drink pushes his centre of mass, the ankles chase it late, the
-  torso and arms whip to buy ground, the boots step to catch it, and A/D
-  pressed toward the lean is the recovery. When no ordinary step can reach
-  where the capture point is going he topples — the root goes with him, one or
-  two lunges are thrown at where the point will be, the hands go out for the
-  ground — and either a lunge catches him or he goes down;
+- above `60`,seeded balance moves COM;ankles chase late,torso/arms whip,
+  boots catch;A/D toward the lean recovers. Beyond ordinary reach the root
+  follows the fall;one or two lunges and bracing hands catch it or yield to
+  ragdoll. Stairs allow falls with their physical slope. An unsupported
+  topple releases step/brace and recovers;an ineligible latch at `60` or below
+  clears;
 - a lost topple hands the bracing pose and its motion about the supporting boot
   to a 14-body runtime ragdoll. The pelvis is tethered within `0.68 m` of the
   root;lower-spine/chest joints share `18 kg` as `8/10 kg`.

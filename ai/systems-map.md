@@ -201,7 +201,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Session state / checkpoint | Latest scene-entry RAM snapshot; pause restores progress/world. New Game/exit clears; no disk save. | `GameSessionState`, `SessionCheckpointService`, `CheckpointWorldState` | Current |
 | Bar drink service | Menu/repeat/receipt;beer/wine three portions,full wine;guest FIFO/look/nod. | `BarDrink*`, `BarRepeatGesture`, `BarBartenderServiceQueue` | Current |
 | Intoxication stages and presentation | Vodka+24;reversible FX/body;recovery4.5–18s/point,higher→slower. | `IntoxicationStageRules`,`IntoxicationStatusController` | Current |
-| Continuous balance and falling | Combat hero:planar/vertical caps/freefall gravity24;settled pose→seated/all-fours rise. | `PlayerBalanceModel`, `PlayerRiseModel`, `Player3D*` | Current |
+| Continuous balance and falling | Stair falls;unsupported pose releases;combat caps;seated/all-fours rise. | `PlayerBalance{Model,Controller}`, `StairWalkableSurface`, `PlayerRiseModel` | Current |
 | Hero drunk muttering | A seeded stage-dependent clock drives short authored mutters, slurring and an owned speech bubble. | `HeroMutterModel`, `HeroMutterLines` | Current |
 | Hero nausea bouts | High intoxication drives the walking gauge, cancellation gates, vomiting relief and session mouth-soiling. | `HeroNauseaClock`, `HeroNauseaGaugeModel` | Current |
 | Bar interior and exterior | Hall/worn WC; solid shared door, exclusive hero/guest access and masked broken mirror. | `BarInteriorLayout*`, `BarWashroom*`, `InteriorHingedDoorInteraction` | Current |
