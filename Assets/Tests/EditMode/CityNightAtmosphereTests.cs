@@ -8,289 +8,186 @@ namespace BarPromenade.Tests.EditMode
     public sealed class CityNightAtmosphereTests
     {
         [Test]
-        public void FringePractical_LeasesOneStreetSlotWithinTwelveLightBudget()
+        public void FringePracticals_KeepFixedSourcesAtAnyDistanceWithDayFloorAndCleanup()
         {
-            var owner = new GameObject("Night Atmosphere Test");
+            var owner = new GameObject("Fixed Night Atmosphere Test");
             try
             {
-                Transform player = CreateAnchor(
-                    owner.transform,
-                    "Player",
-                    Vector3.zero,
-                    Vector3.forward);
-                List<Transform> streetAnchors = CreateStreetAnchors(
-                    owner.transform);
+                Transform player = CreateAnchor(owner.transform, "Player", Vector3.zero, Vector3.forward);
+                List<Transform> streetAnchors = CreateStreetAnchors(owner.transform);
                 List<Vector3> barPositions = CreateBarPositions();
-                List<CityFringePracticalAnchor> practicals =
-                    CreatePracticalAnchors(owner.transform);
+                List<CityFringePracticalAnchor> practicals = CreatePracticalAnchors(owner.transform);
                 var nightRoot = new GameObject("Night With Practicals");
                 nightRoot.transform.SetParent(owner.transform, false);
-                CityNightAtmosphere atmosphere =
-                    nightRoot.AddComponent<CityNightAtmosphere>();
+                CityNightAtmosphere atmosphere = nightRoot.AddComponent<CityNightAtmosphere>();
+                atmosphere.Initialize(player, streetAnchors, barPositions, practicals);
+                AssertFixedStreetAssignment(atmosphere, nightRoot, streetAnchors, practicals.Count);
 
-                atmosphere.Initialize(
-                    player,
-                    streetAnchors,
-                    barPositions,
-                    practicals);
-
-                AssertDefaultStreetAssignment(atmosphere, nightRoot);
-
-                for (int index = 0; index < practicals.Count; index++)
+                var sources = new List<Light>(atmosphere.StreetLightPool);
+                var positions = new Dictionary<Light, Vector3>();
+                var rotations = new Dictionary<Light, Quaternion>();
+                var nightIntensities = new Dictionary<Light, float>();
+                Light[] allLights = nightRoot.GetComponentsInChildren<Light>(true);
+                foreach (Light light in allLights)
                 {
-                    CityFringePracticalAnchor practical = practicals[index];
+                    positions.Add(light, light.transform.position);
+                    rotations.Add(light, light.transform.rotation);
+                    nightIntensities.Add(light, light.intensity);
+                    Assert.That(light.enabled, Is.True);
+                }
+                foreach (CityFringePracticalAnchor practical in practicals)
+                {
+                    Light fixedLight = atmosphere.GetPracticalLight(practical.Kind);
+                    AssertPracticalProfile(practical, fixedLight);
                     player.position = practical.Anchor.position;
                     atmosphere.RefreshImmediate();
-
-                    Assert.That(
-                        atmosphere.IsPracticalSlotLeased,
-                        Is.True,
-                        practical.Kind.ToString());
-                    Assert.That(
-                        atmosphere.ActivePracticalKind,
-                        Is.EqualTo(practical.Kind));
-                    Assert.That(
-                        atmosphere.AssignedStreetLightCount,
-                        Is.EqualTo(7));
-                    Assert.That(
-                        atmosphere.ActivePracticalLight,
-                        Is.SameAs(atmosphere.StreetLightPool[7]));
-                    foreach (Light pooled in atmosphere.StreetLightPool)
-                    {
-                        Assert.That(pooled.enabled, Is.True);
-                    }
-                    Assert.That(
-                        nightRoot.GetComponentsInChildren<Light>(true),
-                        Has.Length.EqualTo(
-                            CityNightAtmosphere.MaximumRealtimeLights));
-                    AssertPracticalProfile(
-                        practical,
-                        atmosphere.ActivePracticalLight);
+                    Assert.That(atmosphere.ActivePracticalKind, Is.EqualTo(practical.Kind),
+                        "The nearest-practical diagnostic remains useful without controlling illumination.");
+                    Assert.That(atmosphere.ActivePracticalLight, Is.SameAs(fixedLight));
+                    Assert.That(atmosphere.AssignedStreetLightCount, Is.EqualTo(streetAnchors.Count),
+                        "A practical cannot borrow or extinguish any street fixture.");
+                    Assert.That(atmosphere.StreetLightPool, Is.EqualTo(sources));
                 }
 
-                CityFringePracticalAnchor tunnel = practicals[2];
-                player.position = tunnel.Anchor.position;
+                // The old nearest pool left distant streets dark. Move beyond
+                // every old lease distance and verify the actual sources stay on.
+                player.position = new Vector3(10000f, 300f, -10000f);
                 atmosphere.RefreshImmediate();
-                Light practicalLight = atmosphere.ActivePracticalLight;
-                CityLightHalo practicalHalo = practicalLight
-                    .GetComponentInChildren<CityLightHalo>(true);
-
-                // The §20 law: at noon nothing electric switches off, it
-                // gives two thirds of its night strength. Captured at
-                // night first so the day assertion is a ratio against
-                // what each light actually burns at, not a re-derivation
-                // of every base intensity.
-                var nightIntensities = new Dictionary<Light, float>();
-                var nightEnabled = new Dictionary<Light, bool>();
-                foreach (Light light in
-                         nightRoot.GetComponentsInChildren<Light>(true))
+                Assert.That(atmosphere.IsPracticalSlotLeased, Is.False);
+                Assert.That(atmosphere.ActivePracticalLight, Is.Null);
+                Assert.That(atmosphere.ReassignmentCount, Is.Zero);
+                foreach (Light light in allLights)
                 {
-                    nightIntensities[light] = light.intensity;
-                    nightEnabled[light] = light.enabled;
+                    Assert.That(light.enabled, Is.True, "Distance must not switch a built fixture off.");
+                    Assert.That(light.transform.position, Is.EqualTo(positions[light]));
+                    Assert.That(Quaternion.Angle(light.transform.rotation, rotations[light]), Is.LessThan(.001f));
+                    Assert.That(light.intensity, Is.EqualTo(nightIntensities[light]));
                 }
 
-                atmosphere.SetNightFactor(0f);
-
-                float floor = GameTimeDayNightRules.DayFixtureFloor;
-                foreach (Light light in
-                         nightRoot.GetComponentsInChildren<Light>(true))
-                {
-                    if (!nightEnabled[light])
-                    {
-                        continue;
-                    }
-
-                    Assert.That(
-                        light.enabled,
-                        Is.True,
-                        "The day must not switch a burning fixture off.");
-                    Assert.That(
-                        light.intensity,
-                        Is.EqualTo(nightIntensities[light] * floor)
-                            .Within(0.001f),
-                        "The day takes a third off a fixture, no more.");
-                }
-
-                Assert.That(
-                    practicalHalo.IntensityFactor,
-                    Is.EqualTo(floor).Within(0.001f));
-                Assert.That(practicalHalo.IsVisible, Is.True);
-
-                atmosphere.SetTunnelPracticalFlickerMultiplier(0.4f);
-
-                Assert.That(
-                    practicalLight.intensity,
-                    Is.EqualTo(150f * floor * 0.4f).Within(0.001f),
-                    "The fault stays the fixture's own, on top of the law.");
-                Assert.That(
-                    practicalHalo.IntensityFactor,
-                    Is.EqualTo(floor * 0.4f).Within(0.001f));
+                Light tunnel = atmosphere.GetPracticalLight(CityFringeYardKind.SouthTunnelForecourt);
+                CityLightHalo tunnelHalo = tunnel.GetComponentInChildren<CityLightHalo>(true);
+                atmosphere.SetTunnelPracticalFlickerMultiplier(.4f);
+                Assert.That(tunnel.intensity, Is.EqualTo(150f * .4f).Within(.001f),
+                    "The distant tunnel fault addresses its own fixed source, without a nearby lease.");
+                Assert.That(tunnelHalo.IntensityFactor, Is.EqualTo(.4f).Within(.001f));
+                foreach (CityFringePracticalAnchor practical in practicals)
+                    if (practical.Kind != CityFringeYardKind.SouthTunnelForecourt)
+                        AssertPracticalProfile(practical, atmosphere.GetPracticalLight(practical.Kind));
                 atmosphere.SetTunnelPracticalFlickerMultiplier(1f);
 
-                atmosphere.SetNightFactor(1f);
+                atmosphere.SetNightFactor(0f);
+                float floor = GameTimeDayNightRules.DayFixtureFloor;
+                foreach (Light light in allLights)
+                {
+                    Assert.That(light.enabled, Is.True, "Noon retains every distant fixture.");
+                    Assert.That(light.intensity, Is.EqualTo(nightIntensities[light] * floor).Within(.001f));
+                }
+                Assert.That(tunnelHalo.IntensityFactor, Is.EqualTo(floor).Within(.001f));
+                Assert.That(tunnelHalo.IsVisible, Is.True);
+                atmosphere.SetTunnelPracticalFlickerMultiplier(.4f);
+                Assert.That(tunnel.intensity, Is.EqualTo(150f * floor * .4f).Within(.001f));
+                Assert.That(tunnelHalo.IntensityFactor, Is.EqualTo(floor * .4f).Within(.001f));
 
-                Assert.That(atmosphere.IsPracticalSlotLeased, Is.True);
-                Assert.That(
-                    atmosphere.ActivePracticalKind,
-                    Is.EqualTo(CityFringeYardKind.SouthTunnelForecourt));
-                Assert.That(practicalLight.enabled, Is.True);
-                Assert.That(practicalLight.intensity, Is.EqualTo(150f));
-                Assert.That(practicalHalo.IntensityFactor, Is.EqualTo(1f));
-                Assert.That(practicalHalo.IsVisible, Is.True);
+                atmosphere.enabled = false;
+                foreach (Light light in allLights) Assert.That(light.enabled, Is.False);
+                Assert.That(tunnelHalo.IsVisible, Is.False);
+                atmosphere.SetTunnelPracticalFlickerMultiplier(.6f);
+                Assert.That(tunnel.enabled, Is.False, "A fault update must not revive a disabled exterior.");
+                atmosphere.enabled = true;
+                foreach (Light light in allLights) Assert.That(light.enabled, Is.True);
+                Assert.That(atmosphere.StreetLightPool, Is.EqualTo(sources));
+                Assert.That(tunnel.intensity, Is.EqualTo(150f * floor * .6f).Within(.001f));
+                atmosphere.SetTunnelPracticalFlickerMultiplier(1f);
+                atmosphere.SetNightFactor(1f);
+                foreach (Light light in allLights)
+                    Assert.That(light.intensity, Is.EqualTo(nightIntensities[light]).Within(.001f));
 
                 Object.DestroyImmediate(nightRoot);
+                foreach (Light light in allLights) Assert.That(light == null, Is.True);
                 var noFringeRoot = new GameObject("Night Without Practicals");
                 noFringeRoot.transform.SetParent(owner.transform, false);
-                CityNightAtmosphere noFringe =
-                    noFringeRoot.AddComponent<CityNightAtmosphere>();
-                player.position = practicals[0].Anchor.position;
-
-                noFringe.Initialize(
-                    player,
-                    streetAnchors,
-                    barPositions);
-
-                Assert.That(noFringe.IsPracticalSlotLeased, Is.False);
-                Assert.That(noFringe.ActivePracticalKind, Is.Null);
-                Assert.That(noFringe.ActivePracticalLight, Is.Null);
-                Assert.That(noFringe.AssignedStreetLightCount, Is.EqualTo(8));
-                Assert.That(
-                    noFringe.RealtimeLightCount,
-                    Is.EqualTo(CityNightAtmosphere.MaximumRealtimeLights));
-                Assert.That(
-                    noFringeRoot.GetComponentsInChildren<Light>(true),
-                    Has.Length.EqualTo(
-                        CityNightAtmosphere.MaximumRealtimeLights));
+                CityNightAtmosphere noFringe = noFringeRoot.AddComponent<CityNightAtmosphere>();
+                noFringe.Initialize(player, streetAnchors, barPositions);
+                AssertFixedStreetAssignment(noFringe, noFringeRoot, streetAnchors, 0);
+                Assert.That(noFringe.GetPracticalLight(CityFringeYardKind.SouthTunnelForecourt), Is.Null);
             }
-            finally
-            {
-                Object.DestroyImmediate(owner);
-            }
+            finally { Object.DestroyImmediate(owner); }
         }
 
         [Test]
-        public void QuayLampAnchors_TakeTheLowWideProfileWhenNearest()
+        public void QuayLampAnchors_KeepLowWideProfileAndIdentityAtAnyDistance()
         {
-            var owner = new GameObject("Quay Lamp Pool Test");
+            var owner = new GameObject("Fixed Quay Lamp Test");
             try
             {
-                Transform player = CreateAnchor(
-                    owner.transform,
-                    "Player",
-                    new Vector3(200f, 2f, 0f),
-                    Vector3.forward);
-                List<Transform> streetAnchors = CreateStreetAnchors(
-                    owner.transform);
-                List<Transform> quayAnchors = CreateQuayAnchors(
-                    owner.transform);
+                Transform player = CreateAnchor(owner.transform, "Player", new Vector3(200f, 2f, 0f), Vector3.forward);
+                List<Transform> streetAnchors = CreateStreetAnchors(owner.transform);
+                List<Transform> quayAnchors = CreateQuayAnchors(owner.transform);
                 var nightRoot = new GameObject("Night With Quay Lamps");
                 nightRoot.transform.SetParent(owner.transform, false);
-                CityNightAtmosphere atmosphere =
-                    nightRoot.AddComponent<CityNightAtmosphere>();
+                CityNightAtmosphere atmosphere = nightRoot.AddComponent<CityNightAtmosphere>();
+                atmosphere.Initialize(player, streetAnchors, CreateBarPositions(), null, quayAnchors);
+                var fixedLights = new List<Light>(atmosphere.StreetLightPool);
+                int expectedSources = streetAnchors.Count + quayAnchors.Count;
+                Assert.That(fixedLights, Has.Count.EqualTo(expectedSources));
+                Assert.That(atmosphere.RealtimeLightCount, Is.EqualTo(expectedSources + atmosphere.BarLights.Count));
+                Assert.That(nightRoot.GetComponentsInChildren<Light>(true), Has.Length.EqualTo(atmosphere.RealtimeLightCount));
+                Assert.That(atmosphere.RealtimeLightCount, Is.LessThanOrEqualTo(CityNightAtmosphere.MaximumRealtimeLights));
 
-                atmosphere.Initialize(
-                    player,
-                    streetAnchors,
-                    CreateBarPositions(),
-                    null,
-                    quayAnchors);
-
-                // The pool itself does not grow: quay lanterns are
-                // anchors, never lights of their own.
-                Assert.That(
-                    atmosphere.StreetLightPool.Count,
-                    Is.EqualTo(8));
-                Assert.That(
-                    atmosphere.RealtimeLightCount,
-                    Is.EqualTo(
-                        CityNightAtmosphere.MaximumRealtimeLights));
-                Assert.That(
-                    nightRoot.GetComponentsInChildren<Light>(true),
-                    Has.Length.EqualTo(
-                        CityNightAtmosphere.MaximumRealtimeLights));
-                Assert.That(
-                    atmosphere.AssignedStreetLightCount,
-                    Is.EqualTo(8));
-
-                // Standing by the river: the six quay anchors win six
-                // of the eight slots and carry the low wide profile
-                // with the anchor's own authored aim.
-                int quayAssigned = 0;
-                foreach (Light light in atmosphere.StreetLightPool)
+                foreach (Vector3 observer in new[] { player.position, Vector3.zero, new Vector3(-10000f, 500f, 10000f) })
                 {
-                    Transform match = quayAnchors.Find(anchor =>
-                        Vector3.Distance(
-                            anchor.position,
-                            light.transform.position) < 0.001f);
-                    if (match == null)
+                    player.position = observer;
+                    atmosphere.RefreshImmediate();
+                    Assert.That(atmosphere.StreetLightPool, Is.EqualTo(fixedLights));
+                    Assert.That(atmosphere.AssignedStreetLightCount, Is.EqualTo(expectedSources));
+                    for (int index = 0; index < streetAnchors.Count; index++)
                     {
+                        Light light = atmosphere.GetLightForAnchor(index);
+                        Assert.That(light, Is.SameAs(fixedLights[index]));
+                        Assert.That(light.enabled, Is.True);
+                        Assert.That(light.transform.position, Is.EqualTo(streetAnchors[index].position));
                         AssertStreetProfile(light);
-                        continue;
+                        Assert.That(light.GetComponentInChildren<CityLightHalo>(true), Is.Null,
+                            "The physical fixture already owns its halo; its fixed Light adds no duplicate.");
                     }
-
-                    quayAssigned++;
-                    Assert.That(
-                        light.type,
-                        Is.EqualTo(LightType.Spot));
-                    Assert.That(light.intensity, Is.EqualTo(6f));
-                    Assert.That(light.range, Is.EqualTo(10f));
-                    Assert.That(light.spotAngle, Is.EqualTo(130f));
-                    Assert.That(
-                        light.innerSpotAngle,
-                        Is.EqualTo(70f));
-                    Assert.That(
-                        light.shadows,
-                        Is.EqualTo(LightShadows.None));
-                    Assert.That(
-                        Vector3.Angle(
-                            light.transform.forward,
-                            match.forward),
-                        Is.LessThan(0.01f));
-                }
-
-                Assert.That(
-                    quayAssigned,
-                    Is.EqualTo(quayAnchors.Count));
-
-                // Back on the street: the same pool lights are
-                // re-stamped with the mast profile the moment the
-                // masts are nearest.
-                player.position = Vector3.zero;
-                atmosphere.RefreshImmediate();
-
-                Assert.That(
-                    atmosphere.AssignedStreetLightCount,
-                    Is.EqualTo(8));
-                foreach (Light light in atmosphere.StreetLightPool)
-                {
-                    AssertStreetProfile(light);
+                    for (int index = 0; index < quayAnchors.Count; index++)
+                    {
+                        Light light = atmosphere.GetLightForAnchor(streetAnchors.Count + index);
+                        Assert.That(light, Is.SameAs(fixedLights[streetAnchors.Count + index]));
+                        Assert.That(light.enabled, Is.True);
+                        Assert.That(light.type, Is.EqualTo(LightType.Spot));
+                        Assert.That(light.intensity, Is.EqualTo(6f));
+                        Assert.That(light.range, Is.EqualTo(10f));
+                        Assert.That(light.spotAngle, Is.EqualTo(130f));
+                        Assert.That(light.innerSpotAngle, Is.EqualTo(70f));
+                        Assert.That(light.shadows, Is.EqualTo(LightShadows.None));
+                        Assert.That(Vector3.Distance(light.transform.position, quayAnchors[index].position), Is.LessThan(.001f));
+                        Assert.That(Vector3.Angle(light.transform.forward, quayAnchors[index].forward), Is.LessThan(.01f));
+                    }
                 }
             }
-            finally
-            {
-                Object.DestroyImmediate(owner);
-            }
+            finally { Object.DestroyImmediate(owner); }
         }
 
-        private static void AssertDefaultStreetAssignment(
-            CityNightAtmosphere atmosphere,
-            GameObject nightRoot)
+        private static void AssertFixedStreetAssignment(CityNightAtmosphere atmosphere,
+            GameObject nightRoot, IReadOnlyList<Transform> streetAnchors, int practicalCount)
         {
             Assert.That(atmosphere.BarLights.Count, Is.EqualTo(4));
-            Assert.That(atmosphere.StreetLightPool.Count, Is.EqualTo(8));
-            Assert.That(
-                atmosphere.RealtimeLightCount,
-                Is.EqualTo(CityNightAtmosphere.MaximumRealtimeLights));
-            Assert.That(
-                nightRoot.GetComponentsInChildren<Light>(true),
-                Has.Length.EqualTo(
-                    CityNightAtmosphere.MaximumRealtimeLights));
+            Assert.That(atmosphere.StreetLightPool.Count, Is.EqualTo(streetAnchors.Count + practicalCount));
+            Assert.That(atmosphere.RealtimeLightCount, Is.EqualTo(streetAnchors.Count + practicalCount + atmosphere.BarLights.Count));
+            Assert.That(atmosphere.FixedFixtureCount, Is.EqualTo(atmosphere.RealtimeLightCount));
+            Assert.That(atmosphere.FixedAnchorLightCount, Is.EqualTo(streetAnchors.Count));
+            Assert.That(atmosphere.RealtimeLightCount, Is.LessThanOrEqualTo(CityNightAtmosphere.MaximumRealtimeLights));
+            Assert.That(nightRoot.GetComponentsInChildren<Light>(true), Has.Length.EqualTo(atmosphere.RealtimeLightCount));
             Assert.That(atmosphere.IsPracticalSlotLeased, Is.False);
             Assert.That(atmosphere.ActivePracticalKind, Is.Null);
             Assert.That(atmosphere.ActivePracticalLight, Is.Null);
-            Assert.That(atmosphere.AssignedStreetLightCount, Is.EqualTo(8));
-            foreach (Light light in atmosphere.StreetLightPool)
+            Assert.That(atmosphere.AssignedStreetLightCount, Is.EqualTo(streetAnchors.Count));
+            for (int index = 0; index < streetAnchors.Count; index++)
             {
+                Light light = atmosphere.GetLightForAnchor(index);
+                Assert.That(light, Is.SameAs(atmosphere.StreetLightPool[index]));
+                Assert.That(light.transform.position, Is.EqualTo(streetAnchors[index].position));
                 AssertStreetProfile(light);
             }
         }

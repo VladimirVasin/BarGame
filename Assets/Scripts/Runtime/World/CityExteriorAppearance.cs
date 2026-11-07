@@ -537,7 +537,7 @@ namespace BarPromenade
                 color.a);
         }
 
-        private static uint StableHash(
+        internal static uint StableHash(
             int seed,
             int x,
             int z,

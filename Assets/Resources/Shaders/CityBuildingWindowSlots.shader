@@ -133,6 +133,13 @@ Shader "Bar Promenade/City Building Window Slots"
                     sampler_BaseMap,
                     atlasUv).rgb;
                 glass *= panePattern;
+                // The atlas contains painted sash and curtain shadows, but
+                // the whole authored glass pane is luminous. Actual separate
+                // frame geometry stays dark and still occludes the room light.
+                half paneLuminance = dot(panePattern,
+                    half3(0.2126h, 0.7152h, 0.0722h));
+                half paneEmission = lerp(0.72h, 1.0h,
+                    saturate(paneLuminance));
 
                 InputData inputData = (InputData)0;
                 inputData.positionWS = input.positionWS;
@@ -158,7 +165,7 @@ Shader "Bar Promenade/City Building Window Slots"
                 surface.normalTS = half3(0.0h, 0.0h, 1.0h);
                 surface.emission = family == 0
                     ? half3(0.0h, 0.0h, 0.0h)
-                    : litColor * panePattern *
+                    : litColor * paneEmission * variantFactor *
                       (fixture * _EmissionStrength);
                 surface.occlusion = 1.0h;
                 surface.alpha = 1.0h;

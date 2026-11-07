@@ -4,6 +4,23 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-07
+Residential entrances reuse authored lamps and fixed soft Point light on door,
+paving, side facade and balcony underside; canopy/Home fixtures are not doubled.
+Shared glow/day floor/shadows/cleanup and finite structure-clipped air remain.
+CityEntranceLighting proves receiver spill, day floor and fixed identity/cleanup;
+day/night/high-entrance frames reviewed. Distant hero movement leaves the
+fixed-observer frame identical; Point shadow cost remains unmeasured.
+
+Static City/Home-balcony fixtures retain permanent world-anchored light;
+proximity leases caused visible switching from the Ridge. Ordinary Blender
+buildings keep one deterministic lit window/fixed shadowed Spot each;
+special facades, day floor and bounded shared effects remain.
+Whole-glass emission keeps dark frames; aperture light aims outward onto
+reveals/sills/paving. CityLightingContinuity proves fixed-camera continuity
+after distant hero movement, day floor and lifecycle. Native night/noon,
+open Ridge-bridge and approach frames reviewed; view source bounds stay within
+the native budget. CPU/GPU frame cost remains unavailable.
+
 Pawnshop stair now joins the actual summit footway; the previous route began below it at the
 Home bench. Imported upper flights and a full turning pad keep the tree/bench branch.
 Overlapping ground cuts remove native-earth seam slivers; visible/physical guards stop

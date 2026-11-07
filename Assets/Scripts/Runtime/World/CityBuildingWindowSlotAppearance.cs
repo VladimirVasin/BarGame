@@ -6,7 +6,7 @@ namespace BarPromenade
 {
     /// <summary>
     /// Binds the window-slot IDs authored into the combined Blender glass
-    /// mesh to deterministic, row-balanced warm-light and dark variants. UV2
+    /// mesh to a sparse, permanent warm-light selection and dark variants. UV2
     /// keeps every pane addressable while the FBX remains non-readable at
     /// runtime; pane-local UV0 carries one complete atlas window per slot.
     /// </summary>
@@ -56,6 +56,7 @@ namespace BarPromenade
             }
 
             var states = new float[MaximumSlotCount];
+            ulong litWindowMask = ResolveLitWindowMask(registry, lot, citySeed);
             for (int index = 0; index < registry.WindowSlots.Count; index++)
             {
                 CityBuildingWindowSlot slot = registry.WindowSlots[index];
@@ -77,13 +78,19 @@ namespace BarPromenade
                         ResolveRowPaneCount(registry, slot),
                         side,
                         out uint paneHash);
+                if (lot.IsOrdinaryBuilding)
+                    family = (litWindowMask & (1UL << shaderIndex)) != 0
+                        ? CityWindowFamily.Warm : CityWindowFamily.Off;
                 int variant = (int)((paneHash >> 8) %
                     CityWindowAppearance.VariantCount);
                 states[shaderIndex] =
                     ((int)family * CityWindowAppearance.VariantCount) +
                     variant;
+                if (family != CityWindowFamily.Off)
+                    litWindowMask |= 1UL << shaderIndex;
             }
 
+            registry.LitWindowMask = litWindowMask;
             renderer.sharedMaterial = Material;
             var properties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(properties);
@@ -91,6 +98,27 @@ namespace BarPromenade
             renderer.SetPropertyBlock(properties);
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
+        }
+
+        // Select once from the actual authored panes, across every floor and
+        // facade. Every luminous ordinary pane then owns its own fixed Light;
+        // neither emission nor the receiving street changes with the observer.
+        internal static ulong ResolveLitWindowMask(CityBuildingAssetRegistry registry,
+            BuildingLot lot, int citySeed)
+        {
+            if (!lot.IsOrdinaryBuilding) return 0;
+            uint best = uint.MaxValue;
+            int selected = -1;
+            foreach (CityBuildingWindowSlot slot in registry.WindowSlots)
+            {
+                if (slot.OpeningKind != CityBuildingOpeningKind.Window) continue;
+                uint hash = CityExteriorAppearance.StableHash(citySeed, lot.Cell.x, lot.Cell.y,
+                    slot.Floor, slot.Bay, ResolveSideIndex(slot.Side));
+                if (selected >= 0 && hash >= best) continue;
+                best = hash;
+                selected = slot.Uv2SlotId;
+            }
+            return selected >= 0 ? 1UL << selected : 0;
         }
 
         private static Material Material

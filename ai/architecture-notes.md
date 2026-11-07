@@ -6,12 +6,12 @@
   Plaza1.6m/asphalt/flowerbeds;mirrored outer lamps3.2m;West10.4m6-step;
   concrete pigeon/plinth1.98m between benches,rear.
   Road→3×12→bench35.553→2×12/landing2.4m→footway/zebra/door.
-  1.8/.32m;bench spur;rails off walk;4lamps/pool12;cuts/ramp/tread/nav/map/Home.
+  1.8/.32m;bench spur;rails off walk;4fixedlamps;cuts/ramp/tread/nav/map/Home.
 
 - **Accepted 2026-11-06,user — pawnshop:** west island/2zebras/2.4m path→door,face hero;
   `PawnshopInterior`/secure grille room/permanent silent clerk. Buy/Sell stubs,
   no cash/item mutation. Shared DoorUse/dormant City/modal cleanup;
-  shielded pair→even matte sign/halo0,6tasks/pool12. Hall3HDRdiffusers/1shadow256;
+  shielded pair→even matte sign/halo0,6fixedtasks. Hall3HDRdiffusers/1shadow256;
   ambient/exposure/bloom kept;24FX/cleanup.
   unmeasured;ordinary0–5. Art§7.
 
@@ -553,7 +553,7 @@
   §6 waiver. Port tiles/City response; covered concrete dry, no new tiles.
   4 lens/light/halo centres↓:warm work/neutral machines/cool canopy/weak front4m;
   no air beams.
-  pool12/Soft256/day≥2/3/bounce≤4/air≤4/probes≤2; hum/static Home.
+  fixed/Soft256/day≥2/3/bounce≤4/air≤4/probes≤2; hum/static Home.
   All24 City stack kept; §16/21/art§16. Pause/cull/retained City/
   unload:time/custody/contacts/cleanup kept; cost unmeasured.
 
@@ -622,7 +622,7 @@
   purpose; adjacency/port bias selects uses, no pipe/cargo scatter.
   3 optional metre-UV roles:shared timber/concrete/steel; purpose changes
   brick/paint recipes, no new maps/instance mats.
-  Task anchors:pool12/always-lit halos/day≥2/3/bounded selection/lifetime;
+  Task anchors:fixed/always-lit halos/day≥2/3/bounded selection/lifetime;
   bounce≤4/air≤4/halo≤24/probes≤2. All24:SSAO/fog/soft shadows/grade kept;
   no SSGI/SCGI/facade SSR/COLOR/DBuffer rollout. Other shared material/motion/
   post owners kept(AA:SMAA).
@@ -649,7 +649,7 @@
   cable mesh/shared mats/no wire physics; Home slice≤48m. RU place labels;
   EN kept. No new NPC/interaction/quest/Light/clue.
   PC_Renderer/CityNoirVolume/CityLightingPresentation:shared effects,
-  pool12/finite bounce-air-probes/post; FPS unmeasured.
+  fixed/finite bounce-air-probes/post; FPS unmeasured.
 
 - **Accepted 2026-10-26 — karaoke:** Wordless singing, hall silence/gaze,
   breath grace, real intoxication pitch drift; fixed narrow source-pitch UI.
@@ -968,7 +968,7 @@
 - **Accepted exception 2026-10-20, City local lighting — explicit user decision:**
   Art §4/§6–11/§15a/story §6/§20: nine areas share finite air/halation/metal/bounce/
   static reflections, one owner/frame budget; no new district/sky/fog/weather/grade/
-  light/story. Twelve-light pool retains power/leases; headlights follow sources
+  light/story. Fixed fixtures retain power; headlights follow sources
   without duplicate halos. Yard/island have no volume; park keeps one chess lamp,
   church garden support. Beach/boat/cave/tunnel/eastern distance gain no light.
   Structural/finite support promises no small-object volume shadows. Two filtered
@@ -1568,12 +1568,12 @@
   Toys displayed; personal car/low table/sitting local. Terrain-foot contacts,
   pause/routes/collision/`CityBenchSeatClaims` preserve seats/`2.2 m` paths.
   Shared Blender banks/hero rig/contextual actions/causal sound/materials/light
-  pool `12`. No trade/speech/lore/reward/cat response/carnival/§6 exception;
+  fixed lights. No trade/speech/lore/reward/cat response/carnival/§6 exception;
   §16/§21/nine checks hold.
 
 - **Accepted architecture exception — 2026-09-15, eastern valley:**
   User: story §6 `0`/art §10e: valley descent/city/halo, near/panorama seam;
-  common road/land/car/lamp datum. First lamp: existing model/pool `12`;
+  common road/land/car/lamp datum. First lamp: existing model/fixed light;
   passive distant fixtures. Blender depth/cars pause/§20.
   Clip48m/sea/west/south/post/paths/§16/§21/nine art checks hold.
 
@@ -3398,7 +3398,7 @@
   light ban is lifted only for ten fixed warm uplights: nine planted-edge washes,
   one Mary accent. `ChurchGardenUplight`/`CityNightSiteLightRegistry`: shadowless
   Spots35°/3.2m, night7.2/2.8, shielded bodies≤.22m, real recessed lenses/small
-  persistent halos/day≥2/3. Street/bar pool12 and fountain's no-Light rule stay.
+  persistent halos/day≥2/3. Street/bar lights stay fixed; fountain has no Light.
   `ChurchGardenBorderPlan` retains28 hedge segments .8m high/.85m deep,
   rounded back/wings, north opening3.9m/east-tree gap, separate from two trees/
   six shrubs. Entrance/loop/bench pockets/sole cemetery passage remain clear.
@@ -3539,18 +3539,12 @@
   beams with one `abs(dot)` — `FlashFactorAt`'s `min(Δ, 180°−Δ)` in cosine
   space — and the C# rules class stays the single source of truth for the
   rotation and the 14°.
-- **Accepted — The quay lanterns are pool anchors, not permanent lights:** The
-  river's waterside lanterns (13 m pitch, both wall faces, lens riding the
-  falling water datum) would cost ~36 permanent `Light`s done naively. Every
-  wall fixture instead keeps one always-lit emissive lens and fog halo, plus
-  an aimed anchor that joins `CityNightAtmosphere`'s nearest-first pool after
-  the street masts. Anchors are distinguished **by index alone**
-  (`quayAnchorStartIndex`): at night a slot assigned past the boundary takes a
-  low wide profile (6 / 10 m / 130° / 70° — the lens hangs ~1 m over what it
-  lights, not the mast's 4.7 m) and the anchor's own authored rotation, the
-  fringe practicals' convention. The 12-light budget and pool of 8 stay
-  untouched; daytime keeps the visible wall bulbs and halos but does not spend
-  realtime slots on their secondary spill. With lamps at the water the river
+- **Accepted — Quay lanterns keep world-anchored light:** Waterside lanterns
+  (13 m pitch, both wall faces, lenses follow water datum) retain one fixed
+  Light, emissive lens and fog halo each. `quayAnchorStartIndex` distinguishes
+  their low wide profile (6 / 10 m / 130° / 70°); authored rotation aims from
+  ~1 m over the receiver rather than the mast's 4.7 m. Day spill follows §20.
+  With lamps at the water the river
   also turned `_AdditionalSpecular` on (1.2, the fountain's value). Geometry
   note: the iron brackets remain "Waterside Lantern Brackets" and the lenses
   now live in their own "Quay Wall Lamp Glow" batch, separate from the
@@ -3593,18 +3587,15 @@
   `CityFountainReflectionController` cubemap hung over the road-network
   centre — an envmap has no parallax, so one probe serves every puddle
   exactly as it serves the fountain.
-- **Accepted — Fixed lamps own their halos; pooled spots carry light
+- **Accepted — Fixed lamps own their halos; realtime spots carry light
   alone:** An emissive lens is a couple of pixels the ExpSquared fog
   swallows by ~25-30 m, so every fixed lamp builds its own `CityLightHalo`.
   Ordinary street, esplanade and upper-promenade fixtures use
-  `CityLightHalo.CreateNightRegistered` and remain dead by day. The low river
+  `CityLightHalo.CreateNightRegistered` with the §20 daytime floor. The low river
   wall fixtures are the deliberate exception: their directly initialized
   halos and separate emissive batch stay full around the clock. The blurred
-  ball is the fixture's own; the pooled realtime spots therefore hide their
-  travelling halos
-  (`CityNightAtmosphere.pooledHaloVisible`, true only for the leased
-  fringe practical, which has no static duplicate) so an arriving
-  spot never doubles the blob. Street-mast halos stand apart from the
+  ball is the fixture's own; fixed realtime Spots add no travelling duplicate.
+  Fringe practicals retain their authored halo. Street-mast halos stand apart from the
   lamp anchors — the night presentation test pins anchors bare.
 - **Accepted — The channel has a floor:** River cells omit terrain.
   CityRiverWorldBuilder.BuildRiverbed lays a silt floor RiverBedDepth=1.10 m below
@@ -3721,14 +3712,11 @@
   ridge. Large masses
   collide; tracks, drains, cables and small traces do not.
   Four west/south anchors each expose one small emissive practical to
-  `CityNightGlowRegistry`, but the fringe root creates no `Light`. When the
-  player comes within `20 m`, only the nearest supported anchor can lease one
-  street Spot already owned by `CityNightAtmosphere`: the production pool is
-  `1` bar + `10` street + `1` fringe, still `12` total, and returns to `1+11`
-  outside the activation radius. The tunnel lease is the deliberate stronger
+  `CityNightGlowRegistry`; `CityNightAtmosphere` owns one permanent Light per
+  supported anchor without a proximity gate. The tunnel fixture is the stronger
   exception: a warm shadowless `150`-intensity, `16 m`, `72°`/`40°` Spot is
-  moved from the crown to the faulty second ceiling fixture and retains a
-  `0.22` day floor. A separate mountain
+  anchored at the faulty second ceiling fixture and retains a
+  §20 day floor. A separate mountain
   destination now exists, but this physical City crossing remains deliberately
   unwired; bounded tunnel navigation and automatic refusal are owned by the
   tunnel contracts rather than this fringe plan. The lot and road-grid footprint is
@@ -3888,8 +3876,8 @@
   physical street. World reservations, truck, map, balcony and ride use these
   plans. Poles and map use route number plus one-based stop order (03-02);
   shared platforms carry both codes and split transfers identify the partner.
-  The closest pole borrows two street spots for warm light along both plates, fading
-  with distance and following the daylight floor. City and the Home balcony share the pool.
+  Each pole keeps two fixed short-range Spots along both plates, following the daylight
+  floor. City and the Home balcony share the same world anchors.
   Buses display their route number on the front, sides and rear. Fog, materials and post
   retain City settings. Headlights, sound and interaction follow visible buses.
 
@@ -3922,7 +3910,7 @@
   Steering/wheel travel animate; synthesized engine is `22050 Hz`. Motion/night
   drive head/tail/brake/cabin emission. Two shadowless headlight Spots plus two
   soft shadowless cabin Spots follow shared `NightFactor`, disable at zero and
-  pool-reset off. They are outside the 12-light city-atmosphere pool: each visible vehicle contributes at most four local realtime lights. Scene/
+  pool-reset off. They remain separately owned from static City fixtures: each visible vehicle contributes at most four local realtime lights. Scene/
   lightning Directionals are separate.
 
 - **Accepted — City-only Route 01 passenger MVP:** Default-layer triggers:
@@ -5973,18 +5961,13 @@
   `CityFacadeAppearanceTests` and `CityBuildingSurfaceAppearanceTests`, so
   widening a district palette or drifting a semantic sheet fails at its owner.
 - **Accepted — District presentation is pure data with windows as the first
-  consumer:** `CityDistrictPresentationPlanner` owns stable per-block keys for
-  frontage, mass, windows, light and wear plus a one-block transition motif
-  restricted to authored neighbour pairs. The current world build consumes
-  only the window channel. The profile keeps a district lit ratio, but every
-  actual facade row quantizes that ratio to an exact count, never zero and
-  never the whole row when more than one pane exists. A stable row phase varies
-  the chosen bays by block, floor and side, which distributes light over the
-  full height without a repeated vertical stripe or the former Nightlife
-  ground-floor bias. Every selected pane is warm like a street lamp; special
-  Bar, Home and Supermarket families retain texture/material identity but not
-  a different hue. The remaining channels are implemented inputs, not yet
-  claims about built geometry.
+  consumer:** `CityDistrictPresentationPlanner` owns stable block keys for
+  frontage/mass/windows/light/wear and one-block transitions between authored
+  neighbour pairs. Only windows are consumed; other channels are inputs, not
+  built geometry. Ordinary Blender buildings choose one stable lit slot from
+  all authored floors/sides; no per-row minimum. District ratios remain inputs
+  for legacy/special paths. All lit panes share street-lamp warmth; special
+  Bar/Home/Supermarket keep their own textures/materials.
 - **Accepted - PC native scene composite:** `SceneCompositeRendererFeature` runs
   at `AfterRenderingPostProcessing` for the final Game camera, preserving source
   resolution. `SceneComposite.shader`/`SceneComposite.hlsl` share intoxication
@@ -6020,7 +6003,7 @@
 - **Accepted architecture exception — 2026-08-29, explicit user request —
   the barrel fire under the [10;5]–[11;5] arch is one strong realtime local
   light:** this supersedes the shelter draft's temporary “emissive only” rule
-  and the ordinary pooled-City-light assumption. The always-burning fire owns
+  and ordinary static-City lighting. The always-burning fire owns
   exactly one warm shadowed Point `Light` (`95` base intensity, `7.0 m`
   range), outside the night-fixture registry because it is causal at every
   hour. Its deterministic multi-frequency flicker never falls below `72%`,
@@ -6061,8 +6044,8 @@
   glow registry (`DeadGlowFraction` now IS the day floor; the dead tube is
   repealed), the site-light registry (authored day intensities survive only
   above the floor; no registered light is ever disabled; halos stay
-  visible), the pooled street/bar/practical realtime lights
-  (`CityNightAtmosphere`, including the lease scan), the vista's distant
+  visible), fixed street/bar/practical realtime lights
+  (`CityNightAtmosphere`), the vista's distant
   city windows, the bus cabin plafond (the plafond that moves; headlights
   and tail lights stay excluded as events), and the summit practicals
   (`YardLampNightBoost 0.55 → 0.5`, day exactly two thirds). The faulty
@@ -6072,24 +6055,44 @@
   would skip the refresh and hold the plafond dark until dusk.
   `AlwaysLitLawTests` pins the number, both registries and the mountain
   ratios; the re-anchored fixture tests pin each consumer.
-- **Accepted — Exterior windows use emission, not realtime Lights:** special
-  Bar/Home/Supermarket panes reuse the packaged shared lit shader emission variant and
-  the same window sheet for albedo and emission; ordinary Blender prototypes
-  keep emission in `CityBuildingWindowSlots`. Both paths use the same `0.48`
-  emission strength and §20 fixture factor. Dark panes stay dark, every lit
-  pane is warm like the street lamps, and the City realtime-light budget
-  remains exactly `12`. The bar is the authored exception to sampling
-  the sheet: its glass has metre-scale planar UVs and separate sash geometry,
-  so its lit renderers override both maps with white instead of clamping to
-  the atlas's dark border; their shared material still owns colour and power.
+- **Accepted — Shared exterior-window emission:** Bar/Home/Supermarket use
+  the packaged lit shader and one albedo/emission sheet; ordinary Blender
+  glass uses `CityBuildingWindowSlots`. Both share strength `0.48`, §20 fixture
+  factor and street-lamp warmth; dark panes stay dark. Bar glass has metre UVs
+  and real sashes, so white maps avoid the atlas border; the shared material
+  owns colour/power.
+- **Accepted architecture exception — 2026-11-07, user correction — continuous
+  City lighting:** permanent world-anchor fixtures; `CityNightAtmosphere`≤2048,
+  no hero-relative leases. Ordinary Blender buildings keep one deterministic
+  lit window/Spot; `CityWindowLighting`≤192, range `5 m`, intensity `7`, hard `256`.
+  Sources lie inside apertures, aimed out along facade normals (`160°/120°`);
+  frames shape light. Whole-glass emission keeps dark frames/curtain texture.
+  City/Home balcony agree; special Bar/Home/Supermarket glass stays.
+  Native URP culls intersecting light volumes against camera frusta;
+  ranges/far planes bound receivers, no custom distance gate. Ordinary buildings
+  lack generated LODs/LODGroup; simplified Home is not LOD. Auxiliary distance
+  budgets stay. Warm/day≥`2/3`, halos/profiles/faults/dormancy/unload stay.
+  Practical catalogue≤2240; fixed sources are not moving.
+  air4/bounce4/halos24/cubes2; no new GI/post/recaptures.
+  `CityLightingContinuity` proves fixed-camera continuity, day floor/lifecycle;
+  reviewed native Ridge/approach views remain within visible-source bounds.
+  CPU/GPU frame costs are unavailable; no gain claimed.
+- **Accepted — 2026-11-07, user — one lamp per residential entrance:**
+  `CityResidentialEntranceLighting`: Blender `PassageLamp`,
+  `2.55 m` mount/measured lens in City/Home; canopy/Home fixtures not doubled.
+  `ResidentialEntrance`/`CourtyardEntrance`: Point `7.5`/`5.5 m`, Soft low `256`,
+  day≥`2/3`; lights door/paving/side facade/balcony underside. HomeEntrance stays.
+  Shared glow/fixed cleanup. Entry air≤2/scene≤4, gain `.25`, full-range
+  sphere/structure/depth clipped; native air shadows are Spot-only.
+  Point shadows use six faces; GPU cost unmeasured. No new pass/GI/global fog/post.
+  `CityEntranceLighting` proves receiver spill/day floor/identity/cleanup;
+  day/night/high-entrance frames reviewed.
 - **Accepted architecture exception — 2026-08-29, explicit user correction —
   window light is sparse, warm and vertically distributed:** this supersedes
   the cold Industrial window family and the Nightlife rule that concentrated
   light on the front ground floor while leaving upper/rear rows dark. It does
-  not lift the art-bible ban on all-lit facades. Each declared row quantizes
-  the district ratio to at least one lit pane and, for rows wider than one, at
-  least one dark pane; a stable floor/side phase distributes those panes over
-  the whole building. Every selected pane remains on through the §20 fixture
+  not lift the art-bible ban on all-lit facades. Stable selection varies floors
+  and sides across buildings; individual rows may be dark. Every selected pane remains on through the §20 fixture
   floor and uses exactly `CityNightAtmosphere.StreetLampColor`; frames,
   curtains, blinds, stable brightness variants and dark panes prevent a
   uniform glowing grid. This City rule does not alter Alpine Village dimming.
@@ -6164,7 +6167,7 @@
   deliberately does not touch `GameTimeDayNightRules`, ambient/directional
   daylight, fog, grade or far clip: daylight dimming and weather grading remain
   separate future decisions.
-- **Accepted — Deterministic lightning outside the pooled light budget:**
+- **Accepted — Deterministic lightning outside static local lighting:**
   Lightning shares the pure schedule: each `12`-game-minute window hashes
   into at most one strike (`70%`) whose start offset, azimuth and distance
   are gated to fully developed Thunderstorm slots, so every scene evaluates
@@ -6173,8 +6176,7 @@
   scaled down to `45%` at the far distance band) that stays disabled outside
   its `0.5`-game-minute flicker envelope and lives outside `Night.Root`.
   Because it is directional and transient, it is counted separately from the
-  bounded `18` local realtime lights and does not change the pooled
-  atmosphere/bus assertions. Thunder is a deterministic synthesized one-shot
+  static local fixtures and runtime bus lights. Thunder is a deterministic synthesized one-shot
   (`CityThunderSound`, `Ambience/Details`, two rotating voices on child
   objects because a low-pass filter processes its whole GameObject) played
   `0.6-3 s` after the flash with distance-scaled volume and cutoff. A frozen
@@ -6189,15 +6191,14 @@
   for at most six signalized degree-3+ intersections before GameObjects exist.
   The same ordered nodes own zebra crossings. Visual lamp fixtures and bulbs
   are combined into separate `48 m` meshes while lightweight anchors preserve
-  the pooled-light contract.
-- **Accepted — Bounded practical lights:** All bulbs and signal lenses reuse
-  one HDR URP Unlit material; a player-relative pool of directed street spot
-  lights plus bar entrance point lights keeps the city-atmosphere pool at no
-  more than `12` shadowless realtime lights. The sole active bus may add `4`
+  permanent world-light identities.
+- **Accepted — Bounded practical lights:** All bulbs/signals share one HDR URP
+  Unlit material. Static street/bar/practical anchors keep permanent Lights
+  under the `2048` construction cap; no player-relative pool. Each bus may add `4`
   runtime-owned shadowless Spots, the single pooled helmet-lamp pedestrian may
   add `1`, and the fixed always-on yard Spot adds `1`. Fixed site lights,
-  including the cemetery and ten church-garden uplights, are separate from
-  the unchanged twelve-light atmosphere pool. The scene Directional and transient lightning
+  including cemetery/ten church-garden uplights, stay separately owned.
+  The scene Directional and transient lightning
   Directional are separate from this local-light count.
 - **Accepted — Safe signal rhythm:** Each selected intersection uses one
   seed-phased controller for two heads and flashes amber below 1 Hz; red and

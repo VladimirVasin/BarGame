@@ -8,19 +8,17 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityNightAtmosphere : MonoBehaviour
     {
-        public const int MaximumRealtimeLights = 12;
+        public const int MaximumRealtimeLights = 2048;
         public const float MinimumTunnelFlickerMultiplier = 0.05f;
 
-        private const float ReassignmentInterval = 0.35f;
-        private const float ReassignmentDistance = 1.25f;
+        private const float AvailabilityRefreshInterval = 0.35f;
         internal const float PracticalLeaseDistance = 20f;
         internal const string IndustrialTaskLightPrefix = "IndustrialTaskLight_";
         private const int MaximumIndustrialTaskLights = 512;
 
         // The mast grew from 2.92 m to 4.70 m of source height; the
         // inverse-square law wants (4.70/2.92)^2 = 2.6x the luminous
-        // power for the same pavement below, and the pool reaches
-        // correspondingly further.
+        // power for the same pavement below.
         private const float StreetLightIntensity = 31f;
         private const float StreetLightRange = 16.5f;
         private const float HillsideLightRange = 22f;
@@ -56,7 +54,6 @@ namespace BarPromenade
 
         private Transform player;
         private Transform[] busStopPoles = Array.Empty<Transform>();
-        private const float PlateFadeStart = 15f, PlateFadeEnd = 28f;
         private static readonly Color PlateLampColor = new Color(1f, .89f, .73f);
         private Transform[] lampAnchors = Array.Empty<Transform>();
         private CityFringePracticalAnchor[] practicalAnchors =
@@ -68,13 +65,10 @@ namespace BarPromenade
         private CityLightHalo[] barLightHalos =
             Array.Empty<CityLightHalo>();
         private int[] selectedAnchorIndices = Array.Empty<int>();
-        private float[] selectedAnchorDistances = Array.Empty<float>();
         private float[] pooledLightBaseIntensities = Array.Empty<float>();
-        // Whether a pool slot may show its travelling halo. Only the
-        // leased practical does: every fixed lamp carries its own
-        // fixture halo now, and a pooled spot arriving at a mast or
-        // a quay lantern must not double the blob. The quay wall halo
-        // is independently always lit; most fixtures remain night-gated.
+        // Static fixtures keep their Light for their complete exterior lifetime.
+        // Only fringe practicals need an additional halo: masts, quay and task
+        // fixtures already own fixed halos independent of the actual Light.
         private bool[] pooledHaloVisible = Array.Empty<bool>();
         private int activePracticalIndex = -1;
         private int quayAnchorStartIndex = int.MaxValue;
@@ -90,9 +84,11 @@ namespace BarPromenade
         private CityLightHalo[] industrialFixtureHalos = Array.Empty<CityLightHalo>();
         private CityCoveredPassageLight[] coveredPassageLights = Array.Empty<CityCoveredPassageLight>();
         private bool[] industrialIsCoveredPassage = Array.Empty<bool>();
+        private readonly HashSet<Light> residentialEntranceLights = new HashSet<Light>();
         public int IndustrialTaskLightCount => industrialPurposes.Length;
-        private float nextReassignmentTime;
-        private Vector3 lastAssignmentPosition;
+        private float nextAvailabilityRefresh;
+        private int practicalLightStart, plateLightStart;
+        private bool fixedBindingsReady;
         private float nightFactor = 1f;
         private float tunnelPracticalFlickerMultiplier = 1f;
         private bool hasAppliedNightFactor;
@@ -103,7 +99,8 @@ namespace BarPromenade
         public float NightFactor => nightFactor;
         public float TunnelPracticalFlickerMultiplier =>
             tunnelPracticalFlickerMultiplier;
-        public int ReassignmentCount { get; private set; }
+        // Retained for diagnostics compatibility: fixed fixtures never reassign.
+        public int ReassignmentCount => 0;
         public int RealtimeLightCount =>
             streetLightPool.Length + barLights.Length;
         internal bool IsPracticalSlotLeased { get; private set; }
@@ -114,9 +111,22 @@ namespace BarPromenade
                 ? practicalAnchors[activePracticalIndex].Kind
                 : null;
         internal Light ActivePracticalLight =>
-            IsPracticalSlotLeased && streetLightPool.Length > 0
-                ? streetLightPool[streetLightPool.Length - 1]
+            IsPracticalSlotLeased && activePracticalIndex >= 0
+                ? streetLightPool[practicalLightStart + activePracticalIndex]
                 : null;
+        public int FixedFixtureCount => RealtimeLightCount;
+        public int FixedAnchorLightCount => lampAnchors.Length;
+
+        public Light GetLightForAnchor(int anchorIndex) =>
+            anchorIndex >= 0 && anchorIndex < lampAnchors.Length
+                ? streetLightPool[anchorIndex] : null;
+
+        public Light GetPracticalLight(CityFringeYardKind kind)
+        {
+            for (int i = 0; i < practicalAnchors.Length; i++)
+                if (practicalAnchors[i].Kind == kind) return streetLightPool[practicalLightStart + i];
+            return null;
+        }
         internal int AssignedStreetLightCount { get; private set; }
 
         public void Initialize(
@@ -127,6 +137,8 @@ namespace BarPromenade
                 fringePracticalAnchors = null,
             IReadOnlyList<Transform> quayLampAnchors = null, Transform busStops = null)
         {
+            if (fixedBindingsReady)
+                throw new InvalidOperationException("City fixed lighting is already initialized.");
             player = playerTransform != null
                 ? playerTransform
                 : throw new ArgumentNullException(nameof(playerTransform));
@@ -140,9 +152,8 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(barLightPositions));
             }
 
-            // Quay and industrial task fixtures join the same nearest-first
-            // pool. Their cached index ranges select the working profile and
-            // preserve the fixture's authored aim without extra Lights.
+            // Stable index ranges preserve every fixture's physical source,
+            // authored aim and special shadow profile at any observer distance.
             Transform[] taskAnchors = FindIndustrialTaskLights(transform.parent);
             industrialAnchorStartIndex = streetLampAnchors.Count + (quayLampAnchors?.Count ?? 0);
             lampAnchors = CopyAnchors(streetLampAnchors, quayLampAnchors, taskAnchors);
@@ -197,6 +208,14 @@ namespace BarPromenade
                         industrialUseShadows[index] = true;
                         industrialIntensityScales[index] = .28f;
                         industrialRangeLimits[index] = 4.5f; break;
+                    case "ResidentialEntrance":
+                    case "CourtyardEntrance":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = .5f;
+                        industrialRangeLimits[index] = 5.5f;
+                        industrialSpotAngles[index] = 155f;
+                        industrialInnerSpotAngles[index] = 95f; break;
                     case "PawnshopEntrance":
                         industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
                         industrialUseShadows[index] = true;
@@ -256,11 +275,6 @@ namespace BarPromenade
                         industrialUseShadows[index] = true;
                         industrialIntensityScales[index] = .01f;
                         industrialRangeLimits[index] = 4f; break;
-                    case "CourtyardEntrance":
-                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
-                        industrialUseShadows[index] = true;
-                        industrialIntensityScales[index] = .16f;
-                        industrialRangeLimits[index] = 4.5f; break;
                     default:
                         if (!Enum.TryParse(purposeName, out industrialPurposes[index]) || industrialPurposes[index] == CityIndustrialPurpose.None)
                             throw new InvalidOperationException("Unknown functional industrial task light: " + taskAnchors[index].name);
@@ -288,9 +302,17 @@ namespace BarPromenade
             }
             practicalAnchors = CopyPracticalAnchors(
                 fringePracticalAnchors);
-            int barLightCount = Mathf.Min(
-                barLightPositions.Count,
-                MaximumRealtimeLights);
+            if (busStops != null)
+            {
+                busStopPoles = new Transform[busStops.childCount];
+                for (int i = 0; i < busStopPoles.Length; i++) busStopPoles[i] = busStops.GetChild(i);
+            }
+            practicalLightStart = lampAnchors.Length;
+            plateLightStart = checked(practicalLightStart + practicalAnchors.Length);
+            int streetLightCount = checked(plateLightStart + busStopPoles.Length * 2);
+            int barLightCount = barLightPositions.Count;
+            if (checked(streetLightCount + barLightCount) > MaximumRealtimeLights)
+                throw new InvalidOperationException("City fixed-light catalog exceeds 2048 fixtures.");
             barLights = new Light[barLightCount];
             barLightHalos = new CityLightHalo[barLightCount];
             for (int index = 0; index < barLightCount; index++)
@@ -309,37 +331,24 @@ namespace BarPromenade
                     out barLightHalos[index]);
             }
 
-            if (busStops != null)
-            {
-                busStopPoles = new Transform[busStops.childCount];
-                for (int i = 0; i < busStopPoles.Length; i++) busStopPoles[i] = busStops.GetChild(i);
-            }
-            int streetLightCount = Mathf.Min(
-                lampAnchors.Length + (busStopPoles.Length > 0 ? 2 : 0),
-                MaximumRealtimeLights - barLightCount);
             streetLightPool = new Light[streetLightCount];
             streetLightHalos = new CityLightHalo[streetLightCount];
             selectedAnchorIndices = new int[streetLightCount];
-            selectedAnchorDistances = new float[streetLightCount];
             pooledLightBaseIntensities = new float[streetLightCount];
             pooledHaloVisible = new bool[streetLightCount];
             pooledShadowData = new UniversalAdditionalLightData[streetLightCount];
             for (int index = 0; index < streetLightCount; index++)
             {
+                selectedAnchorIndices[index] = -1;
+                bool practical = index >= practicalLightStart && index < plateLightStart;
                 pooledLightBaseIntensities[index] = StreetLightIntensity;
                 streetLightPool[index] = CreateLight(
-                    $"Pooled Street Light {index + 1}",
-                    transform.position,
-                    StreetLightColor,
-                    LightType.Spot,
-                    StreetLightIntensity,
-                    StreetLightRange,
-                    1.15f,
-                    3.10f,
-                    StreetHaloInner,
-                    StreetHaloOuter,
-                    out streetLightHalos[index]);
+                    $"Fixed City Light {index + 1}", transform.position,
+                    StreetLightColor, LightType.Spot, StreetLightIntensity, StreetLightRange,
+                    1.15f, 3.10f, StreetHaloInner, StreetHaloOuter,
+                    out streetLightHalos[index], practical);
             }
+            BindFixedFixtures();
 
             SetNightFactor(nightFactor);
         }
@@ -376,11 +385,8 @@ namespace BarPromenade
             hasAppliedNightFactor = true;
             bool visible = nightFactor > VisibleFactorThreshold;
 
-            // Every realtime fixture below rides the §20 floor rather than
-            // the raw factor: the law says a fixture gives at least two
-            // thirds of its night strength at noon and its fog halo is
-            // never taken away. The raw factor keeps driving what really
-            // belongs to the hour - the refresh cadence, the pool scan.
+            // Static sources retain the §20 daylight floor at any distance.
+            // Their identities and illuminated surfaces never follow the hero.
             float fixtureFactor =
                 GameTimeDayNightRules.FixtureFactor(nightFactor);
             for (int index = 0; index < industrialFixtureHalos.Length; index++)
@@ -390,7 +396,8 @@ namespace BarPromenade
             {
                 barLights[index].intensity =
                     BarLightIntensity * fixtureFactor;
-                barLights[index].enabled = true;
+                barLights[index].enabled = isActiveAndEnabled;
+                barLightHalos[index].SetVisible(isActiveAndEnabled);
                 barLightHalos[index].SetIntensityFactor(fixtureFactor);
             }
 
@@ -405,12 +412,12 @@ namespace BarPromenade
                 }
                 else if (IsActivePracticalPoolIndex(index))
                 {
-                    streetLightPool[index].enabled = true;
+                    streetLightPool[index].enabled = isActiveAndEnabled;
                 }
 
-                streetLightHalos[index].SetIntensityFactor(
+                streetLightHalos[index]?.SetIntensityFactor(
                     intensityFactor);
-                streetLightHalos[index].SetVisible(
+                streetLightHalos[index]?.SetVisible(
                     intensityFactor > VisibleFactorThreshold &&
                     streetLightPool[index].enabled &&
                     pooledHaloVisible[index]);
@@ -437,9 +444,8 @@ namespace BarPromenade
                 else if ((source == null || !source.gameObject.activeInHierarchy) && industrialFixtureHalos[index] != null)
                     industrialFixtureHalos[index].SetVisible(false);
             }
-            // A contact fault must not be quantized to lease periods. Apply the
-            // sampled lens/halo factor at frame cadence, without reassigning or
-            // repeatedly multiplying the stored full-power intensity.
+            // A contact fault stays at frame cadence on its fixed source,
+            // without multiplying an already attenuated power value.
             for (int slot = 0; slot < streetLightPool.Length; slot++)
             {
                 if (IsActivePracticalPoolIndex(slot)) continue;
@@ -451,8 +457,46 @@ namespace BarPromenade
             }
         }
 
-        private void OnDisable() => RestoreCoveredPassagePower();
-        private void OnDestroy() => RestoreCoveredPassagePower();
+        private void OnEnable()
+        {
+            if (!fixedBindingsReady) return;
+            foreach (CityLightHalo halo in industrialFixtureHalos) if (halo != null) halo.SetVisible(true);
+            RefreshStreetLights(true);
+            SetNightFactor(nightFactor, true);
+        }
+
+        private void OnDisable()
+        {
+            RestoreCoveredPassagePower();
+            foreach (Light light in streetLightPool) if (light != null) light.enabled = false;
+            foreach (Light light in barLights) if (light != null) light.enabled = false;
+            foreach (CityLightHalo halo in streetLightHalos) if (halo != null) halo.SetVisible(false);
+            foreach (CityLightHalo halo in barLightHalos) if (halo != null) halo.SetVisible(false);
+            foreach (CityLightHalo halo in industrialFixtureHalos) if (halo != null) halo.SetVisible(false);
+        }
+
+        private void OnDestroy()
+        {
+            RestoreCoveredPassagePower();
+            residentialEntranceLights.Clear();
+            foreach (Light light in streetLightPool) DestroyOwnedLight(light);
+            foreach (Light light in barLights) DestroyOwnedLight(light);
+            foreach (CityLightHalo halo in industrialFixtureHalos)
+                if (halo != null) DestroyOwnedObject(halo.transform.parent.gameObject);
+        }
+
+        private static void DestroyOwnedLight(Light light)
+        {
+            if (light == null) return;
+            DestroyOwnedObject(light.gameObject);
+        }
+
+        private static void DestroyOwnedObject(GameObject target)
+        {
+            if (target == null) return;
+            if (Application.isPlaying) Destroy(target);
+            else DestroyImmediate(target);
+        }
 
         private void RestoreCoveredPassagePower()
         {
@@ -493,164 +537,84 @@ namespace BarPromenade
             ApplyActivePracticalIntensity();
         }
 
+        private void BindFixedFixtures()
+        {
+            for (int index = 0; index < lampAnchors.Length; index++)
+            {
+                selectedAnchorIndices[index] = index;
+                bool industrial = index >= industrialAnchorStartIndex;
+                bool quay = !industrial && index >= quayAnchorStartIndex;
+                if (industrial)
+                {
+                    int task = index - industrialAnchorStartIndex;
+                    ApplyIndustrialProfile(index, industrialPurposes[task], industrialUseShadows[task],
+                        industrialIntensityScales[task], industrialRangeLimits[task],
+                        industrialSpotAngles[task], industrialInnerSpotAngles[task], industrialStreetOnly[task]);
+                    string anchorName = lampAnchors[index].name;
+                    if (anchorName == CityResidentialEntranceLighting.LightAnchorName ||
+                        anchorName == "IndustrialTaskLight_CourtyardEntrance")
+                    {
+                        // The frosted bulb illuminates the wall beside/above
+                        // the door and the underside of the balcony as well as
+                        // the apron. Its real housing and building cast shadows.
+                        streetLightPool[index].type = LightType.Point;
+                        streetLightPool[index].shadowStrength = 1f;
+                        residentialEntranceLights.Add(streetLightPool[index]);
+                    }
+                }
+                else if (quay) ApplyQuayLampProfile(index);
+                else ApplyStreetProfile(index, lampAnchors[index].forward.y < -.05f);
+                Transform anchor = lampAnchors[index];
+                streetLightPool[index].transform.SetPositionAndRotation(anchor.position,
+                    industrial || quay ? anchor.rotation : CreateStreetLightRotation(anchor));
+            }
+            for (int index = 0; index < practicalAnchors.Length; index++)
+            {
+                int slot = practicalLightStart + index;
+                pooledHaloVisible[slot] = true;
+                AssignPracticalLight(slot, practicalAnchors[index]);
+            }
+            for (int index = 0; index < busStopPoles.Length; index++)
+                for (int face = 0; face < 2; face++)
+                    AssignPlateLight(plateLightStart + index * 2 + face,
+                        busStopPoles[index], face == 0 ? 1 : -1, 1f);
+            fixedBindingsReady = true;
+        }
+
         private void RefreshStreetLights(bool force)
         {
-            if (player == null ||
-                streetLightPool.Length == 0)
-            {
-                return;
-            }
-
+            if (!fixedBindingsReady) return;
             float now = Time.unscaledTime;
-            Vector3 playerPosition = player.position;
-            float movementSquared =
-                (playerPosition - lastAssignmentPosition).sqrMagnitude;
-            if (!force &&
-                now < nextReassignmentTime &&
-                movementSquared <
-                ReassignmentDistance * ReassignmentDistance)
-            {
-                return;
-            }
-
-            for (int index = 0; index < selectedAnchorIndices.Length; index++)
-            {
-                selectedAnchorIndices[index] = -1;
-                selectedAnchorDistances[index] = float.PositiveInfinity;
-            }
-
-            // The pool leases by the FIXTURE factor, not the sky's. The
-            // old gate skipped the anchor scan at a zero night factor -
-            // a fair optimisation while lamps died at dawn, and repealed
-            // with them: under §20 the nearest lamps spill realtime light
-            // at noon exactly as they do at midnight, two thirds as hard.
-            bool nightVisible =
-                GameTimeDayNightRules.FixtureFactor(nightFactor) >
-                VisibleFactorThreshold;
-            activePracticalIndex = FindNearestPractical(
-                playerPosition,
-                nightVisible);
-            IsPracticalSlotLeased =
-                activePracticalIndex >= 0 &&
-                streetLightPool.Length > 0;
-            int streetSlotCount = streetLightPool.Length -
-                                  (IsPracticalSlotLeased ? 1 : 0);
-            Transform pole = FindNearestPlate(playerPosition, out float plateStrength);
-            int plateSlots = pole != null ? Mathf.Min(2, streetSlotCount) : 0;
-            streetSlotCount -= plateSlots;
-
-            if (nightVisible)
-            {
-                for (int anchorIndex = 0;
-                     anchorIndex < lampAnchors.Length;
-                     anchorIndex++)
-                {
-                    Transform anchor = lampAnchors[anchorIndex];
-                    float distance = anchor != null && IsAnchorAvailable(anchorIndex)
-                        ? (anchor.position - playerPosition).sqrMagnitude
-                        : float.PositiveInfinity;
-                    InsertNearest(
-                        anchorIndex,
-                        distance,
-                        streetSlotCount);
-                }
-            }
-
+            if (!force && now < nextAvailabilityRefresh) return;
+            nextAvailabilityRefresh = now + AvailabilityRefreshInterval;
+            // Compatibility diagnostics may describe the nearest practical;
+            // they never control a fixture's binding, position or power.
+            activePracticalIndex = player != null ? FindNearestPractical(player.position, true) : -1;
+            IsPracticalSlotLeased = activePracticalIndex >= 0;
             AssignedStreetLightCount = 0;
             for (int index = 0; index < streetLightPool.Length; index++)
             {
-                if (IsPracticalSlotLeased &&
-                    index == streetLightPool.Length - 1)
-                {
-                    pooledHaloVisible[index] = true;
-                    AssignPracticalLight(
-                        index,
-                        practicalAnchors[activePracticalIndex]);
-                    continue;
-                }
-
-                if (index >= streetSlotCount && index < streetSlotCount + plateSlots)
-                {
-                    int side = index == streetSlotCount ? 1 : -1;
-                    AssignPlateLight(index, pole, side, plateStrength);
-                    AssignedStreetLightCount++;
-                    continue;
-                }
-
-                int anchorIndex = selectedAnchorIndices[index];
-                bool isIndustrial = anchorIndex >= industrialAnchorStartIndex;
-                bool isQuay = !isIndustrial && anchorIndex >= quayAnchorStartIndex;
-                if (isIndustrial)
-                {
-                    int taskIndex = anchorIndex - industrialAnchorStartIndex;
-                    ApplyIndustrialProfile(index, industrialPurposes[taskIndex], industrialUseShadows[taskIndex],
-                        industrialIntensityScales[taskIndex], industrialRangeLimits[taskIndex],
-                        industrialSpotAngles[taskIndex], industrialInnerSpotAngles[taskIndex],
-                        industrialStreetOnly[taskIndex]);
-                }
-                else if (isQuay)
-                {
-                    ApplyQuayLampProfile(index);
-                }
-                else
-                {
-                    ApplyStreetProfile(index, anchorIndex >= 0 && anchorIndex < lampAnchors.Length &&
-                        lampAnchors[anchorIndex] != null && lampAnchors[anchorIndex].forward.y < -.05f);
-                }
-
                 Light light = streetLightPool[index];
-                bool hasAnchor =
-                    anchorIndex >= 0 &&
-                    anchorIndex < lampAnchors.Length &&
-                    lampAnchors[anchorIndex] != null && IsAnchorAvailable(anchorIndex);
-                bool visible =
-                    hasAnchor &&
-                    nightVisible;
-                light.enabled = visible;
-                // The fixture's own always-on halo carries the blur;
-                // the pooled spot brings light alone.
-                pooledHaloVisible[index] = false;
-                streetLightHalos[index].SetVisible(false);
-                if (hasAnchor)
+                float factor = GetPooledIntensityFactor(index);
+                bool available = index < lampAnchors.Length ?
+                    lampAnchors[index] != null && IsAnchorAvailable(index) :
+                    index < plateLightStart ? practicalAnchors[index - practicalLightStart].Anchor != null :
+                    busStopPoles[(index - plateLightStart) / 2] != null;
+                light.intensity = pooledLightBaseIntensities[index] * factor;
+                light.enabled = isActiveAndEnabled && available && factor > VisibleFactorThreshold;
+                CityLightHalo halo = streetLightHalos[index];
+                if (halo != null)
                 {
-                    AssignedStreetLightCount++;
-                    Transform anchor = lampAnchors[anchorIndex];
-                    // A quay lantern's anchor is authored aim, the
-                    // practical's convention; a street anchor only
-                    // knows its road and the tilt is derived.
-                    light.transform.SetPositionAndRotation(
-                        anchor.position,
-                        isQuay || isIndustrial
-                            ? anchor.rotation
-                            : CreateStreetLightRotation(anchor));
+                    halo.SetIntensityFactor(factor);
+                    halo.SetVisible(light.enabled && pooledHaloVisible[index]);
                 }
+                if (light.enabled && !IsActivePracticalPoolIndex(index)) AssignedStreetLightCount++;
             }
-
-            lastAssignmentPosition = playerPosition;
-            nextReassignmentTime = now + ReassignmentInterval;
-            ReassignmentCount++;
         }
-
-        private Transform FindNearestPlate(Vector3 focus, out float strength)
-        {
-            Transform nearest = null;
-            float best = PlateFadeEnd * PlateFadeEnd;
-            foreach (Transform pole in busStopPoles)
-            {
-                if (pole == null || !pole.gameObject.activeInHierarchy) continue;
-                float distance = (pole.position - focus).sqrMagnitude;
-                if (distance >= best) continue;
-                best = distance;
-                nearest = pole;
-            }
-            strength = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(PlateFadeStart, PlateFadeEnd, Mathf.Sqrt(best)));
-            return nearest;
-        }
-
         private void AssignPlateLight(int slot, Transform pole, int side, float strength)
         {
-            // Two grazing beams from the top rim, one per face. Reuse street slots
-            // only within reading distance, with no shadow map or fog halo.
+            // Each board keeps two tiny grazing beams, one per face. Their
+            // short radius affects the plate, without borrowing a street Light.
             Vector3 face = pole.TransformPoint(new Vector3(0f, 2.18f, .101f * side));
             Vector3 source = face + pole.up * .31f + pole.forward * (.22f * side);
             ApplyPooledLightProfile(slot, PlateLampColor, .16f * strength, .95f, 124f, 82f,
@@ -659,37 +623,8 @@ namespace BarPromenade
             light.transform.SetPositionAndRotation(source, Quaternion.LookRotation(face - source, pole.up));
             light.enabled = true;
             pooledHaloVisible[slot] = false;
-            streetLightHalos[slot].SetVisible(false);
+            streetLightHalos[slot]?.SetVisible(false);
         }
-
-        private void InsertNearest(
-            int anchorIndex,
-            float distance,
-            int slotCount)
-        {
-            for (int slot = 0; slot < slotCount; slot++)
-            {
-                if (distance >= selectedAnchorDistances[slot])
-                {
-                    continue;
-                }
-
-                for (int move = slotCount - 1;
-                     move > slot;
-                     move--)
-                {
-                    selectedAnchorDistances[move] =
-                        selectedAnchorDistances[move - 1];
-                    selectedAnchorIndices[move] =
-                        selectedAnchorIndices[move - 1];
-                }
-
-                selectedAnchorDistances[slot] = distance;
-                selectedAnchorIndices[slot] = anchorIndex;
-                return;
-            }
-        }
-
         private int FindNearestPractical(
             Vector3 playerPosition,
             bool includeNightOnly)
@@ -802,14 +737,17 @@ namespace BarPromenade
         internal static Color GetIndustrialTaskLightColor(CityIndustrialPurpose purpose) =>
             GetIndustrialProfile(purpose).Color;
 
+        internal bool IsResidentialEntranceLight(Light light) =>
+            light != null && residentialEntranceLights.Contains(light);
+
         // Native frosted laundry lenses emit a broad downward hemisphere.
-        // Their pooled leases illuminate surfaces, without a separate air beam.
+        // Their fixed sources illuminate surfaces without a separate air beam.
         internal bool IsLaundryDiffuser(Light light)
         {
             for (int i = 0; i < streetLightPool.Length; i++)
             {
                 if (streetLightPool[i] != light) continue;
-                if (IsPracticalSlotLeased && i == streetLightPool.Length - 1) return false;
+                if (IsActivePracticalPoolIndex(i)) return false;
                 int task = selectedAnchorIndices[i] - industrialAnchorStartIndex;
                 return task >= 0 && task < industrialUseShadows.Length && industrialUseShadows[task];
             }
@@ -843,7 +781,7 @@ namespace BarPromenade
         {
             if (sourceRoot == null) return Array.Empty<Transform>();
             var result = new List<Transform>();
-            // One construction-time scan. Pool reassignment only reads the cached anchors.
+            // One construction-time scan; fixed bindings retain these anchors.
             foreach (Transform candidate in sourceRoot.GetComponentsInChildren<Transform>(true))
             {
                 if (!candidate.name.StartsWith(IndustrialTaskLightPrefix, StringComparison.Ordinal)) continue;
@@ -914,7 +852,7 @@ namespace BarPromenade
             pooledLightBaseIntensities[poolIndex] = intensity;
             light.intensity =
                 intensity * GetPooledIntensityFactor(poolIndex);
-            streetLightHalos[poolIndex].SetAppearance(
+            streetLightHalos[poolIndex]?.SetAppearance(
                 innerHaloSize,
                 outerHaloSize,
                 innerHaloColor,
@@ -923,33 +861,23 @@ namespace BarPromenade
 
         private void ApplyActivePracticalIntensity()
         {
-            if (!IsPracticalSlotLeased ||
-                activePracticalIndex < 0 ||
-                activePracticalIndex >= practicalAnchors.Length ||
-                streetLightPool.Length == 0)
+            // Every fringe source exists at any distance. The tunnel fault
+            // always addresses its own source, never a nearest leased slot.
+            for (int index = 0; index < practicalAnchors.Length; index++)
             {
-                return;
+                if (practicalAnchors[index].Kind != CityFringeYardKind.SouthTunnelForecourt) continue;
+                int slot = practicalLightStart + index;
+                float factor = GetPracticalIntensityFactor(practicalAnchors[index].Kind);
+                Light light = streetLightPool[slot];
+                light.intensity = pooledLightBaseIntensities[slot] * factor;
+                light.enabled = isActiveAndEnabled && practicalAnchors[index].Anchor != null && factor > VisibleFactorThreshold;
+                CityLightHalo halo = streetLightHalos[slot];
+                if (halo != null)
+                {
+                    halo.SetIntensityFactor(factor);
+                    halo.SetVisible(light.enabled);
+                }
             }
-
-            CityFringePracticalAnchor practical =
-                practicalAnchors[activePracticalIndex];
-            if (practical.Kind !=
-                CityFringeYardKind.SouthTunnelForecourt)
-            {
-                return;
-            }
-
-            int poolIndex = streetLightPool.Length - 1;
-            float intensityFactor = GetPracticalIntensityFactor(
-                practical.Kind);
-            Light light = streetLightPool[poolIndex];
-            CityLightHalo halo = streetLightHalos[poolIndex];
-            light.intensity =
-                pooledLightBaseIntensities[poolIndex] * intensityFactor;
-            light.enabled = intensityFactor > VisibleFactorThreshold;
-            halo.SetIntensityFactor(intensityFactor);
-            halo.SetVisible(
-                light.enabled && pooledHaloVisible[poolIndex]);
         }
 
         private float GetPooledIntensityFactor(int poolIndex)
@@ -968,7 +896,7 @@ namespace BarPromenade
             }
 
             return GetPracticalIntensityFactor(
-                practicalAnchors[activePracticalIndex].Kind);
+                practicalAnchors[poolIndex - practicalLightStart].Kind);
         }
 
         private bool IsAnchorAvailable(int anchorIndex)
@@ -996,14 +924,8 @@ namespace BarPromenade
             return poweredFactor * tunnelPracticalFlickerMultiplier;
         }
 
-        private bool IsActivePracticalPoolIndex(int poolIndex)
-        {
-            return IsPracticalSlotLeased &&
-                   activePracticalIndex >= 0 &&
-                   activePracticalIndex < practicalAnchors.Length &&
-                   streetLightPool.Length > 0 &&
-                   poolIndex == streetLightPool.Length - 1;
-        }
+        private bool IsActivePracticalPoolIndex(int poolIndex) =>
+            poolIndex >= practicalLightStart && poolIndex < plateLightStart;
 
         private static PracticalLightProfile GetPracticalProfile(
             CityFringeYardKind kind)
@@ -1074,7 +996,8 @@ namespace BarPromenade
             float outerHaloSize,
             Color innerHaloColor,
             Color outerHaloColor,
-            out CityLightHalo halo)
+            out CityLightHalo halo,
+            bool createHalo = true)
         {
             GameObject lightObject = new GameObject(lightName);
             lightObject.transform.SetParent(transform, true);
@@ -1094,6 +1017,7 @@ namespace BarPromenade
                 light.innerSpotAngle = 55f;
             }
 
+            if (!createHalo) { halo = null; return light; }
             GameObject haloObject = new GameObject("Fog Light Halo");
             haloObject.transform.SetParent(lightObject.transform, false);
             halo = haloObject.AddComponent<CityLightHalo>();

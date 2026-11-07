@@ -226,6 +226,9 @@ namespace BarPromenade
             FacadeAttachments => facadeAttachments;
         public IReadOnlyList<CityBuildingWindowSlot> WindowSlots =>
             windowSlots;
+        // Runtime presentation uses the exact same selection as the glass
+        // shader. No per-pane objects or duplicate random selection are needed.
+        internal ulong LitWindowMask { get; set; }
         public IReadOnlyList<CityBuildingBalconySlot> BalconySlots =>
             balconySlots;
         public float FrontageWidth => frontageWidth;

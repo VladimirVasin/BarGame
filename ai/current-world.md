@@ -427,7 +427,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
   Coast→Lower Court/upper housing;2seven-tier climbs join streets over dry ravine.
   Stairs→tiers/through court/crest;off-road earth joins yards.
-  Level pockets:benches/bins/booths;panels→entry/forecourt,shadowed pool12/dayfloor.
+  Level pockets:benches/bins/booths;panels→entry/forecourt,fixed shadowed lights/dayfloor.
   Home bench→truss/ravine/lower roofs.
   `CityHillsideBenchPocketPlan`:pawnshop≤45mXZ;origins fixed;West11/13 face+Z/new docks.
   Plaza/stone1.6m→footways;West landing:solid AsphaltRoad/Concrete.
@@ -435,13 +435,13 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   CityPawnshopDescentPlan:40.06m→3×12(.1252/.32m),aprons→bench35.553m→
   2×12(.166/.32m),landing2.4m→footway/Lane5 zebra/door;imported1.8m/bench branch.
   Cuts/ramp/treads/nav/map/Home;POI at summit/stale art→scheme;walk clear.
-  Outer+4descent lamps:RidgeBench37.5/r11/soft256/pool12/dayfloor.
+  Outer+4descent lamps:RidgeBench37.5/r11/soft256/fixed/dayfloor.
   Pigeon/plinth1.98m,rear;side beds;solid/nav clear.
   Homes:soil/wet asphalt skirts;worn turf/gravel/broken stone/shrub03-04→Home;
   deciduous gable groups. W:stepped concrete/drains;E:low kerbs/grass/boot
   scrapers. Home patched plinth/pooled doorstep;upper poles→stairs/bridge footways;
   covered fixtures below;loose rock/gravel under bridge bearings.
-  Each kiosk:one warm emissive lens/two shadowed pooled lobes light seller/shelves,
+  Each kiosk:one warm emissive lens/two fixed shadowed lobes light seller/shelves,
   through-window street spill. Strong beam reaches statics;soft ordinary source
   keeps seller/dialogue hero faces/clothes. City/Home share placements.
   `10×6 m` rear wings retain padded clearance/`2.4 m` court gap. `3.6 m` through openings
@@ -503,10 +503,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   return wings, two-post frame/crown floodlight), caged floodworks/gauge.
   Four measured sheets: compacted forefield, aggregate, board-formed concrete,
   old masonry. Four emissive practicals stay outside the combined geometry;
-  the nearest supported anchor within `20 m` leases `CityNightAtmosphere`'s
-  last street Spot, keeping its `12`-Light pool. The tunnel moves that lease
-  to the faulty second ceiling fixture, keeps a `0.22` daytime floor and gives
-  its lens and pooled light the same sparse flicker. Four more emissive-only
+  `CityNightAtmosphere` gives each supported anchor a permanent Light. The tunnel
+  Spot stays at its faulty second ceiling fixture, keeps the §20 day floor
+  and shares the lens's sparse flicker. Four more emissive-only
   fixtures continue into the bend; the faulty ballast owns a positional
   `5.6 m` buzz and crackles only on visible power dips. The east drain/pole/
   shed/berm profile yields within the mainland-road clearance;
@@ -537,9 +536,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   catalog sparse city-wide: sidewalk edges, lot bands at walls, tide line, ≤6
   by park benches/paths; off roads/crossings/scenes/yards/cemetery/church/bar
   yard; `1.5 m` gaps, same variant ≥`18/45/90 m`; one instancer.
-  Pooled lamp + canopy/shed Spots: day floor/halos/hard shadows.
+  Fixed lamp + canopy/shed Spots: day floor/halos/hard shadows.
   `CityEastRoadProfile`: shared road/land/car/lamp datum; `RoadGroundCuts` bends.
-  First mast joins pool `12`; later shells/lenses/halos/pools are passive.
+  First mast keeps a fixed Light; later shells/lenses/halos/pools are passive.
   East valley skyline/windows/glow fade 12–30m from post. Far-depth (.20m)
   panorama and traffic fade on entering either southern hill over 12m.
   The checkpoint uses the lowland visibility band.
@@ -613,21 +612,23 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   and authored road frontages and proves their authorized component from the
   spawn road. The first version permits only one walkable surface at any XZ
   projection;
-- one shared MVP day/night lighting cycle for City, the Home window and the
-  Home balcony exterior: night before `06:00`, smooth dawn from `06:00` to
-  `07:00`, day until `18:00`, smooth dusk until `19:00`, then night again.
-  It blends directional/ambient/reflection lighting and the bounded City/Home
-  exterior night fixtures; the fixed neighbour-wall yard Spot is
-  outside `NightFactor` and stays on. The atmosphere pool remains capped at
-  `12` local realtime lights. Each visible bus may add `4` (up to two vehicles per line), the pooled
+- Shared City/Home window/balcony clock: night before `06:00`, smooth dawn
+  `06:00–07:00`, day until `18:00`, smooth dusk `18:00–19:00`, then night.
+  Directional/ambient/reflection and City/Home fixtures blend; the neighbour-wall
+  yard Spot stays outside `NightFactor`. Static City fixtures keep one permanent
+  world-anchored Light each, construction cap `2048`; no proximity leases.
+  `CityWindowLighting`: one lit ordinary Blender window/fixed Spot per building,
+  ≤`192` sources, `5 m`/intensity`7`/hard`256`; special Bar/Home/Shop glass stays.
+  City/Home balcony share warmth/day floor, range/far culling and dormancy cleanup.
+  Each visible bus may add `4` (up to two vehicles per line), the pooled
   helmet-lamp pedestrian `1`, the yard `1` and the drying yard's night-only
-  pole floodlight `1`. Fixed site lights, including the cemetery and the ten
-  church-garden uplights, remain separate from the twelve-light pool;
+  pole floodlight `1`. Fixed site lights (cemetery/ten church-garden uplights)
+  remain separately owned;
   the scene Directional and transient lightning Directional are counted
   separately. Bar, Supermarket and Stairwell lighting are unchanged. On City streets the hero climbs from lowland Exp2 `.090`/48 m to `.025`/110 m at the crest.
-  Lower streets stay hazy below the rooflines. Wind carries the local fog. Night dims the sky, haze,
+  Low streets retain wind-driven haze below roofs. Night dims sky, haze,
   ambient and directional fill, leaving pools of light and their wet reflections visible.
-  The summit apartment and balcony look past the upper bridge and dry ravine to roofs on the descending streets.
+  Summit Home/balcony see roofs down-slope past the upper bridge/dry ravine.
   Saturation `-24` day→`-30` night follows
   clock; authored grade/Home interior unchanged. The
   Windows player retains the runtime-only Exp2 shader variant;
@@ -748,12 +749,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   soil/grass triangles within `1.5 m` outside body contours as asphalt,
   preserving planes/hard surfaces and excluding low grass. Hosts keep
   semantics; cemetery cuts/coatings, sand/fixed collision stay. Home copies
-  bounded street/terrain/perimeters without collision. Ordinary facade panes consume the first channel
-  of the pure `CityDistrictPresentationPlanner`: each district keeps its own
-  lit ratio, while every authored facade row quantizes that ratio to a stable
-  warm/dark selection. At least one warm street-lamp-coloured pane reaches
-  every floor and side, and a multi-pane row always retains darkness. Bar,
-  Home and Supermarket panes retain their authored material families;
+  bounded street/terrain/perimeters without collision. Ordinary Blender panes
+  select exactly one stable warm slot across all authored floors/sides; rows
+  may be dark. Pure `CityDistrictPresentationPlanner` retains district inputs;
+  Bar/Home/Supermarket keep their own material families;
 - `CityFogField`:≤36 world particles/shared material;City/balcony use slow
   wind-driven layers with absolute game-time phase/pause. Roofs clear/refill;
   road/village retain their field profile and weather shelter owner. Exp2 is
@@ -921,7 +920,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   reserve the shelter, waiting places and door approaches. Each stop has a zebra to the opposite pavement. At the foot of the slopes, concrete stairs and
   landings link 01-01 to 03-01 on the west and 02-01 to 03-07 on the east. Residents and the hero use
   the same walk between buses. The river-mouth transfer follows the bridge. The map distinguishes each physical pole. Each face gives the line and stop (03-02), with a second code for transfers.
-  Two short-range, shadowless spots from the street pool light the nearest pole from above, one per face.
+  Two permanent short-range, shadowless Spots light each pole from above, one per face.
   The bus displays dark digits on its pale front panel and light digits on the sides and rear.
   In drizzle and light rain, scattered small drops cling to its panes. Drops run down the glass in heavy rain.
   Each bus serves its own ordered stops, opens both doors and dwells for ten
@@ -965,7 +964,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Home the balcony places a static collider-free sign from the actual home
   line and platform. Active transport runs in City.
 - deterministic street lamps with geometry batched into `48 m` spatial
-  chunks, focused lower-pole collision proxies, shadowless spot-light pools
+  chunks, focused lower-pole collision proxies, fixed shadowless Spots
   and slow out-of-phase amber traffic signals generated from the road graph;
 - scene loops under `Resources/Audio/`: `{City,Bar,Supermarket,Stairwell,Church,Home}Music/`
   with matching snake-case `_theme` names; optional slots fail silent.
@@ -1115,7 +1114,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   roof; no local fog;
 - fair `[11;3]`/`[11;4]`: four staffed passive bread/fruit/pottery/toy stalls,
   shared hero organ/bell actions, two seats, clutter, three always-lit garlands
-  in pool `12`. Three silent adults idle at the first three stalls' inner ends:
+  with fixed lights. Three silent adults idle at the first three stalls' inner ends:
   global `fair.visitor.0..2` identities/wardrobe, no aprons, grounded collision.
   Three silent children share one detailed body, three constructed outfits
   with waist-high trousers and child clips: watching toys, rolling a personal
@@ -1304,7 +1303,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   `3.9 m` north opening and the existing east tree gap. Nine ground lights wash
   planting and one the statue: warm shadowless `35°` Spots, range `3.2 m`,
   real lenses/halos and day floor `2/3`. `CityNightSiteLightRegistry` owns them
-  outside the twelve-Light pool; their finite bounce/volume exclusion remains.
+  with separate fixed ownership; their finite bounce/volume exclusion remains.
   `CityChurchGroundPlan` keeps continuous sampled terrain, a flat inhabited
   garden and graded northern reserve. Paving replaces grass skin, with no
   coplanar overlaps; open iron closes genuine outer edges and west frontage
@@ -1488,12 +1487,14 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
 - ordinary Blender models: five Residential forms, `3–5` storeys,
   heights `13.4/15.8/12.8/15.8/10 m`. Every body/wing has an open `1.4×2.4 m`
   entrance/`1.8 m` vestibule: measured threshold, split collision/skirt, real floor.
-  Cached `CityResidentialEntrancePlan` owns protected graded paving→public
-  sidewalk; City/Home/map share it, without new interactions or apartments.
+  `CityResidentialEntrancePlan` owns protected graded paving→public sidewalk.
+  Each entrance: cool lamp/fixed soft Point/finite air in City/Home, lighting
+  door/facade/balcony underside; canopy/Home reused. Shared glow/day floor;
+  `CityResidentialEntranceLighting` reuses authored `PassageLamp`, no new interaction/apartment.
   Industrial eight functions, heights `8.6/7.8/8.4/7.8/6/8.4/6.6/7.8 m`:
   dry/cold storage, repair/metal/packaging, boiler/compressor, repair garage.
   Equipment owns roofs/gates/recesses; timber/concrete/steel retain response.
-  `IndustrialTaskLight_*` uses the twelve-Light pool/halos/day floor.
+  `IndustrialTaskLight_*` keeps fixed Lights/halos/day floor.
   Twenty original IDs plus three Industrial IDs; fronts≤15.5m,L15×14m,wing10×6m;
   work passage3.6×4.2m. Measured roles/Blender metres/+Z front align to
   `DoorPosition+0.08m`. Home/shop/bar retain heights. Unique facade/plinth sides,
@@ -2296,7 +2297,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   asphalt/sidewalks/markings/lots/windows/lamps/signals; the home line
   stop pole is Home-local/collider-free. Home has its own exterior lighting and shared saturation.
   The summit outlook uses `.0048`/410 m. Other balcony views use `.090`/48 m with local fog.
-  Both share the 12-light street/bar pool;
+  Both keep fixed world-anchored street/bar lights;
   MainRoom/Bathroom/disable/destroy restore captured Home visibility/light.
   Only that shot runs5day/2night distance-managed pedestrians in the fog band;
   leaving pools them. The static stop activates no bus/director: no complete-body,

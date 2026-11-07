@@ -11,7 +11,8 @@ namespace BarPromenade
     {
         public enum Zone { Residential, OldTown, Nightlife, Industrial, Park, ChurchCemetery, River, CoastPort, Fringe }
         public const int MaximumHalationSources = 24, MaximumVolumeSources = 4, MaximumBounceRegions = 4;
-        public const int MaximumPracticals = 192, MaximumEmitterCandidates = 8192;
+        public const int MaximumPracticals = CityNightAtmosphere.MaximumRealtimeLights + 192;
+        public const int MaximumEmitterCandidates = 8192;
         private const float RefreshSeconds = .1f, EmitterCellSize = 16f;
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
@@ -25,11 +26,11 @@ namespace BarPromenade
         internal readonly struct SourceZoneBinding
         {
             internal readonly Zone? FixedZone;
-            internal readonly bool Pooled;
+            internal readonly bool FixtureBound;
 
             internal SourceZoneBinding(string name)
             {
-                Pooled = name.StartsWith("Pooled Street Light ", StringComparison.Ordinal);
+                FixtureBound = name.StartsWith("Fixed City Light ", StringComparison.Ordinal);
                 FixedZone = name.StartsWith("Port ", StringComparison.Ordinal) || name == "Hut Lamp Light" || name == "Ferryman Car Floodlight Light" ? Zone.CoastPort :
                     name.Contains("Cemetery") || name == "Porch Lamp Light" || name == "Ground Planting Light" ? Zone.ChurchCemetery :
                     name.StartsWith("Cannery ", StringComparison.Ordinal) || name.StartsWith("Delivery Truck ", StringComparison.Ordinal) ? Zone.Industrial :
@@ -43,7 +44,8 @@ namespace BarPromenade
             internal readonly Light Light;
             internal readonly SourceZoneBinding ZoneBinding;
             internal Zone Zone;
-            internal bool Moving, Pooled, AllowVolume, AllowBounce, SupportValid, CafeInterior;
+            internal bool Moving, FixtureBound, AllowVolume, AllowBounce, SupportValid, CafeInterior;
+            internal bool Entrance, SurfaceOnly;
             internal Bounds Bounds;
             internal Vector3 SupportPosition;
             internal Quaternion SupportRotation;
@@ -131,6 +133,7 @@ namespace BarPromenade
         public Transform SourceRoot => sourceRoot;
         public CityNightAtmosphere Atmosphere { get; private set; }
         public CityReflectionController Reflection { get; private set; }
+        public CityWindowLighting WindowLights { get; private set; }
         public override Light VolumeLight => null;
         private int halationSourceCount;
         public override int HalationSourceCount => halationSourceCount;
@@ -153,6 +156,7 @@ namespace BarPromenade
             Reflection = gameObject.AddComponent<CityReflectionController>();
             Reflection.Initialize(root, this);
             initialized = true;
+            InitializeWindowLights(root.Camera);
         }
 
         public void InitializeExterior(Transform exteriorRoot, Camera camera, CityNightAtmosphere atmosphere,
@@ -173,6 +177,14 @@ namespace BarPromenade
             Reflection = gameObject.AddComponent<CityReflectionController>();
             Reflection.InitializeExterior(exteriorRoot, this, atmosphere, active);
             initialized = true;
+            InitializeWindowLights(camera);
+        }
+
+        private void InitializeWindowLights(Camera camera)
+        {
+            WindowLights = gameObject.AddComponent<CityWindowLighting>();
+            WindowLights.Initialize(sourceRoot, camera, () => IsForCamera(camera));
+            WindowLights.enabled = isActiveAndEnabled;
         }
 
         private void CacheWorld(Transform staticRoot)
@@ -227,16 +239,18 @@ namespace BarPromenade
                 string name = light.name;
                 int cafeLight = CafeLightIndex(light);
                 if (cafeLight < 0 && !IsExistingPractical(name)) continue;
-                if (practicals.Count >= MaximumPracticals) throw new InvalidOperationException("City practical budget exceeds 192.");
-                bool pooled = name.StartsWith("Pooled Street Light ", StringComparison.Ordinal);
-                bool moving = pooled || name.StartsWith("Bus ", StringComparison.Ordinal) ||
+                if (practicals.Count >= MaximumPracticals) throw new InvalidOperationException("City practical catalogue exceeds its fixed fixture budget.");
+                bool fixtureBound = name.StartsWith("Fixed City Light ", StringComparison.Ordinal);
+                bool entrance = fixtureBound && Atmosphere.IsResidentialEntranceLight(light);
+                bool moving = name.StartsWith("Bus ", StringComparison.Ordinal) ||
                     name.StartsWith("Delivery Truck Headlamp ", StringComparison.Ordinal) ||
                     name == "Port Vessel Searchlight";
                 bool volume = name != "Home Yard Spotlight Light" &&
                     name != "Island Mast Floodlight Light" &&
                     name != "Ferryman Car Floodlight Light" &&
                     name != "Ground Planting Light" && !name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal);
-                var practical = new Practical(light, name) { Moving = moving, Pooled = pooled, AllowVolume = volume,
+                var practical = new Practical(light, name) { Moving = moving, FixtureBound = fixtureBound, AllowVolume = volume,
+                    Entrance = entrance, SurfaceOnly = fixtureBound && !entrance && Atmosphere.IsLaundryDiffuser(light),
                     // Existing fire spill is already causal; do not sum it again.
                     AllowBounce = name != CityArchShelterPresentation.FireLightObjectName &&
                         name != "Ground Planting Light" && !name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal) };
@@ -251,8 +265,8 @@ namespace BarPromenade
                 practicals.Add(practical);
                 if (cafeLight >= 0) continue;
                 // Fixed mast bulbs have their own stable physical emitters. The
-                // travelling pool is a Light lease, not another visible bulb.
-                if (pooled) continue;
+                // fixed fixture binding is not another visible bulb.
+                if (fixtureBound) continue;
                 Renderer nearest = null; float nearestDistance = .8f * .8f;
                 foreach (Emitter emitter in emitters)
                 {
@@ -318,7 +332,7 @@ namespace BarPromenade
 
         private static bool IsExistingPractical(string name)
         {
-            return name.StartsWith("Pooled Street Light ", StringComparison.Ordinal) ||
+            return name.StartsWith("Fixed City Light ", StringComparison.Ordinal) ||
                 name.StartsWith("Bar Entrance Light ", StringComparison.Ordinal) ||
                 name.StartsWith("Bus Headlight ", StringComparison.Ordinal) || name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal) ||
                 name.StartsWith("Delivery Truck Headlamp ", StringComparison.Ordinal) ||
@@ -431,6 +445,7 @@ namespace BarPromenade
                 if (!GeometryUtility.TestPlanesAABB(frustum, entry.Bounds)) continue;
                 float distance = entry.Bounds.SqrDistance(camera.transform.position) +
                     (light.transform.position - camera.transform.position).sqrMagnitude * .08f;
+                if (entry.Entrance) distance *= .7f;
                 int slot = candidateCount;
                 while (slot > 0 && distance < volumeDistances[slot - 1]) slot--;
                 if (slot >= selectedPracticals.Length) continue;
@@ -439,18 +454,22 @@ namespace BarPromenade
                 selectedPracticals[slot] = entry; volumeDistances[slot] = distance;
                 candidateCount = Mathf.Min(candidateCount + 1, selectedPracticals.Length);
             }
-            int valid = 0;
+            int valid = 0, entrances = 0;
             for (int i = 0; i < candidateCount && valid < MaximumVolumeSources; i++)
             {
                 Practical entry = selectedPracticals[i];
+                // Entrance air gets a modest priority, while other working
+                // sources retain at least half of the unchanged shared budget.
+                if (entry.Entrance && entrances >= MaximumVolumeSources / 2) continue;
                 if (Time.unscaledTime >= entry.SupportAt || !entry.SupportValid ||
                     (entry.SupportPosition - entry.Light.transform.position).sqrMagnitude > .25f ||
                     Quaternion.Angle(entry.SupportRotation, entry.Light.transform.rotation) > 3f) ConfigureSupport(entry);
                 if (!entry.SupportValid) continue;
-                float gain = entry.CafeInterior ? .30f : entry.Zone == Zone.Industrial ? .18f : entry.Zone == Zone.Park ? .12f :
+                float gain = entry.Entrance ? .25f : entry.CafeInterior ? .30f : entry.Zone == Zone.Industrial ? .18f : entry.Zone == Zone.Park ? .12f :
                     entry.Zone == Zone.ChurchCemetery ? .16f : entry.Zone == Zone.CoastPort ? .30f : .34f;
                 selected[valid++] = new SceneLocalLightSource(entry.Light, entry.Bounds, Vector4.zero, gain,
                     entry.Light.type == LightType.Spot && entry.Light.shadows != LightShadows.None, entry.Planes, entry.Blockers);
+                if (entry.Entrance) entrances++;
             }
             VolumeSourceCount = valid;
         }
@@ -459,7 +478,15 @@ namespace BarPromenade
         {
             if (entry.CafeInterior) { entry.Bounds = cafeBounds; return; }
             Light light = entry.Light; Vector3 position = light.transform.position;
-            float reach = Mathf.Min(light.range, entry.Moving && !entry.Pooled ? 16f : 7f);
+            float reach = Mathf.Min(light.range, entry.Moving && !entry.FixtureBound ? 16f : 7f);
+            if (entry.Entrance && light.type == LightType.Point)
+            {
+                // A doorway bulb has finite support above and beside its lens,
+                // including a real balcony soffit. Existing structure/depth
+                // clipping still owns occlusion; no scene fog is added.
+                entry.Bounds = new Bounds(position, Vector3.one * (reach * 2f));
+                return;
+            }
             Vector3 end = light.type == LightType.Spot ? position + light.transform.forward * reach : position;
             entry.Bounds = new Bounds(position, Vector3.zero); entry.Bounds.Encapsulate(end);
             float width = light.type == LightType.Point ? Mathf.Min(3f, light.range * .5f) :
@@ -673,7 +700,7 @@ namespace BarPromenade
             IReadOnlyDictionary<Vector3, Zone> fixtureZones, CityLayout layout)
         {
             if (binding.FixedZone.HasValue) return binding.FixedZone.Value;
-            if (binding.Pooled && fixtureZones.TryGetValue(position, out Zone zone)) return zone;
+            if (binding.FixtureBound && fixtureZones.TryGetValue(position, out Zone zone)) return zone;
             return ResolveDistrict(layout, position);
         }
 
@@ -730,8 +757,7 @@ namespace BarPromenade
             return false;
         }
 
-        private bool AllowsVolume(Practical entry) => entry.AllowVolume &&
-            !(entry.Pooled && Atmosphere.IsLaundryDiffuser(entry.Light));
+        private bool AllowsVolume(Practical entry) => entry.AllowVolume && !entry.SurfaceOnly;
         public Zone GetSourceZone(Light light)
         {
             if (light == null) return Zone.Residential;
@@ -771,11 +797,13 @@ namespace BarPromenade
         {
             base.OnEnable(); if (!initialized) return;
             if (Reflection != null) Reflection.enabled = true; refreshAt = 0f;
+            if (WindowLights != null) WindowLights.enabled = true;
         }
         protected override void OnDisable()
         {
             halationSourceCount = 0; VolumeSourceCount = 0; BounceRegionCount = 0;
             if (Reflection != null) Reflection.enabled = false;
+            if (WindowLights != null) WindowLights.enabled = false;
             metal?.Restore(); base.OnDisable();
         }
         private void OnDestroy() { metal?.Dispose(); metal = null; }

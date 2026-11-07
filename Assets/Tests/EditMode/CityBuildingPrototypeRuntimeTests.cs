@@ -581,7 +581,8 @@ namespace BarPromenade.Tests.EditMode
             float maximumState =
                 ((int)CityWindowFamily.Supermarket + 1) *
                 CityWindowAppearance.VariantCount - 1;
-            bool hasLitState = false;
+            int litStates = 0;
+            ulong selected = CityBuildingWindowSlotAppearance.ResolveLitWindowMask(registry, lot, citySeed);
             for (int index = 0;
                  index < registry.WindowSlots.Count;
                  index++)
@@ -603,6 +604,8 @@ namespace BarPromenade.Tests.EditMode
                         paneCount,
                         ResolveWindowSide(slot.Side),
                         out uint paneHash);
+                family = (selected & (1UL << slot.Uv2SlotId)) != 0
+                    ? CityWindowFamily.Warm : CityWindowFamily.Off;
                 if (family != CityWindowFamily.Off)
                 {
                     Assert.That(
@@ -626,36 +629,14 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(expectedState).Within(0.001f),
                     $"Window slot {slot.SlotId} in " +
                     $"'{registry.StableId}' lost its deterministic state.");
-                hasLitState |= family != CityWindowFamily.Off;
+                if (family != CityWindowFamily.Off) litStates++;
             }
 
             Assert.That(
-                hasLitState,
-                Is.True,
-                $"Prototype '{registry.StableId}' wrote no lit window " +
-                "states into its material property block.");
-            foreach (var row in registry.WindowSlots.GroupBy(slot =>
-                         $"{slot.Side}:{slot.Floor}"))
-            {
-                int lit = row.Count(slot =>
-                    Mathf.FloorToInt(
-                        states[slot.Uv2SlotId] /
-                        CityWindowAppearance.VariantCount) !=
-                    (int)CityWindowFamily.Off);
-                Assert.That(
-                    lit,
-                    Is.GreaterThanOrEqualTo(1),
-                    $"Prototype '{registry.StableId}' left row " +
-                    $"'{row.Key}' entirely dark.");
-                if (row.Count() > 1)
-                {
-                    Assert.That(
-                        lit,
-                        Is.LessThan(row.Count()),
-                        $"Prototype '{registry.StableId}' lit every pane " +
-                        $"in row '{row.Key}'.");
-                }
-            }
+                litStates,
+                Is.EqualTo(1),
+                $"Prototype '{registry.StableId}' must keep one permanent lit pane.");
+            Assert.That(registry.LitWindowMask, Is.EqualTo(selected));
         }
 
         private static int ResolveWindowSide(string side)

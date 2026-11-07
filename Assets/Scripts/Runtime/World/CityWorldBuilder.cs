@@ -381,6 +381,7 @@ namespace BarPromenade
             CityDogParkWorldBuilder.Build(world, layout);
             CityStaticCollisionBuilder.AddDogParkColliders(world, plans.DogPark);
             GameObject residentialCourtyardRoot = CityResidentialCourtyardWorldBuilder.Build(world, residentialCourtyards);
+            CityResidentialEntranceLighting.Build(world, layout);
             CityResidentialCourtyardLife courtyardLife = residentialCourtyardRoot.AddComponent<CityResidentialCourtyardLife>();
             courtyardLife.Initialize(residentialCourtyards, residentialCourtyardRoot.transform);
             CityTerracePilotWorld.Build(world, terraces);
@@ -1948,9 +1949,7 @@ namespace BarPromenade
                 lamp.GetComponent<Renderer>(),
                 lampColor);
 
-            // The existing lens used to glow without lighting its doorstep.
-            // Lease its surface light from the city pool instead of adding a
-            // permanent Light outside it.
+            // The shared atmosphere binds a fixed source to this existing lens.
             Transform source = new GameObject(CityNightAtmosphere.IndustrialTaskLightPrefix + "HomeEntrance").transform;
             source.SetParent(parent, true);
             source.position = lamp.transform.position - Vector3.up * .055f;

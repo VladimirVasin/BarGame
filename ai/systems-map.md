@@ -43,7 +43,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City ground water network | Flush municipal ironwork on `Roadside`: a gutter grate every `~52 m`, a welded standpipe every `~150 m`. | `CityDecorationPlanner`, `CityDecorationWorldBuilder` | Current |
 | City ground | Typed sectors retain planes/weather/steps; 1.5m asphalt follows buildings; cemetery/sand stay local. | `CityGroundSurfaceSystem`, `CityBuildingPerimeterPlan` | Current |
 | City street support | Shared stations/outer seams join asphalt, pavement and terrain; imported topology. | `CityStreetSupportPlan`, `CityTerrainStreetBoundaryPlan`, `CityStreetSurfaceWorldBuilder` | Current |
-| City Blender ordinary buildings | Work8;homes/entries;passages:unique graffiti/utilities,pooled lamps/local faults. | `CityBuilding*`, `CityCoveredPassage*`, `CityResidentialEntrance*` | Current |
+| City Blender ordinary buildings | Work8;homes/entries:fixed visible lamps;passages:graffiti/utilities/local faults. | `CityBuilding*`, `CityCoveredPassage*`, `CityResidentialEntrance*` | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | Residential laundry | Residual L-shell; silent worker folds/carries the same cloth/basket; enamel sign/shared light/hum. | `CityLaundry{Plan,AssetProvider,Controller,WorldBuilder}`, `build-city-laundry-3d-model.py` | Current |
 | Residential dog park | Residual fenced yard; three articulated dogs, two permanent owners; open entry and local voices. | `CityDogPark{Plan,AssetProvider,Controller,WorldBuilder}`, `CityDogPose`, `CityDogActivity` | Current |
@@ -80,7 +80,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City elevation/stairs | Shared heights align stairs, ground and collision. | `CityElevation*`, `CityTerrainSurfacePlan` | Current |
 | Terraced City | Yards/bench paths;summit→bench→pawnshop steps;bins/booths/bridges. | `CityHillside*`,`CityTerrace*`,`CityPawnshopDescent*` | Current |
 | City mountain boundary and open tunnel | `default-coastal` closes west/south around the non-traversable river cave and one gate-free `8 x 5.5 m` portal. | `CityMountainBoundary*`, `CityMountainBackdrop*` | Current |
-| Eastern mainland view | Closed post; shared road/traffic datum; skyline/glow fade beyond checkpoint. One pooled mast. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |
+| Eastern mainland view | Closed post; shared road/traffic datum; skyline/glow fade beyond checkpoint. One fixed mast. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |
 | City litter | 36 Blender variants off roads; dense east/no near repeats; solids block; finite shared palette per root. | `CityLitterCatalog`, `CityLitter{Plan,Planner,WorldBuilder,Instancer}`, `CityEastLitter*` | Current |
 | Eastern checkpoint guards | Distinct guards alternate physical patrols; shared pair/E bubbles, passive shoulder rifles, pause/cleanup. | `CityEastGuard{Duty,Plan,Controller}`, `EastGuardActor` | Current |
 | South tunnel travel stub | Walking triggers the authored refusal/return. Gap: no pedestrian transition to Mountain Road. | `CityTunnelTravel{Plan,Planner,Controller,CrossingModel}`, `InteractionPromptView` | Partial |
@@ -146,7 +146,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Supermarket cashier | Wall checkout/decor snacks;anchored palms/light;ordinary cashier,bulging 3D face/shared rig. | `SupermarketCashier{Provider,AssetRegistry,Factory,Presentation,Actor,SurveillanceState,BlinkState,Interaction}` | Current |
 | Supermarket CCTV corner cameras | Four authored corner cameras follow the hero without gameplay surveillance. | `SupermarketInteriorAssetRegistry`, `SupermarketSecurityCamera{,WorldBuilder}` | Current |
 | Supermarket fluorescent atmosphere | Visible fixtures own the store's restrained light, flicker and sound within explicit shared-resource budgets. | `SupermarketInteriorAtmosphere`, `SupermarketFluorescentFlicker` | Current |
-| City day/night presentation | Height opens views;night dims sky/fill. Booths/pawnshop benches share12/day floor. | `CityNightAtmosphere`, `CityAltitudeVisibility`, `CityDayNightController`, `HomeBalconyExteriorAtmosphere` | Current |
+| City day/night presentation | Height opens views;night dims sky/fill. Booths/pawnshop benches retain fixed light/day floor. | `CityNightAtmosphere`, `CityAltitudeVisibility`, `CityDayNightController`, `HomeBalconyExteriorAtmosphere` | Current |
 | Deterministic exterior weather | Shared weather drives area rain/snow/wetness and causal audio. Gap: rain does not dim ambient light or alter grading. | `GameWeatherRules`, `CityWeatherController` | Partial |
 | Exterior cloud ceiling | A passive shared-density shell supplies a camera-relative cloud ceiling with bounded horizon coverage. | `ExteriorCloud{AssetMetadata,Profile,MotionRules,Resources,Field,CaptureCamera}`, `ExteriorCloud.shader` | Current |
 | Runtime cloth rags | Visible cloth uses shared bounded wind response and explicit attachment constraints. | `ClothPanelFactory`, `CityClothWindRegistry` | Current |
@@ -208,7 +208,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Apartment calendar appearance | Days1–7 neglect; heavier7/exact debug restore; sleep view7+hero7. | `HomeApartmentDressing`, `HomeApartmentDay{Rules,Controller}` | Current |
 | Player-home stairwell | Three puzzles/pickup shots/equip;crowbar wakes crowd after return.Safe room3/retry. | `StairwellLabyrinth*`, `StairwellPickup*`, `StairwellEncounter*` | Current |
 | City facade presentation | The legacy 4×4 path remains only for clipped Home crossings. | `CityFacade{Grid,Appearance}`, `CityBuilding{SurfaceAppearance,WindowSlotAppearance}` | Current |
-| City window presentation | Pure facade/window slots select bounded lit shares and preserve district palettes and daytime light floors. | `CityDistrict{ArtProfile,PresentationPlan,PresentationPlanner}`, `CityWindowAppearance` | Current |
+| City windows | One fixed lit ordinary window/Spot per building; warmth/day floor. | `CityWindow{Appearance,Lighting}`, `CityBuildingWindowSlotAppearance` | Current |
 | Stairwell surface presentation | Cached textures and material property blocks apply measured stairwell surfaces without instance materials. | `StairwellSurfaceAppearance`, `SurfaceAppearanceCore` | Current |
 | Exterior ground response | Indexed MPBs share response maps/road masks/snow edges; ridge haze retained. | `GroundSurface{Appearance,Coordinates}`, `GroundSurfaceLit`, `*SurfaceAppearance` | Current |
 | Home/Stairwell surfaces | Original micro sheets/unique macro charts/shared variants; exact earlier-state restore. | `HomeSurfaceAppearance`, `HomeAuthoredVisualFactory`, `SurfaceDamageLibrary` | Current |

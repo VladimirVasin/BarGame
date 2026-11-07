@@ -35,7 +35,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void CityLighting_RegisteredMetadataKeepsPooledAndMovingZonesLiveWithoutAllocations()
+        public void CityLighting_RegisteredMetadataKeepsFixtureAndMovingZonesLiveWithoutAllocations()
         {
             CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,
                 CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
@@ -52,12 +52,12 @@ namespace BarPromenade.Tests.EditMode
                 Light light = host.AddComponent<Light>();
                 light.name = "Port Vessel Searchlight";
                 var fixedSource = new CityLightingPresentation.SourceZoneBinding(light.name);
-                light.name = "Pooled Street Light 0";
+                light.name = "Fixed City Light 0";
                 var pooledSource = new CityLightingPresentation.SourceZoneBinding(light.name);
                 light.name = "Bus Headlight 0";
                 var districtSource = new CityLightingPresentation.SourceZoneBinding(light.name);
                 // Names are immutable registration metadata. Only position and
-                // the live pooled fixture assignment participate after capture.
+                // the registered fixture zone participate after capture.
                 light.name = "Cannery Service Work Light";
                 Assert.That(Resolve(fixedSource, residential), Is.EqualTo(CityLightingPresentation.Zone.CoastPort));
                 Assert.That(Resolve(fixedSource, industrial), Is.EqualTo(CityLightingPresentation.Zone.CoastPort));
