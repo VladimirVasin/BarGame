@@ -8,10 +8,10 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-07
 
-- Остановки:световой контур под крышей и свет посадки;общий вид City/балкона,
-  постоянная мощность,мягкая смена теней. CityBusStopLighting;
-  LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
-- Западный Гребень:новые4-/3-этажные дома,дерево убрано. CityWestRidgeInfillHouse.
+- Разворот:голубятня/живые птицы/хозяин,корм/вода/уборка и насесты. CityPigeonLoft.
+- Остановки:контур/свет посадки City/Home,постоянная мощность/мягкие тени.
+  CityBusStopLighting;LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
+- Запад:жилые дома вместо дерева. CityWestRidgeInfillHouse.
 - Подъезды низины/склонов/Гребня/Home освещены;эркерный прибор под плитой.
   Свет двери/фасада/низа балкона;навесы без дублей. CityEntranceLighting.
 - Уличное окно горит постоянно;добавочное меняется по часам.

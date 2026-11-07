@@ -2,16 +2,16 @@
 
 ## Current facts
 
-- **Accepted 2026-11-07,user — illuminated bus platforms:**
-  Physical01/02/03/transfers dedup;City/Home share Blender recessed neutral
-  perimeter strip underroof:4quarter-rail Spots→bench/backpanel/waiting;pole Spot→
-  front-door apron;paired plate Spots stay. Fixed `CityNightAtmosphere`/day≥2/3/
-  native range/far,never hero-gated. Shadows≤2visible platforms/soft256/fade/
-  hysteresis/≤10maps;strip air0. Air4/bounce4/halos24/cubes2×256;structure/
-  depth clipped. All24FX reviewed:shared GI/SSAO/fog/grade/material/motion/post
-  owners retained;new GI/SSGI/SCGI/pass/globalfog/text/audio/story0.
-  Assets/buffers/cleanup bounded;Art2.3/15a/story§6/20/16/21/art9.
-  CityBusStopLighting passed;cost not isolated.
+- **Accepted 2026-11-07,user — Ridge loft:** one loft/6pigeons/silent keeper;
+  ordinary0–5,story6/17/art7;24FX: [details](city-multilevel-plan.md).
+
+- **Accepted 2026-11-07,user — illuminated bus platforms:** City/Home share
+  recessed neutral perimeter diffuser;4rail Spots→bench/back/waiting,pole→boarding,
+  paired plate Spots. Dedup01/02/03/transfers;fixed CityNightAtmosphere/day≥2/3,
+  native range;soft256 shadows≤2visible stops/10maps,fade/hysteresis;strip air0.
+  Air4/bounce4/halos24/cubes2×256;depth/structure clipping. Shared24FX owners,
+  GI/SSGI/SCGI/pass/fog/text/audio/story unchanged;bounded assets/cleanup.
+  Art2.3/15a,story6/20/16/21/art9;CityBusStopLighting;cost unmeasured.
 
 - **Accepted 2026-11-06/2026-11-07,user — bench access:** pawnshop≤45mXZ;origins fixed;west pair+Z.
   Plaza1.6m/asphalt/flowerbeds;mirrored outer lamps3.2m;West10.4m6-step;
@@ -74,17 +74,16 @@
   Art2/story20:96real min/day×1=4s/game minute;needs/weather scale,
   world motion/alcohol recovery/pause/debug owners stay;story acts/events action-driven.
 
-- **Accepted exceptions 2026-11-03 and 2026-11-05, user — City street visibility and night:**
-  Y≤5:gray-green Exp2`.090`/48m;Y40:`.025`/110m;downhill haze,sky/ridge behind
-  roofs. Night dims sky/fill/haze/reflections,keeps practical spill/Home summit
-  range. Art3.3/9/story16/21;global breathing/story0. `CityFogField`:≤36 shared
-  world particles/slow layered wind/absolute time/Home axes;pause/roof/dormancy/
-  return/unload owners;road/village kept. `CityEastDistance*`:cameraXZ/post;
-  skyline/windows/glow12→30m(full≤12/0≥30);far panorama/traffic fade first12m of
-  either south hill. Cached refs/MPB;recurring loads/material instances0;GPU
-  unmeasured. Both heights share wind/probes/SSR/water/bounce/volumetrics/fog/
-  Gaussian focus;SSAO/soft shadows/surface detail/bloom/SMAA/vignette/grain owners;
-  new pass/SSGI/SCGI/lens0.
+- **Accepted exceptions 2026-11-03/2026-11-05,user — City visibility/night:**
+  Y≤5:Exp2 .090/48m;Y40:.025/110m,gray-green downhill haze,roof/ridge silhouette.
+  Night dims sky/fill/haze/reflections;practicals/Home summit range retained.
+  CityFogField≤36 wind-driven particles,absolute time/shared Home axes;
+  pause/roof/dormancy/return/unload cleanup. CityEastDistance uses cameraXZ/post:
+  skyline/windows/glow full≤12m→0at30m;far traffic/panorama fades first12m of
+  south hills. Cached refs/MPB;no recurring loads/material instances;GPU unmeasured.
+  Shared wind/probes/SSR/water/bounce/volumetrics/fog/Gaussian focus/SSAO/soft
+  shadows/surfaces/bloom/SMAA/vignette/grain;new pass/SSGI/SCGI/lens0.
+  Art3.3/9,story16/21/art9.
 
 - **Accepted 2026-11-03,user — City/balcony night saturation:**
   Runtime grades:day `-24`→night `-30`, shared dawn/dusk/fractional clock.

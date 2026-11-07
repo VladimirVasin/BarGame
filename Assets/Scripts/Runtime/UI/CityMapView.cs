@@ -2621,6 +2621,7 @@ namespace BarPromenade
                 if (drawGround && pointOfInterest.HasFootprint &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.RidgeKiosk &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.Pawnshop &&
+                    pointOfInterest.Kind != CityMapPointOfInterestKind.PigeonLoft &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.UpperCourtBridge &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.UpperSummitBridge)
                 {
@@ -3797,6 +3798,7 @@ namespace BarPromenade
                     break;
                 case CityMapPointOfInterestKind.RidgeKiosk:
                 case CityMapPointOfInterestKind.Pawnshop:
+                case CityMapPointOfInterestKind.PigeonLoft:
                     RetroUiTheme.StrokeRect(new Rect(center.x - halfSize * .76f, center.y - halfSize * .48f,
                         halfSize * 1.52f, halfSize * 1.4f), width, color);
                     DrawLine(center + new Vector2(-halfSize, -halfSize * .68f),

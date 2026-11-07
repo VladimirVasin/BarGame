@@ -125,6 +125,7 @@ namespace BarPromenade
             CityTerracePilotWorld.BuildHillsideShortcuts(frame, CityHillsideAccessPlan.ForLayout(context.Layout), window);
             CityHillsideSiteDetails.Build(frame, context.Layout, window);
             CityHillsideFurnitureWorld.Build(frame, context.Layout, window);
+            CityPigeonLoftWorld.Build(frame, context.Layout, false, window);
             if (CityPawnshopPlan.TryCreate(context.Layout, out var pawnshop) && window.Overlaps(pawnshop.Bounds))
             {
                 CityPawnshopWorld.Build(frame, pawnshop, false);

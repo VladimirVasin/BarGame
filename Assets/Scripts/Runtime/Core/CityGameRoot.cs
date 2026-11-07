@@ -900,6 +900,8 @@ namespace BarPromenade
             }
 
             follow.Initialize(camera, Player.GameObject.transform, false);
+            foreach (var keeper in World.Root.GetComponentsInChildren<CityPigeonKeeper>(true))
+                keeper.PresentationObserver = Player.GameObject.transform;
             BindCafe(ui.transform, camera, follow);
             GameLogPhases.Report("city", "park_and_benches", stepTimer);
             yield return new CompositionStep("residents_and_interactions", 0.87f);
@@ -1666,6 +1668,8 @@ namespace BarPromenade
             }
 
             follow.Initialize(camera, Player.GameObject.transform, false);
+            foreach (var keeper in World.Root.GetComponentsInChildren<CityPigeonKeeper>(true))
+                keeper.PresentationObserver = Player.GameObject.transform;
             if (IntoxicationStatus != null)
             {
                 IntoxicationStatus.Initialize(Player, follow, intoxicationHud);

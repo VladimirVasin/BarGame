@@ -124,15 +124,22 @@ FAST:один primary check;общему контракту ещё один focu
 `AreaCaptureFixture`/City,просмотр/удаление. Docs:`tools/check-docs.py`/diff-check.
 Полные suites/билд не входят;доказательства только по факту.
 
-Проверены `LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap` и
-`LiveCity_CoastalAscentAndStairShortcutShareSupportedRoutes`. Оба полных
-маршрута и лестницы проверены `LiveCity_CitywideSlopesKeepSupportedRoutesAndArrivals`.
-Для верхнего района `LiveCity_UpperQuarterJoinsBothSlopesThroughTheLitCourt` проверяет
-проход по двум мостам, скальное дно под ними, лестницы и ночной путь через дом.
-До вершин пешком 1338 м на востоке, 1474 м на западе. Штатная камера и
-сравнение дальней панорамы на восточной лестнице просмотрены.
-`LiveCity_RidgeGroundAndViewBenchesKeepSupportedWalksAndArrivals` проверяет
-землю/обход дома,его собственную коллизию,приход к скамье и E-посадку/выход.
-Сидячие день/ночь просмотрены;все платформы —
-`LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement`.
-Карта:новая геометрия/POI у верхней дороги;старый ImageGen→схема.
+Путь/контакты/прибытия проверены LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap,
+LiveCity_CoastalAscentAndStairShortcutShareSupportedRoutes,
+LiveCity_CitywideSlopesKeepSupportedRoutesAndArrivals,
+LiveCity_UpperQuarterJoinsBothSlopesThroughTheLitCourt,
+LiveCity_RidgeGroundAndViewBenchesKeepSupportedWalksAndArrivals.
+Пешком восток1338м/запад1474м;день/ночь/штатная камера просмотрены.
+Остановки:LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
+Новая геометрия/POI у верхней дороги:старый ImageGen→схема.
+
+## Голубятня западного разворота
+
+`2026-11-07`,user:loft/6pigeons/silent keeper.
+CityPigeonLoftPlan clears routes/solids;feet meet earth;Home/map share site.
+Keeper:calendar/feed/water/sweep/rig grips. Six birds:plumage/voice,perch/peck/preen,
+≤2flights/free landings,night/rain shelter.
+Pause/cleanup;cost unmeasured;24FX:
+two dayfloor warm Spots,shared GI/SSAO/fog/air/shadows/grade/probes/SSR;wet atlas/
+bevels/weighted normals;rigid mesh/shared wind/rain shelter;no new water/particles/
+vertex-colour. Causal rim/common target outline;all8post categories retain City owners.

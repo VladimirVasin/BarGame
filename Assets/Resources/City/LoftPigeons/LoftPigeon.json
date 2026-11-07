@@ -1,0 +1,28 @@
+{
+  "design_id": "domestic_rock_pigeon",
+  "coordinates": "metres, spread wings, +Z bill, Y0 toes",
+  "plumages": [
+    "blue bar",
+    "pale bar",
+    "warm grey",
+    "slate grey",
+    "sooty",
+    "pied cheek and covert"
+  ],
+  "model": {
+    "name": "LoftPigeon",
+    "bounds_min": [
+      -0.304,
+      0.0005,
+      -0.1838
+    ],
+    "bounds_max": [
+      0.304,
+      0.24899,
+      0.12815
+    ],
+    "anchors": [],
+    "triangles": 3460,
+    "geometry_signature": "995a735d5b3a347216e12e16bdb6b969dbdb82c5681ee28647ca5b690b167b9b"
+  }
+}

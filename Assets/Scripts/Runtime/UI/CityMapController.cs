@@ -40,7 +40,8 @@ namespace BarPromenade
         UpperSummitBridge = 21,
         RidgeKiosk = 22,
         Pawnshop = 23,
-        PawnshopDescent = 24
+        PawnshopDescent = 24,
+        PigeonLoft = 25
     }
 
     public readonly struct CityMapPointOfInterest
@@ -969,6 +970,9 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.Pawnshop:
                     key = "map.poi.pawnshop";
                     return true;
+                case CityMapPointOfInterestKind.PigeonLoft:
+                    key = "map.poi.pigeon_loft";
+                    return true;
                 case CityMapPointOfInterestKind.PawnshopDescent:
                     key = "map.poi.pawnshop_descent";
                     return true;
@@ -1580,6 +1584,10 @@ namespace BarPromenade
             if (CityPawnshopPlan.TryCreate(Layout, out var pawnshop))
                 pointsOfInterest.Add(new CityMapPointOfInterest("pawnshop", CityMapPointOfInterestKind.Pawnshop,
                     CityDistrictKind.Residential, pawnshop.ReturnWorld, pawnshop.Bounds, true));
+            var loft = CityPigeonLoftPlan.ForLayout(Layout);
+            if (loft.IsEnabled)
+                pointsOfInterest.Add(new CityMapPointOfInterest("ridge-pigeon-loft", CityMapPointOfInterestKind.PigeonLoft,
+                    CityDistrictKind.Residential, loft.Approach + Vector3.up * rootOffset, loft.Bounds, true));
             var descent = CityPawnshopDescentPlan.ForLayout(Layout);
             if (descent.IsEnabled)
                 pointsOfInterest.Add(new CityMapPointOfInterest("pawnshop-descent", CityMapPointOfInterestKind.PawnshopDescent,

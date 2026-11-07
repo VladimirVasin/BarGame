@@ -4,13 +4,13 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-07
-Bus shelters now use recessed perimeter diffusers and distributed rail Spots;
-a pole practical lights boarding,while plate beams stay. Shared City/Home models/
-anchors keep fixed dayfloor power;camera-ranked shadow fades are bounded.
-Strip air is disabled:the accepted view reads as a glowing edge and surface
-illumination. CityBusStopLighting proves fixtures,receivers,daylight,fixed-camera power,
-Home and cleanup;native stop views accepted.
-LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
+Ridge loft adds living pigeons and a permanent keeper with real feed/water/tool
+contacts. Imported geometry clears phone/house/road;outward nest openings clear
+the house. CityPigeonLoft covers flight/landing/shelter/pause/grips and day/night views.
+
+Bus platforms share City/Home recessed diffusers/rail Spots,pole boarding light,
+fixed dayfloor power and bounded shadow fades;strip air0. CityBusStopLighting;
+LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement;native views accepted.
 
 West crest infill:four-/three-storey homes,tree cleared;shared lights/map/approaches.
 CityWestRidgeInfillHouse.

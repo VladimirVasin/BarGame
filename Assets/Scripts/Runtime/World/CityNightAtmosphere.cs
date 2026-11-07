@@ -214,6 +214,20 @@ namespace BarPromenade
                         taskAnchors[index].GetComponentInParent<RidgeKioskStreetLightReceivers>()
                             .Initialize(transform.parent, taskAnchors[index].position, industrialRangeLimits[index]);
                         break;
+                    case "PigeonLoftAviary":
+                        industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = .12f;
+                        industrialRangeLimits[index] = 3f;
+                        industrialSpotAngles[index] = 145f;
+                        industrialInnerSpotAngles[index] = 95f; break;
+                    case "PigeonLoft":
+                        industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = .32f;
+                        industrialRangeLimits[index] = 6f;
+                        industrialSpotAngles[index] = 145f;
+                        industrialInnerSpotAngles[index] = 100f; break;
                     case "RidgeKioskInterior":
                         industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
                         industrialUseShadows[index] = true;

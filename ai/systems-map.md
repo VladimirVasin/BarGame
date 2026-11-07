@@ -78,7 +78,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City blueprint/roads | Two districts+park;144 IDs/−29.2% land; fronts/courts share ground/navigation. | `City{Layout,SpatialPlan,RoadGeometryPlan,CourtyardBlockPlanner}`, `BuildingLot` | Current |
 | Coastal utilities | Three passive buildings; bounded poles/wires clear routes; shared Home plan. | `CityCoastalInfrastructure{Plan,WorldBuilder}` | Current |
 | City elevation/stairs | Shared heights align stairs, ground and collision. | `CityElevation*`, `CityTerrainSurfacePlan` | Current |
-| Terraced City | Yards/bench paths;summit→bench→pawnshop steps;bins/booths/bridges. | `CityHillside*`,`CityTerrace*`,`CityPawnshopDescent*` | Current |
+| Terraced City | Yards/bench paths/pawnshop steps;loft/6pigeons/working keeper. | `CityHillside*`,`CityTerrace*`,`CityPawnshopDescent*`,`CityPigeon*` | Current |
 | City mountain boundary and open tunnel | `default-coastal` closes west/south around the non-traversable river cave and one gate-free `8 x 5.5 m` portal. | `CityMountainBoundary*`, `CityMountainBackdrop*` | Current |
 | Eastern mainland view | Closed post; shared road/traffic datum; skyline/glow fade beyond checkpoint. One fixed mast. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |
 | City litter | 36 Blender variants off roads; dense east/no near repeats; solids block; finite shared palette per root. | `CityLitterCatalog`, `CityLitter{Plan,Planner,WorldBuilder,Instancer}`, `CityEastLitter*` | Current |

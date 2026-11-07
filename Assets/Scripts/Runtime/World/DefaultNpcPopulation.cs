@@ -18,6 +18,7 @@ namespace BarPromenade
         public const string PawnshopClerk = "city.pawnshop.clerk";
         public const string CityResidentialKioskSeller = "city.kiosk.residential.seller";
         public const string CityIndustrialKioskSeller = "city.kiosk.industrial.seller";
+        public const string CityPigeonKeeper = "city.ridge.pigeon-keeper";
         public const string CityLaundryWorker = "zzzz.city.laundry.worker";
         public const string CityDogParkStandingOwner = "zzzzz.city.dog-park.standing";
         public const string CityDogParkSeatedOwner = "zzzzz.city.dog-park.seated";
@@ -337,6 +338,13 @@ namespace BarPromenade
                 new SlotConstraint("scarf", "scarf.warm"),
                 new SlotConstraint("apron", new string[] { null })));
             roster.Add(new CharacterDefinition(CityIndustrialKioskSeller, model,
+                new SlotConstraint("outerwear", "outerwear.work"),
+                new SlotConstraint("boots", "boots.work"),
+                new SlotConstraint("headwear", "headwear.everyday"),
+                new SlotConstraint("gloves", new string[] { null }),
+                new SlotConstraint("scarf", new string[] { null }),
+                new SlotConstraint("apron", new string[] { null })));
+            roster.Add(new CharacterDefinition(CityPigeonKeeper, model,
                 new SlotConstraint("outerwear", "outerwear.work"),
                 new SlotConstraint("boots", "boots.work"),
                 new SlotConstraint("headwear", "headwear.everyday"),

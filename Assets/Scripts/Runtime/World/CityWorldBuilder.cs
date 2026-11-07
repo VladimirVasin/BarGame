@@ -391,8 +391,12 @@ namespace BarPromenade
             CityHillsideQuarterGround.Build(world, layout);
             CityHillsideSiteDetails.Build(world, layout);
             CityHillsideFurnitureWorld.Build(world, layout);
+            Transform pigeonLoft = CityPigeonLoftWorld.Build(world, layout);
             CityResidentialEntranceLighting.Build(world);
-            var kioskShelters = new List<Collider>(6);
+            var kioskShelters = new List<Collider>(8);
+            if (pigeonLoft != null)
+                foreach (var collider in pigeonLoft.GetComponentsInChildren<BoxCollider>())
+                    if (collider.isTrigger && collider.name == "Pigeon loft rain shelter") kioskShelters.Add(collider);
             foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(layout).Sites)
             {
                 RidgeKioskWorld.Build(world, kiosk, true, out var shelters);

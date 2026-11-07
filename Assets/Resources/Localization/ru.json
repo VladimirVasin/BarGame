@@ -1,5 +1,6 @@
 {
   "entries": [
+    {"key":"map.poi.pigeon_loft","value":"Голубятня"},
     {"key":"interaction.enter_pawnshop","value":"E — войти в ломбард"},
     {"key":"map.poi.pawnshop","value":"Ломбард"},
     {"key":"pawnshop.trade.prompt","value":"E — обратиться"},
