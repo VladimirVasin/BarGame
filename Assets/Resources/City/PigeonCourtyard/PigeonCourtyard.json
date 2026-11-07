@@ -1,0 +1,176 @@
+{
+  "design": "ridge_pigeon_courtyard_v1",
+  "units": "Unity metres; props face +Z; fences extend +X",
+  "pieces": {
+    "FencePanel": {
+      "min": [
+        0.0,
+        0.075,
+        -0.016
+      ],
+      "max": [
+        1.0,
+        1.35,
+        0.016
+      ],
+      "triangles": 316,
+      "sha256": "7902dc1e9bb541ea7926ed37b842eadc4b2bc798a8a2c28f981146cf4bcbde9e"
+    },
+    "FencePanelRepair": {
+      "min": [
+        0.0,
+        0.075,
+        -0.016
+      ],
+      "max": [
+        1.0,
+        1.35,
+        0.016
+      ],
+      "triangles": 316,
+      "sha256": "279687f410393166b7bce070e96ce15d2c48609b87bd191820b321136420115e"
+    },
+    "FencePost": {
+      "min": [
+        -0.0415,
+        -0.02,
+        -0.0415
+      ],
+      "max": [
+        0.0415,
+        1.5,
+        0.0415
+      ],
+      "triangles": 84,
+      "sha256": "d365c8b0117b1a51590ee5d7507f89cd8ffd08ad6240cef2e9d2d8b91aa6e23a"
+    },
+    "Gate": {
+      "min": [
+        -0.027,
+        0.075,
+        -0.02568
+      ],
+      "max": [
+        1.478,
+        1.35,
+        0.069
+      ],
+      "triangles": 488,
+      "sha256": "a5e4376af9f7c4dfa00216688701dfb5d64fb3569f2c4a909d6d6678a22a17e0"
+    },
+    "Workbench": {
+      "min": [
+        -0.96,
+        0.01683,
+        -0.51078
+      ],
+      "max": [
+        0.96,
+        1.39464,
+        0.475
+      ],
+      "triangles": 1464,
+      "sha256": "5e72928fc47df7f5e98408c9de713d9053a682eb98a2fe47166c6fed66a43ae0"
+    },
+    "GrainStore": {
+      "min": [
+        -0.56,
+        0.0,
+        -0.38
+      ],
+      "max": [
+        0.56,
+        0.8335,
+        0.43
+      ],
+      "triangles": 1380,
+      "sha256": "b91ee2649a4807efbf6aea18c3803d0bcfc17e8106d8006b473acc7d82bf0a6a"
+    },
+    "Bath": {
+      "min": [
+        -0.66,
+        0,
+        -0.63
+      ],
+      "max": [
+        0.565,
+        0.106,
+        0.50437
+      ],
+      "triangles": 1080,
+      "sha256": "a2926f2688d39a66211a3addda299c34f337141dd6c3993f56cede8243455d48"
+    },
+    "BathWater": {
+      "min": [
+        -0.447,
+        0.082,
+        -0.41124
+      ],
+      "max": [
+        0.447,
+        0.086,
+        0.41124
+      ],
+      "triangles": 156,
+      "sha256": "a96ff02eae3bf2035b5e7953a329c86811b2662ce53371a9477229b180820f6e"
+    },
+    "GravelPatch": {
+      "min": [
+        -0.5,
+        -0.005,
+        -0.4
+      ],
+      "max": [
+        0.5,
+        0.015,
+        0.4
+      ],
+      "triangles": 388,
+      "sha256": "da3911cd5bf7504b6a11268ba84537c27c08ee49b0c4ad84a87c35cd985723a3"
+    },
+    "HandLamp": {
+      "min": [
+        -0.07,
+        0.0,
+        -0.07
+      ],
+      "max": [
+        0.07,
+        0.298,
+        0.07
+      ],
+      "triangles": 140,
+      "sha256": "129a862e3b9305086618aada5b7684a69b583a10099bf540a554a3eaddb3ecbc"
+    },
+    "HandLampGlass": {
+      "min": [
+        -0.0475,
+        0.0575,
+        -0.0475
+      ],
+      "max": [
+        0.0475,
+        0.2025,
+        0.0475
+      ],
+      "triangles": 28,
+      "sha256": "a3c21302f240d5e0d507385dc658a863feb5ef64315c09e8b3331fcc6c8e7e0c"
+    }
+  },
+  "anchors": {
+    "Bath": {
+      "PerchBath": [
+        0,
+        0.105,
+        -0.49
+      ],
+      "BathDrink": [
+        0,
+        0.086,
+        -0.37
+      ]
+    }
+  },
+  "shared_material": "City/PigeonLoft/PigeonLoftSurface",
+  "atlas_sha256": "e5d5c8afeb7bb0b1abc9cd79540df52f96677b3cd34fa55e61c626cc535774d4"
+}

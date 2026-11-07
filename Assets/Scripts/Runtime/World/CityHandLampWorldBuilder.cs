@@ -164,6 +164,13 @@ namespace BarPromenade
                 CityNightResources.EmissiveMaterial,
                 false);
 
+            AddLight(assembly);
+            return assembly.gameObject;
+        }
+
+        /// <summary>The same lamp light and halo for an authored imported housing.</summary>
+        internal static void AddLight(Transform assembly, float intensityScale = 1f, float range = Range)
+        {
             var emitter = new GameObject("Hand Lamp Light");
             emitter.transform.SetParent(assembly, false);
             emitter.transform.localPosition =
@@ -171,8 +178,8 @@ namespace BarPromenade
             Light light = emitter.AddComponent<Light>();
             light.type = LightType.Point;
             light.color = LampColor;
-            light.intensity = NightIntensity;
-            light.range = Range;
+            light.intensity = NightIntensity * intensityScale;
+            light.range = range;
             light.shadows = LightShadows.None;
 
             // ForcePixel is not a quality setting here: a vertex-mode
@@ -191,14 +198,13 @@ namespace BarPromenade
                 CityNightResources.AtmosphereMaterial,
                 0.26f,
                 0.80f,
-                MultiplyRgb(LampColor, 1.9f, 0.20f),
-                MultiplyRgb(LampColor, 1.1f, 0.06f));
+                MultiplyRgb(LampColor, 1.9f, 0.20f * intensityScale),
+                MultiplyRgb(LampColor, 1.1f, 0.06f * intensityScale));
             CityNightSiteLightRegistry.Register(
                 light,
-                NightIntensity,
-                DayIntensity,
+                NightIntensity * intensityScale,
+                DayIntensity * intensityScale,
                 halo);
-            return assembly.gameObject;
         }
 
         private static Color MultiplyRgb(

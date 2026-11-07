@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -15,6 +16,18 @@ namespace BarPromenade
         public VillageResidentPresentation Worker { get; private set; }
         public bool IsFeeding { get; private set; }
         public float HandContactError { get; private set; }
+        public const float CommuteSpeed = 1.1f;
+        public const float GateActionSeconds = 3.5f;
+        public bool IsAtHome { get; private set; }
+        public bool IsCommuting { get; private set; }
+        public bool IsUsingGate { get; private set; }
+        public float GateActionTime { get; private set; }
+        public CityPigeonKeeperPlan CommutePlan { get; private set; }
+        public double MorningDepartureSeconds => 360d / GameTimeState.GameMinutesPerRealSecond - CommuteSeconds;
+        public double EveningDepartureSeconds => 1260d / GameTimeState.GameMinutesPerRealSecond;
+        public double CommuteSeconds => workDuration + GateActionSeconds + homeDuration;
+        public float GateApproachSeconds => workDuration;
+        public float HomeWalkSeconds => homeDuration;
 
         private Transform feeder, water, scoop, broom, waterRight, waterLeft, broomLower, broomFoot;
         private Transform spine, grain, waterTap;
@@ -30,6 +43,44 @@ namespace BarPromenade
         private bool present = true;
         private double lastPose = double.NegativeInfinity;
         private double lastClock = double.NaN;
+        private CityPigeonCourtyardGate gate;
+        private CapsuleCollider bodyCollider;
+        private Camera viewCamera;
+        private float[] workDistances, homeDistances;
+        private float workDuration, homeDuration;
+        private double commuteDelay, sampleDelta, nextHomeVisibility;
+        private bool insideHidden, forceRoutine, gateActionActive, gateActionOpening, commuteToolsRestored;
+        private float gateActionStart;
+        private Vector3[] exitOpenApproach, exitOpenReturn;
+        private float[] exitOpenApproachDistances, exitOpenReturnDistances;
+        private float exitOpenApproachDuration, exitOpenReturnDuration, exitOpenElapsed, exitOpenStart;
+        private bool exitOpening;
+        private Transform walkObserver;
+        private CharacterController observedBody;
+
+        public void ConfigureCommute(CityPigeonKeeperPlan plan, CityPigeonCourtyardGate courtyardGate)
+        {
+            CommutePlan = plan ?? throw new ArgumentNullException(nameof(plan));
+            gate = courtyardGate ?? throw new ArgumentNullException(nameof(courtyardGate));
+            workDistances = Distances(plan.WorkToGate);
+            homeDistances = Distances(plan.GateToHome);
+            workDuration = workDistances[workDistances.Length - 1] / CommuteSpeed + .25f;
+            homeDuration = homeDistances[homeDistances.Length - 1] / CommuteSpeed + .25f;
+            Quaternion closedGate = gate.Pivot.rotation * Quaternion.Euler(0f, 90f * gate.Openness, 0f);
+            Vector3 inside = gate.Pivot.position + closedGate * new Vector3(-.35f, 0f, .40f);
+            inside.y = plan.WorkToGate[plan.WorkToGate.Count - 3].y;
+            Vector3 behindTip = gate.Pivot.position + closedGate * new Vector3(-.35f, 0f, 1.85f);
+            Vector3 beyondTip = gate.Pivot.position + closedGate * new Vector3(.90f, 0f, 1.85f);
+            behindTip.y = beyondTip.y = inside.y;
+            Vector3 arrival = plan.WorkToGate[plan.WorkToGate.Count - 3];
+            exitOpenApproach = new[] { arrival, inside };
+            exitOpenReturn = new[] { inside, behindTip, beyondTip, arrival };
+            exitOpenApproachDistances = Distances(exitOpenApproach);
+            exitOpenReturnDistances = Distances(exitOpenReturn);
+            exitOpenApproachDuration = exitOpenApproachDistances[1] / CommuteSpeed + .25f;
+            exitOpenReturnDuration = exitOpenReturnDistances[3] / CommuteSpeed + .25f;
+            ApplyAt(Calendar());
+        }
 
         public void Initialize(Transform site, Transform feeder, Transform water, Transform scoop, Transform workAnchor)
         {
@@ -71,10 +122,11 @@ namespace BarPromenade
             spine = Require(Worker.ModelRoot, "spine");
             fingers = Worker.GetComponent<NpcHandPose>() ??
                 throw new InvalidOperationException("The pigeon keeper must use the ordinary hand rig.");
-            var body = Worker.gameObject.AddComponent<CapsuleCollider>();
-            body.center = Vector3.up * .87f;
-            body.height = 1.7f;
-            body.radius = .20f;
+            bodyCollider = Worker.gameObject.AddComponent<CapsuleCollider>();
+            bodyCollider.center = Vector3.up * .87f;
+            bodyCollider.height = 1.7f;
+            bodyCollider.radius = .20f;
+            viewCamera = Camera.main;
             renderers = Worker.GetComponentsInChildren<Renderer>(true);
             visible = new bool[renderers.Length];
             for (int i = 0; i < renderers.Length; i++) visible[i] = renderers[i].enabled;
@@ -113,17 +165,39 @@ namespace BarPromenade
             if (Worker == null || double.IsNaN(seconds) || double.IsInfinity(seconds) || seconds < 0)
                 throw new ArgumentOutOfRangeException(nameof(seconds));
             lastClock = seconds;
+            commuteDelay = sampleDelta = 0d;
+            forceRoutine = true;
+            insideHidden = false;
+            exitOpening = false;
+            nextHomeVisibility = seconds;
             Sample(seconds, WorkPhase(seconds), true);
+            forceRoutine = false;
         }
 
         private void LateUpdate()
         {
             if (Worker == null) return;
-            double clock = AutoAdvance ? Calendar() : lastClock;
-            if (GameTimeScaleRuntime.IsPaused && tapSound.isPlaying) tapSound.Stop();
+            AdvanceAt(AutoAdvance ? Calendar() : lastClock);
+        }
+
+        /// <summary>Advance the ordinary calendar path, retaining blocked-gate waits.</summary>
+        public void AdvanceAt(double clock)
+        {
+            if (Worker == null || double.IsNaN(clock) || double.IsInfinity(clock) || clock < 0d)
+                throw new ArgumentOutOfRangeException(nameof(clock));
+            if (walkObserver != PresentationObserver)
+            {
+                walkObserver = PresentationObserver;
+                observedBody = walkObserver ? walkObserver.GetComponent<CharacterController>() : null;
+            }
+            if (GameTimeScaleRuntime.IsPaused)
+            {
+                if (tapSound.isPlaying) tapSound.Stop();
+                return;
+            }
             float distance = PresentationObserver == null ? 0 :
-                (PresentationObserver.position - work).sqrMagnitude;
-            bool show = distance < (present ? 115f * 115f : 105f * 105f);
+                (PresentationObserver.position - Worker.transform.position).sqrMagnitude;
+            bool show = !insideHidden && distance < (present ? 115f * 115f : 105f * 105f);
             bool changed = show != present;
             if (changed)
             {
@@ -145,6 +219,8 @@ namespace BarPromenade
                     tapSound.Play();
                 }
             }
+            sampleDelta = double.IsNaN(lastClock) ? 0d : Math.Max(0d, clock - lastClock);
+            if (clock < lastClock || sampleDelta > .5d) { commuteDelay = 0d; exitOpening = false; }
             lastClock = clock;
             double interval = close ? 1d / 30d : 1d / 12d;
             Sample(clock, phase, show && (changed || clock < lastPose || clock - lastPose >= interval));
@@ -163,6 +239,260 @@ namespace BarPromenade
         }
 
         private void Sample(double seconds, float phase, bool pose)
+        {
+            if (CommutePlan != null && SampleCommute(seconds, pose)) return;
+            IsAtHome = IsCommuting = false;
+            IsUsingGate = gateActionActive = false;
+            insideHidden = false;
+            commuteToolsRestored = false;
+            if (bodyCollider != null) bodyCollider.enabled = true;
+            if (forceRoutine && gate != null) gate.TrySetOpenness(1f);
+            SampleWork(seconds, phase, pose);
+        }
+
+        private bool SampleCommute(double seconds, bool pose)
+        {
+            if (exitOpening)
+            {
+                commuteDelay += sampleDelta;
+                exitOpenElapsed += (float)sampleDelta;
+                SampleExitOpening(seconds, pose);
+                return true;
+            }
+            bool wasAtHome = IsAtHome;
+            double day = (seconds - commuteDelay) % GameTimeState.RealSecondsPerGameDay;
+            double morning = MorningDepartureSeconds;
+            double leaving = EveningDepartureSeconds;
+            bool returning = day >= morning && day < morning + CommuteSeconds;
+            bool leavingNow = day >= leaving && day < leaving + CommuteSeconds;
+            IsAtHome = day < morning || day >= leaving + CommuteSeconds;
+            IsCommuting = returning || leavingNow;
+            IsUsingGate = false;
+            if (!IsAtHome && !IsCommuting) { commuteDelay = 0d; return false; }
+            if (!commuteToolsRestored) { RestoreTools(); commuteToolsRestored = true; }
+            IsFeeding = false;
+
+            if (IsAtHome)
+            {
+                gateActionActive = false;
+                if (forceRoutine) gate.TrySetOpenness(0f);
+                if (!wasAtHome || forceRoutine)
+                {
+                    Vector3 inward = -CommutePlan.House.Lot.FacadeForward;
+                    Worker.transform.SetPositionAndRotation(CommutePlan.InsideHome, Quaternion.LookRotation(inward));
+                }
+                if (pose && !insideHidden)
+                {
+                    lastPose = seconds;
+                    Worker.ApplyLocomotion(0f, false, (float)(seconds % 1200d));
+                }
+                bool wasHidden = insideHidden;
+                if (!insideHidden && seconds >= nextHomeVisibility)
+                {
+                    nextHomeVisibility = seconds + .25d;
+                    insideHidden = CanRetireInside();
+                }
+                if (wasHidden != insideHidden || forceRoutine) UpdateHomeVisibility();
+                commuteDelay = 0d;
+                return true;
+            }
+
+            double elapsed = day - (returning ? morning : leaving);
+            // A retired model only returns while its actual vestibule is hidden.
+            // If someone watches that opening, it waits at the same indoor feet.
+            if (returning && insideHidden && !forceRoutine && !CanRetireInside())
+            {
+                commuteDelay += sampleDelta;
+                Worker.transform.position = CommutePlan.InsideHome;
+                UpdateHomeVisibility();
+                return true;
+            }
+            insideHidden = false;
+            bodyCollider.enabled = true;
+            float beforeGate = returning ? homeDuration : workDuration;
+            if (elapsed < beforeGate)
+            {
+                int arrivalIndex = CommutePlan.WorkToGate.Count - 3;
+                float arrivalAt = workDistances[arrivalIndex] / CommuteSpeed + .125f;
+                if (!returning && !forceRoutine && gate.Openness < .999f && elapsed >= arrivalAt)
+                {
+                    commuteDelay += elapsed - arrivalAt;
+                    exitOpening = true;
+                    exitOpenElapsed = 0f;
+                    exitOpenStart = gate.Openness;
+                    SampleExitOpening(seconds, pose);
+                    return true;
+                }
+                gateActionActive = false;
+                if (forceRoutine) gate.TrySetOpenness(returning ? 0f : 1f);
+                Walk(returning ? CommutePlan.GateToHome : CommutePlan.WorkToGate,
+                    returning ? homeDistances : workDistances, (float)elapsed, returning, seconds, pose);
+            }
+            else if (elapsed < beforeGate + GateActionSeconds)
+            {
+                GateActionTime = (float)(elapsed - beforeGate);
+                IsUsingGate = true;
+                if (!gateActionActive || gateActionOpening != returning || forceRoutine)
+                {
+                    gateActionActive = true;
+                    gateActionOpening = returning;
+                    gateActionStart = forceRoutine ? (returning ? 0f : 1f) : gate.Openness;
+                }
+                float fraction = Mathf.Lerp(gateActionStart, returning ? 1f : 0f,
+                    Ease(GateActionTime, .8f, 2.6f));
+                if (!gate.TrySetOpenness(fraction) && !forceRoutine) commuteDelay += sampleDelta;
+                PoseAtGate(seconds, GateActionTime, returning, pose, CommutePlan.GateOutsideStand);
+            }
+            else
+            {
+                gateActionActive = false;
+                if (forceRoutine) gate.TrySetOpenness(returning ? 1f : 0f);
+                Walk(returning ? CommutePlan.WorkToGate : CommutePlan.GateToHome,
+                    returning ? workDistances : homeDistances,
+                    (float)(elapsed - beforeGate - GateActionSeconds), returning, seconds, pose);
+            }
+            return true;
+        }
+
+        private void SampleExitOpening(double seconds, bool pose)
+        {
+            IsAtHome = false;
+            IsCommuting = true;
+            IsUsingGate = false;
+            if (exitOpenElapsed < exitOpenApproachDuration)
+                Walk(exitOpenApproach, exitOpenApproachDistances, exitOpenElapsed, false, seconds, pose);
+            else if (exitOpenElapsed < exitOpenApproachDuration + GateActionSeconds)
+            {
+                IsUsingGate = true;
+                GateActionTime = exitOpenElapsed - exitOpenApproachDuration;
+                float goal = Mathf.Lerp(exitOpenStart, 1f, Ease(GateActionTime, .8f, 2.6f));
+                if (!gate.TrySetOpenness(goal)) exitOpenElapsed -= (float)sampleDelta;
+                PoseAtGate(seconds, GateActionTime, true, pose, exitOpenApproach[1]);
+            }
+            else
+            {
+                float elapsed = exitOpenElapsed - exitOpenApproachDuration - GateActionSeconds;
+                Walk(exitOpenReturn, exitOpenReturnDistances, elapsed, false, seconds, pose);
+                if (elapsed >= exitOpenReturnDuration) exitOpening = false;
+            }
+        }
+
+        private void PoseAtGate(double seconds, float elapsed, bool opening, bool pose, Vector3 stand)
+        {
+            Vector3 grip = gate.GripPosition;
+            Vector3 aim = Vector3.ProjectOnPlane(grip - stand, Vector3.up);
+            Worker.transform.SetPositionAndRotation(stand, Quaternion.LookRotation(aim));
+            if (!pose) return;
+            lastPose = seconds;
+            Worker.ApplyDoor(opening ? VillageResidentAction.DoorOpen : VillageResidentAction.DoorClose, elapsed, grip);
+            float weight = Window(elapsed, 0f, .7f, 2.8f, GateActionSeconds);
+            Pose hand = fingers.GetSocketPose(false, grip, Vector3.up, -Worker.transform.forward);
+            Quaternion upright = spine.rotation;
+            for (float lean = 0f; ; lean += 4f)
+            {
+                spine.rotation = Quaternion.AngleAxis(lean * weight, Worker.transform.right) * upright;
+                if (Worker.ApplyHandContacts(hand.position, null, hand.rotation, null, weight) || lean >= 36f || weight < .999f) break;
+            }
+            fingers.SetGrip(false, weight * .85f);
+            HandContactError = weight >= .999f ? Vector3.Distance(Worker.RightGrip.position, hand.position) : 0f;
+        }
+
+        private void Walk(IReadOnlyList<Vector3> route, float[] distances, float elapsed,
+            bool reverse, double seconds, bool pose)
+        {
+            const float ramp = .25f;
+            float length = distances[distances.Length - 1];
+            float duration = length / CommuteSpeed + ramp;
+            float t = Mathf.Clamp(elapsed, 0f, duration);
+            float along = t < ramp ? CommuteSpeed * t * t / (2f * ramp) :
+                t > duration - ramp ? length - CommuteSpeed * (duration - t) * (duration - t) / (2f * ramp) :
+                CommuteSpeed * (t - ramp * .5f);
+            if (reverse) along = length - along;
+            int segment = 0;
+            while (segment + 2 < distances.Length && distances[segment + 1] < along) segment++;
+            float fraction = Mathf.InverseLerp(distances[segment], distances[segment + 1], along);
+            Vector3 position = Vector3.Lerp(route[segment], route[segment + 1], fraction);
+            Vector3 direction = Vector3.ProjectOnPlane(route[segment + 1] - route[segment], Vector3.up).normalized;
+            if (reverse) direction = -direction;
+            if (!forceRoutine && HeroBlocksStep(position))
+            {
+                if (exitOpening) exitOpenElapsed -= (float)sampleDelta;
+                else commuteDelay += sampleDelta;
+                if (pose)
+                {
+                    lastPose = seconds;
+                    Worker.ApplyLocomotion(0f, false, (float)(seconds % 1200d), PresentationObserver.position + Vector3.up * 1.2f);
+                }
+                return;
+            }
+            Worker.transform.SetPositionAndRotation(position, Quaternion.LookRotation(direction));
+            if (!pose) return;
+            lastPose = seconds;
+            float speed = CommuteSpeed * Mathf.Clamp01(Mathf.Min(t, duration - t) / ramp);
+            Worker.ApplyLocomotion(speed, false, (float)(seconds % 1200d), position + direction * 2f + Vector3.up * 1.2f);
+            HandContactError = 0f;
+        }
+
+        private bool HeroBlocksStep(Vector3 next)
+        {
+            if (!observedBody || !observedBody.enabled) return false;
+            Bounds hero = observedBody.bounds;
+            if (next.y >= hero.max.y || next.y + bodyCollider.height <= hero.min.y) return false;
+            Vector3 current = Worker.transform.position;
+            Vector2 from = new(current.x - hero.center.x, current.z - hero.center.z);
+            Vector2 step = new(next.x - current.x, next.z - current.z);
+            if (step.sqrMagnitude < .000001f || Vector2.Dot(from, step) >= 0f) return false;
+            float fraction = Mathf.Clamp01(-Vector2.Dot(from, step) / step.sqrMagnitude);
+            float radius = bodyCollider.radius + Mathf.Max(hero.extents.x, hero.extents.z) + .04f;
+            return (from + step * fraction).sqrMagnitude < radius * radius;
+        }
+
+        private static float[] Distances(IReadOnlyList<Vector3> route)
+        {
+            if (route == null || route.Count < 2) throw new ArgumentException("A keeper commute needs continuous endpoints.");
+            var result = new float[route.Count];
+            for (int i = 1; i < route.Count; i++) result[i] = result[i - 1] + Vector3.Distance(route[i - 1], route[i]);
+            return result;
+        }
+
+        private bool CanRetireInside()
+        {
+            if (!viewCamera) viewCamera = Camera.main;
+            if (!viewCamera) return false;
+            return Hidden(Worker.Head.position) && Hidden(Worker.transform.position + Vector3.up * .85f) &&
+                Hidden(Worker.transform.position + Vector3.up * .10f);
+
+            bool Hidden(Vector3 point)
+            {
+                Vector3 view = viewCamera.WorldToViewportPoint(point);
+                if (view.z < 0f || view.x < -.1f || view.x > 1.1f || view.y < -.1f || view.y > 1.1f) return true;
+                Vector3 ray = point - viewCamera.transform.position;
+                if (!Physics.Raycast(viewCamera.transform.position, ray.normalized, out RaycastHit hit,
+                    ray.magnitude - .08f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) return false;
+                return !hit.transform.IsChildOf(Worker.transform) &&
+                    CommutePlan.House.FoundationBounds.Contains(new Vector2(hit.point.x, hit.point.z));
+            }
+        }
+
+        private void UpdateHomeVisibility()
+        {
+            bodyCollider.enabled = !insideHidden;
+            for (int i = 0; i < renderers.Length; i++) renderers[i].enabled = !insideHidden && present && visible[i];
+            if (insideHidden) Worker.ReleaseAnimation();
+        }
+
+        private void RestoreTools()
+        {
+            if (tapSound != null && tapSound.isPlaying) tapSound.Stop();
+            if (scoop != null) scoop.SetPositionAndRotation(scoopRest.position, scoopRest.rotation);
+            if (water != null) water.SetPositionAndRotation(waterRest.position, waterRest.rotation);
+            if (broom != null) broom.SetPositionAndRotation(broomRest.position, broomRest.rotation);
+            if (waterTap != null) waterTap.rotation = tapRest;
+            if (waterStream != null) waterStream.enabled = false;
+            if (grain != null) grain.localScale = grainFullScale;
+        }
+
+        private void SampleWork(double seconds, float phase, bool pose)
         {
             float feedVisit = Window(phase, 0, 3, 17, 20);
             float waterVisit = Window(phase, 55, 59, 84, 88);
@@ -283,13 +613,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
-            if (tapSound != null) tapSound.Stop();
-            if (scoop != null) scoop.SetPositionAndRotation(scoopRest.position, scoopRest.rotation);
-            if (water != null) water.SetPositionAndRotation(waterRest.position, waterRest.rotation);
-            if (broom != null) broom.SetPositionAndRotation(broomRest.position, broomRest.rotation);
-            if (waterTap != null) waterTap.rotation = tapRest;
-            if (waterStream != null) waterStream.enabled = false;
-            if (grain != null) grain.localScale = grainFullScale;
+            RestoreTools();
             if (Worker != null) Worker.ReleaseAnimation();
             IsFeeding = false;
         }

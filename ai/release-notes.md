@@ -8,7 +8,8 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-07
 
-- Разворот:голубятня/живые птицы/хозяин,корм/вода/уборка и насесты. CityPigeonLoft.
+- Двор голубятни/купальня/тусклая лампа;будка наверху.
+  Хозяин21→дом/06→работа;калитка `E`. CityPigeonLoft.
 - Остановки:контур/свет посадки City/Home,постоянная мощность/мягкие тени.
   CityBusStopLighting;LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
 - Запад:жилые дома вместо дерева. CityWestRidgeInfillHouse.

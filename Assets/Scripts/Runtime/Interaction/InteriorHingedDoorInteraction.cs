@@ -27,6 +27,8 @@ namespace BarPromenade
         private UnityEngine.Object npcBodyOwner;
         private Transform npcBody;
         private float npcRadius, npcHeight;
+        private string openPrompt = "interaction.open_village_door", closePrompt = "interaction.close_village_door";
+        private Func<Vector3, Vector3> resolveDock;
 
         public event Action<bool> InteractionFinished;
         public float OpenFraction { get; private set; }
@@ -40,7 +42,7 @@ namespace BarPromenade
         public float ContactWeight { get; private set; }
         public string PromptKey => washroomAccess != null && washroomAccess.IsLocked && !IsInside
             ? BarWashroomAccess.OccupiedKey
-            : OpenFraction >= .5f ? "interaction.close_village_door" : "interaction.open_village_door";
+            : OpenFraction >= .5f ? closePrompt : openPrompt;
         public Vector3 GroundedOutsideDock => outsideDock;
         public Vector3 GroundedInsideDock => insideDock;
         public Vector3 InteractionPosition => hinge != null ?
@@ -51,25 +53,28 @@ namespace BarPromenade
 
         public void Initialize(PlayerRuntime runtime, PlayerAnimatedInteractionController sharedController,
             Transform pivot, BoxCollider solidLeaf, Transform outerHandle, Transform innerHandle,
-            Vector3 groundedOutsideDock, Vector3 groundedInsideDock, float openAngle = -90f)
+            Vector3 groundedOutsideDock, Vector3 groundedInsideDock, float openAngle = -90f,
+            float initialOpenFraction = 0f, Func<Vector3, Vector3> groundedDock = null)
         {
             if (runtime.GameObject == null || sharedController == null || !sharedController.IsInitialized ||
                 pivot == null || solidLeaf == null || solidLeaf.isTrigger || !solidLeaf.enabled ||
                 outerHandle == null || innerHandle == null || !solidLeaf.transform.IsChildOf(pivot) ||
-                float.IsNaN(openAngle) || float.IsInfinity(openAngle) || Mathf.Abs(openAngle) > 90f || Mathf.Abs(openAngle) < 1f)
+                float.IsNaN(openAngle) || float.IsInfinity(openAngle) || Mathf.Abs(openAngle) > 90f || Mathf.Abs(openAngle) < 1f ||
+                float.IsNaN(initialOpenFraction) || initialOpenFraction < 0f || initialOpenFraction > 1f)
                 throw new ArgumentException("An interior door requires a solid leaf, measured handles/docks and the live shared hero.");
             Cancel(); Unsubscribe();
             player = runtime; controller = sharedController; hinge = pivot; leaf = solidLeaf;
             outsideHandle = outerHandle; insideHandle = innerHandle;
             outsideDock = groundedOutsideDock; insideDock = groundedInsideDock; angle = openAngle;
-            closedRotation = hinge.localRotation;
-            closedNormal = hinge.forward;
+            resolveDock = groundedDock;
+            closedRotation = hinge.localRotation * Quaternion.Inverse(Quaternion.Euler(0f, angle * initialOpenFraction, 0f));
+            closedNormal = hinge.parent != null ? hinge.parent.rotation * closedRotation * Vector3.forward : closedRotation * Vector3.forward;
             leafFromHinge = hinge.worldToLocalMatrix * leaf.transform.localToWorldMatrix;
             body = runtime.GameObject.GetComponent<CharacterController>();
             Player3DAssetRegistry registry = runtime.GameObject.GetComponentInChildren<Player3DAssetRegistry>();
             if (body == null || registry == null) throw new InvalidOperationException("The door requires the production hero capsule and rig.");
             hands = new VillageWorkroomHandContacts(runtime.GameObject.transform, registry);
-            OpenFraction = 0f;
+            OpenFraction = initialOpenFraction;
             controller.PhaseChanged += OnPhase;
             controller.InteractionCompleted += OnCompleted;
         }
@@ -111,6 +116,7 @@ namespace BarPromenade
                         Vector3.up * PlayerFactory.GroundedRootOffset;
                 }
             }
+            if (resolveDock != null) dock = resolveDock(dock);
             if (IntersectsSweep(OpenFraction, targetFraction, dock - player.GameObject.transform.position)) return false;
             Vector3 contact = hinge.TransformPoint(contactLocal);
             Vector3 facing = contact - dock; facing.y = 0f;
@@ -133,6 +139,12 @@ namespace BarPromenade
             hinge.parent != null ? hinge.parent.TransformPoint(hinge.localPosition + closedRotation * local) : hinge.position + closedRotation * local;
 
         public void ConfigureWashroomAccess(BarWashroomAccess access) => washroomAccess = access;
+
+        internal void ConfigurePromptKeys(string openKey, string closeKey)
+        {
+            openPrompt = openKey;
+            closePrompt = closeKey;
+        }
 
         public Transform GetNpcHandle(bool inside) => inside ? insideHandle : outsideHandle;
 

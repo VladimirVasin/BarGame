@@ -2,8 +2,10 @@
 
 ## Current facts
 
-- **Accepted 2026-11-07,user — Ridge loft:** one loft/6pigeons/silent keeper;
-  ordinary0–5,story6/17/art7;24FX: [details](city-multilevel-plan.md).
+- **Accepted 2026-11-07,user — Ridge loft:** loft/6pigeons/keeper;
+  grille/bench/dim pier lamp/grain/bath;phone+dock uphill;fixed loft/map/Home.
+  Keeper21→(-23,-7)/06→loft;stairs/grip/E;sampled docks;occluded home.
+  Ordinary0–5,story6/17/art7;[24FX](city-multilevel-plan.md).
 
 - **Accepted 2026-11-07,user — illuminated bus platforms:** City/Home share
   recessed neutral perimeter diffuser;4rail Spots→bench/back/waiting,pole→boarding,

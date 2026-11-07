@@ -30,6 +30,9 @@ namespace BarPromenade
         }
 
         private readonly Joint body, head, leftWing, rightWing, leftFoot, rightFoot, leftTail, rightTail;
+        private readonly Transform headTransform;
+        private readonly Vector3 localBillTip;
+        public Vector3 BillPosition => headTransform.TransformPoint(localBillTip);
 
         public CityLoftPigeonRig(Transform host, GameObject template, Material plumage, int variant)
         {
@@ -49,6 +52,10 @@ namespace BarPromenade
             if (joints.Count != 8) throw new InvalidOperationException("Articulated pigeon requires eight mesh joints.");
             body = new Joint(joints["Breast"], host);
             head = new Joint(joints["NeckHead"], host);
+            headTransform = joints["NeckHead"];
+            // The bill tip is authored in the same anatomical metre frame as
+            // the rig. Store it in the imported joint's actual unit wrapper.
+            localBillTip = headTransform.InverseTransformPoint(host.TransformPoint(new Vector3(0f, .207f, .128f)));
             leftWing = new Joint(joints["LeftWing"], host);
             rightWing = new Joint(joints["RightWing"], host);
             leftFoot = new Joint(joints["LeftFoot"], host);
@@ -58,7 +65,8 @@ namespace BarPromenade
         }
 
         public void Pose(float seconds, float spread, float flap, float legsFolded, float flare,
-            float step, float peck, float preen, bool tucked, bool moving)
+            float step, float peck, float preen, bool tucked, bool moving,
+            Vector3? drinkingTarget = null, float drinkContact = 0f)
         {
             float breath = Mathf.Sin(seconds * 1.9f);
             float stride = Mathf.Sin(seconds * 11f);
@@ -66,8 +74,13 @@ namespace BarPromenade
             body.Shift(new Vector3(0f, .0015f * breath - crouch + step * Mathf.Abs(stride) * .004f, 0f));
             body.Rotate(Quaternion.Euler(26f * peck + 5f * legsFolded - 12f * flare, 0f, 0f));
             head.Shift(new Vector3(0f, -.025f * peck, .010f * (step * stride + peck)));
-            head.Rotate(Quaternion.Euler(54f * peck + 28f * preen, (moving ? 0f : Mathf.Sin(seconds * .86f) * 13f) +
+            head.Rotate(Quaternion.Euler(54f * peck + 28f * preen, (moving || drinkingTarget.HasValue ? 0f : Mathf.Sin(seconds * .86f) * 13f) +
                 94f * preen + (tucked ? 46f : 0f), 10f * preen));
+            if (drinkingTarget.HasValue && drinkContact > 0f)
+            {
+                Vector3 correction = drinkingTarget.Value - BillPosition;
+                headTransform.position += Vector3.ClampMagnitude(correction, .035f) * drinkContact;
+            }
             leftWing.Rotate(Wing(-1f, spread, flap));
             rightWing.Rotate(Wing(1f, spread, flap));
             float fan = 7f * spread + 13f * flare;

@@ -4,9 +4,11 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-07
-Ridge loft adds living pigeons and a permanent keeper with real feed/water/tool
-contacts. Imported geometry clears phone/house/road;outward nest openings clear
-the house. CityPigeonLoft covers flight/landing/shelter/pause/grips and day/night views.
+Ridge loft adds grille yard/workbench/grain/bath;phone+dock uphill,loft fixed.
+Lamp spill/glass/halo reduced after overexposure. Keeper walks21→home/06→work
+via stairs/gate grip;E opens both sides. Home retirement waits for occlusion.
+Blender/map/Home share contacts;bill meets water. CityPigeonLoft covers
+flight/shelter/pause/grips,courtyard/phone and commute/gate views.
 
 Bus platforms share City/Home recessed diffusers/rail Spots,pole boarding light,
 fixed dayfloor power and bounded shadow fades;strip air0. CityBusStopLighting;

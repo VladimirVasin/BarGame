@@ -48,6 +48,7 @@ namespace BarPromenade
     public sealed class CityHillsideFurniturePlan
     {
         public const string HomeBenchId = "ridge-home-view-bench";
+        public const string LoftPhoneId = "ridge-West-RoadsidePhoneBooth-09";
         public const float BenchSpacing = 52f, DumpsterSpacing = 58f, PhoneBoothSpacing = 82f;
         public const int MaximumPlacements = 96;
         private static readonly ConditionalWeakTable<CityLayout, RawPlan> RawPlans = new();
@@ -57,6 +58,7 @@ namespace BarPromenade
         public IReadOnlyList<CityStreetUtilityDock> UtilityDocks { get; }
         public IReadOnlyList<Rect> SolidFootprints { get; }
         public IReadOnlyList<Vector2[]> SolidPolygons { get; }
+        internal IReadOnlyList<Rect> BusReservations { get; }
 
         public static CityHillsideFurniturePlan ForLayout(CityLayout layout) => Plans.GetValue(layout, l => new(l));
         // Raw pads use only the analytic ground recipe. Grid construction may call this without
@@ -78,6 +80,7 @@ namespace BarPromenade
             // pad construction. Reject its exact published reservations only at this stage.
             var busReservations = new List<Rect>(CityBusNetworkFurniture.Reservations(
                 CityDistrictBusPlanner.CreateRoadRouting(layout), layout));
+            BusReservations = busReservations.AsReadOnly();
             var raw = RawPlans.GetValue(layout, l => new(l));
             string homeFailure = "raw candidate missing: " + raw.HomeFailure;
             foreach (var candidate in raw.Sites)
@@ -86,11 +89,14 @@ namespace BarPromenade
                 if (!ground.TrySampleTop(point, out float top))
                 { if (candidate.Id == HomeBenchId) homeFailure = "no ground at " + point; continue; }
                 bool clear = true;
+                // The public phone has a narrow graded connection all the way
+                // to the footway. Its whole strip must survive final reservations.
+                Rect reservedAccess = candidate.Id == LoftPhoneId ? raw.LoftPhoneApproach : candidate.AccessBounds;
                 foreach (Rect area in busReservations)
-                    if (candidate.AccessBounds.Overlaps(area))
+                    if (reservedAccess.Overlaps(area))
                     { clear = false; if (candidate.Id == HomeBenchId) homeFailure = "bus reservation " + area; break; }
                 foreach (var site in CityHillsideSiteDetails.ForLayout(layout))
-                    if (candidate.Bounds.Overlaps(site.Bounds))
+                    if ((candidate.Id == LoftPhoneId ? reservedAccess : candidate.Bounds).Overlaps(site.Bounds))
                     { clear = false; if (candidate.Id == HomeBenchId) homeFailure = site.Part + " at " + site.Origin + " bounds " + site.Bounds; break; }
                 if (RidgeKioskSitePlan.TryCreate(layout, out var kiosk) &&
                     (candidate.AccessBounds.Overlaps(kiosk.Bounds) || candidate.AccessBounds.Overlaps(kiosk.Apron)))
@@ -132,6 +138,8 @@ namespace BarPromenade
             }
             if (layout.HasSummitHome && !seats.Exists(s => s.Id == HomeBenchId))
                 throw new InvalidOperationException("The Ridge home viewpoint needs a supported, unobstructed bench: " + homeFailure);
+            if (layout.HasSummitHome && !placements.Exists(p => p.Id == LoftPhoneId))
+                throw new InvalidOperationException("The pigeon courtyard phone needs its supported public landing.");
             Placements = placements.AsReadOnly(); Seats = seats.AsReadOnly();
             UtilityDocks = docks.AsReadOnly(); SolidFootprints = solids.AsReadOnly(); SolidPolygons = polygons.AsReadOnly();
         }
@@ -148,6 +156,7 @@ namespace BarPromenade
             internal readonly List<CityHillsideGroundPad> Pads = new();
             internal readonly List<CityHillsideGroundRamp> Ramps = new();
             internal string HomeFailure { get; private set; } = "not surveyed";
+            internal Rect LoftPhoneApproach { get; private set; }
             private readonly CityLayout layout;
             private readonly List<Rect> reserved = new();
             private readonly IReadOnlyList<CityHillsideStreetRoute> roads;
@@ -174,6 +183,7 @@ namespace BarPromenade
 
                 if (layout.HasSummitHome)
                 {
+                    reserved.Add(CityPigeonCourtyardPlan.FurnitureReservation);
                     // Across the street from Home, just west of the stone lip. The bench faces
                     // the lower truss and descending roofs rather than the house or the wall.
                     var target = quarter.Bridges[0].DeckCenterWorld;
@@ -211,6 +221,11 @@ namespace BarPromenade
                 for (float station = start; station < road.Path.Length - 12f && Sites.Count < MaximumPlacements; station += spacing)
                 {
                     string id = $"ridge-{road.Bank}-{kind}-{serial++:00}";
+                    if (id == LoftPhoneId && layout.HasSummitHome)
+                    {
+                        AddLoftPhone(road);
+                        continue;
+                    }
                     bool added = false;
                     // Search a bounded nearby station; a doorway or a queue wins over a nominal interval.
                     for (int attempt = 0; attempt < 9 && !added; attempt++)
@@ -231,6 +246,45 @@ namespace BarPromenade
                         }
                     }
                 }
+            }
+
+            private void AddLoftPhone(CityHillsideStreetRoute road)
+            {
+                // Use the same utility ID, light and door dock on the outer south
+                // shoulder of the final street. Survey the level landing before
+                // construction of the terrain and feather a narrow path to the curb.
+                float streetZ = road.GetLaneZ(CityHillsideStreetRoute.LaneCount - 1);
+                foreach (float setback in new[] { 13f, 15f, 17f })
+                // Start two metres beyond the retaining wall on the west side
+                // of the neighbouring frontage. Face north across level earth.
+                foreach (float x in new[] { -148f, -150f, -152f, -146f, -144f })
+                {
+                    Vector2 p = new(x, streetZ - setback);
+                    float outside = streetZ - 8f, inside = streetZ;
+                    // Find the actual faceted outside edge, including the bus overhang.
+                    for (int i = 0; i < 12; i++)
+                    {
+                        float mid = (outside + inside) * .5f;
+                        if (road.TrySampleTop(new Vector2(x, mid), out _, out _)) inside = mid;
+                        else outside = mid;
+                    }
+                    if (!road.TrySampleTop(new Vector2(x, inside), out float curb, out var kind) ||
+                        kind != CityStreetSupportKind.Sidewalk) continue;
+                    Rect approach = Rect.MinMaxRect(x - .95f, p.y, x + .95f, outside);
+                    bool clear = true;
+                    foreach (var obstacle in reserved)
+                        if (obstacle.Overlaps(approach)) { clear = false; break; }
+                    if (!clear || !Add(LoftPhoneId, CityMiscKind.RoadsidePhoneBooth, p, Vector3.forward,
+                        new Vector3(x, curb, streetZ), 0)) continue;
+                    var phone = Sites[Sites.Count - 1];
+                    LoftPhoneApproach = Rect.MinMaxRect(phone.AccessBounds.xMin, phone.AccessBounds.yMin,
+                        phone.AccessBounds.xMax, outside);
+                    Ramps.Add(new CityHillsideGroundRamp(approach, phone.AccessBounds.yMax, outside,
+                        phone.Position.y, curb - .012f));
+                    reserved.Add(approach);
+                    return;
+                }
+                throw new InvalidOperationException("No clear outer shoulder for the pigeon courtyard phone.");
             }
 
             private bool Add(string id, CityMiscKind kind, Vector2 p, Vector3 facing, Vector3 target, int variant)

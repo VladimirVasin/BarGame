@@ -384,7 +384,7 @@
 
 | Уровень | Раздел | Что снимается | Чем заменяется |
 | ---: | --- | --- | --- |
-| `0` | худ.§10c;§17 | птицы/хозяин | `2026-11-07`,user:one Ridge loft/6domestic pigeons+silent keeper;ordinary0–5;§16/21/art9;architecture. |
+| `0` | худ.§10c;§17 | птицы/хозяин | `2026-11-07`,user:Ridge loft/6pigeons/keeper21→home/06→work;gate hand/E both sides;grille/tools/grain/bath/dim pier lamp;phone uphill;ordinary0–5;§16/21/art9;architecture. |
 | `0` | §20;худ.§2.3/15a | приборы остановок | `2026-11-07`,user:01/02/03+Home:perimeter strip/rail Spots,air0+pole apron;fixed/day≥2/3,plate2 stay. Быт0–5;герой/текст/сюжет0;§16/21/art9;architecture. |
 | `0` | §20;худ.§7/15a | подъездный прибор | `2026-11-07`,user:жилые подъезды City/Home:плафон/постоянный свет порога/фасада/низа балкона/воздуха;навес/Home без дублей. День≥2/3;туман/сюжет прежние. §16/21/art9;architecture. |
 | `0` | §20;худ.§2.2/7/15a | пулы/ряды/часы | `2026-11-07`,user:City/Home без приближения;основное окно постоянно,в жилом доме ещё одно по seed/часам с паузой. День≥2/3 пока горит;редко/без сюжета. §16/21/art9;architecture. |

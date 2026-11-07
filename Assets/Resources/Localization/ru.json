@@ -668,6 +668,14 @@
       "value": "E — открыть дверь"
     },
     {
+      "key": "interaction.open_pigeon_gate",
+      "value": "E — открыть калитку"
+    },
+    {
+      "key": "interaction.close_pigeon_gate",
+      "value": "E — закрыть калитку"
+    },
+    {
       "key": "interaction.exit_mothers_house",
       "value": "E — выйти в деревню"
     },

@@ -12,18 +12,20 @@ namespace BarPromenade
         private const int AirCapacity = 2;
         private const string Folder = "City/LoftPigeons/";
 
-        private enum SiteKind { Shelf, Perch, Ground, Feeder, Water }
+        private enum SiteKind { Shelf, Perch, Ground, Feeder, Water, Bath }
 
         private sealed class Site
         {
             public readonly Vector3 Feet, Out;
             public readonly SiteKind Kind;
             public readonly string Name;
+            public readonly Vector3 DrinkTarget;
             public int Occupant = -1;
             public bool IsTrough => Kind == SiteKind.Feeder || Kind == SiteKind.Water;
-            public Quaternion Facing => Quaternion.LookRotation(IsTrough ? -Out : Out);
+            public bool IsGround => Kind == SiteKind.Ground || Kind == SiteKind.Bath;
+            public Quaternion Facing => Quaternion.LookRotation(IsTrough || Kind == SiteKind.Bath ? -Out : Out);
 
-            public Site(Transform anchor, SiteKind kind, Transform frame)
+            public Site(Transform anchor, SiteKind kind, Transform frame, Transform drinkTarget = null)
             {
                 Vector3 horizontal = Vector3.ProjectOnPlane(anchor.forward, Vector3.up);
                 Out = horizontal.sqrMagnitude > .25f ? horizontal.normalized : Vector3.forward;
@@ -39,6 +41,11 @@ namespace BarPromenade
                     Out = depth >= 0f ? frame.forward : -frame.forward;
                 if (kind == SiteKind.Feeder || kind == SiteKind.Water || kind == SiteKind.Ground)
                     Out = Vector3.Dot(radial, frame.forward) >= 0f ? frame.forward : -frame.forward;
+                if (kind == SiteKind.Bath)
+                {
+                    DrinkTarget = drinkTarget.position;
+                    Out = Vector3.ProjectOnPlane(anchor.position - DrinkTarget, Vector3.up).normalized;
+                }
                 Name = anchor.name;
                 Kind = kind;
                 // Both trough toes stand on the flat board, just inboard of the lip.
@@ -57,6 +64,7 @@ namespace BarPromenade
             public Site BlockedDestination;
             public int BlockedSample;
             public bool LeavesShelf, EntersShelf;
+            public float DrinkContact;
             public readonly Vector3[] Route = new Vector3[5];
             public readonly float[] SegmentEnd = new float[4];
         }
@@ -64,6 +72,28 @@ namespace BarPromenade
         public int BirdCount => initialized ? Population : 0;
         public int FlyingCount { get; private set; }
         public int LandingCount { get; private set; }
+        public int BathVisitCount { get; private set; }
+        public int BathDrinkingCount
+        {
+            get
+            {
+                int count = 0;
+                for (int i = 0; i < BirdCount; i++)
+                    if (!IsFlying(i) && birds[i].DrinkContact >= .99f) count++;
+                return count;
+            }
+        }
+        public float BathContactError
+        {
+            get
+            {
+                float error = 0f;
+                for (int i = 0; i < BirdCount; i++)
+                    if (!IsFlying(i) && birds[i].DrinkContact >= .99f)
+                        error = Mathf.Max(error, Vector3.Distance(birds[i].Rig.BillPosition, sites[birds[i].Site].DrinkTarget));
+                return error;
+            }
+        }
         public int ShelteredCount
         {
             get
@@ -97,7 +127,7 @@ namespace BarPromenade
         private readonly AudioSource[] voices = new AudioSource[2];
         private readonly int[] voiceOwners = { -1, -1 };
         private Site[] sites;
-        private int feedSite, waterSite, firstShelf, cursor, routeBudget;
+        private int feedSite, waterSite, firstShelf, cursor, routeBudget, bathSite = -1;
         private Material plumage;
         private AudioClip coo, wing;
         private Func<Transform> player;
@@ -106,14 +136,17 @@ namespace BarPromenade
         private bool initialized, audioPaused, shelter, feeding;
 
         public static CityPigeonFlock Create(Transform parent, Transform[] perches, Transform feeder,
-            Transform water, Func<Transform> player, Func<bool> keeperFeeding)
+            Transform water, Func<Transform> player, Func<bool> keeperFeeding,
+            Transform bathPerch = null, Transform bathDrink = null)
         {
             if (!parent || !feeder || !water || perches == null || perches.Length < Population || player == null)
                 throw new ArgumentException("A pigeon loft requires home, perches, feeder, water and a player provider.");
+            if ((bathPerch == null) != (bathDrink == null))
+                throw new ArgumentException("A courtyard bath requires both its standing stone and water contact.");
             var host = new GameObject("Domestic pigeon flock");
             host.transform.SetParent(parent, false);
             var flock = host.AddComponent<CityPigeonFlock>();
-            try { flock.Initialize(perches, feeder, water, player, keeperFeeding); }
+            try { flock.Initialize(perches, feeder, water, player, keeperFeeding, bathPerch, bathDrink); }
             catch
             {
                 if (Application.isPlaying) Destroy(host); else DestroyImmediate(host);
@@ -123,13 +156,13 @@ namespace BarPromenade
         }
 
         private void Initialize(Transform[] perches, Transform feeder, Transform water,
-            Func<Transform> playerProvider, Func<bool> feedProvider)
+            Func<Transform> playerProvider, Func<bool> feedProvider, Transform bathPerch, Transform bathDrink)
         {
             player = playerProvider;
             keeperFeeding = feedProvider;
             feedSite = perches.Length;
             waterSite = feedSite + 1;
-            sites = new Site[perches.Length + 2];
+            sites = new Site[perches.Length + 2 + (bathPerch ? 1 : 0)];
             int covered = 0;
             for (int i = 0; i < perches.Length; i++)
             {
@@ -147,6 +180,11 @@ namespace BarPromenade
             if (covered < Population) throw new ArgumentException("Each loft pigeon needs a separate sheltered perch.");
             sites[feedSite] = new Site(feeder, SiteKind.Feeder, transform);
             sites[waterSite] = new Site(water, SiteKind.Water, transform);
+            if (bathPerch)
+            {
+                bathSite = waterSite + 1;
+                sites[bathSite] = new Site(bathPerch, SiteKind.Bath, transform, bathDrink);
+            }
             GameObject template = Required<GameObject>("LoftPigeon");
             coo = Required<AudioClip>("PigeonCoo");
             wing = Required<AudioClip>("PigeonWing");
@@ -236,6 +274,7 @@ namespace BarPromenade
                 if (bird.Elapsed + .0001f < bird.Duration) continue;
                 bird.Site = bird.Destination;
                 bird.Destination = -1;
+                if (bird.Site == bathSite) BathVisitCount++;
                 bird.NextMove = clock + 5.5f + ((i * 5 + bird.Ordinal * 3) % 9);
                 FlyingCount--;
                 LandingCount++;
@@ -267,7 +306,7 @@ namespace BarPromenade
             Bird bird = birds[id];
             if (bird.Destination >= 0) return;
             Site current = sites[bird.Site];
-            bool flee = current.Kind == SiteKind.Ground && observer && (observer.position - current.Feet).sqrMagnitude < 2.25f * 2.25f;
+            bool flee = current.IsGround && observer && (observer.position - current.Feet).sqrMagnitude < 2.25f * 2.25f;
             if (!shelter && distanceSquared < 14f * 14f && clock >= bird.NextCoo && clock >= nextCall && !flee)
             {
                 Emit(id, coo, .23f);
@@ -282,11 +321,13 @@ namespace BarPromenade
             int attempts = 0;
             for (int step = 0; step <= count; step++)
             {
-                int target = step == 0 ? (feeding ? feedSite : (id + bird.Ordinal) % 3 == 0 ? waterSite : start) : (start + step - 1) % count;
+                int preferredWater = bathSite >= 0 && (id + bird.Ordinal) % 2 == 0 ? bathSite : waterSite;
+                int target = step == 0 ? (feeding ? feedSite : (id + bird.Ordinal) % 3 == 0 ? preferredWater : start) : (start + step - 1) % count;
                 Site next = sites[target];
                 if (target == bird.Site || next.Occupant >= 0 || (shelter && next.Kind != SiteKind.Shelf) ||
                     (next.Kind == SiteKind.Feeder && !feeding) ||
-                    (flee && (next.Kind == SiteKind.Ground || (observer.position - next.Feet).sqrMagnitude < 2.5f * 2.5f))) continue;
+                    (flee && (next.IsGround || (observer.position - next.Feet).sqrMagnitude < 2.5f * 2.5f)) ||
+                    (next.IsGround && observer && (observer.position - next.Feet).sqrMagnitude < 2.25f * 2.25f)) continue;
                 if ((current.Feet - next.Feet).sqrMagnitude < .55f * .55f) continue;
                 routeBudget--;
                 if (!PrepareRoute(bird, next, id))
@@ -457,6 +498,7 @@ namespace BarPromenade
         private void Present(int id)
         {
             Bird bird = birds[id];
+            bird.DrinkContact = 0f;
             float phaseClock = clock + id * 2.73f;
             if (bird.Destination >= 0)
             {
@@ -477,6 +519,16 @@ namespace BarPromenade
             }
             Site site = sites[bird.Site];
             bird.Host.SetPositionAndRotation(StandingPosition(bird.Site,id), site.Facing);
+            if (site.Kind == SiteKind.Bath)
+            {
+                float cycle = Mathf.Repeat(phaseClock / 3.6f, 1f);
+                float dip = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.15f, .53f, cycle)) *
+                    (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.70f, .97f, cycle)));
+                bird.DrinkContact = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.92f, 1f, dip));
+                bird.Rig.Pose(phaseClock, 0f, 0f, 0f, 0f, 0f, dip, 0f, false, false,
+                    site.DrinkTarget, bird.DrinkContact);
+                return;
+            }
             bool tucked = shelter && site.Kind == SiteKind.Shelf;
             float wave = .5f + .5f*Mathf.Sin(phaseClock * 3.8f);
             bool eating = site.Kind == SiteKind.Feeder || site.Kind == SiteKind.Water;

@@ -10,7 +10,8 @@ namespace BarPromenade
         public static Transform Build(Transform parent, CityLayout layout, bool live = true, Rect? retained = null)
         {
             var plan = CityPigeonLoftPlan.ForLayout(layout);
-            if (!plan.IsEnabled || (retained.HasValue && !retained.Value.Overlaps(plan.Bounds))) return null;
+            if (!plan.IsEnabled || (retained.HasValue && !retained.Value.Overlaps(plan.Courtyard.Bounds))) return null;
+            Transform bath = CityPigeonCourtyardWorld.Build(parent, layout, live, out var gate);
             var root = new GameObject("Ridge Pigeon Loft").transform;
             root.SetParent(parent, false);
             root.localPosition = plan.Origin;
@@ -79,8 +80,16 @@ namespace BarPromenade
                 var keeper = root.gameObject.AddComponent<CityPigeonKeeper>();
                 keeper.Initialize(root, anchors["Feeder"], anchors["Water"],
                     anchors["Scoop"], anchors["KeeperWorkAnchor"]);
+                keeper.ConfigureCommute(CityPigeonKeeperPlan.ForLayout(layout), gate);
+                Transform bathPerch = null, bathDrink = null;
+                foreach (Transform point in bath.GetComponentsInChildren<Transform>())
+                {
+                    if (point.name == "PerchBath") bathPerch = point;
+                    if (point.name == "BathDrink") bathDrink = point;
+                }
+                if (!bathPerch || !bathDrink) throw new InvalidOperationException("Courtyard bath requires authored bird contacts.");
                 CityPigeonFlock.Create(root, perches.ToArray(), anchors["FeederPerch"],
-                    anchors["WaterPerch"], () => keeper.PresentationObserver, () => keeper.IsFeeding);
+                    anchors["WaterPerch"], () => keeper.PresentationObserver, () => keeper.IsFeeding, bathPerch, bathDrink);
             }
             if (live)
             {

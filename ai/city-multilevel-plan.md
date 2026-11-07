@@ -135,11 +135,11 @@ LiveCity_RidgeGroundAndViewBenchesKeepSupportedWalksAndArrivals.
 
 ## Голубятня западного разворота
 
-`2026-11-07`,user:loft/6pigeons/silent keeper.
-CityPigeonLoftPlan clears routes/solids;feet meet earth;Home/map share site.
-Keeper:calendar/feed/water/sweep/rig grips. Six birds:plumage/voice,perch/peck/preen,
-≤2flights/free landings,night/rain shelter.
-Pause/cleanup;cost unmeasured;24FX:
-two dayfloor warm Spots,shared GI/SSAO/fog/air/shadows/grade/probes/SSR;wet atlas/
-bevels/weighted normals;rigid mesh/shared wind/rain shelter;no new water/particles/
-vertex-colour. Causal rim/common target outline;all8post categories retain City owners.
+`2026-11-07`,user loft6/keeper/grille/tools/grain/bath;phone up.
+Keeper21→home/06→work,stairs/gate grip;E both sides;occluded vestibule retirement.
+Dim pier lamp6/r8/shadow0/day≥2/3.24FX Current/shared;cost unmeasured.
+1GI/SSGI/SCGI,2SSAO(moving gate),3fog,4air,5shadows,6grade,7probes/SSR.
+8bath atlas,9wetness,10bevels/normals,11vertex colour0,12wind/rigid,
+13gravel contacts,14rain,15source rim,16utility outline.
+17Bloom/18DoF/19SMAA(grid)/20vignette/21grain-dither/22flares/23blur/
+24CA-distortion share City profiles;Home/map/rig/pause/cleanup.
