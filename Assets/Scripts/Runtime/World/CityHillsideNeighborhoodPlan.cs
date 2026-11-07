@@ -148,6 +148,21 @@ namespace BarPromenade
                         if (!BlocksStair(building, access) && HasClearance(building, buildings)) buildings.Add(building);
                     }
                 }
+                if (road.Bank == CityTerraceTransportBank.West)
+                {
+                    // Complete the surveyed gap beside the upper footway.
+                    // Keep the same cut-and-fill, frontage and shared exterior
+                    // contracts as the other west-bank residences.
+                    int lane = CityHillsideStreetRoute.LaneCount - 1;
+                    var infill = new CityHillsideBuilding(road.Bank, new Vector2Int(-24, -8),
+                        -99.2f, road.GetLaneZ(lane), -1, 7.4f, 0, Vector3.forward,
+                        at => road.SampleLaneTop(lane, at) + CityHillsideBuilding.PavementRise);
+                    if (!BlocksStair(infill, access) && HasClearance(infill, buildings)) buildings.Add(infill);
+                    var neighbour = new CityHillsideBuilding(road.Bank, new Vector2Int(-25, -8),
+                        -84f, road.GetLaneZ(lane), -1, 7.4f, 4, Vector3.forward,
+                        at => road.SampleLaneTop(lane, at) + CityHillsideBuilding.PavementRise);
+                    if (!BlocksStair(neighbour, access) && HasClearance(neighbour, buildings)) buildings.Add(neighbour);
+                }
             }
             Buildings = buildings.AsReadOnly();
             var shared = new List<CityHillsideBuilding>();

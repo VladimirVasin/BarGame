@@ -594,7 +594,7 @@ namespace BarPromenade.Tests.PlayMode
                 var lighting = city.Night.Atmosphere;
                 lighting.RefreshImmediate();
                 Assert.That(lighting.RealtimeLightCount, Is.LessThanOrEqualTo(CityNightAtmosphere.MaximumRealtimeLights));
-                var spots = lighting.StreetLightPool.Where(light => light.enabled && light.type == LightType.Spot &&
+                var spots = lighting.StreetLightPool.Where(light => light.enabled && light.type == LightType.Spot && light.range < 1f &&
                     (light.transform.position - faces[0].transform.position).sqrMagnitude < .9f).ToArray();
                 Assert.That(spots.Length, Is.EqualTo(2), code);
                 foreach (var face in faces)

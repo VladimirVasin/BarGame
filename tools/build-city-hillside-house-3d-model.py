@@ -26,13 +26,14 @@ def stair_bay(mat):
     root = port.empty("GlazedStairBay")
     brick, concrete = kit.geometry("Brick"), kit.geometry("Concrete")
     frame, glass, roof = kit.geometry("SteelDark"), kit.geometry("LandingGlass"), kit.geometry("Roof")
+    first_landing = 2.64
     for side in (-1, 1):
         kit.box(brick, (side*.98, 1.32, .53), (.21, 2.64, 1.06), port.RUST)
         for row in range(7):
             kit.box(concrete, (side*.98, .19 + .34*row, 1.06), (.20, .024, .022), port.EDGE, .002)
         kit.box(frame, (side*1.02, 5.66, 1.02), (.065, 6.08, .075), port.METAL)
     for level in range(2):
-        bottom = 2.64 + level*3.0
+        bottom = first_landing + level*3.0
         # Each flight has two landings and two short opposing stair runs.
         for i in range(8):
             kit.box(concrete, (-.45 + i*.124, bottom+.12+i*.195, .52), (.135, .20, .78), port.CONCRETE, .007)
@@ -61,6 +62,9 @@ def stair_bay(mat):
                        ("LandingGlazing",glass),("FoldedBayCap",roof)):
         kit.emit(geom,name,root,mat)
     port.empty("ANCHOR_Pipe",root,(1.12,1.32,.14))
+    # The merged concrete also includes low pier trim. Its bounds cannot
+    # identify this soffit; export the actual first slab's underside instead.
+    port.empty("ANCHOR_EntranceLampCeiling", root, (0, first_landing + .035 - .09, .55))
     return root
 
 
@@ -195,16 +199,20 @@ def build():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-dir",type=Path,default=OUT)
+    parser.add_argument("--model", action="append", help="Export only a named model; the full manifest stays validated.")
     parser.add_argument("--validate-only",action="store_true")
     args = parser.parse_args(sys.argv[sys.argv.index("--")+1:])
     port.base.reset()
     roots, data = build()
+    if args.model and set(args.model) - {root.name for root in roots}:
+        raise ValueError("Unknown hillside model selection")
     if args.validate_only:
         if json.loads((args.model_dir/MANIFEST).read_text()) != data:
             raise ValueError("Published hillside house manifest differs")
     else:
         args.model_dir.mkdir(parents=True,exist_ok=True)
         for root in roots:
+            if args.model and root.name not in args.model: continue
             port.base.export(root,args.model_dir/(root.name+".fbx"))
         (args.model_dir/MANIFEST).write_text(json.dumps(data,indent=2)+"\n")
     port.base.reset()

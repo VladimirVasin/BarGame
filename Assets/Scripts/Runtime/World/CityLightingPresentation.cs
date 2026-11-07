@@ -45,6 +45,7 @@ namespace BarPromenade
             internal readonly SourceZoneBinding ZoneBinding;
             internal Zone Zone;
             internal bool Moving, FixtureBound, AllowVolume, AllowBounce, SupportValid, CafeInterior;
+            internal CityBusStopLighting BusStop;
             internal bool Entrance, SurfaceOnly;
             internal Bounds Bounds;
             internal Vector3 SupportPosition;
@@ -148,6 +149,8 @@ namespace BarPromenade
             Root = root != null && root.World != null && root.Night?.Atmosphere != null ? root :
                 throw new ArgumentNullException(nameof(root));
             sourceRoot = root.transform; Atmosphere = root.Night.Atmosphere; layout = root.Layout;
+            Atmosphere.ConfigureStopShadowCamera(root.Camera,
+                () => Root != null && Root.IsInitialized && !Root.IsDormant && Root.isActiveAndEnabled);
             cafe = root.World.Cafe;
             CacheCafeSupport();
             CitySurfaceLibrary.ApplyHierarchy(sourceRoot);
@@ -167,6 +170,7 @@ namespace BarPromenade
             exteriorCamera = camera != null ? camera : throw new ArgumentNullException(nameof(camera));
             Atmosphere = atmosphere != null ? atmosphere : throw new ArgumentNullException(nameof(atmosphere));
             exteriorActive = active ?? throw new ArgumentNullException(nameof(active));
+            Atmosphere.ConfigureStopShadowCamera(camera, active);
             // The reconstructed balcony is rotated into Home space. Original
             // City district coordinates must never classify those transformed fixtures.
             layout = null;
@@ -230,6 +234,14 @@ namespace BarPromenade
                 if (!HasEmitterNear(anchor.position)) AddEmitter(new Emitter { Anchor = anchor,
                     Radius = .13f, Strength = .25f }, false);
             }
+            foreach (CityBusStopLighting stop in Atmosphere.BusStopFixtures)
+                for (int source = 0; source < CityBusStopLighting.LightCount; source++)
+                {
+                    Transform anchor = stop.SourceAnchors[source];
+                    fixtureZones[anchor.position] = ResolveDistrict(anchor.position);
+                    if (!HasEmitterNear(anchor.position)) AddEmitter(new Emitter { Anchor = anchor,
+                        Light = stop.Lights[source], Radius = .07f, Strength = .16f }, false);
+                }
             if (Root != null)
                 foreach (Transform anchor in Root.World.RiverQuayLampAnchors)
                     if (anchor != null) fixtureZones[anchor.position] = Zone.River;
@@ -254,6 +266,13 @@ namespace BarPromenade
                     // Existing fire spill is already causal; do not sum it again.
                     AllowBounce = name != CityArchShelterPresentation.FireLightObjectName &&
                         name != "Ground Planting Light" && !name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal) };
+                if (Atmosphere.TryGetBusStopSource(light, out CityBusStopLighting stopFixture, out int stopSource))
+                {
+                    practical.BusStop = stopFixture;
+                    // A continuous frosted rail washes surfaces. It does not
+                    // draw a spotlight cone from the middle of the canopy.
+                    practical.AllowVolume = stopSource >= CityBusStopLighting.StripLightCount;
+                }
                 if (cafeLight >= 0)
                 {
                     // The third Light only extends the same warm energy at the
@@ -465,7 +484,7 @@ namespace BarPromenade
                     (entry.SupportPosition - entry.Light.transform.position).sqrMagnitude > .25f ||
                     Quaternion.Angle(entry.SupportRotation, entry.Light.transform.rotation) > 3f) ConfigureSupport(entry);
                 if (!entry.SupportValid) continue;
-                float gain = entry.Entrance ? .25f : entry.CafeInterior ? .30f : entry.Zone == Zone.Industrial ? .18f : entry.Zone == Zone.Park ? .12f :
+                float gain = entry.BusStop != null ? .16f : entry.Entrance ? .25f : entry.CafeInterior ? .30f : entry.Zone == Zone.Industrial ? .18f : entry.Zone == Zone.Park ? .12f :
                     entry.Zone == Zone.ChurchCemetery ? .16f : entry.Zone == Zone.CoastPort ? .30f : .34f;
                 selected[valid++] = new SceneLocalLightSource(entry.Light, entry.Bounds, Vector4.zero, gain,
                     entry.Light.type == LightType.Spot && entry.Light.shadows != LightShadows.None, entry.Planes, entry.Blockers);
@@ -494,6 +513,15 @@ namespace BarPromenade
             entry.Bounds.Expand(new Vector3(width * 2f, 1f, width * 2f));
             Vector3 min = entry.Bounds.min, max = entry.Bounds.max;
             max.y = Mathf.Min(max.y, position.y + .4f);
+            if (entry.BusStop != null)
+            {
+                // Strip and hooded apron heads emit below their diffuser. The
+                // visual-only canopy must not acquire a volume above its roof.
+                Bounds site = entry.BusStop.WorldBounds;
+                min.x = Mathf.Max(min.x, site.min.x); max.x = Mathf.Min(max.x, site.max.x);
+                min.z = Mathf.Max(min.z, site.min.z); max.z = Mathf.Min(max.z, site.max.z);
+                max.y = Mathf.Min(max.y, position.y + .01f);
+            }
             // The working harbour and its ship retain their own finite side of
             // the shore; source scattering cannot turn the boat approaches into a destination.
             if (Root?.World.PortPlan != null && light.name.StartsWith("Port ", StringComparison.Ordinal) &&

@@ -54,6 +54,14 @@ namespace BarPromenade
 
         private Transform player;
         private Transform[] busStopPoles = Array.Empty<Transform>();
+        private CityBusStopLighting[] busStopFixtures = Array.Empty<CityBusStopLighting>();
+        private Camera stopShadowCamera;
+        private Func<bool> stopShadowActive;
+        private readonly Plane[] stopShadowFrustum = new Plane[6];
+        private readonly int[] desiredShadowStops = { -1, -1 };
+        private readonly float[] shadowStopDistances = new float[CityBusStopLighting.MaximumShadowedStops];
+        private float nextStopShadowRefresh;
+        private Vector3 lastStopShadowCamera;
         private static readonly Color PlateLampColor = new Color(1f, .89f, .73f);
         private Transform[] lampAnchors = Array.Empty<Transform>();
         private CityFringePracticalAnchor[] practicalAnchors =
@@ -85,9 +93,11 @@ namespace BarPromenade
         private CityCoveredPassageLight[] coveredPassageLights = Array.Empty<CityCoveredPassageLight>();
         private bool[] industrialIsCoveredPassage = Array.Empty<bool>();
         private readonly HashSet<Light> residentialEntranceLights = new HashSet<Light>();
+        private readonly Dictionary<Light, (CityBusStopLighting fixture, int source)> busStopLightOwners =
+            new Dictionary<Light, (CityBusStopLighting, int)>();
         public int IndustrialTaskLightCount => industrialPurposes.Length;
         private float nextAvailabilityRefresh;
-        private int practicalLightStart, plateLightStart;
+        private int practicalLightStart, plateLightStart, stopLightStart;
         private bool fixedBindingsReady;
         private float nightFactor = 1f;
         private float tunnelPracticalFlickerMultiplier = 1f;
@@ -96,6 +106,7 @@ namespace BarPromenade
         public IReadOnlyList<Transform> LampAnchors => lampAnchors;
         public IReadOnlyList<Light> StreetLightPool => streetLightPool;
         public IReadOnlyList<Light> BarLights => barLights;
+        public IReadOnlyList<CityBusStopLighting> BusStopFixtures => busStopFixtures;
         public float NightFactor => nightFactor;
         public float TunnelPracticalFlickerMultiplier =>
             tunnelPracticalFlickerMultiplier;
@@ -120,6 +131,13 @@ namespace BarPromenade
         public Light GetLightForAnchor(int anchorIndex) =>
             anchorIndex >= 0 && anchorIndex < lampAnchors.Length
                 ? streetLightPool[anchorIndex] : null;
+
+        internal bool TryGetBusStopSource(Light light, out CityBusStopLighting fixture, out int source)
+        {
+            if (busStopLightOwners.TryGetValue(light, out var binding))
+            { fixture = binding.fixture; source = binding.source; return true; }
+            fixture = null; source = -1; return false;
+        }
 
         public Light GetPracticalLight(CityFringeYardKind kind)
         {
@@ -306,10 +324,12 @@ namespace BarPromenade
             {
                 busStopPoles = new Transform[busStops.childCount];
                 for (int i = 0; i < busStopPoles.Length; i++) busStopPoles[i] = busStops.GetChild(i);
+                busStopFixtures = busStops.GetComponentsInChildren<CityBusStopLighting>(true);
             }
             practicalLightStart = lampAnchors.Length;
             plateLightStart = checked(practicalLightStart + practicalAnchors.Length);
-            int streetLightCount = checked(plateLightStart + busStopPoles.Length * 2);
+            stopLightStart = checked(plateLightStart + busStopPoles.Length * 2);
+            int streetLightCount = checked(stopLightStart + busStopFixtures.Length * CityBusStopLighting.LightCount);
             int barLightCount = barLightPositions.Count;
             if (checked(streetLightCount + barLightCount) > MaximumRealtimeLights)
                 throw new InvalidOperationException("City fixed-light catalog exceeds 2048 fixtures.");
@@ -357,6 +377,78 @@ namespace BarPromenade
         {
             RefreshStreetLights(false);
             RefreshCoveredPassagePower();
+        }
+
+        private void LateUpdate()
+        {
+            if (busStopFixtures.Length == 0) return;
+            bool active = stopShadowCamera != null && stopShadowCamera.isActiveAndEnabled &&
+                (stopShadowActive == null || stopShadowActive());
+            RefreshStopShadows(active ? stopShadowCamera : null, Time.unscaledDeltaTime);
+        }
+
+        public void ConfigureStopShadowCamera(Camera camera, Func<bool> active)
+        {
+            stopShadowCamera = camera;
+            stopShadowActive = active;
+        }
+
+        /// <summary>Only shadow detail follows the view. Fixed source power and range never do.</summary>
+        public void RefreshStopShadows(Camera camera, float deltaTime, bool immediate = false)
+        {
+            if (!isActiveAndEnabled || camera == null)
+            {
+                foreach (var stop in busStopFixtures) if (stop != null) stop.ApplyShadowStrength(0f);
+                desiredShadowStops[0] = desiredShadowStops[1] = -1;
+                return;
+            }
+            if (immediate || Time.unscaledTime >= nextStopShadowRefresh ||
+                (lastStopShadowCamera - camera.transform.position).sqrMagnitude > 4f)
+            {
+                nextStopShadowRefresh = Time.unscaledTime + .2f;
+                lastStopShadowCamera = camera.transform.position;
+                GeometryUtility.CalculateFrustumPlanes(camera, stopShadowFrustum);
+                for (int slot = 0; slot < desiredShadowStops.Length; slot++)
+                { desiredShadowStops[slot] = -1; shadowStopDistances[slot] = float.PositiveInfinity; }
+                float reach = Mathf.Min(45f, camera.farClipPlane);
+                for (int i = 0; i < busStopFixtures.Length; i++)
+                {
+                    var stop = busStopFixtures[i];
+                    if (stop == null || !stop.isActiveAndEnabled ||
+                        !GeometryUtility.TestPlanesAABB(stopShadowFrustum, stop.WorldBounds)) continue;
+                    float distance = (stop.transform.position - camera.transform.position).sqrMagnitude;
+                    if (distance >= reach * reach) continue;
+                    if (stop.ShadowStrength > .0001f) distance *= .8f;
+                    int at = 0;
+                    while (at < desiredShadowStops.Length && distance >= shadowStopDistances[at]) at++;
+                    if (at == desiredShadowStops.Length) continue;
+                    for (int move = desiredShadowStops.Length - 1; move > at; move--)
+                    { desiredShadowStops[move] = desiredShadowStops[move - 1]; shadowStopDistances[move] = shadowStopDistances[move - 1]; }
+                    desiredShadowStops[at] = i; shadowStopDistances[at] = distance;
+                }
+            }
+            float step = immediate ? 1f : Mathf.Clamp(deltaTime, 0f, .1f) * 2.5f;
+            int activeCount = 0;
+            // Release old shadow maps before admitting a new platform, keeping
+            // the cap valid even during a camera cut or a transfer handover.
+            for (int i = 0; i < busStopFixtures.Length; i++)
+            {
+                var stop = busStopFixtures[i];
+                if (stop == null) continue;
+                if (i != desiredShadowStops[0] && i != desiredShadowStops[1])
+                    stop.ApplyShadowStrength(Mathf.MoveTowards(stop.ShadowStrength, 0f, step));
+                if (stop.ShadowStrength > .0001f) activeCount++;
+            }
+            foreach (int index in desiredShadowStops)
+            {
+                if (index < 0) continue;
+                var stop = busStopFixtures[index];
+                float distance = Vector3.Distance(stop.transform.position, camera.transform.position);
+                float target = stop.isActiveAndEnabled ? Mathf.Clamp01((45f - distance) / 15f) : 0f;
+                if (stop.ShadowStrength <= .0001f && target > 0f)
+                { if (activeCount >= CityBusStopLighting.MaximumShadowedStops) continue; activeCount++; }
+                stop.ApplyShadowStrength(Mathf.MoveTowards(stop.ShadowStrength, target, step));
+            }
         }
 
         public void RefreshImmediate()
@@ -467,6 +559,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            foreach (var stop in busStopFixtures) if (stop != null) stop.ApplyShadowStrength(0f);
             RestoreCoveredPassagePower();
             foreach (Light light in streetLightPool) if (light != null) light.enabled = false;
             foreach (Light light in barLights) if (light != null) light.enabled = false;
@@ -479,6 +572,7 @@ namespace BarPromenade
         {
             RestoreCoveredPassagePower();
             residentialEntranceLights.Clear();
+            busStopLightOwners.Clear(); stopShadowCamera = null; stopShadowActive = null;
             foreach (Light light in streetLightPool) DestroyOwnedLight(light);
             foreach (Light light in barLights) DestroyOwnedLight(light);
             foreach (CityLightHalo halo in industrialFixtureHalos)
@@ -578,6 +672,15 @@ namespace BarPromenade
                 for (int face = 0; face < 2; face++)
                     AssignPlateLight(plateLightStart + index * 2 + face,
                         busStopPoles[index], face == 0 ? 1 : -1, 1f);
+            for (int index = 0; index < busStopFixtures.Length; index++)
+                for (int source = 0; source < CityBusStopLighting.LightCount; source++)
+                {
+                    int slot = stopLightStart + index * CityBusStopLighting.LightCount + source;
+                    CityBusStopLighting fixture = busStopFixtures[index];
+                    fixture.BindLight(source, streetLightPool[slot]);
+                    busStopLightOwners.Add(streetLightPool[slot], (fixture, source));
+                    pooledLightBaseIntensities[slot] = fixture.NightIntensity(source);
+                }
             fixedBindingsReady = true;
         }
 
@@ -599,7 +702,9 @@ namespace BarPromenade
                 bool available = index < lampAnchors.Length ?
                     lampAnchors[index] != null && IsAnchorAvailable(index) :
                     index < plateLightStart ? practicalAnchors[index - practicalLightStart].Anchor != null :
-                    busStopPoles[(index - plateLightStart) / 2] != null;
+                    index < stopLightStart ? busStopPoles[(index - plateLightStart) / 2] != null :
+                    busStopFixtures[(index - stopLightStart) / CityBusStopLighting.LightCount] != null &&
+                    busStopFixtures[(index - stopLightStart) / CityBusStopLighting.LightCount].isActiveAndEnabled;
                 light.intensity = pooledLightBaseIntensities[index] * factor;
                 light.enabled = isActiveAndEnabled && available && factor > VisibleFactorThreshold;
                 CityLightHalo halo = streetLightHalos[index];

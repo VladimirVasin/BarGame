@@ -71,7 +71,7 @@ namespace BarPromenade
                 ResolveRotation(
                     stop.Forward,
                     stop.RoadsideForward));
-            BuildStopVisual(root, true, assets, label);
+            BuildStopVisual(root, true, assets, label, stop.Forward);
             return root.gameObject;
         }
 
@@ -91,7 +91,8 @@ namespace BarPromenade
             BuildStopVisual(
                 root,
                 collider,
-                new StopAssets(), new CityBusStopLabel(routeNumber, stop.SequenceIndex + 1, stop.TransferNumber));
+                new StopAssets(), new CityBusStopLabel(routeNumber, stop.SequenceIndex + 1, stop.TransferNumber),
+                parent.TransformDirection(localRouteForward));
             return root.gameObject;
         }
 
@@ -191,7 +192,7 @@ namespace BarPromenade
         private static void BuildStopVisual(
             Transform root,
             bool collider,
-            StopAssets assets, CityBusStopLabel label)
+            StopAssets assets, CityBusStopLabel label, Vector3 routeForward)
         {
             bool importedPole = BuildPole(root, collider, assets);
             BuildShelter(root, collider, assets);
@@ -202,6 +203,7 @@ namespace BarPromenade
                 CityBusPlateLettering.Create(root, root.TransformPoint(new Vector3(0f, 2.18f, .101f * side)),
                     normal, root.up, label.PlateText, new Vector2(.57f, .35f), StopPlateInk);
             }
+            root.gameObject.AddComponent<CityBusStopLighting>().Initialize(routeForward);
             if (importedPole) return;
             assets.CreateFallbackBox("Route Plate", root, new Vector3(0f, 2.18f, 0f),
                 new Vector3(.76f, .56f, .10f), assets.SignRim, false);
@@ -433,7 +435,10 @@ namespace BarPromenade
                     var host = new GameObject($"{name} {part.Role}");
                     host.transform.SetParent(root, false);
                     host.AddComponent<MeshFilter>().sharedMesh = part.Mesh;
-                    host.AddComponent<MeshRenderer>().sharedMaterial = ResolveMaterial(part);
+                    var renderer = host.AddComponent<MeshRenderer>();
+                    renderer.sharedMaterial = ResolveMaterial(part);
+                    if (part.Role == CityMiscMeshRole.BacklitSign)
+                        CityNightGlowRegistry.Register(renderer, CityBusStopLighting.LensColor);
                 }
             }
 
@@ -444,6 +449,7 @@ namespace BarPromenade
                     case CityMiscMeshRole.Fixture: return Frame;
                     case CityMiscMeshRole.Timber: return Bench;
                     case CityMiscMeshRole.Street: return SignRim;
+                    case CityMiscMeshRole.BacklitSign: return CityNightResources.EmissiveMaterial;
                     case CityMiscMeshRole.Residential:
                         return part.Kind == CityMiscKind.Route01PoleShell ? SignFace : BackPanel;
                     default: throw new InvalidOperationException($"Unexpected bus stop part '{part.Component}'.");

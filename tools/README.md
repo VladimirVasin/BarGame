@@ -19,13 +19,13 @@ Bench:`build-city-bench-{access-stair,pigeon-statue,flowerbed}-3d-model.py`
 source `ArtSource/City/EastExit`.
 `build-city-east-ground-texture.py --verify`: grass/soil seam.
 
-`build-city-{buildings,coastal-infrastructure,street-profile,terrace}-3d-model.py`:
+`build-city-{buildings,coastal-infrastructure,street-profile,terrace,misc}-3d-model.py`:
 launcher/`--validate-only`. Buildings: `Assets/City/Models/CityBuildings3D.{fbx,json}`;
 `CityBuildingAssetSetup.BuildOrThrow`. Coast: `Resources/City/CoastalInfrastructure`;
 `CityCoastalInfrastructureAssetSetup.{Build,Validate}OrThrow`.
 `Resources/City/StreetProfile`: metre tops/edges for `CityStreetSupportPlan`.
-Terraces: `Assets/Resources/CityTerraces`. Upper City: `build-city-hillside-{house,bridge}-3d-model.py`
-writes measured FBXs and manifests to `Assets/Resources/City/Hillside`.
+Terraces: `Assets/Resources/CityTerraces`. `build-city-hillside-{house,bridge}-3d-model.py`:
+FBXs/JSON→`Assets/Resources/City/Hillside`;house `--model GlazedStairBay`.
 
 `build-city-litter-3d-model.py`:36 props;`--validate-only`:geometry/determinism.
 `build-city-laundry-3d-model.py --validate-only`:metres/sign+SHA.

@@ -10,16 +10,17 @@ namespace BarPromenade
         public const string RootName = "Residential Entrance Lighting";
         public const string FixturePrefix = "Entrance Lamp ";
         public const string LightAnchorName = "IndustrialTaskLight_ResidentialEntrance";
+        internal const string CeilingMountName = "Residential Entrance Ceiling Mount";
+        private const int MaximumFixtures = 192;
         public const float MountHeight = 2.55f;
         public static readonly Vector3 ModelScale = new Vector3(.6f, .8f, .8f);
         private const string CanopyAnchorName = "IndustrialTaskLight_CourtyardEntrance";
         private static readonly Color LensColor =
             CityNightAtmosphere.GetIndustrialTaskLightColor(CityIndustrialPurpose.CompressorHouse) * 3f;
 
-        public static Transform Build(Transform parent, CityLayout layout, HomeExteriorContextPlan home = null)
+        public static Transform Build(Transform parent)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
-            if (layout == null) throw new ArgumentNullException(nameof(layout));
             // Canopies have already been placed. Their physical lenses already
             // own a source, so a doorway underneath must not gain a second lamp.
             var canopySources = new List<Vector3>();
@@ -29,28 +30,30 @@ namespace BarPromenade
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
             int index = 0;
-            foreach (CityResidentialEntranceDescriptor entrance in CityResidentialEntrancePlan.ForLayout(layout).Entrances)
+            // Read the measured entrances of the models actually built here.
+            // The lowland route plan excludes the separately built hillside;
+            // Home's nearby-lot list likewise excludes its hillside frame.
+            // World-space anchors cover both without a second placement list.
+            foreach (CityBuildingAssetRegistry building in parent.GetComponentsInChildren<CityBuildingAssetRegistry>(true))
             {
+                if (!building.HasEntrance || building.District != CityDistrictKind.Residential) continue;
+                if (index >= MaximumFixtures) throw new InvalidOperationException("Residential entrance fixture budget exceeds 192.");
                 int fixtureIndex = index++;
-                if (!IsVisibleLot(entrance.Lot, home)) continue;
-                Vector3 cityPosition = entrance.Threshold + Vector3.up * MountHeight + entrance.Outward * .025f;
-                Vector3 position = home == null ? root.InverseTransformPoint(cityPosition) :
-                    PlayerHomeBalconyGeometry.ToHomeLocal(home.PlayerHome, cityPosition);
-                Vector3 outward = home == null ? root.InverseTransformDirection(entrance.Outward).normalized :
-                    PlayerHomeBalconyGeometry.ToHomeLocalDirection(home.PlayerHome, entrance.Outward).normalized;
-                Vector3 up = home == null ? root.InverseTransformDirection(Vector3.up).normalized :
-                    PlayerHomeBalconyGeometry.ToHomeLocalDirection(home.PlayerHome, Vector3.up).normalized;
-                if (HasCanopySource(canopySources, root.TransformPoint(position))) continue;
+                Transform ceiling = building.transform.Find(CeilingMountName);
+                Vector3 threshold = building.transform.TransformPoint(building.LocalEntranceThreshold);
+                Vector3 outward = building.transform.TransformDirection(building.LocalEntranceOutward).normalized;
+                Vector3 up = building.transform.up;
+                Vector3 position = ceiling != null ? ceiling.position : threshold + up * MountHeight + outward * .025f;
+                if (HasCanopySource(canopySources, position)) continue;
 
-                Transform fixture = new GameObject(FixturePrefix + fixtureIndex + " " + entrance.Lot.Cell).transform;
+                Transform fixture = new GameObject(FixturePrefix + fixtureIndex + " " + building.transform.parent.name).transform;
                 fixture.SetParent(root, false);
-                fixture.localPosition = position;
-                fixture.localRotation = Quaternion.LookRotation(outward, up);
-                // The passive Blender fluorescent bulkhead is authored for a
-                // ceiling. Turn its mounting plane onto the wall, preserving
-                // the imported root's unit factor and its real protective cage.
+                fixture.SetPositionAndRotation(position, Quaternion.LookRotation(outward, up));
+                // Keep the authored ceiling mount under a stair landing;
+                // otherwise turn the mounting plane onto the facade. Both
+                // preserve the imported unit factor and protective cage.
                 Transform model = CityCoveredPassageAssetProvider.Create("PassageLamp", fixture,
-                    Vector3.zero, Quaternion.Euler(-90f, 0f, 0f), ModelScale);
+                    Vector3.zero, ceiling != null ? Quaternion.identity : Quaternion.Euler(-90f, 0f, 0f), ModelScale);
                 foreach (Renderer renderer in model.GetComponentsInChildren<Renderer>(true))
                     if (renderer.name.EndsWith("__Lens", StringComparison.Ordinal))
                         CityNightGlowRegistry.Register(renderer, LensColor);
@@ -63,14 +66,6 @@ namespace BarPromenade
                 // same permanent-source/daylight/cleanup contract as other doors.
             }
             return root;
-        }
-
-        private static bool IsVisibleLot(BuildingLot lot, HomeExteriorContextPlan home)
-        {
-            if (home == null) return true;
-            foreach (BuildingLot nearby in home.NearbyLots)
-                if (ReferenceEquals(nearby, lot)) return true;
-            return false;
         }
 
         private static bool HasCanopySource(List<Vector3> sources, Vector3 mount)

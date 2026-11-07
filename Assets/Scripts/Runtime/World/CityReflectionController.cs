@@ -47,6 +47,7 @@ namespace BarPromenade
         private float nightReference;
         private double lastStateChange, nextSelection;
         private uint lightingGeneration;
+        private uint windowGenerationReference;
         private Camera maskedCamera;
         private Camera eligibleCamera;
         private int maskedLightCount, submissionFrame = -1;
@@ -425,15 +426,19 @@ namespace BarPromenade
             Vector3 direction = sun != null ? sun.transform.forward : Vector3.down;
             Color ambient = RenderSettings.ambientLight * RenderSettings.ambientIntensity;
             float night = atmosphere != null ? atmosphere.NightFactor : 1f;
+            uint windowGeneration = (Presentation as CityLightingPresentation)?.WindowLights?.StateGeneration ?? 0u;
             bool changed = lightingGeneration == 0 || ColorDelta(sunlight, sunReference) > .12f ||
                 ColorDelta(ambient, ambientReference) > .08f || ColorDelta(RenderSettings.fogColor, fogReference) > .08f ||
-                Vector3.Dot(direction, sunDirectionReference) < .978f || Mathf.Abs(night - nightReference) > .12f;
-            // Pool leases, traffic, flame flicker and tunnel dips never invalidate a static environment.
+                Vector3.Dot(direction, sunDirectionReference) < .978f || Mathf.Abs(night - nightReference) > .12f ||
+                windowGeneration != windowGenerationReference;
+            // Scheduled room lights change the static environment; traffic,
+            // flame flicker and tunnel dips retain their existing exclusions.
             if (changed && (lightingGeneration == 0 || Time.realtimeSinceStartupAsDouble - lastStateChange >= 5d))
             {
                 lightingGeneration++; lastStateChange = Time.realtimeSinceStartupAsDouble;
                 sunReference = sunlight; ambientReference = ambient; fogReference = RenderSettings.fogColor;
                 sunDirectionReference = direction; nightReference = night;
+                windowGenerationReference = windowGeneration;
             }
             return lightingGeneration;
         }

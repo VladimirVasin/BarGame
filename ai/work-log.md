@@ -4,46 +4,49 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-07
-Residential entrances reuse authored lamps and fixed soft Point light on door,
-paving, side facade and balcony underside; canopy/Home fixtures are not doubled.
-Shared glow/day floor/shadows/cleanup and finite structure-clipped air remain.
-CityEntranceLighting proves receiver spill, day floor and fixed identity/cleanup;
-day/night/high-entrance frames reviewed. Distant hero movement leaves the
-fixed-observer frame identical; Point shadow cost remains unmeasured.
-
-Static City/Home-balcony fixtures retain permanent world-anchored light;
-proximity leases caused visible switching from the Ridge. Ordinary Blender
-buildings keep one deterministic lit window/fixed shadowed Spot each;
-special facades, day floor and bounded shared effects remain.
-Whole-glass emission keeps dark frames; aperture light aims outward onto
-reveals/sills/paving. CityLightingContinuity proves fixed-camera continuity
-after distant hero movement, day floor and lifecycle. Native night/noon,
-open Ridge-bridge and approach frames reviewed; view source bounds stay within
-the native budget. CPU/GPU frame cost remains unavailable.
-
-Pawnshop stair now joins the actual summit footway; the previous route began below it at the
-Home bench. Imported upper flights and a full turning pad keep the tree/bench branch.
-Overlapping ground cuts remove native-earth seam slivers; visible/physical guards stop
-outside the public sidewalk. Shared ramp/tread/nav/map/Home plans and pooled lamps remain.
-LiveCity_PawnshopDescentWalksBothWaysWithSupportedStepsRailsAndMapArrivals covers the
-street seam, full walk/return, bench branch, clear sidewalk both ways, imported contacts
-and map arrivals; native upper/side day/night views reviewed. Existing effects retained.
-Descent ImageGen candidates rejected for shape/registration;accepted kiosk bitmap/metadata
-kept. Current map uses live geometry scheme/POI;no SHA retag. Fallback artifact contract.
-
-City kiosks retain Ridge and cover lower Residential/Industrial with unique permanent
-sellers,source prefixes,map marks and arrivals. Residential chooses the farthest valid
-graded route from bars;existing public footways stay clear.
-Shared beer/vodka/pie,atomic session cash/inventory purchase and common receipt/cleanup.
-Only Ridge keeps its voluntary exchanges;new vendors are silent. ActV cutoff remains
-a story contract,not implemented progression.
-Distinct faces/headwear/clothes use the global population and existing worker kit;
-Ridge's bare head/apron stay. New looks:cardigan/knit cap/scarf and work jacket/peaked cap.
-LiveCity_DistrictKiosksKeepDistinctSellersSafeApproachesAndAtomicVodkaSales covers sites,
-contacts,identity,active outfits,map selection/registration and transactions;
-native day/night/window/portrait/map frames reviewed. Kiosk-stage ImageGen sheet/provenance
-retain their earlier registered geography.
+Bus shelters now use recessed perimeter diffusers and distributed rail Spots;
+a pole practical lights boarding,while plate beams stay. Shared City/Home models/
+anchors keep fixed dayfloor power;camera-ranked shadow fades are bounded.
+Strip air is disabled:the accepted view reads as a glowing edge and surface
+illumination. CityBusStopLighting proves fixtures,receivers,daylight,fixed-camera power,
+Home and cleanup;native stop views accepted.
 LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
+
+West crest infill:four-/three-storey homes,tree cleared;shared lights/map/approaches.
+CityWestRidgeInfillHouse.
+
+Entrance lamps scan actual lower/slopes/Ridge/Home registries:the paving plan
+missed hillside doors. Authored stair-bay anchor replaces bounds polluted by
+ground trim. CITYHILLSIDEHOUSE proves selective export with geometry/UV intact.
+Wall/ceiling mounts clear slabs;Point spill reaches door/facade/balcony underside;
+canopy/Home sources are not doubled. CityEntranceLighting covers receivers;
+reported stair-bay/high entrance/Home views reviewed.
+
+Ordinary houses keep a street-front warm pane;Residential adds a seeded timed pane.
+Glass/mask/paired Lights change atomically;City/Home share clock/dayfloor.
+Rear/gable selection hid the minimum;glass-only proof missed the coplanar wall.
+Each selected ordinary pane adds a weak inward wall wash;special owners stay.
+No GI,air/bounce registration or shadow maps added.
+CityStreetWindowMinimum proves front glass/wall pixels,paired state and night
+continuity;reported crest/native variants reviewed;user accepted appearance.
+CityLightingContinuity proves dayfloor,identity,lifecycle and fixed-frame stability.
+Editor GPU diagnostics do not isolate feature cost/FPS;Point-shadow cost unmeasured.
+
+Pawnshop stair reaches summit footway instead of starting below it at Home bench.
+Imported flights/turning pad preserve tree/bench branch. Overlapping cuts remove
+earth slivers;guards stop outside public pavement. Shared ground/nav/map/Home/
+lights stay. LiveCity_PawnshopDescentWalksBothWaysWithSupportedStepsRailsAndMapArrivals
+covers supported return walks,contacts,clear pavement and safeXYZ;day/night views reviewed.
+City redraw registers both infill homes/descent with live layers;
+ImageGenCityMap_PreservesPlanAndLivePlaces;native map reviewed.
+
+Kiosks retain Ridge/add lower Residential/Industrial;Residential chooses the
+farthest valid graded bar route. Unique permanent IDs/faces/outfits use the global
+population/worker kit:bare head/apron,cardigan/knit cap/scarf,jacket/peaked cap.
+Shared beer/vodka/pie and atomic cash/inventory/receipt cleanup;Ridge alone speaks.
+ActV cutoff remains a story contract.
+LiveCity_DistrictKiosksKeepDistinctSellersSafeApproachesAndAtomicVodkaSales covers
+sites,contacts,identity,map,transactions;day/night/window/portrait/map reviewed.
 
 ## 2026-11-06
 Pawnshop:secure clerk/Buy-Sell stubs,zebras/door path,even sign/HDR hall.

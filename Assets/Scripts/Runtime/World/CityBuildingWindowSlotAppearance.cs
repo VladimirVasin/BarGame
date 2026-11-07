@@ -6,7 +6,7 @@ namespace BarPromenade
 {
     /// <summary>
     /// Binds the window-slot IDs authored into the combined Blender glass
-    /// mesh to a sparse, permanent warm-light selection and dark variants. UV2
+    /// mesh to a guaranteed warm pane, one optional timed pane and dark variants. UV2
     /// keeps every pane addressable while the FBX remains non-readable at
     /// runtime; pane-local UV0 carries one complete atlas window per slot.
     /// </summary>
@@ -56,7 +56,12 @@ namespace BarPromenade
             }
 
             var states = new float[MaximumSlotCount];
-            ulong litWindowMask = ResolveLitWindowMask(registry, lot, citySeed);
+            ulong guaranteed = ResolveLitWindowMask(registry, lot, citySeed);
+            registry.GuaranteedWindowMask = guaranteed;
+            registry.OptionalWindowMask = ResolveOptionalWindowMask(registry, lot, citySeed, guaranteed);
+            registry.WindowScheduleSeed = CityExteriorAppearance.StableHash(citySeed, lot.Cell.x, lot.Cell.y,
+                Mathf.RoundToInt(lot.Center.x * 100f), Mathf.RoundToInt(lot.Center.z * 100f), lot.BuildingVariant) ^ 0x9e3779b9u;
+            ulong litWindowMask = ResolveTimedMask(registry, AbsoluteMinutes);
             for (int index = 0; index < registry.WindowSlots.Count; index++)
             {
                 CityBuildingWindowSlot slot = registry.WindowSlots[index];
@@ -91,8 +96,11 @@ namespace BarPromenade
             }
 
             registry.LitWindowMask = litWindowMask;
+            registry.WindowGlassRenderer = renderer;
+            registry.WindowStateBuffer = states;
             renderer.sharedMaterial = Material;
             var properties = new MaterialPropertyBlock();
+            registry.WindowProperties = properties;
             renderer.GetPropertyBlock(properties);
             properties.SetFloatArray(WindowStatesId, states);
             renderer.SetPropertyBlock(properties);
@@ -100,9 +108,72 @@ namespace BarPromenade
             renderer.receiveShadows = false;
         }
 
-        // Select once from the actual authored panes, across every floor and
-        // facade. Every luminous ordinary pane then owns its own fixed Light;
-        // neither emission nor the receiving street changes with the observer.
+        internal static double AbsoluteMinutes =>
+            GameSessionState.GameDayIndex * 1440d + GameSessionState.GameTimeOfDayMinutes;
+
+        internal static ulong ResolveTimedMask(CityBuildingAssetRegistry registry, double absoluteMinutes) =>
+            registry.GuaranteedWindowMask | (registry.OptionalWindowMask != 0 && OptionalPaneIsOn(absoluteMinutes, registry.WindowScheduleSeed)
+                ? registry.OptionalWindowMask : 0UL);
+
+        // Each four-hour block owns one independently seeded occupancy interval.
+        // The surrounding off gaps and the on interval vary without replaying
+        // history after a time jump, checkpoint restore or exterior reconstruction.
+        internal static bool OptionalPaneIsOn(double absoluteMinutes, uint seed)
+        {
+            GetOptionalInterval(absoluteMinutes, seed, out double start, out double end);
+            return absoluteMinutes >= start && absoluteMinutes < end;
+        }
+
+        internal static void GetOptionalInterval(double absoluteMinutes, uint seed, out double start, out double end)
+        {
+            if (double.IsNaN(absoluteMinutes) || double.IsInfinity(absoluteMinutes) || absoluteMinutes < 0d)
+            { start = end = double.PositiveInfinity; return; }
+            double block = Math.Floor(absoluteMinutes / 240d);
+            uint hash = CityCoveredPassagePlan.Mix(seed ^ unchecked((uint)(long)block) * 0x85ebca6bu);
+            start = block * 240d + (hash & 0xffffu) / 65535d * 120d;
+            uint duration = CityCoveredPassagePlan.Mix(hash ^ 0xc2b2ae35u);
+            end = start + 20d + (duration & 0xffffu) / 65535d * 30d;
+        }
+
+        internal static void RefreshTimedMask(CityBuildingAssetRegistry registry, double absoluteMinutes)
+        {
+            if (registry.GuaranteedWindowMask == 0 || registry.WindowGlassRenderer == null ||
+                registry.WindowStateBuffer == null || registry.WindowProperties == null) return;
+            ulong mask = ResolveTimedMask(registry, absoluteMinutes);
+            if (mask == registry.LitWindowMask) return;
+            foreach (CityBuildingWindowSlot slot in registry.WindowSlots)
+            {
+                int index = slot.Uv2SlotId;
+                int variant = (int)registry.WindowStateBuffer[index] % CityWindowAppearance.VariantCount;
+                registry.WindowStateBuffer[index] = variant +
+                    ((mask & (1UL << index)) != 0 ? (int)CityWindowFamily.Warm * CityWindowAppearance.VariantCount : 0);
+            }
+            registry.WindowGlassRenderer.GetPropertyBlock(registry.WindowProperties);
+            registry.WindowProperties.SetFloatArray(WindowStatesId, registry.WindowStateBuffer);
+            registry.WindowGlassRenderer.SetPropertyBlock(registry.WindowProperties);
+            registry.LitWindowMask = mask;
+        }
+
+        private static ulong ResolveOptionalWindowMask(CityBuildingAssetRegistry registry, BuildingLot lot,
+            int citySeed, ulong guaranteed)
+        {
+            if (!lot.IsOrdinaryBuilding || lot.District != CityDistrictKind.Residential) return 0;
+            uint best = uint.MaxValue;
+            int selected = -1;
+            foreach (CityBuildingWindowSlot slot in registry.WindowSlots)
+            {
+                if (slot.OpeningKind != CityBuildingOpeningKind.Window || (guaranteed & (1UL << slot.Uv2SlotId)) != 0) continue;
+                uint hash = CityExteriorAppearance.StableHash(citySeed ^ 0x25be13, lot.Cell.x, lot.Cell.y,
+                    slot.Floor, slot.Bay, ResolveSideIndex(slot.Side));
+                if (selected >= 0 && hash >= best) continue;
+                best = hash; selected = slot.Uv2SlotId;
+            }
+            return selected >= 0 ? 1UL << selected : 0;
+        }
+
+        // The minimum belongs to the street-facing facade. A random rear or
+        // gable pane can exist in the mask while the whole public front stays
+        // dark. Floor and bay still vary stably within the authored front panes.
         internal static ulong ResolveLitWindowMask(CityBuildingAssetRegistry registry,
             BuildingLot lot, int citySeed)
         {
@@ -111,14 +182,17 @@ namespace BarPromenade
             int selected = -1;
             foreach (CityBuildingWindowSlot slot in registry.WindowSlots)
             {
-                if (slot.OpeningKind != CityBuildingOpeningKind.Window) continue;
+                if (slot.OpeningKind != CityBuildingOpeningKind.Window ||
+                    !string.Equals(slot.Side, "Front", StringComparison.Ordinal)) continue;
                 uint hash = CityExteriorAppearance.StableHash(citySeed, lot.Cell.x, lot.Cell.y,
                     slot.Floor, slot.Bay, ResolveSideIndex(slot.Side));
                 if (selected >= 0 && hash >= best) continue;
                 best = hash;
                 selected = slot.Uv2SlotId;
             }
-            return selected >= 0 ? 1UL << selected : 0;
+            if (selected < 0)
+                throw new InvalidOperationException($"Ordinary building '{registry.StableId}' has no street-facing window.");
+            return 1UL << selected;
         }
 
         private static Material Material

@@ -51,7 +51,7 @@ import city_river_parts as river_parts  # noqa: E402
 import city_coastal_site_parts as coastal_site_parts  # noqa: E402
 
 
-GENERATOR_VERSION = "4.15.0"
+GENERATOR_VERSION = "4.16.0"
 DESIGN_ID = "city_misc_citywide_v4"
 DISPLAY_NAME = (
     "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + "
@@ -85,6 +85,16 @@ SCALE_MODE = "fixed_meters"
 BOUNDS_EPSILON = 1e-5
 UV_EPSILON = 1e-6
 MAX_TRIANGLES = 240000
+
+# Unity-local source positions sit on the bottom face of the authored lenses.
+# The rear rail clears the steel back panel (its road-facing surface is Z=-.43).
+BUS_STOP_LIGHT_ANCHORS = (
+    ("ANCHOR_BusStopStripFrontLeft", (-3.65, 2.475, .4775)),
+    ("ANCHOR_BusStopStripFrontRight", (-1.45, 2.475, .4775)),
+    ("ANCHOR_BusStopStripRearLeft", (-3.65, 2.475, -.3825)),
+    ("ANCHOR_BusStopStripRearRight", (-1.45, 2.475, -.3825)),
+    ("ANCHOR_BusStopApron", (0.0, 2.60, .22)),
+)
 
 # Source X/Y are Unity local X/Z. These caps protect the authored pieces from
 # spilling out of their runtime pockets; the residential strip is deliberately
@@ -2630,6 +2640,32 @@ def build_route01_shelter_shell() -> AssemblySpec:
         local_tube((x - 2.16, 2.58, -0.48),
                    (x + 2.16, 2.58, -0.48), 0.045, sides=8),
     ]
+    # One continuous municipal diffuser follows the inner underside of the
+    # canopy. Its rear edge is ahead of the opaque steel wall, not buried in it.
+    # The side runs sit outside the posts, while the centre remains unlit steel.
+    rear, front = -.405, .50
+    width, depth = 4.42, front - rear
+    midpoint = (front + rear) * .5
+    lens_width = .045
+    diffuser = [
+        local_box(x, 2.4875, rear + lens_width * .5,
+                  width, .025, lens_width, .003),
+        local_box(x, 2.4875, front - lens_width * .5,
+                  width, .025, lens_width, .003),
+        *(local_box(x + side * (width - lens_width) * .5, 2.4875, midpoint,
+                    lens_width, .025, depth - 2 * lens_width, .003)
+          for side in (-1, 1)),
+    ]
+    channel_width = .075
+    fixture.extend((
+        local_box(x, 2.515, rear + lens_width * .5,
+                  width + .03, .030, channel_width, .004),
+        local_box(x, 2.515, front - lens_width * .5,
+                  width + .03, .030, channel_width, .004),
+        *(local_box(x + side * (width - lens_width) * .5, 2.515, midpoint,
+                    channel_width, .030, depth - 2 * lens_width, .004)
+          for side in (-1, 1)),
+    ))
     timber = [
         local_box(x, 0.72, 0.05, 2.65, 0.16, 0.62, 0.035),
         local_box(x, 1.10, -0.20, 2.65, 0.62, 0.14, 0.028),
@@ -2655,8 +2691,9 @@ def build_route01_shelter_shell() -> AssemblySpec:
          make_named_part(kind, variant, "Timber", "Timber", *timber,
                          authored_uvs=timber_uvs),
          make_named_part(kind, variant, "Residential", "Residential_PaintedMetal",
-                         panel, authored_uvs=wall_uvs)),
-        unity_owned_parts=("WaitSlots", "SitDock", "CollisionProxy"),
+                         panel, authored_uvs=wall_uvs),
+         make_named_part(kind, variant, "BacklitSign", "BacklitSign", *diffuser)),
+        unity_owned_parts=("WaitSlots", "SitDock", "CollisionProxy", "Light", "Halo"),
         root_derivation="CityBusStopRoot@stop.ShelterPosition",
         coordinate_profile="root_local_direct",
         expected_source_min_z=0.0,
@@ -2675,6 +2712,10 @@ def build_route01_pole_shell() -> AssemblySpec:
         local_box(-0.25, 2.18, 0.075, 0.045, 0.28, 0.018, 0.003),
         local_box(-0.07, 2.18, 0.075, 0.045, 0.28, 0.018, 0.003),
         local_box(0.18, 2.18, 0.075, 0.05, 0.30, 0.018, 0.003),
+        local_vertical_solid(0.0, 2.35, 2.66, 0.0,
+                             .037, .037, top_scale=1.0, sides=8),
+        local_tube((0.0, 2.65, 0.0), (0.0, 2.65, .22), .028, sides=8),
+        local_box(0.0, 2.65, .22, .34, .08, .32, .014),
     ]
     street = [local_box(
         0.0, 2.18, 0.0, 0.76, 0.56, 0.10, 0.025)]
@@ -2685,8 +2726,10 @@ def build_route01_pole_shell() -> AssemblySpec:
         kind, variant,
         (route_metal_part(kind, "Fixture", fixture),
          route_metal_part(kind, "Street", street),
-         route_metal_part(kind, "Residential", residential)),
-        unity_owned_parts=("CollisionProxy",),
+         route_metal_part(kind, "Residential", residential),
+         make_named_part(kind, variant, "BacklitSign", "BacklitSign",
+                         local_box(0.0, 2.6125, .22, .285, .025, .265, .006))),
+        unity_owned_parts=("CollisionProxy", "Light", "Halo"),
         root_derivation="CityBusStopRoot@stop.ShelterPosition",
         coordinate_profile="root_local_direct",
         expected_source_min_z=0.0,
@@ -6012,9 +6055,10 @@ EXPECTED_ROLES = {
     ("ParkPlayground", 0): (
         "Residential_PaintedMetal", "Masonry_Timber",
         "Street_PaintedMetal"),
-    ("Route01ShelterShell", 0): ("Fixture", "Timber", "Residential_PaintedMetal"),
+    ("Route01ShelterShell", 0): (
+        "Fixture", "Timber", "Residential_PaintedMetal", "BacklitSign"),
     ("Route01PoleShell", 0):
-        ("Fixture", "Street", "Residential"),
+        ("Fixture", "Street", "Residential", "BacklitSign"),
     ("TrafficSignalShell", 0): ("Fixture",),
     ("YardDeadTree", 0): ("Bark",),
     ("YardBench", 0): ("Timber", "Fixture"),
@@ -6123,7 +6167,7 @@ EXPECTED_MESH_SUFFIXES = {
     **{(kind, 0): suffixes for kind, suffixes in river_parts.PART_SUFFIXES.items()},
     **{(kind, variant): suffixes for kind, suffixes in coastal_site_parts.PART_SUFFIXES.items()
        for variant in range(coastal_site_parts.VARIANTS[kind])},
-    ("Route01ShelterShell", 0): ("Fixture", "Timber", "Residential"),
+    ("Route01ShelterShell", 0): ("Fixture", "Timber", "Residential", "BacklitSign"),
     ("ParkBin", 0): (
         "Basket_Residential_PaintedMetal", "Cradle_Street_PaintedMetal"),
     ("ParkNoticeBoard", 0): (
@@ -6762,6 +6806,46 @@ def validate_shelter_static_humanoids(
             "Nightlife shelter sleeper lost its grounded adult pose envelope")
 
 
+def validate_bus_stop_lighting(assemblies: Sequence[AssemblySpec], problems: list[str]) -> None:
+    lookup = {(item.kind, item.variant): item for item in assemblies}
+    shelter = lookup[("Route01ShelterShell", 0)]
+    pole = lookup[("Route01PoleShell", 0)]
+    strip = next(part for part in shelter.parts if part.part_role == "BacklitSign")
+    low, high = geometry_bounds(strip.geometry)
+    expected_low, expected_high = (-4.76, -.405, 2.475), (-.34, .50, 2.50)
+    if any(abs(low[i] - expected_low[i]) > BOUNDS_EPSILON or
+           abs(high[i] - expected_high[i]) > BOUNDS_EPSILON for i in range(3)):
+        problems.append("Bus stop strip must follow the inner canopy perimeter")
+    # An independent open-centre test catches replacing the perimeter with a
+    # broad luminous roof plane; touching vertices alone would not catch it.
+    vertices, faces = strip.geometry
+    for face in faces:
+        centre = tuple(sum(vertices[v][axis] for v in face) / len(face)
+                       for axis in range(3))
+        if -4.70 < centre[0] < -.40 and -.35 < centre[1] < .445:
+            problems.append("Bus stop diffuser fills the dark centre of its ring")
+            break
+    if low[1] <= -.43:
+        problems.append("Rear bus stop diffuser intersects the steel back panel")
+    for index, (_, position) in enumerate(BUS_STOP_LIGHT_ANCHORS):
+        lens = strip if index < 4 else next(
+            part for part in pole.parts if part.part_role == "BacklitSign")
+        minimum, maximum = geometry_bounds(lens.geometry)
+        source = local_point(*position)
+        if abs(source[2] - minimum[2]) > BOUNDS_EPSILON or any(
+                source[axis] < minimum[axis] - BOUNDS_EPSILON or
+                source[axis] > maximum[axis] + BOUNDS_EPSILON for axis in (0, 1)):
+            problems.append("Bus stop source is not on its authored diffuser face")
+        if index < 4 and abs(position[2] + .48) < .05:
+            problems.append("Bus stop strip source is inside the opaque back wall")
+    all_low, all_high = combined_bounds(shelter.parts)
+    if abs(all_low[0] + 4.875) > BOUNDS_EPSILON or \
+            abs(all_high[0] + .225) > BOUNDS_EPSILON or \
+            abs(all_low[1] + .59) > BOUNDS_EPSILON or \
+            abs(all_high[1] - .59) > BOUNDS_EPSILON:
+        problems.append("Bus stop lighting changed the shelter's public footprint")
+
+
 def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
     problems: list[str] = []
     names: set[str] = set()
@@ -6919,8 +7003,8 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
     if len(assemblies) != 145:
         problems.append(
             f"assembly count is {len(assemblies)}, expected 145")
-    if len(names) != 306:
-        problems.append(f"mesh count is {len(names)}, expected 306")
+    if len(names) != 308:
+        problems.append(f"mesh count is {len(names)}, expected 308")
     validate_mirror_bounds(assemblies, "IndustrialCargo", problems)
     validate_mirror_bounds(
         assemblies, "RoadsideRoadworkAndBicycle", problems)
@@ -6934,6 +7018,7 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         validate_mirror_bounds(assemblies, kind, problems)
     validate_nightlife_arch_alignment(assemblies, problems)
     validate_shelter_static_humanoids(assemblies, problems)
+    validate_bus_stop_lighting(assemblies, problems)
     wave1_signature = wave1_compatibility_signature(assemblies)
     if wave1_signature != WAVE1_COMPATIBILITY_SIGNATURE:
         problems.append(
@@ -6967,6 +7052,9 @@ def signature_payload(
     return {
         "generator_version": generator_version,
         "design_id": design_id,
+        **({"bus_stop_lighting_anchors": BUS_STOP_LIGHT_ANCHORS}
+           if design_id != V2_DESIGN_ID and
+           generator_version == GENERATOR_VERSION else {}),
         "root_contract": {
             "origin": (
                 "assembly_ground" if design_id == V2_DESIGN_ID
@@ -7194,6 +7282,14 @@ def build_scene(assemblies: tuple[AssemblySpec, ...]) -> BuildResult:
         for part in assembly.parts:
             obj = create_part_object(part, assembly, root, source)
             objects[part.mesh] = obj
+    for name, unity_position in BUS_STOP_LIGHT_ANCHORS:
+        anchor = bpy.data.objects.new(name, None)
+        source.objects.link(anchor)
+        anchor.parent = root
+        anchor.location = local_point(*unity_position)
+        anchor.empty_display_size = .08
+        anchor["bp_source_contract"] = "bottom_face_of_bus_stop_diffuser"
+        objects[name] = anchor
     return BuildResult(
         root, source, presentation, assemblies, objects, materials)
 
@@ -7298,6 +7394,11 @@ def manifest_for(
                 },
             },
         },
+        "bus_stop_lighting_anchors": [
+            {"name": name, "position_unity": list(position),
+             "position_source": list(local_point(*position))}
+            for name, position in BUS_STOP_LIGHT_ANCHORS
+        ],
         "static_humanoid_contract": {
             "standard": SHELTER_STATIC_HUMANOID_STANDARD,
             "standard_version": SHELTER_STATIC_HUMANOID_STANDARD_VERSION,

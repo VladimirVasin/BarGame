@@ -1,18 +1,18 @@
 {
   "tool": "built-in image_gen",
-  "intent": "Two additional street kiosks in lower Residential and Industrial; existing city geography retained.",
-  "prompt": "imagegen-district-kiosks-prompt.txt",
+  "intent": "Final registered City map after two west crest residential infills and the completed pawnshop descent.",
+  "prompt": "imagegen-west-ridge-infill-prompt.txt",
   "references": [
-    "CityMapImage.reference.png",
-    "map-reference.png"
+    "map-reference.png",
+    "CityMapImage.reference.png"
   ],
   "geography": "CityMapImage.accepted-geography.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "8d9aa62e81ce67fde6f6add4b92ecf4e6cba9644143dcae98063d64fe1a147d8",
-  "runtime_image_sha256": "8d9aa62e81ce67fde6f6add4b92ecf4e6cba9644143dcae98063d64fe1a147d8",
-  "previous_image_sha256": "e52c9bf5785f28e318d400a098ad082dafb1345624e5e99558809979cc8a2d23",
+  "image_sha256": "7a7b0a84bbafcc95f69e93002c7e92b26bed501f5755280a34ec7967fa2dc296",
+  "runtime_image_sha256": "7a7b0a84bbafcc95f69e93002c7e92b26bed501f5755280a34ec7967fa2dc296",
+  "previous_image_sha256": "8d9aa62e81ce67fde6f6add4b92ecf4e6cba9644143dcae98063d64fe1a147d8",
   "registration": {
-    "description": "Full-bleed north-up bounds unchanged. Residential kiosk centre normalized (0.627612,0.503345), Industrial (0.288060,0.588051); Ridge retained (0.420709,0.929153). Names and shop glyphs remain live overlays.",
+    "description": "Full-bleed north-up bounds retained. Surveyed west crest infills at normalized (0.33358,0.93697) and (0.36194,0.93241); distinct roofs and gaps retained. Pawnshop descent stairs and turning pad follow the current survey. Labels, markers, XYZ and arrivals remain live.",
     "source_size": [
       1173,
       1341
@@ -22,17 +22,9 @@
       2048
     ]
   },
-  "fingerprint": "175c2b0e687d3ce16062ba4a906283213ee82cdd647061b6f3e8e598a59c59c3",
+  "fingerprint": "8df66c540201c47c07706e4c1a626fab2ba3d8184c7eebc70a8370ebcb2259fe",
   "schemaVersion": 2,
   "width": 1173,
   "height": 1341,
-  "current_geography": "map-reference.json",
-  "pending_redraw": {
-    "reason": "Descent ImageGen candidates failed measured footprint/registration review; runtime keeps the authoritative live scheme while accepted illustration metadata is stale.",
-    "current_fingerprint": "beb3fe13c41757878a0b1b45ef0bfa059edeb3477ab08ad41b70382afdc39913",
-    "prompt": "imagegen-pawnshop-descent-prompt.txt",
-    "registered_guide": "map-descent-registered-guide.png",
-    "guide_sha256": "bcd670d7bf7437aea9c991d074332444562f1b29c3501849e7eebd62fa3c0696",
-    "historical_reference_note": "references lists paths used for the accepted kiosk generation; map-reference.png now contains the current descent survey. Its accepted geography is archived in geography."
-  }
+  "current_geography": "map-reference.json"
 }

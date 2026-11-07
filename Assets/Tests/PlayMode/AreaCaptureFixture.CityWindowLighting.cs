@@ -21,7 +21,7 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         [Timeout(180000)]
-        [Explicit("Persistent City fixture identity, one real window per building, Ridge view, receiver spill and exterior cleanup.")]
+        [Explicit("Persistent City fixtures, every home retains a lit window, seeded occupancy intervals, Ridge spill and cleanup.")]
         public IEnumerator CityLightingContinuity()
         {
             string[] keys = { "graphics.dof", "graphics.intoxication_fx", "graphics.aspect_4_3" };
@@ -72,6 +72,10 @@ namespace BarPromenade.Tests.PlayMode
                 var owned = new List<Light>(windows.Lights);
                 var street = new List<Light>(city.Night.Atmosphere.StreetLightPool);
                 int ordinaryLightCount = city.Night.Atmosphere.RealtimeLightCount;
+                // Source construction precedes Root.IsInitialized. This
+                // coroutine can resume before the first eligible LateUpdate;
+                // synchronize the public owner before inspecting its lights.
+                windows.RefreshImmediate();
                 AssertPermanentWindowSources(city, windows);
                 AssertPermanentStreetSources(city.Night.Atmosphere);
                 FindWindowLightReceiver(city, out CityBuildingAssetRegistry building,
@@ -95,6 +99,7 @@ namespace BarPromenade.Tests.PlayMode
                 CaptureWindowLightPair(city.Camera, windows, "01-night", wall, ground);
                 AssertHeroIndependentCityLighting(city, windows, owned, street, position, target, wall, ground);
                 CapturePersistentCityViews(city, windows, position, target);
+                AssertNightWindowOccupancy(city, windows);
                 float[] nightPowers = new float[owned.Count];
                 for (int index = 0; index < nightPowers.Length; index++) nightPowers[index] = owned[index].intensity;
                 double untilNoon = (12 * 60 - GameSessionState.GameTimeOfDayMinutes + 1440) % 1440;
@@ -124,7 +129,7 @@ namespace BarPromenade.Tests.PlayMode
                 AssertWindowLightsOff(windows);
                 Object.DestroyImmediate(exclusion);
                 windows.RefreshImmediate();
-                Assert.That(windows.ActiveCount, Is.EqualTo(owned.Count));
+                AssertPermanentWindowSources(city, windows);
                 Assert.That(city.EnterDormant(), Is.True);
                 AssertWindowLightsOff(windows);
                 city.ResumeFromDormant();
@@ -133,7 +138,7 @@ namespace BarPromenade.Tests.PlayMode
                 city.Camera.GetComponent<PlayerCameraFollow>().enabled = false;
                 SetWindowLightCamera(city, position, target);
                 windows.RefreshImmediate();
-                Assert.That(windows.ActiveCount, Is.EqualTo(owned.Count));
+                AssertPermanentWindowSources(city, windows);
                 Assert.That(windows.Lights, Is.EqualTo(owned));
                 Debug.Log("CityLightingContinuity: permanent source identity and real spill verified. GPU/frame-cost comparison unavailable in this render acceptance.");
                 yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
@@ -174,7 +179,7 @@ namespace BarPromenade.Tests.PlayMode
                 foreach (CityBuildingWindowSlot slot in candidate.WindowSlots)
                 {
                     if (slot.Floor != 0 || pass == 0 && slot.Side != "Front" || slot.OpeningKind != CityBuildingOpeningKind.Window ||
-                        (candidate.LitWindowMask & (1UL << slot.Uv2SlotId)) == 0) continue;
+                        (candidate.GuaranteedWindowMask & (1UL << slot.Uv2SlotId)) == 0) continue;
                     building = candidate; pane = slot;
                     center = candidate.transform.TransformPoint(slot.LocalCenter);
                     outward = candidate.transform.TransformDirection(WindowLightOutward(slot.Side)).normalized;
@@ -203,7 +208,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void AssertWindowLightBudget(WindowLighting windows)
         {
-            Assert.That(windows.ActiveCount, Is.EqualTo(windows.Lights.Count));
+            Assert.That(windows.ActiveCount, Is.InRange(1, windows.Lights.Count));
             Assert.That(windows.Lights.Count, Is.InRange(1, WindowLighting.MaximumLights));
             foreach (Light light in windows.Lights)
             {
@@ -237,13 +242,26 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertPermanentWindowSources(CityGameRoot city, WindowLighting windows)
         {
             CityBuildingAssetRegistry[] buildings = city.GetComponentsInChildren<CityBuildingAssetRegistry>();
-            int expected = 0;
+            AssertWindowSourceModels(buildings, windows);
+            AssertResidentialWindowInventory(city, buildings);
+        }
+
+        private static void AssertWindowSourceModels(CityBuildingAssetRegistry[] buildings, WindowLighting windows)
+        {
+            int expected = 0, expectedActive = 0;
             var properties = new MaterialPropertyBlock();
             foreach (CityBuildingAssetRegistry building in buildings)
             {
                 ulong mask = building.LitWindowMask;
-                Assert.That(mask != 0 && (mask & (mask - 1)) == 0, Is.True,
-                    building.StableId + " must have exactly one glowing ordinary window.");
+                Assert.That(mask, Is.EqualTo(CityBuildingWindowSlotAppearance.ResolveTimedMask(building,
+                    CityBuildingWindowSlotAppearance.AbsoluteMinutes)), "Glass must follow the shared absolute game clock.");
+                ulong guaranteed = building.GuaranteedWindowMask;
+                ulong candidates = guaranteed | building.OptionalWindowMask;
+                Assert.That(guaranteed != 0 && (guaranteed & (guaranteed - 1)) == 0, Is.True,
+                    building.StableId + " must retain one guaranteed glowing ordinary window.");
+                Assert.That((mask & guaranteed) == guaranteed && (mask & ~candidates) == 0, Is.True,
+                    "Timed occupancy must never darken the last pane or light an unauthored source.");
+                Assert.That(building.OptionalWindowMask == 0 || building.District == CityDistrictKind.Residential, Is.True);
                 Assert.That(building.TryGetRenderer(CityBuildingMeshRole.WindowGlass, out Renderer glass), Is.True);
                 properties.Clear();
                 glass.GetPropertyBlock(properties);
@@ -254,14 +272,109 @@ namespace BarPromenade.Tests.PlayMode
                     bool lit = (mask & (1UL << slot.Uv2SlotId)) != 0;
                     bool visibleEmission = (int)states[slot.Uv2SlotId] / CityWindowAppearance.VariantCount != (int)CityWindowFamily.Off;
                     Assert.That(visibleEmission, Is.EqualTo(lit), "Visible emission and real source must agree: " + building.StableId);
-                    if (!lit) continue;
+                    if ((candidates & (1UL << slot.Uv2SlotId)) == 0) continue;
                     Assert.That(slot.OpeningKind, Is.EqualTo(CityBuildingOpeningKind.Window));
-                    AssertWindowLightSource(windows, building.transform.TransformPoint(slot.LocalCenter));
+                    Vector3 center = building.transform.TransformPoint(slot.LocalCenter);
+                    AssertWindowLightSource(windows, center);
+                    int matches = 0;
+                    for (int i = 0; i < windows.Lights.Count; i++)
+                        if (windows.TryGetSelectedWindow(i, out Vector3 source, out _) && (source - center).sqrMagnitude < .0001f)
+                        {
+                            matches++;
+                            Assert.That(windows.Lights[i].enabled, Is.EqualTo(lit && building.gameObject.activeInHierarchy),
+                                "Glass emission and its permanent real light must change together: " + building.transform.parent.name +
+                                ", pane=" + slot.Uv2SlotId + ", mask=" + mask + ", active=" + windows.ActiveCount +
+                                ", owner=" + windows.isActiveAndEnabled);
+                        }
+                    Assert.That(matches, Is.EqualTo(1));
+                    if (lit && building.gameObject.activeInHierarchy) expectedActive++;
                     expected++;
                 }
             }
-            Assert.That(expected, Is.EqualTo(buildings.Length));
-            Assert.That(windows.Lights.Count, Is.EqualTo(expected), "Every glowing ordinary window owns exactly one fixed Light.");
+            Assert.That(windows.Lights.Count, Is.EqualTo(expected), "Guaranteed and timed panes each own a fixed Light.");
+            Assert.That(windows.ActiveCount, Is.EqualTo(expectedActive));
+        }
+
+        private static void AssertResidentialWindowInventory(CityGameRoot city, CityBuildingAssetRegistry[] actual)
+        {
+            var expected = new HashSet<BuildingLot>();
+            foreach (BuildingLot lot in city.Layout.BuildingMasses)
+                if (lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.Residential) expected.Add(lot);
+            foreach (CityHillsideBuilding house in CityHillsideNeighborhoodPlan.ForLayout(city.Layout).AllBuildings)
+                if (house.Lot.IsOrdinaryBuilding) expected.Add(house.Lot);
+            foreach (BuildingLot lot in expected)
+            {
+                CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
+                Vector3 entrance = pose.TransformPoint(CityBuildingAssetProvider.GetExpectedEntranceThreshold(lot.BuildingVariant));
+                int matches = 0;
+                foreach (CityBuildingAssetRegistry building in actual)
+                    if (building.HasEntrance && Vector3.Distance(building.transform.TransformPoint(building.LocalEntranceThreshold), entrance) < .05f)
+                    { matches++; Assert.That(building.LitWindowMask, Is.Not.Zero, "A residential home cannot be dark: " + lot.Cell); }
+                Assert.That(matches, Is.EqualTo(1), "The window check must include lowland, infill, slopes and Ridge: " + lot.Cell);
+            }
+            PlayerHomeExteriorAssetRegistry hero = city.World.Root.GetComponentInChildren<PlayerHomeExteriorAssetRegistry>();
+            Assert.That(hero, Is.Not.Null);
+            int litHomePanes = 0;
+            foreach (PlayerHomeExteriorPartBinding part in hero.Parts)
+                if (part.Emissive && part.Sheet == "WindowGlass" && part.Renderer != null && part.Renderer.enabled)
+                {
+                    Material material = part.Renderer.sharedMaterial;
+                    Assert.That(material != null && material.IsKeywordEnabled("_EMISSION") &&
+                        material.GetColor("_EmissionColor").maxColorComponent > .001f, Is.True,
+                        "The bespoke hero home must retain its visible warm lit glass.");
+                    litHomePanes++;
+                }
+            Assert.That(litHomePanes, Is.GreaterThanOrEqualTo(1));
+        }
+
+        private static void AssertNightWindowOccupancy(CityGameRoot city, WindowLighting windows)
+        {
+            var buildings = city.World.Root.GetComponentsInChildren<CityBuildingAssetRegistry>();
+            CityBuildingAssetRegistry timed = null;
+            foreach (CityBuildingAssetRegistry building in buildings)
+                if (building.OptionalWindowMask != 0) { timed = building; break; }
+            Assert.That(timed, Is.Not.Null, "Residential homes need a bounded timed occupancy candidate.");
+            double now = CityBuildingWindowSlotAppearance.AbsoluteMinutes;
+            double block = Math.Ceiling(now / 1440d) * 1440d;
+            CityBuildingWindowSlotAppearance.GetOptionalInterval(block, timed.WindowScheduleSeed, out double start, out double end);
+            Assert.That(end - start, Is.InRange(20d, 50d));
+            Assert.That(CityBuildingWindowSlotAppearance.OptionalPaneIsOn((start + end) * .5d, timed.WindowScheduleSeed), Is.True);
+            Assert.That(CityBuildingWindowSlotAppearance.OptionalPaneIsOn(end + 1d, timed.WindowScheduleSeed), Is.False);
+            Assert.That(CityBuildingWindowSlotAppearance.OptionalPaneIsOn(double.NaN, timed.WindowScheduleSeed), Is.False);
+            var identities = windows.Lights.ToArray();
+            var positions = identities.Select(light => light.transform.position).ToArray();
+            uint initialGeneration = windows.StateGeneration;
+            foreach (double minute in new[] { block, (start + end) * .5d, end + 1d, block + 230d })
+            {
+                double delta = minute - CityBuildingWindowSlotAppearance.AbsoluteMinutes;
+                if (delta > 0d) GameSessionState.AdvanceGameTime((float)(delta / GameTimeState.GameMinutesPerRealSecond));
+                city.DayNight.ApplyCurrentTime(true);
+                windows.RefreshImmediate();
+                Assert.That(CityWindowAppearance.NightFactor, Is.GreaterThan(.99f));
+                AssertPermanentWindowSources(city, windows);
+                ulong mask = timed.LitWindowMask;
+                uint generation = windows.StateGeneration;
+                windows.RefreshImmediate();
+                Assert.That(timed.LitWindowMask, Is.EqualTo(mask), "The same absolute time must reconstruct the same occupancy.");
+                Assert.That(windows.StateGeneration, Is.EqualTo(generation), "An unchanged clock must not invalidate reflection history.");
+                Assert.That(windows.Lights, Is.EqualTo(identities));
+                for (int i = 0; i < identities.Length; i++) Assert.That(identities[i].transform.position, Is.EqualTo(positions[i]));
+                bool shouldBeOn = CityBuildingWindowSlotAppearance.OptionalPaneIsOn(
+                    CityBuildingWindowSlotAppearance.AbsoluteMinutes, timed.WindowScheduleSeed);
+                Assert.That((timed.LitWindowMask & timed.OptionalWindowMask) != 0, Is.EqualTo(shouldBeOn));
+                if (minute == (start + end) * .5d || minute == end + 1d)
+                {
+                    CityBuildingWindowSlot slot = timed.WindowSlots.First(pane => (timed.OptionalWindowMask & (1UL << pane.Uv2SlotId)) != 0);
+                    Vector3 center = timed.transform.TransformPoint(slot.LocalCenter);
+                    Vector3 outward = timed.transform.TransformDirection(WindowLightOutward(slot.Side));
+                    SetWindowLightCamera(city, center + outward * 7f + Vector3.up, center);
+                    CaptureCurrentCamera(city.Camera, WindowLightCaptureArea, shouldBeOn ? "11-timed-window-on" : "12-timed-window-off",
+                        WindowLightCaptureWidth, WindowLightCaptureHeight);
+                }
+            }
+            Assert.That(windows.StateGeneration, Is.GreaterThan(initialGeneration),
+                "Real glass state transitions must invalidate the existing bounded reflection cache.");
+            Debug.Log("CityLightingContinuity: every actual residential home retains a warm pane; seeded timed glass/light transitions and fixed source identities verified.");
         }
 
         private static void AssertPermanentStreetSources(CityNightAtmosphere atmosphere)

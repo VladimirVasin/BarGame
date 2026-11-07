@@ -204,10 +204,10 @@ namespace BarPromenade
     public sealed partial class CityMiscAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "City/CityMiscAssetProvider";
-        public const string GeneratorVersion = "4.15.0";
+        public const string GeneratorVersion = "4.16.0";
         public const string DesignId = "city_misc_citywide_v4";
         public const int ExpectedAssemblyCount = 145;
-        public const int ExpectedMeshCount = 306;
+        public const int ExpectedMeshCount = 308;
         public const int SupportedKindCount = 104;
 
         private const float GroundTolerance = 0.003f;
@@ -508,13 +508,15 @@ namespace BarPromenade
         {
             P("Fixture", CityMiscMeshRole.Fixture),
             P("Timber", CityMiscMeshRole.Timber),
-            P("Residential", CityMiscMeshRole.Residential, CityMiscSurfaceKind.PaintedMetal)
+            P("Residential", CityMiscMeshRole.Residential, CityMiscSurfaceKind.PaintedMetal),
+            P("BacklitSign", CityMiscMeshRole.BacklitSign)
         };
         private static readonly ExpectedPartSpec[] FixtureStreetResidentialParts =
         {
             P("Fixture", CityMiscMeshRole.Fixture),
             P("Street", CityMiscMeshRole.Street),
-            P("Residential", CityMiscMeshRole.Residential)
+            P("Residential", CityMiscMeshRole.Residential),
+            P("BacklitSign", CityMiscMeshRole.BacklitSign)
         };
         private static readonly ExpectedPartSpec[] BarkPart =
         {
@@ -794,6 +796,36 @@ namespace BarPromenade
                     return 0.05f;
                 default:
                     return 0f;
+            }
+        }
+
+        public const int BusStopLightAnchorCount = 5;
+
+        /// <summary>Fixed-metre authored diffuser contacts, independently
+        /// exported as named source anchors for import/contact verification.</summary>
+        public static Vector3 GetBusStopLightAnchor(int index)
+        {
+            switch (index)
+            {
+                case 0: return new Vector3(-3.65f, 2.475f, .4775f);
+                case 1: return new Vector3(-1.45f, 2.475f, .4775f);
+                case 2: return new Vector3(-3.65f, 2.475f, -.3825f);
+                case 3: return new Vector3(-1.45f, 2.475f, -.3825f);
+                case 4: return new Vector3(0f, 2.60f, .22f);
+                default: throw new ArgumentOutOfRangeException(nameof(index));
+            }
+        }
+
+        public static string GetBusStopLightAnchorName(int index)
+        {
+            switch (index)
+            {
+                case 0: return "ANCHOR_BusStopStripFrontLeft";
+                case 1: return "ANCHOR_BusStopStripFrontRight";
+                case 2: return "ANCHOR_BusStopStripRearLeft";
+                case 3: return "ANCHOR_BusStopStripRearRight";
+                case 4: return "ANCHOR_BusStopApron";
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 

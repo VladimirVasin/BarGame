@@ -229,6 +229,12 @@ namespace BarPromenade
         // Runtime presentation uses the exact same selection as the glass
         // shader. No per-pane objects or duplicate random selection are needed.
         internal ulong LitWindowMask { get; set; }
+        internal ulong GuaranteedWindowMask { get; set; }
+        internal ulong OptionalWindowMask { get; set; }
+        internal uint WindowScheduleSeed { get; set; }
+        internal Renderer WindowGlassRenderer { get; set; }
+        internal float[] WindowStateBuffer { get; set; }
+        internal MaterialPropertyBlock WindowProperties { get; set; }
         public IReadOnlyList<CityBuildingBalconySlot> BalconySlots =>
             balconySlots;
         public float FrontageWidth => frontageWidth;

@@ -13,26 +13,31 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityWindowLighting : MonoBehaviour
     {
-        public const int MaximumLights = 192;
+        public const int MaximumLights = 384;
         public const float MaximumRange = 5f;
+        public const float MaximumFacadeRange = 1.75f;
         private const float BuildingRefreshSeconds = .35f;
         private const float BaseIntensity = 7f;
+        private const float FacadeIntensity = .2f;
+        private const float FacadeSourceOffset = .45f;
         private const float SourceInset = .2f;
 
         private readonly struct Source
         {
-            public readonly Transform Building;
+            public readonly CityBuildingAssetRegistry Registry;
+            public readonly ulong PaneMask;
             public readonly Vector3 Center, Outward, Position;
             public readonly Quaternion Rotation;
 
-            public Source(Transform building, Vector3 center, Vector3 outward)
+            public Source(CityBuildingAssetRegistry registry, int slotId, Vector3 center, Vector3 outward)
             {
-                Building = building;
+                Registry = registry;
+                PaneMask = 1UL << slotId;
                 Center = center;
                 Outward = outward;
-                // Light leaves the opening from just inside the room. The
-                // authored reveal and sill shape its exterior spill, instead
-                // of an exterior downward projector painting the facade.
+                // Direct room spill leaves along the window normal. The
+                // separate compact facade wash supplies its local scattered
+                // light without turning this into a downward projector.
                 Position = center - outward * SourceInset;
                 Rotation = Quaternion.LookRotation(outward, Vector3.up);
             }
@@ -40,13 +45,17 @@ namespace BarPromenade
 
         private Source[] sources = Array.Empty<Source>();
         private Light[] lights = Array.Empty<Light>();
+        private Light[] facadeLights = Array.Empty<Light>();
+        private CityBuildingAssetRegistry[] buildings = Array.Empty<CityBuildingAssetRegistry>();
         private Camera viewCamera;
         private Func<bool> exteriorActive;
         private float nextBuildingRefresh, lastFixtureFactor = -1f;
         private bool initialized, renderingActive;
 
         public IReadOnlyList<Light> Lights => lights;
+        public IReadOnlyList<Light> FacadeLights => facadeLights;
         public int CandidateCount => sources.Length;
+        public uint StateGeneration { get; private set; }
         public int ActiveCount
         {
             get
@@ -65,14 +74,15 @@ namespace BarPromenade
             viewCamera = camera != null ? camera : throw new ArgumentNullException(nameof(camera));
             exteriorActive = active ?? throw new ArgumentNullException(nameof(active));
             var configuredSources = new List<Source>(MaximumLights);
-            foreach (CityBuildingAssetRegistry registry in sourceRoot.GetComponentsInChildren<CityBuildingAssetRegistry>(true))
+            buildings = sourceRoot.GetComponentsInChildren<CityBuildingAssetRegistry>(true);
+            foreach (CityBuildingAssetRegistry registry in buildings)
             {
                 foreach (CityBuildingWindowSlot slot in registry.WindowSlots)
                 {
-                    if ((registry.LitWindowMask & (1UL << slot.Uv2SlotId)) == 0) continue;
+                    if (((registry.GuaranteedWindowMask | registry.OptionalWindowMask | registry.LitWindowMask) & (1UL << slot.Uv2SlotId)) == 0) continue;
                     if (configuredSources.Count >= MaximumLights)
-                        throw new InvalidOperationException("City window source budget exceeds 192.");
-                    configuredSources.Add(new Source(registry.transform,
+                        throw new InvalidOperationException("City window source budget exceeds 384.");
+                    configuredSources.Add(new Source(registry, slot.Uv2SlotId,
                         registry.transform.TransformPoint(slot.LocalCenter),
                         registry.transform.TransformDirection(LocalOutward(slot.Side)).normalized));
                 }
@@ -80,6 +90,7 @@ namespace BarPromenade
 
             sources = configuredSources.ToArray();
             lights = new Light[sources.Length];
+            facadeLights = new Light[sources.Length];
             for (int i = 0; i < sources.Length; i++)
             {
                 Source source = sources[i];
@@ -109,6 +120,27 @@ namespace BarPromenade
                     data.additionalLightsShadowResolutionTier =
                         UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow;
                 lights[i] = light;
+                // The outward room source cannot light its coplanar wall.
+                // A weak, compact inward wash represents light scattered by
+                // the opening; it shares the pane state and adds no shadow map.
+                var facadeObject = new GameObject("Window Facade Spill " + i);
+                facadeObject.transform.SetParent(transform, false);
+                facadeObject.transform.SetPositionAndRotation(source.Center + source.Outward * FacadeSourceOffset,
+                    Quaternion.LookRotation(-source.Outward, Vector3.up));
+                Light facade = facadeObject.AddComponent<Light>();
+                facade.type = LightType.Spot;
+                facade.color = light.color;
+                facade.range = MaximumFacadeRange;
+                facade.spotAngle = 160f;
+                facade.innerSpotAngle = 110f;
+                facade.intensity = 0f;
+                facade.bounceIntensity = 0f;
+                facade.shadows = LightShadows.None;
+                facade.enabled = false;
+                UniversalAdditionalLightData facadeData = facade.GetUniversalAdditionalLightData();
+                facadeData.usePipelineSettings = false;
+                facadeData.renderingLayers = 1u;
+                facadeLights[i] = facade;
             }
             initialized = true;
             RefreshImmediate();
@@ -150,6 +182,16 @@ namespace BarPromenade
 
         private void ApplySources()
         {
+            double absoluteMinutes = CityBuildingWindowSlotAppearance.AbsoluteMinutes;
+            bool stateChanged = false;
+            for (int i = 0; i < buildings.Length; i++)
+                if (buildings[i] != null)
+                {
+                    ulong before = buildings[i].LitWindowMask;
+                    CityBuildingWindowSlotAppearance.RefreshTimedMask(buildings[i], absoluteMinutes);
+                    stateChanged |= before != buildings[i].LitWindowMask;
+                }
+            if (stateChanged) unchecked { StateGeneration++; }
             float factor = GameTimeDayNightRules.FixtureFactor(CityWindowAppearance.NightFactor);
             float intensity = BaseIntensity * factor;
             bool intensityChanged = factor != lastFixtureFactor;
@@ -157,10 +199,16 @@ namespace BarPromenade
             {
                 Light light = lights[i];
                 if (light == null) continue;
-                if (intensityChanged) light.intensity = intensity;
-                Transform building = sources[i].Building;
-                bool enabledSource = building != null && building.gameObject.activeInHierarchy;
+                if (intensityChanged)
+                {
+                    light.intensity = intensity;
+                    facadeLights[i].intensity = FacadeIntensity * factor;
+                }
+                CityBuildingAssetRegistry building = sources[i].Registry;
+                bool enabledSource = building != null && building.gameObject.activeInHierarchy &&
+                    (building.LitWindowMask & sources[i].PaneMask) != 0;
                 if (light.enabled != enabledSource) light.enabled = enabledSource;
+                if (facadeLights[i].enabled != enabledSource) facadeLights[i].enabled = enabledSource;
             }
             lastFixtureFactor = factor;
             nextBuildingRefresh = Time.unscaledTime + BuildingRefreshSeconds;
@@ -170,7 +218,10 @@ namespace BarPromenade
         private void DisableSources()
         {
             for (int i = 0; i < lights.Length; i++)
+            {
                 if (lights[i] != null && lights[i].enabled) lights[i].enabled = false;
+                if (facadeLights[i] != null && facadeLights[i].enabled) facadeLights[i].enabled = false;
+            }
             renderingActive = false;
             nextBuildingRefresh = 0f;
         }
@@ -193,14 +244,22 @@ namespace BarPromenade
             DisableSources();
             for (int i = 0; i < lights.Length; i++)
             {
-                if (lights[i] == null) continue;
-                if (Application.isPlaying) Destroy(lights[i].gameObject);
-                else DestroyImmediate(lights[i].gameObject);
+                DestroySource(lights[i]);
+                DestroySource(facadeLights[i]);
             }
             lights = Array.Empty<Light>();
+            facadeLights = Array.Empty<Light>();
             sources = Array.Empty<Source>();
+            buildings = Array.Empty<CityBuildingAssetRegistry>();
             exteriorActive = null;
             viewCamera = null;
+        }
+
+        private static void DestroySource(Light light)
+        {
+            if (light == null) return;
+            if (Application.isPlaying) Destroy(light.gameObject);
+            else DestroyImmediate(light.gameObject);
         }
     }
 }

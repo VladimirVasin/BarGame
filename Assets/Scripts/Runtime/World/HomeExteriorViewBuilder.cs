@@ -85,7 +85,7 @@ namespace BarPromenade
             CityLaundryWorldBuilder.BuildHomeExterior(root, context);
             CityResidentialCourtyardPlan courtyards = CityResidentialCourtyardPlan.ForLayout(context.Layout);
             CityResidentialCourtyardWorldBuilder.BuildHomeExterior(root, courtyards, context);
-            CityResidentialEntranceLighting.Build(root, context.Layout, context);
+            CityResidentialEntranceLighting.Build(root);
             var poles = BuildHomeBusStop(root, context);
             night = BuildNightFixtures(root, context);
             night.BusStopPoles = poles;

@@ -2,6 +2,17 @@
 
 ## Current facts
 
+- **Accepted 2026-11-07,user — illuminated bus platforms:**
+  Physical01/02/03/transfers dedup;City/Home share Blender recessed neutral
+  perimeter strip underroof:4quarter-rail Spots→bench/backpanel/waiting;pole Spot→
+  front-door apron;paired plate Spots stay. Fixed `CityNightAtmosphere`/day≥2/3/
+  native range/far,never hero-gated. Shadows≤2visible platforms/soft256/fade/
+  hysteresis/≤10maps;strip air0. Air4/bounce4/halos24/cubes2×256;structure/
+  depth clipped. All24FX reviewed:shared GI/SSAO/fog/grade/material/motion/post
+  owners retained;new GI/SSGI/SCGI/pass/globalfog/text/audio/story0.
+  Assets/buffers/cleanup bounded;Art2.3/15a/story§6/20/16/21/art9.
+  CityBusStopLighting passed;cost not isolated.
+
 - **Accepted 2026-11-06/2026-11-07,user — bench access:** pawnshop≤45mXZ;origins fixed;west pair+Z.
   Plaza1.6m/asphalt/flowerbeds;mirrored outer lamps3.2m;West10.4m6-step;
   concrete pigeon/plinth1.98m between benches,rear.
@@ -45,10 +56,11 @@
   Goals kept,pooling resets excursion;ordinary rig/motion/24FX keep owners;
   new light/sound/text/canon0.
 
-- **Accepted exception — 2026-11-04,user — upper residential City:** art2.2/7/8,
-  story18: lower west keeps work;both upper slopes are housing. Court/40m crest
-  roads bridge one dry ravine;stairs join all tiers behind the original cave/
-  tunnel. One south ridge encloses the quarter;bridges/stairs serve its homes.
+- **Accepted exception — 2026-11-04/2026-11-07,user — upper residential City:**
+  art2.2/7/8,story18:lower west works;upper slopes house. Court/40m roads bridge
+  dry ravine;stairs join tiers behind cave/tunnel;south ridge encloses homes.
+  West Lane6 adds4-/3-storey v0/v4,one tree removed;shared light/approach/map;
+  no NPC/text/story exception.
 
 - **Accepted architecture extension — 2026-11-03,user — terraced City:**
   Low coast/port/river;two south streets≤6%→Y40;seven traverses/side.
@@ -3849,16 +3861,12 @@
   actual poles by `0.30 m` or `StaticFixtureOverlap` rejects the turn.
   Shared material regions and collision-free Home slices use actual support.
 - **Accepted exception — user, 2026-11-04 — City district bus service.**
-  Art §2 and story §6 level 0. The production city operates three independent
-  one-way rings. West 01 and east 02 stay on their river banks. Hillside 03
-  uses the full west ascent, summit bridge, east descent and Works bridge.
-  Stable transfer IDs pair 01-01 with 03-01 and 02-01 with 03-07. The lower and upper
-  pavements meet at surveyed flights. `CityHillsideAccessPlan.Transfers` supplies their floors,
-  ramps, treads, rails, pedestrian path and map strokes. Ground cuts and fence openings keep the
-  route continuous. Stop zebras use existing crossings or join both paved sides outside the
-  stopped vehicle. Six white rectangles run parallel to traffic with asphalt gaps across the road.
-  Each stripe and the pedestrian links follow surveyed heights.
-  The mouth transfer follows its bridge. Riders leave and enter at live doors.
+  Art2/story§6 level0:one-way01 west/02 east;03 west ascent/summit bridge/east
+  descent/Works bridge. Stable01-01↔03-01/02-01↔03-07 transfers use surveyed
+  `CityHillsideAccessPlan.Transfers` floors/ramps/treads/rails/walk/map;
+  ground cuts/fence openings keep continuity. Zebras join both pavements outside
+  stopped bodies:6white rectangles parallel to traffic/asphalt gaps/surveyedY.
+  Mouth transfer follows its bridge;boarding/alighting use live doors.
   Stops favour useful destinations, room for the shelter and a clear walking
   strip serving both doors. After changes to a stop, its service or obstacles
   along its approach, check every active stop code in the built City. Keep the
@@ -3866,18 +3874,13 @@
   from both directions along that sidewalk, through the waiting area to each
   open passenger door in turn. Press `E` and confirm the player is
   riding the assigned bus. Check each boarding place at a transfer. Record the PlayMode proof.
-  Nearby destinations may share a stop. A shared
-  kerb has one shelter, bench and map platform. The abandoned island stays clear.
-  Each line has two vehicles starting half a lap apart. A following bus eases its pace
-  when the gap closes. Distant services use route timing and resident stop events;
-  models, lights, cabin audio and collision bind within the fog band.
-  One graph for both banks and the hill return checks full-body clearance.
-  The hill uses the same widened bends, height samples and crest road as the
-  physical street. World reservations, truck, map, balcony and ride use these
-  plans. Poles and map use route number plus one-based stop order (03-02);
-  shared platforms carry both codes and split transfers identify the partner.
-  Each pole keeps two fixed short-range Spots along both plates, following the daylight
-  floor. City and the Home balcony share the same world anchors.
+  Nearby destinations may share one shelter/bench/map platform;abandoned island
+  stays clear. Two vehicles/line start half a lap apart;followers ease closing gaps.
+  Remote timing/resident stop events persist;model/light/cabin audio/collision bind
+  in fog. One graph checks full-body clearance over banks/hill;widened bends/Y/
+  crest road feed reservations/truck/map/balcony/ride. Pole/map codes combine
+  line+one-based order(03-02);shared platforms show both,split transfers the partner.
+  Pole plates:2fixed short Spots/dayfloor/shared City/Home anchors.
   Buses display their route number on the front, sides and rear. Fog, materials and post
   retain City settings. Headlights, sound and interaction follow visible buses.
 
@@ -5962,12 +5965,10 @@
   widening a district palette or drifting a semantic sheet fails at its owner.
 - **Accepted — District presentation is pure data with windows as the first
   consumer:** `CityDistrictPresentationPlanner` owns stable block keys for
-  frontage/mass/windows/light/wear and one-block transitions between authored
-  neighbour pairs. Only windows are consumed; other channels are inputs, not
-  built geometry. Ordinary Blender buildings choose one stable lit slot from
-  all authored floors/sides; no per-row minimum. District ratios remain inputs
-  for legacy/special paths. All lit panes share street-lamp warmth; special
-  Bar/Home/Supermarket keep their own textures/materials.
+  frontage/mass/windows/light/wear and authored one-block transitions. Only
+  windows are consumed; other channels are inputs, not geometry. Ordinary
+  slots span all floors/sides without per-row minima; legacy/special paths keep
+  district ratios. Lit panes share street-lamp warmth; special materials stay.
 - **Accepted - PC native scene composite:** `SceneCompositeRendererFeature` runs
   at `AfterRenderingPostProcessing` for the final Game camera, preserving source
   resolution. `SceneComposite.shader`/`SceneComposite.hlsl` share intoxication
@@ -6062,40 +6063,41 @@
   and real sashes, so white maps avoid the atlas border; the shared material
   owns colour/power.
 - **Accepted architecture exception — 2026-11-07, user correction — continuous
-  City lighting:** permanent world-anchor fixtures; `CityNightAtmosphere`≤2048,
-  no hero-relative leases. Ordinary Blender buildings keep one deterministic
-  lit window/Spot; `CityWindowLighting`≤192, range `5 m`, intensity `7`, hard `256`.
-  Sources lie inside apertures, aimed out along facade normals (`160°/120°`);
-  frames shape light. Whole-glass emission keeps dark frames/curtain texture.
-  City/Home balcony agree; special Bar/Home/Supermarket glass stays.
-  Native URP culls intersecting light volumes against camera frusta;
-  ranges/far planes bound receivers, no custom distance gate. Ordinary buildings
-  lack generated LODs/LODGroup; simplified Home is not LOD. Auxiliary distance
-  budgets stay. Warm/day≥`2/3`, halos/profiles/faults/dormancy/unload stay.
-  Practical catalogue≤2240; fixed sources are not moving.
-  air4/bounce4/halos24/cubes2; no new GI/post/recaptures.
-  `CityLightingContinuity` proves fixed-camera continuity, day floor/lifecycle;
-  reviewed native Ridge/approach views remain within visible-source bounds.
-  CPU/GPU frame costs are unavailable; no gain claimed.
+  City lighting:** permanent world anchors; `CityNightAtmosphere`≤2048,no hero leases.
+  `CityWindowLighting`≤384 pane pairs:inside/outward `5 m`/`7`/hard`256`,
+  `160°/120°`;outside/inward `.45 m` offset,`1.75 m`/`.2`,`160°/110°`,shadowless.
+  Each lit pane warms its wall;inward fill approximates scattering,not GI.
+  Both share mask/dayfloor/cleanup. Whole-glass emission keeps frames non-emissive
+  and curtain texture. City/Home balcony agree;special Bar/Home/Supermarket glass stays.
+  Native URP frustum-culls intersecting volumes;ranges/far planes bound receivers,
+  no custom distance gate. Ordinary buildings lack generated LODs/LODGroup;
+  simplified Home is not LOD. Auxiliary distance budgets stay.
+  Warm/day≥`2/3`,halos/profiles/faults/dormancy/unload stay.
+  air4/bounce4/halos24/cubes2;wash adds no air/bounce entry/GI/post/shadow map.
+  `CityLightingContinuity`/`CityStreetWindowMinimum` pass clock/glass/wall/lifecycle.
+  CPU/GPU frame cost unavailable;no gain claimed.
 - **Accepted — 2026-11-07, user — one lamp per residential entrance:**
-  `CityResidentialEntranceLighting`: Blender `PassageLamp`,
-  `2.55 m` mount/measured lens in City/Home; canopy/Home fixtures not doubled.
+  `CityResidentialEntranceLighting` scans actual Residential entrance registries
+  after lower/hillside/Ridge/Home builds. `PassageLamp`:
+  `2.55 m` wall mount or authored `ANCHOR_EntranceLampCeiling`/lens; canopy dedup stays.
   `ResidentialEntrance`/`CourtyardEntrance`: Point `7.5`/`5.5 m`, Soft low `256`,
   day≥`2/3`; lights door/paving/side facade/balcony underside. HomeEntrance stays.
   Shared glow/fixed cleanup. Entry air≤2/scene≤4, gain `.25`, full-range
   sphere/structure/depth clipped; native air shadows are Spot-only.
   Point shadows use six faces; GPU cost unmeasured. No new pass/GI/global fog/post.
-  `CityEntranceLighting` proves receiver spill/day floor/identity/cleanup;
-  day/night/high-entrance frames reviewed.
+  `CityEntranceLighting` passes all-house coverage/receivers; Ridge/Home viewed.
+- **Accepted — 2026-11-07, user — one guaranteed window and a timed extra:**
+  Seeded street-front primary pane/Spot stays on;Residential has one timed extra.
+  City seed+original lot(cell/position/variant)+absolute minutes choose each
+  `240`-minute block: start `0–120`, on `20–50`, off≥`70`; no replay/UnityRandom.
+  `.35 s` checks reuse MPB/64-state buffers; glass/Light change atomically.
+  City/Home keys/clock agree; pause freezes time; lit panes keep day≥`2/3`.
+  Optional-state generations dirty existing `2×256` reflection cubes with `5 s`
+  debounce, no new pass. `CityLightingContinuity` passes;
+  range/fog/DoF stay.
 - **Accepted architecture exception — 2026-08-29, explicit user correction —
-  window light is sparse, warm and vertically distributed:** this supersedes
-  the cold Industrial window family and the Nightlife rule that concentrated
-  light on the front ground floor while leaving upper/rear rows dark. It does
-  not lift the art-bible ban on all-lit facades. Stable selection varies floors
-  and sides across buildings; individual rows may be dark. Every selected pane remains on through the §20 fixture
-  floor and uses exactly `CityNightAtmosphere.StreetLampColor`; frames,
-  curtains, blinds, stable brightness variants and dark panes prevent a
-  uniform glowing grid. This City rule does not alter Alpine Village dimming.
+  window light is sparse, warm and vertically distributed:** all-lit facades
+  stay banned. Slots vary floor/side; dark gaps/frames persist. Village dimming stays.
 - **Accepted — Bounded local fog:** One seeded, player-following
   `CityFogField`:≤36/shared material/collision-trails-lights0;per-area `MixFog`.
   City/balcony:2026-11-03;road/village unchanged. Weather clears/refills snow/fog

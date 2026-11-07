@@ -425,22 +425,23 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Two raised houses/two OpenGround,144 IDs. House11,8 sits3.84m below street,
   roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
-  Coast→Lower Court/upper housing;2seven-tier climbs join streets over dry ravine.
-  Stairs→tiers/through court/crest;off-road earth joins yards.
-  Level pockets:benches/bins/booths;panels→entry/forecourt,fixed shadowed lights/dayfloor.
-  Home bench→truss/ravine/lower roofs.
+  Coast→Lower Court/upper homes;2seven-tier climbs/ravine.
+  Stairs→tiers/court/crest;earth joins yards. Benches/bins/booths on level pockets;
+  panels→entry/forecourt,fixed shadows/dayfloor;Home bench→truss/ravine/roofs.
+  West Lane6:(-24,-8)/v0/4fl/X-99.2;(-25,-8)/v4/3fl/X-84.
+  Tree gone;shared light/approach/mapXYZ.
   `CityHillsideBenchPocketPlan`:pawnshop≤45mXZ;origins fixed;West11/13 face+Z/new docks.
   Plaza/stone1.6m→footways;West landing:solid AsphaltRoad/Concrete.
   Stair10.4m(6×.16/.36m)/warped lower landing→street grade.
   CityPawnshopDescentPlan:40.06m→3×12(.1252/.32m),aprons→bench35.553m→
   2×12(.166/.32m),landing2.4m→footway/Lane5 zebra/door;imported1.8m/bench branch.
-  Cuts/ramp/treads/nav/map/Home;POI at summit/stale art→scheme;walk clear.
+  Cuts/ramp/treads/nav/map/Home;POI at summit/current art;walk clear.
   Outer+4descent lamps:RidgeBench37.5/r11/soft256/fixed/dayfloor.
   Pigeon/plinth1.98m,rear;side beds;solid/nav clear.
-  Homes:soil/wet asphalt skirts;worn turf/gravel/broken stone/shrub03-04→Home;
-  deciduous gable groups. W:stepped concrete/drains;E:low kerbs/grass/boot
-  scrapers. Home patched plinth/pooled doorstep;upper poles→stairs/bridge footways;
-  covered fixtures below;loose rock/gravel under bridge bearings.
+  Homes:soil/wet asphalt skirts;turf/gravel/broken stone/shrub03-04→Home;
+  deciduous gable groups. W:stepped concrete/drains;E:kerbs/grass/boot scrapers.
+  Home patched plinth/lamp;poles→stairs/bridge footways;
+  covered lamps below;rock/gravel under bridge bearings.
   Each kiosk:one warm emissive lens/two fixed shadowed lobes light seller/shelves,
   through-window street spill. Strong beam reaches statics;soft ordinary source
   keeps seller/dialogue hero faces/clothes. City/Home share placements.
@@ -617,8 +618,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Directional/ambient/reflection and City/Home fixtures blend; the neighbour-wall
   yard Spot stays outside `NightFactor`. Static City fixtures keep one permanent
   world-anchored Light each, construction cap `2048`; no proximity leases.
-  `CityWindowLighting`: one lit ordinary Blender window/fixed Spot per building,
-  ≤`192` sources, `5 m`/intensity`7`/hard`256`; special Bar/Home/Shop glass stays.
+  `CityWindowLighting`: street-front primary plus timed Residential extra;
+  ≤`384` pane pairs:outward `5 m`/`7`/hard`256` + inward `1.75 m`/`.2`,shadowless.
+  Each lit pane warms its wall;shared mask/clock/cleanup,no GI. Specials stay.
   City/Home balcony share warmth/day floor, range/far culling and dormancy cleanup.
   Each visible bus may add `4` (up to two vehicles per line), the pooled
   helmet-lamp pedestrian `1`, the yard `1` and the drying yard's night-only
@@ -750,9 +752,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   preserving planes/hard surfaces and excluding low grass. Hosts keep
   semantics; cemetery cuts/coatings, sand/fixed collision stay. Home copies
   bounded street/terrain/perimeters without collision. Ordinary Blender panes
-  select exactly one stable warm slot across all authored floors/sides; rows
-  may be dark. Pure `CityDistrictPresentationPlanner` retains district inputs;
-  Bar/Home/Supermarket keep their own material families;
+  keep a street-front primary and timed Residential extra;dark gaps/districts/
+  special Bar/Home/Shop materials stay;
 - `CityFogField`:≤36 world particles/shared material;City/balcony use slow
   wind-driven layers with absolute game-time phase/pause. Roofs clear/refill;
   road/village retain their field profile and weather shelter owner. Exp2 is
@@ -913,14 +914,17 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   the actor. The default City has three one-way rings. Lines 01 and 02 stay
   on the west and east banks. Line 03 climbs the western switchbacks, crosses
   Summit Street Bridge, descends the eastern streets and returns via Works Bridge.
-  Each line has shelters on straight sections. The City and Home balcony share the painted steel frame,
-  jointed rear sheets, lengthwise timber grain and enamel stop codes. A walk from either
-  end of the sidewalk reaches the shelter and both passenger doors, including
-  on the switchbacks. Queues stand back from the through path. Infill and litter
-  reserve the shelter, waiting places and door approaches. Each stop has a zebra to the opposite pavement. At the foot of the slopes, concrete stairs and
-  landings link 01-01 to 03-01 on the west and 02-01 to 03-07 on the east. Residents and the hero use
-  the same walk between buses. The river-mouth transfer follows the bridge. The map distinguishes each physical pole. Each face gives the line and stop (03-02), with a second code for transfers.
-  Two permanent short-range, shadowless Spots light each pole from above, one per face.
+  Shelters stand on straight sections. City/Home share painted steel/jointed rear
+  sheets/lengthwise timber/enamel codes. Both sidewalk directions reach shelter
+  and both doors,including switchbacks. Queues/infill/litter clear through walks/
+  waiting/door reservations. Zebras reach opposite pavements. Concrete transfers
+  link01-01↔03-01/02-01↔03-07;hero/residents share routes. Mouth transfer uses bridge.
+  Map distinguishes physical poles;both faces show line/stop(03-02)/transfer code.
+  `CityBusStopLighting`:continuous recessed neutral perimeter strip below roof;
+  4quarter-rail Spots→bench/backpanel/waiting;pole Spot→front-door apron.
+  Shared mesh/anchors;fixed `CityNightAtmosphere`/day≥2/3/native range/far;
+  plate2shadowless Spots stay;platforms dedup. Camera shadows≤2visible
+  stops/soft256/≤10maps/fade30–45m;strip air0,power fixed;shared FX budgets stay.
   The bus displays dark digits on its pale front panel and light digits on the sides and rear.
   In drizzle and light rain, scattered small drops cling to its panes. Drops run down the glass in heavy rain.
   Each bus serves its own ordered stops, opens both doors and dwells for ten
@@ -1488,9 +1492,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   heights `13.4/15.8/12.8/15.8/10 m`. Every body/wing has an open `1.4×2.4 m`
   entrance/`1.8 m` vestibule: measured threshold, split collision/skirt, real floor.
   `CityResidentialEntrancePlan` owns protected graded paving→public sidewalk.
-  Each entrance: cool lamp/fixed soft Point/finite air in City/Home, lighting
-  door/facade/balcony underside; canopy/Home reused. Shared glow/day floor;
-  `CityResidentialEntranceLighting` reuses authored `PassageLamp`, no new interaction/apartment.
+  `CityResidentialEntranceLighting` scans placed entrance registries after
+  lower/hillside/Ridge/Home builds. Cool fixed Point/finite air lights door/
+  facade/balcony underside; `PassageLamp` wall/FBX-ceiling mounts clear
+  glazed stair bays. Canopy/Home reuse; glow/day floor; no new action.
   Industrial eight functions, heights `8.6/7.8/8.4/7.8/6/8.4/6.6/7.8 m`:
   dry/cold storage, repair/metal/packaging, boiler/compressor, repair garage.
   Equipment owns roofs/gates/recesses; timber/concrete/steel retain response.
@@ -1763,7 +1768,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   fair/post/docks/arch/church/cafe/laundry/dog yard/terraces/kiosks/pawnshop/descent),bounded localized legend/
   selectable places. Public lots/fair use open ground,not buildings;locations come
   from validated memoised plans/port.
-  City:live scheme;descent made kiosk-stage ImageGen art stale,not retagged.
+  City:registered ImageGen includes crest infill/descent;live layers/XYZ remain.
   Village uses the worn tourist brochure with a red-crossed resort.
   LodgeApproach arrival;no3D change. Plan/RU SHA+bounds/size guard
   stale art;other seeds/MountainRoad→schematic. City SHA excludes Village

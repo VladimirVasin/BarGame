@@ -582,7 +582,9 @@ namespace BarPromenade.Tests.EditMode
                 ((int)CityWindowFamily.Supermarket + 1) *
                 CityWindowAppearance.VariantCount - 1;
             int litStates = 0;
-            ulong selected = CityBuildingWindowSlotAppearance.ResolveLitWindowMask(registry, lot, citySeed);
+            ulong guaranteed = CityBuildingWindowSlotAppearance.ResolveLitWindowMask(registry, lot, citySeed);
+            ulong selected = CityBuildingWindowSlotAppearance.ResolveTimedMask(registry,
+                CityBuildingWindowSlotAppearance.AbsoluteMinutes);
             for (int index = 0;
                  index < registry.WindowSlots.Count;
                  index++)
@@ -634,8 +636,9 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 litStates,
-                Is.EqualTo(1),
-                $"Prototype '{registry.StableId}' must keep one permanent lit pane.");
+                Is.InRange(1, lot.District == CityDistrictKind.Residential ? 2 : 1),
+                $"Prototype '{registry.StableId}' must retain a guaranteed lit pane and at most one timed extra.");
+            Assert.That(registry.GuaranteedWindowMask, Is.EqualTo(guaranteed));
             Assert.That(registry.LitWindowMask, Is.EqualTo(selected));
         }
 

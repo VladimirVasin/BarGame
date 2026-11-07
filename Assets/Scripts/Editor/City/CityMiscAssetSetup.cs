@@ -915,6 +915,18 @@ namespace BarPromenade.Editor
                     "City misc model is not passive render-only geometry.");
             }
 
+            Transform[] frames = model.GetComponentsInChildren<Transform>(true);
+            for (int index = 0; index < CityMiscAssetProvider.BusStopLightAnchorCount; index++)
+            {
+                string name = CityMiscAssetProvider.GetBusStopLightAnchorName(index);
+                Transform[] matches = frames.Where(frame => frame.name == name).ToArray();
+                if (matches.Length != 1 || Vector3.Distance(
+                        model.transform.InverseTransformPoint(matches[0].position),
+                        CityMiscAssetProvider.GetBusStopLightAnchor(index)) > BoundsTolerance)
+                    throw new InvalidOperationException(
+                        $"City bus stop source '{name}' differs from its authored diffuser contact.");
+            }
+
             var manifestParts = manifest.parts.ToDictionary(
                 part => part.mesh,
                 StringComparer.Ordinal);

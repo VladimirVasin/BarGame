@@ -619,6 +619,12 @@ MonoBehaviour:
     role: 7
     surface: 3
     mesh: {fileID: 3714185552807035286, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 26
+    variant: 0
+    component: BacklitSign
+    role: 8
+    surface: 0
+    mesh: {fileID: 5032566625189591919, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
   - kind: 27
     variant: 0
     component: Fixture
@@ -637,6 +643,12 @@ MonoBehaviour:
     role: 7
     surface: 0
     mesh: {fileID: 8994631116911825778, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 27
+    variant: 0
+    component: BacklitSign
+    role: 8
+    surface: 0
+    mesh: {fileID: -8352463000144423819, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
   - kind: 28
     variant: 0
     component: Fixture
@@ -1849,4 +1861,4 @@ MonoBehaviour:
     role: 2
     surface: 1
     mesh: {fileID: 8952813868899882856, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
-  buildSignature: d90d2485a303bcffdb9c78e07206dc69c5a6a4d258b246e0060050af4eead9ef
+  buildSignature: 7b5794ca72a7877a47f31d954e6a7f243b0eab00e6cabd81b5b8f1be6419d952

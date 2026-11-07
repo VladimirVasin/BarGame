@@ -42,6 +42,13 @@ namespace BarPromenade
             if (house.HasGlazedBay)
             {
                 var stairs = Place(ref bay, "GlazedStairBay", root, entry, facing);
+                Transform ceiling = CityResidentialCourtyardAssetProvider.FindPart(stairs, "ANCHOR_EntranceLampCeiling");
+                // The first landing projects over the doorway. Keep the whole
+                // fixture below its authored slab, with its chassis flush to
+                // the soffit instead of intersecting it as a wall-mounted lamp.
+                Transform mount = new GameObject(CityResidentialEntranceLighting.CeilingMountName).transform;
+                mount.SetParent(building.transform, false);
+                mount.SetPositionAndRotation(ceiling.position, facing);
                 foreach (int side in new[] { -1, 1 })
                     CityTerracePilotWorld.Box(stairs, "Bay pier", new Vector3(side * .98f, 1.32f, .53f),
                         new Vector3(.21f, 2.64f, 1.06f), Quaternion.identity);

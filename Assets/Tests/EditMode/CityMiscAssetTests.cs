@@ -200,9 +200,11 @@ namespace BarPromenade.Tests.EditMode
             Part(CityMiscKind.Route01ShelterShell, 0, CityMiscMeshRole.Fixture),
             Part(CityMiscKind.Route01ShelterShell, 0, CityMiscMeshRole.Timber),
             Part(CityMiscKind.Route01ShelterShell, 0, "Residential", CityMiscMeshRole.Residential, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.Route01ShelterShell, 0, CityMiscMeshRole.BacklitSign),
             Part(CityMiscKind.Route01PoleShell, 0, CityMiscMeshRole.Fixture),
             Part(CityMiscKind.Route01PoleShell, 0, CityMiscMeshRole.Street),
             Part(CityMiscKind.Route01PoleShell, 0, CityMiscMeshRole.Residential),
+            Part(CityMiscKind.Route01PoleShell, 0, CityMiscMeshRole.BacklitSign),
             Part(CityMiscKind.TrafficSignalShell, 0, CityMiscMeshRole.Fixture),
             Part(CityMiscKind.YardDeadTree, 0, CityMiscMeshRole.Bark),
             Part(CityMiscKind.YardBench, 0, CityMiscMeshRole.Timber),
@@ -415,7 +417,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo("city_misc_citywide_v4"));
             Assert.That(
                 CityMiscAssetProvider.GeneratorVersion,
-                Is.EqualTo("4.15.0"));
+                Is.EqualTo("4.16.0"));
             Assert.That(
                 CityMiscAssetProvider.SupportedKindCount,
                 Is.EqualTo(104));
@@ -424,8 +426,8 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(145));
             Assert.That(
                 CityMiscAssetProvider.ExpectedMeshCount,
-                Is.EqualTo(306));
-            Assert.That(ExpectedParts, Has.Length.EqualTo(306));
+                Is.EqualTo(308));
+            Assert.That(ExpectedParts, Has.Length.EqualTo(308));
 
             var actualNames = new List<string>();
             int assemblies = 0;
@@ -461,7 +463,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(ExpectedParts.Select(part => part.MeshName)));
             Assert.That(
                 actualNames.Distinct(StringComparer.Ordinal).Count(),
-                Is.EqualTo(306));
+                Is.EqualTo(308));
             Assert.That(
                 actualNames.Take(33),
                 Is.EqualTo(ExpectedParts.Take(33).Select(part => part.MeshName)),
@@ -500,13 +502,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.lights, Is.False);
             Assert.That(manifest.cameras, Is.False);
             Assert.That(manifest.animation_count, Is.Zero);
-            Assert.That(manifest.mesh_count, Is.EqualTo(306));
+            Assert.That(manifest.mesh_count, Is.EqualTo(308));
             Assert.That(manifest.assembly_count, Is.EqualTo(145));
-            Assert.That(manifest.triangle_count, Is.EqualTo(57246));
+            Assert.That(manifest.triangle_count, Is.EqualTo(57582));
             Assert.That(
                 manifest.build_signature,
                 Is.EqualTo(
-                    "d90d2485a303bcffdb9c78e07206dc69c5a6a4d258b246e0060050af4eead9ef"));
+                    "7b5794ca72a7877a47f31d954e6a7f243b0eab00e6cabd81b5b8f1be6419d952"));
             Assert.That(
                 manifest.wave1_compatibility_signature,
                 Is.EqualTo(
@@ -632,7 +634,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(imported.OfType<Material>(), Is.Empty);
             Assert.That(imported.OfType<AnimationClip>(), Is.Empty);
             Mesh[] meshes = imported.OfType<Mesh>().ToArray();
-            Assert.That(meshes, Has.Length.EqualTo(306));
+            Assert.That(meshes, Has.Length.EqualTo(308));
             Assert.That(meshes.All(mesh => mesh.isReadable), Is.True);
             Assert.That(meshes.All(mesh => mesh.vertexCount > 0), Is.True);
 
@@ -700,7 +702,7 @@ namespace BarPromenade.Tests.EditMode
                 actualNames.Add(part.Mesh.name);
             }
 
-            Assert.That(actualNames, Has.Count.EqualTo(306));
+            Assert.That(actualNames, Has.Count.EqualTo(308));
             UnityEngine.Object[] imported =
                 AssetDatabase.LoadAllAssetsAtPath(
                     ModelPath);

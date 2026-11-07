@@ -381,7 +381,6 @@ namespace BarPromenade
             CityDogParkWorldBuilder.Build(world, layout);
             CityStaticCollisionBuilder.AddDogParkColliders(world, plans.DogPark);
             GameObject residentialCourtyardRoot = CityResidentialCourtyardWorldBuilder.Build(world, residentialCourtyards);
-            CityResidentialEntranceLighting.Build(world, layout);
             CityResidentialCourtyardLife courtyardLife = residentialCourtyardRoot.AddComponent<CityResidentialCourtyardLife>();
             courtyardLife.Initialize(residentialCourtyards, residentialCourtyardRoot.transform);
             CityTerracePilotWorld.Build(world, terraces);
@@ -392,6 +391,7 @@ namespace BarPromenade
             CityHillsideQuarterGround.Build(world, layout);
             CityHillsideSiteDetails.Build(world, layout);
             CityHillsideFurnitureWorld.Build(world, layout);
+            CityResidentialEntranceLighting.Build(world);
             var kioskShelters = new List<Collider>(6);
             foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(layout).Sites)
             {

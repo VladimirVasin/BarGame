@@ -61,14 +61,17 @@ namespace BarPromenade.Tests.PlayMode
                 foreach (Renderer renderer in city.Player.GameObject.GetComponentsInChildren<Renderer>(true))
                     if (renderer.enabled) { renderer.enabled = false; hidden.Add(renderer); }
 
-                CityResidentialEntrancePlan plan = CityResidentialEntrancePlan.ForLayout(city.Layout);
-                Assert.That(plan.Entrances, Is.Not.Empty);
+                // The road-access plan deliberately excludes hillside houses.
+                // Use the independent inventory of all building lots so this
+                // acceptance cannot repeat the runtime builder's old omission.
+                List<CityResidentialEntranceDescriptor> entrances = ExpectedEntranceLampDoors(city.Layout);
+                Assert.That(entrances, Is.Not.Empty);
                 var sources = new List<Transform>();
                 var lights = new List<Light>();
                 var claimed = new HashSet<Transform>();
                 CityResidentialEntranceDescriptor capture = null, highest = null;
                 int fresh = 0, reused = 0;
-                foreach (CityResidentialEntranceDescriptor entrance in plan.Entrances)
+                foreach (CityResidentialEntranceDescriptor entrance in entrances)
                 {
                     Transform source = FindEntranceLampSource(city.Night.Atmosphere, entrance, out Light light);
                     Assert.That(claimed.Add(source), Is.True, "Each doorway owns its own fixture: " + entrance.Lot.Cell);
@@ -102,9 +105,11 @@ namespace BarPromenade.Tests.PlayMode
                     sources.Add(source); lights.Add(light);
                 }
                 Assert.That(fresh, Is.GreaterThan(0));
-                Assert.That(fresh + reused, Is.EqualTo(plan.Entrances.Count));
+                Assert.That(fresh + reused, Is.EqualTo(entrances.Count));
                 Assert.That(capture, Is.Not.Null);
-                Debug.Log("CityEntranceLighting coverage: entries=" + plan.Entrances.Count + ", new=" + fresh + ", existing canopies=" + reused);
+                AssertEntranceRegistryInventory(city.World.Root.transform, entrances);
+                AssertPlayerHomeEntranceLamp(city, claimed);
+                Debug.Log("CityEntranceLighting coverage: entries=" + entrances.Count + ", new=" + fresh + ", existing canopies=" + reused);
 
                 Vector3 tangent = Vector3.Cross(Vector3.up, capture.Outward);
                 Vector3 eye = capture.Threshold + capture.Outward * 5.4f + tangent * 1.1f + Vector3.up * 1.7f;
@@ -144,6 +149,7 @@ namespace BarPromenade.Tests.PlayMode
                 SetEntranceLampCamera(city, highest.Threshold + highest.Outward * 4.2f + Vector3.up * EyeHeight,
                     highest.Threshold + Vector3.up * 1.55f);
                 CaptureCurrentCamera(city.Camera, EntranceLampCaptureArea, "03-highest-entrance-night", EntranceLampWidth, EntranceLampHeight);
+                CaptureReportedRidgeEntrance(city, entrances, lights);
 
                 double toNoon = (12 * 60 - GameSessionState.GameTimeOfDayMinutes + 1440) % 1440;
                 GameSessionState.AdvanceGameTime((float)(toNoon / GameTimeState.GameMinutesPerRealSecond));
@@ -161,6 +167,11 @@ namespace BarPromenade.Tests.PlayMode
                 city.DayNight.enabled = false; city.Weather.enabled = false; follow.enabled = false;
                 city.Night.Atmosphere.RefreshImmediate();
                 foreach (Light light in lights) Assert.That(light.enabled, Is.True);
+                double toNight = (21 * 60 - GameSessionState.GameTimeOfDayMinutes + 1440) % 1440;
+                GameSessionState.AdvanceGameTime((float)(toNight / GameTimeState.GameMinutesPerRealSecond));
+                GameSessionState.EnterHome();
+                yield return SceneManager.LoadSceneAsync(SceneIds.HomeInterior, LoadSceneMode.Single);
+                yield return AssertHomeEntranceLampCoverage();
                 yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
                 yield return null;
                 foreach (Light light in lights) Assert.That(light == null, Is.True, "Entrance light lifetime belongs to its exterior.");
@@ -185,6 +196,184 @@ namespace BarPromenade.Tests.PlayMode
                 Time.captureDeltaTime = previousCaptureDelta;
                 GameSessionState.BeginNewGame("Test entrance lamps cleanup");
             }
+        }
+
+        private static List<CityResidentialEntranceDescriptor> ExpectedEntranceLampDoors(CityLayout layout)
+        {
+            var result = new List<CityResidentialEntranceDescriptor>();
+            var included = new HashSet<BuildingLot>();
+            foreach (BuildingLot lot in layout.BuildingMasses) Add(lot);
+            foreach (CityHillsideBuilding house in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings) Add(house.Lot);
+            return result;
+
+            void Add(BuildingLot lot)
+            {
+                if (!lot.IsOrdinaryBuilding || lot.District != CityDistrictKind.Residential || !included.Add(lot)) return;
+                CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
+                result.Add(new CityResidentialEntranceDescriptor(lot,
+                    pose.TransformPoint(CityBuildingAssetProvider.GetExpectedEntranceThreshold(lot.BuildingVariant)),
+                    pose.Rotation * CityBuildingAssetProvider.GetExpectedEntranceOutward(lot.BuildingVariant),
+                    Array.Empty<Vector3>(), Array.Empty<CityEntranceForecourtPlan>()));
+            }
+        }
+
+        private static void AssertEntranceRegistryInventory(Transform root,
+            IReadOnlyList<CityResidentialEntranceDescriptor> expected)
+        {
+            int actual = 0;
+            foreach (CityBuildingAssetRegistry building in root.GetComponentsInChildren<CityBuildingAssetRegistry>(true))
+            {
+                if (building.District != CityDistrictKind.Residential) continue;
+                Assert.That(building.HasEntrance, Is.True);
+                Vector3 threshold = building.transform.TransformPoint(building.LocalEntranceThreshold);
+                int matches = 0;
+                foreach (CityResidentialEntranceDescriptor entry in expected)
+                    if (Vector3.Distance(entry.Threshold, threshold) < .05f) matches++;
+                Assert.That(matches, Is.EqualTo(1), "Every actual model entrance must match the independent lot inventory: " + threshold);
+                actual++;
+            }
+            Assert.That(actual, Is.EqualTo(expected.Count), "The inventory must include lowland, infill, slope and shared-court homes.");
+        }
+
+        private static void AssertPlayerHomeEntranceLamp(CityGameRoot city, HashSet<Transform> claimed)
+        {
+            int found = 0;
+            for (int i = 0; i < city.Night.Atmosphere.LampAnchors.Count; i++)
+            {
+                Transform anchor = city.Night.Atmosphere.LampAnchors[i];
+                if (anchor == null || anchor.name != "IndustrialTaskLight_HomeEntrance") continue;
+                found++;
+                Assert.That(claimed.Add(anchor), Is.True, "The hero's bespoke doorway must retain its own source.");
+                Light light = city.Night.Atmosphere.GetLightForAnchor(i);
+                Assert.That(light != null && light.isActiveAndEnabled, Is.True);
+                Assert.That(light.type, Is.EqualTo(LightType.Spot));
+                Assert.That(light.intensity, Is.EqualTo(4.2f).Within(.001f));
+                Assert.That(light.range, Is.EqualTo(4.5f).Within(.001f));
+                Renderer lens = null;
+                foreach (Renderer renderer in anchor.parent.GetComponentsInChildren<Renderer>(true))
+                    if (renderer.name == "Home Entrance Lamp") { lens = renderer; break; }
+                Assert.That(lens, Is.Not.Null, "The existing player-home light must still have its visible lamp.");
+                Assert.That(Vector3.Distance(lens.bounds.ClosestPoint(anchor.position), anchor.position), Is.LessThan(.03f));
+            }
+            Assert.That(found, Is.EqualTo(1), "The bespoke hero-home lamp is reused exactly once.");
+        }
+
+        private static void CaptureReportedRidgeEntrance(CityGameRoot city,
+            IReadOnlyList<CityResidentialEntranceDescriptor> entrances, IReadOnlyList<Light> lights)
+        {
+            Vector2 reported = new Vector2(-70.8f, -350.2f);
+            CityHillsideBuilding nearest = null;
+            float distance = float.PositiveInfinity;
+            foreach (CityHillsideBuilding house in CityHillsideNeighborhoodPlan.ForLayout(city.Layout).AllBuildings)
+            {
+                if (house.Lot.IsPlayerHome) continue;
+                float candidate = (new Vector2(house.ThresholdWorld.x, house.ThresholdWorld.z) - reported).sqrMagnitude;
+                if (candidate >= distance) continue;
+                nearest = house; distance = candidate;
+            }
+            Assert.That(nearest, Is.Not.Null);
+            Assert.That(nearest.Lot.Cell, Is.EqualTo(new Vector2Int(-23, -8)), "Keep the reported west-slope house in the reproduction.");
+            Assert.That(distance, Is.LessThan(25f * 25f), "The reported coordinate must identify a nearby hillside entrance.");
+            Assert.That(nearest.HasGlazedBay, Is.True, "The reported blue bay must reproduce the omitted west-slope house.");
+            CityResidentialEntranceDescriptor entry = null;
+            foreach (CityResidentialEntranceDescriptor candidate in entrances)
+                if (ReferenceEquals(candidate.Lot, nearest.Lot)) { entry = candidate; break; }
+            Assert.That(entry, Is.Not.Null);
+            Transform source = FindEntranceLampSource(city.Night.Atmosphere, entry, out _);
+            Transform fixture = FindEntranceLampVisual(source, out _, out Bounds bounds);
+            CityBuildingAssetRegistry registry = FindEntranceLampBuilding(city.World.Root.transform, entry.Threshold);
+            Transform mount = registry.transform.Find(CityResidentialEntranceLighting.CeilingMountName);
+            Assert.That(mount, Is.Not.Null, "A glazed stair bay needs the measured landing mount.");
+            Assert.That(bounds.max.y, Is.LessThanOrEqualTo(mount.position.y + .005f), "No part of the lamp may be buried in its stair landing.");
+            Assert.That(source.position.y, Is.LessThan(mount.position.y - .05f));
+            Assert.That(fixture.up.y, Is.GreaterThan(.99f));
+            Vector3 tangent = Vector3.Cross(Vector3.up, entry.Outward);
+            Vector3 eye = entry.Threshold + entry.Outward * 4.5f + tangent * 1.1f + Vector3.up * EyeHeight;
+            city.Player.Motor.Teleport(eye - Vector3.up * EyeHeight);
+            SetEntranceLampCamera(city, eye, entry.Threshold + Vector3.up * 2f);
+            Vector3 lensViewport = city.Camera.WorldToViewportPoint(source.position);
+            Assert.That(lensViewport.z, Is.GreaterThan(0));
+            Assert.That(lensViewport.x, Is.InRange(.1f, .9f));
+            Assert.That(lensViewport.y, Is.InRange(.1f, .9f));
+            CaptureEntranceLampPair(city.Camera, lights, "05-reported-ridge-night",
+                entry.Threshold - entry.Outward * .65f + Vector3.up * 1.05f,
+                entry.Threshold + entry.Outward * .75f + Vector3.up * .035f);
+            Debug.Log("CityEntranceLighting reported ridge: lot=" + nearest.Lot.Cell + ", threshold=" + entry.Threshold + ", source=" + source.position);
+        }
+
+        private static IEnumerator AssertHomeEntranceLampCoverage()
+        {
+            HomeInteriorRoot home = null;
+            float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                home = Object.FindAnyObjectByType<HomeInteriorRoot>();
+                if (home != null && home.IsInitialized) break;
+                yield return null;
+            }
+            Assert.That(home != null && home.IsInitialized, Is.True);
+            Rect activation = home.BalconyLayout.BalconyCameraActivationBounds;
+            home.Player.Motor.Teleport(new Vector3(activation.center.x, home.Layout.PlayerSpawn.y, activation.center.y));
+            for (int frame = 0; frame < 5; frame++) yield return null;
+            home.ExteriorAtmosphere.RefreshImmediate();
+            Assert.That(home.ExteriorAtmosphere.IsBalconyVisibilityActive, Is.True);
+            CityNightAtmosphere atmosphere = home.ExteriorAtmosphere.ExteriorLighting;
+            Assert.That(atmosphere, Is.Not.Null);
+            atmosphere.RefreshImmediate();
+            var expected = new List<CityResidentialEntranceDescriptor>();
+            HomeExteriorContextPlan context = home.ExteriorContext;
+            float radius = HomeExteriorContextPlanner.ViewRadius;
+            Vector3 origin = context.PlayerHome.DoorPosition;
+            var window = new Rect(origin.x - radius, origin.z - radius, radius * 2f, radius * 2f);
+            var hillside = new HashSet<BuildingLot>();
+            foreach (CityHillsideBuilding house in CityHillsideNeighborhoodPlan.ForLayout(context.Layout).AllBuildings)
+                if (!house.Lot.IsPlayerHome && (window.Overlaps(house.FoundationBounds) || window.Overlaps(house.ApproachBounds)))
+                    hillside.Add(house.Lot);
+            foreach (CityResidentialEntranceDescriptor entry in ExpectedEntranceLampDoors(context.Layout))
+            {
+                bool retained = hillside.Contains(entry.Lot);
+                if (!retained)
+                    foreach (BuildingLot lot in context.NearbyLots)
+                        if (ReferenceEquals(lot, entry.Lot) && CityBuildingPrototypeWorldBuilder.ClassifyHomeExterior(context, lot) == CityBuildingExteriorFit.Full)
+                        { retained = true; break; }
+                if (!retained) continue;
+                Vector3 threshold = home.ExteriorView.TransformPoint(PlayerHomeBalconyGeometry.ToHomeLocal(context.PlayerHome, entry.Threshold));
+                Vector3 outward = home.ExteriorView.TransformDirection(PlayerHomeBalconyGeometry.ToHomeLocalDirection(context.PlayerHome, entry.Outward));
+                expected.Add(new CityResidentialEntranceDescriptor(entry.Lot, threshold, outward,
+                    Array.Empty<Vector3>(), Array.Empty<CityEntranceForecourtPlan>()));
+            }
+            Assert.That(hillside.Count, Is.GreaterThan(0), "The retained Home frame must exercise separately built hillside homes.");
+            AssertEntranceRegistryInventory(home.ExteriorView, expected);
+            home.ExteriorLighting.WindowLights.RefreshImmediate();
+            AssertWindowSourceModels(home.ExteriorView.GetComponentsInChildren<CityBuildingAssetRegistry>(),
+                home.ExteriorLighting.WindowLights);
+            var claimed = new HashSet<Transform>();
+            foreach (CityResidentialEntranceDescriptor entry in expected)
+            {
+                Transform source = FindEntranceLampSource(atmosphere, entry, out Light light);
+                Assert.That(claimed.Add(source), Is.True, "No Home-frame entrance may borrow another doorway's fixture.");
+                Assert.That(light.isActiveAndEnabled && light.intensity > 0f, Is.True);
+                Assert.That(light.type, Is.EqualTo(LightType.Point));
+                Assert.That(light.range, Is.EqualTo(5.5f).Within(.001f));
+                FindEntranceLampVisual(source, out Renderer lens, out Bounds measured);
+                Assert.That(Vector3.Distance(lens.bounds.ClosestPoint(source.position), source.position), Is.LessThan(.15f));
+                CityBuildingAssetRegistry building = FindEntranceLampBuilding(home.ExteriorView, entry.Threshold);
+                Transform mount = building.transform.Find(CityResidentialEntranceLighting.CeilingMountName);
+                if (mount != null) Assert.That(measured.max.y, Is.LessThanOrEqualTo(mount.position.y + .005f));
+            }
+            foreach (Collider collider in home.ExteriorView.GetComponentsInChildren<Collider>(true))
+                Assert.That(collider.enabled, Is.False, "The shared fixture fix must preserve the passive exterior.");
+            CaptureCurrentCamera(home.CameraFollow.GetComponent<Camera>(), EntranceLampCaptureArea,
+                "06-home-balcony-night", EntranceLampWidth, EntranceLampHeight);
+            Debug.Log("CityEntranceLighting Home coverage: expected=" + expected.Count + ", hillside=" + hillside.Count);
+        }
+
+        private static CityBuildingAssetRegistry FindEntranceLampBuilding(Transform root, Vector3 threshold)
+        {
+            foreach (CityBuildingAssetRegistry building in root.GetComponentsInChildren<CityBuildingAssetRegistry>(true))
+                if (building.HasEntrance && Vector3.Distance(building.transform.TransformPoint(building.LocalEntranceThreshold), threshold) < .05f)
+                    return building;
+            throw new AssertionException("The measured entrance must belong to an actual Blender building: " + threshold);
         }
 
         private static Transform FindEntranceLampSource(CityNightAtmosphere atmosphere,
@@ -264,7 +453,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static void CaptureEntranceLampPair(Camera camera, IReadOnlyList<Light> lights, string name,
-            Vector3 door, Vector3 paving, Vector3 facadeLeft, Vector3 facadeRight, Vector3 balcony)
+            Vector3 door, Vector3 paving, params Vector3[] surrounding)
         {
             var powers = new float[lights.Count];
             for (int i = 0; i < lights.Count; i++) { powers[i] = lights[i].intensity; lights[i].intensity = 0f; }
@@ -273,9 +462,8 @@ namespace BarPromenade.Tests.PlayMode
             CaptureCurrentCamera(camera, EntranceLampCaptureArea, name + "-on", EntranceLampWidth, EntranceLampHeight);
             AssertEntranceLampReceiver(camera, name, "door", door);
             AssertEntranceLampReceiver(camera, name, "paving", paving);
-            AssertEntranceLampReceiver(camera, name, "left facade", facadeLeft);
-            AssertEntranceLampReceiver(camera, name, "right facade", facadeRight);
-            AssertEntranceLampReceiver(camera, name, "balcony underside", balcony);
+            string[] names = { "left facade", "right facade", "balcony underside" };
+            for (int i = 0; i < surrounding.Length; i++) AssertEntranceLampReceiver(camera, name, names[i], surrounding[i]);
         }
 
         private static void AssertEntranceLampReceiver(Camera camera, string name, string receiver, Vector3 position)

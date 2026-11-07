@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-misc-3d-model.py",
-  "generator_version": "4.15.0",
+  "generator_version": "4.16.0",
   "blender_version": "5.2.3 LTS",
   "design_id": "city_misc_citywide_v4",
   "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + Residential Courtyard Life + Park Gazebo and Furniture + River Fittings + Cemetery Entrance and Closed Boat Station",
@@ -38,6 +38,73 @@
       }
     }
   },
+  "bus_stop_lighting_anchors": [
+    {
+      "name": "ANCHOR_BusStopStripFrontLeft",
+      "position_unity": [
+        -3.65,
+        2.475,
+        0.4775
+      ],
+      "position_source": [
+        -3.65,
+        0.4775,
+        2.475
+      ]
+    },
+    {
+      "name": "ANCHOR_BusStopStripFrontRight",
+      "position_unity": [
+        -1.45,
+        2.475,
+        0.4775
+      ],
+      "position_source": [
+        -1.45,
+        0.4775,
+        2.475
+      ]
+    },
+    {
+      "name": "ANCHOR_BusStopStripRearLeft",
+      "position_unity": [
+        -3.65,
+        2.475,
+        -0.3825
+      ],
+      "position_source": [
+        -3.65,
+        -0.3825,
+        2.475
+      ]
+    },
+    {
+      "name": "ANCHOR_BusStopStripRearRight",
+      "position_unity": [
+        -1.45,
+        2.475,
+        -0.3825
+      ],
+      "position_source": [
+        -1.45,
+        -0.3825,
+        2.475
+      ]
+    },
+    {
+      "name": "ANCHOR_BusStopApron",
+      "position_unity": [
+        0.0,
+        2.6,
+        0.22
+      ],
+      "position_source": [
+        0.0,
+        0.22,
+        2.6
+      ]
+    }
+  ],
   "static_humanoid_contract": {
     "standard": "static_humanoid_anatomy_v2",
     "standard_version": 2.0,
@@ -80,9 +147,9 @@
   "materials": false,
   "preview_materials_in_presentation_only": true,
   "animation_count": 0,
-  "mesh_count": 306,
+  "mesh_count": 308,
   "assembly_count": 145,
-  "triangle_count": 57246,
+  "triangle_count": 57582,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -1762,7 +1829,9 @@
       "unity_owned_parts": [
         "WaitSlots",
         "SitDock",
-        "CollisionProxy"
+        "CollisionProxy",
+        "Light",
+        "Halo"
       ],
       "root_derivation": "CityBusStopRoot@stop.ShelterPosition",
       "coordinate_profile": "root_local_direct",
@@ -1770,7 +1839,8 @@
       "part_meshes": [
         "GEO_CMM_Route01ShelterShell_Variant01_Fixture",
         "GEO_CMM_Route01ShelterShell_Variant01_Timber",
-        "GEO_CMM_Route01ShelterShell_Variant01_Residential"
+        "GEO_CMM_Route01ShelterShell_Variant01_Residential",
+        "GEO_CMM_Route01ShelterShell_Variant01_BacklitSign"
       ],
       "bounds_min_source": [
         -4.875,
@@ -1801,7 +1871,9 @@
       "canonical_reference": {},
       "scale_parameters": [],
       "unity_owned_parts": [
-        "CollisionProxy"
+        "CollisionProxy",
+        "Light",
+        "Halo"
       ],
       "root_derivation": "CityBusStopRoot@stop.ShelterPosition",
       "coordinate_profile": "root_local_direct",
@@ -1809,7 +1881,8 @@
       "part_meshes": [
         "GEO_CMM_Route01PoleShell_Variant01_Fixture",
         "GEO_CMM_Route01PoleShell_Variant01_Street",
-        "GEO_CMM_Route01PoleShell_Variant01_Residential"
+        "GEO_CMM_Route01PoleShell_Variant01_Residential",
+        "GEO_CMM_Route01PoleShell_Variant01_BacklitSign"
       ],
       "bounds_min_source": [
         -0.38,
@@ -1818,8 +1891,8 @@
       ],
       "bounds_max_source": [
         0.38,
-        0.108329,
-        2.46
+        0.38,
+        2.69
       ],
       "bounds_min_unity": [
         -0.38,
@@ -1828,8 +1901,8 @@
       ],
       "bounds_max_unity": [
         0.38,
-        2.46,
-        0.108329
+        2.69,
+        0.38
       ]
     },
     {
@@ -10500,8 +10573,8 @@
       "tint_role": "Fixture",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 80,
-      "triangles": 140,
+      "vertices": 144,
+      "triangles": 252,
       "bounds_min_source": [
         -4.875,
         -0.59,
@@ -10612,6 +10685,46 @@
       ]
     },
     {
+      "mesh": "GEO_CMM_Route01ShelterShell_Variant01_BacklitSign",
+      "kind": "Route01ShelterShell",
+      "variant": 0,
+      "part_role": "BacklitSign",
+      "surface_kind": "BacklitSign",
+      "tint_role": "BacklitSign",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min_source": [
+        -4.76,
+        -0.405,
+        2.475
+      ],
+      "bounds_max_source": [
+        -0.34,
+        0.5,
+        2.5
+      ],
+      "bounds_min_unity": [
+        -4.76,
+        2.475,
+        -0.405
+      ],
+      "bounds_max_unity": [
+        -0.34,
+        2.5,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
       "mesh": "GEO_CMM_Route01PoleShell_Variant01_Fixture",
       "kind": "Route01PoleShell",
       "variant": 0,
@@ -10620,8 +10733,8 @@
       "tint_role": "Fixture",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 116,
-      "triangles": 204,
+      "vertices": 164,
+      "triangles": 288,
       "bounds_min_source": [
         -0.2725,
         -0.108329,
@@ -10629,8 +10742,8 @@
       ],
       "bounds_max_source": [
         0.205,
-        0.108329,
-        2.4
+        0.38,
+        2.69
       ],
       "bounds_min_unity": [
         -0.2725,
@@ -10639,16 +10752,16 @@
       ],
       "bounds_max_unity": [
         0.205,
-        2.4,
-        0.108329
+        2.69,
+        0.38
       ],
       "uv_min": [
         -0.2725,
         -0.108329
       ],
       "uv_max": [
-        0.205,
-        2.4
+        0.38,
+        2.69
       ]
     },
     {
@@ -10729,6 +10842,46 @@
       "uv_max": [
         0.29,
         2.365
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_Route01PoleShell_Variant01_BacklitSign",
+      "kind": "Route01PoleShell",
+      "variant": 0,
+      "part_role": "BacklitSign",
+      "surface_kind": "BacklitSign",
+      "tint_role": "BacklitSign",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -0.1425,
+        0.0875,
+        2.6
+      ],
+      "bounds_max_source": [
+        0.1425,
+        0.3525,
+        2.625
+      ],
+      "bounds_min_unity": [
+        -0.1425,
+        2.6,
+        0.0875
+      ],
+      "bounds_max_unity": [
+        0.1425,
+        2.625,
+        0.3525
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
       ]
     },
     {
@@ -18812,5 +18965,5 @@
       ]
     }
   ],
-  "build_signature": "d90d2485a303bcffdb9c78e07206dc69c5a6a4d258b246e0060050af4eead9ef"
+  "build_signature": "7b5794ca72a7877a47f31d954e6a7f243b0eab00e6cabd81b5b8f1be6419d952"
 }

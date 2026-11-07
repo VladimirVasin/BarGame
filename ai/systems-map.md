@@ -43,7 +43,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City ground water network | Flush municipal ironwork on `Roadside`: a gutter grate every `~52 m`, a welded standpipe every `~150 m`. | `CityDecorationPlanner`, `CityDecorationWorldBuilder` | Current |
 | City ground | Typed sectors retain planes/weather/steps; 1.5m asphalt follows buildings; cemetery/sand stay local. | `CityGroundSurfaceSystem`, `CityBuildingPerimeterPlan` | Current |
 | City street support | Shared stations/outer seams join asphalt, pavement and terrain; imported topology. | `CityStreetSupportPlan`, `CityTerrainStreetBoundaryPlan`, `CityStreetSurfaceWorldBuilder` | Current |
-| City Blender ordinary buildings | Work8;homes/entries:fixed visible lamps;passages:graffiti/utilities/local faults. | `CityBuilding*`, `CityCoveredPassage*`, `CityResidentialEntrance*` | Current |
+| City Blender ordinary buildings | Work8;all housing entries:fixed lamps;passages:graffiti/utilities/local faults. | `CityBuilding*`, `CityCoveredPassage*`, `CityResidentialEntrance*` | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | Residential laundry | Residual L-shell; silent worker folds/carries the same cloth/basket; enamel sign/shared light/hum. | `CityLaundry{Plan,AssetProvider,Controller,WorldBuilder}`, `build-city-laundry-3d-model.py` | Current |
 | Residential dog park | Residual fenced yard; three articulated dogs, two permanent owners; open entry and local voices. | `CityDogPark{Plan,AssetProvider,Controller,WorldBuilder}`, `CityDogPose`, `CityDogActivity` | Current |
@@ -136,9 +136,10 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Pedestrian street insults | Insult responses need the authored proximity/facing gates; the twenty-line bag deals once a round, surviving reloads. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
 | City/Home pedestrians | 192 itineraries;≤36/cache48;Home5/2. Turnout/prop bypass keeps goals; narrow paths use landings. | `CityResidentWorld`, `CityResidentJourneyDirector`, `CityPedestrianDirector` | Current |
 | NPC Human V2 anatomy, appearance and visibility | Shared rigs; joint fields/volume and shaped hands/clothes retain UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `CharacterJointDeformation` | Current |
-| City district buses | Two buses per ring with shared platforms and transfers. Gap: no Home service or live map vehicle marker. | `CityDistrictBusPlanner`, `CityHillsideBusPlanner`, `CityBus{Director,Actor,Factory}` | Partial |
+| City district buses | Two/ring,shared transfers. Gap:no Home service/live map buses. | `City{District,Hillside}BusPlanner`, `CityBus{Director,Actor,Factory}` | Partial |
+| Bus stop lighting | City/Home perimeter strip/apron;fixed daylight;bounded soft-shadow fades. | `CityBusStopLighting`, `CityNightAtmosphere` | Current |
 | Pedestrian bench rests | Eligible walkers reserve benches, play owned sit/rest/stand actions and return to their route. | `CityBenchRest{Plan,Planner}`, `CityBenchNpcRestController` | Current |
-| City bus passengers | Two doors serve clear aisle paths; 10 seats, 3 standing. Remote service. Gap: fares/live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |
+| City bus passengers | Two doors/10seats/3standing;remote. Gap:fares/live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |
 | City visual diversity and collision proxies | Deterministic visual variants share simple semantic collision proxies and reusable resources. | `CityDecoration{Descriptor,Plan,Planner,Validator,WorldBuilder}`, `CityDecorationCollisionCatalog` | Current |
 | Road-edge fences | Plan-owned fences protect boundaries while preserving every validated road/waterside opening. | `RoadFence{Planner,Plan,WorldBuilder}`, `CitySurfaceDescriptor` | Current |
 | Shops | 3kiosks/3goods/map marks/Ridge-only talk;shop7goods. Atomic sales/3D receipts. | `CityKioskSites`, `RidgeKiosk*`, `SupermarketPurchaseRules` | Current |
@@ -191,7 +192,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Structured session diagnostics | 20MiB/adaptive samples/end reserve/32-action tail;CPU/cloth/ammo/carry/input/F8. | `Runtime/Diagnostics`, `DuelJournal` | Current |
 | Bar activity flavour | Legacy activity identity still selects bar flavour; the removed sprite minigames remain absent. | `BarActivityKind`, `BarActivityAssignment` | Current |
 | Area map UI | Fullscreen;scrollable place list→one plaque/line/square;large hero arrow;travel/XYZ. | `CityMap{Controller,View,AreaController,AreaView,MountainRoadOverlay,AlpineVillageOverlay}` | Current |
-| Area map art | City live scheme. Gap:stale descent illustration. Village brochure;Road/other seeds schematic. | `{City,AlpineVillage}MapArtResources`, `CityMapArtReferenceExport`, `CityMapIllustratedLabels` | Partial |
+| Area map art | City charcoal:surveyed infill/descent. Village brochure;Road/other seeds schematic. | `{City,AlpineVillage}MapArtResources`, `CityMapArtReferenceExport`, `CityMapIllustratedLabels` | Current |
 | Map XYZ inspection | Map points, fair/post/docks/arch/church-door places included, expose world coordinates and validated teleport targets. | `CityMapTeleport{Lattice,Grounds}`, `CityMapPointDescriptor` | Current |
 | Map arrival ground | Area-owned ground; City lot/XYZ arrivals re-sample land Y and move occupied markers to a clear street. | `ICityMapTeleportGround`, `CityMap{City,MountainRoad}TeleportGround` | Current |
 | Scene transition | Guarded loads/cleanup; closed entrance leaves stay solid and door-action docks clear. | `PlayerDoorAction{Plan,Controller,Target}`, `ApartmentEntranceDoor`, `CityGameRoot` | Current |
@@ -208,7 +209,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Apartment calendar appearance | Days1–7 neglect; heavier7/exact debug restore; sleep view7+hero7. | `HomeApartmentDressing`, `HomeApartmentDay{Rules,Controller}` | Current |
 | Player-home stairwell | Three puzzles/pickup shots/equip;crowbar wakes crowd after return.Safe room3/retry. | `StairwellLabyrinth*`, `StairwellPickup*`, `StairwellEncounter*` | Current |
 | City facade presentation | The legacy 4×4 path remains only for clipped Home crossings. | `CityFacade{Grid,Appearance}`, `CityBuilding{SurfaceAppearance,WindowSlotAppearance}` | Current |
-| City windows | One fixed lit ordinary window/Spot per building; warmth/day floor. | `CityWindow{Appearance,Lighting}`, `CityBuildingWindowSlotAppearance` | Current |
+| City windows | Street-front primary/timed extra;paired local wall wash. | `CityWindow{Appearance,Lighting}`, `CityBuildingWindowSlotAppearance` | Current |
 | Stairwell surface presentation | Cached textures and material property blocks apply measured stairwell surfaces without instance materials. | `StairwellSurfaceAppearance`, `SurfaceAppearanceCore` | Current |
 | Exterior ground response | Indexed MPBs share response maps/road masks/snow edges; ridge haze retained. | `GroundSurface{Appearance,Coordinates}`, `GroundSurfaceLit`, `*SurfaceAppearance` | Current |
 | Home/Stairwell surfaces | Original micro sheets/unique macro charts/shared variants; exact earlier-state restore. | `HomeSurfaceAppearance`, `HomeAuthoredVisualFactory`, `SurfaceDamageLibrary` | Current |
