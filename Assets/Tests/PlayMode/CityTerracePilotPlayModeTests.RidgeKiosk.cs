@@ -24,6 +24,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(kiosk, Is.Not.Null);
             Assert.That(kiosk.position, Is.EqualTo(site.Origin));
             var vendor = kiosk.GetComponentInChildren<RidgeKioskVendor>();
+            var station = kiosk.GetComponentInChildren<RidgeKioskStation>();
+            Assert.That(station, Is.Not.Null);
             var products = kiosk.GetComponentsInChildren<RidgeKioskPurchase>();
             Assert.That(products.Select(p => p.ItemId), Is.EquivalentTo(new[] {
                 InventoryItemId.BeerCan, InventoryItemId.VodkaBottle, InventoryItemId.PotatoPirozhok }));
@@ -76,28 +78,28 @@ namespace BarPromenade.Tests.PlayMode
                     AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "RidgeKiosk", "02-window-from-home", 1280, 720);
                 }
 
-                foreach (var product in products)
+                for (int index = 0; index < station.Offers.Count; index++)
                 {
-                    yield return AimAt(product.InteractionPosition);
-                    Assert.That(hero.ActiveInteractable, Is.SameAs(product), $"Aiming at {product.ItemId} should select that sample.");
-                    product.Interact(hero);
-                    var confirmation = city.TargetInteraction;
-                    Assert.That(confirmation.IsOpen, Is.True, product.ItemId.ToString());
+                    var product = station.Offers[index];
+                    yield return OpenWindow();
+                    var menu = station.Menu;
+                    Assert.That(menu.IsOpen, Is.True);
+                    Assert.That(menu.Select(index + 1), Is.True);
+                    Assert.That(menu.SelectedItemId, Is.EqualTo(product.ItemId));
                     int cash = GameSessionState.CashBalance;
                     int count = GameSessionState.GetInventoryItemCount(product.ItemId);
-                    Assert.That(confirmation.Cancel(), Is.True);
+                    menu.Exit();
                     Assert.That(GameSessionState.CashBalance, Is.EqualTo(cash), "Cancelling must not charge.");
                     Assert.That(GameSessionState.GetInventoryItemCount(product.ItemId), Is.EqualTo(count));
-                    yield return AimAt(product.InteractionPosition);
-                    product.Interact(hero);
-                    confirmation.SelectConfirmation(true);
-                    Assert.That(confirmation.Confirm(), Is.True);
+                    yield return OpenWindow();
+                    Assert.That(menu.Select(index + 1), Is.True);
+                    Assert.That(menu.ConfirmSelection(), Is.True);
                     Assert.That(receipt.IsPresenting, Is.True);
                     Assert.That(SupermarketProductCatalog.TryGetOffer(RetailStock.RidgeKiosk, product.ItemId,
                         out var offer), Is.True);
                     Assert.That(GameSessionState.CashBalance, Is.EqualTo(cash - offer.Price));
                     Assert.That(GameSessionState.GetInventoryItemCount(product.ItemId), Is.EqualTo(count + 1));
-                    Assert.That(confirmation.Confirm(), Is.False, "One confirmation owns exactly one grant.");
+                    Assert.That(menu.ConfirmSelection(), Is.False, "One confirmation owns exactly one grant.");
                     if (product.ItemId == InventoryItemId.PotatoPirozhok)
                     {
                         for (int i = 0; i < 100 && !receipt.IsShowing; i++) yield return null;
@@ -107,25 +109,33 @@ namespace BarPromenade.Tests.PlayMode
                         for (int i = 0; i < 100 && receipt.IsPresenting; i++) yield return null;
                         Assert.That(receipt.IsPresenting, Is.False);
                         yield return null;
+                        Assert.That(menu.IsOpen && menu.SelectedItemId == product.ItemId, Is.True);
+                        menu.Exit();
                         GameSessionState.UpdateNeeds(56, GameSessionState.StressLevel);
                         Assert.That(city.Inventory.Open(), Is.True);
-                        int index = GameSessionState.InventoryItems.ToList().FindIndex(s => s.ItemId == product.ItemId);
-                        Assert.That(index, Is.GreaterThanOrEqualTo(0));
-                        city.Inventory.SelectItem(index);
+                        int inventoryIndex = GameSessionState.InventoryItems.ToList().FindIndex(s => s.ItemId == product.ItemId);
+                        Assert.That(inventoryIndex, Is.GreaterThanOrEqualTo(0));
+                        city.Inventory.SelectItem(inventoryIndex);
                         Assert.That(city.Inventory.SelectedStack.ItemId, Is.EqualTo(product.ItemId));
                         Assert.That(city.Inventory.UseSelected(), Is.True);
                         Assert.That(GameSessionState.HungerLevel, Is.EqualTo(32));
                         Assert.That(GameSessionState.GetInventoryItemCount(product.ItemId), Is.EqualTo(count));
                         Assert.That(city.Inventory.Close(), Is.True);
                     }
-                    else Assert.That(receipt.Abandon(), Is.True);
+                    else
+                    {
+                        Assert.That(receipt.Abandon(), Is.True);
+                        Assert.That(menu.IsOpen, Is.True);
+                        menu.Exit();
+                    }
                     yield return null;
                 }
 
-                yield return AimAt(vendor.Actor.Head.position);
-                Assert.That(hero.ActiveInteractable, Is.SameAs(vendor), "The window lets the player address the person behind the bottles.");
                 int beforeTalk = GameSessionState.CashBalance;
-                vendor.Interact(hero);
+                yield return OpenWindow();
+                Assert.That(station.Menu.SelectedIndex, Is.Zero);
+                Assert.That(station.Menu.ConfirmSelection(), Is.True);
+                Assert.That(station.Menu.IsOpen, Is.False);
                 Assert.That(vendor.Session.IsActive, Is.True);
                 for (int i = 0; i < 220 && !vendor.Session.IsChoosing && vendor.Session.IsActive; i++) yield return null;
                 Assert.That(vendor.Session.IsChoosing, Is.True,
@@ -161,19 +171,22 @@ namespace BarPromenade.Tests.PlayMode
             finally
             {
                 if (receipt.IsPresenting) receipt.Abandon();
-                if (city.TargetInteraction.IsOpen) city.TargetInteraction.Cancel();
+                station.Menu?.Close();
                 if (city.Inventory.IsOpen) city.Inventory.Close();
                 if (vendor.Session.IsActive) vendor.Session.Cancel();
                 follow.ClearFixedPose();
             }
 
-            IEnumerator AimAt(Vector3 pointToFace)
+            IEnumerator OpenWindow()
             {
-                // A normal shoulder-height view from the street. The real interactor
-                // must resolve the targets before the test dispatches the action.
                 Vector3 eye = hero.transform.position + new Vector3(.37f, 1.53f, .65f);
-                follow.SetFixedPose(eye, Quaternion.LookRotation(pointToFace - eye), 59f);
+                follow.SetFixedPose(eye, Quaternion.LookRotation(station.InteractionPosition - eye), 59f);
                 Physics.SyncTransforms();
+                yield return null;
+                yield return null;
+                Assert.That(hero.ActiveInteractable, Is.SameAs(station));
+                station.Interact(hero);
+                // The press opening the window cannot also select its first action.
                 yield return null;
                 yield return null;
             }

@@ -10,6 +10,8 @@ import struct
 import sys
 import zlib
 
+sys.dont_write_bytecode = True
+
 import bpy
 import numpy as np
 from mathutils import Vector
@@ -26,6 +28,8 @@ ANCHORS = {
     "KioskBeer": (-1.04, 1.04, 1.36), "KioskVodka": (-.42, 1.04, 1.36),
     "KioskPie": (.78, 1.04, 1.36), "KioskTalk": (0, 1.63, 1.17),
     "KioskApproach": (0, 0, 2.22),
+    "KioskSignSource": (0, 2.672, 2.055), "KioskSignTarget": (0, 2.432, 1.756),
+    "KioskHoursFront": (-1.130, 2.432, 1.750),
 }
 # One paint/material atlas. Its alpha is smoothness for the URP lit surface.
 SURFACES = {
@@ -41,6 +45,24 @@ SURFACES = {
 ATLAS = "RidgeKioskSurface"
 GLASS = "KioskSashGlass"
 LAMP = "KioskLampGlass"
+SIGN_BOARD = "KioskSignBoard"
+SIGN_LETTERS = "KioskSignLetters"
+SIGN_TEXT = "КИОСК"
+HOURS_TEXT = "24/7"
+POSTER = "KioskAdvertisement"
+# Stroke pattern in the plane of the fascia as seen by a reader: u right, v up.
+# The path follows each numeral in order: 2 (5 strokes), 4 (4), / (1), 7 (3).
+NEON_STROKES = (
+    ((-.069, .0295), (-.043, .0295)), ((-.041, .0275), (-.041, .002)),
+    ((-.043, 0), (-.069, 0)), ((-.071, -.002), (-.071, -.0275)),
+    ((-.069, -.0295), (-.043, -.0295)),
+    ((-.031, .0295), (-.031, .002)), ((-.029, 0), (-.003, 0)),
+    ((-.001, .002), (-.001, .0295)), ((-.001, -.002), (-.001, -.0295)),
+    ((.010, -.0295), (.031, .0295)),
+    ((.040, .0295), (.068, .0295)), ((.070, .0275), (.070, .002)),
+    ((.070, -.002), (.070, -.0295)),
+)
+NEON_SLOTS = tuple(f"KioskNeon{i:02d}" for i in range(len(NEON_STROKES)))
 
 
 def field(rng, size, cells):
@@ -126,6 +148,74 @@ class Model:
         self.add(surface, parts.u_cylinder(xyz, (2*radius, height/2, 2*radius), sides))
 
 
+def lettering(text, height):
+    curve = bpy.data.curves.new("Kiosk lettering", "FONT")
+    curve.body = text
+    curve.font = bpy.data.fonts.load(str(ROOT / "Assets/Resources/Fonts/Roboto-Regular.ttf"), check_existing=True)
+    curve.align_x = "CENTER"
+    curve.resolution_u = 3
+    curve.extrude = .005
+    obj = bpy.data.objects.new("Kiosk lettering source", curve)
+    bpy.context.collection.objects.link(obj)
+    converted = bpy.data.meshes.new_from_object(obj.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+    low = min(v.co.y for v in converted.vertices)
+    high = max(v.co.y for v in converted.vertices)
+    scale = height / (high - low)
+    points = [(v.co.x * scale, (v.co.y - (low + high) * .5) * scale, v.co.z * scale)
+              for v in converted.vertices]
+    faces = [tuple(poly.vertices[:]) for poly in converted.polygons]
+    bpy.data.meshes.remove(converted)
+    bpy.data.objects.remove(obj, do_unlink=True)
+    bpy.data.curves.remove(curve)
+    return points, faces
+
+
+def fascia_sign(m):
+    # The board sits on two feet bolted to the front hem of the canopy.
+    for x in (-.57, .57):
+        m.box("iron", (x, 2.341, 1.701), (.043, .25, .036), .003)
+    m.box(SIGN_BOARD, (0, 2.432, 1.732), (1.52, .35, .036), .008)
+    points, faces = lettering(SIGN_TEXT, .242)
+    assert max(abs(p[0]) for p in points) < .69
+    # The front faces +Z: from the public apron local -X is the reader's right.
+    m.add(SIGN_LETTERS, ([(-u, 2.432+v, 1.753+d) for u,v,d in points], faces))
+    # Short arm, downward lens and folded lip hide the source from the customer.
+    m.beam("iron", (0, 2.535, 1.714), (0, 2.704, 2.035), .024, .026)
+    m.box("iron", (0, 2.710, 2.056), (.32, .046, .16), .005)
+    m.box("iron", (0, 2.684, 2.128), (.32, .072, .022), .004)
+    m.box("enamel", (0, 2.680, 2.055), (.252, .012, .107), .003)
+    # A separate fascia panel shares the canopy's front mounting hem. Keep
+    # the hours to the customer's right of the shop name, above the aperture.
+    cx, cy, cz = ANCHORS["KioskHoursFront"]
+    m.box(SIGN_BOARD, (cx,cy,cz), (.62,.30,.036), .008)
+    for x in (cx-.19, cx+.19):
+        m.box("iron", (x, 2.341, 1.717), (.043,.25,.036), .003)
+    for slot, ((u0,v0), (u1,v1)) in zip(NEON_SLOTS, NEON_STROKES):
+        start = Vector((cx-3*u0, cy+3*v0, cz+.026))
+        end = Vector((cx-3*u1, cy+3*v1, cz+.026))
+        direction = end-start
+        rotation = Vector((0,1,0)).rotation_difference(direction)
+        points, faces = parts.u_cylinder((0,0,0), (.0099, direction.length*.5, .0099), 6)
+        m.add(slot, ([tuple((start+end)*.5 + rotation @ Vector(p)) for p in points], faces))
+
+
+def side_advertisements(m):
+    # Two identical prints on this shop, on opposite sides. The 0.764 m
+    # holder fits between the service doorway (ends at z=.21) and corner post.
+    cy, cz = 1.43, .62
+    for side in (-1, 1):
+        m.box("iron", (side*1.509, cy, cz), (.018, 1.124, .764), .004)
+        for dz in (-.369, .369):
+            for dy in (-.55, .55):
+                m.box("aluminium", (side*1.520, cy+dy, cz+dz), (.006,.012,.012), .002)
+        # UV corners start at the reader's lower left on either side. Inward
+        # winding would hide the image behind its backing under backface culling.
+        x = side * 1.520
+        sheet = [(x,cy-.54,cz-side*.36), (x,cy-.54,cz+side*.36),
+                 (x,cy+.54,cz+side*.36), (x,cy+.54,cz-side*.36)]
+        m.solids.append((POSTER, (sheet, [(3,2,1,0)])))
+
+
 def kiosk():
     m = Model()
     # Plinth and the top landing meet the graded pavement on its own level.
@@ -172,6 +262,8 @@ def kiosk():
     m.box("kick", (0, 2.208, 1.763), (2.76, .073, .034))
     for x in (-1.27, 1.27):
         m.beam("iron", (x, 1.85, 1.265), (x, 2.202, 1.686), .03, .033)
+    fascia_sign(m)
+    side_advertisements(m)
     # Sliding glass is parked in a pair over the right-hand jamb. Sightline to the face stays open.
     for x in (-1.11, 1.11):
         m.box("aluminium", (x, 1.575, 1.247), (.047, 1.11, .045))
@@ -343,8 +435,12 @@ def swatch_uv(points, faces, surface):
 def emit(name, model, marks, model_dir, source_dir, image):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     materials = {}
-    for slot in (ATLAS, GLASS, LAMP):
-        mat = bpy.data.materials.new(slot)
+    slots = (ATLAS, GLASS, LAMP, SIGN_BOARD, SIGN_LETTERS, POSTER, *NEON_SLOTS)
+    for slot in slots:
+        if slot in NEON_SLOTS and NEON_SLOTS[0] in materials:
+            materials[slot] = materials[NEON_SLOTS[0]]
+            continue
+        mat = bpy.data.materials.new("KioskNeonGlass" if slot in NEON_SLOTS else slot)
         mat.use_nodes = True
         bsdf = mat.node_tree.nodes.get("Principled BSDF")
         if slot == ATLAS:
@@ -352,6 +448,13 @@ def emit(name, model, marks, model_dir, source_dir, image):
             node.image = bpy.data.images.load(str(image))
             node.image.alpha_mode = "CHANNEL_PACKED"
             mat.node_tree.links.new(node.outputs["Color"],bsdf.inputs["Base Color"])
+        elif slot in NEON_SLOTS:
+            bsdf.inputs["Base Color"].default_value = (.82,.04,.26,1)
+            bsdf.inputs["Emission Color"].default_value = (.82,.025,.22,1)
+            bsdf.inputs["Emission Strength"].default_value = 1.5
+        elif slot in (SIGN_BOARD, SIGN_LETTERS, POSTER):
+            bsdf.inputs["Base Color"].default_value = (.025,.031,.026,1) if slot == SIGN_BOARD else (.79,.70,.52,1)
+            bsdf.inputs["Roughness"].default_value = .97
         else:
             bsdf.inputs["Base Color"].default_value = (.29,.38,.37,1) if slot == GLASS else (.91,.78,.49,1)
             if slot == GLASS:
@@ -359,8 +462,8 @@ def emit(name, model, marks, model_dir, source_dir, image):
         materials[slot] = mat
     root = bpy.data.objects.new(name+"_MetricRoot", None)
     bpy.context.collection.objects.link(root)
-    for slot in (ATLAS, GLASS, LAMP):
-        solids = [(s,solid) for s,solid in model.solids if (s if s in (GLASS,LAMP) else ATLAS) == slot]
+    for slot in slots:
+        solids = [(s,solid) for s,solid in model.solids if (s if s in slots else ATLAS) == slot]
         if not solids:
             continue
         vertices, faces, uvs, smooth = [], [], [], []
@@ -371,7 +474,11 @@ def emit(name, model, marks, model_dir, source_dir, image):
             vertices.extend(source_points)
             faces.extend([tuple(offset+i for i in f) for f in source_faces])
             smooth.extend([surface in ("pastry", "seam")]*len(source_faces))
-            uvs.extend(swatch_uv(points,source_faces,surface))
+            if slot == POSTER:
+                uv_corners = ((0,0),(1,0),(1,1),(0,1))
+                uvs.extend(uv_corners[i] for face in source_faces for i in face)
+            else:
+                uvs.extend(swatch_uv(points,source_faces,surface))
         mesh = bpy.data.meshes.new(name+"_"+slot)
         mesh.from_pydata(vertices,[],faces)
         mesh.update()
@@ -406,19 +513,30 @@ def main():
     parser.add_argument("--model-dir",type=Path,default=OUT)
     parser.add_argument("--source-dir",type=Path,default=SOURCE)
     parser.add_argument("--validate-only",action="store_true")
+    parser.add_argument("--kiosk-only", action="store_true",
+                        help="Publish the kiosk FBX, editing source and manifest; preserve unchanged stock assets.")
     args = parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
     builds = (("RidgeKiosk", kiosk, ANCHORS),("PotatoPie", pie, {}))
     texture = atlas_bytes()
     payload = {"front":"+Z","unit":"metre","palette_sha256":hashlib.sha256(texture).hexdigest(),
+               "sign_text":SIGN_TEXT,"hours_text":HOURS_TEXT,"neon_sectors":list(NEON_SLOTS),
                "anchors":ANCHORS,"models":{}}
     for name,make,_ in builds:
-        record = measure(make())
+        model = make()
+        if name == "RidgeKiosk":
+            assert len(NEON_SLOTS) == 13
+            for slot in NEON_SLOTS:
+                sectors = [solid for surface,solid in model.solids if surface == slot]
+                assert len(sectors) == 1
+                assert all(-1.346 <= x <= -.912 and 2.338 <= y <= 2.526 and
+                           1.771 <= z <= 1.781 for x,y,z in sectors[0][0])
+        record = measure(model)
         if record != measure(make()):
             raise ValueError(name+" geometry is not deterministic")
         payload["models"][name] = record
     bounds = payload["models"]["RidgeKiosk"]
     assert bounds["bounds_min"][0] < -1.5 and bounds["bounds_min"][1] == -.5
-    assert bounds["bounds_max"][2] == 3.4 and 2.61 < bounds["bounds_max"][1] < 2.65
+    assert bounds["bounds_max"][2] == 3.4 and abs(bounds["bounds_max"][1] - 2.733) < .001
     assert sum(record["triangles"] for record in payload["models"].values()) < 13000
     manifest = json.dumps(payload, indent=2)+"\n"
     if args.validate_only:
@@ -427,10 +545,17 @@ def main():
     else:
         args.model_dir.mkdir(parents=True,exist_ok=True)
         args.source_dir.mkdir(parents=True,exist_ok=True)
-        path = args.model_dir/"RidgeKioskPalette.png"
-        path.write_bytes(texture)
+        path = (OUT if args.kiosk_only else args.model_dir)/"RidgeKioskPalette.png"
+        if args.kiosk_only:
+            existing = json.loads((OUT/"RidgeKiosk.json").read_text())
+            assert existing["models"]["PotatoPie"] == payload["models"]["PotatoPie"]
+            assert path.read_bytes() == texture
+        else:
+            path.write_bytes(texture)
         (args.model_dir/"RidgeKiosk.json").write_text(manifest)
         for name,make,marks in builds:
+            if args.kiosk_only and name != "RidgeKiosk":
+                continue
             emit(name,make(),marks,args.model_dir,args.source_dir,path)
     print("RIDGE KIOSK AND POTATO PIE OK")
 

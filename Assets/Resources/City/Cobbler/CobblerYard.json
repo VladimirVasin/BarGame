@@ -1,0 +1,271 @@
+{
+  "coordinateSystem": "Local Unity metres; origin at ground; +Z seat forward or cable length",
+  "surface": "City/Cobbler/CobblerSurface",
+  "generator": "build-city-cobbler-yard-3d-model.py",
+  "triangles": 5824,
+  "parts": [
+    {
+      "name": "SeatBench",
+      "bounds_min": [
+        -0.663,
+        -0.008,
+        -0.38218
+      ],
+      "bounds_max": [
+        0.637,
+        0.969,
+        0.279
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_YardSeatLeft",
+          "position": [
+            -0.32,
+            0.48,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_YardSeatRight",
+          "position": [
+            0.32,
+            0.48,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 1000,
+      "geometry_signature": "6ecb4c583de51fa9298608563c75196180aa93530d95bbbe7087a077cd68f42c",
+      "boxes": [
+        {
+          "name": "COL_SeatBench",
+          "center": [
+            0.0,
+            0.473,
+            -0.045
+          ],
+          "size": [
+            1.33,
+            0.946,
+            0.65
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Footrest",
+      "bounds_min": [
+        -0.238,
+        -0.0045,
+        -0.154
+      ],
+      "bounds_max": [
+        0.238,
+        0.18,
+        0.155
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_YardFootrestContact",
+          "position": [
+            0.0,
+            0.147,
+            0.013
+          ]
+        }
+      ],
+      "triangles": 264,
+      "geometry_signature": "10c2bbc6bf8a05add628904219d857c71eb08323e044cab149c554b0831ee574",
+      "boxes": [
+        {
+          "name": "COL_Footrest",
+          "center": [
+            0.0,
+            0.084,
+            0.0
+          ],
+          "size": [
+            0.477,
+            0.183,
+            0.312
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BootScraper",
+      "bounds_min": [
+        -0.219,
+        -0.0305,
+        -0.0985
+      ],
+      "bounds_max": [
+        0.219,
+        0.14929,
+        0.0985
+      ],
+      "anchors": [],
+      "triangles": 148,
+      "geometry_signature": "90e0de7ecfcbc54998295fac658a0444917671f3017e9aad515f28d0729d19cb",
+      "boxes": [
+        {
+          "name": "COL_BootScraper",
+          "center": [
+            0.0,
+            0.063,
+            0.0
+          ],
+          "size": [
+            0.438,
+            0.177,
+            0.197
+          ]
+        }
+      ]
+    },
+    {
+      "name": "KerbLong",
+      "bounds_min": [
+        -0.52,
+        -0.09,
+        -0.095
+      ],
+      "bounds_max": [
+        0.52,
+        0.103,
+        0.095
+      ],
+      "anchors": [],
+      "triangles": 68,
+      "geometry_signature": "7888ccd77c020d196a2d3e32a86f6b2cc7a41011b79d6e9dc2cd42cb844bdbe9",
+      "boxes": [
+        {
+          "name": "COL_KerbLong",
+          "center": [
+            0.0,
+            0.004,
+            0.0
+          ],
+          "size": [
+            1.04,
+            0.188,
+            0.19
+          ]
+        }
+      ]
+    },
+    {
+      "name": "KerbShort",
+      "bounds_min": [
+        -0.365,
+        -0.09,
+        -0.09
+      ],
+      "bounds_max": [
+        0.365,
+        0.103,
+        0.09
+      ],
+      "anchors": [],
+      "triangles": 68,
+      "geometry_signature": "d10d6ca20b9436f8ae14605c7a3ee86fc118b720d0db4906a8b00709e9a385c8",
+      "boxes": [
+        {
+          "name": "COL_KerbShort",
+          "center": [
+            0.0,
+            0.004,
+            0.0
+          ],
+          "size": [
+            0.73,
+            0.188,
+            0.18
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Lilac",
+      "bounds_min": [
+        -0.63695,
+        -0.04313,
+        -0.71124
+      ],
+      "bounds_max": [
+        0.68142,
+        1.98548,
+        0.71714
+      ],
+      "anchors": [],
+      "triangles": 3680,
+      "geometry_signature": "a925e522e2c7bf82bb98bcee578241d7c19dd1c35fe2d820b79a9806201a0066",
+      "boxes": [
+        {
+          "name": "COL_Lilac",
+          "center": [
+            0.0,
+            0.195,
+            0.0
+          ],
+          "size": [
+            0.265,
+            0.44,
+            0.234
+          ]
+        }
+      ]
+    },
+    {
+      "name": "GravelApproach",
+      "bounds_min": [
+        -0.88795,
+        0.0,
+        -0.49459
+      ],
+      "bounds_max": [
+        0.89084,
+        0.0,
+        0.50773
+      ],
+      "anchors": [],
+      "triangles": 168,
+      "geometry_signature": "b79f41ea9a3b8db7027459f9dead615aca77752de8a1a116c891b16b3d0f9cc6",
+      "boxes": []
+    },
+    {
+      "name": "FeedCable",
+      "bounds_min": [
+        -0.063,
+        -0.22877,
+        -0.053
+      ],
+      "bounds_max": [
+        0.063,
+        0.0695,
+        3.035
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_FeedEnd",
+          "position": [
+            0.0,
+            0.0,
+            3.0
+          ]
+        },
+        {
+          "name": "ANCHOR_FeedStart",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 428,
+      "geometry_signature": "6a979106d5cb5d40e57ec260dc7a8395ebc5d012a0289674e28215a69e7dd08c",
+      "boxes": []
+    }
+  ]
+}

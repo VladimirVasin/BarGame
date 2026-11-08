@@ -1,0 +1,514 @@
+{
+  "name": "CobblerBus",
+  "bounds_min": [
+    -1.19,
+    -0.03,
+    -4.125
+  ],
+  "bounds_max": [
+    2.24,
+    3.05,
+    4.125
+  ],
+  "anchors": [
+    {
+      "name": "ANCHOR_AwlRest",
+      "position": [
+        -0.1,
+        1.215,
+        3.51
+      ]
+    },
+    {
+      "name": "ANCHOR_EntryInside",
+      "position": [
+        0.53,
+        0.48,
+        2.47
+      ]
+    },
+    {
+      "name": "ANCHOR_EntryOutside",
+      "position": [
+        2.33,
+        0.0,
+        2.47
+      ]
+    },
+    {
+      "name": "ANCHOR_Feet",
+      "position": [
+        -0.47,
+        0.48,
+        2.48
+      ]
+    },
+    {
+      "name": "ANCHOR_HandLeft",
+      "position": [
+        -0.6,
+        1.34,
+        3.0
+      ]
+    },
+    {
+      "name": "ANCHOR_HandRight",
+      "position": [
+        -0.27,
+        1.37,
+        3.01
+      ]
+    },
+    {
+      "name": "ANCHOR_Lamp",
+      "position": [
+        -0.82,
+        1.84,
+        3.56
+      ]
+    },
+    {
+      "name": "ANCHOR_LampAim",
+      "position": [
+        -0.44,
+        1.3,
+        3.04
+      ]
+    },
+    {
+      "name": "ANCHOR_Lunch",
+      "position": [
+        -0.52,
+        0.48,
+        0.34
+      ]
+    },
+    {
+      "name": "ANCHOR_Mug",
+      "position": [
+        -0.94,
+        1.1,
+        0.5
+      ]
+    },
+    {
+      "name": "ANCHOR_Seat",
+      "position": [
+        -0.47,
+        0.92,
+        2.3
+      ]
+    },
+    {
+      "name": "ANCHOR_ShoeRest",
+      "position": [
+        -0.45,
+        1.3,
+        3.04
+      ]
+    },
+    {
+      "name": "ANCHOR_SignAim",
+      "position": [
+        1.242,
+        2.722,
+        2.47
+      ]
+    },
+    {
+      "name": "ANCHOR_SignLamp",
+      "position": [
+        1.62,
+        2.99,
+        2.46
+      ]
+    },
+    {
+      "name": "ANCHOR_Step1",
+      "position": [
+        2.07,
+        0.16,
+        2.47
+      ]
+    },
+    {
+      "name": "ANCHOR_Step2",
+      "position": [
+        1.71,
+        0.32,
+        2.47
+      ]
+    },
+    {
+      "name": "ANCHOR_Threshold",
+      "position": [
+        1.32,
+        0.48,
+        2.47
+      ]
+    },
+    {
+      "name": "ANCHOR_Workbench",
+      "position": [
+        -0.46,
+        1.19,
+        3.32
+      ]
+    },
+    {
+      "name": "MOVE_LampSwitch",
+      "position": [
+        -0.77,
+        1.215,
+        2.98
+      ]
+    },
+    {
+      "name": "ANCHOR_LampSwitch",
+      "position": [
+        -0.77,
+        1.215,
+        2.98
+      ]
+    },
+    {
+      "name": "PIVOT_Awl",
+      "position": [
+        -0.27,
+        1.37,
+        3.01
+      ]
+    },
+    {
+      "name": "PIVOT_Broom",
+      "position": [
+        0.89,
+        1.18,
+        -3.39
+      ]
+    },
+    {
+      "name": "PIVOT_Door",
+      "position": [
+        1.15,
+        1.46,
+        2.47
+      ]
+    },
+    {
+      "name": "SignLetters",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "SignLight",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "SignPanel",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Support_FL",
+      "position": [
+        -0.78,
+        0.37,
+        2.62
+      ]
+    },
+    {
+      "name": "Support_FR",
+      "position": [
+        0.78,
+        0.37,
+        2.62
+      ]
+    },
+    {
+      "name": "Support_RL",
+      "position": [
+        -0.78,
+        0.37,
+        -2.62
+      ]
+    },
+    {
+      "name": "Support_RR",
+      "position": [
+        0.78,
+        0.37,
+        -2.62
+      ]
+    }
+  ],
+  "triangles": 11804,
+  "geometry_signature": "4664c9de2832a6abf9b4832f9b6db3d3ed3dd51cb3289513c39ab80e7fd79034",
+  "coordinateSystem": "Unity metres, +Z nose, +X passenger side, Y=0 ground",
+  "bodySize": [
+    2.38,
+    2.68,
+    8.25
+  ],
+  "signText": "\u0420\u0415\u041c\u041e\u041d\u0422 \u041e\u0411\u0423\u0412\u0418",
+  "boxes": [
+    {
+      "name": "COL_Chair",
+      "center": [
+        -0.47,
+        0.7,
+        2.27
+      ],
+      "size": [
+        0.4,
+        0.44,
+        0.34
+      ]
+    },
+    {
+      "name": "COL_Door",
+      "center": [
+        1.15,
+        1.46,
+        2.47
+      ],
+      "size": [
+        0.052,
+        1.95,
+        1.29
+      ]
+    },
+    {
+      "name": "COL_EndFront",
+      "center": [
+        0.0,
+        1.57,
+        4.0
+      ],
+      "size": [
+        2.28,
+        2.18,
+        0.06
+      ]
+    },
+    {
+      "name": "COL_EndRear",
+      "center": [
+        0.0,
+        1.57,
+        -4.0
+      ],
+      "size": [
+        2.28,
+        2.18,
+        0.06
+      ]
+    },
+    {
+      "name": "COL_Floor",
+      "center": [
+        0.0,
+        0.425,
+        0.0
+      ],
+      "size": [
+        2.3,
+        0.11,
+        8.0
+      ]
+    },
+    {
+      "name": "COL_Landing",
+      "center": [
+        1.34,
+        0.24,
+        2.47
+      ],
+      "size": [
+        0.4,
+        0.48,
+        1.25
+      ]
+    },
+    {
+      "name": "COL_LunchBench",
+      "center": [
+        -0.52,
+        0.7,
+        -0.14
+      ],
+      "size": [
+        0.57,
+        0.44,
+        0.36
+      ]
+    },
+    {
+      "name": "COL_Rack",
+      "center": [
+        -0.885,
+        0.75,
+        -2.61
+      ],
+      "size": [
+        0.41,
+        0.54,
+        2.22
+      ]
+    },
+    {
+      "name": "COL_Roof",
+      "center": [
+        0.0,
+        2.78,
+        0.0
+      ],
+      "size": [
+        2.31,
+        0.27,
+        8.02
+      ]
+    },
+    {
+      "name": "COL_SideLeft",
+      "center": [
+        -1.1525,
+        1.58,
+        0.0
+      ],
+      "size": [
+        0.075,
+        2.2,
+        8.06
+      ]
+    },
+    {
+      "name": "COL_SideRightFront",
+      "center": [
+        1.1525,
+        1.58,
+        3.575
+      ],
+      "size": [
+        0.075,
+        2.2,
+        0.91
+      ]
+    },
+    {
+      "name": "COL_SideRightRear",
+      "center": [
+        1.1525,
+        1.58,
+        -1.105
+      ],
+      "size": [
+        0.075,
+        2.2,
+        5.85
+      ]
+    },
+    {
+      "name": "COL_Support_FL",
+      "center": [
+        -0.78,
+        0.17,
+        2.62
+      ],
+      "size": [
+        0.53,
+        0.4,
+        0.7
+      ]
+    },
+    {
+      "name": "COL_Support_FR",
+      "center": [
+        0.78,
+        0.17,
+        2.62
+      ],
+      "size": [
+        0.53,
+        0.4,
+        0.7
+      ]
+    },
+    {
+      "name": "COL_Support_RL",
+      "center": [
+        -0.78,
+        0.17,
+        -2.62
+      ],
+      "size": [
+        0.53,
+        0.4,
+        0.7
+      ]
+    },
+    {
+      "name": "COL_Support_RR",
+      "center": [
+        0.78,
+        0.17,
+        -2.62
+      ],
+      "size": [
+        0.53,
+        0.4,
+        0.7
+      ]
+    },
+    {
+      "name": "COL_Tread1",
+      "center": [
+        2.065,
+        0.08,
+        2.47
+      ],
+      "size": [
+        0.35,
+        0.16,
+        1.25
+      ]
+    },
+    {
+      "name": "COL_Tread2",
+      "center": [
+        1.715,
+        0.16,
+        2.47
+      ],
+      "size": [
+        0.35,
+        0.32,
+        1.25
+      ]
+    },
+    {
+      "name": "COL_Workbench",
+      "center": [
+        -0.43,
+        0.836,
+        3.395
+      ],
+      "size": [
+        1.24,
+        0.712,
+        0.97
+      ]
+    }
+  ],
+  "atlasSHA256": "61565943a611eddba49d033ec3b538012f4631174bc92ab1ad862433447a8e3a"
+}

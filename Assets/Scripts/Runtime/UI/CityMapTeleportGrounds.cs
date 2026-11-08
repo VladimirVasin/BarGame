@@ -46,6 +46,7 @@ namespace BarPromenade
             polygonBuildingObstacles.AddRange(CityPawnshopDescentPlan.ForLayout(layout).SolidPolygons);
             polygonBuildingObstacles.AddRange(CityPigeonLoftPlan.ForLayout(layout).SolidPolygons);
             polygonBuildingObstacles.AddRange(CityGlassReturnSitePlan.ForLayout(layout).SolidPolygons);
+            polygonBuildingObstacles.AddRange(CityCobblerSitePlan.ForLayout(layout).SolidPolygons);
             foreach (BuildingLot lot in layout.BuildingMasses)
                 if (lot.HasBuilding && (lot.HasFacadeRotation || courtyardCells.Contains(lot.Cell)))
                     polygonBuildingObstacles.AddRange(lot.CreateCollisionPolygons());
@@ -165,6 +166,7 @@ namespace BarPromenade
         /// </summary>
         private bool TryResolveSurfaceTop(Vector2 worldXZ, out float top)
         {
+            if (CityCobblerSitePlan.ForLayout(layout).TrySampleFloor(worldXZ, out top)) return true;
             if(CityPawnshopDescentPlan.ForLayout(layout).TrySampleTop(worldXZ,out top)) return true;
             if(CityPawnshopBenchTerracePlan.ForLayout(layout).TrySampleTop(worldXZ,out top)) return true;
             foreach (CityKioskSitePlan kiosk in kiosks)

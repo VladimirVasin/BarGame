@@ -142,9 +142,10 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City bus passengers | Two doors/10seats/3standing;remote. Gap:fares/live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |
 | City visual variants | Deterministic variants share assets and simple semantic colliders. | `CityDecoration{Descriptor,Plan,Planner,Validator,WorldBuilder}`, `CityDecorationCollisionCatalog` | Current |
 | Road-edge fences | Planned fences leave road and waterside openings clear. | `RoadFence{Planner,Plan,WorldBuilder}`, `CitySurfaceDescriptor` | Current |
-| Shops | 3kiosks/3goods/map marks/Ridge-only talk;shop7goods. Atomic sales/3D receipts. | `CityKioskSites`, `RidgeKiosk*`, `SupermarketPurchaseRules` | Current |
+| Shops | 3kiosks/E4focus/Ridge talk;shop7goods.Shared browser/atomic3D receipts. | `RidgeKiosk*`, `IWorldShelfMenu`, `SupermarketShelfShop*` | Current |
 | Pawnshop | Island pavilion/secure clerk. Gap:trade stubs have no transactions. | `CityPawnshop*`, `PawnshopInterior*`, `PawnshopTradeController` | Partial |
-| Glass return | East bend: silent sorting/window arrival; wall light covers yard. | `CityGlassReturn*` | Current |
+| Ridge workshops | Cobbler11–20:30/home;glass08–23/switch/grille. | `CityCobbler*`,`CityGlassReturn*` | Current |
+
 | Supermarket cashier | Wall checkout/decor snacks;anchored palms/light;ordinary cashier,bulging 3D face/shared rig. | `SupermarketCashier{Provider,AssetRegistry,Factory,Presentation,Actor,SurveillanceState,BlinkState,Interaction}` | Current |
 | Supermarket CCTV corner cameras | Four authored corner cameras follow the hero without gameplay surveillance. | `SupermarketInteriorAssetRegistry`, `SupermarketSecurityCamera{,WorldBuilder}` | Current |
 | Supermarket fluorescent atmosphere | Visible fixtures own the store's restrained light, flicker and sound within explicit shared-resource budgets. | `SupermarketInteriorAtmosphere`, `SupermarketFluorescentFlicker` | Current |
@@ -193,7 +194,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Structured session diagnostics | 20MiB/adaptive samples/end reserve/32-action tail;CPU/cloth/ammo/carry/input/F8. | `Runtime/Diagnostics`, `DuelJournal` | Current |
 | Bar activity flavour | Legacy activity identity still selects bar flavour; the removed sprite minigames remain absent. | `BarActivityKind`, `BarActivityAssignment` | Current |
 | Area map UI | Fullscreen;scrollable place list→one plaque/line/square;large hero arrow;travel/XYZ. | `CityMap{Controller,View,AreaController,AreaView,MountainRoadOverlay,AlpineVillageOverlay}` | Current |
-| Area map art | City charcoal:surveyed infill/descent. Village brochure;Road/other seeds schematic. | `{City,AlpineVillage}MapArtResources`, `CityMapArtReferenceExport`, `CityMapIllustratedLabels` | Current |
+| Area map art | City charcoal:Ridge sites/stairs. Village brochure;Road/other seeds schematic. | `{City,AlpineVillage}MapArtResources`, `CityMapArtReferenceExport`, `CityMapIllustratedLabels` | Current |
 | Map XYZ inspection | Map points, fair/post/docks/arch/church-door places included, expose world coordinates and validated teleport targets. | `CityMapTeleport{Lattice,Grounds}`, `CityMapPointDescriptor` | Current |
 | Map arrival ground | Area-owned ground; City lot/XYZ arrivals re-sample land Y and move occupied markers to a clear street. | `ICityMapTeleportGround`, `CityMap{City,MountainRoad}TeleportGround` | Current |
 | Scene transition | Guarded loads/cleanup; closed entrance leaves stay solid and door-action docks clear. | `PlayerDoorAction{Plan,Controller,Target}`, `ApartmentEntranceDoor`, `CityGameRoot` | Current |

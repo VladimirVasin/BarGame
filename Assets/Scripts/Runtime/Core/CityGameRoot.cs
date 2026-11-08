@@ -861,6 +861,8 @@ namespace BarPromenade
             }
             if (World.CafeSite != null)
                 benchPlans.Add(new CityBenchSitPlan(World.CafeSite.CounterSeat.ToBenchSeat()));
+            var cobblerSite = CityCobblerSitePlan.ForLayout(Layout);
+            if (cobblerSite.IsEnabled) benchPlans.Add(new CityBenchSitPlan(cobblerSite.Yard.Seat));
             benchPlans.AddRange(CityBenchRestPlanner.CreateCourtyardSeats(World.ResidentialCourtyards));
             BenchSits = CityBenchSitWorldBuilder.Build(
                 transform,
@@ -873,6 +875,7 @@ namespace BarPromenade
             // Fair seats stay available to the hero; background walkers
             // have no authored approach through the fair's props.
             var restBenchPlans = new List<CityBenchSitPlan>(benchPlans);
+            restBenchPlans.RemoveAll(bench => bench.Id == CityCobblerYardPlan.SeatId);
             if (World.CafeSite != null)
                 restBenchPlans.RemoveAll(bench => bench.Id == World.CafeSite.CounterSeat.StableId);
             if (World.Fair != null)
@@ -902,6 +905,12 @@ namespace BarPromenade
             follow.Initialize(camera, Player.GameObject.transform, false);
             foreach (var keeper in World.Root.GetComponentsInChildren<CityPigeonKeeper>(true))
                 keeper.PresentationObserver = Player.GameObject.transform;
+            foreach (var sorter in World.Root.GetComponentsInChildren<CityGlassReturnWorker>(true))
+                sorter.PresentationObserver = Player.GameObject.transform;
+            foreach (var cobbler in World.Root.GetComponentsInChildren<CityCobblerWorker>(true))
+                cobbler.PresentationObserver = Player.GameObject.transform;
+            foreach (var door in World.Root.GetComponentsInChildren<CityCobblerWorld>(true))
+                door.BindPlayer(Player.GameObject.transform);
             foreach (var gate in World.Root.GetComponentsInChildren<CityPigeonCourtyardGate>(true))
                 gate.BindPlayer(Player);
             BindCafe(ui.transform, camera, follow);
@@ -1675,6 +1684,12 @@ namespace BarPromenade
             follow.Initialize(camera, Player.GameObject.transform, false);
             foreach (var keeper in World.Root.GetComponentsInChildren<CityPigeonKeeper>(true))
                 keeper.PresentationObserver = Player.GameObject.transform;
+            foreach (var sorter in World.Root.GetComponentsInChildren<CityGlassReturnWorker>(true))
+                sorter.PresentationObserver = Player.GameObject.transform;
+            foreach (var cobbler in World.Root.GetComponentsInChildren<CityCobblerWorker>(true))
+                cobbler.PresentationObserver = Player.GameObject.transform;
+            foreach (var door in World.Root.GetComponentsInChildren<CityCobblerWorld>(true))
+                door.BindPlayer(Player.GameObject.transform);
             foreach (var gate in World.Root.GetComponentsInChildren<CityPigeonCourtyardGate>(true))
                 gate.BindPlayer(Player);
             if (IntoxicationStatus != null)

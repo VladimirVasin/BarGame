@@ -2,6 +2,23 @@
   "front": "+Z",
   "unit": "metre",
   "palette_sha256": "419b29d47654cec52c6972202509f6b1b31ae334456bfa8279aabe32defc21bc",
+  "sign_text": "\u041a\u0418\u041e\u0421\u041a",
+  "hours_text": "24/7",
+  "neon_sectors": [
+    "KioskNeon00",
+    "KioskNeon01",
+    "KioskNeon02",
+    "KioskNeon03",
+    "KioskNeon04",
+    "KioskNeon05",
+    "KioskNeon06",
+    "KioskNeon07",
+    "KioskNeon08",
+    "KioskNeon09",
+    "KioskNeon10",
+    "KioskNeon11",
+    "KioskNeon12"
+  ],
   "anchors": {
     "KioskVendor": [
       0,
@@ -37,6 +54,21 @@
       0,
       0,
       2.22
+    ],
+    "KioskSignSource": [
+      0,
+      2.672,
+      2.055
+    ],
+    "KioskSignTarget": [
+      0,
+      2.432,
+      1.756
+    ],
+    "KioskHoursFront": [
+      -1.13,
+      2.432,
+      1.75
     ]
   },
   "models": {
@@ -48,11 +80,11 @@
       ],
       "bounds_max": [
         1.57,
-        2.62094,
+        2.733,
         3.4
       ],
-      "triangles": 6752,
-      "geometry_sha256": "63b9e049a6c547f1756701909d73b74a999ed155066820f0e1b68878645fbf7a"
+      "triangles": 8152,
+      "geometry_sha256": "de9debac83480b3f8522c8df136a104179d1d41588a3ade2d43fe3b4e1ffaed7"
     },
     "PotatoPie": {
       "bounds_min": [

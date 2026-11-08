@@ -11,7 +11,7 @@ namespace BarPromenade
         public const string YardResource = "City/GlassReturn/Yard";
         public const string FloodlightResource = "City/GlassReturn/WallFloodlight";
         private static GameObject pavilion, yard, floodlight;
-        private static Material brick, clearGlass;
+        private static Material brick, clearGlass, signBoard, signLetters;
         private static Texture2D brickPigment, brickResponse;
         private static readonly int Pigment = Shader.PropertyToID("_BaseMap");
         private static readonly int Response = Shader.PropertyToID("_SceneMaterialResponse");
@@ -51,7 +51,13 @@ namespace BarPromenade
                 if (split < 0) throw new InvalidOperationException("Unclassified glass return surface " + meshName);
                 string role = meshName.Substring(split + 2);
                 properties.Clear();
-                if (role == "Brick")
+                if (role == "SignBoard" || role == "SignLetters")
+                {
+                    if (!signBoard) signBoard = Require<Material>("Pawnshop/Materials/PawnshopMatteSign");
+                    if (!signLetters) signLetters = Require<Material>("Pawnshop/Materials/PawnshopMatteLetters");
+                    renderer.sharedMaterial = role == "SignBoard" ? signBoard : signLetters;
+                }
+                else if (role == "Brick")
                 {
                     if (brick == null) brick = Require<Material>("Materials/SupermarketPhysicalSurface");
                     if (brickPigment == null) brickPigment = Require<Texture2D>("City/Surfaces/SupermarketBrickAlbedo");

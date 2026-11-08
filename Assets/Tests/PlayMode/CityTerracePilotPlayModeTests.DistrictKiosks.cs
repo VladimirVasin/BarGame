@@ -43,6 +43,7 @@ namespace BarPromenade.Tests.PlayMode
             PlayerInteractor hero = null;
             PlayerCameraFollow follow = null;
             WorldItemFoundScreen receipt = null;
+            RidgeKioskMenuController menu = null;
             bool capture = Environment.GetEnvironmentVariable(DistrictKioskCaptureSetup.CaptureEnvironment) == "1";
             try
             {
@@ -175,24 +176,29 @@ namespace BarPromenade.Tests.PlayMode
                     }
 
                     RidgeKioskPurchase vodka = products.Single(product => product.ItemId == InventoryItemId.VodkaBottle);
-                    yield return AimKioskAt(site, vodka.InteractionPosition);
-                    Assert.That(hero.ActiveInteractable, Is.SameAs(vodka), site.StableId + " real optical selection");
+                    var station = kiosk.GetComponentInChildren<RidgeKioskStation>();
+                    Assert.That(station, Is.Not.Null);
+                    yield return AimKioskAt(site, station.InteractionPosition);
+                    Assert.That(hero.ActiveInteractable, Is.SameAs(station), site.StableId + " window prompt");
                     int cash = GameSessionState.CashBalance;
                     int count = GameSessionState.GetInventoryItemCount(InventoryItemId.VodkaBottle);
                     yield return PressKioskE();
-                    Assert.That(city.TargetInteraction.IsOpen, Is.True, "E must open the shared confirmation.");
-                    Assert.That(city.TargetInteraction.Cancel(), Is.True);
+                    menu = station.Menu;
+                    Assert.That(menu.IsOpen, Is.True, "E must open the shelf menu at the window.");
+                    Assert.That(menu.Select(3), Is.True);
+                    Assert.That(menu.SelectedItemId, Is.EqualTo(vodka.ItemId));
+                    menu.Exit();
                     Assert.That(GameSessionState.CashBalance, Is.EqualTo(cash));
                     Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.VodkaBottle), Is.EqualTo(count));
-                    yield return AimKioskAt(site, vodka.InteractionPosition);
+                    yield return AimKioskAt(site, station.InteractionPosition);
                     yield return PressKioskE();
-                    Assert.That(city.TargetInteraction.IsOpen, Is.True);
-                    city.TargetInteraction.SelectConfirmation(true);
-                    Assert.That(city.TargetInteraction.Confirm(), Is.True);
+                    Assert.That(menu.IsOpen, Is.True);
+                    Assert.That(menu.Select(3), Is.True);
+                    Assert.That(menu.ConfirmSelection(), Is.True);
                     Assert.That(receipt.IsPresenting, Is.True);
                     Assert.That(GameSessionState.CashBalance, Is.EqualTo(cash - 28));
                     Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.VodkaBottle), Is.EqualTo(count + 1));
-                    Assert.That(city.TargetInteraction.Confirm(), Is.False, "A confirmation may credit only once.");
+                    Assert.That(menu.ConfirmSelection(), Is.False, "A confirmation may credit only once.");
                     yield return WaitForKiosk(() => receipt.IsShowing, "The shared 3D vodka receipt did not settle.");
                     Assert.That(receipt.ActiveItemId, Is.EqualTo(InventoryItemId.VodkaBottle));
                     Assert.That(receipt.Dismiss(), Is.True);
@@ -201,6 +207,8 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(GameSessionState.CashBalance, Is.EqualTo(cash - 28));
                     Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.VodkaBottle), Is.EqualTo(count + 1));
                     Assert.That(vodka.isActiveAndEnabled, Is.True, "The counter sample remains replenishable.");
+                    Assert.That(menu.IsOpen && menu.SelectedItemId == vodka.ItemId, Is.True);
+                    menu.Exit();
                     Assert.That(hero.InputEnabled && motor.InputEnabled, Is.True);
                     yield return WalkKioskTo(through + Vector3.up * PlayerFactory.GroundedRootOffset);
                     yield return WalkKioskTo(right + Vector3.up * PlayerFactory.GroundedRootOffset);
@@ -230,9 +238,9 @@ namespace BarPromenade.Tests.PlayMode
             finally
             {
                 if (receipt != null && receipt.IsPresenting) receipt.Abandon();
+                menu?.Close();
                 if (city != null)
                 {
-                    if (city.TargetInteraction != null && city.TargetInteraction.IsOpen) city.TargetInteraction.Cancel();
                     if (city.Map != null && city.Map.IsOpen) city.Map.Close();
                 }
                 if (follow != null) follow.ClearFixedPose();

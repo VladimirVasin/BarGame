@@ -20,10 +20,9 @@ Read both bibles before changing anything the player sees, hears, reads or does.
 
 Rules:
 
-- Before adding a detail, find the `Нельзя` it would violate. None → allowed.
-  One dated to a level in the story bible's §6 registry → allowed from that
-  level. One that is not in the registry → **the detail is not added**, and the
-  discussion is about adding a registry row, not about the detail.
+- Check added details against `Нельзя`. No violation → allowed. A dated story
+  §6 exception permits its listed violation from that level. Otherwise
+  **omit the violating detail** and discuss adding a registry row.
 - The story bible's §16 «Законы сюжета» are hard constraints, not guidance.
 - Any new in-fiction text — `Assets/Resources/Localization/{ru,en}.json`
   included — must satisfy the story bible's §21 «Регистр текста».
@@ -33,6 +32,11 @@ Rules:
   recorded as an accepted exception in `ai/architecture-notes.md`.
 - Update the relevant bible when its facts change, exactly as for the documents
   listed under Quality and documentation.
+- New/revised in-world drawn posters, advertising prints and similar illustrated
+  signs use one primitive low-poly style with angular large forms, a limited
+  muted palette and rough lettering. Photorealism, gloss and rendered detail
+  are forbidden. Approved photos/maps and untouched old images retain
+  their styles. [Art §13](ai/city-zones-art-bible.md#13-данные-и-детерминизм).
 
 ## Git
 
@@ -46,9 +50,9 @@ without reconfirmation. Host approval policy still applies.
 
 ## Supported scope
 
-New player text is Russian only; retain existing English. New input targets
-keyboard/mouse only; retain existing gamepad support. Do not add translations,
-gamepad bindings/hints or require their parity/coverage unless explicitly requested.
+New player text is Russian; new input targets keyboard/mouse only. Retain
+existing English/gamepad support. Translations, gamepad bindings/hints and
+required parity/coverage need explicit requests.
 
 ## Current baseline
 
@@ -89,25 +93,21 @@ gamepad bindings/hints or require their parity/coverage unless explicitly reques
 - New/changed item interactions reuse [the standard](ai/item-interaction-standard.md):
   keyed prompts, shared 3D pickup/receipt UI, one grant, input/cleanup.
   Exceptions require a recorded user decision.
-- New default NPCs register a permanent character ID/model/garment constraints
-  in the global `DefaultNpcPopulation`, then use
-  `DefaultNpcFactory.CreateForCharacter`. Its whole-world assignment retains
-  face/hair/clothes across loads and avoids repeats. Models come from
-  `DefaultNpcCatalog`; a bespoke appearance or missing type's pool extension
-  requires an explicit user request. Do not borrow unlisted models or build
-  local randomizers. Placement/actions stay local. See the accepted
-  `2026-09-15` default-NPC decisions in `ai/architecture-notes.md`.
-- All speech and dialogue must follow
-  [`ai/speech-presentation-standard.md`](ai/speech-presentation-standard.md).
-  Every spoken line, including `E` replies, uses the shared bubble above its
-  speaker; bottom UI is silent. Do not copy speech UI/typewriter/audio/lifetime
-  logic per feature. A deviation requires an explicit user decision recorded
-  as an accepted architecture exception.
-- Every future contextual interaction must follow
-  `ai/contextual-animation-standard.md`. The production hero is one continuous
-  modular 3D character: an interaction either drives that world rig or derives a
-  camera-local first-person subset from the same prefab. The sprite/atlas
-  approach the standard once described is retired. A deviation requires an
+- Register each new default NPC's permanent ID/model/garment constraints in
+  global `DefaultNpcPopulation`; use `DefaultNpcFactory.CreateForCharacter`.
+  Global assignment keeps face/hair/clothes across loads without repeats.
+  `DefaultNpcCatalog` owns allowed models. Bespoke looks or a missing type's pool
+  extension require explicit user request. Unlisted models/local randomizers are
+  forbidden;placement/actions stay local. See `2026-09-15` decisions in
+  `ai/architecture-notes.md`.
+- Speech/dialogue follow [the standard](ai/speech-presentation-standard.md).
+  Every spoken line, including `E` replies, uses its speaker's shared bubble;
+  bottom UI is silent. Feature-local UI/typewriter/audio/lifetime copies are
+  forbidden. Deviations require explicit user decisions recorded as accepted
+  architecture exceptions.
+- Future contextual interactions follow `ai/contextual-animation-standard.md` using the
+  continuous modular 3D hero's world rig or a camera-local first-person subset
+  of that prefab. Sprite/atlas presentation is retired. Deviations require an
   explicit user decision recorded as an accepted architecture exception.
 
 ## Optimization from the start
@@ -128,13 +128,13 @@ Every feature/fix/refactor/asset considers CPU/GPU, memory/GC and loading from d
 
 ## Workspace retention
 
-Declare every ignored path in `tools/workspace-budget.json`: `never`, `retain`
-days, `idle` cache days, `declared` or `allowed`. `python tools/check-workspace.py`
-checks all worktrees; missing policies fail. `--sweep --apply` refuses busy
-Unity/Blender checkouts, tracked files and live document references.
-`Captures/` is temporary (`never`): generate, inspect, delete outputs at task end,
-including videos/reports/staging. Record named checks without capture links.
-Fix growing writers or shorten retention; never raise it.
+Every ignored path needs a `tools/workspace-budget.json` policy of `never`,
+`retain` days, `idle` cache days, `declared` or `allowed`.
+`python tools/check-workspace.py` checks all worktrees; missing policies fail.
+`--sweep --apply` refuses busy Unity/Blender checkouts, tracked files and live
+document references. Delete temporary `Captures/` (`never`) outputs after review
+at task end, including videos/reports/staging. Record named checks without
+capture links. Fix growing writers or shorten retention; never raise it.
 
 ## Quality and documentation
 
@@ -143,7 +143,7 @@ Fix growing writers or shorten retention; never raise it.
 - A focused Unity test compiles dependencies. Skip a separate compilation.
 - Update `ai/project-overview.md` or `ai/systems-map.md` when their facts change.
   Use `git ls-files`/`rg` as the path reference; do not keep a copied file tree.
-- Keep both bibles current; World canon governs changes.
+- Update both bibles under World canon.
 - Record meaningful implementation sessions in `ai/work-log.md`.
 - Put player-visible milestones in `ai/release-notes.md`.
 - Keep `README.md`, the only human-facing document, current with what the
@@ -198,9 +198,9 @@ changes. Risk selects the focused check; it does not authorize broad regression.
 
 ## Minimal verification policy
 
-Normal work: one primary check; a shared framework may add one focused check.
-Stop when sufficient. Cap: one Unity invocation, two narrowly filtered
-invocations for a shared framework.
+Normal work uses one primary check; shared frameworks may add one focused check.
+Stop when sufficient. Cap one Unity invocation, or two narrowly filtered ones
+for a shared framework.
 
 - Documentation/comments: run `python tools/check-docs.py` and review the diff;
   also run `git diff --check`. No Unity test or build. The checker enforces

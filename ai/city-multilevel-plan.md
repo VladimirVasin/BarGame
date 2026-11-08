@@ -80,10 +80,10 @@
 
 ## Три группы эффектов
 
-Общие источники/материалы/пост City. Будки: панель→вход/земля, мягкие тени, пул12/дневной минимум;
+City shared light/material/post. Будки→вход/земля,soft/pool12/dayfloor;
 Сквозные проходы:матовый атлас граффити,Blender-коммуникации/плафоны;сухой центр/мокрые пороги.
 Мягкие тени/пул12,независимые редкие провалы одной лампы;линза/ореол/spill согласованы.
-24 категории ниже сохраняют owners. Новые GI/pass не нужны;GPU-стоимость не измерена.
+24FX share owners;GI/pass0;GPU unmeasured.
 
 | Эффект | Покрытие / соответствие | Действие, предел и доказательство |
 | --- | --- | --- |
@@ -129,18 +129,21 @@ LiveCity_CoastalAscentAndStairShortcutShareSupportedRoutes,
 LiveCity_CitywideSlopesKeepSupportedRoutesAndArrivals,
 LiveCity_UpperQuarterJoinsBothSlopesThroughTheLitCourt,
 LiveCity_RidgeGroundAndViewBenchesKeepSupportedWalksAndArrivals.
-Пешком восток1338м/запад1474м;день/ночь/штатная камера просмотрены.
+Пешком восток1338м/запад1474м;день/ночь/камера просмотрены.
 Остановки:LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
-Новая геометрия/POI у верхней дороги:старый ImageGen→схема.
+City ImageGen:финальная геометрия Гребня/сапожная;живые POI/XYZ.
 
 ## Голубятня западного разворота
 
-`2026-11-07` loft6/yard/phone uphill;`2026-11-08` day chores/cry.
-Rail/grain/vice/grille/bath/sweep;brief upper feed/water;ground cry.
-21→home/06→loft;gate hand/E;occluded home;local preE/calendar fixed.
-Lamp6/r8/shadow0/day≥2/3;24FX Current/shared,cost unknown.
-1GI/SSGI/SCGI,2SSAO/5shadows parts,3fog,4air,6grade,7probes/SSR.
-8bath atlas,9wetness,10bevels/normals,11vertex colour0,12wind/rigid,
-13gravel,14rain,15source rim,16utility outline.
-17Bloom/18DoF/19SMAA/20vignette/21grain-dither/22flares/23blur/
-24CA-distortion City;rig/pause/cleanup.
+`2026-11-07` loft6/yard/phone uphill;`2026-11-08` chores/cry.
+Rail/grain/vice/grille/bath/sweep;upper feed/water;ground cry.
+21→home/06→loft;gate/E;occluded home;preE calendar held.
+Lamp6/r8/shadow0/day≥2/3;24FX shared,cost unknown.
+
+Cobbler68.8,-307/250°. Open road view. Last leg→1.6m gravel/steps/scraper.
+Tobacco bus double seat+footrest69.4,-302.9. 2 low kerbs/sparse lilac2m@71,-312,wall→rear cable.
+Map:yard exempt. 1GI/SSGI/SCGI shared,2SSAO/5soft256 hands,3fog/6grade City.
+4air/17bloom follow desk switch,sign.3cd fixed. Yard lights0.
+7probes/SSR,8water,9wet body/gravel,10bevel/one deck,11vertex0/12wind0,
+13wear/14rain/roof/15rim/16outline0.18DoF/19SMAA/20vignette/21grain-dither/
+22flares/23blur/24CA City. Pause/cull/cleanup.

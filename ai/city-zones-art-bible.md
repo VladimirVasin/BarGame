@@ -653,19 +653,21 @@ Port/City:масштаб/палитра/матовость прежние,кры
 низкие бетонные клумбы:крем/бордо/лиловый;текста0.
 Road→3×12→bench→2×12/2.4m→zebra/door;1.8/.32m,4fixedlamps;rails off walk.
 
-`2026-11-08`: восточная шпилька Гребня. Пункт стеклотары: низкий кирпич углом
-к дороге, стальной козырёк; свет окна поперёк рук/стойки. За сеткой ящики
-бесцветных/зелёных/бурых бутылок, звон укладки. Прожектор соседней стены
-мягко освещает пункт/двор/подход. Fixed/day≥⅔/Soft.65.
+`2026-11-08`:восточный пункт,кирпич/козырёк.«ПУНКТ ПРИЁМА СТЕКЛОТАРЫ» —
+матовый крем/тёмно-зелёный,ровная подсветка.08–23,ночью приёмщик дома.
+Тумблер гасит окно/опускает решётку,утром обратно (§6/20).
+Прожектор→двор/подход/слабый фасад;вывеска fixed/day≥⅔.
+Бетон выше грунта.
 
-`2026-11-06`,user:ломбард8×9×4м/западный круг/вход к герою;
-ниже жилья;козырёк/витрина/«ЛОМБАРД»;штукатурка/бетон/угольный металл.
-Крем/зелень/линолеум/ламинат;kit7.4×8.4×3м:витрины/прилавок1.05м/
-лоток/решётка до потолка/закрытая комната приёмщика.
-6постоянных задач:2экранированных проектора→матовые буквы,ровно/без блика/ореола;
-вход/бок/тыл. Зал:3HDRплафона/1тень/2bounce/куб;24FX;
-туман/лучи/SSR/SSGI/SCGI/DOF0.
+`2026-11-06`:ломбард8×9×4м/западный круг;ниже жилья,вход к герою.
+Козырёк/витрина/«ЛОМБАРД»;штукатурка/бетон/угольный металл;крем/зелень/
+линолеум/ламинат. Kit7.4×8.4×3м;витрины/прилавок1.05м/лоток/решётка/
+комната приёмщика.6fixedзадач;2проектора→матовые буквы/без блика-ореола.
+Зал3HDR/1тень/2bounce/куб;fog/rays/SSR/SSGI/SCGI/DOF0;24FX.
 2зебры/Plaza2.4м→дверь;проезд свободен.
+
+№03/2ступени, руки под лампой за лобовым. Матовая «РЕМОНТ ОБУВИ».
+Гравий, сиденья, сирень.
 
 ### Квартира героя
 
@@ -1056,7 +1058,10 @@ Cat/black route/22m contactors/2Hard lights stay;solve lights next door.
 
 ### Бар и ориентиры
 
-Ларьки 03-04/Жилой/Рабочий:металл/тёплый свет;без шапки,фартук/(кардиган,шапка,шарф)/(куртка,кепка).
+Ларьки03-04/Жилой/Рабочий:металл/тёплый свет;без шапки,фартук/(кардиган,шапка,шарф)/(куртка,кепка).
+Матовый«КИОСК»/навесной свет;справа фасадный малиновый неон«24/7» змейкой,
+dim/dayfloor;Light/ореол/строб0. Матовая low-poly афиша в боковых
+рамах:Гребень пиво/Жилой пирожки/Рабочий водка (§13).
 
 Бар внизу узнаётся по вывеске на первом этаже, лавке, урне, объявлениям или велосипеду.
 Тёплый свет смешан с холодным подъездным, звук негромкий.
@@ -3923,30 +3928,35 @@ field с `35 мм` / `f/8`; доставка и обслуживание ост�
 
 ## 13. Данные и детерминизм
 
-`CityDistrictArtProfile` хранит frontage/mass/window/light/wear/transition;
-чистый planner даёт стабильные ключи и соседние переходы в одном квартале.
-Мир потребляет только window;прочее — данные,пока не геометрия.
-Расширение:веса/пределы высоты и пятна,skyline/facade families,две палитры,
-окна/light families,roof/facade/frontage/roadside motifs,primary landmark/
-открытое общественное место,wear,sound bed/anchors/events,NPC behavior,
-соседние переходы,запреты/лимиты исключений.
+`CityDistrictArtProfile` stores frontage/mass/window/light/wear/transition.
+Pure plans keep stable keys and same-block neighbor transitions. Only window
+is consumed by the world;other fields remain data.
+Planned weights,height/footprint bounds,skyline/facade families,two palettes,
+window/light families,roof/facade/frontage/roadside motifs,primary landmark/
+public place,wear,sound bed/anchors/events,NPC behavior,neighbor transitions,
+exception bans/limits.
 
-Порядок решения для лота:
+Lot priority:
 
-1. district, park и street connectivity;
-2. защищённые bar, player home и primary landmark;
-3. самостоятельный public-place land use, если лот выбран для районной точки;
-4. районная пространственная грамматика здания для оставшихся лотов;
-5. реальный road frontage и близость к границе;
-6. seeded-вариант;
-7. clearance, walkability и бюджет.
+1. district/park/street connectivity;
+2. protected bar/player home/primary landmark;
+3. public-place land use for a selected district place;
+4. district building grammar for other lots;
+5. actual road frontage/boundary proximity;
+6. seeded variant;
+7. clearance/walkability/budget.
 
-Сохраняются детерминизм, связность, один бар в нижнем районе, безопасные подходы, shared
-materials, chunk batching, ограниченные realtime lights и та же наружная среда
-через окно/балкон Home. У обычного декора простые коллайдеры разрешены только
-для заземлённых конструкций и крупных физических препятствий; мелкие,
-подвесные и крышные детали остаются нефизическими. Коллайдеры нельзя
-использовать как невидимый периметр.
+Keep determinism/connectivity,one lower-district bar,safe approaches,shared
+materials,chunk batching,bounded realtime lights and the same exterior through
+Home windows/balcony. Simple decor colliders serve only grounded structures/
+large obstacles;small,hanging and roof details remain nonphysical. Invisible
+collider perimeters are forbidden.
+
+`2026-11-08`,user:новые/переработанные внутримировые рисованные афиши,
+рекламные плакаты и подобные вывески имеют единый примитивный low-poly стиль.
+Угловатый рисунок,крупные формы,малая приглушённая палитра,грубые буквы.
+Фотореализм/глянец/рендерная детализация запрещены.
+Approved photos/maps/untouched old images retain their styles.
 
 ## 14. Звук
 
@@ -4142,10 +4152,12 @@ gameplay-модификатор морали.
 
 ### Область действия
 
-Мир/камера/свет/материалы/формат/звук/правила/ввод/строки прежние
-вне исключений ниже. `640x360` читается в тёмном/пьяном композите.
-Загрузка: живописный viewport/пропорции-кадрирование/нижняя полоса.
-Сажа/старая бумага/линейка/воздух;текст/рамка/изображение не спорят.
+Outside accepted cases,world/camera/light/material/format/sound/rules/input/text
+stay.`640x360` stays readable in dark/intoxicated composites.
+Loading keeps painterly viewport/fitted proportions/bottom strip.Soot/old paper/
+ruler/air balance text/frame/image.
+Shop/kiosk browser:small card↙/cash↗ at actual viewport corners;small arrows,whole-word wrap;Retro.
+Kiosks:one E/Vendor(default)/Pie/Beer/Vodka;actual vendor/goods;3D receipt;Ridge-only speech.
 
 ### Форма и материал
 

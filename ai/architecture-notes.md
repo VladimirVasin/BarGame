@@ -13,16 +13,17 @@
   All three FX groups reviewed:motion only;existing light/material/post owners
   unchanged. No new text,sound,lore or registry exception;story16/art9 stay.
 
-- **Accepted 2026-11-07,user — Ridge loft:** loft6/yard/Home/map;phone+dock uphill.
-  Keeper21→(-23,-7)/06→loft,stairs/gate/E;occluded home.
-  User2026-11-08 day rail6s/grain/vice/grille/bath/sweep;lid/handle/hollow bin;
-  upper50s=20feed+4watch+25water+1settle.Ground fits final pre17/21 cycle;late seek same.
-  Local preE keeps calendar;pause/cull/tools/rig cleanup.
-  Shared speech45–75first/120–180next active s;ground cry120–180first/
-  240–360next,10–14s;20s separation.Same rig/feet/tools;no audio/camera/control/music.
+- **Accepted 2026-11-07,user — Ridge loft:** loft6/Home/map;phone+dock uphill.
+  Keeper21→(-23,-7)/06→loft,stairs/gate/E;occluded home.User2026-11-08 yard
+  rounds/upper feed-water;fitted pre17/21 cycle;local preE/calendar held.
+  Moving tools/hollow bin;shared speech/ground crying retain rig/feet/tools,
+  bounded active cooldowns,gap,pause/cull/cleanup;cry has no sound/camera/control/music.
   Own wife's loss/suicidal struggle veiled as birdkeeping;§17/21 exception.
   No methods/romantic death/crime/water/Cat/exposition;ordinary0–5;§16/art9;
   [24FX](city-multilevel-plan.md).
+
+- **Accepted 2026-11-08,user — glass return:** one press→only interior/window
+  off+grille shut,morning on/open.Flood/sign fixed/day≥⅔;§6/20.
 
 - **Accepted 2026-11-07,user — illuminated bus platforms:** City/Home share
   recessed neutral perimeter diffuser;4rail Spots→bench/back/waiting,pole→boarding,
@@ -62,10 +63,10 @@
   ≤128 receivers restore disable/destroy;leases reset masks. 24FX;new GI/pass/
   grade/fog0;GPU unmeasured.
 
-- **Accepted 2026-11-05/2026-11-07,user — City kiosks.** Ridge+lower Residential/
-  Industrial;shared beer/vodka/pie/receipt/light. Unique IDs/looks/map marks.
-  Ridge-only speech (§6/21);others silent. ActV contract:permanent bar closure
-  ends alcohol,regardless of hours.
+- **Accepted 2026-11-05/2026-11-07,user — City kiosks.** Ridge/lower Residential/Industrial;
+  IDs/map;only Ridge speaks;ActV permanent bar closure ends alcohol.
+  User2026-11-08 E→compact shop/kiosk browser,4 foci/Vendor0;atomic buy.
+  Ads/signs:art§13;front neon24/7.
 
 - **Accepted 2026-11-04,user — pedestrian vehicle passage:** silent City walkers
   yield3bus lines/Ferryman/cannery truck;body/following gaps.
@@ -81,13 +82,13 @@
   West Lane6 adds4-/3-storey v0/v4,one tree removed;shared light/approach/map;
   no NPC/text/story exception.
 
-- **Accepted architecture extension — 2026-11-03,user — terraced City:**
-  Low coast/port/river;two south streets≤6%→Y40;seven traverses/side.
-  Level R13 turns;outer widening .75m/R13,.90m/R9 clears buses. Street/earth/
-  homes/NPC/map share stations;original cave/tunnel. Lower bridge+7.68m over
-  sheltered3m alley;first104m rise3.84m;dog yard/window landing/Lower Court.
-  Lots rebased;map follows geometry,one redraw;shared fog/post/camera,
-  story16/21/art9. [Proof](city-multilevel-plan.md).
+- **Accepted 2026-11-03,user — terraced City; 2026-11-08 cobbler:**
+  Coast/port/river low;two seven-tier streets≤6%→Y40,levelR13 turns,
+  outer+.75m(R13)/+.90m(R9). Shared terrain/route/home/map;original cave/tunnel.
+  Lower bridge+7.68m/sheltered3m alley;first104m rise3.84m;dog yard/Lower Court.
+  Bus8.25×2.38@68.8,-307/250°,home21,-6,11–20:30/lunch14–14:30.
+  §20:cord 1s/2s→desk3.1 AM on/PM off. Sign.3 fixed/day≥⅔.
+  Steps/grips/XYZ/safe POI,§16/21/art9,[FX](city-multilevel-plan.md)
 
 - **Accepted architecture exception — 2026-11-03,user — doubled calendar day:**
   Art2/story20:96real min/day×1=4s/game minute;needs/weather scale,

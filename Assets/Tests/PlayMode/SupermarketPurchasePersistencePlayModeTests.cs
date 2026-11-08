@@ -212,9 +212,11 @@ namespace BarPromenade.Tests.PlayMode
             root.ShelfShop.Close();
         }
 
-        [UnityTest]
+        [UnityTest, PrebuildSetup(typeof(KioskMenuCaptureSetup))]
         public IEnumerator ShelfBrowser_CentersProducts_CrossesStockedShelves_ThenRestoresState()
         {
+            bool capture = Environment.GetEnvironmentVariable(KioskMenuCaptureSetup.CaptureEnvironment) == "1";
+            if (capture) Assert.That(Application.isBatchMode, Is.False, "The compact shelf panels are reviewed in the real Game view.");
             SupermarketInteriorRoot root = null;
             yield return LoadSceneAndWaitForRoot(value => root = value);
             yield return WaitUntil(
@@ -279,6 +281,12 @@ namespace BarPromenade.Tests.PlayMode
             AssertAllRenderersDisabled(cashierRenderers);
             AssertSelectedProductCentered(root, dryShelf);
             AssertNavigationArrowsFlankSelectedProduct(root);
+            CompactShelfMenuAssertions.Check(root.ShelfShopView, true, root.ShelfShop.SelectedOffer.DescriptionLocalizationKey);
+            if (capture && root.ShelfShop.SelectedProduct.ItemId is InventoryItemId.DayOldLoaf or InventoryItemId.InstantNoodles)
+            {
+                yield return CityTerracePilotPlayModeTests.CaptureShopMenuFrame("supermarket-" + root.ShelfShop.SelectedProduct.ItemId);
+                CompactShelfMenuAssertions.CheckDescription(root.ShelfShopView, root.ShelfShop.SelectedOffer.DescriptionLocalizationKey, true);
+            }
 
             var ordered = new List<SupermarketProductView>();
             foreach (SupermarketShelfView shelf in root.World.Shelves)
@@ -290,6 +298,12 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.ShelfShop.SelectedProduct, Is.SameAs(ordered[index]));
                 AssertSelectedProductCentered(root, ordered[index].Shelf);
                 AssertNavigationArrowsFlankSelectedProduct(root);
+                CompactShelfMenuAssertions.Check(root.ShelfShopView, true, root.ShelfShop.SelectedOffer.DescriptionLocalizationKey);
+                if (capture && ordered[index].ItemId is InventoryItemId.DayOldLoaf or InventoryItemId.InstantNoodles)
+                {
+                    yield return CityTerracePilotPlayModeTests.CaptureShopMenuFrame("supermarket-" + ordered[index].ItemId);
+                    CompactShelfMenuAssertions.CheckDescription(root.ShelfShopView, root.ShelfShop.SelectedOffer.DescriptionLocalizationKey, true);
+                }
             }
             Assert.That(root.ShelfShop.MoveSelection(-1), Is.True);
             Assert.That(root.ShelfShop.SelectedProduct, Is.SameAs(ordered[ordered.Count - 2]));

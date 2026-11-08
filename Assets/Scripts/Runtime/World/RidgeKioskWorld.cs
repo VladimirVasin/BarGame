@@ -7,6 +7,13 @@ namespace BarPromenade
 {
     public static class RidgeKioskWorld
     {
+        private static Material signBoard, signLetters;
+        // Scene cleanup does not retain textures referenced only through an MPB.
+        private static Texture2D beerPoster, vodkaPoster, piePoster;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetPosters() => beerPoster = vodkaPoster = piePoster = null;
+
         public static Transform Build(Transform parent, CityKioskSitePlan site, bool interactive) =>
             Build(parent, site, interactive, out _);
 
@@ -26,17 +33,35 @@ namespace BarPromenade
             foreach (var part in model.GetComponentsInChildren<Transform>(true))
                 if (part.name.StartsWith("Kiosk", StringComparison.Ordinal)) anchors[part.name] = part;
 
+            if (!signBoard) signBoard = Resources.Load<Material>("Pawnshop/Materials/PawnshopMatteSign");
+            if (!signLetters) signLetters = Resources.Load<Material>("Pawnshop/Materials/PawnshopMatteLetters");
+            if (!signBoard || !signLetters) throw new InvalidOperationException("Kiosk enamel sign materials are missing.");
             foreach (var renderer in model.GetComponentsInChildren<MeshRenderer>())
-                if (renderer.name == "RidgeKiosk_KioskLampGlass")
+            {
+                switch (renderer.name)
                 {
-                    renderer.sharedMaterial = CityNightResources.EmissiveMaterial;
-                    renderer.shadowCastingMode = ShadowCastingMode.Off;
-                    renderer.receiveShadows = false;
-                    CityNightGlowRegistry.Register(renderer, new Color(3.8f, 2.3f, .9f));
+                    case "RidgeKiosk_KioskLampGlass":
+                        renderer.sharedMaterial = CityNightResources.EmissiveMaterial;
+                        renderer.shadowCastingMode = ShadowCastingMode.Off;
+                        renderer.receiveShadows = false;
+                        CityNightGlowRegistry.Register(renderer, new Color(3.8f, 2.3f, .9f));
+                        break;
+                    case "RidgeKiosk_KioskSignBoard": renderer.sharedMaterial = signBoard; break;
+                    case "RidgeKiosk_KioskSignLetters": renderer.sharedMaterial = signLetters; break;
+                    case "RidgeKiosk_KioskAdvertisement":
+                        BindPoster(renderer, site.StableId);
+                        break;
                 }
+            }
+            root.gameObject.AddComponent<KioskHoursNeon>().Initialize(model);
+
+            Transform signLamp = new GameObject(CityNightAtmosphere.IndustrialTaskLightPrefix + "KioskSign").transform;
+            signLamp.SetParent(root, false);
+            signLamp.SetPositionAndRotation(anchors["KioskSignSource"].position,
+                Quaternion.LookRotation(anchors["KioskSignTarget"].position - anchors["KioskSignSource"].position, root.up));
 
             Transform approach = anchors["KioskApproach"];
-            RidgeKioskOffers.Build(root, anchors["KioskBeer"], anchors["KioskVodka"], anchors["KioskPie"], approach,
+            var offers = RidgeKioskOffers.Build(root, anchors["KioskBeer"], anchors["KioskVodka"], anchors["KioskPie"], approach,
                 interactive, site.StableId);
             // Direction is owned by this metre-space frame, not by the imported
             // Empty's local axes. Both City and the passive balcony share its lens.
@@ -55,10 +80,33 @@ namespace BarPromenade
             if (interactive)
             {
                 rainShelters = BuildCollision(root);
-                RidgeKioskVendor.Build(root, anchors["KioskVendor"], anchors["KioskTalk"], approach,
+                var vendor = RidgeKioskVendor.Build(root, anchors["KioskVendor"], anchors["KioskTalk"], approach,
                     site.CharacterId, site.HasDialogue);
+                root.gameObject.AddComponent<RidgeKioskStation>().Initialize(vendor, offers, anchors["KioskTalk"], approach);
             }
             return root;
+        }
+
+        private static void BindPoster(Renderer renderer, string siteId)
+        {
+            Texture2D texture = siteId switch
+            {
+                "ridge-kiosk" => Poster("KioskBeer", ref beerPoster),
+                "industrial-kiosk" => Poster("KioskVodka", ref vodkaPoster),
+                "residential-kiosk" => Poster("KioskPies", ref piePoster),
+                _ => throw new ArgumentOutOfRangeException(nameof(siteId), siteId, "Missing kiosk advertisement.")
+            };
+            renderer.sharedMaterial = signLetters;
+            var print = new MaterialPropertyBlock();
+            print.SetTexture("_BaseMap", texture);
+            print.SetColor("_BaseColor", Color.white);
+            renderer.SetPropertyBlock(print);
+        }
+
+        private static Texture2D Poster(string name, ref Texture2D cached)
+        {
+            if (!cached) cached = Resources.Load<Texture2D>("RidgeKiosk/Posters/" + name);
+            return cached ? cached : throw new InvalidOperationException("Missing kiosk poster " + name);
         }
 
         private static Collider[] BuildCollision(Transform root)

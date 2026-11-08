@@ -4,35 +4,31 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-08
-Eastern ridge hairpin: low brick glass return and fenced stock leave the inner
-footway open. One permanent sorter transfers the same bottle to its crate.
-The clink comes from the contact; the window uses a City light without shadows.
-The adjacent house carries a fixed diffuse flood for shell, yard and apron.
-Blender reuses the City yard fixture's head and wall plate. Soft shadows at
-.65 and the daylight floor of 2/3 preserve shape. Existing wetness, bevels
-and materials catch the light; shared SSR/reflections, SSAO, grade, SMAA
-and bloom remain. No new SSGI, SCGI, DOF or motion blur.
-CityGlassReturn compared lit/unlit frames at the yard and mount. The shared
-64×64 reflector cookie feathers light away from the mounting wall; the shed,
-yard and approach remain lit without a bright patch on the house.
-Blender's glass-return model check verified metres and repeatability.
-CityGlassReturn verified both grips, crate contact, canopy and footway. The
-night view shows hands at the lit counter; the upper branch reveals the yard,
-the lower wall conceals the window. CityMapArtReferenceExport and the new
-ImageGen map locate the parcel. LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
+Glass return08–23/home22:-7:sorter rests bottle,reaches switch;one press cuts
+window/interior light and starts grille;safe motor wait precedes staff exit.
+Morning reverses.RU sign matte/lit;flood/sign fixed dayfloor,only cabin§6/20.
+Opaque soft shadows,weak wall wash/raised yard remain.CityGlassReturn proves
+switch/grips/power/grille/safe wait/sign/shift/commute/pause/cleanup.
+Kiosks prints/neon24/7/dayfloor/pause/lifecycle:CityKioskSigns. Texture refs survive cleanup.
+AGENTS/art§13 bind primitive low-poly world posters;approved photos/maps/old art stay.
+One E→shared compact shop/kiosk browser,Vendor default/three goods;atomic3D
+receipt→same focus.Card↙/cash↗ anchor to actual viewport corners;descriptions wrap whole words.
+Ridge-only talk;silent vendors inspectable.Exit/talk restores world camera/input/HUD.
+LiveCity_KioskMenuUsesOneEntryAndFourFocusedTargets proves corners/wrap/entry/focus/receipt/
+input/dialogue/cleanup;ShelfBrowser_CentersProducts_CrossesStockedShelves_ThenRestoresState
+proves shared-view compatibility.Retro/camera/receipt DoF owners reused;
+world material/light/GI/SSAO/fog/SSR/post owners stay.Blender glass model check.
 
-Keeper spends daytime rounds in the yard;brief upper feed/water visits and
-short rail stops replace long landing waits. Ground chores fill the last round
-before timed returns;late loading samples that same cycle. Local preE keeps calendar.
+Keeper yard chores/brief upper feed-water/rail stops;last ground round precedes
+timed return;late loading shares cycle,preE calendar held.
 Vice handle and hollow grain bin lid move with the same hand rig;grille/bath/
 sweep stops share authored routes and contacts. Night commute/gate stay owned.
 More frequent shared speech veils loss/suicidal struggle as birdkeeping under
 the accepted register exception. Crying stays on safe ground chores,apart from
 speech;rig/feet/tools persist. CityPigeonLoft proves revised upper/ground tempo,
 contacts/pause/night life,speech ownership and crying cleanup.
-Animator stream writes erased held IK between samples;the bounded body-pose
-cache retains contacts on rendered frames,including pause. Native-frame views
-confirm broom/face contacts;manual camera rendering reused stale skinned vertices.
+Bounded bone cache preserves IK against Animator writes/pause;native views
+confirm broom/face contacts;manual rendering reused stale skins.
 
 Stair loss of balance can fall through shared ragdoll/rise;marked physical
 ramps retain their real normal,unmarked slopes retain the fall limit.
@@ -45,6 +41,11 @@ StairExit_StairRampAllowsACompleteFallAndRecovery proves an actual exterior
 stair's fall/ragdoll/rise/input;standing/fallen/recovered views reviewed.
 Three FX groups reviewed;motion only,light/material/post owners unchanged.
 check-docs/diff-check.
+
+Cobbler/home21,-6. Blender bus+yard --check:deck/cord/props. CityCobbler:
+shift/grips/switch,gravel/steps both ways,sit/exit/hips,cable/map.
+Road/south/glass day/night views. ImageGen map, yard props exempt.
+LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
 
 ## 2026-11-07
 Ridge loft adds grille yard/workbench/grain/bath;phone+dock uphill,loft fixed.

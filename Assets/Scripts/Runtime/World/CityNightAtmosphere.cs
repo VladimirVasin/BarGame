@@ -91,6 +91,7 @@ namespace BarPromenade
         private UniversalAdditionalLightData[] pooledShadowData = Array.Empty<UniversalAdditionalLightData>();
         private CityLightHalo[] industrialFixtureHalos = Array.Empty<CityLightHalo>();
         private CityCoveredPassageLight[] coveredPassageLights = Array.Empty<CityCoveredPassageLight>();
+        private CityGlassReturnWorkLight[] glassReturnWorkLights = Array.Empty<CityGlassReturnWorkLight>();
         private bool[] industrialIsCoveredPassage = Array.Empty<bool>();
         private readonly HashSet<Light> residentialEntranceLights = new HashSet<Light>();
         private readonly Dictionary<Light, (CityBusStopLighting fixture, int source)> busStopLightOwners =
@@ -185,6 +186,7 @@ namespace BarPromenade
             industrialStreetOnly = new bool[taskAnchors.Length];
             industrialFixtureHalos = new CityLightHalo[taskAnchors.Length];
             coveredPassageLights = new CityCoveredPassageLight[taskAnchors.Length];
+            glassReturnWorkLights = new CityGlassReturnWorkLight[taskAnchors.Length];
             industrialIsCoveredPassage = new bool[taskAnchors.Length];
             for (int index = 0; index < taskAnchors.Length; index++)
             {
@@ -299,11 +301,22 @@ namespace BarPromenade
                         industrialInnerSpotAngles[index] = 105f;
                         break;
                     case "GlassReturnWindow":
+                        glassReturnWorkLights[index] = taskAnchors[index].GetComponent<CityGlassReturnWorkLight>() ??
+                            throw new InvalidOperationException("Glass return work light requires its physical switch circuit.");
                         industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
                         industrialIntensityScales[index] = .52f;
                         industrialRangeLimits[index] = 4.2f;
                         industrialSpotAngles[index] = 96f;
                         industrialInnerSpotAngles[index] = 66f;
+                        break;
+                    case "KioskSign":
+                    case "GlassReturnSignLeft":
+                    case "GlassReturnSignRight":
+                        industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
+                        industrialIntensityScales[index] = .035f;
+                        industrialRangeLimits[index] = 1.6f;
+                        industrialSpotAngles[index] = 155f;
+                        industrialInnerSpotAngles[index] = 125f;
                         break;
                     case "LaundryWork":
                         industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
@@ -331,7 +344,8 @@ namespace BarPromenade
                 // Two lobes describe one kiosk diffuser. The sign projectors
                 // are hooded toward their board, so only their real lenses glow.
                 if (purposeName == "RidgeKioskInterior" || purposeName == "GlassReturnWindow" || purposeName == "PawnshopSignLeft" ||
-                    purposeName == "PawnshopSignRight") continue;
+                    purposeName == "PawnshopSignRight" || purposeName == "GlassReturnSignLeft" ||
+                    purposeName == "GlassReturnSignRight" || purposeName == "KioskSign") continue;
                 // Imported anchors inherit the FBX unit factor. Keep particle
                 // sizes in world metres and move their soft depth fade clear
                 // of the fixture housing and the adjacent opaque facade.
@@ -510,6 +524,8 @@ namespace BarPromenade
             // Their identities and illuminated surfaces never follow the hero.
             float fixtureFactor =
                 GameTimeDayNightRules.FixtureFactor(nightFactor);
+            foreach (var source in glassReturnWorkLights)
+                if (source != null) source.SetFixtureFactor(fixtureFactor);
             for (int index = 0; index < industrialFixtureHalos.Length; index++)
                 if (industrialFixtureHalos[index] != null && !industrialIsCoveredPassage[index])
                     industrialFixtureHalos[index].SetIntensityFactor(fixtureFactor);
@@ -674,11 +690,13 @@ namespace BarPromenade
                         industrialIntensityScales[task], industrialRangeLimits[task],
                         industrialSpotAngles[task], industrialInnerSpotAngles[task], industrialStreetOnly[task]);
                     string anchorName = lampAnchors[index].name;
+                    if (glassReturnWorkLights[task] != null)
+                        glassReturnWorkLights[task].BindLight(streetLightPool[index], pooledLightBaseIntensities[index], this);
                     if (anchorName == IndustrialTaskLightPrefix + "GlassReturnFloodlight")
                     {
-                        // Wide frosted flood: the common Soft profile supplies PCF;
-                        // shallow local shadows retain shape without a hard black cut.
-                        streetLightPool[index].shadowStrength = .65f;
+                        // PCF softens the edge; the opaque kiosk must still
+                        // stop the full beam when its interior circuit is off.
+                        streetLightPool[index].shadowStrength = 1f;
                         streetLightPool[index].cookie = CityGlassReturnWorld.FloodlightCookie(
                             lampAnchors[index], streetLightPool[index].spotAngle);
                     }
@@ -1028,6 +1046,8 @@ namespace BarPromenade
             {
                 float fixtureFactor = GameTimeDayNightRules.FixtureFactor(nightFactor);
                 int task = selectedAnchorIndices[poolIndex] - industrialAnchorStartIndex;
+                if (task >= 0 && task < glassReturnWorkLights.Length && glassReturnWorkLights[task] != null)
+                    return fixtureFactor * glassReturnWorkLights[task].PowerMultiplier;
                 if (task >= 0 && task < industrialIsCoveredPassage.Length && industrialIsCoveredPassage[task])
                 {
                     var source = coveredPassageLights[task];

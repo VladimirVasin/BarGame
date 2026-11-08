@@ -394,10 +394,18 @@ namespace BarPromenade
             Transform pigeonLoft = CityPigeonLoftWorld.Build(world, layout);
             CityResidentialEntranceLighting.Build(world);
             var kioskShelters = new List<Collider>(8);
+            var cobbler = CityCobblerSitePlan.ForLayout(layout);
+            if (cobbler.IsEnabled)
+            {
+                CityCobblerWorld.Build(world, cobbler, true, out var cobblerShelter);
+                if (cobblerShelter != null) kioskShelters.Add(cobblerShelter);
+            }
             var glassReturn = CityGlassReturnSitePlan.ForLayout(layout);
             if (glassReturn.IsEnabled)
             {
-                CityGlassReturnWorld.Build(world, glassReturn, true, out var glassShelter);
+                Transform glassPavilion = CityGlassReturnWorld.Build(world, glassReturn, true, out var glassShelter);
+                glassPavilion.GetComponent<CityGlassReturnWorker>().ConfigureCommute(
+                    CityGlassReturnWorkerPlan.ForLayout(layout));
                 if (glassShelter != null) kioskShelters.Add(glassShelter);
             }
             if (pigeonLoft != null)

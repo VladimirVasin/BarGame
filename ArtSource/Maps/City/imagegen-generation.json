@@ -1,18 +1,18 @@
 {
   "tool": "built-in image_gen",
-  "intent": "Final City map featuring the glass return pavilion and its fenced stockyard in the last eastern hairpin. The western pigeon yard is included in the same survey.",
-  "prompt": "imagegen-glass-return-prompt.txt",
+  "intent": "One final charcoal-sheet redraw adds the retired cobbler bus to the inner eastern bend at the Court Bridge road.",
+  "prompt": "imagegen-cobbler-prompt.txt",
   "references": [
     "CityMapImage.reference.png",
     "map-reference.png"
   ],
   "geography": "CityMapImage.accepted-geography.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "8c8dac4819940e73f596a5665c71408aeeb8da7d6f5c9e4f20d71abb254c3f5e",
-  "runtime_image_sha256": "8c8dac4819940e73f596a5665c71408aeeb8da7d6f5c9e4f20d71abb254c3f5e",
-  "previous_image_sha256": "7a7b0a84bbafcc95f69e93002c7e92b26bed501f5755280a34ec7967fa2dc296",
+  "image_sha256": "ef7f9f3229e148080812a880a83298bd83fd2cc05e3f272890b2c715177be8bb",
+  "runtime_image_sha256": "ef7f9f3229e148080812a880a83298bd83fd2cc05e3f272890b2c715177be8bb",
+  "previous_image_sha256": "8c8dac4819940e73f596a5665c71408aeeb8da7d6f5c9e4f20d71abb254c3f5e",
   "registration": {
-    "description": "Full-bleed north-up sheet. The eastern pavilion and yard lie near normalized (0.81884,0.89087) and (0.81903,0.89951), inside the bend. Markers, selection, XYZ and arrivals remain live.",
+    "description": "Full-bleed north-up sheet. The cobbler roof lies near normalized (0.64701,0.85194), its nose toward the southwest. Markers, selection, XYZ and arrivals remain live.",
     "source_size": [
       1173,
       1341
@@ -22,7 +22,7 @@
       2048
     ]
   },
-  "fingerprint": "ffbafaad727b362e3e84bfec8677def51f67bae7d4967206a000fd33f2beb7bf",
+  "fingerprint": "c1cf19b8ff23b7ec02a08787d026d2621bde61264a44aed924a11f932f435c88",
   "schemaVersion": 2,
   "width": 1173,
   "height": 1341,

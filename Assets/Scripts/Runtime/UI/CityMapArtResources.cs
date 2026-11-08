@@ -280,6 +280,14 @@ namespace BarPromenade
                         foreach (Vector2 point in polygon) Point(writer, point);
                     Point(writer, glass.Origin); Point(writer, glass.YardOrigin); Point(writer, glass.Approach);
                 }
+                var cobbler = CityCobblerSitePlan.ForLayout(layout);
+                if (cobbler.IsEnabled)
+                {
+                    writer.Write(CityCobblerSitePlan.StableId);
+                    Point(writer, cobbler.Origin);
+                    foreach (Vector2 point in cobbler.Footprint) Point(writer, point);
+                    Point(writer, cobbler.Approach);
+                }
                 writer.Write(benchPockets.Count);
                 foreach (var pocket in benchPockets)
                 {

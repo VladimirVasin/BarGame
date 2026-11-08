@@ -5,15 +5,15 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class SupermarketShelfShopView : MonoBehaviour
     {
-        private static readonly Rect HeaderRect =
-            new Rect(14f, 12f, 612f, 56f);
-        private static readonly Rect FooterRect =
-            new Rect(14f, 276f, 612f, 70f);
-        private const float NavigationWidth = 26f;
-        private const float NavigationHeight = 34f;
-        private const float NavigationGap = 8f;
+        private static readonly Rect ProductCard = new Rect(0f, 0f, 300f, 98f);
+        private static readonly Rect PersonCard = new Rect(0f, 0f, 220f, 56f);
+        private static readonly Rect BalanceBadge = new Rect(0f, 0f, 158f, 22f);
+        private const float EdgeMargin = 6f;
+        private const float NavigationWidth = 18f;
+        private const float NavigationHeight = 24f;
+        private const float NavigationGap = 6f;
 
-        private SupermarketShelfShopController controller;
+        private IWorldShelfMenu menu;
         private Camera worldCamera;
 
         // Bound once at Initialize: method-group and lambda arguments
@@ -21,7 +21,6 @@ namespace BarPromenade
         // as long as the shop stays open.
         private System.Action confirmAction;
         private System.Action exitAction;
-        private GUIStyle titleStyle;
         private GUIStyle nameStyle;
         private GUIStyle balanceStyle;
         private GUIStyle descriptionStyle;
@@ -30,24 +29,81 @@ namespace BarPromenade
         private GUIStyle priceStyle;
         private GUIStyle navigationStyle;
         private Vector2 logicalPointer;
+        internal int PaintRevision { get; private set; }
+
+        /// <summary>Logical rectangles shared by painting and pointer ownership.</summary>
+        public void GetPanelRects(out Rect card, out Rect balance)
+        {
+            bool details = menu != null && (menu.Price.HasValue || !string.IsNullOrEmpty(menu.DescriptionKey) ||
+                !string.IsNullOrEmpty(menu.FeedbackKey));
+            card = details ? ProductCard : PersonCard;
+            balance = BalanceBadge;
+            Rect viewport = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height).ViewportRect;
+            card.position = new Vector2(viewport.xMin + EdgeMargin, viewport.yMax - EdgeMargin - card.height);
+            balance.position = new Vector2(viewport.xMax - EdgeMargin - balance.width, viewport.yMin + EdgeMargin);
+        }
+
+        public bool TryGetActionRects(out Rect confirm, out Rect exit)
+        {
+            confirm = exit = default;
+            if (menu == null || !menu.IsVisible) return false;
+            GetPanelRects(out Rect card, out _);
+            exit = new Rect(card.xMax - 76f, card.yMax - 29f, 66f, 22f);
+            if (!string.IsNullOrEmpty(menu.ConfirmKey))
+                confirm = new Rect(exit.xMin - 102f, exit.y, 95f, 22f);
+            return true;
+        }
+
+        public bool TryGetDescriptionRect(out Rect description)
+        {
+            description = default;
+            if (menu == null || !menu.IsVisible ||
+                (string.IsNullOrEmpty(menu.DescriptionKey) && string.IsNullOrEmpty(menu.FeedbackKey))) return false;
+            GetPanelRects(out Rect card, out _);
+            description = new Rect(card.x + 10f, card.y + 29f, card.width - 20f, 36f);
+            return true;
+        }
 
         public void Initialize(
             SupermarketShelfShopController shopController,
-            Camera camera)
+            Camera camera) =>
+            Initialize(shopController != null ? new SupermarketMenu(shopController) : null, camera);
+
+        public void Initialize(IWorldShelfMenu shopMenu, Camera camera)
         {
-            controller = shopController;
+            menu = shopMenu;
             worldCamera = camera;
-            confirmAction = shopController == null
+            confirmAction = shopMenu == null
                 ? null
-                : () => shopController.ConfirmSelection();
-            exitAction = shopController == null
+                : () => shopMenu.ConfirmSelection();
+            exitAction = shopMenu == null
                 ? null
-                : (System.Action)shopController.Exit;
+                : (System.Action)shopMenu.Exit;
+        }
+
+        private sealed class SupermarketMenu : IWorldShelfMenu
+        {
+            private readonly SupermarketShelfShopController shop;
+            public SupermarketMenu(SupermarketShelfShopController shop) => this.shop = shop;
+            public bool IsVisible => shop && shop.IsOpen && !shop.IsReceiptOpen && shop.SelectedProduct != null;
+            public bool CanNavigate => shop && shop.IsOpen && shop.CanNavigate && shop.SelectedProduct != null;
+            public int CashBalance => shop.CashBalance;
+            public string TitleKey => "supermarket.shop.title";
+            public string NameKey => shop.SelectedOffer.NameLocalizationKey;
+            public string DescriptionKey => shop.SelectedOffer.DescriptionLocalizationKey;
+            public string ConfirmKey => "supermarket.shop.buy";
+            public string FeedbackKey => shop.FeedbackKey;
+            public int? Price => shop.SelectedOffer.Price;
+            public bool TryGetSelectionBounds(out Bounds bounds) => shop.SelectedProduct.TryGetWorldBounds(out bounds);
+            public bool MoveSelection(int direction) => shop.MoveSelection(direction);
+            public bool ConfirmSelection() => shop.ConfirmSelection();
+            public void Exit() => shop.Exit();
         }
 
         public bool ContainsPointerBlockingWorldSelection(
             Vector2 screenPosition)
         {
+            if (menu == null || !menu.IsVisible) return false;
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
                 Screen.width,
                 Screen.height);
@@ -55,7 +111,8 @@ namespace BarPromenade
                 screenPosition.x,
                 canvas.ScreenHeight - screenPosition.y);
             Vector2 logical = canvas.ScreenToLogical(guiScreen);
-            if (HeaderRect.Contains(logical) || FooterRect.Contains(logical))
+            GetPanelRects(out Rect card, out Rect balance);
+            if (!canvas.ViewportRect.Contains(logical) || card.Contains(logical) || balance.Contains(logical))
             {
                 return true;
             }
@@ -80,8 +137,7 @@ namespace BarPromenade
         private void OnGUI()
         {
             using var input = RetroUiInput.Begin();
-            if (controller == null || !controller.IsOpen || controller.IsReceiptOpen ||
-                controller.SelectedProduct == null)
+            if (menu == null || !menu.IsVisible)
             {
                 return;
             }
@@ -95,9 +151,10 @@ namespace BarPromenade
             Matrix4x4 previousMatrix = RetroUiTheme.BeginCanvas(canvas);
             try
             {
-                DrawHeader();
+                DrawBalance();
                 DrawNavigation(canvas);
-                DrawFooter();
+                DrawCard();
+                if (Event.current.type == EventType.Repaint) PaintRevision++;
             }
             finally
             {
@@ -105,72 +162,48 @@ namespace BarPromenade
             }
         }
 
-        private void DrawHeader()
+        private void DrawBalance()
         {
-            SupermarketProductOffer offer = controller.SelectedOffer;
-            RetroUiTheme.DrawPanel(
-                HeaderRect,
-                RetroUiTheme.Panel,
-                RetroUiTheme.BorderMuted,
-                false,
-                0f,
-                1f);
+            GetPanelRects(out _, out Rect balance);
+            RetroUiTheme.FillRect(balance, RetroUiTheme.WithAlpha(RetroUiTheme.Panel, .88f));
             GUI.Label(
-                new Rect(26f, 16f, 200f, 18f),
-                LocalizationService.Get("supermarket.shop.title"),
-                titleStyle);
-            GUI.Label(
-                new Rect(26f, 35f, 350f, 26f),
-                LocalizationService.Get(offer.NameLocalizationKey),
-                nameStyle);
-            GUI.Label(
-                new Rect(388f, 18f, 198f, 30f),
+                new Rect(balance.x + 8f, balance.y + 2f, balance.width - 16f, 18f),
                 string.Format(
                     LocalizationService.Get(
                         "supermarket.shop.balance"),
-                    controller.CashBalance),
+                    menu.CashBalance),
                 balanceStyle);
         }
 
-        private void DrawFooter()
+        private void DrawCard()
         {
-            SupermarketProductOffer offer = controller.SelectedOffer;
+            GetPanelRects(out Rect card, out _);
             RetroUiTheme.DrawPanel(
-                FooterRect,
+                card,
                 RetroUiTheme.Panel,
                 RetroUiTheme.BorderMuted,
                 false,
                 0f,
                 1f);
-            GUI.Label(
-                new Rect(28f, 284f, 384f, 31f),
-                LocalizationService.Get(
-                    offer.DescriptionLocalizationKey),
-                descriptionStyle);
-            GUI.Label(
-                new Rect(28f, 316f, 150f, 22f),
-                string.Format(
-                    LocalizationService.Get("supermarket.shop.price"),
-                    offer.Price),
-                priceStyle);
-            if (!string.IsNullOrEmpty(controller.FeedbackKey))
-            {
-                GUI.Label(
-                    new Rect(170f, 316f, 242f, 22f),
-                    LocalizationService.Get(controller.FeedbackKey),
-                    feedbackStyle);
-            }
+            GUI.Label(new Rect(card.x + 10f, card.y + 7f, card.width - 20f, 19f),
+                LocalizationService.Get(menu.NameKey), nameStyle);
+            string description = string.IsNullOrEmpty(menu.FeedbackKey) ? menu.DescriptionKey : menu.FeedbackKey;
+            if (TryGetDescriptionRect(out Rect descriptionRect))
+                GUI.Label(descriptionRect,
+                    LocalizationService.Get(description), string.IsNullOrEmpty(menu.FeedbackKey) ? descriptionStyle : feedbackStyle);
+            if (menu.Price is int price)
+                GUI.Label(new Rect(card.x + 10f, card.yMax - 28f, 94f, 20f),
+                    string.Format(LocalizationService.Get("supermarket.shop.price"), price), priceStyle);
 
+            string confirmKey = menu.ConfirmKey;
+            TryGetActionRects(out Rect confirm, out Rect exit);
+            if (!string.IsNullOrEmpty(confirmKey))
+                DrawButton(confirm, LocalizationService.Get(confirmKey), confirmAction, true);
             DrawButton(
-                new Rect(430f, 296f, 104f, 38f),
-                LocalizationService.Get("supermarket.shop.buy"),
-                confirmAction,
-                true);
-            DrawButton(
-                new Rect(541f, 296f, 72f, 38f),
+                exit,
                 LocalizationService.Get("supermarket.shop.back"),
                 exitAction,
-                true);
+                false);
         }
 
         private void DrawNavigation(RetroUiCanvas canvas)
@@ -194,21 +227,10 @@ namespace BarPromenade
             int direction,
             bool hovered)
         {
-            Color fill = RetroUiTheme.WithAlpha(
-                hovered
-                    ? RetroUiTheme.PanelRaised
-                    : RetroUiTheme.PanelInset,
-                hovered ? 0.72f : 0.38f);
-            Color border = RetroUiTheme.WithAlpha(
-                hovered
-                    ? RetroUiTheme.AccentPale
-                    : RetroUiTheme.BorderMuted,
-                hovered ? 0.75f : 0.55f);
-            RetroUiTheme.FillRect(rect, fill);
-            RetroUiTheme.StrokeRect(rect, 1f, border);
+            if (hovered) RetroUiTheme.FillRect(rect, RetroUiTheme.WithAlpha(RetroUiTheme.PanelRaised, .72f));
             if (RetroUiInput.Button(rect, label, navigationStyle))
             {
-                controller.MoveSelection(direction);
+                menu.MoveSelection(direction);
             }
         }
 
@@ -219,19 +241,14 @@ namespace BarPromenade
         {
             left = default;
             right = default;
-            if (controller == null || !controller.IsOpen ||
-                !controller.CanNavigate || worldCamera == null ||
-                controller.SelectedProduct == null ||
+            if (menu == null || !menu.CanNavigate || worldCamera == null ||
                 !TryProjectSelectedProduct(canvas, out Rect productRect))
             {
                 return false;
             }
 
-            Rect content = Rect.MinMaxRect(
-                HeaderRect.x,
-                HeaderRect.yMax + NavigationGap,
-                HeaderRect.xMax,
-                FooterRect.yMin - NavigationGap);
+            Rect viewport = canvas.ViewportRect;
+            Rect content = Rect.MinMaxRect(viewport.xMin + 8f, viewport.yMin + 8f, viewport.xMax - 8f, viewport.yMax - 8f);
             float y = Mathf.Clamp(
                 productRect.center.y - NavigationHeight * 0.5f,
                 content.yMin,
@@ -256,7 +273,21 @@ namespace BarPromenade
                     y,
                     NavigationWidth,
                     NavigationHeight));
+            GetPanelRects(out Rect card, out Rect balance);
+            left = AvoidPanel(AvoidPanel(left, card, content), balance, content);
+            right = AvoidPanel(AvoidPanel(right, card, content), balance, content);
             return true;
+        }
+
+        private static Rect AvoidPanel(Rect arrow, Rect panel, Rect viewport)
+        {
+            if (!arrow.Overlaps(panel)) return arrow;
+            float above = panel.yMin - NavigationGap - arrow.height;
+            float below = panel.yMax + NavigationGap;
+            arrow.y = above >= viewport.yMin && (below + arrow.height > viewport.yMax ||
+                Mathf.Abs(arrow.y - above) <= Mathf.Abs(arrow.y - below)) ? above : below;
+            arrow.y = Mathf.Clamp(arrow.y, viewport.yMin, viewport.yMax - arrow.height);
+            return RetroUiTheme.SnapRect(arrow);
         }
 
         private bool TryProjectSelectedProduct(
@@ -264,8 +295,7 @@ namespace BarPromenade
             out Rect productRect)
         {
             productRect = default;
-            if (!controller.SelectedProduct.TryGetWorldBounds(
-                    out Bounds bounds))
+            if (!menu.TryGetSelectionBounds(out Bounds bounds))
             {
                 return false;
             }
@@ -308,18 +338,13 @@ namespace BarPromenade
             System.Action action,
             bool framed)
         {
-            if (framed)
+            bool hovered = rect.Contains(logicalPointer);
+            if (framed || hovered)
             {
-                RetroUiTheme.DrawPanel(
-                    rect,
-                    RetroUiTheme.PanelInset,
-                    RetroUiTheme.BorderMuted,
-                    false,
-                    0f,
-                    1f);
-                RetroUiTheme.DrawSelection(
-                    rect,
-                    rect.Contains(logicalPointer));
+                RetroUiTheme.FillRect(rect, RetroUiTheme.WithAlpha(
+                    hovered ? RetroUiTheme.PanelRaised : RetroUiTheme.PanelInset, hovered ? .8f : .5f));
+                RetroUiTheme.StrokeRect(rect, 1f, RetroUiTheme.WithAlpha(
+                    hovered ? RetroUiTheme.AccentPale : RetroUiTheme.BorderMuted, hovered ? .8f : .45f));
             }
 
             if (RetroUiInput.Button(rect, label, buttonStyle))
@@ -330,48 +355,46 @@ namespace BarPromenade
 
         private void EnsureStyles()
         {
-            if (titleStyle != null)
+            if (nameStyle != null)
             {
                 return;
             }
 
-            titleStyle = RetroUiTheme.CreateLabelStyle(
-                11,
-                TextAnchor.MiddleLeft,
-                RetroUiTheme.Muted,
-                true);
             nameStyle = RetroUiTheme.CreateLabelStyle(
-                17,
+                15,
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.Text,
                 true);
+            nameStyle.padding = new RectOffset();
             balanceStyle = RetroUiTheme.CreateLabelStyle(
-                13,
+                11,
                 TextAnchor.MiddleRight,
                 RetroUiTheme.Text,
                 true);
             descriptionStyle = RetroUiTheme.CreateLabelStyle(
                 11,
-                TextAnchor.MiddleLeft,
+                TextAnchor.UpperLeft,
                 RetroUiTheme.Text,
-                true);
+                true, true);
+            descriptionStyle.padding = new RectOffset();
             feedbackStyle = RetroUiTheme.CreateLabelStyle(
                 11,
-                TextAnchor.MiddleLeft,
+                TextAnchor.UpperLeft,
                 RetroUiTheme.Bad,
-                true);
+                true, true);
+            feedbackStyle.padding = new RectOffset();
             buttonStyle = RetroUiTheme.CreateButtonStyle(
                 11,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
                 true);
             priceStyle = RetroUiTheme.CreateLabelStyle(
-                13,
+                12,
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.AccentPale,
                 true);
             navigationStyle = RetroUiTheme.CreateButtonStyle(
-                17,
+                16,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.WithAlpha(RetroUiTheme.Muted, 0.78f),
                 true);

@@ -731,6 +731,7 @@ namespace BarPromenade
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
                 area.ExcludePolygons(new[] { pawnshop.Footprint });
             area.ExcludePolygons(CityGlassReturnSitePlan.ForLayout(layout).SolidPolygons);
+            area.ExcludePolygons(CityCobblerSitePlan.ForLayout(layout).SolidPolygons);
             // Final furniture samples the completed earth; never make its raw
             // level-pad recipe depend on this mask. Oriented footprints keep
             // the sit/stand and utility docks clear beside diagonal benches.

@@ -11,6 +11,7 @@ namespace BarPromenade
         public const string StableId = "ridge-glass-return";
         public const float Width = 4.6f, Depth = 3.2f, YardWidth = 4.2f, YardDepth = 3.8f;
         public const float CanopyFront = 2.38f;
+        public const float YardSlabClearance = .055f;
         private static readonly Vector2 ShellCentre = new(160.9f, -330.9f);
         private static readonly Vector2 YardCentre = new(161f, -336.2f);
         private static readonly Vector2 ArrivalXZ = new(164.9f, -332.6f);
@@ -41,7 +42,22 @@ namespace BarPromenade
             if (!layout.HasSummitHome) return;
             var ground = CityHillsideGroundPlan.ForLayout(layout);
             Origin = Ground(ShellCentre);
-            YardOrigin = Ground(YardCentre);
+            Vector3 yardGround = Ground(YardCentre);
+            Rect slab = new(YardCentre - new Vector2(YardWidth, YardDepth) * .5f, new Vector2(YardWidth, YardDepth));
+            // The crate floor and the existing earth both used to end at the
+            // surveyed ground elevation. Lift the entire fenced slab together.
+            // Test the actual terrain triangles, including their diagonals.
+            float bed = yardGround.y;
+            foreach (var bank in CityHillsideGroundGrid.ForLayout(layout))
+            {
+                while (bank.ReachesAbove(slab, bed))
+                {
+                    bed += .025f;
+                    if (bed - yardGround.y > .20f)
+                        throw new InvalidOperationException("Glass sorting yard exceeds its foundation depth.");
+                }
+            }
+            YardOrigin = new Vector3(yardGround.x, bed + YardSlabClearance, yardGround.z);
             Approach = Ground(ArrivalXZ);
             HeroDock = Ground(XZ(Origin + Rotation * (Vector3.forward * (Depth * .5f + .57f))));
             // The eastern end wall belongs to the same surveyed residential parcel.

@@ -438,15 +438,15 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Cuts/ramp/treads/nav/map/Home;POI at summit/current art;walk clear.
   Outer+4descent lamps:RidgeBench37.5/r11/soft256/fixed/dayfloor.
   Pigeon/plinth1.98m,rear;side beds;solid/nav clear.
-  E bend:brick glass return/lit window/fenced yard;sorter/clink,map outside.
-  Neighbour wall flood→shell/yard/apron;fixed/day≥⅔/Soft.65.
+  E glass return08–23/home(22,-7);switch→cabin light/grille;sign/flood fixed.
+  Raised yard/map outside;spill.12/day≥⅔/Soft/opaque.
   Homes:soil/wet asphalt skirts;turf/gravel/broken stone/shrub03-04→Home;
   deciduous gable groups. W:stepped concrete/drains;E:kerbs/grass/boot scrapers.
   Home patched plinth/lamp;poles→stairs/bridge footways;
   covered lamps below;rock/gravel under bridge bearings.
-  Each kiosk:one warm emissive lens/two fixed shadowed lobes light seller/shelves,
-  through-window street spill. Strong beam reaches statics;soft ordinary source
-  keeps seller/dialogue hero faces/clothes. City/Home share placements.
+  Kiosks:one warm lens/two fixed soft-shadow lobes→seller/shelves/street;
+  Cobbler68.8,-307/250°,home21,-6,11–20:30/lunch14–14:30. Steps/.48 deck,
+  shoe/awl,desk switch,sign fixed. Gravel/E seat/scraper/lilac/kerbs/wall cable.
   `10×6 m` rear wings retain padded clearance/`2.4 m` court gap. `3.6 m` through openings
   keep their collision/route, height `3.2 m` (`4.2 m` Industrial). City/Home share
   `CityCoveredPassagePlan/World`: independent occupied/vacant wall slots for matte graffiti, repairs and Blender utilities.
@@ -1579,11 +1579,11 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   deck geometry;
 - City opening:Home/Ridge entrance;custom fallback≤48m street walk.
   Interior returns→own sidewalk arrival,not road centre.
-  `CityKioskSites`:Ridge/lower Residential/Industrial share metal kit,
-  beer6/vodka28/potato pie5/gaze+E/atomic cash/inventory/3D receipt/cleanup.
-  Unique permanent sellers/looks/sources/map marks;only Ridge has two optional
-  exchanges,new sellers silent. Residential≥120m graded route/≥60mXZ from any bar,
-  maximises min route distance;
+  `CityKioskSites`:E→shop menu,Vendor(default)/Pie5/Beer6/Vodka28;
+  3D receipt→same focus.Exit/talk→world;Ridge-only talk,others view.
+  Residential≥120m graded route/≥60mXZ from bars,max min route.
+  Matte«КИОСК»/canopy light/front neon24/7;side prints per kiosk,
+  all3goods;Ridge beer/Residential pies/Industrial vodka dominant.
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
 
@@ -2147,12 +2147,11 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   offers:egg2,vodka28,closed stew11,noodles3,loaf4,BeerCan500ml/6,WineBottle750ml/22;
   stack9. Dense deterministic passive copies share meshes/materials without separate
   item controllers/colliders/transactions;one selectable source/price per SKU.
-  Realistic-sized packages rest on authored tiers;vodka≈.299m/top fit.37m remains
-  below2.05m shelf during selection. OpenStewCan remains Home/cat-only;
+  Packages rest on authored tiers;vodka≈.299m/top fit.37m stays below2.05m shelf. OpenStewCan remains Home/cat-only;
   ClosedStewCan cannot feed cat. Atomic price/item commit rejects funds/capacity
   without mutation. Stock/price/colliders persist;no unique collection history.
-  Shared receipt preflights one temporary model,borrows browser modal,returns to
-  selection;close/Escape/unload cannot grant/refund/rebuy.
+  Shop/kiosk card↙/cash↗ at actual viewport corners;arrows.Shared receipt preflights
+  one model,borrows modal,returns choice;close/Escape/unload cannot grant/refund/rebuy.
   One carried owner:vodka/beer/wine/hawthorn;container ID/fill/open state.
   Bar/inventory gains:LightBeer10,DarkBeer12,WhiteWine17,RedWine20,CognacVs22/
   Vsop24,Vodka24/PepperVodka20/Moonshine24;stress kept. Beer500ml=bar portion(+10),

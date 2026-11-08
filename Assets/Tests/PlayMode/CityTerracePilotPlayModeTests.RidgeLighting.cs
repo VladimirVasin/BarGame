@@ -23,6 +23,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(RidgeKioskSitePlan.TryCreate(city.Layout, out var site), Is.True);
             Transform kiosk = city.World.Root.transform.Find("Ridge Kiosk");
             var vendor = kiosk.GetComponentInChildren<RidgeKioskVendor>();
+            var station = kiosk.GetComponentInChildren<RidgeKioskStation>();
+            Assert.That(station, Is.Not.Null);
             var hero = city.Player.Interactor;
             var follow = city.Camera.GetComponent<PlayerCameraFollow>();
             var atmosphere = city.Night.Atmosphere;
@@ -41,13 +43,17 @@ namespace BarPromenade.Tests.PlayMode
                     city.Player.Motor.Teleport(site.Approach + Vector3.up * PlayerFactory.GroundedRootOffset);
                     city.Player.Motor.transform.rotation = Quaternion.LookRotation(-kiosk.forward);
                     Vector3 eye = hero.transform.position + new Vector3(.37f, 1.53f, .65f);
-                    follow.SetFixedPose(eye, Quaternion.LookRotation(vendor.Actor.Head.position - eye), 59f);
+                    follow.SetFixedPose(eye, Quaternion.LookRotation(station.InteractionPosition - eye), 59f);
                     Physics.SyncTransforms();
                     atmosphere.RefreshImmediate();
                     yield return null;
                     yield return null;
-                    Assert.That(hero.ActiveInteractable, Is.SameAs(vendor));
-                    vendor.Interact(hero);
+                    Assert.That(hero.ActiveInteractable, Is.SameAs(station));
+                    station.Interact(hero);
+                    yield return null;
+                    yield return null;
+                    Assert.That(station.Menu.SelectedIndex, Is.Zero);
+                    Assert.That(station.Menu.ConfirmSelection(), Is.True);
                     Assert.That(vendor.Session.IsActive, Is.True, "Use the production conversation and staging.");
                     for (int frame = 0; frame < 220 && !vendor.Session.IsChoosing && vendor.Session.IsActive; frame++)
                         yield return null;
@@ -105,6 +111,7 @@ namespace BarPromenade.Tests.PlayMode
             finally
             {
                 if (vendor.Session.IsActive) vendor.Session.Cancel();
+                station.Menu?.Close();
                 follow.ClearFixedPose();
                 OnDemandRendering.renderFrameInterval = priorInterval;
             }

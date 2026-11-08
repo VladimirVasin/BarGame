@@ -1,6 +1,12 @@
 {
   "design_id": "city_ridge_glass_return_v1",
   "coordinate_system": "Unity metres; +Z counter; Y=0 floor",
+  "sign_lines": [
+    "\u041f\u0423\u041d\u041a\u0422 \u041f\u0420\u0418\u0401\u041c\u0410",
+    "\u0421\u0422\u0415\u041a\u041b\u041e\u0422\u0410\u0420\u042b"
+  ],
+  "grille_rows": 13,
+  "grille_pitch": 0.085,
   "generator": "build-city-glass-return-3d-model.py",
   "working_grip_above_base": 0.19,
   "models": [
@@ -13,8 +19,8 @@
       ],
       "bounds_max": [
         2.3,
-        2.81,
-        2.38
+        3.0075,
+        2.925
       ],
       "anchors": [
         {
@@ -58,6 +64,46 @@
           ]
         },
         {
+          "name": "ANCHOR_SignLightLeft",
+          "position": [
+            -0.82,
+            2.92,
+            2.83
+          ]
+        },
+        {
+          "name": "ANCHOR_SignLightRight",
+          "position": [
+            0.82,
+            2.92,
+            2.83
+          ]
+        },
+        {
+          "name": "ANCHOR_SignTargetLeft",
+          "position": [
+            -0.78,
+            2.64,
+            2.401
+          ]
+        },
+        {
+          "name": "ANCHOR_SignTargetRight",
+          "position": [
+            0.78,
+            2.64,
+            2.401
+          ]
+        },
+        {
+          "name": "ANCHOR_SwitchStand",
+          "position": [
+            1.64,
+            0.0,
+            0.27
+          ]
+        },
+        {
           "name": "ANCHOR_Worker",
           "position": [
             0.0,
@@ -88,11 +134,99 @@
             1.01,
             1.37
           ]
+        },
+        {
+          "name": "MOVE_ServiceDoor",
+          "position": [
+            2.245,
+            0.0,
+            -0.02
+          ]
+        },
+        {
+          "name": "ANCHOR_ServiceDoorGrip",
+          "position": [
+            2.285,
+            1.04,
+            -0.81
+          ]
+        },
+        {
+          "name": "ANCHOR_ServiceDoorInsideGrip",
+          "position": [
+            2.159,
+            1.04,
+            -0.81
+          ]
+        },
+        {
+          "name": "ANCHOR_ServiceDoorPush",
+          "position": [
+            2.245,
+            1.05,
+            -0.16
+          ]
+        },
+        {
+          "name": "MOVE_ServiceDoorSteel",
+          "position": [
+            2.245,
+            0.0,
+            -0.02
+          ]
+        },
+        {
+          "name": "MOVE_ServiceDoorSteelDark",
+          "position": [
+            2.245,
+            0.0,
+            -0.02
+          ]
+        },
+        {
+          "name": "MOVE_SwitchRocker",
+          "position": [
+            1.965,
+            1.32,
+            0.15
+          ]
+        },
+        {
+          "name": "ANCHOR_SwitchContact",
+          "position": [
+            1.953,
+            1.345,
+            0.15
+          ]
+        },
+        {
+          "name": "MOVE_SwitchRockerSignLetters",
+          "position": [
+            1.965,
+            1.32,
+            0.15
+          ]
+        },
+        {
+          "name": "MOVE_WindowGrille",
+          "position": [
+            0.0,
+            1.022,
+            1.713
+          ]
+        },
+        {
+          "name": "ANCHOR_GrilleMouth",
+          "position": [
+            0.0,
+            2.167,
+            1.713
+          ]
         }
       ],
-      "triangles": 5452,
-      "geometry_signature": "2fef62f475441761c75baef14eb8c9907eba0dc65ac4c39174baa584e27c8879",
-      "renderer_count": 11
+      "triangles": 10064,
+      "geometry_signature": "c7d4a4342f50ce379656bde6261226d9679da8a68dfc8405b87689ca076f4a9b",
+      "renderer_count": 29
     },
     {
       "name": "Yard",

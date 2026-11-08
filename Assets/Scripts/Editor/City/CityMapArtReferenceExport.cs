@@ -302,6 +302,9 @@ namespace BarPromenade.Editor
                 var fence = new List<Vector2>(glass.YardFootprint) { glass.YardFootprint[0] };
                 Line("glass-return:fence", "fence", .15f, fence);
             }
+            var cobbler = CityCobblerSitePlan.ForLayout(layout);
+            if (cobbler.IsEnabled)
+                Poly(CityCobblerSitePlan.StableId + ":building", "shop-building", cobbler.Footprint);
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
             {
                 Poly("pawnshop:building", "shop-building", pawnshop.Footprint);

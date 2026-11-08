@@ -1747,6 +1747,8 @@ namespace BarPromenade
                 DrawGroundQuad(glass.Footprint, ResidentialBuilding);
                 DrawGroundQuad(glass.YardFootprint, PublicPlaceLand);
             }
+            var cobbler = CityCobblerSitePlan.ForLayout(controller.Layout);
+            if (cobbler.IsEnabled) DrawGroundQuad(cobbler.Footprint, ResidentialBuilding);
             void DrawGroundQuad(Vector2[] polygon, Color color)
             {
                 // A thick centre line preserves the rotated rectangle, unlike its axis-aligned bounds.
@@ -2629,6 +2631,7 @@ namespace BarPromenade
                     pointOfInterest.Kind != CityMapPointOfInterestKind.Pawnshop &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.PigeonLoft &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.GlassReturn &&
+                    pointOfInterest.Kind != CityMapPointOfInterestKind.Cobbler &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.UpperCourtBridge &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.UpperSummitBridge)
                 {
@@ -3807,6 +3810,7 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.Pawnshop:
                 case CityMapPointOfInterestKind.PigeonLoft:
                 case CityMapPointOfInterestKind.GlassReturn:
+                case CityMapPointOfInterestKind.Cobbler:
                     RetroUiTheme.StrokeRect(new Rect(center.x - halfSize * .76f, center.y - halfSize * .48f,
                         halfSize * 1.52f, halfSize * 1.4f), width, color);
                     DrawLine(center + new Vector2(-halfSize, -halfSize * .68f),

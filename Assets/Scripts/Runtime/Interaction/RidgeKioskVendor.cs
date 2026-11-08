@@ -4,7 +4,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     [DefaultExecutionOrder(200)]
-    public sealed class RidgeKioskVendor : MonoBehaviour, IInteractable, ISpeechFaceActor
+    public sealed class RidgeKioskVendor : MonoBehaviour, ISpeechFaceActor
     {
         private const string PieQuestion = "kiosk.talk.pies";
         private const string BeerQuestion = "kiosk.talk.beer";
@@ -59,9 +59,6 @@ namespace BarPromenade
                 seller.SamplePose();
                 return seller;
             }
-            var trigger = host.gameObject.AddComponent<SphereCollider>();
-            trigger.radius = .34f;
-            trigger.isTrigger = true;
             seller.Session = host.gameObject.AddComponent<DialogueSessionController>();
             seller.target = RidgeKioskTarget.Attach(kiosk, host, actor.Head, approachAnchor);
             seller.face = CityPedestrianHandProps.FindSocket(actor.ModelRoot, "GEO_FaceSurface").GetComponent<Renderer>();
@@ -81,14 +78,19 @@ namespace BarPromenade
             isActiveAndEnabled && HasDialogue && player != null && player.InputEnabled &&
             !Session.IsActive && !SceneTransitionService.IsTransitioning &&
             !BarMinigameModalLock.IsAnyLocked && !CounterMenuInput.IsBlockedByOtherUi() &&
-            target.IsAvailable(player);
+            target.CanReach(player);
 
         public void Interact(PlayerInteractor player)
         {
-            if (!CanInteract(player)) return;
+            TryStartFromMenu(player);
+        }
+
+        public bool TryStartFromMenu(PlayerInteractor player)
+        {
+            if (!CanInteract(player)) return false;
             Vector3 ground = approach.position;
             if (!Physics.Raycast(ground + Vector3.up * .4f, Vector3.down, out var hit, .85f, ~0,
-                    QueryTriggerInteraction.Ignore) || hit.normal.y < .8f) return;
+                    QueryTriggerInteraction.Ignore) || hit.normal.y < .8f) return false;
             ground.y = hit.point.y;
             Quaternion facing = Quaternion.LookRotation(-kiosk.forward, Vector3.up);
             Vector3 root = ground + Vector3.up * PlayerFactory.GroundedRootOffset;
@@ -97,7 +99,7 @@ namespace BarPromenade
             var exit = new PlayerAnimatedInteractionPose(root + facing * PlayerDialogueActions.ExitGroundOffset,
                 facing, ground + facing * PlayerDialogueActions.ExitPelvisFromGround);
             var staging = new DialogueStagingPlan(entry, ground + facing * PlayerDialogueActions.ActionPelvisFromGround, exit);
-            Session.Begin(Conversation, staging, new DialogueParticipant(this, Actor.transform, Actor.Head,
+            return Session.Begin(Conversation, staging, new DialogueParticipant(this, Actor.transform, Actor.Head,
                 CharacterId), player, null, null);
         }
 

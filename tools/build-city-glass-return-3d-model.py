@@ -32,13 +32,20 @@ ANCHORS = {
     "BottleRest": (-.32, 1.01, 1.37), "CrateSlot": (.38, 1, 1.35),
     "Clink": (.38, 1, 1.35), "WorkLight": (-.88, 2.44, .94),
     "LightTarget": (.18, 1, 1.46),
+    "SwitchStand": (1.64, 0, .27),
+    "SignLightLeft": (-.82, 2.92, 2.83), "SignLightRight": (.82, 2.92, 2.83),
+    "SignTargetLeft": (-.78, 2.64, 2.401), "SignTargetRight": (.78, 2.64, 2.401),
 }
+SIGN_LINES = ("ПУНКТ ПРИЁМА", "СТЕКЛОТАРЫ")
+GRILLE_ROWS, GRILLE_PITCH = 13, .085
+GRILLE_BOTTOM, GRILLE_PLANE, GRILLE_MOUTH = 1.022, 1.713, 2.167
 GLASS = {"GlassGreen": (.19,.31,.21,1), "GlassBrown": (.31,.19,.09,1),
          "GlassClear": (.48,.53,.51,1)}
 PORT = {"Brick": port.RUST, "Plaster": port.CABIN, "Concrete": port.CONCRETE,
         "Timber": port.WOOD, "Steel": port.PAINT, "SteelDark": port.DARK,
-        "Roof": port.DARK, "Lens": port.LAMP, **GLASS}
-port.SURFACE_TILES.update({"Brick": 1.5, "Lens": 1, **{k: 1 for k in GLASS}})
+        "Roof": port.DARK, "Lens": port.LAMP, "SignBoard":port.DARK, "SignLetters":port.ICE, **GLASS}
+port.SURFACE_TILES.update({"Brick": 1.5, "Lens": 1, "SignBoard":1, "SignLetters":1,
+                           **{k: 1 for k in GLASS}})
 
 
 class Model:
@@ -110,6 +117,70 @@ def crate(model, x, base, z, filled=None, height=.23):
                 bottle(model, filled, (x+(i-2)*.114,base+.04,z+(j-1)*.113))
 
 
+def sign_geometry(model):
+    model.box("SignBoard",(0,2.64,2.375),(3.40,.53,.042),.012)
+    font=bpy.data.fonts.load(str(TOOLS.parent/"Assets/Resources/Fonts/Roboto-Regular.ttf"),check_existing=True)
+    for text,cy in zip(SIGN_LINES,(2.759,2.515)):
+        curve=bpy.data.curves.new("Glass return sign lettering","FONT")
+        curve.body=text
+        curve.font=font
+        curve.align_x="CENTER"
+        curve.size=1
+        curve.resolution_u=2
+        curve.extrude=.004
+        obj=bpy.data.objects.new("Sign lettering source",curve)
+        bpy.context.collection.objects.link(obj)
+        converted=bpy.data.meshes.new_from_object(obj.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+        low=min(v.co.y for v in converted.vertices)
+        high=max(v.co.y for v in converted.vertices)
+        # From the road (+Z), the reader's right is local -X. The two dots
+        # on the Ё belong to the actual Cyrillic glyph in the checked-in font.
+        scale=.195/(high-low)
+        points=[(-v.co.x*scale,cy+(v.co.y-(high+low)*.5)*scale,2.402+v.co.z*scale)
+                for v in converted.vertices]
+        model.part("SignLetters").add(points,[tuple(reversed(p.vertices[:])) for p in converted.polygons],
+                                       PORT["SignLetters"],solid=False)
+        bpy.data.meshes.remove(converted)
+        bpy.data.objects.remove(obj,do_unlink=True)
+        bpy.data.curves.remove(curve)
+    for side in (-1,1):
+        x=side*.82
+        model.box("SteelDark",(side*1.22,2.50,2.33),(.065,.38,.06))
+        model.rod("SteelDark",(x,2.83,2.36),(x,2.97,2.81),.021)
+        model.box("SteelDark",(x,2.975,2.815),(.39,.065,.22),.008)
+        model.box("SteelDark",(x,2.935,2.909),(.39,.09,.031),.006)
+        model.box("Plaster",(x,2.939,2.806),(.31,.014,.142),.004)
+
+
+def window_mechanism(model,root,material):
+    # The roll sits under the canopy. A hollow soffit leaves a continuous
+    # mouth down into the two jamb guides, in front of every sorting bottle.
+    for side in (-1,1):
+        model.box("SteelDark",(side*1.30,1.577,GRILLE_PLANE),(.047,1.112,.056),.005)
+        model.box("SteelDark",(side*1.329,2.17,1.767),(.030,.206,.246),.006)
+    model.box("SteelDark",(0,2.168,1.88),(2.67,.199,.024),.006)
+    model.box("SteelDark",(0,2.168,1.653),(2.67,.199,.018),.005)
+    model.box("SteelDark",(0,2.269,1.765),(2.67,.014,.245),.004)
+    model.box("SteelDark",(0,2.074,1.819),(2.67,.016,.12),.004)
+    # One steel row is a rigid hinged unit on the roller. Each row has a
+    # rod and staggered wire links; adjacent rods pass through the links.
+    guide=port.empty("MOVE_WindowGrille",root,(0,GRILLE_BOTTOM,GRILLE_PLANE))
+    port.empty("ANCHOR_GrilleMouth",guide,(0,GRILLE_MOUTH-GRILLE_BOTTOM,0))
+    for i in range(GRILLE_ROWS):
+        row=Model(port.empty(f"GrilleRow{i:02d}",guide,(0,(i+.5)*GRILLE_PITCH,0)))
+        row.rod("SteelDark",(-1.286,-.035,0),(1.286,-.035,0),.0055 if i else .010,6)
+        for col in range(11):
+            x=(col-5)*.235+(.028 if i%2 else -.028)
+            dx=.036 if i%2 else -.036
+            row.rod("SteelDark",(x,-.036,0),(x+dx,.051,0),.0048,5)
+        row.emit(material)
+    model.box("SteelDark",(1.997,1.32,.15),(.054,.145,.107),.009)
+    rocker=Model(port.empty("MOVE_SwitchRocker",root,(1.965,1.32,.15)))
+    rocker.box("SignLetters",(-.005,0,0),(.014,.075,.064),.004)
+    rocker.emit(material)
+    port.empty("ANCHOR_SwitchContact",rocker.root,(-.012,.025,0))
+
+
 def pavilion(material):
     root = port.empty("Pavilion")
     m = Model(root)
@@ -118,11 +189,15 @@ def pavilion(material):
     wall = kit.wall_run(4.48,2.70,.18,(kit.Opening(0,2.62,2.20,.95),))
     port.kit_add(m.part("Brick"),kit.translated(wall,(0,1.48,0)),PORT["Brick"])
     m.box("Brick",(0,1.35,-1.49),(4.48,2.70,.18))
-    for x in (-2.15,2.15):
-        m.box("Brick",(x,1.35,0),(.18,2.70,2.80))
+    m.box("Brick",(-2.15,1.35,0),(.18,2.70,2.80))
     m.box("Plaster",(0,1.36,-1.38),(4.10,2.62,.036))
-    for x in (-2.04,2.04):
-        m.box("Plaster",(x,1.36,0),(.036,2.62,2.77))
+    m.box("Plaster",(-2.04,1.36,0),(.036,2.62,2.77))
+    # A 0.92 metre staff doorway through both masonry and plaster.
+    for role,x,thickness,half_run,bottom,top in (
+            ("Brick",2.15,.18,1.40,0,2.70),("Plaster",2.04,.036,1.385,.05,2.67)):
+        for start,end in ((-half_run,-.94),(-.02,half_run)):
+            m.box(role,(x,(bottom+top)*.5,(start+end)*.5),(thickness,top-bottom,end-start))
+        m.box(role,(x,(2.14+top)*.5,-.48),(thickness,top-2.14,.92))
     m.box("Concrete",(0,-.225,0),(4.6,.45,3.2),.013)
     m.box("Roof",(0,2.755,0),(4.6,.11,3.2),.015)
     # Front fascia, canopy lip, folded standing seams, two triangulated brackets.
@@ -156,12 +231,21 @@ def pavilion(material):
         m.box("SteelDark",(x,.90,-1.02),(.038,1.80,.038))
     for i,(x,role) in enumerate(((-.16,"GlassGreen"),(.58,"GlassBrown"))):
         crate(m,x,.448,-1.03,role if i == 0 else None)
-    # Closed service leaf opens into the yard between collections.
-    m.box("Steel",(2.25,1.065,-.48),(.035,2.13,.90),.008)
-    m.box("SteelDark",(2.28,1.06,-.82),(.035,.04,.15),.004)
-    for y in (.30,1.82):
-        m.box("SteelDark",(2.276,y,-.07),(.045,.12,.06))
+    window_mechanism(m,root,material)
+    sign_geometry(m)
     m.emit(material)
+    hinge = port.empty("MOVE_ServiceDoor",root,(2.245,0,-.02))
+    door = Model(hinge)
+    door.box("Steel",(-.018,1.067,-.46),(.036,2.126,.91),.008)
+    for x in (.04,-.086):
+        door.box("SteelDark",(x*.5-.009,1.04,-.73),(abs(x+.018),.034,.035),.003)
+        door.box("SteelDark",(x,1.04,-.79),(.025,.032,.15),.005)
+    for y in (.30,1.82):
+        door.rod("SteelDark",(0,y-.06,0),(0,y+.06,0),.022)
+    door.emit(material)
+    for name,pos in (("ServiceDoorGrip",(.04,1.04,-.79)),("ServiceDoorInsideGrip",(-.086,1.04,-.79)),
+                     ("ServiceDoorPush",(0,1.05,-.14))):
+        port.empty("ANCHOR_"+name,hinge,pos)
     for key, pos in ANCHORS.items():
         port.empty("ANCHOR_"+key, root, pos)
     moving = Model(port.empty("MOVE_Bottle",root,ANCHORS["BottleRest"]))
@@ -257,7 +341,7 @@ def generate():
     descriptions=[]
     for root, expected_min, expected_max, limit in zip(roots,
             ((-2.30,-.45,-1.60),(-2.10,-.45,-1.90),(-.31,-.21,-.18)),
-            ((2.30,2.81,2.38),(2.10,1.62,1.90),(.31,.21,.285)), (13000,32000,900)):
+            ((2.30,3.0075,2.925),(2.10,1.62,1.90),(.31,.21,.285)), (15000,32000,900)):
         desc=port.describe(root)
         for key,want in (("bounds_min",expected_min),("bounds_max",expected_max)):
             if max(abs(a-b) for a,b in zip(desc[key],want)) > .001:
@@ -265,7 +349,7 @@ def generate():
         if desc["triangles"]>limit:
             raise ValueError(f"{root.name} exceeded triangle limit {limit}: {desc['triangles']}")
         desc["renderer_count"]=sum(o.type=="MESH" for o in root.children_recursive)
-        if desc["renderer_count"]>13:
+        if desc["renderer_count"]>(30 if root.name=="Pavilion" else 13):
             raise ValueError(f"{root.name} surface batches exceeded")
         desc["anchors"]=[a for a in desc["anchors"] if a["name"].startswith(("ANCHOR_","MOVE_"))]
         descriptions.append(desc)
@@ -273,10 +357,17 @@ def generate():
     for x in (-1.2,0,1.2):
         if mesh.ray_cast(Vector(port.source((x,1.5,1.2))),Vector(port.source((0,0,1))),distance=.5)[0]:
             raise ValueError("Pavilion window is sealed")
+    for finish in ("__Brick","__Plaster"):
+        side=next(o for o in roots[0].children_recursive if o.type=="MESH" and o.name.endswith(finish))
+        for height in (.10,1.1,2.06):
+            for z in (-.88,-.48,-.08):
+                if side.ray_cast(Vector(port.source((1.9,height,z))),Vector(port.source((1,0,0))),distance=.45)[0]:
+                    raise ValueError("Service doorway is sealed by "+finish)
     source=next(o for o in roots[2].children_recursive if o.name=="ANCHOR_Source")
     if source.parent.name!="MOVE_Head" or abs(port.source(source.location)[2]-.205) > .0001:
         raise ValueError("Floodlight source must move with the face of the hinged head")
     return roots,{"design_id":"city_ridge_glass_return_v1","coordinate_system":"Unity metres; +Z counter; Y=0 floor",
+                  "sign_lines":list(SIGN_LINES),"grille_rows":GRILLE_ROWS,"grille_pitch":GRILLE_PITCH,
                   "generator": Path(__file__).name, "working_grip_above_base": .19, "models":descriptions}
 
 
