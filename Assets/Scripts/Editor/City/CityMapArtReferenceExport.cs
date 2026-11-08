@@ -283,8 +283,25 @@ namespace BarPromenade.Editor
                 for (int i = 0; i < laundry.BodyFootprints.Count; i++) Box("laundry:" + i, "building", laundry.BodyFootprints[i]);
             foreach (CityMapPointOfInterest place in controller.PointsOfInterest)
                 if (place.HasFootprint && place.Kind != CityMapPointOfInterestKind.Pawnshop &&
-                    place.Kind != CityMapPointOfInterestKind.RidgeKiosk)
+                    place.Kind != CityMapPointOfInterestKind.RidgeKiosk && place.Kind != CityMapPointOfInterestKind.GlassReturn &&
+                    place.Kind != CityMapPointOfInterestKind.PigeonLoft)
                     Box("place:" + place.StableId, "public-ground", place.Footprint);
+            var loft = CityPigeonLoftPlan.ForLayout(layout);
+            if (loft.IsEnabled)
+            {
+                var fence = new List<Vector2>();
+                foreach (Vector3 post in loft.Courtyard.FencePosts) fence.Add(new Vector2(post.x, post.z));
+                Line("ridge-pigeon-loft:fence", "fence", .15f, fence);
+                Box("ridge-pigeon-loft:building", "building", loft.Bounds);
+            }
+            var glass = CityGlassReturnSitePlan.ForLayout(layout);
+            if (glass.IsEnabled)
+            {
+                Poly("glass-return:building", "shop-building", glass.Footprint);
+                Poly("glass-return:yard", "public-ground", glass.YardFootprint);
+                var fence = new List<Vector2>(glass.YardFootprint) { glass.YardFootprint[0] };
+                Line("glass-return:fence", "fence", .15f, fence);
+            }
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
             {
                 Poly("pawnshop:building", "shop-building", pawnshop.Footprint);

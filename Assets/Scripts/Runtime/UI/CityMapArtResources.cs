@@ -272,6 +272,14 @@ namespace BarPromenade
                 }
                 if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
                     foreach (Vector2 point in pawnshop.ApproachFootprint) Point(writer, point);
+                var glass = CityGlassReturnSitePlan.ForLayout(layout);
+                if (glass.IsEnabled)
+                {
+                    writer.Write(CityGlassReturnSitePlan.StableId);
+                    foreach (Vector2[] polygon in glass.SolidPolygons)
+                        foreach (Vector2 point in polygon) Point(writer, point);
+                    Point(writer, glass.Origin); Point(writer, glass.YardOrigin); Point(writer, glass.Approach);
+                }
                 writer.Write(benchPockets.Count);
                 foreach (var pocket in benchPockets)
                 {

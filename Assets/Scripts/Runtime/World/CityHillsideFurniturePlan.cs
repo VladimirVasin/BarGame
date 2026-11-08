@@ -184,6 +184,7 @@ namespace BarPromenade
                 if (layout.HasSummitHome)
                 {
                     reserved.Add(CityPigeonCourtyardPlan.FurnitureReservation);
+                    reserved.Add(CityGlassReturnSitePlan.LandReservation);
                     // Across the street from Home, just west of the stone lip. The bench faces
                     // the lower truss and descending roofs rather than the house or the wall.
                     var target = quarter.Bridges[0].DeckCenterWorld;

@@ -977,12 +977,14 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.RidgeKiosk,
                     CityMapPointOfInterestKind.RidgeKiosk,
                     CityMapPointOfInterestKind.Pawnshop,
-                    CityMapPointOfInterestKind.PawnshopDescent
+                    CityMapPointOfInterestKind.PigeonLoft,
+                    CityMapPointOfInterestKind.PawnshopDescent,
+                    CityMapPointOfInterestKind.GlassReturn
                 };
                 var expectedIds = new[]
                 {
                     "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court", "terrace-shortcut", "terrace-landing", "residential-summit", "industrial-summit", "upper-shared-court",
-                    "upper-court-bridge", "upper-summit-bridge", "ridge-kiosk", "residential-kiosk", "industrial-kiosk", "pawnshop", "pawnshop-descent"
+                    "upper-court-bridge", "upper-summit-bridge", "ridge-kiosk", "residential-kiosk", "industrial-kiosk", "pawnshop", "ridge-pigeon-loft", "pawnshop-descent", "ridge-glass-return"
                 };
                 var expectedDistricts = new[]
                 {
@@ -1007,6 +1009,8 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Industrial,
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential
                 };
@@ -1060,6 +1064,10 @@ namespace BarPromenade.Tests.EditMode
                 var descent = CityPawnshopDescentPlan.ForLayout(layout);
                 Assert.That(descent.IsEnabled, Is.True);
                 namedArrivals.Add("pawnshop-descent", ("Спуск к ломбарду", descent.UpperDock));
+                var loft = CityPigeonLoftPlan.ForLayout(layout);
+                var glass = CityGlassReturnSitePlan.ForLayout(layout);
+                namedArrivals.Add("ridge-pigeon-loft", ("Голубятня", loft.Approach));
+                namedArrivals.Add(CityGlassReturnSitePlan.StableId, ("Приём стеклотары", glass.Approach));
                 var upper = CityHillsideQuarterPlan.ForLayout(layout);
                 foreach (var bridge in upper.Bridges)
                 {
@@ -1089,7 +1097,15 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(place.HasFootprint, Is.EqualTo(bridgePlace || place.Kind == CityMapPointOfInterestKind.Fair ||
                         place.Kind == CityMapPointOfInterestKind.Cafe || place.Kind == CityMapPointOfInterestKind.DogPark ||
                         place.Kind == CityMapPointOfInterestKind.RidgeKiosk ||
+                        place.Kind == CityMapPointOfInterestKind.GlassReturn || place.Kind == CityMapPointOfInterestKind.PigeonLoft ||
                         place.Kind == CityMapPointOfInterestKind.Pawnshop), context);
+                    if (place.Kind == CityMapPointOfInterestKind.GlassReturn)
+                    {
+                        Assert.That(place.Footprint, Is.EqualTo(glass.Bounds), context);
+                        Assert.That(walkable.Contains(glass.HeroDock, CityGroundTraversalPlanner.MaximumAgentRadius), Is.True, context);
+                        Assert.That(walkable.Contains(glass.Origin), Is.False, "The map must exclude the shelled pavilion.");
+                        Assert.That(walkable.Contains(glass.YardOrigin), Is.False, "The fenced stock is inaccessible.");
+                    }
                     if (place.Kind == CityMapPointOfInterestKind.RidgeKiosk)
                     {
                         CityKioskSitePlan kiosk = kiosks[place.StableId];

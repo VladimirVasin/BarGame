@@ -41,7 +41,8 @@ namespace BarPromenade
         RidgeKiosk = 22,
         Pawnshop = 23,
         PawnshopDescent = 24,
-        PigeonLoft = 25
+        PigeonLoft = 25,
+        GlassReturn = 26
     }
 
     public readonly struct CityMapPointOfInterest
@@ -973,6 +974,9 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.PigeonLoft:
                     key = "map.poi.pigeon_loft";
                     return true;
+                case CityMapPointOfInterestKind.GlassReturn:
+                    key = "map.poi.glass_return";
+                    return true;
                 case CityMapPointOfInterestKind.PawnshopDescent:
                     key = "map.poi.pawnshop_descent";
                     return true;
@@ -1592,6 +1596,10 @@ namespace BarPromenade
             if (descent.IsEnabled)
                 pointsOfInterest.Add(new CityMapPointOfInterest("pawnshop-descent", CityMapPointOfInterestKind.PawnshopDescent,
                     CityDistrictKind.Residential, descent.UpperArrivalWorld + Vector3.up * rootOffset));
+            var glass = CityGlassReturnSitePlan.ForLayout(Layout);
+            if (glass.IsEnabled)
+                pointsOfInterest.Add(new CityMapPointOfInterest(CityGlassReturnSitePlan.StableId, CityMapPointOfInterestKind.GlassReturn,
+                    CityDistrictKind.Residential, glass.Approach + Vector3.up * rootOffset, glass.Bounds, true));
         }
 
         private Vector3 ResolveNamedPlaceArrival(Vector3 approach)

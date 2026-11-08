@@ -1741,6 +1741,12 @@ namespace BarPromenade
                 float pixelsPerMetre = projection.ScreenRect.width / (projection.MaximumX - projection.MinimumX);
                 DrawLine(front, back, CityPawnshopPlan.Width * pixelsPerMetre, ResidentialBuilding);
             }
+            var glass = CityGlassReturnSitePlan.ForLayout(controller.Layout);
+            if (glass.IsEnabled)
+            {
+                DrawGroundQuad(glass.Footprint, ResidentialBuilding);
+                DrawGroundQuad(glass.YardFootprint, PublicPlaceLand);
+            }
             void DrawGroundQuad(Vector2[] polygon, Color color)
             {
                 // A thick centre line preserves the rotated rectangle, unlike its axis-aligned bounds.
@@ -2622,6 +2628,7 @@ namespace BarPromenade
                     pointOfInterest.Kind != CityMapPointOfInterestKind.RidgeKiosk &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.Pawnshop &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.PigeonLoft &&
+                    pointOfInterest.Kind != CityMapPointOfInterestKind.GlassReturn &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.UpperCourtBridge &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.UpperSummitBridge)
                 {
@@ -3799,6 +3806,7 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.RidgeKiosk:
                 case CityMapPointOfInterestKind.Pawnshop:
                 case CityMapPointOfInterestKind.PigeonLoft:
+                case CityMapPointOfInterestKind.GlassReturn:
                     RetroUiTheme.StrokeRect(new Rect(center.x - halfSize * .76f, center.y - halfSize * .48f,
                         halfSize * 1.52f, halfSize * 1.4f), width, color);
                     DrawLine(center + new Vector2(-halfSize, -halfSize * .68f),

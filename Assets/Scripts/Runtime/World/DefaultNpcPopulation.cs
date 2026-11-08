@@ -19,6 +19,7 @@ namespace BarPromenade
         public const string CityResidentialKioskSeller = "city.kiosk.residential.seller";
         public const string CityIndustrialKioskSeller = "city.kiosk.industrial.seller";
         public const string CityPigeonKeeper = "city.ridge.pigeon-keeper";
+        public const string CityGlassReturnWorker = "city.ridge.glass-return.worker";
         public const string CityLaundryWorker = "zzzz.city.laundry.worker";
         public const string CityDogParkStandingOwner = "zzzzz.city.dog-park.standing";
         public const string CityDogParkSeatedOwner = "zzzzz.city.dog-park.seated";
@@ -351,6 +352,13 @@ namespace BarPromenade
                 new SlotConstraint("gloves", new string[] { null }),
                 new SlotConstraint("scarf", new string[] { null }),
                 new SlotConstraint("apron", new string[] { null })));
+            roster.Add(new CharacterDefinition(CityGlassReturnWorker, model, false,
+                new SlotConstraint("outerwear", "outerwear.work"),
+                new SlotConstraint("boots", "boots.work"),
+                new SlotConstraint("headwear", new string[] { null }),
+                new SlotConstraint("gloves", new string[] { null }),
+                new SlotConstraint("scarf", new string[] { null }),
+                new SlotConstraint("apron", "apron.work")));
             return roster.ToArray();
         }
 

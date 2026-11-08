@@ -394,6 +394,12 @@ namespace BarPromenade
             Transform pigeonLoft = CityPigeonLoftWorld.Build(world, layout);
             CityResidentialEntranceLighting.Build(world);
             var kioskShelters = new List<Collider>(8);
+            var glassReturn = CityGlassReturnSitePlan.ForLayout(layout);
+            if (glassReturn.IsEnabled)
+            {
+                CityGlassReturnWorld.Build(world, glassReturn, true, out var glassShelter);
+                if (glassShelter != null) kioskShelters.Add(glassShelter);
+            }
             if (pigeonLoft != null)
                 foreach (var collider in pigeonLoft.GetComponentsInChildren<BoxCollider>())
                     if (collider.isTrigger && collider.name == "Pigeon loft rain shelter") kioskShelters.Add(collider);

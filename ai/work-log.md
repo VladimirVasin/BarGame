@@ -4,6 +4,23 @@ Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md)
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
 ## 2026-11-08
+Eastern ridge hairpin: low brick glass return and fenced stock leave the inner
+footway open. One permanent sorter transfers the same bottle to its crate.
+The clink comes from the contact; the window uses a City light without shadows.
+The adjacent house carries a fixed diffuse flood for shell, yard and apron.
+Blender reuses the City yard fixture's head and wall plate. Soft shadows at
+.65 and the daylight floor of 2/3 preserve shape. Existing wetness, bevels
+and materials catch the light; shared SSR/reflections, SSAO, grade, SMAA
+and bloom remain. No new SSGI, SCGI, DOF or motion blur.
+CityGlassReturn compared lit/unlit frames at the yard and mount. The shared
+64×64 reflector cookie feathers light away from the mounting wall; the shed,
+yard and approach remain lit without a bright patch on the house.
+Blender's glass-return model check verified metres and repeatability.
+CityGlassReturn verified both grips, crate contact, canopy and footway. The
+night view shows hands at the lit counter; the upper branch reveals the yard,
+the lower wall conceals the window. CityMapArtReferenceExport and the new
+ImageGen map locate the parcel. LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
+
 Keeper spends daytime rounds in the yard;brief upper feed/water visits and
 short rail stops replace long landing waits. Ground chores fill the last round
 before timed returns;late loading samples that same cycle. Local preE keeps calendar.

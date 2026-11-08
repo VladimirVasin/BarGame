@@ -1,18 +1,18 @@
 {
   "tool": "built-in image_gen",
-  "intent": "Final registered City map after two west crest residential infills and the completed pawnshop descent.",
-  "prompt": "imagegen-west-ridge-infill-prompt.txt",
+  "intent": "Final City map featuring the glass return pavilion and its fenced stockyard in the last eastern hairpin. The western pigeon yard is included in the same survey.",
+  "prompt": "imagegen-glass-return-prompt.txt",
   "references": [
-    "map-reference.png",
-    "CityMapImage.reference.png"
+    "CityMapImage.reference.png",
+    "map-reference.png"
   ],
   "geography": "CityMapImage.accepted-geography.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "7a7b0a84bbafcc95f69e93002c7e92b26bed501f5755280a34ec7967fa2dc296",
-  "runtime_image_sha256": "7a7b0a84bbafcc95f69e93002c7e92b26bed501f5755280a34ec7967fa2dc296",
-  "previous_image_sha256": "8d9aa62e81ce67fde6f6add4b92ecf4e6cba9644143dcae98063d64fe1a147d8",
+  "image_sha256": "8c8dac4819940e73f596a5665c71408aeeb8da7d6f5c9e4f20d71abb254c3f5e",
+  "runtime_image_sha256": "8c8dac4819940e73f596a5665c71408aeeb8da7d6f5c9e4f20d71abb254c3f5e",
+  "previous_image_sha256": "7a7b0a84bbafcc95f69e93002c7e92b26bed501f5755280a34ec7967fa2dc296",
   "registration": {
-    "description": "Full-bleed north-up bounds retained. Surveyed west crest infills at normalized (0.33358,0.93697) and (0.36194,0.93241); distinct roofs and gaps retained. Pawnshop descent stairs and turning pad follow the current survey. Labels, markers, XYZ and arrivals remain live.",
+    "description": "Full-bleed north-up sheet. The eastern pavilion and yard lie near normalized (0.81884,0.89087) and (0.81903,0.89951), inside the bend. Markers, selection, XYZ and arrivals remain live.",
     "source_size": [
       1173,
       1341
@@ -22,7 +22,7 @@
       2048
     ]
   },
-  "fingerprint": "8df66c540201c47c07706e4c1a626fab2ba3d8184c7eebc70a8370ebcb2259fe",
+  "fingerprint": "ffbafaad727b362e3e84bfec8677def51f67bae7d4967206a000fd33f2beb7bf",
   "schemaVersion": 2,
   "width": 1173,
   "height": 1341,

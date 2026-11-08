@@ -45,6 +45,7 @@ namespace BarPromenade
                 polygonBuildingObstacles.Add(pawnshop.Footprint);
             polygonBuildingObstacles.AddRange(CityPawnshopDescentPlan.ForLayout(layout).SolidPolygons);
             polygonBuildingObstacles.AddRange(CityPigeonLoftPlan.ForLayout(layout).SolidPolygons);
+            polygonBuildingObstacles.AddRange(CityGlassReturnSitePlan.ForLayout(layout).SolidPolygons);
             foreach (BuildingLot lot in layout.BuildingMasses)
                 if (lot.HasBuilding && (lot.HasFacadeRotation || courtyardCells.Contains(lot.Cell)))
                     polygonBuildingObstacles.AddRange(lot.CreateCollisionPolygons());

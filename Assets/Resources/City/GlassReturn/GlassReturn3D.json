@@ -1,0 +1,157 @@
+{
+  "design_id": "city_ridge_glass_return_v1",
+  "coordinate_system": "Unity metres; +Z counter; Y=0 floor",
+  "generator": "build-city-glass-return-3d-model.py",
+  "working_grip_above_base": 0.19,
+  "models": [
+    {
+      "name": "Pavilion",
+      "bounds_min": [
+        -2.3,
+        -0.45,
+        -1.6
+      ],
+      "bounds_max": [
+        2.3,
+        2.81,
+        2.38
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_BottleRest",
+          "position": [
+            -0.32,
+            1.01,
+            1.37
+          ]
+        },
+        {
+          "name": "ANCHOR_Clink",
+          "position": [
+            0.38,
+            1.0,
+            1.35
+          ]
+        },
+        {
+          "name": "ANCHOR_Counter",
+          "position": [
+            0.0,
+            1.02,
+            1.6
+          ]
+        },
+        {
+          "name": "ANCHOR_CrateSlot",
+          "position": [
+            0.38,
+            1.0,
+            1.35
+          ]
+        },
+        {
+          "name": "ANCHOR_LightTarget",
+          "position": [
+            0.18,
+            1.0,
+            1.46
+          ]
+        },
+        {
+          "name": "ANCHOR_Worker",
+          "position": [
+            0.0,
+            0.0,
+            0.89
+          ]
+        },
+        {
+          "name": "ANCHOR_WorkLight",
+          "position": [
+            -0.88,
+            2.44,
+            0.94
+          ]
+        },
+        {
+          "name": "MOVE_Bottle",
+          "position": [
+            -0.32,
+            1.01,
+            1.37
+          ]
+        },
+        {
+          "name": "MOVE_BottleGlassGreen",
+          "position": [
+            -0.32,
+            1.01,
+            1.37
+          ]
+        }
+      ],
+      "triangles": 5452,
+      "geometry_signature": "2fef62f475441761c75baef14eb8c9907eba0dc65ac4c39174baa584e27c8879",
+      "renderer_count": 11
+    },
+    {
+      "name": "Yard",
+      "bounds_min": [
+        -2.1,
+        -0.45,
+        -1.9
+      ],
+      "bounds_max": [
+        2.1,
+        1.62,
+        1.9
+      ],
+      "anchors": [],
+      "triangles": 27208,
+      "geometry_signature": "36893c245d02d150b90dab1a9a37d95ccb7462e52a6a5b72bfd8fd8c8a2c061b",
+      "renderer_count": 7
+    },
+    {
+      "name": "WallFloodlight",
+      "bounds_min": [
+        -0.31,
+        -0.21,
+        -0.18
+      ],
+      "bounds_max": [
+        0.31,
+        0.21,
+        0.285
+      ],
+      "anchors": [
+        {
+          "name": "MOVE_Head",
+          "position": [
+            0.0,
+            0.0,
+            0.08
+          ]
+        },
+        {
+          "name": "ANCHOR_Source",
+          "position": [
+            0.0,
+            0.0,
+            0.285
+          ]
+        },
+        {
+          "name": "MOVE_HeadSteelDark",
+          "position": [
+            0.0,
+            0.0,
+            0.08
+          ]
+        }
+      ],
+      "triangles": 280,
+      "geometry_signature": "46eb8e0226334af893f28520960b3db874d329b15893205434d404a29fac5bb8",
+      "renderer_count": 3
+    }
+  ]
+}

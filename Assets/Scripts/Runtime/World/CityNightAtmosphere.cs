@@ -290,6 +290,21 @@ namespace BarPromenade
                         coveredPassageLights[index] = taskAnchors[index].GetComponent<CityCoveredPassageLight>() ??
                             throw new InvalidOperationException("A covered passage source needs its fixed fixture marker.");
                         break;
+                    case "GlassReturnFloodlight":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = 16f;
+                        industrialRangeLimits[index] = 19f;
+                        industrialSpotAngles[index] = 140f;
+                        industrialInnerSpotAngles[index] = 105f;
+                        break;
+                    case "GlassReturnWindow":
+                        industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
+                        industrialIntensityScales[index] = .52f;
+                        industrialRangeLimits[index] = 4.2f;
+                        industrialSpotAngles[index] = 96f;
+                        industrialInnerSpotAngles[index] = 66f;
+                        break;
                     case "LaundryWork":
                         industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
                         industrialIntensityScales[index] = .75f;
@@ -315,7 +330,7 @@ namespace BarPromenade
                 PracticalLightProfile profile = GetIndustrialProfile(industrialPurposes[index]);
                 // Two lobes describe one kiosk diffuser. The sign projectors
                 // are hooded toward their board, so only their real lenses glow.
-                if (purposeName == "RidgeKioskInterior" || purposeName == "PawnshopSignLeft" ||
+                if (purposeName == "RidgeKioskInterior" || purposeName == "GlassReturnWindow" || purposeName == "PawnshopSignLeft" ||
                     purposeName == "PawnshopSignRight") continue;
                 // Imported anchors inherit the FBX unit factor. Keep particle
                 // sizes in world metres and move their soft depth fade clear
@@ -659,6 +674,14 @@ namespace BarPromenade
                         industrialIntensityScales[task], industrialRangeLimits[task],
                         industrialSpotAngles[task], industrialInnerSpotAngles[task], industrialStreetOnly[task]);
                     string anchorName = lampAnchors[index].name;
+                    if (anchorName == IndustrialTaskLightPrefix + "GlassReturnFloodlight")
+                    {
+                        // Wide frosted flood: the common Soft profile supplies PCF;
+                        // shallow local shadows retain shape without a hard black cut.
+                        streetLightPool[index].shadowStrength = .65f;
+                        streetLightPool[index].cookie = CityGlassReturnWorld.FloodlightCookie(
+                            lampAnchors[index], streetLightPool[index].spotAngle);
+                    }
                     if (anchorName == CityResidentialEntranceLighting.LightAnchorName ||
                         anchorName == "IndustrialTaskLight_CourtyardEntrance")
                     {

@@ -10,6 +10,7 @@
     {"key":"city.pigeon_keeper.line.07","value":"С утра вас слышно. Так бы и лежал."},
     {"key":"interaction.enter_pawnshop","value":"E — войти в ломбард"},
     {"key":"map.poi.pawnshop","value":"Ломбард"},
+    {"key":"map.poi.glass_return","value":"Приём стеклотары"},
     {"key":"pawnshop.trade.prompt","value":"E — обратиться"},
     {"key":"pawnshop.trade.title","value":"Ломбард"},
     {"key":"pawnshop.trade.buy","value":"Купить"},

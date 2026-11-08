@@ -438,6 +438,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Cuts/ramp/treads/nav/map/Home;POI at summit/current art;walk clear.
   Outer+4descent lamps:RidgeBench37.5/r11/soft256/fixed/dayfloor.
   Pigeon/plinth1.98m,rear;side beds;solid/nav clear.
+  E bend:brick glass return/lit window/fenced yard;sorter/clink,map outside.
+  Neighbour wall flood→shell/yard/apron;fixed/day≥⅔/Soft.65.
   Homes:soil/wet asphalt skirts;turf/gravel/broken stone/shrub03-04→Home;
   deciduous gable groups. W:stepped concrete/drains;E:kerbs/grass/boot scrapers.
   Home patched plinth/lamp;poles→stairs/bridge footways;

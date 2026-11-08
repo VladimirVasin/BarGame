@@ -138,12 +138,13 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | NPC Human V2 anatomy, appearance and visibility | Shared rigs; joint fields/volume and shaped hands/clothes retain UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `CharacterJointDeformation` | Current |
 | City district buses | Two/ring,shared transfers. Gap:no Home service/live map buses. | `City{District,Hillside}BusPlanner`, `CityBus{Director,Actor,Factory}` | Partial |
 | Bus stop lighting | City/Home perimeter strip/apron;fixed daylight;bounded soft-shadow fades. | `CityBusStopLighting`, `CityNightAtmosphere` | Current |
-| Pedestrian bench rests | Eligible walkers reserve benches, play owned sit/rest/stand actions and return to their route. | `CityBenchRest{Plan,Planner}`, `CityBenchNpcRestController` | Current |
+| Pedestrian bench rests | Eligible walkers reserve, sit, rest, stand and resume their route. | `CityBenchRest{Plan,Planner}`, `CityBenchNpcRestController` | Current |
 | City bus passengers | Two doors/10seats/3standing;remote. Gap:fares/live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |
-| City visual diversity and collision proxies | Deterministic visual variants share simple semantic collision proxies and reusable resources. | `CityDecoration{Descriptor,Plan,Planner,Validator,WorldBuilder}`, `CityDecorationCollisionCatalog` | Current |
-| Road-edge fences | Plan-owned fences protect boundaries while preserving every validated road/waterside opening. | `RoadFence{Planner,Plan,WorldBuilder}`, `CitySurfaceDescriptor` | Current |
+| City visual variants | Deterministic variants share assets and simple semantic colliders. | `CityDecoration{Descriptor,Plan,Planner,Validator,WorldBuilder}`, `CityDecorationCollisionCatalog` | Current |
+| Road-edge fences | Planned fences leave road and waterside openings clear. | `RoadFence{Planner,Plan,WorldBuilder}`, `CitySurfaceDescriptor` | Current |
 | Shops | 3kiosks/3goods/map marks/Ridge-only talk;shop7goods. Atomic sales/3D receipts. | `CityKioskSites`, `RidgeKiosk*`, `SupermarketPurchaseRules` | Current |
 | Pawnshop | Island pavilion/secure clerk. Gap:trade stubs have no transactions. | `CityPawnshop*`, `PawnshopInterior*`, `PawnshopTradeController` | Partial |
+| Glass return | East bend: silent sorting/window arrival; wall light covers yard. | `CityGlassReturn*` | Current |
 | Supermarket cashier | Wall checkout/decor snacks;anchored palms/light;ordinary cashier,bulging 3D face/shared rig. | `SupermarketCashier{Provider,AssetRegistry,Factory,Presentation,Actor,SurveillanceState,BlinkState,Interaction}` | Current |
 | Supermarket CCTV corner cameras | Four authored corner cameras follow the hero without gameplay surveillance. | `SupermarketInteriorAssetRegistry`, `SupermarketSecurityCamera{,WorldBuilder}` | Current |
 | Supermarket fluorescent atmosphere | Visible fixtures own the store's restrained light, flicker and sound within explicit shared-resource budgets. | `SupermarketInteriorAtmosphere`, `SupermarketFluorescentFlicker` | Current |
