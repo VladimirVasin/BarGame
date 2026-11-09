@@ -22,6 +22,42 @@ namespace BarPromenade.Tests.PlayMode
         private const float DeadlineSeconds = 120f;
 
         [UnityTest]
+        [Explicit("Captures the pigeon loft and the gap in its courtyard fence on the City schematic.")]
+        public IEnumerator CitySchematic_ShowsPigeonLoftAndCourtyardGate()
+        {
+            var host = new GameObject("City schematic capture");
+            var map = host.AddComponent<CityMapController>();
+            try
+            {
+                var layout = CityLayoutCache.GetOrGenerate(CityBlueprintCatalog.Default,
+                    CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
+                var loft = CityPigeonLoftPlan.ForLayout(layout);
+                Assert.That(loft.IsEnabled, Is.True);
+                host.transform.position = loft.Origin + Vector3.right * 35f;
+                host.AddComponent<Camera>();
+                var player = new PlayerRuntime(host, null, host.AddComponent<PlayerInteractor>(), null);
+                // A chart without the surveyed bus overlay takes the real schematic fallback.
+                map.Initialize(layout, player, null, null);
+                Assert.That(map.View.IsUsingIllustratedMap, Is.False);
+                Assert.That(map.PointsOfInterest, Has.Some.Matches<CityMapPointOfInterest>(
+                    point => point.Kind == CityMapPointOfInterestKind.PigeonLoft &&
+                        point.WorldPosition == loft.Approach + Vector3.up * PlayerFactory.GroundedRootOffset));
+#if UNITY_EDITOR
+                System.Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
+                    .GetMethod("FocusGameViewForCapture", System.Type.EmptyTypes).Invoke(null, null);
+#endif
+                Assert.That(map.Open(), Is.True);
+                for (int frame = 0; frame < 5; frame++) yield return null;
+                yield return CaptureMapUi("schematic-pigeon-loft");
+            }
+            finally
+            {
+                if (map.IsOpen) map.Close();
+                Object.Destroy(host);
+            }
+        }
+
+        [UnityTest]
         [Explicit("Focused ImageGen City map with native UI captures. Requires a visible Game view: run without -batchmode.")]
         public IEnumerator ImageGenCityMap_PreservesPlanAndLivePlaces()
         {

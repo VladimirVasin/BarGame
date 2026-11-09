@@ -13,6 +13,17 @@ collision. CityCobbler held work, grips and light at 14:00, 14:15 and 14:30.
 Road and south views show the pile beside the shrub. At 14:15 the cabin view
 shows the worker at his bench. LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
 
+Ridge fixes: any solid occluder releases the cobbler's hidden home departure;
+the glass sorter's current trip survives midnight and player blocking.
+Kiosk talk preserves its browser after a rejected start; the schematic map
+draws the loft and fence from their shared plans. Shared rig/camera/UI owners
+and City light/material/post providers cover all three FX groups.
+Cobbler_OccludedHomeAllowsDepartureWhileVisibleHomeWaits and
+GlassSorter_BlockedEveningTripResumesAcrossMidnight prove occlusion and delayed
+commute continuity. LiveCity_RidgeKioskSideWindowKeepsMenuOnRefusedTalk proves
+window reach and modal recovery. CitySchematic_ShowsPigeonLoftAndCourtyardGate
+passed; the schematic frame was reviewed. check-docs/diff-check.
+
 ## 2026-11-08
 Glass return08–23/home22:-7:sorter rests bottle,reaches switch;one press cuts
 window/interior light and starts grille;safe motor wait precedes staff exit.

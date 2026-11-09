@@ -26,6 +26,7 @@ namespace BarPromenade
             var volume = trigger.gameObject.AddComponent<SphereCollider>();
             volume.isTrigger = true; volume.radius = .48f;
             reach = RidgeKioskTarget.Attach(transform, trigger, window, approach);
+            Vendor.BindWindow(reach);
             Menu = gameObject.AddComponent<RidgeKioskMenuController>();
             Menu.Initialize(this);
         }

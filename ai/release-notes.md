@@ -10,6 +10,13 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 - Сапожник у Дворового моста чинит обувь с 11:00 до 20:30 без перерыва.
   Между автобусом и сиренью свалены старые автобусные колёса. CityCobbler.
+- Сапожник выходит из дома за перекрывающей обзор стеной. Приёмщик стеклотары
+  заканчивает задержанный путь через полночь. Разговор у края окна киоска
+  использует доступность окна; отказ возвращает меню. На схеме видны голубятня
+  и ограда с проходом. Cobbler_OccludedHomeAllowsDepartureWhileVisibleHomeWaits;
+  GlassSorter_BlockedEveningTripResumesAcrossMidnight;
+  LiveCity_RidgeKioskSideWindowKeepsMenuOnRefusedTalk;
+  CitySchematic_ShowsPigeonLoftAndCourtyardGate.
 
 ### 2026-11-08
 

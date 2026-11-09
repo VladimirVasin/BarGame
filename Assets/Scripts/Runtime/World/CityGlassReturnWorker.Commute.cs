@@ -23,8 +23,8 @@ namespace BarPromenade
         private Vector3 leafCentre, leafHalfSize;
         private float[] switchDistances, staffDistances, crossDistances, homeDistances;
         private float switchWalkSeconds, staffWalkSeconds, crossWalkSeconds, homeWalkSeconds;
-        private double commuteDelay, lastMotionSample = double.NaN, nextHomeVisibility;
-        private bool insideHidden;
+        private double commuteStart, commuteDelay, lastMotionSample = double.NaN, nextHomeVisibility;
+        private bool commutingToWork, insideHidden;
         private Collider[] doorBodies = new Collider[16];
         private static double StartSeconds => ShiftStartMinute / GameTimeState.GameMinutesPerRealSecond;
         private static double EndSeconds => ShiftEndMinute / GameTimeState.GameMinutesPerRealSecond;
@@ -70,7 +70,9 @@ namespace BarPromenade
             try
             {
                 double day = seconds % GameTimeState.RealSecondsPerGameDay;
-                double motionDelta = double.IsNaN(lastMotionSample) ? 0d : Math.Max(0d, seconds - lastMotionSample);
+                double previousSample = lastMotionSample;
+                bool seek = double.IsNaN(previousSample);
+                double motionDelta = seek ? 0d : Math.Max(0d, seconds - previousSample);
                 if (motionDelta > .5d) motionDelta = delta;
                 lastMotionSample = seconds;
                 IsUsingStaffDoor = false;
@@ -85,52 +87,65 @@ namespace BarPromenade
                     if (IsWorking && pose) PoseAt(seconds);
                     return;
                 }
-                bool returning = day >= StartSeconds - CommuteSeconds && day < StartSeconds + commuteDelay;
-                bool departing = day >= EndSeconds && day < EndSeconds + CommuteSeconds + commuteDelay;
-                IsWorking = !returning && day >= StartSeconds && day < EndSeconds;
-                IsCommuting = returning || departing;
-                IsAtHome = !IsWorking && !IsCommuting;
+                double morning = StartSeconds - CommuteSeconds;
+                bool scheduledToWork = day >= morning && day < EndSeconds;
+                if (seek || (!IsCommuting && IsWorking != scheduledToWork))
+                {
+                    double scheduledStart = seconds - day + (scheduledToWork ? morning : EndSeconds);
+                    if (day < morning) scheduledStart -= GameTimeState.RealSecondsPerGameDay;
+                    // If a previous trip arrived late, start from that endpoint now.
+                    // Missed shifts need no queue of historical journeys.
+                    commuteStart = seek ? scheduledStart : Math.Max(previousSample, scheduledStart);
+                    commuteDelay = 0d;
+                    commutingToWork = scheduledToWork;
+                    IsCommuting = !seek || seconds - commuteStart < CommuteSeconds;
+                    IsWorking = !IsCommuting && scheduledToWork;
+                    IsAtHome = !IsCommuting && !scheduledToWork;
+                }
+                if (!IsWorking)
+                {
+                    if (clink.isPlaying) clink.Stop();
+                    Bottle.SetPositionAndRotation(bottleRest.position, bottleRest.rotation);
+                    hands.SetGrip(true, 0f); hands.SetGrip(false, 0f);
+                    HandContactError = 0f;
+                }
+                if (IsCommuting)
+                {
+                    // A hidden morning departure waits while its doorway is watched.
+                    if (commutingToWork && insideHidden && !forceSample && !CanRetireInside())
+                    {
+                        commuteDelay += motionDelta;
+                        return;
+                    }
+                    insideHidden = false; UpdateVisibility();
+                    double elapsed = seconds - commuteStart - commuteDelay;
+                    double priorDelay = commuteDelay;
+                    SampleTrip(seconds, Mathf.Clamp((float)elapsed, 0f, CommuteSeconds),
+                        commutingToWork, motionDelta, pose);
+                    if (elapsed < CommuteSeconds || commuteDelay > priorDelay) return;
+                    IsCommuting = false;
+                    IsWorking = commutingToWork;
+                    IsAtHome = !commutingToWork;
+                }
+                SampleOperatingRest(IsWorking);
+                TryMoveDoor(0f);
                 if (IsWorking)
                 {
-                    SampleOperatingRest(true);
-                    commuteDelay = 0d;
                     insideHidden = false; UpdateVisibility();
                     Worker.transform.SetPositionAndRotation(workRest.position, workRest.rotation);
-                    TryMoveDoor(0f);
                     if (pose) PoseAt(seconds);
                     return;
                 }
-                if (clink.isPlaying) clink.Stop();
-                Bottle.SetPositionAndRotation(bottleRest.position, bottleRest.rotation);
-                hands.SetGrip(true, 0f); hands.SetGrip(false, 0f);
-                HandContactError = 0f;
-                if (IsAtHome)
+                Worker.transform.SetPositionAndRotation(CommutePlan.InsideHome,
+                    Quaternion.LookRotation(-CommutePlan.House.Lot.FacadeForward));
+                if (!insideHidden && seconds >= nextHomeVisibility)
                 {
-                    SampleOperatingRest(false);
-                    commuteDelay = 0d;
-                    Worker.transform.SetPositionAndRotation(CommutePlan.InsideHome,
-                        Quaternion.LookRotation(-CommutePlan.House.Lot.FacadeForward));
-                    TryMoveDoor(0f);
-                    if (!insideHidden && seconds >= nextHomeVisibility)
-                    {
-                        insideHidden = CanRetireInside();
-                        nextHomeVisibility = seconds + .25d;
-                    }
-                    UpdateVisibility();
-                    if (pose && !insideHidden)
-                        Worker.ApplyLocomotion(0f, false, (float)(seconds % 1200d), CommutePlan.HomeDoor + Vector3.up);
-                    return;
+                    insideHidden = CanRetireInside();
+                    nextHomeVisibility = seconds + .25d;
                 }
-                // Morning visibility resumes at exactly the same recessed position.
-                // A retired actor cannot pop back into a directly watched doorway.
-                if (returning && insideHidden && !forceSample && !CanRetireInside())
-                {
-                    commuteDelay += motionDelta;
-                    return;
-                }
-                insideHidden = false; UpdateVisibility();
-                float elapsed = (float)Math.Max(0d, day - (returning ? StartSeconds - CommuteSeconds : EndSeconds) - commuteDelay);
-                SampleTrip(seconds, elapsed, returning, motionDelta, pose);
+                UpdateVisibility();
+                if (pose && !insideHidden)
+                    Worker.ApplyLocomotion(0f, false, (float)(seconds % 1200d), CommutePlan.HomeDoor + Vector3.up);
             }
             finally
             {

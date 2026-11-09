@@ -97,6 +97,60 @@ namespace BarPromenade.Tests.PlayMode
 
     public sealed partial class CityTerracePilotPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator LiveCity_RidgeKioskSideWindowKeepsMenuOnRefusedTalk()
+        {
+            yield return LoadProductionCity();
+            if (!GameSessionState.IsGameTimeRunning) GameSessionState.TryStartGameTimeAt(720);
+            var station = city.World.Root.transform.Find("Ridge Kiosk").GetComponent<RidgeKioskStation>();
+            var hero = city.Player.Interactor;
+            var animation = hero.GetComponent<PlayerAnimatedInteractionController>();
+            var motor = city.Player.Motor;
+            var follow = city.Camera.GetComponent<PlayerCameraFollow>();
+            var hud = UnityEngine.Object.FindAnyObjectByType<IntoxicationHudView>();
+            bool hudWasVisible = hud.Visible;
+            try
+            {
+                // From the side the jamb hides the seller's head, but the hatch is in reach.
+                motor.Teleport(station.transform.TransformPoint(new Vector3(1.8f, PlayerFactory.GroundedRootOffset, 1.60f)));
+                Physics.SyncTransforms();
+                Vector3 eye = hero.transform.position + Vector3.up * 1.5f;
+                Assert.That(Physics.Linecast(eye, station.Vendor.Actor.Head.position, out var hit, ~0,
+                    QueryTriggerInteraction.Ignore), Is.True);
+                Assert.That(hit.collider.name, Is.EqualTo("Window jamb"));
+                Assert.That(station.CanReach(hero), Is.True);
+                Assert.That(station.Vendor.CanInteract(hero), Is.True);
+
+                // Stand on the apron for the staged walk, and refuse its first attempt.
+                motor.Teleport(station.transform.TransformPoint(new Vector3(1f, PlayerFactory.GroundedRootOffset, 2.22f)));
+                Physics.SyncTransforms();
+                Assert.That(station.Menu.Open(station, hero), Is.True);
+                yield return null; yield return null;
+                var menuPosition = follow.FixedBasePosition;
+                animation.enabled = false;
+                Assert.That(station.Menu.ConfirmSelection(), Is.False);
+                Assert.That(station.Menu.IsVisible && BarMinigameModalLock.IsAnyLocked, Is.True);
+                Assert.That(station.Menu.SelectedFocus, Is.EqualTo(RidgeKioskFocus.Vendor));
+                Assert.That(Vector3.Distance(follow.FixedBasePosition, menuPosition), Is.LessThan(.025f));
+                Assert.That(hero.InputEnabled || motor.InputEnabled || hud.Visible, Is.False);
+                animation.enabled = true;
+                yield return null; yield return null;
+                Assert.That(station.Menu.ConfirmSelection(), Is.True);
+                Assert.That(station.Vendor.Session.IsActive, Is.True);
+                Assert.That(station.Menu.IsOpen, Is.False);
+                station.Vendor.Session.RestoreImmediate();
+                Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
+                Assert.That(hero.InputEnabled && motor.InputEnabled, Is.True);
+                Assert.That(hud.Visible, Is.EqualTo(hudWasVisible));
+            }
+            finally
+            {
+                animation.enabled = true;
+                station.Menu.Close();
+                station.Vendor.Session.RestoreImmediate();
+            }
+        }
+
         [UnityTest, PrebuildSetup(typeof(KioskMenuCaptureSetup)), Timeout(240000)]
         public IEnumerator LiveCity_KioskMenuUsesOneEntryAndFourFocusedTargets()
         {

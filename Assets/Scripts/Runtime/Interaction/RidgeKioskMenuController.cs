@@ -50,7 +50,9 @@ namespace BarPromenade
             View = gameObject.AddComponent<SupermarketShelfShopView>();
         }
 
-        public bool Open(RidgeKioskStation owner, PlayerInteractor interactor)
+        public bool Open(RidgeKioskStation owner, PlayerInteractor interactor) => Open(owner, interactor, true);
+
+        private bool Open(RidgeKioskStation owner, PlayerInteractor interactor, bool playSound)
         {
             if (IsOpen || !isActiveAndEnabled || owner != station || !interactor || !interactor.InputEnabled ||
                 interactor.InteractKeyClaimed || CounterMenuInput.IsBlockedByOtherUi() || !station.CanReach(interactor)) return false;
@@ -66,7 +68,7 @@ namespace BarPromenade
                 inputUnlockFrame = Time.frameCount + 1; IsOpen = true;
                 View.Initialize(this, camera);
                 FocusCamera(); Physics.SyncTransforms();
-                RetroAudio.Play(RetroSfxId.UiConfirm);
+                if (playSound) RetroAudio.Play(RetroSfxId.UiConfirm);
                 return true;
             }
             catch { Close(); throw; }
@@ -92,7 +94,10 @@ namespace BarPromenade
                 if (!station.Vendor.HasDialogue) return false;
                 var customer = player;
                 Close();
-                return station.Vendor.TryStartFromMenu(customer);
+                if (station.Vendor.TryStartFromMenu(customer)) return true;
+                // A refused staged approach gives the same window its camera and input back.
+                Open(station, customer, false);
+                return false;
             }
             var offer = station.Offers[SelectedIndex - 1];
             var preflight = SupermarketPurchaseRules.Evaluate(offer.SourceId, offer.ItemId, CashBalance,

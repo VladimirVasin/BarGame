@@ -198,8 +198,7 @@ namespace BarPromenade
                 Vector3 ray = p - observer.transform.position;
                 if (!Physics.Raycast(observer.transform.position, ray.normalized, out var hit, ray.magnitude - .1f,
                         Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) ||
-                    hit.transform.IsChildOf(Worker.transform) ||
-                    !CommutePlan.House.FoundationBounds.Contains(new Vector2(hit.point.x, hit.point.z))) return false;
+                    hit.transform.IsChildOf(Worker.transform)) return false;
             }
             return true;
         }

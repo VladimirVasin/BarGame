@@ -1741,6 +1741,16 @@ namespace BarPromenade
                 float pixelsPerMetre = projection.ScreenRect.width / (projection.MaximumX - projection.MinimumX);
                 DrawLine(front, back, CityPawnshopPlan.Width * pixelsPerMetre, ResidentialBuilding);
             }
+            var loft = CityPigeonLoftPlan.ForLayout(controller.Layout);
+            if (loft.IsEnabled)
+            {
+                DrawSolidRect(ProjectWorldRect(projection, loft.Bounds), ResidentialBuilding);
+                var posts = loft.Courtyard.FencePosts;
+                // The last and first posts flank the gate opening.
+                for (int i = 1; i < posts.Count; i++)
+                    DrawLine(projection.WorldToScreen(posts[i - 1]), projection.WorldToScreen(posts[i]),
+                        1f, RetroUiTheme.Muted);
+            }
             var glass = CityGlassReturnSitePlan.ForLayout(controller.Layout);
             if (glass.IsEnabled)
             {

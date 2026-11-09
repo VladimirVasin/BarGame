@@ -60,7 +60,6 @@ namespace BarPromenade
                 return seller;
             }
             seller.Session = host.gameObject.AddComponent<DialogueSessionController>();
-            seller.target = RidgeKioskTarget.Attach(kiosk, host, actor.Head, approachAnchor);
             seller.face = CityPedestrianHandProps.FindSocket(actor.ModelRoot, "GEO_FaceSurface").GetComponent<Renderer>();
             seller.ordinaryFace = new MaterialPropertyBlock();
             seller.face.GetPropertyBlock(seller.ordinaryFace);
@@ -74,11 +73,13 @@ namespace BarPromenade
             return seller;
         }
 
+        internal void BindWindow(RidgeKioskTarget window) => target = window;
+
         public bool CanInteract(PlayerInteractor player) =>
             isActiveAndEnabled && HasDialogue && player != null && player.InputEnabled &&
             !Session.IsActive && !SceneTransitionService.IsTransitioning &&
             !BarMinigameModalLock.IsAnyLocked && !CounterMenuInput.IsBlockedByOtherUi() &&
-            target.CanReach(player);
+            target && target.CanReach(player);
 
         public void Interact(PlayerInteractor player)
         {
