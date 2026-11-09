@@ -1,0 +1,72 @@
+{
+  "design_id": "city_west_south_fractured_rim_v1",
+  "generator": "build-city-rockface-3d-model.py",
+  "axes": "X along ridge, Y toward crest, +Z toward City",
+  "edge_intervals": 4,
+  "models": [
+    {
+      "name": "CityRockface0",
+      "bounds_min": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bounds_max": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 104,
+      "geometry_signature": "ec4ec7bf217329a8dc3cc0bcc668b67fa9c85c9804df15c496561400b7bfb5e2",
+      "plates": 3
+    },
+    {
+      "name": "CityRockface1",
+      "bounds_min": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bounds_max": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 134,
+      "geometry_signature": "281beb794a7d3613957c233c0dd12fc196ca2b9fc748b27781e6f1f8a3ee9559",
+      "plates": 4
+    },
+    {
+      "name": "CityRockface2",
+      "bounds_min": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bounds_max": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 104,
+      "geometry_signature": "0a967325f7b671a5bc904c04358b2197d5c905a6c5f32d5a19b85f0aeb979b2a",
+      "plates": 3
+    },
+    {
+      "name": "CityRockface3",
+      "bounds_min": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bounds_max": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 122,
+      "geometry_signature": "c2e55b6d15b2ef04c655f69cd734eca8c94de3cc16c2446162e5562858e535f6",
+      "plates": 4
+    }
+  ]
+}

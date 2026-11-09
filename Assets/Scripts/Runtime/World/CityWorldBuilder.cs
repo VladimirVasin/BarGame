@@ -81,7 +81,7 @@ namespace BarPromenade
 
             Transform world = new GameObject("Generated City").transform;
             world.SetParent(parent, false);
-            CityGroundSurfaceSystem groundSurface = CityGroundSurfaceSystem.Begin(world);
+            CityGroundSurfaceSystem groundSurface = CityGroundSurfaceSystem.Begin(world, talusLayout: layout);
             CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
             Material emissiveMaterial = CityNightResources.EmissiveMaterial;
             RoadFencePlan fencePlan = plans.Fence;

@@ -50,6 +50,7 @@ namespace BarPromenade
             var pads = CityHillsideFurniturePlan.GroundPads(layout);
             var ramps = CityHillsideFurniturePlan.GroundRamps(layout);
             var seams = CityHillsideGroundSeamPlan.ForLayout(layout);
+            var talus = CityMountainTalusPlan.ForLayout(layout);
             for (float at = bounds.xMin; at < bounds.xMax; at += 3f) xs.Add(at);
             for (float at = bounds.yMin; at < bounds.yMax; at += 3f) zs.Add(at);
             AddBreaks(bounds);
@@ -80,6 +81,7 @@ namespace BarPromenade
             CityHillsideGroundPlan.AddPadBreaks(bounds, pads, xs, zs);
             CityHillsideGroundPlan.AddRampBreaks(bounds, ramps, xs, zs);
             seams.AddBreaks(bounds, xs, zs);
+            talus.AddBreaks(bounds, xs, zs);
             x = new float[xs.Count]; xs.CopyTo(x);
             z = new float[zs.Count]; zs.CopyTo(z);
             heights = new float[Columns * Rows];
@@ -88,9 +90,10 @@ namespace BarPromenade
             for (int col = 0; col < Columns; col++)
             {
                 var p = new Vector2(x[col], z[row]);
-                heights[row * Columns + col] = CityHillsideGroundPlan.ApplyRamps(p,
+                float ground = CityHillsideGroundPlan.ApplyRamps(p,
                     CityHillsideGroundPlan.ApplyPads(p,
                         seams.Apply(p, CityHillsideNeighborhoodPlan.SampleBuiltGround(layout, road, p, houses)), pads), ramps);
+                heights[row * Columns + col] = talus.ApplyHeight(p, ground);
                 if (col + 1 == Columns || row + 1 == Rows) continue;
                 var center = new Vector2((p.x + x[col + 1]) * .5f, (p.y + z[row + 1]) * .5f);
                 surfaces[row * (Columns - 1) + col] = Classify(center);

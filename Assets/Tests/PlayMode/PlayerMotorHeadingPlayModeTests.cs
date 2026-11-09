@@ -62,12 +62,15 @@ namespace BarPromenade.Tests.PlayMode
         private InputTestFixture inputFixture;
         private Keyboard keyboard;
         private Gamepad gamepad;
+        private bool previousMovementFocus;
 
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            previousMovementFocus = GameInput.MovementFocused;
             inputFixture = new InputTestFixture();
             inputFixture.Setup();
+            GameInput.HandleApplicationFocus(true);
 
             playerObject = new GameObject("Test player motor");
             playerObject.transform.position = new Vector3(0f, 100f, 0f);
@@ -78,6 +81,7 @@ namespace BarPromenade.Tests.PlayMode
 
             keyboard = InputSystem.AddDevice<Keyboard>();
             gamepad = InputSystem.AddDevice<Gamepad>();
+            GameInput.ReadMovement();
             yield return GroundForExternalPush();
         }
 
@@ -111,6 +115,7 @@ namespace BarPromenade.Tests.PlayMode
 
             inputFixture?.TearDown();
             inputFixture = null;
+            GameInput.HandleApplicationFocus(previousMovementFocus);
             yield return null;
         }
 
@@ -972,39 +977,48 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Airborne_ReleaseAndTurnKeepWorldMomentumUntilLanding()
         {
-            QueueKeyboardState(Key.W, Key.LeftShift);
-            yield return WaitForSpeed(MaximumRunningSpeed - .01f);
-            Vector3 leavingVelocity = motor.PlanarVelocity;
-            pushGround.SetActive(false);
-            Physics.SyncTransforms();
-            // Lose the previous move's support before testing air controls.
-            yield return null;
-            Assert.That(motor.IsGrounded, Is.False);
-            QueueKeyboardState(Key.D);
-            float deadline = Time.time + .3f;
-            while (Time.time < deadline)
+            float previousDelta = Time.captureDeltaTime;
+            Time.captureDeltaTime = 1f / 60f;
+            try
             {
+                QueueKeyboardState(Key.W, Key.LeftShift);
+                yield return WaitForSpeed(MaximumRunningSpeed - .01f);
+                Vector3 leavingVelocity = motor.PlanarVelocity;
+                pushGround.SetActive(false);
+                Physics.SyncTransforms();
+                // Lose the previous move's support before testing air controls.
                 yield return null;
-                Assert.That(Vector3.Distance(motor.PlanarVelocity, leavingVelocity), Is.LessThan(.05f),
-                    "Releasing travel and turning in the air must retain the achieved world velocity.");
-            }
-            Assert.That(Mathf.Abs(Mathf.DeltaAngle(playerObject.transform.eulerAngles.y, 0f)), Is.GreaterThan(15f));
+                Assert.That(motor.IsGrounded, Is.False);
+                QueueKeyboardState(Key.D);
+                float deadline = Time.time + .3f;
+                while (Time.time < deadline)
+                {
+                    yield return null;
+                    Assert.That(Vector3.Distance(motor.PlanarVelocity, leavingVelocity), Is.LessThan(.05f),
+                        "Releasing travel and turning in the air must retain the achieved world velocity.");
+                }
+                Assert.That(Mathf.Abs(Mathf.DeltaAngle(playerObject.transform.eulerAngles.y, 0f)), Is.GreaterThan(15f));
 
-            QueueKeyboardState(Key.S);
-            deadline = Time.time + .25f;
-            while (Time.time < deadline)
+                QueueKeyboardState(Key.S);
+                deadline = Time.time + .25f;
+                while (Time.time < deadline)
+                {
+                    Vector3 before = motor.PlanarVelocity;
+                    yield return null;
+                    Assert.That(Vector3.Distance(motor.PlanarVelocity, before), Is.LessThanOrEqualTo(1.5f * Time.deltaTime + .02f),
+                        "Held air control changes velocity gradually rather than replacing the flight direction.");
+                }
+                Assert.That(Vector3.Dot(motor.PlanarVelocity, leavingVelocity.normalized), Is.GreaterThan(3f));
+
+                QueueKeyboardState();
+                yield return GroundForExternalPush();
+                yield return WaitForStop();
+                Assert.That(motor.IsGrounded, Is.True, "Landing restores ordinary ground braking.");
+            }
+            finally
             {
-                Vector3 before = motor.PlanarVelocity;
-                yield return null;
-                Assert.That(Vector3.Distance(motor.PlanarVelocity, before), Is.LessThanOrEqualTo(1.5f * Time.deltaTime + .02f),
-                    "Held air control changes velocity gradually rather than replacing the flight direction.");
+                Time.captureDeltaTime = previousDelta;
             }
-            Assert.That(Vector3.Dot(motor.PlanarVelocity, leavingVelocity.normalized), Is.GreaterThan(3f));
-
-            QueueKeyboardState();
-            yield return GroundForExternalPush();
-            yield return WaitForStop();
-            Assert.That(motor.IsGrounded, Is.True, "Landing restores ordinary ground braking.");
         }
 
         [UnityTest]
@@ -1280,7 +1294,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 motor.PlanarVelocity.magnitude,
                 Is.GreaterThanOrEqualTo(minimumSpeed),
-                "The motor did not reach the requested speed in time.");
+                $"The motor did not reach the requested speed in time. " +
+                $"requested={motor.RequestedPlanarVelocity}, actual={motor.PlanarVelocity}, dt={Time.deltaTime}, " +
+                $"focus={GameInput.MovementFocused}, neutral={GameInput.MovementAwaitingNeutral}, " +
+                $"allowed={GameInput.CanRead(GameInputContext.Movement)}, grounded={motor.IsGrounded}, " +
+                $"W={keyboard.wKey.isPressed}, shift={keyboard.leftShiftKey.isPressed}, contact={motor.LastContact.Flags}.");
         }
 
         private IEnumerator WaitForStop()

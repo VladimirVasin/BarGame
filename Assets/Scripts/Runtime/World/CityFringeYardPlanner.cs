@@ -11,7 +11,10 @@ namespace BarPromenade
         // service frame adds at most seven descriptors. Runtime still batches
         // the fine strokes by 48 m chunk/style/collision. One grounded mason
         // cart is appended after the landmark pass.
-        public const int MaximumPartCount = 656;
+        // Dense toe deposits replace the former two/three small boxes in each
+        // mountain yard. Their fixed ceiling adds at most 119 descriptors.
+        public const int MaximumPartCount = 775;
+        public const int MaximumRockfallClustersPerYard = 32;
         public const float MinimumTunnelDriveClearWidth = 6f;
         // Keep the first working entrance readable through the unchanged fog
         // from the public side of the closed checkpoint fence.
@@ -96,6 +99,7 @@ namespace BarPromenade
                 yards,
                 forecourt);
             plan = CityFringeYardLifePlanner.Append(layout, plan);
+            plan = CityCoastalInfrastructurePlan.ReserveFacilitySites(layout, plan);
             CityFringeYardValidator.ValidateOrThrow(layout, mountains, plan);
             return plan;
         }
@@ -328,18 +332,6 @@ namespace BarPromenade
                     traversal,
                     parts);
             }
-            AddRockfallPockets(
-                layout,
-                surfaces,
-                bounds,
-                areaId,
-                tangent,
-                outward,
-                access.Center,
-                traversal,
-                kind,
-                parts);
-
             if (kind == CityFringeYardKind.WestStoneTerraces)
             {
                 AddStoneCulvert(
@@ -376,6 +368,10 @@ namespace BarPromenade
                     forecourt,
                     parts);
             }
+
+            AddRockfallPockets(
+                layout, surfaces, bounds, areaId, tangent, outward,
+                access.Center, traversal, parts);
 
             // The southern streets cross the old retaining/drainage strip at grade.
             // Reserve the complete carriageway and both pavements before the shared
@@ -830,48 +826,66 @@ namespace BarPromenade
             Vector3 outward,
             Vector3 anchor,
             Rect reserved,
-            CityFringeYardKind kind,
             ICollection<CityFringeYardPartDescriptor> parts)
         {
             GetLongRange(bounds, axis, 10f, 10f, out float start, out float end);
-            int count = kind == CityFringeYardKind.SouthFloodWorks ? 3 : 2;
+            int count = Mathf.Clamp(
+                Mathf.CeilToInt((end - start) / 8f),
+                3, MaximumRockfallClustersPerYard);
             for (int index = 0; index < count; index++)
             {
-                float amount = (index + 1f) / (count + 1f);
-                Vector3 center = PointAtOuterInset(
-                    bounds,
-                    anchor,
-                    outward,
-                    2.35f + index * 0.18f);
-                center = SetLongCoordinate(
-                    center,
-                    axis,
-                    Mathf.Lerp(start, end, amount));
+                string stableId = $"{areaId}-rockfall-{index:00}";
                 float unit = HashUnit(
-                    layout.Seed,
-                    $"{areaId}-rockfall-{index:00}");
-                Quaternion rotation = Quaternion.Euler(
-                    0f,
-                    Mathf.Lerp(-18f, 18f, unit),
-                    0f);
-                AddGroundedPart(
-                    layout,
-                    surfaces,
-                    areaId,
-                    $"{areaId}-rockfall-{index:00}",
-                    CityFringeYardPartKind.RockfallMass,
-                    CityFringeYardStyle.Rock,
-                    center,
-                    rotation,
+                    layout.Seed, stableId);
+                float amount = (index + Mathf.Lerp(.28f, .72f, unit)) / count;
+                Quaternion rotation = Quaternion.LookRotation(outward) *
+                    Quaternion.Euler(0f, Mathf.Lerp(-7f, 7f, unit), 0f);
+                Vector3 size = FitCivilDepth(
+                    bounds, outward, rotation,
                     new Vector3(
-                        Mathf.Lerp(1.0f, 1.7f, unit),
-                        Mathf.Lerp(0.65f, 1.15f, unit),
-                        Mathf.Lerp(1.2f, 2.2f, 1f - unit)),
-                    true,
-                    0.10f,
-                    reserved,
-                    parts);
+                        Mathf.Lerp(4.6f, 7.2f, unit),
+                        Mathf.Lerp(1.9f, 3.6f, unit),
+                        Mathf.Lerp(3.6f, 5.2f, 1f - unit)));
+                float halfDepth =
+                    Mathf.Abs(Vector3.Dot(rotation * Vector3.right, outward)) * size.x * .5f +
+                    Mathf.Abs(Vector3.Dot(rotation * Vector3.forward, outward)) * size.z * .5f;
+                // This inset is already in actual metres after fitting the
+                // compact yard. Keep the back edge against the surveyed toe.
+                Vector3 center = anchor;
+                if (Mathf.Abs(outward.x) > .5f)
+                    center.x = bounds.xMin + halfDepth + .06f;
+                else
+                    center.z = bounds.yMin + halfDepth + .06f;
+                center = SetLongCoordinate(center, axis, Mathf.Lerp(start, end, amount));
+                float ground = SampleLowestCornerTop(layout, surfaces, center, rotation, size);
+                center.y = ground + size.y * .5f - .28f;
+                var part = new CityFringeYardPartDescriptor(
+                    stableId, areaId, CityFringeYardPartKind.RockfallMass,
+                    CityFringeYardStyle.Rock, center, rotation, size, true);
+                if (part.Footprint.Overlaps(reserved) || RockfallObscuresFixture(part, parts))
+                    continue;
+                parts.Add(part);
             }
+        }
+
+        internal static bool RockfallObscuresFixture(
+            CityFringeYardPartDescriptor rockfall,
+            IEnumerable<CityFringeYardPartDescriptor> parts)
+        {
+            foreach (CityFringeYardPartDescriptor part in parts)
+            {
+                // Retaining work can disappear into the old deposited rock.
+                // Keep authored equipment and the portal wings readable.
+                if (part.Kind == CityFringeYardPartKind.RockfallMass ||
+                    part.Kind == CityFringeYardPartKind.RetainingSection ||
+                    part.Kind == CityFringeYardPartKind.Gabion ||
+                    part.Kind == CityFringeYardPartKind.GabionCage ||
+                    part.Kind == CityFringeYardPartKind.Buttress ||
+                    !CityFringeYardLifePlanner.RequiresSceneClearance(part))
+                    continue;
+                if (rockfall.Footprint.Overlaps(part.Footprint)) return true;
+            }
+            return false;
         }
 
         private static void AddStoneCulvert(

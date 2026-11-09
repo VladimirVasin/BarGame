@@ -465,13 +465,11 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   lower offset 5.35 m. Wires clear roads by 7 m and avoid bays, galleries and roofs
   along all 16 mesh segments. At most 64 poles/192 spans; one shared-material cable
   mesh. Home clips the same plan to its 64 m balcony view;
-- one default-blueprint-only mountain boundary plan closes the physical west
-  and south edges with deterministic flat-shaded low-poly ridge strips whose
-  toes sample the authoritative terrain top. The south skyline remains closed
-  over one low, dark `10 m`-wide river-cave water mouth; surrounding rock
-  terminates both bank routes physically, and the cave itself is never
-  walkable. A
-  gate-free `8 x 5.5 m` portal at `yard-south-west-access` has a raised,
+- Blender facets share render/collision. `CityMountainTalusPlan` grades open
+  toes. Upper/south tongues reach 1.6–3.6 m. West utility gaps rise 0.09 m within
+  0.35 m, with full-width material/boulders. Terrain sampling matches physics.
+  Doors/courts/routes stay clear. The crest spans
+  `10 m` river mouth; rock stops both banks. A gate-free `8 x 5.5 m` portal at `yard-south-west-access` has a raised,
   terrain-overlapping floor and closed non-coplanar lining joints. Its `72 m`
   shell stays straight/physical for `12 m`, then bends west to hide its end
   and the backdrop. Navigation reaches `11 m`; crossing `8 m` shows the
@@ -479,10 +477,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   No tunnel transition handler or cave interaction. North remains sea;
   east has the closed mainland road below. Two camera-relative west/south
   layers at `39.4-43.2 m` keep world azimuth within `48 m` far clip, without
-  collision/lights/navigation/world bounds. Shared `CityMountainPhysical` and
-  deterministic `CityMountainRockAlbedo` use matching forward/depth/normal
-  dither across `43-31 m`, a `0.10` contrast floor only after native Exp2
-  reaches it, and natural fog on approach. The fog-exempt shell mixes `0.86`
+  collision/lights/navigation/world bounds. `CityMountainPhysical` shades
+  `CityMountainRockAlbedo` with City SSAO. Colour/depth/normals share dither
+  at `39–47.5 m` at sea level and lift with altitude. Contrast follows Exp2
+  to a `0.10` floor. The fog-exempt shell mixes `0.86`
   toward City fog. The omitted `(-1,-1)` cell holds one textured natural-soil
   slope around `16.2°`, outside navigation behind the exact L-shaped road
   fence, with no steps/terraces/platforms. Outer wings follow sampled terrain
@@ -493,13 +491,13 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   authored approaches remain open.
   Portal, physical entry and visual continuation pieces retain
   `RuntimePrimitiveLit`;
-- immutable default-only `CityFringeYardPlan` derives five Yard compositions
-  from canonical bounds/access/terrain. Four west/south strips share graded
-  maintenance traces, drainage, retaining work, poles/cables and repair/rockfall
-  pockets. Their roughly `22 m` road-to-toe terrain forms one conforming
-  compacted-fill batch: `0-4 m` shoulder trace, three transverse traces and
-  three or four seeded anchors in `4-14 m` (gaps ≤`40 m`), paired traces or
-  flood-drain/retaining work in `14-22 m`. No broad longitudinal track overlays.
+- The default-only `CityFringeYardPlan` fits five yards to their bounds, access
+  and terrain. West/south yards hold drains, retaining walls, poles, cables
+  and repair pockets. Dense boulder belts rise to the cliff, clear of routes and
+  utility sites. Static meshes share rock texture and collision. Compacted fill spans
+  the shoulder (`0–4 m`), three transverse traces and three or four
+  seeded anchors (`4–14 m`, gaps ≤`40 m`), then paired traces or flood drainage
+  and retaining works (`14–22 m`). No broad track overlays.
   Macro anchors: stepped culvert terrace, industrial repair frame, `6.9 m`
   tunnel forecourt (`>6 m` clear lane, embedded marks, two grounded concrete
   return wings, two-post frame/crown floodlight), caged floodworks/gauge.
@@ -1619,7 +1617,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Lean `40/60`; `ai/player-art-spec.md`;
 - one manual PlayableGraph presentation that damp-blends the in-place
   `Idle` (4 s), `Walk` (1 s), `Run` (.75 s/18 frames) and snow clips from
-  actual constrained speed. Idle breathes/shifts weight; Walk articulates
+  achieved speed within the requested step. Capsule recovery away from a wall
+  adds no walking momentum. Idle breathes/shifts weight; Walk articulates
   contact/down/passing/up, elbows/knees/ankles. Heavy Run loads forward, swings
   arms, lifts knees and briefly flies. `SnowWalk`/`SnowWalkBackward` (2 s)
   extract bent legs high with long support, short steps and weight transfer;

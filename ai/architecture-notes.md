@@ -3459,18 +3459,18 @@
   treating a missing fence segment as sufficient traversal.
 - **Accepted — The physical coastal basin closes only west and south:**
   `CityMountainBoundaryDefinition`: `default-coastal` only; custom/legacy get
-  `CityMountainBoundaryPlan.Empty`. Flat-shaded ridges follow west/south Yards/
-  `CityTerrainSurfacePlan`; render/collision share exact toes, lip `0.04 m`
-  below terrain/`0.08 m` cityward. South closes above the dark `10 m` river mouth;
-  rock ends both promenades. Only mouth/portal interrupt toes. `(-1,-1)` has
-  a diagonal closure; west tapers to northern beach, north remains sea.
-  The physical ridge chunks use one shared opaque `CityMountainPhysical`
-  material, MPBs and deterministic `CityMountainRockAlbedo`; only the near toe
-  owns collision, while the tall rear mass casts no huge distant shadow. A
-  screen-space dither hands the shell to physical rock over `43-31 m`
-  horizontal distance; forward, `DepthOnly` and `DepthNormalsOnly` share clips.
-  A `0.10` visibility floor starts only when native Exp2 reaches it, leaving
-  natural stronger contrast at `9-20 m`. Near portal/lining pieces retain
+  `CityMountainBoundaryPlan.Empty`. Surveys own toes/openings/crest.
+  `CityMountainTalusPlan` grades accessible west/south toes. Upper/south tongues
+  reach 1.6–3.6 m. Lower west utility yards rise 0.09 m within 0.35 m maintenance
+  gaps, with full-width masks/existing boulders. Grid heights drive sampling/
+  render/collision. Exclusions clear houses/courts/routes. Masks/buried Blender
+  blocks join the wall. The dark `10 m` river mouth stops both promenades.
+  `(-1,-1)` closes diagonally, west tapers to beach, north is sea.
+  Pinned borders weld four Blender faces in render/collision chunks.
+  Rear mass casts no distant shadow. Opaque `CityMountainPhysical`
+  uses MPBs, `CityMountainRockAlbedo` and City SSAO. Forward/depth/normals
+  share the horizontal dither band (39–47.5 m at sea level) and altitude scale.
+  Native Exp2 reaches 0.10 beyond the 9–20 m approach. Portal/lining retain
   `RuntimePrimitiveLit`. The floor reaches `0.25 m` beneath the terrain edge,
   raised `0.03 m`; walls sit `0.04 m` outside portal faces and overlap floor/
   ceiling, whose overhang is another `0.04 m`. Conforming terrain, narrow ruts,
@@ -5915,8 +5915,8 @@
   signed forward speed/turn→`Walk`/`Run`/`WalkBack`/`TurnLeft`/`TurnRight`,six-input mixer.
 - **Accepted — Bounded inertial walk/run locomotion:** Forward walk/run
   `2.6/4.2 m/s`,back `1.4`;ground accel/brake `6.5/11 m/s²`;release coasts.
-  Constrained displacement feeds velocity/`PlayerMotionSample.RunBlend`;
-  collision/road edges store no impulse or run-in-place. Modal/transition/input
+  Achieved travel feeds velocity/`RunBlend`, capped to the intended step.
+  Opposing boundary recovery adds no momentum. Obstructions stop the gait. Modal/transition/input
   disable/teleport stop. Intoxication scales targets/turn;fatigue0;approaches walk.
 - **Accepted — Run is one production-only authored gait:** Hero V2 appends one
   bone-only, in-place `Run` Action (`0.75 s`, `18` frames at `24 fps`) to reach

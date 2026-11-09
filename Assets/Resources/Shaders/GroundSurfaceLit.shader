@@ -3,6 +3,10 @@ Shader "Bar Promenade/Layered Ground"
 {
     Properties
     {
+        _GroundMountainTalus("Mountain talus surface", Float) = 0
+        _GroundTalusMap("Mountain talus rock", 2D) = "white" {}
+        _GroundTalusResponse("Mountain talus response", 2D) = "white" {}
+        _GroundTalusColor("Mountain talus tint", Color) = (1,1,1,1)
         _GroundResponse("Linear material response", 2D) = "white" {}
         _GroundSubstrateMap("Snow substrate", 2D) = "white" {}
         _GroundSubstrateResponse("Snow substrate response", 2D) = "white" {}

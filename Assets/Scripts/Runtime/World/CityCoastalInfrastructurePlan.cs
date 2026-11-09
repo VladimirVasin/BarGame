@@ -62,6 +62,8 @@ namespace BarPromenade
         private const float PoleSideOffset = 5.35f;
         private const float MaximumSpanLength = 64f;
         private const int MaximumPoleCandidateCount = 768;
+        private const float FacilityFringeClearance = .30f;
+        internal const float FacilityMaintenanceGap = .35f;
         private static readonly ConditionalWeakTable<CityLayout, CityCoastalInfrastructurePlan> Cache =
             new ConditionalWeakTable<CityLayout, CityCoastalInfrastructurePlan>();
 
@@ -115,12 +117,7 @@ namespace BarPromenade
                 return new CityCoastalInfrastructurePlan(facilities, poles, spans, solids, inlets, forwards, services);
 
             var clearance = new ClearanceContext(layout);
-            AddFacility(layout, fringe, facilities, solids, clearance, "coastal-substation", "Substation",
-                new Vector3(5f, 3.7f, 4f), CityFringeYardKind.WestIndustrialBelt, .65f);
-            AddFacility(layout, fringe, facilities, solids, clearance, "coastal-municipal-workshop", "MunicipalWorkshop",
-                new Vector3(7.4f, 4.4f, 4.2f), CityFringeYardKind.WestIndustrialBelt, .20f);
-            AddFacility(layout, fringe, facilities, solids, clearance, "coastal-port-workshop", "PortWorkshop",
-                new Vector3(6f, 4.2f, 4.4f), CityFringeYardKind.WestStoneTerraces, .75f);
+            PlanFacilities(layout, fringe, facilities, solids, clearance, false);
 
             clearance.Geometry = new CityElectricalClearanceGeometry(layout);
             var candidates = new List<Vector3>(MaximumPoleCandidateCount);
@@ -181,9 +178,63 @@ namespace BarPromenade
             return new CityCoastalInfrastructurePlan(facilities, poles, spans, solids, inlets, forwards, services);
         }
 
+        // Existing utility sites have priority over new toe dressing. Survey just the
+        // three buildings here so the fringe can reserve the exact sites and feed mast
+        // without constructing the electrical graph or entering the layout cache.
+        internal static CityFringeYardPlan ReserveFacilitySites(CityLayout layout, CityFringeYardPlan fringe)
+        {
+            if (!fringe.IsEnabled || !layout.SpatialPlan.IsCompactCoastal) return fringe;
+            var facilities = new List<CityCoastalFacility>(ExpectedFacilityCount);
+            var sites = new List<Rect>(ExpectedFacilityCount + 1);
+            PlanFacilities(layout, fringe, facilities, sites, new ClearanceContext(layout), true);
+            sites.Add(PoleFootprint(FeedAnchor(facilities[0])));
+
+            var yards = new List<CityFringeYardDescriptor>(fringe.Yards);
+            bool changed = false;
+            for (int index = 0; index < yards.Count; index++)
+            {
+                CityFringeYardDescriptor yard = yards[index];
+                if (yard.Kind != CityFringeYardKind.WestIndustrialBelt &&
+                    yard.Kind != CityFringeYardKind.WestStoneTerraces) continue;
+                var parts = new List<CityFringeYardPartDescriptor>(yard.Parts);
+                int removed = parts.RemoveAll(part =>
+                    part.Kind == CityFringeYardPartKind.RockfallMass &&
+                    OverlapsAny(sites, Expanded(part.Footprint, FacilityFringeClearance)));
+                if (removed == 0) continue;
+                yards[index] = new CityFringeYardDescriptor(yard.StableId, yard.AreaId, yard.Kind,
+                    yard.AreaBounds, yard.Access, yard.TraversalBounds, parts);
+                changed = true;
+            }
+            return changed ? new CityFringeYardPlan(yards, fringe.HasTunnelForecourt, fringe.TunnelForecourt,
+                new List<CityFringeYardPracticalDescriptor>(fringe.Practicals)) : fringe;
+        }
+
+        private static void PlanFacilities(CityLayout layout, CityFringeYardPlan fringe,
+            IList<CityCoastalFacility> facilities, IList<Rect> solids, ClearanceContext clearance, bool ignoreRockfalls)
+        {
+            AddFacility(layout, fringe, facilities, solids, clearance, "coastal-substation", "Substation",
+                new Vector3(5f, 3.7f, 4f), CityFringeYardKind.WestIndustrialBelt, .65f, ignoreRockfalls);
+            AddFacility(layout, fringe, facilities, solids, clearance, "coastal-municipal-workshop", "MunicipalWorkshop",
+                new Vector3(7.4f, 4.4f, 4.2f), CityFringeYardKind.WestIndustrialBelt, .20f, ignoreRockfalls);
+            AddFacility(layout, fringe, facilities, solids, clearance, "coastal-port-workshop", "PortWorkshop",
+                new Vector3(6f, 4.2f, 4.4f), CityFringeYardKind.WestStoneTerraces, .75f, ignoreRockfalls);
+        }
+
+        private static bool YardBlocksFacility(CityFringeYardDescriptor yard, Rect site, bool ignoreRockfalls)
+        {
+            for (int index = 0; index < yard.Parts.Count; index++)
+            {
+                CityFringeYardPartDescriptor part = yard.Parts[index];
+                if (!part.BlocksMovement || (ignoreRockfalls && part.Kind == CityFringeYardPartKind.RockfallMass))
+                    continue;
+                if (site.Overlaps(Expanded(part.Footprint, FacilityFringeClearance))) return true;
+            }
+            return false;
+        }
+
         private static void AddFacility(CityLayout layout, CityFringeYardPlan fringe,
             IList<CityCoastalFacility> facilities, IList<Rect> solids, ClearanceContext clearance, string id, string assembly,
-            Vector3 size, CityFringeYardKind preferred, float along)
+            Vector3 size, CityFringeYardKind preferred, float along, bool ignoreRockfalls)
         {
             bool found = false; Vector3 best = default; float bestScore = float.PositiveInfinity;
             Quaternion bestRotation = Quaternion.identity;
@@ -197,13 +248,12 @@ namespace BarPromenade
                 // facing roadward. The west sheet has only eight usable metres.
                 Quaternion rotation = Quaternion.Euler(0f,90f,0f);
                 Rect local = new CityCoastalFacility(id,assembly,Vector3.zero,size,rotation).Footprint;
-                const float maintenanceGap=.35f;
-                float xMin=area.xMin+maintenanceGap-local.xMin;
+                float xMin=area.xMin+FacilityMaintenanceGap-local.xMin;
                 // AreaBounds already omits the half-road. Preserve the same
                 // 2.2 m public-road exclusion when deriving the candidate range.
                 float xMax=area.xMax-2.2f-local.xMax;
-                float zMin=area.yMin+maintenanceGap-local.yMin;
-                float zMax=area.yMax-maintenanceGap-local.yMax;
+                float zMin=area.yMin+FacilityMaintenanceGap-local.yMin;
+                float zMax=area.yMax-FacilityMaintenanceGap-local.yMax;
                 if(xMax<xMin || zMax<zMin)continue;
                 Vector2 desired = new Vector2(area.center.x, Mathf.Lerp(area.yMin, area.yMax, along));
                 int zCount=Mathf.Clamp(Mathf.CeilToInt((zMax-zMin)/1.25f)+1,2,128);
@@ -220,16 +270,7 @@ namespace BarPromenade
                         OverlapsAny(solids, Expanded(footprint, 1.2f)) ||
                         OverlapsBuildings(clearance, footprint) || OverlapsAny(clearance.Furniture,Expanded(footprint,.4f)))
                     {blockedSolid++;continue;}
-                    bool blocked = false;
-                    for (int p = 0; p < yard.Parts.Count; p++)
-                    {
-                        CityFringeYardPartDescriptor part = yard.Parts[p];
-                        if (!part.BlocksMovement) continue;
-                        // Footprint includes the authored part's rotation;
-                        // its raw Size axes are not a world-space rectangle.
-                        if (footprint.Overlaps(Expanded(part.Footprint,.30f))) { blocked = true; break; }
-                    }
-                    if(blocked){blockedSolid++;continue;}
+                    if(YardBlocksFacility(yard,footprint,ignoreRockfalls)){blockedSolid++;continue;}
                     if(!TryFoundation(layout,footprint,out float datum)){unsupported++;continue;}
                     if(assembly=="Substation")
                     {
@@ -239,10 +280,7 @@ namespace BarPromenade
                             feed.Overlaps(Expanded(yard.TraversalBounds,.65f)) || NearRoad(layout,feed,2.2f) ||
                             OverlapsBuildings(clearance,feed) || OverlapsAny(clearance.Furniture,Expanded(feed,.4f)))
                         {blockedSolid++;continue;}
-                        for(int p=0;p<yard.Parts.Count;p++)
-                            if(yard.Parts[p].BlocksMovement && feed.Overlaps(Expanded(yard.Parts[p].Footprint,.30f)))
-                            {blocked=true;break;}
-                        if(blocked){blockedSolid++;continue;}
+                        if(YardBlocksFacility(yard,feed,ignoreRockfalls)){blockedSolid++;continue;}
                         if(!TryFoundation(layout,feed,out _)){unsupported++;continue;}
                     }
                     float score = (new Vector2(x,z)-desired).sqrMagnitude;

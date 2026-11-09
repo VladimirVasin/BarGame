@@ -663,6 +663,11 @@ namespace BarPromenade
             float inverseDelta = Time.deltaTime > 0.0001f ? 1f / Time.deltaTime : 0f;
             Vector3 momentumDisplacement = transform.position - before;
             momentumDisplacement.y = 0f;
+            // Area recovery and native overlap resolution can move the capsule
+            // farther than its own step, or opposite to it. That correction
+            // restores contact and must not become next frame's propulsion.
+            momentumDisplacement = ExtractLocomotionDisplacement(
+                momentumDisplacement, desired - current);
             momentumVelocity = momentumDisplacement * inverseDelta;
 
             Vector3 driftDisplacement = Vector3.zero;
@@ -790,6 +795,13 @@ namespace BarPromenade
             {
                 verticalSpeed -= Gravity * Time.deltaTime;
             }
+        }
+
+        private static Vector3 ExtractLocomotionDisplacement(Vector3 actual, Vector3 requested)
+        {
+            requested.y = 0f;
+            if (Vector3.Dot(actual, requested) <= 0f) return Vector3.zero;
+            return Vector3.ClampMagnitude(actual, requested.magnitude);
         }
 
         private static float GetVelocityChangeRate(

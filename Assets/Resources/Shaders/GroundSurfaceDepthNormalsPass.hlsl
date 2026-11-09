@@ -27,6 +27,7 @@ struct Attributes
 {
     float4 groundRoad : TEXCOORD3;
     half4 groundState : COLOR;
+    half2 groundTalus : TEXCOORD4;
     float4 positionOS   : POSITION;
     float4 tangentOS    : TANGENT;
     float2 texcoord     : TEXCOORD0;
@@ -39,6 +40,7 @@ struct Varyings
     float3 surfaceWorld : TEXCOORD6;
     float4 groundRoad : TEXCOORD7;
     half4 groundState : TEXCOORD9;
+    half groundTalus : TEXCOORD10;
     float4 positionCS  : SV_POSITION;
     #if defined(REQUIRES_UV_INTERPOLATOR)
     float2 uv          : TEXCOORD1;
@@ -78,6 +80,7 @@ Varyings DepthNormalsVertex(Attributes input)
     output.surfaceWorld = vertexInput.positionWS;
     output.groundRoad = input.groundRoad;
     output.groundState = input.groundState;
+    output.groundTalus = input.groundTalus.x;
     output.normalWS = half3(normalInput.normalWS);
     #if defined(REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR) || defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR)
         float sign = input.tangentOS.w * float(GetOddNegativeScale());
@@ -164,7 +167,7 @@ void DepthNormalsFragment(
     InitializeStandardLitSurfaceData(input.uv, surface);
     half relief;
     ApplyGroundLayers(input.uv, input.surfaceWorld, input.normalWS,
-        input.groundRoad, input.groundState, surface, relief);
+        input.groundRoad, input.groundState, input.groundTalus, surface, relief);
     half3 surfaceNormal = GroundReliefNormal(input.surfaceWorld,
         NormalizeNormalPerPixel(normalWS), relief);
     half receiver = GroundScreenSpaceReceiver();

@@ -26,6 +26,7 @@ struct Attributes
 {
     float4 groundRoad : TEXCOORD3;
     half4 groundState : COLOR;
+    half2 groundTalus : TEXCOORD4;
     float4 positionOS   : POSITION;
     float3 normalOS     : NORMAL;
     float4 tangentOS    : TANGENT;
@@ -39,6 +40,7 @@ struct Varyings
 {
     float4 groundRoad : TEXCOORD11;
     half4 groundState : TEXCOORD12;
+    half groundTalus : TEXCOORD13;
     float2 uv                       : TEXCOORD0;
 
 #if defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)
@@ -189,6 +191,7 @@ Varyings LitPassVertex(Attributes input)
 
     output.groundRoad = input.groundRoad;
     output.groundState = input.groundState;
+    output.groundTalus = input.groundTalus.x;
     output.uv = TRANSFORM_TEX(input.texcoord, _BaseMap);
 
     // already normalized from normal transform to WS.
@@ -257,7 +260,7 @@ void LitPassFragment(
     InitializeStandardLitSurfaceData(input.uv, surfaceData);
     half groundRelief;
     ApplyGroundLayers(input.uv, input.positionWS, input.normalWS,
-        input.groundRoad, input.groundState, surfaceData, groundRelief);
+        input.groundRoad, input.groundState, input.groundTalus, surfaceData, groundRelief);
 
 #ifdef LOD_FADE_CROSSFADE
     LODFadeCrossFade(input.positionCS);

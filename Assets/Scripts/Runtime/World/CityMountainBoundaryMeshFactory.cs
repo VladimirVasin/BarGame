@@ -11,7 +11,7 @@ namespace BarPromenade
     /// vertices and therefore its normal, which keeps the mountain readable
     /// through distance, lighting and haze.
     /// </summary>
-    internal static class CityMountainBoundaryMeshFactory
+    internal static partial class CityMountainBoundaryMeshFactory
     {
         private const float MaximumChunkLength = 48f;
         internal const float ToeGroundOverlap = 0.08f;
@@ -21,11 +21,11 @@ namespace BarPromenade
         private const float CrestDepthRatio = 0.52f;
         private const float ShoulderHeightRatio = 0.34f;
         private const float BackHeightRatio = 0f;
-        private const int ToeColliderBandCount = 3;
 
         internal static GameObject CreateRidge(
             Transform parent,
-            CityMountainRidgeDescriptor ridge)
+            CityMountainRidgeDescriptor ridge,
+            CityLayout layout = null)
         {
             if (parent == null)
             {
@@ -66,7 +66,8 @@ namespace BarPromenade
                     first,
                     last,
                     distances,
-                    chunkIndex);
+                    chunkIndex,
+                    layout);
                 first = last;
                 chunkIndex++;
             }
@@ -274,7 +275,8 @@ namespace BarPromenade
             int first,
             int last,
             IReadOnlyList<float> distances,
-            int chunkIndex)
+            int chunkIndex,
+            CityLayout layout)
         {
             var vertices = new List<Vector3>();
             var uvs = new List<Vector2>();
@@ -288,12 +290,19 @@ namespace BarPromenade
                     ridge.Stations[stationIndex];
                 CityMountainRidgeStation next =
                     ridge.Stations[stationIndex + 1];
-                Vector3[] currentCross = CreateCrossSection(current);
-                Vector3[] nextCross = CreateCrossSection(next);
+                Vector3[] currentCross = CreateTalusCrossSection(current, layout);
+                Vector3[] nextCross = CreateTalusCrossSection(next, layout);
                 Vector3 inward = -Flatten(
                     current.OutwardNormal + next.OutwardNormal);
                 for (int band = 0; band < currentCross.Length - 1; band++)
                 {
+                    if (band == 2 || band == 3)
+                    {
+                        AppendRockface(vertices, uvs, triangles, current, next,
+                            currentCross, nextCross, band,
+                            distances[stationIndex], distances[stationIndex + 1]);
+                        continue;
+                    }
                     Vector3 faceDirection =
                         band < currentCross.Length - 2
                             ? inward
@@ -319,21 +328,21 @@ namespace BarPromenade
                 vertices,
                 uvs,
                 triangles,
-                CreateCrossSection(ridge.Stations[first]),
+                CreateTalusCrossSection(ridge.Stations[first], layout),
                 ridge.Stations[first].WorldXZ -
                 ridge.Stations[first + 1].WorldXZ);
             AddEndCap(
                 vertices,
                 uvs,
                 triangles,
-                CreateCrossSection(ridge.Stations[last]),
+                CreateTalusCrossSection(ridge.Stations[last], layout),
                 ridge.Stations[last].WorldXZ -
                 ridge.Stations[last - 1].WorldXZ);
 
             Color tint = CreateChunkTint(
                 ridge.Stations[first].Seed,
                 chunkIndex);
-            CreateMeshObject(
+            GameObject visible = CreateMeshObject(
                 $"{ridge.StableId} Chunk {chunkIndex + 1}",
                 parent,
                 vertices,
@@ -341,69 +350,16 @@ namespace BarPromenade
                 triangles,
                 tint,
                 false,
-                true);
-            CreateToeCollider(
-                parent,
-                ridge,
-                first,
-                last,
-                chunkIndex);
-        }
-
-        private static void CreateToeCollider(
-            Transform parent,
-            CityMountainRidgeDescriptor ridge,
-            int first,
-            int last,
-            int chunkIndex)
-        {
-            var vertices = new List<Vector3>();
-            var uvs = new List<Vector2>();
-            var triangles = new List<int>();
-            for (int index = first; index < last; index++)
-            {
-                CityMountainRidgeStation current = ridge.Stations[index];
-                CityMountainRidgeStation next = ridge.Stations[index + 1];
-                Vector3[] currentCross = CreateCrossSection(current);
-                Vector3[] nextCross = CreateCrossSection(next);
-                Vector3 inward = -Flatten(
-                    current.OutwardNormal + next.OutwardNormal);
-                for (int band = 0;
-                     band < ToeColliderBandCount;
-                     band++)
-                {
-                    AddQuad(
-                        vertices,
-                        uvs,
-                        triangles,
-                        currentCross[band],
-                        currentCross[band + 1],
-                        nextCross[band],
-                        nextCross[band + 1],
-                        (inward * 0.72f +
-                         Vector3.up * 0.28f).normalized);
-                }
-            }
-
-            var mesh = new Mesh
-            {
-                name = $"{ridge.StableId} Toe Collider Mesh",
-                hideFlags = HideFlags.HideAndDontSave,
-                indexFormat = vertices.Count > ushort.MaxValue
-                    ? IndexFormat.UInt32
-                    : IndexFormat.UInt16
-            };
-            mesh.SetVertices(vertices);
-            mesh.SetTriangles(triangles, 0, true);
-            mesh.RecalculateBounds();
-
-            var result = new GameObject(
-                $"{ridge.StableId} Toe Collider {chunkIndex + 1}");
-            result.transform.SetParent(parent, false);
-            result.AddComponent<MeshCollider>().sharedMesh = mesh;
-            result.AddComponent<RuntimeGeneratedMeshOwner>()
-                .Initialize(mesh);
-            mesh.UploadMeshData(false);
+                true,
+                keepReadable: true);
+            Mesh rockMesh = visible.GetComponent<MeshFilter>().sharedMesh;
+            CityMountainTalusAppearance.BakeRidge(rockMesh, ridge.Stations, first, last);
+            CityMountainTalusAppearance.ApplyRidge(visible.GetComponent<Renderer>());
+            // The same facets that can approach the camera also stop the body.
+            // A single shared mesh avoids a second copy of the rock surface.
+            var collision = new GameObject($"{ridge.StableId} Toe Collider {chunkIndex + 1}");
+            collision.transform.SetParent(parent, false);
+            collision.AddComponent<MeshCollider>().sharedMesh = visible.GetComponent<MeshFilter>().sharedMesh;
         }
 
         private static GameObject CreateMeshObject(
@@ -414,7 +370,8 @@ namespace BarPromenade
             List<int> triangles,
             Color tint,
             bool collider,
-            bool usePhysicalRidgeMaterial)
+            bool usePhysicalRidgeMaterial,
+            bool keepReadable = false)
         {
             var mesh = new Mesh
             {
@@ -455,8 +412,19 @@ namespace BarPromenade
 
             result.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(mesh);
-            mesh.UploadMeshData(!collider);
+            mesh.UploadMeshData(!collider && !keepReadable);
             return result;
+        }
+
+        private static Vector3[] CreateTalusCrossSection(CityMountainRidgeStation station, CityLayout layout)
+        {
+            Vector3[] cross = CreateCrossSection(station);
+            if (layout == null) return cross;
+            float lift = CityMountainTalusPlan.ForLayout(layout).ApplyHeight(station.WorldXZ, station.BaseY) - station.BaseY;
+            // The buried lip closes local notches where a reserved approach
+            // lowers the apron between two ridge stations.
+            for (int i = 1; i < 3; i++) cross[i] += Vector3.up * lift;
+            return cross;
         }
 
         internal static Vector3[] CreateCrossSection(

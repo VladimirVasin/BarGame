@@ -19,6 +19,10 @@ float _GroundRoadCoordinates;
 float _GroundVertexData;
 float _GroundVergeTileRatio;
 float _GroundCityClimate;
+float _GroundMountainTalus;
+TEXTURE2D(_GroundTalusMap); SAMPLER(sampler_GroundTalusMap);
+TEXTURE2D(_GroundTalusResponse); SAMPLER(sampler_GroundTalusResponse);
+half4 _GroundTalusColor;
 float _CityGroundWetness;
 half4 _GroundSubstrateColor;
 half4 _GroundAsphaltColor;
@@ -77,7 +81,7 @@ void ApplyGroundAsphalt(float2 plane, half upward, float4 road, float roadFootpr
 }
 
 void ApplyGroundLayers(float2 uv, float3 world, half3 normal,
-    float4 road, half4 vertexData, inout SurfaceData surface, out half relief)
+    float4 road, half4 vertexData, half talusInfluence, inout SurfaceData surface, out half relief)
 {
     half3 response = SAMPLE_TEXTURE2D(_GroundResponse, sampler_GroundResponse, uv).rgb;
     half upward = saturate(normal.y * 4.0);
@@ -190,6 +194,20 @@ void ApplyGroundLayers(float2 uv, float3 world, half3 normal,
         if (_GroundKind > 6.5 && _GroundKind < 7.5) relief *= 0.4h; // sand
         if (_GroundKind > 2.5 && _GroundKind < 3.5) relief *= turfRelief; // lawn
         if (_GroundKind > 9.5) relief = 0; // paint / soft silt
+    }
+    [branch] if (_GroundMountainTalus > .5 && talusInfluence > .001h)
+    {
+        // The surveyed toe mask follows each old fall. A smaller-scale broken
+        // edge lets the local soil show between stones without a painted border.
+        half edge = GroundNoise(world.xz * 2.7) * .65h + GroundNoise(world.xz * 7.3) * .35h;
+        half cover = smoothstep(.04h, .93h, talusInfluence + (edge - .5h) * .34h);
+        float2 rockUv = world.xz / 6.0;
+        half3 rock = SAMPLE_TEXTURE2D(_GroundTalusMap, sampler_GroundTalusMap, rockUv).rgb;
+        half3 rockResponse = SAMPLE_TEXTURE2D(_GroundTalusResponse, sampler_GroundTalusResponse, rockUv).rgb;
+        rock *= _GroundTalusColor.rgb * lerp(1.0h, .88h, wetness);
+        surface.albedo = lerp(surface.albedo, rock, cover);
+        surface.smoothness = lerp(surface.smoothness, lerp(.025h, .20h, wetness) * rockResponse.r, cover);
+        relief = lerp(relief, (rockResponse.g - .5h) * .0015h, cover);
     }
     surface.metallic = 0;
 }

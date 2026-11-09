@@ -6,6 +6,9 @@ Shader "Bar Promenade/City Mountain Physical"
         _BaseColor("Rock Tint", Color) = (1, 1, 1, 1)
         _GroundResponse("Linear rock response", 2D) = "white" {}
         _GroundRockLayers("Local rock wear", Float) = 0
+        _MountainTalusSoil("Soil in the cliff foot", Float) = 0
+        _MountainTalusSoilMap("Local soil albedo", 2D) = "white" {}
+        _MountainTalusSoilColor("Local soil tint", Color) = (1,1,1,1)
         _HazeColor("City Haze Color", Color) = (0.330, 0.380, 0.355, 1)
         _FogDensity("City Fog Density", Float) = 0.090
         _VisibilityFloor("Distant Visibility Floor", Range(0, 1)) = 0.10
@@ -41,6 +44,7 @@ Shader "Bar Promenade/City Mountain Physical"
             #pragma multi_compile_instancing
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
+            #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -52,6 +56,10 @@ Shader "Bar Promenade/City Mountain Physical"
             TEXTURE2D(_GroundResponse);
             SAMPLER(sampler_GroundResponse);
             float _GroundRockLayers;
+            float _MountainTalusSoil;
+            TEXTURE2D(_MountainTalusSoilMap);
+            SAMPLER(sampler_MountainTalusSoilMap);
+            half4 _MountainTalusSoilColor;
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _BaseMap_ST;
@@ -72,6 +80,7 @@ Shader "Bar Promenade/City Mountain Physical"
                 float4 positionOS : POSITION;
                 half3 normalOS : NORMAL;
                 float2 uv : TEXCOORD0;
+                float2 talus : TEXCOORD4;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -82,6 +91,7 @@ Shader "Bar Promenade/City Mountain Physical"
                 half3 normalWS : TEXCOORD1;
                 float2 uv : TEXCOORD2;
                 float4 shadowCoord : TEXCOORD3;
+                float heightAboveToe : TEXCOORD4;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -99,6 +109,7 @@ Shader "Bar Promenade/City Mountain Physical"
                     input.normalOS);
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 output.shadowCoord = GetShadowCoord(positionInputs);
+                output.heightAboveToe = input.talus.y;
                 return output;
             }
 
@@ -141,6 +152,16 @@ Shader "Bar Promenade/City Mountain Physical"
                 half3 response = SAMPLE_TEXTURE2D(_GroundResponse,
                     sampler_GroundResponse, input.uv).rgb;
                 albedo *= lerp(1.0h, 1.015h - response.b * 0.035h, _GroundRockLayers);
+                [branch] if (_MountainTalusSoil > .5 && input.heightAboveToe < 2.8)
+                {
+                    // Windblown local earth lodges in low cracks. The toe's
+                    // physical relief is carried in its mesh and depth passes.
+                    half cavity = smoothstep(.40h, .85h, response.b);
+                    half soilCover = (1.0h - smoothstep(.35h, 2.8h, input.heightAboveToe)) * cavity * .38h;
+                    half3 soil = SAMPLE_TEXTURE2D(_MountainTalusSoilMap,
+                        sampler_MountainTalusSoilMap, input.positionWS.xz / 12.0).rgb;
+                    albedo = lerp(albedo, soil * _MountainTalusSoilColor.rgb, soilCover);
+                }
                 half3 normalWS = NormalizeNormalPerPixel(input.normalWS);
                 Light mainLight = GetMainLight(input.shadowCoord);
                 half lambert = saturate(dot(
@@ -153,6 +174,10 @@ Shader "Bar Promenade/City Mountain Physical"
                     lambert *
                     mainLight.distanceAttenuation *
                     mainLight.shadowAttenuation;
+                AmbientOcclusionFactor occlusion = GetScreenSpaceAmbientOcclusion(
+                    input.positionCS.xy / _ScaledScreenParams.xy);
+                ambient *= occlusion.indirectAmbientOcclusion;
+                direct *= occlusion.directAmbientOcclusion;
                 half3 litColor = albedo * max(
                     ambient + direct,
                     half3(0.12h, 0.12h, 0.12h) * CitySkyFill());

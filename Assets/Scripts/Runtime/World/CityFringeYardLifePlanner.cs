@@ -287,7 +287,7 @@ namespace BarPromenade
             return true;
         }
 
-        private static bool RequiresSceneClearance(
+        internal static bool RequiresSceneClearance(
             CityFringeYardPartDescriptor part)
         {
             if (part.BlocksMovement)

@@ -582,7 +582,7 @@ namespace BarPromenade
                     : new Vector2(start.x, coordinate);
                 result.Add(new Vector3(
                     worldXZ.x,
-                    CityTerrainSurfacePlan.SampleTop(
+                    CityTerrainSurfacePlan.SampleTopWithoutMountainTalus(
                         layout,
                         surface,
                         worldXZ),
@@ -852,7 +852,7 @@ namespace BarPromenade
                     continue;
                 }
 
-                return CityTerrainSurfacePlan.SampleTop(
+                return CityTerrainSurfacePlan.SampleTopWithoutMountainTalus(
                     layout,
                     surface,
                     worldXZ);

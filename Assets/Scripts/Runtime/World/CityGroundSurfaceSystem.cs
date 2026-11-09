@@ -39,16 +39,19 @@ namespace BarPromenade
         private readonly List<GroundSurfacePartitioner.Footprint> supportContours = new List<GroundSurfacePartitioner.Footprint>();
         private readonly Dictionary<(int, FootstepGroundKind), int> projectedStyles = new Dictionary<(int, FootstepGroundKind), int>();
         private bool buildCollision;
+        private CityLayout talusLayout;
         private bool sealedSurface;
         internal int SourceCount => sources.Count;
         internal int SurfaceTriangleCount { get; private set; }
         internal int SectorCount { get; private set; }
         internal double BuildMilliseconds { get; private set; }
 
-        internal static CityGroundSurfaceSystem Begin(Transform parent, bool collision = true)
+        internal static CityGroundSurfaceSystem Begin(Transform parent, bool collision = true,
+            CityLayout talusLayout = null)
         {
             var system = parent.gameObject.AddComponent<CityGroundSurfaceSystem>();
             system.buildCollision = collision;
+            system.talusLayout = talusLayout;
             return system;
         }
 
@@ -560,6 +563,15 @@ namespace BarPromenade
                 mesh.SetTriangles(indices[i], i, false); materials[i] = styles[slots[i]].Material;
                 for (int j = 0; j < indices[i].Count; j += 3) kinds.Add(styles[slots[i]].Kind);
             }
+            // Partitioning carries the ordinary road/verge channels. Rebuild the
+            // local talus mask from final positions only for sectors receiving it.
+            if (talusLayout != null)
+                for (int slot = 0; slot < slots.Count; slot++)
+                    if (styles[slots[slot]].Properties.GetFloat(Shader.PropertyToID("_GroundMountainTalus")) > .5f)
+                    {
+                        CityMountainTalusAppearance.BakeGround(mesh, talusLayout);
+                        break;
+                    }
             mesh.RecalculateBounds();
             var host = new GameObject(name); host.transform.SetParent(parent, false);
             // Source coordinates are local to this system, not to a dynamic parent.

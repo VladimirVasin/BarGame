@@ -111,6 +111,8 @@ namespace BarPromenade
                         mountainGround.GetComponent<Renderer>(),
                         CityFringeYardSurfaceKind.ForefieldGround,
                         CityExteriorAppearance.YardGround);
+                    CityMountainTalusAppearance.BakeGround(mountainGround.GetComponent<MeshFilter>().sharedMesh, layout);
+                    CityMountainTalusAppearance.ApplyGround(mountainGround.GetComponent<Renderer>());
                 }
             }
 

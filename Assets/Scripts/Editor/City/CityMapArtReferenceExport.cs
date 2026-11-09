@@ -244,11 +244,26 @@ namespace BarPromenade.Editor
                 }
             }
             CityMountainBoundaryPlan mountain = controller.MountainBoundaryPlan;
+            var talus = CityMountainTalusPlan.ForLayout(layout);
             foreach (CityMountainRidgeDescriptor ridge in mountain.Ridges)
             {
                 for (int i = 1; i < ridge.Stations.Count; i++)
                 {
                     CityMountainRidgeStation a = ridge.Stations[i - 1], b = ridge.Stations[i];
+                    Vector2 inward = CityMapArtResources.TalusInward(a.WorldXZ, b.WorldXZ, a.OutwardNormal);
+                    int samples = Mathf.CeilToInt(Vector2.Distance(a.WorldXZ, b.WorldXZ) / 3f);
+                    Vector2 previousToe = a.WorldXZ;
+                    Vector2 previousEdge = CityMapArtResources.TalusEdge(talus, previousToe, inward);
+                    for (int sample = 1; sample <= samples; sample++)
+                    {
+                        Vector2 toe = Vector2.Lerp(a.WorldXZ, b.WorldXZ, sample / (float)samples);
+                        Vector2 edge = CityMapArtResources.TalusEdge(talus, toe, inward);
+                        string id = ridge.StableId + ":talus:" + i + ":" + sample;
+                        Poly(id, "mountain-talus", new[] { previousToe, toe, edge, previousEdge });
+                        Line(id + ":edge", "mountain-ink", .22f, new[] { previousEdge, edge });
+                        previousToe = toe;
+                        previousEdge = edge;
+                    }
                     Poly(ridge.StableId + ":" + i, "mountain", new[] { a.WorldXZ, b.WorldXZ, XZ(b.OuterFoot), XZ(a.OuterFoot) });
                     Line(ridge.StableId + ":toe:" + i, "mountain-ink", .55f, new[] { a.WorldXZ, b.WorldXZ });
                     Line(ridge.StableId + ":hatch:" + i, "mountain-ink", .3f, new[] { b.WorldXZ, XZ(b.OuterFoot) });
@@ -588,6 +603,7 @@ namespace BarPromenade.Editor
                     case "beach": return new Color32(79, 76, 61, 255);
                     case "dry-rock": return new Color32(67, 57, 48, 255);
                     case "mountain": return new Color32(35, 39, 36, 255);
+                    case "mountain-talus": return new Color32(48, 49, 42, 255);
                     case "promenade": return new Color32(92, 95, 85, 255);
                     case "bridge": return new Color32(133, 128, 107, 255);
                     case "public-ground": return new Color32(67, 76, 67, 255);

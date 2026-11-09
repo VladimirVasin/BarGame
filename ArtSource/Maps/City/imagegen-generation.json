@@ -1,18 +1,18 @@
 {
   "tool": "built-in image_gen",
-  "intent": "One final charcoal-sheet redraw adds the retired cobbler bus to the inner eastern bend at the Court Bridge road.",
-  "prompt": "imagegen-cobbler-prompt.txt",
+  "intent": "Final registered City sheet redraw adds the surveyed uneven west/south talus aprons.",
+  "prompt": "imagegen-talus-prompt.txt",
   "references": [
     "CityMapImage.reference.png",
     "map-reference.png"
   ],
   "geography": "CityMapImage.accepted-geography.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "ef7f9f3229e148080812a880a83298bd83fd2cc05e3f272890b2c715177be8bb",
-  "runtime_image_sha256": "ef7f9f3229e148080812a880a83298bd83fd2cc05e3f272890b2c715177be8bb",
-  "previous_image_sha256": "8c8dac4819940e73f596a5665c71408aeeb8da7d6f5c9e4f20d71abb254c3f5e",
+  "image_sha256": "971db223b399cf547ed4894beade1687267f8b5842bf1e5638042d937f2cba19",
+  "runtime_image_sha256": "971db223b399cf547ed4894beade1687267f8b5842bf1e5638042d937f2cba19",
+  "previous_image_sha256": "ef7f9f3229e148080812a880a83298bd83fd2cc05e3f272890b2c715177be8bb",
   "registration": {
-    "description": "Full-bleed north-up sheet. The cobbler roof lies near normalized (0.64701,0.85194), its nose toward the southwest. Markers, selection, XYZ and arrivals remain live.",
+    "description": "Full-bleed north-up sheet. Uneven narrow old-collapse aprons follow the west/south surveyed toes. Live markers, selection, XYZ and safe arrivals follow current plans.",
     "source_size": [
       1173,
       1341
@@ -22,7 +22,7 @@
       2048
     ]
   },
-  "fingerprint": "c1cf19b8ff23b7ec02a08787d026d2621bde61264a44aed924a11f932f435c88",
+  "fingerprint": "69611b9f0af3f0eaaa43200b17ab25794eebcaa6f6b79081d022e3790b436ec6",
   "schemaVersion": 2,
   "width": 1173,
   "height": 1341,

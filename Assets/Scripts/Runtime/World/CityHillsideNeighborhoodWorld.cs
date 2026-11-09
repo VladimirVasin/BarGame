@@ -73,6 +73,7 @@ namespace BarPromenade
             var mesh = CityHillsidePerimeterSurface.Build(grid.Layout, "Hillside banks and door aprons",
                 vertices, uv, earth, concrete);
             CityPawnshopBenchTerraceWorld.CutGroundMesh(grid.Layout,mesh);
+            CityMountainTalusAppearance.BakeGround(mesh, grid.Layout);
             var go = new GameObject("Terraced ground and courts");
             go.transform.SetParent(parent, false);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
@@ -81,6 +82,7 @@ namespace BarPromenade
             renderer.sharedMaterials = new[] { material, CityPortAssetProvider.GetSurfaceMaterial("Concrete"),
                 material, material, material };
             CityExteriorAppearance.ApplyGroundSurface(renderer, CityHillsidePerimeterSurface.ResidentialSoil, 0);
+            CityMountainTalusAppearance.ApplyGround(renderer);
             GroundAuthoredSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Concrete, 1, true);
             // The same two-metre PortConcrete tiles continue onto the imported porch.
             CityHillsidePerimeterSurface.SetTilePitch(renderer, 1, CityExteriorAppearance.GroundTextureTileSize, 2f);

@@ -444,6 +444,24 @@ namespace BarPromenade
                         foreach (CityMountainRidgeStation station in ridge.Stations)
                         { Point(writer, station.Toe); Point(writer, station.OuterFoot); }
                     }
+                    // The graded apron changes height and its cityward extent without
+                    // moving the rock's old survey line. Hash the actual new profile.
+                    var talus = CityMountainTalusPlan.ForLayout(layout);
+                    foreach (CityMountainRidgeDescriptor ridge in mountains.Ridges)
+                    for (int index = 1; index < ridge.Stations.Count; index++)
+                    {
+                        Vector2 a = ridge.Stations[index - 1].WorldXZ, b = ridge.Stations[index].WorldXZ;
+                        Vector2 inward = TalusInward(a, b, ridge.Stations[index - 1].OutwardNormal);
+                        int samples = Mathf.CeilToInt(Vector2.Distance(a, b) / 3f);
+                        writer.Write(samples);
+                        for (int sample = 0; sample <= samples; sample++)
+                        {
+                            Vector2 toe = Vector2.Lerp(a, b, sample / (float)samples);
+                            Point(writer, TalusEdge(talus, toe, inward));
+                            for (int across = 0; across <= 6; across++)
+                                Scalar(writer, talus.ApplyHeight(toe + inward * (across * .6f), 0f));
+                        }
+                    }
                     writer.Write(mountains.HasTunnel);
                     if (mountains.HasTunnel) { RectValue(writer, mountains.Tunnel.PortalBounds); RectValue(writer, mountains.Tunnel.ApproachBounds); }
                     writer.Write(mountains.HasRiverCave);
@@ -468,6 +486,24 @@ namespace BarPromenade
                     return text.ToString();
                 }
             }
+        }
+
+        internal static Vector2 TalusInward(Vector2 a, Vector2 b, Vector3 outward)
+        {
+            Vector2 direction = (b - a).normalized;
+            Vector2 inward = new Vector2(-direction.y, direction.x);
+            return Vector2.Dot(inward, new Vector2(outward.x, outward.z)) > 0f ? -inward : inward;
+        }
+
+        internal static Vector2 TalusEdge(CityMountainTalusPlan talus, Vector2 toe, Vector2 inward)
+        {
+            Vector2 edge = toe;
+            for (int sample = 1; sample <= 24; sample++)
+            {
+                Vector2 point = toe + inward * (sample * .15f);
+                if (talus.Influence(point) > .045f) edge = point;
+            }
+            return edge;
         }
 
         internal static void CrosswalkStroke(RuntimeOrientedBox stripe, out Vector3 a, out Vector3 b, out float width)

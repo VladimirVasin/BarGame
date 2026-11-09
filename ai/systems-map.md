@@ -79,7 +79,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Coastal utilities | City/Home share facade feeds clear of bays and roofs. | `CityCoastalInfrastructure*`, `CityElectrical*` | Current |
 | City elevation/stairs | Shared heights align stairs, ground and collision. | `CityElevation*`, `CityTerrainSurfacePlan` | Current |
 | Terraced City | Yards/steps;loft/birds;keeper chores/commute/gate/speech/cry;upper phone. | `CityHillside*`,`CityTerrace*`,`CityPawnshopDescent*`,`CityPigeon*` | Current |
-| City mountain boundary and open tunnel | `default-coastal` closes west/south around the non-traversable river cave and one gate-free `8 x 5.5 m` portal. | `CityMountainBoundary*`, `CityMountainBackdrop*` | Current |
+| City mountain boundary | West/south fractured cliffs, graded talus, river cave and open portal. | `CityMountain{Boundary*,Talus*}`, `CityRockface*`, `CityFringeYard*` | Current |
 | Eastern mainland view | Closed post; shared road/traffic datum; skyline/glow fade beyond checkpoint. One fixed mast. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |
 | City litter | 36 Blender variants off roads; dense east/no near repeats; solids block; finite shared palette per root. | `CityLitterCatalog`, `CityLitter{Plan,Planner,WorldBuilder,Instancer}`, `CityEastLitter*` | Current |
 | Eastern checkpoint guards | Distinct guards alternate physical patrols; shared pair/E bubbles, passive shoulder rifles, pause/cleanup. | `CityEastGuard{Duty,Plan,Controller}`, `EastGuardActor` | Current |

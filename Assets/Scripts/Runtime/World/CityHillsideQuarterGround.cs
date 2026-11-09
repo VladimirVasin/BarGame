@@ -49,6 +49,7 @@ namespace BarPromenade
             var mesh = CityHillsidePerimeterSurface.Build(layout, "Upper quarter saddle and dry rock cut",
                 vertices, uv, faces, rock, scree);
             CityPawnshopBenchTerraceWorld.CutGroundMesh(layout,mesh);
+            CityMountainTalusAppearance.BakeGround(mesh, layout);
             var ground = new GameObject("Shared residential hillside");
             ground.transform.SetParent(parent, false);
             ground.AddComponent<MeshFilter>().sharedMesh = mesh;
@@ -56,6 +57,7 @@ namespace BarPromenade
             var material = RuntimePrimitiveFactory.DefaultMaterial;
             renderer.sharedMaterials = new[] { material, material, material, material, material, material };
             CityExteriorAppearance.ApplyGroundSurface(renderer, CityHillsidePerimeterSurface.ResidentialSoil, 0);
+            CityMountainTalusAppearance.ApplyGround(renderer);
             CityMountainSurfaceAppearance.ApplyCombined(renderer, new Color(.36f, .375f, .355f), 1);
             CityCemeterySurfaceAppearance.ApplyCombined(renderer, CityCemeterySurfaceKind.Gravel,
                 new Color(.31f, .305f, .28f), 2);

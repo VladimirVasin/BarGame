@@ -5,6 +5,18 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-09
 
+Accessible west/south toes have uneven talus, buried blocks and graded soil/rock.
+Lower west utility gaps keep their narrow physical profile. Entrances, routes,
+workshop, substation and feed mast stay clear. Blender faces share collision
+and City SSAO. CityMountainTalusTransitions passed, addressed frames reviewed.
+CityMapArtReferenceExport supplied the final ImageGen redraw.
+Deterministic build-city-rockfall-3d-model and build-city-rockface-3d-model.
+CityFringeApproaches covers the yards. CityMountainRockfaces proved summit
+relief and contacts; close, along-wall, crest and street views were reviewed.
+Shared City lighting, material and post owners cover all three FX groups.
+Opposing capsule recovery at the toe no longer feeds walking momentum.
+CityRockfaceContactsStayLocal and Airborne_ReleaseAndTurnKeepWorldMomentumUntilLanding.
+
 Cobbler works through midday. Scheduled NPC lunch breaks require an explicit
 user request. Worn bus wheels lie between his bus and the lilac.
 The static pile shares the yard atlas, collision plan and City light.

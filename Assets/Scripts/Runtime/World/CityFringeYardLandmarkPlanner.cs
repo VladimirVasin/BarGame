@@ -82,6 +82,10 @@ namespace BarPromenade
                             null);
                 }
 
+                // Landmarks arrive after the base belt. Their visible mouths,
+                // gauges and lamps need clearance even with no solid proxy.
+                parts.RemoveAll(part => part.Kind == CityFringeYardPartKind.RockfallMass &&
+                    CityFringeYardPlanner.RockfallObscuresFixture(part, parts));
                 yards.Add(new CityFringeYardDescriptor(
                     yard.StableId,
                     yard.AreaId,

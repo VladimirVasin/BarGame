@@ -27,6 +27,10 @@ def outputs():
                           'Shader "Bar Promenade/Layered Ground"')
     shader = replace_once(shader, '    Properties\n    {', '''    Properties
     {
+        _GroundMountainTalus("Mountain talus surface", Float) = 0
+        _GroundTalusMap("Mountain talus rock", 2D) = "white" {}
+        _GroundTalusResponse("Mountain talus response", 2D) = "white" {}
+        _GroundTalusColor("Mountain talus tint", Color) = (1,1,1,1)
         _GroundResponse("Linear material response", 2D) = "white" {}
         _GroundSubstrateMap("Snow substrate", 2D) = "white" {}
         _GroundSubstrateResponse("Snow substrate response", 2D) = "white" {}
@@ -64,20 +68,23 @@ def outputs():
 struct Attributes
 {
     float4 groundRoad : TEXCOORD3;
-    half4 groundState : COLOR;''')
+    half4 groundState : COLOR;
+    half2 groundTalus : TEXCOORD4;''')
     forward = replace_once(forward, 'struct Varyings\n{', '''struct Varyings
 {
     float4 groundRoad : TEXCOORD11;
-    half4 groundState : TEXCOORD12;''')
+    half4 groundState : TEXCOORD12;
+    half groundTalus : TEXCOORD13;''')
     forward = replace_once(forward, '    output.uv = TRANSFORM_TEX(input.texcoord, _BaseMap);',
         '''    output.groundRoad = input.groundRoad;
     output.groundState = input.groundState;
+    output.groundTalus = input.groundTalus.x;
     output.uv = TRANSFORM_TEX(input.texcoord, _BaseMap);''')
     forward = replace_once(forward, '    InitializeStandardLitSurfaceData(input.uv, surfaceData);',
         '''    InitializeStandardLitSurfaceData(input.uv, surfaceData);
     half groundRelief;
     ApplyGroundLayers(input.uv, input.positionWS, input.normalWS,
-        input.groundRoad, input.groundState, surfaceData, groundRelief);''')
+        input.groundRoad, input.groundState, input.groundTalus, surfaceData, groundRelief);''')
     forward = replace_once(forward, '    InitializeInputData(input, surfaceData.normalTS, inputData);',
         '''    InitializeInputData(input, surfaceData.normalTS, inputData);
     inputData.normalWS = GroundReliefNormal(input.positionWS, inputData.normalWS, groundRelief);''')

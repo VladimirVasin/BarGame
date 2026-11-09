@@ -991,8 +991,9 @@ namespace BarPromenade.Tests.EditMode
                     "Physical Ridges");
                 MeshRenderer[] ridgeRenderers =
                     ridges.GetComponentsInChildren<MeshRenderer>(true);
-                Assert.That(ridgeRenderers.Length, Is.GreaterThanOrEqualTo(6));
-                Assert.That(ridgeRenderers.Length, Is.LessThanOrEqualTo(24));
+                Assert.That(ridgeRenderers.Length, Is.InRange(plan.RidgeCount,
+                    plan.Ridges.Sum(ridge => ridge.Stations.Count - 1)),
+                    "A chunk must contain at least one planned station interval.");
                 Material ridgeMaterial =
                     CityMountainSurfaceAppearance.PhysicalRidgeMaterial;
                 Assert.That(
@@ -1045,7 +1046,7 @@ namespace BarPromenade.Tests.EditMode
                     toeColliders.All(item =>
                         item.GetComponent<Renderer>() == null),
                     Is.True,
-                    "Only the invisible near-toe surface may collide.");
+                    "Each rock chunk keeps a dedicated collision sibling.");
 
                 Transform openTunnel = FindChild(
                     physical.transform,
@@ -1412,25 +1413,10 @@ namespace BarPromenade.Tests.EditMode
                             Vector3.down *
                             CityMountainBoundaryMeshFactory
                                 .ToeGroundBurial;
-                        // Physical render meshes discard their CPU copy
-                        // after upload. Assert the exact cross-section fed
-                        // to every rendered quad, then prove below that all
-                        // five of its bands were emitted for every chunk.
-                        Vector3[] renderedCross =
-                            CityMountainBoundaryMeshFactory
-                                .CreateCrossSection(station);
-                        AssertContainsVertex(
-                            renderedCross,
-                            anchor,
-                            $"{station.StableId} rendered toe anchor");
-                        AssertContainsVertex(
-                            renderedCross,
-                            buried,
-                            $"{station.StableId} rendered buried seam");
                         AssertContainsVertex(
                             colliderVertices,
                             anchor,
-                            $"{station.StableId} exact toe anchor");
+                            $"{station.StableId} visible and physical toe anchor");
                         AssertContainsVertex(
                             colliderVertices,
                             buried,
@@ -1453,32 +1439,13 @@ namespace BarPromenade.Tests.EditMode
                         Mesh renderedMesh = renderers[chunkIndex]
                             .GetComponent<MeshFilter>()
                             .sharedMesh;
-                        int renderedTriangles = checked((int)
-                            (renderedMesh.GetIndexCount(0) / 3u));
-                        const int renderedTrianglesPerSegment = 10;
-                        const int endCapTriangles = 8;
-                        int segmentTriangles =
-                            renderedTriangles - endCapTriangles;
-                        Assert.That(
-                            segmentTriangles,
-                            Is.GreaterThan(0),
-                            renderers[chunkIndex].name);
-                        Assert.That(
-                            segmentTriangles %
-                            renderedTrianglesPerSegment,
-                            Is.Zero,
-                            $"{renderers[chunkIndex].name} must close both " +
-                            "six-point end caps.");
-                        int segmentCount = segmentTriangles /
-                                           renderedTrianglesPerSegment;
-                        int colliderTriangles = checked((int)
-                            (colliders[chunkIndex].sharedMesh
-                                 .GetIndexCount(0) / 3u));
-                        Assert.That(
-                            colliderTriangles,
-                            Is.EqualTo(segmentCount * 6),
-                            $"{colliders[chunkIndex].name} must retain all " +
-                            "three near-toe collision bands.");
+                        Assert.That(colliders[chunkIndex].sharedMesh, Is.SameAs(renderedMesh),
+                            $"{renderers[chunkIndex].name} must collide on its visible facets.");
+                        Assert.That(renderedMesh.isReadable, Is.True);
+                        Assert.That(renderedMesh.GetIndexCount(0), Is.GreaterThan(24u),
+                            "Both end caps and the full strip need triangles.");
+                        Assert.That(renderedMesh.vertexCount, Is.LessThanOrEqualTo(ushort.MaxValue),
+                            "The measured relief must fit a 16-bit spatial chunk.");
                     }
                 }
             }

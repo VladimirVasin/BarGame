@@ -84,8 +84,11 @@ namespace BarPromenade
             {
                 CityMountainBoundaryMeshFactory.CreateRidge(
                     ridges,
-                    plan.Ridges[index]);
+                    plan.Ridges[index],
+                    layout);
             }
+
+            CityMountainTalusWorldBuilder.Build(root.transform, layout, plan);
 
             if (plan.HasTunnel)
             {

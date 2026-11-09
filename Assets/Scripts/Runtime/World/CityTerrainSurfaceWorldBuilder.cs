@@ -1027,6 +1027,14 @@ namespace BarPromenade
             float halfRoad = layout.ElevationPlan.RoadWidth * 0.5f;
             var xAnchors = new List<float>();
             var zAnchors = new List<float>();
+            if (!seabedOnly && CityTerrainSurfacePlan.ReceivesMountainTalus(surface))
+            {
+                var xs = new SortedSet<float>();
+                var zs = new SortedSet<float>();
+                CityMountainTalusPlan.ForLayout(layout).AddBreaks(patch, xs, zs);
+                xAnchors.AddRange(xs);
+                zAnchors.AddRange(zs);
+            }
             if (surface.Kind == CitySurfaceKind.Beach)
             {
                 for (float x = patch.xMin + beachPitch; x < patch.xMax;

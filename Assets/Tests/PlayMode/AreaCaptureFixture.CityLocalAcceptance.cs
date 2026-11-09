@@ -13,6 +13,18 @@ using Object = UnityEngine.Object;
 
 namespace BarPromenade.Tests.PlayMode
 {
+    public sealed class CityRockfallAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+            new ParkAssetsSetup().Setup();
+#if UNITY_EDITOR
+            Type.GetType("BarPromenade.Editor.CityRockfallAssetSetup, BarPromenade.Editor", true)
+                .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
+#endif
+        }
+    }
+
     public sealed partial class AreaCaptureFixture
     {
         // A single explicit selection owns this plan; release it with the scene's
@@ -36,7 +48,7 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         [Explicit("Only the four west/south service approaches: actual motor in/out, rock/closed walking boundary and addressed construction details. Run alone.")]
-        [PrebuildSetup(typeof(ParkAssetsSetup))]
+        [PrebuildSetup(typeof(CityRockfallAssetsSetup))]
         public IEnumerator CityFringeApproaches() => CaptureCityLocalAcceptance(ReviewFringeApproaches);
 
         [UnityTest]
@@ -928,6 +940,10 @@ namespace BarPromenade.Tests.PlayMode
 
         private static IEnumerator ReviewFringeApproaches(CityGameRoot city)
         {
+            CityFringeYardPlan repeated = CityFringeYardPlanner.Create(city.Layout, city.World.MountainBoundaryPlan);
+            Assert.That(repeated.Yards.SelectMany(yard => yard.Parts),
+                Is.EqualTo(city.World.FringeYardPlan.Yards.SelectMany(yard => yard.Parts)),
+                "Rockfall placement must remain deterministic across scene construction.");
             var yards = city.World.FringeYardPlan.Yards.Where(yard => yard.Kind != CityFringeYardKind.EastUtilityEdge).ToArray();
             Assert.That(yards.Length, Is.EqualTo(4));
             CharacterController body = city.Player.Motor.GetComponent<CharacterController>();
@@ -1030,6 +1046,33 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3 eye = FindLocalDetailEye(city, part.Center, -outward);
                     yield return LocalAcceptanceFrame(city, "fringe-detail-" + part.StableId, eye, part.Center, 62f);
                 }
+                CityFringeYardPartDescriptor[] rockfalls = yard.Parts
+                    .Where(part => part.Kind == CityFringeYardPartKind.RockfallMass).ToArray();
+                Assert.That(rockfalls.Length, Is.InRange(1, CityFringeYardPlanner.MaximumRockfallClustersPerYard),
+                    yard.StableId + " needs a bounded visible old rockfall composition.");
+                Debug.Log("FRINGE ROCKFALL CLUSTERS: " + yard.StableId + " = " + rockfalls.Length);
+                foreach (CityFringeYardPartDescriptor part in rockfalls)
+                {
+                    Assert.That(CityFringeYardPlanner.RockfallObscuresFixture(part, yard.Parts), Is.False,
+                        part.StableId + " obscures authored service equipment.");
+                    Mesh source = CityRockfallAssetProvider.GetMesh(CityFringeYardWorldBuilder.ResolveRockfallVariant(part));
+                    Assert.That(Vector3.Distance(source.bounds.size, Vector3.one), Is.LessThan(.001f));
+                    Assert.That(source.bounds.center.magnitude, Is.LessThan(.001f));
+                    Assert.That(part.Size.y, Is.InRange(1.9f, 3.6f));
+                    Vector3 probe = part.Center + outward * part.Size.z * .2f;
+                    RaycastHit[] hits = Physics.RaycastAll(probe + Vector3.up * 6f, Vector3.down, 12f);
+                    RaycastHit surface = hits.FirstOrDefault(hit => hit.collider.name.StartsWith("Fringe Rockfall ", StringComparison.Ordinal));
+                    Assert.That(surface.collider, Is.Not.Null, part.StableId + " lost its authored physical rock surface.");
+                    Assert.That(((MeshCollider)surface.collider).sharedMesh,
+                        Is.SameAs(surface.collider.GetComponent<MeshFilter>().sharedMesh),
+                        "Rock collision must follow the actual facets.");
+                }
+                CityFringeYardPartDescriptor rockfall = rockfalls[0];
+                Vector3 rockEye = FindLocalDetailEye(city, rockfall.Center, -outward, 7f);
+                yield return LocalAcceptanceFrame(city, "fringe-rockfall-" + yard.StableId + "-front", rockEye, rockfall.Center);
+                Vector3 oblique = Quaternion.Euler(0f, 50f, 0f) * -outward;
+                rockEye = FindLocalDetailEye(city, rockfall.Center, oblique, 9f);
+                yield return LocalAcceptanceFrame(city, "fringe-rockfall-" + yard.StableId + "-oblique", rockEye, rockfall.Center);
                 Debug.Log("FRINGE ACTUAL MOTOR OK: " + yard.StableId + "; street -> middle -> toe -> stopped boundary -> street.");
             }
         }

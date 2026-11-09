@@ -1,0 +1,62 @@
+{
+  "design_id": "city_boundary_old_rockfall_v1",
+  "generator": "build-city-rockfall-3d-model.py",
+  "axes": "Unity X along ridge, +Y up, +Z toward cliff; centred unit bounds",
+  "source_rock_uv_metres_per_tile": 6.0,
+  "models": [
+    {
+      "name": "CityRockfall0",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangles": 352,
+      "geometry_signature": "3485986f03edb93391843918ad9b5088d0c08908dec70a6ad86f401e402cb7c1",
+      "boulders": 8,
+      "front_max_y": -0.19012,
+      "rear_max_y": 0.4685
+    },
+    {
+      "name": "CityRockfall1",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangles": 352,
+      "geometry_signature": "c0d9d8f7e8a77d1af8125e6f53a3ef0d5d73426a165203e53c8d146f5dc4b2d4",
+      "boulders": 8,
+      "front_max_y": -0.15277,
+      "rear_max_y": 0.5
+    },
+    {
+      "name": "CityRockfall2",
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "triangles": 396,
+      "geometry_signature": "b5a5f140368eae8e3e41a8cb81673afe4fbf954e1687a25d25b930b32584050c",
+      "boulders": 9,
+      "front_max_y": -0.0892,
+      "rear_max_y": 0.47028
+    }
+  ]
+}

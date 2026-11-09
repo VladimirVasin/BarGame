@@ -29,6 +29,8 @@ namespace BarPromenade
         private const int MaximumLatticeLinesPerAxis = 512;
         private const float KeyboardPanSpeed = 116f;
         private const float MouseWheelStep = 18f;
+        private CityMountainBoundaryPlan talusMapSource;
+        private readonly List<(Vector3 A, Vector3 B, Vector3 Toe)> talusMapStrokes = new();
         private const float MountainTunnelMarkerWidth = 19f;
         private const float MountainTunnelMarkerHeight = 17f;
         private const float MountainTunnelMarkerEdgePadding = 3f;
@@ -1288,9 +1290,44 @@ namespace BarPromenade
                 DrawMountainRidge(projection, plan.Ridges[index]);
             }
 
+            DrawMountainTalus(projection, plan);
             if (plan.HasRiverCave)
             {
                 DrawRiverCaveMouth(projection, plan.RiverCave);
+            }
+        }
+
+        private void DrawMountainTalus(MapProjection projection, CityMountainBoundaryPlan plan)
+        {
+            // Survey once per bound plan. IMGUI repaint only projects the cached
+            // contour and hatches, matching the ImageGen reference geography.
+            if (talusMapSource != plan)
+            {
+                talusMapSource = plan;
+                talusMapStrokes.Clear();
+                var talus = CityMountainTalusPlan.ForLayout(controller.Layout);
+                foreach (var ridge in plan.Ridges)
+                for (int index = 1; index < ridge.Stations.Count; index++)
+                {
+                    Vector2 a = ridge.Stations[index - 1].WorldXZ, b = ridge.Stations[index].WorldXZ;
+                    Vector2 inward = CityMapArtResources.TalusInward(a, b, ridge.Stations[index - 1].OutwardNormal);
+                    Vector2 previous = CityMapArtResources.TalusEdge(talus, a, inward);
+                    int samples = Mathf.CeilToInt(Vector2.Distance(a, b) / 3f);
+                    for (int sample = 1; sample <= samples; sample++)
+                    {
+                        Vector2 toe = Vector2.Lerp(a, b, sample / (float)samples);
+                        Vector2 edge = CityMapArtResources.TalusEdge(talus, toe, inward);
+                        if ((edge - toe).sqrMagnitude > .0225f)
+                            talusMapStrokes.Add((new Vector3(previous.x, 0f, previous.y),
+                                new Vector3(edge.x, 0f, edge.y), new Vector3(toe.x, 0f, toe.y)));
+                        previous = edge;
+                    }
+                }
+            }
+            foreach (var stroke in talusMapStrokes)
+            {
+                DrawLine(projection.WorldToScreen(stroke.A), projection.WorldToScreen(stroke.B), 1f, MountainHatch);
+                DrawLine(projection.WorldToScreen(stroke.B), projection.WorldToScreen(stroke.Toe), 1f, MountainHatch);
             }
         }
 

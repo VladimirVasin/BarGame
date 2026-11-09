@@ -53,9 +53,11 @@ namespace BarPromenade
             var pads = CityHillsideFurniturePlan.GroundPads(layout);
             var ramps = CityHillsideFurniturePlan.GroundRamps(layout);
             var seams = CityHillsideGroundSeamPlan.ForLayout(layout);
+            var talus = CityMountainTalusPlan.ForLayout(layout);
             CityHillsideGroundPlan.AddPadBreaks(bounds, pads, xs, zs);
             CityHillsideGroundPlan.AddRampBreaks(bounds, ramps, xs, zs);
             seams.AddBreaks(bounds, xs, zs);
+            talus.AddBreaks(bounds, xs, zs);
             var xAxis = new List<float>(xs);
             z = new float[zs.Count]; zs.CopyTo(z);
             Columns = xAxis.Count;
@@ -67,9 +69,9 @@ namespace BarPromenade
                 for (int col = 0; col < Columns; col++)
                 {
                     Vector2 point = new(CityHillsideQuarterRavine.MeshX(xAxis[col], section), z[row]);
-                    vertices[row * Columns + col] = new Vector3(point.x,
-                        CityHillsideGroundPlan.ApplyRamps(point,
-                            CityHillsideGroundPlan.ApplyPads(point, seams.Apply(point, plan.SampleSoil(point)), pads), ramps), point.y);
+                    float ground = CityHillsideGroundPlan.ApplyRamps(point,
+                        CityHillsideGroundPlan.ApplyPads(point, seams.Apply(point, plan.SampleSoil(point)), pads), ramps);
+                    vertices[row * Columns + col] = new Vector3(point.x, talus.ApplyHeight(point, ground), point.y);
                     if (col + 1 == Columns || row + 1 == Rows) continue;
                     float midZ = (z[row] + z[row + 1]) * .5f;
                     float templateX = (xAxis[col] + xAxis[col + 1]) * .5f;

@@ -10,14 +10,14 @@ def build_depth_normals(source, family):
     start = source.index('#if defined(_ALPHATEST_ON) || defined(_PARALLAXMAP)')
     end = source.index('#endif', start) + len('#endif')
     source = source[:start] + '#define REQUIRES_UV_INTERPOLATOR' + source[end:]
-    metadata = ('    float4 groundRoad : TEXCOORD3;\n    half4 groundState : COLOR;'
+    metadata = ('    float4 groundRoad : TEXCOORD3;\n    half4 groundState : COLOR;\n    half2 groundTalus : TEXCOORD4;'
         if ground else '    float2 warehouseMetres : TEXCOORD1;')
     source = source.replace('struct Attributes\n{', 'struct Attributes\n{\n' + metadata, 1)
-    metadata = ('    float4 groundRoad : TEXCOORD7;\n    half4 groundState : TEXCOORD9;'
+    metadata = ('    float4 groundRoad : TEXCOORD7;\n    half4 groundState : TEXCOORD9;\n    half groundTalus : TEXCOORD10;'
         if ground else '    float2 warehouseMetres : TEXCOORD7;')
     source = source.replace('struct Varyings\n{',
         'struct Varyings\n{\n    float3 surfaceWorld : TEXCOORD6;\n' + metadata, 1)
-    transfer = ('    output.groundRoad = input.groundRoad;\n    output.groundState = input.groundState;'
+    transfer = ('    output.groundRoad = input.groundRoad;\n    output.groundState = input.groundState;\n    output.groundTalus = input.groundTalus.x;'
         if ground else '    output.warehouseMetres = input.warehouseMetres;')
     source = source.replace('    output.normalWS = half3(normalInput.normalWS);',
         '    output.surfaceWorld = vertexInput.positionWS;\n' + transfer +
@@ -37,7 +37,7 @@ def build_depth_normals(source, family):
     if ground:
         hook += '''    half relief;
     ApplyGroundLayers(input.uv, input.surfaceWorld, input.normalWS,
-        input.groundRoad, input.groundState, surface, relief);
+        input.groundRoad, input.groundState, input.groundTalus, surface, relief);
     half3 surfaceNormal = GroundReliefNormal(input.surfaceWorld,
         NormalizeNormalPerPixel(normalWS), relief);
     half receiver = GroundScreenSpaceReceiver();

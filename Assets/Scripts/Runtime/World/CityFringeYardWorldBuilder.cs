@@ -64,6 +64,7 @@ namespace BarPromenade
             var collisionBatches =
                 new Dictionary<BatchKey, List<RuntimeOrientedBox>>();
             var importedIds = new HashSet<string>(StringComparer.Ordinal);
+            var rockfallBatches = new Dictionary<Vector2Int, List<RuntimeMeshPlacement>>();
             CityMiscAssetProvider miscProvider =
                 CityMiscAssetProvider.Load();
             for (int yardIndex = 0;
@@ -82,6 +83,21 @@ namespace BarPromenade
                 {
                     CityFringeYardPartDescriptor part =
                         yard.Parts[partIndex];
+                    if (part.Kind == CityFringeYardPartKind.RockfallMass)
+                    {
+                        var cell = new Vector2Int(
+                            Mathf.FloorToInt(part.Center.x / SpatialChunkSize),
+                            Mathf.FloorToInt(part.Center.z / SpatialChunkSize));
+                        if (!rockfallBatches.TryGetValue(cell, out var placements))
+                        {
+                            placements = new List<RuntimeMeshPlacement>();
+                            rockfallBatches.Add(cell, placements);
+                        }
+                        placements.Add(new RuntimeMeshPlacement(
+                            CityRockfallAssetProvider.GetMesh(ResolveRockfallVariant(part)),
+                            part.Center, part.Rotation, part.Size));
+                        continue;
+                    }
                     var key = new BatchKey(
                         Mathf.FloorToInt(part.Center.x / SpatialChunkSize),
                         Mathf.FloorToInt(part.Center.z / SpatialChunkSize),
@@ -188,6 +204,18 @@ namespace BarPromenade
                         ResolveColor(key.Style),
                         true);
                 proxy.GetComponent<Renderer>().enabled = false;
+            }
+
+            var rockfallCells = new List<Vector2Int>(rockfallBatches.Keys);
+            rockfallCells.Sort((a, b) => a.x != b.x ? a.x.CompareTo(b.x) : a.y.CompareTo(b.y));
+            foreach (Vector2Int cell in rockfallCells)
+            {
+                GameObject chunk = RuntimePrimitiveFactory.CreateCombinedMeshes(
+                    $"Fringe Rockfall {cell.x} {cell.y}", root.transform,
+                    rockfallBatches[cell], Rock, true,
+                    ResolveTileSize(CityFringeYardStyle.Rock), RuntimeWorldUvMode.BoxProjected);
+                ApplyAppearance(chunk.GetComponent<Renderer>(), CityFringeYardStyle.Rock, Rock);
+                FootstepGround.Stamp(chunk, FootstepGroundKind.Stone);
             }
 
             IList<CityFringePracticalAnchor> practicalAnchors =
@@ -654,6 +682,13 @@ namespace BarPromenade
             CityFringeYardPartDescriptor part)
         {
             return 0;
+        }
+
+        internal static int ResolveRockfallVariant(CityFringeYardPartDescriptor part)
+        {
+            return int.TryParse(GetTrailingOrdinal(part.StableId), out int ordinal)
+                ? ordinal % CityRockfallAssetProvider.VariantCount
+                : 0;
         }
 
         private static int ResolveRepairVariant(

@@ -332,7 +332,8 @@ namespace BarPromenade
             float offset = surface.Kind == CitySurfaceKind.ParkGround
                 ? 0f
                 : CityElevationPlan.GroundTopOffset;
-            return SampleDatum(layout, surface, worldXZ) + offset;
+            float top = SampleDatum(layout, surface, worldXZ) + offset;
+            return ApplyMountainTalus(layout, surface, worldXZ, top);
         }
 
         internal static float SampleTop(
@@ -344,8 +345,28 @@ namespace BarPromenade
             float offset = surface.Kind == CitySurfaceKind.ParkGround
                 ? 0f
                 : CityElevationPlan.GroundTopOffset;
-            return SampleDatum(layout, surface, worldXZ, in context) + offset;
+            float top = SampleDatum(layout, surface, worldXZ, in context) + offset;
+            return ApplyMountainTalus(layout, surface, worldXZ, top);
         }
+
+        // Boundary planning owns the original rim datum. Talus is fitted to that
+        // survey afterwards, so constructing it must never sample itself.
+        internal static float SampleTopWithoutMountainTalus(
+            CityLayout layout, CitySurfaceDescriptor surface, Vector2 point)
+        {
+            float offset = surface.Kind == CitySurfaceKind.ParkGround ? 0f : CityElevationPlan.GroundTopOffset;
+            return SampleDatum(layout, surface, point) + offset;
+        }
+
+        internal static bool ReceivesMountainTalus(CitySurfaceDescriptor surface) =>
+            surface.Kind == CitySurfaceKind.OpenGround &&
+            (surface.AreaId == CityMountainBoundaryDefinition.WestNorthAreaId ||
+             surface.AreaId == CityMountainBoundaryDefinition.WestSouthAreaId ||
+             surface.AreaId == CityMountainBoundaryDefinition.SouthWestAreaId ||
+             surface.AreaId == CityMountainBoundaryDefinition.SouthEastAreaId);
+
+        private static float ApplyMountainTalus(CityLayout layout, CitySurfaceDescriptor surface, Vector2 point, float top) =>
+            ReceivesMountainTalus(surface) ? CityMountainTalusPlan.ForLayout(layout).ApplyHeight(point, top) : top;
 
         public static bool TrySampleGroundTop(
             CityLayout layout,
