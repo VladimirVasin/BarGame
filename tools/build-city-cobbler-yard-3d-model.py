@@ -11,6 +11,7 @@ import sys
 sys.dont_write_bytecode = True
 import bpy
 from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 
 TOOLS = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("cobbler_workshop", TOOLS / "build-city-cobbler-3d-model.py")
@@ -19,7 +20,7 @@ spec.loader.exec_module(workshop)
 port, Parts = workshop.port, workshop.Parts
 OUT, SOURCE = workshop.OUT, workshop.SOURCE
 PART_NAMES = ("SeatBench", "Footrest", "BootScraper", "KerbLong", "KerbShort", "Lilac",
-              "GravelApproach", "FeedCable")
+              "GravelApproach", "FeedCable", "OldBusWheels")
 
 
 def octagon(width, depth, cut):
@@ -232,13 +233,141 @@ def cable(m, mat):
     port.empty("ANCHOR_FeedEnd",m.root,(0,0,3))
 
 
+def wheel_point(origin, tilt, yaw):
+    # Polar coordinates on the axle. Positive depth faces the viewer on the
+    # leaning wheel. Both tip and rotation in the dirt are authored in metres.
+    axis=Vector((math.sin(tilt)*math.cos(yaw),math.cos(tilt),math.sin(tilt)*math.sin(yaw)))
+    u=Vector((math.cos(tilt)*math.cos(yaw),-math.sin(tilt),math.cos(tilt)*math.sin(yaw)))
+    v=Vector((-math.sin(yaw),0,math.cos(yaw)))
+    def point(radius, angle, depth):
+        return origin+axis*depth+(u*math.cos(angle)+v*math.sin(angle))*radius
+    return point
+
+
+def wheel_shell(point, profile, segments, tread=False):
+    vertices=[]
+    faces=[]
+    for row,(radius,depth) in enumerate(profile):
+        for i in range(segments):
+            angle=math.tau*i/segments
+            r=radius
+            if tread and radius>=.448:
+                # Worn cross-cuts meet two circumferential grooves.
+                # Offset their phase at each shoulder to leave shallow chevrons.
+                groove,step=divmod(i,3)
+                angle=math.tau*(groove+(0,.12,.80)[step])/(segments//3)+abs(depth)*.59
+                if step==0:r-=.007
+            vertices.append(point(r,angle,depth))
+            j=(i+1)%segments
+            next_row=(row+1)%len(profile)
+            faces.append((row*segments+i,row*segments+j,next_row*segments+j,next_row*segments+i))
+    return vertices,faces
+
+
+def pressed_wheel_dish(m,point):
+    # Each sector contains a small stud hole and a larger brake ventilation
+    # opening punched through a dished steel plate. The centre is an open bore.
+    vertices=[]
+    lookup={}
+    faces=[]
+    def vertex(radius,angle,back):
+        depth=.057-.065*max(0,(radius-.146)/.098)-(.012 if back else 0)
+        p=tuple(point(radius,angle,depth))
+        key=tuple(round(k,6) for k in p)
+        if key not in lookup:
+            lookup[key]=len(vertices)
+            vertices.append(p)
+        return lookup[key]
+    for sector in range(8):
+        angle=math.tau*sector/8
+        for r0,r1,hole,radial,angular in ((.072,.151,.119,.013,.112),(.151,.246,.200,.027,.211)):
+            contour=((r0,-1),((r0+r1)/2,-1),(r1,-1),(r1,0),
+                     (r1,1),((r0+r1)/2,1),(r0,1),(r0,0))
+            outside=[[vertex(r,angle+a*math.pi/8,back) for r,a in contour] for back in (False,True)]
+            inside=[]
+            for back in (False,True):
+                inside.append([vertex(hole+radial*math.sin((j-1)*math.pi/4),
+                                      angle-angular*math.cos((j-1)*math.pi/4),back) for j in range(8)])
+            for i in range(8):
+                j=(i+1)%8
+                for out,inn in zip(outside,inside):
+                    faces.append((out[i],out[j],inn[j],inn[i]))
+                faces.append((inside[0][i],inside[0][j],inside[1][j],inside[1][i]))
+                if (r0==.072 and i in (6,7)) or (r1==.246 and i in (2,3)):
+                    faces.append((outside[0][i],outside[0][j],outside[1][j],outside[1][i]))
+    start=len(m.g.colors)
+    m.g.add(vertices,faces,workshop.COLOR["wear"])
+    for i in range(len(faces)):
+        if i%13 in (3,4,5):m.g.colors[start+i]=workshop.COLOR["leather"]
+    # From the exposed face, bolts and cooling slots must read as through holes.
+    dish=BVHTree.FromPolygons(vertices,faces)
+    inward=(point(0,0,0)-point(0,0,.1)).normalized()
+    for radius,angle,steel in ((0,0,False),(.119,0,False),(.200,0,False),(.145,.18,True)):
+        hit=dish.ray_cast(point(radius,angle,.155),inward,.30)[0]
+        if (hit is not None)!=steel:
+            raise ValueError("The visible wheel dish has a sealed opening or missing steel")
+    # The rolled land around the hub bore stands proud of the flat stud flange.
+    hub=((.075,.054),(.075,.079),(.080,.088),(.088,.086),(.091,.061),(.095,.054))
+    vertices,faces=wheel_shell(point,hub,24)
+    m.g.add(vertices,faces,workshop.COLOR["iron"])
+
+
+def old_bus_wheels(m,mat):
+    # Two horizontal, offset casings bear on their flat sidewalls. The third
+    # lies against the high edge of this stack with its tread on the ground.
+    profile=((.256,-.085),(.293,-.125),(.363,-.125),(.446,-.103),(.469,-.081),
+             (.460,-.039),(.469,-.030),(.469,.030),(.460,.039),(.469,.081),
+             (.446,.103),(.363,.125),(.293,.125),(.256,.085))
+    origins=[Vector((-.285,.125,-.066)),Vector((-.212,.375,.039)),Vector((0,0,0))]
+    tilts=(0,0,math.radians(52))
+    yaws=(.19,-.43,.13)
+    casings=[]
+    for origin,tilt,yaw in zip(origins,tilts,yaws):
+        casings.append(wheel_shell(wheel_point(origin,tilt,yaw),profile,36,tread=True))
+    verts,faces=casings[-1]
+    origins[-1].z=.027
+    origins[-1].y=-min(v.y for v in verts)
+    stack=[BVHTree.FromPolygons(v,f) for v,f in casings[:2]]
+    def touches_stack(x):
+        delta=origins[-1]+Vector((x,0,0))
+        tyre=BVHTree.FromPolygons([v+delta for v in verts],faces)
+        return any(tyre.overlap(support) for support in stack)
+    touching,clear=.24,.94
+    if not touches_stack(touching) or touches_stack(clear):
+        raise ValueError("Leaning wheel has no supported position on the two tyres")
+    for _ in range(12):
+        mid=(touching+clear)/2
+        if touches_stack(mid):touching=mid
+        else:clear=mid
+    origins[-1].x=clear
+    barrel=((.255,-.086),(.264,-.091),(.264,-.072),(.253,-.055),
+            (.253,.055),(.264,.076),(.264,.088),(.248,.084),(.244,.063),(.244,-.061))
+    for i,(origin,tilt,yaw) in enumerate(zip(origins,tilts,yaws)):
+        point=wheel_point(origin,tilt,yaw)
+        vertices,faces=wheel_shell(point,profile,36,tread=True)
+        m.g.add(vertices,faces,workshop.COLOR["rubber"])
+        if i==2:
+            vertices,faces=wheel_shell(point,barrel,24)
+            m.g.add(vertices,faces,workshop.COLOR["iron"])
+            pressed_wheel_dish(m,point)
+        else:
+            # The two reversed rims show their plain inboard barrel and bore.
+            inner=((.256,-.083),(.265,-.089),(.265,-.072),(.252,-.051),(.252,.067),
+                   (.263,.084),(.245,.083),(.240,.060),(.239,-.026),(.147,-.065),
+                   (.078,-.065),(.078,-.077),(.149,-.077),(.245,-.039),(.245,-.070))
+            vertices,faces=wheel_shell(point,inner,16)
+            m.g.add(vertices,faces,workshop.COLOR["iron"])
+    # A single broad low obstacle leaves the air beside the leaning tyre free.
+    workshop.collider(m.root,mat,"OldBusWheels",(-.011,.317,0),(1.43,.634,.87))
+
+
 def build():
     port.base.reset()
     mat=port.base.material("CobblerYardPalette")
     root=port.empty("CobblerYard")
     descriptions=[]
     recipes=(bench,footrest,scraper,lambda m,material:kerb(m,material,True),
-             lambda m,material:kerb(m,material,False),lilac,gravel,cable)
+             lambda m,material:kerb(m,material,False),lilac,gravel,cable,old_bus_wheels)
     for name,recipe in zip(PART_NAMES,recipes):
         part=port.empty(name,root)
         m=Parts(part,mat)
@@ -264,6 +393,10 @@ def build():
             spans=[high-low for low,high in zip(desc["bounds_min"],desc["bounds_max"])]
             if not (1.18<spans[0]<1.74 and 1.94<spans[1]<2.07 and 1.06<spans[2]<1.70):
                 raise ValueError("Lilac no longer fits the sparse two-metre yard parcel: "+str(spans))
+        if name=="OldBusWheels":
+            lo,hi=desc["bounds_min"],desc["bounds_max"]
+            if lo[1]!=0 or not (1.45<hi[0]-lo[0]<1.60 and .77<hi[1]<.93 and .99<hi[2]-lo[2]<1.12):
+                raise ValueError("The wheel pile no longer rests inside its yard parcel")
         descriptions.append(desc)
     total=sum(p["triangles"] for p in descriptions)
     if total>11500:raise ValueError(f"Yard geometry exceeds budget: {total}")

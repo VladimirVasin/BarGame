@@ -3,15 +3,14 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>One assigned resident follows the calendar through the entrance, the workshop and the lunch break.</summary>
+    /// <summary>One assigned resident walks between his home and a full shift at the workbench.</summary>
     [DefaultExecutionOrder(215), DisallowMultipleComponent]
     public sealed partial class CityCobblerWorker : MonoBehaviour
     {
-        public const int ShiftStartMinute = 660, LunchStartMinute = 840, LunchEndMinute = 870, ShiftEndMinute = 1230;
+        public const int ShiftStartMinute = 660, ShiftEndMinute = 1230;
         private const float WalkingSpeed = .86f, SitSeconds = 1.75f;
         public bool AutoAdvance { get; set; } = true;
         public bool IsWorking { get; private set; }
-        public bool IsAtLunch { get; private set; }
         public bool IsAtHome { get; private set; }
         public bool IsCommuting { get; private set; }
         public bool DoorShouldBeOpen { get; private set; }
@@ -100,13 +99,11 @@ namespace BarPromenade
             double opening = AtMinute(ShiftStartMinute), closing = AtMinute(ShiftEndMinute);
             bool morning = day >= opening - CommuteSeconds && day < opening;
             bool evening = day >= closing && day < closing + CommuteSeconds;
-            bool lunch = day >= AtMinute(LunchStartMinute) && day < AtMinute(LunchEndMinute);
             bool home = !morning && !evening && (day < opening || day >= closing);
             bool doorOpen = !home && !morning && !evening;
             Vector3 stand = CommutePlan.HomeToWork[CommutePlan.HomeToWork.Count - 1];
             Vector3 position = stand, forward = site.Rotation * Vector3.forward;
             float seat = 0f, walking = 0f, grip = 0f;
-            float lunchRest = 0f;
             if (home)
             {
                 position = CommutePlan.InsideHome;
@@ -131,41 +128,18 @@ namespace BarPromenade
                     seat = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.28f, 1f, t));
                 }
             }
-            else if (lunch)
-            {
-                var path = CommutePlan.BreakWalk;
-                float afterStart = (float)(day - AtMinute(LunchStartMinute)), untilEnd = (float)(AtMinute(LunchEndMinute) - day);
-                bool outbound = afterStart < untilEnd;
-                float t = Mathf.Min(afterStart, untilEnd);
-                if (t <= SitSeconds)
-                {
-                    float towardSeat = 1f - t / SitSeconds;
-                    forward = SeatTurn(!outbound, towardSeat);
-                    seat = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.28f, 1f, towardSeat));
-                }
-                else
-                {
-                    float along = (t - SitSeconds) * WalkingSpeed;
-                    position = path.Sample(along, out Vector3 direction);
-                    if (along < path.Length)
-                    { forward = outbound ? direction : -direction; walking = WalkingSpeed; }
-                    else lunchRest = Mathf.SmoothStep(0f, 1f, (along - path.Length) / (WalkingSpeed * SitSeconds));
-                }
-            }
             else
             {
                 seat = 1f;
-                double previous = day >= AtMinute(LunchEndMinute) ? AtMinute(LunchEndMinute) : opening;
-                double next = day < AtMinute(LunchStartMinute) ? AtMinute(LunchStartMinute) : closing;
-                grip = Mathf.SmoothStep(0f, 1f, (float)Math.Min(day - previous, next - day) / .9f);
+                grip = Mathf.SmoothStep(0f, 1f, (float)Math.Min(day - opening, closing - day) / .9f);
             }
             if (yieldToPlayer && walking > 0f && HeroInPath(position))
                 return false;
             if (yieldToPlayer && morning && retiredAtHome && observer && !CanRetire(CommutePlan.InsideHome))
                 return false;
 
-            IsCommuting = morning || evening; IsAtHome = home; IsAtLunch = lunch;
-            IsWorking = !home && !IsCommuting && !lunch;
+            IsCommuting = morning || evening; IsAtHome = home;
+            IsWorking = !home && !IsCommuting;
             DoorShouldBeOpen = doorOpen;
             SampleLampSwitch(day, opening, closing);
             WorkSeatWeight = seat;
@@ -178,15 +152,14 @@ namespace BarPromenade
             // Keep the wrapper on its floor station. Move the skeleton onto the seat;
             // a seated pelvis must never drag the collision capsule down through the floor.
             Worker.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, Vector3.up));
-            float seated = Mathf.Max(seat, lunchRest);
-            body.height = Mathf.Lerp(1.7f, 1.18f, seated);
+            body.height = Mathf.Lerp(1.7f, 1.18f, seat);
             body.center = Vector3.up * (body.height * .5f);
             SampleTool(seconds, grip);
             if (!hidden)
             {
                 if (walking > 0f) Worker.ApplyLocomotion(walking, false, (float)(seconds % 1200d));
                 else Worker.Apply(VillageResidentAction.Idle, (float)(seconds % 1200d));
-                ApplyRig(seat, lunchRest, grip);
+                ApplyRig(seat, grip);
                 if (IsUsingLampSwitch) ApplyLampSwitchPose();
                 CapturePose();
             }

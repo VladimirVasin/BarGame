@@ -82,11 +82,11 @@
   West Lane6 adds4-/3-storey v0/v4,one tree removed;shared light/approach/map;
   no NPC/text/story exception.
 
-- **Accepted 2026-11-03,user — terraced City; 2026-11-08 cobbler:**
+- **Accepted 2026-11-03,user — terraced City; 2026-11-08/09 cobbler:**
   Coast/port/river low;two seven-tier streets≤6%→Y40,levelR13 turns,
   outer+.75m(R13)/+.90m(R9). Shared terrain/route/home/map;original cave/tunnel.
   Lower bridge+7.68m/sheltered3m alley;first104m rise3.84m;dog yard/Lower Court.
-  Bus8.25×2.38@68.8,-307/250°,home21,-6,11–20:30/lunch14–14:30.
+  Bus8.25×2.38@68.8,-307/250°,home21,-6,11–20:30 continuous.
   §20:cord 1s/2s→desk3.1 AM on/PM off. Sign.3 fixed/day≥⅔.
   Steps/grips/XYZ/safe POI,§16/21/art9,[FX](city-multilevel-plan.md)
 

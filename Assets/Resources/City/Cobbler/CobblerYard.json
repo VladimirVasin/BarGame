@@ -2,7 +2,7 @@
   "coordinateSystem": "Local Unity metres; origin at ground; +Z seat forward or cable length",
   "surface": "City/Cobbler/CobblerSurface",
   "generator": "build-city-cobbler-yard-3d-model.py",
-  "triangles": 5824,
+  "triangles": 11420,
   "parts": [
     {
       "name": "SeatBench",
@@ -266,6 +266,37 @@
       "triangles": 428,
       "geometry_signature": "6a979106d5cb5d40e57ec260dc7a8395ebc5d012a0289674e28215a69e7dd08c",
       "boxes": []
+    },
+    {
+      "name": "OldBusWheels",
+      "bounds_min": [
+        -0.75152,
+        0.0,
+        -0.53252
+      ],
+      "bounds_max": [
+        0.78134,
+        0.83769,
+        0.50799
+      ],
+      "anchors": [],
+      "triangles": 5596,
+      "geometry_signature": "8ead3746b233c875df16316419bfa97093f54f0f7bc9c12dc72a3bcef2f32208",
+      "boxes": [
+        {
+          "name": "COL_OldBusWheels",
+          "center": [
+            -0.011,
+            0.317,
+            0.0
+          ],
+          "size": [
+            1.43,
+            0.634,
+            0.87
+          ]
+        }
+      ]
     }
   ]
 }

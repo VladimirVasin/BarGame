@@ -94,15 +94,10 @@ namespace BarPromenade
                 Quaternion.Slerp(awlRest.rotation, awlWorking.rotation, grip));
         }
 
-        private void ApplyRig(float seat, float lunch, float grip)
+        private void ApplyRig(float seat, float grip)
         {
             HandContactError = SoleContactError = 0f;
             if (seat > 0f) PlaceOnSeat(seatAnchor.position, floorAnchor.position.y, seat);
-            if (lunch > 0f)
-            {
-                Vector3 lunchSeat = site.ToWorld(new Vector3(-.52f, .92f, -.13f));
-                PlaceOnSeat(lunchSeat, floorAnchor.position.y, lunch);
-            }
             if (grip <= 0f) return;
             Vector3 forward = site.Rotation * Vector3.forward, right = site.Rotation * Vector3.right;
             Quaternion leftRotation = leftPalm.ResolveHandRotation(Vector3.down, forward);

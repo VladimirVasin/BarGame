@@ -140,9 +140,9 @@ Rail/grain/vice/grille/bath/sweep;upper feed/water;ground cry.
 21→home/06→loft;gate/E;occluded home;preE calendar held.
 Lamp6/r8/shadow0/day≥2/3;24FX shared,cost unknown.
 
-Cobbler68.8,-307/250°. Open road view. Last leg→1.6m gravel/steps/scraper.
-Tobacco bus double seat+footrest69.4,-302.9. 2 low kerbs/sparse lilac2m@71,-312,wall→rear cable.
-Map:yard exempt. 1GI/SSGI/SCGI shared,2SSAO/5soft256 hands,3fog/6grade City.
+Cobbler68.8,-307/250°. Open front. Last leg:gravel1.6m→steps/scraper.
+Tobacco bus bench2+footrest69.4,-302.9,2 low kerbs,sparse lilac2m@71,-312,wall→rear cable.
+Wheel pile69.5,-310.65. Map exempt. 1GI/SSGI/SCGI shared,2SSAO/5soft256 hands,3fog/6grade.
 4air/17bloom follow desk switch,sign.3cd fixed. Yard lights0.
 7probes/SSR,8water,9wet body/gravel,10bevel/one deck,11vertex0/12wind0,
 13wear/14rain/roof/15rim/16outline0.18DoF/19SMAA/20vignette/21grain-dither/

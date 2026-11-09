@@ -13,7 +13,6 @@ namespace BarPromenade
         public Vector3 HomeDoor => House.ThresholdWorld;
         public IReadOnlyList<Vector3> HomeToWork => commute.Points;
         internal Path Commute => commute;
-        internal Path BreakWalk { get; }
         internal float DoorApproachDistance { get; }
         private readonly Path commute;
 
@@ -49,14 +48,10 @@ namespace BarPromenade
             int firstStep = points.Count;
             foreach (string name in new[] { "ANCHOR_Step1", "ANCHOR_Step2", "ANCHOR_Threshold", "ANCHOR_EntryInside" })
                 points.Add(Anchor(shell, name).position);
-            Vector3 aisle = site.ToWorld(new Vector3(.25f, .48f, 2.62f));
-            Vector3 workingStand = site.ToWorld(new Vector3(-.47f, .48f, 2.62f));
-            points.Add(aisle);
-            points.Add(workingStand);
+            points.Add(site.ToWorld(new Vector3(.25f, .48f, 2.62f)));
+            points.Add(site.ToWorld(new Vector3(-.47f, .48f, 2.62f)));
             commute = new Path(points);
             DoorApproachDistance = Mathf.Max(0f, commute.Distances[firstStep - 1] - 1.65f);
-            BreakWalk = new Path(new List<Vector3> { workingStand, aisle, site.ToWorld(new Vector3(.25f,.48f,.34f)),
-                Anchor(shell, "ANCHOR_Lunch").position });
 
             void GroundLeg(Vector3 goal)
             {

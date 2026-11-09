@@ -93,13 +93,13 @@ required parity/coverage need explicit requests.
 - New/changed item interactions reuse [the standard](ai/item-interaction-standard.md):
   keyed prompts, shared 3D pickup/receipt UI, one grant, input/cleanup.
   Exceptions require a recorded user decision.
-- Register each new default NPC's permanent ID/model/garment constraints in
-  global `DefaultNpcPopulation`; use `DefaultNpcFactory.CreateForCharacter`.
-  Global assignment keeps face/hair/clothes across loads without repeats.
-  `DefaultNpcCatalog` owns allowed models. Bespoke looks or a missing type's pool
-  extension require explicit user request. Unlisted models/local randomizers are
-  forbidden;placement/actions stay local. See `2026-09-15` decisions in
-  `ai/architecture-notes.md`.
+- Register new default NPCs' permanent IDs/model/garment constraints in
+  `DefaultNpcPopulation`. Use `DefaultNpcFactory.CreateForCharacter` and only
+  `DefaultNpcCatalog` models. Keep globally unique face/hair/clothes across loads.
+  Bespoke looks or missing-type pool extensions need explicit user request.
+  No local randomizers. Keep placement/actions local (see `2026-09-15` in
+  `ai/architecture-notes.md`).
+- Schedule NPC lunch breaks only on explicit user request (`2026-11-09`).
 - Speech/dialogue follow [the standard](ai/speech-presentation-standard.md).
   Every spoken line, including `E` replies, uses its speaker's shared bubble;
   bottom UI is silent. Feature-local UI/typewriter/audio/lifetime copies are

@@ -52,6 +52,8 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3 floorEye = new(floorXZ.x, floorGround + EyeHeight, floorXZ.y);
                     var yardView = new Vector2(65.5f, -300.1f);
                     Assert.That(ground.TrySampleTop(yardView, out float yardTop), Is.True);
+                    var wheelsView = new Vector2(62.6f, -310.9f);
+                    Assert.That(ground.TrySampleTop(wheelsView, out float wheelsTop), Is.True);
 #if UNITY_EDITOR
                     if (Environment.GetEnvironmentVariable("BAR_EXPORT_COBBLER_MAP") == "1")
                         Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
@@ -67,6 +69,8 @@ namespace BarPromenade.Tests.PlayMode
                             new Vector3(69.3f, site.Origin.y + .95f, -306.3f), 65f, 1155, 1.5),
                         Frame("cobbler-yard-south", new Vector3(57f, site.Origin.y + EyeHeight, -318f),
                             new Vector3(69.6f, site.Origin.y + 1.1f, -308f), 60f, 720, 1.5),
+                        Frame("cobbler-old-wheels-day", new Vector3(wheelsView.x, wheelsTop + EyeHeight, wheelsView.y),
+                            new Vector3(68.5f, site.Origin.y + .95f, -308.8f), 65f, 855, 0),
                         Frame("cobbler-sign-night", site.Approach + site.Rotation * new Vector3(1.2f, EyeHeight, -.35f),
                             Part("ANCHOR_SignAim").position, 60f, 1155, 1.5),
                         Frame("cobbler-sign-day", site.Approach + site.Rotation * new Vector3(1.2f, EyeHeight, -.35f),
@@ -74,7 +78,7 @@ namespace BarPromenade.Tests.PlayMode
                         Frame("cobbler-near-sidewalk-hands", nearEye, target, 60f, 1155, 1.5),
                         Frame("cobbler-hands-through-glass", nearEye, target, 32f, 1155, 5.5),
                         Frame("cobbler-inside-hands", insideEye, target, 60f, 1155, 1.5),
-                        Frame("cobbler-lunch", insideEye, Part("ANCHOR_Lunch").position + Vector3.up, 60f, 855, 0),
+                        Frame("cobbler-midday-work", insideEye, target, 60f, 855, 0),
                         Frame("cobbler-closed-empty-bench", eye, target, 60f, 1320, 0),
                         Frame("cobbler-floor-front", floorEye, site.ToWorld(new Vector3(0f, .48f, .5f)), 60f, 720, 1.5),
                         Frame("cobbler-floor-front-offset", floorEye + new Vector3(.15f, .03f, -.10f),
@@ -108,15 +112,19 @@ namespace BarPromenade.Tests.PlayMode
 
                 Assert.That(cobbler.HomeStableId, Is.EqualTo(CityCobblerWorkerPlan.ResidenceId));
                 Assert.That(cobbler.CommutePlan.House.Lot.Cell, Is.EqualTo(new Vector2Int(21, -6)));
-                foreach (int minute in new[] { 660, 720, 1155, 1229 })
+                var hands = cobbler.Worker.GetComponent<NpcHandPose>();
+                foreach (int minute in new[] { 660, 720, 840, 855, 870, 1155, 1229 })
                 {
-                    cobbler.ApplyAt(minute / GameTimeState.GameMinutesPerRealSecond + 1.5d);
+                    double time = minute / GameTimeState.GameMinutesPerRealSecond;
+                    // Allow the opening pickup to finish. Probe every other minute at its exact boundary.
+                    cobbler.ApplyAt(minute == CityCobblerWorker.ShiftStartMinute ? time + 1.5d : time);
                     Assert.That(cobbler.IsWorking, Is.True, "Working minute " + minute);
+                    Assert.That(cobbler.WorkSeatWeight, Is.EqualTo(1f));
+                    Assert.That(cobbler.WorkLightOn, Is.True);
+                    Assert.That(hands.RightGripWeight, Is.GreaterThan(.99f), "The awl stays in use at " + minute);
                     Assert.That(cobbler.HandContactError, Is.LessThan(.075f), "Hands must reach the same shoe/tool.");
                     Assert.That(cobbler.SoleContactError, Is.LessThan(.075f), "Seated feet keep their authored floor contacts.");
                 }
-                cobbler.ApplyAt(855d / GameTimeState.GameMinutesPerRealSecond);
-                Assert.That(cobbler.IsAtLunch, Is.True);
                 cobbler.ApplyAt(1320d / GameTimeState.GameMinutesPerRealSecond);
                 Assert.That(cobbler.IsAtHome, Is.True);
                 double closing = 1230d / GameTimeState.GameMinutesPerRealSecond;
@@ -228,6 +236,17 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Vector3.Distance(start.position, site.Yard.CableStart), Is.LessThan(.01f));
             Assert.That(Vector3.Distance(end.position, site.Yard.CableEnd), Is.LessThan(.01f));
             var ground = CityHillsideGroundPlan.ForLayout(site.Layout);
+            var wheels = yard.Find("OldBusWheels");
+            Assert.That(wheels, Is.Not.Null);
+            var wheelMesh = CityCobblerAssetProvider.FindPart(wheels, "OldBusWheels__Paint").GetComponent<Renderer>();
+            Assert.That(wheelMesh.bounds.size.x, Is.InRange(1.1f, 1.9f));
+            Assert.That(wheelMesh.bounds.size.y, Is.InRange(.5f, 1.2f));
+            Assert.That(wheelMesh.bounds.min.y - wheels.position.y, Is.InRange(-.03f, .03f),
+                "The full-size old wheels rest on their authored ground contact.");
+            Assert.That(wheels.GetComponentsInChildren<BoxCollider>().Length, Is.EqualTo(1));
+            Assert.That(wheels.GetComponentsInChildren<Rigidbody>().Length, Is.Zero);
+            Assert.That(site.ToLocal(wheels.position).x, Is.LessThan(-1.8f),
+                "The pile is outside the driver's side, on the right in the player's screenshot.");
             foreach (var filter in yard.GetComponentsInChildren<MeshFilter>())
             {
                 if (filter.name != "GravelApproach__Paint") continue;
@@ -271,7 +290,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(lamp.enabled, Is.True);
             Assert.That(lamp.intensity, Is.GreaterThan(0f));
             worker.ApplyAt(855d / GameTimeState.GameMinutesPerRealSecond);
-            Assert.That(lamp.enabled, Is.True, "Lunch inside the bus keeps the light on.");
+            Assert.That(lamp.enabled, Is.True, "The workbench stays lit through the afternoon.");
             circuit.enabled = false;
             Assert.That(lamp.enabled, Is.False);
             circuit.enabled = true;

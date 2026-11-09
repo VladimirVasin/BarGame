@@ -3,6 +3,16 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-09
+
+Cobbler works through midday. Scheduled NPC lunch breaks require an explicit
+user request. Worn bus wheels lie between his bus and the lilac.
+The static pile shares the yard atlas, collision plan and City light.
+Blender yard --check and CityCobbler verified wheel scale, ground contact and
+collision. CityCobbler held work, grips and light at 14:00, 14:15 and 14:30.
+Road and south views show the pile beside the shrub. At 14:15 the cabin view
+shows the worker at his bench. LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
+
 ## 2026-11-08
 Glass return08–23/home22:-7:sorter rests bottle,reaches switch;one press cuts
 window/interior light and starts grille;safe motor wait precedes staff exit.

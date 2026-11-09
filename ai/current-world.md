@@ -445,8 +445,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Home patched plinth/lamp;poles→stairs/bridge footways;
   covered lamps below;rock/gravel under bridge bearings.
   Kiosks:one warm lens/two fixed soft-shadow lobes→seller/shelves/street;
-  Cobbler68.8,-307/250°,home21,-6,11–20:30/lunch14–14:30. Steps/.48 deck,
-  shoe/awl,desk switch,sign fixed. Gravel/E seat/scraper/lilac/kerbs/wall cable.
+  Cobbler68.8,-307/250°,home21,-6,11–20:30. Steps/.48 deck,
+  shoe/awl,desk switch,sign fixed. Gravel/E seat/scraper/lilac/wheel pile/kerbs/wall cable.
   `10×6 m` rear wings retain padded clearance/`2.4 m` court gap. `3.6 m` through openings
   keep their collision/route, height `3.2 m` (`4.2 m` Industrial). City/Home share
   `CityCoveredPassagePlan/World`: independent occupied/vacant wall slots for matte graffiti, repairs and Blender utilities.

@@ -33,7 +33,7 @@ namespace BarPromenade
         internal CityCobblerYardPlan(CityCobblerSitePlan site)
         {
             var ground = CityHillsideGroundPlan.ForLayout(site.Layout);
-            var placements = new List<Placement>(6);
+            var placements = new List<Placement>(7);
             var solids = new List<Vector2[]>();
             Place("SeatBench", new Vector2(69.4f, -302.9f), 235f);
             var bench = placements[0];
@@ -46,6 +46,7 @@ namespace BarPromenade
             Place("KerbLong", new Vector2(67.3f, -311.99f), 69f);
             Place("KerbShort", new Vector2(68.75f, -312.42f), 80f);
             Place("Lilac", new Vector2(71f, -312f), 37f);
+            Place("OldBusWheels", new Vector2(69.5f, -310.65f), 180f);
             Placements = placements.AsReadOnly();
             SolidPolygons = solids.AsReadOnly();
 

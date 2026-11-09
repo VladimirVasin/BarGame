@@ -11,7 +11,7 @@
 [Гребень](city-multilevel-plan.md):дворы/мосты/лестницы/скамьи/баки/будки,
 ломбард/киоски/западные дома — быт0. Окна Home→верхний мост/сухой лог/крыши;
 низина в тумане;будки→вход/земля(§20). Сапожная у Дворового моста:
-автобус, дом21,-6, смена11–20:30/обед14–14:30. Лавка для примерки, ночью верстак тёмен. Быт0–5.
+автобус, дом21,-6. Без перерыва 11–20:30. Лавка для примерки, старые колёса. Ночью верстак тёмен. Быт0–5.
 
 ## 1. Одна фраза
 
@@ -387,7 +387,7 @@
 
 | Уровень | Раздел | Что снимается | Чем заменяется |
 | ---: | --- | --- | --- |
-| `0` | §20;худ.§7 | свет мастерских | `2026-11-08`,user:GlassReturn press→interior/window off+grille shut,AM on/open. Cobbler cord→desk on before 11/off after 20:30,on at lunch. Signs/flood fixed/day≥⅔. Быт0–5,§16/21/art9. |
+| `0` | §20;худ.§7 | свет мастерских | `2026-11-08`,user:GlassReturn press→interior/window off+grille shut,AM on/open. Cobbler cord→desk on before 11/off after 20:30. Signs/flood fixed/day≥⅔. Быт0–5,§16/21/art9. |
 | `0` | худ.§10c;§17/21 | голубятник | `2026-11-07`,user:loft6;2026-11-08 chores/rare speech+silent crying.§17/21 exception:his wife’s death/suicidal struggle veiled as birdkeeping;ordinary0–5;§16/art9;architecture. |
 | `0` | §20;худ.§2.3/15a | приборы остановок | `2026-11-07`,user:01/02/03+Home:perimeter strip/rail Spots,air0+pole apron;fixed/day≥2/3,plate2 stay. Быт0–5;герой/текст/сюжет0;§16/21/art9;architecture. |
 | `0` | §20;худ.§7/15a | подъездный прибор | `2026-11-07`,user:жилые подъезды City/Home:плафон/постоянный свет порога/фасада/низа балкона/воздуха;навес/Home без дублей. День≥2/3;туман/сюжет прежние. §16/21/art9;architecture. |
