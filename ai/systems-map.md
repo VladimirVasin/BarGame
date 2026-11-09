@@ -76,7 +76,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | New-quest notice | Blinking notebook at the screen's top-right edge; the key shows until first open. | `JournalNoticeView`, `GameSessionState.HasUnreadQuests` | Current |
 | Stairwell quest descent gate | The active day-two cat quest gates descent and guides the hero back to the landing before restoring input. | `StairwellQuestDescentBlocker`, `PlayerMotor.MoveTowardsInteractionPose` | Current |
 | City blueprint/roads | Two districts+park;144 IDs/−29.2% land; fronts/courts share ground/navigation. | `City{Layout,SpatialPlan,RoadGeometryPlan,CourtyardBlockPlanner}`, `BuildingLot` | Current |
-| Coastal utilities | Three passive buildings; bounded poles/wires clear routes; shared Home plan. | `CityCoastalInfrastructure{Plan,WorldBuilder}` | Current |
+| Coastal utilities | City/Home share facade feeds clear of bays and roofs. | `CityCoastalInfrastructure*`, `CityElectrical*` | Current |
 | City elevation/stairs | Shared heights align stairs, ground and collision. | `CityElevation*`, `CityTerrainSurfacePlan` | Current |
 | Terraced City | Yards/steps;loft/birds;keeper chores/commute/gate/speech/cry;upper phone. | `CityHillside*`,`CityTerrace*`,`CityPawnshopDescent*`,`CityPigeon*` | Current |
 | City mountain boundary and open tunnel | `default-coastal` closes west/south around the non-traversable river cave and one gate-free `8 x 5.5 m` portal. | `CityMountainBoundary*`, `CityMountainBackdrop*` | Current |

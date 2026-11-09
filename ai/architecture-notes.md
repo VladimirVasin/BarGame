@@ -2,6 +2,10 @@
 
 ## Current facts
 
+- **Accepted 2026-11-09 — City power:** ≤64poles/192spans;roads≥7m;Home≤64m.
+  Ridge:axes2m,neighbour feeds;16 segments clear bays/roofs.
+  One mesh/mats;24FX/SMAA;lights/passes0.
+
 - **Accepted 2026-11-08,user — lost balance may cause a fall on stairs:**
   `StairWalkableSurface` marks physical stair ramps;labyrinth route collision
   chunks include their landings. Shared balance/status support sampling keeps
@@ -674,11 +678,8 @@
   Streets8m/asphalt6m/pavements2m; shared road-ground contours/Home triangle planes.
   Graded home/bar/shop forecourts/embedded skirts/fixture tops keep door datums;
   Home copies collision-free; port civil/eastern roads follow terrain.
-  Substation5×4×3.7m; workshops:municipal7.4×4.2×4.4m/port6×4.4×4.2m
-  clear old works/routes; support spread≤.24m;≤64poles/192spans;
-  poles5.35m off-axis/wires≥7m over roads/real facade drops. One fitted owned
-  cable mesh/shared mats/no wire physics; Home slice≤48m. RU place labels;
-  EN kept. No new NPC/interaction/quest/Light/clue.
+  Substation5×4×3.7m;municipal7.4×4.2×4.4m/port6×4.4×4.2m;support spread≤.24m.
+  RU place labels;EN kept. No new NPC/interaction/quest/Light/clue.
   PC_Renderer/CityNoirVolume/CityLightingPresentation:shared effects,
   fixed/finite bounce-air-probes/post; FPS unmeasured.
 

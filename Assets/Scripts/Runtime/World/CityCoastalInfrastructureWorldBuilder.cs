@@ -45,7 +45,11 @@ namespace BarPromenade
                 collider.size = new Vector3(.38f,8.3f,.38f);
             }
             for (int i = 0; i < plan.FacadeInlets.Count; i++)
-                Place(root,"FacadeInlet","Coastal Facade Inlet "+i,plan.FacadeInlets[i],Quaternion.identity);
+                Place(root,"FacadeInlet","Coastal Facade Inlet "+i,plan.FacadeInlets[i] - Vector3.up * .28f,plan.ServiceConnections[i].Rotation);
+            foreach(var service in plan.ServiceConnections)
+                if(service.SuppliedById != null && !service.IsExisting)
+                    Place(root,"FacadeInlet","Coastal Supply Outlet " + service.StableId,
+                        service.Start - Vector3.up * .28f,service.SourceRotation);
             BuildCables(root, plan.CableSpans);
             return root.gameObject;
         }
@@ -80,8 +84,16 @@ namespace BarPromenade
             {
                 Vector3 local = Local(plan.FacadeInlets[i]);
                 if (InsideExterior(local,.3f))
-                    Place(root,"FacadeInlet","Exterior Facade Inlet "+i,local,rotation);
+                    Place(root,"FacadeInlet","Exterior Facade Inlet "+i,local - Vector3.up * .28f,rotation * plan.ServiceConnections[i].Rotation);
             }
+            foreach(var service in plan.ServiceConnections)
+                if(service.SuppliedById != null && !service.IsExisting)
+                {
+                    Vector3 local=Local(service.Start);
+                    if(InsideExterior(local,.3f))
+                        Place(root,"FacadeInlet","Exterior Supply Outlet " + service.StableId,
+                            local - Vector3.up * .28f,rotation * service.SourceRotation);
+                }
             var visible = new List<CityCoastalCableSpan>(plan.CableSpans.Count);
             for (int i = 0; i < plan.CableSpans.Count; i++)
             {

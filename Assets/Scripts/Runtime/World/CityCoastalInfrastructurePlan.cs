@@ -50,7 +50,7 @@ namespace BarPromenade
 
     /// <summary>One immutable bounded electrical graph and three utility sites per layout.
     /// Pure placement never asks a navigation/world-composition owner for its own inputs.</summary>
-    public sealed class CityCoastalInfrastructurePlan
+    public sealed partial class CityCoastalInfrastructurePlan
     {
         public const int ExpectedFacilityCount = 3;
         public const int MaximumPoleCount = 64;
@@ -61,13 +61,13 @@ namespace BarPromenade
         // edge, while the .65 m crossarm tips fit the recessed street wall.
         private const float PoleSideOffset = 5.35f;
         private const float MaximumSpanLength = 64f;
-        private const int MaximumPoleCandidateCount = MaximumPoleCount * 4;
+        private const int MaximumPoleCandidateCount = 768;
         private static readonly ConditionalWeakTable<CityLayout, CityCoastalInfrastructurePlan> Cache =
             new ConditionalWeakTable<CityLayout, CityCoastalInfrastructurePlan>();
 
         private CityCoastalInfrastructurePlan(IList<CityCoastalFacility> facilities,
             IList<Vector3> poles, IList<CityCoastalCableSpan> spans, IList<Rect> solids,
-            IList<Vector3> inlets, IList<Vector3> forwards)
+            IList<Vector3> inlets, IList<Vector3> forwards, IList<CityElectricalServiceConnection> services)
         {
             Facilities = new ReadOnlyCollection<CityCoastalFacility>(facilities);
             Poles = new ReadOnlyCollection<Vector3>(poles);
@@ -75,6 +75,7 @@ namespace BarPromenade
             SolidFootprints = new ReadOnlyCollection<Rect>(solids);
             FacadeInlets = new ReadOnlyCollection<Vector3>(inlets);
             PoleForwards = new ReadOnlyCollection<Vector3>(forwards);
+            ServiceConnections = new ReadOnlyCollection<CityElectricalServiceConnection>(services);
         }
         public IReadOnlyList<CityCoastalFacility> Facilities { get; }
         public IReadOnlyList<Vector3> Poles { get; }
@@ -82,6 +83,7 @@ namespace BarPromenade
         public IReadOnlyList<Rect> SolidFootprints { get; }
         public IReadOnlyList<Vector3> FacadeInlets { get; }
         public IReadOnlyList<Vector3> PoleForwards { get; }
+        public IReadOnlyList<CityElectricalServiceConnection> ServiceConnections { get; }
         public bool IsEnabled => Facilities.Count != 0;
 
         public static CityCoastalInfrastructurePlan ForLayout(CityLayout layout)
@@ -105,11 +107,12 @@ namespace BarPromenade
             var poles = new List<Vector3>(MaximumPoleCount);
             var spans = new List<CityCoastalCableSpan>(MaximumCableSpanCount);
             var solids = new List<Rect>(MaximumPoleCount + ExpectedFacilityCount);
-            var inlets = new List<Vector3>(24);
+            var inlets = new List<Vector3>(80);
+            var services = new List<CityElectricalServiceConnection>(80);
             var forwards = new List<Vector3>(MaximumPoleCount);
             var connections = new List<Vector2Int>(MaximumPoleCount);
             if (!fringe.IsEnabled || !layout.SpatialPlan.IsCompactCoastal)
-                return new CityCoastalInfrastructurePlan(facilities, poles, spans, solids, inlets, forwards);
+                return new CityCoastalInfrastructurePlan(facilities, poles, spans, solids, inlets, forwards, services);
 
             var clearance = new ClearanceContext(layout);
             AddFacility(layout, fringe, facilities, solids, clearance, "coastal-substation", "Substation",
@@ -119,31 +122,11 @@ namespace BarPromenade
             AddFacility(layout, fringe, facilities, solids, clearance, "coastal-port-workshop", "PortWorkshop",
                 new Vector3(6f, 4.2f, 4.4f), CityFringeYardKind.WestStoneTerraces, .75f);
 
-            var visibility = new Dictionary<(Vector3, Vector3, Vector3), bool>();
+            clearance.Geometry = new CityElectricalClearanceGeometry(layout);
             var candidates = new List<Vector3>(MaximumPoleCandidateCount);
             CityCoastalFacility station = facilities[0];
             Vector3 feedAnchor = FeedAnchor(station);
-            Vector2 feedXZ = new Vector2(feedAnchor.x,feedAnchor.z);
-            // Road-side poles are deliberately between junctions. They stand
-            // beyond the full public sidewalk, never at the old traffic inset.
-            // Reserve a bounded source stratum before the whole-town sample;
-            // an index stride must not omit the one edge beside the feed yard.
-            var nearEdges = new List<int>(layout.RoadEdges.Count);
-            for(int e=0;e<layout.RoadEdges.Count;e++)nearEdges.Add(e);
-            nearEdges.Sort((a,b)=>
-            {
-                float first=layout.RoadGeometry.Get(layout.RoadEdges[a]).Project(feedXZ).DistanceSquared;
-                float second=layout.RoadGeometry.Get(layout.RoadEdges[b]).Project(feedXZ).DistanceSquared;
-                int order=first.CompareTo(second);return order==0?a.CompareTo(b):order;
-            });
-            for(int n=0;n<Mathf.Min(12,nearEdges.Count) && candidates.Count<32;n++)
-                AddRoadCandidates(layout,fringe,facilities,candidates,clearance,layout.RoadEdges[nearEdges[n]],32);
-            int edgeCount=Mathf.Min(80,layout.RoadEdges.Count);
-            for(int e=0;e<edgeCount && candidates.Count<MaximumPoleCandidateCount;e++)
-            {
-                int index=edgeCount==1?0:Mathf.RoundToInt(e*(layout.RoadEdges.Count-1)/(float)(edgeCount-1));
-                AddRoadCandidates(layout,fringe,facilities,candidates,clearance,layout.RoadEdges[index],MaximumPoleCandidateCount);
-            }
+            Vector2 feedXZ = new Vector2(feedAnchor.x, feedAnchor.z);
             // A small feed mast is part of the substation yard. It makes the
             // common graph start at a physical source rather than at a random pole.
             if (!TryGround(layout, feedXZ, out float feedY))
@@ -152,54 +135,8 @@ namespace BarPromenade
             poles.Add(feed); forwards.Add(Vector3.zero);
             solids.Add(PoleFootprint(feed));
             spans.Add(new CityCoastalCableSpan(feed + Vector3.up * PoleCableHeight,
-                station.Position + station.Rotation * new Vector3(2.46f, 2.12f, -.5f), .18f, true));
-            int initialCandidates=candidates.Count,sourceLinks=0;
-            var sourceRejected=new int[4];
-            Vector3 nearestCandidate=default;float nearestSquared=float.PositiveInfinity;
-            for(int c=0;c<candidates.Count;c++)
-                if((candidates[c]-feed).sqrMagnitude<nearestSquared)
-                {nearestSquared=(candidates[c]-feed).sqrMagnitude;nearestCandidate=candidates[c];}
-
-            // Bounded Prim growth over visible, obstacle-free overhead links.
-            // An unusable candidate is omitted together with its pole; no fake
-            // isolated wire network is placed through a house or park frontage.
-            while (poles.Count < MaximumPoleCount && candidates.Count > 0)
-            {
-                int bestCandidate = -1, bestParent = -1;
-                float bestDistance = MaximumSpanLength * MaximumSpanLength;
-                for (int c = 0; c < candidates.Count; c++)
-                for (int p = 0; p < poles.Count; p++)
-                {
-                    float distance = (candidates[c] - poles[p]).sqrMagnitude;
-                    if (distance >= bestDistance || distance < 16f) continue;
-                    Vector3 direction = candidates[c] - poles[p];
-                    direction.y=0f;direction.Normalize();
-                    Vector3 parentForward = forwards[p] == Vector3.zero ? direction : forwards[p];
-                    var key = (poles[p], candidates[c], parentForward);
-                    if (!visibility.TryGetValue(key, out bool clear))
-                    {
-                        clear = ClearBundle(layout,facilities,clearance,poles[p],candidates[c],parentForward,direction,out CableRejection rejection);
-                        visibility.Add(key, clear);
-                        if(poles.Count==1){sourceLinks++;if(!clear)sourceRejected[(int)rejection]++;}
-                    }
-                    if (!clear) continue;
-                    bestDistance = distance; bestCandidate = c; bestParent = p;
-                }
-                if (bestCandidate < 0 || connections.Count * 3 + 4 > MaximumCableSpanCount - 24) break;
-                Vector3 next = candidates[bestCandidate];
-                connections.Add(new Vector2Int(bestParent,poles.Count));
-                Vector3 forward = next-poles[bestParent];forward.y=0f;forward.Normalize();
-                if(forwards[bestParent]==Vector3.zero)forwards[bestParent]=forward;
-                forwards.Add(forward);
-                poles.Add(next); solids.Add(PoleFootprint(next)); candidates.RemoveAt(bestCandidate);
-                // Street stations are placement alternatives, not a mandate
-                // for several poles along one small block.
-                for(int c=candidates.Count-1;c>=0;c--)
-                    if((new Vector2(candidates[c].x-next.x,candidates[c].z-next.z)).sqrMagnitude<144f)
-                        candidates.RemoveAt(c);
-            }
-            if (poles.Count < 2)
-                throw new InvalidOperationException($"Coastal electrical graph cannot leave its substation: candidates={initialCandidates}, sourceLinks={sourceLinks}, building={sourceRejected[1]}, facility={sourceRejected[2]}, vehicle={sourceRejected[3]}, feed={feed}, nearest={nearestCandidate}, distance={Mathf.Sqrt(nearestSquared):F2}.");
+                station.Position + station.Rotation * new Vector3(2.48f, 2.24f, -.5f), .18f, true));
+            GrowCore(layout, fringe, facilities, clearance, candidates, poles, forwards, solids, connections);
 
             for (int c = 0; c < connections.Count; c++)
             {
@@ -209,7 +146,7 @@ namespace BarPromenade
                 // Each end is attached to its own pole's ceramic crossarm.
                 // Branching may change orientation; ends never hang in air.
                 if (Vector3.Dot(rightA,rightB)<0f) rightB = -rightB;
-                for (int conductor = -1; conductor <= 1; conductor++)
+                for (int conductor = c < 24 ? -1 : 0; conductor <= (c < 24 ? 1 : 0); conductor++)
                     spans.Add(new CityCoastalCableSpan(poles[link.x] + Vector3.up * PoleCableHeight + rightA*(conductor*.65f),
                         poles[link.y] + Vector3.up * PoleCableHeight + rightB*(conductor*.65f),.65f,false));
             }
@@ -220,21 +157,28 @@ namespace BarPromenade
             {
                 BuildingLot lot = layout.BuildingLots[i];
                 if (!lot.IsOrdinaryBuilding || !lot.HasRoadFrontage) continue;
-                Vector3 end = lot.DoorPosition + lot.FacadeForward * .18f + Vector3.up * Mathf.Min(6.25f,lot.Height-1f);
-                int nearest = -1; float distance = 19f * 19f;
-                for (int p = 0; p < poles.Count; p++)
+                Vector3 end=default;Quaternion inletRotation=Quaternion.identity;
+                int nearest=-1;float distance=40f*40f;
+                foreach(var pin in LowerAttachments(lot))
                 {
-                    float squared = (poles[p] - end).sqrMagnitude;
-                    if (squared >= distance) continue;
-                    var drop = new CityCoastalCableSpan(poles[p] + Vector3.up * PoleCableHeight, end, .25f, true);
-                    if (!ClearSpan(layout, facilities, drop, clearance, lot)) continue;
-                    nearest = p; distance = squared;
+                    for(int p=0;p<poles.Count;p++)
+                    {
+                        Vector3 start=poles[p]+Vector3.up*PoleCableHeight;
+                        float squared=(start-pin.Position).sqrMagnitude;
+                        if(squared>=distance || Vector3.Dot(start-pin.Position,pin.Outward)<.2f)continue;
+                        var drop=new CityCoastalCableSpan(start,pin.Position,.25f,true);
+                        if(!ClearSpan(layout,facilities,drop,clearance,lot))continue;
+                        nearest=p;distance=squared;end=pin.Position;inletRotation=Quaternion.LookRotation(pin.Outward);
+                    }
                 }
                 if (nearest < 0) continue;
                 spans.Add(new CityCoastalCableSpan(poles[nearest] + Vector3.up * PoleCableHeight, end, .25f, true));
                 inlets.Add(end);
+                services.Add(new CityElectricalServiceConnection("city:" + lot.Cell.x + ":" + lot.Cell.y,
+                    poles[nearest] + Vector3.up * PoleCableHeight, end, inletRotation, null));
             }
-            return new CityCoastalInfrastructurePlan(facilities, poles, spans, solids, inlets, forwards);
+            ExtendToRidge(layout, facilities, clearance, poles, forwards, spans, solids, inlets, services);
+            return new CityCoastalInfrastructurePlan(facilities, poles, spans, solids, inlets, forwards, services);
         }
 
         private static void AddFacility(CityLayout layout, CityFringeYardPlan fringe,
@@ -369,7 +313,8 @@ namespace BarPromenade
             }
             if(!TryFoundation(layout,footprint,out top))return false;
             if(CityStreetSurfacePlanner.TrySampleEntranceForecourtTop(layout,xz,out float forecourtTop))top=forecourtTop;
-            pole=new Vector3(xz.x,top-.04f,xz.y);return true;
+            pole=new Vector3(xz.x,top-.04f,xz.y);
+            return clearance.Geometry == null || clearance.Geometry.PoleClear(pole);
         }
 
         private enum CableRejection {None,Building,Facility,Vehicle}
@@ -397,31 +342,26 @@ namespace BarPromenade
             CityCoastalCableSpan span,ClearanceContext context,out CableRejection rejection,BuildingLot receiver=null)
         {
             rejection=CableRejection.None;
-            int samples=Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(span.Start,span.End)/1.5f),4,48);
+            if(!context.Geometry.Clear(span)){rejection=CableRejection.Building;return false;}
+            Rect extent=Rect.MinMaxRect(Mathf.Min(span.Start.x,span.End.x)-.01f,Mathf.Min(span.Start.z,span.End.z)-.01f,
+                Mathf.Max(span.Start.x,span.End.x)+.01f,Mathf.Max(span.Start.z,span.End.z)+.01f);
+            bool touches=context.Bounds.Overlaps(extent);
+            for(int f=0;f<facilities.Count && !touches;f++)touches=facilities[f].Footprint.Overlaps(extent);
+            if(!touches)return true;
+            context.NearbyRoads.Clear();
+            context.Paving.GetNearby(extent,context.NearbyRoads);
+            int samples=Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(span.Start,span.End)/.5f),4,128);
             for(int i=1;i<samples;i++)
             {
                 Vector3 point=span.Sample(i/(float)samples);
                 Vector2 xz=new Vector2(point.x,point.z);
-                for(int b=0;b<context.Solids.Count;b++)
-                {
-                    SolidVolume solid = context.Solids[b];
-                    if (solid.Lot == receiver && i >= samples - 1) continue;
-                    if (point.y <= solid.Top && solid.Footprint.Contains(xz)){rejection=CableRejection.Building;return false;}
-                }
                 for(int f=0;f<facilities.Count;f++)
                     if(point.y<facilities[f].Position.y+facilities[f].Size.y+.35f &&
                         facilities[f].Footprint.Contains(xz)){rejection=CableRejection.Facility;return false;}
-                for(int e=0;e<layout.RoadEdges.Count;e++)
-                {
-                    RoadEdge edge=layout.RoadEdges[e];
-                    CityRoadPath path=layout.RoadGeometry.Get(edge);
-                    if (!Expanded(path.Bounds, layout.RoadWidth*.5f+.1f).Contains(xz)) continue;
-                    CityRoadProjection projection=path.Project(xz);
-                    float width = layout.RoadWidth*.5f+.1f;
-                    if(projection.DistanceSquared>width*width) continue;
-                    float datum=layout.ElevationPlan.SampleRoadDatum(edge,projection.DistanceAlong/path.Length);
-                    if(point.y-datum<MinimumVehicleWireHeight){rejection=CableRejection.Vehicle;return false;}
-                }
+                foreach(var patch in context.NearbyRoads)
+                    if(patch.Kind==CityStreetSupportKind.Asphalt && patch.TrySampleTop(xz,out float top) &&
+                        point.y-top<MinimumVehicleWireHeight+.08f){rejection=CableRejection.Vehicle;return false;}
+
             }
             return true;
         }
@@ -429,17 +369,24 @@ namespace BarPromenade
         private readonly struct SolidVolume
         {
             internal SolidVolume(BuildingLot lot, Rect footprint)
-            { Lot = lot; Footprint = Expanded(footprint, .35f); Top = lot.Center.y + lot.Height + .35f; }
+            { Lot = lot; RawFootprint=footprint; Footprint = Expanded(footprint, .35f); Top = lot.Center.y + lot.Height + .35f; }
             internal BuildingLot Lot { get; }
+            internal Rect RawFootprint { get; }
             internal Rect Footprint { get; }
             internal float Top { get; }
         }
         private sealed class ClearanceContext
         {
+            internal Rect Bounds;
+            internal CityElectricalClearanceGeometry Geometry;
+            internal readonly CityStreetSupportPlan Paving;
+            internal readonly List<CityStreetSupportPatch> NearbyRoads=new List<CityStreetSupportPatch>(64);
             internal readonly List<SolidVolume> Solids = new List<SolidVolume>();
             internal readonly List<Rect> Furniture = new List<Rect>();
             internal ClearanceContext(CityLayout layout)
             {
+                Bounds = layout.WorldXZBounds;
+                Paving=CityStreetSupportPlan.ForLayout(layout);
                 foreach (Rect footprint in CityBusNetworkFurniture.Reservations(CityDistrictBusPlanner.CreateRoadRouting(layout), layout))
                     Furniture.Add(footprint);
                 for (int i = 0; i < layout.BuildingMasses.Count; i++)

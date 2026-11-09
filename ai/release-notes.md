@@ -18,6 +18,12 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   LiveCity_RidgeKioskSideWindowKeepsMenuOnRefusedTalk;
   CitySchematic_ShowsPigeonLoftAndCourtyardGate.
 
+- Электросеть связывает низину и все здания Гребня. Соседние дома передают
+  питание напрямую; у столбов оставлено место для траверс. Провода обходят
+  эркеры, балконы и крыши, в том числе на западной верхней улице.
+  CityElectricalNetwork: проверка видимых моделей и вид из квартиры.
+  LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement.
+
 ### 2026-11-08
 
 - Пункт стеклотары08–23 получил освещённую вывеску. Перед уходом домой приёмщик

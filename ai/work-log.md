@@ -24,6 +24,17 @@ commute continuity. LiveCity_RidgeKioskSideWindowKeepsMenuOnRefusedTalk proves
 window reach and modal recovery. CitySchematic_ShowsPigeonLoftAndCourtyardGate
 passed; the schematic frame was reviewed. check-docs/diff-check.
 
+City power surveys stable streets and feeds both climbs. Ridge prefers neighbour
+wall leads, retaining the cobbler's fitted cable. Upper poles need a service pocket;
+full shafts/crossarms and every cable section clear bodies, bays, galleries and
+roofs. The old footprint/end-percentage exemptions missed protruding glazing.
+Lower pins use real shells/eaves; sag clears the actual asphalt. City/Home share
+one bounded mesh. CityElectricalNetwork audits the fitted wire radius against
+placed architectural triangles, including the cobbler lead; the reported west
+crest, both slopes and balcony frames were reviewed. Shared light/material/post,
+fog/shadows/SMAA retained. LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement
+proves occupied-platform walks and both-door boarding. check-docs/diff-check.
+
 ## 2026-11-08
 Glass return08–23/home22:-7:sorter rests bottle,reaches switch;one press cuts
 window/interior light and starts grille;safe motor wait precedes staff exit.

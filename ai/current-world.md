@@ -460,12 +460,11 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   substation `5x4x3.7 m`, municipal workshop `7.4x4.2x4.4 m` and port workshop
   `6x4.4x4.2 m`. Their fixed footprints clear existing fringe works, roads,
   public pavements and traversal; maximum support-height spread `0.24 m`.
-  At most `64` poles and `192` cable spans form a causal electrical network:
-  poles sit outside the public footway, `5.35 m` from street axes, main wires
-  clear roads by at least `7 m`, facade drops have physical ends. The imported
-  topology is fitted once at build into one owned cable mesh with shared
-  materials; no wire physics, extra Light, NPC or interaction. Home shows only
-  a passive `48 m` slice from the same plan;
+  Substation feeds lower City and every Ridge building. Ridge drops prefer a wired
+  neighbour; house (21,-6) feeds the cobbler. Upper pole axes stay 2 m from buildings; shafts and crossarms clear geometry;
+  lower offset 5.35 m. Wires clear roads by 7 m and avoid bays, galleries and roofs
+  along all 16 mesh segments. At most 64 poles/192 spans; one shared-material cable
+  mesh. Home clips the same plan to its 64 m balcony view;
 - one default-blueprint-only mountain boundary plan closes the physical west
   and south edges with deterministic flat-shaded low-poly ridge strips whose
   toes sample the authoritative terrain top. The south skyline remains closed
