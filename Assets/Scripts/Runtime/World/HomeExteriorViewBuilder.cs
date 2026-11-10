@@ -73,7 +73,7 @@ namespace BarPromenade
             BuildTerminalEnvironment(root, balcony, context);
             BuildRoads(root, context);
             BuildBuildings(root, context);
-            if (context.Layout.HasSummitHome) BuildSummitNeighborhood(root, context);
+            if (context.Layout.HasSummitHome) ground.RegisterGrassScenery(BuildSummitNeighborhood(root, context));
             BuildKiosks(root, context);
             CityDistrictPointOfInterestWorldBuilder
                 .BuildHomeExterior(root, context);
@@ -91,6 +91,7 @@ namespace BarPromenade
             night.BusStopPoles = poles;
             ground.SetBuildingPerimeters(CityBuildingPerimeterPlan.ForLayout(context.Layout), context);
             ground.SetResidentialCourtyards(courtyards, context);
+            ground.SetGrassContext(context.Layout, home: context);
             ground.FinalizeSurface();
             // The retained exterior is presentation only. Shared fixture
             // builders and imported kits may carry collision components;
@@ -100,7 +101,7 @@ namespace BarPromenade
             return root;
         }
 
-        private static void BuildSummitNeighborhood(Transform parent, HomeExteriorContextPlan context)
+        private static Transform BuildSummitNeighborhood(Transform parent, HomeExteriorContextPlan context)
         {
             // The same terrain cuts, stairs and domestic frontages seen outside the
             // apartment. Assemble in the city's frame, then place under the balcony.
@@ -135,6 +136,7 @@ namespace BarPromenade
             frame.SetParent(parent, false);
             frame.localPosition = PlayerHomeBalconyGeometry.ToHomeLocal(home, Vector3.zero);
             frame.localRotation = Quaternion.LookRotation(PlayerHomeBalconyGeometry.ToHomeLocalDirection(home, Vector3.forward));
+            return frame;
         }
 
         private static void BuildKiosks(Transform parent, HomeExteriorContextPlan context)

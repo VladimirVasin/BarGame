@@ -23,7 +23,7 @@ namespace BarPromenade.Tests.PlayMode
             foreach (string key in keys)
                 preferences[key] = PlayerPrefs.HasKey(key) ? PlayerPrefs.GetInt(key) : (int?)null;
             float previousDelta = Time.captureDeltaTime;
-            CityCoastalGrassWind grass = null;
+            CityGrassField grass = null;
             Material basin = null;
             try
             {
@@ -98,13 +98,13 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     FreezeLightingPolish(city.Player.Motor);
                     city.DayNight.enabled = false; city.Weather.enabled = false;
-                    grass = city.World.Root.GetComponentInChildren<CityCoastalGrassWind>(true);
+                    grass = city.World.Root.GetComponentInChildren<CityGrassField>(true);
                     Assert.That(grass, Is.Not.Null);
-                    Assert.That(grass.StemCount, Is.InRange(1, CityCoastalGrassWind.MaximumStems));
-                    Assert.That(grass.TryGetStem(0, out Vector3 root, out Vector3 tip), Is.True);
+                    Assert.That(grass.SurfaceFaceCount, Is.GreaterThan(0));
+                    Assert.That(grass.TryFindPlant(CityGrassHabitat.Beach, out Vector3 root, out Vector3 tip), Is.True);
                     grass.DebugPhaseSeconds = 1f;
                     grass.DebugWind = new WindSample(90f, 1f);
-                    grass.DebugInteractionPosition = root + Vector3.right * 2f;
+                    grass.DebugContact = root + Vector3.right * 2f;
                     Vector3 aim = Vector3.Lerp(root, tip, .55f);
                     Vector3 eye = aim + new Vector3(1.05f, .38f, -1.05f);
                     var shots = new List<Shot>
@@ -150,9 +150,9 @@ namespace BarPromenade.Tests.PlayMode
                     Shot GrassShot(string label, bool still, bool contact) =>
                         Shot.At("Test coast - " + label, eye, aim, 43f, readyWhen: () =>
                         {
-                            grass.DebugDisableMotion = still;
-                            grass.DebugInteractionPosition = root + Vector3.right * (contact ? .15f : 2f);
-                            grass.RefreshPresentation(); return true;
+                            grass.DebugStill = still;
+                            grass.DebugContact = root + Vector3.right * (contact ? .15f : 2f);
+                             return true;
                         });
                 });
                 Assert.That(PolishDifference(SceneIds.City, "Test coast - Still", "Test coast - Wind"), Is.GreaterThan(24));
@@ -165,8 +165,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(mirror.ReflectionTexture.filterMode, Is.EqualTo(FilterMode.Trilinear));
                 for (int i = 0; i < 8; i++) yield return null;
                 Assert.That(mirror.CaptureCount, Is.EqualTo(captures), "Stable lighting must reuse the snapshot.");
-                grass.DebugPhaseSeconds = null; grass.DebugWind = null; grass.DebugInteractionPosition = null;
-                grass.DebugDisableMotion = false; grass.RefreshPresentation();
+                grass.DebugPhaseSeconds = null; grass.DebugWind = null; grass.DebugContact = null;
+                grass.DebugStill = false;
 
                 yield return CaptureCrownAndSlidePolish();
             }
@@ -174,8 +174,8 @@ namespace BarPromenade.Tests.PlayMode
             {
                 if (grass != null)
                 {
-                    grass.DebugPhaseSeconds = null; grass.DebugWind = null; grass.DebugInteractionPosition = null;
-                    grass.DebugDisableMotion = false; grass.DebugDisableInteraction = false; grass.RefreshPresentation();
+                    grass.DebugPhaseSeconds = null; grass.DebugWind = null; grass.DebugContact = null;
+                    grass.DebugStill = false;
                 }
                 if (basin != null) { basin.SetFloat("_EdgeFoamStrength", 0f); basin.SetFloat("_ReflectionBlur", .65f); }
                 foreach (var preference in preferences)

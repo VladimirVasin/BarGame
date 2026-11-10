@@ -61,28 +61,28 @@ namespace BarPromenade.Tests.PlayMode
                     capture.Save(SceneIds.City, "Test wet street - Screen edge fallback");
                     yield return AssertSsrCameraExclusion(camera, feature);
 
-                    CityCoastalGrassWind grass = city.World.Root.GetComponentInChildren<CityCoastalGrassWind>(true);
+                    CityGrassField grass = city.World.Root.GetComponentInChildren<CityGrassField>(true);
                     Assert.That(grass, Is.Not.Null);
-                    Assert.That(grass.TryGetStem(0, out Vector3 stemRoot, out Vector3 tip), Is.True);
+                    Assert.That(grass.TryFindPlant(CityGrassHabitat.Beach, out Vector3 stemRoot, out Vector3 tip), Is.True);
                     Vector3 aim = Vector3.Lerp(stemRoot, tip, .55f);
                     SetSsrPose(camera, aim + new Vector3(1.05f, .38f, -1.05f), aim, 43f);
                     grass.DebugWind = new WindSample(90f, 1f);
                     grass.DebugPhaseSeconds = 1f;
-                    grass.DebugInteractionPosition = stemRoot + Vector3.right * 2f;
-                    grass.RefreshPresentation();
+                    grass.DebugContact = stemRoot + Vector3.right * 2f;
+
                     yield return WarmSsrCamera(camera, feature);
                     yield return null;
                     grass.DebugPhaseSeconds = 2f;
-                    grass.RefreshPresentation(); camera.Render();
+                     camera.Render();
                     Assert.That(grass.PreviousRenderedPhaseSeconds, Is.EqualTo(1f));
                     grass.DebugPhaseSeconds = 3f;
-                    grass.RefreshPresentation(); camera.Render();
+                     camera.Render();
                     Assert.That(grass.PreviousRenderedPhaseSeconds, Is.EqualTo(1f), "Repeated same-frame renders cannot advance previous wind.");
                     capture.Save(SceneIds.City, "Test coast - Wind motion history");
                     grass.enabled = false; grass.enabled = true; camera.Render();
                     Assert.That(grass.PreviousRenderedPhaseSeconds, Is.EqualTo(grass.AppliedPhaseSeconds));
-                    grass.DebugPhaseSeconds = null; grass.DebugWind = null; grass.DebugInteractionPosition = null;
-                    grass.RefreshPresentation();
+                    grass.DebugPhaseSeconds = null; grass.DebugWind = null; grass.DebugContact = null;
+
                 }
                 CityReflectionController oldCityReflection = city.Lighting.Reflection;
                 yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest, LoadSceneMode.Single);

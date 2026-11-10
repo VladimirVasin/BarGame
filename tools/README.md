@@ -134,14 +134,15 @@ Art pins:`python tools/toolchain.py --scope all`.
 Mac:`native.macos`:Python/NumPy/clang/SDK;`python3 tools/toolchain.py --scope native`.
 
 Desktop:[workflow](../ai/windows-build-optimization-plan.md).
-Repo root;`--`:args. Launcher:Python pin/startup/errors/fresh `--expect`/JSON;
-both launcher/generator:`--validate-only`.
-Ordinary:`principal_npc_detail.py`/`service_npc_detail.py`/`npc_detail_geometry.py`.
+Repo root;`--`:args. Launcher:Python/errors/fresh `--expect`/JSON;
+`--validate-only`:both.
+Grass:`build-city-grass-3d-model.py`;`build-city-grass-shader.py --check`.
+NPC:`principal_npc_detail.py`/`service_npc_detail.py`/`npc_detail_geometry.py`.
 Cashier:`supermarket_cashier_geometry.py`:normal/3D face;Watcher kept.
 Shop:`supermarket_surface_response.py --validate-only`:6maps/hash.
 
-Empty `Captures/Tooling`:repeat `--stage-output=--model-dir=Assets/path`/other args kept;
-`--expect`:destinations. Publish checked/Unity closed,keep `.meta`/rollback;import non-atomic.
+`Captures/Tooling`:repeat `--stage-output=--model-dir=Assets/path`/other args kept;
+Publish checked/Unity closed;keep `.meta`/rollback;non-atomic.
 
 VHS:Windows `tools/audio-vhs/build.ps1`;Mac `tools/audio-vhs/build-macos.py`.
 Both:ABI/DSP;compile-only keeps temporary output.

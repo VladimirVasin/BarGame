@@ -484,6 +484,7 @@ namespace BarPromenade
                     world,
                     windDressingPlan);
 
+            groundSurface.SetGrassContext(layout, seacoastPlan);
             groundSurface.FinalizeSurface();
             completed(new CityWorldResult(
                 world.gameObject,

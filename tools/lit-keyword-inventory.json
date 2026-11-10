@@ -212,6 +212,10 @@
       "sha256": "638deb8f5a8038518a07d8a11b7a45167520f532742a5cd01c230ffa0737bb88",
       "review": "Reviewed: creates common Lit; emission enabled for bulb roles."
     },
+    "Assets/Scripts/Runtime/World/CityGrassField.cs": {
+      "sha256": "f9d7fe4ed4cec345f96562eb54ce94fb9fcc54fb8e94f34960b0720b0f10e10f",
+      "review": "Reviewed: one scene-owned instanced CityGrassLit material; SSR receiver disabled, MotionVectors enabled; owned cleanup, no Lit variant stripping."
+    },
     "Assets/Scripts/Runtime/World/CityLaundryAssetProvider.cs": {
       "sha256": "6007d349b8c451887cdb4544b1c9072ddf545ca6e902911530ae9dc18823684c",
       "review": "Reviewed: clones port SteelLight and enables straight-alpha transparency; inherited sets remain open."
@@ -505,6 +509,9 @@
     },
     "Assets/Scripts/Runtime/World/CityFringeYardSurfaceAppearance.cs": {
       "sha256": "0f7b51bf34bf9bbe40dadf9cb32d197d2dae3279dac289386afadbd4f9db38c0"
+    },
+    "Assets/Scripts/Runtime/World/CityGrassField.cs": {
+      "sha256": "f9d7fe4ed4cec345f96562eb54ce94fb9fcc54fb8e94f34960b0720b0f10e10f"
     },
     "Assets/Scripts/Runtime/World/CityHomeGroundWorldBuilder.cs": {
       "sha256": "ad77bfadc666acc120045d33cb2a05c25d43a6a0c867b47b9066b49b766da917"

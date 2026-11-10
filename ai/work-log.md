@@ -3,6 +3,18 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-11
+
+City grass uses authored narrow leaves and substantial coastal reeds, mixed
+by habitat on final ground after paving/yard cuts. Seeded chunks share models,
+materials and Home coordinates; weather/body bend retains rooted bases and
+finite recovery. Garden/cemetery care, sparse former lake and usable routes
+remain. Explicit material eligibility/bridge spans prevent plants on hard decks;
+complete cut/arrival neighbourhoods prevent square cache gaps. Blender CityGrass
+geometry/determinism and pinned grass shader validator. CityGrassAcceptance
+passed City/Home, bridge exclusions, wind/contact, pause, disable/unload and
+excavate/fill; frames reviewed. Lit inventory retains unrelated old snapshot gaps.
+
 ## 2026-11-09
 
 Accessible west/south toes have uneven talus, buried blocks and graded soil/rock.

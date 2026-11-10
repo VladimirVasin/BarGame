@@ -2,6 +2,11 @@
 
 ## Current facts
 
+- **Accepted 2026-11-11,user — dense City grass:**8types/3variants/3LOD;
+  ground/Home;instances/cache100/range38m.
+  Wind/roots/hero+7NPC/24trails;Lit/pigment/history.
+  Low park/kept garden/sparse lake/beach reeds;story/FX kept.
+
 - **Accepted 2026-11-09 — City power:** ≤64poles/192spans;roads≥7m;Home≤64m.
   Ridge:axes2m,neighbour feeds;16 segments clear bays/roofs.
   One mesh/mats;24FX/SMAA;lights/passes0.
@@ -923,10 +928,7 @@
   inspection reuses the shared owned Bokeh contract.
 - **Accepted 2026-10-21, material/motion pilots — explicit user decision:**
   BarCounterMaterialResponse: ten wood/brass receivers, response maps, unchanged
-  albedo/mean smoothness; one cached material. CityCoastalGrassWind: existing
-  flat stems/weather wind, one 0.65 m hero radius, rooted bases, forward/shadow/
-  depth/normal parity and padded bounds; disable restores material/MPB/UV/bounds.
-  No per-stem physics/new geometry. One physical 48 m Road chunk: scoped shader/
+  albedo/mean smoothness; one cached material. One physical 48 m Road chunk: scoped shader/
   COLOR 0.93–1; silhouette/UV/ground/wind stay. Pistol Slide__Steel corner normals
   blend 35% toward weighted normals on existing bevels; geometry/UV/anchors stay.
   CityRiverWater defaults foam=1/blur=0; basin 0/0.65 stays foam-free. Existing

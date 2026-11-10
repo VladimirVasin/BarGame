@@ -9,7 +9,7 @@
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
 - 16:9/native/SMAA/savedFX;4:3 unsupported;City/balcony Soft,bar/church Neutral.
   Maps/response/cubes; City/Home/bar UV0+1;house air/bar WC mirror.
-  Pilots:coastal stems(City crowns static),roadRGB,pistol normals;fountain foam/mips.
+  City:8grass types/wind/contact/Home;crowns static. RoadRGB/pistol/fountain pilots.
 - Fourteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
 
 | Index | Scene | Role |

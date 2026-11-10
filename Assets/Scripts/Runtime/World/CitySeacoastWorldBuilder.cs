@@ -292,6 +292,9 @@ namespace BarPromenade
                     part.Style,
                     part.Kind == CitySeacoastPartKind.EsplanadeSlab,
                     part.Kind == CitySeacoastPartKind.ShoreGrass);
+                // ShoreGrass stays in the immutable coast plan; the habitat
+                // field replaces its old visible box stems.
+                if (part.Kind == CitySeacoastPartKind.ShoreGrass) continue;
                 if (importedIds.Contains(part.StableId))
                 {
                     if (part.BlocksMovement)

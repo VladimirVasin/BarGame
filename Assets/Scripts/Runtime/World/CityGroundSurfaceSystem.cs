@@ -41,6 +41,26 @@ namespace BarPromenade
         private bool buildCollision;
         private CityLayout talusLayout;
         private bool sealedSurface;
+        private CityLayout grassLayout;
+        private CitySeacoastPlan grassCoast;
+        private HomeExteriorContextPlan grassHome;
+        private CityGrassSurface grassSupport;
+        private bool recordingGrass;
+        private readonly List<Source> grassScenery = new List<Source>();
+        internal void RegisterGrassScenery(Transform root)
+        {
+            if(root==null)return;
+            foreach(var filter in root.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if(filter.sharedMesh==null||!filter.sharedMesh.isReadable||!filter.TryGetComponent<Renderer>(out var renderer))continue;
+                bool ground=false;
+                foreach(Material material in renderer.sharedMaterials)
+                    if(material!=null&&material.HasProperty("_GroundKind")){ground=true;break;}
+                if(ground)grassScenery.Add(new Source(renderer,0,false,false,null));
+            }
+        }
+        internal void SetGrassContext(CityLayout layout, CitySeacoastPlan coast = null, HomeExteriorContextPlan home = null)
+        { grassLayout = layout; grassCoast = coast; grassHome = home; }
         internal int SourceCount => sources.Count;
         internal int SurfaceTriangleCount { get; private set; }
         internal int SectorCount { get; private set; }
@@ -184,12 +204,36 @@ namespace BarPromenade
             double perimeterMilliseconds = timer.Elapsed.TotalMilliseconds;
             surface = GroundSurfacePartitioner.Conform(surface, bucketSize: EdgeBucketSize);
             double conformMilliseconds = timer.Elapsed.TotalMilliseconds;
+            CityGrassSurface grass = null;
+            if (grassLayout != null)
+            {
+                grass = new CityGrassSurface(grassLayout, grassHome, grassCoast);
+                grassSupport=grass;
+                foreach (Triangle triangle in surface)
+                    AddGrassFace(triangle);
+                // Home assembles retained hillside terrain in a detached City
+                // frame before rotating it. Read it after placement, without
+                // changing its existing passive geometry or collision contract.
+                foreach(Source source in grassScenery)
+                {
+                    Capture(source);
+                    foreach(Triangle triangle in source.Top)AddGrassFace(triangle);
+                    source.Top=null;source.Sides=null;source.Support=null;
+                }
+                // Sand is deformable, but its upper-beach plant roots are stable.
+                // Grave excavation regions deliberately never receive rooted plants.
+                foreach (Source source in sources)
+                    if (source.Dynamic && source.Renderer.GetComponent<CitySandTreading>() != null)
+                        foreach (Triangle triangle in source.Top) AddGrassFace(triangle);
+            }
             SurfaceTriangleCount = surface.Count;
             surface.AddRange(sides);
             Transform sectors = new GameObject("City Ground").transform;
             sectors.SetParent(transform, false);
             SectorCount = BuildSectors(sectors, surface, buildCollision);
+            recordingGrass=grass!=null;
             foreach (DynamicRegion region in dynamicRegions) BuildDynamic(region);
+            recordingGrass=false;
             foreach (Source source in sources)
             {
                 if (source.Dynamic) continue;
@@ -198,6 +242,29 @@ namespace BarPromenade
                 foreach (Collider collider in source.Renderer.GetComponents<Collider>()) collider.enabled = false;
             }
             foreach (Collider collider in replacedColliders) if (collider != null) collider.enabled = false;
+            if (grass != null)
+            {
+                foreach (Collider collider in GetComponentsInChildren<Collider>(true))
+                {
+                    if (!collider.enabled || collider.isTrigger || collider.GetComponentInParent<FootstepGround>() != null) continue;
+                    Bounds bounds = collider.bounds;
+                    if (bounds.size.y < .1f || bounds.size.x < .05f || bounds.size.z < .05f) continue;
+                    // Home's view is rotated; transform all bounds corners, not just its centre.
+                    Bounds cityBounds = new Bounds(grass.ToCity(bounds.center), Vector3.zero);
+                    for (int corner = 0; corner < 8; corner++)
+                        cityBounds.Encapsulate(grass.ToCity(new Vector3((corner & 1) == 0 ? bounds.min.x : bounds.max.x,
+                            (corner & 2) == 0 ? bounds.min.y : bounds.max.y, (corner & 4) == 0 ? bounds.min.z : bounds.max.z)));
+                    grass.AddObstacle(cityBounds, collider is MeshCollider ? collider : null);
+                }
+                if (buildingPerimeters != null)
+                    foreach (var footprint in buildingPerimeters.Footprints)
+                    {
+                        Rect body = footprint.BodyFootprint.Bounds;
+                        grass.AddObstacle(new Bounds(new Vector3(body.center.x, 0, body.center.y),
+                            new Vector3(body.width, 1000, body.height)));
+                    }
+                CityGrassField.Create(transform, grassLayout, grass);
+            }
             supports.Clear();
             supportFaces.Clear(); supportBounds.Clear(); supportPlanes.Clear(); supportContours.Clear();
             foreach (Source source in sources)
@@ -261,6 +328,19 @@ namespace BarPromenade
                 GameLog.Debug("city", "ground_allocation_calibration", GameLog.Field("status", status),
                     GameLog.Field("count", calibrationCount), GameLog.Field("raw_value", calibrationValue));
             }
+        }
+
+        private void AddGrassFace(Triangle triangle)
+        {
+            Style style=styles[triangle.Surface];
+            // A footstep fallback is not permission to plant an imported deck.
+            float kind=style.Properties.GetFloat(Shader.PropertyToID("_GroundKind"));
+            bool planting=style.Material.HasProperty("_GroundKind") &&
+                (kind==(float)GroundSurfaceKind.Soil||kind==(float)GroundSurfaceKind.Lawn||kind==(float)GroundSurfaceKind.Sand);
+            FootstepGroundKind plantKind=kind==(float)GroundSurfaceKind.Lawn?FootstepGroundKind.Grass:
+                kind==(float)GroundSurfaceKind.Sand?FootstepGroundKind.Sand:FootstepGroundKind.Soil;
+            grassSupport.Add(grassSupport.ToCity(triangle.A.Position),grassSupport.ToCity(triangle.B.Position),
+                grassSupport.ToCity(triangle.C.Position),planting?plantKind:FootstepGroundKind.None);
         }
 
         private void Capture(Source source)
@@ -618,6 +698,13 @@ namespace BarPromenade
             List<Triangle> surface = GroundSurfacePartitioner.Partition(input, SurfaceBucketSize);
             surface = ApplyBuildingPerimeters(surface);
             surface = GroundSurfacePartitioner.Conform(surface, bucketSize: EdgeBucketSize);
+            if(recordingGrass)
+            {
+                if(excavation!=null)grassSupport.SetExcavation(excavation,region.Bounds);
+                foreach(Triangle triangle in surface)AddGrassFace(triangle);
+            }
+            else if(grassSupport!=null)
+                GetComponentInChildren<CityGrassField>(true)?.Invalidate(region.Bounds);
             surface.AddRange(region.Source.Sides);
             if (region.Built != null) { region.Built.SetActive(false); DestroyGenerated(region.Built); }
             region.Built = BuildMesh("Dynamic ground sector - " + region.Name, region.Source.Renderer.transform, surface, buildCollision);
