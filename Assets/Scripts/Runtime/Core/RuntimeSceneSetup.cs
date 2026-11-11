@@ -586,6 +586,8 @@ namespace BarPromenade
             grain.intensity.Override(0.015f);
             grain.response.Override(0.80f);
 
+            // Complete the far blur within the street fog. A focal plane
+            // near the far clip puts the haze and its silhouettes in different blur bands.
             AddGaussianDepthOfField(profile, 8f, 28f, 1.5f);
             return profile;
         }

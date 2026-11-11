@@ -647,7 +647,7 @@ namespace BarPromenade
             DayNight = gameObject.AddComponent<CityDayNightController>();
             DayNight.Initialize(Night, camera);
             Visibility = Night.Root.AddComponent<CityAltitudeVisibility>();
-            Visibility.Initialize(camera, Night.FogField, DayNight.SceneDepthOfField);
+            Visibility.Initialize(camera, Night.FogField);
             Pedestrians.StreetVisibility = Visibility;
             GameLogPhases.Report("city", "night_lighting", stepTimer);
             stepTimer.Restart();

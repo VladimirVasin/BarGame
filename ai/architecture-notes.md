@@ -7671,7 +7671,7 @@
   retired style/console-effect keys are ignored. DoF changes runtime/cloned
   profiles only; disabled intoxication forces zero.
 - **Accepted — shared depth of field has two tiers:** the
-  scene tier is Gaussian: City `8/28` at the shore to `35/90` on the crest, radius `1.5`;
+  scene tier is Gaussian. City `8/28/1.5` completes the blur inside its fog at all heights.
   six interiors retain radius `0.55`: Bar `6/18`, Home `5/14`, Stairwell
   `5/16`, Supermarket `7/20`, Church `5/13`, Mother's House `4.5/13`.
   Exteriors, including Road `20/92/0.65`, stay. Modal `CinematicDepthOfField`

@@ -44,9 +44,10 @@ The fish sign has a matte ImageGen print and two floods; UVs follow the
 street viewer. Blender Home/Sign contracts; CitySummitStreetRepairs and frames.
 CityMapArtReferenceExport updated the schematic survey.
 
-Uniform City fog/range preserves live shadows. Moving `CityPerformanceAudit`
-showed less visible work but no stable 60 FPS; failed ground/grass/shadow
-experiments were removed. `CityAltitudeAndNightStreet` verifies the profile.
+`CityAltitudeAndNightStreet`: uniform fog/range with live shadows.
+`CityPerformanceAudit` reduced visible work without stable 60 FPS. Pilots removed.
+Fixed Gaussian range removes roof fringes. `CityFogOutlineComparison` compares
+matched stills and a camera sweep with lowland controls.
 
 ## 2026-11-09
 
