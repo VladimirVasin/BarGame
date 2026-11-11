@@ -14,7 +14,9 @@ float3 CityWindCoordinates(float3 positionWS)
 float CityWindStrength(float strength, float height)
 {
     float climb = smoothstep(0, 1, (height - _CityWindProfile.x) * _CityWindProfile.y);
-    return strength + _CityWindProfile.z * climb * sqrt(strength) * (1 - strength);
+    // Approach the authored maximum without flattening every crest gust at a hard clamp.
+    float exposed = 1 - pow(1 - saturate(strength), 1 + _CityWindProfile.z);
+    return lerp(strength, exposed, climb * climb);
 }
 
 float CityWindPhase(float2 cityXZ)

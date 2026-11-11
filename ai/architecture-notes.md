@@ -7,7 +7,10 @@
 
 - **Accepted 2026-11-11,user — City grass/wind:**8types/3variants/3LOD.
   City/Home cache100/range38m. Clear paths. Roots, hero+7NPC/24trails.
-  Ridge wind grows with height. Crowns and anchored wires sway within bounds.
+  Ridge gusts peak at the crest. Crowns/wires bounded; grass outside loft fence.
+
+- **Accepted 2026-11-11,user — fish sign:** story §6/21, art §7/13.
+  `(-23,-7)`; ImageGen print, Blender frame, two fixed Spots.
 
 - **Accepted 2026-11-09 — City power:** ≤64poles/192spans;roads≥7m;Home≤64m.
   Ridge:axes2m,neighbour feeds;16 segments clear bays/roofs.
@@ -44,11 +47,9 @@
   GI/SSGI/SCGI/pass/fog/text/audio/story unchanged;bounded assets/cleanup.
   Art2.3/15a,story6/20/16/21/art9;CityBusStopLighting;cost unmeasured.
 
-- **Accepted 2026-11-06/2026-11-07,user — bench access:** pawnshop≤45mXZ;origins fixed;west pair+Z.
-  Plaza1.6m/asphalt/flowerbeds;mirrored outer lamps3.2m;West10.4m6-step;
-  concrete pigeon/plinth1.98m between benches,rear.
-  Road→3×12→bench35.553→2×12/landing2.4m→footway/zebra/door.
-  1.8/.32m;bench spur;rails off walk;4fixedlamps;cuts/ramp/tread/nav/map/Home.
+- **Accepted 2026-11-06/2026-11-07,user — bench access:** radius45m; west pair+Z.
+  Plaza1.6m, 6-step10.4m, pigeon1.98m. Road→3×12→bench→2×12→zebra/door.
+  Four lamps; clipped summit apron joins sidewalk; shared ramp/nav/map/Home.
 
 - **Accepted 2026-11-06,user — pawnshop:** west island/2zebras/2.4m path→door,face hero;
   `PawnshopInterior`/secure grille room/permanent silent clerk. Buy/Sell stubs,

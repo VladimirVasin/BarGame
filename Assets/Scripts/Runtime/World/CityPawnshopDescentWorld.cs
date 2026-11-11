@@ -38,12 +38,27 @@ namespace BarPromenade
                 landingRoot.localRotation=Quaternion.LookRotation(Quaternion.Inverse(plan.Rotation)*(landing.End-landing.Start));
                 Vector3 start=Vector3.zero,end=Vector3.forward*landing.Length,center=(start+end)*.5f;
                 var size=new Vector2(landing.Width,landing.Length);
-                CityTerracePilotWorld.Model(court,landingRoot,landing.Id,center,Quaternion.identity,
-                    new Vector3(size.x/CityTerracePilotPlan.CourtSize,1f,size.y/CityTerracePilotPlan.CourtSize));
-                CityTerracePilotWorld.Box(landingRoot,landing.Id+" support",center-Vector3.up*.15f,
-                    new Vector3(size.x,.30f,size.y),Quaternion.identity);
-                CityTerracePilotWorld.Support(support,landingRoot,landing.Id+" foundation",center-Vector3.up*.30f,size,
-                    foundation-landingRoot.localPosition.y);
+                if (landing.Id == CityPawnshopDescentPlan.SummitApronId)
+                {
+                    var paving = plan.SummitApronPaving;
+                    Vector3 Point(Vector2 p) => Local(new Vector3(p.x, landing.Start.y, p.y));
+                    var triangles = new List<Vector3[]>(paving.Count - 2);
+                    for (int i = 1; i + 1 < paving.Count; i++)
+                        triangles.Add(new[] { Point(paving[0]), Point(paving[i]), Point(paving[i + 1]) });
+                    var apron = CityHillsideBenchPocketWorld.BuildMesh("Summit stair apron paving", root, triangles, false);
+                    CityGroundSurfaceSystem.RegisterJointScenery(apron.GetComponent<Renderer>());
+                    if (!retained.HasValue)
+                        apron.AddComponent<MeshCollider>().sharedMesh = apron.GetComponent<MeshFilter>().sharedMesh;
+                }
+                else
+                {
+                    CityTerracePilotWorld.Model(court,landingRoot,landing.Id,center,Quaternion.identity,
+                        new Vector3(size.x/CityTerracePilotPlan.CourtSize,1f,size.y/CityTerracePilotPlan.CourtSize));
+                    CityTerracePilotWorld.Box(landingRoot,landing.Id+" support",center-Vector3.up*.15f,
+                        new Vector3(size.x,.30f,size.y),Quaternion.identity);
+                    CityTerracePilotWorld.Support(support,landingRoot,landing.Id+" foundation",center-Vector3.up*.30f,size,
+                        foundation-landingRoot.localPosition.y);
+                }
                 for(int side=-1;side<=1;side+=2)
                 {
                     Vector3 offset=Vector3.right*(side*(landing.Width*.5f-.06f));
@@ -52,7 +67,7 @@ namespace BarPromenade
                     Vector3 railStart=landing==plan.Landings[0] && side==1
                         ?start+Vector3.forward*Mathf.Min(1.2f,landing.Length):start;
                     Vector3 railEnd=end;
-                    if(landing.Id=="Descent summit apron 0")
+                    if(landing.Id==CityPawnshopDescentPlan.SummitApronId)
                     {
                         Vector3 forward=(landing.End-landing.Start).normalized;
                         Vector3 worldSide=Vector3.Cross(Vector3.up,forward)*offset.x;

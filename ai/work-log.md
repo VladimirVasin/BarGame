@@ -5,20 +5,15 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-11
 
-City grass uses authored narrow leaves and substantial coastal reeds, mixed
-by habitat on final ground after paving/yard cuts. Seeded chunks share models,
-materials and Home coordinates; weather/body bend retains rooted bases and
-finite recovery. Garden/cemetery care, sparse former lake and usable routes
-remain. Explicit material eligibility/bridge spans prevent plants on hard decks;
-complete cut/arrival neighbourhoods prevent square cache gaps. Blender CityGrass
-geometry/determinism and pinned grass shader validator. CityGrassAcceptance
-passed City/Home, bridge exclusions, wind/contact, pause, disable/unload and
-excavate/fill; frames reviewed. Lit inventory retains unrelated old snapshot gaps.
-Ridge bank faces feed rooted grass. City/Home reserve actual paths and kiosk
-aprons. Walking presses blades and leaves recovering tracks. City weather
-drives height-scaled gusts on blades, crowns, shrubs and pinned wires.
-Gable planting uses the existing terrain, route and wire clearance plans.
-`CityRidgeWind` reviews paths, gusts, trunk support and the retained view.
+City grass uses authored narrow leaves and coastal reeds by habitat. City/Home
+share seeded chunks; weather/body bend retains rooted bases and recovery.
+Eligible materials/bridge spans keep decks clear; complete cut/arrival
+neighbourhoods prevent square cache gaps. Blender CityGrass and grass shader
+validators. CityGrassAcceptance covered City/Home, wind/contact, pause/cleanup
+and excavate/fill; frames reviewed. Lit inventory retains old snapshot gaps.
+Ridge banks carry rooted grass off paths and kiosk aprons. Shared gusts drive
+blades, crowns, shrubs and pinned wires. Gable planting respects terrain,
+routes and wires. `CityRidgeWind`: gusts, trunks, paths and Home.
 
 User made softened coating and structural joints mandatory (art §4).
 City/Home use height-aware, local seam bins with shared pigment/response
@@ -44,6 +39,12 @@ approaches and both bridges. Reviewed paired dry and rain captures.
 Ridge verges follow local curb and soil heights; foundation cut/fill is limited
 near footways. `CityRidgeRoadShoulders`: both banks, physical contacts, bench
 paths, map arrivals and Home. ImageGen City map redrawn from the final survey.
+Summit: soffit lamp and short balcony posts; pawnshop apron ends at the curb.
+East house clears the walk; the neighbouring entry gets a rail and a plinth
+fitted to the cut bank. Loft grass ends at the fence; crest gusts strengthen.
+The fish sign has a matte ImageGen print and two floods; UVs follow the
+street viewer. Blender Home/Sign contracts; CitySummitStreetRepairs and frames.
+CityMapArtReferenceExport updated the schematic survey.
 
 ## 2026-11-09
 

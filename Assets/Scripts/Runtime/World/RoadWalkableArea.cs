@@ -720,6 +720,7 @@ namespace BarPromenade
                 // last courts lie beyond the road ribbons' spatial envelope.
                 area.AddPolygons(new[] { CityRoadPolygon.Rectangle(building.ApproachBounds),
                     CityRoadPolygon.Rectangle(building.CourtBounds) });
+                area.ExcludePolygons(building.EntryRailFootprints);
             }
             foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(layout).Sites)
             {

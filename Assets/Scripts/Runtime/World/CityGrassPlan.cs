@@ -210,19 +210,22 @@ namespace BarPromenade
             foreach (Rect approach in CityBusNetworkFurniture.Reservations(CityDistrictBusPlanner.CreateRoadRouting(city), city))
                 ReserveRect(approach);
             foreach (var trunk in CityRidgeVegetationPlan.ForLayout(city).Trunks) Reserve(trunk);
+            var pigeonYard = CityPigeonLoftPlan.ForLayout(city).Courtyard;
+            if (pigeonYard != null) Reserve(pigeonYard.Enclosure, exact: true);
 
             void ReserveRect(Rect rect)
             {
                 if (rect.width > 0f && rect.height > 0f) Reserve(CityRoadPolygon.Rectangle(rect));
             }
 
-            void Reserve(Vector2[] outline)
+            void Reserve(Vector2[] outline, bool exact = false)
             {
                 if (outline.Length < 3) return;
                 Rect rect = CityRoadPolygon.Bounds(outline);
+                float padding = exact ? 0f : 2f * PathMargin;
                 var bounds = new Bounds(new Vector3(rect.center.x, 0f, rect.center.y),
-                    new Vector3(rect.width + 2f * PathMargin, 0f, rect.height + 2f * PathMargin));
-                IndexObstacle(new Obstacle(bounds, null, outline));
+                    new Vector3(rect.width + padding, 0f, rect.height + padding));
+                IndexObstacle(new Obstacle(bounds, null, outline, exact));
             }
         }
 
@@ -274,7 +277,8 @@ namespace BarPromenade
                     if (obstacle.Path != null)
                     {
                         float clearance = Mathf.Lerp(.18f, PathMargin, CityGrassPlan.Unit(marginSeed));
-                        if (!NearPath(obstacle.Path, p, clearance)) continue;
+                        if (!(obstacle.Exact ? CityRoadPolygon.Contains(obstacle.Path, p) :
+                            NearPath(obstacle.Path, p, clearance))) continue;
                         LastBlocker = block;
                         return false;
                     }
@@ -378,8 +382,9 @@ namespace BarPromenade
             internal readonly Bounds Bounds;
             internal readonly Collider Shape;
             internal readonly Vector2[] Path;
-            internal Obstacle(Bounds bounds, Collider shape, Vector2[] path = null)
-            { Bounds=bounds; Shape=shape; Path=path; }
+            internal readonly bool Exact;
+            internal Obstacle(Bounds bounds, Collider shape, Vector2[] path = null, bool exact = false)
+            { Bounds=bounds; Shape=shape; Path=path; Exact=exact; }
         }
     }
 }

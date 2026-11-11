@@ -119,7 +119,7 @@ namespace BarPromenade
             {
                 if (!window.Overlaps(house.FoundationBounds) && !window.Overlaps(house.ApproachBounds)) continue;
                 if (!house.Lot.IsPlayerHome)
-                    CityHillsideNeighborhoodWorld.BuildHouse(frame, house, context.Layout.Seed);
+                    CityHillsideNeighborhoodWorld.BuildHouse(frame, context.Layout, house);
                 if (district.SharedCourtBuildings.Contains(house))
                     CityHillsideHousePresentation.BuildApron(frame, paving, house);
             }

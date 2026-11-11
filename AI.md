@@ -119,10 +119,9 @@ repository evidence. This does not require running every test layer.
   Unity `(x, y, z)` is Blender `(x, z, y)` under the project's export settings
   (`axis_forward="-Z", axis_up="Y"`) plus `bakeAxisConversion`; the
   right-to-left handedness change is what removes the sign one would expect.
-  Never settle this by reasoning about it — assert an authored anchor against
-  the plan position it is supposed to occupy, as `BarModelContractTests` does.
-  Getting it wrong silently mirrors the model: the bar's doorway landed in the
-  opposite wall and its counter 9.5 m away.
+  Assert imported anchors against the plan (`BarModelContractTests`).
+  For signs, assert imported U/V grow right/up from the street viewer's
+  position and read the lettering in a Unity frame. Correct UVs at the source.
 - **An imported FBX keeps its unit factor on the authoring root.** That root
   arrives scaled `100` and its meshes store vertices at a hundredth of the
   metres they were authored in; an anchor's `localPosition` is likewise a

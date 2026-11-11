@@ -120,6 +120,30 @@ namespace BarPromenade
         internal Vector3 Vertex(int col, int row) =>
             new Vector3(x[col], heights[row * Columns + col], z[row]);
 
+        internal float FoundationDepth(CityHillsideBuilding house)
+        {
+            Rect footprint = house.FoundationBounds;
+            float lowest = house.ThresholdWorld.y;
+            // Enclosing grid vertices conservatively bound each terrain triangle
+            // beneath the plinth, including the verge's lowered shoulder.
+            int firstCol = Cell(x, footprint.xMin), lastCol = Cell(x, footprint.xMax) + 1;
+            int firstRow = Cell(z, footprint.yMin), lastRow = Cell(z, footprint.yMax) + 1;
+            for (int row = firstRow; row <= lastRow; row++)
+            for (int col = firstCol; col <= lastCol; col++)
+                lowest = Mathf.Min(lowest, heights[row * Columns + col]);
+            return Mathf.Max(.9f, house.ThresholdWorld.y - lowest + .25f);
+        }
+
+        internal IEnumerable<Vector3> WestStairCutEdge(Rect cut)
+        {
+            int column = System.Array.BinarySearch(x, cut.xMin);
+            int first = System.Array.BinarySearch(z, cut.yMin);
+            int last = System.Array.BinarySearch(z, cut.yMax);
+            if (column < 0 || first < 0 || last < 0)
+                throw new InvalidOperationException("The east stairs need their surveyed terrain cut edge.");
+            for (int row = first; row <= last; row++) yield return Vertex(column, row);
+        }
+
         internal Surface CellSurface(int col, int row) => surfaces[row * (Columns - 1) + col];
 
         internal void AppendCellTriangles(List<int> faces, int col, int row)

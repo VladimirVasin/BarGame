@@ -54,7 +54,7 @@ from city_building_coplanarity import (  # noqa: E402
     validate_coplanarity_audit_contract,
 )
 
-GENERATOR_VERSION = "1.2.0"
+GENERATOR_VERSION = "1.3.0"
 DESIGN_ID = "player_home_exterior_v1"
 DISPLAY_NAME = "Bar Promenade Player Home Exterior"
 ROOT_OBJECT_NAME = DESIGN_ID
@@ -91,6 +91,7 @@ ENTRY_LEFT = -1.0
 ENTRY_RIGHT = 0.8
 ENTRY_REAR_Y = 4.96
 ENTRY_TOP = 3.20
+ENTRY_SOFFIT_THICKNESS = .14
 ENTRY_DOOR_WIDTH = 1.15
 ENTRY_DOOR_HEIGHT = 2.30
 DOOR_ANCHOR_SOURCE = (0.0, HALF_DEPTH, 0.0)
@@ -837,7 +838,7 @@ def build_entry(
     reveal_front = WALL_FRONT_Y + WALL_THICKNESS * 0.5 - 0.06
     reveal_depth = reveal_front - ENTRY_REAR_Y
     reveal_center = (reveal_front + ENTRY_REAR_Y) * 0.5
-    soffit_bottom = ENTRY_TOP - 0.14
+    soffit_bottom = ENTRY_TOP - ENTRY_SOFFIT_THICKNESS
     reveals = (
         ((ENTRY_LEFT, soffit_bottom * 0.5, reveal_center),
          (0.14, soffit_bottom, reveal_depth)),
@@ -854,7 +855,7 @@ def build_entry(
         asset, materials, "Recessed Entry Soffit",
         bp.u_box((
             (ENTRY_LEFT + ENTRY_RIGHT) * 0.5,
-            ENTRY_TOP - 0.07,
+            ENTRY_TOP - ENTRY_SOFFIT_THICKNESS * .5,
             reveal_center,
         ), (
             ENTRY_RIGHT - ENTRY_LEFT,
@@ -1024,8 +1025,10 @@ def build_balcony(
     )
 
     gallery_y = BALCONY_OUTER_Y - 0.26
+    post_top = 6.70
     gallery_posts = [
-        bp.u_box((x, 3.48, gallery_y), (0.12, 6.84, 0.12), 0.006)
+        bp.u_box((x, (BALCONY_FLOOR + post_top) * .5, gallery_y),
+                 (.12, post_top - BALCONY_FLOOR, .12), .006)
         for x in (BALCONY_LEFT + 0.08, BALCONY_CENTER_X, BALCONY_RIGHT - 0.08)
     ]
     gallery_posts.extend((
@@ -1132,6 +1135,11 @@ def build() -> AssetBuild:
     build_rain_goods(asset, materials)
     add_anchor_source(
         asset, "ExteriorDoor", "exterior_door", DOOR_ANCHOR_SOURCE
+    )
+    add_anchor_source(
+        asset, "EntranceLampCeiling", "entrance_lamp_ceiling",
+        ((ENTRY_LEFT + ENTRY_RIGHT) * .5, (ENTRY_REAR_Y + HALF_DEPTH) * .5,
+         ENTRY_TOP - ENTRY_SOFFIT_THICKNESS),
     )
     return asset
 

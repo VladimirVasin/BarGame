@@ -274,6 +274,12 @@ namespace BarPromenade
                         industrialRangeLimits[index] = 15f;
                         industrialSpotAngles[index] = 150f;
                         industrialInnerSpotAngles[index] = 105f; break;
+                    case "RidgeFishSign":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialIntensityScales[index] = 6f;
+                        industrialRangeLimits[index] = 10f;
+                        industrialSpotAngles[index] = 108f;
+                        industrialInnerSpotAngles[index] = 80f; break;
                     case "RidgeBench":
                         industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
                         industrialUseShadows[index] = true;

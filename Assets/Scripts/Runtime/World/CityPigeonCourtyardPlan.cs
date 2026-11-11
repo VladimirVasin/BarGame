@@ -17,6 +17,7 @@ namespace BarPromenade
             BendCentre.x - Radius, BendCentre.y - Radius, EastEdge, BendCentre.y + Radius);
 
         public IReadOnlyList<Vector3> FencePosts { get; }
+        internal Vector2[] Enclosure { get; }
         public Vector3 GateCenter { get; }
         public Vector3 GateLeafEnd { get; }
         public Vector3 Arrival { get; }
@@ -43,6 +44,9 @@ namespace BarPromenade
             for (int i = 1; i <= 3; i++) posts.Add(Foot(new Vector2(Mathf.Lerp(EastEdge, BendCentre.x, i / 3f), south)));
             foreach (float angle in new[] { 249f, 228f, 207f }) posts.Add(Foot(Arc(angle)));
             FencePosts = posts.AsReadOnly();
+            var outlinePoints = new Vector2[posts.Count];
+            for (int i = 0; i < posts.Count; i++) outlinePoints[i] = XZ(posts[i]);
+            Enclosure = CityRoadPolygon.CounterClockwise(outlinePoints);
             Vector2 hinge = XZ(posts[0]), strike = XZ(posts[posts.Count - 1]);
             Vector2 gate = (hinge + strike) * .5f;
             Vector2 inward = (BendCentre - gate).normalized;

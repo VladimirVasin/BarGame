@@ -1453,13 +1453,14 @@ namespace BarPromenade
                         building,
                         lot,
                         foundationDepth);
-                CityPlayerHomeExteriorWorldBuilder.BuildCity(
+                var exterior = CityPlayerHomeExteriorWorldBuilder.BuildCity(
                     building,
                     lot);
                 BuildHomeFront(
                     building,
                     layout,
                     lot,
+                    exterior,
                     emissiveMaterial,
                     walkableArea,
                     ref playerHome);
@@ -1835,6 +1836,7 @@ namespace BarPromenade
             Transform parent,
             CityLayout layout,
             BuildingLot lot,
+            PlayerHomeExteriorAssetRegistry exterior,
             Material emissiveMaterial,
             RoadWalkableArea walkableArea,
             ref HomeEntrance playerHome)
@@ -1889,6 +1891,7 @@ namespace BarPromenade
             BuildHomeAnchor(
                 parent,
                 lot,
+                exterior,
                 direction,
                 tangent,
                 frontageIsX,
@@ -1931,8 +1934,8 @@ namespace BarPromenade
         public const string HomeHouseNumber = "7";
 
         /// <summary>
-        /// The landmarks that make the hero's building findable: a warm
-        /// entrance lamp under a small canopy with the lit blue house
+        /// The landmarks that make the hero's building findable: a recessed
+        /// entrance lamp with the lit blue house
         /// number beside the door for street level, and a rooftop
         /// antenna mast with a red beacon for anywhere in the city.
         /// Every glow rides the night registry, so it dims by day with
@@ -1941,39 +1944,27 @@ namespace BarPromenade
         private static void BuildHomeAnchor(
             Transform parent,
             BuildingLot lot,
+            PlayerHomeExteriorAssetRegistry exterior,
             Vector3 direction,
             Vector3 tangent,
             bool frontageIsX,
             Material emissiveMaterial)
         {
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Entrance Lamp Housing",
-                parent,
-                lot.DoorPosition +
-                (direction * 0.50f) +
-                (Vector3.up * 2.36f),
-                new Vector3(0.16f, 0.10f, 0.16f),
-                HomeDoor,
-                false);
-            Color lampColor = new Color(1.10f, 1.15f, .97f);
-            GameObject lamp = RuntimePrimitiveFactory.CreateBox(
-                "Home Entrance Lamp",
-                parent,
-                lot.DoorPosition +
-                (direction * 0.50f) +
-                (Vector3.up * 2.27f),
-                new Vector3(0.12f, 0.09f, 0.12f),
-                lampColor,
-                emissiveMaterial,
-                false);
-            CityNightGlowRegistry.Register(
-                lamp.GetComponent<Renderer>(),
-                lampColor);
+            if (!exterior.TryGetAnchor("entrance_lamp_ceiling", out Transform ceiling))
+                throw new InvalidOperationException("The Home entry fixture needs its authored soffit anchor.");
+            Transform fixture = CityCoveredPassageAssetProvider.Create("PassageLamp", parent,
+                parent.InverseTransformPoint(ceiling.position), lot.FacadeRotation, new Vector3(.42f, .9f, .9f));
+            foreach (Renderer part in fixture.GetComponentsInChildren<Renderer>())
+            {
+                if (!part.name.EndsWith("__Lens", StringComparison.Ordinal)) continue;
+                part.name = "Home Entrance Lamp";
+                CityNightGlowRegistry.Register(part, new Color(2.7f, 2.9f, 2.55f));
+            }
 
             // The shared atmosphere binds a fixed source to this existing lens.
             Transform source = new GameObject(CityNightAtmosphere.IndustrialTaskLightPrefix + "HomeEntrance").transform;
             source.SetParent(parent, true);
-            source.position = lamp.transform.position - Vector3.up * .055f;
+            source.position = CityResidentialCourtyardAssetProvider.FindPart(fixture, "ANCHOR_LightSource").position;
             source.rotation = Quaternion.LookRotation(Vector3.down + direction * .28f, direction);
 
             // The Soviet enamel plaque: deep blue, lit from within.

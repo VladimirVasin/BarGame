@@ -1,0 +1,56 @@
+{
+  "design_id": "city_ridge_fish_sign",
+  "print_size": [
+    8.3,
+    10.375
+  ],
+  "model": {
+    "name": "RidgeFishSign",
+    "bounds_min": [
+      -4.23,
+      -5.6075,
+      -0.005
+    ],
+    "bounds_max": [
+      4.23,
+      5.6075,
+      1.55
+    ],
+    "anchors": [
+      {
+        "name": "ANCHOR_AimLower",
+        "position": [
+          1.085,
+          -1.65,
+          0.199
+        ]
+      },
+      {
+        "name": "ANCHOR_AimUpper",
+        "position": [
+          -1.085,
+          1.65,
+          0.199
+        ]
+      },
+      {
+        "name": "ANCHOR_FloodLower",
+        "position": [
+          1.75,
+          -5.4275,
+          1.286
+        ]
+      },
+      {
+        "name": "ANCHOR_FloodUpper",
+        "position": [
+          -1.75,
+          5.4275,
+          1.286
+        ]
+      }
+    ],
+    "triangles": 336,
+    "geometry_signature": "937187f571be5909d9a3311251eeffe558dd7ab2ed49308c9b7c5d312345692b"
+  }
+}

@@ -426,23 +426,23 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
   Coast→Lower Court/upper homes;2seven-tier climbs/ravine.
-  Stairs→tiers/court/crest;soil blends from curbs into banks. Grass off paths;benches/bins/booths on level pockets;
-  panels→entry/forecourt,fixed shadows/dayfloor;Home bench→truss/ravine/roofs.
-  West Lane6:(-24,-8)/v0/4fl/X-99.2;(-25,-8)/v4/3fl/X-84.
-  Tree gone;shared light/approach/mapXYZ.
+  Stairs→tiers/court/crest. Soil blends at curbs. Grass outside paths/loft.
+  Benches/bins/booths on pockets;fixed entry light. Home bench→truss/ravine/roofs.
+  West Lane6: (-24,-8)/4fl/X-99.2; (-25,-8)/3fl/X-84.
   `CityHillsideBenchPocketPlan`:pawnshop≤45mXZ;origins fixed;West11/13 face+Z/new docks.
   Plaza/stone1.6m по грунту с мягким краем→footways;West landing:AsphaltRoad/Concrete.
   Stair10.4m(6×.16/.36m)/warped lower landing→street grade.
   CityPawnshopDescentPlan:40.06m→3×12(.1252/.32m),aprons→bench35.553m→
   2×12(.166/.32m),landing2.4m→footway/Lane5 zebra/door;imported1.8m/bench branch.
-  Cuts/ramp/treads/nav/map/Home;POI at summit/current art;walk clear.
+  Clipped summit apron; shared ramp/nav/map/Home.
   Outer+4descent lamps:RidgeBench37.5/r11/soft256/fixed/dayfloor.
   Pigeon/plinth1.98m,rear;side beds;solid/nav clear.
-  E glass return08–23/home(22,-7);switch→cabin light/grille;sign/flood fixed.
+  E glass return08–23;switch→cabin light/grille;sign/flood fixed.
+  Home(22,-7): plinth to bank; rail along entry; closed stair cut.
   Raised yard/map outside;spill.12/day≥⅔/Soft/opaque.
-  Homes:soil/wet asphalt skirts;turf/gravel/broken stone/shrub03-04→Home;
-  trees/shrubs flank gables. W:stepped concrete/drains;E:kerbs/grass/boot scrapers.
-  Home patched plinth/lamp;poles→stairs/bridge footways;
+  Home verges:soil/wet asphalt/turf/gravel/stone. W:drains;E:kerbs/scrapers.
+  Home soffit lamp/timber above deck. East `(21,-7)` clears walk.
+  West `(-23,-7)`: «Хвост и Чешуя», two floods. Poles→stairs/bridge footways;
   covered lamps below;rock/gravel under bridge bearings.
   Kiosks:one warm lens/two fixed soft-shadow lobes→seller/shelves/street;
   Cobbler68.8,-307/250°,home21,-6,11–20:30. Steps/.48 deck,
@@ -1443,7 +1443,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   lot dimensions to meet
   `CityLayoutGenerator.MinimumDistrictPointLotDimension` (`18 m`); smaller
   custom blocks omit the district POIs safely;
-- `CityWindField` strengthens gusts up the Ridge. Grass, crowns and fixed-end wires
+- `CityWindField` peaks at the summit and eases towards the lowland. Grass, crowns and fixed-end wires
   share it in City/Home. `CityWindDressing*` hangs up to `64` cloth/rope pieces on
   existing structures — awning rags on up to four Old Town market valances (two
   per stall), grey shrouds on up to three scaffoldings' outer guard rails,

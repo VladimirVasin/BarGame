@@ -10,7 +10,7 @@ namespace BarPromenade
     {
         internal const float MaximumTreeTravel = .75f;
         internal const float MaximumShrubTravel = .20f;
-        private const float HeightGain = .82f;
+        private const float SummitGain = 3.25f;
         private const float Foot = CityAltitudeVisibility.LowlandTop;
         private const float Climb = CityHillsideStreetRoute.SummitTop - Foot;
         private static readonly int WindId = Shader.PropertyToID("_CityWind");
@@ -54,7 +54,7 @@ namespace BarPromenade
         {
             if (!isActiveAndEnabled) return;
             active = this;
-            Shader.SetGlobalVector(ProfileId, new Vector4(Foot, 1f / Climb, HeightGain, 0f));
+            Shader.SetGlobalVector(ProfileId, new Vector4(Foot, 1f / Climb, SummitGain, 0f));
             Shader.SetGlobalMatrix(FrameId, toCity);
             Wind = ReadWind();
             Publish(Wind);

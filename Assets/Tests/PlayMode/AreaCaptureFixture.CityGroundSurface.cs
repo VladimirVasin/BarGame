@@ -12,6 +12,140 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class AreaCaptureFixture
     {
+        [UnityTest, Explicit("Review the reported summit contacts, west gable sign and pigeon enclosure in the live City.")]
+        public IEnumerator CitySummitStreetRepairs()
+        {
+            GameSessionState.BeginNewGame();
+            Assert.That(GameSessionState.TryStartGameTimeAt(19 * 60), Is.True);
+            CityGameRoot city = null;
+            yield return Capture(SceneIds.City, () =>
+            {
+                city = Object.FindAnyObjectByType<CityGameRoot>();
+                return city != null && city.IsInitialized ? city : null;
+            }, () =>
+            {
+                FreezeLightingPolish(city.Player.Motor);
+                var housing = CityHillsideNeighborhoodPlan.ForLayout(city.Layout);
+                var eastHouse = housing.AllBuildings.Single(house => house.Lot.Cell == new Vector2Int(21, -7));
+                var eastRoad = CityHillsideStreetPlan.ForLayout(city.Layout).Routes
+                    .Single(road => road.Bank == CityTerraceTransportBank.East);
+                float eastSidewalk = eastRoad.GetLaneZ(CityHillsideStreetRoute.LaneCount - 1) +
+                    CityHillsideStreetRoute.OuterHalfWidth;
+                Assert.That(eastHouse.FoundationBounds.yMin - eastSidewalk, Is.EqualTo(.65f).Within(.002f));
+
+                var descent = CityPawnshopDescentPlan.ForLayout(city.Layout);
+                Assert.That(descent.SummitApronPaving.Min(point => point.y),
+                    Is.EqualTo(descent.SummitPavementNorthEdge).Within(.002f));
+                Assert.That(descent.SummitApronPaving.Max(point => point.y),
+                    Is.GreaterThan(descent.SummitPavementNorthEdge + 1f));
+                var apron = city.World.Root.GetComponentsInChildren<MeshCollider>()
+                    .Single(collider => collider.name == "Summit stair apron paving");
+                float apronSouthEdge = apron.sharedMesh.vertices.Min(vertex => apron.transform.TransformPoint(vertex).z);
+                Assert.That(apronSouthEdge, Is.EqualTo(descent.SummitPavementNorthEdge).Within(.002f));
+
+                var home = city.World.Root.GetComponentInChildren<PlayerHomeExteriorAssetRegistry>();
+                Assert.That(home.TryGetAnchor("entrance_lamp_ceiling", out Transform ceiling), Is.True);
+                var lamp = city.World.Root.GetComponentsInChildren<Renderer>()
+                    .Single(part => part.name == "Home Entrance Lamp");
+                Assert.That(Vector3.Distance(lamp.bounds.center, ceiling.position), Is.LessThan(.16f));
+                var gallery = home.Parts.Single(part => part.SourceName == "Two Storey Gallery Timber").Renderer;
+                Assert.That(gallery.bounds.min.y, Is.GreaterThan(city.Layout.PlayerHome.DoorPosition.y + 4.6f));
+
+                var sign = city.World.Root.GetComponentsInChildren<Transform>()
+                    .Single(part => part.name == "Ridge fish cannery advertisement");
+                var print = sign.GetComponentsInChildren<Renderer>().Single(part => part.name == "PrintedFace");
+                Assert.That(print.bounds.size.y, Is.EqualTo(10.375f).Within(.01f));
+                Assert.That(sign.forward.x, Is.EqualTo(1f).Within(.01f));
+#if UNITY_EDITOR
+                AssertSignReadsFromStreet(sign, print);
+#endif
+                foreach (var fixture in sign.GetComponentsInChildren<Transform>().Where(part =>
+                    part.name == "IndustrialTaskLight_RidgeFishSign"))
+                    Assert.That(Vector3.Dot(fixture.forward, sign.forward), Is.LessThan(-.2f));
+                Assert.That(sign.GetComponentsInChildren<Transform>().Count(part =>
+                    part.name == "IndustrialTaskLight_RidgeFishSign"), Is.EqualTo(2));
+
+                var grass = city.World.Root.GetComponentInChildren<CityGrassField>();
+                var yard = CityPigeonLoftPlan.ForLayout(city.Layout).Courtyard;
+                int outsidePlants = 0;
+                for (float z = yard.Bounds.yMin - 1f; z < yard.Bounds.yMax + 1f; z += .24f)
+                for (float x = yard.Bounds.xMin - 1f; x < yard.Bounds.xMax; x += .24f)
+                {
+                    var point = new Vector2(x, z);
+                    bool supportsGrass = grass.Surface.TrySample(point, out _, out _, out _);
+                    if (CityRoadPolygon.Contains(yard.Enclosure, point))
+                        Assert.That(supportsGrass, Is.False, "Grass inside the surveyed fence at " + point);
+                    else if (supportsGrass)
+                        outsidePlants++;
+                }
+                Assert.That(outsidePlants, Is.GreaterThan(0));
+
+                var guardedHouse = housing.AllBuildings.Single(house => house.HasGuardedEntry);
+                var eastBank = CityHillsideGroundGrid.ForLayout(city.Layout).Single(grid => grid.Road == eastRoad);
+                var guard = city.World.Root.GetComponentsInChildren<Transform>()
+                    .Single(part => part.name == "East Ridge entry rail");
+                float footing = guard.parent.GetComponentsInChildren<Renderer>()
+                    .Where(renderer => renderer.name.StartsWith(CityBuildingPrototypeWorldBuilder.FoundationObjectName))
+                    .Min(renderer => renderer.bounds.min.y);
+                Assert.That(guardedHouse.ThresholdWorld.y - footing,
+                    Is.EqualTo(eastBank.FoundationDepth(guardedHouse)).Within(.01f));
+                Assert.That(guard.GetComponentsInChildren<BoxCollider>().Length, Is.GreaterThanOrEqualTo(4));
+                Assert.That(city.World.Root.GetComponentsInChildren<MeshCollider>()
+                    .Count(collider => collider.name == "East stair soil cut"), Is.EqualTo(1));
+                float approachX = guardedHouse.ApproachBounds.center.x;
+                for (float z = guardedHouse.StreetContactWorld.z; z <= guardedHouse.ThresholdWorld.z; z += .25f)
+                {
+                    Assert.That(guardedHouse.TrySampleApproach(new Vector2(approachX, z), out float y), Is.True);
+                    Assert.That(city.World.WalkableArea.Contains(new Vector3(approachX, y, z), .32f),
+                        Is.True, "The fence leaves a clear approach at " + z);
+                }
+
+                Vector3 stairEye = new(-48.2f, descent.UpperDock.y + 1.67f, -343.3f);
+                Vector3 yardEye = new(-154.0f, yard.GateCenter.y + 1.72f, -336.5f);
+                return new[]
+                {
+                    Shot.At("summit-repairs-home", city.Layout.PlayerHome.DoorPosition + new Vector3(-1.0f, 1.7f, 4.5f),
+                        ceiling.position - Vector3.up * .5f, 66f),
+                    Shot.At("summit-repairs-stairs", stairEye, descent.UpperDock + new Vector3(1.5f, -.75f, 2f), 68f),
+                    Shot.At("summit-repairs-sign", print.bounds.center + sign.forward * 16f - new Vector3(0f, 4f, 2f),
+                        print.bounds.center, 52f),
+                    Shot.At("summit-repairs-yard", yardEye, yard.Arrival + new Vector3(4f, .35f, 1f), 64f,
+                        readyWhen: () => WarmGrassShot(grass, city.Camera, yardEye, yard.Arrival)),
+                    Shot.At("summit-repairs-east", new Vector3(138.6f, 39.0f, -342.8f),
+                        new Vector3(eastHouse.Lot.Center.x, 37.4f, eastHouse.FoundationBounds.yMin), 62f),
+                    Shot.At("summit-repairs-east-foundation", new Vector3(122.5f, 36.9f, -329.8f),
+                        new Vector3(119.2f, 36.6f, -335f), 68f),
+                    Shot.At("summit-repairs-east-entry-rail", new Vector3(111.9f, 39.8f, -339.5f),
+                        guardedHouse.ThresholdWorld + Vector3.up * .45f, 70f)
+                };
+            });
+        }
+
+#if UNITY_EDITOR
+        private static void AssertSignReadsFromStreet(Transform sign, Renderer print)
+        {
+            var mesh = print.GetComponent<MeshFilter>().sharedMesh;
+            using var data = UnityEditor.MeshUtility.AcquireReadOnlyMeshData(mesh);
+            using var vertices = new Unity.Collections.NativeArray<Vector3>(mesh.vertexCount, Unity.Collections.Allocator.Temp);
+            using var uv = new Unity.Collections.NativeArray<Vector2>(mesh.vertexCount, Unity.Collections.Allocator.Temp);
+            data[0].GetVertices(vertices);
+            data[0].GetUVs(0, uv);
+            Vector3 streetRight = Vector3.Cross(sign.up, -sign.forward);
+            int left = 0, right = 0, bottom = 0, top = 0;
+            for (int i = 1; i < vertices.Length; i++)
+            {
+                Vector3 point = print.transform.TransformPoint(vertices[i]);
+                float x = Vector3.Dot(point, streetRight);
+                if (x < Vector3.Dot(print.transform.TransformPoint(vertices[left]), streetRight)) left = i;
+                if (x > Vector3.Dot(print.transform.TransformPoint(vertices[right]), streetRight)) right = i;
+                if (point.y < print.transform.TransformPoint(vertices[bottom]).y) bottom = i;
+                if (point.y > print.transform.TransformPoint(vertices[top]).y) top = i;
+            }
+            Assert.That(uv[right].x - uv[left].x, Is.GreaterThan(.99f), "U grows to the viewer's right on the imported sign.");
+            Assert.That(uv[top].y - uv[bottom].y, Is.GreaterThan(.99f), "V grows upward on the imported sign.");
+        }
+#endif
+
         [UnityTest, Explicit("Ridge pavement meets the local hillside in City and the retained Home view.")]
         public IEnumerator CityRidgeRoadShoulders()
         {

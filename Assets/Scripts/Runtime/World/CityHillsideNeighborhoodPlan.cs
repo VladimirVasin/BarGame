@@ -7,6 +7,8 @@ namespace BarPromenade
     /// <summary>A fixed-metre building on a cut-and-fill bench, with a continuous public approach.</summary>
     public sealed class CityHillsideBuilding
     {
+        internal static readonly Vector2Int GuardedEastHouseCell = new(22, -7);
+        internal const float EntryRailWidth = .12f;
         private readonly System.Func<float, float> pavement;
         private readonly float courtEdgeZ;
         public BuildingLot Lot { get; }
@@ -20,6 +22,9 @@ namespace BarPromenade
         public Vector3 DoorWorld { get; }
         public Vector3 ThresholdWorld { get; }
         internal float PavementEdgeZ => StreetContactWorld.z + Mathf.Sign(DoorWorld.z - StreetContactWorld.z);
+        internal bool HasGuardedEntry => Bank == CityTerraceTransportBank.East && Lot.Cell == GuardedEastHouseCell;
+        internal IReadOnlyList<Vector3> EntryRail { get; } = System.Array.Empty<Vector3>();
+        internal IReadOnlyList<Vector2[]> EntryRailFootprints { get; } = System.Array.Empty<Vector2[]>();
         internal const float PavementRise = CityStreetSurfacePlanner.SidewalkTop - CityStreetSurfacePlanner.RoadTop;
 
         // side = -1 on the south side of this street. A gable entry reaches
@@ -71,6 +76,37 @@ namespace BarPromenade
                 playerHome ? new Vector3(StreetContactWorld.x, floor - PavementRise, streetZ) : StreetContactWorld,
                 StreetContactWorld, variant, forward);
             MapFootprints = Lot.CreateCollisionFootprints();
+            if (HasGuardedEntry)
+            {
+                const float inset = .09f;
+                float approachEdge = ApproachBounds.xMin + inset;
+                float porchEdge = CourtBounds.xMin + inset;
+                float porchBack = CourtBounds.yMax - inset;
+                var rail = new[]
+                {
+                    RailFoot(approachEdge, PavementEdgeZ + .18f),
+                    RailFoot(approachEdge, CourtBounds.yMin),
+                    RailFoot(porchEdge, CourtBounds.yMin + inset),
+                    RailFoot(porchEdge, porchBack),
+                    RailFoot(CourtBounds.xMax - inset, porchBack)
+                };
+                var footprints = new Vector2[rail.Length - 1][];
+                for (int i = 0; i < footprints.Length; i++)
+                {
+                    Vector2 a = new(rail[i].x, rail[i].z), b = new(rail[i + 1].x, rail[i + 1].z);
+                    Vector2 offset = new Vector2(a.y - b.y, b.x - a.x).normalized * (EntryRailWidth * .5f);
+                    footprints[i] = CityRoadPolygon.CounterClockwise(new[] { a - offset, b - offset, b + offset, a + offset });
+                }
+                EntryRail = System.Array.AsReadOnly(rail);
+                EntryRailFootprints = System.Array.AsReadOnly(footprints);
+            }
+
+            Vector3 RailFoot(float railX, float railZ)
+            {
+                if (!TrySampleApproach(new Vector2(railX, railZ), out float height))
+                    throw new System.InvalidOperationException("The east Ridge entry rail must be on its own pavement.");
+                return new Vector3(railX, height - CityHillsideGroundSeamPlan.SurfaceRecess, railZ);
+            }
         }
 
         internal bool HasGlazedBay => !Lot.IsPlayerHome && Bank == CityTerraceTransportBank.West && Lot.BuildingVariant != 4;
@@ -142,8 +178,17 @@ namespace BarPromenade
                         Vector3 forward = east && parcel == 1 ? (reversed ? Vector3.left : Vector3.right)
                             : Vector3.back * side;
                         var cell = new Vector2Int((east ? 1 : -1) * (21 + parcel), -2 - shelf);
+                        float setback = 7.4f + (parcel == 1 ? .65f : 0f);
+                        if (east && shelf == CityHillsideStreetRoute.LaneCount - 2 && parcel == 0)
+                        {
+                            // The rear wing faces the next street uphill. Leave a soil
+                            // shoulder between its rear wall and the summit sidewalk.
+                            float laneSpacing = Mathf.Abs(road.GetLaneZ(lane) - road.GetLaneZ(lane + 1));
+                            float depth = CityBuildingAssetProvider.GetExpectedEnvelope(CityDistrictKind.Residential, variant).z;
+                            setback = laneSpacing - CityHillsideStreetRoute.OuterHalfWidth - depth - .65f;
+                        }
                         var building = new CityHillsideBuilding(road.Bank, cell, x, road.GetLaneZ(lane), side,
-                            7.4f + (parcel == 1 ? .65f : 0f), variant, forward,
+                            setback, variant, forward,
                             at => road.SampleLaneTop(lane, at) + CityHillsideBuilding.PavementRise);
                         if (!BlocksStair(building, access) && HasClearance(building, buildings)) buildings.Add(building);
                     }

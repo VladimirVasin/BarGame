@@ -30,6 +30,7 @@ namespace BarPromenade
     {
         public const string BenchId=CityHillsideFurniturePlan.HomeBenchId;
         public const float LandingWidth=2.4f;
+        internal const string SummitApronId = "Descent summit apron 0";
         private static readonly ConditionalWeakTable<CityLayout,CityPawnshopDescentPlan> Plans=new();
         public static CityPawnshopDescentPlan ForLayout(CityLayout layout)=>
             Plans.GetValue(layout,value=>new CityPawnshopDescentPlan(value));
@@ -38,6 +39,7 @@ namespace BarPromenade
         public Vector3 UpperDock {get;}
         public Vector3 BenchLandingDock {get;}
         public float SummitPavementNorthEdge {get;}
+        internal IReadOnlyList<Vector2> SummitApronPaving { get; }
         public Vector3 UpperApproachMouth {get;}
         public Vector3 UpperArrivalWorld=>UpperDock;
         public Vector3 LowerDock {get;}
@@ -178,7 +180,22 @@ namespace BarPromenade
             summitRoute.Add(UpperApproachMouth);
             Flights=flights.AsReadOnly();Landings=landings.AsReadOnly();
             var footprints=new List<Vector2[]>();
-            foreach(var landing in Landings) footprints.Add(landing.Footprint);
+            foreach(var landing in Landings)
+            {
+                if (landing.Id != SummitApronId)
+                {
+                    footprints.Add(landing.Footprint);
+                    continue;
+                }
+                // The first apron enters the north footway diagonally. Its actual
+                // paving starts at the curb edge; the street owns the shared entry.
+                Vector2 edge = new(0f, SummitPavementNorthEdge);
+                Vector2[] clipped = CityRoadPolygon.Clip(landing.Footprint, edge, edge + Vector2.right).ToArray();
+                if (CityRoadPolygon.Area(clipped) <= .00001f)
+                    throw new InvalidOperationException("The summit apron has no paving outside the sidewalk.");
+                SummitApronPaving = Array.AsReadOnly(clipped);
+                footprints.Add(clipped);
+            }
             flightFootprints=new Vector2[flights.Count][];
             for(int i=0;i<flights.Count;i++) flightFootprints[i]=FlightPolygon(flights[i]);
             footprints.AddRange(flightFootprints);
