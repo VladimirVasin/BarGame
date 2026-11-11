@@ -107,16 +107,15 @@
   Art2/story20:96real min/day×1=4s/game minute;needs/weather scale,
   world motion/alcohol recovery/pause/debug owners stay;story acts/events action-driven.
 
-- **Accepted exceptions 2026-11-03/2026-11-05,user — City visibility/night:**
-  Y≤5:Exp2 .090/48m;Y40:.025/110m,gray-green downhill haze,roof/ridge silhouette.
-  Night dims sky/fill/haze/reflections;practicals/Home summit range retained.
-  CityFogField≤36 wind-driven particles,absolute time/shared Home axes;
-  pause/roof/dormancy/return/unload cleanup. CityEastDistance uses cameraXZ/post:
-  skyline/windows/glow full≤12m→0at30m;far traffic/panorama fades first12m of
-  south hills. Cached refs/MPB;no recurring loads/material instances;GPU unmeasured.
-  Shared wind/probes/SSR/water/bounce/volumetrics/fog/Gaussian focus/SSAO/soft
-  shadows/surfaces/bloom/SMAA/vignette/grain;new pass/SSGI/SCGI/lens0.
-  Art3.3/9,story16/21/art9.
+- **Accepted exceptions 2026-11-03/2026-11-05/2026-11-11,user — City visibility/night:**
+  All City heights:Exp2 .090/48m;no downhill gradient. Home balcony keeps its
+  separate far outlook. Night dims sky/fill/haze/reflections;fixed practicals stay.
+  CityFogField≤36 wind layers/shared Home time;pause/roof/dormancy/unload cleanup.
+  CityEastDistance cameraXZ/post:skyline/windows/glow full≤12m→0at30m;
+  far traffic/panorama fades first12m of south hills. Cached refs/MPB;no
+  recurring loads/materials. Shared wind/probes/SSR/water/bounce/volumetrics/
+  fog/Gaussian focus/SSAO/soft shadows/surfaces/bloom/SMAA/vignette/grain;
+  new pass/SSGI/SCGI/lens0. Art3.3/9,story16/21/art9.
 
 - **Accepted 2026-11-03,user — City/balcony night saturation:**
   Runtime grades:day `-24`→night `-30`, shared dawn/dusk/fractional clock.

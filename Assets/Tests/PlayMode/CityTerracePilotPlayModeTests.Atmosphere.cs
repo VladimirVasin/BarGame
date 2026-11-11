@@ -48,11 +48,11 @@ namespace BarPromenade.Tests.PlayMode
             yield return Observe(middle, downhill, "02-court");
             float midDensity = RenderSettings.fogDensity, midClip = city.Camera.farClipPlane;
             yield return Observe(crest, downhill, "03-crest");
-            Assert.That(RenderSettings.fogDensity, Is.EqualTo(.025f).Within(.0005f));
-            Assert.That(city.Camera.farClipPlane, Is.EqualTo(110f).Within(.1f));
-            Assert.That(city.Night.FogField.LayerOpacityMultiplier, Is.LessThan(.25f));
-            Assert.That(midDensity, Is.GreaterThan(RenderSettings.fogDensity).And.LessThan(lowDensity));
-            Assert.That(midClip, Is.LessThan(city.Camera.farClipPlane).And.GreaterThan(lowClip));
+            Assert.That(RenderSettings.fogDensity, Is.EqualTo(lowDensity).Within(.0005f));
+            Assert.That(city.Camera.farClipPlane, Is.EqualTo(lowClip).Within(.1f));
+            Assert.That(city.Night.FogField.LayerOpacityMultiplier, Is.EqualTo(1f).Within(.01f));
+            Assert.That(midDensity, Is.EqualTo(lowDensity).Within(.0001f));
+            Assert.That(midClip, Is.EqualTo(lowClip).Within(.001f));
             yield return Observe(middle, downhill, null);
             Assert.That(RenderSettings.fogDensity, Is.EqualTo(midDensity).Within(.0001f));
             yield return Observe(low, downhill, null);

@@ -455,8 +455,8 @@ namespace BarPromenade.Tests.PlayMode
             city.Player.Motor.Teleport(ridgeFloor);
             SetWindowLightCamera(city, ridgePosition, cityTarget);
             city.Visibility.Refresh(true);
-            Assert.That(city.Camera.farClipPlane, Is.EqualTo(CityAltitudeVisibility.SummitFarPlane).Within(.01f));
-            Assert.That(city.Visibility.Density, Is.EqualTo(CityAltitudeVisibility.SummitDensity).Within(.0001f));
+            Assert.That(city.Camera.farClipPlane, Is.EqualTo(RuntimeSceneSetup.CityFarClipPlane).Within(.01f));
+            Assert.That(city.Visibility.Density, Is.EqualTo(RuntimeSceneSetup.CityFogDensity).Within(.0001f));
             windows.RefreshImmediate();
             LogCityVisibleLightBudget(city.Camera, "Ridge");
             CaptureCurrentCamera(city.Camera, WindowLightCaptureArea, "06-ridge-city-night",

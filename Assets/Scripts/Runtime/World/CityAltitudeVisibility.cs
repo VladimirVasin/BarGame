@@ -4,13 +4,11 @@ using UnityEngine.SceneManagement;
 
 namespace BarPromenade
 {
-    /// <summary>City street air follows the hero's elevation above sea level.</summary>
+    /// <summary>One City fog and drawing distance at every street elevation.</summary>
     [DisallowMultipleComponent]
     public sealed partial class CityAltitudeVisibility : MonoBehaviour
     {
         public const float LowlandTop = 5f;
-        public const float SummitDensity = .025f;
-        public const float SummitFarPlane = 110f;
         private static readonly int ValleyFogId = Shader.PropertyToID("_CityValleyFog");
         private static CityAltitudeVisibility current;
         private Camera sceneCamera;
@@ -46,17 +44,12 @@ namespace BarPromenade
             if (!force && Mathf.Abs(factor - lastHeightFactor) < .0001f) return;
             lastHeightFactor = factor;
             current = this;
-            Density = Mathf.Lerp(RuntimeSceneSetup.CityFogDensity, SummitDensity, factor);
+            Density = RuntimeSceneSetup.CityFogDensity;
             RenderSettings.fogDensity = Density;
-            sceneCamera.farClipPlane = Mathf.Lerp(RuntimeSceneSetup.CityFarClipPlane, SummitFarPlane, factor);
-            fogField.SetLayerOpacity(Mathf.Lerp(1f, .18f, factor));
+            sceneCamera.farClipPlane = RuntimeSceneSetup.CityFarClipPlane;
+            fogField.SetLayerOpacity(1f);
             CityMountainSurfaceAppearance.SetCityVisibility(Density, sceneCamera.farClipPlane);
-
-            // Mean extra density along a descending sightline. Ground below the
-            // quay retains the lowland limit. A level sightline has no extra fog.
-            float densityGradient = (RuntimeSceneSetup.CityFogDensity - Density) /
-                (2f * Density * Mathf.Max(height - LowlandTop, .01f));
-            Shader.SetGlobalVector(ValleyFogId, new Vector4(height, densityGradient, LowlandTop, factor));
+            Shader.SetGlobalVector(ValleyFogId, Vector4.zero);
             if (sceneDepth != null)
             {
                 sceneDepth.gaussianStart.value = Mathf.Lerp(lowFocusStart, 35f, factor);

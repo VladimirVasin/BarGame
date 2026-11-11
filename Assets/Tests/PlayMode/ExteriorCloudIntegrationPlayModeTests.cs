@@ -53,8 +53,7 @@ namespace BarPromenade.Tests.PlayMode
             AssertOutdoorField(
                 city.Clouds,
                 ExteriorCloudProfileKind.City,
-                Mathf.Lerp(RuntimeSceneSetup.CityFarClipPlane, CityAltitudeVisibility.SummitFarPlane,
-                    CityAltitudeVisibility.HeightFactor(city.Player.GameObject.transform.position.y)));
+                RuntimeSceneSetup.CityFarClipPlane);
             CaptureSky("City", city.Clouds);
             ExteriorCloudMotionSample cityPhase = city.Clouds.Phase;
             ExteriorCloudField previousField = city.Clouds;

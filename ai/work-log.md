@@ -5,12 +5,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-11
 
-City grass uses authored narrow leaves and coastal reeds by habitat. City/Home
-share seeded chunks; weather/body bend retains rooted bases and recovery.
-Eligible materials/bridge spans keep decks clear; complete cut/arrival
-neighbourhoods prevent square cache gaps. Blender CityGrass and grass shader
-validators. CityGrassAcceptance covered City/Home, wind/contact, pause/cleanup
-and excavate/fill; frames reviewed. Lit inventory retains old snapshot gaps.
+City/Home use seeded authored grass and coastal reeds; wind/body bend retains
+roots. Full arrival neighbourhoods prevent gaps; decks stay clear.
+Blender CityGrass/shader validators and CityGrassAcceptance cover wind,
+contacts, cleanup and excavation; frames reviewed. Lit inventory has old gaps.
 Ridge banks carry rooted grass off paths and kiosk aprons. Shared gusts drive
 blades, crowns, shrubs and pinned wires. Gable planting respects terrain,
 routes and wires. `CityRidgeWind`: gusts, trunks, paths and Home.
@@ -45,6 +43,10 @@ fitted to the cut bank. Loft grass ends at the fence; crest gusts strengthen.
 The fish sign has a matte ImageGen print and two floods; UVs follow the
 street viewer. Blender Home/Sign contracts; CitySummitStreetRepairs and frames.
 CityMapArtReferenceExport updated the schematic survey.
+
+Uniform City fog/range preserves live shadows. Moving `CityPerformanceAudit`
+showed less visible work but no stable 60 FPS; failed ground/grass/shadow
+experiments were removed. `CityAltitudeAndNightStreet` verifies the profile.
 
 ## 2026-11-09
 
