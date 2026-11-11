@@ -3,6 +3,19 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-12
+
+City and Home rain traces end on visible roofs, ground, props and water.
+Clipped rings follow the puddle film. Bus glass uses pane space and wipers.
+Eave drips and grass response share the contact field. `CityRainContacts`
+passed roof, film, pane attachment, pause and Home cleanup. City and Home
+frames reviewed. The hero obscured the night puddle shot, so its framing and
+camera submission were corrected. `build-city-grass-shader --check` passed.
+F9 weather presets drive the live rain/snow, wind and lightning readers.
+Auto returns to the current slot. Travel keeps the selection and New Game
+clears it. `DebugWindow_SelectsLiveWeatherAndReturnsToSchedule` checked the
+modal guard, drizzle floor, forced lightning and restoration.
+
 ## 2026-11-11
 
 City/Home use seeded authored grass and coastal reeds; wind/body bend retains

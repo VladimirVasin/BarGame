@@ -6,7 +6,7 @@ namespace BarPromenade
     /// <summary>
     /// The F9 debug window. The bar minigames it once launched are cut
     /// from the project; what remains is the debug surface itself:
-    /// intoxication adjustment, game-day/hero-appearance selection, the City map's
+    /// intoxication adjustment, game-day/weather/hero-appearance selection, the City map's
     /// test-teleport toggle, loaded cannery truck and F8 diagnostics, under the same
     /// modal lock.
     /// </summary>
@@ -14,6 +14,14 @@ namespace BarPromenade
     public sealed class MinigameDebugWindow : MonoBehaviour
     {
         private const int IntoxicationStep = 20;
+        private static readonly (WeatherKind? Kind, string RainKey, string SnowKey)[] WeatherModes =
+        {
+            (null, "debug.weather.auto", "debug.weather.auto"),
+            (WeatherKind.Clear, "debug.weather.drizzle", "debug.weather.quiet"),
+            (WeatherKind.LightRain, "debug.weather.rain", "debug.weather.snow"),
+            (WeatherKind.HeavyRain, "debug.weather.downpour", "debug.weather.snowfall"),
+            (WeatherKind.Thunderstorm, "debug.weather.storm", "debug.weather.blizzard")
+        };
 
         private readonly BarMinigameModalLock modalLock =
             new BarMinigameModalLock();
@@ -30,7 +38,9 @@ namespace BarPromenade
         private GUIStyle titleStyle;
         private GUIStyle hintStyle;
         private GUIStyle rowStyle;
+        private GUIStyle weatherStyle;
         private GUIStyle footerStyle;
+        private bool weatherIsSnow;
         private int inputUnlockFrame;
 
         public bool IsInitialized { get; private set; }
@@ -51,13 +61,15 @@ namespace BarPromenade
             PlayerCameraFollow follow,
             IntoxicationHudView hud,
             CityMapController map = null,
-            BarDrinkShopController activeDrinkShop = null)
+            BarDrinkShopController activeDrinkShop = null,
+            bool weatherIsSnow = false)
         {
             player = playerRuntime;
             cameraFollow = follow;
             intoxicationHud = hud;
             cityMap = map;
             drinkShop = activeDrinkShop;
+            this.weatherIsSnow = weatherIsSnow;
             IsInitialized = player.Interactor != null;
         }
 
@@ -168,6 +180,18 @@ namespace BarPromenade
             }
 
             homeDayController?.RefreshImmediate();
+            RetroAudio.Play(RetroSfxId.UiMove);
+            return true;
+        }
+
+        internal bool TrySetWeather(WeatherKind? kind)
+        {
+            if (!IsOpen || HomeApartmentDayController.IsHomeBusy(home) ||
+                !GameSessionState.TrySetDebugWeather(kind))
+            {
+                return false;
+            }
+
             RetroAudio.Play(RetroSfxId.UiMove);
             return true;
         }
@@ -413,7 +437,7 @@ namespace BarPromenade
                     RetroUiTheme.Backdrop,
                     0.92f));
 
-            Rect panel = new Rect(112f, 24f, 416f, 312f);
+            Rect panel = new Rect(112f, 12f, 416f, 336f);
             RetroUiTheme.DrawPanel(
                 panel,
                 RetroUiTheme.Panel,
@@ -422,12 +446,12 @@ namespace BarPromenade
                 0f,
                 1f);
             GUI.Label(
-                new Rect(132f, 39f, 376f, 25f),
+                new Rect(132f, 30f, 376f, 25f),
                 LocalizationService.Get(
                     "debug.minigames.title"),
                 titleStyle);
             GUI.Label(
-                new Rect(132f, 66f, 376f, 28f),
+                new Rect(132f, 58f, 376f, 28f),
                 LocalizationService.Get(
                     "debug.minigames.hint"),
                 hintStyle);
@@ -447,12 +471,13 @@ namespace BarPromenade
             DrawSpeedSelectionControl();
             DrawHeroCorruptionControls();
             DrawCoordinatesControl();
+            DrawWeatherControls();
             if (cannery != null) DrawCanneryTruckControl();
 
             if (!string.IsNullOrEmpty(LastLaunchErrorKey))
             {
                 GUI.Label(
-                    new Rect(132f, 307f, 376f, 20f),
+                    new Rect(132f, 331f, 376f, 14f),
                     LocalizationService.Get(LastLaunchErrorKey),
                     footerStyle);
             }
@@ -510,6 +535,27 @@ namespace BarPromenade
             {
                 PlayerCoordinatesHud.CoordinatesEnabled = !enabled;
                 RetroAudio.Play(RetroSfxId.UiMove);
+            }
+        }
+
+        private void DrawWeatherControls()
+        {
+            GUI.Label(new Rect(132f, 306f, 56f, 24f),
+                LocalizationService.Get("debug.weather.title"), hintStyle);
+            WeatherKind? current = GameSessionState.DebugWeatherOverride;
+            bool previousEnabled = GUI.enabled;
+            for (int index = 0; index < WeatherModes.Length; index++)
+            {
+                var mode = WeatherModes[index];
+                var button = new Rect(194f + 63f * index, 306f, 62f, 24f);
+                bool selected = mode.Kind == current;
+                RetroUiTheme.DrawPanel(button, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted);
+                RetroUiTheme.DrawSelection(button, selected);
+                GUI.enabled = previousEnabled && !selected;
+                string key = weatherIsSnow ? mode.SnowKey : mode.RainKey;
+                if (RetroUiInput.Button(button, LocalizationService.Get(key), weatherStyle))
+                    TrySetWeather(mode.Kind);
+                GUI.enabled = previousEnabled;
             }
         }
 
@@ -742,6 +788,7 @@ namespace BarPromenade
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
                 true);
+            weatherStyle = new GUIStyle(rowStyle) { fontSize = 11, padding = new RectOffset(4, 4, 0, 0) };
             footerStyle = RetroUiTheme.CreateLabelStyle(
                 9,
                 TextAnchor.MiddleCenter,

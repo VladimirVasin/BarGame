@@ -52,6 +52,26 @@ namespace BarPromenade
             }
             return found;
         }
+
+        internal bool TryRainHit(Ray ray, float limit, out float distance)
+        {
+            distance = 0f;
+            if (ray.direction.y >= -.001f || ray.origin.y <= Top(ray.origin)) return false;
+            Vector3 end = ray.GetPoint(limit);
+            if (end.y > Top(end)) return false;
+
+            float low = 0f, high = limit;
+            for (int step = 0; step < 15; step++)
+            {
+                float mid = (low + high) * .5f;
+                Vector3 point = ray.GetPoint(mid);
+                if (point.y > Top(point)) low = mid;
+                else high = mid;
+            }
+            distance = (low + high) * .5f;
+            Vector3 hit = ray.GetPoint(distance);
+            return footprint.Contains(new Vector2(hit.x, hit.z));
+        }
         private float Top(Vector3 position)
         {
             var xz = new Vector2(Mathf.Clamp(position.x, footprint.xMin, footprint.xMax),

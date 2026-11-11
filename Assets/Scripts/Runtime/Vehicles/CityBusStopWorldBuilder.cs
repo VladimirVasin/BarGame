@@ -227,6 +227,9 @@ namespace BarPromenade
             StopAssets assets)
         {
             const float x = ShelterOffsetAlongLane;
+            // Bottom of the rounded, road-facing lip on the authored canopy.
+            CityRainDripEdge.Add(root, new Vector3(x - 2.2f, 2.55f, .592f),
+                new Vector3(x + 2.2f, 2.55f, .592f));
             if (assets.Shelter.Length > 0)
             {
                 assets.Place(root, assets.Shelter, "Imported Route 01 Shelter Shell");

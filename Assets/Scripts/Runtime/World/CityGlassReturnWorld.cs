@@ -15,6 +15,7 @@ namespace BarPromenade
             Transform shell = CityGlassReturnAssetProvider.CreatePavilion(parent).transform;
             shell.name = "Ridge Glass Return";
             shell.localPosition = plan.Origin; shell.localRotation = plan.Rotation;
+            CityRainDripEdge.Add(shell, new Vector3(-1.70f, 2.287f, 2.382f), new Vector3(1.70f, 2.287f, 2.382f));
             Transform yard = CityGlassReturnAssetProvider.CreateYard(parent).transform;
             yard.localPosition = plan.YardOrigin; yard.localRotation = Quaternion.identity;
 

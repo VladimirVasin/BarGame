@@ -2195,6 +2195,46 @@
       "value": "ДЕНЬ"
     },
     {
+      "key": "debug.weather.title",
+      "value": "Погода"
+    },
+    {
+      "key": "debug.weather.auto",
+      "value": "Авто"
+    },
+    {
+      "key": "debug.weather.drizzle",
+      "value": "Морось"
+    },
+    {
+      "key": "debug.weather.rain",
+      "value": "Дождь"
+    },
+    {
+      "key": "debug.weather.downpour",
+      "value": "Ливень"
+    },
+    {
+      "key": "debug.weather.storm",
+      "value": "Гроза"
+    },
+    {
+      "key": "debug.weather.quiet",
+      "value": "Тихо"
+    },
+    {
+      "key": "debug.weather.snow",
+      "value": "Снег"
+    },
+    {
+      "key": "debug.weather.snowfall",
+      "value": "Снегопад"
+    },
+    {
+      "key": "debug.weather.blizzard",
+      "value": "Метель"
+    },
+    {
       "key": "debug.hero_corruption",
       "value": "Вид героя"
     },

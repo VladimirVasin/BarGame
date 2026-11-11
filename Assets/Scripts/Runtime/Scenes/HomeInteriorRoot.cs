@@ -388,6 +388,8 @@ namespace BarPromenade
                 BalconyLayout,
                 Layout,
                 GameSessionState.CitySeed);
+            ExteriorAtmosphere.RainField.EnableSurfaceContacts(camera, ExteriorView,
+                Player.GameObject.transform, balcony: Balcony, homeShelter: ExteriorAtmosphere.RainShelter);
             ExteriorAtmosphere.BindPedestrians(Pedestrians);
             ExteriorAtmosphere.BindBalconySmokers(BalconySmokers);
             var exteriorLightingObject = new GameObject("Home Balcony City Lighting");

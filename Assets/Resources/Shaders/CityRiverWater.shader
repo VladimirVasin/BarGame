@@ -267,8 +267,42 @@ Shader "Bar Promenade/City River Water"
                 float viewZ : TEXCOORD3;
                 float crest : TEXCOORD4;
                 float2 filmUv : TEXCOORD5;
+                float meanWaterY : TEXCOORD6;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
+
+            // Filled for the gameplay camera by the same drops that reach
+            // the water. The existing sheet clips the ring at its actual rim.
+            int _CityRainWaterHitCount;
+            float4 _CityRainWaterHits[20];
+            float3 _CityRainView;
+
+            float3 RainRing(float3 positionWS, float viewZ)
+            {
+                float3 wave = 0.0;
+                if (_CityRainWaterHitCount == 0 || viewZ > 26.0 ||
+                    distance(_CityRainView, _WorldSpaceCameraPos) > .1) return wave;
+                bool puddle = _EdgeNoiseParams.z > .5;
+                [loop] for (int index = 0; index < _CityRainWaterHitCount; index++)
+                {
+                    float4 hit = _CityRainWaterHits[index];
+                    bool hitPuddle = hit.w < 1.0;
+                    if (puddle != hitPuddle || abs(positionWS.y - hit.z) > .16) continue;
+                    float2 delta = positionWS.xz - hit.xy;
+                    float distanceSquared = dot(delta, delta);
+                    if (distanceSquared > .08) continue;
+                    float distanceFromHit = sqrt(distanceSquared);
+                    float age = frac(hit.w);
+                    float radius = lerp(.016, puddle ? .22 : .16, age);
+                    float width = .013 + .007 * age;
+                    float ring = 1.0 - smoothstep(width * .25, width, abs(distanceFromHit - radius));
+                    float strength = ring * (1.0 - age) * (1.0 - smoothstep(13.0, 26.0, viewZ));
+                    float slope = clamp((distanceFromHit - radius) / width, -1.0, 1.0);
+                    wave.xy += strength * slope * delta / max(distanceFromHit, .001);
+                    wave.z = max(wave.z, strength);
+                }
+                return wave;
+            }
 
             // Returns the unit downstream axis and, through `flowing`,
             // whether there is a current at all.
@@ -397,6 +431,7 @@ Shader "Bar Promenade/City River Water"
 
                 float3 positionWS = TransformObjectToWorld(
                     input.positionOS.xyz);
+                output.meanWaterY = positionWS.y;
                 float time = _Time.y * _FlowSpeed;
                 float2 slope;
                 float crest01;
@@ -564,6 +599,8 @@ Shader "Bar Promenade/City River Water"
                 }
 
                 float3 rippleNormal = SampleRipple(input.positionWS.xz, time);
+                float3 contactRing = RainRing(float3(input.positionWS.x, input.meanWaterY, input.positionWS.z), input.viewZ);
+                rippleNormal.xz += contactRing.xy * .23;
                 float3 waveNormalWS = normalize(input.waveNormalWS);
 
                 // The bed's other lesson: its dent reads because the
@@ -891,6 +928,7 @@ Shader "Bar Promenade/City River Water"
                 color += _HighlightColor.rgb *
                          (_RainIntensity * (floor(chop * steps) / steps) *
                           0.10h * CitySkyFill());
+                color += _HighlightColor.rgb * (contactRing.z * .17h * CitySkyFill());
 
                 half fogFactor = ComputeFogFactorZ0ToFar(
                     max(input.viewZ - _ProjectionParams.y, 0));

@@ -769,6 +769,7 @@ namespace BarPromenade
                         replacement = CreateJointField(neighbourhood, false);
                     }
                     PublishDynamic(region, surface, replacement ?? staticJointField);
+                    CityRainContactField.InvalidateGeometry(gameObject.scene);
                     region.JointField?.Dispose();
                     region.JointField = replacement;
                     return;

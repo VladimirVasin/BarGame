@@ -93,9 +93,8 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Deterministic exterior weather: a pure function of the city seed and
-    /// the absolute game time, so City and the Home balcony always agree and
-    /// scene loads cannot desynchronize the sky.
+    /// Exterior weather follows the city seed and absolute game time. Live
+    /// readers share the same session override when F9 selects a preset.
     /// </summary>
     public static class GameWeatherRules
     {
@@ -241,6 +240,11 @@ namespace BarPromenade
 
         public static WeatherVisualSample EvaluateCurrent()
         {
+            if (GameSessionState.DebugWeatherOverride is WeatherKind kind)
+            {
+                return new WeatherVisualSample(kind, GetTargetIntensity(kind));
+            }
+
             return Evaluate(
                 GameSessionState.CitySeed,
                 CurrentAbsoluteGameMinutes());
@@ -254,7 +258,12 @@ namespace BarPromenade
         /// </summary>
         public static LightningSample EvaluateLightning(
             int seed,
-            double absoluteGameMinutes)
+            double absoluteGameMinutes) => EvaluateLightning(seed, absoluteGameMinutes, false);
+
+        private static LightningSample EvaluateLightning(
+            int seed,
+            double absoluteGameMinutes,
+            bool forcedThunderstorm)
         {
             ValidateMinutes(absoluteGameMinutes);
 
@@ -278,14 +287,14 @@ namespace BarPromenade
                 return LightningSample.None;
             }
 
-            long strikeSlot = (long)Math.Floor(
-                strikeStart / SlotMinutes);
-            if (EvaluateSlotKind(seed, strikeSlot) !=
-                WeatherKind.Thunderstorm ||
-                strikeStart - strikeSlot * SlotMinutes <
-                TransitionMinutes)
+            if (!forcedThunderstorm)
             {
-                return LightningSample.None;
+                long strikeSlot = (long)Math.Floor(strikeStart / SlotMinutes);
+                if (EvaluateSlotKind(seed, strikeSlot) != WeatherKind.Thunderstorm ||
+                    strikeStart - strikeSlot * SlotMinutes < TransitionMinutes)
+                {
+                    return LightningSample.None;
+                }
             }
 
             float flashProgress = (float)(
@@ -306,9 +315,16 @@ namespace BarPromenade
 
         public static LightningSample EvaluateCurrentLightning()
         {
+            WeatherKind? forcedKind = GameSessionState.DebugWeatherOverride;
+            if (forcedKind.HasValue && forcedKind != WeatherKind.Thunderstorm)
+            {
+                return LightningSample.None;
+            }
+
             return EvaluateLightning(
                 GameSessionState.CitySeed,
-                CurrentAbsoluteGameMinutes());
+                CurrentAbsoluteGameMinutes(),
+                forcedKind == WeatherKind.Thunderstorm);
         }
 
         public static float GetTargetWindStrength(WeatherKind kind)
@@ -338,7 +354,12 @@ namespace BarPromenade
         /// </summary>
         public static WindSample EvaluateWind(
             int seed,
-            double absoluteGameMinutes)
+            double absoluteGameMinutes) => EvaluateWind(seed, absoluteGameMinutes, null);
+
+        private static WindSample EvaluateWind(
+            int seed,
+            double absoluteGameMinutes,
+            WeatherKind? forcedKind)
         {
             ValidateMinutes(absoluteGameMinutes);
 
@@ -347,7 +368,7 @@ namespace BarPromenade
             float targetDirection =
                 HashWind(seed, slotIndex) % 360u;
             float targetStrength = GetTargetWindStrength(
-                EvaluateSlotKind(seed, slotIndex));
+                forcedKind ?? EvaluateSlotKind(seed, slotIndex));
             float baseDirection = targetDirection;
             float baseStrength = targetStrength;
             double minutesIntoSlot =
@@ -357,7 +378,7 @@ namespace BarPromenade
                 float previousDirection =
                     HashWind(seed, slotIndex - 1) % 360u;
                 float previousStrength = GetTargetWindStrength(
-                    EvaluateSlotKind(seed, slotIndex - 1));
+                    forcedKind ?? EvaluateSlotKind(seed, slotIndex - 1));
                 float linear = Mathf.Clamp01(
                     (float)(minutesIntoSlot / TransitionMinutes));
                 float progress = linear * linear * (3f - (2f * linear));
@@ -387,7 +408,8 @@ namespace BarPromenade
         {
             return EvaluateWind(
                 GameSessionState.CitySeed,
-                CurrentAbsoluteGameMinutes());
+                CurrentAbsoluteGameMinutes(),
+                GameSessionState.DebugWeatherOverride);
         }
 
         /// <summary>

@@ -51,6 +51,7 @@ Shader "Bar Promenade/City Bus Glass Rain"
                 float4 _WiperB;
                 float4 _WiperMask;
                 float4 _BusForwardWS;
+                float4 _BusRainContacts[4];
             CBUFFER_END
 
             float WipedFactor(
@@ -98,6 +99,7 @@ Shader "Bar Promenade/City Bus Glass Rain"
                 float2 pane : TEXCOORD0;
                 half fogFactor : TEXCOORD1;
                 half3 normalWS : TEXCOORD2;
+                float3 positionWS : TEXCOORD3;
             };
 
             float Hash(float value)
@@ -130,6 +132,7 @@ Shader "Bar Promenade/City Bus Glass Rain"
                 output.pane.x = dot(relativeWS, acrossWS);
                 output.pane.y = relativeWS.y;
                 output.normalWS = normalWS;
+                output.positionWS = positionInputs.positionWS;
 
                 float viewZ =
                     -TransformWorldToView(positionInputs.positionWS).z;
@@ -194,6 +197,21 @@ Shader "Bar Promenade/City Bus Glass Rain"
                     pattern = StillBeads(input.pane) * (1.0h - _RunoffIntensity);
                 if (_RunoffIntensity > 0.0h)
                     pattern = max(pattern, RunningDrops(input.pane, head) * _RunoffIntensity);
+                [unroll] for (int index = 0; index < 4; index++)
+                {
+                    float4 contact = _BusRainContacts[index];
+                    float age = _Time.y + 1.0 - contact.w;
+                    if (contact.w == 0.0 || age < 0.0 || age >= .72) continue;
+                    float3 drop = TransformObjectToWorld(contact.xyz);
+                    float3 normal = normalize(input.normalWS);
+                    float3 down = float3(0, -1, 0) + normal * normal.y;
+                    drop += down * (_RunoffIntensity * age * age * .18);
+                    float3 delta = input.positionWS - drop;
+                    float along = dot(delta, down);
+                    delta -= down * (along * _RunoffIntensity * .55);
+                    float bead = (1.0 - smoothstep(.008, .024, length(delta))) * (1.0 - age / .72);
+                    pattern = max(pattern, bead);
+                }
                 // The windshield behind a running blade is freshly
                 // squeegeed: suppress the drops in the wiped sector and
                 // let them regrow toward the return stroke. Only panes

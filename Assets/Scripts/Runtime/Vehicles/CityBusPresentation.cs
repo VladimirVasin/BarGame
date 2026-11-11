@@ -80,6 +80,11 @@ namespace BarPromenade
         private readonly List<MaterialPropertyBlock>
             glassRainOverlayProperties =
                 new List<MaterialPropertyBlock>();
+        private static readonly int RainContactsId = Shader.PropertyToID("_BusRainContacts");
+        private readonly Dictionary<Renderer, int> glassRainSources = new Dictionary<Renderer, int>();
+        private readonly Dictionary<Renderer, CityRainSurfaceKind> rainSurfaces = new Dictionary<Renderer, CityRainSurfaceKind>();
+        private readonly List<Vector4[]> glassContacts = new List<Vector4[]>();
+        private readonly List<int> nextGlassContact = new List<int>();
         private Material glassRainMaterial;
         private float appliedGlassRainIntensity = -1f;
         private Vector3 leftWiperTipLocal;
@@ -138,6 +143,7 @@ namespace BarPromenade
             driverPresentation;
         public float NightFactor { get; private set; }
         public float RainIntensity { get; private set; }
+        internal int RainContactGeneration { get; private set; }
         public IReadOnlyList<Renderer> GlassRainOverlays =>
             glassRainOverlays;
         public float WiperAngleDegrees { get; private set; }
@@ -175,6 +181,18 @@ namespace BarPromenade
             CaptureDoorHingeAxis();
             CaptureBasePoses();
             CreateGlassRainOverlays();
+            foreach (CityBusRendererBinding binding in registry.RendererBindings)
+            {
+                if (binding?.Renderer == null) continue;
+                rainSurfaces[binding.Renderer] = binding.MaterialSlot switch
+                {
+                    CityBusMaterialSlot.Interior or CityBusMaterialSlot.Seat or CityBusMaterialSlot.Rail or
+                        CityBusMaterialSlot.Dashboard or CityBusMaterialSlot.CabinLight => CityRainSurfaceKind.Cover,
+                    CityBusMaterialSlot.Glass or CityBusMaterialSlot.Headlight or CityBusMaterialSlot.TailLight => CityRainSurfaceKind.Glass,
+                    CityBusMaterialSlot.Body or CityBusMaterialSlot.Accent or CityBusMaterialSlot.Metal => CityRainSurfaceKind.Metal,
+                    _ => CityRainSurfaceKind.Stone
+                };
+            }
             IsInitialized = true;
             ResetForPool();
         }
@@ -532,6 +550,14 @@ namespace BarPromenade
             driverDoorSample = default;
             NightFactor = 0f;
             RainIntensity = 0f;
+            RainContactGeneration++;
+            for (int index = 0; index < glassContacts.Count; index++)
+            {
+                Array.Clear(glassContacts[index], 0, glassContacts[index].Length);
+                nextGlassContact[index] = 0;
+                glassRainOverlayProperties[index].SetVectorArray(RainContactsId, glassContacts[index]);
+                glassRainOverlays[index].SetPropertyBlock(glassRainOverlayProperties[index]);
+            }
             previousLeftWiperAngle = 0f;
             previousRightWiperAngle = 0f;
             leftWiperSweepSign = 1f;
@@ -715,6 +741,9 @@ namespace BarPromenade
         {
             glassRainOverlays.Clear();
             glassRainOverlayProperties.Clear();
+            glassRainSources.Clear();
+            glassContacts.Clear();
+            nextGlassContact.Clear();
             Shader shader = Shader.Find(GlassRainShaderName);
             if (shader == null)
             {
@@ -768,13 +797,36 @@ namespace BarPromenade
                 overlay.enabled = false;
                 var properties = new MaterialPropertyBlock();
                 properties.SetFloat(RainIntensityId, 0f);
+                var contacts = new Vector4[4];
+                properties.SetVectorArray(RainContactsId, contacts);
                 overlay.SetPropertyBlock(properties);
+                glassRainSources.Add(binding.Renderer, glassRainOverlays.Count);
                 glassRainOverlays.Add(overlay);
                 glassRainOverlayProperties.Add(properties);
+                glassContacts.Add(contacts);
+                nextGlassContact.Add(0);
             }
 
             MeasureWiperBlades();
         }
+
+        internal bool RecordRainHit(Renderer pane, Vector3 point)
+        {
+            if (!glassRainSources.TryGetValue(pane, out int index)) return false;
+            Renderer overlay = glassRainOverlays[index];
+            Vector3 local = overlay.transform.InverseTransformPoint(point);
+            Vector4[] contacts = glassContacts[index];
+            int next = nextGlassContact[index];
+            contacts[next] = new Vector4(local.x, local.y, local.z, Time.time + 1f);
+            nextGlassContact[index] = (next + 1) % contacts.Length;
+            MaterialPropertyBlock properties = glassRainOverlayProperties[index];
+            properties.SetVectorArray(RainContactsId, contacts);
+            overlay.SetPropertyBlock(properties);
+            return true;
+        }
+
+        internal bool TryGetRainSurface(Renderer renderer, out CityRainSurfaceKind kind) =>
+            rainSurfaces.TryGetValue(renderer, out kind);
 
         /// <summary>
         /// Measures each parked wiper's blade tip in its pivot's local

@@ -1090,6 +1090,8 @@ namespace BarPromenade
             foreach (var terraceAnchors in World.Root.GetComponentsInChildren<CityTerraceWorldAnchors>())
                 if (terraceAnchors.RainShelter != null) rainShelters.Add(terraceAnchors.RainShelter);
             Rain.SetLocalShelters(rainShelters);
+            Rain.EnableSurfaceContacts(camera, transform, Player.GameObject.transform,
+                vehicles, Cannery?.Truck, LastRouteCar != null ? LastRouteCar.transform : null);
             if (World.MountainBoundaryPlan.HasTunnel)
             {
                 var tunnelShelterObject =

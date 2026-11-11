@@ -8,6 +8,7 @@ Shader "Bar Promenade/City Atmosphere Particle"
         _SoftParticleDistance("Depth Fade Distance", Range(0.01, 4)) = 1
         _FogMotion("City Layer Motion", Vector) = (0, 0, 0, 0)
         _ReceiveCitySkyFill("Weather receives City sky fill", Float) = 0
+        [HideInInspector] _RainContactFade("Near rain centre and range", Vector) = (0, 0, 0, 0)
     }
 
     SubShader
@@ -55,6 +56,7 @@ Shader "Bar Promenade/City Atmosphere Particle"
                 half _SoftParticleDistance;
                 float4 _FogMotion;
                 half _ReceiveCitySkyFill;
+                float4 _RainContactFade;
             CBUFFER_END
 
             struct Attributes
@@ -138,6 +140,13 @@ Shader "Bar Promenade/City Atmosphere Particle"
                     max(_SoftParticleDistance, 0.01h));
 
                 half alpha = input.color.a * shape * depthFade * (1.0h - _FogMotion.w);
+                if (_RainContactFade.w > 0.0)
+                {
+                    float edge = smoothstep(_RainContactFade.w * .625, _RainContactFade.w,
+                        distance(input.positionWS.xz, _RainContactFade.xz));
+                    float above = smoothstep(3.2, 6.5, input.positionWS.y - _RainContactFade.y);
+                    alpha *= max(edge, above);
+                }
                 half3 lighting = _AlpineLocalLightingPerPixel != 0 ?
                     AlpineLocalParticleLighting(input.positionWS, true) : input.localLighting;
                 // Weather carries sky scatter and a lamp still lights it locally.

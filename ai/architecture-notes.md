@@ -6145,53 +6145,36 @@
   only for the active Balcony shot, and is absent from true interiors and
   technical transition scenes. The fountain reflection camera opts in with a
   marker; unrelated preview/UI cameras do not inherit the world shell.
-- **Accepted — The city never dries (city-scene decree):**
-  `CityEternalRainShaper` is the city's own `ICityWeatherShaper` - the seam
-  the mountain and village already shape the shared schedule through. It
-  floors precipitation at `DrizzleIntensity 0.18` (visible rain, clearly
-  under LightRain's `0.45`; wind passes through untouched - drizzle in calm
-  air is a real state of the sky) and is attached to the city's weather
-  controller plus the four direct schedule readers: the city rain field's
-  init, the river's build-time water hook, the bus's wiper intensity and the
-  home balcony's exterior view (which shows the same sky and must agree).
-  The schedule itself is untouched - determinism, kinds, lightning and the
-  areas above keep their own weather, and a "Clear" slot at the mountain's
-  tunnel mouth stays genuinely dry. The shared wet film consequently never
-  reads drier than the drizzle in city scenes, and puddles never dissolve;
-  the drying machinery stays for the slopes between heavy and drizzle.
-  Amended 2026-08-31: the film's target is the shaper's own third axis,
-  `ShapeSurfaceWetness(schedule)`. The controller had been handing the
-  registry the raw schedule so the village blizzard could not soak the
-  shared film - which also cut the city's floor out of the film path, and
-  a `Clear` slot dried every puddle away while the drizzle kept falling.
-  The city floors that axis at the drizzle; the snow areas pass the
-  schedule through untouched.
+- **Accepted — The city never dries:** `CityEternalRainShaper` floors City
+  rain and `ShapeSurfaceWetness` at `0.18`. The field, river, bus wipers and
+  Home balcony share the floor. Wind and slot kind pass through. Snow areas
+  feed the raw schedule to wetness, preserving a dry clear tunnel mouth.
 - **Accepted — Deterministic slot weather, presentation-only:**
-  `GameWeatherRules` is a pure function of the city seed and the absolute
-  session minutes: `90`-game-minute slots hash into Clear (`55%`), LightRain
-  (`27%`), HeavyRain (`12%`) or Thunderstorm (`6%`), and the continuous
-  intensity smoothsteps between the slot targets (`0` / `0.45` / `1.0` /
-  `1.0`) over the first `5` game minutes of a slot. Because the sample is
-  derived, no new session state is persisted and City and the Home balcony
-  can never disagree. Presentation is a seeded player-following
-  `CityRainField` (at most `420` stretched streak particles over a `26 m`
-  box on the shared atmosphere material, no collision) plus a deterministic
-  crossfaded noise loop (`CityRainSound`, `Ambience/Beds`), driven per frame
-  by `CityWeatherController` in City and by `HomeBalconyExteriorAtmosphere`
-  on the balcony; balcony audio and flashes are gated to the active Balcony
-  shot. While `CityBusRideController.IsPassengerAboard`, the emitter switches
-  to a donut with a `10 m` rain-free core so streaks never spawn inside the
-  cabin. `CityWetSurfaceRegistry` owns the one transient rain film shared by
-  City and the Home balcony: it wets at `0.58/s`, dries at `0.028/s`, catches
-  up from absolute game time on a scene handoff and resets with a new session.
-  Ground, road, sidewalk and marking recipes multiply their authored dry tint
-  and raise smoothness through MPBs on the existing shared material. A pure
-  stable-rank planner chooses at most `42` road patches and one builder emits
-  their upper faces as a single collider-free mesh `3 mm` above the road; dry
-  puddles return to the road recipe instead of leaving raised boxes. The rain
-  deliberately does not touch `GameTimeDayNightRules`, ambient/directional
-  daylight, fog, grade or far clip: daylight dimming and weather grading remain
-  separate future decisions.
+  Seed and absolute minutes pick `90`-minute slots: Clear/LightRain/HeavyRain/
+  Thunderstorm `55/27/12/6%`; blend `0/.45/1/1` over `5` game minutes.
+  `CityRainField` carries `420` streaks over `26 m` and a `6.5 m` bus shelter
+  core. `CityWeatherController` and `HomeBalconyExteriorAtmosphere` drive the
+  field and crossfaded rain bed. Active balcony owns audio/flashes. Shared
+  film wets at `.58/s`, recedes at `.028/s`, resumes by the clock and resets
+  on New Game. Ground MPBs preserve pigment; up to `42` patches share one
+  collider-free sheet `3 mm` above the road. Weather grading remains deferred.
+- **Accepted 2026-11-12,user — F9 weather presets:** `MinigameDebugWindow`
+  writes a session-only override. Live weather readers share slot intensity,
+  wind strength and seeded lightning windows. City keeps its drizzle floor;
+  mountain profiles shape snow and wind. Auto uses the current clock slot.
+  Scene travel and checkpoints keep the debug selection; New Game clears it.
+- **Accepted 2026-11-12,user — rain contacts:** City and active Home balcony
+  trace the first face from the wind direction. Native matching collision,
+  visible mesh cache and water footprints resolve the surface. The live puddle
+  rim also owns footstep classification. Cloth/ground absorb, hard parts
+  splash, glass carries beads, water clips its rings and grass darkens in place.
+  Authored eaves shed secondary drops; bus pane marks use the wipers and reset
+  with the pool. One batch, `128` drops, `8` new rain rays/frame plus eave drips;
+  bounded geometry/pose reads. Pause, shelter, balcony visibility and dormancy
+  own lifetime. Existing GI/SSGI/SCGI/SSAO/fog/air/shadows/grade and probe/SSR scope;
+  material/particle changes use wind and preserve bevel/COLOR/decal/rim/outline
+  ownership. Existing bloom/DOF/SMAA/vignette/grain/dither/flares/blur/lens scope.
+  Art §4/16, story §16/20. Performance unmeasured.
 - **Accepted — Deterministic lightning outside static local lighting:**
   Lightning shares the pure schedule: each `12`-game-minute window hashes
   into at most one strike (`70%`) whose start offset, azimuth and distance

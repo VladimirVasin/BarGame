@@ -1243,7 +1243,8 @@ namespace BarPromenade
                 Player,
                 CameraFollow,
                 IntoxicationHud,
-                Map);
+                Map,
+                weatherIsSnow: true);
 
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(

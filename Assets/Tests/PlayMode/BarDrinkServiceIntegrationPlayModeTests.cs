@@ -199,6 +199,53 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
         }
 
+        [UnityTest]
+        public IEnumerator DebugWindow_SelectsLiveWeatherAndReturnsToSchedule()
+        {
+            // This window can produce lightning, but the default seed's
+            // midday schedule is clear. A forced storm must use that window.
+            Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60 + 3), Is.True);
+            GameSessionState.AdvanceGameTime(.25f / (float)GameTimeState.GameMinutesPerRealSecond);
+            double minute = GameSessionState.GameTimeOfDayMinutes;
+            int seed = GameSessionState.CitySeed;
+            WeatherVisualSample scheduled = GameWeatherRules.Evaluate(seed, minute);
+            WindSample scheduledWind = GameWeatherRules.EvaluateWind(seed, minute);
+            Assert.That(GameWeatherRules.EvaluateCurrentLightning().IsFlashing, Is.False);
+
+            var rain = rootObject.AddComponent<CityRainField>();
+            rain.Initialize(player.GameObject.transform, RuntimePrimitiveFactory.DefaultMaterial, seed);
+            var weather = rootObject.AddComponent<CityWeatherController>();
+            weather.Initialize(rain, null, null, null, player.GameObject.transform, null, new CityEternalRainShaper());
+
+            Assert.That(debugWindow.TrySetWeather(WeatherKind.Thunderstorm), Is.False);
+            Assert.That(debugWindow.Open(), Is.True);
+            Assert.That(debugWindow.TrySetWeather(WeatherKind.Thunderstorm), Is.True);
+            weather.ApplyCurrentWeather();
+            Assert.That(rain.Intensity, Is.EqualTo(GameWeatherRules.ThunderstormIntensity));
+            Assert.That(CityWaterResources.RainIntensity, Is.EqualTo(rain.Intensity));
+            Assert.That(weather.CurrentWind.Strength01,
+                Is.EqualTo(GameWeatherRules.ThunderstormWindStrength * GameWeatherRules.EvaluateCurrentGust()).Within(.0001f));
+            Assert.That(GameWeatherRules.EvaluateCurrentLightning().IsFlashing, Is.True);
+            Assert.That(GameSessionState.GameTimeOfDayMinutes, Is.EqualTo(minute));
+
+            Assert.That(debugWindow.TrySetWeather(WeatherKind.HeavyRain), Is.True);
+            Assert.That(GameWeatherRules.EvaluateCurrentLightning().IsFlashing, Is.False);
+            Assert.That(debugWindow.TrySetWeather(WeatherKind.Clear), Is.True);
+            Assert.That(debugWindow.Close(), Is.True);
+            weather.ApplyCurrentWeather();
+            Assert.That(rain.Intensity, Is.EqualTo(CityEternalRainShaper.DrizzleIntensity));
+
+            Assert.That(debugWindow.Open(), Is.True);
+            Assert.That(debugWindow.TrySetWeather(null), Is.True);
+            Assert.That(GameWeatherRules.EvaluateCurrent().IsVisuallyEquivalentTo(scheduled), Is.True);
+            Assert.That(GameWeatherRules.EvaluateCurrentWind().Strength01, Is.EqualTo(scheduledWind.Strength01));
+            Assert.That(debugWindow.TrySetWeather(WeatherKind.LightRain), Is.True);
+            Assert.That(debugWindow.Close(), Is.True);
+            GameSessionState.BeginNewGame("debug_weather_reset_test");
+            Assert.That(GameSessionState.DebugWeatherOverride, Is.Null);
+            yield return null;
+        }
+
         private static void CloseExistingModalOwners()
         {
             foreach (BarDrinkShopController controller in

@@ -636,19 +636,17 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
 
 ### Weather, sky and presentation
 
-- City and Home share a rain film: fast wetting, slow recession to City's
-  permanent drizzle floor; absolute game time carries it across scene handoffs,
-  New Game resets it. MPBs preserve authored tints; linear response maps vary
-  local smoothness/relief. Up to `42` deterministic top-only puddles share one
-  collider-free water mesh `3 mm` above the roads;
-- one shared generated exterior cloud ceiling in City, Mountain Road, Alpine
-  Village and the active Home balcony shot. A passive `220`-triangle hemisphere
-  and one packed linear density texture feed three property-block profiles;
-  City/Home reuse the same seed, canonical frame and absolute-time phase, while
-  the road and village only change density, scale and colour. The shell follows
-  camera translation. Its mesh radii are `47 / 119 / 109 m`; on upper City streets
-  the sky renders behind the expanded exterior view. It owns no fog, grade, Light, shadow or collider, and Home disables
-  it everywhere except the balcony;
+- City and Home share fast wetting and slow recession to drizzle by absolute
+  game time. New Game resets the film. MPBs keep pigment/relief; `42` puddles
+  share one soft-rim sheet `3 mm` above the road. Near rain ends on the first
+  visible surface, with material splashes, water rings, glass beads and eave
+  drips. Bus beads ride the panes and use the wiper mask. Home runs contacts
+  only in the balcony shot;
+- Camera-following cloud ceiling uses a passive `220`-triangle hemisphere,
+  one packed density texture and three profiles (`47 / 119 / 109 m`). City
+  and Home balcony share the seed, frame and absolute phase. Road and Village
+  vary density, scale and colour. The upper City sky sits behind the expanded
+  view. The shell is visual only;
 - 16:9;4:3 unsupported.SMAA High/on:3passes after native/intoxication;
   crop/UI last;previews/probes off.Flags:`SceneLightingPresentation` (4 owners).
   Warehouse:fan/steel/bounce. Village:window/garland air-snow/clip,
@@ -2702,11 +2700,13 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Busy actions/modal ownership and defeat permit entry; timelines stay live.
   Flight reserves physical commands, never snapshots input flags. F4/Esc returns
   the current scene camera; actual pause/scene/disable clears the overlay;
-- `F9` City/Bar/Road/Home: closes map, modal lock; clicks/Left/Right adjust
+- `F9` City/Bar/Road/Home/Village: closes map, modal lock; clicks/Left/Right adjust
   intoxication `±20` within `0–100`, keep drink context. Days `1–7` keep
   `HH:MM`/running/needs; days uncapped. City owns teleport flag;
   Home days reversible; `HomeDebugCityMapShortcut`: City map beside home.
   Opening/actions/doors/modals block Home debug/delay midnight;
+  Weather presets feed live rain/snow, wind and lightning. Auto reads the
+  current slot. The override survives travel and clears on New Game.
   Committed drink protected. Default-on speed flag: `F1/F2/F3`
   `×3/×5/×10` across nine scenes/actions; repeat/flag-off→`×1`. Pause/loading
   block keys; transitions retain speed, new game resets `×1`/flag. Readout:

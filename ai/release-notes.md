@@ -6,6 +6,14 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
+### 2026-11-12
+
+- В City и с балкона Home капли брызгают на твёрдом, дают круги на воде и
+  срываются с кромок навесов. Дворники счищают капли со стекла автобуса.
+  `CityRainContacts`.
+- В F9 можно выбрать морось, дождь, ливень или грозу. В горах — режимы снега.
+  «Авто» возвращает погоду по часам. `DebugWindow_SelectsLiveWeatherAndReturnsToSchedule`.
+
 ### 2026-11-11
 
 - В City 48 м на всех высотах и живые тени. Крыши плавно гаснут в дымке. `CityFogOutlineComparison`.

@@ -126,6 +126,7 @@ namespace BarPromenade
         private static long nextDrinkOrderSequence;
 
         public static int CitySeed { get; private set; } = DefaultCitySeed;
+        internal static WeatherKind? DebugWeatherOverride { get; private set; }
         public static WarehouseFishAssemblyState WarehouseFishAssembly => warehouseFishAssembly;
         public static WarehouseGateState WarehouseGate => warehouseGate;
         public static StairwellLabyrinthPuzzleState StairwellLabyrinthPuzzles => stairwellLabyrinthPuzzles;
@@ -420,6 +421,18 @@ namespace BarPromenade
         public static bool TryPrepareGameTimeAt(int minuteOfDay) => gameTime.TryPrepareAt(minuteOfDay);
         public static bool TryStartPreparedGameTime() => gameTime.TryStartPrepared();
 
+        internal static bool TrySetDebugWeather(WeatherKind? kind)
+        {
+            if (kind == DebugWeatherOverride ||
+                (kind.HasValue && (uint)kind.Value > (uint)WeatherKind.Thunderstorm))
+            {
+                return false;
+            }
+
+            DebugWeatherOverride = kind;
+            return true;
+        }
+
         public static bool TrySetDebugGameDay(int dayNumber)
         {
             if (dayNumber < FirstDebugGameDayNumber ||
@@ -585,6 +598,7 @@ namespace BarPromenade
             // the insult the last playthrough opened with.
             CityPedestrianInsultSessionState.ResetForNewSession();
             CitySeed = DefaultCitySeed;
+            DebugWeatherOverride = null;
             CityBlueprintId = DefaultCityBlueprintId;
             ActiveBarId = string.Empty;
             ActiveBarActivity = BarActivityKind.None;

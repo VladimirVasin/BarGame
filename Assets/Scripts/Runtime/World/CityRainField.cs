@@ -244,6 +244,7 @@ namespace BarPromenade
             Shader.PropertyToID("_NoiseStrength");
         private static readonly int SoftParticleDistanceId =
             Shader.PropertyToID("_SoftParticleDistance");
+        private static readonly int ContactFadeId = Shader.PropertyToID("_RainContactFade");
 
         [SerializeField] private ParticleSystem particles;
         [SerializeField] private ParticleSystemRenderer rainRenderer;
@@ -257,6 +258,9 @@ namespace BarPromenade
         private bool appliedSheltered;
         private Vector2 appliedWindDrift;
         private ParticleSystem.Particle[] shelterParticles;
+        private MaterialPropertyBlock rendererProperties;
+        private Vector4 contactFade;
+        private int fieldSeed;
 
         public bool IsInitialized { get; private set; }
         public CityPrecipitationKind Kind { get; private set; }
@@ -269,6 +273,7 @@ namespace BarPromenade
         public bool IsSheltered => appliedSheltered;
         public Vector2 AppliedWindDrift => appliedWindDrift;
         public IReadOnlyList<Collider> LocalShelters => localShelters;
+        internal CityRainContactField Contacts { get; private set; }
 
         public void Initialize(
             Transform target,
@@ -287,6 +292,7 @@ namespace BarPromenade
             }
 
             Kind = kind;
+            fieldSeed = seed;
             profile = CityPrecipitationProfile.For(kind);
             EnsureParticleSystem();
             PositionEmitter();
@@ -296,6 +302,23 @@ namespace BarPromenade
                 Mathf.Clamp01(initialIntensity),
                 initiallySheltered);
             IsInitialized = true;
+        }
+
+        internal void EnableSurfaceContacts(Camera camera, Transform world, Transform hero = null,
+            CityBusDirector[] buses = null, Transform truck = null, Transform car = null,
+            Transform balcony = null, Collider homeShelter = null)
+        {
+            if (!IsInitialized || Kind != CityPrecipitationKind.Rain || Contacts != null) return;
+            Contacts = gameObject.AddComponent<CityRainContactField>();
+            Contacts.Initialize(this, camera, world, fieldSeed, hero, buses, truck, car, balcony, homeShelter);
+        }
+
+        internal void SetContactFade(Vector4 value)
+        {
+            if (value == contactFade || rainRenderer == null || rendererProperties == null) return;
+            contactFade = value;
+            rendererProperties.SetVector(ContactFadeId, value);
+            rainRenderer.SetPropertyBlock(rendererProperties);
         }
 
         public void SetIntensity(float intensity)
@@ -745,16 +768,17 @@ namespace BarPromenade
                 MotionVectorGenerationMode.ForceNoMotion;
             rainRenderer.allowOcclusionWhenDynamic = true;
 
-            var properties = new MaterialPropertyBlock();
-            properties.SetFloat(CityNightResources.ReceiveSkyFillId, 1f);
-            properties.SetFloat(EdgePowerId, profile.EdgePower);
-            properties.SetFloat(
+            rendererProperties = new MaterialPropertyBlock();
+            contactFade = Vector4.zero;
+            rendererProperties.SetFloat(CityNightResources.ReceiveSkyFillId, 1f);
+            rendererProperties.SetFloat(EdgePowerId, profile.EdgePower);
+            rendererProperties.SetFloat(
                 NoiseStrengthId,
                 profile.ShaderNoiseStrength);
-            properties.SetFloat(
+            rendererProperties.SetFloat(
                 SoftParticleDistanceId,
                 profile.SoftParticleDistance);
-            rainRenderer.SetPropertyBlock(properties);
+            rainRenderer.SetPropertyBlock(rendererProperties);
         }
 
         private static uint CreateRandomSeed(int seed)

@@ -272,7 +272,7 @@ namespace BarPromenade
                 }
             }
 
-            return CreateSheet(
+            GameObject disc = CreateSheet(
                 name,
                 parent,
                 centre,
@@ -280,6 +280,9 @@ namespace BarPromenade
                 normals,
                 triangles,
                 sharedMaterial);
+            if (sharedMaterial.shader.name == CityRainSurfaceIndex.WaterShaderName)
+                disc.AddComponent<CityRainWaterReceiver>().SetDisc(radius);
+            return disc;
         }
 
         /// <summary>
