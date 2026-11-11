@@ -349,7 +349,11 @@ namespace BarPromenade
             {
                 foreach (var road in roads)
                     if (CityHillsideNeighborhoodPlan.TerrainBounds(road).Contains(p))
-                    { y = CityHillsideNeighborhoodPlan.SampleBuiltGround(layout, road, p, housing.Buildings); return true; }
+                    {
+                        float bank = CityHillsideNeighborhoodPlan.SampleBank(layout, road, p);
+                        y = CityHillsideNeighborhoodPlan.ApplyFoundationLevels(road, p, bank, housing.Buildings);
+                        return true;
+                    }
                 if (quarter.TerrainBounds.Contains(p) && !quarter.IsExposedRavine(p, 1f))
                 { y = quarter.SampleSoil(p); return true; }
                 y = 0f; return false;

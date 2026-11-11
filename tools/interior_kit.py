@@ -122,6 +122,56 @@ def box(center: Sequence[float], size: Sequence[float]) -> Geometry:
     return vertices, faces
 
 
+def joint_box(center: Sequence[float], size: Sequence[float], width: float) -> Geometry:
+    """Closed trim/profile blank with all twelve visible edges relieved.
+
+    Retains the exact outer bounds and flat mounting planes. Separate caps
+    and bevel faces make the result suitable for metre-projected UVs.
+    """
+    half = tuple(v * .5 for v in size)
+    cut = min(width, min(half) * .45)
+    if cut <= 1e-6:
+        return box(center, size)
+    signs = tuple(tuple(1 if index & (1 << axis) else -1 for axis in range(3))
+                  for index in range(8))
+    vertices = [tuple(center[a] + sign[a] * (half[a] - (cut if a == trim else 0.0))
+                      for a in range(3)) for sign in signs for trim in range(3)]
+    faces = []
+
+    def face(indices, normal):
+        axis = next(i for i in range(3) if normal[i])
+        ref = (axis + 1) % 3
+        # Tangent reference projected onto the face, then an orthogonal basis.
+        u = tuple((1.0 if i == ref else 0.0) - normal[ref] * n /
+                  sum(x * x for x in normal) for i, n in enumerate(normal))
+        v = (normal[1] * u[2] - normal[2] * u[1], normal[2] * u[0] - normal[0] * u[2],
+             normal[0] * u[1] - normal[1] * u[0])
+        middle = tuple(sum(vertices[i][a] for i in indices) / len(indices) for a in range(3))
+
+        def angle(index):
+            delta = tuple(vertices[index][a] - middle[a] for a in range(3))
+            return math.atan2(sum(d * w for d, w in zip(delta, v)),
+                              sum(d * w for d, w in zip(delta, u)))
+
+        faces.append(tuple(sorted(indices, key=angle)))
+
+    for axis in range(3):
+        for side in (-1, 1):
+            face([i * 3 + trim for i, sign in enumerate(signs) if sign[axis] == side
+                  for trim in range(3) if trim != axis],
+                 tuple(side if a == axis else 0 for a in range(3)))
+    for axis in range(3):
+        for i, sign in enumerate(signs):
+            if sign[axis] > 0:
+                continue
+            j = i | (1 << axis)
+            face([k * 3 + trim for k in (i, j) for trim in range(3) if trim != axis],
+                 tuple(0 if a == axis else sign[a] for a in range(3)))
+    for i, sign in enumerate(signs):
+        face([i * 3, i * 3 + 1, i * 3 + 2], sign)
+    return vertices, faces
+
+
 def chamfered_box(
     center: Sequence[float],
     size: Sequence[float],
@@ -268,17 +318,46 @@ def profile_skirting(
     height: float,
     depth: float,
     cove: float = 0.018,
+    rounded: bool = False,
 ) -> list[tuple[float, float]]:
     """A skirting: flat against the wall, a splayed top, a foot at the floor.
 
     The splay is what stops a floor/wall junction reading as one black
     line, which is exactly what it reads as when both are boxes.
     """
+    if rounded:
+        rise = min(height * .45, cove * 2.2)
+        shoulder = [(depth * (.32 + .68 * math.cos(step * math.pi / 8)),
+                     height - rise + rise * math.sin(step * math.pi / 8))
+                    for step in range(5)]
+        return [(0.0, 0.0), (depth, 0.0), *shoulder, (0.0, height)]
     return [
         (0.0, 0.0), (depth, 0.0), (depth, height - cove * 2.2),
         (depth * 0.45, height - cove * 0.6), (depth * 0.32, height),
         (0.0, height),
     ]
+
+
+def threshold(width: float, depth: float, height: float) -> Geometry:
+    """Centred sill with a flat crest and a curved approach from each floor."""
+    half_depth, half_height = depth * .5, height * .5
+    shoulder = min(depth * .32, height * 2.5)
+    toe = min(.002, height * .1)
+    approach = [(half_depth - shoulder * i / 4,
+                 -half_height + toe + (height - toe) * (.5 - .5 * math.cos(i * math.pi / 4)))
+                for i in range(5)]
+    outline = [(-half_depth, -half_height), (half_depth, -half_height),
+               *approach, *((-x, y) for x, y in reversed(approach))]
+    return rotated_z(prism(outline, width), 90)
+
+
+def stair_nose(width: float, depth: float, height: float, radius: float) -> Geometry:
+    """A solid tread with a curved exposed edge at the foot of the flight."""
+    run, top = depth * .5, height * .5
+    radius = min(radius, depth * .25, height * .5)
+    nose = [(-run + radius * (1 - math.sin(step * math.pi / 8)),
+             top - radius * (1 - math.cos(step * math.pi / 8))) for step in range(5)]
+    return rotated_z(prism([(-run, -top), (run, -top), (run, top), *nose], width), 90)
 
 
 def profile_cornice(height: float, depth: float) -> list[tuple[float, float]]:

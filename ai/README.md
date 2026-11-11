@@ -1,11 +1,8 @@
 # AI memory index
 
-Start with [`AI.md`](../AI.md), then overview/system index and relevant details.
-AI.md owns source order; entry documents are not world catalogues.
-
-Document **types** and **byte budgets** come from
-[`tools/docs-budget.json`](../tools/docs-budget.json).
-`python tools/check-docs.py` enforces them and checks this table; see Retention.
+[`AI.md`](../AI.md) owns source order. See overview, systems and relevant details.
+[`tools/docs-budget.json`](../tools/docs-budget.json) defines types and budgets;
+`python tools/check-docs.py` checks them and this table.
 
 | File | Type | Budget | Purpose |
 | --- | --- | --- | --- |
@@ -22,6 +19,7 @@ Document **types** and **byte budgets** come from
 | `village-narrative-plan.md` | note | 40000 | Place inspections/families, shared camera/text, acceptance |
 | `city-lighting-plan.md` | note | 8000 | Nine City lighting stages and acceptance |
 | `city-texture-plan.md` | note | 8000 | Nine City material stages and acceptance |
+| `world-joint-plan.md` | note | 12000 | Fourteen world joint stages and City inventory |
 | `bar-dialogue-plan.md` | note | 64000 | Bar speech contract, paired conversations and Russian phrase bank |
 | `karaoke-plan.md` | note | 6000 | Free live voice, hall attention, camera shots, drunken pitch drift and focused acceptance |
 | `systems-map.md` | index | 44000 | System index: guarantee, key files and status |

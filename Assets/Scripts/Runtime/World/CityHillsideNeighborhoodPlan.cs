@@ -221,14 +221,10 @@ namespace BarPromenade
             Rect.MinMaxRect(road.LaneMinX - 26f, road.GetLaneZ(CityHillsideStreetRoute.LaneCount - 1) - 28f,
                 road.LaneMaxX + 26f, -168f);
 
-        // One height recipe for physical ground vertices and early shelter placement.
-        internal static float SampleBuiltGround(CityLayout layout, CityHillsideStreetRoute road, Vector2 point,
+        // The foundation levels shared by the mesh and early shelter placement.
+        internal static float ApplyFoundationLevels(CityHillsideStreetRoute road, Vector2 point, float y,
             IReadOnlyList<CityHillsideBuilding> houses)
         {
-            float y = SampleBank(layout, road, point);
-            var projection = road.Path.Project(point);
-            if (projection.DistanceSquared < 49f)
-                y = Mathf.Min(y, road.Profile.SampleDistance(projection.DistanceAlong).Height - .18f);
             for (int index = 0; index < houses.Count; index++)
             {
                 var house = houses[index];

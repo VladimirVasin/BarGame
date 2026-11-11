@@ -99,6 +99,7 @@ namespace BarPromenade
                         false);
                     step.transform.localRotation =
                         Quaternion.Euler(0f, yaw, 0f);
+                    RuntimePrimitiveFactory.ProfileStructuralBox(step, .012f, CityExteriorAppearance.SidewalkTextureTileSize);
                     CityExteriorAppearance.ApplySidewalkSurface(
                         step.GetComponent<Renderer>());
                     // Walking bodies use the invisible ramp below; the
@@ -168,6 +169,7 @@ namespace BarPromenade
                     0f,
                     DirectionYaw(landing.Direction),
                     0f);
+                RuntimePrimitiveFactory.ProfileStructuralBox(surface, .015f, CityExteriorAppearance.SidewalkTextureTileSize);
                 CityExteriorAppearance.ApplySidewalkSurface(
                     surface.GetComponent<Renderer>());
             }
@@ -218,13 +220,14 @@ namespace BarPromenade
             float height,
             float thickness)
         {
-            RuntimePrimitiveFactory.CreateBox(
+            GameObject post = RuntimePrimitiveFactory.CreateBox(
                 name,
                 parent,
                 surfacePoint + (Vector3.up * (height * 0.5f)),
                 new Vector3(thickness, height, thickness),
                 RailColor,
                 true);
+            RuntimePrimitiveFactory.ProfileStructuralBox(post, .007f);
         }
 
         private static void BuildRetainingWalls(
@@ -252,6 +255,7 @@ namespace BarPromenade
                     0f,
                     DirectionYaw(run),
                     0f);
+                RuntimePrimitiveFactory.ProfileStructuralBox(wallObject, .025f);
             }
         }
 
@@ -274,6 +278,7 @@ namespace BarPromenade
             beam.transform.localRotation = Quaternion.LookRotation(
                 delta.normalized,
                 Vector3.up);
+            RuntimePrimitiveFactory.ProfileStructuralBox(beam, .007f);
         }
 
         private static Transform CreateGroup(string name, Transform parent)

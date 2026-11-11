@@ -420,7 +420,6 @@ namespace BarPromenade
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
             {
                 CityPawnshopWorld.Build(world, pawnshop, true, out var pawnshopRainShelter);
-                CityPawnshopWorld.BuildForecourt(world, layout, pawnshop, true);
                 var shelters = new Collider[kioskRainShelters.Length + 1];
                 Array.Copy(kioskRainShelters, shelters, kioskRainShelters.Length);
                 shelters[shelters.Length - 1] = pawnshopRainShelter;
@@ -484,6 +483,9 @@ namespace BarPromenade
                     world,
                     windDressingPlan);
 
+            var ridgeVegetation = CityRidgeVegetationPlan.ForLayout(layout);
+            ridgeVegetation.Build(world);
+            walkableArea.ExcludePolygons(ridgeVegetation.Trunks);
             groundSurface.SetGrassContext(layout, seacoastPlan);
             groundSurface.FinalizeSurface();
             completed(new CityWorldResult(

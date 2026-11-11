@@ -164,7 +164,8 @@ namespace BarPromenade.Tests.PlayMode
             yield return CaptureSurfaceWeather("window-court-outlook-rain", lowerTurn, 1f);
         }
 
-        private IEnumerator CaptureSurfaceWeather(string name, Vector3 target, float intensity)
+        private IEnumerator CaptureSurfaceWeather(string name, Vector3 target, float intensity,
+            System.Action<Camera> check = null)
         {
             bool weatherEnabled = city.Weather.enabled;
             float rain = city.Rain.Intensity, water = CityWaterResources.RainIntensity;
@@ -176,7 +177,7 @@ namespace BarPromenade.Tests.PlayMode
                 CityWaterResources.SetRainIntensity(intensity);
                 CityWetSurfaceRegistry.SetImmediate(intensity);
                 for (int frame = 0; frame < 16; frame++) yield return null;
-                yield return CapturePlayerView(name, target);
+                yield return CapturePlayerView(name, target, check);
             }
             finally
             {

@@ -25,6 +25,7 @@ namespace BarPromenade
         private static readonly int SubstrateId = Shader.PropertyToID("_GroundSubstrateMap");
         private static readonly int SubstrateResponseId = Shader.PropertyToID("_GroundSubstrateResponse");
         private static readonly int SubstrateColorId = Shader.PropertyToID("_GroundSubstrateColor");
+        internal static readonly int ShoulderMixId = Shader.PropertyToID("_GroundShoulderMix");
         internal static readonly int WetnessId = Shader.PropertyToID("_GroundWetness");
         internal static readonly int CityWetnessId = Shader.PropertyToID("_CityGroundWetness");
         private static readonly Dictionary<string, Texture2D> Responses =
@@ -110,6 +111,19 @@ namespace BarPromenade
             Apply(renderer, kind, albedo, materialIndex);
             Read(renderer, materialIndex);
             Properties.SetFloat(Shader.PropertyToID("_GroundCityClimate"), 1f);
+            Write(renderer, materialIndex);
+        }
+
+        internal static void BlendShoulders(Renderer renderer, float width, Texture2D neighbor,
+            Color tint, HomeSurfaceRecipe recipe, int materialIndex = -1, Texture2D response = null,
+            bool useContourDistance = false)
+        {
+            Read(renderer, materialIndex);
+            Properties.SetTexture(SubstrateId, neighbor);
+            Properties.SetTexture(SubstrateResponseId, response == null ? GetResponse(neighbor) : response);
+            Properties.SetColor(SubstrateColorId, tint);
+            Properties.SetVector(ShoulderMixId,
+                new Vector4(1f / recipe.MetersPerTile, width, recipe.Smoothness, useContourDistance ? 1f : 0f));
             Write(renderer, materialIndex);
         }
 

@@ -177,6 +177,11 @@ namespace BarPromenade
                 ShadowCastingMode.On,
                 MountainRoadSurfaceKind.Asphalt);
             FootstepGround.Stamp(road, FootstepGroundKind.Concrete);
+            const MountainRoadSurfaceKind shoulder = MountainRoadSurfaceKind.ForestFloor;
+            GroundSurfaceAppearance.BlendShoulders(road.GetComponent<Renderer>(), .38f,
+                MountainRoadSurfaceAppearance.GetTexture(shoulder),
+                MountainRoadSurfaceAppearance.CreateDisplayTint(SoilColor, shoulder),
+                MountainRoadSurfaceAppearance.GetRecipe(shoulder));
             GameObject terminalApron = CreateMeshObject(
                 "Visible Terminal Vehicle Apron",
                 physicalRoot.transform,

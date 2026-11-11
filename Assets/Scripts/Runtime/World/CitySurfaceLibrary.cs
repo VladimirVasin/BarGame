@@ -24,7 +24,7 @@ namespace BarPromenade
         private static readonly Dictionary<string, List<CitySurfaceSheet>> sourceNames = new Dictionary<string, List<CitySurfaceSheet>>(StringComparer.Ordinal);
         private static readonly Dictionary<string, CitySurfaceSheet> uniqueBarNames = new Dictionary<string, CitySurfaceSheet>(StringComparer.Ordinal);
         private static readonly Dictionary<Texture, CitySurfaceSheet> resolvedSources = new Dictionary<Texture, CitySurfaceSheet>();
-        private static readonly Dictionary<Material, Material> materials = new Dictionary<Material, Material>();
+        private static readonly Dictionary<(Material, int), Material> materials = new();
         private static readonly MaterialPropertyBlock properties = new MaterialPropertyBlock();
         private static readonly MaterialPropertyBlock indexed = new MaterialPropertyBlock();
         private static CitySurfaceManifest manifest;
@@ -139,6 +139,17 @@ namespace BarPromenade
             return bound;
         }
 
+        internal static void ApplyWind(MeshRenderer renderer, CityWindGeometry geometry, float maximumTravel)
+        {
+            ApplyRenderer(renderer);
+            renderer.sharedMaterial = GetShared(renderer.sharedMaterial, true, (int)geometry);
+            renderer.motionVectorGenerationMode = MotionVectorGenerationMode.Object;
+            Bounds bounds = renderer.localBounds;
+            float localTravel = maximumTravel / Mathf.Min(renderer.transform.lossyScale.x, renderer.transform.lossyScale.z);
+            bounds.Expand(new Vector3(2f * localTravel, 0f, 2f * localTravel));
+            renderer.localBounds = bounds;
+        }
+
         // The builder calls this while it still owns BarAssetRegistry metadata, before flattening/destroying it.
         // Generic City or interior source names never opt into the unique facade atlas.
         internal static void ApplyBarFacade(Renderer renderer, string sourceName)
@@ -188,6 +199,20 @@ namespace BarPromenade
             target.SetTexture("_GroundSubstrateResponse", Load(sheet.ground_response));
         }
 
+        internal static bool TryGroundJointMaps(Texture source, out Texture2D albedo, out Texture2D response)
+        {
+            _ = Manifest;
+            if (TryResolve(source, out CitySurfaceSheet sheet) && !sheet.unique_uv &&
+                !string.IsNullOrEmpty(sheet.ground_response))
+            {
+                albedo = Load(sheet.albedo);
+                response = Load(sheet.ground_response);
+                return true;
+            }
+            albedo = response = null;
+            return false;
+        }
+
         private static bool TryResolve(Texture source, out CitySurfaceSheet sheet)
         {
             sheet = null;
@@ -227,9 +252,10 @@ namespace BarPromenade
             textures.Add(path, result); return result;
         }
 
-        private static Material GetShared(Material original, bool foliage)
+        private static Material GetShared(Material original, bool foliage, int wind = 0)
         {
-            if (materials.TryGetValue(original, out Material shared)) return shared;
+            var key = (original, wind);
+            if (materials.TryGetValue(key, out Material shared)) return shared;
             if (materials.Count >= MaximumSharedMaterials) throw new InvalidOperationException("City shared surface material budget exceeded.");
             Shader shader = Resources.Load<Shader>(foliage ? "Shaders/CitySurfaceFoliage" : "Shaders/CitySurfaceLit");
             if (shader == null || !shader.isSupported) throw new InvalidOperationException("Missing supported City surface shader.");
@@ -238,7 +264,12 @@ namespace BarPromenade
                 name = original.name + " City Surface Shared", shader = shader,
                 hideFlags = HideFlags.HideAndDontSave, enableInstancing = true
             };
-            materials.Add(original, shared); return shared;
+            if (wind != 0)
+            {
+                shared.SetFloat("_CityWindGeometry", wind);
+                shared.SetShaderPassEnabled("MotionVectors", true);
+            }
+            materials.Add(key, shared); return shared;
         }
 
         internal static bool SupportsOpaque(Renderer renderer) => renderer != null && renderer.sharedMaterial != null &&

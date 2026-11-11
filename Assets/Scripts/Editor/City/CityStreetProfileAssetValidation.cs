@@ -12,7 +12,7 @@ namespace BarPromenade.Editor
         private const string ManifestPath = "Assets/Resources/" + Resource + ".json";
 
         [Serializable] private sealed class Part { public int triangles; public float[] min, max; }
-        [Serializable] private sealed class Parts { public Part SurfacePatch, BoundaryStrip, StreetProfile; }
+        [Serializable] private sealed class Parts { public Part SurfacePatch, BoundaryStrip, SoftCurbFacing, StreetProfile; }
         [Serializable] private sealed class Manifest
         {
             public string version, signature;
@@ -35,7 +35,7 @@ namespace BarPromenade.Editor
                 importer.materialImportMode != ModelImporterMaterialImportMode.None)
                 throw new InvalidOperationException("Street profile lost its passive readable metre import contract.");
             Manifest manifest = JsonUtility.FromJson<Manifest>(source.text);
-            if (manifest == null || manifest.version != "1.0.0" || manifest.signature?.Length != 64 ||
+            if (manifest == null || manifest.version != "1.1.0" || manifest.signature?.Length != 64 ||
                 manifest.asphalt_width != 6f || manifest.public_sidewalk_width != 2f ||
                 manifest.road_top != .08f || manifest.sidewalk_top != .14f || manifest.parts == null)
                 throw new InvalidOperationException("Street profile manifest lost its authored metric contract.");
@@ -46,6 +46,7 @@ namespace BarPromenade.Editor
                 {
                     "SurfacePatch" => manifest.parts.SurfacePatch,
                     "BoundaryStrip" => manifest.parts.BoundaryStrip,
+                    "SoftCurbFacing" => manifest.parts.SoftCurbFacing,
                     "StreetProfile" => manifest.parts.StreetProfile,
                     _ => null
                 };
@@ -70,8 +71,8 @@ namespace BarPromenade.Editor
                 model.GetComponentsInChildren<Camera>(true).Length != 0)
                 throw new InvalidOperationException("Street profile source must remain passive.");
             MeshFilter[] filters = model.GetComponentsInChildren<MeshFilter>(true);
-            if (filters.Length != 3) throw new InvalidOperationException("Street profile requires exactly three authored parts.");
-            bool patch = false, strip = false, section = false;
+            if (filters.Length != 4) throw new InvalidOperationException("Street profile requires exactly four authored parts.");
+            bool patch = false, strip = false, curb = false, section = false;
             foreach (MeshFilter filter in filters)
             {
                 if (filter.sharedMesh == null || !filter.sharedMesh.isReadable || filter.sharedMesh.vertexCount == 0)
@@ -90,6 +91,25 @@ namespace BarPromenade.Editor
                     strip = true;
                     ValidateDeformationPart(filter, new[] { Vector3.zero, Vector3.right, Vector3.down, Vector3.right + Vector3.down },
                         new[] { 0, 1, 2, 2, 1, 3 });
+                }
+                else if (filter.name == "SoftCurbFacing" && !curb)
+                {
+                    curb = true;
+                    var expected = new Vector3[10];
+                    var faces = new int[24];
+                    for (int row = 0; row < 5; row++)
+                    {
+                        float angle = row * Mathf.PI / 8f;
+                        var start = new Vector3(0f, Mathf.Cos(angle) - 1f, -Mathf.Sin(angle));
+                        int i = row * 2;
+                        expected[i] = start;
+                        expected[i + 1] = start + Vector3.right;
+                        if (row == 4) continue;
+                        int f = row * 6;
+                        faces[f] = i; faces[f + 1] = i + 1; faces[f + 2] = i + 2;
+                        faces[f + 3] = i + 2; faces[f + 4] = i + 1; faces[f + 5] = i + 3;
+                    }
+                    ValidateDeformationPart(filter, expected, faces);
                 }
                 else if (filter.name == "StreetProfile" && !section)
                 {

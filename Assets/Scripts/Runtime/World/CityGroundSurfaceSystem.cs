@@ -47,6 +47,7 @@ namespace BarPromenade
         private CityGrassSurface grassSupport;
         private bool recordingGrass;
         private readonly List<Source> grassScenery = new List<Source>();
+        private readonly List<Source> jointScenery = new List<Source>();
         internal void RegisterGrassScenery(Transform root)
         {
             if(root==null)return;
@@ -56,8 +57,14 @@ namespace BarPromenade
                 bool ground=false;
                 foreach(Material material in renderer.sharedMaterials)
                     if(material!=null&&material.HasProperty("_GroundKind")){ground=true;break;}
-                if(ground)grassScenery.Add(new Source(renderer,0,false,false,null));
+                if (ground) grassScenery.Add(new Source(renderer, 0, false, false, null));
             }
+        }
+
+        internal static void RegisterJointScenery(Renderer renderer)
+        {
+            CityGroundSurfaceSystem system = renderer.GetComponentInParent<CityGroundSurfaceSystem>(true);
+            if (system != null) system.jointScenery.Add(new Source(renderer, 0, false, false, null));
         }
         internal void SetGrassContext(CityLayout layout, CitySeacoastPlan coast = null, HomeExteriorContextPlan home = null)
         { grassLayout = layout; grassCoast = coast; grassHome = home; }
@@ -214,12 +221,8 @@ namespace BarPromenade
                 // Home assembles retained hillside terrain in a detached City
                 // frame before rotating it. Read it after placement, without
                 // changing its existing passive geometry or collision contract.
-                foreach(Source source in grassScenery)
-                {
-                    Capture(source);
-                    foreach(Triangle triangle in source.Top)AddGrassFace(triangle);
-                    source.Top=null;source.Sides=null;source.Support=null;
-                }
+                foreach (Source source in grassScenery) AddSceneryGrassFaces(source);
+                foreach (Source source in jointScenery) AddSceneryGrassFaces(source);
                 // Sand is deformable, but its upper-beach plant roots are stable.
                 // Grave excavation regions deliberately never receive rooted plants.
                 foreach (Source source in sources)
@@ -227,13 +230,22 @@ namespace BarPromenade
                         foreach (Triangle triangle in source.Top) AddGrassFace(triangle);
             }
             SurfaceTriangleCount = surface.Count;
+            var localSurfaces = new List<Triangle>[dynamicRegions.Count];
+            recordingGrass = grass != null;
+            for (int i = 0; i < localSurfaces.Length; i++)
+                localSurfaces[i] = ComposeDynamic(dynamicRegions[i]);
+            recordingGrass = false;
+            double beforeJoints = timer.Elapsed.TotalMilliseconds;
+            PrepareStaticJoints(surface, localSurfaces);
+            CoatingJointBuildMilliseconds = timer.Elapsed.TotalMilliseconds - beforeJoints;
+            grassScenery.Clear();
+            jointScenery.Clear();
             surface.AddRange(sides);
             Transform sectors = new GameObject("City Ground").transform;
             sectors.SetParent(transform, false);
             SectorCount = BuildSectors(sectors, surface, buildCollision);
-            recordingGrass=grass!=null;
-            foreach (DynamicRegion region in dynamicRegions) BuildDynamic(region);
-            recordingGrass=false;
+            for (int i = 0; i < localSurfaces.Length; i++)
+                PublishDynamic(dynamicRegions[i], localSurfaces[i], staticJointField);
             foreach (Source source in sources)
             {
                 if (source.Dynamic) continue;
@@ -246,7 +258,10 @@ namespace BarPromenade
             {
                 foreach (Collider collider in GetComponentsInChildren<Collider>(true))
                 {
-                    if (!collider.enabled || collider.isTrigger || collider.GetComponentInParent<FootstepGround>() != null) continue;
+                    if (!collider.enabled || collider.isTrigger) continue;
+                    var stamped = collider.GetComponentInParent<FootstepGround>();
+                    if (stamped != null && (collider is not BoxCollider ||
+                        stamped.Kind is not (FootstepGroundKind.Stone or FootstepGroundKind.Concrete))) continue;
                     Bounds bounds = collider.bounds;
                     if (bounds.size.y < .1f || bounds.size.x < .05f || bounds.size.z < .05f) continue;
                     // Home's view is rotated; transform all bounds corners, not just its centre.
@@ -263,7 +278,9 @@ namespace BarPromenade
                         grass.AddObstacle(new Bounds(new Vector3(body.center.x, 0, body.center.y),
                             new Vector3(body.width, 1000, body.height)));
                     }
-                CityGrassField.Create(transform, grassLayout, grass);
+                var wind = gameObject.AddComponent<CityWindField>();
+                wind.Initialize(grass);
+                CityGrassField.Create(transform, grassLayout, grass, wind);
             }
             supports.Clear();
             supportFaces.Clear(); supportBounds.Clear(); supportPlanes.Clear(); supportContours.Clear();
@@ -288,6 +305,7 @@ namespace BarPromenade
                 GameLog.Field("partition_ms", partitionMilliseconds - routingMilliseconds),
                 GameLog.Field("perimeter_ms", perimeterMilliseconds - partitionMilliseconds),
                 GameLog.Field("conform_ms", conformMilliseconds - perimeterMilliseconds),
+                GameLog.Field("joints_ms", CoatingJointBuildMilliseconds),
                 GameLog.Field("publish_ms", BuildMilliseconds - conformMilliseconds));
         }
 
@@ -341,6 +359,12 @@ namespace BarPromenade
                 kind==(float)GroundSurfaceKind.Sand?FootstepGroundKind.Sand:FootstepGroundKind.Soil;
             grassSupport.Add(grassSupport.ToCity(triangle.A.Position),grassSupport.ToCity(triangle.B.Position),
                 grassSupport.ToCity(triangle.C.Position),planting?plantKind:FootstepGroundKind.None);
+        }
+
+        private void AddSceneryGrassFaces(Source source)
+        {
+            if (source.Top == null) Capture(source);
+            foreach (Triangle triangle in source.Top) AddGrassFace(triangle);
         }
 
         private void Capture(Source source)
@@ -608,11 +632,12 @@ namespace BarPromenade
                 group.Add(triangle);
             }
             foreach (KeyValuePair<Vector2Int, List<Triangle>> entry in groups)
-                BuildMesh("Ground sector " + entry.Key, parent, entry.Value, collision);
+                BuildMesh("Ground sector " + entry.Key, parent, entry.Value, collision, staticJointField);
             return groups.Count;
         }
 
-        private GameObject BuildMesh(string name, Transform parent, IReadOnlyList<Triangle> triangles, bool collision)
+        private GameObject BuildMesh(string name, Transform parent, IReadOnlyList<Triangle> triangles, bool collision,
+            CityGroundJointField jointField)
         {
             var positions = new List<Vector3>(); var normals = new List<Vector3>(); var uv = new List<Vector2>();
             var road = new List<Vector4>(); var colors = new List<Color>();
@@ -640,7 +665,10 @@ namespace BarPromenade
             var materials = new Material[slots.Count];
             for (int i = 0; i < slots.Count; i++)
             {
-                mesh.SetTriangles(indices[i], i, false); materials[i] = styles[slots[i]].Material;
+                mesh.SetTriangles(indices[i], i, false);
+                Material original = styles[slots[i]].Material;
+                materials[i] = jointField != null && original == GroundSurfaceAppearance.SharedMaterial
+                    ? JointMaterial : original;
                 for (int j = 0; j < indices[i].Count; j += 3) kinds.Add(styles[slots[i]].Kind);
             }
             // Partitioning carries the ordinary road/verge channels. Rebuild the
@@ -669,6 +697,12 @@ namespace BarPromenade
             // Dynamic cemetery sectors reuse style snapshots after a dig. Bind their indexed maps here too,
             // so rebuilding a local cut cannot revert to donor pigment or the old ground response.
             CitySurfaceLibrary.ApplyRenderer(renderer);
+            if (jointField != null)
+            {
+                var block = new MaterialPropertyBlock();
+                for (int i = 0; i < slots.Count; i++)
+                    if (materials[i] == jointMaterial) BindJointSlot(renderer, i, jointField, block);
+            }
             if (collision)
             {
                 host.AddComponent<MeshCollider>().sharedMesh = mesh;
@@ -680,7 +714,7 @@ namespace BarPromenade
             { positions.Add(vertex.Position); normals.Add(vertex.Normal); uv.Add(vertex.Uv0); road.Add(vertex.RoadCoordinates); colors.Add(vertex.Color); }
         }
 
-        private void BuildDynamic(DynamicRegion region)
+        private List<Triangle> ComposeDynamic(DynamicRegion region)
         {
             var input = new List<Triangle>(region.Coatings);
             // A grave cuts through every coating, including a path that happens
@@ -705,9 +739,15 @@ namespace BarPromenade
             }
             else if(grassSupport!=null)
                 GetComponentInChildren<CityGrassField>(true)?.Invalidate(region.Bounds);
+            return surface;
+        }
+
+        private void PublishDynamic(DynamicRegion region, List<Triangle> surface, CityGroundJointField field)
+        {
             surface.AddRange(region.Source.Sides);
             if (region.Built != null) { region.Built.SetActive(false); DestroyGenerated(region.Built); }
-            region.Built = BuildMesh("Dynamic ground sector - " + region.Name, region.Source.Renderer.transform, surface, buildCollision);
+            region.Built = BuildMesh("Dynamic ground sector - " + region.Name, region.Source.Renderer.transform,
+                surface, buildCollision, field);
             region.Source.Renderer.enabled = false;
             CityWetSurfaceRegistry.Unregister(region.Source.Renderer);
             foreach (Collider collider in region.Source.Renderer.GetComponents<Collider>()) collider.enabled = false;
@@ -717,7 +757,22 @@ namespace BarPromenade
         {
             foreach (DynamicRegion region in dynamicRegions)
                 if (region.Name == source.Renderer.name)
-                { region.Source = source; BuildDynamic(region); return; }
+                {
+                    region.Source = source;
+                    List<Triangle> surface = ComposeDynamic(region);
+                    CityGroundJointField replacement = null;
+                    if (region.JointNeighbours != null && staticJointField != null)
+                    {
+                        var neighbourhood = new List<Triangle>(region.JointNeighbours);
+                        neighbourhood.AddRange(surface);
+                        neighbourhood = GroundSurfacePartitioner.Conform(neighbourhood, bucketSize: EdgeBucketSize);
+                        replacement = CreateJointField(neighbourhood, false);
+                    }
+                    PublishDynamic(region, surface, replacement ?? staticJointField);
+                    region.JointField?.Dispose();
+                    region.JointField = replacement;
+                    return;
+                }
         }
 
         private static void DestroyGenerated(UnityEngine.Object target)
@@ -870,6 +925,8 @@ namespace BarPromenade
             }
             internal Source Source; internal readonly string Name; internal Rect Bounds;
             internal readonly List<Triangle> Coatings = new List<Triangle>(); internal GameObject Built;
+            internal List<Triangle> JointNeighbours;
+            internal CityGroundJointField JointField;
         }
     }
 }

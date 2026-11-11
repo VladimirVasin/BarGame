@@ -175,10 +175,11 @@ def shape(style,size):
     if style=='jamb':
         return merged([box((x,y,z*.58),(0,0,z*.21),.006),
                        box((x*.7,y,z*.42),(x*.15,0,-z*.29),.006)])
+    if style=='threshold': return kit.threshold(x,z,y)
     if style=='tread':
         # Flat full-width contact plane, relieved front arris and riser.
         return merged([box((x,y-.016,z-.022),(0,-.008,.011),.003),
-                       box((x,.016,z),(0,(y-.016)/2,0),.004)])
+                       move(kit.stair_nose(x,z,.016,.007),(0,(y-.016)/2,0))])
     if style in ('pipe','clamp','bottle','spindle'): return cylinder(size,style)
     if style=='valve':
         g=kit.lathe([(.075,-y),(.11,-y),(.11,y),(.075,y)],16)
@@ -396,7 +397,7 @@ def design():
         add([label+' Fluorescent End Cap '+s for s in ('Left','Right')],(.10,.16,.22),'jamb',projection='BoxZY')
         add([label+' Fluorescent Suspension '+s for s in ('Left','Right')],(.035,(support-pos[1]-.18)*.5,.035),'pipe','Cylinder','CylinderSide')
     # DoorTransition keeps its camera, hierarchy, all pivots and black aperture.
-    for names,size,style in [('Black Void',(8,6,.20),'box'),('Threshold Floor',(5.5,.07,4.8),'box'),(['Left Door Frame','Right Door Frame'],(.24,3.08,.27),'jamb'),('Door Lintel',(2.24,.28,.31),'jamb'),('Door Threshold',(1.82,.07,.34),'box'),('Door Leaf',(1.73,2.84,.14),'leaf'),('Handle Lever',(.34,.065,.075),'box')]: add(names,size,style)
+    for names,size,style in [('Black Void',(8,6,.20),'box'),('Threshold Floor',(5.5,.07,4.8),'box'),(['Left Door Frame','Right Door Frame'],(.24,3.08,.27),'jamb'),('Door Lintel',(2.24,.28,.31),'jamb'),('Door Threshold',(1.82,.07,.34),'threshold'),('Door Leaf',(1.73,2.84,.14),'leaf'),('Handle Lever',(.34,.065,.075),'box')]: add(names,size,style)
     add('Handle Spindle',(.105,.055,.105),'spindle','Cylinder','CylinderSide')
     supports,contacts=rail_supports()
     lo,hi=kit.bounds(supports);centre=tuple((a+b)/2 for a,b in zip(lo,hi))

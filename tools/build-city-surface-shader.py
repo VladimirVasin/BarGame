@@ -3,6 +3,7 @@
 import argparse
 import importlib.util
 from pathlib import Path
+import re
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,6 +22,9 @@ def outputs():
         value = value[value.index('\n')+1:]
         value = value.replace("MothersHouseSurface", "CitySurface").replace(
             'Shader "Bar Promenade/Mothers House Surface"', 'Shader "Bar Promenade/City Surface"')
+        if name == "CitySurfaceInput.hlsl":
+            value = source.once(value, "CBUFFER_START(UnityPerMaterial)",
+                                "CBUFFER_START(UnityPerMaterial)\nfloat _CityWindGeometry;")
         result[SHADERS/name] = header+value
     foliage = (SHADERS/"LitFoliage.shader").read_text(encoding="utf8")
     foliage = foliage[foliage.index('Shader "'):]
@@ -28,6 +32,7 @@ def outputs():
                           'Shader "Bar Promenade/City Surface Foliage"')
     foliage = source.once(foliage,'    Properties\n    {','''    Properties
     {
+        [HideInInspector] _CityWindGeometry("City wind geometry", Float) = 0
         [NoScaleOffset] _SceneMaterialResponse("Physical slopes / roughness / cavity", 2D) = "gray" {}
         _SceneResponseStrength("Physical material response", Range(0,1)) = 0
         _SceneNormalStrength("Near material relief", Range(0,1)) = 0''')
@@ -47,7 +52,57 @@ def outputs():
             #undef InitializeStandardLitSurfaceData
             #undef UniversalFragmentPBR
             #undef PROJECT_LIT_SURFACE_RESPONSE''')
+    def wind_vertex(entry, original, position, normal=None):
+        if normal:
+            deform = f"""                float3 normal = surface.{normal};
+                CityWindSurfaceDisplaceNormal(surface.{position}, normal, input.wind);
+                surface.{normal} = normal;"""
+        else:
+            deform = f"                CityWindSurfaceDisplace(surface.{position}, input.wind);"
+        return f'''            #include "CityWindSurface.hlsl"
+            struct CityWindAttributes
+            {{
+                Attributes surface;
+                float4 wind : TEXCOORD3;
+            }};
+
+            Varyings {entry}(CityWindAttributes input)
+            {{
+                Attributes surface = input.surface;
+                UNITY_SETUP_INSTANCE_ID(surface);
+{deform}
+                return {original}(surface);
+            }}'''
+
+    for entry, original, position, normal in (
+        ("FoliageLitPassVertex", "LitPassVertex", "positionOS", "normalOS"),
+        ("FoliageShadowPassVertex", "ShadowPassVertex", "positionOS", "normalOS"),
+        ("FoliageDepthOnlyVertex", "DepthOnlyVertex", "position", None),
+        ("FoliageDepthNormalsVertex", "DepthNormalsVertex", "positionOS", "normal"),
+    ):
+        pattern = r'            #include "MountainWindSway.hlsl"[^#]*?Varyings ' + entry + r'\(Attributes input\).*?\n            }'
+        foliage, replacements = re.subn(pattern, wind_vertex(entry, original, position, normal), foliage, flags=re.S)
+        if replacements != 1:
+            raise ValueError("City wind vertex hook changed for " + entry)
+    foliage = source.once(foliage, "#pragma vertex LitGBufferPassVertex", "#pragma vertex FoliageGBufferVertex")
+    gbuffer = '            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GBufferOutputFormat.hlsl"'
+    foliage = source.once(foliage, gbuffer, gbuffer + "\n" +
+                          wind_vertex("FoliageGBufferVertex", "LitGBufferPassVertex", "positionOS", "normalOS"))
+    foliage = foliage.replace('Packages/com.unity.render-pipelines.universal/ShaderLibrary/ObjectMotionVectors.hlsl',
+                              'CityWindSurfaceMotionVectors.hlsl')
     result[SHADERS/"CitySurfaceFoliage.shader"] = header+"\n".join(line.rstrip() for line in foliage.splitlines())+"\n"
+
+    motion = (SHADERS/"CityGrassMotionVectors.hlsl").read_text(encoding="utf8")
+    motion = motion.replace("tools/build-city-grass-shader.py", "tools/build-city-surface-shader.py")
+    motion = motion.replace("CITY_GRASS_MOTION_VECTORS", "CITY_WIND_SURFACE_MOTION_VECTORS")
+    motion = motion.replace('#include "CityGrassWind.hlsl"', '#include "CityWindSurface.hlsl"')
+    motion = source.once(motion, "float2 uv                   : TEXCOORD0; // rooted stem metadata also when alpha test is off",
+                         "float2 uv                   : TEXCOORD0;\n    float4 wind                 : TEXCOORD3;")
+    motion = source.once(motion, "CityGrassDisplace(currentPosition, input.uv);",
+                         "CityWindSurfaceDisplace(currentPosition, input.wind);")
+    motion = source.once(motion, "CityGrassPreviousPositionWS(prevPos, input.uv)",
+                         "CityWindSurfacePositionWS(prevPos, input.wind, true)")
+    result[SHADERS/"CityWindSurfaceMotionVectors.hlsl"] = motion
     return result
 
 

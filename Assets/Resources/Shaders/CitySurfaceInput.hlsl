@@ -16,6 +16,7 @@
 
 // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
 CBUFFER_START(UnityPerMaterial)
+float _CityWindGeometry;
 float4 _BaseMap_ST;
 float4 _BaseMap_TexelSize;
 float4 _DetailAlbedoMap_ST;

@@ -171,7 +171,7 @@ def boxes(
     specs: Iterable[tuple[Sequence[float], Sequence[float]]],
     chamfer: float = 0.012,
 ) -> kit.Geometry:
-    return merge(bp.u_box(center, size, chamfer) for center, size in specs)
+    return merge(kit.joint_box(center, size, chamfer) for center, size in specs)
 
 def cylinder_along_z(
     center: Sequence[float],
@@ -502,7 +502,8 @@ def build_entrance_doors(asset: AssetBuild) -> None:
                 handle.append(cylinder_along_z((hx, y, z+face*.065), .028, .08, 10))
         add_part(asset, f"Entrance {label} Handles", merge(handle), "door_handle", "ShelfMetal",
                  (.47, .49, .43, 1), group="door", parent_anchor=parent)
-    add_part(asset, "Entrance Threshold", bp.u_box((0, .012, z), (2.18, .024, .20), .008),
+    threshold = kit.translated(bp.to_source(kit.threshold(2.18, .20, .024)), (0, .012, z))
+    add_part(asset, "Entrance Threshold", threshold,
              "door_trim", "ShelfMetal", (.23, .25, .23, 1))
     # A shallow dark vestibule behind glass avoids an exposed void without
     # inventing an exterior vista in this isolated interior scene.

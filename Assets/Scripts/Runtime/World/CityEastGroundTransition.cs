@@ -7,7 +7,8 @@ namespace BarPromenade
 {
     /// <summary>Partitions the existing visible terrain triangles, never adds
     /// a competing sheet. Collision keeps the original continuous terrain.
-    /// Two submeshes share Lit; only their packaged albedo/UVs differ.</summary>
+    /// The retained terrain keeps its layered material; the authored band
+    /// owns only its original strip and coordinates.</summary>
     internal static class CityEastGroundTransition
     {
         private const float Epsilon = .00001f;
@@ -104,7 +105,7 @@ namespace BarPromenade
             Renderer renderer = surface.GetComponent<Renderer>();
             var original = new MaterialPropertyBlock(); renderer.GetPropertyBlock(original);
             original.SetVector(BaseMapST, new Vector4(1f, 1f, 0f, -plan.SeamZ / originalPitch));
-            renderer.sharedMaterials = new[] { RuntimePrimitiveFactory.DefaultMaterial, RuntimePrimitiveFactory.DefaultMaterial };
+            renderer.sharedMaterials = new[] { renderer.sharedMaterial, RuntimePrimitiveFactory.DefaultMaterial };
             renderer.SetPropertyBlock(null);
             renderer.SetPropertyBlock(original, 0);
             var blend = new MaterialPropertyBlock();
@@ -112,7 +113,12 @@ namespace BarPromenade
             blend.SetVector(BaseMapST, new Vector4(1f, 1f, 0f, 0f));
             blend.SetColor(BaseColor, Color.white); blend.SetColor(ColorId, Color.white);
             blend.SetFloat("_Smoothness", .0275f); blend.SetFloat("_Metallic", 0f);
+            blend.SetFloat("_GroundCityClimate", 1f);
+            blend.SetFloat("_GroundClampV", 1f);
             renderer.SetPropertyBlock(blend, 1);
+            if (!CitySurfaceLibrary.TryGroundJointMaps(texture, out _, out Texture2D response))
+                throw new InvalidOperationException("Eastern transition needs the published ground response.");
+            GroundSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Soil, texture, 1, response);
 
             void Append(List<Vertex> polygon, bool blended)
             {

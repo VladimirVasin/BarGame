@@ -94,14 +94,7 @@ namespace BarPromenade
                         Place(root,"FacadeInlet","Exterior Supply Outlet " + service.StableId,
                             local - Vector3.up * .28f,rotation * service.SourceRotation);
                 }
-            var visible = new List<CityCoastalCableSpan>(plan.CableSpans.Count);
-            for (int i = 0; i < plan.CableSpans.Count; i++)
-            {
-                CityCoastalCableSpan source = plan.CableSpans[i];
-                var span = new CityCoastalCableSpan(Local(source.Start),Local(source.End),source.Sag,source.IsServiceDrop);
-                if (ClipExterior(span,out CityCoastalCableSpan clipped)) visible.Add(clipped);
-            }
-            BuildCables(root,visible);
+            BuildCables(root, plan.CableSpans, context);
             return root.gameObject;
         }
 
@@ -109,11 +102,11 @@ namespace BarPromenade
             position.x-radius>=HomeExteriorViewBuilder.ContextMinimumX &&
             new Vector2(position.x-PlayerHomeBalconyGeometry.HomeFacadeX,position.z).magnitude+radius<=HomeExteriorContextPlanner.ViewRadius;
 
-        private static bool ClipExterior(CityCoastalCableSpan source,out CityCoastalCableSpan clipped)
+        private static bool ClipExterior(CityCoastalCableSpan source, out float start, out float end)
         {
-            clipped=default;
             Vector3 delta=source.End-source.Start;
-            float start=0f,end=1f;
+            start=0f;
+            end=1f;
             float minimum=HomeExteriorViewBuilder.ContextMinimumX+WireRadius;
             if(Mathf.Abs(delta.x)<.0001f) { if(source.Start.x<minimum)return false; }
             else if(delta.x>0f)start=Mathf.Max(start,(minimum-source.Start.x)/delta.x);
@@ -130,10 +123,7 @@ namespace BarPromenade
                 start=Mathf.Max(start,(-bb-root)/(2f*aa));
                 end=Mathf.Min(end,(-bb+root)/(2f*aa));
             }
-            if(end-start<.001f)return false;
-            clipped=new CityCoastalCableSpan(source.Sample(start),source.Sample(end),
-                source.Sag*(end-start)*(end-start),source.IsServiceDrop);
-            return true;
+            return end-start>=.001f;
         }
 
         private static void EnsureTemplates()
@@ -190,37 +180,61 @@ namespace BarPromenade
             return placement;
         }
 
-        private static void BuildCables(Transform parent,IReadOnlyList<CityCoastalCableSpan> spans)
+        private static void BuildCables(Transform parent, IReadOnlyList<CityCoastalCableSpan> spans,
+            HomeExteriorContextPlan home = null)
         {
             if(spans.Count==0)return;
             if(spans.Count>CityCoastalInfrastructurePlan.MaximumCableSpanCount)
                 throw new InvalidOperationException("Coastal cable population exceeds its bounded plan.");
-            int count=spans.Count*cableVertices.Length;
-            var vertices=new Vector3[count];var uv=new Vector2[count];
-            var triangles=new int[spans.Count*cableTriangles.Length];
+            int capacity=spans.Count*cableVertices.Length;
+            var vertices=new List<Vector3>(capacity);
+            var uv=new List<Vector2>(capacity);
+            var motion=new List<Vector4>(capacity);
+            var triangles=new List<int>(spans.Count*cableTriangles.Length);
             for(int s=0;s<spans.Count;s++)
             {
-                CityCoastalCableSpan span=spans[s];
-                Vector3 delta=span.End-span.Start;
-                Vector3 right=new Vector3(delta.z,0f,-delta.x).normalized;
-                int offset=s*cableVertices.Length;
+                CityCoastalCableSpan sourceSpan=spans[s];
+                CityCoastalCableSpan span=sourceSpan;
+                float start=0f,end=1f;
+                if (home != null)
+                {
+                    span=new CityCoastalCableSpan(
+                        PlayerHomeBalconyGeometry.ToHomeLocal(home.PlayerHome, sourceSpan.Start),
+                        PlayerHomeBalconyGeometry.ToHomeLocal(home.PlayerHome, sourceSpan.End),
+                        sourceSpan.Sag, sourceSpan.IsServiceDrop);
+                    if (!ClipExterior(span, out start, out end)) continue;
+                }
+                Vector3 right=span.Lateral;
+                Vector3 centre=(sourceSpan.Start+sourceSpan.End)*.5f;
+                float height=centre.y-(sourceSpan.IsServiceDrop ? 5f : CityCoastalInfrastructurePlan.PoleCableHeight);
+                float phase=centre.x*.17f+centre.z*.11f;
+                int offset=vertices.Count;
                 for(int v=0;v<cableVertices.Length;v++)
                 {
-                    Vector3 source=cableVertices[v];float t=Mathf.Clamp01(source.z);
-                    float curve=4f*t*(1f-t);
-                    vertices[offset+v]=span.Sample(t)+right*source.x+
-                        Vector3.up*(source.y+.70f*curve);
-                    uv[offset+v]=cableUv[v];
+                    Vector3 source=cableVertices[v];
+                    float t=Mathf.Clamp01(source.z);
+                    float along=Mathf.Lerp(start,end,t);
+                    vertices.Add(span.Sample(along)+right*source.x+Vector3.up*(source.y+.70f*4f*t*(1f-t)));
+                    uv.Add(cableUv[v]);
+                    float swing=sourceSpan.WindSwing*CityCoastalCableSpan.WindEnvelope(along);
+                    motion.Add(new Vector4(right.x*swing,right.z*swing,height,phase));
                 }
                 for(int t=0;t<cableTriangles.Length;t++)
-                    triangles[s*cableTriangles.Length+t]=offset+cableTriangles[t];
+                    triangles.Add(offset+cableTriangles[t]);
             }
-            var mesh=new Mesh {name="Coastal Authored Cable Network",indexFormat=count>65535?IndexFormat.UInt32:IndexFormat.UInt16};
-            mesh.vertices=vertices;mesh.uv=uv;mesh.triangles=triangles;mesh.RecalculateNormals();mesh.RecalculateBounds();
+            if (vertices.Count==0) return;
+            var mesh=new Mesh {name="Coastal Authored Cable Network",indexFormat=vertices.Count>65535?IndexFormat.UInt32:IndexFormat.UInt16};
+            mesh.SetVertices(vertices);
+            mesh.SetUVs(0,uv);
+            mesh.SetUVs(3,motion);
+            mesh.SetTriangles(triangles,0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
             GameObject cable=new GameObject("Coastal Electrical Conductors");cable.transform.SetParent(parent,false);
             cable.AddComponent<MeshFilter>().sharedMesh=mesh;
             MeshRenderer renderer=cable.AddComponent<MeshRenderer>();
             renderer.sharedMaterial=CityPortAssetProvider.GetSurfaceMaterial("Rubber");
+            CitySurfaceLibrary.ApplyWind(renderer, CityWindGeometry.Cable, CityCoastalInfrastructurePlan.MaximumWindSwing);
             renderer.shadowCastingMode=ShadowCastingMode.Off;renderer.receiveShadows=true;
             renderer.lightProbeUsage=LightProbeUsage.BlendProbes;renderer.reflectionProbeUsage=ReflectionProbeUsage.Off;
             cable.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);

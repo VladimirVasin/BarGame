@@ -1036,7 +1036,7 @@ namespace BarPromenade
             if (boxes.Count > 0)
             {
                 GameObject rail =
-                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    RuntimePrimitiveFactory.CreateStructuralBoxes(
                         name,
                         parent,
                         boxes,
@@ -1045,7 +1045,8 @@ namespace BarPromenade
                         CityRiverSurfaceAppearance
                             .GetRecipe(surface)
                             .MetersPerTile,
-                        RuntimeWorldUvMode.BoxProjected);
+                        RuntimeWorldUvMode.BoxProjected,
+                        .009f);
                 CityRiverSurfaceAppearance.ApplyCombined(
                     rail.GetComponent<Renderer>(),
                     surface,
@@ -1086,7 +1087,8 @@ namespace BarPromenade
                 root,
                 planks,
                 Timber,
-                false);
+                false,
+                .018f);
             var structure = new List<Bounds>
             {
                 new Bounds(
@@ -1126,7 +1128,8 @@ namespace BarPromenade
                 root,
                 structure,
                 TimberEdge,
-                true);
+                true,
+                .016f);
         }
 
         /// <summary>
@@ -1139,21 +1142,20 @@ namespace BarPromenade
             Transform parent,
             IReadOnlyList<Bounds> boxes,
             Color color,
-            bool collider)
+            bool collider,
+            float edgeRadius)
         {
             const CityParkSurfaceKind timber = CityParkSurfaceKind.Timber;
-            GameObject batch = RuntimePrimitiveFactory.CreateCombinedBoxes(
+            GameObject batch = RuntimePrimitiveFactory.CreateStructuralBoxes(
                 name,
                 parent,
                 boxes,
                 color,
                 collider,
                 CityParkSurfaceAppearance.GetRecipe(timber).MetersPerTile,
-                CityParkSurfaceAppearance.GetUvMode(timber));
-            CityParkSurfaceAppearance.ApplyCombined(
-                batch.GetComponent<Renderer>(),
-                timber,
-                color);
+                CityParkSurfaceAppearance.GetUvMode(timber),
+                edgeRadius);
+            CityParkSurfaceAppearance.ApplyCombined(batch.GetComponent<Renderer>(), timber, color);
         }
 
         private static AxisRange CreateBridgeGuardRange(
@@ -1212,7 +1214,7 @@ namespace BarPromenade
                         tread + 0.025f)));
             }
 
-            GameObject flight = RuntimePrimitiveFactory.CreateCombinedBoxes(
+            GameObject flight = RuntimePrimitiveFactory.CreateStructuralBoxes(
                 "Granite Stair Flight",
                 root,
                 steps,
@@ -1221,14 +1223,15 @@ namespace BarPromenade
                 CityRiverSurfaceAppearance
                     .GetRecipe(CityRiverSurfaceKind.Paving)
                     .MetersPerTile,
-                RuntimeWorldUvMode.BoxProjected);
+                RuntimeWorldUvMode.BoxProjected,
+                .014f);
             CityRiverSurfaceAppearance.ApplyCombined(
                 flight.GetComponent<Renderer>(),
                 CityRiverSurfaceKind.Paving,
                 Granite);
 
             GameObject platform =
-                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                RuntimePrimitiveFactory.CreateStructuralBoxes(
                     "Lower Waterside Platform",
                     root,
                     new[]
@@ -1248,7 +1251,8 @@ namespace BarPromenade
                     CityRiverSurfaceAppearance
                         .GetRecipe(CityRiverSurfaceKind.Paving)
                         .MetersPerTile,
-                    RuntimeWorldUvMode.BoxProjected);
+                    RuntimeWorldUvMode.BoxProjected,
+                    .018f);
             CityRiverSurfaceAppearance.ApplyCombined(
                 platform.GetComponent<Renderer>(),
                 CityRiverSurfaceKind.Paving,
@@ -1469,7 +1473,7 @@ namespace BarPromenade
                     platformHeight,
                     LandingRetainingWallThickness)));
 
-            GameObject result = RuntimePrimitiveFactory.CreateCombinedBoxes(
+            GameObject result = RuntimePrimitiveFactory.CreateStructuralBoxes(
                 LandingCutRetainingWallsName,
                 parent,
                 walls,
@@ -1478,7 +1482,8 @@ namespace BarPromenade
                 CityRiverSurfaceAppearance
                     .GetRecipe(CityRiverSurfaceKind.Quay)
                     .MetersPerTile,
-                RuntimeWorldUvMode.BoxProjected);
+                RuntimeWorldUvMode.BoxProjected,
+                .018f);
             CityRiverSurfaceAppearance.ApplyCombined(
                 result.GetComponent<Renderer>(),
                 CityRiverSurfaceKind.Quay,
@@ -1583,7 +1588,7 @@ namespace BarPromenade
             if (posts.Count > 0)
             {
                 GameObject lampPosts =
-                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    RuntimePrimitiveFactory.CreateStructuralBoxes(
                         "Embankment Lamp Posts",
                         lights,
                         posts,
@@ -1592,7 +1597,8 @@ namespace BarPromenade
                         CityRiverSurfaceAppearance
                             .GetRecipe(CityRiverSurfaceKind.Iron)
                             .MetersPerTile,
-                        RuntimeWorldUvMode.BoxProjected);
+                        RuntimeWorldUvMode.BoxProjected,
+                        .006f);
                 CityRiverSurfaceAppearance.ApplyCombined(
                     lampPosts.GetComponent<Renderer>(),
                     CityRiverSurfaceKind.Iron,
@@ -1602,7 +1608,7 @@ namespace BarPromenade
             if (brackets.Count > 0)
             {
                 GameObject lanternBrackets =
-                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    RuntimePrimitiveFactory.CreateStructuralBoxes(
                         "Waterside Lantern Brackets",
                         lights,
                         brackets,
@@ -1611,7 +1617,8 @@ namespace BarPromenade
                         CityRiverSurfaceAppearance
                             .GetRecipe(CityRiverSurfaceKind.Iron)
                             .MetersPerTile,
-                        RuntimeWorldUvMode.BoxProjected);
+                        RuntimeWorldUvMode.BoxProjected,
+                        .006f);
                 CityRiverSurfaceAppearance.ApplyCombined(
                     lanternBrackets.GetComponent<Renderer>(),
                     CityRiverSurfaceKind.Iron,
@@ -2391,7 +2398,8 @@ namespace BarPromenade
                 color,
                 material,
                 collider,
-                surface);
+                surface,
+                profileStructure: false);
         }
 
         private static GameObject CreateBeamBetween(
@@ -2428,7 +2436,8 @@ namespace BarPromenade
             Color color,
             Material material,
             bool collider,
-            CityRiverSurfaceKind? surface = null)
+            CityRiverSurfaceKind? surface = null,
+            bool profileStructure = true)
         {
             Vector3 delta = end - start;
             float length = delta.magnitude;
@@ -2437,24 +2446,30 @@ namespace BarPromenade
                 return null;
             }
 
+            Quaternion rotation = Quaternion.LookRotation(delta.normalized, Vector3.up);
+            Vector3 center = (start + end) * 0.5f;
+            Vector3 size = new Vector3(width, height, length);
+            if (profileStructure && material == null && surface.HasValue &&
+                surface.Value != CityRiverSurfaceKind.Bed)
+                return CreateProfiledStructure(name, parent, new RuntimeOrientedBox(center, rotation, size),
+                    color, collider, surface.Value);
+
             GameObject result = material == null
                 ? RuntimePrimitiveFactory.CreateBox(
                     name,
                     parent,
-                    (start + end) * 0.5f,
-                    new Vector3(width, height, length),
+                    center,
+                    size,
                     color,
                     collider)
                 : RuntimePrimitiveFactory.CreateMaterialBox(
                     name,
                     parent,
-                    (start + end) * 0.5f,
-                    new Vector3(width, height, length),
+                    center,
+                    size,
                     material,
                     collider);
-            result.transform.localRotation = Quaternion.LookRotation(
-                delta.normalized,
-                Vector3.up);
+            result.transform.localRotation = rotation;
             TextureSurface(result, surface, color);
             return result;
         }
@@ -2468,6 +2483,9 @@ namespace BarPromenade
             bool collider,
             CityRiverSurfaceKind? surface = null)
         {
+            if (surface.HasValue && surface.Value != CityRiverSurfaceKind.Bed)
+                return CreateProfiledStructure(name, parent, new RuntimeOrientedBox(position, Quaternion.identity, size),
+                    color, collider, surface.Value);
             GameObject result = RuntimePrimitiveFactory.CreateBox(
                 name,
                 parent,
@@ -2476,6 +2494,17 @@ namespace BarPromenade
                 color,
                 collider);
             TextureSurface(result, surface, color);
+            return result;
+        }
+
+        private static GameObject CreateProfiledStructure(string name, Transform parent, RuntimeOrientedBox box,
+            Color color, bool collider, CityRiverSurfaceKind surface)
+        {
+            GameObject result = RuntimePrimitiveFactory.CreateBox(name, parent, box.Center, box.Size, color, collider);
+            result.transform.localRotation = box.Rotation;
+            RuntimePrimitiveFactory.ProfileStructuralBox(result, surface == CityRiverSurfaceKind.Iron ? .008f : .017f,
+                CityRiverSurfaceAppearance.GetRecipe(surface).MetersPerTile);
+            CityRiverSurfaceAppearance.ApplyCombined(result.GetComponent<Renderer>(), surface, color);
             return result;
         }
 

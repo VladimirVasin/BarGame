@@ -47,7 +47,7 @@ namespace BarPromenade
                 triangles.Add(a + 1); triangles.Add(b); triangles.Add(b + 1);
             }
             var mesh = CityHillsidePerimeterSurface.Build(layout, "Upper quarter saddle and dry rock cut",
-                vertices, uv, faces, rock, scree);
+                vertices, uv, false, faces, rock, scree);
             CityPawnshopBenchTerraceWorld.CutGroundMesh(layout,mesh);
             CityMountainTalusAppearance.BakeGround(mesh, layout);
             var ground = new GameObject("Shared residential hillside");
@@ -55,7 +55,7 @@ namespace BarPromenade
             ground.AddComponent<MeshFilter>().sharedMesh = mesh;
             var renderer = ground.AddComponent<MeshRenderer>();
             var material = RuntimePrimitiveFactory.DefaultMaterial;
-            renderer.sharedMaterials = new[] { material, material, material, material, material, material };
+            renderer.sharedMaterials = new[] { material, material, material, material, material, material, material };
             CityExteriorAppearance.ApplyGroundSurface(renderer, CityHillsidePerimeterSurface.ResidentialSoil, 0);
             CityMountainTalusAppearance.ApplyGround(renderer);
             CityMountainSurfaceAppearance.ApplyCombined(renderer, new Color(.36f, .375f, .355f), 1);
@@ -65,11 +65,13 @@ namespace BarPromenade
                 CityCemeterySurfaceAppearance.GetRecipe(CityCemeterySurfaceKind.Gravel).MetersPerTile);
             CityExteriorAppearance.ApplyRoadSurface(renderer, 3);
             CityHillsidePerimeterSurface.ApplyVerges(renderer, 4, 5);
+            CityHillsidePerimeterSurface.ApplyPaving(renderer, 6);
+            CityGroundSurfaceSystem.RegisterJointScenery(renderer);
             if (!retained.HasValue) ground.AddComponent<MeshCollider>().sharedMesh = mesh;
             ground.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
             if (!retained.HasValue) CityHillsidePerimeterSurface.Stamp(ground, mesh, FootstepGroundKind.Soil,
                 FootstepGroundKind.Stone, FootstepGroundKind.Stone, FootstepGroundKind.Concrete,
-                FootstepGroundKind.Grass, FootstepGroundKind.Stone);
+                FootstepGroundKind.Grass, FootstepGroundKind.Stone, FootstepGroundKind.Stone);
             CityHillsideQuarterBridgeWorld.Build(parent, plan, retained);
         }
     }

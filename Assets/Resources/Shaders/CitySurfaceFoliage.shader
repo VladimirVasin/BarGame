@@ -3,6 +3,7 @@ Shader "Bar Promenade/City Surface Foliage"
 {
     Properties
     {
+        [HideInInspector] _CityWindGeometry("City wind geometry", Float) = 0
         [NoScaleOffset] _SceneMaterialResponse("Physical slopes / roughness / cavity", 2D) = "gray" {}
         _SceneResponseStrength("Physical material response", Range(0,1)) = 0
         _SceneNormalStrength("Near material relief", Range(0,1)) = 0
@@ -201,13 +202,21 @@ Shader "Bar Promenade/City Surface Foliage"
             #undef InitializeStandardLitSurfaceData
             #undef UniversalFragmentPBR
             #undef PROJECT_LIT_SURFACE_RESPONSE
-            #include "MountainWindSway.hlsl"
-
-            // Identical object-space bend under camera and shadow projections.
-            Varyings FoliageLitPassVertex(Attributes input)
+            #include "CityWindSurface.hlsl"
+            struct CityWindAttributes
             {
-                MountainWindDisplace(input.positionOS, input.texcoord);
-                return LitPassVertex(input);
+                Attributes surface;
+                float4 wind : TEXCOORD3;
+            };
+
+            Varyings FoliageLitPassVertex(CityWindAttributes input)
+            {
+                Attributes surface = input.surface;
+                UNITY_SETUP_INSTANCE_ID(surface);
+                float3 normal = surface.normalOS;
+                CityWindSurfaceDisplaceNormal(surface.positionOS, normal, input.wind);
+                surface.normalOS = normal;
+                return LitPassVertex(surface);
             }
 
             ENDHLSL
@@ -260,13 +269,21 @@ Shader "Bar Promenade/City Surface Foliage"
             // Includes
             #include "CitySurfaceInput.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
-            #include "MountainWindSway.hlsl"
-
-            // Identical object-space bend under camera and shadow projections.
-            Varyings FoliageShadowPassVertex(Attributes input)
+            #include "CityWindSurface.hlsl"
+            struct CityWindAttributes
             {
-                MountainWindDisplace(input.positionOS, input.texcoord);
-                return ShadowPassVertex(input);
+                Attributes surface;
+                float4 wind : TEXCOORD3;
+            };
+
+            Varyings FoliageShadowPassVertex(CityWindAttributes input)
+            {
+                Attributes surface = input.surface;
+                UNITY_SETUP_INSTANCE_ID(surface);
+                float3 normal = surface.normalOS;
+                CityWindSurfaceDisplaceNormal(surface.positionOS, normal, input.wind);
+                surface.normalOS = normal;
+                return ShadowPassVertex(surface);
             }
 
             ENDHLSL
@@ -297,7 +314,7 @@ Shader "Bar Promenade/City Surface Foliage"
 
             // -------------------------------------
             // Shader Stages
-            #pragma vertex LitGBufferPassVertex
+            #pragma vertex FoliageGBufferVertex
             #pragma fragment LitGBufferPassFragment
 
             // -------------------------------------
@@ -360,6 +377,22 @@ Shader "Bar Promenade/City Surface Foliage"
             #include "CitySurfaceInput.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitGBufferPass.hlsl"
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GBufferOutputFormat.hlsl"
+            #include "CityWindSurface.hlsl"
+            struct CityWindAttributes
+            {
+                Attributes surface;
+                float4 wind : TEXCOORD3;
+            };
+
+            Varyings FoliageGBufferVertex(CityWindAttributes input)
+            {
+                Attributes surface = input.surface;
+                UNITY_SETUP_INSTANCE_ID(surface);
+                float3 normal = surface.normalOS;
+                CityWindSurfaceDisplaceNormal(surface.positionOS, normal, input.wind);
+                surface.normalOS = normal;
+                return LitGBufferPassVertex(surface);
+            }
             ENDHLSL
         }
 
@@ -404,13 +437,19 @@ Shader "Bar Promenade/City Surface Foliage"
             // Includes
             #include "CitySurfaceInput.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/DepthOnlyPass.hlsl"
-            #include "MountainWindSway.hlsl"
-
-            // Identical object-space bend under camera and shadow projections.
-            Varyings FoliageDepthOnlyVertex(Attributes input)
+            #include "CityWindSurface.hlsl"
+            struct CityWindAttributes
             {
-                MountainWindDisplace(input.position, input.texcoord);
-                return DepthOnlyVertex(input);
+                Attributes surface;
+                float4 wind : TEXCOORD3;
+            };
+
+            Varyings FoliageDepthOnlyVertex(CityWindAttributes input)
+            {
+                Attributes surface = input.surface;
+                UNITY_SETUP_INSTANCE_ID(surface);
+                CityWindSurfaceDisplace(surface.position, input.wind);
+                return DepthOnlyVertex(surface);
             }
 
             ENDHLSL
@@ -468,13 +507,21 @@ Shader "Bar Promenade/City Surface Foliage"
             // Includes
             #include "CitySurfaceInput.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitDepthNormalsPass.hlsl"
-            #include "MountainWindSway.hlsl"
-
-            // Identical object-space bend under camera and shadow projections.
-            Varyings FoliageDepthNormalsVertex(Attributes input)
+            #include "CityWindSurface.hlsl"
+            struct CityWindAttributes
             {
-                MountainWindDisplace(input.positionOS, input.texcoord);
-                return DepthNormalsVertex(input);
+                Attributes surface;
+                float4 wind : TEXCOORD3;
+            };
+
+            Varyings FoliageDepthNormalsVertex(CityWindAttributes input)
+            {
+                Attributes surface = input.surface;
+                UNITY_SETUP_INSTANCE_ID(surface);
+                float3 normal = surface.normal;
+                CityWindSurfaceDisplaceNormal(surface.positionOS, normal, input.wind);
+                surface.normal = normal;
+                return DepthNormalsVertex(surface);
             }
 
             ENDHLSL
@@ -568,7 +615,7 @@ Shader "Bar Promenade/City Surface Foliage"
             #pragma shader_feature_local_vertex _ADD_PRECOMPUTED_VELOCITY
 
             #include "CitySurfaceInput.hlsl"
-            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ObjectMotionVectors.hlsl"
+            #include_with_pragmas "CityWindSurfaceMotionVectors.hlsl"
             ENDHLSL
         }
 
@@ -595,7 +642,7 @@ Shader "Bar Promenade/City Surface Foliage"
             #define APPLICATION_SPACE_WARP_MOTION 1
 
             #include "CitySurfaceInput.hlsl"
-            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ObjectMotionVectors.hlsl"
+            #include_with_pragmas "CityWindSurfaceMotionVectors.hlsl"
             ENDHLSL
         }
     }

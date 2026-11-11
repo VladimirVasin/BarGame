@@ -257,10 +257,16 @@ void LitPassFragment(
 #endif
 
     SurfaceData surfaceData;
-    InitializeStandardLitSurfaceData(input.uv, surfaceData);
+    float2 groundUv = GroundMaterialUv(input.uv);
+    InitializeStandardLitSurfaceData(groundUv, surfaceData);
     half groundRelief;
-    ApplyGroundLayers(input.uv, input.positionWS, input.normalWS,
+    ApplyGroundLayers(groundUv, input.positionWS, input.normalWS,
         input.groundRoad, input.groundState, input.groundTalus, surfaceData, groundRelief);
+    half groundReceiver = GroundScreenSpaceReceiver();
+    half groundFallback = _GroundKind < .5h && _GroundRoadCoordinates > .5h ? groundReceiver : 1.0h;
+    #if defined(_CITY_GROUND_SEAMS)
+        ApplyCityGroundJoints(input.positionWS, input.normalWS, surfaceData, groundRelief, groundReceiver, groundFallback);
+    #endif
 
 #ifdef LOD_FADE_CROSSFADE
     LODFadeCrossFade(input.positionCS);
@@ -277,9 +283,8 @@ void LitPassFragment(
 
     InitializeBakedGIData(input, inputData);
 
-    projectScreenSpaceReceiver = GroundScreenSpaceReceiver();
-    projectReflectionFallbackWeight = _GroundKind < .5h && _GroundRoadCoordinates > .5h
-        ? projectScreenSpaceReceiver : 1.0h;
+    projectScreenSpaceReceiver = groundReceiver;
+    projectReflectionFallbackWeight = groundFallback;
     half4 color = UniversalFragmentPBR(inputData, surfaceData);
     color.rgb += VillageWetStoneReflection(inputData, surfaceData, _GroundKind);
     color.rgb = MixFog(color.rgb, inputData.fogCoord);

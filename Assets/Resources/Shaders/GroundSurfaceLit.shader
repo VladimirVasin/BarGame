@@ -17,9 +17,11 @@ Shader "Bar Promenade/Layered Ground"
         _GroundJunctionResponse("Snow junction response", 2D) = "white" {}
         _GroundJunctions("Painted snow junctions", Float) = 0
         _GroundSubstrateColor("Snow substrate tint", Color) = (1,1,1,1)
+        _GroundShoulderMix("Shoulder pitch, width and smoothness", Vector) = (0,0,0,0)
         _GroundKind("Surface family", Float) = 0
         _GroundWetness("Local weather amount", Range(0,1)) = 0
         _GroundCityClimate("City ground weather", Float) = 0
+        _GroundClampV("Directional ground sheet", Float) = 0
         _GroundRoadCoordinates("Authored road coordinates", Float) = 0
         _GroundVergeTileRatio("Soil to verge texture pitch", Float) = 0
         _GroundVertexData("Existing snow state", Float) = 0
@@ -146,6 +148,8 @@ Shader "Bar Promenade/Layered Ground"
 
             HLSLPROGRAM
             #pragma target 3.5
+            #pragma require compute : _CITY_GROUND_SEAMS
+            #pragma multi_compile_local_fragment _ _CITY_GROUND_SEAMS
 
             // -------------------------------------
             // Shader Stages
@@ -433,6 +437,8 @@ Shader "Bar Promenade/Layered Ground"
 
             HLSLPROGRAM
             #pragma target 3.5
+            #pragma require compute : _CITY_GROUND_SEAMS
+            #pragma multi_compile_local_fragment _ _CITY_GROUND_SEAMS
 
             // -------------------------------------
             // Shader Stages

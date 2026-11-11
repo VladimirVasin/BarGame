@@ -252,6 +252,7 @@ namespace BarPromenade
             if (walkableArea == null)
             {
                 walkableArea = RoadWalkableArea.FromLayout(layout);
+                walkableArea.ExcludePolygons(CityRidgeVegetationPlan.ForLayout(layout).Trunks);
                 // The fair straddles the absent road strip between its two
                 // lots, which no cell ground covers; the world admits that
                 // ground after the buildings, and so must the chart.

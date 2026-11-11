@@ -159,6 +159,15 @@ namespace BarPromenade
         }
         private static float Compensate(float value, float mean) => Mathf.LinearToGammaSpace(Mathf.Clamp01(Mathf.GammaToLinearSpace(value) / mean));
 
+        internal static void ApplySnowShoulder(Renderer renderer, float width, int materialIndex = -1,
+            bool useContourDistance = false)
+        {
+            const MountainRoadSurfaceKind snow = MountainRoadSurfaceKind.WindSnow;
+            GroundSurfaceAppearance.BlendShoulders(renderer, width, GetTexture(snow),
+                CreateDisplayTint(AlpineVillageWorldBuilder.CleanSnowTint, snow), GetRecipe(snow),
+                materialIndex, GetGroundResponse(GetFamily(snow)), useContourDistance);
+        }
+
         internal static void Apply(Renderer renderer, MountainRoadSurfaceKind kind, Color tint, int materialIndex = -1)
         {
             if (renderer != null) Apply(renderer, kind, SurfaceAppearanceCore.ResolveBoxProjection(renderer), tint, materialIndex);

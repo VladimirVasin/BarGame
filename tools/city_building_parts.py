@@ -13,7 +13,7 @@ import math
 from dataclasses import dataclass
 from typing import Iterable, Sequence
 
-from interior_kit import door_frame, panelled_leaf
+from interior_kit import door_frame, joint_box, panelled_leaf
 
 
 Vec2 = tuple[float, float]
@@ -207,6 +207,12 @@ _BOX_FACE_NAMES = (
     "Front",
     "Left",
 )
+
+
+def trim_box(center: Vec3, size: Vec3, width: float = .014) -> Geometry:
+    """Relieve exposed details while the building's exact solids own contact."""
+    vertices, faces = joint_box(center, size, width)
+    return Geometry(tuple(vertices), tuple(faces), (0,) * len(faces))
 
 
 def box_without_faces(
@@ -510,6 +516,26 @@ def prism(polygon: Sequence[Vec2], bottom: float, top: float) -> Geometry:
     return Geometry(vertices, tuple(faces), (0,) * len(faces))
 
 
+def facade_prism(polygon: Sequence[Vec2], bottom: float, top: float) -> Geometry:
+    """Ease the exposed convex arrises while retaining each face's datum."""
+    outline = []
+    for index, corner in enumerate(polygon):
+        previous, following = polygon[index - 1], polygon[(index + 1) % len(polygon)]
+        a = (previous[0] - corner[0], previous[1] - corner[1])
+        b = (following[0] - corner[0], following[1] - corner[1])
+        if a[0] * b[1] - a[1] * b[0] >= -1e-8 or abs(a[0] * b[0] + a[1] * b[1]) > 1e-8:
+            outline.append(corner)
+            continue
+        length_a, length_b = math.hypot(*a), math.hypot(*b)
+        radius = min(.052, .18 * length_a, .18 * length_b)
+        for step in range(5):
+            angle = step * math.pi / 8
+            da, db = radius * (1 - math.sin(angle)), radius * (1 - math.cos(angle))
+            outline.append(tuple(corner[axis] + da * a[axis] / length_a + db * b[axis] / length_b
+                                 for axis in range(2)))
+    return prism(outline, bottom, top)
+
+
 def collision_bounds_for(prototype: PrototypeSpec) -> tuple[tuple[Vec3, Vec3], ...]:
     """Use authored solids, excluding thin ground skins and the open courtyards."""
     if prototype.collision_bounds:
@@ -594,24 +620,24 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
                  (half_w, front_y), (passage_width * 0.5, front_y))
         # Lower wings plus one continuous upper body leave a genuine open
         # throat, including the soffit; no painted rectangle hides a wall.
-        facade_primary = merge((prism(left, 0.0, passage_top),
-            prism(right, 0.0, passage_top), prism(polygon, passage_top, body_top)))
+        facade_primary = merge((facade_prism(left, 0.0, passage_top),
+            facade_prism(right, 0.0, passage_top), facade_prism(polygon, passage_top, body_top)))
         solids = (((-half_w, -half_d, 0.0),
                    (-passage_width * 0.5, front_y, passage_top)),
                   ((passage_width * 0.5, -half_d, 0.0),
                    (half_w, front_y, passage_top)),
                   ((-half_w, -half_d, passage_top), (half_w, front_y, body_top)))
         pier_width = half_w - passage_width * 0.5
-        plinth = merge(box((sign * (half_w + passage_width * 0.5) * 0.5,
+        plinth = merge(trim_box((sign * (half_w + passage_width * 0.5) * 0.5,
                            front_y - 0.085, 0.35),
                           (pier_width - 0.08, 0.24, 0.7)) for sign in (-1, 1))
-        secondary = [box((sign * (half_w + passage_width * 0.5) * 0.5,
+        secondary = [trim_box((sign * (half_w + passage_width * 0.5) * 0.5,
                           front_y - 0.055, 2.6),
                          (pier_width - 0.08, 0.24, 0.28)) for sign in (-1, 1)]
     else:
-        facade_primary = prism(polygon, 0.0, body_top)
-        plinth = box((0.0, front_y - 0.085, 0.35), (width - 0.08, 0.24, 0.7))
-        secondary = [box((0.0, front_y - 0.055, 2.6),
+        facade_primary = facade_prism(polygon, 0.0, body_top)
+        plinth = trim_box((0.0, front_y - 0.085, 0.35), (width - 0.08, 0.24, 0.7))
+        secondary = [trim_box((0.0, front_y - 0.055, 2.6),
                          (width - 0.08, 0.24, 0.28))]
     entrance = None
     entrance_metal = []
@@ -634,12 +660,12 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
             return tuple(result)
 
         if passage:
-            facade_primary = merge((prism(vestibule_outline(left), 0.0, opening_head),
-                prism(left, opening_head, passage_top), prism(right, 0.0, passage_top),
-                prism(polygon, passage_top, body_top)))
+            facade_primary = merge((facade_prism(vestibule_outline(left), 0.0, opening_head),
+                facade_prism(left, opening_head, passage_top), facade_prism(right, 0.0, passage_top),
+                facade_prism(polygon, passage_top, body_top)))
         else:
-            facade_primary = merge((prism(vestibule_outline(polygon), 0.0, opening_head),
-                                    prism(polygon, opening_head, body_top)))
+            facade_primary = merge((facade_prism(vestibule_outline(polygon), 0.0, opening_head),
+                                    facade_prism(polygon, opening_head, body_top)))
         solids = split_entrance_solids(solids, entrance)
         # Split the plinth rather than painting a door over a continuous base.
         plinth_pieces = []
@@ -647,7 +673,7 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
         for a, b in intervals:
             for start, end in ((a, min(b, entrance_x - .86)), (max(a, entrance_x + .86), b)):
                 if end > start:
-                    plinth_pieces.append(box(((start + end) * .5, front_y - .085, .35),
+                    plinth_pieces.append(trim_box(((start + end) * .5, front_y - .085, .35),
                                             (end - start, .24, .7)))
         # The vestibule floor is exactly the imported ground datum, matching
         # the continuous approach. Its four edges have no raised threshold.
@@ -666,7 +692,7 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
                          (entrance_x - .76, front_y - .08, .02), -math.pi * .5),
             kit_geometry(panelled_leaf(1.1, 2.12, .07, panels=0),
                          (entrance_x - .55, back_y + .05, 0.))))
-        entrance_metal.append(box((entrance_x - .68, front_y - 1.12, 1.05), (.09, .12, .045)))
+        entrance_metal.append(trim_box((entrance_x - .68, front_y - 1.12, 1.05), (.09, .12, .045)))
     if district == "OldTown":
         roof = (merge((gable_roof((0.0, front_y * 0.5), width, front_y,
                                  body_top, height),
@@ -678,14 +704,14 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
         roof = shed_roof((0.0, (front_y - half_d) * 0.5), width,
                          front_y + half_d, body_top, height, high_on_right=True)
     elif district == "Industrial":
-        roof = prism(polygon, body_top, height)
+        roof = facade_prism(polygon, body_top, height)
     elif district == "Residential":
         # A low slate stairhead and a real flat roof retain a bed for the
         # canonical greenhouse/laundry instead of stranding them on a slope.
         stair_x = -half_w + 2.5
         stair_y = front_y * .5 if corner else -half_d + 2.0
-        roof = merge((prism(polygon, body_top, body_top + .18),
-                      box((stair_x, stair_y, body_top + .45), (2.2, 2.8, .54)),
+        roof = merge((facade_prism(polygon, body_top, body_top + .18),
+                      trim_box((stair_x, stair_y, body_top + .45), (2.2, 2.8, .54)),
                       gable_roof((stair_x, stair_y), 2.2, 2.8,
                                  body_top + .72, height)))
     else:
@@ -693,7 +719,7 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
                           front_y + half_d, body_top, height)
     if district == "Industrial":
         # A continuous lintel stripe sits above the loading-gate surround.
-        secondary = [box((0.0, front_y - 0.055, 4.85),
+        secondary = [trim_box((0.0, front_y - 0.055, 4.85),
                          (width - 0.08, 0.24, 0.28))]
     metal = [cylinder_z((-half_w + 0.35, -half_d + 0.4),
                         body_top, height - 0.10, 0.14, 8)]
@@ -701,11 +727,11 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
     # Water runs and patched entrance hardware follow actual building joints.
     # All stay inside the metre envelope and keep the public pavement clear.
     for drain_x in (-half_w + .18, half_w - .18):
-        metal.append(box((drain_x, front_y + .02, body_top * .5),
+        metal.append(trim_box((drain_x, front_y + .02, body_top * .5),
                          (.075, .10, body_top - .4)))
     for floor_band in (2.8, 5.6, 8.4, 11.2):
         if district != "Industrial" and floor_band + .2 < body_top:
-            secondary.append(box((0, front_y - .055, floor_band + .12),
+            secondary.append(trim_box((0, front_y - .055, floor_band + .12),
                                  (width - .12, .24, .12)))
     slots: list[WindowSlot] = []
     balconies: list[BalconySlot] = []
@@ -761,22 +787,22 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
         # Front trim follows real storeys; the back remains a quieter service face.
         if district == "OldTown":
             for level in (3.7, 9.7):
-                secondary.append(box((0.0, front_y - 0.055, level),
+                secondary.append(trim_box((0.0, front_y - 0.055, level),
                                      (width - 0.08, 0.24, 0.24)))
         elif district == "Industrial":
-            secondary.append(box((-width * 0.26, front_y - 0.08, 3.0),
+            secondary.append(trim_box((-width * 0.26, front_y - 0.08, 3.0),
                                  (4.0, 0.24, 3.0)))
             for level in (4.5, 6.8):
                 if level + .05 >= height:
                     continue
-                metal.append(box((0.0, front_y + 0.045, level),
+                metal.append(trim_box((0.0, front_y + 0.045, level),
                                  (width - 0.7, 0.05, 0.09)))
         else:
-            secondary.append(box((width * 0.25, front_y - 0.055, 5.0),
+            secondary.append(trim_box((width * 0.25, front_y - 0.055, 5.0),
                                  (3.0, 0.24, 1.1)))
             for level in (6.2, 12.2, 18.2):
                 if level + .2 < body_top:
-                    metal.append(box((half_w - 0.3, 1.2, level),
+                    metal.append(trim_box((half_w - 0.3, 1.2, level),
                                      (0.12, 1.8, 0.08)))
     rear_low, rear_high = (-half_w, inner_x) if corner else (-half_w, half_w)
     rear_bay_count = 2 if corner else (5 if district == "Residential" else 4)

@@ -782,6 +782,21 @@ namespace BarPromenade.Tests.PlayMode
             var graph = city.PedestrianPlan;
             var ground = new CityMapCityTeleportGround(layout);
             var missingTreeViews = new List<string>();
+            Assert.That(CityPawnshopPlan.TryCreate(layout, out var pawnshop), Is.True);
+            Vector3 forecourtCentre = pawnshop.DoorWorld + pawnshop.DoorOutward * 2.1f;
+            Vector3 acrossApproach = Vector3.Cross(Vector3.up, pawnshop.DoorOutward);
+            Vector3 approachEdge = forecourtCentre + acrossApproach * (CityPawnshopPlan.ApproachWidth * .5f);
+            var hillside = CityHillsideGroundPlan.ForLayout(layout);
+            Assert.That(hillside.TrySampleTop(new Vector2(forecourtCentre.x, forecourtCentre.z), out float approachY), Is.True);
+            forecourtCentre.y = approachEdge.y = approachY;
+            Physics.SyncTransforms();
+            Assert.That(Physics.Raycast(forecourtCentre + Vector3.up * .3f, Vector3.down, out var forecourt, .6f,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True);
+            Assert.That(forecourt.point.y, Is.EqualTo(approachY).Within(.02f));
+            AssertGroundCoating(forecourt, GroundSurfaceKind.Paving, FootstepGroundKind.Stone);
+            Assert.That(forecourt.collider.GetComponent<Renderer>().sharedMaterials.Any(
+                material => material.IsKeywordEnabled("_CITY_GROUND_SEAMS")), Is.True,
+                "The live forecourt must receive the same field as its neighbouring soil.");
             Assert.That(quarter.Links.Select(l => l.Id), Is.EquivalentTo(new[] { "court", "summit" }));
             Assert.That(housing.AllBuildings.All(h => h.Lot.District == CityDistrictKind.Residential), Is.True);
             Assert.That(housing.SharedCourtBuildings.Count, Is.GreaterThan(0));
@@ -812,7 +827,10 @@ namespace BarPromenade.Tests.PlayMode
                     for (int j = 0, n = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(a, b))); j <= n; j++)
                     {
                         var p = Vector3.Lerp(a, b, j / (float)n);
-                        AssertHillsideCollider(new Vector2(p.x, p.z), p.y);
+                        // A ray on the exact diagonal of a cooked road patch can
+                        // miss both triangles. Probe both sides of the centreline.
+                        AssertHillsideCollider(new Vector2(p.x, p.z - .002f), p.y);
+                        AssertHillsideCollider(new Vector2(p.x, p.z + .002f), p.y);
                     }
                 }
                 if (link.Id == "court")
@@ -858,6 +876,14 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Time.captureDeltaTime = .1f;
                 OnDemandRendering.renderFrameInterval = 24;
+                yield return Stand(forecourtCentre + pawnshop.DoorOutward, approachEdge);
+                yield return CaptureSurfaceWeather("upper-quarter-pawnshop-joint-dry", approachEdge, 0f,
+                    camera => CapturePavingBaseline(camera, "dry"));
+                yield return CaptureSurfaceWeather("upper-quarter-pawnshop-joint-rain", approachEdge, 1f,
+                    camera => CapturePavingBaseline(camera, "rain"));
+                var benchTerrace = CityPawnshopBenchTerracePlan.ForLayout(layout);
+                yield return Stand(benchTerrace.RouteWorld[0], benchTerrace.UpperLanding.Center);
+                yield return CapturePlayerView("upper-quarter-bench-landing", benchTerrace.UpperLanding.Center);
                 foreach (var road in CityHillsideStreetPlan.ForLayout(layout).Routes)
                 {
                     bool westBank = road.Bank == CityTerraceTransportBank.West;
@@ -998,6 +1024,19 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(properties.HasFloat("_GroundKind"), Is.True, hit.point.ToString());
                 Assert.That(properties.GetFloat("_GroundKind"), Is.EqualTo((float)coating), hit.point.ToString());
                 Assert.That(hit.collider.GetComponent<FootstepGround>().ResolveKind(hit.triangleIndex), Is.EqualTo(step));
+            }
+
+            void CapturePavingBaseline(Camera camera, string weather)
+            {
+                int preview = Shader.PropertyToID("_CityJointPreviewOff");
+                float saved = Shader.GetGlobalFloat(preview);
+                Shader.SetGlobalFloat(preview, 1f);
+                try
+                {
+                    AreaCaptureFixture.CaptureCurrentCamera(camera, "CityTerracePilot",
+                        "upper-quarter-pawnshop-baseline-" + weather, 1280, 720);
+                }
+                finally { Shader.SetGlobalFloat(preview, saved); }
             }
 
             IEnumerator Stand(Vector3 floor, Vector3? facing = null)

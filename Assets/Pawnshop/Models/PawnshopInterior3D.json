@@ -2,7 +2,7 @@
   "schema_version": 1,
   "design_id": "pawnshop_interior_v1",
   "generator_version": "1.0.0",
-  "build_signature": "a00c9afc7676b8449ad0860cb2eab7b727cab0d7de8370bd4094062c2a201987",
+  "build_signature": "b7a5a1410973f5f877d11960dd0351a3fdbc6d62bb7319e81ce0851cb870fa40",
   "bounds_m": {
     "min": [
       -3.85,
@@ -15,8 +15,8 @@
       4.35
     ]
   },
-  "triangle_count": 5320,
-  "vertex_count": 3040,
+  "triangle_count": 5560,
+  "vertex_count": 3088,
   "parts": [
     {
       "name": "PART_Floor",
@@ -478,6 +478,30 @@
       ],
       "texture": "",
       "smoothness": 0.12,
+      "metallic": 0
+    },
+    {
+      "name": "MatteSign",
+      "color": [
+        0.18,
+        0.23,
+        0.21,
+        1
+      ],
+      "texture": "SupermarketShelfMetal",
+      "smoothness": 0.03,
+      "metallic": 0
+    },
+    {
+      "name": "MatteLetters",
+      "color": [
+        0.83,
+        0.81,
+        0.65,
+        1
+      ],
+      "texture": "",
+      "smoothness": 0.03,
       "metallic": 0
     }
   ]

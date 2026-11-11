@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-warehouse-broken-stair-3d-model.py",
   "generator_version": "1.0.0",
-  "blender_version": "5.0.1",
-  "build_signature": "eddb6f7e5c93df82ddf3d4aff53636729d9f6619db5961f37ef9366089a71364",
+  "blender_version": "5.2.3 LTS",
+  "build_signature": "3e1f2b0691e84c0a5a619e26f9cb1aecbb4030ef11fce966f2ba8c981a149168",
   "units": "metres",
   "unity_forward": "+Z",
   "unity_up": "+Y",
@@ -11,7 +11,7 @@
   "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
   "signed_volumes": "every solid positive before and after axis swap",
   "determinism": "two independent geometry builds match",
-  "triangle_count": 6104,
+  "triangle_count": 7944,
   "materials": {
     "Steel": [
       0.2,
@@ -39,7 +39,7 @@
       "name": "BrokenStair",
       "bounds_min": [
         -1.375946,
-        -0.059809,
+        -0.063387,
         -0.07
       ],
       "bounds_max": [
@@ -47,7 +47,7 @@
         4.315,
         6.08
       ],
-      "triangle_count": 6104,
+      "triangle_count": 7944,
       "solid_count": 218,
       "mesh_count": 26,
       "anchors": [

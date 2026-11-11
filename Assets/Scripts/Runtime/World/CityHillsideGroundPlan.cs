@@ -43,15 +43,7 @@ namespace BarPromenade
                     site.Part == CityHillsideSiteDetails.Kind.YardShelter)
                     solids.Add(CityRoadPolygon.Rectangle(site.Bounds));
                 else if (site.Part == CityHillsideSiteDetails.Kind.YardTree)
-                {
-                    // Match BuildTree's physical trunk, not its open crown.
-                    float half = .34f * site.Scale;
-                    Vector3 right = site.Rotation * Vector3.right * half;
-                    Vector3 forward = site.Rotation * Vector3.forward * half;
-                    solids.Add(CityRoadPolygon.CounterClockwise(new[] {
-                        XZ(site.Origin - right - forward), XZ(site.Origin + right - forward),
-                        XZ(site.Origin + right + forward), XZ(site.Origin - right + forward) }));
-                }
+                    solids.Add(CityHillsideSiteDetails.TrunkFootprint(site.Origin, site.Rotation, site.Scale));
             }
             if (RidgeKioskSitePlan.TryCreate(layout, out var kiosk)) solids.Add(CityRoadPolygon.Rectangle(kiosk.Bounds));
             // The enclosing rim trims the soil's rectangular corners. A flat

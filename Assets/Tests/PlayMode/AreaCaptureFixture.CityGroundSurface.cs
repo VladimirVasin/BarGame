@@ -1,8 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using BarPromenade.Rendering;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
@@ -10,6 +12,588 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class AreaCaptureFixture
     {
+        [UnityTest, Explicit("Ridge pavement meets the local hillside in City and the retained Home view.")]
+        public IEnumerator CityRidgeRoadShoulders()
+        {
+            GameSessionState.BeginNewGame();
+            Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60), Is.True);
+            const float westLane = -294f;
+            var reportedEdge = new Vector2(-92.8f, westLane + CityHillsideStreetRoute.OuterHalfWidth);
+            var retainedEdge = new Vector2(-62f, -341f);
+            var surveyIssues = new List<string>();
+            float retainedTop = 0f;
+            CityGameRoot city = null;
+            yield return Capture(SceneIds.City, () =>
+            {
+                city = Object.FindAnyObjectByType<CityGameRoot>();
+                return city != null && city.IsInitialized ? city : null;
+            }, () =>
+            {
+                FreezeLightingPolish(city.Player.Motor);
+                var grids = CityHillsideGroundGrid.ForLayout(city.Layout);
+                var west = grids.Single(grid => grid.Road.Bank == CityTerraceTransportBank.West);
+                var east = grids.Single(grid => grid.Road.Bank == CityTerraceTransportBank.East);
+                Assert.That(west.Road.TrySampleTop(reportedEdge, out float paved, out var kind), Is.True);
+                Assert.That(kind, Is.EqualTo(CityStreetSupportKind.Sidewalk));
+                Assert.That(RidgeShoulderStep(west, reportedEdge, Vector2.up, paved), Is.LessThan(.205f),
+                    "At X -92.8 the verge must descend without a trench and a near-vertical return.");
+                Assert.That(west.TryHeight(reportedEdge + Vector2.up * 1.5f, out float shoulder), Is.True);
+                Assert.That(shoulder, Is.EqualTo(28.91f).Within(.12f),
+                    "The surveyed outside height is local, between the reported pavement and the next lane.");
+
+                Physics.SyncTransforms();
+                var ground = CityHillsideGroundPlan.ForLayout(city.Layout);
+                var bankMeshes = city.World.Root.GetComponentsInChildren<MeshCollider>()
+                    .Where(mesh => mesh.name == "Terraced ground and courts").ToArray();
+                var map = new CityMapCityTeleportGround(city.Layout);
+                Vector2 landing = reportedEdge + Vector2.up * 1.5f;
+                Assert.That(map.TryResolveStandingPosition(landing, out var arrival), Is.True);
+                Assert.That(Vector2.Distance(landing, new Vector2(arrival.x, arrival.z)), Is.LessThan(.04f));
+                Assert.That(arrival.y, Is.EqualTo(shoulder + PlayerFactory.GroundedRootOffset).Within(.04f));
+                Assert.That(city.World.WalkableArea.Contains(arrival, city.Player.Motor.GetComponent<CharacterController>().radius), Is.True);
+                Debug.Log($"Ridge road shoulders map illustrated: {CityMapArtResources.TryGet(city.Map, out _, out _)}.");
+
+                var housing = CityHillsideNeighborhoodPlan.ForLayout(city.Layout).AllBuildings;
+                var cuts = CityPawnshopBenchTerracePlan.ForLayout(city.Layout).Footprints
+                    .Concat(CityPawnshopDescentPlan.ForLayout(city.Layout).GroundCuts).ToArray();
+                foreach (var grid in grids)
+                for (int lane = 0; lane < CityHillsideStreetRoute.LaneCount; lane++)
+                {
+                    int surveyed = 0;
+                    for (int station = 1; station <= 7; station++)
+                    foreach (float side in new[] { -1f, 1f })
+                    {
+                        float x = Mathf.Lerp(grid.Road.LaneMinX, grid.Road.LaneMaxX, .1f + station * .1f);
+                        Vector2 outward = Vector2.up * side;
+                        var edge = new Vector2(x, grid.Road.GetLaneZ(lane) + side * CityHillsideStreetRoute.OuterHalfWidth);
+                        if (!grid.Road.TrySampleTop(edge, out float curb, out _) ||
+                            grid.Road.TrySampleTop(edge + outward * .05f, out _, out _)) continue;
+                        var probe = edge + outward * 1.5f;
+                        // Walls and the authored stair/landing cuts have their own geometry.
+                        if (housing.Any(house => house.FoundationBounds.Contains(probe)) ||
+                            cuts.Any(cut => CityRoadPolygon.Contains(cut, probe)) ||
+                            !grid.TryHeight(edge + outward * 2.25f, out _)) continue;
+                        float maximumStep = RidgeShoulderStep(grid, edge, outward, curb);
+                        if (float.IsPositiveInfinity(maximumStep)) continue;
+                        if (maximumStep >= .46f)
+                            surveyIssues.Add($"{grid.Road.Bank} lane {lane + 1} at {edge:F2} facing {side}: {maximumStep:F3} m step");
+                        Assert.That(ground.TrySampleTop(probe, out float top), Is.True);
+                        var from = new Vector3(probe.x, top + .35f, probe.y);
+                        Assert.That(bankMeshes.Any(mesh => mesh.Raycast(new Ray(from, Vector3.down), out var hit, .70f) &&
+                            Mathf.Abs(hit.point.y - top) < .015f), Is.True, $"Ground mesh contact at {probe:F2}.");
+                        surveyed++;
+                    }
+                    Assert.That(surveyed, Is.GreaterThanOrEqualTo(4), $"{grid.Road.Bank} lane {lane + 1} has testable banks.");
+                }
+                var benches = CityHillsideBenchPocketPlan.ForLayout(city.Layout);
+                foreach (string id in benches.UnconnectedBenchIds)
+                    surveyIssues.Add("Missing paved approach at " + id);
+
+                Assert.That(west.TryHeight(retainedEdge, out retainedTop), Is.True);
+                var grass = city.World.Root.GetComponentInChildren<CityGrassField>();
+                Assert.That(grass.Surface.TrySample(reportedEdge - Vector2.up * .35f, out _, out _, out _), Is.False,
+                    "The public sidewalk stays clear of grass.");
+                return new[] { ShoulderShot(west, reportedEdge), ShoulderShot(east, new Vector2(117f, reportedEdge.y)) };
+
+                Shot ShoulderShot(CityHillsideGroundGrid grid, Vector2 edge)
+                {
+                    Assert.That(grid.Road.TrySampleTop(edge, out float top, out _), Is.True);
+                    Vector3 seam = new(edge.x, top, edge.y);
+                    Vector3 eye = seam + new Vector3(2f, 1.78f, -.80f);
+                    Vector3 aim = seam + new Vector3(-6f, -.4f, 1.25f);
+                    return Shot.At("ridge-road-shoulder-" + grid.Road.Bank, eye, aim, 68f,
+                        readyWhen: () => WarmGrassShot(grass, city.Camera, eye, aim));
+                }
+            });
+
+            GameSessionState.PrepareHomeArrival(HomeArrivalKind.Normal);
+            GameSessionState.EnterHome();
+            HomeInteriorRoot home = null;
+            yield return Capture(SceneIds.HomeInterior, () =>
+            {
+                home = Object.FindAnyObjectByType<HomeInteriorRoot>();
+                return home != null && home.IsInitialized ? home : null;
+            }, () =>
+            {
+                FreezeLightingPolish(home.Player.Motor);
+                var west = CityHillsideGroundGrid.ForLayout(home.ExteriorContext.Layout)
+                    .Single(grid => grid.Road.Bank == CityTerraceTransportBank.West);
+                Assert.That(west.TryHeight(retainedEdge, out float height), Is.True);
+                Assert.That(height, Is.EqualTo(retainedTop).Within(.005f));
+                var frame = home.ExteriorView.Find("Summit street from home");
+                Assert.That(frame, Is.Not.Null);
+                Vector3 seam = new(retainedEdge.x, height, retainedEdge.y);
+                Vector3 eye = frame.TransformPoint(seam + new Vector3(2f, 1.80f, -.90f));
+                Vector3 aim = frame.TransformPoint(seam + new Vector3(-6f, -.30f, .90f));
+                var grass = home.ExteriorView.GetComponentInChildren<CityGrassField>();
+                return new[] { Shot.At("ridge-road-shoulder-Home", eye, aim, 67f,
+                    readyWhen: () => WarmGrassShot(grass, Camera.main, eye, aim)) };
+            });
+            Assert.That(surveyIssues, Is.Empty, string.Join("\n", surveyIssues));
+        }
+
+        private static float RidgeShoulderStep(CityHillsideGroundGrid grid, Vector2 edge, Vector2 outward, float paved)
+        {
+            float step = 0f, previous = paved;
+            for (int index = 0; index <= 9; index++)
+            {
+                if (!grid.TryHeight(edge + outward * (index * .25f), out float top)) return float.PositiveInfinity;
+                step = Mathf.Max(step, Mathf.Abs(top - previous));
+                previous = top;
+            }
+            return step;
+        }
+
+        [UnityTest]
+        [Explicit("City coating joints A/B and local rebuilds, with the real Home exterior.")]
+        public IEnumerator CityGroundJointPilot()
+        {
+            GameSessionState.BeginNewGame();
+            GameSessionState.TryStartGameTimeFromWake();
+            GameSessionState.AdvanceGameTime((float)((12d * 60d - GameSessionState.GameTimeOfDayMinutes) /
+                GameTimeState.GameMinutesPerRealSecond));
+            CityGameRoot city = null;
+            int preview = Shader.PropertyToID("_CityJointPreviewOff");
+            Shot measured = default;
+            int originalContacts = 0;
+            bool previousLens = GraphicsEffectsSettings.IntoxicationLensFxEnabled;
+            try
+            {
+                yield return Capture(SceneIds.City, () =>
+                {
+                    city = Object.FindAnyObjectByType<CityGameRoot>();
+                    return city != null && city.IsInitialized ? city : null;
+                }, () =>
+                {
+                    CityGroundSurfaceSystem system = city.World.Root.GetComponent<CityGroundSurfaceSystem>();
+                    Assert.That(CityGroundJointPalette.Supported, Is.True, "The desktop target needs the actual seam shader.");
+                    Assert.That(system.CoatingJointCount, Is.GreaterThan(0));
+                    Assert.That(system.CoatingJointBytes, Is.InRange(1, 16 * 1024 * 1024));
+                    originalContacts = system.CoatingJointCount;
+                    city.DayNight.ApplyCurrentTime(true);
+                    Physics.SyncTransforms();
+                    CityResidentialCourtyardDescriptor court = CityResidentialCourtyardPlan.ForLayout(city.Layout).Courts
+                        .First(candidate => candidate.Surfaces.Any(surface => surface.Kind == CityResidentialCourtyardSurfaceKind.Soil));
+                    CityResidentialCourtyardSurfaceDescriptor strip = court.Surfaces
+                        .Where(surface => surface.Kind == CityResidentialCourtyardSurfaceKind.Soil)
+                        .OrderBy(surface => (surface.Footprint.center - new Vector2(court.CommonCenter.x, court.CommonCenter.z)).sqrMagnitude)
+                        .First();
+                    Vector2 edge = (strip.Polygon[0] + strip.Polygon[1]) * .5f;
+                    Vector3 at = new Vector3(edge.x, court.CommonCenter.y, edge.y);
+                    if (TryCommonGroundHit(system, at, out RaycastHit support)) at = support.point;
+                    Vector3 from = Vector3.MoveTowards(at, court.CommonCenter, 3.0f) + Vector3.up * EyeHeight;
+                    if ((from - at).sqrMagnitude < 1f) from += court.GroupForward * 2f;
+                    measured = Shot.At("joint draw timing", from, at, 66f);
+                    var shots = new List<Shot>();
+                    foreach (float wet in new[] { 0f, 1f })
+                        foreach (bool enabled in new[] { false, true })
+                        {
+                            string label = (wet > 0f ? "joint wet" : "joint dry") + (enabled ? " enabled" : " baseline");
+                            shots.Add(Shot.At(CityLightingFrame(label), from, at, 66f, readyWhen: () =>
+                            {
+                                CityWetSurfaceRegistry.SetImmediate(wet);
+                                Shader.SetGlobalFloat(preview, enabled ? 0f : 1f);
+                                return true;
+                            }));
+                        }
+                    shots.Add(CityJointCurbShot(city, system));
+                    AddCityJointAuditShots(city, shots);
+                    AssertCityStreetJointCoverage(city, system);
+                    shots.Add(Shot.At("ground-joints-court-maximum-lens", from, at, 66f, readyWhen: () =>
+                    {
+                        GraphicsEffectsSettings.IntoxicationLensFxEnabled = true;
+                        IntoxicationRenderState.Set(IntoxicationStageRules.Evaluate(100), 1.25f, 0f, Vector2.zero, Vector3.zero);
+                        return true;
+                    }));
+                    bool nightSet = false;
+                    shots.Add(Shot.At("ground-joints-court-night", from, at, 66f, readyWhen: () =>
+                    {
+                        if (nightSet) return true;
+                        IntoxicationRenderState.Clear();
+                        GameSessionState.AdvanceGameTime((float)((22d * 60d - GameSessionState.GameTimeOfDayMinutes) /
+                            GameTimeState.GameMinutesPerRealSecond));
+                        city.DayNight.ApplyCurrentTime(true);
+                        nightSet = true;
+                        return false;
+                    }));
+                    Debug.Log($"Ground joints pilot: {system.CoatingJointCount} contacts, " +
+                        $"{system.CoatingJointBytes} buffer bytes, max {system.MaximumCoatingCandidates} candidates, " +
+                        $"{system.CoatingJointBuildMilliseconds:F1} ms joint build, " +
+                        $"{system.BuildMilliseconds:F1} ms ground composition.");
+                    return shots.ToArray();
+                });
+                Assert.That(CountCityLightingDifference("joint dry baseline", "joint dry enabled"), Is.GreaterThan(24));
+                Assert.That(CountCityLightingDifference("joint wet baseline", "joint wet enabled"), Is.GreaterThan(24));
+                Assert.That(CountCityLightingDifference("garden joint baseline", "garden joint enabled"), Is.GreaterThan(24),
+                    "The east seam must no longer remove the layered material from the ordinary church lawn.");
+                MeasureCityJointDraw(city.Camera, measured, preview);
+                yield return MeasureCityJointFrames(city.Camera, measured, preview);
+                AssertCommonGroundExcavation(city);
+                yield return AssertCommonGroundSand(city);
+                yield return WalkCityJointRoutes(city);
+                HomeInteriorRoot home = null;
+                yield return Capture(SceneIds.HomeInterior, () =>
+                {
+                    home = Object.FindAnyObjectByType<HomeInteriorRoot>();
+                    return home != null && home.IsInitialized ? home : null;
+                }, () =>
+                {
+                    Rect activation = home.BalconyLayout.BalconyCameraActivationBounds;
+                    home.Player.Motor.Teleport(new Vector3(activation.center.x, home.Layout.PlayerSpawn.y, activation.center.y));
+                    Vector3 eye = new Vector3(activation.center.x, home.Layout.PlayerSpawn.y + EyeHeight, activation.center.y);
+                    var ground = home.ExteriorView.GetComponent<CityGroundSurfaceSystem>();
+                    Assert.That(ground.CoatingJointBytes, Is.GreaterThan(0),
+                        "The real retained balcony view must bind the same City coating mechanism.");
+                    return new[] { Shot.At("ground-joints-home-balcony", eye,
+                        new Vector3(eye.x + 13f, home.BalconyLayout.StreetGroundY, eye.z), 70f) };
+                });
+                yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
+                CityGameRoot returned = Object.FindAnyObjectByType<CityGameRoot>();
+                Assert.That(returned, Is.Not.Null);
+                yield return new WaitUntil(() => returned.IsInitialized);
+                var returnedGround = returned.World.Root.GetComponent<CityGroundSurfaceSystem>();
+                Assert.That(returnedGround.CoatingJointCount, Is.EqualTo(originalContacts));
+                Assert.That(returnedGround.CoatingJointBytes, Is.GreaterThan(0));
+#if UNITY_EDITOR
+                double withField = returnedGround.BuildMilliseconds;
+                int withFieldTriangles = returnedGround.SurfaceTriangleCount;
+                CityGroundSurfaceSystem.BypassJointBuildForMeasurement = true;
+                yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
+                CityGameRoot baseline = Object.FindAnyObjectByType<CityGameRoot>();
+                Assert.That(baseline, Is.Not.Null);
+                yield return new WaitUntil(() => baseline.IsInitialized);
+                var baselineGround = baseline.World.Root.GetComponent<CityGroundSurfaceSystem>();
+                Assert.That(baselineGround.CoatingJointCount, Is.Zero);
+                Assert.That(baselineGround.SurfaceTriangleCount, Is.EqualTo(withFieldTriangles));
+                Debug.Log($"City ground composition field off/on {baselineGround.BuildMilliseconds:F0}/{withField:F0} ms.");
+#endif
+            }
+            finally
+            {
+                Shader.SetGlobalFloat(preview, 0f);
+                CityWetSurfaceRegistry.SetImmediate(0f);
+                GraphicsEffectsSettings.IntoxicationLensFxEnabled = previousLens;
+                IntoxicationRenderState.Clear();
+#if UNITY_EDITOR
+                CityGroundSurfaceSystem.BypassJointBuildForMeasurement = false;
+#endif
+            }
+        }
+
+        private static IEnumerator MeasureCityJointFrames(Camera camera, Shot pose, int preview)
+        {
+            if (!FrameTimingManager.IsFeatureEnabled())
+            {
+                Debug.Log("Ground joint frame timing unavailable on this Editor target.");
+                yield break;
+            }
+
+            var target = new RenderTexture(Width, Height, 24);
+            var times = new FrameTiming[1];
+            var cpu = new[] { new List<double>(), new List<double>() };
+            var gpu = new[] { new List<double>(), new List<double>() };
+            PlayerCameraFollow follow = camera.GetComponent<PlayerCameraFollow>();
+            bool wasFollowing = follow != null && follow.enabled;
+            RenderTexture previous = camera.targetTexture;
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            float fov = camera.fieldOfView;
+            try
+            {
+                if (follow != null) follow.enabled = false;
+                camera.targetTexture = target;
+                camera.transform.SetPositionAndRotation(pose.Position,
+                    Quaternion.LookRotation(pose.Target - pose.Position, Vector3.up));
+                camera.fieldOfView = pose.FieldOfView;
+                for (int block = 0; block < 4; block++)
+                {
+                    int enabled = block == 0 || block == 3 ? 0 : 1;
+                    Shader.SetGlobalFloat(preview, enabled == 0 ? 1f : 0f);
+                    for (int frame = 0; frame < 20; frame++)
+                    {
+                        FrameTimingManager.CaptureFrameTimings();
+                        yield return null;
+                        if (frame < 8 || FrameTimingManager.GetLatestTimings(1, times) == 0) continue;
+                        if (times[0].cpuMainThreadFrameTime > 0d) cpu[enabled].Add(times[0].cpuMainThreadFrameTime);
+                        if (times[0].gpuFrameTime > 0d) gpu[enabled].Add(times[0].gpuFrameTime);
+                    }
+                }
+                if (cpu[0].Count > 0 && cpu[1].Count > 0)
+                    Debug.Log($"Ground joint fixed camera median CPU off/on {Median(cpu[0]):F2}/{Median(cpu[1]):F2} ms.");
+                if (gpu[0].Count == 0 || gpu[1].Count == 0)
+                    Debug.Log("Ground joint frame timing: the Editor returned no GPU samples.");
+                else
+                    Debug.Log($"Ground joint fixed camera median GPU off/on {Median(gpu[0]):F2}/{Median(gpu[1]):F2} ms.");
+            }
+            finally
+            {
+                if (follow != null) follow.enabled = wasFollowing;
+                camera.targetTexture = previous;
+                camera.transform.SetPositionAndRotation(position, rotation);
+                camera.fieldOfView = fov;
+                Shader.SetGlobalFloat(preview, 0f);
+                Object.DestroyImmediate(target);
+            }
+
+            static double Median(List<double> samples)
+            {
+                samples.Sort();
+                return samples[samples.Count / 2];
+            }
+        }
+
+        private static void MeasureCityJointDraw(Camera camera, Shot pose, int preview)
+        {
+            // The 1-pixel readback synchronizes the identical camera renders.
+            // This is a render-plus-sync cost in the Editor, not a GPU timer.
+            var target = new RenderTexture(Width, Height, 24);
+            var pixel = new Texture2D(1, 1, TextureFormat.RGB24, false);
+            var timer = new System.Diagnostics.Stopwatch();
+            var baseline = new double[5];
+            var enabled = new double[5];
+            RenderTexture previousTarget = camera.targetTexture, previousActive = RenderTexture.active;
+            Vector3 previousPosition = camera.transform.position;
+            Quaternion previousRotation = camera.transform.rotation;
+            float previousFov = camera.fieldOfView;
+            try
+            {
+                camera.targetTexture = target;
+                camera.transform.SetPositionAndRotation(pose.Position,
+                    Quaternion.LookRotation(pose.Target - pose.Position, Vector3.up));
+                camera.fieldOfView = pose.FieldOfView;
+                Draw(true); Draw(false); // warm both paths at the same pose
+                for (int i = 0; i < baseline.Length; i++)
+                {
+                    if ((i & 1) == 0) { baseline[i] = Draw(true); enabled[i] = Draw(false); }
+                    else { enabled[i] = Draw(false); baseline[i] = Draw(true); }
+                }
+                System.Array.Sort(baseline); System.Array.Sort(enabled);
+                Debug.Log($"Ground joint camera render + sync: off {baseline[2]:F2} ms, on {enabled[2]:F2} ms.");
+            }
+            finally
+            {
+                RenderTexture.active = previousActive;
+                camera.targetTexture = previousTarget;
+                camera.transform.SetPositionAndRotation(previousPosition, previousRotation);
+                camera.fieldOfView = previousFov;
+                Shader.SetGlobalFloat(preview, 0f);
+                Object.DestroyImmediate(target);
+                Object.DestroyImmediate(pixel);
+            }
+
+            double Draw(bool off)
+            {
+                Shader.SetGlobalFloat(preview, off ? 1f : 0f);
+                timer.Restart();
+                camera.Render();
+                RenderTexture.active = target;
+                pixel.ReadPixels(new Rect(0f, 0f, 1f, 1f), 0, 0, false);
+                timer.Stop();
+                return timer.Elapsed.TotalMilliseconds;
+            }
+        }
+
+        private static void AddCityJointAuditShots(CityGameRoot city, List<Shot> shots)
+        {
+            BuildingLot working = FindOrdinaryFrontage(city.Layout, CityDistrictKind.Industrial);
+            BuildingLot residential = FindOrdinaryFrontage(city.Layout, CityDistrictKind.Residential);
+            AddFrontage("working", working);
+            AddFrontage("residential", residential);
+            CityParkGateDescriptor gate = city.Layout.Park.Gates[0];
+            shots.Add(Shot.At("ground-joints-audit-park", gate.Center - gate.OutwardNormal * 3f + Vector3.up * EyeHeight,
+                gate.Center + gate.OutwardNormal * 5f, 68f));
+            CityChurchCourtyardPlan church = city.World.ChurchCourtyardPlan;
+            Rect garden = church.GardenBounds;
+            Vector3 gardenGround = new Vector3(garden.center.x, church.GroundTopY, garden.center.y);
+            foreach (bool enabled in new[] { false, true })
+                shots.Add(Shot.At(CityLightingFrame(enabled ? "garden joint enabled" : "garden joint baseline"),
+                    gardenGround + new Vector3(-2f, EyeHeight, -4f), gardenGround + Vector3.forward * 2f, 70f,
+                    readyWhen: () =>
+                    {
+                        Shader.SetGlobalFloat("_CityJointPreviewOff", enabled ? 0f : 1f);
+                        return true;
+                    }));
+            CityRiverPromenadeDescriptor quay = city.Layout.River.Promenades[0];
+            Vector3 quayGround = new Vector3(quay.Bounds.center.x, (quay.SouthY + quay.NorthY) * .5f, quay.Bounds.center.y);
+            shots.Add(Shot.At("ground-joints-audit-river", quayGround + new Vector3(0f, EyeHeight, -3f),
+                quayGround + Vector3.forward * 4f, 68f));
+            CityRiverBridgeDescriptor timber = city.Layout.River.Bridges.Single(bridge => bridge.Definition.Role == CityBridgeRole.ParkFootbridge);
+            var timberDeck = city.World.RiverRoot.transform.Find("River Bridges/Central Park Timber Footbridge/Timber Deck Planks");
+            Assert.That(timberDeck.GetComponent<MeshFilter>().sharedMesh.name, Does.EndWith("Profiled Mesh"));
+            var timberProperties = new MaterialPropertyBlock();
+            timberDeck.GetComponent<Renderer>().GetPropertyBlock(timberProperties);
+            Texture timberAlbedo = timberProperties.GetTexture("_BaseMap");
+            Assert.That(timberAlbedo, Is.Not.Null);
+            Assert.That(timberAlbedo.name, Is.EqualTo(CityParkSurfaceAppearance.GetTexture(CityParkSurfaceKind.Timber).name));
+            Assert.That(timberProperties.GetTexture("_GroundSubstrateMap"), Is.Null,
+                "The final board must be timber right through its rounded edge.");
+            Rect span = timber.SpanBounds;
+            float timberY = timber.AverageY + CityStreetSurfacePlanner.RoadTop;
+            var timberEntry = new Vector3(span.xMin, timberY, span.center.y);
+            shots.Add(Shot.At("ground-joints-audit-timber-entry",
+                timberEntry + new Vector3(-1.7f, EyeHeight, .4f), timberEntry + Vector3.right * 1.6f, 60f));
+            Vector3 otherEntry = new Vector3(span.xMax, timberY, span.center.y);
+            shots.Add(Shot.At("ground-joints-audit-timber-east",
+                otherEntry + new Vector3(1.7f, EyeHeight, -.4f), otherEntry + Vector3.left * 1.6f, 60f));
+            CityRiverLandingDescriptor landing = city.Layout.River.Landings[0];
+            Vector3 stairCenter = new Vector3(landing.StairBounds.center.x, (landing.UpperY + landing.LowerY) * .5f,
+                landing.StairBounds.center.y);
+            Vector3 stairTop = stairCenter - landing.DescentDirection * (landing.StairBounds.height * .5f + .65f);
+            stairTop.y = landing.UpperY;
+            shots.Add(Shot.At("ground-joints-audit-river-stair", stairTop + Vector3.up * EyeHeight, stairCenter, 60f));
+            CityPortController portController = Object.FindAnyObjectByType<CityPortController>();
+            Assert.That(portController, Is.Not.Null);
+            CityPortPlan port = portController.Plan;
+            AddPort("port", new Vector3(-19.5f, 3.22f, -6f), new Vector3(-8f, 2f, -.8f), 68f);
+            AddPort("port-rack", new Vector3(10.5f, 3.22f, -11.1f), new Vector3(11.3f, 2.9f, -6.9f), 58f);
+            CityPortAccessPlan access = port.Access;
+            shots.Add(Shot.At("ground-joints-audit-port-road", Vector3.Lerp(access.StreetConnection, access.Gate, .03f) + Vector3.up * EyeHeight,
+                Vector3.Lerp(access.StreetConnection, access.Gate, .18f), 66f));
+            CityTerraceDistrictPlan terrace = CityTerraceDistrictPlan.ForLayout(city.Layout);
+            shots.Add(Shot.At("ground-joints-audit-terrace", terrace.EntryEndWorld + Vector3.up * EyeHeight,
+                terrace.LowerArrivalWorld, 68f));
+            Rect burial = city.World.CemeteryPlan.Grounds;
+            Vector3 grave = new Vector3(burial.center.x, city.World.CemeteryPlan.GroundTopY, burial.center.y);
+            shots.Add(Shot.At("ground-joints-audit-cemetery", grave + new Vector3(0f, EyeHeight, -2f),
+                grave + Vector3.forward * 4f, 65f));
+            CitySeacoastFrame coast = city.World.SeacoastPlan.Frame;
+            Vector3 shore = new Vector3(coast.EastZone.center.x, coast.BeachEdgeTopY, coast.WaterlineZ - 3f);
+            shots.Add(Shot.At("ground-joints-audit-shore", shore + Vector3.up * EyeHeight,
+                shore + Vector3.right * 7f + Vector3.forward * 3f, 68f));
+            CityMountainTunnelDescriptor tunnel = city.World.MountainBoundaryPlan.Tunnel;
+            shots.Add(Shot.At("ground-joints-audit-tunnel", tunnel.PortalGroundCenter - tunnel.Axis * 5f + Vector3.up * EyeHeight,
+                tunnel.PortalGroundCenter, 68f));
+            CityEastGroundTransitionPlan east = CityEastGroundTransitionPlan.Create(city.Layout);
+            Vector2 seam = new Vector2(east.Bounds.center.x, east.SeamZ);
+            if (east.IsEnabled && CityTerrainSurfacePlan.TrySampleGroundTop(city.Layout, seam, out float seamTop, out _))
+            {
+                Vector3 target = new Vector3(seam.x, seamTop, seam.y);
+                shots.Add(Shot.At("ground-joints-audit-east", target + new Vector3(-4f, EyeHeight, -4f),
+                    target + Vector3.right * 4f, 68f));
+            }
+
+            void AddFrontage(string name, BuildingLot lot)
+            {
+                Shot pose = FrameWindowFacade(name, lot);
+                Vector3 near = Vector3.Lerp(pose.Position, pose.Target, .62f);
+                near.y = pose.Position.y;
+                Vector3 baseTarget = pose.Target;
+                baseTarget.y = pose.Position.y - EyeHeight + .35f;
+                shots.Add(Shot.At("ground-joints-audit-" + name, near, baseTarget, 68f));
+            }
+
+            void AddPort(string name, Vector3 localEye, Vector3 localTarget, float fov)
+            {
+                Vector3 eye = port.World(localEye);
+                int visibleAfterFrame = -1;
+                shots.Add(Shot.At("ground-joints-audit-" + name, eye, port.World(localTarget), fov, readyWhen: () =>
+                {
+                    if (visibleAfterFrame < 0)
+                    {
+                        city.Player.Motor.Teleport(eye - Vector3.up * EyeHeight);
+                        city.Visibility.Refresh(true);
+                        portController.ForcePresentation = true;
+                        portController.RefreshPresentation();
+                        Physics.SyncTransforms();
+                        Assert.That(portController.ShorePresentationActive, Is.True);
+                        Assert.That(Physics.RaycastAll(eye, Vector3.down, 2f, Physics.DefaultRaycastLayers,
+                            QueryTriggerInteraction.Ignore).Any(hit => hit.collider.transform.IsChildOf(portController.transform) &&
+                            Mathf.Abs(hit.point.y - port.QuayTopY) < .06f), Is.True,
+                            "The live quay must support the port camera at " + localEye);
+                        visibleAfterFrame = Time.frameCount + 3;
+                    }
+                    return Time.frameCount >= visibleAfterFrame;
+                }));
+            }
+        }
+
+        private static void AssertCityStreetJointCoverage(CityGameRoot city, CityGroundSurfaceSystem system)
+        {
+            CityLayout layout = city.Layout;
+            CityStreetSupportPlan support = CityStreetSurfacePlanner.Create(layout).SupportPlan;
+            var sectors = system.GetComponentsInChildren<MeshCollider>(true)
+                .Where(collider => collider.enabled && collider.name.StartsWith("Ground sector"))
+                .Select(collider => (Collider: collider, Bounds: collider.bounds)).ToArray();
+            var missing = new List<string>();
+            int samples = 0;
+            float sidewalk = layout.RoadWidth * .5f - CityStreetSurfacePlanner.SidewalkWidth * .5f;
+            foreach (RoadEdge edge in layout.RoadEdges)
+            {
+                if (layout.GetPathKind(edge) != CityPathKind.Street || layout.TryGetBridge(edge, out _) ||
+                    layout.ElevationPlan.TryGetSignatureStair(edge, out _)) continue;
+                CityRoadPath path = layout.RoadGeometry.Get(edge);
+                for (int station = 1; station <= 3; station++)
+                {
+                    CityRoadSample sample = path.SampleDistance(path.Length * station / 4f);
+                    for (int lane = -1; lane <= 1; lane++)
+                    {
+                        Vector2 p = sample.Position + sample.Right * (lane * sidewalk);
+                        if (!support.TrySampleTop(p, out float y, out _)) continue;
+                        samples++;
+                        var ray = new Ray(new Vector3(p.x, y + .10f, p.y), Vector3.down);
+                        bool contact = sectors.Any(sector => sector.Bounds.IntersectRay(ray, out float enter) &&
+                            enter <= .20f && sector.Collider.Raycast(ray, out RaycastHit hit, .20f) && hit.normal.y > .6f);
+                        if (!contact && missing.Count < 12) missing.Add(edge + " " + ray.origin.ToString("F2"));
+                    }
+                }
+            }
+            Assert.That(samples, Is.GreaterThan(500), "The survey must span the public street network.");
+            Assert.That(missing, Is.Empty, "Missing final support on public streets: " + string.Join(", ", missing));
+            Debug.Log("CITY JOINT STREET SURVEY OK " + samples + " lane and pavement contacts");
+        }
+
+        private static IEnumerator WalkCityJointRoutes(CityGameRoot city)
+        {
+            var motor = city.Player.Motor;
+            motor.SetInputEnabled(false);
+            IReadOnlyList<Vector3> garden = CityChurchCourtyardPlanner.GetLoopWaypoints(city.World.ChurchCourtyardPlan);
+            CityTerraceDistrictPlan terrace = CityTerraceDistrictPlan.ForLayout(city.Layout);
+            var routes = new[]
+            {
+                garden,
+                new[] { terrace.EntryStartWorld, terrace.EntryEndWorld, terrace.LowerArrivalWorld }
+            };
+            foreach (IReadOnlyList<Vector3> route in routes)
+            {
+                motor.Teleport(route[0] + Vector3.up * PlayerFactory.GroundedRootOffset);
+                for (int i = 1; i < route.Count; i++)
+                    yield return WalkChurchGardenLeg(motor, route[i], "city joints " + route[i].ToString("F2"));
+            }
+            motor.SetInputEnabled(true);
+        }
+
+        private static Shot CityJointCurbShot(CityGameRoot city, CityGroundSurfaceSystem system)
+        {
+            CityLayout layout = city.Layout;
+            CityStreetSurfacePlan streets = CityStreetSurfacePlanner.Create(layout);
+            float half = (layout.RoadWidth - 2f * CityStreetSurfacePlanner.SidewalkWidth) * .5f;
+            foreach (RoadEdge edge in layout.RoadEdges)
+            {
+                if (layout.GetPathKind(edge) != CityPathKind.Street || layout.TryGetBridge(edge, out _) ||
+                    layout.ElevationPlan.TryGetSignatureStair(edge, out _)) continue;
+                CityRoadPath path = layout.RoadGeometry.Get(edge);
+                CityRoadSample sample = path.SampleDistance(path.Length * .5f);
+                foreach (int side in new[] { -1, 1 })
+                {
+                    Vector2 across = sample.Right * side;
+                    Vector2 rim = sample.Position + across * half;
+                    if (!streets.SupportPlan.TrySampleTop(rim - across * .12f, FootstepGroundKind.Concrete, out float road) ||
+                        !streets.SupportPlan.TrySampleTop(rim + across * .12f, FootstepGroundKind.Stone, out float walk) ||
+                        walk - road < .035f || walk - road > .12f) continue;
+                    Vector2 band = rim - across * .006f;
+                    var point = new Vector3(band.x, walk, band.y);
+                    if (!TryCommonGroundHit(system, point, out RaycastHit curved) ||
+                        curved.point.y <= road + .02f || Mathf.Abs(curved.point.y - walk) > .024f) continue;
+                    Vector3 tangent = new Vector3(sample.Tangent.x, 0f, sample.Tangent.y);
+                    Vector3 inward = new Vector3(across.x, 0f, across.y);
+                    return Shot.At("ground-joints-profiled-curb", curved.point - tangent * 1.8f -
+                        inward * .65f + Vector3.up * .28f, curved.point + tangent * .6f, 55f);
+                }
+            }
+            Assert.Fail("No raised street curb supplied its authored curved facing and intact support.");
+            return default;
+        }
+
         [UnityTest]
         [Explicit("City common ground, painted roads, local excavation and collider-free Home view.")]
         public IEnumerator CityGroundSurface()

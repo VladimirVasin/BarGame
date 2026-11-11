@@ -104,7 +104,7 @@ namespace BarPromenade
         public Vector3 Scale { get; }
     }
 
-    public static class RuntimePrimitiveFactory
+    public static partial class RuntimePrimitiveFactory
     {
         private const int LowPolyCylinderSides = 8;
         // The same built-in asset GameObject.CreatePrimitive(Cube) mounts: a

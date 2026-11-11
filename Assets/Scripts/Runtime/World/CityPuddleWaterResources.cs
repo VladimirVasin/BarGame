@@ -72,7 +72,7 @@ namespace BarPromenade
 
         // The rim eater: noise cells just under half a metre, full
         // bite, enabled — the flag is what tells the shader this
-        // material's meshes carry a rim mask in TEXCOORD0. The bite is
+        // material's meshes carry signed patch axes in TEXCOORD0. The bite is
         // public because the footstep overlay mirrors the film formula
         // on the CPU and must erode the rim by the same amount.
         public const float EdgeBite = 1.0f;

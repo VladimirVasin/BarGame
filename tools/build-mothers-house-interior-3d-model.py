@@ -634,7 +634,7 @@ def room_skirting_with_south_door() -> kit.Geometry:
     overlap = 0.026
     door_start = DOOR_CENTER_X - DOOR_WIDTH * 0.5
     door_end = DOOR_CENTER_X + DOOR_WIDTH * 0.5
-    profile = kit.profile_skirting(0.15, 0.026)
+    profile = kit.profile_skirting(0.15, 0.026, rounded=True)
     return merge((
         kit.sweep(
             ((-half_x, -half_z), (door_start - overlap, -half_z)),

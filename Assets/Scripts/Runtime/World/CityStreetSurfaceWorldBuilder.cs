@@ -10,7 +10,8 @@ namespace BarPromenade
     internal static class CityStreetSurfaceWorldBuilder
     {
         private const string ResourcePath = "City/StreetProfile/CityStreetProfile3D";
-        private static Topology patchTopology, stripTopology;
+        private const float CurbRadius = .012f;
+        private static Topology patchTopology, stripTopology, curbTopology;
 
         internal static GameObject Build(string name, Transform parent, CityLayout layout,
             CityStreetSurfacePlan street, HomeExteriorContextPlan home = null)
@@ -123,18 +124,60 @@ namespace BarPromenade
                 void AppendStripPart(Vector3 a, Vector3 b, float depth)
                 {
                     Vector3 normal = Vector3.Cross(b - a, Vector3.down).normalized;
-                    int offset = vertices.Count;
-                    foreach (Vector3 coefficient in stripTopology.Vertices)
-                        AddVertex(Vector3.LerpUnclamped(a, b, coefficient.x) + Vector3.up * (coefficient.y * depth), normal);
-                    foreach (int index in stripTopology.Indices) triangles[slot].Add(offset + index);
+                    if (patch.Kind == CityStreetSupportKind.Sidewalk && patch.IsSupport &&
+                        depth > CurbRadius && IsRaisedRoadFacing(a, b, normal))
+                    {
+                        Vector3 up = Vector3.Cross((b - a).normalized, normal).normalized;
+                        int start = vertices.Count;
+                        foreach (Vector3 coefficient in curbTopology.Vertices)
+                        {
+                            Vector3 point = Vector3.LerpUnclamped(a, b, coefficient.x) +
+                                (Vector3.up * coefficient.y - normal * coefficient.z) * CurbRadius;
+                            Vector3 curved = (up * (1f + coefficient.y) - normal * coefficient.z).normalized;
+                            AddVertex(point, curved, true, -coefficient.y * CurbRadius, normal);
+                        }
+                        foreach (int index in curbTopology.Indices) triangles[slot].Add(start + index);
+                        Vector3 rim = (normal - Vector3.up) * CurbRadius;
+                        AppendStraight(a + rim, b + rim, depth - CurbRadius, true);
+                        return;
+                    }
+                    AppendStraight(a, b, depth, false);
+
+                    void AppendStraight(Vector3 left, Vector3 right, float height, bool curved)
+                    {
+                        int offset = vertices.Count;
+                        foreach (Vector3 coefficient in stripTopology.Vertices)
+                            AddVertex(Vector3.LerpUnclamped(left, right, coefficient.x) + Vector3.up * (coefficient.y * height),
+                                normal, curved, CurbRadius - coefficient.y * height, normal);
+                        foreach (int index in stripTopology.Indices) triangles[slot].Add(offset + index);
+                    }
                 }
 
-                void AddVertex(Vector3 point, Vector3 normal)
+                bool IsRaisedRoadFacing(Vector3 a, Vector3 b, Vector3 normal)
+                {
+                    // Ordinary inner patch joins keep the exact original
+                    // topology. Only a verified public curb above asphalt
+                    // receives a facing. Skip mouths and transitional slopes.
+                    Vector3 one = Vector3.Lerp(a, b, .24f), two = Vector3.Lerp(a, b, .76f);
+                    return AboveRoad(one) && AboveRoad(two);
+
+                    bool AboveRoad(Vector3 point)
+                    {
+                        Vector3 outside = point + normal * .028f;
+                        if (!plan.TrySampleTop(new Vector2(outside.x, outside.z), out float roadTop,
+                            out FootstepGroundKind kind) || kind != FootstepGroundKind.Concrete) return false;
+                        float drop = point.y - roadTop;
+                        return drop >= .035f && drop <= .12f;
+                    }
+                }
+
+                void AddVertex(Vector3 point, Vector3 normal, bool wrap = false, float depth = 0f, Vector3 outward = default)
                 {
                     Vector3 local = home == null ? point : PlayerHomeBalconyGeometry.ToHomeLocal(home.PlayerHome, point);
                     vertices.Add(local);
                     normals.Add(home == null ? normal : PlayerHomeBalconyGeometry.ToHomeLocalDirection(home.PlayerHome, normal));
-                    Vector2 texturePoint = Mathf.Abs(normal.y) > .5f ? new Vector2(point.x, point.z) :
+                    Vector2 texturePoint = wrap ? new Vector2(point.x + outward.x * depth, point.z + outward.z * depth) :
+                        Mathf.Abs(normal.y) > .5f ? new Vector2(point.x, point.z) :
                         Mathf.Abs(normal.x) > .5f ? new Vector2(point.z, point.y) : new Vector2(point.x, point.y);
                     uvs.Add(texturePoint / tile);
                     if (frame != null)
@@ -252,9 +295,10 @@ namespace BarPromenade
             {
                 if (filter.name == "SurfacePatch") patchTopology = new Topology(filter, new Vector3(1f, 0f, 1f));
                 else if (filter.name == "BoundaryStrip") stripTopology = new Topology(filter, new Vector3(1f, 1f, 0f));
+                else if (filter.name == "SoftCurbFacing") curbTopology = new Topology(filter, Vector3.one);
             }
-            if (patchTopology == null || stripTopology == null)
-                throw new InvalidOperationException("Street profile needs SurfacePatch and BoundaryStrip meshes.");
+            if (patchTopology == null || stripTopology == null || curbTopology == null)
+                throw new InvalidOperationException("Street profile needs top, boundary and curb topology.");
         }
 
         private sealed class Topology
@@ -272,13 +316,15 @@ namespace BarPromenade
                 for (int i = 0; i < Indices.Length; i += 3)
                 {
                     Vector3 normal = Vector3.Cross(Vertices[Indices[i + 1]] - Vertices[Indices[i]], Vertices[Indices[i + 2]] - Vertices[Indices[i]]);
-                    if ((filter.name == "SurfacePatch" && normal.y <= 0f) || (filter.name == "BoundaryStrip" && normal.z >= 0f))
+                    if ((filter.name == "SurfacePatch" && normal.y <= 0f) ||
+                        (filter.name == "BoundaryStrip" && normal.z >= 0f) ||
+                        (filter.name == "SoftCurbFacing" && (normal.y <= 0f || normal.z >= 0f)))
                         throw new InvalidOperationException("Inverted imported street topology: " + filter.name);
                 }
             }
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void Reset() { patchTopology = null; stripTopology = null; }
+        private static void Reset() { patchTopology = null; stripTopology = null; curbTopology = null; }
     }
 }

@@ -357,7 +357,8 @@ def geometry(api):
         stands.append(stand);wax.extend(candles)
     record('votive_stands',[kit.merge(g,*wax[i*16:(i+1)*16]) for i,g in enumerate(stands)])
     add('INT_VotiveStands','Gold','paired_votive_candle_stands',merge(stands))
-    rail=[box((0,8,.12),(11.5,.28,.24),.008),box((0,8,.80),(11.5,.16,.10),.008)]
+    rail=[kit.joint_box((0,8,.12),(11.5,.28,.24),.013),
+          kit.joint_box((0,8,.80),(11.5,.16,.10),.010)]
     rail += [cyl((x,8,.49),.032,.55,8) for x in [i*.48 for i in range(-11,12)]]
     rail=merge(rail);record('communion_rail',[rail]);add('INT_CommunionRail','Gold','closed_communion_rail_and_center_gate',rail)
     # Raised stiles and a stepped cornice make the existing reredos a

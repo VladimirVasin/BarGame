@@ -8,12 +8,6 @@ namespace BarPromenade
         public const string RootName = "Pawnshop Exterior";
         public const string ResourcePath = "Pawnshop/PawnshopExterior3D";
 
-        internal static void BuildForecourt(Transform parent, CityLayout layout, CityPawnshopPlan plan, bool interactive)
-        {
-            CityHillsideBenchPocketWorld.BuildPaving(parent, layout, new[] { plan.ApproachFootprint },
-                "Pawnshop forecourt paving", footsteps: interactive);
-        }
-
         public static Transform Build(Transform parent, CityPawnshopPlan plan, bool interactive)
             => Build(parent, plan, interactive, out _);
 

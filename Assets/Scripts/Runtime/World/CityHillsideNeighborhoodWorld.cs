@@ -71,7 +71,7 @@ namespace BarPromenade
             }
 
             var mesh = CityHillsidePerimeterSurface.Build(grid.Layout, "Hillside banks and door aprons",
-                vertices, uv, earth, concrete);
+                vertices, uv, true, earth, concrete);
             CityPawnshopBenchTerraceWorld.CutGroundMesh(grid.Layout,mesh);
             CityMountainTalusAppearance.BakeGround(mesh, grid.Layout);
             var go = new GameObject("Terraced ground and courts");
@@ -80,7 +80,7 @@ namespace BarPromenade
             var renderer = go.AddComponent<MeshRenderer>();
             var material = RuntimePrimitiveFactory.DefaultMaterial;
             renderer.sharedMaterials = new[] { material, CityPortAssetProvider.GetSurfaceMaterial("Concrete"),
-                material, material, material };
+                material, material, material, material };
             CityExteriorAppearance.ApplyGroundSurface(renderer, CityHillsidePerimeterSurface.ResidentialSoil, 0);
             CityMountainTalusAppearance.ApplyGround(renderer);
             GroundAuthoredSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Concrete, 1, true);
@@ -88,10 +88,13 @@ namespace BarPromenade
             CityHillsidePerimeterSurface.SetTilePitch(renderer, 1, CityExteriorAppearance.GroundTextureTileSize, 2f);
             CityExteriorAppearance.ApplyRoadSurface(renderer, 2);
             CityHillsidePerimeterSurface.ApplyVerges(renderer, 3, 4);
+            CityHillsidePerimeterSurface.ApplyPaving(renderer, 5);
+            CityGroundSurfaceSystem.RegisterJointScenery(renderer);
             if (!retained.HasValue) go.AddComponent<MeshCollider>().sharedMesh = mesh;
             go.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
             if (!retained.HasValue) CityHillsidePerimeterSurface.Stamp(go, mesh, FootstepGroundKind.Soil,
-                FootstepGroundKind.Concrete, FootstepGroundKind.Concrete, FootstepGroundKind.Grass, FootstepGroundKind.Stone);
+                FootstepGroundKind.Concrete, FootstepGroundKind.Concrete, FootstepGroundKind.Grass,
+                FootstepGroundKind.Stone, FootstepGroundKind.Stone);
 
         }
     }

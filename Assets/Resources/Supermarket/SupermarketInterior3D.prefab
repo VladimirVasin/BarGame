@@ -1728,10 +1728,10 @@ MonoBehaviour:
     wallThickness: 0.25
     entranceWidth: 2.4
     entranceHeight: 2.94
-  sourceTriangleCount: 15776
+  sourceTriangleCount: 20032
   sourceGeneratorVersion: 1.2.1
   designId: supermarket_interior_v1
-  buildSignature: c4f592b32ab08c1cce2eaf2352cae157bb9d3efc16371ba722b7567b515eb2bc
+  buildSignature: bd3180c90e38725e2f2ea24247bc39f28d28d5d433693399a88f34996f5a6b1b
 --- !u!1 &856012660699955004
 GameObject:
   m_ObjectHideFlags: 0

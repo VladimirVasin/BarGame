@@ -71,7 +71,7 @@
     5.625
   ],
   "mesh_count": 86,
-  "triangle_count": 15776,
+  "triangle_count": 20032,
   "budgets": {
     "maximum_renderers": 90,
     "maximum_triangles": 30000,
@@ -951,8 +951,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 48,
-      "triangles": 84,
+      "vertices": 72,
+      "triangles": 204,
       "bounds_min": [
         -7.8815,
         -5.25,
@@ -996,8 +996,8 @@
       },
       "parent_anchor": "door_hinge",
       "colliders": [],
-      "vertices": 96,
-      "triangles": 168,
+      "vertices": 144,
+      "triangles": 408,
       "bounds_min": [
         -1.09,
         -5.5275,
@@ -1176,8 +1176,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 96,
-      "triangles": 168,
+      "vertices": 144,
+      "triangles": 408,
       "bounds_min": [
         0.01,
         -5.5275,
@@ -1356,8 +1356,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 24,
+      "triangles": 44,
       "bounds_min": [
         -1.09,
         -5.59,
@@ -1491,8 +1491,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 80,
-      "triangles": 140,
+      "vertices": 120,
+      "triangles": 340,
       "bounds_min": [
         -5.37,
         -2.35,
@@ -1581,8 +1581,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 80,
-      "triangles": 140,
+      "vertices": 120,
+      "triangles": 340,
       "bounds_min": [
         -1.92,
         -2.35,
@@ -1671,8 +1671,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 80,
-      "triangles": 140,
+      "vertices": 120,
+      "triangles": 340,
       "bounds_min": [
         1.58,
         -2.35,
@@ -1761,8 +1761,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 80,
-      "triangles": 140,
+      "vertices": 120,
+      "triangles": 340,
       "bounds_min": [
         5.03,
         -2.35,
@@ -1851,8 +1851,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 64,
-      "triangles": 112,
+      "vertices": 96,
+      "triangles": 272,
       "bounds_min": [
         -6.75,
         -3.62,
@@ -1896,8 +1896,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         -6.575,
         5.35,
@@ -1941,8 +1941,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 176,
-      "triangles": 308,
+      "vertices": 264,
+      "triangles": 748,
       "bounds_min": [
         -5.2,
         -2.65,
@@ -2076,8 +2076,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 176,
-      "triangles": 308,
+      "vertices": 264,
+      "triangles": 748,
       "bounds_min": [
         0.85,
         -2.35,
@@ -2211,8 +2211,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 80,
-      "triangles": 140,
+      "vertices": 120,
+      "triangles": 340,
       "bounds_min": [
         -3.2,
         4.725,
@@ -2391,8 +2391,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         -2.56,
         4.729,
@@ -3561,8 +3561,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 128,
-      "triangles": 224,
+      "vertices": 192,
+      "triangles": 544,
       "bounds_min": [
         4.65,
         4.725,
@@ -3651,8 +3651,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         4.755,
         4.33,
@@ -3696,8 +3696,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         5.015,
         4.345,
@@ -3741,8 +3741,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         -7.25,
         -4.75,
@@ -3786,8 +3786,8 @@
       },
       "parent_anchor": "cctv_head_01",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         -7.285,
         -4.75,
@@ -3831,8 +3831,8 @@
       },
       "parent_anchor": "cctv_head_01",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         -7.225,
         -4.135,
@@ -3921,8 +3921,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         7.01,
         -4.75,
@@ -3966,8 +3966,8 @@
       },
       "parent_anchor": "cctv_head_02",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         6.975,
         -4.75,
@@ -4011,8 +4011,8 @@
       },
       "parent_anchor": "cctv_head_02",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         7.035,
         -4.135,
@@ -4101,8 +4101,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         -7.25,
         4.51,
@@ -4146,8 +4146,8 @@
       },
       "parent_anchor": "cctv_head_03",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         -7.285,
         4.51,
@@ -4191,8 +4191,8 @@
       },
       "parent_anchor": "cctv_head_03",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         -7.225,
         5.125,
@@ -4281,8 +4281,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         7.01,
         4.51,
@@ -4326,8 +4326,8 @@
       },
       "parent_anchor": "cctv_head_04",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         6.975,
         4.51,
@@ -4371,8 +4371,8 @@
       },
       "parent_anchor": "cctv_head_04",
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 48,
+      "triangles": 136,
       "bounds_min": [
         7.035,
         5.125,
@@ -4430,5 +4430,5 @@
       ]
     }
   ],
-  "build_signature": "c4f592b32ab08c1cce2eaf2352cae157bb9d3efc16371ba722b7567b515eb2bc"
+  "build_signature": "bd3180c90e38725e2f2ea24247bc39f28d28d5d433693399a88f34996f5a6b1b"
 }

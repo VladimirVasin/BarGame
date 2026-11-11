@@ -117,7 +117,7 @@ namespace BarPromenade
                     faces.Add(new[] {highA,lowA,lowB});faces.Add(new[] {highA,lowB,highB});
                 }
             }
-            var retaining=CityHillsideBenchPocketWorld.BuildMesh("Descent fitted retaining edges",root,faces,false,raisedSkin:false);
+            var retaining=CityHillsideBenchPocketWorld.BuildMesh("Descent fitted retaining edges",root,faces,false);
             if(retaining!=null)
             {
                 retaining.AddComponent<MeshCollider>().sharedMesh=retaining.GetComponent<MeshFilter>().sharedMesh;

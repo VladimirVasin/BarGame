@@ -19,6 +19,7 @@ float _GroundRoadCoordinates;
 float _GroundVertexData;
 float _GroundVergeTileRatio;
 float _GroundCityClimate;
+float _GroundClampV;
 float _GroundMountainTalus;
 TEXTURE2D(_GroundTalusMap); SAMPLER(sampler_GroundTalusMap);
 TEXTURE2D(_GroundTalusResponse); SAMPLER(sampler_GroundTalusResponse);
@@ -26,6 +27,21 @@ half4 _GroundTalusColor;
 float _CityGroundWetness;
 half4 _GroundSubstrateColor;
 half4 _GroundAsphaltColor;
+float4 _GroundShoulderMix;
+float _CityJointPreviewOff;
+
+float GroundClampedV(float v, float footprint)
+{
+    float inset = clamp(footprint * .75, .5 / 256.0, .45);
+    return clamp(v, inset, 1 - inset);
+}
+
+float2 GroundMaterialUv(float2 uv)
+{
+    // The old east strip is periodic along the seam, not across it.
+    if (_GroundClampV > .5) uv.y = GroundClampedV(uv.y, fwidth(uv.y));
+    return uv;
+}
 
 half GroundScreenSpaceReceiver()
 {
@@ -93,6 +109,24 @@ void ApplyGroundLayers(float2 uv, float3 world, half3 normal,
     half wetness = saturate(max(_GroundWetness, _CityGroundWetness * _GroundCityClimate));
     half damp = smoothstep(0.30h, 0.75h, broad) * wetness;
     half turfRelief = 0.5h;
+    bool pathContour = _GroundShoulderMix.w > .5;
+    [branch] if (_GroundShoulderMix.x > 0.0 && _CityJointPreviewOff < .5 && (pathContour || road.z > .1))
+    {
+        float distanceToEdge = pathContour ? road.x : road.z - abs(road.x);
+        float wear = lerp(.72, 1.28, GroundNoise(world.xz * 5.1));
+        half shoulder = 1.0h - smoothstep(0.0, _GroundShoulderMix.y * wear, distanceToEdge);
+        [branch] if (shoulder > .001h)
+        {
+            float2 jointUv = world.xz * _GroundShoulderMix.x;
+            half3 pigment = SAMPLE_TEXTURE2D_GRAD(_GroundSubstrateMap, sampler_GroundSubstrateMap,
+                jointUv, groundDx * _GroundShoulderMix.x, groundDy * _GroundShoulderMix.x).rgb;
+            half3 shoulderResponse = SAMPLE_TEXTURE2D_GRAD(_GroundSubstrateResponse, sampler_GroundSubstrateResponse,
+                jointUv, groundDx * _GroundShoulderMix.x, groundDy * _GroundShoulderMix.x).rgb;
+            surface.albedo = lerp(surface.albedo, pigment * _GroundSubstrateColor.rgb, shoulder);
+            surface.smoothness = lerp(surface.smoothness, _GroundShoulderMix.z, shoulder);
+            response = lerp(response, shoulderResponse, shoulder);
+        }
+    }
     [branch] if (_GroundVergeTileRatio > 0.0)
     {
         // Affine distances to the surveyed edges interpolate exactly on the original terrain.
@@ -224,4 +258,8 @@ half3 GroundReliefNormal(float3 world, half3 normal, half relief)
     gradient /= max(1.0, length(gradient) / 0.10);
     return normalize(normal - gradient);
 }
+
+#if defined(_CITY_GROUND_SEAMS)
+#include "CityGroundJoints.hlsl"
+#endif
 #endif

@@ -616,7 +616,7 @@
       "runtime_wrapper_yaw_degrees": 0.0,
       "mesh_count": 24,
       "renderer_count": 24,
-      "triangle_count": 17628,
+      "triangle_count": 17708,
       "bounds_min": [
         -6.0525,
         -12.1775,
@@ -1250,8 +1250,8 @@
           "name": "INT_CommunionRail",
           "role": "closed_communion_rail_and_center_gate",
           "material_slot": "Gold",
-          "vertices": 400,
-          "triangles": 700
+          "vertices": 416,
+          "triangles": 780
         },
         {
           "name": "INT_HighAltar",
@@ -1836,5 +1836,5 @@
       ]
     }
   ],
-  "build_signature": "8652bc83d24c05c6dd93d73ed1f11ecf0b69db3c57aeea31890c3fbd9a81f9fc"
+  "build_signature": "55e6a9de6bedd3734994ed2f06287c120a44b8e40f9945816d1191d557015f25"
 }

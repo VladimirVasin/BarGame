@@ -102,9 +102,7 @@ namespace BarPromenade
                     Vector2 a = XZ(corners[i - 1]), b = XZ(corners[i]);
                     Vector2 right = new Vector2((b-a).y, -(b-a).x).normalized * (PathWidth * .5f);
                     if ((b-a).sqrMagnitude < .0001f) continue;
-                    // All pieces share the exact soil plane, normals, material
-                    // and world UV. A little identical-material overlap at the
-                    // landing and joints avoids recursive polygon fragmentation.
+                    // The overlapping footprints keep the full walking width at bends.
                     surfaces.Add(CityRoadPolygon.CounterClockwise(new[] { a-right, b-right, b+right, a+right }));
                     // Square joints cover the whole walking width at a dogleg.
                     if (i + 1 < corners.Count) surfaces.Add(CityRoadPolygon.Rectangle(

@@ -90,9 +90,11 @@ namespace BarPromenade
             for (int col = 0; col < Columns; col++)
             {
                 var p = new Vector2(x[col], z[row]);
+                float bank = CityHillsideNeighborhoodPlan.SampleBank(layout, road, p);
+                float developed = CityHillsideNeighborhoodPlan.ApplyFoundationLevels(road, p, bank, houses);
+                float verge = seams.LimitFoundationAtVerge(p, bank, developed);
                 float ground = CityHillsideGroundPlan.ApplyRamps(p,
-                    CityHillsideGroundPlan.ApplyPads(p,
-                        seams.Apply(p, CityHillsideNeighborhoodPlan.SampleBuiltGround(layout, road, p, houses)), pads), ramps);
+                    CityHillsideGroundPlan.ApplyPads(p, seams.Apply(p, verge), pads), ramps);
                 heights[row * Columns + col] = talus.ApplyHeight(p, ground);
                 if (col + 1 == Columns || row + 1 == Rows) continue;
                 var center = new Vector2((p.x + x[col + 1]) * .5f, (p.y + z[row + 1]) * .5f);

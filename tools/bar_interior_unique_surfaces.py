@@ -404,7 +404,10 @@ def verify_export(path, asset):
 
 if __name__ == "__main__":
     import toolchain
-    toolchain.check_python(toolchain.load_config(), ("Pillow", "numpy"))
+    config = toolchain.load_config()
+    if sys.platform == "darwin":
+        config["python"] = config["native"]["macos"]["python"]
+    toolchain.check_python(config, ("Pillow", "numpy"))
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--repaint", action="store_true",

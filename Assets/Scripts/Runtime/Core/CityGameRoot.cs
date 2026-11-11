@@ -1153,7 +1153,8 @@ namespace BarPromenade
                 new CityEternalRainShaper(),
                 Night.FogField);
             World.Root.GetComponentInChildren<CityCoastalGrassWind>(true)?.Initialize(Weather, Player.GameObject.transform);
-            World.Root.GetComponentInChildren<CityGrassField>(true)?.Initialize(Weather, Player.GameObject.transform, Pedestrians, camera);
+            World.Root.GetComponent<CityWindField>()?.BindWeather(Weather);
+            World.Root.GetComponentInChildren<CityGrassField>(true)?.Initialize(Player.GameObject.transform, Pedestrians, camera);
             GameLogPhases.Report("city", "soundscape_and_weather", stepTimer);
             stepTimer.Restart();
             Clouds = ExteriorCloudField.Create(

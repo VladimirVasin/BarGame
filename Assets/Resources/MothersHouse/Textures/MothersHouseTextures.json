@@ -8,7 +8,7 @@
     {
       "name": "MothersHouseSurfaceAtlas",
       "source": "ArtSource/MothersHouse/Textures/Atlases/MothersHouseSurfaceAtlas.source.png",
-      "sha256": "4c916a39eb83544c8bd314fcf3cc61b411be78cc35f547182da86bb59482fda8",
+      "sha256": "5fbb4f96a96a2f829768bf54ac78615f7b9229481f2fc13795d1101ca2cbd037",
       "size": 4096,
       "sRGB": true,
       "wrap": "Clamp",
@@ -22,7 +22,7 @@
     {
       "name": "MothersHouseMaterialResponse",
       "source": "ArtSource/MothersHouse/Textures/Atlases/MothersHouseMaterialResponse.source.png",
-      "sha256": "879514e76d74e6ce5c5b00ded5deb1eb16124dde42acb03759bb9202d93975ae",
+      "sha256": "2c1ec01a92021eb8a888b22aaa34a82d54b4649733c71f4e689e63b3168210a4",
       "size": 2048,
       "sRGB": false,
       "wrap": "Clamp",
@@ -37,7 +37,7 @@
     {
       "name": "MothersHousePositiveAtlas",
       "source": "ArtSource/MothersHouse/Textures/Atlases/MothersHousePositiveAtlas.source.png",
-      "sha256": "c3e5380e1f73c9b9b51bd778acf4f9fd25076f57afbc1fec426da7a5fe62ec6b",
+      "sha256": "bbcfba9f1064d3a657c45e1d905683a186616cad9dd787d47913f180ffc29da0",
       "size": 1024,
       "sRGB": true,
       "wrap": "Clamp",

@@ -52,7 +52,7 @@
   },
   "prototype_count": 23,
   "mesh_count": 188,
-  "triangle_count": 15650,
+  "triangle_count": 29250,
   "prototypes": [
     {
       "stable_id": "old-town-prototype-01",
@@ -89,7 +89,7 @@
           ]
         }
       ],
-      "triangle_count": 568,
+      "triangle_count": 1192,
       "bounds_min_source": [
         -7.03,
         -6.78,
@@ -886,8 +886,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 40,
+          "triangles": 76,
           "bounds_min_source": [
             -7.0,
             -6.75,
@@ -913,7 +913,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995727,
             0.996
           ],
           "uv2_slot_ids": [
@@ -926,8 +926,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 56,
-          "triangles": 84,
+          "vertices": 168,
+          "triangles": 476,
           "bounds_min_source": [
             -6.96,
             6.575,
@@ -966,8 +966,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -6.96,
             6.545,
@@ -1046,8 +1046,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.6,
-          "vertices": 32,
-          "triangles": 52,
+          "vertices": 64,
+          "triangles": 164,
           "bounds_min_source": [
             -6.8575,
             -6.49,
@@ -1365,7 +1365,7 @@
           ]
         }
       ],
-      "triangle_count": 1194,
+      "triangle_count": 2034,
       "bounds_min_source": [
         -5.831,
         -5.831,
@@ -2319,8 +2319,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 24,
-          "triangles": 40,
+          "vertices": 104,
+          "triangles": 200,
           "bounds_min_source": [
             -5.801,
             -5.801,
@@ -2346,7 +2346,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995682,
             0.907164
           ],
           "uv2_slot_ids": [
@@ -2359,8 +2359,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 88,
-          "triangles": 132,
+          "vertices": 168,
+          "triangles": 412,
           "bounds_min_source": [
             -5.761,
             4.426,
@@ -2399,8 +2399,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 20,
-          "triangles": 26,
+          "vertices": 52,
+          "triangles": 138,
           "bounds_min_source": [
             -5.761,
             2.801,
@@ -2439,8 +2439,8 @@
           "surface_kind": "Roof",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 4.0,
-          "vertices": 22,
-          "triangles": 32,
+          "vertices": 70,
+          "triangles": 152,
           "bounds_min_source": [
             -5.801,
             -5.801,
@@ -2479,8 +2479,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 360,
-          "triangles": 564,
+          "vertices": 408,
+          "triangles": 732,
           "bounds_min_source": [
             -5.6585,
             -5.541,
@@ -2730,7 +2730,7 @@
           ]
         }
       ],
-      "triangle_count": 780,
+      "triangle_count": 1036,
       "bounds_min_source": [
         -7.0,
         -6.79,
@@ -2915,8 +2915,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 24,
-          "triangles": 36,
+          "vertices": 64,
+          "triangles": 124,
           "bounds_min_source": [
             -7.0,
             -6.75,
@@ -2942,7 +2942,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995727,
             0.996
           ],
           "uv2_slot_ids": [
@@ -2955,8 +2955,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -6.94,
             6.61,
@@ -2995,8 +2995,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -6.93,
             -6.79,
@@ -3241,8 +3241,8 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -6.34,
             5.57,
@@ -3392,7 +3392,7 @@
           ]
         }
       ],
-      "triangle_count": 480,
+      "triangle_count": 1160,
       "bounds_min_source": [
         -6.28,
         -6.03,
@@ -4019,8 +4019,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 40,
+          "triangles": 76,
           "bounds_min_source": [
             -6.25,
             -6.0,
@@ -4046,7 +4046,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995693,
             0.996
           ],
           "uv2_slot_ids": [
@@ -4059,8 +4059,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 48,
-          "triangles": 72,
+          "vertices": 144,
+          "triangles": 408,
           "bounds_min_source": [
             -6.21,
             5.825,
@@ -4099,8 +4099,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -6.21,
             5.795,
@@ -4179,8 +4179,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 48,
-          "triangles": 76,
+          "vertices": 112,
+          "triangles": 300,
           "bounds_min_source": [
             -6.1075,
             -5.74,
@@ -4388,7 +4388,7 @@
           ]
         }
       ],
-      "triangle_count": 568,
+      "triangle_count": 1192,
       "bounds_min_source": [
         -7.78,
         -5.78,
@@ -5185,8 +5185,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 40,
+          "triangles": 76,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -5212,7 +5212,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995679,
             0.996
           ],
           "uv2_slot_ids": [
@@ -5225,8 +5225,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 56,
-          "triangles": 84,
+          "vertices": 168,
+          "triangles": 476,
           "bounds_min_source": [
             -7.71,
             5.575,
@@ -5265,8 +5265,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.71,
             5.545,
@@ -5345,8 +5345,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.6,
-          "vertices": 32,
-          "triangles": 52,
+          "vertices": 64,
+          "triangles": 164,
           "bounds_min_source": [
             -7.6075,
             -5.49,
@@ -5664,7 +5664,7 @@
           ]
         }
       ],
-      "triangle_count": 1428,
+      "triangle_count": 2268,
       "bounds_min_source": [
         -7.78,
         -5.78,
@@ -6823,8 +6823,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 24,
-          "triangles": 40,
+          "vertices": 104,
+          "triangles": 200,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -6850,7 +6850,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995679,
             0.920658
           ],
           "uv2_slot_ids": [
@@ -6863,8 +6863,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 104,
-          "triangles": 156,
+          "vertices": 184,
+          "triangles": 436,
           "bounds_min_source": [
             -7.71,
             4.375,
@@ -6903,8 +6903,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 20,
-          "triangles": 26,
+          "vertices": 52,
+          "triangles": 138,
           "bounds_min_source": [
             -7.71,
             2.75,
@@ -6943,8 +6943,8 @@
           "surface_kind": "Roof",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 4.0,
-          "vertices": 22,
-          "triangles": 32,
+          "vertices": 70,
+          "triangles": 152,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -6983,8 +6983,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 440,
-          "triangles": 684,
+          "vertices": 488,
+          "triangles": 852,
           "bounds_min_source": [
             -7.6075,
             -5.49,
@@ -7252,7 +7252,7 @@
           ]
         }
       ],
-      "triangle_count": 568,
+      "triangle_count": 880,
       "bounds_min_source": [
         -7.75,
         -5.79,
@@ -7403,8 +7403,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 24,
-          "triangles": 36,
+          "vertices": 64,
+          "triangles": 124,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -7430,7 +7430,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995679,
             0.996
           ],
           "uv2_slot_ids": [
@@ -7443,8 +7443,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.69,
             5.61,
@@ -7483,8 +7483,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.68,
             -5.79,
@@ -7523,8 +7523,8 @@
           "surface_kind": "Roof",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 4.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -7685,8 +7685,8 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.09,
             4.57,
@@ -7836,7 +7836,7 @@
           ]
         }
       ],
-      "triangle_count": 378,
+      "triangle_count": 1002,
       "bounds_min_source": [
         -7.78,
         -5.78,
@@ -8310,8 +8310,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 40,
+          "triangles": 76,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -8337,7 +8337,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995679,
             0.996
           ],
           "uv2_slot_ids": [
@@ -8350,8 +8350,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 48,
-          "triangles": 72,
+          "vertices": 144,
+          "triangles": 408,
           "bounds_min_source": [
             -7.71,
             5.575,
@@ -8390,8 +8390,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.71,
             5.545,
@@ -8470,8 +8470,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 40,
-          "triangles": 64,
+          "vertices": 88,
+          "triangles": 232,
           "bounds_min_source": [
             -7.6075,
             -5.49,
@@ -8683,7 +8683,7 @@
           ]
         }
       ],
-      "triangle_count": 414,
+      "triangle_count": 1054,
       "bounds_min_source": [
         -7.53,
         -7.03,
@@ -9191,8 +9191,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 12,
-          "triangles": 20,
+          "vertices": 52,
+          "triangles": 100,
           "bounds_min_source": [
             -7.5,
             -7.0,
@@ -9218,7 +9218,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995737,
             0.996
           ],
           "uv2_slot_ids": [
@@ -9231,8 +9231,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 56,
-          "triangles": 84,
+          "vertices": 168,
+          "triangles": 476,
           "bounds_min_source": [
             -7.46,
             6.825,
@@ -9271,8 +9271,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.46,
             6.795,
@@ -9351,8 +9351,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.6,
-          "vertices": 32,
-          "triangles": 52,
+          "vertices": 64,
+          "triangles": 164,
           "bounds_min_source": [
             -7.3575,
             -6.74,
@@ -9658,7 +9658,7 @@
           ]
         }
       ],
-      "triangle_count": 1098,
+      "triangle_count": 1986,
       "bounds_min_source": [
         -7.53,
         -7.03,
@@ -10408,8 +10408,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 32,
-          "triangles": 56,
+          "vertices": 128,
+          "triangles": 248,
           "bounds_min_source": [
             -7.5,
             -7.0,
@@ -10435,7 +10435,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995737,
             0.910971
           ],
           "uv2_slot_ids": [
@@ -10448,8 +10448,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 88,
-          "triangles": 132,
+          "vertices": 168,
+          "triangles": 412,
           "bounds_min_source": [
             -7.46,
             5.625,
@@ -10488,8 +10488,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 20,
-          "triangles": 26,
+          "vertices": 52,
+          "triangles": 138,
           "bounds_min_source": [
             -7.46,
             4.0,
@@ -10528,8 +10528,8 @@
           "surface_kind": "Roof",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 4.0,
-          "vertices": 26,
-          "triangles": 40,
+          "vertices": 82,
+          "triangles": 176,
           "bounds_min_source": [
             -7.5,
             -7.0,
@@ -10568,8 +10568,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 360,
-          "triangles": 564,
+          "vertices": 408,
+          "triangles": 732,
           "bounds_min_source": [
             -7.3575,
             -6.74,
@@ -10817,7 +10817,7 @@
           ]
         }
       ],
-      "triangle_count": 580,
+      "triangle_count": 828,
       "bounds_min_source": [
         -7.53,
         -7.04,
@@ -11036,8 +11036,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 12,
-          "triangles": 20,
+          "vertices": 52,
+          "triangles": 100,
           "bounds_min_source": [
             -7.5,
             -7.0,
@@ -11063,7 +11063,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995737,
             0.996
           ],
           "uv2_slot_ids": [
@@ -11076,8 +11076,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.44,
             6.86,
@@ -11116,8 +11116,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.43,
             -7.04,
@@ -11366,8 +11366,8 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -0.7,
             -1.9,
@@ -11539,7 +11539,7 @@
           ]
         }
       ],
-      "triangle_count": 448,
+      "triangle_count": 1144,
       "bounds_min_source": [
         -7.53,
         -7.03,
@@ -12098,8 +12098,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 12,
-          "triangles": 20,
+          "vertices": 52,
+          "triangles": 100,
           "bounds_min_source": [
             -7.5,
             -7.0,
@@ -12125,7 +12125,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995737,
             0.996
           ],
           "uv2_slot_ids": [
@@ -12138,8 +12138,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 48,
-          "triangles": 72,
+          "vertices": 144,
+          "triangles": 408,
           "bounds_min_source": [
             -7.46,
             6.825,
@@ -12178,8 +12178,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.46,
             6.795,
@@ -12258,8 +12258,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 48,
-          "triangles": 76,
+          "vertices": 112,
+          "triangles": 300,
           "bounds_min_source": [
             -7.3575,
             -6.74,
@@ -12503,7 +12503,7 @@
           ]
         }
       ],
-      "triangle_count": 496,
+      "triangle_count": 1360,
       "bounds_min_source": [
         -7.78,
         -5.78,
@@ -13096,8 +13096,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 24,
-          "triangles": 36,
+          "vertices": 120,
+          "triangles": 228,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -13123,7 +13123,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995679,
             0.996
           ],
           "uv2_slot_ids": [
@@ -13136,8 +13136,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 64,
-          "triangles": 96,
+          "vertices": 192,
+          "triangles": 544,
           "bounds_min_source": [
             -7.71,
             5.575,
@@ -13176,8 +13176,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 16,
-          "triangles": 24,
+          "vertices": 48,
+          "triangles": 136,
           "bounds_min_source": [
             -7.71,
             5.545,
@@ -13256,8 +13256,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.6,
-          "vertices": 32,
-          "triangles": 52,
+          "vertices": 64,
+          "triangles": 164,
           "bounds_min_source": [
             -7.6075,
             -5.49,
@@ -13595,7 +13595,7 @@
           ]
         }
       ],
-      "triangle_count": 1416,
+      "triangle_count": 2496,
       "bounds_min_source": [
         -7.78,
         -5.78,
@@ -14652,8 +14652,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 40,
-          "triangles": 64,
+          "vertices": 184,
+          "triangles": 352,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -14679,7 +14679,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995679,
             0.920658
           ],
           "uv2_slot_ids": [
@@ -14692,8 +14692,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 112,
-          "triangles": 168,
+          "vertices": 208,
+          "triangles": 504,
           "bounds_min_source": [
             -7.71,
             4.375,
@@ -14732,8 +14732,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 28,
-          "triangles": 38,
+          "vertices": 76,
+          "triangles": 206,
           "bounds_min_source": [
             -7.71,
             2.75,
@@ -14772,8 +14772,8 @@
           "surface_kind": "Roof",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 4.0,
-          "vertices": 22,
-          "triangles": 32,
+          "vertices": 70,
+          "triangles": 152,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -14812,8 +14812,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 440,
-          "triangles": 684,
+          "vertices": 488,
+          "triangles": 852,
           "bounds_min_source": [
             -7.6075,
             -5.49,
@@ -15113,7 +15113,7 @@
           ]
         }
       ],
-      "triangle_count": 542,
+      "triangle_count": 1006,
       "bounds_min_source": [
         -7.75,
         -5.79,
@@ -15315,8 +15315,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 56,
-          "triangles": 84,
+          "vertices": 168,
+          "triangles": 324,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -15342,7 +15342,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995679,
             0.996
           ],
           "uv2_slot_ids": [
@@ -15355,8 +15355,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.69,
             5.61,
@@ -15395,8 +15395,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.68,
             -5.79,
@@ -15603,8 +15603,8 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 16,
-          "triangles": 24,
+          "vertices": 48,
+          "triangles": 136,
           "bounds_min_source": [
             -7.67,
             4.63,
@@ -15798,7 +15798,7 @@
           ]
         }
       ],
-      "triangle_count": 376,
+      "triangle_count": 1240,
       "bounds_min_source": [
         -7.78,
         -5.78,
@@ -16187,8 +16187,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 24,
-          "triangles": 36,
+          "vertices": 120,
+          "triangles": 228,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -16214,7 +16214,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995679,
             0.996
           ],
           "uv2_slot_ids": [
@@ -16227,8 +16227,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 56,
-          "triangles": 84,
+          "vertices": 168,
+          "triangles": 476,
           "bounds_min_source": [
             -7.71,
             5.575,
@@ -16267,8 +16267,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 16,
-          "triangles": 24,
+          "vertices": 48,
+          "triangles": 136,
           "bounds_min_source": [
             -7.71,
             5.545,
@@ -16347,8 +16347,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 40,
-          "triangles": 64,
+          "vertices": 88,
+          "triangles": 232,
           "bounds_min_source": [
             -7.6075,
             -5.49,
@@ -16528,7 +16528,7 @@
           ]
         }
       ],
-      "triangle_count": 356,
+      "triangle_count": 924,
       "bounds_min_source": [
         -5.03,
         -3.03,
@@ -16985,8 +16985,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 40,
+          "triangles": 76,
           "bounds_min_source": [
             -5.0,
             -3.0,
@@ -17012,7 +17012,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995386,
             0.996
           ],
           "uv2_slot_ids": [
@@ -17025,8 +17025,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 48,
-          "triangles": 72,
+          "vertices": 144,
+          "triangles": 408,
           "bounds_min_source": [
             -4.96,
             2.825,
@@ -17065,8 +17065,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -4.96,
             2.795,
@@ -17145,8 +17145,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.6,
-          "vertices": 32,
-          "triangles": 52,
+          "vertices": 64,
+          "triangles": 164,
           "bounds_min_source": [
             -4.8575,
             -2.74,
@@ -17424,7 +17424,7 @@
           ]
         }
       ],
-      "triangle_count": 928,
+      "triangle_count": 1712,
       "bounds_min_source": [
         -5.03,
         -3.03,
@@ -18139,8 +18139,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 24,
-          "triangles": 40,
+          "vertices": 104,
+          "triangles": 200,
           "bounds_min_source": [
             -5.0,
             -3.0,
@@ -18166,7 +18166,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995386,
             0.87696
           ],
           "uv2_slot_ids": [
@@ -18179,8 +18179,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 64,
-          "triangles": 96,
+          "vertices": 128,
+          "triangles": 320,
           "bounds_min_source": [
             -4.96,
             1.625,
@@ -18219,8 +18219,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 20,
-          "triangles": 26,
+          "vertices": 52,
+          "triangles": 138,
           "bounds_min_source": [
             -4.96,
             0.0,
@@ -18259,8 +18259,8 @@
           "surface_kind": "Roof",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 4.0,
-          "vertices": 22,
-          "triangles": 32,
+          "vertices": 70,
+          "triangles": 152,
           "bounds_min_source": [
             -5.0,
             -3.0,
@@ -18299,8 +18299,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 280,
-          "triangles": 444,
+          "vertices": 328,
+          "triangles": 612,
           "bounds_min_source": [
             -4.8575,
             -2.74,
@@ -18528,7 +18528,7 @@
           ]
         }
       ],
-      "triangle_count": 1050,
+      "triangle_count": 1306,
       "bounds_min_source": [
         -5.0,
         -3.04,
@@ -18696,8 +18696,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 24,
-          "triangles": 36,
+          "vertices": 64,
+          "triangles": 124,
           "bounds_min_source": [
             -5.0,
             -3.0,
@@ -18723,7 +18723,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995386,
             0.996
           ],
           "uv2_slot_ids": [
@@ -18736,8 +18736,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -4.94,
             2.86,
@@ -18776,8 +18776,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -4.93,
             -3.04,
@@ -19020,8 +19020,8 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -4.34,
             1.82,
@@ -19171,7 +19171,7 @@
           ]
         }
       ],
-      "triangle_count": 316,
+      "triangle_count": 884,
       "bounds_min_source": [
         -5.03,
         -3.03,
@@ -19560,8 +19560,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 40,
+          "triangles": 76,
           "bounds_min_source": [
             -5.0,
             -3.0,
@@ -19587,7 +19587,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995386,
             0.996
           ],
           "uv2_slot_ids": [
@@ -19600,8 +19600,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 40,
-          "triangles": 60,
+          "vertices": 120,
+          "triangles": 340,
           "bounds_min_source": [
             -4.96,
             2.825,
@@ -19640,8 +19640,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -4.96,
             2.795,
@@ -19720,8 +19720,8 @@
           "surface_kind": "Metal",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 40,
-          "triangles": 64,
+          "vertices": 88,
+          "triangles": 232,
           "bounds_min_source": [
             -4.8575,
             -2.74,
@@ -19923,7 +19923,7 @@
           ]
         }
       ],
-      "triangle_count": 564,
+      "triangle_count": 876,
       "bounds_min_source": [
         -7.0,
         -6.79,
@@ -20074,8 +20074,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 24,
-          "triangles": 36,
+          "vertices": 64,
+          "triangles": 124,
           "bounds_min_source": [
             -7.0,
             -6.75,
@@ -20101,7 +20101,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995727,
             0.996
           ],
           "uv2_slot_ids": [
@@ -20114,8 +20114,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -6.94,
             6.61,
@@ -20154,8 +20154,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -6.93,
             -6.79,
@@ -20194,8 +20194,8 @@
           "surface_kind": "Roof",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 4.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.0,
             -6.75,
@@ -20356,8 +20356,8 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -6.34,
             5.57,
@@ -20529,7 +20529,7 @@
           ]
         }
       ],
-      "triangle_count": 528,
+      "triangle_count": 840,
       "bounds_min_source": [
         -7.0,
         -6.79,
@@ -20680,8 +20680,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 24,
-          "triangles": 36,
+          "vertices": 64,
+          "triangles": 124,
           "bounds_min_source": [
             -7.0,
             -6.75,
@@ -20707,7 +20707,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995727,
             0.996
           ],
           "uv2_slot_ids": [
@@ -20720,8 +20720,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -6.94,
             6.61,
@@ -20760,8 +20760,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -6.93,
             -6.79,
@@ -20800,8 +20800,8 @@
           "surface_kind": "Roof",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 4.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.0,
             -6.75,
@@ -20962,8 +20962,8 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -6.34,
             5.57,
@@ -21135,7 +21135,7 @@
           ]
         }
       ],
-      "triangle_count": 574,
+      "triangle_count": 830,
       "bounds_min_source": [
         -7.75,
         -5.79,
@@ -21337,8 +21337,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 24,
-          "triangles": 36,
+          "vertices": 64,
+          "triangles": 124,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -21364,7 +21364,7 @@
             0.004
           ],
           "uv0_max": [
-            0.996,
+            0.995679,
             0.996
           ],
           "uv2_slot_ids": [
@@ -21377,8 +21377,8 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.69,
             5.61,
@@ -21417,8 +21417,8 @@
           "surface_kind": "Plinth",
           "uv_scheme": "full_face_projected_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.68,
             -5.79,
@@ -21625,8 +21625,8 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 8,
-          "triangles": 12,
+          "vertices": 24,
+          "triangles": 68,
           "bounds_min_source": [
             -7.09,
             4.57,
@@ -21742,5 +21742,5 @@
       ]
     }
   ],
-  "build_signature": "81b67b2e2e4893cb6ad5d267467d23870ce7a5c41dba3288d61920dfe2a333f6"
+  "build_signature": "4e181b1d14bc2cec324ffb9c8395d98c2df36420251b03f2060a4205a7f314b6"
 }

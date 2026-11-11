@@ -101,8 +101,8 @@ namespace BarPromenade
                     }
                     Retaining(a,b);
                 }
-                GameObject surface=CityHillsideBenchPocketWorld.BuildMesh(name,root,faces,false,raisedSkin:false,asphalt:asphalt);
-                GameObject edges=asphalt?CityHillsideBenchPocketWorld.BuildMesh("Upper bench retaining edges",root,retaining,false,raisedSkin:false):null;
+                GameObject surface=CityHillsideBenchPocketWorld.BuildMesh(name,root,faces,false,asphalt:asphalt);
+                GameObject edges=asphalt?CityHillsideBenchPocketWorld.BuildMesh("Upper bench retaining edges",root,retaining,false):null;
                 if(!retained.HasValue)
                 {
                     surface.AddComponent<MeshCollider>().sharedMesh=surface.GetComponent<MeshFilter>().sharedMesh;

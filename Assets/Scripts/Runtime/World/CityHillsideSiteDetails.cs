@@ -9,6 +9,7 @@ namespace BarPromenade
     /// City and the apartment sample the same ground and keep the same free approaches.</summary>
     internal static class CityHillsideSiteDetails
     {
+        private const float TrunkHalfWidth = .34f;
         internal enum Kind { RetainingEnd, CourtEdge, BearingTalus, PlinthRepair, GardenVerge, YardTree, YardShelter }
 
         internal readonly struct Site
@@ -306,7 +307,7 @@ namespace BarPromenade
                 if (site.Part == Kind.YardTree)
                 {
                     frame.localScale = Vector3.one * site.Scale;
-                    BuildTree(frame, site.Variant, !retained.HasValue);
+                    BuildPlant(frame, CityMiscKind.ParkTree, site.Variant, !retained.HasValue);
                     continue;
                 }
                 if (site.Part == Kind.YardShelter)
@@ -345,13 +346,14 @@ namespace BarPromenade
             }
         }
 
-        private static void BuildTree(Transform frame, int variant, bool solid)
+        internal static void BuildPlant(Transform frame, CityMiscKind kind, int variant, bool solid)
         {
             var provider = CityMiscAssetProvider.LoadOrThrow();
-            int count = CityMiscAssetProvider.GetPartCount(CityMiscKind.ParkTree);
+            bool tree = kind == CityMiscKind.ParkTree;
+            int count = CityMiscAssetProvider.GetPartCount(kind);
             for (int i = 0; i < count; i++)
             {
-                var part = provider.GetPartOrThrow(CityMiscKind.ParkTree, variant, i);
+                var part = provider.GetPartOrThrow(kind, variant, i);
                 var branch = new GameObject(part.Component);
                 branch.transform.SetParent(frame, false);
                 branch.AddComponent<MeshFilter>().sharedMesh = part.Mesh;
@@ -360,11 +362,25 @@ namespace BarPromenade
                 bool bark = part.Role == CityMiscMeshRole.Bark;
                 CityParkSurfaceAppearance.ApplyCombined(renderer, bark ? CityParkSurfaceKind.Bark : CityParkSurfaceKind.Foliage,
                     bark ? new Color(.31f, .27f, .21f) : new Color(.28f, .33f, .21f));
+                CitySurfaceLibrary.ApplyWind(renderer, tree ? CityWindGeometry.Tree : CityWindGeometry.Shrub,
+                    tree ? CityWindField.MaximumTreeTravel : CityWindField.MaximumShrubTravel);
             }
-            if (!solid) return;
+            if (!solid || !tree) return;
             var trunk = frame.gameObject.AddComponent<BoxCollider>();
             trunk.center = Vector3.up * 1.15f;
-            trunk.size = new Vector3(.68f, 2.3f, .68f);
+            trunk.size = new Vector3(2f * TrunkHalfWidth, 2.3f, 2f * TrunkHalfWidth);
+        }
+
+        internal static Vector2[] TrunkFootprint(Vector3 origin, Quaternion rotation, float scale)
+        {
+            Vector3 right = rotation * Vector3.right * (TrunkHalfWidth * scale);
+            Vector3 front = rotation * Vector3.forward * (TrunkHalfWidth * scale);
+            return CityRoadPolygon.CounterClockwise(new[]
+            {
+                Xz(origin - right - front), Xz(origin + right - front),
+                Xz(origin + right + front), Xz(origin - right + front)
+            });
+            static Vector2 Xz(Vector3 point) => new(point.x, point.z);
         }
 
         private static void Bind(MeshRenderer renderer)
@@ -384,7 +400,8 @@ namespace BarPromenade
                 case "Foliage":
                     renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
                     CityParkSurfaceAppearance.ApplyCombined(renderer, CityParkSurfaceKind.Foliage, new Color(.37f, .42f, .30f));
-                    break;
+                    CitySurfaceLibrary.ApplyWind(renderer, CityWindGeometry.Shrub, CityWindField.MaximumShrubTravel);
+                    return;
                 case "Bark":
                     renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
                     CityParkSurfaceAppearance.ApplyCombined(renderer, CityParkSurfaceKind.Bark, new Color(.34f, .31f, .26f));

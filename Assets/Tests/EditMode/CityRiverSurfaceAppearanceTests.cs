@@ -477,40 +477,30 @@ namespace BarPromenade.Tests.EditMode
             Mesh mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
             Assert.That(mesh, Is.Not.Null);
             Vector3[] vertices = mesh.vertices;
-            Vector3[] normals = mesh.normals;
             Vector2[] uvs = mesh.uv;
-            Assert.That(normals, Has.Length.EqualTo(vertices.Length));
             Assert.That(uvs, Has.Length.EqualTo(vertices.Length));
 
-            for (int index = 0; index < vertices.Length; index++)
+            int[] indices = mesh.triangles;
+            var projectionAxes = new[] { Vector3.right, Vector3.up, Vector3.forward };
+            for (int index = 0; index < indices.Length; index += 3)
             {
-                Vector3 vertex = vertices[index];
-                Vector3 normal = normals[index];
-                float absoluteX = Mathf.Abs(normal.x);
-                float absoluteY = Mathf.Abs(normal.y);
-                float absoluteZ = Mathf.Abs(normal.z);
-                Vector2 expected;
-                if (absoluteY >= absoluteX && absoluteY >= absoluteZ)
+                Vector3 a = vertices[indices[index]];
+                Vector3 normal = Vector3.Cross(vertices[indices[index + 1]] - a,
+                    vertices[indices[index + 2]] - a).normalized;
+                bool hasMetricChart = false;
+                foreach (Vector3 axis in projectionAxes)
                 {
-                    expected = new Vector2(vertex.x, vertex.z);
+                    if (Mathf.Abs(Vector3.Dot(axis, normal)) < .4f) continue;
+                    bool matches = true;
+                    for (int corner = 0; corner < 3; corner++)
+                    {
+                        int vertex = indices[index + corner];
+                        Vector2 expected = RuntimePrimitiveFactory.ProjectBoxUv(vertices[vertex], axis) / tileSize;
+                        matches &= (uvs[vertex] - expected).sqrMagnitude < 1e-8f;
+                    }
+                    hasMetricChart |= matches;
                 }
-                else if (absoluteX >= absoluteZ)
-                {
-                    expected = new Vector2(vertex.z, vertex.y);
-                }
-                else
-                {
-                    expected = new Vector2(vertex.x, vertex.y);
-                }
-
-                Assert.That(
-                    uvs[index].x,
-                    Is.EqualTo(expected.x / tileSize).Within(0.0001f),
-                    $"'{renderer.name}' has a stretched U coordinate.");
-                Assert.That(
-                    uvs[index].y,
-                    Is.EqualTo(expected.y / tileSize).Within(0.0001f),
-                    $"'{renderer.name}' has a stretched V coordinate.");
+                Assert.That(hasMetricChart, Is.True, $"'{renderer.name}' triangle {index / 3} needs one metre UV chart.");
             }
         }
 

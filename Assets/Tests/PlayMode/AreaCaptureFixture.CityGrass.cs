@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -183,6 +184,274 @@ namespace BarPromenade.Tests.PlayMode
             camera.transform.SetPositionAndRotation(eye,Quaternion.LookRotation((aim-eye).normalized,Vector3.up));
             grass.WarmView(camera);
             return true;
+        }
+
+        [UnityTest, Explicit("Ridge ground, rooted grass contact and shared crown/conductor gusts in City and Home.")]
+        public IEnumerator CityRidgeWind()
+        {
+            GameSessionState.BeginNewGame("Ridge wind");
+            Assert.That(GameSessionState.TryStartGameTimeAt(720), Is.True);
+            CityGameRoot city = null;
+            CityWindField wind = null;
+            Vector3 westRoot = default;
+            yield return Capture(SceneIds.City, () =>
+            {
+                city = Object.FindAnyObjectByType<CityGameRoot>();
+                return city != null && city.IsInitialized ? city : null;
+            }, () =>
+            {
+                FreezeLightingPolish(city.Player.Motor);
+                city.Weather.enabled = false;
+                var root = city.World.Root.transform;
+                wind = root.GetComponent<CityWindField>();
+                var grass = root.GetComponentInChildren<CityGrassField>();
+                Assert.That(wind, Is.Not.Null);
+                Assert.That(wind.Wind.z, Is.EqualTo(city.Weather.CurrentWind.Strength01).Within(.001f));
+                AssertKioskApproachesClear(grass, city.Layout);
+                var vegetation = CityRidgeVegetationPlan.ForLayout(city.Layout);
+                var added = root.Find(CityRidgeVegetationPlan.RootName);
+                Assert.That(added, Is.Not.Null);
+                Assert.That(added.childCount, Is.EqualTo(vegetation.Plants.Count));
+                var map = new CityMapCityTeleportGround(city.Layout);
+                Physics.SyncTransforms();
+                for (int i = 0; i < vegetation.Plants.Count; i++)
+                {
+                    var plant = vegetation.Plants[i];
+                    var instance = added.GetChild(i);
+                    Assert.That(Vector3.Distance(instance.position, plant.Origin), Is.LessThan(.005f));
+                    Assert.That(instance.GetComponentsInChildren<MeshRenderer>().All(renderer =>
+                        renderer.sharedMaterial.GetFloat("_CityWindGeometry") ==
+                        (float)(plant.IsTree ? CityWindGeometry.Tree : CityWindGeometry.Shrub)), Is.True);
+                    if (!plant.IsTree) continue;
+                    Assert.That(instance.GetComponent<BoxCollider>(), Is.Not.Null);
+                    Assert.That(city.World.WalkableArea.Contains(plant.Origin, .3f), Is.False, "The walk mask skips the trunk.");
+                }
+                foreach (var trail in city.Layout.CourtyardPaths)
+                    foreach (var strip in trail.Ribbon(1.5f))
+                        Assert.That(grass.Surface.TrySample(strip.Aggregate(Vector2.zero, (sum, p) => sum + p) /
+                            strip.Length, out _, out _, out _), Is.False, "An unpaved courtyard trail must also stay clear.");
+                foreach (var patch in CityStreetSupportPlan.ForLayout(city.Layout).Patches)
+                    if (patch.IsSupport && patch.Kind == CityStreetSupportKind.ParkPath)
+                    {
+                        Vector3 middle = patch.TopVertices.Aggregate(Vector3.zero, (sum, p) => sum + p) / patch.TopVertices.Count;
+                        Assert.That(grass.Surface.TrySample(new Vector2(middle.x, middle.z), out _, out _, out _), Is.False,
+                            "A park path must stay clear.");
+                    }
+                var shots = new List<Shot>();
+                foreach (var route in CityHillsideStreetPlan.ForLayout(city.Layout).Routes)
+                {
+                    Vector3 bank = route.SummitArrivalWorld;
+                    var plants = vegetation.Plants.Where(item => item.Bank == route.Bank).ToArray();
+                    Debug.Log("Ridge " + route.Bank + " planting: " + plants.Count(item => item.IsTree) +
+                        " trees and " + plants.Count(item => !item.IsTree) + " shrubs.");
+                    Assert.That(plants.Count(item => item.IsTree), Is.GreaterThanOrEqualTo(4));
+                    Assert.That(plants.Count(item => !item.IsTree), Is.GreaterThanOrEqualTo(5));
+                    var group = plants.Where(item => item.IsTree).OrderByDescending(item =>
+                        item.Origin.y + 5f * plants.Count(member => !member.IsTree &&
+                            Vector3.Distance(member.Origin, item.Origin) < 4.5f)).First();
+                    if (map.TryResolveStandingPosition(new Vector2(group.Origin.x, group.Origin.z), out var arrival))
+                        Assert.That(Vector2.Distance(new Vector2(arrival.x, arrival.z),
+                            new Vector2(group.Origin.x, group.Origin.z)), Is.GreaterThan(.34f * group.Scale + .25f));
+                    Vector3 plant = FindRidgeGrass(grass, city.Layout.Seed, bank);
+                    if (route.Bank == CityTerraceTransportBank.West) westRoot = plant;
+                    Assert.That(grass.Surface.TrySample(new Vector2(bank.x, bank.z), out _, out _, out _), Is.False,
+                        "The summit public footway stays clear.");
+                    city.Player.Motor.Teleport(plant + Vector3.up * PlayerFactory.GroundedRootOffset);
+                    Vector3 aim = plant + Vector3.up * .22f;
+                    Vector3 eye = FrameRidgeGrass(aim, 3.5f, 1.45f);
+                    shots.Add(Shot.At("ridge-wind-grass-" + route.Bank, eye, aim, 62f, readyWhen: () =>
+                    {
+                        grass.DebugWind = new WindSample(75, .50f);
+                        grass.DebugPhaseSeconds = 2f;
+                        grass.DebugContact = plant + Vector3.right * 3f;
+                        return WarmGrassShot(grass, city.Camera, eye, aim);
+                    }));
+                    Vector3 groupAim = group.Origin + Vector3.up * 2.55f;
+                    Vector3 groupEye = FrameRidgeGrass(groupAim, 8f, -.75f);
+                    shots.Add(Shot.At("ridge-wind-planting-" + route.Bank, groupEye, groupAim, 65f,
+                        readyWhen: () => WarmGrassShot(grass, city.Camera, groupEye, groupAim)));
+                }
+                var westAim = westRoot + Vector3.up * .20f;
+                var westEye = FrameRidgeGrass(westAim, 1.15f, .32f);
+                foreach (bool contact in new[] { false, true })
+                    shots.Add(Shot.At(contact ? "ridge-wind-grass-pressed" : "ridge-wind-grass-free", westEye, westAim, 53f,
+                        readyWhen: () =>
+                        {
+                            grass.DebugContact = westRoot + Vector3.right * (contact ? .10f : 3f);
+                            return WarmGrassShot(grass, city.Camera, westEye, westAim);
+                        }));
+                Transform tree = root.Find("Residential terrace edges").Cast<Transform>()
+                    .Where(site => site.name == "RidgeYardTree").OrderByDescending(site => site.position.y).First();
+                var crown = tree.GetComponentsInChildren<MeshRenderer>().OrderByDescending(part => part.bounds.center.y).First();
+                Assert.That(crown.sharedMaterial.GetFloat("_CityWindGeometry"), Is.EqualTo(1f));
+                Assert.That(tree.GetComponent<BoxCollider>(), Is.Not.Null);
+                Vector3 treeAim = crown.bounds.center - Vector3.up * .4f;
+                Vector3 treeEye = tree.position + new Vector3(4.4f, 2.2f, -5.2f);
+                var treeWind = new WindSample(90, .50f);
+                Vector4 profile = Shader.GetGlobalVector("_CityWindProfile");
+                AddWindPair("tree", treeEye, treeAim, treeWind);
+                var shrub = vegetation.Plants.Where(item => !item.IsTree).OrderByDescending(item => item.Origin.y).First();
+                Vector3 shrubAim = shrub.Origin + Vector3.up * .62f;
+                AddWindPair("shrub", FrameRidgeGrass(shrubAim, 3.1f, .40f), shrubAim, new WindSample(75, .68f));
+                shots.Add(Shot.At("ridge-wind-tree-lowland", treeEye, treeAim, 62f, readyWhen: () =>
+                {
+                    Shader.SetGlobalVector("_CityWind", wind.Pack(treeWind, 1.4f));
+                    Shader.SetGlobalVector("_CityWindProfile", new Vector4(profile.x, profile.y, 0f, profile.w));
+                    return true;
+                }));
+
+                var network = CityCoastalInfrastructurePlan.ForLayout(city.Layout);
+                var wire = ElectricalMesh(root.Find(CityCoastalInfrastructureWorldBuilder.RootName));
+                Shader shader = wire.GetComponent<Renderer>().sharedMaterial.shader;
+                Assert.That(shader.name, Is.EqualTo(CitySurfaceLibrary.FoliageShaderName));
+#if UNITY_EDITOR
+                Assert.That(UnityEditor.ShaderUtil.ShaderHasError(shader), Is.False);
+#endif
+                var data = new List<Vector4>();
+                wire.sharedMesh.GetUVs(3, data);
+                Vector3[] wireVertices = wire.sharedMesh.vertices;
+                int stride = wire.sharedMesh.vertexCount / network.CableSpans.Count;
+                Assert.That(data.Count, Is.EqualTo(wire.sharedMesh.vertexCount));
+                var span = network.CableSpans.Where(item => !item.IsServiceDrop && item.Start.y > 38f && item.End.y > 38f)
+                    .OrderByDescending(item => item.WindSwing).First();
+                Assert.That(span.WindSwing, Is.GreaterThan(.10f));
+                var geometry = new CityElectricalClearanceGeometry(city.Layout);
+                for (int i = 0; i < network.CableSpans.Count; i++)
+                {
+                    var line = network.CableSpans[i];
+                    Assert.That(geometry.Clear(line, line.WindSwing) || line.WindSwing == 0f, Is.True);
+                    Vector3 axis = line.End - line.Start;
+                    axis.y = 0f;
+                    float lengthSquared = axis.sqrMagnitude;
+                    int ends = 0;
+                    for (int j = i * stride; j < (i + 1) * stride; j++)
+                    {
+                        float t = Vector3.Dot(wire.transform.TransformPoint(wireVertices[j]) - line.Start, axis) /
+                            Mathf.Max(lengthSquared, .000001f);
+                        if (t > .0001f && t < .9999f) continue;
+                        Assert.That(new Vector2(data[j].x, data[j].y).sqrMagnitude, Is.LessThan(1e-9f));
+                        ends |= t < .5f ? 1 : 2;
+                    }
+                    Assert.That(ends, Is.EqualTo(3), "The cable model includes both pinned rings.");
+                }
+                Vector3 mid = span.Sample(.5f);
+                float crosswind = Mathf.Atan2(span.Lateral.x, span.Lateral.z) * Mathf.Rad2Deg;
+                AddWindPair("wire", mid - Vector3.up * 4.6f + (span.End - span.Start).normalized * 3f,
+                    mid, new WindSample(crosswind, .80f));
+                shots.Add(RidgeKioskApronShot(city.Layout, grass, city.Camera));
+                return shots.ToArray();
+
+                void AddWindPair(string subject, Vector3 eye, Vector3 aim, WindSample sample)
+                {
+                    foreach (bool gust in new[] { false, true })
+                        shots.Add(Shot.At("ridge-wind-" + subject + (gust ? "-gust" : "-still"), eye, aim, 62f,
+                            readyWhen: () =>
+                            {
+                                Shader.SetGlobalVector("_CityWindProfile", profile);
+                                Shader.SetGlobalVector("_CityWind", gust ? wind.Pack(sample, 1.4f) : Vector4.zero);
+                                return true;
+                            }));
+                }
+            });
+            foreach (string subject in new[] { "tree", "shrub", "wire" })
+                Assert.That(PolishDifference(SceneIds.City, "ridge-wind-" + subject + "-still",
+                    "ridge-wind-" + subject + "-gust"), Is.GreaterThan(24), subject);
+            Assert.That(PolishDifference(SceneIds.City, "ridge-wind-grass-free", "ridge-wind-grass-pressed"),
+                Is.GreaterThan(24), "A body depresses the rooted leaves.");
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                Vector4 paused = wind.Wind;
+                yield return null;
+                yield return null;
+                Assert.That(wind.Wind, Is.EqualTo(paused));
+            }
+
+            GameSessionState.PrepareHomeArrival(HomeArrivalKind.Normal);
+            GameSessionState.EnterHome();
+            HomeInteriorRoot home = null;
+            yield return Capture(SceneIds.HomeInterior, () =>
+            {
+                home = Object.FindAnyObjectByType<HomeInteriorRoot>();
+                return home != null && home.IsInitialized ? home : null;
+            }, () =>
+            {
+                FreezeLightingPolish(home.Player.Motor);
+                var field = home.ExteriorView.GetComponentInChildren<CityGrassField>();
+                Assert.That(home.ExteriorView.GetComponent<CityWindField>(), Is.Not.Null);
+                AssertKioskApproachesClear(field, home.ExteriorContext.Layout);
+                Assert.That(field.Surface.TrySample(new Vector2(westRoot.x, westRoot.z), out var retained, out _, out _), Is.True);
+                Assert.That(retained.y, Is.EqualTo(westRoot.y).Within(.015f));
+                var vegetation = CityRidgeVegetationPlan.ForLayout(home.ExteriorContext.Layout);
+                var replay = home.ExteriorView.Find("Summit street from home/" + CityRidgeVegetationPlan.RootName);
+                Assert.That(replay, Is.Not.Null);
+                Assert.That(replay.GetComponentsInChildren<Collider>(true), Is.Empty);
+                Assert.That(replay.Cast<Transform>().All(frame => vegetation.Plants.Any(plant =>
+                    Vector3.Distance(frame.localPosition, plant.Origin) < .005f)), Is.True);
+                Assert.That(replay.Cast<Transform>().Any(frame => frame.name == "Yard shrub"), Is.True);
+                return new[] { RidgeKioskApronShot(home.ExteriorContext.Layout, field, Camera.main) };
+            });
+            Assert.That(wind == null, Is.True, "The City wind owner releases on scene travel.");
+        }
+
+        private static Vector3 FindRidgeGrass(CityGrassField field, int seed, Vector3 summit)
+        {
+            int x = Mathf.FloorToInt(summit.x / CityGrassPlan.Spacing);
+            int z = Mathf.FloorToInt(summit.z / CityGrassPlan.Spacing);
+            Vector3 closest = default;
+            float best = float.PositiveInfinity;
+            int plants = 0;
+            for (int row = z - 35; row <= z + 35; row++)
+            for (int column = x - 42; column <= x + 42; column++)
+            {
+                Vector2 point = CityGrassPlan.Root(seed, column, row);
+                if (!field.Surface.TrySample(point, out var root, out _, out var habitat) ||
+                    habitat != CityGrassHabitat.Ridge || root.y < 36f ||
+                    !CityGrassPlan.Plant(seed, column, row, habitat, out _, out _, out _)) continue;
+                plants++;
+                float distance = (root - summit).sqrMagnitude;
+                if (distance >= best) continue;
+                if (!Physics.Raycast(root + Vector3.up * .3f, Vector3.down, out var hit, .5f,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) || Mathf.Abs(hit.point.y - root.y) > .035f) continue;
+                best = distance;
+                closest = root;
+            }
+            Assert.That(plants, Is.GreaterThan(100), "There is rooted grass beyond the summit pavement on each bank.");
+            Assert.That(best, Is.LessThan(float.PositiveInfinity), "A blade root sits on the live terrain collider.");
+            return closest;
+        }
+
+        private static void AssertKioskApproachesClear(CityGrassField grass, CityLayout layout)
+        {
+            foreach (var site in CityKioskSites.ForLayout(layout).Sites)
+            for (float z = site.Apron.yMin + .10f; z < site.Apron.yMax; z += .20f)
+            for (float x = site.Apron.xMin + .10f; x < site.Apron.xMax; x += .20f)
+            {
+                var point = new Vector2(x, z);
+                if (site.TrySampleApronTop(point, out _))
+                    Assert.That(grass.Surface.TrySample(point, out _, out _, out _), Is.False,
+                        "Grass must stay off the concrete kiosk approach in City and Home.");
+            }
+        }
+
+        private static Shot RidgeKioskApronShot(CityLayout layout, CityGrassField grass, Camera camera)
+        {
+            Assert.That(RidgeKioskSitePlan.TryCreate(layout, out var kiosk), Is.True);
+            Vector3 eye = grass.Surface.FromCity(kiosk.Origin + new Vector3(3.65f, 1.8f, 5.3f));
+            Vector3 aim = grass.Surface.FromCity(kiosk.Approach + Vector3.up * .23f);
+            return Shot.At("ridge-wind-kiosk-clear", eye, aim, 61f,
+                readyWhen: () => WarmGrassShot(grass, camera, eye, aim));
+        }
+
+        private static Vector3 FrameRidgeGrass(Vector3 aim, float distance, float elevation)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                Vector3 eye = aim + Quaternion.Euler(0f, i * 45f, 0f) * Vector3.back * distance + Vector3.up * elevation;
+                if (!Physics.CheckSphere(eye, .13f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) &&
+                    !Physics.Linecast(eye, aim, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                    return eye;
+            }
+            return aim + new Vector3(0f, elevation + 1f, -distance);
         }
     }
 }

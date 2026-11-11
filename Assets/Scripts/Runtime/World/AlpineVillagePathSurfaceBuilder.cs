@@ -55,6 +55,7 @@ namespace BarPromenade
                 renderer.receiveShadows = true;
                 VillageSurfaceAppearance.ApplyCombined(renderer,
                     MountainRoadSurfaceKind.ForestFloor, tint);
+                VillageSurfaceAppearance.ApplySnowShoulder(renderer, .23f, useContourDistance: true);
             }
             AlpineVillageWorldBuilder.ReportTerrainMesh(
                 "Visible Village Paths", vertices, indices, meshMs, 0d,
@@ -95,7 +96,8 @@ namespace BarPromenade
             AlpineVillagePathDescriptor terminal = chain[chain.Count - 1];
             bool meetsLodgeThreshold = terminal.Kind == AlpineVillagePathKind.SkiBaseAccess &&
                 (XZ(terminal.End) - XZ(expansion.LodgeThresholdApproach)).sqrMagnitude < .000001f;
-            List<Vector2> points = Contour(centres, radius, !meetsLodgeThreshold);
+            List<Vector2> contour = Contour(centres, radius, !meetsLodgeThreshold);
+            var points = new List<Vector2>(contour);
             List<int> triangles = Triangulate(points);
             Refine(points, ref triangles);
             ValidateCoverage(points, triangles, origin, chain);
@@ -140,7 +142,42 @@ namespace BarPromenade
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             AlpineVillageRoadSurfaceBuilder.FitPathJunctions(mesh, plan);
+            AssignContourDistance(mesh, origin, contour, centres, meetsLodgeThreshold);
             return mesh;
+        }
+
+        private static void AssignContourDistance(Mesh mesh, Vector2 origin, IReadOnlyList<Vector2> contour,
+            IReadOnlyList<Vector2> centres, bool meetsThreshold)
+        {
+            // FitPathJunctions can insert vertices. Measure the finished mesh
+            // against its original contour so rounded caps fade like the sides.
+            Vector2 end = centres[centres.Count - 1];
+            Vector2 forward = (end - centres[centres.Count - 2]).normalized;
+            var edges = new List<(Vector2 Start, Vector2 Span, float InverseLengthSquared)>(contour.Count);
+            for (int i = 0; i < contour.Count; i++)
+            {
+                Vector2 a = contour[i], b = contour[(i + 1) % contour.Count];
+                if (meetsThreshold && Mathf.Abs(Vector2.Dot(a - end, forward)) < Epsilon &&
+                    Mathf.Abs(Vector2.Dot(b - end, forward)) < Epsilon) continue;
+                Vector2 span = b - a;
+                edges.Add((a, span, 1f / span.sqrMagnitude));
+            }
+
+            Vector3[] vertices = mesh.vertices;
+            var distances = new List<Vector4>(vertices.Length);
+            foreach (Vector3 vertex in vertices)
+            {
+                Vector2 point = XZ(vertex) - origin;
+                float nearest = .32f * .32f;
+                foreach (var edge in edges)
+                {
+                    Vector2 delta = point - edge.Start;
+                    float along = Mathf.Clamp01(Vector2.Dot(delta, edge.Span) * edge.InverseLengthSquared);
+                    nearest = Mathf.Min(nearest, (delta - edge.Span * along).sqrMagnitude);
+                }
+                distances.Add(new Vector4(Mathf.Sqrt(nearest), 0f, 0f, 0f));
+            }
+            mesh.SetUVs(GroundSurfaceCoordinates.Channel, distances);
         }
 
         private static List<Vector2> Contour(List<Vector2> centres, float radius, bool roundEnd)

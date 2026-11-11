@@ -2,10 +2,12 @@
 
 ## Current facts
 
-- **Accepted 2026-11-11,user — dense City grass:**8types/3variants/3LOD;
-  ground/Home;instances/cache100/range38m.
-  Wind/roots/hero+7NPC/24trails;Lit/pigment/history.
-  Low park/kept garden/sparse lake/beach reeds;story/FX kept.
+- **Accepted 2026-11-11,user — world joints:** art §4, City first.
+  Blend coatings. Profile separate solids; timber bridge boards end in timber.
+
+- **Accepted 2026-11-11,user — City grass/wind:**8types/3variants/3LOD.
+  City/Home cache100/range38m. Clear paths. Roots, hero+7NPC/24trails.
+  Ridge wind grows with height. Crowns and anchored wires sway within bounds.
 
 - **Accepted 2026-11-09 — City power:** ≤64poles/192spans;roads≥7m;Home≤64m.
   Ridge:axes2m,neighbour feeds;16 segments clear bays/roofs.
@@ -61,10 +63,11 @@
   Pool12/lens/halo/spill;lease/pause/disable cleanup. Story6/19/20 exception:
   text/clues/hero reaction/strobe0;24FX/art9/story16/21.
 
-- **Accepted 2026-11-06,user — Ridge ground/furniture:** shared earth triangles/
-  collision/walk/map;ravine/steep/solids closed;level road/stair contacts;
-  shared rigs/seats/utilities. Benches40–60/bins40–65/booths70–90m→sites/
-  views;Home bridge bench→city. Map=geometry;bounded plans/materials/Update0;level0.
+- **Accepted 2026-11-06,user — Ridge ground/furniture:** earth triangles/
+  collision/walk/map;ravine/steep/solids closed;stairs meet grade.
+  Curbs→local soil;limited foundation cut/fill.
+  Shared seats/utilities;benches40–60/bins40–65/booths70–90m→sites/views.
+  Home bench→city. Bounded plans/materials/Update0;level0.
 
 - **Accepted 2026-11-06,user — Ridge/kiosk light:** poles→stairs/decks165°/95°/22m.
   Home/court/booths share12/day floor/shadows;booths6.5m/130° down/out. Kiosk
@@ -1361,13 +1364,11 @@
   identity-palette/§16/9checks/0§6 deviation.
 
 - **Accepted — 2026-10-04, unified City ground:**
-  `CityGroundSurfaceSystem` partitions typed sources in XZ, retaining exact
-  planes/normals/metre UVs. `48 m` sectors bind weather and triangle footsteps;
-  markings project/clip to support. Disabled hosts retain semantics. Structural
-  bridges/piers/stairs, cemetery cuts and deformable sand remain local; Home
-  composition has no collision. One synchronous stage caches vertices/planes/
-  contours/styles; partition/support/edge grids stay `2/1/.5 m`.
-  Routes/anchors/palettes/story §16/nine checks stay.
+  `CityGroundSurfaceSystem`: typed XZ partition; exact planes/normals/metre UVs,
+  `48 m` weather/triangle footsteps; paint projects/clips to support.
+  Disabled hosts keep semantics. Bridges/piers/stairs, grave cuts/sand local;
+  Home collision0. Sync caches vertices/planes/contours/styles;
+  grids `2/1/.5 m`. Routes/anchors/palettes/story §16/art9 stay.
 
 
 - **Accepted — 2026-09-29, Normal NPC faces and fisherman:**

@@ -38,12 +38,15 @@ namespace BarPromenade
 
     public readonly struct CityCoastalCableSpan
     {
-        internal CityCoastalCableSpan(Vector3 start, Vector3 end, float sag, bool service)
-        { Start = start; End = end; Sag = sag; IsServiceDrop = service; }
+        internal CityCoastalCableSpan(Vector3 start, Vector3 end, float sag, bool service, float windSwing = 0f)
+        { Start = start; End = end; Sag = sag; IsServiceDrop = service; WindSwing = windSwing; }
         public Vector3 Start { get; }
         public Vector3 End { get; }
         public float Sag { get; }
         public bool IsServiceDrop { get; }
+        internal float WindSwing { get; }
+        internal Vector3 Lateral => Vector3.Cross(Vector3.up, End - Start).normalized;
+        internal static float WindEnvelope(float t) => t <= .00001f || t >= .99999f ? 0f : 4f * t * (1f - t);
         public Vector3 Sample(float t) => Vector3.Lerp(Start, End, t) -
             Vector3.up * (Sag * 4f * t * (1f - t));
     }
@@ -57,6 +60,7 @@ namespace BarPromenade
         public const int MaximumCableSpanCount = 192;
         public const float PoleCableHeight = 8.14f;
         public const float MinimumVehicleWireHeight = 7f;
+        internal const float MaximumWindSwing = .34f;
         // The .38 m ground collar clears the public pavement's 5 m outer
         // edge, while the .65 m crossarm tips fit the recessed street wall.
         private const float PoleSideOffset = 5.35f;
@@ -175,6 +179,18 @@ namespace BarPromenade
                     poles[nearest] + Vector3.up * PoleCableHeight, end, inletRotation, null));
             }
             ExtendToRidge(layout, facilities, clearance, poles, forwards, spans, solids, inlets, services);
+            for (int i = 0; i < spans.Count; i++)
+            {
+                CityCoastalCableSpan span = spans[i];
+                float limit = Mathf.Min(span.IsServiceDrop ? .12f : MaximumWindSwing, span.Sag * .68f);
+                limit = Mathf.Min(limit, Vector3.Distance(span.Start, span.End) * .018f);
+                for (float swing = limit; swing >= .012f; swing *= .5f)
+                {
+                    if (!ClearSpan(layout, facilities, span, clearance, out _, swing: swing)) continue;
+                    spans[i] = new CityCoastalCableSpan(span.Start, span.End, span.Sag, span.IsServiceDrop, swing);
+                    break;
+                }
+            }
             return new CityCoastalInfrastructurePlan(facilities, poles, spans, solids, inlets, forwards, services);
         }
 
@@ -377,21 +393,28 @@ namespace BarPromenade
             =>ClearSpan(layout,facilities,span,context,out _,receiver);
 
         private static bool ClearSpan(CityLayout layout,IList<CityCoastalFacility> facilities,
-            CityCoastalCableSpan span,ClearanceContext context,out CableRejection rejection,BuildingLot receiver=null)
+            CityCoastalCableSpan span,ClearanceContext context,out CableRejection rejection,BuildingLot receiver=null,
+            float swing=0f)
         {
             rejection=CableRejection.None;
-            if(!context.Geometry.Clear(span)){rejection=CableRejection.Building;return false;}
-            Rect extent=Rect.MinMaxRect(Mathf.Min(span.Start.x,span.End.x)-.01f,Mathf.Min(span.Start.z,span.End.z)-.01f,
-                Mathf.Max(span.Start.x,span.End.x)+.01f,Mathf.Max(span.Start.z,span.End.z)+.01f);
+            if(!context.Geometry.Clear(span,swing)){rejection=CableRejection.Building;return false;}
+            float padding=.01f+swing;
+            Rect extent=Rect.MinMaxRect(Mathf.Min(span.Start.x,span.End.x)-padding,Mathf.Min(span.Start.z,span.End.z)-padding,
+                Mathf.Max(span.Start.x,span.End.x)+padding,Mathf.Max(span.Start.z,span.End.z)+padding);
             bool touches=context.Bounds.Overlaps(extent);
             for(int f=0;f<facilities.Count && !touches;f++)touches=facilities[f].Footprint.Overlaps(extent);
             if(!touches)return true;
             context.NearbyRoads.Clear();
             context.Paving.GetNearby(extent,context.NearbyRoads);
             int samples=Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(span.Start,span.End)/.5f),4,128);
+            int sides=swing>0f?1:0;
+            Vector3 lateral=sides==0?Vector3.zero:span.Lateral*swing;
             for(int i=1;i<samples;i++)
+            for(int side=-sides;side<=sides;side++)
             {
-                Vector3 point=span.Sample(i/(float)samples);
+                float t=i/(float)samples;
+                Vector3 point=span.Sample(t);
+                if (side!=0) point+=lateral*(side*CityCoastalCableSpan.WindEnvelope(t));
                 Vector2 xz=new Vector2(point.x,point.z);
                 for(int f=0;f<facilities.Count;f++)
                     if(point.y<facilities[f].Position.y+facilities[f].Size.y+.35f &&

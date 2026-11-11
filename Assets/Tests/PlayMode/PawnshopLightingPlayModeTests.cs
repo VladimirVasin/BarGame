@@ -87,7 +87,6 @@ namespace BarPromenade.Tests.PlayMode
                     "Every maintained hillside bench needs an approach from a public footway: " +
                     string.Join(", ", pockets.UnconnectedBenchIds));
                 Transform pocketWorld = city.World.Root.GetComponentsInChildren<Transform>().Single(part => part.name == "Ridge bench pockets");
-                Assert.That(pocketWorld.GetComponentsInChildren<Renderer>().Any(renderer => renderer.name == "Maintained bench paving"), Is.True);
                 foreach (var pocket in pockets.Pockets)
                 {
                     Assert.That(pocket.ApproachPath.Count, Is.GreaterThan(1), pocket.Placement.Id);

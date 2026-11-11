@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "signature": "9a0dd1a1b281a0937b748c6b1af02c0c37726fe5ba295170bc0c86202a74af13",
+  "version": "1.1.0",
+  "signature": "f3a55248e0f42aa0a644e009e5e84d34318b4b20951b50cce201cc22e74c333a",
   "unity_axes": "Blender (x,z,y), reversed face winding",
   "asphalt_width": 6,
   "public_sidewalk_width": 2,
@@ -33,6 +33,20 @@
         1,
         0,
         0
+      ]
+    },
+    "SoftCurbFacing": {
+      "vertices": 10,
+      "triangles": 8,
+      "min": [
+        0,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        1,
+        0.0,
+        -0.0
       ]
     },
     "StreetProfile": {

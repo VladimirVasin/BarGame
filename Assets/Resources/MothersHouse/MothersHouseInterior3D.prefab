@@ -2591,11 +2591,11 @@ MonoBehaviour:
     albedo: {fileID: 2800000, guid: ace42e61f12d54008fc5020f984266a0, type: 3}
     response: {fileID: 2800000, guid: 32bca1c954ad5389af50ead7a895cb0a, type: 3}
     auxiliary: {fileID: 2800000, guid: d55f55c6ea864ac4f9c1b421abd70c5b, type: 3}
-    uvSignature: 0d52f32ddc77b640396a5ab9912173da5641066efc74d6a3d3bc0e5dcb9f1ebe
-    albedoSha256: 4c916a39eb83544c8bd314fcf3cc61b411be78cc35f547182da86bb59482fda8
-    responseSha256: 879514e76d74e6ce5c5b00ded5deb1eb16124dde42acb03759bb9202d93975ae
-    modelSha256: 7b16cd119ea2d202de3ea9bb5be29bdf4e876cdf2bd21c0f0ea8ac9e0ece6bd9
-    auxiliarySha256: c3e5380e1f73c9b9b51bd778acf4f9fd25076f57afbc1fec426da7a5fe62ec6b
+    uvSignature: 00cff912fd950613b9de6c5c67b24cdd7eacf04cf5d35b810ce953688e1e0d16
+    albedoSha256: 5fbb4f96a96a2f829768bf54ac78615f7b9229481f2fc13795d1101ca2cbd037
+    responseSha256: 2c1ec01a92021eb8a888b22aaa34a82d54b4649733c71f4e689e63b3168210a4
+    modelSha256: baebe90583a0c8107b4570826ff3a754169fddb7c2a7720512e12d5cd847b3d4
+    auxiliarySha256: bbcfba9f1064d3a657c45e1d905683a186616cad9dd787d47913f180ffc29da0
     uniquePartCount: 125
   localBounds:
     m_Center: {x: 0, y: 2.93, z: 0.4500003}
@@ -2607,10 +2607,10 @@ MonoBehaviour:
     wallThickness: 0.24
     doorWidth: 1.3
     doorHeight: 2.2
-  sourceTriangleCount: 21760
+  sourceTriangleCount: 21816
   sourceGeneratorVersion: 1.12.0
   designId: mothers_house_interior_v1
-  buildSignature: d083642282e0fe4399488d2d4dfa21ee7eb03f94064820a3fd114bc12c395fbe
+  buildSignature: bdd127c21ae97dfc6cf24804ff8ad791b750803824df141589a685ec4bc94f30
 --- !u!1001 &4490380615483208827
 PrefabInstance:
   m_ObjectHideFlags: 0

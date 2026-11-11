@@ -38,17 +38,20 @@ namespace BarPromenade
                 padding = CableRadius * new Vector3(Length(horizontal.x,y.x), Length(horizontal.y,y.y), Length(horizontal.z,y.z));
             }
 
-            internal bool Cable(CityCoastalCableSpan span)
+            internal bool Cable(CityCoastalCableSpan span, float swing)
             {
                 Vector3 a = inverse.MultiplyPoint3x4(span.Start);
                 Vector3 delta = inverse.MultiplyVector(span.End - span.Start);
                 Vector3 sag = inverse.MultiplyVector(Vector3.up * (4f * span.Sag));
+                Vector3 lateral = swing > 0f ? Abs(inverse.MultiplyVector(span.Lateral * swing)) : Vector3.zero;
                 Vector3 from = a, low = local.min - padding, high = local.max + padding;
                 for (int i = 1; i <= Segments; i++)
                 {
                     float t = i / (float)Segments;
                     Vector3 to = a + delta * t - sag * (t * (1f - t));
-                    if (Intersects(from, to, low, high)) return true;
+                    Vector3 sweep = swing > 0f ? lateral * CityCoastalCableSpan.WindEnvelope(
+                        Mathf.Clamp(.5f, (i - 1) / (float)Segments, t)) : Vector3.zero;
+                    if (Intersects(from, to, low - sweep, high + sweep)) return true;
                     from = to;
                 }
                 return false;
@@ -126,13 +129,15 @@ namespace BarPromenade
             seen = new int[parts.Count];
         }
 
-        internal bool Clear(CityCoastalCableSpan span) => !TryFindBlockingPart(span, out _);
+        internal bool Clear(CityCoastalCableSpan span, float swing = 0f) => !TryFindBlockingPart(span, out _, swing);
 
-        internal bool TryFindBlockingPart(CityCoastalCableSpan span, out string name)
+        internal bool TryFindBlockingPart(CityCoastalCableSpan span, out string name, float swing = 0f)
         {
-            Vector3 lo = Vector3.Min(span.Start, span.End) - Vector3.up * span.Sag - Vector3.one * CableRadius;
-            Vector3 hi = Vector3.Max(span.Start, span.End) + Vector3.one * CableRadius;
-            return Find(new Bounds((lo + hi) * .5f, hi - lo), span, default, false, 0f, out name);
+            Vector3 axis = swing > 0f ? span.Lateral * swing : Vector3.zero;
+            Vector3 padding = Vector3.one * CableRadius + new Vector3(Mathf.Abs(axis.x), 0f, Mathf.Abs(axis.z));
+            Vector3 lo = Vector3.Min(span.Start, span.End) - Vector3.up * span.Sag - padding;
+            Vector3 hi = Vector3.Max(span.Start, span.End) + padding;
+            return Find(new Bounds((lo + hi) * .5f, hi - lo), span, default, false, swing, out name);
         }
 
         internal bool PoleClear(Vector3 ground, float clearance = .23f)
@@ -158,7 +163,7 @@ namespace BarPromenade
                     seen[index] = stamp;
                     Part part = parts[index];
                     if (!query.Intersects(part.WorldBounds)) continue;
-                    if (!(isPole ? part.Pole(pole,clearance) : part.Cable(span))) continue;
+                    if (!(isPole ? part.Pole(pole,clearance) : part.Cable(span,clearance))) continue;
                     name = part.Name;
                     return true;
                 }

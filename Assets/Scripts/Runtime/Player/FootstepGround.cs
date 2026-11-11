@@ -264,9 +264,6 @@ namespace BarPromenade
     /// </summary>
     public sealed class PuddleFootstepOverlay : FootstepGroundOverlay
     {
-        /// <summary>The shader's `0.4 + 0.6 * noise`, averaged.</summary>
-        public const float MeanEdgeNoise = 0.7f;
-
         /// <summary>
         /// Half of the shader's `smoothstep(0, 0.12)`: the film is at least
         /// half opaque, which is where a puddle reads as water.
@@ -294,9 +291,8 @@ namespace BarPromenade
                 return false;
             }
 
-            // The rim mask is 1 at the patch centre and 0 on its rim,
-            // interpolated bilinearly over a 3x3 grid: the product of the
-            // two axis pyramids.
+            // The shared water shader evaluates the signed patch axes as
+            // a radius, then wears that rim with world-space noise.
             Vector3 local = Quaternion.Inverse(patch.Rotation) *
                             (new Vector3(feet.x, topY, feet.z) -
                              patch.Center);
@@ -304,11 +300,27 @@ namespace BarPromenade
                       Mathf.Max(0.0001f, patch.Size.x * 0.5f);
             float v = Mathf.Abs(local.z) /
                       Mathf.Max(0.0001f, patch.Size.z * 0.5f);
-            float mask = Mathf.Clamp01(1f - u) * Mathf.Clamp01(1f - v);
-            float erosion =
-                (1f - mask) * MeanEdgeNoise * Mathf.Max(0.05f, edgeBite);
+            float erosion = Mathf.Sqrt(u * u + v * v) *
+                (1.03f + .22f * edgeBite * EdgeNoise(feet));
             float shore = Mathf.Sqrt(Mathf.Clamp01(wetness));
             return shore - erosion >= FilmThreshold;
+        }
+
+        private static float EdgeNoise(Vector3 point)
+        {
+            float x = point.x * 2.2f, z = point.z * 2.2f;
+            float cx = Mathf.Floor(x), cz = Mathf.Floor(z);
+            float a = x - cx, b = z - cz;
+            a = a * a * (3f - 2f * a);
+            b = b * b * (3f - 2f * b);
+            return Mathf.Lerp(Mathf.Lerp(Hash(cx, cz), Hash(cx + 1f, cz), a),
+                Mathf.Lerp(Hash(cx, cz + 1f), Hash(cx + 1f, cz + 1f), a), b);
+
+            static float Hash(float x, float z)
+            {
+                float n = Mathf.Sin(x * 127.1f + z * 311.7f) * 43758.5453f;
+                return n - Mathf.Floor(n);
+            }
         }
 
         public override bool IsActiveAt(Vector3 feet)

@@ -35,12 +35,19 @@ def build_depth_normals(source, family):
     InitializeStandardLitSurfaceData(input.uv, surface);
 '''
     if ground:
-        hook += '''    half relief;
-    ApplyGroundLayers(input.uv, input.surfaceWorld, input.normalWS,
+        hook = '''    SurfaceData surface;
+    float2 groundUv = GroundMaterialUv(input.uv);
+    InitializeStandardLitSurfaceData(groundUv, surface);
+    half relief;
+    ApplyGroundLayers(groundUv, input.surfaceWorld, input.normalWS,
         input.groundRoad, input.groundState, input.groundTalus, surface, relief);
+    half receiver = GroundScreenSpaceReceiver();
+    #if defined(_CITY_GROUND_SEAMS)
+        half fallback = _GroundKind < .5h && _GroundRoadCoordinates > .5h ? receiver : 1.0h;
+        ApplyCityGroundJoints(input.surfaceWorld, input.normalWS, surface, relief, receiver, fallback);
+    #endif
     half3 surfaceNormal = GroundReliefNormal(input.surfaceWorld,
         NormalizeNormalPerPixel(normalWS), relief);
-    half receiver = GroundScreenSpaceReceiver();
 '''
     else:
         hook += '''    half2 slope;

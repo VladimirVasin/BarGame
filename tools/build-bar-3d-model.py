@@ -758,14 +758,14 @@ def build_shell(asset: AssetBuild, materials: dict) -> None:
     add_part(
         asset, materials, "Entrance Door Frame",
         kit.merge_all([
-            bp.u_box(
+            kit.joint_box(
                 (side * (DOOR_WIDTH * 0.5 + frame_bar * 0.5),
                  (DOOR_HEIGHT + frame_bar) * 0.5,
                  frame_z),
                 (frame_bar, DOOR_HEIGHT + frame_bar, 0.20), 0.010)
             for side in (-1.0, 1.0)
         ] + [
-            bp.u_box(
+            kit.joint_box(
                 (0.0, DOOR_HEIGHT + frame_bar * 0.5, frame_z),
                 (DOOR_WIDTH + frame_bar * 2.0, frame_bar, 0.20),
                 0.010)
@@ -773,7 +773,7 @@ def build_shell(asset: AssetBuild, materials: dict) -> None:
         "entrance_frame", bp.ident("DarkWoodTint"), sheet="DarkWood")
     add_part(
         asset, materials, "Entrance Door",
-        bp.u_box(
+        kit.joint_box(
             (0.0, DOOR_HEIGHT * 0.5, door_face_z),
             (DOOR_WIDTH, DOOR_HEIGHT, 0.08), 0.014),
         "entrance_door", bp.ident("DarkWoodTint"), sheet="DarkWood")
@@ -2717,13 +2717,23 @@ def main() -> None:
     validate(interior)
     validate_service_props(service_props)
     validate_facade(facade)
+    facade_signature = signature_for(facade, exterior.DESIGN_ID, exterior.GENERATOR_VERSION)
+    preserve_facade = False
+    if FACADE_MANIFEST.exists() and FACADE_FBX.exists():
+        try:
+            previous_facade = json.loads(FACADE_MANIFEST.read_text(encoding="utf-8"))
+            preserve_facade = (previous_facade.get("design_id") == exterior.DESIGN_ID and
+                               previous_facade.get("build_signature") == facade_signature)
+        except (OSError, ValueError):
+            pass
     import bar_interior_unique_surfaces as interior_surfaces
     interior_surfaces.prepare(interior, write=not args.validate_only)
     interior_surfaces.review_materials(interior)
     import city_bar_unique_surfaces as city_surfaces
     if city_surfaces.MANIFEST.exists():
-        city_surfaces.prepare(facade, write=not args.validate_only)
-        if not args.validate_only:
+        republish_facade = not args.validate_only and not preserve_facade
+        city_surfaces.prepare(facade, write=republish_facade)
+        if republish_facade:
             # A geometry change repacks the facade's unique UVs. Publish the
             # matching pair in the same operation, preserving user import
             # settings and all unrelated City surface sheets.
@@ -2739,6 +2749,7 @@ def main() -> None:
                 "publisher.build(['CityBarFacade'])",
             ))
             subprocess.run(["python", "-B", "-c", publisher_code, str(ROOT / "tools")], cwd=ROOT, check=True)
+        if not args.validate_only:
             city_surfaces.review_materials(facade)
     total = kit.triangle_count(
         kit.merge_all([part.geometry for part in interior.parts]))
@@ -2788,18 +2799,6 @@ def main() -> None:
             district_moods=())
         export_fbx(service_props, SERVICE_FBX)
 
-    facade_signature = signature_for(
-        facade, exterior.DESIGN_ID, exterior.GENERATOR_VERSION)
-    preserve_facade = False
-    if FACADE_MANIFEST.exists() and FACADE_FBX.exists():
-        try:
-            previous_facade = json.loads(
-                FACADE_MANIFEST.read_text(encoding="utf-8"))
-            preserve_facade = (
-                previous_facade.get("design_id") == exterior.DESIGN_ID and
-                previous_facade.get("build_signature") == facade_signature)
-        except (OSError, ValueError):
-            preserve_facade = False
     if preserve_facade:
         facade_manifest = previous_facade
     else:

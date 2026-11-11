@@ -11,8 +11,8 @@ from __future__ import annotations
 from city_building_parts import (
     FacadeAttachmentBounds, Geometry, PartSpec, PrototypeSpec,
     box, coastal_prototype, combine, cylinder_z,
-    facade_bounds, gable_roof, merge, parts_for, prism, shed_roof,
-    slots_for_grid, window_geometry,
+    facade_bounds, facade_prism, gable_roof, merge, parts_for, shed_roof,
+    slots_for_grid, trim_box, window_geometry,
 )
 
 PURPOSES = ("DryWarehouse", "ColdStorage", "RepairWorkshop", "MetalWorkshop",
@@ -115,35 +115,33 @@ def industrial_prototype(variant: int) -> PrototypeSpec:
     body_top = height - (2. if variant == 1 else 1.2)
     front = hd - 1.18
     primary, secondary, metal, concrete, steel, timber = [], [], [], [], [], []
+    def recessed_facade(left, right, pier, top):
+        outline = ((left, -hd), (right, -hd), (right, hd), (right - pier, hd),
+                   (right - pier, front), (left + pier, front), (left + pier, hd), (left, hd))
+        return facade_prism(outline, 0, top)
+
     # The apron is raised, visibly occupied and closed; it is not a traversable
     # sidewalk hidden behind the conservative building collider.
     if variant == 4:
         for left, right in ((-hw, -1.8), (1.8, hw)):
-            primary.append(box(((left + right) * .5, -0.59, 2.1),
-                               (right - left, depth - 1.18, 4.2)))
-            for edge_x in (left + .21, right - .21):
-                primary.append(box((edge_x, hd - .59, 2.1), (.42, 1.18, 4.2)))
-            concrete.append(box(((left + right) * .5, hd - .59, .24),
+            primary.append(recessed_facade(left, right, .42, 4.2))
+            concrete.append(trim_box(((left + right) * .5, hd - .59, .24),
                                 (right - left - .16, 1.06, .48)))
-        primary.append(box((0, 0, (4.2 + body_top) * .5),
-                           (width, depth, body_top - 4.2)))
+        primary.append(facade_prism(((-hw, -hd), (hw, -hd), (hw, hd), (-hw, hd)), 4.2, body_top))
     elif variant == 3:
         polygon = ((-hw, -hd), (-hw + 5., -hd), (-hw + 5., 0.),
                    (hw, 0.), (hw, hd), (-hw, hd))
-        primary.append(prism(polygon, 0, body_top))
-        concrete.append(box((2.2, -1.0, .16), (5.8, 1.8, .32)))
+        primary.append(facade_prism(polygon, 0, body_top))
+        concrete.append(trim_box((2.2, -1.0, .16), (5.8, 1.8, .32)))
     else:
-        primary.append(box((0, -.59, body_top * .5), (width, depth - 1.18, body_top)))
         # True loading recess: wall is behind stock, canopy and load-bearing
         # piers. The service apron never protrudes into public pavement.
-        for sign in (-1, 1):
-            primary.append(box((sign * (hw - .29), hd - .59, body_top * .5),
-                               (.58, 1.18, body_top)))
-        concrete.append(box((0, hd - .61, .24), (width - 1.32, 1.14, .48)))
-    secondary.append(box((0, hd - .05, body_top - .25), (width - .12, .18, .38)))
-    plinth = box((0, -hd + .04, .29), (width - .14 if variant != 3 else 4.86, .16, .58))
+        primary.append(recessed_facade(-hw, hw, .58, body_top))
+        concrete.append(trim_box((0, hd - .61, .24), (width - 1.32, 1.14, .48)))
+    secondary.append(trim_box((0, hd - .05, body_top - .25), (width - .12, .18, .38)))
+    plinth = trim_box((0, -hd + .04, .29), (width - .14 if variant != 3 else 4.86, .16, .58))
     if variant == 3:
-        plinth = box((-hw + 2.5, -hd + .04, .29), (4.86, .16, .58))
+        plinth = trim_box((-hw + 2.5, -hd + .04, .29), (4.86, .16, .58))
     slots = []
     def windows(side, fixed, bays, levels, size):
         slots.extend(slots_for_grid(len(slots) + 1, side, fixed, bays, levels, size))
@@ -159,7 +157,7 @@ def industrial_prototype(variant: int) -> PrototypeSpec:
         windows("Front", front, (2.5, 4.8), (5.45,), (1.35, .86))
         windows("Rear", -hd, (-4.7, 4.7), (5.45,), (1.15, .86))
     elif variant == 2:
-        roof = box((0, 0, body_top + .20), (width, depth, .40))
+        roof = trim_box((0, 0, body_top + .20), (width, depth, .40))
         gate(-2.5, 3.35, 4.25, True)
         steel.extend((box((-2.5, front + .25, 4.98), (4.1, .24, .34)),
                       louvre(4.5, front, 2.65, 2.65, 1.9)))
@@ -211,7 +209,7 @@ def industrial_prototype(variant: int) -> PrototypeSpec:
         windows("Front", front, (-3.65,), (3.75,), (.70, .8))
         windows("Rear", -hd, (-2.8, 2.8), (3.7,), (1.25, .85))
     elif variant == 6:
-        roof = box((0, 0, body_top + .15), (width, depth, .30))
+        roof = trim_box((0, 0, body_top + .15), (width, depth, .30))
         # A single restrained flue is the rare vertical among low masses.
         steel.extend((cylinder_z((-5.9, hd - .60), .48, height - .14, .45, 12),
                       cylinder_z((-5.9, hd - .60), height - .14, height, .53, 12),
@@ -227,7 +225,7 @@ def industrial_prototype(variant: int) -> PrototypeSpec:
         windows("Front", front, (5.45,), (2.55,), (.80, 1.05))
         windows("Rear", -hd, (3.8,), (5.35,), (1.2, .9))
     elif variant == 7:
-        roof = box((0, 0, body_top + .19), (width, depth, .38))
+        roof = trim_box((0, 0, body_top + .19), (width, depth, .38))
         steel.append(louvre(-2.8, front, 2.8, 4.1, 2.8))
         gate(4.2, 1.6, 2.75, True)
         # Horizontal receiver and motor sit on a visible paired service skid.

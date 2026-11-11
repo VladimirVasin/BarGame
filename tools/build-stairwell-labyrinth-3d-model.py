@@ -484,7 +484,7 @@ def design():
         sr=rise/steps;sd=run/steps
         role='Concrete' if stage==1 else 'WornSteel'
         for n in range(steps):
-            g=bp.u_box((0,(n+1)*sr-.07,(n+.5)*sd),(width,.14,sd+.01),.006)
+            g=kit.translated(bp.to_source(kit.stair_nose(width,sd+.01,.14,.009)),(0,(n+1)*sr-.07,(n+.5)*sd))
             add(stage,role,transform(g,a,(0,yaw,0)),chunk)
             if stage>1 and n%3==0:
                 g=bp.u_box((0,(n+1)*sr+.006,(n+.16)*sd),(width-.20,.012,.035),.002)
@@ -797,7 +797,9 @@ def design():
             steps=8+(idx%5)*2;depth=.25+(idx%3)*.035;rise=.16+(idx%3)*.025
             run=steps*depth;climb=steps*rise;width=1.35+(idx%4)*.22;parts=[]
             material='Concrete' if stage==1 or idx%4==0 else 'WornSteel'
-            for step in range(steps):parts.append((material,bp.u_box((0,(step+1)*rise-.065,(step+.5)*depth),(width,.13,depth+.01),.005)))
+            tread = bp.to_source(kit.stair_nose(width,depth+.01,.13,.008))
+            for step in range(steps):
+                parts.append((material,kit.translated(tread,(0,(step+1)*rise-.065,(step+.5)*depth))))
             for sy,sz in ((0,-.65),(climb,run+.65)):
                 parts.append((material,bp.u_box((0,sy-.12,sz),(width+.65,.24,1.3),.008)))
                 for sign in (-1,1):local_rail(parts,(sign*(width+.65)/2,sy,sz-.64),(sign*(width+.65)/2,sy,sz+.64),'Wood' if stage==1 else 'Steel')

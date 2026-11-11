@@ -1,5 +1,7 @@
 #ifndef BAR_PROMENADE_CITY_GRASS_WIND_INCLUDED
 #define BAR_PROMENADE_CITY_GRASS_WIND_INCLUDED
+#include "CityWindField.hlsl"
+
 float4 _CityGrassWind;
 float4 _CityGrassPreviousWind;
 float4 _CityGrassContacts[32];
@@ -12,24 +14,35 @@ int _CityGrassContactCount;
 
 float3 CityGrassTravel(float3 root, float height, float4 wind, bool previous)
 {
-    float phase = dot(root.xz, float2(.67,.41));
-    float wave = .62 + .24*sin(wind.w*1.5 + phase) + .14*sin(wind.w*3.1+phase*1.7);
-    float stiffness = lerp(.45,.20,saturate(height));
-    float2 travel = wind.xy * (height*stiffness*wind.z*wave);
+    float3 city = CityWindCoordinates(root);
+    float phase = CityWindPhase(city.xz);
+    float ripple = .90 + .10 * sin(wind.w * 4.1 + dot(city.xz, float2(1.3, .93)));
+    float flex = lerp(.68, .41, saturate(height));
+    float strength = CityWindStrength(wind.z, city.y);
+    float2 travel = wind.xy * (height * flex * strength * CityWindPulse(phase, wind.w) * ripple);
+    float pressure = 0;
     bool nearBodies=all(root.xz>=_CityGrassContactBounds.xy)&&all(root.xz<=_CityGrassContactBounds.zw);
     [loop] for(int i=0;i<(nearBodies ? _CityGrassContactCount : 0);i++)
     {
         float4 body = previous ? _CityGrassPreviousContacts[i] : _CityGrassContacts[i];
-        if(body.w<=.015 || abs(root.y-body.y)>.85)continue;
+        if(body.w<=.015 || abs(root.y-body.y)>.55)continue;
         float2 away=root.xz-body.xz;
         float d=length(away);
-        float weight=smoothstep(body.w,0,d);
-        travel += away/max(d,.12) * (height*.72*weight);
+        float weight = 1 - smoothstep(body.w * .15, body.w, d);
+        float2 bend = away + wind.xy * max(0, .08 - d);
+        travel += bend / max(length(bend), .02) * (height * .93 * weight);
+        pressure = max(pressure, weight);
     }
     float lengthXZ=length(travel);
-    travel *= min(1,height*.78/max(.001,lengthXZ));
-    float sink=min(height*.42,dot(travel,travel)/max(.10,2*height));
+    travel *= min(1, height * .96 / max(.001, lengthXZ));
+    float sink = max(height * .60 * pressure, dot(travel,travel) / max(.10, 2 * height));
     return float3(travel.x,-sink,travel.y)*_CityGrassState.x;
+}
+
+float3 CityGrassBentPosition(float3 root, float3 position, float weight, float3 travel, float fade)
+{
+    float3 bend = float3(travel.x * weight, travel.y, travel.z * weight) * weight;
+    return root + (position - root + bend) * fade;
 }
 
 float3 CityGrassPositionWS(float4 positionOS,float2 metadata,bool previous)
@@ -41,8 +54,7 @@ float3 CityGrassPositionWS(float4 positionOS,float2 metadata,bool previous)
     float3 travel=CityGrassTravel(root,height,previous ? _CityGrassPreviousWind : _CityGrassWind,previous);
     // Geometry shrinks into its own fixed roots at the outer fog band.
     float fade=previous ? _CityGrassPreviousFade : _CityGrassFade;
-    position=root+(position-root)*fade;
-    return position+travel*(weight*weight)*fade;
+    return CityGrassBentPosition(root, position, weight, travel, fade);
 }
 void CityGrassDisplace(inout float4 positionOS,float2 metadata)
 {
@@ -57,10 +69,11 @@ void CityGrassDisplaceNormal(inout float4 positionOS,inout float3 normalOS,float
     // Jacobian inverse transpose for the quadratic rooted bend. The same
     // normal correction is used by lighting, shadow bias and depth normals.
     float3 n=TransformObjectToWorldNormal(normalOS);
-    float3 derivative=travel*(2*saturate(metadata.x)/height);
+    float weight = saturate(metadata.x);
+    float3 derivative = float3(travel.x * 2 * weight, travel.y, travel.z * 2 * weight) / height;
     n.y=(n.y-derivative.x*n.x-derivative.z*n.z)/max(.2,1+derivative.y);
     normalOS=TransformWorldToObjectNormal(normalize(n));
-    CityGrassDisplace(positionOS,metadata);
+    positionOS.xyz = TransformWorldToObject(CityGrassBentPosition(root, position, weight, travel, _CityGrassFade));
 }
 float3 CityGrassPreviousPositionWS(float4 positionOS,float2 metadata)
 {return CityGrassPositionWS(positionOS,metadata,true);}

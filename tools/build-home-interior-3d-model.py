@@ -75,7 +75,7 @@ def swap(v):
 
 
 def box(size, cut=.012):
-    return kit.chamfered_box((0,0,0), swap(size), cut)
+    return kit.joint_box((0,0,0), swap(size), cut)
 
 
 def cylinder(size, profile=None):
@@ -399,7 +399,7 @@ def add_entry_door(b):
             architraves.append(cuboid((sx*.698,1.15,side*.133),(.124,2.30,.034),.006))
         architraves.append(cuboid((0,2.255,side*.133),(1.272,.09,.034),.006))
     placed("Home Entry Door Architraves",kit.merge_all(architraves),tint=(.23,.136,.073,1))
-    placed("Home Entry Door Threshold",cuboid((0,.018,0),(1.132,.036,.24),.004),
+    placed("Home Entry Door Threshold",kit.translated(bp.to_source(kit.threshold(1.132,.24,.036)), (0,.018,0)),
            tint=(.16,.105,.066,1))
 
     hinges=[]
@@ -555,6 +555,7 @@ def add_bindings(b):
             geom=cylinder(size,((1,-.5),(1,-.46),(.62,-.42),(.52,.38),(.70,.45),(1,.5)))
         if name=="Home Bathroom Shower Basin":geom=rectangular_drain_surface(size,.060,.012)
         if name=="Home Kitchen Top Left":geom=remodel.sink_countertop(size)
+        if name=="Home Balcony Threshold":geom=kit.rotated_z(kit.threshold(size[2],size[0],size[1]),90)
         b.add(name,size,sheet,geometry=geom)
     remodel.add_bindings(b)
     b.add("Home Sink",(.85,.18,.55),"Enamel",geometry=remodel.sink_bowl())

@@ -2,11 +2,10 @@
 
 ## Before changing the project
 
-Read `AI.md`/relevant `ai/` files; verify reality before plans.
-Separate facts from proposals. Assess every user plan for project fit under
-`ai/prompt-templates.md`.
-Every scene change/visual task reviews all three groups, including
-post-processing: [effects standard](ai/visual-effects-standard.md).
+Read `AI.md`/relevant `ai/`; verify facts before plans. Assess fit under
+`ai/prompt-templates.md`. Visual changes review all [effects](ai/visual-effects-standard.md).
+Soften every visible world joint, including structural edges: art bible §4.
+Each separate construction part keeps its finish.
 
 ## World canon
 

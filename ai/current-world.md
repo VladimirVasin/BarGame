@@ -426,12 +426,12 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
   Coast→Lower Court/upper homes;2seven-tier climbs/ravine.
-  Stairs→tiers/court/crest;earth joins yards. Benches/bins/booths on level pockets;
+  Stairs→tiers/court/crest;soil blends from curbs into banks. Grass off paths;benches/bins/booths on level pockets;
   panels→entry/forecourt,fixed shadows/dayfloor;Home bench→truss/ravine/roofs.
   West Lane6:(-24,-8)/v0/4fl/X-99.2;(-25,-8)/v4/3fl/X-84.
   Tree gone;shared light/approach/mapXYZ.
   `CityHillsideBenchPocketPlan`:pawnshop≤45mXZ;origins fixed;West11/13 face+Z/new docks.
-  Plaza/stone1.6m→footways;West landing:solid AsphaltRoad/Concrete.
+  Plaza/stone1.6m по грунту с мягким краем→footways;West landing:AsphaltRoad/Concrete.
   Stair10.4m(6×.16/.36m)/warped lower landing→street grade.
   CityPawnshopDescentPlan:40.06m→3×12(.1252/.32m),aprons→bench35.553m→
   2×12(.166/.32m),landing2.4m→footway/Lane5 zebra/door;imported1.8m/bench branch.
@@ -441,7 +441,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   E glass return08–23/home(22,-7);switch→cabin light/grille;sign/flood fixed.
   Raised yard/map outside;spill.12/day≥⅔/Soft/opaque.
   Homes:soil/wet asphalt skirts;turf/gravel/broken stone/shrub03-04→Home;
-  deciduous gable groups. W:stepped concrete/drains;E:kerbs/grass/boot scrapers.
+  trees/shrubs flank gables. W:stepped concrete/drains;E:kerbs/grass/boot scrapers.
   Home patched plinth/lamp;poles→stairs/bridge footways;
   covered lamps below;rock/gravel under bridge bearings.
   Kiosks:one warm lens/two fixed soft-shadow lobes→seller/shelves/street;
@@ -740,17 +740,15 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   nodes and closes missing three-way sides with `1 x 8 m` paving. Compact
   narrow/wide approaches continue flush over bus aprons. Dashes clear nodes/
   zebras; up to six crossings share signals; bus/pole gap stays `0.30 m`.
-  `CityStreetSupportPlan` typed stations drive imported Blender top/edge
-  topology. Cached outer boundaries constrain
-  soil/lawn/path triangles through a `4 m` blend;
-  internal/buried edges do not pull earth down. `CityGroundSurfaceSystem` and
-  `GroundSurfacePartitioner` retain planes/normals/metre UVs while removing
-  lower-priority overlaps. `48 m` render/collision sectors keep weather/steps/
-  priority; paint projects to support. `CityBuildingPerimeterPlan` reclassifies
-  soil/grass triangles within `1.5 m` outside body contours as asphalt,
-  preserving planes/hard surfaces and excluding low grass. Hosts keep
-  semantics; cemetery cuts/coatings, sand/fixed collision stay. Home copies
-  bounded street/terrain/perimeters without collision. Ordinary Blender panes
+  `CityStreetSupportPlan` drives Blender tops, edges and curved kerbs.
+  Cached outer boundaries grade soil/lawn/path over `4 m`; buried edges do not.
+  `CityGroundSurfaceSystem` partitions overlaps into `48 m` sectors with exact
+  planes/UVs/weather/steps/priority. Paint projects to support. Height-aware
+  joint fields mix pigment/response on ground contacts. `CityBuildingPerimeterPlan`
+  replaces soil/grass in the outer `1.5 m` with asphalt on the same plane.
+  Hard ground stays. Grave cuts and sand stay local. River stairs/rails, timber
+  deck and facade corners use profiles. Wood ends at the quay on both banks.
+  Home copies bounded street/terrain/perimeters without collision. Ordinary Blender panes
   keep a street-front primary and timed Residential extra;dark gaps/districts/
   special Bar/Home/Shop materials stay;
 - `CityFogField`:≤36 world particles/shared material;City/balcony use slow
@@ -1445,10 +1443,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   lot dimensions to meet
   `CityLayoutGenerator.MinimumDistrictPointLotDimension` (`18 m`); smaller
   custom blocks omit the district POIs safely;
-- city-wide wind dressing: one cross-zone plan
-  (`CityWindDressing{Plan,Planner,Validator,WorldBuilder}`) hangs up to `64`
-  simulated cloth and rope pieces off structures the other dressers already
-  draw — torn awning rags on up to four of Old Town's market valances (two
+- `CityWindField` strengthens gusts up the Ridge. Grass, crowns and fixed-end wires
+  share it in City/Home. `CityWindDressing*` hangs up to `64` cloth/rope pieces on
+  existing structures — awning rags on up to four Old Town market valances (two
   per stall), grey shrouds on up to three scaffoldings' outer guard rails,
   up to six residential courtyard drying lines on their own drawn poles and
   parabola-sagged rope (`CityRopeSpanGeometry`, walk-through wash in the

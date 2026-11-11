@@ -23,7 +23,7 @@ source `ArtSource/City/EastExit`.
 launcher/`--validate-only`. Buildings: `Assets/City/Models/CityBuildings3D.{fbx,json}`;
 `CityBuildingAssetSetup.BuildOrThrow`. Coast: `Resources/City/CoastalInfrastructure`;
 `CityCoastalInfrastructureAssetSetup.{Build,Validate}OrThrow`.
-`Resources/City/StreetProfile`: metre tops/edges for `CityStreetSupportPlan`.
+`City/StreetProfile`: Blender tops/edges/curbs for `CityStreetSupportPlan`.
 Terraces: `Assets/Resources/CityTerraces`. `build-city-hillside-{house,bridge}-3d-model.py`:
 FBXs/JSON→`Assets/Resources/City/Hillside`;house `--model GlazedStairBay`.
 

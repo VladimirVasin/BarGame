@@ -61,7 +61,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThan(0f));
 
             // The rim eater is on — the flag that tells the shader
-            // this material's meshes carry a rim mask in TEXCOORD0.
+            // this material's meshes carry signed patch axes in TEXCOORD0.
             Assert.That(
                 puddle.GetVector("_EdgeNoiseParams").z,
                 Is.EqualTo(1f).Within(0.0001f));
@@ -113,6 +113,8 @@ namespace BarPromenade.Tests.EditMode
                 source,
                 Does.Contain("shore - erosion"),
                 "The rim erosion must bite the shore, not the raw wetness.");
+            Assert.That(source, Does.Contain("length(input.filmUv)"),
+                "A fully wet puddle must have a radial rim rather than a visible rectangular carrier.");
         }
 
         [Test]
@@ -180,13 +182,16 @@ namespace BarPromenade.Tests.EditMode
                     Is.Null,
                     "A three-millimetre film must never trip a walker.");
 
-                // One 3x3 grid per patch: the centre vertex carries the
-                // rim mask the shader erodes from the edge inward.
+                // One 3x3 grid per patch with affine, signed rim coordinates.
                 var filter = root.GetComponent<MeshFilter>();
                 generatedMesh = filter.sharedMesh;
                 Assert.That(
                     filter.sharedMesh.vertexCount,
                     Is.EqualTo(patches.Count * 9));
+                Vector2[] uv = generatedMesh.uv;
+                Assert.That(uv[0], Is.EqualTo(new Vector2(-1f, -1f)));
+                Assert.That(uv[4], Is.EqualTo(Vector2.zero));
+                Assert.That(uv[8], Is.EqualTo(Vector2.one));
                 foreach (RuntimeOrientedBox patch in patches)
                 {
                     Assert.That(

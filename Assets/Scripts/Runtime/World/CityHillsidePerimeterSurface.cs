@@ -9,7 +9,7 @@ namespace BarPromenade
 {
     internal static class CityHillsidePerimeterSurface
     {
-        private enum Finish { Soil, Asphalt, Turf, Gravel }
+        private enum Finish { Asphalt, Turf, Gravel, Paving }
         private readonly struct Plot
         {
             internal readonly Finish Finish;
@@ -21,6 +21,7 @@ namespace BarPromenade
             }
         }
         private static readonly ConditionalWeakTable<CityLayout, List<Plot>> Plots = new();
+        private static readonly ConditionalWeakTable<CityLayout, List<GroundSurfacePartitioner.Footprint>> Paving = new();
         internal static Color ResidentialSoil => CityExteriorAppearance.ResolveDistrictGroundTint(
             CityDistrictPresentationPlanner.GetProfile(CityDistrictKind.Residential).Wear);
 
@@ -71,6 +72,41 @@ namespace BarPromenade
             }
         }
 
+        private static List<GroundSurfacePartitioner.Footprint> CreatePaving(CityLayout layout)
+        {
+            var cuts = new List<GroundSurfacePartitioner.Footprint>();
+            foreach (var road in CityHillsideStreetPlan.ForLayout(layout).Routes)
+                foreach (var polygon in road.WalkablePolygons)
+                    cuts.Add(new GroundSurfacePartitioner.Footprint(polygon));
+            foreach (var link in CityHillsideQuarterPlan.ForLayout(layout).Links)
+                cuts.Add(new GroundSurfacePartitioner.Footprint(link.Bounds));
+
+            var result = new List<GroundSurfacePartitioner.Footprint>();
+            foreach (var pocket in CityHillsideBenchPocketPlan.ForLayout(layout).Pockets)
+                foreach (var polygon in pocket.SurfacePolygons) Add(polygon);
+            if (CityPawnshopPlan.TryCreate(layout, out var pawnshop)) Add(pawnshop.ApproachFootprint);
+            return result;
+
+            void Add(Vector2[] polygon)
+            {
+                var footprint = new GroundSurfacePartitioner.Footprint(polygon);
+                var remaining = new List<Vector2[]> { footprint.Points };
+                // Public footways and bridge decks own their own finishes.
+                foreach (var cut in cuts)
+                {
+                    if (!cut.Bounds.Overlaps(footprint.Bounds)) continue;
+                    var next = new List<Vector2[]>();
+                    foreach (var part in remaining) next.AddRange(CityRoadPolygon.Subtract(part, cut.Points));
+                    remaining = next;
+                }
+                foreach (var part in remaining) result.Add(new GroundSurfacePartitioner.Footprint(part));
+            }
+        }
+
+        internal static void ApplyPaving(Renderer renderer, int slot) =>
+            CityParkSurfaceAppearance.ApplyCombined(renderer, CityParkSurfaceKind.Plaza,
+                new Color(.37f, .385f, .35f), slot);
+
         internal static void ApplyVerges(Renderer renderer, int turf, int gravel)
         {
             Bind(turf, GroundSurfaceKind.Lawn, CityParkSurfaceAppearance.GetTexture(CityParkSurfaceKind.Lawn),
@@ -105,7 +141,7 @@ namespace BarPromenade
         // Pave part of the original soil plane. A separate flat slab would float on the
         // downhill side, cover stairs, or change the height used by bus-side clearances.
         internal static Mesh Build(CityLayout layout, string name, Vector3[] points, Vector2[] coordinates,
-            params List<int>[] layers)
+            bool paveConcreteAprons, params List<int>[] layers)
         {
             var mesh = new Mesh { name = name };
             if (points.Length > ushort.MaxValue) mesh.indexFormat = IndexFormat.UInt32;
@@ -121,59 +157,71 @@ namespace BarPromenade
             // distances, without tessellating the terrain just to interpolate the finish.
             var edgeDistances = new List<Vector4>(new Vector4[points.Length]);
             var otherEdges = new List<Color32>(new Color32[points.Length]);
-            var splitIndices = new Dictionary<(Vector3, Finish), int>();
-            var soil = new List<int>(layers[0].Count);
-            var finishes = new[] { soil, new List<int>(), new List<int>(), new List<int>() };
+            var splitIndices = new Dictionary<(Vector3, int), int>();
+            var finishes = new[] { new List<int>(), new List<int>(), new List<int>(), new List<int>() };
             var candidates = new List<int>();
             var remaining = new List<Triangle>();
             var next = new List<Triangle>();
             var plan = CityBuildingPerimeterPlan.ForLayout(layout);
             var plots = Plots.GetValue(layout, CreatePlots);
-            for (int i = 0; i < layers[0].Count; i += 3)
+            var paving = Paving.GetValue(layout, CreatePaving);
+            float pavingTile = CityParkSurfaceAppearance.GetRecipe(CityParkSurfaceKind.Plaza).MetersPerTile;
+            Rect pavingBounds = default;
+            foreach (var shape in paving)
+                pavingBounds = pavingBounds.width == 0f ? shape.Bounds :
+                    Rect.MinMaxRect(Mathf.Min(pavingBounds.xMin, shape.Bounds.xMin), Mathf.Min(pavingBounds.yMin, shape.Bounds.yMin),
+                        Mathf.Max(pavingBounds.xMax, shape.Bounds.xMax), Mathf.Max(pavingBounds.yMax, shape.Bounds.yMax));
+            for (int slot = 0; slot < (paveConcreteAprons ? 2 : 1); slot++)
             {
-                int a = layers[0][i], b = layers[0][i + 1], c = layers[0][i + 2];
-                Vector3 min = Vector3.Min(points[a], Vector3.Min(points[b], points[c]));
-                Vector3 max = Vector3.Max(points[a], Vector3.Max(points[b], points[c]));
-                Rect bounds = Rect.MinMaxRect(min.x, min.z, max.x, max.z);
-                plan.Query(bounds, candidates);
-                bool cut = false;
-                foreach (int candidate in candidates)
+                List<int> original = layers[slot];
+                var unchanged = new List<int>(original.Count);
+                for (int i = 0; i < original.Count; i += 3)
                 {
-                    var rings = plan.Bands(candidate);
-                    for (int j = 0; j < rings.Count; j++)
+                    int a = original[i], b = original[i + 1], c = original[i + 2];
+                    Vector3 min = Vector3.Min(points[a], Vector3.Min(points[b], points[c]));
+                    Vector3 max = Vector3.Max(points[a], Vector3.Max(points[b], points[c]));
+                    Rect bounds = Rect.MinMaxRect(min.x, min.z, max.x, max.z);
+                    bool cut = false;
+                    if (pavingBounds.Overlaps(bounds))
+                        foreach (var shape in paving) Cover(shape, Finish.Paving);
+                    if (slot == 0)
                     {
-                        Cover(rings[j], Finish.Asphalt);
+                        plan.Query(bounds, candidates);
+                        foreach (int candidate in candidates)
+                            foreach (var band in plan.Bands(candidate)) Cover(band, Finish.Asphalt);
+                        foreach (var plot in plots) Cover(plot.Shape, plot.Finish);
                     }
-                }
-                foreach (var plot in plots) Cover(plot.Shape, plot.Finish);
-                if (cut)
-                    foreach (var part in remaining) Emit(part, Finish.Soil);
-                else { soil.Add(a); soil.Add(b); soil.Add(c); }
+                    if (cut)
+                        foreach (var part in remaining) Emit(part, unchanged, slot);
+                    else { unchanged.Add(a); unchanged.Add(b); unchanged.Add(c); }
 
-                void Cover(GroundSurfacePartitioner.Footprint shape, Finish finish)
-                {
-                    if (!shape.Bounds.Overlaps(bounds)) return;
-                    if (!cut)
+                    void Cover(GroundSurfacePartitioner.Footprint shape, Finish finish)
                     {
-                        remaining.Clear();
-                        remaining.Add(new Triangle(At(a), At(b), At(c), 0));
+                        if (!shape.Bounds.Overlaps(bounds)) return;
+                        if (!cut)
+                        {
+                            remaining.Clear();
+                            remaining.Add(new Triangle(At(a), At(b), At(c), slot));
+                        }
+                        next.Clear();
+                        int index = (int)finish;
+                        foreach (var originalPart in remaining)
+                        {
+                            var covered = GroundSurfacePartitioner.Intersect(originalPart, shape);
+                            if (covered.Count == 0) { next.Add(originalPart); continue; }
+                            cut = true;
+                            foreach (var part in covered) Emit(part, finishes[index], layers.Length + index, finish, shape);
+                            next.AddRange(GroundSurfacePartitioner.Subtract(originalPart, shape));
+                        }
+                        (remaining, next) = (next, remaining);
                     }
-                    next.Clear();
-                    foreach (var original in remaining)
-                    {
-                        var covered = GroundSurfacePartitioner.Intersect(original, shape);
-                        if (covered.Count == 0) { next.Add(original); continue; }
-                        cut = true;
-                        foreach (var part in covered) Emit(part, finish, shape);
-                        next.AddRange(GroundSurfacePartitioner.Subtract(original, shape));
-                    }
-                    (remaining, next) = (next, remaining);
                 }
+                layers[slot] = unchanged;
             }
 
             if (vertices.Count > ushort.MaxValue && mesh.indexFormat != IndexFormat.UInt32)
                 mesh.indexFormat = IndexFormat.UInt32;
-            mesh.subMeshCount = layers.Length + 3;
+            mesh.subMeshCount = layers.Length + finishes.Length;
             mesh.SetVertices(vertices);
             mesh.SetNormals(normals);
             mesh.SetUVs(0, uv);
@@ -182,31 +230,35 @@ namespace BarPromenade
                 mesh.SetUVs(GroundSurfaceCoordinates.Channel, edgeDistances);
                 mesh.SetColors(otherEdges);
             }
-            mesh.SetTriangles(soil, 0, false);
-            for (int slot = 1; slot < layers.Length; slot++) mesh.SetTriangles(layers[slot], slot, false);
-            for (int i = 1; i < finishes.Length; i++) mesh.SetTriangles(finishes[i], layers.Length + i - 1, false);
+            for (int slot = 0; slot < layers.Length; slot++) mesh.SetTriangles(layers[slot], slot, false);
+            for (int i = 0; i < finishes.Length; i++) mesh.SetTriangles(finishes[i], layers.Length + i, false);
             mesh.RecalculateBounds();
             return mesh;
 
             Vertex At(int index) => new Vertex(points[index], normals[index], coordinates[index], Vector4.zero, Color.white);
 
-            void Emit(Triangle part, Finish finish, GroundSurfacePartitioner.Footprint shape = null)
+            void Emit(Triangle part, List<int> indices, int slot, Finish? finish = null,
+                GroundSurfacePartitioner.Footprint shape = null)
             {
-                var indices = finishes[(int)finish];
-                indices.Add(Index(part.A, finish, shape));
-                indices.Add(Index(part.B, finish, shape));
-                indices.Add(Index(part.C, finish, shape));
+                indices.Add(Index(part.A, slot, finish, shape));
+                indices.Add(Index(part.B, slot, finish, shape));
+                indices.Add(Index(part.C, slot, finish, shape));
             }
 
-            int Index(Vertex v, Finish finish, GroundSurfacePartitioner.Footprint shape)
+            int Index(Vertex v, int slot, Finish? finish, GroundSurfacePartitioner.Footprint shape)
             {
-                var key = (v.Position, finish);
+                var key = (v.Position, slot);
                 if (splitIndices.TryGetValue(key, out int index)) return index;
                 index = vertices.Count;
                 vertices.Add(v.Position);
                 normals.Add(v.Normal.normalized);
                 var city = new Vector2(v.Position.x, v.Position.z);
-                uv.Add(finish == Finish.Asphalt ? city / CityExteriorAppearance.RoadTextureTileSize : v.Uv0);
+                uv.Add(finish switch
+                {
+                    Finish.Asphalt => city / CityExteriorAppearance.RoadTextureTileSize,
+                    Finish.Paving => city / pavingTile,
+                    _ => v.Uv0
+                });
                 var first = Vector4.one * 16f;
                 var last = Vector4.one;
                 if (finish == Finish.Turf || finish == Finish.Gravel)

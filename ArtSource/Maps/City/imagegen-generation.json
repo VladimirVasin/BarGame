@@ -1,30 +1,30 @@
 {
   "tool": "built-in image_gen",
-  "intent": "Final registered City sheet redraw adds the surveyed uneven west/south talus aprons.",
-  "prompt": "imagegen-talus-prompt.txt",
+  "intent": "Final City sheet follows the locally graded road verges on both Ridge banks.",
+  "prompt": "imagegen-ridge-verges-prompt.txt",
   "references": [
     "CityMapImage.reference.png",
     "map-reference.png"
   ],
   "geography": "CityMapImage.accepted-geography.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "971db223b399cf547ed4894beade1687267f8b5842bf1e5638042d937f2cba19",
-  "runtime_image_sha256": "971db223b399cf547ed4894beade1687267f8b5842bf1e5638042d937f2cba19",
-  "previous_image_sha256": "ef7f9f3229e148080812a880a83298bd83fd2cc05e3f272890b2c715177be8bb",
+  "image_sha256": "c920b7fee4263023220907a54cf6c60dfbe84143be7abb569327f425d0731632",
+  "runtime_image_sha256": "c920b7fee4263023220907a54cf6c60dfbe84143be7abb569327f425d0731632",
+  "previous_image_sha256": "971db223b399cf547ed4894beade1687267f8b5842bf1e5638042d937f2cba19",
   "registration": {
-    "description": "Full-bleed north-up sheet. Uneven narrow old-collapse aprons follow the west/south surveyed toes. Live markers, selection, XYZ and safe arrivals follow current plans.",
+    "description": "Full-bleed north-up sheet. Soft terrain beside Ridge pavements; roads, buildings and bridges register to the survey. Live overlays and arrivals use the actual plan.",
     "source_size": [
-      1173,
-      1341
+      1172,
+      1342
     ],
     "survey_size": [
       1792,
       2048
     ]
   },
-  "fingerprint": "69611b9f0af3f0eaaa43200b17ab25794eebcaa6f6b79081d022e3790b436ec6",
+  "fingerprint": "bc113bea7b7478e12bd1bc99360c687bd3899315c04067f4135c7e383c891ac9",
   "schemaVersion": 2,
-  "width": 1173,
-  "height": 1341,
+  "width": 1172,
+  "height": 1342,
   "current_geography": "map-reference.json"
 }

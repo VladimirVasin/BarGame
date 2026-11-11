@@ -102,6 +102,7 @@
       "type": "note",
       "budget": 8000
     },
+    "ai/world-joint-plan.md": {"type": "note", "budget": 12000},
     "ai/bar-dialogue-plan.md": {
       "type": "note",
       "budget": 64000

@@ -186,10 +186,10 @@ MonoBehaviour:
     height: 7.55
     doorWidth: 1.8
     doorHeight: 2.6
-  sourceTriangleCount: 17628
+  sourceTriangleCount: 17708
   sourceGeneratorVersion: 2.0.0
   designId: provincial_catholic_gothic_basilica_v1
-  buildSignature: 8652bc83d24c05c6dd93d73ed1f11ecf0b69db3c57aeea31890c3fbd9a81f9fc
+  buildSignature: 55e6a9de6bedd3734994ed2f06287c120a44b8e40f9945816d1191d557015f25
 --- !u!1001 &8416263600627462086
 PrefabInstance:
   m_ObjectHideFlags: 0

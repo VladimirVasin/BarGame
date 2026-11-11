@@ -58,7 +58,8 @@ namespace BarPromenade
             {
                 CityGrassHabitat.Park => pick < .64f ? CityGrassSpecies.Lawn : pick < .93f ? CityGrassSpecies.Soft : CityGrassSpecies.Tall,
                 CityGrassHabitat.Courtyard => pick < .42f ? CityGrassSpecies.Lawn : pick < .73f ? CityGrassSpecies.Broad : pick < .94f ? CityGrassSpecies.Soft : CityGrassSpecies.Tall,
-                CityGrassHabitat.Ridge => pick < .48f ? CityGrassSpecies.Tussock : pick < .76f ? CityGrassSpecies.Dry : CityGrassSpecies.Soft,
+                CityGrassHabitat.Ridge => pick < .40f ? CityGrassSpecies.Tussock : pick < .64f ? CityGrassSpecies.Soft :
+                    pick < .80f ? CityGrassSpecies.Sedge : pick < .93f ? CityGrassSpecies.Tall : CityGrassSpecies.Dry,
                 CityGrassHabitat.Industrial => pick < .48f ? CityGrassSpecies.Tall : pick < .77f ? CityGrassSpecies.Dry : CityGrassSpecies.Broad,
                 CityGrassHabitat.OldStreet => pick < .75f ? CityGrassSpecies.Lawn : CityGrassSpecies.Broad,
                 CityGrassHabitat.River => pick < .65f ? CityGrassSpecies.Sedge : CityGrassSpecies.Soft,
@@ -79,6 +80,7 @@ namespace BarPromenade
     internal sealed class CityGrassSurface
     {
         private const float BucketSize = 1f;
+        private const float PathMargin = .27f;
         private readonly List<Face> faces = new List<Face>();
         private readonly Dictionary<Vector2Int,List<int>> buckets = new Dictionary<Vector2Int,List<int>>();
         private readonly Dictionary<Vector2Int,List<Obstacle>> obstacles = new Dictionary<Vector2Int,List<Obstacle>>();
@@ -108,6 +110,7 @@ namespace BarPromenade
             foreach(var road in CityHillsideStreetPlan.ForLayout(city).Routes)
                 ridge.Add(CityHillsideNeighborhoodPlan.TerrainBounds(road));
             ridge.Add(CityHillsideQuarterPlan.ForLayout(city).TerrainBounds);
+            ReserveWalkways(city);
         }
         internal void SetExcavation(CityCemeteryGroundExcavation owner,Rect bounds)
         {excavation=owner;cemetery=bounds;}
@@ -147,7 +150,8 @@ namespace BarPromenade
         internal void Add(Vector3 a, Vector3 b, Vector3 c, FootstepGroundKind kind)
         {
             Vector3 normal = Vector3.Cross(b-a,c-a).normalized;
-            if (Mathf.Abs(normal.y) < .65f) return;
+            if (Mathf.Abs(normal.y) < .01f) return;
+            if (Mathf.Abs(normal.y) < .65f) kind = FootstepGroundKind.None;
             if (normal.y < 0) normal = -normal;
             var face = new Face(a,b,c,normal,kind);
             int id = faces.Count; faces.Add(face);
@@ -171,12 +175,66 @@ namespace BarPromenade
         internal void AddObstacle(Bounds bounds,Collider preciseShape=null)
         {
             bounds.Expand(new Vector3(.28f,0,.28f));
+            IndexObstacle(new Obstacle(bounds, preciseShape));
+        }
+
+        private void ReserveWalkways(CityLayout city)
+        {
+            // Some path tops are separate models, and Home omits their
+            // collision entirely. Reserve their same contours in City space.
+            foreach (var site in CityKioskSites.ForLayout(city).Sites)
+            {
+                Reserve(site.Footprint);
+                foreach (var apron in site.ApronPolygons) Reserve(apron);
+            }
+            foreach (var path in city.CourtyardPaths)
+                foreach (var strip in path.Ribbon(1.5f)) Reserve(strip);
+            var terrace = CityTerraceDistrictPlan.ForLayout(city);
+            if (terrace.IsEnabled)
+            {
+                ReserveRect(terrace.LowerCourtEntryBounds);
+                foreach (Rect passage in terrace.PassageFootprints) ReserveRect(passage);
+            }
+            foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(city).AllBuildings)
+            {
+                ReserveRect(house.CourtBounds);
+                ReserveRect(house.ApproachBounds);
+            }
+            foreach (var stair in CityHillsideAccessPlan.ForLayout(city).AllStairs)
+                foreach (Rect piece in stair.WalkableBounds) ReserveRect(piece);
+            foreach (var pocket in CityHillsideBenchPocketPlan.ForLayout(city).Pockets)
+                foreach (var piece in pocket.SurfacePolygons) Reserve(piece);
+            foreach (var piece in CityPawnshopBenchTerracePlan.ForLayout(city).Footprints) Reserve(piece);
+            foreach (var piece in CityPawnshopDescentPlan.ForLayout(city).Footprints) Reserve(piece);
+            if (CityPawnshopPlan.TryCreate(city, out var pawnshop)) Reserve(pawnshop.ApproachFootprint);
+            foreach (Rect approach in CityBusNetworkFurniture.Reservations(CityDistrictBusPlanner.CreateRoadRouting(city), city))
+                ReserveRect(approach);
+            foreach (var trunk in CityRidgeVegetationPlan.ForLayout(city).Trunks) Reserve(trunk);
+
+            void ReserveRect(Rect rect)
+            {
+                if (rect.width > 0f && rect.height > 0f) Reserve(CityRoadPolygon.Rectangle(rect));
+            }
+
+            void Reserve(Vector2[] outline)
+            {
+                if (outline.Length < 3) return;
+                Rect rect = CityRoadPolygon.Bounds(outline);
+                var bounds = new Bounds(new Vector3(rect.center.x, 0f, rect.center.y),
+                    new Vector3(rect.width + 2f * PathMargin, 0f, rect.height + 2f * PathMargin));
+                IndexObstacle(new Obstacle(bounds, null, outline));
+            }
+        }
+
+        private void IndexObstacle(Obstacle obstacle)
+        {
+            Bounds bounds = obstacle.Bounds;
             for(int z=Bucket(bounds.min.z);z<=Bucket(bounds.max.z);z++)
             for(int x=Bucket(bounds.min.x);x<=Bucket(bounds.max.x);x++)
             {
                 var key = new Vector2Int(x,z);
                 if(!obstacles.TryGetValue(key,out var list)) obstacles.Add(key,list=new List<Obstacle>());
-                list.Add(new Obstacle(bounds,preciseShape));
+                list.Add(obstacle);
             }
         }
         internal bool TrySample(Vector2 p,out Vector3 root,out Vector3 normal,out CityGrassHabitat habitat)
@@ -197,15 +255,30 @@ namespace BarPromenade
             }
             if(!Sample(p,out Face face,out float height) || !Eligible(face.Kind)) return false;
             root=new Vector3(p.x,height-.008f,p.y); normal=face.Normal;
-            // Keep leaves clear of actual paving, including narrow paths and grade breaks.
+            // Keep the full old minimum clearance. A seeded outer margin
+            // thins a straight row gradually without growing onto the paving.
             foreach (Vector2 offset in EdgeOffsets)
-                if(!Sample(p+offset,out Face edge,out float edgeY) || !Eligible(edge.Kind) || Mathf.Abs(edgeY-height)>.22f) return false;
+                if (!Sample(p + offset, out Face edge, out float edgeY) || !Eligible(edge.Kind) ||
+                    Mathf.Abs(edgeY - height) > .22f) return false;
+            uint marginSeed = CityGrassPlan.Hash(layout.Seed,
+                Mathf.FloorToInt(p.x * 4f), Mathf.FloorToInt(p.y * 4f), 1471);
+            Vector2 outer = EdgeOffsets[(int)(marginSeed >> 16 & 3u)] *
+                Mathf.Lerp(1f, 1.55f, CityGrassPlan.Unit(marginSeed));
+            if (!Sample(p + outer, out Face margin, out float marginY) || !Eligible(margin.Kind) ||
+                Mathf.Abs(marginY - height) > .22f) return false;
             if(obstacles.TryGetValue(new Vector2Int(Bucket(p.x),Bucket(p.y)),out var blocks))
                 foreach(var obstacle in blocks)
                 {
                     Bounds block=obstacle.Bounds;
-                    if(p.x<block.min.x || p.x>block.max.x || p.y<block.min.z || p.y>block.max.z ||
-                        height<block.min.y-.25f || height>=block.max.y-.08f)continue;
+                    if(p.x<block.min.x || p.x>block.max.x || p.y<block.min.z || p.y>block.max.z)continue;
+                    if (obstacle.Path != null)
+                    {
+                        float clearance = Mathf.Lerp(.18f, PathMargin, CityGrassPlan.Unit(marginSeed));
+                        if (!NearPath(obstacle.Path, p, clearance)) continue;
+                        LastBlocker = block;
+                        return false;
+                    }
+                    if(height<block.min.y-.25f || height>=block.max.y-.08f)continue;
                     // A combined collision mesh can span the entire city with
                     // empty space between its pieces. Its AABB is only a broad
                     // phase; the exact vertical shape decides occupancy.
@@ -225,6 +298,19 @@ namespace BarPromenade
             }
             habitat=Habitat(root,face.Kind);
             return true;
+        }
+
+        private static bool NearPath(Vector2[] outline, Vector2 point, float clearance)
+        {
+            if (CityRoadPolygon.Contains(outline, point)) return true;
+            for (int i = 0; i < outline.Length; i++)
+            {
+                Vector2 from = outline[i];
+                Vector2 edge = outline[(i + 1) % outline.Length] - from;
+                float t = Mathf.Clamp01(Vector2.Dot(point - from, edge) / Mathf.Max(edge.sqrMagnitude, 1e-6f));
+                if ((point - (from + edge * t)).sqrMagnitude <= clearance * clearance) return true;
+            }
+            return false;
         }
         private CityGrassHabitat Habitat(Vector3 root,FootstepGroundKind kind)
         {
@@ -289,8 +375,11 @@ namespace BarPromenade
         }
         private readonly struct Obstacle
         {
-            internal readonly Bounds Bounds;internal readonly Collider Shape;
-            internal Obstacle(Bounds bounds,Collider shape){Bounds=bounds;Shape=shape;}
+            internal readonly Bounds Bounds;
+            internal readonly Collider Shape;
+            internal readonly Vector2[] Path;
+            internal Obstacle(Bounds bounds, Collider shape, Vector2[] path = null)
+            { Bounds=bounds; Shape=shape; Path=path; }
         }
     }
 }

@@ -316,37 +316,47 @@ def side_atlas_uv0_values(
     return values
 
 
-def per_face_uv0_values(geometry: Geometry) -> list[tuple[float, float]]:
+def per_face_uv0_values(geometry: Geometry, inherit_bevels: bool = False) -> list[tuple[float, float]]:
     """Map every face independently over the full 0..1 sheet.
 
     WindowGlass needs a complete atlas window per pane. Plinth needs every
-    authored box face to consume the complete non-repeating base treatment.
-    Per-face projection preserves both contracts on combined role meshes.
+    authored principal face to consume the non-repeating base treatment.
+    Its narrow bevel faces can inherit an adjacent chart.
     """
-    values: list[tuple[float, float]] = []
-    for face in geometry.faces:
-        normal = face_normal(geometry.vertices, face)
-        dominant = max(range(3), key=lambda axis: abs(normal[axis]))
-        projected: list[tuple[float, float]] = []
-        for vertex_index in face:
-            x, y, z = geometry.vertices[vertex_index]
-            if dominant == 0:
-                projected.append((y, z))
-            elif dominant == 1:
-                projected.append((x, z))
-            else:
-                projected.append((x, y))
+    def project(index, axis):
+        x, y, z = geometry.vertices[index]
+        return (y, z) if axis == 0 else (x, z) if axis == 1 else (x, y)
 
-        low_u = min(value[0] for value in projected)
-        high_u = max(value[0] for value in projected)
-        low_v = min(value[1] for value in projected)
-        high_v = max(value[1] for value in projected)
-        span_u = max(high_u - low_u, 1e-6)
-        span_v = max(high_v - low_v, 1e-6)
+    def chart(face, axis):
+        projected = [project(index, axis) for index in face]
+        u, v = zip(*projected)
+        return axis, min(u), min(v), max(max(u) - min(u), 1e-6), max(max(v) - min(v), 1e-6)
+
+    normals = [face_normal(geometry.vertices, face) for face in geometry.faces]
+    axes = [max(range(3), key=lambda axis: abs(n[axis])) for n in normals]
+    charts = [chart(face, axis) for face, axis in zip(geometry.faces, axes)]
+    contacts: dict[int, list[int]] = {}
+    if inherit_bevels:
+        for i, face in enumerate(geometry.faces):
+            if abs(normals[i][axes[i]]) < .999:
+                continue
+            for vertex in face:
+                contacts.setdefault(vertex, []).append(i)
+
+    values: list[tuple[float, float]] = []
+    for i, face in enumerate(geometry.faces):
+        chosen = i
+        if inherit_bevels and abs(normals[i][axes[i]]) < .999:
+            count: dict[int, int] = {}
+            for vertex in face:
+                for candidate in contacts.get(vertex, ()):
+                    count[candidate] = count.get(candidate, 0) + 1
+            if count:
+                chosen = max(count, key=lambda j: (count[j], charts[j][3] * charts[j][4], -j))
+        axis, low_u, low_v, span_u, span_v = charts[chosen]
         values.extend(
-            (stable((u - low_u) / span_u),
-             stable((v - low_v) / span_v))
-            for u, v in projected
+            (stable(clamp01((u - low_u) / span_u)), stable(clamp01((v - low_v) / span_v)))
+            for u, v in (project(index, axis) for index in face)
         )
     return values
 
@@ -360,7 +370,7 @@ def uv0_values_for_part(
     if part.uv_scheme == UV0_SIDE_ATLAS_SCHEME:
         return side_atlas_uv0_values(prototype, part.geometry)
     if part.uv_scheme == UV0_FULL_FACE_SCHEME:
-        return per_face_uv0_values(part.geometry)
+        return per_face_uv0_values(part.geometry, inherit_bevels=True)
     if part.uv_scheme == UV0_METRIC_SCHEME:
         return metric_uv0_values(part.geometry, part.meters_per_tile)
     raise ValueError(
@@ -453,6 +463,9 @@ def validate_geometry(
         for face_index, face in enumerate(geometry.faces):
             face_uv = uv0[cursor:cursor + len(face)]
             cursor += len(face)
+            if part.uv_scheme == UV0_FULL_FACE_SCHEME and max(
+                    abs(component) for component in face_normal(geometry.vertices, face)) < .999:
+                continue  # A bevel inherits an adjoining full-face chart.
             low_u = min(value[0] for value in face_uv)
             high_u = max(value[0] for value in face_uv)
             low_v = min(value[1] for value in face_uv)
@@ -862,6 +875,8 @@ def prototype_signature_record(prototype: PrototypeSpec) -> dict:
                          for vertex in part.geometry.vertices],
             "faces": [list(face) for face in part.geometry.faces],
             "face_slot_ids": list(part.geometry.face_slot_ids),
+            "plinth_uv0": uv0_values_for_part(prototype, part)
+            if part.uv_scheme == UV0_FULL_FACE_SCHEME else None,
         } for part in prototype.parts],
     }
 
@@ -1119,6 +1134,26 @@ def create_part_object(
     mesh.from_pydata(part.geometry.vertices, [], part.geometry.faces)
     mesh.update(calc_edges=True)
     assign_uv_layers(mesh, prototype, part)
+    if part.role == "FacadePrimary":
+        # Average across authored curve segments only. The roof and floor
+        # contacts keep their planar normals and the adjacent chart's UVs.
+        adjacency = [[] for _ in mesh.vertices]
+        for face in mesh.polygons:
+            if abs(face.normal.z) < .001:
+                for vertex in face.vertices:
+                    adjacency[vertex].append(face.normal.copy())
+        loop_normals = []
+        for face in mesh.polygons:
+            face.use_smooth = True
+            for vertex in face.vertices:
+                normal = face.normal.copy()
+                if abs(normal.z) < .001:
+                    normal.zero()
+                    for neighbour in adjacency[vertex]:
+                        if face.normal.dot(neighbour) > .87:
+                            normal += neighbour
+                loop_normals.append(tuple(normal.normalized()))
+        mesh.normals_split_custom_set(loop_normals)
     obj = bpy.data.objects.new(part.object_name, mesh)
     source.objects.link(obj)
     obj.parent = root

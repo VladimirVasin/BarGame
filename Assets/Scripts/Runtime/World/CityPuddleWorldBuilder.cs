@@ -141,12 +141,9 @@ namespace BarPromenade
                         patch.Center + (patch.Rotation * local));
                     normals.Add(Vector3.up);
 
-                    // The rim mask: 1 only at the centre vertex, 0 on
-                    // the whole rim. Bilinear interpolation turns it
-                    // into a pyramid the shader erodes from the edge
-                    // inward.
-                    bool centre = row == 1 && column == 1;
-                    uvs.Add(new Vector2(centre ? 1f : 0f, 0f));
+                    // Keep signed local axes so the visible film has a
+                    // rounded, eroded rim at every wetness, including full.
+                    uvs.Add(new Vector2(column - 1, row - 1));
                 }
             }
 

@@ -164,13 +164,18 @@ void DepthNormalsFragment(
     #endif
 
     SurfaceData surface;
-    InitializeStandardLitSurfaceData(input.uv, surface);
+    float2 groundUv = GroundMaterialUv(input.uv);
+    InitializeStandardLitSurfaceData(groundUv, surface);
     half relief;
-    ApplyGroundLayers(input.uv, input.surfaceWorld, input.normalWS,
+    ApplyGroundLayers(groundUv, input.surfaceWorld, input.normalWS,
         input.groundRoad, input.groundState, input.groundTalus, surface, relief);
+    half receiver = GroundScreenSpaceReceiver();
+    #if defined(_CITY_GROUND_SEAMS)
+        half fallback = _GroundKind < .5h && _GroundRoadCoordinates > .5h ? receiver : 1.0h;
+        ApplyCityGroundJoints(input.surfaceWorld, input.normalWS, surface, relief, receiver, fallback);
+    #endif
     half3 surfaceNormal = GroundReliefNormal(input.surfaceWorld,
         NormalizeNormalPerPixel(normalWS), relief);
-    half receiver = GroundScreenSpaceReceiver();
     #if defined(_GBUFFER_NORMALS_OCT)
         outNormalWS.rgb = PackFloat2To888(saturate(PackNormalOctQuadEncode(surfaceNormal) * .5 + .5));
     #else

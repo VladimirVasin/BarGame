@@ -239,9 +239,16 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 PuddleFootstepOverlay.IsWetAt(patch, rim, drizzle, bite),
                 Is.False);
-            // A downpour fills it to the rim; no wetness dissolves it.
+            // A downpour fills the interior but cannot reach the carrier's
+            // rectangular rim or corners; the dry film is silent throughout.
             Assert.That(
                 PuddleFootstepOverlay.IsWetAt(patch, rim, 1f, bite),
+                Is.False);
+            Assert.That(
+                PuddleFootstepOverlay.IsWetAt(patch, new Vector3(.70f, 0f, .56f), 1f, bite),
+                Is.False);
+            Assert.That(
+                PuddleFootstepOverlay.IsWetAt(patch, new Vector3(.55f, 0f, 0f), 1f, bite),
                 Is.True);
             Assert.That(
                 PuddleFootstepOverlay.IsWetAt(patch, centre, 0f, bite),

@@ -14,6 +14,36 @@ complete cut/arrival neighbourhoods prevent square cache gaps. Blender CityGrass
 geometry/determinism and pinned grass shader validator. CityGrassAcceptance
 passed City/Home, bridge exclusions, wind/contact, pause, disable/unload and
 excavate/fill; frames reviewed. Lit inventory retains unrelated old snapshot gaps.
+Ridge bank faces feed rooted grass. City/Home reserve actual paths and kiosk
+aprons. Walking presses blades and leaves recovering tracks. City weather
+drives height-scaled gusts on blades, crowns, shrubs and pinned wires.
+Gable planting uses the existing terrain, route and wire clearance plans.
+`CityRidgeWind` reviews paths, gusts, trunk support and the retained view.
+
+User made softened coating and structural joints mandatory (art §4).
+City/Home use height-aware, local seam bins with shared pigment/response
+maps and wet reflection; ridge meshes keep local collision. Quarter-circle
+curb profiles retain the pavement datum; selected facade trim is chamfered.
+`CityGroundJointPilot`: dry/wet A/B, night, curb, excavation, sand and Home;
+frames reviewed. `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement`.
+Plinth bevels inherit a chart. Garden and tunnel coatings join the field.
+Radial puddles match footsteps in `Puddle_IsWetOnlyWhereTheFilmIs`.
+Profiled facade arrises, river stairs, rails and the wooden deck retain
+their supporting geometry. User accepted separate timber and quay finishes.
+`CityGroundJointPilot` covers the street network, port, garden, terrace and
+the Home return. `BuildRiver_TexturesEveryBankAndBridgeMember` checks metre
+UVs. Blender construction profile and CityBuildings validate.
+MountainRoad and Village use metre-based shoulder blends. Village paths use
+their surveyed contours. Interior sills, stair nosings and trim use authored
+profiles. `WorldJointSceneMigration` checks the scenes. Bar and Mother's
+House atlases match the regenerated geometry.
+Ridge bench paths and the pawnshop forecourt share the terrain planes.
+Their edges enter the joint field in City and the retained Home view.
+`LiveCity_UpperQuarterJoinsBothSlopesThroughTheLitCourt` checks contact,
+approaches and both bridges. Reviewed paired dry and rain captures.
+Ridge verges follow local curb and soil heights; foundation cut/fill is limited
+near footways. `CityRidgeRoadShoulders`: both banks, physical contacts, bench
+paths, map arrivals and Home. ImageGen City map redrawn from the final survey.
 
 ## 2026-11-09
 

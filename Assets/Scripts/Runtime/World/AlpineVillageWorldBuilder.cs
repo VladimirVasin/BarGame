@@ -636,6 +636,7 @@ namespace BarPromenade
                 AlpineVillageRoadSurfaceBuilder.AsphaltTint,
                 TerrainAsphaltMaterialIndex);
             GroundSurfaceCoordinates.Enable(renderer, TerrainAsphaltMaterialIndex);
+            VillageSurfaceAppearance.ApplySnowShoulder(renderer, .42f, TerrainAsphaltMaterialIndex);
             AlpineVillageJunctionAppearance.Apply(renderer, TerrainJunctionMaterialIndex);
             VillageSurfaceAppearance.ApplyCombined(renderer,
                 MountainRoadSurfaceKind.ForestFloor,
@@ -2206,16 +2207,11 @@ namespace BarPromenade
         {
             // The same collider and metre dimensions serve authored and
             // fallback leaves. Door interaction docks remain plan-owned.
-            Texture(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Physical Door Step",
-                    parent,
-                    new Vector3(across, 0.05f, half + 0.28f),
-                    new Vector3(DoorWidth + 0.5f, 0.1f, 0.55f),
-                    StoneColor,
-                    true),
-                MountainRoadSurfaceKind.LayeredStone,
-                StoneColor);
+            GameObject step = RuntimePrimitiveFactory.CreateBox("Physical Door Step", parent,
+                new Vector3(across, 0.05f, half + 0.28f), new Vector3(DoorWidth + 0.5f, 0.1f, 0.55f),
+                StoneColor, true);
+            RuntimePrimitiveFactory.ProfileStructuralBox(step, .018f);
+            Texture(step, MountainRoadSurfaceKind.LayeredStone, StoneColor);
         }
 
         private static void BuildAuthoredDoor(

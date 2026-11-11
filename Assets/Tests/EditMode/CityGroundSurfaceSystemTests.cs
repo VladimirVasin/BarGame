@@ -23,6 +23,32 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void CoatingJoints_JoinConformedContactsButNotPaintOrOtherLevels()
+        {
+            var left = JointFace(new Vector3(0, 0, 0), new Vector3(-1, 0, 1), new Vector3(0, 0, 2), 1);
+            var near = JointFace(new Vector3(0, .0005f, 0), new Vector3(0, .0005f, 1),
+                new Vector3(1, .10f, .5f), 2);
+            var far = JointFace(new Vector3(0, 0, 1), new Vector3(0, 0, 2), new Vector3(1, 0, 1.5f), 3);
+            var above = JointFace(new Vector3(0, 2, 0), new Vector3(0, 2, 2), new Vector3(1, 2, 1), 4);
+            var paint = JointFace(new Vector3(0, 0, 2), new Vector3(-1, 0, 1), new Vector3(-1, 0, 2), 9);
+            var conformed = GroundSurfacePartitioner.Conform(new[] { left, near, far, above, paint });
+            var joints = GroundJointTopology.Find(conformed, style => style != 9);
+            Assert.That(joints.Count, Is.EqualTo(2));
+            foreach (var joint in joints)
+            {
+                Assert.That(Mathf.Abs(joint.A.x) + Mathf.Abs(joint.B.x), Is.LessThan(.0001f));
+                Assert.That(Vector3.Distance(joint.A, joint.B), Is.EqualTo(1f).Within(.001f));
+                Assert.That(conformed[joint.Left].Surface, Is.EqualTo(1));
+                Assert.That(conformed[joint.Right].Surface, Is.EqualTo(2).Or.EqualTo(3));
+            }
+
+            static GroundSurfacePartitioner.Triangle JointFace(Vector3 a, Vector3 b, Vector3 c, int style)
+                => new GroundSurfacePartitioner.Triangle(V(a), V(b), V(c), style);
+            static GroundSurfacePartitioner.Vertex V(Vector3 point)
+                => new GroundSurfacePartitioner.Vertex(point, Vector3.up, Vector2.zero, Vector4.zero, Color.white);
+        }
+
+        [Test]
         public void FinalizeSurface_MarkingFollowsEachGradePlaneAndRetainsSupportingFootstep()
         {
             MeshRenderer road = CreateSurface("Graded Road", new[]

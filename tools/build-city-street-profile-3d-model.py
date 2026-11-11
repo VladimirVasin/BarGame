@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 import sys
 sys.dont_write_bytecode = True
@@ -21,6 +22,12 @@ ROOT = Path(__file__).resolve().parents[1]
 def geometry():
     patch = ([(0, 0, 0), (1, 0, 0), (0, 0, 1)], [(0, 2, 1)])
     strip = ([(0, 0, 0), (1, 0, 0), (0, -1, 0), (1, -1, 0)], [(0, 1, 2), (2, 1, 3)])
+    # A convex quarter-circle from the exact public pavement top to its
+    # outer vertical facing. The runtime scales this profile, not its shape.
+    curve = [(x, round(math.cos(i * math.pi / 8) - 1, 9), round(-math.sin(i * math.pi / 8), 9))
+             for i in range(5) for x in (0, 1)]
+    facing = (curve, [face for i in range(0, len(curve)-2, 2)
+                      for face in ((i, i+1, i+2), (i+2, i+1, i+3))])
     section = []
     for x, width, top, thickness in ((0, 6, .08, .16), (-4, 2, .14, .30), (4, 2, .14, .30)):
         solid = bp.u_box((x, top-thickness/2, .5), (width, thickness, 1), 0)
@@ -31,11 +38,12 @@ def geometry():
         offset = len(vertices)
         vertices.extend(part_vertices)
         faces.extend(tuple(offset+i for i in face) for face in part_faces)
-    return {"SurfacePatch": patch, "BoundaryStrip": strip, "StreetProfile": (vertices, faces)}
+    return {"SurfacePatch": patch, "BoundaryStrip": strip, "SoftCurbFacing": facing,
+            "StreetProfile": (vertices, faces)}
 
 def payload(parts):
     serial = json.dumps(parts, sort_keys=True, separators=(",", ":"))
-    return {"version": "1.0.0", "signature": hashlib.sha256(serial.encode()).hexdigest(),
+    return {"version": "1.1.0", "signature": hashlib.sha256(serial.encode()).hexdigest(),
             "unity_axes": "Blender (x,z,y), reversed face winding", "asphalt_width": 6,
             "public_sidewalk_width": 2, "road_top": .08, "sidewalk_top": .14,
             "parts": {name: {"vertices": len(verts), "triangles": sum(len(f)-2 for f in faces),
@@ -63,6 +71,7 @@ def main():
             assert normal.length > 0
             if name == "SurfacePatch": assert normal.y > 0
             if name == "BoundaryStrip": assert normal.z < 0
+            if name == "SoftCurbFacing": assert normal.z < 0 and normal.y > 0
         if name == "StreetProfile": assert bp.signed_volume(converted) > 0
     if config.validate_only:
         print("CITY STREET PROFILE DIRECT VALIDATION OK " + manifest["signature"])

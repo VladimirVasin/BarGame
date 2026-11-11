@@ -2,12 +2,12 @@
   "schema_version": 1,
   "design_id": "home_interior_v1",
   "generator_version": "2.2.0",
-  "signature": "bde60c5a7c0616337fa3fc9c671e45231302a5cd6bfb19f3c738cfc21ca8d1c8",
+  "signature": "ed66775d4bb2c8ab9fc709cee6ed01dd38bb8156848b3b5c950e836a421c47c9",
   "coordinates": "Unity local metres +X east +Y up +Z north",
   "source_conversion": "Y/Z swap and face rewinding; FBX -Z forward Y up",
   "report": {
     "part_count": 392,
-    "triangle_count": 35352,
+    "triangle_count": 43984,
     "day_decor_counts": [
       127,
       133,
@@ -80,7 +80,7 @@
         0.08,
         4.0
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -130,7 +130,7 @@
         0.08,
         4.24
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -180,7 +180,7 @@
         1.45,
         0.12
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -230,7 +230,7 @@
         1.45,
         4.0
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -280,7 +280,7 @@
         1.45,
         4.0
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -330,7 +330,7 @@
         1.45,
         0.12
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -380,7 +380,7 @@
         1.45,
         0.12
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -430,7 +430,7 @@
         0.1299999999999999,
         0.12
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -480,7 +480,7 @@
         1.32,
         0.12
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -530,7 +530,7 @@
         1.32,
         0.12
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -580,7 +580,7 @@
         0.17,
         0.12
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -630,7 +630,7 @@
         0.015,
         0.675
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -680,7 +680,7 @@
         1.45,
         0.455
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -730,7 +730,7 @@
         1.45,
         0.215
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -780,7 +780,7 @@
         1.45,
         1.91
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -830,7 +830,7 @@
         0.765,
         0.74
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -880,7 +880,7 @@
         0.135,
         0.74
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -930,7 +930,7 @@
         0.28,
         0.68
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -980,7 +980,7 @@
         0.19,
         0.575
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1080,7 +1080,7 @@
         0.28,
         1.01
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1130,7 +1130,7 @@
         0.54,
         1.01
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1230,7 +1230,7 @@
         0.05,
         0.6
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1380,7 +1380,7 @@
         0.05,
         0.04
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1430,7 +1430,7 @@
         0.05,
         0.04
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1480,7 +1480,7 @@
         0.36,
         0.23
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1530,7 +1530,7 @@
         0.025,
         0.25
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1580,7 +1580,7 @@
         0.081,
         0.072
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1630,7 +1630,7 @@
         0.0525,
         0.0054
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1680,7 +1680,7 @@
         0.0105,
         0.0225
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1730,7 +1730,7 @@
         1.45,
         1.5
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1780,7 +1780,7 @@
         1.45,
         0.09
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1830,7 +1830,7 @@
         1.45,
         0.09
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1880,7 +1880,7 @@
         0.32499999999999996,
         0.09
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1930,7 +1930,7 @@
         1.06,
         0.04
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -1980,7 +1980,7 @@
         0.012,
         1.4
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2030,7 +2030,7 @@
         0.85,
         0.011
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2080,7 +2080,7 @@
         0.85,
         1.44
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2130,7 +2130,7 @@
         0.24,
         0.429
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2180,7 +2180,7 @@
         0.36,
         0.374
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2230,7 +2230,7 @@
         0.09,
         0.575
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2330,7 +2330,7 @@
         0.045,
         0.025
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2380,7 +2380,7 @@
         0.045,
         0.545
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2430,7 +2430,7 @@
         0.1,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2480,7 +2480,7 @@
         0.0175,
         0.0945
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2530,7 +2530,7 @@
         0.44,
         0.012
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2580,7 +2580,7 @@
         1.12,
         0.38
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2630,7 +2630,7 @@
         1.12,
         0.38
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2680,7 +2680,7 @@
         0.115,
         0.38
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2730,7 +2730,7 @@
         0.115,
         0.38
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2780,7 +2780,7 @@
         0.89,
         0.0775
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2830,7 +2830,7 @@
         0.89,
         0.014
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2880,7 +2880,7 @@
         0.89,
         0.25
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2930,7 +2930,7 @@
         0.89,
         0.25
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -2980,7 +2980,7 @@
         1.04,
         0.05
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3030,7 +3030,7 @@
         0.9464,
         0.0125
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3080,7 +3080,7 @@
         1.45,
         0.12
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3130,7 +3130,7 @@
         1.45,
         0.12
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3180,7 +3180,7 @@
         0.09,
         1.95
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3221,16 +3221,16 @@
         1.26
       ],
       "bounds_min": [
-        -0.29,
+        -0.2900000000000001,
         -0.045,
         -0.63
       ],
       "bounds_max": [
-        0.29,
+        0.2900000000000001,
         0.045,
         0.63
       ],
-      "triangles": 28,
+      "triangles": 44,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3280,7 +3280,7 @@
         0.035,
         1.98
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3330,7 +3330,7 @@
         0.035,
         0.09
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3380,7 +3380,7 @@
         0.035,
         0.09
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3430,7 +3430,7 @@
         0.46,
         0.41
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3530,7 +3530,7 @@
         0.46,
         0.41
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3580,7 +3580,7 @@
         0.05,
         0.45
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3630,7 +3630,7 @@
         0.91,
         0.015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3680,7 +3680,7 @@
         0.91,
         0.015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3730,7 +3730,7 @@
         0.91,
         0.015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3780,7 +3780,7 @@
         0.91,
         0.015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3830,7 +3830,7 @@
         0.28,
         0.052571428571428575
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3880,7 +3880,7 @@
         0.3,
         0.575
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -3930,7 +3930,7 @@
         0.3,
         0.575
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -4231,7 +4231,7 @@
         0.075,
         0.014
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -4558,7 +4558,7 @@
       "max_day": 7,
       "position": [
         0.0,
-        0.018,
+        0.017999999999999995,
         0.0
       ],
       "rotation": [
@@ -4568,20 +4568,20 @@
       ],
       "size": [
         1.132,
-        0.036,
-        0.24
+        0.03599999999999999,
+        0.24000000000000005
       ],
       "bounds_min": [
         -0.566,
-        -0.018,
-        -0.12
+        -0.017999999999999995,
+        -0.12000000000000002
       ],
       "bounds_max": [
         0.566,
-        0.018,
-        0.12
+        0.017999999999999995,
+        0.12000000000000002
       ],
-      "triangles": 28,
+      "triangles": 44,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -4931,7 +4931,7 @@
         1.11,
         0.155
       ],
-      "triangles": 168,
+      "triangles": 408,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -4981,7 +4981,7 @@
         0.6,
         0.11299999999999999
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -5031,7 +5031,7 @@
         0.075,
         0.014
       ],
-      "triangles": 84,
+      "triangles": 204,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -5081,7 +5081,7 @@
         0.006,
         0.075
       ],
-      "triangles": 524,
+      "triangles": 724,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -5231,7 +5231,7 @@
         0.91,
         0.16
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -5281,7 +5281,7 @@
         0.91,
         0.16
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -5331,7 +5331,7 @@
         0.91,
         0.16
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -5381,7 +5381,7 @@
         0.91,
         0.16
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -5431,7 +5431,7 @@
         0.91,
         0.16
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -6104,7 +6104,7 @@
         0.0125,
         0.005
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -6257,7 +6257,7 @@
         0.0055,
         0.0055
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -6307,7 +6307,7 @@
         0.0055,
         0.0055
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -6357,7 +6357,7 @@
         0.0055,
         0.0055
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -6407,7 +6407,7 @@
         0.002,
         0.007
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -6557,7 +6557,7 @@
         0.09,
         0.05
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -6657,7 +6657,7 @@
         0.0375,
         0.0125
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -6707,7 +6707,7 @@
         0.0175,
         0.06
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -6889,7 +6889,7 @@
         0.5,
         0.5
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7173,7 +7173,7 @@
         0.5,
         0.5
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7224,7 +7224,7 @@
         0.5,
         0.5
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7326,7 +7326,7 @@
         0.5,
         0.5
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7377,7 +7377,7 @@
         0.5,
         0.5
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7428,7 +7428,7 @@
         0.5,
         0.5
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7479,7 +7479,7 @@
         0.5,
         0.5
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7530,7 +7530,7 @@
         1.45,
         1.53
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": true,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7580,7 +7580,7 @@
         1.45,
         0.09
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": true,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7630,7 +7630,7 @@
         1.45,
         0.09
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": true,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7680,7 +7680,7 @@
         0.34999999999999987,
         0.09
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": true,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7730,7 +7730,7 @@
         1.1,
         0.04
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": true,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7780,7 +7780,7 @@
         0.095,
         3.86
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": true,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7830,7 +7830,7 @@
         0.095,
         0.025
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": true,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7880,7 +7880,7 @@
         0.095,
         0.025
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": true,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7930,7 +7930,7 @@
         0.095,
         0.025
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": true,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -7980,7 +7980,7 @@
         0.095,
         0.025
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": true,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8030,7 +8030,7 @@
         1.145,
         0.0275
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": true,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8080,7 +8080,7 @@
         1.145,
         0.0275
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": true,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8130,7 +8130,7 @@
         0.04,
         0.0275
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8180,7 +8180,7 @@
         0.93,
         0.009
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": true,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8230,7 +8230,7 @@
         0.36,
         0.0275
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8280,7 +8280,7 @@
         0.0125,
         0.0225
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8330,7 +8330,7 @@
         0.065,
         0.0275
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8380,7 +8380,7 @@
         0.011,
         0.0175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8430,7 +8430,7 @@
         0.36,
         0.0275
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8480,7 +8480,7 @@
         0.0125,
         0.0225
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8530,7 +8530,7 @@
         0.065,
         0.0275
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8580,7 +8580,7 @@
         0.011,
         0.0175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8630,7 +8630,7 @@
         0.305,
         0.014
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8680,7 +8680,7 @@
         0.285,
         0.0015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8730,7 +8730,7 @@
         0.285,
         0.0015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8780,7 +8780,7 @@
         0.285,
         0.0015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8830,7 +8830,7 @@
         0.285,
         0.0015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8880,7 +8880,7 @@
         0.285,
         0.0015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8930,7 +8930,7 @@
         0.285,
         0.0015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -8980,7 +8980,7 @@
         0.285,
         0.0015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9030,7 +9030,7 @@
         0.285,
         0.0015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9080,7 +9080,7 @@
         0.285,
         0.0015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9130,7 +9130,7 @@
         0.285,
         0.0015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9180,7 +9180,7 @@
         0.285,
         0.0015
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9230,7 +9230,7 @@
         0.28,
         0.23
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9280,7 +9280,7 @@
         0.28,
         0.23
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9330,7 +9330,7 @@
         0.0225,
         0.23
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9380,7 +9380,7 @@
         0.0225,
         0.23
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9430,7 +9430,7 @@
         0.2575,
         0.0125
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9480,7 +9480,7 @@
         0.2575,
         0.0175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9530,7 +9530,7 @@
         0.075,
         0.02
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9580,7 +9580,7 @@
         0.19,
         0.005
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9630,7 +9630,7 @@
         0.28,
         0.23
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9680,7 +9680,7 @@
         0.28,
         0.23
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9730,7 +9730,7 @@
         0.0225,
         0.23
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9780,7 +9780,7 @@
         0.0225,
         0.23
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9830,7 +9830,7 @@
         0.2575,
         0.0125
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9880,7 +9880,7 @@
         0.2575,
         0.0175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9930,7 +9930,7 @@
         0.075,
         0.02
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -9980,7 +9980,7 @@
         0.19,
         0.005
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10080,7 +10080,7 @@
         0.0005,
         0.025
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10130,7 +10130,7 @@
         0.0005,
         0.025
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10180,7 +10180,7 @@
         0.0005,
         0.025
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10230,7 +10230,7 @@
         0.0005,
         0.025
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10330,7 +10330,7 @@
         0.0225,
         0.0375
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10380,7 +10380,7 @@
         0.0125,
         0.016
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10430,7 +10430,7 @@
         0.0175,
         0.345
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10480,7 +10480,7 @@
         0.265,
         0.0175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10530,7 +10530,7 @@
         0.165,
         0.009
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10580,7 +10580,7 @@
         0.0175,
         0.0275
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10680,7 +10680,7 @@
         0.009,
         0.014
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10730,7 +10730,7 @@
         0.009,
         0.014
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10830,7 +10830,7 @@
         0.009,
         0.014
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10880,7 +10880,7 @@
         0.009,
         0.014
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -10980,7 +10980,7 @@
         0.009,
         0.014
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11030,7 +11030,7 @@
         0.009,
         0.014
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11130,7 +11130,7 @@
         0.009,
         0.014
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11180,7 +11180,7 @@
         0.009,
         0.014
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11230,7 +11230,7 @@
         0.0225,
         0.0175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11280,7 +11280,7 @@
         0.0225,
         0.0175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11330,7 +11330,7 @@
         0.0225,
         0.0175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11380,7 +11380,7 @@
         0.0225,
         0.0175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11430,7 +11430,7 @@
         0.07,
         0.325
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11480,7 +11480,7 @@
         0.385,
         0.14
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11530,7 +11530,7 @@
         0.007,
         0.22
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11580,7 +11580,7 @@
         0.0015,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11630,7 +11630,7 @@
         0.0015,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11680,7 +11680,7 @@
         0.0015,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11730,7 +11730,7 @@
         0.0015,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11780,7 +11780,7 @@
         0.0015,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11830,7 +11830,7 @@
         0.0015,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11880,7 +11880,7 @@
         0.0015,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11930,7 +11930,7 @@
         0.0015,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -11980,7 +11980,7 @@
         0.0015,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -12030,7 +12030,7 @@
         0.0325,
         0.16
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -12080,7 +12080,7 @@
         0.135,
         0.115
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -12130,7 +12130,7 @@
         0.135,
         0.115
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -12480,7 +12480,7 @@
         0.0325,
         0.0325
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -12680,7 +12680,7 @@
         0.145,
         0.0125
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -12730,7 +12730,7 @@
         0.0225,
         0.2
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -12780,7 +12780,7 @@
         0.0225,
         0.2
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -12830,7 +12830,7 @@
         0.045,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -12880,7 +12880,7 @@
         0.045,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -12930,7 +12930,7 @@
         0.045,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -12980,7 +12980,7 @@
         0.045,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -13030,7 +13030,7 @@
         0.045,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -13080,7 +13080,7 @@
         0.045,
         0.175
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -13130,7 +13130,7 @@
         0.0325,
         0.0525
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -13180,7 +13180,7 @@
         0.009,
         0.0375
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -13230,7 +13230,7 @@
         0.15,
         0.18
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -13280,7 +13280,7 @@
         0.06,
         0.009
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -13330,7 +13330,7 @@
         0.0525,
         0.002
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -13380,7 +13380,7 @@
         0.0525,
         0.002
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -13430,7 +13430,7 @@
         0.0525,
         0.002
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -13480,7 +13480,7 @@
         0.0525,
         0.002
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -13530,7 +13530,7 @@
         0.0525,
         0.002
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -13580,7 +13580,7 @@
         0.0525,
         0.002
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -13630,7 +13630,7 @@
         0.0525,
         0.002
       ],
-      "triangles": 28,
+      "triangles": 68,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,

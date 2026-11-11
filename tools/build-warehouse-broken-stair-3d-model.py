@@ -36,9 +36,12 @@ def solid(item, role, geometry, group, collision=True):
 
 
 def box(item, role, position, size, group, collision=True, rotation=(0, 0, 0)):
-    geometry = bp.u_box((0, 0, 0), size, min(.008, min(size) * .2))
-    geometry = kit.translated(bp.u_rotated(geometry, rotation), position)
-    solid(item, role, geometry, group, collision)
+    cut = min(.008, min(size) * .2)
+    def placed(geometry):
+        return kit.translated(bp.u_rotated(geometry, rotation), position)
+    item.add(role, placed(kit.joint_box((0, 0, 0), size, cut)), group)
+    if collision:
+        item.add("ConcreteDark", placed(bp.u_box((0, 0, 0), size, cut)), "Collision_" + group)
 
 
 def rod(item, role, a, b, radius, group, collision=True):

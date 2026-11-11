@@ -29,13 +29,13 @@ namespace BarPromenade
         private CityLayout layout;
         private Template[] templates;
         private Material material;
-        private CityWeatherController weather;
+        private CityWindField windField;
         private Transform hero;
         private CityPedestrianDirector pedestrians;
         private float phase, previousPhase, renderedPhase;
         private Vector4 wind,previousWind,renderedWind;
         private int historyFrame=-1,trailCursor;
-        private Vector3 previousHero;
+        private Vector3 trailAnchor;
         private bool hasHero;
         private bool hasView;
         private Vector3 previousView;
@@ -55,16 +55,17 @@ namespace BarPromenade
         internal Vector3 FirstVisibleRoot {get;private set;}
         internal bool TryFindPlant(CityGrassHabitat habitat,out Vector3 root,out Vector3 tip)=>surface.TryFindPlant(habitat,out root,out tip);
 
-        internal static CityGrassField Create(Transform parent, CityLayout city, CityGrassSurface ground)
+        internal static CityGrassField Create(Transform parent, CityLayout city, CityGrassSurface ground, CityWindField wind)
         {
             var host=new GameObject("City Grass Field"); host.transform.SetParent(parent,false);
             var field=host.AddComponent<CityGrassField>(); field.layout=city; field.surface=ground;
+            field.windField=wind;
             field.LoadTemplates();
             return field;
         }
         private void Awake()=>properties=new MaterialPropertyBlock();
-        internal void Initialize(CityWeatherController controller, Transform player, CityPedestrianDirector crowd=null,Camera camera=null)
-        {weather=controller;hero=player;pedestrians=crowd;if(camera!=null)WarmView(camera);}
+        internal void Initialize(Transform player, CityPedestrianDirector crowd=null,Camera camera=null)
+        {hero=player;pedestrians=crowd;if(camera!=null)WarmView(camera);}
         internal void WarmView(Camera camera)
         {
             Vector3 eye=surface.ToCity(camera.transform.position);
@@ -142,9 +143,16 @@ namespace BarPromenade
             if(hero!=null||DebugContact.HasValue)
             {
                 contacts[0]=new Vector4(position.x,position.y,position.z,.68f);
-                if(hasHero&&(position-previousHero).sqrMagnitude>.04f&&(position-previousHero).sqrMagnitude<4f)
-                {trailRoots[trailCursor]=previousHero;trailTimes[trailCursor]=phase;trailCursor=(trailCursor+1)%MaximumTrails;}
-                previousHero=position;hasHero=true;
+                float travel=(position-trailAnchor).sqrMagnitude;
+                if(!hasHero||travel>=4f)trailAnchor=position;
+                else if(travel>.04f)
+                {
+                    trailRoots[trailCursor]=trailAnchor;
+                    trailTimes[trailCursor]=phase;
+                    trailCursor=(trailCursor+1)%MaximumTrails;
+                    trailAnchor=position;
+                }
+                hasHero=true;
             }
             for(int i=0;i<nearestDistances.Length;i++)nearestDistances[i]=float.PositiveInfinity;
             if(pedestrians!=null)
@@ -197,9 +205,9 @@ namespace BarPromenade
             Vector3 eye=surface.ToCity(camera.transform.position);
             if(worldView&&(!hasView||(eye-previousView).sqrMagnitude>64))WarmView(camera);
             if(!GameTimeScaleRuntime.IsPaused && DebugContact.HasValue)UpdateContacts();
-            WindSample sample=DebugWind??(weather!=null?weather.CurrentWind:GameWeatherRules.EvaluateCurrentWind());
-            Vector3 direction=surface.FromCityRotation*sample.HorizontalDirection;
-            wind=new Vector4(direction.x,direction.z,DebugStill?0:sample.Strength01,DebugStill?0:DebugPhaseSeconds??phase);
+            wind=DebugWind.HasValue ? windField.Pack(DebugWind.Value, windField.Wind.w) : windField.Wind;
+            if (DebugPhaseSeconds.HasValue) wind.w=DebugPhaseSeconds.Value;
+            if (DebugStill) { wind.z=0f; wind.w=0f; }
             if(worldView&&historyFrame!=Time.frameCount)
             {
                 bool contiguous=historyFrame==Time.frameCount-1;
@@ -281,6 +289,7 @@ namespace BarPromenade
         {
             var chunk=pool.Count>0?pool.Pop():new Chunk();chunk.Reset();
             var lists=chunk.Lists;var roots=chunk.Roots;
+            Quaternion worldRotation=surface.FromCityRotation;
             for(int z=0;z<CityGrassPlan.CellsPerChunk;z++)for(int x=0;x<CityGrassPlan.CellsPerChunk;x++)
             {
                 int gx=key.x*CityGrassPlan.CellsPerChunk+x,gz=key.y*CityGrassPlan.CellsPerChunk+z;
@@ -290,7 +299,7 @@ namespace BarPromenade
                 int template=(int)species*3+variant;
                 Quaternion yaw=Quaternion.Euler(0,CityGrassPlan.Unit(CityGrassPlan.Hash(layout.Seed,gx,gz,871))*360f,0);
                 Quaternion slope=Quaternion.FromToRotation(Vector3.up,Vector3.Lerp(Vector3.up,normal,.65f).normalized);
-                Matrix4x4 basis=Matrix4x4.TRS(surface.FromCity(root),surface.FromCityRotation*slope*yaw,Vector3.one*scale);
+                Matrix4x4 basis=Matrix4x4.TRS(surface.FromCity(root),worldRotation*slope*yaw,Vector3.one*scale);
                 if(lists[template]==null)lists[template]=new List<Matrix4x4>(128);
                 if(lists[template].Count==0)roots[template]=surface.FromCity(root);
                 // All LODs have the same authored transform basis.

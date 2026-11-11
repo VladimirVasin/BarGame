@@ -253,11 +253,7 @@ Shader "Bar Promenade/City River Water"
             struct Attributes
             {
                 float4 positionOS : POSITION;
-                // Rim mask for the puddle film, 0 at the patch edge and
-                // 1 at its centre. The big water meshes carry no UV
-                // stream at all — the missing stream reads as zero, so
-                // the vertex stage only consumes it when
-                // _EdgeNoiseParams.z turns the film's edge on.
+                // Signed patch coordinates for the puddle film only.
                 float2 uv : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -270,7 +266,7 @@ Shader "Bar Promenade/City River Water"
                 float4 screenPos : TEXCOORD2;
                 float viewZ : TEXCOORD3;
                 float crest : TEXCOORD4;
-                half edgeMask : TEXCOORD5;
+                float2 filmUv : TEXCOORD5;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -444,9 +440,7 @@ Shader "Bar Promenade/City River Water"
                 // Eye depth interpolates exactly, so the fragment
                 // stage derives the factor from it instead.
                 output.viewZ = -TransformWorldToView(positionWS).z;
-                output.edgeMask = _EdgeNoiseParams.z > 0.5
-                    ? (half)saturate(input.uv.x)
-                    : 1.0h;
+                output.filmUv = input.uv;
                 return output;
             }
 
@@ -528,6 +522,19 @@ Shader "Bar Promenade/City River Water"
             half4 RiverFragment(Varyings input) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
+                // Preserve a core in drizzle and never show the carrier
+                // rectangle, even at full wetness. Reject dry pixels
+                // before the shared ripple, lighting and reflection work.
+                half film = _SurfaceWetness;
+                if (_EdgeNoiseParams.z > 0.5)
+                {
+                    float erosion = length(input.filmUv) *
+                        (1.03 + .22 * _EdgeNoiseParams.y * EdgeNoise(input.positionWS.xz));
+                    float shore = sqrt(saturate(_SurfaceWetness));
+                    film = (half)smoothstep(0.0, 0.12, shore - erosion);
+                    clip(film - .0001h);
+                }
 
                 float time = _Time.y * _FlowSpeed;
                 float2 screenUV = input.screenPos.xy / input.screenPos.w;
@@ -902,28 +909,6 @@ Shader "Bar Promenade/City River Water"
                 // IS the road. The rim erodes first, carved by world
                 // noise, so a drying puddle pulls toward its middle.
                 //
-                // The shore stands on the SQUARE ROOT of the wetness.
-                // The city never dries below its drizzle (0.18), and
-                // measured against the wetness itself that floor left
-                // a sliver a quarter of the patch wide - at 640x360 no
-                // puddle at all. Against sqrt(0.18) = 0.42 the drizzle
-                // keeps about half the patch (the noise varies it from
-                // a third to the whole), light rain nearly fills it, a
-                // downpour fills it, and zero still dissolves it.
-                half film = _SurfaceWetness;
-                if (_EdgeNoiseParams.z > 0.5)
-                {
-                    float erosion =
-                        (1.0 - input.edgeMask) *
-                        (0.4 + 0.6 * EdgeNoise(input.positionWS.xz)) *
-                        max(0.05, _EdgeNoiseParams.y);
-                    float shore = sqrt(saturate(_SurfaceWetness));
-                    film = (half)smoothstep(
-                        0.0,
-                        0.12,
-                        shore - erosion);
-                }
-
                 color = lerp((half3)background, color, saturate(film));
                 if (_ShoreSwashParams.w > 0.5)
                 {

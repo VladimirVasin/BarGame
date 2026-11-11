@@ -2995,10 +2995,10 @@ MonoBehaviour:
     wallThickness: 0.3
     doorWidth: 1.45
     doorHeight: 2.34
-  sourceTriangleCount: 15732
+  sourceTriangleCount: 15892
   sourceGeneratorVersion: 4.1.1
   designId: bar_interior_v3
-  buildSignature: a8b496d3ff308442dabbd48ef8f8ca6b7068adc782cd55b3be370c9e482262b4
+  buildSignature: 7a67998cb3ad970037c3e5d54da6fb69129877baa11c97391dc081c3e658dc2c
 --- !u!1001 &7990514647565248362
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3362,10 +3362,6 @@ PrefabInstance:
     - target: {fileID: -6271772770395003368, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: m_LocalRotation.w
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -6271772770395003368, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -6271772770395003368, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: m_LocalRotation.y
