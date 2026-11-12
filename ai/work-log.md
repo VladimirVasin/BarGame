@@ -46,6 +46,10 @@ joins. Local admission counts both layers.
 `LiveCity_WalkersClearSummitArrivalAndSharedStairExit` passed the startup,
 stationary hero, traffic forecast, kerb bypass and stair exits. Frame reviewed.
 
+Ridge ambient walkers sweep sidesteps and back across joins while followers
+wait. `LiveCity_AmbientWalkersClearBlockedRidgeShoulders` cleared the Court
+case. `Ridge encounter replay` cleared both cases.
+
 ## 2026-11-11
 
 City/Home use seeded authored grass and coastal reeds. Wind/body bend keeps

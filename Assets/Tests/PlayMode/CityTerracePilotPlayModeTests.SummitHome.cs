@@ -177,6 +177,84 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator LiveCity_AmbientWalkersClearBlockedRidgeShoulders()
+        {
+            yield return LoadProductionCity();
+            city.AmbientPedestrians.enabled = false;
+            city.Pedestrians.AutomaticUpdatesSuspended = true;
+            city.Pedestrians.ReleaseResidentPresentationsForTimeJump();
+            Physics.SyncTransforms();
+
+            var graph = city.PedestrianPlan;
+            var pavement = CityPedestrianPlanner.CreateWalkableArea(graph);
+            var walks = new CityAmbientWalkPlan(graph, city.Layout, city.BusPlans);
+            var traffic = new CityPedestrianVehicleTraffic();
+            var movement = new CityAmbientWalking(walks, pavement, CityStreetSupportPlan.ForLayout(city.Layout), traffic);
+            const float speed = CityResidentWorld.WalkingSpeed;
+
+            // The log gives the ambient walker's feet, but only the type of
+            // the blocker. Place a resident close ahead and between shoulders.
+            int court = LinkIndex("hill:quarter:court:south:court:a:court:b");
+            Vector3 courtStart = new Vector3(4.42705345f, 31.6327534f, -310.301361f);
+            var walker = RouteAt(court, courtStart, 1, out Vector3 forward);
+            Vector3 centre = walks.Sample(court, walker.Along, out _);
+            Vector3 resident = courtStart + forward * .59f + Vector3.back * .34f;
+            var nearby = new[] { new CityAmbientWalking.Contact(-2, resident, graph.AgentRadius) };
+            traffic.AddFootprint(centre + Vector3.forward * 1.45f, Quaternion.identity,
+                new Bounds(Vector3.up, new Vector3(8f, 2f, 1f)), predicted: true);
+            Assert.That(movement.HasClearance(courtStart), Is.True);
+            float minimumGap = CityAmbientWalking.Radius + graph.AgentRadius + .013f;
+            Vector3 feet = courtStart;
+            bool backedAcrossJoin = false;
+            for (int frame = 0; frame < 180 && Vector3.Dot(feet - resident, forward) < 1.1f; frame++)
+            {
+                movement.Advance(ref walker, 20, feet, speed, FrameSeconds, nearby, nearby.Length, out feet, out _);
+                backedAcrossJoin |= walker.Backing && walker.Link != court;
+                Assert.That(Gap(feet, resident), Is.GreaterThanOrEqualTo(minimumGap), "A sidestep must clear the resident's body.");
+                Assert.That(pavement.Contains(feet, CityAmbientWalking.Radius), Is.True, "Traffic occupies the kerb.");
+            }
+            Assert.That(backedAcrossJoin && Vector3.Dot(feet - resident, forward) >= 1.1f, Is.True,
+                $"Walker should back past the frontage join, change sides and continue. Ended at {feet:F3}, {walks.LinkId(walker.Link)}.");
+
+            // The two logged summit positions are already near contact and
+            // offset toward the wrong sides for a nominal right-hand pass.
+            traffic.ClearFootprints();
+            int summit = LinkIndex("hill:quarter:summit:south:court:b:court:a");
+            Vector3 eastFeet = new Vector3(-20.84052f, 40.06f, -350f);
+            Vector3 westFeet = new Vector3(-20.4046917f, 40.06f, -350.378632f);
+            float eastGoal = westFeet.x + .85f, westGoal = eastFeet.x - .85f;
+            var east = RouteAt(summit, eastFeet, 1, out _);
+            var west = RouteAt(summit, westFeet, -1, out _);
+            var pair = new CityAmbientWalking.Contact[2];
+            for (int frame = 0; frame < 180 && (eastFeet.x < eastGoal || westFeet.x > westGoal); frame++)
+            {
+                pair[1] = new CityAmbientWalking.Contact(5, westFeet, CityAmbientWalking.Radius, west);
+                movement.Advance(ref east, 3, eastFeet, speed, FrameSeconds, pair, pair.Length, out eastFeet, out _);
+                pair[0] = new CityAmbientWalking.Contact(3, eastFeet, CityAmbientWalking.Radius, east);
+                movement.Advance(ref west, 5, westFeet, speed, FrameSeconds, pair, pair.Length, out westFeet, out _);
+                Assert.That(Gap(eastFeet, westFeet), Is.GreaterThanOrEqualTo(.568f));
+                Assert.That(pavement.Contains(eastFeet, CityAmbientWalking.Radius) &&
+                    pavement.Contains(westFeet, CityAmbientWalking.Radius), Is.True);
+            }
+            Assert.That(eastFeet.x >= eastGoal && westFeet.x <= westGoal, Is.True,
+                $"Both walkers should continue beyond the encounter. Ended at {eastFeet:F3} and {westFeet:F3}.");
+
+            int LinkIndex(string id) => Enumerable.Range(0, graph.Links.Count).Single(index => graph.Links[index].Id == id);
+
+            CityAmbientWalking.Route RouteAt(int link, Vector3 position, int eastward, out Vector3 travel)
+            {
+                float along = walks.ProjectDistance(link, position);
+                Vector3 point = walks.Sample(link, along, out Vector3 tangent);
+                int direction = tangent.x * eastward > 0f ? 1 : -1;
+                travel = tangent * direction;
+                float offset = Vector3.Dot(position - point, Vector3.Cross(Vector3.up, tangent));
+                return new CityAmbientWalking.Route(link, direction, along) { Offset = offset, DesiredOffset = offset };
+            }
+
+            float Gap(Vector3 a, Vector3 b) => new Vector2(a.x - b.x, a.z - b.z).magnitude;
+        }
+
+        [UnityTest]
         public IEnumerator LiveCity_SummitResidentWalksSidewalkAndSharedStairsAtFrameCadence()
         {
             yield return LoadProductionCity();

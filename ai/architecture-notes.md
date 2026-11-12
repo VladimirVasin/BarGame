@@ -533,9 +533,9 @@
   collision/time/input stay live. Shared effects/PP retained; cost unmeasured.
   `CityAmbientPedestrians` ≤12/cache18, ≤48 combined, 60/40 target.
   Looks allocate after permanent signatures. Warm≤3. In 12m arrivals share
-  four slots, two ambient. Hidden excess retires. Passing probes pavement
-  width and stair joins. Walkers turn into the step and can use 0.32m of clear
-  road beside a kerb. Traffic forecast guards it. Hero/resident priority.
+  four slots, two ambient. Hidden excess retires. Ambient passing sweeps the
+  step to the lane. Followers leave room to back through joins. Walkers turn
+  into the step. Clear kerb allowance 0.32m. Hero/resident priority.
   Spurs serve homes, circuits use the frontage.
   The hero's gate stays public. Pause/dormancy bound presentation.
   Effects audit: GI/SSAO/fog/volumetrics/shadows/grading keep existing City

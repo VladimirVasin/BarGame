@@ -781,8 +781,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Both warm under the overlay with half-hour ramps. Warm ambient≤3, arrivals
   per 12m≤4 combined/2 ambient. Hidden entries and exits, 60/40 target.
   Ambient walks use stairs, avoid crossings and enter away from platforms.
-  Walkers turn into clear shoulders, using free kerb edges or turnouts. House spurs have
-  the full paved shoulders. Public circuits turn at the sidewalk. The hero's
+  Ambient walkers sweep sidesteps and leave room to back across joins.
+  Clear kerbs and turnouts can serve a pass. House spurs use the full pavement.
+  Public circuits turn at the sidewalk. The hero's
   house is private; the pavement in front stays connected. Ordinary
   movement keeps its `.82 m/s` pace; distant idle/walk sampling is bounded while
   time, collision and immediate interactions stay live. A spatial index limits
