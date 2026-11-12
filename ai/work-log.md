@@ -16,20 +16,54 @@ Auto returns to the current slot. Travel keeps the selection and New Game
 clears it. `DebugWindow_SelectsLiveWeatherAndReturnsToSchedule` checked the
 modal guard, drizzle floor, forced lightning and restoration.
 
+City has ordinary women on permanent IDs through the shared appearance pool.
+Their cannery-derived rig has distinct faces, long hairstyles and fitted clothes.
+Prior assignments matched the roster snapshot. `OrdinaryWomen_KeepVisibleAssignmentsAndRideTheBus`
+passed pool restoration and both door transfers with seated contact.
+`OrdinaryWomenStreet` frames reviewed. Blender `--validate-only` checks crown coverage.
+Loose hair now shares one surface and strand UVs from crown to ends.
+Blender checked connected edges. `OrdinaryWomenLooseHair` passed and the profile
+and rear views were reviewed.
+The women's street cycle shifts weight at the hips. A softer elbow fold and
+outward arm aim clear the trousers in both walk and idle. Blender checked
+the shaped meshes. `OrdinaryWomenWalk` passed the gait and start blend for
+both street layers. Frames reviewed.
+
+City workers stay at an evening destination before heading home. Short visual
+walks fill nearby pavement, with arrival selection balancing the combined flow.
+The initial home-door walk exposed sparse framing. Entries now favour paths
+into view. `CityAmbientStreet` passed the walk, platform clearance and worker
+continuity. Day and evening frames reviewed.
+
+Ambient walkers now take paired shoulders or yield at a turnout. The live
+log had no ambient blockage events; sustained stops now identify the blocker
+kind. `AmbientWalkers_HeadOnClearOppositeShouldersOrYieldInTheTurnout`,
+`AmbientWalkers_ClearAStationaryResidentWithoutWaitingForThemToMove`, and
+`CityAmbientStreet` passed. Day and evening frames reviewed.
+The hero's home apron is private. Both street layers keep the public sidewalk.
+`Destinations_StayInTheirHomeComponentAndUseActualCityFrontages` passed.
+Ridge entrance routes retain paved shoulders. Routine home-area walks turn
+at the frontage. Ambient density and spawn spacing keep entrances clear.
+Ridge plinths meet the terrain and rails follow the approach edges. Glass
+return pavers and asphalt follow the bank from footway to window and staff
+exit. `CityAmbientStreet` passed opposing resident routes, foundation and
+rail placement, pavement contacts, the grass-free crate yard and the density
+check. Frames reviewed.
+
 ## 2026-11-11
 
-City/Home use seeded authored grass and coastal reeds; wind/body bend retains
-roots. Full arrival neighbourhoods prevent gaps; decks stay clear.
-Blender CityGrass/shader validators and CityGrassAcceptance cover wind,
-contacts, cleanup and excavation; frames reviewed. Lit inventory has old gaps.
-Ridge banks carry rooted grass off paths and kiosk aprons. Shared gusts drive
-blades, crowns, shrubs and pinned wires. Gable planting respects terrain,
-routes and wires. `CityRidgeWind`: gusts, trunks, paths and Home.
+City/Home use seeded authored grass and coastal reeds. Wind/body bend keeps
+roots; full arrivals close gaps; decks stay clear. Blender CityGrass/shader
+validators and CityGrassAcceptance cover wind, contact, cleanup, excavation.
+Frames reviewed. Lit inventory gaps persist.
+Ridge grass clears paths/kiosks; gable plants fit terrain/routes/wires.
+Gusts drive grass, crowns, shrubs and pinned wires. `CityRidgeWind` covers
+gusts, trunks, paths and Home.
 
 User made softened coating and structural joints mandatory (art §4).
-City/Home use height-aware, local seam bins with shared pigment/response
-maps and wet reflection; ridge meshes keep local collision. Quarter-circle
-curb profiles retain the pavement datum; selected facade trim is chamfered.
+City/Home use height-aware seam bins, shared pigment/response and wet reflection.
+Ridge keeps local collision. Quarter-round curbs keep pavement height;
+selected facade trim is chamfered.
 `CityGroundJointPilot`: dry/wet A/B, night, curb, excavation, sand and Home;
 frames reviewed. `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement`.
 Plinth bevels inherit a chart. Garden and tunnel coatings join the field.
@@ -57,10 +91,12 @@ The fish sign has a matte ImageGen print and two floods; UVs follow the
 street viewer. Blender Home/Sign contracts; CitySummitStreetRepairs and frames.
 CityMapArtReferenceExport updated the schematic survey.
 
-`CityAltitudeAndNightStreet`: uniform fog/range with live shadows.
-`CityPerformanceAudit` reduced visible work without stable 60 FPS. Pilots removed.
-Fixed Gaussian range removes roof fringes. `CityFogOutlineComparison` compares
-matched stills and a camera sweep with lowland controls.
+PC punctual atlas cap 4096px. `CityAltitudeAndNightStreet`: even fog/range,
+live shadows without rescaling; frames reviewed.
+`CityPerformanceAudit`: less visible work, unstable 60 FPS; pilots removed.
+`CityFogOutlineComparison` checks fixed Gaussian focus in paired stills/sweep.
+`CityRidgeNightFog` checks scatter continuity at the reported view.
+Night/day frames reviewed.
 
 ## 2026-11-09
 

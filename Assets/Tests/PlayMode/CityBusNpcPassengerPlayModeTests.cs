@@ -33,7 +33,9 @@ namespace BarPromenade.Tests.PlayMode
         private const int FrameCap = 40000;
 
         [Test]
-        public void PassengerFeet_FollowDoorwayAndAisleInBothDirections()
+        public void PassengerFeet_FollowDoorwayAndAisleInBothDirections() => CheckPassengerFeet(52, false);
+
+        internal static void CheckPassengerFeet(int resident, bool checkSeat)
         {
             const float terraceHeight = 12f;
             float pavementY = terraceHeight + CityStreetSurfacePlanner.RoadTop;
@@ -75,7 +77,7 @@ namespace BarPromenade.Tests.PlayMode
                 walker.PrepareSpawn(graph, new CityPedestrianSpawnAnchor("boarding", dock, 0, 1),
                     0, .82f, 1f, 0f, 0, 1u);
                 var model = CityPedestrianDefaultNpcBody.Create(root.transform,
-                    DefaultNpcPopulation.PedestrianId(52), CityPedestrianResources.LoadStreetClipDonor());
+                    DefaultNpcPopulation.PedestrianId(resident), CityPedestrianResources.LoadStreetClipDonor());
                 var body = model.gameObject.AddComponent<CityPedestrianPresentation>();
                 body.Initialize(model);
                 model.Animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
@@ -102,6 +104,9 @@ namespace BarPromenade.Tests.PlayMode
                 CheckTransfer(entry, true, dock);
                 Assert.That(CityBusNpcPassengerController.BeginPassengerRide(walker, bus, seat, false), Is.True);
                 walker.Advance(Step);
+                if (checkSeat)
+                    CheckSeatedResident(body, registry.PassengerSeatAnchors[seat], registry.StandingFloorAnchors[0].position,
+                        bus.transform.up, bus.TravelDirection);
                 CheckTransfer(exit, false, exit.ExitPose.RootPosition);
                 walker.ResumeRoaming(0);
                 for (int i = 0; i < 4; i++)

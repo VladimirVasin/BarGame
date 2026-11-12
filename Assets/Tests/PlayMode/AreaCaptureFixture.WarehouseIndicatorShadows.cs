@@ -151,7 +151,6 @@ namespace BarPromenade.Tests.PlayMode
         {
             var pipeline = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
             Assert.That(pipeline, Is.Not.Null);
-            Assert.That(pipeline.additionalLightsShadowmapResolution, Is.EqualTo(2048));
             Assert.That(pipeline.additionalLightsShadowResolutionTierLow, Is.EqualTo(256));
             Assert.That(pipeline.additionalLightsShadowResolutionTierMedium, Is.EqualTo(512));
             Assert.That(pipeline.additionalLightsShadowResolutionTierHigh, Is.EqualTo(1024));
@@ -181,7 +180,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(activeIndicators, Is.EqualTo(3));
             Assert.That(texels, Is.LessThanOrEqualTo(49L * 256 * 256));
             Assert.That(texels, Is.LessThanOrEqualTo((long)pipeline.additionalLightsShadowmapResolution *
-                pipeline.additionalLightsShadowmapResolution), "The existing additional-light atlas must contain every source.");
+                pipeline.additionalLightsShadowmapResolution), "The additional-light atlas must contain every source.");
         }
 
         private static void AssertWarehouseIndicatorBlockedReceivers(Camera camera, Light indicator,

@@ -8,7 +8,8 @@ namespace BarPromenade
         Work,
         Shopping,
         Walking,
-        ReturningHome
+        ReturningHome,
+        Leisure
     }
 
     /// <summary>A destination interval, expressed in absolute calendar minutes.</summary>
@@ -30,7 +31,7 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Stateless daily destinations for the ambient residents. Runtime owns the
+    /// Stateless daily destinations for permanent residents. Runtime owns the
     /// actual journey and presentation; these rules never create an interior,
     /// purchase, job transaction or a frame-by-frame simulation.
     /// </summary>
@@ -39,6 +40,7 @@ namespace BarPromenade
         public const int ResidentCount = 192;
         public const int MinutesPerDay = 24 * 60;
         public const int PopulationRampMinutes = 30;
+        public const int MaximumAmbientStreetPopulation = 12;
 
         private readonly struct Destination
         {
@@ -55,8 +57,7 @@ namespace BarPromenade
         private static readonly Destination[] WorkerRoutine =
         {
             new Destination(360, CityResidentActivity.Work),
-            new Destination(960, CityResidentActivity.Shopping),
-            new Destination(1050, CityResidentActivity.Walking),
+            new Destination(1020, CityResidentActivity.Leisure),
             new Destination(1230, CityResidentActivity.ReturningHome),
             new Destination(1320, CityResidentActivity.Home)
         };
@@ -87,34 +88,43 @@ namespace BarPromenade
         };
 
         private static readonly int[] PopulationBoundaries = { 0, 360, 600, 1020, 1320 };
-        private static readonly int[] PopulationBefore = { 10, 5, 28, 22, 36 };
-        private static readonly int[] PopulationAfter = { 5, 28, 22, 36, 10 };
+        private static readonly int[] ResidentPopulation = { 5, 28, 22, 36, 10 };
+        private static readonly int[] AmbientPopulation = { 2, 8, 10, MaximumAmbientStreetPopulation, 4 };
 
         /// <summary>
         /// Local street budget. Smooth ramps straddle each time boundary,
         /// including midnight, rather than replacing the crowd on the hour.
         /// </summary>
         public static int TargetStreetPopulation(double minuteOfDay)
+            => PopulationAt(minuteOfDay, ResidentPopulation);
+
+        public static int TargetAmbientPopulation(double minuteOfDay)
+            => PopulationAt(minuteOfDay, AmbientPopulation);
+
+        // Choose the next body against the combined nearby street population.
+        // Integer arithmetic rounds the desired count at 2 women per 5 people.
+        public static bool PreferWomanForNextArrival(int nearbyCount, int nearbyWomen)
+            => nearbyWomen < ((nearbyCount + 1) * 2 + 2) / 5;
+
+        private static int PopulationAt(double minuteOfDay, int[] population)
         {
             ValidateMinute(minuteOfDay);
             double halfRamp = PopulationRampMinutes * 0.5d;
+            int window = 0;
             for (int index = 0; index < PopulationBoundaries.Length; index++)
             {
+                if (minuteOfDay >= PopulationBoundaries[index]) window = index;
                 double distance = minuteOfDay - PopulationBoundaries[index];
                 if (distance > MinutesPerDay * 0.5d) distance -= MinutesPerDay;
                 if (distance < -MinutesPerDay * 0.5d) distance += MinutesPerDay;
                 if (distance < -halfRamp || distance > halfRamp) continue;
                 double progress = (distance + halfRamp) / PopulationRampMinutes;
                 progress = progress * progress * (3d - 2d * progress);
-                return (int)Math.Floor(PopulationBefore[index] +
-                    (PopulationAfter[index] - PopulationBefore[index]) * progress + 0.5d);
+                int before = population[(index + population.Length - 1) % population.Length];
+                return (int)Math.Floor(before + (population[index] - before) * progress + 0.5d);
             }
 
-            if (minuteOfDay < 360d) return 5;
-            if (minuteOfDay < 600d) return 28;
-            if (minuteOfDay < 1020d) return 22;
-            if (minuteOfDay < 1320d) return 36;
-            return 10;
+            return population[window];
         }
 
         /// <summary>
@@ -167,7 +177,8 @@ namespace BarPromenade
         public static bool IsOnStreet(CityResidentActivity activity)
             => activity == CityResidentActivity.Shopping ||
                activity == CityResidentActivity.Walking ||
-               activity == CityResidentActivity.ReturningHome;
+               activity == CityResidentActivity.ReturningHome ||
+               activity == CityResidentActivity.Leisure;
 
         /// <summary>
         /// Cache a daily roster ordered by this key, with resident index as the

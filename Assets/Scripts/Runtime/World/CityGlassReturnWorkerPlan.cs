@@ -37,7 +37,8 @@ namespace BarPromenade
             HomeDoor = House.ThresholdWorld;
             InsideHome = HomeDoor - House.Lot.FacadeForward * (CityBuildingAssetProvider.EntranceDepth - .45f);
             // Feet remain clear of the rear shelving and the sorting crate.
-            Vector3 inside = Local(1.65f, -.48f), outside = Earth(Local(3f, -.48f));
+            Vector2 outsideLocal = CityGlassReturnSitePlan.ServiceDoorOutside;
+            Vector3 inside = Local(1.65f, -.48f), outside = Earth(Local(outsideLocal.x, outsideLocal.y));
             Vector3 switchStand = Local(1.64f, .27f);
             WorkToSwitch = Array.AsReadOnly(new[] { Local(0f, .89f), Local(.95f, .40f), switchStand });
             SwitchToDoor = Array.AsReadOnly(new[] { switchStand, inside });
@@ -47,7 +48,8 @@ namespace BarPromenade
             CityHillsideStreetRoute road = null;
             var path = new List<Vector3>(48) { outside };
             // Turn around the front corner, rather than diagonally through the side wall.
-            GroundLeg(Local(2.75f, 2.15f));
+            Vector2 corner = CityGlassReturnSitePlan.ServiceCorner;
+            GroundLeg(Local(corner.x, corner.y));
             GroundLeg(site.Approach);
             foreach (var candidate in CityHillsideStreetPlan.ForLayout(layout).Routes)
                 if (candidate.Bank == CityTerraceTransportBank.East) { road = candidate; break; }
@@ -90,7 +92,7 @@ namespace BarPromenade
             }
         }
 
-        private static (int segment, Vector3 point, float distance) Project(IReadOnlyList<Vector3> path, Vector3 target)
+        internal static (int segment, Vector3 point, float distance) Project(IReadOnlyList<Vector3> path, Vector3 target)
         {
             int segment = 0;
             Vector3 nearest = path[0];

@@ -36,12 +36,18 @@ namespace BarPromenade
             Transform parent,
             string characterId,
             CityPedestrianAssetRegistry clipDonor)
-            => Create(parent, DefaultNpcPopulation.GetAssignment(characterId), clipDonor);
+            => Create(parent, characterId, null, clipDonor);
 
         /// <summary>Adapts a shared visit allocation without registering a permanent character.</summary>
         public static CityPedestrianAssetRegistry Create(
             Transform parent,
             DefaultNpcPopulation.Assignment assignment,
+            CityPedestrianAssetRegistry clipDonor)
+            => Create(parent, (assignment ?? throw new ArgumentNullException(nameof(assignment))).CharacterId,
+                assignment, clipDonor);
+
+        private static CityPedestrianAssetRegistry Create(
+            Transform parent, string characterId, DefaultNpcPopulation.Assignment assignment,
             CityPedestrianAssetRegistry clipDonor)
         {
             if (parent == null)
@@ -49,18 +55,15 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(parent));
             }
 
-            if (assignment == null)
-                throw new ArgumentNullException(nameof(assignment));
-            string characterId = assignment.CharacterId;
-            GameObject root = new GameObject(
-                $"Pedestrian {characterId} ({assignment.ModelId})");
+            GameObject root = new GameObject($"Pedestrian {characterId}");
             root.transform.SetParent(parent, false);
             VillageResidentPresentation actor = null;
             try
             {
-                actor = DefaultNpcFactory.CreateForAssignment(
-                    root.transform,
-                    assignment);
+                actor = assignment == null
+                    ? DefaultNpcFactory.CreateForCharacter(root.transform, characterId, out assignment)
+                    : DefaultNpcFactory.CreateForAssignment(root.transform, assignment);
+                root.name = $"Pedestrian {characterId} ({assignment.ModelId})";
                 actor.name = "Character";
                 // Face the wrapper's +Z the way every route-driven walker
                 // does, measured live as the port and the fair measure it.
@@ -84,6 +87,7 @@ namespace BarPromenade
                         "complete rig or idle/walk pair for the street.");
                 }
 
+                var streetClips = actor.GetComponent<DefaultNpcStreetClips>();
                 Renderer[] visible = CollectVisibleRenderers(actor);
                 var registry = root.AddComponent<CityPedestrianAssetRegistry>();
                 registry.Configure(
@@ -106,10 +110,12 @@ namespace BarPromenade
                     assignment.VisibleSignature,
                     configuredPelvisAnchor:
                         RequireJoint(model, assignment.ModelId, "pelvis"),
-                    configuredSitClip: clipDonor != null
-                        ? clipDonor.SitClip
-                        : null);
-                if (clipDonor != null)
+                    configuredSitClip: streetClips != null ? streetClips.Sit : clipDonor?.SitClip);
+                if (streetClips != null)
+                {
+                    registry.ConfigurePersonalSpaceClips(streetClips.Guard, streetClips.Shove);
+                }
+                else if (clipDonor != null)
                 {
                     registry.ConfigurePersonalSpaceClips(
                         clipDonor.PersonalSpaceGuardClip,

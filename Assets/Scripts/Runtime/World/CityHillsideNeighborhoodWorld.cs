@@ -41,17 +41,22 @@ namespace BarPromenade
         {
             Transform placed = new GameObject("Building " + house.Lot.Cell).transform;
             placed.SetParent(parent, false);
-            float depth = .9f;
-            if (house.HasGuardedEntry)
-                foreach (var grid in CityHillsideGroundGrid.ForLayout(layout))
-                    if (grid.Road.Bank == house.Bank)
-                        depth = grid.FoundationDepth(house);
-            var building = CityBuildingPrototypeWorldBuilder.BuildCity(placed, house.Lot, layout.Seed, depth);
-            if (house.HasGuardedEntry)
-                foreach (Transform part in placed)
-                    if (part.name.StartsWith(CityBuildingPrototypeWorldBuilder.FoundationObjectName, System.StringComparison.Ordinal))
-                        RuntimePrimitiveFactory.ProfileStructuralBox(part.gameObject, .04f);
+            var building = CityBuildingPrototypeWorldBuilder.BuildCity(placed, house.Lot, layout.Seed, FoundationDepth(layout, house));
+            foreach (Transform part in placed)
+                if (part.name.StartsWith(CityBuildingPrototypeWorldBuilder.FoundationObjectName, System.StringComparison.Ordinal))
+                    RuntimePrimitiveFactory.ProfileStructuralBox(part.gameObject, .04f);
             CityHillsideHousePresentation.Build(placed, house, building);
+        }
+
+        internal static float FoundationDepth(CityLayout layout, CityHillsideBuilding house)
+        {
+            float depth = CityHillsideGroundGrid.MinimumFoundationDepth;
+            foreach (var grid in CityHillsideGroundGrid.ForLayout(layout))
+                if (grid.Road.Bank == house.Bank) depth = grid.FoundationDepth(house);
+            var quarter = CityHillsideQuarterPlan.ForLayout(layout);
+            if (quarter.Links.Count > 0 && quarter.TerrainBounds.Overlaps(house.FoundationBounds))
+                depth = Mathf.Max(depth, CityHillsideQuarterGroundGrid.ForLayout(layout).FoundationDepth(house));
+            return depth;
         }
 
         internal static void BuildGround(Transform parent, CityHillsideGroundGrid grid, Rect? retained = null)

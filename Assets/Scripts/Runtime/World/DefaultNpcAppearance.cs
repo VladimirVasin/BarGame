@@ -37,6 +37,7 @@ namespace BarPromenade
 
         [SerializeField] private FaceBinding[] faces = Array.Empty<FaceBinding>();
         [SerializeField] private Renderer[] permanentRenderers = Array.Empty<Renderer>();
+        [SerializeField] private Renderer separateFaceRenderer;
         [SerializeField] private string currentFaceId;
         [SerializeField] private string appearanceKey;
         [SerializeField] private HairColorBinding[] hairColors = Array.Empty<HairColorBinding>();
@@ -55,7 +56,8 @@ namespace BarPromenade
             => Configure(bindings, defaultFaceId, new[] { new HairColorBinding("gray", Color.white),
                 new HairColorBinding("brunette", Color.white), new HairColorBinding("blond", Color.white) }, Array.Empty<Renderer>());
 
-        public void Configure(FaceBinding[] bindings, string defaultFaceId, HairColorBinding[] colors, Renderer[] hair)
+        public void Configure(FaceBinding[] bindings, string defaultFaceId, HairColorBinding[] colors, Renderer[] hair,
+            Renderer faceRenderer = null)
         {
             if (bindings == null || bindings.Length == 0)
                 throw new ArgumentException("The default NPC needs authored faces.", nameof(bindings));
@@ -82,12 +84,14 @@ namespace BarPromenade
             foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
                 if (!nextWardrobe.Owns(renderer)) permanent.Add(renderer);
             if (permanent.Count == 0) throw new InvalidOperationException("Default NPC appearance requires its permanent body.");
+            if (faceRenderer != null && !permanent.Contains(faceRenderer))
+                throw new ArgumentException("A separate face surface must be part of the permanent body.", nameof(faceRenderer));
             var uniqueHair = new HashSet<Renderer>();
             foreach (Renderer renderer in hair)
                 if (renderer == null || !permanent.Contains(renderer) || !uniqueHair.Add(renderer))
                     throw new ArgumentException("Hair renderers must be unique permanent parts of this body.", nameof(hair));
             wardrobe = nextWardrobe; faces = (FaceBinding[])bindings.Clone();
-            permanentRenderers = permanent.ToArray(); currentFaceId = defaultFaceId;
+            permanentRenderers = permanent.ToArray(); separateFaceRenderer = faceRenderer; currentFaceId = defaultFaceId;
             hairColors = (HairColorBinding[])colors.Clone(); hairRenderers = (Renderer[])hair.Clone();
             currentHairColorId = "gray";
             appearanceKey = null;
@@ -161,14 +165,18 @@ namespace BarPromenade
             if (string.IsNullOrEmpty(currentFaceId)) return;
             Texture2D texture = CurrentAtlas;
             properties ??= new MaterialPropertyBlock();
+            Color hairColor = RequireHairColor(currentHairColorId).Color;
+            if (separateFaceRenderer != null)
+            {
+                RestoreFaceTexture(separateFaceRenderer, texture);
+                wardrobe.SetHairColor(hairColor);
+                return;
+            }
             foreach (Renderer renderer in permanentRenderers)
             {
                 if (renderer == null) continue;
-                renderer.GetPropertyBlock(properties);
-                properties.SetTexture("_BaseMap", texture); properties.SetTexture("_MainTex", texture);
-                renderer.SetPropertyBlock(properties); properties.Clear();
+                RestoreFaceTexture(renderer, texture);
             }
-            Color hairColor = RequireHairColor(currentHairColorId).Color;
             foreach (Renderer renderer in hairRenderers)
             {
                 if (renderer == null) continue;
@@ -177,6 +185,13 @@ namespace BarPromenade
                 renderer.SetPropertyBlock(properties); properties.Clear();
             }
             wardrobe.SetAtlas(texture);
+        }
+
+        private void RestoreFaceTexture(Renderer renderer, Texture2D texture)
+        {
+            renderer.GetPropertyBlock(properties);
+            properties.SetTexture("_BaseMap", texture); properties.SetTexture("_MainTex", texture);
+            renderer.SetPropertyBlock(properties); properties.Clear();
         }
 
         private void OnEnable() => RestoreFace();

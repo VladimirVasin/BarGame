@@ -28,7 +28,7 @@ Snapshot:hunger/stress/fatigue/intoxication/cash/drinking.
 | `diagnostics` | snapshots/directory |
 | `unity` | warnings/assertions/errors/exceptions + stacks |
 | `bus` | yield_started→yield_blocker_changed/approach_stalled(2s)→approach_released. Order:seq. Join:stall_id;blocker_stall_id or blocker_id/index→route_id/vehicle_index;nearest_stop/XYZ. Last blocker on release. |
-| `pedestrian` (verbose) | route_blocked:spawn/state/from/to/XYZ/blocked_s/yielding;15s/actor |
+| `pedestrian` | route_blocked, ambient_route_blocked (blocker_kind), XYZ, verbose 15s/actor |
 | `bar` | `patron_cleanup_phase/reach_retry/deferred`: anchor, phase, contact error, correction or blocker |
 
 session/new_game_started:menu_reset=menu;combat_test_start=range;

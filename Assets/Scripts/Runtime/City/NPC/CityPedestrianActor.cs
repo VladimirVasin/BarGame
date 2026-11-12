@@ -1284,7 +1284,7 @@ namespace BarPromenade
                 int linkIndex = linkIndices[index];
                 CityPedestrianLink link = plan.Links[linkIndex];
                 int other = link.Other(reachedNode);
-                if (other == previousNodeIndex)
+                if (other == previousNodeIndex || link.Kind == CityPedestrianLinkKind.HomeEntrance)
                 {
                     continue;
                 }

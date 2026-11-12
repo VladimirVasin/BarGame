@@ -113,7 +113,7 @@ namespace BarPromenade
                     }
                     else if (actor.IsAtResidentDestination && IsPublicResidentActivity(schedule.Activity))
                     {
-                        int home = residentWorld.Destination(resident, CityResidentActivity.Home);
+                        int home = residentWorld.HomeFrontage(resident);
                         int publicGoal = residentWorld.Destination(resident, schedule.Activity);
                         int goal = actor.ResidentDestinationNode == home ? publicGoal : home;
                         if (goal != actor.ResidentDestinationNode)
@@ -134,8 +134,9 @@ namespace BarPromenade
                 // excess/finished visits retire under the existing fog contract.
                 bool hidden = squaredDistance >= MinimumConnectedSpawnDistance * MinimumConnectedSpawnDistance;
                 bool indoors = resident >= 0 && actor.IsAtResidentDestination &&
-                    (journeys != null ? journeys.GetState(resident).Phase == CityResidentJourneyPhase.AtDestination :
-                        !IsPublicResidentActivity(residentWorld.Schedule(resident, day, minute).Activity));
+                    (journeys != null ? IsIndoorDestination(journeys.GetState(resident)) :
+                        !IsPublicResidentActivity(residentWorld.Schedule(resident, day, minute).Activity) &&
+                        residentWorld.Schedule(resident, day, minute).Activity != CityResidentActivity.Leisure);
                 bool activityOwned = actor.IsRouteBound || actor.IsPersonalSpaceReacting || actor.IsYieldingToVehicle ||
                     (actor.MotionState != CityPedestrianMotionState.Walking &&
                      actor.MotionState != CityPedestrianMotionState.WaitingAtDestination &&
@@ -154,6 +155,9 @@ namespace BarPromenade
 
         private static bool IsPublicResidentActivity(CityResidentActivity activity) =>
             activity == CityResidentActivity.Walking || activity == CityResidentActivity.Shopping;
+
+        private static bool IsIndoorDestination(CityResidentJourneyState state) =>
+            state.Phase == CityResidentJourneyPhase.AtDestination && state.Activity != CityResidentActivity.Leisure;
 
         private bool TrySpawnResident(bool allowNear)
         {

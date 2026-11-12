@@ -8,6 +8,7 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public class NpcWardrobe : MonoBehaviour
     {
+        public const string HairStyleSlot = "hair";
         [Serializable] public sealed class GarmentBinding
         {
             [SerializeField] private string slot;
@@ -58,6 +59,7 @@ namespace BarPromenade
         [SerializeField] private OutfitPreset[] presets = Array.Empty<OutfitPreset>();
         [SerializeField] private string[] equippedItemIds = Array.Empty<string>();
         private MaterialPropertyBlock properties;
+        private Color? hairColor;
         public string CurrentOutfitId => outfitId;
         public Texture2D Atlas => atlas;
         public IReadOnlyList<GarmentBinding> Garments => garments;
@@ -131,6 +133,20 @@ namespace BarPromenade
             if (texture == null) throw new ArgumentNullException(nameof(texture));
             atlas = texture;
             RestoreCurrentAppearance();
+        }
+
+        internal void SetHairColor(Color color)
+        {
+            if (hairColor == color) return;
+            hairColor = color;
+            properties ??= new MaterialPropertyBlock();
+            foreach (GarmentBinding binding in garments)
+            {
+                if (binding.Slot != HairStyleSlot || binding.Renderer == null) continue;
+                binding.Renderer.GetPropertyBlock(properties);
+                properties.SetColor("_BaseColor", color); properties.SetColor("_Color", color);
+                binding.Renderer.SetPropertyBlock(properties); properties.Clear();
+            }
         }
 
         public void ApplyItems(IReadOnlyList<string> selected)
@@ -313,7 +329,8 @@ namespace BarPromenade
                 renderer.enabled = !IsModular || visible.Contains(renderer) && !covered.Contains(renderer);
                 renderer.sharedMaterial = material;
                 renderer.GetPropertyBlock(properties);
-                properties.SetColor("_BaseColor", garment.Color); properties.SetColor("_Color", garment.Color);
+                Color color = garment.Slot == HairStyleSlot ? hairColor ?? garment.Color : garment.Color;
+                properties.SetColor("_BaseColor", color); properties.SetColor("_Color", color);
                 properties.SetTexture("_BaseMap", atlas); properties.SetTexture("_MainTex", atlas);
                 properties.SetVector("_BaseMap_ST", new Vector4(1f, 1f, 0f, 0f));
                 properties.SetVector("_MainTex_ST", new Vector4(1f, 1f, 0f, 0f));

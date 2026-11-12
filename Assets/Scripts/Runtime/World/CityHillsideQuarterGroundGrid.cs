@@ -94,6 +94,28 @@ namespace BarPromenade
         internal Vector3 Vertex(int col, int row) => vertices[row * Columns + col];
         internal Surface CellSurface(int col, int row) => surfaces[row * (Columns - 1) + col];
 
+        internal float FoundationDepth(CityHillsideBuilding house)
+        {
+            Rect footprint = house.FoundationBounds;
+            float lowest = house.ThresholdWorld.y;
+            for (int row = 0; row < Rows - 1; row++)
+            {
+                if (z[row + 1] <= footprint.yMin || z[row] >= footprint.yMax) continue;
+                for (int col = 0; col < Columns - 1; col++)
+                {
+                    if (CellSurface(col, row) == Surface.Cut) continue;
+                    Vector3 a = Vertex(col, row), b = Vertex(col, row + 1);
+                    Vector3 c = Vertex(col + 1, row), d = Vertex(col + 1, row + 1);
+                    if (Mathf.Max(c.x, d.x) <= footprint.xMin || Mathf.Min(a.x, b.x) >= footprint.xMax) continue;
+                    // Bent cells can straddle the footprint even when their
+                    // centres lie outside it. The corner heights bound both triangles.
+                    lowest = Mathf.Min(lowest, Mathf.Min(Mathf.Min(a.y, b.y), Mathf.Min(c.y, d.y)));
+                }
+            }
+            return Mathf.Max(CityHillsideGroundGrid.MinimumFoundationDepth,
+                house.ThresholdWorld.y - lowest + CityHillsideGroundGrid.FoundationEmbedDepth);
+        }
+
         internal bool TryHeight(Vector2 point, out float top)
         {
             top = 0f;

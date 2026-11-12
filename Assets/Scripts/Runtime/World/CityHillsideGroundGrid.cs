@@ -10,6 +10,8 @@ namespace BarPromenade
     internal sealed class CityHillsideGroundGrid
     {
         internal enum Surface : byte { Cut, Earth, Concrete }
+        internal const float MinimumFoundationDepth = .9f;
+        internal const float FoundationEmbedDepth = .25f;
 
         private static readonly ConditionalWeakTable<CityLayout, CityHillsideGroundGrid[]> Cached = new();
         private readonly float[] x, z, heights;
@@ -123,6 +125,8 @@ namespace BarPromenade
         internal float FoundationDepth(CityHillsideBuilding house)
         {
             Rect footprint = house.FoundationBounds;
+            if (!footprint.Overlaps(Rect.MinMaxRect(x[0], z[0], x[Columns - 1], z[Rows - 1])))
+                return MinimumFoundationDepth;
             float lowest = house.ThresholdWorld.y;
             // Enclosing grid vertices conservatively bound each terrain triangle
             // beneath the plinth, including the verge's lowered shoulder.
@@ -131,7 +135,7 @@ namespace BarPromenade
             for (int row = firstRow; row <= lastRow; row++)
             for (int col = firstCol; col <= lastCol; col++)
                 lowest = Mathf.Min(lowest, heights[row * Columns + col]);
-            return Mathf.Max(.9f, house.ThresholdWorld.y - lowest + .25f);
+            return Mathf.Max(MinimumFoundationDepth, house.ThresholdWorld.y - lowest + FoundationEmbedDepth);
         }
 
         internal IEnumerable<Vector3> WestStairCutEdge(Rect cut)

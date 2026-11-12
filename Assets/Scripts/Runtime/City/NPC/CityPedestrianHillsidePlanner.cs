@@ -117,11 +117,12 @@ namespace BarPromenade
                 graph.AddLink(id, from, to, kind, false, new CityRoadPath(new[] { a, b }), height);
             }
 
-            int JoinPoint(string id, int from, Vector3 point, Func<Vector2, float> height)
+            int JoinPoint(string id, int from, Vector3 point, Func<Vector2, float> height,
+                CityPedestrianLinkKind kind = CityPedestrianLinkKind.Sidewalk)
             {
                 if ((XZ(graph.Nodes[from].Position) - XZ(point)).sqrMagnitude < .000001f) return from;
                 int next = graph.AddNode(id, point, false);
-                Connect(id + ":walk", from, next, CityPedestrianLinkKind.Sidewalk, height);
+                Connect(id + ":walk", from, next, kind, height);
                 return next;
             }
 
@@ -153,29 +154,35 @@ namespace BarPromenade
             void AddHouse(CityHillsideBuilding house, string prefix, string pavement)
             {
                 string id = prefix + "house:" + house.Lot.Cell.x + ":" + house.Lot.Cell.y;
-                // A small loop in the entrance court survives two-core pruning while
-                // residents can actually walk between their street and their front door.
                 Rect court = house.CourtBounds;
                 Vector2 center = court.center;
-                float dx = Mathf.Min(.65f, court.width * .5f - AgentRadius - NavigationMargin);
-                float dz = Mathf.Min(.65f, court.height * .5f - AgentRadius - NavigationMargin);
-                if (dx <= 0f || dz <= 0f) return;
+                float clearance = 2f * (AgentRadius + NavigationMargin);
+                if (court.width <= clearance || court.height <= clearance) return;
                 int gate = Gate(id + ":gate", pavement, house.StreetContactWorld);
-                int start = JoinPoint(id + ":street", gate, house.StreetContactWorld, Height);
-                int a = CourtNode("walk", center + new Vector2(dx, -dz));
-                int b = CourtNode("turn", center + new Vector2(-dx, -dz));
+                // The frontage stays public. The hero is the sole occupant
+                // and only the player's exterior ground leads to this door.
+                if (house.Lot.IsPlayerHome) return;
+
+                // Use the laid pavement for side steps as well as the route
+                // centre. Posts and railings still constrain live clearance.
+                graph.AddNavigationPolygon(CityRoadPolygon.Rectangle(house.ApproachBounds));
+                graph.AddNavigationPolygon(CityRoadPolygon.Rectangle(court));
+                const CityPedestrianLinkKind kind = CityPedestrianLinkKind.HomeEntrance;
+                int start = JoinPoint(id + ":street", gate, house.StreetContactWorld, Height, kind);
                 // The long axis of a gable-facing entrance is offset from its porch centre.
                 // Stay on the apron until reaching the court.
                 Vector3 elbow = new Vector3(house.StreetContactWorld.x, house.DoorWorld.y, center.y);
-                int approach = JoinPoint(id + ":apron", start, elbow, Height);
-                // The usual front-facing approach already reached the exact entry centre.
-                int entry = JoinPoint(id + ":entry", approach, GroundedPoint(center, Height), Height);
-                Connect(id + ":court-a", entry, a, CityPedestrianLinkKind.Sidewalk, Height);
-                Connect(id + ":court-b", a, b, CityPedestrianLinkKind.Sidewalk, Height);
-                Connect(id + ":court-c", b, entry, CityPedestrianLinkKind.Sidewalk, Height);
+                int approach = JoinPoint(id + ":apron", start, elbow, Height, kind);
+                int entry = JoinPoint(id + ":entry", approach, GroundedPoint(center, Height), Height, kind);
+                graph.RetainEntranceTerminal(entry);
 
-                int CourtNode(string suffix, Vector2 p) => graph.AddNode(id + ":" + suffix, GroundedPoint(p, Height), false);
-                float Height(Vector2 p) => house.TrySampleApproach(p, out float y) ? y : StreetHeight(p);
+                float Height(Vector2 p)
+                {
+                    // The first metre belongs to the physical sidewalk where
+                    // its grade may differ from the house's lane survey.
+                    if (streets.SupportPlan.TrySampleTop(p, out float y, out _)) return y;
+                    return house.TrySampleApproach(p, out y) ? y : StreetHeight(p);
+                }
             }
         }
 

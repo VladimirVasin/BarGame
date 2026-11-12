@@ -10,10 +10,15 @@ namespace BarPromenade
     public static class DefaultNpcFactory
     {
         public static VillageResidentPresentation CreateForCharacter(Transform parent, string characterId)
+            => CreateForCharacter(parent, characterId, out _);
+
+        internal static VillageResidentPresentation CreateForCharacter(
+            Transform parent, string characterId, out DefaultNpcPopulation.Assignment assignment)
         {
             // Assign the whole population before spawning any scene's subset.
             // Scene order therefore cannot change a person's face or garments.
-            return CreateForAssignment(parent, DefaultNpcPopulation.GetAssignment(characterId));
+            assignment = DefaultNpcPopulation.GetAssignment(characterId);
+            return CreateForAssignment(parent, assignment);
         }
 
         /// <summary>Builds one selection already allocated by the shared population owner.</summary>

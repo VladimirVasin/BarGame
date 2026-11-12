@@ -12,13 +12,16 @@ namespace BarPromenade
     {
         public const string OrdinaryWorker = "ordinary-worker-v1";
         public const string OrdinaryWorkerResourcePath = "VillageLife/OrdinaryWorker";
+        public const string OrdinaryWoman = "ordinary-woman-v1";
+        public const string OrdinaryWomanResourcePath = "City/Residents/OrdinaryWomanActor";
 
         // A prefab needs its own Resources address: the source StationWorker
         // FBX is also a GameObject, but has no wardrobe or appearance bindings.
         private static readonly Dictionary<string, string> ResourcePaths =
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                [OrdinaryWorker] = OrdinaryWorkerResourcePath
+                [OrdinaryWorker] = OrdinaryWorkerResourcePath,
+                [OrdinaryWoman] = OrdinaryWomanResourcePath
             };
 
         public static IReadOnlyList<string> ModelIds { get; } =

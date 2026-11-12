@@ -50,6 +50,12 @@ HAIR_PATHS = {
     "HairLeft":((.070,.008,1.680),(.114,.077,1.486),(.119,.117,1.294),(.085,.119,1.154)),
     "HairRight":((-.071,.014,1.678),(-.115,.083,1.474),(-.123,.120,1.283),(-.088,.116,1.128)),
 }
+HEAD_ROWS = ((1.486,.028,.037,-.014),(1.506,.047,.057,-.014),
+             (1.529,.063,.074,-.014),(1.552,.077,.084,-.014),
+             (1.575,.087,.092,-.014),(1.599,.091,.098,-.014),
+             (1.623,.091,.098,-.014),(1.647,.089,.094,-.014),
+             (1.671,.082,.086,-.014),(1.695,.070,.074,-.014),
+             (1.719,.049,.055,-.014))
 
 
 def woman_skeleton():
@@ -277,15 +283,10 @@ class WomanBuilder(base.PedestrianBuilder):
     def add(self,name,geometry,bone,color,role="clothing"):
         return self.add_part(name,geometry,bone,role,color)
 
-    def head(self):
+    def head(self, with_hair=True):
         # One egg-shaped skull. Face and side/back share identical boundary
         # vertices; no raised sticker, facial feature mesh or hidden full head.
-        rows=((1.486,.028,.037,-.014),(1.506,.047,.057,-.014),
-              (1.529,.063,.074,-.014),(1.552,.077,.084,-.014),
-              (1.575,.087,.092,-.014),(1.599,.091,.098,-.014),
-              (1.623,.091,.098,-.014),(1.647,.089,.094,-.014),
-              (1.671,.082,.086,-.014),(1.695,.070,.074,-.014),
-              (1.719,.049,.055,-.014))
+        rows=HEAD_ROWS
         face_angles=[math.radians(-68+i*136/8) for i in range(9)]
         back_angles=[math.radians(68+i*224/18) for i in range(19)]
         def surface(angles):
@@ -309,6 +310,8 @@ class WomanBuilder(base.PedestrianBuilder):
         self.add("GEO_Neck",base.make_vertical_shell(((1.39,.061,.054,-.006),(1.421,.060,.051,-.008),(1.452,.050,.045,-.012),(1.486,.042,.042,-.010),(1.51,.040,.041,-.008)),16),"neck","skin","body")
         for side,sign in (("L",1),("R",-1)):
             self.add("GEO_Ear."+side,base.make_ellipsoid((sign*.090,-.007,1.591),(.014,.018,.031),10,6),"head","skin","body_detail")
+        if not with_hair:
+            return
         # Swept crown locks follow the cranium and preserve its
         # asymmetric part, covering ears at the rear but keeping eyes open.
         self.add("HAIR_Crown",base.make_ellipsoid((0,.002,1.687),(.099,.100,.065),20,8),"head","hair","hair")
@@ -488,7 +491,7 @@ class WomanBuilder(base.PedestrianBuilder):
         thumb=[world((-sign*.025,-.002,.017)),world((-sign*.043,-.008,.032)),world((-sign*.044,-.018,.052)),world((-sign*.035,-.023,.065))]
         self.add("GEO_Thumb."+side,self.tube_path(thumb,tuple(v*scale for v in (.011,.010,.009,.007)),8),bone,"skin","body_detail")
 
-    def jeans(self):
+    def jeans(self, with_belt=True):
         """One manifold branched trouser shell, with shared hip/leg vertices.
 
         The two upper-leg outer arcs form the actual pelvis boundary. Their
@@ -545,6 +548,8 @@ class WomanBuilder(base.PedestrianBuilder):
             for name,weight in assignment.items():
                 if weight>0:groups[name].add([i],weight,"REPLACE")
         for polygon in obj.data.polygons:polygon.use_smooth=len(polygon.vertices)==4
+        if not with_belt:
+            return
         # An ordinary leather belt at the waist, not down at the hip line.
         self.add("CLO_LeatherBelt",base.make_vertical_shell(((1.077,.147*waist_factor(1.077),.102,-.002),(1.100,.143*waist_factor(1.100),.101,-.003)),32),"pelvis","belt")
         for x,z,w,h in ((-.015,1.089,.004,.026),(.015,1.089,.004,.026),(0,1.101,.030,.004),(0,1.077,.030,.004),(0,1.089,.025,.003)):

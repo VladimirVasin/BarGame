@@ -71,6 +71,7 @@ namespace BarPromenade
         public CityTunnelShelterController TunnelShelter { get; private set; }
         public CityPedestrianPlan PedestrianPlan { get; private set; }
         public CityPedestrianDirector Pedestrians { get; private set; }
+        internal CityAmbientPedestrians AmbientPedestrians { get; private set; }
         public IReadOnlyList<CityBusPlan> BusPlans { get; private set; }
         public IReadOnlyList<CityBusDirector> BusVehicles { get; private set; }
         public CityResidentJourneyDirector ResidentJourneys { get; private set; }
@@ -1361,6 +1362,10 @@ namespace BarPromenade
             Lighting.Initialize(this);
             GameLogPhases.Report("city", "local_lighting", stepTimer);
             yield return new CompositionStep("local_lighting", 0.98f);
+            AmbientPedestrians = CityAmbientPedestrians.Create(this, pedestrianWalkableArea);
+            Physics.SyncTransforms();
+            while (AmbientPedestrians.WarmNext())
+                yield return new CompositionStep("ambient_pedestrians", 0.99f);
             GameSessionState.CompleteCityReturn();
             IsInitialized = true;
             GameLogPhases.Report("city", "player_and_ui", phaseTimer);

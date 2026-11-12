@@ -350,6 +350,20 @@ namespace BarPromenade
             }
         }
 
+        internal static CityPedestrianPresentation CreateAmbientPresentation(Transform poolRoot, string appearanceId)
+        {
+            CityPedestrianAssetRegistry registry = CityPedestrianDefaultNpcBody.Create(poolRoot, appearanceId, null);
+            try
+            {
+                return InitializePresentation(registry, 0, true, null);
+            }
+            catch
+            {
+                CityPedestrianResources.DestroyObject(registry.gameObject);
+                throw;
+            }
+        }
+
         private static CityPedestrianPresentation CreateResidentPresentation(
             Transform poolRoot,
             DefaultNpcPopulation.Assignment assignment,

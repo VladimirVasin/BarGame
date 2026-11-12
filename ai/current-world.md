@@ -438,8 +438,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Outer+4descent lamps:RidgeBench37.5/r11/soft256/fixed/dayfloor.
   Pigeon/plinth1.98m,rear;side beds;solid/nav clear.
   E glass return08–23;switch→cabin light/grille;sign/flood fixed.
-  Home(22,-7): plinth to bank; rail along entry; closed stair cut.
-  Raised yard/map outside;spill.12/day≥⅔/Soft/opaque.
+  Raised yard grass-free/map outside;spill.12/day≥⅔/Soft/opaque.
+  Paved path from east footway; asphalt at window and staff exit follows grade.
+  Ridge homes: plinths keyed into banks/court; side rails behind footway.
+  East (22,-7) retains the closed stair cut.
   Home verges:soil/wet asphalt/turf/gravel/stone. W:drains;E:kerbs/scrapers.
   Home soffit lamp/timber above deck. East `(21,-7)` clears walk.
   West `(-23,-7)`: «Хвост и Чешуя», two floods. Poles→stairs/bridge footways;
@@ -653,7 +655,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   snow bounce/metal/spring cube. House:halos/metal/bounce/air, two cubes;
   atlas/half-shadow/mirror stay. Road:air/snow/headlights/halos/metal/bounce,
   station cube. City:9 areas plus diner, real lamps/windows/traffic;
-  finite air/bounce/metal; cafe joins two reused reflection slots.
+  Finite air uses integrated depth; bounce/metal; cafe shares two reflection slots.
   Home balcony shares City; indoors off. Dark places retained.
   Filtered256 captures:one pending per owner, no actors/vehicles/precipitation;
   post-submit watchdog gives bounded frame grace for cold stalls.
@@ -768,21 +770,21 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Moving actor/head: `6→4 m`, `.25–.5 m` gap, shared `10 px`/charcoal. Depth/actor-ID
   mask rejects colliderless occlusion; no edge clamp. Speech/pause/modal/transition
   suppress; overlap priority is active interaction→nearest;
-- one radius-safe sidewalk/crosswalk/Courtyard graph; courtyard knots use
-  exact free ground holes/heights and .35 m radius. Street spawn anchors stay.
-  Each of the `192` permanent residents has a home entrance and a daily agenda.
-  Working residents have a fixed industrial address. Trips compare walking with
-  the approach, wait, ride, optional platform change and walk from the exit.
-  Stop visits exchange resident IDs, including during absences from City.
-  Nearby actors continue the same journeys on the pavement and through the doors.
-  On city benches and bus seats the clothed hips and thighs rest on the surface, hands
-  on the thighs and feet on the local floor. Local population caps by time of day:
-  `00–06` → `5`, `06–10` → `28`, `10–17` → `22`, `17–22` → `36`,
-  `22–24` → `10`, with smooth half-hour boundary ramps. Clearance, connected
-  journeys and eligible residents can leave fewer people present.
-  City has at most `36` physical slots and `48` lazily built cached bodies;
-  incremental construction warms nearby residents beneath the loading overlay.
-  Replacements use distance/clearance rather than camera direction. Ordinary
+- radius-safe sidewalk/crosswalk/Courtyard graph, including .35 m knots at
+  courtyard ground holes and height changes. The `192` residents (`48` women)
+  keep home entrances. Workers go to a fixed workplace, evening leisure and
+  home. Journeys compare walking and transit with waits and transfers, including
+  during City absences. On benches and bus seats the hips and thighs rest on
+  the surface, hands on thighs and feet on the floor.
+  Resident caps `5/28/22/36/10` over 00–06/06–10/10–17/17–22/22–24,
+  cache `48`. Local visual walks add `2/8/10/12/4`, cache `18`, combined
+  ceiling `48`. Both warm under the overlay and use half-hour ramps.
+  Ambient figures appear and retire out of view, leave platforms, crossings
+  and stairs clear, and fill toward a combined 60% men and 40% women.
+  Opposing figures use both shoulders. On single-file pavement the yielding
+  figure backs toward a turnout. House entrances are terminal routes with
+  the full paved shoulders. Public circuits turn at the sidewalk. The hero's
+  house is private; the pavement in front stays connected. Ordinary
   movement keeps its `.82 m/s` pace; distant idle/walk sampling is bounded while
   time, collision and immediate interactions stay live. A spatial index limits
   peer-avoidance queries. Oncoming walkers use separate shoulders on the hillside stairs. In single file
@@ -1201,10 +1203,11 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Unload→two-hand carry→outdoor scales→release/settle/nod→support; empty=0.
   Three approvals/put-aways/clearance gate loading.
   Receiver/seamer: fixed `NpcWardrobe`; body/ink/face/hair/glasses independent.
-  `ordinary-worker-v1`:fair/port/factory/driver/station/bartender +192 residents.
-  Men:hero anatomy/NPC rig,160–185cm/slim–chubby+belly.
-  4faces/3haircolors/21skinned items/8slots/3presets,shared assets/coverage;
-  vest/jackets/cardigan/coat/overshirt/trousers/shoes;hero/bespoke/combat kept.
+  `ordinary-worker-v1`:fair/port/factory/driver/station/bar;144 street men.
+  Hero body,160–185cm;4faces/3hair colors/21skinned items.
+  `ordinary-woman-v1`:48 street IDs,155–178cm,4faces/3styles/3colors.
+  Separate clothing atlas, shared shapes/seat/hand contacts/coverage.
+  Walk has hip clearance and weight transfer.
   BodyNpc torso metadata retains triangle-corner multiplicity after FBX welding;
   imported frames keep the strict affine check.
   Hero/NPC hands:+20%,slim,fixed wrists;`NpcHandPose`:bare/gloved grip.

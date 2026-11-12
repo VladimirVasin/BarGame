@@ -110,9 +110,9 @@ python tools/run-blender.py tools/build-village-residents-3d-model.py `
 ```
 
 Validate:`--validate-only`;retain `--phase-two` and earlier bodies/actions.
-`Bar Promenade/Default NPC/Rebuild Ordinary Worker`:12 face-hair atlases;
-Inspector:faces/hair/presets/slots.
-`DefaultNpcPopulation` IDs/constraints + `CreateForCharacter`:stable nonrepeating appearance.
+`build-default-npc-woman-3d-model.py` uses launcher/`--validate-only`.
+Unity `Default NPC/Rebuild Ordinary Worker` / `Rebuild Ordinary Woman`.
+Stable looks via `DefaultNpcPopulation` + `CreateForCharacter`.
 Props:17 recipes,first eleven kept. `build-village-resident-doors-3d-model.py`:three envelopes,real openings,
 six concealed docks behind vestibule turns.
 

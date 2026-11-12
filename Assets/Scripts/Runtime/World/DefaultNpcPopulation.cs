@@ -56,13 +56,33 @@ namespace BarPromenade
         private static readonly string[] PortIds = { "port.captain", "port.deckhand", "port.crane.west", "port.crane.east", "port.docker" };
         /// <summary>
         /// The street population: permanent identities outlive the smaller
-        /// presentation cache, so a repeat encounter meets the same person. They declare
-        /// no model - <see cref="AnyCatalogModel"/> - and take the least-used
-        /// catalog model, which is how a model added to <see cref="DefaultNpcCatalog"/>
-        /// joins the pavement without a registration here.
+        /// presentation cache, so a repeat encounter meets the same person.
         /// </summary>
         public const string PedestrianIdPrefix = "city.pedestrian.";
+        internal const int AmbientAppearancesPerGender = 24;
         private const int OriginalPedestrianCount = 13;
+        // A fixed subset of the newer residential schedules, spread by the
+        // stable ID hash. Enlarging the roster must not move these assignments.
+        private static readonly int[] WomenPedestrians =
+        {
+            14, 17, 24, 27, 31, 36, 37, 39, 40, 44, 50, 53, 54, 55, 56, 57,
+            59, 60, 61, 82, 85, 90, 97, 98, 114, 115, 117, 118, 125, 127, 131, 132,
+            133, 135, 142, 147, 153, 157, 158, 160, 166, 169, 170, 172, 176, 180, 181, 187
+        };
+        private static readonly SlotConstraint[] WorkerStreetClothes =
+        {
+            new SlotConstraint("apron", new string[] { null }),
+            new SlotConstraint("gloves", null, "gloves.work"),
+            new SlotConstraint("scarf", null, "scarf.warm"),
+            new SlotConstraint("headwear", null, "headwear.everyday", "headwear.work", "headwear.warm")
+        };
+        private static readonly SlotConstraint[] WomanStreetClothes =
+        {
+            new SlotConstraint("outerwear", null, "outerwear.cardigan", "outerwear.everyday"),
+            new SlotConstraint("gloves", null, "gloves.work"),
+            new SlotConstraint("scarf", null, "scarf.warm"),
+            new SlotConstraint("headwear", null, "headwear.everyday")
+        };
         public static int PedestrianCount => CityResidentLifeRules.ResidentCount;
         /// <summary>A character whose model the population picks from the whole catalog.</summary>
         public const string AnyCatalogModel = null;
@@ -107,14 +127,14 @@ namespace BarPromenade
             public float Build { get; }
             public bool UsesRandomBody { get; }
             internal Assignment(CharacterDefinition character, string modelId, string face, string hairColor, string[] items,
-                string signature, int referenceHeightCm)
+                string signature, int referenceHeightCm, int minHeightCm, int maxHeightCm)
             {
                 CharacterId = character.Id; ModelId = modelId; FaceId = face; HairColorId = hairColor;
                 ItemIds = Array.AsReadOnly((string[])items.Clone()); VisibleSignature = signature;
                 UsesRandomBody = character.UsesRandomBody;
                 // Independent channels never enter the existing face/hair/garment traversal.
-                HeightCm = UsesRandomBody ? DefaultNpcBodyShape.MinimumHeightCm + DefaultNpcAppearanceSelection.Index(
-                    character.Id, "height-cm", DefaultNpcBodyShape.MaximumHeightCm - DefaultNpcBodyShape.MinimumHeightCm + 1) : referenceHeightCm;
+                HeightCm = UsesRandomBody ? minHeightCm + DefaultNpcAppearanceSelection.Index(
+                    character.Id, "height-cm", maxHeightCm - minHeightCm + 1) : referenceHeightCm;
                 Build = UsesRandomBody ? DefaultNpcAppearanceSelection.Index(character.Id, "body-build", 10001) / 10000f : .5f;
             }
         }
@@ -126,6 +146,8 @@ namespace BarPromenade
             public string[] Faces;
             public string[] HairColors;
             public int ReferenceHeightCm;
+            public int MinHeightCm, MaxHeightCm;
+            public bool HasHairStyles;
         }
 
         public static IReadOnlyList<CharacterDefinition> Characters { get; } = Array.AsReadOnly(BuildCharacters());
@@ -158,6 +180,12 @@ namespace BarPromenade
             return PedestrianIdPrefix + index.ToString("00", System.Globalization.CultureInfo.InvariantCulture);
         }
 
+        internal static bool IsWomanPedestrian(int index) => Array.BinarySearch(WomenPedestrians, index) >= 0;
+
+        internal static string AmbientPedestrianId(int index, bool woman) =>
+            (woman ? "city.ambient.woman." : "city.ambient.man.") +
+            index.ToString("00", System.Globalization.CultureInfo.InvariantCulture);
+
         /// <summary>
         /// Allocates a fresh, bounded temporary cast through the same catalog,
         /// face and wardrobe selector as permanent characters. These identities
@@ -176,9 +204,13 @@ namespace BarPromenade
             Prepare();
             var models = new SortedDictionary<string, ModelDefinition>(StringComparer.Ordinal);
             var signature = new StringBuilder();
-            string[] catalogModels = new List<string>(DefaultNpcCatalog.ModelIds).ToArray();
-            foreach (string available in modelId == AnyCatalogModel ? catalogModels : new[] { modelId })
-                models.Add(available, ReadModel(available, signature));
+            foreach (string available in modelId == AnyCatalogModel ? DefaultNpcCatalog.ModelIds : new[] { modelId })
+            {
+                ModelDefinition candidate = ReadModel(available, signature);
+                if (modelId != AnyCatalogModel || SupportsConstraints(candidate, constraints)) models.Add(available, candidate);
+            }
+            if (models.Count == 0) throw new InvalidOperationException("No catalog model supports the visit wardrobe: " + scope);
+            string[] catalogModels = new List<string>(models.Keys).ToArray();
             var usage = new Dictionary<string, int>(StringComparer.Ordinal);
             var expandedUsage = new Dictionary<string, int>(StringComparer.Ordinal);
             var modelUsage = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -207,7 +239,7 @@ namespace BarPromenade
                     new SlotConstraint("gloves", null, "gloves.work"),
                     new SlotConstraint("scarf", null, "scarf.warm")));
             for (int i = 0; i < FairVisitorCount; i++)
-                roster.Add(new CharacterDefinition(FairVisitorId(i), AnyCatalogModel,
+                roster.Add(new CharacterDefinition(FairVisitorId(i), model,
                     new SlotConstraint("outerwear", "outerwear.everyday", "outerwear.warm"),
                     new SlotConstraint("boots", "boots.everyday", "boots.warm"),
                     new SlotConstraint("headwear", null, "headwear.everyday", "headwear.warm"),
@@ -237,15 +269,10 @@ namespace BarPromenade
                 new SlotConstraint("outerwear", "outerwear.warm"), new SlotConstraint("boots", "boots.warm"),
                 new SlotConstraint("headwear", "headwear.warm"), new SlotConstraint("scarf", "scarf.warm"),
                 new SlotConstraint("gloves", "gloves.work"), new SlotConstraint("apron", new string[] { null })));
-            // Passers-by: any catalog model, street clothes only. Every worn
-            // slot stays free so the allocator spreads coats, boots and hats;
-            // an apron is work wear and a bare head, hands or neck are allowed.
             for (int i = 0; i < PedestrianCount; i++)
-                roster.Add(new CharacterDefinition(PedestrianId(i), AnyCatalogModel,
-                    new SlotConstraint("apron", new string[] { null }),
-                    new SlotConstraint("gloves", null, "gloves.work"),
-                    new SlotConstraint("scarf", null, "scarf.warm"),
-                    new SlotConstraint("headwear", null, "headwear.everyday", "headwear.work", "headwear.warm")));
+                roster.Add(IsWomanPedestrian(i)
+                    ? new CharacterDefinition(PedestrianId(i), DefaultNpcCatalog.OrdinaryWoman, WomanStreetClothes)
+                    : new CharacterDefinition(PedestrianId(i), model, WorkerStreetClothes));
             for (int i = 0; i < CombatTestOpponentCount; i++)
                 roster.Add(new CharacterDefinition(CombatTestOpponentId(i), model, false,
                     new SlotConstraint("outerwear", "outerwear.work"),
@@ -367,6 +394,12 @@ namespace BarPromenade
                 new SlotConstraint("headwear", new string[] { null }),
                 new SlotConstraint("scarf", new string[] { null }),
                 new SlotConstraint("apron", "apron.work")));
+            // These looks have no calendar slot and allocate after the entire cast.
+            for (int i = 0; i < AmbientAppearancesPerGender; i++)
+            {
+                roster.Add(new CharacterDefinition(AmbientPedestrianId(i, false), model, WorkerStreetClothes));
+                roster.Add(new CharacterDefinition(AmbientPedestrianId(i, true), DefaultNpcCatalog.OrdinaryWoman, WomanStreetClothes));
+            }
             return roster.ToArray();
         }
 
@@ -410,14 +443,50 @@ namespace BarPromenade
             }
             string catalog = signature.ToString();
             if (catalog == cachedCatalog && assignments != null) return;
-            var next = new List<Assignment>();
+            var next = new Assignment[Characters.Count];
             var usage = new Dictionary<string, int>(StringComparer.Ordinal);
             var expandedUsage = new Dictionary<string, int>(StringComparer.Ordinal);
             var modelUsage = new Dictionary<string, int>(StringComparer.Ordinal);
             string[] catalogModels = new List<string>(DefaultNpcCatalog.ModelIds).ToArray();
-            foreach (CharacterDefinition character in Characters)
-                next.Add(SelectAppearance(character, models, catalogModels, usage, expandedUsage, modelUsage));
-            assignments = next.AsReadOnly(); cachedCatalog = catalog;
+            // Reserve the earlier street tuples in their original order. A
+            // converted slot otherwise releases a tuple to a later man and
+            // can change the look of another resident or a named character.
+            int permanentCount = Characters.Count - AmbientAppearancesPerGender * 2;
+            for (int i = 0; i < permanentCount; i++)
+            {
+                CharacterDefinition character = Characters[i];
+                CharacterDefinition baseline = IsConvertedStreetSlot(character)
+                    ? new CharacterDefinition(character.Id, DefaultNpcCatalog.OrdinaryWorker, WorkerStreetClothes)
+                    : character;
+                next[i] = SelectAppearance(baseline, models, catalogModels, usage, expandedUsage, modelUsage);
+            }
+            for (int i = 0; i < permanentCount; i++)
+                if (IsConvertedStreetSlot(Characters[i]))
+                    next[i] = SelectAppearance(Characters[i], models, catalogModels, usage, expandedUsage, modelUsage);
+            for (int i = permanentCount; i < Characters.Count; i++)
+                next[i] = SelectAppearance(Characters[i], models, catalogModels, usage, expandedUsage, modelUsage);
+            assignments = Array.AsReadOnly(next); cachedCatalog = catalog;
+        }
+
+        private static bool IsConvertedStreetSlot(CharacterDefinition character) =>
+            character.ModelId == DefaultNpcCatalog.OrdinaryWoman && character.Id.StartsWith(PedestrianIdPrefix, StringComparison.Ordinal);
+
+        private static bool AllowsMissingSlot(SlotConstraint slot) =>
+            slot.AllowedItemIds.Count == 1 && slot.AllowedItemIds[0] == null;
+
+        private static bool SupportsConstraints(ModelDefinition model, SlotConstraint[] constraints)
+        {
+            foreach (SlotConstraint slot in constraints)
+            {
+                if (!model.Slots.TryGetValue(slot.Slot, out string[] choices))
+                {
+                    if (!AllowsMissingSlot(slot)) return false;
+                    continue;
+                }
+                foreach (string id in slot.AllowedItemIds)
+                    if (id != null && Array.IndexOf(choices, id) < 0) return false;
+            }
+            return true;
         }
 
         private static Assignment SelectAppearance(CharacterDefinition character,
@@ -437,7 +506,7 @@ namespace BarPromenade
             var constraints = new Dictionary<string, SlotConstraint>(StringComparer.Ordinal);
             foreach (SlotConstraint slot in character.Slots)
             {
-                if (!model.Slots.ContainsKey(slot.Slot) || constraints.ContainsKey(slot.Slot))
+                if ((!model.Slots.ContainsKey(slot.Slot) && !AllowsMissingSlot(slot)) || constraints.ContainsKey(slot.Slot))
                     throw new InvalidOperationException("Character constraints must name unique authored slots: " + character.Id);
                 constraints.Add(slot.Slot, slot);
             }
@@ -495,7 +564,8 @@ namespace BarPromenade
             expandedUsage[finalSignature] = expandedUsage.TryGetValue(finalSignature, out int finalCount) ? finalCount + 1 : 1;
             var equipped = new List<string>();
             for (int i = 2; i < chosen.Length; i++) if (!string.IsNullOrEmpty(chosen[i])) equipped.Add(chosen[i]);
-            return new Assignment(character, modelId, chosen[0], chosen[1], equipped.ToArray(), finalSignature, model.ReferenceHeightCm);
+            return new Assignment(character, modelId, chosen[0], chosen[1], equipped.ToArray(), finalSignature,
+                model.ReferenceHeightCm, model.MinHeightCm, model.MaxHeightCm);
         }
 
         private static bool IsAddedOuterwear(string id) => id == "outerwear.cardigan" || id == "outerwear.coat" || id == "outerwear.overshirt";
@@ -510,8 +580,14 @@ namespace BarPromenade
                 throw new InvalidOperationException("A population model requires modular clothing, face and body-shape bindings: " + modelId);
             wardrobe.ValidateBindings();
             bodyShape.ValidateBindings();
-            var model = new ModelDefinition { ReferenceHeightCm = Mathf.RoundToInt(bodyShape.ReferenceHeightMetres * 100f) };
-            signature.Append(modelId).Append(':').Append(model.ReferenceHeightCm).Append(';');
+            var model = new ModelDefinition
+            {
+                ReferenceHeightCm = Mathf.RoundToInt(bodyShape.ReferenceHeightMetres * 100f),
+                MinHeightCm = bodyShape.MinHeightCm,
+                MaxHeightCm = bodyShape.MaxHeightCm
+            };
+            signature.Append(modelId).Append(':').Append(model.ReferenceHeightCm)
+                .Append('/').Append(model.MinHeightCm).Append('/').Append(model.MaxHeightCm).Append(';');
             var faces = new SortedSet<string>(StringComparer.Ordinal);
             foreach (DefaultNpcAppearance.FaceBinding face in appearance.Faces)
             {
@@ -551,6 +627,7 @@ namespace BarPromenade
                     signature.Append(';');
                 }
             }
+            model.HasHairStyles = model.Slots.ContainsKey(NpcWardrobe.HairStyleSlot);
             return model;
         }
 
@@ -568,13 +645,22 @@ namespace BarPromenade
             for (int i = 2; i < candidate.Length; i++)
                 if (!string.IsNullOrEmpty(candidate[i]))
                     foreach (Renderer renderer in model.Items[candidate[i]].CoveredRenderers) covered.Add(renderer);
-            var signature = new StringBuilder(modelId).Append('|').Append(candidate[0]).Append('|').Append(candidate[1]);
+            var signature = new StringBuilder(modelId).Append('|').Append(candidate[0]);
+            if (!model.HasHairStyles) signature.Append('|').Append(candidate[1]);
+            bool visibleHair = false;
             for (int i = 2; i < candidate.Length; i++)
             {
                 if (string.IsNullOrEmpty(candidate[i])) continue;
-                foreach (NpcWardrobe.GarmentBinding part in model.Items[candidate[i]].Parts)
-                    if (!covered.Contains(part.Renderer)) { signature.Append('|').Append(candidate[i]); break; }
+                NpcWardrobe.ItemBinding item = model.Items[candidate[i]];
+                foreach (NpcWardrobe.GarmentBinding part in item.Parts)
+                    if (!covered.Contains(part.Renderer))
+                    {
+                        signature.Append('|').Append(item.Id);
+                        visibleHair |= item.Slot == NpcWardrobe.HairStyleSlot;
+                        break;
+                    }
             }
+            if (model.HasHairStyles && visibleHair) signature.Append('|').Append(candidate[1]);
             return signature.ToString();
         }
 

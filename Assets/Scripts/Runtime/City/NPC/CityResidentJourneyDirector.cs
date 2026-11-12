@@ -237,6 +237,8 @@ namespace BarPromenade
                 walks[id] != null)
                 return world.SampleRoute(walks[id], Math.Max(0d, minute - r.StartedAt) / WalkingMinutesPerMetre,
                     r.Prefix, false, r.Schedule, out sample);
+            if (r.Phase == CityResidentJourneyPhase.AtDestination && r.Schedule.Activity == CityResidentActivity.Leisure)
+                return world.TrySampleLeisure(r.Goal, r.Schedule, out sample);
             sample = default;
             return false;
         }
@@ -312,14 +314,11 @@ namespace BarPromenade
             }
             else
             {
-                // Public errands/walks use the existing out-and-back circuit
-                // after the first leg, including a journey that ended by bus.
+                // Repeat an errand from the public frontage. The house entrance
+                // belongs to the actual departure and return in the calendar.
                 bool publicVisit = r.Schedule.Activity == CityResidentActivity.Walking ||
                     r.Schedule.Activity == CityResidentActivity.Shopping;
-                bool worker = CityResidentLifeRules.HasWorkSchedule(id);
-                if (worker && r.Schedule.Activity == CityResidentActivity.Shopping) publicVisit = false;
-                int other = worker && publicVisit ? world.LocalWalkNode(r.Goal) :
-                    world.Destination(id, CityResidentActivity.Home);
+                int other = world.HomeFrontage(id);
                 if (publicVisit && other != r.Goal)
                 {
                     BeginWalk(id, r.From, r.From == other ? r.Goal : other, at, false);

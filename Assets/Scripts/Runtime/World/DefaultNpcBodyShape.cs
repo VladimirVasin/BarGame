@@ -23,6 +23,8 @@ namespace BarPromenade
 
         [SerializeField] private Binding[] bindings = Array.Empty<Binding>();
         [SerializeField] private float referenceHeightMetres;
+        [SerializeField] private int minimumHeightCm;
+        [SerializeField] private int maximumHeightCm;
         [SerializeField] private Vector3 referenceScale = Vector3.one;
         [SerializeField] private int heightCm;
         [SerializeField] private float build = .5f;
@@ -32,6 +34,8 @@ namespace BarPromenade
 
         public bool IsConfigured => bindings.Length > 0 && referenceHeightMetres > 0f;
         public float ReferenceHeightMetres => referenceHeightMetres;
+        public int MinHeightCm => minimumHeightCm > 0 ? minimumHeightCm : MinimumHeightCm;
+        public int MaxHeightCm => maximumHeightCm > 0 ? maximumHeightCm : MaximumHeightCm;
         public Vector3 ReferenceScale => referenceScale;
         public int HeightCm => heightCm;
         public float Build => build;
@@ -41,11 +45,15 @@ namespace BarPromenade
         public float HeightRatio => hasSelection ? heightCm * .01f / referenceHeightMetres : 1f;
 
         /// <summary>Authoring only: cache shape indices and conservative bounds without modifying shared meshes.</summary>
-        public void Configure(SkinnedMeshRenderer[] renderers, float referenceHeightMetres)
+        public void Configure(SkinnedMeshRenderer[] renderers, float referenceHeightMetres,
+            int minHeightCm = MinimumHeightCm, int maxHeightCm = MaximumHeightCm)
         {
             if (renderers == null) throw new ArgumentNullException(nameof(renderers));
             if (!float.IsFinite(referenceHeightMetres) || referenceHeightMetres <= 0f)
                 throw new ArgumentOutOfRangeException(nameof(referenceHeightMetres));
+            int referenceHeightCm = Mathf.RoundToInt(referenceHeightMetres * 100f);
+            if (minHeightCm <= 0 || minHeightCm > referenceHeightCm || maxHeightCm < referenceHeightCm)
+                throw new ArgumentOutOfRangeException(nameof(minHeightCm), "The height range must include the model's stature.");
             var authored = new List<Binding>();
             var unique = new HashSet<SkinnedMeshRenderer>();
             foreach (SkinnedMeshRenderer renderer in renderers)
@@ -65,15 +73,19 @@ namespace BarPromenade
                 throw new InvalidOperationException("A default NPC requires authored body and garment shapes.");
             bindings = authored.ToArray();
             this.referenceHeightMetres = referenceHeightMetres;
+            minimumHeightCm = minHeightCm;
+            maximumHeightCm = maxHeightCm;
             referenceScale = transform.localScale;
-            heightCm = Mathf.RoundToInt(referenceHeightMetres * 100f);
+            heightCm = referenceHeightCm;
             build = .5f; hasSelection = false; usesAuthoredAnatomy = false;
             RestoreShapes();
         }
 
         public void ValidateBindings()
         {
-            if (!IsConfigured || !Finite(referenceScale) || referenceScale.x <= 0f || referenceScale.y <= 0f || referenceScale.z <= 0f)
+            int referenceHeightCm = Mathf.RoundToInt(referenceHeightMetres * 100f);
+            if (!IsConfigured || !Finite(referenceScale) || referenceScale.x <= 0f || referenceScale.y <= 0f || referenceScale.z <= 0f ||
+                MinHeightCm > referenceHeightCm || MaxHeightCm < referenceHeightCm)
                 throw new InvalidOperationException("The default NPC has no measured body-shape configuration.");
             foreach (Binding binding in bindings)
             {
@@ -89,7 +101,7 @@ namespace BarPromenade
         public void Apply(int heightCm, float build)
         {
             if (!IsConfigured) throw new InvalidOperationException("Configure the default NPC body before assigning its proportions.");
-            if (heightCm < MinimumHeightCm || heightCm > MaximumHeightCm)
+            if (heightCm < MinHeightCm || heightCm > MaxHeightCm)
                 throw new ArgumentOutOfRangeException(nameof(heightCm));
             if (!float.IsFinite(build) || build < 0f || build > 1f)
                 throw new ArgumentOutOfRangeException(nameof(build));

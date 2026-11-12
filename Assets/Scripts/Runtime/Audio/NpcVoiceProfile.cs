@@ -284,6 +284,7 @@ namespace BarPromenade
             if (TryGetOrdinal(designId, out int authored)) return profiles[authored].Gender;
             switch (designId)
             {
+                case DefaultNpcCatalog.OrdinaryWoman:
                 case "weigh_attendant_v1":
                 case "village-wood-woman":
                 case "village-sewing-woman":

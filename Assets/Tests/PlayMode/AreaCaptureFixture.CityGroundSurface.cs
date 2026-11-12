@@ -80,16 +80,8 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 Assert.That(outsidePlants, Is.GreaterThan(0));
 
-                var guardedHouse = housing.AllBuildings.Single(house => house.HasGuardedEntry);
-                var eastBank = CityHillsideGroundGrid.ForLayout(city.Layout).Single(grid => grid.Road == eastRoad);
-                var guard = city.World.Root.GetComponentsInChildren<Transform>()
-                    .Single(part => part.name == "East Ridge entry rail");
-                float footing = guard.parent.GetComponentsInChildren<Renderer>()
-                    .Where(renderer => renderer.name.StartsWith(CityBuildingPrototypeWorldBuilder.FoundationObjectName))
-                    .Min(renderer => renderer.bounds.min.y);
-                Assert.That(guardedHouse.ThresholdWorld.y - footing,
-                    Is.EqualTo(eastBank.FoundationDepth(guardedHouse)).Within(.01f));
-                Assert.That(guard.GetComponentsInChildren<BoxCollider>().Length, Is.GreaterThanOrEqualTo(4));
+                var guardedHouse = housing.AllBuildings.Single(house => house.Lot.Cell == CityHillsideBuilding.GuardedEastHouseCell);
+                AssertRidgeEntrySupports(city);
                 Assert.That(city.World.Root.GetComponentsInChildren<MeshCollider>()
                     .Count(collider => collider.name == "East stair soil cut"), Is.EqualTo(1));
                 float approachX = guardedHouse.ApproachBounds.center.x;
@@ -119,6 +111,44 @@ namespace BarPromenade.Tests.PlayMode
                         guardedHouse.ThresholdWorld + Vector3.up * .45f, 70f)
                 };
             });
+        }
+
+        private static void AssertRidgeEntrySupports(CityGameRoot city)
+        {
+            var guards = city.World.Root.GetComponentsInChildren<Transform>()
+                .Where(part => part.name == "Ridge entry rail").ToDictionary(part => part.parent.name);
+            var houses = CityHillsideNeighborhoodPlan.ForLayout(city.Layout).AllBuildings;
+            var terrain = CityHillsideGroundPlan.ForLayout(city.Layout);
+            Assert.That(guards.Count, Is.EqualTo(houses.Count(house => !house.Lot.IsPlayerHome)));
+            foreach (CityHillsideBuilding house in houses)
+            {
+                if (house.Lot.IsPlayerHome) continue;
+                string id = "Building " + house.Lot.Cell;
+                Assert.That(guards.TryGetValue(id, out Transform guard), Is.True, id);
+                Assert.That(guard.GetComponentsInChildren<BoxCollider>().Length,
+                    Is.GreaterThanOrEqualTo(house.EntryRail.Count - 1), id);
+                float footing = guard.parent.GetComponentsInChildren<Renderer>()
+                    .Where(renderer => renderer.name.StartsWith(CityBuildingPrototypeWorldBuilder.FoundationObjectName))
+                    .Min(renderer => renderer.bounds.min.y);
+                Assert.That(house.ThresholdWorld.y - footing,
+                    Is.EqualTo(CityHillsideNeighborhoodWorld.FoundationDepth(city.Layout, house)).Within(.015f), id);
+                foreach (Vector2 corner in CityRoadPolygon.Rectangle(house.FoundationBounds))
+                    if (terrain.TrySampleTop(corner, out float ground))
+                        Assert.That(ground - footing, Is.GreaterThan(.12f), id + " footing under surveyed ground");
+
+                float inward = Mathf.Sign(house.DoorWorld.z - house.StreetContactWorld.z);
+                foreach (Vector3 point in house.EntryRail)
+                    Assert.That((point.z - house.PavementEdgeZ) * inward, Is.GreaterThan(.08f), id + " rail behind sidewalk");
+                float start = house.StreetContactWorld.z, end = house.CourtBounds.center.y;
+                int steps = Mathf.CeilToInt(Mathf.Abs(end - start) / .25f);
+                for (int step = 0; step <= steps; step++)
+                {
+                    var point = new Vector2(house.StreetContactWorld.x, Mathf.Lerp(start, end, step / (float)steps));
+                    Assert.That(house.TrySampleApproach(point, out float y), Is.True, id);
+                    Assert.That(city.World.WalkableArea.Contains(new Vector3(point.x, y, point.y), .32f), Is.True,
+                        id + " clear route from sidewalk to porch at " + point);
+                }
+            }
         }
 
 #if UNITY_EDITOR

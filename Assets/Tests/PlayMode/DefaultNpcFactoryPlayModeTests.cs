@@ -21,7 +21,7 @@ namespace BarPromenade.Tests.PlayMode
         }
     }
 
-    public sealed class DefaultNpcFactoryPlayModeTests
+    public sealed partial class DefaultNpcFactoryPlayModeTests
     {
         // Authored colours pass through Unity's native material property block.
         private static readonly ColorEqualityComparer AppearanceColorComparer = new ColorEqualityComparer(1e-5f);
@@ -538,7 +538,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(body, Is.Not.Null);
                     if (assignment.UsesRandomBody)
                     {
-                        Assert.That(assignment.HeightCm, Is.InRange(160, 185));
+                        Assert.That(assignment.HeightCm, Is.InRange(body.MinHeightCm, body.MaxHeightCm));
                         Assert.That(assignment.Build, Is.InRange(0f, 1f));
                         Assert.That(body.HeightCm, Is.EqualTo(assignment.HeightCm));
                         Assert.That(body.Build, Is.EqualTo(assignment.Build));

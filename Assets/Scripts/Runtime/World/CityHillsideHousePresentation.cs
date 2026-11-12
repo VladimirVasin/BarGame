@@ -6,6 +6,7 @@ namespace BarPromenade
     internal static class CityHillsideHousePresentation
     {
         private static GameObject bay, airer, clerestory;
+        private static GameObject entryRailModel;
         private static readonly GameObject[] galleries = new GameObject[5];
         private static readonly Vector2Int FishSignHouse = new(-23, -7);
         private const string FishSignResource = "City/RidgeFishSign/";
@@ -20,11 +21,12 @@ namespace BarPromenade
                 BuildFishSign(building, envelope);
             if (house.HasGuardedEntry)
             {
-                var railModel = Resources.Load<GameObject>(CityTerracePilotWorld.ResourceFolder + "TerraceRail");
-                var guard = new GameObject("East Ridge entry rail").transform;
+                if (entryRailModel == null)
+                    entryRailModel = Resources.Load<GameObject>(CityTerracePilotWorld.ResourceFolder + "TerraceRail");
+                var guard = new GameObject("Ridge entry rail").transform;
                 guard.SetParent(root, false);
                 for (int i = 1; i < house.EntryRail.Count; i++)
-                    CityTerracePilotWorld.BuildRailRun(guard, railModel, "Entry rail", house.EntryRail[i - 1], house.EntryRail[i]);
+                    CityTerracePilotWorld.BuildRailRun(guard, entryRailModel, "Entry rail", house.EntryRail[i - 1], house.EntryRail[i]);
                 CitySurfaceLibrary.ApplyHierarchy(guard);
             }
             if (house.Bank == CityTerraceTransportBank.East)
@@ -196,6 +198,7 @@ namespace BarPromenade
             bay = null;
             airer = null;
             clerestory = null;
+            entryRailModel = null;
             Array.Clear(galleries, 0, galleries.Length);
         }
     }

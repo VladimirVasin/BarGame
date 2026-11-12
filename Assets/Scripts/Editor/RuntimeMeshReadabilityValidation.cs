@@ -129,6 +129,8 @@ namespace BarPromenade.Editor
                 "BarPromenade.Editor.PlayerScarfAssetSetup.BuildOrThrow");
             Add(DefaultNpcAssetSetup.ModelPath, "NpcHandPose / bartender garment geometry",
                 "BarPromenade.Editor.DefaultNpcAssetSetup.BuildOrThrow");
+            Add(DefaultNpcWomanAssetSetup.ModelPath, "CityPedestrianShoeContacts / seated trouser geometry",
+                "BarPromenade.Editor.DefaultNpcWomanAssetSetup.BuildOrThrow");
             Add(BarAssetSetup.ServicePropsModelPath, "BarBartenderAssetRegistry.CacheTowelBounds",
                 "BarPromenade.Editor.BarAssetSetup.BuildOrThrow (BarModelImporter must retain this CPU source)");
 #if SURFACE_CACHE

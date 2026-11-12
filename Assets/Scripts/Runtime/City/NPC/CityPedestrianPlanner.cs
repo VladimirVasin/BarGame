@@ -205,7 +205,12 @@ namespace BarPromenade
 
             var area = new RoadWalkableArea(plan.NavigationRectangles);
             area.AddPolygons(plan.NavigationPolygons);
-            if (plan.TerraceLayout != null) area.AttachTerraceDistrict(plan.TerraceLayout);
+            if (plan.TerraceLayout != null)
+            {
+                area.AttachTerraceDistrict(plan.TerraceLayout);
+                foreach (CityHillsideBuilding house in CityHillsideNeighborhoodPlan.ForLayout(plan.TerraceLayout).AllBuildings)
+                    area.ExcludePolygons(house.EntryRailFootprints);
+            }
             return area;
         }
 
@@ -1389,8 +1394,10 @@ namespace BarPromenade
                 new Dictionary<string, int>(StringComparer.Ordinal);
             private readonly HashSet<LinkKey> linkKeys =
                 new HashSet<LinkKey>();
+            private readonly HashSet<int> entranceTerminals = new HashSet<int>();
 
             public IReadOnlyList<CityPedestrianNode> Nodes => nodes;
+            public void RetainEntranceTerminal(int node) => entranceTerminals.Add(node);
 
             public void MarkCrosswalkEntry(int i)
             {
@@ -1543,7 +1550,7 @@ namespace BarPromenade
                 uint stableSeed,
                 CityLayout terraceLayout = null)
             {
-                FindTwoCore(
+                FindRetainedGraph(
                     out bool[] retainedNodes,
                     out bool[] retainedLinks);
                 int[] remappedNodeIndices = new int[nodes.Count];
@@ -1628,7 +1635,7 @@ namespace BarPromenade
                     sample.Position + along - across });
             }
 
-            private void FindTwoCore(
+            private void FindRetainedGraph(
                 out bool[] retainedNodes,
                 out bool[] retainedLinks)
             {
@@ -1655,7 +1662,7 @@ namespace BarPromenade
                 var pending = new Queue<int>();
                 for (int index = 0; index < degree.Length; index++)
                 {
-                    if (degree[index] < 2)
+                    if (CanPrune(index))
                     {
                         pending.Enqueue(index);
                     }
@@ -1682,12 +1689,15 @@ namespace BarPromenade
                         retainedLinks[linkIndex] = false;
                         int other = links[linkIndex].Other(nodeIndex);
                         degree[other]--;
-                        if (retainedNodes[other] && degree[other] < 2)
+                        if (retainedNodes[other] && CanPrune(other))
                         {
                             pending.Enqueue(other);
                         }
                     }
                 }
+
+                bool CanPrune(int node) => degree[node] == 0 ||
+                    degree[node] == 1 && !entranceTerminals.Contains(node);
             }
 
             private static Rect CreateCorridor(

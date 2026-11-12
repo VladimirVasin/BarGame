@@ -101,10 +101,11 @@ namespace BarPromenade.Tests.EditMode
                     .GetLinkIndices(nodeIndex)
                     .Select(linkIndex => plan.Links[linkIndex].Kind)
                     .ToArray();
-                Assert.That(
-                    incidentKinds.Length,
-                    Is.GreaterThanOrEqualTo(2),
-                    $"Pedestrian graph node '{node.Id}' is a dead end.");
+                if (incidentKinds.Length == 1)
+                    Assert.That(incidentKinds[0], Is.EqualTo(CityPedestrianLinkKind.HomeEntrance),
+                        $"Public pedestrian graph node '{node.Id}' must have an onward route.");
+                else
+                    Assert.That(incidentKinds.Length, Is.GreaterThanOrEqualTo(2), node.Id);
                 bool hasCrosswalk = incidentKinds.Contains(
                     CityPedestrianLinkKind.Crosswalk);
                 bool hasSidewalk = incidentKinds.Contains(

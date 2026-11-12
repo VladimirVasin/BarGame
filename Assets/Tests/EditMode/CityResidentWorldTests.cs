@@ -51,6 +51,32 @@ namespace BarPromenade.Tests.EditMode
                 CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
             CityPedestrianPlan plan = CityPedestrianPlanner.Create(layout,
                 GameSessionState.DefaultCitySeed, CityStreetSurfacePlanner.Create(layout));
+            CityHillsideBuilding summitHome = layout.SummitHome;
+            Assert.That(summitHome, Is.Not.Null);
+            string homePrefix = $"hill:quarter:summit:house:{summitHome.Lot.Cell.x}:{summitHome.Lot.Cell.y}:";
+            int frontage = -1;
+            for (int node = 0; node < plan.Nodes.Count; node++)
+            {
+                string id = plan.Nodes[node].Id;
+                if (!id.StartsWith(homePrefix, StringComparison.Ordinal)) continue;
+                Assert.That(id, Is.EqualTo(homePrefix + "gate"), "The shared pedestrian graph stops at the public frontage.");
+                frontage = node;
+            }
+            Assert.That(frontage, Is.GreaterThanOrEqualTo(0));
+            Assert.That(plan.GetLinkIndices(frontage).Count, Is.EqualTo(2), "The sidewalk stays open in both directions.");
+            RoadWalkableArea pavement = CityPedestrianPlanner.CreateWalkableArea(plan);
+            Assert.That(pavement.Contains(summitHome.StreetContactWorld, plan.AgentRadius), Is.True);
+            Assert.That(pavement.Contains(summitHome.DoorWorld), Is.False, "Side steps cannot use the hero's doorway.");
+            var ambientEntries = new List<CityAmbientWalkPlan.Entry>();
+            var ambient = new CityAmbientWalkPlan(plan, layout);
+            ambient.CollectEntries(summitHome.DoorWorld, 12f, ambientEntries);
+            Assert.That(ambientEntries, Is.Not.Empty);
+            foreach (var entry in ambientEntries)
+                Assert.That(summitHome.CourtBounds.Contains(new Vector2(entry.Position.x, entry.Position.z)), Is.False,
+                    "No background walker starts in the private entrance court.");
+            for (int link = 0; link < plan.Links.Count; link++)
+                if (plan.Links[link].Kind == CityPedestrianLinkKind.HomeEntrance)
+                    Assert.That(ambient.Length(link), Is.Zero, "Background routes cannot continue into entrances.");
             var world = new CityResidentWorld(plan, layout);
             var homes = new HashSet<int>();
             var work = new HashSet<int>();
@@ -82,6 +108,16 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(home, Is.Not.EqualTo(playerHome), "The hero's home is not an ambient resident home.");
                 Assert.That(world.Home(resident).Building, Is.Not.SameAs(layout.PlayerHome));
                 Assert.That(world.Destination(resident, CityResidentActivity.ReturningHome), Is.EqualTo(home));
+                if (hillHomes.Contains(home))
+                {
+                    int streetNode = world.HomeFrontage(resident);
+                    Assert.That(streetNode, Is.Not.EqualTo(home));
+                    bool joinsPublicPavement = false;
+                    foreach (int link in plan.GetLinkIndices(streetNode))
+                        joinsPublicPavement |= plan.Links[link].Kind != CityPedestrianLinkKind.HomeEntrance;
+                    Assert.That(joinsPublicPavement, Is.True);
+                    Assert.That(plan.GetLinkIndices(home).Count, Is.EqualTo(1));
+                }
                 bool industrialReachable = false;
                 foreach (int workplace in work)
                     if (!float.IsPositiveInfinity(world.DistancesTo(home)[workplace])) industrialReachable = true;
@@ -182,6 +218,7 @@ namespace BarPromenade.Tests.EditMode
             var workRiders = new HashSet<int>();
             var homeRiders = new HashSet<int>();
             var reachedWork = new HashSet<int>();
+            var reachedLeisure = new HashSet<int>();
             var reachedHome = new HashSet<int>();
             bool restored = false;
             int vehicles = 2 * lines.Count;
@@ -219,6 +256,13 @@ namespace BarPromenade.Tests.EditMode
                     if (state.Phase == CityResidentJourneyPhase.AtDestination && state.Activity == CityResidentActivity.Work &&
                         state.CurrentNode == world.Workplace(id).PavementNode) reachedWork.Add(id);
                 }
+                foreach (int id in reachedWork)
+                {
+                    var state = director.GetState(id);
+                    if (state.Phase == CityResidentJourneyPhase.AtDestination && state.Activity == CityResidentActivity.Leisure &&
+                        state.CurrentNode == world.Destination(id, CityResidentActivity.Leisure))
+                        reachedLeisure.Add(id);
+                }
                 foreach (int id in homeRiders)
                 {
                     var state = director.GetState(id);
@@ -228,8 +272,9 @@ namespace BarPromenade.Tests.EditMode
             }
             Assert.That(restored, Is.True, "A worker must ride before their seat can be checkpointed.");
             Assert.That(reachedWork, Is.Not.Empty, "A worker must complete the last mile after riding.");
-            reachedHome.IntersectWith(reachedWork);
-            Assert.That(reachedHome, Is.Not.Empty, "A worker must also ride home to the original address.");
+            Assert.That(reachedLeisure, Is.Not.Empty, "A worker must stay at their scheduled evening destination.");
+            reachedHome.IntersectWith(reachedLeisure);
+            Assert.That(reachedHome, Is.Not.Empty, "The same worker must return to the original address after leisure.");
             foreach (int id in reachedHome)
             {
                 Assert.That(world.Home(id).Building, Is.Not.Null);

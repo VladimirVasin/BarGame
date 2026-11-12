@@ -417,6 +417,10 @@ namespace BarPromenade
         private static readonly CityPedestrianSeatedRide DefaultNpcSeatedRide =
             new CityPedestrianSeatedRide(0.076f, 0.21f, 0.915f);
 
+        // Measured at reference stature across both trouser cuts in the seated loop.
+        public static readonly CityPedestrianSeatedRide OrdinaryWomanSeatedRide =
+            new CityPedestrianSeatedRide(0.067f, 0.21f, 0.876f);
+
         // THREE ORDINARY RESIDENTS DELIBERATELY DO NOT RIDE. The band above
         // is measured from the design's own seated clip, and for these three
         // the measurement is dominated by something that is not a hip: the
@@ -587,8 +591,8 @@ namespace BarPromenade
         /// <summary>
         /// The designs that ROAM: one archetype per default NPC catalog model,
         /// derived from <see cref="DefaultNpcCatalog.ModelIds"/> at first use
-        /// so a model added to the catalog is on the pavement with no
-        /// registration here. Its design ID is the catalog model ID and its
+        /// so models assigned by the population share a street entry point.
+        /// Its design ID is the catalog model ID and its
         /// prefab path is the catalog's; the body itself is built by
         /// `CityPedestrianDefaultNpcBody`, not loaded from a registry prefab.
         /// </summary>
@@ -613,7 +617,7 @@ namespace BarPromenade
                             DefaultNpcMaximumAnimationSpeed,
                             CityPedestrianArchetype.UnlimitedPoolInstances,
                             0f,
-                            DefaultNpcSeatedRide);
+                            models[index] == DefaultNpcCatalog.OrdinaryWoman ? OrdinaryWomanSeatedRide : DefaultNpcSeatedRide);
                     }
 
                     roamingArchetypes = built;
@@ -734,10 +738,8 @@ namespace BarPromenade
         /// <summary>
         /// The design of each pooled slot, in slot order. The population
         /// decides it, not a round-robin: slot <c>i</c> is the permanent
-        /// walker `DefaultNpcPopulation.PedestrianId(i)`, whose model the
-        /// whole-world allocation chose least-used first, so every catalog
-        /// model appears at least once whenever the pool is large enough to
-        /// hold them all. Reading it prepares the population, which loads the
+        /// walker `DefaultNpcPopulation.PedestrianId(i)`, whose model comes
+        /// from the permanent roster. Reading it prepares the population, which loads the
         /// catalog prefabs; a warm-up wanting paths alone reads
         /// <see cref="CollectPooledPrefabResourcePaths"/>.
         /// </summary>

@@ -7,8 +7,8 @@
 - Unity `6000.6.8f1`, URP `17.6.0`, Input System `1.20.1`, Navigation `2.0.16`:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
-- 16:9/native/SMAA/savedFX;4:3 unsupported;City/balcony Soft,bar/church Neutral.
-  Maps/response/cubes; City/Home/bar UV0+1;house air/bar WC mirror.
+- 16:9/native/SMAA/savedFX/no4:3;City/balcony Soft,bar/church Neutral.
+  4096px local shadow atlas cap; City/Home/bar UV0+1;house air/bar WC mirror.
   City:8grass types/wind/contact/Home;crowns static. RoadRGB/pistol/fountain pilots.
 - Fourteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
 
@@ -91,7 +91,7 @@ Repair/publication: [../tools/README.md](../tools/README.md).
 - City:west work/east homes3–5storeys+park;144lots/courts/wings.
   Hillside yards/lit bench paths near pawnshop/bins/booths share plans/contacts.
   2 buses/ring, transfer stairs, stop zebras. 10 seats+3 stands.
-  NPC192/≤36/cache48, home/work, Home5/2, dog3/owners2.
+  City NPC192/≤36+12 ambient, Home5/2, dogs3/owners2.
   8 industry sites: roofs/gear/surfaces/task lights;
   substation/municipal/port workshops remain passive.
   First unpaused dock entry starts port→factory→shop supply;

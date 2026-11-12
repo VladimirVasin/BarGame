@@ -2324,6 +2324,70 @@ namespace BarPromenade.Tests.EditMode
 
         [TestCase(false)]
         [TestCase(true)]
+        public void AmbientWalkers_HeadOnClearOppositeShouldersOrYieldInTheTurnout(bool singleFile)
+        {
+            float halfWidth = singleFile ? .44f : .64f;
+            var pavement = new RoadWalkableArea(new[] { Rect.MinMaxRect(-halfWidth, -8f, halfWidth, 8f) });
+            if (singleFile) pavement.Add(Rect.MinMaxRect(-1.25f, -3.2f, halfWidth, -1.85f));
+            var movement = new CityAmbientWalking(CreateAmbientTestWalk(), pavement);
+            Assert.That(movement.HasClearance(new Vector3(.46f, 0f, 0f)), Is.False,
+                "The previous fixed offset cannot fit on this pavement.");
+            var north = new CityAmbientWalking.Route(0, -1, 7.95f);
+            var south = new CityAmbientWalking.Route(0, 1, 6.05f);
+            Vector3 northFeet = new Vector3(0f, 0f, .95f);
+            Vector3 southFeet = new Vector3(0f, 0f, -.95f);
+            var contacts = new CityAmbientWalking.Contact[2];
+            bool yieldedInPocket = false;
+            for (int step = 0; step < 230 && (northFeet.z > -3.7f || southFeet.z < .75f); step++)
+            {
+                contacts[1] = new CityAmbientWalking.Contact(2, southFeet, CityAmbientWalking.Radius, south);
+                movement.Advance(ref north, 1, northFeet, .82f, .05f, contacts, contacts.Length, out northFeet, out _);
+                contacts[0] = new CityAmbientWalking.Contact(1, northFeet, CityAmbientWalking.Radius, north);
+                movement.Advance(ref south, 2, southFeet, .82f, .05f, contacts, contacts.Length, out southFeet, out _);
+                yieldedInPocket |= south.InPocket && Mathf.Abs(southFeet.x) > .5f;
+                Assert.That(PlanarDistance(northFeet, southFeet), Is.GreaterThanOrEqualTo(.565f));
+                Assert.That(north.Direction, Is.EqualTo(-1));
+                Assert.That(south.Direction, Is.EqualTo(1));
+                Assert.That(pavement.Contains(northFeet, CityAmbientWalking.Radius), Is.True);
+                Assert.That(pavement.Contains(southFeet, CityAmbientWalking.Radius), Is.True);
+            }
+            Assert.That(northFeet.z, Is.LessThanOrEqualTo(-3.7f), $"Priority walker ended at {northFeet}, yielding walker at {southFeet}.");
+            Assert.That(southFeet.z, Is.GreaterThanOrEqualTo(.75f), $"Yielding walker ended at {southFeet}.");
+            Assert.That(yieldedInPocket, Is.EqualTo(singleFile));
+        }
+
+        [Test]
+        public void AmbientWalkers_ClearAStationaryResidentWithoutWaitingForThemToMove()
+        {
+            var pavement = new RoadWalkableArea(new[] { Rect.MinMaxRect(-1.02f, -8f, 1.02f, 8f) });
+            var movement = new CityAmbientWalking(CreateAmbientTestWalk(), pavement);
+            var walk = new CityAmbientWalking.Route(0, 1, 5.4f);
+            Vector3 feet = new Vector3(0f, 0f, -1.6f);
+            var contacts = new[] { new CityAmbientWalking.Contact(-2, Vector3.zero, .35f) };
+            for (int step = 0; step < 140 && feet.z < 1.2f; step++)
+            {
+                movement.Advance(ref walk, 1, feet, .82f, .05f, contacts, contacts.Length, out feet, out _);
+                Assert.That(PlanarDistance(feet, Vector3.zero), Is.GreaterThanOrEqualTo(.665f));
+            }
+            Assert.That(feet.z, Is.GreaterThanOrEqualTo(1.2f));
+        }
+
+        private static CityAmbientWalkPlan CreateAmbientTestWalk()
+        {
+            var street = new CityPedestrianPlan(1, 2, 3u, CityPedestrianPlanner.AgentRadius,
+                new[]
+                {
+                    new CityPedestrianNode("south", new Vector3(0f, 0f, -7f), false),
+                    new CityPedestrianNode("north", new Vector3(0f, 0f, 7f), false)
+                },
+                new[] { new CityPedestrianLink("street", 0, 1, CityPedestrianLinkKind.Sidewalk) },
+                System.Array.Empty<CityPedestrianSpawnAnchor>(),
+                new[] { Rect.MinMaxRect(-1.3f, -8f, 1.3f, 8f) });
+            return new CityAmbientWalkPlan(street);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
         public void PassingActors_AtTurnoutCornerReachDestinationsWithoutTurningBack(bool obstacleOnExit)
         {
             GameObject root = new GameObject("Turnout Corner Passing Test");

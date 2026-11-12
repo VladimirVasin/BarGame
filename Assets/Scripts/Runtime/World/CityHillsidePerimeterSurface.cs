@@ -28,6 +28,8 @@ namespace BarPromenade
         private static List<Plot> CreatePlots(CityLayout layout)
         {
             var plots = new List<Plot>();
+            foreach (var piece in CityGlassReturnSitePlan.PavingForLayout(layout).Asphalt)
+                plots.Add(new Plot(Finish.Asphalt, piece));
             var quarter = CityHillsideQuarterPlan.ForLayout(layout);
             if (quarter.Bridges.Count == 0) return plots;
             var bridge = quarter.Bridges[quarter.Bridges.Count - 1];
@@ -85,6 +87,8 @@ namespace BarPromenade
             foreach (var pocket in CityHillsideBenchPocketPlan.ForLayout(layout).Pockets)
                 foreach (var polygon in pocket.SurfacePolygons) Add(polygon);
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop)) Add(pawnshop.ApproachFootprint);
+            foreach (var piece in CityGlassReturnSitePlan.PavingForLayout(layout).Path)
+                result.Add(new GroundSurfacePartitioner.Footprint(piece));
             return result;
 
             void Add(Vector2[] polygon)

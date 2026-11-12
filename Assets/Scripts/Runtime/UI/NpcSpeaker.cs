@@ -44,9 +44,9 @@ namespace BarPromenade
 
         private static string ResolveVoiceIdentity(Object owner, string designId)
         {
-            // A shared male model is appearance metadata, not the person's
+            // A shared model is appearance metadata, not the person's
             // voice identity. Preserve explicit staged voice aliases unchanged.
-            if (designId == DefaultNpcCatalog.OrdinaryWorker)
+            if (designId == DefaultNpcCatalog.OrdinaryWorker || designId == DefaultNpcCatalog.OrdinaryWoman)
             {
                 CityPedestrianDefaultNpcBody person = owner is Component component
                     ? component.GetComponent<CityPedestrianDefaultNpcBody>()

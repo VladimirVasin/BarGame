@@ -308,9 +308,8 @@ namespace BarPromenade
             }
 
             CityPedestrianPresentation owner = nearest.Presentation;
-            // A population walker speaks in a voice of its own: every pooled
-            // body shares one catalog design id, so the voice is keyed by
-            // the permanent person instead of by the model.
+            // The person keys the voice variation. The model declares which
+            // voice pool owns that variation.
             CityPedestrianDefaultNpcBody person =
                 owner.GetComponent<CityPedestrianDefaultNpcBody>();
             NpcSpeaker speaker = person != null
@@ -318,7 +317,8 @@ namespace BarPromenade
                     owner,
                     owner.Registry.HeadAnchor,
                     person.CharacterId,
-                    NpcEarshotProfile.Conversation)
+                    NpcEarshotProfile.Conversation,
+                    NpcVoiceCatalog.ResolveGender(owner.Registry.DesignId))
                 : NpcSpeaker.FromRegistry(
                     owner,
                     owner.Registry,

@@ -12,6 +12,15 @@ namespace BarPromenade
         internal bool CanChangeBodyAt(Vector3 feet)
         {
             if (sceneCamera == null || Density >= RuntimeSceneSetup.CityFogDensity) return true;
+            return IsStreetBodyHidden(feet);
+        }
+
+        // Background arrivals also use nearer entries. Apply the full view
+        // test even at lowland fog density before changing one of those bodies.
+        internal bool CanChangeAmbientBodyAt(Vector3 feet) => sceneCamera != null && IsStreetBodyHidden(feet);
+
+        private bool IsStreetBodyHidden(Vector3 feet)
+        {
             if (streetViewFrame != Time.frameCount)
             {
                 GeometryUtility.CalculateFrustumPlanes(sceneCamera, streetViewPlanes);

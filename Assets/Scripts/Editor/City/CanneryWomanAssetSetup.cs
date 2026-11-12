@@ -141,7 +141,8 @@ namespace BarPromenade.Editor
             ValidateBody(prefab, source);
         }
 
-        private static void ConfigureModel(string path, bool animation, Avatar avatar)
+        internal static void ConfigureModel(string path, bool animation, Avatar avatar, bool blendShapes = false,
+            Func<string, bool> loops = null)
         {
             var importer = AssetImporter.GetAtPath(path) as ModelImporter;
             if (importer == null) throw new InvalidOperationException("Missing generated cannery woman model " + path);
@@ -151,7 +152,13 @@ namespace BarPromenade.Editor
             importer.importAnimation = animation; importer.globalScale = 1f; importer.useFileScale = true;
             importer.bakeAxisConversion = true; importer.preserveHierarchy = true; importer.optimizeGameObjects = false;
             importer.isReadable = true; importer.importCameras = false; importer.importLights = false;
-            importer.addCollider = false; importer.importBlendShapes = false;
+            importer.addCollider = false; importer.importBlendShapes = blendShapes;
+            if (blendShapes)
+            {
+                importer.skinWeights = ModelImporterSkinWeights.Custom;
+                importer.maxBonesPerVertex = 4;
+                importer.minBoneWeight = 0f;
+            }
             importer.materialImportMode = ModelImporterMaterialImportMode.None;
             importer.animationCompression = ModelImporterAnimationCompression.Off;
             importer.meshCompression = ModelImporterMeshCompression.Off;
@@ -163,14 +170,15 @@ namespace BarPromenade.Editor
             {
                 int separator = clip.name.LastIndexOf('|');
                 if (separator >= 0) clip.name = clip.name.Substring(separator + 1);
-                clip.loopTime = true; clip.loopPose = false; clip.keepOriginalOrientation = true;
+                clip.loopTime = loops?.Invoke(clip.name) ?? true;
+                clip.loopPose = false; clip.keepOriginalOrientation = true;
                 clip.keepOriginalPositionXZ = clip.keepOriginalPositionY = true;
                 clip.lockRootRotation = clip.lockRootPositionXZ = clip.lockRootHeightY = true;
             }
             importer.clipAnimations = clips; importer.SaveAndReimport();
         }
 
-        private static void ConfigureTexture(string path)
+        internal static void ConfigureTexture(string path)
         {
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
             if (importer == null) throw new InvalidOperationException("Missing painted cannery woman texture " + path);

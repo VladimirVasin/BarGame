@@ -22,7 +22,7 @@ namespace BarPromenade
         public Vector3 DoorWorld { get; }
         public Vector3 ThresholdWorld { get; }
         internal float PavementEdgeZ => StreetContactWorld.z + Mathf.Sign(DoorWorld.z - StreetContactWorld.z);
-        internal bool HasGuardedEntry => Bank == CityTerraceTransportBank.East && Lot.Cell == GuardedEastHouseCell;
+        internal bool HasGuardedEntry => !Lot.IsPlayerHome && EntryRail.Count >= 2;
         internal IReadOnlyList<Vector3> EntryRail { get; } = System.Array.Empty<Vector3>();
         internal IReadOnlyList<Vector2[]> EntryRailFootprints { get; } = System.Array.Empty<Vector2[]>();
         internal const float PavementRise = CityStreetSurfacePlanner.SidewalkTop - CityStreetSurfacePlanner.RoadTop;
@@ -76,36 +76,53 @@ namespace BarPromenade
                 playerHome ? new Vector3(StreetContactWorld.x, floor - PavementRise, streetZ) : StreetContactWorld,
                 StreetContactWorld, variant, forward);
             MapFootprints = Lot.CreateCollisionFootprints();
-            if (HasGuardedEntry)
+            if (!playerHome)
             {
                 const float inset = .09f;
-                float approachEdge = ApproachBounds.xMin + inset;
-                float porchEdge = CourtBounds.xMin + inset;
-                float porchBack = CourtBounds.yMax - inset;
-                var rail = new[]
+                float inward = Mathf.Sign(DoorWorld.z - StreetContactWorld.z);
+                bool rightEdge = gableEntry && forward.x > 0f;
+                float approachEdge = rightEdge ? ApproachBounds.xMax - inset : ApproachBounds.xMin + inset;
+                float porchEdge = rightEdge ? CourtBounds.xMax - inset : CourtBounds.xMin + inset;
+                float oppositePorchEdge = rightEdge ? CourtBounds.xMin + inset : CourtBounds.xMax - inset;
+                float railStart = PavementEdgeZ + inward * .18f;
+                float porchBack = inward > 0f ? CourtBounds.yMax - inset : CourtBounds.yMin + inset;
+                var rail = new List<Vector3>(5);
+                if ((courtEdgeZ - railStart) * inward > .06f)
                 {
-                    RailFoot(approachEdge, PavementEdgeZ + .18f),
-                    RailFoot(approachEdge, CourtBounds.yMin),
-                    RailFoot(porchEdge, CourtBounds.yMin + inset),
-                    RailFoot(porchEdge, porchBack),
-                    RailFoot(CourtBounds.xMax - inset, porchBack)
-                };
-                var footprints = new Vector2[rail.Length - 1][];
+                    AddRailPoint(approachEdge, railStart);
+                    AddRailPoint(approachEdge, courtEdgeZ);
+                }
+                // Gable porches have an exposed outer edge beyond the approach.
+                // A short front-facing entrance starts its rail on the porch.
+                if (gableEntry || rail.Count == 0)
+                {
+                    float porchStart = inward > 0f ? Mathf.Max(railStart, courtEdgeZ + inset) :
+                        Mathf.Min(railStart, courtEdgeZ - inset);
+                    if ((porchBack - porchStart) * inward > .06f)
+                    {
+                        AddRailPoint(porchEdge, porchStart);
+                        AddRailPoint(porchEdge, porchBack);
+                        if (gableEntry) AddRailPoint(oppositePorchEdge, porchBack);
+                    }
+                }
+                var footprints = new Vector2[Mathf.Max(0, rail.Count - 1)][];
                 for (int i = 0; i < footprints.Length; i++)
                 {
                     Vector2 a = new(rail[i].x, rail[i].z), b = new(rail[i + 1].x, rail[i + 1].z);
                     Vector2 offset = new Vector2(a.y - b.y, b.x - a.x).normalized * (EntryRailWidth * .5f);
                     footprints[i] = CityRoadPolygon.CounterClockwise(new[] { a - offset, b - offset, b + offset, a + offset });
                 }
-                EntryRail = System.Array.AsReadOnly(rail);
+                EntryRail = rail.AsReadOnly();
                 EntryRailFootprints = System.Array.AsReadOnly(footprints);
-            }
 
-            Vector3 RailFoot(float railX, float railZ)
-            {
-                if (!TrySampleApproach(new Vector2(railX, railZ), out float height))
-                    throw new System.InvalidOperationException("The east Ridge entry rail must be on its own pavement.");
-                return new Vector3(railX, height - CityHillsideGroundSeamPlan.SurfaceRecess, railZ);
+                void AddRailPoint(float railX, float railZ)
+                {
+                    if (!TrySampleApproach(new Vector2(railX, railZ), out float height))
+                        throw new System.InvalidOperationException("A Ridge entry rail must stand on its own pavement.");
+                    var point = new Vector3(railX, height - CityHillsideGroundSeamPlan.SurfaceRecess, railZ);
+                    if (rail.Count == 0 || (rail[rail.Count - 1] - point).sqrMagnitude > .0001f)
+                        rail.Add(point);
+                }
             }
         }
 

@@ -11,6 +11,57 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class AreaCaptureFixture
     {
+        private static void AssertAndCaptureGlassPaving(CityGameRoot city)
+        {
+            var site = CityGlassReturnSitePlan.ForLayout(city.Layout);
+            var paving = CityGlassReturnSitePlan.PavingForLayout(city.Layout);
+            var road = CityHillsideStreetPlan.ForLayout(city.Layout).Routes.Single(route => route.Bank == CityTerraceTransportBank.East);
+            var terrain = CityHillsideGroundPlan.ForLayout(city.Layout);
+            var crossing = CityGlassReturnWorkerPlan.ForLayout(city.Layout).DoorCrossing;
+            var entry = new Vector2(site.Approach.x, site.Approach.z);
+            Physics.SyncTransforms();
+            CheckSurface(site.HeroDock, FootstepGroundKind.Concrete);
+            CheckSurface(crossing[crossing.Count - 1], FootstepGroundKind.Concrete);
+            bool sawPath = false;
+            int steps = Mathf.CeilToInt(Vector2.Distance(paving.SidewalkContact, entry) / .15f);
+            for (int step = 0; step <= steps; step++)
+            {
+                Vector2 point = Vector2.Lerp(paving.SidewalkContact, entry, step / (float)steps);
+                if (road.TrySampleTop(point, out _, out _)) continue;
+                Assert.That(terrain.TrySampleTop(point, out float top), Is.True);
+                Assert.That(paving.Path.Any(polygon => CityRoadPolygon.Contains(polygon, point)), Is.True,
+                    "The path meets the actual footway and the asphalt at " + point);
+                CheckSurface(new Vector3(point.x, top, point.y), FootstepGroundKind.Stone);
+                sawPath = true;
+            }
+            Assert.That(sawPath, Is.True, "The pavers cover ground between the road and the parcel.");
+
+            var grass = city.World.Root.GetComponentInChildren<CityGrassField>(true);
+            Assert.That(grass, Is.Not.Null);
+            Rect yard = CityRoadPolygon.Bounds(site.YardFootprint);
+            for (float z = yard.yMin + .05f; z < yard.yMax; z += .15f)
+            for (float x = yard.xMin + .05f; x < yard.xMax; x += .15f)
+            {
+                var point = new Vector2(x, z);
+                Assert.That(grass.Surface.TrySample(point, out _, out _, out _), Is.False,
+                    "The fenced concrete crate yard is clear of grass at " + point);
+            }
+
+            Vector3 eye = site.Approach + new Vector3(4.1f, 3.2f, -1.9f);
+            CaptureStreetDetail(city, "glass-return-paving", eye, site.Origin + site.Rotation * new Vector3(1.2f, .48f, 1.6f), 59f);
+
+            void CheckSurface(Vector3 feet, FootstepGroundKind expected)
+            {
+                Assert.That(city.World.WalkableArea.Contains(feet, .30f), Is.True, "Clear walking space at " + feet);
+                Assert.That(Physics.Raycast(feet + Vector3.up * .55f, Vector3.down, out RaycastHit hit, .85f,
+                    CityPedestrianCollision.NonPedestrianMask, QueryTriggerInteraction.Ignore), Is.True, "Paved contact at " + feet);
+                Assert.That(hit.point.y, Is.EqualTo(feet.y).Within(.08f), "Paving keeps the surveyed ground at " + feet);
+                var material = hit.collider.GetComponentInParent<FootstepGround>();
+                Assert.That(material, Is.Not.Null);
+                Assert.That(material.ResolveKind(hit.triangleIndex), Is.EqualTo(expected), "The built walking finish at " + feet);
+            }
+        }
+
         [UnityTest]
         [Explicit("Glass return at the eastern hairpin: both sidewalks, window sorting, local light and rain cover.")]
         public IEnumerator CityGlassReturn()

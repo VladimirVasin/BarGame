@@ -15,14 +15,18 @@ namespace BarPromenade
         private static readonly Vector2 ShellCentre = new(160.9f, -330.9f);
         private static readonly Vector2 YardCentre = new(161f, -336.2f);
         private static readonly Vector2 ArrivalXZ = new(164.9f, -332.6f);
+        private static readonly Quaternion SiteRotation = Quaternion.Euler(0f, 105f, 0f);
+        internal static readonly Vector2 ServiceDoorOutside = new(3f, -.48f);
+        internal static readonly Vector2 ServiceCorner = new(2.75f, 2.15f);
         private static readonly ConditionalWeakTable<CityLayout, CityGlassReturnSitePlan> Plans = new();
+        private static readonly ConditionalWeakTable<CityLayout, PavingPlan> PavingPlans = new();
         // Raw furniture and landscaping are surveyed before the terrain triangles exist.
         // This reserve also covers the canopy and the turn from the footway to the window.
         internal static Rect LandReservation => Rect.MinMaxRect(158.7f, -338.2f, 166f, -328.2f);
 
         public bool IsEnabled { get; }
         public Vector3 Origin { get; }
-        public Quaternion Rotation { get; } = Quaternion.Euler(0f, 105f, 0f);
+        public Quaternion Rotation => SiteRotation;
         public Vector3 YardOrigin { get; }
         public Vector3 Approach { get; }
         public Vector3 CounterWorld => Origin + Rotation * new Vector3(0f, 1.02f, Depth * .5f);
@@ -36,6 +40,73 @@ namespace BarPromenade
 
         public static CityGlassReturnSitePlan ForLayout(CityLayout layout) =>
             Plans.GetValue(layout, value => new CityGlassReturnSitePlan(value));
+
+        // XZ-only finishes can be planned before the ground mesh exists. The
+        // terrain partitioner then keeps the original height and triangles.
+        internal static PavingPlan PavingForLayout(CityLayout layout) =>
+            PavingPlans.GetValue(layout, CreatePaving);
+
+        internal sealed class PavingPlan
+        {
+            internal readonly List<Vector2[]> Path = new List<Vector2[]>();
+            internal readonly List<Vector2[]> Asphalt = new List<Vector2[]>();
+            internal Vector2 SidewalkContact { get; set; }
+        }
+
+        private static PavingPlan CreatePaving(CityLayout layout)
+        {
+            var result = new PavingPlan();
+            if (!layout.HasSummitHome) return result;
+            CityHillsideStreetRoute street = null;
+            foreach (var road in CityHillsideStreetPlan.ForLayout(layout).Routes)
+                if (road.Bank == CityTerraceTransportBank.East) { street = road; break; }
+            if (street == null) throw new InvalidOperationException("Glass return paving needs the east sidewalk.");
+
+            Vector3 arrival = new(ArrivalXZ.x, 0f, ArrivalXZ.y);
+            var first = CityGlassReturnWorkerPlan.Project(street.SidewalkPath, arrival);
+            var second = CityGlassReturnWorkerPlan.Project(street.OppositeSidewalkPath, arrival);
+            result.SidewalkContact = XZ(first.distance <= second.distance ? first.point : second.point);
+            Vector2 corner = SitePoint(ServiceCorner);
+            Vector2 overlap = ArrivalXZ + (corner - ArrivalXZ).normalized * .4f;
+            var shell = new Vector3(ShellCentre.x, 0f, ShellCentre.y);
+            var yard = new Vector3(YardCentre.x, 0f, YardCentre.y);
+            var cuts = new List<Vector2[]>
+            {
+                RectAt(shell, SiteRotation, Width, Depth),
+                RectAt(yard, Quaternion.identity, YardWidth, YardDepth)
+            };
+            foreach (var polygon in street.WalkablePolygons)
+                cuts.Add(polygon);
+
+            foreach (var polygon in new CityRoadPath(new[] { result.SidewalkContact, ArrivalXZ, overlap }).Ribbon(1.45f))
+                Add(result.Path, polygon);
+            foreach (var polygon in new CityRoadPath(new[] { ArrivalXZ, corner }).Ribbon(1.65f))
+                Add(result.Asphalt, polygon);
+            Add(result.Asphalt, LocalRect(-1.85f, 1.52f, 3.55f, 3.06f));
+            Add(result.Asphalt, LocalRect(2.20f, -1.12f, 3.62f, 2.82f));
+            return result;
+
+            void Add(List<Vector2[]> destination, Vector2[] polygon)
+            {
+                var pieces = new List<Vector2[]> { polygon };
+                Rect bounds = CityRoadPolygon.Bounds(polygon);
+                foreach (var cut in cuts)
+                {
+                    if (!CityRoadPolygon.Bounds(cut).Overlaps(bounds)) continue;
+                    var remaining = new List<Vector2[]>();
+                    foreach (var piece in pieces) remaining.AddRange(CityRoadPolygon.Subtract(piece, cut));
+                    pieces = remaining;
+                }
+                destination.AddRange(pieces);
+            }
+        }
+
+        private static Vector2[] LocalRect(float left, float rear, float right, float front) =>
+            CityRoadPolygon.CounterClockwise(new[] { SitePoint(new Vector2(left, rear)), SitePoint(new Vector2(right, rear)),
+                SitePoint(new Vector2(right, front)), SitePoint(new Vector2(left, front)) });
+
+        private static Vector2 SitePoint(Vector2 point) =>
+            ShellCentre + XZ(SiteRotation * new Vector3(point.x, 0f, point.y));
 
         private CityGlassReturnSitePlan(CityLayout layout)
         {

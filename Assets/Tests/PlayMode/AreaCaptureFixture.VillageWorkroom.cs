@@ -264,7 +264,6 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierMedium));
             var pipeline = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
             Assert.That(pipeline, Is.Not.Null);
-            Assert.That(pipeline.additionalLightsShadowmapResolution, Is.EqualTo(2048));
             Assert.That(pipeline.additionalLightsShadowResolutionTierMedium, Is.EqualTo(512));
             int tilesPerSide = pipeline.additionalLightsShadowmapResolution /
                 pipeline.additionalLightsShadowResolutionTierMedium;

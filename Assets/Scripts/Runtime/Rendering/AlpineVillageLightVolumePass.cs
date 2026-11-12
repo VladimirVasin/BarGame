@@ -322,6 +322,7 @@ namespace BarPromenade.Rendering
                 data.Lights.ShadowIndices = lights.ShadowIndices;
                 builder.UseTexture(depth, AccessFlags.Read);
                 builder.UseTexture(volume, AccessFlags.Read);
+                if (shadows.IsValid()) builder.UseTexture(shadows, AccessFlags.Read);
                 // Additive blending reads the attachment; no color texture sampling.
                 builder.SetRenderAttachment(color, 0, AccessFlags.ReadWrite);
                 builder.SetRenderFunc(static (PassData pass, RasterGraphContext context) =>

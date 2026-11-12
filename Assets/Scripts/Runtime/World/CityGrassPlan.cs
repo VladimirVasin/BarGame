@@ -207,6 +207,10 @@ namespace BarPromenade
             foreach (var piece in CityPawnshopBenchTerracePlan.ForLayout(city).Footprints) Reserve(piece);
             foreach (var piece in CityPawnshopDescentPlan.ForLayout(city).Footprints) Reserve(piece);
             if (CityPawnshopPlan.TryCreate(city, out var pawnshop)) Reserve(pawnshop.ApproachFootprint);
+            Reserve(CityGlassReturnSitePlan.ForLayout(city).YardFootprint);
+            var glassPaving = CityGlassReturnSitePlan.PavingForLayout(city);
+            foreach (var piece in glassPaving.Path) Reserve(piece);
+            foreach (var piece in glassPaving.Asphalt) Reserve(piece);
             foreach (Rect approach in CityBusNetworkFurniture.Reservations(CityDistrictBusPlanner.CreateRoadRouting(city), city))
                 ReserveRect(approach);
             foreach (var trunk in CityRidgeVegetationPlan.ForLayout(city).Trunks) Reserve(trunk);

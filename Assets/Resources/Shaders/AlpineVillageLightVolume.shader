@@ -79,14 +79,10 @@ Shader "Hidden/BarPromenade/Alpine Village Local Lit Air"
             return leave > enter;
         }
 
-        float4 AlpineAirIntegrate(Varyings input) : SV_Target
+        float3 AlpineAirIntegrateRay(float3 origin, float3 direction, float lengthToSurface,
+            out float integratedDistance)
         {
-            UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-            float2 uv = input.texcoord;
-            float raw = AlpineAirRawDepth(uv);
-            float3 origin, direction;
-            float lengthToSurface;
-            AlpineAirRay(uv, raw, origin, direction, lengthToSurface);
+            integratedDistance = 0;
             float3 sum = 0;
             [loop] for (int lightIndex = 0; lightIndex < _AlpineLocalLightCount; lightIndex++)
             {
@@ -95,6 +91,7 @@ Shader "Hidden/BarPromenade/Alpine Village Local Lit Air"
                 float stepLength = (leave - enter) / 10.0;
                 leave = min(leave, lengthToSurface);
                 if (leave <= enter) continue;
+                integratedDistance = max(integratedDistance, leave);
                 [unroll] for (int sampleIndex = 0; sampleIndex < 10; sampleIndex++)
                 {
                     float start = enter + sampleIndex * stepLength;
@@ -113,7 +110,21 @@ Shader "Hidden/BarPromenade/Alpine Village Local Lit Air"
                         (segment * .012 * visibility * shadow * _AlpineLocalLightOptions[lightIndex].x);
                 }
             }
-            return float4(sum, AlpineAirEyeDepth(raw));
+            return sum;
+        }
+
+        float4 AlpineAirIntegrate(Varyings input) : SV_Target
+        {
+            UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+            float2 uv = input.texcoord;
+            float3 origin, direction;
+            float lengthToSurface, integratedDistance;
+            AlpineAirRay(uv, AlpineAirRawDepth(uv), origin, direction, lengthToSurface);
+            float3 sum = AlpineAirIntegrateRay(origin, direction, lengthToSurface, integratedDistance);
+            // The stored light ends at the volume or surface, whichever came first.
+            // A distant wire should accept air that was integrated entirely in front of it.
+            float integratedEyeDepth = -TransformWorldToView(origin + direction * integratedDistance).z;
+            return float4(sum, integratedEyeDepth);
         }
 
         float4 AlpineAirResolve(Varyings input) : SV_Target
@@ -148,8 +159,7 @@ Shader "Hidden/BarPromenade/Alpine Village Local Lit Air"
                     float2 sampleUv = (cell + float2(x, y) + .5) * _AlpineAirTexelSize.xy;
                     float4 tap = SAMPLE_TEXTURE2D_X_LOD(_AlpineAirVolume, sampler_PointClamp, sampleUv, 0);
                     float2 spatial = lerp(1 - fraction, fraction, float2(x, y));
-                    // A shorter scattering prefix is safe; a farther opaque
-                    // endpoint can add air behind this surface and is rejected.
+                    // Reject a tap whose integration reaches behind this surface.
                     float behind = max(tap.a - eyeDepth, 0);
                     float tolerance = max(.06, eyeDepth * .003);
                     float weight = spatial.x * spatial.y * saturate(1 - behind / tolerance);
@@ -157,7 +167,11 @@ Shader "Hidden/BarPromenade/Alpine Village Local Lit Air"
                     weights += weight;
                 }
             }
-            return float4(weights > .00001 ? sum / weights : 0, 0);
+            [branch] if (weights > .00001) return float4(sum / weights, 0);
+            // All four coarse rays can pass behind a thin foreground object.
+            // Recover the air in front of it with the same depth-clipped integral.
+            float integratedDistance;
+            return float4(AlpineAirIntegrateRay(origin, direction, lengthToSurface, integratedDistance), 0);
         }
         ENDHLSL
 
@@ -183,6 +197,10 @@ Shader "Hidden/BarPromenade/Alpine Village Local Lit Air"
             #pragma target 3.5
             #pragma vertex Vert
             #pragma fragment AlpineAirResolve
+            #pragma multi_compile_fog
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
             ENDHLSL
         }
     }

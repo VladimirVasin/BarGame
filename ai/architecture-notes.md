@@ -2,6 +2,13 @@
 
 ## Current facts
 
+- **Accepted 2026-11-12, user — ordinary women.** City 48/192 by fixed street IDs.
+  Cannery rest rig/body, distinct faces/clothes and long loose hair, ponytail, braid.
+  Loose hair uses one skinned surface with continuous strand UVs from crown to ends.
+  `155–178 cm`, shared shape/coverage/allocator, reserved male looks.
+  Own clips with hip clearance and weight transfer. Measured bench/bus/rail contacts.
+  Stable voice IDs, fair/bar gates. Lit/Fog/SSAO, matte, scene post. Story §16.10/17, art §15/16.
+
 - **Accepted 2026-11-11,user — world joints:** art §4, City first.
   Blend coatings. Profile separate solids; timber bridge boards end in timber.
 
@@ -38,6 +45,7 @@
 
 - **Accepted 2026-11-08,user — glass return:** one press→only interior/window
   off+grille shut,morning on/open.Flood/sign fixed/day≥⅔;§6/20.
+  Pavers→footway, asphalt→window/door on partitioned bank mesh.
 
 - **Accepted 2026-11-07,user — illuminated bus platforms:** City/Home share
   recessed neutral perimeter diffuser;4rail Spots→bench/back/waiting,pole→boarding,
@@ -511,8 +519,9 @@
 - **Accepted 2026-10-29 — City resident life:**
   User:more simultaneous street people by hour, prototype daily life.
   `CityResidentLifeRules` owns192 permanent resident schedules; runtime assigns
-  stable home and work entrances, shop and outing destinations on the pavement graph. No new
-  interior, economy, speech/model/light, death or story timer. Target caps:
+  stable home and work entrances, shops and outings on the pavement graph.
+  The 2026-11-12 worker cycle goes from work to a fixed evening visit and
+  waits for the scheduled return home. Resident target caps:
   00–06:5/06–10:28/10–17:22/17–22:36/22–24:10, smooth30min ramps;
   eligible routes/clearance may leave fewer. ≤36 actors/cache48 lazy default
   bodies; one construction step/body warms the loading overlay. Same identity
@@ -522,6 +531,12 @@
   sit/guard/shove, shared rig/footsteps; six placed residents stay off streets.
   Home retains5/2 over first8. Spatial peer index/bounded animation sampling;
   collision/time/input stay live. Shared effects/PP retained; cost unmeasured.
+  `CityAmbientPedestrians`: hidden sidewalk entries, ≤12 active/cache18,
+  ≤48 combined, 60/40 target. Looks allocate after permanent signatures.
+  Ambient passing uses paired shoulders or a turnout, with hero/resident
+  priority. House spurs end at the apron and serve actual trips home. Circuits
+  turn at the frontage; ambient skips spurs/platforms/stairs. The hero's gate
+  stays public. Pause/dormancy bound the presentation.
   Effects audit: GI/SSAO/fog/volumetrics/shadows/grading keep existing City
   coverage; moving rig bounds/contact shadows retained, no new light or GI pass.
   Reflections/SSR/water/wetness/bevels/vertex colour/wind/decals/particles/rim/
@@ -940,7 +955,7 @@
   nine art §16 checks apply; costs unmeasured.
 - **Accepted exception 2026-10-21, bounded lighting polish — explicit user decision:**
   Art §4/story §6/§20: City/clock/Home balcony Soft; indoor mode restored. Bias/normal bias/
-  near plane/URP distance/cascades/atlases stay; yard/island hard/no-volume.
+  near plane/URP distance/cascades stay; yard/island hard/no-volume.
   Art §12: BarLightingPresentation/saved flag own two finite countertop bounces;
   practical hierarchy/warmth/dust stay. Neutral/ACES comparison retains Neutral
   for skin/wood/shadows, without City grade/new light. Art §10g: exact house-air
@@ -1138,7 +1153,8 @@
   moving bulbs, occupied windows and the switched lodge lantern; shared source
   masks/blur/SMAA retain their order. Existing five window/garland practicals
   supply at most four nearest local volumes: ten steps, at most 320x180,
-  existing fog transmittance, exact exterior facade planes and camera depth.
+  fog transmittance and exact facade planes. Resolve uses integrated depth;
+  if all taps fail, trace to the exact surface.
   The same bounded light parameters illuminate actual falling-snow particles;
   physics-clipped bounds/facades/depth do not promise full small-object shadows.
   No shadowed warehouse fan column or warehouse darkness is imported.
@@ -2084,9 +2100,9 @@
   coincide with the shell's cut faces. Source face-depth checks and the focused
   `VillageWorkroomWalls` capture guard the former coplanar-surface flicker.
   The workroom's shadowed point light explicitly requests Medium (`512 px`
-  per face): its six faces fit the unchanged PC `2048 px` additional-light
-  atlas at the same resolution URP previously obtained by reducing High
-  (`1024 px`). The focused capture also checks this shadow budget.
+  per face): its six faces fit within `2048 × 2048` at the same resolution
+  URP previously obtained by reducing High (`1024 px`). The focused capture
+  also checks this shadow budget.
   Board tops and the threshold remain at the original floor datum. Real
   underboarding closes the seams; the soil bed is `0.16 m` below the floor.
   The bed is inset `0.178 m`

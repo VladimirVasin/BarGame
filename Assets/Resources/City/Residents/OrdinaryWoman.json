@@ -1,0 +1,1047 @@
+{
+  "generator": "build-default-npc-woman-3d-model.py",
+  "catalog_model_id": "ordinary-woman-v1",
+  "anatomy_source": "tools/build-cannery-woman-3d-model.py",
+  "bone_count": 31,
+  "height_m": 1.63,
+  "height_scale": 0.9378596087456846,
+  "min_height_cm": 155,
+  "max_height_cm": 178,
+  "mesh_count": 75,
+  "triangle_count": 20734,
+  "bounds_min": [
+    -0.723084,
+    -0.188901,
+    0.0
+  ],
+  "bounds_max": [
+    0.72493,
+    0.25072,
+    1.769
+  ],
+  "maximum_visible_triangles": 7958,
+  "parts": [
+    {
+      "name": "GEO_FaceSurface",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_Head",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_Neck",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_Ear.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_Ear.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_Scalp",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_LongSleeveTop",
+      "color": [
+        0.5457244613701866,
+        0.5332764040105052,
+        0.4232676699860717,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Trousers_SlacksUpper",
+      "color": [
+        0.10946171077829933,
+        0.10702310297826761,
+        0.07618538148130785,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_CrewNeckRib",
+      "color": [
+        0.5457244613701866,
+        0.5332764040105052,
+        0.4232676699860717,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Sleeve.L",
+      "color": [
+        0.5457244613701866,
+        0.5332764040105052,
+        0.4232676699860717,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Cuff.L",
+      "color": [
+        0.5457244613701866,
+        0.5332764040105052,
+        0.4232676699860717,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_HandPalm.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_HandFinger0.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_HandFinger1.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_HandFinger2.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_HandFinger3.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_HandThumb.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Sleeve.R",
+      "color": [
+        0.5457244613701866,
+        0.5332764040105052,
+        0.4232676699860717,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Cuff.R",
+      "color": [
+        0.5457244613701866,
+        0.5332764040105052,
+        0.4232676699860717,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_HandPalm.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_HandFinger0.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_HandFinger1.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_HandFinger2.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_HandFinger3.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_HandThumb.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_UnderLongSleeveTop",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_UnderSleeve.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_UnderSleeve.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Cardigan",
+      "color": [
+        0.1714411007328226,
+        0.12477181756095049,
+        0.14412847085805777,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_CardiganSleeve.L",
+      "color": [
+        0.1714411007328226,
+        0.12477181756095049,
+        0.14412847085805777,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_CardiganSleeve.R",
+      "color": [
+        0.1714411007328226,
+        0.12477181756095049,
+        0.14412847085805777,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_CardiganCuff.L",
+      "color": [
+        0.1714411007328226,
+        0.12477181756095049,
+        0.14412847085805777,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_CardiganCuff.R",
+      "color": [
+        0.1714411007328226,
+        0.12477181756095049,
+        0.14412847085805777,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_CardiganCollar",
+      "color": [
+        0.1714411007328226,
+        0.12477181756095049,
+        0.14412847085805777,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ShortJacket",
+      "color": [
+        0.11697066775851084,
+        0.1651321945016676,
+        0.14412847085805777,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ShortJacketSleeve.L",
+      "color": [
+        0.11697066775851084,
+        0.1651321945016676,
+        0.14412847085805777,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ShortJacketSleeve.R",
+      "color": [
+        0.11697066775851084,
+        0.1651321945016676,
+        0.14412847085805777,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ShortJacketCuff.L",
+      "color": [
+        0.11697066775851084,
+        0.1651321945016676,
+        0.14412847085805777,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ShortJacketCuff.R",
+      "color": [
+        0.11697066775851084,
+        0.1651321945016676,
+        0.14412847085805777,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ShortJacketCollar",
+      "color": [
+        0.11697066775851084,
+        0.1651321945016676,
+        0.14412847085805777,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Trousers_StraightUpper",
+      "color": [
+        0.07818742180518633,
+        0.08865558628577294,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_UnderTrousers",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Scarf",
+      "color": [
+        0.21223075741405523,
+        0.2581828529215958,
+        0.20507873639031693,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_BareFoot.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "GEO_BareFoot.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_WalkingShoeSole.L",
+      "color": [
+        0.03560131487502034,
+        0.03433980680868217,
+        0.030713443732993635,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_WalkingShoe.L",
+      "color": [
+        0.09305896284668745,
+        0.06847816984440017,
+        0.046665086336880095,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_WalkingShoeSock.L",
+      "color": [
+        0.03560131487502034,
+        0.03433980680868217,
+        0.030713443732993635,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_WalkingShoeSole.R",
+      "color": [
+        0.03560131487502034,
+        0.03433980680868217,
+        0.030713443732993635,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_WalkingShoe.R",
+      "color": [
+        0.09305896284668745,
+        0.06847816984440017,
+        0.046665086336880095,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_WalkingShoeSock.R",
+      "color": [
+        0.03560131487502034,
+        0.03433980680868217,
+        0.030713443732993635,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_AnkleBootSole.L",
+      "color": [
+        0.03560131487502034,
+        0.03433980680868217,
+        0.030713443732993635,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_AnkleBoot.L",
+      "color": [
+        0.06480326669290577,
+        0.06124605423161761,
+        0.0595112381629812,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_AnkleBootSock.L",
+      "color": [
+        0.03560131487502034,
+        0.03433980680868217,
+        0.030713443732993635,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_AnkleBootSole.R",
+      "color": [
+        0.03560131487502034,
+        0.03433980680868217,
+        0.030713443732993635,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_AnkleBoot.R",
+      "color": [
+        0.06480326669290577,
+        0.06124605423161761,
+        0.0595112381629812,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_AnkleBootSock.R",
+      "color": [
+        0.03560131487502034,
+        0.03433980680868217,
+        0.030713443732993635,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_GlovePalm.L",
+      "color": [
+        0.13286832155381798,
+        0.11697066775851084,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_GloveFinger0.L",
+      "color": [
+        0.13286832155381798,
+        0.11697066775851084,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_GloveFinger1.L",
+      "color": [
+        0.13286832155381798,
+        0.11697066775851084,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_GloveFinger2.L",
+      "color": [
+        0.13286832155381798,
+        0.11697066775851084,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_GloveFinger3.L",
+      "color": [
+        0.13286832155381798,
+        0.11697066775851084,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_GloveThumb.L",
+      "color": [
+        0.13286832155381798,
+        0.11697066775851084,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_GlovePalm.R",
+      "color": [
+        0.13286832155381798,
+        0.11697066775851084,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_GloveFinger0.R",
+      "color": [
+        0.13286832155381798,
+        0.11697066775851084,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_GloveFinger1.R",
+      "color": [
+        0.13286832155381798,
+        0.11697066775851084,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_GloveFinger2.R",
+      "color": [
+        0.13286832155381798,
+        0.11697066775851084,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_GloveFinger3.R",
+      "color": [
+        0.13286832155381798,
+        0.11697066775851084,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_GloveThumb.R",
+      "color": [
+        0.13286832155381798,
+        0.11697066775851084,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "HAIR_Loose",
+      "color": [
+        0.1651321945016676,
+        0.15292615199615017,
+        0.13286832155381798,
+        1.0
+      ]
+    },
+    {
+      "name": "HAIR_PonytailCrown",
+      "color": [
+        0.1651321945016676,
+        0.15292615199615017,
+        0.13286832155381798,
+        1.0
+      ]
+    },
+    {
+      "name": "HAIR_PonytailLength",
+      "color": [
+        0.1651321945016676,
+        0.15292615199615017,
+        0.13286832155381798,
+        1.0
+      ]
+    },
+    {
+      "name": "HAIR_BraidCrown",
+      "color": [
+        0.1651321945016676,
+        0.15292615199615017,
+        0.13286832155381798,
+        1.0
+      ]
+    },
+    {
+      "name": "HAIR_BraidLength",
+      "color": [
+        0.1651321945016676,
+        0.15292615199615017,
+        0.13286832155381798,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_KnitCap",
+      "color": [
+        0.13843161503245183,
+        0.13286832155381798,
+        0.09989872824711389,
+        1.0
+      ]
+    }
+  ],
+  "shaped_renderers": [
+    "CLO_LongSleeveTop",
+    "CLO_CrewNeckRib",
+    "CLO_Sleeve.L",
+    "CLO_Sleeve.R",
+    "CLO_Cuff.L",
+    "CLO_Cuff.R",
+    "GEO_UnderLongSleeveTop",
+    "GEO_UnderSleeve.L",
+    "GEO_UnderSleeve.R",
+    "CLO_Cardigan",
+    "CLO_CardiganSleeve.L",
+    "CLO_CardiganSleeve.R",
+    "CLO_CardiganCuff.L",
+    "CLO_CardiganCuff.R",
+    "CLO_CardiganCollar",
+    "CLO_ShortJacket",
+    "CLO_ShortJacketSleeve.L",
+    "CLO_ShortJacketSleeve.R",
+    "CLO_ShortJacketCuff.L",
+    "CLO_ShortJacketCuff.R",
+    "CLO_ShortJacketCollar",
+    "CLO_Trousers_SlacksUpper",
+    "CLO_Trousers_StraightUpper",
+    "GEO_UnderTrousers"
+  ],
+  "grip_shape": "CylindricalGrip",
+  "grip_radius_m": 0.022,
+  "items": [
+    {
+      "id": "shirt.everyday",
+      "slot": "shirt",
+      "renderers": [
+        "CLO_LongSleeveTop",
+        "CLO_CrewNeckRib",
+        "CLO_Sleeve.L",
+        "CLO_Sleeve.R",
+        "CLO_Cuff.L",
+        "CLO_Cuff.R"
+      ],
+      "covered_renderers": [
+        "GEO_UnderLongSleeveTop",
+        "GEO_UnderSleeve.L",
+        "GEO_UnderSleeve.R"
+      ]
+    },
+    {
+      "id": "outerwear.cardigan",
+      "slot": "outerwear",
+      "renderers": [
+        "CLO_Cardigan",
+        "CLO_CardiganSleeve.L",
+        "CLO_CardiganSleeve.R",
+        "CLO_CardiganCuff.L",
+        "CLO_CardiganCuff.R",
+        "CLO_CardiganCollar"
+      ],
+      "covered_renderers": [
+        "CLO_LongSleeveTop",
+        "CLO_CrewNeckRib",
+        "CLO_Sleeve.L",
+        "CLO_Sleeve.R",
+        "CLO_Cuff.L",
+        "CLO_Cuff.R",
+        "GEO_UnderLongSleeveTop",
+        "GEO_UnderSleeve.L",
+        "GEO_UnderSleeve.R"
+      ]
+    },
+    {
+      "id": "outerwear.everyday",
+      "slot": "outerwear",
+      "renderers": [
+        "CLO_ShortJacket",
+        "CLO_ShortJacketSleeve.L",
+        "CLO_ShortJacketSleeve.R",
+        "CLO_ShortJacketCuff.L",
+        "CLO_ShortJacketCuff.R",
+        "CLO_ShortJacketCollar"
+      ],
+      "covered_renderers": [
+        "CLO_LongSleeveTop",
+        "CLO_CrewNeckRib",
+        "CLO_Sleeve.L",
+        "CLO_Sleeve.R",
+        "CLO_Cuff.L",
+        "CLO_Cuff.R",
+        "GEO_UnderLongSleeveTop",
+        "GEO_UnderSleeve.L",
+        "GEO_UnderSleeve.R"
+      ]
+    },
+    {
+      "id": "trousers.everyday",
+      "slot": "trousers",
+      "renderers": [
+        "CLO_Trousers_SlacksUpper"
+      ],
+      "covered_renderers": [
+        "GEO_UnderTrousers"
+      ]
+    },
+    {
+      "id": "trousers.work",
+      "slot": "trousers",
+      "renderers": [
+        "CLO_Trousers_StraightUpper"
+      ],
+      "covered_renderers": [
+        "GEO_UnderTrousers"
+      ]
+    },
+    {
+      "id": "scarf.warm",
+      "slot": "scarf",
+      "renderers": [
+        "CLO_Scarf"
+      ],
+      "covered_renderers": []
+    },
+    {
+      "id": "boots.everyday",
+      "slot": "boots",
+      "renderers": [
+        "CLO_WalkingShoe.L",
+        "CLO_WalkingShoeSole.L",
+        "CLO_WalkingShoeSock.L",
+        "CLO_WalkingShoe.R",
+        "CLO_WalkingShoeSole.R",
+        "CLO_WalkingShoeSock.R"
+      ],
+      "covered_renderers": [
+        "GEO_BareFoot.L",
+        "GEO_BareFoot.R"
+      ]
+    },
+    {
+      "id": "boots.work",
+      "slot": "boots",
+      "renderers": [
+        "CLO_AnkleBoot.L",
+        "CLO_AnkleBootSole.L",
+        "CLO_AnkleBootSock.L",
+        "CLO_AnkleBoot.R",
+        "CLO_AnkleBootSole.R",
+        "CLO_AnkleBootSock.R"
+      ],
+      "covered_renderers": [
+        "GEO_BareFoot.L",
+        "GEO_BareFoot.R"
+      ]
+    },
+    {
+      "id": "gloves.work",
+      "slot": "gloves",
+      "renderers": [
+        "CLO_GlovePalm.L",
+        "CLO_GloveFinger0.L",
+        "CLO_GloveFinger1.L",
+        "CLO_GloveFinger2.L",
+        "CLO_GloveFinger3.L",
+        "CLO_GloveThumb.L",
+        "CLO_GlovePalm.R",
+        "CLO_GloveFinger0.R",
+        "CLO_GloveFinger1.R",
+        "CLO_GloveFinger2.R",
+        "CLO_GloveFinger3.R",
+        "CLO_GloveThumb.R"
+      ],
+      "covered_renderers": [
+        "GEO_HandPalm.L",
+        "GEO_HandFinger0.L",
+        "GEO_HandFinger1.L",
+        "GEO_HandFinger2.L",
+        "GEO_HandFinger3.L",
+        "GEO_HandThumb.L",
+        "GEO_HandPalm.R",
+        "GEO_HandFinger0.R",
+        "GEO_HandFinger1.R",
+        "GEO_HandFinger2.R",
+        "GEO_HandFinger3.R",
+        "GEO_HandThumb.R"
+      ]
+    },
+    {
+      "id": "hair.loose",
+      "slot": "hair",
+      "renderers": [
+        "HAIR_Loose"
+      ],
+      "covered_renderers": []
+    },
+    {
+      "id": "hair.ponytail",
+      "slot": "hair",
+      "renderers": [
+        "HAIR_PonytailCrown",
+        "HAIR_PonytailLength"
+      ],
+      "covered_renderers": []
+    },
+    {
+      "id": "hair.braid",
+      "slot": "hair",
+      "renderers": [
+        "HAIR_BraidCrown",
+        "HAIR_BraidLength"
+      ],
+      "covered_renderers": []
+    },
+    {
+      "id": "headwear.everyday",
+      "slot": "headwear",
+      "renderers": [
+        "CLO_KnitCap"
+      ],
+      "covered_renderers": []
+    }
+  ],
+  "faces": [
+    {
+      "id": "face-01",
+      "texture": "OrdinaryWomanFace1.png",
+      "sha256": "fe8a76b97b32c60e4e4ed6955c1009cb9ba1832ee0fd5f03a7994839f4dd4a79"
+    },
+    {
+      "id": "face-02",
+      "texture": "OrdinaryWomanFace2.png",
+      "sha256": "2d5cbca0e5ea88e487de73b3d3ab81456d906d1d0b7dc4bb6790a70f9133fd42"
+    },
+    {
+      "id": "face-03",
+      "texture": "OrdinaryWomanFace3.png",
+      "sha256": "91b00fa4eaac2a5e8aa0d49ba63aca6cefbcfa21b1326aeb2f45e19090d29414"
+    },
+    {
+      "id": "face-04",
+      "texture": "OrdinaryWomanFace4.png",
+      "sha256": "429cd74ddb8e60077d028b65106d3148bbd1ffd77ecd499d0fbe569f63b328fc"
+    }
+  ],
+  "clothing_atlas": "OrdinaryWomanClothing.png",
+  "atlas_sha256": "eead70f0f4547118710082f1edacda4c2bc666c9f97c3450d6446dddfafbe998",
+  "hair_colors": [
+    {
+      "id": "gray",
+      "color": [
+        0.1651321945016676,
+        0.15292615199615017,
+        0.13286832155381798,
+        1.0
+      ]
+    },
+    {
+      "id": "brunette",
+      "color": [
+        0.06301001765316767,
+        0.04091519690685319,
+        0.028426039504420793,
+        1.0
+      ]
+    },
+    {
+      "id": "blond",
+      "color": [
+        0.25015828472995344,
+        0.18782077230067787,
+        0.09758734714186246,
+        1.0
+      ]
+    }
+  ],
+  "outfits": [
+    {
+      "id": "everyday",
+      "items": [
+        "shirt.everyday",
+        "trousers.everyday",
+        "boots.everyday",
+        "hair.loose"
+      ]
+    },
+    {
+      "id": "warm",
+      "items": [
+        "shirt.everyday",
+        "outerwear.cardigan",
+        "trousers.work",
+        "boots.work",
+        "hair.braid",
+        "headwear.everyday",
+        "scarf.warm",
+        "gloves.work"
+      ]
+    },
+    {
+      "id": "work",
+      "items": [
+        "shirt.everyday",
+        "outerwear.everyday",
+        "trousers.work",
+        "boots.work",
+        "hair.ponytail"
+      ]
+    }
+  ],
+  "clips": [
+    {
+      "name": "OrdinaryWomanIdle",
+      "seconds": 4.0,
+      "loop": true
+    },
+    {
+      "name": "OrdinaryWomanWalk",
+      "seconds": 1.25,
+      "loop": true
+    },
+    {
+      "name": "OrdinaryWomanSit",
+      "seconds": 4.0,
+      "loop": true
+    },
+    {
+      "name": "OrdinaryWomanGuard",
+      "seconds": 1.0,
+      "loop": false
+    },
+    {
+      "name": "OrdinaryWomanShove",
+      "seconds": 1.0,
+      "loop": false
+    }
+  ],
+  "crown_clearance_m": {
+    "loose": 0.006785,
+    "ponytail": 0.006734,
+    "braid": 0.007305
+  },
+  "geometry_signature": "02dd522715193fc7d43ac5035e4ccc54cdbf749d3bf532bf11697abf125dabe3",
+  "seat": {
+    "lift": 0.067,
+    "headroom": 0.876
+  },
+  "arm_clearance_m": {
+    "idle": 0.01015,
+    "walk": 0.019679
+  }
+}

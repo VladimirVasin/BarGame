@@ -188,7 +188,7 @@ namespace BarPromenade
                 drinkKinds = AllocateDrinkKinds(anchors.Length);
                 visitors = anchors.Length == 0 ? Array.Empty<DefaultNpcPopulation.Assignment>() :
                     DefaultNpcPopulation.AllocateVisitGroup("bar.visitors", anchors.Length,
-                        DefaultNpcPopulation.AnyCatalogModel,
+                        DefaultNpcCatalog.OrdinaryWorker,
                         new DefaultNpcPopulation.SlotConstraint("apron", new string[] { null }),
                         new DefaultNpcPopulation.SlotConstraint("gloves", null, "gloves.work"),
                         new DefaultNpcPopulation.SlotConstraint("scarf", null, "scarf.warm"),
