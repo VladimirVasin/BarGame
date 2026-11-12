@@ -221,6 +221,16 @@ namespace BarPromenade
             }
         }
 
+        internal void SettleAtSpawnedDestination()
+        {
+            if (!IsSpawned || MotionState != CityPedestrianMotionState.Walking || targetNodeIndex < 0 ||
+                targetNodeIndex != ResidentDestinationNode ||
+                (Position - plan.Nodes[targetNodeIndex].Position).sqrMagnitude > ArrivalRadius * ArrivalRadius)
+                throw new InvalidOperationException("A settled resident must spawn on their destination.");
+
+            ReachTargetNode();
+        }
+
         public void ClearResidentDestination()
         {
             ResidentDestinationNode = -1;
@@ -427,7 +437,8 @@ namespace BarPromenade
             Vector3? initialApproachTarget = null,
             IReadOnlyList<float> initialApproachNodeDistances = null,
             Vector3? attentionCandidate = null,
-            CityPedestrianVehicleTraffic vehicleTraffic = null)
+            CityPedestrianVehicleTraffic vehicleTraffic = null,
+            bool holdResidentDestination = false)
         {
             if (!IsSpawned)
             {
@@ -508,13 +519,16 @@ namespace BarPromenade
                     ResumeRoaming(resumeNode);
                 }
             }
-            else if (AdvancePassingRetreat(safeDeltaTime, vehicleTraffic, out bool retreatMoving))
+            // A local activity at a reserved spot owns the standing position and
+            // facing. Other walkers still see this capsule and make room for it.
+            else if (!holdResidentDestination && AdvancePassingRetreat(safeDeltaTime, vehicleTraffic, out bool retreatMoving))
             {
                 moving = retreatMoving;
                 IsYielding = true;
                 blockedTime = 0f;
             }
-            else if ((HasPassingRequest || returningToLaneCentre) && TryAdvancePassingLane(safeDeltaTime, shouldYield, vehicleTraffic, out bool passingMoving))
+            else if (!holdResidentDestination && (HasPassingRequest || returningToLaneCentre) &&
+                     TryAdvancePassingLane(safeDeltaTime, shouldYield, vehicleTraffic, out bool passingMoving))
             {
                 moving = passingMoving;
                 IsYielding = (shouldYield || holdPassingProgress) && !moving;

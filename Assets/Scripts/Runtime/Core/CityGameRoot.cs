@@ -346,6 +346,7 @@ namespace BarPromenade
             if (!AreaTravelService.TryScheduleComposition(this, steps) &&
                 !SceneTransitionService.TryScheduleComposition(this, steps))
             {
+                GameTimeRuntime.ExcludeSynchronousLoadFromCalendar();
                 RuntimeComposition.RunSynchronously(steps);
             }
         }
@@ -626,6 +627,14 @@ namespace BarPromenade
             LineWaitPlans = waits;
             ResidentJourneys = new CityResidentJourneyDirector(Pedestrians.Residents, BusPlans, waits);
             Pedestrians.ConfigureResidentJourneys(ResidentJourneys);
+            var kioskCourt = World.Root.GetComponentInChildren<RidgeKioskCourtWorld>();
+            if (kioskCourt != null && Pedestrians.Residents.KioskWindowNode >= 0)
+            {
+                var kioskLife = kioskCourt.gameObject.AddComponent<RidgeKioskCourtLife>();
+                kioskLife.Initialize(kioskCourt, kioskCourt.GetComponentInParent<RidgeKioskStation>(),
+                    Pedestrians.Residents, ResidentJourneys, Player, camera);
+                Pedestrians.ConfigureKioskCourt(kioskLife);
+            }
             GameLogPhases.Report("city", "pedestrian_pool", stepTimer);
             stepTimer.Restart();
             var lowLampAnchors = new List<Transform>(World.RiverQuayLampAnchors);
@@ -1045,6 +1054,8 @@ namespace BarPromenade
             BusRides = rides;
             VehiclePassengers = passengers;
             foreach (var controller in passengers) controller.ShareWaitingPlaces(passengers);
+            while (Pedestrians.WarmKioskPopulation())
+                yield return new CompositionStep("resident_population", 0.76f);
             foreach (var controller in passengers) controller.WarmResidentWaiters();
             while (Pedestrians.WarmResidentPopulation())
                 yield return new CompositionStep("resident_population", 0.76f);

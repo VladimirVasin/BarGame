@@ -6,6 +6,7 @@ namespace BarPromenade
     public sealed class GameTimeRuntime : MonoBehaviour
     {
         private static GameTimeRuntime instance;
+        private static int ignoreLoadDeltaThroughFrame = -1;
 
         public GameDayAnnouncementView DayAnnouncement { get; private set; }
 
@@ -14,6 +15,13 @@ namespace BarPromenade
         private static void ResetStatics()
         {
             instance = null;
+            ignoreLoadDeltaThroughFrame = -1;
+        }
+
+        internal static void ExcludeSynchronousLoadFromCalendar()
+        {
+            // The following frame's unscaled delta includes the wall time spent loading.
+            ignoreLoadDeltaThroughFrame = Time.frameCount + 1;
         }
 
         private void Awake()
@@ -37,6 +45,7 @@ namespace BarPromenade
 
         private void Update()
         {
+            if (Time.frameCount <= ignoreLoadDeltaThroughFrame) return;
             GameSessionState.AdvanceGameTime(
                 GameTimeScaleRuntime.CalendarDeltaTime);
         }

@@ -182,10 +182,16 @@ namespace BarPromenade
             }
             if (deltaTime <= 0f) return true;
             bool hold = holdPassingProgress || shouldYield || MotionState == CityPedestrianMotionState.WaitingAtDestination;
-            if (!hold && leg.Length - leg.Progress <= .025f)
+            Vector3 current = Position;
+            Vector2 currentXZ = new Vector2(current.x, current.z);
+            bool kioskStop = targetNodeIndex == ResidentDestinationNode &&
+                plan.Nodes[targetNodeIndex].Id.StartsWith(RidgeKioskCourtPlan.NodePrefix, System.StringComparison.Ordinal);
+            Vector3 stop = plan.Nodes[targetNodeIndex].Position;
+            if (!hold && leg.Length - leg.Progress <= .025f && (!kioskStop ||
+                (currentXZ - new Vector2(stop.x, stop.z)).sqrMagnitude <= .04f * .04f))
             {
                 // Actors on parallel lanes pass the end of the segment beside its node.
-                // Requiring both capsules to touch that same centre would merge the lanes.
+                // An occupied kiosk pocket or tabletop spot must end at its reserved centre.
                 ReachTargetNode();
                 return true;
             }
@@ -194,9 +200,8 @@ namespace BarPromenade
             float next = Mathf.Min(leg.Length, leg.Progress + (hold ? 0f : stride * requestedSpeedScale));
             Vector3 centre = leg.Sample(next, out Vector3 direction);
             Vector3 right = Vector3.Cross(Vector3.up, direction);
-            Vector3 desired = centre + right * requestedPassingLane;
-            Vector3 current = Position;
-            Vector2 currentXZ = new Vector2(current.x, current.z);
+            float lane = kioskStop && !hold ? requestedPassingLane * Mathf.Clamp01((leg.Length - next) / .70f) : requestedPassingLane;
+            Vector3 desired = centre + right * lane;
             Vector2 moved = Vector2.MoveTowards(currentXZ, new Vector2(desired.x, desired.z), stride);
             desired = new Vector3(moved.x, centre.y, moved.y);
             bool alongEdge = requestedPassingEdge || returningToLaneCentre && !walkableArea.Contains(current, agentRadius);

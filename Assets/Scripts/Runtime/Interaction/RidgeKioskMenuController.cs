@@ -55,7 +55,8 @@ namespace BarPromenade
         private bool Open(RidgeKioskStation owner, PlayerInteractor interactor, bool playSound)
         {
             if (IsOpen || !isActiveAndEnabled || owner != station || !interactor || !interactor.InputEnabled ||
-                interactor.InteractKeyClaimed || CounterMenuInput.IsBlockedByOtherUi() || !station.CanReach(interactor)) return false;
+                interactor.InteractKeyClaimed || CounterMenuInput.IsBlockedByOtherUi() || !station.CanReach(interactor) ||
+                !station.WindowAvailable) return false;
             if (!camera) camera = Camera.main;
             if (!follow && camera) follow = camera.GetComponent<PlayerCameraFollow>();
             if (!hud) hud = FindAnyObjectByType<IntoxicationHudView>();

@@ -15,6 +15,13 @@ namespace BarPromenade
         public Vector3 InteractionPosition => focus.position;
         private Transform focus;
         private RidgeKioskTarget reach;
+        private PlayerInteractor hero, pendingHero;
+        private Transform heroHead, npcBuyer;
+        internal bool HeroHasWindow => pendingHero || Menu.IsOpen || Vendor.Session != null && Vendor.Session.IsActive;
+        internal Transform Customer => npcBuyer && (npcBuyer.position - focus.position).sqrMagnitude < 2.6f
+            ? npcBuyer : HeroHasWindow ? heroHead : null;
+        internal bool WindowAvailable => Vendor.AtCounter && !npcBuyer;
+        internal bool HasCustomerNearby => HeroHasWindow || npcBuyer || hero && reach.CanReach(hero);
 
         internal void Initialize(RidgeKioskVendor vendor, IReadOnlyList<RidgeKioskPurchase> offers, Transform window, Transform approach)
         {
@@ -35,7 +42,45 @@ namespace BarPromenade
         public bool CanInteract(PlayerInteractor player) => isActiveAndEnabled && Menu && !Menu.IsOpen &&
             player && player.InputEnabled && !player.InteractKeyClaimed && !CounterMenuInput.IsBlockedByOtherUi() &&
             reach && reach.IsAvailable(player);
-        public void Interact(PlayerInteractor player) { if (CanInteract(player)) Menu.Open(this, player); }
-        private void OnDisable() { if (Menu) Menu.Close(); }
+        public void Interact(PlayerInteractor player)
+        {
+            if (!CanInteract(player)) return;
+            if (WindowAvailable) Menu.Open(this, player);
+            else pendingHero = player;
+        }
+
+        internal void BindHero(PlayerInteractor player, Transform head)
+        {
+            hero = player;
+            heroHead = head;
+        }
+
+        internal bool TryClaimNpc(Transform buyer)
+        {
+            if (!buyer || npcBuyer || HeroHasWindow) return false;
+            npcBuyer = buyer;
+            return true;
+        }
+
+        internal bool OwnsNpcWindow(Transform buyer) => buyer && npcBuyer == buyer;
+        internal void ReleaseNpc(Transform buyer) { if (npcBuyer == buyer) npcBuyer = null; }
+
+        internal void ServePendingHero()
+        {
+            if (!pendingHero) return;
+            if (!CanReach(pendingHero) || !pendingHero.InputEnabled || CounterMenuInput.IsBlockedByOtherUi())
+            { pendingHero = null; return; }
+            if (!WindowAvailable) return;
+            PlayerInteractor player = pendingHero;
+            pendingHero = null;
+            Menu.Open(this, player);
+        }
+
+        private void OnDisable()
+        {
+            pendingHero = null;
+            npcBuyer = null;
+            if (Menu) Menu.Close();
+        }
     }
 }

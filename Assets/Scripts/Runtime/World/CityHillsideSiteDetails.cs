@@ -54,6 +54,9 @@ namespace BarPromenade
             "RidgePlinthRepair", "RidgeGardenVerge", "RidgeYardTree", "RidgeYardShelter" };
         internal static IReadOnlyList<Site> ForLayout(CityLayout layout) => Plans.GetValue(layout, Plan);
 
+        internal static bool IsClearedForCourt(Site site, RidgeKioskCourtPlan court) =>
+            site.Part == Kind.GardenVerge && court != null && court.Overlaps(site.Bounds);
+
         private static List<Site> Plan(CityLayout layout)
         {
             var sites = new List<Site>();
@@ -296,9 +299,13 @@ namespace BarPromenade
             var templates = new GameObject[Names.Length];
             var root = new GameObject("Residential terrace edges").transform;
             root.SetParent(parent, false);
+            var court = RidgeKioskSitePlan.TryCreate(layout, out var kiosk) ? kiosk.Court : null;
             foreach (var site in sites)
             {
                 if (retained.HasValue && !retained.Value.Overlaps(site.Bounds)) continue;
+                // The small verge planting gives way where its edge would
+                // cut across the measured route from pavement to the court.
+                if (IsClearedForCourt(site, court)) continue;
                 int i = (int)site.Part;
                 var frame = new GameObject(Names[i]).transform;
                 frame.SetParent(root, false);

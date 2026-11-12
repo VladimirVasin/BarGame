@@ -55,11 +55,36 @@ namespace BarPromenade
                 NextUnit());
         }
 
+        internal static BarPatronDrinkTimeline InProgress(int seed, float phase)
+        {
+            var timeline = new BarPatronDrinkTimeline(seed);
+            float elapsed = Mathf.Clamp01(phase) *
+                (timeline.PhaseDuration + RaiseSeconds + MaximumSipSeconds + LowerSeconds);
+            while (elapsed >= timeline.PhaseDuration)
+            {
+                float duration = timeline.PhaseDuration;
+                elapsed -= duration;
+                timeline.Advance(duration);
+            }
+            timeline.Advance(elapsed);
+            timeline.ConsumeGulpCue();
+            return timeline;
+        }
+
         public BarPatronDrinkPhase Phase { get; private set; } =
             BarPatronDrinkPhase.Rest;
         public float PhaseElapsed => phaseElapsed;
         public float PhaseDuration => phaseDuration;
         public int CompletedDrinks { get; private set; }
+        internal bool HoldAtEndOfRest { get; set; }
+        internal bool RestFinished => Phase == BarPatronDrinkPhase.Rest && phaseElapsed >= phaseDuration;
+
+        internal void ExtendCurrentRest(float seconds)
+        {
+            if (Phase != BarPatronDrinkPhase.Rest)
+                throw new InvalidOperationException("Only the rest before a sip can be extended.");
+            phaseDuration += seconds;
+        }
 
         /// <summary>
         /// A small, non-referential head drift during the wait between sips.
@@ -223,6 +248,11 @@ namespace BarPromenade
             switch (Phase)
             {
                 case BarPatronDrinkPhase.Rest:
+                    if (HoldAtEndOfRest)
+                    {
+                        phaseElapsed = phaseDuration;
+                        break;
+                    }
                     SetPhase(
                         BarPatronDrinkPhase.Raise,
                         RaiseSeconds);
@@ -380,6 +410,7 @@ namespace BarPromenade
         private float sipHeadLeanBackDegrees =
             SipHeadLeanBackDegrees + HeadTiltDegrees;
         private Vector3 bottleRestPoint;
+        private Vector3 heldRestInOwner;
         private Vector3 tableSupportPoint;
         private Quaternion rightClavicleBaseLocalRotation;
         private Quaternion rightUpperBaseLocalRotation;
@@ -399,6 +430,7 @@ namespace BarPromenade
         private float restHeadMotionDegrees;
         private bool tableLean;
         private bool seatedTable;
+        private bool keepDrinkInHand;
         private Renderer surfaceRenderer;
         private Bounds surfaceBounds;
         private bool actionWasActive;
@@ -415,6 +447,9 @@ namespace BarPromenade
         public bool CanConverse => isInitialized && isActiveAndEnabled && timeline != null &&
             timeline.Phase == BarPatronDrinkPhase.Rest &&
             (CounterRefill == null || !CounterRefill.IsWaitingForRefill && !CounterRefill.IsRefilling);
+        internal bool HoldNewSips { get; set; }
+        internal bool SampleContacts { get; set; } = true;
+        internal Action SipCompleted { get; set; }
 
         public void SetConversationPartner(Transform partner)
         {
@@ -618,7 +653,8 @@ namespace BarPromenade
             Vector3 supportPoint,
             Renderer restingSurface = null,
             bool isSeatedTable = false,
-            BarPatronDrinkProp drinkProp = null)
+            BarPatronDrinkProp drinkProp = null,
+            bool keepDrinkInHand = false)
         {
             InitializeCommon(
                 drinkTimeline,
@@ -654,6 +690,8 @@ namespace BarPromenade
             surfaceRenderer = restingSurface;
             surfaceBounds = restingSurface != null ? restingSurface.bounds : default;
             seatedTable = isSeatedTable;
+            this.keepDrinkInHand = keepDrinkInHand;
+            heldRestInOwner = ownerRoot.InverseTransformPoint(restingBottlePoint);
             CompleteInitialization(true);
         }
 
@@ -664,22 +702,27 @@ namespace BarPromenade
                 return;
             }
 
-            // A whole A→B exchange holds the existing rest pose, never an
-            // interrupted sip or service request. No second animation graph.
-            if ((conversationPartner != null || karaokeFocusOwner != null && karaokeFocus != null ||
-                karaokePoseWeight > .0001f) && CanConverse) return;
+            // The kiosk's timed last rest can count down during speech.
+            // Its hold still prevents the sip until the exchange ends.
+            if (CanConverse && (HoldNewSips || conversationPartner != null && !timeline.HoldAtEndOfRest ||
+                karaokeFocusOwner != null && karaokeFocus != null || karaokePoseWeight > .0001f)) return;
 
             if (CounterRefill != null)
             {
                 if (CounterRefill.isActiveAndEnabled) CounterRefill.Advance(deltaTime);
             }
-            else timeline.Advance(deltaTime);
+            else
+            {
+                BarPatronDrinkPhase before = timeline.Phase;
+                timeline.Advance(deltaTime);
+                if (before == BarPatronDrinkPhase.Sip && timeline.Phase == BarPatronDrinkPhase.Lower) SipCompleted?.Invoke();
+            }
             gulpCuePending |= timeline.ConsumeGulpCue();
         }
 
         private void LateUpdate()
         {
-            if (!isInitialized || !isActiveAndEnabled)
+            if (!isInitialized || !isActiveAndEnabled || !SampleContacts)
             {
                 return;
             }
@@ -848,13 +891,13 @@ namespace BarPromenade
             // these world-space rotations accumulate once per frame and the
             // supporting hand eventually spirals away from the tabletop.
             ResetUpperBodyToBase();
-            ApplySurfaceLean(
-                TableSpineLeanDegrees * (1f - karaokePoseWeight),
-                TableChestLeanDegrees * (1f - karaokePoseWeight));
+            if (!keepDrinkInHand)
+                ApplySurfaceLean(TableSpineLeanDegrees * (1f - karaokePoseWeight),
+                    TableChestLeanDegrees * (1f - karaokePoseWeight));
             ApplyRestHeadMotion();
 
             ApplyBottleSipLean();
-            SolveLeftArmTowardsSupport();
+            if (!keepDrinkInHand) SolveLeftArmTowardsSupport();
             SolveRightHandBottleGrip();
         }
 
@@ -1024,7 +1067,8 @@ namespace BarPromenade
         {
             float tipWeight = timeline.VesselTipWeight;
             bottleRotation = ResolvePropRotation(tipWeight);
-            Vector3 restingRoot = bottleRestPoint -
+            Vector3 rest = keepDrinkInHand ? ownerRoot.TransformPoint(heldRestInOwner) : bottleRestPoint;
+            Vector3 restingRoot = rest -
                 ResolvePropRotation(0f) * baseLocalPosition;
             Vector3 lipSolvedRoot = mouthSocket.position -
                 bottleRotation * rimLocalPosition;
@@ -1091,6 +1135,13 @@ namespace BarPromenade
             ResolveBottlePose(
                 out Vector3 bottlePosition,
                 out Quaternion bottleRotation);
+            if (keepDrinkInHand)
+            {
+                // Place the prop at the solved hand, including the last few
+                // millimetres lost to an individual rig's reach limit.
+                Vector3 grip = rightHand.position + rightHand.rotation * rightAnatomicalHand.CylinderCentreInHand;
+                bottlePosition = grip - bottleRotation * gripLocalPosition;
+            }
             bottleRoot.SetPositionAndRotation(
                 bottlePosition,
                 bottleRotation);

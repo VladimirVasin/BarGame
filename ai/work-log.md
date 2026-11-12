@@ -3,18 +3,29 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-13
+
+Ridge court pairs stand off the aisles and arrivals wait separately.
+The refill pause is part of the final rest. Guests save the last sip until
+their turn and walk after the throw. The aisle stays reserved through the return.
+`LiveCity_RidgeKioskRearCourtTradesAndEmptiesByEleven` passed last sip timing,
+repeat trips, route clearance, walk-in and closing. Court frames reviewed.
+
 ## 2026-11-12
 
-City and Home rain traces end on visible roofs, ground, props and water.
-Clipped rings follow the puddle film. Bus glass uses pane space and wipers.
-Eave drips and grass response share the contact field. `CityRainContacts`
-passed roof, film, pane attachment, pause and Home cleanup. City and Home
-frames reviewed. The hero obscured the night puddle shot, so its framing and
-camera submission were corrected. `build-city-grass-shader --check` passed.
-F9 weather presets drive the live rain/snow, wind and lightning readers.
-Auto returns to the current slot. Travel keeps the selection and New Game
-clears it. `DebugWindow_SelectsLiveWeatherAndReturnsToSchedule` checked the
-modal guard, drizzle floor, forced lightning and restoration.
+Ridge rear slab, umbrellas, booth and smoke break use shared street systems.
+`build-ridge-kiosk-3d-model` passed. Direct City loading excludes build time.
+Prewarm fits the hero hand to inactive rigs. Drinks follow the wrist from
+pickup to release; the throw uses the hero's upright contact.
+`LiveCity_RidgeKioskRearCourtTradesAndEmptiesByEleven` passed grip, bar speech,
+release and repurchase. Carry, windup and pre-release frames reviewed.
+
+City/Home rain contacts use visible roofs, props, grass and water; clipped
+rings follow puddle film and wipers work in pane space. `CityRainContacts`
+passed contact/pause/cleanup; frames reviewed after night reframing.
+`build-city-grass-shader --check` passed. F9 presets drive rain/snow/wind/
+lightning; Auto resumes the schedule, travel retains, New Game clears.
+`DebugWindow_SelectsLiveWeatherAndReturnsToSchedule` passed.
 
 City has ordinary women on permanent IDs through the shared appearance pool.
 Their cannery-derived rig has distinct faces, long hairstyles and fitted clothes.
@@ -24,10 +35,9 @@ passed pool restoration and both door transfers with seated contact.
 Loose hair now shares one surface and strand UVs from crown to ends.
 Blender checked connected edges. `OrdinaryWomenLooseHair` passed and the profile
 and rear views were reviewed.
-The women's street cycle shifts weight at the hips. A softer elbow fold and
-outward arm aim clear the trousers in both walk and idle. Blender checked
-the shaped meshes. `OrdinaryWomenWalk` passed the gait and start blend for
-both street layers. Frames reviewed.
+Women's walk shifts hip weight; softer elbow/outward arm clear trousers in
+walk/idle. Blender checked shapes. `OrdinaryWomenWalk` passed both layers
+and starts. Frames reviewed.
 
 City workers stay at a fixed evening destination before heading home.
 `CityAmbientStreet` checked worker continuity, platform clearance and street flow.
@@ -40,11 +50,9 @@ Plinths meet the slope, rails follow the approaches. The glass return path
 leads to asphalt at the window and staff exit. The crate yard stays grass-free.
 `CityAmbientStreet` passed the contact and movement checks. Frames reviewed.
 
-Both street layers stalled near the stationary hero on the summit. Walkers
-probe real shoulders and clear kerbs, turn into the sidestep and use stair
-joins. Local admission counts both layers.
-`LiveCity_WalkersClearSummitArrivalAndSharedStairExit` passed the startup,
-stationary hero, traffic forecast, kerb bypass and stair exits. Frame reviewed.
+Both street layers sweep real shoulders, turn into sidesteps and share local
+admission. `LiveCity_WalkersClearSummitArrivalAndSharedStairExit` passed startup,
+stationary hero, traffic forecast, kerbs and stair exits. Frame reviewed.
 
 Ridge ambient walkers sweep sidesteps and back across joins while followers
 wait. `LiveCity_AmbientWalkersClearBlockedRidgeShoulders` cleared the Court

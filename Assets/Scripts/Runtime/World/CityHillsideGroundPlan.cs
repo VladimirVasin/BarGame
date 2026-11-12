@@ -25,7 +25,7 @@ namespace BarPromenade
 
         private CityHillsideGroundPlan(CityLayout layout)
         {
-            banks = CityHillsideGroundGrid.ForLayout(layout);
+            banks = CityHillsideGroundGrid.ForSurface(layout);
             quarter = CityHillsideQuarterGroundGrid.ForLayout(layout);
             var polygons = new List<Vector2[]>();
             foreach (var bank in banks) AppendBank(bank, polygons);

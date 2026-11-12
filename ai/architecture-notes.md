@@ -2,6 +2,20 @@
 
 ## Current facts
 
+- **Accepted 2026-11-12 and 2026-11-13, user — Ridge kiosk court:** rear slab, 3 umbrellas/phone.
+  City/Home share grade. Two side places per table; off-aisle waits for arrivals.
+  One buyer owns the round trip. Departures use the same turn.
+  The final rest adds 45–75s. Guests keep the last sip until their refill turn.
+  Last orders22, clear23. City load freezes time; settled guests start mid-drink.
+  Arrivals walk, buy, carry. Hero grip and upright throw (≤6 empties).
+  Shared sips and bar counter pairs in shared bubbles.
+  Seller idles/focuses, uses hinged door and shared smoke until a buyer arrives.
+  Story §6/17/21 and art §4/7/16. Shared City lighting/GI, SSAO, fog/air, shadows,
+  grade, probes/road SSR. Court lit by pooled spots; sidewalk wetness, bevels,
+  atlas wear, wind and rain contacts. Water/COLOR/rim/outlines unchanged;
+  bloom/DOF/AA/vignette/grain/dither/flares/blur/lens retain scene ownership.
+  No added SSGI/SCGI/pass. Costs unmeasured.
+
 - **Accepted 2026-11-12, user — ordinary women.** City 48/192 by fixed street IDs.
   Cannery rest rig/body, distinct faces/clothes and long loose hair, ponytail, braid.
   Loose hair uses one skinned surface with continuous strand UVs from crown to ends.
@@ -72,11 +86,10 @@
   Pool12/lens/halo/spill;lease/pause/disable cleanup. Story6/19/20 exception:
   text/clues/hero reaction/strobe0;24FX/art9/story16/21.
 
-- **Accepted 2026-11-06,user — Ridge ground/furniture:** earth triangles/
-  collision/walk/map;ravine/steep/solids closed;stairs meet grade.
-  Curbs→local soil;limited foundation cut/fill.
-  Shared seats/utilities;benches40–60/bins40–65/booths70–90m→sites/views.
-  Home bench→city. Bounded plans/materials/Update0;level0.
+- **Accepted 2026-11-06,user — Ridge ground/furniture:** shared terrain/collision/nav/map;
+  ravine/steep/solid closed, stairs/curbs meet grade, bounded foundation cut/fill.
+  Shared seats/utilities/Home bench;benches40–60/bins40–65/booths70–90m→sites/views.
+  Cached plans/materials, Update0, level0.
 
 - **Accepted 2026-11-06,user — Ridge/kiosk light:** poles→stairs/decks165°/95°/22m.
   Home/court/booths share12/day floor/shadows;booths6.5m/130° down/out. Kiosk
@@ -84,10 +97,9 @@
   ≤128 receivers restore disable/destroy;leases reset masks. 24FX;new GI/pass/
   grade/fog0;GPU unmeasured.
 
-- **Accepted 2026-11-05/2026-11-07,user — City kiosks.** Ridge/lower Residential/Industrial;
-  IDs/map;only Ridge speaks;ActV permanent bar closure ends alcohol.
-  User2026-11-08 E→compact shop/kiosk browser,4 foci/Vendor0;atomic buy.
-  Ads/signs:art§13;front neon24/7.
+- **Accepted 2026-11-05/2026-11-07,user — City kiosks:** Ridge/Residential/Industrial;
+  map IDs, only Ridge seller speaks. Act V bar closure ends alcohol.
+  User2026-11-08 E→shop browser,4 foci/Vendor0/atomic buy. Signs art§13/neon24/7.
 
 - **Accepted 2026-11-04,user — pedestrian vehicle passage:** silent City walkers
   yield3bus lines/Ferryman/cannery truck;body/following gaps.
@@ -517,34 +529,20 @@
   earlier states/audio stay. Bounded readout/pause/reset; no clue/new text/lore.
 
 - **Accepted 2026-10-29 — City resident life:**
-  User:more simultaneous street people by hour, prototype daily life.
-  `CityResidentLifeRules` owns192 permanent resident schedules; runtime assigns
-  stable home and work entrances, shops and outings on the pavement graph.
-  The 2026-11-12 worker cycle goes from work to a fixed evening visit and
-  waits for the scheduled return home. Resident target caps:
-  00–06:5/06–10:28/10–17:22/17–22:36/22–24:10, smooth30min ramps;
-  eligible routes/clearance may leave fewer. ≤36 actors/cache48 lazy default
-  bodies; one construction step/body warms the loading overlay. Same identity
-  follows bus/rest; background routes read absolute calendar time. First13
-  `city.pedestrian.NN` and all existing cast keep allocation order; extra IDs
-  append after them. `CreateForCharacter`/street wardrobe/no apron; donor
-  sit/guard/shove, shared rig/footsteps; six placed residents stay off streets.
-  Home retains5/2 over first8. Spatial peer index/bounded animation sampling;
-  collision/time/input stay live. Shared effects/PP retained; cost unmeasured.
-  `CityAmbientPedestrians` ≤12/cache18, ≤48 combined, 60/40 target.
-  Looks allocate after permanent signatures. Warm≤3. In 12m arrivals share
-  four slots, two ambient. Hidden excess retires. Ambient passing sweeps the
-  step to the lane. Followers leave room to back through joins. Walkers turn
-  into the step. Clear kerb allowance 0.32m. Hero/resident priority.
-  Spurs serve homes, circuits use the frontage.
-  The hero's gate stays public. Pause/dormancy bound presentation.
-  Effects audit: GI/SSAO/fog/volumetrics/shadows/grading keep existing City
-  coverage; moving rig bounds/contact shadows retained, no new light or GI pass.
-  Reflections/SSR/water/wetness/bevels/vertex colour/wind/decals/particles/rim/
-  outlines reuse existing assets/providers; this task adds no receiver or effect.
-  Bloom/DOF/AA/vignette/grain/flares/blur/lens settings retain shared ownership;
-  reviewed scene frames preserve faces, silhouettes, approach space and palette.
-  Ordinary distributed life only; story§16/17/21/art§15/16, no new§6 exception.
+  `CityResidentLifeRules`:192 permanent schedules, stable home/work entrances,
+  shops/outings on the graph. 2026-11-12 workers make fixed visits until the home slot.
+  Caps00–06:5/06–10:28/10–17:22/17–22:36/22–24:10,30min ramps, clearance can reduce.
+  ≤36 actors/cache48, one warm step/body; identity follows bus/rest and offscreen
+  absolute time. First13 `city.pedestrian.NN` and existing cast keep allocation order.
+  `CreateForCharacter`/street wardrobe/no apron; donor sit/guard/shove, shared rig/steps;
+  six placed residents stay off streets. Home5/2 of first8. Spatial peers and bounded
+  animation retain collision/time/input through distance/pause/dormancy.
+  Ambient≤12/cache18/combined≤48/target60:40. Looks follow resident signatures.
+  Warm≤3. At12m, four arrival slots including two ambient. Hidden excess retires.
+  Passing sweeps toward lane, followers allow backing through joins; turn into step,
+  kerb .32m, hero/resident priority. Home spurs, frontage circuits, public hero gate.
+  All24FX retain owners and rig/contact shadows; frames reviewed. Cost unmeasured.
+  Ordinary life, story§16/17/21/art§15/16.
 
 - **Accepted 2026-10-29 — residential court functions:**
   User:shared court/spine/open center/wall edges;

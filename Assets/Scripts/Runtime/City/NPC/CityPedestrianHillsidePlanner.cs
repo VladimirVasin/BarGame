@@ -72,6 +72,8 @@ namespace BarPromenade
                 string prefix = house.OnSummitStreet ? "hill:quarter:summit:" : "hill:quarter:court:";
                 AddHouse(house, prefix, prefix + (house.ThresholdWorld.z > house.StreetContactWorld.z ? "north" : "south"));
             }
+            if (RidgeKioskSitePlan.TryCreate(layout, out var kiosk) && kiosk.Court != null)
+                AddKioskCourt(kiosk.Court);
             foreach (var transfer in access.Transfers)
             {
                 string id = "hill:" + transfer.Id;
@@ -182,6 +184,78 @@ namespace BarPromenade
                     // its grade may differ from the house's lane survey.
                     if (streets.SupportPlan.TrySampleTop(p, out float y, out _)) return y;
                     return house.TrySampleApproach(p, out y) ? y : StreetHeight(p);
+                }
+            }
+
+            void AddKioskCourt(RidgeKioskCourtPlan court)
+            {
+                const string prefix = RidgeKioskCourtPlan.NodePrefix;
+                Vector3 street = court.Point(court.SideAisle, CityKioskSitePlan.ApronFront + 1f);
+                var summit = CityHillsideQuarterPlan.ForLayout(layout).Links[1];
+                string pavement = street.x >= summit.Bounds.xMin + .10f ? "hill:quarter:summit:south" : "hill:West:pavement:";
+                int gate = Gate(prefix + "gate", pavement, street);
+                foreach (Rect floor in court.WalkableFloors) graph.AddNavigationPolygon(CityRoadPolygon.Rectangle(floor));
+                int entry = Join(gate, "entry", court.Entry);
+                int windowTurn = Join(entry, "window-turn", court.Point(court.EntrySide * 1.94f, 2.48f));
+                int window = Join(windowTurn, "window", court.Window, CityPedestrianLinkKind.Courtyard);
+                graph.RetainEntranceTerminal(window);
+                float frontZ = RidgeKioskCourtPlan.FrontAisle;
+                int side = Join(entry, "side-aisle", court.Point(court.SideAisle, frontZ));
+
+                // The waiting pockets are dead ends outside the through aisle.
+                // Each entrance spur runs normal to the aisle, clear of the next pocket.
+                var frontXs = new SortedSet<float> { court.Entry.x, court.Table(0).x, court.Origin.x, court.Table(1).x };
+                for (int slot = 0; slot < RidgeKioskCourtPlan.Capacity; slot++) frontXs.Add(court.Wait(slot).x);
+                var front = new Dictionary<float, int> { { court.Entry.x, side } };
+                int index = 0, last = side;
+                foreach (float x in frontXs)
+                    if (x > court.Entry.x) last = AddFront(last, x);
+                last = side;
+                foreach (float x in frontXs.Reverse())
+                    if (x < court.Entry.x) last = AddFront(last, x);
+                for (int slot = 0; slot < RidgeKioskCourtPlan.Capacity; slot++)
+                {
+                    Vector3 wait = court.Wait(slot);
+                    int stop = JoinPoint(RidgeKioskCourtPlan.WaitingId(slot), front[wait.x],
+                        GroundedPoint(XZ(wait), Height), Height, CityPedestrianLinkKind.Courtyard);
+                    graph.RetainEntranceTerminal(stop);
+                }
+
+                int leftBend = Join(front[court.Table(0).x], "left-bend", court.Point(-3.35f, -3.84f));
+                int leftOuter = Join(leftBend, "left-edge", court.Point(-4.22f, -3.84f));
+                leftOuter = Join(leftOuter, "left-outer", court.Point(-4.22f, -4.94f));
+                int rightBend = Join(front[court.Table(1).x], "right-bend", court.Point(4.20f, -3.20f));
+                int rightOuter = Join(rightBend, "right-outer", court.Point(4.20f, -4.94f));
+                int centre = Join(front[court.Origin.x], "centre-aisle", court.Point(0f, -4.94f));
+                int back = Join(centre, "back-aisle", court.Point(0f, RidgeKioskCourtPlan.BackAisle));
+                int backLeft = Join(back, "rear-left", court.Point(-2.0f, RidgeKioskCourtPlan.BackAisle));
+                int backRight = Join(back, "rear-right", court.Point(2.0f, RidgeKioskCourtPlan.BackAisle));
+                backLeft = Join(backLeft, "rear-left-edge", court.Point(-2.0f, -8.43f));
+                backRight = Join(backRight, "rear-right-edge", court.Point(2.0f, -8.43f));
+                var accesses = new[] { leftOuter, centre, centre, rightOuter, backLeft, backRight };
+                for (int slot = 0; slot < accesses.Length; slot++)
+                {
+                    int place = Join(accesses[slot], "place-" + slot, court.Place(slot), CityPedestrianLinkKind.Courtyard);
+                    graph.RetainEntranceTerminal(place);
+                }
+
+                int AddFront(int from, float x)
+                {
+                    int node = Join(from, "front-" + index++, new Vector3(x, court.Origin.y, court.Origin.z + frontZ));
+                    front.Add(x, node);
+                    return node;
+                }
+
+                // Reserved visitors use these spurs. Ordinary roaming never
+                // enters them, and the public graph keeps the through sidewalk.
+                int Join(int from, string name, Vector3 point, CityPedestrianLinkKind kind = CityPedestrianLinkKind.HomeEntrance) =>
+                    JoinPoint(prefix + name, from, GroundedPoint(XZ(point), Height), Height, kind);
+
+                float Height(Vector2 p)
+                {
+                    if (CityRoadPolygon.Contains(kiosk.ApronPolygons[0], p)) return kiosk.Origin.y;
+                    if (court.TrySurface(p, out float top)) return top;
+                    return StreetHeight(p);
                 }
             }
         }

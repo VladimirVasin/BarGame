@@ -611,7 +611,7 @@ namespace BarPromenade
             return definition.LoopFrameCount - 1;
         }
 
-        private static float ResolveClipProgress(
+        internal static float ResolveClipProgress(
             PlayerAnimatedInteractionDefinition definition,
             double elapsedSeconds)
         {

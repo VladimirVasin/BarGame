@@ -312,7 +312,7 @@ namespace BarPromenade
                     actor.TargetNodeIndex < 0 ||
                     actor.TargetNodeIndex >=
                     point.NodeDistances.Count ||
-                    IsBusy(actor))
+                    IsBusy(actor) || director.HasKioskVisit(index))
                 {
                     continue;
                 }

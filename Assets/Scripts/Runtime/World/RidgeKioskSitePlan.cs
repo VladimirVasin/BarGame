@@ -12,6 +12,7 @@ namespace BarPromenade
         private static readonly RidgeKioskSitePlan Missing = new(Vector3.zero);
         private RidgeKioskSitePlan(Vector3 origin) : base("ridge-kiosk", CityDistrictKind.Residential,
             origin, Quaternion.identity, DefaultNpcPopulation.RidgeKioskSeller, true) { }
+        public RidgeKioskCourtPlan Court { get; private set; }
 
         public static bool TryCreate(CityLayout layout, out RidgeKioskSitePlan site)
         {
@@ -32,7 +33,9 @@ namespace BarPromenade
                 reserved.Add(building.ApproachBounds);
                 reserved.Add(building.CourtBounds);
             }
-            foreach (var detail in CityHillsideSiteDetails.ForLayout(layout)) reserved.Add(detail.Bounds);
+            var gardenVerge = new List<Rect>();
+            foreach (var detail in CityHillsideSiteDetails.ForLayout(layout))
+                (detail.Part == CityHillsideSiteDetails.Kind.GardenVerge ? gardenVerge : reserved).Add(detail.Bounds);
             foreach (var stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)
                 reserved.AddRange(stair.WalkableBounds);
 
@@ -48,18 +51,31 @@ namespace BarPromenade
             // west-bank route. The shelter, its queue and both doors are already
             // reserved. The first gap can lie past that joint beside the stop.
             float end = Mathf.Max(west.LaneMinX + 2f, home.ThresholdWorld.x - 60f);
+            RidgeKioskSitePlan bareSite = Missing;
             for (float x = home.FoundationBounds.xMin - 2.0f; x >= end; x -= .25f)
             {
-                float floor = x >= ridge.Bounds.xMin ? ridge.PavementTopAt(x)
-                    : west.SampleLaneTop(CityHillsideStreetRoute.LaneCount - 1, x) + CityHillsideBuilding.PavementRise;
+                float floor = StreetHeight(x);
                 var site = new RidgeKioskSitePlan(new Vector3(x, floor, ridge.Bounds.yMin - ApronFront));
                 // Include the eaves, visitor and outer ends of the apron, with a
                 // full capsule of clearance beside each pre-existing obstacle.
                 Rect extent = Rect.MinMaxRect(x - 1.60f - .35f, site.Origin.z - 1.34f - .35f,
                     x + 1.57f + .35f, site.Apron.yMax);
-                if (!reserved.Exists(area => extent.Overlaps(area))) return site;
+                if (reserved.Exists(area => extent.Overlaps(area)) || gardenVerge.Exists(area => extent.Overlaps(area))) continue;
+                if (bareSite == Missing) bareSite = site;
+                // One side may back onto a shelter reservation. Keep its
+                // existing through walk and approach the rear court on the free side.
+                for (int attempt = 0; attempt < 3; attempt++)
+                {
+                    var court = new RidgeKioskCourtPlan(site.Origin, StreetHeight, attempt == 2 ? -1 : 1, attempt == 0);
+                    if (reserved.Exists(court.Overlaps)) continue;
+                    site.Court = court;
+                    return site;
+                }
             }
-            return Missing;
+            return bareSite;
+
+            float StreetHeight(float x) => x >= ridge.Bounds.xMin ? ridge.PavementTopAt(x)
+                : west.SampleLaneTop(CityHillsideStreetRoute.LaneCount - 1, x) + CityHillsideBuilding.PavementRise;
         }
     }
 }

@@ -28,7 +28,8 @@ namespace BarPromenade
             DrinkId drinkId,
             Vector3 gripLocalPosition,
             Vector3 rimLocalPosition,
-            Bounds physicalLocalBounds)
+            Bounds physicalLocalBounds,
+            NpcHandGripKind? gripKind = null)
         {
             Root = root != null ? root : throw new ArgumentNullException(nameof(root));
             Mouth = mouth != null ? mouth : throw new ArgumentNullException(nameof(mouth));
@@ -41,7 +42,7 @@ namespace BarPromenade
             BaseLocalPosition = new Vector3(0f, physicalLocalBounds.min.y, 0f);
             OpeningLocalAxis = Vector3.up;
             HandleLocalAxis = IsBottle ? Vector3.forward : Vector3.right;
-            GripKind = NpcHandPose.GripKindForVessel(ToVesselKind(kind));
+            GripKind = gripKind ?? NpcHandPose.GripKindForVessel(ToVesselKind(kind));
 
             switch (kind)
             {
@@ -93,6 +94,19 @@ namespace BarPromenade
         public bool IsBottle => Kind == BarPatronDrinkPropKind.Bottle;
         public float GripToLipDistance => Vector3.Distance(GripLocalPosition, RimLocalPosition);
         public float GripToBaseDistance => Vector3.Distance(GripLocalPosition, BaseLocalPosition);
+
+        internal Vector3 RootPositionAtGrip(Vector3 grip, Quaternion rotation) => grip - rotation * GripLocalPosition;
+
+        internal static BarPatronDrinkProp FromContainer(VodkaBottleView view)
+        {
+            Transform root = view.transform;
+            DrinkContainerProfile profile = view.Profile;
+            var bounds = new Bounds(Vector3.up * (profile.Height * .5f),
+                new Vector3(2f * profile.Radius, profile.Height, 2f * profile.Radius));
+            return new BarPatronDrinkProp(root, view.Mouth, null, BarPatronDrinkPropKind.Bottle,
+                profile.IsCan ? DrinkId.LightBeer : DrinkId.Vodka, InRotationSpace(root, view.Grip.position),
+                InRotationSpace(root, view.Mouth.position), bounds, profile.GripKind);
+        }
 
         public static BarPatronDrinkProp Create(
             Transform parent,

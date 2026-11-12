@@ -82,11 +82,28 @@ namespace BarPromenade
                 CityDistrictBusPlanner.CreateRoadRouting(layout), layout));
             BusReservations = busReservations.AsReadOnly();
             var raw = RawPlans.GetValue(layout, l => new(l));
+            RidgeKioskSitePlan.TryCreate(layout, out var kiosk);
+            RidgeKioskCourtPlan court = kiosk?.Court;
+            string courtPhone = null;
+            float nearestPhone = float.PositiveInfinity;
+            if (court != null)
+                foreach (var item in raw.Sites)
+                {
+                    if (item.Kind != CityMiscKind.RoadsidePhoneBooth || item.Id == LoftPhoneId) continue;
+                    float distance = (item.Position - kiosk.Origin).sqrMagnitude;
+                    if (distance >= nearestPhone) continue;
+                    nearestPhone = distance;
+                    courtPhone = item.Id;
+                }
             string homeFailure = "raw candidate missing: " + raw.HomeFailure;
-            foreach (var candidate in raw.Sites)
+            foreach (var item in raw.Sites)
             {
+                bool onCourt = item.Id == courtPhone;
+                var candidate = onCourt ? new CityHillsideFurniturePlacement(item.Id, item.Kind, court.Phone,
+                    Vector3.right, court.Phone + Vector3.right * 3f, court.PhoneBounds, court.PhoneAccess, item.Variant) : item;
                 Vector2 point = new(candidate.Position.x, candidate.Position.z);
-                if (!ground.TrySampleTop(point, out float top))
+                float top = candidate.Position.y;
+                if (!onCourt && !ground.TrySampleTop(point, out top))
                 { if (candidate.Id == HomeBenchId) homeFailure = "no ground at " + point; continue; }
                 bool clear = true;
                 // The public phone has a narrow graded connection all the way
@@ -96,14 +113,17 @@ namespace BarPromenade
                     if (reservedAccess.Overlaps(area))
                     { clear = false; if (candidate.Id == HomeBenchId) homeFailure = "bus reservation " + area; break; }
                 foreach (var site in CityHillsideSiteDetails.ForLayout(layout))
-                    if ((candidate.Id == LoftPhoneId ? reservedAccess : candidate.Bounds).Overlaps(site.Bounds))
+                    if (!CityHillsideSiteDetails.IsClearedForCourt(site, court) &&
+                        (candidate.Id == LoftPhoneId ? reservedAccess : candidate.Bounds).Overlaps(site.Bounds))
                     { clear = false; if (candidate.Id == HomeBenchId) homeFailure = site.Part + " at " + site.Origin + " bounds " + site.Bounds; break; }
-                if (RidgeKioskSitePlan.TryCreate(layout, out var kiosk) &&
-                    (candidate.AccessBounds.Overlaps(kiosk.Bounds) || candidate.AccessBounds.Overlaps(kiosk.Apron)))
+                if (!onCourt && kiosk != null &&
+                    (candidate.AccessBounds.Overlaps(kiosk.Bounds) || candidate.AccessBounds.Overlaps(kiosk.Apron) ||
+                        court != null && court.Overlaps(candidate.AccessBounds)))
                 { clear = false; if (candidate.Id == HomeBenchId) homeFailure = "kiosk footprint"; }
-                foreach (Vector2 corner in Corners(candidate.AccessBounds))
-                    if (!ground.TrySampleTop(corner, out float y) || Mathf.Abs(y - top) > .085f)
-                    { clear = false; if (candidate.Id == HomeBenchId) homeFailure = $"ground corner {corner}: {y:F4} versus {top:F4}"; }
+                if (!onCourt)
+                    foreach (Vector2 corner in Corners(candidate.AccessBounds))
+                        if (!ground.TrySampleTop(corner, out float y) || Mathf.Abs(y - top) > .085f)
+                        { clear = false; if (candidate.Id == HomeBenchId) homeFailure = $"ground corner {corner}: {y:F4} versus {top:F4}"; }
                 if (!clear) continue;
                 // The two benches share the new straight terrace frontage.
                 // Keep the surveyed earth/reservation recipe unchanged: its

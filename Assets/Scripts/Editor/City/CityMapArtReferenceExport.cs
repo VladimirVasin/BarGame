@@ -330,6 +330,11 @@ namespace BarPromenade.Editor
                 Poly(kiosk.StableId + ":building", "shop-building", kiosk.Footprint);
                 for (int i = 0; i < kiosk.ApronPolygons.Count; i++)
                     Poly(kiosk.StableId + ":apron:" + i, "sidewalk", kiosk.ApronPolygons[i]);
+                if (kiosk is RidgeKioskSitePlan { Court: { } kioskCourt })
+                {
+                    Box(kiosk.StableId + ":rear-court", "public-ground", kioskCourt.Slab);
+                    Box(kiosk.StableId + ":phone", "shop-building", kioskCourt.PhoneBounds);
+                }
             }
             CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
             if (terraces.IsEnabled)

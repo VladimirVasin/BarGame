@@ -446,7 +446,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Home soffit lamp/timber above deck. East `(21,-7)` clears walk.
   West `(-23,-7)`: «Хвост и Чешуя», two floods. Poles→stairs/bridge footways;
   covered lamps below;rock/gravel under bridge bearings.
-  Kiosks:one warm lens/two fixed soft-shadow lobes→seller/shelves/street;
+  Kiosk lens/two soft spots→seller/shelves/street; Ridge three canopy spots.
   Cobbler68.8,-307/250°,home21,-6,11–20:30. Steps/.48 deck,
   shoe/awl,desk switch,sign fixed. Gravel/E seat/scraper/lilac/wheel pile/kerbs/wall cable.
   `10×6 m` rear wings retain padded clearance/`2.4 m` court gap. `3.6 m` through openings
@@ -1568,19 +1568,17 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   `bar-01352777-12-06` and `SplitTheG` activity assignment. Four semantic
   rooftop/facade landmarks survive independently of the two districts. Custom
   generated layouts may still request multiple graph-separated bars;
-- a default `8.8 m` player-home body with a recognizable supported upper
-  gallery, open balcony door and one lit window to its street-left; City and
-  Home share the same `4.7 m` floor, door/window positions and `2.3 m` outward
-  deck geometry;
-- City opening:Home/Ridge entrance;custom fallback≤48m street walk.
-  Interior returns→own sidewalk arrival,not road centre.
-  `CityKioskSites`:E→shop menu,Vendor(default)/Pie5/Beer6/Vodka28;
-  3D receipt→same focus.Exit/talk→world;Ridge-only talk,others view.
-  Residential≥120m graded route/≥60mXZ from bars,max min route.
-  Matte«КИОСК»/canopy light/front neon24/7;side prints per kiosk,
-  all3goods;Ridge beer/Residential pies/Industrial vodka dominant.
-- diegetic bar identification through warm windows, framed entrances and
-  shared camera-facing pixel mug signs;
+- Home `8.8 m` body/upper gallery/open balcony/left lit window. City/Home share
+  `4.7 m` floor, door/window and `2.3 m` deck. City starts at Ridge Home; custom
+  fallback≤48m street walk. Interior returns to its own sidewalk.
+- `CityKioskSites`:E→Vendor/Pie5/Beer6/Vodka28; shared receipt/focus.
+  Talk at Ridge. Residential≥120m route/≥60mXZ from bars,max min route.
+  Matte«КИОСК»/canopy light/neon24/7; side prints Ridge beer/Residential pies/Industrial vodka.
+  Ridge rear slab/umbrellas/phone; two per table, settled guests with drinks.
+  Arrivals buy/carry. Guests save the last sip until their refill turn.
+  Bar talk, held sips, hero throw. Orders end22, clear by23.
+  Seller idles, looks at buyer, walks out to smoke between customers.
+- Bar fronts: warm windows, framed entrances and shared pixel mug signs.
 
 ### The hero
 

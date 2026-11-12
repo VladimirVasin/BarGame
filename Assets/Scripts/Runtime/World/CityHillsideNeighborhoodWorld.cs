@@ -13,7 +13,7 @@ namespace BarPromenade
             if (streets.Routes.Count == 0) return;
             var district = CityHillsideNeighborhoodPlan.ForLayout(layout);
             var access = CityHillsideAccessPlan.ForLayout(layout);
-            foreach (var grid in CityHillsideGroundGrid.ForLayout(layout))
+            foreach (var grid in CityHillsideGroundGrid.ForSurface(layout))
             {
                 var road = grid.Road;
                 var bank = new GameObject(road.Bank == CityTerraceTransportBank.East

@@ -393,6 +393,11 @@ namespace BarPromenade
                     writer.Write(kiosk.ApronPolygons.Count);
                     foreach (Vector2[] apron in kiosk.ApronPolygons)
                     { writer.Write(apron.Length); foreach (Vector2 point in apron) Point(writer, point); }
+                    if (kiosk is RidgeKioskSitePlan { Court: { } court })
+                    {
+                        RectValue(writer, court.Slab);
+                        Point(writer, court.Phone);
+                    }
                 }
                 writer.Write(controller.PointsOfInterest.Count);
                 foreach (CityMapPointOfInterest point in controller.PointsOfInterest)

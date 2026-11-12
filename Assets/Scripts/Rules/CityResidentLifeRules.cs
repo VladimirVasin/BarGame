@@ -165,6 +165,35 @@ namespace BarPromenade
             int dayIndex, double minuteOfDay, int seed)
             => Evaluate(residentIndex, dayIndex, minuteOfDay, seed).Activity;
 
+        public const int KioskLastOrderMinute = 22 * 60;
+        public const int KioskCourtEmptyMinute = 23 * 60;
+        public const int KioskCourtTables = 3, KioskCourtPlacesPerTable = 2;
+        public const int KioskCourtCapacity = KioskCourtTables * KioskCourtPlacesPerTable;
+
+        public static CityResidentLifeSample EvaluateKioskRegular(int resident, int place, int day,
+            double minuteOfDay, int seed)
+        {
+            ValidateResident(resident);
+            ValidateMinute(minuteOfDay);
+            if (day < 0 || place < 0 || place >= KioskCourtCapacity) throw new ArgumentOutOfRangeException();
+            int offset = ScheduleOffsetMinutes(resident, seed);
+            double absolute = day * (double)MinutesPerDay + minuteOfDay;
+            double work = day * (double)MinutesPerDay + 360 + offset;
+            int routineDay = absolute < work ? day - 1 : day;
+            double start = routineDay * (double)MinutesPerDay;
+            work = start + 360 + offset;
+            double leisure = start + 975 + offset * .6d;
+            // Leave individually before the cutoff, allowing the longest walk
+            // from the rear table to clear the court before 23:00.
+            int departureSlot = (place + routineDay % KioskCourtCapacity + KioskCourtCapacity) % KioskCourtCapacity;
+            double leave = start + KioskLastOrderMinute + 6 + departureSlot * 7 + (Hash(resident, seed, 0x4B494F53u) % 3u);
+            double home = leave + 85d;
+            if (absolute < leisure) return new(CityResidentActivity.Work, CityResidentActivity.Home, work, leisure);
+            if (absolute < leave) return new(CityResidentActivity.Leisure, CityResidentActivity.Work, leisure, leave);
+            if (absolute < home) return new(CityResidentActivity.ReturningHome, CityResidentActivity.Leisure, leave, home);
+            return new(CityResidentActivity.Home, CityResidentActivity.ReturningHome, home, work + MinutesPerDay);
+        }
+
         public static int ScheduleOffsetMinutes(int residentIndex, int seed)
         {
             ValidateResident(residentIndex);

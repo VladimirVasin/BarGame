@@ -728,6 +728,11 @@ namespace BarPromenade
                 // The overlap is on the existing paved sidewalk at the same height.
                 area.AddPolygons(kiosk.WalkableApronPolygons);
                 area.ExcludePolygons(new[] { kiosk.Footprint });
+                if (kiosk is RidgeKioskSitePlan { Court: { } court })
+                {
+                    foreach (Rect floor in court.WalkableFloors) area.Add(floor);
+                    area.ExcludePolygons(court.Solids);
+                }
             }
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
                 area.ExcludePolygons(new[] { pawnshop.Footprint });

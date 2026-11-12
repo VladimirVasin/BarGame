@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fixed-metre Ridge Street kiosk and fried potato pie. Local +Z faces the street."""
+"""Fixed-metre Ridge Street kiosk, its rear court and potato pie. +Z faces the street."""
 import argparse
 import hashlib
 import json
@@ -30,7 +30,13 @@ ANCHORS = {
     "KioskApproach": (0, 0, 2.22),
     "KioskSignSource": (0, 2.672, 2.055), "KioskSignTarget": (0, 2.432, 1.756),
     "KioskHoursFront": (-1.130, 2.432, 1.750),
+    "KioskServiceDoor": (-1.513, .08, -.632),
 }
+TABLES = ((-2.15, -4.94), (2.15, -4.94), (0., -8.43))
+COURT_ANCHORS = {f"KioskCourtTable{i}": (x, 1.06, z) for i, (x, z) in enumerate(TABLES)}
+COURT_ANCHORS.update({f"KioskCanopy{i}": (x, 2.52, z) for i, (x, z) in enumerate(TABLES)})
+COURT_ANCHORS.update({f"KioskCourtLight{i}": (x+.13, 2.34, z) for i, (x, z) in enumerate(TABLES)})
+COURT_ANCHORS["KioskCourtSlab"] = (0., 0., 0.)
 # One paint/material atlas. Its alpha is smoothness for the URP lit surface.
 SURFACES = {
     "sage": ((103, 127, 116), .34), "kick": ((65, 83, 80), .37),
@@ -124,6 +130,8 @@ def atlas_bytes(cell=256):
 class Model:
     def __init__(self):
         self.solids = []
+        self.groups = []
+        self.group = None
 
     def add(self, surface, solid):
         vertices, faces = solid
@@ -133,6 +141,7 @@ class Model:
         if volume < 0:
             faces = [tuple(reversed(face)) for face in faces]
         self.solids.append((surface, (vertices, faces)))
+        self.groups.append(self.group)
 
     def box(self, surface, xyz, size, bevel=.008):
         self.add(surface, parts.u_box(xyz, size, bevel))
@@ -224,8 +233,11 @@ def kiosk():
     m.box("iron", (0, .054, 0), (3, .052, 2.50))
     m.box("tile", (0, .068, 0), (2.91, .024, 2.40), .003)
     m.box("sage", (0, 1.31, -1.205), (2.93, 2.46, .09))
-    for x in (-1.455, 1.455):
-        m.box("sage", (x, 1.31, 0), (.09, 2.46, 2.43))
+    m.box("sage", (1.455, 1.31, 0), (.09, 2.46, 2.43))
+    for low, high in ((-1.215, -.65), (.23, 1.215)):
+        m.box("sage", (-1.455, 1.31, (low+high)/2), (.09, 2.46, high-low))
+        m.box("kick", (-1.47, .225, (low+high)/2), (.064, .29, high-low))
+    m.box("sage", (-1.455, 2.34, -.21), (.09, .40, .88))
     # Wainscot and projecting sill are separate from the clear aperture.
     m.box("sage", (0, .54, 1.205), (2.93, .92, .09))
     m.box("sage", (0, 2.335, 1.205), (2.93, .43, .09))
@@ -234,14 +246,22 @@ def kiosk():
     for x in (-1.47, 1.47):
         for z in (-1.22, 1.22):
             m.box("kick", (x, 1.32, z), (.062, 2.51, .064))
-        m.box("kick", (x, .225, 0), (.064, .29, 2.47))
+        if x > 0:
+            m.box("kick", (x, .225, 0), (.064, .29, 2.47))
         for z in (-.84, -.39, .06, .51, .96):
+            if x < 0 and -.65 < z < .23:
+                continue
             m.box("sage", (x, 1.42, z), (.066, 2.09, .024), .003)
     for z in (-1.22, 1.22):
         m.box("kick", (0, .22, z), (2.99, .28, .064))
         for x in (-.98, -.50, 0, .50, .98):
             m.box("sage", (x, .68 if z > 0 else 1.415, z), (.028, .57 if z > 0 else 2.08, .065), .002)
-    # Staff service door in the side wall with return, worn threshold and latch.
+    # Separate jamb and leaf, with a real opening behind the closed door.
+    for z in (-.638, .219):
+        m.box("iron", (-1.484, 1.105, z), (.116, 2.05, .026), .003)
+    m.box("iron", (-1.484, 2.124, -.21), (.116, .033, .88), .004)
+    m.box("aluminium", (-1.48, .072, -.21), (.16, .016, .88), .004)
+    m.group = "KioskServiceDoor"
     m.box("iron", (-1.493, 1.11, -.21), (.034, 2.02, .84))
     m.box("kick", (-1.514, 1.11, -.21), (.028, 1.96, .79))
     m.box("sage", (-1.531, 1.26, -.21), (.012, 1.59, .71))
@@ -249,6 +269,8 @@ def kiosk():
         m.box("iron", (-1.536, y, -.58), (.035, .102, .05))
     m.box("aluminium", (-1.55, 1.08, .10), (.036, .20, .057))
     m.box("iron", (-1.58, 1.09, .055), (.04, .025, .12))
+    m.box("iron", (-1.438, 1.09, .055), (.035, .027, .105), .005)
+    m.group = None
     # The sheet falls to the rear. Raised seams, a shallow fascia and a hemmed canopy.
     m.box("roof", (0, 2.54, -.025), (3.10, .06, 2.59))
     for x in (-1.54, 1.54):
@@ -313,6 +335,48 @@ def kiosk():
     for z in (.47,.89):
         for y in (.32,.58):
             m.box("rust",(1.532,y,z), (.020,.016,.016), .002)
+    return m
+
+
+def court():
+    m = Model()
+    # Recessed footing and three poured panels with fine joints at their edges.
+    m.group = "KioskCourtSlab"
+    m.box("concrete", (0., -.163, -5.985), (10., .23, 9.43), .016)
+    for z0, z1 in ((-10.70, -7.58), (-7.572, -4.42), (-4.412, -1.27)):
+        m.box("concrete", (0., -.035, (z0+z1)/2), (10., .07, z1-z0), .012)
+    m.group = None
+    for i, (x, z) in enumerate(TABLES):
+        m.cylinder("concrete", (x, .048, z), .28, .096)
+        m.cylinder("iron", (x, 1.30, z), .044, 2.48, 12)
+        m.cylinder("kick", (x, .984, z), .63, .054, 16)
+        # Two bevelled rings give the round tabletop a worn, readable edge.
+        rings = ((.625, 1.007), (.65, 1.023), (.647, 1.05), (.632, 1.06))
+        n = 16
+        points = [(x+r*math.cos(j*math.tau/n), y, z+r*math.sin(j*math.tau/n)) for r, y in rings for j in range(n)]
+        faces = [tuple(range(n))]
+        faces.extend((k*n+j, (k+1)*n+j, (k+1)*n+(j+1)%n, k*n+(j+1)%n)
+                     for k in range(len(rings)-1) for j in range(n))
+        faces.append(tuple(reversed(range((len(rings)-1)*n, len(rings)*n))))
+        m.add("wood", (points, faces))
+        for a in (0, math.tau/3, math.tau*2/3):
+            m.beam("iron", (x, .79, z), (x+.49*math.cos(a), .98, z+.49*math.sin(a)), .025, .025)
+        m.group = f"KioskCanopy{i}"
+        centre = (x, 2.84, z)
+        for j in range(8):
+            a, b = (j + .5)*math.tau/8, (j+1.5)*math.tau/8
+            p = (x+1.7*math.cos(a), 2.26, z+1.7*math.sin(a))
+            q = (x+1.7*math.cos(b), 2.26, z+1.7*math.sin(b))
+            top = [centre, p, q]
+            bottom = [(v[0], v[1]-.012, v[2]) for v in top]
+            m.add(("sage", "stitch", "kick")[i], (top+bottom, [(0,1,2), (5,4,3), (0,3,4,1), (1,4,5,2), (2,5,3,0)]))
+            m.beam("iron", (x, 2.80, z), (p[0], 2.245, p[2]), .018, .016)
+            m.beam(("kick", "paper", "sage")[i], p, q, .026, .023)
+        m.cylinder("iron", (x, 2.84, z), .066, .07)
+        m.beam("iron", (x, 2.54, z), (x+.13, 2.46, z), .026, .026)
+        m.cylinder("enamel", (x+.13, 2.409, z), .112, .085)
+        m.cylinder(LAMP, (x+.13, 2.353, z), .084, .028)
+        m.group = None
     return m
 
 
@@ -403,6 +467,8 @@ def pie():
 def signature(model):
     stable = [(surface, [[tuple(round(x,7) for x in point) for point in vertices], faces])
               for surface,(vertices,faces) in model.solids]
+    if any(model.groups):
+        stable.append(model.groups)
     return hashlib.sha256(json.dumps(stable,separators=(",",":")).encode()).hexdigest()
 
 
@@ -462,14 +528,27 @@ def emit(name, model, marks, model_dir, source_dir, image):
         materials[slot] = mat
     root = bpy.data.objects.new(name+"_MetricRoot", None)
     bpy.context.collection.objects.link(root)
-    for slot in slots:
-        solids = [(s,solid) for s,solid in model.solids if (s if s in slots else ATLAS) == slot]
+    parents = {None: root}
+    for key,(x,y,z) in marks.items():
+        marker = bpy.data.objects.new(key,None)
+        bpy.context.collection.objects.link(marker)
+        marker.empty_display_size = .04
+        marker.location = (x,z,y)
+        marker.parent = root
+        parents[key] = marker
+    groups = dict.fromkeys(model.groups)
+    for group, slot in ((g, s) for g in groups for s in slots):
+        solids = [(s,solid) for (s,solid),g in zip(model.solids,model.groups)
+                  if g == group and (s if s in slots else ATLAS) == slot]
         if not solids:
             continue
         vertices, faces, uvs, smooth = [], [], [], []
         for surface, solid in solids:
             points, oriented = solid
             source_points, source_faces = parts.to_source(solid)
+            if group:
+                pivot = parents[group].location
+                source_points = [tuple(Vector(point)-pivot) for point in source_points]
             offset = len(vertices)
             vertices.extend(source_points)
             faces.extend([tuple(offset+i for i in f) for f in source_faces])
@@ -479,7 +558,7 @@ def emit(name, model, marks, model_dir, source_dir, image):
                 uvs.extend(uv_corners[i] for face in source_faces for i in face)
             else:
                 uvs.extend(swatch_uv(points,source_faces,surface))
-        mesh = bpy.data.meshes.new(name+"_"+slot)
+        mesh = bpy.data.meshes.new(name+"_"+(group+"_" if group else "")+slot)
         mesh.from_pydata(vertices,[],faces)
         mesh.update()
         mesh.uv_layers.new(name="UVMap").data.foreach_set("uv",np.array(uvs,dtype=np.float32).ravel())
@@ -487,13 +566,7 @@ def emit(name, model, marks, model_dir, source_dir, image):
         mesh.materials.append(materials[slot])
         obj = bpy.data.objects.new(mesh.name,mesh)
         bpy.context.collection.objects.link(obj)
-        obj.parent = root
-    for key,(x,y,z) in marks.items():
-        marker = bpy.data.objects.new(key,None)
-        bpy.context.collection.objects.link(marker)
-        marker.empty_display_size = .04
-        marker.location = (x,z,y)
-        marker.parent = root
+        obj.parent = parents[group]
     bpy.ops.object.select_all(action="SELECT")
     bpy.context.view_layer.objects.active = root
     bpy.ops.export_scene.fbx(filepath=str(model_dir/(name+".fbx")), use_selection=True,
@@ -514,13 +587,13 @@ def main():
     parser.add_argument("--source-dir",type=Path,default=SOURCE)
     parser.add_argument("--validate-only",action="store_true")
     parser.add_argument("--kiosk-only", action="store_true",
-                        help="Publish the kiosk FBX, editing source and manifest; preserve unchanged stock assets.")
+                        help="Publish the kiosk and court; preserve unchanged stock assets.")
     args = parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
-    builds = (("RidgeKiosk", kiosk, ANCHORS),("PotatoPie", pie, {}))
+    builds = (("RidgeKiosk", kiosk, ANCHORS),("PotatoPie", pie, {}),("RidgeKioskCourt", court, COURT_ANCHORS))
     texture = atlas_bytes()
     payload = {"front":"+Z","unit":"metre","palette_sha256":hashlib.sha256(texture).hexdigest(),
                "sign_text":SIGN_TEXT,"hours_text":HOURS_TEXT,"neon_sectors":list(NEON_SLOTS),
-               "anchors":ANCHORS,"models":{}}
+               "anchors":ANCHORS,"court_anchors":COURT_ANCHORS,"models":{}}
     for name,make,_ in builds:
         model = make()
         if name == "RidgeKiosk":
@@ -537,7 +610,10 @@ def main():
     bounds = payload["models"]["RidgeKiosk"]
     assert bounds["bounds_min"][0] < -1.5 and bounds["bounds_min"][1] == -.5
     assert bounds["bounds_max"][2] == 3.4 and abs(bounds["bounds_max"][1] - 2.733) < .001
-    assert sum(record["triangles"] for record in payload["models"].values()) < 13000
+    court_bounds = payload["models"]["RidgeKioskCourt"]
+    assert court_bounds["bounds_max"][2] <= -1.27 and court_bounds["bounds_min"][2] == -10.7
+    assert court_bounds["triangles"] < 6500
+    assert bounds["triangles"] + payload["models"]["PotatoPie"]["triangles"] < 13000
     manifest = json.dumps(payload, indent=2)+"\n"
     if args.validate_only:
         assert (args.model_dir/"RidgeKiosk.json").read_text() == manifest
@@ -554,10 +630,10 @@ def main():
             path.write_bytes(texture)
         (args.model_dir/"RidgeKiosk.json").write_text(manifest)
         for name,make,marks in builds:
-            if args.kiosk_only and name != "RidgeKiosk":
+            if args.kiosk_only and name == "PotatoPie":
                 continue
             emit(name,make(),marks,args.model_dir,args.source_dir,path)
-    print("RIDGE KIOSK AND POTATO PIE OK")
+    print("RIDGE KIOSK, COURT AND POTATO PIE OK")
 
 if __name__ == "__main__":
     main()

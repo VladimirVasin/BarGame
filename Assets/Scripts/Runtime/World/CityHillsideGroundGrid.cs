@@ -14,6 +14,7 @@ namespace BarPromenade
         internal const float FoundationEmbedDepth = .25f;
 
         private static readonly ConditionalWeakTable<CityLayout, CityHillsideGroundGrid[]> Cached = new();
+        private static readonly ConditionalWeakTable<CityLayout, CityHillsideGroundGrid[]> Finished = new();
         private readonly float[] x, z, heights;
         private readonly Surface[] surfaces;
         internal CityHillsideStreetRoute Road { get; }
@@ -24,8 +25,18 @@ namespace BarPromenade
         internal static IReadOnlyList<CityHillsideGroundGrid> ForLayout(CityLayout layout) =>
             Cached.GetValue(layout, CreateBanks);
 
-        private static CityHillsideGroundGrid[] CreateBanks(CityLayout layout)
+        // The bus and frontage surveys consume the original earth. Only the
+        // finished surface can depend on a site chosen around those reservations.
+        internal static IReadOnlyList<CityHillsideGroundGrid> ForSurface(CityLayout layout) =>
+            Finished.GetValue(layout, value => CreateBanks(value,
+                RidgeKioskSitePlan.TryCreate(value, out var kiosk) ? kiosk.Court : null, Cached.GetValue(value, CreateBanks)));
+
+        private static CityHillsideGroundGrid[] CreateBanks(CityLayout layout) => CreateBanks(layout, null, null);
+
+        private static CityHillsideGroundGrid[] CreateBanks(CityLayout layout, RidgeKioskCourtPlan kioskCourt,
+            CityHillsideGroundGrid[] baseline)
         {
+            if (baseline != null && kioskCourt == null) return baseline;
             var roads = CityHillsideStreetPlan.ForLayout(layout).Routes;
             var grids = new CityHillsideGroundGrid[roads.Count];
             var buildings = CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings;
@@ -33,16 +44,18 @@ namespace BarPromenade
             {
                 var houses = new List<CityHillsideBuilding>();
                 Rect bounds = CityHillsideNeighborhoodPlan.TerrainBounds(roads[i]);
+                if (baseline != null && !kioskCourt.Overlaps(bounds)) { grids[i] = baseline[i]; continue; }
                 foreach (var house in buildings)
                     if (house.Bank == roads[i].Bank &&
                         (bounds.Overlaps(house.FoundationBounds) || bounds.Overlaps(house.ApproachBounds) || bounds.Overlaps(house.CourtBounds)))
                         houses.Add(house);
-                grids[i] = new CityHillsideGroundGrid(layout, roads[i], houses);
+                grids[i] = new CityHillsideGroundGrid(layout, roads[i], houses, kioskCourt);
             }
             return grids;
         }
 
-        private CityHillsideGroundGrid(CityLayout layout, CityHillsideStreetRoute road, List<CityHillsideBuilding> houses)
+        private CityHillsideGroundGrid(CityLayout layout, CityHillsideStreetRoute road, List<CityHillsideBuilding> houses,
+            RidgeKioskCourtPlan kioskCourt)
         {
             Layout = layout;
             Road = road;
@@ -82,6 +95,7 @@ namespace BarPromenade
             }
             CityHillsideGroundPlan.AddPadBreaks(bounds, pads, xs, zs);
             CityHillsideGroundPlan.AddRampBreaks(bounds, ramps, xs, zs);
+            kioskCourt?.AddGradeBreaks(bounds, xs, zs);
             seams.AddBreaks(bounds, xs, zs);
             talus.AddBreaks(bounds, xs, zs);
             x = new float[xs.Count]; xs.CopyTo(x);
@@ -97,7 +111,8 @@ namespace BarPromenade
                 float verge = seams.LimitFoundationAtVerge(p, bank, developed);
                 float ground = CityHillsideGroundPlan.ApplyRamps(p,
                     CityHillsideGroundPlan.ApplyPads(p, seams.Apply(p, verge), pads), ramps);
-                heights[row * Columns + col] = talus.ApplyHeight(p, ground);
+                ground = talus.ApplyHeight(p, ground);
+                heights[row * Columns + col] = kioskCourt?.Grade(p, ground) ?? ground;
                 if (col + 1 == Columns || row + 1 == Rows) continue;
                 var center = new Vector2((p.x + x[col + 1]) * .5f, (p.y + z[row + 1]) * .5f);
                 surfaces[row * (Columns - 1) + col] = Classify(center);

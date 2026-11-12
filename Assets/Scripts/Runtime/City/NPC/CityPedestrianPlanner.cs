@@ -210,6 +210,12 @@ namespace BarPromenade
                 area.AttachTerraceDistrict(plan.TerraceLayout);
                 foreach (CityHillsideBuilding house in CityHillsideNeighborhoodPlan.ForLayout(plan.TerraceLayout).AllBuildings)
                     area.ExcludePolygons(house.EntryRailFootprints);
+                if (RidgeKioskSitePlan.TryCreate(plan.TerraceLayout, out var kiosk) && kiosk.Court != null)
+                {
+                    area.AddPolygons(kiosk.WalkableApronPolygons);
+                    area.ExcludePolygons(kiosk.Court.Solids);
+                    area.ExcludePolygons(new[] { kiosk.Footprint, CityRoadPolygon.Rectangle(kiosk.Court.PhoneBounds) });
+                }
             }
             return area;
         }

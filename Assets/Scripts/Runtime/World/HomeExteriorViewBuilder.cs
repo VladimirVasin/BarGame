@@ -110,7 +110,7 @@ namespace BarPromenade
             float radius = HomeExteriorContextPlanner.ViewRadius;
             var window = new Rect(home.DoorPosition.x - radius, home.DoorPosition.z - radius, radius * 2f, radius * 2f);
             CityHillsideQuarterGround.Build(frame, context.Layout, window);
-            foreach (var grid in CityHillsideGroundGrid.ForLayout(context.Layout))
+            foreach (var grid in CityHillsideGroundGrid.ForSurface(context.Layout))
                 if (window.Overlaps(CityHillsideNeighborhoodPlan.TerrainBounds(grid.Road)))
                     CityHillsideNeighborhoodWorld.BuildGround(frame, grid, window);
             var district = CityHillsideNeighborhoodPlan.ForLayout(context.Layout);

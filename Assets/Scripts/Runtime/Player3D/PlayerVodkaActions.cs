@@ -62,6 +62,17 @@ namespace BarPromenade
             foreach (AnimationClip clip in clips) if (clip != null && clip.name == name) return clip;
             return null;
         }
+        internal static AnimationClip LoadThrowClip()
+        {
+            clips ??= Resources.LoadAll<AnimationClip>(ResourcePath);
+            return Find(ThrowClip);
+        }
+
+        internal static (Vector3 Velocity, Vector3 Spin) ContainerThrowMotion(
+            Vector3 right, Vector3 forward, Vector3 inheritedVelocity = default) =>
+            (inheritedVelocity + right * 6.2f + forward * .7f + Vector3.up * .8f,
+                forward * 16f + Vector3.Cross(forward, right) * 4f);
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetCache() => clips = null;
     }

@@ -888,8 +888,8 @@ namespace BarPromenade
                 Collider vehicleHull = null;
                 if (busRide != null && busRide.TryGetBottleReleaseContext(out Vector3 vehicleVelocity, out vehicleHull))
                     inheritedVelocity = vehicleVelocity;
-                ThrownVodkaBottle.Release(thrown, inheritedVelocity + transform.right * 6.2f + transform.forward * .7f + Vector3.up * .8f,
-                    transform.forward * 16f + transform.up * 4f, transform, vehicleHull);
+                var (velocity, spin) = PlayerVodkaActions.ContainerThrowMotion(transform.right, transform.forward, inheritedVelocity);
+                ThrownVodkaBottle.Release(thrown, velocity, spin, transform, vehicleHull);
                 ThrownBottles++;
             }
             MarkPresented();

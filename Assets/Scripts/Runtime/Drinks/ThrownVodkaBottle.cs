@@ -9,9 +9,10 @@ namespace BarPromenade
     public sealed class ThrownVodkaBottle : MonoBehaviour
     {
         public const int MaximumLiveBottles = 4;
+        internal const int MaximumAmbientContainers = 6;
         public const float IntactLifetime = 45f;
         public const float BrokenLifetime = 12f;
-        private static readonly List<ThrownVodkaBottle> Live = new List<ThrownVodkaBottle>(MaximumLiveBottles);
+        private static readonly List<ThrownVodkaBottle> Live = new(MaximumLiveBottles + MaximumAmbientContainers);
         private readonly Rigidbody[] shards = new Rigidbody[8];
         private readonly Vector3[] frozenVelocity = new Vector3[9];
         private readonly Vector3[] frozenSpin = new Vector3[9];
@@ -21,6 +22,7 @@ namespace BarPromenade
         private WarehouseFishLampBurstAudio glassAudio;
         private float age, brokenAge, lastContact = -1f;
         private bool paused, released;
+        private Transform ambientParent;
         private Vector3 previousWaterPoint;
         private float waterAge;
         public bool IsSubmerged { get; private set; }
@@ -31,30 +33,55 @@ namespace BarPromenade
         public float LastCanMetalVolume { get; private set; }
         public Rigidbody Body { get; private set; }
         public int ActiveShardCount { get { int count = 0; foreach (Rigidbody shard in shards) if (shard != null && shard.gameObject.activeSelf) count++; return count; } }
-        public static int ActiveCount => Live.Count;
+        public static int ActiveCount => Count(false);
+        internal static int AmbientActiveCount => Count(true);
 
         public static ThrownVodkaBottle Release(VodkaBottleView bottle, Vector3 velocity,
             Vector3 angularVelocity, Transform ignoredHero, Collider ignoredVehicleHull = null)
+            => ReleaseCore(bottle, velocity, angularVelocity, ignoredHero, ignoredVehicleHull, null);
+
+        internal static ThrownVodkaBottle ReleaseAmbient(VodkaBottleView bottle, Vector3 velocity, Vector3 angularVelocity,
+            Transform thrower, Collider heroBody, Transform world)
+        {
+            if (!world) return null;
+            return ReleaseCore(bottle, velocity, angularVelocity, thrower, heroBody, world);
+        }
+
+        private static int Count(bool ambient)
+        {
+            int count = 0;
+            foreach (var item in Live)
+                if (item && (item.ambientParent != null) == ambient) count++;
+            return count;
+        }
+
+        private static ThrownVodkaBottle ReleaseCore(VodkaBottleView bottle, Vector3 velocity,
+            Vector3 angularVelocity, Transform ignoredHero, Collider ignoredVehicleHull, Transform ambientParent)
         {
             if (bottle == null) throw new ArgumentNullException(nameof(bottle));
             ThrownVodkaBottle existing = bottle.GetComponent<ThrownVodkaBottle>();
             if (existing != null && existing.released) return existing;
-            while (Live.Count >= MaximumLiveBottles)
+            bool ambient = ambientParent != null;
+            int capacity = ambient ? MaximumAmbientContainers : MaximumLiveBottles;
+            while (Count(ambient) >= capacity)
             {
-                int index = 0;
+                int index = -1;
                 for (int i = 0; i < Live.Count; i++)
                 {
                     ThrownVodkaBottle candidate = Live[i];
-                    if (candidate == null || candidate.IsBroken || (candidate.Body != null && candidate.Body.IsSleeping()) ||
+                    if (!candidate || (candidate.ambientParent != null) != ambient) continue;
+                    if (index < 0) index = i;
+                    if (candidate.IsBroken || (candidate.Body != null && candidate.Body.IsSleeping()) ||
                         !candidate.IsVisible()) { index = i; break; }
                 }
                 ThrownVodkaBottle oldest = Live[index]; Live.RemoveAt(index);
                 if (oldest != null) { oldest.gameObject.SetActive(false); Destroy(oldest.gameObject); }
             }
-            bottle.transform.SetParent(null, true);
+            bottle.transform.SetParent(ambientParent, true);
             bottle.SetRemaining(0f); bottle.SetOpened(true);
             ThrownVodkaBottle owner = existing != null ? existing : bottle.gameObject.AddComponent<ThrownVodkaBottle>();
             owner.view = bottle;
+            owner.ambientParent = ambientParent;
             owner.vehicleHull = ignoredVehicleHull;
             owner.heroColliders = ignoredHero != null ? ignoredHero.GetComponentsInChildren<Collider>(true) : Array.Empty<Collider>();
             var lower = bottle.gameObject.AddComponent<CapsuleCollider>();
@@ -184,7 +211,7 @@ namespace BarPromenade
                 Renderer renderer = view.GlassCells[i];
                 MeshFilter filter = renderer.GetComponent<MeshFilter>();
                 Transform cell = renderer.transform;
-                cell.SetParent(null, true);
+                cell.SetParent(ambientParent, true);
                 var collider = cell.gameObject.AddComponent<BoxCollider>();
                 collider.center = filter.sharedMesh.bounds.center;
                 collider.size = Vector3.Max(filter.sharedMesh.bounds.size, Vector3.one * .0001f);

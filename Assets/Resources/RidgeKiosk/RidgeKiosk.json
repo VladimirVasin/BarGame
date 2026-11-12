@@ -69,6 +69,63 @@
       -1.13,
       2.432,
       1.75
+    ],
+    "KioskServiceDoor": [
+      -1.513,
+      0.08,
+      -0.632
+    ]
+  },
+  "court_anchors": {
+    "KioskCourtTable0": [
+      -2.15,
+      1.06,
+      -4.94
+    ],
+    "KioskCourtTable1": [
+      2.15,
+      1.06,
+      -4.94
+    ],
+    "KioskCourtTable2": [
+      0.0,
+      1.06,
+      -8.43
+    ],
+    "KioskCanopy0": [
+      -2.15,
+      2.52,
+      -4.94
+    ],
+    "KioskCanopy1": [
+      2.15,
+      2.52,
+      -4.94
+    ],
+    "KioskCanopy2": [
+      0.0,
+      2.52,
+      -8.43
+    ],
+    "KioskCourtLight0": [
+      -2.02,
+      2.34,
+      -4.94
+    ],
+    "KioskCourtLight1": [
+      2.28,
+      2.34,
+      -4.94
+    ],
+    "KioskCourtLight2": [
+      0.13,
+      2.34,
+      -8.43
+    ],
+    "KioskCourtSlab": [
+      0.0,
+      0.0,
+      0.0
     ]
   },
   "models": {
@@ -83,8 +140,8 @@
         2.733,
         3.4
       ],
-      "triangles": 8152,
-      "geometry_sha256": "de9debac83480b3f8522c8df136a104179d1d41588a3ade2d43fe3b4e1ffaed7"
+      "triangles": 8320,
+      "geometry_sha256": "5004da454a99cbade3700d8e3c1310b790cded589b075b8bcf8a3a0a948ade8c"
     },
     "PotatoPie": {
       "bounds_min": [
@@ -99,6 +156,20 @@
       ],
       "triangles": 1658,
       "geometry_sha256": "61adcb694ef114c3ff3b6c37da05a24eea6df366db8b03433f756d725ebfac54"
+    },
+    "RidgeKioskCourt": {
+      "bounds_min": [
+        -5.0,
+        -0.278,
+        -10.7
+      ],
+      "bounds_max": [
+        5.0,
+        2.875,
+        -1.27
+      ],
+      "triangles": 3196,
+      "geometry_sha256": "e96b7fc02332a8a0409ba45b20d7bb7b9487d4e22612c9d74f80a5efb4a24d34"
     }
   }
 }

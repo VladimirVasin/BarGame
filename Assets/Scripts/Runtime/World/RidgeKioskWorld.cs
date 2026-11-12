@@ -77,12 +77,29 @@ namespace BarPromenade
             interior.position = lamp.position;
             interior.rotation = root.rotation * Quaternion.LookRotation(Vector3.down, Vector3.forward);
 
+            RidgeKioskCourtWorld court = null;
+            var shelters = new List<Collider>(5);
+            if (site is RidgeKioskSitePlan { Court: { } rearCourt })
+                court = RidgeKioskCourtWorld.Build(root, rearCourt, interactive, shelters);
             if (interactive)
             {
-                rainShelters = BuildCollision(root);
+                shelters.AddRange(BuildCollision(root, court != null));
+                rainShelters = shelters.ToArray();
                 var vendor = RidgeKioskVendor.Build(root, anchors["KioskVendor"], anchors["KioskTalk"], approach,
                     site.CharacterId, site.HasDialogue);
-                root.gameObject.AddComponent<RidgeKioskStation>().Initialize(vendor, offers, anchors["KioskTalk"], approach);
+                var station = root.gameObject.AddComponent<RidgeKioskStation>();
+                station.Initialize(vendor, offers, anchors["KioskTalk"], approach);
+                if (court != null)
+                {
+                    Transform authoredLeaf = anchors["KioskServiceDoor"];
+                    var door = new GameObject("Kiosk staff door hinge").transform;
+                    door.SetParent(root, false);
+                    door.SetPositionAndRotation(authoredLeaf.position, root.rotation);
+                    authoredLeaf.SetParent(door, true);
+                    CityTerracePilotWorld.Box(door, "Kiosk staff door leaf", new Vector3(0f, 1.03f, .42f),
+                        new Vector3(.06f, 2.05f, .84f), Quaternion.identity);
+                    vendor.ConfigureCourt(court, door, station);
+                }
             }
             return root;
         }
@@ -109,14 +126,20 @@ namespace BarPromenade
             return cached ? cached : throw new InvalidOperationException("Missing kiosk poster " + name);
         }
 
-        private static Collider[] BuildCollision(Transform root)
+        private static Collider[] BuildCollision(Transform root, bool serviceDoor)
         {
             BoxCollider Box(string part, Vector3 centre, Vector3 size) =>
                 CityTerracePilotWorld.Box(root, part, centre, size, Quaternion.identity);
             Box("Rear wall", new Vector3(0f, 1.16f, -1.20f), new Vector3(3f, 2.75f, .10f));
             foreach (float sign in new[] { -1f, 1f })
             {
-                Box("Side wall", new Vector3(sign * 1.46f, 1.16f, 0f), new Vector3(.08f, 2.75f, 2.5f));
+                if (serviceDoor && sign < 0f)
+                {
+                    Box("Service door rear jamb", new Vector3(-1.46f, 1.16f, -.948f), new Vector3(.09f, 2.75f, .604f));
+                    Box("Service door front jamb", new Vector3(-1.46f, 1.16f, .735f), new Vector3(.09f, 2.75f, 1.03f));
+                    Box("Service door head", new Vector3(-1.46f, 2.34f, -.21f), new Vector3(.09f, .40f, .88f));
+                }
+                else Box("Side wall", new Vector3(sign * 1.46f, 1.16f, 0f), new Vector3(.08f, 2.75f, 2.5f));
                 Box("Window jamb", new Vector3(sign * 1.31f, 1.58f, 1.20f), new Vector3(.38f, 1.08f, .10f));
             }
             Box("Counter base", new Vector3(0f, .275f, 1.20f), new Vector3(3f, 1.45f, .10f));

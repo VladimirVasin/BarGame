@@ -54,6 +54,7 @@ namespace BarPromenade
                 minute = GameSessionState.IsGameTimeRunning ? Math.Floor(now / 1440d) * 1440d : now;
                 city.ResidentJourneys.Reset(minute);
                 CatchUp(now);
+                city.ResidentJourneys.SeedKioskAtCityStart();
             }
             saved = null;
         }
@@ -85,6 +86,7 @@ namespace BarPromenade
         internal void Tick()
         {
             if (active != this || suspended) return;
+            city.ResidentJourneys.RequireKioskWalkIn(city.Pedestrians.IsNearKioskCourt);
             double now = Now;
             double elapsed = now - minute;
             // A normal calendar sample is tiny even at the debug speed multiplier.
@@ -106,6 +108,13 @@ namespace BarPromenade
         }
 
         private void CatchUp(double now)
+        {
+            city.ResidentJourneys.RequireKioskWalkIn(false);
+            try { AdvanceDetachedJourneys(now); }
+            finally { city.ResidentJourneys.RequireKioskWalkIn(city.Pedestrians.IsNearKioskCourt); }
+        }
+
+        private void AdvanceDetachedJourneys(double now)
         {
             if (now < minute)
             {

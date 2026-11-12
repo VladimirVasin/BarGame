@@ -37,6 +37,7 @@ namespace BarPromenade
         private readonly int[,] seats;
         private double now = double.NaN;
         private double nextEvent;
+        private bool kioskWalkInRequired;
 
         public CityResidentJourneyDirector(CityResidentWorld world, IReadOnlyList<CityBusPlan> lines,
             IReadOnlyList<CityBusStopWaitPlan> waitPlans)
@@ -69,6 +70,41 @@ namespace BarPromenade
 
         public bool IsStreetPresented(int id) => presented[id];
         public int RiderAt(int vehicle, int slot) => seats[vehicle, slot];
+
+        internal void RequireKioskWalkIn(bool required)
+        {
+            if (kioskWalkInRequired == required) return;
+            kioskWalkInRequired = required;
+            nextEvent = double.NegativeInfinity;
+        }
+
+        internal void SeedKioskAtCityStart()
+        {
+            const double initialWalkMinutes = 20d;
+            for (int id = 0; id < residents.Length; id++)
+            {
+                if (world.KioskPlace(id) < 0) continue;
+                CityResidentLifeSample schedule = Schedule(id, now);
+                if (schedule.Activity != CityResidentActivity.Leisure || now < schedule.StartedAt + initialWalkMinutes) continue;
+
+                ref Resident resident = ref residents[id];
+                if (resident.Phase == CityResidentJourneyPhase.Riding)
+                    seats[resident.Vehicle, resident.Slot] = -1;
+                int place = world.Destination(id, CityResidentActivity.Leisure);
+                resident = new Resident
+                {
+                    Schedule = schedule,
+                    Phase = CityResidentJourneyPhase.AtDestination,
+                    From = place,
+                    WalkTo = place,
+                    Goal = place,
+                    Vehicle = -1,
+                    ArrivesAt = schedule.StartedAt + initialWalkMinutes
+                };
+                walks[id] = null;
+                nextEvent = Math.Min(nextEvent, schedule.EndsAt);
+            }
+        }
 
         /// <summary>Initial placement or a deliberate time discontinuity. The
         /// caller can resume at an earlier cutover and feed actual historical
@@ -117,7 +153,14 @@ namespace BarPromenade
                 while ((due = Deadline(id)) <= now)
                 {
                     ref Resident r = ref residents[id];
-                    if (r.Phase == CityResidentJourneyPhase.Waiting || r.Phase == CityResidentJourneyPhase.AtDestination)
+                    if (IsPendingKioskWalkIn(id))
+                    {
+                        // The slot expired before the last walk happened.
+                        // Start the trip home on the public side of the gate.
+                        int from = TrySample(id, due, out var sample) ? sample.ToNode : r.From;
+                        BeginJourney(id, from, Schedule(id, due), due);
+                    }
+                    else if (r.Phase == CityResidentJourneyPhase.Waiting || r.Phase == CityResidentJourneyPhase.AtDestination)
                         BeginJourney(id, r.From, Schedule(id, due), due);
                     else
                         FinishWalk(id, due);
@@ -140,8 +183,17 @@ namespace BarPromenade
                     // Let the local controller finish its atomic transfer.
                     return presented[id] ? double.PositiveInfinity : r.Schedule.EndsAt;
                 default:
+                    if (IsPendingKioskWalkIn(id)) return r.Schedule.EndsAt;
                     return presented[id] ? double.PositiveInfinity : r.ArrivesAt;
             }
+        }
+
+        private bool IsPendingKioskWalkIn(int id)
+        {
+            ref Resident r = ref residents[id];
+            return kioskWalkInRequired && !presented[id] && r.Phase == CityResidentJourneyPhase.Walking &&
+                r.Schedule.Activity == CityResidentActivity.Leisure && r.WalkTo == r.Goal &&
+                world.KioskPlace(id) >= 0 && !world.HasEnteredKioskRoute(r.From);
         }
 
         public bool MarkAtStop(int id)
@@ -156,6 +208,14 @@ namespace BarPromenade
             if (residents[id].Phase != CityResidentJourneyPhase.Walking) return false;
             FinishWalk(id, now);
             return true;
+        }
+
+        internal void LeaveKiosk(int id, int node, CityResidentLifeSample schedule)
+        {
+            ref Resident resident = ref residents[id];
+            if (node < 0 || resident.Schedule.Activity != CityResidentActivity.Leisure ||
+                resident.Phase != CityResidentJourneyPhase.Walking && resident.Phase != CityResidentJourneyPhase.AtDestination) return;
+            BeginJourney(id, node, schedule, now);
         }
 
         public int NextWaiting(int vehicle, int stop, bool excludePresented = false)
@@ -235,8 +295,13 @@ namespace BarPromenade
             ref Resident r = ref residents[id];
             if ((r.Phase == CityResidentJourneyPhase.Walking || r.Phase == CityResidentJourneyPhase.ApproachingStop) &&
                 walks[id] != null)
-                return world.SampleRoute(walks[id], Math.Max(0d, minute - r.StartedAt) / WalkingMinutesPerMetre,
-                    r.Prefix, false, r.Schedule, out sample);
+            {
+                var walk = walks[id];
+                double distance = Math.Max(0d, minute - r.StartedAt) / WalkingMinutesPerMetre;
+                if (IsPendingKioskWalkIn(id))
+                    distance = Math.Min(distance, world.KioskApproachLimit(walk, r.Prefix, r.Goal));
+                return world.SampleRoute(walk, distance, r.Prefix, false, r.Schedule, out sample);
+            }
             if (r.Phase == CityResidentJourneyPhase.AtDestination && r.Schedule.Activity == CityResidentActivity.Leisure)
                 return world.TrySampleLeisure(r.Goal, r.Schedule, out sample);
             sample = default;

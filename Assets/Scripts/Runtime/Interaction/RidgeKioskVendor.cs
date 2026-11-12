@@ -4,7 +4,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     [DefaultExecutionOrder(200)]
-    public sealed class RidgeKioskVendor : MonoBehaviour, ISpeechFaceActor
+    public sealed partial class RidgeKioskVendor : MonoBehaviour, ISpeechFaceActor
     {
         private const string PieQuestion = "kiosk.talk.pies";
         private const string BeerQuestion = "kiosk.talk.beer";
@@ -77,6 +77,7 @@ namespace BarPromenade
 
         public bool CanInteract(PlayerInteractor player) =>
             isActiveAndEnabled && HasDialogue && player != null && player.InputEnabled &&
+            AtCounter &&
             !Session.IsActive && !SceneTransitionService.IsTransitioning &&
             !BarMinigameModalLock.IsAnyLocked && !CounterMenuInput.IsBlockedByOtherUi() &&
             target && target.CanReach(player);
@@ -106,7 +107,9 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
-            if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused || Time.time < nextIdleSample) return;
+            if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
+            if (courtStation != null) { AdvanceCourtVendor(Time.deltaTime); return; }
+            if (Time.time < nextIdleSample) return;
             if (streetCamera == null) streetCamera = Camera.main;
             float distance = streetCamera != null ? (streetCamera.transform.position - transform.position).sqrMagnitude : 0f;
             bool talking = Session != null && Session.IsActive;
@@ -123,7 +126,11 @@ namespace BarPromenade
             Actor.ApplyHandContacts(kiosk.TransformPoint(new Vector3(.24f, 1.05f, .92f)), null);
         }
 
-        private void OnDisable() => Session?.RestoreImmediate();
+        private void OnDisable()
+        {
+            Session?.RestoreImmediate();
+            ResetCourtVendor();
+        }
 
         public bool TrySetSpeechFace(object owner, SpeechFacePose pose)
         {

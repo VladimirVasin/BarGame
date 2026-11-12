@@ -1752,6 +1752,11 @@ namespace BarPromenade
                 DrawGroundQuad(kiosk.Footprint,
                     kiosk.District == CityDistrictKind.Industrial ? IndustrialBuilding : ResidentialBuilding);
                 foreach (Vector2[] apron in kiosk.ApronPolygons) DrawGroundQuad(apron, PublicPlaceLand);
+                if (kiosk is RidgeKioskSitePlan { Court: { } court })
+                {
+                    DrawGroundQuad(CityRoadPolygon.Rectangle(court.Slab), PublicPlaceLand);
+                    DrawGroundQuad(CityRoadPolygon.Rectangle(court.PhoneBounds), ResidentialBuilding);
+                }
             }
             var pawnshopDescent = CityPawnshopDescentPlan.ForLayout(controller.Layout);
             if (pawnshopDescent.IsEnabled)

@@ -216,6 +216,14 @@ namespace BarPromenade
                         taskAnchors[index].GetComponentInParent<RidgeKioskStreetLightReceivers>()
                             .Initialize(transform.parent, taskAnchors[index].position, industrialRangeLimits[index]);
                         break;
+                    case "RidgeKioskCourt":
+                        industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = .64f;
+                        industrialRangeLimits[index] = 4.2f;
+                        industrialSpotAngles[index] = 150f;
+                        industrialInnerSpotAngles[index] = 95f;
+                        break;
                     case "PigeonLoftAviary":
                         industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
                         industrialUseShadows[index] = true;
@@ -351,7 +359,7 @@ namespace BarPromenade
                 // are hooded toward their board, so only their real lenses glow.
                 if (purposeName == "RidgeKioskInterior" || purposeName == "GlassReturnWindow" || purposeName == "PawnshopSignLeft" ||
                     purposeName == "PawnshopSignRight" || purposeName == "GlassReturnSignLeft" ||
-                    purposeName == "GlassReturnSignRight" || purposeName == "KioskSign") continue;
+                    purposeName == "GlassReturnSignRight" || purposeName == "KioskSign" || purposeName == "RidgeKioskCourt") continue;
                 // Imported anchors inherit the FBX unit factor. Keep particle
                 // sizes in world metres and move their soft depth fade clear
                 // of the fixture housing and the adjacent opaque facade.

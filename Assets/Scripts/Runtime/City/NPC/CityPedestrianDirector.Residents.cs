@@ -20,6 +20,7 @@ namespace BarPromenade
         public CityResidentWorld Residents => residentWorld;
         public int LogicalResidentCount => HasResidentLife ? CityResidentLifeRules.ResidentCount : 0;
         private CityResidentJourneyDirector journeys;
+        private RidgeKioskCourtLife kioskCourt;
         private CityBusDirector residentFleet;
         internal CityAltitudeVisibility StreetVisibility { get; set; }
         internal CityAmbientPedestrians AmbientStreet { get; set; }
@@ -31,6 +32,9 @@ namespace BarPromenade
         {
             journeys = director ?? throw new ArgumentNullException(nameof(director));
         }
+
+        internal void ConfigureKioskCourt(RidgeKioskCourtLife court) => kioskCourt = court;
+        internal bool IsNearKioskCourt => kioskCourt != null && kioskCourt.IsNear(player.position);
 
         public void ReleaseResidentPresentationsForTimeJump()
         {
@@ -66,6 +70,14 @@ namespace BarPromenade
             return false;
         }
 
+        internal bool WarmKioskPopulation()
+        {
+            if (!HasResidentLife || !IsNearKioskCourt || ActiveCount >= CurrentActiveLimit) return false;
+            for (int retry = 0; retry < MaximumSpawnProbes; retry++)
+                if (TrySpawnResident(allowNear: true, settledKioskOnly: true)) return true;
+            return false;
+        }
+
         public int ResidentIndex(CityPedestrianActor actor)
         {
             for (int i = 0; i < actors.Count; i++) if (actors[i] == actor) return HasResidentLife ? actorResidents[i] : -1;
@@ -73,6 +85,13 @@ namespace BarPromenade
         }
 
         internal int ResidentAtSlot(int slot) => HasResidentLife ? actorResidents[slot] : -1;
+
+        internal bool HasKioskVisit(int slot)
+        {
+            int resident = ResidentAtSlot(slot);
+            return resident >= 0 && kioskCourt != null &&
+                kioskCourt.HasVisit(resident, GameSessionState.GameDayIndex, GameSessionState.GameTimeOfDayMinutes);
+        }
 
         private void AdvanceResidentLife(float deltaTime, bool warming)
         {
@@ -89,7 +108,10 @@ namespace BarPromenade
                 CityPedestrianActor actor = actors[i];
                 if (!actor.IsSpawned) continue;
                 int resident = actorResidents[i];
-                if (resident >= 0 && !actor.IsRouteBound && !actor.IsYieldingToVehicle)
+                bool followsResidentSchedule = resident >= 0 && !actor.IsRouteBound && !actor.IsYieldingToVehicle;
+                bool visitingKiosk = followsResidentSchedule && kioskCourt != null &&
+                    kioskCourt.AdvanceResident(actor, resident, deltaTime, day, minute);
+                if (followsResidentSchedule && !visitingKiosk)
                 {
                     CityResidentLifeSample schedule = residentWorld.Schedule(resident, day, minute);
                     // Change goals at schedule boundaries. Public out-and-back
@@ -127,8 +149,10 @@ namespace BarPromenade
                     !actor.IsYieldingToVehicle;
                 actor.Presentation.MinimumEvaluationInterval = !ordinaryWalk || squaredDistance < 24f * 24f
                     ? 0f : squaredDistance < 48f * 48f ? 1f / 15f : 1f / 8f;
-                SetEncounterMovement(actor, i);
-                actor.Advance(deltaTime, attentionCandidate: heroHead, vehicleTraffic: vehicleTraffic);
+                bool holdsKioskPosition = visitingKiosk && actor.IsAtResidentDestination;
+                if (!holdsKioskPosition) SetEncounterMovement(actor, i);
+                actor.Advance(deltaTime, attentionCandidate: heroHead, vehicleTraffic: vehicleTraffic,
+                    holdResidentDestination: holdsKioskPosition);
                 pedestrianIndex.Update(i, actor);
                 squaredDistance = PlanarSquaredDistance(actor.Position, player.position);
                 // Arrival never makes somebody vanish within view. Distant
@@ -146,6 +170,7 @@ namespace BarPromenade
                     hidden && (indoors || ActiveCount > CurrentActiveLimit)) && CanChangeStreetBodyAt(actor.Position))
                     ReleaseActor(i);
             }
+            kioskCourt?.AdvanceSpeech(deltaTime, day, minute);
             spawnCooldown = Mathf.Max(0f, spawnCooldown - deltaTime);
             if (ActiveCount < GetEffectivePopulationLimit() && spawnCooldown <= 0f)
             {
@@ -160,7 +185,7 @@ namespace BarPromenade
         private static bool IsIndoorDestination(CityResidentJourneyState state) =>
             state.Phase == CityResidentJourneyPhase.AtDestination && state.Activity != CityResidentActivity.Leisure;
 
-        private bool TrySpawnResident(bool allowNear)
+        private bool TrySpawnResident(bool allowNear, bool settledKioskOnly = false)
         {
             if (!CanUseStreetSlot()) return false;
             int slot = FindAvailableActorIndex();
@@ -171,16 +196,34 @@ namespace BarPromenade
             float minimumSquared = allowNear ? 4f * 4f : MinimumConnectedSpawnDistance * MinimumConnectedSpawnDistance;
             int day = GameSessionState.GameDayIndex;
             double minute = GameSessionState.GameTimeOfDayMinutes;
+            bool nearCourt = IsNearKioskCourt;
+            bool chosenAtCourt = false;
             for (int offset = 0; offset < CityResidentLifeRules.ResidentCount; offset++)
             {
                 int id = (residentCursor + offset) % CityResidentLifeRules.ResidentCount;
+                bool kioskRegular = kioskCourt != null && residentWorld.KioskPlace(id) >= 0;
+                if (settledKioskOnly && !kioskRegular) continue;
                 if (blockedResidentsUntil[id] > residentSpawnTime || IsResidentPresented(id) || !residentWorld.TrySample(id, day, minute, out CityResidentWorld.StreetSample sample)) continue;
                 float distance = PlanarSquaredDistance(sample.Position, player.position);
-                if (distance < minimumSquared || distance > MaximumSpawnDistance * MaximumSpawnDistance) continue;
-                if (!allowNear && !CanChangeStreetBodyAt(sample.Position)) continue;
-                if (!HasResidentClearance(sample)) continue;
+                bool kioskVisitor = kioskRegular && sample.Schedule.Activity == CityResidentActivity.Leisure;
+                bool atCourt = kioskVisitor && sample.AtLeisureDestination;
+                if (settledKioskOnly && !atCourt) continue;
+                if (kioskRegular && !atCourt && kioskCourt.IsCourtFloor(sample.Position)) continue;
+                float minimum = atCourt && allowNear ? 0f : kioskVisitor ? 4f * 4f : minimumSquared;
+                if (distance < minimum || distance > MaximumSpawnDistance * MaximumSpawnDistance) continue;
+                if (!allowNear)
+                {
+                    bool closeVisit = kioskVisitor && distance < minimumSquared && StreetVisibility != null;
+                    if (closeVisit ? !StreetVisibility.CanChangeAmbientBodyAt(sample.Position) : !CanChangeStreetBodyAt(sample.Position)) continue;
+                }
+                if (!HasResidentClearance(sample, atCourt)) continue;
                 uint priority = CityResidentLifeRules.StreetPriority(id, day, plan.PopulationSeed);
-                if (best < 0 || priority < bestPriority) { best = id; chosen = sample; bestPriority = priority; }
+                if (nearCourt) priority = priority / 4u + (atCourt ? 0u : kioskVisitor ? 0x40000000u : 0x80000000u);
+                if (best >= 0 && priority >= bestPriority) continue;
+                best = id;
+                chosen = sample;
+                bestPriority = priority;
+                chosenAtCourt = atCourt;
             }
             if (best < 0) return false;
             Physics.SyncTransforms();
@@ -193,7 +236,13 @@ namespace BarPromenade
             if (!TryBindSpawn(slot, anchor, chosen.ToNode, unchecked((uint)best + plan.StableSeed), body)) return false;
             actorResidents[slot] = best;
             actorActivityStarts[slot] = chosen.Schedule.StartedAt;
-            actors[slot].SetResidentDestination(chosen.Destination, residentWorld.DistancesTo(chosen.Destination));
+            CityPedestrianActor actor = actors[slot];
+            actor.SetResidentDestination(chosen.Destination, residentWorld.DistancesTo(chosen.Destination));
+            if (chosenAtCourt)
+            {
+                actor.SettleAtSpawnedDestination();
+                kioskCourt.RestoreVisitorAtTable(actor, best, day, chosen.Schedule);
+            }
             residentCursor = (best + 1) % CityResidentLifeRules.ResidentCount;
             return true;
         }
@@ -242,18 +291,21 @@ namespace BarPromenade
             return chosen;
         }
 
-        private bool HasResidentClearance(CityResidentWorld.StreetSample sample)
+        private bool HasResidentClearance(CityResidentWorld.StreetSample sample, bool atCourt)
         {
+            // Authored standing places only need capsule clearance. Street traffic
+            // still gets room to walk and pass before it reaches the tables.
+            float separation = atCourt ? 2f * plan.AgentRadius + CollisionActivationPadding : profile.MinimumPeerSeparation;
             int laneCount = 0, destinationCount = 0;
             int localCount = AmbientStreet != null ? AmbientStreet.CountNear(sample.Position) : 0;
             for (int i = 0; i < actors.Count; i++)
             {
                 CityPedestrianActor other = actors[i];
                 if (!other.IsSpawned || other.IsAttachedToVehicle) continue;
-                if (CityAmbientPedestrians.OnSameStretch(other.Position, sample.Position) &&
+                if (!atCourt && CityAmbientPedestrians.OnSameStretch(other.Position, sample.Position) &&
                     ++localCount >= CityAmbientPedestrians.LocalStreetLimit) return false;
                 if (other.ResidentDestinationNode == sample.Destination && ++destinationCount >= 3) return false;
-                if (PlanarSquaredDistance(other.Position, sample.Position) < profile.MinimumPeerSeparation * profile.MinimumPeerSeparation) return false;
+                if (PlanarSquaredDistance(other.Position, sample.Position) < separation * separation) return false;
                 if ((other.PreviousNodeIndex == sample.FromNode && other.TargetNodeIndex == sample.ToNode) ||
                     (other.PreviousNodeIndex == sample.ToNode && other.TargetNodeIndex == sample.FromNode)) laneCount++;
             }
@@ -273,6 +325,15 @@ namespace BarPromenade
                 if (entry.Value == id) return IsPresentationInUse(entry.Key) ? null : entry.Key;
             if (!MakeRoomInBodyCache()) return null;
             CityPedestrianPresentation result = createResidentPresentation(id);
+            try
+            {
+                if (kioskCourt != null && residentWorld.KioskPlace(id) >= 0) kioskCourt.PrepareVisitorPresentation(result);
+            }
+            catch
+            {
+                CityPedestrianResources.DestroyObject(result.gameObject);
+                throw;
+            }
             result.transform.SetParent(poolRoot, false);
             presentationPool.Add(result); residentIds.Add(result, id);
             return result;
@@ -333,6 +394,7 @@ namespace BarPromenade
         private void RetainResident(int slot)
         {
             if (!HasResidentLife || actorResidents[slot] < 0) return;
+            kioskCourt?.ReleaseResident(actorResidents[slot], actors[slot]);
             residentWorld.Retain(actorResidents[slot], actors[slot], GameSessionState.GameDayIndex, GameSessionState.GameTimeOfDayMinutes);
             journeys?.SetStreetPresented(actorResidents[slot], false);
             actorResidents[slot] = -1;

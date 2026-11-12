@@ -38,7 +38,12 @@ namespace BarPromenade
                 courtyardCells.Add(block.Cell);
             obstacleFootprints = CollectObstacleFootprints(layout, courtyardCells);
             kiosks = CityKioskSites.ForLayout(layout).Sites;
-            foreach (CityKioskSitePlan kiosk in kiosks) polygonBuildingObstacles.Add(kiosk.Footprint);
+            foreach (CityKioskSitePlan kiosk in kiosks)
+            {
+                polygonBuildingObstacles.Add(kiosk.Footprint);
+                if (kiosk is RidgeKioskSitePlan { Court: { } court })
+                    polygonBuildingObstacles.AddRange(court.Solids);
+            }
             foreach (var building in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
                 polygonBuildingObstacles.AddRange(building.Lot.CreateCollisionPolygons());
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
@@ -170,7 +175,8 @@ namespace BarPromenade
             if(CityPawnshopDescentPlan.ForLayout(layout).TrySampleTop(worldXZ,out top)) return true;
             if(CityPawnshopBenchTerracePlan.ForLayout(layout).TrySampleTop(worldXZ,out top)) return true;
             foreach (CityKioskSitePlan kiosk in kiosks)
-                if (kiosk.TrySampleApronTop(worldXZ, out top)) return true;
+                if (kiosk.TrySampleApronTop(worldXZ, out top) ||
+                    kiosk is RidgeKioskSitePlan { Court: { } court } && court.TrySurface(worldXZ, out top)) return true;
             if (terraces.ContainsFootprint(worldXZ))
                 return terraces.TrySampleStandingTop(worldXZ, 0f, out top);
             foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)
