@@ -11,7 +11,8 @@ namespace BarPromenade
         Turn,
         Crosswalk,
         Courtyard,
-        HomeEntrance
+        HomeEntrance,
+        Stair
     }
 
     public sealed class CityPedestrianNode :

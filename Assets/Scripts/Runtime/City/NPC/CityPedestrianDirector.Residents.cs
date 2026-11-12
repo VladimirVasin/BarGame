@@ -22,6 +22,7 @@ namespace BarPromenade
         private CityResidentJourneyDirector journeys;
         private CityBusDirector residentFleet;
         internal CityAltitudeVisibility StreetVisibility { get; set; }
+        internal CityAmbientPedestrians AmbientStreet { get; set; }
 
         internal bool CanChangeStreetBodyAt(Vector3 feet) =>
             StreetVisibility == null || StreetVisibility.CanChangeBodyAt(feet);
@@ -244,10 +245,13 @@ namespace BarPromenade
         private bool HasResidentClearance(CityResidentWorld.StreetSample sample)
         {
             int laneCount = 0, destinationCount = 0;
+            int localCount = AmbientStreet != null ? AmbientStreet.CountNear(sample.Position) : 0;
             for (int i = 0; i < actors.Count; i++)
             {
                 CityPedestrianActor other = actors[i];
                 if (!other.IsSpawned || other.IsAttachedToVehicle) continue;
+                if (CityAmbientPedestrians.OnSameStretch(other.Position, sample.Position) &&
+                    ++localCount >= CityAmbientPedestrians.LocalStreetLimit) return false;
                 if (other.ResidentDestinationNode == sample.Destination && ++destinationCount >= 3) return false;
                 if (PlanarSquaredDistance(other.Position, sample.Position) < profile.MinimumPeerSeparation * profile.MinimumPeerSeparation) return false;
                 if ((other.PreviousNodeIndex == sample.FromNode && other.TargetNodeIndex == sample.ToNode) ||

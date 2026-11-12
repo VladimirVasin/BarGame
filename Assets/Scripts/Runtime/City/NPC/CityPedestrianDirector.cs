@@ -272,7 +272,7 @@ namespace BarPromenade
             }
 
             passingClock += SanitizeDeltaTime(deltaTime);
-            vehicleTraffic?.Refresh(actors);
+            vehicleTraffic?.Refresh(actors, AmbientStreet != null && AmbientStreet.ActiveCount > 0 ? player.position : null);
             if (HasResidentLife)
             {
                 using (ResidentSimulationMarker.Auto())

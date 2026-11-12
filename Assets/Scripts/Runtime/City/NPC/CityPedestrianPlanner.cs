@@ -641,7 +641,7 @@ namespace BarPromenade
                             : $"sidewalk:{laneId}:{index - 1}",
                         points[index - 1].NodeIndex,
                         points[index].NodeIndex,
-                        CityPedestrianLinkKind.Sidewalk,
+                        isStair ? CityPedestrianLinkKind.Stair : CityPedestrianLinkKind.Sidewalk,
                         !isStair &&
                         !layout.IsRiverPedestrianSpawnExcluded(edge));
                 }

@@ -447,7 +447,10 @@ namespace BarPromenade
                 if (safeDeltaTime > 0f) presentation.Advance(safeDeltaTime, false);
                 return;
             }
-            if (AdvanceVehicleYield(safeDeltaTime, vehicleTraffic, out bool vehicleMoving))
+            bool retreatFromKerb = steppingOffKerb && vehicleTraffic != null &&
+                vehicleTraffic.Blocks(Position, agentRadius) && !vehicleTraffic.PhysicallyBlocks(Position, agentRadius);
+            if (retreatFromKerb) SetPassingLane(0f, true);
+            if (!retreatFromKerb && AdvanceVehicleYield(safeDeltaTime, vehicleTraffic, out bool vehicleMoving))
             {
                 IsYielding = IsYieldingToVehicle;
                 blockedTime = 0f;
@@ -511,7 +514,7 @@ namespace BarPromenade
                 IsYielding = true;
                 blockedTime = 0f;
             }
-            else if ((HasPassingRequest || returningToLaneCentre) && TryAdvancePassingLane(safeDeltaTime, shouldYield, out bool passingMoving))
+            else if ((HasPassingRequest || returningToLaneCentre) && TryAdvancePassingLane(safeDeltaTime, shouldYield, vehicleTraffic, out bool passingMoving))
             {
                 moving = passingMoving;
                 IsYielding = (shouldYield || holdPassingProgress) && !moving;
@@ -1072,7 +1075,7 @@ namespace BarPromenade
             // Stop inside the reserved slot: the street's ordinary arrival
             // tolerance can leave the waiter's shoulder in the through footway.
             float arrivalRadius = directToWaitSlot || curvedLink?.Kind == CityPedestrianLinkKind.Courtyard
-                ? 0.025f : ArrivalRadius;
+                ? 0.025f : incomingLinkKind == CityPedestrianLinkKind.Stair ? .055f : ArrivalRadius;
             if (distance <= arrivalRadius)
             {
                 if (directToWaitSlot)
@@ -1587,7 +1590,7 @@ namespace BarPromenade
         private void ResetSpawnState()
         {
             SetPassingLane(0f, false);
-            returningToLaneCentre = false;
+            returningToLaneCentre = steppingOffKerb = false;
             ResetPassingRetreat();
             ResetVehicleYield();
             ClearCrossing();

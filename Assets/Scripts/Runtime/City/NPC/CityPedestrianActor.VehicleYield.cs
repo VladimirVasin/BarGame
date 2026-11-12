@@ -180,22 +180,30 @@ namespace BarPromenade
             return false;
         }
 
-        private bool CanWalkVehicleSegment(Vector3 from, Vector3 to, bool ignoreWalkerBodies = false)
+        private bool CanWalkVehicleSegment(Vector3 from, Vector3 to, bool ignoreWalkerBodies = false,
+            float footRadius = 0f)
         {
+            if (footRadius <= 0f) footRadius = agentRadius;
             Vector3 offset = to - from;
             int steps = Mathf.Max(1, Mathf.CeilToInt(offset.magnitude / .2f));
             Vector3 previous = from;
             for (int i = 1; i <= steps; i++)
             {
                 Vector3 next = Vector3.Lerp(from, to, i / (float)steps);
-                if (!walkableArea.Contains(next, agentRadius)) return false;
-                Vector3 constrained = walkableArea.Constrain(previous, next, agentRadius);
+                if (!walkableArea.Contains(next, footRadius)) return false;
+                Vector3 constrained = walkableArea.Constrain(previous, next, footRadius);
                 Vector3 difference = constrained - next;
                 difference.y = 0f;
                 if (difference.sqrMagnitude > .0001f || Mathf.Abs(constrained.y - previous.y) > .28f)
                     return false;
                 previous = constrained;
             }
+            return ClearVehicleWalkCapsule(from, to, ignoreWalkerBodies);
+        }
+
+        private bool ClearVehicleWalkCapsule(Vector3 from, Vector3 to, bool ignoreWalkerBodies)
+        {
+            Vector3 offset = to - from;
             float length = offset.magnitude;
             CapsuleAt(from, out Vector3 bottom, out Vector3 top, out float radius);
             if (length > .0001f)

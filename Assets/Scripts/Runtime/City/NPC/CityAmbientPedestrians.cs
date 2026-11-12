@@ -10,13 +10,17 @@ namespace BarPromenade
     {
         internal const int MaximumActive = CityResidentLifeRules.MaximumAmbientStreetPopulation;
         internal const int MaximumStreetBodies = CityPedestrianDirector.MaximumActiveModels + MaximumActive;
+        internal const int LocalStreetLimit = 4;
+        internal const int LocalAmbientLimit = 2;
+        internal const int WarmLimit = 3;
+        private const float LocalRadius = 12f;
         private const int MaximumCachedBodies = 18;
         private const int MaximumEntryProbes = 8;
         private const float EntryRadius = 35f;
-        private const float ReleaseRadius = 46f;
+        internal const float ReleaseRadius = 46f;
         private const float BalanceRadius = 26f;
         private const float MinimumEntryDistance = 7f;
-        private const float SpawnSpacing = 3.2f;
+        private const float SpawnSpacing = 4f;
         private static readonly ProfilerMarker TickMarker = new ProfilerMarker("City.AmbientPedestrians");
 
         private readonly Walker[] walkers = new Walker[MaximumActive];
@@ -33,7 +37,7 @@ namespace BarPromenade
         private int cachedBodies;
         private int serial;
         private uint entrySearch;
-        private float spawnCountdown;
+        private float spawnCountdown, crowdCheckCountdown;
 
         internal int ActiveCount { get; private set; }
 
@@ -75,12 +79,31 @@ namespace BarPromenade
             var playerBody = ambient.hero.GetComponent<CharacterController>();
             ambient.heroRadius = playerBody != null ? playerBody.radius : .32f;
             ambient.plan = new CityAmbientWalkPlan(city.PedestrianPlan, city.Layout, city.BusPlans);
-            ambient.movement = new CityAmbientWalking(ambient.plan, pavement);
+            ambient.movement = new CityAmbientWalking(ambient.plan, pavement, CityStreetSupportPlan.ForLayout(city.Layout),
+                city.Pedestrians.VehicleTraffic);
             ambient.lanePopulation = new int[city.PedestrianPlan.Links.Count];
+            city.Pedestrians.AmbientStreet = ambient;
             return ambient;
         }
 
-        internal bool WarmNext() => ActiveCount < Mathf.Min(6, Target()) && TrySpawn(true);
+        internal bool WarmNext()
+        {
+            if (ActiveCount >= Mathf.Min(WarmLimit, Target()) || !TrySpawn(true)) return false;
+            spawnCountdown = .9f;
+            return true;
+        }
+
+        internal static bool OnSameStretch(Vector3 first, Vector3 second) =>
+            Mathf.Abs(first.y - second.y) < 2f && (first - second).sqrMagnitude < LocalRadius * LocalRadius;
+
+        internal int CountNear(Vector3 point, int exceptSlot = -1)
+        {
+            int count = 0;
+            for (int i = 0; i < walkers.Length; i++)
+                if (i != exceptSlot && walkers[i].Encounter != 0 &&
+                    OnSameStretch(point, looks[walkers[i].Look].Body.transform.position)) count++;
+            return count;
+        }
 
         internal bool TryGetWalker(int index, out Vector3 position, out bool woman, out int encounter)
         {
@@ -101,6 +124,9 @@ namespace BarPromenade
             using var marker = TickMarker.Auto();
             int target = Target();
             int contactCount = CollectContacts();
+            crowdCheckCountdown -= delta;
+            bool checkCrowd = crowdCheckCountdown <= 0f;
+            if (checkCrowd) crowdCheckCountdown = .7f;
             for (int index = 0; index < walkers.Length; index++)
             {
                 ref Walker walker = ref walkers[index];
@@ -112,7 +138,9 @@ namespace BarPromenade
                 bool beyondLocalStreets = distanceSquared > ReleaseRadius * ReleaseRadius;
                 bool canRotateCast = distanceSquared > 15f * 15f &&
                     (walker.Age > 28f || ActiveCount > target || walker.Age > 12f && distanceSquared > 24f * 24f);
-                if ((beyondLocalStreets || canRotateCast) && city.Visibility.CanChangeAmbientBodyAt(position))
+                if ((beyondLocalStreets || canRotateCast || checkCrowd && walker.Age > 5f) &&
+                    city.Visibility.CanChangeAmbientBodyAt(position) &&
+                    (beyondLocalStreets || canRotateCast || !HasLocalRoom(position, index)))
                 {
                     Release(index);
                     contacts[index] = default;
@@ -123,7 +151,7 @@ namespace BarPromenade
 
             spawnCountdown -= delta;
             if (ActiveCount >= target || spawnCountdown > 0f) return;
-            spawnCountdown = TrySpawn(false) ? .6f : .9f;
+            spawnCountdown = TrySpawn(false) ? .9f : 1.2f;
         }
 
         private bool TrySpawn(bool warming)
@@ -142,14 +170,15 @@ namespace BarPromenade
                 float distance = offset.magnitude;
                 if (distance < MinimumEntryDistance || distance > EntryRadius || Mathf.Abs(offset.y) > 4f ||
                     lanePopulation[entry.Link] >= plan.LaneLimit(entry.Link) ||
-                    !ClearOfPeople(entry.Position, -1, SpawnSpacing))
+                    !ClearOfPeople(entry.Position) || !HasLocalRoom(entry.Position))
                     continue;
                 bool hidden = city.Visibility.CanChangeAmbientBodyAt(entry.Position);
                 if (!warming && !hidden && distance > 23f) continue;
                 float plus = ArrivalScore(entry, 1, interest);
                 float minus = ArrivalScore(entry, -1, interest);
+                if (float.IsPositiveInfinity(Mathf.Min(plus, minus))) continue;
                 uint hash = CityPedestrianStableHash.Combine(entrySearch, unchecked((uint)i));
-                float score = Mathf.Min(plus, minus) + Mathf.Abs(distance - (warming ? 11f : 17f)) * .5f +
+                float score = Mathf.Min(plus, minus) + Mathf.Abs(distance - (warming ? 13f : 19f)) * .5f +
                     lanePopulation[entry.Link] * 6f - (plan.IsBusy(entry.Link) ? 2f : 0f) + (hash & 255u) / 96f;
                 score += warming ? FramingPenalty(entry.Position) : hidden ? 0f : 2f;
                 int rank = 0;
@@ -177,6 +206,7 @@ namespace BarPromenade
         {
             float available = direction > 0 ? plan.Length(entry.Link) - entry.Distance : entry.Distance;
             Vector3 future = plan.Sample(entry.Link, entry.Distance + direction * Mathf.Min(8f, available), out _);
+            if (!HasLocalRoom(future)) return float.PositiveInfinity;
             float score = Vector3.Distance(future, interest) * .55f + FramingPenalty(future);
             if (available < 3f) score += 5f;
             return score;
@@ -352,9 +382,24 @@ namespace BarPromenade
                 GameLog.Field("y", position.y), GameLog.Field("z", position.z));
         }
 
-        private bool ClearOfPeople(Vector3 point, int slot, float spacing)
+        private bool HasLocalRoom(Vector3 point, int exceptSlot = -1)
         {
-            float squared = spacing * spacing;
+            int ambient = CountNear(point, exceptSlot);
+            if (ambient >= LocalAmbientLimit) return false;
+            int count = ambient;
+            var actors = city.Pedestrians.Actors;
+            for (int i = 0; i < actors.Count; i++)
+            {
+                CityPedestrianActor actor = actors[i];
+                if (actor.IsSpawned && !actor.IsAttachedToVehicle && OnSameStretch(point, actor.Position) &&
+                    ++count >= LocalStreetLimit) return false;
+            }
+            return true;
+        }
+
+        private bool ClearOfPeople(Vector3 point)
+        {
+            float squared = SpawnSpacing * SpawnSpacing;
             if ((point - hero.position).sqrMagnitude < squared) return false;
             IReadOnlyList<CityPedestrianActor> actors = city.Pedestrians.Actors;
             for (int i = 0; i < actors.Count; i++)
@@ -365,7 +410,7 @@ namespace BarPromenade
             }
             for (int i = 0; i < walkers.Length; i++)
             {
-                if (i == slot || walkers[i].Encounter == 0) continue;
+                if (walkers[i].Encounter == 0) continue;
                 if ((point - looks[walkers[i].Look].Body.transform.position).sqrMagnitude < squared) return false;
             }
             return true;

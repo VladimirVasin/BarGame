@@ -2,16 +2,52 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    internal static class CityPedestrianPassingGround
+    {
+        internal const float MaximumKerbStep = .32f;
+
+        internal static bool TryKerb(CityStreetSupportPlan streets, CityPedestrianVehicleTraffic traffic,
+            Vector3 centre, Vector3 desired, float radius, bool returning, out Vector3 feet)
+        {
+            feet = desired;
+            if (streets == null || traffic == null) return false;
+            var point = new Vector2(desired.x, desired.z);
+            var lane = new Vector2(centre.x, centre.z);
+            if (!streets.TrySampleTop(lane, FootstepGroundKind.Stone, out float pavementTop) ||
+                Mathf.Abs(pavementTop - centre.y) > .13f ||
+                !streets.TrySampleTop(point, out float top, out var kind) || Mathf.Abs(top - pavementTop) > .18f)
+                return false;
+            feet.y = top;
+            if (kind == FootstepGroundKind.Stone) return true;
+            if (kind != FootstepGroundKind.Concrete ||
+                !streets.TrySampleTop(Vector2.MoveTowards(point, lane, MaximumKerbStep), FootstepGroundKind.Stone, out _))
+                return false;
+            return !traffic.Blocks(feet, radius) || returning && !traffic.PhysicallyBlocks(feet, radius);
+        }
+
+        internal static Vector3 PassingFacing(Vector3 travel, Vector3 step)
+        {
+            step.y = 0f;
+            return step.sqrMagnitude > .000001f
+                ? Vector3.RotateTowards(travel, step.normalized, 30f * Mathf.Deg2Rad, 0f) : travel;
+        }
+    }
+
     public sealed partial class CityPedestrianActor
     {
+        // The feet stay on the paved strip. The physical capsule may overhang
+        // a kerb slightly, with its full collision against walls and people.
+        private const float PassingEdgeMargin = .10f;
         private float requestedPassingLane;
-        private bool holdPassingProgress, returningToLaneCentre;
+        private bool holdPassingProgress, returningToLaneCentre, requestedPassingEdge, requestedKerb, steppingOffKerb;
 
         /// <summary>Metres to the right of this actor's direction along its route.</summary>
-        internal void SetPassingLane(float signedMetres, bool holdForward)
+        internal void SetPassingLane(float signedMetres, bool holdForward, bool alongEdge = false, bool kerb = false)
         {
             requestedPassingLane = signedMetres;
             holdPassingProgress = holdForward;
+            requestedPassingEdge = alongEdge;
+            requestedKerb = kerb;
         }
 
         private bool HasPassingRequest => holdPassingProgress || requestedPassingLane != 0f;
@@ -96,30 +132,52 @@ namespace BarPromenade
         // Scenery and support decide which shoulder leads somewhere; the director
         // negotiates the moving capsules separately. Probe the authored curve,
         // rather than extending a tangent through the next railing or corner.
-        internal bool CanWalkPassingLane(float signedMetres, float lookAhead)
+        internal bool CanWalkPassingLane(float signedMetres, float lookAhead, bool alongEdge = false,
+            CityPedestrianVehicleTraffic roadTraffic = null)
         {
             if (!TryGetPassingLeg(out var leg)) return false;
+            float footRadius = alongEdge ? Mathf.Max(.12f, agentRadius - PassingEdgeMargin) : agentRadius;
             Vector3 centre = leg.Sample(leg.Progress, out Vector3 direction);
             Vector3 previous = centre + Vector3.Cross(Vector3.up, direction) * signedMetres;
-            if (!CanWalkVehicleSegment(Position, previous, true)) return false;
+            if (!Probe(Position, ref previous, centre)) return false;
             float end = Mathf.Min(leg.Length, leg.Progress + lookAhead);
             const int probes = 4;
             for (int i = 1; i <= probes; i++)
             {
                 centre = leg.Sample(Mathf.Lerp(leg.Progress, end, i / (float)probes), out direction);
                 Vector3 next = centre + Vector3.Cross(Vector3.up, direction) * signedMetres;
-                if (!CanWalkVehicleSegment(previous, next, true)) return false;
+                if (!Probe(previous, ref next, centre)) return false;
                 previous = next;
             }
             return true;
+
+            bool Probe(Vector3 from, ref Vector3 target, Vector3 routeCentre)
+            {
+                if (roadTraffic == null) return CanWalkVehicleSegment(from, target, true, footRadius);
+                var streets = plan.TerraceLayout != null ? CityStreetSupportPlan.ForLayout(plan.TerraceLayout) : null;
+                int steps = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(from, target) / .16f));
+                Vector3 last = from;
+                for (int i = 1; i <= steps; i++)
+                {
+                    Vector3 point = Vector3.Lerp(from, target, i / (float)steps);
+                    if (!walkableArea.Contains(point, footRadius) &&
+                        !CityPedestrianPassingGround.TryKerb(streets, roadTraffic, routeCentre, point, agentRadius, false, out point))
+                        return false;
+                    if (Mathf.Abs(point.y - last.y) > .23f || !ClearVehicleWalkCapsule(last, point, true)) return false;
+                    last = point;
+                }
+                target = last;
+                return true;
+            }
         }
 
-        private bool TryAdvancePassingLane(float deltaTime, bool shouldYield, out bool moving)
+        private bool TryAdvancePassingLane(float deltaTime, bool shouldYield, CityPedestrianVehicleTraffic traffic, out bool moving)
         {
             moving = false;
             if (!TryGetPassingLeg(out var leg))
             {
                 returningToLaneCentre = false;
+                steppingOffKerb = false;
                 return false;
             }
             if (deltaTime <= 0f) return true;
@@ -141,16 +199,25 @@ namespace BarPromenade
             Vector2 currentXZ = new Vector2(current.x, current.z);
             Vector2 moved = Vector2.MoveTowards(currentXZ, new Vector2(desired.x, desired.z), stride);
             desired = new Vector3(moved.x, centre.y, moved.y);
-            Vector3 constrained = walkableArea.Constrain(current, desired, agentRadius);
+            bool alongEdge = requestedPassingEdge || returningToLaneCentre && !walkableArea.Contains(current, agentRadius);
+            float footRadius = alongEdge ? Mathf.Max(.12f, agentRadius - PassingEdgeMargin) : agentRadius;
+            bool allowKerb = requestedKerb || steppingOffKerb;
+            bool onKerb = allowKerb && !walkableArea.Contains(desired, footRadius);
+            Vector3 constrained;
+            if (onKerb && plan.TerraceLayout != null && CityPedestrianPassingGround.TryKerb(
+                CityStreetSupportPlan.ForLayout(plan.TerraceLayout), traffic, centre, desired, agentRadius,
+                steppingOffKerb && !requestedKerb, out Vector3 kerb)) constrained = kerb;
+            else constrained = walkableArea.Constrain(current, desired, footRadius);
             if (CollisionEnabled) characterController.Move(constrained - current);
             else transform.position = constrained;
 
             LastDisplacement = Position - current;
             lateralOffset = Vector3.Dot(Position - centre, right);
             returningToLaneCentre = Mathf.Abs(lateralOffset) > .04f;
-            // Keep an ordinary forward-facing gait on the route, even while stepping aside.
+            steppingOffKerb = allowKerb && !walkableArea.Contains(Position, footRadius);
             transform.rotation = Quaternion.RotateTowards(transform.rotation,
-                Quaternion.LookRotation(direction, Vector3.up), TurnSpeedDegrees * deltaTime);
+                Quaternion.LookRotation(CityPedestrianPassingGround.PassingFacing(direction, LastDisplacement), Vector3.up),
+                TurnSpeedDegrees * deltaTime);
             Vector3 step = LastDisplacement;
             step.y = 0f;
             moving = step.sqrMagnitude > .000001f;
@@ -164,7 +231,7 @@ namespace BarPromenade
         private void OnDisable()
         {
             SetPassingLane(0f, false);
-            returningToLaneCentre = false;
+            returningToLaneCentre = steppingOffKerb = false;
             ResetPassingRetreat();
         }
     }

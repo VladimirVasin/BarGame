@@ -29,26 +29,22 @@ outward arm aim clear the trousers in both walk and idle. Blender checked
 the shaped meshes. `OrdinaryWomenWalk` passed the gait and start blend for
 both street layers. Frames reviewed.
 
-City workers stay at an evening destination before heading home. Short visual
-walks fill nearby pavement, with arrival selection balancing the combined flow.
-The initial home-door walk exposed sparse framing. Entries now favour paths
-into view. `CityAmbientStreet` passed the walk, platform clearance and worker
-continuity. Day and evening frames reviewed.
+City workers stay at a fixed evening destination before heading home.
+`CityAmbientStreet` checked worker continuity, platform clearance and street flow.
+Ambient walkers pass on shoulders or use a turnout. Logs identify blockers.
+`AmbientWalkers_HeadOnClearOppositeShouldersOrYieldInTheTurnout` and
+`AmbientWalkers_ClearAStationaryResidentWithoutWaitingForThemToMove` passed.
+The hero's apron is private. `Destinations_StayInTheirHomeComponentAndUseActualCityFrontages` passed.
+Ridge house routes use paved shoulders. Public circuits turn at the frontage.
+Plinths meet the slope, rails follow the approaches. The glass return path
+leads to asphalt at the window and staff exit. The crate yard stays grass-free.
+`CityAmbientStreet` passed the contact and movement checks. Frames reviewed.
 
-Ambient walkers now take paired shoulders or yield at a turnout. The live
-log had no ambient blockage events; sustained stops now identify the blocker
-kind. `AmbientWalkers_HeadOnClearOppositeShouldersOrYieldInTheTurnout`,
-`AmbientWalkers_ClearAStationaryResidentWithoutWaitingForThemToMove`, and
-`CityAmbientStreet` passed. Day and evening frames reviewed.
-The hero's home apron is private. Both street layers keep the public sidewalk.
-`Destinations_StayInTheirHomeComponentAndUseActualCityFrontages` passed.
-Ridge entrance routes retain paved shoulders. Routine home-area walks turn
-at the frontage. Ambient density and spawn spacing keep entrances clear.
-Ridge plinths meet the terrain and rails follow the approach edges. Glass
-return pavers and asphalt follow the bank from footway to window and staff
-exit. `CityAmbientStreet` passed opposing resident routes, foundation and
-rail placement, pavement contacts, the grass-free crate yard and the density
-check. Frames reviewed.
+Both street layers stalled near the stationary hero on the summit. Walkers
+probe real shoulders and clear kerbs, turn into the sidestep and use stair
+joins. Local admission counts both layers.
+`LiveCity_WalkersClearSummitArrivalAndSharedStairExit` passed the startup,
+stationary hero, traffic forecast, kerb bypass and stair exits. Frame reviewed.
 
 ## 2026-11-11
 

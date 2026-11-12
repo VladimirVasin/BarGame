@@ -145,9 +145,9 @@ namespace BarPromenade
                 }
                 var points = stair.RouteWorld;
                 for (int i = 0; i < points.Count; i++)
-                    previous = JoinPoint(id + ":" + i, previous, points[i], Height);
+                    previous = JoinPoint(id + ":" + i, previous, points[i], Height, CityPedestrianLinkKind.Stair);
                 int upper = Gate(id + ":upper", upperPavement, points[points.Count - 1]);
-                Connect(id + ":upper-join", previous, upper, CityPedestrianLinkKind.Sidewalk, Height);
+                Connect(id + ":upper-join", previous, upper, CityPedestrianLinkKind.Stair, Height);
                 float Height(Vector2 p) => stair.TrySampleTop(p, out float y) ? y : StreetHeight(p);
             }
 

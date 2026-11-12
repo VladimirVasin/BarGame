@@ -49,19 +49,21 @@ namespace BarPromenade
             for (int index = 0; index < lengths.Length; index++)
             {
                 CityPedestrianLink link = streets.Links[index];
-                if ((link.Kind != CityPedestrianLinkKind.Sidewalk && link.Kind != CityPedestrianLinkKind.Turn) ||
-                    link.Id.StartsWith("stair:", StringComparison.Ordinal) ||
-                    link.Id.StartsWith("hill:quarter:passage", StringComparison.Ordinal))
+                bool stair = link.Kind == CityPedestrianLinkKind.Stair;
+                if (!stair && link.Kind != CityPedestrianLinkKind.Sidewalk && link.Kind != CityPedestrianLinkKind.Turn)
                     continue;
 
                 Vector3 first = streets.Nodes[link.FirstNodeIndex].Position;
                 Vector3 last = streets.Nodes[link.SecondNodeIndex].Position;
                 float length = link.Path?.Length ?? Vector2.Distance(Xz(first), Xz(last));
-                if (length < .15f || Mathf.Abs(first.y - last.y) / length > .22f ||
-                    NearPlatform(link, first, last, platforms))
+                if (length < .015f || !stair && (Mathf.Abs(first.y - last.y) / length > .22f ||
+                    NearPlatform(link, first, last, platforms)))
                     continue;
 
                 lengths[index] = length;
+                // Arrivals use open pavements. Stair flights and their landings
+                // are connected travel, including the final join to the sidewalk.
+                if (stair) continue;
                 Vector3 middle = Sample(index, length * .5f, out _);
                 busy[index] = link.Id.StartsWith("coast", StringComparison.Ordinal) ||
                     link.Id.StartsWith("river-promenade:", StringComparison.Ordinal) ||
@@ -85,6 +87,7 @@ namespace BarPromenade
 
         public float Length(int link) => lengths[link];
         public string LinkId(int link) => streets.Links[link].Id;
+        public bool IsStair(int link) => streets.Links[link].Kind == CityPedestrianLinkKind.Stair;
         public bool IsBusy(int link) => busy[link];
         public int LaneLimit(int link) => busy[link] && lengths[link] >= 14f ? 2 : 1;
 

@@ -777,12 +777,11 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   during City absences. On benches and bus seats the hips and thighs rest on
   the surface, hands on thighs and feet on the floor.
   Resident caps `5/28/22/36/10` over 00–06/06–10/10–17/17–22/22–24,
-  cache `48`. Local visual walks add `2/8/10/12/4`, cache `18`, combined
-  ceiling `48`. Both warm under the overlay and use half-hour ramps.
-  Ambient figures appear and retire out of view, leave platforms, crossings
-  and stairs clear, and fill toward a combined 60% men and 40% women.
-  Opposing figures use both shoulders. On single-file pavement the yielding
-  figure backs toward a turnout. House entrances are terminal routes with
+  cache `48`. Visual walks add `2/8/10/12/4`, cache `18`, combined `48`.
+  Both warm under the overlay with half-hour ramps. Warm ambient≤3, arrivals
+  per 12m≤4 combined/2 ambient. Hidden entries and exits, 60/40 target.
+  Ambient walks use stairs, avoid crossings and enter away from platforms.
+  Walkers turn into clear shoulders, using free kerb edges or turnouts. House spurs have
   the full paved shoulders. Public circuits turn at the sidewalk. The hero's
   house is private; the pavement in front stays connected. Ordinary
   movement keeps its `.82 m/s` pace; distant idle/walk sampling is bounded while

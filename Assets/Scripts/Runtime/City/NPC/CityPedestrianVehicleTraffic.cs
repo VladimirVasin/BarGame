@@ -35,11 +35,13 @@ namespace BarPromenade
             carBounds = collider != null ? new Bounds(collider.center, collider.size) : default;
         }
 
-        public void Refresh(IReadOnlyList<CityPedestrianActor> walkers = null)
+        public void Refresh(IReadOnlyList<CityPedestrianActor> walkers = null, Vector3? ambientOrigin = null)
         {
             ClearFootprints();
-            Bounds neighbourhood = default;
-            bool anyWalker = false;
+            bool anyWalker = ambientOrigin.HasValue;
+            float diameter = CityAmbientPedestrians.ReleaseRadius * 2f;
+            Bounds neighbourhood = anyWalker
+                ? new Bounds(ambientOrigin.Value, new Vector3(diameter, 8f, diameter)) : default;
             if (walkers != null)
                 for (int i = 0; i < walkers.Count; i++)
                 {

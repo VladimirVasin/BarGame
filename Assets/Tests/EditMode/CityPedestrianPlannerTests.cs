@@ -364,7 +364,7 @@ namespace BarPromenade.Tests.EditMode
                 {
                     Assert.That(
                         link.Kind,
-                        Is.EqualTo(CityPedestrianLinkKind.Sidewalk),
+                        Is.EqualTo(CityPedestrianLinkKind.Stair),
                         link.Id);
                     nodeIndices.Add(link.FirstNodeIndex);
                     nodeIndices.Add(link.SecondNodeIndex);

@@ -531,12 +531,13 @@
   sit/guard/shove, shared rig/footsteps; six placed residents stay off streets.
   Home retains5/2 over first8. Spatial peer index/bounded animation sampling;
   collision/time/input stay live. Shared effects/PP retained; cost unmeasured.
-  `CityAmbientPedestrians`: hidden sidewalk entries, ≤12 active/cache18,
-  ≤48 combined, 60/40 target. Looks allocate after permanent signatures.
-  Ambient passing uses paired shoulders or a turnout, with hero/resident
-  priority. House spurs end at the apron and serve actual trips home. Circuits
-  turn at the frontage; ambient skips spurs/platforms/stairs. The hero's gate
-  stays public. Pause/dormancy bound the presentation.
+  `CityAmbientPedestrians` ≤12/cache18, ≤48 combined, 60/40 target.
+  Looks allocate after permanent signatures. Warm≤3. In 12m arrivals share
+  four slots, two ambient. Hidden excess retires. Passing probes pavement
+  width and stair joins. Walkers turn into the step and can use 0.32m of clear
+  road beside a kerb. Traffic forecast guards it. Hero/resident priority.
+  Spurs serve homes, circuits use the frontage.
+  The hero's gate stays public. Pause/dormancy bound presentation.
   Effects audit: GI/SSAO/fog/volumetrics/shadows/grading keep existing City
   coverage; moving rig bounds/contact shadows retained, no new light or GI pass.
   Reflections/SSR/water/wetness/bevels/vertex colour/wind/decals/particles/rim/
