@@ -33,10 +33,22 @@ ANCHORS = {
     "KioskServiceDoor": (-1.513, .08, -.632),
 }
 TABLES = ((-2.15, -4.94), (2.15, -4.94), (0., -8.43))
+COURT_LAMP_OFFSET, COURT_LAMP_Y = .275, 2.437
 COURT_ANCHORS = {f"KioskCourtTable{i}": (x, 1.06, z) for i, (x, z) in enumerate(TABLES)}
 COURT_ANCHORS.update({f"KioskCanopy{i}": (x, 2.52, z) for i, (x, z) in enumerate(TABLES)})
-COURT_ANCHORS.update({f"KioskCourtLight{i}": (x+.13, 2.34, z) for i, (x, z) in enumerate(TABLES)})
+COURT_ANCHORS.update({f"KioskCourtLamp{i}": (x, 2.52, z) for i, (x, z) in enumerate(TABLES)})
+COURT_ANCHORS.update({f"KioskCourtLight{i}{side}": (x + sign * COURT_LAMP_OFFSET, COURT_LAMP_Y, z)
+                      for i, (x, z) in enumerate(TABLES) for side, sign in (("Left", -1), ("Right", 1))})
 COURT_ANCHORS["KioskCourtSlab"] = (0., 0., 0.)
+PATHS = {
+    "Service": ((-2.55, -1.27, -1.45, .75),),
+    "Left": ((-3.91, -1.27, -2.55, .75), (-3.91, .75, -2.12, 3.40)),
+    "Right": ((1.66, -1.27, 3.46, 3.40),),
+    "LeftTurn": ((-2.12, 1.77, -1.50, 3.36),),
+    "RightTurn": ((1.50, 1.77, 1.66, 3.36),),
+}
+COURT_ANCHORS.update({"KioskCourtPath" + part: (0., 0., 0.) for part in PATHS})
+COURT_ANCHORS["KioskCourtEdges"] = (0., 0., 0.)
 # One paint/material atlas. Its alpha is smoothness for the URP lit surface.
 SURFACES = {
     "sage": ((103, 127, 116), .34), "kick": ((65, 83, 80), .37),
@@ -373,11 +385,92 @@ def court():
             m.beam("iron", (x, 2.80, z), (p[0], 2.245, p[2]), .018, .016)
             m.beam(("kick", "paper", "sage")[i], p, q, .026, .023)
         m.cylinder("iron", (x, 2.84, z), .066, .07)
-        m.beam("iron", (x, 2.54, z), (x+.13, 2.46, z), .026, .026)
-        m.cylinder("enamel", (x+.13, 2.409, z), .112, .085)
-        m.cylinder(LAMP, (x+.13, 2.353, z), .084, .028)
+        m.group = f"KioskCourtLamp{i}"
+        # A fixed annular fitting clamps to the mast. The textile canopy can
+        # move separately, while the frosted lens and its sources stay aligned.
+        m.add("iron", lamp_ring(x, z, ((.046, 2.484), (.055, 2.475),
+                                      (.115, 2.475), (.115, 2.546), (.046, 2.546))))
+        m.add("enamel", lamp_ring(x, z, ((.104, 2.456), (.367, 2.456), (.380, 2.467),
+                                        (.380, 2.499), (.368, 2.511), (.104, 2.511))))
+        m.add(LAMP, lamp_ring(x, z, ((.118, 2.443), (.343, 2.443), (.353, 2.450),
+                                    (.353, 2.457), (.113, 2.457), (.113, 2.450))))
         m.group = None
+    court_edges(m)
+    for name, rectangles in PATHS.items():
+        m.group = "KioskCourtPath" + name
+        for left, back, right, front in rectangles:
+            # Disjoint panels share joints; the runtime only conforms this
+            # authored surface to the survey's grade, including Home's copy.
+            m.box("concrete", ((left+right)/2, -.076, (back+front)/2),
+                  (right-left, .124, front-back), .006)
+            rows = sorted({back, front, *[v for v in (.75, 1.35, 2.35) if back < v < front]})
+            columns = max(1, math.ceil((right-left)/.95))
+            for a, b in zip(rows, rows[1:]):
+                for col in range(columns):
+                    x0 = left + (right-left)*col/columns
+                    x1 = left + (right-left)*(col+1)/columns
+                    m.box("concrete", ((x0+x1)/2, -.028, (a+b)/2),
+                          (x1-x0-.004, .056, b-a-.004), .005)
     return m
+
+
+def lamp_ring(x, z, profile, sides=16):
+    """Revolve a closed chamfered cross-section around the umbrella mast."""
+    vertices = [(x + radius * math.cos(i * math.tau / sides), y,
+                 z + radius * math.sin(i * math.tau / sides))
+                for radius, y in profile for i in range(sides)]
+    faces = []
+    for ring in range(len(profile)):
+        first, second = ring * sides, ((ring + 1) % len(profile)) * sides
+        for i in range(sides):
+            following = (i + 1) % sides
+            faces.append((first + i, second + i, second + following, first + following))
+    return vertices, faces
+
+
+def court_edges(m):
+    m.group = "KioskCourtEdges"
+    # Low repaired garden steel, with an open street-facing edge and rear gap.
+    for start, end in (((-4.88, -10.58), (-4.88, -3.54)),
+                       ((4.88, -10.58), (4.88, -1.39)),
+                       ((-4.88, -10.58), (-1.12, -10.58)),
+                       ((1.12, -10.58), (4.88, -10.58))):
+        a, b = Vector((start[0], 0, start[1])), Vector((end[0], 0, end[1]))
+        direction = (b-a).normalized()
+        count = math.ceil((b-a).length/1.85)
+        for i in range(count+1):
+            p = a.lerp(b, i/count)
+            m.box("concrete", (p.x, .065, p.z), (.24, .13, .24), .018)
+            m.box("kick", (p.x, .47, p.z), (.068, .82, .068), .009)
+            m.box("sage", (p.x, .90, p.z), (.094, .035, .094), .008)
+            if i == count:
+                continue
+            q = a.lerp(b, (i+1)/count)
+            for y in (.27, .79):
+                m.beam("sage", (p.x, y, p.z), (q.x, y, q.z), .038, .038)
+            mid = (p+q)*.5
+            half = min(.39, (q-p).length*.28)
+            diamond = (mid-direction*half + Vector((0,.53,0)), mid+Vector((0,.76,0)),
+                       mid+direction*half + Vector((0,.53,0)), mid+Vector((0,.30,0)))
+            for j in range(4):
+                m.beam("sage", diamond[j], diamond[(j+1)%4], .025, .025)
+            # A few dull bare welds, never an all-over rust overlay.
+            if i % 3 == 1:
+                m.box("rust", (p.x, .79, p.z), (.073, .027, .073), .003)
+    for x in (-4.06, 4.06):
+        z = -9.65
+        m.box("concrete", (x, .055, z), (1.16, .11, .82), .022)
+        for dx in (-.525, .525):
+            m.box("concrete", (x+dx, .29, z), (.11, .42, .82), .018)
+        for dz in (-.355, .355):
+            m.box("concrete", (x, .29, z+dz), (.94, .42, .11), .018)
+        m.box("gasket", (x, .395, z), (.94, .03, .60), .008)
+        for i in range(5):
+            px, pz = x-.35+.17*i, z+.12*math.sin(i*2.4)
+            height = .15 + .07*(i%3)
+            m.beam("kick", (px,.41,pz), (px,.41+height,pz), .018, .018)
+            for side in (-1, 1):
+                m.beam("sage", (px,.45,pz), (px+side*.09,.45+height*.65,pz+side*.07), .070, .022)
 
 
 def crown(x):
@@ -588,6 +681,8 @@ def main():
     parser.add_argument("--validate-only",action="store_true")
     parser.add_argument("--kiosk-only", action="store_true",
                         help="Publish the kiosk and court; preserve unchanged stock assets.")
+    parser.add_argument("--court-only", action="store_true",
+                        help="Publish the rear court; preserve kiosk, stock and shared palette.")
     args = parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
     builds = (("RidgeKiosk", kiosk, ANCHORS),("PotatoPie", pie, {}),("RidgeKioskCourt", court, COURT_ANCHORS))
     texture = atlas_bytes()
@@ -611,8 +706,12 @@ def main():
     assert bounds["bounds_min"][0] < -1.5 and bounds["bounds_min"][1] == -.5
     assert bounds["bounds_max"][2] == 3.4 and abs(bounds["bounds_max"][1] - 2.733) < .001
     court_bounds = payload["models"]["RidgeKioskCourt"]
-    assert court_bounds["bounds_max"][2] <= -1.27 and court_bounds["bounds_min"][2] == -10.7
-    assert court_bounds["triangles"] < 6500
+    assert court_bounds["bounds_max"][2] == 3.4 and court_bounds["bounds_min"][2] == -10.7
+    assert court_bounds["triangles"] < 15000
+    model = court()
+    for (_, solid), group in zip(model.solids, model.groups):
+        if not (group or "").startswith("KioskCourtPath"):
+            assert max(v[2] for v in solid[0]) <= -1.27 + 1e-6
     assert bounds["triangles"] + payload["models"]["PotatoPie"]["triangles"] < 13000
     manifest = json.dumps(payload, indent=2)+"\n"
     if args.validate_only:
@@ -621,15 +720,19 @@ def main():
     else:
         args.model_dir.mkdir(parents=True,exist_ok=True)
         args.source_dir.mkdir(parents=True,exist_ok=True)
-        path = (OUT if args.kiosk_only else args.model_dir)/"RidgeKioskPalette.png"
-        if args.kiosk_only:
+        path = (OUT if args.kiosk_only or args.court_only else args.model_dir)/"RidgeKioskPalette.png"
+        if args.kiosk_only or args.court_only:
             existing = json.loads((OUT/"RidgeKiosk.json").read_text())
             assert existing["models"]["PotatoPie"] == payload["models"]["PotatoPie"]
+            if args.court_only:
+                assert existing["models"]["RidgeKiosk"] == payload["models"]["RidgeKiosk"]
             assert path.read_bytes() == texture
         else:
             path.write_bytes(texture)
         (args.model_dir/"RidgeKiosk.json").write_text(manifest)
         for name,make,marks in builds:
+            if args.court_only and name != "RidgeKioskCourt":
+                continue
             if args.kiosk_only and name == "PotatoPie":
                 continue
             emit(name,make(),marks,args.model_dir,args.source_dir,path)

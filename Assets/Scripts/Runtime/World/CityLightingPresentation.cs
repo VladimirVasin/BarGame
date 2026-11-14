@@ -30,7 +30,7 @@ namespace BarPromenade
 
             internal SourceZoneBinding(string name)
             {
-                FixtureBound = name.StartsWith("Fixed City Light ", StringComparison.Ordinal);
+                FixtureBound = name.StartsWith(CityNightAtmosphere.FixedLightPrefix, StringComparison.Ordinal);
                 FixedZone = name.StartsWith("Port ", StringComparison.Ordinal) || name == "Hut Lamp Light" || name == "Ferryman Car Floodlight Light" ? Zone.CoastPort :
                     name.Contains("Cemetery") || name == "Porch Lamp Light" || name == "Ground Planting Light" ? Zone.ChurchCemetery :
                     name.StartsWith("Cannery ", StringComparison.Ordinal) || name.StartsWith("Delivery Truck ", StringComparison.Ordinal) ? Zone.Industrial :
@@ -231,6 +231,8 @@ namespace BarPromenade
             {
                 if (anchor == null) continue;
                 fixtureZones[anchor.position] = ResolveDistrict(anchor.position);
+                // The two court sources belong to one registered frosted lens.
+                if (anchor.name == CityNightAtmosphere.IndustrialTaskLightPrefix + RidgeKioskCourtWorld.LampPurpose) continue;
                 if (!HasEmitterNear(anchor.position)) AddEmitter(new Emitter { Anchor = anchor,
                     Radius = .13f, Strength = .25f }, false);
             }
@@ -252,19 +254,20 @@ namespace BarPromenade
                 int cafeLight = CafeLightIndex(light);
                 if (cafeLight < 0 && !IsExistingPractical(name)) continue;
                 if (practicals.Count >= MaximumPracticals) throw new InvalidOperationException("City practical catalogue exceeds its fixed fixture budget.");
-                bool fixtureBound = name.StartsWith("Fixed City Light ", StringComparison.Ordinal);
+                bool fixtureBound = name.StartsWith(CityNightAtmosphere.FixedLightPrefix, StringComparison.Ordinal);
                 bool entrance = fixtureBound && Atmosphere.IsResidentialEntranceLight(light);
+                bool courtDiffuser = fixtureBound && name.EndsWith(RidgeKioskCourtWorld.LampPurpose, StringComparison.Ordinal);
                 bool moving = name.StartsWith("Bus ", StringComparison.Ordinal) ||
                     name.StartsWith("Delivery Truck Headlamp ", StringComparison.Ordinal) ||
                     name == "Port Vessel Searchlight";
-                bool volume = name != "Home Yard Spotlight Light" &&
+                bool volume = !courtDiffuser && name != "Home Yard Spotlight Light" &&
                     name != "Island Mast Floodlight Light" &&
                     name != "Ferryman Car Floodlight Light" &&
                     name != "Ground Planting Light" && !name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal);
                 var practical = new Practical(light, name) { Moving = moving, FixtureBound = fixtureBound, AllowVolume = volume,
                     Entrance = entrance, SurfaceOnly = fixtureBound && !entrance && Atmosphere.IsLaundryDiffuser(light),
-                    // Existing fire spill is already causal; do not sum it again.
-                    AllowBounce = name != CityArchShelterPresentation.FireLightObjectName &&
+                    // The court pair already approximates the same diffuse fixture.
+                    AllowBounce = !courtDiffuser && name != CityArchShelterPresentation.FireLightObjectName &&
                         name != "Ground Planting Light" && !name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal) };
                 if (Atmosphere.TryGetBusStopSource(light, out CityBusStopLighting stopFixture, out int stopSource))
                 {
@@ -351,7 +354,7 @@ namespace BarPromenade
 
         private static bool IsExistingPractical(string name)
         {
-            return name.StartsWith("Fixed City Light ", StringComparison.Ordinal) ||
+            return name.StartsWith(CityNightAtmosphere.FixedLightPrefix, StringComparison.Ordinal) ||
                 name.StartsWith("Bar Entrance Light ", StringComparison.Ordinal) ||
                 name.StartsWith("Bus Headlight ", StringComparison.Ordinal) || name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal) ||
                 name.StartsWith("Delivery Truck Headlamp ", StringComparison.Ordinal) ||

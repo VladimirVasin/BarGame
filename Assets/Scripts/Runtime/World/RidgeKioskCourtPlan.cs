@@ -28,6 +28,8 @@ namespace BarPromenade
             Origin = origin;
             this.streetHeight = streetHeight;
             EntrySide = entrySide;
+            HasLeftApproach = entrySide < 0 || bothSides;
+            HasRightApproach = entrySide > 0 || bothSides;
             Slab = WorldRect(-SlabHalfWidth, SlabBack, SlabHalfWidth, SlabFront);
             float slabJoin = SlabFront - CityGroundTraversalPlanner.ConnectorReach;
             var paths = new List<Rect>(4) { WorldRect(-2.55f, slabJoin, -1.45f, .75f) };
@@ -48,7 +50,15 @@ namespace BarPromenade
             Phone = Point(-4.22f, -2.43f);
             PhoneBounds = WorldRect(-4.79f, -3.17f, -3.65f, -1.69f);
             PhoneAccess = WorldRect(-4.82f, -3.27f, -2.45f, -1.58f);
-            var solids = new Vector2[TableCount][];
+            // Footings and planters stay outside the existing table/phone aisles.
+            EdgeBounds = Array.AsReadOnly(new[] {
+                WorldRect(-5f, -10.70f, -4.76f, -3.42f),
+                WorldRect(4.76f, -10.70f, 5f, -1.27f),
+                WorldRect(-5f, -10.70f, -1f, -10.46f),
+                WorldRect(1f, -10.70f, 5f, -10.46f),
+                WorldRect(-4.64f, -10.06f, -3.48f, -9.24f),
+                WorldRect(3.48f, -10.06f, 4.64f, -9.24f) });
+            var solids = new Vector2[TableCount + EdgeBounds.Count][];
             for (int index = 0; index < TableCount; index++)
             {
                 Vector3 table = tables[index];
@@ -61,6 +71,8 @@ namespace BarPromenade
                 }
                 solids[index] = rim;
             }
+            for (int index = 0; index < EdgeBounds.Count; index++)
+                solids[TableCount + index] = CityRoadPolygon.Rectangle(EdgeBounds[index]);
             Solids = Array.AsReadOnly(solids);
         }
 
@@ -70,6 +82,9 @@ namespace BarPromenade
         public Rect PhoneBounds { get; }
         public Rect PhoneAccess { get; }
         public IReadOnlyList<Rect> Reservations => reservations;
+        internal IReadOnlyList<Rect> EdgeBounds { get; }
+        internal bool HasLeftApproach { get; }
+        internal bool HasRightApproach { get; }
         internal IReadOnlyList<Rect> WalkableFloors { get; }
         internal IReadOnlyList<Vector2[]> Solids { get; }
         internal int EntrySide { get; }
@@ -109,7 +124,7 @@ namespace BarPromenade
                 // Stop at the edge of the existing pavement. Its collision and
                 // longitudinal profile keep ownership through the junction.
                 if (p.y <= approach.yMax + .01f)
-                    baseHeight = BlendHeight(approach, p, baseHeight, PathTop(p));
+                    baseHeight = BlendHeight(approach, p, baseHeight, PathTop(p) - .035f);
             }
             return BlendHeight(Slab, p, baseHeight, Origin.y - .018f);
         }

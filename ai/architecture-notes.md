@@ -2,19 +2,21 @@
 
 ## Current facts
 
-- **Accepted 2026-11-12 and 2026-11-13, user — Ridge kiosk court:** rear slab, 3 umbrellas/phone.
-  City/Home share grade. Two side places per table; off-aisle waits for arrivals.
-  One buyer owns the round trip. Departures use the same turn.
-  The final rest adds 45–75s. Guests keep the last sip until their refill turn.
-  Last orders22, clear23. City load freezes time; settled guests start mid-drink.
-  Arrivals walk, buy, carry. Hero grip and upright throw (≤6 empties).
-  Shared sips and bar counter pairs in shared bubbles.
-  Seller idles/focuses, uses hinged door and shared smoke until a buyer arrives.
-  Story §6/17/21 and art §4/7/16. Shared City lighting/GI, SSAO, fog/air, shadows,
-  grade, probes/road SSR. Court lit by pooled spots; sidewalk wetness, bevels,
-  atlas wear, wind and rain contacts. Water/COLOR/rim/outlines unchanged;
-  bloom/DOF/AA/vignette/grain/dither/flares/blur/lens retain scene ownership.
-  No added SSGI/SCGI/pass. Costs unmeasured.
+- **Accepted 2026-11-14, user — umbrella light:** fixed frosted rings, two wide
+  weak pooled Spots each. The visible lens owns bloom. The paired sources light
+  surfaces directly and skip air and bounce. City/Home share the fixtures.
+  City softness/grade/SSAO/fog/probes/roadSSR/scene post apply. Costs unmeasured.
+
+- **Accepted 2026-11-13, user — court paving/fence:** Blender paths share
+  City/Home grade, wetness and grass exclusion. Off-aisle rails/planters join
+  nav/map obstacles. Courtyard map-art exemption. Grade once, release at teardown.
+
+- **Accepted 2026-11-12/13, user — Ridge kiosk court:** rear slab/3 umbrellas/phone,
+  2/table and off-aisle waits. Single refill/departure trip. Final rest +45–75s,
+  last sip on turn. Orders22/empty23. Frozen load clock, prefilled guests mid-drink.
+  Walk/buy/carry, hero grip/throw≤6 empties, shared sips/bar pairs/bubbles.
+  Seller idle/look/hinge/smoke. Story6/17/21,art4/7/16. Shared wetness/wind/rain,
+  atlas wear/chamfers. Water/COLOR/rim/outlines as City. SSGI/SCGI absent.
 
 - **Accepted 2026-11-12, user — ordinary women.** City 48/192 by fixed street IDs.
   Cannery rest rig/body, distinct faces/clothes and long loose hair, ponytail, braid.

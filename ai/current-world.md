@@ -1571,13 +1571,13 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
 - Home `8.8 m` body/upper gallery/open balcony/left lit window. City/Home share
   `4.7 m` floor, door/window and `2.3 m` deck. City starts at Ridge Home; custom
   fallback≤48m street walk. Interior returns to its own sidewalk.
-- `CityKioskSites`:E→Vendor/Pie5/Beer6/Vodka28; shared receipt/focus.
-  Talk at Ridge. Residential≥120m route/≥60mXZ from bars,max min route.
-  Matte«КИОСК»/canopy light/neon24/7; side prints Ridge beer/Residential pies/Industrial vodka.
-  Ridge rear slab/umbrellas/phone; two per table, settled guests with drinks.
-  Arrivals buy/carry. Guests save the last sip until their refill turn.
-  Bar talk, held sips, hero throw. Orders end22, clear by23.
-  Seller idles, looks at buyer, walks out to smoke between customers.
+- `CityKioskSites`:E→Vendor/Pie5/Beer6/Vodka28;shared receipt/focus/Ridge talk.
+  Residential≥120m route/≥60mXZ from bars,max min route.
+  Matte«КИОСК»/canopy/neon24/7;Ridge beer/Residential pies/Industrial vodka prints.
+  Ridge:rear slab/umbrellas with frosted ring lights/phone. Paved approach,
+  low diamond rails and corner planters.
+  Two/table;settled guests hold drinks. Arrivals walk/buy/carry;last sip waits for
+  refill turn. Bar pairs/hero throw;orders22/clear23. Seller idle/look/smoke walk.
 - Bar fronts: warm windows, framed entrances and shared pixel mug signs.
 
 ### The hero

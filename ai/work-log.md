@@ -3,6 +3,14 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-14
+
+The Ridge umbrellas use wide frosted rings. Two dim sources per ring spread
+light across both guests and reduce the peak on the mast. The lens supplies
+glow while the two sources use direct lighting. `build-ridge-kiosk-3d-model`
+passed. `LiveCity_RidgeUmbrellaDiffusersLightBothGuestsWithoutClipping` passed.
+Night frames were reviewed for faces, tabletop light and diffuser placement.
+
 ## 2026-11-13
 
 Ridge court pairs stand off the aisles and arrivals wait separately.
@@ -10,6 +18,13 @@ The refill pause is part of the final rest. Guests save the last sip until
 their turn and walk after the throw. The aisle stays reserved through the return.
 `LiveCity_RidgeKioskRearCourtTradesAndEmptiesByEleven` passed last sip timing,
 repeat trips, route clearance, walk-in and closing. Court frames reviewed.
+
+Authored concrete approaches cover the existing route to the street; grade,
+rain response and grass exclusion share the court plan. Low diamond rails and
+corner planters join the physical and navigation obstacles without crossing aisles.
+`build-ridge-kiosk-3d-model` passed. The same focused court check passed paved
+contacts, grass exclusion and fence clearance; day/street/night frames reviewed.
+`check-docs` and `git diff --check` passed.
 
 ## 2026-11-12
 

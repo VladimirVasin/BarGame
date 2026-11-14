@@ -52,6 +52,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(regulars.All(id => !DefaultNpcPopulation.IsWomanPedestrian(id)), Is.True);
             Assert.That(regulars.All(id => city.Pedestrians.Residents.Schedule(id, 0, CityResidentLifeRules.KioskCourtEmptyMinute).Activity != CityResidentActivity.Leisure), Is.True);
             VerifyCourtGraph();
+            VerifyCourtPavingAndEdges();
             int startupPlaces = live.OccupiedPlaces;
             var startupDrinks = city.Pedestrians.GetComponentsInChildren<VodkaBottleView>();
             string startupState = $"Minute {GameSessionState.GameTimeOfDayMinutes:F2}, hero {city.Player.GameObject.transform.position}, " +
@@ -114,6 +115,8 @@ namespace BarPromenade.Tests.PlayMode
             {
                 GameCursor.SetApplicationFocused(true);
                 city.Pedestrians.AutomaticUpdatesSuspended = true;
+                Capture("00-enclosed-court-evening", court.Point(7.5f, -13.0f) + Vector3.up * 5.3f,
+                    court.Point(0f, -5.5f) + Vector3.up * .5f);
                 Capture("01-startup-drinkers", court.Point(4.6f, -9.9f) + Vector3.up * 2.2f, court.Point(-.4f, -4.7f) + Vector3.up * 1.2f);
                 Transform subject = beerHolder.transform;
                 Capture("02-beer-grip", beerHolder.Position + subject.right * 1.05f + subject.forward * .88f + Vector3.up * 1.48f,
@@ -331,6 +334,14 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 Assert.That(walkedInWithDrink, Is.True, "An arriving resident must walk from the street and carry the purchase to the court. " + TradeState());
                 Debug.Log("Ridge kiosk walk-in reached the court with the purchased container in hand.");
+                if (review)
+                {
+                    AdvanceCalendarTo(12 * 60);
+                    Capture("07-paved-street-entrance", court.Point(6f, 5.7f) + Vector3.up * 2.4f,
+                        court.Point(2.3f, -.6f) + Vector3.up * .5f);
+                    Capture("08-enclosed-court-day", court.Point(7.5f, -13.0f) + Vector3.up * 5.3f,
+                        court.Point(0f, -5.5f) + Vector3.up * .5f);
+                }
 
                 void ObserveRepeatRoutes()
                 {
@@ -411,6 +422,38 @@ namespace BarPromenade.Tests.PlayMode
                         }
                     }
                 }
+            }
+
+            void VerifyCourtPavingAndEdges()
+            {
+                Physics.SyncTransforms();
+                var grass = city.World.Root.GetComponentInChildren<CityGrassField>().Surface;
+                foreach (float x in new[] { court.SideAisle, -1.95f })
+                {
+                    float front = x == court.SideAisle ? CityKioskSitePlan.ApronFront - .02f : .70f;
+                    for (float z = RidgeKioskCourtPlan.SlabFront + .05f; z <= front; z += .08f)
+                    {
+                        Vector3 foot = court.Point(x, z);
+                        var point = new Vector2(foot.x, foot.z);
+                        foot.y = court.PathTop(point);
+                        Assert.That(Physics.Raycast(foot + Vector3.up * .25f, Vector3.down, out RaycastHit hit,
+                            .5f, ~0, QueryTriggerInteraction.Ignore), Is.True, "Paving needs a physical top at " + point);
+                        Assert.That(hit.collider.name, Does.Contain("KioskCourtPath"), "The path must be laid over the earth.");
+                        Assert.That(hit.point.y, Is.EqualTo(foot.y).Within(.02f), "Paving must follow the planned grade.");
+                        Assert.That(hit.collider.GetComponent<FootstepGround>().Kind, Is.EqualTo(FootstepGroundKind.Concrete));
+                        Assert.That(grass.TrySample(point, out _, out _, out _), Is.False, "No grass through the laid path.");
+                    }
+                }
+                var nav = CityPedestrianPlanner.CreateWalkableArea(city.Pedestrians.Plan);
+                foreach (Rect edge in court.EdgeBounds)
+                {
+                    Vector3 p = new(edge.center.x, court.Origin.y, edge.center.y);
+                    Assert.That(nav.Contains(p, city.Pedestrians.Plan.AgentRadius), Is.False,
+                        "Fence/planter footprints must exclude NPC paths.");
+                    Assert.That(city.World.WalkableArea.Contains(p, CityGroundTraversalPlanner.MaximumAgentRadius), Is.False,
+                        "The hero must respect the same fence and planter footprints.");
+                }
+                Debug.Log("Ridge kiosk paved approach: concrete contacts, grade, grass exclusion and fence clearance verified.");
             }
 
             static float XzDistance(Vector3 a, Vector3 b) => new Vector2(a.x - b.x, a.z - b.z).magnitude;

@@ -141,8 +141,8 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(viewport.x, Is.InRange(.05f, .95f), name + " " + patch.label);
                         Assert.That(viewport.y, Is.InRange(.05f, .95f), name + " " + patch.label);
                         Vector3 radius = city.Camera.WorldToViewportPoint(patch.point + city.Camera.transform.right * patch.halfSize) - viewport;
-                        var lit = RidgeDialoguePatchExposure(name + "-on", viewport, Mathf.Abs(radius.x));
-                        var unlit = RidgeDialoguePatchExposure(name + "-off", viewport, Mathf.Abs(radius.x));
+                        var lit = ReadRidgePatchExposure("RidgeLighting", name + "-on", viewport, Mathf.Abs(radius.x));
+                        var unlit = ReadRidgePatchExposure("RidgeLighting", name + "-off", viewport, Mathf.Abs(radius.x));
                         Debug.Log($"Kiosk dialogue {name}/{patch.label}: on={lit.mean:F5}, off={unlit.mean:F5}, clipped={lit.clipped:F3}.");
                         Assert.That(lit.mean, Is.LessThanOrEqualTo(unlit.mean * 1.2f + .01f),
                             name + " " + patch.label + ": the strong street beam must not brighten the character.");
@@ -212,12 +212,12 @@ namespace BarPromenade.Tests.PlayMode
                         "The street-only beam must exclude " + renderer.name + " even during dialogue.");
         }
 
-        private static (float mean, float clipped) RidgeDialoguePatchExposure(string shot, Vector3 viewport, float radius)
+        private static (float mean, float clipped) ReadRidgePatchExposure(string folder, string shot, Vector3 viewport, float radius)
         {
             var image = new Texture2D(2, 2, TextureFormat.RGB24, false);
             try
             {
-                Assert.That(image.LoadImage(File.ReadAllBytes(Path.Combine("Captures", "RidgeLighting", shot + ".png"))), Is.True);
+                Assert.That(image.LoadImage(File.ReadAllBytes(Path.Combine("Captures", folder, shot + ".png"))), Is.True);
                 int cx = Mathf.RoundToInt(viewport.x * (image.width - 1));
                 int cy = Mathf.RoundToInt(viewport.y * (image.height - 1));
                 int half = Mathf.Clamp(Mathf.RoundToInt(radius * image.width), 2, 24);
@@ -236,6 +236,103 @@ namespace BarPromenade.Tests.PlayMode
                 return (sum / count, (float)clipped / count);
             }
             finally { Object.DestroyImmediate(image); }
+        }
+
+        [UnityTest]
+        public IEnumerator LiveCity_RidgeUmbrellaDiffusersLightBothGuestsWithoutClipping()
+        {
+            Assert.That(GameSessionState.TryStartGameTimeAt(21 * 60 + 10), Is.True);
+            yield return LoadProductionCity();
+            Assert.That(RidgeKioskSitePlan.TryCreate(city.Layout, out var site), Is.True);
+            var court = city.World.Root.GetComponentInChildren<RidgeKioskCourtWorld>();
+            Assert.That(court, Is.Not.Null);
+            var atmosphere = city.Night.Atmosphere;
+            const string anchorName = CityNightAtmosphere.IndustrialTaskLightPrefix + RidgeKioskCourtWorld.LampPurpose;
+            Light[] sources = atmosphere.LampAnchors.Select((anchor, index) => (anchor, index))
+                .Where(binding => binding.anchor.name == anchorName)
+                .Select(binding => atmosphere.GetLightForAnchor(binding.index)).ToArray();
+            Assert.That(sources.Length, Is.EqualTo(2 * RidgeKioskCourtPlan.TableCount));
+            var lenses = court.GetComponentsInChildren<MeshRenderer>()
+                .Where(renderer => renderer.sharedMaterial == CityNightResources.EmissiveMaterial).ToArray();
+            Assert.That(lenses.Length, Is.EqualTo(RidgeKioskCourtPlan.TableCount));
+            foreach (MeshRenderer lens in lenses)
+            {
+                Bounds bounds = lens.bounds;
+                Assert.That(bounds.size.x, Is.InRange(.69f, .72f));
+                Assert.That(bounds.size.z, Is.InRange(.69f, .72f));
+                var lobes = sources.Where(light => (light.transform.position - bounds.center).sqrMagnitude < .31f * .31f)
+                    .OrderBy(light => (light.transform.position - bounds.center).x).ToArray();
+                Assert.That(lobes.Length, Is.EqualTo(2));
+                Assert.That(Vector3.Distance(lobes[0].transform.position, lobes[1].transform.position), Is.EqualTo(.55f).Within(.01f));
+                foreach (Light light in lobes)
+                {
+                    Vector3 offset = light.transform.position - bounds.center;
+                    Assert.That(light.transform.position.y, Is.LessThan(bounds.min.y).And.GreaterThan(bounds.min.y - .02f));
+                    Assert.That(Vector3.Dot(light.transform.forward, offset.normalized), Is.GreaterThan(.25f));
+                    Assert.That(light.type, Is.EqualTo(LightType.Spot));
+                    Assert.That(light.spotAngle, Is.GreaterThanOrEqualTo(160f));
+                    Assert.That(light.range, Is.LessThanOrEqualTo(3.5f));
+                    Assert.That(light.intensity, Is.GreaterThan(1f).And.LessThan(2.1f));
+                    Assert.That(light.isActiveAndEnabled, Is.True);
+                }
+            }
+
+            if (System.Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_RIDGE_LIGHTING") != "1" ||
+                SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) yield break;
+
+            var visitors = city.Pedestrians.Actors.Where(actor => actor.IsSpawned &&
+                city.Pedestrians.ResidentIndex(actor) >= 0 &&
+                city.Pedestrians.Residents.KioskPlace(city.Pedestrians.ResidentIndex(actor)) >= 0 &&
+                site.Court.Slab.Contains(new Vector2(actor.Position.x, actor.Position.z)))
+                .OrderBy(actor => city.Pedestrians.Residents.KioskPlace(city.Pedestrians.ResidentIndex(actor))).ToArray();
+            Assert.That(visitors.Length, Is.EqualTo(RidgeKioskCourtPlan.Capacity));
+            var skins = city.Pedestrians.GetComponentsInChildren<SkinnedMeshRenderer>();
+            var previousForce = skins.Select(skin => skin.forceMatrixRecalculationPerRender).ToArray();
+            var follow = city.Camera.GetComponent<PlayerCameraFollow>();
+            float priorAspect = city.Camera.aspect;
+            const string folder = "RidgeUmbrellaLighting";
+            try
+            {
+                city.DayNight.ApplyCurrentTime(true);
+                atmosphere.RefreshImmediate();
+                foreach (var skin in skins) skin.forceMatrixRecalculationPerRender = true;
+                city.Camera.aspect = 1280f / 720f;
+                Vector3 eye = site.Court.Point(3.6f, -9.8f) + Vector3.up * 1.78f;
+                Vector3 target = site.Court.Point(-.45f, -5.4f) + Vector3.up * 1.55f;
+                follow.SetFixedPose(eye, Quaternion.LookRotation(target - eye), 66f);
+                AreaCaptureFixture.CaptureCurrentCamera(city.Camera, folder, "court-night", 1280, 720);
+
+                for (int place = 0; place < visitors.Length; place++)
+                {
+                    CityPedestrianActor visitor = visitors[place];
+                    Transform head = visitor.Presentation.Registry.HeadAnchor;
+                    Transform mouth = CityPedestrianHandProps.FindSocket(head, BarPatronWorldBuilder.MouthSocketName);
+                    Assert.That(mouth, Is.Not.Null);
+                    Vector3 face = mouth.position + Vector3.up * .043f;
+                    Vector3 sight = visitor.transform.forward;
+                    eye = face + sight * 1.42f + visitor.transform.right * .43f + Vector3.up * .055f;
+                    follow.SetFixedPose(eye, Quaternion.LookRotation(face - eye), 48f);
+                    string shot = "guest-" + place;
+                    Vector3 sample = city.Camera.WorldToViewportPoint(face);
+                    AreaCaptureFixture.CaptureCurrentCamera(city.Camera, folder, shot, 1280, 720);
+                    foreach (Light light in sources) light.enabled = false;
+                    AreaCaptureFixture.CaptureCurrentCamera(city.Camera, folder, shot + "-off", 1280, 720);
+                    foreach (Light light in sources) light.enabled = true;
+
+                    var illuminated = ReadRidgePatchExposure(folder, shot, sample, .018f);
+                    var unlit = ReadRidgePatchExposure(folder, shot + "-off", sample, .018f);
+                    Debug.Log($"Umbrella guest {place}: face luminance {illuminated.mean:F5}, ambient {unlit.mean:F5}, clipped {illuminated.clipped:P1}.");
+                    Assert.That(illuminated.mean, Is.GreaterThan(unlit.mean + .004f), "The diffuser must reach each guest's face.");
+                    Assert.That(illuminated.clipped, Is.LessThan(.03f), "The lit face must retain detail without broad clipping.");
+                }
+            }
+            finally
+            {
+                foreach (Light light in sources) light.enabled = true;
+                for (int i = 0; i < skins.Length; i++) skins[i].forceMatrixRecalculationPerRender = previousForce[i];
+                city.Camera.aspect = priorAspect;
+                follow.ClearFixedPose();
+            }
         }
 
         [UnityTest]

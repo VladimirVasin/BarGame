@@ -7,10 +7,14 @@ namespace BarPromenade
 {
     internal sealed class RidgeKioskCourtWorld : MonoBehaviour
     {
+        internal const string LampPurpose = "RidgeKioskCourt";
+        private static readonly Color DiffuserGlow = new Color(.83f, .67f, .47f);
         private readonly Transform[] canopies = new Transform[RidgeKioskCourtPlan.TableCount];
         private readonly Quaternion[] canopyRest = new Quaternion[RidgeKioskCourtPlan.TableCount];
         private readonly Transform[] tableTops = new Transform[RidgeKioskCourtPlan.TableCount];
         private Renderer concrete;
+        private readonly List<Renderer> pathSurfaces = new(5);
+        private readonly List<Mesh> gradedMeshes = new(5);
         private Camera observer;
         private float nextWindSample;
         internal RidgeKioskCourtPlan Plan { get; private set; }
@@ -29,6 +33,7 @@ namespace BarPromenade
             result.Plan = plan;
             result.concrete = Find(model, "KioskCourtSlab").GetComponentInChildren<MeshRenderer>();
             CityWetSurfaceRegistry.Register(result.concrete, CityWetSurfaceKind.Sidewalk);
+            result.BuildPaths(model, interactive);
             if (interactive)
             {
                 result.HeroActions = new NpcHeroUpperBodyPose(host);
@@ -41,6 +46,9 @@ namespace BarPromenade
                 var furnitureCollision = furniture.gameObject.AddComponent<MeshCollider>();
                 furnitureCollision.sharedMesh = furniture.sharedMesh;
                 FootstepGround.Stamp(furniture.gameObject, FootstepGroundKind.Wood);
+                var edges = Find(model, "KioskCourtEdges").GetComponentInChildren<MeshFilter>();
+                edges.gameObject.AddComponent<MeshCollider>().sharedMesh = edges.sharedMesh;
+                FootstepGround.Stamp(edges.gameObject, FootstepGroundKind.Concrete);
             }
             for (int table = 0; table < RidgeKioskCourtPlan.TableCount; table++)
             {
@@ -52,23 +60,17 @@ namespace BarPromenade
                 Transform canopy = Find(model, "KioskCanopy" + table);
                 result.canopies[table] = canopy;
                 result.canopyRest[table] = canopy.localRotation;
-                MeshFilter canopySurface = null;
-                foreach (var renderer in canopy.GetComponentsInChildren<MeshRenderer>())
-                {
-                    if (renderer.name.EndsWith("_KioskLampGlass", StringComparison.Ordinal))
-                    {
-                        renderer.sharedMaterial = CityNightResources.EmissiveMaterial;
-                        renderer.shadowCastingMode = ShadowCastingMode.Off;
-                        renderer.receiveShadows = false;
-                        CityNightGlowRegistry.Register(renderer, new Color(1.48f, .99f, .49f));
-                    }
-                    else canopySurface = renderer.GetComponent<MeshFilter>();
-                }
-                Transform light = new GameObject(CityNightAtmosphere.IndustrialTaskLightPrefix + "RidgeKioskCourt").transform;
-                light.SetParent(host, false);
-                light.SetPositionAndRotation(Find(model, "KioskCourtLight" + table).position,
-                    host.rotation * Quaternion.LookRotation(Vector3.down, Vector3.forward));
+                var diffuser = Find(model, $"RidgeKioskCourt_KioskCourtLamp{table}_KioskLampGlass")
+                    .GetComponent<MeshRenderer>();
+                diffuser.sharedMaterial = CityNightResources.EmissiveMaterial;
+                diffuser.shadowCastingMode = ShadowCastingMode.Off;
+                diffuser.receiveShadows = false;
+                CityNightGlowRegistry.Register(diffuser, DiffuserGlow);
+                AddLampSource(table, "Left", -1f);
+                AddLampSource(table, "Right", 1f);
+
                 if (!interactive) continue;
+                MeshFilter canopySurface = canopy.GetComponentInChildren<MeshFilter>();
                 if (!canopySurface) throw new InvalidOperationException("The imported umbrella has no rain surface.");
                 var shape = canopySurface.gameObject.AddComponent<MeshCollider>();
                 shape.convex = true;
@@ -77,12 +79,72 @@ namespace BarPromenade
                 rainShelters.Add(shape);
             }
             return result;
+
+            void AddLampSource(int table, string side, float outward)
+            {
+                Transform socket = Find(model, $"KioskCourtLight{table}{side}");
+                Transform anchor = new GameObject(CityNightAtmosphere.IndustrialTaskLightPrefix + LampPurpose).transform;
+                anchor.SetParent(host, false);
+                // Both lobes tip away from the mast. Each face receives a
+                // broad beam and the steel pole stays out of the bright core.
+                Vector3 aim = new Vector3(outward * .32f, -1f, 0f);
+                anchor.SetPositionAndRotation(socket.position, host.rotation * Quaternion.LookRotation(aim, Vector3.forward));
+            }
         }
 
         private static Transform Find(Transform model, string name) =>
             CityPedestrianHandProps.FindSocket(model, name) ?? throw new InvalidOperationException("Missing court anchor " + name);
 
-        private void OnDestroy() => CityWetSurfaceRegistry.Unregister(concrete);
+        private void BuildPaths(Transform model, bool interactive)
+        {
+            Path("Service", true);
+            Path("Left", Plan.HasLeftApproach);
+            Path("Right", Plan.HasRightApproach);
+            Path("LeftTurn", Plan.EntrySide < 0);
+            Path("RightTurn", Plan.EntrySide > 0);
+
+            void Path(string part, bool active)
+            {
+                Transform group = Find(model, "KioskCourtPath" + part);
+                group.gameObject.SetActive(active);
+                if (!active) return;
+                var filter = group.GetComponentInChildren<MeshFilter>();
+                Mesh mesh = Instantiate(filter.sharedMesh);
+                mesh.name = "Graded kiosk path " + part;
+                gradedMeshes.Add(mesh);
+                // Preserve the FBX's unit scale. Only grade the authored vertices;
+                // City and the passive Home view use this same metre-space plan.
+                Matrix4x4 toCourt = transform.worldToLocalMatrix * filter.transform.localToWorldMatrix;
+                Matrix4x4 toMesh = toCourt.inverse;
+                Vector3[] vertices = mesh.vertices;
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    Vector3 p = toCourt.MultiplyPoint3x4(vertices[i]);
+                    p.y += Plan.PathTop(new Vector2(Plan.Origin.x + p.x, Plan.Origin.z + p.z)) - Plan.Origin.y;
+                    vertices[i] = toMesh.MultiplyPoint3x4(p);
+                }
+                mesh.vertices = vertices;
+                mesh.RecalculateNormals();
+                mesh.RecalculateTangents();
+                mesh.RecalculateBounds();
+                filter.sharedMesh = mesh;
+                var surface = filter.GetComponent<MeshRenderer>();
+                pathSurfaces.Add(surface);
+                CityWetSurfaceRegistry.Register(surface, CityWetSurfaceKind.Sidewalk);
+                if (interactive)
+                {
+                    filter.gameObject.AddComponent<MeshCollider>().sharedMesh = mesh;
+                    FootstepGround.Stamp(filter.gameObject, FootstepGroundKind.Concrete);
+                }
+            }
+        }
+
+        private void OnDestroy()
+        {
+            CityWetSurfaceRegistry.Unregister(concrete);
+            foreach (Renderer surface in pathSurfaces) CityWetSurfaceRegistry.Unregister(surface);
+            foreach (Mesh mesh in gradedMeshes) if (mesh) Destroy(mesh);
+        }
 
         private void LateUpdate()
         {
