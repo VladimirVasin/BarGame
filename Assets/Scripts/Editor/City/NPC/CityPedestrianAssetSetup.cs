@@ -202,7 +202,7 @@ namespace BarPromenade.Editor
         /// more for the single design that also has to get off a car, and a
         /// second idle/walk pair for each promoted resident that also roams.
         /// </summary>
-        private static int ExpectedLocomotionClipCount => LocomotionDescriptors.Sum(descriptor =>
+        private static int ExpectedLocomotionClipCount => Descriptors.Sum(descriptor =>
             2 + (descriptor.RidesBus ? 1 : 0) + (descriptor.HasAction ? 1 : 0) +
             (descriptor.HasDismount ? 1 : 0) + (descriptor.HasAmbientGait ? 2 : 0));
 
@@ -495,19 +495,6 @@ namespace BarPromenade.Editor
                 actionDuration: 2f),
         };
 
-        // The original takes remain in the shared authoring bank. The
-        // live Ferryman uses the measured car bank and the default NPC.
-        private static readonly PedestrianDescriptor LegacyFerrymanTakes =
-            new PedestrianDescriptor("Last Route source takes", "LastRouteFerryman3D",
-                "last_route_ferryman_v1", string.Empty, string.Empty, string.Empty,
-                "FerrymanWait", "FerrymanTrudge", 4f, 1.5f, 1800, 2400,
-                isStaged: true, sitClipName: "FerrymanDrive", sitDuration: 3f,
-                actionClipName: "FerrymanBoard", actionDuration: 2.5f,
-                dismountClipName: "FerrymanDismount", dismountDuration: 1f);
-
-        private static IEnumerable<PedestrianDescriptor> LocomotionDescriptors =>
-            Descriptors.Append(LegacyFerrymanTakes);
-
         private static bool isBuilding;
         private static bool buildQueued;
 
@@ -669,22 +656,8 @@ namespace BarPromenade.Editor
         /// Ferryman's board transition, which starts on a car bonnet and
         /// ends behind its wheel.
         ///
-        /// Two import settings depend on this and one of them matters a
-        /// great deal. `loopTime` is merely honest. `loopPose`, though,
-        /// normalises a clip's ends towards each other - which is exactly
-        /// right for a loop and exactly wrong here, because it would drag
-        /// the last frame back towards the bonnet and the runtime crosses
-        /// out of that frame into the driving loop.
-        ///
-        /// Declared as the one-shot ACTION of a design that also declares
-        /// a seated loop, which is the shape of a transition between two
-        /// postures rather than a beat on top of an idle - and, since he
-        /// grew a walk in the middle of getting into his own car, as that
-        /// design's DISMOUNT as well. The dismount does not fit the action
-        /// shape and never will: it is a second transition on one design,
-        /// so it is named rather than inferred, and it needs the loop flags
-        /// off for exactly the same reason. Loop-pose on that clip would
-        /// drag his landing back towards the bonnet he just left.
+        /// One-shot gestures and transitions must keep their distinct endpoints.
+        /// Loop-pose normalization would drag the last frame toward the first.
         /// </summary>
         public static bool IsOneShotClip(string normalizedClipName)
         {
@@ -698,7 +671,7 @@ namespace BarPromenade.Editor
                 return false;
             }
 
-            foreach (PedestrianDescriptor descriptor in LocomotionDescriptors)
+            foreach (PedestrianDescriptor descriptor in Descriptors)
             {
                 if (descriptor.IsStaged &&
                     descriptor.HasDismount &&
@@ -736,7 +709,7 @@ namespace BarPromenade.Editor
                 return false;
             }
 
-            foreach (PedestrianDescriptor descriptor in LocomotionDescriptors)
+            foreach (PedestrianDescriptor descriptor in Descriptors)
             {
                 if (!descriptor.PreservesAirborneMotion)
                 {
@@ -3169,7 +3142,7 @@ namespace BarPromenade.Editor
             Dictionary<string, PedestrianDescriptor> clipOwners =
                 new Dictionary<string, PedestrianDescriptor>(
                     StringComparer.Ordinal);
-            foreach (PedestrianDescriptor descriptor in LocomotionDescriptors)
+            foreach (PedestrianDescriptor descriptor in Descriptors)
             {
                 clipOwners.Add(descriptor.IdleClipName, descriptor);
                 clipOwners.Add(descriptor.WalkClipName, descriptor);
@@ -3211,17 +3184,6 @@ namespace BarPromenade.Editor
                         clip.archetype,
                         owner.DesignId,
                         StringComparison.Ordinal) ||
-                    // Almost every clip in this library loops, and asserting
-                    // it is what catches a clip that drifts off its own
-                    // first frame. The Ferryman's two transitions are the
-                    // ones that MUST NOT: one starts on a car bonnet and
-                    // ends standing on the lot, the other starts at his own
-                    // door and ends behind the wheel, so both the loop flag
-                    // and the seam error are meaningless for them. What holds
-                    // it together instead is that it opens and closes on
-                    // the base poses of the clips either side, which the
-                    // art generator states by reusing those pose functions
-                    // rather than re-typing numbers.
                     clip.loop == clip.one_shot ||
                     !clip.in_place ||
                     clip.keyed_bone_count != ExpectedBoneCount ||
@@ -4459,12 +4421,8 @@ namespace BarPromenade.Editor
             float expectedDuration,
             CityPedestrianAnimationManifest animationManifest)
         {
-            // A transition between two postures is the one kind of clip
-            // here that must NOT be imported as a loop, so its loop flag is
-            // asserted the other way round rather than skipped: an import
-            // that quietly turned FerrymanBoard back into a loop would
-            // re-introduce the loop-pose normalisation this clip cannot
-            // survive, and would do it silently.
+            // One-shots must not import with loop-pose normalization, which
+            // changes the authored start and end contacts of a transition.
             bool expectLooping = !IsOneShotClip(expectedName);
             if (clip == null ||
                 !string.Equals(

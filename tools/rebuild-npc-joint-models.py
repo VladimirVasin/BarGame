@@ -88,12 +88,6 @@ def main():
                   "--models-only", "--no-preview")
         for selector in (("--archetype", "all"), ("--mother",), ("--cafe-cast",), ("--shelter-residents",)):
             invoke(base, (*common, *selector))
-        for name, filename, source_path, model_path, stem in (
-                ("driver", "build-city-bus-driver-3d-model.py", "Vehicles/Drivers/Blender", "Vehicles/Drivers/Models", "CityBusDriver3D"),):
-            module = load("joint_publish_" + name, filename)
-            invoke(module, ("--output", sources / source_path / (stem + ".blend"),
-                            "--fbx", assets / model_path / (stem + ".fbx"),
-                            "--manifest", assets / model_path / (stem + ".json"), "--no-preview"))
         cashier = load("joint_publish_cashier", "build-supermarket-cashier-3d-model.py")
         def cashier_atlas(canvas, path):
             if Path(path).read_bytes() != canvas.png_bytes():

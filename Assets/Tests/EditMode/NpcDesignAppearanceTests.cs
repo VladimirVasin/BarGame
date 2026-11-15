@@ -34,7 +34,6 @@ namespace BarPromenade.Tests.EditMode
 
         private static readonly string[] StandaloneManifests =
         {
-            "Assets/Vehicles/Drivers/Models/CityBusDriver3D.json",
             "Assets/Cemetery/Raven/Models/CemeteryRaven3D.json",
             "Assets/Stairwell/Cat/Models/StairwellCat3D.json",
         };

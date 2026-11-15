@@ -29,13 +29,10 @@ namespace BarPromenade
         /// three centimetres inside the seat. Pedal targets remain anchored
         /// to the cushion independently of this body placement.
         /// </summary>
-        private const float DriverSeatLift = 0.060f;
-        // At the relaxed torso angle the visible lower back projects 12.76 cm
-        // behind the pelvis. The chair's front face is 15.5 cm behind the datum.
-        private const float DriverSeatBackOffset = 0.023f;
-        private const float FootForwardOffset = 0.325f;
-        private const float FootSideOffset = 0.14f;
-        private const float DoorSillToCabinFloor = .01f;
+        private const float DriverSeatLift = 0.078f;
+        // All three uniform trousers sit on the drawn cushion at this
+        // height. The measured short coat also clears the backrest.
+        private const float DriverSeatBackOffset = 0.010f;
         private const float KneeForwardOffset = 0.30f;
         private const float KneeSideOffset = 0.14f;
         private const float KneeHintLift = 0.10f;
@@ -52,7 +49,7 @@ namespace BarPromenade
         private readonly List<BonePose> baseBonePoses =
             new List<BonePose>(24);
 
-        private CityBusDriverAssetRegistry registry;
+        private CityBusDriverRig registry;
         private CityBusAssetRegistry busRegistry;
         private Transform presentationRoot;
         private CityBusPresentation busPresentation;
@@ -63,7 +60,6 @@ namespace BarPromenade
         private Vector3 leftRimContact, rightRimContact;
         private Transform playerFocusRoot;
         private Transform playerFocusHead;
-        private Renderer[] blinkRenderers = Array.Empty<Renderer>();
         private SeatedArmHandAttachment leftHandAttachment;
         private SeatedArmHandAttachment rightHandAttachment;
         private Quaternion leftFootRotationInDriver;
@@ -85,10 +81,10 @@ namespace BarPromenade
         public float NeckStretchRatio { get; private set; } = 1f;
         public float BlinkClosure { get; private set; }
         public bool EyesClosed { get; private set; }
-        public CityBusDriverAssetRegistry Registry => registry;
+        public CityBusDriverRig Registry => registry;
 
         public void Initialize(
-            CityBusDriverAssetRegistry driverRegistry,
+            CityBusDriverRig driverRegistry,
             CityBusAssetRegistry configuredBusRegistry,
             Transform configuredPresentationRoot)
         {
@@ -110,7 +106,6 @@ namespace BarPromenade
                 : throw new ArgumentNullException(
                     nameof(configuredPresentationRoot));
             ValidateBindings();
-            CaptureBlinkRenderers();
 
             if (registry.Animator != null)
             {
@@ -141,10 +136,8 @@ namespace BarPromenade
                     driverRoot.rotation) *
                 registry.RightFoot.rotation;
 
-            fingers = registry.GetComponent<NpcHandPose>();
-            rightIndexTip = CityPedestrianHandProps.FindSocket(registry.ModelRoot, "ANCHOR_DriverIndexOpenTip.R");
-            if (fingers == null || rightIndexTip == null)
-                throw new InvalidOperationException("The bus driver needs both authored rim grips and the open index fingertip.");
+            fingers = registry.Hands;
+            rightIndexTip = registry.RightIndexTip;
             rightIndexOffset = Quaternion.Inverse(registry.RightHand.rotation) * (rightIndexTip.position - registry.RightHand.position);
             rightIndexFrame = MeasureHandFrame(registry.RightHand, rightIndexTip);
             // Solve the fixed seat and pedals once. These bones and the driver root
@@ -250,80 +243,8 @@ namespace BarPromenade
             RefreshContactDiagnostics();
         }
 
-        private void CaptureBlinkRenderers()
-        {
-            var targets = new List<Renderer>(4);
-            IReadOnlyList<CityBusDriverRendererBinding> bindings =
-                registry.RendererBindings;
-            for (int index = 0; index < bindings.Count; index++)
-            {
-                CityBusDriverRendererBinding binding = bindings[index];
-                if (binding == null || binding.Renderer == null)
-                {
-                    continue;
-                }
-
-                if (string.Equals(
-                        binding.Role,
-                        "long_horizontal_eye",
-                        StringComparison.Ordinal) ||
-                    string.Equals(
-                        binding.Role,
-                        "visible_eye_pupil",
-                        StringComparison.Ordinal))
-                {
-                    targets.Add(binding.Renderer);
-                }
-            }
-
-            if (targets.Count != 4)
-            {
-                throw new InvalidOperationException(
-                    "The city bus driver blink requires exactly two eye " +
-                    "whites and two pupils.");
-            }
-
-            blinkRenderers = targets.ToArray();
-        }
-
         private void ValidateBindings()
         {
-            Transform[] requiredDriverBindings =
-            {
-                registry.Pelvis,
-                registry.Spine,
-                registry.Chest,
-                registry.Neck,
-                registry.Head,
-                registry.FaceEyeLeft,
-                registry.FaceEyeRight,
-                registry.LeftUpperArm,
-                registry.LeftForearm,
-                registry.LeftHand,
-                registry.LeftGripSocket,
-                registry.RightUpperArm,
-                registry.RightForearm,
-                registry.RightHand,
-                registry.RightGripSocket,
-                registry.LeftThigh,
-                registry.LeftShin,
-                registry.LeftFoot,
-                registry.RightThigh,
-                registry.RightShin,
-                registry.RightFoot
-            };
-            for (int index = 0;
-                 index < requiredDriverBindings.Length;
-                 index++)
-            {
-                if (requiredDriverBindings[index] == null)
-                {
-                    throw new InvalidOperationException(
-                        "The city bus driver rig is missing a required " +
-                        "bone or grip binding.");
-                }
-            }
-
             Transform[] requiredBusBindings =
             {
                 busRegistry.Body,
@@ -389,22 +310,24 @@ namespace BarPromenade
             Vector3 up = driverRoot.up;
             Vector3 forward = driverRoot.forward;
             Vector3 right = driverRoot.right;
-            // Feet remain on the bus pedal/floor plane. The knee hint is a
-            // bend direction, not a knee target: putting it below the cushion
-            // and too far sideways lowers the outer thigh into the seat even
-            // when the pelvis rises. Keep both knees forward over the feet.
+            // The bus owns both pedal surfaces. The work shoe owns its planted
+            // point, so imported scale and shin rotation cannot move the contact.
             Vector3 seat = busRegistry.DriverSeatAnchor.position;
-            Vector3 floor = seat + up * (Vector3.Dot(busRegistry.FrontDoorEntryAnchor.position - seat, up) + DoorSillToCabinFloor);
-            float leftAnkle = driverRoot.InverseTransformPoint(registry.LeftFoot.position).y - registry.LocalBounds.min.y;
-            float rightAnkle = driverRoot.InverseTransformPoint(registry.RightFoot.position).y - registry.LocalBounds.min.y;
-            ApplyLegPose(registry.LeftThigh, registry.LeftShin, registry.LeftFoot,
-                floor - right * FootSideOffset + forward * FootForwardOffset + up * leftAnkle,
-                seat - right * KneeSideOffset + forward * KneeForwardOffset + up * KneeHintLift,
-                driverRoot.rotation * leftFootRotationInDriver);
-            ApplyLegPose(registry.RightThigh, registry.RightShin, registry.RightFoot,
-                floor + right * FootSideOffset + forward * (FootForwardOffset + .025f) + up * rightAnkle,
-                seat + right * KneeSideOffset + forward * KneeForwardOffset + up * KneeHintLift,
-                driverRoot.rotation * rightFootRotationInDriver);
+            SeatFoot("L", registry.LeftThigh, registry.LeftShin, registry.LeftFoot,
+                registry.LeftSole, driverRoot.rotation * leftFootRotationInDriver, -1f);
+            SeatFoot("R", registry.RightThigh, registry.RightShin, registry.RightFoot,
+                registry.RightSole, driverRoot.rotation * rightFootRotationInDriver, 1f);
+
+            void SeatFoot(string side, Transform thigh, Transform shin, Transform foot, Transform sole,
+                Quaternion rotation, float sign)
+            {
+                Transform pedal = CityPedestrianHandProps.FindSocket(busRegistry.Body, "ANCHOR_DriverFoot." + side)
+                    ?? throw new InvalidOperationException("Bus driver pedal support is missing: " + side);
+                Vector3 soleInAnkle = Quaternion.Inverse(foot.rotation) * (sole.position - foot.position);
+                Vector3 ankleTarget = pedal.position - rotation * soleInAnkle;
+                Vector3 knee = seat + sign * right * KneeSideOffset + forward * KneeForwardOffset + up * KneeHintLift;
+                ApplyLegPose(thigh, shin, foot, ankleTarget, knee, rotation);
+            }
 
             registry.Spine.rotation = Quaternion.AngleAxis(
                     5f,
@@ -479,13 +402,6 @@ namespace BarPromenade
                 Quaternion.AngleAxis(-pitch * 0.65f, driverRoot.right);
             registry.Neck.rotation = neckTurn * registry.Neck.rotation;
             registry.Head.rotation = headTurn * registry.Head.rotation;
-
-            float eyeYaw = Mathf.Clamp(yaw * 0.10f, -7f, 7f);
-            Quaternion eyeTurn = Quaternion.AngleAxis(eyeYaw, up);
-            registry.FaceEyeLeft.rotation =
-                eyeTurn * registry.FaceEyeLeft.rotation;
-            registry.FaceEyeRight.rotation =
-                eyeTurn * registry.FaceEyeRight.rotation;
 
             Vector3 resolvedLook = ResolvePlanarFaceForward(up);
             Vector3 resolvedTarget = Vector3.ProjectOnPlane(
@@ -680,14 +596,7 @@ namespace BarPromenade
         {
             BlinkClosure = Mathf.Clamp01(closure);
             EyesClosed = BlinkClosure >= EyesClosedThreshold;
-            for (int index = 0; index < blinkRenderers.Length; index++)
-            {
-                Renderer target = blinkRenderers[index];
-                if (target != null)
-                {
-                    target.forceRenderingOff = EyesClosed;
-                }
-            }
+            registry.Appearance.SetEyesClosed(EyesClosed);
         }
 
         private static float SmoothStep01(float amount)

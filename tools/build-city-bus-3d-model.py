@@ -26,8 +26,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Sequence
 
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import city_bus_forms as forms
+from city_bus_surfaces import paint_uv
+from last_route_car_forms import round_headlight
+
 try:
     import bpy
+    import bmesh
     from mathutils import Matrix, Vector
 except ImportError as error:  # pragma: no cover - Blender-only entry point.
     raise RuntimeError(
@@ -35,8 +42,8 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "1.8.0"
-DESIGN_ID = "road_v2_midibus_v1"
+GENERATOR_VERSION = "2.0.0"
+DESIGN_ID = "road_v2_midibus_v2"
 DISPLAY_NAME = "Road v2 City Midibus"
 SEED = 260811
 
@@ -46,8 +53,21 @@ HEIGHT = 2.95
 WHEELBASE = 4.50
 WHEEL_RADIUS = 0.43
 WHEEL_WIDTH = 0.26
+WHEEL_OFFSET = 1.07
+WHEEL_HOUSE_OUTSIDE = 1.174
+FRONT_WHEEL_HOUSE = ((0., .828, .982), (.11, .788, .970), (.22, .757, .945),
+                     (.31, .756, .897), (.38, .787, .841), (.43, .872, .776), (.474, .985, .689))
+REAR_WHEEL_HOUSE = ((0., .899, .977), (.20, .900, .954), (.32, .901, .895),
+                    (.39, .916, .823), (.433, .950, .751), (.466, .991, .689))
 MIN_TRIANGLES = 900
-MAX_TRIANGLES = 12000
+MAX_TRIANGLES = 22000
+MAX_RENDERERS = 66
+TEXTURE_DIR = Path(__file__).resolve().parents[1] / "Assets/Vehicles/Textures"
+TEXTURE_FAMILY = {
+    "Body": "Paint", "Accent": "Paint", "Interior": "Interior", "Dashboard": "Interior",
+    "Seat": "Seat", "Metal": "Metal", "Rail": "Metal", "Rubber": "Rubber",
+    "Floor": "Floor", "Glass": "Glass",
+}
 
 SOURCE_COLLECTION = "SOURCE_CityBus3D"
 PRESENTATION_COLLECTION = "PRESENTATION_CityBus3D"
@@ -57,6 +77,10 @@ BODY_NAME = "ROOT_Body"
 DOOR_SIDE_X = -1.205
 DOOR_CENTER_Z = 1.58
 DOOR_HINGE_OFFSET = 0.76
+DOOR_HEADER_BOTTOM = 2.423
+DOOR_SLIDE_RUN = .80
+HEADLIGHT_CENTRES = (("L", .72, -4.125, .96), ("R", -.72, -4.125, .96))
+MIRROR_Y, MIRROR_Z, MIRROR_DEPTH = -3.989, 2.23, .132
 DOORWAY_SPECS = (
     (
         "Front",
@@ -75,6 +99,9 @@ DOORWAY_SPECS = (
         ),
     ),
 )
+# Stop the steps in front of the two wheel envelopes on the boarding side.
+STEP_SPANS = ((-3.764, -2.735), (.626, 1.765))
+STEP_SECTION = ((1.079, .502, .111, .094), (1.177, .361, .101, .093))
 
 # Source coordinates in metres. Seat 07 and the two doorways keep their
 # original contacts. Indices 06 and 10 share the transverse rear bench.
@@ -107,6 +134,9 @@ DOOR_BUTTON_CENTER = (0.35, -3.59, 1.47)
 DOOR_BUTTON_DEPTH = 0.045
 DOOR_BUTTON_TRAVEL = 0.012
 DRIVER_DOOR_LOOK_POSITION = (-0.90, -3.05, 2.12)
+# Anatomical left is +X in source space. Contacts sit on the ball of each
+# work shoe; the flat accelerator and wide left rest are separate assemblies.
+DRIVER_FOOT_SUPPORTS = (("L", .82, -3.66, .701, .128), ("R", .54, -3.71, .711, .102))
 
 # Each wiper mesh is authored relative to its own base pivot so the runtime
 # can sweep it across the windshield around the pivot's forward axis
@@ -144,6 +174,7 @@ UV_TILE_METERS = {
     "Metal": 0.9,
     "Rail": 0.9,
     "Rubber": 0.55,
+    "Floor": 0.62,
 }
 
 
@@ -154,12 +185,15 @@ MATERIALS: dict[str, tuple[tuple[float, float, float, float], float, float, floa
     "Trim": ((0.035, 0.043, 0.042, 1.0), 0.05, 0.76, 0.0),
     "Rubber": ((0.015, 0.018, 0.017, 1.0), 0.0, 0.92, 0.0),
     "Metal": ((0.24, 0.27, 0.26, 1.0), 0.58, 0.35, 0.0),
-    "Glass": ((0.075, 0.16, 0.17, 0.34), 0.04, 0.22, 0.0),
-    "Interior": ((0.12, 0.13, 0.12, 1.0), 0.0, 0.73, 0.0),
+    "Glass": ((0.18, 0.27, 0.26, 0.27), 0.04, 0.27, 0.0),
+    "Interior": ((0.32, 0.32, 0.25, 1.0), 0.0, 0.73, 0.0),
     "Seat": ((0.07, 0.20, 0.17, 1.0), 0.0, 0.82, 0.0),
     "Rail": ((0.76, 0.46, 0.08, 1.0), 0.31, 0.31, 0.0),
     "Dashboard": ((0.055, 0.065, 0.062, 1.0), 0.0, 0.69, 0.0),
-    "Headlight": ((0.82, 0.88, 0.70, 1.0), 0.05, 0.24, 4.5),
+    "Floor": ((0.061, 0.066, 0.061, 1.0), 0.0, 0.84, 0.0),
+    "InstrumentInk": ((0.68, 0.65, 0.48, 1.0), 0.0, 0.68, 0.0),
+    "MarkerLens": ((0.72, 0.30, 0.042, 1.0), 0.0, 0.47, 0.0),
+    "Headlight": ((1.0, 236/255, 209/255, 1.0), 0.02, 0.18, 1.85),
     "TailLight": ((0.58, 0.015, 0.008, 1.0), 0.0, 0.28, 3.2),
     "CabinLight": ((0.92, 0.58, 0.24, 1.0), 0.0, 0.36, 2.1),
     "Destination": ((0.96, 0.39, 0.045, 1.0), 0.0, 0.40, 3.6),
@@ -208,7 +242,21 @@ class MeshAccumulator:
         self,
         center: Sequence[float],
         size: Sequence[float],
+        bevel: float | None = None,
     ) -> None:
+        if bevel != 0:
+            mesh = bmesh.new()
+            bmesh.ops.create_cube(mesh, size=1.)
+            for v in mesh.verts:
+                v.co = Vector(tuple(v.co[i]*size[i]+center[i] for i in range(3)))
+            offset = min(.024 if bevel is None else bevel, min(size)*.22)
+            bmesh.ops.bevel(mesh, geom=list(mesh.edges), offset=offset, segments=1, affect="EDGES")
+            mesh.verts.index_update()
+            base = len(self.vertices)
+            self.vertices.extend(tuple(v.co) for v in mesh.verts)
+            self.faces.extend(tuple(base+v.index for v in f.verts) for f in mesh.faces)
+            mesh.free()
+            return
         cx, cy, cz = center
         hx, hy, hz = (component * 0.5 for component in size)
         base = len(self.vertices)
@@ -406,6 +454,7 @@ def parse_args() -> argparse.Namespace:
         default=Path("ArtSource/Vehicles/Blender/CityBus3D.png"),
     )
     parser.add_argument("--no-preview", action="store_true")
+    parser.add_argument("--validate-only", action="store_true")
     blender_separator = sys.argv.index("--") + 1 if "--" in sys.argv else len(sys.argv)
     args = parser.parse_args(sys.argv[blender_separator:])
     for field_name in ("output", "fbx", "manifest", "preview"):
@@ -462,6 +511,39 @@ def create_material(name: str, spec: tuple) -> bpy.types.Material:
     if emission_input is not None:
         emission_input.default_value = emission_strength
     material.node_tree.links.new(shader.outputs["BSDF"], output.inputs["Surface"])
+    family = TEXTURE_FAMILY.get(name)
+    if family:
+        nodes = material.node_tree.nodes
+        links = material.node_tree.links
+
+        def image(suffix, linear=False):
+            node = nodes.new("ShaderNodeTexImage")
+            path = TEXTURE_DIR / f"CityBus{family}{suffix}.png"
+            node.image = bpy.data.images.load(str(path), check_existing=True)
+            if linear:
+                node.image.colorspace_settings.name = "Non-Color"
+            # The editable source remains usable outside this checkout.
+            node.image.pack()
+            return node
+
+        tex = image("Albedo")
+        multiply = nodes.new("ShaderNodeMixRGB")
+        multiply.blend_type = "MULTIPLY"
+        multiply.inputs[0].default_value = 1.
+        multiply.inputs[1].default_value = rgba
+        links.new(tex.outputs["Color"], multiply.inputs[2])
+        links.new(multiply.outputs["Color"], shader.inputs["Base Color"])
+        if family != "Glass":
+            normal = nodes.new("ShaderNodeNormalMap")
+            normal.inputs["Strength"].default_value = .65
+            links.new(image("Normal", True).outputs["Color"], normal.inputs["Color"])
+            links.new(normal.outputs["Normal"], shader.inputs["Normal"])
+            response = image("Response", True)
+            invert = nodes.new("ShaderNodeMath")
+            invert.operation = "SUBTRACT"
+            invert.inputs[0].default_value = 1.
+            links.new(response.outputs["Alpha"], invert.inputs[1])
+            links.new(invert.outputs[0], shader.inputs["Roughness"])
     if rgba[3] < 1.0:
         material.use_transparency_overlap = False
         material.surface_render_method = "DITHERED"
@@ -488,7 +570,7 @@ def create_empty(
     return obj
 
 
-def apply_box_uvs(mesh: bpy.types.Mesh, tile_meters: float) -> None:
+def apply_uvs(mesh: bpy.types.Mesh, slot: str, parent: bpy.types.Object | None) -> None:
     """Project deterministic per-face box UVs at world scale.
 
     Every loop takes its UV from the two vertex coordinates orthogonal to the
@@ -497,12 +579,21 @@ def apply_box_uvs(mesh: bpy.types.Mesh, tile_meters: float) -> None:
     keep (1, 1) tiling.
     """
     uv_layer = mesh.uv_layers.new(name="UVMap")
-    scale = 1.0 / tile_meters
+    scale = 1.0 / UV_TILE_METERS.get(slot, UV_TILE_METERS_DEFAULT)
+    painted = slot in ("Body", "Accent")
+    matrix = Matrix.Identity(4)
+    root = parent
+    while painted and root is not None and root.name != BODY_NAME:
+        matrix = (Matrix.Translation(root.location) @ root.rotation_euler.to_matrix().to_4x4()) @ matrix
+        root = root.parent
     for polygon in mesh.polygons:
         normal = polygon.normal
         ax, ay, az = abs(normal.x), abs(normal.y), abs(normal.z)
         for loop_index in polygon.loop_indices:
             vertex = mesh.vertices[mesh.loops[loop_index].vertex_index].co
+            if painted:
+                uv_layer.data[loop_index].uv = paint_uv(matrix @ vertex, matrix.to_3x3() @ normal)
+                continue
             if az >= ax and az >= ay:
                 uv = (vertex.x, vertex.y)
             elif ax >= ay:
@@ -525,10 +616,7 @@ def create_part(
     mesh.from_pydata(accumulator.vertices, [], accumulator.faces)
     mesh.validate(clean_customdata=False)
     mesh.update(calc_edges=True)
-    apply_box_uvs(
-        mesh,
-        UV_TILE_METERS.get(material_slot, UV_TILE_METERS_DEFAULT),
-    )
+    apply_uvs(mesh, material_slot, parent)
     obj = bpy.data.objects.new(name, mesh)
     collection.objects.link(obj)
     obj.parent = parent
@@ -536,6 +624,12 @@ def create_part(
     obj.rotation_euler = (0.0, 0.0, 0.0)
     obj.scale = (1.0, 1.0, 1.0)
     obj.data.materials.append(material)
+    if material_slot not in ("Glass", "InstrumentInk", "Preview"):
+        # Smooth across the pressed facets while holding the broad planes.
+        for polygon in mesh.polygons:
+            polygon.use_smooth = True
+        normals = obj.modifiers.new("Form-weighted normals", "WEIGHTED_NORMAL")
+        normals.weight = 40
     obj["bp_role"] = role
     obj["bp_material_slot"] = material_slot
     return Part(obj, role, material_slot)
@@ -644,82 +738,86 @@ class CityBusBuilder:
         )
 
     def _build_shell(self) -> None:
-        self.add_boxes(
-            "GEO_BodyShell",
-            [
-                ((0.0, 0.0, 0.47), (2.30, 7.98, 0.24)),
-                ((0.0, 0.0, 2.86), (2.30, 7.92, 0.18)),
-                ((0.0, -4.045, 0.92), (2.28, 0.16, 0.92)),
-                ((0.0, -4.045, 2.70), (2.28, 0.16, 0.42)),
-                ((0.0, 4.045, 1.12), (2.28, 0.16, 1.32)),
-                ((0.0, 4.045, 2.73), (2.28, 0.16, 0.36)),
-                ((1.145, 0.0, 0.98), (0.10, 7.94, 0.94)),
-                ((-1.145, -3.91, 0.98), (0.10, 0.16, 0.94)),
-                ((-1.145, -0.84, 0.98), (0.10, 2.74, 0.94)),
-                ((-1.145, 3.04, 0.98), (0.10, 2.00, 0.94)),
-                ((1.145, 0.0, 2.66), (0.10, 7.90, 0.34)),
-                ((-1.145, 0.0, 2.66), (0.10, 7.90, 0.34)),
-            ],
-            "body_shell",
-            "Body",
-        )
-        self.add_boxes(
-            "GEO_BodyAccent",
-            [
-                ((0.0, -4.137, 0.49), (2.38, 0.07, 0.20)),
-                ((0.0, 4.137, 0.49), (2.38, 0.07, 0.20)),
-                ((1.202, 0.0, 1.47), (0.055, 7.94, 0.18)),
-                ((-1.202, -3.91, 1.47), (0.055, 0.16, 0.18)),
-                ((-1.202, -0.84, 1.47), (0.055, 2.74, 0.18)),
-                ((-1.202, 3.04, 1.47), (0.055, 2.00, 0.18)),
-            ],
-            "body_accent",
-            "Accent",
-        )
-        pillar_boxes: list[tuple[Sequence[float], Sequence[float]]] = []
-        for y in (-3.88, -3.00, -2.00, -1.00, 0.00, 1.00, 2.00, 3.00, 3.88):
-            pillar_boxes.append(((1.175, y, 2.08), (0.11, 0.10, 1.12)))
-        for y in (-3.88, -2.25, -1.15, 0.54, 2.12, 3.10, 3.88):
-            pillar_boxes.append(((-1.175, y, 2.08), (0.11, 0.10, 1.12)))
-        pillar_boxes.extend(
-            [
-                ((-1.05, -4.085, 2.08), (0.16, 0.10, 1.12)),
-                ((1.05, -4.085, 2.08), (0.16, 0.10, 1.12)),
-                ((-1.05, 4.085, 2.08), (0.16, 0.10, 1.12)),
-                ((1.05, 4.085, 2.08), (0.16, 0.10, 1.12)),
-            ]
-        )
+        skin = MeshAccumulator()
+        forms.roof(skin)
+        forms.end_panel(skin, -1, .54, 1.60, .15)
+        forms.end_panel(skin, -1, 2.52, 2.80, .15)
+        forms.end_panel(skin, 1, .54, 1.76, .16)
+        forms.end_panel(skin, 1, 2.53, 2.80, .16)
+        door_spans = ((-4.00, -3.82), (-2.28, .57), (2.11, 4.00))
+        for side, spans in ((1, ((-4.00, 4.00),)), (-1, door_spans)):
+            for start, end in spans:
+                forms.side_panel(skin, side, start, end, 1.51, .43, (-2.25, 2.25))
+            forms.side_panel(skin, side, -4.00, 4.00, 2.746, 2.49)
+        # Continuous pressed quadrants bridge the recessed end skin and each
+        # straight side. They sit behind the glazing and fixed door jambs.
+        for side in (-1, 1):
+            for end in (-1, 1):
+                corner = ((1.006,4.092),(1.068,4.116),(1.106,4.093),
+                          (1.167,4.017),(1.185,3.958),(1.189,3.853),
+                          (1.140,3.842),(1.103,3.946),(1.021,4.036))
+                forms.loft(skin, [[(side*(x-inset),end*(y-inset),z) for x,y in corner]
+                    for z,inset in ((.55,.022),(.59,0.),(2.55,0.),(2.606,.020),(2.68,.048))])
+        self.add_accumulator("GEO_BodyShell", skin, "body_shell", "Body")
+
+        stripe = MeshAccumulator()
+        for side, spans in ((1, ((-3.89, 3.89),)), (-1, door_spans)):
+            for start, end in spans:
+                forms.side_panel(stripe, side, start, end, 1.52, 1.397, outside=1.199, depth=.02)
+        self.add_accumulator("GEO_BodyAccent", stripe, "body_accent", "Accent")
+
+        trims = MeshAccumulator()
+        for side in (-1, 1):
+            forms.arch_rim(trims, side, -2.25, start=-2.28 if side < 0 else -math.inf)
+            forms.arch_rim(trims, side, 2.25, start=2.11 if side < 0 else -math.inf)
+        # Rubber step edges, sill rub rails and bumper corners read as separate pieces.
+        for x in (-.94, .94):
+            for end in (-1, 1):
+                trims.add_box((x, end*4.039, .533), (.43, .207, .174))
+        for x, start, end in ((1.19,-3.76,3.76),(-1.19,-2.26,.55),(-1.19,2.14,3.76)):
+            trims.add_box((x, (start+end)*.5, 1.04), (.040,end-start,.073))
+        self.add_accumulator("GEO_ArchAndSillMouldings", trims, "arch_and_sill", "Trim")
+
+        pillar_boxes = []
+        for x, start, end, mullions in (
+            (1.179,-3.91,3.91,(-3.02,-2.02,-1.02,-.02,.98,1.98,2.98)),
+            (-1.179,-2.31,.60,(-1.36,-.38)), (-1.179,2.08,3.91,(2.99,))):
+            for z in (1.537, 2.494):
+                pillar_boxes.append(((x, (start+end)*.5, z), (.060, end-start, .076)))
+            for y in (start, *mullions, end):
+                pillar_boxes.append(((x, y, 2.024), (.069, .094, 1.01)))
+        for end in (-1, 1):
+            y = end*4.116
+            for z in ((1.604, 2.536) if end < 0 else (1.751, 2.536)):
+                pillar_boxes.append(((0.,y,z),(2.151,.048,.068)))
+            for x in (-1.05, 1.05):
+                pillar_boxes.append(((x,y,2.080),(.112,.055,.93)))
         self.add_boxes("GEO_WindowFrames", pillar_boxes, "window_frame", "Trim")
-        self.add_boxes(
-            "GEO_Underbody",
-            [
-                ((0.0, 0.25, 0.31), (1.64, 5.80, 0.20)),
-                ((0.0, 3.15, 0.34), (1.18, 0.75, 0.22)),
-                ((0.0, -3.18, 0.34), (1.10, 0.68, 0.20)),
-            ],
-            "underbody",
-            "Trim",
-        )
+        self.add_boxes("GEO_Underbody", [
+            ((0., .25, .363),(1.62,6.84,.134)),
+            ((0.,3.33,.360),(1.91,1.05,.255)),
+            ((0.,-3.37,.323),(1.82,.99,.151)),
+            *((((0.,y,.43),(1.91,.14,.16)) for y in (-2.25,2.25))),
+        ], "underbody", "Trim")
 
     def _build_glass(self) -> None:
-        windows: list[tuple[Sequence[float], Sequence[float]]] = []
-        for y in (-3.45, -2.50, -1.50, -0.50, 0.50, 1.50, 2.50, 3.45):
-            windows.append(((1.199, y, 2.08), (0.025, 0.82, 0.92)))
-        for y, length in ((-1.70, 0.90), (-0.65, 0.90), (3.02, 1.70)):
-            windows.append(((-1.199, y, 2.08), (0.025, length, 0.92)))
-        windows.extend(
-            [
-                ((0.0, -4.132, 2.08), (1.88, 0.025, 0.92)),
-                ((0.0, 4.132, 2.14), (1.88, 0.025, 0.80)),
-            ]
-        )
+        windows = []
+        for x, edges in (
+            (1.179, (-3.93,-3.02,-2.02,-1.02,-.02,.98,1.98,2.98,3.93)),
+            (-1.179, (-2.33,-1.36,-.38,.62)), (-1.179, (2.06,2.99,3.93))):
+            for start, end in zip(edges, edges[1:]):
+                windows.append(((x,(start+end)*.5,2.013), (.018,end-start-.057,.921)))
+        # Preserve the swept windshield plane and the visible rear sill.
+        windows.extend((((0.,-4.130,2.074),(2.094,.020,.922)),
+                        ((0.,4.130,2.140),(2.094,.020,.782))))
         self.add_boxes("GLS_Windows", windows, "glass", "Glass")
 
     def _build_interior(self) -> None:
+        floor = MeshAccumulator()
+        floor.add_box((0., 0., CABIN_FLOOR_TOP-.05), (2.08, 7.70, .10))
         self.add_boxes(
-            "INT_InteriorSurfaces",
+            "INT_CabinPanels",
             [
-                ((0.0, 0.0, 0.62), (2.08, 7.70, 0.10)),
                 ((0.0, 0.0, 2.75), (2.06, 7.68, 0.06)),
                 ((0.0, 3.76, 1.13), (2.05, 0.12, 0.95)),
                 ((0.0, -3.97, 0.83), (2.05, 0.10, 0.40)),
@@ -727,22 +825,53 @@ class CityBusBuilder:
                 # rear row land on the same drawn floor as all other riders.
                 ((0.0, REAR_BENCH_Y + 0.06, 0.805), (1.16, 0.32, 0.27)),
             ],
-            "interior_shell",
-            "Interior",
+            "cabin_panels", "Interior",
         )
+        lining = MeshAccumulator()
+        for side in (-1, 1):
+            for axle, profile in ((-WHEELBASE*.5, FRONT_WHEEL_HOUSE), (WHEELBASE*.5, REAR_WHEEL_HOUSE)):
+                forms.wheel_housing(lining, side, axle, WHEEL_HOUSE_OUTSIDE, CABIN_FLOOR_TOP-.034, profile)
+        for side, spans in ((1, ((-3.86,3.72),)), (-1, ((-2.28,.57),(2.11,3.72)))):
+            for start,end in spans:
+                lining.add_box((side*1.073,(start+end)*.5,1.133),(.059,end-start,.726))
+                lining.add_box((side*1.105,(start+end)*.5,1.496),(.102,end-start,.072))
+        for start, end in STEP_SPANS:
+            y, run = (start+end)*.5, end-start
+            # Non-slip caps share the deck finish; liners wrap the risers.
+            for x, z, width, height in STEP_SECTION:
+                lining.add_box((-x, y, z-.006), (width, run, height-.012))
+                floor.add_box((-x, y, z+height*.5-.006), (width, run, .014), .004)
+            lining.add_box((-1.125,y,.451), (.020,run,.140))
+            lining.add_box((-1.038,y,.602), (.029,run,.139))
+        self.add_accumulator("INT_InteriorSurfaces", floor, "interior_shell", "Floor")
+        self.add_accumulator("INT_LiningAndSteps", lining, "lining_and_steps", "Interior")
 
         seats = MeshAccumulator()
         frames = MeshAccumulator()
+        piping = MeshAccumulator()
         for x, y in SEAT_POSITIONS:
             if y == REAR_BENCH_Y:
                 continue
-            seats.add_box((x, y, 1.01), (0.52, 0.48, 0.14))
-            seats.add_box((x, y + 0.20, 1.36), (0.52, 0.12, 0.62))
-            frames.add_cylinder_between((x, y + 0.10, 0.67), (x, y + 0.10, 0.94), 0.028, 6)
-            frames.add_cylinder_between((x, y - 0.10, 0.67), (x, y - 0.10, 0.94), 0.028, 6)
+            seats.add_box((x,y,1.01),(.52,.48,.14), .018)
+            # The upholstered back follows a shallow lean over a rigid pan.
+            forms.loft(seats, [[(x+dx,y+dy+lean,z) for dx,dy in
+                ((-w,-.050),(w,-.050),(w+.019,-.020),(w+.019,.034),
+                 (w,.055),(-w,.055),(-w-.019,.034),(-w-.019,-.020))]
+                for z,w,lean in ((1.082,.214,.183),(1.137,.241,.184),
+                    (1.552,.232,.231),(1.630,.211,.259),(1.656,.192,.260))])
+            piping.add_box((x,y-.238,1.018),(.456,.013,.016))
+            piping.add_box((x,y+.315,1.411),(.355,.018,.165))
+            frames.add_box((x,y+.016,.930),(.403,.385,.081))
+            for side in (-1,1):
+                xx=x+side*.151
+                frames.add_cylinder_between((xx,y+.127,.670),(xx,y+.115,.949),.020,8)
+                frames.add_cylinder_between((xx,y-.107,.670),(xx,y-.073,.940),.018,8)
+                frames.add_box((xx,y,.682),(.075,.321,.025))
         self.add_accumulator("INT_PassengerSeats", seats, "passenger_seats", "Seat")
         self._build_rear_bench()
+        frames.add_box((.681,-3.25,.751), (.294,.303,.169))
         self.add_accumulator("INT_SeatFrames", frames, "seat_frames", "Metal")
+        self.add_accumulator("INT_SeatEdging", piping, "seat_edging", "Trim")
 
         self.add_boxes(
             "INT_DriverSeat",
@@ -757,14 +886,36 @@ class CityBusBuilder:
         self.add_boxes(
             "INT_Dashboard",
             [
-                ((0.0, -3.82, 1.42), (2.02, 0.32, 0.16)),
-                ((0.67, -3.85, 1.49), (0.62, 0.22, 0.14)),
-                ((-0.64, -3.48, 1.30), (0.36, 0.28, 0.55)),
-                ((0.35, -3.66, 1.46), (0.18, 0.10, 0.13)),
+                ((0.0,-3.86,1.434),(2.06,.33,.154)),
+                ((.672,-3.916,1.533),(.660,.245,.171)),
+                ((-.64,-3.585,1.33),(.335,.253,.429)),
+                ((.35,-3.666,1.461),(.183,.105,.130)),
+                ((.681,-3.25,.854),(.432,.427,.078)),
             ],
             "dashboard",
             "Dashboard",
         )
+        controls = MeshAccumulator()
+        markings = MeshAccumulator()
+        for x,radius in ((.507,.052),(.671,.073),(.827,.057)):
+            # Dial and raised bezel are seen from the driver's side.
+            controls.add_torus_y((x,-3.786,1.53),radius,.008,14,4)
+            controls.add_cylinder_between((x,-3.792,1.53),(x,-3.781,1.53),radius-.006,14)
+            for i in range(7):
+                a = math.radians(205-38*i)
+                a0 = Vector((x+math.cos(a)*radius*.80,-3.780,1.53+math.sin(a)*radius*.80))
+                a1 = Vector((x+math.cos(a)*radius*.62,-3.779,1.53+math.sin(a)*radius*.62))
+                markings.add_cylinder_between(a0,a1,.0018,4)
+            markings.add_cylinder_between((x,-3.777,1.53),(x-.027,-3.777,1.51),.0022,5)
+        for x in (.135,.216,.881,.960):
+            controls.add_box((x,-3.679,1.442),(.034,.036,.038))
+        # The right shoe works the accelerator, the left has a separate floor rest.
+        for _, x, y, z, width in DRIVER_FOOT_SUPPORTS:
+            controls.add_box((x,y,z-.020),(width,.103,.036))
+            for step in range(3):
+                markings.add_box((x,y-.026+.026*step,z-.002),(width*.83,.004,.004))
+        self.add_accumulator("INT_ControlHardware",controls,"control_hardware","Trim")
+        self.add_accumulator("INT_InstrumentMarks",markings,"instrument_detail","InstrumentInk")
         steering_column = MeshAccumulator()
         steering_column.add_cylinder_between(
             STEERING_WHEEL_CENTER,
@@ -923,18 +1074,22 @@ class CityBusBuilder:
 
     def _build_doors(self) -> None:
         for doorway_name, doorway_y, leaf_specs in DOORWAY_SPECS:
+            posts = [
+                ((DOOR_SIDE_X, doorway_y + direction*DOOR_HINGE_OFFSET, 1.68), (.085,.09,1.72))
+                for _, direction, _ in leaf_specs
+            ]
+            posts.append(((-1.180, doorway_y, (DOOR_HEADER_BOTTOM+2.558)*.5),
+                          (.123,1.636,2.558-DOOR_HEADER_BOTTOM)))
+            for leaf_name, direction, _ in leaf_specs:
+                if doorway_name == "Front" and leaf_name == "Forward":
+                    continue
+                # The three top guides start above their jambs and run over
+                # the window border where the parallel leaf parks outside.
+                y = doorway_y + direction*(DOOR_HINGE_OFFSET + DOOR_SLIDE_RUN*.5)
+                posts.append(((-1.242, y, 2.458), (.146,DOOR_SLIDE_RUN+.12,.058)))
             self.add_boxes(
                 f"GEO_{doorway_name}DoorOuterPosts",
-                [
-                    (
-                        (DOOR_SIDE_X, doorway_y - DOOR_HINGE_OFFSET, 1.68),
-                        (0.085, 0.07, 1.72),
-                    ),
-                    (
-                        (DOOR_SIDE_X, doorway_y + DOOR_HINGE_OFFSET, 1.68),
-                        (0.085, 0.07, 1.72),
-                    ),
-                ],
+                posts,
                 "door_post",
                 "Trim",
             )
@@ -951,7 +1106,7 @@ class CityBusBuilder:
                 self.add_boxes(
                     f"GEO_{doorway_name}Door{leaf_name}LeafPanels",
                     [
-                        ((0.0, panel_y, -0.46), (0.07, 0.70, 0.58)),
+                        ((0.0, panel_y, -0.60), (0.07, 0.70, 0.85)),
                         ((0.0, panel_y, 0.69), (0.07, 0.70, 0.22)),
                     ],
                     "door_panel",
@@ -961,9 +1116,11 @@ class CityBusBuilder:
                 self.add_boxes(
                     f"GEO_{doorway_name}Door{leaf_name}LeafFrames",
                     [
-                        ((0.0, center_stile_y, 0.10), (0.085, 0.04, 1.72)),
+                        ((0.0, center_stile_y, -.095), (0.085, 0.04, 1.85)),
                         ((0.0, panel_y, -0.12), (0.085, 0.70, 0.07)),
-                        ((0.0, panel_y, 0.80), (0.085, 0.70, 0.07)),
+                        ((0.0, panel_y, -1.008), (0.082, 0.70, 0.057)),
+                        ((0.0, panel_y + direction*.331, .34), (.083,.035,.928)),
+                        ((0.0, panel_y, .805), (0.085, 0.70, .061)),
                     ],
                     "door_frame",
                     "Trim",
@@ -981,10 +1138,10 @@ class CityBusBuilder:
 
     def _build_wheels(self) -> None:
         wheel_specs = (
-            ("FL", 1.07, -WHEELBASE * 0.5, True, "front_left"),
-            ("FR", -1.07, -WHEELBASE * 0.5, True, "front_right"),
-            ("RL", 1.07, WHEELBASE * 0.5, False, "rear_left"),
-            ("RR", -1.07, WHEELBASE * 0.5, False, "rear_right"),
+            ("FL", WHEEL_OFFSET, -WHEELBASE * 0.5, True, "front_left"),
+            ("FR", -WHEEL_OFFSET, -WHEELBASE * 0.5, True, "front_right"),
+            ("RL", WHEEL_OFFSET, WHEELBASE * 0.5, False, "rear_left"),
+            ("RR", -WHEEL_OFFSET, WHEELBASE * 0.5, False, "rear_right"),
         )
         for code, x, y, steering, role_suffix in wheel_specs:
             parent = self.body
@@ -1005,27 +1162,60 @@ class CityBusBuilder:
                 roll_location,
             )
             tyre = MeshAccumulator()
-            tyre.add_cylinder_x((0.0, 0.0, 0.0), WHEEL_RADIUS, WHEEL_WIDTH, 16)
+            half = WHEEL_WIDTH*.5
+            forms.rolling_profile(tyre, ((-half,.231),(-half,.365),
+                (-.099,.413),(-.062,WHEEL_RADIUS),(.062,WHEEL_RADIUS),
+                (.099,.413),(half,.365),(half,.231)))
             self.add_accumulator(f"GEO_Tire{code}", tyre, "wheel_tire", "Rubber", roll)
             hub = MeshAccumulator()
-            hub.add_cylinder_x((0.0, 0.0, 0.0), 0.185, WHEEL_WIDTH + 0.025, 12)
+            side = math.copysign(1.,x)
+            forms.rolling_profile(hub, [(side*offset,radius) for offset,radius in (
+                (.113,.222),(.131,.222),(.139,.201),(.122,.174),
+                (.125,.122),(.159,.108),(.160,.084))], 18)
+            for i in range(6):
+                a = math.tau*i/6
+                hub.add_cylinder_x((side*.148,.144*math.cos(a),.144*math.sin(a)),.013,.039,6)
             self.add_accumulator(f"GEO_Hub{code}", hub, "wheel_hub", "Metal", roll)
 
     def _build_lights_and_details(self) -> None:
-        self.add_boxes(
-            "LGT_Headlights",
-            [
-                ((-0.72, -4.134, 0.96), (0.38, 0.035, 0.22)),
-                ((0.72, -4.134, 0.96), (0.38, 0.035, 0.22)),
-            ],
-            "headlight",
-            "Headlight",
-        )
+        surrounds = MeshAccumulator()
+        markers = MeshAccumulator()
+        hardware = MeshAccumulator()
+        for end in (-1, 1):
+            forms.end_panel(surrounds, end, .457, .652, .16, 1.162)
+            y = end*4.122
+            if end > 0:
+                for x in (-.84,.84):
+                    surrounds.add_box((x,y,1.05),(.311,.069,.406))
+            for x in (-1.012,1.012):
+                markers.add_box((x if end > 0 else math.copysign(.72,x),
+                                 end*(4.107 if end > 0 else 4.126),
+                                 .947 if end > 0 else .771),(.142,.065,.079))
+            for x in (-.93,.93):
+                markers.add_box((x,end*4.074,2.714),(.129,.066,.039))
+            # Engine air and cooling live behind a shadowed recess. Separate
+            # pressed metal slats catch light across the slot.
+            grille_width = .816 if end < 0 else 1.198
+            surrounds.add_box((0.,end*4.116,1.006),(grille_width,.051,.258))
+            for row in range(6):
+                hardware.add_box((0.,end*4.145,.906+row*.039),
+                    (grille_width-.050,.020,.011))
+        for x in (-1.27,1.27):
+            hardware.add_box((x,MIRROR_Y+MIRROR_DEPTH*.5+.002,MIRROR_Z),(.151,.013,.258))
+        for side,x,y,z in HEADLIGHT_CENTRES:
+            lens = MeshAccumulator()
+            round_headlight(lens, hardware, (x,y,z))
+            self.add_accumulator(f"LGT_Headlight.{side}",lens,"headlight","Headlight")
+            self.add_pivot(f"ANCHOR_Headlight.{side}",f"headlight_{side.lower()}",
+                           self.body,(x,y-.052,z))
+        self.add_accumulator("GEO_FasciaHousings", surrounds, "fascia_housings", "Trim")
+        self.add_accumulator("GEO_GrilleAndMirrorFaces", hardware, "grille_and_mirrors", "Metal")
+        self.add_accumulator("GEO_MarkerLenses", markers, "marker_lenses", "MarkerLens")
         self.add_boxes(
             "LGT_TailLights",
             [
-                ((-0.84, 4.134, 1.05), (0.24, 0.035, 0.34)),
-                ((0.84, 4.134, 1.05), (0.24, 0.035, 0.34)),
+                ((-0.84, 4.162, 1.05), (0.24, 0.035, 0.34)),
+                ((0.84, 4.162, 1.05), (0.24, 0.035, 0.34)),
             ],
             "tail_light",
             "TailLight",
@@ -1042,6 +1232,9 @@ class CityBusBuilder:
             "cabin_light",
             "CabinLight",
         )
+        self.add_boxes("GEO_CabinStripHousings", [
+            ((x,-.80,2.723),(.166,4.69,.048)) for x in (-.43,.43)
+        ] + [((0.,2.80,2.723),(.912,.164,.048))], "cabin_strip_housings", "Dashboard")
         lamp_stems = MeshAccumulator()
         lamp_collars = MeshAccumulator()
         lamp_bulbs = MeshAccumulator()
@@ -1085,7 +1278,7 @@ class CityBusBuilder:
         )
         self.add_boxes(
             "LGT_DestinationSign",
-            [((0.0, -4.137, 2.69), (1.48, 0.025, 0.27))],
+            [((0.0, -4.137, 2.671), (1.48, 0.025, 0.195))],
             "destination_sign",
             "Destination",
         )
@@ -1096,15 +1289,17 @@ class CityBusBuilder:
                 ((0.0, 4.158, 0.68), (1.72, 0.05, 0.10)),
                 ((0.0, -4.158, 0.53), (0.48, 0.035, 0.13)),
                 ((0.0, 4.158, 0.53), (0.48, 0.035, 0.13)),
-                ((-1.27, -3.58, 2.20), (0.18, 0.22, 0.32)),
-                ((1.27, -3.58, 2.20), (0.18, 0.22, 0.32)),
+                ((-1.27, MIRROR_Y, MIRROR_Z), (.18, MIRROR_DEPTH, .32)),
+                ((1.27, MIRROR_Y, MIRROR_Z), (.18, MIRROR_DEPTH, .32)),
+                ((0.,-4.123,2.672),(1.590,.050,.234)),
             ],
             "exterior_trim",
             "Trim",
         )
         mirror_arms = MeshAccumulator()
-        mirror_arms.add_cylinder_between((-1.10, -3.67, 2.17), (-1.27, -3.58, 2.20), 0.025, 8)
-        mirror_arms.add_cylinder_between((1.10, -3.67, 2.17), (1.27, -3.58, 2.20), 0.025, 8)
+        for side in (-1,1):
+            mirror_arms.add_cylinder_between((side*1.115,-4.061,MIRROR_Z-.115),
+                (side*1.27,MIRROR_Y,MIRROR_Z-.102),.023,8)
         self.add_accumulator("GEO_MirrorArms", mirror_arms, "mirror_arms", "Metal")
         for wiper_code, wiper_role, base_x, tip_reach in WIPER_SPECS:
             wiper_pivot = self.add_pivot(
@@ -1160,6 +1355,9 @@ class CityBusBuilder:
             self.body,
             DRIVER_DOOR_LOOK_POSITION,
         )
+        for side, x, y, z, _ in DRIVER_FOOT_SUPPORTS:
+            self.add_pivot(f"ANCHOR_DriverFoot.{side}", f"driver_foot_{side.lower()}",
+                           self.body, (x,y,z))
         for index, (x, y) in enumerate(SEAT_POSITIONS, start=1):
             self.add_pivot(
                 f"ANCHOR_PassengerSeat_{index:02d}",
@@ -1240,6 +1438,54 @@ def build_signature(result: BuildResult) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def validate_wheel_clearance(result: BuildResult, errors: list[str]) -> None:
+    lining = next(p.obj for p in result.parts if p.role == "lining_and_steps")
+    floor = next(p.obj for p in result.parts if p.role == "interior_shell")
+    down = Vector((0., 0., -1.))
+    for axle, (key, step), steer_limit in zip((-WHEELBASE*.5, WHEELBASE*.5),
+                                              zip(("FL", "RL"), STEP_SPANS), (28, 0)):
+        tire = next(p.obj for p in result.parts if p.obj.name == f"GEO_Tire{key}")
+        rings = {(round(v.co.x, 6), round(math.hypot(v.co.y, v.co.z), 6)) for v in tire.data.vertices}
+        tread_min = min(x-width*.5 for x, _, width, _ in STEP_SECTION)
+        tread_max = max(x+width*.5 for x, _, width, _ in STEP_SECTION)
+        tread_bottom = min(z-height*.5 for _, z, _, height in STEP_SECTION)
+        # The wheels are unsprung. Sweep the actual tire profile through roll and
+        # steer, relative to the full body motion in CityBusPresentation.
+        body_poses = [(Matrix.Rotation(math.radians(roll), 3, 'Y') @
+                       Matrix.Rotation(math.radians(pitch), 3, 'X'), Vector((0.,0.,heave)))
+                      for heave in (-.045, 0., .045) for pitch in (-.8, 0., .8) for roll in (-1., 0., 1.)]
+        crown_gap = float('inf')
+        step_clear = True
+        centre = Vector((WHEEL_OFFSET, axle, WHEEL_RADIUS))
+        for steer in range(-steer_limit, steer_limit+1, 7):
+            steer_matrix = Matrix.Rotation(math.radians(steer), 3, 'Z')
+            for x, radius in rings:
+                for angle in range(0, 360, 10):
+                    angle = math.radians(angle)
+                    point = centre + steer_matrix @ Vector((x, radius*math.cos(angle), radius*math.sin(angle)))
+                    for rotation, offset in body_poses:
+                        p = rotation @ (point-offset)
+                        # The boarding side is the mirror image; all extremal
+                        # steer and body angles are included with both signs.
+                        if tread_min <= p.x <= tread_max and step[0] <= p.y <= step[1] and tread_bottom <= p.z <= CABIN_FLOOR_TOP:
+                            step_clear = False
+                        if p.z > CABIN_FLOOR_TOP and p.x < WHEEL_HOUSE_OUTSIDE-.005:
+                            for side in (-1, 1):
+                                hit, contact, _, _ = lining.ray_cast(Vector((side*p.x, p.y, 1.66)), down)
+                                crown_gap = min(crown_gap, contact.z-p.z if hit else -1.)
+        if crown_gap < .002:
+            errors.append(f"The {key} tire emerges through the cabin lining ({crown_gap:+.3f} m clearance)")
+        if not step_clear:
+            errors.append(f"The {key} axle intersects a boarding step")
+    for (_, y, _), (start, end) in zip(DOORWAY_SPECS, STEP_SPANS):
+        for x, z, _, height in STEP_SECTION:
+            for longitudinal in (y-.18, y, y+.18):
+                hit, contact, _, _ = floor.ray_cast(Vector((-x,longitudinal,.64)), down)
+                if not start < longitudinal < end or not hit or abs(contact.z-(z+height*.5)) > .003:
+                    errors.append(f"Boarding step near y={y:.2f} has no continuous tread under the doorway")
+                    break
+
+
 def validate_result(result: BuildResult) -> ValidationReport:
     errors: list[str] = []
     names = [obj.name for obj in result.source_objects]
@@ -1251,6 +1497,8 @@ def validate_result(result: BuildResult) -> ValidationReport:
             errors.append(f"Unexpected Blender numeric suffix on {name}")
 
     mesh_count = len(result.parts)
+    if mesh_count > MAX_RENDERERS:
+        errors.append(f"{mesh_count} visible parts exceed the {MAX_RENDERERS}-renderer budget")
     triangle_count = sum(triangulated_count(part.obj.data) for part in result.parts)
     if triangle_count < MIN_TRIANGLES or triangle_count > MAX_TRIANGLES:
         errors.append(
@@ -1403,6 +1651,14 @@ def validate_result(result: BuildResult) -> ValidationReport:
                 f"PIVOT_Wiper{wiper_code} must directly own its single wiper mesh"
             )
 
+    footwell = next(part.obj for part in result.parts if part.role == "control_hardware")
+    for side, x, y, z, _ in DRIVER_FOOT_SUPPORTS:
+        validate_control_pivot(f"ANCHOR_DriverFoot.{side}", f"driver_foot_{side.lower()}",
+                               result.body, (x,y,z))
+        hit, position, _, _ = footwell.ray_cast(Vector((x,y,z+.02)), Vector((0,0,-1)))
+        if not hit or abs(position.z - z) > .003:
+            errors.append(f"Driver foot support {side} misses the pedal surface")
+
     expected_leaf_roles: dict[str, tuple[str, tuple[float, float, float]]] = {}
     for doorway_name, doorway_y, leaf_specs in DOORWAY_SPECS:
         for leaf_name, direction, role in leaf_specs:
@@ -1427,7 +1683,7 @@ def validate_result(result: BuildResult) -> ValidationReport:
             abs(actual - expected) > 1e-6
             for actual, expected in zip(pivot.obj.location, expected_location)
         ):
-            errors.append(f"Door leaf pivot {name} is not on its outer hinge")
+            errors.append(f"Door leaf pivot {name} is not at its outer jamb")
         child_parts = [part for part in result.parts if part.obj.parent is pivot.obj]
         child_roles = sorted(part.role for part in child_parts)
         if child_roles != ["door_frame", "door_glass", "door_panel"]:
@@ -1445,7 +1701,7 @@ def validate_result(result: BuildResult) -> ValidationReport:
         if abs(x) - body_radius < 0.35 or abs(x) + body_radius > 1.04:
             errors.append(f"Standing bay {i} encroaches on the aisle or cabin wall")
         # Both doorways cross to the aisle at their own longitudinal station.
-        # The open two-leaf sweep stays inside the two fixed outer posts.
+        # Door panels park at the sides of the two public crossing paths.
         for _, door_y, _ in DOORWAY_SPECS:
             if x < 0 and abs(y - door_y) < DOOR_HINGE_OFFSET + body_radius:
                 errors.append(f"Standing bay {i} overlaps the doorway")
@@ -1468,6 +1724,27 @@ def validate_result(result: BuildResult) -> ValidationReport:
         part.obj.parent is not result.body for part in door_posts
     ):
         errors.append("Both fixed doorway-post meshes must be parented to ROOT_Body")
+    door_meshes = [part.obj for part in result.parts if part.role in {"door_frame", "door_panel"}]
+    front_hinge = DOORWAY_SPECS[0][1] - DOOR_HINGE_OFFSET
+    if MIRROR_Y + MIRROR_DEPTH*.5 + .01 >= front_hinge - .04:
+        errors.append("Fixed mirrors must be ahead of the front doorway")
+    if any((obj.matrix_world @ v.co).z >= DOOR_HEADER_BOTTOM - .004 for obj in door_meshes for v in obj.data.vertices):
+        errors.append("Moving door skin must clear the stationary header through its sweep")
+    opaque_body = [p.obj for p in result.parts if p.role in {"door_post", "body_shell", "window_frame"}]
+    for _, y, _ in DOORWAY_SPECS:
+        for offset in (-.70, -.34, 0., .34, .70):
+            for z in (2.444, 2.485, 2.530):
+                if not any(obj.ray_cast(Vector((-1.4,y+offset,z)), Vector((1,0,0)), distance=.33)[0]
+                           for obj in opaque_body):
+                    errors.append(f"Open seam above closed doorway at {y+offset:.2f}, {z:.3f}")
+    validate_wheel_clearance(result, errors)
+    lenses = {p.obj.name: p.obj for p in result.parts if p.role == "headlight"}
+    for side,x,y,z in HEADLIGHT_CENTRES:
+        validate_control_pivot(f"ANCHOR_Headlight.{side}",f"headlight_{side.lower()}",result.body,(x,y-.052,z))
+        lens = lenses[f"LGT_Headlight.{side}"]
+        hit, pos, _, _ = lens.ray_cast(Vector((x,y-.080,z)), Vector((0,1,0)))
+        if not hit or abs(pos.y-(y-.048)) > .002:
+            errors.append(f"Headlight {side} does not meet the visible lens and beam contract")
     seats = [p for p in result.pivots if p.role == "passenger_seat_anchor"]
     rear = [p.obj for p in seats if p.obj.location.y > 3.0]
     if len(seats) != 10 or {p.name for p in rear} != {"ANCHOR_PassengerSeat_06", "ANCHOR_PassengerSeat_10"}:
@@ -1669,6 +1946,9 @@ def main() -> None:
     result = CityBusBuilder().build()
     bpy.context.view_layer.update()
     report = validate_result(result)
+    if config.validate_only:
+        print(f"CITY BUS 3D CONTRACT OK: {report.mesh_count} meshes, {report.triangle_count} triangles, {report.build_signature}")
+        return
     if not config.no_preview:
         render_preview(config.preview, result)
     export_fbx(config.fbx, result)

@@ -23,7 +23,7 @@ namespace BarPromenade.Editor
         public const string TextureFolder =
             "Assets/Vehicles/Textures";
 
-        private const string ExpectedDesignId = "road_v2_midibus_v1";
+        private const string ExpectedDesignId = "road_v2_midibus_v2";
         private const string ExpectedForwardAxis = "-Y";
         private const string ExpectedRuntimeForwardAxis = "+Z";
         private const float ExpectedLength = 8.25f;
@@ -33,7 +33,8 @@ namespace BarPromenade.Editor
         private const float ExpectedWheelRadius = 0.43f;
         private const float ExpectedDoorButtonTravel = 0.012f;
         private const int MinimumTriangleCount = 900;
-        private const int MaximumTriangleCount = 12000;
+        private const int MaximumTriangleCount = 22000;
+        private const int MaximumRenderers = 66;
 
         private static bool isBuilding;
         private static bool buildQueued;
@@ -262,7 +263,7 @@ namespace BarPromenade.Editor
             if (!manifest.visible_interior ||
                 manifest.colliders ||
                 manifest.animation_count != 0 ||
-                manifest.mesh_count != manifest.parts.Length ||
+                manifest.mesh_count != manifest.parts.Length || manifest.mesh_count > MaximumRenderers ||
                 manifest.triangle_count < MinimumTriangleCount ||
                 manifest.triangle_count > MaximumTriangleCount ||
                 manifest.bounds_min.Length != 3 ||
@@ -525,6 +526,28 @@ namespace BarPromenade.Editor
             if (material.HasProperty("_MainTex"))
             {
                 material.SetTexture("_MainTex", albedo);
+            }
+
+            string responseFamily = slot == CityBusMaterialSlot.Glass ? null : TextureFamily(slot);
+            AssignResponse("_BumpMap", "_NORMALMAP", "Normal");
+            AssignResponse("_MetallicGlossMap", "_METALLICSPECGLOSSMAP", "Response");
+            if (responseFamily != null)
+            {
+                material.SetFloat("_BumpScale", .65f);
+                material.SetFloat("_Smoothness", 1f); // Response alpha is authored in absolute units.
+            }
+            // Like the sedan, the moving paint and curved glass use stable
+            // environment reflection. City's road trace remains on the road.
+            material.SetFloat("_ScreenSpaceReflections", 0f);
+            material.SetFloat("_ScreenSpaceReflectionsContributeTransparent", 0f);
+            material.EnableKeyword("_SCREENSPACEREFLECTIONS_OFF");
+
+            void AssignResponse(string property, string keyword, string suffix)
+            {
+                Texture2D map = responseFamily == null ? null : LoadTexture(responseFamily, suffix);
+                material.SetTexture(property, map);
+                if (map != null) material.EnableKeyword(keyword);
+                else material.DisableKeyword(keyword);
             }
 
             material.enableInstancing = true;
@@ -1226,44 +1249,29 @@ namespace BarPromenade.Editor
             return $"{MaterialFolder}/CityBus{slot}.mat";
         }
 
-        private static string TexturePath(CityBusMaterialSlot slot)
+        private static string TextureFamily(CityBusMaterialSlot slot) => slot switch
         {
-            switch (slot)
-            {
-                case CityBusMaterialSlot.Body:
-                case CityBusMaterialSlot.Accent:
-                    return $"{TextureFolder}/CityBusPaintAlbedo.png";
-                case CityBusMaterialSlot.Metal:
-                case CityBusMaterialSlot.Rail:
-                    return $"{TextureFolder}/CityBusMetalAlbedo.png";
-                case CityBusMaterialSlot.Interior:
-                case CityBusMaterialSlot.Dashboard:
-                    return $"{TextureFolder}/CityBusInteriorAlbedo.png";
-                case CityBusMaterialSlot.Seat:
-                    return $"{TextureFolder}/CityBusSeatAlbedo.png";
-                default:
-                    return null;
-            }
-        }
+            CityBusMaterialSlot.Body or CityBusMaterialSlot.Accent => "Paint",
+            CityBusMaterialSlot.Metal or CityBusMaterialSlot.Rail => "Metal",
+            CityBusMaterialSlot.Interior or CityBusMaterialSlot.Dashboard => "Interior",
+            CityBusMaterialSlot.Seat => "Seat",
+            CityBusMaterialSlot.Rubber => "Rubber",
+            CityBusMaterialSlot.Floor => "Floor",
+            CityBusMaterialSlot.Glass => "Glass",
+            _ => null
+        };
 
-        private static Texture2D LoadAlbedoTexture(CityBusMaterialSlot slot)
+        private static string TexturePath(CityBusMaterialSlot slot) =>
+            TextureFamily(slot) is string family ? $"{TextureFolder}/CityBus{family}Albedo.png" : null;
+
+        private static Texture2D LoadAlbedoTexture(CityBusMaterialSlot slot) =>
+            TextureFamily(slot) is string family ? LoadTexture(family, "Albedo") : null;
+
+        private static Texture2D LoadTexture(string family, string suffix)
         {
-            string path = TexturePath(slot);
-            if (path == null)
-            {
-                return null;
-            }
-
-            Texture2D texture =
-                AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-            if (texture == null)
-            {
-                throw new InvalidOperationException(
-                    $"City bus albedo '{path}' is missing; run " +
-                    "tools/build-city-bus-textures.py.");
-            }
-
-            return texture;
+            string path = $"{TextureFolder}/CityBus{family}{suffix}.png";
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path)
+                ?? throw new InvalidOperationException($"Generate the missing City bus map '{path}'.");
         }
 
         private static Color GetMaterialColor(CityBusMaterialSlot slot)
@@ -1281,17 +1289,23 @@ namespace BarPromenade.Editor
                 case CityBusMaterialSlot.Metal:
                     return Hex("#606B68FF");
                 case CityBusMaterialSlot.Glass:
-                    return Hex("#3160645C");
+                    return Hex("#73928E47");
                 case CityBusMaterialSlot.Interior:
-                    return Hex("#303532FF");
+                    return Hex("#929080FF");
                 case CityBusMaterialSlot.Seat:
                     return Hex("#24554AFF");
                 case CityBusMaterialSlot.Rail:
                     return Hex("#C27A19FF");
                 case CityBusMaterialSlot.Dashboard:
-                    return Hex("#171C1AFF");
+                    return Hex("#333A36FF");
+                case CityBusMaterialSlot.Floor:
+                    return Hex("#474B44FF");
+                case CityBusMaterialSlot.InstrumentInk:
+                    return Hex("#C8B98EFF");
+                case CityBusMaterialSlot.MarkerLens:
+                    return Hex("#AF6D24FF");
                 case CityBusMaterialSlot.Headlight:
-                    return Hex("#DDECB8FF");
+                    return LastRouteCarHeadlights.LensColor;
                 case CityBusMaterialSlot.TailLight:
                     return Hex("#B5140CFF");
                 case CityBusMaterialSlot.CabinLight:
@@ -1321,7 +1335,7 @@ namespace BarPromenade.Editor
             switch (slot)
             {
                 case CityBusMaterialSlot.Glass:
-                    return 0.78f;
+                    return 0.64f;
                 case CityBusMaterialSlot.Metal:
                 case CityBusMaterialSlot.Rail:
                     return 0.65f;

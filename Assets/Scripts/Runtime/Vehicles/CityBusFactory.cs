@@ -48,14 +48,14 @@ namespace BarPromenade
             if (plans == null || plans.Count == 0 || plans.Count > CityBusDirector.MaximumLines)
                 throw new ArgumentException("Expected one to three bus lines.", nameof(plans));
             GameObject model = CityBusResources.LoadPrefab();
-            GameObject driver = CityBusDriverResources.LoadPrefab();
             var fleet = new CityBusDirector[plans.Count * CityBusDirector.VehiclesPerLine];
             try
             {
                 for (int i = 0; i < fleet.Length; i++)
                 {
                     int line = i / CityBusDirector.VehiclesPerLine;
-                    fleet[i] = Create(parent, plans[line], player, pedestrians, model, driver, nightFactorProvider,
+                    fleet[i] = Create(parent, plans[line], player, pedestrians, model, nightFactorProvider,
+                        busSlot: i % CityBusDirector.VehiclesPerLine,
                         deferPresentation: i % CityBusDirector.VehiclesPerLine != 0);
                 }
                 for (int i = 0; i < fleet.Length; i += CityBusDirector.VehiclesPerLine)
@@ -79,7 +79,6 @@ namespace BarPromenade
         {
             Stopwatch timer = Stopwatch.StartNew();
             GameObject presentationPrefab = CityBusResources.LoadPrefab();
-            GameObject driverPrefab = CityBusDriverResources.LoadPrefab();
             CityBusPlanner.ReportPhase("bus_prefab_load", timer);
             return Create(
                 parent,
@@ -87,7 +86,6 @@ namespace BarPromenade
                 player,
                 pedestrians,
                 presentationPrefab,
-                driverPrefab,
                 nightFactorProvider);
         }
 
@@ -98,25 +96,11 @@ namespace BarPromenade
             CityPedestrianDirector pedestrians,
             GameObject presentationPrefab,
             Func<float> nightFactorProvider = null)
-        {
-            return Create(
-                parent,
-                plan,
-                player,
-                pedestrians,
-                presentationPrefab,
-                CityBusDriverResources.LoadPrefab(),
-                nightFactorProvider);
-        }
+            => Create(parent, plan, player, pedestrians, presentationPrefab, nightFactorProvider, busSlot: 0);
 
-        public static CityBusDirector Create(
-            Transform parent,
-            CityBusPlan plan,
-            Transform player,
-            CityPedestrianDirector pedestrians,
-            GameObject presentationPrefab,
-            GameObject driverPrefab,
-            Func<float> nightFactorProvider, bool deferPresentation = false)
+        private static CityBusDirector Create(
+            Transform parent, CityBusPlan plan, Transform player, CityPedestrianDirector pedestrians,
+            GameObject presentationPrefab, Func<float> nightFactorProvider, int busSlot, bool deferPresentation = false)
         {
             if (parent == null)
             {
@@ -140,13 +124,6 @@ namespace BarPromenade
                     $"Resources/{CityBusResources.PrefabResourcePath}.");
             }
 
-            if (!plan.IsEmpty && driverPrefab == null)
-            {
-                throw new InvalidOperationException(
-                    "The city bus driver prefab is missing at " +
-                    $"Resources/{CityBusDriverResources.PrefabResourcePath}.");
-            }
-
             CityBusCollision.EnsureRuntimePolicy();
             GameObject runtimeRoot = new GameObject(RuntimeRootName);
             runtimeRoot.transform.SetParent(parent, false);
@@ -166,7 +143,7 @@ namespace BarPromenade
                 {
                     var template = presentationPrefab.GetComponent<CityBusAssetRegistry>();
                     if (template == null) throw new InvalidOperationException("Bus prefab is missing its registry.");
-                    CityBusPresentation CreateModel() => BuildPresentation(presentationPrefab, driverPrefab, modelPoolRoot, plan);
+                    CityBusPresentation CreateModel() => BuildPresentation(presentationPrefab, modelPoolRoot, plan, busSlot);
                     if (deferPresentation) deferredModel = CreateModel;
                     else presentation = CreateModel();
 
@@ -192,7 +169,7 @@ namespace BarPromenade
             }
         }
 
-        private static CityBusPresentation BuildPresentation(GameObject model, GameObject driver, Transform poolRoot, CityBusPlan plan)
+        private static CityBusPresentation BuildPresentation(GameObject model, Transform poolRoot, CityBusPlan plan, int busSlot)
         {
             if (!CityBusResources.TryInstantiate(model, poolRoot, out var registry))
                 throw new InvalidOperationException("Bus prefab is missing its registry.");
@@ -205,10 +182,7 @@ namespace BarPromenade
                 if (presentation == null) presentation = registry.gameObject.AddComponent<CityBusPresentation>();
                 presentation.Initialize(registry);
                 presentation.SetRouteNumber(plan.Number);
-                if (!CityBusDriverResources.TryInstantiate(driver, registry.transform, out var driverRegistry))
-                    throw new InvalidOperationException("Bus driver prefab is missing its registry.");
-                ValidatePassiveDriver(driverRegistry);
-                presentation.AttachDriver(driverRegistry);
+                presentation.AttachDriver(CityBusDriverRig.Create(registry.transform, plan.Number, busSlot));
                 presentation.gameObject.SetActive(false);
                 return presentation;
             }
@@ -243,32 +217,6 @@ namespace BarPromenade
                 {
                     throw new InvalidOperationException(
                         "City bus presentations must not be interactive.");
-                }
-            }
-        }
-
-        private static void ValidatePassiveDriver(
-            CityBusDriverAssetRegistry registry)
-        {
-            if (registry.GetComponentsInChildren<Collider>(true).Length > 0 ||
-                registry.GetComponentsInChildren<Collider2D>(true).Length > 0 ||
-                registry.GetComponentsInChildren<Rigidbody>(true).Length > 0 ||
-                registry.GetComponentsInChildren<Rigidbody2D>(true).Length > 0 ||
-                registry.GetComponentsInChildren<Light>(true).Length > 0)
-            {
-                throw new InvalidOperationException(
-                    "City bus driver prefabs must remain collider, rigidbody " +
-                    "and Light free.");
-            }
-
-            MonoBehaviour[] behaviours =
-                registry.GetComponentsInChildren<MonoBehaviour>(true);
-            for (int index = 0; index < behaviours.Length; index++)
-            {
-                if (behaviours[index] is IInteractable)
-                {
-                    throw new InvalidOperationException(
-                        "City bus drivers must not be interactive.");
                 }
             }
         }

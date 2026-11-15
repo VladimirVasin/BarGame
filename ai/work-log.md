@@ -13,6 +13,16 @@ Checks passed: `build-city-buildings-3d-model`,
 Doorway views reviewed. `LiveCity_BothTransferStairsCarryPedestriansBetweenBuses`
 hit the west landing lamp. The map uses the live scheme after ImageGen missed registration.
 
+Midibus: formed shell, sealed headers, fixed mirrors and shared sedan optics.
+Wheel housings cover the sprung tyre sweep; treads clear the arches. The cab
+leaf opens inward; three leaves unseat then slide along the side. Default
+drivers keep the transit uniform, long eyes and physical cab contacts. Removed
+obsolete driver assets and duplicate Ferryman sources; retained the sedan takes.
+Proof: `build-city-bus-3d-model`, `CityMidibusRemodel`,
+`Doors_OpenClearAndReseatOnTheSprungBody`, `Passenger_BoardsRidesAndExitsAtLaterStop`,
+`Driver_SitsOnTheDrawnSeatAndWorksWheelAndButtonWithoutCrossingLimbs`,
+`build-last-route-cabin-actions --validate-only`.
+
 ## 2026-11-15
 
 Ridge parking joins home and kiosk: authored paving/ramp/curbs, municipal

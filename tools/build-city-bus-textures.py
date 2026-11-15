@@ -1,252 +1,143 @@
 #!/usr/bin/env python3
-"""Build the deterministic tileable albedo sheets for the production City bus.
-
-The bus model carries world-scale box-projected UVs (see
-`tools/build-city-bus-3d-model.py`), so every sheet here is authored to wrap
-seamlessly and is consumed by `CityBusAssetSetup.BuildMaterials` at (1, 1)
-tiling. Like the facade sheets, each albedo is a light base carrying dark
-features: URP/Lit multiplies `_BaseColor` by `_BaseMap`, so the existing flat
-material colors keep providing the actual hue and most of the value while the
-texture adds panel, weave and wear detail. Pillow is the only dependency.
-
-Run from the repository root::
-
-    python tools/build-city-bus-textures.py
-"""
-
+"""Bake the midibus' panel atlas and shared metre-scale surface maps."""
 from __future__ import annotations
 
 import argparse
-import random
-import sys
+import hashlib
 from pathlib import Path
+import sys
 
-from PIL import Image, ImageDraw, ImageFilter
+import numpy as np
+
+sys.dont_write_bytecode = True
+from atlas_kit import PixelCanvas
+from city_bus_surfaces import PAINT_END, PAINT_ROOF, PAINT_SIDE
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_TEXTURE_DIR = ROOT / "Assets" / "Vehicles" / "Textures"
-
-SEED = 260813
-SHEET_SIZE = 512
-
-# Light albedo bases keep the multiplied material color close to its flat
-# value; anything much darker would visibly dim the bus against its city
-# materials that never multiplied a texture.
-PAINT_BASE = 204
-METAL_BASE = 206
-INTERIOR_BASE = 196
-SEAT_BASE = 192
+DEFAULT_TEXTURE_DIR = ROOT / "Assets/Vehicles/Textures"
 
 
-def tileable_noise(
-    rng: random.Random,
-    size: int,
-    lattice: int,
-    amplitude: float,
-) -> Image.Image:
-    """Return an L-mode sheet of smooth wrapping noise centred on 128."""
-    values = [
-        [rng.uniform(-1.0, 1.0) for _ in range(lattice)]
-        for _ in range(lattice)
-    ]
-    cell = Image.new("L", (lattice, lattice))
-    cell.putdata(
-        [
-            max(0, min(255, round(128 + values[y][x] * amplitude)))
-            for y in range(lattice)
-            for x in range(lattice)
-        ]
-    )
-    tiled = Image.new("L", (lattice * 3, lattice * 3))
-    for tile_x in range(3):
-        for tile_y in range(3):
-            tiled.paste(cell, (tile_x * lattice, tile_y * lattice))
-    upsampled = tiled.resize((size * 3, size * 3), Image.BICUBIC)
-    return upsampled.crop((size, size, size * 2, size * 2))
+def coordinates(size):
+    c = (np.arange(size, dtype=np.float64) + .5) / size
+    return np.meshgrid(c, c[::-1])
 
 
-def apply_noise(base: Image.Image, noise: Image.Image) -> Image.Image:
-    """Add signed noise (128-centred) onto a grayscale base sheet."""
-    result = base.point(lambda value: value)
-    base_pixels = result.load()
-    noise_pixels = noise.load()
-    width, height = result.size
-    for y in range(height):
-        for x in range(width):
-            value = base_pixels[x, y] + noise_pixels[x, y] - 128
-            base_pixels[x, y] = max(0, min(255, value))
-    return result
+def wave(u, v, x, y, phase=0.):
+    return np.sin(2*np.pi*(u*x+phase)) * np.cos(2*np.pi*v*y)
 
 
-def wrapped_line(
-    draw: ImageDraw.ImageDraw,
-    size: int,
-    start: tuple[float, float],
-    end: tuple[float, float],
-    fill: int,
-    width: int,
-) -> None:
-    """Draw a line at every 3x3 wrap offset so it tiles seamlessly."""
-    for offset_x in (-size, 0, size):
-        for offset_y in (-size, 0, size):
-            draw.line(
-                [
-                    (start[0] + offset_x, start[1] + offset_y),
-                    (end[0] + offset_x, end[1] + offset_y),
-                ],
-                fill=fill,
-                width=width,
-            )
+def pressure(u, v, x, y, width, height):
+    return np.exp(-((u-x)/width)**2-((v-y)/height)**2)
 
 
-def wrapped_dot(
-    draw: ImageDraw.ImageDraw,
-    size: int,
-    center: tuple[float, float],
-    radius: float,
-    fill: int,
-) -> None:
-    for offset_x in (-size, 0, size):
-        for offset_y in (-size, 0, size):
-            cx = center[0] + offset_x
-            cy = center[1] + offset_y
-            draw.ellipse(
-                (cx - radius, cy - radius, cx + radius, cy + radius),
-                fill=fill,
-            )
+def rgba(r, g, b, a=1.):
+    return np.clip(np.rint(np.stack(np.broadcast_arrays(r, g, b, a), axis=-1)*255),
+                   0, 255).astype(np.uint8)
 
 
-def mean_luminance(sheet: Image.Image) -> float:
-    histogram = sheet.convert("L").histogram()
-    total = sum(histogram)
-    return sum(index * count for index, count in enumerate(histogram)) / (
-        total * 255.0
-    )
+def finish(rgb, height, smoothness, metallic=0., tile=False, scale=2.):
+    if tile:
+        dx = (np.roll(height,-1,1)-np.roll(height,1,1))*.5
+        dy = (np.roll(height,-1,0)-np.roll(height,1,0))*.5
+    else:
+        dy, dx = np.gradient(height)
+    x, y = -dx*scale, dy*scale
+    length = np.sqrt(1+x*x+y*y)
+    return {"Albedo": rgba(*rgb), "Normal": rgba(.5+.5*x/length,.5+.5*y/length,.5+.5/length),
+            "Response": rgba(metallic, 0., 0., np.clip(smoothness,.06,.83))}
 
 
-def build_paint(rng: random.Random) -> Image.Image:
-    """Exterior paint: panel seams, rivet rows and streaked grime."""
-    size = SHEET_SIZE
-    sheet = Image.new("L", (size, size), PAINT_BASE)
-    sheet = apply_noise(sheet, tileable_noise(rng, size, 24, 9.0))
-    draw = ImageDraw.Draw(sheet)
-
-    # Two horizontal panel seams per tile with a rivet row under each.
-    for seam_y in (size * 0.25, size * 0.75):
-        wrapped_line(draw, size, (0, seam_y), (size, seam_y), 150, 2)
-        wrapped_line(
-            draw, size, (0, seam_y + 2), (size, seam_y + 2), 226, 1
-        )
-        for rivet in range(16):
-            rivet_x = (rivet + 0.5) * size / 16
-            wrapped_dot(draw, size, (rivet_x, seam_y + 8), 2.0, 158)
-    # One vertical seam so long side panels break up as well.
-    wrapped_line(draw, size, (size * 0.5, 0), (size * 0.5, size), 156, 2)
-
-    # Sparse vertical grime streaks running down from the upper seam line.
-    for _ in range(26):
-        streak_x = rng.uniform(0, size)
-        streak_top = rng.uniform(0, size)
-        streak_length = rng.uniform(size * 0.08, size * 0.35)
-        tone = rng.randint(172, 194)
-        wrapped_line(
-            draw,
-            size,
-            (streak_x, streak_top),
-            (streak_x, streak_top + streak_length),
-            tone,
-            rng.randint(1, 3),
-        )
-    return sheet.filter(ImageFilter.GaussianBlur(0.6))
-
-
-def build_metal(rng: random.Random) -> Image.Image:
-    """Brushed metal: long horizontal grain plus faint scratches."""
-    size = SHEET_SIZE
-    sheet = Image.new("L", (size, size), METAL_BASE)
-    grain = tileable_noise(rng, size, 12, 14.0)
-    grain = grain.resize((size // 8, size), Image.BICUBIC).resize(
-        (size, size), Image.BICUBIC
-    )
-    sheet = apply_noise(sheet, grain)
-    draw = ImageDraw.Draw(sheet)
-    for _ in range(40):
-        scratch_y = rng.uniform(0, size)
-        scratch_x = rng.uniform(0, size)
-        scratch_length = rng.uniform(size * 0.05, size * 0.5)
-        tone = rng.choice((178, 186, 222, 230))
-        wrapped_line(
-            draw,
-            size,
-            (scratch_x, scratch_y),
-            (scratch_x + scratch_length, scratch_y),
-            tone,
-            1,
-        )
-    return sheet.filter(ImageFilter.GaussianBlur(0.5))
+def paint(rng):
+    u,v = coordinates(1024)
+    grain = .36*wave(u,v,110,83) + .38*wave(u,v,52,39,.34) + rng.normal(0.,.24,u.shape)
+    sx = (u-.026)/.948
+    mottle = .55+.29*wave(u,v,11,79,.20)+.14*wave(u,v,43,43,.42)
+    stains = np.zeros_like(u)
+    oxide = np.zeros_like(u)
+    scuffs = np.zeros_like(u)
+    repair = np.zeros_like(u)
+    for i, origin in enumerate(PAINT_SIDE):
+        z = (v-origin)/.156*2.95
+        band = (v > origin-.020) & (v < origin+.167)
+        stains += band*(.21*np.exp(-np.maximum(0.,z-.34)*4.1)
+            + mottle*.035*np.exp(-((z-.98)/.70)**2)
+            + .018*wave(u,v,61,11,i*.19)*np.exp(-((z-1.58)/.73)**2))
+        for wheel in (.232,.768):
+            stains += band*(.22*pressure(sx,z,wheel+.058,.54,.085,.38)
+                            + .090*pressure(sx,z,wheel,1.04,.047,.18))
+        for x,h,w in ((.142,.55,.042),(.316,.83,.023),(.558,.51,.051),(.831,.63,.046),(.939,.66,.026)):
+            wear = pressure(sx,z,x+i*.014,h,w,.063)
+            oxide += band*np.clip(wear*(.68 + .34*grain)-.38,0,.6)
+        scuffs += band*pressure(sx,z,.21 if i else .821,1.424,.055,.022)
+        # A broad, low contrast repair follows one replaceable panel.
+        mask = (sx > .432+i*.085) & (sx < .577+i*.085) & (z > .50) & (z < 1.397)
+        repair += mask*.075
+    for origin in PAINT_END:
+        z = (v-origin)/.151*2.95
+        stains += ((z > -.3)&(z < 3.15))*(.23*np.exp(-np.maximum(0.,z-.37)*3.5)
+            + .026*mottle*np.exp(-((z-1.52)/.70)**2))
+    stains += (v > PAINT_ROOF-.018)*(.029+.018*wave(u,v,7,13))
+    enamel = .96 + repair + .018*grain - stains + .028*scuffs
+    flake = np.clip(oxide*1.5,0,1)
+    rgb = (enamel*(1-flake)+.73*flake, enamel*(1-flake)+.48*flake,
+           enamel*(1-flake)+.307*flake)
+    return finish(rgb,.076*grain+.14*oxide+.034*wave(u,v,19,16),
+                  .39-.54*stains-.32*oxide+.072*scuffs+.025*grain,.04+.13*flake,scale=2.1)
 
 
-def build_interior(rng: random.Random) -> Image.Image:
-    """Interior linoleum: speckle field over soft ribbing."""
-    size = SHEET_SIZE
-    sheet = Image.new("L", (size, size), INTERIOR_BASE)
-    sheet = apply_noise(sheet, tileable_noise(rng, size, 32, 8.0))
-    draw = ImageDraw.Draw(sheet)
-    for rib in range(8):
-        rib_x = (rib + 0.5) * size / 8
-        wrapped_line(draw, size, (rib_x, 0), (rib_x, size), 178, 2)
-        wrapped_line(draw, size, (rib_x + 3, 0), (rib_x + 3, size), 212, 1)
-    for _ in range(900):
-        speck_x = rng.uniform(0, size)
-        speck_y = rng.uniform(0, size)
-        tone = rng.choice((168, 176, 216, 224))
-        wrapped_dot(draw, size, (speck_x, speck_y), rng.uniform(0.6, 1.4), tone)
-    return sheet.filter(ImageFilter.GaussianBlur(0.4))
+def repeat_surfaces(rng):
+    u,v = coordinates(512)
+    detail = .28*wave(u,v,71,63) + .38*wave(u,v,35,29,.35) + rng.normal(0.,.19,u.shape)
+    grime = .5 + .23*wave(u,v,3,5) + .16*wave(u,v,8,7,.26)
+    streak = wave(u,v,4,94,.69)
+    n = .89 - grime*.09 + .038*detail
+    metal = finish((n,n*.995,n*.972),.075*detail+.063*streak,.40+.13*grime+.034*streak,
+                   metallic=.42+.24*grime,tile=True)
+    panel = .92 + .027*detail - .14*grime
+    interior = finish((panel,panel*.99,panel*.964),.13*detail,.34+.05*detail,tile=True)
+    weave = .6*wave(u,v,85,95) + .4*wave(v,u,45,60,.12)
+    buckle = (np.cos(2*np.pi*v*2.)*.5+.5)**12
+    vinyl = .82 + .14*grime+.043*weave-.051*buckle
+    seat = finish((vinyl,vinyl*.996,vinyl*.968),
+                  .079*weave+.046*detail-.053*buckle,.29+.12*grime+.06*weave,tile=True)
+    carbon = .87-.20*grime+.034*detail
+    rubber = finish((carbon,carbon*.998,carbon*.967),.073*detail,.13+.054*grime,tile=True)
+    # Staggered moulded studs rather than scratches on passenger floor rubber.
+    col = (u*20+.5*(np.floor(v*28)%2))%1-.5
+    row = (v*28)%1-.5
+    studs = np.maximum(0.,1-(col/.32)**2-(row/.35)**2)**.68
+    floor = .88-.17*grime+.062*studs
+    floor_maps = finish((floor,floor*.989,floor*.96),.085*detail+.12*studs,
+                        .18+.057*grime+.065*studs,tile=True,scale=3.2)
+    glass = .96-.10*grime+.027*streak
+    return {"Metal":metal, "Interior":interior, "Seat":seat, "Rubber":rubber, "Floor":floor_maps,
+            "Glass":{"Albedo":rgba(glass,glass,glass*.978)}}
 
 
-def build_seat(rng: random.Random) -> Image.Image:
-    """Seat fabric: fine two-way weave with soft wear blotches."""
-    size = SHEET_SIZE
-    sheet = Image.new("L", (size, size), SEAT_BASE)
-    pixels = sheet.load()
-    for y in range(size):
-        for x in range(size):
-            weave = 6 if ((x // 4) + (y // 4)) % 2 == 0 else -6
-            fine = 3 if (x + y) % 2 == 0 else -3
-            pixels[x, y] = max(0, min(255, SEAT_BASE + weave + fine))
-    sheet = apply_noise(sheet, tileable_noise(rng, size, 16, 10.0))
-    return sheet.filter(ImageFilter.GaussianBlur(0.3))
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Generate the deterministic City bus albedo sheets."
-    )
-    parser.add_argument(
-        "--texture-dir",
-        type=Path,
-        default=DEFAULT_TEXTURE_DIR,
-    )
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_TEXTURE_DIR)
+    parser.add_argument("--verify", action="store_true")
     args = parser.parse_args()
-    args.texture_dir.mkdir(parents=True, exist_ok=True)
-
-    builders = {
-        "CityBusPaintAlbedo.png": build_paint,
-        "CityBusMetalAlbedo.png": build_metal,
-        "CityBusInteriorAlbedo.png": build_interior,
-        "CityBusSeatAlbedo.png": build_seat,
-    }
-    print("CITY BUS TEXTURES BUILD OK")
-    for file_name, builder in builders.items():
-        rng = random.Random(f"{SEED}:{file_name}")
-        sheet = builder(rng).convert("RGB")
-        if sheet.size != (SHEET_SIZE, SHEET_SIZE):
-            raise RuntimeError(f"{file_name} lost its {SHEET_SIZE} px contract")
-        target = args.texture_dir / file_name
-        sheet.save(target, format="PNG")
-        print(f"  {file_name}: mean luminance {mean_luminance(sheet):.3f}")
-    print(f"  Output: {args.texture_dir}")
+    rng = np.random.default_rng(260813)
+    families = {"Paint":paint(rng), **repeat_surfaces(rng)}
+    if not args.verify:
+        args.output_dir.mkdir(parents=True,exist_ok=True)
+    digest = hashlib.sha256()
+    for family,maps in families.items():
+        for kind,data in maps.items():
+            canvas = PixelCanvas(data.shape[1],data.shape[0])
+            canvas.pixels[:] = data.tobytes()
+            content = canvas.png_bytes()
+            path = args.output_dir / f"CityBus{family}{kind}.png"
+            if args.verify:
+                if path.read_bytes() != content:
+                    raise RuntimeError(f"Non-deterministic bus map: {path}")
+            else:
+                path.write_bytes(content)
+            digest.update(content)
+    print(f"CITY BUS SURFACE CONTRACT OK {digest.hexdigest()}")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

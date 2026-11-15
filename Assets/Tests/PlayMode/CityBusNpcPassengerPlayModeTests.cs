@@ -322,7 +322,7 @@ namespace BarPromenade.Tests.PlayMode
                 var route = CreateTwoStopRoute();
                 bus.PrepareSpawn(route, route.SpawnAnchors[0], 71);
                 bus.BindPresentation(view);
-                var driver = CityBusDriverResources.Instantiate(root.transform);
+                var driver = CityBusDriverRig.Create(root.transform);
                 view.AttachDriver(driver);
                 AdvanceActorUntil(bus, () => bus.DoorsFullyOpen);
                 var donor = CityPedestrianResources.LoadStreetClipDonor();
@@ -778,7 +778,7 @@ namespace BarPromenade.Tests.PlayMode
                 busActor.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
                 Quaternion suspensionInBus = Quaternion.Inverse(busActor.transform.rotation) *
                     busPresentation.SuspensionVisual.rotation;
-                CityBusDriverAssetRegistry driver = CityBusDriverResources.Instantiate(root.transform);
+                CityBusDriverRig driver = CityBusDriverRig.Create(root.transform);
                 Assert.That(driver, Is.Not.Null);
                 busPresentation.AttachDriver(driver);
                 SetSeatedCaptureLayer(root);

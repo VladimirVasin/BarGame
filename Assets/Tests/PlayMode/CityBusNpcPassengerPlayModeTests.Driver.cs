@@ -7,9 +7,22 @@ using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
 {
+    public sealed class CityBusRemodelAssetSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            if (System.Environment.GetEnvironmentVariable("BAR_PROMENADE_REBUILD_BUS") != "1") return;
+            foreach (string owner in new[] { "DefaultNpcAssetSetup", "CityBusAssetSetup" })
+                System.Type.GetType("BarPromenade.Editor." + owner + ", BarPromenade.Editor", true)
+                    .GetMethod("BuildOrThrow", System.Type.EmptyTypes).Invoke(null, null);
+#endif
+        }
+    }
+
     public sealed partial class CityBusNpcPassengerPlayModeTests
     {
-        [UnityTest]
+        [UnityTest, PrebuildSetup(typeof(CityBusRemodelAssetSetup))]
         public IEnumerator Driver_SitsOnTheDrawnSeatAndWorksWheelAndButtonWithoutCrossingLimbs()
         {
             var root = new GameObject("Production cab contact survey");
@@ -20,14 +33,14 @@ namespace BarPromenade.Tests.PlayMode
                 var bus = CityBusResources.Instantiate(root.transform);
                 var view = bus.GetComponent<CityBusPresentation>() ?? bus.gameObject.AddComponent<CityBusPresentation>();
                 view.Initialize(bus);
-                var driver = CityBusDriverResources.Instantiate(root.transform);
+                var driver = CityBusDriverRig.Create(root.transform);
                 view.AttachDriver(driver);
                 SetSeatedCaptureLayer(root);
                 yield return null;
                 var seat = new SeatedCushionFrame(bus.DriverSeatAnchor, view.transform.rotation);
                 var support = SeatedSupportRenderers(driver.Renderers);
                 var seatMesh = BusPart("INT_DriverSeat");
-                var shell = BusPart("INT_InteriorSurfaces");
+                var pedals = BusPart("INT_ControlHardware");
                 var wheel = BusPart("INT_SteeringWheel");
                 var button = BusPart("INT_DoorButton");
                 var report = new SeatedMeshReport();
@@ -69,32 +82,30 @@ namespace BarPromenade.Tests.PlayMode
                     float backFront = back.Max(p => p.z);
                     float backRear = back.Min(p => p.z);
                     float backHeight = back.Max(p => p.y);
-                    var floorVertices = DriverWorldMesh(shell, baked, out var floorTriangles).Select(seat.Coordinates).ToArray();
-                    float floorDatum = seat.Coordinates(bus.StandingFloorAnchors[0].position).y;
                     float backClearance = float.PositiveInfinity;
                     Vector3 backContact = Vector3.zero;
                     string backPart = "";
-                    foreach (var part in driver.RendererBindings)
+                    foreach (Renderer part in driver.Renderers)
                     {
-                        bool shin = part.BoneName == "shin.L" || part.BoneName == "shin.R";
-                        bool trunk = part.BoneName == "pelvis" || part.BoneName == "chest";
+                        bool shin = part.name.StartsWith("CLO_Trousers_") && part.name.Contains("Lower.");
+                        bool trunk = part.name.StartsWith("CLO_Outer_transit") || support.Contains(part);
                         if (!shin && !trunk) continue;
                         if (trunk)
                         {
-                            Vector3? point = DeepestDriverBackPoint(part.Renderer, baked, seat, halfWidth, backHeight);
+                            Vector3? point = DeepestDriverBackPoint(part, baked, seat, halfWidth, backHeight);
                             if (point.HasValue && point.Value.z - backFront < backClearance)
                             {
                                 backClearance = point.Value.z - backFront;
                                 backContact = point.Value;
-                                backPart = part.RendererName;
+                                backPart = part.name;
                             }
                         }
                         bool penetrates = shin
-                            ? DriverIntersectsBox(part.Renderer, baked, seat, new Vector3(-halfWidth + .008f, underside + .008f, rear + .008f),
+                            ? DriverIntersectsBox(part, baked, seat, new Vector3(-halfWidth + .008f, underside + .008f, rear + .008f),
                                 new Vector3(halfWidth - .008f, topY - .012f, front - .008f))
-                            : DriverIntersectsBox(part.Renderer, baked, seat, new Vector3(-halfWidth + .01f, .035f, backRear + .01f),
+                            : DriverIntersectsBox(part, baked, seat, new Vector3(-halfWidth + .01f, .035f, backRear + .01f),
                                 new Vector3(halfWidth - .01f, backHeight - .01f, backFront - .012f));
-                        if (penetrates) issues.Add($"{phase.name}: drawn {part.RendererName} penetrates the {(shin ? "cushion" : "backrest")}.");
+                        if (penetrates) issues.Add($"{phase.name}: drawn {part.name} penetrates the {(shin ? "cushion" : "backrest")}.");
                     }
 
                     readings.Add($"min backrest clearance {backClearance:F4} m on {backPart}, seat XYZ {backContact:F4}, front plane Z {backFront:F4}");
@@ -128,14 +139,14 @@ namespace BarPromenade.Tests.PlayMode
                     {
                         bool left = side == 0;
                         string suffix = left ? ".L" : ".R";
-                        var humanPalm = driver.RendererBindings.Single(b => b.RendererName == "GEO_Hand" + suffix).Renderer;
+                        var humanPalm = driver.Renderers.Single(r => r.name == "GEO_HandPalm" + suffix);
                         Vector3[] palm = DriverWorldMesh(humanPalm, baked, out _);
                         bool onButton = !left && phase.press;
                         if (onButton)
                         {
-                            var index = driver.RendererBindings.Single(b => b.RendererName == "GEO_HandFinger0.R").Renderer;
+                            var index = driver.Renderers.Single(r => r.name == "GEO_HandFinger0.R");
                             var finger = DriverWorldMesh(index, baked, out var indexTriangles);
-                            Vector3 tip = CityPedestrianHandProps.FindSocket(driver.ModelRoot, "ANCHOR_DriverIndexOpenTip.R").position;
+                            Vector3 tip = driver.RightIndexTip.position;
                             float skin = DriverSurfaceDistance(tip, finger, indexTriangles);
                             float buttonGap = DriverSurfaceDistance(tip, buttonPoints, buttonTriangles);
                             if (skin > .004f || buttonGap > .012f)
@@ -155,27 +166,15 @@ namespace BarPromenade.Tests.PlayMode
                             issues.Add($"{phase.name}{suffix}: knee or boot crossed the driver's midline.");
                         if (Vector3.Dot(knee.position - driver.Pelvis.position, seat.Forward) < .17f)
                             issues.Add($"{phase.name}{suffix}: knee is not in front of the driver's hips.");
-                        var sole = driver.RendererBindings.Single(b => b.RendererName == "CLO_ShoeSole" + suffix).Renderer;
-                        float minimumGap = float.PositiveInfinity;
-                        foreach (var solePoint in DriverWorldMesh(sole, baked, out _))
-                        {
-                            Vector3 point = seat.Coordinates(solePoint);
-                            for (int i = 0; i < floorTriangles.Length; i += 3)
-                            {
-                                Vector3 a = floorVertices[floorTriangles[i]], b = floorVertices[floorTriangles[i + 1]],
-                                    c = floorVertices[floorTriangles[i + 2]];
-                                if (Mathf.Abs(a.y - floorDatum) > .035f || Mathf.Abs(b.y - floorDatum) > .035f ||
-                                    Mathf.Abs(c.y - floorDatum) > .035f) continue;
-                                Vector3 plane = Vector3.Cross(b - a, c - a);
-                                if (Mathf.Abs(plane.y) < .0001f) continue;
-                                float y = a.y - ((point.x - a.x) * plane.x + (point.z - a.z) * plane.z) / plane.y;
-                                var contact = new Vector3(point.x, y, point.z);
-                                if (DriverInsideTriangle(contact, a, b, c, plane)) minimumGap = Mathf.Min(minimumGap, point.y - y);
-                            }
-                        }
-                        readings.Add($"{suffix} sole/floor {minimumGap:F4} m");
-                        if (minimumGap < -.010f || minimumGap > .018f)
-                            issues.Add($"{phase.name}{suffix}: visible sole to drawn footwell {minimumGap:F4} m.");
+                        var sole = driver.Renderers.Single(r => r.name == "CLO_Boot_workSole" + suffix);
+                        Vector3 contact = (left ? driver.LeftSole : driver.RightSole).position;
+                        Vector3[] drawnSole = DriverWorldMesh(sole, baked, out var soleTriangles);
+                        var pads = DriverWorldMesh(pedals, baked, out var padTriangles);
+                        float surface = DriverSurfaceDistance(contact, drawnSole, soleTriangles);
+                        float gap = DriverSurfaceDistance(contact, pads, padTriangles);
+                        readings.Add($"{suffix} sole/pedal {surface:F4}/{gap:F4} m");
+                        if (surface > .007f || gap > .007f)
+                            issues.Add($"{phase.name}{suffix}: planted point misses the drawn shoe/pedal {surface:F4}/{gap:F4} m.");
                     }
                     // The two forearms cannot exchange sides even at full lock.
                     float elbows = Vector3.Dot(driver.RightForearm.position - driver.LeftForearm.position, seat.Right);
@@ -191,36 +190,33 @@ namespace BarPromenade.Tests.PlayMode
             finally { Object.DestroyImmediate(baked); Object.DestroyImmediate(root); }
         }
 
-        private static void CheckSteeringDigits(string phase, bool left, CityBusDriverAssetRegistry driver, Mesh baked,
+        private static void CheckSteeringDigits(string phase, bool left, CityBusDriverRig driver, Mesh baked,
             Vector3 centre, Vector3 shaft, float radius, float tubeRadius, Vector3 up, Vector3[] wheel,
             IReadOnlyList<int> rim, List<string> issues)
         {
             string side = left ? ".L" : ".R";
-            Vector3 across = (driver.RightHand.position - driver.LeftHand.position).normalized * (left ? 1f : -1f);
-            Vector3 indexRoot = default;
+            Vector3 inward = (driver.RightHand.position - driver.LeftHand.position).normalized * (left ? 1f : -1f);
+            Vector3 hand = (left ? driver.LeftHand : driver.RightHand).position;
+            float indexHeight = 0f;
             for (int i = 0; i <= 4; i++)
             {
                 bool thumb = i == 4;
-                string digit = thumb ? "Thumb" : "Finger" + i;
-                string meshName = (thumb ? "GEO_Thumb" : "GEO_HandFinger" + i) + side;
-                var part = driver.RendererBindings.Single(b => b.RendererName == meshName).Renderer;
-                var skin = DriverWorldMesh(part, baked, out var triangles);
-                string anchor = "ANCHOR_Driver" + digit;
-                Vector3 root = CityPedestrianHandProps.FindSocket(driver.ModelRoot, anchor + "Root" + side).position;
-                Vector3 tip = CityPedestrianHandProps.FindSocket(driver.ModelRoot, anchor + "Tip" + side).position;
-                float endCap = DriverSurfaceDistance(tip, skin, triangles);
+                string meshName = (thumb ? "GEO_HandThumb" : "GEO_HandFinger" + i) + side;
+                var part = driver.Renderers.Single(r => r.name == meshName);
+                var skin = DriverWorldMesh(part, baked, out _);
                 float contact = skin.Min(p => DriverSurfaceDistance(p, wheel, rim));
-                if (endCap > .004f || contact > .012f)
-                    issues.Add($"{phase}/{meshName}: fingertip to its closed skin {endCap:F4}, skin to rim {contact:F4} m.");
+                if (contact > .012f)
+                    issues.Add($"{phase}/{meshName}: skin to rim {contact:F4} m.");
                 if (thumb)
                 {
-                    float inward = Vector3.Dot(tip - root, across);
-                    if (inward < .010f) issues.Add($"{phase}/{meshName}: thumb advances only {inward:F3} m toward the opposite hand.");
+                    float advance = skin.Max(p => Vector3.Dot(p - hand, inward));
+                    if (advance < .010f) issues.Add($"{phase}/{meshName}: thumb does not oppose the grip.");
                     continue;
                 }
 
-                if (i == 0) indexRoot = root;
-                if (i == 3 && Vector3.Dot(indexRoot - root, up) < .025f)
+                float height = skin.Average(p => Vector3.Dot(p, up));
+                if (i == 0) indexHeight = height;
+                if (i == 3 && indexHeight - height < .025f)
                     issues.Add($"{phase}{side}: the index and little finger are not stacked upright on the side of the wheel.");
 
                 // Measure how far the *skinned finger* wraps around the tube
@@ -241,7 +237,9 @@ namespace BarPromenade.Tests.PlayMode
                     for (int j = 1; j < angles.Count; j++) largestGap = Mathf.Max(largestGap, angles[j] - angles[j - 1]);
                     sweep = 360f - largestGap;
                 }
-                if (sweep < 105f) issues.Add($"{phase}/{meshName}: visible finger spans only {sweep:F0}° around its rim tube.");
+                // The shared hand has shorter distal segments. It must still
+                // curve around most of a quadrant as well as touching the tube.
+                if (sweep < 75f) issues.Add($"{phase}/{meshName}: visible finger spans only {sweep:F0}° around its rim tube.");
             }
         }
 
@@ -315,7 +313,7 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static void CaptureDriverCab(GameObject root, CityBusAssetRegistry bus, CityBusDriverAssetRegistry driver,
+        private static void CaptureDriverCab(GameObject root, CityBusAssetRegistry bus, CityBusDriverRig driver,
             SeatedCushionFrame seat, string phase)
         {
             var camera = new GameObject("Cab contact camera").AddComponent<Camera>();
@@ -366,14 +364,15 @@ namespace BarPromenade.Tests.PlayMode
                     camera.orthographicSize = .205f;
                     // Put the camera above the shoulders. Like a first-person
                     // view, omit the head behind the eyes for this shot only.
-                    var cranial = driver.RendererBindings.Where(b => b.BoneName == "head" ||
-                        b.BoneName == "neck" || b.BoneName.StartsWith("face.", System.StringComparison.Ordinal)).ToArray();
-                    foreach (var part in cranial) part.Renderer.gameObject.layer = 0;
+                    var cranial = driver.Renderers.Where(r => r.name == "GEO_FaceSurface" ||
+                        r.name.StartsWith("GEO_Head") || r.name.StartsWith("GEO_Ear") ||
+                        r.name.StartsWith("CLO_Hat") || r.name.StartsWith("HAIR_")).ToArray();
+                    foreach (var part in cranial) part.gameObject.layer = 0;
                     Quaternion frontLight = key.transform.rotation;
                     key.transform.rotation = Quaternion.LookRotation(seat.Forward - seat.Up * 1.3f, seat.Up);
                     camera.transform.position = target - seat.Forward * .43f + seat.Up * .82f;
                     Capture("grip-driver");
-                    foreach (var part in cranial) part.Renderer.gameObject.layer = 31;
+                    foreach (var part in cranial) part.gameObject.layer = 31;
                     key.transform.rotation = frontLight;
                     camera.transform.position = target + seat.Forward * .62f + seat.Up * .12f;
                     Capture("grip-front");
@@ -390,6 +389,91 @@ namespace BarPromenade.Tests.PlayMode
             {
                 foreach (var item in layers) item.part.layer = item.layer;
                 Object.DestroyImmediate(key.gameObject); Object.DestroyImmediate(fill.gameObject); Object.DestroyImmediate(camera.gameObject);
+            }
+        }
+    }
+}
+
+namespace BarPromenade.Tests.PlayMode
+{
+    public sealed partial class AreaCaptureFixture
+    {
+        [UnityTest, Explicit("Review the midibus from its City street and cabin camera.")]
+        [PrebuildSetup(typeof(CityBusRemodelAssetSetup))]
+        public IEnumerator CityMidibusRemodel()
+        {
+            GameObject stagedBus = null;
+            try
+            {
+                GameSessionState.BeginNewGame("Midibus art review");
+                Assert.That(GameSessionState.TryStartGameTimeAt(14 * 60), Is.True);
+                yield return UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(SceneIds.City);
+                CityGameRoot city = null;
+                yield return WaitFor(() => (city = Object.FindAnyObjectByType<CityGameRoot>()) != null && city.IsInitialized,
+                    "The City did not compose.");
+                foreach (var active in city.BusVehicles) active.enabled = false;
+                var camera = city.Camera;
+                camera.GetComponent<PlayerCameraFollow>().enabled = false;
+                city.Player.Motor.SetInputEnabled(false);
+                city.Player.Interactor.SetInputEnabled(false);
+                city.Weather.enabled = false;
+                city.Rain.SetIntensity(0f);
+                CityWetSurfaceRegistry.SetImmediate(0f);
+                var stop = city.BusPlan.Stops[0];
+                var model = CityBusResources.Instantiate(city.transform);
+                stagedBus = model.gameObject;
+                Transform frame = model.transform;
+                frame.SetPositionAndRotation(stop.Position, Quaternion.LookRotation(stop.Forward, Vector3.up));
+                var view = stagedBus.AddComponent<CityBusPresentation>();
+                view.Initialize(model);
+                view.SetRouteNumber(city.BusPlan.Number);
+                view.AttachDriver(CityBusDriverRig.Create(frame, city.BusPlan.Number));
+                view.SetNightFactor(0f);
+                Vector3 outside = new Vector3(5.4f, 2.8f, 6.4f);
+                Shot(outside, new Vector3(0f,1.35f,0f), "01-closed-day");
+                view.SetDoors(.18f);
+                Shot(new Vector3(3.8f,1.7f,4.4f), new Vector3(1.05f,1.47f,3.05f), "02-unseating");
+                view.SetDoors(1f);
+                Shot(new Vector3(3.3f, 1.66f, 4.1f), new Vector3(.9f,1.45f,3.05f), "03-open-front");
+                float cameraFov = camera.fieldOfView;
+                camera.fieldOfView = 70f;
+                float rearEyeX = Mathf.Min(3f, Vector3.Dot(stop.ShelterPosition - stop.Position, frame.right) - .75f);
+                Shot(new Vector3(rearEyeX, 1.62f, -1.34f), new Vector3(.8f,1.40f,-1.34f), "04-open-rear");
+                camera.fieldOfView = cameraFov;
+                // From the door side of the centre aisle, looking into the working cab.
+                Shot(new Vector3(.21f,1.98f,1.62f), new Vector3(-.54f,1.56f,3.34f), "05-cab-day");
+                Shot(new Vector3(.39f,1.77f,2.28f), new Vector3(-.23f,1.28f,-1.70f), "06-saloon");
+                view.SetDoors(0f);
+                double toNight = (21 * 60 - GameSessionState.GameTimeOfDayMinutes + 1440) % 1440;
+                GameSessionState.AdvanceGameTime((float)(toNight / GameTimeState.GameMinutesPerRealSecond));
+                city.DayNight.ApplyCurrentTime(true);
+                city.Night.Atmosphere.RefreshImmediate();
+                city.Rain.SetIntensity(1f);
+                CityWetSurfaceRegistry.SetImmediate(1f);
+                view.SetNightFactor(1f);
+                view.AdvanceWipers(1f,.48f);
+                yield return null;
+                Shot(outside, new Vector3(0f,1.04f,1.25f), "07-night-rain");
+                Assert.That(view.HeadlightLights.Count, Is.EqualTo(2));
+                foreach (var beam in view.HeadlightLights)
+                {
+                    Assert.That(beam.enabled, Is.True);
+                    Assert.That(beam.range, Is.EqualTo(CityRoadHeadlightProfile.Range));
+                    Assert.That(beam.color, Is.EqualTo(CityRoadHeadlightProfile.Color));
+                }
+
+                void Shot(Vector3 eye, Vector3 target, string label)
+                {
+                    camera.transform.SetPositionAndRotation(frame.TransformPoint(eye),
+                        Quaternion.LookRotation(frame.TransformVector(target-eye), Vector3.up));
+                    CaptureCurrentCamera(camera, "BusRemodel", label);
+                }
+            }
+            finally
+            {
+                if (stagedBus != null) Object.DestroyImmediate(stagedBus);
+                CityWetSurfaceRegistry.SetImmediate(0f);
+                GameSessionState.BeginNewGame();
             }
         }
     }

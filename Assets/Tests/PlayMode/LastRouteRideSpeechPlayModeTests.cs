@@ -26,7 +26,7 @@ namespace BarPromenade.Tests.PlayMode
                 var passengerCamera = cameraHost.AddComponent<Camera>();
                 view.BindCamera(passengerCamera);
                 var speaker = new NpcSpeaker(host, host.transform,
-                    NpcVoiceCatalog.FerrymanDesignId, NpcEarshotProfile.Conversation);
+                    NpcVoiceCatalog.FerrymanVoiceId, NpcEarshotProfile.Conversation);
 
                 for (int trip = 0; trip < 2; trip++)
                 {
@@ -188,7 +188,7 @@ namespace BarPromenade.Tests.PlayMode
                 var view = host.AddComponent<NpcSpeechBubbleView>();
                 view.UseManualClock = true;
                 view.Initialize(camera, cameraHost.transform);
-                var npcSpeaker = new NpcSpeaker(npc, npc.transform, NpcVoiceCatalog.FerrymanDesignId,
+                var npcSpeaker = new NpcSpeaker(npc, npc.transform, NpcVoiceCatalog.FerrymanVoiceId,
                     NpcEarshotProfile.Conversation);
                 var heroSpeaker = new NpcSpeaker(hero, hero.transform, NpcVoiceCatalog.HeroMutterDesignId,
                     NpcEarshotProfile.Conversation);
@@ -473,7 +473,7 @@ namespace BarPromenade.Tests.PlayMode
                 var automatic = autoHost.AddComponent<NpcSpeechBubbleView>();
                 automatic.Initialize(camera, cameraHost.transform);
                 Assert.That(automatic.DeclareSpeaker(autoHost, autoHost.transform,
-                    NpcVoiceCatalog.FerrymanDesignId, NpcEarshotProfile.Conversation), Is.True);
+                    NpcVoiceCatalog.FerrymanVoiceId, NpcEarshotProfile.Conversation), Is.True);
                 yield return null;
                 Assert.That(automatic.ShowAt(autoHost, "The road is quiet.", Time.unscaledTime, 0.2f), Is.True);
                 using (GameTimeScaleRuntime.AcquirePause())

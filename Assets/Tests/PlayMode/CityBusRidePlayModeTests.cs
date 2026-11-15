@@ -24,6 +24,96 @@ namespace BarPromenade.Tests.PlayMode
             cleanup?.Invoke();
         }
 
+        [Test]
+        public void Doors_OpenClearAndReseatOnTheSprungBody()
+        {
+            var registry = CityBusResources.Instantiate(null);
+            try
+            {
+                Transform bus = registry.transform;
+                bus.rotation = Quaternion.Euler(0f, 37f, 0f);
+                var view = bus.gameObject.AddComponent<CityBusPresentation>();
+                view.Initialize(registry);
+                Transform[] leaves = { registry.FrontDoorForwardLeaf, registry.FrontDoorRearwardLeaf,
+                    registry.RearDoorForwardLeaf, registry.RearDoorRearwardLeaf };
+                var mounts = leaves.Select(leaf => leaf.localPosition).ToArray();
+                var orientations = leaves.Select(leaf => leaf.localRotation).ToArray();
+                var posts = registry.RendererBindings.Where(binding => binding.Role == "door_post")
+                    .Select(binding => binding.Renderer.transform).ToArray();
+                Assert.That(posts.Length, Is.EqualTo(2));
+                Assert.That(posts.All(post => post.parent == registry.Body), Is.True);
+                var jambMounts = posts.Select(post => post.localPosition).ToArray();
+                var neutralSuspension = view.SuspensionVisual.rotation;
+
+                CheckOpening(bus.up, bus.right, bus.forward);
+                view.SetDoors(0f);
+                CheckSeated();
+                view.SetMotion(.67f, CityBusActor.CruiseSpeed, -CityBusActor.ServiceDeceleration, 14f, true, .2f);
+                Quaternion sprung = view.SuspensionVisual.rotation * Quaternion.Inverse(neutralSuspension);
+                Assert.That(Quaternion.Angle(sprung, Quaternion.identity), Is.GreaterThan(.05f));
+                CheckOpening(sprung * bus.up, sprung * bus.right, sprung * bus.forward);
+                view.ResetForPool();
+                CheckSeated();
+
+                void CheckOpening(Vector3 up, Vector3 outward, Vector3 forward)
+                {
+                    var closed = leaves.Select(leaf => leaf.position).ToArray();
+                    var closedRotations = leaves.Select(leaf => leaf.rotation).ToArray();
+                    view.SetDoors(.18f);
+                    for (int i = 1; i < leaves.Length; i++)
+                    {
+                        Vector3 movement = leaves[i].position - closed[i];
+                        Assert.That(Vector3.Dot(movement, outward), Is.GreaterThan(.05f), leaves[i].name);
+                        Assert.That(Mathf.Abs(Vector3.Dot(movement, forward)), Is.LessThan(.001f), leaves[i].name);
+                    }
+                    view.SetDoors(1f);
+                    Assert.That(Vector3.Distance(leaves[0].position, closed[0]), Is.LessThan(.001f));
+                    Quaternion swing = leaves[0].rotation * Quaternion.Inverse(closedRotations[0]);
+                    Assert.That(Vector3.Angle(swing * up, up), Is.LessThan(.03f));
+                    Assert.That(Vector3.SignedAngle(forward, swing * forward, up),
+                        Is.EqualTo(CityBusPresentation.MaximumDoorAngle).Within(.02f));
+                    for (int i = 0; i < leaves.Length; i++)
+                    {
+                        float direction = i % 2 == 0 ? 1f : -1f;
+                        if (i > 0)
+                        {
+                            Vector3 movement = leaves[i].position - closed[i];
+                            Assert.That(Vector3.Dot(movement, outward), Is.InRange(.10f, .15f), leaves[i].name);
+                            Assert.That(Vector3.Dot(movement, forward) * direction, Is.InRange(.78f, .84f), leaves[i].name);
+                            Assert.That(Mathf.Abs(Vector3.Dot(movement, up)), Is.LessThan(.001f), leaves[i].name);
+                            Assert.That(Quaternion.Angle(leaves[i].rotation, closedRotations[i]), Is.LessThan(.05f));
+                        }
+                        Vector3 opening = (i < 2 ? registry.FrontDoorEntryAnchor : registry.RearDoorEntryAnchor).position;
+                        foreach (var binding in registry.RendererBindings.Where(b => b.Renderer.transform.IsChildOf(leaves[i])))
+                        {
+                            // Project the actual door skins, not the pivots, clear of each boarding lane.
+                            Bounds bounds = binding.Renderer.localBounds;
+                            Vector3 a = binding.Renderer.transform.TransformVector(Vector3.right * bounds.extents.x);
+                            Vector3 b = binding.Renderer.transform.TransformVector(Vector3.up * bounds.extents.y);
+                            Vector3 c = binding.Renderer.transform.TransformVector(Vector3.forward * bounds.extents.z);
+                            float halfSpan = Mathf.Abs(Vector3.Dot(a, forward)) + Mathf.Abs(Vector3.Dot(b, forward)) +
+                                Mathf.Abs(Vector3.Dot(c, forward));
+                            Vector3 centre = binding.Renderer.transform.TransformPoint(bounds.center);
+                            Assert.That(Vector3.Dot(centre - opening, forward) * direction - halfSpan,
+                                Is.GreaterThan(i == 0 ? .45f : .68f), binding.SourceName);
+                        }
+                    }
+                    for (int i = 0; i < posts.Length; i++) Assert.That(posts[i].localPosition, Is.EqualTo(jambMounts[i]));
+                }
+
+                void CheckSeated()
+                {
+                    Assert.That(view.DoorOpenness, Is.Zero);
+                    for (int i = 0; i < leaves.Length; i++)
+                    {
+                        Assert.That(leaves[i].localPosition, Is.EqualTo(mounts[i]));
+                        Assert.That(Quaternion.Angle(leaves[i].localRotation, orientations[i]), Is.LessThan(.05f));
+                    }
+                }
+            }
+            finally { Object.DestroyImmediate(registry.gameObject); }
+        }
+
         [UnityTest]
         [PrebuildSetup(typeof(VodkaBottleAssetsSetup))]
         public IEnumerator Passenger_BoardsRidesAndExitsAtLaterStop()
@@ -1045,8 +1135,20 @@ namespace BarPromenade.Tests.PlayMode
                             Assert.That(Mathf.Max(sign.color.r, sign.color.g, sign.color.b), Is.LessThan(.1f),
                                 "The backlit destination panel needs dark glyphs even at dusk.");
                         }
-                        else Assert.That(sign.transform.TransformVector(Vector3.up * sign.textBounds.size.y).magnitude,
-                            Is.GreaterThan(.44f), sign.name + " must fill the panel in real metres.");
+                        else if (face == 2)
+                        {
+                            Assert.That(sign.transform.TransformVector(Vector3.up * sign.textBounds.size.y).magnitude,
+                                Is.GreaterThan(.44f), sign.name + " must fill the panel in real metres.");
+                        }
+                        else
+                        {
+                            Bounds ink = CityBusPresentation.DigitInkBounds(sign);
+                            float bottom = busModel.transform.InverseTransformPoint(sign.transform.TransformPoint(ink.min)).y;
+                            float top = busModel.transform.InverseTransformPoint(sign.transform.TransformPoint(ink.max)).y;
+                            Assert.That(top - bottom, Is.EqualTo(.26f).Within(.008f));
+                            Assert.That(bottom, Is.GreaterThan(1.08f), "The rub rail must not cross the number.");
+                            Assert.That(top, Is.LessThan(1.397f), "The number sits below the painted stripe.");
+                        }
                     }
                     rides[i] = CityBusRideController.Create(lines[i], player, areas, camera, follow, surfaces);
                 }

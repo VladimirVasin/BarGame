@@ -49,6 +49,14 @@ def revolve(mesh, center, axis, profile, segments, loop=False):
                 for d, r in profile], loop)
 
 
+def round_headlight(lens, rim, centre):
+    """The same shallow glass lens and rolled bezel on both City vehicles."""
+    revolve(lens, centre, (0,-1,0),
+            ((-.024,.097),(.006,.110),(.024,.105),(.041,.078),(.048,.031)),24)
+    revolve(rim, centre, (0,-1,0),
+            ((-.026,.129),(.005,.131),(.022,.121),(.024,.108),(.014,.105),(-.024,.105)),24,loop=True)
+
+
 def deck(mesh, stations, thickness, underside=False):
     """A pressed skin with a shallow crown and narrow rolled shoulders."""
     strips = (-1., -.98, -.84, -.44, 0., .44, .84, .98, 1.)

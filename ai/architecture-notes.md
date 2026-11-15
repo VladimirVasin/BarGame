@@ -3048,7 +3048,7 @@
   character design now carries one of two marks,
   `NpcDesignAppearance.Normal` or `.Bizarre`, in
   `Assets/Scripts/Runtime/Core/NpcDesignAppearance.cs`, keyed on `design_id`
-  and covering `27` authored designs (the `25` rigged humanoid assets plus the raven
+  and covering `25` authored designs (the `23` rigged humanoid assets plus the raven
   and the cat; the hero's own models are out of scope). The line is this
   document's and the art bible's, not a new one: strangeness of the BODY is
   bizarre, a strange thing worn or carried is not — «его странность — само
@@ -3058,13 +3058,8 @@
   Lampshade, Chair Carrier, Kettle Hat and Helmet Lamp Hopper among the
   authored walkers, the retained Watcher cashier and
   the stairwell cat.
-  The active `supermarket_cashier_v1` belongs to the normal group, giving
-  `7` bizarre and `20` normal authored designs. The bartender uses the normal
-  default worker, without increasing the active cast. The
-  long-eyed bus driver is NORMAL by explicit user decision — his head is
-  authored as an ordinary one and his own generator refuses any part that
-  would replace or conceal it, so a stylised eye sits nearer a worn thing
-  than a wrong body.
+  The active cashier is normal: `7` bizarre and `18` normal authored designs.
+  Bartender, transit drivers and Ferryman use the ordinary worker catalogue.
 
   **Runtime does not read it yet, and its home is provisional.** Editor asset
   validation may assert a recorded verdict, but model selection stays explicit
@@ -3940,28 +3935,28 @@
   rim/outlines retain scope. Bloom/focus/SMAA/vignette/grain/flare/blur/lens
   use City settings. No facade SSR or SSGI/SCGI. Cost unmeasured.
 
-- **Accepted — Route 01 driver and sprung presentation:** The separate passive
-  `CityBusDriver3D` uses `Player3DLit`, the exact 31-bone rig and a normal
-  low-poly head with long horizontal eyes. The driver sits on the cushion with each
-  knee and foot on its own side. The column carries the wheel forward of the seat;
-  upright hands hold the sides of the rim and change grip on large turns.
-  Four fingers wrap each rim tube; both thumbs point toward the other hand.
-  The right hand opens to press the dashboard button (`12 mm`) with its index
-  finger while the left keeps its grip. Driver looks toward front door during Opening,
-  holds through open, returns during Closing. Four eye renderers blink from
-  a deterministic pool. A hero in the door-side `2.25–2.75 m` band overrides
-  the static look target; connected neck/head extend at most `0.10 m`/`1.35x`.
-  Pooling restores bones, wheel, button, look and timeline to neutral.
-  Fixed outer posts retain independently hinged, oppositely folding leaves.
-
-  Runtime `Suspension Visual` contains body, excluding all four wheel assemblies.
-  Distance/speed heave caps at `0.045 m`, acceleration pitch at `0.8°`, steering/
-  road-wave roll at `1°`; authoritative route pose/collider stay unchanged.
-  Steering/wheel travel animate; synthesized engine is `22050 Hz`. Motion/night
-  drive head/tail/brake/cabin emission. Two shadowless headlight Spots plus two
-  soft shadowless cabin Spots follow shared `NightFactor`, disable at zero and
-  pool-reset off. They remain separately owned from static City fixtures: each visible vehicle contributes at most four local realtime lights. Scene/
-  lightning Directionals are separate.
+- **Accepted 2026-11-16, user — midibus remodel and permanent drivers.**
+  Shared Blender shell/cabin, fitted door headers and quarter panels; mirrors
+  stay on the fixed front pillars. Body dimensions, routes, seats and docks hold.
+  Separate finishes use bevelled edges and shared albedo/normal/response maps.
+  Wheel housings cover the tyre sweep above the deck; treads end before the
+  arches. The cab leaf swings inward; the other three unseat outwards and
+  slide on fixed guides. The sprung body carries every leaf and its rain pane.
+  Side numbers sit between the rub rail and the painted stripe.
+  Round lenses share sedan tooling and City dipped beam profile from lens
+  anchors. Two shadowless heads and two warm cabin Spots retain the light cap.
+  Six permanent NPC IDs use reserved face tiles, dark uniform/cap and tie.
+  Default hands close on the rim; index works the 12 mm button, boots meet
+  both drawn pedals. Door look and bounded focus remain. Blink uses shared
+  atlas tiles; distant cab poses sample at 10 Hz and hide fine dial marks.
+  Driver identity, neutral contacts, rain and lights reset with the pool.
+  Suspension visual keeps .045 m heave/.8° pitch/1° roll; wheels and collider
+  retain route pose. Legacy model sources removed; dedicated sedan takes stay.
+  FX: existing City finite bounce, SSAO, fog, air, shadows and grade. Probes
+  on vehicle; SSR on road, no active SSGI/SCGI here. Local wear uses UV maps;
+  no new water, wind, vertex effects, decals, particles, rim or outlines.
+  Bloom, DoF, SMAA, vignette, grain/dither, flares, blur and lens keep City
+  settings. 24 categories reviewed; costs unmeasured. Story §16/21, art §16.
 
 - **Accepted — City-only Route 01 passenger MVP:** Default-layer triggers:
   front/rear doors,seat07(anchor6) opposite driver;solid CityBus excluded from
@@ -5135,7 +5130,7 @@
   authored by a deterministic generator under `tools/build-*-3d-model.py`,
   exported, and imported as a model asset. It is not composed at runtime
   from `RuntimePrimitiveFactory` boxes and cylinders. The established
-  generators set the pattern — player, pedestrians, bus, bus driver,
+  generators set the pattern — player, pedestrians, bus,
   cashier, cat, chess set, Last Route car, church and the two misc
   libraries — and each pairs its script with a measured JSON manifest plus a
   determinism check,

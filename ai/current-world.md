@@ -868,7 +868,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   hopper silhouettes remain, and the driver keeps his horizontal eyes. The active cashier keeps the same uniform, face, blink
   and attentive gaze, but uses an ordinary head and non-scaling human neck;
   the former `18 m` treatment survives only in the inactive
-  `watcher_cashier_v1` asset. The appearance catalog covers `27` authored designs — `7` bizarre and `20` normal.
+  `watcher_cashier_v1` asset. The appearance catalog covers `25` authored designs — `7` bizarre and `18` normal.
   The active cashier is normal; his retained Watcher predecessor is bizarre
   and never creates a duplicate active role. The default-worker bartender is ordinary.
   The five withdrawn library walkers retain their authored silhouettes, clips,
@@ -877,20 +877,17 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   not place them in City, Home or the bus population. Home transforms the shared pavement
   graph into its local exterior, retaining a bounded `100 m` approach context
   beyond the facade while rendering its `48 m` street slice;
-- two circulating midibuses per district line, starting half a circuit apart. The production
-  model uses its real `8.25 x 2.38 x 2.95 m` body and `4.5 m` wheelbase rather
-  than a hidden gameplay scale, and exposes a modeled driver area, passenger
-  seats, overhead rings, dashboard, two animated double-leaf doors, rolling
-  wheels and front steering. Each door keeps its outer posts fixed while its
-  two independently hinged leaves fold inward around the bus vertical. The
-  separate passive `CityBusDriver3D` uses the shared `Player3DLit` material
-  and the `NpcHumanV2` rig/Avatar copied from Hero V2, with a normal low-poly
-  head and its canonical long horizontal eyes.
+- two midibuses per line, spaced half a circuit apart. The `8.25 x 2.38 x 2.95 m`
+  body and `4.5 m` wheelbase remain. Pressed panels, round sedan optics,
+  sealed door headers, fixed mirrors, worn paint/vinyl and a moulded floor
+  surround the sprung cabin. The cab leaf opens inward; three sliders travel
+  along the outside. Closed wheel housings meet the deck; steps end before the arches. Each bus has a
+  permanent default NPC driver: long eyes, dark uniform, cap and rust-red tie.
   A two-person rear bench and eight individual seats include the hero’s 07. Residents fill nine seats, then three standing
   places with floor and ring contacts. Residents walk from the pavement to the door sill and along the cabin deck;
   both doors admit or discharge riders together if their aisle paths are clear. The bus waits for both crossings.
   On board, dressed bodies follow the sprung cabin without a street actor; on the pavement their feet return to street grounding.
-  The driver sits clear of the backrest with boots in the footwell. Each hand
+  The seated driver plants work boots on the drawn supports. Each hand
   steers from its own side of the rim through turns. For each
   door command, a deterministic timeline moves only the right hand to the
   dashboard button with `12 mm` travel while the left stays planted, and turns
@@ -933,11 +930,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   driver, cabin and passengers and yield around conflicting movements.
   Suspension, wheel/steering articulation, button travel, driver hands/look, the
   door timeline, a synthesized engine loop and night-scaled head, tail and cabin
-  emission reset with the pool. Two
-  shadowless runtime headlight Spots illuminate the road ahead and two soft
-  downward cabin Spots light the interior; the shared night factor scales all
-  four and pooling switches them fully off. Camera direction and frustum
-  membership never participate in the lifecycle. At either fully open
+  emission reset with the pool. Two shadowless Spots use the sedan's City
+  dipped profile; two cabin Spots follow the fixture floor. All pool off.
+  Distant driver poses sample at 10 Hz. At either fully open
   passenger door, the standard localized E/Enter/gamepad/pointer prompt begins
   the passenger MVP. The controller chooses the closest valid front- or
   rear-door exterior dock and records that door-specific transfer; the bus

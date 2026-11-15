@@ -130,12 +130,6 @@ namespace BarPromenade
 
                 ["lake_fisherman_v1"] = NpcDesignAppearance.Normal,
 
-                // His eyes are never drawn, but by a cast shadow under a cap
-                // brim — a costume fact. He is the near neighbour of the
-                // Lampshade Walker and the reason the two verdicts differ:
-                // one hides a face, the other has none.
-                ["last_route_ferryman_v1"] = NpcDesignAppearance.Normal,
-
                 // Both park players wear a game piece where a hat would be,
                 // which is the Chair Carrier's category exactly.
                 ["park_chess_player_v1"] = NpcDesignAppearance.Normal,
@@ -166,18 +160,6 @@ namespace BarPromenade
                 // Retained as a separate, dormant design rather than being
                 // overwritten when the ordinary cashier becomes active.
                 ["watcher_cashier_v1"] = NpcDesignAppearance.Bizarre,
-
-                // Normal by the user's explicit call (2026-09-02), against a
-                // first draft that had him bizarre for the eyes alone.
-                // Everything else about the design argues their way: his
-                // head is deliberately an "ordinary low-poly human" one,
-                // the generator's own validator REFUSES any part that would
-                // "replace or conceal the human head", and
-                // `ai/architecture-notes.md` files them as "the slightly
-                // bizarre identity in long horizontal eyes rather than
-                // distorted anatomy". A stylised eye on an ordinary head is
-                // nearer to a worn thing than to a wrong body.
-                ["long_eyes_driver_v1"] = NpcDesignAppearance.Normal,
 
                 // --- Animals ---------------------------------------------
                 // «Это обычные зимующие птицы, какие живут при любом

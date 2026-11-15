@@ -31,7 +31,7 @@ from atlas_kit import PixelCanvas, read_generated_png
 import hand_bowl_grip
 import default_npc_body
 
-VERSION = "3.0.0"
+VERSION = "3.1.0"
 HAND_SIZE_SCALE = 1.20
 HAND_GIRTH_SCALE = .85
 HAND_GRIP_SHAPE = "CylindricalGrip"
@@ -49,6 +49,8 @@ COLORS = {
     "outer_everyday": "706657", "outer_work": "73796B", "outer_warm": "546966",
     "outer_cardigan": "716A62", "outer_coat": "555A55", "outer_overshirt": "7C7968",
     "ferryman_oilcloth": "343839", "ferryman_binding": "404344", "ferryman_lining": "292B2A",
+    "outer_transit": "384E50", "transit_binding": "435759", "transit_cap": "303F41",
+    "transit_crease": "303F42", "transit_tie": "80463E", "transit_button": "827358",
     "pants_everyday": "494B49", "pants_work": "67695C", "pants_warm": "595B54",
     "boots_everyday": "544639", "boots_work": "494739", "boots_warm": "4B443B",
     "sole": "34342D", "cap_everyday": "655F50", "cap_work": "686D62", "cap_warm": "767764",
@@ -155,16 +157,21 @@ def atlas(path, verify, face_index=0, hair_id="gray"):
             f.put(x,y,tuple(round(v+light-shade+grain) for v in skin)+(255,))
     for y in ((27,32) if face_index != 3 else (24,29,34)):
         f.line(43,y,84,y-1,(158,126,103,255))
-    eye_centres=((41,87),(40,88),(42,86),(40,88))[face_index]
+    transit=face_index >= 4
+    eye_centres=((41,87),(40,88),(42,86),(40,88),(38,89),(39,88))[face_index]
+    eye_skin=bytes(f.pixels) if transit else None
     for side,cx in enumerate(eye_centres):
         y=57+side
-        brow=((94,87,71,255),(100,87,67,255),(81,75,65,255),(107,106,94,255))[face_index]
-        arch=(2,4,0,3)[face_index];thickness=(2,1,3,2)[face_index]
-        hair.line(cx-12,47+side,cx-1,47-arch+side,brow,thickness)
-        hair.line(cx-1,47-arch+side,cx+10,47+side,brow,thickness)
-        eye_height=(3,3,2,2)[face_index];eye_width=(9,8,10,9)[face_index]
-        f.ellipse(cx,y,eye_width,eye_height,(175,167,143,255))
-        iris=((99,112,100,255),(110,92,64,255),(90,103,104,255),(119,123,106,255))[face_index]
+        brow=((94,87,71,255),(100,87,67,255),(81,75,65,255),(107,106,94,255),
+              (88,83,70,255),(83,79,66,255))[face_index]
+        arch=(2,4,0,3,2,4)[face_index];thickness=(2,1,3,2,2,2)[face_index]
+        reach=3 if transit else 0
+        hair.line(cx-12-reach,47+side,cx-1,47-arch+side,brow,thickness)
+        hair.line(cx-1,47-arch+side,cx+10+reach,47+side,brow,thickness)
+        eye_height=(3,3,2,2,4,3)[face_index];eye_width=(9,8,10,9,16,15)[face_index]
+        f.ellipse(cx,y,eye_width,eye_height,(199,190,159,255) if transit else (175,167,143,255))
+        iris=((99,112,100,255),(110,92,64,255),(90,103,104,255),(119,123,106,255),
+              (76,91,81,255),(90,84,66,255))[face_index]
         f.ellipse(cx,y,3,eye_height,iris);f.line(cx,y-eye_height+1,cx,y+eye_height-1,(48,57,49,255))
         f.put(cx-1,y-1,(196,191,164,255))
         f.line(cx-10,y-3,cx+9,y-2,(113,91,73,255))
@@ -172,6 +179,11 @@ def atlas(path, verify, face_index=0, hair_id="gray"):
         f.line(cx-8,y+10,cx+7,y+9,(163,129,105,255))
         sx=-1 if side==0 else 1
         f.line(cx+sx*12,y+3,cx+sx*16,y+6,(155,120,95,255))
+        if transit:
+            f.line(cx-15,y-2,cx-6,y-4,(107,82,67,255))
+            f.line(cx-6,y-4,cx+10,y-3,(107,82,67,255))
+            f.line(cx-14,y+6,cx+11,y+7,(141,109,85,255))
+            f.line(cx+sx*14,y+2,cx+sx*20,y+5,(148,115,91,255))
     f.line(59,61,56,78,(151,113,87,255));f.line(69,61,73,78,(183,149,120,255))
     f.ellipse(64,80,10,5,(170,126,101,255))
     f.line(54,81,59,83,(105,75,57,255));f.line(69,83,75,81,(105,75,57,255))
@@ -210,6 +222,10 @@ def atlas(path, verify, face_index=0, hair_id="gray"):
             for offset in (0,4,8):f.line(cx+sign*11,60+offset,cx+sign*18,63+offset,(155,120,98,255))
         f.line(38,86,34,99,(153,119,96,255));f.line(91,86,95,99,(153,119,96,255))
         f.line(48,106,45,113,(152,116,94,255));f.line(83,105,86,113,(152,116,94,255))
+    elif face_index==5:
+        for x in range(47,83):
+            if abs(x-64)>2:
+                hair.line(x,91+abs(x-64)//11,x,94+abs(x-64)//12,(115,101,83,255))
     # Only explicitly authored hair pixels take the hair palette. Skin,
     # freckles/creases, eye colour and every textile pixel stay identical.
     tint=tuple(int(HAIR_COLORS[hair_id][i:i+2],16) for i in (0,2,4))
@@ -226,6 +242,18 @@ def atlas(path, verify, face_index=0, hair_id="gray"):
     for y in range(128):
         offset=((384+y)*512+384)*4
         c.pixels[offset:offset+512]=f.pixels[y*512:(y+1)*512]
+    if transit:
+        # Same face and hair palette. Only the actual eyelid area differs.
+        for side,cx in enumerate(eye_centres):
+            cy=57+side
+            for y in range(cy-5,cy+5):
+                start=(y*128+cx-17)*4
+                f.pixels[start:start+35*4]=eye_skin[start:start+35*4]
+            f.line(cx-14,cy+1,cx-4,cy+3,(111,86,69,255))
+            f.line(cx-4,cy+3,cx+12,cy+1,(111,86,69,255))
+        for y in range(128):
+            offset=((384+y)*512+256)*4
+            c.pixels[offset:offset+512]=f.pixels[y*512:(y+1)*512]
     # Reserved white texels keep skin and trim free from textile noise.
     c.rect(500,0,512,12,(255,255,255,255))
     return publish(path,c.png_bytes(),verify)
@@ -256,6 +284,14 @@ class WorkerBuilder(base.PedestrianBuilder):
         item={"id":item_id,"slot":item_id.split(".")[0],"renderers":[],"covered_renderers":list(covered)}
         self.items.append(item);self.active_item=item
         return item
+
+    def contact(self,name,bone,point):
+        anchor=bpy.data.objects.new(name,None)
+        self.result.export_collection.objects.link(anchor)
+        anchor.parent=self.result.rig;anchor.parent_type="BONE";anchor.parent_bone=bone
+        bpy.context.view_layer.update()
+        anchor.matrix_world=Matrix.Translation(point)
+        self.result.anchors[name]=anchor
 
     def weights(self,obj,assignments):
         for group in list(obj.vertex_groups): obj.vertex_groups.remove(group)
@@ -384,6 +420,8 @@ class WorkerBuilder(base.PedestrianBuilder):
                 shape(palm,closed,shape_name)
             for i,(offset,length,radius) in enumerate(((-.023,.035,.0088),(-.007,.044,.0093),(.009,.041,.0088),(.024,.032,.0078))):
                 points=[local(.055,offset,0),local(.065+length*.35,offset,.002),local(.055+length,offset,.005)]
+                if not gloves and i==0 and side=="R":
+                    self.contact("ANCHOR_IndexOpenTip.R",bone,points[-1])
                 radii=tuple(radius*f*factor*HAND_SIZE_SCALE*HAND_GIRTH_SCALE for f in (1,.96,.70))
                 obj=self.add(prefix+"Finger"+str(i)+"."+side,tube(points,radii,7,.9),bone,color,"clothing" if gloves else "body_detail")
                 # Preserve both phalanx lengths. Moving the already buried
@@ -621,6 +659,9 @@ class WorkerBuilder(base.PedestrianBuilder):
                 "corrective_angle_degrees":0.,"weight_curve":"sewn_foot_to_shin"})
             sole=([(xx,yy,(z-.006)*.14) for xx,yy,z in vertices],faces)
             self.add(prefix+"Sole."+side,sole,"foot."+side,"sole")
+            if outfit=="work":
+                self.contact("ANCHOR_WorkSole."+side,"foot."+side,
+                             (x,cy-.100,min(point[2] for point in sole[0])))
             for i in range(3):
                 y=cy-.071-i*.023;z=.112-i*.015
                 self.add(prefix+"Lace"+str(i)+"."+side,tube(((x-.031,y,z),(x+.031,y-.007,z)),(.0025,.0025),5),"foot."+side,"trim")
@@ -745,6 +786,48 @@ class WorkerBuilder(base.PedestrianBuilder):
             self.add(prefix+"FrontFold",base.make_tapered_box((0,-.118,1.655),(0,-.102,1.71),(.192,.022,0),(.197,.020,0)),"head","trim")
             for side,sign in (("L",1),("R",-1)):
                 self.add(prefix+"EarFlap."+side,base.make_ellipsoid((sign*.113,.001,1.601),(.025,.061,.068),12,6),"head",color)
+
+    def transit_uniform(self,covered):
+        """A short uniform coat that hangs clear of the seated thighs."""
+        self.item("outerwear.transit",covered)
+        prefix="CLO_Outer_transit"
+        self.trunk(prefix+"Body",((.969,.188,.132,.005),(1.020,.194,.144,.003),
+            (1.102,.196,.146,-.002),(1.213,.218,.151,-.007),(1.310,.218,.140,-.009),
+            (1.378,.204,.119,-.012),(1.419,.098,.085,-.017)),"outer_transit",sides=24)
+        for side,sign in (("L",1),("R",-1)):
+            self.arm(prefix+"Sleeve."+side,side,(.059,.082,.081,.068,.057,.062,.055,.043,.036),
+                     "outer_transit",sides=14)
+            self.add(prefix+"Lapel."+side,cloth_panel(([
+                (sign*.024,-.155,1.228),(sign*.083,-.136,1.288),
+                (sign*.111,-.106,1.376),(sign*.069,-.091,1.416),
+                (sign*.031,-.133,1.364),(sign*.045,-.151,1.295)
+            ],[(0,1,5),(1,2,4,5),(2,3,4)]),.004),"chest","transit_binding")
+            self.add(prefix+"Pocket."+side,cloth_panel(([
+                (sign*.083,-.140,1.113),(sign*.166,-.108,1.108),
+                (sign*.179,-.097,1.164),(sign*.079,-.148,1.173)
+            ],[(0,1,2,3)]),.004),"spine","transit_binding")
+            for i in range(2):
+                z=1.052+i*.032
+                self.add(prefix+f"Fold{i}."+side,tube(
+                    ((sign*.052,-.143,z),(sign*.099,-.136,z+.006),(sign*.147,-.111,z-.005)),
+                    (.0018,.0028,.0014),5,.65),"spine","transit_crease")
+        self.add(prefix+"Tie",cloth_panel(([
+            (-.016,-.126,1.393),(.014,-.126,1.394),(.024,-.161,1.256),
+            (.003,-.161,1.224),(-.025,-.161,1.251)
+        ],[(0,1,2,4),(4,2,3)]),.004),"chest","transit_tie")
+        self.add(prefix+"TieKnot",base.make_ellipsoid((0,-.131,1.373),(.019,.010,.021),8,4),
+                 "chest","transit_tie")
+        for i in range(3):
+            self.add(prefix+f"Button{i}",base.make_ellipsoid((.010,-.149,1.028+i*.063),
+                (.006,.003,.006),8,3),"spine","transit_button")
+        self.item("headwear.transit",["HAIR_Crown"])
+        self.add("CLO_Hat_transitCrown",base.make_vertical_shell((
+            (1.670,.107,.112,-.015),(1.697,.114,.122,-.017),(1.729,.113,.122,-.021),
+            (1.747,.093,.105,-.021),(1.749,.073,.089,-.021)),16),"head","transit_cap")
+        self.add("CLO_Hat_transitBand",base.make_vertical_shell((
+            (1.668,.108,.114,-.016),(1.691,.116,.127,-.020)),16),"head","transit_binding")
+        self.add("CLO_Hat_transitPeak",base.make_ellipsoid((0,-.121,1.668),
+            (.092,.083,.009),16,4),"head","transit_cap")
 
     def ferryman_coat(self, covered):
         self.item("outerwear.ferryman", covered)
@@ -875,6 +958,8 @@ class WorkerBuilder(base.PedestrianBuilder):
             self.item("outerwear."+outfit,covers);self.outer(outfit)
         self.ferryman_coat([p.obj.name for p in self.result.parts
                             if p.obj.name.startswith("CLO_Shirt_") and "Collar" not in p.obj.name])
+        self.transit_uniform([p.obj.name for p in self.result.parts
+                             if p.obj.name.startswith("CLO_Shirt_") and "Collar" not in p.obj.name])
         for outfit in OUTFITS:
             self.item("trousers."+outfit,[n for n in body_names if n.startswith("GEO_Legs")]);self.trousers(outfit)
         for outfit in OUTFITS:
@@ -1256,23 +1341,25 @@ def main():
     texture=ASSETS/(MODEL+"Atlas.png");texture_hash=atlas(texture,args.validate_only)
     face_data={"default_face_id":"face-01","items":[]}
     face_hashes=[]
-    for i in range(4):
+    for i in range(6):
         name=MODEL+("" if i==0 else "Face"+str(i+1).zfill(2))+"Atlas.png"
         hashed=texture_hash if i==0 else atlas(ASSETS/name,args.validate_only,i)
         face={"id":"face-"+str(i+1).zfill(2),"texture":name}
+        if i >= 4:
+            face["has_blink_tile"]=True
         for hair_id in ("brunette","blond"):
             variant=MODEL+"Face"+str(i+1).zfill(2)+hair_id.title()+"Atlas.png"
             face[hair_id+"_texture"]=variant
             atlas(ASSETS/variant,args.validate_only,i,hair_id)
         face_data["items"].append(face)
         face_hashes.append(hashed)
-    if len(set(face_hashes))!=4:raise RuntimeError("All four authored faces must differ")
+    if len(set(face_hashes))!=len(face_hashes):raise RuntimeError("All authored faces must differ")
     reference=read_generated_png(texture)[2]
     for face in face_data["items"][1:]:
         width,height,pixels=read_generated_png(ASSETS/face["texture"])
         if (width,height)!=(512,512):raise RuntimeError("Face atlas dimensions differ")
         for y in range(512):
-            end=384 if y>=384 else 512
+            end=(256 if face.get("has_blink_tile") else 384) if y>=384 else 512
             start=y*512*4
             if pixels[start:start+end*4]!=reference[start:start+end*4]:
                 raise RuntimeError("Face variant changes clothing or body pixels")
@@ -1286,6 +1373,8 @@ def main():
             for i in range(512*512):
                 if pixels[i*4:i*4+4]==reference[i*4:i*4+4]:continue
                 x=i%512-384;y=i//512-384
+                if face.get("has_blink_tile") and -128<=x<0:
+                    x+=128
                 if not 0<=x<128 or not 0<=y<128 or y*128+x not in HAIR_MASKS[index]:
                     raise RuntimeError("Hair palette changes a non-hair pixel")
                 changed+=1

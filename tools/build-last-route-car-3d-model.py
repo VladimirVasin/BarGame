@@ -1091,12 +1091,9 @@ class LastRouteCarBuilder:
         bezels, grille, rear_trim, indicators = (MeshAccumulator() for _ in range(4))
         for x, side in ((.602, "Driver"),(-.602, "Passenger")):
             lamp = MeshAccumulator()
-            forms.revolve(lamp,(x,front,.854),(0,-1,0),
-                          ((-.024,.097),(.006,.110),(.024,.105),(.041,.078),(.048,.031)),24)
+            forms.round_headlight(lamp,bezels,(x,front,.854))
             self.add_accumulator("GEO_Headlight"+side, lamp, "headlight", "Headlight")
             self.add_pivot("ANCHOR_Headlight"+side,"headlight_beam",self.body,(x,front-.074,.854))
-            forms.revolve(bezels,(x,front,.854),(0,-1,0),((-.026,.129),(.005,.131),
-                          (.022,.121),(.024,.108),(.014,.105),(-.024,.105)),24,loop=True)
             bezel = MeshAccumulator()
             forms.loft(bezel,[forms.chamfered_ring(x,.848,w,h,r,y)
                               for y,w,h,r in ((rear-.026,.151,.079,.022),(rear+.016,.144,.071,.018))])

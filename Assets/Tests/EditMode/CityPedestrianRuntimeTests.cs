@@ -57,11 +57,6 @@ namespace BarPromenade.Tests.EditMode
         //     street pair counted through the catalog.            6*2 = 12
         //   - The two park players add the shout they throw at each
         //     other.                                                    2
-        //   - The Ferryman carries FIVE, because he is the only design
-        //     with two seats and the only one that walks between them: a
-        //     wait on his bonnet, the drop off it, the trudge round the
-        //     car that this is finally for, the transition in through his
-        //     own door, and the driving loop it arrives at.             5
         //   - The Lake Fisherman came off the street on 2026-09-02, so his
         //     four - the placed pair he leans on the мостки with and the
         //     street pair he no longer walks - now count here. They stay
@@ -71,21 +66,8 @@ namespace BarPromenade.Tests.EditMode
         //     his walk and the seated loop that used to be counted through
         //     the catalog's own ride tally.                             3
         private const int NonRoamingLocomotionClipCount =
-            11 + 2 + 12 + 2 + 5 + 4 + 3;
+            11 + 2 + 12 + 2 + 4 + 3;
 
-        /// <summary>
-        /// The library's two clips that are not loops, both the
-        /// Ferryman's: the drop off his bonnet and the way in through his
-        /// own door. Named here rather than asked of the editor pipeline
-        /// because this assembly does not reference it - and naming them
-        /// is in keeping with the clip list below, which is spelled out by
-        /// hand for the same reason: a contract nobody has to look up.
-        /// </summary>
-        private static readonly string[] OneShotTransitionClipNames =
-        {
-            "FerrymanDismount",
-            "FerrymanBoard"
-        };
         private const string LocomotionManifestPath =
             "Assets/Pedestrians/Animations/" +
             "CityPedestrianLocomotion.json";
@@ -249,10 +231,6 @@ namespace BarPromenade.Tests.EditMode
                     "CheckersMull",
                     "CheckersTrudge",
                     "CheckersJeer",
-                    "FerrymanWait",
-                    "FerrymanTrudge",
-                    "FerrymanDismount",
-                    "FerrymanBoard",
                     "LampshadeSit",
                     "ChairCarrierSit",
                     "KettleHatSit",
@@ -283,11 +261,6 @@ namespace BarPromenade.Tests.EditMode
                     "ChessStreetWalk",
                     "CheckersStreetIdle",
                     "CheckersStreetWalk",
-                    // The Ferryman's seated loop is not a Route 01 ride: it
-                    // is him behind the wheel of his own car. He is the one
-                    // design with two seats, and the sit slot carries the
-                    // second.
-                    "FerrymanDrive"
                 },
                 locomotionClips.Select(
                     clip => NormalizeAnimationClipName(clip.name)));
@@ -306,26 +279,8 @@ namespace BarPromenade.Tests.EditMode
                     (residents.Count * 2) +
                     seatedCount +
                     NonRoamingLocomotionClipCount));
-            // Every clip loops except a transition between two postures,
-            // and a transition that DID loop would be the bug: loop-pose
-            // normalisation drags its last frame back towards its first,
-            // and the Ferryman's two are each authored to end exactly on
-            // the base pose of the clip the runtime crosses into - his
-            // walk, and then his driving loop.
-            foreach (AnimationClip clip in locomotionClips)
-            {
-                string name = NormalizeAnimationClipName(clip.name);
-                bool oneShot = System.Array.IndexOf(
-                    OneShotTransitionClipNames,
-                    name) >= 0;
-                Assert.That(
-                    clip.isLooping,
-                    Is.EqualTo(!oneShot),
-                    oneShot
-                        ? $"'{name}' is a one-shot transition and must " +
-                          "not be imported as a loop."
-                        : $"'{name}' must loop.");
-            }
+            Assert.That(locomotionClips.All(clip => clip.isLooping), Is.True,
+                "The Ferryman's one-shot transitions belong to his dedicated sedan bank.");
 
             GameObject pedestrianPrefab =
                 Resources.Load<GameObject>(prefabResourcePath);

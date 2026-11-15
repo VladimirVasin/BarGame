@@ -451,13 +451,7 @@ class ArchetypeSpec:
     # rests on the plank, down to the soles, which have to reach the ground
     # beside it. That distance IS the height of the drawn seat, so the band is
     # declared in those terms and the world can be checked against it directly.
-    # Most designs declare exactly one of this and `seated_clearance_m`,
-    # because most designs have one seat. The Ferryman has two - he waits
-    # on the bonnet of his own car and drives it away - so a design MAY
-    # declare both, and then each seated clip says which of the two is
-    # carrying it via ActionSpec.perched. Nothing is weakened by that:
-    # every seated clip is still proved against exactly one band, and a
-    # clip that cannot name its band is still an error.
+    # A design with both cabin and perch poses identifies the latter on its clip.
     perch_seat_height_m: tuple[float, float] | None = None
     # Optional absolute world support band for dedicated staged seating. The
     # older perch band above measures hip-to-lowest-mesh distance and cannot
@@ -472,24 +466,14 @@ class ArchetypeSpec:
     # height perch: both the hips and both boots must independently touch the
     # same floor, and no deformed part may pass through it.
     floor_seated_contact_m: tuple[float, float] | None = None
-    # How far anything may hang below a seated pelvis before it is through
-    # the floor. This is a property of the VEHICLE, not of the sitter, and
-    # the two vehicles in the game do not agree: Route 01 seats a passenger
-    # 0.41 m above its deck, and the Ferryman's car seats its driver only
-    # 0.22 m above its floor pan. That difference is the whole reason a
-    # driving posture reaches its feet forward to the pedals instead of
-    # letting them hang - so it is declared, and proved, per design.
+    # The maximum drop from the seated pelvis to the vehicle floor.
     seated_floor_drop_m: float = 0.41
     # Optional single authored beat that is neither locomotion nor a ride: a
     # thing this design does, once, on top of its idle. The runtime blends it
     # over the idle on a two-input mixer, so the clip has to open and close on
     # the idle's own base pose or the seam shows.
     action_clip: str | None = None
-    # A SECOND one-shot transition, and so far only the Ferryman owns one.
-    # He is the only design that has to leave a seat under his own power and
-    # then walk somewhere before the next posture starts, so his drop off the
-    # bonnet cannot be the head of the clip that puts him behind the wheel -
-    # there are three metres of lot in between.
+    # Optional independent transition from a perch to the ground.
     dismount_clip: str | None = None
     # A wheelchair stays grounded on its tyres rather than on the rider's
     # shoes. Declaring a radius switches the animation bake/validator to that
@@ -794,44 +778,6 @@ ARCHETYPES = {
     # `perch_seat_height_m` instead of `seated_clearance_m`. The drawn
     # chess bench puts its plank 0.54 m over the lawn, so that is the
     # distance his authored seat has to keep from his own soles.
-    # The Ferryman, who waits at the last route island with a car that
-    # still runs. He is Charon in this register: not a robed skeleton but
-    # a driver whose silhouette is a boatman's - a long oilcloth coat
-    # standing in for the cloak, a peaked cap whose brim is the hood, and
-    # one coil of mooring rope on a man beside a car, never explained.
-    #
-    # He is the library's second perched design. The bonnet he sits on is
-    # 0.505 m above the bumper his boots rest on, which is the number
-    # `perch_seat_height_m` pins - see PERCH_DROP_M in
-    # tools/build-last-route-car-3d-model.py, and the cross-manifest test
-    # that fails when either generator moves.
-    #
-    # The coat's long skirt is deliberately NOT authored here. It is a
-    # runtime Cloth panel hung from his hips, so it drapes over the
-    # bonnet edge and moves in the wind instead of being a rigid slab.
-    # The geometry stops at a short hem stub that the cloth hangs from.
-    "last_route_ferryman": ArchetypeSpec(
-        "last_route_ferryman", "last_route_ferryman_v1", "Last Route Ferryman",
-        1264099,
-        "LastRouteFerryman3D.blend", "LastRouteFerryman3D",
-        "LastRouteFerryman3D.png", "FerrymanWait", "FerrymanTrudge",
-        (1800, 2400),
-        staged=True,
-        pool_eligible=False,
-        perch_seat_height_m=(0.50, 0.52),
-        action_clip="FerrymanBoard",
-        dismount_clip="FerrymanDismount",
-        # And his second seat, the one he leaves in. Both numbers are
-        # the car's own rather than the bus's, read off
-        # tools/build-last-route-car-3d-model.py: ROOF_UNDERSIDE_Z 1.56
-        # over SEAT_PELVIS_Z 0.52 leaves 1.04 m of head, and FLOOR_Z 0.30
-        # under the same seat leaves only 0.22 m of leg. The second of
-        # those is why he drives with his feet forward on the pedals
-        # instead of hanging them like a bus passenger.
-        sit_clip="FerrymanDrive",
-        seated_clearance_m=(0.90, 1.04),
-        seated_floor_drop_m=0.22,
-    ),
     "park_chess_player": ArchetypeSpec(
         "park_chess_player", "park_chess_player_v1", "Park Chess Player",
         1104733,
@@ -1105,12 +1051,8 @@ class ActionSpec:
     # has both. Ignored when its archetype declares a single band - the
     # band it declares is the only answer there is.
     perched: bool = False
-    # And a clip that MOVES between two seats cannot be measured against
-    # either of them. The Ferryman's board transition starts on a car
-    # bonnet and ends behind its wheel: half way through his seat is
-    # nowhere, by design. Such a clip stays seated - it must not be
-    # sole-grounded - but its band check is skipped, and whatever it
-    # arrives at is proved by the clip that follows it.
+    # A transition between supports is not grounded against either endpoint
+    # during the move. Its adjoining poses are validated on those supports.
     leaves_seat: bool = False
     # A transition is not a loop and must not be asserted as one. Every
     # other clip in this library returns to its own first frame, because
@@ -1150,26 +1092,6 @@ PALETTE = {
     "coat_light": (0.120, 0.215, 0.165, 1.0),
     "coat_dark": (0.040, 0.085, 0.068, 1.0),
     "trousers": (0.075, 0.105, 0.115, 1.0),
-    # The Ferryman. His coat is the darkest value on the island and the
-    # cap band and the coin are the only light ones, so the toss carries
-    # the whole silhouette from across the lot.
-    #
-    # Lifted about forty percent from the first pass, which was so far
-    # down that no amount of light on him made any difference: at 0.055
-    # albedo under the island's fog he was a hole in the frame rather
-    # than a man in a dark coat, and the lamp the runtime now hangs in
-    # front of him had nothing to catch. Still the darkest cloth in the
-    # library by a wide margin - the near-black under the cap brim is
-    # deliberately NOT lifted, because that shadow is the hood and its
-    # whole job is to stay unreadable.
-    "ferry_coat": (0.078, 0.082, 0.088, 1.0),
-    "ferry_coat_dark": (0.046, 0.049, 0.053, 1.0),
-    "ferry_cap": (0.068, 0.071, 0.076, 1.0),
-    "ferry_cap_band": (0.470, 0.445, 0.360, 1.0),
-    "ferry_shadow": (0.012, 0.013, 0.015, 1.0),
-    "ferry_rope": (0.360, 0.315, 0.225, 1.0),
-    "ferry_boot": (0.076, 0.068, 0.060, 1.0),
-    "ferry_skin": (0.470, 0.395, 0.330, 1.0),
     "glove": (0.080, 0.075, 0.065, 1.0),
     "hood": (0.245, 0.235, 0.205, 1.0),
     "hood_light": (0.345, 0.325, 0.275, 1.0),
@@ -1613,9 +1535,6 @@ NPC_HEAD_SCALES = {
     "helmet_lamp": (0.87, 0.93),
     # The Watcher's little head is a story silhouette, not an anatomy error.
     "watcher_cashier": (1.00, 1.00),
-    # The old driver skull was 0.308 m wide.  This stronger X correction puts
-    # the skull itself back in the adult band while retaining the long eyes.
-    "city_bus_driver": (0.62, 0.84),
 }
 
 NPC_RADIAL_SCALES = {
@@ -2718,10 +2637,6 @@ class PedestrianBuilder:
                 self.build_lake_fisherman_body,
                 self.build_lake_fisherman_details,
             ),
-            "last_route_ferryman": (
-                self.build_last_route_ferryman_body,
-                self.build_last_route_ferryman_details,
-            ),
             "park_chess_player": (
                 self.build_park_chess_player_body,
                 self.build_park_chess_player_details,
@@ -3063,23 +2978,10 @@ class PedestrianBuilder:
             or "face" in role
             or name.startswith("FACE_")
         )
-        # Facial landmarks narrow more than the cranium, matching the V2 eye
-        # spacing without turning the whole skull into a pin head.  The bus
-        # driver's canonical horizontal eyes retain their aspect ratio because
-        # their local width is handled separately below.
+        # Facial landmarks narrow more than the cranium to fit the V2 spacing.
         x_scale = min(scale_x, 0.80) if is_face else scale_x
         mapped = point.copy()
         mapped.x *= x_scale
-        if profile == "city_bus_driver" and name.startswith("FACE_EyeWhite."):
-            source_center = 0.071 if name.endswith(".L") else -0.062
-            mapped.x = source_center * scale_x + (
-                point.x - source_center
-            ) * 0.82
-        elif profile == "city_bus_driver" and name.startswith("FACE_Pupil."):
-            source_center = 0.077 if name.endswith(".L") else -0.066
-            mapped.x = source_center * scale_x + (
-                point.x - source_center
-            ) * 0.76
         mapped.y = -0.020 + (point.y + 0.040) * scale_y
         is_headwear = (
             role == "signature_silhouette"
@@ -5431,183 +5333,6 @@ class PedestrianBuilder:
                 "surface_detail", "button",
             )
 
-    def build_last_route_ferryman_body(self) -> None:
-        """The Ferryman: a driver built to read as a boatman.
-
-        Everything here is the trick stated once. The coat is a taxi
-        driver's oilcloth greatcoat, which from any distance is a cloak.
-        The cap brim carries a separate near-black shadow part so the
-        EYES ARE NEVER DRAWN - that shadow is the hood, and it is the
-        cheapest way to keep a face unreadable at 640x360 under any
-        light the island throws at it.
-
-        The skirt of the coat stops at a hem stub below the pelvis. The
-        rest of it is a runtime Cloth panel: he sits on a bonnet with the
-        skirt hanging over the nose, and a rigid slab there would read as
-        a plank rather than as cloth.
-        """
-
-        # Tall-shouldered and narrow: a spare man in a heavy coat.
-        self.build_ordinary_adult_body(
-            skin="ferry_skin",
-            coat="ferry_coat",
-            coat_dark="ferry_coat_dark",
-            trousers="ferry_coat_dark",
-            shoe="ferry_boot",
-            shoulder_width=0.384,
-            waist_width=0.372,
-            chest_span=(1.075, 1.336),
-            waist_span=(0.880, 1.092),
-            chest_depth=0.1135,
-            waist_depth=0.112,
-            head_center=(0, -0.030, 1.566),
-            head_radii=(0.098, 0.092, 0.122),
-            neck_span=(1.318, 1.472),
-            neck_radii=(0.060, 0.052),
-            # The high collar closes over them, and a cap band sits on
-            # the same radius.
-            ears=False,
-            # Large hands. He is thin everywhere else.
-            hand_scale=1.10,
-            # See the note below: the pelvis shell keeps its authored
-            # name, its narrower width and its 0.734 floor.
-            seat_name="CLO_CoatSeat",
-            lower_stations=(
-                (0.734, 0.168, 0.119, 0.014),
-                (0.790, 0.168, 0.116, 0.013),
-                (0.855, 0.168, 0.112, 0.011),
-                (0.902, 0.168, 0.110, 0.010),
-            ),
-            arm_points={
-                "L": (
-                    (0.196, -0.002, 1.300), (0.462, -0.008, 1.180),
-                    (0.676, -0.016, 1.078), (0.756, -0.022, 1.034),
-                ),
-                "R": (
-                    (-0.196, 0.002, 1.300), (-0.462, -0.008, 1.180),
-                    (-0.676, -0.016, 1.078), (-0.756, -0.022, 1.034),
-                ),
-            },
-            leg_points={
-                "L": (
-                    (0.094, 0.004, 0.734), (0.100, -0.012, 0.356),
-                    (0.100, -0.012, 0.348), (0.110, -0.020, 0.128),
-                ),
-                "R": (
-                    (-0.094, 0.004, 0.734), (-0.100, -0.012, 0.356),
-                    (-0.100, -0.012, 0.348), (-0.110, -0.020, 0.128),
-                ),
-            },
-            # Boots muddy to the ankle - he waits outdoors.
-            foot_part_name="Boot",
-            shoe_shape=(0.93, 1.12, 1.36),
-        )
-        # High collar, turned up: the coat closes around the jaw and
-        # takes over from the cap shadow.
-        self.add_part(
-            "CLO_Collar",
-            make_frustum_between((0, -0.004, 1.322), (0, -0.020, 1.436), 0.108, 0.112, 10),
-            "neck", "clothing", "ferry_coat_dark",
-        )
-        for side, sign in (("L", 1.0), ("R", -1.0)):
-            self.add_part(
-                f"CLO_SleeveCuff.{side}",
-                make_frustum_between(
-                    (sign * 0.628, -0.014, 1.102),
-                    (sign * 0.690, -0.018, 1.070),
-                    0.047, 0.042, 8,
-                ),
-                f"forearm.{side}", "clothing", "ferry_coat_dark",
-            )
-        # The seat of him: hips and backside, bridging the waist above to
-        # the thighs below.
-        #
-        # This exists because the hem stub next to it is DELETED at
-        # runtime - the cloth skirt replaces it - and without this block
-        # that left a 15 cm hole where his pelvis should be, straight
-        # through the coat and out the other side. Every other design in
-        # the library gets away with one hem box doing both jobs; this is
-        # the only one whose hem is a placeholder, so it is the only one
-        # that needs the body underneath drawn as well.
-        #
-        # Deliberately NARROWER than the hem stub, and it stops at the
-        # hip line rather than below it. The first keeps it clear of the
-        # two cloth flaps, which hang at 46 percent of the stub's 0.392 m
-        # width - 0.180 m out against this block's 0.168 m, so a swinging
-        # flap has 12 mm before it finds his hip. The second keeps the
-        # lowest drawn point of the pelvis group the mooring coil it
-        # already was, so the perch measurement this design is converged
-        # against does not move. The coat waist above is wider than this
-        # and overhangs it, which is what a coat does over hips.
-        # (Drawn by the shared substrate above, under this exact name.)
-        #
-        # The hem stub. The cloth panel hangs from its underside, so it
-        # has to be wide enough that no gap shows where the two meet.
-        self.add_part(
-            "CLO_CoatHem",
-            make_tapered_box((0, 0.012, 0.762), (0, 0.010, 0.896), (0.392, 0.256, 0), (0.356, 0.220, 0)),
-            "pelvis", "clothing", "ferry_coat_dark",
-        )
-        # The coat's front edge, so the skirt reads as opening rather
-        # than as a tube even before the cloth takes over.
-        self.add_part(
-            "CLO_CoatFacing",
-            self.make_trunk_patch(
-                (0.805, 1.275), 0.0, 0.026, 0.026, 2,
-            ),
-            "spine", "clothing", "ferry_coat_dark",
-        )
-
-    def build_last_route_ferryman_details(self) -> None:
-        """Cap, the shadow under its brim, and one coil of rope.
-
-        The rope is the only boat on him. It is never referred to and
-        never used; a mooring coil on a man beside a car is odd enough
-        to be noticed and small enough not to explain itself.
-        """
-
-        # Flat-topped service cap with a low brim.
-        self.add_part(
-            "ACC_CapCrown",
-            make_tapered_box((0, -0.014, 1.668), (0, -0.014, 1.750), (0.214, 0.214, 0), (0.206, 0.204, 0)),
-            "head", "signature_silhouette", "ferry_cap",
-        )
-        self.add_part(
-            "ACC_CapBand",
-            make_tapered_box((0, -0.014, 1.626), (0, -0.014, 1.670), (0.210, 0.210, 0), (0.214, 0.214, 0)),
-            "head", "signature_silhouette", "ferry_cap_band",
-        )
-        self.add_part(
-            "ACC_CapBrim",
-            make_tapered_box((0, -0.120, 1.616), (0, -0.118, 1.634), (0.218, 0.150, 0), (0.206, 0.142, 0)),
-            "head", "signature_silhouette", "ferry_cap",
-        )
-        # The hood. A near-black slab under the brim, sized to swallow
-        # the eye line from every angle the player can reach.
-        self.add_part(
-            "ACC_BrowShadow",
-            make_box((0, -0.064, 1.594), (0.178, 0.098, 0.034)),
-            "head", "face_detail", "ferry_shadow",
-        )
-        # A grey stubble line and a flat mouth: the only face there is.
-        self.add_part(
-            "ACC_Jaw",
-            make_box((0, -0.076, 1.494), (0.128, 0.052, 0.038)),
-            "head", "face_detail", "ferry_skin",
-        )
-        self.add_part(
-            "ACC_Mouth",
-            make_box((0, -0.100, 1.508), (0.052, 0.014, 0.010)),
-            "head", "face_detail", "ferry_coat_dark",
-        )
-        # The mooring coil, on the belt loop at his left hip.
-        for index, radius in enumerate((0.070, 0.060, 0.050)):
-            self.add_part(
-                f"ACC_MooringRope{index + 1:02d}",
-                make_torus_x((0.146, 0.020, 0.812 - index * 0.014), radius, 0.011, 10, 5),
-                "pelvis", "surface_detail", "ferry_rope",
-            )
-
     def build_cemetery_watchman_body(self) -> None:
         """Snide old cemetery watchman; the attitude lives in the clips.
 
@@ -6942,8 +6667,6 @@ class PedestrianBuilder:
         skirt_span: tuple[float, float] = (0.560, 0.880),
         skirt_widths: tuple[float, float] = (0.560, 0.470),
         build_thighs: bool = True,
-        # The Ferryman's pelvis shell has to keep its authored name: a
-        # runtime anchor and an asset test both name `CLO_CoatSeat`.
         seat_name: str | None = None,
         seat_material: str | None = None,
         foot_part_name: str = "Shoe",
@@ -10370,73 +10093,6 @@ ACTION_SPECS = (
     # the grid is regular rather than contractual, but twelve seconds is
     # what it takes for a man who is not doing anything to stop looking
     # like a looping animation.
-    # The Ferryman. Four seconds and one toss: the loop is short because
-    # the toss is the content, and a longer wait between throws reads as
-    # a man who has stopped doing the thing rather than one who keeps
-    # doing it. The release and catch phases below are a CONTRACT - the
-    # runtime coin reads them from LastRouteFerrymanPresentation and
-    # arcs between them, so re-timing this grid without re-timing those
-    # constants detaches the coin from his hand in mid-air.
-    ActionSpec(
-        "FerrymanWait", "last_route_ferryman_v1", 4.0, 96,
-        "perched on the car's bonnet, right hand braced behind the hip, "
-        "left forearm up with the palm open",
-        "four slow breaths, one coin thrown with the whole arm and caught "
-        "- wound down to the hip, released at 1/16 of the loop and caught "
-        "at 5/16 on an arm at full stretch - and three idle kicks of one "
-        "leg at a time off the bumper",
-        seated=True,
-        perched=True,
-    ),
-    ActionSpec(
-        "FerrymanTrudge", "last_route_ferryman_v1", 1.5, 36,
-        "upright in the long coat with the collar up",
-        "slow coat-heavy steps that do not hurry for anybody",
-    ),
-    # Getting OFF his own car. Deliberately fast - one second from the
-    # bonnet to both boots on the lot - because the whole point of the
-    # beat is that a man who has waited twenty years moves immediately
-    # once somebody finally says yes. It opens on the exact base pose of
-    # FerrymanWait and closes on the exact base pose of FerrymanTrudge,
-    # never re-typed numbers, so the runtime crosses out of the wait and
-    # into the walk without a seam at either end.
-    ActionSpec(
-        "FerrymanDismount", "last_route_ferryman_v1", 1.0, 24,
-        "off the bonnet, one push from the bracing hand, down onto the lot",
-        "a hard shove down off the metal, both legs reaching for the "
-        "ground, and a landing taken on bent knees",
-        seated=True,
-        leaves_seat=True,
-        one_shot=True,
-    ),
-    # And getting INTO it, which is now a separate thing with a walk in
-    # between: he stands at his own door, takes the handle, pulls it
-    # open, gets in and shuts it behind him. Two and a half seconds
-    # because four of those beats are real and the door is the one the
-    # player is watching. It opens on the exact base pose of
-    # FerrymanTrudge and closes on the exact base pose of FerrymanDrive.
-    ActionSpec(
-        "FerrymanBoard", "last_route_ferryman_v1", 2.5, 60,
-        "standing at the driver's door, reaching for its handle",
-        "a pull on the handle and a step back as the door comes, then in "
-        "under the roofline, down into the seat, and the door pulled shut "
-        "with both hands arriving on the wheel",
-        seated=True,
-        leaves_seat=True,
-        one_shot=True,
-    ),
-    ActionSpec(
-        "FerrymanDrive", "last_route_ferryman_v1", 3.0, 72,
-        "seated at the wheel, both hands on the rim, chin level",
-        "a settled seated breath and nothing else; he is waiting again, "
-        "only now he is waiting inside the car",
-        seated=True,
-        # Carried by the car's cabin rather than by its bonnet, which is
-        # why the archetype declares two bands and this clip does not say
-        # `perched`. It is measured: a driver whose cap clears his seated
-        # pelvis by more than the roof allows is wearing the roof, and
-        # this is the only clip that would show it.
-    ),
     # Her one clip. Six seconds of breathing and nothing else - the chair's
     # rock is driven in C# so that a single angle carries both the timber
     # and the woman on it, and writing a sway in here as well would give
@@ -11268,170 +10924,6 @@ def fisherman_base_pose() -> dict[str, BonePose]:
     }
 
 
-def ferryman_base_pose() -> dict[str, BonePose]:
-    """Perched on the car's bonnet, braced back on one hand, coin ready.
-
-    The whole design is in this pose, so it is worth saying what each
-    half is for. The RIGHT arm is furniture: it goes back and down onto
-    the bonnet behind his hip and never moves again in the loop. The
-    LEFT arm is the gesture: forearm up, palm open at chest height,
-    and it is the only thing that moves apart from his breathing. One
-    arm fixed and one arm working is what makes a toss legible from
-    across the lot, where a two-handed fidget would read as noise.
-
-    The lean is backwards, not forwards. A man bowed over his knees
-    reads as tired; a man tipped back on his supporting hand reads as
-    someone enjoying the wait, which is the whole character. It is a
-    small lean, though - see the pelvis below for why it stopped being
-    a large one. The head is turned very slightly off the coin so that
-    from the approach he looks like he is watching the arriving hero
-    instead - the shadow under the cap brim does the rest.
-
-    The legs are the measured half, exactly as they are for the chess
-    player. His boots rest on the car's front bumper, 0.505 m below the
-    bonnet skin he sits on and 0.42 m ahead of it - both numbers come
-    from PERCH_SEAT and PERCH_SOLES in
-    tools/build-last-route-car-3d-model.py, and `perch_seat_height_m`
-    is what pins the drop.
-    """
-
-    return {
-        # Tipped back off the hips, chest open - but only just. The first
-        # pass leaned him twelve degrees off vertical with his chin up to
-        # match, and at the size he is drawn on screen that read as a man
-        # staring at the sky rather than at whoever is walking up. Four
-        # degrees came out of the pelvis and the spine and four out of the
-        # neck and the head, which leaves the lean but points the face
-        # along the ground. Anything that moves these has to re-converge
-        # the two things they carry: the thighs below (which hold his
-        # boots on the bumper) and the bracing arm behind (which holds his
-        # hand on the bonnet).
-        "pelvis": BonePose(rotation_degrees=(-3.0, 0.0, 0.0), location_m=(0, 0.010, -0.004)),
-        "spine": BonePose(rotation_degrees=(-2.0, 2.0, 0.0)),
-        "chest": BonePose(rotation_degrees=(-2.0, 3.0, 0.0)),
-        # Chin level and turned a few degrees toward whoever is walking
-        # up, so the cap brim's shadow still covers the eyes.
-        "neck": BonePose(rotation_degrees=(0.0, -7.0, 0.0)),
-        "head": BonePose(rotation_degrees=(-2.0, -6.0, 2.0)),
-        "clavicle.L": BonePose(rotation_degrees=(2.0, -4.0, 6.0)),
-        "clavicle.R": BonePose(rotation_degrees=(-4.0, 4.0, -10.0)),
-        # Left: the coin hand. Elbow in at the ribs, forearm up, palm
-        # open and level at chest height where the toss starts.
-        "upper_arm.L": BonePose(rotation_degrees=(-150.0, 4.0, 74.0)),
-        "forearm.L": BonePose(rotation_degrees=(-78.0, 40.0, 8.0)),
-        "hand.L": BonePose(rotation_degrees=(10.0, 20.0, -10.0)),
-        # Right: the brace. These three are a MEASURED result, not a
-        # posed one. Nothing about this rig's shoulder is guessable -
-        # raising |X| lifts the hand rather than lowering it, and Z
-        # swings it across the body - so the angles were swept against
-        # one target taken off the car: the heel of his hand on the
-        # bonnet behind his hip. Re-swept after the torso was levelled,
-        # because sitting up moves the shoulder and takes the hand with
-        # it: they now land the underside of his palm 0.317 m behind him
-        # and 3 mm over the bonnet skin. Re-posing by eye will move it
-        # off the metal and he will be bracing on air.
-        "upper_arm.R": BonePose(rotation_degrees=(-20.0, -10.0, -62.0)),
-        "forearm.R": BonePose(rotation_degrees=(-8.0, -6.0, -4.0)),
-        "hand.R": BonePose(rotation_degrees=(-16.0, -6.0, 6.0)),
-        # Both boots rest on the bumper, and that is a contract rather
-        # than a look: the wait loop swings one leg at a time (see
-        # `ferry_kick`), so the OTHER boot is what the perch measurement
-        # reads every frame. They were levelled to within a millimetre of
-        # each other for exactly that reason - a leg left hanging seven
-        # centimetres high, as the first pass had it, moves the measured
-        # seat by seven centimetres the moment its partner kicks.
-        #
-        # Solved, not posed: swept against the car's own 0.505 m from
-        # bonnet skin to bumper top and landing in the 0.5060-0.5077 band.
-        # Thigh angle is what moves this number; bending the shin further barely
-        # touches it, which is not obvious and cost a sweep to learn.
-        # The left thigh is the shallower of the two because the pelvis
-        # above it is turned, not because the legs are meant to differ.
-        "thigh.L": BonePose(rotation_degrees=(-71.0, 0.0, 3.0)),
-        "shin.L": BonePose(rotation_degrees=(42.0, 0.0, 0.0)),
-        "foot.L": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
-        "thigh.R": BonePose(rotation_degrees=(-72.0, 0.0, -8.0)),
-        "shin.R": BonePose(rotation_degrees=(38.0, 0.0, 0.0)),
-        "foot.R": BonePose(rotation_degrees=(6.0, 0.0, -6.0)),
-    }
-
-
-def ferryman_stand_pose() -> dict[str, BonePose]:
-    """The standing stance his walk is built on, for the trudge slot."""
-
-    return {
-        "pelvis": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
-        "spine": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
-        "chest": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
-        "neck": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
-        "head": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
-        "clavicle.L": BonePose(rotation_degrees=(2.0, -3.0, 5.0)),
-        "clavicle.R": BonePose(rotation_degrees=(2.0, 3.0, -5.0)),
-        "upper_arm.L": BonePose(rotation_degrees=(-8.0, 0.0, 62.0)),
-        "upper_arm.R": BonePose(rotation_degrees=(-8.0, 0.0, -62.0)),
-        "forearm.L": BonePose(rotation_degrees=(-16.0, 10.0, 4.0)),
-        "forearm.R": BonePose(rotation_degrees=(-16.0, -10.0, -4.0)),
-        "hand.L": BonePose(rotation_degrees=(4.0, 6.0, -4.0)),
-        "hand.R": BonePose(rotation_degrees=(4.0, -6.0, 4.0)),
-    }
-
-
-def ferryman_drive_pose() -> dict[str, BonePose]:
-    """Behind the wheel of his own car, waiting again.
-
-    A cabin seat, not a bonnet, and a small car's cabin rather than the
-    bus's: both halves of this pose are measured against
-    tools/build-last-route-car-3d-model.py rather than eyeballed, and
-    both were wrong when they were.
-
-    Under him there is far less room than a bus gives. FLOOR_Z 0.30 sits
-    only 0.22 m below SEAT_PELVIS_Z 0.52, where Route 01 allows 0.41, so
-    a passenger's hanging shins put his boots a fifth of a metre through
-    the floor pan. A driver does not hang his legs anyway - he reaches
-    them forward onto the pedals - and that is what the angles below do:
-    the thighs run slightly above level and the shins slope forward, for
-    0.2197 m of leg under the pelvis against the 0.22 m there is.
-
-    Over him there is less room too. ROOF_UNDERSIDE_Z 1.56 leaves 1.04 m
-    of head, and sitting up straight he measures 1.0430 m to the crown of
-    his cap - three millimetres of roof, worn. So he sits into the seat
-    rather than on it, which is what a man who has waited twenty years
-    does regardless, and clears it by twelve.
-
-    Both hands come onto the rim - the bracing arm has nothing to brace
-    on any more, and a driver with one hand down reads as parked rather
-    than as about to leave.
-    """
-
-    return {
-        "pelvis": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
-        "spine": BonePose(rotation_degrees=(14.0, 0.0, 0.0)),
-        "chest": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
-        "neck": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
-        "head": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
-        "clavicle.L": BonePose(rotation_degrees=(3.0, -3.0, 6.0)),
-        "clavicle.R": BonePose(rotation_degrees=(3.0, 3.0, -6.0)),
-        # Both forearms up and in, hands meeting on the rim in front of
-        # the chest. Mirrored exactly: a wheel is symmetric and so is
-        # the grip on it.
-        "upper_arm.L": BonePose(rotation_degrees=(-148.0, 4.0, 72.0)),
-        "upper_arm.R": BonePose(rotation_degrees=(-148.0, -4.0, -72.0)),
-        "forearm.L": BonePose(rotation_degrees=(-86.0, 42.0, 8.0)),
-        "forearm.R": BonePose(rotation_degrees=(-86.0, -42.0, -8.0)),
-        "hand.L": BonePose(rotation_degrees=(8.0, 24.0, -14.0)),
-        "hand.R": BonePose(rotation_degrees=(8.0, -24.0, 14.0)),
-        # Driving legs: thighs a little above level and the shins reaching
-        # forward at the pedals, not hanging. Converged against the car's
-        # 0.22 m of floor rather than chosen - see the docstring.
-        "thigh.L": BonePose(rotation_degrees=(-90.3, 0.0, 4.0)),
-        "shin.L": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
-        "foot.L": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
-        "thigh.R": BonePose(rotation_degrees=(-90.3, 0.0, -4.0)),
-        "shin.R": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
-        "foot.R": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
-    }
-
-
 def chess_player_base_pose() -> dict[str, BonePose]:
     """Perched on the plank, elbows on the board rim, head in both hands.
 
@@ -11947,7 +11439,6 @@ def shelter_sleeping_base_pose() -> dict[str, BonePose]:
 # designs now declare it.
 PERCH_PREVIEW_POSES = {
     "mother": mother_base_pose,
-    "last_route_ferryman": ferryman_base_pose,
     "park_chess_player": chess_player_base_pose,
     "park_checkers_player": checkers_player_base_pose,
     "cafe_lone_patron": cafe_lone_base_pose,
@@ -11960,120 +11451,6 @@ SHELTER_PREVIEW_POSES = {
     "shelter_seated_resident": shelter_seated_base_pose,
     "shelter_sleeping_resident": shelter_sleeping_base_pose,
 }
-
-
-def ferry_breath(base: dict[str, BonePose], amount: float) -> dict[str, BonePose]:
-    """One breath carried by the ribs, the fisherman's own idiom.
-
-    The chest lifts and the shoulders follow it a little; nothing else
-    moves. On a man sitting still this is the only thing that keeps the
-    loop from reading as a freeze frame.
-    """
-
-    return merge_pose(
-        base,
-        {
-            "chest": BonePose(
-                rotation_degrees=(-2.0 - 1.8 * amount, 3.0, 0.0)
-            ),
-            "clavicle.L": BonePose(
-                rotation_degrees=(2.0 + 1.4 * amount, -4.0, 6.0)
-            ),
-            "clavicle.R": BonePose(
-                rotation_degrees=(-4.0 + 1.4 * amount, 4.0, -10.0)
-            ),
-        },
-    )
-
-
-def ferry_kick(
-    base: dict[str, BonePose], side: str, amount: float
-) -> dict[str, BonePose]:
-    """One idle swing of one leg, off the bumper and back onto it.
-
-    A man who has waited twenty years on the nose of his own car does
-    not sit still, and this is the cheapest thing he can be doing that
-    is not the coin: he knocks a heel off the bumper and lets it drop
-    back. Twenty degrees out of the knee lifts the boot about six
-    centimetres, which is small in metres and unmistakable in motion.
-
-    ONE LEG AT A TIME, and that is a contract rather than a preference.
-    The perch validator measures his seat against the lowest drawn point
-    of the whole model every frame, and on this design that point is a
-    boot sole. So the loop is authored to keep the other boot on the
-    metal throughout - both are levelled to the millimetre in the base
-    pose for exactly this - and the measurement never notices that
-    anything moved. Two legs up at once would swing the seat by the full
-    amplitude and read as a man levitating off his own bonnet.
-
-    Every angle is read off the base pose rather than re-typed, so
-    re-converging the legs against the car moves the kick with them.
-    """
-
-    swings = (
-        (f"thigh.{side}", -3.0),
-        (f"shin.{side}", -20.0),
-        (f"foot.{side}", -6.0),
-    )
-    kicked: dict[str, BonePose] = {}
-    for bone_name, degrees in swings:
-        rest = base[bone_name]
-        pitch, yaw, roll = rest.rotation_degrees
-        kicked[bone_name] = BonePose(
-            rotation_degrees=(pitch + degrees * amount, yaw, roll),
-            location_m=rest.location_m,
-        )
-    return kicked
-
-
-# --- The ordinary citizen gait -------------------------------------------
-#
-# THIS IS THE HERO'S OWN WALK, TRANSPLANTED. `tools/player_3d_model_common.py`
-# authors `Walk` as an eight-key cycle - contact, down, pass, up for each leg
-# - over `1.0 s` at `24` fps, and every leg, pelvis, spine, chest, head, arm
-# and hand key below is copied from it verbatim. It transfers without
-# retargeting because both rigs are the same 31-bone NpcHumanV2 skeleton with
-# the same rest pose; `npc_v2_bone_specs()` reproduces Hero V2's landmarks to
-# the millimetre.
-#
-# THE ARMS ARE HIS AIM VECTORS, NOT ROTATIONS. The hero points each upper arm
-# at an armature-space `target_direction` - a hanging arm is `(0.06, 0, -0.33)`,
-# straight down and a hand's width out - and keys the forearm and hand as
-# plain bone-local rotations under it. Until 2026-09-05 this recipe
-# re-expressed those aims as X rotations "of the same magnitude" and merged
-# them OVER each design's base arms. On the shared A-pose rig the upper arm's
-# local X axis points back and up, not sideways, so an X turn is abduction,
-# not a forward swing: the base's hang was thrown away, every street copy
-# stood in the bind A-pose and flapped +-25 deg like a bird, and the street
-# idle - `1.2 deg` of X on the bare rest - was the A-pose outright. That is
-# what the user saw as arms held out sideways and a strange walk.
-# `BonePose.target_direction` now exists here and `apply_pose` solves it the
-# way his generator does, so the vectors are carried over unchanged.
-#
-# The cycle is a RECIPE rather than a clip: it is merged onto each design's
-# own STANDING base pose, and it owns more of it than the arms. The walk keys
-# pelvis, spine, chest and head from the hero's cycle and the idle's breath
-# zeroes spine, chest and head, so on the street a design keeps only its NECK
-# - and, in the idle, its pelvis (pitch and location offset) and legs. An
-# authored stoop in spine/chest/head never reaches the street clips; tune a
-# crossing stance through the neck and pelvis, or through this recipe. The
-# base's clavicles are reset too - the hang is measured from a rest shoulder,
-# and a design's own shoulder shaping (a hunch, a shrug) would tilt it.
-
-# The hero's relaxed arms: `relaxed_pose()` in his generator, verbatim.
-CITIZEN_HANGING_ARMS: dict[str, BonePose] = {
-    "clavicle.L": BonePose(),
-    "clavicle.R": BonePose(),
-    "upper_arm.L": BonePose(target_direction=(0.059, -0.014, -0.334)),
-    "upper_arm.R": BonePose(target_direction=(-0.047, -0.010, -0.334)),
-    "forearm.L": BonePose(rotation_degrees=(-4.0, 3.0, -2.0)),
-    "forearm.R": BonePose(rotation_degrees=(-5.0, -3.0, 2.0)),
-    "hand.L": BonePose(rotation_degrees=(2.0, -5.0, 2.0)),
-    "hand.R": BonePose(rotation_degrees=(2.0, 5.0, -2.0)),
-}
-
-# The bones the citizen recipe owns on every design it is merged onto.
-CITIZEN_ARM_BONES = tuple(CITIZEN_HANGING_ARMS)
 
 
 def citizen_arms(
@@ -13235,273 +12612,6 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "chest": BonePose(rotation_degrees=(3.0, -0.5, 0.8)),
         "head": BonePose(rotation_degrees=(1.0, 0.0, -0.5)),
     })
-    # ------------------------------------------------------- ferryman
-    ferry_wait = ferryman_base_pose()
-    ferry_wait_inhale = ferry_breath(ferry_wait, 1.0)
-    # The throw, and it is a throw now.
-    #
-    # It used to live entirely in the wrist: fourteen degrees of elbow,
-    # thirty-six of hand, and the shoulder and clavicle not keyed at all.
-    # The reasoning was that a big swing would read as a man throwing
-    # something away rather than one amusing himself, and at the size he
-    # is drawn that bought nothing - the coin moved and the man did not,
-    # so it read as a chip of light jumping beside a statue. It is now
-    # the whole arm: down to the hip, up on a nearly straight one, and
-    # giving on the catch. The hand travels 0.78 m instead of 0.06 m.
-    #
-    # Every angle below is MEASURED off the rig rather than posed by eye.
-    # The rest pose is a T, the eulers are bone-local, and none of this is
-    # derivable from the numbers already in this file: on `upper_arm.L`,
-    # MORE NEGATIVE X raises the hand (-90 puts it at his hip, -195 half
-    # a metre above his shoulder) and +Z carries it out away from the
-    # ribs, which is what stops the raised arm folding back beside his cap
-    # like a salute. Sweep it again before changing it.
-    #
-    # `chest`, `spine` and `pelvis` are deliberately absent. His RIGHT
-    # palm braces on the bonnet with three millimetres to spare and hangs
-    # off `clavicle.R` on the chest, so turning the torso into the throw
-    # would take that hand off the metal. The whole body of the gesture
-    # goes through `clavicle.L`, which is on the free side.
-    def ferry_toss(
-        base: dict[str, BonePose],
-        clavicle: tuple[float, float, float],
-        upper_arm: tuple[float, float, float],
-        forearm: tuple[float, float, float],
-        hand: tuple[float, float, float],
-        head: tuple[float, float, float],
-    ) -> dict[str, BonePose]:
-        return merge_pose(
-            base,
-            {
-                "clavicle.L": BonePose(rotation_degrees=clavicle),
-                "upper_arm.L": BonePose(rotation_degrees=upper_arm),
-                "forearm.L": BonePose(rotation_degrees=forearm),
-                "hand.L": BonePose(rotation_degrees=hand),
-                "head": BonePose(rotation_degrees=head),
-            },
-        )
-
-    # Wind-up: the arm swings down and the open palm carries the coin to
-    # his hip. The coin is not airborne until the next key, so it rides
-    # the hand all the way down.
-    ferry_wait_windup = ferry_toss(
-        ferry_wait,
-        (8.0, -4.0, 14.0), (-90.0, 4.0, 66.0), (-34.0, 40.0, 8.0),
-        (28.0, 20.0, -10.0), (4.0, -6.0, 2.0),
-    )
-    # Release, on the way up and moving. The wrist snaps through here;
-    # everything after it is the arm following the coin.
-    ferry_wait_flick = ferry_toss(
-        ferry_wait,
-        (4.0, -4.0, 10.0), (-116.0, 4.0, 74.0), (-54.0, 40.0, 8.0),
-        (-34.0, 20.0, -10.0), (-2.0, -6.0, 2.0),
-    )
-    # Still rising, with the coin above him. This key used to be the
-    # plain inhale, which is built off the BASE pose - so the forearm and
-    # the wrist snapped back to rest in mid-flight, within a frame or two
-    # of the coin reaching the top of its arc.
-    ferry_wait_lift = ferry_toss(
-        ferry_wait_inhale,
-        (-2.0, -4.0, 2.0), (-158.0, 4.0, 88.0), (-62.0, 40.0, 8.0),
-        (-10.0, 20.0, -10.0), (-9.0, -6.0, 2.0),
-    )
-    # Full extension, waiting for it: half a metre above his own shoulder
-    # on an almost straight arm, and clear of the cap by 0.38 m.
-    ferry_wait_reach = ferry_toss(
-        ferry_wait,
-        (-6.0, -4.0, -2.0), (-195.0, 4.0, 94.0), (-45.0, 40.0, 8.0),
-        (6.0, 20.0, -10.0), (-15.0, -5.0, 2.0),
-    )
-    # And gives with the catch, the way a caught weight is absorbed.
-    ferry_wait_catch = ferry_toss(
-        ferry_wait,
-        (-4.0, -4.0, 0.0), (-176.0, 4.0, 92.0), (-58.0, 40.0, 8.0),
-        (32.0, 20.0, -10.0), (-6.0, -7.0, 2.0),
-    )
-    # The arm coming back down to where it rests. Formerly a plain inhale
-    # too, and for the same reason it could not stay one: it would snap
-    # the whole arm home inside a single frame.
-    ferry_wait_settle = ferry_toss(
-        ferry_wait_inhale,
-        (2.0, -4.0, 6.0), (-160.0, 4.0, 80.0), (-84.0, 40.0, 8.0),
-        (16.0, 20.0, -10.0), (-2.0, -6.0, 2.0),
-    )
-    # Once a loop he looks up from the coin at the island instead.
-    ferry_wait_glance = merge_pose(
-        ferry_wait,
-        {
-            "neck": BonePose(rotation_degrees=(-2.0, -14.0, 0.0)),
-            "head": BonePose(rotation_degrees=(0.0, -12.0, 3.0)),
-        },
-    )
-
-    ferry_stand = ferryman_stand_pose()
-    ferry_step_l = merge_pose(
-        ferry_stand,
-        {
-            "thigh.L": BonePose(rotation_degrees=(-20.0, 0.0, 3.0)),
-            "shin.L": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
-            "thigh.R": BonePose(rotation_degrees=(14.0, 0.0, -3.0)),
-            "shin.R": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
-            "upper_arm.L": BonePose(rotation_degrees=(-14.0, 0.0, 62.0)),
-            "upper_arm.R": BonePose(rotation_degrees=(-2.0, 0.0, -62.0)),
-        },
-    )
-    ferry_step_r = merge_pose(
-        ferry_stand,
-        {
-            "thigh.R": BonePose(rotation_degrees=(-20.0, 0.0, -3.0)),
-            "shin.R": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
-            "thigh.L": BonePose(rotation_degrees=(14.0, 0.0, 3.0)),
-            "shin.L": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
-            "upper_arm.R": BonePose(rotation_degrees=(-14.0, 0.0, -62.0)),
-            "upper_arm.L": BonePose(rotation_degrees=(-2.0, 0.0, 62.0)),
-        },
-    )
-    ferry_pass_r = merge_pose(
-        ferry_stand,
-        {
-            "thigh.R": BonePose(rotation_degrees=(-6.0, 0.0, -3.0)),
-            "shin.R": BonePose(rotation_degrees=(26.0, 0.0, 0.0)),
-            "pelvis": BonePose(rotation_degrees=(2.0, 0.0, 0.0), location_m=(0, 0, 0.008)),
-        },
-    )
-    ferry_pass_l = merge_pose(
-        ferry_stand,
-        {
-            "thigh.L": BonePose(rotation_degrees=(-6.0, 0.0, 3.0)),
-            "shin.L": BonePose(rotation_degrees=(26.0, 0.0, 0.0)),
-            "pelvis": BonePose(rotation_degrees=(2.0, 0.0, 0.0), location_m=(0, 0, 0.008)),
-        },
-    )
-
-    ferry_drive = ferryman_drive_pose()
-    ferry_drive_breath = merge_pose(
-        ferry_drive,
-        {
-            "chest": BonePose(rotation_degrees=(1.5, 0.0, 0.0)),
-            "clavicle.L": BonePose(rotation_degrees=(3.0, -3.0, 6.0)),
-            "clavicle.R": BonePose(rotation_degrees=(3.0, 3.0, -6.0)),
-        },
-    )
-    # The push off the metal: the bracing arm straightens hard and the
-    # hips leave the bonnet before anything else has moved. This used to
-    # open the board transition, back when getting off the car and getting
-    # into it were one three-quarter-second clip; it now opens the DROP,
-    # which is the only half of that it was ever really about.
-    ferry_drop_push = merge_pose(
-        ferry_wait,
-        {
-            "pelvis": BonePose(rotation_degrees=(-2.0, 0.0, 0.0), location_m=(0, -0.04, 0.06)),
-            "spine": BonePose(rotation_degrees=(6.0, 4.0, 0.0)),
-            "upper_arm.R": BonePose(rotation_degrees=(-6.0, -10.0, -76.0)),
-            "thigh.L": BonePose(rotation_degrees=(-32.0, 0.0, 3.0)),
-            "thigh.R": BonePose(rotation_degrees=(-28.0, 0.0, -8.0)),
-            "head": BonePose(rotation_degrees=(-2.0, -18.0, 2.0)),
-        },
-    )
-    # In the air. Sampled between the two authored postures rather than
-    # posed from scratch: both ends of this drop are converged shapes -
-    # the perch against the car's bumper, the stance against the ground -
-    # and anything hand-written in between would drift off the line they
-    # already describe. Only the legs and the bow get their own numbers,
-    # because they are what the drop is; the arms coming down off the
-    # brace are exactly the interpolation.
-    ferry_drop_air = interpolate_pose(ferry_wait, ferry_stand, 0.55)
-    # Boots down, knees taking it, head over the landing. Measured rather
-    # than eyeballed: this puts his soles 16 mm over the plane his stand
-    # pose sits on, which is a landing rather than a stamp, and the next
-    # two keys close that to nothing.
-    ferry_drop_land = merge_pose(
-        interpolate_pose(ferry_wait, ferry_stand, 0.90),
-        {
-            "spine": BonePose(rotation_degrees=(11.0, 0.0, 0.0)),
-            "chest": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
-            "head": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
-            "thigh.L": BonePose(rotation_degrees=(-26.0, 0.0, 3.0)),
-            "shin.L": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
-            "foot.L": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
-            "thigh.R": BonePose(rotation_degrees=(-24.0, 0.0, -3.0)),
-            "shin.R": BonePose(rotation_degrees=(28.0, 0.0, 0.0)),
-            "foot.R": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
-        },
-    )
-    ferry_drop_rise = interpolate_pose(ferry_drop_land, ferry_stand, 0.60)
-
-    # ---------------------------------------------------- the door
-    # He takes the handle with his LEFT hand, and that is geometry rather
-    # than preference: the car is left-hand drive, so with the rig facing
-    # its own -Y the driver's door is on his left in the cabin and dead
-    # ahead of him on the way in.
-    #
-    # All three arm shapes below are SOLVED, not posed. This rig's
-    # shoulder Eulers are not guessable - the same trap the bracing arm
-    # of the perch fell into - so each one came out of a sweep against a
-    # hand target: 0.43 m in front of him at the car's waist line for the
-    # handle, drawn back and across for the pull, and 0.63 m out to his
-    # left for the door edge once he is sitting down. Re-pose any of them
-    # by eye and he mimes at air.
-    ferry_door_reach = merge_pose(
-        ferry_stand,
-        {
-            "spine": BonePose(rotation_degrees=(12.0, 6.0, 0.0)),
-            "chest": BonePose(rotation_degrees=(6.0, 8.0, 0.0)),
-            "upper_arm.L": BonePose(rotation_degrees=(-90.0, 0.0, 60.0)),
-            "forearm.L": BonePose(rotation_degrees=(-60.0, 0.0, 0.0)),
-            "hand.L": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
-        },
-    )
-    ferry_door_pull = merge_pose(
-        ferry_stand,
-        {
-            "spine": BonePose(rotation_degrees=(4.0, -8.0, 0.0)),
-            "chest": BonePose(rotation_degrees=(2.0, -10.0, 0.0)),
-            "upper_arm.L": BonePose(rotation_degrees=(-20.0, -10.0, 20.0)),
-            "forearm.L": BonePose(rotation_degrees=(-80.0, 0.0, 0.0)),
-            "hand.L": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
-            # Weight going back onto the rear foot as the door comes.
-            "thigh.L": BonePose(rotation_degrees=(10.0, 0.0, 3.0)),
-            "thigh.R": BonePose(rotation_degrees=(-8.0, 0.0, -3.0)),
-        },
-    )
-    ferry_door_clear = merge_pose(
-        ferry_stand,
-        {
-            "spine": BonePose(rotation_degrees=(2.0, -6.0, 0.0)),
-            "head": BonePose(rotation_degrees=(0.0, -8.0, 0.0)),
-        },
-    )
-    # Getting in. The three sampled amounts track the ROOT's own travel
-    # into the seat in LastRouteFerrymanBoardingTimeline - 0.22, 0.70 and
-    # 0.97 at the keys below - so the pose and the metres arrive together
-    # instead of him sitting down in mid-air and sliding in afterwards.
-    ferry_seat_step = merge_pose(
-        interpolate_pose(ferry_stand, ferry_drive, 0.22),
-        {
-            "spine": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
-            "chest": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
-            "head": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
-        },
-    )
-    ferry_seat_settle = merge_pose(
-        interpolate_pose(ferry_stand, ferry_drive, 0.70),
-        {
-            "spine": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
-            "head": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
-        },
-    )
-    ferry_seat_down = interpolate_pose(ferry_stand, ferry_drive, 0.97)
-    ferry_door_shut = merge_pose(
-        ferry_drive,
-        {
-            "spine": BonePose(rotation_degrees=(10.0, -14.0, 0.0)),
-            "chest": BonePose(rotation_degrees=(4.0, -16.0, 0.0)),
-            "upper_arm.L": BonePose(rotation_degrees=(-20.0, 0.0, 30.0)),
-            "forearm.L": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
-            "hand.L": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
-        },
-    )
-
     chess_stand = chess_player_stand_pose()
 
     def chess_breath(amount: float) -> dict[str, BonePose]:
@@ -14207,90 +13317,6 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (0.8125, shelter_sleeping_exhale),
             (0.875, shelter_sleeping_inhale),
             (1.0, shelter_sleeping),
-        ),
-        # The Ferryman's wait. A quarter-loop breath grid, exactly the
-        # fisherman's contract, plus the one thing he does. The coin
-        # leaves his palm at 0.0625 and lands back in it at 0.3125; the
-        # hand rises through the throw and drops to meet the fall,
-        # because a hand that stays still while a coin arcs off it reads
-        # as the coin being fired rather than flicked.
-        #
-        # He also swings his legs, and the three kicks below are placed
-        # on keys whose NEIGHBOURS leave that leg at rest, so each kick
-        # is one clean rise and fall and the other boot never leaves the
-        # bumper. Right, left, and a half-hearted right on the way out:
-        # unevenly spaced on purpose, because a man idling his feet is
-        # not a metronome.
-        # The release and the catch keys are a CONTRACT with
-        # `LastRouteFerrymanPresentation.TossReleasePhase` and
-        # `TossCatchPhase` (1/16 and 5/16), which is where the runtime
-        # hands the coin over to its own arc and takes it back. Those two
-        # times may not move. The wind-up before the release and the three
-        # keys carrying the arm up and back down between them are free,
-        # and the throw needs all of them: the arm covers 0.78 m, and on
-        # the old four-key grid it did that in two frames and snapped back
-        # to rest in the middle of the coin's flight.
-        "FerrymanWait": (
-            (0.0, ferry_wait),
-            (1.0 / 24.0, ferry_wait_windup),
-            (0.0625, ferry_wait_flick),
-            (0.125, ferry_wait_lift),
-            (0.25, merge_pose(
-                ferry_wait_reach, ferry_kick(ferry_wait, "R", 1.0))),
-            (0.3125, ferry_wait_catch),
-            (0.375, ferry_wait_settle),
-            (0.5, ferry_wait),
-            (0.625, merge_pose(
-                ferry_wait_inhale, ferry_kick(ferry_wait, "L", 1.0))),
-            (0.75, ferry_wait_glance),
-            (0.875, merge_pose(
-                ferry_wait_inhale, ferry_kick(ferry_wait, "R", 0.5))),
-            (1.0, ferry_wait),
-        ),
-        "FerrymanTrudge": (
-            (0.0, ferry_step_l),
-            (0.25, ferry_pass_r),
-            (0.5, ferry_step_r),
-            (0.75, ferry_pass_l),
-            (1.0, ferry_step_l),
-        ),
-        # Off the bonnet and onto the lot. One second, and the landing key
-        # at 0.62 is a CONTRACT: the runtime drops his root on the same
-        # fraction and kicks the car's springs there, so a man whose boots
-        # touch at 0.5 would rock a car he is still falling past. Opens on
-        # the exact base pose of FerrymanWait and closes on the exact base
-        # pose of FerrymanTrudge, so the wait crosses in and the walk
-        # crosses out with nothing to blend at either end.
-        "FerrymanDismount": (
-            (0.0, ferry_wait),
-            (0.18, ferry_drop_push),
-            (0.42, ferry_drop_air),
-            (0.62, ferry_drop_land),
-            (0.82, ferry_drop_rise),
-            (1.0, ferry_stand),
-        ),
-        # Standing at his own door, and then behind his own wheel. Four
-        # of these keys are contracts with
-        # LastRouteFerrymanBoardingTimeline rather than free choices: the
-        # leaf starts moving at 0.16 and is open at 0.34, the root leaves
-        # the standing point at 0.36 and arrives at 0.78, and the leaf is
-        # pulled shut between 0.84 and 0.98. Re-time the grid without
-        # re-timing those and he walks through his own door.
-        "FerrymanBoard": (
-            (0.0, ferry_stand),
-            (0.10, ferry_door_reach),
-            (0.22, ferry_door_pull),
-            (0.34, ferry_door_clear),
-            (0.48, ferry_seat_step),
-            (0.62, ferry_seat_settle),
-            (0.74, ferry_seat_down),
-            (0.88, ferry_door_shut),
-            (1.0, ferry_drive),
-        ),
-        "FerrymanDrive": (
-            (0.0, ferry_drive),
-            (0.5, ferry_drive_breath),
-            (1.0, ferry_drive),
         ),
         "MotherRock": (
             (0.0, mother_settled),
@@ -16765,15 +15791,7 @@ def ground_actions_per_archetype(
             bake_constant_pelvis_offset(result, grounded_actions)
         reports = validate_animated_grounding(result, actions, spec)
         footprint_reports = validate_animated_footprints(result, actions, spec)
-        # `setdefault`, not `reports[...]`. The two validators do not cover
-        # the same clips and are not meant to: grounding SKIPS a clip that
-        # leaves its seat, because a dismount has no seat to measure halfway
-        # through, while the footprint sweep still measures the floor it
-        # crosses - and rightly, since that is the clip that crosses most of
-        # it. Indexing assumed every footprint had a grounding entry and
-        # killed `--archetype all` outright with a KeyError on
-        # `FerrymanDismount`, which is why the shared clip bank could not be
-        # regenerated at all. Footprint data stands on its own.
+        # A transition can have footprint data while skipping seated grounding.
         for action_name, footprint_report in footprint_reports.items():
             reports.setdefault(action_name, {}).update(footprint_report)
         grounding.update(reports)
@@ -17122,16 +16140,7 @@ def build_cafe_animation_library(config: argparse.Namespace) -> None:
 
 
 def build_mother_animation_library(config: argparse.Namespace) -> None:
-    """Her own one-clip bank.
-
-    Kept separate for a reason that is not aesthetic: rebuilding the shared
-    City locomotion bank crashes on the committed tree. `FerrymanDismount`
-    is a `leaves_seat` clip, so `validate_animated_grounding` skips it while
-    `validate_animated_footprints` still reports it, and merging the two
-    raises `KeyError: 'FerrymanDismount'`. That bug is not this feature's to
-    fix - a task may not quietly rebuild a neighbouring system it happened
-    to touch - so she is built without regenerating that bank at all.
-    """
+    """Her own one-clip bank, independent of the City locomotion library."""
 
     build_named_animation_library(
         config,

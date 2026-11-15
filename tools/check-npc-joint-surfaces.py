@@ -42,19 +42,6 @@ def check_npcs():
         except (RuntimeError, ValueError) as error:
             failures.append((spec.key, str(error)))
             print("NPC joint failure:", spec.key, error, flush=True)
-    standalone = (
-        ("driver", "build-city-bus-driver-3d-model.py", "DriverBuilder", "validate_driver_result"),
-    )
-    for name, filename, builder_name, validator_name in standalone:
-        try:
-            module = load("npc_joint_check_" + name, filename)
-            result = getattr(module, builder_name)().build()
-            report = getattr(module, validator_name)(result)
-            reports.append((name, report.triangle_count, len(joints.manifest(result)["seams"])))
-            print("NPC joints:", reports[-1], flush=True)
-        except (RuntimeError, ValueError) as error:
-            failures.append((name, str(error)))
-            print("NPC joint failure:", name, error, flush=True)
     cashier = load("npc_joint_check_cashier", "build-supermarket-cashier-3d-model.py")
     for variant in (cashier.NORMAL_VARIANT, cashier.WATCHER_VARIANT):
         try:

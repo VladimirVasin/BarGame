@@ -61,7 +61,8 @@ namespace BarPromenade.Tests.PlayMode
                         var driver = bus.DriverPresentation;
                         Assert.That(driver, Is.Not.Null);
                         Assert.That(driver.IsInitialized, Is.True);
-                        Assert.That(driver.Registry.SourceTriangleCount, Is.InRange(4500, 8000));
+                        Assert.That(driver.Registry.Appearance.AppearanceKey,
+                            Is.EqualTo(DefaultNpcPopulation.BusDriverId(city.BusPlan.Number, 0)));
                         driver.ApplyPose(0f, 0f, 0f);
                         paused = GameTimeScaleRuntime.AcquirePause();
                         Vector3 fisherFace = body.HeadAnchor.position + Vector3.up * .13f;

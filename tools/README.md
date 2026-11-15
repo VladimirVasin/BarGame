@@ -55,9 +55,9 @@ asphalt12m. `build-city-port-foreman-3d-model.py`:`Foreman/PortForeman`
 model/manifest/actions/atlas/lower-face/chin-jowl/mouth/export check.
 `dialogue_face_atlas.py [--validate-only]`:face PNGs/manifest;no Blender.
 
-`build-last-route-{car,coin}-3d-model.py` and `build-last-route-cabin-actions.py`:
-launcher, `--validate-only`; sedan and anchors, coin and pile, driver/passenger clips.
-Car textures use NumPy. `LastRouteCabinAssetSetup.BuildOrThrow` imports car and wardrobe.
+Sedan/coin/actions: `build-last-route-{car,coin}-3d-model.py`,
+`build-last-route-cabin-actions.py` (`--validate-only`); `LastRouteCabinAssetSetup`.
+Bus: `build-city-bus-textures.py --verify`, `build-city-bus-3d-model.py`, `CityBusAssetSetup`.
 
 Village: `build-village-{outdoor-player-actions,errands}-3d-model.py` via `run-blender.py`.
 Checks: `VillageOutdoorLife` (contacts/carry/reload), `VillageOutdoorPartners` (completion).

@@ -19,6 +19,7 @@ sys.dont_write_bytecode = True
 TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent
 sys.path.insert(0, str(TOOLS))
+import last_route_driver_poses
 
 
 def source_module(name, file):
@@ -167,7 +168,7 @@ def apply(rig, value):
 
 
 def driver_actions(rig):
-    keys=legacy.animation_keys()
+    keys=last_route_driver_poses.action_keys(legacy)
     sole={s:foot_contact(rig,"CLO_Boot_workSole",s) for s in ("L","R")}
     heel={s:foot_contact(rig,"CLO_Boot_workSole",s,heel=True) for s in ("L","R")}
     scale=worker.HEIGHT_SCALE

@@ -88,10 +88,7 @@ namespace BarPromenade.Tests.PlayMode
                 new PrefabCase("shelter resident", shelter.StandingPrefab),
                 new PrefabCase("cafe woman", cafe.PairWomanPrefab),
                 new PrefabCase("cashier", cashier.CashierPrefab),
-                new PrefabCase("default bartender", DefaultNpcCatalog.GetPrefab()),
-                new PrefabCase(
-                    "bus driver",
-                    CityBusDriverResources.LoadPrefab())
+                new PrefabCase("shared worker", DefaultNpcCatalog.GetPrefab())
             };
         }
 

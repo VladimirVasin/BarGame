@@ -16,6 +16,9 @@ namespace BarPromenade
         public const float MaximumSuspensionRoll = 1f;
         public const float MaximumWiperSweepDegrees = 40f;
 
+        private const float DoorUnseatPhase = 0.30f;
+        private const float DoorUnseatDistance = 0.12f;
+        private const float DoorSlideDistance = 0.80f;
         private const float MinimumWiperIntensity = 0.02f;
         private const float MinimumWiperHertz = 0.35f;
         private const float MaximumWiperHertz = 1.15f;
@@ -32,10 +35,6 @@ namespace BarPromenade
         private const float AccelerationPitchScale = 0.12f;
         private const float SteeringRollScale = 0.78f;
         private const float SteeringWheelRatio = 3.55f;
-        private const float HeadlightBaseIntensity = 14f;
-        private const float HeadlightRange = 22f;
-        private const float HeadlightSpotAngle = 48f;
-        private const float HeadlightInnerSpotAngle = 28f;
         private const float CabinLightBaseIntensity = 7.5f;
         private const float CabinLightRange = 3.6f;
         // World height of the pendant bulb centres authored by
@@ -63,13 +62,11 @@ namespace BarPromenade
         private static readonly int BusForwardId =
             Shader.PropertyToID("_BusForwardWS");
         private static readonly Color HeadlightEmission =
-            new Color(4.2f, 3.55f, 2.35f);
+            LastRouteCarHeadlights.LensColor * LastRouteCarHeadlights.LensEmission;
         private static readonly Color TailLightEmission =
             new Color(3.5f, 0.10f, 0.035f);
         private static readonly Color CabinLightEmission =
             new Color(3.1f, 2.0f, 1.05f);
-        private static readonly Color HeadlightColor =
-            new Color(1f, 0.85f, 0.58f);
         private static readonly Color CabinLightColor =
             new Color(1f, 0.65f, 0.34f);
 
@@ -129,7 +126,9 @@ namespace BarPromenade
         private float suspensionHeave;
         private float suspensionPitch;
         private float suspensionRoll;
-        private Vector3 doorHingeAxisLocal = Vector3.up;
+        private Vector3 cabinDoorHingeAxisLocal = Vector3.up;
+        private Vector3 doorOutwardLocal;
+        private Vector3 doorForwardLocal;
 
         public bool IsInitialized { get; private set; }
         public CityBusAssetRegistry Registry => registry;
@@ -163,6 +162,9 @@ namespace BarPromenade
         public float SuspensionRoll => suspensionRoll;
         public IReadOnlyList<Light> HeadlightLights => headlightLights;
         public IReadOnlyList<Light> CabinLights => cabinLights;
+        private Renderer instrumentDetail;
+        private bool nearbyCabin = true;
+        private float pendingDriverPoseTime;
 
         public void Initialize(CityBusAssetRegistry assetRegistry)
         {
@@ -178,16 +180,17 @@ namespace BarPromenade
             lightProperties = new MaterialPropertyBlock();
             CreateSuspensionHierarchy();
             CreateRuntimeLights();
-            CaptureDoorHingeAxis();
             CaptureBasePoses();
             CreateGlassRainOverlays();
             foreach (CityBusRendererBinding binding in registry.RendererBindings)
             {
                 if (binding?.Renderer == null) continue;
+                if (binding.Role == "instrument_detail") instrumentDetail = binding.Renderer;
                 rainSurfaces[binding.Renderer] = binding.MaterialSlot switch
                 {
                     CityBusMaterialSlot.Interior or CityBusMaterialSlot.Seat or CityBusMaterialSlot.Rail or
-                        CityBusMaterialSlot.Dashboard or CityBusMaterialSlot.CabinLight => CityRainSurfaceKind.Cover,
+                        CityBusMaterialSlot.Dashboard or CityBusMaterialSlot.CabinLight or CityBusMaterialSlot.Floor or
+                        CityBusMaterialSlot.InstrumentInk => CityRainSurfaceKind.Cover,
                     CityBusMaterialSlot.Glass or CityBusMaterialSlot.Headlight or CityBusMaterialSlot.TailLight => CityRainSurfaceKind.Glass,
                     CityBusMaterialSlot.Body or CityBusMaterialSlot.Accent or CityBusMaterialSlot.Metal => CityRainSurfaceKind.Metal,
                     _ => CityRainSurfaceKind.Stone
@@ -195,6 +198,14 @@ namespace BarPromenade
             }
             IsInitialized = true;
             ResetForPool();
+        }
+
+        internal void SetCabinViewDistance(float metres)
+        {
+            bool near = metres <= (nearbyCabin ? 24f : 20f);
+            if (nearbyCabin == near) return;
+            nearbyCabin = near;
+            if (instrumentDetail != null) instrumentDetail.forceRenderingOff = !near;
         }
 
         // Numerals on the front destination box, both bodysides and the rear cap.
@@ -218,7 +229,7 @@ namespace BarPromenade
                 label.text = digits;
                 label.fontSize = 8f;
                 label.ForceMeshUpdate(ignoreActiveState: true);
-                float targetHeight = i == 0 ? .26f : .48f;
+                float targetHeight = i == 2 ? .48f : .26f;
                 float height = frame.TransformVector(Vector3.up * BoundsForFace(label, i).size.y).magnitude;
                 if (height < .001f) throw new InvalidOperationException("The city bus route number has no visible glyphs.");
                 label.fontSize *= targetHeight / height;
@@ -229,9 +240,9 @@ namespace BarPromenade
         }
 
         // TMP textBounds includes the font's ascenders and descenders. On the
-        // narrow front display, fit the actual ink to two thirds of its 38 cm face.
+        // narrow front display and between the side mouldings, fit the actual ink.
         private static Bounds BoundsForFace(TMPro.TextMeshPro label, int face) =>
-            face == 0 ? DigitInkBounds(label) : label.textBounds;
+            face == 2 ? label.textBounds : DigitInkBounds(label);
 
         internal static Bounds DigitInkBounds(TMPro.TextMeshPro label)
         {
@@ -273,14 +284,13 @@ namespace BarPromenade
             Color32 cream = new Color32(247, 235, 205, 255);
             routeLabels[0] = Create("Route number - front", mount.position + transform.forward * .019f,
                 transform.forward, new Vector2(1.3f, .36f), new Color32(19, 20, 19, 255));
-            // The door and wheel openings end outside this solid bay; the painted
-            // accent starts at 1.38 m. The back number is above the bumper, between lamps.
-            routeLabels[1] = Create("Route number - doors", transform.TransformPoint(new Vector3(1.201f, 1.04f, .70f)),
-                transform.right, new Vector2(1f, .56f), cream);
+            // Put the ink between the 1.08 m rub rail and the 1.40 m accent.
+            routeLabels[1] = Create("Route number - doors", transform.TransformPoint(new Vector3(1.201f, 1.235f, .70f)),
+                transform.right, new Vector2(1f, .32f), cream);
             routeLabels[2] = Create("Route number - rear", transform.TransformPoint(new Vector3(0f, 1.32f, -4.133f)),
                 -transform.forward, new Vector2(1f, .56f), cream);
-            routeLabels[3] = Create("Route number - left", transform.TransformPoint(new Vector3(-1.201f, 1.04f, .70f)),
-                -transform.right, new Vector2(1f, .56f), cream);
+            routeLabels[3] = Create("Route number - left", transform.TransformPoint(new Vector3(-1.201f, 1.235f, .70f)),
+                -transform.right, new Vector2(1f, .32f), cream);
 
             TMPro.TextMeshPro Create(string name, Vector3 centre, Vector3 facing, Vector2 size, Color32 ink)
             {
@@ -293,7 +303,7 @@ namespace BarPromenade
             }
         }
 
-        public void AttachDriver(CityBusDriverAssetRegistry driverRegistry)
+        public void AttachDriver(CityBusDriverRig driverRegistry)
         {
             if (!IsInitialized)
             {
@@ -423,21 +433,22 @@ namespace BarPromenade
                 return;
             }
 
-            DoorOpenness = IsFinite(openness01)
+            float openness = IsFinite(openness01)
                 ? Mathf.Clamp01(openness01)
                 : 0f;
-            ApplyDoorLeafPose(
-                frontDoorForwardLeafBase,
-                DoorOpenness);
-            ApplyDoorLeafPose(
-                frontDoorRearwardLeafBase,
-                -DoorOpenness);
-            ApplyDoorLeafPose(
-                rearDoorForwardLeafBase,
-                DoorOpenness);
-            ApplyDoorLeafPose(
-                rearDoorRearwardLeafBase,
-                -DoorOpenness);
+            if (openness == DoorOpenness) return;
+            DoorOpenness = openness;
+            ApplyAxisPose(frontDoorForwardLeafBase, MaximumDoorAngle * openness, cabinDoorHingeAxisLocal);
+
+            // Clear the jamb and the rub rail before moving along the skin.
+            // The same path runs in reverse so the glass closes flush again.
+            Vector3 outward = doorOutwardLocal * Mathf.SmoothStep(0f, DoorUnseatDistance,
+                openness / DoorUnseatPhase);
+            Vector3 along = doorForwardLocal * Mathf.SmoothStep(0f, DoorSlideDistance,
+                (openness - DoorUnseatPhase) / (1f - DoorUnseatPhase));
+            OffsetDoor(frontDoorRearwardLeafBase, outward - along);
+            OffsetDoor(rearDoorForwardLeafBase, outward + along);
+            OffsetDoor(rearDoorRearwardLeafBase, outward - along);
         }
 
         public void SetNightFactor(float factor)
@@ -571,6 +582,8 @@ namespace BarPromenade
             suspensionHeave = 0f;
             suspensionPitch = 0f;
             suspensionRoll = 0f;
+            pendingDriverPoseTime = 0f;
+            SetCabinViewDistance(0f);
             RestorePose(suspensionVisualBase);
             RestorePose(frontDoorForwardLeafBase);
             RestorePose(frontDoorRearwardLeafBase);
@@ -629,6 +642,11 @@ namespace BarPromenade
                 registry.RearDoorForwardLeaf);
             rearDoorRearwardLeafBase = new TransformPose(
                 registry.RearDoorRearwardLeaf);
+            cabinDoorHingeAxisLocal = ResolveVerticalAxisLocal(registry.FrontDoorForwardLeaf, transform);
+            // All leaves are direct children of Body. Capture the vehicle basis
+            // there once so the sliding tracks also follow suspension pitch/roll.
+            doorOutwardLocal = registry.Body.InverseTransformVector(transform.TransformVector(Vector3.right));
+            doorForwardLocal = registry.Body.InverseTransformVector(transform.TransformVector(Vector3.forward));
             frontLeftWheelBase = new TransformPose(
                 registry.FrontLeftWheel);
             frontRightWheelBase = new TransformPose(
@@ -714,19 +732,6 @@ namespace BarPromenade
                 bodyParent,
                 detachedRoots);
             body.SetParent(suspensionVisual, true);
-        }
-
-        private void CaptureDoorHingeAxis()
-        {
-            if (suspensionVisual == null)
-            {
-                doorHingeAxisLocal = Vector3.up;
-                return;
-            }
-
-            doorHingeAxisLocal = suspensionVisual
-                .InverseTransformDirection(transform.up)
-                .normalized;
         }
 
         /// <summary>
@@ -1071,29 +1076,16 @@ namespace BarPromenade
 
         private void CreateRuntimeLights()
         {
-            Bounds bounds = registry.LocalBounds;
-            float headlightZ = bounds.max.z + 0.06f;
-            Vector3 headlightDirection =
-                new Vector3(0f, -0.12f, 1f).normalized;
-            headlightLights = new[]
+            headlightLights = new[] { Headlight("L"), Headlight("R") };
+            Light Headlight(string side)
             {
-                CreateSpotLight(
-                    "Bus Headlight Left",
-                    new Vector3(-0.72f, 0.96f, headlightZ),
-                    headlightDirection,
-                    HeadlightColor,
-                    HeadlightRange,
-                    HeadlightSpotAngle,
-                    HeadlightInnerSpotAngle),
-                CreateSpotLight(
-                    "Bus Headlight Right",
-                    new Vector3(0.72f, 0.96f, headlightZ),
-                    headlightDirection,
-                    HeadlightColor,
-                    HeadlightRange,
-                    HeadlightSpotAngle,
-                    HeadlightInnerSpotAngle)
-            };
+                Transform lens = CityPedestrianHandProps.FindSocket(registry.Body, "ANCHOR_Headlight." + side)
+                    ?? throw new InvalidOperationException("Missing midibus lens anchor " + side);
+                return CreateSpotLight("Bus Headlight " + side, transform.InverseTransformPoint(lens.position),
+                    new Vector3(0f, -CityRoadHeadlightProfile.DownwardAim, 1f),
+                    CityRoadHeadlightProfile.Color, CityRoadHeadlightProfile.Range,
+                    CityRoadHeadlightProfile.OuterAngle, CityRoadHeadlightProfile.InnerAngle);
+            }
 
             float cabinY = CabinLampHeight;
             cabinLights = new[]
@@ -1310,7 +1302,7 @@ namespace BarPromenade
                 CabinLightEmission * cabinFactor);
             SetRuntimeLightFactor(
                 headlightLights,
-                HeadlightBaseIntensity,
+                CityRoadHeadlightProfile.Intensity,
                 NightFactor);
             SetRuntimeLightFactor(
                 cabinLights,
@@ -1374,44 +1366,19 @@ namespace BarPromenade
 
             if (driverPresentation != null)
             {
+                pendingDriverPoseTime += deltaTime;
+                if (!nearbyCabin && pendingDriverPoseTime < .1f) return;
                 driverPresentation.ApplyPose(
                     driverDoorSample.RightHandButtonBlend,
                     driverDoorSample.DoorLook01,
-                    deltaTime);
+                    pendingDriverPoseTime);
+                pendingDriverPoseTime = 0f;
             }
         }
 
-        private void ApplyDoorLeafPose(
-            TransformPose pose,
-            float signedOpenness)
+        private static void OffsetDoor(TransformPose pose, Vector3 offset)
         {
-            if (pose.Target == null)
-            {
-                return;
-            }
-
-            pose.Target.localPosition = pose.LocalPosition;
-            pose.Target.localRotation = pose.LocalRotation;
-            Vector3 hingeAxis = ResolveDoorHingeAxis();
-            pose.Target.rotation =
-                Quaternion.AngleAxis(
-                    MaximumDoorAngle * signedOpenness,
-                    hingeAxis) *
-                pose.Target.rotation;
-        }
-
-        private Vector3 ResolveDoorHingeAxis()
-        {
-            if (suspensionVisual == null)
-            {
-                return transform.up;
-            }
-
-            Vector3 hingeAxis = suspensionVisual.TransformDirection(
-                doorHingeAxisLocal);
-            return hingeAxis.sqrMagnitude > 0.0001f
-                ? hingeAxis.normalized
-                : transform.up;
+            if (pose.Target != null) pose.Target.localPosition = pose.LocalPosition + offset;
         }
 
         private static void ApplyWheelPose(

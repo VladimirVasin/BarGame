@@ -1,7 +1,7 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
   "generator_version": "4.5.2",
-  "blender_version": "5.0.1",
+  "blender_version": "5.2.3 LTS",
   "skeleton_source": "NpcHumanV2 compatible A-pose v4.0.0",
   "anatomy_standard": "NpcHumanV2",
   "rest_pelvis_height_m": 0.835,
@@ -9,7 +9,7 @@
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 53,
+  "clip_count": 48,
   "clips": [
     {
       "name": "LampshadeIdle",
@@ -1294,185 +1294,6 @@
       ]
     },
     {
-      "name": "FerrymanWait",
-      "archetype": "last_route_ferryman_v1",
-      "duration_seconds": 4.0,
-      "frame_start": 0,
-      "frame_end": 96,
-      "loop": true,
-      "one_shot": false,
-      "in_place": true,
-      "authored_posture": "perched on the car's bonnet, right hand braced behind the hip, left forearm up with the palm open",
-      "gait": "four slow breaths, one coin thrown with the whole arm and caught - wound down to the hip, released at 1/16 of the loop and caught at 5/16 on an arm at full stretch - and three idle kicks of one leg at a time off the bumper",
-      "keyed_bone_count": 31,
-      "loop_max_error": 1e-06,
-      "root_translation_range_m": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "seated": true,
-      "perched": true,
-      "perch_seat_height_min_m": 0.501525,
-      "perch_seat_height_max_m": 0.504255,
-      "perch_support_contact_min_m": 0.866865,
-      "perch_support_contact_max_m": 0.866865,
-      "perch_support_radius_m": 0.0,
-      "perch_pelvis_lift_m": -0.021778,
-      "perch_pelvis_planar_m": [
-        0.0,
-        0.011777
-      ],
-      "perch_contact_parts": [
-        "GEO_BootSole.L",
-        "GEO_BootSole.R"
-      ],
-      "seated_drop_m": 0.482476,
-      "animated_local_xz_min_m": [
-        -0.269598,
-        -0.269065
-      ],
-      "animated_local_xz_max_m": [
-        0.530182,
-        0.919651
-      ],
-      "animated_local_xz_size_m": [
-        0.79978,
-        1.188716
-      ]
-    },
-    {
-      "name": "FerrymanTrudge",
-      "archetype": "last_route_ferryman_v1",
-      "duration_seconds": 1.5,
-      "frame_start": 0,
-      "frame_end": 36,
-      "loop": true,
-      "one_shot": false,
-      "in_place": true,
-      "authored_posture": "upright in the long coat with the collar up",
-      "gait": "slow coat-heavy steps that do not hurry for anybody",
-      "keyed_bone_count": 31,
-      "loop_max_error": 0.0,
-      "root_translation_range_m": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0,
-      "animated_local_xz_min_m": [
-        -0.283708,
-        -0.44696
-      ],
-      "animated_local_xz_max_m": [
-        0.28418,
-        0.427986
-      ],
-      "animated_local_xz_size_m": [
-        0.567888,
-        0.874946
-      ]
-    },
-    {
-      "name": "FerrymanDismount",
-      "archetype": "last_route_ferryman_v1",
-      "duration_seconds": 1.0,
-      "frame_start": 0,
-      "frame_end": 24,
-      "loop": false,
-      "one_shot": true,
-      "in_place": true,
-      "authored_posture": "off the bonnet, one push from the bracing hand, down onto the lot",
-      "gait": "a hard shove down off the metal, both legs reaching for the ground, and a landing taken on bent knees",
-      "keyed_bone_count": 31,
-      "loop_max_error": 0.679862,
-      "root_translation_range_m": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "animated_local_xz_min_m": [
-        -0.281996,
-        -0.417649
-      ],
-      "animated_local_xz_max_m": [
-        0.283238,
-        0.863203
-      ],
-      "animated_local_xz_size_m": [
-        0.565234,
-        1.280852
-      ]
-    },
-    {
-      "name": "FerrymanBoard",
-      "archetype": "last_route_ferryman_v1",
-      "duration_seconds": 2.5,
-      "frame_start": 0,
-      "frame_end": 60,
-      "loop": false,
-      "one_shot": true,
-      "in_place": true,
-      "authored_posture": "standing at the driver's door, reaching for its handle",
-      "gait": "a pull on the handle and a step back as the door comes, then in under the roofline, down into the seat, and the door pulled shut with both hands arriving on the wheel",
-      "keyed_bone_count": 31,
-      "loop_max_error": 0.662347,
-      "root_translation_range_m": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "animated_local_xz_min_m": [
-        -0.34203,
-        -0.422468
-      ],
-      "animated_local_xz_max_m": [
-        0.598868,
-        0.918604
-      ],
-      "animated_local_xz_size_m": [
-        0.940899,
-        1.341072
-      ]
-    },
-    {
-      "name": "FerrymanDrive",
-      "archetype": "last_route_ferryman_v1",
-      "duration_seconds": 3.0,
-      "frame_start": 0,
-      "frame_end": 72,
-      "loop": true,
-      "one_shot": false,
-      "in_place": true,
-      "authored_posture": "seated at the wheel, both hands on the rim, chin level",
-      "gait": "a settled seated breath and nothing else; he is waiting again, only now he is waiting inside the car",
-      "keyed_bone_count": 31,
-      "loop_max_error": 0.0,
-      "root_translation_range_m": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "seated": true,
-      "seated_headroom_m": 0.952565,
-      "seated_drop_m": 0.209467,
-      "seated_contact_m": 0.062497,
-      "seated_floor_drop_limit_m": 0.22,
-      "animated_local_xz_min_m": [
-        -0.278323,
-        -0.149006
-      ],
-      "animated_local_xz_max_m": [
-        0.277786,
-        0.918592
-      ],
-      "animated_local_xz_size_m": [
-        0.556109,
-        1.067597
-      ]
-    },
-    {
       "name": "ChessStreetIdle",
       "archetype": "park_chess_player_v1",
       "duration_seconds": 2.0,
@@ -1861,5 +1682,5 @@
       ]
     }
   ],
-  "build_signature": "ac98df2854f01463e3c5a85e34a704649964ad4c2a9eed4853c594ddc9eae146"
+  "build_signature": "27b61a5a0bdd2236be091602c5e0dad8d4f022dee78790b2a3207e1c0d0e18bb"
 }

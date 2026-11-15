@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-city-bus-3d-model.py",
-  "generator_version": "1.8.0",
+  "generator_version": "2.0.0",
   "blender_version": "5.2.3 LTS",
-  "design_id": "road_v2_midibus_v1",
+  "design_id": "road_v2_midibus_v2",
   "display_name": "Road v2 City Midibus",
   "seed": 260811,
   "forward_axis": "-Y",
@@ -14,8 +14,8 @@
     "wheelbase": 4.5,
     "wheel_radius": 0.43
   },
-  "mesh_count": 48,
-  "triangle_count": 4906,
+  "mesh_count": 59,
+  "triangle_count": 21878,
   "bounds_min": [
     -1.36,
     -4.183,
@@ -32,23 +32,31 @@
   "visible_interior": true,
   "passenger_seat_count": 10,
   "standing_place_count": 3,
-  "build_signature": "dce118804dca3a01fe70fa2abf1fd5ed22db6192263a1fa6c550c70b5f11bf8b",
+  "build_signature": "d5090f55b2d697a3c61529ada6e09737cf3c8c73814bbfac42a29fadf8501a2e",
   "parts": [
+    {
+      "name": "GEO_ArchAndSillMouldings",
+      "role": "arch_and_sill",
+      "material_slot": "Trim",
+      "parent": "ROOT_Body",
+      "vertices": 408,
+      "triangles": 772
+    },
     {
       "name": "GEO_BodyAccent",
       "role": "body_accent",
       "material_slot": "Accent",
       "parent": "ROOT_Body",
       "vertices": 48,
-      "triangles": 72
+      "triangles": 80
     },
     {
       "name": "GEO_BodyShell",
       "role": "body_shell",
       "material_slot": "Body",
       "parent": "ROOT_Body",
-      "vertices": 96,
-      "triangles": 144
+      "vertices": 720,
+      "triangles": 1380
     },
     {
       "name": "GEO_CabinLampCollars",
@@ -67,84 +75,116 @@
       "triangles": 40
     },
     {
+      "name": "GEO_CabinStripHousings",
+      "role": "cabin_strip_housings",
+      "material_slot": "Dashboard",
+      "parent": "ROOT_Body",
+      "vertices": 72,
+      "triangles": 132
+    },
+    {
       "name": "GEO_ExteriorTrim",
       "role": "exterior_trim",
       "material_slot": "Trim",
       "parent": "ROOT_Body",
-      "vertices": 48,
-      "triangles": 72
+      "vertices": 168,
+      "triangles": 308
+    },
+    {
+      "name": "GEO_FasciaHousings",
+      "role": "fascia_housings",
+      "material_slot": "Trim",
+      "parent": "ROOT_Body",
+      "vertices": 168,
+      "triangles": 312
     },
     {
       "name": "GEO_FrontDoorForwardLeafFrames",
       "role": "door_frame",
       "material_slot": "Trim",
       "parent": "PIVOT_FrontDoorForwardLeaf",
-      "vertices": 24,
-      "triangles": 36
+      "vertices": 120,
+      "triangles": 220
     },
     {
       "name": "GEO_FrontDoorForwardLeafPanels",
       "role": "door_panel",
       "material_slot": "Body",
       "parent": "PIVOT_FrontDoorForwardLeaf",
-      "vertices": 16,
-      "triangles": 24
+      "vertices": 48,
+      "triangles": 88
     },
     {
       "name": "GEO_FrontDoorOuterPosts",
       "role": "door_post",
       "material_slot": "Trim",
       "parent": "ROOT_Body",
-      "vertices": 16,
-      "triangles": 24
+      "vertices": 96,
+      "triangles": 176
     },
     {
       "name": "GEO_FrontDoorRearwardLeafFrames",
       "role": "door_frame",
       "material_slot": "Trim",
       "parent": "PIVOT_FrontDoorRearwardLeaf",
-      "vertices": 24,
-      "triangles": 36
+      "vertices": 120,
+      "triangles": 220
     },
     {
       "name": "GEO_FrontDoorRearwardLeafPanels",
       "role": "door_panel",
       "material_slot": "Body",
       "parent": "PIVOT_FrontDoorRearwardLeaf",
-      "vertices": 16,
-      "triangles": 24
+      "vertices": 48,
+      "triangles": 88
+    },
+    {
+      "name": "GEO_GrilleAndMirrorFaces",
+      "role": "grille_and_mirrors",
+      "material_slot": "Metal",
+      "parent": "ROOT_Body",
+      "vertices": 624,
+      "triangles": 1192
     },
     {
       "name": "GEO_HubFL",
       "role": "wheel_hub",
       "material_slot": "Metal",
       "parent": "PIVOT_WheelFLRoll",
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 198,
+      "triangles": 368
     },
     {
       "name": "GEO_HubFR",
       "role": "wheel_hub",
       "material_slot": "Metal",
       "parent": "PIVOT_WheelFRRoll",
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 198,
+      "triangles": 368
     },
     {
       "name": "GEO_HubRL",
       "role": "wheel_hub",
       "material_slot": "Metal",
       "parent": "PIVOT_WheelRLRoll",
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 198,
+      "triangles": 368
     },
     {
       "name": "GEO_HubRR",
       "role": "wheel_hub",
       "material_slot": "Metal",
       "parent": "PIVOT_WheelRRRoll",
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 198,
+      "triangles": 368
+    },
+    {
+      "name": "GEO_MarkerLenses",
+      "role": "marker_lenses",
+      "material_slot": "MarkerLens",
+      "parent": "ROOT_Body",
+      "vertices": 192,
+      "triangles": 352
     },
     {
       "name": "GEO_MirrorArms",
@@ -159,88 +199,88 @@
       "role": "door_frame",
       "material_slot": "Trim",
       "parent": "PIVOT_RearDoorForwardLeaf",
-      "vertices": 24,
-      "triangles": 36
+      "vertices": 120,
+      "triangles": 220
     },
     {
       "name": "GEO_RearDoorForwardLeafPanels",
       "role": "door_panel",
       "material_slot": "Body",
       "parent": "PIVOT_RearDoorForwardLeaf",
-      "vertices": 16,
-      "triangles": 24
+      "vertices": 48,
+      "triangles": 88
     },
     {
       "name": "GEO_RearDoorOuterPosts",
       "role": "door_post",
       "material_slot": "Trim",
       "parent": "ROOT_Body",
-      "vertices": 16,
-      "triangles": 24
+      "vertices": 120,
+      "triangles": 220
     },
     {
       "name": "GEO_RearDoorRearwardLeafFrames",
       "role": "door_frame",
       "material_slot": "Trim",
       "parent": "PIVOT_RearDoorRearwardLeaf",
-      "vertices": 24,
-      "triangles": 36
+      "vertices": 120,
+      "triangles": 220
     },
     {
       "name": "GEO_RearDoorRearwardLeafPanels",
       "role": "door_panel",
       "material_slot": "Body",
       "parent": "PIVOT_RearDoorRearwardLeaf",
-      "vertices": 16,
-      "triangles": 24
+      "vertices": 48,
+      "triangles": 88
     },
     {
       "name": "GEO_TireFL",
       "role": "wheel_tire",
       "material_slot": "Rubber",
       "parent": "PIVOT_WheelFLRoll",
-      "vertices": 32,
-      "triangles": 60
+      "vertices": 192,
+      "triangles": 380
     },
     {
       "name": "GEO_TireFR",
       "role": "wheel_tire",
       "material_slot": "Rubber",
       "parent": "PIVOT_WheelFRRoll",
-      "vertices": 32,
-      "triangles": 60
+      "vertices": 192,
+      "triangles": 380
     },
     {
       "name": "GEO_TireRL",
       "role": "wheel_tire",
       "material_slot": "Rubber",
       "parent": "PIVOT_WheelRLRoll",
-      "vertices": 32,
-      "triangles": 60
+      "vertices": 192,
+      "triangles": 380
     },
     {
       "name": "GEO_TireRR",
       "role": "wheel_tire",
       "material_slot": "Rubber",
       "parent": "PIVOT_WheelRRRoll",
-      "vertices": 32,
-      "triangles": 60
+      "vertices": 192,
+      "triangles": 380
     },
     {
       "name": "GEO_Underbody",
       "role": "underbody",
       "material_slot": "Trim",
       "parent": "ROOT_Body",
-      "vertices": 24,
-      "triangles": 36
+      "vertices": 120,
+      "triangles": 220
     },
     {
       "name": "GEO_WindowFrames",
       "role": "window_frame",
       "material_slot": "Trim",
       "parent": "ROOT_Body",
-      "vertices": 160,
-      "triangles": 240
+      "vertices": 720,
+      "triangles": 1320
     },
     {
       "name": "GEO_WiperL",
@@ -263,64 +303,80 @@
       "role": "door_glass",
       "material_slot": "Glass",
       "parent": "PIVOT_FrontDoorForwardLeaf",
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "GLS_FrontDoorRearwardLeafGlass",
       "role": "door_glass",
       "material_slot": "Glass",
       "parent": "PIVOT_FrontDoorRearwardLeaf",
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "GLS_RearDoorForwardLeafGlass",
       "role": "door_glass",
       "material_slot": "Glass",
       "parent": "PIVOT_RearDoorForwardLeaf",
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "GLS_RearDoorRearwardLeafGlass",
       "role": "door_glass",
       "material_slot": "Glass",
       "parent": "PIVOT_RearDoorRearwardLeaf",
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "GLS_Windows",
       "role": "glass",
       "material_slot": "Glass",
       "parent": "ROOT_Body",
-      "vertices": 104,
-      "triangles": 156
+      "vertices": 360,
+      "triangles": 660
+    },
+    {
+      "name": "INT_CabinPanels",
+      "role": "cabin_panels",
+      "material_slot": "Interior",
+      "parent": "ROOT_Body",
+      "vertices": 96,
+      "triangles": 176
+    },
+    {
+      "name": "INT_ControlHardware",
+      "role": "control_hardware",
+      "material_slot": "Trim",
+      "parent": "ROOT_Body",
+      "vertices": 396,
+      "triangles": 756
     },
     {
       "name": "INT_Dashboard",
       "role": "dashboard",
       "material_slot": "Dashboard",
       "parent": "ROOT_Body",
-      "vertices": 32,
-      "triangles": 48
+      "vertices": 120,
+      "triangles": 220
     },
     {
       "name": "INT_DoorButton",
       "role": "door_button",
       "material_slot": "Accent",
       "parent": "PIVOT_DoorButton",
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "INT_DriverSeat",
       "role": "driver_seat",
       "material_slot": "Seat",
       "parent": "ROOT_Body",
-      "vertices": 24,
-      "triangles": 36
+      "vertices": 72,
+      "triangles": 132
     },
     {
       "name": "INT_Handrails",
@@ -331,20 +387,36 @@
       "triangles": 1484
     },
     {
+      "name": "INT_InstrumentMarks",
+      "role": "instrument_detail",
+      "material_slot": "InstrumentInk",
+      "parent": "ROOT_Body",
+      "vertices": 342,
+      "triangles": 564
+    },
+    {
       "name": "INT_InteriorSurfaces",
       "role": "interior_shell",
+      "material_slot": "Floor",
+      "parent": "ROOT_Body",
+      "vertices": 120,
+      "triangles": 220
+    },
+    {
+      "name": "INT_LiningAndSteps",
+      "role": "lining_and_steps",
       "material_slot": "Interior",
       "parent": "ROOT_Body",
-      "vertices": 40,
-      "triangles": 60
+      "vertices": 624,
+      "triangles": 1176
     },
     {
       "name": "INT_PassengerSeats",
       "role": "passenger_seats",
       "material_slot": "Seat",
       "parent": "ROOT_Body",
-      "vertices": 128,
-      "triangles": 192
+      "vertices": 512,
+      "triangles": 960
     },
     {
       "name": "INT_RearBench",
@@ -355,12 +427,20 @@
       "triangles": 150
     },
     {
+      "name": "INT_SeatEdging",
+      "role": "seat_edging",
+      "material_slot": "Trim",
+      "parent": "ROOT_Body",
+      "vertices": 384,
+      "triangles": 704
+    },
+    {
       "name": "INT_SeatFrames",
       "role": "seat_frames",
       "material_slot": "Metal",
       "parent": "ROOT_Body",
-      "vertices": 192,
-      "triangles": 320
+      "vertices": 1112,
+      "triangles": 1996
     },
     {
       "name": "INT_SteeringColumn",
@@ -391,32 +471,40 @@
       "role": "cabin_light",
       "material_slot": "CabinLight",
       "parent": "ROOT_Body",
-      "vertices": 24,
-      "triangles": 36
+      "vertices": 72,
+      "triangles": 132
     },
     {
       "name": "LGT_DestinationSign",
       "role": "destination_sign",
       "material_slot": "Destination",
       "parent": "ROOT_Body",
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
-      "name": "LGT_Headlights",
+      "name": "LGT_Headlight.L",
       "role": "headlight",
       "material_slot": "Headlight",
       "parent": "ROOT_Body",
-      "vertices": 16,
-      "triangles": 24
+      "vertices": 120,
+      "triangles": 236
+    },
+    {
+      "name": "LGT_Headlight.R",
+      "role": "headlight",
+      "material_slot": "Headlight",
+      "parent": "ROOT_Body",
+      "vertices": 120,
+      "triangles": 236
     },
     {
       "name": "LGT_TailLights",
       "role": "tail_light",
       "material_slot": "TailLight",
       "parent": "ROOT_Body",
-      "vertices": 16,
-      "triangles": 24
+      "vertices": 48,
+      "triangles": 88
     }
   ],
   "pivots": [
@@ -455,6 +543,40 @@
       "travel_m": 0.0
     },
     {
+      "name": "ANCHOR_DriverFoot.L",
+      "role": "driver_foot_l",
+      "parent": "ROOT_Body",
+      "local_position": [
+        0.82,
+        -3.66,
+        0.701
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "",
+      "travel_m": 0.0
+    },
+    {
+      "name": "ANCHOR_DriverFoot.R",
+      "role": "driver_foot_r",
+      "parent": "ROOT_Body",
+      "local_position": [
+        0.54,
+        -3.71,
+        0.711
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "",
+      "travel_m": 0.0
+    },
+    {
       "name": "ANCHOR_DriverSeat",
       "role": "driver_seat_anchor",
       "parent": "ROOT_Body",
@@ -479,6 +601,40 @@
         -0.72,
         -3.05,
         0.66
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "",
+      "travel_m": 0.0
+    },
+    {
+      "name": "ANCHOR_Headlight.L",
+      "role": "headlight_l",
+      "parent": "ROOT_Body",
+      "local_position": [
+        0.72,
+        -4.177,
+        0.96
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "",
+      "travel_m": 0.0
+    },
+    {
+      "name": "ANCHOR_Headlight.R",
+      "role": "headlight_r",
+      "parent": "ROOT_Body",
+      "local_position": [
+        -0.72,
+        -4.177,
+        0.96
       ],
       "local_rotation_degrees": [
         0.0,

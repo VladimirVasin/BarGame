@@ -14,11 +14,18 @@ namespace BarPromenade
             [SerializeField] private Texture2D atlas;
             [SerializeField] private Texture2D brunetteAtlas;
             [SerializeField] private Texture2D blondAtlas;
+            [SerializeField] private bool hasBlinkTile;
             public string Id => id;
             public Texture2D Atlas => atlas;
+            public bool HasBlinkTile => hasBlinkTile;
             public FaceBinding(string id, Texture2D atlas) : this(id, atlas, atlas, atlas) { }
             public FaceBinding(string id, Texture2D atlas, Texture2D brunetteAtlas, Texture2D blondAtlas)
-            { this.id = id; this.atlas = atlas; this.brunetteAtlas = brunetteAtlas; this.blondAtlas = blondAtlas; }
+                : this(id, atlas, brunetteAtlas, blondAtlas, false) { }
+            public FaceBinding(string id, Texture2D atlas, Texture2D brunetteAtlas, Texture2D blondAtlas, bool hasBlinkTile)
+            {
+                this.id = id; this.atlas = atlas; this.brunetteAtlas = brunetteAtlas; this.blondAtlas = blondAtlas;
+                this.hasBlinkTile = hasBlinkTile;
+            }
             public Texture2D GetAtlas(string hairColorId) => hairColorId switch
             {
                 "gray" => atlas, "brunette" => brunetteAtlas, "blond" => blondAtlas,
@@ -38,6 +45,7 @@ namespace BarPromenade
         [SerializeField] private FaceBinding[] faces = Array.Empty<FaceBinding>();
         [SerializeField] private Renderer[] permanentRenderers = Array.Empty<Renderer>();
         [SerializeField] private Renderer separateFaceRenderer;
+        [SerializeField] private Renderer blinkSurface;
         [SerializeField] private string currentFaceId;
         [SerializeField] private string appearanceKey;
         [SerializeField] private HairColorBinding[] hairColors = Array.Empty<HairColorBinding>();
@@ -45,6 +53,8 @@ namespace BarPromenade
         [SerializeField] private string currentHairColorId = "gray";
         [SerializeField] private NpcWardrobe wardrobe;
         private MaterialPropertyBlock properties;
+        private static readonly int BaseMapTransform = Shader.PropertyToID("_BaseMap_ST");
+        private bool blinkClosed;
         public IReadOnlyList<FaceBinding> Faces => faces;
         public string CurrentFaceId => currentFaceId;
         public string AppearanceKey => appearanceKey;
@@ -57,7 +67,7 @@ namespace BarPromenade
                 new HairColorBinding("brunette", Color.white), new HairColorBinding("blond", Color.white) }, Array.Empty<Renderer>());
 
         public void Configure(FaceBinding[] bindings, string defaultFaceId, HairColorBinding[] colors, Renderer[] hair,
-            Renderer faceRenderer = null)
+            Renderer faceRenderer = null, Renderer eyelidSurface = null)
         {
             if (bindings == null || bindings.Length == 0)
                 throw new ArgumentException("The default NPC needs authored faces.", nameof(bindings));
@@ -86,12 +96,16 @@ namespace BarPromenade
             if (permanent.Count == 0) throw new InvalidOperationException("Default NPC appearance requires its permanent body.");
             if (faceRenderer != null && !permanent.Contains(faceRenderer))
                 throw new ArgumentException("A separate face surface must be part of the permanent body.", nameof(faceRenderer));
+            if (Array.Exists(bindings, face => face.HasBlinkTile) &&
+                (eyelidSurface == null || !permanent.Contains(eyelidSurface)))
+                throw new ArgumentException("Blink tiles require the permanent painted face surface.", nameof(eyelidSurface));
             var uniqueHair = new HashSet<Renderer>();
             foreach (Renderer renderer in hair)
                 if (renderer == null || !permanent.Contains(renderer) || !uniqueHair.Add(renderer))
                     throw new ArgumentException("Hair renderers must be unique permanent parts of this body.", nameof(hair));
             wardrobe = nextWardrobe; faces = (FaceBinding[])bindings.Clone();
             permanentRenderers = permanent.ToArray(); separateFaceRenderer = faceRenderer; currentFaceId = defaultFaceId;
+            blinkSurface = eyelidSurface; blinkClosed = false;
             hairColors = (HairColorBinding[])colors.Clone(); hairRenderers = (Renderer[])hair.Clone();
             currentHairColorId = "gray";
             appearanceKey = null;
@@ -101,6 +115,7 @@ namespace BarPromenade
         public void ApplyFace(string id)
         {
             RequireFace(id);
+            SetEyesClosed(false);
             currentFaceId = id;
             RestoreFace();
         }
@@ -141,6 +156,7 @@ namespace BarPromenade
             RequireHairColor(hairColorId);
             if (face.GetAtlas(hairColorId) == null) throw new ArgumentException("The assigned face has no hair-color atlas.");
             wardrobe.ApplyItems(itemIds);
+            SetEyesClosed(false);
             appearanceKey = stableIdentity; currentFaceId = faceId; currentHairColorId = hairColorId;
             RestoreFace();
         }
@@ -192,6 +208,19 @@ namespace BarPromenade
             renderer.GetPropertyBlock(properties);
             properties.SetTexture("_BaseMap", texture); properties.SetTexture("_MainTex", texture);
             renderer.SetPropertyBlock(properties); properties.Clear();
+        }
+
+        /// <summary>The next tile to the left paints shut lids on the same face and mesh.</summary>
+        internal void SetEyesClosed(bool closed)
+        {
+            if (blinkSurface == null || closed == blinkClosed) return;
+            if (closed && !RequireFace(currentFaceId).HasBlinkTile) return;
+            blinkClosed = closed;
+            properties ??= new MaterialPropertyBlock();
+            blinkSurface.GetPropertyBlock(properties);
+            properties.SetVector(BaseMapTransform, new Vector4(1f, 1f, closed ? -.25f : 0f, 0f));
+            blinkSurface.SetPropertyBlock(properties);
+            properties.Clear();
         }
 
         private void OnEnable() => RestoreFace();

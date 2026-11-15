@@ -89,7 +89,6 @@ namespace BarPromenade.Editor
             RegisterGenerated("Cafe cast", MountainRoadCafeCastAssetSetup.ValidateOrThrow, "MountainRoadCafeCastAssetSetup");
             RegisterGenerated("Hand props", CityPedestrianHandPropAssetSetup.ValidateOrThrow, "CityPedestrianHandPropAssetSetup");
             RegisterGenerated("Bus", CityBusAssetSetup.ValidateOrThrow, "CityBusAssetSetup");
-            RegisterGenerated("Bus driver", CityBusDriverAssetSetup.ValidateOrThrow, "CityBusDriverAssetSetup");
             Register("Last Route car", BarPromenade.EditorTools.LastRouteCarAssetSetup.ValidateOrThrow,
                 "BarPromenade.EditorTools.LastRouteCarAssetSetup.BuildOrThrow");
             Register("Last Route cabin actions", LastRouteCabinAssetSetup.ValidateOrThrow,

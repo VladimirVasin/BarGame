@@ -511,6 +511,7 @@ namespace BarPromenade
 
             if (actor.IsSpawned)
             {
+                presentation.SetCabinViewDistance(actor.HasPlayerPassenger ? 0f : distance);
                 actor.CirculationSpeedFactor = CirculationPace();
                 detachedPhase = double.NaN;
                 actor.Advance(deltaTime + backgroundTime, ResolveObstacleState(), GetNightFactor(), GetRainIntensity());

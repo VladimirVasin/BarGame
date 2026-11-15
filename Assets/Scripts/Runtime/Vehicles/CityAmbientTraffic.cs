@@ -3,6 +3,17 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    // Shared with the midibus: the same warm, wide dipped beam on city streets.
+    internal static class CityRoadHeadlightProfile
+    {
+        internal const float Intensity = 180f;
+        internal const float Range = 24f;
+        internal const float OuterAngle = 72f;
+        internal const float InnerAngle = 42f;
+        internal const float DownwardAim = .21f;
+        internal static readonly Color Color = new Color(1f, .955f, .865f);
+    }
+
     /// <summary>A small persistent fleet on surveyed city lanes. All cars decide from
     /// one snapshot before any of them moves. Rendering never owns road occupancy.</summary>
     [DefaultExecutionOrder(260)]
@@ -11,7 +22,7 @@ namespace BarPromenade
         private const float SampleSpacing = 1.25f;
         private const int SampleCapacity = 34;
         private const float CarPredictionReach = 40f;
-        private const float DippedIntensity = 180f;
+        private const float DippedIntensity = CityRoadHeadlightProfile.Intensity;
         private const int VehicleCapacity = CityBusDirector.MaximumActiveModels + AmbientTrafficRules.Capacity + 2;
         private readonly Car[] cars = new Car[AmbientTrafficRules.Capacity];
         private readonly Vehicle[] vehicles = new Vehicle[VehicleCapacity];
@@ -142,13 +153,13 @@ namespace BarPromenade
                 var holder = new GameObject("Sedan dipped beam");
                 holder.transform.SetParent(registry.Body, false);
                 holder.transform.SetPositionAndRotation(lenses[i].position + root.forward * .12f,
-                    Quaternion.LookRotation(root.forward - root.up * .21f, root.up));
+                    Quaternion.LookRotation(root.forward - root.up * CityRoadHeadlightProfile.DownwardAim, root.up));
                 var beam = holder.AddComponent<Light>();
                 beam.type = LightType.Spot;
-                beam.range = 24f;
-                beam.spotAngle = 72f;
-                beam.innerSpotAngle = 42f;
-                beam.color = new Color(1f, .955f, .865f);
+                beam.range = CityRoadHeadlightProfile.Range;
+                beam.spotAngle = CityRoadHeadlightProfile.OuterAngle;
+                beam.innerSpotAngle = CityRoadHeadlightProfile.InnerAngle;
+                beam.color = CityRoadHeadlightProfile.Color;
                 beam.renderMode = LightRenderMode.ForcePixel;
                 beam.bounceIntensity = 0f;
                 beam.intensity = 0f;

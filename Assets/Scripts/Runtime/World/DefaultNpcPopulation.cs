@@ -151,6 +151,7 @@ namespace BarPromenade
             public readonly SortedDictionary<string, string[]> Slots = new SortedDictionary<string, string[]>(StringComparer.Ordinal);
             public readonly Dictionary<string, NpcWardrobe.ItemBinding> Items = new Dictionary<string, NpcWardrobe.ItemBinding>(StringComparer.Ordinal);
             public string[] Faces;
+            public string[] TransitFaces;
             public string[] HairColors;
             public int ReferenceHeightCm;
             public int MinHeightCm, MaxHeightCm;
@@ -158,6 +159,7 @@ namespace BarPromenade
         }
 
         public static IReadOnlyList<CharacterDefinition> Characters { get; } = Array.AsReadOnly(BuildCharacters());
+        private const string BusDriverIdPrefix = "city.bus.driver.";
         private static string cachedCatalog;
         private static IReadOnlyList<Assignment> assignments;
         private static ulong visitSerial;
@@ -173,6 +175,15 @@ namespace BarPromenade
             return "fair.visitor." + index;
         }
         public static string PortWorkerId(int index) => PortIds[index];
+
+        public static string BusDriverId(int routeNumber, int busSlot)
+        {
+            if (routeNumber < 1 || routeNumber > CityBusDirector.MaximumLines)
+                throw new ArgumentOutOfRangeException(nameof(routeNumber));
+            if (busSlot < 0 || busSlot >= CityBusDirector.VehiclesPerLine)
+                throw new ArgumentOutOfRangeException(nameof(busSlot));
+            return BusDriverIdPrefix + routeNumber + "." + busSlot;
+        }
 
         public static string CombatTestOpponentId(int index)
         {
@@ -427,6 +438,17 @@ namespace BarPromenade
                     new SlotConstraint("gloves", new string[] { null }),
                     new SlotConstraint("scarf", new string[] { null }),
                     new SlotConstraint("apron", new string[] { null })));
+            for (int route = 1; route <= CityBusDirector.MaximumLines; route++)
+                for (int slot = 0; slot < CityBusDirector.VehiclesPerLine; slot++)
+                    roster.Add(new CharacterDefinition(BusDriverId(route, slot), model, false,
+                        new SlotConstraint("outerwear", "outerwear.transit"),
+                        new SlotConstraint("shirt", "shirt.everyday"),
+                        new SlotConstraint("trousers", "trousers.everyday", "trousers.work", "trousers.warm"),
+                        new SlotConstraint("boots", "boots.work"),
+                        new SlotConstraint("headwear", "headwear.transit"),
+                        new SlotConstraint("gloves", new string[] { null }),
+                        new SlotConstraint("scarf", new string[] { null }),
+                        new SlotConstraint("apron", new string[] { null })));
             return roster.ToArray();
         }
 
@@ -530,7 +552,8 @@ namespace BarPromenade
                 ? DefaultNpcAppearanceSelection.Choose(character.Id, new[] { catalogModels }, choice => choice[0], modelUsage)[0]
                 : character.ModelId;
             ModelDefinition model = models[modelId];
-            var dimensions = new List<string[]> { model.Faces, model.HairColors };
+            bool transit = character.Id.StartsWith(BusDriverIdPrefix, StringComparison.Ordinal);
+            var dimensions = new List<string[]> { transit ? model.TransitFaces : model.Faces, model.HairColors };
             int outerwearDimension = -1;
             var addedOuterwear = new List<string>();
             var constraints = new Dictionary<string, SlotConstraint>(StringComparer.Ordinal);
@@ -554,9 +577,12 @@ namespace BarPromenade
                     }
                     choices = new List<string>(allowed).ToArray();
                 }
-                else if (slot.Key == "outerwear" && modelId == DefaultNpcCatalog.OrdinaryWorker)
+                else if (modelId == DefaultNpcCatalog.OrdinaryWorker)
                 {
-                    choices = Array.FindAll(choices, id => id != FerrymanCoatItem);
+                    if (slot.Key == "outerwear")
+                        choices = Array.FindAll(choices, id => id != FerrymanCoatItem && id != "outerwear.transit");
+                    if (slot.Key == "headwear")
+                        choices = Array.FindAll(choices, id => id != "headwear.transit");
                 }
                 if (modelId == DefaultNpcCatalog.OrdinaryWorker && slot.Key == "outerwear")
                 {
@@ -623,12 +649,16 @@ namespace BarPromenade
             signature.Append(modelId).Append(':').Append(model.ReferenceHeightCm)
                 .Append('/').Append(model.MinHeightCm).Append('/').Append(model.MaxHeightCm).Append(';');
             var faces = new SortedSet<string>(StringComparer.Ordinal);
+            var transitFaces = new SortedSet<string>(StringComparer.Ordinal);
+            var faceIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (DefaultNpcAppearance.FaceBinding face in appearance.Faces)
             {
-                if (face == null || string.IsNullOrWhiteSpace(face.Id) || face.Atlas == null || !faces.Add(face.Id))
+                if (face == null || string.IsNullOrWhiteSpace(face.Id) || face.Atlas == null || !faceIds.Add(face.Id))
                     throw new InvalidOperationException("Population faces require unique IDs and atlases: " + modelId);
+                (face.HasBlinkTile ? transitFaces : faces).Add(face.Id);
             }
             model.Faces = new List<string>(faces).ToArray();
+            model.TransitFaces = new List<string>(transitFaces).ToArray();
             var hairColors = new SortedSet<string>(StringComparer.Ordinal);
             foreach (DefaultNpcAppearance.HairColorBinding hair in appearance.HairColors)
             {
@@ -640,6 +670,7 @@ namespace BarPromenade
             if (hairColors.Count == 0) throw new InvalidOperationException("Population model has no hair colors: " + modelId);
             model.HairColors = new List<string>(hairColors).ToArray();
             signature.Append(modelId).Append(':').Append(string.Join(",", model.Faces)).Append('/')
+                .Append(string.Join(",", model.TransitFaces)).Append('/')
                 .Append(string.Join(",", model.HairColors)).Append(';');
             var slots = new SortedDictionary<string, List<string>>(StringComparer.Ordinal);
             foreach (NpcWardrobe.ItemBinding item in wardrobe.Items)

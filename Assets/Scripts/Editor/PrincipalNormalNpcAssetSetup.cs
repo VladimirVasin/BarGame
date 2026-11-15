@@ -23,7 +23,6 @@ namespace BarPromenade.Editor
             {
                 CityPedestrianAssetSetup.BuildLakeFishermanOrThrow();
                 SupermarketCashierAssetSetup.BuildNormalOrThrow();
-                CityBusDriverAssetSetup.BuildOrThrow();
                 MothersHouseMotherAssetSetup.BuildOrThrow();
                 AssetDatabase.SaveAssets();
             }
@@ -37,7 +36,6 @@ namespace BarPromenade.Editor
         {
             CityPedestrianAssetSetup.ValidateLakeFishermanOrThrow();
             SupermarketCashierAssetSetup.ValidateNormalOrThrow();
-            CityBusDriverAssetSetup.ValidateOrThrow();
             MothersHouseMotherAssetSetup.ValidateOrThrow();
         }
     }

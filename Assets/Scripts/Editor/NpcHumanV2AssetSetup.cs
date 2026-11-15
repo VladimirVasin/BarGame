@@ -24,7 +24,6 @@ namespace BarPromenade.Editor
             MountainRoadCafeCastAssetSetup.IsBuilding ||
             CityPedestrianHandPropAssetSetup.IsBuilding ||
             SupermarketCashierAssetSetup.IsBuilding ||
-            CityBusDriverAssetSetup.IsBuilding ||
             CityMiscAssetSetup.IsBuilding;
 
         [MenuItem("Bar Promenade/NPC Human V2/Rebuild All Runtime Assets")]
@@ -46,7 +45,6 @@ namespace BarPromenade.Editor
                 // the freshly imported reference body FBXs.
                 CityPedestrianHandPropAssetSetup.BuildOrThrow();
                 SupermarketCashierAssetSetup.BuildOrThrow();
-                CityBusDriverAssetSetup.BuildOrThrow();
                 CityMiscAssetSetup.BuildOrThrow();
 
                 CityPedestrianAssetSetup.ValidateOrThrow();
@@ -55,7 +53,6 @@ namespace BarPromenade.Editor
                 MountainRoadCafeCastAssetSetup.ValidateOrThrow();
                 CityPedestrianHandPropAssetSetup.ValidateOrThrow();
                 SupermarketCashierAssetSetup.ValidateOrThrow();
-                CityBusDriverAssetSetup.ValidateOrThrow();
                 CityMiscAssetSetup.ValidateOrThrow();
 
                 AssetDatabase.SaveAssets();

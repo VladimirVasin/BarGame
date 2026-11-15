@@ -114,7 +114,7 @@ namespace BarPromenade
 
         public const string WatchmanDesignId = "cemetery_watchman_v1";
         public const string FishermanDesignId = "lake_fisherman_v1";
-        public const string FerrymanDesignId = "last_route_ferryman_v1";
+        public const string FerrymanVoiceId = DefaultNpcPopulation.LastRouteFerryman;
         public const string ChessPlayerDesignId = "park_chess_player_v1";
         public const string CheckersPlayerDesignId =
             "park_checkers_player_v1";
@@ -168,7 +168,7 @@ namespace BarPromenade
         {
             WatchmanDesignId,
             FishermanDesignId,
-            FerrymanDesignId,
+            FerrymanVoiceId,
             ChessPlayerDesignId,
             CheckersPlayerDesignId,
             CafeManDesignId,

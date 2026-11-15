@@ -1,6 +1,6 @@
 {
   "generator": "build-default-npc-3d-model.py",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "role": "StationWorker",
   "catalog_model_id": "ordinary-worker-v1",
   "anatomy_standard": "NpcHumanV2",
@@ -3610,6 +3610,280 @@
         }
       },
       {
+        "id": "elbow.L:CLO_Outer_transitSleeve.L",
+        "bone": "forearm.L",
+        "renderers": [
+          "CLO_Outer_transitSleeve.L",
+          "CLO_Outer_transitSleeve.L"
+        ],
+        "topology": "continuous",
+        "vertices_a": [
+          67,
+          68,
+          69,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66
+        ],
+        "vertices_b": [
+          67,
+          68,
+          69,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66
+        ],
+        "bones": [
+          "upper_arm.L",
+          "forearm.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.42216572165489197,
+            "y": -0.0004621371626853943,
+            "z": 1.2051655054092407
+          },
+          {
+            "x": 0.42917510867118835,
+            "y": 0.020328370854258537,
+            "z": 1.2136704921722412
+          },
+          {
+            "x": 0.4412993788719177,
+            "y": 0.03471585363149643,
+            "z": 1.2293708324432373
+          },
+          {
+            "x": 0.4561372697353363,
+            "y": 0.03985068202018738,
+            "z": 1.249157190322876
+          },
+          {
+            "x": 0.4707499146461487,
+            "y": 0.03471585363149643,
+            "z": 1.2691104412078857
+          },
+          {
+            "x": 0.48224306106567383,
+            "y": 0.020328370854258537,
+            "z": 1.285278558731079
+          },
+          {
+            "x": 0.4883403778076172,
+            "y": -0.0004621371626853943,
+            "z": 1.2944594621658325
+          },
+          {
+            "x": 0.48783427476882935,
+            "y": -0.023537863045930862,
+            "z": 1.2948344945907593
+          },
+          {
+            "x": 0.48082488775253296,
+            "y": -0.044328369200229645,
+            "z": 1.2863295078277588
+          },
+          {
+            "x": 0.468700647354126,
+            "y": -0.05871585011482239,
+            "z": 1.2706291675567627
+          },
+          {
+            "x": 0.4538627564907074,
+            "y": -0.06385068595409393,
+            "z": 1.250842809677124
+          },
+          {
+            "x": 0.439250111579895,
+            "y": -0.05871585011482239,
+            "z": 1.2308895587921143
+          },
+          {
+            "x": 0.4277569353580475,
+            "y": -0.044328369200229645,
+            "z": 1.214721441268921
+          },
+          {
+            "x": 0.4216596186161041,
+            "y": -0.023537863045930862,
+            "z": 1.2055405378341675
+          }
+        ],
+        "band_m": 0.1,
+        "loose": false,
+        "corrective_shape": "JointVolume.Elbow.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            0.999975,
+            0.999905,
+            0.999801
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "elbow.R:CLO_Outer_transitSleeve.R",
+        "bone": "forearm.R",
+        "renderers": [
+          "CLO_Outer_transitSleeve.R",
+          "CLO_Outer_transitSleeve.R"
+        ],
+        "topology": "continuous",
+        "vertices_a": [
+          67,
+          68,
+          69,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66
+        ],
+        "vertices_b": [
+          67,
+          68,
+          69,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66
+        ],
+        "bones": [
+          "upper_arm.R",
+          "forearm.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.4864228665828705,
+            "y": 0.0035346057265996933,
+            "z": 1.288398265838623
+          },
+          {
+            "x": -0.4804740250110626,
+            "y": 0.024319246411323547,
+            "z": 1.2791073322296143
+          },
+          {
+            "x": -0.46908366680145264,
+            "y": 0.03870266675949097,
+            "z": 1.262863039970398
+          },
+          {
+            "x": -0.4545077085494995,
+            "y": 0.043836046010255814,
+            "z": 1.2428826093673706
+          },
+          {
+            "x": -0.4396331310272217,
+            "y": 0.03870266675949097,
+            "z": 1.2231234312057495
+          },
+          {
+            "x": -0.42740604281425476,
+            "y": 0.024319246411323547,
+            "z": 1.2074992656707764
+          },
+          {
+            "x": -0.4202481210231781,
+            "y": 0.0035346057265996933,
+            "z": 1.1991043090820312
+          },
+          {
+            "x": -0.41957715153694153,
+            "y": -0.019534606486558914,
+            "z": 1.199601650238037
+          },
+          {
+            "x": -0.4255259931087494,
+            "y": -0.04031924903392792,
+            "z": 1.208892583847046
+          },
+          {
+            "x": -0.4369163513183594,
+            "y": -0.05470266938209534,
+            "z": 1.2251368761062622
+          },
+          {
+            "x": -0.4514923095703125,
+            "y": -0.059836048632860184,
+            "z": 1.2451173067092896
+          },
+          {
+            "x": -0.46636688709259033,
+            "y": -0.05470266938209534,
+            "z": 1.2648764848709106
+          },
+          {
+            "x": -0.47859397530555725,
+            "y": -0.04031924903392792,
+            "z": 1.2805006504058838
+          },
+          {
+            "x": -0.4857518970966339,
+            "y": -0.019534606486558914,
+            "z": 1.288895606994629
+          }
+        ],
+        "band_m": 0.1,
+        "loose": false,
+        "corrective_shape": "JointVolume.Elbow.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            0.999985,
+            0.999946,
+            0.999885
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
         "id": "knee.L:CLO_Trousers_everydayUpper",
         "bone": "shin.L",
         "renderers": [
@@ -4960,6 +5234,22 @@
         ]
       },
       {
+        "name": "CLO_Outer_transitSleeve.L",
+        "bones": [
+          "chest",
+          "forearm.L",
+          "upper_arm.L"
+        ]
+      },
+      {
+        "name": "CLO_Outer_transitSleeve.R",
+        "bones": [
+          "chest",
+          "forearm.R",
+          "upper_arm.R"
+        ]
+      },
+      {
         "name": "CLO_Trousers_everydayUpper",
         "bones": [
           "pelvis",
@@ -5007,8 +5297,8 @@
     "attachments": []
   },
   "height_scale": 1.0171428571428571,
-  "mesh_count": 210,
-  "triangle_count": 20428,
+  "mesh_count": 229,
+  "triangle_count": 21896,
   "bounds_min": [
     -0.78121,
     -0.251,
@@ -5142,6 +5432,25 @@
       "CLO_FerrymanCoatFastening1055",
       "CLO_FerrymanCoatFastening1185",
       "CLO_FerrymanCoatFastening1307",
+      "CLO_Outer_transitBody",
+      "CLO_Outer_transitSleeve.L",
+      "CLO_Outer_transitLapel.L",
+      "CLO_Outer_transitPocket.L",
+      "CLO_Outer_transitFold0.L",
+      "CLO_Outer_transitFold1.L",
+      "CLO_Outer_transitSleeve.R",
+      "CLO_Outer_transitLapel.R",
+      "CLO_Outer_transitPocket.R",
+      "CLO_Outer_transitFold0.R",
+      "CLO_Outer_transitFold1.R",
+      "CLO_Outer_transitTie",
+      "CLO_Outer_transitTieKnot",
+      "CLO_Outer_transitButton0",
+      "CLO_Outer_transitButton1",
+      "CLO_Outer_transitButton2",
+      "CLO_Hat_transitCrown",
+      "CLO_Hat_transitBand",
+      "CLO_Hat_transitPeak",
       "CLO_Trousers_everydayUpper",
       "CLO_Trousers_everydayLower.L",
       "CLO_Trousers_everydayLower.R",
@@ -6484,6 +6793,177 @@
       ]
     },
     {
+      "name": "CLO_Outer_transitBody",
+      "color": [
+        0.03954623527673284,
+        0.07618538148130785,
+        0.08021982031446832,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitSleeve.L",
+      "color": [
+        0.03954623527673284,
+        0.07618538148130785,
+        0.08021982031446832,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitLapel.L",
+      "color": [
+        0.05612849004960009,
+        0.0953074666309647,
+        0.09989872824711389,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitPocket.L",
+      "color": [
+        0.05612849004960009,
+        0.0953074666309647,
+        0.09989872824711389,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitFold0.L",
+      "color": [
+        0.0295568344378088,
+        0.04970656598412723,
+        0.05448027644244237,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitFold1.L",
+      "color": [
+        0.0295568344378088,
+        0.04970656598412723,
+        0.05448027644244237,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitSleeve.R",
+      "color": [
+        0.03954623527673284,
+        0.07618538148130785,
+        0.08021982031446832,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitLapel.R",
+      "color": [
+        0.05612849004960009,
+        0.0953074666309647,
+        0.09989872824711389,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitPocket.R",
+      "color": [
+        0.05612849004960009,
+        0.0953074666309647,
+        0.09989872824711389,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitFold0.R",
+      "color": [
+        0.0295568344378088,
+        0.04970656598412723,
+        0.05448027644244237,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitFold1.R",
+      "color": [
+        0.0295568344378088,
+        0.04970656598412723,
+        0.05448027644244237,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitTie",
+      "color": [
+        0.21586050011389926,
+        0.06124605423161761,
+        0.04817182422688942,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitTieKnot",
+      "color": [
+        0.21586050011389926,
+        0.06124605423161761,
+        0.04817182422688942,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitButton0",
+      "color": [
+        0.2232279573168085,
+        0.1714411007328226,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitButton1",
+      "color": [
+        0.2232279573168085,
+        0.1714411007328226,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Outer_transitButton2",
+      "color": [
+        0.2232279573168085,
+        0.1714411007328226,
+        0.09758734714186246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Hat_transitCrown",
+      "color": [
+        0.0295568344378088,
+        0.04970656598412723,
+        0.052860647023180246,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Hat_transitBand",
+      "color": [
+        0.05612849004960009,
+        0.0953074666309647,
+        0.09989872824711389,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_Hat_transitPeak",
+      "color": [
+        0.0295568344378088,
+        0.04970656598412723,
+        0.052860647023180246,
+        1.0
+      ]
+    },
+    {
       "name": "CLO_Trousers_everydayUpper",
       "color": [
         0.06662593864377289,
@@ -7471,6 +7951,53 @@
         ]
       },
       {
+        "id": "outerwear.transit",
+        "slot": "outerwear",
+        "renderers": [
+          "CLO_Outer_transitBody",
+          "CLO_Outer_transitSleeve.L",
+          "CLO_Outer_transitLapel.L",
+          "CLO_Outer_transitPocket.L",
+          "CLO_Outer_transitFold0.L",
+          "CLO_Outer_transitFold1.L",
+          "CLO_Outer_transitSleeve.R",
+          "CLO_Outer_transitLapel.R",
+          "CLO_Outer_transitPocket.R",
+          "CLO_Outer_transitFold0.R",
+          "CLO_Outer_transitFold1.R",
+          "CLO_Outer_transitTie",
+          "CLO_Outer_transitTieKnot",
+          "CLO_Outer_transitButton0",
+          "CLO_Outer_transitButton1",
+          "CLO_Outer_transitButton2"
+        ],
+        "covered_renderers": [
+          "CLO_Shirt_everydayBody",
+          "CLO_Shirt_everydaySleeve.L",
+          "CLO_Shirt_everydaySleeve.R",
+          "CLO_Shirt_everydayPlacket",
+          "CLO_Shirt_workBody",
+          "CLO_Shirt_workSleeve.L",
+          "CLO_Shirt_workSleeve.R",
+          "CLO_Shirt_workPlacket",
+          "CLO_Shirt_warmBody",
+          "CLO_Shirt_warmSleeve.L",
+          "CLO_Shirt_warmSleeve.R"
+        ]
+      },
+      {
+        "id": "headwear.transit",
+        "slot": "headwear",
+        "renderers": [
+          "CLO_Hat_transitCrown",
+          "CLO_Hat_transitBand",
+          "CLO_Hat_transitPeak"
+        ],
+        "covered_renderers": [
+          "HAIR_Crown"
+        ]
+      },
+      {
         "id": "trousers.everyday",
         "slot": "trousers",
         "renderers": [
@@ -7752,6 +8279,20 @@
         "texture": "StationWorkerFace04Atlas.png",
         "brunette_texture": "StationWorkerFace04BrunetteAtlas.png",
         "blond_texture": "StationWorkerFace04BlondAtlas.png"
+      },
+      {
+        "id": "face-05",
+        "texture": "StationWorkerFace05Atlas.png",
+        "has_blink_tile": true,
+        "brunette_texture": "StationWorkerFace05BrunetteAtlas.png",
+        "blond_texture": "StationWorkerFace05BlondAtlas.png"
+      },
+      {
+        "id": "face-06",
+        "texture": "StationWorkerFace06Atlas.png",
+        "has_blink_tile": true,
+        "brunette_texture": "StationWorkerFace06BrunetteAtlas.png",
+        "blond_texture": "StationWorkerFace06BlondAtlas.png"
       }
     ]
   },
@@ -7759,9 +8300,11 @@
     "01c1b577931563cfb18b8af9aea80a3a36cb99e7cf0d0b84f6f9d2814141205b",
     "db911f5651ae3ba1488a793058f17c6bcde6fef098f610c3f27e034a67b5c295",
     "037055e31e57b052881d8a3ba64b27bd1fdde9d8524fa19399f36640445d51fa",
-    "c358695eebb5c92658cd9e6a6e19893264b011a61e31be2267cfe08647ea0985"
+    "c358695eebb5c92658cd9e6a6e19893264b011a61e31be2267cfe08647ea0985",
+    "fef719f0f8ebd5d397eede6a6603b2d47b05a181094bce2407dd8e6174cbea76",
+    "dc9e23bf3138a28eb1977234222c0d41517bdbfc39f943afd77939a6cf429a47"
   ],
-  "geometry_signature": "08631a4a06c3ae60a0d29f9aa3c051da9f3b9b953bfc9517d559d5120b16e3fd",
+  "geometry_signature": "553633e1556ddd525a0491207c053c76219f03663abc7e5bfaf83c5a76166d7f",
   "validation": {
     "outfit_triangle_counts": {
       "everyday": 4936,
@@ -7903,15 +8446,15 @@
         "BodyShape.Slim": {
           "minimum_front_y_m": -0.0734945,
           "waist_width_m": 0.27104,
-          "changed_vertices": 7577
+          "changed_vertices": 8159
         },
         "BodyShape.Chubby": {
           "minimum_front_y_m": -0.1755443,
           "waist_width_m": 0.4004,
-          "changed_vertices": 7582
+          "changed_vertices": 8164
         }
       },
-      "signature": "cb219475f1c217523a447d9b9ca94fc369b473dddad1750ebe382879df994d67",
+      "signature": "7c24f485cce4543b55c0b21548c915b24aeb1907ac17c791383bdc20042e8114",
       "source_geometry_reused": true,
       "shared_skin_garment_field": true,
       "head_hair_hand_contact_preserved": true
@@ -8257,8 +8800,28 @@
       "face_id": "face-04",
       "hair_id": "blond",
       "sha256": "9420461a8a4d4454ca2390364b64858e1f8e72768d18bc27e11f042caff606f5"
+    },
+    {
+      "face_id": "face-05",
+      "hair_id": "brunette",
+      "sha256": "4007a888b692a5a3498a4e783233e0c6e0e20081bcd01c37fbac161961197c37"
+    },
+    {
+      "face_id": "face-05",
+      "hair_id": "blond",
+      "sha256": "e99cc3513ab53c2d222d96ea9df9c0bf02b3a0c9d3b5620724e6ca26801f07de"
+    },
+    {
+      "face_id": "face-06",
+      "hair_id": "brunette",
+      "sha256": "748168cb3d0c774567f698a533b140cdae6c2a36c34a5d11f61ef7370d80514d"
+    },
+    {
+      "face_id": "face-06",
+      "hair_id": "blond",
+      "sha256": "b1f925e306fd6ba6c2035b2f9ff5f471122d2566e031e7003acdd683137bda7c"
     }
   ],
-  "uv_signature": "fddb209da05ff8b4234313da50e7494dde033f50a144f3bb771bd3a46e1e692c",
-  "signature": "f8e5923f918c5814bb4531d3bdefb6c49412470de680f135fe48033574f2cb07"
+  "uv_signature": "4e0a3ee32e8fc122bf318d040f3635ec85bdc6efc94dec1a8a71100049eb3025",
+  "signature": "bc1ace6ba67b9e214eb2023442771667a7f7846ff38488a0babba9d8ef5ac5f9"
 }

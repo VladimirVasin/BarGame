@@ -138,6 +138,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City/Home pedestrians | 192 assigned shifts and commutes. City ≤36 residents + ≤12 ambient. Home 5/2. | `CityResidentJourneyDirector`, `CityPedestrianDirector`, `CityAmbientPedestrians` | Current |
 | NPC Human V2 anatomy, appearance and visibility | Shared rigs; joint fields/volume and shaped hands/clothes retain UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `CharacterJointDeformation` | Current |
 | City district buses | Two/ring,shared transfers. Gap:no Home service/live map buses. | `City{District,Hillside}BusPlanner`, `CityBus{Director,Actor,Factory}` | Partial |
+| Midibus | Sedan lights, sliding leaves, fixed NPCs. | `CityBus{Presentation,DriverRig}` | Current |
 | Bus stop lighting | City/Home perimeter strip/apron;fixed daylight;bounded soft-shadow fades. | `CityBusStopLighting`, `CityNightAtmosphere` | Current |
 | Pedestrian bench rests | Eligible walkers reserve, sit, rest, stand and resume their route. | `CityBenchRest{Plan,Planner}`, `CityBenchNpcRestController` | Current |
 | City bus passengers | Two doors/10seats/3standing;remote. Gap:fares/live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |

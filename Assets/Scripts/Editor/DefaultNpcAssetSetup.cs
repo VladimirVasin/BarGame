@@ -114,11 +114,13 @@ namespace BarPromenade.Editor
                         new DefaultNpcAppearance.FaceBinding(face.id,
                             AssetDatabase.LoadAssetAtPath<Texture2D>(Folder + face.texture),
                             AssetDatabase.LoadAssetAtPath<Texture2D>(Folder + face.brunette_texture),
-                            AssetDatabase.LoadAssetAtPath<Texture2D>(Folder + face.blond_texture))).ToArray(),
+                            AssetDatabase.LoadAssetAtPath<Texture2D>(Folder + face.blond_texture),
+                            face.has_blink_tile)).ToArray(),
                         manifest.faces.default_face_id, manifest.hair_colors.Select(hair =>
                             new DefaultNpcAppearance.HairColorBinding(hair.id,
                                 new Color(hair.color[0], hair.color[1], hair.color[2], hair.color[3]).gamma)).ToArray(),
-                        permanent.Where(renderer => renderer.name.StartsWith("HAIR_", StringComparison.Ordinal)).ToArray());
+                        permanent.Where(renderer => renderer.name.StartsWith("HAIR_", StringComparison.Ordinal)).ToArray(),
+                        eyelidSurface: byName["GEO_FaceSurface"]);
                     // Only the wardrobe owns clothes, including restoration after OnEnable.
                     ValidateGeometry(root, manifest);
                     CharacterJointDeformation.Configure(root);
@@ -201,7 +203,7 @@ namespace BarPromenade.Editor
                 value.parts == null || value.parts.Length != value.mesh_count || value.triangle_count < 2408 ||
                 value.bounds_min?.Length != 3 || value.bounds_max?.Length != 3 || value.wardrobe == null ||
                 value.wardrobe.items == null || value.wardrobe.outfits?.Length != 3 ||
-                value.wardrobe.default_outfit_id != "warm" || value.faces?.items?.Length != 4 ||
+                value.wardrobe.default_outfit_id != "warm" || value.faces?.items?.Length != 6 ||
                 value.faces.default_face_id != "face-01" || value.hair_colors?.Length != 3)
                 throw new InvalidOperationException("Generate the modular worker with tools/build-default-npc-3d-model.py first.");
             if (value.parts.Any(part => string.IsNullOrEmpty(part.name) || part.color?.Length != 4) ||
@@ -344,7 +346,11 @@ namespace BarPromenade.Editor
         [Serializable] private sealed class Item { public string id, slot; public string[] renderers, covered_renderers; }
         [Serializable] private sealed class Outfit { public string id; public string[] items; }
         [Serializable] private sealed class Faces { public string default_face_id; public Face[] items; }
-        [Serializable] private sealed class Face { public string id, texture, brunette_texture, blond_texture; }
+        [Serializable] private sealed class Face
+        {
+            public string id, texture, brunette_texture, blond_texture;
+            public bool has_blink_tile;
+        }
         [Serializable] private sealed class HairColor { public string id; public float[] color; }
     }
 }

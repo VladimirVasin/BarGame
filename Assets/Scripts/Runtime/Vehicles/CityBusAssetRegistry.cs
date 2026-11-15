@@ -19,7 +19,10 @@ namespace BarPromenade
         Headlight,
         TailLight,
         CabinLight,
-        Destination
+        Destination,
+        Floor,
+        InstrumentInk,
+        MarkerLens
     }
 
     [Serializable]

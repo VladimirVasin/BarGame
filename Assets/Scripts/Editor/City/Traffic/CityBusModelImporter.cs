@@ -1,10 +1,27 @@
 using System;
 using UnityEditor;
+using UnityEngine;
 
 namespace BarPromenade.Editor
 {
     public sealed class CityBusModelImporter : AssetPostprocessor
     {
+        private void OnPreprocessTexture()
+        {
+            if (!assetPath.StartsWith(CityBusAssetSetup.TextureFolder + "/CityBus", StringComparison.Ordinal) ||
+                !(assetImporter is TextureImporter texture)) return;
+            bool normal = assetPath.EndsWith("Normal.png", StringComparison.Ordinal);
+            bool response = assetPath.EndsWith("Response.png", StringComparison.Ordinal);
+            texture.textureType = normal ? TextureImporterType.NormalMap : TextureImporterType.Default;
+            texture.sRGBTexture = !normal && !response;
+            texture.alphaSource = response ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
+            texture.wrapMode = assetPath.Contains("/CityBusPaint") ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
+            texture.mipmapEnabled = true;
+            texture.isReadable = false;
+            texture.anisoLevel = 4;
+            texture.maxTextureSize = 1024;
+        }
+
         private void OnPreprocessModel()
         {
             if (!string.Equals(

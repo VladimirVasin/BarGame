@@ -21,12 +21,20 @@ namespace BarPromenade
             return CreateForAssignment(parent, assignment);
         }
 
+        internal static VillageResidentPresentation CreateForCharacter(Transform parent, string characterId,
+            bool initializeLocomotion) =>
+            CreateForAssignment(parent, DefaultNpcPopulation.GetAssignment(characterId), initializeLocomotion);
+
         /// <summary>Builds one selection already allocated by the shared population owner.</summary>
         public static VillageResidentPresentation CreateForAssignment(
-            Transform parent, DefaultNpcPopulation.Assignment assignment)
+            Transform parent, DefaultNpcPopulation.Assignment assignment) =>
+            CreateForAssignment(parent, assignment, true);
+
+        private static VillageResidentPresentation CreateForAssignment(
+            Transform parent, DefaultNpcPopulation.Assignment assignment, bool initializeLocomotion)
         {
             if (assignment == null) throw new ArgumentNullException(nameof(assignment));
-            VillageResidentPresentation actor = Create(parent, assignment.ModelId);
+            VillageResidentPresentation actor = Create(parent, assignment.ModelId, initializeLocomotion);
             try
             {
                 DefaultNpcPopulation.Apply(actor, assignment);
@@ -44,7 +52,9 @@ namespace BarPromenade
 
         /// <summary>Raw model creation for authoring/preview and legacy compatibility.</summary>
         public static VillageResidentPresentation Create(Transform parent,
-            string modelId = DefaultNpcCatalog.OrdinaryWorker)
+            string modelId = DefaultNpcCatalog.OrdinaryWorker) => Create(parent, modelId, true);
+
+        private static VillageResidentPresentation Create(Transform parent, string modelId, bool initializeLocomotion)
         {
             GameObject prefab = DefaultNpcCatalog.GetPrefab(modelId);
             if (prefab.GetComponent<VillageResidentPresentation>() == null)
@@ -54,8 +64,11 @@ namespace BarPromenade
             try
             {
                 var presentation = instance.GetComponent<VillageResidentPresentation>();
-                presentation.Initialize();
-                NpcFootstepSources.Register(instance.transform);
+                if (initializeLocomotion)
+                {
+                    presentation.Initialize();
+                    NpcFootstepSources.Register(instance.transform);
+                }
                 return presentation;
             }
             catch

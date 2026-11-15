@@ -805,7 +805,7 @@ namespace BarPromenade.Tests.PlayMode
                     DefaultNpcFrame(camera, report, "03-head-" + view, target + offset, target, 35f, actors[0]);
                 }
                 DefaultNpcAppearance faceAppearance = actors[0].GetComponent<DefaultNpcAppearance>();
-                Assert.That(faceAppearance.Faces.Count, Is.EqualTo(4));
+                Assert.That(faceAppearance.Faces.Count(face => !face.HasBlinkTile), Is.EqualTo(4));
                 string originalFace = faceAppearance.CurrentFaceId;
                 string originalHair = faceAppearance.CurrentHairColorId;
                 foreach (DefaultNpcAppearance.FaceBinding face in faceAppearance.Faces)

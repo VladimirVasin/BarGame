@@ -10,7 +10,7 @@ namespace BarPromenade
     {
         public const string DriverBank = "City/LastRouteFerrymanActions";
         public const string PassengerBank = "Player/LastRoutePassengerActions";
-        public const string VoiceId = "last_route_ferryman_v1";
+        public const string VoiceId = NpcVoiceCatalog.FerrymanVoiceId;
         private static readonly string[] DriverClips =
             { "FerrymanWait", "FerrymanDismount", "FerrymanTrudge", "FerrymanBoard", "FerrymanDrive" };
         private static AnimationClip[] clips;
