@@ -5,6 +5,20 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-15
 
+The Ferryman uses the default NPC rig with a reserved work outfit. Two doors
+and a tucked front apron define the sedan. Cabin pieces map to separate
+upholstery, trim and plastic textures. Measured heel support keeps his
+trousers and boots clear of the nose throughout the perch loop.
+`build-last-route-car-3d-model`, `build-last-route-cabin-actions` and
+`build-last-route-car-textures` passed.
+`LastRouteSedanAtBothStops`, `Ferryman_PerchesOnTheBonnetWithHisCoinAndHisCoat`
+and `Ride_CarriesTheHeroAndOnlyLetsHimOutWhenItStops` passed.
+Game View confirmed upholstery, the visible coins and hand contacts.
+`CabinReactions_FollowTheRadioAndCloseTheLidByHand`,
+`Capture_TheCabinFromThePassengerSeat` and
+`Ride_AnswersTheRadioFromTheSeatWhileTheCarIsMoving` passed.
+The Lit inventory still reports unrelated material and keyword owners.
+
 Both Ridge switchbacks have alternating municipal poles from the mouths to
 the crest. They follow the outside sidewalk edge through bends and shift
 along their side to clear platforms and approaches.

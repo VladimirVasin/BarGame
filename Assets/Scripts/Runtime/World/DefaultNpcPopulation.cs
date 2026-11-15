@@ -26,6 +26,8 @@ namespace BarPromenade
         public const string CityDogParkSeatedOwner = "zzzzz.city.dog-park.seated";
         // Append after every existing identity to retain their allocated looks.
         public const string CityResidentialCourtyardCarrier = "zzzzzz.city.residential-courtyard.carrier";
+        public const string LastRouteFerryman = "last-route.ferryman";
+        public const string FerrymanCoatItem = "outerwear.ferryman";
         // Append-only allocation: these bespoke enemy bases must not reshuffle living residents.
         public static string StairwellEnemyId(int index)
         {
@@ -400,6 +402,17 @@ namespace BarPromenade
                 roster.Add(new CharacterDefinition(AmbientPedestrianId(i, false), model, WorkerStreetClothes));
                 roster.Add(new CharacterDefinition(AmbientPedestrianId(i, true), DefaultNpcCatalog.OrdinaryWoman, WomanStreetClothes));
             }
+            // Allocated after the ambient looks as well. A fitted coat and
+            // the reference stature keep both of his vehicle contacts stable.
+            roster.Add(new CharacterDefinition(LastRouteFerryman, model, false,
+                new SlotConstraint("outerwear", FerrymanCoatItem),
+                new SlotConstraint("shirt", "shirt.work"),
+                new SlotConstraint("trousers", "trousers.everyday"),
+                new SlotConstraint("boots", "boots.work"),
+                new SlotConstraint("headwear", "headwear.everyday"),
+                new SlotConstraint("gloves", new string[] { null }),
+                new SlotConstraint("scarf", new string[] { null }),
+                new SlotConstraint("apron", new string[] { null })));
             return roster.ToArray();
         }
 
@@ -451,7 +464,10 @@ namespace BarPromenade
             // Reserve the earlier street tuples in their original order. A
             // converted slot otherwise releases a tuple to a later man and
             // can change the look of another resident or a named character.
-            int permanentCount = Characters.Count - AmbientAppearancesPerGender * 2;
+            int permanentCount = 0;
+            while (permanentCount < Characters.Count &&
+                   Characters[permanentCount].Id != AmbientPedestrianId(0, false))
+                permanentCount++;
             for (int i = 0; i < permanentCount; i++)
             {
                 CharacterDefinition character = Characters[i];
@@ -523,6 +539,10 @@ namespace BarPromenade
                         allowed.Add(id ?? string.Empty);
                     }
                     choices = new List<string>(allowed).ToArray();
+                }
+                else if (slot.Key == "outerwear" && modelId == DefaultNpcCatalog.OrdinaryWorker)
+                {
+                    choices = Array.FindAll(choices, id => id != FerrymanCoatItem);
                 }
                 if (modelId == DefaultNpcCatalog.OrdinaryWorker && slot.Key == "outerwear")
                 {

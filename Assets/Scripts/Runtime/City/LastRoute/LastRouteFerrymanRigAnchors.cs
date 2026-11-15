@@ -1,188 +1,107 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>
-    /// The two things on the staged Ferryman that the runtime has to reach
-    /// and the skeleton does not name: the hollow of his open left palm,
-    /// where the coin lies between tosses, and the waist his coat hangs
-    /// from.
-    ///
-    /// Both are the fisherman's problem again. Every part of every
-    /// pedestrian is a rigidly skinned mesh, so a part's own Transform
-    /// never moves - the palm and the hem are drawn by vertices that follow
-    /// bones, and there is nothing to parent a coin or a cloth panel to.
-    /// Reconstructing either from constants would mean re-deriving the
-    /// Blender-to-Unity axis conversion and the prefab's own 180 degree
-    /// model flip in gameplay code, and re-deriving it again every time the
-    /// art moves.
-    ///
-    /// So the prefab build measures both once, in the bind pose, off the
-    /// actual imported meshes, and parents an empty anchor to the bone that
-    /// carries them. This component is asset metadata only: it drives
-    /// nothing and, like the fisherman's, adds no behaviour of its own.
-    /// </summary>
+    /// <summary>Vehicle contacts on the same production rig as the other default NPCs.</summary>
     [DisallowMultipleComponent]
     public sealed class LastRouteFerrymanRigAnchors : MonoBehaviour
     {
-        public const string CoinRestRendererName = "GEO_Hand.L";
-        public const string CoatHemRendererName = "CLO_CoatHem";
-        public const string CoinRestAnchorName = "ANCHOR_CoinRest";
-        public const string CoatHemAnchorName = "ANCHOR_CoatHem";
+        public const string DriverBank = "City/LastRouteFerrymanActions";
+        public const string PassengerBank = "Player/LastRoutePassengerActions";
+        public const string VoiceId = "last_route_ferryman_v1";
+        private static readonly string[] DriverClips =
+            { "FerrymanWait", "FerrymanDismount", "FerrymanTrudge", "FerrymanBoard", "FerrymanDrive" };
+        private static AnimationClip[] clips;
+        private static ContactManifest contactManifest;
 
-        [SerializeField] private CityPedestrianAssetRegistry pedestrianRegistry;
-        [SerializeField] private Transform coinRestAnchor;
-        [SerializeField] private Transform coatHemAnchor;
-        [SerializeField] private Renderer coatHemRenderer;
-        [SerializeField] private Vector2 coatHemSize;
-        [SerializeField] private float perchPelvisDrop;
-        [SerializeField] private AnimationClip dismountClip;
-        [SerializeField] private Transform leftUpperArm;
-        [SerializeField] private Transform leftForearm;
-        [SerializeField] private Transform leftHand;
-        [SerializeField] private Transform leftGripSocket;
-        [SerializeField] private Transform rightUpperArm;
-        [SerializeField] private Transform rightForearm;
-        [SerializeField] private Transform rightHand;
-        [SerializeField] private Transform rightGripSocket;
+        public Animator Animator { get; private set; }
+        public Transform HeadAnchor { get; private set; }
+        public Transform Pelvis { get; private set; }
+        public Transform Spine { get; private set; }
+        public Transform Chest { get; private set; }
+        public Transform LeftFoot { get; private set; }
+        public Transform RightFoot { get; private set; }
+        public Transform CoinRestAnchor { get; private set; }
+        public Transform LeftUpperArm { get; private set; }
+        public Transform LeftForearm { get; private set; }
+        public Transform LeftHand { get; private set; }
+        public Transform LeftGripSocket { get; private set; }
+        public Transform RightUpperArm { get; private set; }
+        public Transform RightForearm { get; private set; }
+        public Transform RightHand { get; private set; }
+        public Transform RightGripSocket { get; private set; }
+        public NpcHandPose HandPose { get; private set; }
+        public AnimationClip WaitClip => clips[0];
+        public AnimationClip DismountClip => clips[1];
+        public AnimationClip WalkClip => clips[2];
+        public AnimationClip BoardClip => clips[3];
+        public AnimationClip DriveClip => clips[4];
+        public float PerchHipRise => contactManifest.contacts.perch_hip_rise_m;
+        public float PerchHipReach => contactManifest.contacts.perch_hip_reach_m;
 
-        public CityPedestrianAssetRegistry PedestrianRegistry =>
-            pedestrianRegistry;
-
-        /// <summary>The open left palm, on the left hand bone. The coin
-        /// lies here whenever it is not in the air.</summary>
-        public Transform CoinRestAnchor => coinRestAnchor;
-
-        /// <summary>
-        /// The top of the drawn hem stub, on the pelvis bone - where the
-        /// cloth skirt hangs from. The stub itself is short on purpose:
-        /// the long skirt is a runtime Cloth panel, so it drapes over the
-        /// bonnet edge instead of being a rigid slab through it.
-        /// </summary>
-        public Transform CoatHemAnchor => coatHemAnchor;
-
-        /// <summary>
-        /// The hem stub's renderer, so the runtime can hide it once the
-        /// cloth that replaces it exists. Without this the two would be
-        /// drawn one inside the other.
-        /// </summary>
-        public Renderer CoatHemRenderer => coatHemRenderer;
-
-        /// <summary>
-        /// Width and drop of the hem stub in metres, measured in the bind
-        /// pose. The cloth panel is cut to these rather than to constants,
-        /// so a coat redrawn in Blender still gets a skirt that fits it.
-        /// </summary>
-        public Vector2 CoatHemSize => coatHemSize;
-
-        /// <summary>
-        /// How far his pelvis bone rides above the lowest drawn point of
-        /// the perched pose - his boot sole - measured in Blender off the
-        /// posed meshes and carried here.
-        ///
-        /// The runtime cannot work this out for itself. The model origin
-        /// is the sole plane of the BIND pose, standing straight, and the
-        /// perch has both knees up on a car bonnet: the feet leave that
-        /// plane entirely. Unity will not recompute skinned bounds for a
-        /// manually driven PlayableGraph, and the ankle bone is no
-        /// substitute because the perch draws one boot back onto its toe.
-        /// So the number crosses from the generator that measured it, and
-        /// the presentation sets him down by it.
-        /// </summary>
-        public float PerchPelvisDrop => perchPelvisDrop;
-
-        /// <summary>
-        /// His drop off the bonnet - the fifth clip, and the reason this
-        /// component carries one at all.
-        ///
-        /// `CityPedestrianAssetRegistry` has exactly four clip slots (idle,
-        /// walk, sit, action) and this design already fills all four with
-        /// his wait, his trudge, his driving loop and his board transition.
-        /// He is the only pedestrian with a fifth posture, so the fifth clip
-        /// rides the component that is already his alone rather than
-        /// widening a type every other design shares.
-        /// </summary>
-        public AnimationClip DismountClip => dismountClip;
-
-        /// <summary>
-        /// His arms, for the wheel. The shared pedestrian registry serializes
-        /// no arm bones - nothing is found by name at runtime, and no other
-        /// pedestrian needs an arm reached - so, like the fifth clip, the
-        /// bindings ride the component that is already his alone. The grip
-        /// sockets are the skeleton's own SOCKET_Grip bones in each palm,
-        /// the same contract the bus driver's hands close on.
-        /// </summary>
-        public Transform LeftUpperArm => leftUpperArm;
-
-        public Transform LeftForearm => leftForearm;
-        public Transform LeftHand => leftHand;
-        public Transform LeftGripSocket => leftGripSocket;
-        public Transform RightUpperArm => rightUpperArm;
-        public Transform RightForearm => rightForearm;
-        public Transform RightHand => rightHand;
-        public Transform RightGripSocket => rightGripSocket;
-
-        public void Configure(
-            CityPedestrianAssetRegistry configuredPedestrianRegistry,
-            Transform configuredCoinRestAnchor,
-            Transform configuredCoatHemAnchor,
-            Renderer configuredCoatHemRenderer,
-            Vector2 configuredCoatHemSize,
-            float configuredPerchPelvisDrop,
-            AnimationClip configuredDismountClip,
-            LastRouteFerrymanArmBindings configuredArms)
+        internal void Bind(VillageResidentPresentation actor)
         {
-            pedestrianRegistry = configuredPedestrianRegistry;
-            coinRestAnchor = configuredCoinRestAnchor;
-            coatHemAnchor = configuredCoatHemAnchor;
-            coatHemRenderer = configuredCoatHemRenderer;
-            coatHemSize = configuredCoatHemSize;
-            perchPelvisDrop = configuredPerchPelvisDrop;
-            dismountClip = configuredDismountClip;
-            leftUpperArm = configuredArms.LeftUpperArm;
-            leftForearm = configuredArms.LeftForearm;
-            leftHand = configuredArms.LeftHand;
-            leftGripSocket = configuredArms.LeftGripSocket;
-            rightUpperArm = configuredArms.RightUpperArm;
-            rightForearm = configuredArms.RightForearm;
-            rightHand = configuredArms.RightHand;
-            rightGripSocket = configuredArms.RightGripSocket;
-        }
-    }
+            LoadDriverBank();
+            Animator = actor.Animator;
+            HeadAnchor = actor.Head;
+            HandPose = actor.GetComponent<NpcHandPose>();
+            if (HandPose == null) throw new InvalidOperationException("Ferryman needs the default NPC's hand contacts.");
+            var rig = new Dictionary<string, Transform>();
+            foreach (Transform bone in actor.ModelRoot.GetComponentsInChildren<Transform>(true))
+                rig.TryAdd(bone.name, bone);
+            Transform Bone(string name) => rig.TryGetValue(name, out var bone) ? bone :
+                throw new InvalidOperationException($"Ferryman's default rig is missing {name}.");
+            Pelvis = Bone("pelvis");
+            Spine = Bone("spine");
+            Chest = Bone("chest");
+            LeftFoot = Bone("foot.L");
+            RightFoot = Bone("foot.R");
+            LeftUpperArm = Bone("upper_arm.L");
+            LeftForearm = Bone("forearm.L");
+            LeftHand = Bone("hand.L");
+            LeftGripSocket = actor.LeftGrip;
+            RightUpperArm = Bone("upper_arm.R");
+            RightForearm = Bone("forearm.R");
+            RightHand = Bone("hand.R");
+            RightGripSocket = actor.RightGrip;
 
-    /// <summary>
-    /// The eight arm bindings, bundled so the prefab build hands them over
-    /// as one argument instead of stretching a signature to fifteen.
-    /// </summary>
-    public readonly struct LastRouteFerrymanArmBindings
-    {
-        public LastRouteFerrymanArmBindings(
-            Transform leftUpperArm,
-            Transform leftForearm,
-            Transform leftHand,
-            Transform leftGripSocket,
-            Transform rightUpperArm,
-            Transform rightForearm,
-            Transform rightHand,
-            Transform rightGripSocket)
-        {
-            LeftUpperArm = leftUpperArm;
-            LeftForearm = leftForearm;
-            LeftHand = leftHand;
-            LeftGripSocket = leftGripSocket;
-            RightUpperArm = rightUpperArm;
-            RightForearm = rightForearm;
-            RightHand = rightHand;
-            RightGripSocket = rightGripSocket;
+            AnatomicalHandFrame palm = HandPose.GetAnatomicalFrame(true);
+            var coin = new GameObject("Coin on Left Palm").transform;
+            coin.position = LeftHand.position + LeftHand.rotation * (palm.PalmCentreInHand + .005f * palm.PalmNormalInHand);
+            coin.rotation = LeftHand.rotation * Quaternion.LookRotation(palm.FingerDirectionInHand, palm.PalmNormalInHand);
+            coin.SetParent(LeftHand, true);
+            CoinRestAnchor = coin;
         }
 
-        public Transform LeftUpperArm { get; }
-        public Transform LeftForearm { get; }
-        public Transform LeftHand { get; }
-        public Transform LeftGripSocket { get; }
-        public Transform RightUpperArm { get; }
-        public Transform RightForearm { get; }
-        public Transform RightHand { get; }
-        public Transform RightGripSocket { get; }
+        internal static void LoadDriverBank()
+        {
+            if (clips != null) return;
+            AnimationClip[] source = Resources.LoadAll<AnimationClip>(DriverBank);
+            var loaded = new AnimationClip[DriverClips.Length];
+            for (int i = 0; i < DriverClips.Length; i++)
+            {
+                loaded[i] = Array.Find(source, candidate => candidate.name == DriverClips[i]);
+                if (loaded[i] == null)
+                    throw new InvalidOperationException($"Missing Last Route action {DriverClips[i]}.");
+            }
+            TextAsset manifest = Resources.Load<TextAsset>(DriverBank);
+            ContactManifest read = manifest != null ? JsonUtility.FromJson<ContactManifest>(manifest.text) : null;
+            if (read?.contacts == null || read.contacts.perch_hip_rise_m <= 0f || read.contacts.perch_hip_reach_m <= 0f)
+                throw new InvalidOperationException("Missing Last Route perch contacts.");
+            contactManifest = read;
+            clips = loaded;
+        }
+
+        [Serializable]
+        private sealed class ContactManifest { public Contacts contacts; }
+
+        [Serializable]
+        private sealed class Contacts
+        {
+            public float perch_hip_rise_m;
+            public float perch_hip_reach_m;
+        }
     }
 }

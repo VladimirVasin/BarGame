@@ -2,6 +2,11 @@
 
 ## Current facts
 
+- **Accepted 2026-11-15, user — Ferryman and sedan.** `last-route.ferryman`
+  uses the default NPC at both stops with a reserved long coat, work cap
+  and boots. The two-door sedan supplies sprung seat and hand anchors for
+  the two cabin action banks. Shared scene FX, mesh LOD, bounded exhaust.
+
 - **Accepted 2026-11-14/15, user — kiosk dialogue and subtitles:** two sealed
   drinks transfer on tabletop contact. Both toss old drinks and pick up the
   gifts in a wide shot before the shared foreman graph. Day/IDs/round in
@@ -3042,16 +3047,12 @@
   is zero; the bedding root owns `-5°` world yaw. The rigged breathing blanket
   replaces the static one; static residents/blanket remain compatibility and
   surface-validation assets only, never rendered.
-  User decision `2026-09-04`: ordinary adults match Hero V2 anatomy, beyond
-  bone names. `PedestrianBuilder.build_ordinary_adult_body`: shelled trunk,
-  hands/thumb, ears, profiled limbs/boots for `yard_babushka`, `weigh_attendant`,
-  `cemetery_mourner`, `cemetery_watchman`, `park_chess_player`,
-  `park_checkers_player`, `last_route_ferryman`. Blender/Unity reject box torsos;
-  budget floor `1,800`. Footwear contacts, headwear, faces and props stay authored;
-  no `texture_atlas` on these seven. `make_trunk_band` follows the shell;
-  `make_trunk_patch` fits pockets/lapels/aprons/scarf tails to it. Generator
-  `4.5.2` preserves untouched city signatures. Fisherman's refinement is owned
-  by the separate `2026-09-29` decision.
+  User decision `2026-09-04`: ordinary adults match Hero V2 anatomy.
+  `PedestrianBuilder.build_ordinary_adult_body` fits the rounded shell,
+  profiled limbs and boots for the staged yard, weighbridge, cemetery and
+  board-game roles. Blender and Unity reject box torsos. Their footwear
+  contacts, headwear, faces and props are authored. For the fisherman,
+  see `2026-09-29`.
 
 - **Accepted — the normal/bizarre verdict lives in C#, temporarily:** every
   character design now carries one of two marks,

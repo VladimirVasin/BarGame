@@ -94,16 +94,12 @@ namespace BarPromenade
             action.dashboard = driver.GetComponent<LastRouteCarDashboard>();
             action.car = driver.GetComponentInChildren<LastRouteCarAssetRegistry>(true);
             action.seat = driver.GetComponentInChildren<LastRouteCarSeatInteraction>(true);
-            action.arms = presentation.GetComponentInChildren<LastRouteFerrymanRigAnchors>(true);
-            var registry = presentation.GetComponentInChildren<CityPedestrianAssetRegistry>(true);
-            if (registry != null)
+            action.arms = presentation.Rig;
+            if (action.arms != null)
             {
-                action.attention.Bind(presentation.transform, registry.HeadAnchor, registry.Animator);
-                foreach (Transform bone in registry.Animator.GetComponentsInChildren<Transform>(true))
-                {
-                    if (bone.name == "spine") action.spine = bone;
-                    if (bone.name == "chest") action.chest = bone;
-                }
+                action.attention.Bind(presentation.transform, action.arms.HeadAnchor, action.arms.Animator);
+                action.spine = action.arms.Spine;
+                action.chest = action.arms.Chest;
             }
             if (action.car != null)
                 foreach (LastRouteCarRendererBinding binding in action.car.Bindings)
@@ -206,10 +202,8 @@ namespace BarPromenade
                 arms.RightGripSocket == null) return;
             if (!framesReady)
             {
-                if (!LastRouteFerrymanHandFrame.TryCreate(arms.LeftHand, arms.LeftGripSocket, true,
-                        ferryman.transform, out leftFrame) ||
-                    !LastRouteFerrymanHandFrame.TryCreate(arms.RightHand, arms.RightGripSocket, false,
-                        ferryman.transform, out rightFrame)) return;
+                leftFrame = LastRouteFerrymanHandFrame.Measure(arms.HandPose, true);
+                rightFrame = LastRouteFerrymanHandFrame.Measure(arms.HandPose, false);
                 framesReady = true;
             }
             Vector3 target = kind == ActionKind.Glovebox ? LidContactPoint : Center(dashboard.RadioTuningKnobMesh);
@@ -295,6 +289,8 @@ namespace BarPromenade
             Vector3 reach = desiredWrist - upper.position;
             spine.position += reach.normalized * Mathf.Min(Mathf.Max(0f, reach.magnitude - armLength), 0.18f) * weight;
             ferryman.ReapplySteeringHands();
+            arms.HandPose.SetGrip(useLeft, Mathf.Lerp(ferryman.SteeringHandsWeight,
+                radio ? (regripping ? .22f : .76f) : 0f, weight));
             Quaternion neutralHandInForearm = Quaternion.Inverse(forearm.rotation) * hand.rotation;
             Vector3 wheelWrist = hand.position;
             Quaternion wheelRotation = hand.rotation;
@@ -403,9 +399,7 @@ namespace BarPromenade
             Vector3 fingers = Vector3.ProjectOnPlane(forearmDirection, normal).normalized;
             if (fingers.sqrMagnitude < 0.01f)
                 fingers = Vector3.ProjectOnPlane(-dashboard.RadioKnobAxis, normal).normalized;
-            Vector3 frameRight = useLeft ? -normal : normal;
-            return Quaternion.LookRotation(fingers, Vector3.Cross(fingers, frameRight)) *
-                Quaternion.Inverse(handFrame.RotationInHand);
+            return handFrame.Anatomy.ResolveHandRotation(-normal, fingers);
         }
 
         private Vector3 RadioGripPoint(Vector3 radial)

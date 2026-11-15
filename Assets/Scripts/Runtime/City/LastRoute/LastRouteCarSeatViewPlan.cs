@@ -18,26 +18,13 @@ namespace BarPromenade
     /// there, and let his hands and knees stay in frame - and this is that
     /// arrangement pointed down a bonnet.
     ///
-    /// The numbers are measured off the two rigs rather than chosen. The
-    /// seat anchor IS the pelvis target - `LastRouteCarSeatPlan` docks the
-    /// hero's hips onto it - and the car's roof was cut in
-    /// `tools/build-last-route-car-3d-model.py` against this rig's seated
-    /// head clearance band of `0.99-1.10 m` above that pelvis, which is
-    /// what puts the eye line just under `0.80`.
+    /// The seat anchor is the passenger's pelvis target. The eye line
+    /// follows it below the fitted cabin roof.
     /// </summary>
     public static class LastRouteCarSeatViewPlan
     {
-        /// <summary>
-        /// How far above the seat anchor the lens sits.
-        ///
-        /// The anchor is a PELVIS target, not a cushion top, so this is the
-        /// whole seated torso: the crown of a seated head lands `0.99-1.10`
-        /// above it and the roof underside was then cut at `1.04`. An eye
-        /// belongs a little below the crown, and every centimetre added
-        /// here is a centimetre off the `0.24 m` of headroom the shot has
-        /// left.
-        /// </summary>
-        public const float EyeHeightAboveSeat = 0.78f;
+        /// <summary>Eye height measured from the seated passenger's pelvis.</summary>
+        public const float EyeHeightAboveSeat = .76f;
 
         /// <summary>
         /// And how far in front of it, along the car's own facing. Small,
@@ -56,7 +43,7 @@ namespace BarPromenade
         /// tight enough that the island through the windscreen is still a
         /// place rather than a fisheye.
         /// </summary>
-        public const float FieldOfView = 62f;
+        public const float FieldOfView = 64f;
 
         /// <summary>
         /// How far he may turn his head on the seat, and how far up and

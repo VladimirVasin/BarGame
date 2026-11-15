@@ -48,6 +48,7 @@ COLORS = {
     "shirt_everyday": "B5AD95", "shirt_work": "7A897E", "shirt_warm": "9A9682",
     "outer_everyday": "706657", "outer_work": "73796B", "outer_warm": "546966",
     "outer_cardigan": "716A62", "outer_coat": "555A55", "outer_overshirt": "7C7968",
+    "ferryman_oilcloth": "343839", "ferryman_binding": "404344", "ferryman_lining": "292B2A",
     "pants_everyday": "494B49", "pants_work": "67695C", "pants_warm": "595B54",
     "boots_everyday": "544639", "boots_work": "494739", "boots_warm": "4B443B",
     "sole": "34342D", "cap_everyday": "655F50", "cap_work": "686D62", "cap_warm": "767764",
@@ -745,6 +746,73 @@ class WorkerBuilder(base.PedestrianBuilder):
             for side,sign in (("L",1),("R",-1)):
                 self.add(prefix+"EarFlap."+side,base.make_ellipsoid((sign*.113,.001,1.601),(.025,.061,.068),12,6),"head",color)
 
+    def ferryman_coat(self, covered):
+        self.item("outerwear.ferryman", covered)
+        cloth = "ferryman_oilcloth"
+        prefix = "CLO_FerrymanCoat"
+        self.trunk(prefix + "Body", ((.853,.221,.156,.013),(.927,.217,.156,.008),
+                   (1.07,.216,.152,0.),(1.244,.227,.145,-.008),(1.356,.216,.132,-.010),
+                   (1.415,.175,.111,-.014),(1.452,.099,.091,-.017)),cloth,sides=28)
+        for side, sign in (("L",1.),("R",-1.)):
+            self.arm(prefix + "Sleeve." + side, side,
+                     (.054,.076,.074,.062,.055,.053,.046,.040,.034),cloth,sides=14)
+            # Rounded front crease, rain collar and an unmarked, broad pocket.
+            points=((sign*.012,-.145,.865),(sign*.016,-.157,1.029),
+                    (sign*.024,-.145,1.231),(sign*.071,-.116,1.398),
+                    (sign*.089,-.082,1.469))
+            binding=self.add(prefix+"Facing."+side,tube(points,(.012,.012,.013,.018,.016),8,.63),
+                             "chest","ferryman_binding")
+            self.weights(binding,[self.trunk_weight(v.co.z+binding.location.z) for v in binding.data.vertices])
+            for y,z,w,h in ((-.141,1.005,.103,.118),(-.148,1.064,.111,.025)):
+                patch=self.add(prefix+f"Pocket{round(z*1000)}."+side,
+                    base.make_ellipsoid((sign*.114,y,z),(w*.5,.009,h*.5),12,6),"spine",cloth)
+                self.weights(patch,[self.trunk_weight(v.co.z+patch.location.z) for v in patch.data.vertices])
+
+            # Each half has an inner return, front and rear vents and a sewn
+            # overlap at the waist. The hem follows the same leg through the
+            # sill and sits outside the thigh rather than entering the cushion.
+            vertices, faces, weights = [], [], []
+            rows=((.946,.213,.149,.07,.01),(.876,.224,.157,.075,.06),
+                  (.796,.231,.159,.15,.34),(.696,.234,.160,.24,.75),
+                  (.574,.231,.161,.30,.93),(.494,.223,.155,.34,.94))
+            columns=12
+            for layer in (0.,.005):
+                for z,width,depth,vent,leg in rows:
+                    for i in range(columns):
+                        t=i/(columns-1)
+                        angle=vent+t*(math.pi-2.*vent)
+                        fold=.007*math.sin(angle*5.+z*5.)*leg
+                        x=sign*((width-layer)*math.sin(angle)+fold)
+                        y=.023-(depth-layer)*math.cos(angle)
+                        vertices.append((x,y,z))
+                        # Rear and front corners can spread, while the crown
+                        # stays with the waist through the door turn.
+                        w=leg*(.56+.44*math.sin(angle))
+                        weights.append({"pelvis":1-w,"thigh."+side:w})
+            stride=len(rows)*columns
+            for layer in (0,stride):
+                for row in range(len(rows)-1):
+                    for i in range(columns-1):
+                        a=layer+row*columns+i
+                        face=(a,a+1,a+columns+1,a+columns)
+                        faces.append(face if layer==0 else tuple(reversed(face)))
+            rim=list(range(columns))+[r*columns+columns-1 for r in range(1,len(rows))]
+            rim+=list(range(stride-2,stride-columns-1,-1))+[r*columns for r in range(len(rows)-2,0,-1)]
+            for a,b in zip(rim,rim[1:]+rim[:1]): faces.append((b,a,a+stride,b+stride))
+            skirt=self.add(prefix+"Hem."+side,(vertices,faces),"pelvis",cloth)
+            self.weights(skirt,weights)
+            skirt.shape_key_add(name="Basis")
+            lifted=skirt.shape_key_add(name="FerrymanHemBreeze")
+            for vertex,target in zip(skirt.data.vertices,lifted.data):
+                low=max(0.,(.795-(vertex.co.z+skirt.location.z))/.31)**2
+                target.co.x+=sign*.029*low
+                target.co.y+=.021*low
+                target.co.z+=.014*low
+
+        for z in (1.055,1.185,1.307):
+            self.add(prefix+f"Fastening{round(z*1000)}",base.make_ellipsoid((.014,-.158,z),(.009,.003,.009),8,4),
+                     "spine" if z<1.20 else "chest","ferryman_binding")
+
     def accessories(self):
         self.item("scarf.warm",["GEO_Neck"]+[p.obj.name for p in self.result.parts if p.obj.name.startswith("CLO_Shirt_") and "Collar" in p.obj.name])
         self.add("CLO_ScarfNeck",base.make_vertical_shell(((1.391,.113,.111,-.004),(1.428,.113,.105,-.012),(1.47,.088,.083,-.02)),16),"neck","scarf")
@@ -805,6 +873,8 @@ class WorkerBuilder(base.PedestrianBuilder):
             if outfit!="everyday":
                 covers=[p.obj.name for p in self.result.parts if p.obj.name.startswith("CLO_Shirt_") and "Collar" not in p.obj.name]
             self.item("outerwear."+outfit,covers);self.outer(outfit)
+        self.ferryman_coat([p.obj.name for p in self.result.parts
+                            if p.obj.name.startswith("CLO_Shirt_") and "Collar" not in p.obj.name])
         for outfit in OUTFITS:
             self.item("trousers."+outfit,[n for n in body_names if n.startswith("GEO_Legs")]);self.trousers(outfit)
         for outfit in OUTFITS:

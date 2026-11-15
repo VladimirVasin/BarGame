@@ -3,18 +3,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>
-    /// Instantiates the one authored Ferryman. There is no pool, no
-    /// director and no spawn band: he keeps the bonnet of his own car for
-    /// as long as the City lives, or he is absent along with the car.
-    ///
-    /// Five things are added around the staged prefab rather than into it,
-    /// and all five for the same reason: that prefab is validated passive,
-    /// with no collider, light, audio or interaction anywhere in it. The
-    /// coin, the cloth coat, the lamp over him, the attention magnet and
-    /// the talk trigger are each raised separately, so the art stays art
-    /// and the guard keeps working.
-    /// </summary>
+    /// <summary>Gives a permanent default NPC his place, clothes and Last Route actions.</summary>
     public static class LastRouteFerrymanFactory
     {
         public const string RuntimeRootName = "Last Route Ferryman";
@@ -46,23 +35,6 @@ namespace BarPromenade
             InventoryTargetInteractionController targetInteraction,
             LastRouteFerrymanVoice voice)
         {
-            return Create(
-                parent,
-                plan,
-                car,
-                targetInteraction,
-                voice,
-                LastRouteFerrymanProvider.Load());
-        }
-
-        public static LastRouteFerrymanPresentation Create(
-            Transform parent,
-            LastRouteFerrymanPlan plan,
-            LastRouteCarAssetRegistry car,
-            InventoryTargetInteractionController targetInteraction,
-            LastRouteFerrymanVoice voice,
-            LastRouteFerrymanProvider provider)
-        {
             if (parent == null)
             {
                 throw new ArgumentNullException(nameof(parent));
@@ -86,75 +58,45 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(car));
             }
 
-            if (provider == null || provider.StagedPrefab == null)
-            {
-                GameLog.Warning(
-                    "city",
-                    "last_route_ferryman_provider_missing");
-                return null;
-            }
-
+            LastRouteFerrymanRigAnchors.LoadDriverBank();
             Transform root = new GameObject(RuntimeRootName).transform;
             root.SetParent(parent, false);
-
             LastRouteFerrymanStance stance = plan.Stance;
-            GameObject instance = UnityEngine.Object.Instantiate(
-                provider.StagedPrefab,
-                root);
+            try
+            {
+                return PlaceFerryman(root, stance, car, targetInteraction, voice);
+            }
+            catch
+            {
+                if (Application.isPlaying) UnityEngine.Object.Destroy(root.gameObject);
+                else UnityEngine.Object.DestroyImmediate(root.gameObject);
+                throw;
+            }
+        }
+
+        private static LastRouteFerrymanPresentation PlaceFerryman(
+            Transform root, LastRouteFerrymanStance stance, LastRouteCarAssetRegistry car,
+            InventoryTargetInteractionController targetInteraction, LastRouteFerrymanVoice voice)
+        {
+            VillageResidentPresentation actor = DefaultNpcFactory.CreateForCharacter(root, DefaultNpcPopulation.LastRouteFerryman);
+            GameObject instance = actor.gameObject;
             instance.name = "Ferryman";
-            instance.transform.SetPositionAndRotation(
-                stance.Position,
-                Quaternion.LookRotation(stance.Facing, Vector3.up));
-
-            var registry = instance
-                .GetComponentInChildren<CityPedestrianAssetRegistry>(true);
-            if (registry == null)
-            {
-                UnityEngine.Object.Destroy(root.gameObject);
-                throw new InvalidOperationException(
-                    "The staged Ferryman prefab requires a " +
-                    nameof(CityPedestrianAssetRegistry) + ".");
-            }
-
-            var anchors = instance
-                .GetComponentInChildren<LastRouteFerrymanRigAnchors>(true);
-            if (anchors == null ||
-                anchors.CoinRestAnchor == null ||
-                anchors.CoatHemAnchor == null)
-            {
-                UnityEngine.Object.Destroy(root.gameObject);
-                throw new InvalidOperationException(
-                    "The staged Ferryman prefab requires bound " +
-                    nameof(LastRouteFerrymanRigAnchors) + " for its coin " +
-                    "and its coat.");
-            }
-
+            instance.transform.SetPositionAndRotation(stance.Position, Quaternion.LookRotation(stance.Facing, Vector3.up));
             ValidatePassivePresentation(instance);
+            actor.ReleaseAnimation();
 
-            var presentation = instance
-                .AddComponent<LastRouteFerrymanPresentation>();
-            presentation.Initialize(registry, anchors, stance, car);
-            NpcNameplateTarget.Attach(
-                instance, "npc.name.ferryman", registry.HeadAnchor, "ferryman")
-                .SetInteractionRoot(root).SetHeadClearance(0.5f);
+            var anchors = instance.AddComponent<LastRouteFerrymanRigAnchors>();
+            anchors.Bind(actor);
+            var presentation = instance.AddComponent<LastRouteFerrymanPresentation>();
+            presentation.Initialize(anchors, stance, car);
+            NpcNameplateTarget.Attach(instance, "npc.name.ferryman", anchors.HeadAnchor, "ferryman")
+                .SetInteractionRoot(root).SetHeadClearance(.5f);
 
-            // The coin and the coat are both children of the ROOT rather
-            // than of any bone: the imported hierarchy carries Unity's 100x
-            // FBX scale, and both of these are written into world space
-            // every frame instead of inheriting it. Neither needs the
-            // inverse-scale dance that bone-socket props do.
             var coinObject = new GameObject("Ferryman Coin Rig");
             coinObject.transform.SetParent(root, false);
             coinObject.AddComponent<LastRouteFerrymanCoin>().Initialize(
-                presentation,
-                anchors.CoinRestAnchor,
-                instance.transform);
-
-            var coatObject = new GameObject("Ferryman Coat");
-            coatObject.transform.SetParent(root, false);
-            coatObject.AddComponent<LastRouteFerrymanCoat>().Initialize(
-                anchors,
-                instance.transform);
+                presentation, anchors.CoinRestAnchor, instance.transform);
+            instance.AddComponent<LastRouteFerrymanCoat>().Initialize(presentation, instance.GetComponent<NpcWardrobe>());
 
             // He carries no light of his own any more. What lit him was a
             // bare Point with no fixture drawn anywhere, parented beside
@@ -199,10 +141,7 @@ namespace BarPromenade
                 // offering the road or only answering. The source lives
                 // on the speech service: the passive-presentation guard
                 // below rejects an AudioSource inside this instance.
-                NpcSpeaker speaker = NpcSpeaker.FromRegistry(
-                    presentation,
-                    registry,
-                    NpcEarshotProfile.Conversation);
+                NpcSpeaker speaker = presentation.Speaker;
                 if (targetInteraction != null)
                 {
                     var menu = trigger
@@ -239,9 +178,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The staged prefab is authored passive on purpose. Instantiating
-        /// it must not smuggle in physics, audio, light or interaction -
-        /// the coin, the coat and the talk trigger are added separately.
+        /// Vehicle mechanics and speech own all scene resources around the actor.
         /// </summary>
         private static void ValidatePassivePresentation(GameObject instance)
         {
@@ -252,7 +189,7 @@ namespace BarPromenade
                 instance.GetComponentInChildren<Camera>(true) != null)
             {
                 throw new InvalidOperationException(
-                    "The staged Ferryman presentation must stay passive.");
+                    "The Ferryman presentation must stay passive.");
             }
         }
     }

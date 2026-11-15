@@ -184,6 +184,7 @@ namespace BarPromenade
             Vector3 dock = car.position + centreline +
                 (outward * DockStandoff) -
                 (forward * DockRearwardShift);
+            dock = LastRouteCarDoors.ResolveDockBehindSwing(dock, forward, registry.DriverDoorLeaf);
             dock.y = LastRouteCarSeatPlan.ResolveStandingHeight(dock, groundY);
 
             // He turns to face the doorway he is about to step into, not the

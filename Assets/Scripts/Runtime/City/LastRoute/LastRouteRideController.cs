@@ -546,12 +546,7 @@ namespace BarPromenade
             controller.RoadSpeech = LastRouteRideSpeechView.Create(host.transform);
             controller.RoadSpeech.BindCamera(carSeat.SeatCamera);
             controller.roadSpeechState = LastRouteRideSpeechSession.State;
-            controller.roadSpeaker = NpcSpeaker.FromRegistry(
-                ferrymanPresentation,
-                ferrymanPresentation != null
-                    ? ferrymanPresentation.GetComponentInChildren<CityPedestrianAssetRegistry>()
-                    : null,
-                NpcEarshotProfile.Conversation);
+            controller.roadSpeaker = ferrymanPresentation != null ? ferrymanPresentation.Speaker : NpcSpeaker.None;
             controller.CabinActions = LastRouteFerrymanCabinActions.Create(
                 host.transform, ferrymanPresentation, carDriver, controller);
             carSeat.AttachDriver(carDriver);

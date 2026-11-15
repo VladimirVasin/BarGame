@@ -29,8 +29,8 @@ namespace BarPromenade
         // open a car door: behind the swing, in the aperture, not in front
         // of it. `LastRouteCarDoors.MeasureSwingClearance` states the rule
         // and one EditMode test holds both docks to it.
-        public const float DockStandoff = 1.85f;
-        public const float DockRearwardShift = 1.00f;
+        public const float DockStandoff = 1.42f;
+        public const float DockRearwardShift = .91f;
 
         /// <summary>
         /// How far out the pelvis passes through the doorway on its way to
@@ -225,6 +225,7 @@ namespace BarPromenade
             Vector3 dock = car.position + centreline +
                 (outward * DockStandoff) -
                 (forward * DockRearwardShift);
+            dock = LastRouteCarDoors.ResolveDockBehindSwing(dock, forward, registry.PassengerDoorLeaf);
 
             // The dock's height has to be the height the hero will actually
             // stand at, not the car's own ground. The island's paving slab,

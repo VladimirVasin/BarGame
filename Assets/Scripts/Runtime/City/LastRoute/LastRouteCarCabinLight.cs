@@ -60,22 +60,8 @@ namespace BarPromenade
         public const string GloveboxBulbRole = "glovebox_bulb";
         public const string InstrumentFacesRole = "instrument_faces";
 
-        /// <summary>
-        /// The plafond, derived rather than chosen.
-        ///
-        /// The emitter stands `0.533 m` from the Ferryman's face at `58.2°`
-        /// off the axis, where the spot's own angular falloff between the
-        /// `55°` and `70°` half-angles leaves `0.628`; `N·L` on his cheek is
-        /// `0.375` and the range fade `0.906`, so `1.90` arrives as about
-        /// `0.91` and puts his skin near `114/255` after the mountain
-        /// grade. Skin does not clip until roughly `5.9`, so there is six
-        /// times the headroom; the brightest thing in the frame is the
-        /// hero's own hands in his lap at about `179/255`, which is what a
-        /// dome lamp over a lap should do. The usable band is `1.2`-`2.4`
-        /// and this is the ONLY dial worth moving if it wants tuning -
-        /// never the cone, never the range.
-        /// </summary>
-        public const float CabinLampIntensity = 1.90f;
+        /// <summary>The plafond's output for the default driver's face and the textured dash.</summary>
+        public const float CabinLampIntensity = 1.43f;
 
         /// <summary>
         /// Range does two jobs at once here, and both are load-bearing.
@@ -123,13 +109,10 @@ namespace BarPromenade
         public const float CabinLampStandoff = 0.0245f;
 
         /// <summary>
-        /// The glovebox bulb, set by a `9 cm` throw, which is why it is a
-        /// hundredth of the plafond. The only thing a seated passenger can
-        /// SEE inside the box is the floor strip his sightline reaches past
-        /// the aperture's top edge; its centre is `0.093 m` from the bulb.
-        /// The low output keeps that nearby strip a warm lit drawer.
+        /// The glovebox bulb gives the flocked tray and the exposed coins
+        /// a small warm pool of light when the lid is open.
         /// </summary>
-        public const float GloveboxLampIntensity = 0.055f;
+        public const float GloveboxLampIntensity = 0.048f;
 
         /// <summary>
         /// The compartment walls cast no shadows, so the range must stop
@@ -164,7 +147,7 @@ namespace BarPromenade
         /// already an argument between cold mercury and the cafe's
         /// sulphur.</summary>
         private static readonly Color CabinLampColor =
-            new Color(1.00f, 0.82f, 0.56f);
+            new Color(1.00f, 0.87f, 0.70f);
 
         /// <summary>What the lit surfaces glow when the material carries no
         /// readable emission - a build without one is a build somebody will

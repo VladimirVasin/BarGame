@@ -1,0 +1,40 @@
+{
+  "generator": "build-last-route-cabin-actions.py",
+  "bank": "LastRouteFerrymanActions",
+  "bone_count": 31,
+  "signature": "3997922d2bec54f28246a0964a058270178079c9e4f5b03f43a4fbbf47be0eb5",
+  "contacts": {
+    "perch_hip_rise_m": 0.112,
+    "perch_hip_reach_m": 0.058,
+    "driver_crown_above_pelvis_m": 0.904962,
+    "maximum_sole_fit_error_m": 4e-06,
+    "minimum_perch_shin_clearance_m": 0.02281
+  },
+  "clips": [
+    {
+      "name": "FerrymanWait",
+      "seconds": 4.0,
+      "loop": true
+    },
+    {
+      "name": "FerrymanTrudge",
+      "seconds": 1.5,
+      "loop": true
+    },
+    {
+      "name": "FerrymanDismount",
+      "seconds": 1.0,
+      "loop": false
+    },
+    {
+      "name": "FerrymanBoard",
+      "seconds": 2.5,
+      "loop": false
+    },
+    {
+      "name": "FerrymanDrive",
+      "seconds": 3.0,
+      "loop": true
+    }
+  ]
+}

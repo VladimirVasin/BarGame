@@ -1,0 +1,27 @@
+{
+  "generator": "build-last-route-cabin-actions.py",
+  "bank": "LastRoutePassengerActions",
+  "bone_count": 43,
+  "signature": "3238658e174d223beaa1286e42088a4b3a14964974787cc1a5a4ba61fa13941d",
+  "contacts": {
+    "passenger_crown_above_pelvis_m": 0.885857,
+    "maximum_sole_fit_error_m": 3.9e-06
+  },
+  "clips": [
+    {
+      "name": "LastRoutePassengerLoop",
+      "seconds": 2.0,
+      "loop": true
+    },
+    {
+      "name": "LastRoutePassengerEnter",
+      "seconds": 3.0,
+      "loop": false
+    },
+    {
+      "name": "LastRoutePassengerExit",
+      "seconds": 3.0,
+      "loop": false
+    }
+  ]
+}

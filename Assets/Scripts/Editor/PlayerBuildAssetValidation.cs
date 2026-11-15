@@ -92,6 +92,8 @@ namespace BarPromenade.Editor
             RegisterGenerated("Bus driver", CityBusDriverAssetSetup.ValidateOrThrow, "CityBusDriverAssetSetup");
             Register("Last Route car", BarPromenade.EditorTools.LastRouteCarAssetSetup.ValidateOrThrow,
                 "BarPromenade.EditorTools.LastRouteCarAssetSetup.BuildOrThrow");
+            Register("Last Route cabin actions", LastRouteCabinAssetSetup.ValidateOrThrow,
+                "BarPromenade.Editor.LastRouteCabinAssetSetup.BuildOrThrow");
             RegisterGenerated("Raven", CemeteryRavenAssetSetup.ValidateOrThrow, "CemeteryRavenAssetSetup");
             RegisterGenerated("Stairwell cat", StairwellCatAssetSetup.ValidateOrThrow, "StairwellCatAssetSetup");
             Register("Stairwell labyrinth collision", StairwellLabyrinthAssetSetup.ValidateOrThrow,

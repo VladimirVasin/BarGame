@@ -55,11 +55,9 @@ asphalt12m. `build-city-port-foreman-3d-model.py`:`Foreman/PortForeman`
 model/manifest/actions/atlas/lower-face/chin-jowl/mouth/export check.
 `dialogue_face_atlas.py [--validate-only]`:face PNGs/manifest;no Blender.
 
-`build-last-route-coin-3d-model.py`: `54 x 9 mm` brass coin/glovebox pile.
-Launcher/`--validate-only`:determinism/winding/compartment-light clearance.
-`Assets/Resources/Vehicles/LastRouteCoin3D.{fbx,json}`;
-source `ArtSource/Vehicles/Blender/LastRouteCoin3D.blend`.
-`LastRouteCoinAssetValidation`:build-gate import bounds.
+`build-last-route-{car,coin}-3d-model.py` and `build-last-route-cabin-actions.py`:
+launcher, `--validate-only`; sedan and anchors, coin and pile, driver/passenger clips.
+Car textures use NumPy. `LastRouteCabinAssetSetup.BuildOrThrow` imports car and wardrobe.
 
 Village: `build-village-{outdoor-player-actions,errands}-3d-model.py` via `run-blender.py`.
 Checks: `VillageOutdoorLife` (contacts/carry/reload), `VillageOutdoorPartners` (completion).

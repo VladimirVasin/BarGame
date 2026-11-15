@@ -3336,6 +3336,280 @@
         }
       },
       {
+        "id": "elbow.L:CLO_FerrymanCoatSleeve.L",
+        "bone": "forearm.L",
+        "renderers": [
+          "CLO_FerrymanCoatSleeve.L",
+          "CLO_FerrymanCoatSleeve.L"
+        ],
+        "topology": "continuous",
+        "vertices_a": [
+          67,
+          68,
+          69,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66
+        ],
+        "vertices_b": [
+          67,
+          68,
+          69,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66
+        ],
+        "bones": [
+          "upper_arm.L",
+          "forearm.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.4233178198337555,
+            "y": -0.0008669747039675713,
+            "z": 1.2067385911941528
+          },
+          {
+            "x": 0.43008124828338623,
+            "y": 0.019194044172763824,
+            "z": 1.2149451971054077
+          },
+          {
+            "x": 0.44178012013435364,
+            "y": 0.033076703548431396,
+            "z": 1.2300947904586792
+          },
+          {
+            "x": 0.4560973644256592,
+            "y": 0.03803136199712753,
+            "z": 1.2491867542266846
+          },
+          {
+            "x": 0.47019726037979126,
+            "y": 0.033076703548431396,
+            "z": 1.2684398889541626
+          },
+          {
+            "x": 0.4812871813774109,
+            "y": 0.019194044172763824,
+            "z": 1.2840408086776733
+          },
+          {
+            "x": 0.48717057704925537,
+            "y": -0.0008669747039675713,
+            "z": 1.292899489402771
+          },
+          {
+            "x": 0.4866821765899658,
+            "y": -0.02313302457332611,
+            "z": 1.2932614088058472
+          },
+          {
+            "x": 0.47991877794265747,
+            "y": -0.04319404438138008,
+            "z": 1.2850548028945923
+          },
+          {
+            "x": 0.4682198762893677,
+            "y": -0.057076700031757355,
+            "z": 1.2699052095413208
+          },
+          {
+            "x": 0.4539026618003845,
+            "y": -0.06203136593103409,
+            "z": 1.2508132457733154
+          },
+          {
+            "x": 0.43980273604393005,
+            "y": -0.057076700031757355,
+            "z": 1.2315601110458374
+          },
+          {
+            "x": 0.4287128448486328,
+            "y": -0.04319404438138008,
+            "z": 1.2159591913223267
+          },
+          {
+            "x": 0.42282941937446594,
+            "y": -0.02313302457332611,
+            "z": 1.207100510597229
+          }
+        ],
+        "band_m": 0.1,
+        "loose": false,
+        "corrective_shape": "JointVolume.Elbow.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            0.999975,
+            0.999906,
+            0.999801
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "elbow.R:CLO_FerrymanCoatSleeve.R",
+        "bone": "forearm.R",
+        "renderers": [
+          "CLO_FerrymanCoatSleeve.R",
+          "CLO_FerrymanCoatSleeve.R"
+        ],
+        "topology": "continuous",
+        "vertices_a": [
+          67,
+          68,
+          69,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66
+        ],
+        "vertices_b": [
+          67,
+          68,
+          69,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66
+        ],
+        "bones": [
+          "upper_arm.R",
+          "forearm.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.4852501153945923,
+            "y": 0.003129882737994194,
+            "z": 1.286840558052063
+          },
+          {
+            "x": -0.47951003909111023,
+            "y": 0.023185238242149353,
+            "z": 1.277875542640686
+          },
+          {
+            "x": -0.46851930022239685,
+            "y": 0.037063974887132645,
+            "z": 1.262201189994812
+          },
+          {
+            "x": -0.45445480942726135,
+            "y": 0.042017240077257156,
+            "z": 1.2429218292236328
+          },
+          {
+            "x": -0.44010213017463684,
+            "y": 0.037063974887132645,
+            "z": 1.2238560914993286
+          },
+          {
+            "x": -0.4283040463924408,
+            "y": 0.023185238242149353,
+            "z": 1.2087799310684204
+          },
+          {
+            "x": -0.42139732837677,
+            "y": 0.003129882737994194,
+            "z": 1.2006796598434448
+          },
+          {
+            "x": -0.4207499027252197,
+            "y": -0.019129883497953415,
+            "z": 1.2011593580245972
+          },
+          {
+            "x": -0.4264899790287018,
+            "y": -0.03918524086475372,
+            "z": 1.2101243734359741
+          },
+          {
+            "x": -0.43748071789741516,
+            "y": -0.053063977509737015,
+            "z": 1.2257987260818481
+          },
+          {
+            "x": -0.45154520869255066,
+            "y": -0.058017242699861526,
+            "z": 1.2450780868530273
+          },
+          {
+            "x": -0.46589788794517517,
+            "y": -0.053063977509737015,
+            "z": 1.2641438245773315
+          },
+          {
+            "x": -0.4776959717273712,
+            "y": -0.03918524086475372,
+            "z": 1.2792199850082397
+          },
+          {
+            "x": -0.484602689743042,
+            "y": -0.019129883497953415,
+            "z": 1.2873202562332153
+          }
+        ],
+        "band_m": 0.1,
+        "loose": false,
+        "corrective_shape": "JointVolume.Elbow.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            0.999987,
+            0.999946,
+            0.999886
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
         "id": "knee.L:CLO_Trousers_everydayUpper",
         "bone": "shin.L",
         "renderers": [
@@ -4670,6 +4944,22 @@
         ]
       },
       {
+        "name": "CLO_FerrymanCoatSleeve.L",
+        "bones": [
+          "chest",
+          "forearm.L",
+          "upper_arm.L"
+        ]
+      },
+      {
+        "name": "CLO_FerrymanCoatSleeve.R",
+        "bones": [
+          "chest",
+          "forearm.R",
+          "upper_arm.R"
+        ]
+      },
+      {
         "name": "CLO_Trousers_everydayUpper",
         "bones": [
           "pelvis",
@@ -4717,8 +5007,8 @@
     "attachments": []
   },
   "height_scale": 1.0171428571428571,
-  "mesh_count": 196,
-  "triangle_count": 18200,
+  "mesh_count": 210,
+  "triangle_count": 20428,
   "bounds_min": [
     -0.78121,
     -0.251,
@@ -4726,7 +5016,7 @@
   ],
   "bounds_max": [
     0.78321,
-    0.167,
+    0.180215,
     1.776
   ],
   "atlas_sha256": "01c1b577931563cfb18b8af9aea80a3a36cb99e7cf0d0b84f6f9d2814141205b",
@@ -4838,6 +5128,20 @@
       "CLO_Outer_overshirtButton2",
       "CLO_Outer_overshirtButton3",
       "CLO_Outer_overshirtButton4",
+      "CLO_FerrymanCoatBody",
+      "CLO_FerrymanCoatSleeve.L",
+      "CLO_FerrymanCoatFacing.L",
+      "CLO_FerrymanCoatPocket1005.L",
+      "CLO_FerrymanCoatPocket1064.L",
+      "CLO_FerrymanCoatHem.L",
+      "CLO_FerrymanCoatSleeve.R",
+      "CLO_FerrymanCoatFacing.R",
+      "CLO_FerrymanCoatPocket1005.R",
+      "CLO_FerrymanCoatPocket1064.R",
+      "CLO_FerrymanCoatHem.R",
+      "CLO_FerrymanCoatFastening1055",
+      "CLO_FerrymanCoatFastening1185",
+      "CLO_FerrymanCoatFastening1307",
       "CLO_Trousers_everydayUpper",
       "CLO_Trousers_everydayLower.L",
       "CLO_Trousers_everydayLower.R",
@@ -6054,6 +6358,132 @@
       ]
     },
     {
+      "name": "CLO_FerrymanCoatBody",
+      "color": [
+        0.03433980680868217,
+        0.03954623527673284,
+        0.04091519690685319,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_FerrymanCoatSleeve.L",
+      "color": [
+        0.03433980680868217,
+        0.03954623527673284,
+        0.04091519690685319,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_FerrymanCoatFacing.L",
+      "color": [
+        0.05126945837404324,
+        0.05612849004960009,
+        0.05780543019106723,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_FerrymanCoatPocket1005.L",
+      "color": [
+        0.03433980680868217,
+        0.03954623527673284,
+        0.04091519690685319,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_FerrymanCoatPocket1064.L",
+      "color": [
+        0.03433980680868217,
+        0.03954623527673284,
+        0.04091519690685319,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_FerrymanCoatHem.L",
+      "color": [
+        0.03433980680868217,
+        0.03954623527673284,
+        0.04091519690685319,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_FerrymanCoatSleeve.R",
+      "color": [
+        0.03433980680868217,
+        0.03954623527673284,
+        0.04091519690685319,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_FerrymanCoatFacing.R",
+      "color": [
+        0.05126945837404324,
+        0.05612849004960009,
+        0.05780543019106723,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_FerrymanCoatPocket1005.R",
+      "color": [
+        0.03433980680868217,
+        0.03954623527673284,
+        0.04091519690685319,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_FerrymanCoatPocket1064.R",
+      "color": [
+        0.03433980680868217,
+        0.03954623527673284,
+        0.04091519690685319,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_FerrymanCoatHem.R",
+      "color": [
+        0.03433980680868217,
+        0.03954623527673284,
+        0.04091519690685319,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_FerrymanCoatFastening1055",
+      "color": [
+        0.05126945837404324,
+        0.05612849004960009,
+        0.05780543019106723,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_FerrymanCoatFastening1185",
+      "color": [
+        0.05126945837404324,
+        0.05612849004960009,
+        0.05780543019106723,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_FerrymanCoatFastening1307",
+      "color": [
+        0.05126945837404324,
+        0.05612849004960009,
+        0.05780543019106723,
+        1.0
+      ]
+    },
+    {
       "name": "CLO_Trousers_everydayUpper",
       "color": [
         0.06662593864377289,
@@ -7008,6 +7438,39 @@
         ]
       },
       {
+        "id": "outerwear.ferryman",
+        "slot": "outerwear",
+        "renderers": [
+          "CLO_FerrymanCoatBody",
+          "CLO_FerrymanCoatSleeve.L",
+          "CLO_FerrymanCoatFacing.L",
+          "CLO_FerrymanCoatPocket1005.L",
+          "CLO_FerrymanCoatPocket1064.L",
+          "CLO_FerrymanCoatHem.L",
+          "CLO_FerrymanCoatSleeve.R",
+          "CLO_FerrymanCoatFacing.R",
+          "CLO_FerrymanCoatPocket1005.R",
+          "CLO_FerrymanCoatPocket1064.R",
+          "CLO_FerrymanCoatHem.R",
+          "CLO_FerrymanCoatFastening1055",
+          "CLO_FerrymanCoatFastening1185",
+          "CLO_FerrymanCoatFastening1307"
+        ],
+        "covered_renderers": [
+          "CLO_Shirt_everydayBody",
+          "CLO_Shirt_everydaySleeve.L",
+          "CLO_Shirt_everydaySleeve.R",
+          "CLO_Shirt_everydayPlacket",
+          "CLO_Shirt_workBody",
+          "CLO_Shirt_workSleeve.L",
+          "CLO_Shirt_workSleeve.R",
+          "CLO_Shirt_workPlacket",
+          "CLO_Shirt_warmBody",
+          "CLO_Shirt_warmSleeve.L",
+          "CLO_Shirt_warmSleeve.R"
+        ]
+      },
+      {
         "id": "trousers.everyday",
         "slot": "trousers",
         "renderers": [
@@ -7298,16 +7761,16 @@
     "037055e31e57b052881d8a3ba64b27bd1fdde9d8524fa19399f36640445d51fa",
     "c358695eebb5c92658cd9e6a6e19893264b011a61e31be2267cfe08647ea0985"
   ],
-  "geometry_signature": "efab63dfc022124f2e11f2ed6dcb61b53234d694cae55c8f88d32a78d3d05cba",
+  "geometry_signature": "08631a4a06c3ae60a0d29f9aa3c051da9f3b9b953bfc9517d559d5120b16e3fd",
   "validation": {
     "outfit_triangle_counts": {
       "everyday": 4936,
       "work": 4804,
       "warm": 4408
     },
-    "maximum_visible_triangles": 6168,
+    "maximum_visible_triangles": 7360,
     "maximum_visible_items": [
-      "outerwear.coat",
+      "outerwear.ferryman",
       "trousers.work",
       "boots.everyday",
       "headwear.warm",
@@ -7440,15 +7903,15 @@
         "BodyShape.Slim": {
           "minimum_front_y_m": -0.0734945,
           "waist_width_m": 0.27104,
-          "changed_vertices": 6507
+          "changed_vertices": 7577
         },
         "BodyShape.Chubby": {
           "minimum_front_y_m": -0.1755443,
           "waist_width_m": 0.4004,
-          "changed_vertices": 6512
+          "changed_vertices": 7582
         }
       },
-      "signature": "b97d6b8d95242a4d11e56478e88c4800f3adde3bb12b0154efbb940f54df04f3",
+      "signature": "cb219475f1c217523a447d9b9ca94fc369b473dddad1750ebe382879df994d67",
       "source_geometry_reused": true,
       "shared_skin_garment_field": true,
       "head_hair_hand_contact_preserved": true
@@ -7796,6 +8259,6 @@
       "sha256": "9420461a8a4d4454ca2390364b64858e1f8e72768d18bc27e11f042caff606f5"
     }
   ],
-  "uv_signature": "46ecf0bfe0a432b514ad65b9e3d966127364b8976081eac93d3abd8f79bb71f1",
-  "signature": "0d0243478c98f12871730fb6a86a6f4f69dc4f0d65963b5ee5f2cb5c81d1f525"
+  "uv_signature": "fddb209da05ff8b4234313da50e7494dde033f50a144f3bb771bd3a46e1e692c",
+  "signature": "f8e5923f918c5814bb4531d3bdefb6c49412470de680f135fe48033574f2cb07"
 }

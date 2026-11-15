@@ -145,20 +145,32 @@ namespace BarPromenade
             float reach = 0f;
             for (int index = 0; index < renderers.Length; index++)
             {
-                Bounds bounds = renderers[index].bounds;
+                Renderer renderer = renderers[index];
+                Bounds bounds = renderer.localBounds;
                 for (int corner = 0; corner < 8; corner++)
                 {
                     var offset = new Vector3(
                         (corner & 1) == 0 ? -bounds.extents.x : bounds.extents.x,
                         (corner & 2) == 0 ? -bounds.extents.y : bounds.extents.y,
                         (corner & 4) == 0 ? -bounds.extents.z : bounds.extents.z);
-                    Vector3 planar = bounds.center + offset - hinge;
+                    Vector3 planar = renderer.transform.TransformPoint(bounds.center + offset) - hinge;
                     planar.y = 0f;
                     reach = Mathf.Max(reach, planar.magnitude);
                 }
             }
 
             return reach;
+        }
+
+        internal static Vector3 ResolveDockBehindSwing(Vector3 candidate, Vector3 forward, Transform leaf)
+        {
+            if (leaf == null) return candidate;
+            Vector3 fromHinge = Vector3.ProjectOnPlane(candidate - leaf.position, Vector3.up);
+            float back = -Vector3.Dot(fromHinge, forward);
+            float sideSquared = Mathf.Max(0f, fromHinge.sqrMagnitude - back * back);
+            float radius = MeasureLeafReach(leaf) + SwingBodyClearance + .035f;
+            float requiredBack = Mathf.Sqrt(Mathf.Max(0f, radius * radius - sideSquared));
+            return candidate - forward * Mathf.Max(0f, requiredBack - back);
         }
 
         /// <summary>

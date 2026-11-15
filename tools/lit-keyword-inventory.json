@@ -35,18 +35,7 @@
         "Assets/Vehicles/Materials/CityBusRubber.mat",
         "Assets/Vehicles/Materials/CityBusSeat.mat",
         "Assets/Vehicles/Materials/CityBusTrim.mat",
-        "Assets/Vehicles/Materials/LastRouteCarAccentPaint.mat",
-        "Assets/Vehicles/Materials/LastRouteCarBody.mat",
-        "Assets/Vehicles/Materials/LastRouteCarBrokenGlass.mat",
-        "Assets/Vehicles/Materials/LastRouteCarChrome.mat",
-        "Assets/Vehicles/Materials/LastRouteCarDashboard.mat",
-        "Assets/Vehicles/Materials/LastRouteCarInterior.mat",
-        "Assets/Vehicles/Materials/LastRouteCarMetal.mat",
-        "Assets/Vehicles/Materials/LastRouteCarPlate.mat",
-        "Assets/Vehicles/Materials/LastRouteCarRubber.mat",
-        "Assets/Vehicles/Materials/LastRouteCarRust.mat",
-        "Assets/Vehicles/Materials/LastRouteCarSeat.mat",
-        "Assets/Vehicles/Materials/LastRouteCarTrim.mat"
+        "Assets/Vehicles/Materials/LastRouteCarBrokenGlass.mat"
       ]
     },
     {
@@ -55,9 +44,7 @@
         "_SURFACE_TYPE_TRANSPARENT"
       ],
       "evidence_materials": [
-        "Assets/Vehicles/Materials/CityBusGlass.mat",
-        "Assets/Vehicles/Materials/LastRouteCarCrackedGlass.mat",
-        "Assets/Vehicles/Materials/LastRouteCarGlass.mat"
+        "Assets/Vehicles/Materials/CityBusGlass.mat"
       ]
     },
     {
@@ -68,11 +55,7 @@
         "Assets/Vehicles/Materials/CityBusCabinLight.mat",
         "Assets/Vehicles/Materials/CityBusDestination.mat",
         "Assets/Vehicles/Materials/CityBusHeadlight.mat",
-        "Assets/Vehicles/Materials/CityBusTailLight.mat",
-        "Assets/Vehicles/Materials/LastRouteCarCabinLamp.mat",
-        "Assets/Vehicles/Materials/LastRouteCarHeadlight.mat",
-        "Assets/Vehicles/Materials/LastRouteCarRadioDial.mat",
-        "Assets/Vehicles/Materials/LastRouteCarTailLight.mat"
+        "Assets/Vehicles/Materials/CityBusTailLight.mat"
       ]
     },
     {
@@ -94,6 +77,59 @@
       ],
       "evidence_materials": [
         "Assets/Player3D/Materials/Player3DLit.mat"
+      ]
+    },
+    {
+      "keywords": [
+        "_EMISSION",
+        "_SCREENSPACEREFLECTIONS_OFF"
+      ],
+      "evidence_materials": [
+        "Assets/Vehicles/Materials/LastRouteCarCabinLamp.mat",
+        "Assets/Vehicles/Materials/LastRouteCarHeadlight.mat",
+        "Assets/Vehicles/Materials/LastRouteCarRadioDial.mat",
+        "Assets/Vehicles/Materials/LastRouteCarTailLight.mat"
+      ]
+    },
+    {
+      "keywords": [
+        "_METALLICSPECGLOSSMAP",
+        "_NORMALMAP",
+        "_SCREENSPACEREFLECTIONS_OFF"
+      ],
+      "evidence_materials": [
+        "Assets/Vehicles/Materials/LastRouteCarAccentPaint.mat",
+        "Assets/Vehicles/Materials/LastRouteCarBody.mat",
+        "Assets/Vehicles/Materials/LastRouteCarCarpet.mat",
+        "Assets/Vehicles/Materials/LastRouteCarDashboard.mat",
+        "Assets/Vehicles/Materials/LastRouteCarInterior.mat",
+        "Assets/Vehicles/Materials/LastRouteCarRubber.mat",
+        "Assets/Vehicles/Materials/LastRouteCarSeat.mat"
+      ]
+    },
+    {
+      "keywords": [
+        "_SCREENSPACEREFLECTIONS_OFF"
+      ],
+      "evidence_materials": [
+        "Assets/Vehicles/Materials/LastRouteCarChrome.mat",
+        "Assets/Vehicles/Materials/LastRouteCarInstrumentInk.mat",
+        "Assets/Vehicles/Materials/LastRouteCarMarkerLens.mat",
+        "Assets/Vehicles/Materials/LastRouteCarMetal.mat",
+        "Assets/Vehicles/Materials/LastRouteCarPlate.mat",
+        "Assets/Vehicles/Materials/LastRouteCarTrim.mat"
+      ]
+    },
+    {
+      "keywords": [
+        "_ALPHAPREMULTIPLY_ON",
+        "_SCREENSPACEREFLECTIONSCONTRIBUTETRANSPARENT_OFF",
+        "_SCREENSPACEREFLECTIONS_OFF",
+        "_SURFACE_TYPE_TRANSPARENT"
+      ],
+      "evidence_materials": [
+        "Assets/Vehicles/Materials/LastRouteCarCrackedGlass.mat",
+        "Assets/Vehicles/Materials/LastRouteCarGlass.mat"
       ]
     }
   ],

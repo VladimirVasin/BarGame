@@ -803,6 +803,7 @@ namespace BarPromenade.Tests.PlayMode
                 Renderer bulb = FindCabinRenderer(harness.Car, "glovebox_bulb");
                 Renderer compartment = FindCabinRenderer(
                     harness.Car, "glovebox_compartment");
+                MeshRenderer coins = harness.Car.GetComponentInChildren<LastRouteGloveboxCoins>().PileRenderer;
                 Assert.That(bulb.bounds.size.magnitude, Is.LessThan(0.10f),
                     "The drawn bulb must remain a centimetre-scale fixture.");
                 Assert.That(bulb.transform.IsChildOf(harness.Car.GloveboxLidPivot),
@@ -874,6 +875,8 @@ namespace BarPromenade.Tests.PlayMode
                     }
 
                     WriteCabinCapture(camera, target, buffer, shots[index].Name);
+                    if (shots[index].Name == "05-glovebox-open")
+                        AssertCoinsVisible(camera, target, buffer, coins);
                 }
             }
             finally
@@ -913,8 +916,43 @@ namespace BarPromenade.Tests.PlayMode
                 position, Quaternion.LookRotation(aim - position, Vector3.up));
         }
 
+        private static void AssertCoinsVisible(Camera camera, RenderTexture target, Texture2D buffer, MeshRenderer coins)
+        {
+            ReadCabinFrame(camera, target, buffer);
+            Color32[] visible = buffer.GetPixels32();
+            try
+            {
+                coins.forceRenderingOff = true;
+                ReadCabinFrame(camera, target, buffer);
+            }
+            finally
+            {
+                coins.forceRenderingOff = false;
+            }
+            Color32[] hidden = buffer.GetPixels32();
+            Vector3 center = camera.WorldToScreenPoint(coins.bounds.center);
+            const int radius = 145;
+            int differences = 0;
+            for (int y = Mathf.Max(0, (int)center.y - radius); y < Mathf.Min(target.height, (int)center.y + radius); y++)
+            for (int x = Mathf.Max(0, (int)center.x - radius); x < Mathf.Min(target.width, (int)center.x + radius); x++)
+            {
+                int index = y * target.width + x;
+                Color32 shown = visible[index], occluded = hidden[index];
+                if (Mathf.Abs(shown.r - occluded.r) + Mathf.Abs(shown.g - occluded.g) + Mathf.Abs(shown.b - occluded.b) >= 30)
+                    differences++;
+            }
+            Assert.That(differences, Is.GreaterThan(180), "The open glovebox should show the actual coin pile.");
+        }
+
         private static void WriteCabinCapture(
             Camera camera, RenderTexture target, Texture2D buffer, string name)
+        {
+            ReadCabinFrame(camera, target, buffer);
+            File.WriteAllBytes(Path.Combine(CabinCaptureRoot, name + ".png"), buffer.EncodeToPNG());
+            Debug.Log("Cabin capture: " + name + ".png written");
+        }
+
+        private static void ReadCabinFrame(Camera camera, RenderTexture target, Texture2D buffer)
         {
             camera.Render();
             RenderTexture previousActive = RenderTexture.active;
@@ -929,10 +967,6 @@ namespace BarPromenade.Tests.PlayMode
             {
                 RenderTexture.active = previousActive;
             }
-
-            File.WriteAllBytes(Path.Combine(CabinCaptureRoot, name + ".png"),
-                buffer.EncodeToPNG());
-            Debug.Log("Cabin capture: " + name + ".png written");
         }
 
         /// <summary>
@@ -1444,7 +1478,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(affordance.TuningPromptKey, Is.EqualTo(LastRouteCarDashboard.RadioTunePromptKey));
                 yield return CaptureRadioControlsUi(affordance, "09-radio-on-controls", true);
 
-                var pedestrian = harness.Ferryman.GetComponentInChildren<CityPedestrianAssetRegistry>(true);
+                var pedestrian = harness.Ferryman.Rig;
                 harness.Seat.LookAtForTests(pedestrian.HeadAnchor.position);
                 harness.Ride.SaySpecial(LastRouteRideController.RadioReactionKey);
                 float speakingUntil = Time.realtimeSinceStartup + 0.9f;
@@ -1730,7 +1764,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(harness.Seat.IsSeated, Is.True);
                 Camera camera = harness.Seat.SeatCamera;
                 Assert.That(harness.Ride.RoadSpeech.BoundCamera, Is.SameAs(camera));
-                var pedestrian = harness.Ferryman.GetComponentInChildren<CityPedestrianAssetRegistry>(true);
+                var pedestrian = harness.Ferryman.Rig;
                 Renderer coinCompartment = null;
                 foreach (LastRouteCarRendererBinding binding in harness.Car.Bindings)
                     if (binding.Role == "glovebox_compartment") coinCompartment = binding.Renderer;

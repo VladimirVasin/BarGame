@@ -40,7 +40,10 @@ namespace BarPromenade
         /// the same slot, so lighting the dials there would have set the
         /// plate glowing in the dark.
         /// </summary>
-        CabinLamp
+        CabinLamp,
+        MarkerLens,
+        InstrumentInk,
+        Carpet
     }
 
     [Serializable]
@@ -153,6 +156,8 @@ namespace BarPromenade
         [SerializeField] private Transform radioTuningKnobPivot;
         [SerializeField] private Transform radioNeedlePivot;
         [SerializeField] private Transform speedoNeedlePivot;
+        [SerializeField] private Transform driverHeadlight, passengerHeadlight, exhaustOutlet;
+        [SerializeField] private Transform driverOuterPull, driverInnerPull, passengerOuterPull, passengerInnerPull;
         [SerializeField] private float radioNeedleTravel;
         [SerializeField] private Renderer radioDialRenderer;
         [SerializeField] private Renderer[] renderers = Array.Empty<Renderer>();
@@ -212,6 +217,25 @@ namespace BarPromenade
         public Transform RadioTuningKnobPivot => radioTuningKnobPivot;
         public Transform RadioNeedlePivot => radioNeedlePivot;
         public Transform SpeedoNeedlePivot => speedoNeedlePivot;
+        public Transform DriverHeadlight => driverHeadlight;
+        public Transform PassengerHeadlight => passengerHeadlight;
+        public Transform ExhaustOutlet => exhaustOutlet;
+        public Transform DriverOuterPull => driverOuterPull;
+        public Transform DriverInnerPull => driverInnerPull;
+        public Transform PassengerOuterPull => passengerOuterPull;
+        public Transform PassengerInnerPull => passengerInnerPull;
+
+        public void ConfigureVehicleContacts(Transform driverLamp, Transform passengerLamp, Transform exhaust,
+            Transform driverOuter, Transform driverInner, Transform passengerOuter, Transform passengerInner)
+        {
+            driverHeadlight = driverLamp;
+            passengerHeadlight = passengerLamp;
+            exhaustOutlet = exhaust;
+            driverOuterPull = driverOuter;
+            driverInnerPull = driverInner;
+            passengerOuterPull = passengerOuter;
+            passengerInnerPull = passengerInner;
+        }
 
         /// <summary>How far the radio needle slides from one end of its
         /// dial to the other, in metres, off the manifest.</summary>

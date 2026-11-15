@@ -172,11 +172,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   envelopes/collision/pivots. Tunnel stone joints and bridge/terminal profiles
   stay outside the established openings and road. At the normal `2.6 m/s`
   walk speed the route takes about `238.5 s`, or `3 min 58 s`; continuous
-  `4.2 m/s` run input takes about `148 s`, or `2 min 28 s`. The Ferryman's
-  Last Route car reads and drives the same route. On the terminal apron he waits for the
-  passenger to get out, then alights and returns to the bonnet. The return leg
-  is armed after the passenger's exit; a fresh boarding can then take him back
-  to the wheel. Layered forest retains physical/mid/far budgets and three crown
+  `4.2 m/s` run input takes about `148 s`. The Ferryman drives the same route.
+  On the apron he waits for the passenger to exit, then sits on the bonnet
+  until the next boarding. The passenger's exit arms the return leg.
+  Layered forest retains physical/mid/far budgets and three crown
   silhouettes. Shared road/village crowns close below: no sky or cut trunk tip
   shows through at close range; outer sizes, materials and wind stay unchanged.
   It yields locally at three measured hairpins, the bridge and the terminal
@@ -1949,8 +1948,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   the lighthouse island's shaders shows the valley bed, the switchback he
   climbed and a grain of city, all measured from the tunnel mouth's own
   height and lit after dark with no Light at all. One mercury practical burns
-  over the freight dock and the brink stays dark. The Ferryman answers on the
-  summit from a second repertoire that offers nothing. While driving, ten
+  over the freight dock and the brink stays dark. At both stops the Ferryman
+  wears a long dark coat, cap and work boots and drives the two-door sedan.
+  On the summit he uses a second repertoire offering nothing. While driving, ten
   ordinary road lines use shared bubbles/clicks, turning his head to the passenger.
   The shuffle persists across scenes, with no round/seam repeats. First line:
   `12–18 s` of travel; later: `30–45 s` after typing plus the `2.5 s` reading hold,

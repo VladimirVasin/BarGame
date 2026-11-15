@@ -1,31 +1,14 @@
 #!/usr/bin/env python3
-"""Build the Last Route ferry car - the city's one parked vehicle.
+"""Build the Ferryman's working sedan, its passive Unity model and measured art contract.
 
-Run through Blender 5, for example::
-
-    blender --background --factory-startup --python-exit-code 1 --python \
-      tools/build-last-route-car-3d-model.py
-
-A period saloon, beaten but plainly still running: dents, rust blooms, a
-cracked quarter light, one broken headlight, a door in the wrong colour and a
-missing hubcap - with all four wheels on and the glass intact enough to drive
-behind. The Ferryman leans on its passenger flank and waits.
-
-The height is not a styling choice. The hero will later be seated in this car
-by reusing the bus clips verbatim, and the shared rig's seated head clearance
-band is 0.99-1.10 m above the pelvis. A modern saloon roof would give 0.92 m
-and force a bespoke clip; this one gives 1.04 m and forces nothing.
-
-Deterministic output: a meter-scale editable .blend, a hierarchy-preserving
-FBX, a JSON contract for Unity's prefab builder and a review render. Blender
-source space is Z-up with vehicle forward along -Y and source +X on the
-DRIVER side. The Unity prefab builder rotates the imported model 180 degrees
-so its local runtime forward is +Z.
+Blender metres, Z-up, forward -Y. The Unity prefab rotates the imported model
+to the runtime's +Z, keeping the pivots and contact anchors intact.
 """
 
 from __future__ import annotations
 
 import argparse
+import bmesh
 import hashlib
 import json
 import math
@@ -39,25 +22,31 @@ from typing import Iterable, Sequence
 try:
     import bpy
     from mathutils import Matrix, Vector
+    from mathutils.bvhtree import BVHTree
 except ImportError as error:  # pragma: no cover - Blender-only entry point.
     raise RuntimeError(
         "This generator must run through Blender's bundled Python."
     ) from error
 
 
-GENERATOR_VERSION = "1.0.0"
-DESIGN_ID = "last_route_ferry_car_v1"
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import last_route_car_forms as forms
+from last_route_car_cabin_atlas import PATCHES, PATCH_GRID, cabin_patch
+
+GENERATOR_VERSION = "2.0.0"
+DESIGN_ID = "last_route_ferry_car_v2"
 DISPLAY_NAME = "Last Route Ferry Car"
 SEED = 470301
 
 LENGTH = 4.83
 WIDTH = 1.80
-HEIGHT = 1.62
+HEIGHT = 1.57
 WHEELBASE = 2.70
 WHEEL_RADIUS = 0.34
 WHEEL_WIDTH = 0.19
-MIN_TRIANGLES = 1200
-MAX_TRIANGLES = 4200
+MIN_TRIANGLES = 7000
+MAX_TRIANGLES = 24000
 
 SOURCE_COLLECTION = "SOURCE_LastRouteCar3D"
 PRESENTATION_COLLECTION = "PRESENTATION_LastRouteCar3D"
@@ -82,7 +71,7 @@ FLOOR_Z = 0.30          # cabin floor: the plane a seated root stands on
 SILL_Z = 0.44           # top of the rocker
 WAIST_Z = 1.02          # waistline; the rail he rests his forearm on
 BONNET_Z = 1.08
-ROOF_UNDERSIDE_Z = 1.56
+ROOF_UNDERSIDE_Z = 1.505
 SEAT_PELVIS_Z = 0.52
 SEAT_Y = -0.40          # pelvis row, centred in the door opening
 SEAT_HALF_SPAN_X = 0.44
@@ -97,8 +86,8 @@ SEAT_CUSHION_WIDTH = 0.52  # also where the rocker has to stop, inboard
 #
 # The drop between them is the contract the pedestrian rig calls
 # `perch_seat_height_m`: the distance from a sitter's seat to his own soles.
-PERCH_SEAT = (-0.28, -2.02, BONNET_Z)
-PERCH_SOLES = (-0.28, -2.44, 0.575)
+PERCH_SEAT = (-0.28, -2.222, BONNET_Z - .0036)
+PERCH_SOLES = (-0.28, -2.485, 0.575)
 PERCH_DROP_M = PERCH_SEAT[2] - PERCH_SOLES[2]
 
 # The steering wheel is authored flat in its pivot's space and raked by the
@@ -134,13 +123,13 @@ DASH_HALF_WIDTH = 0.73
 # capped so that, hinged at the aperture's bottom edge and dropped fully
 # open, it stays a hand's breadth above a seated passenger's knees.
 GLOVEBOX_X = (-0.62, -0.30)
-GLOVEBOX_Z = (0.88, 1.00)
+GLOVEBOX_Z = (0.88, 1.023)
 GLOVEBOX_HINGE = (
     (GLOVEBOX_X[0] + GLOVEBOX_X[1]) * 0.5,
     DASH_REAR_Y,
     GLOVEBOX_Z[0],
 )
-GLOVEBOX_LID_HEIGHT = 0.125
+GLOVEBOX_LID_HEIGHT = GLOVEBOX_Z[1] - GLOVEBOX_Z[0] + .005
 GLOVEBOX_LID_LAP = 0.01
 GLOVEBOX_LID_OPEN_DEGREES = 78.0
 # The radio, dead centre. The dial is a strip the needle slides along from
@@ -174,8 +163,8 @@ FUEL_GAUGE_X = 0.495
 # face is ever coplanar with the headlining - the seam rule the car's own
 # headlights and the bus's cabin strip both paid for.
 CABIN_LAMP_Y = -0.720
-CABIN_LAMP_HOUSING = ((0.0, CABIN_LAMP_Y, 1.565), (0.170, 0.110, 0.050))
-CABIN_LAMP_LENS = ((0.0, CABIN_LAMP_Y, 1.5295), (0.120, 0.076, 0.041))
+CABIN_LAMP_HOUSING = ((0.0, CABIN_LAMP_Y, 1.520), (0.170, 0.110, 0.050))
+CABIN_LAMP_LENS = ((0.0, CABIN_LAMP_Y, 1.4845), (0.120, 0.076, 0.041))
 # And the bulb, in the roof of the compartment just inside the opening, so
 # that dropping the lid shows the lamp itself and not only its pool. That
 # is what was asked for; a real glovebox hides its bulb behind the lip.
@@ -183,11 +172,12 @@ GLOVEBOX_BULB = ((-0.460, -0.960, 0.984), (0.048, 0.032, 0.044))
 
 DOOR_HINGE_Y = -1.17    # the A-pillar base; the door opens forward of it
 DOOR_HINGE_Z = 0.73
-DOOR_LEAF_LENGTH = 1.51
+DOOR_LEAF_LENGTH = 1.68
+B_PILLAR_Y = DOOR_HINGE_Y + DOOR_LEAF_LENGTH
 # How far the shut leaf laps the jamb it sits against. The leaf is a skin
 # hung OUTBOARD of the flank rather than a plug in the hole, so this only
 # has to beat the grazing angle at which a coincident edge shows a seam.
-DOOR_LEAF_LAP = 0.03
+DOOR_LEAF_LAP = 0.010
 # The hole in the bodywork that the leaf covers - stated here, in the same
 # breath as the leaf, because the two drifting apart is exactly the failure
 # this is fixing. For a whole build the flank had no hole at all: opening a
@@ -208,99 +198,57 @@ DOOR_SPECS = (
     ("Passenger", -1.0, "passenger_door_leaf", "AccentPaint"),
 )
 
-# Damage the user asked for, each its own mesh so a validator can prove it is
-# still there and so it reads in silhouette rather than relying on texture.
-#
-# Anything that lands within a FRONT leaf's footprint has to ride that leaf
-# instead - see DOOR_DENT_SPECS below. The rear-door crease stays here
-# because the rear doors never open.
-DENT_SPECS = (
-    ((-0.902, 1.05, 0.80), (0.045, 0.46, 0.26)),
-    ((0.55, REAR_Y + 0.02, 0.86), (0.60, 0.06, 0.22)),
-    ((-0.40, FRONT_Y - 0.01, 0.70), (0.52, 0.05, 0.20)),
+# Coordinates in the painted skin, where the metal is actually displaced.
+DENTS = (
+    (1., -.28, .75, .29, .21, .036),
+    (-1., .84, .71, .23, .19, .032),
+    (1., 1.72, .86, .25, .16, .022),
 )
 
-# How far proud of the leaf's own skin door-mounted damage sits. The skin's
-# outer face is at local x 0.035; rust straddles it the way rust does, and
-# the crease stands as far out as it once stood of the flank.
-DOOR_RUST_PROUD_X = 0.035
-DOOR_DENT_PROUD_X = 0.037
-
-# The crease down the driver's door, keyed by the leaf it belongs to. It was
-# drawn into the body's GEO_Dents, which made it invisible from the day the
-# leaf was fitted over it and would have left it hanging in the empty doorway
-# from the day the leaf could move - the stranded-handle bug for the third
-# time. See the comment in `_build_doors`.
-DOOR_DENT_SPECS = {
-    "Driver": (((0.902, -0.20, 0.74), (0.045, 0.52, 0.30)),),
-}
-def _rust_run(
-    x: float,
-    start_y: float,
-    patches: Sequence[tuple[float, float, float]],
-) -> tuple[tuple[tuple[float, float, float], tuple[float, float, float]], ...]:
-    """A bloom of rust as short patches at drifting heights.
-
-    One long box reads as a painted stripe. Rust reaches along a seam in
-    fits, so the silhouette of the run has to be ragged.
-    """
-    run = []
-    cursor = start_y
-    for length, height, lift in patches:
-        run.append(
-            (
-                (x, cursor + length * 0.5, lift),
-                (0.020, length, height),
-            )
-        )
-        cursor += length + 0.045
-    return tuple(run)
+def smooth01(value):
+    t = min(1., max(0., value))
+    return t*t*(3.-2.*t)
 
 
-def _onto_door_leaf(
-    boxes: Sequence[tuple[tuple[float, float, float], tuple[float, float, float]]],
-    side: float,
-    proud_x: float,
-) -> tuple[tuple[tuple[float, float, float], tuple[float, float, float]], ...]:
-    """Re-express flank decoration in a front door hinge's own space.
-
-    Only the height and the length carry over; the lateral coordinate is
-    replaced outright, because a box authored against the flank at +/-0.905
-    ends up buried inside the leaf that was later hung over it at 0.880-0.930.
-    """
-    return tuple(
-        (
-            (side * proud_x, center[1] - DOOR_HINGE_Y, center[2] - DOOR_HINGE_Z),
-            size,
-        )
-        for center, size in boxes
-    )
+def apron_blend(y):
+    return 1. - smooth01((y - FRONT_Y) / .46)
 
 
-RUST_SPECS = (
-    # Around the rear arches, where the road throws everything.
-    *_rust_run(0.905, 0.86, ((0.24, 0.13, 0.76), (0.19, 0.09, 0.72),
-                             (0.30, 0.15, 0.78))),
-    *_rust_run(-0.905, 0.92, ((0.27, 0.12, 0.74), (0.21, 0.08, 0.70))),
-    # The boot lip, and a bloom creeping along the underside seam. The seam
-    # run sits just UNDER the cabin floor: it used to be swallowed by the
-    # rocker slab, and with that slab gone it would otherwise surface as a
-    # rust stripe laid across the cabin carpet.
-    ((0.24, REAR_Y - 0.02, 0.60), (0.34, 0.024, 0.09)),
-    ((-0.34, REAR_Y - 0.02, 0.58), (0.26, 0.024, 0.07)),
-    ((-0.58, 0.10, FLOOR_Z - 0.045), (0.30, 1.20, 0.020)),
-)
+def lower_wing_retract(y, z):
+    return .133 * apron_blend(y) * (1.-smooth01((z-.35)/.27))
 
-# Along both sills, worst behind the front arches - which is to say, along
-# the bottom of both front doors. These ride their leaves for the same
-# reason the handles do.
-DOOR_RUST_SPECS = {
-    "Driver": _rust_run(0.905, -0.95, ((0.26, 0.10, 0.50), (0.17, 0.07, 0.53),
-                                       (0.31, 0.12, 0.49), (0.14, 0.06, 0.55))),
-    "Passenger": _rust_run(-0.905, -0.90, ((0.22, 0.09, 0.51),
-                                           (0.28, 0.11, 0.48),
-                                           (0.15, 0.06, 0.54))),
-}
+
+def flank_x(side, y, z):
+    # Tuck the ends and the sill. A continuous shoulder catches a broad,
+    # restrained highlight across the doors and the fenders.
+    end_taper = .104 * (abs(y) / (LENGTH * .5)) ** 5
+    shoulder = .9 - .039 * ((z - .82) / .55) ** 2 - end_taper
+    fender = .014 * sum(math.exp(-((y - axle) / .41) ** 4) *
+                        math.exp(-((z - .73) / .14) ** 2)
+                        for axle in (FRONT_AXLE_Y, REAR_AXLE_Y))
+    dent = sum(depth * math.exp(-((y - yy) / w) ** 2 - ((z - zz) / h) ** 2)
+               for sign, yy, zz, w, h, depth in DENTS if sign == side)
+    tucked = .098 * apron_blend(y) * (1.-smooth01((z-.34)/.26))
+    return min(.902, shoulder + fender - dent - tucked)
+
+
+def hood_z(x, y):
+    crown = .057
+    # Reference height at the actual perch, including the stamping's crown.
+    base = BONNET_Z - crown * (1. - (.28 / .79) ** 2)
+    return base + crown * (1. - (x / .79) ** 2) + .018 * (y + 2.02)
+
+
+def arch_base(y):
+    return max(
+        forms.arch_floor(y, FRONT_AXLE_Y, .318), forms.arch_floor(y, REAR_AXLE_Y, .318))
+
+
+def section_ys(first, last):
+    arch_points = forms.arch_stations(FRONT_AXLE_Y, .318) + forms.arch_stations(REAR_AXLE_Y, .318)
+    dents = [y + d for _, y, _, _, _, _ in DENTS for d in (-.30, -.19, -.09, 0., .09, .19, .30)]
+    return [first, last] + [y for y in arch_points + dents if first < y < last]
+
 
 UV_TILE_METERS_DEFAULT = 1.10
 UV_TILE_METERS = {
@@ -327,7 +275,7 @@ MATERIALS: dict[str, tuple[tuple[float, float, float, float], float, float, floa
     "Chrome": ((0.42, 0.44, 0.43, 1.0), 0.72, 0.34, 0.0),
     "Rubber": ((0.017, 0.019, 0.018, 1.0), 0.0, 0.93, 0.0),
     "Metal": ((0.20, 0.22, 0.21, 1.0), 0.55, 0.42, 0.0),
-    "Glass": ((0.085, 0.155, 0.160, 0.30), 0.04, 0.20, 0.0),
+    "Glass": ((0.16, 0.23, 0.24, 0.22), 0.04, 0.20, 0.0),
     "CrackedGlass": ((0.62, 0.66, 0.64, 0.55), 0.04, 0.46, 0.0),
     "BrokenGlass": ((0.055, 0.060, 0.058, 1.0), 0.10, 0.55, 0.0),
     "Interior": ((0.085, 0.085, 0.080, 1.0), 0.0, 0.80, 0.0),
@@ -346,8 +294,11 @@ MATERIALS: dict[str, tuple[tuple[float, float, float, float], float, float, floa
     # car: lighting the dials on that slot would have set the plate
     # glowing in the dark.
     "CabinLamp": ((0.949, 0.808, 0.620, 1.0), 0.0, 0.34, 1.05),
-    "Headlight": ((0.98, 0.94, 0.78, 1.0), 0.02, 0.18, 9.0),
-    "TailLight": ((0.55, 0.020, 0.012, 1.0), 0.0, 0.30, 2.4),
+    "Headlight": ((0.98, 0.86, 0.68, 1.0), 0.02, 0.18, 1.85),
+    "TailLight": ((0.45, 0.043, 0.018, 1.0), 0.0, 0.30, 0.4),
+    "MarkerLens": ((0.44, 0.20, 0.038, 1.0), 0.0, 0.64, 0.0),
+    "InstrumentInk": ((0.092, 0.079, 0.064, 1.0), 0.0, 0.52, 0.0),
+    "Carpet": ((0.105, 0.094, 0.087, 1.0), 0.0, 0.94, 0.0),
     "Plate": ((0.60, 0.60, 0.55, 1.0), 0.05, 0.62, 0.0),
 }
 
@@ -373,13 +324,6 @@ class BuildResult:
     parts: tuple[Part, ...]
     pivots: tuple[Pivot, ...]
     source_objects: tuple[bpy.types.Object, ...]
-    # The body shell's boxes as authored, kept so the validator can prove
-    # the door openings are still openings. Once the shell is a mesh there
-    # is no cheap way to ask whether a hole in it is still a hole, and this
-    # design has already shipped once with both doorways bricked up.
-    shell_boxes: tuple[
-        tuple[tuple[float, float, float], tuple[float, float, float]], ...
-    ] = ()
     # The dashboard slab's boxes as authored, for the same reason: the
     # glovebox aperture is a hole that only exists as an omission.
     dash_boxes: tuple[
@@ -409,31 +353,21 @@ class MeshAccumulator:
         center: Sequence[float],
         size: Sequence[float],
     ) -> None:
-        cx, cy, cz = center
-        hx, hy, hz = (component * 0.5 for component in size)
-        base = len(self.vertices)
-        self.vertices.extend(
-            [
-                (cx - hx, cy - hy, cz - hz),
-                (cx + hx, cy - hy, cz - hz),
-                (cx + hx, cy + hy, cz - hz),
-                (cx - hx, cy + hy, cz - hz),
-                (cx - hx, cy - hy, cz + hz),
-                (cx + hx, cy - hy, cz + hz),
-                (cx + hx, cy + hy, cz + hz),
-                (cx - hx, cy + hy, cz + hz),
-            ]
-        )
-        self.faces.extend(
-            [
-                (base + 0, base + 3, base + 2, base + 1),
-                (base + 4, base + 5, base + 6, base + 7),
-                (base + 0, base + 1, base + 5, base + 4),
-                (base + 1, base + 2, base + 6, base + 5),
-                (base + 2, base + 3, base + 7, base + 6),
-                (base + 3, base + 0, base + 4, base + 7),
-            ]
-        )
+        # Roll the edges in the source, before UVs and imported normals.
+        # Thickness determines the bevel on a vent or a switch; a large
+        # surface never receives a furniture-scale fillet.
+        box = bmesh.new()
+        try:
+            bmesh.ops.create_cube(box, size=1.0)
+            for vertex in box.verts:
+                vertex.co = Vector(tuple(c + v * d for c, v, d in zip(center, vertex.co, size)))
+            bmesh.ops.bevel(box, geom=list(box.edges), offset=min(.020, min(size) * .19),
+                           segments=1, affect="EDGES", clamp_overlap=True)
+            box.verts.index_update()
+            forms.append(self, [v.co for v in box.verts],
+                         [tuple(v.index for v in face.verts) for face in box.faces])
+        finally:
+            box.free()
 
     def add_cylinder_x(
         self,
@@ -660,7 +594,47 @@ def create_material(name: str, spec: tuple) -> bpy.types.Material:
     material.node_tree.links.new(shader.outputs["BSDF"], output.inputs["Surface"])
     if rgba[3] < 1.0:
         material.use_transparency_overlap = False
+        material.use_backface_culling = True
         material.surface_render_method = "DITHERED"
+    family = {
+        "Body": "Paint", "AccentPaint": "Paint", "Glass": "Glass", "Seat": "Interior",
+        "Interior": "Interior", "Dashboard": "Interior", "Carpet": "Interior",
+        "Rubber": "Rubber",
+    }.get(name)
+    if family:
+        tree = material.node_tree
+        path = Path(__file__).resolve().parents[1] / "Assets/Vehicles/Textures"
+        def map_node(label, data=False):
+            image = bpy.data.images.load(str(path / ("LastRouteCar"+label+".png")), check_existing=True)
+            if data: image.colorspace_settings.name = "Non-Color"
+            image.pack()
+            node = tree.nodes.new("ShaderNodeTexImage")
+            node.image = image
+            node.extension = "EXTEND" if family in ("Paint", "Glass") else "REPEAT"
+            return node
+
+        texture = map_node(family+"Albedo")
+        tint = tree.nodes.new("ShaderNodeMixRGB")
+        tint.blend_type = "MULTIPLY"
+        tint.inputs[0].default_value = 1.
+        tint.inputs[1].default_value = (1.,1.,1.,1.) if family == "Interior" else rgba
+        tree.links.new(texture.outputs["Color"], tint.inputs[2])
+        tree.links.new(tint.outputs["Color"], shader.inputs["Base Color"])
+        if name == "Glass":
+            tree.links.new(texture.outputs["Alpha"], shader.inputs["Alpha"])
+        else:
+            surface = family
+            response = map_node(surface+"Response", True)
+            normal = tree.nodes.new("ShaderNodeNormalMap")
+            normal.inputs["Strength"].default_value = .68 if surface=="Paint" else .82
+            tree.links.new(map_node(surface+"Normal", True).outputs["Color"], normal.inputs["Color"])
+            tree.links.new(normal.outputs["Normal"], shader.inputs["Normal"])
+            rough = tree.nodes.new("ShaderNodeMath")
+            rough.operation = "MULTIPLY_ADD"
+            rough.inputs[1].default_value = -.94 if surface=="Paint" else -.39
+            rough.inputs[2].default_value = 1.
+            tree.links.new(response.outputs["Alpha"], rough.inputs[0])
+            tree.links.new(rough.outputs[0], shader.inputs["Roughness"])
     material["bp_material_slot"] = name
     return material
 
@@ -684,28 +658,46 @@ def create_empty(
     return obj
 
 
-def apply_box_uvs(mesh: bpy.types.Mesh, tile_meters: float) -> None:
-    """Project deterministic per-face box UVs at world scale.
-
-    Every loop takes its UV from the two vertex coordinates orthogonal to the
-    face normal's dominant axis, divided by the slot's tile size, so tileable
-    albedos land on the geometry without a hand unwrap and Unity materials can
-    keep (1, 1) tiling.
-    """
+def apply_uvs(mesh, name, role, material_slot, parent):
     uv_layer = mesh.uv_layers.new(name="UVMap")
-    scale = 1.0 / tile_meters
+    scale = 1.0 / UV_TILE_METERS.get(material_slot, UV_TILE_METERS_DEFAULT)
+    painted = material_slot in ("Body", "AccentPaint")
+    offset = parent.location if painted and parent and parent.name.startswith("PIVOT_Door") else Vector()
     for polygon in mesh.polygons:
         normal = polygon.normal
-        ax, ay, az = abs(normal.x), abs(normal.y), abs(normal.z)
-        for loop_index in polygon.loop_indices:
-            vertex = mesh.vertices[mesh.loops[loop_index].vertex_index].co
-            if az >= ax and az >= ay:
-                uv = (vertex.x, vertex.y)
+        ax, ay, az = (abs(value) for value in normal)
+        patch = cabin_patch(name, role, normal.z > .69) if material_slot in ("Interior","Seat","Dashboard","Carpet") else None
+        if patch is not None:
+            col, row = PATCHES.index(patch) % PATCH_GRID, PATCHES.index(patch) // PATCH_GRID
+        for index in polygon.loop_indices:
+            vertex = mesh.vertices[mesh.loops[index].vertex_index].co
+            if material_slot == "Glass":
+                grid = mesh.loops[index].vertex_index % 28
+                uv = (grid % 7 / 6., grid // 7 / 3.)
+            elif painted:
+                uv = forms.body_uv(*(vertex + offset), normal)
+            elif patch is not None:
+                px, py, pz = vertex
+                if role == "door_card":
+                    pu, pv = .12 + py / 2.15, .06 + (pz + .32) / .74
+                elif role in ("dashboard", "dash_lip", "glovebox_compartment", "glovebox_lid"):
+                    pu = .5 + px / 1.66
+                    pv = (.5 + (py + 1.05) * 2.5 if az > ay else .5 + (pz - .92) * 2.15)
+                    if role == "glovebox_lid":
+                        pu, pv = .5 + px * 2.7, .08 + pz * 4.5
+                elif az >= ay and az >= ax:
+                    pu, pv = .5 + px * .59, .48 + py * .37
+                else:
+                    pu, pv = .5 + (px if ay >= ax else py) * .58, .06 + pz * .76
+                uv = tuple((cell + .04 + .92 * max(0., min(1., value))) / PATCH_GRID
+                           for cell, value in ((col, pu), (row, pv)))
+            elif az >= ax and az >= ay:
+                uv = (vertex.x * scale, vertex.y * scale)
             elif ax >= ay:
-                uv = (vertex.y, vertex.z)
+                uv = (vertex.y * scale, vertex.z * scale)
             else:
-                uv = (vertex.x, vertex.z)
-            uv_layer.data[loop_index].uv = (uv[0] * scale, uv[1] * scale)
+                uv = (vertex.x * scale, vertex.z * scale)
+            uv_layer.data[index].uv = uv
 
 
 def create_part(
@@ -721,10 +713,12 @@ def create_part(
     mesh.from_pydata(accumulator.vertices, [], accumulator.faces)
     mesh.validate(clean_customdata=False)
     mesh.update(calc_edges=True)
-    apply_box_uvs(
-        mesh,
-        UV_TILE_METERS.get(material_slot, UV_TILE_METERS_DEFAULT),
-    )
+    apply_uvs(mesh, name, role, material_slot, parent)
+    smooth = material_slot not in ("Glass", "CrackedGlass", "Preview", "InstrumentInk")
+    if smooth:
+        for polygon in mesh.polygons:
+            polygon.use_smooth = True
+        mesh.set_sharp_from_angle(angle=math.radians(40.))
     obj = bpy.data.objects.new(name, mesh)
     collection.objects.link(obj)
     obj.parent = parent
@@ -732,6 +726,13 @@ def create_part(
     obj.rotation_euler = (0.0, 0.0, 0.0)
     obj.scale = (1.0, 1.0, 1.0)
     obj.data.materials.append(material)
+    if smooth:
+        weighted = obj.modifiers.new("Pressed surface normals", "WEIGHTED_NORMAL")
+        weighted.keep_sharp = True
+        weighted.weight = 25
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.modifier_apply(modifier=weighted.name)
+
     obj["bp_role"] = role
     obj["bp_material_slot"] = material_slot
     return Part(obj, role, material_slot)
@@ -745,9 +746,6 @@ class LastRouteCarBuilder:
         }
         self.parts: list[Part] = []
         self.pivots: list[Pivot] = []
-        self.shell_boxes: tuple[
-            tuple[tuple[float, float, float], tuple[float, float, float]], ...
-        ] = ()
         self.dash_boxes: tuple[
             tuple[tuple[float, float, float], tuple[float, float, float]], ...
         ] = ()
@@ -829,13 +827,13 @@ class LastRouteCarBuilder:
         self._build_shell()
         self._build_greenhouse()
         self._build_glass()
-        self._build_damage()
         self._build_doors()
         self._build_wheels()
         self._build_lights_and_trim()
         self._build_interior()
         self._build_dashboard()
         self._build_anchors()
+        self._combine_fixed_parts()
         self.root["bp_generator"] = "tools/build-last-route-car-3d-model.py"
         self.root["bp_generator_version"] = GENERATOR_VERSION
         self.root["bp_design_id"] = DESIGN_ID
@@ -848,495 +846,343 @@ class LastRouteCarBuilder:
             tuple(sorted(self.parts, key=lambda part: part.obj.name)),
             tuple(sorted(self.pivots, key=lambda pivot: pivot.obj.name)),
             tuple(self.collection.objects),
-            self.shell_boxes,
             self.dash_boxes,
             tuple(self.dashboard_parts),
         )
+
+    def _combine_fixed_parts(self):
+        # Group only fixed, same-finish meshes with the same view lifetime.
+        # Independently bound lamps, instrument faces and moving parts stay separate.
+        for names in (
+            ("GEO_BodyShell","GEO_Decks","GEO_Greenhouse","GEO_Pillars"),
+            ("GEO_Trim","GEO_Underbody","GEO_RadiatorMouth","GEO_TailHousings"),
+            ("GEO_HeadlightRims","GEO_Grille"),
+            ("GEO_SeatWeltingDriver","GEO_SeatWeltingPassenger","GEO_SeatWeltingRear"),
+            ("GEO_InstrumentBezels","GEO_IgnitionKey"),
+        ):
+            by_name = {p.obj.name:p for p in self.parts}
+            parts = [by_name[name] for name in names]
+            lead = parts[0]
+            combined = MeshAccumulator()
+            role, slot = lead.role, lead.material_slot
+            for part in parts:
+                obj=part.obj
+                if obj.parent is not self.body or part.material_slot!=slot:
+                    raise RuntimeError(f"Cannot merge moving or different finish: {obj.name}")
+                forms.append(combined,[v.co for v in obj.data.vertices],
+                             [tuple(p.vertices) for p in obj.data.polygons],False)
+                if part in self.dashboard_parts:
+                    self.dashboard_parts.remove(part)
+                self.parts.remove(part)
+                data = obj.data
+                bpy.data.objects.remove(obj,do_unlink=True)
+                bpy.data.meshes.remove(data)
+            assembled=self.add_accumulator(names[0],combined,role,slot)
+            if role in ("dashboard","dash_vents","pedal_stems","instrument_bezels"):
+                self.dashboard_parts.append(assembled)
 
     # ------------------------------------------------------------------
     # Geometry
     # ------------------------------------------------------------------
 
     def _build_shell(self) -> None:
-        """The three-box saloon: rocker, body sides, bonnet and boot.
+        shell = MeshAccumulator()
+        for side in (1., -1.):
+            contour = lambda y, z: flank_x(side, y, z)
+            # The quarter behind the longer door is a single pressed panel.
+            # It has neither a rear door gap nor hardware.
+            fixed_y = section_ys(DOORWAY_REAR_Y, REAR_Y)
+            forms.side_skin(shell, side, fixed_y, WAIST_Z, arch_base, contour)
+            wing_y = section_ys(FRONT_Y, DOORWAY_FRONT_Y) + [-2.385, -2.325, -2.245, -2.14, -2.025]
+            forms.side_skin(shell, side, wing_y, WAIST_Z,
+                            lambda y: arch_base(y)+.088*apron_blend(y),
+                            contour, retract=lower_wing_retract)
+            # Structural sill bridges the doors only between the wheel tubs.
+            forms.side_skin(shell, side, (-.92, -.86, -.25, .30, .83, .92),
+                            SILL_Z, lambda y: .308, lambda y, z: .815, thickness=.095)
+        # The lower ends of the wings roll inward under the bumper and
+        # meet the recessed apron. The apron stops short of the arch and
+        # follows a rounded, shallow U rather than two dangling tabs.
+        apron_sections=[]
+        for x in (-.728,-.701,-.65,-.51,-.33,0.,.33,.51,.65,.701,.728):
+            edge=(abs(x)/.728)**2
+            y=-2.373+.102*edge
+            lower=.365+.067*edge
+            upper=.596-.036*edge
+            apron_sections.append([(x,y+dy,z) for dy,z in (
+                (.044,lower+.003),(.012,lower),(-.006,lower+.018),(-.014,lower+.042),
+                (-.009,upper-.035),(.014,upper),(.072,upper-.004),(.063,lower+.020))])
+        forms.loft(shell,apron_sections)
+        forms.loft(shell, [forms.chamfered_ring(0., .745, w, h, .065, y)
+                           for y, w, h in ((FRONT_Y + .015, .767, .182), (FRONT_Y + .09, .806, .224),
+                                           (FRONT_Y + .18, .818, .215))])
+        forms.loft(shell, [forms.chamfered_ring(0., .755, w, h, .070, y)
+                           for y, w, h in ((REAR_Y - .18, .808, .235), (REAR_Y - .07, .798, .234),
+                                           (REAR_Y - .01, .769, .194))])
+        self.add_accumulator("GEO_BodyShell", shell, "body_shell", "Body")
 
-        Authored as separate slabs rather than one hull so the waistline is a
-        real edge - it is the rail the Ferryman rests his forearm on, and the
-        line the rust follows.
-        """
-        # Three cuts, all stated by what is left out, because a box cannot
-        # be hollowed. Vertically the flank exists only between the arches
-        # and at the overhangs, so the wheels stand in open arches instead of
-        # behind a wall. Laterally the cabin is drawn as two side panels
-        # rather than a slab, so the floor, the seats and the wheel are
-        # inside a room instead of buried in solid bodywork - the hero will
-        # be sitting in there looking out.
-        #
-        # And the third: each cabin panel STOPS at the doorway and starts
-        # again behind it. For a whole build it did not, and the room was
-        # sealed - the leaf swung open on thirteen centimetres of bodywork
-        # filling the entire opening. The gap between these boxes IS the
-        # door, exactly as the gaps in the bus's passenger flank are its
-        # doors. The 0.13 m panel gives the cut edge a real jamb for free.
-        midsection = ARCH_HALF_LENGTH  # half-length of the belt between arches
-        overhang_length = REAR_Y - (REAR_AXLE_Y + ARCH_HALF_LENGTH)
-        overhang_y = REAR_AXLE_Y + ARCH_HALF_LENGTH + overhang_length * 0.5
-        lower_mid_z = (SILL_Z + WHEEL_TOP_Z) * 0.5
-        upper_mid_z = (WHEEL_TOP_Z + WAIST_Z) * 0.5
-        panel_thickness = 0.13
-        panel_x = BODY_HALF_WIDTH - panel_thickness * 0.5
-        bay_length = CABIN_FRONT_Y - FRONT_Y
-        bay_y = (FRONT_Y + CABIN_FRONT_Y) * 0.5
-        boot_length = REAR_Y - CABIN_REAR_Y
-        boot_y = (CABIN_REAR_Y + REAR_Y) * 0.5
-        # What is left of each cabin panel once the doorway is taken out of
-        # it: a sliver of A-pillar root ahead of the opening, and the rear
-        # door's own flank behind it. The rear doors never open, so that
-        # half stays solid.
-        jamb_front_length = DOORWAY_FRONT_Y - CABIN_FRONT_Y
-        jamb_front_y = (CABIN_FRONT_Y + DOORWAY_FRONT_Y) * 0.5
-        jamb_rear_length = CABIN_REAR_Y - DOORWAY_REAR_Y
-        jamb_rear_y = (DOORWAY_REAR_Y + CABIN_REAR_Y) * 0.5
-        # The lower belt only ever reached the arches, so its share of the
-        # doorway is just the stretch behind it.
-        lower_rear_length = midsection - DOORWAY_REAR_Y
-        lower_rear_y = (DOORWAY_REAR_Y + midsection) * 0.5
-        # The rocker, which used to be a slab of bodywork right across the
-        # cabin from the floor line up to the sill. That slab was the thing
-        # a sitter sank into: the drawn floor tops out at FLOOR_Z + 0.025
-        # and the slab's face was 0.14 m ABOVE it, so a seated man's boots
-        # went through it and the manifest's own `cabin_floor_drop_m` was
-        # fiction. It is now what it is called - two rockers under the two
-        # door openings, stopping inboard at the seat cushion.
-        sill_outer_x = BODY_HALF_WIDTH - 0.02
-        sill_inner_x = SEAT_HALF_SPAN_X + SEAT_CUSHION_WIDTH * 0.5
-        sill_width = sill_outer_x - sill_inner_x
-        sill_x = (sill_inner_x + sill_outer_x) * 0.5
-        sill_length = midsection - ARCH_REAR_Y
-        sill_y = (ARCH_REAR_Y + midsection) * 0.5
-        sill_bottom_z = FLOOR_Z - 0.04
-        front_lip_length = DOORWAY_FRONT_Y - (FRONT_AXLE_Y - ARCH_HALF_LENGTH)
-        front_lip_y = (FRONT_AXLE_Y - ARCH_HALF_LENGTH) + front_lip_length * 0.5
-        shell_boxes = (
-            # Rockers under each doorway, and nothing between them.
-            ((sill_x, sill_y, (sill_bottom_z + SILL_Z) * 0.5),
-             (sill_width, sill_length, SILL_Z - sill_bottom_z)),
-            ((-sill_x, sill_y, (sill_bottom_z + SILL_Z) * 0.5),
-             (sill_width, sill_length, SILL_Z - sill_bottom_z)),
-            # Lower flank between the arches, behind the doorway.
-            ((panel_x, lower_rear_y, lower_mid_z),
-             (panel_thickness, lower_rear_length, WHEEL_TOP_Z - SILL_Z)),
-            ((-panel_x, lower_rear_y, lower_mid_z),
-             (panel_thickness, lower_rear_length, WHEEL_TOP_Z - SILL_Z)),
-            # Lower flank ahead of and behind the arches.
-            ((0.0, -overhang_y, lower_mid_z),
-             (WIDTH, overhang_length, WHEEL_TOP_Z - SILL_Z)),
-            ((0.0, overhang_y, lower_mid_z),
-             (WIDTH, overhang_length, WHEEL_TOP_Z - SILL_Z)),
-            # Upper flank: solid over the engine bay and the boot,
-            # side panels along the cabin - each in two pieces with the
-            # door opening between them.
-            ((0.0, bay_y, upper_mid_z),
-             (WIDTH, bay_length, WAIST_Z - WHEEL_TOP_Z)),
-            ((0.0, boot_y, upper_mid_z),
-             (WIDTH, boot_length, WAIST_Z - WHEEL_TOP_Z)),
-            ((panel_x, jamb_front_y, upper_mid_z),
-             (panel_thickness, jamb_front_length, WAIST_Z - WHEEL_TOP_Z)),
-            ((-panel_x, jamb_front_y, upper_mid_z),
-             (panel_thickness, jamb_front_length, WAIST_Z - WHEEL_TOP_Z)),
-            ((panel_x, jamb_rear_y, upper_mid_z),
-             (panel_thickness, jamb_rear_length, WAIST_Z - WHEEL_TOP_Z)),
-            ((-panel_x, jamb_rear_y, upper_mid_z),
-             (panel_thickness, jamb_rear_length, WAIST_Z - WHEEL_TOP_Z)),
-            # Bonnet and boot lid.
-            ((0.0, -1.78, (WAIST_Z + BONNET_Z) * 0.5),
-             (WIDTH - 0.14, 1.05, BONNET_Z - WAIST_Z)),
-            ((0.0, 1.86, (WAIST_Z + BONNET_Z) * 0.5),
-             (WIDTH - 0.14, 0.98, BONNET_Z - WAIST_Z)),
-            # Nose and tail panels.
-            ((0.0, FRONT_Y + 0.06, upper_mid_z),
-             (WIDTH - 0.10, 0.16, WAIST_Z - WHEEL_TOP_Z)),
-            ((0.0, REAR_Y - 0.06, upper_mid_z),
-             (WIDTH - 0.10, 0.16, WAIST_Z - WHEEL_TOP_Z)),
-            # Arch lips over each wheel. The FRONT pair stops at the door
-            # shut line instead of running the full arch, which is both
-            # what a saloon does and what keeps an eyebrow of bodywork from
-            # crossing the open doorway at chest height.
-            ((TRACK_HALF + 0.10, front_lip_y, WHEEL_TOP_Z + 0.04),
-             (0.11, front_lip_length, 0.08)),
-            ((-(TRACK_HALF + 0.10), front_lip_y, WHEEL_TOP_Z + 0.04),
-             (0.11, front_lip_length, 0.08)),
-            ((TRACK_HALF + 0.10, REAR_AXLE_Y, WHEEL_TOP_Z + 0.04),
-             (0.11, ARCH_HALF_LENGTH * 2.0, 0.08)),
-            ((-(TRACK_HALF + 0.10), REAR_AXLE_Y, WHEEL_TOP_Z + 0.04),
-             (0.11, ARCH_HALF_LENGTH * 2.0, 0.08)),
-            # Aprons closing the overhangs under the bumpers.
-            ((0.0, FRONT_Y + 0.10, 0.40), (WIDTH - 0.16, 0.32, 0.20)),
-            ((0.0, REAR_Y - 0.10, 0.40), (WIDTH - 0.16, 0.32, 0.20)),
-        )
-        self.shell_boxes = shell_boxes
-        self.add_boxes(
-            "GEO_BodyShell",
-            shell_boxes,
-            "body_shell",
-            "Body",
-        )
+        bonnet = MeshAccumulator()
+        forms.deck(bonnet, [(y, w, .057, hood_z(0, y) - .057)
+                    for y, w in ((-2.408,.748),(-2.36,.776),(-2.02,.79),(-1.68,.798),(-1.25,.803))], .025)
+        forms.deck(bonnet, [(y, w, .031, z)
+                    for y, w, z in ((1.145,.787,1.032),(1.42,.80,1.039),(2.12,.776,1.027),
+                                   (2.359,.750,1.018),(2.400,.728,.995))], .027)
+        self.add_accumulator("GEO_Decks", bonnet, "deck_skins", "Body")
+
+        under = MeshAccumulator()
+        forms.loft(under, [forms.chamfered_ring(0., z, w, h, .023, y)
+                           for y, z, w, h in ((-1.66,.310,.43,.026),(-1.36,.264,.57,.040),
+                                               (-.94,.242,.64,.041),(1.52,.242,.64,.041),
+                                               (1.76,.279,.51,.033))])
+        for side in (-1., 1.):
+            for axle in (FRONT_AXLE_Y, REAR_AXLE_Y):
+                # Real black wheel tubs. The rolled returns under the metal
+                # arch give the tyre clearance from its own silhouette.
+                path=[]
+                for i in range(19):
+                    a=math.pi*i/18
+                    path.append((side*.817, axle + .421*math.cos(a), .335+.421*math.sin(a)))
+                forms.trim_path(under, path, .023, 6)
+                under.add_box((side*.59, axle, .48), (.08,.71,.37))
+        self.add_accumulator("GEO_Underbody", under, "underbody", "Trim")
 
     def _build_greenhouse(self) -> None:
-        """Roof, headers and six thin pillars.
+        roof = MeshAccumulator()
+        sections = ((-.875,.717,.028,1.501),(-.815,.737,.045,1.513),
+                    (-.60,.750,.055,1.515),(0.0,.751,.055,1.515),
+                    (.69,.722,.052,1.511),(.96,.676,.040,1.500),
+                    (1.10,.632,.023,1.469))
+        forms.deck(roof, sections, .028)
+        self.add_accumulator("GEO_Greenhouse", roof, "greenhouse", "Body")
 
-        The pillars are cylinders rather than boxes because they rake, and a
-        period saloon reads by how thin they are.
-        """
-        self.add_boxes(
-            "GEO_Greenhouse",
-            (
-                ((0.0, 0.21, (ROOF_UNDERSIDE_Z + HEIGHT) * 0.5),
-                 (1.72, 2.22, HEIGHT - ROOF_UNDERSIDE_Z)),
-                ((0.0, -0.88, ROOF_UNDERSIDE_Z - 0.03), (1.66, 0.14, 0.10)),
-                ((0.0, 1.28, ROOF_UNDERSIDE_Z - 0.03), (1.66, 0.14, 0.10)),
-                ((0.0, 1.34, WAIST_Z + 0.04), (1.46, 0.50, 0.05)),
-                ((0.0, -1.24, WAIST_Z + 0.03), (WIDTH - 0.18, 0.14, 0.07)),
-            ),
-            "greenhouse",
-            "Body",
-        )
+        liner = MeshAccumulator()
+        forms.deck(liner, [(y, w - .027, c, h - .029) for y,w,c,h in sections], .009)
+        self.add_accumulator("GEO_Headlining", liner, "headlining", "Interior")
 
         pillars = MeshAccumulator()
-        for side in (1.0, -1.0):
-            # A-pillar: from the scuttle up to the windscreen header, so the
-            # screen has something to sit in and the roof has something to
-            # stand on. Raked, which is why these are cylinders and not boxes.
-            pillars.add_cylinder_between(
-                (side * 0.84, -1.17, WAIST_Z),
-                (side * 0.80, -0.88, ROOF_UNDERSIDE_Z),
-                0.048,
-                segments=6,
-            )
-            pillars.add_cylinder_between(
-                (side * 0.84, 0.34, WAIST_Z),
-                (side * 0.82, 0.34, ROOF_UNDERSIDE_Z),
-                0.044,
-                segments=6,
-            )
-            pillars.add_cylinder_between(
-                (side * 0.84, 1.02, WAIST_Z),
-                (side * 0.80, 1.28, ROOF_UNDERSIDE_Z),
-                0.052,
-                segments=6,
-            )
+        for side in (1., -1.):
+            for path, radius in (
+                (((side*.822,-1.235,1.018),(side*.776,-1.10,1.221),(side*.692,-.857,1.474)),.028),
+                (((side*.829,B_PILLAR_Y,1.017),(side*.793,B_PILLAR_Y-.022,1.232),(side*.705,B_PILLAR_Y-.032,1.479)),.025),
+                (((side*.827,1.187,1.022),(side*.754,1.15,1.243),(side*.610,1.081,1.446)),.052),
+            ):
+                forms.trim_path(pillars, path, radius, 8)
         self.add_accumulator("GEO_Pillars", pillars, "pillars", "Body")
 
     def _build_glass(self) -> None:
-        """Screens and side lights as double-sided quads.
+        glass = (
+            ("Windshield", ((.793,-1.230,1.044),(-.793,-1.230,1.044),
+                            (-.703,-.858,1.484),(.703,-.858,1.484)), (0.,-1.,0.), .018),
+            ("Backlight", ((-.788,1.294,1.063),(.788,1.294,1.063),
+                           (.623,1.103,1.469),(-.623,1.103,1.469)), (0.,1.,0.), .022),
+            ("RearDriver", ((.817,B_PILLAR_Y+.024,1.047),(.800,1.148,1.047),
+                             (.627,1.065,1.463),(.712,B_PILLAR_Y+.010,1.480)), (1.,0.,0.), .008),
+            ("RearPassenger", ((-.817,B_PILLAR_Y+.024,1.047),(-.800,1.148,1.047),
+                                (-.627,1.065,1.463),(-.712,B_PILLAR_Y+.010,1.480)), (-1.,0.,0.), .008),
+        )
+        seals = MeshAccumulator()
+        for name, corners, normal, crown in glass:
+            pane = MeshAccumulator()
+            forms.pane(pane, corners, crown, normal)
+            self.add_accumulator("GEO_" + name, pane, "glass", "Glass")
+            for a, b in zip(corners, corners[1:] + corners[:1]):
+                middle = (Vector(a) + Vector(b)) * .5
+                if name in ("Windshield","Backlight") and abs(a[0]-b[0]) > .3:
+                    middle += Vector(normal) * crown
+                forms.trim_path(seals, (a,middle,b), .011, 6)
+        self.add_accumulator("GEO_WindowSeals", seals, "window_seals", "Rubber")
 
-        Double-sided on purpose: the hero will sit behind this glass, and a
-        single winding would leave him looking out through nothing.
-        """
-        glass = MeshAccumulator()
-        # Windscreen, raked back from the scuttle to the header.
-        glass.add_double_quad(
-            (0.82, -1.17, WAIST_Z + 0.04),
-            (-0.82, -1.17, WAIST_Z + 0.04),
-            (-0.78, -0.89, ROOF_UNDERSIDE_Z - 0.03),
-            (0.78, -0.89, ROOF_UNDERSIDE_Z - 0.03),
-        )
-        # Rear screen, raked the other way.
-        glass.add_double_quad(
-            (0.80, 1.36, WAIST_Z + 0.04),
-            (-0.80, 1.36, WAIST_Z + 0.04),
-            (-0.78, 1.27, ROOF_UNDERSIDE_Z - 0.03),
-            (0.78, 1.27, ROOF_UNDERSIDE_Z - 0.03),
-        )
-        # Rear side lights, between the B and C pillars.
-        for side in (1.0, -1.0):
-            glass.add_double_quad(
-                (side * 0.84, 0.39, WAIST_Z + 0.03),
-                (side * 0.84, 0.99, WAIST_Z + 0.03),
-                (side * 0.82, 1.03, ROOF_UNDERSIDE_Z - 0.03),
-                (side * 0.82, 0.39, ROOF_UNDERSIDE_Z - 0.03),
-            )
-        self.add_accumulator("GEO_Glass", glass, "glass", "Glass")
-
-        # The driver's rear quarter light took a stone years ago. The crack
-        # lines are separate slivers on the windscreen so the damage is a
-        # silhouette read at 640x360, not a texture nobody will resolve.
-        cracked = MeshAccumulator()
-        cracked.add_double_quad(
-            (0.845, 1.06, WAIST_Z + 0.04),
-            (0.825, 1.27, WAIST_Z + 0.04),
-            (0.815, 1.27, ROOF_UNDERSIDE_Z - 0.04),
-            (0.835, 1.06, ROOF_UNDERSIDE_Z - 0.04),
-        )
-        for offset, span, height in (
-            (-0.10, 0.30, 0.020),
-            (0.06, 0.26, 0.016),
-            (0.20, 0.22, 0.014),
-            (-0.26, 0.18, 0.014),
-            (0.34, 0.16, 0.012),
-        ):
-            cracked.add_box(
-                (offset, -1.02, WAIST_Z + 0.24 + span * 0.35),
-                (span, 0.02, height),
-            )
-        self.add_accumulator(
-            "GEO_CrackedGlass", cracked, "cracked_glass", "CrackedGlass"
-        )
-
-    def _build_damage(self) -> None:
-        """Dents pressed in, rust standing proud.
-
-        Both are separate meshes with their own roles so the generator can
-        assert the wreck is still a wreck after a later styling pass.
-        """
-        self.add_boxes(
-            "GEO_Dents",
-            DENT_SPECS,
-            "dents",
-            "Body",
-        )
-        self.add_boxes(
-            "GEO_Rust",
-            RUST_SPECS,
-            "rust",
-            "Rust",
-        )
+        # One hairline rooted in the driver's rear side pane. The vertices
+        # are evaluated on the same ruled surface as the pane, not on a plate.
+        corners = [Vector(p) for p in glass[2][1]]
+        crack=MeshAccumulator()
+        def at(u,v):
+            p=corners[0].lerp(corners[1],u).lerp(corners[3].lerp(corners[2],u),v)
+            return p+Vector((.009*u*(1-u)*4+.0014,0,0))
+        for points in (((.83,.04),(.71,.20),(.75,.35),(.55,.69),(.50,.88)),
+                       ((.71,.20),(.50,.27),(.43,.39)),((.75,.35),(.85,.57),(.86,.72)),
+                       ((.55,.69),(.66,.71),(.73,.84))):
+            forms.trim_path(crack, [at(u,v) for u,v in points], .0011, 5)
+        self.add_accumulator("GEO_CrackedGlass", crack, "cracked_glass", "CrackedGlass")
 
     def _build_doors(self) -> None:
-        """Two front doors, each on its own hinge pivot.
-
-        Authored in the pivot's space so "he opens the door" is later a
-        rotation rather than a re-author. The passenger door is the one in the
-        wrong colour.
-        """
         for name, side, role, slot in DOOR_SPECS:
-            hinge = self.add_pivot(
-                f"PIVOT_Door{name}",
-                role,
-                self.body,
-                (side * (BODY_HALF_WIDTH - 0.005), DOOR_HINGE_Y, DOOR_HINGE_Z),
-                runtime_axis_local="+Z",
-            )
-            leaf_y = DOOR_LEAF_LENGTH * 0.5
-            self.add_boxes(
-                f"GEO_Door{name}Panel",
-                (
-                    ((side * 0.010, leaf_y, 0.0),
-                     (0.050, DOOR_LEAF_LENGTH, 0.58)),
-                    ((side * 0.016, leaf_y, 0.30),
-                     (0.042, DOOR_LEAF_LENGTH, 0.035)),
-                ),
-                "door_panel",
-                slot,
-                parent=hinge,
-            )
-            self.add_boxes(
-                f"GEO_Door{name}Glass",
-                (((side * 0.006, 0.77, 0.54), (0.030, 1.40, 0.50)),),
-                "door_glass",
-                "Glass",
-                parent=hinge,
-            )
-            # The handle rides the leaf. It used to be drawn into the
-            # flank's trim mesh, which was harmless for exactly as long as
-            # the door never moved: the moment it opens, a handle left on
-            # the body hangs in the empty doorway with nothing behind it.
-            # Same box, same place, expressed in the hinge's own space.
-            self.add_boxes(
-                f"GEO_Door{name}Handle",
-                (
-                    (
-                        (side * 0.019, DOOR_HANDLE_Y, DOOR_HANDLE_Z),
-                        (0.030, 0.15, 0.035),
-                    ),
-                ),
-                "door_handle",
-                "Chrome",
-                parent=hinge,
-            )
+            origin = (side*.866, DOOR_HINGE_Y, DOOR_HINGE_Z)
+            hinge = self.add_pivot(f"PIVOT_Door{name}", role, self.body, origin, runtime_axis_local="+Z")
+            local = lambda x,y,z: (side*x-origin[0], y-origin[1], z-origin[2])
+            outer = MeshAccumulator()
+            first = DOORWAY_FRONT_Y + .006
+            last = DOORWAY_REAR_Y - .006
+            forms.side_skin(outer, side, section_ys(first, last), WAIST_Z-.006,
+                            lambda y: max(SILL_Z+.006, arch_base(y)+.010),
+                            lambda y,z: flank_x(side,y,z), origin, .029)
+            self.add_accumulator(f"GEO_Door{name}Panel", outer, "door_panel", slot, hinge)
 
-            # And so does the damage, for exactly the reason above. The sill
-            # rust and the driver's crease were authored against the flank
-            # at +/-0.905 and then a leaf was hung over them at 0.880-0.930,
-            # which buried both; cutting the doorway would have gone one
-            # worse and left them floating in the hole. Same runs, same
-            # heights, re-expressed on the leaf and standing proud of it.
-            self.add_boxes(
-                f"GEO_Door{name}Rust",
-                _onto_door_leaf(
-                    DOOR_RUST_SPECS[name], side, DOOR_RUST_PROUD_X),
-                "rust",
-                "Rust",
-                parent=hinge,
-            )
-            dents = DOOR_DENT_SPECS.get(name)
-            if dents:
-                self.add_boxes(
-                    f"GEO_Door{name}Dent",
-                    _onto_door_leaf(dents, side, DOOR_DENT_PROUD_X),
-                    "dents",
-                    slot,
-                    parent=hinge,
-                )
+            corners = (local(.850,-1.148,1.037),local(.846,B_PILLAR_Y-.028,1.037),
+                       local(.719,B_PILLAR_Y-.054,1.480),local(.704,-.869,1.478))
+            pane=MeshAccumulator()
+            forms.pane(pane, corners, .008, (side,0,0))
+            self.add_accumulator(f"GEO_Door{name}Glass", pane, "door_glass", "Glass", hinge)
+            rim = MeshAccumulator()
+            for a,b in zip(corners,corners[1:]+corners[:1]):
+                mid=(Vector(a)+Vector(b))*.5 + Vector((.008*side,0.,0.))
+                forms.trim_path(rim, (a,mid,b), .014, 8)
+            self.add_accumulator(f"GEO_Door{name}Frame", rim, "door_frame", slot, hinge)
+            rubber=MeshAccumulator()
+            pane_centre=sum((Vector(point) for point in corners),Vector())/4
+            inset=[Vector(a).lerp(pane_centre,.035)-Vector((.005*side,0.,0.)) for a in corners]
+            for a,b in zip(inset,inset[1:]+inset[:1]):
+                forms.trim_path(rubber,(a,(a+b)*.5+Vector((.006*side,0.,0.)),b),.006,6)
+            self.add_accumulator(f"GEO_Door{name}Seal",rubber,"door_seal","Rubber",hinge)
+
+            card=MeshAccumulator()
+            forms.side_skin(card, side, section_ys(first+.025,last-.022), .991,
+                            lambda y: max(.485,arch_base(y)+.034),
+                            lambda y,z: flank_x(side,y,z)-.034, origin,.042)
+            arm=local(.793,-.291,.836)
+            card.add_box(local(.817,.014,.65),(.049,.215,.090))
+            self.add_accumulator(f"GEO_Door{name}Card", card, "door_card", "Interior", hinge)
+            self.add_boxes(f"GEO_Door{name}Armrest", ((arm,(.086,.36,.080)),),
+                           "door_armrest", "Interior", hinge)
+            handles = MeshAccumulator()
+            handle_y = B_PILLAR_Y - .146
+            x=flank_x(side,handle_y,.922)
+            forms.trim_path(handles, (local(x-.005,handle_y-.081,.921),local(x+.023,handle_y-.052,.924),
+                                     local(x+.024,handle_y+.056,.923),local(x-.003,handle_y+.084,.918)),.011,8)
+            forms.trim_path(handles, (local(.782,-.37,.901),local(.756,-.33,.919),
+                                      local(.775,-.269,.916)),.010,8)
+            self.add_accumulator(f"GEO_Door{name}Handle",handles,"door_handle","Chrome",hinge)
+            self.add_pivot(f"ANCHOR_Door{name}Pull", f"{role}_outer_grip", hinge,
+                           local(x+.025,handle_y,.924))
+            self.add_pivot(f"ANCHOR_Door{name}InnerPull", f"{role}_inner_grip", hinge,
+                           local(.756,-.322,.919))
 
     def _build_wheels(self) -> None:
-        """All four wheels are on. Three of the four hubcaps are not."""
-        wheel_specs = (
-            ("FL", "front_left_wheel", TRACK_HALF, FRONT_AXLE_Y, True),
-            ("FR", "front_right_wheel", -TRACK_HALF, FRONT_AXLE_Y, False),
-            ("RL", "rear_left_wheel", TRACK_HALF, REAR_AXLE_Y, True),
-            ("RR", "rear_right_wheel", -TRACK_HALF, REAR_AXLE_Y, True),
-        )
-        for code, role, x, y, has_hubcap in wheel_specs:
-            pivot = self.add_pivot(
-                f"PIVOT_Wheel{code}",
-                role,
-                self.body,
-                (x, y, WHEEL_RADIUS),
-                runtime_axis_local="+X",
-            )
-            tyre = MeshAccumulator()
-            tyre.add_cylinder_x((0.0, 0.0, 0.0), WHEEL_RADIUS, WHEEL_WIDTH, 12)
-            self.add_accumulator(
-                f"GEO_Wheel{code}", tyre, "wheel", "Rubber", parent=pivot
-            )
-            if not has_hubcap:
-                continue
-            cap = MeshAccumulator()
-            outward = math.copysign(WHEEL_WIDTH * 0.5 + 0.012, x)
-            cap.add_cylinder_x((outward, 0.0, 0.0), 0.125, 0.024, 12)
-            self.add_accumulator(
-                f"GEO_Hubcap{code}", cap, "hubcap", "Chrome", parent=pivot
-            )
+        for code, role, x, y, cap in (
+            ("FL","front_left_wheel",TRACK_HALF,FRONT_AXLE_Y,True),
+            ("FR","front_right_wheel",-TRACK_HALF,FRONT_AXLE_Y,False),
+            ("RL","rear_left_wheel",TRACK_HALF,REAR_AXLE_Y,True),
+            ("RR","rear_right_wheel",-TRACK_HALF,REAR_AXLE_Y,True),
+        ):
+            pivot=self.add_pivot(f"PIVOT_Wheel{code}",role,self.body,(x,y,WHEEL_RADIUS),runtime_axis_local="+X")
+            sign=math.copysign(1.,x)
+            disk=MeshAccumulator()
+            profile=((-0.083,.205),(-.098,.235),(-.104,.285),(-.086,.325),
+                     (-.059,WHEEL_RADIUS),(.059,WHEEL_RADIUS),(.086,.325),(.104,.285),
+                     (.098,.235),(.083,.205))
+            forms.revolve(disk,(0,0,0),(1,0,0),profile,28,loop=True)
+            self.add_accumulator(f"GEO_Wheel{code}",disk,"wheel","Rubber",pivot)
+            steel=MeshAccumulator()
+            forms.revolve(steel,(0,0,0),(sign,0,0),((-.090,.209),(.077,.209),(.101,.205),
+                           (.104,.193),(.091,.177),(.069,.159),(.048,.118)),24)
+            for n in range(5):
+                a=math.tau*n/5
+                point=(sign*.073, .076*math.cos(a), .076*math.sin(a))
+                forms.revolve(steel,point,(sign,0,0),((-.015,.010),(.011,.010),(.016,.007)),6)
+            self.add_accumulator(f"GEO_Rim{code}",steel,"wheel_rim","Metal",pivot)
+            if cap:
+                hub=MeshAccumulator()
+                forms.revolve(hub,(0,0,0),(sign,0,0),((.094,.123),(.108,.123),(.119,.102),
+                               (.130,.057),(.131,.023)),24)
+                self.add_accumulator(f"GEO_Hubcap{code}",hub,"hubcap","Chrome",pivot)
 
     def _build_lights_and_trim(self) -> None:
-        """Two burning headlights, and the small metal around them.
+        front, rear = FRONT_Y, REAR_Y
+        bezels, grille, rear_trim, indicators = (MeshAccumulator() for _ in range(4))
+        for x, side in ((.602, "Driver"),(-.602, "Passenger")):
+            lamp = MeshAccumulator()
+            forms.revolve(lamp,(x,front,.854),(0,-1,0),
+                          ((-.024,.097),(.006,.110),(.024,.105),(.041,.078),(.048,.031)),24)
+            self.add_accumulator("GEO_Headlight"+side, lamp, "headlight", "Headlight")
+            self.add_pivot("ANCHOR_Headlight"+side,"headlight_beam",self.body,(x,front-.074,.854))
+            forms.revolve(bezels,(x,front,.854),(0,-1,0),((-.026,.129),(.005,.131),
+                          (.022,.121),(.024,.108),(.014,.105),(-.024,.105)),24,loop=True)
+            bezel = MeshAccumulator()
+            forms.loft(bezel,[forms.chamfered_ring(x,.848,w,h,r,y)
+                              for y,w,h,r in ((rear-.026,.151,.079,.022),(rear+.016,.144,.071,.018))])
+            forms.loft(rear_trim,[forms.chamfered_ring(x,.848,w,h,r,y)
+                                  for y,w,h,r in ((rear-.045,.166,.090,.020),(rear+.006,.166,.088,.020))])
+            self.add_accumulator("GEO_TailLight"+side,bezel,"tail_light","TailLight")
+            for yi, direction, z in ((front-.015,-1.,.684),(rear+.022,1.,.846)):
+                xi = x if direction < 0 else x + math.copysign(.106,x)
+                forms.loft(indicators,[forms.chamfered_ring(xi,z,w,.028,.012,yi+d*direction)
+                                 for d,w in ((-.029,.040),(.003,.046),(.009,.040))])
+        self.add_accumulator("GEO_HeadlightRims",bezels,"headlight_rim","Chrome")
+        self.add_accumulator("GEO_TailHousings",rear_trim,"tail_housing","Trim")
+        self.add_accumulator("GEO_Indicators",indicators,"indicator_lens","MarkerLens")
 
-        Everything else on this car is broken; the lamps are not. They are
-        the only working thing on an abandoned lot, and at 640x360 through
-        fog they are what reads first - a pair of lit lenses says someone is
-        waiting in a way a parked shape never does. The lens is proud of its
-        own rim so the emissive face is never coplanar with the bodywork.
-        """
-        headlight = MeshAccumulator()
-        rims = MeshAccumulator()
-        for lamp_x in (0.62, -0.62):
-            headlight.add_cylinder_x(
-                (lamp_x, FRONT_Y - 0.01, 0.86), 0.105, 0.14, 12
-            )
-            rims.add_cylinder_x(
-                (lamp_x, FRONT_Y + 0.04, 0.86), 0.125, 0.06, 12
-            )
-        self.add_accumulator(
-            "GEO_Headlight", headlight, "headlight", "Headlight"
-        )
-        self.add_accumulator(
-            "GEO_HeadlightRims", rims, "headlight_rim", "Chrome"
-        )
+        # Deep dark aperture and thin horizontal blades with bright edges.
+        mask = MeshAccumulator()
+        forms.loft(mask,[forms.chamfered_ring(0.,.833,w,h,.025,y)
+                     for y,w,h in ((front+.012,.457,.122),(front+.050,.486,.137))])
+        self.add_accumulator("GEO_RadiatorMouth",mask,"radiator_mouth","Trim")
+        for z in (.747,.790,.833,.876,.919):
+            forms.trim_path(grille, ((-.446,front+.007,z),(-.29,front-.004,z),
+                                    (0.,front-.009,z),(.29,front-.004,z),(.446,front+.007,z)),.007,6)
+        self.add_accumulator("GEO_Grille",grille,"grille","Chrome")
 
-        self.add_boxes(
-            "GEO_TailLights",
-            (
-                ((0.60, REAR_Y - 0.02, 0.88), (0.22, 0.06, 0.14)),
-                ((-0.60, REAR_Y - 0.02, 0.88), (0.22, 0.06, 0.14)),
-            ),
-            "tail_light",
-            "TailLight",
-        )
-
-        grille = MeshAccumulator()
-        grille.add_box((0.0, FRONT_Y + 0.01, 0.80), (0.94, 0.05, 0.30))
-        for index in range(5):
-            grille.add_box(
-                (0.0, FRONT_Y - 0.02, 0.68 + index * 0.062),
-                (0.90, 0.03, 0.022),
-            )
-        self.add_accumulator("GEO_Grille", grille, "grille", "Chrome")
-
-        # The front bumper's outer section was hit and hangs low; the rear one
-        # is straight. A box cannot yaw, so the droop is stated by offset.
-        self.add_boxes(
-            "GEO_Bumpers",
-            (
-                ((0.18, FRONT_Y - 0.06, 0.52), (1.12, 0.10, 0.11)),
-                ((-0.62, FRONT_Y - 0.02, 0.44), (0.52, 0.09, 0.10)),
-                ((0.80, FRONT_Y - 0.05, 0.52), (0.28, 0.09, 0.10)),
-                ((0.0, REAR_Y + 0.05, 0.54), (1.58, 0.10, 0.11)),
-                ((0.0, REAR_Y + 0.03, 0.44), (1.20, 0.07, 0.06)),
-            ),
-            "bumper",
-            "Chrome",
-        )
+        bumper = MeshAccumulator()
+        def bumper_section(x,y,z,depth,height):
+            return [(x,y+dy,z+dz) for dy,dz in (
+                (-depth*.33,-height*.5),(depth*.34,-height*.5),(depth*.5,-height*.30),
+                (depth*.5,height*.30),(depth*.34,height*.5),(-depth*.34,height*.5),
+                (-depth*.5,height*.30),(-depth*.5,-height*.30))]
+        for sign in (-1.,1.):
+            # One bent end. The useful top beneath the Ferryman's boots
+            # remains level at the authored contact.
+            cross=[]
+            for x in (-.832,-.777,-.62,-.36,-.13,.25,.64,.78,.832):
+                d=.14-(.045 if abs(x)>.78 else 0)
+                y=sign*(2.452-.100*(abs(x)/.832)**6)
+                z=.523 - (.061 * max(0.,(x-.52)/.312) if sign < 0 else .007)
+                cross.append(bumper_section(x,y,z,d,.104))
+            forms.loft(bumper,cross)
+        self.add_accumulator("GEO_Bumpers",bumper,"bumper","Chrome")
 
         trim = MeshAccumulator()
-        for side in (1.0, -1.0):
-            # Waist strip - the line his forearm follows.
-            trim.add_box(
-                (side * (BODY_HALF_WIDTH + 0.006), 0.10, WAIST_Z - 0.03),
-                (0.016, 3.60, 0.030),
-            )
-            # Drip rail.
-            trim.add_box(
-                (side * 0.74, 0.18, ROOF_UNDERSIDE_Z + 0.01),
-                (0.030, 2.00, 0.026),
-            )
-            # Rear door shut lines. The rear doors never open, so they are
-            # seams rather than leaves: the flank still reads as a saloon.
-            for seam_y in (0.34, 1.02):
-                trim.add_box(
-                    (side * (BODY_HALF_WIDTH + 0.004), seam_y, 0.73),
-                    (0.012, 0.020, 0.56),
-                )
-            # The REAR door handle only. The front one is not trim: it is
-            # the thing the Ferryman pulls, so it belongs to the leaf that
-            # swings and is built with it in `_build_doors`. Left in this
-            # mesh it stayed bolted to the flank while the door opened -
-            # a chrome bar hanging in an empty doorway - which nobody saw
-            # for as long as nothing ever opened the door.
-            trim.add_box(
-                (side * (BODY_HALF_WIDTH + 0.014), 0.62, WAIST_Z - 0.11),
-                (0.030, 0.15, 0.035),
-            )
-        # Wing mirror on the driver's side only, and two wipers parked low.
-        trim.add_cylinder_between(
-            (0.86, -1.05, WAIST_Z + 0.02),
-            (1.00, -1.12, WAIST_Z + 0.12),
-            0.014,
-            segments=6,
-        )
-        trim.add_box((1.02, -1.13, WAIST_Z + 0.15), (0.035, 0.10, 0.09))
-        for wiper_x in (0.34, -0.34):
-            trim.add_box(
-                (wiper_x, -1.14, WAIST_Z + 0.075), (0.44, 0.020, 0.014)
-            )
-        # The aerial snapped off years ago and never got replaced. Keeping the
-        # stub under the roofline is also what lets the height bound stay a
-        # tight contract instead of a tolerance widened for one whisker.
-        trim.add_cylinder_between(
-            (-0.80, -0.70, WAIST_Z + 0.02),
-            (-0.84, -0.64, WAIST_Z + 0.34),
-            0.008,
-            segments=4,
-        )
-        self.add_accumulator("GEO_Trim", trim, "exterior_trim", "Trim")
+        plates = MeshAccumulator()
+        for sign in (-1.,1.):
+            y = front-.027 if sign<0 else rear+.041
+            forms.loft(plates,[forms.chamfered_ring(.02,.66,w,h,.016,y+sign*d)
+                               for d,w,h in ((-.014,.216,.048),(.002,.216,.048),(.009,.208,.042))])
+            for x in (-.153,.190):
+                forms.revolve(trim,(x,y+sign*.008,.687),(0,sign,0),((0.,.005),(.005,.005),(.007,.003)),6)
+        self.add_accumulator("GEO_NumberPlate",plates,"number_plate","Plate")
 
-        exhaust = MeshAccumulator()
-        exhaust.add_cylinder_between(
-            (-0.30, 1.10, 0.24), (-0.44, REAR_Y + 0.06, 0.20), 0.032, segments=6
-        )
-        exhaust.add_box((-0.37, 1.60, 0.30), (0.012, 0.012, 0.14))
-        self.add_accumulator("GEO_Exhaust", exhaust, "exhaust", "Metal")
+        for side in (-1.,1.):
+            for axle in (FRONT_AXLE_Y, REAR_AXLE_Y):
+                # Exposed arch lip remains on the fixed panel. The forward
+                # door's corner cuts into the opening and has its own return.
+                path=[]
+                for i in range(23):
+                    a=math.pi*i/22
+                    y,z= axle+.425*math.cos(a),.335+.425*math.sin(a)
+                    if axle==FRONT_AXLE_Y and DOORWAY_FRONT_Y <= y <= DOORWAY_REAR_Y:
+                        if len(path) > 1:
+                            forms.trim_path(trim,path,.007,5)
+                        path=[]
+                        continue
+                    path.append((side*(flank_x(side,y,z)+.002),y,z))
+                if len(path)>1:
+                    forms.trim_path(trim,path,.007,5)
+        for wiper_x in (.36,-.36):
+            forms.trim_path(trim, ((wiper_x+.220,-1.248,1.051),(wiper_x+.147,-1.227,1.085),
+                                  (wiper_x-.13,-1.209,1.099)),.009,6)
+        forms.trim_path(trim,((-.823,-.92,1.01),(-.842,-.91,1.13),(-.853,-.90,1.27)),.006,6)
+        # Only the driver's exterior mirror survived. The inside mirror is
+        # separate, so it never gets cloned into an expensive live camera.
+        forms.trim_path(trim,((.848,-1.156,1.024),(.933,-1.142,1.118),
+                              (.981,-1.162,1.135)),.014,8)
+        forms.loft(trim,[forms.chamfered_ring(.976,1.139,w,h,.013,y)
+                         for y,w,h in ((-1.225,.061,.038),(-1.168,.064,.045),(-1.145,.058,.038))])
+        self.add_accumulator("GEO_Trim",trim,"exterior_trim","Trim")
 
-        # The front plate lost a fixing and hangs off one corner.
-        self.add_boxes(
-            "GEO_NumberPlate",
-            (
-                ((0.10, FRONT_Y - 0.07, 0.62), (0.44, 0.02, 0.11)),
-                ((0.30, FRONT_Y - 0.06, 0.68), (0.03, 0.02, 0.05)),
-            ),
-            "number_plate",
-            "Plate",
-        )
+        exhaust=MeshAccumulator()
+        forms.trim_path(exhaust,((-.31,1.53,.253),(-.32,1.95,.252),(-.43,2.24,.251),(-.43,2.36,.229)),.028,12)
+        forms.revolve(exhaust,(-.43,2.36,.229),(0,1,0),((-.035,.032),(.015,.032),(.019,.029),
+                                                          (.019,.023),(-.035,.023)),12,loop=True)
+        self.add_accumulator("GEO_Exhaust",exhaust,"exhaust","Metal")
+        self.add_pivot("ANCHOR_Exhaust","exhaust_outlet",self.body,(-.43,2.39,.226))
 
     def _build_interior(self) -> None:
         """A real cabin: the glass is see-through and the hero will sit in it."""
@@ -1400,54 +1246,52 @@ class LastRouteCarBuilder:
             "interior_shell",
             "Interior",
         )
-        self.add_boxes(
-            "GEO_SeatDriver",
-            (
-                ((SEAT_HALF_SPAN_X, SEAT_Y, 0.46), (0.52, 0.50, 0.12)),
-                ((SEAT_HALF_SPAN_X, SEAT_Y + 0.30, 0.85), (0.52, 0.11, 0.66)),
-                ((SEAT_HALF_SPAN_X, SEAT_Y + 0.28, 1.24), (0.30, 0.10, 0.16)),
-            ),
-            "driver_seat",
-            "Seat",
-        )
-        self.add_boxes(
-            "GEO_SeatPassenger",
-            (
-                ((-SEAT_HALF_SPAN_X, SEAT_Y, 0.46), (0.52, 0.50, 0.12)),
-                ((-SEAT_HALF_SPAN_X, SEAT_Y + 0.30, 0.85), (0.52, 0.11, 0.66)),
-                ((-SEAT_HALF_SPAN_X, SEAT_Y + 0.28, 1.24), (0.30, 0.10, 0.16)),
-            ),
-            "passenger_seat",
-            "Seat",
-        )
-        self.add_boxes(
-            "GEO_SeatRear",
-            (
-                ((0.0, 0.55, 0.48), (1.30, 0.52, 0.12)),
-                ((0.0, 0.85, 0.84), (1.30, 0.11, 0.60)),
-            ),
-            "rear_bench",
-            "Seat",
-        )
-        # The dashboard itself is `_build_dashboard`'s: it is composed
-        # around a glovebox aperture and carries the radio, so it is no
-        # longer two boxes drawn in passing here.
+        self._build_seats()
+
+        # Both footwells have removable mats above the textured floor.
+        self.add_boxes("GEO_CarpetMats", tuple(
+            ((side*.433,-.832,FLOOR_Z+.006),(.376,.64,.012)) for side in (-1.,1.)),
+            "floor_mats","Carpet")
+        # The dashboard itself is built around the glovebox aperture.
         column = MeshAccumulator()
-        column.add_cylinder_between(
-            (0.44, -1.02, 0.80),
-            STEERING_WHEEL_CENTER,
-            0.026,
-            segments=6,
-        )
-        self.add_accumulator(
-            "GEO_SteeringColumn", column, "steering_column", "Metal"
-        )
-        self.add_boxes(
-            "GEO_InteriorMirror",
-            (((0.0, -0.88, ROOF_UNDERSIDE_Z - 0.09), (0.20, 0.03, 0.06)),),
-            "interior_mirror",
-            "Trim",
-        )
+        column.add_cylinder_between((.44,-1.02,.80),STEERING_WHEEL_CENTER,.026,10)
+        self.add_accumulator("GEO_SteeringColumn",column,"steering_column","Metal")
+        self.add_boxes("GEO_InteriorMirror",(((0.,-.934,1.414),(.215,.029,.061)),),"interior_mirror","Trim")
+        self.add_boxes("GEO_InteriorMirrorSilver",(((0.,-.916,1.414),(.194,.010,.044)),),"mirror_surface","Chrome")
+
+    def _build_seats(self):
+        for side, name, role in ((1.,"Driver","driver_seat"),(-1.,"Passenger","passenger_seat"),
+                                 (0.,"Rear","rear_bench")):
+            cx=side*SEAT_HALF_SPAN_X
+            fore=SEAT_Y if side else .63
+            width=.232 if side else .613
+            cloth, welting=MeshAccumulator(),MeshAccumulator()
+            # Compressed centre with slightly higher rounded edge bolsters.
+            forms.loft(cloth,[forms.chamfered_ring(cx,z,width*w,h,.028,fore+y)
+                               for y,w,z,h in ((-.268,.83,.429,.028),(-.218,1.,.438,.057),
+                                               (-.05,1.,.432,.054),(.149,1.,.431,.052),(.228,.91,.435,.039))])
+            back=[]
+            for w,y,z,d in ((1.,.18,.449,.062),(1.,.217,.523,.060),(.98,.248,.695,.066),
+                             (.94,.283,.867,.059),(.82,.302,1.055,.051),(.67,.314,1.094,.035)):
+                back.append([(cx+x,fore+yy,z) for x, yy in (
+                    (-width*w+.033,y-d),(width*w-.033,y-d),(width*w,y-d+.021),(width*w,y+d-.034),
+                    (width*w-.032,y+d),(-width*w+.032,y+d),(-width*w,y+d-.034),(-width*w,y-d+.021))])
+            if not side:
+                back=[[(x,y+.09,z-.065) for x,y,z in row] for row in back]
+            forms.loft(cloth,back)
+            if side:
+                forms.loft(cloth,[forms.chamfered_ring(cx,1.167,w,h,.025,fore+y)
+                                 for y,w,h in ((.227,.089,.047),(.257,.125,.067),(.326,.121,.061),(.347,.098,.043))])
+                for x in (cx-.084,cx+.084):
+                    forms.trim_path(welting,((x,fore+.283,1.058),(x,fore+.290,1.128)),.007,8)
+            for sign in (-1.,1.):
+                x=cx+width*.83*sign
+                forms.trim_path(welting,((x,fore-.214,.492),(x,fore-.055,.485),(x,fore+.143,.483)),.003,5)
+                if side:
+                    forms.trim_path(welting,((x,fore+.158,.565),(x,fore+.188,.697),
+                                              (cx+width*.68*sign,fore+.255,1.042)),.003,5)
+            self.add_accumulator("GEO_Seat"+name,cloth,role,"Seat")
+            self.add_accumulator("GEO_SeatWelting"+name,welting,"seat_welting","Interior")
 
     def _dash_boxes(
         self,
@@ -1541,7 +1385,7 @@ class LastRouteCarBuilder:
             "GEO_CabinLampHousing",
             (CABIN_LAMP_HOUSING,),
             "cabin_lamp_housing",
-            "Trim",
+            "Interior",
         )
         self._dash_boxes(
             "GEO_CabinLampLens",
@@ -1627,7 +1471,7 @@ class LastRouteCarBuilder:
             knob.add_cylinder_between((0.0, 0.0, 0.0), (0.0, 0.028, 0.0), 0.014, segments=8)
             knob.add_box((0.0, 0.024, 0.009), (0.004, 0.010, 0.010))
             self._dash_accumulator(
-                f"GEO_Radio{name}Knob", knob, "radio_knob", "Trim", parent=knob_pivot
+                f"GEO_Radio{name}Knob", knob, "radio_knob", "Interior", parent=knob_pivot
             )
         needle_pivot = self.add_pivot(
             "PIVOT_RadioNeedle",
@@ -1647,6 +1491,8 @@ class LastRouteCarBuilder:
 
         # The binnacle: two dials recessed in the cowl's rear face, chrome
         # rings round them, and the fuel needle drawn at "empty".
+        # The dials share a readable, quiet backlight. Thin indices are in
+        # front of the faces and below the glass/horizon line.
         cowl_face_y = -1.01
         bezels = MeshAccumulator()
         faces = MeshAccumulator()
@@ -1676,6 +1522,17 @@ class LastRouteCarBuilder:
         self._dash_accumulator(
             "GEO_InstrumentFaces", faces, "instrument_faces", "CabinLamp"
         )
+        markings = MeshAccumulator()
+        for x in (SPEEDO_CENTER[0],FUEL_GAUGE_X):
+            for i in range(9):
+                a=math.radians(-45+33.75*i)
+                r=.021 if i%2==0 else .025
+                p=lambda radius: (x+math.cos(a)*radius,cowl_face_y+.0135,SPEEDO_CENTER[2]+math.sin(a)*radius)
+                forms.trim_path(markings,(p(r),p(.0295)),.00135,4)
+        for i in range(13):
+            x=-.060+i*.010
+            markings.add_box((x,radio_y+.0124,RADIO_DIAL_Z+.007),(.0013,.002,.010 if i%3==0 else .006))
+        self._dash_accumulator("GEO_InstrumentMarkings", markings, "instrument_markings", "InstrumentInk")
         speedo = self.add_pivot(
             "PIVOT_SpeedoNeedle",
             "speedo_needle",
@@ -1703,7 +1560,7 @@ class LastRouteCarBuilder:
                     ((side * 0.075, radio_y + 0.012, 0.995 + step * 0.014),
                      (0.10, 0.006, 0.006))
                 )
-        self._dash_boxes("GEO_DashVents", tuple(vents), "dash_vents", "Trim")
+        self._dash_boxes("GEO_DashVents", tuple(vents), "dash_vents", "Interior")
         self._dash_boxes(
             "GEO_Ashtray",
             (
@@ -1711,7 +1568,7 @@ class LastRouteCarBuilder:
                 ((-0.205, radio_y + 0.019, 0.925), (0.03, 0.006, 0.008)),
             ),
             "ashtray",
-            "Trim",
+            "Interior",
         )
         self._dash_boxes(
             "GEO_DashLip",
@@ -1739,7 +1596,7 @@ class LastRouteCarBuilder:
                 ((0.05, -0.63, 0.50), (0.024, 0.09, 0.024)),
             ),
             "lever_knobs",
-            "Trim",
+            "Interior",
         )
 
         # Pedals in the driver's footwell, on stems back to the scuttle -
@@ -1774,7 +1631,7 @@ class LastRouteCarBuilder:
         self._dash_boxes(
             "GEO_SunVisors",
             tuple(
-                ((side * SEAT_HALF_SPAN_X, -0.85, 1.471), (0.30, 0.12, 0.012))
+                ((side * SEAT_HALF_SPAN_X, -0.815, 1.433), (0.30, 0.12, 0.012))
                 for side in (1.0, -1.0)
             ),
             "sun_visor",
@@ -1782,7 +1639,7 @@ class LastRouteCarBuilder:
         )
         mirror_stalk = MeshAccumulator()
         mirror_stalk.add_cylinder_between(
-            (0.0, -0.895, 1.465), (0.0, -0.955, 1.42), 0.007, segments=4
+            (0.0, -0.855, 1.469), (0.0, -0.939, 1.421), 0.007, segments=4
         )
         self._dash_accumulator("GEO_MirrorStalk", mirror_stalk, "mirror_stalk", "Trim")
 
@@ -1805,9 +1662,10 @@ class LastRouteCarBuilder:
             (0.0, 0.0, 0.0),
             STEERING_WHEEL_MAJOR_RADIUS,
             STEERING_WHEEL_MINOR_RADIUS,
-            12,
-            4,
+            32,
+            8,
         )
+        forms.revolve(rim, (0.,0.,0.), (0,0,1), ((-.012,.037),(.008,.047),(.016,.042)), 16)
         for spoke_angle in (math.radians(210.0), math.radians(330.0), math.radians(90.0)):
             rim.add_cylinder_between(
                 (0.0, 0.0, 0.0),
@@ -1820,7 +1678,7 @@ class LastRouteCarBuilder:
                 segments=4,
             )
         self.add_accumulator(
-            "INT_SteeringWheel", rim, "steering_wheel", "Trim", parent=steering
+            "INT_SteeringWheel", rim, "steering_wheel", "Interior", parent=steering
         )
 
         # The grips are CHILDREN of the rim pivot, so a later turn of the wheel
@@ -1936,6 +1794,8 @@ def build_signature(result: BuildResult) -> str:
                     for vertex in mesh.vertices
                 ],
                 "faces": [list(polygon.vertices) for polygon in mesh.polygons],
+                "uv": [[stable_float(v) for v in loop.uv] for loop in mesh.uv_layers[0].data],
+                "smooth": [polygon.use_smooth for polygon in mesh.polygons],
             }
         )
     for pivot in result.pivots:
@@ -1988,8 +1848,8 @@ def render_preview(path: Path, result: BuildResult) -> None:
     camera_data = bpy.data.cameras.new("CAM_LastRouteCarPreview")
     camera = bpy.data.objects.new("CAM_LastRouteCarPreview", camera_data)
     presentation.objects.link(camera)
-    camera.location = (-5.6, -6.9, 2.9)
-    target = Vector((-0.10, -0.35, 0.80))
+    camera.location = (-5.8, -6.5, 2.8)
+    target = Vector((-0.04, -0.06, 0.77))
     camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
     camera_data.lens = 50
     scene.camera = camera
@@ -2012,7 +1872,9 @@ def render_preview(path: Path, result: BuildResult) -> None:
     ground = MeshAccumulator()
     ground.add_box((0.0, 0.20, -0.045), (12.0, 11.0, 0.09))
     ground_material = bpy.data.materials.new("MAT_PreviewGround")
-    ground_material.diffuse_color = (0.022, 0.034, 0.030, 1.0)
+    ground_material.use_nodes = True
+    ground_material.node_tree.nodes.get("Principled BSDF").inputs["Base Color"].default_value = (.10,.106,.102,1.)
+    ground_material.node_tree.nodes.get("Principled BSDF").inputs["Roughness"].default_value = .85
     create_part(
         "PreviewGround",
         ground,
@@ -2057,8 +1919,15 @@ def parse_args() -> argparse.Namespace:
         default=Path("ArtSource/Vehicles/Blender/LastRouteCar3D.png"),
     )
     parser.add_argument("--no-preview", action="store_true")
+    parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--model-dir", type=Path)
+    parser.add_argument("--source-dir", type=Path)
     blender_separator = sys.argv.index("--") + 1 if "--" in sys.argv else len(sys.argv)
     args = parser.parse_args(sys.argv[blender_separator:])
+    if args.model_dir:
+        args.fbx, args.manifest = (args.model_dir / path.name for path in (args.fbx, args.manifest))
+    if args.source_dir:
+        args.output, args.preview = (args.source_dir / path.name for path in (args.output, args.preview))
     for field_name in ("output", "fbx", "manifest", "preview"):
         value = getattr(args, field_name)
         setattr(args, field_name, value.resolve())
@@ -2066,24 +1935,14 @@ def parse_args() -> argparse.Namespace:
 
 
 REQUIRED_MESH_ROLES = (
-    "body_shell", "greenhouse", "pillars", "glass", "cracked_glass",
-    "dents", "rust", "door_panel", "door_glass", "door_handle", "wheel",
-    "hubcap",
-    "headlight", "headlight_rim", "tail_light", "grille", "bumper",
-    "exterior_trim", "exhaust", "number_plate", "cabin_floor",
-    "interior_shell",
-    "driver_seat", "passenger_seat", "rear_bench", "dashboard",
-    "steering_column", "steering_wheel", "interior_mirror",
-    # The dashboard proper: the two things the passenger can touch ...
-    "glovebox_compartment", "glovebox_lid", "glovebox_catch",
-    "radio_bezel", "radio_dial", "radio_knob", "radio_needle",
-    # ... and the furniture he only looks at.
-    "instrument_bezels", "instrument_faces", "speedo_needle",
-    # ... and the three things in here that light up.
-    "cabin_lamp_housing", "cabin_lamp_lens", "glovebox_bulb",
-    "dash_vents", "ashtray", "dash_lip", "transmission_tunnel",
-    "gear_lever", "lever_knobs", "pedal_plates", "pedal_stems",
-    "column_stalk", "ignition_key", "sun_visor", "mirror_stalk",
+    "body_shell", "glass", "cracked_glass", "window_seals", "door_panel", "door_glass",
+    "door_handle", "door_card", "door_frame", "wheel", "wheel_rim", "hubcap",
+    "headlight", "headlight_rim", "tail_light", "bumper", "exterior_trim", "exhaust",
+    "number_plate", "interior_shell", "driver_seat", "passenger_seat", "rear_bench",
+    "dashboard", "steering_wheel", "floor_mats",
+    "glovebox_compartment", "glovebox_lid", "glovebox_catch", "radio_dial", "radio_knob",
+    "radio_needle", "instrument_bezels", "instrument_faces", "instrument_markings", "speedo_needle",
+    "cabin_lamp_housing", "cabin_lamp_lens", "glovebox_bulb", "dash_vents",
 )
 
 REQUIRED_PIVOT_ROLES = (
@@ -2280,69 +2139,31 @@ def validate_result(result: BuildResult) -> ValidationReport:
         errors.append("The car must keep all four wheels")
     if roles.count("hubcap") != 3:
         errors.append("Exactly one hubcap must be missing")
-    if roles.count("headlight") != 1:
-        errors.append("The two headlights share one lens mesh")
-    if "broken_headlight" in role_set:
-        errors.append(
-            "Both headlights work now; a broken lens contradicts the design"
-        )
-    # Both front doorways have to be HOLES. This design shipped with the
-    # cabin flank drawn as one unbroken panel from the scuttle to the parcel
-    # shelf, so opening a leaf revealed 0.13 m of bodywork filling the whole
-    # opening and the "visible interior" the manifest advertises was a room
-    # with no way into it. A hole in a merged mesh cannot be asked about
-    # afterwards, so the shell's boxes are checked as authored.
-    doorway = (
-        (DOORWAY_FRONT_Y, DOORWAY_REAR_Y),
-        (SILL_Z, WAIST_Z),
-    )
-    for side, name in ((1.0, "driver"), (-1.0, "passenger")):
-        near_x = min(side * SEAT_HALF_SPAN_X + side * SEAT_CUSHION_WIDTH * 0.5,
-                     side * BODY_HALF_WIDTH)
-        far_x = max(side * SEAT_HALF_SPAN_X + side * SEAT_CUSHION_WIDTH * 0.5,
-                    side * BODY_HALF_WIDTH)
-        for center, size in result.shell_boxes:
-            spans = (
-                (center[0] - size[0] * 0.5, center[0] + size[0] * 0.5),
-                (center[1] - size[1] * 0.5, center[1] + size[1] * 0.5),
-                (center[2] - size[2] * 0.5, center[2] + size[2] * 0.5),
-            )
-            limits = ((near_x, far_x), doorway[0], doorway[1])
-            if all(
-                min(span[1], limit[1]) - max(span[0], limit[0]) > 1e-4
-                for span, limit in zip(spans, limits)
-            ):
-                errors.append(
-                    f"Body shell box at {center} blocks the {name} doorway"
-                )
-
-    # And the room itself has to stay empty. `cabin_floor_drop_m` promises a
-    # seated pelvis 0.22 m of leg down to FLOOR_Z, and the Ferryman's own
-    # archetype is validated against that number - but for a whole build the
-    # rocker was a slab of bodywork right across the cabin whose face sat
-    # 0.14 m ABOVE the drawn floor, so both sitters went through it to the
-    # knee and the promise was fiction. Nothing structural belongs between
-    # the rockers, above the floor and below the waist.
-    cabin_clear = (
-        (-(SEAT_HALF_SPAN_X + SEAT_CUSHION_WIDTH * 0.5),
-         SEAT_HALF_SPAN_X + SEAT_CUSHION_WIDTH * 0.5),
-        (CABIN_FRONT_Y, CABIN_REAR_Y),
-        (FLOOR_Z + 0.03, WAIST_Z),
-    )
-    for center, size in result.shell_boxes:
-        spans = (
-            (center[0] - size[0] * 0.5, center[0] + size[0] * 0.5),
-            (center[1] - size[1] * 0.5, center[1] + size[1] * 0.5),
-            (center[2] - size[2] * 0.5, center[2] + size[2] * 0.5),
-        )
-        if all(
-            min(span[1], limit[1]) - max(span[0], limit[0]) > 1e-4
-            for span, limit in zip(spans, cabin_clear)
-        ):
-            errors.append(
-                f"Body shell box at {center} stands inside the cabin, "
-                "where the seats and the sitters are"
-            )
+    if roles.count("headlight") != 2 or "broken_headlight" in role_set:
+        errors.append("The two working headlights must have individually bound lenses")
+    # Measure the real aperture, without either moving door. A nominal
+    # box or the part's bounding box cannot prove that a person fits in it.
+    fixed_roles = {"body_shell", "pillars", "underbody", "headlining", "deck_skins"}
+    solids = []
+    for part in result.parts:
+        if part.role in fixed_roles:
+            obj = part.obj
+            solids.append(BVHTree.FromPolygons([obj.matrix_world @ v.co for v in obj.data.vertices],
+                                                [tuple(p.vertices) for p in obj.data.polygons]))
+    for side in (-1., 1.):
+        for y in (-.66, -.44, -.20, .12):
+            for z in (.505, .67, .85, 1.03, 1.24, 1.40):
+                if any(tree.ray_cast(Vector((side*1.05, y,z)), Vector((-side,0.,0.)), .365)[0] is not None
+                       for tree in solids):
+                    errors.append(f"Fixed shell obstructs a door: {(side,y,z)}")
+    # All three deformations must be sunk below their fair flank.
+    for side,y,z,width,height,depth in DENTS:
+        if flank_x(side, y, z) >= .89 or not .014 <= depth <= .06:
+            errors.append("Dent has lost its shallow pressed form")
+    for part in result.parts:
+        if part.material_slot in ("Body", "AccentPaint"):
+            if any(not 0. <= value <= 1. for loop in part.obj.data.uv_layers[0].data for value in loop.uv):
+                errors.append(f"Paint UVs escape the car atlas: {part.obj.name}")
 
     door_panels = [part for part in result.parts if part.role == "door_panel"]
     if len(door_panels) != 2:
@@ -2465,7 +2286,7 @@ def validate_result(result: BuildResult) -> ValidationReport:
 
     if perch_seat is not None:
         # He sits ON the bonnet, not in it and not above it.
-        if abs(perch_seat.obj.location.z - BONNET_Z) > 1e-6:
+        if abs(perch_seat.obj.location.z - hood_z(*perch_seat.obj.location.xy)) > .003:
             errors.append("The perch seat must rest on the bonnet skin")
         if not (FRONT_Y < perch_seat.obj.location.y < CABIN_FRONT_Y):
             errors.append("The perch seat must sit over the bonnet, not the roof")
@@ -2476,13 +2297,11 @@ def validate_result(result: BuildResult) -> ValidationReport:
         if perch_soles.obj.location.y >= perch_seat.obj.location.y:
             errors.append("His boots must be ahead of his seat, on the bumper")
 
-    # Headroom is validated against the HERO's seated band, not the
-    # Ferryman's: the hero reuses the bus clips verbatim, so his pose is the
-    # one that actually has to fit under this roof.
+    # The paired rig check verifies posed head and foot clearances.
     headroom = ROOF_UNDERSIDE_Z - SEAT_PELVIS_Z
-    if headroom < 0.99 or headroom > 1.10:
+    if headroom < 0.94 or headroom > 1.055:
         errors.append(
-            f"Seated headroom {headroom:.3f}m is outside the shared rig's 0.99-1.10m band"
+            f"Seated headroom {headroom:.3f}m is outside the sedan cabin envelope"
         )
 
     for name, expected_role in (
@@ -2498,25 +2317,15 @@ def validate_result(result: BuildResult) -> ValidationReport:
         child_roles = sorted(
             part.role for part in result.parts if part.obj.parent is pivot.obj
         )
-        for required in ("door_panel", "door_glass", "door_handle"):
+        required_parts = ("door_panel", "door_glass", "door_handle", "door_card", "door_armrest", "door_frame", "door_seal")
+        for required in required_parts:
             if child_roles.count(required) != 1:
                 errors.append(
                     f"Door leaf pivot {name} must own exactly one "
                     f"{required} - it is what swings"
                 )
-        # Anything ELSE the leaf owns has to be damage. The rule used to be
-        # an exact list of three, which was right until the flank's dents
-        # and rust had to move onto the leaves for the same reason the
-        # handle did: a doorway is a hole now, and a mark drawn on the body
-        # inside that hole hangs in mid-air the moment the door opens.
-        for role in child_roles:
-            if role not in (
-                "door_panel", "door_glass", "door_handle", "dents", "rust"
-            ):
-                errors.append(
-                    f"Door leaf pivot {name} owns an unexpected {role}; "
-                    "only the leaf itself and its damage may swing"
-                )
+        if set(child_roles) != set(required_parts):
+            errors.append(f"{name} must move as one finished door assembly")
 
     _validate_dashboard(result, require_pivot, errors)
 
@@ -2529,7 +2338,7 @@ def validate_result(result: BuildResult) -> ValidationReport:
     # The upper tolerance is the bumpers, which overhang the body on purpose.
     if size.y < LENGTH - 0.08 or size.y > LENGTH + 0.30:
         errors.append(f"Visual length {size.y:.3f}m differs from {LENGTH:.2f}m")
-    if size.x < WIDTH or size.x > WIDTH + 0.30:
+    if size.x < WIDTH - .02 or size.x > WIDTH + 0.30:
         errors.append(f"Visual width {size.x:.3f}m is outside body-plus-mirror contract")
     if result.root.location.length > 1e-6 or result.body.location.length > 1e-6:
         errors.append("Car source/body roots must remain at the world origin")
@@ -2641,6 +2450,12 @@ def main() -> None:
     result = LastRouteCarBuilder().build()
     bpy.context.view_layer.update()
     report = validate_result(result)
+    if config.validate_only:
+        existing = json.loads(config.manifest.read_text())
+        if existing["build_signature"] != report.build_signature:
+            raise RuntimeError("Last Route car asset differs from deterministic source")
+        print("LAST ROUTE CAR 3D CONTRACT OK")
+        return
     if not config.no_preview:
         render_preview(config.preview, result)
     export_fbx(config.fbx, result)

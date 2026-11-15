@@ -117,6 +117,8 @@ namespace BarPromenade
             AddObstacleCollider(root.gameObject, registry);
             InstallMechanisms(root, registry);
             InstallHeadlights(root, registry, lamps);
+            root.gameObject.AddComponent<LastRouteCarRoadPresence>().Initialize(
+                registry, root.GetComponent<LastRouteCarDriver>(), lamps == LastRouteCarLamps.AlwaysDipped);
             InstallCabinLighting(root, registry);
             InstallPassengerSeat(root, registry, plan, player, camera);
 
@@ -224,85 +226,34 @@ namespace BarPromenade
             LastRouteCarAssetRegistry registry,
             LastRouteCarLamps lamps)
         {
-            bool burning = lamps != LastRouteCarLamps.CityHalos;
-            Transform lens = null;
-            for (int index = 0; index < registry.Bindings.Count; index++)
+            if (registry.DriverHeadlight == null || registry.PassengerHeadlight == null)
+                throw new InvalidOperationException("Both car lenses need a bound emitter.");
+            bool hasBeams = lamps != LastRouteCarLamps.CityHalos;
+            LastRouteCarSuspension suspension = root.GetComponent<LastRouteCarSuspension>();
+            Transform carrier = suspension != null && suspension.SprungBody != null
+                ? suspension.SprungBody : root;
+            var inner = new Color(1f, .94f, .74f, .68f);
+            var outer = new Color(.86f, .72f, .40f, 0f);
+
+            Vector3 left = registry.DriverHeadlight.position;
+            Vector3 right = registry.PassengerHeadlight.position;
+            if (Vector3.Dot(left - right, root.right) > 0f) (left, right) = (right, left);
+            CityLightHalo MakeHalo(Vector3 position)
             {
-                LastRouteCarRendererBinding binding = registry.Bindings[index];
-                if (binding.Role == "headlight" && binding.Renderer != null)
-                {
-                    lens = binding.Renderer.transform;
-                    break;
-                }
+                Vector3 local = carrier.InverseTransformPoint(position);
+                return hasBeams
+                    ? CityLightHalo.CreateAlwaysBurning(carrier, local,
+                        HeadlightHaloInnerSize, HeadlightHaloOuterSize, inner, outer)
+                    : CityLightHalo.CreateNightRegistered(carrier, local,
+                        HeadlightHaloInnerSize, HeadlightHaloOuterSize, inner, outer);
             }
 
-            if (lens == null)
-            {
-                return;
-            }
+            CityLightHalo leftHalo = MakeHalo(left);
+            CityLightHalo rightHalo = MakeHalo(right);
+            if (!hasBeams) return;
 
-            // Both lamps live in one mesh, so the halos are placed from the
-            // renderer's own bounds rather than from two transforms that do
-            // not exist: one at each end of the lit face.
-            Bounds bounds = lens.GetComponent<Renderer>().bounds;
-            float lateral = bounds.extents.x;
-            Vector3 centre = bounds.center;
-            var inner = new Color(1f, 0.94f, 0.74f, 0.85f);
-            var outer = new Color(0.86f, 0.72f, 0.40f, 0f);
-            foreach (float side in new[] { 1f, -1f })
-            {
-                Vector3 world = centre + root.right * (lateral * side * 0.72f);
-                Vector3 local = root.InverseTransformPoint(world);
-                if (!burning)
-                {
-                    CityLightHalo.CreateNightRegistered(
-                        root,
-                        local,
-                        HeadlightHaloInnerSize,
-                        HeadlightHaloOuterSize,
-                        inner,
-                        outer);
-                    continue;
-                }
-
-                CityLightHalo.CreateAlwaysBurning(
-                    root,
-                    local,
-                    HeadlightHaloInnerSize,
-                    HeadlightHaloOuterSize,
-                    inner,
-                    outer);
-            }
-
-            if (!burning)
-            {
-                return;
-            }
-
-            // On the SPRUNG body, not the root: the beams should dip under
-            // braking and lift when the car pulls away, and the suspension
-            // already writes exactly that. The root deliberately does not
-            // rock — it carries the obstacle collider — which is why the
-            // halos above stay on it.
-            LastRouteCarSuspension suspension =
-                root.GetComponent<LastRouteCarSuspension>();
-            Transform carrier =
-                suspension != null && suspension.SprungBody != null
-                    ? suspension.SprungBody
-                    : root;
-            // How deep the lamp assembly is along the car's OWN forward, so
-            // the emitters can be put outside its glass rather than at the
-            // middle of it. The bounds are a world AABB, so the extent along
-            // an arbitrary axis is its support function - not `extents.z`,
-            // which is only the answer when the car happens to face down Z.
-            Vector3 heading = root.forward;
-            float halfDepth =
-                (Mathf.Abs(heading.x) * bounds.extents.x) +
-                (Mathf.Abs(heading.y) * bounds.extents.y) +
-                (Mathf.Abs(heading.z) * bounds.extents.z);
-            root.gameObject
-                .AddComponent<LastRouteCarHeadlights>()
-                .Initialize(root, carrier, centre, lateral, halfDepth, lamps);
+            root.gameObject.AddComponent<LastRouteCarHeadlights>()
+                .Initialize(root, carrier, left, right, leftHalo, rightHalo, lamps);
         }
 
         /// <summary>

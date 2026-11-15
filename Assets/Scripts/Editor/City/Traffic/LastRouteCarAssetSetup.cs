@@ -25,7 +25,7 @@ namespace BarPromenade.EditorTools
             "Assets/Vehicles/Models/LastRouteCar3D.json";
         public const string PrefabPath =
             "Assets/Resources/Vehicles/LastRouteCar3D.prefab";
-        public const string ExpectedDesignId = "last_route_ferry_car_v1";
+        public const string ExpectedDesignId = "last_route_ferry_car_v2";
         private const string ShaderName = "Bar Promenade/Lit";
         private const string MaterialDirectory = "Assets/Vehicles/Materials";
         private const string TextureDirectory = "Assets/Vehicles/Textures";
@@ -116,6 +116,7 @@ namespace BarPromenade.EditorTools
                     "differs from the manifest. Rebuild it.");
             }
 
+            ValidateRegistryBindings(registry, manifest);
             ValidatePrefabPresentation(prefab);
         }
 
@@ -183,6 +184,7 @@ namespace BarPromenade.EditorTools
 
                 var bindings = new List<LastRouteCarRendererBinding>();
                 var boundRenderers = new List<Renderer>();
+                var materials = new Dictionary<LastRouteCarMaterialSlot, Material>();
                 foreach (ManifestPart part in manifest.parts)
                 {
                     if (!renderers.TryGetValue(part.name, out Renderer renderer))
@@ -194,7 +196,13 @@ namespace BarPromenade.EditorTools
                     var slot = (LastRouteCarMaterialSlot)Enum.Parse(
                         typeof(LastRouteCarMaterialSlot),
                         part.material_slot);
-                    renderer.sharedMaterial = ResolveMaterial(slot);
+                    if (!materials.TryGetValue(slot, out Material material))
+                    {
+                        material = ResolveMaterial(slot);
+                        materials.Add(slot, material);
+                    }
+                    renderer.sharedMaterial = material;
+                    renderer.reflectionProbeUsage = ReflectionProbeUsage.BlendProbesAndSkybox;
                     renderer.shadowCastingMode =
                         UnityEngine.Rendering.ShadowCastingMode.On;
                     bindings.Add(
@@ -251,6 +259,15 @@ namespace BarPromenade.EditorTools
                 RequireManifestPivot(manifest, "PIVOT_RadioTuningKnob", "+Y");
                 RequireManifestPivot(manifest, "PIVOT_SpeedoNeedle", "+Y");
 
+                registry.ConfigureVehicleContacts(
+                    RequireTransform(transforms, "ANCHOR_HeadlightDriver"),
+                    RequireTransform(transforms, "ANCHOR_HeadlightPassenger"),
+                    RequireTransform(transforms, "ANCHOR_Exhaust"),
+                    RequireTransform(transforms, "ANCHOR_DoorDriverPull"),
+                    RequireTransform(transforms, "ANCHOR_DoorDriverInnerPull"),
+                    RequireTransform(transforms, "ANCHOR_DoorPassengerPull"),
+                    RequireTransform(transforms, "ANCHOR_DoorPassengerInnerPull"));
+                BuildDetailLevels(root, bindings);
                 ValidateRegistryBindings(registry, manifest);
                 ValidatePrefabPresentation(root);
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
@@ -308,16 +325,25 @@ namespace BarPromenade.EditorTools
                     "The two seats are not mirrored across the body.");
             }
 
-            // Headroom is measured against the hero's seated band, not the
-            // Ferryman's: the hero reuses the bus clips verbatim, so his pose
-            // is the one that actually has to fit under this roof.
-            if (manifest.seated_headroom_m < 0.99f ||
-                manifest.seated_headroom_m > 1.10f)
-            {
-                throw new InvalidOperationException(
-                    $"Seated headroom {manifest.seated_headroom_m:F3}m is " +
-                    "outside the shared rig's 0.99-1.10m band.");
-            }
+            if (manifest.seated_headroom_m < .94f || manifest.seated_headroom_m > 1.055f)
+                throw new InvalidOperationException("The sedan cabin is outside its measured envelope.");
+
+            Vector3 sourceSize = new Vector3(manifest.bounds_max[0]-manifest.bounds_min[0],
+                manifest.bounds_max[2]-manifest.bounds_min[2], manifest.bounds_max[1]-manifest.bounds_min[1]);
+            Bounds measured = CalculateLocalBounds(registry.transform, registry.Renderers);
+            if ((sourceSize-measured.size).magnitude > .065f || Mathf.Abs(measured.min.y) > .006f)
+                throw new InvalidOperationException($"Imported sedan bounds {measured.size:F3} differ from source {sourceSize:F3}.");
+            if (!registry.Bindings.Any(binding => binding.Role == LastRouteCarDashboard.RadioBezelRole))
+                throw new InvalidOperationException("The dashboard needs a separate radio frame for gaze targeting.");
+            if (registry.DriverHeadlight == null || registry.PassengerHeadlight == null ||
+                registry.ExhaustOutlet == null || registry.DriverOuterPull == null || registry.DriverInnerPull == null ||
+                registry.PassengerOuterPull == null || registry.PassengerInnerPull == null)
+                throw new InvalidOperationException("Last Route car lost a lamp, exhaust or door contact.");
+            if (registry.DriverOuterPull.parent != registry.DriverDoorLeaf ||
+                registry.DriverInnerPull.parent != registry.DriverDoorLeaf ||
+                registry.PassengerOuterPull.parent != registry.PassengerDoorLeaf ||
+                registry.PassengerInnerPull.parent != registry.PassengerDoorLeaf)
+                throw new InvalidOperationException("Door grips must move with their own leaf.");
 
             // He sits on the bonnet with his boots ahead of him on the
             // bumper, facing out over the nose. Both anchors have to be in
@@ -391,6 +417,21 @@ namespace BarPromenade.EditorTools
             }
         }
 
+        private static void BuildDetailLevels(GameObject root, List<LastRouteCarRendererBinding> bindings)
+        {
+            bool VisibleAtDistance(LastRouteCarRendererBinding part) => part.Role is
+                "body_shell" or "deck_skins" or "greenhouse" or "pillars" or "glass" or "door_panel" or
+                "door_glass" or "door_frame" or "wheel" or "wheel_rim" or "hubcap" or "bumper" or
+                "headlight" or "tail_light" or "tail_housing" or "grille" or "radiator_mouth" or
+                "headlight_rim" or "exterior_trim" or "interior_shell" or "driver_seat" or
+                "passenger_seat" or "rear_bench" or "dashboard" or "cabin_lamp_lens";
+            Renderer[] close = bindings.Select(part => part.Renderer).ToArray();
+            Renderer[] distant = bindings.Where(VisibleAtDistance).Select(part => part.Renderer).ToArray();
+            LODGroup lod = root.AddComponent<LODGroup>();
+            lod.SetLODs(new[] { new LOD(.115f, close), new LOD(.012f, distant) });
+            lod.RecalculateBounds();
+        }
+
         private static void ValidatePrefabPresentation(GameObject root)
         {
             if (root.GetComponentInChildren<Collider>(true) != null)
@@ -433,6 +474,7 @@ namespace BarPromenade.EditorTools
             material.SetFloat("_Metallic", GetMaterialMetallic(slot));
             material.enableInstancing = true;
             ApplyAlbedo(material, slot);
+            ApplyMaterialResponse(material, slot);
             ApplySurfaceMode(material, slot);
             ApplyEmission(material, slot);
             EditorUtility.SetDirty(material);
@@ -475,6 +517,50 @@ namespace BarPromenade.EditorTools
             }
         }
 
+        private static void ApplyMaterialResponse(Material material, LastRouteCarMaterialSlot slot)
+        {
+            string family = slot switch
+            {
+                LastRouteCarMaterialSlot.Body or LastRouteCarMaterialSlot.AccentPaint => "Paint",
+                LastRouteCarMaterialSlot.Interior or LastRouteCarMaterialSlot.Dashboard or
+                    LastRouteCarMaterialSlot.Seat or LastRouteCarMaterialSlot.Carpet => "Interior",
+                LastRouteCarMaterialSlot.Rubber => "Rubber",
+                _ => null
+            };
+            SetTextureKeyword(material, "_BumpMap", "_NORMALMAP", family, "Normal");
+            SetTextureKeyword(material, "_MetallicGlossMap", "_METALLICSPECGLOSSMAP", family, "Response");
+            if (family != null)
+            {
+                material.SetFloat("_BumpScale", family == "Paint" ? .68f : .82f);
+                float smoothness = slot switch
+                {
+                    LastRouteCarMaterialSlot.Body or LastRouteCarMaterialSlot.AccentPaint => 1f,
+                    LastRouteCarMaterialSlot.Rubber => .23f,
+                    _ => .88f
+                };
+                material.SetFloat("_Smoothness", smoothness);
+            }
+            // This moving object uses stable environment reflection. City
+            // and warehouse keep their independent shared trace policies.
+            material.SetFloat("_ScreenSpaceReflections", 0f);
+            material.SetFloat("_ScreenSpaceReflectionsContributeTransparent", 0f);
+            material.EnableKeyword("_SCREENSPACEREFLECTIONS_OFF");
+        }
+
+        private static void SetTextureKeyword(Material material, string property, string keyword, string family, string suffix)
+        {
+            Texture2D map = null;
+            if (family != null)
+            {
+                string path = $"{TextureDirectory}/LastRouteCar{family}{suffix}.png";
+                map = AssetDatabase.LoadAssetAtPath<Texture2D>(path) ??
+                    throw new InvalidOperationException($"Missing sedan surface map '{path}'.");
+            }
+            material.SetTexture(property, map);
+            if (map != null) material.EnableKeyword(keyword);
+            else material.DisableKeyword(keyword);
+        }
+
         private static string TexturePath(LastRouteCarMaterialSlot slot)
         {
             switch (slot)
@@ -486,18 +572,21 @@ namespace BarPromenade.EditorTools
                     return $"{TextureDirectory}/LastRouteCarRustAlbedo.png";
                 case LastRouteCarMaterialSlot.Interior:
                 case LastRouteCarMaterialSlot.Dashboard:
-                    return $"{TextureDirectory}/LastRouteCarInteriorAlbedo.png";
+                case LastRouteCarMaterialSlot.Carpet:
                 case LastRouteCarMaterialSlot.Seat:
-                    return $"{TextureDirectory}/LastRouteCarSeatAlbedo.png";
+                    return $"{TextureDirectory}/LastRouteCarInteriorAlbedo.png";
                 case LastRouteCarMaterialSlot.Trim:
                 case LastRouteCarMaterialSlot.Chrome:
                 case LastRouteCarMaterialSlot.Metal:
-                case LastRouteCarMaterialSlot.Rubber:
                 case LastRouteCarMaterialSlot.Plate:
                     // A chrome bumper is a chrome bumper; the bus already
                     // owns this sheet and there is nothing car-specific to
                     // say about it.
                     return "Assets/Vehicles/Textures/CityBusMetalAlbedo.png";
+                case LastRouteCarMaterialSlot.Rubber:
+                    return $"{TextureDirectory}/LastRouteCarRubberAlbedo.png";
+                case LastRouteCarMaterialSlot.Glass:
+                    return $"{TextureDirectory}/LastRouteCarGlassAlbedo.png";
                 default:
                     return null;
             }
@@ -545,8 +634,8 @@ namespace BarPromenade.EditorTools
         {
             switch (slot)
             {
-                case LastRouteCarMaterialSlot.Headlight: return 6.5f;
-                case LastRouteCarMaterialSlot.TailLight: return 1.4f;
+                case LastRouteCarMaterialSlot.Headlight: return 3.8f;
+                case LastRouteCarMaterialSlot.TailLight: return .72f;
                 // The dial keeps its emission keyword ON so the runtime can
                 // light it through a property block when the radio is
                 // switched on; the block writes black until then. A zero
@@ -582,10 +671,8 @@ namespace BarPromenade.EditorTools
                 slot == LastRouteCarMaterialSlot.CrackedGlass;
             SetFloatIfPresent(material, "_Surface", transparent ? 1f : 0f);
             SetFloatIfPresent(material, "_Blend", 0f);
-            SetFloatIfPresent(
-                material,
-                "_SrcBlend",
-                transparent ? (float)BlendMode.SrcAlpha : (float)BlendMode.One);
+            SetFloatIfPresent(material, "_BlendModePreserveSpecular", 1f);
+            SetFloatIfPresent(material, "_SrcBlend", (float)BlendMode.One);
             SetFloatIfPresent(
                 material,
                 "_DstBlend",
@@ -593,19 +680,29 @@ namespace BarPromenade.EditorTools
                     ? (float)BlendMode.OneMinusSrcAlpha
                     : (float)BlendMode.Zero);
             SetFloatIfPresent(material, "_ZWrite", transparent ? 0f : 1f);
+            SetFloatIfPresent(material, "_SrcBlendAlpha", (float)BlendMode.One);
+            SetFloatIfPresent(material, "_DstBlendAlpha",
+                transparent ? (float)BlendMode.OneMinusSrcAlpha : (float)BlendMode.Zero);
+            material.SetOverrideTag("RenderType", transparent ? "Transparent" : "Opaque");
             if (transparent)
             {
+                material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
                 material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                material.EnableKeyword("_SCREENSPACEREFLECTIONSCONTRIBUTETRANSPARENT_OFF");
                 material.renderQueue = (int)RenderQueue.Transparent;
                 // A pane that casts a solid shadow is the tell that it is
                 // not really transparent.
                 material.SetShaderPassEnabled("ShadowCaster", false);
+                material.SetShaderPassEnabled("DepthOnly", false);
             }
             else
             {
+                material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
                 material.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                material.DisableKeyword("_SCREENSPACEREFLECTIONSCONTRIBUTETRANSPARENT_OFF");
                 material.renderQueue = -1;
                 material.SetShaderPassEnabled("ShadowCaster", true);
+                material.SetShaderPassEnabled("DepthOnly", true);
             }
         }
 
@@ -624,15 +721,15 @@ namespace BarPromenade.EditorTools
         {
             switch (slot)
             {
-                case LastRouteCarMaterialSlot.Body: return Hex("#3B382FFF");
-                case LastRouteCarMaterialSlot.AccentPaint: return Hex("#2E3B2FFF");
+                case LastRouteCarMaterialSlot.Body: return Hex("#655B49FF");
+                case LastRouteCarMaterialSlot.AccentPaint: return Hex("#516353FF");
                 case LastRouteCarMaterialSlot.Rust: return Hex("#4A2C1CFF");
                 case LastRouteCarMaterialSlot.Trim: return Hex("#1B1C1BFF");
-                case LastRouteCarMaterialSlot.Chrome: return Hex("#6E7370FF");
+                case LastRouteCarMaterialSlot.Chrome: return Hex("#757873FF");
                 case LastRouteCarMaterialSlot.Rubber: return Hex("#121312FF");
                 case LastRouteCarMaterialSlot.Metal: return Hex("#3A3E3CFF");
-                case LastRouteCarMaterialSlot.Glass: return Hex("#2A4245A0");
-                case LastRouteCarMaterialSlot.CrackedGlass: return Hex("#9AA29ECC");
+                case LastRouteCarMaterialSlot.Glass: return Hex("#91A2A4E0");
+                case LastRouteCarMaterialSlot.CrackedGlass: return Hex("#969E976E");
                 case LastRouteCarMaterialSlot.BrokenGlass: return Hex("#171917FF");
                 // Lifted 2026-09-02 with the cabin lighting, and for the
                 // reason the Ferryman's own coat was lifted: at `#1E1E1B`
@@ -641,17 +738,20 @@ namespace BarPromenade.EditorTools
                 // difference at all. Doubling the albedo is what turns the
                 // glovebox's pool from a smudge into a lit drawer; raising
                 // the LAMP instead would have cost the windscreen.
-                case LastRouteCarMaterialSlot.Interior: return Hex("#2D2D28FF");
-                case LastRouteCarMaterialSlot.Seat: return Hex("#3A3125FF");
+                case LastRouteCarMaterialSlot.Interior: return Color.white;
+                case LastRouteCarMaterialSlot.Seat: return Color.white;
                 // The same lift, for the same reason, on the surface the
                 // user actually named: `#1A1A18` reads about `17/255` under
                 // the new plafond and `#272724` about `32`.
-                case LastRouteCarMaterialSlot.Dashboard: return Hex("#272724FF");
-                case LastRouteCarMaterialSlot.Headlight: return Hex("#FFF6D2FF");
-                case LastRouteCarMaterialSlot.TailLight: return Hex("#7A1310FF");
+                case LastRouteCarMaterialSlot.Dashboard: return Color.white;
+                case LastRouteCarMaterialSlot.Headlight: return Hex("#FFECD1FF");
+                case LastRouteCarMaterialSlot.TailLight: return Hex("#812519FF");
                 case LastRouteCarMaterialSlot.Plate: return Hex("#8E8E82FF");
                 case LastRouteCarMaterialSlot.RadioDial: return Hex("#E9A24CFF");
                 case LastRouteCarMaterialSlot.CabinLamp: return Hex("#F2CE9EFF");
+                case LastRouteCarMaterialSlot.MarkerLens: return Hex("#995B24FF");
+                case LastRouteCarMaterialSlot.InstrumentInk: return Hex("#33312BFF");
+                case LastRouteCarMaterialSlot.Carpet: return Color.white;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(slot));
             }
@@ -846,6 +946,7 @@ namespace BarPromenade.EditorTools
             public float seated_headroom_m;
             public float dashboard_top_z;
             public string build_signature;
+            public float[] bounds_min, bounds_max;
             public ManifestPart[] parts;
             public ManifestPivot[] pivots;
         }

@@ -70,6 +70,7 @@ namespace BarPromenade
     /// guarantee that is to read it off the clip that is moving the hand.
     /// </summary>
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(285)]
     public sealed class LastRouteFerrymanPresentation : MonoBehaviour
     {
         /// <summary>A hitch longer than this advances the graph by a
@@ -149,7 +150,8 @@ namespace BarPromenade
         private LastRouteFerrymanBoardingTimeline boarding;
         private LastRouteFerrymanAlightingTimeline alighting;
         private Vector3 drivePelvisOffset;
-        private float perchPelvisLift;
+        private Vector3 perchPelvisOffset;
+        private Quaternion driveInBody;
         private float walkSeconds;
         private LastRouteCarAssetRegistry carRegistry;
         private LastRouteCarDoors doors;
@@ -166,6 +168,7 @@ namespace BarPromenade
         private SeatedArmHandAttachment rightHandAttachment;
         private bool hasSteeringArms;
         private float steeringHandsWeight;
+        private LastRouteDoorHandContact doorHand;
 
         public bool IsInitialized { get; private set; }
         public LastRouteFerrymanPhase Phase { get; private set; }
@@ -203,6 +206,9 @@ namespace BarPromenade
                   LastRouteFerrymanBoardingTimeline.LandingPhase));
 
         public LastRouteFerrymanBoardingPlan BoardingPlan => boardingPlan;
+        public LastRouteFerrymanRigAnchors Rig => rigAnchors;
+        public NpcSpeaker Speaker => new NpcSpeaker(this, rigAnchors.HeadAnchor,
+            LastRouteFerrymanRigAnchors.VoiceId, NpcEarshotProfile.Conversation);
 
         /// <summary>
         /// The wait loop's own position, in `[0, 1)`. Zero before the graph
@@ -256,7 +262,6 @@ namespace BarPromenade
         }
 
         public void Initialize(
-            CityPedestrianAssetRegistry registry,
             LastRouteFerrymanRigAnchors anchors,
             LastRouteFerrymanStance stance,
             LastRouteCarAssetRegistry car)
@@ -266,48 +271,20 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(anchors));
             }
 
-            if (registry == null)
-            {
-                throw new ArgumentNullException(nameof(registry));
-            }
+            if (car == null) throw new ArgumentNullException(nameof(car));
+            if (anchors.Animator == null || anchors.Pelvis == null)
+                throw new InvalidOperationException("The Ferryman needs a bound default NPC rig.");
 
-            if (car == null)
-            {
-                throw new ArgumentNullException(nameof(car));
-            }
-
-            if (registry.Animator == null)
-            {
-                throw new InvalidOperationException(
-                    "The Ferryman prefab has no Animator.");
-            }
-
-            if (registry.Pelvis == null)
-            {
-                throw new InvalidOperationException(
-                    "The Ferryman prefab has no serialized pelvis anchor, " +
-                    "so his seat cannot be solved.");
-            }
-
-            AnimationClip wait = registry.IdleClip;
-            AnimationClip walk = registry.WalkClip;
-            AnimationClip board = registry.ActionClip;
-            AnimationClip drive = registry.SitClip;
+            AnimationClip wait = anchors.WaitClip;
+            AnimationClip walk = anchors.WalkClip;
+            AnimationClip board = anchors.BoardClip;
+            AnimationClip drive = anchors.DriveClip;
             AnimationClip dismount = anchors.DismountClip;
-            if (wait == null || walk == null || board == null ||
-                drive == null || dismount == null)
-            {
-                throw new InvalidOperationException(
-                    "The Ferryman prefab needs its wait loop, his drop off " +
-                    "the bonnet, his walk, his board transition and his " +
-                    "driving loop.");
-            }
 
             waitLengthSeconds = Mathf.Max(0.0001f, wait.length);
             dismountLengthSeconds = Mathf.Max(0.0001f, dismount.length);
             boardLengthSeconds = Mathf.Max(0.0001f, board.length);
             playbackSpeed = Mathf.Max(0.05f, stance.PlaybackSpeed);
-            registry.ApplyPaletteVariant(stance.PaletteVariant);
 
             perchRotation = Quaternion.LookRotation(stance.Facing, Vector3.up);
             perchPosition = stance.Position;
@@ -326,12 +303,12 @@ namespace BarPromenade
             graph.Connect(boardPlayable, 0, mixer, BoardInput);
             graph.Connect(drivePlayable, 0, mixer, DriveInput);
             AnimationPlayableOutput
-                .Create(graph, "Last Route Ferryman Pose", registry.Animator)
+                .Create(graph, "Last Route Ferryman Pose", anchors.Animator)
                 .SetSourcePlayable(mixer);
             graph.Play();
             hasGraph = true;
 
-            SolveDriverSeat(registry, car);
+            SolveDriverSeat(anchors, car);
             ResolveCarMechanisms(car);
             SolveWalk(car);
 
@@ -343,8 +320,9 @@ namespace BarPromenade
                 Mathf.Repeat(stance.PhaseOffsetSeconds, wait.length));
             graph.Evaluate(0f);
 
-            SolvePerch(registry, anchors, stance);
             CaptureSteeringArms(anchors, car);
+            perchPelvisOffset = Quaternion.Inverse(perchRotation) * (anchors.Pelvis.position - transform.position);
+            UpdatePerchRoot();
 
             Phase = LastRouteFerrymanPhase.Waiting;
             transform.SetPositionAndRotation(perchPosition, perchRotation);
@@ -458,7 +436,7 @@ namespace BarPromenade
         /// are all world-space and all six hundred metres and twenty-six
         /// metres of altitude out of date by the time he gets out at the cafe.
         /// The perch in particular is re-derived exactly as
-        /// <see cref="SolvePerch"/> did it, from the car's own soles anchor
+        /// the initial placement did, from the car's bonnet anchor
         /// plus the measured pelvis drop, so he lands on the metal rather than
         /// above or through it.
         /// </summary>
@@ -476,18 +454,19 @@ namespace BarPromenade
                 return;
             }
 
-            Vector3 facing = carRegistry.PerchSolesAnchor.position -
-                             carRegistry.PerchSeatAnchor.position;
-            facing.y = 0f;
-            if (facing.sqrMagnitude > 0.000001f)
-            {
-                perchRotation = Quaternion.LookRotation(
-                    facing.normalized,
-                    Vector3.up);
-            }
+            UpdatePerchRoot();
+        }
 
-            perchPosition = carRegistry.PerchSolesAnchor.position +
-                            (Vector3.up * perchPelvisLift);
+        private void UpdatePerchRoot()
+        {
+            Transform perch = carRegistry.PerchSeatAnchor;
+            Vector3 facing = carRegistry.PerchSolesAnchor.position - perch.position;
+            facing.y = 0f;
+            if (facing.sqrMagnitude > .000001f)
+                perchRotation = Quaternion.LookRotation(facing.normalized, Vector3.up);
+            Vector3 pelvisTarget = perch.position + Vector3.up * rigAnchors.PerchHipRise +
+                (perchRotation * Vector3.forward) * rigAnchors.PerchHipReach;
+            perchPosition = pelvisTarget - perchRotation * perchPelvisOffset;
         }
 
         /// <summary>
@@ -503,7 +482,7 @@ namespace BarPromenade
         /// be wrong about either.
         /// </summary>
         private void SolveDriverSeat(
-            CityPedestrianAssetRegistry registry,
+            LastRouteFerrymanRigAnchors anchors,
             LastRouteCarAssetRegistry car)
         {
             if (car.DriverSeatAnchor == null ||
@@ -536,7 +515,7 @@ namespace BarPromenade
             // will drive, the pelvis's world position IS the rotated offset
             // from root to pelvis. The root that seats him is therefore the
             // seat anchor minus exactly that.
-            Vector3 rotatedPelvisOffset = registry.Pelvis.position;
+            Vector3 rotatedPelvisOffset = anchors.Pelvis.position;
             drivePosition =
                 car.DriverSeatAnchor.position - rotatedPelvisOffset;
 
@@ -545,8 +524,8 @@ namespace BarPromenade
             // every frame and his root has to be re-solved from them; with
             // the offset in the pose's own frame that is the same two lines
             // as above rather than a second solve.
-            drivePelvisOffset =
-                Quaternion.Inverse(driveRotation) * rotatedPelvisOffset;
+            drivePelvisOffset = Quaternion.Inverse(driveRotation) * rotatedPelvisOffset;
+            driveInBody = Quaternion.Inverse(car.Body.rotation) * driveRotation;
 
             transform.SetPositionAndRotation(
                 previousPosition,
@@ -571,16 +550,7 @@ namespace BarPromenade
                 return;
             }
 
-            Vector3 toWheel = carRegistry.SteeringWheelPivot.position -
-                              carRegistry.DriverSeatAnchor.position;
-            toWheel.y = 0f;
-            if (toWheel.sqrMagnitude > 0.000001f)
-            {
-                driveRotation = Quaternion.LookRotation(
-                    toWheel.normalized,
-                    Vector3.up);
-            }
-
+            driveRotation = carRegistry.Body.rotation * driveInBody;
             drivePosition = carRegistry.DriverSeatAnchor.position -
                             (driveRotation * drivePelvisOffset);
         }
@@ -637,50 +607,6 @@ namespace BarPromenade
                 ? (firstLegLength + secondLegLength) /
                   WalkSpeedMetersPerSecond
                 : 0f;
-        }
-
-        /// <summary>
-        /// Sets him down on the car, now that the perch pose is evaluated.
-        ///
-        /// The model origin is the sole plane of the BIND pose - standing
-        /// straight - and the perch is nothing like it: both knees are up
-        /// on a bonnet, so the feet leave that plane entirely. Placing the
-        /// root on the soles anchor therefore left him hanging in the air
-        /// above the car with his coat draped on nothing.
-        ///
-        /// So the pelvis is placed instead, exactly as the driver's seat
-        /// is: Blender measured how far the pelvis rides above the lowest
-        /// drawn point of this pose and the prefab carries the number, so
-        /// putting the pelvis that far above the bumper puts his boots on
-        /// the bumper and - because the pose was converged against the
-        /// car's own 0.505 m bonnet drop - his backside on the bonnet.
-        /// Only the height is solved; where he sits along and across the
-        /// car is the anchor's business and is left alone.
-        /// </summary>
-        private void SolvePerch(
-            CityPedestrianAssetRegistry registry,
-            LastRouteFerrymanRigAnchors anchors,
-            LastRouteFerrymanStance stance)
-        {
-            if (anchors == null || anchors.PerchPelvisDrop <= 0f)
-            {
-                throw new InvalidOperationException(
-                    "The Ferryman prefab must carry a measured perch " +
-                    "pelvis drop; without it he cannot be set down.");
-            }
-
-            transform.SetPositionAndRotation(stance.Position, perchRotation);
-            graph.Evaluate(0f);
-
-            float targetPelvisY =
-                stance.Position.y + anchors.PerchPelvisDrop;
-            // Kept as the LIFT rather than only as the answer, so getting
-            // back onto the bonnet at the far end of the mountain road can
-            // re-derive the same seat from the car's soles anchor without a
-            // second evaluation of the pose.
-            perchPelvisLift = targetPelvisY - registry.Pelvis.position.y;
-            perchPosition = stance.Position +
-                            (Vector3.up * perchPelvisLift);
         }
 
         /// <summary>
@@ -886,6 +812,12 @@ namespace BarPromenade
                 transform.SetPositionAndRotation(drivePosition, driveRotation);
             }
 
+            if (IsWaiting)
+            {
+                UpdatePerchRoot();
+                transform.SetPositionAndRotation(perchPosition, perchRotation);
+            }
+
             blendElapsedSeconds += step;
             ApplyWeights();
             graph.Evaluate(step);
@@ -894,6 +826,23 @@ namespace BarPromenade
             // on each Evaluate, so an arm posed earlier in this frame would
             // be silently unposed by the very next line.
             AdvanceSteeringHands(step);
+            ApplyDoorHand();
+        }
+
+        private void ApplyDoorHand()
+        {
+            float phase;
+            if (Phase == LastRouteFerrymanPhase.Boarding && boarding != null)
+                phase = boarding.PhaseProgress;
+            else if (Phase == LastRouteFerrymanPhase.Alighting && alighting != null)
+                phase = alighting.ReversedClipPhase;
+            else
+                return;
+
+            doorHand.Apply(carRegistry.DriverOuterPull,
+                LastRouteDoorHandContact.Hold(phase, .08f, .16f, .24f, .36f));
+            doorHand.Apply(carRegistry.DriverInnerPull,
+                LastRouteDoorHandContact.Hold(phase, .77f, .86f, .96f, 1f));
         }
 
         public const float SteeringHandsEaseSeconds = 0.35f;
@@ -926,6 +875,8 @@ namespace BarPromenade
             LastRouteCarAssetRegistry car)
         {
             rigAnchors = anchors;
+            doorHand = new LastRouteDoorHandContact(anchors.LeftUpperArm, anchors.LeftForearm,
+                anchors.LeftHand, anchors.LeftGripSocket);
             hasSteeringArms =
                 anchors.LeftUpperArm != null &&
                 anchors.LeftForearm != null &&
@@ -982,6 +933,11 @@ namespace BarPromenade
                 steeringHandsWeight,
                 wantsWheel ? 1f : 0f,
                 step / SteeringHandsEaseSeconds);
+            if (hasSteeringArms)
+            {
+                rigAnchors.HandPose.SetGrip(true, steeringHandsWeight, NpcHandGripKind.Cylindrical);
+                rigAnchors.HandPose.SetGrip(false, steeringHandsWeight, NpcHandGripKind.Cylindrical);
+            }
             if (steeringHandsWeight <= 0f || !hasSteeringArms)
             {
                 LeftGripDistance = 0f;
@@ -1042,9 +998,9 @@ namespace BarPromenade
                 handRotation * attachment.SocketPositionInHand;
             Vector3 elbowHint =
                 upperArm.position +
-                elbowSide * 0.32f +
-                transform.forward * 0.08f -
-                transform.up * 0.08f;
+                elbowSide * 0.17f +
+                transform.forward * 0.05f -
+                transform.up * 0.30f;
             SeatedArmIk.SolveTwoBone(
                 upperArm,
                 forearm,
@@ -1348,6 +1304,11 @@ namespace BarPromenade
             Transform car = suspension.transform;
             Vector3 toSeat = drivePosition - car.position;
             return Vector3.Dot(toSeat, car.right) >= 0f;
+        }
+
+        private void OnDisable()
+        {
+            if (rigAnchors != null) rigAnchors.HandPose.ResetGrip();
         }
 
         private void OnDestroy()

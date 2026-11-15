@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -97,14 +96,11 @@ namespace BarPromenade.Tests.PlayMode
                 // metal. A few centimetres of tolerance for the pelvis
                 // bone riding just inside the hips.
                 var registry = ferryman
-                    .GetComponentInChildren<CityPedestrianAssetRegistry>(
-                        true);
+                    .GetComponent<LastRouteFerrymanRigAnchors>();
                 Assert.That(registry, Is.Not.Null);
                 Assert.That(
-                    Mathf.Abs(
-                        registry.Pelvis.position.y -
-                        harness.Car.PerchSeatAnchor.position.y),
-                    Is.LessThan(0.06f),
+                    registry.Pelvis.position.y - harness.Car.PerchSeatAnchor.position.y,
+                    Is.EqualTo(registry.PerchHipRise).Within(.017f),
                     $"He is perched at {registry.Pelvis.position.y:0.###} " +
                     $"while the bonnet is at " +
                     $"{harness.Car.PerchSeatAnchor.position.y:0.###}.");
@@ -137,46 +133,11 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(coin, Is.Not.Null);
                 Assert.That(coin.IsInitialized, Is.True);
 
-                var coat = root.GetComponentInChildren<
-                    LastRouteFerrymanCoat>(true);
-                Assert.That(coat, Is.Not.Null);
+                var coat = root.GetComponentInChildren<LastRouteFerrymanCoat>(true);
                 Assert.That(coat.IsInitialized, Is.True);
-                Assert.That(
-                    coat.LeftFlap.GetComponent<Cloth>(),
-                    Is.Not.Null,
-                    "The coat is meant to be real cloth.");
-                Assert.That(
-                    coat.RightFlap.GetComponent<Cloth>(),
-                    Is.Not.Null,
-                    "The coat is meant to be real cloth.");
-
-                // Two flaps, one either side of him. A single sheet in
-                // front was tried and rendered as a signboard propped
-                // against his shins - so the thing that matters is that
-                // these are apart, and apart across him rather than along.
-                Vector3 across =
-                    coat.RightFlap.position - coat.LeftFlap.position;
-                Assert.That(
-                    across.magnitude,
-                    Is.GreaterThan(0.2f),
-                    "The two coat flaps have collapsed into one slab.");
-                Assert.That(
-                    Mathf.Abs(Vector3.Dot(
-                        across.normalized,
-                        ferryman.transform.forward)),
-                    Is.LessThan(0.25f),
-                    "The flaps must be beside him, not one behind the " +
-                    "other.");
-
-                // The rigid stub it replaced must be hidden, or the two are
-                // drawn one inside the other.
-                var anchors = root.GetComponentInChildren<
-                    LastRouteFerrymanRigAnchors>(true);
-                Assert.That(anchors, Is.Not.Null);
-                Assert.That(
-                    anchors.CoatHemRenderer.enabled,
-                    Is.False,
-                    "The drawn hem stub must give way to the cloth.");
+                Assert.That(coat.LeftHem.enabled && coat.RightHem.enabled, Is.True);
+                Assert.That(coat.LeftHem.rootBone, Is.EqualTo(coat.RightHem.rootBone));
+                Assert.That(ferryman.GetComponent<Cloth>(), Is.Null);
 
                 yield return null;
             }
@@ -380,8 +341,7 @@ namespace BarPromenade.Tests.PlayMode
                 // And he arrived ON the seat rather than beside it. This is
                 // the assertion the whole pelvis solve exists for.
                 var registry = harness.Ferryman
-                    .GetComponentInChildren<CityPedestrianAssetRegistry>(
-                        true);
+                    .GetComponent<LastRouteFerrymanRigAnchors>();
                 Assert.That(
                     Vector3.Distance(
                         registry.Pelvis.position,
@@ -437,8 +397,7 @@ namespace BarPromenade.Tests.PlayMode
                 Harness harness = BuildHarness(root.transform);
                 LastRouteFerrymanPresentation ferryman = harness.Ferryman;
                 var registry = ferryman
-                    .GetComponentInChildren<CityPedestrianAssetRegistry>(
-                        true);
+                    .GetComponent<LastRouteFerrymanRigAnchors>();
 
                 // Batch mode draws nothing, and a culled Animator writes no
                 // bone at all - the entire rig reads back in its bind pose,
@@ -736,8 +695,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Harness harness = BuildHarness(root.transform);
                 var registry = harness.Ferryman
-                    .GetComponentInChildren<CityPedestrianAssetRegistry>(
-                        true);
+                    .GetComponent<LastRouteFerrymanRigAnchors>();
                 var anchors = harness.Ferryman
                     .GetComponentInChildren<LastRouteFerrymanRigAnchors>(
                         true);
@@ -768,7 +726,7 @@ namespace BarPromenade.Tests.PlayMode
                     lowestPalm = Mathf.Min(lowestPalm, palm);
                     braceSamples.Add(
                         registry.Pelvis.InverseTransformPoint(
-                            anchors.CoatHemAnchor.position));
+                            anchors.RightHand.position));
                 }
 
                 // Half a metre of hand is the whole point of the change.
@@ -784,7 +742,7 @@ namespace BarPromenade.Tests.PlayMode
                 // And it goes UP, rather than merely being wide.
                 Assert.That(
                     shoulderToPalmAtTop,
-                    Is.GreaterThan(registry.Head.position.y -
+                    Is.GreaterThan(registry.HeadAnchor.position.y -
                                    root3D.position.y - 0.25f),
                     "At the top of the throw his palm should be up around " +
                     "his own cap, not out at his side.");
@@ -823,8 +781,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Harness harness = BuildHarness(root.transform);
                 var registry = harness.Ferryman
-                    .GetComponentInChildren<CityPedestrianAssetRegistry>(
-                        true);
+                    .GetComponent<LastRouteFerrymanRigAnchors>();
                 float bumper = harness.Car.PerchSolesAnchor.position.y;
 
                 // Every staged pedestrian ships as CullUpdateTransforms,
@@ -893,52 +850,31 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator PassiveGuard_RejectsASmuggledCollider()
+        public IEnumerator FerrymanUsesTheSameDefaultNpcAndRestrictedOutfitAcrossPlacements()
         {
-            var root = new GameObject("Ferryman Passive Guard Test");
+            var root = new GameObject("Ferryman Default Identity Test");
             try
             {
-                LastRouteFerrymanProvider provider =
-                    LastRouteFerrymanProvider.Load();
-                Assert.That(
-                    provider,
-                    Is.Not.Null.And.Property("StagedPrefab").Not.Null);
-
-                // A copy of the staged prefab with exactly one thing wrong
-                // with it.
-                GameObject tainted = Object.Instantiate(
-                    provider.StagedPrefab,
-                    root.transform);
-                tainted.AddComponent<BoxCollider>();
-
-                // A stand-in provider pointing at it. The field is written
-                // by reflection rather than through SerializedObject
-                // because this assembly builds for every platform and must
-                // not reference UnityEditor; the provider has no setter
-                // because in production only the asset build ever fills it.
-                var taintedProvider = ScriptableObject
-                    .CreateInstance<LastRouteFerrymanProvider>();
-                typeof(LastRouteFerrymanProvider)
-                    .GetField(
-                        "stagedPrefab",
-                        BindingFlags.NonPublic | BindingFlags.Instance)
-                    .SetValue(taintedProvider, tainted);
-
-                Harness harness = BuildHarness(
-                    root.transform,
-                    buildFerryman: false);
-
-                Assert.That(
-                    () => LastRouteFerrymanFactory.Create(
-                        root.transform,
-                        LastRouteFerrymanPlan.Create(harness.Car),
-                        harness.Car,
-                        harness.TargetInteraction,
-                        LastRouteFerrymanVoice.Island(1),
-                        taintedProvider),
-                    Throws.InvalidOperationException,
-                    "A staged prefab carrying physics must not spawn.");
-
+                Harness harness = BuildHarness(root.transform);
+                LastRouteFerrymanPresentation first = harness.Ferryman;
+                var otherCar = LastRouteCarFactory.Create(root.transform,
+                    LastRouteCarPlan.At(new Vector3(15f, 0f, 0f), Vector3.left));
+                var next = LastRouteFerrymanFactory.Create(root.transform, LastRouteFerrymanPlan.Create(otherCar),
+                    otherCar, null, LastRouteFerrymanVoice.Mountain(1));
+                var firstActor = first.GetComponent<VillageResidentPresentation>();
+                var secondActor = next.GetComponent<VillageResidentPresentation>();
+                Assert.That(firstActor, Is.Not.Null);
+                Assert.That(secondActor, Is.Not.Null);
+                Assert.That(first.GetComponentInChildren<CityPedestrianAssetRegistry>(true), Is.Null);
+                Assert.That(next.GetComponentInChildren<CityPedestrianAssetRegistry>(true), Is.Null);
+                var firstWardrobe = first.GetComponent<NpcWardrobe>();
+                var secondWardrobe = next.GetComponent<NpcWardrobe>();
+                Assert.That(firstWardrobe.EquippedItemIds, Is.EquivalentTo(secondWardrobe.EquippedItemIds));
+                Assert.That(firstWardrobe.GetEquippedItem("outerwear"), Is.EqualTo(DefaultNpcPopulation.FerrymanCoatItem));
+                Assert.That(firstWardrobe.GetEquippedItem("headwear"), Is.EqualTo("headwear.everyday"));
+                Assert.That(firstWardrobe.GetEquippedItem("boots"), Is.EqualTo("boots.work"));
+                Assert.That(secondActor.Animator.avatar, Is.SameAs(firstActor.Animator.avatar));
+                Assert.That(first.Speaker.DesignId, Is.EqualTo(next.Speaker.DesignId));
                 yield return null;
             }
             finally
@@ -1076,8 +1012,7 @@ namespace BarPromenade.Tests.PlayMode
                 Harness harness = BuildHarness(root.transform);
                 LastRouteFerrymanPresentation ferryman = harness.Ferryman;
                 var pedestrianRegistry = ferryman
-                    .GetComponentInChildren<CityPedestrianAssetRegistry>(
-                        true);
+                    .GetComponent<LastRouteFerrymanRigAnchors>();
 
                 // Batch mode draws nothing, and a culled Animator writes no
                 // bone at all - the rig reads back in bind pose and every

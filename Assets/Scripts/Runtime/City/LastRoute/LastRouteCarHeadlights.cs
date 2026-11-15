@@ -156,6 +156,7 @@ namespace BarPromenade
         private Light rightBeam;
         private Light spill;
         private float appliedPower = -1f;
+        private CityLightHalo leftHalo, rightHalo;
         private LastRouteCarLamps lamps = LastRouteCarLamps.RideOnly;
         private LastRouteRideController ride;
 
@@ -172,94 +173,23 @@ namespace BarPromenade
         public float RestingPower =>
             lamps == LastRouteCarLamps.AlwaysDipped ? StandingPower : 0f;
 
-        /// <summary>
-        /// Builds the three lamps under <paramref name="carrier"/>, aimed
-        /// along the axes of <paramref name="root"/>. They start dark;
-        /// <see cref="SetPower"/> is what turns them on.
-        ///
-        /// THE TWO TRANSFORMS ARE NOT INTERCHANGEABLE, AND THIS COST A BUILD.
-        /// The carrier is the sprung body, which is where the lamps have to
-        /// hang so the beam dips under braking — but
-        /// <c>LastRouteCarSuspension.TryCreateSprungBody</c> copies its
-        /// `localRotation` straight off the IMPORTED body node, and this
-        /// car's imported forward is very nearly vertical. Aiming with a
-        /// local Euler in that space threw both beams at the sky, so the
-        /// blackout landed on a road nothing was lighting and the scene came
-        /// up black. Every axis therefore comes from the runtime root, which
-        /// is the one transform this project sets itself
-        /// (`LookRotation(plan.Facing, up)`), and the world pose is written
-        /// AFTER parenting so the spring still carries it. Same rule as
-        /// everywhere else here: resolve against the runtime root, never
-        /// against an imported node.
-        /// </summary>
-        public void Initialize(
-            Transform root,
-            Transform carrier,
-            Vector3 lensCenterWorld,
-            float lensHalfWidth,
-            float lensHalfDepth,
-            LastRouteCarLamps lamps = LastRouteCarLamps.RideOnly)
+        /// <summary>The left/right emitters and halos share the two authored lenses.</summary>
+        public void Initialize(Transform root, Transform carrier, Vector3 left, Vector3 right,
+            CityLightHalo leftFogHalo, CityLightHalo rightFogHalo, LastRouteCarLamps lamps)
         {
-            if (IsInitialized)
-            {
-                throw new InvalidOperationException(
-                    "The car's headlights are already initialized.");
-            }
-
-            if (root == null)
-            {
-                throw new ArgumentNullException(nameof(root));
-            }
-
-            if (carrier == null)
-            {
-                throw new ArgumentNullException(nameof(carrier));
-            }
-
-            Vector3 forward = root.forward;
-            Vector3 up = root.up;
-            Vector3 right = root.right;
-            Quaternion facing = Quaternion.LookRotation(forward, up);
-
-            // Out through the glass and clear of it. The `up` nudge that used
-            // to be here is gone with the setback: it lifted the source
-            // toward the bonnet line, which is one of the things the beams
-            // were washing.
-            Vector3 emitter = lensCenterWorld +
-                              forward *
-                              (Mathf.Max(0f, lensHalfDepth) +
-                               LensStandoffMeters);
-
-            leftBeam = CreateBeam(
-                carrier,
-                "Headlight Beam Left",
-                emitter - right * (lensHalfWidth * 0.72f),
-                facing * Quaternion.Euler(
-                    BeamPitchDegrees,
-                    -BeamSpreadDegrees,
-                    0f));
-            rightBeam = CreateBeam(
-                carrier,
-                "Headlight Beam Right",
-                emitter + right * (lensHalfWidth * 0.72f),
-                facing * Quaternion.Euler(
-                    BeamPitchDegrees,
-                    BeamSpreadDegrees,
-                    0f));
-            spill = CreateSpill(
-                carrier,
-                emitter,
-                facing * Quaternion.Euler(
-                    BeamPitchDegrees * 1.6f,
-                    0f,
-                    0f));
+            if (IsInitialized) throw new InvalidOperationException("Headlights are already initialized.");
+            if (root == null || carrier == null) throw new ArgumentException("Headlights need the car and its sprung body.");
+            Quaternion facing = Quaternion.LookRotation(root.forward, root.up);
+            leftBeam = CreateBeam(carrier, "Headlight Beam Left", left,
+                facing * Quaternion.Euler(BeamPitchDegrees, -BeamSpreadDegrees, 0f));
+            rightBeam = CreateBeam(carrier, "Headlight Beam Right", right,
+                facing * Quaternion.Euler(BeamPitchDegrees, BeamSpreadDegrees, 0f));
+            spill = CreateSpill(carrier, (left + right) * .5f,
+                facing * Quaternion.Euler(BeamPitchDegrees * 1.6f, 0f, 0f));
+            leftHalo = leftFogHalo;
+            rightHalo = rightFogHalo;
             this.lamps = lamps;
             IsInitialized = true;
-
-            // Straight to the resting level, not a ramp up to it. A parked
-            // car's lamps are already on when you walk round the corner; a
-            // fade-in on scene load would read as the lights coming on
-            // because the hero arrived.
             SetPower(RestingPower);
         }
 
@@ -312,6 +242,9 @@ namespace BarPromenade
             ApplyPower(leftBeam, BeamIntensity, clamped, burning);
             ApplyPower(rightBeam, BeamIntensity, clamped, burning);
             ApplyPower(spill, SpillIntensity, clamped, burning);
+            float halo = burning ? Mathf.Lerp(.44f, 1f, Mathf.Sqrt(clamped)) : 0f;
+            leftHalo.SetIntensityFactor(halo);
+            rightHalo.SetIntensityFactor(halo);
         }
 
         private void Update()

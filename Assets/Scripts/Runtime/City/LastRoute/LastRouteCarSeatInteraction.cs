@@ -33,6 +33,7 @@ namespace BarPromenade
     ///    driver's, and the prompt appearing any earlier says the opposite.
     /// </summary>
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(286)]
     public sealed class LastRouteCarSeatInteraction :
         MonoBehaviour,
         IInteractable
@@ -40,16 +41,9 @@ namespace BarPromenade
         public const string SitPromptKey = "interaction.sit_ferry_car";
         public const string StandPromptKey = "interaction.stand_up";
 
-        /// <summary>
-        /// His own car clips, not the bus's. The seated loop between them
-        /// still is the bus's, and deliberately: both car clips are
-        /// authored to open and close on `BusRideLoop`'s exact seated pose,
-        /// which is also the pose the car's roof height was cut against in
-        /// `tools/build-last-route-car-3d-model.py`.
-        /// </summary>
-        public const string EnterClipName = "CarBoardEnter";
-        public const string LoopClipName = "BusRideLoop";
-        public const string ExitClipName = "CarAlightExit";
+        public const string EnterClipName = "LastRoutePassengerEnter";
+        public const string LoopClipName = "LastRoutePassengerLoop";
+        public const string ExitClipName = "LastRoutePassengerExit";
         public const int TransferFrameCount = 36;
         public const float TransferFramesPerSecond = 12f;
         public const int LoopFrameCount = 16;
@@ -114,6 +108,7 @@ namespace BarPromenade
         private PlayerCameraFollow cameraFollow;
         private Player3DHeadVisibility hiddenHead;
         private bool ownsActiveInteraction;
+        private LastRouteDoorHandContact outsideHand, insideHand;
         private float doorOpenness;
 
         private bool rootAttached;
@@ -311,6 +306,12 @@ namespace BarPromenade
                 controller.PhaseChanged -= HandlePhaseChanged;
             }
 
+            if (playerRuntime.Visual is Player3DCharacterPresentation hero)
+            {
+                hero.Registry.RegisterRuntimeAnimationBank(LastRouteFerrymanRigAnchors.PassengerBank, "car_ride");
+                outsideHand = LastRouteDoorHandContact.ForHero(hero.Registry, true);
+                insideHand = LastRouteDoorHandContact.ForHero(hero.Registry, false);
+            }
             player = playerRuntime;
             controller = interactionController;
             playerRoot = playerRuntime.GameObject.transform;
@@ -810,7 +811,24 @@ namespace BarPromenade
             // frame in which one has moved and the other has not is a frame
             // in which he is looking out of the wrong part of the car.
             RefreshAttachedRootPose();
+            ApplyDoorHands();
             UpdateOwnedCamera(Time.unscaledDeltaTime);
+        }
+
+        private void ApplyDoorHands()
+        {
+            if (car == null || !ownsActiveInteraction || controller == null) return;
+            float phase = controller.PhaseProgress;
+            if (controller.Phase == PlayerAnimatedInteractionPhase.Entering)
+            {
+                outsideHand?.Apply(car.PassengerOuterPull, LastRouteDoorHandContact.Hold(phase, .07f, .16f, .24f, .34f));
+                insideHand?.Apply(car.PassengerInnerPull, LastRouteDoorHandContact.Hold(phase, .76f, .85f, .95f, 1f));
+            }
+            else if (controller.Phase == PlayerAnimatedInteractionPhase.Exiting)
+            {
+                insideHand?.Apply(car.PassengerInnerPull, LastRouteDoorHandContact.Hold(phase, .02f, .08f, .19f, .30f));
+                outsideHand?.Apply(car.PassengerOuterPull, LastRouteDoorHandContact.Hold(phase, .70f, .80f, .89f, .98f));
+            }
         }
 
         /// <summary>

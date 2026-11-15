@@ -531,13 +531,12 @@ namespace BarPromenade
 
         private static float DoorLatchCue(float time, float white)
         {
-            float click = Mathf.Sin(time * Mathf.PI * 2f * 1900f) *
-                          Mathf.Exp(-time * 140f) *
-                          0.30f;
-            float thud = Mathf.Sin(time * Mathf.PI * 2f * 95f) *
-                         Mathf.Exp(-time * 28f) *
-                         0.40f;
-            return click + thud + (white * Mathf.Exp(-time * 60f) * 0.08f);
+            float seal = .35f * Mathf.Sin(time * Mathf.PI * 2f * 84f) * Mathf.Exp(-time * 36f);
+            float shell = .13f * Mathf.Sin(time * Mathf.PI * 2f * 147f) * Mathf.Exp(-time * 53f);
+            float afterSeal = time - .009f;
+            float bolt = afterSeal < 0f ? 0f : Mathf.Sin(afterSeal * Mathf.PI * 2f * 2350f) *
+                Mathf.Exp(-afterSeal * 123f) * .28f;
+            return seal + shell + bolt + white * Mathf.Exp(-time * 88f) * .061f;
         }
 
         /// <summary>A rotary switch going over its stop: one bright click
@@ -1048,9 +1047,11 @@ namespace BarPromenade
         {
             bool inside = seat != null &&
                           (seat.IsSeated || seat.IsAttachedToCar);
+            float opening = doors == null ? 0f : Mathf.Max(doors.DriverOpenness, doors.PassengerOpenness);
+            float enclosureAtSeat = 1f - .78f * Mathf.SmoothStep(0f, 1f, opening);
             cabinBlend = Mathf.MoveTowards(
                 cabinBlend,
-                inside ? 1f : 0f,
+                inside ? enclosureAtSeat : 0f,
                 step / LastRouteCarAudioMix.CabinBlendSeconds);
 
             bool enclosed = isEnclosed != null && isEnclosed();

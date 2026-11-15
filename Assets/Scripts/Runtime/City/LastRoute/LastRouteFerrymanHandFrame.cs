@@ -1,149 +1,66 @@
-using System.Collections.Generic;
+using System;
+using System.Linq;
 using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>
-    /// The drawn palm's anatomical frame and surface, measured once from the rig.
-    /// Offsets are world metres expressed by rotation, independent of FBX scale.
-    /// Forward is fingers, up is thumb; the palm faces right on the left hand,
-    /// and left on the right hand, as in the shared shower/brushing hand frame.
-    /// </summary>
+    /// <summary>Skin contact points in the default hand's rotation frame, in metres.</summary>
     internal readonly struct LastRouteFerrymanHandFrame
     {
-        private readonly bool isLeft;
-
-        private LastRouteFerrymanHandFrame(
-            Quaternion rotationInHand, Vector3 palmPointInHand, Vector3 knobPointInHand, bool left)
+        private LastRouteFerrymanHandFrame(AnatomicalHandFrame anatomy, Vector3 palm, Vector3 knob)
         {
-            RotationInHand = rotationInHand;
-            PalmPointInHand = palmPointInHand;
-            KnobPointInHand = knobPointInHand;
-            isLeft = left;
+            Anatomy = anatomy;
+            PalmPointInHand = palm;
+            KnobPointInHand = knob;
         }
 
-        internal Quaternion RotationInHand { get; }
+        internal AnatomicalHandFrame Anatomy { get; }
         internal Vector3 PalmPointInHand { get; }
-        /// <summary>Palmar skin toward the fingers, for a small knob's side grip.</summary>
         internal Vector3 KnobPointInHand { get; }
-        internal Vector3 FingerAxisInHand => RotationInHand * Vector3.forward;
-        internal Vector3 ThumbAxisInHand => RotationInHand * Vector3.up;
-        internal Vector3 PalmNormalInHand =>
-            (isLeft ? 1f : -1f) * (RotationInHand * Vector3.right);
+        internal Vector3 FingerAxisInHand => Anatomy.FingerDirectionInHand;
+        internal Vector3 ThumbAxisInHand => Anatomy.ThumbDirectionInHand;
+        internal Vector3 PalmNormalInHand => Anatomy.PalmNormalInHand;
 
-        internal static bool TryCreate(
-            Transform hand,
-            Transform gripSocket,
-            bool isLeft,
-            Transform presentationRoot,
-            out LastRouteFerrymanHandFrame frame)
+        internal static LastRouteFerrymanHandFrame Measure(NpcHandPose pose, bool isLeft)
         {
-            frame = default;
-            if (hand == null || gripSocket == null || presentationRoot == null)
-                return false;
-
-            string side = isLeft ? ".L" : ".R";
-            SkinnedMeshRenderer palm = null;
-            SkinnedMeshRenderer thumb = null;
-            foreach (SkinnedMeshRenderer renderer in
-                     presentationRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            AnatomicalHandFrame anatomy = pose.GetAnatomicalFrame(isLeft);
+            NpcHandPose.HandBinding hand = pose.Hands.Single(binding => binding.IsLeft == isLeft);
+            string palmName = isLeft ? "GEO_HandPalm.L" : "GEO_HandPalm.R";
+            SkinnedMeshRenderer palm = hand.Renderers.Single(renderer => renderer.name == palmName);
+            Mesh mesh = palm.sharedMesh;
+            Matrix4x4 bind = mesh.bindposes[Array.IndexOf(palm.bones, hand.Hand)];
+            Quaternion inverse = Quaternion.Inverse(hand.Hand.rotation);
+            Vector3[] vertices = mesh.vertices;
+            Vector3 center = anatomy.PalmCentreInHand;
+            float extent = 0f;
+            for (int i = 0; i < vertices.Length; i++)
             {
-                if (renderer.name == "GEO_Hand" + side) palm = renderer;
-                else if (renderer.name == "GEO_Thumb" + side) thumb = renderer;
+                vertices[i] = inverse * hand.Hand.TransformVector(bind.MultiplyPoint3x4(vertices[i]));
+                extent = Mathf.Max(extent, Vector3.Dot(vertices[i] - center, anatomy.FingerDirectionInHand));
             }
-            if (palm == null || thumb == null ||
-                palm.sharedMesh == null || thumb.sharedMesh == null)
-                return false;
 
-            var sample = new Mesh { name = "Ferryman hand contact measurement" };
-            try
-            {
-                var palmVertices = new List<Vector3>();
-                var thumbVertices = new List<Vector3>();
-                if (!ReadWorldVertices(palm, sample, palmVertices, out Vector3 palmCenter))
-                    return false;
-                int[] triangles = sample.triangles;
-                if (!ReadWorldVertices(thumb, sample, thumbVertices, out Vector3 thumbCenter))
-                    return false;
+            Vector3 normal = anatomy.PalmNormalInHand;
+            Vector3 distal = center + anatomy.FingerDirectionInHand * (.58f * extent);
+            int[] triangles = mesh.triangles;
+            float middleDistance = SkinDistance(center, normal, vertices, triangles);
+            float distalDistance = SkinDistance(distal, normal, vertices, triangles);
+            if (float.IsPositiveInfinity(middleDistance) || float.IsPositiveInfinity(distalDistance))
+                throw new InvalidOperationException("The Ferryman's default palm has no contact surface.");
 
-                Vector3 fingers = gripSocket.position - hand.position;
-                if (!IsFinite(fingers) || fingers.sqrMagnitude < 0.000001f)
-                    return false;
-                fingers.Normalize();
-                Vector3 towardThumb = Vector3.ProjectOnPlane(thumbCenter - palmCenter, fingers);
-                if (!IsFinite(towardThumb) || towardThumb.sqrMagnitude < 0.00000001f)
-                    return false;
-                towardThumb.Normalize();
-                Quaternion physicalFrame = Quaternion.LookRotation(fingers, towardThumb);
-                Vector3 palmNormal = (isLeft ? 1f : -1f) * (physicalFrame * Vector3.right);
-
-                // The anchor used for the coin is the centre of this volume.
-                // Find the actual skin in the palm direction, not that centre.
-                float nearest = float.PositiveInfinity;
-                float distalExtent = 0f;
-                foreach (Vector3 vertex in palmVertices)
-                    distalExtent = Mathf.Max(distalExtent, Vector3.Dot(vertex - palmCenter, fingers));
-                Vector3 knobRayOrigin = palmCenter + fingers * (0.6f * distalExtent);
-                float nearestKnob = float.PositiveInfinity;
-                for (int index = 0; index + 2 < triangles.Length; index += 3)
-                {
-                    int a = triangles[index];
-                    int b = triangles[index + 1];
-                    int c = triangles[index + 2];
-                    if (a < 0 || b < 0 || c < 0 || a >= palmVertices.Count ||
-                        b >= palmVertices.Count || c >= palmVertices.Count)
-                        return false;
-                    if (RayTriangle(palmCenter, palmNormal, palmVertices[a],
-                            palmVertices[b], palmVertices[c], out float distance))
-                        nearest = Mathf.Min(nearest, distance);
-                    if (RayTriangle(knobRayOrigin, palmNormal, palmVertices[a],
-                            palmVertices[b], palmVertices[c], out float knobDistance))
-                        nearestKnob = Mathf.Min(nearestKnob, knobDistance);
-                }
-                if (float.IsPositiveInfinity(nearest))
-                    return false;
-
-                Quaternion inverseHand = Quaternion.Inverse(hand.rotation);
-                Vector3 palmPoint = palmCenter + palmNormal * nearest;
-                Vector3 knobPoint = float.IsPositiveInfinity(nearestKnob) ? palmPoint :
-                    knobRayOrigin + palmNormal * nearestKnob;
-                frame = new LastRouteFerrymanHandFrame(
-                    inverseHand * physicalFrame,
-                    inverseHand * (palmPoint - hand.position),
-                    inverseHand * (knobPoint - hand.position),
-                    isLeft);
-                return true;
-            }
-            finally
-            {
-                if (Application.isPlaying) Object.Destroy(sample);
-                else Object.DestroyImmediate(sample);
-            }
+            return new LastRouteFerrymanHandFrame(anatomy, center + normal * middleDistance,
+                distal + normal * distalDistance);
         }
 
-        private static bool ReadWorldVertices(
-            SkinnedMeshRenderer renderer, Mesh sample, List<Vector3> vertices,
-            out Vector3 center)
+        private static float SkinDistance(Vector3 point, Vector3 normal, Vector3[] vertices, int[] triangles)
         {
-            center = Vector3.zero;
-            sample.Clear(false);
-            // Match HomeTeethBrushingArmPose and the production foot probe:
-            // this imported hierarchy requires useScale=true before world conversion.
-            renderer.BakeMesh(sample, true);
-            sample.GetVertices(vertices);
-            if (vertices.Count == 0)
-                return false;
-            Matrix4x4 world = renderer.transform.localToWorldMatrix;
-            for (int index = 0; index < vertices.Count; index++)
+            float nearest = float.PositiveInfinity;
+            for (int i = 0; i < triangles.Length; i += 3)
             {
-                Vector3 point = world.MultiplyPoint3x4(vertices[index]);
-                if (!IsFinite(point))
-                    return false;
-                vertices[index] = point;
-                center += point;
+                if (RayTriangle(point, normal, vertices[triangles[i]], vertices[triangles[i + 1]],
+                    vertices[triangles[i + 2]], out float distance))
+                    nearest = Mathf.Min(nearest, distance);
             }
-            center /= vertices.Count;
-            return true;
+            return nearest;
         }
 
         private static bool RayTriangle(
@@ -169,10 +86,5 @@ namespace BarPromenade
             distance = Vector3.Dot(edge2, q) * inverse;
             return !float.IsNaN(distance) && !float.IsInfinity(distance) && distance >= 0f;
         }
-
-        private static bool IsFinite(Vector3 value) =>
-            !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&
-            !float.IsNaN(value.y) && !float.IsInfinity(value.y) &&
-            !float.IsNaN(value.z) && !float.IsInfinity(value.z);
     }
 }

@@ -13,6 +13,7 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _EMISSION
+  - _SCREENSPACEREFLECTIONS_OFF
   m_InvalidKeywords: []
   m_LightmapFlags: 1
   m_EnableInstancingVariants: 1
@@ -110,8 +111,8 @@ Material:
     - _Parallax: 0.005
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _ScreenSpaceReflections: 1
-    - _ScreenSpaceReflectionsContributeTransparent: 1
+    - _ScreenSpaceReflections: 0
+    - _ScreenSpaceReflectionsContributeTransparent: 0
     - _Smoothness: 0.68
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -122,9 +123,9 @@ Material:
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1
     m_Colors:
-    - _BaseColor: {r: 1, g: 0.9647059, b: 0.8235294, a: 1}
-    - _Color: {r: 1, g: 0.9647059, b: 0.8235294, a: 1}
-    - _EmissionColor: {r: 6.5, g: 6.2705884, b: 5.352941, a: 6.5}
+    - _BaseColor: {r: 1, g: 0.9254902, b: 0.81960785, a: 1}
+    - _Color: {r: 1, g: 0.9254902, b: 0.81960785, a: 1}
+    - _EmissionColor: {r: 3.8, g: 3.5168626, b: 3.1145098, a: 3.8}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

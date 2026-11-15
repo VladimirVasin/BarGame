@@ -37,7 +37,26 @@ namespace BarPromenade.EditorTools
             importer.weldVertices = false;
             importer.materialImportMode = ModelImporterMaterialImportMode.None;
             importer.importNormals = ModelImporterNormals.Import;
-            importer.importTangents = ModelImporterTangents.None;
+            importer.importTangents = ModelImporterTangents.CalculateMikk;
+        }
+
+        private void OnPreprocessTexture()
+        {
+            if (!assetPath.StartsWith("Assets/Vehicles/Textures/LastRouteCar", System.StringComparison.Ordinal) ||
+                !(assetImporter is TextureImporter importer)) return;
+            bool normal = assetPath.EndsWith("Normal.png", System.StringComparison.Ordinal);
+            bool response = assetPath.EndsWith("Response.png", System.StringComparison.Ordinal);
+            bool glass = assetPath.EndsWith("GlassAlbedo.png", System.StringComparison.Ordinal);
+            importer.textureType = normal ? TextureImporterType.NormalMap : TextureImporterType.Default;
+            importer.sRGBTexture = !normal && !response;
+            importer.wrapMode = assetPath.Contains("CarRubber") ? TextureWrapMode.Repeat : TextureWrapMode.Clamp;
+            importer.filterMode = FilterMode.Trilinear;
+            importer.anisoLevel = 4;
+            importer.mipmapEnabled = true;
+            importer.alphaSource = response || glass ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
+            importer.alphaIsTransparency = false;
+            importer.maxTextureSize = 1024;
+            importer.textureCompression = TextureImporterCompression.CompressedHQ;
         }
 
         private static void OnPostprocessAllAssets(
