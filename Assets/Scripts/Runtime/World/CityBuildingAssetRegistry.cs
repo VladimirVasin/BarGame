@@ -420,7 +420,7 @@ namespace BarPromenade
 
         private void ValidateEntrance()
         {
-            if (hasEntrance != (district == CityDistrictKind.Residential))
+            if (hasEntrance != CityBuildingAssetProvider.HasExpectedEntrance(district))
                 throw new InvalidOperationException($"City building '{stableId}' lost its entrance contract.");
             if (!hasEntrance) return;
             int variant = -1;
@@ -428,8 +428,21 @@ namespace BarPromenade
                 if (string.Equals(stableId, CityBuildingAssetProvider.GetExpectedStableId(index), StringComparison.Ordinal))
                 { variant = CityBuildingAssetProvider.GetExpectedVariantIndex(index); break; }
             if (variant < 0 || Vector3.Distance(localEntranceThreshold,
-                    CityBuildingAssetProvider.GetExpectedEntranceThreshold(variant)) > .003f)
+                    CityBuildingAssetProvider.GetExpectedEntranceThreshold(district, variant)) > .003f)
                 throw new InvalidOperationException($"City building '{stableId}' entrance threshold drifted.");
+            if (district == CityDistrictKind.Industrial)
+            {
+                for (int section = 0; section < 2; section++)
+                {
+                    Rect floor = CityIndustrialEntranceGeometry.Floor(localEntranceThreshold, section);
+                    var passage = new Bounds(new Vector3(floor.center.x, CityIndustrialEntranceGeometry.Height * .5f, floor.center.y),
+                        new Vector3(floor.width - .02f, CityIndustrialEntranceGeometry.Height - .02f, floor.height - .02f));
+                    foreach (Bounds solid in colliderBounds)
+                        if (solid.Intersects(passage))
+                            throw new InvalidOperationException($"City building '{stableId}' staff entrance is blocked.");
+                }
+                return;
+            }
             Bounds clear = new Bounds(localEntranceThreshold +
                 new Vector3(0f, CityBuildingAssetProvider.EntranceClearHeight * .5f,
                     -CityBuildingAssetProvider.EntranceDepth * .5f),

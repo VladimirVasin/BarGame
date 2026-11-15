@@ -201,7 +201,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Vector3.Distance(measured.center, expected.center), Is.LessThan(.025f));
             Assert.That(Vector3.Distance(measured.size, expected.size), Is.LessThan(.025f),
                 "Each imported house must retain its authored world metres.");
-            var entry = new CityResidentialEntranceDescriptor(house.Lot, threshold, house.Lot.FacadeForward,
+            var entry = new CityBuildingEntranceDescriptor(house.Lot, threshold, house.Lot.FacadeForward,
                 Array.Empty<Vector3>(), Array.Empty<CityEntranceForecourtPlan>());
             Transform source = FindEntranceLampSource(city.Night.Atmosphere, entry, out lamp);
             FindEntranceLampVisual(source, out Renderer lens, out _);

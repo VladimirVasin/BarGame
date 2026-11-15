@@ -769,16 +769,17 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Moving actor/head: `6→4 m`, `.25–.5 m` gap, shared `10 px`/charcoal. Depth/actor-ID
   mask rejects colliderless occlusion; no edge clamp. Speech/pause/modal/transition
   suppress; overlap priority is active interaction→nearest;
-- radius-safe sidewalk/crosswalk/Courtyard graph, including .35 m knots at
-  courtyard ground holes and height changes. The `192` residents (`48` women)
-  keep home entrances. Workers go to a fixed workplace, evening leisure and
-  home. Journeys compare walking and transit with waits and transfers, including
-  during City absences. On benches and bus seats the hips and thighs rest on
-  the surface, hands on thighs and feet on the floor.
-  Resident caps `5/28/22/36/10` over 00–06/06–10/10–17/17–22/22–24,
-  cache `48`. Visual walks add `2/8/10/12/4`, cache `18`, combined `48`.
-  Both warm under the overlay with half-hour ramps. Warm ambient≤3, arrivals
-  per 12m≤4 combined/2 ambient. Hidden entries and exits, 60/40 target.
+- Radius-safe graph covers sidewalks, crossings and courts with .35 m knots.
+  Midblock zebras join isolated walks.
+  Seed assigns all `192` residents (`48` women) to fixed industrial jobs.
+  Each shift starts at 07, 08 or 09 and lasts eight hours. Departure includes
+  the walk or bus estimate, full headway and transfer time. Residents
+  walk past the staff threshold, wait inside if early and leave after the shift.
+  Absences use the same calendar and bus service. Evening visits and home follow.
+  Seat contacts: hips/thighs on seat, hands on thighs, feet on floor.
+  Body caps `5/28/22/36/10` at 00/06/10/17/22h, cache 48. Ambient
+  `2/8/10/12/4`, cache 18, combined 48, warm≤3. Half-hour ramps,
+  arrivals per 12m≤4 combined/2 ambient, hidden handoffs, 60/40 target.
   Ambient walks use stairs, avoid crossings and enter away from platforms.
   Ambient walkers sweep sidesteps and leave room to back across joins.
   Clear kerbs and turnouts can serve a pass. House spurs use the full pavement.
@@ -1495,15 +1496,14 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   lower/hillside/Ridge/Home builds. Cool fixed Point/finite air lights door/
   facade/balcony underside; `PassageLamp` wall/FBX-ceiling mounts clear
   glazed stair bays. Canopy/Home reuse; glow/day floor; no new action.
-  Industrial eight functions, heights `8.6/7.8/8.4/7.8/6/8.4/6.6/7.8 m`:
-  dry/cold storage, repair/metal/packaging, boiler/compressor, repair garage.
-  Equipment owns roofs/gates/recesses; timber/concrete/steel retain response.
-  `IndustrialTaskLight_*` keeps fixed Lights/halos/day floor.
-  Twenty original IDs plus three Industrial IDs; fronts≤15.5m,L15×14m,wing10×6m;
-  work passage3.6×4.2m. Measured roles/Blender metres/+Z front align to
-  `DoorPosition+0.08m`. Home/shop/bar retain heights. Unique facade/plinth sides,
-  metric equipment/roof/metal/frame,pane-local glass; warm day emission kept.
-  Trim/skirts avoid coplanarity; Home shares pose, crossings alone clip silhouettes;
+  Eight industrial uses: dry/cold storage, repair/metal/packaging, boiler/
+  compressor and garage. 63 workplace bodies include a rear wing. A graded
+  path, steel jambs and a bent concrete vestibule share exact floor and collision.
+  Loading recesses and the 3.6×4.2 m through passage stay clear. Fixed task
+  lights, day floor and halos. Twenty original IDs plus three Industrial IDs;
+  fronts≤15.5m, L15×14m, wing10×6m, heights6–8.6m. Blender metres and +Z align to
+  `DoorPosition+0.08m`. Unique facade/plinth sides, metre equipment/roof/metal/
+  frames, pane-local glass. Home shares the pose and clips crossing shapes;
 - the bar now uses the complete fixed-metre `bar_exterior_v2` from the shared
   bar Blender pipeline instead of the City misc `BarBuildingShell` and generic
   window bands. Its `12.2645 x 13.5237 x 9.3435 m` measured envelope is unchanged;

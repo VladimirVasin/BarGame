@@ -291,7 +291,7 @@ namespace BarPromenade
                 }
             }
             CityStreetSurfaceWorldBuilder.Build("Home Exterior Unified Street", parent, context.Layout, plan, context);
-            CityResidentialEntranceWorldBuilder.Build(parent, context.Layout, context);
+            CityBuildingEntranceWorldBuilder.Build(parent, context.Layout, context);
             foreach (BuildingLot lot in context.NearbyLots)
                 if (lot.IsBar || (lot.IsPlayerHome && !context.Layout.HasSummitHome) || lot.IsSupermarket)
                     CityEntranceForecourtWorldBuilder.Build("Home Exterior Entrance " + lot.Cell, parent,

@@ -143,7 +143,7 @@ namespace BarPromenade
             supported = cafe != null ? cafe.ApplyGroundTop(worldXZ, supported) : supported;
             // Composition primes entrance paving after court/infill placement.
             // Terrain queries must only read the cached result, never trigger it.
-            if (CityResidentialEntrancePlan.TrySampleCachedTop(layout, worldXZ, out float entranceTop))
+            if (CityBuildingEntrancePlan.TrySampleCachedTop(layout, worldXZ, out float entranceTop))
                 supported = Mathf.Min(supported, entranceTop - .04f);
             return supported - offset;
         }

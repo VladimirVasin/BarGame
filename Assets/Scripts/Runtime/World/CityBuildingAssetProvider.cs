@@ -190,6 +190,14 @@ namespace BarPromenade
         public static IReadOnlyList<Bounds> GetExpectedCollisionBounds(
             CityDistrictKind district, int variantIndex)
         {
+            IReadOnlyList<Bounds> solids = GetMassBounds(district, variantIndex);
+            return district == CityDistrictKind.Industrial
+                ? CityIndustrialEntranceGeometry.Cut(solids, variantIndex)
+                : solids;
+        }
+
+        private static IReadOnlyList<Bounds> GetMassBounds(CityDistrictKind district, int variantIndex)
+        {
             Vector3 envelope = GetExpectedEnvelope(district, variantIndex);
             float halfWidth = envelope.x * .5f;
             float halfDepth = envelope.z * .5f;
@@ -211,17 +219,24 @@ namespace BarPromenade
             return district == CityDistrictKind.Residential ? CutEntrance(solids, variantIndex) : solids;
         }
 
+        public static bool HasExpectedEntrance(CityDistrictKind district) =>
+            district == CityDistrictKind.Residential || district == CityDistrictKind.Industrial;
+
+        public static float GetExpectedEntranceDepth(CityDistrictKind district) =>
+            district == CityDistrictKind.Industrial ? CityIndustrialEntranceGeometry.Depth : EntranceDepth;
+
+        public static Vector3 GetExpectedEntranceThreshold(CityDistrictKind district, int variantIndex) =>
+            district == CityDistrictKind.Industrial
+                ? CityIndustrialEntranceGeometry.Threshold(variantIndex)
+                : GetExpectedEntranceThreshold(variantIndex);
+
         public static Vector3 GetExpectedEntranceThreshold(int variantIndex)
         {
             Vector3 envelope = GetExpectedEnvelope(CityDistrictKind.Residential, variantIndex);
             return new Vector3(variantIndex == 3 ? -3.6f : 0f, 0f, envelope.z * .5f - 1.2f);
         }
 
-        public static Vector3 GetExpectedEntranceOutward(int variantIndex)
-        {
-            GetExpectedEnvelope(CityDistrictKind.Residential, variantIndex);
-            return Vector3.forward;
-        }
+        public static Vector3 EntranceOutward => Vector3.forward;
 
         private static IReadOnlyList<Bounds> CutEntrance(IReadOnlyList<Bounds> solids, int variantIndex)
         {
@@ -271,7 +286,9 @@ namespace BarPromenade
         public static IReadOnlyList<Bounds> GetExpectedGroundCollisionBounds(
             CityDistrictKind district, int variantIndex)
         {
-            IReadOnlyList<Bounds> solids = GetExpectedCollisionBounds(district, variantIndex);
+            // Lot allocation, traffic and the map building silhouette use the
+            // outer mass. Staff navigation adds the interior as a private spur.
+            IReadOnlyList<Bounds> solids = GetMassBounds(district, variantIndex);
             if (variantIndex != 3 && district != CityDistrictKind.Residential) return solids;
             var ground = new List<Bounds>(2);
             for (int index = 0; index < solids.Count; index++)

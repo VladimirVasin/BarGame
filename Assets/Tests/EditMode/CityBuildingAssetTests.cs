@@ -107,7 +107,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.design_id,
                 Is.EqualTo(CityBuildingAssetProvider.ExpectedDesignId));
-            Assert.That(manifest.generator_version, Is.EqualTo("4.2.0"));
+            Assert.That(manifest.generator_version, Is.EqualTo("4.3.0"));
             Assert.That(manifest.fbx_asset_path, Is.EqualTo(ModelPath));
             Assert.That(manifest.unit_factor, Is.EqualTo(1f));
             Assert.That(manifest.unity_axes, Is.Not.Null);
@@ -255,23 +255,23 @@ namespace BarPromenade.Tests.EditMode
 
                 if (CityBuildingAssetProvider.GetExpectedVariantIndex(index) == 2)
                 {
-                    if (expected.District != CityDistrictKind.Residential)
+                    if (!CityBuildingAssetProvider.HasExpectedEntrance(expected.District))
                         Assert.That(solids.Count, Is.EqualTo(2));
                     Assert.That(solids.Any(solid => solid.Contains(new Vector3(3f, 1f, -3.5f))), Is.False,
                         "The rear-right corner is an open courtyard, not one envelope collider.");
                 }
 
-                if (expected.District == CityDistrictKind.Residential)
+                if (CityBuildingAssetProvider.HasExpectedEntrance(expected.District))
                 {
                     Assert.That(prototype.entrance, Is.Not.Null);
                     Vector3 threshold = Vector3FromArray(prototype.entrance.threshold_unity);
-                    Assert.That(Vector3.Distance(threshold, CityBuildingAssetProvider.GetExpectedEntranceThreshold(
+                    Assert.That(Vector3.Distance(threshold, CityBuildingAssetProvider.GetExpectedEntranceThreshold(expected.District,
                         CityBuildingAssetProvider.GetExpectedVariantIndex(index))), Is.LessThan(.003f));
                     Assert.That(Vector3.Distance(threshold,
                         ConvertSourceVectorToUnity(prototype.entrance.threshold_source)), Is.LessThan(.003f));
                     Assert.That(prototype.entrance.clear_width_m, Is.EqualTo(CityBuildingAssetProvider.EntranceClearWidth));
                     Assert.That(prototype.entrance.clear_height_m, Is.EqualTo(CityBuildingAssetProvider.EntranceClearHeight));
-                    Assert.That(prototype.entrance.depth_m, Is.EqualTo(CityBuildingAssetProvider.EntranceDepth));
+                    Assert.That(prototype.entrance.depth_m, Is.EqualTo(CityBuildingAssetProvider.GetExpectedEntranceDepth(expected.District)));
                     Bounds clear = new Bounds(threshold + new Vector3(0f, 1.2f, -.9f),
                         new Vector3(1.38f, 2.38f, 1.78f));
                     Assert.That(solids.Any(solid => solid.Intersects(clear)), Is.False,

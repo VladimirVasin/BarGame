@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-buildings-3d-model.py",
-  "generator_version": "4.2.0",
+  "generator_version": "4.3.0",
   "blender_version": "5.2.3 LTS",
   "design_id": "city_buildings_coastal_v4",
   "display_name": "City Buildings 3D Prototype Catalog",
@@ -52,7 +52,7 @@
   },
   "prototype_count": 23,
   "mesh_count": 188,
-  "triangle_count": 29250,
+  "triangle_count": 33130,
   "prototypes": [
     {
       "stable_id": "old-town-prototype-01",
@@ -2705,7 +2705,31 @@
           0.573576
         ]
       },
-      "entrance": null,
+      "entrance": {
+        "threshold_source": [
+          2.5,
+          6.75,
+          0.0
+        ],
+        "threshold_unity": [
+          2.5,
+          0.0,
+          6.75
+        ],
+        "outward_source": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "outward_unity": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "clear_width_m": 1.4,
+        "clear_height_m": 2.4,
+        "depth_m": 4.15
+      },
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -2714,7 +2738,7 @@
             0.0
           ],
           "bounds_max_source": [
-            7.0,
+            1.8,
             6.75,
             6.6
           ],
@@ -2724,13 +2748,123 @@
             -6.75
           ],
           "bounds_max_unity": [
+            1.8,
+            6.6,
+            6.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            5.7,
+            -6.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            7.0,
+            6.75,
+            6.6
+          ],
+          "bounds_min_unity": [
+            5.7,
+            0.0,
+            -6.75
+          ],
+          "bounds_max_unity": [
             7.0,
             6.6,
             6.75
           ]
+        },
+        {
+          "bounds_min_source": [
+            1.8,
+            -6.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            5.7,
+            2.6,
+            6.6
+          ],
+          "bounds_min_unity": [
+            1.8,
+            0.0,
+            -6.75
+          ],
+          "bounds_max_unity": [
+            5.7,
+            6.6,
+            2.6
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.2,
+            4.25,
+            0.0
+          ],
+          "bounds_max_source": [
+            5.7,
+            6.75,
+            6.6
+          ],
+          "bounds_min_unity": [
+            3.2,
+            0.0,
+            4.25
+          ],
+          "bounds_max_unity": [
+            5.7,
+            6.6,
+            6.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            1.8,
+            2.6,
+            2.4
+          ],
+          "bounds_max_source": [
+            3.2,
+            6.75,
+            6.6
+          ],
+          "bounds_min_unity": [
+            1.8,
+            2.4,
+            2.6
+          ],
+          "bounds_max_unity": [
+            3.2,
+            6.6,
+            6.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.2,
+            2.6,
+            2.4
+          ],
+          "bounds_max_source": [
+            5.7,
+            4.25,
+            6.6
+          ],
+          "bounds_min_unity": [
+            3.2,
+            2.4,
+            2.6
+          ],
+          "bounds_max_unity": [
+            5.7,
+            6.6,
+            4.25
+          ]
         }
       ],
-      "triangle_count": 1036,
+      "triangle_count": 1604,
       "bounds_min_source": [
         -7.0,
         -6.79,
@@ -2915,8 +3049,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 64,
-          "triangles": 124,
+          "vertices": 212,
+          "triangles": 416,
           "bounds_min_source": [
             -7.0,
             -6.75,
@@ -3241,35 +3375,35 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 24,
-          "triangles": 68,
+          "vertices": 54,
+          "triangles": 140,
           "bounds_min_source": [
             -6.34,
-            5.57,
+            2.56,
             0.0
           ],
           "bounds_max_source": [
             6.34,
-            6.71,
+            6.75,
             0.48
           ],
           "bounds_min_unity": [
             -6.34,
             0.0,
-            5.57
+            2.56
           ],
           "bounds_max_unity": [
             6.34,
             0.48,
-            6.71
+            6.75
           ],
           "uv0_min": [
             -2.67,
             0.5
           ],
           "uv0_max": [
-            3.855,
-            3.855
+            3.845,
+            3.875
           ],
           "uv2_slot_ids": [
             0
@@ -3281,31 +3415,31 @@
           "surface_kind": "EquipmentSteel",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 120,
-          "triangles": 180,
+          "vertices": 192,
+          "triangles": 384,
           "bounds_min_source": [
             -4.0,
             5.57,
-            0.5
+            0.0
           ],
           "bounds_max_source": [
-            1.1,
+            3.332,
             6.815,
             5.4
           ],
           "bounds_min_unity": [
             -4.0,
-            0.5,
+            0.0,
             5.57
           ],
           "bounds_max_unity": [
-            1.1,
+            3.332,
             5.4,
             6.815
           ],
           "uv0_min": [
             -1.722222,
-            0.777778
+            0.5
           ],
           "uv0_max": [
             4.286111,
@@ -7227,7 +7361,31 @@
           0.573576
         ]
       },
-      "entrance": null,
+      "entrance": {
+        "threshold_source": [
+          1.4,
+          5.75,
+          0.0
+        ],
+        "threshold_unity": [
+          1.4,
+          0.0,
+          5.75
+        ],
+        "outward_source": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "outward_unity": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "clear_width_m": 1.4,
+        "clear_height_m": 2.4,
+        "depth_m": 4.15
+      },
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -7236,7 +7394,7 @@
             0.0
           ],
           "bounds_max_source": [
-            7.75,
+            0.7,
             5.75,
             6.6
           ],
@@ -7246,13 +7404,123 @@
             -5.75
           ],
           "bounds_max_unity": [
+            0.7,
+            6.6,
+            5.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            4.6,
+            -5.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            7.75,
+            5.75,
+            6.6
+          ],
+          "bounds_min_unity": [
+            4.6,
+            0.0,
+            -5.75
+          ],
+          "bounds_max_unity": [
             7.75,
             6.6,
             5.75
           ]
+        },
+        {
+          "bounds_min_source": [
+            0.7,
+            -5.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            4.6,
+            1.6,
+            6.6
+          ],
+          "bounds_min_unity": [
+            0.7,
+            0.0,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            4.6,
+            6.6,
+            1.6
+          ]
+        },
+        {
+          "bounds_min_source": [
+            2.1,
+            3.25,
+            0.0
+          ],
+          "bounds_max_source": [
+            4.6,
+            5.75,
+            6.6
+          ],
+          "bounds_min_unity": [
+            2.1,
+            0.0,
+            3.25
+          ],
+          "bounds_max_unity": [
+            4.6,
+            6.6,
+            5.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.7,
+            1.6,
+            2.4
+          ],
+          "bounds_max_source": [
+            2.1,
+            5.75,
+            6.6
+          ],
+          "bounds_min_unity": [
+            0.7,
+            2.4,
+            1.6
+          ],
+          "bounds_max_unity": [
+            2.1,
+            6.6,
+            5.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            2.1,
+            1.6,
+            2.4
+          ],
+          "bounds_max_source": [
+            4.6,
+            3.25,
+            6.6
+          ],
+          "bounds_min_unity": [
+            2.1,
+            2.4,
+            1.6
+          ],
+          "bounds_max_unity": [
+            4.6,
+            6.6,
+            3.25
+          ]
         }
       ],
-      "triangle_count": 880,
+      "triangle_count": 1448,
       "bounds_min_source": [
         -7.75,
         -5.79,
@@ -7367,13 +7635,13 @@
           "bay": 0,
           "opening_kind": "Window",
           "center_source": [
-            1.65,
-            4.57,
-            2.6
+            1.4,
+            5.75,
+            3.05
           ],
           "size_m": [
             0.8,
-            1.1
+            0.8
           ],
           "uv2_slot_id": 1
         },
@@ -7403,8 +7671,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 64,
-          "triangles": 124,
+          "vertices": 212,
+          "triangles": 416,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -7608,29 +7876,29 @@
           "bounds_min_source": [
             -6.125,
             -5.78,
-            2.05
+            2.65
           ],
           "bounds_max_source": [
-            2.05,
-            4.6,
+            1.8,
+            5.78,
             5.425
           ],
           "bounds_min_unity": [
             -6.125,
-            2.05,
+            2.65,
             -5.78
           ],
           "bounds_max_unity": [
-            2.05,
+            1.8,
             5.425,
-            4.6
+            5.78
           ],
           "uv0_min": [
             -7.15625,
-            3.0625
+            3.8125
           ],
           "uv0_max": [
-            3.0625,
+            2.75,
             7.28125
           ],
           "uv2_slot_ids": [
@@ -7649,22 +7917,22 @@
           "bounds_min_source": [
             -6.054125,
             -5.768,
-            2.12425
+            2.704
           ],
           "bounds_max_source": [
-            1.97575,
-            4.588,
+            1.746,
+            5.768,
             5.354125
           ],
           "bounds_min_unity": [
             -6.054125,
-            2.12425,
+            2.704,
             -5.768
           ],
           "bounds_max_unity": [
-            1.97575,
+            1.746,
             5.354125,
-            4.588
+            5.768
           ],
           "uv0_min": [
             0.0,
@@ -7685,27 +7953,27 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 24,
-          "triangles": 68,
+          "vertices": 54,
+          "triangles": 140,
           "bounds_min_source": [
             -7.09,
-            4.57,
+            1.56,
             0.0
           ],
           "bounds_max_source": [
             7.09,
-            5.71,
+            5.75,
             0.48
           ],
           "bounds_min_unity": [
             -7.09,
             0.0,
-            4.57
+            1.56
           ],
           "bounds_max_unity": [
             7.09,
             0.48,
-            5.71
+            5.75
           ],
           "uv0_min": [
             -3.045,
@@ -7713,7 +7981,7 @@
           ],
           "uv0_max": [
             4.045,
-            3.355
+            3.375
           ],
           "uv2_slot_ids": [
             0
@@ -7725,12 +7993,12 @@
           "surface_kind": "EquipmentSteel",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 248,
-          "triangles": 404,
+          "vertices": 320,
+          "triangles": 608,
           "bounds_min_source": [
             -5.2,
             -2.85,
-            0.5
+            0.0
           ],
           "bounds_max_source": [
             5.905,
@@ -7739,7 +8007,7 @@
           ],
           "bounds_min_unity": [
             -5.2,
-            0.5,
+            0.0,
             -2.85
           ],
           "bounds_max_unity": [
@@ -10770,7 +11038,31 @@
           0.573576
         ]
       },
-      "entrance": null,
+      "entrance": {
+        "threshold_source": [
+          2.8,
+          7.0,
+          0.0
+        ],
+        "threshold_unity": [
+          2.8,
+          0.0,
+          7.0
+        ],
+        "outward_source": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "outward_unity": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "clear_width_m": 1.4,
+        "clear_height_m": 2.4,
+        "depth_m": 4.15
+      },
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -10779,7 +11071,7 @@
             0.0
           ],
           "bounds_max_source": [
-            7.5,
+            2.1,
             7.0,
             7.2
           ],
@@ -10789,9 +11081,119 @@
             0.0
           ],
           "bounds_max_unity": [
+            2.1,
+            7.2,
+            7.0
+          ]
+        },
+        {
+          "bounds_min_source": [
+            6.0,
+            0.0,
+            0.0
+          ],
+          "bounds_max_source": [
+            7.5,
+            7.0,
+            7.2
+          ],
+          "bounds_min_unity": [
+            6.0,
+            0.0,
+            0.0
+          ],
+          "bounds_max_unity": [
             7.5,
             7.2,
             7.0
+          ]
+        },
+        {
+          "bounds_min_source": [
+            2.1,
+            0.0,
+            0.0
+          ],
+          "bounds_max_source": [
+            6.0,
+            2.85,
+            7.2
+          ],
+          "bounds_min_unity": [
+            2.1,
+            0.0,
+            0.0
+          ],
+          "bounds_max_unity": [
+            6.0,
+            7.2,
+            2.85
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.5,
+            4.5,
+            0.0
+          ],
+          "bounds_max_source": [
+            6.0,
+            7.0,
+            7.2
+          ],
+          "bounds_min_unity": [
+            3.5,
+            0.0,
+            4.5
+          ],
+          "bounds_max_unity": [
+            6.0,
+            7.2,
+            7.0
+          ]
+        },
+        {
+          "bounds_min_source": [
+            2.1,
+            2.85,
+            2.4
+          ],
+          "bounds_max_source": [
+            3.5,
+            7.0,
+            7.2
+          ],
+          "bounds_min_unity": [
+            2.1,
+            2.4,
+            2.85
+          ],
+          "bounds_max_unity": [
+            3.5,
+            7.2,
+            7.0
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.5,
+            2.85,
+            2.4
+          ],
+          "bounds_max_source": [
+            6.0,
+            4.5,
+            7.2
+          ],
+          "bounds_min_unity": [
+            3.5,
+            2.4,
+            2.85
+          ],
+          "bounds_max_unity": [
+            6.0,
+            7.2,
+            4.5
           ]
         },
         {
@@ -10817,7 +11219,7 @@
           ]
         }
       ],
-      "triangle_count": 828,
+      "triangle_count": 1208,
       "bounds_min_source": [
         -7.53,
         -7.04,
@@ -11036,8 +11438,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 52,
-          "triangles": 100,
+          "vertices": 140,
+          "triangles": 272,
           "bounds_min_source": [
             -7.5,
             -7.0,
@@ -11366,16 +11768,16 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 24,
-          "triangles": 68,
+          "vertices": 30,
+          "triangles": 72,
           "bounds_min_source": [
             -0.7,
             -1.9,
             0.0
           ],
           "bounds_max_source": [
-            5.1,
-            -0.1,
+            6.04,
+            7.0,
             0.32
           ],
           "bounds_min_unity": [
@@ -11384,17 +11786,17 @@
             -1.9
           ],
           "bounds_max_unity": [
-            5.1,
+            6.04,
             0.32,
-            -0.1
+            7.0
           ],
           "uv0_min": [
             -0.45,
             -0.45
           ],
           "uv0_max": [
-            3.05,
-            0.66
+            3.52,
+            4.0
           ],
           "uv2_slot_ids": [
             0
@@ -11406,25 +11808,25 @@
           "surface_kind": "EquipmentSteel",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 192,
-          "triangles": 312,
+          "vertices": 264,
+          "triangles": 516,
           "bounds_min_source": [
             -5.14,
             -2.92,
-            0.06
+            0.0
           ],
           "bounds_max_source": [
-            3.075,
+            3.632,
             7.07,
             4.65
           ],
           "bounds_min_unity": [
             -5.14,
-            0.06,
+            0.0,
             -2.92
           ],
           "bounds_max_unity": [
-            3.075,
+            3.632,
             4.65,
             7.07
           ],
@@ -15044,7 +15446,31 @@
           0.573576
         ]
       },
-      "entrance": null,
+      "entrance": {
+        "threshold_source": [
+          2.85,
+          5.75,
+          0.0
+        ],
+        "threshold_unity": [
+          2.85,
+          0.0,
+          5.75
+        ],
+        "outward_source": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "outward_unity": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "clear_width_m": 1.4,
+        "clear_height_m": 2.4,
+        "depth_m": 4.15
+      },
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -15075,7 +15501,7 @@
             0.0
           ],
           "bounds_max_source": [
-            7.75,
+            2.15,
             5.75,
             4.2
           ],
@@ -15085,9 +15511,119 @@
             -5.75
           ],
           "bounds_max_unity": [
+            2.15,
+            4.2,
+            5.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            6.05,
+            -5.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            7.75,
+            5.75,
+            4.2
+          ],
+          "bounds_min_unity": [
+            6.05,
+            0.0,
+            -5.75
+          ],
+          "bounds_max_unity": [
             7.75,
             4.2,
             5.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            2.15,
+            -5.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            6.05,
+            1.6,
+            4.2
+          ],
+          "bounds_min_unity": [
+            2.15,
+            0.0,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            6.05,
+            4.2,
+            1.6
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.55,
+            3.25,
+            0.0
+          ],
+          "bounds_max_source": [
+            6.05,
+            5.75,
+            4.2
+          ],
+          "bounds_min_unity": [
+            3.55,
+            0.0,
+            3.25
+          ],
+          "bounds_max_unity": [
+            6.05,
+            4.2,
+            5.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            2.15,
+            1.6,
+            2.4
+          ],
+          "bounds_max_source": [
+            3.55,
+            5.75,
+            4.2
+          ],
+          "bounds_min_unity": [
+            2.15,
+            2.4,
+            1.6
+          ],
+          "bounds_max_unity": [
+            3.55,
+            4.2,
+            5.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.55,
+            1.6,
+            2.4
+          ],
+          "bounds_max_source": [
+            6.05,
+            3.25,
+            4.2
+          ],
+          "bounds_min_unity": [
+            3.55,
+            2.4,
+            1.6
+          ],
+          "bounds_max_unity": [
+            6.05,
+            4.2,
+            3.25
           ]
         },
         {
@@ -15113,7 +15649,7 @@
           ]
         }
       ],
-      "triangle_count": 1006,
+      "triangle_count": 1506,
       "bounds_min_source": [
         -7.75,
         -5.79,
@@ -15315,8 +15851,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 168,
-          "triangles": 324,
+          "vertices": 316,
+          "triangles": 616,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -15603,27 +16139,27 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 48,
-          "triangles": 136,
+          "vertices": 54,
+          "triangles": 140,
           "bounds_min_source": [
             -7.67,
-            4.63,
+            1.56,
             0.0
           ],
           "bounds_max_source": [
             7.67,
-            5.69,
+            5.75,
             0.48
           ],
           "bounds_min_unity": [
             -7.67,
             0.0,
-            4.63
+            1.56
           ],
           "bounds_max_unity": [
             7.67,
             0.48,
-            5.69
+            5.75
           ],
           "uv0_min": [
             -3.335,
@@ -15631,7 +16167,7 @@
           ],
           "uv0_max": [
             4.335,
-            3.345
+            3.375
           ],
           "uv2_slot_ids": [
             0
@@ -15643,34 +16179,34 @@
           "surface_kind": "EquipmentSteel",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 192,
-          "triangles": 288,
+          "vertices": 264,
+          "triangles": 492,
           "bounds_min_source": [
             -6.54,
             4.57,
-            0.4
+            0.0
           ],
           "bounds_max_source": [
-            6.54,
+            7.24,
             5.815,
             5.4
           ],
           "bounds_min_unity": [
             -6.54,
-            0.4,
+            0.0,
             4.57
           ],
           "bounds_max_unity": [
-            6.54,
+            7.24,
             5.4,
             5.815
           ],
           "uv0_min": [
             -3.133333,
-            0.722222
+            0.5
           ],
           "uv0_max": [
-            4.133333,
+            4.522222,
             3.730556
           ],
           "uv2_slot_ids": [
@@ -18503,7 +19039,31 @@
           0.573576
         ]
       },
-      "entrance": null,
+      "entrance": {
+        "threshold_source": [
+          1.55,
+          3.0,
+          0.0
+        ],
+        "threshold_unity": [
+          1.55,
+          0.0,
+          3.0
+        ],
+        "outward_source": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "outward_unity": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "clear_width_m": 1.4,
+        "clear_height_m": 2.4,
+        "depth_m": 4.15
+      },
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -18512,7 +19072,7 @@
             0.0
           ],
           "bounds_max_source": [
-            5.0,
+            0.85,
             3.0,
             4.8
           ],
@@ -18522,13 +19082,123 @@
             -3.0
           ],
           "bounds_max_unity": [
+            0.85,
+            4.8,
+            3.0
+          ]
+        },
+        {
+          "bounds_min_source": [
+            4.75,
+            -3.0,
+            0.0
+          ],
+          "bounds_max_source": [
+            5.0,
+            3.0,
+            4.8
+          ],
+          "bounds_min_unity": [
+            4.75,
+            0.0,
+            -3.0
+          ],
+          "bounds_max_unity": [
             5.0,
             4.8,
             3.0
           ]
+        },
+        {
+          "bounds_min_source": [
+            0.85,
+            -3.0,
+            0.0
+          ],
+          "bounds_max_source": [
+            4.75,
+            -1.15,
+            4.8
+          ],
+          "bounds_min_unity": [
+            0.85,
+            0.0,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            4.75,
+            4.8,
+            -1.15
+          ]
+        },
+        {
+          "bounds_min_source": [
+            2.25,
+            0.5,
+            0.0
+          ],
+          "bounds_max_source": [
+            4.75,
+            3.0,
+            4.8
+          ],
+          "bounds_min_unity": [
+            2.25,
+            0.0,
+            0.5
+          ],
+          "bounds_max_unity": [
+            4.75,
+            4.8,
+            3.0
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.85,
+            -1.15,
+            2.4
+          ],
+          "bounds_max_source": [
+            2.25,
+            3.0,
+            4.8
+          ],
+          "bounds_min_unity": [
+            0.85,
+            2.4,
+            -1.15
+          ],
+          "bounds_max_unity": [
+            2.25,
+            4.8,
+            3.0
+          ]
+        },
+        {
+          "bounds_min_source": [
+            2.25,
+            -1.15,
+            2.4
+          ],
+          "bounds_max_source": [
+            4.75,
+            0.5,
+            4.8
+          ],
+          "bounds_min_unity": [
+            2.25,
+            2.4,
+            -1.15
+          ],
+          "bounds_max_unity": [
+            4.75,
+            4.8,
+            0.5
+          ]
         }
       ],
-      "triangle_count": 1306,
+      "triangle_count": 1466,
       "bounds_min_source": [
         -5.0,
         -3.04,
@@ -18696,8 +19366,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 64,
-          "triangles": 124,
+          "vertices": 212,
+          "triangles": 416,
           "bounds_min_source": [
             -5.0,
             -3.0,
@@ -18980,10 +19650,10 @@
           "surface_kind": "CargoTimber",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.6,
-          "vertices": 544,
-          "triangles": 816,
+          "vertices": 272,
+          "triangles": 408,
           "bounds_min_source": [
-            0.825,
+            2.775,
             1.97,
             0.48
           ],
@@ -18993,7 +19663,7 @@
             2.31
           ],
           "bounds_min_unity": [
-            0.825,
+            2.775,
             0.48,
             1.97
           ],
@@ -19003,7 +19673,7 @@
             2.79
           ],
           "uv0_min": [
-            1.015625,
+            1.73125,
             0.8
           ],
           "uv0_max": [
@@ -19020,35 +19690,35 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 24,
-          "triangles": 68,
+          "vertices": 54,
+          "triangles": 140,
           "bounds_min_source": [
             -4.34,
-            1.82,
+            -1.19,
             0.0
           ],
           "bounds_max_source": [
-            4.34,
-            2.96,
+            4.79,
+            3.0,
             0.48
           ],
           "bounds_min_unity": [
             -4.34,
             0.0,
-            1.82
+            -1.19
           ],
           "bounds_max_unity": [
-            4.34,
+            4.79,
             0.48,
-            2.96
+            3.0
           ],
           "uv0_min": [
             -1.67,
-            0.5
+            -0.095
           ],
           "uv0_max": [
-            2.67,
-            1.98
+            2.895,
+            2.0
           ],
           "uv2_slot_ids": [
             0
@@ -19060,31 +19730,31 @@
           "surface_kind": "EquipmentSteel",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 56,
-          "triangles": 84,
+          "vertices": 128,
+          "triangles": 288,
           "bounds_min_source": [
             -3.64,
             1.82,
-            0.5
+            0.0
           ],
           "bounds_max_source": [
-            0.44,
+            2.382,
             3.065,
             4.25
           ],
           "bounds_min_unity": [
             -3.64,
-            0.5,
+            0.0,
             1.82
           ],
           "bounds_max_unity": [
-            0.44,
+            2.382,
             4.25,
             3.065
           ],
           "uv0_min": [
             -1.522222,
-            0.777778
+            0.5
           ],
           "uv0_max": [
             2.202778,
@@ -19898,7 +20568,31 @@
           0.573576
         ]
       },
-      "entrance": null,
+      "entrance": {
+        "threshold_source": [
+          1.16,
+          6.75,
+          0.0
+        ],
+        "threshold_unity": [
+          1.16,
+          0.0,
+          6.75
+        ],
+        "outward_source": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "outward_unity": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "clear_width_m": 1.4,
+        "clear_height_m": 2.4,
+        "depth_m": 4.15
+      },
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -19907,7 +20601,7 @@
             0.0
           ],
           "bounds_max_source": [
-            7.0,
+            0.46,
             6.75,
             7.2
           ],
@@ -19917,13 +20611,123 @@
             -6.75
           ],
           "bounds_max_unity": [
+            0.46,
+            7.2,
+            6.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            4.36,
+            -6.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            7.0,
+            6.75,
+            7.2
+          ],
+          "bounds_min_unity": [
+            4.36,
+            0.0,
+            -6.75
+          ],
+          "bounds_max_unity": [
             7.0,
             7.2,
             6.75
           ]
+        },
+        {
+          "bounds_min_source": [
+            0.46,
+            -6.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            4.36,
+            2.6,
+            7.2
+          ],
+          "bounds_min_unity": [
+            0.46,
+            0.0,
+            -6.75
+          ],
+          "bounds_max_unity": [
+            4.36,
+            7.2,
+            2.6
+          ]
+        },
+        {
+          "bounds_min_source": [
+            1.86,
+            4.25,
+            0.0
+          ],
+          "bounds_max_source": [
+            4.36,
+            6.75,
+            7.2
+          ],
+          "bounds_min_unity": [
+            1.86,
+            0.0,
+            4.25
+          ],
+          "bounds_max_unity": [
+            4.36,
+            7.2,
+            6.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.46,
+            2.6,
+            2.4
+          ],
+          "bounds_max_source": [
+            1.86,
+            6.75,
+            7.2
+          ],
+          "bounds_min_unity": [
+            0.46,
+            2.4,
+            2.6
+          ],
+          "bounds_max_unity": [
+            1.86,
+            7.2,
+            6.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            1.86,
+            2.6,
+            2.4
+          ],
+          "bounds_max_source": [
+            4.36,
+            4.25,
+            7.2
+          ],
+          "bounds_min_unity": [
+            1.86,
+            2.4,
+            2.6
+          ],
+          "bounds_max_unity": [
+            4.36,
+            7.2,
+            4.25
+          ]
         }
       ],
-      "triangle_count": 876,
+      "triangle_count": 1444,
       "bounds_min_source": [
         -7.0,
         -6.79,
@@ -20074,8 +20878,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 64,
-          "triangles": 124,
+          "vertices": 212,
+          "triangles": 416,
           "bounds_min_source": [
             -7.0,
             -6.75,
@@ -20356,35 +21160,35 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 24,
-          "triangles": 68,
+          "vertices": 54,
+          "triangles": 140,
           "bounds_min_source": [
             -6.34,
-            5.57,
+            2.56,
             0.0
           ],
           "bounds_max_source": [
             6.34,
-            6.71,
+            6.75,
             0.48
           ],
           "bounds_min_unity": [
             -6.34,
             0.0,
-            5.57
+            2.56
           ],
           "bounds_max_unity": [
             6.34,
             0.48,
-            6.71
+            6.75
           ],
           "uv0_min": [
             -2.67,
             0.5
           ],
           "uv0_max": [
-            3.855,
-            3.855
+            3.845,
+            3.875
           ],
           "uv2_slot_ids": [
             0
@@ -20396,12 +21200,12 @@
           "surface_kind": "EquipmentSteel",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 240,
-          "triangles": 388,
+          "vertices": 312,
+          "triangles": 592,
           "bounds_min_source": [
             -6.43,
             5.57,
-            0.48
+            0.0
           ],
           "bounds_max_source": [
             4.79,
@@ -20410,7 +21214,7 @@
           ],
           "bounds_min_unity": [
             -6.43,
-            0.48,
+            0.0,
             5.57
           ],
           "bounds_max_unity": [
@@ -20420,7 +21224,7 @@
           ],
           "uv0_min": [
             -3.072222,
-            0.766667
+            0.5
           ],
           "uv0_max": [
             4.286111,
@@ -20504,7 +21308,31 @@
           0.573576
         ]
       },
-      "entrance": null,
+      "entrance": {
+        "threshold_source": [
+          2.34,
+          6.75,
+          0.0
+        ],
+        "threshold_unity": [
+          2.34,
+          0.0,
+          6.75
+        ],
+        "outward_source": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "outward_unity": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "clear_width_m": 1.4,
+        "clear_height_m": 2.4,
+        "depth_m": 4.15
+      },
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -20513,7 +21341,7 @@
             0.0
           ],
           "bounds_max_source": [
-            7.0,
+            1.64,
             6.75,
             5.4
           ],
@@ -20523,13 +21351,123 @@
             -6.75
           ],
           "bounds_max_unity": [
+            1.64,
+            5.4,
+            6.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            5.54,
+            -6.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            7.0,
+            6.75,
+            5.4
+          ],
+          "bounds_min_unity": [
+            5.54,
+            0.0,
+            -6.75
+          ],
+          "bounds_max_unity": [
             7.0,
             5.4,
             6.75
           ]
+        },
+        {
+          "bounds_min_source": [
+            1.64,
+            -6.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            5.54,
+            2.6,
+            5.4
+          ],
+          "bounds_min_unity": [
+            1.64,
+            0.0,
+            -6.75
+          ],
+          "bounds_max_unity": [
+            5.54,
+            5.4,
+            2.6
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.04,
+            4.25,
+            0.0
+          ],
+          "bounds_max_source": [
+            5.54,
+            6.75,
+            5.4
+          ],
+          "bounds_min_unity": [
+            3.04,
+            0.0,
+            4.25
+          ],
+          "bounds_max_unity": [
+            5.54,
+            5.4,
+            6.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            1.64,
+            2.6,
+            2.4
+          ],
+          "bounds_max_source": [
+            3.04,
+            6.75,
+            5.4
+          ],
+          "bounds_min_unity": [
+            1.64,
+            2.4,
+            2.6
+          ],
+          "bounds_max_unity": [
+            3.04,
+            5.4,
+            6.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.04,
+            2.6,
+            2.4
+          ],
+          "bounds_max_source": [
+            5.54,
+            4.25,
+            5.4
+          ],
+          "bounds_min_unity": [
+            3.04,
+            2.4,
+            2.6
+          ],
+          "bounds_max_unity": [
+            5.54,
+            5.4,
+            4.25
+          ]
         }
       ],
-      "triangle_count": 840,
+      "triangle_count": 1408,
       "bounds_min_source": [
         -7.0,
         -6.79,
@@ -20680,8 +21618,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 64,
-          "triangles": 124,
+          "vertices": 212,
+          "triangles": 416,
           "bounds_min_source": [
             -7.0,
             -6.75,
@@ -20962,35 +21900,35 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 24,
-          "triangles": 68,
+          "vertices": 54,
+          "triangles": 140,
           "bounds_min_source": [
             -6.34,
-            5.57,
+            2.56,
             0.0
           ],
           "bounds_max_source": [
             6.34,
-            6.71,
+            6.75,
             0.48
           ],
           "bounds_min_unity": [
             -6.34,
             0.0,
-            5.57
+            2.56
           ],
           "bounds_max_unity": [
             6.34,
             0.48,
-            6.71
+            6.75
           ],
           "uv0_min": [
             -2.67,
             0.5
           ],
           "uv0_max": [
-            3.855,
-            3.855
+            3.845,
+            3.875
           ],
           "uv2_slot_ids": [
             0
@@ -21002,12 +21940,12 @@
           "surface_kind": "EquipmentSteel",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 232,
-          "triangles": 364,
+          "vertices": 304,
+          "triangles": 568,
           "bounds_min_source": [
             -4.93,
             -3.35,
-            0.49
+            0.0
           ],
           "bounds_max_source": [
             5.19,
@@ -21016,7 +21954,7 @@
           ],
           "bounds_min_unity": [
             -4.93,
-            0.49,
+            0.0,
             -3.35
           ],
           "bounds_max_unity": [
@@ -21110,7 +22048,31 @@
           0.573576
         ]
       },
-      "entrance": null,
+      "entrance": {
+        "threshold_source": [
+          -0.9,
+          5.75,
+          0.0
+        ],
+        "threshold_unity": [
+          -0.9,
+          0.0,
+          5.75
+        ],
+        "outward_source": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "outward_unity": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "clear_width_m": 1.4,
+        "clear_height_m": 2.4,
+        "depth_m": 4.15
+      },
       "collision_bounds": [
         {
           "bounds_min_source": [
@@ -21119,7 +22081,7 @@
             0.0
           ],
           "bounds_max_source": [
-            7.75,
+            -1.6,
             5.75,
             6.6
           ],
@@ -21129,13 +22091,123 @@
             -5.75
           ],
           "bounds_max_unity": [
+            -1.6,
+            6.6,
+            5.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            2.3,
+            -5.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            7.75,
+            5.75,
+            6.6
+          ],
+          "bounds_min_unity": [
+            2.3,
+            0.0,
+            -5.75
+          ],
+          "bounds_max_unity": [
             7.75,
             6.6,
             5.75
           ]
+        },
+        {
+          "bounds_min_source": [
+            -1.6,
+            -5.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            2.3,
+            1.6,
+            6.6
+          ],
+          "bounds_min_unity": [
+            -1.6,
+            0.0,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            2.3,
+            6.6,
+            1.6
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -0.2,
+            3.25,
+            0.0
+          ],
+          "bounds_max_source": [
+            2.3,
+            5.75,
+            6.6
+          ],
+          "bounds_min_unity": [
+            -0.2,
+            0.0,
+            3.25
+          ],
+          "bounds_max_unity": [
+            2.3,
+            6.6,
+            5.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -1.6,
+            1.6,
+            2.4
+          ],
+          "bounds_max_source": [
+            -0.2,
+            5.75,
+            6.6
+          ],
+          "bounds_min_unity": [
+            -1.6,
+            2.4,
+            1.6
+          ],
+          "bounds_max_unity": [
+            -0.2,
+            6.6,
+            5.75
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -0.2,
+            1.6,
+            2.4
+          ],
+          "bounds_max_source": [
+            2.3,
+            3.25,
+            6.6
+          ],
+          "bounds_min_unity": [
+            -0.2,
+            2.4,
+            1.6
+          ],
+          "bounds_max_unity": [
+            2.3,
+            6.6,
+            3.25
+          ]
         }
       ],
-      "triangle_count": 830,
+      "triangle_count": 1398,
       "bounds_min_source": [
         -7.75,
         -5.79,
@@ -21337,8 +22409,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 64,
-          "triangles": 124,
+          "vertices": 212,
+          "triangles": 416,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -21625,27 +22697,27 @@
           "surface_kind": "EquipmentConcrete",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 2.0,
-          "vertices": 24,
-          "triangles": 68,
+          "vertices": 54,
+          "triangles": 140,
           "bounds_min_source": [
             -7.09,
-            4.57,
+            1.56,
             0.0
           ],
           "bounds_max_source": [
             7.09,
-            5.71,
+            5.75,
             0.48
           ],
           "bounds_min_unity": [
             -7.09,
             0.0,
-            4.57
+            1.56
           ],
           "bounds_max_unity": [
             7.09,
             0.48,
-            5.71
+            5.75
           ],
           "uv0_min": [
             -3.045,
@@ -21653,7 +22725,7 @@
           ],
           "uv0_max": [
             4.045,
-            3.355
+            3.375
           ],
           "uv2_slot_ids": [
             0
@@ -21665,12 +22737,12 @@
           "surface_kind": "EquipmentSteel",
           "uv_scheme": "world_metre_projected",
           "meters_per_tile": 1.8,
-          "vertices": 256,
-          "triangles": 400,
+          "vertices": 328,
+          "triangles": 604,
           "bounds_min_source": [
             -6.675,
             4.57,
-            0.48
+            0.0
           ],
           "bounds_max_source": [
             6.575,
@@ -21679,7 +22751,7 @@
           ],
           "bounds_min_unity": [
             -6.675,
-            0.48,
+            0.0,
             4.57
           ],
           "bounds_max_unity": [
@@ -21689,7 +22761,7 @@
           ],
           "uv0_min": [
             -3.208333,
-            0.766667
+            0.5
           ],
           "uv0_max": [
             4.152778,
@@ -21742,5 +22814,5 @@
       ]
     }
   ],
-  "build_signature": "4e181b1d14bc2cec324ffb9c8395d98c2df36420251b03f2060a4205a7f314b6"
+  "build_signature": "671675ad0dcac8c4551deaff1e4bcb524ebe3d0b29d30cfebcf2eeee5acbb9ba"
 }

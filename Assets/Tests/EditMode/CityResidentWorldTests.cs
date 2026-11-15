@@ -86,8 +86,10 @@ namespace BarPromenade.Tests.EditMode
             {
                 if (!CityBusStopWaitPlanner.TryFindNearestNode(plan, lot.SidewalkArrivalPosition, out int node)) continue;
                 if (lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.Residential) homes.Add(node);
-                else if (lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.Industrial) work.Add(node);
             }
+            for (int node = 0; node < plan.Nodes.Count; node++)
+                if (plan.IsPrivateWorkNode(node) && plan.Nodes[node].Id.EndsWith(":inside", StringComparison.Ordinal))
+                    work.Add(node);
             var hillHomes = new HashSet<int>();
             foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
             {
@@ -123,7 +125,7 @@ namespace BarPromenade.Tests.EditMode
                     if (!float.IsPositiveInfinity(world.DistancesTo(home)[workplace])) industrialReachable = true;
                 if (industrialReachable)
                     Assert.That(work.Contains(world.Destination(resident, CityResidentActivity.Work)), Is.True,
-                        "A reachable workplace uses an industrial frontage.");
+                        "A reachable workplace ends behind its industrial threshold.");
             }
             Assert.That(occupiedUphill, Is.True, "Upper residential courts must supply occupied home addresses.");
             AssertConnectedDestinations(world, plan);
@@ -236,7 +238,6 @@ namespace BarPromenade.Tests.EditMode
                     var state = director.GetState(id);
                     Assert.That(state.Vehicle, Is.EqualTo(vehicle));
                     Assert.That(state.Phase, Is.EqualTo(CityResidentJourneyPhase.Riding));
-                    if (!CityResidentLifeRules.HasWorkSchedule(id)) continue;
                     if (state.Activity == CityResidentActivity.Work) workRiders.Add(id);
                     if (state.Activity == CityResidentActivity.ReturningHome || state.Activity == CityResidentActivity.Home)
                         homeRiders.Add(id);

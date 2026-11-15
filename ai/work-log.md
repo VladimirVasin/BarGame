@@ -3,6 +3,16 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-16
+
+Industrial work uses graded staff approaches and bent vestibules. Seed
+balances resident jobs. Route time and bus waits set departure, with
+attendance starting inside. Midblock zebras connect isolated walks.
+Checks passed: `build-city-buildings-3d-model`,
+`LiveCity_IndustrialShiftsUseEveryBuilding`, `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement`.
+Doorway views reviewed. `LiveCity_BothTransferStairsCarryPedestriansBetweenBuses`
+hit the west landing lamp. The map uses the live scheme after ImageGen missed registration.
+
 ## 2026-11-15
 
 Ridge parking joins home and kiosk: authored paving/ramp/curbs, municipal

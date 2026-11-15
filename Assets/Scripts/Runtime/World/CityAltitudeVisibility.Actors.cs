@@ -19,6 +19,16 @@ namespace BarPromenade
         // test even at lowland fog density before changing one of those bodies.
         internal bool CanChangeAmbientBodyAt(Vector3 feet) => sceneCamera != null && IsStreetBodyHidden(feet);
 
+        internal bool CanChangeWorkBodyAt(Vector3 feet, CityBuildingEntranceDescriptor entrance)
+        {
+            if (sceneCamera == null || entrance == null) return false;
+            if (IsStreetBodyHidden(feet)) return true;
+            Quaternion toLocal = Quaternion.Inverse(entrance.Lot.FacadeRotation);
+            return CityIndustrialEntranceGeometry.HidesBody(
+                toLocal * (sceneCamera.transform.position - entrance.Threshold),
+                toLocal * (feet - entrance.Threshold));
+        }
+
         private bool IsStreetBodyHidden(Vector3 feet)
         {
             if (streetViewFrame != Time.frameCount)

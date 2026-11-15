@@ -92,8 +92,7 @@ Repair/publication: [../tools/README.md](../tools/README.md).
   Hillside yards/lit bench paths near pawnshop/bins/booths share plans/contacts.
   2 buses/ring, transfer stairs, stop zebras. 10 seats+3 stands.
   City NPC192/≤36+12 ambient, Home5/2, dogs3/owners2.
-  8 industry sites: roofs/gear/surfaces/task lights;
-  substation/municipal/port workshops remain passive.
+  Eight industrial types with staff entries and shifts. Coastal utilities stay passive.
   First unpaused dock entry starts port→factory→shop supply;
   catch-up spans scene changes, excluding pre-entry time. Three units,
   two cranes, crews and a

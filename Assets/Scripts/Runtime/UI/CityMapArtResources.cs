@@ -148,11 +148,19 @@ namespace BarPromenade
                 foreach (CityRoadPath path in layout.CourtyardPaths)
                 { writer.Write(path.Vertices.Count); foreach (Vector2 point in path.Vertices) Point(writer, point); }
                 writer.Write(-1);
-                var entrances = CityResidentialEntrancePlan.ForLayout(layout).Entrances;
+                var entrances = CityBuildingEntrancePlan.ForLayout(layout).Entrances;
                 writer.Write(entrances.Count);
                 foreach (var entrance in entrances)
                 {
                     Point(writer, entrance.Threshold);
+                    writer.Write(entrance.Points.Count);
+                    foreach (Vector3 point in entrance.Points) Point(writer, point);
+                }
+                var workplaces = CityBuildingEntrancePlan.ForLayout(layout).Workplaces;
+                writer.Write(workplaces.Count);
+                foreach (var entrance in workplaces)
+                {
+                    writer.Write(entrance.WorkplaceId);
                     writer.Write(entrance.Points.Count);
                     foreach (Vector3 point in entrance.Points) Point(writer, point);
                 }

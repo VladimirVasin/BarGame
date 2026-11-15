@@ -329,6 +329,7 @@ namespace BarPromenade
             float best = MaximumNodeDistance * MaximumNodeDistance;
             for (int index = 0; index < plan.Nodes.Count; index++)
             {
+                if (plan.IsPrivateWorkNode(index)) continue;
                 Vector3 offset = plan.Nodes[index].Position - position;
                 offset.y = 0f;
                 float distance = offset.sqrMagnitude;

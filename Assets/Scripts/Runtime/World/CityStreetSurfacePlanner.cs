@@ -1147,56 +1147,65 @@ namespace BarPromenade
                     Vector3 outward = otherPosition - nodePosition;
                     outward.y = 0f;
                     outward.Normalize();
-                    Vector3 crosswalkCenter = nodePosition +
-                        (outward *
-                         (halfRoad + (CrosswalkDepth * 0.5f)));
-                    TrySetRoadDatum(layout, ref crosswalkCenter);
-                    Rect walkable = CreateOrientedRect(
-                        crosswalkCenter,
-                        outward,
-                        CrosswalkDepth,
-                        carriagewayWidth);
-                    walkableRectangles.Add(walkable);
-                    crosswalks.Add(new CityCrosswalkDescriptor(
-                        node,
-                        edge,
-                        walkable,
-                        crosswalkCenter,
-                        outward,
-                        new Vector3(-outward.z, 0f, outward.x)));
-                    markingExclusions.Add(walkable);
+                    Vector3 center = nodePosition + outward * (halfRoad + CrosswalkDepth * .5f);
+                    AddCrossing(node, edge, center, outward);
+                }
+            }
 
-                    for (int stripeIndex = 0;
-                         stripeIndex < CrosswalkStripeCount;
-                         stripeIndex++)
-                    {
-                        float distance = halfRoad +
-                            (((stripeIndex + 0.5f) /
-                              CrosswalkStripeCount) * CrosswalkDepth);
-                        Vector3 center = nodePosition +
-                            (outward * distance);
-                        TrySetRoadDatum(layout, ref center);
-                        center.y += MarkingCenterAboveRoadBase;
-                        Vector3 size = Mathf.Abs(outward.x) > 0.5f
-                            ? new Vector3(
-                                CrosswalkStripeDepth,
-                                MarkingHeight,
-                                carriagewayWidth)
-                            : new Vector3(
-                                carriagewayWidth,
-                                MarkingHeight,
-                                CrosswalkStripeDepth);
-                        var marking = new Bounds(center, size);
-                        crosswalkMarkings.Add(marking);
-                        crosswalkMarkingGeometry.Add(
-                            new RuntimeOrientedBox(
-                                marking.center,
-                                Quaternion.identity,
-                                marking.size));
-                    }
+            if (layout.HasIndustrialShifts)
+            {
+                foreach (RoadEdge edge in IndustrialShiftCrossings)
+                {
+                    if (!edgesWithSidewalks.Contains(edge) || !layout.RoadGeometry.Get(edge).IsStraight ||
+                        layout.ElevationPlan.TryGetSignatureStair(edge, out _))
+                        throw new InvalidOperationException($"Workday crossing {edge} requires two straight pavements.");
+                    Vector3 a = layout.GetNodeWorldPosition(edge.A);
+                    Vector3 b = layout.GetNodeWorldPosition(edge.B);
+                    Vector3 along = Vector3.ProjectOnPlane(b - a, Vector3.up).normalized;
+                    AddCrossing(edge.A, edge, (a + b) * .5f, along);
+                }
+            }
+
+            void AddCrossing(Vector2Int node, RoadEdge edge, Vector3 center, Vector3 along)
+            {
+                TrySetRoadDatum(layout, ref center);
+                Rect walkable = CreateOrientedRect(center, along, CrosswalkDepth, carriagewayWidth);
+                walkableRectangles.Add(walkable);
+                crosswalks.Add(new CityCrosswalkDescriptor(node, edge, walkable, center, along,
+                    new Vector3(-along.z, 0f, along.x)));
+                markingExclusions.Add(walkable);
+
+                bool horizontal = Mathf.Abs(along.x) > .5f;
+                Vector3 size = horizontal ? new Vector3(CrosswalkStripeDepth, MarkingHeight, carriagewayWidth) :
+                    new Vector3(carriagewayWidth, MarkingHeight, CrosswalkStripeDepth);
+                for (int stripe = 0; stripe < CrosswalkStripeCount; stripe++)
+                {
+                    float offset = ((stripe + .5f) / CrosswalkStripeCount - .5f) * CrosswalkDepth;
+                    Vector3 stripeCenter = center + along * offset;
+                    TrySetRoadDatum(layout, ref stripeCenter);
+                    stripeCenter.y += MarkingCenterAboveRoadBase;
+                    crosswalkMarkings.Add(new Bounds(stripeCenter, size));
+                    crosswalkMarkingGeometry.Add(new RuntimeOrientedBox(stripeCenter, Quaternion.identity, size));
                 }
             }
         }
+
+        // Surveyed between opposite sidewalks that were in different components.
+        // Mid-block stripes keep the turning corners and platform approaches free.
+        private static readonly RoadEdge[] IndustrialShiftCrossings =
+        {
+            ShiftCrossing(0, 1, 0, 2), ShiftCrossing(0, 3, 0, 4), ShiftCrossing(0, 6, 0, 7),
+            ShiftCrossing(0, 9, 0, 10), ShiftCrossing(0, 11, 0, 12), ShiftCrossing(1, 0, 1, 1),
+            ShiftCrossing(2, 0, 2, 1), ShiftCrossing(2, 7, 2, 8), ShiftCrossing(2, 11, 2, 12),
+            ShiftCrossing(3, 0, 3, 1), ShiftCrossing(3, 2, 3, 3), ShiftCrossing(3, 3, 3, 4),
+            ShiftCrossing(3, 7, 3, 8), ShiftCrossing(3, 11, 3, 12), ShiftCrossing(4, 0, 4, 1),
+            ShiftCrossing(4, 5, 4, 6), ShiftCrossing(5, 2, 5, 3), ShiftCrossing(5, 9, 5, 10),
+            ShiftCrossing(6, 11, 6, 12), ShiftCrossing(7, 2, 7, 3), ShiftCrossing(9, 4, 9, 5),
+            ShiftCrossing(10, 3, 10, 4), ShiftCrossing(11, 1, 11, 2), ShiftCrossing(11, 3, 11, 4)
+        };
+
+        private static RoadEdge ShiftCrossing(int ax, int az, int bx, int bz) =>
+            new RoadEdge(new Vector2Int(ax, az), new Vector2Int(bx, bz));
 
         /// <summary>
         /// The street edges with pavements, listed under each of their two

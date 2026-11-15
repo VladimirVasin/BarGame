@@ -389,10 +389,20 @@ MonoBehaviour:
     m_Center: {x: 0, y: 7.7999997, z: 0}
     m_Extent: {x: 6.6, y: 0.5999999, z: 6.35}
   colliderBounds:
-  - m_Center: {x: 0, y: 3.6, z: 0}
-    m_Extent: {x: 7, y: 3.6, z: 6.75}
-  hasEntrance: 0
-  localEntranceThreshold: {x: 0, y: 0, z: 0}
+  - m_Center: {x: -3.27, y: 3.6, z: 0}
+    m_Extent: {x: 3.73, y: 3.6, z: 6.75}
+  - m_Center: {x: 5.6800003, y: 3.6, z: 0}
+    m_Extent: {x: 1.3199999, y: 3.6, z: 6.75}
+  - m_Center: {x: 2.41, y: 3.6, z: -2.075}
+    m_Extent: {x: 1.95, y: 3.6, z: 4.675}
+  - m_Center: {x: 3.1100001, y: 3.6, z: 5.5}
+    m_Extent: {x: 1.25, y: 3.6, z: 1.25}
+  - m_Center: {x: 1.16, y: 4.8, z: 4.675}
+    m_Extent: {x: 0.7, y: 2.3999999, z: 2.075}
+  - m_Center: {x: 3.1100001, y: 4.8, z: 3.425}
+    m_Extent: {x: 1.25, y: 2.3999999, z: 0.82500005}
+  hasEntrance: 1
+  localEntranceThreshold: {x: 1.16, y: 0, z: 6.75}
   facadeAttachments:
   - side: Front
     localBounds:
@@ -432,10 +442,10 @@ MonoBehaviour:
   depth: 13.5
   height: 8.4
   unitFactor: 1
-  sourceTriangleCount: 876
-  sourceGeneratorVersion: 4.2.0
+  sourceTriangleCount: 1444
+  sourceGeneratorVersion: 4.3.0
   designId: city_buildings_coastal_v4
-  buildSignature: 4e181b1d14bc2cec324ffb9c8395d98c2df36420251b03f2060a4205a7f314b6
+  buildSignature: 671675ad0dcac8c4551deaff1e4bcb524ebe3d0b29d30cfebcf2eeee5acbb9ba
 --- !u!1 &3465581710104688742
 GameObject:
   m_ObjectHideFlags: 0

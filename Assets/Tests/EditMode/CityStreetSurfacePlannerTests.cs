@@ -312,14 +312,14 @@ namespace BarPromenade.Tests.EditMode
                     "Every entrance front must overlap its continuous public pavement.");
             }
 
-            CityResidentialEntrancePlan residential = CityResidentialEntrancePlan.ForLayout(layout);
+            CityBuildingEntrancePlan residential = CityBuildingEntrancePlan.ForLayout(layout);
             BuildingLot[] houses = layout.BuildingMasses.Where(lot =>
                 lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.Residential).ToArray();
-            Assert.That(residential, Is.SameAs(CityResidentialEntrancePlan.ForLayout(layout)),
+            Assert.That(residential, Is.SameAs(CityBuildingEntrancePlan.ForLayout(layout)),
                 "Access is one immutable plan per layout, shared by City, Home and the map.");
             Assert.That(residential.Entrances.Select(entry => entry.Lot), Is.EquivalentTo(houses),
                 "Every physical residential mass, including rear wings, must have an entrance route.");
-            foreach (CityResidentialEntranceDescriptor entry in residential.Entrances)
+            foreach (CityBuildingEntranceDescriptor entry in residential.Entrances)
             {
                 CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(entry.Lot);
                 Assert.That(Vector3.Distance(entry.Threshold, pose.TransformPoint(

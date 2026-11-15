@@ -596,7 +596,7 @@ namespace BarPromenade
                     .IsOpen(position, forward, pole, right)) return false;
             Vector3 wall = pole + (forward *
                 CityBusStopWorldBuilder.ShelterOffsetAlongLane);
-            if (CityResidentialEntrancePlan.IntersectsPrimaryApproach(layout,
+            if (CityBuildingEntrancePlan.IntersectsPrimaryApproach(layout,
                 CityBusStopWorldBuilder.DescribeFurnitureFootprint(pole, forward, -right))) return false;
             for (int index = 0; index < entrancePoints.Count; index++)
             {

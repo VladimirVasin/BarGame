@@ -22,7 +22,7 @@ namespace BarPromenade.Editor
             "Assets/Resources/City/Buildings";
 
         private const string CatalogRootName = "ROOT_CityBuildings3D";
-        private const string ExpectedGeneratorVersion = "4.2.0";
+        private const string ExpectedGeneratorVersion = "4.3.0";
         private const float ContractTolerance = 0.003f;
         private const float BoundsTolerance = 0.02f;
 
@@ -359,8 +359,8 @@ namespace BarPromenade.Editor
                     manifest.build_signature,
                     prototype.collision_bounds.Select(solid => ConvertSourceBoundsToUnity(
                         solid.bounds_min_source, solid.bounds_max_source)).ToArray(),
-                    ParseDistrict(prototype.district) == CityDistrictKind.Residential,
-                    ParseDistrict(prototype.district) == CityDistrictKind.Residential
+                    CityBuildingAssetProvider.HasExpectedEntrance(ParseDistrict(prototype.district)),
+                    CityBuildingAssetProvider.HasExpectedEntrance(ParseDistrict(prototype.district))
                         ? Vector3FromArray(prototype.entrance.threshold_unity, "entrance threshold")
                         : Vector3.zero);
                 registry.ValidateOrThrow();
@@ -763,24 +763,25 @@ namespace BarPromenade.Editor
         private static void ValidateEntrance(BuildingPrototype prototype, int expectedIndex)
         {
             BuildingEntrance entrance = prototype.entrance;
-            if (ParseDistrict(prototype.district) != CityDistrictKind.Residential)
+            CityDistrictKind district = ParseDistrict(prototype.district);
+            if (!CityBuildingAssetProvider.HasExpectedEntrance(district))
             {
                 if (entrance != null && entrance.HasPayload)
-                    throw new InvalidOperationException("Only residential templates declare collective entrances.");
+                    throw new InvalidOperationException("This building family does not declare an entrance.");
                 return;
             }
             if (entrance == null || !entrance.HasPayload)
-                throw new InvalidOperationException($"City building '{prototype.stable_id}' has no collective entrance.");
+                throw new InvalidOperationException($"City building '{prototype.stable_id}' has no entrance.");
             int variant = CityBuildingAssetProvider.GetExpectedVariantIndex(expectedIndex);
             Vector3 threshold = Vector3FromArray(entrance.threshold_unity, "entrance threshold");
             Vector3 outward = Vector3FromArray(entrance.outward_unity, "entrance outward");
-            if (Vector3.Distance(threshold, CityBuildingAssetProvider.GetExpectedEntranceThreshold(variant)) > ContractTolerance ||
+            if (Vector3.Distance(threshold, CityBuildingAssetProvider.GetExpectedEntranceThreshold(district, variant)) > ContractTolerance ||
                 Vector3.Distance(threshold, ConvertSourceVectorToUnity(entrance.threshold_source)) > ContractTolerance ||
-                Vector3.Distance(outward, CityBuildingAssetProvider.GetExpectedEntranceOutward(variant)) > ContractTolerance ||
+                Vector3.Distance(outward, CityBuildingAssetProvider.EntranceOutward) > ContractTolerance ||
                 Vector3.Distance(outward, ConvertSourceVectorToUnity(entrance.outward_source)) > ContractTolerance ||
                 Mathf.Abs(entrance.clear_width_m - CityBuildingAssetProvider.EntranceClearWidth) > ContractTolerance ||
                 Mathf.Abs(entrance.clear_height_m - CityBuildingAssetProvider.EntranceClearHeight) > ContractTolerance ||
-                Mathf.Abs(entrance.depth_m - CityBuildingAssetProvider.EntranceDepth) > ContractTolerance)
+                Mathf.Abs(entrance.depth_m - CityBuildingAssetProvider.GetExpectedEntranceDepth(district)) > ContractTolerance)
                 throw new InvalidOperationException($"City building '{prototype.stable_id}' entrance metres or axes drifted.");
         }
 

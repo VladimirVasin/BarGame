@@ -173,7 +173,7 @@ namespace BarPromenade.Tests.EditMode
                 CityBuildingPrototypePlacement.ResolveForward(lot),
                 expectedForward);
 
-            if (lot.BuildingVariant > 0)
+            if (lot.BuildingVariant > 0 || CityBuildingAssetProvider.HasExpectedEntrance(lot.District))
             {
                 AssertVariantCollisionAndFoundation(building, lot, registry, expectedPose, foundationDepth);
             }
@@ -363,11 +363,13 @@ namespace BarPromenade.Tests.EditMode
             CityBuildingAssetRegistry registry, CityBuildingPrototypePose pose, float foundationDepth)
         {
             IReadOnlyList<Bounds> solids = registry.ColliderBounds;
-            Assert.That(building.GetComponentsInChildren<Collider>(true), Has.Length.EqualTo(solids.Count));
+            int vestibuleFloors = lot.District == CityDistrictKind.Industrial ? 2 :
+                lot.District == CityDistrictKind.Residential ? 1 : 0;
+            Assert.That(building.GetComponentsInChildren<Collider>(true), Has.Length.EqualTo(solids.Count + vestibuleFloors));
             int groundCount = 0;
             for (int index = 0; index < solids.Count; index++)
             {
-                bool overhead = lot.BuildingVariant == 3 && solids[index].min.y >= 2.5f;
+                bool overhead = solids[index].min.y >= .1f;
                 float extension = overhead ? 0f : foundationDepth;
                 Transform mass = building.Find(CityBuildingPrototypeWorldBuilder.LogicalCollisionObjectName + " " + index);
                 Assert.That(mass, Is.Not.Null);
@@ -388,7 +390,8 @@ namespace BarPromenade.Tests.EditMode
                     AssertSurfaceBinding(foundation.GetComponent<Renderer>(), lot.District, CityBuildingSurfaceKind.Plinth);
                 }
             }
-            Assert.That(lot.CreateCollisionPolygons(), Has.Length.EqualTo(groundCount));
+            if (lot.District != CityDistrictKind.Industrial)
+                Assert.That(lot.CreateCollisionPolygons(), Has.Length.EqualTo(groundCount));
             if (lot.BuildingVariant == 3)
             {
                 Bounds passage = CityBuildingAssetProvider.GetExpectedPassageBounds(lot.District, 3);

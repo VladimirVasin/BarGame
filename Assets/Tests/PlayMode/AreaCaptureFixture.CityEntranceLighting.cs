@@ -64,14 +64,14 @@ namespace BarPromenade.Tests.PlayMode
                 // The road-access plan deliberately excludes hillside houses.
                 // Use the independent inventory of all building lots so this
                 // acceptance cannot repeat the runtime builder's old omission.
-                List<CityResidentialEntranceDescriptor> entrances = ExpectedEntranceLampDoors(city.Layout);
+                List<CityBuildingEntranceDescriptor> entrances = ExpectedEntranceLampDoors(city.Layout);
                 Assert.That(entrances, Is.Not.Empty);
                 var sources = new List<Transform>();
                 var lights = new List<Light>();
                 var claimed = new HashSet<Transform>();
-                CityResidentialEntranceDescriptor capture = null, highest = null;
+                CityBuildingEntranceDescriptor capture = null, highest = null;
                 int fresh = 0, reused = 0;
-                foreach (CityResidentialEntranceDescriptor entrance in entrances)
+                foreach (CityBuildingEntranceDescriptor entrance in entrances)
                 {
                     Transform source = FindEntranceLampSource(city.Night.Atmosphere, entrance, out Light light);
                     Assert.That(claimed.Add(source), Is.True, "Each doorway owns its own fixture: " + entrance.Lot.Cell);
@@ -198,9 +198,9 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static List<CityResidentialEntranceDescriptor> ExpectedEntranceLampDoors(CityLayout layout)
+        private static List<CityBuildingEntranceDescriptor> ExpectedEntranceLampDoors(CityLayout layout)
         {
-            var result = new List<CityResidentialEntranceDescriptor>();
+            var result = new List<CityBuildingEntranceDescriptor>();
             var included = new HashSet<BuildingLot>();
             foreach (BuildingLot lot in layout.BuildingMasses) Add(lot);
             foreach (CityHillsideBuilding house in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings) Add(house.Lot);
@@ -210,15 +210,15 @@ namespace BarPromenade.Tests.PlayMode
             {
                 if (!lot.IsOrdinaryBuilding || lot.District != CityDistrictKind.Residential || !included.Add(lot)) return;
                 CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
-                result.Add(new CityResidentialEntranceDescriptor(lot,
+                result.Add(new CityBuildingEntranceDescriptor(lot,
                     pose.TransformPoint(CityBuildingAssetProvider.GetExpectedEntranceThreshold(lot.BuildingVariant)),
-                    pose.Rotation * CityBuildingAssetProvider.GetExpectedEntranceOutward(lot.BuildingVariant),
+                    pose.Rotation * CityBuildingAssetProvider.EntranceOutward,
                     Array.Empty<Vector3>(), Array.Empty<CityEntranceForecourtPlan>()));
             }
         }
 
         private static void AssertEntranceRegistryInventory(Transform root,
-            IReadOnlyList<CityResidentialEntranceDescriptor> expected)
+            IReadOnlyList<CityBuildingEntranceDescriptor> expected)
         {
             int actual = 0;
             foreach (CityBuildingAssetRegistry building in root.GetComponentsInChildren<CityBuildingAssetRegistry>(true))
@@ -227,7 +227,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(building.HasEntrance, Is.True);
                 Vector3 threshold = building.transform.TransformPoint(building.LocalEntranceThreshold);
                 int matches = 0;
-                foreach (CityResidentialEntranceDescriptor entry in expected)
+                foreach (CityBuildingEntranceDescriptor entry in expected)
                     if (Vector3.Distance(entry.Threshold, threshold) < .05f) matches++;
                 Assert.That(matches, Is.EqualTo(1), "Every actual model entrance must match the independent lot inventory: " + threshold);
                 actual++;
@@ -259,7 +259,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static void CaptureReportedRidgeEntrance(CityGameRoot city,
-            IReadOnlyList<CityResidentialEntranceDescriptor> entrances, IReadOnlyList<Light> lights)
+            IReadOnlyList<CityBuildingEntranceDescriptor> entrances, IReadOnlyList<Light> lights)
         {
             Vector2 reported = new Vector2(-70.8f, -350.2f);
             CityHillsideBuilding nearest = null;
@@ -275,8 +275,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(nearest.Lot.Cell, Is.EqualTo(new Vector2Int(-23, -8)), "Keep the reported west-slope house in the reproduction.");
             Assert.That(distance, Is.LessThan(25f * 25f), "The reported coordinate must identify a nearby hillside entrance.");
             Assert.That(nearest.HasGlazedBay, Is.True, "The reported blue bay must reproduce the omitted west-slope house.");
-            CityResidentialEntranceDescriptor entry = null;
-            foreach (CityResidentialEntranceDescriptor candidate in entrances)
+            CityBuildingEntranceDescriptor entry = null;
+            foreach (CityBuildingEntranceDescriptor candidate in entrances)
                 if (ReferenceEquals(candidate.Lot, nearest.Lot)) { entry = candidate; break; }
             Assert.That(entry, Is.Not.Null);
             Transform source = FindEntranceLampSource(city.Night.Atmosphere, entry, out _);
@@ -320,7 +320,7 @@ namespace BarPromenade.Tests.PlayMode
             CityNightAtmosphere atmosphere = home.ExteriorAtmosphere.ExteriorLighting;
             Assert.That(atmosphere, Is.Not.Null);
             atmosphere.RefreshImmediate();
-            var expected = new List<CityResidentialEntranceDescriptor>();
+            var expected = new List<CityBuildingEntranceDescriptor>();
             HomeExteriorContextPlan context = home.ExteriorContext;
             float radius = HomeExteriorContextPlanner.ViewRadius;
             Vector3 origin = context.PlayerHome.DoorPosition;
@@ -329,7 +329,7 @@ namespace BarPromenade.Tests.PlayMode
             foreach (CityHillsideBuilding house in CityHillsideNeighborhoodPlan.ForLayout(context.Layout).AllBuildings)
                 if (!house.Lot.IsPlayerHome && (window.Overlaps(house.FoundationBounds) || window.Overlaps(house.ApproachBounds)))
                     hillside.Add(house.Lot);
-            foreach (CityResidentialEntranceDescriptor entry in ExpectedEntranceLampDoors(context.Layout))
+            foreach (CityBuildingEntranceDescriptor entry in ExpectedEntranceLampDoors(context.Layout))
             {
                 bool retained = hillside.Contains(entry.Lot);
                 if (!retained)
@@ -339,7 +339,7 @@ namespace BarPromenade.Tests.PlayMode
                 if (!retained) continue;
                 Vector3 threshold = home.ExteriorView.TransformPoint(PlayerHomeBalconyGeometry.ToHomeLocal(context.PlayerHome, entry.Threshold));
                 Vector3 outward = home.ExteriorView.TransformDirection(PlayerHomeBalconyGeometry.ToHomeLocalDirection(context.PlayerHome, entry.Outward));
-                expected.Add(new CityResidentialEntranceDescriptor(entry.Lot, threshold, outward,
+                expected.Add(new CityBuildingEntranceDescriptor(entry.Lot, threshold, outward,
                     Array.Empty<Vector3>(), Array.Empty<CityEntranceForecourtPlan>()));
             }
             Assert.That(hillside.Count, Is.GreaterThan(0), "The retained Home frame must exercise separately built hillside homes.");
@@ -348,7 +348,7 @@ namespace BarPromenade.Tests.PlayMode
             AssertWindowSourceModels(home.ExteriorView.GetComponentsInChildren<CityBuildingAssetRegistry>(),
                 home.ExteriorLighting.WindowLights);
             var claimed = new HashSet<Transform>();
-            foreach (CityResidentialEntranceDescriptor entry in expected)
+            foreach (CityBuildingEntranceDescriptor entry in expected)
             {
                 Transform source = FindEntranceLampSource(atmosphere, entry, out Light light);
                 Assert.That(claimed.Add(source), Is.True, "No Home-frame entrance may borrow another doorway's fixture.");
@@ -377,7 +377,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static Transform FindEntranceLampSource(CityNightAtmosphere atmosphere,
-            CityResidentialEntranceDescriptor entrance, out Light light)
+            CityBuildingEntranceDescriptor entrance, out Light light)
         {
             Transform found = null; light = null;
             Vector3 expected = entrance.Threshold + Vector3.up * CityResidentialEntranceLighting.MountHeight;
@@ -429,7 +429,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static Vector3 FindEntranceBalconyUnderside(CityGameRoot city,
-            CityResidentialEntranceDescriptor entrance)
+            CityBuildingEntranceDescriptor entrance)
         {
             foreach (CityBuildingAssetRegistry building in city.World.Root.GetComponentsInChildren<CityBuildingAssetRegistry>())
             {

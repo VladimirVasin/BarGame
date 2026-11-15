@@ -558,20 +558,15 @@
   earlier states/audio stay. Bounded readout/pause/reset; no clue/new text/lore.
 
 - **Accepted 2026-10-29 — City resident life:**
-  `CityResidentLifeRules`:192 permanent schedules, stable home/work entrances,
-  shops/outings on the graph. 2026-11-12 workers make fixed visits until the home slot.
-  Caps00–06:5/06–10:28/10–17:22/17–22:36/22–24:10,30min ramps, clearance can reduce.
-  ≤36 actors/cache48, one warm step/body; identity follows bus/rest and offscreen
-  absolute time. First13 `city.pedestrian.NN` and existing cast keep allocation order.
-  `CreateForCharacter`/street wardrobe/no apron; donor sit/guard/shove, shared rig/steps;
-  six placed residents stay off streets. Home5/2 of first8. Spatial peers and bounded
-  animation retain collision/time/input through distance/pause/dormancy.
-  Ambient≤12/cache18/combined≤48/target60:40. Looks follow resident signatures.
-  Warm≤3. At12m, four arrival slots including two ambient. Hidden excess retires.
-  Passing sweeps toward lane, followers allow backing through joins; turn into step,
-  kerb .32m, hero/resident priority. Home spurs, frontage circuits, public hero gate.
-  All24FX retain owners and rig/contact shadows; frames reviewed. Cost unmeasured.
-  Ordinary life, story§16/17/21/art§15/16.
+  192 stable IDs and home addresses. Caps 5/28/22/36/10 at 00/06/10/17/22h
+  with half-hour ramps and clearance. Cache48, one warm step/body. First13 IDs
+  and existing cast keep allocation order. Shared rig/steps/sit/guard/shove
+  via `CreateForCharacter`, street wardrobe. Six staged residents stay local.
+  Home5/2 of first8. Ambient≤12/cache18, combined≤48, target60:40.
+  Warm≤3, arrivals per12m≤4/2 ambient. Retire out of sight. Passing sweeps,
+  backing through joins, turns into steps, .32m kerb, hero priority, private
+  home spurs and frontage circuits. Bounded animation and spatial peers keep
+  time/collision/input through pause/dormancy. City effects and contacts reviewed.
 
 - **Accepted 2026-10-29 — residential court functions:**
   User:shared court/spine/open center/wall edges;
@@ -701,18 +696,11 @@
   pins stay separate. Installation on this host belongs to the user.
 
 - **Accepted 2026-10-27 — functional industrial buildings:**
-  User:dry/cold stores,repair/metal/packaging workshops,boiler/compressor,
-  repair garage(8 uses); stronger equipment at3 existing coastal sites.
-  Passive deterministic Blender:distinct roofs/gates/equipment, stocked
-  niches/warm window rows. IDs01–05 kept;06–08 added. Fit-tested variant sets
-  purpose; adjacency/port bias selects uses, no pipe/cargo scatter.
-  3 optional metre-UV roles:shared timber/concrete/steel; purpose changes
-  brick/paint recipes, no new maps/instance mats.
-  Task anchors:fixed/always-lit halos/day≥2/3/bounded selection/lifetime;
-  bounce≤4/air≤4/halo≤24/probes≤2. All24:SSAO/fog/soft shadows/grade kept;
-  no SSGI/SCGI/facade SSR/COLOR/DBuffer rollout. Other shared material/motion/
-  post owners kept(AA:SMAA).
-  Story/text kept; §16/21/art§16; no exception/interaction/gain claim.
+  Eight metre Blender prototypes (IDs01–08) and stronger equipment at three
+  coastal sites. Roofs/gates/stock/windows express use. Fit, adjacency and port
+  bias pick variants. Timber/concrete/steel reuse metre UVs and materials.
+  Fixed task lights and halos, day≥2/3, bounce/air≤4, halo≤24, probes≤2.
+  No pipe/cargo scatter. Story§16/21/art§16. Existing City effects.
 
 - **Accepted architecture exception 2026-10-27 — compact coastal town:**
   Map:Residential east/Industrial west+park; OldTown/Nightlife semantic enums.
@@ -3932,13 +3920,25 @@
   retain City settings. Headlights, sound and interaction follow visible buses.
 
 - **Accepted 2026-11-04 — City resident journeys and background service.**
-  Every ordinary resident keeps one home address. Worker agendas include a fixed
-  workplace. Walking competes with a transit itinerary including access, expected
-  wait, travel, an optional transfer and egress. Service commits the actual person
-  and destination to one vehicle. Distant visits release seats before boarding.
-  A scene-entry checkpoint captures residents and vehicle phases. Waking the City
-  merges historical service calls in time order; long jumps reconstruct the last day.
-  Staged workers retain their existing workplace activity owners.
+  Walk competes with transit including access, expected wait, ride, transfer
+  and egress. Actual service binds identity/seat/destination. Distant visits
+  alight before boarding. Checkpoint stores residents and vehicles. Wake merges
+  service calls by time. Long jumps reconstruct at most a day.
+
+- **Accepted 2026-11-15 — industrial shifts MVP.**
+  Stable seed assigns 192 residents evenly across all workplace masses, rear
+  included. Staged roles stay local. Starts 07/08/09, eight hours. ETA plus
+  margin gives departure. Bus legs allow a full headway. Early arrivals wait
+  inside, late arrivals keep end.
+  Physical steel opening, graded spur and bent concrete floor share Blender
+  metres/collision/map. Staff enter and leave past the opaque turn. Show
+  bodies only as needed, stagger departures, preserve pause/return/checkpoint.
+  Midblock crossings join the previously separate sidewalks used by work and home.
+  Shift state accounts for work. No lunch schedule or new story/text (§16/21).
+  FX: finite bounce/SSAO/fog/air/Soft/grade. Probes, road SSR, wetness and the
+  shared atlas. Chamfer joints by material. Water/vertex colour/wind/particles/
+  rim/outlines retain scope. Bloom/focus/SMAA/vignette/grain/flare/blur/lens
+  use City settings. No facade SSR or SSGI/SCGI. Cost unmeasured.
 
 - **Accepted — Route 01 driver and sprung presentation:** The separate passive
   `CityBusDriver3D` uses `Player3DLit`, the exact 31-bone rig and a normal

@@ -17,6 +17,7 @@ namespace BarPromenade
         public const float CrosswalkChoiceProbability = 0.5f;
 
         private const float GeometryTolerance = 0.0001f;
+        private const float WorkplaceSidewalkReach = 1.15f;
 
         private static readonly Vector2Int[] CardinalDirections =
         {
@@ -140,11 +141,49 @@ namespace BarPromenade
             }
             BuildHillsidePaths(layout, streetSurfacePlan, graph);
             if (supportsCrosswalkNavigation) BuildPlatformCrossings(layout, streetSurfacePlan, graph);
+            if (layout.HasIndustrialShifts)
+                BuildWorkplacePaths(layout, streetSurfacePlan, graph);
             return graph.CreatePlan(
                 layout.Seed,
                 populationSeed,
                 stableSeed,
                 terrace.IsEnabled ? layout : null);
+        }
+
+        private static void BuildWorkplacePaths(CityLayout layout, CityStreetSurfacePlan streets, GraphBuilder graph)
+        {
+            CityBuildingEntrancePlan entrances = CityBuildingEntrancePlan.ForLayout(layout);
+            foreach (CityBuildingEntranceDescriptor entrance in entrances.Workplaces)
+            {
+                string id = entrance.WorkplaceId;
+                var points = entrance.Points;
+                Vector3 street = points[points.Count - 1];
+                int previous = graph.SplitWorkplaceSidewalk(id + ":gate", XZ(street),
+                    p => streets.SupportPlan.TrySampleTop(p, FootstepGroundKind.Stone, out float top) ? top : street.y);
+                for (int i = points.Count - 1; i >= 0; i--)
+                    Join(id + ":approach:" + i, points[i]);
+                Join(id + ":bend", entrance.Bend);
+                Join(entrance.InteriorNodeId, entrance.Interior);
+                graph.RetainEntranceTerminal(previous);
+
+                void Join(string name, Vector3 point)
+                {
+                    Vector3 from = graph.Nodes[previous].Position;
+                    if ((XZ(from) - XZ(point)).sqrMagnitude < .0001f) return;
+                    int next = graph.AddNode(name, point, false);
+                    var path = new CityRoadPath(new[] { XZ(from), XZ(point) });
+                    graph.AddLink(name + ":walk", previous, next, CityPedestrianLinkKind.WorkEntrance,
+                        false, path, Height);
+                    previous = next;
+
+                    float Height(Vector2 p)
+                    {
+                        if (entrances.TrySampleTop(p, out float y)) return y;
+                        if (streets.SupportPlan.TrySampleTop(p, FootstepGroundKind.Stone, out y)) return y;
+                        return Mathf.Lerp(from.y, point.y, path.Project(p).DistanceAlong / path.Length);
+                    }
+                }
+            }
         }
 
         private static void BuildPlatformCrossings(CityLayout layout, CityStreetSurfacePlan streets, GraphBuilder graph)
@@ -1420,6 +1459,10 @@ namespace BarPromenade
 
             public int SplitTerraceStreetAt(string id, Vector2 arrival, Func<Vector2, float> sampleHeight) =>
                 SplitWalkingPathAt(id, CityPedestrianLinkKind.Sidewalk, "sidewalk:", arrival, sampleHeight, 8f * 8f);
+
+            public int SplitWorkplaceSidewalk(string id, Vector2 arrival, Func<Vector2, float> sampleHeight) =>
+                SplitWalkingPathAt(id, CityPedestrianLinkKind.Sidewalk, "sidewalk:", arrival, sampleHeight,
+                    WorkplaceSidewalkReach * WorkplaceSidewalkReach);
 
             public void ExcludeTerraceGround(CityTerraceDistrictPlan terrace)
             {

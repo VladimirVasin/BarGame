@@ -314,7 +314,7 @@ namespace BarPromenade
             // The player's surveyed shell is a solid 13 x 12 m body with a
             // contextual exterior door. Ordinary apartment wings and their
             // recessed entrance probes belong only to their own prototype.
-            if (!lot.IsPlayerHome && (lot.BuildingVariant > 0 || lot.District == CityDistrictKind.Residential))
+            if (!lot.IsPlayerHome && (lot.BuildingVariant > 0 || CityBuildingAssetProvider.HasExpectedEntrance(lot.District)))
             {
                 for (int index = 0; index < registry.ColliderBounds.Count; index++)
                 {
@@ -369,7 +369,7 @@ namespace BarPromenade
             BuildingLot lot,
             float foundationDepth)
         {
-            if (!lot.IsPlayerHome && (lot.BuildingVariant > 0 || lot.District == CityDistrictKind.Residential))
+            if (!lot.IsPlayerHome && (lot.BuildingVariant > 0 || CityBuildingAssetProvider.HasExpectedEntrance(lot.District)))
             {
                 CityBuildingPrototypePose pose =
                     CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
@@ -399,6 +399,22 @@ namespace BarPromenade
                     floor.AddComponent<BoxCollider>().size = new Vector3(CityBuildingAssetProvider.EntranceClearWidth,
                         floorThickness, CityBuildingAssetProvider.EntranceDepth);
                     FootstepGround.Stamp(floor, FootstepGroundKind.Stone);
+                }
+                if (lot.District == CityDistrictKind.Industrial)
+                {
+                    Vector3 threshold = CityIndustrialEntranceGeometry.Threshold(lot.BuildingVariant);
+                    for (int section = 0; section < 2; section++)
+                    {
+                        Rect floorBounds = CityIndustrialEntranceGeometry.Floor(threshold, section);
+                        const float thickness = .12f;
+                        var floor = new GameObject("Industrial Vestibule Floor " + section);
+                        floor.transform.SetParent(parent, false);
+                        floor.transform.localPosition = pose.TransformPoint(new Vector3(
+                            floorBounds.center.x, -thickness * .5f, floorBounds.center.y));
+                        floor.transform.localRotation = pose.Rotation;
+                        floor.AddComponent<BoxCollider>().size = new Vector3(floorBounds.width, thickness, floorBounds.height);
+                        FootstepGround.Stamp(floor, FootstepGroundKind.Stone);
+                    }
                 }
                 return;
             }

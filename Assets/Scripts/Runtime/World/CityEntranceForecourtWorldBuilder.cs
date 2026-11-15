@@ -11,6 +11,20 @@ namespace BarPromenade
             HomeExteriorContextPlan home=null)
         {
             var mesh=new SurfaceMesh(home);
+            AddForecourt(mesh, plan);
+            return mesh.Finish(name,parent,home==null,31);
+        }
+
+        internal static GameObject Build(string name, Transform parent, IReadOnlyList<CityEntranceForecourtPlan> plans,
+            HomeExteriorContextPlan home)
+        {
+            var mesh = new SurfaceMesh(home);
+            foreach (CityEntranceForecourtPlan plan in plans) AddForecourt(mesh, plan);
+            return mesh.Finish(name, parent, home == null, 31);
+        }
+
+        private static void AddForecourt(SurfaceMesh mesh, CityEntranceForecourtPlan plan)
+        {
             for(int row=0;row<plan.Rows-1;row++)
             for(int column=0;column<plan.Columns-1;column++)
             {
@@ -29,7 +43,6 @@ namespace BarPromenade
                 Vector3 outside=(plan.Top[a]+plan.Top[b])*.5f-plan.Bounds.center;outside.y=0f;
                 mesh.Face(new[]{plan.Top[a],plan.Top[b],plan.Bottom[b],plan.Bottom[a]},outside);
             }
-            return mesh.Finish(name,parent,home==null,31);
         }
 
         internal static GameObject BuildHomeSidewalks(Transform parent,HomeExteriorContextPlan home,

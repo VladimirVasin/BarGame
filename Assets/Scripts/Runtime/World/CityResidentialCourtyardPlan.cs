@@ -300,7 +300,7 @@ namespace BarPromenade
         private sealed class GroupContext
         {
             internal readonly CityLayout Layout;
-            internal readonly CityResidentialEntrancePlan Entrances;
+            internal readonly CityBuildingEntrancePlan Entrances;
             internal readonly List<Vector2[]> Bodies = new List<Vector2[]>();
             internal readonly List<Vector2[]> Routes = new List<Vector2[]>();
             internal readonly List<Bounds> Solids;
@@ -315,7 +315,7 @@ namespace BarPromenade
                 new Dictionary<CityCourtyardBlock, FootprintIndex>();
             internal GroupContext(CityLayout layout)
             {
-                Layout = layout; Entrances = CityResidentialEntrancePlan.ForLayout(layout);
+                Layout = layout; Entrances = CityBuildingEntrancePlan.ForLayout(layout);
                 foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(layout).Sites)
                     ProtectedGround.Add(kiosk.ReservedBounds);
                 CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
@@ -332,7 +332,7 @@ namespace BarPromenade
                 foreach (BuildingLot mass in layout.BuildingMasses)
                     if (mass.HasBuilding || mass.IsCafe) Bodies.AddRange(mass.CreateCollisionPolygons());
                 foreach (CityRoadPath route in layout.CourtyardPaths) Routes.AddRange(route.Ribbon(1.5f));
-                foreach (CityResidentialEntranceDescriptor entrance in Entrances.Entrances)
+                foreach (CityBuildingEntranceDescriptor entrance in Entrances.Entrances)
                     foreach (Rect footprint in entrance.Footprints) Routes.Add(CityRoadPolygon.Rectangle(footprint));
                 foreach (Vector2Int cell in layout.PrimaryLandmarkCells.Values) ProtectedCells.Add(cell);
                 foreach (BuildingLot lot in layout.BuildingLots)
@@ -491,8 +491,8 @@ namespace BarPromenade
                             service.Rotation, -1.25f, -.625f, 1.25f, .625f),
                             prefix + "-sheltered", CityResidentialCourtyardSurfaceKind.Concrete, true);
                     }
-                    CityResidentialEntranceDescriptor entrance = null;
-                    foreach (CityResidentialEntranceDescriptor candidate in context.Entrances.Entrances)
+                    CityBuildingEntranceDescriptor entrance = null;
+                    foreach (CityBuildingEntranceDescriptor candidate in context.Entrances.Entrances)
                         if (ReferenceEquals(candidate.Lot, wall.Owner)) { entrance = candidate; break; }
                     if (entrance != null) AddEntrance(layout, context.Solids, block, entrance, prefix, props, surfaces);
                     var circulation = new List<Vector3>();
@@ -819,7 +819,7 @@ namespace BarPromenade
         }
 
         private static void AddEntrance(CityLayout layout, IReadOnlyList<Bounds> existingSolids,
-            CityCourtyardBlock block, CityResidentialEntranceDescriptor entrance, string prefix,
+            CityCourtyardBlock block, CityBuildingEntranceDescriptor entrance, string prefix,
             List<CityResidentialCourtyardPropDescriptor> props, List<CityResidentialCourtyardSurfaceDescriptor> surfaces)
         {
             Quaternion rotation = Quaternion.LookRotation(entrance.Outward, Vector3.up);
@@ -888,7 +888,7 @@ namespace BarPromenade
         private static bool FixtureClear(CityLayout layout, Rect footprint,
             IReadOnlyList<Bounds> existingSolids, bool blocking)
         {
-            if (CityResidentialEntrancePlan.IntersectsReservedApproach(layout, footprint)) return false;
+            if (CityBuildingEntrancePlan.IntersectsReservedApproach(layout, footprint)) return false;
             foreach (Bounds solid in existingSolids)
                 if (footprint.Overlaps(Rect.MinMaxRect(solid.min.x, solid.min.z, solid.max.x, solid.max.z))) return false;
             foreach (BuildingLot mass in layout.BuildingMasses)
@@ -971,7 +971,7 @@ namespace BarPromenade
         }
         private static bool TryTop(CityLayout layout, Vector2 point, out float top)
         {
-            if (CityResidentialEntrancePlan.TrySampleCachedTop(layout, point, out top)) return true;
+            if (CityBuildingEntrancePlan.TrySampleCachedTop(layout, point, out top)) return true;
             return CityTerrainSurfacePlan.TrySampleGroundTop(layout, point, out top, out _);
         }
         private static bool Covered(IReadOnlyList<Vector2[]> ground, Rect footprint)

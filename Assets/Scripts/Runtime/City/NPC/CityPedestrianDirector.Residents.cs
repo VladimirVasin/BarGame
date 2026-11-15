@@ -166,8 +166,11 @@ namespace BarPromenade
                     (actor.MotionState != CityPedestrianMotionState.Walking &&
                      actor.MotionState != CityPedestrianMotionState.WaitingAtDestination &&
                      actor.MotionState != CityPedestrianMotionState.RouteEnded);
-                if (!activityOwned && (squaredDistance > DespawnDistance * DespawnDistance ||
-                    hidden && (indoors || ActiveCount > CurrentActiveLimit)) && CanChangeStreetBodyAt(actor.Position))
+                bool atWork = indoors && journeys != null &&
+                    journeys.GetState(resident).Activity == CityResidentActivity.Work &&
+                    StreetVisibility != null && StreetVisibility.CanChangeWorkBodyAt(actor.Position, residentWorld.WorkEntrance(resident));
+                if (!activityOwned && (atWork || (squaredDistance > DespawnDistance * DespawnDistance ||
+                    hidden && (indoors || ActiveCount > CurrentActiveLimit)) && CanChangeStreetBodyAt(actor.Position)))
                     ReleaseActor(i);
             }
             kioskCourt?.AdvanceSpeech(deltaTime, day, minute);
@@ -198,6 +201,7 @@ namespace BarPromenade
             double minute = GameSessionState.GameTimeOfDayMinutes;
             bool nearCourt = IsNearKioskCourt;
             bool chosenAtCourt = false;
+            bool chosenLeavingWork = false;
             for (int offset = 0; offset < CityResidentLifeRules.ResidentCount; offset++)
             {
                 int id = (residentCursor + offset) % CityResidentLifeRules.ResidentCount;
@@ -210,8 +214,11 @@ namespace BarPromenade
                 if (settledKioskOnly && !atCourt) continue;
                 if (kioskRegular && !atCourt && kioskCourt.IsCourtFloor(sample.Position)) continue;
                 float minimum = atCourt && allowNear ? 0f : kioskVisitor ? 4f * 4f : minimumSquared;
-                if (distance < minimum || distance > MaximumSpawnDistance * MaximumSpawnDistance) continue;
-                if (!allowNear)
+                bool leavingWork = distance < minimum && plan.IsPrivateWorkNode(sample.FromNode) &&
+                    journeys != null && journeys.IsLeavingWork(id) && StreetVisibility != null &&
+                    StreetVisibility.CanChangeWorkBodyAt(sample.Position, residentWorld.WorkEntrance(id));
+                if ((!leavingWork && distance < minimum) || distance > MaximumSpawnDistance * MaximumSpawnDistance) continue;
+                if (!allowNear && !leavingWork)
                 {
                     bool closeVisit = kioskVisitor && distance < minimumSquared && StreetVisibility != null;
                     if (closeVisit ? !StreetVisibility.CanChangeAmbientBodyAt(sample.Position) : !CanChangeStreetBodyAt(sample.Position)) continue;
@@ -219,11 +226,12 @@ namespace BarPromenade
                 if (!HasResidentClearance(sample, atCourt)) continue;
                 uint priority = CityResidentLifeRules.StreetPriority(id, day, plan.PopulationSeed);
                 if (nearCourt) priority = priority / 4u + (atCourt ? 0u : kioskVisitor ? 0x40000000u : 0x80000000u);
-                if (best >= 0 && priority >= bestPriority) continue;
+                if (best >= 0 && (leavingWork == chosenLeavingWork ? priority >= bestPriority : !leavingWork)) continue;
                 best = id;
                 chosen = sample;
                 bestPriority = priority;
                 chosenAtCourt = atCourt;
+                chosenLeavingWork = leavingWork;
             }
             if (best < 0) return false;
             Physics.SyncTransforms();

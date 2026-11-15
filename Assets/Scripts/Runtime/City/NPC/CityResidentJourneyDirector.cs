@@ -46,6 +46,7 @@ namespace BarPromenade
             if (lines == null || waitPlans == null || waitPlans.Count != lines.Count)
                 throw new ArgumentException("Each line needs its own wait plan.");
             planner = new CityResidentTransitPlanner(world, lines, waitPlans);
+            world.EstimateWorkCommutes(planner);
             seats = new int[lines.Count * 2, Capacity];
             ClearSeats();
             world.Journeys = this;
@@ -70,6 +71,26 @@ namespace BarPromenade
 
         public bool IsStreetPresented(int id) => presented[id];
         public int RiderAt(int vehicle, int slot) => seats[vehicle, slot];
+
+        public bool IsWorking(int id)
+        {
+            ref Resident resident = ref residents[id];
+            if (resident.Phase != CityResidentJourneyPhase.AtDestination ||
+                resident.Schedule.Activity != CityResidentActivity.Work ||
+                world.Workday(id) is not CityResidentWorkday day) return false;
+            double shiftDay = Math.Round((resident.Schedule.StartedAt - day.Departure) / CityResidentLifeRules.MinutesPerDay);
+            double midnight = shiftDay * CityResidentLifeRules.MinutesPerDay;
+            return now >= midnight + day.ShiftStart && now < midnight + day.ShiftEnd;
+        }
+
+        internal bool IsLeavingWork(int id)
+        {
+            ref Resident resident = ref residents[id];
+            return (resident.Phase == CityResidentJourneyPhase.Walking ||
+                resident.Phase == CityResidentJourneyPhase.ApproachingStop) &&
+                resident.Schedule.Activity != CityResidentActivity.Work &&
+                world.WorkEntrance(id) != null && resident.From == world.Workplace(id).PavementNode;
+        }
 
         internal void RequireKioskWalkIn(bool required)
         {
@@ -332,6 +353,10 @@ namespace BarPromenade
             r.Leg = trip.First;
             r.Transfer = trip.Second;
             r.HasTransfer = trip.LegCount == 2;
+            // Give the presentation a short opportunity to materialize at the
+            // occluded inside point before the background walker reaches the bend.
+            if (schedule.Activity != CityResidentActivity.Work &&
+                world.WorkEntrance(id) != null && from == world.Workplace(id).PavementNode) start += 1d;
             BeginWalk(id, from, trip.LegCount == 0 ? r.Goal : planner.Node(r.Leg.Line, r.Leg.Board),
                 start, trip.LegCount > 0);
         }
@@ -406,7 +431,10 @@ namespace BarPromenade
         private CityResidentLifeSample Schedule(int id, double minute)
         {
             int day = (int)Math.Floor(minute / CityResidentLifeRules.MinutesPerDay);
-            return world.Schedule(id, day, minute - day * (double)CityResidentLifeRules.MinutesPerDay);
+            CityResidentLifeSample schedule = world.Schedule(id, day, minute - day * (double)CityResidentLifeRules.MinutesPerDay);
+            if (schedule.EndsAt <= minute)
+                throw new InvalidOperationException($"Resident {id} has an expired schedule at {minute:R}.");
+            return schedule;
         }
 
         private void ClearSeats()

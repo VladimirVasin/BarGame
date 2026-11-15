@@ -44,7 +44,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City ground | Height-aware joints, sectors and local grave/sand. | `CityGroundSurfaceSystem`, `GroundJointTopology` | Current |
 | Construction joints | Metric edges and thresholds. | `RuntimePrimitiveFactory`, `interior_kit.py` | Current |
 | City street support | Blender topology joins road, pavement and terrain. | `CityStreetSupportPlan`, `CityTerrainStreetBoundaryPlan`, `CityStreetSurfaceWorldBuilder` | Current |
-| City Blender ordinary buildings | Work8;all housing entries:fixed lamps;passages:graffiti/utilities/local faults. | `CityBuilding*`, `CityCoveredPassage*`, `CityResidentialEntrance*` | Current |
+| City Blender ordinary buildings | Eight industrial types with staff vestibules. Housing lamps and covered passages. | `CityBuilding*`, `CityIndustrialEntranceGeometry`, `CityCoveredPassage*` | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | Residential laundry | Residual L-shell; silent worker folds/carries the same cloth/basket; enamel sign/shared light/hum. | `CityLaundry{Plan,AssetProvider,Controller,WorldBuilder}`, `build-city-laundry-3d-model.py` | Current |
 | Residential dog park | Residual fenced yard; three articulated dogs, two permanent owners; open entry and local voices. | `CityDogPark{Plan,AssetProvider,Controller,WorldBuilder}`, `CityDogPose`, `CityDogActivity` | Current |
@@ -135,7 +135,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Central Park surfaces | The divided park uses shared gravel, paths and bridge geometry from its pure surface plan. | `CityParkSurfaceAppearance`, `CityWorldBuilder` | Current |
 | Pedestrian personal space | Above alcohol `60`: guarding palm; above `80`: close shove. | `CityPedestrianPersonalSpace{Rules,Controller}`, `PlayerMotor` | Current |
 | Pedestrian street insults | Insult responses need the authored proximity/facing gates; the twenty-line bag deals once a round, surviving reloads. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
-| City/Home pedestrians | 192 itineraries, ≤36 street bodies + ≤12 ambient. Street target60/40. Home5/2. | `CityResidentJourneyDirector`, `CityPedestrianDirector`, `CityAmbientPedestrians` | Current |
+| City/Home pedestrians | 192 assigned shifts and commutes. City ≤36 residents + ≤12 ambient. Home 5/2. | `CityResidentJourneyDirector`, `CityPedestrianDirector`, `CityAmbientPedestrians` | Current |
 | NPC Human V2 anatomy, appearance and visibility | Shared rigs; joint fields/volume and shaped hands/clothes retain UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `CharacterJointDeformation` | Current |
 | City district buses | Two/ring,shared transfers. Gap:no Home service/live map buses. | `City{District,Hillside}BusPlanner`, `CityBus{Director,Actor,Factory}` | Partial |
 | Bus stop lighting | City/Home perimeter strip/apron;fixed daylight;bounded soft-shadow fades. | `CityBusStopLighting`, `CityNightAtmosphere` | Current |

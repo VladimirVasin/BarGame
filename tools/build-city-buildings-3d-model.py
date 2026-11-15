@@ -61,10 +61,15 @@ from city_building_coplanarity import (  # noqa: E402
     find_near_coplanar_visible_overlaps,
     validate_coplanarity_audit_contract,
 )
-from city_industrial_parts import OPTIONAL_ROLES  # noqa: E402
+from city_industrial_parts import (  # noqa: E402
+    OPTIONAL_ROLES, ENTRANCE_X as WORK_ENTRANCE_X,
+    ENTRANCE_HALF_WIDTH as WORK_ENTRANCE_HALF_WIDTH,
+    ENTRANCE_HEIGHT as WORK_ENTRANCE_HEIGHT,
+    ENTRANCE_DEPTH as WORK_ENTRANCE_DEPTH,
+)
 
 
-GENERATOR_VERSION = "4.2.0"
+GENERATOR_VERSION = "4.3.0"
 DESIGN_ID = "city_buildings_coastal_v4"
 DISPLAY_NAME = "City Buildings 3D Prototype Catalog"
 FBX_ASSET_PATH = "Assets/City/Models/CityBuildings3D.fbx"
@@ -753,6 +758,18 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
                             if any(all(a[axis] < probe[axis] < b[axis] for axis in range(3))
                                    for a, b in solids):
                                 problems.append(f"{prototype.stable_id} entrance is blocked by collision")
+        elif prototype.district == "Industrial":
+            variant = int(prototype.stable_id[-2:])
+            if threshold != (WORK_ENTRANCE_X[variant - 1], prototype.depth_m * .5, 0.):
+                problems.append(f"{prototype.stable_id} lost its staff entrance")
+            else:
+                for dx, depths in ((-.60, (.1, 1., 2.8, 4.)), (.60, (.1, 1., 2.8, 4.)),
+                                   (2.65, (2.6, 3.32, 4.))):
+                    for depth in depths:
+                        for z in (.1, 1.1, 2.3):
+                            probe = (threshold[0] + dx, threshold[1] - depth, z)
+                            if any(all(a[axis] < probe[axis] < b[axis] for axis in range(3)) for a, b in solids):
+                                problems.append(f"{prototype.stable_id} staff route is blocked by collision")
         elif threshold is not None:
             problems.append(f"{prototype.stable_id} unexpectedly declares a residential entrance")
         if not solids:
@@ -767,7 +784,7 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
             # The rear-right cutout must remain a real empty footprint, rather
             # than one AABB copied from the overall renderer envelope.
             probe = (prototype.frontage_width_m * 0.25, -prototype.depth_m * 0.25, 1.0)
-            if (prototype.district != "Residential" and len(solids) != 2) or any(all(minimum[axis] <= probe[axis] <= maximum[axis]
+            if any(all(minimum[axis] <= probe[axis] <= maximum[axis]
                                          for axis in range(3)) for minimum, maximum in solids):
                 problems.append(f"{prototype.stable_id} fills its open corner with collision")
         if prototype.grammar == "ThroughPassage":
@@ -779,7 +796,7 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
                     if any(all(minimum[axis] <= probe[axis] <= maximum[axis]
                                for axis in range(3)) for minimum, maximum in solids):
                         problems.append(f"{prototype.stable_id} passage has an obstruction")
-            if (prototype.district != "Residential" and len(solids) != 3) or sum(minimum[2] >= clearance - 1e-5
+            if sum(minimum[2] >= clearance - 1e-5
                                      for minimum, _ in solids) != 1:
                 problems.append(f"{prototype.stable_id} passage must have two piers and a lintel")
 
@@ -805,9 +822,9 @@ def entrance_record(prototype: PrototypeSpec) -> dict | None:
         "threshold_unity": source_to_unity(threshold),
         "outward_source": [0., 1., 0.],
         "outward_unity": [0., 0., 1.],
-        "clear_width_m": ENTRANCE_CLEAR_WIDTH,
-        "clear_height_m": ENTRANCE_CLEAR_HEIGHT,
-        "depth_m": ENTRANCE_DEPTH,
+        "clear_width_m": 2 * WORK_ENTRANCE_HALF_WIDTH if prototype.district == "Industrial" else ENTRANCE_CLEAR_WIDTH,
+        "clear_height_m": WORK_ENTRANCE_HEIGHT if prototype.district == "Industrial" else ENTRANCE_CLEAR_HEIGHT,
+        "depth_m": WORK_ENTRANCE_DEPTH if prototype.district == "Industrial" else ENTRANCE_DEPTH,
     }
 
 

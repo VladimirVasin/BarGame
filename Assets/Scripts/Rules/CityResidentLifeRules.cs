@@ -30,6 +30,33 @@ namespace BarPromenade
         }
     }
 
+    public readonly struct CityResidentWorkday
+    {
+        public const int ShiftLength = 8 * 60;
+        public const double MinutesBetweenDepartures = 3d;
+
+        public int ShiftStart { get; }
+        public int ShiftEnd => ShiftStart + ShiftLength;
+        public double ExpectedTripMinutes { get; }
+        public double ExpectedReturnMinutes { get; }
+        public double Departure => ShiftStart - ExpectedTripMinutes - Math.Max(10d, .15d * ExpectedTripMinutes);
+        public double Release { get; }
+
+        public CityResidentWorkday(int shiftStart, int exitOrder, double tripMinutes, double returnMinutes)
+        {
+            if (shiftStart < 0 || shiftStart >= CityResidentLifeRules.MinutesPerDay || exitOrder < 0)
+                throw new ArgumentOutOfRangeException();
+            ShiftStart = shiftStart;
+            ExpectedTripMinutes = tripMinutes;
+            ExpectedReturnMinutes = returnMinutes;
+            Release = shiftStart + ShiftLength + exitOrder * MinutesBetweenDepartures;
+            if (double.IsNaN(tripMinutes) || double.IsInfinity(tripMinutes) || tripMinutes < 0d ||
+                double.IsNaN(returnMinutes) || double.IsInfinity(returnMinutes) || returnMinutes < 0d ||
+                Departure + CityResidentLifeRules.MinutesPerDay <= Release)
+                throw new ArgumentOutOfRangeException(nameof(tripMinutes), "Commute must leave time between shifts.");
+        }
+    }
+
     /// <summary>
     /// Stateless daily destinations for permanent residents. Runtime owns the
     /// actual journey and presentation; these rules never create an interior,
@@ -185,13 +212,50 @@ namespace BarPromenade
             double leisure = start + 975 + offset * .6d;
             // Leave individually before the cutoff, allowing the longest walk
             // from the rear table to clear the court before 23:00.
-            int departureSlot = (place + routineDay % KioskCourtCapacity + KioskCourtCapacity) % KioskCourtCapacity;
-            double leave = start + KioskLastOrderMinute + 6 + departureSlot * 7 + (Hash(resident, seed, 0x4B494F53u) % 3u);
+            double leave = start + KioskDeparture(resident, place, routineDay, seed);
             double home = leave + 85d;
             if (absolute < leisure) return new(CityResidentActivity.Work, CityResidentActivity.Home, work, leisure);
             if (absolute < leave) return new(CityResidentActivity.Leisure, CityResidentActivity.Work, leisure, leave);
             if (absolute < home) return new(CityResidentActivity.ReturningHome, CityResidentActivity.Leisure, leave, home);
             return new(CityResidentActivity.Home, CityResidentActivity.ReturningHome, home, work + MinutesPerDay);
+        }
+
+        public static CityResidentLifeSample EvaluateWorkday(int resident, int day, double minute, int seed,
+            CityResidentWorkday workday, int kioskPlace = -1)
+        {
+            ValidateResident(resident);
+            ValidateMinute(minute);
+            if (day < 0 || kioskPlace < -1 || kioskPlace >= KioskCourtCapacity) throw new ArgumentOutOfRangeException();
+            double now = day * (double)MinutesPerDay + minute;
+            int shiftDay = workday.Departure < 0d ? day + 1 : day;
+            if (now < shiftDay * (double)MinutesPerDay + workday.Departure) shiftDay--;
+            double midnight = shiftDay * (double)MinutesPerDay;
+            double depart = midnight + workday.Departure;
+            double release = midnight + workday.Release;
+            // Use the same timestamp when ending the old interval and starting the new one.
+            double nextDeparture = (midnight + MinutesPerDay) + workday.Departure;
+            bool kiosk = kioskPlace >= 0;
+            int cohort = resident % 8;
+            int offset = ScheduleOffsetMinutes(resident, seed);
+            CityResidentActivity evening = kiosk || cohort < 3 ? CityResidentActivity.Leisure :
+                cohort < 7 ? CityResidentActivity.Shopping : CityResidentActivity.Walking;
+            double returnMinute = kiosk ? KioskDeparture(resident, kioskPlace, shiftDay, seed) :
+                cohort < 3 ? 1230 + offset :
+                cohort < 6 ? 1170 + offset : 1320 + offset;
+            // Preserve home before the next departure even if its lead crosses midnight.
+            double returning = Math.Max(release, Math.Min(midnight + returnMinute, nextDeparture - workday.ExpectedReturnMinutes));
+            double atHome = Math.Min(nextDeparture, returning + Math.Max(1d, workday.ExpectedReturnMinutes));
+            if (now < release) return new(CityResidentActivity.Work, CityResidentActivity.Home, depart, release);
+            if (now < returning) return new(evening, CityResidentActivity.Work, release, returning);
+            if (now < atHome) return new(CityResidentActivity.ReturningHome,
+                returning > release ? evening : CityResidentActivity.Work, returning, atHome);
+            return new(CityResidentActivity.Home, CityResidentActivity.ReturningHome, atHome, nextDeparture);
+        }
+
+        private static double KioskDeparture(int resident, int place, int day, int seed)
+        {
+            int slot = (place + day % KioskCourtCapacity + KioskCourtCapacity) % KioskCourtCapacity;
+            return KioskLastOrderMinute + 6 + slot * 7 + Hash(resident, seed, 0x4B494F53u) % 3u;
         }
 
         public static int ScheduleOffsetMinutes(int residentIndex, int seed)

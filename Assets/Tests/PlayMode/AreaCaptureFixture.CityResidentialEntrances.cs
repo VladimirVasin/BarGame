@@ -239,7 +239,7 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertResidentialEntrancesAndAccess(CityGameRoot city)
         {
             CityLayout layout = city.Layout;
-            CityResidentialEntrancePlan plan = CityResidentialEntrancePlan.ForLayout(layout);
+            CityBuildingEntrancePlan plan = CityBuildingEntrancePlan.ForLayout(layout);
             BuildingLot[] homes = layout.BuildingMasses.Where(lot =>
                 lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.Residential).ToArray();
             Assert.That(plan.Entrances.Count, Is.EqualTo(homes.Length));
@@ -342,7 +342,7 @@ namespace BarPromenade.Tests.PlayMode
         private static Shot[] ResidentialEntranceShots(CityGameRoot city, Volume gray)
         {
             var shots = new List<Shot>();
-            CityResidentialEntrancePlan plan = CityResidentialEntrancePlan.ForLayout(city.Layout);
+            CityBuildingEntrancePlan plan = CityBuildingEntrancePlan.ForLayout(city.Layout);
             for (int variant = 0; variant < CityBuildingAssetProvider.GetVariantCount(CityDistrictKind.Residential); variant++)
             {
                 var entry = plan.Entrances.FirstOrDefault(candidate => candidate.Lot.BuildingVariant == variant);
@@ -466,7 +466,7 @@ namespace BarPromenade.Tests.PlayMode
             }
             Assert.That(home != null && home.IsInitialized, Is.True);
             HomeExteriorContextPlan context = home.ExteriorContext;
-            CityResidentialEntrancePlan plan = CityResidentialEntrancePlan.ForLayout(context.Layout);
+            CityBuildingEntrancePlan plan = CityBuildingEntrancePlan.ForLayout(context.Layout);
             var models = home.ExteriorView.GetComponentsInChildren<CityBuildingAssetRegistry>(true)
                 .Where(model => model.District == CityDistrictKind.Residential).ToArray();
             Assert.That(models, Is.Not.Empty);
@@ -480,7 +480,7 @@ namespace BarPromenade.Tests.PlayMode
             }
             foreach (Collider collider in home.ExteriorView.GetComponentsInChildren<Collider>(true))
                 Assert.That(collider.enabled, Is.False, "The bounded Home exterior remains passive.");
-            Assert.That(home.ExteriorView.Find(CityResidentialEntranceWorldBuilder.RootName), Is.Not.Null);
+            Assert.That(home.ExteriorView.Find(CityBuildingEntranceWorldBuilder.RootName), Is.Not.Null);
             Transform ground = home.ExteriorView.Find("City Ground");
             Assert.That(ground, Is.Not.Null);
             MeshFilter[] sectors = ground.GetComponentsInChildren<MeshFilter>(true);

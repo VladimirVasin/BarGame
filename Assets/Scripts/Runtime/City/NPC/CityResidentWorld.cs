@@ -23,6 +23,11 @@ namespace BarPromenade
         private readonly Vector3[] retainedPosition = new Vector3[CityResidentLifeRules.ResidentCount];
         private readonly Dictionary<int, Address> homeAddresses = new Dictionary<int, Address>();
         private readonly Dictionary<int, Address> workAddresses = new Dictionary<int, Address>();
+        private readonly Dictionary<BuildingLot, double> homeApproachMinutes = new Dictionary<BuildingLot, double>();
+        private readonly Address[] homeConnections = new Address[CityResidentLifeRules.ResidentCount];
+        private readonly CityBuildingEntranceDescriptor[] workplaceByResident;
+        private readonly CityResidentWorkday[] workdays;
+        private readonly int[] workExitOrder;
         private readonly HashSet<int> publicLeisureNodes = new HashSet<int>();
         private readonly int[] kioskPlaces = new int[CityResidentLifeRules.ResidentCount];
         private readonly int[] kioskWaiting = new int[RidgeKioskCourtPlan.Capacity];
@@ -47,6 +52,8 @@ namespace BarPromenade
             var leisure = new List<int>(24);
             var hillHomes = new List<int>(8);
             var hillWalks = new List<int>(2);
+            IReadOnlyList<CityBuildingEntranceDescriptor> workplaces = layout?.HasIndustrialShifts == true
+                ? CityBuildingEntrancePlan.ForLayout(layout).Workplaces : Array.Empty<CityBuildingEntranceDescriptor>();
             if (layout != null)
             {
                 foreach (BuildingLot lot in layout.BuildingLots)
@@ -58,7 +65,7 @@ namespace BarPromenade
                         Vector3 entrance = pose.TransformPoint(CityBuildingAssetProvider.GetExpectedEntranceThreshold(lot.BuildingVariant));
                         AddAddress(homes, homeAddresses, lot, lot.SidewalkArrivalPosition, entrance, 32);
                     }
-                    else if (lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.Industrial)
+                    else if (workplaces.Count == 0 && lot.HasFunctionalIndustrialPurpose)
                         AddAddress(work, workAddresses, lot, lot.SidewalkArrivalPosition, lot.DoorPosition, 12);
                     else if (lot.IsSupermarket) AddPlace(shops, lot.SidewalkArrivalPosition, 4);
                     else if (lot.IsBar) AddPlace(walks, lot.SidewalkArrivalPosition, 4);
@@ -139,6 +146,22 @@ namespace BarPromenade
                     HasConnectedAddress(home, leisure) ? leisure : walks, home, hash >> 19);
                 retainedActivity[id] = double.NaN;
             }
+            if (workplaces.Count > 0)
+            {
+                workplaceByResident = new CityBuildingEntranceDescriptor[CityResidentLifeRules.ResidentCount];
+                workdays = new CityResidentWorkday[CityResidentLifeRules.ResidentCount];
+                workExitOrder = new int[CityResidentLifeRules.ResidentCount];
+                var homeEntrances = new Dictionary<BuildingLot, CityBuildingEntranceDescriptor>();
+                foreach (var entrance in CityBuildingEntrancePlan.ForLayout(layout).Entrances)
+                {
+                    double length = 0d;
+                    for (int i = 1; i < entrance.Points.Count; i++)
+                        length += Vector3.Distance(entrance.Points[i - 1], entrance.Points[i]);
+                    homeApproachMinutes.Add(entrance.Lot, length / MetresPerGameMinute);
+                    homeEntrances.Add(entrance.Lot, entrance);
+                }
+                AssignWorkplaces(workplaces, homeEntrances, layout, shops, walks, leisure);
+            }
             if (layout != null) AssignKioskLeisure();
 
             void AddHillHome(CityHillsideBuilding house)
@@ -149,6 +172,124 @@ namespace BarPromenade
                     new Vector3(court.x, house.DoorWorld.y, court.y), house.ThresholdWorld, 8, hasEntranceRoute: true);
             }
         }
+
+        private void AssignWorkplaces(IReadOnlyList<CityBuildingEntranceDescriptor> workplaces,
+            Dictionary<BuildingLot, CityBuildingEntranceDescriptor> homeEntrances, CityLayout layout,
+            List<int> shops, List<int> walks, List<int> leisure)
+        {
+            var nodes = new Dictionary<string, int>(workplaces.Count, StringComparer.Ordinal);
+            for (int i = 0; i < plan.Nodes.Count; i++)
+            {
+                string id = plan.Nodes[i].Id;
+                if (plan.IsPrivateWorkNode(i) && id.EndsWith(":inside", StringComparison.Ordinal)) nodes.Add(id, i);
+            }
+            var sorted = new List<CityBuildingEntranceDescriptor>(workplaces);
+            sorted.Sort((a, b) =>
+            {
+                uint rankA = CityPedestrianStableHash.Combine(unchecked((uint)seed), CityPedestrianStableHash.String(a.WorkplaceId));
+                uint rankB = CityPedestrianStableHash.Combine(unchecked((uint)seed), CityPedestrianStableHash.String(b.WorkplaceId));
+                int order = rankA.CompareTo(rankB);
+                return order != 0 ? order : string.CompareOrdinal(a.WorkplaceId, b.WorkplaceId);
+            });
+            var residents = new int[CityResidentLifeRules.ResidentCount];
+            for (int id = 0; id < residents.Length; id++) residents[id] = id;
+            Array.Sort(residents, (a, b) =>
+            {
+                int order = Hash(a, seed ^ 0x574F524B).CompareTo(Hash(b, seed ^ 0x574F524B));
+                return order != 0 ? order : a.CompareTo(b);
+            });
+            for (int index = 0; index < sorted.Count; index++)
+            {
+                CityBuildingEntranceDescriptor site = sorted[index];
+                if (!nodes.TryGetValue(site.InteriorNodeId, out int node))
+                    throw new InvalidOperationException($"Workplace {site.WorkplaceId} has no pedestrian entrance.");
+                workAddresses.Add(node, new Address(site.Lot, site.Threshold, node, EntranceFrontage(node)));
+                int exit = 0;
+                for (int i = index; i < residents.Length; i += sorted.Count)
+                {
+                    int resident = residents[i];
+                    int home = Destination(resident, CityResidentActivity.Home);
+                    if (components[home] != components[node])
+                    {
+                        Address address = Home(resident);
+                        if (address.Building == null || !homeEntrances.TryGetValue(address.Building, out var homeEntrance))
+                            throw new InvalidOperationException($"Resident {resident} at {plan.Nodes[home].Id} cannot reach {site.WorkplaceId}.");
+                        home = ConnectHomeToPublicPavement(homeEntrance, components[node], layout);
+                        homeConnections[resident] = new Address(address.Building, address.Entrance, home);
+                        places[resident, (int)CityResidentActivity.Home] = home;
+                        places[resident, (int)CityResidentActivity.ReturningHome] = home;
+                        uint hash = Hash(resident, seed);
+                        places[resident, (int)CityResidentActivity.Shopping] = SelectConnected(shops, home, hash >> 10);
+                        places[resident, (int)CityResidentActivity.Walking] = SelectConnected(walks, home, hash >> 15);
+                        places[resident, (int)CityResidentActivity.Leisure] = SelectConnected(
+                            HasConnectedAddress(home, leisure) ? leisure : walks, home, hash >> 19);
+                    }
+                    workplaceByResident[resident] = site;
+                    places[resident, (int)CityResidentActivity.Work] = node;
+                    workExitOrder[resident] = exit++;
+                    int shift = 7 * 60 + (index % 3) * 60;
+                    double minutes = DistancesTo(node)[home] / MetresPerGameMinute + HomeApproachMinutes(resident);
+                    workdays[resident] = new CityResidentWorkday(shift, workExitOrder[resident], minutes, minutes);
+                }
+            }
+        }
+
+        private int ConnectHomeToPublicPavement(CityBuildingEntranceDescriptor entrance, int component, CityLayout layout)
+        {
+            // The old nearest node can be a detached courtyard loop. Keep the
+            // house and use the actual paved approach's other end instead.
+            Vector3 end = entrance.Points[entrance.Points.Count - 1];
+            int nearest = -1;
+            float best = CityBusStopWaitPlanner.MaximumNodeDistance * CityBusStopWaitPlanner.MaximumNodeDistance;
+            for (int index = 0; index < plan.Nodes.Count; index++)
+            {
+                if (components[index] != component || plan.IsPrivateWorkNode(index)) continue;
+                Vector3 node = plan.Nodes[index].Position;
+                float distance = (node - end).sqrMagnitude;
+                if (distance >= best) continue;
+                int steps = Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(distance) / .45f));
+                bool supported = true;
+                for (int step = 0; step <= steps; step++)
+                {
+                    Vector3 point = Vector3.Lerp(end, node, step / (float)steps);
+                    if (CityStreetSurfacePlanner.TrySamplePublicSidewalkTop(layout,
+                        new Vector2(point.x, point.z), out float top) && Mathf.Abs(top - point.y) <= .28f) continue;
+                    supported = false;
+                    break;
+                }
+                if (!supported) continue;
+                nearest = index;
+                best = distance;
+            }
+            if (nearest < 0)
+                throw new InvalidOperationException($"Home {entrance.Lot.Cell} has no connected pavement near {end:F3} in component {component}.");
+            return nearest;
+        }
+
+        internal void EstimateWorkCommutes(CityResidentTransitPlanner transit)
+        {
+            if (workdays == null) return;
+            for (int id = 0; id < workdays.Length; id++)
+            {
+                int home = Destination(id, CityResidentActivity.Home);
+                int work = Destination(id, CityResidentActivity.Work);
+                float outbound = transit.EstimateWorkTripSeconds(home, work);
+                transit.Plan(work, home, out float inbound);
+                double approach = HomeApproachMinutes(id);
+                workdays[id] = new CityResidentWorkday(workdays[id].ShiftStart, workExitOrder[id],
+                    outbound * GameTimeState.GameMinutesPerRealSecond + approach,
+                    inbound * GameTimeState.GameMinutesPerRealSecond + approach);
+            }
+        }
+
+        private double HomeApproachMinutes(int resident)
+        {
+            BuildingLot home = Home(resident).Building;
+            return home != null && homeApproachMinutes.TryGetValue(home, out double minutes) ? minutes : 0d;
+        }
+
+        public CityResidentWorkday? Workday(int resident) => workdays?[resident];
+        public CityBuildingEntranceDescriptor WorkEntrance(int resident) => workplaceByResident?[resident];
 
         private void AssignKioskLeisure()
         {
@@ -227,7 +368,8 @@ namespace BarPromenade
             }
         }
 
-        public Address Home(int resident) => AddressAt(homeAddresses, Destination(resident, CityResidentActivity.Home));
+        public Address Home(int resident) => homeConnections[resident].Building != null ? homeConnections[resident] :
+            AddressAt(homeAddresses, Destination(resident, CityResidentActivity.Home));
         internal int HomeFrontage(int resident) => Home(resident).FrontageNode;
         public Address Workplace(int resident) => AddressAt(workAddresses, Destination(resident, CityResidentActivity.Work));
 
@@ -256,7 +398,7 @@ namespace BarPromenade
                 foreach (int index in plan.GetLinkIndices(node))
                 {
                     CityPedestrianLink link = plan.Links[index];
-                    if (link.Kind == CityPedestrianLinkKind.HomeEntrance && link.SecondNodeIndex == node)
+                    if (link.IsPrivateEntrance && link.SecondNodeIndex == node)
                     {
                         parent = link.FirstNodeIndex;
                         break;
@@ -268,9 +410,14 @@ namespace BarPromenade
             return node;
         }
 
-        public CityResidentLifeSample Schedule(int resident, int day, double minute) => kioskPlaces[resident] == 0
-            ? CityResidentLifeRules.Evaluate(resident, day, minute, seed)
-            : CityResidentLifeRules.EvaluateKioskRegular(resident, KioskPlace(resident), day, minute, seed);
+        public CityResidentLifeSample Schedule(int resident, int day, double minute)
+        {
+            if (workdays != null)
+                return CityResidentLifeRules.EvaluateWorkday(resident, day, minute, seed, workdays[resident], KioskPlace(resident));
+            return kioskPlaces[resident] == 0
+                ? CityResidentLifeRules.Evaluate(resident, day, minute, seed)
+                : CityResidentLifeRules.EvaluateKioskRegular(resident, KioskPlace(resident), day, minute, seed);
+        }
 
         public int Destination(int resident, CityResidentActivity activity) => places[resident, (int)activity];
         public IReadOnlyList<float> DistancesTo(int node)

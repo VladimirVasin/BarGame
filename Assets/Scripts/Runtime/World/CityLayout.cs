@@ -25,6 +25,9 @@ namespace BarPromenade
         private IReadOnlyList<CityCourtyardConnection> courtyardConnections;
         private IReadOnlyList<BuildingLot> buildingMasses;
 
+        // The shift MVP uses the surveyed production streets and staff entrances.
+        public bool HasIndustrialShifts => SpatialPlan.IsCompactCoastal && Seed == GameSessionState.DefaultCitySeed;
+
         // Semantic lot identities stay stable. Physical mass consumers also
         // see the rear houses and wings that enclose district courts.
         public IReadOnlyList<CityCourtyardBlock> CourtyardBlocks =>

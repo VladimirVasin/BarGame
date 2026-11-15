@@ -143,7 +143,7 @@ namespace BarPromenade
                 Rect approach = CityBusPlatformClearance.PavementApproach(position, forward, -right);
                 foreach (var obstacle in obstacles)
                     if (obstacle.Overlaps(envelope) || obstacle.Overlaps(approach)) return false;
-                if (CityResidentialEntrancePlan.IntersectsPrimaryApproach(layout, envelope)) return false;
+                if (CityBuildingEntrancePlan.IntersectsPrimaryApproach(layout, envelope)) return false;
                 var clearance = CityBusPlatformClearance.ForLayout(layout);
                 for (int i = -3; i <= 3; i++)
                 {

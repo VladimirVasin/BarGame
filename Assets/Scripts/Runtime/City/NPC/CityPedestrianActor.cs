@@ -1088,7 +1088,9 @@ namespace BarPromenade
             // before selecting the next leg instead of rounding it early.
             // Stop inside the reserved slot: the street's ordinary arrival
             // tolerance can leave the waiter's shoulder in the through footway.
-            float arrivalRadius = directToWaitSlot || curvedLink?.Kind == CityPedestrianLinkKind.Courtyard
+            bool workEntrance = curvedLink?.Kind == CityPedestrianLinkKind.WorkEntrance;
+            bool followsPrecisePath = workEntrance || curvedLink?.Kind == CityPedestrianLinkKind.Courtyard;
+            float arrivalRadius = directToWaitSlot || followsPrecisePath
                 ? 0.025f : incomingLinkKind == CityPedestrianLinkKind.Stair ? .055f : ArrivalRadius;
             if (distance <= arrivalRadius)
             {
@@ -1138,14 +1140,13 @@ namespace BarPromenade
                 CityRoadSample sample = path.SampleDistance(next);
                 Vector2 tangent = sample.Tangent * (forward ? 1f : -1f);
                 Vector2 laneRight = new Vector2(tangent.y, -tangent.x);
-                float pathLateralOffset = lateralOffset;
+                float pathLateralOffset = workEntrance ? 0f : lateralOffset;
                 if (curvedLink.Kind == CityPedestrianLinkKind.Courtyard)
                     pathLateralOffset *= Mathf.Clamp01(forward ? path.Length - next : next);
                 Vector2 point = sample.Position + laneRight * pathLateralOffset;
                 Vector2 currentXZ = new Vector2(current.x, current.z);
                 float stride = step;
-                bool courtyard = curvedLink.Kind == CityPedestrianLinkKind.Courtyard;
-                if (courtyard)
+                if (followsPrecisePath)
                 {
                     Vector2 requested = point - currentXZ;
                     stride = 0f;
@@ -1171,19 +1172,18 @@ namespace BarPromenade
                 // Correct its height separately so that gap never consumes the stride.
                 Vector2 moved = Vector2.MoveTowards(currentXZ, point, stride);
                 float pathHeight = curvedLink.PathHeightSampler != null
-                    ? curvedLink.PathHeightSampler(courtyard ? moved : point)
+                    ? curvedLink.PathHeightSampler(followsPrecisePath ? moved : point)
                     : Mathf.Lerp(plan.Nodes[curvedLink.FirstNodeIndex].Position.y,
                         plan.Nodes[curvedLink.SecondNodeIndex].Position.y, next / path.Length);
                 desired = new Vector3(moved.x,
-                    courtyard ? pathHeight : Mathf.MoveTowards(current.y, pathHeight, step), moved.y);
+                    followsPrecisePath ? pathHeight : Mathf.MoveTowards(current.y, pathHeight, step), moved.y);
                 intended = Vector2.Distance(currentXZ, moved);
             }
             Vector3 constrained = walkableArea.Constrain(
                 current,
                 desired,
                 agentRadius);
-            if (curvedLink?.Kind == CityPedestrianLinkKind.Courtyard &&
-                curvedLink.PathHeightSampler != null)
+            if (followsPrecisePath && curvedLink.PathHeightSampler != null)
                 constrained.y = curvedLink.PathHeightSampler(new Vector2(constrained.x, constrained.z));
             if (CollisionEnabled)
             {
@@ -1301,7 +1301,7 @@ namespace BarPromenade
                 int linkIndex = linkIndices[index];
                 CityPedestrianLink link = plan.Links[linkIndex];
                 int other = link.Other(reachedNode);
-                if (other == previousNodeIndex || link.Kind == CityPedestrianLinkKind.HomeEntrance)
+                if (other == previousNodeIndex || link.IsPrivateEntrance)
                 {
                     continue;
                 }

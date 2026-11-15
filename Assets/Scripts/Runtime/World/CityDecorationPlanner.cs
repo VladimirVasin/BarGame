@@ -1269,7 +1269,7 @@ namespace BarPromenade
 
         private static bool BlocksCourtyardRoute(CityLayout layout, Vector3 position, float objectRadius)
         {
-            if (CityResidentialEntrancePlan.IntersectsReservedApproach(layout,
+            if (CityBuildingEntrancePlan.IntersectsReservedApproach(layout,
                 new Rect(position.x - objectRadius, position.z - objectRadius,
                     objectRadius * 2f, objectRadius * 2f))) return true;
             float clearance = objectRadius + CityGroundTraversalPlanner.MaximumAgentRadius;
@@ -1315,7 +1315,7 @@ namespace BarPromenade
             {
                 Bounds bounds = CityBuildingPrototypePlacement.TransformBounds(
                     new Bounds(Vector3.zero, proxy.Size), new CityBuildingPrototypePose(proxy.Center, proxy.Rotation));
-                if (CityResidentialEntrancePlan.IntersectsReservedApproach(layout,
+                if (CityBuildingEntrancePlan.IntersectsReservedApproach(layout,
                     Rect.MinMaxRect(bounds.min.x, bounds.min.z, bounds.max.x, bounds.max.z))) return true;
             }
             return false;

@@ -124,7 +124,7 @@ namespace BarPromenade
             // Paving may join an existing foot route; a roof/wall cannot occupy
             // it. Treating the shared public sidewalk as an exclusive route
             // reservation rejected otherwise valid street-front aprons.
-            if (CityResidentialEntrancePlan.IntersectsReservedApproach(layout, site.StructureBounds))
+            if (CityBuildingEntrancePlan.IntersectsReservedApproach(layout, site.StructureBounds))
                 return survey.Reject("entrance");
             foreach (Rect route in walkingRoutes)
                 if (route.Overlaps(site.StructureBounds)) return survey.Reject("walkingroute");

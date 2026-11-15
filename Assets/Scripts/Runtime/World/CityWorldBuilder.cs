@@ -945,7 +945,7 @@ namespace BarPromenade
                     plan.CrosswalkMarkingGeometry.Count));
             subTimer.Restart();
             CityStreetSurfaceWorldBuilder.Build("Unified Street Surface", roads, layout, plan);
-            CityResidentialEntranceWorldBuilder.Build(roads, layout);
+            CityBuildingEntranceWorldBuilder.Build(roads, layout);
             ReportBlock("roads_and_river/street_support", subTimer,
                 GameLog.Field("patches", plan.SupportPlan.Patches.Count));
             subTimer.Restart();
@@ -2869,7 +2869,7 @@ namespace BarPromenade
             DogPark = CityDogParkPlan.ForLayout(layout);
             // Court and infill allocation finish before entrance routes reserve
             // the final paving; terrain-time reservations remain upstream-only.
-            CityResidentialEntrancePlan.ForLayout(layout);
+            CityBuildingEntrancePlan.ForLayout(layout);
         }
 
         internal CityLayout Layout { get; }

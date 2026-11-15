@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Fixed-metre, text-free functional industrial buildings and their equipment.
-
-All stock sits in a raised, occupied loading recess or the L-shaped service
-court. No equipment crosses the lot envelope or the through-passage throat.
-The legacy collision mass remains conservative around closed work areas.
-"""
+"""Fixed-metre industrial shells with separate staff and loading approaches."""
 
 from __future__ import annotations
 
@@ -19,6 +14,37 @@ PURPOSES = ("DryWarehouse", "ColdStorage", "RepairWorkshop", "MetalWorkshop",
             "PackagingWorkshop", "BoilerHouse", "CompressorHouse", "RepairGarage")
 OPTIONAL_ROLES = {"CargoTimber": 1.6, "EquipmentConcrete": 2.0,
                   "EquipmentSteel": 1.8, "TaskLightLens": 1.0}
+
+# Metres, mirrored by CityIndustrialEntranceGeometry. The side bay is out
+# of the line of sight from the staff opening in the facade.
+ENTRANCE_X = (2.5, 1.4, 2.8, 2.85, 1.55, 1.16, 2.34, -.90)
+ENTRANCE_HALF_WIDTH = .70
+ENTRANCE_HEIGHT = 2.4
+ENTRANCE_TURN_FRONT = 2.50
+ENTRANCE_DEPTH = 4.15
+ENTRANCE_BAY_RIGHT = 3.20
+
+
+def entrance_solids(solids, x, front):
+    left, right = x - ENTRANCE_HALF_WIDTH, x + ENTRANCE_HALF_WIDTH
+    bay_right = x + ENTRANCE_BAY_RIGHT
+    back = front - ENTRANCE_DEPTH
+    turn = front - ENTRANCE_TURN_FRONT
+    result = []
+    for low, high in solids:
+        if high[0] <= left or low[0] >= bay_right or high[1] <= back or low[2] >= ENTRANCE_HEIGHT:
+            result.append((low, high))
+            continue
+        assert low[0] < left < right < bay_right < high[0] and low[1] < back < turn < high[1]
+        a, b, c = low
+        d, e, f = high
+        result.extend((((a, b, c), (left, e, f)),
+                       ((bay_right, b, c), (d, e, f)),
+                       ((left, b, c), (bay_right, back, f)),
+                       ((right, turn, c), (bay_right, e, f)),
+                       ((left, back, ENTRANCE_HEIGHT), (right, e, f)),
+                       ((right, back, ENTRANCE_HEIGHT), (bay_right, turn, f))))
+    return tuple(result)
 
 
 def transform(geometry: Geometry, fn) -> Geometry:
@@ -114,30 +140,76 @@ def industrial_prototype(variant: int) -> PrototypeSpec:
     hw, hd = width * .5, depth * .5
     body_top = height - (2. if variant == 1 else 1.2)
     front = hd - 1.18
+    entry_x = ENTRANCE_X[variant - 1]
+    opening = .79
+    bay_edge = .95
+    cut_head = 2.51
     primary, secondary, metal, concrete, steel, timber = [], [], [], [], [], []
-    def recessed_facade(left, right, pier, top):
-        outline = ((left, -hd), (right, -hd), (right, hd), (right - pier, hd),
-                   (right - pier, front), (left + pier, front), (left + pier, hd), (left, hd))
-        return facade_prism(outline, 0, top)
 
-    # The apron is raised, visibly occupied and closed; it is not a traversable
-    # sidewalk hidden behind the conservative building collider.
+    def recessed_outline(left, right, pier):
+        return ((left, -hd), (right, -hd), (right, hd), (right - pier, hd),
+                (right - pier, front), (left + pier, front), (left + pier, hd), (left, hd))
+
+    def staff_bay(outline, wall, top):
+        def with_entrance(clear):
+            result = []
+            for i, point in enumerate(outline):
+                following = outline[(i + 1) % len(outline)]
+                result.append(point)
+                if point[1] != wall or following[1] != wall or not point[0] > entry_x > following[0]:
+                    continue
+                if wall < hd:
+                    result.extend(((entry_x + bay_edge, wall), (entry_x + bay_edge, hd)))
+                if clear:
+                    result.extend((
+                        (entry_x + opening, hd),
+                        (entry_x + opening, hd - ENTRANCE_TURN_FRONT + .04),
+                        (entry_x + ENTRANCE_BAY_RIGHT + .04, hd - ENTRANCE_TURN_FRONT + .04),
+                        (entry_x + ENTRANCE_BAY_RIGHT + .04, hd - ENTRANCE_DEPTH - .04),
+                        (entry_x - opening, hd - ENTRANCE_DEPTH - .04),
+                        (entry_x - opening, hd)))
+                if wall < hd:
+                    result.extend(((entry_x - bay_edge, hd), (entry_x - bay_edge, wall)))
+            return tuple(result)
+
+        primary.append(facade_prism(with_entrance(True), 0., cut_head))
+        primary.append(facade_prism(with_entrance(False), cut_head, top))
+        # Independent steel jambs and lintel project into the wider masonry opening.
+        for sign in (-1, 1):
+            steel.append(trim_box((entry_x + sign * .766, hd - .105, 1.242),
+                                  (.132, .205, 2.484), .012))
+        steel.append(trim_box((entry_x, hd - .107, 2.47), (1.646, .206, .12), .012))
+        floor = ((entry_x - opening, hd - ENTRANCE_DEPTH - .04),
+                 (entry_x + ENTRANCE_BAY_RIGHT + .04, hd - ENTRANCE_DEPTH - .04),
+                 (entry_x + ENTRANCE_BAY_RIGHT + .04, hd - ENTRANCE_TURN_FRONT + .04),
+                 (entry_x + opening, hd - ENTRANCE_TURN_FRONT + .04),
+                 (entry_x + opening, hd),
+                 (entry_x - opening, hd))
+        concrete.append(Geometry(tuple((x, y, 0.) for x, y in floor), (tuple(range(len(floor))),), (0,)))
+
+    def apron(left, right):
+        # Loading stays on its raised deck. The staff opening has a separate
+        # floor at the lot datum and a relief joint at either side.
+        for start, end in ((left, min(right, entry_x - bay_edge - .02)),
+                           (max(left, entry_x + bay_edge + .02), right)):
+            if end - start > .08:
+                concrete.append(trim_box(((start + end) * .5, hd - .59, .24),
+                                         (end - start, 1.06, .48)))
+
     if variant == 4:
-        for left, right in ((-hw, -1.8), (1.8, hw)):
-            primary.append(recessed_facade(left, right, .42, 4.2))
-            concrete.append(trim_box(((left + right) * .5, hd - .59, .24),
-                                (right - left - .16, 1.06, .48)))
+        primary.append(facade_prism(recessed_outline(-hw, -1.8, .42), 0., 4.2))
+        staff_bay(recessed_outline(1.8, hw, .09), front, 4.2)
+        apron(-hw + .08, -1.88)
+        apron(1.88, hw - .08)
         primary.append(facade_prism(((-hw, -hd), (hw, -hd), (hw, hd), (-hw, hd)), 4.2, body_top))
     elif variant == 3:
         polygon = ((-hw, -hd), (-hw + 5., -hd), (-hw + 5., 0.),
                    (hw, 0.), (hw, hd), (-hw, hd))
-        primary.append(facade_prism(polygon, 0, body_top))
+        staff_bay(polygon, hd, body_top)
         concrete.append(trim_box((2.2, -1.0, .16), (5.8, 1.8, .32)))
     else:
-        # True loading recess: wall is behind stock, canopy and load-bearing
-        # piers. The service apron never protrudes into public pavement.
-        primary.append(recessed_facade(-hw, hw, .58, body_top))
-        concrete.append(trim_box((0, hd - .61, .24), (width - 1.32, 1.14, .48)))
+        staff_bay(recessed_outline(-hw, hw, .58), front, body_top)
+        apron(-hw + .66, hw - .66)
     secondary.append(trim_box((0, hd - .05, body_top - .25), (width - .12, .18, .38)))
     plinth = trim_box((0, -hd + .04, .29), (width - .14 if variant != 3 else 4.86, .16, .58))
     if variant == 3:
@@ -169,7 +241,7 @@ def industrial_prototype(variant: int) -> PrototypeSpec:
                 steel.append(cylinder_z((x + dx, -2.), body_top + 1.06, height, .53, 12))
         for z in (1.0, 1.45):
             metal.append(box((4.8, front + .17, z), (3.5, .13, .13)))
-        windows("Front", front, (1.65,), (2.6,), (.8, 1.1))
+        windows("Front", hd, (1.4,), (3.05,), (.8, .8))
         windows("Rear", -hd, (-5.7,), (4.9,), (.85, 1.05))
     elif variant == 3:
         roof = combine(gable_roof((0, hd * .5), width, hd, body_top, height),
@@ -191,8 +263,8 @@ def industrial_prototype(variant: int) -> PrototypeSpec:
         roof = merge(shed_roof((-width / 3. + i * width / 3., 0.), width / 3.,
                     depth, body_top, height, True) for i in range(3))
         gate(-4.8, 3.1, 3.5, True)
-        gate(4.8, 3.1, 3.5, True)
-        for x in (-4.8, 4.8):
+        gate(5.65, 2.8, 3.5, True)
+        for x in (-4.8, 5.65):
             steel.append(box((x, hd - .62, 1.1), (2.4, .64, .18)))
             for dx in (-.8, .8):
                 steel.append(box((x + dx, hd - .62, .75), (.12, .55, .70)))
@@ -203,7 +275,7 @@ def industrial_prototype(variant: int) -> PrototypeSpec:
     elif variant == 5:
         roof = shed_roof((0, 0), width, depth, body_top, height, False)
         gate(-1.6, 3.7, 3.3, True)
-        for x in (1.4, 3.35):
+        for x in (3.35,):
             timber.extend((slatted_pallet(x, hd - .62), crate(x, hd - .62, .73, 1.1),
                            crate(x, hd - .62, 1.53, 1.1)))
         windows("Front", front, (-3.65,), (3.75,), (.70, .8))
@@ -242,7 +314,7 @@ def industrial_prototype(variant: int) -> PrototypeSpec:
         roof = merge(gable_roof((x, 0), width * .5, depth, body_top, height)
                      for x in (-width * .25, width * .25))
         gate(-3.8, 4.0, 3.8)
-        gate(2.0, 4.0, 3.8, True)
+        gate(2.22, 3.7, 3.8, True)
         steel.append(equipment_bench(5.7, hd - .62))
         for x in (5.25, 5.9):
             steel.append(tube_y(x, hd - .62, 1.45, .31, .32, 12))
@@ -285,6 +357,8 @@ def industrial_prototype(variant: int) -> PrototypeSpec:
                                               (-hw + 4.75, -hd + .2, body_top - .5))
         attachments[3] = FacadeAttachmentBounds("Right", (hw - .2, .25, .5),
                                               (hw, hd - .25, body_top - .5))
+    solids = entrance_solids(solids, entry_x, hd)
     return PrototypeSpec(stable_id, "Industrial", grammar, width, depth, height,
                          (0., hd, 0.), roof_low, roof_high, tuple(attachments), tuple(slots),
-                         tuple(parts), (), solids, (lamp_x, lamp_y + .13, lamp_z - .09), purpose)
+                         tuple(parts), (), solids, (lamp_x, lamp_y + .13, lamp_z - .09), purpose,
+                         (entry_x, hd, 0.))

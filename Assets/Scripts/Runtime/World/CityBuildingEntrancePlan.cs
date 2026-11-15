@@ -7,10 +7,11 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>One physical doorway and its finite, continuous route to public pavement.</summary>
-    public sealed class CityResidentialEntranceDescriptor
+    public sealed class CityBuildingEntranceDescriptor
     {
-        internal CityResidentialEntranceDescriptor(BuildingLot lot, Vector3 threshold, Vector3 outward,
-            IList<Vector3> points, IList<CityEntranceForecourtPlan> paving)
+        internal CityBuildingEntranceDescriptor(BuildingLot lot, Vector3 threshold, Vector3 outward,
+            IList<Vector3> points, IList<CityEntranceForecourtPlan> paving,
+            string workplaceId = null)
         {
             Lot = lot; Threshold = threshold; Outward = outward;
             Points = new ReadOnlyCollection<Vector3>(points);
@@ -18,6 +19,14 @@ namespace BarPromenade
             var footprints = new List<Rect>(paving.Count);
             foreach (CityEntranceForecourtPlan strip in paving) footprints.Add(strip.Footprint);
             Footprints = footprints.AsReadOnly();
+            WorkplaceId = workplaceId;
+            if (workplaceId != null)
+            {
+                CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
+                Vector3 local = CityIndustrialEntranceGeometry.Threshold(lot.BuildingVariant);
+                Bend = pose.TransformPoint(CityIndustrialEntranceGeometry.Bend(local));
+                Interior = pose.TransformPoint(CityIndustrialEntranceGeometry.Interior(local));
+            }
         }
         public BuildingLot Lot { get; }
         public Vector3 Threshold { get; }
@@ -25,6 +34,20 @@ namespace BarPromenade
         public IReadOnlyList<Vector3> Points { get; }
         public IReadOnlyList<CityEntranceForecourtPlan> Paving { get; }
         public IReadOnlyList<Rect> Footprints { get; }
+        public string WorkplaceId { get; }
+        public Vector3 Bend { get; }
+        public Vector3 Interior { get; }
+        internal string InteriorNodeId => WorkplaceId + ":inside";
+
+        internal Vector3[] WorkFloor(int section)
+        {
+            CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(Lot);
+            Rect floor = CityIndustrialEntranceGeometry.Floor(CityIndustrialEntranceGeometry.Threshold(Lot.BuildingVariant), section);
+            return new[] { pose.TransformPoint(new Vector3(floor.xMin, 0f, floor.yMin)),
+                pose.TransformPoint(new Vector3(floor.xMax, 0f, floor.yMin)),
+                pose.TransformPoint(new Vector3(floor.xMax, 0f, floor.yMax)),
+                pose.TransformPoint(new Vector3(floor.xMin, 0f, floor.yMax)) };
+        }
     }
 
     /// <summary>
@@ -34,7 +57,7 @@ namespace BarPromenade
     /// Builders prime it after infill allocation; early planners only read the
     /// primary reservations or an already cached final plan.
     /// </summary>
-    public sealed class CityResidentialEntrancePlan
+    public sealed class CityBuildingEntrancePlan
     {
         public const float PathWidth = 1.5f;
         public const float ThroatWidth = 1.3f;
@@ -43,19 +66,24 @@ namespace BarPromenade
         private const float Thickness = .4f;
         private const float SampleBucketSize = 4f;
         private const int MaximumConnectedCells = 12;
-        private static readonly ConditionalWeakTable<CityLayout, CityResidentialEntrancePlan> Plans =
-            new ConditionalWeakTable<CityLayout, CityResidentialEntrancePlan>();
+        private static readonly ConditionalWeakTable<CityLayout, CityBuildingEntrancePlan> Plans =
+            new ConditionalWeakTable<CityLayout, CityBuildingEntrancePlan>();
         private static readonly ConditionalWeakTable<CityLayout, PrimaryReservations> Reservations =
             new ConditionalWeakTable<CityLayout, PrimaryReservations>();
 
         private readonly Dictionary<Vector2Int, List<int>> sampleBuckets = new Dictionary<Vector2Int, List<int>>();
+        private readonly Dictionary<Vector2Int, List<Rect>> workFloorCuts = new Dictionary<Vector2Int, List<Rect>>();
         private readonly IReadOnlyList<CityStreetSupportPatch> supportPatches;
 
-        private CityResidentialEntrancePlan(IList<CityResidentialEntranceDescriptor> entrances)
+        private CityBuildingEntrancePlan(List<CityBuildingEntranceDescriptor> entrances,
+            List<CityBuildingEntranceDescriptor> workplaces)
         {
-            Entrances = new ReadOnlyCollection<CityResidentialEntranceDescriptor>(entrances);
+            Entrances = entrances.AsReadOnly();
+            Workplaces = workplaces.AsReadOnly();
+            var allEntrances = new List<CityBuildingEntranceDescriptor>(entrances);
+            allEntrances.AddRange(workplaces);
             var patches = new List<CityStreetSupportPatch>();
-            foreach (CityResidentialEntranceDescriptor entry in entrances)
+            foreach (CityBuildingEntranceDescriptor entry in allEntrances)
             foreach (CityEntranceForecourtPlan strip in entry.Paving)
             for (int row = 0; row < strip.Rows - 1; row++)
             for (int column = 0; column < strip.Columns - 1; column++)
@@ -68,7 +96,7 @@ namespace BarPromenade
             }
             SurfacePatches = patches.AsReadOnly();
             var allSupport = new List<CityStreetSupportPatch>(patches);
-            foreach (CityResidentialEntranceDescriptor entry in entrances)
+            foreach (CityBuildingEntranceDescriptor entry in entrances)
             {
                 Vector3 side = Vector3.Cross(Vector3.up, entry.Outward) * (CityBuildingAssetProvider.EntranceClearWidth * .5f);
                 Vector3 back = entry.Threshold - entry.Outward * CityBuildingAssetProvider.EntranceDepth;
@@ -77,6 +105,17 @@ namespace BarPromenade
                 var floor = new CityStreetSupportPatch(new[] { entry.Threshold - side, entry.Threshold + side,
                     back + side, back - side }, CityStreetSupportKind.Sidewalk, .08f, 31);
                 int index = allSupport.Count; allSupport.Add(floor); Index(floor, index);
+            }
+            foreach (CityBuildingEntranceDescriptor workplace in workplaces)
+            for (int section = 0; section < 2; section++)
+            {
+                var floor = new CityStreetSupportPatch(workplace.WorkFloor(section),
+                    CityStreetSupportKind.Sidewalk, .12f, 31);
+                Index(floor, allSupport.Count);
+                allSupport.Add(floor);
+                if (!workFloorCuts.TryGetValue(workplace.Lot.Cell, out List<Rect> cuts))
+                    workFloorCuts.Add(workplace.Lot.Cell, cuts = new List<Rect>(2));
+                cuts.Add(floor.Bounds);
             }
             supportPatches = allSupport.AsReadOnly();
 
@@ -98,10 +137,11 @@ namespace BarPromenade
             }
         }
 
-        public IReadOnlyList<CityResidentialEntranceDescriptor> Entrances { get; }
+        public IReadOnlyList<CityBuildingEntranceDescriptor> Entrances { get; }
+        public IReadOnlyList<CityBuildingEntranceDescriptor> Workplaces { get; }
         public IReadOnlyList<CityStreetSupportPatch> SurfacePatches { get; }
 
-        public static CityResidentialEntrancePlan ForLayout(CityLayout layout)
+        public static CityBuildingEntrancePlan ForLayout(CityLayout layout)
         {
             if (layout == null) throw new ArgumentNullException(nameof(layout));
             return Plans.GetValue(layout, Create);
@@ -110,7 +150,14 @@ namespace BarPromenade
         public static bool TrySampleCachedTop(CityLayout layout, Vector2 point, out float top)
         {
             top = float.NegativeInfinity;
-            return Plans.TryGetValue(layout, out CityResidentialEntrancePlan plan) && plan.TrySampleTop(point, out top);
+            return Plans.TryGetValue(layout, out CityBuildingEntrancePlan plan) && plan.TrySampleTop(point, out top);
+        }
+
+        internal static IReadOnlyList<Rect> CachedWorkFloorCuts(CityLayout layout, CitySurfaceDescriptor surface)
+        {
+            if (surface.Kind == CitySurfaceKind.BuildableGround && Plans.TryGetValue(layout, out var plan) &&
+                plan.workFloorCuts.TryGetValue(surface.Cell, out List<Rect> cuts)) return cuts;
+            return Array.Empty<Rect>();
         }
 
         public bool TrySampleTop(Vector2 point, out float top)
@@ -128,8 +175,11 @@ namespace BarPromenade
         }
 
         public bool Intersects(Rect footprint)
+            => Intersects(Entrances, footprint) || Intersects(Workplaces, footprint);
+
+        private static bool Intersects(IReadOnlyList<CityBuildingEntranceDescriptor> entrances, Rect footprint)
         {
-            foreach (CityResidentialEntranceDescriptor entry in Entrances)
+            foreach (CityBuildingEntranceDescriptor entry in entrances)
                 foreach (Rect path in entry.Footprints)
                     if (path.Overlaps(footprint)) return true;
             return false;
@@ -137,7 +187,7 @@ namespace BarPromenade
 
         public static bool IntersectsReservedApproach(CityLayout layout, Rect footprint)
         {
-            if (Plans.TryGetValue(layout, out CityResidentialEntrancePlan plan) && plan.Intersects(footprint)) return true;
+            if (Plans.TryGetValue(layout, out CityBuildingEntrancePlan plan) && plan.Intersects(footprint)) return true;
             return IntersectsPrimaryApproach(layout, footprint);
         }
 
@@ -170,7 +220,7 @@ namespace BarPromenade
             }
         }
 
-        private static CityResidentialEntrancePlan Create(CityLayout layout)
+        private static CityBuildingEntrancePlan Create(CityLayout layout)
         {
             // Finish courtyard allocation before an infill lookup can enter
             // its ground sampler. Subsequent queries read the same identities.
@@ -203,20 +253,23 @@ namespace BarPromenade
                 obstacles.Add(CityRoadPolygon.Rectangle(footprint));
 
             var grade = new SharedGradeField(layout, masses);
-            var result = new List<CityResidentialEntranceDescriptor>();
-            foreach (BuildingLot lot in masses)
+            var result = new List<CityBuildingEntranceDescriptor>();
+            var workplaces = new List<CityBuildingEntranceDescriptor>();
+            for (int index = 0; index < masses.Count; index++)
             {
-                if (!IsResidential(lot)) continue;
+                BuildingLot lot = masses[index];
+                bool atWork = IsWorkplace(layout, lot);
+                if (!IsResidential(lot) && !atWork) continue;
                 CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
-                Vector3 threshold = pose.TransformPoint(CityBuildingAssetProvider.GetExpectedEntranceThreshold(lot.BuildingVariant));
-                Vector3 outward = pose.Rotation * CityBuildingAssetProvider.GetExpectedEntranceOutward(lot.BuildingVariant);
+                Vector3 threshold = pose.TransformPoint(CityBuildingAssetProvider.GetExpectedEntranceThreshold(lot.District, lot.BuildingVariant));
+                Vector3 outward = pose.Rotation * CityBuildingAssetProvider.EntranceOutward;
                 if (terrace.IsReservedCell(lot.Cell))
                 {
                     if (lot.Cell == CityTerraceDistrictPlan.LowerHouseCell)
                     {
                         var lowerRoute = new List<Vector3>(terrace.LowerHouseRouteWorld);
                         lowerRoute.Reverse();
-                        result.Add(new CityResidentialEntranceDescriptor(lot, threshold, outward,
+                        result.Add(new CityBuildingEntranceDescriptor(lot, threshold, outward,
                             lowerRoute, new List<CityEntranceForecourtPlan>()));
                         continue;
                     }
@@ -230,7 +283,7 @@ namespace BarPromenade
                     for (int point = 7; point >= 0; point--) terraceRoute.Add(terrace.World(ascent[point]));
                     terraceRoute.Add(terrace.EntryEndWorld);
                     terraceRoute.Add(terrace.EntryStartWorld);
-                    result.Add(new CityResidentialEntranceDescriptor(lot, threshold, outward,
+                    result.Add(new CityBuildingEntranceDescriptor(lot, threshold, outward,
                         terraceRoute, new List<CityEntranceForecourtPlan>()));
                     continue;
                 }
@@ -238,14 +291,17 @@ namespace BarPromenade
                 var query = new RouteQuery(layout, lot, obstacles);
                 List<Vector2> route = query.Route(apron);
                 if (route == null)
-                    throw new InvalidOperationException($"Residential entrance {lot.Cell}/variant {lot.BuildingVariant} has no continuous pavement route from {threshold}: {query.Failure}.");
+                    throw new InvalidOperationException($"{lot.District} entrance {lot.Cell}/variant {lot.BuildingVariant} has no continuous pavement route from {threshold}: {query.Failure}.");
                 var points = new List<Vector3> { threshold };
                 Vector2 end = route[route.Count - 1];
                 if (!CityStreetSurfacePlanner.TrySamplePublicSidewalkTop(layout, end, out _))
-                    throw new InvalidOperationException($"Residential entrance {lot.Cell} does not end on public support.");
+                    throw new InvalidOperationException($"{lot.District} entrance {lot.Cell} does not end on public support.");
                 foreach (Vector2 point in route)
                     points.Add(new Vector3(point.x, grade.Sample(point), point.y));
-                List<CityEntranceForecourtPlan> paving = CreatePaving(layout, points, grade);
+                if (atWork && points.Count == 3 && (XZ(points[1]) - end).sqrMagnitude < .09f &&
+                    Vector2.Dot(XZ(points[1] - points[0]), end - XZ(points[1])) < 0f)
+                    points.RemoveAt(1);
+                List<CityEntranceForecourtPlan> paving = CreatePaving(layout, points, grade, atWork);
                 foreach (CityEntranceForecourtPlan strip in paving)
                 {
                     Vector2[] contour = CityRoadPolygon.CounterClockwise(new[] { XZ(strip.Top[0]), XZ(strip.Top[strip.Columns - 1]),
@@ -257,12 +313,18 @@ namespace BarPromenade
                         for (int side = 0; side < body.Length && clipped.Count >= 3; side++)
                             clipped = CityRoadPolygon.Clip(clipped, body[side], body[(side + 1) % body.Length]);
                         if (CityRoadPolygon.Area(clipped) > .0001f)
-                            throw new InvalidOperationException($"Residential entrance {lot.Cell}/variant {lot.BuildingVariant} paving shoulder intersects a physical mass.");
+                            throw new InvalidOperationException($"{lot.District} entrance {lot.Cell}/variant {lot.BuildingVariant} paving shoulder intersects a physical mass.");
                     }
                 }
-                result.Add(new CityResidentialEntranceDescriptor(lot, threshold, outward, points, paving));
+                if (atWork)
+                {
+                    string part = index < layout.BuildingLots.Count ? "main" : "rear";
+                    string id = $"work:{lot.Cell.x}:{lot.Cell.y}:{part}";
+                    workplaces.Add(new CityBuildingEntranceDescriptor(lot, threshold, outward, points, paving, id));
+                }
+                else result.Add(new CityBuildingEntranceDescriptor(lot, threshold, outward, points, paving));
             }
-            return new CityResidentialEntrancePlan(result);
+            return new CityBuildingEntrancePlan(result, workplaces);
 
             void AddPole(Vector3 position)
             {
@@ -271,7 +333,8 @@ namespace BarPromenade
             }
         }
 
-        private static List<CityEntranceForecourtPlan> CreatePaving(CityLayout layout, IReadOnlyList<Vector3> points, SharedGradeField grade)
+        private static List<CityEntranceForecourtPlan> CreatePaving(CityLayout layout, IReadOnlyList<Vector3> points,
+            SharedGradeField grade, bool workApproach)
         {
             var left = new Vector3[points.Count]; var right = new Vector3[points.Count];
             for (int i = 0; i < points.Count; i++)
@@ -307,7 +370,11 @@ namespace BarPromenade
                     for (int column = 0; column < columns; column++)
                     {
                         Vector3 point = Vector3.Lerp(start, end, column / (float)(columns - 1));
-                        point.y = grade.Sample(XZ(point));
+                        if (grade.TrySample(XZ(point), out float height)) point.y = height;
+                        else if (!workApproach)
+                            throw new InvalidOperationException($"Entrance paving has no upstream grade at {point}.");
+                        // A miter at the lot edge can reach outside the source
+                        // terrain. The new solid strip carries that shoulder.
                         int index = row * columns + column;
                         top[index] = point; bottom[index] = point - Vector3.up * Thickness;
                     }
@@ -335,28 +402,33 @@ namespace BarPromenade
                     if (CityTerrainSurfacePlan.UsesContinuousTop(surface)) ground.Add(surface);
                 foreach (BuildingLot lot in masses)
                 {
-                    if (!IsResidential(lot) || terrace.IsReservedCell(lot.Cell)) continue;
+                    if ((!IsResidential(lot) && !IsWorkplace(layout, lot)) || terrace.IsReservedCell(lot.Cell)) continue;
                     CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
-                    anchors.Add(new GradeAnchor(pose.TransformPoint(CityBuildingAssetProvider.GetExpectedEntranceThreshold(lot.BuildingVariant)),
-                        pose.Rotation * CityBuildingAssetProvider.GetExpectedEntranceOutward(lot.BuildingVariant)));
+                    anchors.Add(new GradeAnchor(pose.TransformPoint(CityBuildingAssetProvider.GetExpectedEntranceThreshold(lot.District, lot.BuildingVariant)),
+                        pose.Rotation * CityBuildingAssetProvider.EntranceOutward));
                 }
             }
 
             internal float Sample(Vector2 point)
             {
-                if (samples.TryGetValue(point, out float saved)) return saved;
-                float top;
+                if (TrySample(point, out float top)) return top;
+                throw new InvalidOperationException($"Entrance centreline has no upstream grade at {point}.");
+            }
+
+            internal bool TrySample(Vector2 point, out float top)
+            {
+                if (samples.TryGetValue(point, out top)) return true;
                 if (CityStreetSurfacePlanner.TrySamplePublicSidewalkTop(layout, point, out top))
-                { samples.Add(point, top); return top; }
+                { samples.Add(point, top); return true; }
                 bool found = false;
                 foreach (CitySurfaceDescriptor surface in ground)
                 {
-                    if (!surface.WorldBounds.Contains(point)) continue;
+                    Rect bounds = Expanded(surface.WorldBounds, .002f);
+                    if (!bounds.Contains(point)) continue;
                     top = CityTerrainSurfacePlan.SampleTopWithoutRigidSupports(layout, surface, point);
                     found = true; break;
                 }
-                if (!found)
-                    throw new InvalidOperationException($"Residential paving has no upstream ground support at {point}.");
+                if (!found) return false;
                 float correction = 0f, weightSum = 0f;
                 foreach (GradeAnchor anchor in anchors)
                 {
@@ -371,7 +443,7 @@ namespace BarPromenade
                     correction += (anchor.Threshold.y - top) * weight; weightSum += weight;
                 }
                 if (weightSum > 0f) top += correction / Mathf.Max(1f, weightSum);
-                samples.Add(point, top); return top;
+                samples.Add(point, top); return true;
             }
 
             private readonly struct GradeAnchor
@@ -665,6 +737,8 @@ namespace BarPromenade
         }
 
         private static bool IsResidential(BuildingLot lot) => lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.Residential;
+        private static bool IsWorkplace(CityLayout layout, BuildingLot lot) =>
+            layout.HasIndustrialShifts && lot.HasFunctionalIndustrialPurpose;
         private static Vector2 XZ(Vector3 point) => new Vector2(point.x, point.z);
         private static int Bucket(float value) => Mathf.FloorToInt(value / SampleBucketSize);
         private static Rect Expanded(Rect r, float amount) => Rect.MinMaxRect(r.xMin - amount, r.yMin - amount, r.xMax + amount, r.yMax + amount);

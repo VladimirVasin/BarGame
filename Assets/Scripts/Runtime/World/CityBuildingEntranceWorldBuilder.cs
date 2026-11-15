@@ -3,16 +3,17 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>The same finite entrance paving feeds City and its passive Home view.</summary>
-    internal static class CityResidentialEntranceWorldBuilder
+    internal static class CityBuildingEntranceWorldBuilder
     {
         internal const string RootName = "Residential Entrance Walkways";
 
         internal static void Build(Transform parent, CityLayout layout, HomeExteriorContextPlan home = null)
         {
+            CityBuildingEntrancePlan plan = CityBuildingEntrancePlan.ForLayout(layout);
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
             int index = 0;
-            foreach (var entrance in CityResidentialEntrancePlan.ForLayout(layout).Entrances)
+            foreach (var entrance in plan.Entrances)
             {
                 bool nearby = home == null;
                 if (home != null)
@@ -22,6 +23,18 @@ namespace BarPromenade
                 foreach (CityEntranceForecourtPlan paving in entrance.Paving)
                     CityEntranceForecourtWorldBuilder.Build("Residential Entrance " + index++, root, paving, home);
             }
+            foreach (var entrance in plan.Workplaces)
+            {
+                if (home != null && !ContainsWorkplace(home, entrance.Lot)) continue;
+                CityEntranceForecourtWorldBuilder.Build(entrance.WorkplaceId, root, entrance.Paving, home);
+            }
+        }
+
+        private static bool ContainsWorkplace(HomeExteriorContextPlan home, BuildingLot workplace)
+        {
+            foreach (BuildingLot lot in home.NearbyLots)
+                if (ReferenceEquals(lot, workplace)) return true;
+            return false;
         }
     }
 }

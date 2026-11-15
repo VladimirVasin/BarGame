@@ -593,6 +593,13 @@ namespace BarPromenade
                 DrawMountainBoundary(projection);
                 DrawBuildings(projection);
                 DrawRoads(projection);
+                foreach (var entrance in CityBuildingEntrancePlan.ForLayout(controller.Layout).Workplaces)
+                {
+                    var points = entrance.Points;
+                    for (int i = 1; i < points.Count; i++)
+                        DrawLine(projection.WorldToScreen(points[i - 1]), projection.WorldToScreen(points[i]),
+                            1f, GetPathColor(CityPathKind.ParkPath));
+                }
                 DrawHillsideStreets(projection);
                 DrawTerraceCourts(projection);
                 DrawRiverBridges(projection);

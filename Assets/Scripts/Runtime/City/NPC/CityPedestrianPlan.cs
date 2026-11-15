@@ -12,7 +12,8 @@ namespace BarPromenade
         Crosswalk,
         Courtyard,
         HomeEntrance,
-        Stair
+        Stair,
+        WorkEntrance
     }
 
     public sealed class CityPedestrianNode :
@@ -79,6 +80,8 @@ namespace BarPromenade
         public int FirstNodeIndex { get; }
         public int SecondNodeIndex { get; }
         public CityPedestrianLinkKind Kind { get; }
+        internal bool IsPrivateEntrance =>
+            Kind == CityPedestrianLinkKind.HomeEntrance || Kind == CityPedestrianLinkKind.WorkEntrance;
         // Authored curved sidewalks retain graph endpoints and their stable IDs.
         public CityRoadPath Path { get; }
         internal Func<Vector2, float> PathHeightSampler { get; }
@@ -194,6 +197,9 @@ namespace BarPromenade
         private readonly ReadOnlyCollection<Rect> navigationRectangles;
         private readonly ReadOnlyCollection<Vector2[]> navigationPolygons;
         private readonly IReadOnlyList<int>[] linkIndicesByNode;
+        private readonly bool[] privateWorkNodes;
+
+        internal bool IsPrivateWorkNode(int index) => privateWorkNodes[index];
 
         internal CityPedestrianPlan(
             int layoutSeed,
@@ -218,6 +224,13 @@ namespace BarPromenade
 
             AgentRadius = agentRadius;
             nodes = Copy(sourceNodes, nameof(sourceNodes));
+            privateWorkNodes = new bool[nodes.Count];
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                string id = nodes[i].Id;
+                privateWorkNodes[i] = id.StartsWith("work:", StringComparison.Ordinal) &&
+                    !id.EndsWith(":gate", StringComparison.Ordinal);
+            }
             links = Copy(sourceLinks, nameof(sourceLinks));
             spawnAnchors = Copy(
                 sourceSpawnAnchors,

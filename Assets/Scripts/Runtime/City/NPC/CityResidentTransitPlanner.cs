@@ -27,9 +27,10 @@ namespace BarPromenade
         private readonly CityResidentWorld world;
         private readonly List<Platform> platforms = new List<Platform>();
         private readonly List<Option> options = new List<Option>();
-        private readonly Dictionary<(int from, int to), CityResidentItinerary> trips =
-            new Dictionary<(int, int), CityResidentItinerary>();
+        private readonly Dictionary<(int from, int to), (CityResidentItinerary trip, float seconds)> trips =
+            new Dictionary<(int, int), (CityResidentItinerary, float)>();
         private readonly IReadOnlyList<CityBusStopWaitPlan> waitPlans;
+        private readonly float[] averageWaitSeconds;
 
         internal CityResidentTransitPlanner(CityResidentWorld world, IReadOnlyList<CityBusPlan> lines,
             IReadOnlyList<CityBusStopWaitPlan> waits)
@@ -37,11 +38,13 @@ namespace BarPromenade
             this.world = world;
             waitPlans = waits;
             var clocks = new CityBusTimetable[lines.Count];
+            averageWaitSeconds = new float[lines.Count];
             for (int i = 0; i < lines.Count; i++)
             {
                 CityBusPlan line = lines[i];
                 if (line.IsEmpty) continue;
                 clocks[i] = CityBusTimetable.ForPlan(line);
+                averageWaitSeconds[i] = (float)(clocks[i].Duration * .25d);
                 foreach (CityBusStopWaitPoint point in waits[i].WaitPoints)
                     platforms.Add(new Platform(i, point, line.Stops[point.StopIndex]));
             }
@@ -58,7 +61,7 @@ namespace BarPromenade
                 // transfer is always made on an individual service event.
                 double ride = CityBusTimetable.Wrap(clock.Arrival(last.Point.StopIndex) -
                     clock.Arrival(first.Point.StopIndex), clock.Duration);
-                direct[a, b] = (float)(clock.Duration * .25d + ride);
+                direct[a, b] = (float)(averageWaitSeconds[first.Line] + ride);
                 options.Add(new Option(first, last, direct[a, b], new CityResidentItinerary(Leg(first, last))));
             }
 
@@ -90,9 +93,26 @@ namespace BarPromenade
             return point.PedestrianNodeIndex;
         }
 
-        internal CityResidentItinerary Plan(int from, int destination)
+        internal CityResidentItinerary Plan(int from, int destination) => Plan(from, destination, out _);
+
+        internal float EstimateWorkTripSeconds(int from, int destination)
         {
-            if (trips.TryGetValue((from, destination), out CityResidentItinerary best)) return best;
+            CityResidentItinerary trip = Plan(from, destination, out float seconds);
+            // In a timed commute allow for the full two-bus headway at each
+            // platform. The usual journey choice still uses average waits.
+            if (trip.LegCount > 0) seconds += averageWaitSeconds[trip.First.Line];
+            if (trip.LegCount == 2) seconds += averageWaitSeconds[trip.Second.Line];
+            return seconds;
+        }
+
+        internal CityResidentItinerary Plan(int from, int destination, out float seconds)
+        {
+            if (trips.TryGetValue((from, destination), out var cached))
+            {
+                seconds = cached.seconds;
+                return cached.trip;
+            }
+            CityResidentItinerary best = default;
             float bestTime = world.DistancesTo(destination)[from] / CityResidentWorld.WalkingSpeed;
             foreach (Option option in options)
             {
@@ -105,7 +125,8 @@ namespace BarPromenade
             }
             // Both endpoints are permanent places or platform nodes, never arbitrary
             // samples along the street. Cache therefore has no calendar dimension.
-            trips.Add((from, destination), best);
+            trips.Add((from, destination), (best, bestTime));
+            seconds = bestTime;
             return best;
         }
 

@@ -123,8 +123,7 @@ namespace BarPromenade
                     CityPedestrianLink candidate = plan.Links[id];
                     int other = candidate.Other(toward);
                     if (other == away || candidate.Kind == CityPedestrianLinkKind.Crosswalk && !clearingCrossing) continue;
-                    if (candidate.Kind == CityPedestrianLinkKind.HomeEntrance &&
-                        link.Kind != CityPedestrianLinkKind.HomeEntrance) continue;
+                    if (candidate.IsPrivateEntrance && candidate.Kind != link.Kind) continue;
                     Vector2 direction = (XZ(plan.Nodes[other].Position) - XZ(plan.Nodes[toward].Position)).normalized;
                     float alignment = Vector2.Dot(backwards, direction);
                     if (alignment > best) { next = other; best = alignment; }
