@@ -78,6 +78,35 @@ namespace BarPromenade
             PlaceInHand(drink, anatomy, rotation);
         }
 
+        internal bool ReceiveGift(BarPatronDrinkProp drink, Vector3 at, float reach, float carry, bool pickedUp)
+        {
+            KeepContactAnimated();
+            upperBody.Capture();
+            Vector3 toward = Vector3.ProjectOnPlane(at - spine.position, Vector3.up).normalized;
+            spine.rotation = Quaternion.AngleAxis(54f * reach * (1f - carry), Vector3.Cross(Vector3.up, toward)) * spine.rotation;
+            AnatomicalHandFrame anatomy = fingers.GetAnatomicalFrame(false, drink.GripKind);
+            Quaternion rotation = Quaternion.Slerp(Quaternion.identity, CarryRotation(), carry);
+            Vector3 onTable = at + rotation * (drink.GripLocalPosition - drink.BaseLocalPosition);
+            Vector3 grip = Vector3.Lerp(onTable, ResolveCarryGrip(), carry);
+            grip += Vector3.up * (.14f * Mathf.Sin(carry * Mathf.PI));
+            // The wrist approaches the upright cylinder from the visitor's side.
+            // Its label keeps the rotation the hero put down until it is lifted.
+            Vector3 wristToGrip = onTable - ResolveWrist(drink, anatomy, Quaternion.identity, onTable).position;
+            float pickupYaw = Vector3.SignedAngle(Vector3.ProjectOnPlane(wristToGrip, Vector3.up),
+                Vector3.ProjectOnPlane(onTable - upper.position, Vector3.up), Vector3.up);
+            Quaternion gripRotation = Quaternion.Slerp(Quaternion.AngleAxis(pickupYaw, Vector3.up), CarryRotation(), carry);
+            SolveGrip(drink, anatomy, gripRotation, grip, reach);
+            float errorSquared = (GripCentre(anatomy) - onTable).sqrMagnitude;
+            bool touching = carry > 0f || errorSquared <= .035f * .035f;
+            if (pickedUp && touching) PlaceInHand(drink, anatomy, rotation);
+            if (pickedUp && !touching)
+                GameLog.Info("kiosk", "gift_contact_missed", GameLog.Field("actor", actor.name),
+                    GameLog.Field("item", drink.Root.name),
+                    GameLog.Field("error_m", Mathf.Sqrt(errorSquared)));
+            upperBody.IncludeContactCorrections();
+            return touching;
+        }
+
         private Vector3 ResolveCarryGrip()
         {
             Transform body = actor.transform;

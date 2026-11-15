@@ -25,6 +25,84 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
+        [Explicit("Single-NPC compatibility check for the shared subtitle layout.")]
+        public IEnumerator CityPortForemanSubtitle()
+        {
+            yield return CaptureFocusedPort(VerifyForemanSubtitle);
+        }
+
+        private static IEnumerator VerifyForemanSubtitle(Camera camera, CityGameRoot city,
+            CityPortController port, CityPortCrew crew)
+        {
+            SetPortForemanHour(12);
+            var interaction = crew.Foreman.Interaction;
+            var channel = crew.GetComponent<CityPortConversationController>();
+            var player = city.Player.Interactor;
+            var session = interaction.Session;
+            var follow = camera.GetComponent<PlayerCameraFollow>();
+            float previousStep = Time.captureDeltaTime;
+            Time.captureDeltaTime = .1f;
+            double life = crew.LifeElapsedSeconds;
+            double held = CityPortCycle.CycleDurationSeconds - .001d;
+            try
+            {
+                foreach (Renderer renderer in ((Player3DCharacterPresentation)city.Player.Visual).Renderers)
+                    if (renderer) renderer.enabled = true;
+                city.Player.Motor.SetInputEnabled(true);
+                player.SetInputEnabled(true);
+                follow.enabled = true;
+                follow.ClearFixedPose();
+                channel.CancelForemanInteraction();
+                Sample();
+                Physics.SyncTransforms();
+                Assert.That(interaction.TryResolveStaging(out DialogueStagingPlan pose), Is.True);
+                city.Player.Motor.Teleport(pose.Entry.RootPosition);
+                player.transform.rotation = pose.Entry.RootRotation;
+                follow.Snap();
+                Physics.SyncTransforms();
+                channel.Initialize(port, crew, camera, player.transform, 1537);
+                interaction.Interact(player);
+                yield return Until(() => session.IsChoosing, "foreman offer");
+                Assert.That(session.Bubbles.UseSubtitles, Is.True);
+                Assert.That(session.Bubbles.HeldSubtitle, Is.EqualTo(
+                    LocalizationService.Get(CityPortConversationController.ForemanOfferKey)));
+                yield return null;
+                Assert.That(interaction.SelectChoice(true) && interaction.Confirm(), Is.True);
+                yield return Until(() => session.Phase == DialoguePhase.Speaking &&
+                    session.CurrentNode.Id == "hero_yes", "foreman reply");
+                Assert.That(session.Bubbles.HeldSubtitle, Is.Null);
+                Assert.That(session.CameraDirector.CurrentSpeakerIsHero, Is.True);
+                yield return Until(() => !session.IsActive, "foreman exit");
+                Assert.That(player.InputEnabled && !BarMinigameModalLock.IsAnyLocked, Is.True);
+            }
+            finally
+            {
+                if (session) session.RestoreImmediate();
+                channel.CancelForemanInteraction();
+                Time.captureDeltaTime = previousStep;
+            }
+
+            void Sample()
+            {
+                life += .1d;
+                port.ApplyAt(held, 15f);
+                crew.ApplyAt(held, life);
+                channel.ApplyAt();
+                crew.Foreman.ApplyAt(life);
+            }
+
+            IEnumerator Until(Func<bool> done, string stage)
+            {
+                for (int frame = 0; frame < 150 && !done(); frame++)
+                {
+                    Sample();
+                    yield return null;
+                }
+                Assert.That(done(), Is.True, stage + ": " + session.Phase + " " + session.LastEndReason);
+            }
+        }
+
+        [UnityTest]
         [Explicit("Positioned dialogue, both real speakers and choices. Run without -batchmode for Game view UI.")]
         [PrebuildSetup(typeof(PortForemanDialogueAssetsSetup))]
         public IEnumerator CityPortForemanDialogue()
@@ -429,11 +507,9 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(director.CurrentSpeakerIsHero, Is.EqualTo(player));
                 Transform head = player ? registry.Anchors.Head : foreman.Head;
                 Vector3 face = camera.WorldToViewportPoint(head.position + Vector3.up * .1f);
-                Vector3 bubble = camera.WorldToViewportPoint(head.position + Vector3.up * NpcSpeechBubbleView.AnchorClearanceMeters);
                 Assert.That(face.z, Is.GreaterThan(1f));
                 Assert.That(face.x, Is.InRange(.25f, .75f));
                 Assert.That(face.y, Is.InRange(.48f, .85f));
-                Assert.That(bubble.y, Is.InRange(.65f, .96f));
                 Assert.That(camera.fieldOfView, Is.InRange(28f, 48f));
                 Assert.That(registry.Renderers[0].enabled, Is.True, "The production hero remains visible.");
             }
@@ -447,12 +523,14 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(session.IsChoosing, Is.True);
                 Assert.That(session.LastChoicePanelRect.yMin, Is.GreaterThan(250f));
                 Assert.That(session.LastChoicePanelRect.yMax, Is.LessThan(360f));
+                Assert.That(session.Bubbles.HasRenderedLayout, Is.True);
+                Assert.That(session.Bubbles.LastRenderedPanelRect.yMax, Is.LessThan(session.LastChoicePanelRect.yMin));
             }
             else
             {
                 Assert.That(session.Bubbles.HasRenderedLayout, Is.True);
-                Assert.That(session.Bubbles.LastRenderedBubbleCount, Is.EqualTo(1));
-                Assert.That(session.Bubbles.LastRenderedPanelRect.yMax, Is.LessThan(180f));
+                Assert.That(session.Bubbles.LastRenderedPanelRect.yMax, Is.EqualTo(342f).Within(1f));
+                Assert.That(session.Bubbles.LastRenderedText, Is.EqualTo(session.Bubbles.LastRenderedRevealedText));
             }
             yield return CaptureDialogueScreenshot(name);
         }
@@ -470,7 +548,7 @@ namespace BarPromenade.Tests.PlayMode
             Debug.Log("FOREMAN DIALOGUE FRAME: " + name);
         }
 
-        // Called at end-of-frame: capture THIS articulation, including its actual bubble.
+        // Called at end-of-frame to capture the sampled articulation and subtitle together.
         // Deferred screenshots can otherwise land after a four-letter answer has finished.
         private static void CaptureTalkingFace(string name)
         {

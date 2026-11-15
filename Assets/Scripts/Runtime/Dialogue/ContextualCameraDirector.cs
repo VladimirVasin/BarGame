@@ -26,6 +26,8 @@ namespace BarPromenade
         private PlayerCameraFollow follow;
         private Camera camera;
         private Transform npcRoot, npcHead, heroRoot, heroHead;
+        private Transform secondNpcRoot, secondNpcHead, groupTable;
+        private DialogueSpeaker? groupSpeaker;
         private Vector3 axis, side;
         private float npcHeadHeight, heroHeadHeight;
         private bool active, entering, returning, previousFixed;
@@ -313,12 +315,13 @@ namespace BarPromenade
                 CurrentShotIsClear = true;
                 return true;
             }
-            if (TryResolveShot(CurrentSpeakerIsHero, preferredVariant, out pose, out fov))
+            if (groupTable != null && TryResolveGroupShot(groupSpeaker, out pose, out fov) ||
+                groupTable == null && TryResolveShot(CurrentSpeakerIsHero, preferredVariant, out pose, out fov))
             {
                 CurrentShotIsClear = true;
                 return true;
             }
-            for (int variant = 0; variant < ShotVariantCount; variant++)
+            for (int variant = 0; groupTable == null && variant < ShotVariantCount; variant++)
             {
                 if (variant == preferredVariant) continue;
                 if (!TryResolveShot(CurrentSpeakerIsHero, variant, out pose, out fov)) continue;
@@ -698,6 +701,7 @@ namespace BarPromenade
         private bool IsSceneCollider(Collider collider)
         {
             if (collider == null) return false;
+            if (groupTable != null) return true;
             Transform candidate = collider.transform;
             return candidate != npcRoot && !candidate.IsChildOf(npcRoot) &&
                 candidate != heroRoot && !candidate.IsChildOf(heroRoot);
@@ -737,14 +741,17 @@ namespace BarPromenade
             ? Vector3.Dot(FocusPoint - camera.transform.position, camera.transform.forward)
             : Vector3.Distance(camera.transform.position, FocusPoint);
 
-        private Transform ActiveHead => CurrentSpeakerIsHero ? heroHead : npcHead;
+        private Transform ActiveHead => CurrentSpeakerIsHero ? heroHead :
+            groupSpeaker == DialogueSpeaker.SecondNpc ? secondNpcHead : npcHead;
         private Vector3 FocusPoint => authoredShot ? authoredFocus : objectShot
             ? objectMode == NarrativeCameraMode.ObjectCloseUp || IsSurfaceShot ? closeUpCenter : objectBounds.center
-            : ActiveHead.position + Vector3.up * .1f;
+            : groupTable != null && !groupSpeaker.HasValue ? GroupTableFocus :
+                ActiveHead.position + Vector3.up * .1f;
 
         private bool ParticipantsExist() => follow != null && camera != null &&
             npcRoot != null && heroRoot != null && (authoredShot || objectShot || npcHead != null && heroHead != null) &&
-            npcRoot.gameObject.activeInHierarchy && heroRoot.gameObject.activeInHierarchy;
+            npcRoot.gameObject.activeInHierarchy && heroRoot.gameObject.activeInHierarchy &&
+            (groupTable == null || secondNpcRoot != null && secondNpcHead != null && secondNpcRoot.gameObject.activeInHierarchy);
 
         private void ClearReferences()
         {
@@ -754,6 +761,8 @@ namespace BarPromenade
             cutObjectTransitions = false;
             follow = null; camera = null;
             npcRoot = npcHead = heroRoot = heroHead = null;
+            secondNpcRoot = secondNpcHead = groupTable = null;
+            groupSpeaker = null;
             objectShotHeroBody = null;
         }
 

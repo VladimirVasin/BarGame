@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>A released empty bottle owns bounded real physics and a single impact decision.</summary>
+    /// <summary>A released container owns bounded real physics and a single impact decision.</summary>
     [DisallowMultipleComponent]
     public sealed class ThrownVodkaBottle : MonoBehaviour
     {
@@ -41,10 +41,10 @@ namespace BarPromenade
             => ReleaseCore(bottle, velocity, angularVelocity, ignoredHero, ignoredVehicleHull, null);
 
         internal static ThrownVodkaBottle ReleaseAmbient(VodkaBottleView bottle, Vector3 velocity, Vector3 angularVelocity,
-            Transform thrower, Collider heroBody, Transform world)
+            Transform thrower, Collider heroBody, Transform world, bool keepContents = false)
         {
             if (!world) return null;
-            return ReleaseCore(bottle, velocity, angularVelocity, thrower, heroBody, world);
+            return ReleaseCore(bottle, velocity, angularVelocity, thrower, heroBody, world, keepContents);
         }
 
         private static int Count(bool ambient)
@@ -56,7 +56,7 @@ namespace BarPromenade
         }
 
         private static ThrownVodkaBottle ReleaseCore(VodkaBottleView bottle, Vector3 velocity,
-            Vector3 angularVelocity, Transform ignoredHero, Collider ignoredVehicleHull, Transform ambientParent)
+            Vector3 angularVelocity, Transform ignoredHero, Collider ignoredVehicleHull, Transform ambientParent, bool keepContents = false)
         {
             if (bottle == null) throw new ArgumentNullException(nameof(bottle));
             ThrownVodkaBottle existing = bottle.GetComponent<ThrownVodkaBottle>();
@@ -78,7 +78,8 @@ namespace BarPromenade
                 if (oldest != null) { oldest.gameObject.SetActive(false); Destroy(oldest.gameObject); }
             }
             bottle.transform.SetParent(ambientParent, true);
-            bottle.SetRemaining(0f); bottle.SetOpened(true);
+            if (!keepContents) bottle.SetRemaining(0f);
+            bottle.SetOpened(true);
             ThrownVodkaBottle owner = existing != null ? existing : bottle.gameObject.AddComponent<ThrownVodkaBottle>();
             owner.view = bottle;
             owner.ambientParent = ambientParent;

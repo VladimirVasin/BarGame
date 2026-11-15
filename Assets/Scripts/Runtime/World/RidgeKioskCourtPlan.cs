@@ -93,6 +93,9 @@ namespace BarPromenade
         internal Vector3 Window => Point(.72f, 1.93f);
         internal Vector3 SmokePoint => Point(-1.86f, -1.92f);
         internal Vector3 Table(int table) => tables[table];
+        internal Vector3 ConversationGround(int table) => tables[table] + Vector3.forward * 1.02f;
+        internal static Vector3 GiftPoint(Vector3 tableTop, int side) =>
+            tableTop + new Vector3(side == 0 ? -.36f : .36f, 0f, .46f);
         internal static string PlaceId(int slot) => NodePrefix + "place-" + slot;
         internal static string WaitingId(int slot) => NodePrefix + "wait-" + slot;
         internal Vector3 Wait(int slot) => Point(WaitingX[slot], WaitingZ);

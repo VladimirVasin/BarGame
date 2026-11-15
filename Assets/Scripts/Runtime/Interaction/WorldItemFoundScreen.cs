@@ -57,6 +57,7 @@ namespace BarPromenade
         private Transform heldModel;
         private int inputUnlockFrame;
         private string feedbackKey = string.Empty;
+        private string actionKey, titleKey, descriptionKey, refusalKey;
         private bool alreadyReceived;
         private BarMinigameModalLock outerModalLock;
 
@@ -72,7 +73,9 @@ namespace BarPromenade
         public float InspectionFocusDistance => presenter != null ? presenter.FocusDistance : 0f;
 
         public string FeedbackKey => feedbackKey;
-        public string ActionKey => alreadyReceived ? CloseActionKey : TakeActionKey;
+        public string ActionKey => alreadyReceived ? CloseActionKey : actionKey ?? TakeActionKey;
+        public string TitleKey => titleKey ?? ActiveDefinition.NameLocalizationKey;
+        public string DescriptionKey => descriptionKey ?? ActiveDefinition.DescriptionLocalizationKey;
 
         public InventoryItemDefinition ActiveDefinition =>
             InventoryItemCatalog.Get(ActiveItemId);
@@ -193,6 +196,17 @@ namespace BarPromenade
                 onFinished, null);
         }
 
+        internal bool TryPresentAction(PlayerInteractor interactor, InventoryItemId itemId, Transform model,
+            string action, string title, string description, string refusal, Func<bool> confirm, Action<bool> finished)
+        {
+            if (!TryPresentCore(interactor, itemId, model, confirm, finished, null)) return false;
+            actionKey = action;
+            titleKey = title;
+            descriptionKey = description;
+            refusalKey = refusal;
+            return true;
+        }
+
         private bool TryPresentCore(
             PlayerInteractor interactor,
             InventoryItemId itemId,
@@ -297,7 +311,7 @@ namespace BarPromenade
 
             if (!commit())
             {
-                feedbackKey = NoRoomFeedbackKey;
+                feedbackKey = refusalKey ?? NoRoomFeedbackKey;
                 RetroAudio.Play(RetroSfxId.UiCancel);
                 return true;
             }
@@ -463,6 +477,7 @@ namespace BarPromenade
             finished = null;
             heldModel = null;
             alreadyReceived = false;
+            actionKey = titleKey = descriptionKey = refusalKey = null;
             feedbackKey = string.Empty;
             ActiveItemId = InventoryItemId.None;
             if (restoreModal) modalLock.Restore();

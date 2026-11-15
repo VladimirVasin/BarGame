@@ -575,6 +575,7 @@ namespace BarPromenade
 
         private static void ResetToDefaults()
         {
+            Array.Clear(kioskTableProgress, 0, kioskTableProgress.Length);
             ClearHawthornUse();
             stairwellLabyrinthPuzzles.Reset();
             stairwellEncounter.Reset();

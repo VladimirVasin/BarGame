@@ -27,6 +27,7 @@ namespace BarPromenade
         private Transform inspectionLeftEye, inspectionRightEye;
         private PlayerScarfController.MouthAccess mouthAccess;
         private IInteractable pendingInteraction;
+        private UnityEngine.Object contextualStowOwner;
         private float elapsed, displayedMl, beforeSipMl;
         private int bottleId, resumeAfterFrame;
         private object medicineRequestOwner;
@@ -310,7 +311,7 @@ namespace BarPromenade
             if (pendingInteraction is Object value && value == null) CancelPendingInteraction();
             if (Phase == BottlePhase.Hidden)
             {
-                if (!Equipped || Time.frameCount <= resumeAfterFrame || !CanRead ||
+                if (contextualStowOwner || !Equipped || Time.frameCount <= resumeAfterFrame || !CanRead ||
                     !equipmentOverlay && !visual.CanAcquireClip(this)) return;
                 if (combat == null) combat = GetComponent<CombatActor>();
                 if (combat != null && (combat.HasWeaponInHand || combat.IsSwitchingWeapon)) return;
@@ -530,6 +531,19 @@ namespace BarPromenade
             stowRequested = true;
             pendingSeatHandoff = false;
             repeatWhileHeld = false;
+        }
+
+        internal bool TryHoldContextualStow(UnityEngine.Object owner)
+        {
+            if (!owner || contextualStowOwner && contextualStowOwner != owner) return false;
+            contextualStowOwner = owner;
+            RequestContextualStow();
+            return true;
+        }
+
+        internal void ReleaseContextualStow(UnityEngine.Object owner)
+        {
+            if (contextualStowOwner == owner) contextualStowOwner = null;
         }
 
         private bool IsDrinking => Phase == BottlePhase.Raising || Phase == BottlePhase.Sipping || Phase == BottlePhase.Lowering;
@@ -953,6 +967,7 @@ namespace BarPromenade
         }
         private void OnDisable()
         {
+            contextualStowOwner = null;
             ClearMedicineReturn();
             GameSessionState.InventoryEquipmentChanged -= OnMedicineEquipmentChanged;
             Rendering.HawthornHealingPulse.Clear(viewCamera);

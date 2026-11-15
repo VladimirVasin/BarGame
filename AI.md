@@ -59,10 +59,8 @@ repository evidence. This does not require running every test layer.
   request. No unlisted substitutes or local randomizers. `NpcWardrobe` owns
   items/coverage; placement/actions stay local. See the accepted `2026-09-15`
   decisions in `ai/architecture-notes.md` and AGENTS.md.
-- **All speech and dialogue must follow**
-  [the mandatory speech standard](ai/speech-presentation-standard.md): every
-  spoken line, including `E` replies, uses the shared bubble above its speaker.
-  No feature may copy speech UI, typing, audio or lifetime ownership.
+- [Shared speech](ai/speech-presentation-standard.md): bubbles for ambient/E,
+  subtitles for positioned dialogue. No local UI, reveal, audio or lifetime.
 - **Anything the player sees, hears, reads or does in the world is governed by
   two mandatory documents:** `ai/city-zones-art-bible.md` for form and
   `ai/city-story-bible.md` for meaning. Before adding a detail, find the

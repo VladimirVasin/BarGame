@@ -51,17 +51,16 @@ namespace BarPromenade
 
         private void Draw()
         {
-            InventoryItemDefinition definition = screen.ActiveDefinition;
             RetroItemPanel.DrawFramedText(
                 RetroItemPanel.TitleRect,
-                LocalizationService.Get(definition.NameLocalizationKey),
+                LocalizationService.Get(screen.TitleKey),
                 titleStyle,
                 8f,
                 1f);
             RetroItemPanel.DrawFramedText(
                 RetroItemPanel.DescriptionRect,
                 LocalizationService.Get(
-                    definition.DescriptionLocalizationKey),
+                    screen.DescriptionKey),
                 descriptionStyle,
                 10f,
                 4f);

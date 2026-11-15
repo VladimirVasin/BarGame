@@ -3,6 +3,13 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-15
+
+After table contact, the kiosk guests toss their current drinks into shared
+physics and lift the gifts. The wide shot holds through both pickups before
+dialogue. `LiveCity_KioskTreatOpensThreeDialoguesWithSubtitles` passed. Game
+View frames reviewed for the throws and grips at each table.
+
 ## 2026-11-14
 
 The Ridge umbrellas use wide frosted rings. Two dim sources per ring spread
@@ -10,6 +17,14 @@ light across both guests and reduce the peak on the mast. The lens supplies
 glow while the two sources use direct lighting. `build-ridge-kiosk-3d-model`
 passed. `LiveCity_RidgeUmbrellaDiffusersLightBothGuestsWithoutClipping` passed.
 Night frames were reviewed for faces, tabletop light and diffuser placement.
+
+Ridge table dialogue reuses the foreman graph, camera and rig for two guests.
+Table contact transfers both sealed drinks. The paid round survives a return
+and owns priority over the next ambient exchange. Positioned dialogue displays
+whole subtitles and holds the question through choice.
+`LiveCity_KioskTreatOpensThreeDialoguesWithSubtitles` and `CityPortForemanSubtitle`
+passed. Game View frames reviewed for the handoff, faces and text. The older
+`CityPortForemanDialogue` fixture stopped at a speech-face assertion.
 
 ## 2026-11-13
 

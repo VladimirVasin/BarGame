@@ -1,20 +1,20 @@
 # Mandatory speech presentation standard
 
-Accepted `2026-09-11`; Russian vocalizer rollout explicitly accepted
-`2026-10-24`. Applies to spoken E replies, ambient exchanges, dialogue and hero
-mutters. Story §§6/16/21 and the art bible govern permission, text and appearance.
-No new pool, speaker, lore, gesture or interaction is granted.
+Accepted `2026-09-11`; Russian vocalizer `2026-10-24`. Covers ambient speech,
+E replies, dialogue and mutters. Story §§6/16/21 and art canon govern scope.
 
 ## One presentation
 
-Every spoken line uses `NpcSpeechBubbleView` above its actual speaker, including
-`ShowSpokenFeedback`. Bottom `InteractionPromptView` descriptions, hints, choice
-labels and pages are silent. Only an approved graph node speaks a chosen reply;
-never duplicate speech below.
+Every spoken line uses `NpcSpeechBubbleView`. Ambient speech and
+`ShowSpokenFeedback` project above the speaker. User decision `2026-11-14`:
+`DialogueSessionController` uses centered bottom subtitles with the whole line.
+The last question holds above the choices until selection. Descriptions,
+hints and choices are silent. An approved graph node speaks the chosen reply.
 
 Keep retro canvas/measurement/font/geometry/head/earshot fade/cull. Dialogue
 panels/tails/choices use 72% opacity; text stays crisp (`2026-10-24`).
-Missing speakers cancel delivery; no invented anchor or bottom fallback.
+Missing speakers cancel delivery. Both layouts use the real speaker for voice
+and facial timing.
 
 ## Shared owners
 
@@ -60,9 +60,8 @@ delayed reply or blocked input. Silent feedback keeps its own semantics.
 
 ## Prohibited copies and verification
 
-No feature-specific panels, typewriters, synthesizers, voice pools, earshot logic
-or copies of timing constants. Extend shared owners. Deviations need an explicit
-user decision in `architecture-notes.md`; new content grants no exception.
+Extend shared owners for panels, reveal, synthesis, pools, earshot and timing.
+Deviations require a user decision in `architecture-notes.md`.
 
 Use one focused existing check for routing, fit, identity/earshot, order, pause
 and teardown as relevant. Inspect a frame if appearance changes. Update this

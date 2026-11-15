@@ -3,8 +3,8 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Every spoken line, including an answer to the hero, is drawn over
-    /// its speaker's head. Actions and silent descriptions use the prompt.
+    /// Shared speaker, voice and line lifetime for ambient bubbles and dialogue
+    /// subtitles. Actions and silent descriptions use the prompt.
     /// See ai/speech-presentation-standard.md for the mandatory contract.
     ///
     /// It uses IMGUI on the shared 640x360 logical canvas. Drawing after
@@ -163,6 +163,9 @@ namespace BarPromenade
         private float lastAutomaticTime = -1f;
         private int cachedScatterLevel = -1;
         private float cachedSharedScatter;
+        private GUIStyle subtitleStyle;
+        private string measuredSubtitle;
+        private float subtitleHeight;
 
         // Reused for measurement: a fresh GUIContent per bubble per
         // IMGUI event is steady garbage for lines that change rarely.
@@ -184,6 +187,9 @@ namespace BarPromenade
         // retain their existing frame clock and shared lifetime.
         public bool UseManualClock { get; set; }
         public bool RenderEnabled { get; set; } = true;
+        internal bool UseSubtitles { get; set; }
+        internal string HeldSubtitle { get; set; }
+        internal float SubtitleBottom { get; set; } = RetroUiTheme.LogicalHeight - 18f;
         public float LineDurationSeconds { get; set; } = VisibleSeconds;
 
         /// <summary>Without a listener nothing fades and nothing is
@@ -925,7 +931,7 @@ namespace BarPromenade
                 return;
             }
 
-            EnsureStyles();
+            if (!UseSubtitles) EnsureStyles();
             // Above the intoxication HUD, below the interaction prompt,
             // the city map and the pause menu: it never covers anything
             // the player is operating.
@@ -937,7 +943,9 @@ namespace BarPromenade
                 RetroUiTheme.BeginCanvas(canvas);
             try
             {
-                for (int index = 0; index < bubbles.Length; index++)
+                if (UseSubtitles)
+                    DrawSubtitle();
+                else for (int index = 0; index < bubbles.Length; index++)
                 {
                     DrawBubble(index, canvas);
                 }
@@ -954,6 +962,44 @@ namespace BarPromenade
         }
 
         private void OnDestroy() => DismissAll();
+
+        private void DrawSubtitle()
+        {
+            string text = HeldSubtitle;
+            if (string.IsNullOrEmpty(text))
+            {
+                foreach (Bubble bubble in bubbles)
+                {
+                    if (bubble.Speaker < 0 || bubble.IsCulled || !bubble.Line.HasText) continue;
+                    text = bubble.Line.Text;
+                    break;
+                }
+            }
+            if (string.IsNullOrEmpty(text)) return;
+            if (subtitleStyle == null)
+            {
+                subtitleStyle = RetroUiTheme.CreateLabelStyle(12, TextAnchor.MiddleCenter, RetroUiTheme.Text);
+                subtitleStyle.wordWrap = true;
+            }
+            const float width = 412f, inset = 10f;
+            if (measuredSubtitle != text)
+            {
+                measuredSubtitle = text;
+                measureContent.text = text;
+                subtitleHeight = Mathf.Ceil(subtitleStyle.CalcHeight(measureContent, width - 2f * inset)) + 8f;
+            }
+            var panel = RetroUiTheme.SnapRect(new Rect((RetroUiTheme.LogicalWidth - width) * .5f,
+                SubtitleBottom - subtitleHeight, width, subtitleHeight));
+            Color background = RetroUiTheme.PanelInset;
+            background.a = RetroUiTheme.DialoguePanelOpacity;
+            RetroUiTheme.FillRect(panel, background);
+            GUI.Label(new Rect(panel.x + inset, panel.y, panel.width - 2f * inset, panel.height),
+                text, subtitleStyle);
+            HasRenderedLayout = true;
+            LastRenderedPanelRect = panel;
+            LastRenderedText = LastRenderedRevealedText = text;
+            LastRenderedOpacity = 1f;
+        }
 
         private void DrawBubble(int index, RetroUiCanvas canvas)
         {

@@ -7,9 +7,23 @@ namespace BarPromenade
     {
         public readonly UnityEngine.Object Owner;
         public readonly Transform Root, Head;
-        public readonly string Voice;
-        public DialogueParticipant(UnityEngine.Object owner, Transform root, Transform head, string voice)
-        { Owner = owner; Root = root; Head = head; Voice = voice; }
+        public readonly NpcSpeaker Speech;
+        public readonly ISpeechFaceActor Face;
+        public readonly SpeechFaceProfile FaceProfile;
+        public DialogueParticipant(UnityEngine.Object owner, Transform root, Transform head, string voice,
+            SpeechFaceProfile faceProfile = SpeechFaceProfile.Foreman)
+            : this(new NpcSpeaker(owner, head, voice, NpcEarshotProfile.Conversation), root, owner as ISpeechFaceActor,
+                faceProfile) { }
+
+        internal DialogueParticipant(in NpcSpeaker speech, Transform root, ISpeechFaceActor face, SpeechFaceProfile profile)
+        {
+            Owner = speech.Owner;
+            Root = root;
+            Head = speech.Anchor;
+            Speech = speech;
+            Face = face;
+            FaceProfile = profile;
+        }
         public bool IsPresent => Owner != null && Root != null && Head != null &&
             Root.gameObject.activeInHierarchy && Head.gameObject.activeInHierarchy;
     }
@@ -23,7 +37,14 @@ namespace BarPromenade
         { Entry = entry; ActionHip = actionHip; Exit = exit; }
     }
 
-    public enum DialoguePhase { Idle, Positioning, Framing, PreparingLine, Speaking, FinishingGesture, Choosing, Exiting }
+    public enum DialoguePhase { Idle, Positioning, Framing, PreparingLine, Speaking, FinishingGesture, Choosing, Exiting, Presenting }
+
+    internal interface IDialogueIntroduction
+    {
+        // True after the action has returned to the dialogue's grounded pose.
+        bool Present(float seconds, out bool failed);
+        void Release();
+    }
 
     /// <summary>One owner for a positioned conversation, shared speech, camera, rig and input.</summary>
     [DefaultExecutionOrder(310)]
@@ -33,14 +54,18 @@ namespace BarPromenade
         private readonly BarMinigameModalLock modal = new BarMinigameModalLock();
         private readonly DialogueCameraDirector director = new DialogueCameraDirector();
         private DialogueCursor cursor;
-        private DialogueParticipant npc, hero;
+        private DialogueParticipant npc, secondNpc, hero;
         private PlayerInteractor listener;
         private PlayerAnimatedInteractionController animation;
         private PlayerCameraFollow follow;
         private NpcSpeechBubbleView bubbles;
-        private ISpeechFaceActor heroFace, npcFace;
         private Action<bool> setNpcSpeaking;
+        private Action<DialogueSpeaker> focusChanged;
+        private Action<DialogueNode> lineCompleted;
         private Action finished;
+        private Transform table;
+        private IDialogueIntroduction introduction;
+        private string currentText;
         private bool cameraStarted, confirmArmed, preparingTalk, exitingAnimation;
         private float clock;
         private int choiceFrame, animationFinishedFrame;
@@ -56,28 +81,51 @@ namespace BarPromenade
         public Transform HeroHead => hero.Head;
         public float SpeechClock => clock;
         public Rect LastChoicePanelRect { get; private set; }
+        internal string LastEndReason { get; private set; }
 
         public bool Begin(DialogueGraph graph, DialogueStagingPlan staging, DialogueParticipant participant,
-            PlayerInteractor interactor, Action<bool> speaking, Action completed)
+            PlayerInteractor interactor, Action<bool> speaking, Action completed) =>
+            Begin(graph, staging, participant, default, interactor, speaking, completed, null, null, null, null, null);
+
+        internal bool BeginGroup(DialogueGraph graph, DialogueStagingPlan staging,
+            DialogueParticipant first, DialogueParticipant second, PlayerInteractor interactor, Transform groupTable,
+            string entryId, Action<DialogueSpeaker> focus, Action<DialogueNode> onLineCompleted,
+            Action completed, IDialogueIntroduction prelude = null) =>
+            Begin(graph, staging, first, second, interactor, null, completed, groupTable, entryId, focus,
+                onLineCompleted, prelude);
+
+        private bool Begin(DialogueGraph graph, DialogueStagingPlan staging, DialogueParticipant participant,
+            DialogueParticipant other, PlayerInteractor interactor, Action<bool> speaking, Action completed,
+            Transform groupTable, string entryId, Action<DialogueSpeaker> focus,
+            Action<DialogueNode> onLineCompleted, IDialogueIntroduction prelude)
         {
             if (IsActive || !isActiveAndEnabled || graph == null || !participant.IsPresent ||
+                graph.UsesSecondNpc && (!groupTable || !other.IsPresent || participant.Owner == other.Owner) ||
                 interactor == null || !interactor.isActiveAndEnabled || !interactor.InputEnabled ||
                 BarMinigameModalLock.IsAnyLocked || SceneTransitionService.IsTransitioning) return false;
+            var start = new DialogueCursor(graph, entryId);
             var registry = interactor.GetComponentInChildren<Player3DAssetRegistry>();
             animation = interactor.GetComponent<PlayerAnimatedInteractionController>();
             follow = Camera.main != null ? Camera.main.GetComponent<PlayerCameraFollow>() : null;
             if (registry == null || registry.Anchors.Head == null || animation == null ||
                 !animation.IsInitialized || !animation.isActiveAndEnabled || animation.IsActive || follow == null ||
-                !PlayerDialogueActions.TryAttach(registry)) return false;
+                !PlayerDialogueActions.TryAttach(registry))
+            {
+                LastEndReason = "dialogue rig or camera unavailable";
+                return false;
+            }
             if (!modal.TryCaptureAndDisable(interactor, follow,
                 FindAnyObjectByType<IntoxicationHudView>())) return false;
-            listener = interactor; npc = participant;
-            heroFace = interactor.GetComponentInChildren<Player3DCharacterPresentation>();
-            npcFace = participant.Owner as ISpeechFaceActor;
-            hero = new DialogueParticipant(interactor, interactor.transform, registry.Anchors.Head,
-                NpcVoiceCatalog.HeroMutterDesignId);
+            listener = interactor; npc = participant; secondNpc = other; table = groupTable;
+            hero = new DialogueParticipant(new NpcSpeaker(interactor, registry.Anchors.Head,
+                NpcVoiceCatalog.HeroMutterDesignId, NpcEarshotProfile.Conversation), interactor.transform,
+                registry.GetComponent<Player3DCharacterPresentation>() ??
+                interactor.GetComponentInChildren<Player3DCharacterPresentation>(), SpeechFaceProfile.Hero);
             setNpcSpeaking = speaking; finished = completed;
-            Staging = staging; cursor = new DialogueCursor(graph); clock = 0f;
+            focusChanged = focus; lineCompleted = onLineCompleted; introduction = prelude;
+            currentText = null;
+            LastEndReason = null;
+            Staging = staging; cursor = start; clock = 0f;
             Phase = DialoguePhase.Positioning; cameraStarted = preparingTalk = exitingAnimation = false;
             animationFinishedFrame = -1;
             GameCursor.Capture(this, CursorLockMode.None, false);
@@ -89,10 +137,11 @@ namespace BarPromenade
                     host.transform.SetParent(transform, false);
                     bubbles = host.AddComponent<NpcSpeechBubbleView>();
                     bubbles.UseManualClock = true;
+                    bubbles.UseSubtitles = true;
                 }
                 bubbles.Initialize(follow.Camera, interactor.transform);
-                if (!bubbles.DeclareSpeaker(npc.Owner, npc.Head, npc.Voice, NpcEarshotProfile.Conversation) ||
-                    !bubbles.DeclareSpeaker(hero.Owner, hero.Head, hero.Voice, NpcEarshotProfile.Conversation) ||
+                if (!bubbles.DeclareSpeaker(npc.Speech) || !bubbles.DeclareSpeaker(hero.Speech) ||
+                    table && !bubbles.DeclareSpeaker(secondNpc.Speech) ||
                     !animation.BeginPositioned(PlayerDialogueActions.CreateListeningDefinition(),
                         staging.Entry, staging.ActionHip, staging.Exit))
                 { RestoreImmediate(); return false; }
@@ -119,7 +168,10 @@ namespace BarPromenade
         public void Cancel()
         {
             if (!IsActive || Phase == DialoguePhase.Exiting) return;
-            bubbles?.DismissAll(); setNpcSpeaking?.Invoke(false);
+            bubbles.HeldSubtitle = null;
+            bubbles.DismissAll(); setNpcSpeaking?.Invoke(false);
+            introduction?.Release();
+            introduction = null;
             ReleaseFaces();
             GameCursor.Capture(this, CursorLockMode.None, false);
             Phase = DialoguePhase.Exiting;
@@ -131,10 +183,13 @@ namespace BarPromenade
         private void Update()
         {
             if (!IsActive) return;
-            if (!npc.IsPresent || !hero.IsPresent || listener == null || !listener.isActiveAndEnabled ||
+            if (!npc.IsPresent || !hero.IsPresent ||
+                !ReferenceEquals(table, null) && (!table || !secondNpc.IsPresent) ||
+                listener == null || !listener.isActiveAndEnabled ||
                 animation == null || !animation.isActiveAndEnabled || follow == null ||
-                SceneTransitionService.IsTransitioning || Vector3.Distance(hero.Root.position, npc.Root.position) > 3.5f)
-            { RestoreImmediate(); return; }
+                SceneTransitionService.IsTransitioning || Vector3.Distance(hero.Root.position, npc.Root.position) > 3.5f ||
+                table && Vector3.Distance(hero.Root.position, secondNpc.Root.position) > 3.5f)
+            { LastEndReason = "participant or owner unavailable"; RestoreImmediate(); return; }
             bool paused = PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused || !GameSessionState.IsGameTimeRunning;
             bubbles.RenderEnabled = !paused;
             if (paused) return;
@@ -148,20 +203,24 @@ namespace BarPromenade
                     if (animation.Phase == PlayerAnimatedInteractionPhase.Entering ||
                         animation.Phase == PlayerAnimatedInteractionPhase.Looping)
                     {
-                        cameraStarted = director.Begin(follow, npc.Root, npc.Head, hero.Root, hero.Head);
-                        if (!cameraStarted) { Cancel(); return; }
+                        cameraStarted = table
+                            ? director.BeginGroup(follow, table, npc, secondNpc, hero, introduction != null)
+                            : director.Begin(follow, npc.Root, npc.Head, hero.Root, hero.Head);
+                        if (!cameraStarted) { LastEndReason = "dialogue establishing shot unavailable"; Cancel(); return; }
                         Phase = DialoguePhase.Framing;
                     }
                     break;
                 case DialoguePhase.Framing:
-                    if (director.IsSettled && animation.Phase == PlayerAnimatedInteractionPhase.Looping) PrepareNode();
+                    if (!director.IsSettled || animation.Phase != PlayerAnimatedInteractionPhase.Looping) break;
+                    if (introduction != null) Phase = DialoguePhase.Presenting;
+                    else PrepareNode();
                     break;
                 case DialoguePhase.PreparingLine:
                     if (preparingTalk && animation.NestedLoopActionPhase != PlayerAnimatedInteractionPhase.Looping) break;
                     TrySpeak();
                     break;
                 case DialoguePhase.Speaking:
-                    DialogueParticipant speaker = cursor.Current.Speaker == DialogueSpeaker.Hero ? hero : npc;
+                    DialogueParticipant speaker = Participant(cursor.Current.Speaker);
                     if (bubbles.IsShowing(speaker.Owner)) break;
                     setNpcSpeaking?.Invoke(false);
                     if (preparingTalk)
@@ -169,11 +228,11 @@ namespace BarPromenade
                         animation.RequestNestedLoopActionExit();
                         Phase = DialoguePhase.FinishingGesture;
                     }
-                    else { cursor.CompleteLine(); PrepareNode(); }
+                    else CompleteLine();
                     break;
                 case DialoguePhase.FinishingGesture:
                     if (!animation.IsNestedLoopActionActive)
-                    { preparingTalk = false; cursor.CompleteLine(); PrepareNode(); }
+                    { preparingTalk = false; CompleteLine(); }
                     break;
                 case DialoguePhase.Choosing:
                     ReadChoices();
@@ -190,14 +249,30 @@ namespace BarPromenade
             DialogueNode node = cursor.Current;
             preparingTalk = false;
             if (node.Kind == DialogueNodeKind.End) { Cancel(); return; }
-            director.Focus(node.Speaker == DialogueSpeaker.Hero);
             if (node.Kind == DialogueNodeKind.Choice)
             {
+                if (!table) director.Focus(true);
+                bubbles.HeldSubtitle = currentText;
+                bubbles.SubtitleBottom = ChoicePanel(node.Choices.Count).yMin - 6f;
                 GameCursor.Capture(this, CursorLockMode.None, true);
                 Phase = DialoguePhase.Choosing; SelectedChoice = 0;
                 choiceFrame = Time.frameCount; confirmArmed = false;
                 return;
             }
+            bubbles.HeldSubtitle = null;
+            bubbles.SubtitleBottom = RetroUiTheme.LogicalHeight - 18f;
+            currentText = LocalizationService.Get(node.TextKey);
+            if (table)
+            {
+                if (!director.FocusGroup(node.Speaker))
+                {
+                    LastEndReason = "dialogue shot unavailable for " + node.Speaker;
+                    Cancel();
+                    return;
+                }
+                focusChanged?.Invoke(node.Speaker);
+            }
+            else director.Focus(node.Speaker == DialogueSpeaker.Hero);
             Phase = DialoguePhase.PreparingLine;
             GameCursor.Capture(this, CursorLockMode.None, false);
             if (node.Speaker == DialogueSpeaker.Hero)
@@ -210,12 +285,30 @@ namespace BarPromenade
         private void TrySpeak()
         {
             DialogueNode node = cursor.Current;
-            DialogueParticipant speaker = node.Speaker == DialogueSpeaker.Hero ? hero : npc;
-            string text = LocalizationService.Get(node.TextKey);
-            if (!bubbles.ShowAt(speaker.Owner, text, clock,
-                SpeechDelivery.ResolveSpokenDuration(text, SpeechDelivery.ReadingTailSeconds))) return;
-            setNpcSpeaking?.Invoke(node.Speaker == DialogueSpeaker.Npc);
+            DialogueParticipant speaker = Participant(node.Speaker);
+            if (!bubbles.ShowAt(speaker.Owner, currentText, clock,
+                SpeechDelivery.ResolveSpokenDuration(currentText, SpeechDelivery.ReadingTailSeconds)))
+            {
+                LastEndReason = "dialogue speech unavailable";
+                Cancel();
+                return;
+            }
+            setNpcSpeaking?.Invoke(node.Speaker != DialogueSpeaker.Hero);
             Phase = DialoguePhase.Speaking;
+        }
+
+        private DialogueParticipant Participant(DialogueSpeaker speaker) => speaker switch
+        {
+            DialogueSpeaker.Hero => hero,
+            DialogueSpeaker.SecondNpc => secondNpc,
+            _ => npc
+        };
+
+        private void CompleteLine()
+        {
+            cursor.CompleteLine();
+            lineCompleted?.Invoke(cursor.Current);
+            PrepareNode();
         }
 
         private void ReadChoices()
@@ -252,15 +345,30 @@ namespace BarPromenade
             if (!IsActive || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused || !GameSessionState.IsGameTimeRunning) return;
             if (Phase != DialoguePhase.Positioning && Phase != DialoguePhase.Exiting)
             {
-                if (!PresentFace(heroFace, hero.Owner, SpeechFaceProfile.Hero) ||
-                    !PresentFace(npcFace, npc.Owner, SpeechFaceProfile.Foreman))
-                { Cancel(); return; }
+                if (!PresentFace(hero) || !PresentFace(npc) || table && !PresentFace(secondNpc))
+                { LastEndReason = "participant face unavailable"; Cancel(); return; }
             }
             if (cameraStarted)
             {
                 director.Tick(Time.deltaTime);
-                if (Phase != DialoguePhase.Exiting && director.IsSettled && !director.CurrentShotIsClear)
-                { RestoreImmediate(); return; }
+                if (Phase != DialoguePhase.Exiting &&
+                    (director.IsFinished || director.IsSettled && !director.CurrentShotIsClear))
+                { LastEndReason = "dialogue sightline lost"; RestoreImmediate(); return; }
+            }
+            if (Phase == DialoguePhase.Presenting)
+            {
+                bool ready = introduction.Present(Time.deltaTime, out bool failed);
+                if (failed)
+                {
+                    LastEndReason = "dialogue introduction could not reach contact";
+                    Cancel();
+                }
+                else if (ready)
+                {
+                    introduction.Release();
+                    introduction = null;
+                    PrepareNode();
+                }
             }
             if (Phase == DialoguePhase.Exiting && animationFinishedFrame >= 0 &&
                 Time.frameCount > animationFinishedFrame && (!cameraStarted || director.IsFinished)) RestoreImmediate();
@@ -271,31 +379,53 @@ namespace BarPromenade
             if (!IsActive && !modal.IsLocked) return;
             Action callback = finished; finished = null;
             Phase = DialoguePhase.Idle;
-            ReleaseFaces(); heroFace = npcFace = null;
+            introduction?.Release();
+            introduction = null;
+            ReleaseFaces();
             bubbles?.DismissAll();
             bubbles?.WithdrawSpeaker(npc.Owner); bubbles?.WithdrawSpeaker(hero.Owner);
+            if (bubbles != null)
+            {
+                if (table) bubbles.WithdrawSpeaker(secondNpc.Owner);
+                bubbles.HeldSubtitle = null;
+            }
             setNpcSpeaking?.Invoke(false); setNpcSpeaking = null;
             animation?.CancelActiveInteraction();
             director.RestoreImmediate(); cameraStarted = false;
             GameCursor.Release(this);
             modal.Restore();
-            listener = null; hero = npc = default; cursor = null;
+            listener = null; hero = npc = secondNpc = default; cursor = null;
+            table = null; currentText = null; focusChanged = null; lineCompleted = null;
             callback?.Invoke();
         }
 
-        private bool PresentFace(ISpeechFaceActor actor, UnityEngine.Object owner, SpeechFaceProfile profile)
+        private bool PresentFace(in DialogueParticipant participant)
         {
-            if (actor == null) return true;
-            SpeechFacePose pose = bubbles.TryGetSpeechFaceSample(owner, out SpeechFaceSample sample)
-                ? SpeechFaceAnimation.Resolve(sample, profile, clock)
-                : SpeechFaceAnimation.ResolveListening(profile, clock);
-            return actor.TrySetSpeechFace(this, pose);
+            if (participant.Face == null) return true;
+            SpeechFacePose pose = bubbles.TryGetSpeechFaceSample(participant.Owner, out SpeechFaceSample sample)
+                ? SpeechFaceAnimation.Resolve(sample, participant.FaceProfile, clock)
+                : SpeechFaceAnimation.ResolveListening(participant.FaceProfile, clock);
+            return participant.Face.TrySetSpeechFace(this, pose);
         }
 
         private void ReleaseFaces()
         {
-            if (heroFace is UnityEngine.Object heroObject && heroObject != null) heroFace.ReleaseSpeechFace(this);
-            if (npcFace is UnityEngine.Object npcObject && npcObject != null) npcFace.ReleaseSpeechFace(this);
+            ReleaseFace(hero);
+            ReleaseFace(npc);
+            ReleaseFace(secondNpc);
+        }
+
+        private void ReleaseFace(in DialogueParticipant participant)
+        {
+            if (participant.Face is UnityEngine.Object actor && !actor) return;
+            participant.Face?.ReleaseSpeechFace(this);
+        }
+
+        private static Rect ChoicePanel(int count)
+        {
+            float height = Mathf.Min(4, count) * 28f + 16f;
+            return new Rect((RetroUiTheme.LogicalWidth - 328f) * .5f,
+                RetroUiTheme.LogicalHeight - height - 18f, 328f, height);
         }
 
         private void OnGUI()
@@ -307,6 +437,7 @@ namespace BarPromenade
                 // A text-only hit target avoids inherited editor skin's scaled button textures.
                 optionStyle = RetroUiTheme.CreateLabelStyle(11, TextAnchor.MiddleLeft, RetroUiTheme.Text);
                 selectedStyle = RetroUiTheme.CreateLabelStyle(11, TextAnchor.MiddleLeft, RetroUiTheme.SelectionText);
+                optionStyle.wordWrap = selectedStyle.wordWrap = true;
             }
             int previousDepth = GUI.depth; bool enabled = GUI.enabled;
             GUI.depth = -90;
@@ -316,16 +447,14 @@ namespace BarPromenade
             {
                 int count = cursor.Current.Choices.Count, visible = Mathf.Min(4, count);
                 int first = Mathf.Clamp(SelectedChoice - visible + 1, 0, count - visible);
-                float height = visible * 28f + 16f;
-                Rect panel = new Rect((RetroUiTheme.LogicalWidth - 280f) * .5f,
-                    RetroUiTheme.LogicalHeight - height - 18f, 280f, height);
+                Rect panel = ChoicePanel(count);
                 LastChoicePanelRect = panel;
                 RetroUiTheme.DrawPanel(panel, RetroUiTheme.Panel, RetroUiTheme.BorderMuted,
                     false, 0f, 1f, RetroUiTheme.DialoguePanelOpacity);
                 for (int row = 0; row < visible; row++)
                 {
                     int index = first + row;
-                    Rect rect = new Rect(panel.x + 10f, panel.y + 8f + row * 28f, 260f, 26f);
+                    Rect rect = new Rect(panel.x + 10f, panel.y + 8f + row * 28f, panel.width - 20f, 26f);
                     if (GUI.enabled && RetroUiInput.PointerMoved && rect.Contains(RetroUiInput.MousePosition))
                         SelectedChoice = index;
                     bool selected = index == SelectedChoice;

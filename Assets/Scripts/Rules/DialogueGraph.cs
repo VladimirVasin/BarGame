@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace BarPromenade
 {
-    public enum DialogueSpeaker { Npc, Hero }
+    public enum DialogueSpeaker { Npc, Hero, SecondNpc }
     public enum DialogueNodeKind { Line, Choice, End }
 
     public sealed class DialogueChoice
@@ -42,6 +42,7 @@ namespace BarPromenade
     {
         private readonly Dictionary<string, DialogueNode> nodes = new Dictionary<string, DialogueNode>();
         public string EntryId { get; }
+        public bool UsesSecondNpc { get; }
         public DialogueGraph(string entryId, params DialogueNode[] content)
         {
             if (content == null || content.Length == 0) throw new ArgumentException("Dialogue is empty.");
@@ -56,7 +57,14 @@ namespace BarPromenade
             foreach (DialogueNode node in content)
             {
                 if (node.Kind == DialogueNodeKind.Line)
-                { RequireText(node.TextKey); RequireNode(node.NextId); }
+                {
+                    if (node.Speaker != DialogueSpeaker.Npc && node.Speaker != DialogueSpeaker.Hero &&
+                        node.Speaker != DialogueSpeaker.SecondNpc)
+                        throw new ArgumentException("Unknown dialogue speaker: " + node.Speaker);
+                    UsesSecondNpc |= node.Speaker == DialogueSpeaker.SecondNpc;
+                    RequireText(node.TextKey);
+                    RequireNode(node.NextId);
+                }
                 else if (node.Kind == DialogueNodeKind.Choice)
                 {
                     if (node.Choices.Count == 0) throw new ArgumentException("A choice needs an answer.");
@@ -95,8 +103,11 @@ namespace BarPromenade
     {
         private readonly DialogueGraph graph;
         public DialogueNode Current { get; private set; }
-        public DialogueCursor(DialogueGraph definition)
-        { graph = definition ?? throw new ArgumentNullException(nameof(definition)); Current = graph.Get(graph.EntryId); }
+        public DialogueCursor(DialogueGraph definition, string entryId = null)
+        {
+            graph = definition ?? throw new ArgumentNullException(nameof(definition));
+            Current = graph.Get(entryId ?? graph.EntryId);
+        }
         public bool CompleteLine()
         {
             if (Current.Kind != DialogueNodeKind.Line) return false;

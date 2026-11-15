@@ -6,11 +6,20 @@ namespace BarPromenade
     internal sealed partial class RidgeKioskCourtLife
     {
         private static readonly (string First, string Reply)[] ExchangePool = BuildExchangePool();
+        private static readonly (string First, string Reply)[] TableOpeners =
+        {
+            ("kiosk.dialogue.politics.ambient.a", "kiosk.dialogue.politics.ambient.b"),
+            ("kiosk.dialogue.philosophy.ambient.a", "kiosk.dialogue.philosophy.ambient.b"),
+            ("kiosk.dialogue.misogyny.ambient.a", "kiosk.dialogue.misogyny.ambient.b")
+        };
         private NpcSpeechBubbleView speech;
         private BarSpeechVariantDeck exchanges;
         private Visit firstSpeaker, replySpeaker;
         private bool firstHeard, replying;
         private int exchange, nextPair;
+        private int previousTopicDay = -1;
+        private int openedTopics;
+        private (string First, string Reply) activeExchange;
         private float speechClock, nextExchange, replyAt;
 
         private void InitializeSpeech(Camera camera)
@@ -57,18 +66,25 @@ namespace BarPromenade
                     sample.RevealedCharacters > 0)
                 {
                     firstHeard = true;
-                    exchanges.Commit(exchange);
+                    if (exchange >= 0) exchanges.Commit(exchange);
+                    else openedTopics |= 1 << ~exchange;
                 }
                 if (speech.IsShowing(firstSpeaker.Actor.Presentation)) return;
                 if (!firstHeard) { CancelExchange(); return; }
                 if (replyAt < 0f) replyAt = speechClock + (float)BarConversationSchedule.ReplyMinimumGapSeconds;
                 if (speechClock < replyAt) return;
-                replying = BeginLine(replySpeaker, ExchangePool[exchange].Reply);
+                replying = BeginLine(replySpeaker, activeExchange.Reply);
                 if (!replying) CancelExchange();
                 return;
             }
 
-            if (speechClock < nextExchange || minute >= CityResidentLifeRules.KioskCourtEmptyMinute) return;
+            if (reservedTable >= 0 || speechClock < nextExchange ||
+                minute >= CityResidentLifeRules.KioskCourtEmptyMinute) return;
+            if (previousTopicDay != day)
+            {
+                openedTopics = 0;
+                previousTopicDay = day;
+            }
             double now = day * 1440d + minute;
             nextExchange = speechClock + 1.5f;
             for (int retry = 0; retry < visits.Length; retry++)
@@ -78,8 +94,15 @@ namespace BarPromenade
                 Visit first = visits[start];
                 Visit reply = visits[table + (start - table + 1) % RidgeKioskCourtPlan.PlacesPerTable];
                 if (!Ready(first) || !Ready(reply) || first.Until - now < 3d || reply.Until - now < 3d) continue;
-                exchange = exchanges.Peek();
-                if (!BeginLine(first, ExchangePool[exchange].First)) continue;
+                int topic = table / RidgeKioskCourtPlan.PlacesPerTable;
+                exchange = (openedTopics & (1 << topic)) == 0 ? ~topic : exchanges.Peek();
+                if (exchange < 0)
+                {
+                    first = visits[table];
+                    reply = visits[table + 1];
+                }
+                activeExchange = exchange < 0 ? TableOpeners[topic] : ExchangePool[exchange];
+                if (!BeginLine(first, activeExchange.First)) continue;
                 firstSpeaker = first;
                 replySpeaker = reply;
                 replyAt = -1f;
@@ -100,7 +123,7 @@ namespace BarPromenade
         {
             var owner = visit.Actor.Presentation;
             if (NpcSpeechBubbleView.IsPresentingAt(visit.Head)) return false;
-            if (!speech.DeclareSpeaker(owner, visit.Head, owner.Registry.DesignId, NpcEarshotProfile.Conversation)) return false;
+            if (!speech.DeclareSpeaker(NpcSpeaker.FromRegistry(owner, owner.Registry, NpcEarshotProfile.Conversation))) return false;
             string line = LocalizationService.Get(key);
             float duration = Mathf.Max(NpcSpeechBubbleView.VisibleSeconds,
                 SpeechDelivery.ResolveSpokenDuration(line, SpeechDelivery.ReadingTailSeconds));

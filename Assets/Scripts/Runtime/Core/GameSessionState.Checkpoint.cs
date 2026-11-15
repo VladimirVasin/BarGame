@@ -41,6 +41,7 @@ namespace BarPromenade
             internal readonly int? WarehouseStorySeed;
             internal readonly bool WarehouseDoorAmbushPlayed;
             internal readonly InventoryState.Checkpoint Inventory;
+            internal readonly KioskTableProgress[] KioskTables;
             internal readonly QuestLogEntry[] Quests;
             internal readonly GameTimeState.Checkpoint Time;
             internal readonly PlayerNeedsProgressionState.Checkpoint Needs;
@@ -87,6 +88,7 @@ namespace BarPromenade
                 WarehouseStorySeed = GameSessionState.WarehouseStorySeed;
                 WarehouseDoorAmbushPlayed = GameSessionState.WarehouseDoorAmbushPlayed;
                 Inventory = inventory.CaptureCheckpoint();
+                KioskTables = (KioskTableProgress[])kioskTableProgress.Clone();
                 Quests = questLog.CaptureCheckpoint();
                 Time = gameTime.CaptureCheckpoint();
                 Needs = needsProgression.CaptureCheckpoint();
@@ -158,6 +160,7 @@ namespace BarPromenade
             WarehouseStorySeed = saved.WarehouseStorySeed;
             WarehouseDoorAmbushPlayed = saved.WarehouseDoorAmbushPlayed;
             inventory.RestoreCheckpoint(saved.Inventory);
+            saved.KioskTables.CopyTo(kioskTableProgress, 0);
             questLog.RestoreCheckpoint(saved.Quests);
             gameTime.RestoreCheckpoint(saved.Time);
             needsProgression.RestoreCheckpoint(saved.Needs);

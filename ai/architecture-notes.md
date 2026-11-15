@@ -2,6 +2,13 @@
 
 ## Current facts
 
+- **Accepted 2026-11-14/15, user — kiosk dialogue and subtitles:** two sealed
+  drinks transfer on tabletop contact. Both toss old drinks and pick up the
+  gifts in a wide shot before the shared foreman graph. Day/IDs/round in
+  session/checkpoint. Ambient pair yields. Subtitles below with held question.
+  Story §§6/7/17/21, art §§7/15a/16. City FX/probe/SSR receivers apply. Shared
+  DoF tracks table then speaker. UI after post. Costs unmeasured.
+
 - **Accepted 2026-11-14, user — umbrella light:** fixed frosted rings, two wide
   weak pooled Spots each. The visible lens owns bloom. The paired sources light
   surfaces directly and skip air and bounce. City/Home share the fixtures.
@@ -14,7 +21,7 @@
 - **Accepted 2026-11-12/13, user — Ridge kiosk court:** rear slab/3 umbrellas/phone,
   2/table and off-aisle waits. Single refill/departure trip. Final rest +45–75s,
   last sip on turn. Orders22/empty23. Frozen load clock, prefilled guests mid-drink.
-  Walk/buy/carry, hero grip/throw≤6 empties, shared sips/bar pairs/bubbles.
+  Walk/buy/carry, hero grip/throw≤6 drops, shared sips/bar pairs/bubbles.
   Seller idle/look/hinge/smoke. Story6/17/21,art4/7/16. Shared wetness/wind/rain,
   atlas wear/chamfers. Water/COLOR/rim/outlines as City. SSGI/SCGI absent.
 
@@ -765,12 +772,8 @@
   load mutation through `BarBusinessHours`; `StartMenuModel`,
   `NewGameLocationCatalog`/`NewGameStartService` share admission. No journey,
   forced evening, new binding/speech/story event.
-- **Accepted 2026-10-24 — translucent dialogue panels:** The user requested
-  translucent dialogue windows. `RetroUiTheme.DialoguePanelOpacity` shares `72%`
-  across overhead speech panels/tails and the dialogue choice panel/selection.
-  Text retains its existing contrast; earshot fade still scales the whole line.
-  Existing geometry, anchors, hit targets and ownership remain. Scene shaping,
-  material/accent effects and post-processing need no additional provider.
+- **Accepted 2026-10-24 — translucent speech panels:** `DialoguePanelOpacity`
+  is `72%` for bubbles, tails and choices. Earshot fades ambient lines.
 - **Accepted 2026-10-24 — gradual intoxication audio:** The user requested
   gradual changes to sound, including music. `GameTimeScaleRuntime.AudioPerception`
   uses a persistent audio level with an unpaused real-time exponential `0.7 s`
@@ -1759,9 +1762,9 @@
   Story §6: held face/selected «Хочу»/«Не сейчас» aloud; Cancel always keeps §16.16.
   Foreman first; no lore/job/pay/quest; village/Mother/other choices unchanged.
   `DialogueGraph`/`DialogueCursor` (`Line/Choice/End`) → `DialogueSessionController`:
-  shared `BeginPositioned`, bubbles/camera/input/HUD. `DialogueStagingPlan`: entry/action/exit.
+  shared `BeginPositioned`, speech/camera/input/HUD. `DialogueStagingPlan`: entry/action/exit.
   Visible `1.65 m` flat-quay approach; side chest shots retain axis/rigs. Talk/Listen,
-  carrot custody/bite/clock; bubbles own voices/timing; choices omit offer. E prompts;
+  carrot custody/bite/clock; shared delivery owns voice/timing. E prompts;
   snack/pair gates, no backlog. Shared cleanup restores all owned state on every exit.
   Bone-only `PlayerDialogueActions`: Enter/Listen/Talk/Exit; `RequestNestedLoopActionExit`.
   Carrot/approach parallel; camera/Enter `.3/.35 s` after settle. Stationary
@@ -1784,11 +1787,9 @@
   After scene presentation: cleared actor-ID mask of existing meshes + camera/text depth rejects
   colliderless occlusion. Identity survives movement/reparenting/busy.
 
-- **Accepted — 2026-09-11, every spoken line above its speaker:**
-  `NpcSpeechBubbleView`/`SpeechDelivery`/`NpcSpeechVoice` own all speech, including E;
-  bottom descriptions/hints/choices are silent. The mandatory speech standard
-  preserves text/voices/order, shared anchors/earshot/line duration/admission/
-  pause/cleanup and cross-view head ownership; no feature copies/new pool/recorded acting.
+- **Accepted — 2026-09-11, shared speech presentation:**
+  `NpcSpeechBubbleView`/`SpeechDelivery`/`NpcSpeechVoice` own speech and E replies.
+  Shared anchors/earshot/timing/pause/cleanup apply to bubbles and subtitles.
 
 - **Accepted — 2026-09-11, warehouse doorway priority:**
   Arrival/accepted stock decide access; crane load reserves nothing. Docker
@@ -4295,10 +4296,8 @@
   `22`/`25` again. Widening how far a line can be READ must not move the moment
   two men start shouting, and the profile is now deliberately wider than the
   gate on both ends, so they fall silent before their words begin to fade.
-- **Accepted — shared speech is projected above the speaker:**
-  `NpcSpeechBubbleView`: shared-font IMGUI at `GUI.depth = -75`, above intoxication
-  HUD and below interaction prompt/map/pause. Speech stays readable over the
-  native scene and never covers controls or becomes world geometry.
+- **Accepted — shared speech composites after the scene:**
+  `NpcSpeechBubbleView`: IMGUI depth `-75`; prompt/map/pause have priority.
 - **Accepted architecture exception, explicit user decision 2026-09-05 —
   roaming walkers curse the hero on the last stage, over their own heads:**
   the user asked for insults and, told that the literal request collides

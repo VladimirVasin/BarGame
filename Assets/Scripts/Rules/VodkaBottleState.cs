@@ -85,6 +85,29 @@ namespace BarPromenade
             return index >= 0 ? remaining[index] : 0;
         }
 
+        public int FindSealedFull(int exceptId = 0)
+        {
+            for (int index = 0; index < Count; index++)
+                if (ids[index] != exceptId && !opened[index] && remaining[index] == fullMl)
+                    return ids[index];
+            return 0;
+        }
+
+        public bool IsSealedFull(int id)
+        {
+            int index = Find(id);
+            return index >= 0 && !opened[index] && remaining[index] == fullMl;
+        }
+
+        public bool TryRemoveSealedFull(int firstId, int secondId = 0)
+        {
+            if (!IsSealedFull(firstId) ||
+                secondId != 0 && (firstId == secondId || !IsSealedFull(secondId))) return false;
+            RemoveAt(Find(firstId));
+            if (secondId != 0) RemoveAt(Find(secondId));
+            return true;
+        }
+
         public void Clear()
         {
             Array.Clear(ids, 0, ids.Length); Array.Clear(remaining, 0, remaining.Length);

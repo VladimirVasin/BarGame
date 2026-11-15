@@ -72,6 +72,14 @@ namespace BarPromenade
                 for (int i = 0; i < targets.Length; i++)
                     if (targets[i]) writtenPose[i] = targets[i].localRotation;
             }
+
+            internal void Capture()
+            {
+                Restore();
+                for (int i = 0; i < targets.Length; i++)
+                    if (targets[i]) basePose[i] = writtenPose[i] = targets[i].localRotation;
+                hasPose = true;
+            }
         }
 
         private readonly GameObject donor;

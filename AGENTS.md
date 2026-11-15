@@ -99,11 +99,10 @@ required parity/coverage need explicit requests.
   No local randomizers. Keep placement/actions local (see `2026-09-15` in
   `ai/architecture-notes.md`).
 - Schedule NPC lunch breaks only on explicit user request (`2026-11-09`).
-- Speech/dialogue follow [the standard](ai/speech-presentation-standard.md).
-  Every spoken line, including `E` replies, uses its speaker's shared bubble;
-  bottom UI is silent. Feature-local UI/typewriter/audio/lifetime copies are
-  forbidden. Deviations require explicit user decisions recorded as accepted
-  architecture exceptions.
+- Speech follows [the standard](ai/speech-presentation-standard.md).
+  Shared bubbles for ambient/E; shared subtitles for positioned dialogue.
+  No local UI/reveal/audio/lifetime copies. Deviations require a user decision
+  recorded in `ai/architecture-notes.md`.
 - Future contextual interactions follow `ai/contextual-animation-standard.md` using the
   continuous modular 3D hero's world rig or a camera-local first-person subset
   of that prefab. Sprite/atlas presentation is retired. Deviations require an

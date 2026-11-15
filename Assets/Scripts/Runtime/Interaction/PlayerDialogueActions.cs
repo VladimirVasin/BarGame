@@ -19,6 +19,7 @@ namespace BarPromenade
         private static readonly string[] names = { EnterClip, ListenClip, TalkEnterClip, TalkClip, TalkExitClip, ExitClip };
         private static readonly float[] durations = { EnterSeconds, ListenSeconds, TalkEnterSeconds, TalkSeconds, TalkExitSeconds, ExitSeconds };
         private static Manifest manifest;
+        private static AnimationClip[] clips;
 
         public static IReadOnlyList<string> ClipNames => names;
         public static Vector3 EntryPelvisFromGround => Point(Load().entry_pelvis_from_ground);
@@ -51,8 +52,8 @@ namespace BarPromenade
         public static bool TryAttach(Player3DAssetRegistry registry)
         {
             if (registry == null || !TryLoad(out _)) return false;
-            AnimationClip[] clips = Resources.LoadAll<AnimationClip>(ResourcePath);
-            var bindings = new List<Player3DAnimationBinding>(registry.Animations);
+            clips ??= Resources.LoadAll<AnimationClip>(ResourcePath);
+            List<Player3DAnimationBinding> bindings = null;
             for (int index = 0; index < names.Length; index++)
             {
                 string name = names[index];
@@ -74,8 +75,10 @@ namespace BarPromenade
                     new Player3DFacialExpressionKey(.665f, PlayerFacialExpression.HalfBlink),
                     new Player3DFacialExpressionKey(.68f, PlayerFacialExpression.Neutral)
                 } : Array.Empty<Player3DFacialExpressionKey>();
+                bindings ??= new List<Player3DAnimationBinding>(registry.Animations);
                 bindings.Add(new Player3DAnimationBinding(name, "dialogue", clip, durations[index], IsLoop(name), face));
             }
+            if (bindings == null) return true;
             registry.Configure(registry.Animator, registry.ModelRoot, registry.Renderers.ToArray(),
                 registry.MeshBindings.ToArray(), registry.AnatomicalParts.ToArray(), bindings.ToArray(),
                 registry.Anchors, registry.Metrics, registry.SourceGeneratorVersion, registry.SourcePose,
@@ -123,6 +126,10 @@ namespace BarPromenade
         }
         [Serializable] private sealed class Clip { public string name; public float duration_seconds; public bool loop; }
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCache() => manifest = null;
+        private static void ResetCache()
+        {
+            manifest = null;
+            clips = null;
+        }
     }
 }

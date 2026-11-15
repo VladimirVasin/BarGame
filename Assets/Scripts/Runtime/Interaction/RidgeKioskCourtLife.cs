@@ -7,23 +7,30 @@ namespace BarPromenade
     [DefaultExecutionOrder(325)]
     internal sealed partial class RidgeKioskCourtLife : MonoBehaviour
     {
-        private enum Phase { Unbound, NeedDrink, ToWindow, Handover, ToTable, ReturningToHold, AtTable, Throwing, Leaving, Departed }
+        private enum Phase
+        {
+            Unbound, NeedDrink, ToWindow, Handover, ToTable, ReturningToHold, AtTable, TakingGift, Throwing, Leaving, Departed
+        }
         private sealed class Visit
         {
             internal CityPedestrianActor Actor;
+            internal string CharacterId;
             internal Transform Head;
             internal RidgeKioskVisitorHands Hands;
+            internal KioskVisitorFace Face;
             internal Phase Phase;
             internal double Until;
             internal float Elapsed, ThrowProgress, RetryDelay;
-            internal int Cash, Orders, Sips, HoldNode, TableNode;
+            internal int Cash, Orders, Sips, HoldNode, TableNode, Place;
             internal long Request;
             internal bool FinalRestExtended;
-            internal VodkaBottleView Container;
+            internal bool GiftGripEstablished;
+            internal VodkaBottleView Container, Gift;
             internal BarPatronDrinkProp Drink;
             internal BarPatronDrinkingArmPose Drinking;
             internal BarPatronDrinkTimeline Timeline;
-            internal bool IsAtTable => Actor && At(Actor, TableNode) && Phase is Phase.AtTable or Phase.NeedDrink or Phase.Throwing;
+            internal bool IsAtTable => Actor && At(Actor, TableNode) &&
+                Phase is Phase.AtTable or Phase.NeedDrink or Phase.Throwing or Phase.TakingGift;
             internal void ConsumeSip()
             {
                 if (!Container || Sips <= 0) return;
@@ -88,6 +95,7 @@ namespace BarPromenade
             handover = station.transform.TransformPoint(new Vector3(.56f, 1.04f, 1.46f));
             for (int i = 0; i < visits.Length; i++) visits[i] = new Visit();
             InitializeSpeech(camera);
+            InitializeTableDialogue(player, heroRig);
         }
 
         internal void PrepareVisitorPresentation(CityPedestrianPresentation body) => heroHand.Fit(body);
@@ -131,7 +139,14 @@ namespace BarPromenade
             {
                 if (visit.Actor == actor && visit.Phase != Phase.Departed)
                 {
+                    CloseTableFor(visit);
                     if (visit.Phase == Phase.Throwing) return true;
+                    if (visit.Phase == Phase.TakingGift)
+                    {
+                        visit.Elapsed += step;
+                        if (visit.Elapsed >= GiftCarrySeconds) FaceTable(actor, place, step);
+                        return true;
+                    }
                     if (visit.Phase != Phase.Leaving)
                     {
                         if (aisleTrip != null && aisleTrip != visit) return true;
@@ -171,6 +186,12 @@ namespace BarPromenade
             switch (visit.Phase)
             {
                 case Phase.NeedDrink:
+                    if (visit.Gift)
+                    {
+                        if (At(actor, visit.TableNode)) TryStartGift(visit, step);
+                        else Go(actor, visit.TableNode);
+                        break;
+                    }
                     if (takeOrders && ReadyForWindow(visit) && TryReservePurchase(visit))
                         WalkToWindow(visit);
                     else if (!At(actor, visit.HoldNode)) Go(actor, visit.HoldNode);
@@ -207,12 +228,20 @@ namespace BarPromenade
                 case Phase.AtTable:
                     AdvanceTable(visit, place, step, now, takeOrders);
                     break;
+                case Phase.TakingGift:
+                    if (visit.Elapsed >= GiftCarrySeconds) FaceTable(actor, place, step);
+                    break;
             }
             return true;
         }
 
         private void AdvanceTable(Visit visit, int place, float step, double now, bool takeOrders)
         {
+            if (visit.Gift)
+            {
+                AdvanceGiftExchange(visit, step);
+                return;
+            }
             if (!visit.Drinking)
             {
                 FaceTable(visit.Actor, place, step);
@@ -220,7 +249,7 @@ namespace BarPromenade
             }
 
             visit.Drinking.SampleContacts = (visit.Actor.Position - hero.position).sqrMagnitude < 30f * 30f;
-            visit.Drinking.HoldNewSips = visit.Sips == 0 || visit.Until - now < 2d;
+            visit.Drinking.HoldNewSips = IsReserved(visit) || visit.Sips == 0 || visit.Until - now < 2d;
             if (visit.Sips == 1 && visit.Drinking.CanConverse && !visit.FinalRestExtended)
             {
                 uint seed = CityPedestrianStableHash.Combine(unchecked((uint)GameSessionState.CitySeed),
@@ -240,7 +269,7 @@ namespace BarPromenade
         }
 
         private bool ReadyToFinish(Visit visit) => visit.Phase == Phase.AtTable && visit.Drinking &&
-            visit.Drinking.CanConverse && !SpeakingWith(visit) &&
+            !visit.Gift && visit.Drinking.CanConverse && !IsReserved(visit) && !SpeakingWith(visit) &&
             (visit.Sips == 0 || visit.Sips == 1 && visit.FinalRestExtended && visit.Timeline.RestFinished);
 
         private void TryFinishDrink(Visit visit, int place, float step, bool takeOrders)
@@ -257,8 +286,13 @@ namespace BarPromenade
             // busy, the guest keeps the drink in hand at the table.
             if (takeOrders && aisleTrip != visit && !TryReservePurchase(visit)) return;
             if (visit.Sips > 0 || !Face(visit.Actor, facing, step)) return;
-            StopDrinking(visit);
             throwing = visit;
+            BeginThrow(visit);
+        }
+
+        private static void BeginThrow(Visit visit)
+        {
+            StopDrinking(visit);
             visit.ThrowProgress = 0f;
             Set(visit, Phase.Throwing);
         }
@@ -267,14 +301,22 @@ namespace BarPromenade
         {
             if (visit.Actor) Release(visit);
             visit.Actor = actor;
+            visit.Place = place;
+            var body = actor.Presentation.GetComponent<CityPedestrianDefaultNpcBody>();
+            visit.CharacterId = body.CharacterId;
             visit.Head = actor.Presentation.Registry.HeadAnchor;
             visit.Hands = new RidgeKioskVisitorHands(actor);
+            visit.Face = new KioskVisitorFace(body.Character);
             visit.Until = schedule.EndsAt;
             visit.HoldNode = residents.KioskWaitingNode(place);
             visit.TableNode = tableNode;
             visit.Cash = 256;
             visit.Orders = 0;
             visit.Sips = 0;
+            InventoryItemId gift = GameSessionState.KioskGift(place, visit.CharacterId);
+            if (gift != InventoryItemId.None)
+                visit.Gift = CreateGift(gift, place / RidgeKioskCourtPlan.PlacesPerTable,
+                    place % RidgeKioskCourtPlan.PlacesPerTable);
         }
 
         private void OccupyTable(Visit visit, int place, BarPatronDrinkTimeline timeline)
@@ -288,6 +330,7 @@ namespace BarPromenade
             visit.Container.SetOpened(true);
             visit.Drinking = visit.Hands.BindTable(visit.Drink,
                 court.TableTop(place / RidgeKioskCourtPlan.PlacesPerTable).position, place, timeline);
+            visit.Drinking.HoldNewSips = IsReserved(visit) || visit.Gift;
             visit.Drinking.SipCompleted = visit.ConsumeSip;
         }
 
@@ -295,6 +338,72 @@ namespace BarPromenade
         {
             visit.Container = VodkaBottleView.Create(transform, kind);
             visit.Drink = BarPatronDrinkProp.FromContainer(visit.Container);
+        }
+
+        private void AdvanceGiftExchange(Visit visit, float step)
+        {
+            if (!visit.Container)
+            {
+                TryStartGift(visit, step);
+                return;
+            }
+            if (visit.Drinking)
+            {
+                visit.Drinking.HoldNewSips = true;
+                if (!visit.Drinking.CanConverse) return;
+            }
+            if (TryFindThrowDirection(visit, visit.Place, out Vector3 facing, replacing: true) &&
+                Face(visit.Actor, facing, step)) BeginThrow(visit);
+        }
+
+        private bool TryStartGift(Visit visit, float step)
+        {
+            Vector3 reachFacing = Quaternion.AngleAxis(-42f, Vector3.up) * (GiftPoint(visit) - visit.Actor.Position);
+            if (visit.Elapsed < 0f || !Face(visit.Actor, reachFacing, step))
+                return false;
+            visit.Drink = BarPatronDrinkProp.FromContainer(visit.Gift);
+            visit.Request = 0;
+            visit.GiftGripEstablished = false;
+            Set(visit, Phase.TakingGift);
+            return true;
+        }
+
+        private const float GiftContactSeconds = .64f, GiftCarrySeconds = 1.22f;
+
+        private Vector3 GiftPoint(Visit visit) => RidgeKioskCourtPlan.GiftPoint(
+            court.TableTop(visit.Place / RidgeKioskCourtPlan.PlacesPerTable).position,
+            visit.Place % RidgeKioskCourtPlan.PlacesPerTable);
+
+        private void PresentGiftPickup(Visit visit)
+        {
+            if (!visit.Gift)
+            {
+                Set(visit, Phase.AtTable);
+                return;
+            }
+            if (!visit.GiftGripEstablished && visit.Elapsed >= GiftContactSeconds)
+            {
+                visit.GiftGripEstablished = visit.Hands.ReceiveGift(visit.Drink, GiftPoint(visit), 1f, 0f, pickedUp: true);
+                if (visit.GiftGripEstablished) visit.Elapsed = GiftContactSeconds;
+                else
+                {
+                    visit.Hands.EndThrow();
+                    visit.Hands.ReleaseGrip();
+                    Set(visit, Phase.AtTable);
+                    visit.Elapsed = -6f;
+                }
+                return;
+            }
+            float reach = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, GiftContactSeconds, visit.Elapsed));
+            float carry = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(GiftContactSeconds, GiftCarrySeconds, visit.Elapsed));
+            visit.Hands.ReceiveGift(visit.Drink, GiftPoint(visit), reach, carry, visit.GiftGripEstablished);
+            if (visit.Elapsed < GiftCarrySeconds + .20f) return;
+            visit.Hands.EndThrow();
+            visit.Container = visit.Gift;
+            visit.Gift = null;
+            GameSessionState.TakeKioskGift(visit.Place, visit.CharacterId, visit.Container.ItemId);
+            visit.Sips = visit.Container.Profile.SipCount;
+            OccupyTable(visit, visit.Place, new BarPatronDrinkTimeline(unchecked((int)visit.Until * 97 + visit.Place)));
         }
 
         private void BeginSale(Visit visit, int place, int day)
@@ -329,7 +438,11 @@ namespace BarPromenade
             foreach (Visit visit in visits)
             {
                 if (!visit.Actor || !visit.Actor.IsSpawned) continue;
-                if (visit.Phase == Phase.Throwing)
+                if (visit.Phase == Phase.TakingGift)
+                {
+                    PresentGiftPickup(visit);
+                }
+                else if (visit.Phase == Phase.Throwing)
                 {
                     PresentThrow(visit);
                 }
@@ -362,6 +475,7 @@ namespace BarPromenade
 
         private void PresentThrow(Visit visit)
         {
+            bool replacing = visit.Gift;
             // Sample the actual windup and release frames even when a large
             // frame step crosses both markers. Walking ticks cannot skip them.
             float progress = Mathf.Clamp01(visit.ThrowProgress + Time.deltaTime / PlayerVodkaActions.ThrowSeconds);
@@ -376,17 +490,25 @@ namespace BarPromenade
             {
                 Transform actor = visit.Actor.transform;
                 var (velocity, spin) = PlayerVodkaActions.ContainerThrowMotion(actor.right, actor.forward);
-                if (ThrownVodkaBottle.ReleaseAmbient(visit.Container, velocity, spin, actor, heroBody, drops))
+                // The shorter toss lands near the table while the camera holds both men.
+                if (replacing) velocity *= .43f;
+                if (ThrownVodkaBottle.ReleaseAmbient(visit.Container, velocity, spin, actor, heroBody, drops,
+                    keepContents: replacing))
                 {
                     visit.Container = null;
                     visit.Drink = null;
                     visit.Hands.ReleaseGrip();
-                    releasedEmpties++;
+                    if (!replacing) releasedEmpties++;
                 }
             }
 
             if (progress < 1f) return;
             visit.Hands.EndThrow();
+            if (replacing)
+            {
+                Set(visit, Phase.AtTable);
+                return;
+            }
             throwing = null;
             bool takeOrders = GameSessionState.GameTimeOfDayMinutes < CityResidentLifeRules.KioskLastOrderMinute;
             if (takeOrders && aisleTrip == visit && station.OwnsNpcWindow(visit.Head) && !station.HeroHasWindow)
@@ -399,12 +521,14 @@ namespace BarPromenade
             else Set(visit, Phase.AtTable);
         }
 
-        private bool TryFindThrowDirection(Visit visit, int place, out Vector3 facing)
+        private bool TryFindThrowDirection(Visit visit, int place, out Vector3 facing, bool replacing = false)
         {
             Vector3 outward = RidgeKioskCourtPlan.PlaceDirection(place);
-            for (int turn = 0; turn < 3; turn++)
+            float clearRange = replacing ? 2.35f : 4.2f;
+            int attempts = replacing ? 5 : 3;
+            for (int turn = 0; turn < attempts; turn++)
             {
-                float yaw = turn == 0 ? 0f : turn == 1 ? 50f : -50f;
+                float yaw = turn switch { 0 => 0f, 1 => 50f, 2 => -50f, 3 => 80f, _ => -80f };
                 Vector3 side = Quaternion.AngleAxis(yaw, Vector3.up) * outward;
                 facing = Vector3.Cross(side, Vector3.up);
                 Vector3 velocity = PlayerVodkaActions.ContainerThrowMotion(side, facing).Velocity;
@@ -424,7 +548,7 @@ namespace BarPromenade
                 if (Mathf.Abs(delta.y) > 1.6f) return false;
                 delta.y = 0f;
                 float distance = Vector3.Dot(delta, direction);
-                return distance > 0f && distance < 4.2f && (delta - direction * distance).sqrMagnitude < .65f * .65f;
+                return distance > 0f && distance < clearRange && (delta - direction * distance).sqrMagnitude < .65f * .65f;
             }
         }
 
@@ -508,6 +632,7 @@ namespace BarPromenade
         }
         private void Leave(Visit visit)
         {
+            CloseTableFor(visit);
             EndSpeechFor(visit);
             StopDrinking(visit);
             if (visit.Phase == Phase.Handover) RemoveContainer(visit);
@@ -527,6 +652,7 @@ namespace BarPromenade
         private void Release(Visit visit)
         {
             if (!visit.Actor) return;
+            CloseTableFor(visit);
             FinishAisleTrip(visit);
             EndSpeechFor(visit);
             StopDrinking(visit);
@@ -536,9 +662,17 @@ namespace BarPromenade
             visit.Hands.EndThrow();
             visit.Hands.ReleaseGrip();
             RemoveContainer(visit);
+            if (visit.Gift)
+            {
+                visit.Gift.gameObject.SetActive(false);
+                Destroy(visit.Gift.gameObject);
+                visit.Gift = null;
+            }
+            visit.CharacterId = null;
             visit.Head = null;
             visit.Actor = null;
             visit.Hands = null;
+            visit.Face = null;
             Set(visit, Phase.Unbound);
         }
 
@@ -568,6 +702,7 @@ namespace BarPromenade
         private void OnDisable()
         {
             if (!court) return;
+            CloseTable();
             CancelExchange();
             foreach (Visit visit in visits) Release(visit);
             foreach (var drop in drops.GetComponentsInChildren<ThrownVodkaBottle>(true)) Destroy(drop.gameObject);

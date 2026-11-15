@@ -180,10 +180,48 @@ namespace BarPromenade
 
             if (Containers(itemId) is VodkaBottleState drink)
             {
-                drink.TryRemove(count);
+                if (!drink.TryRemove(count)) return false;
                 if (drink.ActiveId == 0) equippedItems.Remove(itemId);
             }
 
+            DecreaseStack(index, count);
+            return true;
+        }
+
+        internal int FindSealedDrink(InventoryItemId item, int exceptId = 0) =>
+            Containers(item)?.FindSealedFull(exceptId) ?? 0;
+
+        internal bool HasSealedDrink(InventoryItemId item, int id) =>
+            Containers(item)?.IsSealedFull(id) == true;
+
+        internal bool TryTransferSealedDrinks(InventoryItemId first, int firstId, InventoryItemId second, int secondId)
+        {
+            int a = FindIndex(first), b = FindIndex(second);
+            if (a < 0 || b < 0 || items[a].Count < 1 || items[b].Count < 1 ||
+                !HasSealedDrink(first, firstId) || !HasSealedDrink(second, secondId)) return false;
+            if (first == second) return TryDebitSealed(first, a, firstId, secondId);
+
+            // Both identities were checked before mutation. No callbacks are
+            // raised here, so the second debit cannot observe another state.
+            if (!TryDebitSealed(first, a, firstId)) return false;
+            if (!TryDebitSealed(second, FindIndex(second), secondId))
+                throw new InvalidOperationException("A preflighted sealed drink was lost during transfer.");
+            return true;
+        }
+
+        private bool TryDebitSealed(InventoryItemId item, int index, int firstId, int secondId = 0)
+        {
+            int count = secondId == 0 ? 1 : 2;
+            VodkaBottleState drink = Containers(item);
+            if (items[index].Count < count || !drink.TryRemoveSealedFull(firstId, secondId)) return false;
+            if (drink.ActiveId == 0) equippedItems.Remove(item);
+            DecreaseStack(index, count);
+            return true;
+        }
+
+        private void DecreaseStack(int index, int count)
+        {
+            InventoryItemId itemId = items[index].ItemId;
             int remaining = items[index].Count - count;
             if (remaining == 0)
             {
@@ -195,8 +233,6 @@ namespace BarPromenade
                 items[index] =
                     new InventoryItemStack(itemId, remaining);
             }
-
-            return true;
         }
 
         public bool TryDrinkVodkaSip(int expectedBottleId, out VodkaBottleSipResult result) =>
