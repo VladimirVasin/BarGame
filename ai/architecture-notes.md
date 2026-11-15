@@ -12,12 +12,12 @@
   finishes retained; no new GI/volume/water/wind/COLOR/decals/particles/rim/
   outline/lens effects. Cost unmeasured. Story16/21/art9.
 
-- **Accepted 2026-11-15, user — ambient City traffic.** Four sedans on
-  surveyed City/Ridge lanes. Occupied hulls precede priority/clear-exit waits;
-  no timed bypass. Appended default IDs; grounded paths omit retraces,
-  double sums keep seams. Two dipped pairs; shared LOD/materials/audio.
-  Pause/dormancy retain, unload releases. Island/tunnel/closed exit excluded.
-  City FX/finishes; story16/21/art9.
+- **Accepted 2026-11-15, user — ambient City traffic.** Four sedans:
+  City/Ridge lanes; spawn off turns; 40m forecast. Hulls win over priority/
+  clear-exit; no timed bypass. Bus forecasts end at leaders.
+  Default IDs; grounded paths/no retraces, double sums.
+  Two dipped pairs; shared LOD/materials/audio; pause/dormancy keep, unload clears.
+  Island/tunnel/closed exit excluded. City FX/finishes; story16/21/art9.
 
 - **Accepted 2026-11-15, user — Ferryman and sedan.** Default reserved
   `last-route.ferryman`: long coat/cap/work boots at both stops. Two-door sedan,

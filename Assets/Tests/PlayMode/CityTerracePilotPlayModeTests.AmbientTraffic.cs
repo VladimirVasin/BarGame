@@ -9,6 +9,116 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class CityTerracePilotPlayModeTests
     {
         [UnityTest]
+        public IEnumerator LiveCity_AmbientTrafficClearsEastSlopeJunctionQueue()
+        {
+            Assert.That(GameSessionState.TryStartGameTimeAt(14 * 60), Is.True);
+            yield return LoadProductionCity();
+            var traffic = city.AmbientTraffic;
+            Assert.That(traffic.Count, Is.EqualTo(AmbientTrafficRules.Capacity));
+            traffic.AutoAdvance = false;
+            // Freeze unrelated schedules; advance the real four traffic actors
+            // explicitly, including physics occupancy after every safety step.
+            Time.timeScale = 0f;
+            city.Player.Motor.SetInputEnabled(false);
+            city.Player.Motor.Teleport(new Vector3(72f, 6.3f, -145f));
+            var southCar = traffic.GetCar(1);
+            var northCar = traffic.GetCar(2);
+            var southBus = city.Bus.GetVehicle(3);
+            var northBus = city.Bus.GetVehicle(4);
+            // Recorded 2026-11-15: route 02 waits behind car 1, route 03
+            // behind car 2, at the foot of the eastern hillside. Rewind the
+            // queues to their approaches: once both noses enter the narrow
+            // lane shifts, neither can safely drive forward through the other.
+            float southApproach = PlaceCar(southCar, new Vector3(78.10502f, 6.83802f, -133.7672f));
+            float northApproach = PlaceCar(northCar, new Vector3(78.051216f, 6.978259f, -147.432114f));
+            PlaceBus(southBus, "bus:junction:9:1:right-wide:8:1:9:0:route-02:84", 16.66601f, southApproach);
+            PlaceBus(northBus, "bus-route:default-coastal:route-03:link:4", 21.26222f, northApproach);
+            Physics.SyncTransforms();
+            float southTravel = 0f, northTravel = 0f, southBusTravel = 0f, northBusTravel = 0f;
+            foreach (var bus in new[] { southBus, northBus })
+            {
+                var obstacle = CityBusObstacleState.Clear;
+                traffic.AccumulateObstacle(bus.Actor, 18f, ref obstacle);
+                Assert.That(obstacle.MustStop, Is.True, "Reproduce the actual queued bus: " + bus.Plan.RouteId);
+                Assert.That(obstacle.ForwardClearance, Is.LessThan(4f));
+            }
+            Debug.Log("East slope traffic reproduction: south=" + southCar.Position.ToString("F3") +
+                "; north=" + northCar.Position.ToString("F3"));
+            var buses = new[] { southBus, northBus };
+            for (int tick = 0; tick < 1200; tick++)
+            {
+                float southBefore = southCar.Driver.Distance, northBefore = northCar.Driver.Distance;
+                float southBusBefore = southBus.DistanceAlongLoop, northBusBefore = northBus.DistanceAlongLoop;
+                traffic.Advance(.05f);
+                Physics.SyncTransforms();
+                southBus.Advance(.05f);
+                northBus.Advance(.05f);
+                Physics.SyncTransforms();
+                southTravel += Mathf.Repeat(southCar.Driver.Distance - southBefore, southCar.Plan.Length);
+                northTravel += Mathf.Repeat(northCar.Driver.Distance - northBefore, northCar.Plan.Length);
+                southBusTravel += Mathf.Repeat(southBus.DistanceAlongLoop - southBusBefore, southBus.Plan.LoopLength);
+                northBusTravel += Mathf.Repeat(northBus.DistanceAlongLoop - northBusBefore, northBus.Plan.LoopLength);
+                Assert.That(southCar.Hull.Overlaps(northCar.Hull), Is.False, "Sedans must pass without contact.");
+                foreach (var bus in buses)
+                {
+                    var hull = new CityTrafficHull(bus.Actor.Position, bus.Actor.Rotation, bus.Actor.LocalVisualBounds);
+                    Assert.That(southCar.Hull.Overlaps(hull), Is.False, "South sedan/bus contact: " + bus.Plan.RouteId + "; tick=" + tick);
+                    Assert.That(northCar.Hull.Overlaps(hull), Is.False, "North sedan/bus contact: " + bus.Plan.RouteId + "; tick=" + tick);
+                }
+                if (tick % 100 == 0)
+                {
+                    Debug.Log("East slope queue progress: south=" + southTravel.ToString("F2") +
+                        "; north=" + northTravel.ToString("F2") +
+                        "; holds=" + southCar.Driver.Model.HoldDistance + "/" + northCar.Driver.Model.HoldDistance +
+                        "; physical=" + southCar.PhysicalBlocker?.name + "/" + northCar.PhysicalBlocker?.name +
+                        "; cars=" + southCar.Position.ToString("F2") + "/" + northCar.Position.ToString("F2") +
+                        "; buses=" + southBus.Actor.Position.ToString("F2") + "/" + northBus.Actor.Position.ToString("F2"));
+                    yield return null;
+                }
+            }
+            Assert.That(southTravel, Is.GreaterThan(southApproach + 12f), "South queue leader must clear the junction.");
+            Assert.That(northTravel, Is.GreaterThan(northApproach + 12f), "North queue leader must clear the junction.");
+            Assert.That(southBusTravel, Is.GreaterThan(southApproach + 12f), "Route 02 must resume.");
+            Assert.That(northBusTravel, Is.GreaterThan(northApproach + 12f), "Route 03 must resume.");
+
+            float PlaceCar(CityAmbientTraffic.Car car, Vector3 recordedRearPoint)
+            {
+                float nearest = car.Plan.Path.FindNearestDistance(recordedRearPoint);
+                car.Plan.Path.Sample(nearest, out _, out var direction);
+                Vector3 rear = car.Bounds.center - Vector3.forward * car.Bounds.extents.z;
+                Vector3 rootPosition = recordedRearPoint - Quaternion.LookRotation(direction) * rear;
+                float at = car.Plan.Length + Mathf.Repeat(car.Plan.Path.FindNearestDistance(rootPosition), car.Plan.Length);
+                for (float rewind = 30f; rewind <= 120f; rewind += 1f)
+                {
+                    if (!car.Plan.CanWaitOutsideJunction(at - rewind)) continue;
+                    car.Driver.Begin(car.Plan.Path, car.Driver.Model.Profile, 0f, at - rewind);
+                    Debug.Log("Queue safe approach " + car.Plan.RouteId + ": " + rewind + " m before recorded jam.");
+                    return rewind;
+                }
+                Assert.Fail("No safe approach before the recorded junction: " + car.Plan.RouteId);
+                return 0f;
+            }
+
+            void PlaceBus(CityBusDirector bus, string linkId, float along, float approach)
+            {
+                int index = Enumerable.Range(0, bus.Plan.Links.Count).Single(i => bus.Plan.Links[i].Id == linkId);
+                along -= approach;
+                while (along < 0f)
+                {
+                    var order = bus.Plan.OrderedLinkIndices;
+                    int slot = Enumerable.Range(0, order.Count).Single(i => order[i] == index);
+                    index = order[(slot + order.Count - 1) % order.Count];
+                    along += bus.Plan.Links[index].Length;
+                }
+                // Manual safety steps run while physics time is paused. Inspect
+                // the current pose rather than a previous interpolated frame.
+                bus.Actor.RigidBody.interpolation = RigidbodyInterpolation.None;
+                bus.Actor.ApplyDetachedPhase(new CityBusTimetable.Sample(index, along, 0f, -1, 0f, -1), 0);
+            }
+
+        }
+
+        [UnityTest]
         public IEnumerator LiveCity_AmbientTrafficSharesRoadsAndKeepsEveryBusPlatformAccessible()
         {
             Assert.That(GameSessionState.TryStartGameTimeAt(14 * 60), Is.True);

@@ -22,6 +22,11 @@ Day/night and light A/B frames reviewed; user accepted warm lenses/road spill.
 Boarding waits off the exit dock until the real NPC transfer ends.
 `check-workspace` retained older captures under its document-reference guard.
 
+East-slope queues: cars enter outside manoeuvres and retain a full turn
+forecast; queued buses cannot reserve past their leader. Full hull probes
+protect corner clearance. `LiveCity_AmbientTrafficClearsEastSlopeJunctionQueue`
+passed: recorded opposing queues clear without contact.
+
 Ferryman's reserved default work outfit, two-door sedan and tucked apron
 retain measured heel support through the perch. Cabin upholstery/trim/plastic
 have separate textures. `build-last-route-car-3d-model`,

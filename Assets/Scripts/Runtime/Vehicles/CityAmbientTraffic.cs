@@ -10,6 +10,7 @@ namespace BarPromenade
     {
         private const float SampleSpacing = 1.25f;
         private const int SampleCapacity = 34;
+        private const float CarPredictionReach = 40f;
         private const float DippedIntensity = 180f;
         private const int VehicleCapacity = CityBusDirector.MaximumActiveModels + AmbientTrafficRules.Capacity + 2;
         private readonly Car[] cars = new Car[AmbientTrafficRules.Capacity];
@@ -97,6 +98,7 @@ namespace BarPromenade
             for (int attempt = 0; attempt < 128; attempt++)
             {
                 float distance = route.Length + Mathf.Repeat(initial + attempt * route.Length / 128f, route.Length);
+                if (!route.CanWaitOutsideJunction(distance)) continue;
                 route.Path.Sample(distance, out Vector3 position, out Vector3 direction);
                 if ((position - city.Player.GameObject.transform.position).sqrMagnitude < 72f * 72f) continue;
                 var hull = new CityTrafficHull(position, Quaternion.LookRotation(direction), nominal, 3f);
@@ -213,8 +215,10 @@ namespace BarPromenade
         private static void ReadPath(Vehicle v, LastRouteCarDriver driver, Bounds bounds)
         {
             if (driver == null || !driver.IsDriving || driver.Model == null || driver.HasArrived) return;
-            float reach = Mathf.Min(40f, Mathf.Max(18f, driver.Speed * 4f + driver.Speed * driver.Speed / 6f));
-            for (float d = SampleSpacing; d <= reach && v.Count < SampleCapacity; d += SampleSpacing)
+            // Wide junction links include both lane shifts. A speed-based 18 m
+            // horizon loses the far exit when slowing, allowing opposing cars to
+            // enter the same manoeuvre before either sees the conflict.
+            for (float d = SampleSpacing; d <= CarPredictionReach && v.Count < SampleCapacity; d += SampleSpacing)
             {
                 driver.Model.Path.Sample(driver.Distance + d, out var p, out var f);
                 v.Samples[v.Count++] = new CityTrafficHull(p, Quaternion.LookRotation(f), bounds, .12f);
@@ -231,6 +235,15 @@ namespace BarPromenade
                 var v = Next(i, new CityTrafficHull(bus.Position, bus.Rotation, bus.LocalVisualBounds, .12f));
                 if (bus.MotionState == CityBusMotionState.Dwelling || bus.MotionState == CityBusMotionState.RouteEnded) continue;
                 float reach = Mathf.Min(40f, Mathf.Max(18f, bus.Speed * 4f + bus.GetRequiredStoppingDistance()));
+                // A bus queued behind a sedan cannot reserve the junction through
+                // that sedan. Otherwise opposing queue leaders yield to each
+                // other's following bus forever. Use the bus's own stop envelope;
+                // its occupied body still participates even when no travel is free.
+                var obstruction = CityBusObstacleState.Clear;
+                AccumulateObstacle(bus, reach, ref obstruction, city.Bus.GetVehicle(i).Plan.RouteId);
+                if (obstruction.MustStop)
+                    reach = Mathf.Min(reach, Mathf.Max(0f,
+                        obstruction.ForwardClearance - CityBusActor.ObstacleStopPadding));
                 for (float d = SampleSpacing; d <= reach && v.Count < SampleCapacity; d += SampleSpacing)
                 {
                     bus.SampleAhead(d, out var p, out var f);
@@ -379,20 +392,32 @@ namespace BarPromenade
             return false;
         }
 
-        internal void AccumulateObstacle(CityBusActor bus, float lookAhead, ref CityBusObstacleState obstacle)
+        internal void AccumulateObstacle(CityBusActor bus, float lookAhead, ref CityBusObstacleState obstacle,
+            string followingRoute = null)
         {
             if (!isActiveAndEnabled) return;
             for (int i = 0; i < Count; i++)
             {
                 Car car = cars[i];
                 if ((car.Position - bus.Position).sqrMagnitude > 60f * 60f) continue;
-                for (int point = 0; point <= 10; point++)
+                // Only a leader in this corridor limits a queue's prediction.
+                // An opposing car still has to yield before entering a bus turn.
+                if (followingRoute != null && car.Plan.RouteId != followingRoute &&
+                    Vector3.Dot(car.Driver.transform.forward, bus.TravelDirection) < .85f) continue;
+                // Probe full oriented bodies. The point/circle approximation
+                // can miss a sedan beside the nose while the long bus turns.
+                const float probeStep = .5f;
+                float limit = Mathf.Min(lookAhead, obstacle.ForwardClearance);
+                var carHull = car.Hull;
+                for (float ahead = 0f; ahead <= limit; ahead += probeStep)
                 {
-                    Vector3 p = car.Position + car.Driver.transform.rotation *
-                        (car.Bounds.center + Vector3.forward * Mathf.Lerp(-car.Bounds.extents.z, car.Bounds.extents.z, point / 10f));
-                    if (bus.TryGetPathObstacleClearance(p, car.Bounds.extents.x + .04f, lookAhead, out float clearance) &&
-                        clearance < obstacle.ForwardClearance)
-                        obstacle = new CityBusObstacleState(true, clearance, CityBusBlockerKind.AmbientCar, p, "ambient_sedan", i);
+                    bus.SampleAhead(ahead, out var p, out var f);
+                    var hull = new CityTrafficHull(p, Quaternion.LookRotation(f), bus.LocalVisualBounds, .12f);
+                    if (!hull.Overlaps(carHull)) continue;
+                    float clearance = Mathf.Max(0f, ahead - probeStep);
+                    obstacle = new CityBusObstacleState(true, clearance, CityBusBlockerKind.AmbientCar,
+                        carHull.Centre, "ambient_sedan", i);
+                    break;
                 }
             }
         }

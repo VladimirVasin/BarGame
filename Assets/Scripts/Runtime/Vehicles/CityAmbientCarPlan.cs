@@ -79,5 +79,15 @@ namespace BarPromenade
             }
             return hold;
         }
+
+        internal bool CanWaitOutsideJunction(float distance)
+        {
+            float local = Mathf.Repeat(distance, Length);
+            foreach (Vector2 crossing in junctions)
+                for (int copy = -1; copy <= 1; copy++)
+                    if (local > crossing.x - 4f + copy * Length &&
+                        local < crossing.y + 7f + copy * Length) return false;
+            return true;
+        }
     }
 }

@@ -791,12 +791,12 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   `CityPedestrianVehicleTraffic` shares buses, Ferryman, truck and ambient sedans.
   Walkers yield to safe refuges, wait for tails/followers and resume their route;
   Without refuge vehicles wait; collision persists, pooling resets yields.
-  `CityAmbientTraffic`: four City/Ridge sedans, permanent default
-  drivers/shared occupancy/hard holds; no boarding/overtaking;
-  island/tunnel/closed exit excluded. Two nearest beam pairs; shared audio/LOD;
-  pause/dormancy retain, unload releases. `RidgeParkingPlan`: four lit bays
-  home/kiosk, graded entry/manoeuvres; silent/dark unowned sedan.
-  City/Home/nav/map/grass share its footprint.
+  `CityAmbientTraffic`: four City/Ridge sedans; permanent default drivers,
+  hull holds/turn entry/40m forecasts; buses predict only to leaders.
+  No boarding/overtaking/island/tunnel/closed exit.
+  Two near beam pairs/shared audio/LOD; pause/dormancy keep, unload clears.
+  `RidgeParkingPlan`: four lit home/kiosk bays, graded manoeuvres,
+  silent/dark unowned sedan; City/Home/nav/map/grass share footprint.
   Residents retain `city.pedestrian.NN`, catalog model/face/hair/clothes across
   loads; appended IDs preserve prior looks. Six library residents stay local.
   Home retains its separate `5` daytime/`2` night slots over the original first
