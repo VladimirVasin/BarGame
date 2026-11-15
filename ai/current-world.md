@@ -452,8 +452,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   `10×6 m` rear wings retain padded clearance/`2.4 m` court gap. `3.6 m` through openings
   keep their collision/route, height `3.2 m` (`4.2 m` Industrial). City/Home share
   `CityCoveredPassagePlan/World`: independent occupied/vacant wall slots for matte graffiti, repairs and Blender utilities.
-  Municipal lamps share12/soft shadows/day floor; one independently seeded fault dips
-  by absolute time with matched lens/halo/spill. Other lamps stay steady; routes clear. Court loops join the graph;
+  Fixed municipal lamps keep the day floor. Ridge roads: alternating ~23m/.28m curb inset.
+  A seeded fault dips with lens/halo/spill. Clear routes; court loops join the graph;
   neighbours connect only across continuous safe-grade ground without roads.
   Road/ground complements retain metre poses. Graded home/bar/shop fronts share
   sidewalks, embedded skirts and fixture tops in City/Home.
@@ -1573,7 +1573,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   fallback≤48m street walk. Interior returns to its own sidewalk.
 - `CityKioskSites`:E→Vendor/Pie5/Beer6/Vodka28;shared receipt/focus/Ridge talk.
   Residential≥120m route/≥60mXZ from bars. Matte sign/neon24/7/beer,pie,vodka prints.
-  Ridge:paved rear court/rails/planters/phone/frosted umbrellas. Two/table:
+  Ridge:paved rear court/rails/planters, warm umbrella pools, shaded aisles,
+  booth, dim rail lamp and street-facing pole. Two/table:
   walk/buy/carry, last sip waits for turn, throw; orders22/clear23.
   Both toss old drinks and pick up sealed gifts before three questions
   on politics, philosophy or misogyny. Resume that evening. Shared subtitles.

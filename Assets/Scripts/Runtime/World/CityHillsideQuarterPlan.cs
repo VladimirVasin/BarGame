@@ -175,6 +175,30 @@ namespace BarPromenade
             Mathf.InverseLerp(WestGateWorld.x + FlatThroat, EastGateWorld.x - FlatThroat, x));
         public float PavementTopAt(float x) => RoadTopAt(x) + Curb;
 
+        internal bool TrySampleStreetLampBase(float x, bool north, out Vector3 foot)
+        {
+            var walk = north ? NorthSidewalk : SouthSidewalk;
+            float offset = (Shoulder - CarriagewayWidth * .5f) * .5f - CityHillsideStreetRoute.StreetLampSidewalkInset;
+            if (!north) offset = -offset;
+            for (int index = 1; index < walk.Count; index++)
+            {
+                Vector3 start = walk[index - 1], end = walk[index];
+                if (end.x < x || end.x <= start.x) continue;
+                foot = Vector3.Lerp(start, end, Mathf.InverseLerp(start.x, end.x, x));
+                foot.x = x;
+                foot.z += offset;
+                var xz = new Vector2(foot.x, foot.z);
+                // The summit sidewalk continues west of the link into the terminal.
+                CityStreetSupportKind kind;
+                bool supported = x < walk[0].x && Id == "summit"
+                    ? west.TrySampleTop(xz, out foot.y, out kind)
+                    : TrySampleTop(xz, out foot.y, out kind);
+                return supported && kind == CityStreetSupportKind.Sidewalk;
+            }
+            foot = default;
+            return false;
+        }
+
         public bool TrySampleTop(Vector2 p, out float top, out CityStreetSupportKind kind)
         {
             top = 0f;

@@ -144,14 +144,14 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City visual variants | Deterministic variants share assets and simple semantic colliders. | `CityDecoration{Descriptor,Plan,Planner,Validator,WorldBuilder}`, `CityDecorationCollisionCatalog` | Current |
 | Road-edge fences | Planned fences leave road and waterside openings clear. | `RoadFence{Planner,Plan,WorldBuilder}`, `CitySurfaceDescriptor` | Current |
 | Shops | 3 kiosks; Ridge talk; shop7. Shared browser/3D receipt. | `RidgeKiosk*`, `IWorldShelfMenu`, `SupermarketShelfShop*` | Current |
-| Ridge kiosk court | Both swap drinks for sealed gifts, then talk. Resume that evening. | `RidgeKioskCourt*`, `CityResident*` | Current |
+| Ridge kiosk court | Warm tables, dim rail lamp. Both swap drinks for gifts, then talk. Evening resume. | `RidgeKioskCourt*`, `CityResident*` | Current |
 | Pawnshop | Island pavilion/secure clerk. Gap:trade stubs have no transactions. | `CityPawnshop*`, `PawnshopInterior*`, `PawnshopTradeController` | Partial |
 | Ridge workshops | Cobbler11–20:30/home;glass08–23/switch/grille. | `CityCobbler*`,`CityGlassReturn*` | Current |
 
 | Supermarket cashier | Wall checkout/decor snacks;anchored palms/light;ordinary cashier,bulging 3D face/shared rig. | `SupermarketCashier{Provider,AssetRegistry,Factory,Presentation,Actor,SurveillanceState,BlinkState,Interaction}` | Current |
 | Supermarket CCTV corner cameras | Four authored corner cameras follow the hero without gameplay surveillance. | `SupermarketInteriorAssetRegistry`, `SupermarketSecurityCamera{,WorldBuilder}` | Current |
 | Supermarket fluorescent atmosphere | Visible fixtures own the store's restrained light, flicker and sound within explicit shared-resource budgets. | `SupermarketInteriorAtmosphere`, `SupermarketFluorescentFlicker` | Current |
-| City day/night presentation | Uniform fog/48m;night dims sky/fill. Booths/pawnshop benches retain fixed light/day floor. | `CityNightAtmosphere`, `CityAltitudeVisibility`, `CityDayNightController`, `HomeBalconyExteriorAtmosphere` | Current |
+| City day/night presentation | Fog48m;night dims sky/fill. Ridge roads, booths and benches use fixed lamps/day floor. | `City{NightWorldBuilder,NightAtmosphere,AltitudeVisibility,DayNightController}`, `HomeBalconyExteriorAtmosphere` | Current |
 | Exterior weather | Rain contacts, wet film, snow and audio follow the clock. Gap: weather-driven grade. | `GameWeatherRules`, `CityWeatherController`, `CityRainContactField` | Partial |
 | Exterior cloud ceiling | A passive shared-density shell supplies a camera-relative cloud ceiling with bounded horizon coverage. | `ExteriorCloud{AssetMetadata,Profile,MotionRules,Resources,Field,CaptureCamera}`, `ExteriorCloud.shader` | Current |
 | Runtime cloth rags | Visible cloth uses shared bounded wind response and explicit attachment constraints. | `ClothPanelFactory`, `CityClothWindRegistry` | Current |

@@ -39,11 +39,13 @@ namespace BarPromenade
         public const float RoadHalfWidth = 3f, OuterHalfWidth = 5f;
         public const int LaneCount = 7;
         public const float SummitTop = 40f;
+        internal const float StreetLampSidewalkInset = .28f;
         private const float EntryBendWidening = .90f, HairpinWidening = .75f;
         private const float FirstLaneZ = -190f, TurnRadius = 13f;
         private const float SidewalkRise = CityStreetSurfacePlanner.SidewalkTop - CityStreetSurfacePlanner.RoadTop;
         private readonly int[] laneStarts = new int[LaneCount], laneEnds = new int[LaneCount];
         private readonly CityStreetSupportPlan supports;
+        private readonly Vector2[] leftEdge, rightEdge;
 
         internal CityHillsideStreetRoute(CityLayout layout, CityTerraceTransportBank bank, Vector2Int mouth, bool connectedQuarter)
         {
@@ -116,7 +118,8 @@ namespace BarPromenade
             }
             Profile = new CityRoadElevationProfile(stations, CityElevationPlan.MaximumBusGradePercent);
             var miter = Path.Offset(1f).Vertices;
-            var left = new Vector2[points.Count]; var right = new Vector2[points.Count];
+            var left = leftEdge = new Vector2[points.Count];
+            var right = rightEdge = new Vector2[points.Count];
             var innerLeft = new Vector2[points.Count]; var innerRight = new Vector2[points.Count];
             var sidewalk = new Vector3[points.Count]; var opposite = new Vector3[points.Count];
             for (int i = 0; i < points.Count; i++)
@@ -233,6 +236,27 @@ namespace BarPromenade
             return Profile.SampleDistance(Mathf.Clamp(Profile.Stations[first].HorizontalDistance + delta,
                 Profile.Stations[first].HorizontalDistance, Profile.Stations[last].HorizontalDistance)).Height;
         }
+
+        internal bool TrySampleStreetLamp(float distance, StreetLampSide side, out Vector3 foot, out Vector3 target)
+        {
+            CityRoadElevationSample road = Profile.SampleDistance(distance);
+            int index = road.SegmentIndex;
+            float fraction = Mathf.InverseLerp(Profile.Stations[index].HorizontalDistance,
+                Profile.Stations[index + 1].HorizontalDistance, distance);
+            Vector2[] edge = side == StreetLampSide.Left ? leftEdge : rightEdge;
+            Vector2 alongEdge = edge[index + 1] - edge[index];
+            Vector2 outward = new Vector2(alongEdge.y, -alongEdge.x).normalized * (int)side;
+            Vector2 position = Vector2.Lerp(edge[index], edge[index + 1], fraction) - outward * StreetLampSidewalkInset;
+            Vector2 centre = Vector2.Lerp(Path.Vertices[index], Path.Vertices[index + 1], fraction);
+            foot = default;
+            target = default;
+            if (!TrySampleTop(position, out float top, out var kind) || kind != CityStreetSupportKind.Sidewalk)
+                return false;
+            foot = new Vector3(position.x, top, position.y);
+            target = new Vector3(centre.x, road.Height, centre.y);
+            return true;
+        }
+
         // The old grid remains a through neighbourhood. This section follows
         // its public carriageways from the same 4.92 m coastal datum on each bank.
         private static IReadOnlyList<Vector2Int> SurveyCoastApproach(CityTerraceTransportBank bank, CityLayout layout)

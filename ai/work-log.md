@@ -5,10 +5,26 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-15
 
+Both Ridge switchbacks have alternating municipal poles from the mouths to
+the crest. They follow the outside sidewalk edge through bends and shift
+along their side to clear platforms and approaches.
+`LiveCity_RidgeRoadLampsCoverBothSerpentines` and
+`LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` passed.
+Night frames reviewed at the approaches, turns and crest on both banks.
+
 After table contact, the kiosk guests toss their current drinks into shared
 physics and lift the gifts. The wide shot holds through both pickups before
 dialogue. `LiveCity_KioskTreatOpensThreeDialoguesWithSubtitles` passed. Game
 View frames reviewed for the throws and grips at each table.
+
+The Ridge umbrella spots leave shaded aisles between warm pools. A hooded
+enamel lamp on the rear rail post keeps its tilted lens visible and gives the
+planter a dim spill. The kiosk street pole follows the south sidewalk row
+and faces the road. Its footing clears the approach.
+`build-ridge-kiosk-3d-model` and
+`LiveCity_RidgeUmbrellaDiffusersLightBothGuestsWithoutClipping` passed.
+`LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` passed.
+Game View checked the court across the clock and the pole from the road.
 
 ## 2026-11-14
 

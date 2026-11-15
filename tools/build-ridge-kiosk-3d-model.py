@@ -14,7 +14,7 @@ sys.dont_write_bytecode = True
 
 import bpy
 import numpy as np
-from mathutils import Vector
+from mathutils import Quaternion, Vector
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -34,6 +34,7 @@ ANCHORS = {
 }
 TABLES = ((-2.15, -4.94), (2.15, -4.94), (0., -8.43))
 COURT_LAMP_OFFSET, COURT_LAMP_Y = .275, 2.437
+COURT_EDGE_LAMP = (4.778, .982, -10.58 + 9.19 / 5)
 COURT_ANCHORS = {f"KioskCourtTable{i}": (x, 1.06, z) for i, (x, z) in enumerate(TABLES)}
 COURT_ANCHORS.update({f"KioskCanopy{i}": (x, 2.52, z) for i, (x, z) in enumerate(TABLES)})
 COURT_ANCHORS.update({f"KioskCourtLamp{i}": (x, 2.52, z) for i, (x, z) in enumerate(TABLES)})
@@ -49,6 +50,7 @@ PATHS = {
 }
 COURT_ANCHORS.update({"KioskCourtPath" + part: (0., 0., 0.) for part in PATHS})
 COURT_ANCHORS["KioskCourtEdges"] = (0., 0., 0.)
+COURT_ANCHORS["KioskCourtEdgeLamp"] = COURT_EDGE_LAMP
 # One paint/material atlas. Its alpha is smoothness for the URP lit surface.
 SURFACES = {
     "sage": ((103, 127, 116), .34), "kick": ((65, 83, 80), .37),
@@ -396,6 +398,7 @@ def court():
                                     (.353, 2.457), (.113, 2.457), (.113, 2.450))))
         m.group = None
     court_edges(m)
+    court_edge_lamp(m)
     for name, rectangles in PATHS.items():
         m.group = "KioskCourtPath" + name
         for left, back, right, front in rectangles:
@@ -426,6 +429,27 @@ def lamp_ring(x, z, profile, sides=16):
             following = (i + 1) % sides
             faces.append((first + i, second + i, second + following, first + following))
     return vertices, faces
+
+
+def court_edge_lamp(m):
+    source = Vector(COURT_EDGE_LAMP)
+    z = source.z
+    m.group = "KioskCourtEdgeLamp"
+    # A pale enamel case rises above the dark railing on a steel bracket.
+    # The hood stays within the footing, with its lens angled into the court.
+    m.box("iron", (4.877, .961, z), (.076, .194, .086), .008)
+    m.box("enamel", (4.912, 1.052, z), (.144, .192, .260), .012)
+    m.box("enamel", (4.87, 1.124, z), (.220, .073, .282), .010)
+    for side in (-1, 1):
+        m.box("enamel", (4.839, 1.039, z+side*.116), (.142, .112, .030), .006)
+    tilt = Quaternion((0., 0., 1.), math.radians(32.))
+    for surface, setback, size in (
+        ("iron", .039, (.022, .122, .202)),
+        (LAMP, .019, (.016, .090, .164)),
+    ):
+        centre = source + tilt @ Vector((setback, 0., 0.))
+        vertices, faces = parts.u_box((0., 0., 0.), size, .005)
+        m.add(surface, ([tuple(centre + tilt @ Vector(vertex)) for vertex in vertices], faces))
 
 
 def court_edges(m):
@@ -712,6 +736,8 @@ def main():
     for (_, solid), group in zip(model.solids, model.groups):
         if not (group or "").startswith("KioskCourtPath"):
             assert max(v[2] for v in solid[0]) <= -1.27 + 1e-6
+        if group == "KioskCourtEdgeLamp":
+            assert all(4.76 - 1e-6 <= x <= 5.0 for x, _, _ in solid[0]), "Rail lamp projects into the aisle"
     assert bounds["triangles"] + payload["models"]["PotatoPie"]["triangles"] < 13000
     manifest = json.dumps(payload, indent=2)+"\n"
     if args.validate_only:

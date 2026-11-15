@@ -10,9 +10,20 @@ namespace BarPromenade
     {
         private static readonly ConditionalWeakTable<CityLayout, RidgeKioskSitePlan> Sites = new();
         private static readonly RidgeKioskSitePlan Missing = new(Vector3.zero);
+        private static readonly float[] StreetLampOffsets = { 0f, 1.25f, -1.25f, 2.5f, -2.5f, 3.75f };
         private RidgeKioskSitePlan(Vector3 origin) : base("ridge-kiosk", CityDistrictKind.Residential,
             origin, Quaternion.identity, DefaultNpcPopulation.RidgeKioskSeller, true) { }
         public RidgeKioskCourtPlan Court { get; private set; }
+        internal StreetLampDescriptor? StreetLamp { get; private set; }
+        internal Rect? StreetLampFootprint
+        {
+            get
+            {
+                if (StreetLamp is not { } lamp) return null;
+                Bounds pole = CityStaticCollisionBuilder.CreateLowerPoleBounds(lamp.Position);
+                return Rect.MinMaxRect(pole.min.x, pole.min.z, pole.max.x, pole.max.z);
+            }
+        }
 
         public static bool TryCreate(CityLayout layout, out RidgeKioskSitePlan site)
         {
@@ -69,6 +80,7 @@ namespace BarPromenade
                     var court = new RidgeKioskCourtPlan(site.Origin, StreetHeight, attempt == 2 ? -1 : 1, attempt == 0);
                     if (reserved.Exists(court.Overlaps)) continue;
                     site.Court = court;
+                    site.StreetLamp = FindStreetLamp(court, ridge, reserved);
                     return site;
                 }
             }
@@ -76,6 +88,22 @@ namespace BarPromenade
 
             float StreetHeight(float x) => x >= ridge.Bounds.xMin ? ridge.PavementTopAt(x)
                 : west.SampleLaneTop(CityHillsideStreetRoute.LaneCount - 1, x) + CityHillsideBuilding.PavementRise;
+        }
+
+        private static StreetLampDescriptor? FindStreetLamp(RidgeKioskCourtPlan court, CityHillsideQuarterLink street,
+            List<Rect> reserved)
+        {
+            float poleHalfWidth = CityStaticCollisionBuilder.CreateLowerPoleBounds(Vector3.zero).extents.x;
+            float clearance = poleHalfWidth + CityGroundTraversalPlanner.MaximumAgentRadius + .10f;
+            float preferredX = court.Slab.xMax + 2.65f;
+            foreach (float offset in StreetLampOffsets)
+            {
+                if (!street.TrySampleStreetLampBase(preferredX + offset, false, out Vector3 foot)) continue;
+                Rect footprint = new(foot.x - clearance, foot.z - clearance, 2f * clearance, 2f * clearance);
+                if (court.Overlaps(footprint) || reserved.Exists(area => area.Overlaps(footprint))) continue;
+                return new StreetLampDescriptor(default, 0f, StreetLampSide.Right, foot, Vector3.forward);
+            }
+            return null;
         }
     }
 }

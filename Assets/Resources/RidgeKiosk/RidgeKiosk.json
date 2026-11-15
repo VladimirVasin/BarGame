@@ -186,6 +186,11 @@
       0.0,
       0.0,
       0.0
+    ],
+    "KioskCourtEdgeLamp": [
+      4.778,
+      0.982,
+      -8.742
     ]
   },
   "models": {
@@ -228,8 +233,8 @@
         2.875,
         3.4
       ],
-      "triangles": 10696,
-      "geometry_sha256": "947a7f1881336e4c7141dcc8a1e3ff0c9bfe99897c17692a343459a55e50b0d2"
+      "triangles": 10892,
+      "geometry_sha256": "ca441bacdb9bee5a5cb088d2c59cdb8d81163246e1dd01f76aa03aab5e5565fe"
     }
   }
 }

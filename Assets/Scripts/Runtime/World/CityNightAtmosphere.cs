@@ -219,10 +219,17 @@ namespace BarPromenade
                         break;
                     case RidgeKioskCourtWorld.LampPurpose:
                         industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
-                        industrialIntensityScales[index] = .15f;
-                        industrialRangeLimits[index] = 3.4f;
-                        industrialSpotAngles[index] = 164f;
-                        industrialInnerSpotAngles[index] = 108f;
+                        industrialIntensityScales[index] = .163f;
+                        industrialRangeLimits[index] = 3.32f;
+                        industrialSpotAngles[index] = 148f;
+                        industrialInnerSpotAngles[index] = 104f;
+                        break;
+                    case RidgeKioskCourtWorld.EdgeLampPurpose:
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialIntensityScales[index] = .025f;
+                        industrialRangeLimits[index] = 3f;
+                        industrialSpotAngles[index] = 56f;
+                        industrialInnerSpotAngles[index] = 20f;
                         break;
                     case "PigeonLoftAviary":
                         industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;
@@ -355,12 +362,11 @@ namespace BarPromenade
                         break;
                 }
                 PracticalLightProfile profile = GetIndustrialProfile(industrialPurposes[index]);
-                // Two lobes describe one kiosk diffuser. The sign projectors
-                // are hooded toward their board, so only their real lenses glow.
+                // The court and sign lights use the visible lenses for glow.
                 if (purposeName == "RidgeKioskInterior" || purposeName == "GlassReturnWindow" || purposeName == "PawnshopSignLeft" ||
                     purposeName == "PawnshopSignRight" || purposeName == "GlassReturnSignLeft" ||
                     purposeName == "GlassReturnSignRight" || purposeName == "KioskSign" ||
-                    purposeName == RidgeKioskCourtWorld.LampPurpose) continue;
+                    RidgeKioskCourtWorld.IsLampAnchor(taskAnchors[index].name)) continue;
                 // Imported anchors inherit the FBX unit factor. Keep particle
                 // sizes in world metres and move their soft depth fade clear
                 // of the fixture housing and the adjacent opaque facade.
@@ -422,8 +428,8 @@ namespace BarPromenade
                 pooledLightBaseIntensities[index] = StreetLightIntensity;
                 string name = FixedLightPrefix + (index + 1);
                 if (index >= industrialAnchorStartIndex && index < lampAnchors.Length &&
-                    lampAnchors[index].name == IndustrialTaskLightPrefix + RidgeKioskCourtWorld.LampPurpose)
-                    name += " " + RidgeKioskCourtWorld.LampPurpose;
+                    RidgeKioskCourtWorld.IsLampAnchor(lampAnchors[index].name))
+                    name += " " + lampAnchors[index].name.Substring(IndustrialTaskLightPrefix.Length);
                 streetLightPool[index] = CreateLight(
                     name, transform.position,
                     StreetLightColor, LightType.Spot, StreetLightIntensity, StreetLightRange,

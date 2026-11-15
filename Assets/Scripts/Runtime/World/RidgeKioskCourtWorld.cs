@@ -8,7 +8,9 @@ namespace BarPromenade
     internal sealed class RidgeKioskCourtWorld : MonoBehaviour
     {
         internal const string LampPurpose = "RidgeKioskCourt";
+        internal const string EdgeLampPurpose = LampPurpose + "Edge";
         private static readonly Color DiffuserGlow = new Color(.83f, .67f, .47f);
+        private static readonly Color EdgeLampGlow = new Color(.36f, .41f, .39f);
         private readonly Transform[] canopies = new Transform[RidgeKioskCourtPlan.TableCount];
         private readonly Quaternion[] canopyRest = new Quaternion[RidgeKioskCourtPlan.TableCount];
         private readonly Transform[] tableTops = new Transform[RidgeKioskCourtPlan.TableCount];
@@ -20,6 +22,9 @@ namespace BarPromenade
         internal RidgeKioskCourtPlan Plan { get; private set; }
         internal NpcHeroUpperBodyPose HeroActions { get; private set; }
         internal Transform TableTop(int table) => tableTops[table];
+        internal static bool IsLampAnchor(string name) =>
+            name == CityNightAtmosphere.IndustrialTaskLightPrefix + LampPurpose ||
+            name == CityNightAtmosphere.IndustrialTaskLightPrefix + EdgeLampPurpose;
 
         internal static RidgeKioskCourtWorld Build(Transform kiosk, RidgeKioskCourtPlan plan, bool interactive,
             List<Collider> rainShelters)
@@ -60,14 +65,10 @@ namespace BarPromenade
                 Transform canopy = Find(model, "KioskCanopy" + table);
                 result.canopies[table] = canopy;
                 result.canopyRest[table] = canopy.localRotation;
-                var diffuser = Find(model, $"RidgeKioskCourt_KioskCourtLamp{table}_KioskLampGlass")
-                    .GetComponent<MeshRenderer>();
-                diffuser.sharedMaterial = CityNightResources.EmissiveMaterial;
-                diffuser.shadowCastingMode = ShadowCastingMode.Off;
-                diffuser.receiveShadows = false;
-                CityNightGlowRegistry.Register(diffuser, DiffuserGlow);
-                AddLampSource(table, "Left", -1f);
-                AddLampSource(table, "Right", 1f);
+                SetLens($"RidgeKioskCourt_KioskCourtLamp{table}_KioskLampGlass", DiffuserGlow);
+                // The lobes aim out from the mast onto the two standing places.
+                AddLampSource($"KioskCourtLight{table}Left", LampPurpose, new Vector3(-.36f, -1f, 0f));
+                AddLampSource($"KioskCourtLight{table}Right", LampPurpose, new Vector3(.36f, -1f, 0f));
 
                 if (!interactive) continue;
                 MeshFilter canopySurface = canopy.GetComponentInChildren<MeshFilter>();
@@ -78,16 +79,26 @@ namespace BarPromenade
                 shape.sharedMesh = canopySurface.sharedMesh;
                 rainShelters.Add(shape);
             }
+            SetLens("RidgeKioskCourt_KioskCourtEdgeLamp_KioskLampGlass", EdgeLampGlow);
+            // The hood and the downward cone keep the beam on the concrete
+            // beside the rear planter, below the guests and the skyline.
+            AddLampSource("KioskCourtEdgeLamp", EdgeLampPurpose, new Vector3(-1.25f, -1f, -.28f));
             return result;
 
-            void AddLampSource(int table, string side, float outward)
+            void SetLens(string meshName, Color glow)
             {
-                Transform socket = Find(model, $"KioskCourtLight{table}{side}");
-                Transform anchor = new GameObject(CityNightAtmosphere.IndustrialTaskLightPrefix + LampPurpose).transform;
+                var lens = Find(model, meshName).GetComponent<MeshRenderer>();
+                lens.sharedMaterial = CityNightResources.EmissiveMaterial;
+                lens.shadowCastingMode = ShadowCastingMode.Off;
+                lens.receiveShadows = false;
+                CityNightGlowRegistry.Register(lens, glow);
+            }
+
+            void AddLampSource(string socketName, string purpose, Vector3 aim)
+            {
+                Transform socket = Find(model, socketName);
+                Transform anchor = new GameObject(CityNightAtmosphere.IndustrialTaskLightPrefix + purpose).transform;
                 anchor.SetParent(host, false);
-                // Both lobes tip away from the mast. Each face receives a
-                // broad beam and the steel pole stays out of the bright core.
-                Vector3 aim = new Vector3(outward * .32f, -1f, 0f);
                 anchor.SetPositionAndRotation(socket.position, host.rotation * Quaternion.LookRotation(aim, Vector3.forward));
             }
         }

@@ -247,13 +247,35 @@ namespace BarPromenade.Tests.PlayMode
             var court = city.World.Root.GetComponentInChildren<RidgeKioskCourtWorld>();
             Assert.That(court, Is.Not.Null);
             var atmosphere = city.Night.Atmosphere;
+            Assert.That(site.StreetLamp.HasValue, Is.True, "The Ridge kiosk needs a pole in the street lamp row.");
+            var streetPole = site.StreetLamp.Value;
+            Light streetLamp = CheckRidgeKioskStreetLamp(site, streetPole);
             const string anchorName = CityNightAtmosphere.IndustrialTaskLightPrefix + RidgeKioskCourtWorld.LampPurpose;
-            Light[] sources = atmosphere.LampAnchors.Select((anchor, index) => (anchor, index))
+            const string edgeAnchorName = CityNightAtmosphere.IndustrialTaskLightPrefix + RidgeKioskCourtWorld.EdgeLampPurpose;
+            var anchors = atmosphere.LampAnchors.Select((anchor, index) => (anchor, index)).ToArray();
+            Light[] sources = anchors
                 .Where(binding => binding.anchor.name == anchorName)
                 .Select(binding => atmosphere.GetLightForAnchor(binding.index)).ToArray();
             Assert.That(sources.Length, Is.EqualTo(2 * RidgeKioskCourtPlan.TableCount));
-            var lenses = court.GetComponentsInChildren<MeshRenderer>()
-                .Where(renderer => renderer.sharedMaterial == CityNightResources.EmissiveMaterial).ToArray();
+            Light edge = atmosphere.GetLightForAnchor(anchors.Single(binding => binding.anchor.name == edgeAnchorName).index);
+            Vector3 edgeConcrete = site.Court.Point(3.55f, -9.01f) + Vector3.up * .01f;
+            Assert.That(edge.type, Is.EqualTo(LightType.Spot));
+            Assert.That(edge.shadows, Is.EqualTo(LightShadows.None));
+            Assert.That(edge.range, Is.LessThanOrEqualTo(3.2f));
+            Assert.That(Vector3.Angle(edge.transform.forward, Vector3.down) + edge.spotAngle * .5f, Is.LessThan(90f),
+                "The rail lamp stays below eye level and points onto the slab.");
+            Assert.That(RidgeSourceReachesPoint(edge, edgeConcrete), Is.True);
+            var courtMeshes = court.GetComponentsInChildren<MeshRenderer>();
+            var edgeLens = courtMeshes.Single(renderer => renderer.name == "RidgeKioskCourt_KioskCourtEdgeLamp_KioskLampGlass");
+            var edgeHousing = courtMeshes.Single(renderer => renderer.name == "RidgeKioskCourt_KioskCourtEdgeLamp_RidgeKioskSurface");
+            Assert.That(edgeLens.sharedMaterial, Is.SameAs(CityNightResources.EmissiveMaterial));
+            Assert.That(edgeHousing.bounds.size.z, Is.InRange(.27f, .30f), "The rail light needs a readable hood above the post.");
+            Assert.That(edgeHousing.bounds.max.y - site.Court.Origin.y, Is.GreaterThan(1.15f));
+            Vector3 lensToSource = edge.transform.position - edgeLens.bounds.center;
+            Assert.That(lensToSource.magnitude, Is.LessThan(.025f), "Mount the spot at the real lens.");
+            Assert.That(Vector3.Dot(lensToSource, edge.transform.forward), Is.GreaterThan(0f));
+            var lenses = courtMeshes.Where(renderer => renderer.name.Contains("_KioskCourtLamp") &&
+                    renderer.sharedMaterial == CityNightResources.EmissiveMaterial).ToArray();
             Assert.That(lenses.Length, Is.EqualTo(RidgeKioskCourtPlan.TableCount));
             foreach (MeshRenderer lens in lenses)
             {
@@ -270,7 +292,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(light.transform.position.y, Is.LessThan(bounds.min.y).And.GreaterThan(bounds.min.y - .02f));
                     Assert.That(Vector3.Dot(light.transform.forward, offset.normalized), Is.GreaterThan(.25f));
                     Assert.That(light.type, Is.EqualTo(LightType.Spot));
-                    Assert.That(light.spotAngle, Is.GreaterThanOrEqualTo(160f));
+                    Assert.That(light.spotAngle, Is.InRange(140f, 155f));
                     Assert.That(light.range, Is.LessThanOrEqualTo(3.5f));
                     Assert.That(light.intensity, Is.GreaterThan(1f).And.LessThan(2.1f));
                     Assert.That(light.isActiveAndEnabled, Is.True);
@@ -290,17 +312,39 @@ namespace BarPromenade.Tests.PlayMode
             var previousForce = skins.Select(skin => skin.forceMatrixRecalculationPerRender).ToArray();
             var follow = city.Camera.GetComponent<PlayerCameraFollow>();
             float priorAspect = city.Camera.aspect;
-            const string folder = "RidgeUmbrellaLighting";
+            int priorRenderingInterval = OnDemandRendering.renderFrameInterval;
+            const string folder = "RidgeCourtLighting";
             try
             {
+                Object.FindAnyObjectByType<GameTimeRuntime>().enabled = false;
+                OnDemandRendering.renderFrameInterval = 24;
                 city.DayNight.ApplyCurrentTime(true);
                 atmosphere.RefreshImmediate();
                 foreach (var skin in skins) skin.forceMatrixRecalculationPerRender = true;
                 city.Camera.aspect = 1280f / 720f;
-                Vector3 eye = site.Court.Point(3.6f, -9.8f) + Vector3.up * 1.78f;
-                Vector3 target = site.Court.Point(-.45f, -5.4f) + Vector3.up * 1.55f;
-                follow.SetFixedPose(eye, Quaternion.LookRotation(target - eye), 66f);
-                AreaCaptureFixture.CaptureCurrentCamera(city.Camera, folder, "court-night", 1280, 720);
+                PointCamera(streetPole.Position + new Vector3(7.6f, 1.75f, 7.8f),
+                    streetPole.Position + new Vector3(-2.2f, 2.05f, .5f), 59f);
+                Photograph("street-lamp-evening");
+                PhotographCourt("evening");
+                PointCamera(site.Court.Point(4.10f, -6.2f) + Vector3.up * 1.65f, edgeConcrete, 52f);
+                Vector3 edgeSample = city.Camera.WorldToViewportPoint(edgeConcrete);
+                Photograph("edge");
+                edge.enabled = false;
+                Photograph("edge-off");
+                edge.enabled = true;
+                var withEdge = ReadRidgePatchExposure(folder, "edge", edgeSample, .010f);
+                var withoutEdge = ReadRidgePatchExposure(folder, "edge-off", edgeSample, .010f);
+                PointCamera(site.Court.Point(2.95f, -6.8f) + Vector3.up * 1.68f,
+                    (edgeLens.bounds.center + edgeConcrete) * .5f, 54f);
+                Photograph("lamp-at-railing");
+
+                Vector3 rearPool = site.Court.Table(2) + new Vector3(0f, .01f, .92f);
+                Vector3 aisle = site.Court.Point(0f, -6.30f) + Vector3.up * .01f;
+                PointCamera(site.Court.Point(0f, -5.55f) + Vector3.up * 1.70f, (rearPool + aisle) * .5f, 52f);
+                Photograph("pool-and-aisle");
+                var poolLuminance = ReadRidgePatchExposure(folder, "pool-and-aisle", city.Camera.WorldToViewportPoint(rearPool), .008f).mean;
+                var aisleLuminance = ReadRidgePatchExposure(folder, "pool-and-aisle", city.Camera.WorldToViewportPoint(aisle), .008f).mean;
+                Debug.Log($"Ridge court concrete: pool {poolLuminance:F5}, aisle {aisleLuminance:F5}, rear edge {withEdge.mean:F5} / {withoutEdge.mean:F5}.");
 
                 for (int place = 0; place < visitors.Length; place++)
                 {
@@ -310,13 +354,13 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(mouth, Is.Not.Null);
                     Vector3 face = mouth.position + Vector3.up * .043f;
                     Vector3 sight = visitor.transform.forward;
-                    eye = face + sight * 1.42f + visitor.transform.right * .43f + Vector3.up * .055f;
-                    follow.SetFixedPose(eye, Quaternion.LookRotation(face - eye), 48f);
+                    Vector3 eye = face + sight * 1.42f + visitor.transform.right * .43f + Vector3.up * .055f;
+                    PointCamera(eye, face, 48f);
                     string shot = "guest-" + place;
                     Vector3 sample = city.Camera.WorldToViewportPoint(face);
-                    AreaCaptureFixture.CaptureCurrentCamera(city.Camera, folder, shot, 1280, 720);
+                    Photograph(shot);
                     foreach (Light light in sources) light.enabled = false;
-                    AreaCaptureFixture.CaptureCurrentCamera(city.Camera, folder, shot + "-off", 1280, 720);
+                    Photograph(shot + "-off");
                     foreach (Light light in sources) light.enabled = true;
 
                     var illuminated = ReadRidgePatchExposure(folder, shot, sample, .018f);
@@ -325,14 +369,189 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(illuminated.mean, Is.GreaterThan(unlit.mean + .004f), "The diffuser must reach each guest's face.");
                     Assert.That(illuminated.clipped, Is.LessThan(.03f), "The lit face must retain detail without broad clipping.");
                 }
+
+                AdvanceRidgeClock(23 * 60 + 20);
+                var courtLife = court.GetComponent<RidgeKioskCourtLife>();
+                for (int frame = 0; frame < 90 && visitors.Any(actor => actor.IsSpawned && courtLife.IsCourtFloor(actor.Position)); frame++)
+                {
+                    for (int tick = 0; tick < 8; tick++) city.Pedestrians.Advance(.15f);
+                    yield return null;
+                }
+                PhotographCourt("after-hours");
+                Assert.That(visitors.All(actor => !actor.IsSpawned || !courtLife.IsCourtFloor(actor.Position)), Is.True,
+                    "The after-hours lighting frame must show the vacated court.");
+                Light[] fixtures = sources.Append(edge).Append(streetLamp).ToArray();
+                float[] nightIntensities = fixtures.Select(light => light.intensity).ToArray();
+                AdvanceRidgeClock(12 * 60);
+                yield return null;
+                PhotographCourt("noon");
+                for (int index = 0; index < fixtures.Length; index++)
+                {
+                    Assert.That(fixtures[index].isActiveAndEnabled, Is.True);
+                    Assert.That(fixtures[index].intensity,
+                        Is.GreaterThanOrEqualTo(nightIntensities[index] * GameTimeDayNightRules.DayFixtureFloor - .001f));
+                }
+                Assert.That(poolLuminance, Is.GreaterThan(aisleLuminance * 1.5f), "The rear pool must lead the eye across the darker aisle.");
+                Assert.That(withEdge.mean, Is.GreaterThan(withoutEdge.mean + .0015f), "The low lamp must reveal the rear edge.");
+                Assert.That(poolLuminance, Is.GreaterThan(withEdge.mean * 1.2f), "The lit edge must stay secondary to the rear pool.");
             }
             finally
             {
+                edge.enabled = true;
                 foreach (Light light in sources) light.enabled = true;
                 for (int i = 0; i < skins.Length; i++) skins[i].forceMatrixRecalculationPerRender = previousForce[i];
+                OnDemandRendering.renderFrameInterval = priorRenderingInterval;
                 city.Camera.aspect = priorAspect;
                 follow.ClearFixedPose();
             }
+
+            void PointCamera(Vector3 eye, Vector3 target, float fieldOfView) =>
+                follow.SetFixedPose(eye, Quaternion.LookRotation(target - eye), fieldOfView);
+
+            void Photograph(string shot) => AreaCaptureFixture.CaptureCurrentCamera(city.Camera, folder, shot, 1280, 720);
+
+            void PhotographCourt(string phase)
+            {
+                PointCamera(site.Court.Point(site.Court.EntrySide * 2.85f, -1.55f) + Vector3.up * 1.72f,
+                    site.Court.Point(-.30f, -5.8f) + Vector3.up * 1.28f, 67f);
+                Photograph(phase + "-approach");
+                PointCamera(site.Court.Point(3.08f, -9.8f) + Vector3.up * 1.78f,
+                    site.Court.Point(-.45f, -5.4f) + Vector3.up * 1.50f, 66f);
+                Photograph(phase + "-reverse");
+            }
+        }
+
+        private Light CheckRidgeKioskStreetLamp(RidgeKioskSitePlan site, StreetLampDescriptor pole)
+        {
+            var night = city.Night;
+            int index = Enumerable.Range(0, night.Plan.StreetLamps.Count)
+                .Single(slot => night.Plan.StreetLamps[slot] == pole);
+            Assert.That(CityLayoutCache.GetOrCreateHomeExteriorContext(city.Layout).NearbyStreetLamps,
+                Does.Contain(pole), "The balcony uses the same street pole placement.");
+            Vector3 bulb = pole.Position + Vector3.up * 4.70f + pole.Forward * 1.07f;
+            Light light = night.Atmosphere.GetLightForAnchor(index);
+            Assert.That(Vector3.Distance(night.LampAnchors[index].position, bulb), Is.LessThan(.01f));
+            Assert.That(Vector3.Distance(light.transform.position, bulb), Is.LessThan(.01f));
+
+            var street = CityHillsideQuarterPlan.ForLayout(city.Layout).Links[1];
+            Assert.That(pole.Position.z, Is.EqualTo(street.SouthSidewalk[0].z - .72f).Within(.01f),
+                "The kiosk pole must keep the standard offset along the south sidewalk.");
+            Assert.That(pole.Forward, Is.EqualTo(Vector3.forward), "The head must face the carriageway.");
+            Assert.That(street.TrySampleTop(new Vector2(pole.Position.x, pole.Position.z), out float top, out var surface), Is.True);
+            Assert.That(surface, Is.EqualTo(CityStreetSupportKind.Sidewalk));
+            Assert.That(pole.Position.y, Is.EqualTo(top).Within(.01f), "The plinth must sit flush on the pavement.");
+            Bounds blocker = CityStaticCollisionBuilder.CreateLowerPoleBounds(pole.Position);
+            Physics.SyncTransforms();
+            Assert.That(night.Root.GetComponentsInChildren<BoxCollider>().Any(collider =>
+                Vector3.Distance(collider.bounds.center, blocker.center) < .01f &&
+                Vector3.Distance(collider.bounds.size, blocker.size) < .01f), Is.True);
+            float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
+            Assert.That(city.World.WalkableArea.Contains(pole.Position, radius), Is.False);
+            var through = new Vector3(pole.Position.x, top, street.SouthSidewalk[0].z);
+            Assert.That(city.World.WalkableArea.Contains(through, radius), Is.True, "Leave the through side of the pavement clear.");
+            Rect footprint = site.StreetLampFootprint.Value;
+            Assert.That(site.Court.Overlaps(footprint), Is.False);
+            Assert.That(city.World.WalkableArea.Contains(site.Court.Entry, radius), Is.True);
+            Assert.That(CityBusNetworkFurniture.Reservations(city.BusPlans, city.Layout).Any(footprint.Overlaps), Is.False);
+
+            Vector3 lane = new(pole.Position.x, street.RoadTopAt(pole.Position.x), street.WestGateWorld.z);
+            Assert.That(RidgeSourceReachesPoint(light, lane + Vector3.up * .05f), Is.True, "The standard beam must reach the road.");
+            for (int table = 0; table < RidgeKioskCourtPlan.TableCount; table++)
+                Assert.That(RidgeSourceReachesPoint(light, site.Court.Table(table) + Vector3.up * .05f), Is.False,
+                    "The nearby street pole must leave the table pools to the umbrellas.");
+            Debug.Log($"Ridge kiosk street pole at {pole.Position:F2}, road light sample at {lane:F2}.");
+            return light;
+        }
+
+        [UnityTest]
+        public IEnumerator LiveCity_RidgeRoadLampsCoverBothSerpentines()
+        {
+            Assert.That(GameSessionState.TryStartGameTimeAt(0), Is.True);
+            yield return LoadProductionCity();
+            var night = city.Night;
+            var poles = night.Plan.StreetLamps.Select((pole, index) =>
+                (pole, light: night.Atmosphere.GetLightForAnchor(index))).ToArray();
+            bool capture = System.Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_RIDGE_ROADS") == "1" &&
+                SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null;
+            var failures = new List<string>();
+            foreach (var road in CityHillsideStreetPlan.ForLayout(city.Layout).Routes)
+            {
+                float length = road.Path.Length;
+                var row = poles.Where(entry => entry.pole.Edge == default && entry.pole.EdgeT > 0f &&
+                    road.WorldBounds.Contains(Xz(entry.pole.Position))).ToArray();
+                if (row.Length != Mathf.RoundToInt(length / 23f))
+                    failures.Add($"{road.Bank}: {row.Length} poles along {length:F1} m.");
+                float shortest = float.PositiveInfinity, longest = 0f;
+                for (int i = 0; i < row.Length; i++)
+                {
+                    var (pole, light) = row[i];
+                    string station = $"{road.Bank} {pole.EdgeT * length:F1} m at {pole.Position:F2}";
+                    if (i > 0)
+                    {
+                        float gap = (pole.EdgeT - row[i - 1].pole.EdgeT) * length;
+                        shortest = Mathf.Min(shortest, gap);
+                        longest = Mathf.Max(longest, gap);
+                        if (pole.Side == row[i - 1].pole.Side || gap < 15f || gap > 31f)
+                            failures.Add($"{station}: previous pole {gap:F1} m away on {row[i - 1].pole.Side}, this pole on {pole.Side}.");
+                    }
+                    if (!road.TrySampleTop(Xz(pole.Position), out float top, out var kind) ||
+                        kind != CityStreetSupportKind.Sidewalk || Mathf.Abs(top - pole.Position.y) > .01f ||
+                        !OnSidewalk(pole.Position - pole.Forward * .24f) ||
+                        OnSidewalk(pole.Position - pole.Forward * .32f))
+                        failures.Add($"{station}: pole is off the supported 0.28 m sidewalk line.");
+                    if (!pole.LightTarget.HasValue || !RidgeSourceReachesPoint(light, pole.LightTarget.Value + Vector3.up * .05f))
+                        failures.Add($"{station}: the actual beam misses its target on the road.");
+                }
+                Debug.Log($"Ridge road lighting {road.Bank}: {row.Length} poles, spacing {shortest:F1}–{longest:F1} m.");
+
+                Rect searchable = road.WorldBounds;
+                searchable.xMin -= 22f; searchable.xMax += 22f;
+                searchable.yMin -= 22f; searchable.yMax += 22f;
+                var lights = poles.Where(entry => searchable.Contains(Xz(entry.pole.Position)))
+                    .Select(entry => entry.light).ToArray();
+                float[] lanes = { -2.9f, -1.5f, 0f, 1.5f, 2.9f };
+                int segments = Mathf.CeilToInt(length / .5f);
+                int missed = 0;
+                for (int i = 0; i <= segments; i++)
+                {
+                    CityRoadSample sample = road.Path.SampleDistance(length * i / segments);
+                    foreach (float offset in lanes)
+                    {
+                        Vector2 point = sample.Position + sample.Right * offset;
+                        if (!road.TrySampleTop(point, out float top, out var kind) ||
+                            kind != CityStreetSupportKind.Asphalt) continue;
+                        Vector3 aboveAsphalt = new(point.x, top + .05f, point.y);
+                        if (lights.Any(light => RidgeSourceReachesPoint(light, aboveAsphalt))) continue;
+                        if (missed++ < 12)
+                            failures.Add($"{road.Bank}: uncovered asphalt at {sample.Distance:F1} m, {aboveAsphalt:F2}.");
+                    }
+                }
+                if (missed > 0) failures.Add($"{road.Bank}: {missed} of the asphalt probes missed direct light.");
+                if (capture)
+                {
+                    bool west = road.Bank == CityTerraceTransportBank.West;
+                    float apexX = west ? road.LaneMaxX + 13f : road.LaneMinX - 13f;
+                    float bend = road.Path.Project(new Vector2(apexX, road.GetLaneZ(2) - 13f)).DistanceAlong;
+                    Photograph("approach", 6f, 23f);
+                    Photograph("turn", bend - 13f, bend + 1f);
+                    Photograph("summit", length - 36f, length - 18f);
+                }
+
+                bool OnSidewalk(Vector3 point) => road.TrySampleTop(Xz(point), out _, out var kind) &&
+                    kind == CityStreetSupportKind.Sidewalk;
+
+                void Photograph(string name, float eyeDistance, float targetDistance)
+                {
+                    Vector2 eye = road.Path.SampleDistance(eyeDistance).Position;
+                    Vector2 target = road.Path.SampleDistance(targetDistance).Position;
+                    CaptureCity("ridge-road-" + road.Bank + "-" + name,
+                        new Vector3(eye.x, road.Profile.SampleDistance(eyeDistance).Height + 3.2f, eye.y),
+                        new Vector3(target.x, road.Profile.SampleDistance(targetDistance).Height + 1.4f, target.y));
+                }
+            }
+            Assert.That(failures, Is.Empty, string.Join("\n", failures));
+
+            static Vector2 Xz(Vector3 point) => new Vector2(point.x, point.z);
         }
 
         [UnityTest]

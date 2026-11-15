@@ -9,10 +9,13 @@
   Story §§6/7/17/21, art §§7/15a/16. City FX/probe/SSR receivers apply. Shared
   DoF tracks table then speaker. UI after post. Costs unmeasured.
 
-- **Accepted 2026-11-14, user — umbrella light:** fixed frosted rings, two wide
-  weak pooled Spots each. The visible lens owns bloom. The paired sources light
-  surfaces directly and skip air and bounce. City/Home share the fixtures.
-  City softness/grade/SSAO/fog/probes/roadSSR/scene post apply. Costs unmeasured.
+- **Accepted 2026-11-14/15, user — Ridge court light.** Fixed frosted rings,
+  two warm Spots each with narrower falloff. The booth lights the approach.
+  A hooded enamel fixture on a rail post grazes the rear slab with a dim Spot.
+  The street pole faces the road from the south sidewalk row. City/Home share
+  fixed sources and the day floor. Lenses own bloom. Court
+  Spots use direct light. Shared City shadows/SSAO/fog/grade, wetness/probes/
+  road SSR and scene post apply. Dialogue uses shared DoF. Costs unmeasured.
 
 - **Accepted 2026-11-13, user — court paving/fence:** Blender paths share
   City/Home grade, wetness and grass exclusion. Off-aisle rails/planters join
