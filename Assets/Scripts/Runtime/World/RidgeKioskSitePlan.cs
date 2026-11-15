@@ -81,6 +81,8 @@ namespace BarPromenade
                     if (reserved.Exists(court.Overlaps)) continue;
                     site.Court = court;
                     site.StreetLamp = FindStreetLamp(court, ridge, reserved);
+                    if (site.StreetLamp is { } lamp && RidgeParkingPlan.ForLayout(layout) is { } parking &&
+                        parking.Entrance.Contains(new Vector2(lamp.Position.x, lamp.Position.z))) site.StreetLamp = null;
                     return site;
                 }
             }

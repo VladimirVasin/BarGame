@@ -180,6 +180,7 @@ namespace BarPromenade
 
         private void ReserveWalkways(CityLayout city)
         {
+            if (RidgeParkingPlan.ForLayout(city) is { } parking) ReserveRect(parking.SurfaceBounds);
             // Some path tops are separate models, and Home omits their
             // collision entirely. Reserve their same contours in City space.
             foreach (var site in CityKioskSites.ForLayout(city).Sites)

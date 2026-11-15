@@ -5,7 +5,7 @@ namespace BarPromenade
     internal enum CityBusBlockerKind
     {
         Unknown, BusBody, BusPrediction, Player, PlayerPrediction,
-        Pedestrian, PedestrianPrediction, CanneryTruck, CanneryReservation
+        Pedestrian, PedestrianPrediction, CanneryTruck, CanneryReservation, AmbientCar
     }
 
     public readonly struct CityBusObstacleState
@@ -163,6 +163,7 @@ namespace BarPromenade
             CityBusBlockerKind.PedestrianPrediction => "pedestrian_prediction",
             CityBusBlockerKind.CanneryTruck => "cannery_truck",
             CityBusBlockerKind.CanneryReservation => "cannery_reservation",
+            CityBusBlockerKind.AmbientCar => "ambient_car",
             _ => obstacle.MustStop ? "unknown" : "none"
         };
     }

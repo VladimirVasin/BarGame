@@ -1,0 +1,24 @@
+{
+  "generator": "tools/build-ridge-parking-3d-model.py",
+  "unit": "metre",
+  "width": 14.5,
+  "depth": 20.6,
+  "capacity": 4,
+  "bay_width": 2.9,
+  "bay_length": 5.8,
+  "park_z": -17.3,
+  "ramp_front": 2.9,
+  "road_drop": 0.072,
+  "bounds_min": [
+    -7.25,
+    -0.25152,
+    -20.6
+  ],
+  "bounds_max": [
+    7.25,
+    0.12,
+    2.9
+  ],
+  "triangles": 1848,
+  "geometry_sha256": "7b430523b5ac7edad0a9c3b6a749214be50ab41f2baf15ac6a8899e59edad957"
+}

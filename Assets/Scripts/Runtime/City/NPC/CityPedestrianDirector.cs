@@ -248,9 +248,9 @@ namespace BarPromenade
         }
 
         public void ConfigureVehicleTraffic(CityBusDirector busDirector,
-            CityCanneryController canneryController, LastRouteCarDriver carDriver)
+            CityCanneryController canneryController, LastRouteCarDriver carDriver, CityAmbientTraffic ambient = null)
         {
-            vehicleTraffic = new CityPedestrianVehicleTraffic(busDirector, canneryController, carDriver);
+            vehicleTraffic = new CityPedestrianVehicleTraffic(busDirector, canneryController, carDriver, ambient);
             residentFleet = busDirector;
         }
 

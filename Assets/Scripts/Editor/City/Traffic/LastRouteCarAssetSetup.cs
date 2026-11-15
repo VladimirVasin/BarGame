@@ -634,7 +634,7 @@ namespace BarPromenade.EditorTools
         {
             switch (slot)
             {
-                case LastRouteCarMaterialSlot.Headlight: return 3.8f;
+                case LastRouteCarMaterialSlot.Headlight: return LastRouteCarHeadlights.LensEmission;
                 case LastRouteCarMaterialSlot.TailLight: return .72f;
                 // The dial keeps its emission keyword ON so the runtime can
                 // light it through a property block when the radio is
@@ -744,7 +744,7 @@ namespace BarPromenade.EditorTools
                 // user actually named: `#1A1A18` reads about `17/255` under
                 // the new plafond and `#272724` about `32`.
                 case LastRouteCarMaterialSlot.Dashboard: return Color.white;
-                case LastRouteCarMaterialSlot.Headlight: return Hex("#FFECD1FF");
+                case LastRouteCarMaterialSlot.Headlight: return LastRouteCarHeadlights.LensColor;
                 case LastRouteCarMaterialSlot.TailLight: return Hex("#812519FF");
                 case LastRouteCarMaterialSlot.Plate: return Hex("#8E8E82FF");
                 case LastRouteCarMaterialSlot.RadioDial: return Hex("#E9A24CFF");

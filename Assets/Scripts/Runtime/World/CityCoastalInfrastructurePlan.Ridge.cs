@@ -240,12 +240,15 @@ namespace BarPromenade
                 position=default;
                 if(!ground.TrySampleTop(point,out float y))return false;
                 Rect footprint=new Rect(point.x-.23f,point.y-.23f,.46f,.46f);
+                if (RidgeParkingPlan.ForLayout(layout) is { } parking &&
+                    Expanded(parking.SurfaceBounds, .35f).Overlaps(footprint)) return false;
                 foreach(var consumer in consumers) if(Expanded(consumer.Bounds,.4f).Overlaps(footprint))return false;
                 foreach(var house in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
                     if(Expanded(house.ApproachBounds,.35f).Overlaps(footprint) || house.CourtBounds.Overlaps(footprint))return false;
                 foreach(var stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)
                     foreach(var area in stair.WalkableBounds) if(Expanded(area,.3f).Overlaps(footprint))return false;
-                if(RidgeKioskSitePlan.TryCreate(layout,out var kiosk) && kiosk.ReservedBounds.Overlaps(footprint))return false;
+                if(RidgeKioskSitePlan.TryCreate(layout,out var kiosk) &&
+                    (kiosk.ReservedBounds.Overlaps(footprint) || (kiosk.Court?.Overlaps(footprint) ?? false)))return false;
                 if(CityGlassReturnSitePlan.LandReservation.Overlaps(footprint))return false;
                 var loft=CityPigeonLoftPlan.ForLayout(layout);
                 if(loft.IsEnabled && loft.Courtyard.Bounds.Overlaps(footprint))return false;

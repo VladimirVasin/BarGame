@@ -735,6 +735,18 @@ namespace BarPromenade
                     if (ridgeKiosk.StreetLampFootprint is { } pole) area.Exclude(pole);
                 }
             }
+            if (RidgeParkingPlan.ForLayout(layout) is { } parking)
+            {
+                area.Add(parking.SurfaceBounds);
+                foreach (var curb in parking.Curbs) area.Exclude(curb);
+                foreach (var lamp in parking.Lamps)
+                {
+                    var pole = CityStaticCollisionBuilder.CreateLowerPoleBounds(lamp.Position);
+                    area.Exclude(Rect.MinMaxRect(pole.min.x, pole.min.z, pole.max.x, pole.max.z));
+                }
+                Vector3 car = parking.ParkedPosition(RidgeParkingPlan.OccupiedBay);
+                area.Exclude(new Rect(car.x - 1.04f, car.z - 2.522f, 2.08f, 5.044f));
+            }
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
                 area.ExcludePolygons(new[] { pawnshop.Footprint });
             area.ExcludePolygons(CityGlassReturnSitePlan.ForLayout(layout).SolidPolygons);

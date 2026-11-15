@@ -149,6 +149,11 @@ namespace BarPromenade
                 if (frame == null) frame = new GameObject("Street kiosks from home").transform;
                 RidgeKioskWorld.Build(frame, site, false);
             }
+            if (RidgeParkingPlan.ForLayout(context.Layout) is { } parking && window.Overlaps(parking.Bounds))
+            {
+                if (frame == null) frame = new GameObject("Street kiosks from home").transform;
+                RidgeParkingWorld.Build(frame, context.Layout, false);
+            }
             if (frame == null) return;
             frame.SetParent(parent, false);
             frame.localPosition = PlayerHomeBalconyGeometry.ToHomeLocal(context.PlayerHome, Vector3.zero);
@@ -906,7 +911,7 @@ namespace BarPromenade
                             context.PlayerHome,
                             source.Forward),
                     source.LightTarget.HasValue ? PlayerHomeBalconyGeometry.ToHomeLocal(
-                        context.PlayerHome, source.LightTarget.Value) : (Vector3?)null));
+                        context.PlayerHome, source.LightTarget.Value) : (Vector3?)null, source.Purpose));
             }
 
             var signals =

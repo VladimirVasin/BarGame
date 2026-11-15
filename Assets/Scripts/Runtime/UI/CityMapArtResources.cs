@@ -399,6 +399,11 @@ namespace BarPromenade
                         Point(writer, court.Phone);
                     }
                 }
+                if (RidgeParkingPlan.ForLayout(layout) is { } parking)
+                {
+                    writer.Write("ridge-parking"); Point(writer, parking.Origin); RectValue(writer, parking.SurfaceBounds);
+                    for (int bay = 0; bay < RidgeParkingPlan.Capacity; bay++) RectValue(writer, parking.Bay(bay));
+                }
                 writer.Write(controller.PointsOfInterest.Count);
                 foreach (CityMapPointOfInterest point in controller.PointsOfInterest)
                 {

@@ -61,6 +61,7 @@ namespace BarPromenade
             foreach (var item in CityHillsideFurniturePlan.ForLayout(layout).Placements)
                 occupied.Add(item.AccessBounds);
             occupied.AddRange(CityBusNetworkFurniture.Reservations(CityDistrictBusPlanner.CreateRoadRouting(layout), layout));
+            if (RidgeParkingPlan.ForLayout(layout) is { } parking) occupied.Add(parking.SurfaceBounds);
             if (RidgeKioskSitePlan.TryCreate(layout, out var kiosk))
             {
                 occupied.Add(kiosk.ReservedBounds);

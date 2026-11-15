@@ -1,0 +1,197 @@
+using System.Collections;
+using System.Linq;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
+
+namespace BarPromenade.Tests.PlayMode
+{
+    public sealed partial class CityTerracePilotPlayModeTests
+    {
+        [UnityTest]
+        public IEnumerator LiveCity_AmbientTrafficSharesRoadsAndKeepsEveryBusPlatformAccessible()
+        {
+            Assert.That(GameSessionState.TryStartGameTimeAt(14 * 60), Is.True);
+            yield return LoadProductionCity();
+            var traffic = city.AmbientTraffic;
+            Assert.That(traffic, Is.Not.Null);
+            Assert.That(traffic.Count, Is.EqualTo(AmbientTrafficRules.Capacity));
+            traffic.AutoAdvance = false;
+            for (int i = 0; i < traffic.Count; i++)
+            {
+                var actor = traffic.GetCar(i);
+                Assert.That(actor.Driver.GetComponent<BoxCollider>().enabled, Is.True);
+                Assert.That(actor.Driver.GetComponent<Rigidbody>().isKinematic, Is.True);
+                Assert.That(actor.Driver.GetComponentInChildren<LastRouteCarSeatInteraction>(), Is.Null);
+                Assert.That(actor.Person.IsDriving, Is.True);
+                foreach (var part in actor.Registry.Bindings)
+                    if (part.Role == "headlight")
+                    {
+                        Assert.That(part.Renderer.sharedMaterial.shader.isSupported, Is.True, "The lens shader must render.");
+                        var block = new MaterialPropertyBlock();
+                        part.Renderer.GetPropertyBlock(block);
+                        Assert.That(block.GetColor("_BaseColor"), Is.EqualTo(LastRouteCarHeadlights.LensColor));
+                    }
+                actor.Plan.Path.Sample(actor.Plan.Length, out var a, out var f);
+                actor.Plan.Path.Sample(actor.Plan.Length * 2f, out var b, out var g);
+                Assert.That(Vector3.Distance(a, b), Is.LessThan(.08f), actor.Plan.RouteId + " circuit seam");
+                Assert.That(Vector3.Dot(f, g), Is.GreaterThan(.99f));
+            }
+
+            var car = traffic.GetCar(0);
+            float startDistance = -1f;
+            Vector3 direction = Vector3.forward;
+            // City streets are split into short road/junction links. Find a straight
+            // corridor across those seams rather than requiring one very long link.
+            for (float d = car.Plan.Length + 12f; d < car.Plan.Length * 2f - 25f; d += 4f)
+            {
+                car.Plan.Path.Sample(d, out var p, out var f);
+                car.Plan.Path.Sample(d + 18f, out var q, out var g);
+                if (Vector3.Dot(f, g) < .998f || Vector3.Distance(p, q) < 17.95f) continue;
+                if (car.Plan.KeepJunctionExitClear(d, d + 11f) < d + 5f) continue;
+                bool clear = true;
+                for (int i = 1; i < traffic.Count; i++)
+                    if (Vector3.Distance(p, traffic.GetCar(i).Position) < 40f) clear = false;
+                for (int i = 0; i < city.Bus.VehicleCount; i++)
+                    if (Vector3.Distance(p, city.Bus.GetVehicle(i).Actor.Position) < 40f) clear = false;
+                if (clear) { startDistance = d; direction = f; break; }
+            }
+            Assert.That(startDistance, Is.Positive, "A clear public straight for the crossing reproduction.");
+            car.Driver.Begin(car.Plan.Path, car.Driver.Model.Profile, 0f, startDistance);
+            car.Plan.Path.Sample(startDistance + 18f, out var crossing, out _);
+            city.Player.Motor.SetInputEnabled(false);
+            city.Player.Motor.Teleport(crossing + Vector3.up * PlayerFactory.GroundedRootOffset);
+            Physics.SyncTransforms();
+            float initial = car.Driver.Distance;
+            for (int tick = 0; tick < 240; tick++)
+            {
+                traffic.Advance(.05f);
+                if (tick % 4 == 0) yield return null;
+            }
+            Assert.That(car.Driver.Distance - initial, Is.GreaterThan(4f), "Sedan never left its entry: " + car.Position +
+                "; physical=" + car.PhysicalBlocker?.name + "; hold=" + car.Driver.Model.HoldDistance + "; at=" + initial);
+            Assert.That(car.Driver.Speed, Is.LessThan(.05f), "The sedan must stop before the hero.");
+            Assert.That(car.Hull.ContainsCapsule(city.Player.GameObject.transform.position, .35f), Is.False);
+            float waiting = car.Driver.Distance;
+            for (int tick = 0; tick < 420; tick++)
+            {
+                traffic.Advance(.05f);
+                if (tick % 8 == 0) yield return null;
+            }
+            Assert.That(car.Driver.Distance, Is.EqualTo(waiting).Within(.06f), "No collision bypass after prolonged waiting.");
+            Debug.Log("Ambient traffic: real hero held the sedan beyond the ride timeout.");
+
+            var cameraFollow = city.Camera.GetComponent<PlayerCameraFollow>();
+            cameraFollow.enabled = false;
+            yield return TrafficFrame("day", 14 * 60);
+            yield return TrafficFrame("night", 23 * 60);
+            AdvanceRidgeClock(14 * 60);
+            cameraFollow.enabled = true;
+
+            city.Player.Motor.Teleport(crossing + Vector3.Cross(Vector3.up, direction).normalized * 4f +
+                Vector3.up * PlayerFactory.GroundedRootOffset);
+            Physics.SyncTransforms();
+            for (int tick = 0; tick < 100; tick++)
+            {
+                traffic.Advance(.05f);
+                if (tick % 4 == 0) yield return null;
+            }
+            Assert.That(car.Driver.Distance, Is.GreaterThan(waiting + 3f), "The sedan must resume when the person clears its lane.");
+
+            float paused = car.Driver.Distance;
+            Time.timeScale = 0f;
+            traffic.AutoAdvance = true;
+            for (int frame = 0; frame < 4; frame++) yield return null;
+            Assert.That(car.Driver.Distance, Is.EqualTo(paused));
+            Time.timeScale = 1f;
+
+            // Verify the bus uses the new obstacle contributor, then restore the car.
+            traffic.AutoAdvance = false;
+            var bus = city.Bus.GetVehicle(0).Actor;
+            bus.SampleAhead(10f, out var busAhead, out _);
+            float saved = car.Driver.Distance;
+            car.Driver.Begin(car.Plan.Path, car.Driver.Model.Profile, 0f,
+                car.Plan.Length + Mathf.Repeat(car.Plan.Path.FindNearestDistance(busAhead), car.Plan.Length));
+            var obstacle = CityBusObstacleState.Clear;
+            traffic.AccumulateObstacle(bus, 35f, ref obstacle);
+            Assert.That(obstacle.MustStop, Is.True, "The bus must see a sedan in its lane.");
+            Assert.That(traffic.BlocksTruckSweep(new System.Collections.Generic.List<Vector3> { car.Hull.Centre }, 1.25f), Is.True);
+            car.Driver.Begin(car.Plan.Path, car.Driver.Model.Profile, 0f, saved);
+            Physics.SyncTransforms();
+            city.Pedestrians.VehicleTraffic.Refresh();
+            Assert.That(city.Pedestrians.VehicleTraffic.Blocks(car.Position, .35f), Is.True);
+            float dormant = car.Driver.Distance;
+            Assert.That(city.EnterDormant(), Is.True);
+            for (int frame = 0; frame < 3; frame++) yield return null;
+            Assert.That(car.Driver.Distance, Is.EqualTo(dormant));
+            city.ResumeFromDormant();
+            traffic.AutoAdvance = true;
+            city.Player.Motor.SetInputEnabled(true);
+            Debug.Log("Ambient traffic: bus/truck/walker occupancy, pause and dormancy checked; auditing every platform.");
+            yield return VerifyEveryBusStopCanBeBoardedFromThePublicPavement();
+
+            IEnumerator TrafficFrame(string name, int minute)
+            {
+                AdvanceRidgeClock(minute);
+                Vector3 target = car.Position + Vector3.up * .9f;
+                Vector3 view = -car.Driver.transform.right * 2f + car.Driver.transform.forward * 6f + Vector3.up * 1.4f;
+                city.Camera.transform.SetPositionAndRotation(target + view, Quaternion.LookRotation(-view));
+                for (int frame = 0; frame < 20; frame++) { traffic.Advance(.05f); yield return null; }
+                if (SystemInfo.graphicsDeviceType != UnityEngine.Rendering.GraphicsDeviceType.Null)
+                {
+                    AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "AmbientTraffic", name, 1280, 720);
+                    if (name == "night") VerifyRoadLight();
+                }
+            }
+
+            void VerifyRoadLight()
+            {
+                var lensPose = new Pose(city.Camera.transform.position, city.Camera.transform.rotation);
+                Vector3 eye = car.Position - car.Driver.transform.forward * 2f +
+                    car.Driver.transform.right * 6f + Vector3.up * 5f;
+                car.Plan.Path.Sample(car.Driver.Distance + car.Bounds.max.z + 4f, out var target, out _);
+                city.Camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye));
+                Texture2D lit = null, dark = null;
+                try
+                {
+                    foreach (var beam in car.Beams) Assert.That(beam.enabled, Is.True);
+                    AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "AmbientTraffic", "night-road-lit", 1280, 720);
+                    foreach (var beam in car.Beams) beam.enabled = false;
+                    AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "AmbientTraffic", "night-road-unlit", 1280, 720);
+                    lit = Read("night-road-lit"); dark = Read("night-road-unlit");
+                    float brightest = 0f;
+                    for (float ahead = 2f; ahead <= 7f; ahead += 1f)
+                    {
+                        car.Plan.Path.Sample(car.Driver.Distance + car.Bounds.max.z + ahead, out var road, out _);
+                        Vector3 uv = city.Camera.WorldToViewportPoint(road + Vector3.up * .015f);
+                        Assert.That(uv.z, Is.Positive);
+                        int x = Mathf.Clamp(Mathf.RoundToInt(uv.x * lit.width), 4, lit.width - 5);
+                        int y = Mathf.Clamp(Mathf.RoundToInt(uv.y * lit.height), 4, lit.height - 5);
+                        float difference = 0f;
+                        for (int dx = -4; dx <= 4; dx++)
+                        for (int dy = -4; dy <= 4; dy++)
+                            difference += lit.GetPixel(x + dx, y + dy).grayscale - dark.GetPixel(x + dx, y + dy).grayscale;
+                        brightest = Mathf.Max(brightest, difference / 81f);
+                    }
+                    Assert.That(brightest, Is.GreaterThan(.04f), "The actual road must receive visible light, beyond the glowing lenses.");
+                    Debug.Log("Ambient traffic: dipped headlights illuminate the physical road; A/B frames checked.");
+                }
+                finally
+                {
+                    foreach (var beam in car.Beams) beam.enabled = true;
+                    city.Camera.transform.SetPositionAndRotation(lensPose.position, lensPose.rotation);
+                    if (lit != null) Object.DestroyImmediate(lit);
+                    if (dark != null) Object.DestroyImmediate(dark);
+                }
+
+                Texture2D Read(string shot)
+                {
+                    var texture = new Texture2D(2, 2);
+                    texture.LoadImage(System.IO.File.ReadAllBytes(System.IO.Path.Combine(
+                        System.IO.Directory.GetCurrentDirectory(), "Captures", "AmbientTraffic", shot + ".png")));
+                    return texture;
+                }
+            }
+        }
+    }
+}

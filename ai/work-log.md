@@ -5,40 +5,49 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-15
 
-The Ferryman uses the default NPC rig with a reserved work outfit. Two doors
-and a tucked front apron define the sedan. Cabin pieces map to separate
-upholstery, trim and plastic textures. Measured heel support keeps his
-trousers and boots clear of the nose throughout the perch loop.
-`build-last-route-car-3d-model`, `build-last-route-cabin-actions` and
-`build-last-route-car-textures` passed.
-`LastRouteSedanAtBothStops`, `Ferryman_PerchesOnTheBonnetWithHisCoinAndHisCoat`
-and `Ride_CarriesTheHeroAndOnlyLetsHimOutWhenItStops` passed.
-Game View confirmed upholstery, the visible coins and hand contacts.
+Ridge parking joins home and kiosk: authored paving/ramp/curbs, municipal
+light and a silent unowned sedan. Entries/departures clear occupied neighbours;
+the obstructing power pole and its wires now skirt the lot.
+`build-ridge-parking-3d-model` and `LiveCity_RidgeParkingFitsEveryBay` passed;
+day/night and light A/B reviewed. Whole-platform audit passed Ridge 03-04;
+unrelated traffic/boarding waits remain at 01-04, 02-01 and 03-01.
+Map survey updated; ImageGen registration failed, so the live scheme remains.
+
+City ambient sedans reuse the current car/default seat rig. Hard holds cover
+people/shared traffic; grounded paths omit retraces and double sums keep seams.
+Shared rain/audio/materials and nearby dipped beams stay bounded.
+`CityAmbientTrafficTests` and
+`LiveCity_AmbientTrafficSharesRoadsAndKeepsEveryBusPlatformAccessible` passed.
+Day/night and light A/B frames reviewed; user accepted warm lenses/road spill.
+Boarding waits off the exit dock until the real NPC transfer ends.
+`check-workspace` retained older captures under its document-reference guard.
+
+Ferryman's reserved default work outfit, two-door sedan and tucked apron
+retain measured heel support through the perch. Cabin upholstery/trim/plastic
+have separate textures. `build-last-route-car-3d-model`,
+`build-last-route-cabin-actions`, `build-last-route-car-textures`,
+`LastRouteSedanAtBothStops`, `Ferryman_PerchesOnTheBonnetWithHisCoinAndHisCoat`,
+`Ride_CarriesTheHeroAndOnlyLetsHimOutWhenItStops`,
 `CabinReactions_FollowTheRadioAndCloseTheLidByHand`,
 `Capture_TheCabinFromThePassengerSeat` and
 `Ride_AnswersTheRadioFromTheSeatWhileTheCarIsMoving` passed.
-The Lit inventory still reports unrelated material and keyword owners.
+Game View confirmed upholstery, coins and hand contacts.
+Lit inventory reports unrelated material/keyword owners.
 
-Both Ridge switchbacks have alternating municipal poles from the mouths to
-the crest. They follow the outside sidewalk edge through bends and shift
-along their side to clear platforms and approaches.
+Municipal poles cover both Ridge switchbacks, following outside sidewalks
+and shifting clear of platforms/approaches.
 `LiveCity_RidgeRoadLampsCoverBothSerpentines` and
-`LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` passed.
-Night frames reviewed at the approaches, turns and crest on both banks.
+`LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` passed;
+night approaches/turns/crest reviewed on both banks.
 
-After table contact, the kiosk guests toss their current drinks into shared
-physics and lift the gifts. The wide shot holds through both pickups before
-dialogue. `LiveCity_KioskTreatOpensThreeDialoguesWithSubtitles` passed. Game
-View frames reviewed for the throws and grips at each table.
-
-The Ridge umbrella spots leave shaded aisles between warm pools. A hooded
-enamel lamp on the rear rail post keeps its tilted lens visible and gives the
-planter a dim spill. The kiosk street pole follows the south sidewalk row
-and faces the road. Its footing clears the approach.
-`build-ridge-kiosk-3d-model` and
-`LiveCity_RidgeUmbrellaDiffusersLightBothGuestsWithoutClipping` passed.
+Kiosk guests toss old drinks into shared physics, then lift tabletop gifts
+in a held wide shot before dialogue.
+`LiveCity_KioskTreatOpensThreeDialoguesWithSubtitles` passed; throws/grips reviewed.
+Umbrella Spots leave shaded aisles; hooded rail lamp lights its planter.
+`build-ridge-kiosk-3d-model`,
+`LiveCity_RidgeUmbrellaDiffusersLightBothGuestsWithoutClipping` and
 `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` passed.
-Game View checked the court across the clock and the pole from the road.
+Court/pole frames reviewed across the clock; the parking replaces that pole.
 
 ## 2026-11-14
 

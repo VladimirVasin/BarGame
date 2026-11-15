@@ -75,7 +75,8 @@ namespace BarPromenade
             LastRouteCarPlan plan,
             PlayerRuntime player,
             Camera camera,
-            LastRouteCarLamps lamps = LastRouteCarLamps.CityHalos)
+            LastRouteCarLamps lamps = LastRouteCarLamps.CityHalos,
+            bool ambient = false)
         {
             if (parent == null)
             {
@@ -94,7 +95,7 @@ namespace BarPromenade
                 return null;
             }
 
-            Transform root = new GameObject(RuntimeRootName).transform;
+            Transform root = new GameObject(ambient ? "Ambient Sedan" : RuntimeRootName).transform;
             root.SetParent(parent, false);
             root.position = plan.Position;
             root.rotation = Quaternion.LookRotation(plan.Facing, Vector3.up);
@@ -115,12 +116,15 @@ namespace BarPromenade
 
             ValidatePassivePresentation(instance);
             AddObstacleCollider(root.gameObject, registry);
-            InstallMechanisms(root, registry);
+            InstallMechanisms(root, registry, !ambient);
             InstallHeadlights(root, registry, lamps);
             root.gameObject.AddComponent<LastRouteCarRoadPresence>().Initialize(
                 registry, root.GetComponent<LastRouteCarDriver>(), lamps == LastRouteCarLamps.AlwaysDipped);
-            InstallCabinLighting(root, registry);
-            InstallPassengerSeat(root, registry, plan, player, camera);
+            if (!ambient)
+            {
+                InstallCabinLighting(root, registry);
+                InstallPassengerSeat(root, registry, plan, player, camera);
+            }
 
             GameLog.Info(
                 "city",
@@ -143,7 +147,8 @@ namespace BarPromenade
         /// </summary>
         public static void InstallMechanisms(
             Transform root,
-            LastRouteCarAssetRegistry registry)
+            LastRouteCarAssetRegistry registry,
+            bool passengerDetails = true)
         {
             if (root == null || registry == null || !registry.IsBound)
             {
@@ -162,9 +167,8 @@ namespace BarPromenade
             // The dash: the glovebox lid, the radio's knobs and needle, the
             // speedometer. After the springs for the doors' reason, before
             // the engine so the needle reads this frame's speed.
-            root.gameObject
-                .AddComponent<LastRouteCarDashboard>()
-                .Initialize(registry);
+            if (passengerDetails)
+                root.gameObject.AddComponent<LastRouteCarDashboard>().Initialize(registry);
             // And the engine. Raised whether or not anybody will ever ask it
             // to drive - the same rule as the two above, because a car with
             // half its mechanisms is worse than one with none - and idle
@@ -180,8 +184,11 @@ namespace BarPromenade
             root.gameObject
                 .AddComponent<LastRouteCarAudio>()
                 .Initialize(registry);
-            LastRouteRadioMusicPlayer.Create(registry);
-            LastRouteGloveboxCoins.Create(registry);
+            if (passengerDetails)
+            {
+                LastRouteRadioMusicPlayer.Create(registry);
+                LastRouteGloveboxCoins.Create(registry);
+            }
         }
 
         /// <summary>

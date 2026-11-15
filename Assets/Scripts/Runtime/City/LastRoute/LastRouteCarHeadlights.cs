@@ -34,6 +34,9 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class LastRouteCarHeadlights : MonoBehaviour
     {
+        public static readonly Color LensColor = new Color(1f, 236f / 255f, 209f / 255f);
+        public const float LensEmission = 3.8f;
+
         /// <summary>
         /// Do not reason about this number. Arithmetic against the street
         /// masts (`31` over `16.5 m`) said `110`, and that was more than an

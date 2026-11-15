@@ -737,7 +737,8 @@ namespace BarPromenade
                     }
                 }
                 else if (quay) ApplyQuayLampProfile(index);
-                else ApplyStreetProfile(index, lampAnchors[index].forward.y < -.05f);
+                else ApplyStreetProfile(index, lampAnchors[index].forward.y < -.05f,
+                    lampAnchors[index].name.StartsWith(RidgeParkingPlan.LampAnchorPrefix, StringComparison.Ordinal));
                 Transform anchor = lampAnchors[index];
                 streetLightPool[index].transform.SetPositionAndRotation(anchor.position,
                     industrial || quay ? anchor.rotation : CreateStreetLightRotation(anchor));
@@ -977,14 +978,14 @@ namespace BarPromenade
             return result.ToArray();
         }
 
-        private void ApplyStreetProfile(int poolIndex, bool aimedAtSurface = false)
+        private void ApplyStreetProfile(int poolIndex, bool aimedAtSurface = false, bool parking = false)
         {
             ApplyPooledLightProfile(
                 poolIndex,
                 StreetLightColor,
-                StreetLightIntensity,
+                parking ? 150f : StreetLightIntensity,
                 aimedAtSurface ? HillsideLightRange : StreetLightRange,
-                aimedAtSurface ? 165f : 105f,
+                parking ? 145f : aimedAtSurface ? 165f : 105f,
                 aimedAtSurface ? 95f : 55f,
                 1.15f,
                 3.10f,

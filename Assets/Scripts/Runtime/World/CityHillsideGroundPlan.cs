@@ -38,6 +38,7 @@ namespace BarPromenade
                 solids.AddRange(house.Lot.CreateCollisionPolygons());
             foreach (var site in CityHillsideSiteDetails.ForLayout(layout))
             {
+                if (RidgeParkingPlan.ForLayout(layout)?.Clears(site) ?? false) continue;
                 if (site.Part == CityHillsideSiteDetails.Kind.RetainingEnd ||
                     site.Part == CityHillsideSiteDetails.Kind.CourtEdge ||
                     site.Part == CityHillsideSiteDetails.Kind.YardShelter)

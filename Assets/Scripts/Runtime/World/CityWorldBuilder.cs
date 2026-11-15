@@ -416,6 +416,7 @@ namespace BarPromenade
                 RidgeKioskWorld.Build(world, kiosk, true, out var shelters);
                 kioskShelters.AddRange(shelters);
             }
+            RidgeParkingWorld.Build(world, layout, true);
             Collider[] kioskRainShelters = kioskShelters.ToArray();
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
             {

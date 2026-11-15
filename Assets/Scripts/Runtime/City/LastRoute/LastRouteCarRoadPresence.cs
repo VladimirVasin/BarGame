@@ -8,6 +8,7 @@ namespace BarPromenade
     internal sealed class LastRouteCarRoadPresence : MonoBehaviour
     {
         private static readonly int Emission = Shader.PropertyToID("_EmissionColor");
+        private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
         private Renderer[] tails, heads;
         private Transform outlet;
         private LastRouteCarDriver driver;
@@ -35,6 +36,7 @@ namespace BarPromenade
             tails = tailParts.ToArray();
             heads = headParts.ToArray();
             properties = new MaterialPropertyBlock();
+            WriteLenses(heads, 1f);
             ApplyLights();
         }
 
@@ -80,7 +82,11 @@ namespace BarPromenade
             {
                 if (lens == null) continue;
                 lens.GetPropertyBlock(properties);
-                properties.SetColor(Emission, lens.sharedMaterial.GetColor(Emission) * factor);
+                bool headlight = ReferenceEquals(group, heads);
+                if (headlight) properties.SetColor(BaseColor, LastRouteCarHeadlights.LensColor);
+                properties.SetColor(Emission, (headlight
+                    ? LastRouteCarHeadlights.LensColor * LastRouteCarHeadlights.LensEmission
+                    : lens.sharedMaterial.GetColor(Emission)) * factor);
                 lens.SetPropertyBlock(properties);
                 properties.Clear();
             }

@@ -281,6 +281,11 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement()
         {
             yield return LoadProductionCity();
+            yield return VerifyEveryBusStopCanBeBoardedFromThePublicPavement();
+        }
+
+        private IEnumerator VerifyEveryBusStopCanBeBoardedFromThePublicPavement()
+        {
             var metadata = JsonUtility.FromJson<CityMapArtResources.Metadata>(
                 Resources.Load<TextAsset>(CityMapArtResources.ResourcePath).text);
             Debug.Log($"Bus boarding map: illustrated {CityMapArtResources.TryGet(city.Map, out _, out _)}, " +
@@ -415,19 +420,31 @@ namespace BarPromenade.Tests.PlayMode
                             Fail($"{stage} bus failed to serve waiting hero: {actor.MotionState}, {actor.Position}, stop {actor.CurrentStop?.Id}");
                             continue;
                         }
+                        // Wait beside the shelter before occupying an NPC's exit dock.
+                        for (int frame = 0; frame < 150 && !actor.CanUsePassengerDoor(ride, door); frame++)
+                            yield return null;
                         Vector3 pelvis = hero.InverseTransformPoint(visual.Registry.Anchors.Pelvis.position);
                         if (!CityBusRidePlan.TryCreate(actor, areas, pelvis, capsule.radius, door, surfaces, out var dock))
                         {
                             Fail(stage + " open bus has no grounded dock");
                             continue;
                         }
-                        yield return Walk(dock.EntryPose.RootPosition, stage + " open doorway", line);
+                        // Finish the approach at the door itself. The general pavement
+                        // tolerance can leave the hero closer to the shelter bench.
+                        yield return Walk(dock.EntryPose.RootPosition, stage + " open doorway", line, .04f);
                         if (failures.Count != before) continue;
+                        // The daytime population can still own the shared aisle while
+                        // boarding/alighting. Let the actual transfer release it before E.
+                        // The fixture already owns the bus clock; NPC motion stays live.
+                        for (int frame = 0; frame < 150 && !ride.CanInteract(player.Interactor); frame++)
+                            yield return null;
                         yield return null;
                         yield return null;
                         if (!ReferenceEquals(player.Interactor.ActiveInteractable, ride) || !ride.CanInteract(player.Interactor))
                         {
-                            Fail($"{stage} no boarding prompt at {hero.position}, active {player.Interactor.ActiveInteractable}, open {actor.DoorsFullyOpen}");
+                            Fail($"{stage} no boarding prompt at {hero.position}, active {player.Interactor.ActiveInteractable}, " +
+                                $"open {actor.DoorsFullyOpen}, aisle {actor.CanUsePassengerDoor(ride, door)}, " +
+                                $"can board {ride.CanInteract(player.Interactor)}, dock {dock.EntryPose.RootPosition}");
                             continue;
                         }
                         if (capture && stop.SequenceIndex == 0 && line.Plan.Number >= 2 && door == CityBusPassengerDoor.Front)
@@ -483,11 +500,11 @@ namespace BarPromenade.Tests.PlayMode
                 failures.Add(detail);
             }
 
-            IEnumerator Walk(Vector3 target, string stage, CityBusDirector arrivingLine = null)
+            IEnumerator Walk(Vector3 target, string stage, CityBusDirector arrivingLine = null, float tolerance = .14f)
             {
                 for (int step = 0; step < 120; step++)
                 {
-                    if (motor.MoveTowardsApproachWaypoint(target, .14f, .08f))
+                    if (motor.MoveTowardsApproachWaypoint(target, tolerance, .08f))
                     {
                         motor.CancelInteractionPoseMove();
                         yield break;

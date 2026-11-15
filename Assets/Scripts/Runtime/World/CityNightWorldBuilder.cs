@@ -257,6 +257,11 @@ namespace BarPromenade
                 lamps.Add(streetLamp);
 
             AppendHillsideRoadRows(layout, roads, kiosk, lamps);
+            if (RidgeParkingPlan.ForLayout(layout) is { } parking)
+            {
+                lamps.RemoveAll(lamp => parking.Entrance.Contains(new Vector2(lamp.Position.x, lamp.Position.z)));
+                lamps.AddRange(parking.Lamps);
+            }
             return lamps;
 
             void Add(Vector3 foot, Vector3 forward, Vector3? target = null)
@@ -333,7 +338,8 @@ namespace BarPromenade
                 descriptor.Forward,
                 Vector3.up);
             Transform anchor = new GameObject(
-                $"Street Lamp Anchor {index + 1}").transform;
+                (descriptor.Purpose == StreetLampPurpose.Parking ? RidgeParkingPlan.LampAnchorPrefix : "Street Lamp Anchor ") +
+                (index + 1)).transform;
             anchor.SetParent(parent, false);
             anchor.localPosition =
                 descriptor.Position +

@@ -303,9 +303,9 @@ namespace BarPromenade
             foreach (var site in sites)
             {
                 if (retained.HasValue && !retained.Value.Overlaps(site.Bounds)) continue;
-                // The small verge planting gives way where its edge would
-                // cut across the measured route from pavement to the court.
-                if (IsClearedForCourt(site, court)) continue;
+                // Finished court/parking surfaces replace conflicting planting and
+                // old retaining details; the original frontage survey stays stable.
+                if (IsClearedForCourt(site, court) || (RidgeParkingPlan.ForLayout(layout)?.Clears(site) ?? false)) continue;
                 int i = (int)site.Part;
                 var frame = new GameObject(Names[i]).transform;
                 frame.SetParent(root, false);

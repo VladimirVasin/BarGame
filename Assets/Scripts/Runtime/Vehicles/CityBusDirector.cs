@@ -566,6 +566,7 @@ namespace BarPromenade
             var obstacle = CityBusObstacleState.Clear;
             AccumulateOtherBuses(MinimumObstacleLookAhead, ref obstacle);
             CanneryTraffic?.AccumulateObstacle(actor, MinimumObstacleLookAhead, ref obstacle);
+            city?.AmbientTraffic?.AccumulateObstacle(actor, MinimumObstacleLookAhead, ref obstacle);
             return obstacle;
         }
 
@@ -880,8 +881,9 @@ namespace BarPromenade
             city?.Cannery?.Traffic;
 
         public bool CanneryBlocksSpawn(Vector3 position, Quaternion rotation) =>
-            actor != null && CanneryTraffic != null &&
-            CanneryTraffic.BlocksSpawn(position, rotation, actor.LocalVisualBounds);
+            actor != null && ((CanneryTraffic != null &&
+            CanneryTraffic.BlocksSpawn(position, rotation, actor.LocalVisualBounds)) ||
+            (city?.AmbientTraffic != null && city.AmbientTraffic.BlocksSpawn(position, rotation, actor.LocalVisualBounds)));
 
         private static void EvaluateLink(
             CityBusRouteLink link,
@@ -951,6 +953,7 @@ namespace BarPromenade
             var obstacle = CityBusObstacleState.Clear;
             AccumulateOtherBuses(lookAhead, ref obstacle);
             CanneryTraffic?.AccumulateObstacle(actor, lookAhead, ref obstacle);
+            city?.AmbientTraffic?.AccumulateObstacle(actor, lookAhead, ref obstacle);
             if (!actor.HasPlayerPassenger)
             {
                 float playerRadius = GetPlayerRadius();

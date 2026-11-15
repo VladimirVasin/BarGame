@@ -21,14 +21,16 @@ namespace BarPromenade
         private readonly CityCanneryController cannery;
         private readonly LastRouteCarDriver car;
         private readonly Bounds carBounds;
-        private readonly List<Footprint> footprints = new List<Footprint>(160);
+        private readonly CityAmbientTraffic ambient;
+        private readonly List<Footprint> footprints = new List<Footprint>(400);
 
         public CityPedestrianVehicleTraffic(CityBusDirector buses = null,
-            CityCanneryController cannery = null, LastRouteCarDriver car = null)
+            CityCanneryController cannery = null, LastRouteCarDriver car = null, CityAmbientTraffic ambient = null)
         {
             this.buses = buses;
             this.cannery = cannery;
             this.car = car;
+            this.ambient = ambient;
             // The driving car deliberately disables this collider. Cache its
             // shape once rather than treating that as an absent vehicle.
             BoxCollider collider = car != null ? car.GetComponent<BoxCollider>() : null;
@@ -96,6 +98,18 @@ namespace BarPromenade
                 }
             }
 
+            for (int i = 0; ambient != null && ambient.isActiveAndEnabled && i < ambient.Count; i++)
+            {
+                var sedan = ambient.GetCar(i);
+                AddFootprint(sedan.Position, sedan.Driver.transform.rotation, sedan.Bounds);
+                float reach = Mathf.Min(MaximumLookAhead, sedan.Driver.Model.HoldDistance - sedan.Driver.Distance);
+                for (float ahead = PathStep; ahead <= reach; ahead += PathStep)
+                {
+                    sedan.Plan.Path.Sample(sedan.Driver.Distance + ahead, out var point, out var forward);
+                    AddFootprint(point, Rotation(forward, sedan.Driver.transform.rotation), sedan.Bounds, predicted: true);
+                }
+            }
+
             if (car == null || !car.isActiveAndEnabled || carBounds.size.sqrMagnitude <= 0f) return;
             AddFootprint(car.transform.position, car.transform.rotation, carBounds);
             if (!car.IsDriving || car.Model == null || car.HasArrived) return;
@@ -140,6 +154,20 @@ namespace BarPromenade
             float seconds = Mathf.Min(20f, (length + clearance) / Mathf.Max(.35f, walkerSpeed) + .5f);
             Vector3 middle = (from + to) * .5f;
             const float spacing = 1.5f;
+            for (int i = 0; ambient != null && ambient.isActiveAndEnabled && i < ambient.Count; i++)
+            {
+                var sedan = ambient.GetCar(i);
+                float reach = Mathf.Min(sedan.Driver.Model.Profile.CruiseSpeed * seconds,
+                    sedan.Driver.Model.HoldDistance - sedan.Driver.Distance);
+                float broad = reach + length + sedan.Bounds.extents.magnitude;
+                if ((sedan.Position - middle).sqrMagnitude > broad * broad) continue;
+                for (float d = MinimumLookAhead; d < reach + spacing; d += spacing)
+                {
+                    sedan.Plan.Path.Sample(sedan.Driver.Distance + Mathf.Min(d, reach), out var point, out var direction);
+                    if (new Footprint(point, Rotation(direction, sedan.Driver.transform.rotation), sedan.Bounds)
+                        .IntersectsSegment(from, to, clearance)) return true;
+                }
+            }
             for (int i = 0; buses != null && buses.isActiveAndEnabled && i < buses.VehicleCount; i++)
             {
                 var bus = buses.GetVehicle(i).Actor;

@@ -58,6 +58,8 @@ namespace BarPromenade
         private Transform world, additionalGeometry, hero, truck, car;
         private Collider homeShelter;
         private CityBusDirector[] buses;
+        private CityAmbientTraffic ambientTraffic;
+        internal void BindAmbient(CityAmbientTraffic traffic) => ambientTraffic = traffic;
         private CityRainDripEdge[] edges;
         private Material material;
         private Mesh mesh;
@@ -221,6 +223,8 @@ namespace BarPromenade
                 }
             surfaces.AddMoving(truck, focus, 15f);
             surfaces.AddMoving(car, focus, 7f);
+            for (int i = 0; ambientTraffic != null && ambientTraffic.isActiveAndEnabled && i < ambientTraffic.Count; i++)
+                surfaces.AddMoving(ambientTraffic.GetCar(i).Driver.transform, focus, 7f);
             IReadOnlyList<Transform> bodies = NpcFootstepSources.Prune();
             for (int i = 0; i < bodies.Count; i++)
             {

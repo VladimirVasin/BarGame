@@ -336,6 +336,12 @@ namespace BarPromenade.Editor
                     Box(kiosk.StableId + ":phone", "shop-building", kioskCourt.PhoneBounds);
                 }
             }
+            if (RidgeParkingPlan.ForLayout(layout) is { } parking)
+            {
+                Box("ridge-parking:surface", "public-ground", parking.SurfaceBounds);
+                for (int bay = 0; bay < RidgeParkingPlan.Capacity; bay++)
+                    Box("ridge-parking:bay:" + bay, "sidewalk", parking.Bay(bay));
+            }
             CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
             if (terraces.IsEnabled)
             {

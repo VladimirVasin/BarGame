@@ -38,6 +38,17 @@ namespace BarPromenade
                 courtyardCells.Add(block.Cell);
             obstacleFootprints = CollectObstacleFootprints(layout, courtyardCells);
             kiosks = CityKioskSites.ForLayout(layout).Sites;
+            if (RidgeParkingPlan.ForLayout(layout) is { } parking)
+            {
+                foreach (Rect curb in parking.Curbs) polygonBuildingObstacles.Add(CityRoadPolygon.Rectangle(curb));
+                foreach (var lamp in parking.Lamps)
+                {
+                    Bounds b = CityStaticCollisionBuilder.CreateLowerPoleBounds(lamp.Position);
+                    polygonBuildingObstacles.Add(CityRoadPolygon.Rectangle(Rect.MinMaxRect(b.min.x, b.min.z, b.max.x, b.max.z)));
+                }
+                Vector3 car = parking.ParkedPosition(RidgeParkingPlan.OccupiedBay);
+                polygonBuildingObstacles.Add(CityRoadPolygon.Rectangle(new Rect(car.x - 1.04f, car.z - 2.522f, 2.08f, 5.044f)));
+            }
             foreach (CityKioskSitePlan kiosk in kiosks)
             {
                 polygonBuildingObstacles.Add(kiosk.Footprint);
@@ -171,6 +182,8 @@ namespace BarPromenade
         /// </summary>
         private bool TryResolveSurfaceTop(Vector2 worldXZ, out float top)
         {
+            if (RidgeParkingPlan.ForLayout(layout) is { } parking && parking.SurfaceBounds.Contains(worldXZ))
+            { top = parking.SurfaceTop(worldXZ.y - parking.Origin.z); return true; }
             if (CityCobblerSitePlan.ForLayout(layout).TrySampleFloor(worldXZ, out top)) return true;
             if(CityPawnshopDescentPlan.ForLayout(layout).TrySampleTop(worldXZ,out top)) return true;
             if(CityPawnshopBenchTerracePlan.ForLayout(layout).TrySampleTop(worldXZ,out top)) return true;

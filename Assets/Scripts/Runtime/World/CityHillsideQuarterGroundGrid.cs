@@ -58,6 +58,8 @@ namespace BarPromenade
             CityHillsideGroundPlan.AddPadBreaks(bounds, pads, xs, zs);
             CityHillsideGroundPlan.AddRampBreaks(bounds, ramps, xs, zs);
             kioskCourt?.AddGradeBreaks(bounds, xs, zs);
+            var parking = RidgeParkingPlan.ForLayout(layout);
+            parking?.AddGradeBreaks(bounds, xs, zs);
             seams.AddBreaks(bounds, xs, zs);
             talus.AddBreaks(bounds, xs, zs);
             var xAxis = new List<float>(xs);
@@ -74,7 +76,8 @@ namespace BarPromenade
                     float ground = CityHillsideGroundPlan.ApplyRamps(point,
                         CityHillsideGroundPlan.ApplyPads(point, seams.Apply(point, plan.SampleSoil(point)), pads), ramps);
                     ground = talus.ApplyHeight(point, ground);
-                    vertices[row * Columns + col] = new Vector3(point.x, kioskCourt?.Grade(point, ground) ?? ground, point.y);
+                    ground = kioskCourt?.Grade(point, ground) ?? ground;
+                    vertices[row * Columns + col] = new Vector3(point.x, parking?.Grade(point, ground) ?? ground, point.y);
                     if (col + 1 == Columns || row + 1 == Rows) continue;
                     float midZ = (z[row] + z[row + 1]) * .5f;
                     float templateX = (xAxis[col] + xAxis[col + 1]) * .5f;

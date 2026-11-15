@@ -118,6 +118,7 @@ namespace BarPromenade
         public IReadOnlyList<WeighbridgeAttendantPresentation>
             WeighbridgeAttendants { get; private set; }
         public CityCanneryController Cannery { get; private set; }
+        public CityAmbientTraffic AmbientTraffic { get; private set; }
         public CityEastGuardController EastGuards { get; private set; }
         public CityWeighbridgeNeedleController WeighbridgeNeedle
         {
@@ -1038,8 +1039,11 @@ namespace BarPromenade
                     () => TunnelShelter != null && TunnelShelter.IsSheltered,
                     LastRouteCarRoadSurface.WetAsphalt);
             }
-            Pedestrians.ConfigureVehicleTraffic(Bus, Cannery,
-                LastRouteCar != null ? LastRouteCar.GetComponentInParent<LastRouteCarDriver>() : null);
+            var ferrymanDriver = LastRouteCar != null ? LastRouteCar.GetComponentInParent<LastRouteCarDriver>() : null;
+            AmbientTraffic = CityAmbientTraffic.Create(this, ferrymanDriver);
+            while (AmbientTraffic.BuildNext())
+                yield return new CompositionStep("ambient_traffic", .88f);
+            Pedestrians.ConfigureVehicleTraffic(Bus, Cannery, ferrymanDriver, AmbientTraffic);
             var rides = new CityBusRideController[vehicles.Length];
             var passengers = new CityBusNpcPassengerController[vehicles.Length];
             for (int i = 0; i < vehicles.Length; i++)
@@ -1104,6 +1108,7 @@ namespace BarPromenade
             Rain.SetLocalShelters(rainShelters);
             Rain.EnableSurfaceContacts(camera, transform, Player.GameObject.transform,
                 vehicles, Cannery?.Truck, LastRouteCar != null ? LastRouteCar.transform : null);
+            Rain.Contacts?.BindAmbient(AmbientTraffic);
             if (World.MountainBoundaryPlan.HasTunnel)
             {
                 var tunnelShelterObject =

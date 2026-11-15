@@ -2,25 +2,37 @@
 
 ## Current facts
 
-- **Accepted 2026-11-15, user — Ferryman and sedan.** `last-route.ferryman`
-  uses the default NPC at both stops with a reserved long coat, work cap
-  and boots. The two-door sedan supplies sprung seat and hand anchors for
-  the two cabin action banks. Shared scene FX, mesh LOD, bounded exhaust.
+- **Accepted 2026-11-15, user — Ridge parking.** `RidgeParkingPlan`:
+  four 2.9×5.8m bays west of home; radius4.8m entry/S/reverse/forward exit
+  clears occupied neighbours. Blender paving/ramp/curbs share City/Home
+  grade, grass/nav/map exclusions. One unowned sedan rests silent/dark;
+  no boarding/automatic parking. Two pooled municipal lights replace the kiosk
+  pole; power poles/wires skirt the lot. Map uses scheme pending registered art.
+  24FX: City GI/SSAO/fog/shadows/grade/probes/SSR/wetness/post and bevelled
+  finishes retained; no new GI/volume/water/wind/COLOR/decals/particles/rim/
+  outline/lens effects. Cost unmeasured. Story16/21/art9.
 
-- **Accepted 2026-11-14/15, user — kiosk dialogue and subtitles:** two sealed
-  drinks transfer on tabletop contact. Both toss old drinks and pick up the
-  gifts in a wide shot before the shared foreman graph. Day/IDs/round in
-  session/checkpoint. Ambient pair yields. Subtitles below with held question.
-  Story §§6/7/17/21, art §§7/15a/16. City FX/probe/SSR receivers apply. Shared
-  DoF tracks table then speaker. UI after post. Costs unmeasured.
+- **Accepted 2026-11-15, user — ambient City traffic.** Four sedans on
+  surveyed City/Ridge lanes. Occupied hulls precede priority/clear-exit waits;
+  no timed bypass. Appended default IDs; grounded paths omit retraces,
+  double sums keep seams. Two dipped pairs; shared LOD/materials/audio.
+  Pause/dormancy retain, unload releases. Island/tunnel/closed exit excluded.
+  City FX/finishes; story16/21/art9.
 
-- **Accepted 2026-11-14/15, user — Ridge court light.** Fixed frosted rings,
-  two warm Spots each with narrower falloff. The booth lights the approach.
-  A hooded enamel fixture on a rail post grazes the rear slab with a dim Spot.
-  The street pole faces the road from the south sidewalk row. City/Home share
-  fixed sources and the day floor. Lenses own bloom. Court
-  Spots use direct light. Shared City shadows/SSAO/fog/grade, wetness/probes/
-  road SSR and scene post apply. Dialogue uses shared DoF. Costs unmeasured.
+- **Accepted 2026-11-15, user — Ferryman and sedan.** Default reserved
+  `last-route.ferryman`: long coat/cap/work boots at both stops. Two-door sedan,
+  sprung seat/hand anchors, two cabin action banks; shared FX/LOD/bounded exhaust.
+
+- **Accepted 2026-11-14/15, user — kiosk dialogue and subtitles:** sealed
+  gifts transfer on tabletop contact. Guests toss drinks/pick gifts in a wide
+  shot before shared foreman dialogue. Day/IDs/round persist; ambient yields.
+  Held question/subtitles, shared DoF/City FX, UI after post; story6/7/17/21,
+  art7/15a/16. Costs unmeasured.
+
+- **Accepted 2026-11-14/15, user — Ridge court light.** Frosted rings:
+  two warm Spots each; booth lights approach, hooded rail fixture grazes rear.
+  City/Home share sources/day floor; lenses supply bloom, Spots direct light.
+  Shared shadows/SSAO/fog/grade/wetness/probes/road SSR/post. Cost unmeasured.
 
 - **Accepted 2026-11-13, user — court paving/fence:** Blender paths share
   City/Home grade, wetness and grass exclusion. Off-aisle rails/planters join
@@ -1908,27 +1920,17 @@
   No boarding/exit/earnings/quest/crime-disease/act-intoxication changes; §16/§21/art checks.
 
 - **Accepted — 2026-09-09, the Ferryman's radio and ordinary road speech:**
-  User-approved radio, glovebox light and ten road lines: story §6 permits
-  exceptions to §17's parked-pool counts/second person and art §10f's music
-  silence. Twelve island/twelve mountain answers stay separate. Road lines
-  concern driving/maintenance: no invitation, question, mysticism or lore.
-  Only the radio reaction below permits a rhetorical question.
-  Story §16/§21 and all nine art checks otherwise bind.
-  The user's station refinement fixes the radio to exactly three slots:
-  `Resources/Audio/LastRouteRadio/Station1`, `Station2` and `Station3` each
-  hold one user track, with any WAV/OGG/MP3 filename. All three now contain
-  music. `LoadStationClip` prefers the optional `radio_theme` basename; otherwise
-  it chooses the folder's clip, ordered by ordinal name if several are present.
-  `LastRouteRadioMusicPlayer`
-  loops the selected track at the existing radio. Mono `180–3500 Hz`
-  band limiting, mild saturation, quiet hiss and subtle speed drift colour
-  only this source. Session state
-  retains power, the selected station and separate playback seconds per
-  station across car instances. A new session selects station 1. Empty
-  stations remain selected without a fallback; power still suppresses the city
-  theme. `CityMusicPlayer` checks radio power before its first
-  playback, and the place director cannot restart the city theme while power
-  is on. `SceneMusicPlayer.SetPlaybackSuppressed` applies before playback.
+  Story §6 permits radio/glovebox light/ten driving-maintenance lines beyond
+  §17's parked pools/second person and art10f silence. Island/mountain:12 each.
+  No invitation/mysticism/lore; only the radio reaction permits a question.
+  Other story16/21/art9 constraints bind.
+  Three populated `Resources/Audio/LastRouteRadio/Station1`/`Station2`/`Station3`
+  slots accept WAV/OGG/MP3. `LoadStationClip`: `radio_theme` first, else ordinal
+  filename. `LastRouteRadioMusicPlayer` loops with source-only mono 180–3500 Hz,
+  saturation/hiss/speed drift. Power/station/three playheads persist across cars;
+  new session→station1. Empty station has no fallback and still suppresses City
+  music. `CityMusicPlayer`/place director honour power before first playback;
+  `SceneMusicPlayer.SetPlaybackSuppressed` applies before playback.
   Power-on lets the city leave over `4 s` before the radio enters over `1 s`.
   Power-off captures the playhead and immediately cuts radio music and hiss,
   including any detached old-car tail; the city resumes through its usual

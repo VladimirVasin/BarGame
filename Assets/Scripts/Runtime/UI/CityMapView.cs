@@ -1758,6 +1758,16 @@ namespace BarPromenade
                     DrawGroundQuad(CityRoadPolygon.Rectangle(court.PhoneBounds), ResidentialBuilding);
                 }
             }
+            if (RidgeParkingPlan.ForLayout(controller.Layout) is { } parking)
+            {
+                DrawGroundQuad(CityRoadPolygon.Rectangle(parking.SurfaceBounds), PublicPlaceLand);
+                for (int bay = 0; bay <= RidgeParkingPlan.Capacity; bay++)
+                {
+                    Vector3 a = parking.Point((bay - 2f) * RidgeParkingPlan.BayWidth, -20.2f);
+                    Vector3 b = parking.Point((bay - 2f) * RidgeParkingPlan.BayWidth, -14.4f);
+                    DrawLine(projection.WorldToScreen(a), projection.WorldToScreen(b), 1f, GetPathColor(CityPathKind.ParkPath));
+                }
+            }
             var pawnshopDescent = CityPawnshopDescentPlan.ForLayout(controller.Layout);
             if (pawnshopDescent.IsEnabled)
             {

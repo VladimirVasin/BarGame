@@ -105,7 +105,7 @@ namespace BarPromenade
                 float top = candidate.Position.y;
                 if (!onCourt && !ground.TrySampleTop(point, out top))
                 { if (candidate.Id == HomeBenchId) homeFailure = "no ground at " + point; continue; }
-                bool clear = true;
+                bool clear = !(RidgeParkingPlan.ForLayout(layout)?.SurfaceBounds.Overlaps(candidate.AccessBounds) ?? false);
                 // The public phone has a narrow graded connection all the way
                 // to the footway. Its whole strip must survive final reservations.
                 Rect reservedAccess = candidate.Id == LoftPhoneId ? raw.LoftPhoneApproach : candidate.AccessBounds;

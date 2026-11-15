@@ -9,6 +9,8 @@ namespace BarPromenade
         Right = 1
     }
 
+    public enum StreetLampPurpose { Street, Parking }
+
     public readonly struct StreetLampDescriptor :
         IEquatable<StreetLampDescriptor>
     {
@@ -18,7 +20,8 @@ namespace BarPromenade
             StreetLampSide side,
             Vector3 position,
             Vector3 forward,
-            Vector3? lightTarget = null)
+            Vector3? lightTarget = null,
+            StreetLampPurpose purpose = StreetLampPurpose.Street)
         {
             Edge = edge;
             EdgeT = edgeT;
@@ -26,8 +29,10 @@ namespace BarPromenade
             Position = position;
             Forward = forward;
             LightTarget = lightTarget;
+            Purpose = purpose;
         }
 
+        public StreetLampPurpose Purpose { get; }
         public RoadEdge Edge { get; }
         public float EdgeT { get; }
         public StreetLampSide Side { get; }
@@ -43,7 +48,7 @@ namespace BarPromenade
                    Side == other.Side &&
                    Position == other.Position &&
                    Forward == other.Forward &&
-                   Nullable.Equals(LightTarget, other.LightTarget);
+                   Nullable.Equals(LightTarget, other.LightTarget) && Purpose == other.Purpose;
         }
 
         public override bool Equals(object obj)
@@ -62,6 +67,7 @@ namespace BarPromenade
                 hash = (hash * 31) + Position.GetHashCode();
                 hash = (hash * 31) + Forward.GetHashCode();
                 if (LightTarget.HasValue) hash = (hash * 31) + LightTarget.Value.GetHashCode();
+                if (Purpose != StreetLampPurpose.Street) hash = (hash * 31) + (int)Purpose;
                 return hash;
             }
         }

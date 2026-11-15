@@ -27,6 +27,11 @@ namespace BarPromenade
         // Append after every existing identity to retain their allocated looks.
         public const string CityResidentialCourtyardCarrier = "zzzzzz.city.residential-courtyard.carrier";
         public const string LastRouteFerryman = "last-route.ferryman";
+        public static string AmbientDriverId(int index)
+        {
+            if ((uint)index >= AmbientTrafficRules.Capacity) throw new ArgumentOutOfRangeException(nameof(index));
+            return "city.ambient-driver." + index;
+        }
         public const string FerrymanCoatItem = "outerwear.ferryman";
         // Append-only allocation: these bespoke enemy bases must not reshuffle living residents.
         public static string StairwellEnemyId(int index)
@@ -413,6 +418,15 @@ namespace BarPromenade
                 new SlotConstraint("gloves", new string[] { null }),
                 new SlotConstraint("scarf", new string[] { null }),
                 new SlotConstraint("apron", new string[] { null })));
+            // Append after the Ferryman: adding traffic must not change any existing identity.
+            for (int i = 0; i < AmbientTrafficRules.Capacity; i++)
+                roster.Add(new CharacterDefinition(AmbientDriverId(i), model, false,
+                    new SlotConstraint("outerwear", "outerwear.work", "outerwear.everyday"),
+                    new SlotConstraint("boots", "boots.work", "boots.everyday"),
+                    new SlotConstraint("headwear", null, "headwear.everyday"),
+                    new SlotConstraint("gloves", new string[] { null }),
+                    new SlotConstraint("scarf", new string[] { null }),
+                    new SlotConstraint("apron", new string[] { null })));
             return roster.ToArray();
         }
 

@@ -139,12 +139,12 @@ namespace BarPromenade
                 : 0;
 
             distances = new float[points.Length];
+            // Long sampled circuits must not accumulate a different length on each lap.
+            double measuredDistance = 0d;
             for (int index = 1; index < points.Length; index++)
             {
-                distances[index] = distances[index - 1] +
-                                   Vector3.Distance(
-                                       points[index - 1],
-                                       points[index]);
+                measuredDistance += Vector3.Distance(points[index - 1], points[index]);
+                distances[index] = (float)measuredDistance;
             }
 
             forwards = BuildVertexForwards(points, reverseCuspIndex);

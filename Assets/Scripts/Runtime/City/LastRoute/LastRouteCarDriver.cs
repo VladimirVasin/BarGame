@@ -87,6 +87,9 @@ namespace BarPromenade
         public bool IsDriving { get; private set; }
         public bool HasArrived => model != null && model.HasArrived;
         public LastRouteCarDriveModel Model => model;
+        internal bool ExternallyDriven { get; set; }
+        internal bool KeepBodyCollider { get; set; }
+        internal Func<float> SafetyHold { get; set; }
 
         /// <summary>Metres covered so far, for logs and tests.</summary>
         public float Distance => model?.Distance ?? 0f;
@@ -120,7 +123,8 @@ namespace BarPromenade
         public void Begin(
             LastRouteCarDrivePath path,
             LastRouteCarDriveProfile profile,
-            float initialSpeed = 0f)
+            float initialSpeed = 0f,
+            float initialDistance = 0f)
         {
             if (path == null)
             {
@@ -128,12 +132,12 @@ namespace BarPromenade
             }
 
             model = new LastRouteCarDriveModel(path, profile);
-            model.Resume(initialSpeed);
+            model.Resume(initialSpeed, initialDistance);
             announcedArrival = false;
             IsDriving = true;
             if (obstacle != null)
             {
-                obstacle.enabled = false;
+                obstacle.enabled = KeepBodyCollider;
             }
 
             ApplyPose();
@@ -213,13 +217,27 @@ namespace BarPromenade
 
         private void Update()
         {
+            if (!ExternallyDriven) Advance(Time.deltaTime);
+        }
+
+        internal void Advance(float deltaTime)
+        {
             if (!IsDriving || model == null)
             {
                 return;
             }
 
-            float step = Mathf.Min(Time.deltaTime, MaximumStepSeconds);
+            float step = Mathf.Min(deltaTime, MaximumStepSeconds);
+            if (step <= 0f) return;
+            // Occupied background bodies cannot be waived by the ride's wait timeout.
+            float physicalHold = SafetyHold != null ? SafetyHold() : float.PositiveInfinity;
+            float previousHold = model.HoldDistance;
+            float hardLimit = Mathf.Max(model.Distance, Mathf.Min(previousHold, physicalHold));
+            if (physicalHold < previousHold) model.SetHold(hardLimit);
             model.Advance(step);
+            if ((KeepBodyCollider || SafetyHold != null) && model.Distance > hardLimit)
+                model.Resume(0f, hardLimit);
+            if (physicalHold < previousHold) model.SetHold(previousHold);
             ApplyPose();
             Moved?.Invoke();
             ApplyWheels(step);

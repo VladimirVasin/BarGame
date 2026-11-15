@@ -1,0 +1,7 @@
+Use case: precise-object-edit
+Edit target: Assets/Resources/UI/Maps/CityMapImage.png, accepted charcoal City map.
+Geometry reference: map-reference.json and map-reference.png, north-up world bounds unchanged.
+Update only the new four-space Ridge parking west of the hero's home. Preserve all other geography and the exact full-bleed 1172 by 1342 framing.
+Parking footprint on that image: x505..537, y1233..1285. It is immediately LEFT of the square house at (554,1258), RIGHT of the slanted kiosk roof at (490,1244), BELOW the LEFT end of the lowest bridge. The channel x577..650 stays unchanged.
+Dark asphalt, narrow worn tan lines, low curbs along left/right/bottom. Open north/top entrance and manoeuvring aisle. Exactly FOUR perpendicular stalls in one bottom row, x508..534,y1271..1284. Do not enlarge for readability. Preserve every other road, house, cliff, bridge and surface; no labels, glow, icons or margins.
+Acceptance: native aspect, registered geometry, exactly four bays. Rejected generations must not replace the runtime image or receive the current fingerprint; the live scheme remains until registration passes.

@@ -19,6 +19,8 @@ namespace BarPromenade
         private readonly List<Vector3> reserved = new List<Vector3>(400);
         private Bounds reservedBounds;
         private int reservedTrip = -1;
+        private CityAmbientTraffic ambient;
+        internal void BindAmbient(CityAmbientTraffic traffic) => ambient = traffic;
         public bool HasReservation => reservedTrip >= 0;
         public int ReservedTrip => reservedTrip;
 
@@ -34,6 +36,11 @@ namespace BarPromenade
             int trip = TripIndex(snapshot.Stage);
             if (trip < 0) { Release(); return true; }
             CreateSweep(snapshot, candidate);
+            if (ambient != null && ambient.BlocksTruckSweep(candidate, BodyRadius + SweepPadding))
+            {
+                Release();
+                return false;
+            }
             Bounds sweepBounds = PointBounds(candidate);
             for (int i = 0; director != null && i < director.VehicleCount; i++)
             {

@@ -788,14 +788,17 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   time, collision and immediate interactions stay live. A spatial index limits
   peer-avoidance queries. Oncoming walkers use separate shoulders on the hillside stairs. In single file
   a walker uses a landing then resumes. At corners guests skirt parked yielders; bounded curved-lane probes bypass props, retaining goals. Bus/rest keeps identity.
-  `CityPedestrianVehicleTraffic` shares current/near-future bus, Ferryman-car
-  and cannery-truck footprints. Walkers step to a reachable clear refuge, wait
-  for tails and following traffic, return to their interrupted point, then
-  resume the same route. Walkable bounds/collision remain authoritative; without
-  a safe refuge the vehicle keeps braking. Pooling clears temporary ownership.
-  Each resident keeps `city.pedestrian.NN`, catalog model, face, hair and street
-  clothes across scene loads; new IDs allocate after the original cast so
-  existing appearances remain. The six library residents do not roam.
+  `CityPedestrianVehicleTraffic` shares buses, Ferryman, truck and ambient sedans.
+  Walkers yield to safe refuges, wait for tails/followers and resume their route;
+  Without refuge vehicles wait; collision persists, pooling resets yields.
+  `CityAmbientTraffic`: four City/Ridge sedans, permanent default
+  drivers/shared occupancy/hard holds; no boarding/overtaking;
+  island/tunnel/closed exit excluded. Two nearest beam pairs; shared audio/LOD;
+  pause/dormancy retain, unload releases. `RidgeParkingPlan`: four lit bays
+  home/kiosk, graded entry/manoeuvres; silent/dark unowned sedan.
+  City/Home/nav/map/grass share its footprint.
+  Residents retain `city.pedestrian.NN`, catalog model/face/hair/clothes across
+  loads; appended IDs preserve prior looks. Six library residents stay local.
   Home retains its separate `5` daytime/`2` night slots over the original first
   `8` identities, enabled only during the Balcony shot; it uses the existing
   fog-hidden roaming cadence rather than City resident schedules.
@@ -1763,7 +1766,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   fair/post/docks/arch/church/cafe/laundry/dog yard/terraces/kiosks/pawnshop/descent),bounded localized legend/
   selectable places. Public lots/fair use open ground,not buildings;locations come
   from validated memoised plans/port.
-  City:registered ImageGen includes crest infill/descent;live layers/XYZ remain.
+  City:scheme pending parking art registration;live layers/XYZ remain.
   Village uses the worn tourist brochure with a red-crossed resort.
   LodgeApproach arrival;no3D change. Plan/RU SHA+bounds/size guard
   stale art;other seeds/MountainRoad→schematic. City SHA excludes Village
@@ -2823,9 +2826,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   bed, lightning flashes, thunder, wet street film and puddles:
   weather-driven ambient lighting or grading changes, wind-driven debris and
   volumetric light shafts.
-- Player-drivable vehicles, a broader traffic simulation, or skating physics;
-  the City passenger service follows its district rings. Fares
-  and payment, hero destination selection and live map tracking are deferred. `CityBusNpcPassengerController` handles ambient riders.
+- Driving, parking/overtaking, skating, fares, destination selection and live
+  traffic map remain deferred. City buses carry ambient riders and the hero.
 - Multiple bespoke bar interiors.
 - Mobile quality/render-profile parity; the current Windows/PC-targeted project
   retains only its PC quality level, render-pipeline asset and renderer.
