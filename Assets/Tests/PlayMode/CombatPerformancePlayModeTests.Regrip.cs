@@ -61,7 +61,8 @@ namespace BarPromenade.Tests.PlayMode
                     if (impact.Source != hero) return;
                     contacts++;
                     Assert.That(victim.State.Phase, Is.EqualTo(MeleePhase.Stagger), "The real hit interrupts the zombie's attack.");
-                    Assert.That(victim.ActiveClipName, Is.EqualTo(CombatZombieAssetProvider.OrdinaryHitClip),
+                    Assert.That(victim.ActiveClipName, Is.EqualTo(CombatZombieAssetProvider.LoadDegradedClip(
+                            CombatZombieAssetProvider.DegradedHitClip, victim.OrdinaryZombieVariant).name),
                         "The contact must display recoil before hit-stop can freeze it.");
                     Assert.That(Quaternion.Angle(beforeContactChest, chest.rotation), Is.GreaterThanOrEqualTo(18f),
                         "The frozen contact must already show a dramatic torso recoil, rather than a barely changed attack pose.");

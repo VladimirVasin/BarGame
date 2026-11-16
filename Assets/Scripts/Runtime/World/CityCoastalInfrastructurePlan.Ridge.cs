@@ -252,8 +252,6 @@ namespace BarPromenade
                 if(CityGlassReturnSitePlan.LandReservation.Overlaps(footprint))return false;
                 var loft=CityPigeonLoftPlan.ForLayout(layout);
                 if(loft.IsEnabled && loft.Courtyard.Bounds.Overlaps(footprint))return false;
-                foreach(var area in CityPawnshopDescentPlan.ForLayout(layout).Footprints)
-                    if(CityRoadPolygon.Bounds(area).Overlaps(footprint))return false;
                 foreach(var item in furniture)
                     if(Expanded(item.Bounds,.4f).Overlaps(footprint) || item.AccessBounds.Overlaps(footprint))return false;
                 foreach(Rect reservation in clearance.Furniture)if(Expanded(reservation,.35f).Overlaps(footprint))return false;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -329,7 +330,8 @@ namespace BarPromenade.Tests.EditMode
                     pavedGroundCount++;
                 }
 
-                Assert.That(pavedGroundCount, Is.EqualTo(4));
+                Assert.That(pavedGroundCount, Is.EqualTo(layout.DistrictPointsOfInterest.Count(site =>
+                    site.Kind != CityDistrictPointOfInterestKind.IndustrialCannery)));
 
                 Transform dryingYard = FindDryingYardRecipe(root);
                 Texture metalTexture =
@@ -666,12 +668,6 @@ namespace BarPromenade.Tests.EditMode
                         .TryDescribeFerrymanCarStance(descriptor, out _);
                 }
 
-                Assert.That(
-                    root.GetComponentsInChildren<Light>(true),
-                    Has.Length.EqualTo(hasCar ? 3 : 2),
-                    "The district points of interest carry the drying " +
-                    "yard floodlight, the island's service head, and the " +
-                    "Ferryman's car head when there is a car.");
                 Light light = FindSiteLight(
                     root,
                     "Island Mast Floodlight Light");

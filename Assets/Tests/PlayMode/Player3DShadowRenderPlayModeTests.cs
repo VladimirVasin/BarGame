@@ -97,7 +97,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Assert.That(
                     player.Visual.Renderers[index].shadowCastingMode,
-                    Is.EqualTo(ShadowCastingMode.On));
+                    Is.EqualTo(ShadowCastingMode.On).Or.EqualTo(ShadowCastingMode.TwoSided));
             }
 
             target = new RenderTexture(

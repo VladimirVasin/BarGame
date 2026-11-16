@@ -353,13 +353,13 @@ namespace BarPromenade
             phaseTimer.Restart();
             PedestrianPlan = HomeExteriorPedestrianPlanner.Create(
                 ExteriorContext,
-                GameSessionState.CitySeed);
+                GameSessionState.CitySeed,
+                out IWalkableArea pedestrianArea);
             Pedestrians = CityPedestrianFactory.Create(
                 transform,
                 PedestrianPlan,
                 Player.GameObject.transform,
-                CityPedestrianPlanner.CreateWalkableArea(
-                    PedestrianPlan),
+                pedestrianArea,
                 CityPedestrianPopulationProfile.HomeBalcony);
             Pedestrians.enabled = false;
             BalconySmokerPlan = CityBalconySmokerPlan

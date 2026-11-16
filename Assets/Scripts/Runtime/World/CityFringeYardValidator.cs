@@ -242,7 +242,8 @@ namespace BarPromenade
                         depth <=
                         CityFringeYardPlanner.ForefieldToeBandMaximumDepth +
                         GeometryTolerance;
-                    trackMaximumDepth = Mathf.Max(trackMaximumDepth, depth);
+                    GetReferenceDepthRange(yard, part.Footprint, out _, out float trackEdgeDepth);
+                    trackMaximumDepth = Mathf.Max(trackMaximumDepth, trackEdgeDepth);
                 }
                 else if (yard.Kind == CityFringeYardKind.SouthFloodWorks &&
                          part.Kind == CityFringeYardPartKind.DrainChannel &&
@@ -256,7 +257,8 @@ namespace BarPromenade
                              GeometryTolerance)
                 {
                     hasToeTrack = true;
-                    trackMaximumDepth = Mathf.Max(trackMaximumDepth, depth);
+                    GetReferenceDepthRange(yard, part.Footprint, out _, out float drainEdgeDepth);
+                    trackMaximumDepth = Mathf.Max(trackMaximumDepth, drainEdgeDepth);
                 }
                 else if (part.Kind ==
                          CityFringeYardPartKind.RoadShoulder)
@@ -896,7 +898,9 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     $"Fringe Yard '{yard.AreaId}' does not connect its " +
-                    "road, middle and toe-service depth bands.");
+                    $"road, middle and toe-service depth bands. Shoulder={hasRoadShoulder}, " +
+                    $"spur={hasServiceSpur} ({spurMinimumDepth:F3}–{spurMaximumDepth:F3}), " +
+                    $"toe={hasToeTrack} ({trackMaximumDepth:F3}).");
             }
 
             if (forefieldAnchors.Count <

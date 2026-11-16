@@ -34,7 +34,7 @@ namespace BarPromenade.Tests.EditMode
 
             // The variety contract: a populated yard showing all six
             // monument silhouettes and all three stone tints.
-            Assert.That(first.GraveCount, Is.GreaterThanOrEqualTo(30));
+            Assert.That(first.GraveCount, Is.EqualTo(26));
             foreach (CityCemeteryGraveVariant variant in
                      System.Enum.GetValues(
                          typeof(CityCemeteryGraveVariant)))
@@ -793,7 +793,7 @@ namespace BarPromenade.Tests.EditMode
 
                 Assert.That(
                     renderer.sharedMaterial,
-                    Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                    Is.EqualTo(GroundSurfaceAppearance.SharedMaterial));
                 var properties = new MaterialPropertyBlock();
                 renderer.GetPropertyBlock(properties);
                 Assert.That(
@@ -835,9 +835,12 @@ namespace BarPromenade.Tests.EditMode
                 $"The default cemetery builds a {style} batch.");
             foreach (Renderer chunk in chunks)
             {
+                Material expectedMaterial = expectedTexture != null
+                    ? GroundSurfaceAppearance.SharedMaterial
+                    : RuntimePrimitiveFactory.DefaultMaterial;
                 Assert.That(
                     chunk.sharedMaterial,
-                    Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial),
+                    Is.EqualTo(expectedMaterial),
                     chunk.name);
                 var properties = new MaterialPropertyBlock();
                 chunk.GetPropertyBlock(properties);

@@ -224,7 +224,8 @@ namespace BarPromenade.Tests.EditMode
                 ChurchInteriorWorldResult placed = ChurchInteriorWorldBuilder.Build(host.transform, plan);
                 Assert.That(placed.Model.localScale, Is.EqualTo(Vector3.one));
                 Assert.That(placed.GameplayColliders.Count,
-                    Is.EqualTo(10 + plan.Fixtures.Count(fixture => fixture.BlocksMovement)));
+                    Is.EqualTo(11 + plan.Fixtures.Count(fixture => fixture.BlocksMovement)));
+                Assert.That(placed.GameplayColliders.Any(collider => collider.name == "Entrance Door"), Is.True);
             }
             finally { UnityEngine.Object.DestroyImmediate(host); }
 

@@ -287,6 +287,8 @@ namespace BarPromenade
                     stationWeight);
             }
 
+            if (plan.Expansion != null) height = plan.Expansion.ShapeGround(point, height);
+
             // Every plot stands on level ground. A door threshold on a slope
             // is a step the hero cannot use, and the dock tolerance is two
             // centimetres.
@@ -316,8 +318,8 @@ namespace BarPromenade
                 height = Mathf.Lerp(height, plot.GroundCenter.y, weight);
             }
 
+            // Cut the local channel through the final yard grade.
             height = SampleBrookSwale(plan, point, height);
-            if (plan.Expansion != null) height = plan.Expansion.ShapeGround(point, height);
 
             float enclosedHeight = height + SampleRidgeRise(plan, point);
             height = SampleCablewayBrink(plan, point, enclosedHeight);
@@ -694,19 +696,11 @@ namespace BarPromenade
         private const float BrookBankMaximumGrade = 0.75f;
 
         /// <summary>
-        /// How far from the cut the grade cap still applies, and the widest
-        /// a bank may therefore spread. It has to stay inside the ground
-        /// grid's refined band along the water
-        /// (<c>AlpineVillageTerrainGrid</c> refines a half-width plus two
-        /// metres either side, and the cut takes one cell of that) so the
-        /// coarse triangles never bridge it, and it is what the swale's
-        /// reach test above counts. At the maximum grade it carries a climb
-        /// of `1.3 m`, which covers the trench the trace cuts through the
-        /// crest at 84 m; a bank taller than that would end in a step at
-        /// this line, and the brook test's walk out of the channel is what
-        /// would say so.
+        /// The width available for the grade cap outside the cut. The
+        /// refined grid covers the entire blend, including the crest near
+        /// the outfall where the natural ground joins the bank.
         /// </summary>
-        private const float BrookBankMaximumBlendWidth = 1.75f;
+        internal const float BrookBankMaximumBlendWidth = 2.25f;
 
         /// <summary>
         /// Added to the swale's reach before a point is declared out of it,

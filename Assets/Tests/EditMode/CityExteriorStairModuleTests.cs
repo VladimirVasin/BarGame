@@ -144,7 +144,7 @@ namespace BarPromenade.Tests.EditMode
                         Is.True);
                     Assert.That(
                         renderer.sharedMaterial,
-                        Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                        Is.EqualTo(GroundSurfaceAppearance.SharedMaterial));
                 }
 
                 Assert.That(result.RampColliders, Has.Count.EqualTo(1));

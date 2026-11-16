@@ -174,7 +174,8 @@ namespace BarPromenade.Tests.PlayMode
                     {
                         reacted = true;
                         Assert.That(enemy.State.StaggerDuration, Is.LessThanOrEqualTo(1.25f));
-                        Assert.That(enemy.ActiveClipName, Is.EqualTo(CombatZombieAssetProvider.OrdinaryHitClip));
+                        Assert.That(enemy.ActiveClipName, Is.EqualTo(CombatZombieAssetProvider.LoadDegradedClip(
+                            CombatZombieAssetProvider.DegradedHitClip, enemy.OrdinaryZombieVariant).name));
                         Assert.That(Quaternion.Angle(chestBefore, chest.localRotation), Is.GreaterThan(2f),
                             "A successful hit must visibly change the actual chest pose.");
                         if (captureArc) Capture("ordinary-hit-onset", true);

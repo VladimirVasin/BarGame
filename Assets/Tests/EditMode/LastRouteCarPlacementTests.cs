@@ -721,11 +721,13 @@ namespace BarPromenade.Tests.EditMode
                     }
 
                     Assert.That(nearest, Is.Not.Null);
-                    Bounds lens = nearest.bounds;
-                    float halfDepth = Mathf.Abs(root.forward.x) * lens.extents.x +
-                        Mathf.Abs(root.forward.y) * lens.extents.y +
-                        Mathf.Abs(root.forward.z) * lens.extents.z;
-                    float standoff = Vector3.Dot(beam.transform.position - lens.center, root.forward) - halfDepth;
+                    Bounds lens = nearest.localBounds;
+                    Matrix4x4 lensToWorld = nearest.localToWorldMatrix;
+                    float halfDepth = Mathf.Abs(Vector3.Dot(root.forward, lensToWorld.MultiplyVector(Vector3.right * lens.extents.x))) +
+                        Mathf.Abs(Vector3.Dot(root.forward, lensToWorld.MultiplyVector(Vector3.up * lens.extents.y))) +
+                        Mathf.Abs(Vector3.Dot(root.forward, lensToWorld.MultiplyVector(Vector3.forward * lens.extents.z)));
+                    Vector3 lensCenter = lensToWorld.MultiplyPoint3x4(lens.center);
+                    float standoff = Vector3.Dot(beam.transform.position - lensCenter, root.forward) - halfDepth;
                     Assert.That(standoff, Is.InRange(0f, .08f), $"{beam.name} must begin just ahead of its own lens.");
                 }
 

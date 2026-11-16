@@ -42,7 +42,12 @@ namespace BarPromenade
             var car = result.ParkedCar.GetComponentInParent<LastRouteCarDriver>();
             car.name = "Parked Ridge Sedan";
             if (!interactive)
-                foreach (var collider in car.GetComponentsInChildren<Collider>()) Destroy(collider);
+                foreach (var collider in car.GetComponentsInChildren<Collider>())
+                {
+                    collider.enabled = false;
+                    if (Application.isPlaying) Destroy(collider);
+                    else DestroyImmediate(collider);
+                }
             return result;
         }
     }

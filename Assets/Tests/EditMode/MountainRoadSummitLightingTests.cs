@@ -116,8 +116,11 @@ namespace BarPromenade.Tests.EditMode
         [Category("City")]
         public void RelocatedCafe_PreservesItsThreeSourcesAndCounterContacts()
         {
-            CityLayout layout = CityLayoutGenerator.Generate(CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
-            MountainRoadCafePlan cafePlan = CityCafePlan.Create(layout).Cafe;
+            CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
+            CityCafePlan site = CityCafePlan.Create(layout);
+            Assert.That(site, Is.Not.Null, "The default city must contain the relocated cafe.");
+            MountainRoadCafePlan cafePlan = site.Cafe;
             var parent = new GameObject("Relocated Cafe Lighting Test Parent");
             try
             {

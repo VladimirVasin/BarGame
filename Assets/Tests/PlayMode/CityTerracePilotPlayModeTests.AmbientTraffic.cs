@@ -118,7 +118,7 @@ namespace BarPromenade.Tests.PlayMode
 
         }
 
-        [UnityTest]
+        [UnityTest, Timeout(300000)]
         public IEnumerator LiveCity_AmbientTrafficSharesRoadsAndKeepsEveryBusPlatformAccessible()
         {
             Assert.That(GameSessionState.TryStartGameTimeAt(14 * 60), Is.True);

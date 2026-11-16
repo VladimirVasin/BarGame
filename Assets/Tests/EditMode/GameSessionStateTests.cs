@@ -697,6 +697,7 @@ namespace BarPromenade.Tests.EditMode
                     sourceId, InventoryItemId.OpenStewCan), Is.True);
             GameSessionState.AdvanceGameTime(900f);
             Assert.That(GameSessionState.GameDayIndex, Is.Zero);
+            GameSessionState.UpdateNeeds(60, GameSessionState.StressLevel);
             Assert.That(GameSessionState.HungerLevel, Is.GreaterThan(20),
                 "The ordinary food rule would allow eating this tin.");
             Assert.That(GameSessionState.TryConsumeInventoryItem(
@@ -706,7 +707,8 @@ namespace BarPromenade.Tests.EditMode
                 InventoryItemId.OpenStewCan), Is.EqualTo(1));
 
             GameSessionState.EnterHome();
-            GameSessionState.AdvanceGameTime(1980f);
+            double minutesUntilNextDay = 24 * 60 - GameSessionState.GameTimeOfDayMinutes + 1;
+            GameSessionState.AdvanceGameTime((float)(minutesUntilNextDay / GameTimeState.GameMinutesPerRealSecond));
             GameSessionState.PrepareHomeReturn();
             Assert.That(GameSessionState.GameDayIndex, Is.EqualTo(1));
             Assert.That(GameSessionState.IsQuestActive(QuestId.FeedTheCat),
@@ -891,7 +893,8 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.LastAlcoholicDrink,
                 Is.EqualTo(DrinkId.LightBeer));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(1));
-            Assert.That(GameSessionState.HeroCorruptionDose, Is.EqualTo(8));
+            Assert.That(GameSessionState.HeroCorruptionDose,
+                Is.EqualTo(DrinkRules.GetIntoxicationGain(DrinkId.LightBeer)));
         }
 
         [Test]

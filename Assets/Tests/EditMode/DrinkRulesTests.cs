@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 
 namespace BarPromenade.Tests.EditMode
@@ -65,7 +66,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(definition.Id, Is.Not.EqualTo(DrinkId.None));
             }
 
-            Assert.That(actual.Count, Is.EqualTo(10));
+            Assert.That(actual, Is.EquivalentTo(
+                Enum.GetValues(typeof(DrinkId)).Cast<DrinkId>().Where(id => id != DrinkId.None)));
         }
 
         [TestCase(DrinkId.LightBeer, DrinkId.DarkBeer)]

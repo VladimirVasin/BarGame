@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using BarPromenade.Runtime.World;
 using UnityEngine;
@@ -158,6 +159,7 @@ namespace BarPromenade.Tests.PlayMode
             bar.Closing.AutoAdvance = false;
             Assert.That(bar.Crowd, Is.Not.Null.And.Property("IsInitialized").True);
             bar.Crowd.AutoAdvance = false;
+            bar.Bartender.GetComponent<BarBartenderServiceChoreography>().AutoAdvance = false;
             bar.Conversation.AutoAdvance = false;
             // Freeze unrelated sip/voice selection. Crowd movement still drives each real rig itself.
             foreach (BarPatronAnimator animator in bar.GetComponentsInChildren<BarPatronAnimator>(true)) animator.enabled = false;
@@ -733,11 +735,14 @@ namespace BarPromenade.Tests.PlayMode
 
         private IEnumerator DriveCrowdUntil(Func<bool> complete, string message)
         {
+            var choreography = bar.Bartender.GetComponent<BarBartenderServiceChoreography>();
             float deadline = Time.realtimeSinceStartup + 25f;
             for (int step = 0; step < 8000 && !complete(); step++)
             {
-                Assert.That(Time.realtimeSinceStartup, Is.LessThan(deadline), message + CrowdDiagnostic());
+                if (Time.realtimeSinceStartup >= deadline) Assert.Fail(message + CrowdDiagnostic());
                 bool contactPhase = CrowdNeedsContactFrame();
+                bar.Bartender.Advance(.1f);
+                choreography.Advance(.1f);
                 bar.Crowd.Advance(bar.Crowd.HasGuestInTransit ? .1f : BarCrowdController.ChangeIntervalSeconds + .1f);
                 // Each sit/stand sample reaches LateUpdate before advancing again.
                 if (contactPhase || CrowdNeedsContactFrame() || step % 3 == 0) yield return null;
@@ -760,7 +765,13 @@ namespace BarPromenade.Tests.PlayMode
 
         private string CrowdDiagnostic() => $" Phase={bar.Crowd.TransitPhaseName}, guest={bar.Crowd.TransitPatronId}," +
             $" position={bar.Crowd.TransitPosition}, target={bar.Crowd.TransitTarget}, blocked={bar.Crowd.TransitBlockedBy}," +
-            $" foot={bar.Crowd.TransitFootContactError}, grip={bar.Crowd.TransitVesselGripError}.";
+            $" foot={bar.Crowd.TransitFootContactError}, grip={bar.Crowd.TransitVesselGripError}," +
+            $" aisle={bar.AisleTraffic.CurrentOwner}, returning={bar.AisleTraffic.ReturningOwner}, " +
+            $"cleanup={bar.Bartender.GetComponent<BarBartenderServiceChoreography>().CleanupPhaseName}, " +
+            $"minute={GameSessionState.GameMinuteOfDay}, desired={bar.Crowd.TargetCount}, settled={bar.Patrons.Count}. " +
+            string.Join("; ", bar.Patrons.Select(p => $"{p.Anchor.Id} drinking={p.Drinking?.Timeline.Phase}, " +
+                $"conversationFree={bar.Conversation.CanPatronLeave(p)}, serviceFree={bar.DrinkShop.CanPatronLeave(p.Refill)}, " +
+                $"away={p.IsTemporarilyAway}, abandonedGlass={bar.Crowd.TryGetAbandonedDrink(p.Anchor.Id, out _)}"));
 
         private IEnumerator DriveServiceUntil(Func<bool> complete, string message)
         {

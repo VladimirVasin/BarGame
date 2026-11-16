@@ -72,7 +72,7 @@ namespace BarPromenade
                 if (part.name == partName) continue;
                 var unused = CityCobblerAssetProvider.FindPart(shell, part.name);
                 unused.gameObject.SetActive(false);
-                Destroy(unused.gameObject);
+                DestroyOwnedObject(unused.gameObject);
             }
             foreach (var renderer in selected.GetComponentsInChildren<MeshRenderer>(true))
             {
@@ -122,7 +122,13 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
-            foreach (var mesh in fittedMeshes) if (mesh) Destroy(mesh);
+            foreach (var mesh in fittedMeshes) if (mesh) DestroyOwnedObject(mesh);
+        }
+
+        private static void DestroyOwnedObject(UnityEngine.Object owned)
+        {
+            if (Application.isPlaying) Destroy(owned);
+            else DestroyImmediate(owned);
         }
     }
 }

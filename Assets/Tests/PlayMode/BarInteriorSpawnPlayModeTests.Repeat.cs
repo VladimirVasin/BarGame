@@ -149,12 +149,11 @@ namespace BarPromenade.Tests.PlayMode
                             patron.Anchor, patron.Registry, patron.Presentation, clip, bar.Layout, index + 1,
                             bar.Room.Find("Counter Top").GetComponent<Renderer>(), kind });
                         Assert.That(drinking, Is.Not.Null);
-                        var refill = patron.Registry.gameObject.AddComponent<BarCounterPatronRefill>();
-                        refill.Configure(drinking, bar.DrinkShop, slot);
                         patrons[index] = new BarPatron(patron.Anchor, patron.Registry, patron.Presentation, patron.IsSeated, drinking);
                     }
                     slot++;
                 }
+                bar.DrinkShop.ConfigureCounterPatronService(bar.Patrons);
             }
 
             internal IEnumerator StageRequests()

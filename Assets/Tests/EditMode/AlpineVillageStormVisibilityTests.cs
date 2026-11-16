@@ -352,8 +352,8 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            // The stable opaque haze blend starts beyond every crest the
-            // plan produces from the lane, and ends inside the plane.
+            // The haze closes behind the remaining core walls. The expanded
+            // western valley leaves this view open across the forest.
             AlpineVillagePlan plan = CreatePlan();
             AlpineVillageLaneSample middle =
                 plan.Lane.Sample(plan.Lane.Length * 0.5f);
@@ -361,7 +361,6 @@ namespace BarPromenade.Tests.EditMode
             (Vector3 origin, Vector3 direction, string label)[] rays =
             {
                 (middle.Position, middle.Right, "mid-lane toward +Right"),
-                (middle.Position, -middle.Right, "mid-lane toward -Right"),
                 (head.Position, plan.Uphill, "lane head uphill")
             };
             foreach ((Vector3 origin, Vector3 direction, string label) in rays)
@@ -376,6 +375,8 @@ namespace BarPromenade.Tests.EditMode
                     Is.GreaterThanOrEqualTo(crest),
                     $"The haze blend crosses the crest {label} at {crest} m.");
             }
+            Assert.That(FindCrestDistance(plan, middle.Position, -middle.Right), Is.Zero,
+                "The view across the western forest must remain open to the draw range.");
 
             Assert.That(
                 AlpineVillageRidgeAppearance.HandoffNearDistance,

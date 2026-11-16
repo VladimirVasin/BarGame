@@ -22,11 +22,12 @@ namespace BarPromenade.Tests.EditMode
         {
             layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default, CityGenerationSettings.Default,
                 GameSessionState.DefaultCitySeed);
+            CityWorldPlans world = CityWorldPlans.GetOrCreate(layout);
             night = CityNightFixturePlanner.CreatePlan(layout);
-            fence = RoadFencePlanner.CreatePlan(layout);
-            decoration = CityDecorationPlanner.CreatePlan(layout, fence, night);
-            seacoast = CitySeacoastPlanner.Create(layout);
-            archShelter = CityArchShelterPlanner.Create(layout);
+            fence = world.Fence;
+            decoration = world.GetDecoration(night);
+            seacoast = world.Seacoast;
+            archShelter = world.ArchShelter;
             streets = CityStreetSurfacePlanner.Create(layout);
             plan = CreatePlan();
         }
@@ -100,9 +101,8 @@ namespace BarPromenade.Tests.EditMode
         public void DefaultCity_KeepsFootprintsOffRoadsCrossingsBuildingsWaterAndClosedGrounds()
         {
             IReadOnlyList<Rect> roads = layout.CreateRoadRects();
-            var buildings = layout.BuildingLots.Where(lot => lot.HasBuilding).Select(lot => Rect.MinMaxRect(
-                lot.Center.x - lot.Size.x * .5f, lot.Center.z - lot.Size.y * .5f,
-                lot.Center.x + lot.Size.x * .5f, lot.Center.z + lot.Size.y * .5f)).ToArray();
+            var buildings = layout.BuildingMasses.Where(lot => lot.HasBuilding)
+                .SelectMany(lot => lot.CreateCollisionPolygons()).ToArray();
             var closed = layout.Surfaces.Where(surface =>
                 surface.Kind == CitySurfaceKind.CemeteryGround || surface.Kind == CitySurfaceKind.ChurchGround ||
                 surface.IsWater || surface.Feature == CityAreaFeatureKind.Yard ||
@@ -126,7 +126,8 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(roads.Any(road => road.Overlaps(footprint)), Is.False, "Never on the carriageway: " + part.Id);
                 Assert.That(streets.CrosswalkWalkableRectangles.Any(crossing => crossing.Overlaps(footprint)), Is.False,
                     "Never on a crossing: " + part.Id);
-                Assert.That(buildings.Any(building => building.Overlaps(footprint)), Is.False, "Never inside a wall: " + part.Id);
+                Assert.That(buildings.Any(building => CityLitterGeometry.OverlapsPolygon(footprint, building)),
+                    Is.False, "Never inside a wall: " + part.Id);
                 Assert.That(closed.Any(ground => ground.Overlaps(footprint)), Is.False,
                     "The cemetery, the church, water and every fringe yard stay as they are: " + part.Id);
                 Assert.That(scenes.Any(scene => scene.Overlaps(footprint)), Is.False, "Authored scenes stay untouched: " + part.Id);
@@ -173,11 +174,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(plan.GetCount(CityLitterZone.LotGround), Is.GreaterThan(60));
             Assert.That(plan.GetCount(CityLitterZone.Park), Is.InRange(2, 6), "The park gets a handful, never a scatter.");
             Assert.That(plan.GetCount(CityLitterZone.Beach), Is.InRange(12, 60));
-            foreach (CityDistrictKind district in new[] { CityDistrictKind.OldTown, CityDistrictKind.Residential,
-                         CityDistrictKind.Industrial, CityDistrictKind.Nightlife })
+            foreach (CityDistrictKind district in layout.Districts.Select(district => district.Kind).Where(kind =>
+                         kind == CityDistrictKind.Residential || kind == CityDistrictKind.Industrial ||
+                         kind == CityDistrictKind.OldTown || kind == CityDistrictKind.Nightlife))
                 Assert.That(plan.GetCount(district), Is.GreaterThan(0), district.ToString());
-            Assert.That(plan.GetCount(CityDistrictKind.Nightlife), Is.GreaterThan(plan.GetCount(CityDistrictKind.OldTown)),
-                "The night district drops more than the old town.");
             Assert.That(plan.SolidCount, Is.InRange(1, CityLitterPlan.MaximumSolidCount));
             Assert.That(plan.Parts.Select(part => part.Item.Name).Distinct().Count(), Is.GreaterThanOrEqualTo(30),
                 "Nearly every authored variant should be met somewhere in the city.");

@@ -216,12 +216,11 @@ namespace BarPromenade.Tests.EditMode
                         tint,
                         kind);
                 Assert.That(
-                    renderer.sharedMaterial,
-                    Is.SameAs(SupermarketSurfaceAppearance.SharedMaterial));
+                    renderer.sharedMaterial.GetEntityId(),
+                    Is.EqualTo(SupermarketSurfaceAppearance.SharedMaterial.GetEntityId()));
                 Assert.That(
-                    properties.GetTexture(BaseMapId),
-                    Is.SameAs(
-                        SupermarketSurfaceAppearance.GetTexture(kind)));
+                    properties.GetTexture(BaseMapId).GetEntityId(),
+                    Is.EqualTo(SupermarketSurfaceAppearance.GetTexture(kind).GetEntityId()));
                 Assert.That(
                     properties.GetVector(BaseMapTransformId),
                     Is.EqualTo(expectedTransform));

@@ -106,12 +106,15 @@ namespace BarPromenade.Tests.EditMode
                 CityBalconySmokerPlan.CreateCandidates(layout, registry, includeUpperQuarter: true);
             IReadOnlyList<CityBalconySmokerDescriptor> second =
                 CityBalconySmokerPlan.CreateCandidates(layout, registry, includeUpperQuarter: true);
+            var upperHouses = CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings
+                .Where(house => house.Lot.IsOrdinaryBuilding && house.Lot.District == CityDistrictKind.Residential)
+                .ToArray();
             int eligible = layout.BuildingLots.Count(item =>
                 item.IsOrdinaryBuilding &&
-                item.District == CityDistrictKind.Residential) + CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings.Count;
+                item.District == CityDistrictKind.Residential) + upperHouses.Length;
 
             Assert.That(first.Count, Is.EqualTo(eligible));
-            foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings.Where(h => h.HasAirer))
+            foreach (var house in upperHouses.Where(h => h.HasAirer))
             {
                 var occupied = first.Single(d => d.LotCell == house.Lot.Cell);
                 Assert.That(registry.BalconySlots.Single(s => s.StableId == occupied.BalconySlotStableId)
@@ -127,6 +130,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 first.Select(item => item.LotCell).Distinct().Count(),
                 Is.EqualTo(first.Count));
+            Assert.That(first.Any(item => item.LotCell == layout.PlayerHome.Cell), Is.False);
             Assert.That(
                 first.All(item =>
                     CityBalconySmokerArchetypeCatalog.IsEligible(

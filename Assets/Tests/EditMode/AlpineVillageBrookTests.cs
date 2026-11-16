@@ -281,9 +281,9 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(
                             rise / Span,
                             Is.LessThan(slopeCeiling),
-                            $"The bank at {sample.Distance:0.#} m stands at " +
-                            $"{Mathf.Atan(rise / Span) * Mathf.Rad2Deg:0.#} " +
-                            "degrees; the hero's limit is 45.");
+                            $"Bank at {sample.Distance:0.#} m, side {side}, {out2:0.##} m from the centre, " +
+                            $"rises at {Mathf.Atan(rise / Span) * Mathf.Rad2Deg:0.#}° " +
+                            $"against the hero's {PlayerFactory.SlopeLimitDegrees:0.#}° limit.");
                     }
                 }
             }

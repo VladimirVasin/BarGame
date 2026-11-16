@@ -220,17 +220,15 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(platform.Height, Is.LessThan(PlayerFactory.StepOffset));
             Assert.That(plan.FurnitureFootprints.Any(item => item.Kind == BarInteriorFurnitureKind.CoatRack),
                 Is.False);
-            foreach (Vector3 stageDock in new[] { BarInteriorLayoutPlanner.StageEntryPosition,
-                BarInteriorLayoutPlanner.StageStandingPosition })
-            {
-                float radius = BarInteriorLayoutValidator.PlayerRadius;
-                Assert.That(stageDock.x, Is.InRange(platform.Bounds.xMin + radius,
-                    platform.Bounds.xMax - radius));
-                Assert.That(stageDock.z, Is.InRange(platform.Bounds.yMin + radius,
-                    platform.Bounds.yMax - radius));
-                Assert.That(stageDock.y,
-                    Is.EqualTo(platform.Height + PlayerFactory.GroundedRootOffset));
-            }
+            Vector3 entry = BarInteriorLayoutPlanner.StageEntryPosition;
+            Vector3 standing = BarInteriorLayoutPlanner.StageStandingPosition;
+            float radius = BarInteriorLayoutValidator.PlayerRadius;
+            Assert.That(platform.Bounds.Contains(new Vector2(entry.x, entry.z)), Is.True);
+            Assert.That(entry.z, Is.EqualTo(BarInteriorLayoutPlanner.StageApproachPosition.z));
+            Assert.That(standing.x, Is.InRange(platform.Bounds.xMin + radius, platform.Bounds.xMax - radius));
+            Assert.That(standing.z, Is.InRange(platform.Bounds.yMin + radius, platform.Bounds.yMax - radius));
+            Assert.That(entry.y, Is.EqualTo(platform.Height + PlayerFactory.GroundedRootOffset));
+            Assert.That(standing.y, Is.EqualTo(entry.y));
             Assert.That(BarInteriorLayoutPlanner.StageStandingPosition.x -
                 BarInteriorLayoutPlanner.StageMicrophonePosition.x,
                 Is.GreaterThan(BarInteriorLayoutValidator.PlayerRadius + .03f),
@@ -567,11 +565,12 @@ namespace BarPromenade.Tests.EditMode
         {
             BarInteriorLayoutPlan valid = BarInteriorLayoutPlanner.Generate(
                 100, "Test bar with a blocked stool", BarActivityKind.Cocktail);
+            Vector3 approach = BarCounterSeatPlanner.CreateAvailable(valid).Last().ApproachGroundLocalPosition;
             var furniture = new List<BarInteriorFurnitureFootprint>(valid.FurnitureFootprints)
             {
                 new BarInteriorFurnitureFootprint(
                     "Test table beside the counter", BarInteriorFurnitureKind.PubTable,
-                    new Rect(-1.95f, -0.35f, 0.6f, 0.6f), 0.82f, true)
+                    new Rect(approach.x - .1f, approach.z - .1f, .2f, .2f), .82f, true)
             };
             InvalidOperationException error = Assert.Throws<InvalidOperationException>(
                 () => BarInteriorLayoutValidator.ValidateOrThrow(

@@ -828,12 +828,15 @@ namespace BarPromenade.Tests.PlayMode
                         busActor.transform.TransformPoint(ridePosition), busActor.transform.rotation * rideRotation);
                     SetSeatedCaptureLayer(actorObject);
                     NpcWardrobe wardrobe = defaultBody ? npc.GetComponentInChildren<NpcWardrobe>() : null;
-                    string[] trouserVariants = defaultBody ? new[] { "everyday", "work", "warm" } : new[] { "" };
+                    string[] trouserVariants = defaultBody
+                        ? wardrobe.Items.Where(item => item.Slot == "trousers").Select(item => item.Id).ToArray()
+                        : new[] { "" };
+                    Assert.That(trouserVariants, Is.Not.Empty, archetype.DesignId);
                     foreach (string trouserVariant in trouserVariants)
                     {
-                        // All three authored cuts must fit the same seat; this
+                        // All authored cuts must fit the same seat; this
                         // local swap does not alter the population assignment.
-                        if (defaultBody) wardrobe.SetSlot("trousers", "trousers." + trouserVariant);
+                        if (defaultBody) wardrobe.SetSlot("trousers", trouserVariant);
                         string phasePrefix = defaultBody ? trouserVariant + "/" : "";
                         string captureName = archetype.DesignId + (defaultBody ? "-" + trouserVariant : "");
                         busActor.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
@@ -898,7 +901,7 @@ namespace BarPromenade.Tests.PlayMode
                 }
 
                 Renderer[] driverSupport = SeatedSupportRenderers(driver.Renderers);
-                Assert.That(driverSupport.Length, Is.EqualTo(3));
+                Assert.That(driverSupport, Has.Length.EqualTo(1), "The driver wears the shared modular trousers.");
                 for (int sample = 0; sample < 2; sample++)
                 {
                     busActor.transform.SetPositionAndRotation(new Vector3(8f, 1f, -5f),

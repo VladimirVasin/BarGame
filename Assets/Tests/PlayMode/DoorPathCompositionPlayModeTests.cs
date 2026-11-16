@@ -125,6 +125,7 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             bool previousAudioPause = AudioListener.pause;
+            int previousFrameInterval = OnDemandRendering.renderFrameInterval;
             // The same entry BarExit takes once its door action completes.
             Assert.That(SceneTransitionService.RequestDoorLoad(
                 SceneIds.City, DoorTransitionDirection.ExitBar, out string operationId), Is.True);
@@ -156,8 +157,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(city.IsInitialized, Is.True, "The transition ended before the city was ready.");
             Assert.That(GameTimeScaleRuntime.IsPaused, Is.False);
             Assert.That(AudioListener.pause, Is.EqualTo(previousAudioPause));
-            Assert.That(OnDemandRendering.renderFrameInterval, Is.EqualTo(1),
-                "Full-rate drawing must return with the finished city.");
+            Assert.That(OnDemandRendering.renderFrameInterval, Is.EqualTo(previousFrameInterval),
+                "The finished city must restore the caller's drawing rate.");
             yield return null;
             Assert.That(Object.FindAnyObjectByType<TransitionBlackoutOverlay>(), Is.Null,
                 "The black must leave with the transition.");

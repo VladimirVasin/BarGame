@@ -48,19 +48,11 @@ namespace BarPromenade.Tests.EditMode
         private static readonly Dictionary<string, string> Excluded =
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                ["Tunnel Darkness"] = "the absence of a surface",
                 ["Visible Culvert Mouth"] = "a bore, not a material",
                 ["Sagging Visible Cable"] = "55 mm of cable",
                 ["One Continuous Twin-Track Haul Cable"] = "55 mm of cable",
                 ["Warm Lamp Lens"] = "a practical the atmosphere drives",
                 ["Painted Closed Mark"] = "4 mm of paint on a sign face",
-                ["South Window Wall Glass"] = "glazing",
-                ["Chamfered Corner Window Glass"] = "glazing",
-                ["East Window Wall Glass"] = "glazing",
-                ["Open Glass Door - Non Blocking"] = "glazing",
-                ["Boiler Sight Glass"] = "glazing",
-                ["Audible Sulphur Ceiling Tube"] = "emissive",
-                ["Cold Service Strip"] = "emissive",
                 ["Visible Station Practical Lens"] = "emissive",
                 ["Visible Boarding Flood Lens"] = "emissive",
                 ["Visible Boarding Dock Lens"] = "emissive",
@@ -78,7 +70,12 @@ namespace BarPromenade.Tests.EditMode
                 ["Vista Silhouette"] =
                     "a matte at 80-110 m on its own fog-exempt shader",
                 ["Vista City Lights"] =
-                    "additive windows; a sheet would make them opaque"
+                    "additive windows; a sheet would make them opaque",
+                ["Fog Light Halo"] = "a transparent light halo",
+                ["Culvert Inlet Water"] = "the moving brook surface",
+                ["Culvert Outlet Water"] = "the moving brook surface",
+                ["Culvert Pour"] = "the moving brook surface",
+                ["Culvert Splash"] = "transparent spray at the end of the fall"
             };
 
         /// <summary>
@@ -138,10 +135,6 @@ namespace BarPromenade.Tests.EditMode
                         MountainRoadSurfaceKind.Concrete,
                     ["Batched Steel Girders And Crossbeams"] =
                         MountainRoadSurfaceKind.RustedIron,
-                    ["North Service Wall"] =
-                        MountainRoadSurfaceKind.Masonry,
-                    ["Inset Green Linoleum"] =
-                        MountainRoadSurfaceKind.Linoleum,
                     ["Physical Concrete Station Pad"] =
                         MountainRoadSurfaceKind.Concrete,
                     ["Site Ploughed Snow"] =
@@ -274,7 +267,11 @@ namespace BarPromenade.Tests.EditMode
                         MountainRoadSurfaceAppearance.GetTexture(kind);
                     HomeSurfaceRecipe recipe =
                         MountainRoadSurfaceAppearance.GetRecipe(kind);
-                    expectedPaths.Add(recipe.ResourcePath);
+                    // The imported café owns its wall, floor and paint textures.
+                    if (kind != MountainRoadSurfaceKind.Masonry && kind != MountainRoadSurfaceKind.Linoleum &&
+                        kind != MountainRoadSurfaceKind.WallPaint && kind != MountainRoadSurfaceKind.InteriorPaint)
+                        expectedPaths.Add(recipe.ResourcePath);
+                    groups.Add(MountainRoadSurfaceLibrary.GetTexture(kind), kind);
                     if (groups.TryGetValue(
                             sheetTexture,
                             out MountainRoadSurfaceKind sibling))
@@ -351,15 +348,15 @@ namespace BarPromenade.Tests.EditMode
                     {
                         Assert.That(
                             sheet,
-                            Is.SameAs(
-                                MountainRoadSurfaceAppearance.GetTexture(
-                                    expected)),
+                            Is.EqualTo(MountainRoadSurfaceAppearance.GetTexture(expected))
+                                .Or.EqualTo(MountainRoadSurfaceLibrary.GetTexture(expected)),
                             $"'{name}' must read as {expected}.");
                         kind = expected;
                     }
 
                     if (renderer.sharedMaterial != RuntimePrimitiveFactory.DefaultMaterial &&
-                        renderer.sharedMaterial != GroundSurfaceAppearance.SharedMaterial)
+                        renderer.sharedMaterial != GroundSurfaceAppearance.SharedMaterial &&
+                        renderer.sharedMaterial != MountainRoadSurfaceLibrary.SharedMaterial)
                     {
                         foreign.Add(name);
                     }
@@ -385,7 +382,7 @@ namespace BarPromenade.Tests.EditMode
                     skipped,
                     Is.EquivalentTo(Excluded.Keys),
                     "The exclusion list must describe exactly the objects " +
-                    "the built world actually leaves flat.");
+                    "the built world actually leaves flat. Unused: " + string.Join(", ", Excluded.Keys.Except(skipped)));
                 Assert.That(
                     foreign,
                     Is.EquivalentTo(ForeignMaterials.Keys),
@@ -409,11 +406,16 @@ namespace BarPromenade.Tests.EditMode
         {
             HomeSurfaceRecipe recipe =
                 MountainRoadSurfaceAppearance.GetRecipe(kind);
-            if (ForeignMaterials.TryGetValue(name, out string reason))
+            if (renderer.GetComponent<MountainRoadCrownGradientPilot>() != null)
+            {
+                Assert.That(renderer.sharedMaterial.shader.name, Is.EqualTo("Bar Promenade/Mountain Road Crown Gradient"));
+            }
+            else if (ForeignMaterials.TryGetValue(name, out string reason))
             {
                 Assert.That(
                     renderer.sharedMaterial,
-                    Is.SameAs(MountainRoadSurfaceAppearance.FoliageMaterial),
+                    Is.EqualTo(MountainRoadSurfaceAppearance.FoliageMaterial)
+                        .Or.EqualTo(MountainRoadSurfaceLibrary.FoliageMaterial),
                     $"'{name}' {reason}, so it must carry the one shared " +
                     "foliage material - never a per-object instance.");
             }
@@ -422,14 +424,16 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(renderer.sharedMaterial, Is.SameAs(GroundSurfaceAppearance.SharedMaterial),
                     $"'{name}' must use the shared ground response material for {kind}.");
                 Assert.That(properties.GetFloat("_GroundKind"), Is.EqualTo((float)groundKind));
-                Assert.That(properties.GetTexture("_GroundResponse"), Is.SameAs(
-                    GroundSurfaceAppearance.GetResponse(MountainRoadSurfaceAppearance.GetTexture(kind))));
+                Texture expectedResponse = properties.GetTexture(BaseMapId) == MountainRoadSurfaceLibrary.GetTexture(kind)
+                    ? MountainRoadSurfaceLibrary.GetGroundResponse(kind)
+                    : GroundSurfaceAppearance.GetResponse(MountainRoadSurfaceAppearance.GetTexture(kind));
+                Assert.That(properties.GetTexture("_GroundResponse"), Is.EqualTo(expectedResponse));
             }
             else
             {
                 Assert.That(
                     renderer.sharedMaterial,
-                    Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial),
+                    Is.EqualTo(RuntimePrimitiveFactory.DefaultMaterial).Or.EqualTo(MountainRoadSurfaceLibrary.SharedMaterial),
                     $"'{name}' must keep the one shared primitive " +
                     "material.");
             }

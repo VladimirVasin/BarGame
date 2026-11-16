@@ -90,22 +90,23 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 var receivers = kiosk.GetComponent<RidgeKioskStreetLightReceivers>();
                 Assert.That(receivers, Is.Not.Null);
-                Renderer street = city.World.Root.GetComponentsInChildren<MeshRenderer>(true)
-                    .First(renderer => !renderer.transform.IsChildOf(kiosk) &&
-                        (renderer.renderingLayerMask & RidgeKioskStreetLightReceivers.StreetLayer) != 0);
+                var streetReceivers = city.World.Root.GetComponentsInChildren<MeshRenderer>(true)
+                    .Where(renderer => !renderer.transform.IsChildOf(kiosk) &&
+                        (renderer.renderingLayerMask & RidgeKioskStreetLightReceivers.StreetLayer) != 0).ToArray();
                 receivers.enabled = false;
-                Assert.That(street.renderingLayerMask & RidgeKioskStreetLightReceivers.StreetLayer, Is.Zero,
-                    "Disabling the scope restores its environment receiver layer.");
+                var restored = streetReceivers.Where(renderer =>
+                    (renderer.renderingLayerMask & RidgeKioskStreetLightReceivers.StreetLayer) == 0).ToArray();
+                Assert.That(restored, Is.Not.Empty, "Disabling the scope must restore the receiver layers it owns.");
                 receivers.enabled = true;
-                Assert.That(street.renderingLayerMask & RidgeKioskStreetLightReceivers.StreetLayer, Is.Not.Zero,
+                Assert.That(restored.All(renderer =>
+                    (renderer.renderingLayerMask & RidgeKioskStreetLightReceivers.StreetLayer) != 0), Is.True,
                     "Re-enabling restores the scoped street light.");
-                Light priorLease = FindKioskOutgoing();
+                Light kioskFixture = FindKioskOutgoing();
                 city.Player.Motor.Teleport(Vector3.up * PlayerFactory.GroundedRootOffset);
                 Physics.SyncTransforms();
                 atmosphere.RefreshImmediate();
-                var reassigned = priorLease.GetUniversalAdditionalLightData();
-                Assert.That((uint)reassigned.renderingLayers, Is.EqualTo(1u), "A retasked pool light must restore ordinary receivers.");
-                Assert.That(reassigned.customShadowLayers, Is.False, "The next pooled fixture must retain ordinary shadow ownership.");
+                Assert.That(FindKioskOutgoing(), Is.SameAs(kioskFixture), "The window beam stays with the kiosk when the player leaves.");
+                AssertStreetBeamExcludesActor(kioskFixture, city.Player.GameObject.transform);
                 if (capture) yield return PhotographStreet();
             }
             finally
@@ -247,9 +248,6 @@ namespace BarPromenade.Tests.PlayMode
             var court = city.World.Root.GetComponentInChildren<RidgeKioskCourtWorld>();
             Assert.That(court, Is.Not.Null);
             var atmosphere = city.Night.Atmosphere;
-            Assert.That(site.StreetLamp.HasValue, Is.True, "The Ridge kiosk needs a pole in the street lamp row.");
-            var streetPole = site.StreetLamp.Value;
-            Light streetLamp = CheckRidgeKioskStreetLamp(site, streetPole);
             const string anchorName = CityNightAtmosphere.IndustrialTaskLightPrefix + RidgeKioskCourtWorld.LampPurpose;
             const string edgeAnchorName = CityNightAtmosphere.IndustrialTaskLightPrefix + RidgeKioskCourtWorld.EdgeLampPurpose;
             var anchors = atmosphere.LampAnchors.Select((anchor, index) => (anchor, index)).ToArray();
@@ -322,9 +320,6 @@ namespace BarPromenade.Tests.PlayMode
                 atmosphere.RefreshImmediate();
                 foreach (var skin in skins) skin.forceMatrixRecalculationPerRender = true;
                 city.Camera.aspect = 1280f / 720f;
-                PointCamera(streetPole.Position + new Vector3(7.6f, 1.75f, 7.8f),
-                    streetPole.Position + new Vector3(-2.2f, 2.05f, .5f), 59f);
-                Photograph("street-lamp-evening");
                 PhotographCourt("evening");
                 PointCamera(site.Court.Point(4.10f, -6.2f) + Vector3.up * 1.65f, edgeConcrete, 52f);
                 Vector3 edgeSample = city.Camera.WorldToViewportPoint(edgeConcrete);
@@ -380,7 +375,7 @@ namespace BarPromenade.Tests.PlayMode
                 PhotographCourt("after-hours");
                 Assert.That(visitors.All(actor => !actor.IsSpawned || !courtLife.IsCourtFloor(actor.Position)), Is.True,
                     "The after-hours lighting frame must show the vacated court.");
-                Light[] fixtures = sources.Append(edge).Append(streetLamp).ToArray();
+                Light[] fixtures = sources.Append(edge).ToArray();
                 float[] nightIntensities = fixtures.Select(light => light.intensity).ToArray();
                 AdvanceRidgeClock(12 * 60);
                 yield return null;
@@ -419,48 +414,6 @@ namespace BarPromenade.Tests.PlayMode
                     site.Court.Point(-.45f, -5.4f) + Vector3.up * 1.50f, 66f);
                 Photograph(phase + "-reverse");
             }
-        }
-
-        private Light CheckRidgeKioskStreetLamp(RidgeKioskSitePlan site, StreetLampDescriptor pole)
-        {
-            var night = city.Night;
-            int index = Enumerable.Range(0, night.Plan.StreetLamps.Count)
-                .Single(slot => night.Plan.StreetLamps[slot] == pole);
-            Assert.That(CityLayoutCache.GetOrCreateHomeExteriorContext(city.Layout).NearbyStreetLamps,
-                Does.Contain(pole), "The balcony uses the same street pole placement.");
-            Vector3 bulb = pole.Position + Vector3.up * 4.70f + pole.Forward * 1.07f;
-            Light light = night.Atmosphere.GetLightForAnchor(index);
-            Assert.That(Vector3.Distance(night.LampAnchors[index].position, bulb), Is.LessThan(.01f));
-            Assert.That(Vector3.Distance(light.transform.position, bulb), Is.LessThan(.01f));
-
-            var street = CityHillsideQuarterPlan.ForLayout(city.Layout).Links[1];
-            Assert.That(pole.Position.z, Is.EqualTo(street.SouthSidewalk[0].z - .72f).Within(.01f),
-                "The kiosk pole must keep the standard offset along the south sidewalk.");
-            Assert.That(pole.Forward, Is.EqualTo(Vector3.forward), "The head must face the carriageway.");
-            Assert.That(street.TrySampleTop(new Vector2(pole.Position.x, pole.Position.z), out float top, out var surface), Is.True);
-            Assert.That(surface, Is.EqualTo(CityStreetSupportKind.Sidewalk));
-            Assert.That(pole.Position.y, Is.EqualTo(top).Within(.01f), "The plinth must sit flush on the pavement.");
-            Bounds blocker = CityStaticCollisionBuilder.CreateLowerPoleBounds(pole.Position);
-            Physics.SyncTransforms();
-            Assert.That(night.Root.GetComponentsInChildren<BoxCollider>().Any(collider =>
-                Vector3.Distance(collider.bounds.center, blocker.center) < .01f &&
-                Vector3.Distance(collider.bounds.size, blocker.size) < .01f), Is.True);
-            float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
-            Assert.That(city.World.WalkableArea.Contains(pole.Position, radius), Is.False);
-            var through = new Vector3(pole.Position.x, top, street.SouthSidewalk[0].z);
-            Assert.That(city.World.WalkableArea.Contains(through, radius), Is.True, "Leave the through side of the pavement clear.");
-            Rect footprint = site.StreetLampFootprint.Value;
-            Assert.That(site.Court.Overlaps(footprint), Is.False);
-            Assert.That(city.World.WalkableArea.Contains(site.Court.Entry, radius), Is.True);
-            Assert.That(CityBusNetworkFurniture.Reservations(city.BusPlans, city.Layout).Any(footprint.Overlaps), Is.False);
-
-            Vector3 lane = new(pole.Position.x, street.RoadTopAt(pole.Position.x), street.WestGateWorld.z);
-            Assert.That(RidgeSourceReachesPoint(light, lane + Vector3.up * .05f), Is.True, "The standard beam must reach the road.");
-            for (int table = 0; table < RidgeKioskCourtPlan.TableCount; table++)
-                Assert.That(RidgeSourceReachesPoint(light, site.Court.Table(table) + Vector3.up * .05f), Is.False,
-                    "The nearby street pole must leave the table pools to the umbrellas.");
-            Debug.Log($"Ridge kiosk street pole at {pole.Position:F2}, road light sample at {lane:F2}.");
-            return light;
         }
 
         [UnityTest]

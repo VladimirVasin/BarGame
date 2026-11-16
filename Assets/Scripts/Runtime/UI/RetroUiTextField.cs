@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -16,6 +17,7 @@ namespace BarPromenade
     {
         private const int ControlHint = 0x52545854;
         private const float RepeatDelay = .45f, RepeatInterval = .05f;
+        private const int FirstClipboardShortcut = 10, MaximumPendingShortcuts = 32;
         private static readonly Key[] EditKeys =
         {
             Key.LeftArrow, Key.RightArrow, Key.UpArrow, Key.DownArrow,
@@ -31,6 +33,7 @@ namespace BarPromenade
 
         private readonly int limit;
         private readonly StringBuilder pendingText;
+        private readonly Queue<KeyCode> pendingShortcuts = new Queue<KeyCode>(MaximumPendingShortcuts);
         private readonly Event keyEvent = new Event { type = EventType.KeyDown };
         private readonly GUIContent content = new GUIContent();
         private TextEditor editor;
@@ -82,6 +85,7 @@ namespace BarPromenade
             previousImeSelected = keyboard.imeSelected.isPressed;
             keyboard.onTextInput += OnTextInput;
             keyboard.onIMECompositionChange += OnComposition;
+            InputSystem.onAfterUpdate += CollectShortcuts;
             keyboard.SetIMEEnabled(true);
         }
 
@@ -91,12 +95,14 @@ namespace BarPromenade
         {
             if (keyboard != null)
             {
+                InputSystem.onAfterUpdate -= CollectShortcuts;
                 keyboard.onTextInput -= OnTextInput;
                 keyboard.onIMECompositionChange -= OnComposition;
                 if (keyboard.added) keyboard.SetIMEEnabled(previousImeSelected);
                 keyboard = null;
             }
             pendingText.Clear();
+            pendingShortcuts.Clear();
             composition = string.Empty;
             repeating = null;
             dragging = false;
@@ -118,6 +124,17 @@ namespace BarPromenade
         {
             if (open && focused && CanRead && keyboard == Keyboard.current)
                 composition = value.ToString();
+        }
+
+        private void CollectShortcuts()
+        {
+            if (!open || !focused || !CanRead || keyboard != Keyboard.current || composition.Length != 0 ||
+                !(RetroUiInput.ControlHeld || RetroUiInput.CommandHeld)) return;
+            for (int index = FirstClipboardShortcut; index < EditKeys.Length; index++)
+            {
+                if (EditKeys[index] == Key.Insert || !keyboard[EditKeys[index]].wasPressedThisFrame) continue;
+                if (pendingShortcuts.Count < MaximumPendingShortcuts) pendingShortcuts.Enqueue(EditCodes[index]);
+            }
         }
 
         internal string Draw(Rect rect, string value, GUIStyle style, out bool submit, out bool cancel)
@@ -166,6 +183,7 @@ namespace BarPromenade
                 ReadPointer(rect);
                 if (!cancel && focused && keyboard != null)
                 {
+                    while (pendingShortcuts.Count != 0) Edit(pendingShortcuts.Dequeue(), primaryShortcut: true);
                     ReadEditKeys();
                     if (pendingText.Length != 0)
                     {
@@ -224,13 +242,12 @@ namespace BarPromenade
         private void ReadEditKeys()
         {
             if (composition.Length != 0) { repeating = null; return; }
-            bool primary = RetroUiInput.ControlHeld || RetroUiInput.CommandHeld;
             for (int index = 0; index < EditKeys.Length; index++)
             {
                 KeyControl key = keyboard[EditKeys[index]];
-                if (!key.wasPressedThisFrame || index >= 10 && !primary && EditKeys[index] != Key.Insert) continue;
+                if (!key.wasPressedThisFrame || index >= FirstClipboardShortcut && EditKeys[index] != Key.Insert) continue;
                 Edit(EditCodes[index]);
-                repeating = index < 10 ? key : null;
+                repeating = index < FirstClipboardShortcut ? key : null;
                 repeatCode = EditCodes[index];
                 repeatAt = Time.unscaledTime + RepeatDelay;
             }
@@ -241,9 +258,9 @@ namespace BarPromenade
             repeatAt = Time.unscaledTime + RepeatInterval;
         }
 
-        private void Edit(KeyCode code)
+        private void Edit(KeyCode code, bool primaryShortcut = false)
         {
-            bool primary = RetroUiInput.ControlHeld || RetroUiInput.CommandHeld;
+            bool primary = primaryShortcut || RetroUiInput.ControlHeld || RetroUiInput.CommandHeld;
             if (code == KeyCode.V && primary || code == KeyCode.Insert && RetroUiInput.ShiftHeld)
             { InsertBounded(GUIUtility.systemCopyBuffer); return; }
             if (code == KeyCode.A && primary) { editor.SelectAll(); return; }

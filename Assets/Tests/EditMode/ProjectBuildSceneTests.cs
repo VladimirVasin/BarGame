@@ -32,7 +32,8 @@ namespace BarPromenade.Tests.EditMode
                 "Assets/Scenes/ChurchInterior.unity",
                 "Assets/Scenes/AlpineVillage.unity",
                 "Assets/Scenes/MothersHouseInterior.unity",
-                "Assets/Scenes/CombatTest.unity"
+                "Assets/Scenes/CombatTest.unity",
+                "Assets/Scenes/PawnshopInterior.unity"
             };
 
             CollectionAssert.AreEqual(expected, actual);
@@ -47,7 +48,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void BuildShaders_KeepRuntimeExponentialSquaredFogVariant()
+        public void BuildShaders_KeepRuntimeCityAndStairwellFogVariants()
         {
             string projectRoot = Directory.GetParent(
                 Application.dataPath)?.FullName;
@@ -70,7 +71,8 @@ namespace BarPromenade.Tests.EditMode
                 "enabled by RuntimeSceneSetup.");
             Assert.That(
                 settings,
-                Does.Contain("\n  m_FogKeepLinear: 0\n"));
+                Does.Contain("\n  m_FogKeepLinear: 1\n"),
+                "StairwellInteriorAtmosphere applies linear fog at runtime.");
             Assert.That(
                 settings,
                 Does.Contain("\n  m_FogKeepExp: 0\n"));

@@ -26,6 +26,7 @@ namespace BarPromenade.Editor
                 return;
             }
 
+            context.DependsOnArtifact(CityPedestrianAssetSetup.PlayerModelPath);
             Avatar playerAvatar = FindPlayerAvatar();
             if (playerAvatar != null)
             {
@@ -35,9 +36,8 @@ namespace BarPromenade.Editor
             }
             else
             {
-                // A clean Library can import this FBX before the Hero V2 FBX.
-                // The queued asset build imports Hero V2 first and then
-                // reimports this model onto the canonical Generic Avatar.
+                // The artifact dependency reimports this FBX once the Hero V2
+                // model provides the canonical Generic Avatar.
                 importer.avatarSetup =
                     ModelImporterAvatarSetup.CreateFromThisModel;
                 importer.sourceAvatar = null;

@@ -2697,18 +2697,24 @@ namespace BarPromenade
                 float z = frame.WaterlineZ -
                           (0.55f +
                            (((hash >> 8) & 0xFFu) / 255f) * 1.9f);
+                float length = 1.15f + (((hash >> 16) & 0xFFu) / 255f) * 2.15f;
+                float width = 0.30f + (((hash >> 24) & 0xFFu) / 255f) * 0.44f;
+                Quaternion rotation = Quaternion.Euler(0f, (float)((hash >> 4) % 25u) - 12f, 0f);
+                var size = new Vector3(length, 0.055f, width);
+                Vector3 center = new Vector3(x, 0f, z);
+                Rect rotatedFootprint = ToXZRect(center, rotation, size);
+                float landwardShift = Mathf.Max(0f, rotatedFootprint.yMax - (frame.WaterlineZ - .001f));
+                center.z -= landwardShift;
+                rotatedFootprint.y -= landwardShift;
                 Rect footprint = Rect.MinMaxRect(
-                    x - 1.8f, z - 0.6f, x + 1.8f, z + 0.6f);
+                    Mathf.Min(x - 1.8f, rotatedFootprint.xMin), Mathf.Min(center.z - .6f, rotatedFootprint.yMin),
+                    Mathf.Max(x + 1.8f, rotatedFootprint.xMax), Mathf.Max(center.z + .6f, rotatedFootprint.yMax));
                 if (OverlapsAny(footprint, reserved, 0f))
                 {
                     continue;
                 }
 
-                float ground = SampleSandTop(layout, x, z);
-                float length =
-                    1.15f + (((hash >> 16) & 0xFFu) / 255f) * 2.15f;
-                float width =
-                    0.30f + (((hash >> 24) & 0xFFu) / 255f) * 0.44f;
+                center.y = SampleSandTop(layout, center.x, center.z) + .028f;
                 bool weed = (hash % 5u) != 0u;
                 parts.Add(Part(
                     $"seacoast-wrack-{emitted:D2}",
@@ -2716,12 +2722,7 @@ namespace BarPromenade
                     weed
                         ? CitySeacoastStyle.Grass
                         : CitySeacoastStyle.Litter,
-                    new Vector3(x, ground + 0.028f, z),
-                    Quaternion.Euler(
-                        0f,
-                        (float)((hash >> 4) % 25u) - 12f,
-                        0f),
-                    new Vector3(length, 0.055f, width)));
+                    center, rotation, size));
                 emitted++;
             }
         }
@@ -3241,24 +3242,27 @@ namespace BarPromenade
         /// Conservative XZ footprint of an oriented part: the rotated
         /// half-extents projected onto the world axes.
         /// </summary>
-        private static Rect ToXZRect(CitySeacoastPartDescriptor part)
+        private static Rect ToXZRect(CitySeacoastPartDescriptor part) =>
+            ToXZRect(part.Center, part.Rotation, part.Size);
+
+        private static Rect ToXZRect(Vector3 center, Quaternion rotation, Vector3 size)
         {
-            Vector3 right = part.Rotation * Vector3.right;
-            Vector3 up = part.Rotation * Vector3.up;
-            Vector3 forward = part.Rotation * Vector3.forward;
+            Vector3 right = rotation * Vector3.right;
+            Vector3 up = rotation * Vector3.up;
+            Vector3 forward = rotation * Vector3.forward;
             float halfX =
-                Mathf.Abs(right.x) * part.Size.x * 0.5f +
-                Mathf.Abs(up.x) * part.Size.y * 0.5f +
-                Mathf.Abs(forward.x) * part.Size.z * 0.5f;
+                Mathf.Abs(right.x) * size.x * 0.5f +
+                Mathf.Abs(up.x) * size.y * 0.5f +
+                Mathf.Abs(forward.x) * size.z * 0.5f;
             float halfZ =
-                Mathf.Abs(right.z) * part.Size.x * 0.5f +
-                Mathf.Abs(up.z) * part.Size.y * 0.5f +
-                Mathf.Abs(forward.z) * part.Size.z * 0.5f;
+                Mathf.Abs(right.z) * size.x * 0.5f +
+                Mathf.Abs(up.z) * size.y * 0.5f +
+                Mathf.Abs(forward.z) * size.z * 0.5f;
             return Rect.MinMaxRect(
-                part.Center.x - halfX,
-                part.Center.z - halfZ,
-                part.Center.x + halfX,
-                part.Center.z + halfZ);
+                center.x - halfX,
+                center.z - halfZ,
+                center.x + halfX,
+                center.z + halfZ);
         }
 
         private static float GetMinimumWorldY(

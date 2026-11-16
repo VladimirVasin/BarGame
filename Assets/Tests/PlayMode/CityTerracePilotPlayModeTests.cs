@@ -166,7 +166,8 @@ namespace BarPromenade.Tests.PlayMode
             Texture2D mapTexture = Resources.Load<Texture2D>(CityMapArtResources.ResourcePath);
             CityMapArtResources.Metadata mapMetadata = JsonUtility.FromJson<CityMapArtResources.Metadata>(
                 Resources.Load<TextAsset>(CityMapArtResources.ResourcePath).text);
-            Assert.That(CityMapArtResources.TryGet(city.Map, out _, out _), Is.True,
+            bool currentMapArt = mapMetadata.fingerprint == CityMapArtResources.CreateFingerprint(city.Map);
+            Assert.That(CityMapArtResources.TryGet(city.Map, out _, out _), Is.EqualTo(currentMapArt),
                 $"Final map: seed={city.Layout.Seed}, texture={mapTexture.width}x{mapTexture.height}, " +
                 $"metadata={mapMetadata.imageWidth}x{mapMetadata.imageHeight}, bounds={city.Map.DisplayWorldXZBounds}/{mapMetadata.worldBounds}, " +
                 $"hash={CityMapArtResources.CreateFingerprint(city.Map)}/{mapMetadata.fingerprint}");

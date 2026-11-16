@@ -348,7 +348,7 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(walkable.Contains(
                             new Vector3(point.x, top, point.y),
                             CityGroundTraversalPlanner.MaximumAgentRadius),
-                            Is.True, "Open grass cannot hide a traversal seam.");
+                            Is.True, $"Open grass cannot hide a traversal seam at {point:F3} y={top:F3}.");
                     }
                 }
             }
@@ -448,8 +448,7 @@ namespace BarPromenade.Tests.EditMode
                 (CityChurchGroundPlan.FenceThickness * 0.5f);
             // Grounding a stop moves nothing but its height, so the
             // routing plan carries the same footprints the game builds.
-            CityBusPlan busPlan = CityBusPlanner.CreateRoadRouting(layout);
-            Rect[] furniture = busPlan.Stops
+            Rect[] furniture = CityBusNetworkFurniture.Stops(CityDistrictBusPlanner.Create(layout))
                 .Select(CityBusStopWorldBuilder.DescribeFurnitureFootprint)
                 .ToArray();
             Rect[] straddling = furniture

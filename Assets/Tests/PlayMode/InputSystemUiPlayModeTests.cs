@@ -51,6 +51,7 @@ namespace BarPromenade.Tests.PlayMode
             devices.Setup();
             keyboard = InputSystem.AddDevice<Keyboard>();
             mouse = InputSystem.AddDevice<Mouse>();
+            CombatTestStartService.TryConsumePreparationSelection(out _);
             SceneManager.LoadScene(SceneIds.MainMenu, LoadSceneMode.Single);
             yield return Frames();
             GameInput.HandleApplicationFocus(true);
@@ -164,8 +165,8 @@ namespace BarPromenade.Tests.PlayMode
             yield return Frames();
             Assert.That(GameInput.CanRead(GameInputContext.Menu), Is.False);
             Assert.That(GameInput.CanRead(GameInputContext.PauseMenu), Is.True);
-            // MainMenu has no cutscene catalogue: the real Resume row is y=118.
-            yield return Click(LogicalWindowPoint(new Vector2(320f, 134f)));
+            // The resume row starts 58 px below the main page panel.
+            yield return Click(LogicalWindowPoint(new Vector2(320f, 106f)));
             yield return Frames();
             Assert.That(pause.IsOpen, Is.False, "The actual pause button must remain clickable while Menu input is blocked.");
         }

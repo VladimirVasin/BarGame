@@ -1093,7 +1093,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 status.Balance.IsActive,
                 Is.True,
-                "Nothing freezes the model on a bare slab.");
+                $"Nothing freezes the model on a bare slab. Motor input={motor.InputEnabled}, " +
+                $"approach={motor.InteractionPoseMoveActive}, transition={SceneTransitionService.IsTransitioning}, " +
+                $"modal={BarMinigameModalLock.IsAnyLocked}, handoff={presentation.InteractionHandoffLocked}, " +
+                $"ragdoll={runtime.Ragdoll.IsActive}, balance={status.BalanceStateName}.");
         }
 
         /// <summary>

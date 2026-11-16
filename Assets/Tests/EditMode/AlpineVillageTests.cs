@@ -452,7 +452,7 @@ namespace BarPromenade.Tests.EditMode
         /// </summary>
         [Test]
         [Category("AlpineVillage")]
-        public void Bowl_LoomsOverTheLaneOnEverySide()
+        public void Bowl_LoomsOverTheLaneAndOpensToTheForest()
         {
             AlpineVillagePlan plan = CreatePlan();
             AlpineVillageLaneSample middle =
@@ -464,8 +464,6 @@ namespace BarPromenade.Tests.EditMode
                 {
                     (middle.Position, middle.Right, 59f, 32f,
                         "mid-lane toward +Right"),
-                    (middle.Position, -middle.Right, 59f, 32f,
-                        "mid-lane toward -Right"),
                     (head.Position, plan.Uphill, 33f, 40f,
                         "lane head uphill")
                 };
@@ -513,6 +511,11 @@ namespace BarPromenade.Tests.EditMode
                     Is.GreaterThanOrEqualTo(elevationBar),
                     $"The wall subtends only {elevation:0.0} deg {label}.");
             }
+            Vector3 forest = plan.Expansion.ForestEntrance;
+            var forestXZ = new Vector2(forest.x, forest.z);
+            Assert.That(plan.Expansion.ContainsGround(forestXZ), Is.True);
+            Assert.That(AlpineVillageTerrainSampler.SampleRidgeRise(plan, forestXZ), Is.Zero,
+                "The forest entrance must cross the old wall line on ordinary ground.");
         }
 
         /// <summary>
@@ -915,10 +918,21 @@ namespace BarPromenade.Tests.EditMode
                 ((double)grid.ZCoordinates[rows] - grid.ZCoordinates[0]);
             Assert.That(projectedArea, Is.EqualTo(expectedArea).Within(.1d),
                 "Ground material regions overlap or leave a hole after road clipping.");
+            var workroom = new VillageWorkroomPlan(plan.Plots.Single(plot => plot.StableId == VillageWorkroomPlan.HouseId));
+            Rect cavity = VillageWorkroomPlan.TerrainCavity(workroom.House);
+            float bed = workroom.House.GroundCenter.y - VillageWorkroomPlan.TerrainBedDepth;
             float maximumSubdivisionGap = 0f;
             for (int index = gridVertexCount; index < vertices.Length; index++)
-                maximumSubdivisionGap = Mathf.Max(maximumSubdivisionGap, Mathf.Abs(vertices[index].y -
-                    AlpineVillageTerrainSampler.SampleMeshHeight(plan, new Vector2(vertices[index].x, vertices[index].z))));
+            {
+                Vector3 point = vertices[index];
+                Vector3 roomLocal = workroom.Local(point);
+                bool isWorkroomBed = Mathf.Abs(point.y - bed) < .001f &&
+                    roomLocal.x >= cavity.xMin - .001f && roomLocal.x <= cavity.xMax + .001f &&
+                    roomLocal.z >= cavity.yMin - .001f && roomLocal.z <= cavity.yMax + .001f;
+                if (isWorkroomBed) continue;
+                maximumSubdivisionGap = Mathf.Max(maximumSubdivisionGap, Mathf.Abs(point.y -
+                    AlpineVillageTerrainSampler.SampleMeshHeight(plan, new Vector2(point.x, point.z))));
+            }
             Assert.That(maximumSubdivisionGap, Is.LessThan(.003f),
                 "A material boundary changed the original ground plane.");
 
@@ -1025,16 +1039,16 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(AlpineVillageRidgeAppearance.BakedUvTransform));
             Assert.That(
                 riseProperties.GetTexture("_BaseMap"),
-                Is.SameAs(MountainRoadSurfaceAppearance.GetTexture(
+                Is.SameAs(VillageSurfaceAppearance.GetTexture(
                     AlpineVillageRidgeAppearance.RockSurface)));
             Assert.That(
                 floorProperties.GetTexture("_BaseMap"),
-                Is.SameAs(MountainRoadSurfaceAppearance.GetTexture(
+                Is.SameAs(VillageSurfaceAppearance.GetTexture(
                     AlpineVillageRidgeAppearance.Surface)));
             var asphaltProperties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(asphaltProperties, AlpineVillageWorldBuilder.TerrainAsphaltMaterialIndex);
             Assert.That(asphaltProperties.GetTexture("_BaseMap"),
-                Is.SameAs(MountainRoadSurfaceAppearance.GetTexture(MountainRoadSurfaceKind.Asphalt)));
+                Is.SameAs(VillageSurfaceAppearance.GetTexture(MountainRoadSurfaceKind.Asphalt)));
             Assert.That(asphaltProperties.GetVector("_BaseMap_ST"),
                 Is.EqualTo(AlpineVillageRidgeAppearance.BakedUvTransform));
             var junctionProperties = new MaterialPropertyBlock();
@@ -1047,7 +1061,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(junctionProperties.GetTexture("_GroundResponse"),
                 Is.SameAs(Resources.Load<Texture2D>(AlpineVillageJunctionAppearance.ResponseResourcePath)));
             Assert.That(junctionProperties.GetFloat("_Smoothness"), Is.EqualTo(
-                MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).Smoothness));
+                VillageSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).Smoothness));
             Assert.That(junctionProperties.GetFloat("_GroundRoadCoordinates"), Is.Zero,
                 "The junction mask owns its material boundary; it must not inherit a ribbon's wear coordinates.");
             Assert.That(asphaltProperties.GetFloat("_GroundRoadCoordinates"), Is.EqualTo(1f));
@@ -2656,7 +2670,7 @@ namespace BarPromenade.Tests.EditMode
                         }
 
                         float ground =
-                            AlpineVillageTerrainSampler.SampleHeight(
+                            AlpineVillageTerrainSampler.SampleMeshHeight(
                                 plan,
                                 pointXZ);
                         float lift = point.y - ground;
@@ -2726,9 +2740,7 @@ namespace BarPromenade.Tests.EditMode
                 var point = new Vector2(bounds.xMin + bounds.width * (column / (float)columns),
                     bounds.yMin + bounds.height * (row / (float)rows));
                 float depth = AlpineVillageSnowDrift.SampleDepth(plan, paths, point);
-                float ground = depth <= AlpineVillageSnowDrift.FieldBurial
-                    ? AlpineVillageTerrainSampler.SampleMeshHeight(plan, point)
-                    : AlpineVillageTerrainSampler.SampleHeight(plan, point);
+                float ground = AlpineVillageTerrainSampler.SampleMeshHeight(plan, point);
                 float height = ground + depth - AlpineVillageSnowDrift.FieldBurial;
                 expectedVertices.Add(new Vector3(point.x, height, point.y));
                 expectedGrounds.Add(ground);
@@ -3015,10 +3027,8 @@ namespace BarPromenade.Tests.EditMode
                 $"{trees.ForestTrees.Min(tree => tree.CrownRadius):F2}-" +
                 $"{trees.ForestTrees.Max(tree => tree.CrownRadius):F2}, branches " +
                 $"{trees.Branches.Count}");
-            Assert.That(
-                trees.WallTrees.Count,
-                Is.GreaterThan(0),
-                "The wall lost its lee pockets.");
+            Assert.That(trees.ForestTrees.Any(tree => tree.StableId.StartsWith("village-expansion-forest-")),
+                Is.True, "The former west wall opens to a planted forest.");
             Assert.That(
                 trees.ForestTrees.Sum(tree => Mathf.Pow(AlpineVillageTreePlanner.TreeScaleAt(plan,
                     new Vector2(tree.Position.x, tree.Position.z)), 2f)),

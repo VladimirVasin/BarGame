@@ -313,9 +313,7 @@ namespace BarPromenade
             {
                 CityRiverPromenadeDescriptor promenade =
                     layout.River.Promenades[bankIndex];
-                Rect physicalBounds = ResolvePhysicalPromenadeBounds(
-                    layout.River,
-                    promenade);
+                Rect physicalBounds = layout.River.GetPromenadeSurfaceBounds(promenade);
                 List<Rect> cuts = CreateLandingCuts(
                     layout.River,
                     promenade.WestBank);
@@ -358,8 +356,8 @@ namespace BarPromenade
                             $"{patchIndex + 1}",
                             root,
                             patch,
-                            SamplePromenadeY(promenade, patch.yMin),
-                            SamplePromenadeY(promenade, patch.yMax),
+                            promenade.SampleTop(patch.yMin),
+                            promenade.SampleTop(patch.yMax),
                             PromenadeThickness,
                             Granite,
                             null,
@@ -481,9 +479,7 @@ namespace BarPromenade
             {
                 CityRiverPromenadeDescriptor promenade =
                     layout.River.Promenades[bankIndex];
-                Rect physicalBounds = ResolvePhysicalPromenadeBounds(
-                    layout.River,
-                    promenade);
+                Rect physicalBounds = layout.River.GetPromenadeSurfaceBounds(promenade);
                 float railX = promenade.WestBank
                     ? layout.River.Segments[0].WaterBounds.xMin -
                       CityRiverPlanner.QuayEdgeOffset
@@ -508,8 +504,8 @@ namespace BarPromenade
                         railX,
                         span.Minimum,
                         span.Maximum,
-                        SamplePromenadeY(promenade, span.Minimum),
-                        SamplePromenadeY(promenade, span.Maximum),
+                        promenade.SampleTop(span.Minimum),
+                        promenade.SampleTop(span.Maximum),
                         Iron);
                 }
 
@@ -522,9 +518,7 @@ namespace BarPromenade
                         physicalBounds.xMin,
                         physicalBounds.xMax,
                         physicalBounds.yMin,
-                        SamplePromenadeY(
-                            promenade,
-                            physicalBounds.yMin));
+                        promenade.SampleTop(physicalBounds.yMin));
                 }
                 // The coast opens exactly the logical three-metre
                 // promenade. Its paving has an extra structural lip
@@ -547,9 +541,7 @@ namespace BarPromenade
                             lipMinimum,
                             lipMaximum,
                             physicalBounds.yMax,
-                            SamplePromenadeY(
-                                promenade,
-                                physicalBounds.yMax));
+                            promenade.SampleTop(physicalBounds.yMax));
                     }
                 }
                 else
@@ -561,7 +553,7 @@ namespace BarPromenade
                         physicalBounds.xMin,
                         physicalBounds.xMax,
                         physicalBounds.yMax,
-                        SamplePromenadeY(promenade, physicalBounds.yMax));
+                        promenade.SampleTop(physicalBounds.yMax));
                 }
             }
         }
@@ -1693,7 +1685,7 @@ namespace BarPromenade
 
                     result.Add(new Vector3(
                         x,
-                        SamplePromenadeY(promenade, z),
+                        promenade.SampleTop(z),
                         z));
                 }
             }
@@ -2044,29 +2036,6 @@ namespace BarPromenade
             }
         }
 
-        private static Rect ResolvePhysicalPromenadeBounds(
-            CityRiverPlan plan,
-            CityRiverPromenadeDescriptor promenade)
-        {
-            if (plan.Segments.Count == 0)
-            {
-                return promenade.Bounds;
-            }
-
-            Rect waterBounds = plan.Segments[0].WaterBounds;
-            return promenade.WestBank
-                ? Rect.MinMaxRect(
-                    promenade.Bounds.xMin,
-                    promenade.Bounds.yMin,
-                    waterBounds.xMin,
-                    promenade.Bounds.yMax)
-                : Rect.MinMaxRect(
-                    waterBounds.xMax,
-                    promenade.Bounds.yMin,
-                    promenade.Bounds.xMax,
-                    promenade.Bounds.yMax);
-        }
-
         private static void BuildSlopedRailSpan(
             Transform parent,
             string name,
@@ -2297,17 +2266,6 @@ namespace BarPromenade
             {
                 target.Add(Rect.MinMaxRect(xMin, zMin, xMax, zMax));
             }
-        }
-
-        private static float SamplePromenadeY(
-            CityRiverPromenadeDescriptor promenade,
-            float z)
-        {
-            float amount = Mathf.InverseLerp(
-                promenade.Bounds.yMin,
-                promenade.Bounds.yMax,
-                z);
-            return Mathf.Lerp(promenade.SouthY, promenade.NorthY, amount);
         }
 
         private static float ResolveBridgeWaterY(

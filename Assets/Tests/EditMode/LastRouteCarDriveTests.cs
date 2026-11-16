@@ -382,14 +382,16 @@ namespace BarPromenade.Tests.EditMode
         public void Model_BrakesForAHoldRatherThanBeingStoppedAtIt()
         {
             LastRouteCarDrivePath path = BuildStraight(200f);
+            // At this speed the new hold starts inside the braking distance.
+            LastRouteCarDriveProfile profile = LastRouteCarDriveProfile.Mountain;
             var model = new LastRouteCarDriveModel(
                 path,
-                LastRouteCarDriveProfile.City);
+                profile);
             Advance(model, 20f);
             float cruising = model.Speed;
             Assert.That(
                 cruising,
-                Is.GreaterThan(6f),
+                Is.EqualTo(profile.CruiseSpeed).Within(0.05f),
                 "It has to be up to speed for this to prove anything.");
 
             // Armed with barely enough road to stop in. The point is that it
@@ -735,12 +737,16 @@ namespace BarPromenade.Tests.EditMode
                 return hold;
             }
 
-            // Fourteen seconds - the far side of a lawful 10 s dwell, and
-            // still inside his own patience - at a bus that has not moved:
-            // he must be standing short of its tail, not through it. (Twenty
-            // seconds here and the wait cap fires and he drives through,
-            // which is its own test below.)
-            for (int frame = 0; frame < 840; frame++)
+            // The approach time depends on the city profile. Observe the
+            // stop before measuring how long the driver waits there.
+            for (int frame = 0; frame < 1800 && !model.IsWaiting; frame++)
+            {
+                Step(busCenter, 0f);
+            }
+
+            Assert.That(model.IsWaiting, Is.True,
+                "The car must reach the dwelling bus and stop within 30 seconds.");
+            for (int frame = 0; frame < 120; frame++)
             {
                 Step(busCenter, 0f);
             }

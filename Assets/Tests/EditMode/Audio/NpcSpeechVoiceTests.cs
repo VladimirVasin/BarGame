@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -49,19 +50,14 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(profile.JitterCents, Is.InRange(0f, 60f));
                 Assert.That(profile.Volume, Is.InRange(0.05f, 0.5f));
 
-                // A voice keyed on a design id that no longer exists is
-                // a rename nobody would hear until two men swapped
-                // tones, so it fails here instead. The hero is the one
-                // exception and always will be: he is not an NPC, and the
-                // appearance catalog deliberately excludes his models.
+                // An NPC voice follows either a design or a registered character.
                 if (index != NpcVoiceCatalog.HeroMutterOrdinal)
                 {
                     Assert.That(
-                        NpcDesignAppearanceCatalog.TryGet(
-                            designId,
-                            out _),
+                        NpcDesignAppearanceCatalog.TryGet(designId, out _) ||
+                        DefaultNpcPopulation.Characters.Any(character => character.Id == designId),
                         Is.True,
-                        "'" + designId + "' is not a design in the game.");
+                        "No design or registered character owns the voice '" + designId + "'.");
                 }
                 Assert.That(
                     NpcVoiceCatalog.ResolveOrdinal(designId),

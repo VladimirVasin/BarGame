@@ -508,11 +508,15 @@ namespace BarPromenade
                 size,
                 Color.white,
                 addCollider);
-            PlayerHomeExteriorSurfaceAppearance.ApplyProjected(
-                result.GetComponent<Renderer>(),
-                surface,
-                projection);
+            ApplyProjectedExterior(result.GetComponent<Renderer>(), surface, projection);
             return result;
+        }
+
+        private static void ApplyProjectedExterior(Renderer renderer,
+            PlayerHomeExteriorSurfaceKind surface, SurfaceProjection projection)
+        {
+            PlayerHomeExteriorSurfaceAppearance.ApplyProjected(renderer, surface, projection);
+            renderer.GetComponentInParent<HomeApartmentDressing>()?.RefreshRegisteredSurface(renderer);
         }
 
         private static void ApplyHomeBalconyGlass(Renderer renderer)
@@ -582,7 +586,7 @@ namespace BarPromenade
                 new Vector3(0.20f, 0.012f, 0.20f),
                 Color.white,
                 false);
-            PlayerHomeExteriorSurfaceAppearance.ApplyProjected(
+            ApplyProjectedExterior(
                 drain.GetComponent<Renderer>(),
                 PlayerHomeExteriorSurfaceKind.PaintedMetal,
                 SurfaceProjection.BoxXZ);
@@ -1011,7 +1015,7 @@ namespace BarPromenade
                 panels[index] = panel;
                 GameObject wood = HomeAuthoredVisualFactory.CreateBox("Home Balcony Folding Wood", panel,
                     new Vector3(0f, height * .5f, panelWidth * .5f), new Vector3(.045f, height, panelWidth), Color.white, false);
-                PlayerHomeExteriorSurfaceAppearance.ApplyProjected(wood.GetComponent<Renderer>(),
+                ApplyProjectedExterior(wood.GetComponent<Renderer>(),
                     PlayerHomeExteriorSurfaceKind.PaintedWood, SurfaceProjection.BoxZY);
                 GameObject glass = HomeAuthoredVisualFactory.CreateBox("Home Balcony Folding Glass", panel,
                     new Vector3(0f, 1.52f, panelWidth * .5f), new Vector3(.014f, 1.20f, panelWidth - .084f), Color.white, false);
@@ -1046,7 +1050,7 @@ namespace BarPromenade
             GameObject handle = HomeAuthoredVisualFactory.CreateBox("Home Balcony Folding Handle", panel,
                 new Vector3(x, 1.04f, z), new Vector3(.07f, .15f, .028f), Rail, false);
             if (inside) handle.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
-            PlayerHomeExteriorSurfaceAppearance.ApplyProjected(handle.GetComponent<Renderer>(),
+            ApplyProjectedExterior(handle.GetComponent<Renderer>(),
                 PlayerHomeExteriorSurfaceKind.PaintedMetal, SurfaceProjection.BoxZY);
             return handle.transform;
         }

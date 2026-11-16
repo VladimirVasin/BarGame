@@ -290,7 +290,8 @@ namespace BarPromenade.Tests.EditMode
             RetroSfxId.FootstepWood,
             RetroSfxId.FootstepCarpet,
             RetroSfxId.FootstepTile,
-            RetroSfxId.FootstepPuddle
+            RetroSfxId.FootstepPuddle,
+            RetroSfxId.FootstepMetal
         };
 
         [Test]
@@ -310,10 +311,10 @@ namespace BarPromenade.Tests.EditMode
                     definition.SpatialBlend,
                     Is.GreaterThanOrEqualTo(0.9f),
                     id.ToString());
-                // A step, not an event: the puddle's tail is the longest.
+                // Metal carries a short resonant tail.
                 Assert.That(
                     definition.Duration,
-                    Is.LessThanOrEqualTo(0.25f),
+                    Is.LessThanOrEqualTo(id == RetroSfxId.FootstepMetal ? .28f : .25f),
                     id.ToString());
                 Assert.That(
                     definition.Volume,
@@ -372,24 +373,16 @@ namespace BarPromenade.Tests.EditMode
                     .MaxVoices,
                 Is.EqualTo(2));
 
-            // Footstep and gulp banks add cached clips to the total budget.
+            int expectedClipCount = 0;
             for (int index = 1; index < (int)RetroSfxId.Count; index++)
             {
                 var id = (RetroSfxId)index;
-                if (System.Array.IndexOf(FootstepCues, id) >= 0 || id == RetroSfxId.DrinkGulp)
-                {
-                    continue;
-                }
-
-                Assert.That(
-                    RetroSfxLibrary.GetDefinition(id).VariantCount,
-                    Is.EqualTo(1),
-                    id.ToString());
+                expectedClipCount += RetroSfxLibrary.GetDefinition(id).VariantCount;
             }
 
             Assert.That(
                 RetroSfxLibrary.TotalClipCount,
-                Is.EqualTo(RetroSfxLibrary.Count + FootstepCues.Length * 2 + 3));
+                Is.EqualTo(expectedClipCount));
         }
 
         [TestCase(3)]

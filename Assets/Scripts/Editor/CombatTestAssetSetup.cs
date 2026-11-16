@@ -52,7 +52,7 @@ namespace BarPromenade.Editor
             EnsureLocalImports();
         }
 
-        private static void EnsureLocalImports()
+        internal static void EnsureLocalImports()
         {
             if (AssetDatabase.IsAssetImportWorkerProcess()) return;
             RegisterImportDependency();
@@ -581,17 +581,28 @@ namespace BarPromenade.Editor
                     int firstActive = simpleStrike ? Mathf.RoundToInt(MeleeCombatSettings.Crowbar.WindupSeconds * 100f) : 45;
                     int lastActive = simpleStrike ? Mathf.RoundToInt((MeleeCombatSettings.Crowbar.WindupSeconds +
                         MeleeCombatSettings.Crowbar.ActiveSeconds) * 100f) : 63;
-                    for (int frame = firstActive; frame <= lastActive; frame++)
+                    int firstFrame = simpleStrike ? 0 : firstActive;
+                    int lastFrame = simpleStrike ? Mathf.CeilToInt(attack.length * 100f) : lastActive;
+                    for (int frame = firstFrame; frame <= lastFrame; frame++)
                     {
-                        attack.SampleAnimation(animator.gameObject, frame / 100f);
+                        attack.SampleAnimation(animator.gameObject, Mathf.Min(attack.length, frame / 100f));
                         CombatAssetProvider.PlaceCrowbar(bar, grip, handPose, false, npc ? 0f : CombatAssetProvider.RightGripStation);
-                        Vector3 point = actor.transform.InverseTransformPoint(tip.position);
-                        reach = Mathf.Max(reach, point.z);
-                        travel = Mathf.Max(travel, Vector3.Distance(windup, point));
+                        if (frame >= firstActive && frame <= lastActive)
+                        {
+                            Vector3 point = actor.transform.InverseTransformPoint(tip.position);
+                            reach = Mathf.Max(reach, point.z);
+                            travel = Mathf.Max(travel, Vector3.Distance(windup, point));
+                        }
                         if (Vector3.Distance(RightGripPoint(bar.transform, npc), handPose.CylinderCentre(false)) > .001f ||
                             Vector3.Dot(bar.transform.up, handPose.CylinderAxis(false)) < .999f ||
                             Mathf.Abs(Vector3.Distance(origin.position, tip.position) - CombatWeaponGeometry.StrikeTipLocal.magnitude) > .003f)
                             throw new InvalidOperationException("Combat crowbar grip or unit factor differs for " + (npc ? "NPC" : "hero"));
+                        if (simpleStrike)
+                        {
+                            ValidateTwoHandContact(handPose, bar.transform, names.Attack);
+                            if (frame >= 25 && frame <= 30)
+                                ValidateCrowbarHookForward(bar.transform, origin, tip, actor.transform);
+                        }
                     }
                     // The compact backhand crosses at least one weapon length;
                     // the forehand retains its wide arc. Both must reach the same target.
@@ -599,7 +610,8 @@ namespace BarPromenade.Editor
                     float minimumReach = simpleStrike ? .80f : .95f;
                     if (reach < minimumReach || travel < minimumTravel)
                         throw new InvalidOperationException($"Combat imported {(npc ? "NPC" : "hero")} {names.Attack} cannot reach the front target: reach={reach}, travel={travel}.");
-                    ValidateChargedRelease(animator, actor.transform, handPose, bar, origin, tip, npc, names, simpleStrike);
+                    if (!simpleStrike)
+                        ValidateChargedRelease(animator, actor.transform, handPose, bar, tip, npc, names);
                 }
                 ValidateReactions(animator, grip, tip, npc, simpleStrike);
                 ValidateWeightAndHandoff(animator, npc, simpleStrike);
@@ -689,7 +701,7 @@ namespace BarPromenade.Editor
         }
 
         private static void ValidateChargedRelease(Animator animator, Transform actor, NpcHandPose handPose,
-            GameObject bar, Transform origin, Transform tip, bool npc, CombatAssetProvider.SwingClipSet names, bool simpleStrike)
+            GameObject bar, Transform tip, bool npc, CombatAssetProvider.SwingClipSet names)
         {
             Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
             Transform[] feet = { bones.First(bone => bone.name == "foot.L"), bones.First(bone => bone.name == "foot.R") };
@@ -707,13 +719,6 @@ namespace BarPromenade.Editor
             bool[] upperBody = bones.Select(bone => bone.IsChildOf(spine)).ToArray();
             void Blend(float seconds, float q)
             {
-                if (simpleStrike)
-                {
-                    // Both hands follow the same authored take. The physical
-                    // support owner keeps its lower-shaft contact through charge.
-                    light.SampleAnimation(animator.gameObject, CombatAssetProvider.ReleaseSourceSeconds(seconds, q));
-                    return;
-                }
                 light.SampleAnimation(animator.gameObject, seconds);
                 for (int i = 0; i < bones.Length; i++)
                 { positions[i] = bones[i].localPosition; rotations[i] = bones[i].localRotation; }
@@ -755,16 +760,9 @@ namespace BarPromenade.Editor
                     if (Vector3.Distance(RightGripPoint(bar.transform, npc), handPose.CylinderCentre(false)) > .001f ||
                         Vector3.Dot(bar.transform.up, handPose.CylinderAxis(false)) < .999f)
                         throw new InvalidOperationException("Charged blend lost the crowbar grip: " + q);
-                    if (simpleStrike)
-                    {
-                        ValidateTwoHandContact(handPose, bar.transform, names.Attack + "/" + q);
-                        float sourceSeconds = CombatAssetProvider.ReleaseSourceSeconds(seconds, q);
-                        if (sourceSeconds >= .25f && sourceSeconds <= .30f)
-                            ValidateCrowbarHookForward(bar.transform, origin, tip, actor);
-                    }
                     if (seconds >= .45f && seconds <= .63f) reach = Mathf.Max(reach, actor.InverseTransformPoint(tip.position).z);
                 }
-                if (reach < (simpleStrike ? .80f : .95f))
+                if (reach < .95f)
                     throw new InvalidOperationException("Charged blend cannot reach its target: " + names.Attack + "/" + q);
             }
         }

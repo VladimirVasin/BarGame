@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -586,14 +587,30 @@ namespace BarPromenade.Tests.EditMode
                     parent.transform,
                     plan,
                     balcony);
-                root.GetComponent<HomeApartmentDressing>().ApplyDay(7);
+                var dressing = root.GetComponent<HomeApartmentDressing>();
+                Renderer deck = Array.Find(root.GetComponentsInChildren<Renderer>(true),
+                    renderer => renderer.name == "Home Balcony Deck");
+                Assert.That(deck, Is.Not.Null);
+                var deckProperties = new MaterialPropertyBlock();
+                Texture exteriorConcrete = PlayerHomeExteriorSurfaceAppearance.GetTexture(
+                    PlayerHomeExteriorSurfaceKind.Concrete);
+                dressing.ApplyDay(1);
+                deck.GetPropertyBlock(deckProperties);
+                Assert.That(deckProperties.GetTexture(BaseMapId), Is.SameAs(exteriorConcrete));
+                Vector4 deckUv = deckProperties.GetVector(BaseMapTransformId);
+                dressing.ApplyDay(7);
+                deck.GetPropertyBlock(deckProperties);
+                Assert.That(deckProperties.GetTexture(BaseMapId), Is.SameAs(exteriorConcrete));
+                Assert.That(deckProperties.GetVector(BaseMapTransformId), Is.EqualTo(deckUv));
                 var authoredParts = new Dictionary<Mesh, HomeAuthoredPart>();
                 foreach (HomeAuthoredPart part in HomeInteriorModelLibrary.Load().Parts)
                     authoredParts.Add(part.mesh, part);
 
                 var expectedTextures = new HashSet<Texture>();
+                var exteriorTextures = new HashSet<Texture>();
                 foreach (HomeSurfaceKind kind in AllSurfaceKinds())
                 {
+                    if (kind == HomeSurfaceKind.PlankFloor || kind == HomeSurfaceKind.Upholstery) continue;
                     expectedTextures.Add(
                         HomeSurfaceAppearance.GetTexture(kind));
                 }
@@ -601,9 +618,10 @@ namespace BarPromenade.Tests.EditMode
                          System.Enum.GetValues(
                              typeof(PlayerHomeExteriorSurfaceKind)))
                 {
-                    expectedTextures.Add(
-                        PlayerHomeExteriorSurfaceAppearance.GetTexture(
-                            kind));
+                    if (kind == PlayerHomeExteriorSurfaceKind.RoofSlate) continue;
+                    Texture exterior = PlayerHomeExteriorSurfaceAppearance.GetTexture(kind);
+                    expectedTextures.Add(exterior);
+                    exteriorTextures.Add(exterior);
                 }
 
                 var seenTextures = new HashSet<Texture>();
@@ -625,8 +643,9 @@ namespace BarPromenade.Tests.EditMode
                         continue;
                     }
 
-                    if (renderer.sharedMaterial !=
-                        RuntimePrimitiveFactory.DefaultMaterial)
+                    bool usesDamageChart = renderer.sharedMaterial != null &&
+                        renderer.sharedMaterial.shader.name == "Bar Promenade/Surface Damage Lit";
+                    if (renderer.sharedMaterial != RuntimePrimitiveFactory.DefaultMaterial && !usesDamageChart)
                     {
                         Assert.That(
                             renderer.gameObject.name,
@@ -636,7 +655,8 @@ namespace BarPromenade.Tests.EditMode
                                 .Or.Contain("Glow")
                                 .Or.Contain("Glass")
                                 .Or.Contain("Lower Facade Window")
-                                .Or.Contain("Light Strip"),
+                                .Or.Contain("Light Strip")
+                                .Or.EqualTo("BowlWater"),
                             "Unexpected non-default material on " +
                             $"{renderer.gameObject.name}.");
                         continue;
@@ -678,13 +698,13 @@ namespace BarPromenade.Tests.EditMode
                         transform.y,
                         Is.GreaterThan(0f),
                         $"Invalid V tiling on {renderer.name}.");
-                    if (authoredPart != null && !authoredPart.IsParametric)
+                    if (authoredPart != null && !authoredPart.IsParametric && !exteriorTextures.Contains(texture))
                     {
                         bakedUvRendererCount++;
                         Assert.That(transform, Is.EqualTo(new Vector4(1f, 1f, 0f, 0f)),
                             $"'{renderer.name}' must keep its Blender-authored metre UVs unchanged.");
                     }
-                    else if (authoredPart != null)
+                    else if (authoredPart != null && authoredPart.IsParametric)
                     {
                         parametricUvRendererCount++;
                     }
@@ -699,7 +719,8 @@ namespace BarPromenade.Tests.EditMode
                     "The same shared appearance path must still texture resizable hardware.");
                 Assert.That(
                     seenTextures,
-                    Is.EquivalentTo(expectedTextures));
+                    Is.EquivalentTo(expectedTextures),
+                    "Unused textures: " + string.Join(", ", expectedTextures.Except(seenTextures).Select(texture => texture.name)));
             }
             finally
             {

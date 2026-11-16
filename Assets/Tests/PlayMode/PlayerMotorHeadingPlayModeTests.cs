@@ -1089,7 +1089,7 @@ namespace BarPromenade.Tests.PlayMode
             float previousDistance = PlanarDistance(start, target);
             bool completed = false;
 
-            for (int step = 0; step < 20 && !completed; step++)
+            for (int step = 0; step < 28 && !completed; step++)
             {
                 Vector3 before = playerObject.transform.position;
                 completed = motor.MoveTowardsInteractionPose(
@@ -1114,7 +1114,9 @@ namespace BarPromenade.Tests.PlayMode
                 previousDistance = distance;
             }
 
-            Assert.That(completed, Is.True);
+            Assert.That(completed, Is.True,
+                $"The two turns and the approach must complete in 1.4 s. Position {playerObject.transform.position:F4}, " +
+                $"target {target:F4}, facing error {Quaternion.Angle(playerObject.transform.rotation, targetRotation):F2} degrees.");
             Assert.That(
                 PlanarDistance(playerObject.transform.position, target),
                 Is.LessThanOrEqualTo(

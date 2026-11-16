@@ -122,22 +122,24 @@ namespace BarPromenade.Tests.PlayMode
                 Capture("02-beer-grip", beerHolder.Position + subject.right * 1.05f + subject.forward * .88f + Vector3.up * 1.48f,
                     beer.Grip.position + Vector3.up * .10f);
 
-                var barLines = new HashSet<string>(Enumerable.Range(0, BarConversationCatalog.CounterCount).SelectMany(index =>
+                var tableOpeners = new HashSet<string>(new[]
                 {
-                    var pair = BarConversationCatalog.Get(BarConversationKind.Counter, index);
-                    return new[] { LocalizationService.Get(pair.FirstKey), LocalizationService.Get(pair.SecondKey) };
-                }));
+                    "kiosk.dialogue.politics.ambient.a",
+                    "kiosk.dialogue.philosophy.ambient.a",
+                    "kiosk.dialogue.misogyny.ambient.a"
+                }.Select(LocalizationService.Get));
                 var bubbles = live.GetComponent<NpcSpeechBubbleView>();
-                bool spokeBarLine = false;
-                for (int frame = 0; frame < 48 && !spokeBarLine; frame++)
+                bool heardOpening = false;
+                for (int frame = 0; frame < 100 && !heardOpening; frame++)
                 {
                     city.Pedestrians.Advance(.10f);
                     foreach (var actor in city.Pedestrians.Actors)
-                        if (actor.IsSpawned && bubbles.TryGetSpeechFaceSample(actor.Presentation, out var line) && barLines.Contains(line.Text))
-                            spokeBarLine = true;
+                        if (actor.IsSpawned && bubbles.TryGetSpeechFaceSample(actor.Presentation, out var line) &&
+                            line.RevealedCharacters > 0 && tableOpeners.Contains(line.Text))
+                            heardOpening = true;
                     yield return null;
                 }
-                Assert.That(spokeBarLine, Is.True, "A court visitor must present a line from the bar's shared conversation bank.");
+                Assert.That(heardOpening, Is.True, "A court visitor must deliver an authored table opener.");
 
                 VodkaBottleView woundUp = null;
                 ThrownVodkaBottle flight = null;

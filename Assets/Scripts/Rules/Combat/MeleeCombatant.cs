@@ -148,7 +148,7 @@ namespace BarPromenade
         public float ActionRemaining => (float)ActionRemainingSeconds;
         private double ActiveEnd => (double)AttackWindupSeconds + Settings.ActiveSeconds;
         private double AttackDuration => ActiveEnd + AttackRecoverySeconds;
-        private double StepDuration => (double)Settings.StepTravelSeconds + Settings.StepRecoverySeconds;
+        private double StepDuration => Settings.StepDurationSeconds;
         private double KickActiveEndSeconds => (double)Settings.KickWindupSeconds + Settings.KickActiveSeconds;
         private double KickDuration => KickActiveEndSeconds + KickRecoverySeconds;
         private double ActionRemainingSeconds => Phase switch
@@ -359,16 +359,11 @@ namespace BarPromenade
         /// rejects later presses rather than queuing a chain or cancelling its return.</summary>
         public bool RequestAttack(bool allowRecoveryAttack = false)
         {
-            BeginCommand(MeleeBufferedAction.Attack);
             if (TryStartAttack()) return true;
             if (Settings.IsUnarmedZombie) return false;
             if (allowRecoveryAttack && (Phase == MeleePhase.Stagger || Phase == MeleePhase.GuardImpact))
                 return TryStartRecoveryAttack();
-            if (!QueueCommandAllowed(MeleeBufferedAction.Attack, Settings.AttackCost)) return false;
-            bufferedAction = MeleeBufferedAction.Attack;
-            bufferedFromSwing = IsAttacking;
-            ClearCharge();
-            return true;
+            return false;
         }
 
         /// <summary>Runtime calls only after resolving every contact from the previous Advance,
@@ -524,6 +519,8 @@ namespace BarPromenade
         private bool TryStartAttack(bool fromBuffer, bool ignoreWeaponCooldown = false)
         {
             BeginCommand(MeleeBufferedAction.Attack);
+            if (IsDefeated) return RejectCommand(MeleeCommandRejection.Defeated);
+            if (IsKnockedDown) return RejectCommand(MeleeCommandRejection.KnockedDown);
             if (!BodyAllows(MeleeBufferedAction.Attack)) return RejectCommand(MeleeCommandRejection.BodyUnavailable);
             if (Phase != MeleePhase.Ready || IsBlocking) return RejectCommand(MeleeCommandRejection.Phase);
             if (!ignoreWeaponCooldown && clock + .000001d < weaponReadyAt) return RejectCommand(MeleeCommandRejection.Cooldown);

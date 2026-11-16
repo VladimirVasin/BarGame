@@ -305,32 +305,18 @@ namespace BarPromenade.Tests.EditMode
                 segment.IsHorizontal);
             RoadFenceSegmentDescriptor vertical = guard.Single(segment =>
                 !segment.IsHorizontal);
-            Assert.That(
-                horizontal.Start,
-                Is.EqualTo(new Vector3(
-                    nodePosition.x,
-                    nodePosition.y,
-                    corner.z)));
-            Assert.That(
-                horizontal.End,
-                Is.EqualTo(new Vector3(
-                    corner.x,
-                    nodePosition.y,
-                    corner.z)));
+            Assert.That(new Vector2(horizontal.Start.x, horizontal.Start.z), Is.EqualTo(new Vector2(nodePosition.x, corner.z)));
+            Assert.That(new Vector2(horizontal.End.x, horizontal.End.z), Is.EqualTo(new Vector2(corner.x, corner.z)));
             Assert.That(horizontal.OutwardNormal, Is.EqualTo(Vector3.forward));
-            Assert.That(
-                vertical.Start,
-                Is.EqualTo(new Vector3(
-                    corner.x,
-                    nodePosition.y,
-                    nodePosition.z)));
-            Assert.That(
-                vertical.End,
-                Is.EqualTo(new Vector3(
-                    corner.x,
-                    nodePosition.y,
-                    corner.z)));
+            Assert.That(new Vector2(vertical.Start.x, vertical.Start.z), Is.EqualTo(new Vector2(corner.x, nodePosition.z)));
+            Assert.That(vertical.End, Is.EqualTo(horizontal.End));
             Assert.That(vertical.OutwardNormal, Is.EqualTo(Vector3.right));
+            CityStreetSupportPlan support = CityStreetSupportPlan.ForLayout(layout);
+            foreach (Vector3 endpoint in new[] { horizontal.Start, horizontal.End, vertical.Start })
+            {
+                Assert.That(support.TrySampleTop(new Vector2(endpoint.x, endpoint.z), out float height, out _), Is.True);
+                Assert.That(endpoint.y + CityStreetSurfacePlanner.RoadTop, Is.EqualTo(height).Within(Tolerance));
+            }
             Assert.That(
                 horizontal.Length,
                 Is.EqualTo(halfRoad).Within(Tolerance));

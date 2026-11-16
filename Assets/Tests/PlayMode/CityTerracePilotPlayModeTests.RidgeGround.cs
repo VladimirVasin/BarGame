@@ -86,16 +86,23 @@ namespace BarPromenade.Tests.PlayMode
                         site.Bounds.xMax <= bounds.xMin + .1f &&
                         site.Bounds.yMin < bounds.yMax + 2f && site.Bounds.yMax > bounds.yMax - 4f)
                     .OrderBy(site => Vector3.Distance(site.Origin, home.ThresholdWorld)).First();
-                float wallNorth = retaining.Bounds.yMax + .55f;
+                RidgeParkingPlan parking = RidgeParkingPlan.ForLayout(layout);
+                Assert.That(parking, Is.Not.Null);
+                float wallNorth = Mathf.Max(retaining.Bounds.yMax + .55f,
+                    parking.SurfaceBounds.yMax + capsule.radius + .15f);
                 float wallWest = retaining.Bounds.xMin - .55f;
                 float wallSouth = retaining.Bounds.yMin - .55f;
+                float parkingLampClearance = CityStaticCollisionBuilder.CreateLowerPoleBounds(Vector3.zero).extents.x +
+                    capsule.radius + .15f;
+                float westOfHome = Mathf.Min(bounds.xMin - outerClearance,
+                    parking.Lamps.Max(lamp => lamp.Position.x) - parkingLampClearance);
                 Vector2[] corners = {
                     new Vector2(home.StreetContactWorld.x, bounds.yMax + ravineSideClearance),
                     new Vector2(home.StreetContactWorld.x, wallNorth),
                     new Vector2(wallWest, wallNorth),
                     new Vector2(wallWest, wallSouth),
-                    new Vector2(bounds.xMin - outerClearance, wallSouth),
-                    new Vector2(bounds.xMin - outerClearance, bounds.yMin - outerClearance),
+                    new Vector2(westOfHome, wallSouth),
+                    new Vector2(westOfHome, bounds.yMin - outerClearance),
                     new Vector2(bounds.xMax + ravineSideClearance, bounds.yMin - outerClearance),
                     new Vector2(bounds.xMax + ravineSideClearance, bounds.yMax + ravineSideClearance),
                     new Vector2(home.StreetContactWorld.x, bounds.yMax + ravineSideClearance)
@@ -105,7 +112,7 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     Assert.That(ground.Contains(corner, capsule.radius), Is.True,
                         "The home needs an open perimeter, including its rear: " + corner);
-                    homeLoop.Add(RidgeGroundAt(corner, ground));
+                    homeLoop.Add(RidgeGroundAt(corner, layout, ground));
                 }
                 homeLoop.Add(home.StreetContactWorld);
                 Debug.Log("Ridge ground verification: walking the home perimeter around the real retaining-wall end.");
@@ -315,9 +322,11 @@ namespace BarPromenade.Tests.PlayMode
             return System.Array.Empty<Vector3>();
         }
 
-        private static Vector3 RidgeGroundAt(Vector2 point, CityHillsideGroundPlan ground)
+        private static Vector3 RidgeGroundAt(Vector2 point, CityLayout layout, CityHillsideGroundPlan ground)
         {
-            Assert.That(ground.TrySampleTop(point, out float height), Is.True, "Missing exact hillside ground " + point);
+            bool supported = CityStreetSupportPlan.ForLayout(layout).TrySampleTop(point, out float height, out _) ||
+                ground.TrySampleTop(point, out height);
+            Assert.That(supported, Is.True, "Missing exact hillside ground " + point);
             return new Vector3(point.x, height, point.y);
         }
 

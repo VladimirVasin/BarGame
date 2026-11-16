@@ -464,14 +464,18 @@ namespace BarPromenade.Editor
                 var originals = new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
                 foreach (SkinnedMeshRenderer original in AssetDatabase.LoadAssetAtPath<GameObject>(SourceFor(path))
                     .GetComponentsInChildren<SkinnedMeshRenderer>(true)) originals.Add(original.name, original);
+                bool useSourceEnvelope = kind is "Crane" or "Room" or "Imprint" or "LongExposure";
                 Bounds sourceEnvelope = default; bool measuredSource = false;
-                if (kind is "Crane" or "Room" or "Imprint" or "LongExposure")
+                if (useSourceEnvelope)
+                {
                     foreach (SkinnedMeshRenderer original in originals.Values)
                     {
-                        if (!measuredSource) { sourceEnvelope = original.bounds; measuredSource = true; }
-                        else sourceEnvelope.Encapsulate(original.bounds);
+                        Bounds sourceBounds = CombatCraneAssetSetup.MeasureAuthoredBounds(original);
+                        if (!measuredSource) { sourceEnvelope = sourceBounds; measuredSource = true; }
+                        else sourceEnvelope.Encapsulate(sourceBounds);
                     }
-                sourceEnvelope.Expand(.01f);
+                    sourceEnvelope.Expand(.01f);
+                }
                 if (reimport) AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
                 GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (model == null) throw new InvalidOperationException("Missing authored combat body " + kind);
@@ -491,9 +495,13 @@ namespace BarPromenade.Editor
                         renderer.name.StartsWith("FleshRegion3Patch", StringComparison.Ordinal) ||
                         renderer.name.StartsWith("FleshRegion4Patch", StringComparison.Ordinal))
                         ValidateTorsoCells(renderer, originals[renderer.name.Substring(renderer.name.IndexOf("__", StringComparison.Ordinal) + 2)].transform);
-                    if (kind is "Crane" or "Room" or "Imprint" or "LongExposure" ? !sourceEnvelope.Contains(renderer.bounds.min) || !sourceEnvelope.Contains(renderer.bounds.max) :
-                        renderer.bounds.size.magnitude > 3f || renderer.bounds.center.y > 2.2f)
-                        throw new InvalidOperationException("Body derivative lost imported metre scale: " + renderer.name);
+                    // Imported renderer bounds follow the skin's root bone. Measure
+                    // both meshes in the same rest geometry frame for a metre check.
+                    Bounds restBounds = CombatCraneAssetSetup.MeasureAuthoredBounds(renderer);
+                    if (useSourceEnvelope ? !sourceEnvelope.Contains(restBounds.min) || !sourceEnvelope.Contains(restBounds.max) :
+                        restBounds.size.magnitude > 3f || restBounds.center.y > 2.2f)
+                        throw new InvalidOperationException($"{kind} body derivative lost imported metre scale: {renderer.name}; " +
+                            $"actual={restBounds.min:F4}..{restBounds.max:F4}, source={sourceEnvelope.min:F4}..{sourceEnvelope.max:F4}");
                 }
                 int expectedFlesh = kind is "Room" or "Imprint" or "LongExposure" ? JsonUtility.FromJson<TessellationManifest>(
                     File.ReadAllText(ManifestFor(path))).flesh_patch_count : 64;

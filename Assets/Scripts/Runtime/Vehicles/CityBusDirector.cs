@@ -591,6 +591,9 @@ namespace BarPromenade
                         radius, lookAhead, ref obstacle, CityBusBlockerKind.BusBody, routeId, i, other);
                 if (i >= VehicleIndex || other.MotionState == CityBusMotionState.Dwelling ||
                     Mathf.Abs(Vector3.Dot(other.TravelDirection, actor.TravelDirection)) > .9f) continue;
+                // Once that bus has yielded to our hull, let us clear its route.
+                // The hull samples above still stop us if its body is in our way.
+                if (other.IsStoppedForBus(VehicleIndex)) continue;
                 // Lower line number claims a crossing before its nose enters it. If
                 // we already occupy its way out, finish clearing instead of deadlocking.
                 if (other.TryGetPathObstacleClearance(actor.Position, actor.LocalVisualBounds.extents.x,

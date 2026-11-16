@@ -301,17 +301,17 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException("Crane body requires the shared authored surface shader.");
         }
 
-        private static Bounds MeasureAuthoredBounds(SkinnedMeshRenderer renderer)
+        internal static Bounds MeasureAuthoredBounds(SkinnedMeshRenderer renderer)
         {
             Vector3[] vertices = renderer.sharedMesh.vertices;
-            if (vertices.Length == 0) throw new InvalidOperationException("Crane sculpt has no authored volume: " + renderer.name);
+            if (vertices.Length == 0) throw new InvalidOperationException("Body sculpt has no authored volume: " + renderer.name);
             Matrix4x4 world = renderer.transform.localToWorldMatrix;
             Bounds result = new Bounds(world.MultiplyPoint3x4(vertices[0]), Vector3.zero);
             foreach (Vector3 vertex in vertices)
             {
                 Vector3 point = world.MultiplyPoint3x4(vertex);
                 if (!float.IsFinite(point.x) || !float.IsFinite(point.y) || !float.IsFinite(point.z))
-                    throw new InvalidOperationException("Crane sculpt has a nonfinite authored vertex: " + renderer.name);
+                    throw new InvalidOperationException("Body sculpt has a nonfinite authored vertex: " + renderer.name);
                 result.Encapsulate(point);
             }
             return result;

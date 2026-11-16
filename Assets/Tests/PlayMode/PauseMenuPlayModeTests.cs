@@ -26,6 +26,7 @@ namespace BarPromenade.Tests.PlayMode
         private PauseMenuController menu;
         private float previousTimeScale;
         private bool previousAudioPause;
+        private bool previousInputFocus;
 
         [UnitySetUp]
         public IEnumerator SetUp()
@@ -44,6 +45,7 @@ namespace BarPromenade.Tests.PlayMode
 
             previousTimeScale = Time.timeScale;
             previousAudioPause = AudioListener.pause;
+            previousInputFocus = GameInput.MovementFocused;
             GameSessionState.ResetDrinkingState();
             GameTimeScaleRuntime.SetIntoxicationLevel(0f);
             Time.timeScale = 0.75f;
@@ -52,6 +54,8 @@ namespace BarPromenade.Tests.PlayMode
             inputFixture = new InputTestFixture();
             inputFixture.Setup();
             keyboard = InputSystem.AddDevice<Keyboard>();
+            GameInput.HandleApplicationFocus(true);
+            GameInput.ReadMovement();
 
             playerObject = new GameObject("Pause Test Player");
             playerObject.AddComponent<CharacterController>();
@@ -105,6 +109,7 @@ namespace BarPromenade.Tests.PlayMode
             AudioListener.pause = previousAudioPause;
             inputFixture?.TearDown();
             inputFixture = null;
+            GameInput.HandleApplicationFocus(previousInputFocus);
 
             for (int index = 0;
                  index < suspendedMenus.Count;
@@ -273,8 +278,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Escape_OpensAndCapturesGameplayState()
         {
-            inputFixture.Press(keyboard.wKey, queueEventOnly: true);
-            inputFixture.Press(keyboard.aKey, queueEventOnly: true);
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.A));
             yield return null;
             Assert.That(PlayerDirectionalInput.ReadRaw(), Is.EqualTo(new Vector2(-1f, 1f)),
                 "Tank steering must preserve both full axes on W+A.");

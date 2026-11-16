@@ -393,10 +393,10 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(2));
                 Assert.That(
                     presentation.HeadlightLights[0].name,
-                    Is.EqualTo("Bus Headlight Left"));
+                    Is.EqualTo("Bus Headlight L"));
                 Assert.That(
                     presentation.HeadlightLights[1].name,
-                    Is.EqualTo("Bus Headlight Right"));
+                    Is.EqualTo("Bus Headlight R"));
                 Assert.That(
                     presentation.CabinLights[0].name,
                     Is.EqualTo("Bus Cabin Light Front"));
@@ -423,12 +423,9 @@ namespace BarPromenade.Tests.EditMode
                         .InverseTransformDirection(
                             presentation.HeadlightLights[index]
                                 .transform.forward);
-                    Assert.That(
-                        Vector3.Dot(direction, Vector3.forward),
-                        Is.GreaterThan(0.98f));
-                    Assert.That(
-                        Vector3.Dot(direction, Vector3.down),
-                        Is.GreaterThan(0.08f));
+                    Vector3 expected = (Vector3.forward +
+                        Vector3.down * CityRoadHeadlightProfile.DownwardAim).normalized;
+                    Assert.That(Vector3.Dot(direction, expected), Is.GreaterThan(.999f));
                 }
 
                 for (int index = 0;
@@ -2368,6 +2365,8 @@ namespace BarPromenade.Tests.EditMode
                 CityBusAssetRegistry registry =
                     model.AddComponent<CityBusAssetRegistry>();
                 Transform body = CreateChild("Body", model.transform);
+                CreateChild("ANCHOR_Headlight.L", body).localPosition = new Vector3(.72f, .96f, 4.177f);
+                CreateChild("ANCHOR_Headlight.R", body).localPosition = new Vector3(-.72f, .96f, 4.177f);
                 Transform frontLeftSteering = CreateChild(
                     "Front Left Steering",
                     body);

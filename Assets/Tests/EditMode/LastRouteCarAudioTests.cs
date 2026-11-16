@@ -1,3 +1,4 @@
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -381,7 +382,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Car_HangsFiveVoicesOffItsOwnMechanisms()
+        public void Car_HangsVoicesAndRadioOffItsOwnMechanisms()
         {
             var parent = new GameObject("Car Audio Test");
             try
@@ -397,10 +398,13 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     audio.OwnedSources.Count,
                     Is.EqualTo(LastRouteCarAudio.OwnedSourceCount));
-                Assert.That(
-                    root.GetComponentsInChildren<AudioSource>(true).Length,
-                    Is.EqualTo(LastRouteCarAudio.OwnedSourceCount),
-                    "The car owns every source, including the radio's spatial tuning cue.");
+                var radio = root.GetComponentInChildren<LastRouteRadioMusicPlayer>(true);
+                Assert.That(radio, Is.Not.Null);
+                var musicSource = radio.GetComponent<AudioSource>();
+                Assert.That(musicSource, Is.Not.Null);
+                Assert.That(root.GetComponentsInChildren<AudioSource>(true),
+                    Is.EquivalentTo(audio.OwnedSources.Append(musicSource)),
+                    "Each audio source belongs to the car's mechanisms or its separate music player.");
                 Assert.That(
                     audio.IsEngineWanted,
                     Is.False,

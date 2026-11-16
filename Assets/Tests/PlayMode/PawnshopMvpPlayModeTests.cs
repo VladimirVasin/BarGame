@@ -368,8 +368,8 @@ namespace BarPromenade.Tests.PlayMode
             string[] fixtures = { "PawnshopEntrance", "PawnshopSignLeft", "PawnshopSignRight", "PawnshopFacadeLeft", "PawnshopFacadeRight", "PawnshopFacadeRear" };
             Transform[] parts = exterior.GetComponentsInChildren<Transform>(true);
             var pool = city.Night.Atmosphere.StreetLightPool;
-            Assert.That(pool.Count, Is.InRange(fixtures.Length, 12),
-                "The facade borrows the existing bounded pool, including any reserved practical lease.");
+            Assert.That(pool.Count, Is.InRange(fixtures.Length, CityNightAtmosphere.MaximumRealtimeLights),
+                "The fixed facade fixtures belong to the city's bounded lighting system.");
             Assert.That(exterior.GetComponentsInChildren<Light>(true), Is.Empty);
             var intensities = new float[fixtures.Length];
             for (int index = 0; index < fixtures.Length; index++)
@@ -378,7 +378,7 @@ namespace BarPromenade.Tests.PlayMode
                 Transform source = parts.Single(part => part.name == name);
                 Light light = pool.SingleOrDefault(candidate => candidate.enabled &&
                     Vector3.Distance(candidate.transform.position, source.position) < .01f);
-                Assert.That(light, Is.Not.Null, "The actual facade fitting must lease pooled light: " + name);
+                Assert.That(light, Is.Not.Null, "The actual facade fitting must have a fixed light: " + name);
                 Assert.That(light.type, Is.EqualTo(LightType.Spot));
                 Assert.That(light.shadows, Is.EqualTo(LightShadows.Soft));
                 Assert.That(light.range, Is.GreaterThanOrEqualTo(index <= 2 ? 7.9f : 14f));

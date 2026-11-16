@@ -31,17 +31,15 @@ namespace BarPromenade.Tests.EditMode
         public void JunctionResponse_UsesThePaintedWeightsAndMetreCoordinates()
         {
             const string folder = "Assets/Resources/Village/Textures/Junctions/";
-            const string responses = "Assets/Resources/Textures/SurfaceResponse/";
             var temporary = new List<Texture2D>();
             try
             {
                 Texture2D atlas = ReadData(folder + "VillageJunctionResponseAtlas.png", false);
-                Texture2D asphalt = ReadData(responses + "MountainRoadAsphaltResponse.png", true);
-                Texture2D soil = ReadData(responses + "MountainRoadForestFloorResponse.png", true);
-                float asphaltPitch = MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).MetersPerTile;
-                float soilPitch = MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.ForestFloor).MetersPerTile;
-                float soilSmoothnessScale = MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.ForestFloor).Smoothness /
-                    MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).Smoothness;
+                Texture2D asphalt = ReadData(AssetDatabase.GetAssetPath(VillageSurfaceAppearance.GetGroundResponse("Asphalt")), true);
+                Texture2D soil = ReadData(AssetDatabase.GetAssetPath(VillageSurfaceAppearance.GetGroundResponse("ForestFloor")), true);
+                HomeSurfaceRecipe asphaltRecipe = VillageSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt);
+                HomeSurfaceRecipe soilRecipe = VillageSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.ForestFloor);
+                float soilSmoothnessScale = soilRecipe.Smoothness / asphaltRecipe.Smoothness;
                 AlpineVillagePlan plan = CreatePlan();
                 bool mixed = false;
                 for (int nodeIndex = 0; nodeIndex < plan.Expansion.Junctions.Count; nodeIndex++)
@@ -59,8 +57,8 @@ namespace BarPromenade.Tests.EditMode
                         mixed |= weight > .05f && weight < .95f;
                         Vector2 point = node.Bounds.min + Vector2.Scale(node.Bounds.size,
                             new Vector2((x - gutter) / (float)(content - 1), (y - gutter) / (float)(content - 1)));
-                        Color a = Sample(asphalt, point, asphaltPitch, footprint);
-                        Color s = Sample(soil, point, soilPitch, footprint);
+                        Color a = Sample(asphalt, point, asphaltRecipe.MetersPerTile, footprint);
+                        Color s = Sample(soil, point, soilRecipe.MetersPerTile, footprint);
                         s.r *= soilSmoothnessScale;
                         Color expected = Color.Lerp(s, a, weight);
                         Color actual = response.GetPixel(x, y);
@@ -399,20 +397,11 @@ namespace BarPromenade.Tests.EditMode
                         AssertMass("Stone Wing",
                             AlpineVillagePlanner.MothersHouseWingCollisionBounds);
                     }
-                    else if (VillageResidentDoorPlan.IsResidentHouse(
-                                 plot.StableId))
+                    else if (VillageResidentDoorPlan.IsResidentHouse(plot.StableId) ||
+                             plot.StableId == "village-house-02" || plot.StableId == "village-house-10")
                     {
-                        // An inhabited house is entered through a doorway
-                        // cut into a shell fitted to this plot's measured
-                        // envelope, so no box on the footprint can stand
-                        // for it: by the accepted decision (architecture
-                        // notes, 2026-09-08, second part of village
-                        // household life) the fitted shell's own colliders
-                        // own the collision. The plan-derived shell carries
-                        // nothing, and each solid mass collides with exactly
-                        // the mesh it renders, in the renderer's own frame -
-                        // the one arrangement the slab-on-its-side failure
-                        // cannot reach.
+                        // Entrances and wall inspections need the fitted face
+                        // and plinth instead of a box at the roof envelope.
                         Assert.That(
                             shell.GetComponentsInChildren<Collider>(true),
                             Is.Empty,
@@ -424,18 +413,8 @@ namespace BarPromenade.Tests.EditMode
                                      VillageMeshRole.Timber
                                  })
                         {
-                            Assert.That(
-                                VillageResidentDoorAssets.TryGetShellPart(
-                                    plot.StableId,
-                                    role,
-                                    out MeshFilter authored),
-                                Is.True,
-                                $"'{plot.StableId}' has no fitted {role}.");
-                            MeshFilter[] masses = root
-                                .GetComponentsInChildren<MeshFilter>(true)
-                                .Where(filter =>
-                                    filter.sharedMesh == authored.sharedMesh)
-                                .ToArray();
+                            MeshFilter[] masses = root.GetComponentsInChildren<MeshFilter>(true)
+                                .Where(filter => filter.name == "House " + role).ToArray();
                             Assert.That(
                                 masses,
                                 Is.Not.Empty,
@@ -481,6 +460,12 @@ namespace BarPromenade.Tests.EditMode
                         continue;
                     }
 
+                    Transform plotRoot = filter.transform.parent;
+                    if (plotRoot != null && world.SemanticObjects.Any(pair => pair.Value == plotRoot &&
+                            (VillageResidentDoorPlan.IsResidentHouse(pair.Key) ||
+                             pair.Key == "village-house-02" || pair.Key == "village-house-10")) &&
+                        (filter.name == "House Walls" || filter.name == "House Plinth" || filter.name == "House Timber"))
+                        continue;
                     Assert.That(
                         filter.GetComponent<Collider>(),
                         Is.Null,
@@ -790,8 +775,9 @@ namespace BarPromenade.Tests.EditMode
                             AlpineVillageWorldBuilder.HouseDoorPromptKey));
                     Assert.That(
                         door.LockedKey,
-                        Is.EqualTo(
-                            AlpineVillageWorldBuilder.HouseDoorLockedKey));
+                        Is.EqualTo(VillageHouseholdCatalog.IsOccupied(plot.StableId)
+                            ? AlpineVillageWorldBuilder.HouseDoorLockedKey
+                            : "alpine_village.house_door.abandoned"), plot.StableId);
                     Assert.That(world.HouseDoors, Contains.Item(door));
 
                     var trigger = doorRoot.GetComponent<SphereCollider>();

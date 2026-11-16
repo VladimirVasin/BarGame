@@ -728,7 +728,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void DefaultCoastalBlueprint_AuthoredStreetTurnsTheNightlifeStubIntoACrossroads()
+        public void DefaultCoastalBlueprint_AuthoredStreetRemainsConnectedAtBothEnds()
         {
             CityBlueprint blueprint = CityBlueprintCatalog.Default;
             var authored = new RoadEdge(
@@ -745,13 +745,12 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 layout.GetPathKind(authored),
                 Is.EqualTo(CityPathKind.Street));
-            // The lane must not stop again one node on: (10,5) meets the
-            // street on both sides and the x = 10 street continuing north.
-            var crossroads = new Vector2Int(10, 5);
+            // The compact plan retains the tee at the north end.
+            var junction = new Vector2Int(10, 5);
             Assert.That(
-                layout.RoadEdges.Count(edge => edge.Contains(crossroads)),
-                Is.EqualTo(4),
-                "(10,5) must be a four-way crossroads.");
+                layout.RoadEdges.Count(edge => edge.Contains(junction)),
+                Is.EqualTo(3),
+                "(10,5) must connect the authored street to two other legs.");
             Assert.That(
                 layout.RoadEdges.Count(edge =>
                     edge.Contains(new Vector2Int(10, 4))),
@@ -800,8 +799,9 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.DefaultCitySeed);
             Assert.That(layout.SpatialPlan.IsUniform, Is.False);
             Assert.That(layout.SpatialPlan.IsCompactCoastal, Is.True);
-            Assert.That(layout.RoadEdges.All(edge => Mathf.Abs(layout.GetRoadLength(edge) - 26f) < .001f),
-                Is.True, "Urban routes retain their real 26 metre pitch.");
+            Assert.That(layout.RoadEdges.Where(edge => !layout.RoadGeometry.IsCurved(edge))
+                .All(edge => Mathf.Abs(layout.GetRoadLength(edge) - 26f) < .001f),
+                Is.True, "Straight streets retain their 26 metre pitch.");
             for (int z = 3; z <= 8; z++)
                 for (int x = 4; x <= 13; x++)
                 {
@@ -843,18 +843,18 @@ namespace BarPromenade.Tests.EditMode
                         lot.DoorPosition + Vector3.up * CityFacadeGrid.MassBaseElevation),
                         Is.LessThan(.003f), $"{lot.Cell}: frontage attachment");
 
-                    Assert.That(layout.TryGetFrontageEdge(lot, out RoadEdge frontage), Is.True);
-                    CityRoadPath path = layout.RoadGeometry.Get(frontage);
-                    CityRoadProjection anchor = path.Project(new Vector2(lot.ReturnPosition.x, lot.ReturnPosition.z));
-                    Assert.That(anchor.DistanceAlong, Is.InRange(0f, path.Length), $"{lot.Cell}: street anchor");
-                    Assert.That(Mathf.Sqrt(anchor.DistanceSquared),
-                        Is.LessThan(.003f), $"{lot.Cell}: road centreline");
-                    Vector2 planarNormal = path.SampleDistance(anchor.DistanceAlong).Right;
-                    Vector3 normal = new Vector3(planarNormal.x, 0f, planarNormal.y);
-                    Vector3 doorToAnchor = lot.ReturnPosition - lot.DoorPosition;
-                    doorToAnchor.y = 0f;
-                    Assert.That((doorToAnchor - normal * Vector3.Dot(doorToAnchor, normal)).magnitude,
-                        Is.LessThan(.003f), $"{lot.Cell}: uninterrupted straight approach");
+                    if (layout.TryGetFrontageEdge(lot, out RoadEdge frontage))
+                    {
+                        CityRoadPath path = layout.RoadGeometry.Get(frontage);
+                        CityRoadProjection anchor = path.Project(new Vector2(lot.ReturnPosition.x, lot.ReturnPosition.z));
+                        Assert.That(anchor.DistanceAlong, Is.InRange(0f, path.Length), $"{lot.Cell}: street anchor");
+                        Assert.That(Mathf.Sqrt(anchor.DistanceSquared),
+                            Is.LessThan(.003f), $"{lot.Cell}: road centreline");
+                        Vector3 doorToAnchor = lot.ReturnPosition - lot.DoorPosition;
+                        doorToAnchor.y = 0f;
+                        Assert.That(Vector3.Dot(doorToAnchor, lot.FacadeForward), Is.Positive,
+                            $"{lot.Cell}: street anchor remains in front of the facade");
+                    }
 
                     if (!builtVariants.Add(source.StableId)) continue;
                     Transform building = new GameObject(source.StableId).transform;
@@ -1186,12 +1186,14 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(layout.Supermarket.Cell, Is.EqualTo(new Vector2Int(12, 4)));
             Assert.That(bar.DoorPosition.x, Is.EqualTo(bar.Center.x + bar.Size.x * .5f).Within(.001f));
             Assert.That(bar.DoorPosition.z, Is.EqualTo(bar.Center.z).Within(.001f));
-            Assert.That(bar.ReturnPosition.x, Is.EqualTo(182f).Within(.001f));
-            Assert.That(bar.ReturnPosition.z, Is.EqualTo(39f).Within(.001f));
             Assert.That(bar.SidewalkArrivalPosition.x, Is.InRange(bar.DoorPosition.x, bar.ReturnPosition.x));
             Assert.That(
                 layout.TryGetFrontageEdge(bar, out RoadEdge barFrontage),
                 Is.True);
+            CityRoadProjection roadDock = layout.RoadGeometry.Get(barFrontage)
+                .Project(new Vector2(bar.ReturnPosition.x, bar.ReturnPosition.z));
+            Assert.That(roadDock.DistanceSquared, Is.LessThan(.001f * .001f),
+                "The return joins the actual curved frontage lane.");
             Assert.That(
                 layout.TryGetFrontageEdge(formerHome, out RoadEdge homeFrontage),
                 Is.True);
@@ -1203,9 +1205,9 @@ namespace BarPromenade.Tests.EditMode
                 formerHome.FrontageDirection.y * bar.FrontageDirection.y, Is.Zero,
                 "The bar opens onto the neighboring perpendicular street, not opposite the home doorway.");
             Assert.That(formerHome.ReturnPosition, Is.Not.EqualTo(bar.ReturnPosition));
-            float routeDistance = CityTravelDistance.BetweenAnchors(layout.Nodes, layout.RoadEdges,
-                layout.GetNodeWorldPosition, homeFrontage, formerHome.ReturnPosition, barFrontage, bar.ReturnPosition);
-            Assert.That(routeDistance, Is.EqualTo(52f).Within(.1f), "The bar is one block beyond the previous entrance.");
+            float routeDistance = CityTravelDistance.BetweenAnchors(layout,
+                homeFrontage, formerHome.ReturnPosition, barFrontage, bar.ReturnPosition);
+            Assert.That(routeDistance, Is.GreaterThan(52f - .1f), "The bar stays one block beyond the previous entrance.");
             Assert.That(routeDistance, Is.LessThanOrEqualTo(CityLayoutGenerator.MaximumCanonicalHomeBarRouteDistance + .001f));
             Vector3 cornerWorld = layout.GetNodeWorldPosition(corner);
             RoadWalkableArea walkable = RoadWalkableArea.FromLayout(layout);
@@ -1224,7 +1226,8 @@ namespace BarPromenade.Tests.EditMode
                 Vector3 inner = apron.Top[row * apron.Columns];
                 Vector3 outer = apron.Top[row * apron.Columns + apron.Columns - 1];
                 Assert.That(outer.x, Is.GreaterThan(inner.x), "The complete bar apron faces the eastern street.");
-                Assert.That(outer.z, Is.EqualTo(inner.z).Within(.001f));
+                float projectedZ = layout.RoadGeometry.Get(barFrontage).Project(new Vector2(inner.x, inner.z)).Position.y;
+                Assert.That(outer.z, Is.EqualTo(projectedZ).Within(.001f), "Each row follows the curved frontage.");
                 Assert.That(CityStreetSurfacePlanner.TrySamplePublicSidewalkTop(layout,
                     new Vector2(outer.x, outer.z), out float pavementTop), Is.True);
                 Assert.That(outer.y, Is.EqualTo(pavementTop).Within(.001f));
@@ -1242,15 +1245,13 @@ namespace BarPromenade.Tests.EditMode
                 BuildingLot retiredLot = layout.BuildingLots.Single(
                     lot => lot.Cell == retiredCell);
                 Assert.That(
-                    retiredLot.IsOrdinaryBuilding,
-                    Is.True,
-                    $"Former bar lot {retiredCell} must return to " +
-                    "ordinary city housing.");
+                    retiredLot.IsBar,
+                    Is.False,
+                    $"Former bar lot {retiredCell} cannot retain a second bar.");
             }
 
-            Assert.That(
-                layout.BuildingLots.Count(lot => lot.IsOrdinaryBuilding),
-                Is.EqualTo(121));
+            Assert.That(layout.BuildingLots, Has.Count.EqualTo(144),
+                "The reassigned terrace lots and the relocated bar retain the compact city's lot IDs.");
         }
 
         [TestCase(GameSessionState.DefaultCitySeed)]

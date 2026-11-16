@@ -232,9 +232,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(bubbles.IsDeclared(secondPresentation), Is.False);
 
             yield return WaitUntilBubbleCloses(presentation);
-            yield return TickUntil(() => insults.CooldownRemaining <= 0f,
+            // The next speaker may claim the line on the very frame the
+            // shared cooldown ends, which immediately starts a fresh cooldown.
+            yield return TickUntil(() => insults.SpokenLineCount == 2,
                 CityPedestrianInsultRules.CooldownSeconds + 1f);
-            yield return TickUntil(() => insults.SpokenLineCount == 2, 2f);
             Assert.That(insults.SpokenLineCount, Is.EqualTo(2));
             Assert.That(insults.ActiveActor, Is.SameAs(secondActor),
                 "After the pause the other walker gets his turn.");

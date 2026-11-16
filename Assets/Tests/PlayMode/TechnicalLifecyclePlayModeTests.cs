@@ -24,7 +24,9 @@ namespace BarPromenade.Tests.PlayMode
             while ((SceneTransitionService.IsTransitioning || AreaTravelService.IsTraveling) &&
                    Time.realtimeSinceStartup < deadline) yield return null;
             Assert.That(SceneTransitionService.IsTransitioning || AreaTravelService.IsTraveling, Is.False);
-            Scene blank = SceneManager.CreateScene("Technical Lifecycle Cleanup");
+            const string cleanupName = "Technical Lifecycle Cleanup";
+            Scene blank = SceneManager.GetSceneByName(cleanupName);
+            if (!blank.IsValid()) blank = SceneManager.CreateScene(cleanupName);
             SceneManager.SetActiveScene(blank);
             for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
             {
@@ -323,6 +325,7 @@ namespace BarPromenade.Tests.PlayMode
             foreach (GameAreaId destination in destinations)
             {
                 bool previousAudioPause = AudioListener.pause;
+                int previousFrameInterval = OnDemandRendering.renderFrameInterval;
                 Assert.That(AreaTravelService.Request(destination), Is.True);
                 float deadline = Time.realtimeSinceStartup + DeadlineSeconds;
                 int compositionFrames = 0;
@@ -351,8 +354,8 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(AreaSceneCatalog.GetSceneName(destination)));
                 Assert.That(AudioListener.pause, Is.EqualTo(previousAudioPause));
                 Assert.That(GameTimeScaleRuntime.IsPaused, Is.False);
-                Assert.That(OnDemandRendering.renderFrameInterval, Is.EqualTo(1),
-                    "Full-rate drawing must return with the finished world.");
+                Assert.That(OnDemandRendering.renderFrameInterval, Is.EqualTo(previousFrameInterval),
+                    "The finished world must restore the caller's drawing rate.");
                 yield return null;
                 Assert.That(Object.FindAnyObjectByType<AreaLoadingRoot>(), Is.Null);
             }

@@ -73,14 +73,14 @@ namespace BarPromenade
         /// Derives the circuit from the shared yard site contract: its
         /// authored ring centre and radius are the lap, its ground the
         /// height. The dead tree must still stand at the centre — the
-        /// rider circles something, not an abstract point. With an
-        /// elevation plan the lap also carries a sampled ground
+        /// rider circles something, not an abstract point. With the
+        /// city layout the lap also carries a sampled ground
         /// profile, so the chair rides the real terraces instead of one
         /// flat plane.
         /// </summary>
         public static YardWheelchairPlan Create(
             CityOpenAreaDecorationPlan decorations,
-            CityElevationPlan elevation = null)
+            CityLayout layout = null)
         {
             if (decorations == null)
             {
@@ -118,14 +118,14 @@ namespace BarPromenade
                 site.RingRadius,
                 site.GroundY,
                 true,
-                SampleCircuitGround(site, elevation));
+                SampleCircuitGround(site, layout));
         }
 
         private static float[] SampleCircuitGround(
             HomeYardSitePlan site,
-            CityElevationPlan elevation)
+            CityLayout layout)
         {
-            if (elevation == null)
+            if (layout == null)
             {
                 return null;
             }
@@ -140,23 +140,9 @@ namespace BarPromenade
                     Mathf.Cos(angle) * site.RingRadius,
                     site.RingCenter.z +
                     Mathf.Sin(angle) * site.RingRadius);
-                float fallbackDatum = elevation.TrySampleSurface(
-                        probe,
-                        CitySurfaceRole.GroundDatum,
-                        out float datum,
-                        out _)
-                    ? datum
-                    : site.GroundY - CityElevationPlan.GroundTopOffset;
-                Vector2 coordinate = elevation.SpatialPlan.WorldToGrid(
-                    probe - new Vector2(elevation.WorldOrigin.x, elevation.WorldOrigin.z));
-                var cell = new Vector2Int(Mathf.FloorToInt(coordinate.x), Mathf.FloorToInt(coordinate.y));
-                heights[index] =
-                    CityTerrainSurfacePlan.SampleContinuousDatum(
-                        elevation,
-                        cell,
-                        probe,
-                        fallbackDatum) +
-                    CityElevationPlan.GroundTopOffset;
+                heights[index] = CityTerrainSurfacePlan.TrySampleGroundTop(layout, probe, out float top, out _)
+                    ? top
+                    : site.GroundY;
             }
 
             return heights;

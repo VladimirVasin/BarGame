@@ -152,8 +152,8 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(session.CameraDirector.CurrentShotIsClear, Is.True);
                     if (!Application.isBatchMode)
                     {
-                        yield return null;
-                        yield return null;
+                        yield return Until(() => session.Bubbles.HasRenderedLayout && session.LastChoicePanelRect.height > 0f,
+                            "subtitle and choice panel to render together at table " + table);
                         Assert.That(session.Bubbles.HasRenderedLayout, Is.True);
                         Assert.That(session.Bubbles.LastRenderedPanelRect.yMax, Is.LessThan(session.LastChoicePanelRect.yMin));
                     }

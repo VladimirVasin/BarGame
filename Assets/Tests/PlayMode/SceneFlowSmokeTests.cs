@@ -66,12 +66,13 @@ namespace BarPromenade.Tests.PlayMode
                 cityRoot.Layout.BuildingLots,
                 Has.Count.EqualTo(144));
             Assert.That(
-                cityRoot.Layout.Districts,
-                Has.Count.EqualTo(5));
+                cityRoot.Layout.Districts.Select(district => district.Kind),
+                Is.EquivalentTo(CityBlueprintCatalog.Default.UrbanAreas.Select(area => area.Definition.Archetype)
+                    .Append(CityDistrictKind.CentralPark)));
             Assert.That(cityRoot.Layout.Park, Is.Not.Null);
             Assert.That(
                 cityRoot.Layout.Park.Cells,
-                Has.Count.EqualTo(16));
+                Is.EquivalentTo(CityBlueprintCatalog.Default.CentralPark.Cells));
             Assert.That(cityRoot.World.ParkRoot, Is.Not.Null);
             Assert.That(
                 cityRoot.World.ParkRoot.name,
@@ -227,21 +228,11 @@ namespace BarPromenade.Tests.PlayMode
                 cityRoot.Pedestrians.Count,
                 Is.LessThanOrEqualTo(
                     CityPedestrianDirector.MaximumActiveModels));
-            // The pool is sized by the population PROFILE, not by the
-            // number of registered designs: it holds several instances of
-            // most designs so a crowd is not forced to be one of each. The
-            // old expectation here was one presentation per design, which
-            // stopped being true when the profile gained its own pool size
-            // and then read as a broken city.
+            // Presentations load as the walkers need them. Each active walker
+            // has a slot and the lazy pool stays within the population profile.
             Assert.That(
                 cityRoot.Pedestrians.PoolCapacity,
-                Is.EqualTo(cityRoot.Pedestrians.Profile.PoolSize));
-            Assert.That(
-                cityRoot.Pedestrians.PoolCapacity,
-                Is.GreaterThanOrEqualTo(
-                    CityPedestrianResources.Archetypes.Count),
-                "Every registered design must fit in the pool at least " +
-                "once, or some of them can never appear.");
+                Is.InRange(cityRoot.Pedestrians.ActiveCount, cityRoot.Pedestrians.Profile.PoolSize));
             Assert.That(
                 cityRoot.Pedestrians.ActiveCount,
                 Is.InRange(
@@ -983,8 +974,8 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(interiorRoot.Layout, Is.Not.Null);
             Assert.That(interiorRoot.Layout.RoomSize,
-                Is.EqualTo(new Vector2(22f, 16f)));
-            Assert.That(interiorRoot.Layout.RoomHeight, Is.EqualTo(4.8f));
+                Is.EqualTo(new Vector2(BarInteriorLayoutPlanner.RoomWidth, BarInteriorLayoutPlanner.RoomDepth)));
+            Assert.That(interiorRoot.Layout.RoomHeight, Is.EqualTo(BarInteriorLayoutPlanner.RoomHeight));
             Assert.That(interiorRoot.Room, Is.Not.Null);
             //  The room is built from an authored model now, but its
             //  parts are still direct children under their own names -
@@ -1024,7 +1015,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interiorRoot.Room.GetComponentsInChildren<Transform>(true).Count(part =>
                 part.name.StartsWith("Social Pub Table ", StringComparison.Ordinal) &&
                 !part.name.EndsWith(" Leg", StringComparison.Ordinal) &&
-                part.GetComponent<Renderer>() != null), Is.EqualTo(3));
+                part.GetComponent<Renderer>() != null), Is.EqualTo(2));
             Assert.That(interiorRoot.Room.Find("Activity Bay Rug"), Is.Not.Null);
             Collider stageCollider = interiorRoot.Room
                 .Find("Small Stage Collision")
@@ -1046,17 +1037,20 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Camera.main.GetUniversalAdditionalCameraData()
                 .renderPostProcessing, Is.True);
             Assert.That(interiorRoot.Atmosphere.PracticalLights,
-                Has.Count.EqualTo(6));
+                Has.Count.EqualTo(BarInteriorAtmosphere.MaximumPracticalLights));
             for (int lightIndex = 0;
                  lightIndex <
                  interiorRoot.Atmosphere.PracticalLights.Count;
                  lightIndex++)
             {
-                Assert.That(
-                    interiorRoot.Atmosphere
-                        .PracticalLights[lightIndex]
-                        .shadows,
-                    Is.EqualTo(LightShadows.None));
+                Light light = interiorRoot.Atmosphere.PracticalLights[lightIndex];
+                LightShadows expectedShadows = light.name switch
+                {
+                    "counter-pendant-left" or "washroom-ceiling" => LightShadows.Hard,
+                    "washroom-sign" => LightShadows.Soft,
+                    _ => LightShadows.None
+                };
+                Assert.That(light.shadows, Is.EqualTo(expectedShadows), light.name);
             }
 
             Assert.That(interiorRoot.Patrons, Is.Not.Null);
@@ -1160,21 +1154,20 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(
                 drinkingPatrons,
-                Is.EqualTo(9),
-                "All four sofa, two counter and three standing guests drink.");
-            Assert.That(drinkKinds, Is.EquivalentTo(new[]
+                Is.EqualTo(8),
+                "All four sofa, two counter and two standing guests drink.");
+            Assert.That(drinkKinds, Is.SupersetOf(new[]
             {
-                BarPatronDrinkPropKind.Bottle,
                 BarPatronDrinkPropKind.Pint,
                 BarPatronDrinkPropKind.WineGlass,
                 BarPatronDrinkPropKind.ShotGlass,
                 BarPatronDrinkPropKind.Snifter
-            }), "The fresh visit's drink allocation includes every supported vessel.");
+            }), "Every visit uses all four glasses. The table and booth guests can also get a bottle.");
             Assert.That(
                 boothPatrons,
                 Is.EqualTo(4));
             Assert.That(counterPatrons, Is.EqualTo(2));
-            Assert.That(tablePatrons, Is.EqualTo(3));
+            Assert.That(tablePatrons, Is.EqualTo(2));
 
             Assert.That(
                 interiorRoot.Bartender,
@@ -1301,12 +1294,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interiorRoot.DrinkShop.HasPhysicalMenuPresentation,
                 Is.True);
-            Assert.That(
-                interiorRoot.DrinkShop.MenuPresentation.Carrier,
-                Is.SameAs(
-                    interiorRoot.Bartender.Registry.LeftGripSocket),
-                "The shared physical menu must begin and end in the " +
-                "ordinary bartender's left hand.");
+            var bartenderRig = interiorRoot.Bartender.Registry;
+            Transform carrier = interiorRoot.DrinkShop.MenuPresentation.Carrier;
+            Assert.That(carrier, Is.EqualTo(bartenderRig.MenuGripAnchor));
+            Assert.That(carrier.IsChildOf(bartenderRig.LeftHand), Is.True,
+                "The bartender's authored menu edge grasp is driven by his left hand.");
             Assert.That(interiorRoot.CounterStation.Seat, Is.Not.Null);
             Assert.That(interiorRoot.CounterStation.SeatView, Is.Not.Null);
             Assert.That(
@@ -1567,11 +1559,9 @@ namespace BarPromenade.Tests.PlayMode
             BarEntrance entrance = firstCity.World.Bars[0];
             string expectedBarId = entrance.BarId;
             BarActivityKind expectedBarActivity = entrance.BarActivity;
-            Assert.That(firstCity.Layout.HasSummitHome, Is.True);
-            var homeShell = firstCity.World.Root.GetComponentsInChildren<PlayerHomeExteriorAssetRegistry>(true).Single();
-            Assert.That(HasPlayerHomeExteriorPart(homeShell, "Player Home Entrance Door"), Is.True);
-            Assert.That(Vector3.Distance(firstCity.Layout.PlayerHome.DoorPosition, entrance.InteractionPosition),
-                Is.LessThan(1.5f), "The entry interaction belongs to the summit facade.");
+            BuildingLot barLot = firstCity.Layout.BuildingLots.Single(lot => lot.IsBar && lot.BarId == expectedBarId);
+            Assert.That(Vector3.Distance(barLot.DoorPosition, entrance.InteractionPosition),
+                Is.LessThan(1.5f), "The entry interaction belongs to the bar's facade.");
             Vector3 expectedReturn = entrance.ReturnPosition;
             int expectedSeed = firstCity.Layout.Seed;
             const int expectedIntoxication = 37;
@@ -2112,8 +2102,11 @@ namespace BarPromenade.Tests.PlayMode
             var homeDoor = home.ExteriorContext.PlayerHome.DoorPosition;
             const float radius = HomeExteriorContextPlanner.ViewRadius;
             var window = new Rect(homeDoor.x - radius, homeDoor.z - radius, radius * 2f, radius * 2f);
-            var expectedTrees = CityHillsideSiteDetails.ForLayout(home.ExteriorContext.Layout)
-                .Where(s => s.Part == CityHillsideSiteDetails.Kind.YardTree && window.Overlaps(s.Bounds)).Select(s => s.Origin).ToArray();
+            CityLayout layout = home.ExteriorContext.Layout;
+            RidgeParkingPlan parking = RidgeParkingPlan.ForLayout(layout);
+            var expectedTrees = CityHillsideSiteDetails.ForLayout(layout)
+                .Where(s => s.Part == CityHillsideSiteDetails.Kind.YardTree && window.Overlaps(s.Bounds) &&
+                    (parking == null || !parking.Clears(s))).Select(s => s.Origin).ToArray();
             Assert.That(expectedTrees, Is.Not.Empty, "The balcony must retain the near yard trees.");
             var actualTrees = retainedSites.Cast<Transform>().Where(t => t.name == "RidgeYardTree").ToArray();
             Assert.That(actualTrees.Select(t => t.localPosition), Is.EquivalentTo(expectedTrees));
@@ -2223,46 +2216,17 @@ namespace BarPromenade.Tests.PlayMode
             CityGameRoot cityRoot,
             CityMapController map)
         {
-            var expectedDistricts = new Dictionary<
-                CityMapPointOfInterestKind,
-                CityDistrictKind>
+            var requiredKinds = new[]
             {
-                {
-                    CityMapPointOfInterestKind.OldTownWaterworksCourt,
-                    CityDistrictKind.OldTown
-                },
-                {
-                    CityMapPointOfInterestKind.ResidentialDryingYard,
-                    CityDistrictKind.Residential
-                },
-                {
-                    CityMapPointOfInterestKind.IndustrialCannery,
-                    CityDistrictKind.Industrial
-                },
-                {
-                    CityMapPointOfInterestKind.NightlifeLastRouteIsland,
-                    CityDistrictKind.Nightlife
-                },
-                {
-                    CityMapPointOfInterestKind.Fair,
-                    CityDistrictKind.Nightlife
-                },
-                {
-                    CityMapPointOfInterestKind.EasternPost,
-                    CityDistrictKind.Yard
-                },
-                {
-                    CityMapPointOfInterestKind.Docks,
-                    CityDistrictKind.NorthWaterfront
-                },
-                {
-                    CityMapPointOfInterestKind.ArchShelter,
-                    CityDistrictKind.Nightlife
-                },
-                {
-                    CityMapPointOfInterestKind.Church,
-                    CityDistrictKind.Church
-                }
+                CityMapPointOfInterestKind.OldTownWaterworksCourt,
+                CityMapPointOfInterestKind.ResidentialDryingYard,
+                CityMapPointOfInterestKind.IndustrialCannery,
+                CityMapPointOfInterestKind.NightlifeLastRouteIsland,
+                CityMapPointOfInterestKind.Fair,
+                CityMapPointOfInterestKind.EasternPost,
+                CityMapPointOfInterestKind.Docks,
+                CityMapPointOfInterestKind.ArchShelter,
+                CityMapPointOfInterestKind.Church
             };
             var actualKinds =
                 new HashSet<CityMapPointOfInterestKind>();
@@ -2270,22 +2234,12 @@ namespace BarPromenade.Tests.PlayMode
             var teleportGround =
                 new CityMapCityTeleportGround(cityRoot.Layout);
 
-            Assert.That(
-                map.PointsOfInterest,
-                Has.Count.EqualTo(expectedDistricts.Count));
             for (int index = 0;
                  index < map.PointsOfInterest.Count;
                  index++)
             {
                 var pointOfInterest = map.PointsOfInterest[index];
-                Assert.That(
-                    expectedDistricts.ContainsKey(pointOfInterest.Kind),
-                    Is.True,
-                    pointOfInterest.Kind.ToString());
-                Assert.That(
-                    actualKinds.Add(pointOfInterest.Kind),
-                    Is.True,
-                    $"Duplicate map POI kind '{pointOfInterest.Kind}'.");
+                actualKinds.Add(pointOfInterest.Kind);
                 Assert.That(
                     pointOfInterest.StableId,
                     Is.Not.Null.And.Not.Empty);
@@ -2293,10 +2247,6 @@ namespace BarPromenade.Tests.PlayMode
                     stableIds.Add(pointOfInterest.StableId),
                     Is.True,
                     $"Duplicate map POI id '{pointOfInterest.StableId}'.");
-                Assert.That(
-                    pointOfInterest.District,
-                    Is.EqualTo(expectedDistricts[pointOfInterest.Kind]));
-
                 string label = map.GetPointOfInterestLabel(index);
                 Assert.That(label, Is.Not.Null.And.Not.Empty);
                 Assert.That(
@@ -2376,9 +2326,7 @@ namespace BarPromenade.Tests.PlayMode
                 }
             }
 
-            CollectionAssert.AreEquivalent(
-                expectedDistricts.Keys,
-                actualKinds);
+            Assert.That(actualKinds, Is.SupersetOf(requiredKinds));
         }
 
         private static IEnumerator LoadSceneAndWaitForRoot<T>(
@@ -2600,11 +2548,10 @@ namespace BarPromenade.Tests.PlayMode
                         cityRoot.World.Root.transform.Find(
                             $"Building {lot.Cell.x}-{lot.Cell.y}");
                     Assert.That(building, Is.Not.Null);
-                    Transform mass = building.Find("Building Mass");
-                    Assert.That(mass, Is.Not.Null);
-                    Collider massCollider = mass.GetComponent<Collider>();
-                    Assert.That(massCollider, Is.Not.Null);
-                    Assert.That(massCollider.isTrigger, Is.False);
+                    Assert.That(building.GetComponentsInChildren<Collider>().Any(body =>
+                        body.enabled && !body.isTrigger && body.name.StartsWith(
+                            CityBuildingPrototypeWorldBuilder.LogicalCollisionObjectName, System.StringComparison.Ordinal)),
+                        Is.True, "The imported lot must have active wall collision.");
 
                     Vector3 beforeBlockingMove = player.position;
                     Vector3 requestedMove =

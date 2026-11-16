@@ -228,38 +228,45 @@ namespace BarPromenade.Tests.PlayMode
                 affected.Add(edge);
             }
             foreach (RoadEdge edge in affected) AssertStreetProfileContacts(layout, support, edge);
-            CityBusPlan bus = city.BusPlan;
-            Assert.That(bus.IsEmpty, Is.False, "Route 01 must survive the new elevation");
             int contacts = 0;
-            foreach (CityBusRouteLink link in bus.Links)
+            foreach (CityBusPlan bus in city.BusPlans)
             {
-                RoadEdge first = bus.Nodes[link.FromNodeIndex].RoadEdge;
-                RoadEdge last = bus.Nodes[link.ToNodeIndex].RoadEdge;
-                if (!affected.Contains(first) && !affected.Contains(last)) continue;
-                Assert.That(link.Clearance.IsClear, Is.True, link.Id);
-                if (link.Id.StartsWith("bus:road:"))
-                    foreach (CityBusPathSample sample in link.Samples)
-                    {
-                        Assert.That(support.TrySampleTop(new Vector2(sample.Position.x, sample.Position.z),
-                            FootstepGroundKind.Concrete, out float roadY), Is.True, link.Id);
-                        Assert.That(sample.Position.y, Is.EqualTo(roadY).Within(.01f), link.Id);
-                    }
-                contacts += AssertBusBodyContacts(support, bus.Vehicle, link, _ => true);
+                Assert.That(bus.IsEmpty, Is.False, "Every transit line must retain a surveyed route.");
+                InspectLine(bus);
             }
-            Assert.That(contacts, Is.GreaterThan(0), "A real Route 01 link must cover a branch of the ascent");
-            foreach (CityBusStopDescriptor stop in bus.Stops)
+            Assert.That(contacts, Is.GreaterThan(0), "A transit line must cover a branch of the ascent.");
+
+            void InspectLine(CityBusPlan bus)
             {
-                if (!routeEdges.Contains(stop.RoadEdge) && !bypassEdges.Contains(stop.RoadEdge)) continue;
-                Assert.That(support.TrySampleTop(new Vector2(stop.Position.x, stop.Position.z),
-                    FootstepGroundKind.Concrete, out float roadY), Is.True, stop.Id);
-                Assert.That(stop.Position.y, Is.EqualTo(roadY).Within(.025f), stop.Id);
-                if (!routeEdges.Contains(stop.RoadEdge)) continue;
-                CityRoadPath path = layout.RoadGeometry.Get(stop.RoadEdge);
-                float center = path.Project(new Vector2(stop.Position.x, stop.Position.z)).DistanceAlong;
-                float axle = bus.Vehicle.Wheelbase * .5f;
-                float rear = layout.ElevationPlan.SampleRoadDatum(stop.RoadEdge, (center - axle) / path.Length);
-                float front = layout.ElevationPlan.SampleRoadDatum(stop.RoadEdge, (center + axle) / path.Length);
-                Assert.That(front, Is.EqualTo(rear).Within(.015f), stop.Id + " must dock on level ground");
+                foreach (CityBusRouteLink link in bus.Links)
+                {
+                    RoadEdge first = bus.Nodes[link.FromNodeIndex].RoadEdge;
+                    RoadEdge last = bus.Nodes[link.ToNodeIndex].RoadEdge;
+                    if (!affected.Contains(first) && !affected.Contains(last)) continue;
+                    Assert.That(link.Clearance.IsClear, Is.True, link.Id);
+                    if (link.Id.StartsWith("bus:road:"))
+                        foreach (CityBusPathSample sample in link.Samples)
+                        {
+                            Assert.That(support.TrySampleTop(new Vector2(sample.Position.x, sample.Position.z),
+                                FootstepGroundKind.Concrete, out float roadY), Is.True, link.Id);
+                            Assert.That(sample.Position.y, Is.EqualTo(roadY).Within(.01f), link.Id);
+                        }
+                    contacts += AssertBusBodyContacts(support, bus.Vehicle, link, _ => true);
+                }
+                foreach (CityBusStopDescriptor stop in bus.Stops)
+                {
+                    if (!routeEdges.Contains(stop.RoadEdge) && !bypassEdges.Contains(stop.RoadEdge)) continue;
+                    Assert.That(support.TrySampleTop(new Vector2(stop.Position.x, stop.Position.z),
+                        FootstepGroundKind.Concrete, out float roadY), Is.True, stop.Id);
+                    Assert.That(stop.Position.y, Is.EqualTo(roadY).Within(.025f), stop.Id);
+                    if (!routeEdges.Contains(stop.RoadEdge)) continue;
+                    CityRoadPath path = layout.RoadGeometry.Get(stop.RoadEdge);
+                    float center = path.Project(new Vector2(stop.Position.x, stop.Position.z)).DistanceAlong;
+                    float axle = bus.Vehicle.Wheelbase * .5f;
+                    float rear = layout.ElevationPlan.SampleRoadDatum(stop.RoadEdge, (center - axle) / path.Length);
+                    float front = layout.ElevationPlan.SampleRoadDatum(stop.RoadEdge, (center + axle) / path.Length);
+                    Assert.That(front, Is.EqualTo(rear).Within(.015f), stop.Id + " must dock on level ground");
+                }
             }
         }
 

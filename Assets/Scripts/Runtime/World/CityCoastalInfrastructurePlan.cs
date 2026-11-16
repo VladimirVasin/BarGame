@@ -122,6 +122,17 @@ namespace BarPromenade
 
             var clearance = new ClearanceContext(layout);
             PlanFacilities(layout, fringe, facilities, solids, clearance, false);
+            var descent = CityPawnshopDescentPlan.ForLayout(layout);
+            foreach (var polygon in descent.SurfacePolygons)
+                clearance.Furniture.Add(CityRoadPolygon.Bounds(polygon));
+            for (int i = 1; i < descent.PawnshopRoute.Count; i++)
+            {
+                Vector2 a = Xz(descent.PawnshopRoute[i - 1]);
+                Vector2 b = Xz(descent.PawnshopRoute[i]);
+                Vector2 min = Vector2.Min(a, b), max = Vector2.Max(a, b);
+                Rect leg = Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+                clearance.Furniture.Add(Expanded(leg, CityGroundTraversalPlanner.MaximumAgentRadius));
+            }
 
             clearance.Geometry = new CityElectricalClearanceGeometry(layout);
             var candidates = new List<Vector3>(MaximumPoleCandidateCount);

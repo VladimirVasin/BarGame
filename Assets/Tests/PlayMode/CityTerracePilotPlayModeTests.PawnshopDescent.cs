@@ -224,8 +224,17 @@ namespace BarPromenade.Tests.PlayMode
                             AssertFootNearActor(visual.LeftFootGround, current.y, stage + " left foot");
                             AssertFootNearActor(visual.RightFootGround, current.y, stage + " right foot");
                         }
-                        if (!arrived) Debug.Log($"PAWNSHOP DESCENT BLOCKED stage={stage} station={index} " +
-                            $"at={motor.transform.position:F3} target={target:F3} flags={capsule.collisionFlags}");
+                        if (!arrived)
+                        {
+                            Vector3 at = motor.transform.position;
+                            Vector3 ahead = Vector3.ProjectOnPlane(target - at, Vector3.up).normalized;
+                            var hits = Physics.CapsuleCastAll(at + Vector3.up * .35f, at + Vector3.up * 1.25f,
+                                capsule.radius, ahead, .9f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                            Debug.Log($"PAWNSHOP DESCENT BLOCKED stage={stage} station={index} " +
+                                $"at={at:F3} target={target:F3} flags={capsule.collisionFlags}; " +
+                                string.Join(", ", hits.Where(hit => !hit.collider.transform.IsChildOf(motor.transform))
+                                    .Select(hit => $"{hit.collider.name} at {hit.point:F3}, normal {hit.normal:F3}")));
+                        }
                         Assert.That(arrived, Is.True, $"{stage} blocked at {motor.transform.position:F3}, target {target:F3}.");
                         Assert.That(motor.transform.position.y, Is.EqualTo(target.y).Within(.20f), stage + " wrong storey.");
                     }

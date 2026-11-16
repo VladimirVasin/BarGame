@@ -767,7 +767,7 @@ namespace BarPromenade.Tests.PlayMode
             float fov = camera.fieldOfView;
             Vector3 heroPosition = root.Hero.transform.position, heroForward = root.Hero.transform.forward;
             float pitch = root.CameraFollow.TargetOrbitPitch, yaw = camera.transform.eulerAngles.y;
-            var flashlight = root.Hero.GetComponentInChildren<CombatChestFlashlight>(true);
+            CombatChestFlashlight flashlight = root.Flashlight;
             Assert.That(flashlight, Is.Not.Null);
             Assert.That(flashlight.SpotLight.enabled, Is.True);
             // Calibrate authored -Y / Unity -Z against the retained chest bind

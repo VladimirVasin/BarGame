@@ -132,8 +132,10 @@ namespace BarPromenade.Tests.PlayMode
                         continue;
                     }
                     Assert.That(target.State.StaggerElapsed, Is.InRange(.089f, .11f), reactionState);
-                    Assert.That(target.ActiveClipName, Is.EqualTo(kind == CombatEnemyKind.Zombie
-                        ? CombatZombieAssetProvider.OrdinaryHitClip : CombatZombieAssetProvider.HitClip), label);
+                    string hitClip = kind == CombatEnemyKind.Zombie
+                        ? CombatZombieAssetProvider.LoadDegradedClip(CombatZombieAssetProvider.DegradedHitClip, target.OrdinaryZombieVariant).name
+                        : CombatZombieAssetProvider.HitClip;
+                    Assert.That(target.ActiveClipName, Is.EqualTo(hitClip), label);
                     if (capture)
                     {
                         // The frozen simulation still needs a new render frame so the

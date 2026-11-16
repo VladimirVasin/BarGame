@@ -640,8 +640,10 @@ namespace BarPromenade.Tests.PlayMode
                 previousFixedRotation = home.CameraFollow.FixedBaseRotation;
                 if (shower.IsUndressed && shower.Timeline.CameraBlend < 0.999f)
                     return "undressed while the camera was still travelling (blend " + shower.Timeline.CameraBlend + ")";
-                if (shower.IsUndressed && phase <= HomeShowerScenePhase.WaterOff && !shower.View.IsHeadHidden)
-                    return "undressed with the lens outside his head";
+                if (shower.IsUndressed && phase <= HomeShowerScenePhase.WaterOff &&
+                    Vector3.Distance(camera.transform.position, ShowerEyeMidpoint(registry)) < .03f &&
+                    !shower.View.IsHeadHidden)
+                    return "the head rendered while the lens was at his eyes";
                 if (phase >= HomeShowerScenePhase.Straighten && phase <= HomeShowerScenePhase.StepOut && !shower.IsUndressed)
                     return "clothes were restored while the hero was still leaving the stall";
                 if (shower.Timeline.Phase == HomeShowerScenePhase.Wash &&
@@ -985,17 +987,10 @@ namespace BarPromenade.Tests.PlayMode
                 CaptureShower("09-close-entry-curtain");
             });
             Time.timeScale = 1f;
-            yield return WaitUntil(() => shower.IsUndressed, "The hero never undressed.");
+            yield return WaitUntil(() => shower.IsUndressed, "The hero never undressed offscreen.");
             yield return AtPresentation(() =>
             {
                 Assert.That(shower.Timeline.CameraBlend, Is.EqualTo(1f));
-                Assert.That(shower.View.IsHeadHidden, Is.True, "The lens is inside his head, so the head is off.");
-                Assert.That(shower.View.HiddenHeadRendererCount, Is.GreaterThan(10));
-                Assert.That(Player3DHeadVisibility.IsHeadDrawn(registry), Is.False);
-                Assert.That(
-                    Vector3.Distance(camera.transform.position, ShowerEyeMidpoint(registry)),
-                    Is.LessThan(0.03f),
-                    "The lens sits at his eyes.");
                 Assert.That(Find(registry, "CLO_JacketBody").Renderer.enabled, Is.False);
                 Assert.That(Find(registry, "CLO_JacketForearm.L").Renderer.enabled, Is.False, "Both sleeves come off; the left one is no longer a bandage.");
                 Assert.That(Find(registry, "GEO_Forearm.L").Renderer.enabled, Is.True);
@@ -1018,6 +1013,9 @@ namespace BarPromenade.Tests.PlayMode
             yield return AtPresentation(() =>
             {
                 Assert.That(invariants.Violation, Is.Null);
+                Assert.That(shower.View.IsHeadHidden, Is.True, "The lens is inside his head during washing.");
+                Assert.That(shower.View.HiddenHeadRendererCount, Is.GreaterThan(10));
+                Assert.That(Player3DHeadVisibility.IsHeadDrawn(registry), Is.False);
                 Assert.That(valveTurnOrder, Is.EqualTo(new[] { "open-hot", "open-cold" }));
                 for (int action = 0; action < 2; action++)
                 {

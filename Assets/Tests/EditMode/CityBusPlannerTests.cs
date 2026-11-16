@@ -202,6 +202,7 @@ namespace BarPromenade.Tests.EditMode
                 plan.LoopLength,
                 Is.EqualTo(summedLength).Within(GeometryTolerance));
             CityStreetSupportPlan support = CityStreetSupportPlan.ForLayout(layout);
+            var quaySamples = new List<Vector3>();
             for (int index = 0; index < plan.Links.Count; index++)
             {
                 CityBusRouteLink current = plan.Links[index];
@@ -216,14 +217,42 @@ namespace BarPromenade.Tests.EditMode
                 if (!current.Id.StartsWith("bus:road:")) continue;
                 foreach (CityBusPathSample sample in current.Samples)
                 {
-                    Assert.That(support.TrySampleTop(
-                            new Vector2(sample.Position.x, sample.Position.z),
-                            FootstepGroundKind.Concrete, out float physicalTop),
-                        Is.True, current.Id);
+                    Vector2 point = new Vector2(sample.Position.x, sample.Position.z);
+                    if (!support.TrySampleTop(point, FootstepGroundKind.Concrete, out float physicalTop))
+                    {
+                        RoadEdge roadEdge = plan.Nodes[current.FromNodeIndex].RoadEdge;
+                        bool quay = layout.TryGetBridge(roadEdge, out _) &&
+                            layout.River.TrySamplePromenadeTop(point, out physicalTop);
+                        Assert.That(quay, Is.True, $"{current.Id} has no road or bridge approach at {sample.Position:F4}.");
+                        quaySamples.Add(sample.Position);
+                    }
                     Assert.That(sample.Position.y,
                         Is.EqualTo(physicalTop).Within(GeometryTolerance),
                         current.Id);
                 }
+            }
+            Assert.That(quaySamples, Is.Not.Empty, "The loop must drive across the stone approaches to its river bridges.");
+            AssertQuaySupportsBus(layout, quaySamples);
+        }
+
+        private static void AssertQuaySupportsBus(CityLayout layout, List<Vector3> samples)
+        {
+            var parent = new GameObject("Bridge support probe");
+            try
+            {
+                GameObject river = CityRiverWorldBuilder.Build(parent.transform, layout);
+                Physics.SyncTransforms();
+                Collider[] paving = river.transform.Find("Upper Embankments").GetComponentsInChildren<Collider>();
+                foreach (Vector3 sample in samples)
+                {
+                    var ray = new Ray(sample + Vector3.up * .05f, Vector3.down);
+                    Assert.That(paving.Any(collider => collider.Raycast(ray, out _, .10f)), Is.True,
+                        $"The bus sample at {sample:F4} must follow the built quay collision.");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
             }
         }
 
@@ -388,29 +417,12 @@ namespace BarPromenade.Tests.EditMode
                     node.Id);
                 Assert.That(incomingCounts[nodeIndex], Is.EqualTo(1), node.Id);
 
-                Vector3 from = layout.GetNodeWorldPosition(
-                    node.FromGridNode);
-                Vector3 to = layout.GetNodeWorldPosition(
-                    node.ToGridNode);
-                // The lane offset is measured on the ground. On a
-                // graded street the 3D tangent tilts, and a right
-                // vector built out of it comes up short, reading the
-                // planner's 1.5 m as 1.4989.
-                Vector3 forward = to - from;
-                forward.y = 0f;
-                forward.Normalize();
-                Vector3 right = new Vector3(
-                    forward.z,
-                    0f,
-                    -forward.x);
-                float lateralOffset = Vector3.Dot(
-                    node.Position - from,
-                    right);
-                Assert.That(
-                    lateralOffset,
-                    Is.EqualTo(plan.LaneCenterOffset)
-                        .Within(GeometryTolerance),
-                    node.Id);
+                CityRoadPath road = layout.RoadGeometry.Get(node.RoadEdge);
+                if (node.FromGridNode != node.RoadEdge.A) road = road.Reversed();
+                CityRoadPath rightLane = road.Offset(plan.LaneCenterOffset);
+                var position = new Vector2(node.Position.x, node.Position.z);
+                Assert.That(rightLane.Project(position).DistanceSquared,
+                    Is.LessThanOrEqualTo(GeometryTolerance * GeometryTolerance), node.Id);
             }
 
             for (int linkIndex = 0;

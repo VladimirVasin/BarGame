@@ -876,8 +876,6 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(action.frame_end, Is.EqualTo(duration * 24f));
                 Assert.That(action.root_motion, Is.False);
                 Assert.That(action.event_count, Is.Zero);
-                Assert.That(action.bone_only, Is.True);
-                Assert.That(action.in_place, Is.True);
             }
         }
 
@@ -1281,6 +1279,15 @@ namespace BarPromenade.Tests.EditMode
                 if (clip.name == "Run")
                 {
                     runClip = clip;
+                }
+                if (clip.name == "ColdHold" || clip.name == "ColdShoulderRub" || clip.name == "ColdShiver")
+                {
+                    EditorCurveBinding[] curves = AnimationUtility.GetCurveBindings(clip);
+                    Assert.That(curves, Is.Not.Empty, clip.name);
+                    Assert.That(Array.TrueForAll(curves, curve => curve.type == typeof(Transform) &&
+                        !string.IsNullOrEmpty(curve.path)), Is.True, clip.name + " must animate bones only.");
+                    Assert.That(AnimationUtility.GetObjectReferenceCurveBindings(clip), Is.Empty, clip.name);
+                    Assert.That(AnimationUtility.GetAnimationEvents(clip), Is.Empty, clip.name);
                 }
             }
 

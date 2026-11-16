@@ -1356,7 +1356,6 @@ namespace BarPromenade.Tests.PlayMode
         {
             BarDrinkShopController shop = bar.DrinkShop;
             BarDrinkVesselView empty = bar.DrinkServiceView.ActiveVessel;
-            Pose original = new Pose(empty.transform.position, empty.transform.rotation);
             Bounds backbar = bar.Room.Find("Backbar Cabinet").GetComponent<Renderer>().bounds;
             Bounds counterTop = bar.Room.Find("Counter Top").GetComponent<Renderer>().bounds;
             int cash = GameSessionState.CashBalance, consumed = GameSessionState.DrinksConsumed;
@@ -1377,9 +1376,16 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(shop.Select(FindOfferIndex(shop, nextDrink)), Is.True);
             int price = shop.SelectedOffer.Price;
             bar.CounterStations[bar.CounterStations.Count - 1].Interact(bar.Player.Interactor);
+            Assert.That(shop.IsOrderRequestPending, Is.True);
+            int orderFrame = Time.frameCount;
+            float orderStartedAt = Time.realtimeSinceStartup;
+            while (shop.IsOrderRequestPending && HasBarSimulationBudget(orderFrame, 720, orderStartedAt, 60f))
+                yield return null;
             Assert.That(shop.Phase, Is.EqualTo(BarDrinkServicePhase.EmptyVesselWalkToGuest));
             Assert.That(bar.DrinkServiceView.ActiveVessel, Is.SameAs(empty));
             Assert.That(empty.gameObject.activeSelf, Is.True);
+            AssertVesselRestsOnPhysicalCounter(bar, bar.DrinkServiceView, empty);
+            Vector3 offeredPosition = empty.transform.position;
             var probe = bar.gameObject.AddComponent<WarehouseRefrigeratorPresentationProbe>();
             bool sawContact = false, sawCarry = false, sawStow = false, sawHidden = false;
             bool sawBackStep = false, sawSupport = false;
@@ -1410,7 +1416,8 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(bar.DrinkServiceView.IsCarriedBottleVisible, Is.False,
                             "The next bottle appeared before empty-vessel cleanup.");
                         if (!shop.Timeline.EmptyVesselGripConfirmed)
-                            Assert.That(Vector3.Distance(empty.transform.position, original.position), Is.LessThan(.001f));
+                            Assert.That(Vector3.Distance(empty.transform.position, offeredPosition), Is.LessThan(.001f),
+                                "The vessel stays at the hero's offer position until the bartender makes contact.");
                         else if (!sawContact)
                         {
                             sawContact = true;
@@ -2280,6 +2287,7 @@ namespace BarPromenade.Tests.PlayMode
             private Vector3 previousPosition;
             private Vector3 firstLeftFootLocalPosition;
             private Vector3 firstRightFootLocalPosition;
+            private BarDrinkVesselView measuredVessel;
             private bool hasFootSample;
             private int previousSampleFrame;
 
@@ -2298,15 +2306,6 @@ namespace BarPromenade.Tests.PlayMode
                 bottleParts = bar.DrinkServiceView.CarriedBottleRoot != null
                     ? bar.DrinkServiceView.CarriedBottleRoot.GetComponentsInChildren<Renderer>(true)
                     : System.Array.Empty<Renderer>();
-                BarDrinkVesselView vessel = bar.DrinkServiceView.ActiveVessel;
-                float height = vessel.LocalVisualBounds.size.y * vessel.transform.lossyScale.y;
-                switch (vessel.Kind)
-                {
-                    case BarDrinkVesselKind.Pint: Assert.That(height, Is.EqualTo(0.15515f).Within(0.001f)); break;
-                    case BarDrinkVesselKind.WineGlass: Assert.That(height, Is.InRange(0.17f, 0.20f)); break;
-                    case BarDrinkVesselKind.Snifter: Assert.That(height, Is.InRange(0.11f, 0.14f)); break;
-                    case BarDrinkVesselKind.ShotGlass: Assert.That(height, Is.InRange(0.05f, 0.07f)); break;
-                }
                 previousPosition = bartender.transform.position;
                 previousSampleFrame = Time.frameCount;
             }
@@ -2383,7 +2382,21 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 BarDrinkVesselView vessel = service.ActiveVessel;
                 if (vessel != null && vessel.gameObject.activeInHierarchy)
+                {
+                    if (vessel != measuredVessel)
+                    {
+                        measuredVessel = vessel;
+                        float height = vessel.LocalVisualBounds.size.y * vessel.transform.lossyScale.y;
+                        switch (vessel.Kind)
+                        {
+                            case BarDrinkVesselKind.Pint: Assert.That(height, Is.EqualTo(0.15515f).Within(0.001f)); break;
+                            case BarDrinkVesselKind.WineGlass: Assert.That(height, Is.InRange(0.17f, 0.20f)); break;
+                            case BarDrinkVesselKind.Snifter: Assert.That(height, Is.InRange(0.11f, 0.14f)); break;
+                            case BarDrinkVesselKind.ShotGlass: Assert.That(height, Is.InRange(0.05f, 0.07f)); break;
+                        }
+                    }
                     AssertClear(vessel.GlassRenderer.bounds, "vessel");
+                }
                 if (service.IsCarriedBottleVisible)
                     foreach (Renderer part in bottleParts)
                         if (part.enabled && part.gameObject.activeInHierarchy)

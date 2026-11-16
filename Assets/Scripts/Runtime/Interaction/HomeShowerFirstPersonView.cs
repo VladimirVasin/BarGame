@@ -20,7 +20,7 @@ namespace BarPromenade
     {
         public const float FieldOfView = 78f;
         public const float EyeHeightAboveMouth = 0.068f;
-        public const float InitialLookYawDegrees = 7f;
+        public const float InitialLookYawDegrees = 16f;
 
         /// <summary>The blend at which the lens counts as inside the head.</summary>
         public const float HeadHideBlend = 0.90f;

@@ -100,8 +100,43 @@ namespace BarPromenade
                 forecourt);
             plan = CityFringeYardLifePlanner.Append(layout, plan);
             plan = CityCoastalInfrastructurePlan.ReserveFacilitySites(layout, plan);
+            plan = FitRockfallBudget(plan);
             CityFringeYardValidator.ValidateOrThrow(layout, mountains, plan);
             return plan;
+        }
+
+        private static CityFringeYardPlan FitRockfallBudget(CityFringeYardPlan plan)
+        {
+            int excess = plan.PartCount - MaximumPartCount;
+            if (excess <= 0) return plan;
+
+            // The amount of rigid drainage geometry varies with the terrain.
+            // Leave the service and retaining runs intact and give that space
+            // to them from the smallest optional toe rocks.
+            var candidates = new List<CityFringeYardPartDescriptor>();
+            foreach (CityFringeYardDescriptor yard in plan.Yards)
+                foreach (CityFringeYardPartDescriptor part in yard.Parts)
+                    if (part.Kind == CityFringeYardPartKind.RockfallMass) candidates.Add(part);
+            candidates.Sort((first, second) =>
+            {
+                int order = first.Size.sqrMagnitude.CompareTo(second.Size.sqrMagnitude);
+                return order != 0 ? order : string.CompareOrdinal(first.StableId, second.StableId);
+            });
+            var removed = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < Mathf.Min(excess, candidates.Count); index++)
+                removed.Add(candidates[index].StableId);
+
+            var yards = new List<CityFringeYardDescriptor>(plan.Yards.Count);
+            foreach (CityFringeYardDescriptor yard in plan.Yards)
+            {
+                var parts = new List<CityFringeYardPartDescriptor>(yard.Parts);
+                int count = parts.RemoveAll(part => removed.Contains(part.StableId));
+                yards.Add(count == 0 ? yard : new CityFringeYardDescriptor(
+                    yard.StableId, yard.AreaId, yard.Kind, yard.AreaBounds,
+                    yard.Access, yard.TraversalBounds, parts));
+            }
+            return new CityFringeYardPlan(yards, plan.HasTunnelForecourt, plan.TunnelForecourt,
+                new List<CityFringeYardPracticalDescriptor>(plan.Practicals));
         }
         private static CityTunnelForecourtDescriptor CreateTunnelForecourt(
             CityLayout layout,

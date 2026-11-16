@@ -413,7 +413,7 @@ namespace BarPromenade.Tests.EditMode
                     new Vector3(-0.75f, 0f, 0.27f));
                 AssertAnchor(
                     registry, instance.transform, "hero_camera",
-                    new Vector3(-0.75f, 1.6175f, 0.85f));
+                    new Vector3(-0.75f, 1.6175f, 1.03f));
                 AssertAnchor(
                     registry, instance.transform, "hero_camera_look",
                     new Vector3(-0.75f, 1.7175f, 3.395f));
@@ -540,13 +540,9 @@ namespace BarPromenade.Tests.EditMode
                     "solid seat contract");
             }
 
-            for (int index = 1; index <= 3; index++)
-            {
-                Assert.That(
-                    manifest.parts.Any(part =>
-                        part.name == $"Social Pub Table {index}"),
-                    Is.True);
-            }
+            Assert.That(manifest.parts.Where(part => part.name.StartsWith(
+                "Social Pub Table ", StringComparison.Ordinal) && part.name.Length == "Social Pub Table 1".Length)
+                .Select(part => part.name), Is.EquivalentTo(new[] { "Social Pub Table 1", "Social Pub Table 2" }));
         }
 
         [Test]
@@ -1063,7 +1059,7 @@ namespace BarPromenade.Tests.EditMode
                 AssertPlaced(room, "HeroStand",
                     new Vector3(-0.75f, 0f, 0.27f));
                 AssertPlaced(room, "HeroCamera",
-                    new Vector3(-0.75f, 1.6175f, 0.85f));
+                    new Vector3(-0.75f, 1.6175f, 1.03f));
                 AssertPlaced(room, "HeroCameraLook",
                     new Vector3(-0.75f, 1.7175f, 3.395f));
                 AssertPlaced(room, "MenuDock",

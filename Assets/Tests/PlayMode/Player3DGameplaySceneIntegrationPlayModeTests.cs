@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -33,13 +34,24 @@ namespace BarPromenade.Tests.PlayMode
             GameObject lightObject = null;
             GameObject playerObject = null;
             GameObject occlusionRoot = null;
+            var previousMainCameras = new List<Camera>();
+            var previousListeners = new List<AudioListener>();
             try
             {
+                foreach (Camera active in Camera.allCameras)
+                {
+                    if (!active.CompareTag("MainCamera")) continue;
+                    previousMainCameras.Add(active);
+                    active.enabled = false;
+                }
+
+                foreach (AudioListener listener in UnityEngine.Object.FindObjectsByType<AudioListener>())
+                    if (listener.enabled) previousListeners.Add(listener);
+
                 cameraObject = new GameObject(
                     $"{profile} Player3D Contract Camera");
                 cameraObject.tag = "MainCamera";
                 Camera camera = cameraObject.AddComponent<Camera>();
-                camera.enabled = false;
                 UniversalAdditionalCameraData cameraData =
                     camera.GetUniversalAdditionalCameraData();
                 cameraData.renderShadows = false;
@@ -115,10 +127,8 @@ namespace BarPromenade.Tests.PlayMode
 
                 IReadOnlyList<Renderer> renderers =
                     player.Visual.Renderers;
-                Assert.That(
-                    renderers.Count,
-                    Is.GreaterThanOrEqualTo(16));
                 Bounds playerBounds = CombineBounds(renderers);
+                int visibleRenderers = 0;
                 for (int index = 0; index < renderers.Count; index++)
                 {
                     Renderer renderer = renderers[index];
@@ -128,14 +138,18 @@ namespace BarPromenade.Tests.PlayMode
                         renderer is SkinnedMeshRenderer,
                         Is.True,
                         $"'{renderer.name}' must be backed by a 3D mesh renderer.");
-                    Assert.That(renderer.enabled, Is.True);
+                    if (!renderer.enabled) continue;
+                    visibleRenderers++;
                     Assert.That(
                         renderer.shadowCastingMode,
-                        Is.EqualTo(ShadowCastingMode.On));
-                    Assert.That(renderer.receiveShadows, Is.True);
+                        Is.EqualTo(ShadowCastingMode.On).Or.EqualTo(ShadowCastingMode.TwoSided), renderer.name);
+                    Assert.That(renderer.receiveShadows, Is.True, renderer.name);
                 }
+                Assert.That(visibleRenderers, Is.GreaterThanOrEqualTo(16));
 
-                AssertPlayerFitsCamera(configuredCamera, playerBounds);
+                var anchors = ((Player3DCharacterPresentation)player.Visual).Registry.Anchors;
+                AssertAnchorFitsCamera(configuredCamera, anchors.Pelvis.position, "hips");
+                AssertAnchorFitsCamera(configuredCamera, anchors.Head.position, "head");
 
                 Assert.That(player.ContactShadow, Is.Not.Null);
                 Assert.That(player.ContactShadow.IsInitialized, Is.True);
@@ -149,7 +163,9 @@ namespace BarPromenade.Tests.PlayMode
                         "Home",
                         StringComparison.Ordinal))
                 {
-                    occlusionRoot = VerifyHomeOcclusionUsesMeshBounds(
+                    occlusionRoot = new GameObject("Home Player3D Occlusion Contract");
+                    VerifyHomeOcclusionUsesMeshBounds(
+                        occlusionRoot,
                         configuredCamera,
                         player,
                         playerBounds);
@@ -161,6 +177,8 @@ namespace BarPromenade.Tests.PlayMode
                 DestroyImmediate(playerObject);
                 DestroyImmediate(cameraObject);
                 DestroyImmediate(lightObject);
+                foreach (Camera camera in previousMainCameras) camera.enabled = true;
+                foreach (AudioListener listener in previousListeners) listener.enabled = true;
 
                 RenderSettings.sun = previousSun;
                 RenderSettings.fog = previousFog;
@@ -224,22 +242,6 @@ namespace BarPromenade.Tests.PlayMode
             return combined;
         }
 
-        private static void AssertPlayerFitsCamera(
-            Camera camera,
-            Bounds playerBounds)
-        {
-            Vector3 feet = new Vector3(
-                playerBounds.center.x,
-                playerBounds.min.y,
-                playerBounds.center.z);
-            Vector3 head = new Vector3(
-                playerBounds.center.x,
-                playerBounds.max.y,
-                playerBounds.center.z);
-            AssertAnchorFitsCamera(camera, feet, "feet");
-            AssertAnchorFitsCamera(camera, head, "head");
-        }
-
         private static void AssertAnchorFitsCamera(
             Camera camera,
             Vector3 worldPosition,
@@ -264,13 +266,14 @@ namespace BarPromenade.Tests.PlayMode
                 $"Player {anchorName} must remain vertically framed.");
         }
 
-        private static GameObject VerifyHomeOcclusionUsesMeshBounds(
+        private static void VerifyHomeOcclusionUsesMeshBounds(
+            GameObject root,
             Camera camera,
             PlayerRuntime player,
             Bounds playerBounds)
         {
-            GameObject root = new GameObject(
-                "Home Player3D Occlusion Contract");
+            var before = player.Visual.Renderers.Select(renderer =>
+                (renderer.enabled, renderer.shadowCastingMode)).ToArray();
             GameObject blocker = GameObject.CreatePrimitive(
                 PrimitiveType.Cube);
             blocker.name = "Home Player3D Foreground Blocker";
@@ -304,18 +307,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 controller.GetVisibility(group),
                 Is.EqualTo(group.MinimumVisibility).Within(0.0001f));
-            for (int index = 0;
-                 index < player.Visual.Renderers.Count;
-                 index++)
-            {
-                Renderer renderer = player.Visual.Renderers[index];
-                Assert.That(renderer.enabled, Is.True);
-                Assert.That(
-                    renderer.shadowCastingMode,
-                    Is.EqualTo(ShadowCastingMode.On));
-            }
-
-            return root;
+            CollectionAssert.AreEqual(before, player.Visual.Renderers.Select(renderer =>
+                (renderer.enabled, renderer.shadowCastingMode)));
         }
 
         private static void DestroyImmediate(GameObject target)

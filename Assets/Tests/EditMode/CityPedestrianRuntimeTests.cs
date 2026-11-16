@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
@@ -104,48 +105,36 @@ namespace BarPromenade.Tests.EditMode
             LampshadeModelPath,
             CityPedestrianResources.LampshadePrefabResourcePath,
             CityPedestrianResources.LampshadeDesignId,
-            1160,
-            38,
             "LampshadeIdle",
             "LampshadeWalk")]
         [TestCase(
             ChairCarrierModelPath,
             CityPedestrianResources.ChairCarrierPrefabResourcePath,
             CityPedestrianResources.ChairCarrierDesignId,
-            1032,
-            35,
             "ChairCarrierIdle",
             "ChairCarrierWalk")]
         [TestCase(
             KettleHatModelPath,
             CityPedestrianResources.KettleHatPrefabResourcePath,
             CityPedestrianResources.KettleHatDesignId,
-            2004,
-            52,
             "KettleHatIdle",
             "KettleHatWalk")]
         [TestCase(
             LongArmModelPath,
             CityPedestrianResources.LongArmPrefabResourcePath,
             CityPedestrianResources.LongArmDesignId,
-            1044,
-            35,
             "LongArmIdle",
             "LongArmWalk")]
         [TestCase(
             HelmetLampModelPath,
             CityPedestrianResources.HelmetLampPrefabResourcePath,
             CityPedestrianResources.HelmetLampDesignId,
-            1084,
-            37,
             "HelmetLampIdle",
             "HelmetLampHop")]
         public void ProductionPrefabs_UseCustomLocomotionAndGroundedWalk(
             string modelPath,
             string prefabResourcePath,
             string designId,
-            int triangleCount,
-            int rendererCount,
             string idleClipName,
             string walkClipName)
         {
@@ -308,10 +297,13 @@ namespace BarPromenade.Tests.EditMode
                 registry.Animator.cullingMode,
                 Is.EqualTo(AnimatorCullingMode.CullUpdateTransforms));
             Assert.That(registry.DesignId, Is.EqualTo(designId));
+            var modelManifest = JsonUtility.FromJson<PedestrianModelManifest>(
+                File.ReadAllText(Path.ChangeExtension(modelPath, ".json")));
+            Assert.That(modelManifest.design_id, Is.EqualTo(designId));
             Assert.That(
                 registry.SourceTriangleCount,
-                Is.EqualTo(triangleCount));
-            Assert.That(registry.Renderers.Count, Is.EqualTo(rendererCount));
+                Is.EqualTo(modelManifest.triangle_count));
+            Assert.That(registry.Renderers.Count, Is.EqualTo(modelManifest.mesh_count));
             Assert.That(
                 registry.LocalBounds.min.y,
                 Is.EqualTo(0f).Within(0.025f));
@@ -889,22 +881,24 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(cityProfile.PoolSize,
                 Is.LessThan(DefaultNpcPopulation.PedestrianCount));
 
-            var addedResidentIds = new HashSet<string>(
+            string[] addedResidentIds =
                 Enumerable.Range(13, DefaultNpcPopulation.PedestrianCount - 13)
-                    .Select(DefaultNpcPopulation.PedestrianId),
-                StringComparer.Ordinal);
+                    .Select(DefaultNpcPopulation.PedestrianId)
+                    .OrderBy(id => id, StringComparer.Ordinal).ToArray();
             string[] allocationIds = DefaultNpcPopulation.Characters
                 .Select(character => character.Id).ToArray();
-            string[] legacyIds = allocationIds
-                .Where(id => !addedResidentIds.Contains(id))
-                .OrderBy(id => id, StringComparer.Ordinal).ToArray();
-            Assert.That(allocationIds.Take(legacyIds.Length),
-                Is.EqualTo(legacyIds),
+            int addedResidentsStart = Array.IndexOf(allocationIds, addedResidentIds[0]);
+            Assert.That(addedResidentsStart, Is.GreaterThanOrEqualTo(13));
+            string[] legacyIds = allocationIds.Take(addedResidentsStart).ToArray();
+            Assert.That(legacyIds,
+                Is.EqualTo(legacyIds.OrderBy(id => id, StringComparer.Ordinal)),
                 "All existing characters, including the first eight Home " +
                 "walkers, retain their original appearance allocation order.");
-            Assert.That(allocationIds.Skip(legacyIds.Length),
-                Is.EqualTo(addedResidentIds.OrderBy(id => id, StringComparer.Ordinal)),
-                "New residents allocate after the complete existing cast.");
+            Assert.That(legacyIds, Is.SupersetOf(Enumerable.Range(0, 13)
+                .Select(DefaultNpcPopulation.PedestrianId)));
+            Assert.That(allocationIds.Skip(addedResidentsStart).Take(addedResidentIds.Length),
+                Is.EqualTo(addedResidentIds),
+                "Additional residents remain one stable block before later roles.");
             Assert.That(DefaultNpcPopulation.PedestrianId(0), Is.EqualTo("city.pedestrian.00"));
             Assert.That(DefaultNpcPopulation.PedestrianId(100), Is.EqualTo("city.pedestrian.100"));
 
@@ -1030,10 +1024,15 @@ namespace BarPromenade.Tests.EditMode
                         renderer.name.EndsWith("Sole.L", StringComparison.Ordinal)),
                     Is.EqualTo(1),
                     "Exactly one equipped left boot sole feeds the leg layer.");
-                Assert.That(
-                    registry.LocalBounds.size.y,
-                    Is.InRange(1.6f, 2.0f),
-                    "The standing body is measured in the presentation root.");
+                var shape = body.Character.GetComponent<DefaultNpcBodyShape>();
+                Assert.That(shape, Is.Not.Null);
+                Assert.That(shape.HeightCm, Is.EqualTo(assignment.HeightCm));
+                float headHeight = registry.transform.InverseTransformPoint(registry.HeadAnchor.position).y;
+                float soleHeight = Mathf.Min(
+                    registry.transform.InverseTransformPoint(registry.LeftFootAnchor.position).y,
+                    registry.transform.InverseTransformPoint(registry.RightFootAnchor.position).y);
+                Assert.That(registry.LocalBounds.max.y, Is.GreaterThan(headHeight));
+                Assert.That(registry.LocalBounds.min.y, Is.LessThan(soleHeight));
                 Assert.That(
                     NpcFootstepSources.Prune().Contains(body.Character.transform),
                     Is.False,
@@ -1574,7 +1573,8 @@ namespace BarPromenade.Tests.EditMode
                 actor.SetResidentDestination(3, CityBusStopWaitPlanner.CreateNodeDistances(plan, 3));
                 Assert.That(actor.BeginStopApproach(2, plan.Nodes[2].Position, Vector3.forward,
                     CityBusStopWaitPlanner.CreateNodeDistances(plan, 2)), Is.True);
-                actor.Advance(3.2f);
+                for (int step = 0; step < 160 && actor.MotionState != CityPedestrianMotionState.WaitingAtStop; step++)
+                    actor.Advance(.05f);
                 Assert.That(actor.MotionState, Is.EqualTo(CityPedestrianMotionState.WaitingAtStop));
                 Assert.That(actor.ResidentDestinationNode, Is.EqualTo(3));
 
@@ -1643,8 +1643,7 @@ namespace BarPromenade.Tests.EditMode
             CityPedestrianDirector director = null;
             try
             {
-                CityPedestrianPopulationProfile profile =
-                    CityPedestrianPopulationProfile.City;
+                CityPedestrianPopulationProfile profile = CreateLocalSpawnProfile();
                 Transform player = CreatePlayer(root.transform);
                 CityPedestrianPlan plan = CreateDistanceSpawnPlan(
                     CreateRingAnchorPositions(
@@ -1845,7 +1844,7 @@ namespace BarPromenade.Tests.EditMode
             bool isNight = true;
             try
             {
-                const int anchorCount = 5;
+                const int anchorCount = CityPedestrianDirector.NightMaximumActiveModels + 1;
                 Transform player = CreatePlayer(root.transform);
                 CityPedestrianPlan plan = CreateDistanceSpawnPlan(
                     CreateRingAnchorPositions(anchorCount));
@@ -2715,8 +2714,7 @@ namespace BarPromenade.Tests.EditMode
             CityPedestrianDirector director = null;
             try
             {
-                CityPedestrianPopulationProfile profile =
-                    CityPedestrianPopulationProfile.City;
+                CityPedestrianPopulationProfile profile = CreateLocalSpawnProfile();
                 Transform player = CreatePlayer(root.transform);
                 CityPedestrianPlan plan = CreateDistanceSpawnPlan(
                     CreateRingAnchorPositions(
@@ -2933,19 +2931,18 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     actor.gameObject.layer,
                     Is.EqualTo(CityPedestrianCollision.LayerIndex));
-                Assert.That(
-                    controller.height,
-                    Is.EqualTo(
-                        CityPedestrianActor.CollisionHeight).Within(0.0001f));
+                if (actor.HasPresentation)
+                {
+                    var body = actor.Presentation.GetComponent<CityPedestrianDefaultNpcBody>();
+                    var shape = body != null && body.Character != null
+                        ? body.Character.GetComponent<DefaultNpcBodyShape>() : null;
+                    float height = CityPedestrianActor.CollisionHeight * (shape != null ? shape.HeightRatio : 1f);
+                    Assert.That(controller.height, Is.EqualTo(height).Within(.0001f));
+                    Assert.That(controller.center, Is.EqualTo(Vector3.up * (height * .5f)));
+                }
                 Assert.That(
                     controller.radius,
                     Is.EqualTo(actor.AgentRadius).Within(0.0001f));
-                Assert.That(
-                    controller.center,
-                    Is.EqualTo(new Vector3(
-                        0f,
-                        CityPedestrianActor.CollisionCenterHeight,
-                        0f)));
                 Assert.That(
                     actor.CollisionEnabled,
                     Is.EqualTo(actor.HasPresentation));
@@ -3856,6 +3853,15 @@ namespace BarPromenade.Tests.EditMode
                         1)
                 },
                 new[] { Rect.MinMaxRect(-3f, -1f, 3f, 3f) });
+        }
+
+        private static CityPedestrianPopulationProfile CreateLocalSpawnProfile()
+        {
+            var limits = CityPedestrianPopulationProfile.City;
+            return new CityPedestrianPopulationProfile("local-spawn-test", limits.DaytimePopulation,
+                limits.NightPopulation, limits.PoolSize, limits.MaximumSpawnsPerEvent,
+                limits.MinimumPeerSeparation, limits.MaximumWalkersPerStreetLane,
+                limits.ApproachGuidedPopulation, fillsImmediately: false);
         }
 
         /// <summary>

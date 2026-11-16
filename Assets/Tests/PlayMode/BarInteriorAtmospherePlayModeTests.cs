@@ -41,8 +41,8 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(ParticleSystemCurveMode.TwoConstants));
             Assert.That(velocity.y.mode, Is.EqualTo(velocity.x.mode));
             Assert.That(velocity.z.mode, Is.EqualTo(velocity.x.mode));
-            Assert.That(velocity.z.constantMin, Is.Zero);
-            Assert.That(velocity.z.constantMax, Is.Zero);
+            Assert.That(velocity.z.constantMax, Is.EqualTo(.004f).Within(.00001f));
+            Assert.That(velocity.z.constantMin, Is.EqualTo(-velocity.z.constantMax));
             // Do not drain ordinary Log messages here: the batch PlayMode
             // runner can emit its listener advisory during the handoff from
             // the preceding fixture. Warnings and errors remain test-fatal.

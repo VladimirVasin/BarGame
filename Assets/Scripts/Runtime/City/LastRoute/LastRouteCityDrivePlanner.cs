@@ -438,10 +438,19 @@ namespace BarPromenade
                 Flatten(lane[lane.Count - 2]),
                 Flatten(turnFrom));
 
-            // Pulling away off the lot: a short bend from where it is parked
-            // onto the road, rather than a corner at the kerb.
-            AppendLotExit(points, carPlan, lane[0]);
-            for (int index = 0; index < lane.Count - 1; index++)
+            // Join the first lane segment in the direction of travel. Its
+            // junction can lie behind the parking bay on compact streets.
+            Vector3 firstLaneEnd = lane.Count > 2 ? lane[1] : turnFrom;
+            Vector3 firstLaneDirection = firstLaneEnd - lane[0];
+            float laneLength = Flatten(firstLaneDirection).magnitude;
+            float joinDistance = Vector3.Dot(Flatten(probe - lane[0]), Flatten(firstLaneDirection).normalized)
+                + CornerRadiusMeters;
+            float joinFraction = laneLength > .001f
+                ? Mathf.Clamp(joinDistance, 0f, Mathf.Max(0f, laneLength - CornerRadiusMeters)) / laneLength
+                : 0f;
+            Vector3 join = Vector3.Lerp(lane[0], firstLaneEnd, joinFraction);
+            AppendLotExit(points, carPlan, join, firstLaneDirection.normalized);
+            for (int index = 1; index < lane.Count - 1; index++)
             {
                 Append(points, lane[index]);
             }
@@ -856,20 +865,20 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The pull-away. A quadratic through a control point out along the
-        /// car's own nose, so it leaves the way it is pointing and arrives on
-        /// the road pointing down it, instead of sliding sideways off the lot.
+        /// The pull-away follows the parked heading and ends tangent to the lane.
         /// </summary>
         private static void AppendLotExit(
             List<Vector3> points,
             LastRouteCarPlan carPlan,
-            Vector3 join)
+            Vector3 join,
+            Vector3 laneDirection)
         {
             Vector3 start = carPlan.Position;
             float reach = Mathf.Min(
                 LotExitLeadMeters,
                 Vector3.Distance(start, join) * 0.5f);
-            Vector3 control = start + (carPlan.Facing * reach);
+            Vector3 firstControl = start + carPlan.Facing * reach;
+            Vector3 lastControl = join - laneDirection * reach;
             const int divisions = 10;
             for (int index = 1; index <= divisions; index++)
             {
@@ -877,9 +886,10 @@ namespace BarPromenade
                 float inverse = 1f - t;
                 Append(
                     points,
-                    (inverse * inverse * start) +
-                    (2f * inverse * t * control) +
-                    (t * t * join));
+                    (inverse * inverse * inverse * start) +
+                    (3f * inverse * inverse * t * firstControl) +
+                    (3f * inverse * t * t * lastControl) +
+                    (t * t * t * join));
             }
         }
 

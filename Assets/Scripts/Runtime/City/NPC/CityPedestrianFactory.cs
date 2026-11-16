@@ -110,6 +110,7 @@ namespace BarPromenade
                         donor));
             }
 
+            // A local pool keeps the identities of its resident slots.
             return Create(
                 parent,
                 plan,
@@ -320,11 +321,6 @@ namespace BarPromenade
                         presentations));
                 }
 
-                if (requireCatalogComposition && createResidentPresentation == null)
-                {
-                    ValidateCatalogCoverage(presentations);
-                }
-
                 CityPedestrianDirector director =
                     runtimeRoot.AddComponent<CityPedestrianDirector>();
                 Func<int, CityPedestrianPresentation> residentPresentationFactory =
@@ -514,37 +510,6 @@ namespace BarPromenade
 
             presentation.gameObject.SetActive(false);
             return presentation;
-        }
-
-        private static void ValidateCatalogCoverage(
-            IReadOnlyList<CityPedestrianPresentation> presentations)
-        {
-            IReadOnlyList<CityPedestrianArchetype> archetypes =
-                CityPedestrianResources.Archetypes;
-            for (int index = 0; index < archetypes.Count; index++)
-            {
-                string designId = archetypes[index].DesignId;
-                bool found = false;
-                for (int pooled = 0;
-                     pooled < presentations.Count;
-                     pooled++)
-                {
-                    if (string.Equals(
-                            presentations[pooled].Registry.DesignId,
-                            designId,
-                            StringComparison.Ordinal))
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found)
-                {
-                    throw new InvalidOperationException(
-                        $"The pedestrian pool is missing design '{designId}'.");
-                }
-            }
         }
 
         private static void ValidatePassivePresentation(

@@ -31,6 +31,20 @@ namespace BarPromenade
         public const float ShelterApproachClearance = 1.30f;
 
         private static readonly Color StopPlateInk = new Color32(249, 244, 223, 255);
+        private static readonly Bounds PoleBody =
+            new Bounds(new Vector3(0f, 1.20f, 0f), new Vector3(0.12f, 2.40f, 0.12f));
+        private static readonly (string Name, Bounds Body)[] ShelterBodies =
+        {
+            ("Shelter Back Wall Collider", new Bounds(new Vector3(ShelterOffsetAlongLane, 1.32f, -0.48f),
+                new Vector3(4.25f, 2.45f, 0.10f))),
+            ("Shelter Post West Collider", new Bounds(new Vector3(ShelterOffsetAlongLane - 2.05f, 1.30f, 0f),
+                new Vector3(0.16f, 2.60f, 0.16f))),
+            ("Shelter Post East Collider", new Bounds(new Vector3(ShelterOffsetAlongLane + 2.05f, 1.30f, 0f),
+                new Vector3(0.16f, 2.60f, 0.16f))),
+            ("Shelter Bench Seat Collider", new Bounds(new Vector3(ShelterOffsetAlongLane,
+                ShelterBenchSeatTopHeight - ShelterBenchSeatThickness * 0.5f, ShelterBenchSeatForwardOffset),
+                new Vector3(ShelterBenchSeatWidth, ShelterBenchSeatThickness, ShelterBenchSeatDepth)))
+        };
 
         public static GameObject Build(
             Transform parent,
@@ -189,6 +203,25 @@ namespace BarPromenade
             return Rect.MinMaxRect(center.x-x,center.z-z,center.x+x,center.z+z);
         }
 
+        internal static void AddCollisionFootprints(CityBusStopDescriptor stop, List<Vector2[]> footprints)
+        {
+            Quaternion rotation = ResolveRotation(stop.Forward, stop.RoadsideForward);
+            Add(PoleBody);
+            foreach (var part in ShelterBodies) Add(part.Body);
+
+            void Add(Bounds body)
+            {
+                Vector3 centre = stop.ShelterPosition + rotation * body.center;
+                Vector3 right = rotation * Vector3.right * body.extents.x;
+                Vector3 forward = rotation * Vector3.forward * body.extents.z;
+                footprints.Add(CityRoadPolygon.CounterClockwise(new[] {
+                    Xz(centre - right - forward), Xz(centre + right - forward),
+                    Xz(centre + right + forward), Xz(centre - right + forward) }));
+            }
+
+            static Vector2 Xz(Vector3 world) => new Vector2(world.x, world.z);
+        }
+
         private static void BuildStopVisual(
             Transform root,
             bool collider,
@@ -323,11 +356,7 @@ namespace BarPromenade
                 assets.Place(root, assets.Pole, "Imported Route 01 Pole Shell");
                 if (collider)
                 {
-                    AddProxy(
-                        root,
-                        "Route 01 Pole Collider",
-                        new Vector3(0f, 1.20f, 0f),
-                        new Vector3(0.12f, 2.40f, 0.12f));
+                    AddProxy(root, "Route 01 Pole Collider", PoleBody.center, PoleBody.size);
                 }
 
                 return true;
@@ -336,8 +365,8 @@ namespace BarPromenade
             assets.CreateFallbackBox(
                 "Pole",
                 root,
-                new Vector3(0f, 1.20f, 0f),
-                new Vector3(0.12f, 2.40f, 0.12f),
+                PoleBody.center,
+                PoleBody.size,
                 assets.Frame,
                 collider);
             return false;
@@ -345,34 +374,8 @@ namespace BarPromenade
 
         private static void AddShelterColliders(Transform root)
         {
-            const float x = ShelterOffsetAlongLane;
-            AddProxy(
-                root,
-                "Shelter Back Wall Collider",
-                new Vector3(x, 1.32f, -0.48f),
-                new Vector3(4.25f, 2.45f, 0.10f));
-            AddProxy(
-                root,
-                "Shelter Post West Collider",
-                new Vector3(x - 2.05f, 1.30f, 0f),
-                new Vector3(0.16f, 2.60f, 0.16f));
-            AddProxy(
-                root,
-                "Shelter Post East Collider",
-                new Vector3(x + 2.05f, 1.30f, 0f),
-                new Vector3(0.16f, 2.60f, 0.16f));
-            AddProxy(
-                root,
-                "Shelter Bench Seat Collider",
-                new Vector3(
-                    x,
-                    ShelterBenchSeatTopHeight -
-                    ShelterBenchSeatThickness * 0.5f,
-                    ShelterBenchSeatForwardOffset),
-                new Vector3(
-                    ShelterBenchSeatWidth,
-                    ShelterBenchSeatThickness,
-                    ShelterBenchSeatDepth));
+            foreach (var part in ShelterBodies)
+                AddProxy(root, part.Name, part.Body.center, part.Body.size);
         }
 
         private static void AddProxy(

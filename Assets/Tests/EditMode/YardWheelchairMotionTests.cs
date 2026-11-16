@@ -55,12 +55,12 @@ namespace BarPromenade.Tests.EditMode
                 Is.False,
                 "The worn ring geometry must stay removed.");
 
-            // With the elevation plan the lap carries the real ground:
+            // With the city layout the lap carries the real ground:
             // every probed angle must match the sampled terrace datum,
             // so the chair can never hover over a lower terrace.
             YardWheelchairPlan elevated = YardWheelchairPlan.Create(
                 decorations,
-                layout.ElevationPlan);
+                layout);
             Assert.That(elevated.IsPresent, Is.True);
             for (int probe = 0; probe < 8; probe++)
             {

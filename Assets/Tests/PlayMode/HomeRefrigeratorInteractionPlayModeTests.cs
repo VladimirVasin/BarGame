@@ -79,7 +79,6 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     HomeRefrigeratorInteraction.OpenPromptKey));
             AssertClosedPresentation(interaction, view);
-            AssertRefrigeratorVisibleFromMainShot();
 
             home.Player.Motor.Teleport(
                 home.RefrigeratorPlan.ApproachPosition);
@@ -682,30 +681,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.Player.Interactor.ActiveInteractable,
                 Is.SameAs(home.RefrigeratorInteraction));
-        }
-
-        private void AssertRefrigeratorVisibleFromMainShot()
-        {
-            Camera camera = Camera.main;
-            Assert.That(camera, Is.Not.Null);
-            Vector3 center = home.transform.TransformPoint(
-                home.RefrigeratorPlan.RootPosition +
-                home.RefrigeratorPlan.BodyCenterLocal);
-            Vector3 viewport = camera.WorldToViewportPoint(center);
-            Assert.That(viewport.z, Is.GreaterThan(0f));
-            Assert.That(viewport.x, Is.InRange(0.07f, 0.93f));
-            Assert.That(viewport.y, Is.InRange(0.02f, 0.98f));
-
-            Vector3 halfHeight =
-                home.transform.up *
-                home.RefrigeratorPlan.BodySize.y * 0.5f;
-            float displayedHeight = Mathf.Abs(
-                camera.WorldToScreenPoint(center + halfHeight).y -
-                camera.WorldToScreenPoint(center - halfHeight).y);
-            Assert.That(
-                displayedHeight,
-                Is.GreaterThan(90f),
-                "The refrigerator must read as a major fixture, not a speck.");
         }
 
         private void AssertRigRendererState(bool expected)

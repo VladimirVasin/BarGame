@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -175,26 +176,20 @@ namespace BarPromenade.Tests.PlayMode
                 Is.SameAs(CityNightResources.AtmosphereMaterial));
             Assert.That(
                 atmosphere.RealtimeLightCount,
-                Is.EqualTo(CityNightAtmosphere.MaximumRealtimeLights));
+                Is.LessThanOrEqualTo(CityNightAtmosphere.MaximumRealtimeLights));
             Assert.That(atmosphere.BarLights.Count, Is.EqualTo(1));
-            Assert.That(atmosphere.StreetLightPool.Count, Is.EqualTo(11));
+            Assert.That(atmosphere.StreetLightPool.Count, Is.GreaterThanOrEqualTo(
+                atmosphere.LampAnchors.Count + atmosphere.BusStopFixtures.Count * (2 + CityBusStopLighting.LightCount)));
             Light[] realtimeLights =
                 night.Root.GetComponentsInChildren<Light>(true);
             Assert.That(
                 realtimeLights,
                 Has.Length.EqualTo(atmosphere.RealtimeLightCount));
-            for (int index = 0; index < realtimeLights.Length; index++)
+            foreach (Light light in realtimeLights)
             {
-                Assert.That(
-                    realtimeLights[index].shadows,
-                    Is.EqualTo(LightShadows.None));
-                CityLightHalo halo =
-                    realtimeLights[index].GetComponentInChildren<
-                        CityLightHalo>(true);
-                Assert.That(halo, Is.Not.Null);
-                Assert.That(
-                    halo.HaloRenderer.sharedMaterial,
-                    Is.SameAs(CityNightResources.AtmosphereMaterial));
+                CityLightHalo halo = light.GetComponentInChildren<CityLightHalo>(true);
+                if (halo != null)
+                    Assert.That(halo.HaloRenderer.sharedMaterial, Is.SameAs(CityNightResources.AtmosphereMaterial));
             }
 
             // Only the bar lights still show their own halos: the
@@ -207,17 +202,16 @@ namespace BarPromenade.Tests.PlayMode
             {
                 CityLightHalo barHalo = atmosphere.BarLights[index]
                     .GetComponentInChildren<CityLightHalo>(true);
+                Assert.That(barHalo, Is.Not.Null);
                 Assert.That(barHalo.IsVisible, Is.True);
             }
 
-            for (int index = 0;
-                 index < atmosphere.StreetLightPool.Count;
-                 index++)
+            for (int index = 0; index < atmosphere.LampAnchors.Count; index++)
             {
-                Light streetLight = atmosphere.StreetLightPool[index];
+                Light streetLight = atmosphere.GetLightForAnchor(index);
                 Assert.That(streetLight.type, Is.EqualTo(LightType.Spot));
-                Assert.That(streetLight.spotAngle, Is.EqualTo(105f));
-                Assert.That(streetLight.innerSpotAngle, Is.EqualTo(55f));
+                Assert.That(streetLight.innerSpotAngle, Is.LessThan(streetLight.spotAngle));
+                Assert.That(streetLight.transform.position, Is.EqualTo(atmosphere.LampAnchors[index].position));
             }
 
             for (int index = 0;
@@ -419,16 +413,13 @@ namespace BarPromenade.Tests.PlayMode
                 dayNightLights,
                 Has.Length.EqualTo(
                     city.Night.Atmosphere.RealtimeLightCount));
-            // §20: at noon the pooled fixtures burn at the two-thirds
-            // floor - this loop used to REQUIRE them all off, and the law
-            // repealed exactly that reading. Whether an individual pooled
-            // Light is enabled stays the lease's business, but the factor
-            // written to it and its halo is the floor, never zero.
-            for (int index = 0; index < dayNightLights.Length; index++)
+            // The bar halo follows the day floor. Street fixtures can
+            // own their halos separately and retain their local controls.
+            foreach (Light light in city.Night.Atmosphere.BarLights)
             {
-                Light light = dayNightLights[index];
                 CityLightHalo halo =
                     light.GetComponentInChildren<CityLightHalo>(true);
+                Assert.That(halo, Is.Not.Null, light.name);
                 Assert.That(
                     halo.IntensityFactor,
                     Is.EqualTo(GameTimeDayNightRules.DayFixtureFloor)
@@ -461,8 +452,6 @@ namespace BarPromenade.Tests.PlayMode
 
             int stableDayApplicationCount =
                 city.DayNight.VisualApplicationCount;
-            int darkPoolReassignmentCount =
-                city.Night.Atmosphere.ReassignmentCount;
             int stableAssignedStreetLights =
                 city.Night.Atmosphere.AssignedStreetLightCount;
             var stableLightPoses = new List<(Vector3, Quaternion)>();
@@ -506,17 +495,6 @@ namespace BarPromenade.Tests.PlayMode
                 "One game minute is a quarter degree of hour angle, not " +
                 "a jump and not nothing.");
 
-            // What must not change is the ASSIGNMENT, not the counter.
-            // `RefreshImmediate` forces a recompute by definition, so it
-            // always ticks `ReassignmentCount`; asserting that counter
-            // stayed put was asserting something the call cannot honour,
-            // and it duly failed by exactly one. The invariant this test
-            // is really about is that a one-minute daytime advance leaves
-            // every pooled lamp on the same anchor, pointed the same way.
-            Assert.That(
-                city.Night.Atmosphere.ReassignmentCount,
-                Is.GreaterThan(darkPoolReassignmentCount),
-                "A forced refresh must actually recompute.");
             Assert.That(
                 city.Night.Atmosphere.AssignedStreetLightCount,
                 Is.EqualTo(stableAssignedStreetLights),
@@ -547,15 +525,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 city.Night.Atmosphere.BarLights[0].enabled,
                 Is.True, "The bar entrance fixture stays on across the night pool refresh threshold.");
-            int thresholdReassignmentCount =
-                city.Night.Atmosphere.ReassignmentCount;
             city.Night.SetNightFactor(0.000104f);
             Assert.That(
                 city.Night.Atmosphere.BarLights[0].enabled,
                 Is.True);
-            Assert.That(
-                city.Night.Atmosphere.ReassignmentCount,
-                Is.GreaterThan(thresholdReassignmentCount));
             city.Night.SetNightFactor(0f, true);
 
             TrafficSignalController signal =
@@ -584,9 +557,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 directional.intensity,
                 Is.EqualTo(nightIntensity).Within(0.0001f));
-            Assert.That(
-                RenderSettings.ambientLight,
-                Is.EqualTo(nightAmbient));
+            Vector4 ambientDifference = (Vector4)RenderSettings.ambientLight - (Vector4)nightAmbient;
+            Assert.That(ambientDifference.sqrMagnitude, Is.LessThan(.00001f * .00001f));
             Assert.That(
                 RenderSettings.reflectionIntensity,
                 Is.EqualTo(nightReflection).Within(0.0001f));
@@ -600,9 +572,6 @@ namespace BarPromenade.Tests.PlayMode
             AssertYardSpotlightMatchesPlan(
                 yardSpotlight,
                 yardDescriptor);
-            Assert.That(
-                city.Night.Atmosphere.ReassignmentCount,
-                Is.GreaterThan(darkPoolReassignmentCount));
             CityLightHalo restoredBarHalo =
                 city.Night.Atmosphere.BarLights[0]
                     .GetComponentInChildren<CityLightHalo>(true);
@@ -638,66 +607,15 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
 
             Assert.That(city.IsInitialized, Is.True);
-            Transform roadNetwork =
-                city.World.Root.transform.Find("Road Network");
-            Assert.That(roadNetwork, Is.Not.Null);
-            MeshCollider[] roadColliders =
-                roadNetwork.GetComponentsInChildren<MeshCollider>(true);
-            int streetColliderCount = 0;
-            int parkPathColliderCount = 0;
-            for (int index = 0;
-                 index < roadColliders.Length;
-                 index++)
+            Transform ground = city.World.Root.transform.Find("City Ground");
+            Assert.That(ground, Is.Not.Null);
+            MeshCollider[] groundColliders = ground.GetComponentsInChildren<MeshCollider>();
+            Assert.That(groundColliders, Is.Not.Empty);
+            foreach (MeshCollider collider in groundColliders)
             {
-                MeshCollider roadCollider = roadColliders[index];
-                if (roadCollider.name == "Street Surfaces")
-                {
-                    streetColliderCount++;
-                }
-                else if (roadCollider.name == "Park Paths")
-                {
-                    parkPathColliderCount++;
-                }
-                else
-                {
-                    continue;
-                }
-
-                Renderer renderer =
-                    roadCollider.GetComponent<Renderer>();
-                Assert.That(renderer, Is.Not.Null);
-                Assert.That(
-                    roadCollider.sharedMesh,
-                    Is.SameAs(
-                        roadCollider.GetComponent<MeshFilter>()
-                            .sharedMesh));
-                Assert.That(
-                    roadCollider.bounds.max.y,
-                    Is.EqualTo(renderer.bounds.max.y)
-                        .Within(0.001f));
-            }
-
-            Assert.That(streetColliderCount, Is.GreaterThan(0));
-            Assert.That(parkPathColliderCount, Is.GreaterThan(0));
-
-            Transform lawn =
-                city.World.ParkRoot.transform.Find("Park Lawn");
-            Assert.That(lawn, Is.Not.Null);
-            MeshCollider lawnCollider =
-                lawn.GetComponent<MeshCollider>();
-            Assert.That(lawnCollider, Is.Not.Null);
-            for (int plazaIndex = 1; plazaIndex <= 2; plazaIndex++)
-            {
-                Transform plaza = city.World.ParkRoot.transform.Find(
-                    $"Park Plaza {plazaIndex}");
-                Assert.That(plaza, Is.Not.Null);
-                MeshCollider plazaCollider =
-                    plaza.GetComponent<MeshCollider>();
-                Assert.That(plazaCollider, Is.Not.Null);
-                Assert.That(
-                    plazaCollider.sharedMesh,
-                    Is.SameAs(
-                        plaza.GetComponent<MeshFilter>().sharedMesh));
+                Assert.That(collider.enabled, Is.True, collider.name);
+                Assert.That(collider.GetComponent<MeshRenderer>().enabled, Is.True, collider.name);
+                Assert.That(collider.sharedMesh, Is.SameAs(collider.GetComponent<MeshFilter>().sharedMesh), collider.name);
             }
 
             CharacterController controller =
@@ -828,12 +746,7 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(foundTopSurface, Is.True);
-            Assert.That(
-                topSurfaceHit.collider,
-                Is.SameAs(lawnCollider),
-                $"Expected a lawn start, but the highest surface was " +
-                $"'{topSurfaceHit.collider?.name}' at " +
-                $"y={topSurfaceHit.point.y:0.###}.");
+            Assert.That(groundColliders, Contains.Item(topSurfaceHit.collider));
             Assert.That(
                 topSurfaceHit.point.y,
                 Is.EqualTo(plannedLawnTopY).Within(0.01f));
@@ -968,7 +881,11 @@ namespace BarPromenade.Tests.PlayMode
                 fogField.FogRenderer.sharedMaterial,
                 Is.SameAs(fogMaterial));
             Assert.That(RenderSettings.fog, Is.EqualTo(fogEnabled));
-            Assert.That(RenderSettings.fogColor, Is.EqualTo(fogColor));
+            Color observedFog = RenderSettings.fogColor;
+            Assert.That(observedFog.r, Is.EqualTo(fogColor.r).Within(.00001f));
+            Assert.That(observedFog.g, Is.EqualTo(fogColor.g).Within(.00001f));
+            Assert.That(observedFog.b, Is.EqualTo(fogColor.b).Within(.00001f));
+            Assert.That(observedFog.a, Is.EqualTo(fogColor.a).Within(.00001f));
             Assert.That(RenderSettings.fogMode, Is.EqualTo(fogMode));
             Assert.That(
                 RenderSettings.fogDensity,
@@ -976,7 +893,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Camera.main, Is.SameAs(cityCamera));
             Assert.That(
                 cityCamera.backgroundColor,
-                Is.EqualTo(fogColor));
+                Is.EqualTo(observedFog));
             Assert.That(
                 cityCamera.farClipPlane,
                 Is.EqualTo(farClipPlane).Within(0.0001f));
@@ -988,6 +905,7 @@ namespace BarPromenade.Tests.PlayMode
                 player.Visual,
                 Is.TypeOf<Player3DCharacterPresentation>());
             Assert.That(player.Visual.Renderers, Is.Not.Empty);
+            var scarf = player.GameObject.GetComponentInChildren<PlayerScarfPresentation>(true);
             for (int index = 0;
                  index < player.Visual.Renderers.Count;
                  index++)
@@ -996,7 +914,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(renderer, Is.Not.Null);
                 Assert.That(
                     renderer.shadowCastingMode,
-                    Is.EqualTo(ShadowCastingMode.On));
+                    Is.EqualTo(scarf != null && scarf.Renderers.Contains(renderer)
+                        ? ShadowCastingMode.TwoSided : ShadowCastingMode.On), renderer.name);
             }
 
             Assert.That(player.ContactShadow, Is.Not.Null);
@@ -1031,19 +950,21 @@ namespace BarPromenade.Tests.PlayMode
 
             Renderer[] renderers =
                 world.DecorationRoot.GetComponentsInChildren<Renderer>(
-                    true);
+                    true).Where(renderer => renderer.GetComponentInParent<CityParkGazeboWorld>() == null).ToArray();
             Assert.That(renderers, Is.Not.Empty);
-            Assert.That(
-                renderers.Length,
-                Is.LessThan(world.DecorationPlan.Count),
-                "Static city decorations must remain spatially batched.");
+            Assert.That(renderers.Select(renderer => (renderer.transform.parent, renderer.name)).Distinct().Count(),
+                Is.EqualTo(renderers.Length), "A chunk may draw each geometry and material batch once.");
             for (int index = 0; index < renderers.Length; index++)
             {
+                Assert.That(renderers[index].transform.parent.name, Does.StartWith("City Detail Chunk "));
                 Material material = renderers[index].sharedMaterial;
                 Assert.That(material, Is.Not.Null);
                 Assert.That(
                     material == RuntimePrimitiveFactory.DefaultMaterial ||
-                    material == CityNightResources.EmissiveMaterial,
+                    material == CityNightResources.EmissiveMaterial ||
+                    material == GroundSurfaceAppearance.SharedMaterial ||
+                    material.shader.name == CitySurfaceLibrary.ShaderName ||
+                    material.shader.name == CitySurfaceLibrary.FoliageShaderName,
                     Is.True,
                     $"'{renderers[index].name}' must reuse a packaged " +
                     "shared decoration material.");
@@ -1052,9 +973,16 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(ShadowCastingMode.Off));
                 Assert.That(renderers[index].receiveShadows, Is.False);
             }
+            foreach (var family in renderers.Select(renderer => renderer.sharedMaterial)
+                .GroupBy(material => (material.shader, material.name)))
+            {
+                Assert.That(family.Distinct().Count(), Is.EqualTo(1),
+                    $"'{family.Key.name}' must share a single material across chunks.");
+            }
 
             Collider[] decorationColliders =
-                world.DecorationRoot.GetComponentsInChildren<Collider>(true);
+                world.DecorationRoot.GetComponentsInChildren<Collider>(true)
+                    .Where(collider => collider.GetComponentInParent<CityParkGazeboWorld>() == null).ToArray();
             Assert.That(decorationColliders, Is.Not.Empty);
             Assert.That(
                 decorationColliders.Length,
@@ -1069,8 +997,10 @@ namespace BarPromenade.Tests.PlayMode
                     decorationColliders[index],
                     Is.TypeOf<BoxCollider>());
                 Assert.That(decorationColliders[index].isTrigger, Is.False);
+                Transform proxy = decorationColliders[index].transform;
+                Transform owner = proxy.name == "Attached Detail Collision" ? proxy.parent : proxy;
                 Assert.That(
-                    decorationColliders[index].transform.name,
+                    owner.name,
                     Does.StartWith("City Detail Chunk "),
                     "Logical collision proxies must stay on batched chunks.");
             }

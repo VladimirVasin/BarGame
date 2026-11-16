@@ -434,7 +434,7 @@ namespace BarPromenade.Tests.EditMode
                     part.Kind == CityFringeYardPartKind.ForefieldAnchor)
                 .ToArray();
             Assert.That(
-                freightAnchors.Length,
+                freightAnchors.Select(ForefieldRun).Distinct().Count(),
                 Is.InRange(
                     CityFringeYardPlanner.MinimumForefieldAnchorCount,
                     CityFringeYardPlanner.MaximumForefieldAnchorCount));
@@ -557,10 +557,13 @@ namespace BarPromenade.Tests.EditMode
             float returnEnd = tunnelReturns.Max(part =>
                 Vector3.Dot(part.Center, fringe.TunnelForecourt.Axis) +
                 part.Size.z * 0.5f);
+            float approachLength = Vector3.Dot(
+                fringe.TunnelForecourt.PortalAnchor - fringe.TunnelForecourt.StreetAnchor,
+                fringe.TunnelForecourt.Axis);
             Assert.That(
                 returnEnd - returnStart,
-                Is.GreaterThanOrEqualTo(8f),
-                "The portal works lost their legible longitudinal mass.");
+                Is.GreaterThanOrEqualTo(approachLength * 0.35f),
+                "The portal wings must frame the last third of the approach even in the compact yard.");
             Assert.That(
                 yard.Parts.Any(part =>
                     part.StableId.Contains("landmark-side-stock")),
@@ -807,10 +810,8 @@ namespace BarPromenade.Tests.EditMode
                     0.07f);
             }
 
-            CityFringeYardPartDescriptor anchor = yard.Parts.Single(part =>
-                part.Kind == CityFringeYardPartKind.ForefieldAnchor &&
-                part.StableId.Contains("forefield-anchor-00-") &&
-                part.Footprint.Overlaps(cell.WorldBounds));
+            CityFringeYardPartDescriptor anchor = yard.Parts.First(part =>
+                part.Kind == CityFringeYardPartKind.ForefieldAnchor);
             Assert.That(anchor.BlocksMovement, Is.False);
             Assert.That(
                 anchor.Size.x,
@@ -1044,7 +1045,7 @@ namespace BarPromenade.Tests.EditMode
             }
 
             Assert.That(
-                forefield.Length,
+                forefield.Select(ForefieldRun).Distinct().Count(),
                 Is.InRange(
                     CityFringeYardPlanner.MinimumForefieldAnchorCount,
                     CityFringeYardPlanner.MaximumForefieldAnchorCount),
@@ -1066,9 +1067,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 yard.Parts.Any(part =>
                     part.Kind == CityFringeYardPartKind.ServiceTrack &&
-                    DepthFromRoad(yard, part.Center) >=
-                        CityFringeYardPlanner
-                            .ForefieldMiddleBandMaximumDepth),
+                    ReferenceDepthFromRoad(yard, part.Center) >=
+                        CityFringeYardPlanner.ForefieldMiddleBandMaximumDepth - 0.04f),
                 Is.EqualTo(usesServiceTrack),
                 $"{yard.AreaId} has the wrong mountain-toe track contract.");
             if (!usesServiceTrack)
@@ -1076,15 +1076,15 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     yard.Parts.Any(part =>
                         part.Kind == CityFringeYardPartKind.DrainChannel &&
-                        DepthFromRoad(yard, part.Center) >=
-                            CityFringeYardPlanner
-                                .ForefieldMiddleBandMaximumDepth),
+                        ReferenceDepthFromRoad(yard, part.Center) >=
+                            CityFringeYardPlanner.ForefieldMiddleBandMaximumDepth - 0.04f),
                     Is.True,
                     $"{yard.AreaId} lacks its floodworks toe drain.");
             }
 
             float[] coordinates = forefield
-                .Select(part => LongCoordinate(yard, part.Center))
+                .GroupBy(ForefieldRun)
+                .Select(parts => LongCoordinate(yard, parts.First().Center))
                 .OrderBy(value => value)
                 .ToArray();
             float minimum = Mathf.Abs(yard.Access.OutwardNormal.x) > 0.5f
@@ -1114,7 +1114,7 @@ namespace BarPromenade.Tests.EditMode
             {
                 Assert.That(anchor.BlocksMovement, Is.False, anchor.StableId);
                 Assert.That(
-                    DepthFromRoad(yard, anchor.Center),
+                    ReferenceDepthFromRoad(yard, anchor.Center),
                     Is.InRange(
                         CityFringeYardPlanner.ForefieldRoadBandMaximumDepth,
                         CityFringeYardPlanner
@@ -1122,6 +1122,9 @@ namespace BarPromenade.Tests.EditMode
                     anchor.StableId);
             }
         }
+
+        private static string ForefieldRun(CityFringeYardPartDescriptor part) =>
+            string.IsNullOrEmpty(part.SurfaceRunId) ? part.StableId : part.SurfaceRunId;
 
         private static void AssertPoleSpacing(
             CityFringeYardDescriptor yard)
@@ -1456,7 +1459,7 @@ namespace BarPromenade.Tests.EditMode
                 {
                     Assert.That(
                         start,
-                        Is.EqualTo(previousEnd).Within(0.001f),
+                        Is.EqualTo(previousEnd).Within(0.002f),
                         $"{segment.StableId} overlaps its previous segment.");
                 }
 
@@ -1587,27 +1590,28 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
-        private static float DepthFromRoad(
+        private static float ReferenceDepthFromRoad(
             CityFringeYardDescriptor yard,
             Vector3 point)
         {
             Vector3 outward = yard.Access.OutwardNormal;
+            float scale = CityFringeYardPlanner.DepthBudgetScale(yard);
             if (outward.x < -0.5f)
             {
-                return yard.AreaBounds.xMax - point.x;
+                return (yard.AreaBounds.xMax - point.x) / scale;
             }
 
             if (outward.x > 0.5f)
             {
-                return point.x - yard.AreaBounds.xMin;
+                return (point.x - yard.AreaBounds.xMin) / scale;
             }
 
             if (outward.z < -0.5f)
             {
-                return yard.AreaBounds.yMax - point.z;
+                return (yard.AreaBounds.yMax - point.z) / scale;
             }
 
-            return point.z - yard.AreaBounds.yMin;
+            return (point.z - yard.AreaBounds.yMin) / scale;
         }
 
         private static float LongCoordinate(

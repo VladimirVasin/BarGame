@@ -650,9 +650,17 @@ namespace BarPromenade
         {
             layer.Patch = patch;
             SkinnedMeshRenderer renderer = layer.Renderer;
+            Mesh mesh = patch.Renderer.sharedMesh;
+            if (renderer.sharedMesh != mesh)
+            {
+                // Pooled layers can change vertex layout and bone palette together.
+                // Detach the previous skin buffer before binding the new one.
+                renderer.sharedMesh = null;
+            }
             renderer.transform.SetParent(patch.Source.transform, false);
-            renderer.sharedMesh = patch.Renderer.sharedMesh;
-            renderer.bones = patch.Bones; renderer.rootBone = patch.Source.rootBone;
+            renderer.bones = patch.Bones;
+            renderer.rootBone = patch.Source.rootBone;
+            renderer.sharedMesh = mesh;
             renderer.sharedMaterial = RequireProjectileMaterial(bloodMaterial);
             renderer.localBounds = patch.Source.localBounds;
             renderer.shadowCastingMode = ShadowCastingMode.Off; renderer.receiveShadows = true;

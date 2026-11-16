@@ -1258,11 +1258,9 @@ namespace BarPromenade
                         bounds.xMin + bounds.width * (column / (float)columns),
                         bounds.yMin + bounds.height * (row / (float)rows));
                     float depth = AlpineVillageSnowDrift.SampleDepth(plan, paths, point);
-                    // Buried points follow the actual triangle; the analytic
-                    // shelf can stand above the painted road surface.
-                    float ground = depth <= AlpineVillageSnowDrift.FieldBurial
-                        ? AlpineVillageTerrainSampler.SampleMeshHeight(plan, point)
-                        : AlpineVillageTerrainSampler.SampleHeight(plan, point);
+                    // Neighboring vertices must share the rendered ground
+                    // plane even when their depths differ across an edge.
+                    float ground = AlpineVillageTerrainSampler.SampleMeshHeight(plan, point);
                     float height = ground + depth - AlpineVillageSnowDrift.FieldBurial;
                     vertices.Add(new Vector3(point.x, height, point.y));
                     grounds.Add(ground);
@@ -1477,11 +1475,7 @@ namespace BarPromenade
                 plan,
                 paths,
                 point);
-            // Bare toes belong below the physical/rendered ground plane,
-            // not below an independently sampled analytic height.
-            float ground = depth <= 0.0005f
-                ? AlpineVillageTerrainSampler.SampleMeshHeight(plan, point)
-                : AlpineVillageTerrainSampler.SampleHeight(plan, point);
+            float ground = AlpineVillageTerrainSampler.SampleMeshHeight(plan, point);
             float height = depth <= 0.0005f
                 ? ground - AlpineVillageSnowDrift.ToeBurial
                 : ground + depth;

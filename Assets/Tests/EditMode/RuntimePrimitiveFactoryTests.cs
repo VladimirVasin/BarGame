@@ -478,7 +478,7 @@ namespace BarPromenade.Tests.EditMode
                 renderer.GetPropertyBlock(properties);
                 Assert.That(
                     renderer.sharedMaterial,
-                    Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                    Is.EqualTo(GroundSurfaceAppearance.SharedMaterial));
                 Assert.That(
                     properties.GetTexture(
                         Shader.PropertyToID("_BaseMap")),

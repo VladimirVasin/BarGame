@@ -1088,8 +1088,10 @@ namespace BarPromenade.Tests.PlayMode
                 GameInput.HandleApplicationFocus(true);
                 GameCursor.Capture(cursor, CursorLockMode.Locked, false, 0);
                 Time.timeScale = 8f;
-                var layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default, CityGenerationSettings.Default, seed);
-                var areas = RoadWalkableArea.FromLayout(layout);
+                CityGenerationSettings settings = CityGenerationSettings.Default;
+                var layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default, settings, seed);
+                CityWorldResult world = CityWorldBuilder.Build(root.transform, layout, settings);
+                var areas = world.WalkableArea;
                 var surfaces = CityStreetSurfacePlanner.Create(layout);
                 var plans = CityDistrictBusPlanner.Create(layout);
                 Assert.That(plans.Select(p => p.Number), Is.EqualTo(new[] { 1, 2, 3 }));
@@ -1098,12 +1100,7 @@ namespace BarPromenade.Tests.PlayMode
                 var hillTransfer = plans[2].Stops.Single(s => s.TargetId == westTransfer.TargetId);
                 var before = west.Stops[(westTransfer.SequenceIndex + west.Stops.Count - 1) % west.Stops.Count];
 
-                // Build the production street and the stop furniture. This focused world
-                // has its own physics surface in place of the whole-city ground compositor.
-                var streets = CityStreetSurfaceWorldBuilder.Build("Street surface", root.transform, layout, surfaces);
-                var streetCollider = streets.AddComponent<MeshCollider>();
-                streetCollider.sharedMesh = streets.GetComponent<MeshFilter>().sharedMesh;
-                CityBusStopWorldBuilder.Build(root.transform, plans);
+                CityBusStopWorldBuilder.Build(world.Root.transform, plans);
                 var camera = new GameObject("Passenger camera").AddComponent<Camera>();
                 camera.gameObject.AddComponent<AudioListener>();
                 camera.transform.SetParent(root.transform, false);
@@ -1236,13 +1233,20 @@ namespace BarPromenade.Tests.PlayMode
 
                 void AdvanceFleetUntil(System.Func<bool> arrived, int maxSteps)
                 {
-                    for (int i = 0; i < maxSteps && !arrived(); i++)
+                    for (int i = 0; i < maxSteps * 4 && !arrived(); i++)
                     {
-                        foreach (var line in lines) line.Advance(.20f);
+                        foreach (var line in lines) line.Advance(.05f);
                         foreach (var ride in rides) if (ride.IsPassengerAboard) ride.RefreshPassengerPose();
                     }
-                    Assert.That(arrived(), Is.True, "Service missed requested stop. " + string.Join(" / ",
-                        lines.Select(line => line.Plan.RouteId + " " + line.Actor.MotionState + " " + line.Actor.CurrentStop?.Id)));
+                    if (arrived()) return;
+                    var blockerField = typeof(CityBusActor).GetField("lastBlocker",
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                    Assert.Fail("Service missed requested stop. " + string.Join(" / ", lines.Select(line =>
+                    {
+                        var blocker = (CityBusObstacleState)blockerField.GetValue(line.Actor);
+                        return $"{line.Plan.RouteId} {line.Actor.MotionState} at {line.Actor.Position:F2} " +
+                            $"stopping for {blocker.Kind} {blocker.Id}[{blocker.Index}] at {blocker.Point:F2}";
+                    })));
                 }
 
                 IEnumerator WalkTo(Vector3 point, string segment)
@@ -1275,8 +1279,11 @@ namespace BarPromenade.Tests.PlayMode
                     yield return null;
                     yield return null;
                     Vector3 position = player.GameObject.transform.position;
-                    Assert.That(streetCollider.Raycast(new Ray(position + Vector3.up * 4f, Vector3.down),
-                        out RaycastHit floor, 12f), Is.True, stage + " needs real pavement");
+                    RaycastHit floor = Physics.RaycastAll(position + Vector3.up * 4f, Vector3.down, 12f,
+                            Physics.AllLayers, QueryTriggerInteraction.Ignore)
+                        .Where(hit => hit.collider.transform.IsChildOf(world.Root.transform))
+                        .OrderBy(hit => hit.distance).FirstOrDefault();
+                    Assert.That(floor.collider, Is.Not.Null, stage + " needs real pavement");
                     Assert.That(position.y, Is.EqualTo(floor.point.y + PlayerFactory.GroundedRootOffset).Within(.10f),
                         stage + " standing root " + position + " versus pavement " + floor.point);
                     var registry = ((Player3DCharacterPresentation)player.Visual).Registry;

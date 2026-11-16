@@ -264,6 +264,8 @@ namespace BarPromenade
         public Rect Bounds { get; }
         public float SouthY { get; }
         public float NorthY { get; }
+
+        internal float SampleTop(float z) => Mathf.Lerp(SouthY, NorthY, Mathf.InverseLerp(Bounds.yMin, Bounds.yMax, z));
     }
 
     public readonly struct CityRiverBridgeDescriptor
@@ -369,6 +371,37 @@ namespace BarPromenade
             out CityRiverBridgeDescriptor bridge)
         {
             return bridgesByEdge.TryGetValue(edge, out bridge);
+        }
+
+        internal Rect GetPromenadeSurfaceBounds(CityRiverPromenadeDescriptor promenade)
+        {
+            if (Segments.Count == 0) return promenade.Bounds;
+            Rect bounds = promenade.Bounds;
+            Rect water = Segments[0].WaterBounds;
+            if (promenade.WestBank) bounds.xMax = water.xMin;
+            else bounds.xMin = water.xMax;
+            return bounds;
+        }
+
+        internal bool TrySamplePromenadeTop(Vector2 point, out float top)
+        {
+            foreach (CityRiverPromenadeDescriptor promenade in Promenades)
+            {
+                if (!GetPromenadeSurfaceBounds(promenade).Contains(point)) continue;
+                bool cut = false;
+                foreach (CityRiverLandingDescriptor landing in Landings)
+                    if (landing.WestBank == promenade.WestBank &&
+                        (landing.StairBounds.Contains(point) || landing.PlatformBounds.Contains(point)))
+                    {
+                        cut = true;
+                        break;
+                    }
+                if (cut) continue;
+                top = promenade.SampleTop(point.y);
+                return true;
+            }
+            top = 0f;
+            return false;
         }
 
         public bool ContainsBridgeDeck(Vector3 position)

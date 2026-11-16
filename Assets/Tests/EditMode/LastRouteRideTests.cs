@@ -494,6 +494,12 @@ namespace BarPromenade.Tests.EditMode
                 worstIndex = index;
             }
 
+            if (worst >= 26f)
+            {
+                TestContext.WriteLine($"Parked at {carPlan.Position:F3}, facing {carPlan.Facing:F3}.");
+                for (int index = Mathf.Max(0, worstIndex - 4); index <= Mathf.Min(path.PointCount - 1, worstIndex + 4); index++)
+                    TestContext.WriteLine($"{path.GetDistance(index):F3} m: {path.GetPoint(index):F3} at {path.GetTurnRate(index):F1} deg/m");
+            }
             Assert.That(
                 worst,
                 Is.LessThan(26f),

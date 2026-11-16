@@ -51,6 +51,9 @@ namespace BarPromenade
                     "City sidewalks are too narrow for a pedestrian capsule.");
             }
 
+            // Courtyard heights need the same entrance surfaces on cold and
+            // already composed layouts.
+            CityBuildingEntrancePlan.ForLayout(layout);
             streetSurfacePlan ??= CityStreetSurfacePlanner.Create(layout);
             uint stableSeed = CityPedestrianStableHash.Combine(
                 CityPedestrianStableHash.Combine(
@@ -725,6 +728,16 @@ namespace BarPromenade
                         ? CityBusIntersectionSelector
                             .GetCornerCenterOffset(layout)
                         : sideOffset;
+                    Vector3 PavementAt(int x, int z)
+                    {
+                        var point = new Vector2(center.x + x * cornerOffset, center.z + z * cornerOffset);
+                        float height = surfaces.SupportPlan != null &&
+                            surfaces.SupportPlan.TrySampleTop(point, out float top, out _)
+                                ? top
+                                : center.y + CityStreetSurfacePlanner.SidewalkTop;
+                        return new Vector3(point.x, height, point.y);
+                    }
+
                     var corners = new Dictionary<CornerKey, int>();
                     for (int xSign = -1; xSign <= 1; xSign += 2)
                     {
@@ -736,11 +749,7 @@ namespace BarPromenade
                                 graph.AddNode(
                                     $"junction:{gridNode.x}:{gridNode.y}:" +
                                     $"corner:{xSign}:{zSign}",
-                                    new Vector3(
-                                        center.x + (xSign * cornerOffset),
-                                        center.y +
-                                        CityStreetSurfacePlanner.SidewalkTop,
-                                        center.z + (zSign * cornerOffset)),
+                                    PavementAt(xSign, zSign),
                                     false));
                         }
                     }
@@ -793,11 +802,7 @@ namespace BarPromenade
                         int mouth = graph.AddNode(
                             $"junction:{gridNode.x}:{gridNode.y}:" +
                             $"mouth:{direction.x}:{direction.y}",
-                            new Vector3(
-                                center.x + (direction.x * cornerOffset),
-                                center.y +
-                                CityStreetSurfacePlanner.SidewalkTop,
-                                center.z + (direction.y * cornerOffset)),
+                            PavementAt(direction.x, direction.y),
                             false);
                         GetMouthCorners(
                             direction,

@@ -272,8 +272,12 @@ namespace BarPromenade.Tests.PlayMode
                     taskAnchors.Min(anchor => (anchor.position - candidate.position).sqrMagnitude)).First();
                 city.Player.Motor.Teleport(mast.position - Vector3.up * 4.7f + Vector3.up * PlayerFactory.GroundedRootOffset);
                 Physics.SyncTransforms(); atmosphere.RefreshImmediate();
-                Assert.That(faultLease.shadows, Is.EqualTo(LightShadows.None));
-                Assert.That(faultLease.intensity, Is.GreaterThan(.01f), "A retasked slot cannot retain the old contact fault.");
+                Assert.That(Lease(fault), Is.SameAs(faultLease), "The contact fault belongs to its fixed lamp.");
+                Assert.That(faultLease.shadows, Is.EqualTo(LightShadows.Soft));
+                Light mastLight = atmosphere.GetLightForAnchor(System.Array.IndexOf(atmosphere.LampAnchors.ToArray(), mast));
+                Assert.That(mastLight, Is.Not.Null);
+                Assert.That(mastLight, Is.Not.SameAs(faultLease));
+                Assert.That(mastLight.shadows, Is.EqualTo(LightShadows.None));
             }
             finally
             {

@@ -273,7 +273,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(wall.GetComponent<MeshFilter>().sharedMesh, Is.Not.Null, "...but keeps its mesh.");
                 BoxCollider collider = wall.GetComponent<BoxCollider>();
                 Assert.That(collider, Is.Not.Null, "...and its collider.");
-                AssertVector(Vector3.Scale(collider.size, wall.lossyScale), new Vector3(10f, 3.4f, 0.24f));
+                AssertVector(Vector3.Scale(collider.size, wall.lossyScale),
+                    new Vector3(plan.RoomSize.x, plan.RoomHeight, PlayerHomeBalconyGeometry.WallThickness));
                 Transform tile = room.Find(HomeBathroomMirrorPlane.BackTileName);
                 Assert.That(tile.GetComponent<MeshRenderer>().enabled, Is.False);
 
@@ -283,8 +284,12 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(opening.Pieces.Count, Is.EqualTo(11));
                 var block = new MaterialPropertyBlock();
                 Rect hole = HomeBathroomMirrorPlane.OpeningXY;
-                Texture wallTexture = HomeSurfaceAppearance.GetTexture(HomeSurfaceKind.Wallpaper);
-                Texture tileTexture = HomeSurfaceAppearance.GetTexture(HomeSurfaceKind.BathroomTile);
+                wall.GetComponent<Renderer>().GetPropertyBlock(block);
+                Texture wallTexture = block.GetTexture("_BaseMap");
+                tile.GetComponent<Renderer>().GetPropertyBlock(block);
+                Texture tileTexture = block.GetTexture("_BaseMap");
+                Assert.That(wallTexture, Is.Not.Null);
+                Assert.That(tileTexture, Is.Not.Null);
                 var faces = new Dictionary<string, Rect>();
                 var transforms = new Dictionary<string, Vector4>();
                 foreach (Renderer piece in opening.Pieces)

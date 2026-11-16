@@ -15,9 +15,9 @@ namespace BarPromenade.Tests.EditMode
         private const float Tolerance = 0.0005f;
 
         private static readonly Vector3 MattressSize = new Vector3(
-            2.39f,
+            HomeBedInteractionPlan.FurnitureLength - .16f,
             HomeInteriorWorldBuilder.BedMattressThickness,
-            1.57f);
+            HomeBedInteractionPlan.FurnitureDepth - .18f * HomeBedInteractionPlan.FurnitureDepthScale);
 
         [Test]
         public void Factory_BuildsTheGridWithTheRestSilhouetteOfTheBox()
@@ -107,7 +107,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Factory_TopGridUvsSpanZeroToOne()
+        public void Factory_ClonesTheAuthoredTopGridUvs()
         {
             var parent = new GameObject("Bed Surface Factory Test");
             try
@@ -128,30 +128,18 @@ namespace BarPromenade.Tests.EditMode
                         .GetComponent<HomeBedDeformableSurface>();
                 Mesh mesh = surface.Mesh;
                 Vector2[] uvs = mesh.uv;
+                HomeAuthoredPart authored = HomeInteriorModelLibrary.Load().Binding("Home Bed Mattress");
+                CollectionAssert.AreEqual(authored.mesh.uv, uvs);
                 for (int index = 0;
                      index < surface.TopVertexCount;
                      index++)
                 {
                     Assert.That(
-                        uvs[index].x,
-                        Is.InRange(0f, 1f));
+                        float.IsFinite(uvs[index].x),
+                        Is.True);
                     Assert.That(
-                        uvs[index].y,
-                        Is.InRange(0f, 1f));
-                }
-
-                // Within every cell quad the ST transform scales 0..1
-                // face UVs, so a shuffled corner layout would tile wrong.
-                for (int quad = 0;
-                     quad < surface.TopVertexCount;
-                     quad += 4)
-                {
-                    Assert.That(
-                        uvs[quad + 1].x,
-                        Is.GreaterThan(uvs[quad].x));
-                    Assert.That(
-                        uvs[quad + 2].y,
-                        Is.GreaterThan(uvs[quad].y));
+                        float.IsFinite(uvs[index].y),
+                        Is.True);
                 }
             }
             finally
@@ -187,7 +175,8 @@ namespace BarPromenade.Tests.EditMode
             var parent = new GameObject("Filled Pillow Contract Test");
             try
             {
-                var size = new Vector3(0.62f, HomeInteriorWorldBuilder.BedPillowThickness, 1.05f);
+                var size = new Vector3(0.62f, HomeInteriorWorldBuilder.BedPillowThickness,
+                    1.05f * HomeBedInteractionPlan.FurnitureDepthScale);
                 HomeBedDeformableSurface surface = HomeBedDeformableSurfaceFactory
                     .CreateDeformableSurface("Test Pillow", parent.transform, Vector3.zero,
                         size, Color.gray, HomeSurfaceKind.BedLinen, SurfaceProjection.BoxXZ,

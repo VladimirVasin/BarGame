@@ -498,12 +498,12 @@ namespace BarPromenade.Tests.EditMode
                     lot.Cell,
                     lot.FrontageDirection);
                 AssertRoadAnchorMatches(
-                    plan,
+                    defaultLayout,
                     frontage,
                     lot.ReturnPosition,
                     "road return");
                 AssertRoadAnchorMatches(
-                    plan,
+                    defaultLayout,
                     frontage,
                     lot.SidewalkArrivalPosition,
                     "sidewalk arrival");
@@ -558,7 +558,7 @@ namespace BarPromenade.Tests.EditMode
                     point.Accesses)
                 {
                     AssertRoadAnchorMatches(
-                        plan,
+                        defaultLayout,
                         access.FrontageEdge,
                         access.Center,
                         access.Id);
@@ -570,7 +570,7 @@ namespace BarPromenade.Tests.EditMode
                      defaultLayout.OpenAreaAccesses)
             {
                 AssertRoadAnchorMatches(
-                    plan,
+                    defaultLayout,
                     access.FrontageEdge,
                     access.Center,
                     access.Id);
@@ -584,13 +584,16 @@ namespace BarPromenade.Tests.EditMode
                             surface.Kind != CitySurfaceKind.Water)
                         .ToArray();
                 Assert.That(areaSurfaces, Is.Not.Empty, access.Id);
-                Assert.That(
-                    areaSurfaces.All(surface =>
-                        Mathf.Abs(surface.DatumY - access.Center.y) <=
-                        Tolerance),
-                    Is.True,
-                    $"{access.Id} must meet its authored terrace without " +
-                    "a hidden vertical step.");
+                Vector3 yardSide = access.Center + access.OutwardNormal * .45f;
+                var yardPoint = new Vector2(yardSide.x, yardSide.z);
+                if (areaSurfaces.Any(surface => surface.WorldBounds.Contains(yardPoint)))
+                {
+                    Assert.That(CityTerrainSurfacePlan.TrySampleGroundTop(defaultLayout, yardPoint, out float ground, out _),
+                        Is.True, access.Id);
+                    Assert.That(Mathf.Abs(ground - access.Center.y),
+                        Is.LessThanOrEqualTo(CityRoadGroundBoundaryPlanner.MaximumSafeStep),
+                        $"{access.Id} must meet the graded terrace at its actual approach.");
+                }
             }
         }
 
@@ -1271,43 +1274,19 @@ namespace BarPromenade.Tests.EditMode
         }
 
         private static void AssertRoadAnchorMatches(
-            CityElevationPlan plan,
+            CityLayout layout,
             RoadEdge edge,
             Vector3 anchor,
             string label)
         {
-            float expected = SampleEdgeAtWorldPoint(plan, edge, anchor);
+            CityRoadPath path = layout.RoadGeometry.Get(edge);
+            float along = path.Project(new Vector2(anchor.x, anchor.z)).DistanceAlong;
+            float expected = layout.ElevationPlan.SampleRoadDatum(edge, along / path.Length);
             Assert.That(
                 anchor.y,
                 Is.EqualTo(expected).Within(Tolerance),
                 label);
             Assert.That(anchor.y, Is.GreaterThan(0f), label);
-        }
-
-        private static float SampleEdgeAtWorldPoint(
-            CityElevationPlan plan,
-            RoadEdge edge,
-            Vector3 point)
-        {
-            Vector2 start = GetNodeWorldXZ(plan, edge.A);
-            Vector2 end = GetNodeWorldXZ(plan, edge.B);
-            Vector2 delta = end - start;
-            var pointXZ = new Vector2(point.x, point.z);
-            float amount = delta.sqrMagnitude > 0.000001f
-                ? Mathf.Clamp01(
-                    Vector2.Dot(pointXZ - start, delta) /
-                    delta.sqrMagnitude)
-                : 0f;
-            return plan.SampleRoadDatum(edge, amount);
-        }
-
-        private static Vector2 GetNodeWorldXZ(
-            CityElevationPlan plan,
-            Vector2Int node)
-        {
-            return new Vector2(
-                plan.WorldOrigin.x + node.x * plan.NodeSpacing.x,
-                plan.WorldOrigin.z + node.y * plan.NodeSpacing.y);
         }
 
         /// <summary>

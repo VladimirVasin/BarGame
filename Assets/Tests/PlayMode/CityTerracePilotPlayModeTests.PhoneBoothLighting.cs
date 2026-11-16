@@ -98,16 +98,20 @@ namespace BarPromenade.Tests.PlayMode
                         priorAnchor = anchor.position;
                     }
                 }
-                // A normal mast must restore the shared slot after the booth lease.
+                // Each light belongs to its fixed world fixture.
                 var taskAnchors = atmosphere.LampAnchors.Where(anchor => anchor != null && anchor.name.StartsWith("IndustrialTaskLight_")).ToArray();
                 Transform farMast = city.Night.LampAnchors.OrderByDescending(mast =>
                     taskAnchors.Min(anchor => (anchor.position - mast.position).sqrMagnitude)).First();
                 city.Player.Motor.Teleport(farMast.position - Vector3.up * 4.7f + Vector3.up * PlayerFactory.GroundedRootOffset);
                 Physics.SyncTransforms();
                 atmosphere.RefreshImmediate();
-                Assert.That(Vector3.Distance(priorLease.transform.position, priorAnchor), Is.GreaterThan(1f));
-                Assert.That(priorLease.shadows, Is.EqualTo(LightShadows.None), "A retasked normal street light must clear the booth shadow profile.");
-                var data = priorLease.GetUniversalAdditionalLightData();
+                Assert.That(Vector3.Distance(priorLease.transform.position, priorAnchor), Is.LessThan(.01f));
+                Assert.That(priorLease.shadows, Is.EqualTo(LightShadows.Soft));
+                Light mast = atmosphere.GetLightForAnchor(System.Array.IndexOf(atmosphere.LampAnchors.ToArray(), farMast));
+                Assert.That(mast, Is.Not.Null);
+                Assert.That(mast, Is.Not.SameAs(priorLease));
+                Assert.That(mast.shadows, Is.EqualTo(LightShadows.None));
+                var data = mast.GetUniversalAdditionalLightData();
                 Assert.That(data.usePipelineSettings && !data.customShadowLayers && (uint)data.renderingLayers == 1u, Is.True);
             }
             finally { follow.ClearFixedPose(); OnDemandRendering.renderFrameInterval = priorInterval; }

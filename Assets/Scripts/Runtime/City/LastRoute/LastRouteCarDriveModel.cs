@@ -7,10 +7,8 @@ namespace BarPromenade
     /// How one car takes one road: how fast it will go, how hard it gets there
     /// and how much lateral it is willing to carry through a bend.
     ///
-    /// The bus's numbers are the band this sits in - it cruises at `6`, drops
-    /// to `3.2` at junctions and accelerates at `1.45`. A saloon with one
-    /// passenger and nowhere to stop may sit a little above that, but not much:
-    /// the point of the drive is to be looked out of.
+    /// The compact city leg is slow enough to watch from the passenger seat.
+    /// The long mountain leg has its own pace and lower cornering load.
     /// </summary>
     public readonly struct LastRouteCarDriveProfile
     {
@@ -59,12 +57,12 @@ namespace BarPromenade
         public float MinimumCorneringSpeed { get; }
 
         /// <summary>
-        /// City streets: `6 m` of carriageway between kerbs, right-angle
-        /// junctions, and a man who has just been told to drive.
+        /// City streets: `6 m` of carriageway between kerbs and a short drive
+        /// from the island to the tunnel with time to see the streets.
         /// </summary>
         public static LastRouteCarDriveProfile City { get; } =
             new LastRouteCarDriveProfile(
-                cruiseSpeed: 8.2f,
+                cruiseSpeed: 3.25f,
                 acceleration: 1.9f,
                 braking: 2.6f,
                 maximumLateralAcceleration: 2.2f,

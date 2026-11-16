@@ -145,9 +145,14 @@ namespace BarPromenade.Tests.EditMode
                 playerToCamera.y = 0f;
                 Vector3 cameraForward = camera.transform.forward;
                 cameraForward.y = 0f;
+                Vector3 right = Vector3.Cross(Vector3.up, expectedForward);
+                Assert.That(
+                    Vector3.Dot(playerToCamera, right),
+                    Is.EqualTo(PlayerCameraFollow.RightShoulderOffset).Within(0.001f),
+                    "The door arrival seeds the right-shoulder offset.");
                 Assert.That(
                     Vector3.Dot(
-                        playerToCamera.normalized,
+                        (playerToCamera - right * PlayerCameraFollow.RightShoulderOffset).normalized,
                         -expectedForward),
                     Is.GreaterThan(0.995f),
                     "The chase camera must start behind the returned hero.");

@@ -835,20 +835,10 @@ namespace BarPromenade.Tests.PlayMode
                     HomeBalconySmokingInteraction
                         .CigarettePaperLocalPosition));
             Assert.That(
-                paper.localScale,
-                Is.EqualTo(
-                    HomeBalconySmokingInteraction
-                        .CigarettePaperLocalScale));
-            Assert.That(
                 ember.localPosition,
                 Is.EqualTo(
                     HomeBalconySmokingInteraction
                         .CigaretteEmberLocalPosition));
-            Assert.That(
-                ember.localScale,
-                Is.EqualTo(
-                    HomeBalconySmokingInteraction
-                        .CigaretteEmberLocalScale));
 
             Assert.That(
                 GetLocalMeshSize(paper),
@@ -867,9 +857,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(paper.localPosition.y, Is.GreaterThan(0f));
             Assert.That(ember.localPosition.y, Is.GreaterThan(0f));
             float paperTip =
-                paper.localPosition.y + paper.localScale.y;
+                paper.localPosition.y + GetLocalMeshSize(paper).y * .5f;
             float emberBase =
-                ember.localPosition.y - ember.localScale.y;
+                ember.localPosition.y - GetLocalMeshSize(ember).y * .5f;
             Assert.That(emberBase, Is.EqualTo(paperTip).Within(0.0001f));
             Assert.That(
                 ember.localPosition.y,

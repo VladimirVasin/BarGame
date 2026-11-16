@@ -25,11 +25,13 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator OrdinaryWomen_KeepVisibleAssignmentsAndRideTheBus()
         {
             var population = DefaultNpcPopulation.GetAssignments();
-            var women = population.Where(item => item.ModelId == DefaultNpcCatalog.OrdinaryWoman).ToArray();
+            var allWomen = population.Where(item => item.ModelId == DefaultNpcCatalog.OrdinaryWoman).ToArray();
+            var women = allWomen.Where(item => item.CharacterId.StartsWith(
+                DefaultNpcPopulation.PedestrianIdPrefix, StringComparison.Ordinal)).ToArray();
             Assert.That(women, Has.Length.EqualTo(48));
-            Assert.That(women.All(item => item.CharacterId.StartsWith(DefaultNpcPopulation.PedestrianIdPrefix, StringComparison.Ordinal) &&
-                item.HeightCm >= 155 && item.HeightCm <= 178));
-            Assert.That(women.Select(item => item.VisibleSignature).Distinct().Count(), Is.EqualTo(women.Length));
+            Assert.That(allWomen.Length, Is.EqualTo(women.Length + DefaultNpcPopulation.AmbientAppearancesPerGender));
+            Assert.That(allWomen.All(item => item.HeightCm >= 155 && item.HeightCm <= 178));
+            Assert.That(allWomen.Select(item => item.VisibleSignature).Distinct().Count(), Is.EqualTo(allWomen.Length));
             Assert.That(women.Select(item => item.FaceId).Distinct().Count(), Is.EqualTo(4));
             var bareHeaded = women.Where(item => !item.ItemIds.Contains("headwear.everyday")).ToArray();
             CollectionAssert.AreEquivalent(new[] { "hair.loose", "hair.ponytail", "hair.braid" },

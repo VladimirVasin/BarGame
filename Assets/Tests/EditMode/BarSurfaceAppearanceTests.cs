@@ -370,7 +370,6 @@ namespace BarPromenade.Tests.EditMode
                         .MetalTextureResourcePath);
                 foreach (string stoolName in new[]
                          {
-                             "Bar Stool 1",
                              "Bar Stool 2",
                              "Bar Stool 4",
                              "Bar Stool 5",
@@ -385,7 +384,6 @@ namespace BarPromenade.Tests.EditMode
 
                 foreach (string stoolName in new[]
                          {
-                             "Bar Stool 1 Leg",
                              "Bar Stool 2 Leg",
                              "Bar Stool 4 Leg",
                              "Bar Stool 5 Leg",
@@ -399,17 +397,20 @@ namespace BarPromenade.Tests.EditMode
                         cafeMetal);
                 }
 
+                Texture2D roomAtlas = Resources.Load<Texture2D>(BarInteriorSurfaceAppearance.AlbedoResourcePath);
+                Assert.That(roomAtlas, Is.Not.Null);
                 for (int lightIndex = 0;
                      lightIndex < plan.LightAnchors.Count;
                      lightIndex++)
                 {
-                    if (plan.LightAnchors[lightIndex].Kind == BarInteriorLightKind.Washroom) continue;
+                    BarInteriorLightKind kind = plan.LightAnchors[lightIndex].Kind;
+                    if (kind == BarInteriorLightKind.Washroom || kind == BarInteriorLightKind.WashroomSign) continue;
                     AssertTransformTexture(
                         room.Find($"Practical Cable {lightIndex + 1}"),
-                        BarSurfaceKind.PaintedMetal);
+                        roomAtlas);
                     AssertTransformTexture(
                         room.Find($"Practical Shade {lightIndex + 1}"),
-                        BarSurfaceKind.PaintedMetal);
+                        roomAtlas);
                 }
 
                 Transform jukebox = room.Find("Bar Jukebox");

@@ -1,3 +1,4 @@
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -19,9 +20,7 @@ namespace BarPromenade.Tests.EditMode
                 CityNightFixturePlanner.CreatePlan(layout);
             CityDecorationPlan decorations =
                 CityDecorationPlanner.CreatePlan(layout, fence, night);
-            CityBusPlan busPlan = CityBusPlanner.Create(
-                layout,
-                decorations);
+            CityBusPlan busPlan = CityBusPlanner.Create(layout, decorations);
             CityStreetSurfacePlan streetSurface =
                 CityStreetSurfacePlanner.Create(layout);
             CityPedestrianPlan pedestrianPlan =
@@ -96,9 +95,8 @@ namespace BarPromenade.Tests.EditMode
                 CityNightFixturePlanner.CreatePlan(layout);
             CityDecorationPlan decorations =
                 CityDecorationPlanner.CreatePlan(layout, fence, night);
-            CityBusPlan busPlan = CityBusPlanner.Create(
-                layout,
-                decorations);
+            var busPlans = CityDistrictBusPlanner.Create(layout);
+            CityBusStopDescriptor[] stops = CityBusNetworkFurniture.Stops(busPlans).ToArray();
             CityStreetSurfacePlan streetSurface =
                 CityStreetSurfacePlanner.Create(layout);
             System.Collections.Generic.List<CityBenchSitPlan> benches =
@@ -106,7 +104,7 @@ namespace BarPromenade.Tests.EditMode
                     layout,
                     openArea,
                     CityCemeteryPlanner.Create(layout),
-                    busPlan,
+                    busPlans,
                     decorations,
                     streetSurface);
 
@@ -115,13 +113,18 @@ namespace BarPromenade.Tests.EditMode
             // every bus stop.
             var resolvedSeats =
                 new System.Collections.Generic.List<CityBenchSeat>();
+            var fixedPlaneSeats = new System.Collections.Generic.HashSet<string>();
             foreach (CityDecorationDescriptor descriptor in
                      decorations.Descriptors)
             {
+                int first = resolvedSeats.Count;
                 CityDecorationWorldBuilder.AppendBenchSeats(
                     layout,
                     descriptor,
                     resolvedSeats);
+                if (descriptor.HasFixedSupportPlane)
+                    for (int seat = first; seat < resolvedSeats.Count; seat++)
+                        fixedPlaneSeats.Add(resolvedSeats[seat].Id);
             }
 
             Assert.That(
@@ -129,10 +132,10 @@ namespace BarPromenade.Tests.EditMode
                 Is.Not.Empty,
                 "The default city must hide seats in its decorations.");
             Assert.That(
-                busPlan.Stops,
+                stops,
                 Is.Not.Empty,
                 "The default city must run bus stops.");
-            foreach (CityBusStopDescriptor stop in busPlan.Stops)
+            foreach (CityBusStopDescriptor stop in stops)
             {
                 resolvedSeats.Add(
                     CityBusStopWorldBuilder.DescribeShelterBenchSeat(
@@ -148,6 +151,12 @@ namespace BarPromenade.Tests.EditMode
                     plan.IsPresent,
                     Is.True,
                     seat.Id);
+                if (fixedPlaneSeats.Contains(seat.Id))
+                {
+                    Assert.That(plan.EntryRootPosition.y,
+                        Is.EqualTo(seat.GroundY + PlayerFactory.GroundedRootOffset).Within(.001f), seat.Id);
+                    continue;
+                }
 
                 // The sitter docks in front of an ordinary seat and off
                 // the plank end of a game seat; either way the plan must
@@ -165,6 +174,11 @@ namespace BarPromenade.Tests.EditMode
                     new Vector2(dock.x, dock.z),
                     out float expectedGround,
                     out _);
+                if (streetSurface.SupportPlan.TrySampleTop(new Vector2(dock.x, dock.z), out float support, out _))
+                {
+                    expectedGround = sampled ? Mathf.Max(support, expectedGround) : support;
+                    sampled = true;
+                }
                 sampled = SampleWalkwayTops(
                     streetSurface.SidewalkGeometry,
                     dock,

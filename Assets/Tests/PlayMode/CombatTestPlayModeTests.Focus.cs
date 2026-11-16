@@ -40,14 +40,14 @@ namespace BarPromenade.Tests.PlayMode
                 int beforeSwing = root.Hero.State.AttackSequence;
                 input.Press(mouse.leftButton, queueEventOnly: true);
                 for (int frame = 0; frame < 2; frame++) yield return null;
-                Assert.That(root.Hero.State.IsCharging, Is.True, "LMB works without a target lock.");
-                Assert.That(root.ChargeMeterVisible, Is.True);
+                Assert.That(root.Hero.State.IsAttacking, Is.True, "LMB starts the swing without a target lock.");
                 Assert.That(presentation.OwnsClip(root.Hero), Is.True, "The free swing claims the same visible hero rig.");
                 AssertFocusState(false);
                 input.Release(mouse.leftButton, queueEventOnly: true);
                 for (int frame = 0; frame < 2; frame++) yield return null;
-                Assert.That(root.Hero.State.IsAttacking, Is.True, "Releasing LMB commits the forward swing.");
-                Assert.That(root.Hero.State.AttackSequence, Is.GreaterThan(beforeSwing));
+                Assert.That(root.Hero.State.IsAttacking, Is.True);
+                Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(beforeSwing + 1),
+                    "Press and release together account for one forward swing.");
                 for (int frame = 0; frame < 120 && root.Hero.State.Phase != MeleePhase.Ready; frame++)
                 {
                     Assert.That(Quaternion.Angle(facing, root.Hero.transform.rotation), Is.LessThan(.1f),
@@ -72,15 +72,15 @@ namespace BarPromenade.Tests.PlayMode
 
                 Assert.That(root.PauseMenu.Open(), Is.True);
                 yield return null;
-                Assert.That(root.Hero.TryAttack() || root.Hero.RequestCharge(), Is.False,
+                Assert.That(root.Hero.TryAttack(), Is.False,
                     "Removing target focus does not bypass the modal input owner.");
                 input.Press(mouse.leftButton, queueEventOnly: true);
                 for (int frame = 0; frame < 2; frame++) yield return null;
-                Assert.That(root.Hero.State.IsCharging || root.Hero.State.IsAttacking, Is.False);
+                Assert.That(root.Hero.State.IsAttacking, Is.False);
                 Assert.That(root.PauseMenu.Cancel(), Is.True);
                 yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release free melee input.");
                 for (int frame = 0; frame < 2; frame++) yield return null;
-                Assert.That(root.Hero.State.IsCharging || root.Hero.State.IsAttacking, Is.False,
+                Assert.That(root.Hero.State.IsAttacking, Is.False,
                     "An attack button held through pause must wait for release and a new press.");
                 input.Release(mouse.leftButton, queueEventOnly: true);
                 for (int frame = 0; frame < 2; frame++) yield return null;

@@ -74,6 +74,9 @@ namespace BarPromenade
             if (fence == null) throw new ArgumentNullException(nameof(fence));
             if (decoration == null) throw new ArgumentNullException(nameof(decoration));
             if (catalog == null) throw new ArgumentNullException(nameof(catalog));
+            // Entrance paving changes the underlying ground datum. Publish it
+            // before taking ground samples even when composition did not prime it.
+            CityBuildingEntrancePlan.ForLayout(layout);
             var session = new Session(layout, night, fence, decoration, seacoast, archShelter, catalog);
             session.PlaceSidewalks();
             session.PlaceLots();
@@ -820,15 +823,6 @@ namespace BarPromenade
                     if (dx * dx + dz * dz < circle.Radius * circle.Radius) return true;
                 }
                 return false;
-            }
-
-            private static bool OverlapsPolygon(Rect footprint, Vector2[] polygon)
-            {
-                if (!footprint.Overlaps(CityRoadPolygon.Bounds(polygon))) return false;
-                var intersection = new List<Vector2>(CityRoadPolygon.Rectangle(footprint));
-                for (int index = 0; index < polygon.Length && intersection.Count >= 3; index++)
-                    intersection = CityRoadPolygon.Clip(intersection, polygon[index], polygon[(index + 1) % polygon.Length]);
-                return CityRoadPolygon.Area(intersection) > .000001f;
             }
 
             /// <summary>True when another built street or pavement box rises to or above this strip under the footprint.</summary>

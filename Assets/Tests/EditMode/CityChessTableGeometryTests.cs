@@ -5,10 +5,7 @@ using UnityEngine;
 namespace BarPromenade.Tests.EditMode
 {
     /// <summary>
-    /// The park chess set stands on a lawn that keeps sloping under it,
-    /// and it carries the one piece of city dressing that has to be
-    /// literally correct rather than merely suggestive: a chess board.
-    /// Both are pinned here.
+    /// Checks the chess furniture's support and the two physical boards.
     /// </summary>
     public sealed class CityChessTableGeometryTests
     {
@@ -28,30 +25,24 @@ namespace BarPromenade.Tests.EditMode
         private const float BoardBandTop = 0.97f;
 
         /// <summary>
-        /// Every foot of the set reaches the ground it stands over. The
-        /// anchor is one sampled point; the lawn under the far table is
-        /// a tenth of a metre lower, which is exactly the gap a foot
-        /// drawn to the anchor plane would hang by.
+        /// Every foot touches the gazebo's built floor across both tables.
         /// </summary>
         [Test]
-        public void EveryFoot_ReachesTheLawnUnderIt()
+        public void EveryFoot_ReachesTheGazeboDeckUnderIt()
         {
             List<Bounds> parts = CollectChessParts(
                 out CityLayout layout,
                 out Vector3 origin,
                 out Vector3 tangent,
                 out Vector3 forward);
+            Assert.That(CityParkGazeboGeometry.TryFind(CreatePlan(layout), out CityDecorationDescriptor gazebo), Is.True);
 
             foreach (Vector3 foot in DescribeFeet(origin, tangent, forward))
             {
                 Assert.That(
-                    CityTerrainSurfacePlan.TrySampleGroundTop(
-                        layout,
-                        new Vector2(foot.x, foot.z),
-                        out float groundTop,
-                        out _),
+                    CityParkGazeboGeometry.TrySampleFloorTop(gazebo, foot, out float deckTop),
                     Is.True,
-                    "The chess set stands on park terrain.");
+                    $"Foot {foot:F2} must sit within the built deck.");
 
                 bool bedded = false;
                 for (int index = 0; index < parts.Count; index++)
@@ -61,8 +52,8 @@ namespace BarPromenade.Tests.EditMode
                         foot.x > part.max.x ||
                         foot.z < part.min.z ||
                         foot.z > part.max.z ||
-                        part.min.y > groundTop - 0.05f ||
-                        part.max.y < groundTop)
+                        part.min.y > deckTop + 0.001f ||
+                        part.max.y < deckTop)
                     {
                         continue;
                     }
@@ -74,8 +65,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     bedded,
                     Is.True,
-                    $"Nothing bridges the lawn at {foot:F2}: the part " +
-                    "above it hangs clear of the grass.");
+                    $"The part at {foot:F2} hangs above the deck.");
             }
         }
 

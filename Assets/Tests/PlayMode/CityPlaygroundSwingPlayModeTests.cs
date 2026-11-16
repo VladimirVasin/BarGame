@@ -29,6 +29,7 @@ namespace BarPromenade.Tests.PlayMode
             var parent = new GameObject("Playground Swing Physics Test");
             try
             {
+                parent.transform.position = Vector3.up * 200f;
                 GameObject root = CityPlaygroundSwingBuilder.Build(
                     parent.transform,
                     layout,
@@ -95,18 +96,18 @@ namespace BarPromenade.Tests.PlayMode
                     rest - (axis * 8f) - (Vector3.up * 4f);
 
                 bool returned = false;
+                float farthestReturn = pushed;
                 for (int step = 0; step < ReturnSteps && !returned; step++)
                 {
                     yield return new WaitForFixedUpdate();
-                    returned =
-                        Vector3.Dot(swing.SeatCenter - rest, axis) <
-                        -0.1f;
+                    farthestReturn = Mathf.Min(farthestReturn, Vector3.Dot(swing.SeatCenter - rest, axis));
+                    returned = farthestReturn < -0.1f;
                 }
 
                 Assert.That(
                     returned,
                     Is.True,
-                    "A released swing must come back past its rest.");
+                    $"A released swing must come back past its rest. It reached {farthestReturn:F3} m.");
                 Assert.That(
                     float.IsNaN(swing.SeatCenter.x) ||
                     float.IsNaN(swing.SeatCenter.y) ||

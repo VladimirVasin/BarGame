@@ -125,7 +125,7 @@ namespace BarPromenade.Tests.PlayMode
         [Test]
         public void RuleRequestReasonsKeepTheirActionClockAndClearFailedStartWhenQueued()
         {
-            var state = new MeleeCombatant(new MeleeCombatSettings(maxStamina: 15f));
+            var state = new MeleeCombatant(new MeleeCombatSettings(maxStamina: 25f));
             Assert.That(state.TryStartStep(), Is.True);
             state.CancelAction();
             Assert.That(state.RequestKick(), Is.False);
@@ -138,8 +138,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(state.TryStartAttack(), Is.True);
             Assert.That(state.RequestStep(), Is.False);
             Assert.That(state.LastCommandRejection, Is.EqualTo(MeleeCommandRejection.Phase));
-            Assert.That(state.RequestCharge(), Is.True);
-            Assert.That(state.HasBufferedCharge, Is.True);
+            state.Advance(state.AttackWindupSeconds + state.Settings.ActiveSeconds * .5f);
+            Assert.That(state.Phase, Is.EqualTo(MeleePhase.Active));
+            Assert.That(state.RequestShove(), Is.True);
+            Assert.That(state.HasBufferedShove, Is.True);
             Assert.That(state.LastCommandRejection, Is.EqualTo(MeleeCommandRejection.None));
 
             state.Reset();
@@ -149,11 +151,14 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(state.LastCommandAction, Is.EqualTo(MeleeBufferedAction.Attack));
             Assert.That(state.LastCommandRejection, Is.EqualTo(MeleeCommandRejection.Cooldown));
             Assert.That(state.CooldownRemaining(state.LastCommandAction), Is.GreaterThan(state.Settings.AttackBufferSeconds));
-            state.Advance(state.CooldownRemaining(MeleeBufferedAction.Charge) - state.Settings.AttackBufferSeconds * .5f);
-            Assert.That(state.RequestCharge(), Is.True, "A later press can queue inside the same cooldown's buffer window.");
-            Assert.That(state.HasBufferedCharge, Is.True);
+            state.Reset();
+            Assert.That(state.TryStartShove(), Is.True);
+            state.CancelAction();
+            state.Advance(state.CooldownRemaining(MeleeBufferedAction.Shove) - state.Settings.AttackBufferSeconds * .5f);
+            Assert.That(state.RequestShove(), Is.True, "A later press can queue inside the same cooldown's buffer window.");
+            Assert.That(state.HasBufferedShove, Is.True);
             Assert.That(state.LastCommandRejection, Is.EqualTo(MeleeCommandRejection.None),
-                "A failed immediate charge start must not remain the reason of an accepted queue.");
+                "A failed immediate shove start must clear its reason when the queue accepts the command.");
 
             state.Reset();
             Assert.That(state.ReceiveShove(.7f), Is.True);

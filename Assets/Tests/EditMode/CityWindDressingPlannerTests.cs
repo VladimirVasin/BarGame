@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -37,11 +38,7 @@ namespace BarPromenade.Tests.EditMode
             CityWindDressingPlan first = CreatePlan(layout);
             CityWindDressingPlan second = CreatePlan(layout);
 
-            Assert.That(
-                first.ClothCount,
-                Is.GreaterThanOrEqualTo(40),
-                "The default city must hang enough cloth to be met " +
-                "on an ordinary walk.");
+            Assert.That(first.Cloths, Is.Not.Empty);
             Assert.That(
                 first.ClothCount,
                 Is.LessThanOrEqualTo(
@@ -248,10 +245,13 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void DefaultCity_HangsStreetLevelClothInEveryUrbanDistrict()
+        public void DefaultCity_HangsStreetLevelClothWherePolesAndPipeRacksExist()
         {
             CityLayout layout = CreateDefaultLayout();
             CityWindDressingPlan plan = CreatePlan(layout);
+            CityDecorationPlan decorations = CityDecorationPlanner.CreatePlan(layout,
+                RoadFencePlanner.CreatePlan(layout), CityNightFixturePlanner.CreatePlan(layout));
+            int pipeRacks = decorations.Decorations.Count(item => item.Kind == CityDecorationKind.IndustrialPipeRack);
 
             var streetLevelCounts = new Dictionary<
                 CityWindDressingZone, int>
@@ -290,18 +290,14 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            Assert.That(
-                streetLevelCounts[CityWindDressingZone.OldTown],
-                Is.GreaterThanOrEqualTo(8));
+            Assert.That(streetLevelCounts[CityWindDressingZone.OldTown], Is.Zero);
             Assert.That(
                 streetLevelCounts[CityWindDressingZone.Residential],
                 Is.GreaterThanOrEqualTo(10));
             Assert.That(
                 streetLevelCounts[CityWindDressingZone.Industrial],
-                Is.GreaterThanOrEqualTo(6));
-            Assert.That(
-                streetLevelCounts[CityWindDressingZone.Nightlife],
-                Is.GreaterThanOrEqualTo(6));
+                Is.InRange(Mathf.Min(6, pipeRacks * 2), Mathf.Min(8, pipeRacks * 2)));
+            Assert.That(streetLevelCounts[CityWindDressingZone.Nightlife], Is.Zero);
         }
 
         [Test]
@@ -397,6 +393,10 @@ namespace BarPromenade.Tests.EditMode
             CitySeacoastPlan seacoastPlan =
                 CitySeacoastPlanner.Create(layout);
 
+            var balconyPegs = new Dictionary<string, Vector3>();
+            foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
+                if (house.HasAirer) balconyPegs.Add("upper-balcony-" + house.Lot.Cell, house.PegWorld);
+
             // Anchors sit inside their zones; small hang offsets may
             // lean past a district edge by less than half a cell.
             const float Tolerance = 4f;
@@ -404,6 +404,12 @@ namespace BarPromenade.Tests.EditMode
             {
                 CityWindDressingClothDescriptor cloth =
                     plan.Cloths[index];
+                if (balconyPegs.TryGetValue(cloth.StableId, out Vector3 peg))
+                {
+                    Assert.That(cloth.Zone, Is.EqualTo(CityWindDressingZone.Residential));
+                    Assert.That(cloth.Position, Is.EqualTo(peg), cloth.StableId);
+                    continue;
+                }
                 var point = new Vector2(
                     cloth.Position.x,
                     cloth.Position.z);

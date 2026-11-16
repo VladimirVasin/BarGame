@@ -485,6 +485,7 @@ namespace BarPromenade
             if (!IsInitialized) return false;
             RefreshSurfaces();
             Vector3 eye = wash.EyeWorldPosition;
+            Transform shoulder = registry.TryGetPart(Player3DAnatomicalPart.RightUpperArm, out var binding) ? binding.Bone : actor;
             float best = float.PositiveInfinity;
             foreach (Surface surface in surfaces)
             {
@@ -511,11 +512,9 @@ namespace BarPromenade
                          anatomyAlong > HomeToiletFirstPersonView.AnatomyShaftLengthMetres * 0.85f)) continue;
                     if (region == HomeShowerWashRegion.Torso &&
                         (height < 0.25f || height > 0.80f || Vector3.Dot(normal, actor.forward) < 0.45f)) continue;
-                    // Pick exposed skin, not the closed mesh's joint cap.
-                    // Lower legs are rejected by the arm's physical reach.
-                    Transform shoulder = registry.TryGetPart(Player3DAnatomicalPart.RightUpperArm, out var binding) ? binding.Bone : actor;
+                    // Rank exposed skin by reach. The live contact solver tests the
+                    // posed arm and torso before the soap may touch the chosen patch.
                     float reach = Vector3.Distance(shoulder.position, point + normal * (SoapHalfThickness + hands[0].PalmToSoap));
-                    if (reach > 0.62f) continue;
                     Vector3 relative = actor.InverseTransformPoint(point);
                     float score = reach + Mathf.Abs(relative.x) * (region == HomeShowerWashRegion.Torso ? 0.4f : 0f);
                     if (region == HomeShowerWashRegion.LeftArm)

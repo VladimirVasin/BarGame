@@ -83,11 +83,12 @@ namespace BarPromenade.Tests.EditMode
                 Assert.Ignore("The Player 3D prefab is not built yet.");
             }
 
-            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            GameObject owner = new GameObject("Bathing appearance test owner");
             Player3DBathingAppearance lease = null;
             try
             {
-                var registry = instance.GetComponentInChildren<Player3DAssetRegistry>(true);
+                Player3DAssetRegistry registry = Player3DResources.Instantiate(owner.transform);
+                PlayerCorruptionAppearance.Ensure(registry).ApplyLevel(HeroCorruptionRules.FirstLevel);
                 Assert.That(registry, Is.Not.Null);
                 IReadOnlyList<Player3DMeshBinding> bindings = registry.MeshBindings;
                 Assert.That(bindings.Count, Is.GreaterThanOrEqualTo(30));
@@ -164,7 +165,7 @@ namespace BarPromenade.Tests.EditMode
             finally
             {
                 lease?.Restore();
-                UnityEngine.Object.DestroyImmediate(instance);
+                UnityEngine.Object.DestroyImmediate(owner);
             }
         }
 

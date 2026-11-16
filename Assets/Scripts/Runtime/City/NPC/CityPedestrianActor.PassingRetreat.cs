@@ -15,7 +15,7 @@ namespace BarPromenade
         private string retreatPeerSpawn;
         private Vector3 guestAtEncounter, bayForward;
         private Vector3 bayCentre;
-        private float retreatClearance, nextRetreatProbe;
+        private float retreatClearance, nextRetreatProbe, retreatBlockedSeconds;
         private bool returningFromBay, guestReachedBay;
 
         internal bool IsPassingRetreat => retreatCount > 0;
@@ -33,8 +33,12 @@ namespace BarPromenade
             int count = 1;
             if (!SurveyRetreat(priorityWalker.position, clearance, retreatBack, ref count))
             {
-                nextRetreatProbe = .65f;
-                return false;
+                count = 1;
+                if (!SurveyRetreat(priorityWalker.position, clearance, !retreatBack, ref count))
+                {
+                    nextRetreatProbe = .65f;
+                    return false;
+                }
             }
             retreatCount = count;
             retreatIndex = 1;
@@ -92,7 +96,11 @@ namespace BarPromenade
                     Vector3 centre = new Vector3(xz.x, RetreatHeight(link, xz, along / length), xz.y);
                     if (count >= MaximumRetreatPoints - 1) return false;
                     if (Vector2.Distance(XZ(retreatPoints[count - 1]), xz) > .035f)
+                    {
+                        if (!CanWalkVehicleSegment(retreatPoints[count - 1], centre, ignoreWalkerBodies: true))
+                            return false;
                         retreatPoints[count++] = centre;
+                    }
                     if(link.Kind==CityPedestrianLinkKind.Crosswalk) continue;
                     Vector3 side = new Vector3(-backwards.y, 0f, backwards.x);
                     if (Vector3.Dot(guest - centre, side) > 0f) side = -side;
@@ -162,6 +170,7 @@ namespace BarPromenade
             float distance = Vector2.Distance(current, XZ(target));
             if (distance <= .04f)
             {
+                retreatBlockedSeconds = 0f;
                 retreatIndex += returningFromBay ? -1 : 1;
                 if (retreatIndex < 0) ResetPassingRetreat();
                 return true;
@@ -171,9 +180,25 @@ namespace BarPromenade
             // so also sweep this short physical step against anyone newly in its way.
             float step = Mathf.Min(distance, speed * deltaTime);
             Vector3 next = Vector3.Lerp(Position, target, step / distance);
-            if (!CanWalkVehicleSegment(Position, next) ||
-                traffic != null && traffic.BlocksEscapeSegment(Position, next, agentRadius + .1f)) return true;
-            moving = MoveForVehicle(target, deltaTime, traffic);
+            if (CanWalkVehicleSegment(Position, next) &&
+                (traffic == null || !traffic.BlocksEscapeSegment(Position, next, agentRadius + .1f)))
+            {
+                // Turning in place is progress. A blocked leg still needs
+                // another survey if the crowd closes the chosen turnout.
+                Quaternion before = transform.rotation;
+                moving = MoveForVehicle(target, deltaTime, traffic);
+                if (moving || Quaternion.Angle(before, transform.rotation) > .1f)
+                {
+                    retreatBlockedSeconds = 0f;
+                    return true;
+                }
+            }
+            retreatBlockedSeconds += deltaTime;
+            if (retreatBlockedSeconds >= RetreatProbeInterval)
+            {
+                ResetPassingRetreat();
+                nextRetreatProbe = .25f;
+            }
             return true;
         }
 
@@ -229,6 +254,7 @@ namespace BarPromenade
             returningFromBay = false;
             guestReachedBay = false;
             nextRetreatProbe = 0f;
+            retreatBlockedSeconds = 0f;
         }
     }
 }

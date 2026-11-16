@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -90,7 +91,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.BalconyLayout, Is.Not.Null);
             Assert.That(home.ExteriorContext, Is.Not.Null);
             Assert.That(
-                home.ExteriorContext.NearbyDecorations,
+                home.ExteriorContext.NearbyStreetLamps,
                 Is.Not.Empty);
             Assert.That(home.Balcony, Is.Not.Null);
             Assert.That(home.ExteriorView, Is.Not.Null);
@@ -131,8 +132,16 @@ namespace BarPromenade.Tests.PlayMode
                 home.Atmosphere.WindowLight.intensity,
                 Is.EqualTo(stableWindowIntensity).Within(0.001f));
             AssertExteriorAtmosphere(home);
-            AssertRenderedExteriorBarFacade(home);
-            AssertRenderedExteriorDecorations(home.ExteriorView);
+            if (home.ExteriorContext.Layout.HasSummitHome)
+            {
+                Transform street = AssertRequiredObject(home.ExteriorView, "Summit street from home");
+                Assert.That(street.GetComponentsInChildren<MeshRenderer>(true), Is.Not.Empty);
+            }
+            else
+            {
+                AssertRenderedExteriorBarFacade(home);
+                AssertRenderedExteriorDecorations(home.ExteriorView);
+            }
             AssertRenderedExteriorDistrictPointsOfInterest(
                 home.ExteriorView,
                 home.ExteriorContext);
@@ -222,8 +231,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.ExteriorView
                     .GetComponentsInChildren<Collider>(
-                        true),
-                Is.Empty);
+                        true).All(collider => !collider.enabled),
+                Is.True);
             AssertExteriorStaysWithinContext(
                 home.Room,
                 home.ExteriorView);
@@ -498,6 +507,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator HomeScene_SpawnsPedestriansOnlyOnBalcony()
         {
+            Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60), Is.True);
             AsyncOperation load =
                 SceneManager.LoadSceneAsync(
                     SceneIds.HomeInterior,
@@ -527,25 +537,19 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.PedestrianPlan.Count, Is.GreaterThan(0));
             Assert.That(home.Pedestrians, Is.Not.Null);
             Assert.That(home.Pedestrians.IsInitialized, Is.True);
-            // Home shares the whole catalog through the same factory, so the
-            // balcony can show any registered design, not just the two the
-            // City happened to spawn. How MANY it pools is the balcony
-            // profile's own business, though - it holds more instances than
-            // there are designs so the street below is not one of each, and
-            // asserting the design count here read as a broken scene the
-            // moment the profile gained its own pool size.
+            CityPedestrianPopulationProfile profile = home.Pedestrians.Profile;
             Assert.That(
                 home.Pedestrians.PoolCapacity,
-                Is.EqualTo(home.Pedestrians.Profile.PoolSize));
+                Is.EqualTo(profile.PoolSize));
             Assert.That(
-                home.Pedestrians.PoolCapacity,
-                Is.GreaterThanOrEqualTo(
-                    CityPedestrianResources.Archetypes.Count),
-                "Every registered design must fit in the pool at least " +
-                "once, or the balcony can never show some of them.");
+                home.Pedestrians.GetComponentsInChildren<CityPedestrianDefaultNpcBody>(true)
+                    .Select(body => body.CharacterId),
+                Is.EquivalentTo(Enumerable.Range(0, profile.PoolSize).Select(DefaultNpcPopulation.PedestrianId)),
+                "The balcony uses the permanent identities assigned to its resident slots.");
             Assert.That(home.Pedestrians.isActiveAndEnabled, Is.False);
             AssertPedestriansDormant(home.Pedestrians);
 
+            home.Pedestrians.AutomaticUpdatesSuspended = true;
             Rect activation =
                 home.BalconyLayout.BalconyCameraActivationBounds;
             home.Player.Motor.Teleport(
@@ -562,23 +566,17 @@ namespace BarPromenade.Tests.PlayMode
                 home.ExteriorAtmosphere.IsBalconyVisibilityActive,
                 Is.True);
             Assert.That(home.Pedestrians.isActiveAndEnabled, Is.True);
-            home.Pedestrians.Advance(
-                home.Pedestrians.TimeUntilNextSpawn + 0.01f);
+            Assert.That(home.Pedestrians.TimeUntilNextSpawn, Is.Zero);
+            home.Pedestrians.Advance(0.01f);
             Assert.That(
                 home.Pedestrians.ActiveCount,
-                Is.EqualTo(1),
-                "The first randomized event must activate only one slot.");
-            float minimumNextDelay = home.Pedestrians.IsNightSpawnMode
-                ? CityPedestrianDirector.MinimumNightSpawnCooldown
-                : CityPedestrianDirector.MinimumSpawnCooldown;
-            float maximumNextDelay = home.Pedestrians.IsNightSpawnMode
-                ? CityPedestrianDirector.MaximumNightSpawnCooldown
-                : CityPedestrianDirector.MaximumSpawnCooldown;
+                Is.InRange(1, profile.MaximumSpawnsPerEvent),
+                "Daytime entry starts a bounded batch on the first update.");
             Assert.That(
                 home.Pedestrians.TimeUntilNextSpawn,
                 Is.InRange(
-                    minimumNextDelay,
-                    maximumNextDelay));
+                    CityPedestrianDirector.MinimumFillSpawnDelay,
+                    CityPedestrianDirector.MaximumFillSpawnDelay));
 
             var activeAnchorIds = new HashSet<string>();
             for (int index = 0;
@@ -597,18 +595,19 @@ namespace BarPromenade.Tests.PlayMode
                     activeAnchorIds.Add(actor.SpawnAnchorId),
                     Is.True,
                     "Balcony pedestrians must use unique spawn anchors.");
+                var anchor = home.PedestrianPlan.SpawnAnchors.Single(candidate =>
+                    candidate.Id == actor.SpawnAnchorId);
                 float distance = Vector2.Distance(
                     new Vector2(
                         home.Player.GameObject.transform.position.x,
                         home.Player.GameObject.transform.position.z),
-                    new Vector2(actor.Position.x, actor.Position.z));
+                    new Vector2(anchor.Position.x, anchor.Position.z));
                 Assert.That(
                     distance,
                     Is.InRange(
-                        CityPedestrianDirector.MinimumSpawnDistance,
+                        CityPedestrianDirector.MinimumConnectedSpawnDistance,
                         CityPedestrianDirector.MaximumSpawnDistance),
-                    "Balcony pedestrians must spawn in the fog-hidden " +
-                    "player-relative band.");
+                    "The cropped exterior uses the connected spawn fallback when needed.");
             }
 
             home.Player.Motor.Teleport(
@@ -1160,18 +1159,8 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                         RuntimeSceneSetup.DefaultFarClipPlane)
                     .Within(0.001f));
-            AssertUsesCityLitMaterial(
-                AssertRequiredObject(
-                    home.ExteriorView,
-                    "Home Exterior Ground"));
-            AssertUsesCityLitMaterial(
-                AssertRequiredObject(
-                    home.ExteriorView,
-                    "Home Exterior Street Surfaces"));
-            AssertUsesCityLitMaterial(
-                AssertRequiredObject(
-                    home.ExteriorView,
-                    "Home Exterior Sidewalk Surfaces"));
+            if (!home.ExteriorContext.Layout.HasSummitHome)
+                AssertUsesCityLitMaterial(AssertRequiredObject(home.ExteriorView, "Home Exterior Unified Street"));
         }
 
         private static void AssertRenderedExteriorBarFacade(

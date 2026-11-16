@@ -60,8 +60,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.IsInventoryItemReservedForQuest(
                     InventoryItemId.OpenStewCan),
-                Is.False,
-                "Nothing is held back for a quest nobody has yet.");
+                Is.True,
+                "The stew stays available for the cat even before the quest opens.");
         }
 
         /// <summary>

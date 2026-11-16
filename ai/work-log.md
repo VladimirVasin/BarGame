@@ -5,13 +5,11 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-16
 
-Industrial work uses graded staff approaches and bent vestibules. Seed
-balances resident jobs. Route time and bus waits set departure, with
-attendance starting inside. Midblock zebras connect isolated walks.
-Checks passed: `build-city-buildings-3d-model`,
+Industrial shifts use graded entrances and include walking and bus waits.
+Midblock zebras connect isolated walks. `build-city-buildings-3d-model`,
 `LiveCity_IndustrialShiftsUseEveryBuilding`, `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement`.
-Doorway views reviewed. `LiveCity_BothTransferStairsCarryPedestriansBetweenBuses`
-hit the west landing lamp. The map uses the live scheme after ImageGen missed registration.
+`LiveCity_BothTransferStairsCarryPedestriansBetweenBuses` passed after moving
+the west landing lamp. The map uses the live scheme.
 
 Midibus: formed shell, sealed headers, fixed mirrors and shared sedan optics.
 Wheel housings cover the sprung tyre sweep; treads clear the arches. The cab
@@ -24,11 +22,35 @@ Proof: `build-city-bus-3d-model`, `CityMidibusRemodel`,
 `build-last-route-cabin-actions --validate-only`.
 
 The start menu prepares shared Home/City plans and queues assets one at a time.
-Electrical clearance snapshots imported geometry before the worker starts.
-`NewGame_LoadingScreenCoversCompositionUntilDestinationReady` hit the existing
-`ordinary-woman-v1` pool guard. `MenuWarmup_ReusesSharedPlansAtTheStreetDoor`
-exposed the prefab reads. The corrected Runtime assembly compiled with Unity's
-Roslyn response file.
+`MenuWarmup_ReusesSharedPlansAtTheStreetDoor` exposed prefab reads on the worker.
+The electrical planner snapshots imported geometry on the main thread.
+`NewGame_LoadingScreenCoversCompositionUntilDestinationReady` passed.
+
+Combat prebuild measures the current strike and uses imported rest vertices for body scale.
+`CombatTestAssetSetup.BuildOrThrow`, `BuildKickOrThrow` and
+`CombatBodyAssetSetup.ValidateImportedOrThrow` passed.
+The secondary-motion bake synchronizes combat imports before sampling clips.
+`CurrentProject_PassesReadOnlyGate` passed after rebaking.
+
+Flashlight inventory events follow enable/disable. Static
+world pruning selects the Unity destruction API for the current mode. Litter
+reads established entrance grade. The brook cuts the final yard grade and
+refines the full climbable bank. Snow follows the built mesh and house
+thresholds retain their level. Proof includes `CityLitterPlanTests`,
+`QuestLogTests`, `CityBusRuntimeTests` and `SnowMesh_NeverLiesOverATroddenRoute`.
+
+Entrance routes use real shelter solids. The Home pool owns its roster and
+uses City obstacle limits. Standalone heroes retain their spawn.
+`DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
+`HomeScene_SpawnsPedestriansOnlyOnBalcony`, `Player3DFootIkPlayModeTests`.
+The Ferryman joins the lane smoothly. A bus already yielding to another's hull
+cedes the crossing prediction. `CityDeparture_TakesTheTunnelTurnLikeAnyOtherRoadTurn`,
+`Passenger_TransfersFromWestToHillsideAtTheSharedStop`.
+Poles clear the pawnshop stairs and sidewalk.
+`LiveCity_PawnshopDescentWalksBothWaysWithSupportedStepsRailsAndMapArrivals` passed.
+Bus route and yard rider sample the built surface.
+`DefaultCoastal_BuildsClosedWindingTargetRoute`, `YardWheelchairMotionTests`.
+Balcony finishes persist across days. `HomeSurfaceAppearanceTests`.
 
 ## 2026-11-15
 

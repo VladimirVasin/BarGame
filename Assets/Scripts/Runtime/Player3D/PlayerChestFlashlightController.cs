@@ -17,7 +17,6 @@ namespace BarPromenade
             if (!(runtime.Visual is Player3DCharacterPresentation visual)) return null;
             var owner = runtime.GameObject.AddComponent<PlayerChestFlashlightController>();
             owner.presentation = visual;
-            GameSessionState.InventoryEquipmentChanged += owner.RefreshEquipment;
             owner.RefreshEquipment();
             return owner;
         }
@@ -62,17 +61,18 @@ namespace BarPromenade
 
         private void OnEnable()
         {
+            GameSessionState.InventoryEquipmentChanged += RefreshEquipment;
             if (presentation != null) RefreshEquipment();
         }
 
         private void OnDisable()
         {
+            GameSessionState.InventoryEquipmentChanged -= RefreshEquipment;
             if (Flashlight != null) Flashlight.enabled = false;
         }
 
         private void OnDestroy()
         {
-            GameSessionState.InventoryEquipmentChanged -= RefreshEquipment;
             if (Flashlight != null) Destroy(Flashlight);
         }
     }

@@ -679,7 +679,7 @@ namespace BarPromenade
                 transform,
                 YardWheelchairPlan.Create(
                     World.OpenAreaDecorationPlan,
-                    Layout.ElevationPlan));
+                    Layout));
             // The drying yard's three authored grandmothers: two beat
             // the hung carpets at the rack, one smokes apart watching.
             // Staged NPCs outside the pedestrian pool, like the rider.

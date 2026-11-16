@@ -153,7 +153,7 @@ namespace BarPromenade
                 world, ground, exclusion, ringExcluded,
                 roosts, acceptedAnchors);
             TryAddParkBandstandRoost(
-                world, ground, exclusion, ringExcluded,
+                layout, world, ground, exclusion, ringExcluded,
                 roosts, acceptedAnchors);
             if (TrySelectSecondLanding(
                     layout,
@@ -535,33 +535,25 @@ namespace BarPromenade
             }
 
             Rect deck = bridge.DeckBounds;
-            var perchAPosition = new Vector3(
-                deck.xMin + BridgeKerbInsetMeters,
-                bridge.WestY,
-                deck.yMin + BridgeKerbInsetMeters);
-            // Facing east along the deck, into the town the bridge
-            // serves.
-            var perchA = new CemeteryRavenPerch(
-                true,
-                id,
-                perchAPosition,
-                RavenRoostPlan.ComputeYawToward(
-                    perchAPosition,
-                    perchAPosition + Vector3.right));
-            var perchBPosition = new Vector3(
-                deck.xMin + BridgeCompanionAlongMeters,
-                bridge.WestY,
-                deck.yMin + BridgeKerbInsetMeters);
-            var perchB = new CemeteryRavenPerch(
-                true,
-                id,
-                perchBPosition,
-                RavenRoostPlan.ComputeYawToward(
-                    perchBPosition,
-                    perchAPosition));
-            TryAccept(
-                id, perchA, perchB,
-                exclusion, roosts, acceptedAnchors);
+            // A changed approach can put the old kerb corner inside a
+            // protected precinct. Survey the same deck before losing it.
+            float span = deck.width - BridgeCompanionAlongMeters - BridgeKerbInsetMeters;
+            const int stations = 8;
+            for (int index = 0; index <= stations; index++)
+            {
+                float along = deck.xMin + span * index / stations;
+                for (int side = 0; side < 2; side++)
+                {
+                    float kerb = side == 0 ? deck.yMin + BridgeKerbInsetMeters : deck.yMax - BridgeKerbInsetMeters;
+                    var anchor = new Vector3(along + BridgeKerbInsetMeters, bridge.WestY, kerb);
+                    var companion = new Vector3(along + BridgeCompanionAlongMeters, bridge.WestY, kerb);
+                    var perchA = new CemeteryRavenPerch(true, id, anchor,
+                        RavenRoostPlan.ComputeYawToward(anchor, anchor + Vector3.right));
+                    var perchB = new CemeteryRavenPerch(true, id, companion,
+                        RavenRoostPlan.ComputeYawToward(companion, anchor));
+                    if (TryAccept(id, perchA, perchB, exclusion, roosts, acceptedAnchors)) return;
+                }
+            }
         }
 
         /// <summary>
@@ -639,6 +631,7 @@ namespace BarPromenade
         /// terrain resolver keeps the birds off the deck itself.
         /// </summary>
         private static void TryAddParkBandstandRoost(
+            CityLayout layout,
             CityWorldResult world,
             ICityMapTeleportGround ground,
             ExclusionSet exclusion,
@@ -659,15 +652,43 @@ namespace BarPromenade
                 bandstand.Forward).normalized;
             Vector3 anchor = bandstand.Position +
                              lateral * FountainStandOffMeters;
-            TryAddTerrainRoost(
-                "city-roost-park-bandstand",
-                new Vector2(anchor.x, anchor.z),
-                bandstand.Position,
-                ground,
-                exclusion,
-                ringExcluded,
-                roosts,
-                acceptedAnchors);
+            const string id = "city-roost-park-bandstand";
+            if (TryAddTerrainRoost(id, new Vector2(anchor.x, anchor.z), bandstand.Position,
+                    ground, exclusion, ringExcluded, roosts, acceptedAnchors)) return;
+
+            // The bandstand now shares the chess clearing. The nearby
+            // gravel approaches offer another ground perch outside it.
+            const float sightDistance = 24f;
+            Vector2 landmark = new Vector2(bandstand.Position.x, bandstand.Position.z);
+            var candidates = new List<Vector2>();
+            foreach (RoadEdge edge in layout.RoadEdges)
+            {
+                if (layout.GetPathKind(edge) != CityPathKind.ParkPath) continue;
+                CityRoadPath path = layout.RoadGeometry.Get(edge);
+                var nearest = path.Project(landmark);
+                if (nearest.DistanceSquared > sightDistance * sightDistance) continue;
+                for (int step = -4; step <= 4; step++)
+                {
+                    Vector2 point = path.SampleDistance(nearest.DistanceAlong + step * 2f).Position;
+                    if ((point - landmark).sqrMagnitude <= sightDistance * sightDistance && !exclusion.Excludes(point))
+                        candidates.Add(point);
+                }
+            }
+            candidates.Sort((a, b) =>
+            {
+                int distance = (a - landmark).sqrMagnitude.CompareTo((b - landmark).sqrMagnitude);
+                if (distance != 0) return distance;
+                int x = a.x.CompareTo(b.x);
+                return x != 0 ? x : a.y.CompareTo(b.y);
+            });
+            var support = CityStreetSupportPlan.ForLayout(layout);
+            foreach (Vector2 point in candidates)
+                if (HasGravel(point) && TryAddTerrainRoost(id, point, bandstand.Position,
+                        ground, exclusion, ForbiddenCompanion, roosts, acceptedAnchors)) return;
+
+            bool HasGravel(Vector2 point) => layout.Park.WalkableBounds.Contains(point) &&
+                support.TrySampleTop(point, FootstepGroundKind.Soil, out _);
+            bool ForbiddenCompanion(Vector2 point) => !HasGravel(point) || ringExcluded(point);
         }
 
         /// <summary>

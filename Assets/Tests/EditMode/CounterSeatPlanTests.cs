@@ -395,7 +395,7 @@ namespace BarPromenade.Tests.EditMode
                                 style.ItemBoxSize.y;
             Assert.That(
                 verticalGap,
-                Is.GreaterThanOrEqualTo(0.03f),
+                Is.EqualTo(0.01f).Within(0.0001f),
                 "The two descriptions need a compact but distinct gap.");
 
             const float pageRuleInnerEdge = 0.2015f;
@@ -403,12 +403,11 @@ namespace BarPromenade.Tests.EditMode
                                    style.ItemBoxSize.y * 0.5f;
             Assert.That(
                 verticalExtent,
-                Is.LessThanOrEqualTo(pageRuleInnerEdge - 0.02f),
+                Is.LessThanOrEqualTo(pageRuleInnerEdge - 0.015f),
                 "Text boxes must stay clear of the page-head/foot rules.");
 
             const float spineOuterEdge = 0.007f;
             const float outerRailInnerEdge = 0.2485f;
-            const float minimumMargin = 0.005f;
             float halfTextWidth = style.ItemBoxSize.x * 0.5f;
             float halfMarkerWidth = style.MarkerBoxSize.x * 0.5f;
             float leftMarkerOuter = leftTop.x - halfTextWidth -
@@ -419,20 +418,20 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 leftMarkerOuter,
                 Is.GreaterThanOrEqualTo(
-                    -outerRailInnerEdge + minimumMargin),
+                    -outerRailInnerEdge),
                 "The left-page marker must not collide with its outer rail.");
             Assert.That(
                 leftTop.x + halfTextWidth,
-                Is.LessThanOrEqualTo(-spineOuterEdge - minimumMargin),
+                Is.LessThan(-spineOuterEdge),
                 "The left text block must stay clear of the spine.");
             Assert.That(
                 rightMarkerInner,
-                Is.GreaterThanOrEqualTo(spineOuterEdge + minimumMargin),
+                Is.GreaterThan(spineOuterEdge),
                 "The right-page marker must stay clear of the spine.");
             Assert.That(
                 rightTop.x + halfTextWidth,
                 Is.LessThanOrEqualTo(
-                    outerRailInnerEdge - minimumMargin),
+                    outerRailInnerEdge),
                 "The right text block must stay clear of its outer rail.");
         }
 

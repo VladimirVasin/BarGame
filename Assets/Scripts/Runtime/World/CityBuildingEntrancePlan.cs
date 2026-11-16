@@ -249,8 +249,10 @@ namespace BarPromenade
             CityNightFixturePlan night = CityNightFixturePlanner.CreatePlan(layout);
             foreach (StreetLampDescriptor lamp in night.StreetLamps) AddPole(lamp.Position);
             foreach (TrafficSignalDescriptor signal in night.TrafficSignals) AddPole(signal.Position);
-            foreach (Rect footprint in CityBusNetworkFurniture.Reservations(CityDistrictBusPlanner.CreateRoadRouting(layout), layout))
-                obstacles.Add(CityRoadPolygon.Rectangle(footprint));
+            // Platform reservations also cover walkable pavement leading to
+            // the bus doors. Entrance routes can use that shared pavement.
+            foreach (var platform in CityBusNetworkFurniture.Platforms(CityDistrictBusPlanner.CreateRoadRouting(layout)))
+                CityBusStopWorldBuilder.AddCollisionFootprints(platform.stop, obstacles);
 
             var grade = new SharedGradeField(layout, masses);
             var result = new List<CityBuildingEntranceDescriptor>();

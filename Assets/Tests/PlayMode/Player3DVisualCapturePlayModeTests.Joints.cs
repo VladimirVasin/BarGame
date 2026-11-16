@@ -320,7 +320,7 @@ namespace BarPromenade.Tests.PlayMode
             object fold = Field(surface, "acceptedHemFold");
             // Recreate a real surface input while preserving the selected
             // deep-hip fold. Both paths below consume these exact same points.
-            Invoke(surface, "UpdatePose");
+            Invoke(surface, "UpdatePose", false);
             Invoke(surface, "Deform", Field(jacket, "displacements"), contacts, null, 0f, true);
             var world = (Vector3[])Field(surface, "world");
             Vector3[] input = (Vector3[])world.Clone();

@@ -369,7 +369,7 @@ namespace BarPromenade
             BuildingLot lot,
             float foundationDepth)
         {
-            if (!lot.IsPlayerHome && (lot.BuildingVariant > 0 || CityBuildingAssetProvider.HasExpectedEntrance(lot.District)))
+            if (lot.IsOrdinaryBuilding && (lot.BuildingVariant > 0 || CityBuildingAssetProvider.HasExpectedEntrance(lot.District)))
             {
                 CityBuildingPrototypePose pose =
                     CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);

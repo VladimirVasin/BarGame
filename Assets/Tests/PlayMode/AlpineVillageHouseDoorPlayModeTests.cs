@@ -77,7 +77,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator HouseDoor_OffersItselfAndAnswersThatItIsLocked()
+        public IEnumerator HouseDoor_OffersItselfAndAnswersThatItIsAbandoned()
         {
             var scene = new GameObject("Alpine Village House Door Test");
             try
@@ -87,7 +87,8 @@ namespace BarPromenade.Tests.PlayMode
                 AlpineVillagePlotDescriptor house = null;
                 foreach (AlpineVillagePlotDescriptor plot in plan.Plots)
                 {
-                    if (plot.Kind == AlpineVillagePlotKind.House)
+                    if (plot.Kind == AlpineVillagePlotKind.House &&
+                        !VillageHouseholdCatalog.IsOccupied(plot.StableId))
                     {
                         house = plot;
                         break;
@@ -198,8 +199,7 @@ namespace BarPromenade.Tests.PlayMode
                     "He tried the door and it never said anything.");
                 Assert.That(
                     prompt.GetPromptKeyAt(Time.unscaledTime),
-                    Is.EqualTo(
-                        AlpineVillageWorldBuilder.HouseDoorLockedKey));
+                    Is.EqualTo("alpine_village.house_door.abandoned"));
                 Assert.That(
                     prompt.GetDisplayedTextAt(Time.unscaledTime),
                     Is.Not.Empty,

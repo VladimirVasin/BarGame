@@ -6,50 +6,36 @@ using UnityEngine;
 namespace BarPromenade.Tests.EditMode
 {
     /// <summary>
-    /// The grand-loop contract of Route 01: every notable destination in
-    /// the city lies within a walk of some stop, the along-loop spacing
-    /// stays regular, and open-area stops actually sit by their gates.
+    /// Coverage of City service, including the published district network
+    /// and the planner's single-line fallback.
     /// </summary>
     public sealed class CityBusCoverageTests
     {
         [Test]
         public void EveryStopKeepsItsPavementWaitPoint()
         {
-            CreateContext(
-                out CityLayout layout,
-                out CityBusPlan busPlan,
-                out CityPedestrianPlan pedestrianPlan,
-                out RoadWalkableArea walkableArea);
-            CityBusStopWaitPlan waitPlan = CityBusStopWaitPlanner.Create(
-                busPlan,
-                pedestrianPlan,
-                walkableArea);
-
-            Assert.That(
-                waitPlan.Count,
-                Is.EqualTo(busPlan.Stops.Count),
-                "A stop whose pavement the wait planner silently skips " +
-                "is a stop nobody can be served at: " +
-                string.Join(
-                    ", ",
-                    busPlan.Stops
-                        .Where(stop => !waitPlan.WaitPoints.Any(point =>
-                            point.StopIndex == stop.SequenceIndex))
-                        .Select(stop => stop.Id)));
+            var layout = CreateLayout();
+            var pedestrians = CityPedestrianPlanner.Create(layout, layout.Seed);
+            var walkable = RoadWalkableArea.FromLayout(layout);
+            foreach (var line in CityDistrictBusPlanner.Create(layout))
+            {
+                CityBusStopWaitPlan waits = CityBusStopWaitPlanner.Create(line, pedestrians, walkable, layout);
+                Assert.That(waits.WaitPoints.Select(point => point.StopId),
+                    Is.EquivalentTo(line.Stops.Select(stop => stop.Id)), line.RouteId);
+            }
         }
 
         [Test]
         public void EveryDestination_IsWithinWalkOfAStop()
         {
-            CreateContext(
-                out CityLayout layout,
-                out CityBusPlan busPlan,
-                out CityPedestrianPlan pedestrianPlan,
-                out RoadWalkableArea walkableArea);
-            CityBusStopWaitPlan waitPlan = CityBusStopWaitPlanner.Create(
-                busPlan,
-                pedestrianPlan,
-                walkableArea);
+            var layout = CreateLayout();
+            var pedestrianPlan = CityPedestrianPlanner.Create(layout, layout.Seed);
+            var walkableArea = RoadWalkableArea.FromLayout(layout);
+            var network = CityDistrictBusPlanner.Create(layout);
+            var stops = CityBusNetworkFurniture.Stops(network).ToArray();
+            var waitPlan = new CityBusStopWaitPlan(network.SelectMany(line =>
+                CityBusStopWaitPlanner.Create(line, pedestrianPlan, walkableArea, layout)
+                    .WaitPoints).ToArray());
             Assert.That(waitPlan.Count, Is.GreaterThan(0));
 
             var destinations = new List<(string id, Vector3 position)>();
@@ -94,6 +80,8 @@ namespace BarPromenade.Tests.EditMode
                         lot.SidewalkArrivalPosition));
                 }
             }
+            if (layout.HasSummitHome)
+                destinations.Add(("home-summit", layout.PlayerHome.SidewalkArrivalPosition));
 
             float worstDestination = 0f;
             string worstDestinationId = string.Empty;
@@ -149,13 +137,13 @@ namespace BarPromenade.Tests.EditMode
                 {
                     float air = float.PositiveInfinity;
                     for (int stopIndex = 0;
-                         stopIndex < busPlan.Stops.Count;
+                         stopIndex < stops.Length;
                          stopIndex++)
                     {
                         air = Mathf.Min(
                             air,
                             XzDistance(
-                                busPlan.Stops[stopIndex].ShelterPosition,
+                                stops[stopIndex].ShelterPosition,
                                 nodePosition));
                     }
 
@@ -286,115 +274,25 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void StopSpacing_StaysRegularAlongTheLoop()
+        public void StopIntervals_AreDistinctAndCloseEachLine()
         {
-            CreateContext(
-                out CityLayout layout,
-                out CityBusPlan busPlan,
-                out CityPedestrianPlan pedestrianPlan,
-                out RoadWalkableArea walkableArea);
-            IReadOnlyList<CityBusStopDescriptor> stops = busPlan.Stops;
-            Assert.That(stops.Count, Is.GreaterThan(10));
-
-            int withinTarget = 0;
-            float worstGap = 0f;
-            for (int index = 0; index < stops.Count; index++)
+            var layout = CreateLayout();
+            foreach (CityBusPlan line in CityDistrictBusPlanner.Create(layout))
             {
-                CityBusStopDescriptor current = stops[index];
-                CityBusStopDescriptor next =
-                    stops[(index + 1) % stops.Count];
-                float gap = next.DistanceAlongLoop -
-                            current.DistanceAlongLoop;
-                if (index == stops.Count - 1)
+                var stops = line.Stops;
+                Assert.That(stops.Count, Is.GreaterThan(2), line.RouteId);
+                Assert.That(stops.Select(stop => stop.SequenceIndex), Is.EqualTo(Enumerable.Range(0, stops.Count)));
+                for (int index = 0; index < stops.Count; index++)
                 {
-                    gap += busPlan.LoopLength;
-                }
+                    var current = stops[index];
+                    var next = stops[(index + 1) % stops.Count];
+                    float gap = next.DistanceAlongLoop - current.DistanceAlongLoop;
+                    if (index == stops.Count - 1) gap += line.LoopLength;
+                    Assert.That(gap, Is.GreaterThan(GeometryTolerance), current.Id);
 
-                worstGap = Mathf.Max(worstGap, gap);
-                if (gap <= CityBusPlanner.MaximumStopGap)
-                {
-                    withinTarget++;
-                }
-
-                TestContext.Out.WriteLine(
-                    $"{current.SequenceIndex:D2} " +
-                    $"{current.DistanceAlongLoop,7:F1} m  " +
-                    $"gap {gap,6:F1}  {current.TargetKind,-24} " +
-                    current.Id);
-
-                // Doubled-back approach corridors legitimately stretch a
-                // few gaps past the target, but never beyond three ideal
-                // intervals.
-                Assert.That(
-                    gap,
-                    Is.LessThanOrEqualTo(
-                        CityBusPlanner.TargetStopSpacing * 3f),
-                    $"{current.Id} -> {next.Id}");
-                // The minimum binds every pair: target stops closer than
-                // it are coalesced by the planner, inserted stops never
-                // land closer. Only home and the district points of
-                // interest may compress — they are never dropped.
-                bool bothMandatory =
-                    IsMandatoryStopKind(current.TargetKind) &&
-                    IsMandatoryStopKind(next.TargetKind);
-                if (!bothMandatory)
-                {
-                    Assert.That(
-                        gap,
-                        Is.GreaterThanOrEqualTo(
-                            CityBusPlanner.MinimumStopSpacing -
-                            GeometryTolerance),
-                        $"{current.Id} -> {next.Id}");
-                }
-            }
-
-            TestContext.Out.WriteLine(
-                $"stops={stops.Count} loop={busPlan.LoopLength:F1} " +
-                $"worstGap={worstGap:F1} " +
-                $"withinTarget={withinTarget}/{stops.Count}");
-
-            // withinTarget stays a diagnostic print only. The old
-            // "two thirds of gaps within MaximumStopGap" quota measured
-            // an artefact: on the folded corridors that regularity was
-            // held up by poles standing metres apart across the fold,
-            // which the planar floor below now removes on purpose. The
-            // real service guards are the mean interval here, the
-            // three-interval ceiling above and the walk budgets in the
-            // coverage tests — do not resurrect the quota.
-            Assert.That(
-                busPlan.LoopLength / stops.Count,
-                Is.LessThanOrEqualTo(
-                    CityBusPlanner.TargetStopSpacing * 1.5f),
-                "The mean along-loop interval must stay near the " +
-                "target spacing.");
-
-            // No two poles anywhere on the map may stand closer than
-            // the planar floor, whatever their order along the loop —
-            // the same bus calls at both, so the pair is redundant by
-            // construction. Only a pair of never-dropped stops (home,
-            // district points of interest) may compress.
-            for (int first = 0; first < stops.Count; first++)
-            {
-                for (int second = first + 1;
-                     second < stops.Count;
-                     second++)
-                {
-                    if (IsMandatoryStopKind(stops[first].TargetKind) &&
-                        IsMandatoryStopKind(stops[second].TargetKind))
-                    {
-                        continue;
-                    }
-
-                    Vector3 delta = stops[first].ShelterPosition -
-                                    stops[second].ShelterPosition;
-                    delta.y = 0f;
-                    Assert.That(
-                        delta.magnitude,
-                        Is.GreaterThanOrEqualTo(
-                            CityBusPlanner.MinimumPlanarStopSpacing -
-                            GeometryTolerance),
-                        $"{stops[first].Id} and {stops[second].Id} " +
-                        "stand on practically the same spot.");
+                    for (int other = index + 1; other < stops.Count; other++)
+                        Assert.That(CityBusNetworkFurniture.SamePlatform(current.ShelterPosition, stops[other].ShelterPosition),
+                            Is.False, current.Id + " shares a platform with " + stops[other].Id);
                 }
             }
         }
@@ -516,14 +414,6 @@ namespace BarPromenade.Tests.EditMode
                 string.Join(" | ", violations));
         }
 
-        private static bool IsMandatoryStopKind(
-            CityBusStopTargetKind kind)
-        {
-            return kind == CityBusStopTargetKind.PlayerHome || kind == CityBusStopTargetKind.ResidentialBlock ||
-                   kind ==
-                   CityBusStopTargetKind.DistrictPointOfInterest;
-        }
-
         private const float GeometryTolerance = 0.001f;
 
         /// <summary>
@@ -588,14 +478,12 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void EveryShelter_StandsOnThePhysicalPavement()
         {
-            CreateContext(
-                out CityLayout layout,
-                out CityBusPlan busPlan,
-                out _,
-                out _);
+            var layout = CreateLayout();
+            var stops = CityBusNetworkFurniture.Stops(CityDistrictBusPlanner.Create(layout)).ToArray();
             CityStreetSurfacePlan surfaces =
                 CityStreetSurfacePlanner.Create(layout);
-            Assert.That(busPlan.Stops, Is.Not.Empty);
+            var clearance = CityBusPlatformClearance.ForLayout(layout);
+            Assert.That(stops, Is.Not.Empty);
 
             // The shelter's Y is the local sidewalk top every consumer
             // trusts: the stop visual sits its boxes on it, the ride
@@ -605,14 +493,13 @@ namespace BarPromenade.Tests.EditMode
             // 8 cm above the boxed pavement and the bench refused its
             // sitter, so the built surface is the only accepted truth.
             var violations = new List<string>();
-            for (int index = 0; index < busPlan.Stops.Count; index++)
+            foreach (CityBusStopDescriptor stop in stops)
             {
-                CityBusStopDescriptor stop = busPlan.Stops[index];
-                if (!CityBusPlanner.TryResolveShelterGroundTop(
-                        layout,
-                        surfaces,
-                        stop.ShelterPosition,
-                        out float surfaceTop))
+                float surfaceTop;
+                bool supported = stop.RoadEdge.A == stop.RoadEdge.B
+                    ? clearance.TryHeight(stop.ShelterPosition, out surfaceTop)
+                    : CityBusPlanner.TryResolveShelterGroundTop(layout, surfaces, stop.ShelterPosition, out surfaceTop);
+                if (!supported)
                 {
                     violations.Add(
                         stop.Id + ": no physical surface under the " +
@@ -643,11 +530,7 @@ namespace BarPromenade.Tests.EditMode
             out CityPedestrianPlan pedestrianPlan,
             out RoadWalkableArea walkableArea)
         {
-            layout = CityLayoutGenerator.Generate(
-                CityBlueprintCatalog.Resolve(
-                    GameSessionState.DefaultCityBlueprintId),
-                CityGenerationSettings.Default,
-                GameSessionState.DefaultCitySeed);
+            layout = CreateLayout();
             busPlan = CityBusPlanner.Create(layout);
             CityStreetSurfacePlan streetSurfaces =
                 CityStreetSurfacePlanner.Create(layout);
@@ -657,6 +540,9 @@ namespace BarPromenade.Tests.EditMode
                 streetSurfaces);
             walkableArea = RoadWalkableArea.FromLayout(layout);
         }
+
+        private static CityLayout CreateLayout() => CityLayoutGenerator.Generate(
+            CityBlueprintCatalog.Default, CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
 
         private static float XzDistance(Vector3 first, Vector3 second)
         {

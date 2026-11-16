@@ -97,9 +97,12 @@ namespace BarPromenade.Tests.EditMode
         public void Drivers_AppendPermanentOrdinaryIdentitiesAfterExistingCast()
         {
             var roster = DefaultNpcPopulation.Characters;
+            int ferryman = System.Array.FindIndex(roster.ToArray(),
+                person => person.Id == DefaultNpcPopulation.LastRouteFerryman);
+            Assert.That(ferryman, Is.GreaterThanOrEqualTo(0));
             for (int i = 0; i < AmbientTrafficRules.Capacity; i++)
             {
-                var person = roster[roster.Count - AmbientTrafficRules.Capacity + i];
+                var person = roster[ferryman + 1 + i];
                 Assert.That(person.Id, Is.EqualTo(DefaultNpcPopulation.AmbientDriverId(i)));
                 Assert.That(person.ModelId, Is.EqualTo(DefaultNpcCatalog.OrdinaryWorker));
                 Assert.That(person.UsesRandomBody, Is.False, "Keep the measured seat contacts.");

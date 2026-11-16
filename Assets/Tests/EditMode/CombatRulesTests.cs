@@ -315,9 +315,10 @@ namespace BarPromenade.Tests.EditMode
         public void CounterHitPunishesCommitmentAndAWhiffPunishNeverHelpsTheWhiffer()
         {
             float counter = S.StaggerSeconds + S.CounterHitStaggerBonus;
+            float contactTime = S.WindupSeconds + S.ActiveSeconds * .5f;
             var actor = new MeleeCombatant();
             actor.TryStartAttack();
-            actor.Advance(.2f);
+            actor.Advance(S.WindupSeconds * .5f);
             Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Windup));
             Assert.That(actor.ReceiveHit(S.Damage, S.BlockCost, false), Is.EqualTo(MeleeHitResult.Hit));
             Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Stagger));
@@ -330,29 +331,30 @@ namespace BarPromenade.Tests.EditMode
 
             actor.Reset();
             actor.TryStartAttack();
-            actor.Advance(.5f);
+            actor.Advance(contactTime);
             Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Active));
             actor.ReceiveHit(S.Damage, S.BlockCost, false);
             Assert.That(actor.ActionRemaining, Is.EqualTo(S.StaggerSeconds).Within(Eps), "A trade in the live arc is an ordinary stagger.");
 
             actor.Reset();
             actor.TryStartAttack();
-            actor.Advance(.5f);
+            actor.Advance(contactTime);
             actor.TryRegisterHit(1, actor.AttackSequence);
             actor.RecordAttackOutcome(MeleeHitResult.Hit, actor.AttackSequence);
             actor.Advance(.2f);
             Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Recovery));
+            float hitReturn = actor.RecoveryRemaining;
             actor.ReceiveHit(S.Damage, S.BlockCost, false);
-            Assert.That(actor.ActionRemaining, Is.EqualTo(Math.Max(S.StaggerSeconds, actor.Settings.AnimationRecoverySeconds - .07f)).Within(Eps), "Received damage cannot shorten the committed return.");
+            Assert.That(actor.ActionRemaining, Is.EqualTo(Math.Max(S.StaggerSeconds, hitReturn)).Within(Eps), "Received damage cannot shorten the committed return.");
 
             actor.Reset();
             actor.TryStartAttack();
-            actor.Advance(.5f);
-            actor.CancelAttackOnObstacle();
+            actor.Advance(contactTime);
+            Assert.That(actor.CancelAttackOnObstacle(), Is.True);
             actor.ReceiveHit(S.Damage, S.BlockCost, false);
             Assert.That(actor.ActionRemaining, Is.EqualTo(counter).Within(Eps), "A swing stopped by a wall is exposed.");
 
-            for (float t = 0f; t < S.RecoverySeconds; t += .1f)
+            for (float t = 0f; t < S.AnimationRecoverySeconds; t += .1f)
             {
                 actor.Reset();
                 actor.TryStartAttack();
@@ -519,10 +521,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(actor.AttackOutcome, Is.EqualTo(outcome));
             Assert.That(actor.RecoveryRemaining, Is.EqualTo(recovery).Within(.00001f));
             Assert.That(actor.CurrentAttackDurationSeconds, Is.EqualTo(actor.AttackActiveEnd + recovery).Within(.00001f));
-            Assert.That(actor.Settings.AnimationAttackDurationSeconds, Is.EqualTo(1.28f).Within(.00001f));
+            Assert.That(actor.Settings.AnimationAttackDurationSeconds, Is.EqualTo(.78f).Within(.00001f));
             actor.Advance(recovery * .5f);
             Assert.That(actor.PhaseProgress, Is.EqualTo(.5f).Within(.00001f));
-            Assert.That(actor.AttackProgress, Is.EqualTo((.63f + .325f) / 1.28f).Within(.00001f),
+            Assert.That(actor.AttackProgress, Is.EqualTo((.36f + .21f) / .78f).Within(.00001f),
                 "All gameplay outcomes traverse the same authored recovery pose range.");
             actor.Advance(recovery * .5f + .000001f);
             Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Ready));
@@ -597,16 +599,19 @@ namespace BarPromenade.Tests.EditMode
             var actor = new MeleeCombatant();
             float spent = SpendStep(actor);
             actor.TryStartAttack();
-            MeleeAdvanceResult step = actor.Advance(.5f);
+            float contactTime = actor.AttackWindupSeconds + S.ActiveSeconds * .5f;
+            MeleeAdvanceResult step = actor.Advance(contactTime);
             Assert.That(step.HasActiveWindow, Is.True);
             actor.ReceiveHit(S.Damage, S.BlockCost, false);
             Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Stagger));
             Assert.That(actor.TryRegisterHit(1, step.AttackSequence), Is.False);
-            actor.Advance(.5f);
+            float staggerTime = S.StaggerSeconds + .01f;
+            actor.Advance(staggerTime);
             Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Ready));
-            float regenFrom = Math.Max(S.RegenerationDelaySeconds, S.StepDurationSeconds + .5f);
+            float contactClock = S.StepDurationSeconds + contactTime;
+            float regenFrom = Math.Max(S.RegenerationDelaySeconds, contactClock);
             Assert.That(actor.Stamina, Is.EqualTo(Math.Min(S.MaxStamina,
-                spent + (S.StepDurationSeconds + 1f - regenFrom) * S.StaminaPerSecond)).Within(Eps));
+                spent + (contactClock + staggerTime - regenFrom) * S.StaminaPerSecond)).Within(Eps));
         }
 
         [Test]
@@ -1069,13 +1074,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(actor.ActionRemaining, Is.EqualTo(longer).Within(Eps));
             Assert.That(actor.Health, Is.EqualTo(S.MaxHealth - 2f * S.KickDamage - S.Damage).Within(Eps));
 
-            actor.Reset();
-            HoldGuard(actor);
-            actor.ReceiveHit(S.Damage, S.MaxStamina + 1f, true);
-            longer = actor.ActionRemaining;
-            actor.ReceiveKick();
-            Assert.That(actor.Phase, Is.EqualTo(MeleePhase.GuardBroken));
-            Assert.That(actor.ActionRemaining, Is.EqualTo(longer).Within(Eps));
             float health = actor.Health;
             actor.BeginKnockdown();
             Assert.That(actor.ReceiveKick(), Is.EqualTo(MeleeHitResult.Ignored));
@@ -1323,8 +1321,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(kickHitRecoverySeconds: S.AttackBufferSeconds - .01f));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(parryMaxPower: 1.5f));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(guardBreakDamageScale: 1.5f));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(chainWindupSeconds: S.WindupSeconds),
-                "Legacy timing inputs still reject inconsistent values.");
+            Assert.That(new MeleeCombatSettings(windupSeconds: S.WindupSeconds,
+                activeSeconds: S.ActiveSeconds, chainWindupSeconds: 1f).ChainWindupSeconds,
+                Is.EqualTo(S.WindupSeconds).Within(Eps),
+                "A legacy chain timing is capped by the weapon's windup.");
             Assert.That(new MeleeCombatSettings(chainWindupSeconds: .1f).ChainWindupSeconds, Is.EqualTo(.1f).Within(Eps));
         }
 

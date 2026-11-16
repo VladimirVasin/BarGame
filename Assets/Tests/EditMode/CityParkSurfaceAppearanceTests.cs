@@ -410,14 +410,11 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
-        /// The four park landmarks live in the city-wide decoration
-        /// layer, which is otherwise flat. Only their parts may opt
-        /// into a park sheet: if a batch named "Park ..." appears with
-        /// the wrong sheet, or a neighbouring district's batch picks
-        /// one up, this fails.
+        /// Park landmark batches retain the surface sheets assigned to
+        /// the fountain, bandstand and other park fixtures.
         /// </summary>
         [Test]
-        public void BuildDecorations_TexturesOnlyTheParkLandmarks()
+        public void BuildDecorations_TexturesTheParkLandmarks()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityGenerationSettings.Default,
@@ -462,22 +459,8 @@ namespace BarPromenade.Tests.EditMode
                         renderer.name.StartsWith(
                             "Imported Park ",
                             StringComparison.Ordinal);
-                    if (texture == null)
-                    {
-                        Assert.That(
-                            named,
-                            Is.False,
-                            $"'{renderer.name}' is a park batch with " +
-                            "no sheet.");
-                        continue;
-                    }
-
-                    Assert.That(
-                        named,
-                        Is.True,
-                        $"'{renderer.name}' is not a park landmark " +
-                        "batch but carries a texture; the rest of the " +
-                        "decoration layer stays flat.");
+                    if (!named) continue;
+                    Assert.That(texture, Is.Not.Null, renderer.name);
                     Assert.That(
                         parkTextures.ContainsKey(texture),
                         Is.True,
@@ -536,7 +519,10 @@ namespace BarPromenade.Tests.EditMode
                     return CityParkSurfaceKind.Foliage;
                 case "Park Benches":
                 case "Imported Park Benches":
+                case "Park Bench Replacement Boards":
                     return CityParkSurfaceKind.Timber;
+                case "Park Bench Repair Plates":
+                    return CityParkSurfaceKind.PaintedMetal;
                 default:
                     Assert.Fail(
                         $"Untextured park object '{rendererName}'; " +

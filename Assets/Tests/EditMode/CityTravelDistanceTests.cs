@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -84,7 +82,7 @@ namespace BarPromenade.Tests.EditMode
                     : new Vector3(13f, 0f, 0f);
             }
 
-            float forward = InvokeBetweenAnchors(
+            float forward = CityTravelDistance.BetweenAnchors(
                 nodes,
                 edges,
                 GetPosition,
@@ -92,7 +90,7 @@ namespace BarPromenade.Tests.EditMode
                 new Vector3(1f, 0f, 0f),
                 secondEdge,
                 new Vector3(7f, 0f, 0f));
-            float reverse = InvokeBetweenAnchors(
+            float reverse = CityTravelDistance.BetweenAnchors(
                 nodes,
                 edges,
                 GetPosition,
@@ -120,7 +118,7 @@ namespace BarPromenade.Tests.EditMode
                 return new Vector3(node.x * 10f, 0f, 0f);
             }
 
-            float distance = InvokeBetweenAnchors(
+            float distance = CityTravelDistance.BetweenAnchors(
                 nodes,
                 edges,
                 GetPosition,
@@ -128,7 +126,7 @@ namespace BarPromenade.Tests.EditMode
                 new Vector3(2f, 0f, 0f),
                 edge,
                 new Vector3(8f, 0f, 0f));
-            float sameAnchor = InvokeBetweenAnchors(
+            float sameAnchor = CityTravelDistance.BetweenAnchors(
                 nodes,
                 edges,
                 GetPosition,
@@ -194,33 +192,5 @@ namespace BarPromenade.Tests.EditMode
                 .ToArray();
         }
 
-        private static float InvokeBetweenAnchors(
-            IReadOnlyList<Vector2Int> nodes,
-            IReadOnlyList<RoadEdge> edges,
-            Func<Vector2Int, Vector3> getNodeWorldPosition,
-            RoadEdge firstEdge,
-            Vector3 firstAnchor,
-            RoadEdge secondEdge,
-            Vector3 secondAnchor)
-        {
-            MethodInfo method = typeof(CityTravelDistance).GetMethod(
-                "BetweenAnchors",
-                BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.That(method, Is.Not.Null);
-
-            object result = method.Invoke(
-                null,
-                new object[]
-                {
-                    nodes,
-                    edges,
-                    getNodeWorldPosition,
-                    firstEdge,
-                    firstAnchor,
-                    secondEdge,
-                    secondAnchor
-                });
-            return (float)result;
-        }
     }
 }

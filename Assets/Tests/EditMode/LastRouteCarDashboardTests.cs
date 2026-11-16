@@ -482,15 +482,16 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void Session_RestoresTheDashOnTheNextCar()
         {
+            int station = LastRouteCarRadioModel.DetentCount - 1;
             GameSessionState.SetCarDashboard(
-                new LastRouteCarDashboardState(true, 5, true));
+                new LastRouteCarDashboardState(true, station, true));
             GameObject root = BuildCar(
                 out LastRouteCarAssetRegistry registry,
                 out LastRouteCarDashboard dashboard);
             try
             {
                 Assert.That(dashboard.RadioOn, Is.True, "The radio stayed on through the tunnel.");
-                Assert.That(dashboard.TuningDetent, Is.EqualTo(5));
+                Assert.That(dashboard.TuningDetent, Is.EqualTo(station));
                 Assert.That(dashboard.GloveboxOpen, Is.True);
                 Assert.That(dashboard.GloveboxOpenness, Is.EqualTo(1f));
                 Assert.That(dashboard.IsGloveboxSwinging, Is.False, "Restored, not replayed.");

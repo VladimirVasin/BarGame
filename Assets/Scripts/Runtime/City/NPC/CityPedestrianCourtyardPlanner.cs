@@ -90,6 +90,8 @@ namespace BarPromenade
         private static float CourtyardHeight(CityLayout layout, CityStreetSurfacePlan surfaces,
             Vector2 point, RoadEdge? accessEdge)
         {
+            if (CityBuildingEntrancePlan.TrySampleCachedTop(layout, point, out float entranceTop))
+                return entranceTop;
             if (surfaces.SupportPlan != null && surfaces.SupportPlan.TrySampleTop(point, out float supportTop, out _))
                 return supportTop;
             var position = new Vector3(point.x, 0f, point.y);

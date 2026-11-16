@@ -100,30 +100,21 @@ namespace BarPromenade.Tests.EditMode
                         overlay.BridgePosition.z)),
                 Is.True,
                 "The authored bridge must fit the chart.");
-            //  Three since the summit stopped being an MVP pad: the
-            //  brink is where the ground stops, which is precisely the
-            //  sort of thing a map exists to mark.
-            Assert.That(overlay.TerminalLandmarks.Count, Is.EqualTo(3));
+            Assert.That(overlay.TerminalLandmarks.Count, Is.EqualTo(2));
             Assert.That(
                 overlay.TerminalLandmarks,
                 Is.Not.SameAs(plan.Terminal.Landmarks));
             Assert.That(
                 overlay.TerminalLandmarks[0].Kind,
-                Is.EqualTo(MountainRoadTerminalLandmarkKind.Cafe));
-            Assert.That(
-                overlay.TerminalLandmarks[0].LocalizationKey,
-                Is.EqualTo("map.mountain_road.cafe"));
-            Assert.That(
-                overlay.TerminalLandmarks[1].Kind,
                 Is.EqualTo(MountainRoadTerminalLandmarkKind.Cableway));
             Assert.That(
-                overlay.TerminalLandmarks[1].LocalizationKey,
+                overlay.TerminalLandmarks[0].LocalizationKey,
                 Is.EqualTo("map.mountain_road.cableway"));
             Assert.That(
-                overlay.TerminalLandmarks[2].Kind,
+                overlay.TerminalLandmarks[1].Kind,
                 Is.EqualTo(MountainRoadTerminalLandmarkKind.Brink));
             Assert.That(
-                overlay.TerminalLandmarks[2].LocalizationKey,
+                overlay.TerminalLandmarks[1].LocalizationKey,
                 Is.EqualTo("map.mountain_road.brink"));
             for (int index = 0;
                  index < overlay.TerminalLandmarks.Count;
@@ -183,14 +174,9 @@ namespace BarPromenade.Tests.EditMode
                     Has.Count.EqualTo(
                         controller.MapObjects.Count +
                         controller.MapAreaTargets.Count +
+                        controller.PointsOfInterest.Count(point => !point.HasLotCell) +
                         1),
-                    "City should contain one point per legacy map object, " +
-                    "one per open-area target and the current player.");
-                Assert.That(
-                    controller.PointsOfInterest.All(point => point.HasLotCell),
-                    Is.True,
-                    "The legacy layout builds none of the named places, " +
-                    "which is what keeps the count above lot-shaped.");
+                    "City points cover map objects, open-area targets, named places and the player.");
                 AssertUniqueFinitePoints(cityPoints, GameAreaId.City);
                 AssertUniqueFinitePoints(
                     mountainPoints,
@@ -850,22 +836,15 @@ namespace BarPromenade.Tests.EditMode
 
                 // Exercise the actual two confirmation paths. A valid lattice
                 // square does not prove that a lot marker is a safe arrival.
-                for (int x = 0; x <= 5; x++)
+                int[] northernLots = Enumerable.Range(0, controller.MapObjects.Count)
+                    .Where(index => controller.MapObjects[index].IsOrdinaryBuilding)
+                    .OrderByDescending(index => controller.MapObjects[index].Cell.y)
+                    .ThenBy(index => controller.MapObjects[index].Cell.x).Take(6).ToArray();
+                Assert.That(northernLots, Has.Length.EqualTo(6));
+                foreach (int lotIndex in northernLots)
                 {
-                    var cell = new Vector2Int(x, 11);
-                    int lotIndex = -1;
-                    for (int index = 0; index < controller.MapObjects.Count; index++)
-                    {
-                        if (controller.MapObjects[index].Cell == cell)
-                        {
-                            lotIndex = index;
-                            break;
-                        }
-                    }
-
-                    Assert.That(lotIndex, Is.GreaterThanOrEqualTo(0), $"Missing lot {cell}.");
                     BuildingLot lot = controller.MapObjects[lotIndex];
-                    Assert.That(lot.HasBuilding, Is.True, $"Regression lot {cell} needs a building.");
+                    Vector2Int cell = lot.Cell;
                     controller.SetMapPointInspectionEnabled(false);
                     Assert.That(controller.Open(), Is.True);
                     Assert.That(controller.SelectMapObject(lotIndex), Is.True);
@@ -979,12 +958,13 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.Pawnshop,
                     CityMapPointOfInterestKind.PigeonLoft,
                     CityMapPointOfInterestKind.PawnshopDescent,
-                    CityMapPointOfInterestKind.GlassReturn
+                    CityMapPointOfInterestKind.GlassReturn,
+                    CityMapPointOfInterestKind.Cobbler
                 };
                 var expectedIds = new[]
                 {
                     "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court", "terrace-shortcut", "terrace-landing", "residential-summit", "industrial-summit", "upper-shared-court",
-                    "upper-court-bridge", "upper-summit-bridge", "ridge-kiosk", "residential-kiosk", "industrial-kiosk", "pawnshop", "ridge-pigeon-loft", "pawnshop-descent", "ridge-glass-return"
+                    "upper-court-bridge", "upper-summit-bridge", "ridge-kiosk", "residential-kiosk", "industrial-kiosk", "pawnshop", "ridge-pigeon-loft", "pawnshop-descent", "ridge-glass-return", CityCobblerSitePlan.StableId
                 };
                 var expectedDistricts = new[]
                 {
@@ -1009,6 +989,7 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Industrial,
+                    CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
@@ -1054,7 +1035,7 @@ namespace BarPromenade.Tests.EditMode
                 }
                 var kiosks = CityKioskSites.ForLayout(layout).Sites.ToDictionary(site => site.StableId);
                 var namedArrivals = new Dictionary<string, (string Label, Vector3 Floor)> {
-                    { "ridge-kiosk", ("Ларёк на Гребне", kiosks["ridge-kiosk"].Approach) },
+                    { "ridge-kiosk", ("Ларёк и площадка на Гребне", kiosks["ridge-kiosk"].Approach) },
                     { "residential-kiosk", ("Ларёк в Жилом", kiosks["residential-kiosk"].Approach) },
                     { "industrial-kiosk", ("Ларёк в Рабочем", kiosks["industrial-kiosk"].Approach) }
                 };
@@ -1063,11 +1044,14 @@ namespace BarPromenade.Tests.EditMode
                     pawnshop.ReturnWorld - Vector3.up * PlayerFactory.GroundedRootOffset));
                 var descent = CityPawnshopDescentPlan.ForLayout(layout);
                 Assert.That(descent.IsEnabled, Is.True);
-                namedArrivals.Add("pawnshop-descent", ("Спуск к ломбарду", descent.UpperDock));
+                namedArrivals.Add("pawnshop-descent", ("Спуск к ломбарду", descent.UpperArrivalWorld));
                 var loft = CityPigeonLoftPlan.ForLayout(layout);
                 var glass = CityGlassReturnSitePlan.ForLayout(layout);
+                var cobbler = CityCobblerSitePlan.ForLayout(layout);
+                Assert.That(cobbler.IsEnabled, Is.True);
                 namedArrivals.Add("ridge-pigeon-loft", ("Голубятня", loft.Approach));
                 namedArrivals.Add(CityGlassReturnSitePlan.StableId, ("Приём стеклотары", glass.Approach));
+                namedArrivals.Add(CityCobblerSitePlan.StableId, ("Сапожная мастерская", cobbler.Approach));
                 var upper = CityHillsideQuarterPlan.ForLayout(layout);
                 foreach (var bridge in upper.Bridges)
                 {
@@ -1098,7 +1082,9 @@ namespace BarPromenade.Tests.EditMode
                         place.Kind == CityMapPointOfInterestKind.Cafe || place.Kind == CityMapPointOfInterestKind.DogPark ||
                         place.Kind == CityMapPointOfInterestKind.RidgeKiosk ||
                         place.Kind == CityMapPointOfInterestKind.GlassReturn || place.Kind == CityMapPointOfInterestKind.PigeonLoft ||
-                        place.Kind == CityMapPointOfInterestKind.Pawnshop), context);
+                        place.Kind == CityMapPointOfInterestKind.Pawnshop || place.Kind == CityMapPointOfInterestKind.Cobbler), context);
+                    if (place.Kind == CityMapPointOfInterestKind.Cobbler)
+                        Assert.That(place.Footprint, Is.EqualTo(cobbler.Bounds), context);
                     if (place.Kind == CityMapPointOfInterestKind.GlassReturn)
                     {
                         Assert.That(place.Footprint, Is.EqualTo(glass.Bounds), context);
@@ -1276,16 +1262,23 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(walkable.Contains(position, radius), Is.True,
                 $"{context} arrives outside the capsule's walkable mask.");
             var xz = new Vector2(position.x, position.z);
-            foreach (BuildingLot lot in layout.BuildingLots)
+            foreach (BuildingLot lot in layout.BuildingMasses)
             {
                 if (!lot.HasBuilding) continue;
-                Rect footprint = Rect.MinMaxRect(
-                    lot.Center.x - lot.Size.x * 0.5f - radius,
-                    lot.Center.z - lot.Size.y * 0.5f - radius,
-                    lot.Center.x + lot.Size.x * 0.5f + radius,
-                    lot.Center.z + lot.Size.y * 0.5f + radius);
-                Assert.That(footprint.Contains(xz), Is.False,
-                    $"{context} overlaps the building on {lot.Cell}.");
+                foreach (Vector2[] polygon in lot.CreateCollisionPolygons())
+                {
+                    if (!CityLitterGeometry.Expand(CityRoadPolygon.Bounds(polygon), radius).Contains(xz)) continue;
+                    Assert.That(CityRoadPolygon.Contains(polygon, xz), Is.False,
+                        $"{context} arrives inside the building on {lot.Cell}.");
+                    for (int edge = 0; edge < polygon.Length; edge++)
+                    {
+                        Vector2 start = polygon[edge];
+                        Vector2 span = polygon[(edge + 1) % polygon.Length] - start;
+                        float t = Mathf.Clamp01(Vector2.Dot(xz - start, span) / span.sqrMagnitude);
+                        Assert.That(Vector2.Distance(xz, start + span * t), Is.GreaterThanOrEqualTo(radius - .001f),
+                            $"{context} overlaps the building on {lot.Cell}.");
+                    }
+                }
             }
 
             if (!layout.ElevationPlan.TrySampleSurface(xz, CitySurfaceRole.RoadTop,
@@ -1656,6 +1649,10 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(lattice.Area, Is.EqualTo(GameAreaId.City));
             Assert.That(lattice.Squares.Count, Is.GreaterThan(20));
+            var buildingBodies = layout.BuildingMasses.Where(lot => lot.HasBuilding)
+                .SelectMany(lot => lot.CreateCollisionPolygons().Select(body =>
+                    (lot.Cell, Body: body, Bounds: CityRoadPolygon.Bounds(body))))
+                .ToArray();
             for (int index = 0; index < lattice.Squares.Count; index++)
             {
                 CityMapTeleportSquare square = lattice.Squares[index];
@@ -1666,24 +1663,14 @@ namespace BarPromenade.Tests.EditMode
                     square.WorldBounds.Contains(landing),
                     Is.True,
                     $"Square {square.Cell} lands outside itself.");
-                foreach (BuildingLot lot in layout.BuildingLots)
+                foreach (var body in buildingBodies)
                 {
-                    if (!lot.HasBuilding)
-                    {
-                        continue;
-                    }
-
+                    if (!body.Bounds.Contains(landing)) continue;
                     Assert.That(
-                        Mathf.Abs(landing.x - lot.Center.x) <
-                        lot.Size.x * 0.5f &&
-                        Mathf.Abs(landing.y - lot.Center.z) <
-                        lot.Size.y * 0.5f,
+                        CityRoadPolygon.Contains(body.Body, landing),
                         Is.False,
                         $"Square {square.Cell} arrives inside the building " +
-                        $"on {lot.Cell}. The walkable mask allows it - the " +
-                        "ground under a block is walkable and the building " +
-                        "is a collider standing on it - and it is still " +
-                        "not a place to be put down.");
+                        $"on {body.Cell}.");
                 }
             }
 

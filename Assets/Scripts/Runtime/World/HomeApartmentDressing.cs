@@ -56,20 +56,34 @@ namespace BarPromenade
             string damageKey = null)
         {
             if (renderer == null) return;
-            surfaceProperties ??= new MaterialPropertyBlock();
             // A repeated appearance binding must retain its original clean
             // source rather than capturing a previously applied day tint/map.
             if (!surfaces.TryGetValue(renderer, out SurfaceState source))
             {
-                surfaceProperties.Clear();
-                renderer.GetPropertyBlock(surfaceProperties);
-                source = new SurfaceState(kind, surfaceProperties.GetColor(BaseColorId),
-                    surfaceProperties.GetTexture(BaseMapId) ?? HomeSurfaceAppearance.GetTexture(kind),
-                    surfaceProperties.GetFloat(SmoothnessId), ageAcrossDays,
-                    SurfaceDamageLibrary.Resolve("home", damageKey, renderer.name, kind.ToString()), renderer.sharedMaterial);
+                source = ReadSurface(renderer, kind, ageAcrossDays,
+                    SurfaceDamageLibrary.Resolve("home", damageKey, renderer.name, kind.ToString()));
                 surfaces.Add(renderer, source);
             }
             ApplySurfaceDay(renderer, source);
+        }
+
+        internal void RefreshRegisteredSurface(Renderer renderer)
+        {
+            if (!surfaces.TryGetValue(renderer, out SurfaceState previous)) return;
+            SurfaceState source = ReadSurface(renderer, previous.Kind, previous.AgeAcrossDays, previous.Damage);
+            surfaces[renderer] = source;
+            ApplySurfaceDay(renderer, source);
+        }
+
+        private SurfaceState ReadSurface(Renderer renderer, HomeSurfaceKind kind, bool ageAcrossDays,
+            SurfaceDamageLibrary.Entry damage)
+        {
+            surfaceProperties ??= new MaterialPropertyBlock();
+            surfaceProperties.Clear();
+            renderer.GetPropertyBlock(surfaceProperties);
+            return new SurfaceState(kind, surfaceProperties.GetColor(BaseColorId),
+                surfaceProperties.GetTexture(BaseMapId) ?? HomeSurfaceAppearance.GetTexture(kind),
+                surfaceProperties.GetFloat(SmoothnessId), ageAcrossDays, damage, renderer.sharedMaterial);
         }
 
         internal void Build(HomeInteriorLayoutPlan plan, HomeBalconyLayoutPlan balcony,

@@ -1386,7 +1386,7 @@ namespace BarPromenade.Tests.PlayMode
                 input.Setup();
                 keyboard = UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
                 FocusRadioGameView();
-                Harness harness = BuildHarness(out scene);
+                Harness harness = BuildHarness(out scene, departing: false, arrivalRoadLength: DepartureRoadLength);
                 var dashboard =
                     harness.CarRoot.GetComponent<LastRouteCarDashboard>();
                 Assert.That(dashboard, Is.Not.Null, "The car has no dash.");
@@ -2136,11 +2136,13 @@ namespace BarPromenade.Tests.PlayMode
         private static Harness BuildHarness(
             out GameObject scene,
             bool departing,
-            bool armReturn = false)
+            bool armReturn = false,
+            float arrivalRoadLength = RoadLength)
         {
             scene = new GameObject("Last Route Ride Test");
             Transform parent = scene.transform;
-            CreateGround(parent);
+            float roadLength = departing ? DepartureRoadLength : arrivalRoadLength;
+            CreateGround(parent, roadLength);
 
             var cameraObject = new GameObject("Camera");
             cameraObject.transform.SetParent(parent, false);
@@ -2191,7 +2193,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(ferryman, Is.Not.Null, "The Ferryman failed to spawn.");
             seat.AttachFerryman(ferryman);
 
-            float roadLength = departing ? DepartureRoadLength : RoadLength;
             var road = new List<Vector3>();
             for (float distance = 0f; distance <= roadLength; distance += 1f)
             {
@@ -2241,13 +2242,13 @@ namespace BarPromenade.Tests.PlayMode
             };
         }
 
-        private static void CreateGround(Transform parent)
+        private static void CreateGround(Transform parent, float roadLength)
         {
             GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
             ground.name = "Last Route Ride Test Ground";
             ground.transform.SetParent(parent, false);
-            ground.transform.position = new Vector3(0f, -0.5f, 30f);
-            ground.transform.localScale = new Vector3(40f, 1f, 160f);
+            ground.transform.position = new Vector3(0f, -0.5f, (roadLength - 10f) * .5f);
+            ground.transform.localScale = new Vector3(40f, 1f, roadLength + 90f);
         }
 
         private sealed class AlwaysWalkableArea : IWalkableArea

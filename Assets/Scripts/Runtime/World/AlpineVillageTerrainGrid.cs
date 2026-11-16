@@ -11,7 +11,8 @@ namespace BarPromenade
     /// </summary>
     internal sealed class AlpineVillageTerrainGrid
     {
-        private const float BrookMargin = 2f;
+        private const float BrookMargin = AlpineVillageTerrainSampler.BrookTerrainCell +
+            AlpineVillageTerrainSampler.BrookBankMaximumBlendWidth;
         private static AlpineVillagePlan cachedPlan;
         private static AlpineVillageBrookPlan cachedBrook;
         private static AlpineVillageTerrainGrid cachedGrid;

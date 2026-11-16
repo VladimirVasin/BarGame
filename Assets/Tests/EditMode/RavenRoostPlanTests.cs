@@ -796,6 +796,11 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void Log_MeasuredRoostIdsAndPairwiseDistances()
         {
+            foreach (CityParkRegionPlan region in cityLayout.Park.Regions)
+                TestContext.WriteLine($"{region.Id} plaza at {region.PlazaPosition:F2}.");
+            foreach (CityDecorationDescriptor decoration in cityWorld.DecorationPlan.Descriptors)
+                if (decoration.Kind == CityDecorationKind.ParkBandstand || decoration.Kind == CityDecorationKind.ParkChessTables)
+                    TestContext.WriteLine($"{decoration.Kind} at {decoration.Position:F2}.");
             WriteArea("City seed " + CitySeed, cityRoosts);
             WriteArea("MountainRoad seed " + RoadSeed, roadRoosts);
             WriteArea(

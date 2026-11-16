@@ -791,7 +791,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(menuDock.IsChildOf(menu.PropRoot), Is.False);
             Assert.That(
                 Vector3.Distance(
-                    menu.GripAnchor.localPosition,
+                    registry.transform.InverseTransformVector(menu.GripAnchor.position - menu.GripAnchor.parent.position),
                     new Vector3(0f, 0.042f, 0.130f)),
                 Is.LessThan(0.0001f));
 

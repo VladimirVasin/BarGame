@@ -307,13 +307,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(field, Is.EqualTo(FootstepGroundKind.Carpet));
             Assert.That(
                 FootstepGroundOverlay.TryFind(
-                    room.TransformPoint(new Vector3(7.0f, 0f, 0.55f)),
+                    room.TransformPoint(new Vector3(4.5f, 0f, -0.65f)),
                     out FootstepGroundKind rug),
                 Is.True);
             Assert.That(rug, Is.EqualTo(FootstepGroundKind.Carpet));
             Assert.That(
                 FootstepGroundOverlay.TryFind(
-                    room.TransformPoint(new Vector3(-5.6f, 0f, 0f)),
+                    room.TransformPoint(new Vector3(-3.33f, 0f, 0f)),
                     out _),
                 Is.False,
                 "The aisle between the carpet fields is bare board.");

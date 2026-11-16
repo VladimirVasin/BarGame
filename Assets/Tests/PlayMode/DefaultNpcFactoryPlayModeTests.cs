@@ -207,12 +207,13 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(wardrobe.IsModular, Is.True);
             wardrobe.ValidateBindings();
             CollectionAssert.AreEquivalent(new[] { "everyday", "work", "warm" }, wardrobe.Presets.Select(p => p.Id));
-            Assert.That(wardrobe.Items.Count, Is.EqualTo(23));
+            Assert.That(wardrobe.Items.Count, Is.EqualTo(24));
             Assert.That(wardrobe.BodyRenderers, Is.Not.Empty);
             Assert.That(wardrobe.Items.Select(p => p.Id).Distinct().Count(), Is.EqualTo(wardrobe.Items.Count));
             DefaultNpcAppearance appearance = actor.GetComponent<DefaultNpcAppearance>();
             Assert.That(appearance, Is.Not.Null);
-            CollectionAssert.AreEquivalent(new[] { "face-01", "face-02", "face-03", "face-04" }, appearance.Faces.Select(f => f.Id));
+            CollectionAssert.AreEquivalent(new[] { "face-01", "face-02", "face-03", "face-04", "face-05", "face-06" },
+                appearance.Faces.Select(f => f.Id));
             CollectionAssert.AreEquivalent(new[] { "gray", "brunette", "blond" }, appearance.HairColors.Select(h => h.Id));
             AssertStableAppearanceSelection(actor, other);
 
@@ -277,7 +278,8 @@ namespace BarPromenade.Tests.PlayMode
                     faceHairAtlases.Add(appearance.CurrentAtlas);
                 }
             }
-            Assert.That(faceHairAtlases.Count, Is.EqualTo(12), "Every face and hair-colour pairing has its authored shared atlas.");
+            Assert.That(faceHairAtlases.Count, Is.EqualTo(appearance.Faces.Count * appearance.HairColors.Count),
+                "Every face and hair-colour pairing has its authored shared atlas.");
             string selectedFace = appearance.CurrentFaceId;
             string selectedHair = appearance.CurrentHairColorId;
             Texture2D selectedAtlas = appearance.CurrentAtlas;
@@ -508,9 +510,13 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertPopulationAllocation(Transform parent)
         {
             string[] ids = DefaultNpcPopulation.Characters.Select(character => character.Id).ToArray();
-            Assert.That(ids.Length, Is.EqualTo(31 + StairwellEncounterState.Population + DefaultNpcPopulation.CombatTestOpponentCount +
-                DefaultNpcPopulation.FairVisitorCount + DefaultNpcPopulation.PedestrianCount),
-                "Placed staff, stairwell and combat opponents, fair visitors and permanent City walkers.");
+            var required = new[] { DefaultNpcPopulation.BarBartender, DefaultNpcPopulation.VillageStationWorker,
+                DefaultNpcPopulation.PawnshopClerk, DefaultNpcPopulation.LastRouteFerryman }
+                .Concat(Enumerable.Range(0, StairwellEncounterState.Population).Select(DefaultNpcPopulation.StairwellEnemyId))
+                .Concat(Enumerable.Range(0, DefaultNpcPopulation.CombatTestOpponentCount).Select(DefaultNpcPopulation.CombatTestOpponentId))
+                .Concat(Enumerable.Range(0, DefaultNpcPopulation.FairVisitorCount).Select(DefaultNpcPopulation.FairVisitorId))
+                .Concat(Enumerable.Range(0, DefaultNpcPopulation.PedestrianCount).Select(DefaultNpcPopulation.PedestrianId));
+            Assert.That(ids, Is.SupersetOf(required), "Permanent roles and each scheduled population must be registered.");
             Assert.That(ids.Distinct().Count(), Is.EqualTo(ids.Length));
             var remembered = new System.Collections.Generic.Dictionary<string, string>();
             var visibleLooks = new System.Collections.Generic.HashSet<string>();

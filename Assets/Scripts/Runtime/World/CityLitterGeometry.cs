@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -30,6 +31,15 @@ namespace BarPromenade
 
         internal static bool Contains(Rect outer, Rect inner) =>
             inner.xMin >= outer.xMin && inner.xMax <= outer.xMax && inner.yMin >= outer.yMin && inner.yMax <= outer.yMax;
+
+        internal static bool OverlapsPolygon(Rect footprint, IReadOnlyList<Vector2> polygon)
+        {
+            if (!footprint.Overlaps(CityRoadPolygon.Bounds(polygon))) return false;
+            IReadOnlyList<Vector2> intersection = CityRoadPolygon.Rectangle(footprint);
+            for (int index = 0; index < polygon.Count && intersection.Count >= 3; index++)
+                intersection = CityRoadPolygon.Clip(intersection, polygon[index], polygon[(index + 1) % polygon.Count]);
+            return CityRoadPolygon.Area(intersection) > .000001f;
+        }
 
         /// <summary>Planar gap between two footprints; zero when they touch or overlap.</summary>
         internal static float Gap(Rect a, Rect b)

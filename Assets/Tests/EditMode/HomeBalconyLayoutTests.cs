@@ -147,8 +147,16 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 first.NearbyDecorations,
                 Is.EqualTo(second.NearbyDecorations));
-            Assert.That(first.FrontageEdge.HasValue, Is.False);
-            Assert.That(first.Layout.SummitHome.Lot, Is.SameAs(first.PlayerHome));
+            if (first.Layout.HasSummitHome)
+            {
+                Assert.That(first.FrontageEdge.HasValue, Is.False);
+                Assert.That(first.Layout.SummitHome.Lot, Is.SameAs(first.PlayerHome));
+            }
+            else
+            {
+                Assert.That(first.Layout.TryGetFrontageEdge(first.PlayerHome, out RoadEdge frontage), Is.True);
+                Assert.That(first.FrontageEdge, Is.EqualTo(frontage));
+            }
             Assert.That(
                 first.NearbyLots.Any(
                     lot => lot.IsPlayerHome),
@@ -261,45 +269,6 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         public void
-            ExteriorPedestrians_DefaultThreeWayBusApronsRemainAxisAligned()
-        {
-            int seed = GameSessionState.DefaultCitySeed;
-            HomeExteriorContextPlan context =
-                HomeExteriorContextPlanner.Generate(seed);
-            Vector2Int[] threeWayBusIntersections =
-                CityBusIntersectionSelector
-                    .Select(context.Layout)
-                    .Where(node =>
-                        context.Layout.RoadEdges.Count(edge =>
-                            edge.Contains(node)) == 3)
-                    .ToArray();
-
-            Assert.That(
-                threeWayBusIntersections,
-                Is.Not.Empty,
-                "Regression setup requires a selected three-way Road v2.1 " +
-                "bus apron in the production city.");
-
-            CityPedestrianPlan exterior =
-                HomeExteriorPedestrianPlanner.Create(context, seed);
-            for (int index = 0; index < exterior.Links.Count; index++)
-            {
-                CityPedestrianLink link = exterior.Links[index];
-                Vector3 first =
-                    exterior.Nodes[link.FirstNodeIndex].Position;
-                Vector3 second =
-                    exterior.Nodes[link.SecondNodeIndex].Position;
-                Assert.That(
-                    Mathf.Abs(first.x - second.x) <= PositionTolerance ||
-                    Mathf.Abs(first.z - second.z) <= PositionTolerance,
-                    Is.True,
-                    $"Home pedestrian link '{link.Id}' is not " +
-                    "axis-aligned.");
-            }
-        }
-
-        [Test]
-        public void
             ExteriorPedestrians_TransformCityGraphAndFilterSpawnAnchors()
         {
             int seed = GameSessionState.DefaultCitySeed;
@@ -315,7 +284,8 @@ namespace BarPromenade.Tests.EditMode
             CityPedestrianPlan exterior =
                 HomeExteriorPedestrianPlanner.Create(
                     context,
-                    seed);
+                    seed,
+                    out IWalkableArea walkable);
 
             Assert.That(exterior.LayoutSeed, Is.EqualTo(source.LayoutSeed));
             Assert.That(
@@ -358,6 +328,22 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     exteriorLink.SecondNodeIndex,
                     Is.EqualTo(sourceLink.SecondNodeIndex));
+                if (sourceLink.Path == null)
+                {
+                    Assert.That(exteriorLink.Path, Is.Null, sourceLink.Id);
+                    continue;
+                }
+
+                Assert.That(exteriorLink.Path, Is.Not.Null, sourceLink.Id);
+                Assert.That(exteriorLink.Path.Vertices.Count, Is.EqualTo(sourceLink.Path.Vertices.Count), sourceLink.Id);
+                for (int vertex = 0; vertex < sourceLink.Path.Vertices.Count; vertex++)
+                {
+                    Vector2 cityPoint = sourceLink.Path.Vertices[vertex];
+                    Vector3 localPoint = PlayerHomeBalconyGeometry.ToHomeLocal(
+                        context.PlayerHome, new Vector3(cityPoint.x, 0f, cityPoint.y));
+                    Assert.That(Vector2.Distance(exteriorLink.Path.Vertices[vertex], new Vector2(localPoint.x, localPoint.z)),
+                        Is.LessThan(.001f), sourceLink.Id);
+                }
             }
 
             var sourceAnchors = source.SpawnAnchors.ToDictionary(
@@ -405,24 +391,29 @@ namespace BarPromenade.Tests.EditMode
                     "Home approach context.");
             }
 
-            RoadWalkableArea walkable =
-                CityPedestrianPlanner.CreateWalkableArea(exterior);
+            RoadWalkableArea cityWalkable =
+                CityPedestrianPlanner.CreateWalkableArea(source);
             for (int index = 0; index < exterior.Links.Count; index++)
             {
-                CityPedestrianLink link = exterior.Links[index];
-                Vector3 first =
-                    exterior.Nodes[link.FirstNodeIndex].Position;
-                Vector3 second =
-                    exterior.Nodes[link.SecondNodeIndex].Position;
+                CityPedestrianLink link = source.Links[index];
+                Vector3 first = source.Nodes[link.FirstNodeIndex].Position;
+                Vector3 second = source.Nodes[link.SecondNodeIndex].Position;
                 for (int sample = 0; sample <= 4; sample++)
                 {
+                    float fraction = sample / 4f;
+                    Vector3 worldPoint = Vector3.Lerp(first, second, fraction);
+                    if (link.Path != null)
+                    {
+                        Vector2 point = link.Path.SampleDistance(fraction * link.Path.Length).Position;
+                        worldPoint.x = point.x;
+                        worldPoint.z = point.y;
+                    }
+
+                    Vector3 localPoint = PlayerHomeBalconyGeometry.ToHomeLocal(context.PlayerHome, worldPoint);
                     Assert.That(
-                        walkable.Contains(
-                            Vector3.Lerp(first, second, sample / 4f),
-                            exterior.AgentRadius),
-                        Is.True,
-                        $"Transformed pedestrian link '{link.Id}' leaves " +
-                        "its Home-local navigation area.");
+                        walkable.Contains(localPoint, exterior.AgentRadius),
+                        Is.EqualTo(cityWalkable.Contains(worldPoint, source.AgentRadius)),
+                        $"Home changed the navigable space for pedestrian link '{link.Id}'.");
                 }
             }
         }

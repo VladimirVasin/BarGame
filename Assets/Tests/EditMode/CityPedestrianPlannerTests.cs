@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
@@ -296,7 +297,6 @@ namespace BarPromenade.Tests.EditMode
                         node.Position.y,
                         Is.EqualTo(
                             ResolveNavigationSurfaceHeight(
-                                elevation,
                                 streetSurfacePlan,
                                 node.Position))
                             .Within(PositionTolerance),
@@ -308,18 +308,8 @@ namespace BarPromenade.Tests.EditMode
                     node.Id.Contains(":road:"))
                 {
                     Assert.That(
-                        elevation.TrySampleSurface(
-                            new Vector2(
-                                node.Position.x,
-                                node.Position.z),
-                            CitySurfaceRole.RoadTop,
-                            out float roadHeight,
-                            out _),
-                        Is.True,
-                        node.Id);
-                    Assert.That(
                         node.Position.y,
-                        Is.EqualTo(roadHeight)
+                        Is.EqualTo(ResolveNavigationSurfaceHeight(streetSurfacePlan, node.Position))
                             .Within(PositionTolerance),
                         node.Id);
                     sampledRoadNodes++;
@@ -328,13 +318,7 @@ namespace BarPromenade.Tests.EditMode
                 if (node.Id.StartsWith("junction:") &&
                     !node.Id.Contains(":seam:"))
                 {
-                    string[] idParts = node.Id.Split(':');
-                    var gridNode = new Vector2Int(
-                        int.Parse(idParts[1]),
-                        int.Parse(idParts[2]));
-                    float expectedHeight =
-                        layout.GetNodeWorldPosition(gridNode).y +
-                        CityStreetSurfacePlanner.SidewalkTop;
+                    float expectedHeight = ResolveNavigationSurfaceHeight(streetSurfacePlan, node.Position);
                     Assert.That(
                         node.Position.y,
                         Is.EqualTo(expectedHeight)
@@ -405,9 +389,19 @@ namespace BarPromenade.Tests.EditMode
             foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
             {
                 string prefix = $"courtyard:{block.Cell.x}:{block.Cell.y}:";
-                int gate = Enumerable.Range(0, plan.Nodes.Count).Single(index => plan.Nodes[index].Id == prefix + "gate");
-                int court = Enumerable.Range(0, plan.Nodes.Count).Single(index => plan.Nodes[index].Id == prefix + "court");
-                Assert.That(Vector3.Distance(plan.Nodes[court].Position, block.CourtCenter), Is.LessThan(.001f));
+                CityPedestrianLink[] route = courtLinks.Where(link =>
+                    link.Id.StartsWith(prefix + "walk:", StringComparison.Ordinal)).ToArray();
+                int[] routeNodes = route
+                    .SelectMany(link => new[] { link.FirstNodeIndex, link.SecondNodeIndex })
+                    .Distinct()
+                    .ToArray();
+                Assert.That(routeNodes, Is.Not.Empty, prefix);
+                // A gate can land exactly on an existing sidewalk node.
+                int[] gateNodes = routeNodes
+                    .Where(index => plan.GetLinkIndices(index).Any(link => plan.Links[link].Kind == CityPedestrianLinkKind.Sidewalk))
+                    .ToArray();
+                Assert.That(gateNodes, Has.Length.EqualTo(1), prefix);
+                int gate = gateNodes[0];
                 var visited = new HashSet<int> { gate };
                 var pending = new Queue<int>(); pending.Enqueue(gate);
                 while (pending.Count > 0)
@@ -419,7 +413,7 @@ namespace BarPromenade.Tests.EditMode
                         if (visited.Add(other)) pending.Enqueue(other);
                     }
                 }
-                Assert.That(visited, Has.Member(court), "The court must be connected to its actual street gate.");
+                Assert.That(routeNodes, Is.SubsetOf(visited), "The court walk must be connected to its actual street gate.");
                 Assert.That(visited.Any(index => plan.Nodes[index].Id.StartsWith("lane:")), Is.True,
                     "A courtyard component must join the production street graph.");
                 foreach (int node in Enumerable.Range(0, plan.Nodes.Count).Where(index => plan.Nodes[index].Id.StartsWith(prefix)))
@@ -455,8 +449,13 @@ namespace BarPromenade.Tests.EditMode
 
         private static float SampleCourtyardNavigationTop(CityLayout layout, CityStreetSurfacePlan surfaces, Vector2 point)
         {
+            if (CityBuildingEntrancePlan.TrySampleCachedTop(layout, point, out float entranceTop))
+                return entranceTop;
+            if (surfaces.SupportPlan != null && surfaces.SupportPlan.TrySampleTop(point, out float surfaceTop, out _))
+                return surfaceTop;
             if (surfaces.CurvedSidewalkPolygons.Any(polygon => CityRoadPolygon.Contains(polygon, point)) ||
-                layout.RoadGeometry.ObliqueJunction.SidewalkPolygons.Any(polygon => CityRoadPolygon.Contains(polygon, point)))
+                layout.RoadGeometry.ObliqueJunction?.SidewalkPolygons.Any(
+                    polygon => CityRoadPolygon.Contains(polygon, point)) == true)
             {
                 Assert.That(layout.ElevationPlan.TrySampleSurface(point, CitySurfaceRole.SidewalkTop, out float top, out _), Is.True);
                 return top;
@@ -536,52 +535,12 @@ namespace BarPromenade.Tests.EditMode
         }
 
         private static float ResolveNavigationSurfaceHeight(
-            CityElevationPlan elevation,
             CityStreetSurfacePlan streetSurfacePlan,
             Vector3 position)
         {
-            Assert.That(
-                elevation.TrySampleSurface(
-                    new Vector2(position.x, position.z),
-                    CitySurfaceRole.RoadTop,
-                    out float height,
-                    out _),
-                Is.True);
-            Vector2 point = new Vector2(position.x, position.z);
-            if (streetSurfacePlan.CurvedSidewalkPolygons.Any(polygon => CityRoadPolygon.Contains(polygon, point)) ||
-                (elevation.RoadGeometry.ObliqueJunction != null && elevation.RoadGeometry.ObliqueJunction.SidewalkPolygons
-                    .Any(polygon => CityRoadPolygon.Contains(polygon, point))))
-                Assert.That(elevation.TrySampleSurface(point, CitySurfaceRole.SidewalkTop, out height, out _), Is.True);
-            for (int index = 0;
-                 index < streetSurfacePlan.SidewalkGeometry.Count;
-                 index++)
-            {
-                RuntimeOrientedBox box =
-                    streetSurfacePlan.SidewalkGeometry[index];
-                Vector3 normal = box.Rotation * Vector3.up;
-                if (Mathf.Abs(normal.y) <= PositionTolerance)
-                {
-                    continue;
-                }
-
-                Vector3 planePoint = box.Center +
-                                     normal * (box.Size.y * 0.5f);
-                float top = planePoint.y -
-                    ((normal.x * (position.x - planePoint.x) +
-                      normal.z * (position.z - planePoint.z)) /
-                     normal.y);
-                Vector3 local = Quaternion.Inverse(box.Rotation) *
-                    (new Vector3(position.x, top, position.z) -
-                     box.Center);
-                if (Mathf.Abs(local.x) <=
-                        box.Size.x * 0.5f + PositionTolerance &&
-                    Mathf.Abs(local.z) <=
-                        box.Size.z * 0.5f + PositionTolerance)
-                {
-                    height = Mathf.Max(height, top);
-                }
-            }
-
+            var point = new Vector2(position.x, position.z);
+            Assert.That(streetSurfacePlan.SupportPlan.TrySampleTop(point, out float height, out _),
+                Is.True, $"No built walking surface under {position:F3}.");
             return height;
         }
 

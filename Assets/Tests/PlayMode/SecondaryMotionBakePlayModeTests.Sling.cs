@@ -21,7 +21,7 @@ namespace BarPromenade.Tests.PlayMode
                 clip.SampleAnimation(registry.Animator.gameObject, clip.length * .5f);
                 registry.GetComponent<CharacterJointDeformation>()?.ApplyPose();
                 registry.GetComponent<PlayerBootDeformation>()?.ApplyPose(FootGroundSample.None, FootGroundSample.None);
-                sling = CombatShotgunSling.CreateBakeSling(registry);
+                sling = CombatShotgunSling.CreateBakeSling(registry, includeStowedCrowbar: true);
                 sling.enabled = false;
                 // The camera predates the owned gun and mount; their imported
                 // descendants must join the rig's existing capture layer.

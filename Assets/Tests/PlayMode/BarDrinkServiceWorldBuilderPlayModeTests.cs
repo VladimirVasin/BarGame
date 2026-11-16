@@ -605,6 +605,12 @@ namespace BarPromenade.Tests.PlayMode
                  bottleIndex++)
             {
                 BarDrinkBottleView bottle = view.Bottles[bottleIndex];
+                if (bottle.DrinkId == DrinkId.Vodka)
+                {
+                    Assert.That(bottle.SolidCollider.bounds.min.y, Is.EqualTo(owner.transform.position.y).Within(.03f),
+                        "The vodka bottle stands on the floor behind the counter.");
+                    continue;
+                }
                 for (int rendererIndex = 0;
                      rendererIndex < bottle.Renderers.Count;
                      rendererIndex++)

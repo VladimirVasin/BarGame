@@ -89,11 +89,16 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(tunnelHalo.IntensityFactor, Is.EqualTo(floor * .4f).Within(.001f));
 
                 atmosphere.enabled = false;
+                // EditMode does not dispatch the runtime enable/disable callbacks.
+                const System.Reflection.BindingFlags lifecycle = System.Reflection.BindingFlags.Instance |
+                    System.Reflection.BindingFlags.NonPublic;
+                typeof(CityNightAtmosphere).GetMethod("OnDisable", lifecycle).Invoke(atmosphere, null);
                 foreach (Light light in allLights) Assert.That(light.enabled, Is.False);
                 Assert.That(tunnelHalo.IsVisible, Is.False);
                 atmosphere.SetTunnelPracticalFlickerMultiplier(.6f);
                 Assert.That(tunnel.enabled, Is.False, "A fault update must not revive a disabled exterior.");
                 atmosphere.enabled = true;
+                typeof(CityNightAtmosphere).GetMethod("OnEnable", lifecycle).Invoke(atmosphere, null);
                 foreach (Light light in allLights) Assert.That(light.enabled, Is.True);
                 Assert.That(atmosphere.StreetLightPool, Is.EqualTo(sources));
                 Assert.That(tunnel.intensity, Is.EqualTo(150f * floor * .6f).Within(.001f));

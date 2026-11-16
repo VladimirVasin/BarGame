@@ -66,7 +66,9 @@ namespace BarPromenade
         {
             GameObject player = new GameObject("Player");
             player.transform.SetParent(parent, false);
-            player.transform.position = SessionCheckpointService.ResolvePlayerSpawn(parent.gameObject.scene.name, position);
+            player.transform.position = parent == null
+                ? position
+                : SessionCheckpointService.ResolvePlayerSpawn(parent.gameObject.scene.name, position);
 
             CharacterController controller = player.AddComponent<CharacterController>();
             controller.height = 1.7f;

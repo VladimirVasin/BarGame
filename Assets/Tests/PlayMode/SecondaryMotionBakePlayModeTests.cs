@@ -49,7 +49,13 @@ namespace BarPromenade.Tests.PlayMode
                 SecondaryMotionBakeRuntime.Enabled = true;
                 SecondaryMotionBakeRuntime.ReloadAssets();
                 VerifyRecordingCodec(report);
-                rig = Player3DResources.Instantiate(owner.transform);
+                // Reference recordings use the authored bind rig. The live
+                // factory applies the session's corruption-dependent hair length.
+                GameObject prefab = Player3DResources.LoadPrefab();
+                Assert.That(prefab, Is.Not.Null);
+                rig = Object.Instantiate(prefab, owner.transform, false).GetComponent<Player3DAssetRegistry>();
+                Assert.That(rig, Is.Not.Null);
+                rig.ApplyPalette();
                 foreach (MonoBehaviour driver in rig.GetComponentsInChildren<MonoBehaviour>(true)) driver.enabled = false;
                 rig.Animator.enabled = false;
                 PlayerHair hair = rig.GetComponent<PlayerHair>();

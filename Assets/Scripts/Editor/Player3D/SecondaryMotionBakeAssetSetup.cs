@@ -33,6 +33,9 @@ namespace BarPromenade.Editor
         public static void BakeAll()
         {
             if (EditorApplication.isPlaying) throw new InvalidOperationException("Bake secondary motion outside Play Mode.");
+            // The command-line authoring entry point can run before the delayed importer bootstrap.
+            CombatTestAssetSetup.EnsureLocalImports();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             GameObject prefab = Player3DResources.LoadPrefab();
             if (prefab == null) throw new InvalidOperationException("Package the production player before baking secondary motion.");
             var sources = new HashSet<string>(StringComparer.Ordinal) { AssetDatabase.GetAssetPath(prefab) };

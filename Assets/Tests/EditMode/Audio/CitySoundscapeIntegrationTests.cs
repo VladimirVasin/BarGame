@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using Unity.Profiling;
 using UnityEngine;
@@ -23,9 +24,12 @@ namespace BarPromenade.Tests.EditMode
                     layout,
                     decorationPlan);
 
-            Assert.That(plan.Sources, Has.Count.EqualTo(11));
-            Assert.That(plan.LoopingSources, Has.Count.EqualTo(5));
-            Assert.That(plan.ScheduledSources, Has.Count.EqualTo(4));
+            var hillside = CityHillsideNeighborhoodPlan.ForLayout(layout).SharedCourtBuildings;
+            int downpipes = hillside.Count(house => house.OnSummitStreet && house.HasGlazedBay);
+            int airers = hillside.Count(house => house.HasAirer);
+            Assert.That(plan.Sources, Has.Count.EqualTo(9 + downpipes + airers));
+            Assert.That(plan.LoopingSources, Has.Count.EqualTo(4 + airers));
+            Assert.That(plan.ScheduledSources, Has.Count.EqualTo(3 + downpipes));
             Assert.That(plan.TriggeredSources, Has.Count.EqualTo(2));
 
             var owners = new HashSet<CitySoundPhysicalOwnerKind>();
@@ -67,18 +71,17 @@ namespace BarPromenade.Tests.EditMode
                         0d));
             }
 
-            CollectionAssert.AreEquivalent(
-                new[]
-                {
-                    CitySoundPhysicalOwnerKind.OldTownWaterworksCourt,
-                    CitySoundPhysicalOwnerKind.ResidentialDryingYard,
-                    CitySoundPhysicalOwnerKind.NightlifeLastRouteIsland,
-                    CitySoundPhysicalOwnerKind.ParkFountainAndStatue,
-                    CitySoundPhysicalOwnerKind.ParkPlayground,
-                    CitySoundPhysicalOwnerKind.HillsideDownpipe,
-                    CitySoundPhysicalOwnerKind.HillsideBalconyAirer
-                },
-                owners);
+            var expectedOwners = new List<CitySoundPhysicalOwnerKind>
+            {
+                CitySoundPhysicalOwnerKind.OldTownWaterworksCourt,
+                CitySoundPhysicalOwnerKind.ResidentialDryingYard,
+                CitySoundPhysicalOwnerKind.NightlifeLastRouteIsland,
+                CitySoundPhysicalOwnerKind.ParkFountainAndStatue,
+                CitySoundPhysicalOwnerKind.ParkPlayground
+            };
+            if (downpipes != 0) expectedOwners.Add(CitySoundPhysicalOwnerKind.HillsideDownpipe);
+            if (airers != 0) expectedOwners.Add(CitySoundPhysicalOwnerKind.HillsideBalconyAirer);
+            CollectionAssert.AreEquivalent(expectedOwners, owners);
         }
 
         [Test]

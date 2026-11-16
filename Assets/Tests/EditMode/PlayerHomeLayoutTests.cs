@@ -368,9 +368,9 @@ namespace BarPromenade.Tests.EditMode
                     door.localPosition,
                     Is.EqualTo(new Vector3(
                         plan.DoorCenter.x - 0.02f,
-                        0f,
+                        0.10f,
                         plan.DoorCenter.z -
-                        plan.DoorSize.z * 0.5f)));
+                        plan.DoorSize.z * 0.5f + 0.06f)));
                 Assert.That(window.localPosition.x,
                     Is.EqualTo(plan.WindowCenter.x + 0.008f)
                         .Within(0.001f));

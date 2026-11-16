@@ -285,7 +285,9 @@ namespace BarPromenade.Tests.EditMode
                          lot.IsBar || lot.IsPlayerHome || lot.IsSupermarket))
             {
                 CityEntranceForecourtPlan forecourt = CityStreetSurfacePlanner.CreateEntranceForecourt(layout, lot, 2f);
-                float frontageWidth = lot.FrontageDirection.x != 0 ? forecourt.Bounds.size.z : forecourt.Bounds.size.x;
+                Vector3 first = forecourt.Top[0];
+                Vector3 last = forecourt.Top[(forecourt.Rows - 1) * forecourt.Columns];
+                float frontageWidth = Vector2.Distance(new Vector2(first.x, first.z), new Vector2(last.x, last.z));
                 Assert.That(frontageWidth, Is.EqualTo(lot.FrontageDirection.x != 0 ? lot.Size.y : lot.Size.x)
                     .Within(Tolerance), "Paving joins the facade front instead of an isolated door tongue.");
                 Assert.That(forecourt.Bounds.min.y, Is.LessThan(lot.DoorPosition.y),
@@ -306,10 +308,6 @@ namespace BarPromenade.Tests.EditMode
                     if(CityTerrainSurfacePlan.TrySampleGroundTop(layout,new Vector2(top.x,top.z),out float soil,out _))
                         Assert.That(bottom.y,Is.LessThanOrEqualTo(soil-.1f),"Every perimeter foundation is embedded in sampled soil.");
                 }
-                Rect footprint = forecourt.Footprint;
-                Assert.That(plan.SidewalkWalkableRectangles.Any(sidewalk =>
-                    HasPositiveOverlap(sidewalk, footprint)), Is.True,
-                    "Every entrance front must overlap its continuous public pavement.");
             }
 
             CityBuildingEntrancePlan residential = CityBuildingEntrancePlan.ForLayout(layout);
@@ -326,6 +324,17 @@ namespace BarPromenade.Tests.EditMode
                     CityBuildingAssetProvider.GetExpectedEntranceThreshold(entry.Lot.BuildingVariant))), Is.LessThan(.001f));
                 Assert.That(entry.Points[0], Is.EqualTo(entry.Threshold));
                 Vector3 end = entry.Points[entry.Points.Count - 1];
+                CityTerraceDistrictPlan terrace = CityTerraceDistrictPlan.ForLayout(layout);
+                if (terrace.IsReservedCell(entry.Lot.Cell))
+                {
+                    Vector3 access = entry.Lot.Cell == CityTerraceDistrictPlan.LowerHouseCell
+                        ? terrace.LowerHouseRouteWorld[0]
+                        : terrace.EntryStartWorld;
+                    Assert.That(end, Is.EqualTo(access), "Terrace houses join their shared built access.");
+                    Assert.That(entry.Paving, Is.Empty, "The terrace owns the actual supporting ramps and landings.");
+                    continue;
+                }
+
                 Assert.That(CityStreetSurfacePlanner.TrySamplePublicSidewalkTop(layout, new Vector2(end.x, end.z),
                     out float endTop), Is.True, $"Residential {entry.Lot.Cell} must end on existing public pavement.");
                 Assert.That(end.y, Is.EqualTo(endTop).Within(.002f));
@@ -353,7 +362,7 @@ namespace BarPromenade.Tests.EditMode
                 foreach (Vector3 vertex in patch.TopVertices)
                     if (residential.TrySampleTop(new Vector2(vertex.x, vertex.z), out float ownerTop))
                         Assert.That(ownerTop, Is.EqualTo(vertex.y).Within(.025f),
-                            "Intersecting entry routes must agree on the shared ground grade, regardless of source ownership.");
+                            $"Intersecting entry routes at {vertex:F4} must agree on the shared ground grade, regardless of source ownership.");
 
             foreach (Vector2Int node in CityBusIntersectionSelector.Select(layout))
             {

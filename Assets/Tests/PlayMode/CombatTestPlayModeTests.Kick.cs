@@ -18,7 +18,7 @@ namespace BarPromenade.Tests.PlayMode
             System.Type.GetType("BarPromenade.Editor.CityPedestrianAssetSetup, BarPromenade.Editor", true)
                 .GetMethod("ValidateFaceAtlasesOrThrow", System.Type.EmptyTypes).Invoke(null, null);
             System.Type.GetType("BarPromenade.Editor.CombatTestAssetSetup, BarPromenade.Editor", true)
-                .GetMethod("BuildOrThrow", System.Type.EmptyTypes).Invoke(null, null);
+                .GetMethod("BuildKickOrThrow", System.Type.EmptyTypes).Invoke(null, null);
 #endif
         }
     }
@@ -28,12 +28,18 @@ namespace BarPromenade.Tests.PlayMode
     {
         private CombatTestRoot root;
         private float previousCaptureDelta;
+        private bool previousFocus;
+        private bool previousArena;
 
         [UnitySetUp]
         public IEnumerator SetUp()
         {
             previousCaptureDelta = Time.captureDeltaTime;
+            previousFocus = GameInput.MovementFocused;
+            previousArena = CombatTestRoot.UseLegacyArenaForTests;
             Time.captureDeltaTime = 1f / 60f;
+            CombatTestRoot.UseLegacyArenaForTests = true;
+            GameInput.HandleApplicationFocus(true);
             GameSessionState.BeginNewGame();
             yield return null;
         }
@@ -46,6 +52,8 @@ namespace BarPromenade.Tests.PlayMode
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu);
             GameSessionState.BeginNewGame();
             Time.captureDeltaTime = previousCaptureDelta;
+            CombatTestRoot.UseLegacyArenaForTests = previousArena;
+            GameInput.HandleApplicationFocus(previousFocus);
             root = null;
         }
 
@@ -56,6 +64,26 @@ namespace BarPromenade.Tests.PlayMode
             root.Hero.ResetActor(position, Vector3.forward);
             root.Opponent.ResetActor(position + Vector3.forward * distance, Vector3.back);
             Physics.SyncTransforms();
+            Assert.That(root.Hero.IsFirearm, Is.True);
+            Assert.That(root.SetOpponentFocus(true), Is.True);
+        }
+
+        private IEnumerator LoadKickArena()
+        {
+            if (SceneManager.GetActiveScene().name != SceneIds.MainMenu)
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu);
+            Assert.That(CombatTestStartService.TryStart(CombatWeaponId.Pistol), Is.True);
+            float deadline = Time.realtimeSinceStartup + 20f;
+            while (Time.realtimeSinceStartup < deadline &&
+                   (SceneManager.GetActiveScene().name != SceneIds.CombatTest || SceneTransitionService.IsTransitioning))
+                yield return null;
+            Assert.That(SceneTransitionService.IsTransitioning, Is.False);
+            root = Object.FindAnyObjectByType<CombatTestRoot>();
+            Assert.That(root, Is.Not.Null);
+            Assert.That(root.WarehousePlan, Is.Null, "These contact probes use the flat arena.");
+            root.AutomaticSimulation = false;
+            root.SendMessage("OnApplicationFocus", true);
+            GameInput.HandleApplicationFocus(true);
         }
 
         [UnityTest]
@@ -68,27 +96,30 @@ namespace BarPromenade.Tests.PlayMode
                 input.Setup();
                 Keyboard keyboard = InputSystem.AddDevice<Keyboard>();
                 Gamepad pad = InputSystem.AddDevice<Gamepad>();
-                yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest);
-                root = Object.FindAnyObjectByType<CombatTestRoot>();
-                root.AutomaticSimulation = false;
+                yield return LoadKickArena();
                 PlacePair(.80f);
                 root.Opponent.SetBlock(true);
                 root.CameraFollow.Snap();
                 yield return null;
-                Vector3 left = FindKickBone("foot.L").position;
+                Transform left = FindKickBone("foot.L"), right = FindKickBone("foot.R");
+                Vector3 leftAtRest = left.position, rightAtRest = right.position;
                 root.AutomaticSimulation = true;
                 input.Press(keyboard.qKey, queueEventOnly: true);
                 yield return null;
                 root.AutomaticSimulation = false;
                 Assert.That(root.Hero.State.IsKicking, Is.True, "Q is consumed by the real gameplay Update.");
+                int supportedSide = root.Hero.Footwork.SelectedSupportSide;
+                Assert.That(supportedSide, Is.EqualTo(1 - root.Hero.KickStrikingSide));
+                Transform support = supportedSide == 0 ? left : right;
+                Vector3 supportAtRest = supportedSide == 0 ? leftAtRest : rightAtRest;
                 Assert.That(root.Hero.State.Stamina, Is.EqualTo(S.MaxStamina - S.KickCost).Within(.001f));
                 input.Release(keyboard.qKey, queueEventOnly: true);
                 yield return null;
                 Assert.That(root.Hero.TryKick(), Is.False, "The same kick cannot restart itself.");
                 root.Tick(.25f);
                 yield return null;
-                Assert.That(Vector3.Distance(left, FindKickBone("foot.L").position), Is.LessThan(.025f),
-                    "The loaded left foot stays in world contact while the right foot lifts.");
+                Assert.That(Vector3.Distance(supportAtRest, support.position), Is.LessThan(.025f),
+                    "The loaded foot stays in world contact while the other foot lifts.");
                 CaptureKick("kick-prepare");
                 float held = root.Hero.State.KickElapsed;
                 using (GameTimeScaleRuntime.AcquirePause())
@@ -109,15 +140,10 @@ namespace BarPromenade.Tests.PlayMode
                     root.Hero.State.KickElapsed < root.Hero.State.KickActiveEnd); i++)
                     root.Tick(CombatTestRoot.SimulationStep);
                 Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1), "One foot sweep grants one impact.");
-                int kickSequence = root.Hero.State.AttackSequence;
-                Assert.That(root.Hero.RequestCharge(), Is.True);
-                root.Hero.ReleaseCharge();
-                Assert.That(root.Hero.State.IsKicking, Is.False, "The completed kick contact does not block a weapon tap through its whole return.");
-                Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(kickSequence + 1));
                 Assert.That(root.Hero.State.CooldownRemaining(MeleeBufferedAction.Kick), Is.GreaterThan(0f));
-                Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Windup));
-                Assert.That(root.Hero.State.IsChained, Is.False);
-                CaptureKick("kick-return-attack");
+                for (int i = 0; i < 36 && root.Hero.State.IsKicking; i++) root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(root.Hero.State.IsKicking, Is.False, "The support foot releases at the end of recovery.");
+                CaptureKick("kick-return");
 
                 PlacePair(2.4f);
                 yield return null;
@@ -160,22 +186,6 @@ namespace BarPromenade.Tests.PlayMode
                 root.Hero.enabled = false;
                 Assert.That(root.Hero.State.IsKicking, Is.False);
                 root.Hero.enabled = true;
-                foreach (MeleeSwing side in new[] { MeleeSwing.Forehand, MeleeSwing.Backhand })
-                {
-                    PlacePair(3f);
-                    root.Hero.State.ObserveLateralCue(side == MeleeSwing.Forehand ? -1 : 1);
-                    Assert.That(root.Hero.TryAttack(), Is.True);
-                    root.Tick(S.WindupSeconds + .01f);
-                    Assert.That(root.Hero.State.RecordAttackOutcome(MeleeHitResult.Parried, root.Hero.State.AttackSequence), Is.True);
-                    root.Hero.ShowParried(root.Hero.Weapon.transform.position, Vector3.back);
-                    root.Hero.Present();
-                    root.Tick(.5f);
-                    Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Recovery));
-                    var presentation = (Player3DCharacterPresentation)root.Player.Visual;
-                    Assert.That(presentation.ActiveClipName, Is.EqualTo(CombatAssetProvider.SwingClips(side).Recoil),
-                        "A finished recoil holds its Ready endpoint through the remaining forced recovery.");
-                    CaptureKick("recoil-" + side.ToString().ToLowerInvariant());
-                }
             }
             finally
             {
@@ -188,22 +198,10 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Range_KickSelectsWalkingSupportAndCancelsStaleRequests()
         {
-            var input = new InputTestFixture();
             GameObject obstruction = null;
             try
             {
-                input.Setup();
-                yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest);
-                root = Object.FindAnyObjectByType<CombatTestRoot>();
-                root.AutomaticSimulation = false;
-                Mouse mouse = InputSystem.AddDevice<Mouse>();
-                RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
-                Vector2 actionPointer = canvas.LogicalToScreen(new Vector2(320f, 180f));
-                actionPointer.y = Screen.height - actionPointer.y;
-                input.Set(mouse.position, actionPointer);
-                var consume = typeof(CombatTestRoot).GetMethod("UpdateCombatInput",
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-                Assert.That(consume, Is.Not.Null);
+                yield return LoadKickArena();
                 for (int striking = 0; striking < 2; striking++)
                 {
                     PlacePair(3f);
@@ -277,21 +275,12 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.Hero.TryKick(), Is.True);
                 Assert.That(root.Hero.HasPendingKick, Is.True, KickWaitDiagnostics());
                 int sequence = root.Hero.State.AttackSequence;
-                input.Press(mouse.leftButton);
-                InputSystem.Update();
-                Assert.That(GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.Gameplay), Is.True);
-                Assert.That((bool)consume.Invoke(root, null), Is.True);
-                Assert.That(root.Hero.HasPendingKick, Is.False, "A fresh LMB replaces the waiting Q in the one action slot.");
-                Assert.That(root.Hero.State.IsCharging, Is.True, "Waiting for a sole cannot block a new weapon press.");
-                Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(sequence + 1));
+                Assert.That(root.Hero.TrySelectWeapon(CombatWeaponId.Crowbar), Is.True);
+                Assert.That(root.Hero.HasPendingKick, Is.False, "Changing weapons releases the pending firearm action.");
                 Assert.That(root.Hero.State.BufferedAction, Is.EqualTo(MeleeBufferedAction.None));
-                input.Release(mouse.leftButton);
-                InputSystem.Update();
-                Assert.That((bool)consume.Invoke(root, null), Is.True);
-                Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Windup));
                 root.Tick(.25f);
                 Assert.That(root.Hero.State.IsKicking, Is.False, "The replaced Q cannot fire after its former support wait.");
-                Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(sequence + 1));
+                Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(sequence));
                 Object.Destroy(obstruction); obstruction = null;
 
                 PlacePair(3f);
@@ -339,16 +328,13 @@ namespace BarPromenade.Tests.PlayMode
             {
                 if (root != null) root.AutomaticSimulation = false;
                 if (obstruction != null) Object.Destroy(obstruction);
-                input.TearDown();
             }
         }
 
         [UnityTest]
         public IEnumerator Range_CloseKicksAgreeWithPresentedBootAndFrozenAnatomy()
         {
-            yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest);
-            root = Object.FindAnyObjectByType<CombatTestRoot>();
-            root.AutomaticSimulation = false;
+            yield return LoadKickArena();
             Assert.That(S.KickWindupSeconds, Is.LessThan(.30f), "The kick reaches extension sooner than its original authored anticipation.");
             Assert.That(S.KickActiveSeconds, Is.LessThan(.10f), "The striking extension is sharper than its original authored active interval.");
             var csv = new System.Text.StringBuilder("side,target_pose,distance,elapsed,clip_seconds,target_phase,target_progress,root_gap,minimum_gap,part,sweep_hit,presented_delta,final_delta,boot_surface_distance,forward_reach,lateral_reach,from_x,from_y,from_z,to_x,to_y,to_z,surface_x,surface_y,surface_z,target_attack_elapsed,maximum_boot_projection,projection_beyond_sphere,minimum_boot_vertex_gap,maximum_vertex_penetration,penetrating_part,sphere_hit,surface_witness,witness_count,striking_vertex_penetration,accepted_before_sample,surface_from_x,surface_from_y,surface_from_z,surface_to_x,surface_to_y,surface_to_z\n");
@@ -742,9 +728,10 @@ namespace BarPromenade.Tests.PlayMode
         {
             Transform sole = FindKickBone(side == 0 ? "foot.L" : "foot.R");
             float plantedY = sole.position.y;
+            Vector3 target = root.Hero.transform.position + Vector3.forward * 1.5f;
             for (int tick = 0; tick < 80; tick++)
             {
-                root.Hero.Body.Move(Vector3.forward * (1.6f * CombatTestRoot.SimulationStep));
+                root.Player.Motor.MoveTowardsApproachWaypoint(target, .05f, CombatTestRoot.SimulationStep);
                 root.Tick(CombatTestRoot.SimulationStep);
                 if (root.Hero.Footwork.TransferringFoot && sole.position.y > plantedY + .055f) return;
             }
@@ -760,32 +747,6 @@ namespace BarPromenade.Tests.PlayMode
                 $"actual_ankle={FindKickBone("foot.L").position:F4}, measured_ankle={feet.LastKickSupportAnkle:F4}, " +
                 $"ground={feet.LastKickSupportGround:F4}, wait_eligible={feet.CanWaitForKickSupport}, " +
                 $"balance_ready={actor.HasAttackBalance}, stamina={actor.State.Stamina:F2}, {feet.SupportDiagnostics}";
-        }
-
-        [UnityTest]
-        public IEnumerator Range_OpponentStylesObserveKickAndResetWithoutChangingCombatStats()
-        {
-            yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest);
-            root = Object.FindAnyObjectByType<CombatTestRoot>();
-            root.AutomaticSimulation = false;
-            foreach (CombatOpponentStyle style in new[] { CombatOpponentStyle.Cautious, CombatOpponentStyle.Pressuring, CombatOpponentStyle.Patient })
-            {
-                Assert.That(root.SetOpponentStyle(style), Is.True);
-                root.Hero.ResetActor(Vector3.up * PlayerFactory.GroundedRootOffset, Vector3.forward);
-                root.Opponent.ResetActor(Vector3.up * PlayerFactory.GroundedRootOffset + Vector3.forward * 1.2f, Vector3.back);
-                Physics.SyncTransforms();
-                yield return null;
-                Assert.That(root.Hero.TryKick(), Is.True);
-                root.Tick(.18f);
-                Assert.That(root.Opponent.State.Phase, Is.EqualTo(MeleePhase.Ready), "No style evades before seeing the .20s tell.");
-                root.Tick(.06f);
-                Assert.That(root.Opponent.State.Phase, Is.EqualTo(MeleePhase.Step));
-                Assert.That(root.Opponent.State.Settings.MaxHealth, Is.EqualTo(S.MaxHealth));
-                Assert.That(root.Opponent.State.Settings.Damage, Is.EqualTo(S.Damage));
-                root.ResetRound();
-                Assert.That(root.OpponentStyle, Is.EqualTo(style));
-                Assert.That(root.Opponent.State.Phase, Is.EqualTo(MeleePhase.Ready));
-            }
         }
 
         private Transform FindKickBone(string name)

@@ -761,6 +761,8 @@ namespace BarPromenade
         {
             if (support.TrySampleTop(point, FootstepGroundKind.Concrete, out float physicalTop))
                 return physicalTop;
+            if (layout.TryGetBridge(edge, out _) && layout.River.TrySamplePromenadeTop(point, out float quayTop))
+                return quayTop;
             return layout.ElevationPlan.SampleRoadDatum(edge,
                 road.Project(point).DistanceAlong / road.Length) + CityStreetSurfacePlanner.RoadTop;
         }

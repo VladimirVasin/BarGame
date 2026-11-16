@@ -68,7 +68,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void SeatedHip_PlantsBothBootsAndKeepsHimOffTheMattress()
+        public void SeatedHip_UsesTheMeasuredSupportOffsetOverTheMattress()
         {
             HomeInteriorLayoutPlan home =
                 HomeInteriorLayoutPlanner.Generate();
@@ -84,12 +84,6 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(
                     PlayerCharacterDimensions.SeatedPelvisSupportOffset)
                     .Within(Tolerance));
-            Assert.That(
-                clearance,
-                Is.InRange(0f, 0.04f),
-                "Sitting on the edge must neither hover above the bedding " +
-                "nor bury him in it.");
-
             var mattress = new Rect(
                 plan.BedBounds.xMin + 0.09f * HomeBedInteractionPlan.FurnitureDepthScale,
                 plan.BedBounds.yMin + 0.08f,

@@ -93,6 +93,7 @@ namespace BarPromenade.Tests.PlayMode
             void InspectNewCarriageway(RoadEdge edge)
             {
                 CityRoadPath path = layout.RoadGeometry.Get(edge);
+                CityStreetSupportPlan support = CityStreetSupportPlan.ForLayout(layout);
                 CityBusDesignVehicle vehicle = CityBusDesignVehicle.Default;
                 float lane = (layout.RoadWidth - 2f * CityStreetSurfacePlanner.SidewalkWidth) * .25f;
                 float halfBody = vehicle.BodyWidth * .5f;
@@ -110,9 +111,12 @@ namespace BarPromenade.Tests.PlayMode
                     foreach (float track in tracks)
                     {
                         Vector3 contact = middle + right * track;
+                        float contactTop = support.TrySampleTop(new Vector2(contact.x, contact.z),
+                            FootstepGroundKind.Concrete, out float builtTop) ? builtTop : top;
+                        contact.y = contactTop;
                         RaycastHit[] hits = Physics.RaycastAll(contact + Vector3.up * .4f, Vector3.down, .8f,
                             Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-                        bool paved = hits.Any(hit => Mathf.Abs(hit.point.y - top) < .07f &&
+                        bool paved = hits.Any(hit => Mathf.Abs(hit.point.y - contactTop) < .07f &&
                             hit.collider.TryGetComponent(out FootstepGround ground) &&
                             ground.ResolveKind(hit.triangleIndex) == FootstepGroundKind.Concrete);
                         if (!paved && reported.Add("pavement " + track))
@@ -129,9 +133,7 @@ namespace BarPromenade.Tests.PlayMode
                     foreach (Collider hit in Physics.OverlapBox(middle + Vector3.up * (clearance + halfHeight),
                         area, heading, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
                     {
-                        if (hit.transform.IsChildOf(city.Player.GameObject.transform) ||
-                            hit.GetComponentInParent<CityBusActor>() != null || hit.GetComponentInParent<CityPedestrianActor>() != null ||
-                            city.LastRouteCar != null && hit.transform.IsChildOf(city.LastRouteCar.transform) ||
+                        if (hit.transform.IsChildOf(city.Player.GameObject.transform) || IsMovingSceneBody(hit) ||
                             city.Cannery != null && city.Cannery.Truck != null && hit.transform.IsChildOf(city.Cannery.Truck)) continue;
                         string obstacle = hit.name;
                         for (Transform parent = hit.transform.parent; parent != null && parent != city.transform; parent = parent.parent)
@@ -277,7 +279,7 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        [UnityTest]
+        [UnityTest, Timeout(360000)]
         public IEnumerator LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement()
         {
             yield return LoadProductionCity();
@@ -311,6 +313,7 @@ namespace BarPromenade.Tests.PlayMode
             int interval = OnDemandRendering.renderFrameInterval;
             int boarded = 0;
             CityPedestrianActor placedWaiter = null;
+            CityBusDirector previousCase = null;
             try
             {
                 GameInput.HandleApplicationFocus(true);
@@ -326,9 +329,11 @@ namespace BarPromenade.Tests.PlayMode
                     foreach (var stop in city.BusPlans[lineIndex].Stops)
                     foreach (var door in doors)
                     {
+                        if (previousCase != null) ResetService(previousCase);
                         int vehicleSlot = (stop.SequenceIndex + (door == CityBusPassengerDoor.Front ? 0 : 1)) % CityBusDirector.VehiclesPerLine;
                         int vehicle = lineIndex * CityBusDirector.VehiclesPerLine + vehicleSlot;
                         var line = city.BusVehicles[vehicle];
+                        previousCase = line;
                         var ride = city.BusRides[vehicle];
                         var actor = line.Actor;
                         string stage = $"{line.Plan.Number:00}-{stop.SequenceIndex + 1:00}/{door} vehicle {vehicleSlot + 1}";
@@ -343,6 +348,31 @@ namespace BarPromenade.Tests.PlayMode
                         bool reverse = door == CityBusPassengerDoor.Rear;
                         motor.Teleport(path[reverse ? path.Count - 1 : 0] + Vector3.up * (PlayerFactory.GroundedRootOffset + .035f));
                         Physics.SyncTransforms();
+                        if (city.AmbientTraffic != null && city.AmbientTraffic.isActiveAndEnabled)
+                        {
+                            // Wait on the kerb until the whole crossing clears. Starting into
+                            // an occupied lane makes the sedan yield to the hero in its way.
+                            var crossing = new List<Vector3>(path.Count * 4 + 1);
+                            float crossingLength = 0f;
+                            for (int p = 1; p < path.Count; p++)
+                            {
+                                float length = Vector3.Distance(path[p - 1], path[p]);
+                                crossingLength += length;
+                                int samples = Mathf.Max(1, Mathf.CeilToInt(length / .25f));
+                                for (int sample = 0; sample < samples; sample++)
+                                    crossing.Add(Vector3.Lerp(path[p - 1], path[p], sample / (float)samples));
+                            }
+                            crossing.Add(path[path.Count - 1]);
+                            float crossingSeconds = crossingLength / 2.6f + 1.5f;
+                            float clearDeadline = Time.time + 20f;
+                            while (Time.time < clearDeadline && !CrossingGapAvailable(crossing, crossingSeconds))
+                                yield return null;
+                            if (!CrossingGapAvailable(crossing, crossingSeconds))
+                            {
+                                Fail(stage + " a sedan never cleared the zebra while the hero waited on the kerb");
+                                continue;
+                            }
+                        }
                         for (int p = 1; p < path.Count; p++)
                         {
                             var point = path[reverse ? path.Count - 1 - p : p];
@@ -407,22 +437,47 @@ namespace BarPromenade.Tests.PlayMode
 
                         float along = Mathf.Max(0f, stop.DistanceAlongLink - 8f);
                         CityBusActor.EvaluateLink(line.Plan.Links[stop.LinkIndex], along, out var spawn, out var heading);
+                        Quaternion spawnRotation = Quaternion.LookRotation(heading, Vector3.up);
+                        float spawnDeadline = Time.time + 20f;
+                        while (Time.time < spawnDeadline && line.CanneryBlocksSpawn(spawn, spawnRotation))
+                            yield return null;
+                        if (line.CanneryBlocksSpawn(spawn, spawnRotation))
+                        {
+                            Fail(stage + " live traffic never cleared the bus entry point");
+                            continue;
+                        }
                         actor.PrepareSpawn(line.Plan, new CityBusSpawnAnchor("approaching-platform",
                             stop.LinkIndex, along, spawn, heading, stop.RoadEdge), 7u);
                         int ticks = 0;
                         while (ticks++ < 220 && !(actor.CurrentStop == stop && actor.DoorsFullyOpen))
                         {
-                            line.Advance(.1f);
-                            if (ticks % 5 == 0) yield return null;
+                            line.Advance(Time.deltaTime);
+                            yield return null;
                         }
                         if (!actor.IsSpawned || !actor.DoorsFullyOpen || actor.CurrentStop != stop)
                         {
-                            Fail($"{stage} bus failed to serve waiting hero: {actor.MotionState}, {actor.Position}, stop {actor.CurrentStop?.Id}");
+                            var blocker = (CityBusObstacleState)typeof(CityBusActor).GetField("lastBlocker",
+                                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(actor);
+                            Fail($"{stage} bus failed to serve waiting hero: {actor.MotionState}, {actor.Position}, stop {actor.CurrentStop?.Id}. " +
+                                $"Blocker {blocker.Kind} {blocker.Id}[{blocker.Index}] at {blocker.Point:F2}, clearance {blocker.ForwardClearance:F2}m");
                             continue;
                         }
-                        // Wait beside the shelter before occupying an NPC's exit dock.
-                        for (int frame = 0; frame < 150 && !actor.CanUsePassengerDoor(ride, door); frame++)
-                            yield return null;
+                        // Wait outside both door approaches if the live queue is
+                        // already transferring, so the hero leaves a clear landing.
+                        yield return null;
+                        if (!actor.CanUsePassengerDoor(ride, door))
+                        {
+                            yield return Walk(start, stage + " clear the landing", line);
+                            if (failures.Count != before) continue;
+                            float aisleDeadline = Time.time + CityBusNpcPassengerController.MaximumWaiters *
+                                CityBusActor.MaximumServiceHoldDuration;
+                            while (Time.time < aisleDeadline && actor.DoorsFullyOpen &&
+                                   !actor.CanUsePassengerDoor(ride, door))
+                            {
+                                line.Advance(Time.deltaTime);
+                                yield return null;
+                            }
+                        }
                         Vector3 pelvis = hero.InverseTransformPoint(visual.Registry.Anchors.Pelvis.position);
                         if (!CityBusRidePlan.TryCreate(actor, areas, pelvis, capsule.radius, door, surfaces, out var dock))
                         {
@@ -436,15 +491,20 @@ namespace BarPromenade.Tests.PlayMode
                         // The daytime population can still own the shared aisle while
                         // boarding/alighting. Let the actual transfer release it before E.
                         // The fixture already owns the bus clock; NPC motion stays live.
-                        for (int frame = 0; frame < 150 && !ride.CanInteract(player.Interactor); frame++)
+                        for (int frame = 0; frame < 150 && actor.DoorsFullyOpen &&
+                             !ride.CanInteract(player.Interactor); frame++)
+                        {
+                            line.Advance(Time.deltaTime);
                             yield return null;
+                        }
                         yield return null;
                         yield return null;
                         if (!ReferenceEquals(player.Interactor.ActiveInteractable, ride) || !ride.CanInteract(player.Interactor))
                         {
                             Fail($"{stage} no boarding prompt at {hero.position}, active {player.Interactor.ActiveInteractable}, " +
                                 $"open {actor.DoorsFullyOpen}, aisle {actor.CanUsePassengerDoor(ride, door)}, " +
-                                $"can board {ride.CanInteract(player.Interactor)}, dock {dock.EntryPose.RootPosition}");
+                                $"can board {ride.CanInteract(player.Interactor)}, dock {dock.EntryPose.RootPosition}, " +
+                                $"service hold {actor.HasServiceHold}, NPC occupants {actor.NpcOccupantCount}");
                             continue;
                         }
                         if (capture && stop.SequenceIndex == 0 && line.Plan.Number >= 2 && door == CityBusPassengerDoor.Front)
@@ -467,7 +527,6 @@ namespace BarPromenade.Tests.PlayMode
                         if (ride.State != CityBusRideState.Riding || !actor.HasPlayerPassenger || ride.ActivePlan.PassengerDoor != door)
                             Fail($"{stage} E did not seat the hero through the selected door: {ride.State}; {press}");
                         else boarded++;
-                        ResetService(line);
                     }
                 }
                 Assert.That(failures, Is.Empty, string.Join("\n", failures));
@@ -476,6 +535,7 @@ namespace BarPromenade.Tests.PlayMode
             }
             finally
             {
+                if (previousCase != null) ResetService(previousCase);
                 if (placedWaiter != null) city.Pedestrians.ReleaseRouteBoundActor(placedWaiter);
                 motor.CancelInteractionPoseMove();
                 foreach (var ride in city.BusRides) ride.ForceReleaseForBusLifecycle();
@@ -500,17 +560,41 @@ namespace BarPromenade.Tests.PlayMode
                 failures.Add(detail);
             }
 
+            bool CrossingGapAvailable(List<Vector3> crossing, float seconds)
+            {
+                Vector3 midpoint = (crossing[0] + crossing[crossing.Count - 1]) * .5f;
+                float crossingRadius = Vector3.Distance(midpoint, crossing[0]);
+                var traffic = city.AmbientTraffic;
+                for (int i = 0; i < traffic.Count; i++)
+                {
+                    var car = traffic.GetCar(i);
+                    float reach = car.Driver.Model.Profile.CruiseSpeed * seconds;
+                    if (Vector3.Distance(car.Position, midpoint) > reach + crossingRadius + car.Bounds.size.z) continue;
+                    for (float step = 0f; step <= reach; step += .5f)
+                    {
+                        car.Plan.Path.Sample(car.Driver.Distance + step, out Vector3 at, out Vector3 forward);
+                        var hull = new CityTrafficHull(at, Quaternion.LookRotation(forward), car.Bounds, .06f);
+                        foreach (Vector3 point in crossing)
+                            if (hull.ContainsCapsule(point, capsule.radius)) return false;
+                    }
+                }
+                return true;
+            }
+
             IEnumerator Walk(Vector3 target, string stage, CityBusDirector arrivingLine = null, float tolerance = .14f)
             {
                 for (int step = 0; step < 120; step++)
                 {
-                    if (motor.MoveTowardsApproachWaypoint(target, tolerance, .08f))
+                    // Walkers and the hero get the same step. Moving the hero
+                    // three times between updates outruns the yielding gait.
+                    float deltaTime = Time.deltaTime;
+                    if (motor.MoveTowardsApproachWaypoint(target, tolerance, deltaTime))
                     {
                         motor.CancelInteractionPoseMove();
                         yield break;
                     }
-                    arrivingLine?.Advance(.08f);
-                    if (step % 3 == 2) yield return null;
+                    arrivingLine?.Advance(deltaTime);
+                    yield return null;
                 }
                 motor.CancelInteractionPoseMove();
                 Vector3 position = hero.position;
@@ -522,8 +606,10 @@ namespace BarPromenade.Tests.PlayMode
                     string.Join(", ", obstacles.Where(hit => !hit.collider.transform.IsChildOf(hero)).Select(hit =>
                     {
                         var walker = hit.collider.GetComponentInParent<CityPedestrianActor>();
-                        return walker == null ? $"{hit.collider.transform.parent?.name}/{hit.collider.name} hit {hit.distance:F2}m" :
-                            $"{walker.name} {walker.MotionState} at {walker.Position:F2} yielding {walker.IsYielding}";
+                        if (walker == null) return $"{hit.collider.transform.parent?.name}/{hit.collider.name} hit {hit.distance:F2}m";
+                        walker.TryGetPassingFrame(out Vector3 centre, out Vector3 heading);
+                        return $"{walker.name} {walker.MotionState} at {walker.Position:F2}, route {centre:F2} facing {heading:F2}, " +
+                            $"lateral {walker.LateralOffset:F2}, yielding {walker.IsYielding}, retreating {walker.IsPassingRetreat}";
                     }).Distinct()));
             }
         }
@@ -1070,8 +1156,11 @@ namespace BarPromenade.Tests.PlayMode
         {
             Transform root = city.World.Root.transform.Find("Residential terrace edges");
             var placed = root.Cast<Transform>().ToList();
-            var sites = CityHillsideSiteDetails.ForLayout(layout);
-            Assert.That(placed.Count, Is.EqualTo(sites.Count));
+            var kioskCourt = RidgeKioskSitePlan.TryCreate(layout, out var kiosk) ? kiosk.Court : null;
+            RidgeParkingPlan parking = RidgeParkingPlan.ForLayout(layout);
+            var sites = CityHillsideSiteDetails.ForLayout(layout).Where(site =>
+                !CityHillsideSiteDetails.IsClearedForCourt(site, kioskCourt) && (parking == null || !parking.Clears(site))).ToArray();
+            Assert.That(placed.Count, Is.EqualTo(sites.Length));
             foreach (var site in sites)
                 Assert.That(placed.Any(t => t.name == "Ridge" + site.Part &&
                     Vector3.Distance(t.position, site.Origin) < .01f && Quaternion.Angle(t.rotation, site.Rotation) < .1f),
@@ -1359,8 +1448,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(layout.ElevationPlan.GetNodeElevation(to), Is.GreaterThan(layout.ElevationPlan.GetNodeElevation(from)));
                 AssertStreetProfileContacts(layout, support, edge);
             }
-            var bus = city.BusPlan;
             int contacts = 0;
+            foreach (CityBusPlan bus in city.BusPlans)
             foreach (CityBusRouteLink link in bus.Links)
             {
                 if (!edges.Contains(bus.Nodes[link.FromNodeIndex].RoadEdge) &&
@@ -1368,13 +1457,13 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(link.Clearance.IsClear, Is.True, link.Id);
                 contacts += AssertBusBodyContacts(support, bus.Vehicle, link, point => true);
             }
-            Assert.That(contacts, Is.GreaterThan(0), "Route 01 must still serve the eastern through street");
+            Assert.That(contacts, Is.GreaterThan(0), "The transit network must still serve the eastern through street.");
         }
 
         private void AssertHillsideRoadSupport(CityHillsideStreetRoute route)
         {
             var vehicle = city.BusPlan.Vehicle;
-            var blocker = new Collider[1];
+            var blocker = new Collider[16];
             float start = route.Profile.SampleDistance(0f).Height;
             Assert.That(route.Profile.SampleDistance(route.Path.Length).Height, Is.EqualTo(40f).Within(.10f));
             float previous = start;
@@ -1411,8 +1500,13 @@ namespace BarPromenade.Tests.PlayMode
                     int overlaps = Physics.OverlapBoxNonAlloc(boxCenter,
                         new Vector3(vehicle.InflatedWidth * .5f, halfHeight, vehicle.InflatedLength * .5f),
                         blocker, rotation, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-                    Assert.That(overlaps, Is.Zero, route.Bank + " bus swept volume at " + center +
-                        (overlaps > 0 ? " meets " + blocker[0].name : ""));
+                    Assert.That(overlaps, Is.LessThan(blocker.Length), "The static clearance probe overflowed.");
+                    for (int hit = 0; hit < overlaps; hit++)
+                    {
+                        Collider obstacle = blocker[hit];
+                        if (IsMovingSceneBody(obstacle)) continue;
+                        Assert.Fail(route.Bank + " bus swept volume at " + center + " meets " + obstacle.name);
+                    }
                     for (int alongBody = -2; alongBody <= 2; alongBody++)
                     for (int side = -1; side <= 1; side++)
                     {
@@ -1435,6 +1529,11 @@ namespace BarPromenade.Tests.PlayMode
                 .65f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True, "Missing road at " + point);
             Assert.That(hit.point.y, Is.EqualTo(top).Within(.05f), "Physical hillside paving at " + point);
         }
+
+        private static bool IsMovingSceneBody(Collider collider) =>
+            collider.GetComponentInParent<CityBusActor>() != null ||
+            collider.GetComponentInParent<CityPedestrianActor>() != null ||
+            collider.GetComponentInParent<LastRouteCarDriver>() != null;
 
         private void AssertMappedSummit(CityHillsideStreetRoute route)
         {

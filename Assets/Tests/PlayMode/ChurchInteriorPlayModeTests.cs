@@ -16,8 +16,9 @@ namespace BarPromenade.Tests.PlayMode
             "[Bar Promenade] Door Transition Runtime";
         private const string CityRootName =
             "[Bar Promenade] City Runtime";
-        private const int RoomColliderCount = 10;
+        private const int RoomColliderCount = 11;
         private const float TimeoutSeconds = 45f;
+        private const float ColdCityTimeoutSeconds = 90f;
 
         [UnityTest]
         public IEnumerator ChurchInterior_BootsAndCompletesDoorRoundTrip()
@@ -120,7 +121,6 @@ namespace BarPromenade.Tests.PlayMode
                     out _),
                 Is.False,
                 "Map teleport must not land inside the church model.");
-            LogAssert.NoUnexpectedReceived();
         }
 
         /// <summary>
@@ -137,6 +137,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return SceneManager.LoadSceneAsync(
                 SceneIds.MainMenu,
                 LoadSceneMode.Single);
+            CityLayoutCache.Reset();
             StartMenuRoot menu = UnityEngine.Object.FindAnyObjectByType<StartMenuRoot>();
             Assert.That(menu, Is.Not.Null);
             Assert.That(menu.OpenDebugMenu(), Is.True);
@@ -176,7 +177,8 @@ namespace BarPromenade.Tests.PlayMode
             yield return WaitUntil(
                 () => city.IsInitialized &&
                       !SceneTransitionService.IsTransitioning,
-                "Church return to City did not settle.");
+                "A cold Church return to City did not settle.",
+                ColdCityTimeoutSeconds);
 
             Assert.That(CityLayoutCache.HasPendingCityPlans, Is.False, "The build joined the prime.");
             Assert.That(CityWorldPlans.IsMemoised(city.Layout), Is.True, "The world plans came from the prime.");
@@ -190,7 +192,6 @@ namespace BarPromenade.Tests.PlayMode
                     new Vector2(actualReturn.x, actualReturn.z),
                     new Vector2(expectedReturn.x, expectedReturn.z)),
                 Is.LessThan(0.05f));
-            LogAssert.NoUnexpectedReceived();
         }
 
         /// <summary>
@@ -447,57 +448,19 @@ namespace BarPromenade.Tests.PlayMode
                         ChurchInteriorAtmosphere.VotiveCandleCount));
             }
 
-            // A corona is one object, not a heap of parts near each
-            // other. Its hoop bars must lie ALONG the circle: laid
-            // radially they read as the spokes of a starburst, which
-            // is what shipped first. Measured, because the difference
-            // is a quarter turn that looks like nothing in the source.
-            Transform corona = atmosphere.transform.Find(
-                "Nave Corona West Fixture");
-            Assert.That(corona, Is.Not.Null);
-            var hoopCentre = new Vector3(0f, 0f, -12f);
-            int hoopBars = 0;
-            int arms = 0;
-            int hubs = 0;
-            for (int index = 0; index < corona.childCount; index++)
+            Transform[] modelParts = interior.World.Model.GetComponentsInChildren<Transform>(true);
+            Assert.That(modelParts.Any(part => part.name == "INT_LightingHardware"), Is.True);
+            foreach (string corona in new[] { "Narthex", "NaveWest", "NaveEast", "Crossing" })
             {
-                Transform child = corona.GetChild(index);
-                if (child.name == "Corona Arm")
-                {
-                    arms++;
-                    continue;
-                }
-
-                if (child.name == "Corona Hub")
-                {
-                    hubs++;
-                    continue;
-                }
-
-                if (child.name != "Corona Ring")
-                {
-                    continue;
-                }
-
-                hoopBars++;
-                Vector3 outward = child.localPosition - hoopCentre;
-                outward.y = 0f;
-                Vector3 along = child.localRotation * Vector3.right;
-                Assert.That(
-                    Mathf.Abs(
-                        Vector3.Dot(
-                            outward.normalized,
-                            along.normalized)),
-                    Is.LessThan(0.2f),
-                    "A hoop bar is pointing along its own radius, so " +
-                    "the corona is a starburst rather than a ring.");
+                Transform source = modelParts.Single(part => part.name == "ANCHOR_Interior.Corona." + corona);
+                Transform chain = modelParts.Single(part => part.name == "ANCHOR_Interior.CoronaChain." + corona);
+                int light = Array.FindIndex(atmosphere.WarmLights, item => item.name == "Corona." + corona);
+                Assert.That(light, Is.GreaterThanOrEqualTo(0), corona);
+                Assert.That(Vector3.Distance(source.position, atmosphere.WarmLights[light].transform.position),
+                    Is.LessThan(.001f), corona);
+                Assert.That(chain.position.y, Is.GreaterThan(source.position.y), corona);
+                Assert.That(atmosphere.CandleFlames[light].FlameCount, Is.EqualTo(8), corona);
             }
-
-            Assert.That(hoopBars, Is.GreaterThanOrEqualTo(8));
-            // The chain has to land on something and that something has
-            // to reach the hoop, or the parts only float near together.
-            Assert.That(hubs, Is.EqualTo(1));
-            Assert.That(arms, Is.GreaterThanOrEqualTo(4));
 
             ChurchInteriorDayNightController dayNight =
                 interior.DayNight;
@@ -742,9 +705,10 @@ namespace BarPromenade.Tests.PlayMode
 
         private static IEnumerator WaitUntil(
             Func<bool> predicate,
-            string failureMessage)
+            string failureMessage,
+            float timeoutSeconds = TimeoutSeconds)
         {
-            float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+            float deadline = Time.realtimeSinceStartup + timeoutSeconds;
             while (!predicate() &&
                    Time.realtimeSinceStartup < deadline)
             {

@@ -220,18 +220,10 @@ namespace BarPromenade.Tests.EditMode
                 Vector3 vertex = vertices[index];
                 minimumY = Mathf.Min(minimumY, vertex.y);
                 maximumY = Mathf.Max(maximumY, vertex.y);
-                var worldXZ = new Vector2(vertex.x, vertex.z);
                 Assert.That(
-                    expectedSurfaces.Any(surface =>
-                        Contains(surface.WorldBounds, worldXZ) &&
-                        Mathf.Abs(
-                            CityTerrainSurfacePlan.SampleTop(
-                                layout,
-                                surface,
-                                worldXZ) -
-                            vertex.y) <= Tolerance),
+                    expectedSurfaces.Any(surface => MatchesSourceVertex(layout, surface, vertex)),
                     Is.True,
-                    $"{terrain.name} vertex {index} must conform to its " +
+                    $"{terrain.name} vertex {index} at {vertex:F4} must conform to its " +
                     "source terrain area.");
 
                 if (expectedUvPitch.HasValue)
@@ -259,6 +251,32 @@ namespace BarPromenade.Tests.EditMode
             return CollectTriangleAreaIds(layout, mesh);
         }
 
+        private static bool MatchesSourceVertex(CityLayout layout, CitySurfaceDescriptor surface, Vector3 vertex)
+        {
+            var point = new Vector2(vertex.x, vertex.z);
+            if (!ContainsGround(layout, surface, point))
+                return false;
+            if (Mathf.Abs(CityTerrainSurfacePlan.SampleTop(layout, surface, point) - vertex.y) <= Tolerance)
+                return true;
+
+            var boundary = CityTerrainStreetBoundaryPlan.ForSurface(layout, surface);
+            if (boundary == null)
+                return false;
+            // At a closing step the mesh can carry both the ground and the
+            // adjoining street edge's height at the same projected corner.
+            foreach (CityTerrainStreetBoundaryPlan.Segment segment in boundary.Segments)
+            {
+                var start = new Vector2(segment.Start.x, segment.Start.z);
+                var end = new Vector2(segment.End.x, segment.End.z);
+                Vector2 delta = end - start;
+                float amount = Mathf.Clamp01(Vector2.Dot(point - start, delta) / delta.sqrMagnitude);
+                if ((start + delta * amount - point).sqrMagnitude <= Tolerance * Tolerance &&
+                    Mathf.Abs(Mathf.Lerp(segment.Start.y, segment.End.y, amount) - vertex.y) <= Tolerance)
+                    return true;
+            }
+            return false;
+        }
+
         private static HashSet<string> CollectTriangleAreaIds(
             CityLayout layout,
             Mesh mesh)
@@ -272,22 +290,35 @@ namespace BarPromenade.Tests.EditMode
             var result = new HashSet<string>();
             for (int index = 0; index < triangles.Length; index += 3)
             {
-                Vector3 center =
-                    (vertices[triangles[index]] +
-                     vertices[triangles[index + 1]] +
-                     vertices[triangles[index + 2]]) / 3f;
+                Vector3 first = vertices[triangles[index]];
+                Vector3 second = vertices[triangles[index + 1]];
+                Vector3 third = vertices[triangles[index + 2]];
+                if (Mathf.Abs(Vector3.Cross(second - first, third - first).y) < 0.000001f)
+                    continue;
+                Vector3 center = (first + second + third) / 3f;
                 var centerXZ = new Vector2(center.x, center.z);
-                CitySurfaceDescriptor[] matches = sources
-                    .Where(surface => surface.WorldBounds.Contains(centerXZ))
+                string[] matches = sources
+                    .Where(surface => ContainsGround(layout, surface, centerXZ))
+                    .Select(surface => surface.AreaId)
+                    .Distinct()
                     .ToArray();
                 Assert.That(
                     matches,
                     Has.Length.EqualTo(1),
                     $"Triangle center {centerXZ} needs one source area.");
-                result.Add(matches[0].AreaId);
+                result.Add(matches[0]);
             }
 
             return result;
+        }
+
+        private static bool ContainsGround(CityLayout layout, CitySurfaceDescriptor surface, Vector2 point)
+        {
+            if (!layout.RoadGeometry.HasReplannedGround(surface.Cell))
+                return Contains(surface.WorldBounds, point);
+            return Contains(layout.GetCellWorldBounds(surface.Cell), point) &&
+                layout.RoadGeometry.GetGroundPolygons(surface.Cell)
+                    .Any(polygon => CityRoadPolygon.Contains(polygon, point));
         }
 
         private static bool Contains(Rect bounds, Vector2 point)

@@ -87,8 +87,17 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(mesh.bounds.size.z, Is.LessThanOrEqualTo(
                             MountainRoadWorldBuilder.ForestChunkSize + trees.Max(tree => tree.CrownRadius) * 2f + padding.z * 2f + .01f));
                         layerBounds.Encapsulate(mesh.bounds);
-                        Assert.That(crown.GetComponent<MeshRenderer>().sharedMaterial,
-                            Is.SameAs(MountainRoadSurfaceAppearance.FoliageMaterial));
+                        var material = crown.GetComponent<MeshRenderer>().sharedMaterial;
+                        var pigment = crown.GetComponent<MountainRoadCrownGradientPilot>();
+                        if (pigment == null)
+                            Assert.That(material, Is.SameAs(MountainRoadSurfaceAppearance.FoliageMaterial));
+                        else
+                        {
+                            Assert.That(layer, Is.EqualTo(MountainRoadForestLayer.Physical));
+                            Assert.That(pigment.GradientEnabled, Is.True);
+                            Assert.That(material.shader, Is.EqualTo(Resources.Load<Shader>("Shaders/MountainRoadCrownGradient")));
+                            Assert.That(mesh.colors32.Length, Is.EqualTo(mesh.vertexCount));
+                        }
                     }
                     Vector3[] expectedVertices = reference.vertices;
                     Vector2[] expectedUvs = reference.uv;

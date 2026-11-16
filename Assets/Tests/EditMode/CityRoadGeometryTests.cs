@@ -25,16 +25,21 @@ namespace BarPromenade.Tests.EditMode
             CityRoadGeometryPlan geometry = CityRoadGeometryPlan.Create(settings, origin, ordered);
             Assert.That(settings.SpatialPlan.IsCompactCoastal, Is.True);
             Assert.That(geometry.ObliqueJunction, Is.Null);
-            Assert.That(geometry.CurvedEdges, Is.Empty);
+            CollectionAssert.AreEquivalent(ordered.Where(CityTerraceInlandJunctionPlan.Contains), geometry.CurvedEdges);
             Assert.That(geometry.ReplannedCells, Is.Empty);
             foreach (RoadEdge edge in ordered)
             {
                 CityRoadPath path = geometry.Get(edge);
-                Vector2 start = settings.SpatialPlan.GetCoordinateWorldOffset(edge.A) + originOffset;
-                Vector2 end = settings.SpatialPlan.GetCoordinateWorldOffset(edge.B) + originOffset;
+                Vector2 start = settings.SpatialPlan.GetCoordinateWorldOffset(edge.A) + originOffset +
+                    CityTerraceInlandJunctionPlan.Offset(edge.A);
+                Vector2 end = settings.SpatialPlan.GetCoordinateWorldOffset(edge.B) + originOffset +
+                    CityTerraceInlandJunctionPlan.Offset(edge.B);
                 Assert.That(path.Vertices[0], Is.EqualTo(start));
                 Assert.That(path.Vertices[path.Vertices.Count - 1], Is.EqualTo(end));
-                Assert.That(path.Length, Is.EqualTo(26f).Within(.001f));
+                if (!geometry.IsCurved(edge)) Assert.That(path.Length, Is.EqualTo(26f).Within(.001f));
+                Vector2 axis = edge.IsHorizontal ? Vector2.right : Vector2.up;
+                Assert.That(path.SampleDistance(2f).Tangent, Is.EqualTo(axis));
+                Assert.That(path.SampleDistance(path.Length - 2f).Tangent, Is.EqualTo(axis));
                 for (float station = 0f; station <= path.Length; station += 1f)
                     Assert.That(path.Project(path.SampleDistance(station).Position).DistanceAlong,
                         Is.EqualTo(station).Within(.001f));
@@ -269,10 +274,13 @@ namespace BarPromenade.Tests.EditMode
 
         private static void AssertCourtyardConnections(CityLayout layout, IReadOnlyList<Vector2[]> streets)
         {
-            int expectedConnections = layout.HasRoad(new RoadEdge(new Vector2Int(0, 8), new Vector2Int(1, 8))) ? 0 : 1;
-            if (layout.Seed == 20260727) Assert.That(expectedConnections, Is.EqualTo(1));
+            var firstCell = new Vector2Int(0, 7);
+            var secondCell = new Vector2Int(0, 8);
+            bool hasBothRecesses = layout.CourtyardBlocks.Any(block => block.Cell == firstCell && block.Kind == CityCourtyardBlockKind.LRecess)
+                && layout.CourtyardBlocks.Any(block => block.Cell == secondCell && block.Kind == CityCourtyardBlockKind.LRecess);
+            bool dividedByStreet = layout.HasRoad(RoadEdge.ForCellFrontage(firstCell, Vector2Int.up));
             Assert.That(layout.CourtyardConnections.Count(connection => connection.First.Kind == CityCourtyardBlockKind.LRecess &&
-                connection.Second.Kind == CityCourtyardBlockKind.LRecess), Is.EqualTo(expectedConnections));
+                connection.Second.Kind == CityCourtyardBlockKind.LRecess), Is.EqualTo(hasBothRecesses && !dividedByStreet ? 1 : 0));
             Assert.That(layout.CourtyardPaths.Count(), Is.EqualTo(layout.CourtyardBlocks.Count + layout.CourtyardConnections.Count));
             var bodies = layout.BuildingMasses.SelectMany(lot => lot.CreateCollisionPolygons()).ToList();
             RoadWalkableArea heroArea = RoadWalkableArea.FromLayout(layout);
@@ -294,13 +302,13 @@ namespace BarPromenade.Tests.EditMode
                 var ground = connection.First.GroundPolygons.Concat(connection.Second.GroundPolygons).ToList();
                 float maximumGrade = 0f;
                 Vector2 previousPoint = connection.Path.Vertices[0], steepestPoint = previousPoint;
-                Assert.That(CityTerrainSurfacePlan.TrySampleGroundTop(layout, previousPoint, out float previousTop, out _), Is.True);
+                Assert.That(TrySampleWalkTop(previousPoint, out float previousTop), Is.True);
                 for (float distance = 0f; distance < connection.Path.Length + .25f; distance += .25f)
                 {
                     Vector2 point = connection.Path.SampleDistance(distance).Position;
                     Assert.That(heroArea.Contains(new Vector3(point.x, 0f, point.y), .35f), Is.True,
                         $"Inter-court capsule leaves the hero mask at {point}.");
-                    Assert.That(CityTerrainSurfacePlan.TrySampleGroundTop(layout, point, out float top, out _), Is.True);
+                    Assert.That(TrySampleWalkTop(point, out float top), Is.True);
                     float span = Vector2.Distance(point, previousPoint);
                     float grade = span > .001f ? Mathf.Abs(top - previousTop) / span * 100f : 0f;
                     if (grade > maximumGrade) { maximumGrade = grade; steepestPoint = point; }
@@ -317,6 +325,10 @@ namespace BarPromenade.Tests.EditMode
                     $"maximum sampled terrain grade={maximumGrade:F3}% at {steepestPoint:F3}.");
                 Assert.That(maximumGrade, Is.LessThanOrEqualTo(CityElevationPlan.MaximumPedestrianGradePercent + .05f),
                     "The shortcut must use terrain the pedestrian can traverse without a height warp.");
+
+                bool TrySampleWalkTop(Vector2 point, out float top) =>
+                    CityBuildingEntrancePlan.TrySampleCachedTop(layout, point, out top) ||
+                    CityTerrainSurfacePlan.TrySampleGroundTop(layout, point, out top, out _);
             }
         }
 

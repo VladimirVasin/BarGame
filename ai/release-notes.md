@@ -16,7 +16,17 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   открывается внутрь, остальные три сдвигаются снаружи. Водитель сохранил
   фуражку, галстук и длинные глаза. `CityMidibusRemodel`,
   `Doors_OpenClearAndReseatOnTheSprungBody`.
-- Главное меню заранее готовит общие данные квартиры и City.
+- Главное меню заранее готовит общие данные квартиры и City. Новая игра
+  открывает квартиру с её собственным набором прохожих.
+- На западной лестнице свободен проход. Автобусы 01 и 03 разъезжаются при пересадке.
+  `Passenger_TransfersFromWestToHillsideAtTheSharedStop`.
+- В деревне открыто русло ручья после выравнивания дворов. Берег у стока
+  снова проходим, протоптанные дорожки свободны от сугробов.
+  `Water_SitsInGroundTheSamplerActuallyOpened`,
+  `Channel_NeverTrapsTheHeroBelowHisStepOffset`.
+- Перевозчик плавно выезжает на полосу и едет к тоннелю в темпе короткого
+  городского маршрута. `CityDeparture_TakesTheTunnelTurnLikeAnyOtherRoadTurn`.
+- Столбы оставляют свободным спуск к ломбарду. Автобус следует высоте набережной у моста.
 
 ### 2026-11-15
 

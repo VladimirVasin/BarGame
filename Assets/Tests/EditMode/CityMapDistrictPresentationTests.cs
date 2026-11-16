@@ -177,11 +177,6 @@ namespace BarPromenade.Tests.EditMode
                             BarDistrictIdentityCatalog.Get(
                                     controller.Bars[0].District)
                                 .DisplayNameKey)));
-                Assert.That(controller.PointsOfInterest.Count, Is.EqualTo(4));
-                Assert.That(
-                    controller.PointsOfInterest.Count,
-                    Is.EqualTo(layout.DistrictPointsOfInterest.Count));
-
                 var markersById =
                     new Dictionary<string, CityMapPointOfInterest>();
                 for (int index = 0;
@@ -190,8 +185,9 @@ namespace BarPromenade.Tests.EditMode
                 {
                     CityMapPointOfInterest marker =
                         controller.PointsOfInterest[index];
-                    markersById.Add(marker.StableId, marker);
+                    if (marker.HasLotCell) markersById.Add(marker.StableId, marker);
                 }
+                Assert.That(markersById.Count, Is.EqualTo(layout.DistrictPointsOfInterest.Count));
 
                 for (int index = 0;
                      index < layout.DistrictPointsOfInterest.Count;

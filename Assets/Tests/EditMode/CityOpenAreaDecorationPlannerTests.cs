@@ -108,20 +108,21 @@ namespace BarPromenade.Tests.EditMode
                 layout.BuildingLots.Single(lot =>
                     lot.Cell == site.AnchorCell),
                 Is.SameAs(site.Anchor));
-            Assert.That(layout.PlayerHome, Is.Not.Null);
+            BuildingLot lowerHome = layout.LowerResidentialLot;
+            Assert.That(lowerHome, Is.Not.Null);
             Assert.That(
                 site.AnchorCell,
                 Is.EqualTo(
-                    layout.PlayerHome.Cell +
-                    layout.PlayerHome.FrontageDirection));
+                    lowerHome.Cell +
+                    lowerHome.FrontageDirection));
             BuildingLot bar = layout.BuildingLots.Single(lot => lot.IsBar);
             Assert.That(bar.Cell, Is.EqualTo(new Vector2Int(12, 7)));
             Assert.That(bar.FrontageDirection, Is.EqualTo(Vector2Int.right));
             Assert.That(bar.Cell, Is.Not.EqualTo(site.AnchorCell));
             Assert.That(
                 layout.HasRoad(RoadEdge.ForCellFrontage(
-                    layout.PlayerHome.Cell,
-                    layout.PlayerHome.FrontageDirection)),
+                    lowerHome.Cell,
+                    lowerHome.FrontageDirection)),
                 Is.True,
                 "The home keeps its original north street.");
             Assert.That(
@@ -171,7 +172,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 site.RingCenter.y,
                 Is.EqualTo(site.GroundY).Within(0.0001f));
-            YardWheelchairPlan circuit = YardWheelchairPlan.Create(first, layout.ElevationPlan);
+            YardWheelchairPlan circuit = YardWheelchairPlan.Create(first, layout);
             Assert.That(circuit.IsPresent, Is.True);
             Assert.That(circuit.Center.x, Is.EqualTo(site.RingCenter.x).Within(.001f));
             Assert.That(circuit.Center.z, Is.EqualTo(site.RingCenter.z).Within(.001f));

@@ -91,11 +91,9 @@ namespace BarPromenade.Tests.EditMode
         {
             // The film dries on the real clock, and a resume converts the
             // game minutes spent away into the real seconds they took, so
-            // the expected drying follows GameMinutesPerRealSecond rather
-            // than assuming a game minute is a real second: ff441c42 made
-            // a game day 48 real minutes, and ten game minutes are now
-            // twenty real seconds of drying.
-            const double elapsedGameMinutes = 10d;
+            // the expected drying uses the current game clock. Five game
+            // minutes leave measurable film on the ground at resume.
+            const double elapsedGameMinutes = 5d;
             float elapsedRealSeconds = (float)(
                 elapsedGameMinutes /
                 GameTimeState.GameMinutesPerRealSecond);

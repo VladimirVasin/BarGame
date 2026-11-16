@@ -279,6 +279,11 @@ namespace BarPromenade
             var clearance = CityBusPlatformClearance.ForLayout(layout);
             var furniture = CityHillsideFurniturePlan.ForLayout(layout);
             var reserved = new List<Rect>(furniture.BusReservations);
+            // The arriving capsule projects past the last stair tread onto the pavement.
+            float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
+            foreach (var transfer in CityHillsideAccessPlan.ForLayout(layout).Transfers)
+                reserved.Add(Rect.MinMaxRect(transfer.Bounds.xMin - radius, transfer.Bounds.yMin - radius,
+                    transfer.Bounds.xMax + radius, transfer.Bounds.yMax + radius));
             foreach (var item in furniture.Placements) reserved.Add(item.AccessBounds);
             foreach (var detail in CityHillsideSiteDetails.ForLayout(layout)) reserved.Add(detail.Bounds);
             foreach (var pocket in CityHillsideBenchPocketPlan.ForLayout(layout).Pockets)

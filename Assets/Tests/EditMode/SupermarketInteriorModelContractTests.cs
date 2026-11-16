@@ -264,8 +264,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(instance.GetComponentsInChildren<Animator>(true),
                     Is.Empty);
 
-                Assert.That(registry.Parts,
-                    Has.Count.EqualTo(manifest.parts.Length));
+                Assert.That(registry.Parts.Count,
+                    Is.EqualTo(manifest.parts.Length));
                 Assert.That(
                     registry.Parts.Select(part => part.SourceName),
                     Is.EquivalentTo(manifest.parts.Select(part => part.name)));
@@ -315,8 +315,8 @@ namespace BarPromenade.Tests.EditMode
                         ? CityNightResources.EmissiveMaterial
                         : part.Role == "door_glass" ? BarDrinkServiceResources.GlassMaterial
                         : SupermarketSurfaceAppearance.SharedMaterial;
-                    Assert.That(part.Renderer.sharedMaterial,
-                        Is.SameAs(expectedMaterial), part.SourceName);
+                    Assert.That(part.Renderer.sharedMaterial.GetEntityId(),
+                        Is.EqualTo(expectedMaterial.GetEntityId()), part.SourceName);
                     Assert.That(
                         part.Renderer.shadowCastingMode,
                         Is.EqualTo(part.CastsShadows
@@ -551,6 +551,10 @@ namespace BarPromenade.Tests.EditMode
                     return "product_closed_stew_can";
                 case InventoryItemId.ChickenEgg:
                     return "product_chicken_egg";
+                case InventoryItemId.BeerCan:
+                    return "product_beer_can";
+                case InventoryItemId.WineBottle:
+                    return "product_wine_bottle";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(itemId));
             }

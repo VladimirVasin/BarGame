@@ -284,18 +284,21 @@ namespace BarPromenade
         /// <summary>After ordinary and owned Step travel, ground the capsule on the shared duel clock.</summary>
         private void AdvanceWarehouseOpponentGrounding(float seconds)
         {
-            if (AiOpponent != null && AiOpponent.IsCrane) return;
-            if (WarehousePlan == null || seconds <= 0f || AiOpponent == null || AiOpponent.Body == null ||
-                !AiOpponent.Body.enabled || !AiOpponent.ZombieAwake || AiOpponent.IsKnockedDown || AiOpponent.IsBodyGrounded || AiOpponent.IsRagdollActive)
+            var opponent = AiOpponent;
+            if (opponent != null && opponent.IsCrane) return;
+            var body = opponent == null ? null : opponent.Body;
+            if (WarehousePlan == null || seconds <= 0f || body == null ||
+                !body.enabled || !body.gameObject.activeInHierarchy ||
+                !opponent.ZombieAwake || opponent.IsKnockedDown || opponent.IsBodyGrounded || opponent.IsRagdollActive)
             {
                 opponentContext.warehouseOpponentVerticalSpeed = 0f;
                 opponentContext.warehouseOpponentGrounded = false;
                 return;
             }
-            if ((opponentContext.warehouseOpponentGrounded || AiOpponent.Body.isGrounded) && opponentContext.warehouseOpponentVerticalSpeed <= 0f)
+            if ((opponentContext.warehouseOpponentGrounded || body.isGrounded) && opponentContext.warehouseOpponentVerticalSpeed <= 0f)
                 opponentContext.warehouseOpponentVerticalSpeed = -2f;
             else opponentContext.warehouseOpponentVerticalSpeed = Mathf.Max(-24f, opponentContext.warehouseOpponentVerticalSpeed - 24f * seconds);
-            CollisionFlags flags = AiOpponent.Body.Move(Vector3.up * (opponentContext.warehouseOpponentVerticalSpeed * seconds));
+            CollisionFlags flags = body.Move(Vector3.up * (opponentContext.warehouseOpponentVerticalSpeed * seconds));
             opponentContext.warehouseOpponentGrounded = (flags & CollisionFlags.Below) != 0;
         }
     }

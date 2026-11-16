@@ -640,6 +640,7 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             InteractionPromptView prompt = root.InteractionPrompt;
+            for (int frame = 0; frame < 6 && !prompt.HasRenderedLayout; frame++) yield return null;
             Assert.That(prompt.HasRenderedLayout, Is.True);
             Assert.That(
                 prompt.LastRenderedText,

@@ -356,7 +356,12 @@ namespace BarPromenade
 
         public static CityPedestrianPlan Create(
             HomeExteriorContextPlan context,
-            int populationSeed)
+            int populationSeed) => Create(context, populationSeed, out _);
+
+        internal static CityPedestrianPlan Create(
+            HomeExteriorContextPlan context,
+            int populationSeed,
+            out IWalkableArea walkableArea)
         {
             if (context == null)
             {
@@ -370,6 +375,8 @@ namespace BarPromenade
                     context.Layout,
                     populationSeed,
                     streetSurfaces);
+            walkableArea = new HomePedestrianWalkableArea(
+                context.PlayerHome, CityPedestrianPlanner.CreateWalkableArea(cityPlan));
             var nodes = new List<CityPedestrianNode>(
                 cityPlan.Nodes.Count);
             for (int index = 0; index < cityPlan.Nodes.Count; index++)
@@ -474,6 +481,30 @@ namespace BarPromenade
                 links,
                 anchors,
                 navigationRectangles, polygons);
+        }
+
+        // The City area includes hillside support and obstacle exclusions
+        // that live outside the graph's own pavement polygons.
+        private sealed class HomePedestrianWalkableArea : IWalkableArea
+        {
+            private readonly BuildingLot home;
+            private readonly IWalkableArea city;
+
+            public HomePedestrianWalkableArea(BuildingLot home, IWalkableArea city)
+            {
+                this.home = home;
+                this.city = city;
+            }
+
+            public bool Contains(Vector3 position, float radius = 0f) =>
+                city.Contains(PlayerHomeBalconyGeometry.ToCityWorld(home, position), radius);
+
+            public Vector3 Constrain(Vector3 currentPosition, Vector3 desiredPosition, float radius = 0f)
+            {
+                Vector3 worldCurrent = PlayerHomeBalconyGeometry.ToCityWorld(home, currentPosition);
+                Vector3 worldDesired = PlayerHomeBalconyGeometry.ToCityWorld(home, desiredPosition);
+                return PlayerHomeBalconyGeometry.ToHomeLocal(home, city.Constrain(worldCurrent, worldDesired, radius));
+            }
         }
 
         private static bool IsEligibleExteriorAnchor(
