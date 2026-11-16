@@ -5,7 +5,8 @@ namespace BarPromenade
     /// <summary>Physical occupancy wins over priority; a timeout never grants passage.</summary>
     public static class AmbientTrafficRules
     {
-        public const int Capacity = 4;
+        public const int CirculatingCapacity = 4;
+        public const int Capacity = CirculatingCapacity + 1;
         public const float FollowingGap = 2.5f;
         public const float ClearSeconds = .4f;
 

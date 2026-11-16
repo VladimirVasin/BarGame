@@ -8,10 +8,20 @@ namespace BarPromenade
     /// Three copies let the existing speed planner look through the loop seam.</summary>
     public sealed class CityAmbientCarPlan
     {
+        internal const float PassByMinimumEntry = 40f;
+        internal const float PassByMaximumEntry = 66f;
+        internal const float PassByNearRadius = 20f;
+        internal const float PassByReleaseRadius = 80f;
+        private const float PassBySampleSpacing = 4f;
+        private const float PassByMaximumTravel = 240f;
+
         public readonly LastRouteCarDrivePath Path;
         public readonly float Length;
         public readonly string RouteId;
         private readonly Vector2[] junctions;
+        private readonly Vector3[] passBySamples;
+        private readonly bool[] passByEntries;
+        private readonly float passBySpacing;
 
         public CityAmbientCarPlan(CityBusPlan route, CityStreetSupportPlan paving)
         {
@@ -64,6 +74,45 @@ namespace BarPromenade
                 for (int i = lap == 0 ? 0 : 1; i < loop.Count; i++) repeated.Add(loop[i]);
             Path = new LastRouteCarDrivePath(repeated);
             junctions = crossings.ToArray();
+
+            int count = Mathf.CeilToInt(Length / PassBySampleSpacing);
+            passBySamples = new Vector3[count];
+            passByEntries = new bool[count];
+            passBySpacing = Length / count;
+            for (int i = 0; i < count; i++)
+            {
+                float station = Length + i * passBySpacing;
+                Path.Sample(station, out passBySamples[i], out _);
+                passByEntries[i] = CanWaitOutsideJunction(station);
+            }
+        }
+
+        internal int PassBySampleCount => passBySamples.Length;
+
+        internal bool TryGetPassByEntry(int index, Vector3 hero, out float distance)
+        {
+            distance = 0f;
+            if (!passByEntries[index]) return false;
+            float entryDistance = (passBySamples[index] - hero).sqrMagnitude;
+            if (entryDistance < PassByMinimumEntry * PassByMinimumEntry ||
+                entryDistance > PassByMaximumEntry * PassByMaximumEntry) return false;
+
+            // The same lap must come near the hero's street level and then
+            // leave the neighbourhood, including paths across the lap seam.
+            int limit = Mathf.Min(passBySamples.Length - 1, Mathf.FloorToInt(PassByMaximumTravel / passBySpacing));
+            bool passedNear = false;
+            for (int step = 1; step <= limit; step++)
+            {
+                Vector3 offset = passBySamples[(index + step) % passBySamples.Length] - hero;
+                float squared = offset.sqrMagnitude;
+                if (squared > PassByReleaseRadius * PassByReleaseRadius)
+                {
+                    if (passedNear) distance = Length + index * passBySpacing;
+                    return passedNear;
+                }
+                if (squared < PassByNearRadius * PassByNearRadius && Mathf.Abs(offset.y) < 5f) passedNear = true;
+            }
+            return false;
         }
 
         public float KeepJunctionExitClear(float distance, float hold)

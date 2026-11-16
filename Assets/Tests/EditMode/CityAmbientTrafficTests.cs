@@ -100,13 +100,17 @@ namespace BarPromenade.Tests.EditMode
             int ferryman = System.Array.FindIndex(roster.ToArray(),
                 person => person.Id == DefaultNpcPopulation.LastRouteFerryman);
             Assert.That(ferryman, Is.GreaterThanOrEqualTo(0));
-            for (int i = 0; i < AmbientTrafficRules.Capacity; i++)
+            for (int i = 0; i < AmbientTrafficRules.CirculatingCapacity; i++)
             {
                 var person = roster[ferryman + 1 + i];
                 Assert.That(person.Id, Is.EqualTo(DefaultNpcPopulation.AmbientDriverId(i)));
                 Assert.That(person.ModelId, Is.EqualTo(DefaultNpcCatalog.OrdinaryWorker));
                 Assert.That(person.UsesRandomBody, Is.False, "Keep the measured seat contacts.");
             }
+            var passingDriver = roster[roster.Count - 1];
+            Assert.That(passingDriver.Id, Is.EqualTo(DefaultNpcPopulation.AmbientDriverId(AmbientTrafficRules.CirculatingCapacity)));
+            Assert.That(passingDriver.ModelId, Is.EqualTo(DefaultNpcCatalog.OrdinaryWorker));
+            Assert.That(passingDriver.UsesRandomBody, Is.False);
             Assert.That(roster.Select(p => p.Id).Distinct().Count(), Is.EqualTo(roster.Count));
         }
     }

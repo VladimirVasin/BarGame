@@ -9,12 +9,102 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class CityTerracePilotPlayModeTests
     {
         [UnityTest]
+        public IEnumerator LiveCity_AmbientPassByReusesDriverAndClearsRoad()
+        {
+            Assert.That(GameSessionState.TryStartGameTimeAt(14 * 60), Is.True);
+            yield return LoadProductionCity();
+            var traffic = city.AmbientTraffic;
+            traffic.AutoAdvance = false;
+            Time.timeScale = 0f;
+            city.Player.Motor.SetInputEnabled(false);
+            city.Camera.GetComponent<PlayerCameraFollow>().enabled = false;
+            Vector3 hero = city.Player.GameObject.transform.position;
+            Assert.That(traffic.Count, Is.EqualTo(AmbientTrafficRules.CirculatingCapacity));
+
+            AdvanceSeconds(CityAmbientTraffic.MinimumPassByDelay - .25f);
+            Assert.That(traffic.Count, Is.EqualTo(AmbientTrafficRules.CirculatingCapacity), "Respect the first interval.");
+            var car = AwaitPassBy();
+            var carObject = car.Driver.gameObject;
+            Assert.That(Vector3.Distance(hero, car.Position), Is.InRange(CityAmbientCarPlan.PassByMinimumEntry,
+                CityAmbientCarPlan.PassByMaximumEntry));
+            Assert.That(car.Plan.CanWaitOutsideJunction(car.Driver.Distance), Is.True);
+            Assert.That(car.Person.IsDriving, Is.True);
+            Assert.That(car.Person.GetComponent<DefaultNpcAppearance>().AppearanceKey,
+                Is.EqualTo(DefaultNpcPopulation.AmbientDriverId(AmbientTrafficRules.CirculatingCapacity)));
+            Assert.That(carObject.GetComponent<BoxCollider>().enabled, Is.True);
+            for (int i = 0; i < traffic.Count - 1; i++)
+                Assert.That(car.Hull.Overlaps(traffic.GetCar(i).Hull), Is.False);
+            city.Pedestrians.VehicleTraffic.Refresh();
+            Assert.That(city.Pedestrians.VehicleTraffic.PhysicallyBlocks(car.Hull.Centre, .35f), Is.True);
+
+            float distance = car.Driver.Distance;
+            traffic.AutoAdvance = true;
+            yield return null;
+            yield return null;
+            Assert.That(car.Driver.Distance, Is.EqualTo(distance), "Pause holds a live pass-by.");
+            traffic.AutoAdvance = false;
+
+            float closest = float.PositiveInfinity;
+            bool captured = false;
+            for (float elapsed = 0f; elapsed < 90f && carObject.activeSelf; elapsed += .25f)
+            {
+                AdvanceSeconds(.25f);
+                closest = Mathf.Min(closest, Vector3.Distance(hero, car.Position));
+                if (captured || closest > CityAmbientCarPlan.PassByNearRadius ||
+                    SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null) continue;
+                captured = true;
+                Transform camera = city.Camera.transform;
+                var originalView = new Pose(camera.position, camera.rotation);
+                car.Plan.Path.Sample(car.Driver.Distance + 7f, out var lane, out var forward);
+                Vector3 eye = lane + Vector3.up * 2f - Vector3.Cross(Vector3.up, forward).normalized * 1.2f;
+                camera.SetPositionAndRotation(eye, Quaternion.LookRotation(car.Position + Vector3.up * .8f - eye));
+                Time.timeScale = 1f;
+                for (int frame = 0; frame < 4; frame++)
+                {
+                    traffic.Advance(.05f);
+                    yield return null;
+                }
+                AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "AmbientPassBy", "pass", 1280, 720);
+                Time.timeScale = 0f;
+                camera.SetPositionAndRotation(originalView.position, originalView.rotation);
+                yield return null;
+            }
+            Assert.That(closest, Is.LessThan(CityAmbientCarPlan.PassByNearRadius + 1f), "Drive near the hero before leaving.");
+            Assert.That(carObject.activeSelf, Is.False, "The sedan must leave the traffic simulation outside its radius.");
+            Assert.That(Vector3.Distance(hero, car.Position), Is.GreaterThan(CityAmbientCarPlan.PassByReleaseRadius));
+            Assert.That(traffic.Count, Is.EqualTo(AmbientTrafficRules.CirculatingCapacity));
+            Assert.That(car.Beams.All(beam => !beam.enabled), Is.True);
+            Assert.That(car.Audio.OwnedSources.All(source => !source.isPlaying), Is.True);
+
+            AdvanceSeconds(CityAmbientTraffic.MinimumPassByDelay - .25f);
+            Assert.That(traffic.Count, Is.EqualTo(AmbientTrafficRules.CirculatingCapacity), "Respect the interval after release.");
+            Assert.That(AwaitPassBy(), Is.SameAs(car), "Reuse the same sedan and permanently assigned driver.");
+
+            void AdvanceSeconds(float seconds)
+            {
+                for (float elapsed = 0f; elapsed < seconds; elapsed += .25f)
+                {
+                    traffic.Advance(.25f);
+                    Physics.SyncTransforms();
+                }
+            }
+
+            CityAmbientTraffic.Car AwaitPassBy()
+            {
+                for (float elapsed = 0f; elapsed < CityAmbientTraffic.MaximumPassByDelay &&
+                    traffic.Count < AmbientTrafficRules.Capacity; elapsed += .25f) AdvanceSeconds(.25f);
+                Assert.That(traffic.Count, Is.EqualTo(AmbientTrafficRules.Capacity), "Expected a clear approach near " + hero);
+                return traffic.GetCar(traffic.Count - 1);
+            }
+        }
+
+        [UnityTest]
         public IEnumerator LiveCity_AmbientTrafficClearsEastSlopeJunctionQueue()
         {
             Assert.That(GameSessionState.TryStartGameTimeAt(14 * 60), Is.True);
             yield return LoadProductionCity();
             var traffic = city.AmbientTraffic;
-            Assert.That(traffic.Count, Is.EqualTo(AmbientTrafficRules.Capacity));
+            Assert.That(traffic.Count, Is.EqualTo(AmbientTrafficRules.CirculatingCapacity));
             traffic.AutoAdvance = false;
             // Freeze unrelated schedules; advance the real four traffic actors
             // explicitly, including physics occupancy after every safety step.
@@ -125,7 +215,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return LoadProductionCity();
             var traffic = city.AmbientTraffic;
             Assert.That(traffic, Is.Not.Null);
-            Assert.That(traffic.Count, Is.EqualTo(AmbientTrafficRules.Capacity));
+            Assert.That(traffic.Count, Is.EqualTo(AmbientTrafficRules.CirculatingCapacity));
             traffic.AutoAdvance = false;
             for (int i = 0; i < traffic.Count; i++)
             {

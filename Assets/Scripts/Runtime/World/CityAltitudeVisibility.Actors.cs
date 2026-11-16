@@ -19,6 +19,8 @@ namespace BarPromenade
         // test even at lowland fog density before changing one of those bodies.
         internal bool CanChangeAmbientBodyAt(Vector3 feet) => sceneCamera != null && IsStreetBodyHidden(feet);
 
+        internal bool CanChangeAmbientBodyAt(Bounds bounds) => sceneCamera != null && IsStreetBodyHidden(bounds);
+
         internal bool CanChangeWorkBodyAt(Vector3 feet, CityBuildingEntranceDescriptor entrance)
         {
             if (sceneCamera == null || entrance == null) return false;
@@ -29,7 +31,10 @@ namespace BarPromenade
                 toLocal * (feet - entrance.Threshold));
         }
 
-        private bool IsStreetBodyHidden(Vector3 feet)
+        private bool IsStreetBodyHidden(Vector3 feet) =>
+            IsStreetBodyHidden(new Bounds(feet + Vector3.up, new Vector3(2f, 2.5f, 2f)));
+
+        private bool IsStreetBodyHidden(Bounds bounds)
         {
             if (streetViewFrame != Time.frameCount)
             {
@@ -37,7 +42,6 @@ namespace BarPromenade
                 streetViewFrame = Time.frameCount;
             }
             const float hiddenOpticalDepth = CityPedestrianDirector.MinimumConnectedSpawnDistance * RuntimeSceneSetup.CityFogDensity;
-            var bounds = new Bounds(feet + Vector3.up, new Vector3(2f, 2.5f, 2f));
             float nearDepth = streetViewPlanes[4].GetDistanceToPoint(bounds.center) - bounds.extents.magnitude;
             return nearDepth * Density >= hiddenOpticalDepth || !GeometryUtility.TestPlanesAABB(streetViewPlanes, bounds);
         }

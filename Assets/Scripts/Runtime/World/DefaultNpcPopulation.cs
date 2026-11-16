@@ -430,14 +430,7 @@ namespace BarPromenade
                 new SlotConstraint("scarf", new string[] { null }),
                 new SlotConstraint("apron", new string[] { null })));
             // Append after the Ferryman: adding traffic must not change any existing identity.
-            for (int i = 0; i < AmbientTrafficRules.Capacity; i++)
-                roster.Add(new CharacterDefinition(AmbientDriverId(i), model, false,
-                    new SlotConstraint("outerwear", "outerwear.work", "outerwear.everyday"),
-                    new SlotConstraint("boots", "boots.work", "boots.everyday"),
-                    new SlotConstraint("headwear", null, "headwear.everyday"),
-                    new SlotConstraint("gloves", new string[] { null }),
-                    new SlotConstraint("scarf", new string[] { null }),
-                    new SlotConstraint("apron", new string[] { null })));
+            for (int i = 0; i < AmbientTrafficRules.CirculatingCapacity; i++) RegisterAmbientDriver(i);
             for (int route = 1; route <= CityBusDirector.MaximumLines; route++)
                 for (int slot = 0; slot < CityBusDirector.VehiclesPerLine; slot++)
                     roster.Add(new CharacterDefinition(BusDriverId(route, slot), model, false,
@@ -449,7 +442,16 @@ namespace BarPromenade
                         new SlotConstraint("gloves", new string[] { null }),
                         new SlotConstraint("scarf", new string[] { null }),
                         new SlotConstraint("apron", new string[] { null })));
+            RegisterAmbientDriver(AmbientTrafficRules.CirculatingCapacity);
             return roster.ToArray();
+
+            void RegisterAmbientDriver(int index) => roster.Add(new CharacterDefinition(AmbientDriverId(index), model, false,
+                new SlotConstraint("outerwear", "outerwear.work", "outerwear.everyday"),
+                new SlotConstraint("boots", "boots.work", "boots.everyday"),
+                new SlotConstraint("headwear", null, "headwear.everyday"),
+                new SlotConstraint("gloves", new string[] { null }),
+                new SlotConstraint("scarf", new string[] { null }),
+                new SlotConstraint("apron", new string[] { null })));
         }
 
         private static bool IsAdditionalPedestrian(string characterId)

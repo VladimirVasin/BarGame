@@ -8,17 +8,18 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-11-16
 
+- Седан изредка проезжает мимо героя.
+  `LiveCity_AmbientPassByReusesDriverAndClearsRoad`.
 - Жители ходят на смену через служебные двери. Новые зебры связывают тротуары.
   `LiveCity_IndustrialShiftsUseEveryBuilding`.
-- У автобусов новый кузов и салон, круглые фары, зеркала и закрытые арки.
-  Дверь кабины открывается внутрь, остальные сдвигаются снаружи.
+- У автобусов новый кузов и салон, круглые фары, зеркала, закрытые арки.
+  Дверь кабины внутрь, остальные сдвигаются по борту.
   `CityMidibusRemodel`, `Doors_OpenClearAndReseatOnTheSprungBody`.
-- Меню готовит квартиру и City. City остаётся в памяти всю сессию.
-  Игра в фоне готовит прямые выходы. У квартиры свой набор прохожих.
+- Меню готовит квартиру с её прохожими и City. City в памяти всю сессию,
+  прямые выходы готовятся в фоне.
 - На западной лестнице свободен проход. Автобусы 01 и 03 разъезжаются при пересадке.
   `Passenger_TransfersFromWestToHillsideAtTheSharedStop`.
-- В деревне открыто русло ручья. Берег у стока проходим,
-  тропы свободны от сугробов.
+- В деревне открыто русло ручья, проходим берег у стока и расчищены тропы.
   `Water_SitsInGroundTheSamplerActuallyOpened`,
   `Channel_NeverTrapsTheHeroBelowHisStepOffset`.
 - Перевозчик плавно выезжает к тоннелю. `CityDeparture_TakesTheTunnelTurnLikeAnyOtherRoadTurn`.

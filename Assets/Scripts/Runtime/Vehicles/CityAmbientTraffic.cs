@@ -14,8 +14,8 @@ namespace BarPromenade
         internal static readonly Color Color = new Color(1f, .955f, .865f);
     }
 
-    /// <summary>A small persistent fleet on surveyed city lanes. All cars decide from
-    /// one snapshot before any of them moves. Rendering never owns road occupancy.</summary>
+    /// <summary>Circulating cars and occasional local pass-bys on surveyed city lanes.
+    /// All active cars decide from one snapshot before any of them moves.</summary>
     [DefaultExecutionOrder(260)]
     public sealed class CityAmbientTraffic : MonoBehaviour
     {
@@ -24,6 +24,10 @@ namespace BarPromenade
         private const float CarPredictionReach = 40f;
         private const float DippedIntensity = CityRoadHeadlightProfile.Intensity;
         private const int VehicleCapacity = CityBusDirector.MaximumActiveModels + AmbientTrafficRules.Capacity + 2;
+        internal const float MinimumPassByDelay = 35f;
+        internal const float MaximumPassByDelay = 55f;
+        private const float PassByRetryDelay = 6f;
+        private const int PassByProbeLimit = 8;
         private readonly Car[] cars = new Car[AmbientTrafficRules.Capacity];
         private readonly Vehicle[] vehicles = new Vehicle[VehicleCapacity];
         private readonly float[] holds = new float[AmbientTrafficRules.Capacity];
@@ -31,6 +35,10 @@ namespace BarPromenade
         private CityGameRoot city;
         private LastRouteCarDriver ferryman;
         private CharacterController hero;
+        private Transform heroTransform;
+        private Car passingCar;
+        private float passByCountdown;
+        private uint passBySequence;
         private Bounds ferrymanBounds;
         private int buildIndex, vehicleCount;
         private Collider[] obstacleScratch = new Collider[16];
@@ -38,16 +46,18 @@ namespace BarPromenade
         public int Count { get; private set; }
         public bool AutoAdvance { get; set; } = true;
         public Car GetCar(int index) => cars[index];
+        private bool HasActivePassBy => Count > 0 && cars[Count - 1] == passingCar;
 
         public sealed class Car
         {
-            public readonly CityAmbientCarPlan Plan;
+            public CityAmbientCarPlan Plan { get; internal set; }
             public readonly LastRouteCarDriver Driver;
             public readonly LastRouteCarAssetRegistry Registry;
             public readonly LastRouteFerrymanPresentation Person;
             public readonly Bounds Bounds;
             internal readonly Light[] Beams;
             internal readonly LastRouteCarAudio Audio;
+            internal readonly LastRouteCarDriveProfile Profile;
             internal float ClearTime, PreviousHold = float.PositiveInfinity;
             internal int SnapshotIndex;
             public Vector3 Position => Driver.transform.position;
@@ -55,9 +65,10 @@ namespace BarPromenade
             public CityTrafficHull Hull => new CityTrafficHull(Position, Driver.transform.rotation, Bounds, .06f);
 
             internal Car(CityAmbientCarPlan plan, LastRouteCarDriver driver, LastRouteCarAssetRegistry registry,
-                LastRouteFerrymanPresentation person, Light[] beams)
+                LastRouteFerrymanPresentation person, Light[] beams, LastRouteCarDriveProfile profile)
             {
                 Plan = plan; Driver = driver; Registry = registry; Person = person; Beams = beams;
+                Profile = profile;
                 Audio = driver.GetComponent<LastRouteCarAudio>();
                 var body = driver.GetComponent<BoxCollider>();
                 Bounds = new Bounds(body.center, body.size);
@@ -77,7 +88,8 @@ namespace BarPromenade
             root.transform.SetParent(city.transform, false);
             var traffic = root.AddComponent<CityAmbientTraffic>();
             traffic.city = city;
-            traffic.hero = city.Player.GameObject.GetComponent<CharacterController>();
+            traffic.heroTransform = city.Player.GameObject.transform;
+            traffic.hero = traffic.heroTransform.GetComponent<CharacterController>();
             traffic.BindFerryman(ferryman);
             var routes = new System.Collections.Generic.List<CityAmbientCarPlan>(city.BusPlans.Count);
             var paving = CityStreetSupportPlan.ForLayout(city.Layout);
@@ -86,6 +98,7 @@ namespace BarPromenade
                 catch (ArgumentException failure) { GameLog.Warning("city", "ambient_route_unavailable", GameLog.Field("reason", failure.Message)); }
             traffic.routes = routes.ToArray();
             for (int i = 0; i < traffic.vehicles.Length; i++) traffic.vehicles[i] = new Vehicle();
+            traffic.DelayNextPassBy();
             city.Cannery?.Traffic?.BindAmbient(traffic);
             return traffic;
         }
@@ -106,6 +119,13 @@ namespace BarPromenade
             if (buildIndex >= cars.Length || routes.Length == 0) return false;
             int id = buildIndex++;
             CityAmbientCarPlan route = routes[id % routes.Length];
+            if (id == AmbientTrafficRules.CirculatingCapacity)
+            {
+                passingCar = BuildCar(route, route.Length, id);
+                if (passingCar != null) passingCar.Driver.gameObject.SetActive(false);
+                return true;
+            }
+
             float initial = route.Length * Mathf.Repeat(.17f + id * .271f + (city.Layout.Seed & 255) / 1024f, 1f);
             float selected = -1f;
             var nominal = new Bounds(Vector3.up * .8f, new Vector3(1.8f, 1.6f, 4.9f));
@@ -115,17 +135,28 @@ namespace BarPromenade
                 float distance = route.Length + Mathf.Repeat(initial + attempt * route.Length / 128f, route.Length);
                 if (!route.CanWaitOutsideJunction(distance)) continue;
                 route.Path.Sample(distance, out Vector3 position, out Vector3 direction);
-                if ((position - city.Player.GameObject.transform.position).sqrMagnitude < 72f * 72f) continue;
+                if ((position - heroTransform.position).sqrMagnitude < 72f * 72f) continue;
                 var hull = new CityTrafficHull(position, Quaternion.LookRotation(direction), nominal, 3f);
                 bool clear = true;
                 for (int i = 0; i < vehicleCount && clear; i++) clear = !hull.Overlaps(vehicles[i].Samples[0]);
                 if (clear) { selected = distance; break; }
             }
             if (selected < 0f) return true; // No safe entry means fewer cars, never a forced spawn.
-            route.Path.Sample(selected, out var start, out var forward);
+            Car car = BuildCar(route, selected, id);
+            if (car != null)
+            {
+                car.Driver.Begin(route.Path, car.Profile, 0f, selected);
+                cars[Count++] = car;
+            }
+            return true;
+        }
+
+        private Car BuildCar(CityAmbientCarPlan route, float distance, int id)
+        {
+            route.Path.Sample(distance, out var start, out var forward);
             var registry = LastRouteCarFactory.Create(transform, LastRouteCarPlan.At(start, forward),
                 default, null, LastRouteCarLamps.CityHalos, ambient: true);
-            if (registry == null) return true;
+            if (registry == null) return null;
             Transform root = registry.transform.parent;
             var driver = root.GetComponent<LastRouteCarDriver>();
             driver.ExternallyDriven = true;
@@ -141,11 +172,10 @@ namespace BarPromenade
             var seated = person.gameObject.AddComponent<LastRouteFerrymanPresentation>();
             seated.Initialize(rig, LastRouteFerrymanPlan.Create(registry).Stance, registry);
             seated.BeginSeatedAtTheWheel();
-            var profile = new LastRouteCarDriveProfile(5.4f + id * .6f, 1.45f, 3.2f, 1.7f, 2.2f);
-            driver.Begin(route.Path, profile, 0f, selected);
+            float cruise = id == AmbientTrafficRules.CirculatingCapacity ? 6.6f : 5.4f + id * .6f;
+            var profile = new LastRouteCarDriveProfile(cruise, 1.45f, 3.2f, 1.7f, 2.2f);
             root.GetComponent<LastRouteCarAudio>().Bind(null, seated, null, null, LastRouteCarRoadSurface.WetAsphalt);
-            cars[Count++] = new Car(route, driver, registry, seated, CreateBeams(root, registry));
-            return true;
+            return new Car(route, driver, registry, seated, CreateBeams(root, registry), profile);
         }
 
         private static Light[] CreateBeams(Transform root, LastRouteCarAssetRegistry registry)
@@ -189,7 +219,8 @@ namespace BarPromenade
         {
             if (deltaTime <= 0f || !isActiveAndEnabled) return;
             // Bound a hitch, but consume it in small safety steps rather than tunnelling.
-            float remaining = Mathf.Min(deltaTime, .25f);
+            float simulatedTime = Mathf.Min(deltaTime, .25f);
+            float remaining = simulatedTime;
             while (remaining > 0f)
             {
                 float step = Mathf.Min(.05f, remaining);
@@ -217,7 +248,92 @@ namespace BarPromenade
                     }
                 }
             }
+            AdvancePassBy(simulatedTime);
             UpdatePresentation(deltaTime);
+        }
+
+        private uint NextPassByHash() => CityPedestrianStableHash.Combine(unchecked((uint)city.Layout.Seed), ++passBySequence);
+
+        private void DelayNextPassBy() => passByCountdown = Mathf.Lerp(MinimumPassByDelay, MaximumPassByDelay,
+            (NextPassByHash() & 1023u) / 1023f);
+
+        private void AdvancePassBy(float step)
+        {
+            if (passingCar == null) return;
+            Vector3 player = heroTransform.position;
+            if (HasActivePassBy)
+            {
+                const float radius = CityAmbientCarPlan.PassByReleaseRadius;
+                if ((passingCar.Position - player).sqrMagnitude > radius * radius &&
+                    CanChangePassByAt(passingCar.Position, passingCar.Driver.transform.rotation))
+                    ReleasePassBy();
+                return;
+            }
+
+            passByCountdown -= step;
+            if (passByCountdown <= 0f && !TryBeginPassBy(player)) passByCountdown = PassByRetryDelay;
+        }
+
+        private bool TryBeginPassBy(Vector3 player)
+        {
+            ReadVehicles();
+            uint hash = NextPassByHash();
+            int startRoute = (int)(hash % (uint)routes.Length);
+            int probes = 0;
+            for (int r = 0; r < routes.Length; r++)
+            {
+                CityAmbientCarPlan route = routes[(startRoute + r) % routes.Length];
+                int count = route.PassBySampleCount;
+                int start = (int)(CityPedestrianStableHash.Combine(hash, (uint)r) % (uint)count);
+                for (int i = 0; i < count; i++)
+                {
+                    if (!route.TryGetPassByEntry((start + i) % count, player, out float distance)) continue;
+                    route.Path.Sample(distance, out var position, out var forward);
+                    var rotation = Quaternion.LookRotation(forward);
+                    if (!CanChangePassByAt(position, rotation)) continue;
+                    if (++probes > PassByProbeLimit) return false;
+                    if (!PassByLaneIsClear(position, rotation)) continue;
+
+                    passingCar.Plan = route;
+                    passingCar.ClearTime = 0f;
+                    passingCar.PreviousHold = float.PositiveInfinity;
+                    passingCar.PhysicalBlocker = null;
+                    passingCar.Driver.Begin(route.Path, passingCar.Profile, 4f, distance);
+                    passingCar.Driver.gameObject.SetActive(true);
+                    cars[Count++] = passingCar;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool PassByLaneIsClear(Vector3 position, Quaternion rotation)
+        {
+            var hull = new CityTrafficHull(position, rotation, passingCar.Bounds, .75f);
+            for (int i = 0; i < vehicleCount; i++)
+                for (int j = 0; j < vehicles[i].Count; j++)
+                    if (hull.Overlaps(vehicles[i].Samples[j])) return false;
+            return FindBodyObstacle(passingCar, position, rotation, .6f) == null;
+        }
+
+        private bool CanChangePassByAt(Vector3 position, Quaternion rotation)
+        {
+            Bounds visual = passingCar.Registry.LocalBounds;
+            float radius = visual.extents.magnitude + .5f;
+            Vector3 centre = position + rotation * visual.center;
+            // A car outside the shot can still be heard from the camera.
+            float silentDistance = LastRouteCarAudioMix.EngineMaximumDistance + radius;
+            return (centre - city.Camera.transform.position).sqrMagnitude >= silentDistance * silentDistance &&
+                city.Visibility.CanChangeAmbientBodyAt(new Bounds(centre, Vector3.one * (2f * radius)));
+        }
+
+        private void ReleasePassBy()
+        {
+            cars[--Count] = null;
+            passingCar.Driver.Halt();
+            foreach (Light beam in passingCar.Beams) { beam.intensity = 0f; beam.enabled = false; }
+            passingCar.Driver.gameObject.SetActive(false);
+            DelayNextPassBy();
         }
 
         private Vehicle Next(int priority, CityTrafficHull first)
@@ -315,8 +431,7 @@ namespace BarPromenade
                     if (hit) conflict = a * SampleSpacing;
                 }
             }
-            var player = city.Player.GameObject.transform;
-            AccumulateWalker(own, player.position, hero != null ? hero.radius : .35f,
+            AccumulateWalker(own, heroTransform.position, hero != null ? hero.radius : .35f,
                 hero != null ? hero.velocity : Vector3.zero, ref conflict);
             var people = city.Pedestrians.Actors;
             for (int i = 0; i < people.Count; i++)
@@ -355,15 +470,19 @@ namespace BarPromenade
         private bool ImmediateObstacle(Car car)
         {
             car.Plan.Path.Sample(car.Driver.Distance + .6f, out var p, out var f);
-            var rotation = Quaternion.LookRotation(f);
+            car.PhysicalBlocker = FindBodyObstacle(car, p, Quaternion.LookRotation(f));
+            return car.PhysicalBlocker != null;
+        }
+
+        private Collider FindBodyObstacle(Car car, Vector3 p, Quaternion rotation, float lengthPadding = 0f)
+        {
             // Wheels touch the road. A city-spanning sloped road MeshCollider can
             // have a high world AABB even here, so bounds.max.y cannot reject it.
             // Probe only the body above the wheel contact band, in the road's frame.
             float bottom = Mathf.Max(.4f, car.Bounds.min.y);
             float halfHeight = Mathf.Max(.1f, (car.Bounds.max.y - bottom) * .5f);
             Vector3 centre = p + rotation * new Vector3(car.Bounds.center.x, bottom + halfHeight, car.Bounds.center.z);
-            Vector3 halfExtents = new Vector3(car.Bounds.extents.x + .04f, halfHeight, car.Bounds.extents.z + .04f);
-            car.PhysicalBlocker = null;
+            Vector3 halfExtents = new Vector3(car.Bounds.extents.x + .04f, halfHeight, car.Bounds.extents.z + .04f + lengthPadding);
             int count;
             while (true)
             {
@@ -376,15 +495,15 @@ namespace BarPromenade
                 ? Physics.OverlapBox(centre, halfExtents, rotation, ~0, QueryTriggerInteraction.Ignore)
                 : obstacleScratch;
             int total = hits == obstacleScratch ? count : hits.Length;
-            bool blocked = false;
+            Collider blocker = null;
             for (int i = 0; i < total; i++)
             {
                 var hit = hits[i];
                 if (hit != null && !hit.transform.IsChildOf(car.Driver.transform) && hit.bounds.max.y > p.y + .4f)
-                { car.PhysicalBlocker = hit; blocked = true; break; }
+                { blocker = hit; break; }
             }
             Array.Clear(obstacleScratch, 0, count);
-            return blocked;
+            return blocker;
         }
 
         internal bool BlocksSpawn(Vector3 position, Quaternion rotation, Bounds bounds)
@@ -489,6 +608,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            if (gameObject.activeInHierarchy && HasActivePassBy) ReleasePassBy();
             for (int i = 0; i < Count; i++)
                 foreach (Light beam in cars[i].Beams) { beam.intensity = 0f; beam.enabled = false; }
         }

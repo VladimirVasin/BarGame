@@ -5,15 +5,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-16
 
+Pooled sedan enters and leaves off-camera. Release clears hull and lights.
+`LiveCity_AmbientPassByReusesDriverAndClearsRoad`. Road frame reviewed.
+
 Graded shift entrances and zebras. `build-city-buildings-3d-model`,
 `LiveCity_IndustrialShiftsUseEveryBuilding`, `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement`.
 `LiveCity_BothTransferStairsCarryPedestriansBetweenBuses` after moving the west lamp.
 Map uses the live scheme.
 
-Midibus: formed shell, sealed headers, fixed mirrors, sedan optics and sprung
-tyre clearance. Cab leaf opens inward, other leaves slide outside. Uniformed
-drivers retain long eyes and cab contacts. Kept sedan takes of the reused
-Ferryman rig. `build-city-bus-3d-model`, `CityMidibusRemodel`,
+Midibus shell, sealed headers, fixed mirrors, sedan optics and tyre clearance.
+Cab leaf swings in, others slide outside. Uniformed drivers keep long eyes
+and contacts. Ferryman's sedan takes retained. `build-city-bus-3d-model`, `CityMidibusRemodel`,
 `Doors_OpenClearAndReseatOnTheSprungBody`, `Passenger_BoardsRidesAndExitsAtLaterStop`,
 `Driver_SitsOnTheDrawnSeatAndWorksWheelAndButtonWithoutCrossingLimbs`,
 `build-last-route-cabin-actions --validate-only`.
@@ -21,7 +23,7 @@ Ferryman rig. `build-city-bus-3d-model`, `CityMidibusRemodel`,
 Menu primes Home/City. City and direct exits stay resident.
 `MenuWarmup_ReusesSharedPlansAtTheStreetDoor`, `AreaTravel_KeepsCityAndReusesTheDirectRoad`, `NewGame_LoadingScreenCoversCompositionUntilDestinationReady`.
 
-Combat prebuild checks strike and body scale.
+Combat prebuild checks strike/scale.
 `CombatTestAssetSetup.BuildOrThrow`, `BuildKickOrThrow`, `CombatBodyAssetSetup.ValidateImportedOrThrow`.
 Combat imports sync secondary motion. `CurrentProject_PassesReadOnlyGate`.
 
@@ -29,24 +31,24 @@ Flashlight events follow enable/disable; pruning follows Unity mode.
 Litter follows thresholds, snow follows ground, brook cuts its bank. `CityLitterPlanTests`,
 `QuestLogTests`, `CityBusRuntimeTests` and `SnowMesh_NeverLiesOverATroddenRoute`.
 
-Entrances avoid shelters. Home keeps its roster and City obstacles. Standalone spawn retained.
+Entrances clear shelters. Home retains roster, City obstacles and standalone spawn.
 `DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
 `HomeScene_SpawnsPedestriansOnlyOnBalcony`, `Player3DFootIkPlayModeTests`.
-The Ferryman joins the lane smoothly. A bus already yielding to another's hull
-cedes the crossing prediction. `CityDeparture_TakesTheTunnelTurnLikeAnyOtherRoadTurn`,
+Ferryman joins smoothly. Buses held at a hull cede crossing forecasts.
+`CityDeparture_TakesTheTunnelTurnLikeAnyOtherRoadTurn`,
 `Passenger_TransfersFromWestToHillsideAtTheSharedStop`.
 Poles clear the pawnshop stairs. `LiveCity_PawnshopDescentWalksBothWaysWithSupportedStepsRailsAndMapArrivals`.
 Bus and rider follow ground. `DefaultCoastal_BuildsClosedWindingTargetRoute`, `YardWheelchairMotionTests`.
 Balcony finishes. `HomeSurfaceAppearanceTests`.
 
-Sand collision follows the waterfront grade. Sleepwear and the shot grip clear their support.
+Sand follows waterfront grade. Sleepwear and shot grip clear supports.
 `Build_DefaultContinuousTerrain_MatchesPlanAndOwnsCollider`, `SouthWestCornerClosure_WeldsSampledGroundAndCollision`,
 `Bed_SleepAndWakeNeverPushTheHeroThroughTheMattress`, `VodkaService_KeepsShotClearOfCounterAndMenu`.
 Residential pockets use each side's pavement width.
 `ResidentialCourtyardPockets_AreFourDistinctClearAndWindAware`.
 
-Courtyard links avoid threshold grading. The crane lifts and hauls through
-the open well. Shower sleeves and the idle brushing hand clear the body.
+Courtyard links clear threshold grading. Crane lifts through the open well.
+Shower sleeves and idle brushing hand clear the body.
 `CityReplanning_KeepsAnchorsAndPartitionsGroundWithoutBuildingOverlap`,
 `Range_CraneCaptureClearsGalleryRailAndKeepsReleaseMomentum`,
 `build-home-shower-curtain-actions`, `Brushing_MirrorSceneGatesReliefPerDay`.
