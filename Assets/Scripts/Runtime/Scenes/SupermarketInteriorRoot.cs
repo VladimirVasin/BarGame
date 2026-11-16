@@ -4,7 +4,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
-    public sealed class SupermarketInteriorRoot : MonoBehaviour
+    public sealed class SupermarketInteriorRoot : MonoBehaviour, IResidentArrival
     {
         private sealed class InteriorWalkableArea : IWalkableArea
         {
@@ -102,6 +102,13 @@ namespace BarPromenade
         public InventoryController Inventory { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
+
+        void IResidentArrival.Resume()
+        {
+            GameAudioMixer.ApplyProfile(GameAudioProfile.Home);
+            LocationArrival.EnterInterior(Player, Layout.PlayerSpawn, RuntimeSceneSetup.EnsureSupermarketInterior(),
+                IntoxicationStatus, IntoxicationHud);
+        }
 
         private void Awake()
         {

@@ -60,6 +60,7 @@ namespace BarPromenade
         private CityBusDirector[] buses;
         private CityAmbientTraffic ambientTraffic;
         internal void BindAmbient(CityAmbientTraffic traffic) => ambientTraffic = traffic;
+        internal void BindFerryman(Transform movingCar) => car = movingCar;
         private CityRainDripEdge[] edges;
         private Material material;
         private Mesh mesh;

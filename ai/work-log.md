@@ -5,7 +5,7 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-16
 
-Shift routes use graded entrances and new zebra crossings. `build-city-buildings-3d-model`,
+Graded shift entrances and zebras. `build-city-buildings-3d-model`,
 `LiveCity_IndustrialShiftsUseEveryBuilding`, `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement`.
 `LiveCity_BothTransferStairsCarryPedestriansBetweenBuses` after moving the west lamp.
 Map uses the live scheme.
@@ -18,12 +18,12 @@ Ferryman rig. `build-city-bus-3d-model`, `CityMidibusRemodel`,
 `Driver_SitsOnTheDrawnSeatAndWorksWheelAndButtonWithoutCrossingLimbs`,
 `build-last-route-cabin-actions --validate-only`.
 
-Menu prewarms Home/City in stages, electrical assets on the main thread.
-`MenuWarmup_ReusesSharedPlansAtTheStreetDoor`, `NewGame_LoadingScreenCoversCompositionUntilDestinationReady`.
+Menu primes Home/City. City and direct exits stay resident.
+`MenuWarmup_ReusesSharedPlansAtTheStreetDoor`, `AreaTravel_KeepsCityAndReusesTheDirectRoad`, `NewGame_LoadingScreenCoversCompositionUntilDestinationReady`.
 
 Combat prebuild checks strike and body scale.
 `CombatTestAssetSetup.BuildOrThrow`, `BuildKickOrThrow`, `CombatBodyAssetSetup.ValidateImportedOrThrow`.
-Secondary motion synchronizes combat imports. `CurrentProject_PassesReadOnlyGate`.
+Combat imports sync secondary motion. `CurrentProject_PassesReadOnlyGate`.
 
 Flashlight events follow enable/disable; pruning follows Unity mode.
 Litter follows thresholds, snow follows ground, brook cuts its bank. `CityLitterPlanTests`,

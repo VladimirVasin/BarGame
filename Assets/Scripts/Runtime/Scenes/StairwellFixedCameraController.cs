@@ -404,7 +404,7 @@ namespace BarPromenade
             ReleaseCamera();
         }
 
-        private void RefreshSelection(bool forceApply)
+        internal void RefreshSelection(bool forceApply)
         {
             if (puzzleViewOwner is UnityEngine.Object unityOwner && unityOwner == null) puzzleViewOwner = null;
             if (puzzleViewOwner != null) return;

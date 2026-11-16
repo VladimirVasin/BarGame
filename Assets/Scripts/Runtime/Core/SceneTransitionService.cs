@@ -28,14 +28,6 @@ namespace BarPromenade
         private TransitionBlackoutOverlay blackout;
         private AreaLoadingRoot startupLoading;
 
-        // The resident chains are built from shared steps that cannot
-        // return a value through the coroutine driver, so each step leaves
-        // what it produced here: the door scene it loaded, the presentation
-        // it installed, and the name of the step that failed, or null.
-        private Scene residentDoorScene;
-        private DoorTransitionRoot residentPresentation;
-        private string residentFailure;
-
         public static bool IsTransitioning
         {
             get => isSceneTransitioning || AreaTravelService.IsTraveling;
@@ -86,7 +78,6 @@ namespace BarPromenade
                 try
                 {
                     startupLoading = AreaLoadingRoot.CreateForCheckpoint();
-                    yield return ResidentExteriorPolicy.DiscardDormantExterior();
                     // Single mode waits for every outgoing writer before restoring data.
                     AsyncOperation staging = TryStartLoad(SceneIds.AreaLoading);
                     if (staging == null)
@@ -247,6 +238,7 @@ namespace BarPromenade
             EnsureInstance();
             SessionCheckpointService.PrepareDestination(sceneName);
             IsTransitioning = true;
+            AreaAssetWarmup.Prioritize(sceneName);
             activeOperationId = operationId;
             activeSourceScene = GetActiveSceneName();
             activeTargetScene = sceneName;
@@ -273,7 +265,7 @@ namespace BarPromenade
             return true;
         }
 
-        private static void EnsureInstance()
+        internal static void EnsureInstance()
         {
             if (instance != null && instance.isActiveAndEnabled)
             {
@@ -291,11 +283,20 @@ namespace BarPromenade
             DontDestroyOnLoad(service);
         }
 
+        private void Update() => AreaAssetWarmup.Advance();
+
         private IEnumerator LoadDirect(string sceneName, bool cover = false)
         {
             if (cover && startupLoading == null) startupLoading = AreaLoadingRoot.CreateForNewGame();
             yield return null;
-            yield return ResidentExteriorPolicy.DiscardDormantExterior();
+            Scene source = SceneManager.GetActiveScene();
+            if (activeMode == "direct" && source.name != sceneName &&
+                LocationNeighbors.IsGameplay(source.name) && LocationNeighbors.IsGameplay(sceneName))
+            {
+                yield return LoadBetweenLocations(source, sceneName);
+                yield break;
+            }
+
             AsyncOperation operation = TryStartLoad(sceneName);
             if (operation == null)
             {
@@ -348,6 +349,50 @@ namespace BarPromenade
             FinishTransition("completed", true);
         }
 
+        private IEnumerator LoadBetweenLocations(Scene sourceScene, string sceneName)
+        {
+            ResidentLocation source = LocationResidency.CaptureSource(sourceScene, sceneName);
+            ResidentLocation destination = LocationResidency.Find(sceneName);
+            activeResident = destination != null;
+            RequestOutgoingMusicFade(source);
+            blackout = TransitionBlackoutOverlay.Create();
+
+            if (source != null) LocationResidency.Park(source);
+            else if (destination == null && sceneName == SceneIds.City &&
+                Camera.main is Camera sourceCamera && sourceCamera.gameObject.scene == sourceScene)
+                sourceCamera.gameObject.SetActive(false);
+
+            if (destination == null)
+            {
+                yield return LocationResidency.Unload(SceneManager.GetSceneByName(sceneName));
+                AsyncOperation load = TryStartAdditiveLoad(sceneName);
+                if (load == null)
+                {
+                    yield return LoadFallback(sceneName);
+                    yield break;
+                }
+                while (!load.isDone) yield return null;
+            }
+
+            Scene targetScene = destination?.Scene ?? SceneManager.GetSceneByName(sceneName);
+            if (!targetScene.isLoaded || !SceneManager.SetActiveScene(targetScene))
+            {
+                yield return LoadFallback(sceneName);
+                yield break;
+            }
+
+            if (source == null) yield return LocationResidency.Unload(sourceScene);
+            yield return LocationResidency.Trim(sceneName);
+            if (!TryEnterDestination(targetScene, destination))
+            {
+                yield return LoadFallback(sceneName);
+                yield break;
+            }
+
+            yield return null;
+            FinishTransition("completed", true);
+        }
+
         private void ReportStartupCompositionStep(CompositionStep step)
         {
             if (startupLoading == null) return;
@@ -361,444 +406,86 @@ namespace BarPromenade
             DoorTransitionDirection direction)
         {
             yield return null;
-            // An interior door keeps the exterior it opens off: the exterior
-            // goes dormant behind its interiors, stays dormant across the
-            // doors between them, and is woken by the door that leads back
-            // into it. Every other door is the Single chain below, which
-            // first discards an exterior left dormant by an earlier visit.
-            ResidentDoorChain chain = ResidentExteriorPolicy.Resolve(
-                activeSourceScene,
-                sceneName,
-                out IResidentExteriorRoot exterior,
-                out string refusal);
-            if (chain != ResidentDoorChain.None)
+            Scene sourceScene = SceneManager.GetActiveScene();
+            ResidentLocation source = LocationResidency.CaptureSource(sourceScene, sceneName);
+            AsyncOperation doorLoad = TryStartAdditiveLoad(SceneIds.DoorTransition);
+            if (doorLoad == null)
             {
-                ReportResidentChain(chain, exterior, null);
-            }
-            else if (refusal != null)
-            {
-                ReportResidentChain(chain, null, refusal);
-            }
-
-            switch (chain)
-            {
-                case ResidentDoorChain.EnterInterior:
-                    yield return EnterInteriorKeepingExteriorResident(
-                        exterior, sceneName, direction);
-                    yield break;
-                case ResidentDoorChain.BetweenInteriors:
-                    yield return MoveBetweenInteriorsKeepingExteriorResident(
-                        sceneName, direction);
-                    yield break;
-                case ResidentDoorChain.ReturnToExterior:
-                    yield return ReturnToResidentExterior(
-                        exterior, sceneName, direction);
-                    yield break;
-            }
-
-            yield return ResidentExteriorPolicy.DiscardDormantExterior();
-            AsyncOperation transitionOperation =
-                TryStartLoad(SceneIds.DoorTransition);
-            if (transitionOperation == null)
-            {
-                FinishTransition(
-                    "door_load_operation_unavailable",
-                    false);
+                FinishTransition("door_load_operation_unavailable", false);
                 yield break;
             }
 
-            transitionOperation.allowSceneActivation = false;
-            RequestOutgoingMusicFade();
-            yield return WaitForActivationReady(transitionOperation);
-            transitionOperation.allowSceneActivation = true;
-            while (!transitionOperation.isDone)
-            {
-                yield return null;
-            }
+            doorLoad.allowSceneActivation = false;
+            RequestOutgoingMusicFade(source);
+            yield return WaitForActivationReady(doorLoad);
+            doorLoad.allowSceneActivation = true;
+            while (!doorLoad.isDone) yield return null;
 
-            DoorTransitionRoot presentation =
-                FindAnyObjectByType<DoorTransitionRoot>();
-            if (presentation == null)
+            Scene doorScene = SceneManager.GetSceneByName(SceneIds.DoorTransition);
+            if (!doorScene.isLoaded || !SceneManager.SetActiveScene(doorScene))
             {
-                ReportFallback("door_root_missing");
-                Debug.LogError(
-                    "DoorTransition loaded without DoorTransitionRoot; " +
-                    "falling back to the requested destination.");
-                yield return LoadFallback(sceneName);
+                yield return FallBackFromDoor(sceneName, "door_scene_not_active");
                 yield break;
             }
 
-            bool initialized = false;
-            try
-            {
-                presentation.Initialize(direction);
-                initialized = true;
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
-            }
-
-            if (!initialized)
-            {
-                ReportFallback(
-                    "door_presentation_initialization_failed");
-                yield return LoadFallback(sceneName);
-                yield break;
-            }
-
-            AsyncOperation targetOperation = TryStartLoad(sceneName);
-            if (targetOperation == null)
-            {
-                FinishTransition(
-                    "target_load_operation_unavailable",
-                    false);
-                yield break;
-            }
-
-            targetOperation.allowSceneActivation = false;
-            yield return PlayPresentationSafely(presentation);
-            while (targetOperation.progress < 0.9f)
-            {
-                yield return null;
-            }
-
-            // The door scene dies with the Single load, and its black with
-            // it. An overlay that outlives the load keeps the screen black
-            // while the destination, registered from its Awake, is built a
-            // frame at a time instead of inside the activation frame.
             blackout = TransitionBlackoutOverlay.Create();
-            doorComposition = new CompositionDriver(
-                "door",
-                sceneName,
-                CompositionDriver.DoorFrameBudgetMilliseconds);
-            acceptingComposition = true;
-            try
+            if (source != null) LocationResidency.Park(source);
+            else yield return LocationResidency.Unload(sourceScene);
+
+            DoorTransitionRoot presentation = InstallDoorPresentation(doorScene, direction);
+            if (presentation == null)
             {
-                targetOperation.allowSceneActivation = true;
-                while (!targetOperation.isDone)
-                {
-                    yield return null;
-                }
-            }
-            finally
-            {
-                acceptingComposition = false;
+                yield return FallBackFromDoor(sceneName, "door_presentation_initialization_failed");
+                yield break;
             }
 
-            if (doorComposition.HasComposition)
+            ResidentLocation destination = LocationResidency.Find(sceneName);
+            activeResident = destination != null;
+            AsyncOperation targetLoad = null;
+            if (destination == null)
             {
-                while (doorComposition.AdvanceFrame())
+                // A reused scene name may refer to a different bar or to a
+                // different story version of the stairwell.
+                yield return LocationResidency.Unload(SceneManager.GetSceneByName(sceneName));
+                targetLoad = TryStartAdditiveLoad(sceneName);
+                if (targetLoad == null)
                 {
-                    yield return null;
-                }
-
-                if (doorComposition.Failure != null)
-                {
-                    FinishTransition("destination_composition_failed", false);
+                    yield return FallBackFromDoor(sceneName, "target_load_operation_unavailable");
                     yield break;
                 }
 
-                // The driver put full-rate drawing back as the build ended.
-                // This frame draws the finished destination - and, in the
-                // editor, compiles the shader variants it uses for the first
-                // time - under the black, so the player's first frame of it
-                // is not the slow one.
-                yield return null;
+                targetLoad.allowSceneActivation = false;
             }
 
-            FinishTransition("completed", true);
-        }
-
-        /// <summary>
-        /// Exterior -> one of its interiors with the exterior kept. The
-        /// door and the interior load additively; the exterior goes dormant
-        /// before the door's first frame, because the door presentation
-        /// stands at the world origin, inside the exterior, with an 18 m
-        /// far plane. The interior becomes the active scene and installs
-        /// by name once the door scene - and its MainCamera-tagged camera -
-        /// is gone. Every failure past the door load falls back to the
-        /// Single chain, which discards the dormant exterior and builds the
-        /// interior the old way.
-        /// </summary>
-        private IEnumerator EnterInteriorKeepingExteriorResident(
-            IResidentExteriorRoot exterior,
-            string sceneName,
-            DoorTransitionDirection direction)
-        {
-            activeResident = true;
-            yield return LoadDoorSceneAdditive();
-            if (residentFailure != null)
-            {
-                yield return FailResidentStep(sceneName);
-                yield break;
-            }
-
-            Scene doorScene = residentDoorScene;
-            if (!exterior.EnterDormant())
-            {
-                residentFailure = "exterior_dormancy_refused";
-                yield return FailResidentStep(sceneName);
-                yield break;
-            }
-
-            DoorTransitionRoot presentation =
-                InstallDoorPresentation(doorScene, direction);
-            if (presentation == null)
-            {
-                residentFailure = "door_presentation_initialization_failed";
-                yield return FailResidentStep(sceneName);
-                yield break;
-            }
-
-            yield return LoadInteriorBehindDoor(
-                sceneName, doorScene, presentation);
-            if (residentFailure != null)
-            {
-                yield return FailResidentStep(sceneName);
-                yield break;
-            }
-
-            FinishTransition("completed", true);
-        }
-
-        /// <summary>
-        /// Interior -> interior of the same exterior, which stays dormant
-        /// (the stairwell and the flat). The door takes the source
-        /// interior's place exactly as on the way out to the exterior, then
-        /// the target interior loads behind it exactly as on the way in
-        /// from the exterior. Failure falls back to the Single chain, which
-        /// discards the dormant exterior.
-        /// </summary>
-        private IEnumerator MoveBetweenInteriorsKeepingExteriorResident(
-            string sceneName,
-            DoorTransitionDirection direction)
-        {
-            activeResident = true;
-            yield return LoadDoorSceneAdditive();
-            if (residentFailure != null)
-            {
-                yield return FailResidentStep(sceneName);
-                yield break;
-            }
-
-            Scene doorScene = residentDoorScene;
-            yield return ReplaceSourceInteriorWithDoor(doorScene, direction);
-            if (residentFailure != null)
-            {
-                yield return FailResidentStep(sceneName);
-                yield break;
-            }
-
-            yield return LoadInteriorBehindDoor(
-                sceneName, doorScene, residentPresentation);
-            if (residentFailure != null)
-            {
-                yield return FailResidentStep(sceneName);
-                yield break;
-            }
-
-            FinishTransition("completed", true);
-        }
-
-        /// <summary>
-        /// Interior -> the exterior dormant behind it. The interior is
-        /// unloaded before the door presentation is built, as the Single
-        /// load used to take it: its camera must not be adopted and its
-        /// room stands where the door will. After the sequence the exterior
-        /// is made active again, the door leaves, and the same root resumes
-        /// at its return dock. Failure past the door load falls back to the
-        /// Single chain, which discards the dormant exterior and rebuilds.
-        /// </summary>
-        private IEnumerator ReturnToResidentExterior(
-            IResidentExteriorRoot exterior,
-            string sceneName,
-            DoorTransitionDirection direction)
-        {
-            activeResident = true;
-            yield return LoadDoorSceneAdditive();
-            if (residentFailure != null)
-            {
-                yield return FailResidentStep(sceneName);
-                yield break;
-            }
-
-            Scene doorScene = residentDoorScene;
-            yield return ReplaceSourceInteriorWithDoor(doorScene, direction);
-            if (residentFailure != null)
-            {
-                yield return FailResidentStep(sceneName);
-                yield break;
-            }
-
-            // The door draws its own black from here and must be seen
-            // opening; the overlay returns for the frames after it.
             blackout.enabled = false;
-            yield return PlayPresentationSafely(residentPresentation);
+            yield return PlayPresentationSafely(presentation);
             blackout.enabled = true;
 
-            Scene exteriorScene = exterior.Scene;
-            if (!exteriorScene.isLoaded ||
-                !SceneManager.SetActiveScene(exteriorScene))
+            if (targetLoad != null)
             {
-                residentFailure = "exterior_scene_not_active";
-                yield return FailResidentStep(sceneName);
+                yield return WaitForActivationReady(targetLoad);
+                // City already contains an enabled camera and listener.
+                if (sceneName == SceneIds.City) presentation.Camera.gameObject.SetActive(false);
+                targetLoad.allowSceneActivation = true;
+                while (!targetLoad.isDone) yield return null;
+            }
+
+            Scene targetScene = destination?.Scene ?? SceneManager.GetSceneByName(sceneName);
+            if (!targetScene.isLoaded || !SceneManager.SetActiveScene(targetScene))
+            {
+                yield return FallBackFromDoor(sceneName, "target_scene_not_active");
                 yield break;
             }
 
-            yield return UnloadScene(doorScene);
-            bool resumed = false;
-            try
-            {
-                exterior.ResumeFromDormant();
-                resumed = true;
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
-            }
-
-            if (!resumed)
-            {
-                residentFailure = "exterior_resume_failed";
-                yield return FailResidentStep(sceneName);
-                yield break;
-            }
-
-            FinishTransition("completed", true);
-        }
-
-        /// <summary>
-        /// Loads the door scene beside the scenes already loaded, the
-        /// active scene's theme leaving through the mix meanwhile. Leaves
-        /// the scene in <see cref="residentDoorScene"/>.
-        /// </summary>
-        private IEnumerator LoadDoorSceneAdditive()
-        {
-            residentFailure = null;
-            residentDoorScene = default;
-            residentPresentation = null;
-            AsyncOperation transitionOperation =
-                TryStartAdditiveLoad(SceneIds.DoorTransition);
-            if (transitionOperation == null)
-            {
-                residentFailure = "door_load_operation_unavailable";
-                yield break;
-            }
-
-            transitionOperation.allowSceneActivation = false;
-            RequestOutgoingMusicFade();
-            yield return WaitForActivationReady(transitionOperation);
-            transitionOperation.allowSceneActivation = true;
-            while (!transitionOperation.isDone)
-            {
-                yield return null;
-            }
-
-            residentDoorScene =
-                SceneManager.GetSceneByName(SceneIds.DoorTransition);
-            if (!residentDoorScene.isLoaded)
-            {
-                residentFailure = "door_scene_not_loaded";
-            }
-        }
-
-        /// <summary>
-        /// The door takes the source interior's place: made active first,
-        /// so unloading the interior never leaves the dormant exterior as
-        /// the active scene; the overlay black over the frames in which
-        /// nothing renders; the presentation installed where the room
-        /// stood, into <see cref="residentPresentation"/>.
-        /// </summary>
-        private IEnumerator ReplaceSourceInteriorWithDoor(
-            Scene doorScene,
-            DoorTransitionDirection direction)
-        {
-            if (!SceneManager.SetActiveScene(doorScene))
-            {
-                residentFailure = "door_scene_not_active";
-                yield break;
-            }
-
-            blackout = TransitionBlackoutOverlay.Create();
-            yield return UnloadScene(
-                SceneManager.GetSceneByName(activeSourceScene));
-            residentPresentation =
-                InstallDoorPresentation(doorScene, direction);
-            if (residentPresentation == null)
-            {
-                residentFailure = "door_presentation_initialization_failed";
-            }
-        }
-
-        /// <summary>
-        /// Loads the interior beside the door while the door plays, makes
-        /// it the active scene once the door has ended black, unloads the
-        /// door and installs the interior's root by name - its build pumped
-        /// a frame at a time under the overlay when it registers one, as
-        /// the Single chain pumps it.
-        /// </summary>
-        private IEnumerator LoadInteriorBehindDoor(
-            string sceneName,
-            Scene doorScene,
-            DoorTransitionRoot presentation)
-        {
-            AsyncOperation targetOperation = TryStartAdditiveLoad(sceneName);
-            if (targetOperation == null)
-            {
-                residentFailure = "target_load_operation_unavailable";
-                yield break;
-            }
-
-            targetOperation.allowSceneActivation = false;
-            // The door draws its own black and must be seen opening; an
-            // overlay raised over the source's departure steps aside for it.
-            if (blackout != null)
-            {
-                blackout.enabled = false;
-            }
-
-            yield return PlayPresentationSafely(presentation);
-            while (targetOperation.progress < 0.9f)
-            {
-                yield return null;
-            }
-
-            // The door ends black and leaves before the interior installs;
-            // the overlay carries that black across the frames in between.
-            if (blackout == null)
-            {
-                blackout = TransitionBlackoutOverlay.Create();
-            }
-            else
-            {
-                blackout.enabled = true;
-            }
-
-            targetOperation.allowSceneActivation = true;
-            while (!targetOperation.isDone)
-            {
-                yield return null;
-            }
-
-            Scene targetScene = SceneManager.GetSceneByName(sceneName);
-            if (!targetScene.isLoaded ||
-                !SceneManager.SetActiveScene(targetScene))
-            {
-                residentFailure = "target_scene_not_active";
-                yield break;
-            }
-
-            yield return UnloadScene(doorScene);
-            doorComposition = new CompositionDriver(
-                "door",
-                sceneName,
+            yield return LocationResidency.Unload(doorScene);
+            yield return LocationResidency.Trim(sceneName);
+            doorComposition = new CompositionDriver("door", sceneName,
                 CompositionDriver.DoorFrameBudgetMilliseconds);
             acceptingComposition = true;
             bool installed;
             try
             {
-                installed = TryInstallScene(targetScene);
+                installed = TryEnterDestination(targetScene, destination);
             }
             finally
             {
@@ -807,96 +494,41 @@ namespace BarPromenade
 
             if (!installed)
             {
-                residentFailure = "target_install_failed";
+                yield return FallBackFromDoor(sceneName, "target_install_failed");
                 yield break;
             }
 
-            if (!doorComposition.HasComposition)
-            {
-                yield break;
-            }
-
-            while (doorComposition.AdvanceFrame())
-            {
-                yield return null;
-            }
-
+            while (doorComposition.AdvanceFrame()) yield return null;
             if (doorComposition.Failure != null)
             {
-                residentFailure = "destination_composition_failed";
+                FinishTransition("destination_composition_failed", false);
                 yield break;
             }
 
-            // The first draw of the finished interior under the black, so
-            // the player's first frame of it is not the slow one.
             yield return null;
+            FinishTransition("completed", true);
         }
 
-        /// <summary>
-        /// Ends a resident chain at the step named in
-        /// <see cref="residentFailure"/>: a door scene that cannot even be
-        /// asked for is the one terminal failure, as in the Single chain;
-        /// everything else falls back to the Single load of the requested
-        /// scene, which discards the dormant exterior. Never a stuck state.
-        /// </summary>
-        private IEnumerator FailResidentStep(string sceneName)
+        private IEnumerator FallBackFromDoor(string sceneName, string failure)
         {
-            string step = residentFailure;
-            residentFailure = null;
-            if (step == "door_load_operation_unavailable")
-            {
-                FinishTransition(step, false);
-                yield break;
-            }
-
-            ReportFallback(step);
+            ReportFallback(failure);
+            doorComposition?.Dispose();
+            doorComposition = null;
             yield return LoadFallback(sceneName);
         }
 
-        private static void ReportResidentChain(
-            ResidentDoorChain chain,
-            IResidentExteriorRoot exterior,
-            string refusal)
+        internal static bool TryEnterDestination(Scene scene, ResidentLocation resident)
         {
-            string kind;
-            switch (chain)
+            if (resident == null) return TryInstallScene(scene);
+            try
             {
-                case ResidentDoorChain.EnterInterior:
-                    kind = "enter_interior";
-                    break;
-                case ResidentDoorChain.BetweenInteriors:
-                    kind = "between_interiors";
-                    break;
-                case ResidentDoorChain.ReturnToExterior:
-                    kind = "return_to_exterior";
-                    break;
-                default:
-                    kind = "single";
-                    break;
+                LocationResidency.Enter(resident);
+                return true;
             }
-
-            GameLogField[] fields =
+            catch (Exception exception)
             {
-                GameLog.Field("operation_id", activeOperationId),
-                GameLog.Field("kind", kind),
-                GameLog.Field("from_scene", activeSourceScene),
-                GameLog.Field("target_scene", activeTargetScene),
-                GameLog.Field(
-                    "exterior",
-                    exterior != null ? exterior.SceneName : string.Empty),
-                GameLog.Field("reason", refusal ?? string.Empty)
-            };
-            // A door into another exterior's interior - the City chart
-            // opening the mother's house - is the Single chain by design;
-            // a dormant exterior the door does not lead back to is not.
-            if (refusal == null ||
-                refusal == "interior_belongs_to_other_exterior")
-            {
-                GameLog.Info("scene", "resident_chain", fields);
-            }
-            else
-            {
-                GameLog.Warning("scene", "resident_chain", fields);
+                Debug.LogException(exception);
+                return false;
             }
         }
 
@@ -968,29 +600,6 @@ namespace BarPromenade
             }
         }
 
-        private static IEnumerator UnloadScene(Scene scene)
-        {
-            if (!scene.IsValid() || !scene.isLoaded)
-            {
-                yield break;
-            }
-
-            AsyncOperation unload = null;
-            try
-            {
-                unload = SceneManager.UnloadSceneAsync(scene);
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
-            }
-
-            while (unload != null && !unload.isDone)
-            {
-                yield return null;
-            }
-        }
-
         private static IEnumerator PlayPresentationSafely(
             DoorTransitionRoot presentation)
         {
@@ -1042,7 +651,7 @@ namespace BarPromenade
         /// the load never cuts a fade-out short and never has to wait for
         /// one either.
         /// </summary>
-        internal static void RequestOutgoingMusicFade()
+        internal static void RequestOutgoingMusicFade(ResidentLocation source = null)
         {
             Scene activeScene = SceneManager.GetActiveScene();
             if (!activeScene.IsValid() || !activeScene.isLoaded)
@@ -1050,26 +659,18 @@ namespace BarPromenade
                 return;
             }
 
-            MonoBehaviour[] candidates =
-                FindObjectsByType<MonoBehaviour>(
-                    FindObjectsInactive.Include);
-            for (int index = 0; index < candidates.Length; index++)
+            var candidates = new List<MonoBehaviour>();
+            foreach (GameObject root in activeScene.GetRootGameObjects())
             {
-                MonoBehaviour candidate = candidates[index];
-                if (candidate == null ||
-                    !(candidate is IMusicMixSource music) ||
-                    candidate.gameObject.scene != activeScene)
+                candidates.Clear();
+                root.GetComponentsInChildren(true, candidates);
+                foreach (MonoBehaviour candidate in candidates)
                 {
-                    continue;
+                    if (candidate == null || !(candidate is IMusicMixSource music)) continue;
+                    if (!candidate.isActiveAndEnabled) music.CompleteSceneExitFadeImmediately();
+                    else if (source != null && music is SceneMusicPlayer theme) source.FadeTheme(theme);
+                    else music.BeginSceneExitFadeOut();
                 }
-
-                if (!candidate.isActiveAndEnabled)
-                {
-                    music.CompleteSceneExitFadeImmediately();
-                    continue;
-                }
-
-                music.BeginSceneExitFadeOut();
             }
         }
 
@@ -1226,7 +827,11 @@ namespace BarPromenade
             string readyScene = activeTargetScene;
             IsTransitioning = false;
             ClearActiveOperation();
-            if (succeeded) DestinationReady?.Invoke(readyScene);
+            if (succeeded)
+            {
+                LocationResidency.DestinationReady(readyScene);
+                DestinationReady?.Invoke(readyScene);
+            }
         }
 
         /// <summary>
@@ -1304,7 +909,6 @@ namespace BarPromenade
 
         private IEnumerator LoadFallback(string sceneName)
         {
-            yield return ResidentExteriorPolicy.DiscardDormantExterior();
             AsyncOperation operation = TryStartLoad(sceneName);
             if (operation == null)
             {

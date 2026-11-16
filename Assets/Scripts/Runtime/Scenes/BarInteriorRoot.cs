@@ -4,7 +4,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
-    public sealed class BarInteriorRoot : MonoBehaviour
+    public sealed class BarInteriorRoot : MonoBehaviour, IResidentArrival
     {
         private string activeBarId = string.Empty;
         private readonly List<BarCounterStation> allCounterStations = new List<BarCounterStation>(5);
@@ -67,6 +67,16 @@ namespace BarPromenade
         public InventoryController Inventory { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
+
+        void IResidentArrival.Resume()
+        {
+            GameAudioMixer.ApplyProfile(GameAudioProfile.Bar);
+            Camera camera = RuntimeSceneSetup.EnsureBarInterior();
+            LocationArrival.EnterInterior(Player, Layout.PlayerSpawn, camera, IntoxicationStatus,
+                IntoxicationStatus.GetComponent<IntoxicationHudView>());
+            ApplyBusinessHours();
+            BuildArrivalPresentation(camera, camera.GetComponent<PlayerCameraFollow>());
+        }
 
         private void Awake()
         {
@@ -532,7 +542,7 @@ namespace BarPromenade
             PlayerCameraFollow follow)
         {
             ArrivalPresentation =
-                gameObject.AddComponent<BarArrivalPresentation>();
+                GetComponent<BarArrivalPresentation>() ?? gameObject.AddComponent<BarArrivalPresentation>();
             ArrivalPresentation.Initialize(
                 camera,
                 follow,

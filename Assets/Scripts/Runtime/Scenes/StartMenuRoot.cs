@@ -107,25 +107,7 @@ namespace BarPromenade
         {
             // Give the launch card its first frame before issuing any work.
             yield return null;
-            bool warming = false;
-            while (!IsBusy)
-            {
-                if (isActiveAndEnabled && (Application.isBatchMode || GameCursor.ApplicationFocused) &&
-                    !model.IsVocalizerActive && !model.IsChoosingCombatWeapon && !model.IsChoosingLaboratoryEnemy &&
-                    !SceneTransitionService.IsTransitioning && !AreaTravelService.IsTraveling)
-                {
-                    if (!warming)
-                    {
-                        warming = true;
-                        AreaAssetWarmup.BeginFromMenu();
-                        CityLayoutCache.PrimeHomePlans(
-                            CityBlueprintCatalog.Resolve(GameSessionState.CityBlueprintId),
-                            CityGenerationSettings.Default, GameSessionState.CitySeed, "start_menu");
-                    }
-                    if (!AreaAssetWarmup.AdvanceFromMenu()) yield break;
-                }
-                yield return null;
-            }
+            AreaAssetWarmup.BeginFromMenu();
         }
 
         public bool MoveSelection(int delta)

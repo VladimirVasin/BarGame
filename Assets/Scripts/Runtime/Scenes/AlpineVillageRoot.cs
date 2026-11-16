@@ -204,82 +204,12 @@ namespace BarPromenade
             phaseTimer.Restart();
             MothersHouseEntrance = World.MothersHouseEntrance;
 
-            // The loading service arms this before destination activation, so
-            // consume it before any spawn decision or PlayerFactory call.
-            HadAreaArrival = AreaTravelService.TryConsumeArrival(
-                GameAreaId.AlpineVillage,
-                out AreaArrivalToken token,
-                out Vector3 arrivalPoint,
-                out bool hasArrivalPoint);
-            ArrivalToken = HadAreaArrival
-                ? token
-                : AreaArrivalToken.Default;
-            VillageArrival = GameSessionState.ConsumeAlpineVillageArrival();
-            bool startedAtSkiLodge = NewGameStartService.TryConsumeArrival(NewGameLocation.SkiLodge);
-
             var ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
             InteractionPrompt = ui.AddComponent<InteractionPromptView>();
             IntoxicationHud = ui.AddComponent<IntoxicationHudView>();
 
-            Vector3 spawnPosition = Plan.SpawnPosition +
-                                    Vector3.up *
-                                    PlayerFactory.GroundedRootOffset;
-            string spawnSource = "lane_foot";
-            bool arrivedAtChartedPlace = false;
-            PlayerDoorArrivalPose? exteriorDoorArrival = null;
-
-            if (HadAreaArrival && ArrivalToken == AreaArrivalToken.Cableway)
-            {
-                // He arrives in the cabin and the ride seats him, but he has
-                // to be built somewhere first - put him on the platform he is
-                // about to step onto, so a seat that fails leaves him beside
-                // the station rather than up the lane.
-                spawnPosition = Plan.Station.BoardingDockPosition +
-                                Vector3.up * PlayerFactory.GroundedRootOffset;
-                spawnSource = "cableway_platform";
-            }
-
-            if (HadAreaArrival &&
-                hasArrivalPoint &&
-                new CityMapAlpineVillageTeleportGround(World.WalkableArea)
-                    .TryClampArrival(
-                        arrivalPoint,
-                        out Vector3 pointSpawn))
-            {
-                // The map asked for a place, not for the area. A point it
-                // cannot hold falls back to the station rather than dropping
-                // the hero into the slope.
-                spawnPosition = pointSpawn;
-                spawnSource = "map_point";
-                arrivedAtChartedPlace = true;
-            }
-
-            bool arrivedFromMothersHouse =
-                !HadAreaArrival &&
-                VillageArrival ==
-                    AlpineVillageArrivalKind.MothersHouseDoor;
-            if (arrivedFromMothersHouse)
-            {
-                spawnPosition = MothersHouseEntrance.ReturnPosition;
-                exteriorDoorArrival =
-                    PlayerDoorArrivalPose.FromDestinationDoor(
-                        spawnPosition,
-                        MothersHouseEntrance.GetComponent<
-                            PlayerDoorActionTarget>());
-                spawnSource = "mothers_house_return";
-            }
-
-            if (startedAtSkiLodge)
-            {
-                // Resolve from this world's lodge after composition; keep the
-                // fresh start outside the moving doors and grounded on its approach.
-                Vector3 approach = Plan.Expansion.LodgeEntrance - Plan.Expansion.LodgeForward * 3f;
-                if (!new CityMapAlpineVillageTeleportGround(World.WalkableArea)
-                    .TryClampArrival(approach, out spawnPosition))
-                    throw new System.InvalidOperationException("The ski lodge start needs a clear approach.");
-                spawnSource = "new_game_ski_lodge";
-            }
+            var (spawnPosition, rotation, spawnSource) = ResolveArrival();
 
             GameLog.Info(
                 "alpine_village",
@@ -301,47 +231,7 @@ namespace BarPromenade
                 World.WalkableArea,
                 InteractionPrompt);
 
-            // Facing up the lane. The composition only works from the bottom
-            // looking up, and that is the first thing an arrival should see.
-            //
-            // EXCEPT off the cabin, where he is standing on a `1.37 m` strip
-            // with a `0.64 m` drop off both long sides. The lane bears
-            // `19.9°` off the flight's own axis here, so pointing him up it
-            // walks him off the side of his own staircase after two metres and
-            // `0.48 m` down onto the pad - which he then cannot climb back.
-            // From the cabin he is turned down the steps; the lane is what he
-            // sees the moment he is off them.
-            //
-            // And EXCEPT off the chart, where the lane is the wrong answer
-            // for the same kind of reason: the map names a place, he is put
-            // down on the route to it, and what he should be looking at is
-            // the place he asked for - not up a street that, at the head of
-            // the lane, points into the wall of the house at the top.
-            Vector3 facing = ArrivalToken == AreaArrivalToken.Cableway
-                ? -Plan.Station.Cableway.LineForward
-                : Plan.SpawnForward;
-            if (startedAtSkiLodge) facing = Plan.Expansion.LodgeForward;
-            if (arrivedAtChartedPlace)
-            {
-                Vector3 towards = arrivalPoint - spawnPosition;
-                towards.y = 0f;
-                if (towards.sqrMagnitude > 0.0001f)
-                {
-                    facing = towards.normalized;
-                }
-            }
-            if (exteriorDoorArrival.HasValue)
-            {
-                exteriorDoorArrival.Value.ApplyTo(
-                    Player.GameObject.transform);
-            }
-            else
-            {
-                Player.GameObject.transform.rotation =
-                    Quaternion.LookRotation(
-                        facing,
-                        Vector3.up);
-            }
+            Player.GameObject.transform.rotation = rotation;
 
             CameraFollow = areaCamera.GetComponent<PlayerCameraFollow>();
             if (CameraFollow == null)
@@ -404,10 +294,6 @@ namespace BarPromenade
             IsInitialized = true;
             BindColdExposure();
             GameLogPhases.Report("alpine_village", "ready", phaseTimer);
-            // The village's own plan is held already; this starts the road
-            // planner on the pool so the map's first open or idle warm
-            // joins finished work instead of running it in one frame.
-            CityLayoutCache.PrimeForeignAreaPlans(GameSessionState.CitySeed);
             yield return new CompositionStep("ready", 1f);
             Map.ScheduleIdleAreaWarm();
 
@@ -582,26 +468,10 @@ namespace BarPromenade
                 Weather.ApplyCurrentWeather(true);
             }
 
-            // The mothers_house_return branch of the build's spawn ladder,
-            // and the only one a dormant village can wake on: a door is
-            // never an area arrival.
-            VillageArrival = GameSessionState.ConsumeAlpineVillageArrival();
-            Vector3 spawnPosition = Player.GameObject.transform.position;
-            string spawnSource = "resumed_in_place";
-            if (VillageArrival == AlpineVillageArrivalKind.MothersHouseDoor)
-            {
-                PlayerDoorArrivalPose arrival =
-                    PlayerDoorArrivalPose.FromDestinationDoor(
-                        MothersHouseEntrance.ReturnPosition,
-                        MothersHouseEntrance.GetComponent<
-                            PlayerDoorActionTarget>());
-                Player.Motor.Teleport(arrival.RootPosition);
-                Player.GameObject.transform.rotation = arrival.Rotation;
-                spawnPosition = arrival.RootPosition;
-                spawnSource = "mothers_house_return";
-            }
+            var (spawnPosition, rotation, spawnSource) = ResolveArrival();
+            LocationArrival.PlacePlayer(Player, spawnPosition, rotation);
+            CablewayRide.ResumeAtTerminal(Plan.Station.Cableway, ArrivalToken == AreaArrivalToken.Cableway);
 
-            Player.Motor.SetInputEnabled(true);
             CameraFollow = areaCamera.GetComponent<PlayerCameraFollow>();
             if (CameraFollow == null)
             {
@@ -998,6 +868,118 @@ namespace BarPromenade
                 Time.deltaTime);
             ApplyCurrentAtmosphere();
             ApplyVisibility();
+        }
+
+        private (Vector3 Position, Quaternion Rotation, string Source) ResolveArrival()
+        {
+            // The loading service arms this before destination activation, so
+            // consume it before any spawn decision or PlayerFactory call.
+            HadAreaArrival = AreaTravelService.TryConsumeArrival(
+                GameAreaId.AlpineVillage,
+                out AreaArrivalToken token,
+                out Vector3 arrivalPoint,
+                out bool hasArrivalPoint);
+            ArrivalToken = HadAreaArrival
+                ? token
+                : AreaArrivalToken.Default;
+            VillageArrival = GameSessionState.ConsumeAlpineVillageArrival();
+            bool startedAtSkiLodge = NewGameStartService.TryConsumeArrival(NewGameLocation.SkiLodge);
+
+            Vector3 spawnPosition = Plan.SpawnPosition +
+                                    Vector3.up *
+                                    PlayerFactory.GroundedRootOffset;
+            string spawnSource = "lane_foot";
+            bool arrivedAtChartedPlace = false;
+            PlayerDoorArrivalPose? exteriorDoorArrival = null;
+
+            if (HadAreaArrival && ArrivalToken == AreaArrivalToken.Cableway)
+            {
+                // He arrives in the cabin and the ride seats him, but he has
+                // to be built somewhere first - put him on the platform he is
+                // about to step onto, so a seat that fails leaves him beside
+                // the station rather than up the lane.
+                spawnPosition = Plan.Station.BoardingDockPosition +
+                                Vector3.up * PlayerFactory.GroundedRootOffset;
+                spawnSource = "cableway_platform";
+            }
+
+            if (HadAreaArrival &&
+                hasArrivalPoint &&
+                new CityMapAlpineVillageTeleportGround(World.WalkableArea)
+                    .TryClampArrival(
+                        arrivalPoint,
+                        out Vector3 pointSpawn))
+            {
+                // The map asked for a place, not for the area. A point it
+                // cannot hold falls back to the station rather than dropping
+                // the hero into the slope.
+                spawnPosition = pointSpawn;
+                spawnSource = "map_point";
+                arrivedAtChartedPlace = true;
+            }
+
+            bool arrivedFromMothersHouse =
+                !HadAreaArrival &&
+                VillageArrival ==
+                    AlpineVillageArrivalKind.MothersHouseDoor;
+            if (arrivedFromMothersHouse)
+            {
+                spawnPosition = MothersHouseEntrance.ReturnPosition;
+                exteriorDoorArrival =
+                    PlayerDoorArrivalPose.FromDestinationDoor(
+                        spawnPosition,
+                        MothersHouseEntrance.GetComponent<
+                            PlayerDoorActionTarget>());
+                spawnSource = "mothers_house_return";
+            }
+
+            if (startedAtSkiLodge)
+            {
+                // Resolve from this world's lodge after composition; keep the
+                // fresh start outside the moving doors and grounded on its approach.
+                Vector3 approach = Plan.Expansion.LodgeEntrance - Plan.Expansion.LodgeForward * 3f;
+                if (!new CityMapAlpineVillageTeleportGround(World.WalkableArea)
+                    .TryClampArrival(approach, out spawnPosition))
+                    throw new System.InvalidOperationException("The ski lodge start needs a clear approach.");
+                spawnSource = "new_game_ski_lodge";
+            }
+
+            // Facing up the lane. The composition only works from the bottom
+            // looking up, and that is the first thing an arrival should see.
+            //
+            // EXCEPT off the cabin, where he is standing on a `1.37 m` strip
+            // with a `0.64 m` drop off both long sides. The lane bears
+            // `19.9°` off the flight's own axis here, so pointing him up it
+            // walks him off the side of his own staircase after two metres and
+            // `0.48 m` down onto the pad - which he then cannot climb back.
+            // From the cabin he is turned down the steps; the lane is what he
+            // sees the moment he is off them.
+            //
+            // And EXCEPT off the chart, where the lane is the wrong answer
+            // for the same kind of reason: the map names a place, he is put
+            // down on the route to it, and what he should be looking at is
+            // the place he asked for - not up a street that, at the head of
+            // the lane, points into the wall of the house at the top.
+            Vector3 facing = ArrivalToken == AreaArrivalToken.Cableway
+                ? -Plan.Station.Cableway.LineForward
+                : Plan.SpawnForward;
+            if (startedAtSkiLodge) facing = Plan.Expansion.LodgeForward;
+            if (arrivedAtChartedPlace)
+            {
+                Vector3 towards = arrivalPoint - spawnPosition;
+                towards.y = 0f;
+                if (towards.sqrMagnitude > 0.0001f)
+                {
+                    facing = towards.normalized;
+                }
+            }
+            if (exteriorDoorArrival.HasValue)
+            {
+                PlayerDoorArrivalPose arrival = exteriorDoorArrival.Value;
+                return (arrival.RootPosition, arrival.Rotation, spawnSource);
+            }
+
+            return (spawnPosition, Quaternion.LookRotation(facing, Vector3.up), spawnSource);
         }
 
         /// <summary>

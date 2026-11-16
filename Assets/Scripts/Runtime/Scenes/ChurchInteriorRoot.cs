@@ -3,7 +3,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
-    public sealed class ChurchInteriorRoot : MonoBehaviour
+    public sealed class ChurchInteriorRoot : MonoBehaviour, IResidentArrival
     {
         public bool IsInitialized { get; private set; }
         public ChurchInteriorLayoutPlan Layout { get; private set; }
@@ -38,6 +38,14 @@ namespace BarPromenade
         public InventoryController Inventory { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
+
+        void IResidentArrival.Resume()
+        {
+            GameAudioMixer.ApplyProfile(GameAudioProfile.Home);
+            LocationArrival.EnterInterior(Player, Layout.PlayerSpawn, RuntimeSceneSetup.EnsureChurchInterior(),
+                IntoxicationStatus, IntoxicationHud);
+            DayNight.RefreshImmediate();
+        }
 
         private void Awake()
         {

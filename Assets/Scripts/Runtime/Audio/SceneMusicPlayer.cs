@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace BarPromenade
 {
@@ -44,6 +45,8 @@ namespace BarPromenade
         private bool fadeInDeferred;
         private bool playbackRequested;
         private bool playbackSuppressed;
+        private Scene residentScene;
+        private Transform residentParent;
 
         /// <summary>
         /// True while a theme born suppressed has not loaded its clip yet.
@@ -165,6 +168,28 @@ namespace BarPromenade
         public bool RequestSceneExitFade()
         {
             return RequestSceneExitFade(MusicMix.FadeOutSeconds);
+        }
+
+        internal void RequestResidentExitFade()
+        {
+            residentScene = gameObject.scene;
+            residentParent = transform.parent;
+            RequestSceneExitFade();
+        }
+
+        internal void RestoreResidentCarrier()
+        {
+            if (!residentScene.isLoaded) return;
+            if (detachedForSceneExit) CompleteSceneExitFadeImmediately();
+            gameObject.SetActive(true);
+            residentScene = default;
+            residentParent = null;
+        }
+
+        internal void ResumeResidentPlayback()
+        {
+            CancelSceneExitFade();
+            if (playbackRequested && !playbackSuppressed) ResumeWithFadeIn();
         }
 
         public bool RequestSceneExitFade(float durationSeconds)
@@ -623,8 +648,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// A theme that left its scene has nothing to come back to once it
-        /// reaches zero, so it takes its carrier object with it.
+        /// Return a sleeping scene's carrier after the outgoing tail.
         /// </summary>
         private void ReleaseDetachedSceneExit()
         {
@@ -638,6 +662,14 @@ namespace BarPromenade
             if (audioSource != null)
             {
                 audioSource.Stop();
+            }
+
+            if (residentScene.isLoaded)
+            {
+                gameObject.SetActive(false);
+                SceneManager.MoveGameObjectToScene(gameObject, residentScene);
+                if (residentParent != null) transform.SetParent(residentParent, true);
+                return;
             }
 
             if (Application.isPlaying)

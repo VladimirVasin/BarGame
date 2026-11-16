@@ -89,28 +89,11 @@ namespace BarPromenade
                 pendingOperationId = SceneTransitionService.CurrentOperationId;
             }
 
-            PrepareLaunch(scene, "new_game_" + location.ToString().ToLowerInvariant());
             GameLog.Info("session", "new_game_location_selected",
                 GameLog.Field("location", location.ToString()),
                 GameLog.Field("scene", scene),
                 GameLog.Field("operation_id", SceneTransitionService.CurrentOperationId));
             return true;
-        }
-
-        private static void PrepareLaunch(string sceneName, string trigger)
-        {
-            AreaAssetWarmup.KeepForDestination(sceneName);
-            if (sceneName == SceneIds.HomeInterior) return;
-            if (sceneName != SceneIds.City &&
-                ResidentExteriorPolicy.GetExteriorOfInterior(sceneName) != SceneIds.City)
-            {
-                CityLayoutCache.DiscardPendingCityPlans();
-                return;
-            }
-
-            CityBlueprint blueprint = CityBlueprintCatalog.Resolve(GameSessionState.CityBlueprintId);
-            CityGenerationSettings settings = CityGenerationSettings.Default;
-            CityLayoutCache.PrimeCityPlans(blueprint, settings, GameSessionState.CitySeed, trigger);
         }
 
         private static void PrepareInteriorContext(NewGameLocation location, BuildingLot bar)

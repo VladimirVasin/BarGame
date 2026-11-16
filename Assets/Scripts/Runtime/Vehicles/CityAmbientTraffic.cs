@@ -78,13 +78,7 @@ namespace BarPromenade
             var traffic = root.AddComponent<CityAmbientTraffic>();
             traffic.city = city;
             traffic.hero = city.Player.GameObject.GetComponent<CharacterController>();
-            traffic.ferryman = ferryman;
-            if (ferryman != null)
-            {
-                var body = ferryman.GetComponent<BoxCollider>();
-                traffic.ferrymanBounds = new Bounds(body.center, body.size);
-                ferryman.SafetyHold = traffic.FerrymanHold;
-            }
+            traffic.BindFerryman(ferryman);
             var routes = new System.Collections.Generic.List<CityAmbientCarPlan>(city.BusPlans.Count);
             var paving = CityStreetSupportPlan.ForLayout(city.Layout);
             foreach (var route in city.BusPlans)
@@ -94,6 +88,16 @@ namespace BarPromenade
             for (int i = 0; i < traffic.vehicles.Length; i++) traffic.vehicles[i] = new Vehicle();
             city.Cannery?.Traffic?.BindAmbient(traffic);
             return traffic;
+        }
+
+        internal void BindFerryman(LastRouteCarDriver driver)
+        {
+            if (ferryman != null) ferryman.SafetyHold = null;
+            ferryman = driver;
+            if (ferryman == null) return;
+            var body = ferryman.GetComponent<BoxCollider>();
+            ferrymanBounds = new Bounds(body.center, body.size);
+            ferryman.SafetyHold = FerrymanHold;
         }
 
         // Composition yields between cars, including the default NPC allocation/import.

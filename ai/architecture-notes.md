@@ -2601,18 +2601,15 @@
 - **Current — Staged area composition (2026-09-06, extended 2026-09-14 and 2026-11-16):**
   City, Mountain Road, Alpine Village and Home register build iterators under
   cover. Standalone loads drain them. Door black uses 250 ms between stage
-  yields, the loading bar uses 8 ms. Single load unloads the source first.
-  After the first menu frame `CityLayoutCache` prepares the exterior context,
-  entrances, courts and perimeters shared by Home and City. Accepted City
-  starts except Home can extend the prime through beach/seabed samples.
-  Electrical plans read numeric snapshots of authored assets. Foreign planners
-  also use workers. A blueprint/settings/seed key has one owner until joined.
-  Covered builds yield while a prime finishes. A failed
-  prime falls back to the normal planners. Unrelated launches abandon the work.
-  `AreaAssetWarmup` queues hero, Home model library, pooled NPCs and bus one
-  at a time and releases area references after use or diversion.
-  The driver holds tempo, listener pause and `renderFrameInterval` 4 through
-  world construction. Water cubemaps wait for the whole world.
+  yields and the bar uses 8 ms. After the first menu frame the shared Home/City
+  plans start from authored inputs snapshotted on the main thread. During play,
+  direct exits receive background plans and models. City preparation can
+  continue across gameplay. `AreaAssetWarmup` requests one asset at a time and
+  releases references outside the active scope. A confirmed destination takes
+  precedence. The active layout key has one owner until joined. Covered builds
+  yield for a matching plan and use ordinary planning on failure. The driver
+  holds tempo, listener pause and `renderFrameInterval` 4 during construction.
+  Water cubemaps wait for the composed world.
 - **Current — Transition/resource ownership (2026-09-06):** Both transition
   services release held scene activation on disable/destruction. Ordinary
   transitions drive nested routines through one exception/cleanup boundary.
@@ -4844,15 +4841,13 @@
   starts from a grounded dock;terminal neutral reserves the guard for
   `source -> DoorTransition -> destination`. Deterministic1.6s/unscaled
   handle/door/camera in black void overlaps preload;activation waits fully black.
-  Missing presentation falls back to destination. Direction:only warm/cold light,
-  no gameplay state. Accepted 2026-09-12: an interior door keeps its
-  exterior (City, village) resident - root active; hierarchy, camera,
-  listener, clock, weather off; door and interior load additively, the
-  interior installed active once the door is gone; doors between its
-  interiors (stairwell, flat) keep it dormant; the door back resumes the
-  same root at that door's dock, lighting, clock, weather, intoxication and
-  theme re-synced. `ResidentExteriorPolicy` gates it; any other load is
-  Single and discards a dormant exterior.
+  Missing presentation falls back to the destination. Door direction sets the
+  warm/cold light. `LocationResidency` keeps composed direct destinations asleep
+  with their cameras, colliders and inputs off. The user decision of 2026-11-16
+  keeps City across every gameplay transition. A wake restores the authored
+  arrival and rebinds camera, atmosphere, audio and ride ownership. Dormant
+  scenes outside the scope unload. Main menu and checkpoint restores clear the
+  composed scenes at a Single boundary.
 - **Accepted by explicit user decision, 2026-09-04 — every exterior building
   exit leaves the door behind the hero:** Arrival orientation belongs to the
   destination door, not to `DoorTransitionDirection` and not to the source
@@ -5431,28 +5426,18 @@
   Crowns unwrap arc length/world height with per-tree phase. Bridge deck uses
   a single-box batch at metre pitch and a mesh collider like its abutments.
   Cafe cap/side vertices split for nonzero side UV extent and crisp roof edges.
-- **Accepted — Cross-area map travel is a hard Single-mode scene boundary:**
-  the ordinary map owns City and Mountain Road tabs, draws the hero only on the
-  current area's tab and asks for confirmation before an other-area transfer.
-  `AreaTravelService` first Single-loads build index `8`, `AreaLoading`, which
-  owns the unscaled loading presentation (the illustrated exception accepted
-  on `2026-09-06` replaces its former empty black screen); it then Single-loads
-  the destination and passes a one-shot arrival token. Thus the source world is
-  destroyed before the destination composes, and City/Mountain Road are never
-  resident or rendered together. `MountainRoadRoot` may regenerate the pure
-  seeded City layout and mountain-boundary plan for its City tab, but must not
-  invoke a City world builder or instantiate City GameObjects. Door transitions
-  retain their separate authored `DoorTransition` chain. The physical City
-  tunnel is an unavailable refusal boundary **on foot** and stays one; what
-  crosses it is the Ferryman's car, through `AreaArrivalToken.Ferryman` — the
-  first caller the token set has ever had beyond the map. The refusal needs no
-  new gate for that: `CityTunnelTravelController.CanEngage` already requires
-  `Motor.InputEnabled`, which a seated passenger does not have.
+- **Accepted — Cross-area map travel uses the shared area transition:**
+  the map draws the hero on the current area's tab and asks for confirmation
+  before a transfer. `AreaTravelService` opens build index `8`, `AreaLoading`,
+  with the directed illustration accepted on `2026-09-06`. It passes a one-shot
+  token to the installed or waking destination. Authored door routes use the
+  separate `DoorTransition` presentation. The City tunnel refuses on-foot travel.
+  The Ferryman's car passes via `AreaArrivalToken.Ferryman`; a seated passenger
+  cannot engage the tunnel's on-foot trigger.
 - **Accepted — a destination root's `Awake` is INSIDE the transition, not
-  after it:** `AreaTravelService` sets `allowSceneActivation`, the destination
-  wakes, and only after `destinationOperation.isDone` does `Complete` clear
-  the flag. Through that window `SceneTransitionService.IsTransitioning` is
-  still true, and `PlayerAnimatedInteractionController.Update` force-completes
+  after it:** `AreaTravelService` installs or wakes the destination under the
+  cover, then `Complete` clears the guard. Through that window
+  `SceneTransitionService.IsTransitioning` is true, and `PlayerAnimatedInteractionController.Update` force-completes
   every running interaction while it is. Anything an arrival wants to START —
   and a contextual interaction above all — must wait for it to clear rather
   than run in `Awake`. `LastRouteRideController.AwaitArrivalStart` is the

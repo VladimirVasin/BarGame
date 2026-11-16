@@ -7,12 +7,10 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 namespace BarPromenade
 {
     /// <summary>
-    /// Runtime composition root for the separately loaded mountain-road area.
-    /// It reconstructs only pure City map data for the inactive tab; no City
-    /// world GameObject is built or kept beside this scene.
+    /// Runtime composition and arrival for the mountain road.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class MountainRoadRoot : MonoBehaviour
+    public sealed class MountainRoadRoot : MonoBehaviour, IResidentArrival
     {
         public bool IsInitialized { get; private set; }
         public MountainRoadPlan Plan { get; private set; }
@@ -113,6 +111,86 @@ namespace BarPromenade
         /// </summary>
         public RavenRoostController RavenRoosts { get; private set; }
 
+        private Vector3 ResolveArrival(out string spawnSource)
+        {
+            // The loading service arms this before destination activation,
+            // so consume it before any spawn decision or PlayerFactory call.
+            HadAreaArrival = AreaTravelService.TryConsumeArrival(
+                GameAreaId.MountainRoad,
+                out AreaArrivalToken token,
+                out Vector3 arrivalPoint,
+                out bool hasArrivalPoint);
+            ArrivalToken = HadAreaArrival
+                ? token
+                : AreaArrivalToken.Default;
+
+            Vector3 spawnPosition = Plan.SpawnPosition +
+                                    Vector3.up *
+                                    PlayerFactory.GroundedRootOffset;
+            spawnSource = "tunnel";
+            if (HadAreaArrival && ArrivalToken == AreaArrivalToken.Cableway)
+            {
+                // A grounded preparation point while the arrival owns black.
+                // It restores the live passenger before revealing the approach.
+                spawnPosition = Plan.Terminal.Cableway.BoardingDockPosition +
+                                Vector3.up * PlayerFactory.GroundedRootOffset;
+                spawnSource = "cableway";
+            }
+            else if (HadAreaArrival &&
+                hasArrivalPoint &&
+                new CityMapMountainRoadTeleportGround(World.WalkableArea)
+                    .TryClampArrival(
+                        arrivalPoint,
+                        out Vector3 pointSpawn))
+            {
+                // The map asked for a place, not for the area. A point it
+                // cannot hold falls back to the tunnel rather than dropping
+                // the hero into rock.
+                spawnPosition = pointSpawn;
+                spawnSource = "map_point";
+            }
+
+            return spawnPosition;
+        }
+
+        void IResidentArrival.Resume()
+        {
+            GameAudioMixer.ApplyProfile(GameAudioProfile.City);
+            Camera camera = RuntimeSceneSetup.EnsureMountainRoad();
+            Vector3 spawn = ResolveArrival(out _);
+            LocationArrival.PlacePlayer(Player, spawn, Quaternion.LookRotation(Plan.SpawnForward, Vector3.up));
+            CameraFollow.Initialize(camera, Player.GameObject.transform, false);
+            IntoxicationStatus.Initialize(Player, CameraFollow, IntoxicationHud);
+            Atmosphere.ApplyCurrentTime(true);
+            Weather.ApplyCurrentWeather(true);
+            CablewayRide.ResumeAtTerminal(Plan.Terminal.Cableway, ArrivalToken == AreaArrivalToken.Cableway);
+            RestoreLastRoute(camera);
+            Map.ScheduleIdleAreaWarm();
+        }
+
+        private void RestoreLastRoute(Camera camera)
+        {
+            if (ArrivalToken != AreaArrivalToken.Ferryman &&
+                GameSessionState.FerrymanRide == LastRouteFerrymanRideStage.Arrived &&
+                LastRouteCar != null && (Ride == null || !Ride.IsRiding)) return;
+
+            LocationArrival.Retire(Ride != null ? Ride.gameObject : null);
+            LocationArrival.Retire(LastRouteFerryman != null ? LastRouteFerryman.transform.parent.gameObject : null);
+            LocationArrival.Retire(LastRouteCar != null ? LastRouteCar.transform.parent.gameObject : null);
+            if (FerrymanMenu != null)
+            {
+                FerrymanMenu.enabled = false;
+                Destroy(FerrymanMenu);
+            }
+
+            Ride = null;
+            LastRouteFerryman = null;
+            LastRouteCar = null;
+            FerrymanMenu = null;
+            BuildLastRoute(camera);
+            Lighting.RefreshVehicleSources();
+        }
+
         private void Awake()
         {
             Initialize();
@@ -156,48 +234,12 @@ namespace BarPromenade
             GameLogPhases.Report("mountain_road", "world_build", phaseTimer);
             phaseTimer.Restart();
 
-            // The loading service arms this before destination activation,
-            // so consume it before any spawn decision or PlayerFactory call.
-            HadAreaArrival = AreaTravelService.TryConsumeArrival(
-                GameAreaId.MountainRoad,
-                out AreaArrivalToken token,
-                out Vector3 arrivalPoint,
-                out bool hasArrivalPoint);
-            ArrivalToken = HadAreaArrival
-                ? token
-                : AreaArrivalToken.Default;
-
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
             InteractionPrompt = ui.AddComponent<InteractionPromptView>();
             IntoxicationHud = ui.AddComponent<IntoxicationHudView>();
 
-            Vector3 spawnPosition = Plan.SpawnPosition +
-                                    Vector3.up *
-                                    PlayerFactory.GroundedRootOffset;
-            string spawnSource = "tunnel";
-            if (HadAreaArrival && ArrivalToken == AreaArrivalToken.Cableway)
-            {
-                // A grounded preparation point while the arrival owns black.
-                // It restores the live passenger before revealing the approach.
-                spawnPosition = Plan.Terminal.Cableway.BoardingDockPosition +
-                                Vector3.up * PlayerFactory.GroundedRootOffset;
-                spawnSource = "cableway";
-            }
-            else if (HadAreaArrival &&
-                hasArrivalPoint &&
-                new CityMapMountainRoadTeleportGround(World.WalkableArea)
-                    .TryClampArrival(
-                        arrivalPoint,
-                        out Vector3 pointSpawn))
-            {
-                // The map asked for a place, not for the area. A point it
-                // cannot hold falls back to the tunnel rather than dropping
-                // the hero into rock.
-                spawnPosition = pointSpawn;
-                spawnSource = "map_point";
-            }
-
+            Vector3 spawnPosition = ResolveArrival(out string spawnSource);
             GameLog.Info(
                 "mountain_road",
                 "spawn_selected",
@@ -258,10 +300,6 @@ namespace BarPromenade
             Lighting.Initialize(this);
             IsInitialized = true;
             GameLogPhases.Report("mountain_road", "last_route", phaseTimer);
-            // The road's own plan is held already; this starts the village
-            // planner on the pool so the map's first open or idle warm
-            // joins finished work instead of running it in one frame.
-            CityLayoutCache.PrimeForeignAreaPlans(GameSessionState.CitySeed);
             yield return new CompositionStep("ready", 1f);
             Map.ScheduleIdleAreaWarm();
 

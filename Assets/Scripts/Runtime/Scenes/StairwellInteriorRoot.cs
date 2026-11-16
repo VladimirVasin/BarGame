@@ -3,7 +3,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
-    public sealed class StairwellInteriorRoot : MonoBehaviour
+    public sealed class StairwellInteriorRoot : MonoBehaviour, IResidentArrival
     {
         public bool IsInitialized { get; private set; }
         public StairwellArrivalKind Arrival { get; private set; }
@@ -84,6 +84,16 @@ namespace BarPromenade
         public InventoryController Inventory { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
+
+        void IResidentArrival.Resume()
+        {
+            GameAudioMixer.ApplyProfile(GameAudioProfile.Stairwell);
+            Arrival = GameSessionState.ConsumeStairwellArrival();
+            if (Layout.IsCorrupted) Arrival = StairwellArrivalKind.ApartmentDoor;
+            LocationArrival.EnterInterior(Player, Layout.GetSpawn(Arrival), RuntimeSceneSetup.EnsureStairwellInterior(),
+                IntoxicationStatus, IntoxicationHud);
+            FixedCamera.RefreshSelection(true);
+        }
 
         private void Awake()
         {

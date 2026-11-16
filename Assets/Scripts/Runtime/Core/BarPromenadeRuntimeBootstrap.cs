@@ -148,7 +148,11 @@ namespace BarPromenade
             {
                 EnsureCombatTestInstalled();
             }
-            if (!SceneTransitionService.IsTransitioning) SessionCheckpointService.DestinationReady(scene.name);
+            if (!SceneTransitionService.IsTransitioning)
+            {
+                SessionCheckpointService.DestinationReady(scene.name);
+                LocationResidency.DestinationReady(scene.name);
+            }
         }
 
         private static bool IsAllowListedScene(string sceneName)

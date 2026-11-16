@@ -8,15 +8,7 @@ using Object = UnityEngine.Object;
 
 namespace BarPromenade.Tests.PlayMode
 {
-    /// <summary>
-    /// An interior door no longer rebuilds the exterior on the way back:
-    /// the same root sleeps behind the interior - hierarchy, camera and
-    /// listener off, the scene still loaded - through any chain of its own
-    /// interiors, and wakes at the door's return dock with the interior
-    /// gone. Every visit is taken twice in one run, and every City visit is
-    /// followed by a bar visit, because a lease released on disable and
-    /// never re-acquired only shows on the second cycle.
-    /// </summary>
+    /// <summary>Playable-scene residency across shared doors and area travel.</summary>
     public sealed class ResidentCityRoundTripPlayModeTests
     {
         private const float DeadlineSeconds = 120f;
@@ -28,7 +20,8 @@ namespace BarPromenade.Tests.PlayMode
             SceneIds.StairwellInterior,
             SceneIds.HomeInterior,
             SceneIds.ChurchInterior,
-            SceneIds.MothersHouseInterior
+            SceneIds.MothersHouseInterior,
+            SceneIds.PawnshopInterior
         };
 
         [UnityTearDown]
@@ -38,7 +31,6 @@ namespace BarPromenade.Tests.PlayMode
             while ((SceneTransitionService.IsTransitioning || AreaTravelService.IsTraveling) &&
                    Time.realtimeSinceStartup < deadline) yield return null;
             Assert.That(SceneTransitionService.IsTransitioning || AreaTravelService.IsTraveling, Is.False);
-            ResidentExteriorPolicy.ResidentExteriorAcrossDoors = true;
             Scene blank = SceneManager.CreateScene("Resident Exterior Round Trip Cleanup");
             SceneManager.SetActiveScene(blank);
             for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
@@ -68,9 +60,15 @@ namespace BarPromenade.Tests.PlayMode
             yield return LoadCity(root => city = root);
             Camera cityCamera = city.Camera;
             Assert.That(city.World.Bars, Is.Not.Empty);
+            BarInteriorRoot resident = null;
             for (int cycle = 0; cycle < 2; cycle++)
             {
-                yield return VisitBar(city, cityCamera, $"bar cycle {cycle + 1}");
+                yield return VisitBar(city, cityCamera, $"bar cycle {cycle + 1}", bar =>
+                {
+                    if (resident != null) Assert.That(bar, Is.SameAs(resident));
+                    resident = bar;
+                });
+                Assert.That(resident.gameObject.activeInHierarchy, Is.False);
             }
         }
 
@@ -92,7 +90,8 @@ namespace BarPromenade.Tests.PlayMode
                 AssertSameCityAwake(city, cityCamera, label);
             }
 
-            yield return VisitBar(city, cityCamera, "bar after the supermarket");
+            yield return VisitBar(city, cityCamera, "bar after the supermarket", bar =>
+                Assert.That(SceneManager.GetSceneByName(SceneIds.SupermarketInterior).isLoaded, Is.False));
         }
 
         [UnityTest]
@@ -119,8 +118,7 @@ namespace BarPromenade.Tests.PlayMode
         /// <summary>
         /// The two-hop: the City sleeps through the stairwell, the flat and
         /// the stairwell again, and the same root wakes at the street door.
-        /// The stairwell is built twice with a different arrival each time,
-        /// which the intermediate door must not lose.
+        /// The same stairwell accepts distinct street and apartment arrivals.
         /// </summary>
         [UnityTest]
         public IEnumerator HomeVisits_KeepTheSameCityThroughTheStairwell_ThenTheBarAgain()
@@ -153,8 +151,8 @@ namespace BarPromenade.Tests.PlayMode
                 yield return WalkIntoInterior(city, cityCamera, SceneIds.HomeInterior, SceneIds.StairwellInterior,
                     DoorTransitionDirection.ExitApartment,
                     () => GameSessionState.PrepareStairwellArrival(StairwellArrivalKind.ApartmentDoor), label);
-                stairwell = Object.FindAnyObjectByType<StairwellInteriorRoot>();
-                Assert.That(stairwell != null && stairwell.IsInitialized, Is.True, $"{label}: no second stairwell root.");
+                Assert.That(Object.FindAnyObjectByType<StairwellInteriorRoot>(), Is.SameAs(stairwell));
+                Assert.That(stairwell.IsInitialized, Is.True);
                 Assert.That(stairwell.Arrival, Is.EqualTo(StairwellArrivalKind.ApartmentDoor),
                     $"{label}: the door between two interiors must carry the apartment-door arrival.");
 
@@ -237,9 +235,46 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator AreaTravel_KeepsCityAndReusesTheDirectRoad()
+        {
+            CityGameRoot city = null;
+            yield return LoadCity(root => city = root);
+            yield return TravelTo(GameAreaId.MountainRoad);
+            MountainRoadRoot road = Object.FindAnyObjectByType<MountainRoadRoot>();
+            Assert.That(road, Is.Not.Null);
+            Assert.That(city.IsDormant, Is.True);
+            yield return TravelTo(GameAreaId.AlpineVillage);
+            AlpineVillageRoot village = Object.FindAnyObjectByType<AlpineVillageRoot>();
+            Assert.That(village, Is.Not.Null);
+            Assert.That(road.gameObject.activeInHierarchy, Is.False);
+            Assert.That(city.gameObject.scene.isLoaded && city.IsDormant, Is.True);
+
+            yield return TravelTo(GameAreaId.MountainRoad, AreaArrivalToken.Cableway);
+            Assert.That(Object.FindAnyObjectByType<MountainRoadRoot>(), Is.SameAs(road));
+            Assert.That(road.ArrivalToken, Is.EqualTo(AreaArrivalToken.Cableway));
+            Assert.That(village.IsDormant, Is.True);
+
+            yield return TravelTo(GameAreaId.City);
+            Assert.That(Object.FindAnyObjectByType<CityGameRoot>(), Is.SameAs(city));
+            Assert.That(city.IsDormant, Is.False);
+            Assert.That(road.gameObject.activeInHierarchy, Is.False);
+            Assert.That(SceneManager.GetSceneByName(SceneIds.AlpineVillage).isLoaded, Is.False);
+        }
+
+        private static IEnumerator TravelTo(GameAreaId area, AreaArrivalToken token = AreaArrivalToken.MapTeleport)
+        {
+            Assert.That(AreaTravelService.Request(area, token));
+            float deadline = Time.realtimeSinceStartup + DeadlineSeconds;
+            while (AreaTravelService.IsTraveling && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.That(AreaTravelService.IsTraveling, Is.False);
+            string sceneName = AreaSceneCatalog.GetSceneName(area);
+            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo(sceneName));
+            AssertOneLiveListener(sceneName, sceneName);
+        }
+
         private static IEnumerator LoadCity(Action<CityGameRoot> capture)
         {
-            ResidentExteriorPolicy.ResidentExteriorAcrossDoors = true;
             GameSessionState.BeginNewGame();
             yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
             CityGameRoot city = null;
@@ -257,7 +292,8 @@ namespace BarPromenade.Tests.PlayMode
 
         /// <summary>One bar visit, with what the bar exit alone can prove:
         /// the theme handover and the pooled street coming back.</summary>
-        private static IEnumerator VisitBar(CityGameRoot city, Camera cityCamera, string label)
+        private static IEnumerator VisitBar(CityGameRoot city, Camera cityCamera, string label,
+            Action<BarInteriorRoot> onEnter = null)
         {
             BarEntrance entrance = city.World.Bars[0];
             yield return WalkIntoInterior(city, cityCamera, SceneIds.City, SceneIds.BarInterior,
@@ -265,6 +301,7 @@ namespace BarPromenade.Tests.PlayMode
                 () => GameSessionState.EnterBar(entrance.BarId, entrance.BarActivity, entrance.BarDistrict), label);
             BarInteriorRoot bar = Object.FindAnyObjectByType<BarInteriorRoot>();
             Assert.That(bar != null && bar.IsInitialized, Is.True, $"{label}: no bar root.");
+            onEnter?.Invoke(bar);
             yield return WalkBackToExterior(city, cityCamera, SceneIds.BarInterior,
                 DoorTransitionDirection.ExitBar, GameSessionState.PrepareCityReturn, entrance.ReturnPosition, label);
             AssertSameCityAwake(city, cityCamera, label);
@@ -293,8 +330,8 @@ namespace BarPromenade.Tests.PlayMode
                 $"{label}: {exterior.SceneName} must stay loaded behind {targetScene}.");
             if (fromScene != exterior.SceneName)
             {
-                Assert.That(SceneManager.GetSceneByName(fromScene).isLoaded, Is.False,
-                    $"{label}: {fromScene} must be unloaded on the way to {targetScene}.");
+                Assert.That(LocationResidency.IsResident(fromScene), Is.True,
+                    $"{label}: {fromScene} remains the direct exit from {targetScene}.");
             }
 
             Assert.That(SceneManager.GetSceneByName(SceneIds.DoorTransition).isLoaded, Is.False,
@@ -319,8 +356,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(exterior.IsDormant, Is.False, $"{label}: the exterior must be awake.");
             Assert.That(exterior.IsInitialized, Is.True);
             Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo(exterior.SceneName));
-            Assert.That(SceneManager.GetSceneByName(fromScene).isLoaded, Is.False,
-                $"{label}: {fromScene} must be unloaded on the way out.");
+            Assert.That(LocationResidency.IsResident(fromScene), Is.True,
+                $"{label}: {fromScene} remains a direct exit from the exterior.");
             Assert.That(SceneManager.GetSceneByName(SceneIds.DoorTransition).isLoaded, Is.False,
                 $"{label}: the door scene must be unloaded on the way out.");
             Assert.That(exteriorCamera.gameObject.activeInHierarchy, Is.True);

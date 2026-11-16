@@ -56,8 +56,8 @@ Mouse orbit: no button; RMB aims; Alt frees cursor/pauses mouse look/combat.
 `GameCursor`: leases; UI frees cursor; focus return drops delta.
 Impulses kept; local look/debug; no rebind UI.
 
-Area travel uses Single loading. City/Village doors retain one dormant exterior.
-The menu warms shared Home/City plans and assets. Overlay: 20% load/80% build.
+Menu warms Home/City. Gameplay keeps City and loaded direct exits asleep.
+Direct exits also get background preparation. Overlay: 20% load/80% build.
 Shared synchronous/staged builders yield between stages at 8 ms during travel.
 Time/input/audio pause until ready. Village terrain and surfaces share lazy
 heights keyed by plan/brook. Snow retains vertices and paths reuse edges.

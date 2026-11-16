@@ -206,6 +206,8 @@ namespace BarPromenade
 
         private void CacheSources()
         {
+            Array.Clear(practicals, 0, practicalCount);
+            practicalCount = 0;
             var list = new List<Emitter>(MaximumHalationSources);
             AddPractical(owner.Atmosphere.TunnelLamp, false, true);
             AddEmitter(list, owner.Atmosphere.TunnelLamp, null, .13f);
@@ -261,6 +263,8 @@ namespace BarPromenade
             if (list.Count > MaximumHalationSources) throw new InvalidOperationException("Road emitter budget exceeds 24.");
             emitters = list.ToArray();
         }
+
+        internal void RefreshVehicleSources() => CacheSources();
 
         private static void AddEmitter(List<Emitter> list, Light light, Renderer renderer, float radius, float standoff = 0f)
         {

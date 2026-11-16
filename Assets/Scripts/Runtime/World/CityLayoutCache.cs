@@ -548,7 +548,14 @@ namespace BarPromenade
         /// </summary>
         internal static void PrimeForeignAreaPlans(int seed)
         {
-            if (!MountainRoads.ContainsKey(seed) &&
+            PrimeForeignAreaPlan(GameAreaId.MountainRoad, seed);
+            PrimeForeignAreaPlan(GameAreaId.AlpineVillage, seed);
+        }
+
+        internal static void PrimeForeignAreaPlan(GameAreaId area, int seed)
+        {
+            if (area == GameAreaId.MountainRoad &&
+                !MountainRoads.ContainsKey(seed) &&
                 !PendingMountainRoads.ContainsKey(seed))
             {
                 PendingMountainRoads.Add(
@@ -556,12 +563,34 @@ namespace BarPromenade
                     Task.Run(() => CreateMountainRoad(seed)));
             }
 
-            if (!AlpineVillages.ContainsKey(seed) &&
+            if (area == GameAreaId.AlpineVillage &&
+                !AlpineVillages.ContainsKey(seed) &&
                 !PendingAlpineVillages.ContainsKey(seed))
             {
                 PendingAlpineVillages.Add(
                     seed,
                     Task.Run(() => CreateAlpineVillage(seed)));
+            }
+        }
+
+        internal static void RetainNeighborPlans(string sceneName)
+        {
+            if (sceneName != SceneIds.City && !LocationNeighbors.Keeps(sceneName, SceneIds.City))
+            {
+                AbandonCityPlans();
+                primedTerrain = null;
+            }
+
+            if (sceneName != SceneIds.MountainRoad && !LocationNeighbors.HasExitTo(sceneName, SceneIds.MountainRoad))
+            {
+                Abandon(PendingMountainRoads);
+                MountainRoads.Clear();
+            }
+
+            if (sceneName != SceneIds.AlpineVillage && !LocationNeighbors.HasExitTo(sceneName, SceneIds.AlpineVillage))
+            {
+                Abandon(PendingAlpineVillages);
+                AlpineVillages.Clear();
             }
         }
 

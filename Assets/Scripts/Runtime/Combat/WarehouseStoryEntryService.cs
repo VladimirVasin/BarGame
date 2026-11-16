@@ -9,6 +9,10 @@ namespace BarPromenade
         private static string pendingOperationId;
         private static int pendingSeed;
 
+        internal static bool IsAvailable => GameSessionState.HomeSleepAppearanceActive &&
+            GameSessionState.HasInventoryItem(InventoryItemId.CombatCrowbar) &&
+            Application.CanStreamedLevelBeLoaded(SceneIds.CombatTest);
+
         internal static CombatTestSelection Selection
         {
             get
@@ -25,9 +29,7 @@ namespace BarPromenade
         public static bool TryEnter(CombatActor sourceActor = null)
         {
             if (SceneManager.GetActiveScene().name != SceneIds.StairwellInterior ||
-                !GameSessionState.HomeSleepAppearanceActive || !GameSessionState.HasInventoryItem(InventoryItemId.CombatCrowbar) ||
-                SceneTransitionService.IsTransitioning ||
-                !Application.CanStreamedLevelBeLoaded(SceneIds.CombatTest)) return false;
+                !IsAvailable || SceneTransitionService.IsTransitioning) return false;
 
             ResetPending();
             GameSessionState.CaptureStoryPistolState(sourceActor);

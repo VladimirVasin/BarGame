@@ -468,56 +468,10 @@ namespace BarPromenade
                 out Vector3 areaArrivalPoint,
                 out bool hasAreaArrivalPoint);
             var arrivalGround = new CityMapCityTeleportGround(Layout);
-            if (hasAreaArrival && NewGameStartService.TryConsumeCityArrival(
-                    Layout, World, out NewGameLocation startingLocation,
-                    out Vector3 startingPosition, out Vector3 startingForward))
+            if (hasAreaArrival)
             {
-                spawnPosition = startingPosition;
-                arrivalForward = startingForward;
-                spawnSource = "new_game_" + startingLocation.ToString().ToLowerInvariant();
-            }
-            else if (hasAreaArrival &&
-                hasAreaArrivalPoint &&
-                // Resolve the height from the ground under the coordinate
-                // first: a chart point carries whatever Y suited the thing
-                // it names - a bar's road anchor sits at zero - and a spawn
-                // has to stand on the street, not in it. The plain clamp is
-                // the fallback for ground the surface sampler will not
-                // answer for, such as the seacoast decks over water cells.
-                (arrivalGround.TryResolveStandingPosition(
-                     new Vector2(areaArrivalPoint.x, areaArrivalPoint.z),
-                     out Vector3 pointSpawn) ||
-                 arrivalGround.TryClampArrival(
-                     areaArrivalPoint,
-                     out pointSpawn)))
-            {
-                spawnPosition = pointSpawn;
-                spawnSource = "area_map_point";
-            }
-            else if (hasAreaArrival)
-            {
-                if (World.FringeYardPlan.HasTunnelForecourt)
-                {
-                    CityTunnelForecourtDescriptor forecourt =
-                        World.FringeYardPlan.TunnelForecourt;
-                    spawnPosition = forecourt.StreetAnchor + Vector3.up *
-                        (CityStreetSurfacePlanner.RoadTop + PlayerFactory.GroundedRootOffset);
-                    arrivalForward = -forecourt.Axis;
-                    spawnSource = "area_" +
-                                  areaArrivalToken
-                                      .ToString()
-                                      .ToLowerInvariant();
-                }
-                else
-                {
-                    spawnSource = "missing_area_arrival_forecourt";
-                    GameLog.Warning(
-                        "city",
-                        "area_arrival_forecourt_missing",
-                        GameLog.Field(
-                            "arrival_token",
-                            areaArrivalToken.ToString()));
-                }
+                ResolveAreaSpawn(arrivalGround, areaArrivalToken, areaArrivalPoint, hasAreaArrivalPoint,
+                    out spawnPosition, out arrivalForward, out spawnSource);
             }
             else if (TryResolveDoorReturn(
                          out PlayerDoorArrivalPose doorArrival,
@@ -772,52 +726,9 @@ namespace BarPromenade
                 SeacoastFishermanPlan.Create(World.SeacoastPlan),
                 GameSessionState.CitySeed);
             GameLogPhases.Report("city", "cemetery_staff", stepTimer);
-            // The last route island kept its timetable and lost its buses.
-            // A car waits beside the paving instead, off the circle and
-            // clear of every way in - and absent altogether on a seed that
-            // leaves nowhere to park without blocking one.
-            //
-            // Unless he has already been taken up: the car and the man are a
-            // pure function of one stage on the session, and once that journey
-            // is made they stand on the terrace by the mountain cafe instead.
-            // Nothing is left behind on the island - he drove away in it.
-            //
-            // And unless he is on his way back down it, which is the same
-            // stage read one value further round: the car is then built inside
-            // the city's own south portal, still moving, with the hero in the
-            // passenger seat. Everything after that is the departure's
-            // arrangement mirrored, and it is armed below beside it.
-            bool arrivingByCar =
-                hasAreaArrival &&
-                areaArrivalToken == AreaArrivalToken.FerrymanReturn &&
-                GameSessionState.FerrymanRide ==
-                LastRouteFerrymanRideStage.Returning;
+            bool arrivingByCar = IsReturningByCar(hasAreaArrival, areaArrivalToken);
             stepTimer.Restart();
-            if (GameSessionState.FerrymanRide ==
-                LastRouteFerrymanRideStage.NotTaken)
-            {
-                LastRouteCar = LastRouteCarFactory.Create(
-                    transform,
-                    LastRouteCarPlan.Create(Layout),
-                    Player,
-                    camera);
-            }
-            else if (arrivingByCar &&
-                     hasTunnelTravel &&
-                     World.FringeYardPlan.HasTunnelForecourt)
-            {
-                LastRouteCityDrivePlanner.ResolveReturnEntryPose(
-                    World.FringeYardPlan.TunnelForecourt,
-                    tunnelTravelPlan.FloorSurfaceY,
-                    out Vector3 entryPosition,
-                    out Vector3 entryFacing);
-                LastRouteCar = LastRouteCarFactory.Create(
-                    transform,
-                    LastRouteCarPlan.At(entryPosition, entryFacing),
-                    Player,
-                    camera,
-                    LastRouteCarLamps.RideOnly);
-            }
+            BuildLastRouteCar(camera, arrivingByCar, hasTunnelTravel, tunnelTravelPlan);
             GameLogPhases.Report("city", "last_route_car", stepTimer);
             stepTimer.Restart();
             // The park kept a place for company and two men still keep
@@ -947,100 +858,7 @@ namespace BarPromenade
             // in its own bay, which is a pose it cannot pull out of. He talks,
             // and the offer comes back with the next city build, which raises
             // him from the layout in his own stance again.
-            if (LastRouteCar != null)
-            {
-                LastRouteFerryman = LastRouteFerrymanFactory.Create(
-                    transform,
-                    LastRouteFerrymanPlan.Create(LastRouteCar),
-                    LastRouteCar,
-                    arrivingByCar ? null : TargetInteraction,
-                    LastRouteFerrymanVoice.Island(GameSessionState.CitySeed));
-            }
-            // The passenger seat is his to offer, so it only opens once he
-            // has taken the driver's. It cannot be told at construction -
-            // the car is raised first because his whole stance is read off
-            // it - so the seat is attached afterwards, exactly as the
-            // watchman's gravedigging is above.
-            if (LastRouteCar != null && LastRouteFerryman != null)
-            {
-                // The seat is a sibling of the art under the car's runtime
-                // root, not a child of the registry, so the search starts a
-                // level up.
-                Transform carRoot = LastRouteCar.transform.parent != null
-                    ? LastRouteCar.transform.parent
-                    : LastRouteCar.transform;
-                LastRouteCarSeatInteraction carSeat = carRoot
-                    .GetComponentInChildren<LastRouteCarSeatInteraction>(true);
-                carSeat?.AttachFerryman(LastRouteFerryman);
-
-                // And the journey itself, which is armed here and does
-                // nothing at all until the hero actually sits down. The path
-                // is built lazily for the same reason: on most runs nobody
-                // ever answers this man, and walking the whole street graph
-                // to the south portal to find that out would be work done for
-                // nothing on every city build.
-                if (carSeat != null && hasTunnelTravel &&
-                    World.FringeYardPlan.HasTunnelForecourt)
-                {
-                    CityTunnelForecourtDescriptor forecourt =
-                        World.FringeYardPlan.TunnelForecourt;
-                    float tunnelFloorY = tunnelTravelPlan.FloorSurfaceY;
-
-                    // Homebound the road is laid from the ISLAND's own stance
-                    // rather than from where the car is standing, because what
-                    // that stance names here is the destination - see
-                    // LastRouteCityDrivePlanner.CreateReturn. Outbound it is
-                    // read off the car, which is the same thing on a car that
-                    // has not moved and the right thing on one that has.
-                    LastRouteCarPlan islandPlan =
-                        LastRouteCarPlan.Create(Layout);
-                    LastRouteCarPlan departurePlan =
-                        LastRouteCarPlan.At(
-                            carRoot.position,
-                            carRoot.forward);
-                    Ride = arrivingByCar
-                        ? LastRouteRideController.CreateForCityArrival(
-                            transform,
-                            carSeat,
-                            carRoot.GetComponent<LastRouteCarDriver>(),
-                            LastRouteFerryman,
-                            () => LastRouteCityDrivePlanner.CreateReturn(
-                                islandPlan,
-                                Layout,
-                                forecourt,
-                                tunnelFloorY),
-                            Bus,
-                            Pedestrians)
-                        : LastRouteRideController.CreateForCityDeparture(
-                            transform,
-                            carSeat,
-                            carRoot.GetComponent<LastRouteCarDriver>(),
-                            LastRouteFerryman,
-                            () => LastRouteCityDrivePlanner.CreateDeparture(
-                                departurePlan,
-                                Layout,
-                                forecourt,
-                                tunnelFloorY),
-                            // The traffic he turns across. Both directors are
-                            // already up by here - the bus and the walkers are
-                            // raised long before the man on the bonnet is.
-                            Bus,
-                            Pedestrians);
-                }
-
-                // The engine under the bonnet he is sitting on. It turns
-                // over the moment he takes the wheel and idles while the
-                // hero walks round to his door; the street is wet, and the
-                // tunnel closes round it at the end. Bound whether or not
-                // a ride was armed, because a man at the wheel of a car
-                // that cannot leave still started it.
-                carRoot.GetComponent<LastRouteCarAudio>()?.Bind(
-                    carSeat,
-                    LastRouteFerryman,
-                    Ride,
-                    () => TunnelShelter != null && TunnelShelter.IsSheltered,
-                    LastRouteCarRoadSurface.WetAsphalt);
-            }
+            BuildLastRouteRide(arrivingByCar, hasTunnelTravel, tunnelTravelPlan);
             var ferrymanDriver = LastRouteCar != null ? LastRouteCar.GetComponentInParent<LastRouteCarDriver>() : null;
             AmbientTraffic = CityAmbientTraffic.Create(this, ferrymanDriver);
             while (AmbientTraffic.BuildNext())
@@ -1386,12 +1204,7 @@ namespace BarPromenade
                 yield return new CompositionStep("ambient_pedestrians", 0.99f);
             GameSessionState.CompleteCityReturn();
             IsInitialized = true;
-            AreaAssetWarmup.ReleaseCity();
             GameLogPhases.Report("city", "player_and_ui", phaseTimer);
-            // Both foreign planners start on the pool now, so the first M
-            // press or the idle warm above joins finished work instead of
-            // paying the two of them in one frame (895 ms measured).
-            CityLayoutCache.PrimeForeignAreaPlans(citySeed);
             Stopwatch firstFrameTimer = Stopwatch.StartNew();
             yield return new CompositionStep("ready", 1f);
             GameLogPhases.Report("city", "first_frame", firstFrameTimer);
@@ -1680,18 +1493,23 @@ namespace BarPromenade
                 Weather.ApplyCurrentWeather(true);
             }
 
-            // The door-return branches of the build's spawn ladder - the
-            // only ones a dormant City can wake on; a door is never an
-            // area arrival.
             Vector3 spawnPosition = Player.GameObject.transform.position;
             string spawnSource = "resumed_in_place";
-            if (TryResolveDoorReturn(
-                    out PlayerDoorArrivalPose arrival,
-                    out string doorSource,
-                    out string returnBarId))
+            string returnBarId = string.Empty;
+            bool hasAreaArrival = AreaTravelService.TryConsumeArrival(GameAreaId.City, out AreaArrivalToken token,
+                out Vector3 point, out bool hasPoint);
+            if (hasAreaArrival)
             {
-                Player.Motor.Teleport(arrival.RootPosition);
-                Player.GameObject.transform.rotation = arrival.Rotation;
+                ResolveAreaSpawn(new CityMapCityTeleportGround(Layout), token, point, hasPoint,
+                    out spawnPosition, out Vector3 forward, out spawnSource);
+                forward.y = 0f;
+                Quaternion rotation = forward.sqrMagnitude > 0.001f
+                    ? Quaternion.LookRotation(forward, Vector3.up) : Quaternion.identity;
+                LocationArrival.PlacePlayer(Player, spawnPosition, rotation);
+            }
+            else if (TryResolveDoorReturn(out PlayerDoorArrivalPose arrival, out string doorSource, out returnBarId))
+            {
+                LocationArrival.PlacePlayer(Player, arrival.RootPosition, arrival.Rotation);
                 spawnPosition = arrival.RootPosition;
                 spawnSource = doorSource;
             }
@@ -1725,6 +1543,7 @@ namespace BarPromenade
                 IntoxicationStatus.Initialize(Player, follow, intoxicationHud);
             }
 
+            RestoreLastRoute(camera, IsReturningByCar(hasAreaArrival, token));
             foreach (var controller in VehiclePassengers) controller.WarmResidentWaiters();
             RestoreMusicAfterDormancy();
             if (Map != null)
@@ -1754,6 +1573,222 @@ namespace BarPromenade
                 GameLog.Field(
                     "minute_of_day",
                     GameSessionState.GameMinuteOfDay));
+        }
+
+        private void ResolveAreaSpawn(CityMapCityTeleportGround arrivalGround,
+            AreaArrivalToken areaArrivalToken, Vector3 areaArrivalPoint,
+            bool hasAreaArrivalPoint, out Vector3 spawnPosition, out Vector3 arrivalForward, out string spawnSource)
+        {
+            spawnPosition = Layout.StandingSpawnPosition;
+            arrivalForward = Vector3.zero;
+            if (NewGameStartService.TryConsumeCityArrival(
+                    Layout, World, out NewGameLocation startingLocation,
+                    out Vector3 startingPosition, out Vector3 startingForward))
+            {
+                spawnPosition = startingPosition;
+                arrivalForward = startingForward;
+                spawnSource = "new_game_" + startingLocation.ToString().ToLowerInvariant();
+            }
+            else if (hasAreaArrivalPoint &&
+                // Resolve the height from the ground under the coordinate
+                // first: a chart point carries whatever Y suited the thing
+                // it names - a bar's road anchor sits at zero - and a spawn
+                // has to stand on the street, not in it. The plain clamp is
+                // the fallback for ground the surface sampler will not
+                // answer for, such as the seacoast decks over water cells.
+                (arrivalGround.TryResolveStandingPosition(
+                     new Vector2(areaArrivalPoint.x, areaArrivalPoint.z),
+                     out Vector3 pointSpawn) ||
+                 arrivalGround.TryClampArrival(
+                     areaArrivalPoint,
+                     out pointSpawn)))
+            {
+                spawnPosition = pointSpawn;
+                spawnSource = "area_map_point";
+            }
+            else
+            {
+                if (World.FringeYardPlan.HasTunnelForecourt)
+                {
+                    CityTunnelForecourtDescriptor forecourt =
+                        World.FringeYardPlan.TunnelForecourt;
+                    spawnPosition = forecourt.StreetAnchor + Vector3.up *
+                        (CityStreetSurfacePlanner.RoadTop + PlayerFactory.GroundedRootOffset);
+                    arrivalForward = -forecourt.Axis;
+                    spawnSource = "area_" +
+                                  areaArrivalToken
+                                      .ToString()
+                                      .ToLowerInvariant();
+                }
+                else
+                {
+                    spawnSource = "missing_area_arrival_forecourt";
+                    GameLog.Warning(
+                        "city",
+                        "area_arrival_forecourt_missing",
+                        GameLog.Field(
+                            "arrival_token",
+                            areaArrivalToken.ToString()));
+                }
+            }
+        }
+
+        private bool carWasBuiltForReturn;
+
+        private static bool IsReturningByCar(bool hasAreaArrival, AreaArrivalToken token) =>
+            hasAreaArrival && token == AreaArrivalToken.FerrymanReturn &&
+            GameSessionState.FerrymanRide == LastRouteFerrymanRideStage.Returning;
+
+        private void BuildLastRouteCar(Camera camera, bool arrivingByCar,
+            bool hasTunnelTravel, CityTunnelTravelPlan tunnelTravelPlan)
+        {
+            carWasBuiltForReturn = arrivingByCar;
+            if (GameSessionState.FerrymanRide ==
+                LastRouteFerrymanRideStage.NotTaken)
+            {
+                LastRouteCar = LastRouteCarFactory.Create(
+                    transform,
+                    LastRouteCarPlan.Create(Layout),
+                    Player,
+                    camera);
+            }
+            else if (arrivingByCar &&
+                     hasTunnelTravel &&
+                     World.FringeYardPlan.HasTunnelForecourt)
+            {
+                LastRouteCityDrivePlanner.ResolveReturnEntryPose(
+                    World.FringeYardPlan.TunnelForecourt,
+                    tunnelTravelPlan.FloorSurfaceY,
+                    out Vector3 entryPosition,
+                    out Vector3 entryFacing);
+                LastRouteCar = LastRouteCarFactory.Create(
+                    transform,
+                    LastRouteCarPlan.At(entryPosition, entryFacing),
+                    Player,
+                    camera,
+                    LastRouteCarLamps.RideOnly);
+            }
+        }
+
+        private void BuildLastRouteRide(bool arrivingByCar,
+            bool hasTunnelTravel, CityTunnelTravelPlan tunnelTravelPlan)
+        {
+            if (LastRouteCar != null)
+            {
+                LastRouteFerryman = LastRouteFerrymanFactory.Create(
+                    transform,
+                    LastRouteFerrymanPlan.Create(LastRouteCar),
+                    LastRouteCar,
+                    arrivingByCar ? null : TargetInteraction,
+                    LastRouteFerrymanVoice.Island(GameSessionState.CitySeed));
+            }
+            // The passenger seat is his to offer, so it only opens once he
+            // has taken the driver's. It cannot be told at construction -
+            // the car is raised first because his whole stance is read off
+            // it - so the seat is attached afterwards, exactly as the
+            // watchman's gravedigging is above.
+            if (LastRouteCar != null && LastRouteFerryman != null)
+            {
+                // The seat is a sibling of the art under the car's runtime
+                // root, not a child of the registry, so the search starts a
+                // level up.
+                Transform carRoot = LastRouteCar.transform.parent != null
+                    ? LastRouteCar.transform.parent
+                    : LastRouteCar.transform;
+                LastRouteCarSeatInteraction carSeat = carRoot
+                    .GetComponentInChildren<LastRouteCarSeatInteraction>(true);
+                carSeat?.AttachFerryman(LastRouteFerryman);
+
+                // And the journey itself, which is armed here and does
+                // nothing at all until the hero actually sits down. The path
+                // is built lazily for the same reason: on most runs nobody
+                // ever answers this man, and walking the whole street graph
+                // to the south portal to find that out would be work done for
+                // nothing on every city build.
+                if (carSeat != null && hasTunnelTravel &&
+                    World.FringeYardPlan.HasTunnelForecourt)
+                {
+                    CityTunnelForecourtDescriptor forecourt =
+                        World.FringeYardPlan.TunnelForecourt;
+                    float tunnelFloorY = tunnelTravelPlan.FloorSurfaceY;
+
+                    // Homebound the road is laid from the ISLAND's own stance
+                    // rather than from where the car is standing, because what
+                    // that stance names here is the destination - see
+                    // LastRouteCityDrivePlanner.CreateReturn. Outbound it is
+                    // read off the car, which is the same thing on a car that
+                    // has not moved and the right thing on one that has.
+                    LastRouteCarPlan islandPlan =
+                        LastRouteCarPlan.Create(Layout);
+                    LastRouteCarPlan departurePlan =
+                        LastRouteCarPlan.At(
+                            carRoot.position,
+                            carRoot.forward);
+                    Ride = arrivingByCar
+                        ? LastRouteRideController.CreateForCityArrival(
+                            transform,
+                            carSeat,
+                            carRoot.GetComponent<LastRouteCarDriver>(),
+                            LastRouteFerryman,
+                            () => LastRouteCityDrivePlanner.CreateReturn(
+                                islandPlan,
+                                Layout,
+                                forecourt,
+                                tunnelFloorY),
+                            Bus,
+                            Pedestrians)
+                        : LastRouteRideController.CreateForCityDeparture(
+                            transform,
+                            carSeat,
+                            carRoot.GetComponent<LastRouteCarDriver>(),
+                            LastRouteFerryman,
+                            () => LastRouteCityDrivePlanner.CreateDeparture(
+                                departurePlan,
+                                Layout,
+                                forecourt,
+                                tunnelFloorY),
+                            // The traffic he turns across. Both directors are
+                            // already up by here - the bus and the walkers are
+                            // raised long before the man on the bonnet is.
+                            Bus,
+                            Pedestrians);
+                }
+
+                // The engine under the bonnet he is sitting on. It turns
+                // over the moment he takes the wheel and idles while the
+                // hero walks round to his door; the street is wet, and the
+                // tunnel closes round it at the end. Bound whether or not
+                // a ride was armed, because a man at the wheel of a car
+                // that cannot leave still started it.
+                carRoot.GetComponent<LastRouteCarAudio>()?.Bind(
+                    carSeat,
+                    LastRouteFerryman,
+                    Ride,
+                    () => TunnelShelter != null && TunnelShelter.IsSheltered,
+                    LastRouteCarRoadSurface.WetAsphalt);
+            }
+        }
+
+        private void RestoreLastRoute(Camera camera, bool arrivingByCar)
+        {
+            bool needsCar = arrivingByCar || GameSessionState.FerrymanRide == LastRouteFerrymanRideStage.NotTaken;
+            if (!arrivingByCar && needsCar == (LastRouteCar != null) && !carWasBuiltForReturn) return;
+
+            LocationArrival.Retire(Ride != null ? Ride.gameObject : null);
+            LocationArrival.Retire(LastRouteFerryman != null ? LastRouteFerryman.transform.parent.gameObject : null);
+            LocationArrival.Retire(LastRouteCar != null ? LastRouteCar.transform.parent.gameObject : null);
+            Ride = null;
+            LastRouteFerryman = null;
+            LastRouteCar = null;
+
+            bool hasTunnelTravel = CityTunnelTravelPlanner.TryCreate(World.MountainBoundaryPlan, out var tunnelPlan);
+            BuildLastRouteCar(camera, arrivingByCar, hasTunnelTravel, tunnelPlan);
+            BuildLastRouteRide(arrivingByCar, hasTunnelTravel, tunnelPlan);
+
+            LastRouteCarDriver driver = LastRouteCar != null ? LastRouteCar.GetComponentInParent<LastRouteCarDriver>() : null;
+            AmbientTraffic.BindFerryman(driver);
+            Pedestrians.ConfigureVehicleTraffic(Bus, Cannery, driver, AmbientTraffic);
+            Rain.Contacts?.BindFerryman(LastRouteCar != null ? LastRouteCar.transform : null);
         }
 
         /// <summary>

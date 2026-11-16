@@ -6,9 +6,8 @@ using UnityEngine.SceneManagement;
 namespace BarPromenade
 {
     /// <summary>
-    /// Owns a complete source -> loading screen -> area transition. Both
-    /// scene loads use Single mode, so City and MountainRoad are never
-    /// composed or rendered together.
+    /// Owns loading, composition and arrival for trips between areas.
+    /// Direct neighbors can stay composed with their entire scene asleep.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class AreaTravelService : MonoBehaviour
@@ -247,6 +246,7 @@ namespace BarPromenade
             compositionFrameCount = 0;
             Progress = 0f;
             IsTraveling = true;
+            AreaAssetWarmup.Prioritize(AreaSceneCatalog.GetSceneName(request.DestinationArea));
 
             GameLog.Info(
                 "scene",
@@ -265,12 +265,10 @@ namespace BarPromenade
             AreaTravelRequest request)
         {
             yield return null;
-            // Area travel is a Single-mode boundary: an exterior left
-            // dormant behind an interior door is not carried across it.
-            yield return ResidentExteriorPolicy.DiscardDormantExterior();
-
-            AsyncOperation loadingOperation = TryStartLoad(
-                SceneIds.AreaLoading);
+            string destinationScene = AreaSceneCatalog.GetSceneName(request.DestinationArea);
+            Scene outgoingScene = SceneManager.GetActiveScene();
+            ResidentLocation source = LocationResidency.CaptureSource(outgoingScene, destinationScene);
+            AsyncOperation loadingOperation = TryStartLoad(SceneIds.AreaLoading, mode: LoadSceneMode.Additive);
             if (loadingOperation == null)
             {
                 Fail("loading_operation_unavailable", null);
@@ -278,22 +276,19 @@ namespace BarPromenade
             }
 
             activeLoadOperation = loadingOperation;
-            SceneTransitionService.RequestOutgoingMusicFade();
-
-            while (!loadingOperation.isDone)
-            {
-                yield return null;
-            }
-
+            SceneTransitionService.RequestOutgoingMusicFade(source);
+            while (!loadingOperation.isDone) yield return null;
             activeLoadOperation = null;
 
-            if (!IsActiveScene(SceneIds.AreaLoading))
+            Scene loadingScene = SceneManager.GetSceneByName(SceneIds.AreaLoading);
+            if (!loadingScene.isLoaded || !SceneManager.SetActiveScene(loadingScene))
             {
-                yield return RecoverSourceThenFail(
-                    "loading_scene_not_active",
-                    null);
+                yield return RecoverSourceThenFail("loading_scene_not_active", null);
                 yield break;
             }
+
+            if (source != null) LocationResidency.Park(source);
+            else yield return LocationResidency.Unload(outgoingScene);
 
             AreaLoadingRoot loadingRoot = null;
             try
@@ -320,32 +315,24 @@ namespace BarPromenade
                 yield break;
             }
 
-            string destinationScene =
-                AreaSceneCatalog.GetSceneName(request.DestinationArea);
-            AsyncOperation destinationOperation =
-                TryStartLoad(destinationScene, false);
-            if (destinationOperation == null)
+            ResidentLocation destination = LocationResidency.Find(destinationScene);
+            AsyncOperation destinationOperation = null;
+            if (destination == null)
             {
-                yield return RecoverSourceThenFail(
-                    "destination_operation_unavailable",
-                    loadingRoot);
-                yield break;
-            }
-
-            activeLoadOperation = destinationOperation;
-            // Activation waits only for the held load itself. The
-            // illustration is kept on screen by the construction that
-            // follows, not by a minimum display time.
-            while (destinationOperation.progress < 0.9f)
-            {
-                Progress = EvaluateDisplayedProgress(
-                    destinationOperation.progress);
-                if (loadingRoot != null)
+                destinationOperation = TryStartLoad(destinationScene, false, LoadSceneMode.Additive);
+                if (destinationOperation == null)
                 {
-                    loadingRoot.SetProgress(Progress);
+                    yield return RecoverSourceThenFail("destination_operation_unavailable", loadingRoot);
+                    yield break;
                 }
 
-                yield return null;
+                activeLoadOperation = destinationOperation;
+                while (destinationOperation.progress < 0.9f)
+                {
+                    Progress = EvaluateDisplayedProgress(destinationOperation.progress);
+                    loadingRoot.SetProgress(Progress);
+                    yield return null;
+                }
             }
 
             Progress = SceneLoadProgressShare;
@@ -362,24 +349,35 @@ namespace BarPromenade
             composition = new CompositionDriver("area", destinationScene);
             yield return null;
 
-            // Arm the token before activation: destination Awake is allowed
-            // to consume it immediately.
+            // Arm the arrival for both a newly installed and a waking area.
             hasArrival = true;
             arrivalArea = request.DestinationArea;
             arrivalToken = request.ArrivalToken;
             arrivalPosition = request.ArrivalPosition;
             hasArrivalPosition = request.HasArrivalPosition;
-            destinationOperation.allowSceneActivation = true;
-            while (!destinationOperation.isDone)
+            if (destinationOperation != null)
             {
-                yield return null;
+                if (destinationScene == SceneIds.City) loadingRoot.Camera.gameObject.SetActive(false);
+                destinationOperation.allowSceneActivation = true;
+                while (!destinationOperation.isDone) yield return null;
+                activeLoadOperation = null;
             }
 
-            activeLoadOperation = null;
-            if (composition == null || !composition.HasComposition)
+            Scene targetScene = destination?.Scene ?? SceneManager.GetSceneByName(destinationScene);
+            if (!targetScene.isLoaded || !SceneManager.SetActiveScene(targetScene))
             {
-                yield return RecoverSourceThenFail(
-                    "destination_composition_missing", loadingRoot);
+                yield return RecoverSourceThenFail("destination_scene_not_active", loadingRoot);
+                ReleaseComposition();
+                yield break;
+            }
+
+            yield return LocationResidency.Unload(loadingScene);
+            yield return LocationResidency.Trim(destinationScene);
+            if (!SceneTransitionService.TryEnterDestination(targetScene, destination) ||
+                (destination == null && !composition.HasComposition))
+            {
+                hasArrival = false;
+                yield return RecoverSourceThenFail("destination_composition_missing", loadingRoot);
                 ReleaseComposition();
                 yield break;
             }
@@ -430,13 +428,13 @@ namespace BarPromenade
 
         private static AsyncOperation TryStartLoad(
             string sceneName,
-            bool allowActivation = true)
+            bool allowActivation = true, LoadSceneMode mode = LoadSceneMode.Single)
         {
             try
             {
                 AsyncOperation operation = SceneManager.LoadSceneAsync(
                     sceneName,
-                    LoadSceneMode.Single);
+                    mode);
                 if (operation != null)
                 {
                     operation.allowSceneActivation = allowActivation;
@@ -451,17 +449,6 @@ namespace BarPromenade
             }
         }
 
-        private static bool IsActiveScene(string sceneName)
-        {
-            Scene scene = SceneManager.GetActiveScene();
-            return scene.IsValid() &&
-                   scene.isLoaded &&
-                   string.Equals(
-                       scene.name,
-                       sceneName,
-                       StringComparison.Ordinal);
-        }
-
         private IEnumerator RecoverSourceThenFail(
             string reason,
             AreaLoadingRoot loadingRoot)
@@ -471,12 +458,8 @@ namespace BarPromenade
                 loadingRoot.SetFailed();
             }
 
-            // The source has already been unloaded at this point. Keep the
-            // global travel guard reserved and restore it through another
-            // Single load instead of stranding the player on a dead loading
-            // screen. Exact position persistence is intentionally left to a
-            // future arrival token; the ordinary source spawn is still a
-            // safe, playable fallback.
+            // A Single reload restores the ordinary source spawn and clears
+            // partial scene state before handing control back.
             yield return null;
             if (string.IsNullOrEmpty(sourceScene) ||
                 string.Equals(
@@ -510,7 +493,9 @@ namespace BarPromenade
             }
 
             activeLoadOperation = null;
+            string restoredScene = sourceScene;
             Fail($"{reason}_source_restored", null);
+            LocationResidency.DestinationReady(restoredScene);
         }
 
         private static void Complete(AreaTravelRequest request)
@@ -529,8 +514,10 @@ namespace BarPromenade
                 GameLog.Field(
                     "composition_frames",
                     compositionFrameCount));
-            SessionCheckpointService.DestinationReady(AreaSceneCatalog.GetSceneName(request.DestinationArea));
+            string sceneName = AreaSceneCatalog.GetSceneName(request.DestinationArea);
+            SessionCheckpointService.DestinationReady(sceneName);
             ClearPending();
+            LocationResidency.DestinationReady(sceneName);
         }
 
         private static void Fail(

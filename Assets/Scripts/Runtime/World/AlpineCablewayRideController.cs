@@ -101,7 +101,6 @@ namespace BarPromenade
                 parent,
                 cabinSeat,
                 cablewayLine);
-            ride.arrivalCablewayFactory = arrivalCableway;
 
             // The way back is armed from the start. He gets off, walks the
             // village, comes back and boards again - and that second boarding
@@ -119,10 +118,32 @@ namespace BarPromenade
             // real brink under it and closes again over the far turn, so the
             // ride can be flown.
             ride.destinationArea = returnArea;
-            ride.awaitingArrivalStart = true;
-            ride.fade.SetBlack();
-            ride.StartCoroutine(ride.AwaitArrivalStart());
+            ride.ArmArrival(arrivalCableway);
             return ride;
+        }
+
+        internal void ResumeAtTerminal(MountainRoadCablewayPlan plan, bool arrivingByCabin)
+        {
+            fading = false;
+            skipping = false;
+            if (arrivingByCabin)
+            {
+                ArmArrival(() => plan);
+            }
+            else
+            {
+                fade.SetClear();
+                departureLineLength = plan.LineLength;
+                departureFadeLeadMeters = EvaluateFadeLeadMeters(plan);
+            }
+        }
+
+        private void ArmArrival(Func<MountainRoadCablewayPlan> plan)
+        {
+            arrivalCablewayFactory = plan;
+            awaitingArrivalStart = true;
+            fade.SetBlack();
+            StartCoroutine(AwaitArrivalStart());
         }
 
         private static AlpineCablewayRideController Create(

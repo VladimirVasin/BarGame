@@ -6,8 +6,7 @@ namespace BarPromenade
     /// The black the journey passes through.
     ///
     /// The city tunnel goes dark and the mountain tunnel comes out of the
-    /// dark, and between the two is a `LoadSceneMode.Single` boundary that
-    /// destroys one world and builds another. Something has to cover it.
+    /// dark. The fade covers switching between the two areas.
     ///
     /// This is not the fade `ai/contextual-animation-standard.md` forbids.
     /// That rule is about hiding an endpoint MISMATCH between two clips -
@@ -65,6 +64,12 @@ namespace BarPromenade
         {
             opacity = 1f;
             target = 1f;
+        }
+
+        internal void SetClear()
+        {
+            opacity = 0f;
+            target = 0f;
         }
 
         public void FadeOut()

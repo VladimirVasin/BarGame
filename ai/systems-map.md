@@ -201,7 +201,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Map XYZ inspection | Map points, fair/post/docks/arch/church-door places included, expose world coordinates and validated teleport targets. | `CityMapTeleport{Lattice,Grounds}`, `CityMapPointDescriptor` | Current |
 | Map arrival ground | Area-owned ground; City lot/XYZ arrivals re-sample land Y and move occupied markers to a clear street. | `ICityMapTeleportGround`, `CityMap{City,MountainRoad}TeleportGround` | Current |
 | Scene transition | Guarded loads/cleanup; closed entrance leaves stay solid and door-action docks clear. | `PlayerDoorAction{Plan,Controller,Target}`, `ApartmentEntranceDoor`, `CityGameRoot` | Current |
-| Area loading | Directed art and 20% load/80% build bar. Menu warms shared City plans/assets. | `AreaTravelService`, `AreaLoadingRoot`, `CityLayoutCache`, `AreaAssetWarmup` | Current |
+| Area loading | 20% scene/80% build. Warm direct exits. Keep City for the session. | `AreaTravelService`, `AreaLoadingRoot`, `LocationResidency`, `AreaAssetWarmup` | Current |
 | Door transition presentation | Deterministic1.6s/unscaled door shot:black void,warm entry/cold exit. | `DoorTransition{Root,Timeline,Direction}`, `RuntimeSceneSetup` | Current |
 | Session state / checkpoint | Latest scene-entry RAM snapshot; pause restores progress/world. New Game/exit clears; no disk save. | `GameSessionState`, `SessionCheckpointService`, `CheckpointWorldState` | Current |
 | Bar drink service | Menu/repeat/receipt;beer/wine three portions,full wine;guest FIFO/look/nod. | `BarDrink*`, `BarRepeatGesture`, `BarBartenderServiceQueue` | Current |

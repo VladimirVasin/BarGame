@@ -6,7 +6,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
-    public sealed class HomeInteriorRoot : MonoBehaviour
+    public sealed class HomeInteriorRoot : MonoBehaviour, IResidentArrival
     {
         public bool IsInitialized { get; private set; }
         public HomeInteriorLayoutPlan Layout { get; private set; }
@@ -164,6 +164,16 @@ namespace BarPromenade
         public LockedDoorInteraction LockedRoomDoor { get; private set; }
         public CityBenchSitInteraction DiningSeat { get; private set; }
         public NarrativeInteraction Painting { get; private set; }
+
+        void IResidentArrival.Resume()
+        {
+            GameAudioMixer.ApplyProfile(GameAudioProfile.Home);
+            Arrival = GameSessionState.ConsumeHomeArrival();
+            LocationArrival.EnterInterior(Player, Layout.PlayerSpawn, RuntimeSceneSetup.EnsureHomeInterior(),
+                IntoxicationStatus, IntoxicationHud);
+            DayNight.RefreshImmediate();
+            FixedCamera.RestoreGameplayCamera();
+        }
 
         private void Awake()
         {
@@ -474,7 +484,6 @@ namespace BarPromenade
             GameLogPhases.Report("home", "ui_controllers", phaseTimer);
 
             IsInitialized = true;
-            AreaAssetWarmup.ReleaseHome();
             yield return new CompositionStep("ready", 1f);
             timer.Stop();
             GameLog.Info(

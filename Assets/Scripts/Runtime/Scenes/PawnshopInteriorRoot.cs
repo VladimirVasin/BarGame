@@ -7,7 +7,7 @@ using UnityEngine.Rendering.Universal;
 namespace BarPromenade
 {
     /// <summary>One small room, one ordinary clerk and a transaction-free service prototype.</summary>
-    public sealed class PawnshopInteriorRoot : MonoBehaviour
+    public sealed class PawnshopInteriorRoot : MonoBehaviour, IResidentArrival
     {
         private readonly List<Light> lights = new List<Light>(3);
         private readonly List<Renderer> lightDiffusers = new List<Renderer>(3);
@@ -41,6 +41,13 @@ namespace BarPromenade
         public PawnshopLightingPresentation LightingPresentation { get; private set; }
         public IReadOnlyList<Light> Lights => lights;
         public IReadOnlyList<Renderer> LightDiffusers => lightDiffusers;
+
+        void IResidentArrival.Resume()
+        {
+            GameAudioMixer.ApplyProfile(GameAudioProfile.Home);
+            LocationArrival.EnterInterior(Player, Layout.PlayerSpawn, RuntimeSceneSetup.EnsurePawnshopInterior(),
+                IntoxicationHud.GetComponent<IntoxicationStatusController>(), IntoxicationHud);
+        }
 
         private void Awake()
         {
