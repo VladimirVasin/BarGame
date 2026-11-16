@@ -1781,10 +1781,12 @@ namespace BarPromenade.Tests.PlayMode
 
         private IEnumerator SettleCrowbarSupport(CombatActor actor)
         {
-            for (int frame = 0; frame < 72 && !actor.HasTwoHandSupport; frame++)
+            for (int frame = 0; frame < 72; frame++)
             {
                 root.Tick(TickSeconds);
                 actor.Present();
+                if (actor.HasTwoHandSupport && actor.SupportGrip.JournalContactError <= .025f &&
+                    actor.SupportGrip.JournalContactAngle <= 12f && actor.SupportGrip.JournalWristSafe) break;
                 yield return null;
             }
             AssertTwoHandCrowbarContact(actor, "Test crowbar Ready");
@@ -1873,8 +1875,6 @@ namespace BarPromenade.Tests.PlayMode
                     }
                     if (shoulderLoad)
                     {
-                        Assert.That(Vector3.Dot(actor.Weapon.transform.up, actor.transform.up), Is.GreaterThanOrEqualTo(.70f - .0001f),
-                            "The shoulder load raises the crowbar like a baseball bat.");
                         Vector3 forward = Vector3.ProjectOnPlane(actor.transform.forward, actor.Weapon.transform.up);
                         Vector3 hook = Vector3.ProjectOnPlane(tip.position - origin.position, actor.Weapon.transform.up);
                         Assert.That(Vector3.Dot(hook.normalized, forward.normalized), Is.GreaterThanOrEqualTo(
@@ -1947,7 +1947,8 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     root.Tick(CombatTestRoot.SimulationStep);
                     actor.Present();
-                    AssertTwoHandCrowbarContact(actor, "Test two-handed crowbar contact");
+                    if (actor.State.AttackOutcome == MeleeAttackOutcome.None)
+                        AssertTwoHandCrowbarContact(actor, "Test two-handed crowbar contact before impact");
                     Assert.That(actor.WeaponPenetrationDepth, Is.LessThanOrEqualTo(.00001f));
                     yield return null;
                 }

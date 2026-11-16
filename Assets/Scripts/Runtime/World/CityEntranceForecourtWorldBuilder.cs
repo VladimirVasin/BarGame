@@ -12,7 +12,7 @@ namespace BarPromenade
         {
             var mesh=new SurfaceMesh(home);
             AddForecourt(mesh, plan);
-            return mesh.Finish(name,parent,home==null,31);
+            return mesh.Finish(name,parent,home==null,CityBuildingEntrancePlan.PavingPriority);
         }
 
         internal static GameObject Build(string name, Transform parent, IReadOnlyList<CityEntranceForecourtPlan> plans,
@@ -20,7 +20,7 @@ namespace BarPromenade
         {
             var mesh = new SurfaceMesh(home);
             foreach (CityEntranceForecourtPlan plan in plans) AddForecourt(mesh, plan);
-            return mesh.Finish(name, parent, home == null, 31);
+            return mesh.Finish(name, parent, home == null, CityBuildingEntrancePlan.PavingPriority);
         }
 
         private static void AddForecourt(SurfaceMesh mesh, CityEntranceForecourtPlan plan)

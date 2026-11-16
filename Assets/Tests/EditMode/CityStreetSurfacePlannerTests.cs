@@ -287,6 +287,7 @@ namespace BarPromenade.Tests.EditMode
                 {
                     Vector3 a = entry.Points[leg - 1], b = entry.Points[leg];
                     int steps = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(a, b) / .25f));
+                    float previousTop = 0f;
                     for (int step = 0; step <= steps; step++)
                     {
                         Vector3 point = Vector3.Lerp(a, b, step / (float)steps);
@@ -294,6 +295,10 @@ namespace BarPromenade.Tests.EditMode
                             $"Residential {entry.Lot.Cell}, leg {leg} must retain continuous triangulated support.");
                         Assert.That(float.IsNaN(top) || float.IsInfinity(top), Is.False,
                             "The route follows the shared ground grade between its fixed endpoints.");
+                        if (step > 0)
+                            Assert.That(Mathf.Abs(top - previousTop), Is.LessThanOrEqualTo(.12f),
+                                $"Residential {entry.Lot.Cell}, leg {leg} changes support abruptly at {point:F4}.");
+                        previousTop = top;
                     }
                     if (leg == 1) continue;
                     CityEntranceForecourtPlan before = entry.Paving[leg - 2], after = entry.Paving[leg - 1];
@@ -304,9 +309,12 @@ namespace BarPromenade.Tests.EditMode
             }
             foreach (CityStreetSupportPatch patch in residential.SurfacePatches)
                 foreach (Vector3 vertex in patch.TopVertices)
-                    if (residential.TrySampleTop(new Vector2(vertex.x, vertex.z), out float ownerTop))
-                        Assert.That(ownerTop, Is.EqualTo(vertex.y).Within(.025f),
-                            $"Intersecting entry routes at {vertex:F4} must agree on the shared ground grade, regardless of source ownership.");
+                {
+                    var position = new Vector2(vertex.x, vertex.z);
+                    if (CityStreetSurfacePlanner.TrySamplePublicSidewalkTop(layout, position, out float publicTop))
+                        Assert.That(vertex.y, Is.EqualTo(publicTop).Within(.002f),
+                            $"An entrance vertex on the public pavement at {vertex:F4} keeps the pavement's grade.");
+                }
 
             foreach (Vector2Int node in CityBusIntersectionSelector.Select(layout))
             {

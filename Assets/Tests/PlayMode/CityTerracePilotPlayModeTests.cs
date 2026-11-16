@@ -19,6 +19,7 @@ namespace BarPromenade.Tests.PlayMode
         private readonly List<GameObject> hiddenRoots = new List<GameObject>();
         private readonly Dictionary<Collider, bool> ambientCollisionStates = new Dictionary<Collider, bool>();
         private CharacterController isolatedHeroCapsule;
+        private CityBusActor[] isolatedCityBuses;
         private GameSessionState.CheckpointSnapshot previousSession;
         private CheckpointWorldState previousWorld;
         private float previousCaptureDelta, previousTimeScale;
@@ -67,6 +68,7 @@ namespace BarPromenade.Tests.PlayMode
                     if (pair.Key != null) Physics.IgnoreCollision(isolatedHeroCapsule, pair.Key, pair.Value);
             ambientCollisionStates.Clear();
             isolatedHeroCapsule = null;
+            isolatedCityBuses = null;
             if (root != null) Object.Destroy(root.gameObject);
             // Live City owners use scene-unload lifecycle guards. Unloading
             // below must own their destruction, rather than an earlier root
@@ -352,13 +354,23 @@ namespace BarPromenade.Tests.PlayMode
                 if (actor == null || !actor.isActiveAndEnabled ||
                     (actor.transform.position - heroPosition).sqrMagnitude > 16f) continue;
                 Collider body = actor.CharacterController;
-                if (body == null || !body.enabled) continue;
-                if (!ambientCollisionStates.ContainsKey(body))
-                    ambientCollisionStates.Add(body, Physics.GetIgnoreCollision(isolatedHeroCapsule, body));
-                // Pooled bodies can be enabled later. Refresh the scoped pair
-                // immediately before the fixture moves, without stopping NPCs.
-                if (!Physics.GetIgnoreCollision(isolatedHeroCapsule, body))
-                    Physics.IgnoreCollision(isolatedHeroCapsule, body, true);
+                if (body != null && body.enabled) IgnoreBody(body);
+            }
+            if (isolatedCityBuses == null) return;
+            foreach (CityBusActor actor in isolatedCityBuses)
+            {
+                if (actor == null || !actor.isActiveAndEnabled) continue;
+                Collider body = actor.BodyCollider;
+                if (body != null && body.enabled && body.bounds.SqrDistance(heroPosition) <= 16f)
+                    IgnoreBody(body);
+            }
+
+            void IgnoreBody(Collider body)
+            {
+                bool ignored = Physics.GetIgnoreCollision(isolatedHeroCapsule, body);
+                if (!ambientCollisionStates.ContainsKey(body)) ambientCollisionStates.Add(body, ignored);
+                // Streaming can re-enable a body. Refresh just this collision pair.
+                if (!ignored) Physics.IgnoreCollision(isolatedHeroCapsule, body, true);
             }
         }
 

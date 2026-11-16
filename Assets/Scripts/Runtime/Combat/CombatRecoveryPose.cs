@@ -519,7 +519,8 @@ namespace BarPromenade
                     travel.magnitude, out RaycastHit[] hits);
                 Collider nearest = null; float distance = float.PositiveInfinity;
                 for (int i = 0; i < count; i++)
-                    if (hits[i].collider != null && !OwnsCollider(hits[i].collider) && hits[i].distance < distance)
+                    if (hits[i].collider != null && !OwnsCollider(hits[i].collider) &&
+                        !CombatCorpseTraversal.IsCorpse(hits[i].collider) && hits[i].distance < distance)
                     { nearest = hits[i].collider; distance = hits[i].distance; }
                 if (nearest != null) return RejectClearance("path_obstacle", nearest);
             }
@@ -538,7 +539,7 @@ namespace BarPromenade
             int count = OverlapComplete(centre + Vector3.up * half, centre - Vector3.up * half, radius,
                 out Collider[] hits);
             for (int i = 0; i < count; i++)
-                if (hits[i] != null && !OwnsCollider(hits[i]))
+                if (hits[i] != null && !OwnsCollider(hits[i]) && !CombatCorpseTraversal.IsCorpse(hits[i]))
                     return RejectClearance("capsule_overlap", hits[i]);
             return true;
         }
@@ -583,7 +584,8 @@ namespace BarPromenade
             for (int i = 0; i < count; i++)
             {
                 RaycastHit hit = hits[i];
-                if (hit.collider == null || OwnsCollider(hit.collider) ||
+                if (hit.collider == null || OwnsCollider(hit.collider) || CombatCorpseTraversal.IsCorpse(hit.collider) ||
+                    (hit.rigidbody != null && !hit.rigidbody.isKinematic) ||
                     hit.collider.GetComponentInParent<CombatActor>() != null || hit.normal.y < .65f || hit.distance >= closest) continue;
                 closest = hit.distance; contact = hit.point; normal = hit.normal; floorSurface = hit.collider;
             }

@@ -414,6 +414,12 @@ namespace BarPromenade
                     if (first.RearBuilding != null) bodies.AddRange(first.RearBuilding.CreateCollisionPolygons());
                     bodies.AddRange(second.Primary.CreateCollisionPolygons());
                     if (second.RearBuilding != null) bodies.AddRange(second.RearBuilding.CreateCollisionPolygons());
+                    // The short doorway apron can sit above courtyard soil. The
+                    // shortcut needs its own continuous corridor outside it.
+                    CityBuildingEntrancePlan.AppendThresholdGradeFootprint(layout, first.Primary, bodies);
+                    CityBuildingEntrancePlan.AppendThresholdGradeFootprint(layout, first.RearBuilding, bodies);
+                    CityBuildingEntrancePlan.AppendThresholdGradeFootprint(layout, second.Primary, bodies);
+                    CityBuildingEntrancePlan.AppendThresholdGradeFootprint(layout, second.RearBuilding, bodies);
                     if (!TryRouteAroundMasses(new List<Vector2> {
                         XZ(first.CourtCenter), XZ(second.CourtCenter) }, ground, bodies,
                         out List<Vector2> route, false, layout)) continue;

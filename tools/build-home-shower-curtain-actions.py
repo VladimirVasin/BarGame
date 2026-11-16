@@ -112,6 +112,17 @@ class CurtainBuilder(hero.HeroV2Builder):
             math.degrees(v) for v in start[b.name].slerp(b.rotation_quaternion, t).to_euler("XYZ")))
             for b in self.result.rig.pose.bones}
 
+    def clear_sleeve(self, pose, side, blend):
+        # Keep the sleeve outside the jacket as the hand moves between
+        # the neutral hold and the low end of the curtain.
+        self._reset_pose()
+        self._apply_pose(pose)
+        arm = self.result.rig.pose.bones[f"upper_arm.{side}"]
+        direction = arm.tail - arm.head
+        side_sign = 1. if side == "L" else -1.
+        direction.x += side_sign * direction.length * .28 * math.sin(math.pi * blend)
+        pose[arm.name] = common.BonePose(armature_direction=tuple(direction))
+
     def build_actions(self):
         relaxed = self.relaxed_pose()
         self.samples = {}
@@ -125,9 +136,15 @@ class CurtainBuilder(hero.HeroV2Builder):
                 opening = 1. - pull_progress(t) if inside else pull_progress(t)
                 contact = self.contact_pose(inside, opening)
                 if t < REACH_END:
-                    pose = self.blend_pose(relaxed, contact, smooth(t / REACH_END))
+                    reach = smooth(t / REACH_END)
+                    pose = self.blend_pose(relaxed, contact, reach)
+                    if inside and reach > 0.:
+                        self.clear_sleeve(pose, "L", reach)
                 elif t > RELEASE_START:
-                    pose = self.blend_pose(contact, relaxed, smooth((t - RELEASE_START) / (1. - RELEASE_START)))
+                    release = smooth((t - RELEASE_START) / (1. - RELEASE_START))
+                    pose = self.blend_pose(contact, relaxed, release)
+                    if not inside and 0. < release < 1.:
+                        self.clear_sleeve(pose, "R", release)
                 else:
                     pose = contact
                 if frame in (0, round(DURATION * FPS)):

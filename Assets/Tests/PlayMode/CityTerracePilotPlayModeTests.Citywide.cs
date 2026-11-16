@@ -795,21 +795,24 @@ namespace BarPromenade.Tests.PlayMode
             var failures = new List<string>();
             foreach (CityHillsideStreetRoute route in hills.Routes)
             {
-                Check(() => AssertHillsideRoadSupport(route));
-                Check(() => AssertMappedSummit(route));
-                Check(() => AssertHouseApproaches(layout, route));
+                Check(route.Bank + " road", () => AssertHillsideRoadSupport(route));
+                Check(route.Bank + " mapped arrival", () => AssertMappedSummit(route));
+                Check(route.Bank + " house approaches", () => AssertHouseApproaches(layout, route));
             }
-            Check(() => AssertShortcutMapAndDestinations(district));
-            Check(() => AssertEasternThroughStreet(layout));
+            Check("Shortcut stairs and arrivals", () => AssertShortcutMapAndDestinations(district));
+            Check("Eastern through street", () => AssertEasternThroughStreet(layout));
             Assert.That(failures, Is.Empty, string.Join("\n", failures));
 
-            void Check(System.Action validate)
+            void Check(string label, System.Action validate)
             {
                 try { validate(); }
-                catch (AssertionException failure) { failures.Add(failure.Message); }
+                catch (AssertionException failure) { failures.Add(label + " — " + failure.Message); }
             }
 
             isolatedHeroCapsule = city.Player.Motor.GetComponent<CharacterController>();
+            // Platform tests exercise live buses. Here a bus waiting for the
+            // guided capsule must not mask the static route underneath it.
+            isolatedCityBuses = city.GetComponentsInChildren<CityBusActor>(true);
             city.Player.Motor.SetInputEnabled(false);
             city.Player.Interactor.SetInputEnabled(false);
             city.Camera.GetComponent<PlayerCameraFollow>().SetOrbitInputEnabled(false);
@@ -820,7 +823,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 OnDemandRendering.renderFrameInterval = 12;
                 Time.captureDeltaTime = .10f;
-                foreach (CityHillsideStreetRoute route in hills.Routes.OrderByDescending(road => road.Bank))
+                foreach (CityHillsideStreetRoute route in hills.Routes.OrderBy(road => road.Bank))
                 {
                     IReadOnlyList<Vector3> walk = route.SidewalkPath;
                     bool east = route.Bank == CityTerraceTransportBank.East;
@@ -1408,7 +1411,14 @@ namespace BarPromenade.Tests.PlayMode
                 for (int i = 0; i <= steps; i++)
                 {
                     Vector3 p = Vector3.Lerp(house.StreetContactWorld, house.DoorWorld, i / (float)steps);
-                    AssertHillsideCollider(new Vector2(p.x, p.z), p.y);
+                    var position = new Vector2(p.x, p.z);
+                    // The sidewalk, approach and porch meet at grade breaks.
+                    // Sample their actual surfaces along the walked line.
+                    bool supported = route.TrySampleTop(position, out float top, out _) ||
+                        house.TrySampleApproach(position, out top);
+                    Assert.That(supported, Is.True, house.Lot.Cell + " has no planned route at " + position);
+                    p.y = top;
+                    AssertHillsideCollider(position, top);
                     Assert.That(city.World.WalkableArea.Contains(p + Vector3.up * PlayerFactory.GroundedRootOffset, .30f),
                         Is.True, route.Bank + " doorstep is disconnected from its street at " + p);
                 }

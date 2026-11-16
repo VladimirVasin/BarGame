@@ -452,12 +452,16 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(leftForearm.localScale.y, Is.EqualTo(leftForearmScale).Within(.001f));
             Assert.That(rightForearm.localScale.y, Is.EqualTo(rightForearmScale).Within(.001f),
                 "The physical handoff must preserve the deformed arms on the original rig.");
-            for (int frame = 0; frame < 300 && root.LiveOpponentCount == 0; frame++)
+            // A corpse with spilled fish can remain in the warehouse until
+            // the full eight-second loose-parts lifetime has elapsed.
+            for (int frame = 0; frame < Mathf.CeilToInt(10f / Time.fixedDeltaTime) && root.LiveOpponentCount == 0; frame++)
             {
                 root.Tick(Time.fixedDeltaTime);
                 yield return new WaitForFixedUpdate();
             }
-            Assert.That(root.LiveOpponentCount, Is.EqualTo(1));
+            Assert.That(root.LiveOpponentCount, Is.EqualTo(1),
+                $"Recycling: ragdoll settled={zombie.Ragdoll.IsSettled}, settled fish={load.SettledFishCount}/8, " +
+                $"crate resting={zombie.CorpsePropsResting}, next arrival={root.NextOpponentSeconds:F3}.");
             Assert.That(root.Opponents[0], Is.SameAs(zombie));
             Assert.That(zombie.State.IsDefeated || zombie.IsRagdollActive, Is.False);
             Assert.That(zombie.BodyDamage.CanUseLeftHand && zombie.BodyDamage.CanUseRightHand, Is.True);

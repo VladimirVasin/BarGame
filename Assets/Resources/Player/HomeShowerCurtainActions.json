@@ -1,7 +1,7 @@
 {
   "generator": "home_shower_curtain_v1",
   "rig": "HeroV2",
-  "bone_count": 31,
+  "bone_count": 43,
   "root_motion": false,
   "animation_events": 0,
   "fps": 24,
@@ -52,8 +52,8 @@
   "grip_above_root": 1.38,
   "reach_end": 0.25,
   "release_start": 0.75,
-  "maximum_grip_error": 5.479090306416224e-07,
-  "maximum_endpoint_error": 1.7881393432617188e-07,
+  "maximum_grip_error": 5.503352079576071e-07,
+  "maximum_endpoint_error": 2.384185791015625e-07,
   "body_clearance": {
     "method": "evaluated mesh BVH intersections and ray-parity containment",
     "sample_fps": 60,
@@ -64,9 +64,9 @@
         "sample_count": 91,
         "intersecting_pairs": 0,
         "closest": {
-          "clearance_m": 0.004878298379480839,
-          "time": 0.9222222222222223,
-          "first": "CLO_JacketForearm.R",
+          "clearance_m": 0.007092227693647146,
+          "time": 0.24444444444444444,
+          "first": "CLO_JacketForearm.L",
           "second": "CLO_JacketBody"
         },
         "first_intersections": []
@@ -75,9 +75,9 @@
         "sample_count": 91,
         "intersecting_pairs": 0,
         "closest": {
-          "clearance_m": 0.013372653163969517,
-          "time": 0.06666666666666667,
-          "first": "CLO_JacketForearm.L",
+          "clearance_m": 0.006029946729540825,
+          "time": 0.7555555555555555,
+          "first": "CLO_JacketForearm.R",
           "second": "CLO_JacketBody"
         },
         "first_intersections": []
@@ -126,5 +126,5 @@
       ]
     }
   ],
-  "signature": "8740c6833200cd0dc9bceca5b8601f4fa24dd0068a47031a3aada455356b723e"
+  "signature": "5668292ece2275e4cae1e902dd2073b42c616200b8428b7dc7cd3bb088fb0ddd"
 }

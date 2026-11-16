@@ -356,7 +356,14 @@ namespace BarPromenade
                 SolveClearPose(wrist, Quaternion.Slerp(restRotation, destinationRotation, Weight),
                     hint, rest, restRotation, restElbow);
             }
-            else MeasureBodyClearance();
+            else
+            {
+                MeasureBodyClearance();
+                if (BodyClearance < MinimumBodyClearance)
+                    SolveClearPose(hand.position, hand.rotation,
+                        upperArm.position + Outside * 0.30f + Forward * 0.20f - actor.up * 0.25f,
+                        hand.position, hand.rotation, forearm.position);
+            }
             if (BodyIntersectionCount > 0 && hasSafePose)
             {
                 for (int index = 4; index < bones.Length; index++)

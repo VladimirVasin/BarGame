@@ -53,7 +53,7 @@ namespace BarPromenade.Tests.PlayMode
                 // Continue beyond the next landing. A resident may legitimately wait there
                 // until the player has actually passed before returning down the stairs.
                 int waypoint = firstWaypoint;
-                for (int frame = 0; frame < 500 && !(upperArrived && down.IsAtResidentDestination); frame++)
+                for (int frame = 0; frame < 800 && !(upperArrived && down.IsAtResidentDestination); frame++)
                 {
                     director.Advance(FrameSeconds);
                     if (playerClimbs && waypoint <= finalWaypoint && motor.MoveTowardsApproachWaypoint(

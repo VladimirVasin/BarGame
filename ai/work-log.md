@@ -5,50 +5,51 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-16
 
-Industrial shifts use graded entrances and include walking and bus waits.
-Midblock zebras connect isolated walks. `build-city-buildings-3d-model`,
+Shift routes use graded entrances and new zebra crossings. `build-city-buildings-3d-model`,
 `LiveCity_IndustrialShiftsUseEveryBuilding`, `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement`.
-`LiveCity_BothTransferStairsCarryPedestriansBetweenBuses` passed after moving
-the west landing lamp. The map uses the live scheme.
+`LiveCity_BothTransferStairsCarryPedestriansBetweenBuses` after moving the west lamp.
+Map uses the live scheme.
 
-Midibus: formed shell, sealed headers, fixed mirrors and shared sedan optics.
-Wheel housings cover the sprung tyre sweep; treads clear the arches. The cab
-leaf opens inward; three leaves unseat then slide along the side. Default
-drivers keep the transit uniform, long eyes and physical cab contacts. Removed
-obsolete driver assets and duplicate Ferryman sources; retained the sedan takes.
-Proof: `build-city-bus-3d-model`, `CityMidibusRemodel`,
+Midibus: formed shell, sealed headers, fixed mirrors, sedan optics and sprung
+tyre clearance. Cab leaf opens inward, other leaves slide outside. Uniformed
+drivers retain long eyes and cab contacts. Kept sedan takes of the reused
+Ferryman rig. `build-city-bus-3d-model`, `CityMidibusRemodel`,
 `Doors_OpenClearAndReseatOnTheSprungBody`, `Passenger_BoardsRidesAndExitsAtLaterStop`,
 `Driver_SitsOnTheDrawnSeatAndWorksWheelAndButtonWithoutCrossingLimbs`,
 `build-last-route-cabin-actions --validate-only`.
 
-Menu prewarms Home/City in stages. Electrical assets stay on the main thread.
+Menu prewarms Home/City in stages, electrical assets on the main thread.
 `MenuWarmup_ReusesSharedPlansAtTheStreetDoor`, `NewGame_LoadingScreenCoversCompositionUntilDestinationReady`.
 
-Combat prebuild measures the current strike and imported body scale.
+Combat prebuild checks strike and body scale.
 `CombatTestAssetSetup.BuildOrThrow`, `BuildKickOrThrow`, `CombatBodyAssetSetup.ValidateImportedOrThrow`.
 Secondary motion synchronizes combat imports. `CurrentProject_PassesReadOnlyGate`.
 
-Flashlight events follow enable/disable. Pruning uses the current Unity mode.
-Litter follows entry grade, snow follows ground. The brook cuts and grades the bank.
-Thresholds retain height. `CityLitterPlanTests`,
+Flashlight events follow enable/disable; pruning follows Unity mode.
+Litter follows thresholds, snow follows ground, brook cuts its bank. `CityLitterPlanTests`,
 `QuestLogTests`, `CityBusRuntimeTests` and `SnowMesh_NeverLiesOverATroddenRoute`.
 
-Entrance routes use real shelter solids. The Home pool owns its roster and
-uses City obstacle limits. Standalone heroes retain their spawn.
+Entrances avoid shelters. Home keeps its roster and City obstacles. Standalone spawn retained.
 `DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
 `HomeScene_SpawnsPedestriansOnlyOnBalcony`, `Player3DFootIkPlayModeTests`.
 The Ferryman joins the lane smoothly. A bus already yielding to another's hull
 cedes the crossing prediction. `CityDeparture_TakesTheTunnelTurnLikeAnyOtherRoadTurn`,
 `Passenger_TransfersFromWestToHillsideAtTheSharedStop`.
 Poles clear the pawnshop stairs. `LiveCity_PawnshopDescentWalksBothWaysWithSupportedStepsRailsAndMapArrivals`.
-Bus and rider use built ground. `DefaultCoastal_BuildsClosedWindingTargetRoute`, `YardWheelchairMotionTests`.
-Balcony finishes persist. `HomeSurfaceAppearanceTests`.
+Bus and rider follow ground. `DefaultCoastal_BuildsClosedWindingTargetRoute`, `YardWheelchairMotionTests`.
+Balcony finishes. `HomeSurfaceAppearanceTests`.
 
 Sand collision follows the waterfront grade. Sleepwear and the shot grip clear their support.
 `Build_DefaultContinuousTerrain_MatchesPlanAndOwnsCollider`, `SouthWestCornerClosure_WeldsSampledGroundAndCollision`,
 `Bed_SleepAndWakeNeverPushTheHeroThroughTheMattress`, `VodkaService_KeepsShotClearOfCounterAndMenu`.
 Residential pockets use each side's pavement width.
 `ResidentialCourtyardPockets_AreFourDistinctClearAndWindAware`.
+
+Courtyard links avoid threshold grading. The crane lifts and hauls through
+the open well. Shower sleeves and the idle brushing hand clear the body.
+`CityReplanning_KeepsAnchorsAndPartitionsGroundWithoutBuildingOverlap`,
+`Range_CraneCaptureClearsGalleryRailAndKeepsReleaseMomentum`,
+`build-home-shower-curtain-actions`, `Brushing_MirrorSceneGatesReliefPerDay`.
 
 ## 2026-11-15
 

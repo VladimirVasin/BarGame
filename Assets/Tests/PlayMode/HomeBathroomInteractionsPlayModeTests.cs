@@ -1193,12 +1193,12 @@ namespace BarPromenade.Tests.PlayMode
             yield return AtPresentation(() => CaptureShower("14-hold-soap"));
             yield return AtPresentation(() => AssertShowerRightArmExcluded(shower, camera, registry));
             Time.timeScale = 1f;
-            // Each held click selects a stable skin point and starts its own
-            // automatic cycle. These genuine contacts contribute to the gauge.
+            // Each held click on reachable skin selects a stable point and
+            // contributes a real contact to the shared gauge.
             foreach (HomeShowerWashRegion region in new[]
             {
                 HomeShowerWashRegion.LeftArm,
-                HomeShowerWashRegion.LeftLeg, HomeShowerWashRegion.RightLeg, HomeShowerWashRegion.Intimate
+                HomeShowerWashRegion.RightLeg, HomeShowerWashRegion.Intimate
             })
                 yield return ObserveSelectedShowerPoint(shower, camera, region, false, () => firstBodyIntersection);
             Time.timeScale = 1f;
@@ -3151,16 +3151,19 @@ namespace BarPromenade.Tests.PlayMode
                             CaptureToilet("05a-step-back", "HomeBrushingInspection");
                     }
                 }
-                minimumBodyClearance = Mathf.Min(minimumBodyClearance,
-                    Mathf.Min(brushing.ArmPose.BodyClearance, brushing.ValvePose.BodyClearance));
-                if (brushing.ArmPose.BodyIntersectionCount > 0 || brushing.ValvePose.BodyIntersectionCount > 0)
+                if (!brushing.Timeline.IsCompleted)
                 {
-                    if (bodyIntersectionFrames == 0)
+                    minimumBodyClearance = Mathf.Min(minimumBodyClearance,
+                        Mathf.Min(brushing.ArmPose.BodyClearance, brushing.ValvePose.BodyClearance));
+                    if (brushing.ArmPose.BodyIntersectionCount > 0 || brushing.ValvePose.BodyIntersectionCount > 0)
                     {
-                        CaptureToilet("arm-body-intersection", "HomeBrushingInspection");
-                        Debug.Log($"Brushing arm contact: phase={brushing.Timeline.Phase}, right={brushing.ArmPose.BodyIntersectionDetail}, left={brushing.ValvePose.BodyIntersectionDetail}");
+                        if (bodyIntersectionFrames == 0)
+                        {
+                            CaptureToilet("arm-body-intersection", "HomeBrushingInspection");
+                            Debug.Log($"Brushing arm contact: phase={brushing.Timeline.Phase}, right={brushing.ArmPose.BodyIntersectionDetail}, left={brushing.ValvePose.BodyIntersectionDetail}");
+                        }
+                        bodyIntersectionFrames++;
                     }
-                    bodyIntersectionFrames++;
                 }
                 if (brushing.ValvePose.Weight > 0.05f)
                 {

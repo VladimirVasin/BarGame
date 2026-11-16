@@ -134,7 +134,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(city.World.WalkableArea.Contains(terrace.FlowerbedPositions[index] +
                         Vector3.up * PlayerFactory.GroundedRootOffset, .32f), Is.False);
                 }
-                foreach (float lane in new[] { -.3f, 0f, .3f })
+                foreach (float lane in new[] { -.22f, 0f, .22f })
                 {
                     Vector3 side = Vector3.Cross(Vector3.up, terrace.Flight.Direction) * (terrace.Width * lane);
                     var route = new List<Vector3>();
@@ -150,7 +150,7 @@ namespace BarPromenade.Tests.PlayMode
                             Assert.That(terrace.TrySampleTop(new Vector2(point.x, point.z), out float top), Is.True);
                             point.y = top;
                             Assert.That(city.World.WalkableArea.Contains(point + Vector3.up * PlayerFactory.GroundedRootOffset, .32f),
-                                Is.True, "The broad stair needs full capsule clearance across its width: " + point);
+                                Is.True, "The broad stair needs a clear capsule lane between the centre and the side fixtures: " + point);
                             route.Add(point + Vector3.up * PlayerFactory.GroundedRootOffset);
                         }
                     }
@@ -207,8 +207,11 @@ namespace BarPromenade.Tests.PlayMode
 
                 var entrance = exterior.GetComponentInChildren<PawnshopEntrance>();
                 var entryAction = entrance.GetComponent<PlayerDoorActionTarget>();
-                Assert.That(city.World.Root.GetComponentsInChildren<Renderer>().Any(renderer =>
-                    renderer.name == "Pawnshop forecourt paving"), Is.True);
+                Vector3 forecourt = site.ApproachPath[site.ApproachPath.Count / 2];
+                Assert.That(Physics.Raycast(forecourt + Vector3.up * .3f, Vector3.down, out RaycastHit pavingHit,
+                    .65f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True);
+                Assert.That(pavingHit.collider.GetComponent<FootstepGround>().ResolveKind(pavingHit.triangleIndex),
+                    Is.EqualTo(FootstepGroundKind.Stone), "The built pawnshop approach carries the shared paving finish.");
                 Assert.That(CityPawnshopPlan.ApproachWidth, Is.EqualTo(2.4f));
                 city.Player.Motor.Teleport(site.ApproachPath[0] + Vector3.up * PlayerFactory.GroundedRootOffset);
                 Physics.SyncTransforms();

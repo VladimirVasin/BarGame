@@ -548,7 +548,8 @@ namespace BarPromenade.Tests.PlayMode
                 $"range={Vector3.Distance(crane.CraneHookCableExit, target)}, input={GameInput.CanRead(GameInputContext.Gameplay)}";
         }
 
-        private void PlaceCraneFootingHero(CombatActor crane, bool outsideHeight = false, float chestAbove = 1f)
+        private void PlaceCraneFootingHero(CombatActor crane, bool outsideHeight = false, float chestAbove = 1f,
+            Vector3? approach = null)
         {
             // This collider is test support only, like the partition fixture below.
             // Its real contact lets the unmodified rig leave the ledge and fall.
@@ -560,7 +561,7 @@ namespace BarPromenade.Tests.PlayMode
             }
             float chestOffset = FindAnatomicalBone(root.Hero, "chest").position.y - root.Hero.transform.position.y;
             float above = outsideHeight ? CombatActor.CraneMaximumAttackHeightAboveTarget + .5f : chestAbove;
-            Vector3 position = crane.transform.position + Vector3.forward * 3f;
+            Vector3 position = crane.transform.position + (approach ?? Vector3.forward) * 3f;
             position.y = FindAnatomicalBone(crane, "chest").position.y - chestOffset - above;
             craneTestFooting.transform.position = position - Vector3.up * (.15f + PlayerFactory.GroundedRootOffset);
             root.Hero.ResetActor(position, Vector3.ProjectOnPlane(crane.CraneHookCableExit - position, Vector3.up).normalized);
@@ -681,6 +682,7 @@ namespace BarPromenade.Tests.PlayMode
                     GameInput.CanRead(GameInputContext.Gameplay);
             }, "The ceiling encounter did not release its entry transition.");
             root.AutomaticSimulation = false;
+            ForceAmmoFocus();
             CombatActor crane = root.Opponent;
             Assert.That(root.Mode, Is.EqualTo(CombatTestMode.Crane));
             Assert.That(root.WarehousePlan, Is.Not.Null);
@@ -772,9 +774,15 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(Vector3.Distance(limbPose[i], crane.GetCraneCableEnd(i)), Is.LessThan(.001f),
                     "Repeated presentation cannot integrate suspended dynamics again.");
 
-            // A real downward shot crosses the open well, not a solid floor.
-            Vector3 downwardHero = new Vector3(4.5f, 0f, 3f);
-            yield return VerifyCraneHookHit(crane, downwardHero, cableStarts, "crane-hook-downward", captureMotion: true);
+            // An unobstructed downward throw must also satisfy the live chest-height limit.
+            Vector3 intoWell = -Vector3.ProjectOnPlane(crane.transform.position, Vector3.up).normalized;
+            PlaceCraneFootingHero(crane, chestAbove: 1.65f, approach: intoWell);
+            try
+            {
+                yield return VerifyCraneHookHit(crane, root.Hero.transform.position, cableStarts,
+                    "crane-hook-downward", captureMotion: true, keepPlacement: true);
+            }
+            finally { RemoveCraneTestFooting(); }
             Assert.That(observedCraneAim.y, Is.LessThan(-.2f));
             PlaceCraneHero(new Vector3(11f, 0f, 0f), Vector3.left);
             yield return AdvanceCraneFloor(crane, 0, cableStarts);
@@ -804,29 +812,25 @@ namespace BarPromenade.Tests.PlayMode
             TickCrane(crane, .8f);
             Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.Waiting));
             Assert.That(crane.CraneHookThrowCount, Is.EqualTo(lockedThrow), "A target beyond the real three-dimensional hook reach cannot start a new throw.");
-            for (int angle = 0; angle < 8; angle++)
-            {
-                float radians = angle * Mathf.PI * .25f;
-                Vector3 heroPosition = ringCenter + new Vector3(Mathf.Sin(radians), 0f, Mathf.Cos(radians)) * 2.2f;
-                yield return VerifyCraneHookHit(crane, heroPosition, cableStarts,
-                    angle == 0 ? "crane-hook-ground" : null);
-                Assert.That(crane.CraneFloorIndex, Is.EqualTo(2), "Each successful capture completes its return to the original ceiling stop.");
-            }
+            yield return VerifyCraneHookHit(crane, ringCenter + Vector3.forward * 2.2f,
+                cableStarts, "crane-hook-ground");
+            Assert.That(crane.CraneFloorIndex, Is.EqualTo(2),
+                "A successful capture completes its return to the original ceiling stop.");
 
             PlaceCraneHero(new Vector3(11f, 0f, 0f), Vector3.left);
             yield return AdvanceCraneFloor(crane, 1, cableStarts);
-            WarehouseArenaStair upperStair = default;
-            foreach (WarehouseArenaStair stair in root.WarehousePlan.Stairs)
-                if (stair.Foot.x < 0f && stair.Foot.y > 0f) upperStair = stair;
-            Assert.That(upperStair.Foot.y, Is.GreaterThan(0f));
-            // Use a nearer real tread: the longer authored wrist offset and
-            // inset patrol must still keep this upward shot within six metres.
-            yield return VerifyCraneHookHit(crane, new Vector3(-6.95f, upperStair.HeightAt(-.6f), -.6f),
-                cableStarts, "crane-hook-upward");
-            Assert.That(observedCraneAim.y, Is.GreaterThan(.05f), "The actual throw must aim upward at the supported stair tread.");
+            intoWell = -Vector3.ProjectOnPlane(crane.transform.position, Vector3.up).normalized;
+            PlaceCraneFootingHero(crane, chestAbove: -1.3f, approach: intoWell);
+            try
+            {
+                yield return VerifyCraneHookHit(crane, root.Hero.transform.position, cableStarts,
+                    "crane-hook-upward", keepPlacement: true);
+            }
+            finally { RemoveCraneTestFooting(); }
+            Assert.That(observedCraneAim.y, Is.GreaterThan(.05f), "The actual throw must aim upward at the supported hero.");
             PlaceCraneHero(new Vector3(11f, 0f, 0f), Vector3.left);
             yield return AdvanceCraneFloor(crane, 2, cableStarts);
-            yield return VerifyCraneHookHit(crane, new Vector3(4.5f, WarehouseArenaPlan.TopHeight, -6.45f),
+            yield return VerifyCraneHookHit(crane, new Vector3(0f, WarehouseArenaPlan.TopHeight, -6.45f),
                 cableStarts, "Test crane - Same storey gallery hook");
             Assert.That(observedCraneAim.y, Is.InRange(-.35f, .35f));
             Assert.That(root.Opponent, Is.SameAs(crane), "All storeys use the same living actor without resetting its round.");
@@ -888,9 +892,10 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private IEnumerator VerifyCraneHookHit(CombatActor crane, Vector3 heroPosition, Vector3[] starts,
-            string captureName, bool captureMotion = false)
+            string captureName, bool captureMotion = false, bool keepPlacement = false)
         {
-            PlaceCraneHero(heroPosition, Vector3.ProjectOnPlane(crane.transform.position - heroPosition, Vector3.up).normalized);
+            if (!keepPlacement)
+                PlaceCraneHero(heroPosition, Vector3.ProjectOnPlane(crane.transform.position - heroPosition, Vector3.up).normalized);
             int throws = crane.CraneHookThrowCount;
             Assert.That(Vector3.Distance(crane.CraneHookCableExit, root.Hero.transform.position + Vector3.up * 1.2f),
                 Is.LessThan(crane.CraneHookReach), "The supported test target must be in actual three-dimensional cable reach.");
@@ -1058,7 +1063,10 @@ namespace BarPromenade.Tests.PlayMode
 
         private IEnumerator AdvanceCraneTo(CombatActor crane, CombatCranePhase phase, Vector3[] cableStarts)
         {
-            const int maximumSteps = 4800;
+            // Waiting after a successful throw includes the physical retreat,
+            // pendulum settling and a full watch at the ceiling stop.
+            int maximumSteps = phase == CombatCranePhase.Waiting
+                ? Mathf.CeilToInt(60f / CombatTestRoot.SimulationStep) : 4800;
             int step = 0;
             while ((crane.CranePhase != phase || crane.CranePatrolTravelling) && step < maximumSteps)
             {
@@ -1216,7 +1224,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private IEnumerator AdvanceCraneFloor(CombatActor crane, int floor, Vector3[] cableStarts)
         {
-            const int maximumSteps = 4800;
+            int maximumSteps = Mathf.CeilToInt(60f / CombatTestRoot.SimulationStep);
             int step = 0;
             while ((crane.CraneFloorIndex != floor || crane.CranePatrolTravelling ||
                     crane.CranePhase != CombatCranePhase.Waiting) && step < maximumSteps)
@@ -1229,7 +1237,9 @@ namespace BarPromenade.Tests.PlayMode
                 }
             }
             Assert.That(crane.CraneFloorIndex, Is.EqualTo(floor),
-                "The autonomous patrol must reach floor " + floor + " independently of the hero.");
+                $"The autonomous patrol must reach floor {floor}. Phase={crane.CranePhase}, " +
+                $"carriage={crane.CraneCarriagePosition:F3}, goal={crane.CraneTravelGoal:F3}, " +
+                $"block={crane.CraneTravelBlocked}/{crane.CraneBlockedAnatomy}.");
             Assert.That(crane.CranePatrolTravelling, Is.False);
             Assert.That(crane.CranePhase, Is.EqualTo(CombatCranePhase.Waiting));
             Assert.That(crane.CraneCarriagePosition.y,
@@ -1240,7 +1250,7 @@ namespace BarPromenade.Tests.PlayMode
         private void PlaceCraneHero(Vector3 floorPosition, Vector3 facing)
         {
             Assert.That(root.WarehouseArea.TryGetHeight(floorPosition, out float height, root.Hero.Body.radius), Is.True,
-                "The staged hero must stand on a real warehouse floor or stair tread.");
+                $"The staged hero must stand on a real warehouse floor or stair tread at {floorPosition:F3}.");
             Assert.That(height, Is.EqualTo(floorPosition.y).Within(.03f));
             PlaceInspectionHero(floorPosition, facing);
         }

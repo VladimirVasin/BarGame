@@ -69,6 +69,8 @@ namespace BarPromenade.Tests.PlayMode
                 // Start with an actual settled fall, then obstruct preparation.
                 // A failed pose must keep KnockedDown and the physical landing,
                 // rather than announcing Rising with a permanently zero clock.
+                actor.ResetActor(new Vector3(-2.5f, PlayerFactory.GroundedRootOffset, -3f), Vector3.back);
+                Physics.SyncTransforms();
                 Assert.That(actor.TryBeginKnockdown(RecoveryTestImpact(actor, Vector3.down, 1),
                     Vector3.zero, Vector3.zero), Is.True);
                 for (int frame = 0; frame < 300 && !actor.Ragdoll.IsSettled; frame++) yield return null;

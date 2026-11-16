@@ -92,7 +92,11 @@ namespace BarPromenade
             float maximumSpeed = restraintInvertedLeg ? 9f : 4.2f;
             Vector3 desired = distance > .001f ? delta / distance * (maximumSpeed * Mathf.Clamp01((distance - .45f) / .85f)) : Vector3.zero;
             float mass = ActiveCombatMass;
-            Vector3 force = (desired - restraintContactBody.GetPointVelocity(point)) * (mass * 7f) - Physics.gravity * mass;
+            // The winding hook moves the whole body through the wound. Local limb
+            // rotation at that contact must not cancel the lift on the torso.
+            Vector3 velocity = restraintInvertedLeg ? restraintContactBody.GetPointVelocity(point)
+                : (PelvisBody.linearVelocity + ChestBody.linearVelocity) * .5f;
+            Vector3 force = (desired - velocity) * (mass * 7f) - Physics.gravity * mass;
             restraintContactBody.AddForceAtPosition(Vector3.ClampMagnitude(force, mass * (initialJerk ? 42f : 28f)), point, ForceMode.Force);
             restraintDriveSeconds += seconds;
             float engagement = Mathf.SmoothStep(0f, 1f, restraintDriveSeconds / .22f);

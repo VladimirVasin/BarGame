@@ -61,8 +61,10 @@ namespace BarPromenade
     {
         public const float PathWidth = 1.5f;
         public const float ThroatWidth = 1.3f;
+        internal const int PavingPriority = 29;
         private const float RouteRadius = PathWidth * .5f + .01f;
         private const float ApronRun = 1.4f;
+        private const float ApronHalfWidth = 1.1f;
         private const float Thickness = .4f;
         private const float SampleBucketSize = 4f;
         private const int MaximumConnectedCells = 12;
@@ -74,10 +76,12 @@ namespace BarPromenade
         private readonly Dictionary<Vector2Int, List<int>> sampleBuckets = new Dictionary<Vector2Int, List<int>>();
         private readonly Dictionary<Vector2Int, List<Rect>> workFloorCuts = new Dictionary<Vector2Int, List<Rect>>();
         private readonly IReadOnlyList<CityStreetSupportPatch> supportPatches;
+        private readonly CityStreetSupportPlan publicPaving;
 
-        private CityBuildingEntrancePlan(List<CityBuildingEntranceDescriptor> entrances,
+        private CityBuildingEntrancePlan(CityLayout layout, List<CityBuildingEntranceDescriptor> entrances,
             List<CityBuildingEntranceDescriptor> workplaces)
         {
+            publicPaving = CityStreetSurfacePlanner.CreateCourtyardPaving(layout).SupportPlan;
             Entrances = entrances.AsReadOnly();
             Workplaces = workplaces.AsReadOnly();
             var allEntrances = new List<CityBuildingEntranceDescriptor>(entrances);
@@ -91,7 +95,7 @@ namespace BarPromenade
                 int a = row * strip.Columns + column;
                 var face = new[] { strip.Top[a], strip.Top[a + 1],
                     strip.Top[a + strip.Columns + 1], strip.Top[a + strip.Columns] };
-                var patch = new CityStreetSupportPatch(face, CityStreetSupportKind.Sidewalk, Thickness, 31);
+                var patch = new CityStreetSupportPatch(face, CityStreetSupportKind.Sidewalk, Thickness, PavingPriority);
                 Add(patch);
             }
             SurfacePatches = patches.AsReadOnly();
@@ -153,6 +157,19 @@ namespace BarPromenade
             return Plans.TryGetValue(layout, out CityBuildingEntrancePlan plan) && plan.TrySampleTop(point, out top);
         }
 
+        internal static void AppendThresholdGradeFootprint(CityLayout layout, BuildingLot lot, List<Vector2[]> obstacles)
+        {
+            if (lot == null || (!IsResidential(lot) && !IsWorkplace(layout, lot))) return;
+            CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
+            Vector3 threshold = pose.TransformPoint(CityBuildingAssetProvider.GetExpectedEntranceThreshold(lot.District, lot.BuildingVariant));
+            Vector3 forward = pose.Rotation * CityBuildingAssetProvider.EntranceOutward;
+            Vector3 side = Vector3.Cross(Vector3.up, forward) * ApronHalfWidth;
+            Vector3 inside = threshold - forward * CityBuildingAssetProvider.EntranceDepth;
+            Vector3 outside = threshold + forward * ApronRun;
+            obstacles.Add(CityRoadPolygon.CounterClockwise(new[] { XZ(inside - side), XZ(inside + side),
+                XZ(outside + side), XZ(outside - side) }));
+        }
+
         internal static IReadOnlyList<Rect> CachedWorkFloorCuts(CityLayout layout, CitySurfaceDescriptor surface)
         {
             if (surface.Kind == CitySurfaceKind.BuildableGround && Plans.TryGetValue(layout, out var plan) &&
@@ -167,9 +184,12 @@ namespace BarPromenade
             foreach (int index in nearby)
             {
                 if (!supportPatches[index].TrySampleTop(point, out float height)) continue;
-                // The ground compositor retains the first equal-priority
-                // source. Contact queries must choose that same triangle.
-                top = height; return true;
+                // Public paving owns the overlap. Outside it, the compositor
+                // retains the first entrance strip of equal priority.
+                top = index < SurfacePatches.Count &&
+                    publicPaving.TrySampleTop(point, FootstepGroundKind.Stone, out float sidewalk)
+                    ? sidewalk : height;
+                return true;
             }
             return false;
         }
@@ -326,7 +346,7 @@ namespace BarPromenade
                 }
                 else result.Add(new CityBuildingEntranceDescriptor(lot, threshold, outward, points, paving));
             }
-            return new CityBuildingEntrancePlan(result, workplaces);
+            return new CityBuildingEntrancePlan(layout, result, workplaces);
 
             void AddPole(Vector3 position)
             {
@@ -392,13 +412,17 @@ namespace BarPromenade
         // from that shared ground, and every overlapping route sees that pad.
         private sealed class SharedGradeField
         {
+            private const float SidewalkJoinLength = .6f;
             private readonly CityLayout layout;
+            private readonly CityStreetSupportPlan publicPaving;
+            private readonly List<CityStreetSupportPatch> nearbyPaving = new List<CityStreetSupportPatch>();
             private readonly List<GradeAnchor> anchors = new List<GradeAnchor>();
             private readonly Dictionary<Vector2, float> samples = new Dictionary<Vector2, float>();
             private readonly List<CitySurfaceDescriptor> ground = new List<CitySurfaceDescriptor>();
             internal SharedGradeField(CityLayout source, IReadOnlyList<BuildingLot> masses)
             {
                 layout = source;
+                publicPaving = CityStreetSurfacePlanner.CreateCourtyardPaving(source).SupportPlan;
                 CityTerraceDistrictPlan terrace = CityTerraceDistrictPlan.ForLayout(layout);
                 foreach (CitySurfaceDescriptor surface in layout.Surfaces)
                     if (CityTerrainSurfacePlan.UsesContinuousTop(surface)) ground.Add(surface);
@@ -439,13 +463,46 @@ namespace BarPromenade
                     Vector2 forward = XZ(anchor.Outward);
                     float along = Vector2.Dot(delta, forward);
                     float across = Mathf.Abs(CityRoadPolygon.Cross(forward, delta));
-                    if (along < -CityBuildingAssetProvider.EntranceDepth || along > ApronRun || across > 1.1f) continue;
+                    if (along < -CityBuildingAssetProvider.EntranceDepth || along > ApronRun || across > ApronHalfWidth) continue;
                     float weight = (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.15f, ApronRun, Mathf.Max(0f, along)))) *
-                        (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(CityBuildingAssetProvider.EntranceClearWidth * .5f, 1.1f, across)));
+                        (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(CityBuildingAssetProvider.EntranceClearWidth * .5f, ApronHalfWidth, across)));
                     correction += (anchor.Threshold.y - top) * weight; weightSum += weight;
                 }
                 if (weightSum > 0f) top += correction / Mathf.Max(1f, weightSum);
+                top = MatchPublicSidewalk(point, top);
                 samples.Add(point, top); return true;
+            }
+
+            private float MatchPublicSidewalk(Vector2 point, float ground)
+            {
+                var radius = Vector2.one * SidewalkJoinLength;
+                var bounds = Rect.MinMaxRect(point.x - radius.x, point.y - radius.y,
+                    point.x + radius.x, point.y + radius.y);
+                publicPaving.GetNearby(bounds, nearbyPaving);
+                float distanceSquared = SidewalkJoinLength * SidewalkJoinLength;
+                float sidewalk = ground;
+                foreach (CityStreetSupportPatch patch in nearbyPaving)
+                {
+                    if (patch.Kind != CityStreetSupportKind.Sidewalk || !patch.IsSupport) continue;
+                    IReadOnlyList<Vector3> corners = patch.TopVertices;
+                    for (int index = 0; index < corners.Count; index++)
+                    {
+                        Vector3 start = corners[index], end = corners[(index + 1) % corners.Count];
+                        Vector2 edge = XZ(end - start);
+                        float lengthSquared = edge.sqrMagnitude;
+                        if (lengthSquared < .000001f) continue;
+                        float along = Mathf.Clamp01(Vector2.Dot(point - XZ(start), edge) / lengthSquared);
+                        float candidate = (point - XZ(start) - edge * along).sqrMagnitude;
+                        if (candidate >= distanceSquared) continue;
+                        distanceSquared = candidate;
+                        Vector2 edgePoint = XZ(start) + edge * along;
+                        sidewalk = publicPaving.TrySampleTop(edgePoint, FootstepGroundKind.Stone, out float height)
+                            ? height : Mathf.Lerp(start.y, end.y, along);
+                    }
+                }
+                // Overlapping strips see one continuous grade at the verge,
+                // even when their grids straddle the existing paving edge.
+                return Mathf.SmoothStep(sidewalk, ground, Mathf.Sqrt(distanceSquared) / SidewalkJoinLength);
             }
 
             private readonly struct GradeAnchor

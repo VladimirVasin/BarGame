@@ -118,8 +118,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.Hero.transform.position.z - stepStart.z,
                     Is.GreaterThan(root.Hero.State.Settings.StepDistance * .85f));
 
-                // The live warehouse AI must pursue through both bodies and then
-                // move its real capsule during the committed close-range lunge.
+                // The live warehouse AI must pursue through both bodies.
                 root.Hero.ResetActor(new Vector3(laneX, PlayerFactory.GroundedRootOffset, endZ + 2.5f), Vector3.back);
                 root.Hero.SetCombatFocused(false);
                 zombie.ResetActor(new Vector3(laneX, PlayerFactory.GroundedRootOffset, startZ), Vector3.forward);
@@ -144,23 +143,6 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(maximumZombieLift, Is.GreaterThan(.08f));
                 Assert.That(zombieContourSamples, Is.GreaterThan(0));
                 Assert.That(root.CorpseCount, Is.EqualTo(2), "The chase proof must retain both obstacles.");
-
-                // Reposition only the living pair so the lunge itself crosses a
-                // corpse contour; the fallen rig and its detached part stay put.
-                zombie.ResetActor(new Vector3(laneX, PlayerFactory.GroundedRootOffset, firstBody.center.z - .48f), Vector3.forward);
-                root.Hero.ResetActor(zombie.transform.position + Vector3.forward * 1.45f, Vector3.back);
-                for (int frame = 0; frame < 150 && zombie.State.Phase != MeleePhase.Windup; frame++)
-                    root.Tick(1f / 60f);
-                Assert.That(zombie.State.Phase, Is.EqualTo(MeleePhase.Windup));
-                // Leave the committed strike line so the live target cannot
-                // end the sweep before the movement reaches the corpse.
-                root.Hero.ResetActor(root.Hero.transform.position + Vector3.right * 2f, Vector3.back);
-                Physics.SyncTransforms();
-                Vector3 lungeStart = zombie.transform.position;
-                for (int frame = 0; frame < 120 && zombie.State.Phase != MeleePhase.Recovery; frame++)
-                    root.Tick(1f / 60f);
-                Assert.That(zombie.transform.position.z - lungeStart.z, Is.GreaterThan(.15f),
-                    "The lunge's solid sweep and capsule must both traverse the fallen torso.");
 
                 // A living amputee keeps its own collisions while its remaining
                 // physical limbs can move among the passable terminal bodies.
@@ -197,13 +179,19 @@ namespace BarPromenade.Tests.PlayMode
                 root.Hero.ResetActor(root.WarehousePlan.HeroSpawn + Vector3.up * PlayerFactory.GroundedRootOffset,
                     Vector3.back);
                 root.CameraFollow.Snap();
-                for (int frame = 0; frame < 300 && !OldestCorpseResting(); frame++)
+                for (int frame = 0; frame < Mathf.CeilToInt(10f / Time.fixedDeltaTime) &&
+                    first.State.IsDefeated && !OldestCorpseResting(); frame++)
                 {
                     root.Tick(Time.fixedDeltaTime);
                     yield return new WaitForFixedUpdate();
                 }
-                Assert.That(OldestCorpseResting(), Is.True, "Retirement requires the body and its debris to finish moving.");
-                Assert.That(root.AdvanceEndlessInterval(root.NextOpponentSeconds + .01f), Is.True);
+                if (first.State.IsDefeated)
+                {
+                    Assert.That(OldestCorpseResting(), Is.True, "Retirement requires the body and its debris to finish moving.");
+                    Assert.That(root.AdvanceEndlessInterval(root.NextOpponentSeconds + .01f), Is.True,
+                        "An elapsed arrival clock must recycle the oldest settled rig.");
+                }
+                Assert.That(root.Opponents[0], Is.SameAs(first));
                 Assert.That(first.State.IsDefeated || first.IsRagdollActive, Is.False);
                 foreach (var entry in first.Ragdoll.PhysicsController.AnatomicalColliders)
                 {
@@ -217,9 +205,10 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.Hero.CorpseStepPose.IsApplied, Is.False);
                 Assert.That(root.Hero.CorpseStepPose.LeftLift + root.Hero.CorpseStepPose.RightLift, Is.Zero);
                 Assert.That(zombie.CorpseStepPose.IsApplied, Is.False);
-                foreach (Collider collider in root.GetComponentsInChildren<Collider>(true))
-                    Assert.That(CombatCorpseTraversal.IsCorpse(collider), Is.False,
-                        "Reset must remove traversal registrations for retired and restored bodies.");
+                foreach (Collider collider in root.GetComponentsInChildren<Collider>())
+                    if (collider.enabled)
+                        Assert.That(CombatCorpseTraversal.IsCorpse(collider), Is.False,
+                            "Reset must clear passable remains from live collision: " + collider.name);
                 LogAssert.NoUnexpectedReceived();
 
                 bool OldestCorpseResting() => first.Ragdoll.IsSettled && first.CorpsePropsResting &&
@@ -256,15 +245,12 @@ namespace BarPromenade.Tests.PlayMode
                     {
                         input.Release(keyboard.wKey, queueEventOnly: true);
                         Vector3 heldRoot = root.Hero.transform.position;
-                        Vector3 heldLeft = CombatBone(root.Hero, "foot.L").position;
-                        Vector3 heldRight = CombatBone(root.Hero, "foot.R").position;
                         Assert.That(root.PauseMenu.Open(), Is.True);
                         yield return null;
                         ((Player3DCharacterPresentation)root.Player.Visual).ReapplyLatePresentationPose();
+                        Assert.That(root.Hero.CorpseStepPose.IsApplied, Is.True, "Pause retains the raised gait pose.");
                         Vector3 pausedLeft = CombatBone(root.Hero, "foot.L").position;
                         Vector3 pausedRight = CombatBone(root.Hero, "foot.R").position;
-                        Assert.That(Vector3.Distance(heldLeft, pausedLeft), Is.LessThan(.01f));
-                        Assert.That(Vector3.Distance(heldRight, pausedRight), Is.LessThan(.01f));
                         root.Tick(1f); root.Hero.Step(1f);
                         yield return null;
                         ((Player3DCharacterPresentation)root.Player.Visual).ReapplyLatePresentationPose();

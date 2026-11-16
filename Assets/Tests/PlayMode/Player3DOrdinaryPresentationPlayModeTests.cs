@@ -682,7 +682,6 @@ namespace BarPromenade.Tests.PlayMode
                     presentation,
                     registry,
                     neutralFloorY,
-                    canonicalHeight,
                     side.Suffix);
 
                 presentation.SetFallAnimation(
@@ -1496,11 +1495,11 @@ namespace BarPromenade.Tests.PlayMode
             Player3DCharacterPresentation presentation,
             Player3DAssetRegistry registry,
             float neutralFloorY,
-            float canonicalHeight,
             string side)
         {
             const int ImportedLastFrame = 40;
-            float maximumPenetration = canonicalHeight * 0.006f;
+            // The dense source validator permits up to one sole thickness.
+            const float maximumPenetration = .02f;
             for (int frame = 0; frame <= ImportedLastFrame; frame++)
             {
                 presentation.SetFallAnimation(

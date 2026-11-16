@@ -297,6 +297,7 @@ namespace BarPromenade
             public readonly Vector4[] States = new Vector4[HolesPerLayer];
             public int Count;
             public bool Dirty;
+            public bool WasVisible;
         }
 
         private readonly List<Patch> patches = new List<Patch>();
@@ -600,13 +601,21 @@ namespace BarPromenade
 
         private ProjectileLayer CreateProjectileLayer(Patch patch)
         {
-            var host = new GameObject("Projectile Wounds__" + patch.SourceName + "__" + projectileLayers.Count);
-            var layer = new ProjectileLayer { Renderer = host.AddComponent<SkinnedMeshRenderer>() };
+            var layer = new ProjectileLayer
+            {
+                Renderer = CreateProjectileRenderer("Projectile Wounds__" + patch.SourceName + "__" + projectileLayers.Count)
+            };
             // ConfigureProjectileLayer supplies the original mesh/rig when this
             // bounded reserve is first used; it never renders an empty layer.
-            layer.Renderer.enabled = false;
             projectileLayers.Add(layer);
             return layer;
+        }
+
+        private static SkinnedMeshRenderer CreateProjectileRenderer(string name)
+        {
+            var renderer = new GameObject(name).AddComponent<SkinnedMeshRenderer>();
+            renderer.enabled = false;
+            return renderer;
         }
 
         private static void StoreProjectile(ProjectileWound wound)
@@ -653,9 +662,17 @@ namespace BarPromenade
             Mesh mesh = patch.Renderer.sharedMesh;
             if (renderer.sharedMesh != mesh)
             {
-                // Pooled layers can change vertex layout and bone palette together.
-                // Detach the previous skin buffer before binding the new one.
-                renderer.sharedMesh = null;
+                // A published skinned buffer retains its vertex layout on the
+                // render thread. Keep the pooled slot and replace its renderer.
+                if (layer.WasVisible)
+                {
+                    GameObject retired = renderer.gameObject;
+                    retired.SetActive(false);
+                    layer.Renderer = renderer = CreateProjectileRenderer(retired.name);
+                    layer.WasVisible = false;
+                    UnityEngine.Object.Destroy(retired);
+                }
+                else renderer.sharedMesh = null;
             }
             renderer.transform.SetParent(patch.Source.transform, false);
             renderer.bones = patch.Bones;
@@ -861,6 +878,7 @@ namespace BarPromenade
                     for (int i = 0; i < layer.Count; i++) visible |= layer.Holes[i].z > 0f;
                     bool enabled = visible && CombatBodyDestruction.SourceAvailable(actor, layer.Patch.Source);
                     if (layer.Renderer.enabled != enabled) layer.Renderer.enabled = enabled;
+                    layer.WasVisible |= enabled;
                     if (layer.Dirty) UploadProjectileLayer(layer);
                 }
             VisibilityTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start;
