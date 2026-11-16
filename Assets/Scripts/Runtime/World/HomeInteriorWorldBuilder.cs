@@ -33,9 +33,7 @@ namespace BarPromenade
         // rigid torso. Keep the near pillow seam clear of that shoulder.
         internal const float BedPillowHeadwardOffset = 0.11f;
         internal const float BedPillowSurfaceHeight =
-            BedMattressSurfaceHeight +
-            PlayerCharacterDimensions.SupinePelvisSupportOffset -
-            BedSleeperSinkDepth -
+            HomeBedInteractionPlan.SleepingHipHeight -
             PlayerCharacterDimensions.SupineHeadSupportOffset +
             BedPillowSinkDepth;
         internal const float BedPillowCenterHeight =

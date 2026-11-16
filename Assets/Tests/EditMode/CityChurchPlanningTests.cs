@@ -343,14 +343,31 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(top, Is.EqualTo(CityTerrainSurfacePlan
                         .SampleTop(layout, neighbour, point)).Within(Tolerance),
                         "The north seam must meet real terrain on both sides.");
-                    if (sample > 0 && sample < 8)
-                    {
-                        Assert.That(walkable.Contains(
-                            new Vector3(point.x, top, point.y),
-                            CityGroundTraversalPlanner.MaximumAgentRadius),
-                            Is.True, $"Open grass cannot hide a traversal seam at {point:F3} y={top:F3}.");
-                    }
                 }
+            }
+
+            CityChurchCourtyardPlan garden = CityChurchCourtyardPlanner.Create(layout, church,
+                CityChurchCemeteryPassagePlanner.Create(layout, church));
+            Rect opening = ChurchGardenBorderPlan.GetNorthOpeningBounds(garden);
+            const float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
+            CityEastExitPlan checkpoint = CityEastExitPlanner.Create(layout);
+            bool reachesCheckpoint = checkpoint.IsEnabled &&
+                opening.center.x >= checkpoint.ClosedGroundBounds.xMin &&
+                opening.center.x <= checkpoint.ClosedGroundBounds.xMax;
+            float accessibleEnd = reachesCheckpoint
+                ? checkpoint.ClosedGroundBounds.yMin - radius
+                : opening.yMax;
+            for (float z = opening.yMin; z < accessibleEnd; z += .25f)
+            {
+                Vector3 entry = new Vector3(opening.center.x, church.GroundTopY, z);
+                Assert.That(walkable.Contains(entry, radius), Is.True,
+                    $"The north hedge opening must pass a capsule at {entry:F3}.");
+            }
+            if (reachesCheckpoint)
+            {
+                Vector3 behindFence = new Vector3(opening.center.x, church.GroundTopY, opening.yMax + radius);
+                Assert.That(walkable.Contains(behindFence, radius), Is.False,
+                    "The church garden must not bypass the eastern checkpoint fence.");
             }
 
             var fences = CityChurchGroundPlan.CreateFenceSpans(layout, church);

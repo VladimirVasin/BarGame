@@ -209,9 +209,13 @@ namespace BarPromenade.Tests.PlayMode
             for (int index = 0; index < atmosphere.LampAnchors.Count; index++)
             {
                 Light streetLight = atmosphere.GetLightForAnchor(index);
-                Assert.That(streetLight.type, Is.EqualTo(LightType.Spot));
-                Assert.That(streetLight.innerSpotAngle, Is.LessThan(streetLight.spotAngle));
-                Assert.That(streetLight.transform.position, Is.EqualTo(atmosphere.LampAnchors[index].position));
+                Transform anchor = atmosphere.LampAnchors[index];
+                bool bareBulb = anchor.name == CityResidentialEntranceLighting.LightAnchorName ||
+                    anchor.name == "IndustrialTaskLight_CourtyardEntrance";
+                Assert.That(streetLight.type, Is.EqualTo(bareBulb ? LightType.Point : LightType.Spot), anchor.name);
+                if (!bareBulb)
+                    Assert.That(streetLight.innerSpotAngle, Is.LessThan(streetLight.spotAngle), anchor.name);
+                Assert.That(streetLight.transform.position, Is.EqualTo(anchor.position));
             }
 
             for (int index = 0;
@@ -295,7 +299,7 @@ namespace BarPromenade.Tests.PlayMode
                 Transform anchor = night.LampAnchors[index];
                 Assert.That(
                     anchor.name,
-                    Does.StartWith("Street Lamp Anchor "));
+                    Does.StartWith("Street Lamp Anchor ").Or.StartWith(RidgeParkingPlan.LampAnchorPrefix));
                 Assert.That(anchor.childCount, Is.Zero);
                 Assert.That(anchor.GetComponent<Renderer>(), Is.Null);
             }
@@ -1181,11 +1185,8 @@ namespace BarPromenade.Tests.PlayMode
                 }
             }
 
-            Assert.That(
-                siteLights,
-                Has.Length.EqualTo(expectedLightNames.Count),
-                "The public places carry no lights beyond the two mast " +
-                "floodlights and the drying yard pole.");
+            foreach (string name in expectedLightNames)
+                Assert.That(siteLights.Count(light => light.name == name), Is.EqualTo(1), name);
             var floodlightHalos = new List<CityLightHalo>();
             foreach (string expectedName in expectedLightNames)
             {

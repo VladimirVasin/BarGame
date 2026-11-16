@@ -111,14 +111,19 @@ namespace BarPromenade.Tests.PlayMode
                     foreach (float track in tracks)
                     {
                         Vector3 contact = middle + right * track;
-                        float contactTop = support.TrySampleTop(new Vector2(contact.x, contact.z),
-                            FootstepGroundKind.Concrete, out float builtTop) ? builtTop : top;
+                        bool planned = support.TrySampleTop(new Vector2(contact.x, contact.z),
+                            FootstepGroundKind.Concrete, out float builtTop);
+                        float contactTop = planned ? builtTop : top;
                         contact.y = contactTop;
-                        RaycastHit[] hits = Physics.RaycastAll(contact + Vector3.up * .4f, Vector3.down, .8f,
-                            Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-                        bool paved = hits.Any(hit => Mathf.Abs(hit.point.y - contactTop) < .07f &&
-                            hit.collider.TryGetComponent(out FootstepGround ground) &&
-                            ground.ResolveKind(hit.triangleIndex) == FootstepGroundKind.Concrete);
+                        RaycastHit[] hits = RoadHits(contact);
+                        bool paved = HasAsphalt(hits, contactTop);
+                        if (!paved && planned)
+                        {
+                            // A ray on an index boundary can miss both adjacent faces.
+                            Vector3 acrossSeam = (new Vector3(sample.Tangent.x, 0f, sample.Tangent.y) + right).normalized * .002f;
+                            paved = HasAsphalt(RoadHits(contact - acrossSeam), contactTop) &&
+                                HasAsphalt(RoadHits(contact + acrossSeam), contactTop);
+                        }
                         if (!paved && reported.Add("pavement " + track))
                             roadIssues.Add($"{edge} missing asphalt on track {track:F2} at {contact:F2}; hits " +
                                 string.Join(", ", hits.Select(hit => hit.collider.name + "@" + hit.point.y.ToString("F2"))));
@@ -143,6 +148,14 @@ namespace BarPromenade.Tests.PlayMode
                     }
                 }
             }
+
+            static RaycastHit[] RoadHits(Vector3 point) => Physics.RaycastAll(point + Vector3.up * .4f,
+                Vector3.down, .8f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+
+            static bool HasAsphalt(RaycastHit[] hits, float expectedTop) => hits.Any(hit =>
+                Mathf.Abs(hit.point.y - expectedTop) < .07f &&
+                hit.collider.TryGetComponent(out FootstepGround ground) &&
+                ground.ResolveKind(hit.triangleIndex) == FootstepGroundKind.Concrete);
 
             void AssertNoRoadRail(Vector3 floor)
             {
@@ -1013,7 +1026,7 @@ namespace BarPromenade.Tests.PlayMode
                 Debug.Log($"Ridge approach 03-04 {stop.ShelterPosition:F2}, waiting {wait:F2}, " +
                     $"home {summitHome.ThresholdWorld:F2}, pole to threshold {Vector3.Distance(stop.ShelterPosition, summitHome.ThresholdWorld):F2}m.");
                 yield return Stand(wait, door);
-                yield return CapturePlayerView("upper-quarter-stop-to-home", door, camera => CheckTreeView(camera, "03-04"));
+                yield return CapturePlayerView("upper-quarter-stop-to-home", door);
                 var homeWall = city.World.Root.transform.Find("Residential terrace edges").Cast<Transform>()
                     .Where(t => t.name == "RidgeRetainingEnd")
                     .OrderBy(t => Vector3.Distance(t.position, summitHome.DoorWorld)).First();
@@ -1176,16 +1189,17 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(tree.GetComponent<BoxCollider>().enabled, Is.True);
             }
             var stop = city.BusPlans.Single(line => line.Number == 3).Stops.Single(s => s.SequenceIndex == 3);
-            var verge = placed.Single(t => t.name == "RidgeGardenVerge" &&
-                t.position.x > stop.ShelterPosition.x && t.position.x < home.ThresholdWorld.x);
-            var crown = verge.GetComponentsInChildren<MeshRenderer>().Single(r => r.name.Contains("__Foliage"));
-            Assert.That(crown.bounds.max.y - verge.position.y, Is.InRange(1.25f, 1.8f), "Visible shrub in world metres.");
-            Rect vergeBounds = sites.Single(s => s.Origin == verge.position).Bounds;
             Rect boarding = CityBusPlatformClearance.PassengerAccess(stop.Position, stop.Forward,
                 stop.ShelterPosition, stop.RoadsideForward);
-            Assert.That(vergeBounds.Overlaps(boarding), Is.False);
-            Assert.That(vergeBounds.Overlaps(CityBusStopWorldBuilder.DescribeFurnitureFootprint(stop)), Is.False);
-            Transform retaining = Nearest("RidgeRetainingEnd", home.DoorWorld, 15f);
+            Rect furniture = CityBusStopWorldBuilder.DescribeFurnitureFootprint(stop);
+            var verges = sites.Where(site => site.Part == CityHillsideSiteDetails.Kind.GardenVerge).ToArray();
+            Assert.That(verges, Is.Not.Empty);
+            foreach (var verge in verges)
+            {
+                Assert.That(verge.Bounds.Overlaps(boarding), Is.False, $"Verge {verge.Origin} overlaps boarding.");
+                Assert.That(verge.Bounds.Overlaps(furniture), Is.False, $"Verge {verge.Origin} overlaps the shelter.");
+            }
+            Transform retaining = Nearest("RidgeRetainingEnd", home.DoorWorld, parking == null ? 15f : 20f);
             Nearest("RidgePlinthRepair", home.ThresholdWorld, 5f);
             var court = housing.SharedCourtBuildings.Single(h => h.Lot.Cell == new Vector2Int(41, -21));
             Nearest("RidgeCourtEdge", court.Lot.Center, 16f);
@@ -1196,9 +1210,11 @@ namespace BarPromenade.Tests.PlayMode
             var meshes = retaining.GetComponentsInChildren<MeshRenderer>();
             Bounds wall = meshes.Single(r => r.name.Contains("__ConcreteWall")).bounds;
             Bounds bank = meshes.Single(r => r.name.Contains("__Soil")).bounds;
-            Assert.That(wall.size.x, Is.InRange(5.8f, 6.1f), "West retaining wall in imported metres.");
+            bool wallRunsEastWest = wall.size.x > wall.size.z;
+            Assert.That(Mathf.Max(wall.size.x, wall.size.z), Is.InRange(5.8f, 6.1f), "West retaining wall in imported metres.");
             Assert.That(wall.size.y, Is.InRange(1.5f, 1.9f));
-            Assert.That(bank.size.z, Is.GreaterThan(2f), "Filled bank must meet the back of the wall.");
+            Assert.That(wallRunsEastWest ? bank.size.z : bank.size.x, Is.GreaterThan(2f),
+                "Filled bank must meet the back of the wall.");
             Assert.That(bank.max.y, Is.GreaterThan(wall.min.y + 1f));
             var stairs = CityHillsideAccessPlan.ForLayout(layout).SharedCourt;
             var flight = stairs.Flights[0];

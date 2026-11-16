@@ -629,7 +629,9 @@ namespace BarPromenade.Tests.PlayMode
                 foreach (Renderer renderer in home.ToiletPlunge.Appearance.Renderers)
                 {
                     if (!renderer.name.StartsWith("Trousers_", StringComparison.Ordinal)) continue;
-                    string sourceName = "GEO_" + renderer.name.Substring("Trousers_".Length);
+                    string part = renderer.name.Substring("Trousers_".Length);
+                    if (part == "Belt" || part == "BeltBuckle") continue;
+                    string sourceName = "CLO_Trousers" + part;
                     foreach (Player3DMeshBinding binding in registry.MeshBindings)
                     {
                         if (binding.MeshName != sourceName) continue;
@@ -788,6 +790,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private void AssertRestored(OwnedState state)
         {
+            GameCursor.SetApplicationFocused(true);
             Assert.That(home.ToiletChoice.IsOpen, Is.False);
             Assert.That(home.ToiletPlunge.IsActive, Is.False);
             Assert.That(home.ToiletPlunge.Underwater.IsActive, Is.False);
@@ -824,8 +827,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.CameraFollow.FixedBaseFieldOfView, Is.EqualTo(state.Fov).Within(.0001f));
             Assert.That(Vector3.Distance(home.CameraFollow.FixedBasePosition, state.CameraPosition), Is.LessThan(.001f));
             Assert.That(Quaternion.Angle(home.CameraFollow.FixedBaseRotation, state.CameraRotation), Is.LessThan(.01f));
-            Assert.That(Cursor.lockState, Is.EqualTo(state.CursorLock));
-            Assert.That(Cursor.visible, Is.EqualTo(state.CursorVisible));
+            Assert.That(GameCursor.GameplayMouseInputAllowed, Is.EqualTo(state.GameplayMouseInput));
+            Assert.That(GameCursor.FreeCursorRequested, Is.EqualTo(state.FreeCursor));
         }
 
         private static IEnumerator WaitForAudioRestored(OwnedState state)
@@ -967,13 +970,13 @@ namespace BarPromenade.Tests.PlayMode
 
         private readonly struct OwnedState
         {
-            public readonly bool MotorInput, InteractorInput, Orbit, Cinematic, Hud, CursorVisible;
+            public readonly bool MotorInput, InteractorInput, Orbit, Cinematic, Hud, GameplayMouseInput, FreeCursor;
             public readonly float Near, Fov, AudioCutoff, AudioGain;
             public readonly Vector3 CameraPosition;
             public readonly Quaternion CameraRotation;
-            public readonly CursorLockMode CursorLock;
             public OwnedState(HomeInteriorRoot home, Camera camera)
             {
+                GameCursor.SetApplicationFocused(true);
                 MotorInput = home.Player.Motor.InputEnabled;
                 InteractorInput = home.Player.Interactor.InputEnabled;
                 Orbit = home.CameraFollow.OrbitInputEnabled;
@@ -985,8 +988,8 @@ namespace BarPromenade.Tests.PlayMode
                 GameAudioMixer.Mixer.GetFloat(HomeToiletUnderwaterEffect.GainParameter, out AudioGain);
                 CameraPosition = home.CameraFollow.FixedBasePosition;
                 CameraRotation = home.CameraFollow.FixedBaseRotation;
-                CursorLock = Cursor.lockState;
-                CursorVisible = Cursor.visible;
+                GameplayMouseInput = GameCursor.GameplayMouseInputAllowed;
+                FreeCursor = GameCursor.FreeCursorRequested;
             }
         }
     }

@@ -290,8 +290,8 @@ namespace BarPromenade
                     ridge.Stations[stationIndex];
                 CityMountainRidgeStation next =
                     ridge.Stations[stationIndex + 1];
-                Vector3[] currentCross = CreateTalusCrossSection(current, layout);
-                Vector3[] nextCross = CreateTalusCrossSection(next, layout);
+                Vector3[] currentCross = CreateTalusCrossSection(current, layout, ridge.IsSouthWestJoin);
+                Vector3[] nextCross = CreateTalusCrossSection(next, layout, ridge.IsSouthWestJoin);
                 Vector3 inward = -Flatten(
                     current.OutwardNormal + next.OutwardNormal);
                 for (int band = 0; band < currentCross.Length - 1; band++)
@@ -328,14 +328,14 @@ namespace BarPromenade
                 vertices,
                 uvs,
                 triangles,
-                CreateTalusCrossSection(ridge.Stations[first], layout),
+                CreateTalusCrossSection(ridge.Stations[first], layout, ridge.IsSouthWestJoin),
                 ridge.Stations[first].WorldXZ -
                 ridge.Stations[first + 1].WorldXZ);
             AddEndCap(
                 vertices,
                 uvs,
                 triangles,
-                CreateTalusCrossSection(ridge.Stations[last], layout),
+                CreateTalusCrossSection(ridge.Stations[last], layout, ridge.IsSouthWestJoin),
                 ridge.Stations[last].WorldXZ -
                 ridge.Stations[last - 1].WorldXZ);
 
@@ -416,10 +416,14 @@ namespace BarPromenade
             return result;
         }
 
-        private static Vector3[] CreateTalusCrossSection(CityMountainRidgeStation station, CityLayout layout)
+        private static Vector3[] CreateTalusCrossSection(CityMountainRidgeStation station,
+            CityLayout layout, bool cornerJoin)
         {
             Vector3[] cross = CreateCrossSection(station);
             if (layout == null) return cross;
+            // The corner apron falls across the overlap at the two joins.
+            // Sink only the buried edge so that it remains below either apron.
+            if (cornerJoin) cross[0] += Vector3.down * .05f;
             float lift = CityMountainTalusPlan.ForLayout(layout).ApplyHeight(station.WorldXZ, station.BaseY) - station.BaseY;
             // The buried lip closes local notches where a reserved approach
             // lowers the apron between two ridge stations.

@@ -99,15 +99,21 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 presentation.Renderers.Count,
                 Is.GreaterThanOrEqualTo(16));
+            PlayerWardrobe wardrobe = presentation.Registry.GetComponent<PlayerWardrobe>();
+            Assert.That(wardrobe, Is.Not.Null.And.Property("IsConfigured").True);
+            int visibleRenderers = 0;
             for (int index = 0; index < presentation.Renderers.Count; index++)
             {
                 Renderer renderer = presentation.Renderers[index];
                 Assert.That(renderer, Is.Not.Null);
-                Assert.That(renderer.enabled, Is.True);
+                Assert.That(renderer.enabled, Is.EqualTo(wardrobe.IsRendererWorn(renderer)), renderer.name);
+                if (!renderer.enabled) continue;
+                visibleRenderers++;
                 Assert.That(
                     renderer.shadowCastingMode,
-                    Is.EqualTo(ShadowCastingMode.On));
+                    Is.EqualTo(ShadowCastingMode.On).Or.EqualTo(ShadowCastingMode.TwoSided));
             }
+            Assert.That(visibleRenderers, Is.GreaterThan(0));
 
             presentation.SetMotion(new PlayerMotionSample(
                 Vector3.forward *

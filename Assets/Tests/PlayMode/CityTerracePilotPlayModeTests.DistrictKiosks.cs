@@ -194,7 +194,9 @@ namespace BarPromenade.Tests.PlayMode
                     yield return PressKioskE();
                     Assert.That(menu.IsOpen, Is.True);
                     Assert.That(menu.Select(3), Is.True);
-                    Assert.That(menu.ConfirmSelection(), Is.True);
+                    // A newly opened shelf ignores the input frame that opened it.
+                    yield return null;
+                    Assert.That(menu.ConfirmSelection(), Is.True, $"{site.StableId}: {menu.FeedbackKey}");
                     Assert.That(receipt.IsPresenting, Is.True);
                     Assert.That(GameSessionState.CashBalance, Is.EqualTo(cash - 28));
                     Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.VodkaBottle), Is.EqualTo(count + 1));

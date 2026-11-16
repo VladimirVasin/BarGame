@@ -236,25 +236,6 @@ namespace BarPromenade
                 PhysicalRidgeMaterial);
         }
 
-        internal static float EvaluatePhysicalFogVisibility(
-            float cameraDistance)
-        {
-            float distance = Mathf.Max(0f, cameraDistance);
-            float fogTerm = RuntimeSceneSetup.CityFogDensity * distance;
-            float nativeVisibility = Mathf.Exp(-fogTerm * fogTerm);
-            float blend = Mathf.SmoothStep(
-                0f,
-                1f,
-                Mathf.InverseLerp(
-                    NativeFogNearDistance,
-                    NativeFogFarDistance,
-                    distance));
-            return Mathf.Lerp(
-                nativeVisibility,
-                Mathf.Max(nativeVisibility, PhysicalVisibilityFloor),
-                blend);
-        }
-
         internal static Color CreateDisplayTint(Color sourceTint)
         {
             return SurfaceAppearanceCore.CreateDisplayTint(

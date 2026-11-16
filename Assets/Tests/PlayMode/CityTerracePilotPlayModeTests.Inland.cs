@@ -99,6 +99,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             int contacts = 0;
             int bodySteps = Mathf.CeilToInt(vehicle.InflatedLength / .5f);
+            var hits = new RaycastHit[16];
             for (int index = 0; index < link.Samples.Count; index += 10)
             {
                 CityBusPathSample sample = link.Samples[index];
@@ -113,16 +114,31 @@ namespace BarPromenade.Tests.PlayMode
                         vehicle.InflatedLength * .5f, body / (float)bodySteps) + right * (vehicle.InflatedWidth * .5f * side);
                     bool road = support.TrySampleTop(point, FootstepGroundKind.Concrete, out float roadTop);
                     bool paving = support.TrySampleTop(point, FootstepGroundKind.Stone, out float pavingTop);
-                    Assert.That(road || paving, Is.True, link.Id + " unsupported body at " + point);
-                    if (road && paving)
-                        Assert.That(pavingTop - roadTop, Is.LessThanOrEqualTo(.01f), link.Id + " body reaches a raised kerb");
+                    if (!road && !paving)
+                        Assert.Fail($"{link.Id} body has no planned support at {point:F4}.");
+                    if (road && paving && pavingTop - roadTop > .01f)
+                        Assert.Fail($"{link.Id} body reaches a raised kerb at {point:F4}.");
                     float top = road && paving ? Mathf.Max(roadTop, pavingTop) : road ? roadTop : pavingTop;
-                    RaycastHit hit = Physics.RaycastAll(new Vector3(point.x, top + .3f, point.y), Vector3.down,
-                            .6f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
-                        .Where(candidate => !IsMovingSceneBody(candidate.collider)).OrderBy(candidate => candidate.distance).FirstOrDefault();
-                    Assert.That(hit.collider, Is.Not.Null, link.Id + " body has no physical paving at " + point);
-                    Assert.That(hit.point.y, Is.EqualTo(top).Within(.04f),
-                        link.Id + $" body support collider {hit.collider.name} differs at {point:F4}");
+                    var origin = new Vector3(point.x, top + .3f, point.y);
+                    int count;
+                    while ((count = Physics.RaycastNonAlloc(origin, Vector3.down, hits,
+                        .6f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) == hits.Length)
+                    {
+                        System.Array.Resize(ref hits, hits.Length * 2);
+                    }
+                    RaycastHit hit = default;
+                    float nearest = float.PositiveInfinity;
+                    for (int candidate = 0; candidate < count; candidate++)
+                    {
+                        if (hits[candidate].distance >= nearest || IsMovingSceneBody(hits[candidate].collider)) continue;
+                        hit = hits[candidate];
+                        nearest = hit.distance;
+                    }
+                    if (hit.collider == null)
+                        Assert.Fail($"{link.Id} body has no physical paving at {point:F4}.");
+                    if (Mathf.Abs(hit.point.y - top) > .04f)
+                        Assert.Fail($"{link.Id} body support collider {hit.collider.name} at {point:F4} " +
+                            $"is at {hit.point.y:F4} m, expected {top:F4} m.");
                     contacts++;
                 }
             }

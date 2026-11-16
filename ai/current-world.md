@@ -1133,9 +1133,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   and a brief wet-sand tail. The shared transparent swash strips conform to
   the beach, add no collision and exclude the sea wall and port quay.
   Beach sand carries bounded `0.15 m` deterministic relief on a `0.4 m`
-  grid and a shallow loose visual skin; its collider is a coarser `0.8 m`
-  lattice (`0.4 m` in the port's graded box). `CitySandTreading` presses only
-  the skin into soft trails; confirmed beach contacts use `FootstepSand` and
+  grid and a shallow loose visual skin. The collider uses a `1.0 m` grid on
+  gentle sand and shares the `0.4 m` grid with the drawn mesh at the port grade
+  and coastal sidewalk. `CitySandTreading` presses the skin into soft trails.
+  Confirmed beach contacts use `FootstepSand` and
   small sand grains through the village kickup effect. The loose skin fades across the
   last `4–6 m` toward the surf. The same sand texture, tint and world UVs
   continue from exact shared shore heights and normals down an `18 m`
@@ -1340,7 +1341,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   shelters; the bus network owns stop poles and shelters. Ground frontage/
   roadside descriptors sample final XZ rendered terrain; geometry/collision/
   interaction docks share pavement heights, not lot datums;
-- Residential pockets:≤four facade sites/depth≤`1.05 m`; six imports:Nardi/
+- Residential pockets:≤four facade sites/depth≤`1.05 m`, actual sidewalk widths; six imports:Nardi/
   bicycle repair/basket-pulley/chair repair/sweeping/bench-planters. Full proxies
   yield to doors/access/POIs/collision/lines; entering static collision before
   wind dressing moves/omits intersecting wash. ≤five generic colliderless residents;
@@ -2375,8 +2376,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Pelvis alignment keeps the longitudinal coordinate; the approach clears the
   south-west bookcase and the head rests south. The1.15m sofa/manifest share
   .415m travel; baked hands retain support and clear the mattress/back.
-  Measured supine/head/seat offsets in `PlayerCharacterDimensions` determine
-  hip heights; pillow/blanket/shirt fit around the pose.
+  The measured supine pose includes clearance for the sleepwear. The pillow
+  and hip rise together to keep head and body contact with the bedding.
   The mattress and the closed, domed pillow use deformable vertex grids:
   they dent under actual contact with their local rest surface, his hip
   target descends by the same sink depth so he lies in the dent rather than

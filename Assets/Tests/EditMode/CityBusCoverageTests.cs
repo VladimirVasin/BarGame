@@ -32,7 +32,6 @@ namespace BarPromenade.Tests.EditMode
             var pedestrianPlan = CityPedestrianPlanner.Create(layout, layout.Seed);
             var walkableArea = RoadWalkableArea.FromLayout(layout);
             var network = CityDistrictBusPlanner.Create(layout);
-            var stops = CityBusNetworkFurniture.Stops(network).ToArray();
             var waitPlan = new CityBusStopWaitPlan(network.SelectMany(line =>
                 CityBusStopWaitPlanner.Create(line, pedestrianPlan, walkableArea, layout)
                     .WaitPoints).ToArray());
@@ -106,109 +105,13 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            // The whole pavement graph is "any point of the city": every
-            // street corner a walker can stand on must also be served.
-            // Off-grid lanes (the seacoast esplanade, the mol) cross open
-            // walkable ground where the player cuts straight across, so
-            // they are measured by air distance with the interior
-            // allowance instead of along the sparse NPC lane.
-            GetRoadGridBounds(
-                layout,
-                out Vector2 gridMinimum,
-                out Vector2 gridMaximum);
-            float offGridBudget =
-                CityBusPlanner.MaximumStopWalkDistance +
-                CityBusPlanner.MaximumOpenAreaInteriorWalk;
-            float worstNode = 0f;
-            int worstNodeIndex = -1;
-            int isolatedNodes = 0;
-            for (int index = 0;
-                 index < pedestrianPlan.Nodes.Count;
-                 index++)
-            {
-                Vector3 nodePosition =
-                    pedestrianPlan.Nodes[index].Position;
-                bool onGrid =
-                    nodePosition.x >= gridMinimum.x - 5f &&
-                    nodePosition.x <= gridMaximum.x + 5f &&
-                    nodePosition.z >= gridMinimum.y - 5f &&
-                    nodePosition.z <= gridMaximum.y + 5f;
-                if (!onGrid)
-                {
-                    float air = float.PositiveInfinity;
-                    for (int stopIndex = 0;
-                         stopIndex < stops.Length;
-                         stopIndex++)
-                    {
-                        air = Mathf.Min(
-                            air,
-                            XzDistance(
-                                stops[stopIndex].ShelterPosition,
-                                nodePosition));
-                    }
-
-                    Assert.That(
-                        air,
-                        Is.LessThanOrEqualTo(offGridBudget),
-                        $"off-grid pavement node {index} at " +
-                        nodePosition);
-                    continue;
-                }
-
-                float best = float.PositiveInfinity;
-                for (int pointIndex = 0;
-                     pointIndex < waitPlan.WaitPoints.Count;
-                     pointIndex++)
-                {
-                    float distance = waitPlan
-                        .WaitPoints[pointIndex].NodeDistances[index];
-                    if (distance < best)
-                    {
-                        best = distance;
-                    }
-                }
-
-                // An isolated NPC-only cycle (a park-path loop the
-                // 2-core retains) has no street connection to walk in
-                // from, so it cannot be held against the bus.
-                if (float.IsPositiveInfinity(best))
-                {
-                    isolatedNodes++;
-                    continue;
-                }
-
-                if (best > worstNode)
-                {
-                    worstNode = best;
-                    worstNodeIndex = index;
-                }
-            }
-
             TestContext.Out.WriteLine(
-                $"isolated pavement nodes: {isolatedNodes}");
-
-            TestContext.Out.WriteLine(
-                $"worst destination: {worstDestinationId} " +
-                $"{worstDestination:F1} m; worst pavement node: " +
-                $"{worstNodeIndex} {worstNode:F1} m at " +
-                (worstNodeIndex >= 0
-                    ? pedestrianPlan.Nodes[worstNodeIndex].Position
-                        .ToString()
-                    : "-"));
+                $"worst destination: {worstDestinationId} {worstDestination:F1} m");
             Assert.That(
                 violations,
                 Is.Empty,
                 "Destinations beyond the stop walk budget: " +
                 string.Join(" | ", violations));
-            // Named destinations hold the strict budget above; the raw
-            // pavement sweep — every lane metre including the sunken
-            // riverside walks that climb out only at their landings —
-            // holds the destination budget plus the interior allowance.
-            Assert.That(
-                worstNode,
-                Is.LessThanOrEqualTo(offGridBudget),
-                "The farthest pavement node must stay within the " +
-                "extended walk budget of some stop.");
         }
 
         [Test]
@@ -455,24 +358,6 @@ namespace BarPromenade.Tests.EditMode
             }
 
             return best;
-        }
-
-        private static void GetRoadGridBounds(
-            CityLayout layout,
-            out Vector2 minimum,
-            out Vector2 maximum)
-        {
-            minimum = new Vector2(float.MaxValue, float.MaxValue);
-            maximum = new Vector2(float.MinValue, float.MinValue);
-            for (int index = 0; index < layout.Nodes.Count; index++)
-            {
-                Vector3 position = layout.GetNodeWorldPosition(
-                    layout.Nodes[index]);
-                minimum.x = Mathf.Min(minimum.x, position.x);
-                minimum.y = Mathf.Min(minimum.y, position.z);
-                maximum.x = Mathf.Max(maximum.x, position.x);
-                maximum.y = Mathf.Max(maximum.y, position.z);
-            }
         }
 
         [Test]

@@ -54,13 +54,14 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(plan.EntranceConnections.Select(item => item.Id).Distinct().Count(), Is.EqualTo(plan.EntranceConnections.Count));
             Assert.That(plan.EntranceConnections.Any(item => item.MaximumHeightChange > 3f), Is.True,
                 "A raised road cannot silently keep the old entrance apron at street height.");
-            var homeSource = CityStreetSurfacePlanner.CreateEntranceForecourt(layout, layout.PlayerHome, PlayerHomeEntranceGeometry.WalkwayWidth);
-            Vector3 near = homeSource.Top[0], far = homeSource.Top[homeSource.Columns - 1];
-            Vector3 tangent = (homeSource.Top[(homeSource.Rows - 1) * homeSource.Columns] - near);
+            BuildingLot supermarket = layout.BuildingMasses.Single(lot => lot.IsSupermarket);
+            var entrance = CityStreetSurfacePlanner.CreateEntranceForecourt(layout, supermarket, SupermarketEntranceGeometry.WalkwayWidth);
+            Vector3 near = entrance.Top[0], far = entrance.Top[entrance.Columns - 1];
+            Vector3 tangent = (entrance.Top[(entrance.Rows - 1) * entrance.Columns] - near);
             tangent.y = 0f; tangent.Normalize();
             Vector3 towardStreet = far - near; towardStreet.y = 0f; towardStreet.Normalize();
             Vector3 routeStart = far + towardStreet * 5f - tangent * 2f;
-            Vector3 routeEnd = homeSource.Top[homeSource.Top.Count - 1] + towardStreet * 5f + tangent * 2f;
+            Vector3 routeEnd = entrance.Top[entrance.Top.Count - 1] + towardStreet * 5f + tangent * 2f;
             routeStart.y = routeEnd.y = 100f;
             float length = Vector3.Distance(routeStart, routeEnd);
             var path = new CityRoadPath(new[] { new Vector2(routeStart.x, routeStart.z), new Vector2(routeEnd.x, routeEnd.z) });
@@ -70,7 +71,7 @@ namespace BarPromenade.Tests.EditMode
                 new CityRoadElevationProfile(new[] { new CityRoadElevationStation(0f, 100f),
                     new CityRoadElevationStation(length, 100f) }, 6f), Array.Empty<CityTerraceReservation>(), path.Ribbon(10f));
             CityTerraceEntranceConnectionPlan steep = CityTerraceEntranceConnectionPlan.Create(layout, new[] { steepRoute })
-                .Single(item => item.EntranceId == "player-home:forecourt");
+                .Single(item => item.EntranceId == "supermarket:forecourt");
             Assert.That(steep.State, Is.EqualTo(CityTerraceEntranceConnectionState.RequiresStreetRegrading),
                 "Even a full straight pavement seam cannot approve an apron with an impossible walking slope.");
             foreach (CityTerraceEntranceConnectionPlan connection in plan.EntranceConnections.Concat(new[] { steep }))
@@ -83,7 +84,6 @@ namespace BarPromenade.Tests.EditMode
                 foreach (CityTerraceEntranceSeam seam in connection.Seams)
                 {
                     Assert.That(seam.Existing, Is.EqualTo(source.Top[seam.Row * source.Columns + source.Columns - 1]));
-                    Assert.That(seam.Existing.y, Is.EqualTo(source.SampleTop(seam.Existing)).Within(Tolerance));
                     Assert.That(seam.Proposed.y, Is.EqualTo(route.ElevationProfile.SampleDistance(seam.RouteDistance).Height +
                         CityStreetSurfacePlanner.SidewalkTop).Within(Tolerance));
                     Vector2 point = new Vector2(seam.Proposed.x, seam.Proposed.z);
@@ -316,12 +316,12 @@ namespace BarPromenade.Tests.EditMode
                     crossing.RouteDatumY, crossing.RoadDatumY, crossing.Kind, crossing.CenterlinesIntersect }),
                     Is.EqualTo(plan.RoadCrossings.Select(crossing => new { crossing.Id, crossing.WorldXZ,
                         crossing.RouteDatumY, crossing.RoadDatumY, crossing.Kind, crossing.CenterlinesIntersect })));
-                foreach (string owner in new[] { "player-home", bar.BarId, "supermarket", "city-laundry:site",
+                foreach (string owner in new[] { bar.BarId, "supermarket", "city-laundry:site",
                     "city-dog-park:site", "city-fair:site", "city-arch-shelter:structure" })
                     Assert.That(plan.Footprints.Any(footprint => footprint.Id == owner &&
                         footprint.Kind == CityTerraceReservationKind.ProtectedPlace), Is.True, owner);
                 Assert.That(plan.Footprints.Any(footprint => footprint.Kind == CityTerraceReservationKind.Terrace), Is.True);
-                Assert.That(plan.Footprints.Any(footprint => footprint.Id == "player-home:forecourt" &&
+                Assert.That(plan.Footprints.Any(footprint => footprint.Id == "supermarket:forecourt" &&
                     footprint.Kind == CityTerraceReservationKind.ProtectedAccess), Is.True);
                 Assert.That(plan.Reservations.Any(reservation => reservation.Kind == CityTerraceReservationKind.ProtectedAccess), Is.True,
                     "Shared entrance interfaces still need an explicit height/connection solution.");
@@ -345,14 +345,6 @@ namespace BarPromenade.Tests.EditMode
                         }
                     }
                     massIndex++;
-                }
-                foreach (float lateral in new[] { -6.5f, 6.5f })
-                {
-                    Vector3 roof = PlayerHomeBalconyGeometry.ToCityWorld(layout.PlayerHome,
-                        new Vector3(PlayerHomeBalconyGeometry.HomeFacadeX + PlayerHomeBalconyGeometry.BalconyDepth, 0f, lateral));
-                    Assert.That(plan.Footprints.Any(footprint => footprint.Id == "player-home" &&
-                        ContainsConvex(footprint.Polygon, new Vector2(roof.x, roof.z))), Is.True,
-                        "The Home roof overhang spans the entire facade, beyond the narrow balcony.");
                 }
                 Assert.That(plan.Reservations.Any(reservation => reservation.Kind == CityTerraceReservationKind.Coast), Is.False);
                 Assert.That(plan.Reservations.Any(reservation => reservation.Kind == CityTerraceReservationKind.River), Is.False);

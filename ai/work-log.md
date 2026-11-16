@@ -21,22 +21,16 @@ Proof: `build-city-bus-3d-model`, `CityMidibusRemodel`,
 `Driver_SitsOnTheDrawnSeatAndWorksWheelAndButtonWithoutCrossingLimbs`,
 `build-last-route-cabin-actions --validate-only`.
 
-The start menu prepares shared Home/City plans and queues assets one at a time.
-`MenuWarmup_ReusesSharedPlansAtTheStreetDoor` exposed prefab reads on the worker.
-The electrical planner snapshots imported geometry on the main thread.
-`NewGame_LoadingScreenCoversCompositionUntilDestinationReady` passed.
+Menu prewarms Home/City in stages. Electrical assets stay on the main thread.
+`MenuWarmup_ReusesSharedPlansAtTheStreetDoor`, `NewGame_LoadingScreenCoversCompositionUntilDestinationReady`.
 
-Combat prebuild measures the current strike and uses imported rest vertices for body scale.
-`CombatTestAssetSetup.BuildOrThrow`, `BuildKickOrThrow` and
-`CombatBodyAssetSetup.ValidateImportedOrThrow` passed.
-The secondary-motion bake synchronizes combat imports before sampling clips.
-`CurrentProject_PassesReadOnlyGate` passed after rebaking.
+Combat prebuild measures the current strike and imported body scale.
+`CombatTestAssetSetup.BuildOrThrow`, `BuildKickOrThrow`, `CombatBodyAssetSetup.ValidateImportedOrThrow`.
+Secondary motion synchronizes combat imports. `CurrentProject_PassesReadOnlyGate`.
 
-Flashlight inventory events follow enable/disable. Static
-world pruning selects the Unity destruction API for the current mode. Litter
-reads established entrance grade. The brook cuts the final yard grade and
-refines the full climbable bank. Snow follows the built mesh and house
-thresholds retain their level. Proof includes `CityLitterPlanTests`,
+Flashlight events follow enable/disable. Pruning uses the current Unity mode.
+Litter follows entry grade, snow follows ground. The brook cuts and grades the bank.
+Thresholds retain height. `CityLitterPlanTests`,
 `QuestLogTests`, `CityBusRuntimeTests` and `SnowMesh_NeverLiesOverATroddenRoute`.
 
 Entrance routes use real shelter solids. The Home pool owns its roster and
@@ -46,11 +40,15 @@ uses City obstacle limits. Standalone heroes retain their spawn.
 The Ferryman joins the lane smoothly. A bus already yielding to another's hull
 cedes the crossing prediction. `CityDeparture_TakesTheTunnelTurnLikeAnyOtherRoadTurn`,
 `Passenger_TransfersFromWestToHillsideAtTheSharedStop`.
-Poles clear the pawnshop stairs and sidewalk.
-`LiveCity_PawnshopDescentWalksBothWaysWithSupportedStepsRailsAndMapArrivals` passed.
-Bus route and yard rider sample the built surface.
-`DefaultCoastal_BuildsClosedWindingTargetRoute`, `YardWheelchairMotionTests`.
-Balcony finishes persist across days. `HomeSurfaceAppearanceTests`.
+Poles clear the pawnshop stairs. `LiveCity_PawnshopDescentWalksBothWaysWithSupportedStepsRailsAndMapArrivals`.
+Bus and rider use built ground. `DefaultCoastal_BuildsClosedWindingTargetRoute`, `YardWheelchairMotionTests`.
+Balcony finishes persist. `HomeSurfaceAppearanceTests`.
+
+Sand collision follows the waterfront grade. Sleepwear and the shot grip clear their support.
+`Build_DefaultContinuousTerrain_MatchesPlanAndOwnsCollider`, `SouthWestCornerClosure_WeldsSampledGroundAndCollision`,
+`Bed_SleepAndWakeNeverPushTheHeroThroughTheMattress`, `VodkaService_KeepsShotClearOfCounterAndMenu`.
+Residential pockets use each side's pavement width.
+`ResidentialCourtyardPockets_AreFourDistinctClearAndWindAware`.
 
 ## 2026-11-15
 

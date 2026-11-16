@@ -140,12 +140,12 @@ namespace BarPromenade.Tests.PlayMode
 
             // Sober first: the reference walk.
             WalkRecord sober = null;
-            yield return RecordWalk(0, 8f, camera, 0, record => sober = record);
+            yield return RecordWalk(0, 12f, camera, 0, record => sober = record);
             DestroyHero();
             yield return null;
 
             WalkRecord drunk = null;
-            yield return RecordWalk(100, 8f, camera, 1, record => drunk = record);
+            yield return RecordWalk(100, 12f, camera, 1, record => drunk = record);
 
             Debug.Log(
                 $"Drunk gait: sober width {sober.MeanWidth:F3} m, drunk width {drunk.MeanWidth:F3} m; " +

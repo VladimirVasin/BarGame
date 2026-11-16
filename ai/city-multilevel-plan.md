@@ -120,7 +120,7 @@ City shared light/material/post. Будки→вход/земля,soft/pool12/da
 CPU/GPU/memory/loading измерять;ускорение не заявлено.
 
 FAST:один primary check;общему контракту ещё один focused check.
-Переиспользовать `CityVerticalTraversalAuditTests`/проверку плана;вид — кадры
+Переиспользовать `CityScene_GroundTraversalUsesPhysicalBoundaries`;вид — кадры
 `AreaCaptureFixture`/City,просмотр/удаление. Docs:`tools/check-docs.py`/diff-check.
 Полные suites/билд не входят;доказательства только по факту.
 

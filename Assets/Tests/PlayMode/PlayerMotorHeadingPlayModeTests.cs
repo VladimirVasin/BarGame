@@ -1082,6 +1082,11 @@ namespace BarPromenade.Tests.PlayMode
         public void InteractionPoseMove_ApproachesWithoutOvershootAndAligns()
         {
             motor.SetInputEnabled(false);
+            CharacterController capsule = playerObject.GetComponent<CharacterController>();
+            // Give the test capsule's expanded skin room above the floor.
+            // The approach itself moves only in the plane.
+            motor.Teleport(playerObject.transform.position + Vector3.up * capsule.skinWidth);
+            Physics.SyncTransforms();
             Vector3 start = playerObject.transform.position;
             Vector3 target = start + new Vector3(0.52f, 0f, 0.18f);
             Quaternion targetRotation =

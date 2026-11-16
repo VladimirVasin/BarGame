@@ -657,7 +657,11 @@ namespace BarPromenade.Tests.PlayMode
                 bind.inverse.MultiplyVector(source.transform.root.TransformVector(Vector3.back))), Vector3.up).normalized;
             Vector3 floor = actor.transform.position - Vector3.up * PlayerFactory.GroundedRootOffset;
             Vector3 lampPosition = floor + forward * 3.2f + (bank.Name == "Imprint" ? Vector3.Cross(Vector3.up, forward) * .65f : Vector3.zero);
-            PlaceCraneHero(lampPosition, Vector3.ProjectOnPlane(actor.transform.position - lampPosition, Vector3.up).normalized);
+            Vector3 facing = Vector3.ProjectOnPlane(actor.transform.position - lampPosition, Vector3.up).normalized;
+            if (root.IsLaboratory)
+                PlaceInspectionHero(lampPosition, facing);
+            else
+                PlaceCraneHero(lampPosition, facing);
             Vector3 delta = focus - (root.Hero.transform.position + Vector3.up * 1.5f);
             float targetPitch = -Mathf.Atan2(delta.y, new Vector2(delta.x, delta.z).magnitude) * Mathf.Rad2Deg;
             root.CameraFollow.RotatePitch(Mathf.Clamp(targetPitch, root.CameraFollow.MinimumOrbitPitch,
@@ -768,8 +772,11 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 heroPosition = root.Hero.transform.position, heroForward = root.Hero.transform.forward;
             float pitch = root.CameraFollow.TargetOrbitPitch, yaw = camera.transform.eulerAngles.y;
             CombatChestFlashlight flashlight = root.Flashlight;
-            Assert.That(flashlight, Is.Not.Null);
-            Assert.That(flashlight.SpotLight.enabled, Is.True);
+            if (root.WarehousePlan != null)
+            {
+                Assert.That(flashlight, Is.Not.Null);
+                Assert.That(flashlight.SpotLight.enabled, Is.True);
+            }
             // Calibrate authored -Y / Unity -Z against the retained chest bind
             // frame, so the view follows the actual slouched model, not its capsule.
             SkinnedMeshRenderer source = bank.LoadBodyRenderer("GEO_Torso");
@@ -821,7 +828,7 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3 eye = focus + direction * (fullBody ? bodyDistance : 1.0f) + Vector3.up * .04f;
                     camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(focus - eye));
                     camera.fieldOfView = fullBody ? (closeProfile ? 58f : 48f) : 34f;
-                    fill.enabled = view == 3 || view == 6 || view == 8;
+                    fill.enabled = flashlight == null || view == 3 || view == 6 || view == 8;
                     string headSubject = bank.Name == "Room" ? "Enlarged head" : bank.Name == "Imprint" ? "Concave face" : "Fused head sweep";
                     string name = "Test " + bank.Name + " enemy - " + (view == 0 ? "Front body with chest light" :
                         view == 8 ? "Hero and enemy scale comparison" : view == 1 ? "Profile body with chest light" : view == 4 ? headSubject + " three quarter with chest light" :
@@ -941,9 +948,7 @@ namespace BarPromenade.Tests.PlayMode
             CombatActor preparedRoom = authored;
             root.CameraFollow.enabled = false;
             root.CameraFollow.Camera.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
-            // The terminal contact owns a short hit hold before the replacement
-            // interval can advance; do not bypass the production clock.
-            for (int step = 0; step < 120 && root.LiveOpponentCount != 3; step++) root.Tick(CombatTestRoot.SimulationStep);
+            yield return WaitForMixedPopulationToRefill(3);
             root.CameraFollow.enabled = true;
             Assert.That(root.LiveOpponentCount, Is.EqualTo(3));
             authored = root.Opponents[0];
@@ -962,9 +967,12 @@ namespace BarPromenade.Tests.PlayMode
             yield return VerifyMixedEnemyHeadContacts(docker, "Test docker");
             root.Tick(0f);
             Assert.That(root.EndlessKills, Is.EqualTo(2));
-            yield return VerifyMixedEnemyHeadContacts(crane, "Test crane operator");
+            FireMixedEnemyProjectile(crane, Player3DAnatomicalPart.Head);
+            Assert.That(crane.State.Health, Is.EqualTo(crane.State.Settings.MaxHealth * .5f).Within(.001f));
+            FireMixedEnemyProjectile(crane, Player3DAnatomicalPart.Head);
+            Assert.That(crane.IsCraneRegenerating && crane.CraneAttached, Is.True);
             root.Tick(0f);
-            Assert.That(root.EndlessKills, Is.EqualTo(3));
+            Assert.That(root.EndlessKills, Is.EqualTo(2), "The suspended crane regenerates without counting as a kill.");
             Assert.That(root.CorpseCount, Is.LessThanOrEqualTo(settings.MaximumCorpses));
             Assert.That(root.RoundFinished || root.EndlessRunFinished, Is.False);
 
@@ -1046,7 +1054,7 @@ namespace BarPromenade.Tests.PlayMode
             CombatActor crane = root.Opponents[craneSlot];
             CombatActor docker = capacity >= 3 ? root.Opponents[1] : null;
 
-            RefillAuthoredEndlessPool(capacity, crane, defeatCrane: capacity <= 2);
+            yield return RefillAuthoredEndlessPool(capacity, crane);
             foreach (CombatActor actor in root.Opponents)
                 if (actor.IsRoom) AssertAuthoredBodyAppearance(actor, CombatRoomAssetProvider.Bank, true);
             AssertPreparedEndlessPool(prepared, identities, capacity);
@@ -1063,25 +1071,22 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Object.FindAnyObjectByType<CombatActor>(), Is.Null);
         }
 
-        private void RefillAuthoredEndlessPool(int capacity, CombatActor crane, bool defeatCrane)
+        private IEnumerator RefillAuthoredEndlessPool(int capacity, CombatActor crane)
         {
-            // At cap two the crane dies last, so its reservation must win over
-            // an older authored corpse when the production interval advances.
-            int missing = 0;
             foreach (CombatActor actor in root.Opponents)
                 if (actor.IsAuthoredEnemy)
                 {
                     FireMixedEnemyProjectile(actor, Player3DAnatomicalPart.Head);
                     FireMixedEnemyProjectile(actor, Player3DAnatomicalPart.Head);
                     Assert.That(actor.State.IsDefeated, Is.True);
-                    missing++;
                 }
-            if (defeatCrane)
+            if (capacity <= 2)
             {
                 FireMixedEnemyProjectile(crane, Player3DAnatomicalPart.Head);
                 FireMixedEnemyProjectile(crane, Player3DAnatomicalPart.Head);
-                Assert.That(crane.State.IsDefeated, Is.True);
-                missing++;
+                Assert.That(crane.IsCraneRegenerating && crane.CraneAttached, Is.True,
+                    "The suspended crane must retain its actor and slot during regeneration.");
+                Assert.That(crane.State.IsDefeated, Is.False);
             }
             bool following = root.CameraFollow.enabled;
             Quaternion rotation = root.CameraFollow.Camera.transform.rotation;
@@ -1089,18 +1094,7 @@ namespace BarPromenade.Tests.PlayMode
             root.CameraFollow.Camera.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
             try
             {
-                for (int replacement = 0; replacement < missing; replacement++)
-                {
-                    Assert.That(root.AdvanceEndlessInterval(.3f), Is.True,
-                        "The production replacement interval must activate an already prepared body.");
-                    if (defeatCrane && replacement == 0)
-                    {
-                        Assert.That(root.Opponents[Mathf.Min(2, capacity - 1)], Is.SameAs(crane));
-                        Assert.That(crane.CraneAttached && !crane.State.IsDefeated, Is.True,
-                            "The crane returns first even when an older wildcard corpse is available.");
-                        Assert.That(root.LiveOpponentCount, Is.EqualTo(1));
-                    }
-                }
+                yield return WaitForMixedPopulationToRefill(capacity);
             }
             finally
             {
@@ -1108,6 +1102,16 @@ namespace BarPromenade.Tests.PlayMode
                 root.CameraFollow.enabled = following;
             }
             AssertMixedEndlessLayout(capacity);
+        }
+
+        private IEnumerator WaitForMixedPopulationToRefill(int capacity)
+        {
+            // A physical corpse must finish the minimum hold and settle before reuse.
+            for (int frame = 0; frame < 360 && root.LiveOpponentCount < capacity; frame++)
+            {
+                root.Tick(Time.fixedDeltaTime);
+                yield return new WaitForFixedUpdate();
+            }
         }
 
         private void AssertMixedEndlessLayout(int capacity)
@@ -1155,7 +1159,8 @@ namespace BarPromenade.Tests.PlayMode
         private void AssertPreparedEndlessPool(CombatActor[] prepared, string[] identities, int capacity)
         {
             int roomSlots = capacity == 1 ? 0 : capacity <= 3 ? 1 : capacity - 2;
-            Assert.That(prepared.Length, Is.EqualTo(capacity + 1), "The main range prepares one allowed body per live slot plus the hero.");
+            Assert.That(prepared.Length, Is.GreaterThanOrEqualTo(capacity + 1),
+                "The range prepares enough bodies to fill the live slots.");
             Assert.That(root.GetComponentsInChildren<CombatActor>(true), Is.EquivalentTo(prepared),
                 "Refill and reset reuse the entire prewarmed actor pool.");
             int rooms = 0;
@@ -1166,7 +1171,9 @@ namespace BarPromenade.Tests.PlayMode
                 if (actor.IsHero) continue;
                 Assert.That(actor.IsRoom || actor.IsDocker || actor.IsCrane, Is.True,
                     "The warehouse must not warm hidden Zombie, Imprint or Long Exposure bodies.");
-                Assert.That(journalIds.Add(actor.JournalActorId), Is.True, "Every prepared enemy keeps a distinct journal identity.");
+                if (actor != root.DoorAmbush.Source)
+                    Assert.That(journalIds.Add(actor.JournalActorId), Is.True,
+                        $"{actor.name} must have a distinct combat journal identity.");
                 Assert.That(actor.NpcAnimationGraphBuilds, Is.EqualTo(1), "Every allowed body keeps one prepared animation graph.");
                 if (!actor.IsAuthoredEnemy) continue;
                 rooms += actor.IsRoom ? 1 : 0;
@@ -1282,8 +1289,21 @@ namespace BarPromenade.Tests.PlayMode
             else
             {
                 Assert.That(actor.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out Vector3 center, out outward, out _), Is.True);
-                Assert.That(actor.Hurtboxes.SweepProjectile(center + outward * .4f, center - outward * .4f,
-                    CombatProjectilePool.Radius, -outward, out hit), Is.True);
+                bool headContact = false;
+                hit = default;
+                Vector3 anatomicalUp = (FindAnatomicalBone(actor, "head").position -
+                    FindAnatomicalBone(actor, "neck").position).normalized;
+                foreach (float rise in new[] { 0f, .035f, .07f, .105f })
+                {
+                    Vector3 aim = center + anatomicalUp * rise;
+                    if (actor.Hurtboxes.SweepProjectile(aim + outward * .4f, aim - outward * .4f,
+                        CombatProjectilePool.Radius, -outward, out hit) && hit.Part == part)
+                    {
+                        headContact = true;
+                        break;
+                    }
+                }
+                Assert.That(headContact, Is.True, $"A real {part} contact must be exposed on {actor.name}.");
             }
             Assert.That(hit.Part, Is.EqualTo(part), "The fixture must confirm the exposed anatomical contact before applying it.");
             int impacts = actor.ReceivedImpactCount;
@@ -1610,9 +1630,8 @@ namespace BarPromenade.Tests.PlayMode
                 AssertRealCarrySurfaceSkinFreshness(recorder.Jackets);
                 using var allocations = CreateBodyAllocationRecorder();
 
-                // The unrefreshed rest recording still lacks the carried bar.
-                // It must keep its strict refusal without reconstructing guard
-                // meshes and arrays every time the same layout is sampled.
+                // The rest recording's final pose differs from this frame.
+                // A refusal must reuse the same guarded rig on every repeat.
                 SecondaryMotionBakeRuntime.Enabled = true;
                 Player3DAssetRegistry rig = ((Player3DCharacterPresentation)root.Player.Visual).Registry;
                 PlayerJacketCloth jacket = rig.GetComponent<PlayerJacketCloth>();
@@ -1621,19 +1640,19 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(SecondaryMotionBakeRuntime.TrySample(rig, SecondaryMotionBakePart.Jacket,
                     jacket.BakedPoseSignature, jacket.BakedPoseValueCount, false, new WindSample(0f, 0f), out _), Is.False);
                 Assert.That(SecondaryMotionBakeRuntime.LastResult(rig, SecondaryMotionBakePart.Jacket),
-                    Is.EqualTo(SecondaryMotionBakeResult.GuardLayout));
+                    Is.EqualTo(SecondaryMotionBakeResult.FinalPose));
                 long guardBuilds = SecondaryMotionBakeRuntime.Diagnostics.GuardBuildCount;
-                long refusals = SecondaryMotionBakeRuntime.ResultCount(SecondaryMotionBakePart.Jacket, SecondaryMotionBakeResult.GuardLayout);
+                long refusals = SecondaryMotionBakeRuntime.ResultCount(SecondaryMotionBakePart.Jacket, SecondaryMotionBakeResult.FinalPose);
                 allocations.Reset(); allocations.Start();
                 for (int sample = 0; sample < 32; sample++)
                     SecondaryMotionBakeRuntime.TrySample(rig, SecondaryMotionBakePart.Jacket,
                         jacket.BakedPoseSignature, jacket.BakedPoseValueCount, false, new WindSample(0f, 0f), out _);
                 long refusalAllocations = StopBodyAllocationRecorder(allocations);
                 Assert.That(SecondaryMotionBakeRuntime.Diagnostics.GuardBuildCount, Is.EqualTo(guardBuilds));
-                Assert.That(SecondaryMotionBakeRuntime.ResultCount(SecondaryMotionBakePart.Jacket, SecondaryMotionBakeResult.GuardLayout),
+                Assert.That(SecondaryMotionBakeRuntime.ResultCount(SecondaryMotionBakePart.Jacket, SecondaryMotionBakeResult.FinalPose),
                     Is.EqualTo(refusals + 32));
-                Assert.That(refusalAllocations, Is.Zero, "A known obsolete recording must reuse its current rig guard without allocating.");
-                measurements.Add("Test obsolete recording: strict GuardLayout refusal; repeated guard builds=0; GC.Alloc events=0 (recorder positive control passed).");
+                Assert.That(refusalAllocations, Is.Zero, "Refusing the same pose must reuse its rig guard without allocating.");
+                measurements.Add("Test incompatible pose: strict FinalPose refusal; repeated guard builds=0; GC.Alloc events=0 (recorder positive control passed).");
                 SecondaryMotionBakeRuntime.Enabled = false;
 
                 SecondaryMotionBakeRuntime.ReloadAssets();

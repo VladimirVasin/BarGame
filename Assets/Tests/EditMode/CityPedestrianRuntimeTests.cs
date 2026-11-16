@@ -2225,57 +2225,6 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
-        [Test]
-        public void HeadOnActors_OnAWidePavementTakeOppositeShoulders()
-        {
-            GameObject root = new GameObject("Yield Priority Test Root");
-            CityPedestrianDirector director = null;
-            try
-            {
-                Transform player = CreatePlayer(root.transform);
-                CityPedestrianPlan plan = CreateHeadOnSpawnPlan();
-                director = CityPedestrianFactory.Create(
-                    root.transform,
-                    plan,
-                    player,
-                    CityPedestrianPlanner.CreateWalkableArea(plan),
-                    CityPedestrianResources.LoadPrefab(),
-                    () => false);
-                AdvanceToNextSpawn(director);
-                AdvanceToNextSpawn(director);
-
-                Assert.That(director.ActiveCount, Is.EqualTo(2));
-                for (int index = 0; index < director.Actors.Count; index++)
-                {
-                    CityPedestrianActor actor = director.Actors[index];
-                    actor.transform.position = new Vector3(
-                        actor.TravelDirection.x > 0f ? -0.35f : 0.35f,
-                        0f,
-                        -72f);
-                }
-
-                Physics.SyncTransforms();
-                Assert.That(
-                    Vector3.Dot(
-                        director.Actors[0].TravelDirection,
-                        director.Actors[1].TravelDirection),
-                    Is.LessThan(-0.9f));
-                director.Advance(0.1f);
-
-                CityPedestrianActor first = director.Actors[0];
-                CityPedestrianActor second = director.Actors[1];
-                Assert.That(first.LastDisplacement.sqrMagnitude, Is.GreaterThan(0f));
-                Assert.That(second.LastDisplacement.sqrMagnitude, Is.GreaterThan(0f));
-                Assert.That(first.LastDisplacement.z * second.LastDisplacement.z, Is.LessThan(0f),
-                    "Opposing walkers should step onto different halves of this two-metre pavement.");
-            }
-            finally
-            {
-                director?.Shutdown();
-                UnityEngine.Object.DestroyImmediate(root);
-            }
-        }
-
         [TestCase(false)]
         [TestCase(true)]
         public void AmbientWalkers_HeadOnClearOppositeShouldersOrYieldInTheTurnout(bool singleFile)
@@ -4053,57 +4002,6 @@ namespace BarPromenade.Tests.EditMode
                         1)
                 },
                 new[] { Rect.MinMaxRect(-1f, -121f, 1f, 1f) });
-        }
-
-        private static CityPedestrianPlan CreateHeadOnSpawnPlan()
-        {
-            return new CityPedestrianPlan(
-                1,
-                2,
-                3u,
-                CityPedestrianPlanner.AgentRadius,
-                new[]
-                {
-                    new CityPedestrianNode(
-                        "left",
-                        new Vector3(-120f, 0f, -72f),
-                        false),
-                    new CityPedestrianNode(
-                        "center",
-                        new Vector3(0f, 0f, -72f),
-                        false),
-                    new CityPedestrianNode(
-                        "right",
-                        new Vector3(120f, 0f, -72f),
-                        false)
-                },
-                new[]
-                {
-                    new CityPedestrianLink(
-                        "left-half",
-                        0,
-                        1,
-                        CityPedestrianLinkKind.Sidewalk),
-                    new CityPedestrianLink(
-                        "right-half",
-                        1,
-                        2,
-                        CityPedestrianLinkKind.Sidewalk)
-                },
-                new[]
-                {
-                    new CityPedestrianSpawnAnchor(
-                        "spawn:left",
-                        new Vector3(-35f, 0f, -72f),
-                        0,
-                        1),
-                    new CityPedestrianSpawnAnchor(
-                        "spawn:right",
-                        new Vector3(35f, 0f, -72f),
-                        1,
-                        2)
-                },
-                new[] { Rect.MinMaxRect(-121f, -73f, 121f, -71f) });
         }
 
         private static float PlanarDistance(Vector3 first, Vector3 second)

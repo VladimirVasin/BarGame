@@ -1281,7 +1281,7 @@ namespace BarPromenade.Tests.PlayMode
                     DescribeLookInput());
             }
 
-            internal void Observe(BarDrinkServicePhase phase, bool holdInput = false)
+            internal void Observe(BarDrinkServicePhase phase, bool holdInput = false, bool neutralBeforeHandoff = false)
             {
                 string sampledInput = DescribeLookInput();
                 GameCursor.SetApplicationFocused(true);
@@ -1305,8 +1305,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(view.ActionLookPitch, Is.InRange(minimumPitch - .001f, maximumPitch + .001f));
                 Quaternion trackedNeutral = head.rotation * neutralCameraInHead;
                 Quaternion expected = trackedNeutral * LookDelta(view.ActionLookYaw, view.ActionLookPitch);
-                Assert.That(Quaternion.Angle(camera.transform.rotation, expected), Is.LessThan(.15f),
-                    $"The actual {phase} camera did not follow the animated head and manual gaze.");
+                Assert.That(Vector3.Angle(camera.transform.forward, expected * Vector3.forward), Is.LessThan(.5f),
+                    $"The actual {phase} viewing direction did not follow the animated head and manual gaze.");
                 Assert.That(camera.fieldOfView, Is.EqualTo(initialFov).Within(.001f),
                     "Manual drink look must retain the action lens.");
                 if (!phases.TryGetValue(phase, out LookRange range))
@@ -1339,15 +1339,16 @@ namespace BarPromenade.Tests.PlayMode
                         "Test limited drink view " + phase + " " + drinkId);
                 }
                 InputSystem.QueueStateEvent(keyboard,
-                    holdInput ? new KeyboardState() : !range.Positive || repeatGesture && !repeatBartenderFramed
+                    holdInput || neutralBeforeHandoff ? new KeyboardState() : !range.Positive || repeatGesture && !repeatBartenderFramed
                         ? positive : !range.Negative ? negative : new KeyboardState());
                 if (holdInput)
                 {
                     Assert.That(view.ActionLookYaw, Is.Zero.Within(.001f), "Observe the wave from the original glass-directed gaze.");
                     Assert.That(view.ActionLookPitch, Is.Zero.Within(.001f), "The test must not tilt up to find the waving hand.");
                 }
-                lastYaw = view.ActionLookYaw;
-                lastPitch = view.ActionLookPitch;
+                // Successive sips start from the seated gaze inherited from the previous one.
+                lastYaw = view.ViewYaw + view.ActionLookYaw;
+                lastPitch = view.ViewPitch + view.ActionLookPitch;
             }
 
             internal IEnumerator VerifyRestored()
@@ -1372,8 +1373,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(view.IsActionLimitedLookEnabled, Is.False);
                 Assert.That(view.ActionLookYaw, Is.Zero.Within(.001f));
                 Assert.That(view.ActionLookPitch, Is.Zero.Within(.001f));
-                Assert.That(view.ViewYaw, Is.EqualTo(Mathf.Clamp(initialYaw + lastYaw, -70f, 70f)).Within(.01f));
-                Assert.That(view.ViewPitch, Is.EqualTo(Mathf.Clamp(initialPitch + lastPitch, -25f, 55f)).Within(.01f));
+                Assert.That(view.ViewYaw, Is.EqualTo(Mathf.Clamp(lastYaw, -70f, 70f)).Within(.01f));
+                Assert.That(view.ViewPitch, Is.EqualTo(Mathf.Clamp(lastPitch, -25f, 55f)).Within(.01f));
                 float previousYaw = view.ViewYaw;
                 Quaternion previousRotation = camera.transform.rotation;
                 int inputStartFrame = Time.frameCount;

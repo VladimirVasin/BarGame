@@ -469,11 +469,10 @@ namespace BarPromenade
                     CityTerrainSurfacePlan.ResolveSurfaceContext(
                         layout,
                         surface);
-                // Only a coarse sand collider is split; the drawn skin and
-                // the seabed take each patch whole at the drawn pitch.
+                // Both beach skins use the same subdivision inside the steep
+                // port grade. The seabed retains its own shore sampling.
                 Rect? gradedCore = !seabedOnly &&
                                    surface.Kind == CitySurfaceKind.Beach &&
-                                   beachPitch != CityBeachSandPlan.MeshPitch &&
                                    context.Access != null
                     ? context.Access.GradedBounds
                     : (Rect?)null;
@@ -500,6 +499,24 @@ namespace BarPromenade
                             Mathf.Min(patch.xMax, clip.xMax), Mathf.Min(patch.yMax, clip.yMax));
                         if (patch.width <= MinimumPatchSize || patch.height <= MinimumPatchSize) continue;
                     }
+                    if (!seabedOnly && surface.Kind == CitySurfaceKind.Beach &&
+                        context.StreetBoundary != null && context.StreetBoundary.HasBoundaries)
+                    {
+                        // The sharper transition to the coastal sidewalk is built at
+                        // the same pitch on both skins, including intersection ends.
+                        float lip = surface.WorldBounds.yMin + layout.RoadWidth * .5f +
+                            CityStreetSurfacePlanner.PublicSidewalkWidth - CityStreetSurfacePlanner.SidewalkWidth +
+                            CityTerrainStreetBoundaryPlan.BlendDistance;
+                        float fineEnd = Mathf.Min(patch.yMax, lip);
+                        if (fineEnd - patch.yMin > MinimumPatchSize)
+                        {
+                            Rect nearStreet = Rect.MinMaxRect(patch.xMin, patch.yMin, patch.xMax, fineEnd);
+                            AppendPatch(layout, surface, in context, nearStreet, tileSize,
+                                vertices, normals, uvs, triangles, CityBeachSandPlan.MeshPitch);
+                            if (patch.yMax - fineEnd <= MinimumPatchSize) continue;
+                            patch.yMin = fineEnd;
+                        }
+                    }
                     if (!gradedCore.HasValue)
                     {
                         AppendPatch(
@@ -517,10 +534,8 @@ namespace BarPromenade
                         continue;
                     }
 
-                    // The pieces around the graded box at the coarse pitch,
-                    // the piece inside it at the drawn pitch. The seams
-                    // between them are T-junctions like those between any
-                    // two cut patches: the same plan on both sides.
+                    // Share the fine grid inside the graded box. Outside it,
+                    // the collision skin can sample the gentler grade more sparsely.
                     Rect core = gradedCore.Value;
                     pieces.Clear();
                     SubtractRectangle(patch, core, pieces);
@@ -567,11 +582,45 @@ namespace BarPromenade
                 }
             }
 
+            if (kind == CitySurfaceKind.Beach && !seabedOnly && beachPitch != CityBeachSandPlan.MeshPitch)
+                CompactCollisionVertices(vertices, normals, uvs, triangles);
+
             return new CityTerrainMeshSource(
                 vertices,
                 normals,
                 uvs,
                 triangles);
+        }
+
+        private static void CompactCollisionVertices(List<Vector3> vertices, List<Vector3> normals,
+            List<Vector2> uvs, List<int> triangles)
+        {
+            var used = new bool[vertices.Count];
+            foreach (int index in triangles) used[index] = true;
+
+            var compactIndices = new int[vertices.Count];
+            var compactVertices = new Dictionary<Vector3, int>();
+            int kept = 0;
+            for (int index = 0; index < vertices.Count; index++)
+            {
+                if (!used[index]) continue;
+                Vector3 point = vertices[index];
+                if (!compactVertices.TryGetValue(point, out int destination))
+                {
+                    destination = kept++;
+                    compactVertices.Add(point, destination);
+                    vertices[destination] = point;
+                    normals[destination] = normals[index];
+                    uvs[destination] = uvs[index];
+                }
+                compactIndices[index] = destination;
+            }
+
+            for (int index = 0; index < triangles.Count; index++)
+                triangles[index] = compactIndices[triangles[index]];
+            vertices.RemoveRange(kept, vertices.Count - kept);
+            normals.RemoveRange(kept, normals.Count - kept);
+            uvs.RemoveRange(kept, uvs.Count - kept);
         }
 
         /// <summary>

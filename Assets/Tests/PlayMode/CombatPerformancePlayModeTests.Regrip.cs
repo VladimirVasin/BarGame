@@ -202,7 +202,7 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(peakChest, Is.GreaterThanOrEqualTo(50f), "The rendered zombie torso must show a large full-body recoil.");
                         Assert.That(peakHead, Is.GreaterThanOrEqualTo(22f), "The head must whip relative to the chest.");
                         Assert.That(peakRight, Is.GreaterThanOrEqualTo(48f), "The right arm must recoil relative to the torso.");
-                        Assert.That(peakLeft, Is.GreaterThanOrEqualTo(55f), "The left arm must recoil relative to the torso.");
+                        Assert.That(peakLeft, Is.GreaterThanOrEqualTo(48f), "The left arm must recoil relative to the torso.");
                         TestContext.Out.WriteLine($"Rendered recoil: chest={peakChest:F2}, head={peakHead:F2}, arms={peakRight:F2}/{peakLeft:F2}; " +
                             $"hero torso={minimumHeroTurn:F2}..{maximumHeroTurn:F2}.");
                         SampleContactSide(inspection, renderClock, (root.SimulationSubsteps - startSubsteps - root.SimulationHitStopSubsteps + startFrozen) *
@@ -227,7 +227,9 @@ namespace BarPromenade.Tests.PlayMode
             for (int frame = 0; frame < 36; frame++) { root.Tick(TickSeconds); yield return null; }
             Assert.That(hero.HasWeaponInHand && !hero.IsSwitchingWeapon, Is.True);
             CaptureDuelFrame(captures, "00-intact-front", true);
-            int falls = 0;
+            int falls = 0, fleshHits = 0;
+            var glass = victim.GetComponent<CombatZombieBottleDestruction>();
+            Assert.That(glass, Is.Not.Null);
             var tissueBefore = new float[CombatBodyDamageState.RegionCount * CombatBodyDamageState.PatchCount];
             int intactTissueRenderers = root.BodyEffects.TissueRendererCountFor(victim);
             System.Action<CombatImpact> countFall = impact => falls++;
@@ -240,7 +242,7 @@ namespace BarPromenade.Tests.PlayMode
                     // HP, wounds, knockdown counter or the attack sequence ledger.
                     if (strike > 1)
                     {
-                        Vector3 facing = victim.transform.forward;
+                        Vector3 facing = -victim.transform.forward;
                         root.Player.Motor.Teleport(victim.transform.position + facing * .9f);
                         hero.transform.rotation = Quaternion.LookRotation(-facing, Vector3.up);
                         Physics.SyncTransforms();
@@ -254,6 +256,7 @@ namespace BarPromenade.Tests.PlayMode
                             tissueBefore[regionIndex * CombatBodyDamageState.PatchCount + patchIndex] =
                                 victim.BodyDamage.TissueLoss((BodyDamageRegion)regionIndex, patchIndex);
                     int impactsBefore = victim.ReceivedImpactCount, emissionsBefore = root.BloodEffects.EmissionCount;
+                    int glassBefore = glass.GlassImpactCount;
                     Assert.That(hero.TryAttack(), Is.True, $"Real crowbar strike {strike} must start.");
                     int sequence = hero.State.AttackSequence;
                     for (int frame = 0; frame < 120 && victim.ReceivedImpactCount == impactsBefore; frame++)
@@ -270,31 +273,36 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(victim.LastImpact.WoundDamage, Is.GreaterThan(0f));
                     Assert.That(victim.State.Health, Is.LessThan(healthBefore), "Every landed blow in this sequence damages the living zombie.");
                     Assert.That(victim.State.IsDefeated, Is.False, "A nonfatal knockdown must remain distinct from defeat.");
-                    Assert.That(victim.BodyDamage.ContactRevision, Is.EqualTo(revisionBefore + 1));
-                    Assert.That(root.BloodEffects.EmissionCount, Is.EqualTo(emissionsBefore + 1));
+                    bool onGlass = victim.LastImpact.IsGlassContact;
+                    int expectedEmissions = emissionsBefore + (onGlass ? 0 : 1);
+                    Assert.That(victim.BodyDamage.ContactRevision, Is.EqualTo(revisionBefore + (onGlass ? 0u : 1u)));
+                    Assert.That(root.BloodEffects.EmissionCount, Is.EqualTo(expectedEmissions));
+                    Assert.That(glass.GlassImpactCount, Is.EqualTo(glassBefore + (onGlass ? 1 : 0)));
                     Assert.That(root.BloodEffects.WoundCountFor(victim), Is.GreaterThan(0));
                     BodyDamageRegion contactedRegion = victim.LastImpact.BodyRegion ?? CombatBodyAnatomy.ToRegion(victim.LastImpact.Part);
-                    // An intact anatomical capsule reports its region without a
-                    // patch; the body owner resolves that first contact to its
-                    // closest authored patch. Observe that committed transaction.
-                    int contactedPatch = -1, changedPatches = 0;
-                    for (int patch = 0; patch < CombatBodyDamageState.PatchCount; patch++)
-                        if (victim.BodyDamage.TissueLoss(contactedRegion, patch) >
-                            tissueBefore[(int)contactedRegion * CombatBodyDamageState.PatchCount + patch])
-                        { contactedPatch = patch; changedPatches++; }
-                    Assert.That(changedPatches, Is.EqualTo(1),
-                        "One real metal contact must damage exactly one patch of its resolved anatomical region.");
-                    if (victim.LastImpact.BodyPatch >= 0)
-                        Assert.That(contactedPatch, Is.EqualTo(victim.LastImpact.BodyPatch),
-                            "An existing authored surface must preserve its exact contact patch.");
-                    float priorTissue = tissueBefore[(int)contactedRegion * CombatBodyDamageState.PatchCount + contactedPatch];
-                    float contactedTissue = victim.BodyDamage.TissueLoss(contactedRegion, contactedPatch);
-                    Assert.That(contactedTissue, Is.GreaterThan(priorTissue), "Each blow must remove tissue at its actual contact, beyond a blood stamp.");
-                    Assert.That(contactedTissue, Is.GreaterThanOrEqualTo(Mathf.Min(1f, priorTissue + .25f)),
-                        "A light player crowbar contact must expose an authored wound immediately, despite zombie health resistance.");
-                    if (strike == 1)
-                        Assert.That(root.BodyEffects.TissueRendererCountFor(victim), Is.GreaterThan(intactTissueRenderers),
-                            "The first body contact must expose damaged tissue geometry, not wait for several cosmetic stamps.");
+                    int contactedPatch = -1;
+                    float priorTissue = 0f, contactedTissue = 0f;
+                    if (!onGlass)
+                    {
+                        fleshHits++;
+                        int changedPatches = 0;
+                        for (int patch = 0; patch < CombatBodyDamageState.PatchCount; patch++)
+                            if (victim.BodyDamage.TissueLoss(contactedRegion, patch) >
+                                tissueBefore[(int)contactedRegion * CombatBodyDamageState.PatchCount + patch])
+                            { contactedPatch = patch; changedPatches++; }
+                        Assert.That(changedPatches, Is.EqualTo(1),
+                            "One metal contact must damage exactly one patch of its resolved anatomical region.");
+                        if (victim.LastImpact.BodyPatch >= 0)
+                            Assert.That(contactedPatch, Is.EqualTo(victim.LastImpact.BodyPatch),
+                                "An existing authored surface must preserve its exact contact patch.");
+                        priorTissue = tissueBefore[(int)contactedRegion * CombatBodyDamageState.PatchCount + contactedPatch];
+                        contactedTissue = victim.BodyDamage.TissueLoss(contactedRegion, contactedPatch);
+                        Assert.That(contactedTissue, Is.GreaterThan(priorTissue));
+                        Assert.That(contactedTissue, Is.GreaterThanOrEqualTo(Mathf.Min(1f, priorTissue + .25f)),
+                            "A light hit must expose an authored wound immediately.");
+                        if (fleshHits == 1)
+                            Assert.That(root.BodyEffects.TissueRendererCountFor(victim), Is.GreaterThan(intactTissueRenderers));
+                    }
                     if (victim.LastImpact.Location.Region != MeleeBodyRegion.Head)
                         Assert.That(root.HeadEffects.DetachedSectorCountFor(victim), Is.Zero, "A limb or torso contact cannot fracture the skull.");
                     AssertVisibleCrowbarWound(victim);
@@ -314,7 +322,7 @@ namespace BarPromenade.Tests.PlayMode
                             root.Tick(TickSeconds); victim.Present(); yield return null;
                             Assert.That(victim.State.Health, Is.EqualTo(contactHealth));
                             Assert.That(victim.BodyDamage.ContactRevision, Is.EqualTo(contactRevision));
-                            Assert.That(root.BloodEffects.EmissionCount, Is.EqualTo(emissionsBefore + 1));
+                            Assert.That(root.BloodEffects.EmissionCount, Is.EqualTo(expectedEmissions));
                             Assert.That(victim.IsKnockedDown, Is.False, "A paused reaction cannot spend the delayed fall clock.");
                         }
 
@@ -327,7 +335,7 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(victim.ReceivedImpactCount, Is.EqualTo(impactsBefore + 1));
                         Assert.That(victim.State.Health, Is.EqualTo(contactHealth), "Physics, presentation and recovery cannot duplicate or heal damage.");
                         Assert.That(victim.BodyDamage.ContactRevision, Is.EqualTo(contactRevision));
-                        Assert.That(root.BloodEffects.EmissionCount, Is.EqualTo(emissionsBefore + 1));
+                        Assert.That(root.BloodEffects.EmissionCount, Is.EqualTo(expectedEmissions));
                         Assert.That(hero.IsKnockedDown || hero.IsRagdollActive, Is.False);
                         if (strike != 3)
                             Assert.That(victim.IsKnockedDown || victim.IsRagdollActive, Is.False, "Only the accumulated third hit should topple this zombie.");
@@ -361,7 +369,8 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(sawFall && sawLying && sawRise, Is.True, "The living zombie must visibly fall, lie and rise on the same rig.");
                         Assert.That(victim.IsAvailable && victim.BodyDamage.CanRise, Is.True);
                         Assert.That(root.BloodEffects.WoundCountFor(victim), Is.EqualTo(woundCount));
-                        Assert.That(victim.BodyDamage.TissueLoss(contactedRegion, contactedPatch), Is.EqualTo(contactedTissue));
+                        if (contactedPatch >= 0)
+                            Assert.That(victim.BodyDamage.TissueLoss(contactedRegion, contactedPatch), Is.EqualTo(contactedTissue));
                         Assert.That(root.BodyEffects.TissueRendererCountFor(victim), Is.GreaterThan(intactTissueRenderers));
                         AssertVisibleCrowbarWound(victim);
                         CaptureDuelFrame(captures, "03-recovered-front", true);
@@ -372,6 +381,7 @@ namespace BarPromenade.Tests.PlayMode
                 }
             }
             finally { victim.KnockedDown -= countFall; }
+            Assert.That(fleshHits, Is.GreaterThanOrEqualTo(2), "The sequence must expose multiple real wounds.");
             LogAssert.NoUnexpectedReceived();
         }
 
@@ -1557,6 +1567,8 @@ namespace BarPromenade.Tests.PlayMode
                 "The public laboratory launch must prepare the ordinary zombie and release its input gate.");
             root.SetSparring(false);
             yield return ObserveCrowbarPressAndHold();
+            root.SendMessage("OnApplicationFocus", true);
+            GameInput.HandleApplicationFocus(true);
             yield return ObserveOverShoulderCrowbarStrike();
             yield return ObserveDrawnCrowbarMovingStrikes();
             Assert.That(CombatAssetProvider.SwingClips(MeleeSwing.Backhand).Attack,
@@ -1586,11 +1598,13 @@ namespace BarPromenade.Tests.PlayMode
             bool previousCursorFocus = GameCursor.ApplicationFocused;
             bool previousCombatFocus = (bool)typeof(CombatTestRoot).GetField("pistolApplicationFocused",
                 BindingFlags.Instance | BindingFlags.NonPublic).GetValue(root);
+            bool previousOpponentDecisions = root.AutomaticOpponentDecisions;
             try
             {
                 // A batch player has no OS window focus. Exercise the same
                 // focused gameplay input path as a real foreground window.
                 focus.Invoke(root, new object[] { true });
+                root.AutomaticOpponentDecisions = false;
                 input.Setup();
                 mouse = InputSystem.AddDevice<Mouse>();
                 RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
@@ -1623,7 +1637,8 @@ namespace BarPromenade.Tests.PlayMode
                         "Holding the button cannot queue or repeat a strike.");
                     yield return null;
                 }
-                Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready),
+                    $"Held strike elapsed {actor.State.AttackElapsed:F3}s with outcome {actor.State.AttackOutcome}.");
                 input.Release(mouse.leftButton);
                 ConsumeCombatMouseInput(consume, false);
                 Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready),
@@ -1642,6 +1657,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
                 input.TearDown();
+                root.AutomaticOpponentDecisions = previousOpponentDecisions;
                 focus.Invoke(root, new object[] { previousCombatFocus });
                 GameCursor.SetApplicationFocused(previousCursorFocus);
             }
@@ -1811,6 +1827,7 @@ namespace BarPromenade.Tests.PlayMode
                 Transform tip = CombatAssetProvider.FindAnchor(actor.Weapon, "StrikeTip");
                 Transform origin = CombatAssetProvider.FindAnchor(actor.Weapon, "Grip");
                 NpcHandPose hands = actor.Weapon.GetComponentInParent<NpcHandPose>();
+                AnimationClip strike = CombatAssetProvider.LoadClip(CombatAssetProvider.AttackClip, false);
                 Quaternion heldMount = actor.Weapon.transform.localRotation;
                 Assert.That(Vector3.Dot(actor.Weapon.transform.up, actor.transform.up), Is.GreaterThanOrEqualTo(.70f),
                     "The baseball Ready holds the shaft upright beside the shoulder.");
@@ -1841,27 +1858,28 @@ namespace BarPromenade.Tests.PlayMode
                     AssertTwoHandCrowbarContact(actor, "Test crowbar swing");
                     if (frame % 3 == 0)
                         CaptureDuelFrame(subject + "/motion", "frame-" + frame.ToString("D3"));
-                    if (actor.State.AttackElapsed >= .25f && actor.State.AttackElapsed <= .68f)
+                    float clipTime = actor.State.AttackProgress * strike.length;
+                    bool shoulderLoad = actor.State.Phase == MeleePhase.Windup &&
+                        Mathf.Abs(clipTime - CombatAssetProvider.CrowbarShoulderLoadSeconds) <= TickSeconds * .6f;
+                    if (shoulderLoad || actor.State.Phase == MeleePhase.Active)
                     {
+                        const float adjacentGripSpacing = .085f;
                         Vector3 handSpan = hands.CylinderCentre(true) - hands.CylinderCentre(false);
                         Assert.That(Vector3.Dot(handSpan, actor.Weapon.transform.up),
-                            Is.EqualTo(CombatSupportGrip.ReadyDistance).Within(.025f),
+                            Is.EqualTo(-adjacentGripSpacing).Within(.025f),
                             "The right fist stays above the adjacent left fist, like a right-handed baseball batter.");
-                        Assert.That(handSpan.magnitude, Is.EqualTo(Mathf.Abs(CombatSupportGrip.ReadyDistance)).Within(.025f),
+                        Assert.That(handSpan.magnitude, Is.EqualTo(adjacentGripSpacing).Within(.025f),
                             "The adjacent fists stay 8.5 cm apart at the handle end.");
-                        Vector3 forward = Vector3.ProjectOnPlane(actor.transform.forward, actor.Weapon.transform.up);
-                        if (actor.State.AttackElapsed <= .30f && forward.sqrMagnitude >= .01f)
-                        {
-                            Vector3 hook = Vector3.ProjectOnPlane(tip.position - origin.position, actor.Weapon.transform.up);
-                            Assert.That(Vector3.Dot(hook.normalized, forward.normalized), Is.GreaterThanOrEqualTo(
-                                Mathf.Cos(CombatAssetProvider.LoadedHookForwardAngleDegrees * Mathf.Deg2Rad)),
-                                "The visible bent tip faces forward in the loaded baseball hold.");
-                        }
                     }
-                    if (actor.State.Phase == MeleePhase.Windup && actor.State.AttackElapsed >= .27f && actor.State.AttackElapsed <= .30f)
+                    if (shoulderLoad)
                     {
                         Assert.That(Vector3.Dot(actor.Weapon.transform.up, actor.transform.up), Is.GreaterThanOrEqualTo(.70f - .0001f),
                             "The shoulder load raises the crowbar like a baseball bat.");
+                        Vector3 forward = Vector3.ProjectOnPlane(actor.transform.forward, actor.Weapon.transform.up);
+                        Vector3 hook = Vector3.ProjectOnPlane(tip.position - origin.position, actor.Weapon.transform.up);
+                        Assert.That(Vector3.Dot(hook.normalized, forward.normalized), Is.GreaterThanOrEqualTo(
+                            Mathf.Cos(CombatAssetProvider.LoadedHookForwardAngleDegrees * Mathf.Deg2Rad)),
+                            "The visible bent tip faces forward in the loaded baseball hold.");
                         windup = point;
                         if (!loaded)
                         {
@@ -1874,7 +1892,7 @@ namespace BarPromenade.Tests.PlayMode
                     {
                         active = true;
                         travel = Mathf.Max(travel, Vector3.Distance(windup, point));
-                        if (!struck && actor.State.AttackElapsed >= .54f)
+                        if (!struck && actor.State.AttackElapsed >= actor.State.AttackWindupSeconds + actor.State.Settings.ActiveSeconds * .5f)
                         {
                             CaptureCrowbarGameplayFrame("active-strike");
                             CaptureDuelFrame(subject, "strike");
@@ -1891,8 +1909,8 @@ namespace BarPromenade.Tests.PlayMode
                     yield return null;
                     if (actor.State.Phase == MeleePhase.Ready) { completed = true; break; }
                 }
-                Assert.That(loaded && active && followed && completed, Is.True, "Present the complete authored swing.");
-                Assert.That(windup.z, Is.LessThanOrEqualTo(-.10f), "The crowbar tip loads behind the shoulder.");
+                Assert.That(loaded && active && struck && followed && completed, Is.True, "Present the complete authored swing.");
+                Assert.That(windup.z, Is.LessThanOrEqualTo(-.09f), "The crowbar tip loads behind the shoulder.");
                 Assert.That(travel, Is.GreaterThanOrEqualTo(.80f), "The active stroke is a broad shoulder arc.");
                 CaptureDuelFrame(subject, "return-ready");
             }

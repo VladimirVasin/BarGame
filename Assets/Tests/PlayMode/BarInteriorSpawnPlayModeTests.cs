@@ -1276,7 +1276,8 @@ namespace BarPromenade.Tests.PlayMode
                             phase == BarDrinkServicePhase.PlayerDrinking ||
                             phase == BarDrinkServicePhase.PlayerVesselReturn)
                         {
-                            drinkLook.Observe(phase);
+                            drinkLook.Observe(phase, neutralBeforeHandoff:
+                                phase == BarDrinkServicePhase.PlayerVesselReturn && progress >= .85f);
                             clearance.AssertClear("Hero drink " + phase + " " + progress.ToString("F3"));
                             Assert.That(reach.LastPelvisContactError, Is.LessThan(.001f),
                                 "The seated pelvis left its support during the reach.");

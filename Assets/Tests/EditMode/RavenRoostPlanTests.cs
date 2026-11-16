@@ -786,65 +786,6 @@ namespace BarPromenade.Tests.EditMode
                 "AlpineVillage");
         }
 
-        /// <summary>
-        /// Not an assertion — a measurement. The greedy selection is
-        /// unverifiable before a run, so this test prints what the
-        /// default seeds actually accepted and how far apart the
-        /// anchors really stand; the lead reads this output and pins
-        /// the id list afterwards.
-        /// </summary>
-        [Test]
-        public void Log_MeasuredRoostIdsAndPairwiseDistances()
-        {
-            foreach (CityParkRegionPlan region in cityLayout.Park.Regions)
-                TestContext.WriteLine($"{region.Id} plaza at {region.PlazaPosition:F2}.");
-            foreach (CityDecorationDescriptor decoration in cityWorld.DecorationPlan.Descriptors)
-                if (decoration.Kind == CityDecorationKind.ParkBandstand || decoration.Kind == CityDecorationKind.ParkChessTables)
-                    TestContext.WriteLine($"{decoration.Kind} at {decoration.Position:F2}.");
-            WriteArea("City seed " + CitySeed, cityRoosts);
-            WriteArea("MountainRoad seed " + RoadSeed, roadRoosts);
-            WriteArea(
-                "AlpineVillage seed " + VillageSeed,
-                villageRoosts);
-        }
-
-        private static void WriteArea(
-            string title,
-            IReadOnlyList<RavenRoostDescriptor> roosts)
-        {
-            TestContext.WriteLine(
-                title + ": " + roosts.Count + " roosts");
-            for (int index = 0; index < roosts.Count; index++)
-            {
-                Vector3 a = roosts[index].PerchA.Position;
-                Vector3 b = roosts[index].PerchB.Position;
-                TestContext.WriteLine(
-                    "  " + roosts[index].StableId +
-                    "  A=(" + a.x.ToString("F2") + ", " +
-                    a.y.ToString("F2") + ", " +
-                    a.z.ToString("F2") + ")" +
-                    "  B=(" + b.x.ToString("F2") + ", " +
-                    b.y.ToString("F2") + ", " +
-                    b.z.ToString("F2") + ")");
-            }
-
-            for (int first = 0; first < roosts.Count; first++)
-            {
-                for (int second = first + 1;
-                     second < roosts.Count;
-                     second++)
-                {
-                    float distance = Vector2.Distance(
-                        XZ(roosts[first].PerchA.Position),
-                        XZ(roosts[second].PerchA.Position));
-                    TestContext.WriteLine(
-                        "  " + roosts[first].StableId + " <-> " +
-                        roosts[second].StableId + " = " +
-                        distance.ToString("F1") + " m");
-                }
-            }
-        }
-
         private static void AssertSamePlan(
             IReadOnlyList<RavenRoostDescriptor> expected,
             IReadOnlyList<RavenRoostDescriptor> actual,

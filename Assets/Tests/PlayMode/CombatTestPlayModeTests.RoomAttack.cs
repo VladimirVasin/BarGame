@@ -50,7 +50,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.LiveOpponentCount, Is.EqualTo(2));
             root.CameraFollow.enabled = false;
             root.CameraFollow.Camera.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
-            for (int step = 0; step < 120 && root.LiveOpponentCount != 3; step++) root.Tick(CombatTestRoot.SimulationStep);
+            yield return WaitForMixedPopulationToRefill(3);
             root.CameraFollow.enabled = true;
             bool spawnTargetSupported = root.WarehouseArea.TryGetHeight(root.Hero.transform.position,
                 out float spawnTargetHeight, room.Body.radius + .04f);
@@ -642,9 +642,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(room.RoomAttackCooldownRemaining, Is.EqualTo(afterHit), "Later hits do not restart the wait.");
             root.enabled = false;
             Assert.That(room.RoomAttackCooldownRemaining, Is.Zero, "Disabling the encounter clears actor cooldown ownership.");
+            Assert.That(root.HealthHudOpacity, Is.Zero, "A disabled encounter must hide its HUD.");
             root.enabled = true;
             root.AdvanceHudPresentation(.2f);
-            Assert.That(root.HealthHudOpacity, Is.Zero, "Disable clears a pending health reveal from the completed attack.");
+            Assert.That(root.HealthHudOpacity, Is.EqualTo(1f).Within(.001f),
+                "The resumed HUD still displays the hero's current injury.");
 
             PlaceRoomAttackTestPair(room);
             yield return AdvanceRoomTestToPhase(CombatRoomSequencePhase.HeadPain);
@@ -897,7 +899,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.RoomAttackMemorySound.isPlaying, Is.False,
                 "The room phrase cannot bleed into head pain, reset, defeat or ordinary combat.");
             Assert.That(root.RoomAttackCinematicActive, Is.False);
-            Assert.That(root.Player.Motor.InputEnabled, Is.True);
+            Assert.That(root.Player.Motor.InputEnabled, Is.EqualTo(!root.Hero.State.IsDefeated),
+                "Room releases the motor to the ordinary live or defeated state.");
             Assert.That(root.CameraFollow.FixedPoseActive, Is.False);
             Assert.That(root.CameraFollow.OrbitInputEnabled, Is.True);
             Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
@@ -906,8 +909,9 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(actor.RoomAttackSuppressed, Is.False, "Completion, reset and disable release every prepared actor's Room suppression.");
             Assert.That(root.CameraFollow.Camera.fieldOfView, Is.EqualTo(root.CameraFollow.FollowFieldOfView).Within(.001f),
                 "Releasing a Room shot restores the ordinary lens.");
-            Assert.That(RoomTestCameraRoll(root.CameraFollow.Camera), Is.EqualTo(0f).Within(.01f),
-                "The Dutch angle cannot leak into the gameplay camera.");
+            float rollTolerance = root.Hero.State.IsDefeated ? .05f : .01f;
+            Assert.That(RoomTestCameraRoll(root.CameraFollow.Camera), Is.EqualTo(0f).Within(rollTolerance),
+                "The Dutch angle cannot leak into the gameplay or defeat camera.");
             Assert.That(root.CameraFollow.Camera.nearClipPlane, Is.EqualTo(nearClipPlane).Within(.00001f),
                 "Cancellation and reset release the miniature-room near plane too.");
         }
@@ -944,8 +948,14 @@ namespace BarPromenade.Tests.PlayMode
                 "A readable Dutch angle is part of the pointing composition.");
         }
 
-        private static float RoomTestCameraRoll(Camera camera) => Vector3.SignedAngle(
-            Vector3.ProjectOnPlane(Vector3.up, camera.transform.forward), camera.transform.up, camera.transform.forward);
+        private static float RoomTestCameraRoll(Camera camera)
+        {
+            Vector3 forward = camera.transform.forward;
+            Vector3 level = Vector3.ProjectOnPlane(Vector3.up, forward).normalized;
+            Vector3 up = camera.transform.up;
+            return Mathf.Atan2(Vector3.Dot(Vector3.Cross(level, up), forward), Vector3.Dot(level, up)) *
+                Mathf.Rad2Deg;
+        }
 
         private void AssertRoomTestInFrame(Vector3 point)
         {

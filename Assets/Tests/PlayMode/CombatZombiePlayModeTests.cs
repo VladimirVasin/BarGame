@@ -17,6 +17,8 @@ namespace BarPromenade.Tests.PlayMode
         {
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             yield return EnterRange();
+            root.SendMessage("OnApplicationFocus", true);
+            GameInput.HandleApplicationFocus(true);
             CombatActor zombie = root.Opponent;
             Assert.That(zombie.IsZombie, Is.True);
             Assert.That(zombie.Weapon, Is.Null, "Production opponents have no hidden crowbar.");
@@ -408,17 +410,21 @@ namespace BarPromenade.Tests.PlayMode
             yield return WaitFor(() => SceneManager.GetActiveScene().name == SceneIds.MainMenu &&
                 !SceneTransitionService.IsTransitioning, "Zombie range did not release its scene.");
             CombatTestRoot.UseLegacyArenaForTests = false;
+            CombatTestRoot.UseDockerPopulationForTests = true;
             CombatTestRoot.WarehouseSeedForTests = 0;
             var pacing = new CombatEncounterSettings(1, .1f, .1f, .15f, .15f);
             Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
                 new CombatLoadoutSelection(CombatWeaponId.Crowbar), CombatTestMode.Endless, pacing)), Is.True);
             yield return AwaitSelectedCombatRange();
+            root.SendMessage("OnApplicationFocus", true);
+            GameInput.HandleApplicationFocus(true);
             root.Tick(.25f);
             Assert.That(root.WarehousePlan, Is.Not.Null);
             Assert.That(root.LiveOpponentCount, Is.EqualTo(1));
             zombie = root.Opponents[0];
-            Assert.That(zombie.IsZombie && zombie.Weapon == null, Is.True);
+            Assert.That(zombie.IsDocker && zombie.Weapon == null, Is.True);
             load = zombie.GetComponent<CombatZombieLoad>();
+            Assert.That(load, Is.Not.Null);
             crate = load.Model;
             crateMeshCount = CountLoaderMeshInstances(crate);
             catchSkin = FindLoaderCatch(crate);
@@ -428,10 +434,13 @@ namespace BarPromenade.Tests.PlayMode
             AssertLoaderCarrying(zombie, load);
             int graphBuilds = zombie.NpcAnimationGraphBuilds;
             yield return CaptureEndlessPopulationGameView("zombie-endless");
+            zombie.ResetActor(new Vector3(0f, PlayerFactory.GroundedRootOffset, -2f), Vector3.right);
             Transform leftForearm = FindAnatomicalBone(zombie, "forearm.L");
             Transform rightForearm = FindAnatomicalBone(zombie, "forearm.R");
             float leftForearmScale = leftForearm.localScale.y, rightForearmScale = rightForearm.localScale.y;
-            DefeatBodyTargetWithProjectile(zombie, root.Hero, 1);
+            FireMixedEnemyProjectile(zombie, Player3DAnatomicalPart.Head);
+            FireMixedEnemyProjectile(zombie, Player3DAnatomicalPart.Head);
+            zombie.Step(CombatAssetProvider.DefeatHandoffSeconds + .05f);
             Assert.That(zombie.State.IsDefeated && zombie.IsRagdollActive, Is.True);
             root.Tick(0f);
             Assert.That(root.EndlessKills, Is.EqualTo(1));
@@ -443,7 +452,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(leftForearm.localScale.y, Is.EqualTo(leftForearmScale).Within(.001f));
             Assert.That(rightForearm.localScale.y, Is.EqualTo(rightForearmScale).Within(.001f),
                 "The physical handoff must preserve the deformed arms on the original rig.");
-            root.Tick(.35f);
+            for (int frame = 0; frame < 300 && root.LiveOpponentCount == 0; frame++)
+            {
+                root.Tick(Time.fixedDeltaTime);
+                yield return new WaitForFixedUpdate();
+            }
             Assert.That(root.LiveOpponentCount, Is.EqualTo(1));
             Assert.That(root.Opponents[0], Is.SameAs(zombie));
             Assert.That(zombie.State.IsDefeated || zombie.IsRagdollActive, Is.False);
@@ -883,12 +896,17 @@ namespace BarPromenade.Tests.PlayMode
             Ray frontRay = LoaderBoardRay(load, front, out RaycastHit frontSurface);
             Vector3 openingPoint = frontSurface.point, openingNormal = frontSurface.normal;
             float health = actor.State.Health;
-            FireLoaderProjectile(frontRay, participants, sequence++);
-            Assert.That(load.DetachedBoardCount, Is.Zero, "One 25-damage bullet cannot sever a 40-health wooden bone.");
-            Assert.That(load.ReleasedFishCount, Is.Zero);
-            Assert.That(actor.State.Health, Is.EqualTo(health), "The nearer solid board intercepts the flight before anatomy.");
-            FireLoaderProjectile(frontRay, participants, sequence++);
-            Assert.That(load.IsBoardDetached(front), Is.True);
+            const float boardHealth = 40f;
+            const float pistolDamage = 25f;
+            int requiredHits = Mathf.CeilToInt(boardHealth / (pistolDamage * actor.State.Settings.IncomingDamageScale));
+            for (int hit = 1; hit <= requiredHits; hit++)
+            {
+                FireLoaderProjectile(frontRay, participants, sequence++);
+                Assert.That(load.IsBoardDetached(front), Is.EqualTo(hit == requiredHits),
+                    $"Shot {hit}: the board absorbs the porter's scaled pistol damage before it detaches.");
+                Assert.That(load.ReleasedFishCount, Is.Zero);
+                Assert.That(actor.State.Health, Is.EqualTo(health), "The nearer board intercepts the flight before anatomy.");
+            }
             Assert.That(load.DetachedBoardCount, Is.EqualTo(1));
             Assert.That(load.GetBoardCollider(front).enabled, Is.False);
             Assert.That(load.GetBoardBody(front).isKinematic, Is.False);
@@ -942,10 +960,12 @@ namespace BarPromenade.Tests.PlayMode
                 int detached = load.DetachedBoardCount;
                 BoxCollider shape = load.GetBoardCollider(i);
                 Ray ray = LoaderBoardRay(load, i, out RaycastHit boardContact, requireExposed: false);
-                Assert.That(CombatZombieLoad.TryReceiveHit(shape, boardContact.point, ray.direction * 32f, 25f), Is.True);
-                Assert.That(load.DetachedBoardCount, Is.EqualTo(detached), "A fresh wooden bone needs two 25-damage contacts: " + i);
-                Assert.That(CombatZombieLoad.TryReceiveHit(shape, boardContact.point, ray.direction * 32f, 25f), Is.True);
-                Assert.That(load.IsBoardDetached(i), Is.True, "Two accepted contacts must detach their registered wooden bone: " + i);
+                for (int hit = 1; hit <= requiredHits; hit++)
+                {
+                    Assert.That(CombatZombieLoad.TryReceiveHit(shape, boardContact.point, ray.direction * 32f, pistolDamage), Is.True);
+                    Assert.That(load.IsBoardDetached(i), Is.EqualTo(hit == requiredHits),
+                        $"Board {i} detaches after {requiredHits} accepted contacts, at contact {hit}.");
+                }
                 Assert.That(load.DetachedBoardCount, Is.EqualTo(detached + 1));
                 Assert.That(load.GetBoardCollider(i).enabled, Is.False);
                 Assert.That(CombatZombieLoad.TryReceiveHit(shape, boardContact.point, ray.direction * 32f, 25f), Is.False,
@@ -969,13 +989,19 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.PauseMenu.Cancel(), Is.True);
             yield return WaitFor(() => !root.PauseMenu.IsOpen && GameInput.CanRead(GameInputContext.Gameplay),
                 "Spilled-fish pause did not release gameplay input.");
-            root.Tick(0f);
+            root.SendMessage("OnApplicationFocus", true);
+            GameInput.HandleApplicationFocus(true);
+            long resumeSubsteps = root.SimulationSubsteps - root.SimulationHitStopSubsteps;
             yield return new WaitForFixedUpdate();
-            for (int step = 0; step < Mathf.CeilToInt(8.1f / Time.fixedDeltaTime); step++)
+            int requiredSubsteps = Mathf.CeilToInt(8.1f / CombatTestRoot.SimulationStep);
+            for (int step = 0; step < Mathf.CeilToInt(10f / Time.fixedDeltaTime) &&
+                 root.SimulationSubsteps - root.SimulationHitStopSubsteps - resumeSubsteps < requiredSubsteps; step++)
             {
                 root.Tick(Time.fixedDeltaTime);
                 yield return new WaitForFixedUpdate();
             }
+            Assert.That(root.SimulationSubsteps - root.SimulationHitStopSubsteps - resumeSubsteps,
+                Is.GreaterThanOrEqualTo(requiredSubsteps), "The resumed scene must advance the full debris clock.");
             Assert.That(load.SettledFishCount, Is.EqualTo(8), "Finite convulsions must end with bounded physical simulation.");
             foreach (Rigidbody body in fishBodies) Assert.That(body.isKinematic, Is.True);
             yield return null;
@@ -1045,6 +1071,7 @@ namespace BarPromenade.Tests.PlayMode
             PlacePair(4f);
             frontRay = LoaderBoardRay(load, front, out RaycastHit woodenContact);
             PreparePendingMetalActor(root.Hero);
+            float meleeDamage = root.Hero.State.AttackDamage;
             CombatActor.Contact contact = CombatActor.Contact.Obstacle(root.Hero, null, woodenContact.point,
                 woodenContact.normal, frontRay.direction, .5f, false,
                 worldCollider: load.GetBoardCollider(front), weaponSpeed: 5f);
@@ -1052,8 +1079,15 @@ namespace BarPromenade.Tests.PlayMode
             CombatActor.ApplyContacts(pending);
             Assert.That(load.DetachedBoardCount, Is.Zero, "The first accepted melee interception damages its exact plank once.");
             Assert.That(pending.Count, Is.EqualTo(1));
-            FireLoaderProjectile(frontRay, participants, sequence++);
-            Assert.That(load.IsBoardDetached(front), Is.True, "The saved melee damage and a subsequent bullet share the wooden bone's health.");
+            float damageScale = actor.State.Settings.IncomingDamageScale;
+            int remainingHits = Mathf.CeilToInt((boardHealth - meleeDamage * damageScale) / (pistolDamage * damageScale));
+            Assert.That(remainingHits, Is.LessThan(requiredHits));
+            for (int hit = 1; hit <= remainingHits; hit++)
+            {
+                FireLoaderProjectile(frontRay, participants, sequence++);
+                Assert.That(load.IsBoardDetached(front), Is.EqualTo(hit == remainingHits),
+                    "The saved melee damage and subsequent bullets share the wooden bone's health.");
+            }
             actor.Step(.15f);
             Assert.That(load.ReleasedFishCount, Is.EqualTo(1));
             root.ResetRound();

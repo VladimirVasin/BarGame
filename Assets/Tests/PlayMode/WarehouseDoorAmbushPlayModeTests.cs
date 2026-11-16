@@ -352,6 +352,9 @@ namespace BarPromenade.Tests.PlayMode
             yield return AwaitStopped();
             Assert.That(root.PauseMenu.IsOpen, Is.True);
             AssertPreviewRestored(scene, previewOrigin, previewFacing, savedDoor);
+            Assert.That(root.PauseMenu.Page, Is.EqualTo(PauseMenuPage.Cutscenes));
+            Assert.That(root.PauseMenu.Cancel(), Is.True);
+            Assert.That(root.PauseMenu.Page, Is.EqualTo(PauseMenuPage.Main));
             Assert.That(root.PauseMenu.Cancel(), Is.True);
             yield return AwaitGameplayInput();
 
@@ -420,6 +423,9 @@ namespace BarPromenade.Tests.PlayMode
             root.Cutscenes.ReturnToList();
             yield return AwaitStopped();
             AssertPreviewRestored(scene, previewOrigin, previewFacing, savedDoor);
+            Assert.That(root.PauseMenu.Page, Is.EqualTo(PauseMenuPage.Cutscenes));
+            Assert.That(root.PauseMenu.Cancel(), Is.True);
+            Assert.That(root.PauseMenu.Page, Is.EqualTo(PauseMenuPage.Main));
             Assert.That(root.PauseMenu.Cancel(), Is.True);
             yield return AwaitGameplayInput();
 
@@ -717,10 +723,13 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Cutscenes.IsPlaying, Is.False);
         }
 
-        private IEnumerator AwaitGameplayInput()
+        private IEnumerator AwaitGameplayInput([System.Runtime.CompilerServices.CallerLineNumber] int callLine = 0)
         {
             for (int frame = 0; frame < 30 && !GameInput.CanRead(GameInputContext.Gameplay); frame++) yield return null;
-            Assert.That(GameInput.CanRead(GameInputContext.Gameplay), Is.True);
+            Assert.That(GameInput.CanRead(GameInputContext.Gameplay), Is.True,
+                $"Input handoff at test line {callLine}: pause={PauseMenuController.IsAnyPaused}, " +
+                $"clock paused={GameTimeScaleRuntime.IsPaused}, modal={BarMinigameModalLock.IsAnyLocked}, " +
+                $"load={SceneTransitionService.IsTransitioning}, camera={DebugFreeCamera.BlocksWorldInput}. " + Diagnostic());
         }
 
         private void AssertPreviewRestored(WarehouseDoorAmbushScene scene, Vector3 origin, Quaternion facing, LocalPose[] door)

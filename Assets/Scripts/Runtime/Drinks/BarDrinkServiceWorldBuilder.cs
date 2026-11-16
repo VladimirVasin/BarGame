@@ -336,6 +336,14 @@ namespace BarPromenade
                 authored,
                 "service_vessel_drink_rim:" + kind);
             drinkRimAnchor.name = "Vessel Drink Rim Anchor";
+            if (kind == BarDrinkVesselKind.ShotGlass)
+            {
+                // The small vessel is gripped high on its shoulder so the
+                // bottom of the thumb clears the counter as the grip closes.
+                Vector3 grip = gripAnchor.localPosition;
+                grip.y = Mathf.Lerp(grip.y, drinkRimAnchor.localPosition.y, .30f);
+                gripAnchor.localPosition = grip;
+            }
 
             Renderer highlightRenderer = null;
             if (authored.TryGetRenderer(

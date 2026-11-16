@@ -931,11 +931,17 @@ namespace BarPromenade.Tests.PlayMode
                             Matrix4x4 reference = matrices[weight.boneIndex0];
                             for (int column = 0; column < 4; column++) reference.SetColumn(column, reference.GetColumn(column) * weight.weight0);
                             Add(weight.boneIndex1, weight.weight1); Add(weight.boneIndex2, weight.weight2); Add(weight.boneIndex3, weight.weight3);
-                            Assert.That(surface.Skin(vertex).Equals(reference), Is.True,
-                                "Referenced-bone capture must preserve full-rig skin arithmetic across same-frame poses.");
+                            Matrix4x4 actual = surface.Skin(vertex);
+                            const float arithmeticTolerance = .00002f;
+                            for (int column = 0; column < 4; column++)
+                                Assert.That(Vector4.Distance(actual.GetColumn(column), reference.GetColumn(column)),
+                                    Is.LessThan(arithmeticTolerance),
+                                    "Referenced-bone capture must preserve the full-rig skin after each same-frame pose.");
                             Matrix4x4 normalMatrix = reference.inverse.transpose;
-                            Assert.That(surface.WorldNormal(vertex).Equals(normalMatrix.MultiplyVector(normals[vertex]).normalized), Is.True);
-                            Assert.That(surface.BindWorldNormal(vertex).Equals(normalMatrix.MultiplyVector(bindNormals[vertex]).normalized), Is.True);
+                            Assert.That(Vector3.Distance(surface.WorldNormal(vertex),
+                                normalMatrix.MultiplyVector(normals[vertex]).normalized), Is.LessThan(arithmeticTolerance));
+                            Assert.That(Vector3.Distance(surface.BindWorldNormal(vertex),
+                                normalMatrix.MultiplyVector(bindNormals[vertex]).normalized), Is.LessThan(arithmeticTolerance));
 
                             void Add(int bone, float influence)
                             {

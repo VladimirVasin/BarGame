@@ -1010,6 +1010,19 @@ namespace BarPromenade.Tests.PlayMode
             yield return WaitUntil(
                 () => shower.Timeline.Phase == HomeShowerScenePhase.Wash && shower.Timeline.PhaseElapsed > 1.2f,
                 "The wash never started.");
+            ParticleSystem stream = shower.WaterEffect.StreamParticles;
+            var streamSample = new ParticleSystem.Particle[stream.main.maxParticles];
+            int mostVisible = 0;
+            for (int frame = 0; frame < 12 && mostVisible < 3; frame++)
+            {
+                yield return AtPresentation(() =>
+                {
+                    int count = stream.GetParticles(streamSample);
+                    mostVisible = Mathf.Max(mostVisible, CountVisibleShowerParticles(camera, stream, streamSample, count));
+                });
+            }
+            Assert.That(mostVisible, Is.GreaterThanOrEqualTo(3),
+                "The active spray must pass in front of the wall-facing lens before any look input.");
             yield return AtPresentation(() =>
             {
                 Assert.That(invariants.Violation, Is.Null);
@@ -2062,12 +2075,10 @@ namespace BarPromenade.Tests.PlayMode
                 "The whole lamp, including its housing, must be above the curtain and its rail.");
         }
 
-        private static void AssertShowerStreamReachesBody(HomeShowerInteraction shower, Camera camera, Player3DAssetRegistry registry)
+        private static int CountVisibleShowerParticles(Camera camera, ParticleSystem stream,
+            ParticleSystem.Particle[] particles, int count)
         {
-            ParticleSystem stream = shower.WaterEffect.StreamParticles;
-            Assert.That(stream.main.simulationSpace, Is.EqualTo(ParticleSystemSimulationSpace.World));
-            var particles = new ParticleSystem.Particle[stream.main.maxParticles];
-            int count = stream.GetParticles(particles), visible = 0;
+            int visible = 0;
             for (int index = 0; index < count; index++)
             {
                 Vector3 viewport = camera.WorldToViewportPoint(particles[index].position);
@@ -2075,8 +2086,16 @@ namespace BarPromenade.Tests.PlayMode
                     viewport.y > 0.03f && viewport.y < 0.97f && particles[index].GetCurrentColor(stream).a > 0 &&
                     particles[index].GetCurrentSize(stream) > 0.001f) visible++;
             }
-            Assert.That(visible, Is.GreaterThanOrEqualTo(3),
-                $"Real visible water must pass in front of the ordinary wall-facing lens, before any look input: {visible}/{count} particles.");
+            return visible;
+        }
+
+        private static void AssertShowerStreamReachesBody(HomeShowerInteraction shower, Camera camera, Player3DAssetRegistry registry)
+        {
+            ParticleSystem stream = shower.WaterEffect.StreamParticles;
+            Assert.That(stream.main.simulationSpace, Is.EqualTo(ParticleSystemSimulationSpace.World));
+            var particles = new ParticleSystem.Particle[stream.main.maxParticles];
+            int count = stream.GetParticles(particles);
+            int visible = CountVisibleShowerParticles(camera, stream, particles, count);
             float nearestWaterSquared = float.PositiveInfinity, nearestNozzleSquared = float.PositiveInfinity;
             var baked = new Mesh();
             try

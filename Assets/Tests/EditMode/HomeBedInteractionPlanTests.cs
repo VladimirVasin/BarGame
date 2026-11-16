@@ -240,7 +240,8 @@ namespace BarPromenade.Tests.EditMode
                     PlayerCharacterDimensions
                         .SupinePelvisSupportOffset -
                     HomeInteriorWorldBuilder
-                        .BedSleeperSinkDepth)
+                        .BedSleeperSinkDepth +
+                    HomeBedInteractionPlan.SleepingGarmentAllowance)
                     .Within(Tolerance));
 
             AssertVector(

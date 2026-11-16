@@ -53,7 +53,6 @@ namespace BarPromenade.Tests.PlayMode
                 root.CameraFollow.SetCinematicMotionEnabled(false);
                 root.AdvanceHudPresentation(.4f);
                 Assert.That(root.WarehousePlan, Is.Not.Null);
-                Assert.That(root.LiveOpponentCount, Is.Zero);
                 Assert.That(root.GameplayHudVisible, Is.True);
                 Assert.That(root.DebugHudVisible, Is.False, "The player starts with the ordinary HUD.");
                 AssertCombatHudHidden();
@@ -187,7 +186,8 @@ namespace BarPromenade.Tests.PlayMode
                 root.AdvanceHudPresentation(2.5f);
                 Assert.That(root.HealthHudOpacity, Is.EqualTo(1f).Within(.001f), "Recent damage remains readable.");
                 root.AdvanceHudPresentation(1f);
-                Assert.That(root.HealthHudOpacity, Is.Zero);
+                Assert.That(root.HealthHudOpacity, Is.EqualTo(1f).Within(.001f),
+                    "The health bar remains readable until the hero is healed.");
                 Assert.That(root.Hero.State.ReceiveUnarmedHit(65f, 0f, false), Is.EqualTo(MeleeHitResult.Hit));
                 root.AdvanceHudPresentation(10f);
                 Assert.That(root.Hero.State.Health, Is.EqualTo(root.Hero.State.Settings.MaxHealth * .25f));
@@ -228,22 +228,11 @@ namespace BarPromenade.Tests.PlayMode
                 input.Release(mouse.rightButton, queueEventOnly: true);
                 yield return ConsumeMouseLookInput();
                 root.AutomaticSimulation = false;
+                for (int step = 0; step < 60 && root.Hero.State.IsBlocking; step++)
+                    root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(root.Hero.State.IsBlocking, Is.False);
                 root.AdvanceHudPresentation(.4f);
                 Assert.That(root.GuardHudOpacity, Is.Zero);
-                root.Hero.Step(.5f);
-                root.AutomaticSimulation = true;
-                input.Press(mouse.leftButton, queueEventOnly: true);
-                yield return ConsumeMouseLookInput();
-                root.AutomaticSimulation = false;
-                root.AdvanceHudPresentation(.2f);
-                Assert.That(root.Hero.State.IsCharging, Is.True);
-                Assert.That(root.ChargeHudOpacity, Is.EqualTo(1f).Within(.001f));
-                root.AutomaticSimulation = true;
-                input.Release(mouse.leftButton, queueEventOnly: true);
-                yield return ConsumeMouseLookInput();
-                root.AutomaticSimulation = false;
-                root.AdvanceHudPresentation(.4f);
-                Assert.That(root.ChargeHudOpacity, Is.Zero);
 
                 root.Hero.State.ReceiveUnarmedHit(root.Hero.State.Settings.MaxHealth, 0f, false);
                 root.Tick(.2f);

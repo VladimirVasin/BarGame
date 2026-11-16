@@ -140,8 +140,9 @@ namespace BarPromenade.Tests.PlayMode
                     var route = new List<Vector3>();
                     for (int segment = 1; segment < terrace.RouteWorld.Count; segment++)
                     {
-                        Vector3 a = terrace.RouteWorld[segment - 1] + side;
-                        Vector3 b = terrace.RouteWorld[segment] + side;
+                        // The common footway approach and departure stay centred.
+                        Vector3 a = terrace.RouteWorld[segment - 1] + (segment == 1 ? Vector3.zero : side);
+                        Vector3 b = terrace.RouteWorld[segment] + (segment == terrace.RouteWorld.Count - 1 ? Vector3.zero : side);
                         int steps = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(a, b) / .3f));
                         for (int step = segment == 1 ? 0 : 1; step <= steps; step++)
                         {

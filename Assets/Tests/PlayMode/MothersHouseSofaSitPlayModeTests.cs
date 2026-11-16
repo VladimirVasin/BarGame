@@ -437,7 +437,18 @@ namespace BarPromenade.Tests.PlayMode
 
         private static float FaceLuminance(Color32[] frame, Renderer face)
         {
-            Vector3 viewport = Camera.main.WorldToViewportPoint(face.bounds.center);
+            Camera camera = Camera.main;
+            float aspect = camera.aspect;
+            Vector3 viewport;
+            try
+            {
+                camera.aspect = 16f / 9f;
+                viewport = camera.WorldToViewportPoint(face.bounds.center);
+            }
+            finally
+            {
+                camera.aspect = aspect;
+            }
             Assert.That(viewport.z, Is.GreaterThan(0f));
             int centreX = Mathf.RoundToInt(viewport.x * 1280);
             int centreY = Mathf.RoundToInt(viewport.y * 720);

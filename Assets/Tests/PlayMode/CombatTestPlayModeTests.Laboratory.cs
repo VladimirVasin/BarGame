@@ -19,11 +19,12 @@ namespace BarPromenade.Tests.PlayMode
             // The production menu selection must choose the old arena itself.
             CombatTestRoot.UseLegacyArenaForTests = false;
             CombatTestRoot.AuthoredEnemyKindForTests = null;
+            CombatTestStartService.TryConsumePreparationSelection(out _);
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             yield return WaitFor(() => GameInput.CanRead(GameInputContext.Menu), "The launch card did not release its input gate.");
             StartMenuRoot menu = Object.FindAnyObjectByType<StartMenuRoot>();
             Assert.That(menu, Is.Not.Null);
-            Assert.That(menu.OpenDebugMenu(), Is.True);
+            if (!menu.IsDebugMenu) Assert.That(menu.OpenDebugMenu(), Is.True);
             yield return CaptureEndlessGameView("Test old arena - Main menu Russian", "ru", true);
             yield return CaptureEndlessGameView("Test old arena - Main menu English", "en", true);
             Assert.That(menu.SelectOption(StartMenuOption.Laboratory), Is.True);
@@ -128,9 +129,25 @@ namespace BarPromenade.Tests.PlayMode
                     kind + ": the first shot binds a retained wound to its live source skin.");
                 FireLaboratoryHeadProjectile(actor, bank, 203);
                 Assert.That(actor.ReceivedImpactCount, Is.EqualTo(2), kind.ToString());
-                Assert.That(actor.State.IsDefeated && actor.IsRagdollActive, Is.True, kind + ": the second confirmed head contact defeats this body.");
-                Assert.That(root.HeadEffects.DetachedSectorCountFor(actor), Is.GreaterThan(0),
-                    kind + ": terminal damage uses the prepared structural head bank.");
+                if (kind == CombatEnemyKind.Crane)
+                {
+                    Assert.That(actor.IsCraneRegenerating && actor.CraneAttached, Is.True);
+                    Assert.That(actor.State.Health, Is.EqualTo(1f));
+                    Assert.That(actor.State.IsDefeated || actor.IsRagdollActive, Is.False);
+                }
+                else
+                {
+                    Assert.That(actor.State.IsDefeated, Is.True,
+                        $"{kind}: the second confirmed head contact must defeat this body; remaining health {actor.State.Health:F3}.");
+                    for (int frame = 0; frame < 40 && !actor.IsRagdollActive; frame++)
+                    {
+                        root.Tick(CombatTestRoot.SimulationStep);
+                        yield return new WaitForFixedUpdate();
+                    }
+                    Assert.That(actor.IsRagdollActive, Is.True, kind + ": the defeated body must hand over to physics.");
+                    Assert.That(root.HeadEffects.DetachedSectorCountFor(actor), Is.GreaterThan(0),
+                        kind + ": terminal damage uses the prepared structural head bank.");
+                }
                 Assert.That(root.BloodEffects.EmissionCount, Is.GreaterThan(0), kind.ToString());
                 root.ResetRound();
                 AssertLaboratorySlot(targets, graphs, kind);

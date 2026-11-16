@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -23,6 +22,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
                 CombatTestRoot.UseLegacyArenaForTests = false;
+                CombatTestRoot.UseDockerPopulationForTests = true;
                 CombatTestRoot.WarehouseSeedForTests = 0;
                 var pacing = new CombatEncounterSettings(3, .05f, .05f, 12f, 12f);
                 Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
@@ -32,21 +32,17 @@ namespace BarPromenade.Tests.PlayMode
                 GameInput.HandleApplicationFocus(true);
                 Assert.That(root.WarehousePlan, Is.Not.Null);
 
-                // Arrange the prepared population through its production arrival method.
-                // Advancing only this clock avoids an unrelated long fight during setup.
-                MethodInfo arrive = typeof(CombatTestRoot).GetMethod("AdvanceEndlessInterval",
-                    BindingFlags.Instance | BindingFlags.NonPublic);
-                Assert.That(arrive, Is.Not.Null);
-                for (int i = 0; i < 3; i++)
-                    Assert.That((bool)arrive.Invoke(root, new object[] { root.NextOpponentSeconds + .01f }), Is.True);
                 Assert.That(root.LiveOpponentCount, Is.EqualTo(3));
+                foreach (CombatActor actor in root.Opponents)
+                    Assert.That(actor.IsDocker, Is.True, "The corpse route needs three ground actors.");
                 CombatActor first = root.Opponents[0], second = root.Opponents[1], zombie = root.Opponents[2];
                 zombie.ResetActor(new Vector3(9f, PlayerFactory.GroundedRootOffset, -7f), Vector3.left);
                 first.ResetActor(new Vector3(-.15f, PlayerFactory.GroundedRootOffset, -2f), Vector3.right);
                 second.ResetActor(new Vector3(.15f, PlayerFactory.GroundedRootOffset, -1.1f), Vector3.right);
                 foreach (CombatActor corpse in new[] { first, second })
                 {
-                    corpse.State.ReceiveProjectileHit(corpse.State.Settings.MaxHealth);
+                    FireMixedEnemyProjectile(corpse, Player3DAnatomicalPart.Head);
+                    FireMixedEnemyProjectile(corpse, Player3DAnatomicalPart.Head);
                     corpse.Step(CombatAssetProvider.DefeatHandoffSeconds + .05f);
                     Assert.That(corpse.State.IsDefeated && corpse.IsRagdollActive, Is.True,
                         "Traversal must use an actual terminal physics rig.");
@@ -55,7 +51,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.BodyEffects.DetachedPartCountFor(second), Is.GreaterThan(0));
                 for (int frame = 0; frame < 240 && (!first.Ragdoll.IsSettled || !second.Ragdoll.IsSettled); frame++)
                 {
-                    root.BodyEffects.Tick(Time.fixedDeltaTime);
+                    root.Tick(Time.fixedDeltaTime);
                     yield return new WaitForFixedUpdate();
                 }
                 Assert.That(first.Ragdoll.IsSettled && second.Ragdoll.IsSettled, Is.True);
@@ -80,8 +76,10 @@ namespace BarPromenade.Tests.PlayMode
                 float startZ = Mathf.Min(firstBody.min.z, secondBody.min.z) - 1f;
                 float endZ = Mathf.Max(firstBody.max.z, secondBody.max.z) + 1f;
                 Assert.That(CombatCorpseTraversal.TryGetClearance(
-                    new Vector3(laneX, 0f, startZ), new Vector3(laneX, 0f, endZ), .32f, out float top), Is.True);
-                Assert.That(top, Is.InRange(.08f, .7f), "The crossing intersects actual low body contours.");
+                    new Vector3(laneX, 0f, startZ), new Vector3(laneX, 0f, endZ), .25f,
+                    CombatCorpseStepPose.MaximumCorpseRise, out float top, out _), Is.True,
+                    "The route must cross a physical contour within the gait's reach.");
+                Assert.That(top, Is.GreaterThanOrEqualTo(.08f), "The crossing intersects actual low body contours.");
 
                 // Establish devices after scene startup and physical settling;
                 // controls must belong to the current fixture manager state.
@@ -154,6 +152,10 @@ namespace BarPromenade.Tests.PlayMode
                 for (int frame = 0; frame < 150 && zombie.State.Phase != MeleePhase.Windup; frame++)
                     root.Tick(1f / 60f);
                 Assert.That(zombie.State.Phase, Is.EqualTo(MeleePhase.Windup));
+                // Leave the committed strike line so the live target cannot
+                // end the sweep before the movement reaches the corpse.
+                root.Hero.ResetActor(root.Hero.transform.position + Vector3.right * 2f, Vector3.back);
+                Physics.SyncTransforms();
                 Vector3 lungeStart = zombie.transform.position;
                 for (int frame = 0; frame < 120 && zombie.State.Phase != MeleePhase.Recovery; frame++)
                     root.Tick(1f / 60f);
@@ -192,8 +194,16 @@ namespace BarPromenade.Tests.PlayMode
                 VerifyWarehouseSolidAndStairTraversal(laneX);
 
                 // Expiring the production arrival clock reuses the oldest corpse.
-                root.Tick(0f);
-                Assert.That((bool)arrive.Invoke(root, new object[] { root.NextOpponentSeconds + .01f }), Is.True);
+                root.Hero.ResetActor(root.WarehousePlan.HeroSpawn + Vector3.up * PlayerFactory.GroundedRootOffset,
+                    Vector3.back);
+                root.CameraFollow.Snap();
+                for (int frame = 0; frame < 300 && !OldestCorpseResting(); frame++)
+                {
+                    root.Tick(Time.fixedDeltaTime);
+                    yield return new WaitForFixedUpdate();
+                }
+                Assert.That(OldestCorpseResting(), Is.True, "Retirement requires the body and its debris to finish moving.");
+                Assert.That(root.AdvanceEndlessInterval(root.NextOpponentSeconds + .01f), Is.True);
                 Assert.That(first.State.IsDefeated || first.IsRagdollActive, Is.False);
                 foreach (var entry in first.Ragdoll.PhysicsController.AnatomicalColliders)
                 {
@@ -211,6 +221,9 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(CombatCorpseTraversal.IsCorpse(collider), Is.False,
                         "Reset must remove traversal registrations for retired and restored bodies.");
                 LogAssert.NoUnexpectedReceived();
+
+                bool OldestCorpseResting() => first.Ragdoll.IsSettled && first.CorpsePropsResting &&
+                    root.BodyEffects.CorpsePartsResting(first) && root.HeadEffects.CorpsePartsResting(first);
             }
             finally { if (inputStarted) input.TearDown(); }
         }
@@ -246,12 +259,18 @@ namespace BarPromenade.Tests.PlayMode
                         Vector3 heldLeft = CombatBone(root.Hero, "foot.L").position;
                         Vector3 heldRight = CombatBone(root.Hero, "foot.R").position;
                         Assert.That(root.PauseMenu.Open(), Is.True);
+                        yield return null;
+                        ((Player3DCharacterPresentation)root.Player.Visual).ReapplyLatePresentationPose();
+                        Vector3 pausedLeft = CombatBone(root.Hero, "foot.L").position;
+                        Vector3 pausedRight = CombatBone(root.Hero, "foot.R").position;
+                        Assert.That(Vector3.Distance(heldLeft, pausedLeft), Is.LessThan(.01f));
+                        Assert.That(Vector3.Distance(heldRight, pausedRight), Is.LessThan(.01f));
                         root.Tick(1f); root.Hero.Step(1f);
                         yield return null;
                         ((Player3DCharacterPresentation)root.Player.Visual).ReapplyLatePresentationPose();
                         Assert.That(root.Hero.transform.position, Is.EqualTo(heldRoot));
-                        Assert.That(Vector3.Distance(heldLeft, CombatBone(root.Hero, "foot.L").position), Is.LessThan(.002f));
-                        Assert.That(Vector3.Distance(heldRight, CombatBone(root.Hero, "foot.R").position), Is.LessThan(.002f));
+                        Assert.That(Vector3.Distance(pausedLeft, CombatBone(root.Hero, "foot.L").position), Is.LessThan(.002f));
+                        Assert.That(Vector3.Distance(pausedRight, CombatBone(root.Hero, "foot.R").position), Is.LessThan(.002f));
                         Assert.That(root.PauseMenu.Cancel(), Is.True);
                         yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Corpse traversal pause did not release input.");
                         input.Press(keyboard.wKey, queueEventOnly: true);
@@ -322,11 +341,13 @@ namespace BarPromenade.Tests.PlayMode
 
         private void VerifyWarehouseSolidAndStairTraversal(float laneX)
         {
-            root.Hero.ResetActor(new Vector3(laneX, PlayerFactory.GroundedRootOffset, -7.5f), Vector3.back);
-            root.Hero.Body.Move(Vector3.back * 4f);
-            Assert.That(root.Hero.transform.position.z, Is.GreaterThan(-9.1f),
+            WarehouseArenaPlan warehouse = root.WarehousePlan;
+            root.Hero.ResetActor(new Vector3(laneX, PlayerFactory.GroundedRootOffset, warehouse.HeroSpawn.z), Vector3.back);
+            root.Hero.Body.Move(Vector3.back * 5f);
+            Assert.That(root.Hero.transform.position.z, Is.InRange(warehouse.InteriorBounds.min.z,
+                warehouse.EntranceDoorApproach.z + .2f),
                 "Corpse exclusions must not remove the warehouse shell collision.");
-            WarehouseArenaStair stair = root.WarehousePlan.Stairs[0];
+            WarehouseArenaStair stair = warehouse.Stairs[0];
             root.Hero.ResetActor(stair.Foot + Vector3.back * .35f + Vector3.up * PlayerFactory.GroundedRootOffset,
                 Vector3.forward);
             for (int i = 0; i < 60; i++) root.Hero.Body.Move(new Vector3(0f, -.02f, .05f));

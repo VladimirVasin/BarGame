@@ -25,7 +25,9 @@ namespace BarPromenade.Tests.PlayMode
                 mouse = InputSystem.AddDevice<Mouse>();
                 input.Set(mouse.position, new Vector2(Screen.width * .75f, Screen.height * .5f), queueEventOnly: true);
                 yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
-                yield return EnterRange();
+                Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(CombatLoadoutSelection.Default,
+                    CombatTestMode.Laboratory, laboratoryEnemy: CombatEnemyKind.Zombie)), Is.True);
+                yield return AwaitSelectedCombatRange();
                 root.SendMessage("OnApplicationFocus", true);
                 GameInput.HandleApplicationFocus(true);
                 PlacePair(4f);
@@ -66,7 +68,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(Quaternion.Angle(facing, root.Hero.transform.rotation), Is.LessThan(.1f));
                 AssertFocusState(false);
                 input.Release(mouse.rightButton, queueEventOnly: true);
-                for (int frame = 0; frame < 4; frame++) yield return null;
+                yield return WaitFor(() => !root.Hero.State.IsBlocking && !root.Hero.GuardRequested &&
+                    !presentation.OwnsClip(root.Hero), "The physical guard did not release after RMB.");
                 Assert.That(root.Hero.State.IsBlocking || root.Hero.GuardRequested, Is.False);
                 Assert.That(presentation.OwnsClip(root.Hero), Is.False);
 
@@ -93,14 +96,11 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.Hero.State.IsAttacking, Is.True);
                 Assert.That(root.Hero.State.IsShoving, Is.False, "Free melee remains a crowbar swing at close range.");
 
-                PlacePair(1.1f);
-                Assert.That(root.SetOpponentFocus(false), Is.True);
-                Assert.That(root.Hero.RequestCharge(), Is.True);
-                root.Hero.Step(.1f);
-                Assert.That(root.Hero.ReleaseCharge(), Is.True);
-                root.Hero.Step(2f);
+                for (int step = 0; step < 240 && root.Opponent.ReceivedImpactCount == 0; step++)
+                    root.Tick(CombatTestRoot.SimulationStep);
                 Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1),
-                    "The same actual crowbar collision can hit a body ahead without a focus marker.");
+                    $"The free crowbar must hit a body ahead. Outcome {root.Hero.State.AttackOutcome}, " +
+                    $"phase {root.Hero.State.Phase}, obstacle {root.Hero.WeaponBlockingShape}.");
                 Assert.That(root.Opponent.LastImpact.Damage, Is.GreaterThan(0f));
                 AssertFocusState(false);
                 LogAssert.NoUnexpectedReceived();

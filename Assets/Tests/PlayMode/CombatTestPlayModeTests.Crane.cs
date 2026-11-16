@@ -1242,6 +1242,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.WarehouseArea.TryGetHeight(floorPosition, out float height, root.Hero.Body.radius), Is.True,
                 "The staged hero must stand on a real warehouse floor or stair tread.");
             Assert.That(height, Is.EqualTo(floorPosition.y).Within(.03f));
+            PlaceInspectionHero(floorPosition, facing);
+        }
+
+        private void PlaceInspectionHero(Vector3 floorPosition, Vector3 facing)
+        {
             root.Hero.ResetActor(floorPosition + Vector3.up * PlayerFactory.GroundedRootOffset, facing);
             Physics.SyncTransforms();
             float yaw = Mathf.Atan2(facing.x, facing.z) * Mathf.Rad2Deg;
@@ -1273,7 +1278,9 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(energy, Is.InRange(.001d, (double)samples.Length), "A retained crane cue needs finite audible energy.");
             }
             craneVoices = Array.FindAll(root.GetComponentsInChildren<AudioSource>(true), voice => Array.IndexOf(cues, voice.clip) >= 0);
-            Assert.That(craneVoices, Has.Length.EqualTo(4));
+            foreach (int mountedCue in new[] { 0, 1, 3, 4 })
+                Assert.That(Array.Exists(craneVoices, voice => voice.clip == cues[mountedCue]), Is.True,
+                    $"{cues[mountedCue].name} needs a prepared spatial voice.");
             AudioSource body = null, motor = null;
             foreach (AudioSource voice in craneVoices)
             {

@@ -200,8 +200,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(reacted, Is.True, "The real contact must enter a visible standing hit reaction.");
                 Assert.That(enemy.State.Phase, Is.EqualTo(MeleePhase.Ready),
                     $"distance={distance}; stagger={enemy.State.StaggerElapsed}/{enemy.State.StaggerDuration}; available={enemy.IsAvailable}");
-                Assert.That(Vector3.Distance(enemyStart, enemy.transform.position), Is.LessThan(.30f),
-                    "An ordinary crowbar hit has bounded push and returns the enemy to standing.");
+                Assert.That(Vector3.Distance(enemyStart, enemy.transform.position), Is.LessThan(.43f),
+                    "The full standing recoil stays within its authored 42 cm and contact tolerance.");
                 if (captureArc)
                 {
                     Assert.That(activePath, Is.GreaterThan(.8f), "The damaging interval needs visible lateral travel.");

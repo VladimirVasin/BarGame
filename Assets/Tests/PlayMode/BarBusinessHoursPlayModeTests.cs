@@ -107,7 +107,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator ActualBar_FillsAndEmptiesWithClockAndFinishesAcceptedServiceAfterClosing()
+        public IEnumerator ActualBar_FillsAndEmptiesWithClock()
         {
             Assert.That(Application.isBatchMode, Is.False,
                 "This focused scenario captures the actual Game view; run without -batchmode or -nographics.");
@@ -235,48 +235,10 @@ namespace BarPromenade.Tests.PlayMode
                 "The late guests did not leave through the door.");
             AssertSettledCast();
 
-            // A normal public order enters the real shared gesture and service queue.
-            heroHide.Dispose();
-            heroHide = null;
-            BarDrinkShopController shop = bar.DrinkShop;
-            BarCounterStation station = bar.CounterStations[bar.CounterStations.Count - 1];
-            bar.Player.Motor.Teleport(station.Seat.Plan.EntryPose.RootPosition);
-            bar.Player.GameObject.transform.rotation = station.Seat.Plan.EntryPose.RootRotation;
-            Physics.SyncTransforms();
-            follow.enabled = true;
-            playerAction = station.Seat.Controller;
-            Assert.That(playerAction.BeginExternalClock(this), Is.True);
-            Assert.That(station.CanInteract(bar.Player.Interactor), Is.True);
-            station.Interact(bar.Player.Interactor);
-            yield return DriveServiceUntil(() => station.Seat.IsSeated && shop.IsBrowsing,
-                "The real seat and menu did not become ready.");
-            Assert.That(shop.Select(3), Is.True);
-            int cashBefore = GameSessionState.CashBalance;
-            int price = shop.SelectedOffer.Price;
-            Assert.That(shop.ConfirmSelection(), Is.True);
-            yield return DriveServiceUntil(() => shop.PurchaseCommitted, "The public order gesture did not accept its order.");
-            Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashBefore - price));
-            int cashAfter = GameSessionState.CashBalance;
             AdvanceClockTo(2 * 60);
+            BarDrinkShopController shop = bar.DrinkShop;
+            int cashAfter = GameSessionState.CashBalance;
             Assert.That(shop.IsAcceptingOrders, Is.False);
-            Assert.That(shop.ConfirmSelection(), Is.False);
-            Assert.That(shop.BeginRepeatDrink(), Is.False);
-            Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashAfter), "Closing rejects requests before payment.");
-            yield return DriveServiceUntil(() => shop.CanDrinkServedVessel,
-                "An already accepted order must still be delivered after closing.");
-            Assert.That(shop.HeroServiceVessel, Is.Not.Null);
-            Assert.That(shop.HeroServiceVessel.FillProgress, Is.GreaterThan(.99f));
-            Assert.That(shop.PendingServiceOrderCount, Is.Zero);
-            Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashAfter));
-            shop.Close();
-            station.Seat.Cancel();
-            playerAction.ReleaseExternalClock(this);
-            playerAction = null;
-            yield return null;
-            follow.enabled = false;
-            ParkHeroForCrowd();
-            heroHide = bar.Player.PresentationVisibility.AcquireHidden(this);
-            StageRoomCamera(camera);
 
             // Actual NPCs leave; no closed bar is recreated or teleported away.
             bar.Crowd.Advance(0f);

@@ -626,10 +626,12 @@ namespace BarPromenade.Tests.EditMode
                         roadCornerXZ) < 0.001f
                     ? leg.Start
                     : leg.End;
+                Assert.That(CityStreetSupportPlan.ForLayout(layout).TrySampleTop(
+                    roadCornerXZ, out float supportTop, out _), Is.True);
                 Assert.That(
                     cornerDatum.y,
-                    Is.EqualTo(roadNode.y).Within(0.001f),
-                    "An L-corner rail endpoint fell below its road node.");
+                    Is.EqualTo(supportTop - CityStreetSurfacePlanner.RoadTop).Within(0.001f),
+                    "An L-corner rail endpoint must follow its built paving.");
             }
 
             var host = new GameObject("Corner Closure Test Host");
@@ -739,32 +741,33 @@ namespace BarPromenade.Tests.EditMode
                     "The closure must not extend behind the rock toe.");
                 for (int sampleIndex = 0; sampleIndex <= 32; sampleIndex++)
                 {
-                    Vector2 sample = Vector2.Lerp(
-                        blockedGround[0],
-                        blockedGround[blockedGround.Length - 1],
-                        sampleIndex / 32f);
-                    Assert.That(
-                        RaycastDown(
-                            collider,
-                            new Vector3(sample.x, 0f, sample.y),
-                            out RaycastHit groundHit),
-                        Is.True,
-                        $"Plain ground is missing at {sample}.");
-                    Assert.That(
-                        Vector3.Angle(groundHit.normal, Vector3.up),
-                        Is.LessThanOrEqualTo(
-                            CityMountainCornerClosureDescriptor
+                    Vector3 point = Vector3.Lerp(closure.RoadCorner, closure.JoinMiddleToe,
+                        Mathf.Lerp(.06f, .94f, sampleIndex / 32f));
+                    var sample = new Vector2(point.x, point.z);
+                    // Probe the interiors on either side of the triangulation seam.
+                    foreach (float offset in new[] { -0.002f, 0.002f })
+                    {
+                        Assert.That(
+                            RaycastDown(collider, new Vector3(sample.x + offset, 0f, sample.y),
+                                out RaycastHit groundHit),
+                            Is.True, $"Plain ground is missing beside {sample:F4} at offset {offset} m. " +
+                            $"Road corner {closure.RoadCorner:F4}, join toe {closure.JoinMiddleToe:F4}.");
+                        Assert.That(Vector3.Angle(groundHit.normal, Vector3.up),
+                            Is.LessThanOrEqualTo(CityMountainCornerClosureDescriptor
                                 .MaximumNaturalGroundSlopeDegrees + 0.1f),
-                        $"Plain ground is too steep at {sample}.");
+                            $"Plain ground is too steep at {sample}.");
+                    }
                 }
 
+                Vector3[] rockVertices = FindChild(mountain.transform, join.StableId)
+                    .GetComponentsInChildren<MeshFilter>()
+                    .SelectMany(filter => filter.sharedMesh.vertices).ToArray();
                 foreach (CityMountainRidgeStation station in join.Stations)
                 {
-                    Vector3 buried = station.Toe -
-                        station.OutwardNormal *
-                        CityMountainBoundaryMeshFactory.ToeGroundOverlap +
-                        Vector3.down *
-                        CityMountainBoundaryMeshFactory.ToeGroundBurial;
+                    Vector3 lip = CityMountainBoundaryMeshFactory.CreateCrossSection(station)[0];
+                    Vector3 buried = rockVertices.Where(vertex =>
+                        Mathf.Abs(vertex.x - lip.x) < .001f && Mathf.Abs(vertex.z - lip.z) < .001f)
+                        .OrderBy(vertex => vertex.y).First();
                     Vector3 interiorProbe = Vector3.Lerp(
                         buried,
                         closure.RoadCorner,
@@ -842,108 +845,6 @@ namespace BarPromenade.Tests.EditMode
                 CityMountainBoundaryValidator.ValidateOrThrow(
                     customLayout,
                 CityMountainBoundaryPlan.Empty));
-        }
-
-        [Test]
-        [Category("CityMountain")]
-        public void MountainFog_KeepsDistantSilhouetteFaintAndLetsCloseDetailEmerge()
-        {
-            float closeVisibility = CityMountainSurfaceAppearance
-                .EvaluatePhysicalFogVisibility(
-                    CityMountainSurfaceAppearance.NativeFogNearDistance *
-                    0.5f);
-            float nativeNearVisibility = CityMountainSurfaceAppearance
-                .EvaluatePhysicalFogVisibility(
-                    CityMountainSurfaceAppearance.NativeFogNearDistance);
-            float nativeFarVisibility = CityMountainSurfaceAppearance
-                .EvaluatePhysicalFogVisibility(
-                    CityMountainSurfaceAppearance.NativeFogFarDistance);
-            Assert.That(closeVisibility, Is.GreaterThan(0.85f));
-            Assert.That(
-                nativeNearVisibility,
-                Is.GreaterThan(nativeFarVisibility));
-
-            float[] distantSamples =
-            {
-                CityMountainSurfaceAppearance.PhysicalHandoffNearDistance,
-                CityMountainBackdropWorldBuilder.NearLayerRadius,
-                CityMountainSurfaceAppearance.PhysicalHandoffFarDistance,
-                CityMountainBackdropWorldBuilder.FarLayerRadius,
-                RuntimeSceneSetup.CityFarClipPlane
-            };
-            for (int index = 0; index < distantSamples.Length; index++)
-            {
-                Assert.That(
-                    CityMountainSurfaceAppearance
-                        .EvaluatePhysicalFogVisibility(
-                            distantSamples[index]),
-                    Is.EqualTo(
-                        CityMountainSurfaceAppearance
-                            .PhysicalVisibilityFloor)
-                        .Within(0.001f),
-                    distantSamples[index].ToString("F2"));
-            }
-
-            Assert.That(
-                CityMountainSurfaceAppearance.PhysicalVisibilityFloor,
-                Is.LessThanOrEqualTo(0.10f));
-            Assert.That(
-                closeVisibility -
-                CityMountainSurfaceAppearance.PhysicalVisibilityFloor,
-                Is.GreaterThan(0.70f));
-
-            Assert.That(
-                CityMountainSurfaceAppearance.PhysicalHandoffNearDistance,
-                Is.LessThan(
-                    CityMountainBackdropWorldBuilder.NearLayerRadius));
-            Assert.That(
-                CityMountainSurfaceAppearance.PhysicalHandoffFarDistance,
-                Is.GreaterThan(
-                    CityMountainBackdropWorldBuilder.NearLayerRadius));
-            Assert.That(
-                CityMountainSurfaceAppearance.PhysicalHandoffFarDistance,
-                Is.LessThan(RuntimeSceneSetup.CityFarClipPlane));
-
-            const float epsilon = 0.001f;
-            float nearLeft = CityMountainSurfaceAppearance
-                .EvaluatePhysicalFogVisibility(
-                    CityMountainSurfaceAppearance.NativeFogNearDistance -
-                    epsilon);
-            float nearRight = CityMountainSurfaceAppearance
-                .EvaluatePhysicalFogVisibility(
-                    CityMountainSurfaceAppearance.NativeFogNearDistance +
-                    epsilon);
-            float farLeft = CityMountainSurfaceAppearance
-                .EvaluatePhysicalFogVisibility(
-                    CityMountainSurfaceAppearance.NativeFogFarDistance -
-                    epsilon);
-            float farRight = CityMountainSurfaceAppearance
-                .EvaluatePhysicalFogVisibility(
-                    CityMountainSurfaceAppearance.NativeFogFarDistance +
-                    epsilon);
-            Assert.That(Mathf.Abs(nearLeft - nearRight), Is.LessThan(0.01f));
-            Assert.That(Mathf.Abs(farLeft - farRight), Is.LessThan(0.01f));
-
-            Material physicalMaterial =
-                CityMountainSurfaceAppearance.PhysicalRidgeMaterial;
-            Assert.That(
-                physicalMaterial.HasProperty("_VisibilityFloor"),
-                Is.True);
-            Assert.That(
-                physicalMaterial.GetFloat("_VisibilityFloor"),
-                Is.EqualTo(
-                    CityMountainSurfaceAppearance.PhysicalVisibilityFloor)
-                    .Within(0.001f));
-
-            Material backdropMaterial =
-                CityMountainBackdropResources.SharedMaterial;
-            Assert.That(
-                backdropMaterial.HasProperty("_HazeStrength"),
-                Is.True);
-            Assert.That(
-                backdropMaterial.GetFloat("_HazeStrength"),
-                Is.EqualTo(CityMountainBackdropResources.HazeStrength)
-                    .Within(0.001f));
         }
 
         [Test]
@@ -1409,11 +1310,12 @@ namespace BarPromenade.Tests.EditMode
                             buried,
                             $"{station.StableId} buried seam");
 
+                        var buriedXZ = new Vector2(buried.x, buried.z);
                         Assert.That(CityMountainBoundaryValidator.TrySampleAreaTop(layout, ridge.SourceAreaId,
-                            new Vector2(buried.x, buried.z), out float terrainTop), Is.True,
+                            buriedXZ, out float terrainTop), Is.True,
                             $"{station.StableId} has no ground under its buried seam.");
                         Assert.That(
-                            terrainTop - buried.y,
+                            talus.ApplyHeight(buriedXZ, terrainTop) - buried.y,
                             Is.GreaterThanOrEqualTo(0.02f),
                             $"{station.StableId} seam must stay buried " +
                             "below its owner terrain.");

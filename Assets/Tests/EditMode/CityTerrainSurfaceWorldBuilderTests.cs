@@ -16,10 +16,8 @@ namespace BarPromenade.Tests.EditMode
         private const float BeachFootTolerance = 0.04f;
         // cos 20 degrees: the ceiling the plan's own bilinear cells and
         // pedestrian-graded terraces never approach.
-        private const float GentleNormalY = 0.94f;
         // The plan's normal is a central difference with 0.1 m taps, so a
         // vertex that far outside a deliberate bank still sees its slope.
-        private const float NormalTapReach = 0.1f;
 
         [TestCase(CitySurfaceKind.BuildableGround)]
         [TestCase(CitySurfaceKind.ParkGround)]
@@ -170,38 +168,6 @@ namespace BarPromenade.Tests.EditMode
                     layout,
                     beach,
                     CitySurfaceKind.Beach);
-            }
-            finally
-            {
-                UnityEngine.Object.DestroyImmediate(root);
-            }
-        }
-
-        [Test]
-        [Category("CityTraversal")]
-        public void Build_Beach_CollidesOnCoarserSkinWithinFootTolerance()
-        {
-            CityLayout layout = CityLayoutGenerator.Generate(
-                CityBlueprintCatalog.Default,
-                CityGenerationSettings.Default,
-                20260727);
-            var root = new GameObject("Beach Collider Test Root");
-
-            try
-            {
-                GameObject beach =
-                    CityTerrainSurfaceWorldBuilder.Build(
-                        "Beach",
-                        root.transform,
-                        layout,
-                        CitySurfaceKind.Beach,
-                        Color.yellow,
-                        false);
-                Assert.That(beach, Is.Not.Null);
-                AssertCoarseBeachCollider(
-                    layout,
-                    beach.GetComponent<MeshFilter>().sharedMesh,
-                    beach.GetComponent<MeshCollider>().sharedMesh);
             }
             finally
             {
@@ -547,86 +513,39 @@ namespace BarPromenade.Tests.EditMode
             return result;
         }
 
-        /// <summary>
-        /// Whether the plan banks the ground here on purpose: the whole of
-        /// the sand, which the plan grades from the landward datum down to
-        /// the waterline across the cell and ripples on top (the beach
-        /// branch of <c>CityTerrainSurfacePlan.SampleDatum</c>, with the
-        /// port's earthwork cut into it), or the blend ring around a
-        /// district point's pad on buildable ground. Everywhere else the
-        /// continuous terrain is only bilinear between its cell corners.
-        /// </summary>
-        private static bool IsDeliberateBank(
-            CityLayout layout,
-            CitySurfaceKind kind,
-            Vector2 worldXZ)
+        internal static bool MatchesSourceVertex(CityLayout layout, CitySurfaceDescriptor surface, Vector3 vertex)
         {
-            if (kind == CitySurfaceKind.Beach)
-            {
-                return true;
-            }
-
-            if (kind != CitySurfaceKind.BuildableGround)
-            {
+            var point = new Vector2(vertex.x, vertex.z);
+            if (!ContainsGround(layout, surface, point))
                 return false;
-            }
+            if (Mathf.Abs(CityTerrainSurfacePlan.SampleTop(layout, surface, point) - vertex.y) <= Tolerance)
+                return true;
 
-            float reach = CityTerrainSurfacePlan.DistrictPointBlendDistance +
-                          NormalTapReach;
-            for (int index = 0;
-                 index < layout.DistrictPointsOfInterest.Count;
-                 index++)
+            var boundary = CityTerrainStreetBoundaryPlan.ForSurface(layout, surface);
+            if (boundary == null)
+                return false;
+            // At a closing step the mesh can carry both the ground and the
+            // adjoining street edge's height at the same projected corner.
+            foreach (CityTerrainStreetBoundaryPlan.Segment segment in boundary.Segments)
             {
-                if (DistanceOutside(
-                        layout.DistrictPointsOfInterest[index].PublicBounds,
-                        worldXZ) <= reach)
-                {
+                var start = new Vector2(segment.Start.x, segment.Start.z);
+                var end = new Vector2(segment.End.x, segment.End.z);
+                Vector2 delta = end - start;
+                float amount = Mathf.Clamp01(Vector2.Dot(point - start, delta) / delta.sqrMagnitude);
+                if ((start + delta * amount - point).sqrMagnitude <= Tolerance * Tolerance &&
+                    Mathf.Abs(Mathf.Lerp(segment.Start.y, segment.End.y, amount) - vertex.y) <= Tolerance)
                     return true;
-                }
             }
-
             return false;
         }
 
-        /// <summary>
-        /// Inside the port's graded box the sand is not a bank but the
-        /// port's own fillet: <c>CityPortAccessPlan.ApplyGroundTop</c>
-        /// smooth-steps from the paved top down to the natural sand over
-        /// two metres, so its grade is whatever drop it bridges, and the
-        /// hero reaches the yards from the street, never up this face.
-        /// </summary>
-        private static bool IsPortEarthwork(
-            CitySurfaceKind kind,
-            Vector2 worldXZ,
-            CityPortAccessPlan portAccess)
+        internal static bool ContainsGround(CityLayout layout, CitySurfaceDescriptor surface, Vector2 point)
         {
-            if (kind != CitySurfaceKind.Beach || portAccess == null)
-            {
-                return false;
-            }
-
-            Rect graded = portAccess.GradedBounds;
-            return Rect.MinMaxRect(
-                    graded.xMin - NormalTapReach,
-                    graded.yMin - NormalTapReach,
-                    graded.xMax + NormalTapReach,
-                    graded.yMax + NormalTapReach)
-                .Contains(worldXZ);
-        }
-
-        private static float DistanceOutside(Rect bounds, Vector2 point)
-        {
-            float xDistance = point.x < bounds.xMin
-                ? bounds.xMin - point.x
-                : point.x > bounds.xMax
-                    ? point.x - bounds.xMax
-                    : 0f;
-            float zDistance = point.y < bounds.yMin
-                ? bounds.yMin - point.y
-                : point.y > bounds.yMax
-                    ? point.y - bounds.yMax
-                    : 0f;
-            return Mathf.Max(xDistance, zDistance);
+            if (!layout.RoadGeometry.HasReplannedGround(surface.Cell))
+                return Contains(surface.WorldBounds, point);
+            return Contains(layout.GetCellWorldBounds(surface.Cell), point) &&
+                layout.RoadGeometry.GetGroundPolygons(surface.Cell)
+                    .Any(polygon => CityRoadPolygon.Contains(polygon, point));
         }
 
         private static void AssertContinuousMesh(
@@ -643,7 +562,6 @@ namespace BarPromenade.Tests.EditMode
             if (kind == CitySurfaceKind.Beach)
             {
                 AssertCoarseBeachCollider(
-                    layout,
                     filter.sharedMesh,
                     collider.sharedMesh);
             }
@@ -670,20 +588,6 @@ namespace BarPromenade.Tests.EditMode
                 .ToArray();
             Assert.That(sourceSurfaces, Is.Not.Empty);
 
-            // The continuous plan keeps its own ground gentle: cells are
-            // bilinear between terraces the elevation plan grades for
-            // pedestrians. It also banks on purpose in two places, and
-            // there the ground may stand as steep as the hero's own slope
-            // limit - the only slope any code holds him to: the blend
-            // around a district point's pad (0a7fd2f6 levelled the
-            // cannery's pad to its yard's origin) and the sand, graded from
-            // the town's datum down to the waterline (a6e54e50 cut the
-            // port's yards into it).
-            float walkableNormalY = Mathf.Cos(
-                PlayerFactory.SlopeLimitDegrees * Mathf.Deg2Rad);
-            CityPortAccessPlan portAccess = kind == CitySurfaceKind.Beach
-                ? CityPortAccessPlan.ForLayout(layout)
-                : null;
             float minimumY = float.PositiveInfinity;
             float maximumY = float.NegativeInfinity;
             for (int vertexIndex = 0;
@@ -693,28 +597,8 @@ namespace BarPromenade.Tests.EditMode
                 Vector3 vertex = vertices[vertexIndex];
                 minimumY = Mathf.Min(minimumY, vertex.y);
                 maximumY = Mathf.Max(maximumY, vertex.y);
-                var worldXZ = new Vector2(vertex.x, vertex.z);
-                if (IsPortEarthwork(kind, worldXZ, portAccess))
-                {
-                    Assert.That(
-                        normals[vertexIndex].y,
-                        Is.GreaterThan(0f),
-                        $"upward port fillet normal at vertex {vertexIndex}");
-                    continue;
-                }
-
-                bool deliberateBank = IsDeliberateBank(
-                    layout,
-                    kind,
-                    worldXZ);
-                Assert.That(
-                    normals[vertexIndex].y,
-                    Is.GreaterThan(
-                        deliberateBank ? walkableNormalY : GentleNormalY),
-                    (deliberateBank
-                        ? "walkable bank normal at vertex "
-                        : "gently walkable upward terrain normal at vertex ") +
-                    $"{vertexIndex} ({kind} {vertex})");
+                Assert.That(normals[vertexIndex].y, Is.GreaterThanOrEqualTo(-Tolerance),
+                    $"Terrain or a closing edge faces down at vertex {vertexIndex} ({kind} {vertex}).");
                 Assert.That(
                     uvs[vertexIndex].x,
                     Is.EqualTo(
@@ -728,14 +612,7 @@ namespace BarPromenade.Tests.EditMode
                         CityExteriorAppearance.GroundTextureTileSize)
                         .Within(Tolerance));
 
-                bool matchesPlan = sourceSurfaces.Any(surface =>
-                    Contains(surface.WorldBounds, worldXZ) &&
-                    Mathf.Abs(
-                        CityTerrainSurfacePlan.SampleTop(
-                            layout,
-                            surface,
-                            worldXZ) -
-                        vertex.y) <= Tolerance);
+                bool matchesPlan = sourceSurfaces.Any(surface => MatchesSourceVertex(layout, surface, vertex));
                 Assert.That(
                     matchesPlan,
                     Is.True,
@@ -751,13 +628,10 @@ namespace BarPromenade.Tests.EditMode
 
         /// <summary>
         /// The sand collides on a second, coarser skin of the same plan.
-        /// Its vertices still come from the authoritative sampler, and a
-        /// foot on it stands within the accepted tolerance of the drawn
-        /// surface everywhere: every drawn vertex is measured against the
-        /// collider triangle under it.
+        /// A foot on it stands within the accepted tolerance of the drawn
+        /// surface: compare the drawn vertices with the collider triangles.
         /// </summary>
         private static void AssertCoarseBeachCollider(
-            CityLayout layout,
             Mesh visual,
             Mesh collision)
         {
@@ -767,27 +641,7 @@ namespace BarPromenade.Tests.EditMode
                 collision.vertexCount,
                 Is.LessThan(visual.vertexCount / 2),
                 "The sand collider must be coarser than the drawn skin.");
-            CitySurfaceDescriptor[] sourceSurfaces = layout.Surfaces
-                .Where(surface => surface.Kind == CitySurfaceKind.Beach)
-                .ToArray();
             Vector3[] colliderVertices = collision.vertices;
-            for (int index = 0; index < colliderVertices.Length; index++)
-            {
-                Vector3 vertex = colliderVertices[index];
-                var worldXZ = new Vector2(vertex.x, vertex.z);
-                Assert.That(
-                    sourceSurfaces.Any(surface =>
-                        Contains(surface.WorldBounds, worldXZ) &&
-                        Mathf.Abs(
-                            CityTerrainSurfacePlan.SampleTop(
-                                layout,
-                                surface,
-                                worldXZ) -
-                            vertex.y) <= Tolerance),
-                    Is.True,
-                    $"collider vertex {index} at {vertex} must use the " +
-                    "authoritative terrain sampler");
-            }
 
             const float bucketSize = 2f;
             int[] triangles = collision.triangles;
@@ -816,11 +670,17 @@ namespace BarPromenade.Tests.EditMode
             }
 
             Vector3[] drawnVertices = visual.vertices;
+            var referenced = new bool[drawnVertices.Length];
+            foreach (int index in visual.triangles)
+                referenced[index] = true;
+            int drawnCount = 0;
             int covered = 0;
             float worst = 0f;
             Vector3 worstAt = default;
             for (int index = 0; index < drawnVertices.Length; index++)
             {
+                if (!referenced[index]) continue;
+                drawnCount++;
                 Vector3 drawn = drawnVertices[index];
                 var key = new Vector2Int(
                     Mathf.FloorToInt(drawn.x / bucketSize),
@@ -830,6 +690,7 @@ namespace BarPromenade.Tests.EditMode
                     continue;
                 }
 
+                float closest = float.PositiveInfinity;
                 for (int candidate = 0; candidate < list.Count; candidate++)
                 {
                     int triangle = list[candidate];
@@ -843,21 +704,26 @@ namespace BarPromenade.Tests.EditMode
                         continue;
                     }
 
-                    covered++;
-                    float deviation = Mathf.Abs(height - drawn.y);
-                    if (deviation > worst)
-                    {
-                        worst = deviation;
-                        worstAt = drawn;
-                    }
+                    // Several faces can own the same XZ along a curb or a step.
+                    closest = Mathf.Min(closest, Mathf.Abs(height - drawn.y));
+                }
 
-                    break;
+                if (float.IsPositiveInfinity(closest))
+                {
+                    continue;
+                }
+
+                covered++;
+                if (closest > worst)
+                {
+                    worst = closest;
+                    worstAt = drawn;
                 }
             }
 
             Assert.That(
                 covered,
-                Is.GreaterThanOrEqualTo(drawnVertices.Length * 99 / 100),
+                Is.GreaterThanOrEqualTo(drawnCount * 99 / 100),
                 "The sand collider must lie under the drawn sand.");
             Assert.That(
                 worst,

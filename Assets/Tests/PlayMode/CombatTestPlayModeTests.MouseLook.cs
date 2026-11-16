@@ -78,7 +78,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.Hero.Firearm.ShotSequence, Is.EqualTo(shots),
                     "A pointer click made with Alt held cannot fire.");
                 RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
-                Vector2 toolbarPoint = canvas.LogicalToScreen(new Vector2(160f, 20f));
+                var layout = new CombatHudLayout(canvas, root.IsLaboratory, debug: true);
+                Vector2 toolbarPoint = canvas.LogicalToScreen(layout.Toolbar.center);
                 input.Set(mouse.position, new Vector2(toolbarPoint.x, Screen.height - toolbarPoint.y),
                     queueEventOnly: true);
                 InputSystem.Update();

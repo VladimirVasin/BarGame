@@ -2512,9 +2512,16 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3 clearYardPoint =
                         lot.DoorPosition +
                         frontage * (controller.radius + 0.20f);
-                    clearYardPoint.y = originalPosition.y;
                     Vector3 roadPoint = lot.ReturnPosition;
-                    roadPoint.y = originalPosition.y;
+                    var roadXZ = new Vector2(roadPoint.x, roadPoint.z);
+                    var yardXZ = new Vector2(clearYardPoint.x, clearYardPoint.z);
+                    if (!CityStreetSupportPlan.ForLayout(cityRoot.Layout).TrySampleTop(roadXZ, out float roadTop, out _) ||
+                        !CityTerrainSurfacePlan.TrySampleGroundTop(cityRoot.Layout, yardXZ, out float yardTop, out _))
+                    {
+                        continue;
+                    }
+                    roadPoint.y = roadTop + PlayerFactory.GroundedRootOffset;
+                    clearYardPoint.y = yardTop + PlayerFactory.GroundedRootOffset;
                     for (int sample = 0; sample <= 10; sample++)
                     {
                         Vector3 point = Vector3.Lerp(
@@ -2534,9 +2541,7 @@ namespace BarPromenade.Tests.PlayMode
                     player.position = roadPoint;
                     controller.enabled = true;
                     Physics.SyncTransforms();
-                    Vector3 clearMove = clearYardPoint - player.position;
-                    clearMove.y = 0f;
-                    controller.Move(clearMove);
+                    controller.Move(clearYardPoint - player.position);
                     Vector3 clearError = clearYardPoint - player.position;
                     clearError.y = 0f;
                     if (clearError.magnitude > 0.08f)

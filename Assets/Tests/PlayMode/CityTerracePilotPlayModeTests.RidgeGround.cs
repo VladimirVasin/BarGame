@@ -76,51 +76,30 @@ namespace BarPromenade.Tests.PlayMode
                     yield return RidgeWalk(excursion.Reverse().ToArray(), road.Bank + " return to street");
                 }
 
-                // An actual perimeter loop proves usable space behind and beside
-                // the house. Its front-east corner stays tight to the real wall:
-                // the dry ravine turns towards this house immediately beyond it.
+                // Approach the rear ground from the house side of the parking
+                // and kiosk. Both new courts have real boundaries of their own.
                 Rect bounds = home.FoundationBounds;
-                const float outerClearance = 1.2f, ravineSideClearance = .45f;
-                var retaining = CityHillsideSiteDetails.ForLayout(layout)
-                    .Where(site => site.Part == CityHillsideSiteDetails.Kind.RetainingEnd &&
-                        site.Bounds.xMax <= bounds.xMin + .1f &&
-                        site.Bounds.yMin < bounds.yMax + 2f && site.Bounds.yMax > bounds.yMax - 4f)
-                    .OrderBy(site => Vector3.Distance(site.Origin, home.ThresholdWorld)).First();
-                RidgeParkingPlan parking = RidgeParkingPlan.ForLayout(layout);
-                Assert.That(parking, Is.Not.Null);
-                float wallNorth = Mathf.Max(retaining.Bounds.yMax + .55f,
-                    parking.SurfaceBounds.yMax + capsule.radius + .15f);
-                float wallWest = retaining.Bounds.xMin - .55f;
-                float wallSouth = retaining.Bounds.yMin - .55f;
-                float parkingLampClearance = CityStaticCollisionBuilder.CreateLowerPoleBounds(Vector3.zero).extents.x +
-                    capsule.radius + .15f;
-                float westOfHome = Mathf.Min(bounds.xMin - outerClearance,
-                    parking.Lamps.Max(lamp => lamp.Position.x) - parkingLampClearance);
+                const float rearClearance = 1.2f, ravineSideClearance = .45f;
                 Vector2[] corners = {
                     new Vector2(home.StreetContactWorld.x, bounds.yMax + ravineSideClearance),
-                    new Vector2(home.StreetContactWorld.x, wallNorth),
-                    new Vector2(wallWest, wallNorth),
-                    new Vector2(wallWest, wallSouth),
-                    new Vector2(westOfHome, wallSouth),
-                    new Vector2(westOfHome, bounds.yMin - outerClearance),
-                    new Vector2(bounds.xMax + ravineSideClearance, bounds.yMin - outerClearance),
                     new Vector2(bounds.xMax + ravineSideClearance, bounds.yMax + ravineSideClearance),
-                    new Vector2(home.StreetContactWorld.x, bounds.yMax + ravineSideClearance)
+                    new Vector2(bounds.xMax + ravineSideClearance, bounds.yMin - rearClearance),
+                    new Vector2(bounds.center.x, bounds.yMin - rearClearance)
                 };
-                var homeLoop = new List<Vector3> { home.StreetContactWorld };
+                var homeRoute = new List<Vector3> { home.StreetContactWorld };
                 foreach (Vector2 corner in corners)
                 {
                     Assert.That(ground.Contains(corner, capsule.radius), Is.True,
-                        "The home needs an open perimeter, including its rear: " + corner);
-                    homeLoop.Add(RidgeGroundAt(corner, layout, ground));
+                        "The home needs an open approach to its rear ground: " + corner);
+                    homeRoute.Add(RidgeGroundAt(corner, layout, ground));
                 }
-                homeLoop.Add(home.StreetContactWorld);
-                Debug.Log("Ridge ground verification: walking the home perimeter around the real retaining-wall end.");
-                yield return RidgeStand(homeLoop[0]);
-                yield return RidgeWalk(homeLoop, "home courtyard perimeter");
+                Debug.Log("Ridge ground verification: walking from the street to the rear courtyard.");
+                yield return RidgeStand(homeRoute[0]);
+                yield return RidgeWalk(homeRoute, "rear home courtyard");
                 yield return CapturePlayerView("ridge-home-continuous-ground", home.Lot.Center + Vector3.up * .5f);
+                yield return RidgeWalk(homeRoute.AsEnumerable().Reverse().ToArray(), "home courtyard return");
 
-                foreach (Vector3 probe in homeLoop.Skip(1).Take(homeLoop.Count - 2))
+                foreach (Vector3 probe in homeRoute.Skip(1))
                 {
                     Assert.That(mapGround.TryResolveStandingPosition(new Vector2(probe.x, probe.z), out var arrival),
                         Is.True, "New ground must accept a chart arrival.");
@@ -140,15 +119,19 @@ namespace BarPromenade.Tests.PlayMode
                         "A map arrival cannot borrow the rock floor beneath a bridge.");
                 }
 
-                var tree = CityHillsideSiteDetails.ForLayout(layout)
-                    .Where(site => site.Part == CityHillsideSiteDetails.Kind.YardTree)
-                    .OrderBy(site => Vector3.Distance(site.Origin, home.ThresholdWorld)).First();
-                var trunk = new Vector2(tree.Origin.x, tree.Origin.z);
+                var tree = city.World.Root.transform.Find("Residential terrace edges").Cast<Transform>()
+                    .Where(site => site.name == "RidgeYardTree")
+                    .OrderBy(site => Vector3.Distance(site.position, home.ThresholdWorld)).First();
+                var trunkBody = tree.GetComponent<BoxCollider>();
+                Assert.That(trunkBody.enabled, Is.True);
+                Vector3 trunkCenter = tree.TransformPoint(trunkBody.center);
+                var trunk = new Vector2(trunkCenter.x, trunkCenter.z);
                 Assert.That(ground.Contains(trunk, capsule.radius), Is.False,
                     "Newly accessible land must still exclude the physical tree trunk.");
                 if (mapGround.TryResolveStandingPosition(trunk, out var treeArrival))
                     Assert.That(Vector2.Distance(trunk, new Vector2(treeArrival.x, treeArrival.z)),
-                        Is.GreaterThanOrEqualTo(.34f * tree.Scale + CityGroundTraversalPlanner.MaximumAgentRadius - .015f),
+                        Is.GreaterThanOrEqualTo(trunkBody.size.x * tree.lossyScale.x * .5f +
+                            CityGroundTraversalPlanner.MaximumAgentRadius - .015f),
                         "A map click on a tree must fail or move the full hero capsule beyond its actual trunk.");
 
                 Debug.Log("Ridge ground verification: checking furniture contacts and scenery directions.");
@@ -188,36 +171,21 @@ namespace BarPromenade.Tests.PlayMode
                     "The composed home view must reveal the lower city below the crest.");
                 activeSeat = city.GetComponentsInChildren<CityBenchSitInteraction>()
                     .Single(seat => seat.Plan.Id == homeSeat.Id);
-                // Walk continuously from the home loop's final street contact,
-                // across the road west of the bridge and around the bench's
-                // western end. The east end is beside the real retaining face.
-                Vector3 seatFloor = new Vector3(homeSeat.SeatTopCenter.x, homeSeat.GroundY, homeSeat.SeatTopCenter.z);
-                Vector3 benchRight = Vector3.Cross(Vector3.up, homeSeat.FaceDirection);
-                float endClearance = homeSeat.SeatWidth * .5f + .85f;
-                float frontClearance = homeSeat.SeatDepth * .5f + .65f;
-                Vector3 behindEnd = seatFloor - benchRight * endClearance - homeSeat.FaceDirection * frontClearance;
-                Vector3 aheadEnd = seatFloor - benchRight * endClearance + homeSeat.FaceDirection * frontClearance;
-                float crossingX = Mathf.Min(behindEnd.x, bridgeBounds.xMin - 4f);
+                // Cross on the approach to the built descent and follow its
+                // stair to the bench junction. The direct bank drops away.
+                var descent = CityPawnshopDescentPlan.ForLayout(layout);
                 var summit = quarter.Links.Single(link => link.Id == "summit");
-                var approachXZ = new[] {
-                    new Vector2(crossingX, home.StreetContactWorld.z),
-                    new Vector2(crossingX, summit.WestGateWorld.z + 4f),
-                    new Vector2(behindEnd.x, behindEnd.z),
-                    new Vector2(aheadEnd.x, aheadEnd.z)
-                };
-                var benchApproach = new List<Vector3>();
-                var streetSupport = CityStreetSupportPlan.ForLayout(layout);
-                foreach (Vector2 point in approachXZ)
-                {
-                    bool supported = streetSupport.TrySampleTop(point, out float top, out _) ||
-                        ground.TrySampleTop(point, out top);
-                    Assert.That(supported, Is.True, "The home-to-bench route needs real ground: " + point);
-                    var foot = new Vector3(point.x, top, point.y);
+                Assert.That(descent.IsEnabled, Is.True);
+                Assert.That(descent.StairRoute, Does.Contain(descent.UpperApproachMouth));
+                Vector3 south = RidgeGroundAt(new Vector2(descent.UpperDock.x, summit.SouthSidewalk[0].z), layout, ground);
+                var benchApproach = new[] { south }
+                    .Concat(descent.StairRoute.TakeWhile(point => point != descent.UpperApproachMouth))
+                    .Concat(descent.BenchRoute.Reverse().Skip(1)).ToArray();
+                foreach (Vector3 foot in benchApproach)
                     Assert.That(city.World.WalkableArea.Contains(foot + Vector3.up * PlayerFactory.GroundedRootOffset,
-                        capsule.radius), Is.True, "The home-to-bench route needs a full capsule: " + point);
-                    benchApproach.Add(foot);
-                }
-                benchApproach.Add(activeSeat.Plan.EntryRootPosition - Vector3.up * PlayerFactory.GroundedRootOffset);
+                        capsule.radius), Is.True, "The home-to-bench route needs a full capsule: " + foot);
+                Assert.That(Vector3.Distance(benchApproach[benchApproach.Length - 1] + Vector3.up * PlayerFactory.GroundedRootOffset,
+                    activeSeat.Plan.EntryRootPosition), Is.LessThan(.01f));
                 Debug.Log("Ridge ground verification: physically walking from Home across the street to the view bench.");
                 yield return RidgeWalk(benchApproach, "home to bridge-view bench");
                 Debug.Log("Ridge ground verification: using E to sit on the home bridge-view bench.");
@@ -357,7 +325,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(city.World.WalkableArea.Contains(motor.transform.position, capsule.radius), Is.True,
                         stage + " left the supported footprint at " + motor.transform.position);
                     Assert.That(visual.LeftFootGround.HasSurface || visual.RightFootGround.HasSurface, Is.True,
-                        stage + " lost both boot contacts.");
+                        $"{stage} lost both boot contacts at {motor.transform.position:F3} toward {destination:F3}.");
                 }
                 if (!arrived)
                 {

@@ -446,12 +446,19 @@ namespace BarPromenade
                 provisional);
             if (layout.SpatialPlan.IsCompactCoastal)
             {
-                float extraPavement = CityStreetSurfacePlanner.PublicSidewalkWidth -
-                    CityStreetSurfacePlanner.SidewalkWidth;
                 foreach (RoadEdge edge in layout.RoadEdges)
-                    if (layout.GetPathKind(edge) == CityPathKind.Street &&
-                        OverlapsStrict(footprint, Expand(layout.GetRoadRect(edge),
-                            extraPavement + RoadEdgeClearance))) return false;
+                {
+                    if (layout.GetPathKind(edge) != CityPathKind.Street) continue;
+                    Rect road = layout.GetRoadRect(edge);
+                    // Check the pavement on the pocket's side. Protected frontages
+                    // can retain the narrow pavement when the opposite side widens.
+                    int side = (edge.IsHorizontal
+                        ? footprint.center.y <= road.center.y
+                        : footprint.center.x >= road.center.x) ? 1 : -1;
+                    float extraPavement = CityStreetSurfacePlanner.GetPublicSidewalkWidth(layout, edge, side) -
+                        CityStreetSurfacePlanner.SidewalkWidth;
+                    if (OverlapsStrict(footprint, Expand(road, extraPavement + RoadEdgeClearance))) return false;
+                }
             }
             Vector2[] samples =
             {

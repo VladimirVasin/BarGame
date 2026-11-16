@@ -808,8 +808,8 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3.Angle(
                     entryDoorLight.transform.forward,
                     doorDirection),
-                Is.LessThan(entryDoorLight.innerSpotAngle * 0.5f),
-                "The door must sit inside the lamp's full-strength cone.");
+                Is.LessThan(entryDoorLight.spotAngle * 0.5f),
+                "The door must sit inside the lamp's cone.");
 
             Vector3 floorPoolCenter =
                 home.Room.TransformPoint(

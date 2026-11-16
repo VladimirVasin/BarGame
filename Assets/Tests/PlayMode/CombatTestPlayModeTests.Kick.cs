@@ -130,9 +130,12 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 for (int i = 0; i < 24 && root.Opponent.State.Health == S.MaxHealth; i++)
                 { root.Tick(CombatTestRoot.SimulationStep); yield return null; }
-                Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth - S.KickDamage),
+                MeleeCombatSettings target = root.Opponent.State.Settings;
+                float expectedDamage = S.KickDamage * target.IncomingDamageScale;
+                Assert.That(root.Opponent.State.Health, Is.EqualTo(target.MaxHealth - expectedDamage).Within(.001f),
                     "The actual boot crosses the posed anatomy beneath the raised face guard.");
                 Assert.That(root.Opponent.LastImpact.Kind, Is.EqualTo(CombatImpactKind.Kick));
+                Assert.That(root.Opponent.LastImpact.Result, Is.EqualTo(MeleeHitResult.Hit));
                 Assert.That(root.BloodEffects.WoundCountFor(root.Opponent), Is.Zero);
                 Assert.That(root.Opponent.LastImpact.Impulse.magnitude, Is.EqualTo(CombatActor.KickImpulse).Within(.001f));
                 CaptureKick("kick-contact");
@@ -157,16 +160,22 @@ namespace BarPromenade.Tests.PlayMode
 
                 PlacePair(1f);
                 wall = new GameObject("Kick test wall");
-                wall.transform.position = new Vector3(0f, 1f, .5f);
-                wall.AddComponent<BoxCollider>().size = new Vector3(3f, 2f, .05f);
+                wall.transform.position = new Vector3(0f, 1f, .37f);
+                BoxCollider wallCollider = wall.AddComponent<BoxCollider>();
+                wallCollider.size = new Vector3(3f, 2f, .05f);
                 Physics.SyncTransforms();
                 yield return null;
                 Assert.That(root.Hero.TryKick(), Is.True);
                 root.Tick(.45f);
                 yield return null;
-                Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth));
+                var wallSweep = root.Hero.LastKickSweep;
+                Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth),
+                    $"Wall kick from {wallSweep.From:F3} to {wallSweep.To:F3}, " +
+                    $"witness {wallSweep.SurfaceWitness} from {wallSweep.SurfaceFrom:F3} to {wallSweep.SurfaceTo:F3}, " +
+                    $"obstacle distance {wallSweep.ObstacleDistance:F3}, target {root.Opponent.LastImpact.Point:F3}.");
                 Assert.That(root.Hero.State.KickOutcome, Is.EqualTo(MeleeAttackOutcome.Obstacle));
-                Assert.That(root.Hero.KickBootPosition.z, Is.LessThan(.51f));
+                Assert.That(root.Hero.KickBootPosition.z, Is.LessThan(wallCollider.bounds.max.z),
+                    "The boot must remain short of the far face of the wall.");
                 CaptureKick("kick-wall-return");
                 Object.Destroy(wall); wall = null;
                 root.ResetRound();
