@@ -394,6 +394,8 @@ namespace BarPromenade
             CityGenerationSettings settings = CityGenerationSettings.Default;
             CityBlueprint blueprint = CityBlueprintCatalog.Resolve(
                 GameSessionState.CityBlueprintId);
+            var ready = CityLayoutCache.WaitForPrimedPlans(blueprint, settings, GameSessionState.CitySeed);
+            if (ready != null) yield return ready;
             Layout = CityLayoutCache.GetOrGenerate(
                 blueprint,
                 settings,
@@ -1384,6 +1386,7 @@ namespace BarPromenade
                 yield return new CompositionStep("ambient_pedestrians", 0.99f);
             GameSessionState.CompleteCityReturn();
             IsInitialized = true;
+            AreaAssetWarmup.ReleaseCity();
             GameLogPhases.Report("city", "player_and_ui", phaseTimer);
             // Both foreign planners start on the pool now, so the first M
             // press or the idle warm above joins finished work instead of

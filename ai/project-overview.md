@@ -4,7 +4,7 @@
 
 - Windows x64/macOS Universal; runtime-composed city/road/village/interiors.
   [World](current-world.md).
-- Unity `6000.6.8f1`, URP `17.6.0`, Input System `1.20.1`, Navigation `2.0.16`:
+- Unity `6000.6.9f1`, URP `17.6.0`, Input System `1.20.1`, Navigation `2.0.16`:
   `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
 - 16:9/native/SMAA/savedFX/no4:3;City/balcony Soft,bar/church Neutral.
@@ -56,12 +56,11 @@ Mouse orbit: no button; RMB aims; Alt frees cursor/pauses mouse look/combat.
 `GameCursor`: leases; UI frees cursor; focus return drops delta.
 Impulses kept; local look/debug; no rebind UI.
 
-Area travel uses Single loading; City/Village doors retain one dormant exterior.
-Builders share incremental/synchronous entry points. Overlay: 20% loading/80%
-construction; 8 ms best-effort yields between indivisible stages. Time/input/
-gameplay audio pause until ready; teardown releases ownership. Village terrain
-and surfaces share lazy grid heights keyed by plan/brook, invalidated on change;
-snow evaluates retained vertices and paths reuse edge work.
+Area travel uses Single loading. City/Village doors retain one dormant exterior.
+The menu warms shared Home/City plans and assets. Overlay: 20% load/80% build.
+Shared synchronous/staged builders yield between stages at 8 ms during travel.
+Time/input/audio pause until ready. Village terrain and surfaces share lazy
+heights keyed by plan/brook. Snow retains vertices and paths reuse edges.
 
 Litter palette, forest chunks, hair detail, greetings and port BC7:
 accepted `2026-10-13` decision in [architecture-notes.md](architecture-notes.md).

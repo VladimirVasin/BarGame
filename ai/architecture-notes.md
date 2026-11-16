@@ -2598,17 +2598,21 @@
   common bindings; context-specific look/debug controls stay with their
   callers. Both ride skips respect pause, modal ownership and scene
   transitions.
-- **Current — Staged area composition (2026-09-06, ext. 2026-09-14):** City,
-  Mountain Road, Alpine Village and Home (door only) register build
-  iterators; direct loads drain them. A Single load unloads the source
-  first; a door build runs behind a black overlay at a 250 ms stage floor,
-  the loading bar at 8 ms. Activation waits for the held load.
-  `CityLayoutCache` memoises plans per session; foreign planners and, from
-  a new game in a City interior, the City plans and beach/seabed lists run
-  on a `Task` (one owner per layout until joined; a fault plans in place),
-  never `UnityEngine.Object` work. The driver holds a tempo lease, listener
-  pause and `renderFrameInterval` 4 until a frame before the overlay
-  leaves. Water cubemaps wait for the whole world.
+- **Current — Staged area composition (2026-09-06, extended 2026-09-14 and 2026-11-16):**
+  City, Mountain Road, Alpine Village and Home register build iterators under
+  cover. Standalone loads drain them. Door black uses 250 ms between stage
+  yields, the loading bar uses 8 ms. Single load unloads the source first.
+  After the first menu frame `CityLayoutCache` prepares the exterior context,
+  entrances, courts and perimeters shared by Home and City. Accepted City
+  starts except Home can extend the prime through beach/seabed samples.
+  Electrical plans read numeric snapshots of authored assets. Foreign planners
+  also use workers. A blueprint/settings/seed key has one owner until joined.
+  Covered builds yield while a prime finishes. A failed
+  prime falls back to the normal planners. Unrelated launches abandon the work.
+  `AreaAssetWarmup` queues hero, Home model library, pooled NPCs and bus one
+  at a time and releases area references after use or diversion.
+  The driver holds tempo, listener pause and `renderFrameInterval` 4 through
+  world construction. Water cubemaps wait for the whole world.
 - **Current — Transition/resource ownership (2026-09-06):** Both transition
   services release held scene activation on disable/destruction. Ordinary
   transitions drive nested routines through one exception/cleanup boundary.

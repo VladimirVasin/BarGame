@@ -1,237 +1,191 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace BarPromenade
 {
     /// <summary>
-    /// Pulls the hero prefab and the pooled pedestrian archetype prefabs into
-    /// memory while the start menu sits idle, so the first hero-bearing
-    /// composition of a session does not pay their first deserialisation
-    /// (the hero animation FBX and the two shared pedestrian FBX files are
-    /// the bulk of the City root `hero` + `pedestrian_pool` brackets on a
-    /// cold load).
-    ///
-    /// Every load is <see cref="Resources.LoadAsync{T}(string)"/>; nothing
-    /// here touches the main thread beyond issuing the request and, in its
-    /// completion callback, taking the loaded object into <see cref="held"/>.
-    /// That static list is the whole mechanism: a `Single` scene load runs
-    /// the unused-asset sweep, and an asset reachable from a static field is
-    /// not unused, so the prefabs stay resident until the roots ask for them
-    /// by the same path and receive the resident copy.
+    /// Warms a fixed list of assets one at a time while the start menu is idle.
+    /// Strong references carry completed loads across Single scene loads.
     /// </summary>
     public static class AreaAssetWarmup
     {
+        private enum Target { Shared, Home, City }
+
         private struct WarmAsset
         {
             public string Path;
             public Object Asset;
         }
 
-        private struct PendingRequest
-        {
-            public string Path;
-            public ResourceRequest Request;
-        }
-
         private const string LogCategory = "menu";
-
-        // Strong references. Keeping these alive across the scene switch is
-        // the point of the class; see the type summary.
         private static readonly List<WarmAsset> held = new List<WarmAsset>();
-        private static readonly List<PendingRequest> inFlight =
-            new List<PendingRequest>();
+        private static IReadOnlyList<string> menuPaths;
+        private static int nextPath;
+        private static bool keepHome;
+        private static bool keepCity;
+        private static ResourceRequest inFlight;
+        private static string inFlightPath;
 
         public static int HeldCount => held.Count;
-        public static int InFlightCount => inFlight.Count;
+        public static int InFlightCount => inFlight != null ? 1 : 0;
 
-        // Domain reload is off in this project, so the held list would
-        // outlive a play session (and pin editor-loaded assets) unless it
-        // is reset here.
-        [RuntimeInitializeOnLoadMethod(
-            RuntimeInitializeLoadType.SubsystemRegistration)]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {
+            if (inFlight != null) inFlight.completed -= OnRequestCompleted;
             held.Clear();
-            inFlight.Clear();
+            menuPaths = null;
+            nextPath = 0;
+            keepHome = false;
+            keepCity = false;
+            inFlight = null;
+            inFlightPath = null;
+            SceneManager.activeSceneChanged -= OnActiveSceneChanged;
+            SceneManager.activeSceneChanged += OnActiveSceneChanged;
         }
 
-        /// <summary>
-        /// The resource paths the menu warms: the hero first, then every
-        /// default NPC catalog model the City pedestrian pool may build a
-        /// body from. Derived from the same catalog the roots read, never
-        /// listed by hand.
-        /// </summary>
         public static IReadOnlyList<string> CollectMenuWarmupPaths()
         {
             var paths = new List<string>
             {
-                Player3DResources.PrefabResourcePath
+                Player3DResources.PrefabResourcePath,
+                HomeInteriorModelLibrary.ResourcePath
             };
-            IReadOnlyList<string> pooled =
-                CityPedestrianResources.CollectPooledPrefabResourcePaths(
-                    CityPedestrianPopulationProfile.City.PoolSize);
+            var pooled = CityPedestrianResources.CollectPooledPrefabResourcePaths(
+                CityPedestrianPopulationProfile.City.PoolSize);
             for (int index = 0; index < pooled.Count; index++)
             {
                 string path = pooled[index];
-                if (!paths.Contains(path))
-                {
-                    paths.Add(path);
-                }
+                if (!paths.Contains(path)) paths.Add(path);
             }
-
+            paths.Add(CityBusResources.PrefabResourcePath);
             return paths;
         }
 
-        /// <summary>
-        /// Issues one asynchronous load per path not already resident or in
-        /// flight. Safe to call again (a pause-menu restart re-enters the
-        /// launch card): already-warm paths are skipped.
-        /// </summary>
         internal static void BeginFromMenu()
         {
-            IReadOnlyList<string> paths = CollectMenuWarmupPaths();
-            int issued = 0;
-            int skipped = 0;
-            for (int index = 0; index < paths.Count; index++)
-            {
-                string path = paths[index];
-                if (IsHeld(path) || IsInFlight(path))
-                {
-                    skipped++;
-                    continue;
-                }
+            menuPaths ??= CollectMenuWarmupPaths();
+            nextPath = 0;
+            keepHome = true;
+            keepCity = true;
+            GameLog.Info(LogCategory, "asset_warmup_begun",
+                GameLog.Field("paths", menuPaths.Count),
+                GameLog.Field("held", held.Count));
+        }
 
-                ResourceRequest request =
-                    Resources.LoadAsync<GameObject>(path);
+        internal static bool AdvanceFromMenu()
+        {
+            if (inFlight != null) return true;
+
+            while (nextPath < menuPaths.Count)
+            {
+                string path = menuPaths[nextPath++];
+                Target target = TargetOf(path);
+                if (!Wants(target) || IsHeld(path)) continue;
+
+                Type type = target == Target.Home
+                    ? typeof(HomeInteriorModelLibrary)
+                    : typeof(GameObject);
+                ResourceRequest request = Resources.LoadAsync(path, type);
                 if (request == null)
                 {
-                    GameLog.Warning(
-                        LogCategory,
-                        "asset_warmup_refused",
+                    GameLog.Warning(LogCategory, "asset_warmup_refused",
                         GameLog.Field("path", path));
-                    continue;
+                    return true;
                 }
 
-                issued++;
-                if (request.isDone)
-                {
-                    Hold(path, request.asset);
-                    continue;
-                }
-
-                inFlight.Add(new PendingRequest
-                {
-                    Path = path,
-                    Request = request
-                });
-                request.completed += OnRequestCompleted;
+                inFlight = request;
+                inFlightPath = path;
+                request.priority = -1;
+                if (request.isDone) OnRequestCompleted(request);
+                else request.completed += OnRequestCompleted;
+                return true;
             }
 
-            GameLog.Info(
-                LogCategory,
-                "asset_warmup_begun",
-                GameLog.Field("issued", issued),
-                GameLog.Field("already_warm", skipped),
-                GameLog.Field("in_flight", inFlight.Count));
+            GameLog.Info(LogCategory, "asset_warmup_completed",
+                GameLog.Field("held", held.Count));
+            return false;
         }
+
+        internal static void KeepForDestination(string sceneName)
+        {
+            if (sceneName != SceneIds.HomeInterior) ReleaseHome();
+            if (sceneName != SceneIds.City &&
+                ResidentExteriorPolicy.GetExteriorOfInterior(sceneName) != SceneIds.City)
+            {
+                ReleaseCity();
+            }
+        }
+
+        internal static void ReleaseHome()
+        {
+            keepHome = false;
+            Release(Target.Home);
+        }
+
+        internal static void ReleaseCity()
+        {
+            keepCity = false;
+            Release(Target.City);
+        }
+
+        private static void OnActiveSceneChanged(Scene previous, Scene next)
+        {
+            if (next.name != SceneIds.MainMenu && next.name != SceneIds.AreaLoading &&
+                next.name != SceneIds.DoorTransition)
+            {
+                KeepForDestination(next.name);
+            }
+        }
+
+        private static void Release(Target target)
+        {
+            for (int index = held.Count - 1; index >= 0; index--)
+                if (TargetOf(held[index].Path) == target) held.RemoveAt(index);
+        }
+
+        private static Target TargetOf(string path)
+        {
+            if (path == Player3DResources.PrefabResourcePath) return Target.Shared;
+            if (path == HomeInteriorModelLibrary.ResourcePath) return Target.Home;
+            return Target.City;
+        }
+
+        private static bool Wants(Target target) =>
+            target == Target.Shared || (target == Target.Home ? keepHome : keepCity);
 
         private static void OnRequestCompleted(AsyncOperation operation)
         {
-            var request = operation as ResourceRequest;
-            if (request == null)
-            {
-                return;
-            }
+            if (!ReferenceEquals(operation, inFlight)) return;
 
-            for (int index = 0; index < inFlight.Count; index++)
-            {
-                if (!ReferenceEquals(inFlight[index].Request, request))
-                {
-                    continue;
-                }
+            ResourceRequest request = inFlight;
+            string path = inFlightPath;
+            inFlight = null;
+            inFlightPath = null;
+            if (!Wants(TargetOf(path))) return;
 
-                string path = inFlight[index].Path;
-                inFlight.RemoveAt(index);
-                Hold(path, request.asset);
-                if (inFlight.Count == 0)
-                {
-                    GameLog.Info(
-                        LogCategory,
-                        "asset_warmup_completed",
-                        GameLog.Field("held", held.Count));
-                }
-
-                return;
-            }
-
-            // A request that finished after ResetStatics cleared the list
-            // belongs to a previous play session; its asset is not held.
-        }
-
-        private static void Hold(string path, Object asset)
-        {
+            Object asset = request.asset;
             if (asset == null)
             {
-                GameLog.Warning(
-                    LogCategory,
-                    "asset_warmup_missing",
+                GameLog.Warning(LogCategory, "asset_warmup_missing",
                     GameLog.Field("path", path));
                 return;
             }
-
-            if (IsHeld(path))
-            {
-                return;
-            }
-
-            held.Add(new WarmAsset
-            {
-                Path = path,
-                Asset = asset
-            });
+            held.Add(new WarmAsset { Path = path, Asset = asset });
         }
 
         private static bool IsHeld(string path)
         {
             for (int index = 0; index < held.Count; index++)
             {
-                if (!string.Equals(
-                        held[index].Path,
-                        path,
-                        StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                // A destroyed or explicitly unloaded asset is no longer
-                // warm; drop the stale entry so it can be requested again.
-                if (held[index].Asset != null)
-                {
-                    return true;
-                }
-
+                if (held[index].Path != path) continue;
+                if (held[index].Asset != null) return true;
                 held.RemoveAt(index);
                 return false;
             }
-
-            return false;
-        }
-
-        private static bool IsInFlight(string path)
-        {
-            for (int index = 0; index < inFlight.Count; index++)
-            {
-                if (string.Equals(
-                        inFlight[index].Path,
-                        path,
-                        StringComparison.Ordinal))
-                {
-                    return true;
-                }
-            }
-
             return false;
         }
     }

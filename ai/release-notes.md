@@ -16,6 +16,7 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   открывается внутрь, остальные три сдвигаются снаружи. Водитель сохранил
   фуражку, галстук и длинные глаза. `CityMidibusRemodel`,
   `Doors_OpenClearAndReseatOnTheSprungBody`.
+- Главное меню заранее готовит общие данные квартиры и City.
 
 ### 2026-11-15
 

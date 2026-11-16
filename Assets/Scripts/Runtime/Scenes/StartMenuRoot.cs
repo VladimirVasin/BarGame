@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace BarPromenade
@@ -100,12 +101,31 @@ namespace BarPromenade
             model.Open();
             if (CombatTestStartService.TryConsumePreparationSelection(out CombatTestSelection selection))
                 model.OpenCombatPreparation(selection);
-            // The card is now interactive and will sit idle for as long as
-            // the player reads it: fetch the hero and pooled pedestrian
-            // prefabs in the background so the first composition finds them
-            // resident. Every load is asynchronous; a restart that returns
-            // here skips what is already warm.
-            AreaAssetWarmup.BeginFromMenu();
+        }
+
+        private IEnumerator Start()
+        {
+            // Give the launch card its first frame before issuing any work.
+            yield return null;
+            bool warming = false;
+            while (!IsBusy)
+            {
+                if (isActiveAndEnabled && (Application.isBatchMode || GameCursor.ApplicationFocused) &&
+                    !model.IsVocalizerActive && !model.IsChoosingCombatWeapon && !model.IsChoosingLaboratoryEnemy &&
+                    !SceneTransitionService.IsTransitioning && !AreaTravelService.IsTraveling)
+                {
+                    if (!warming)
+                    {
+                        warming = true;
+                        AreaAssetWarmup.BeginFromMenu();
+                        CityLayoutCache.PrimeHomePlans(
+                            CityBlueprintCatalog.Resolve(GameSessionState.CityBlueprintId),
+                            CityGenerationSettings.Default, GameSessionState.CitySeed, "start_menu");
+                    }
+                    if (!AreaAssetWarmup.AdvanceFromMenu()) yield break;
+                }
+                yield return null;
+            }
         }
 
         public bool MoveSelection(int delta)

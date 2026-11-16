@@ -208,7 +208,7 @@ namespace BarPromenade
             return result;
         }
 
-        private static CityBuildingPrototypePose ResolveCityPose(
+        internal static CityBuildingPrototypePose ResolveCityPose(
             BuildingLot lot,
             Vector3 localFrontAnchor)
         {

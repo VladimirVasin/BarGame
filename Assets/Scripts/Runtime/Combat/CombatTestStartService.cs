@@ -25,7 +25,12 @@ namespace BarPromenade
             GameSessionState.BeginNewGame("combat_test_start");
             pendingSelection = selection;
             hasPendingSelection = true;
-            if (SceneTransitionService.RequestLoad(SceneIds.CombatTest)) return true;
+            if (SceneTransitionService.RequestLoad(SceneIds.CombatTest))
+            {
+                AreaAssetWarmup.KeepForDestination(SceneIds.CombatTest);
+                CityLayoutCache.DiscardPendingCityPlans();
+                return true;
+            }
             hasPendingSelection = false;
             return false;
         }

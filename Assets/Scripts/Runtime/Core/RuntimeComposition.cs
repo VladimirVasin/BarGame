@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace BarPromenade
 {
@@ -20,7 +21,7 @@ namespace BarPromenade
     /// <summary>
     /// One ordered construction path for synchronous authoring and staged
     /// travel. All Unity object work stays on the main thread; only the
-    /// engine-free foreign-area planners may run on a <c>Task</c>, joined
+    /// data planners may run on a <c>Task</c>, joined
     /// there (see <see cref="CityLayoutCache"/>). A stage is indivisible;
     /// the budget yields between stages, never halfway through an asset's
     /// initialization.
@@ -29,6 +30,7 @@ namespace BarPromenade
     {
         internal const double FrameBudgetMilliseconds = 8d;
         private readonly Stack<IEnumerator> stack = new Stack<IEnumerator>();
+        private Task dependency;
 
         public RuntimeComposition(IEnumerator steps)
         {
@@ -38,6 +40,7 @@ namespace BarPromenade
         public bool AdvanceFrame(Action<CompositionStep> report,
             double budgetMilliseconds = FrameBudgetMilliseconds)
         {
+            if (!CompleteDependency(budgetMilliseconds)) return true;
             long started = Stopwatch.GetTimestamp();
             while (stack.Count > 0)
             {
@@ -53,6 +56,12 @@ namespace BarPromenade
                 {
                     stack.Push(nested);
                     continue;
+                }
+
+                if (current.Current is Task task)
+                {
+                    dependency = task;
+                    if (!CompleteDependency(budgetMilliseconds)) return true;
                 }
 
                 if (current.Current is CompositionStep step)
@@ -71,8 +80,19 @@ namespace BarPromenade
             return false;
         }
 
+        private bool CompleteDependency(double budgetMilliseconds)
+        {
+            if (dependency == null) return true;
+            if (!dependency.IsCompleted && !double.IsPositiveInfinity(budgetMilliseconds))
+                return false;
+            dependency.GetAwaiter().GetResult();
+            dependency = null;
+            return true;
+        }
+
         public void Dispose()
         {
+            dependency = null;
             while (stack.Count > 0)
             {
                 (stack.Pop() as IDisposable)?.Dispose();

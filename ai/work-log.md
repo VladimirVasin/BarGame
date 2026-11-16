@@ -23,6 +23,13 @@ Proof: `build-city-bus-3d-model`, `CityMidibusRemodel`,
 `Driver_SitsOnTheDrawnSeatAndWorksWheelAndButtonWithoutCrossingLimbs`,
 `build-last-route-cabin-actions --validate-only`.
 
+The start menu prepares shared Home/City plans and queues assets one at a time.
+Electrical clearance snapshots imported geometry before the worker starts.
+`NewGame_LoadingScreenCoversCompositionUntilDestinationReady` hit the existing
+`ordinary-woman-v1` pool guard. `MenuWarmup_ReusesSharedPlansAtTheStreetDoor`
+exposed the prefab reads. The corrected Runtime assembly compiled with Unity's
+Roslyn response file.
+
 ## 2026-11-15
 
 Ridge parking joins home and kiosk: authored paving/ramp/curbs, municipal

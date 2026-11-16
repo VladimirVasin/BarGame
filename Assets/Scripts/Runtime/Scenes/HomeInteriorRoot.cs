@@ -211,10 +211,13 @@ namespace BarPromenade
             GameLogPhases.Report("home", "layout", phaseTimer);
             yield return new CompositionStep("layout", 0.06f);
             phaseTimer.Restart();
-            ExteriorContext =
-                HomeExteriorContextPlanner.Generate(
-                    GameSessionState.CityBlueprintId,
-                    GameSessionState.CitySeed);
+            int citySeed = GameSessionState.CitySeed;
+            CityBlueprint blueprint = CityBlueprintCatalog.Resolve(GameSessionState.CityBlueprintId);
+            CityGenerationSettings settings = CityGenerationSettings.Default;
+            var ready = CityLayoutCache.WaitForPrimedPlans(blueprint, settings, citySeed);
+            if (ready != null) yield return ready;
+            ExteriorContext = CityLayoutCache.GetOrCreateHomeExteriorContext(
+                CityLayoutCache.GetOrGenerate(blueprint, settings, citySeed));
             GameLogPhases.Report("home", "exterior_context_plan", phaseTimer);
             yield return new CompositionStep("exterior_context", 0.30f);
             phaseTimer.Restart();
@@ -471,6 +474,7 @@ namespace BarPromenade
             GameLogPhases.Report("home", "ui_controllers", phaseTimer);
 
             IsInitialized = true;
+            AreaAssetWarmup.ReleaseHome();
             yield return new CompositionStep("ready", 1f);
             timer.Stop();
             GameLog.Info(

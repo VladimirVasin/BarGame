@@ -99,22 +99,27 @@ namespace BarPromenade
 
         private readonly List<Part> parts = new();
         private readonly Dictionary<Vector2Int, List<int>> buckets = new();
-        private readonly Dictionary<string, MeshRenderer[]> templates = new();
-        private readonly Dictionary<(CityDistrictKind,int), CityBuildingAssetRegistry> catalog = new();
-        private readonly CityBuildingAssetProvider provider;
+        private static AuthoredGeometry preparedGeometry;
         private readonly int[] seen;
         private int stamp;
         internal IReadOnlyList<Part> Parts => parts;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetInputs() => preparedGeometry = null;
+
+        // Copy Unity object data on the main thread before the layout can
+        // ask for the electrical plan on a worker.
+        internal static void PrepareInputs() => preparedGeometry ??= new AuthoredGeometry();
+
         internal CityElectricalClearanceGeometry(CityLayout layout)
         {
-            provider = CityBuildingAssetProvider.LoadOrThrow();
+            AuthoredGeometry geometry = preparedGeometry ?? new AuthoredGeometry();
             foreach (var lot in layout.BuildingMasses)
             {
                 if (!lot.HasBuilding) continue;
-                if (lot.IsOrdinaryBuilding) Ordinary(lot, null);
+                if (lot.IsOrdinaryBuilding) Ordinary(lot, null, geometry);
                 else if (lot.IsPlayerHome) Home(lot);
-                else SpecialLot(lot);
+                else SpecialLot(lot, geometry);
             }
             var church = CityChurchPlanner.Create(layout);
             if (church != null)
@@ -123,7 +128,7 @@ namespace BarPromenade
             foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
             {
                 if (house.Lot.IsPlayerHome) Home(house.Lot);
-                else Ordinary(house.Lot, house);
+                else Ordinary(house.Lot, house, geometry);
             }
             Pavilions(layout);
             seen = new int[parts.Count];
@@ -192,75 +197,57 @@ namespace BarPromenade
 
         private static Matrix4x4 Frame(Vector3 origin, Quaternion rotation) => Matrix4x4.TRS(origin, rotation, Vector3.one);
 
-        private void Ordinary(BuildingLot lot, CityHillsideBuilding house)
+        private void Ordinary(BuildingLot lot, CityHillsideBuilding house, AuthoredGeometry geometry)
         {
-            var key = (lot.District, lot.BuildingVariant);
-            if (!catalog.TryGetValue(key, out var registry))
-            {
-                registry = provider.GetPrefabOrThrow(key.District, key.BuildingVariant).GetComponent<CityBuildingAssetRegistry>();
-                catalog.Add(key, registry);
-            }
-            var pose = CityBuildingPrototypePlacement.ResolveCityPose(lot, registry);
+            var building = geometry.Buildings[(lot.District, lot.BuildingVariant)];
+            var pose = CityBuildingPrototypePlacement.ResolveCityPose(lot, building.FrontAnchor);
             Matrix4x4 frame = Frame(pose.Position, pose.Rotation);
             string id = house == null ? $"city:{lot.Cell.x}:{lot.Cell.y}" : CityElectricalConsumerPlan.HouseId(house);
-            foreach (var solid in registry.ColliderBounds) Add(id, solid, frame);
-            foreach (var slot in registry.BalconySlots)
-            {
-                var deck = slot.LocalDeckBounds;
-                deck.Encapsulate(deck.max + Vector3.up * 1.25f);
-                Add(id + " balcony", deck, frame);
-            }
-            if (registry.TryGetRenderer(CityBuildingMeshRole.Roof, out var roof))
-                Add(id + " roof", roof.localBounds, frame * registry.transform.worldToLocalMatrix * roof.localToWorldMatrix);
+            foreach (var solid in building.Solids) Add(id, solid, frame);
+            foreach (var deck in building.Balconies) Add(id + " balcony", deck, frame);
+            if (building.Roof is RendererGeometry roof)
+                Add(id + " roof", roof.Bounds, frame * building.WorldToLocal * roof.LocalToWorld);
             if (house == null) return;
             int variant = lot.BuildingVariant;
             if (house.Bank == CityTerraceTransportBank.East)
             {
                 float depth = CityBuildingAssetProvider.GetExpectedEnvelope(lot.District, variant).z;
-                Model("BalconyGallery" + variant, frame * Matrix4x4.Translate(new Vector3(0f,0f,depth * .5f - 1.2f)), id);
+                Model(geometry.Hillside["BalconyGallery" + variant],
+                    frame * Matrix4x4.Translate(new Vector3(0f, 0f, depth * .5f - 1.2f)), id);
             }
             else
             {
                 float height = CityBuildingAssetProvider.GetExpectedBodyTop(lot.District, variant) + .18f;
-                Model("SteppedClerestory", frame * Matrix4x4.Translate(new Vector3(.85f,height,.65f)), id);
+                Model(geometry.Hillside["SteppedClerestory"],
+                    frame * Matrix4x4.Translate(new Vector3(.85f, height, .65f)), id);
             }
             var entry = Frame(house.ThresholdWorld, lot.FacadeRotation);
-            if (house.HasGlazedBay) Model("GlazedStairBay", entry, id);
+            if (house.HasGlazedBay) Model(geometry.Hillside["GlazedStairBay"], entry, id);
             else if (variant == 3 || lot.Cell.y % 3 == 0)
                 Add(id + " entrance canopy", CityResidentialCourtyardAssetProvider.GetLocalBounds(
                     CityResidentialCourtyardPropKind.EntranceCanopy), entry);
-            if (house.HasAirer) Model("BalconyAirer", Frame(house.AirerOrigin, lot.FacadeRotation), id);
+            if (house.HasAirer)
+                Model(geometry.Hillside["BalconyAirer"], Frame(house.AirerOrigin, lot.FacadeRotation), id);
         }
 
-        private void Model(string name, Matrix4x4 frame, string id)
+        private void Model(RendererGeometry[] renderers, Matrix4x4 frame, string id)
         {
-            if (!templates.TryGetValue(name, out var renderers))
-            {
-                var model = Resources.Load<GameObject>("City/Hillside/" + name);
-                if (!model) throw new InvalidOperationException("Missing hillside model " + name);
-                templates.Add(name, renderers = model.GetComponentsInChildren<MeshRenderer>(true));
-            }
             // This is a bare FBX instantiated under a placement frame. Its root's
             // import scale (100) remains part of the original renderer matrix.
             foreach (var renderer in renderers)
-                Add(id + " " + renderer.name, renderer.localBounds, frame * renderer.localToWorldMatrix);
+                Add(id + " " + renderer.Name, renderer.Bounds, frame * renderer.LocalToWorld);
         }
 
-        private void SpecialLot(BuildingLot lot)
+        private void SpecialLot(BuildingLot lot, AuthoredGeometry geometry)
         {
             string id = $"city:{lot.Cell.x}:{lot.Cell.y}";
             if (lot.IsBar || lot.IsSupermarket)
             {
-                var prefab = lot.IsBar ? BarModelResources.LoadFacadePrefab() : SupermarketExteriorModelResources.LoadPrefab();
+                var facade = lot.IsBar ? geometry.Bar : geometry.Supermarket;
                 Quaternion rotation = lot.IsBar ? Quaternion.LookRotation(Vector3.Cross(lot.FacadeForward,Vector3.up)) : lot.FacadeRotation;
-                Transform anchor;
-                bool found = lot.IsBar ? prefab.GetComponent<BarAssetRegistry>().TryGetAnchor("exterior_door", out anchor)
-                    : prefab.GetComponent<SupermarketExteriorAssetRegistry>().TryGetAnchor("exterior_door", out anchor);
-                if (!found) throw new InvalidOperationException("Missing exterior door for " + id);
-                Matrix4x4 frame = Frame(lot.DoorPosition - rotation * prefab.transform.InverseTransformPoint(anchor.position), rotation)
-                    * prefab.transform.worldToLocalMatrix;
-                foreach (var r in prefab.GetComponentsInChildren<MeshRenderer>(true))
-                    if (r.enabled) Add(id + " " + r.name, r.localBounds, frame * r.localToWorldMatrix);
+                Matrix4x4 frame = Frame(lot.DoorPosition - rotation * facade.DoorAnchor, rotation)
+                    * facade.WorldToLocal;
+                Model(facade.Renderers, frame, id);
                 return;
             }
             foreach (var rect in lot.CreateCollisionFootprints())
@@ -345,5 +332,97 @@ namespace BarPromenade
 
         private void Box(string id, Matrix4x4 frame, Vector3 low, Vector3 high) =>
             Add(id, new Bounds((low+high)*.5f,high-low),frame);
+
+        private readonly struct RendererGeometry
+        {
+            internal readonly string Name;
+            internal readonly Bounds Bounds;
+            internal readonly Matrix4x4 LocalToWorld;
+
+            internal RendererGeometry(Renderer renderer)
+            {
+                Name = renderer.name;
+                Bounds = renderer.localBounds;
+                LocalToWorld = renderer.localToWorldMatrix;
+            }
+        }
+
+        private sealed class BuildingGeometry
+        {
+            internal readonly Vector3 FrontAnchor;
+            internal readonly Matrix4x4 WorldToLocal;
+            internal readonly Bounds[] Solids;
+            internal readonly Bounds[] Balconies;
+            internal readonly RendererGeometry? Roof;
+
+            internal BuildingGeometry(CityBuildingAssetRegistry registry)
+            {
+                Transform root = registry.transform;
+                FrontAnchor = root.InverseTransformPoint(registry.FrontAnchor.position);
+                WorldToLocal = root.worldToLocalMatrix;
+                Solids = new Bounds[registry.ColliderBounds.Count];
+                for (int i = 0; i < Solids.Length; i++) Solids[i] = registry.ColliderBounds[i];
+                Balconies = new Bounds[registry.BalconySlots.Count];
+                for (int i = 0; i < Balconies.Length; i++)
+                {
+                    Bounds deck = registry.BalconySlots[i].LocalDeckBounds;
+                    deck.Encapsulate(deck.max + Vector3.up * 1.25f);
+                    Balconies[i] = deck;
+                }
+                if (registry.TryGetRenderer(CityBuildingMeshRole.Roof, out Renderer roof))
+                    Roof = new RendererGeometry(roof);
+            }
+        }
+
+        private sealed class AuthoredGeometry
+        {
+            internal readonly Dictionary<(CityDistrictKind, int), BuildingGeometry> Buildings = new();
+            internal readonly Dictionary<string, RendererGeometry[]> Hillside = new(StringComparer.Ordinal);
+            internal readonly (Vector3 DoorAnchor, Matrix4x4 WorldToLocal, RendererGeometry[] Renderers) Bar, Supermarket;
+
+            internal AuthoredGeometry()
+            {
+                var provider = CityBuildingAssetProvider.LoadOrThrow();
+                for (int i = 0; i < CityBuildingAssetProvider.ExpectedPrototypeCount; i++)
+                {
+                    CityDistrictKind district = CityBuildingAssetProvider.GetExpectedDistrict(i);
+                    int variant = CityBuildingAssetProvider.GetExpectedVariantIndex(i);
+                    var registry = provider.GetPrefabOrThrow(district, variant).GetComponent<CityBuildingAssetRegistry>();
+                    Buildings.Add((district, variant), new BuildingGeometry(registry));
+                }
+
+                foreach (string name in new[] { "BalconyGallery0", "BalconyGallery2", "BalconyGallery3",
+                    "BalconyGallery4", "SteppedClerestory", "GlazedStairBay", "BalconyAirer" })
+                {
+                    var model = Resources.Load<GameObject>("City/Hillside/" + name);
+                    if (!model) throw new InvalidOperationException("Missing hillside model " + name);
+                    Hillside.Add(name, CaptureRenderers(model, false));
+                }
+                Bar = CaptureFacade(BarModelResources.LoadFacadePrefab(), true);
+                Supermarket = CaptureFacade(SupermarketExteriorModelResources.LoadPrefab(), false);
+            }
+
+            private static (Vector3, Matrix4x4, RendererGeometry[]) CaptureFacade(GameObject prefab, bool isBar)
+            {
+                if (prefab == null)
+                    throw new InvalidOperationException(isBar ? "Missing bar facade." : "Missing supermarket facade.");
+                const string door = "exterior_door";
+                Transform anchor;
+                bool found = isBar ? prefab.GetComponent<BarAssetRegistry>().TryGetAnchor(door, out anchor)
+                    : prefab.GetComponent<SupermarketExteriorAssetRegistry>().TryGetAnchor(door, out anchor);
+                if (!found) throw new InvalidOperationException("Missing exterior door on " + prefab.name);
+                Transform root = prefab.transform;
+                return (root.InverseTransformPoint(anchor.position), root.worldToLocalMatrix,
+                    CaptureRenderers(prefab, true));
+            }
+
+            private static RendererGeometry[] CaptureRenderers(GameObject model, bool enabledOnly)
+            {
+                var parts = new List<RendererGeometry>();
+                foreach (MeshRenderer renderer in model.GetComponentsInChildren<MeshRenderer>(true))
+                    if (!enabledOnly || renderer.enabled) parts.Add(new RendererGeometry(renderer));
+                return parts.ToArray();
+            }
+        }
     }
 }

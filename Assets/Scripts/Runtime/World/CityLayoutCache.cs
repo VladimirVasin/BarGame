@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -22,14 +23,11 @@ namespace BarPromenade
     ///
     /// Accepted architecture exception (staged area composition,
     /// `ai/architecture-notes.md`): the two foreign-area planners, and the
-    /// City's own planning chain when a new game starts inside one of the
-    /// City's interiors, are pure functions of the seed and may run on a
-    /// thread-pool <see cref="Task"/>, so the first door into the City
-    /// joins a finished task instead of paying the planners under the
-    /// black. Nothing that touches a <see cref="UnityEngine.Object"/> leaves
-    /// the main thread: the one asset the chain reads (the port access
-    /// contract) is loaded here before the task starts. A layout has one
-    /// owner at a time - the primed task until the main thread joins it in
+    /// City's planning chain can run on the thread pool. The menu prepares
+    /// the exterior data that Home and City both use. A confirmed City start
+    /// can extend that work with the remaining City plans. Resource reads
+    /// are prepared on the main thread. A layout's lazy plans have one
+    /// owner at a time: the primed task until the main thread joins it in
     /// <see cref="GetOrGenerate"/>, the main thread after - so the
     /// per-layout memos the chain populates (weak tables and dictionaries
     /// keyed by the layout instance) are never written from two threads.
@@ -76,12 +74,9 @@ namespace BarPromenade
         private static readonly object AlpineVillageGate = new object();
 
         /// <summary>
-        /// One City planning chain at a time, on whichever thread: the
-        /// chain writes per-layout memos that are not thread-safe
-        /// (<c>CityCanneryPlan</c>, <c>CityChurchPlan</c>, the bus
-        /// planner's grounded slot, the elevation plan's lazy road index),
-        /// and a synchronous generation that arrives while a primed chain
-        /// is still running must wait for it rather than interleave.
+        /// Serializes the warmup workers across resets and key changes. A
+        /// foreground layout for a different key has its own lazy plans
+        /// and can be generated without waiting for abandoned work.
         /// </summary>
         private static readonly object CityPlanGate = new object();
         private static PendingCityPlans pendingCityPlans;
@@ -112,16 +107,10 @@ namespace BarPromenade
                 return hit;
             }
 
-            CityLayout layout;
-            lock (CityPlanGate)
-            {
-                layout = CityLayoutGenerator.Generate(
-                    blueprint,
-                    settings,
-                    seed);
-            }
-
+            AbandonCityPlans();
+            CityLayout layout = CityLayoutGenerator.Generate(blueprint, settings, seed);
             cachedLayout = layout;
+            primedTerrain = null;
             // A copy, because the caller's instance is a serializable
             // object an inspector may keep editing after this call.
             cachedSettings = settings.Copy();
@@ -143,24 +132,26 @@ namespace BarPromenade
                    SettingsEqual(cachedSettings, settings);
         }
 
-        /// <summary>
-        /// Starts, off the main thread, the whole pure planning chain the
-        /// City's build would otherwise run under the door's black: the
-        /// layout, the night plan, the world plans with their bus routing,
-        /// decoration and litter, the grounded bus plan, the street surface,
-        /// the pedestrian plan, the cannery truck route and the sampled
-        /// beach and seabed mesh lists. Called when a new game starts inside a
-        /// City interior, where the seed, blueprint and settings are final
-        /// and the stay covers the ~2 s of pool time several times over.
-        /// A matching prime already out, or a session that already holds
-        /// everything, starts nothing; a prime for another key is
-        /// abandoned. Main thread only.
-        /// </summary>
+        internal static void PrimeHomePlans(
+            CityBlueprint blueprint,
+            CityGenerationSettings settings,
+            int seed,
+            string trigger) =>
+            PrimePlans(blueprint, settings, seed, trigger, false);
+
         internal static void PrimeCityPlans(
             CityBlueprint blueprint,
             CityGenerationSettings settings,
             int seed,
-            string trigger)
+            string trigger) =>
+            PrimePlans(blueprint, settings, seed, trigger, true);
+
+        private static void PrimePlans(
+            CityBlueprint blueprint,
+            CityGenerationSettings settings,
+            int seed,
+            string trigger,
+            bool includeCity)
         {
             if (blueprint == null)
             {
@@ -172,38 +163,56 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(settings));
             }
 
-            if (pendingCityPlans != null)
+            PendingCityPlans pending = pendingCityPlans;
+            if (pending != null)
             {
-                if (pendingCityPlans.Matches(blueprint, settings, seed))
+                if (pending.Matches(blueprint, settings, seed))
                 {
-                    return;
+                    if (!includeCity || pending.IncludesCity) return;
                 }
-
-                AbandonCityPlans();
+                else
+                {
+                    AbandonCityPlans();
+                    pending = null;
+                }
             }
 
             CityLayout existing = IsCached(cachedLayout, blueprint, settings, seed)
                 ? cachedLayout
                 : null;
-            if (existing != null &&
-                CityWorldPlans.IsMemoised(existing) &&
-                primedTerrain != null &&
-                ReferenceEquals(primedTerrain.Layout, existing))
+            if (pending == null && existing != null &&
+                (includeCity
+                    ? primedTerrain != null && ReferenceEquals(primedTerrain.Layout, existing)
+                    : homeExteriorContexts.TryGetValue(existing, out _)))
             {
                 return;
             }
 
-            // Everything the chain needs from the engine, taken here: the
-            // port contract asset, the eastern road profile the exit plan
-            // reads, the litter catalog asset, and the sand recipe whose
-            // class initialiser resolves shader property ids.
-            CityPortAccessPlan.WarmDefinition();
-            CityEastRoadProfile.Load();
-            CityLitterCatalog.Load();
-            float sandTile = CitySeacoastSurfaceAppearance.GetRecipe(
-                CitySeacoastSurfaceKind.Sand).MetersPerTile;
-            CityGenerationSettings copy = settings.Copy();
-            var pending = new PendingCityPlans(blueprint.Id, copy, seed);
+            // Parse the authored inputs on the main thread. Electrical
+            // clearance uses both cobbler manifests through its site plan.
+            float sandTile = 0f;
+            try
+            {
+                CityPortAccessPlan.WarmDefinition();
+                CityEastRoadProfile.Load();
+                CityLitterCatalog.Load();
+                CityElectricalClearanceGeometry.PrepareInputs();
+                _ = CityCobblerAssetProvider.Geometry;
+                _ = CityCobblerYardWorld.Geometry;
+                if (includeCity)
+                {
+                    sandTile = CitySeacoastSurfaceAppearance.GetRecipe(
+                        CitySeacoastSurfaceKind.Sand).MetersPerTile;
+                }
+            }
+            catch (Exception exception)
+            {
+                GameLog.Warning("city", PrimeEvent,
+                    GameLog.Field("stage", "prepare_inputs"),
+                    GameLog.Field("message", exception.Message));
+                return;
+            }
+
             GameLog.Debug(
                 "city",
                 PrimeEvent,
@@ -211,74 +220,137 @@ namespace BarPromenade
                 GameLog.Field("seed", seed),
                 GameLog.Field("blueprint_id", blueprint.Id),
                 GameLog.Field("trigger", trigger ?? string.Empty),
+                GameLog.Field("scope", includeCity ? "city" : "home"),
                 GameLog.Field("from_cached_layout", existing != null));
-            pending.Task = Task.Run(
-                () => CreateCityPlans(blueprint, copy, seed, existing, sandTile));
+
+            Task<CityPrimedPlans> homeWork = pending?.Task;
+            if (pending == null)
+            {
+                CityGenerationSettings copy = settings.Copy();
+                pending = new PendingCityPlans(blueprint.Id, copy, seed, existing);
+                pending.Layout = existing != null
+                    ? Task.FromResult(existing)
+                    : Task.Run(() => CityLayoutGenerator.Generate(blueprint, copy, seed));
+            }
+
+            CancellationToken stop = pending.Cancellation.Token;
+            Task<CityLayout> layoutWork = pending.Layout;
+            pending.IncludesCity = includeCity;
+            pending.Task = Task.Run(async () =>
+            {
+                CityLayout layout = (homeWork == null
+                    ? await layoutWork.ConfigureAwait(false)
+                    : (await homeWork.ConfigureAwait(false)).Layout);
+                lock (CityPlanGate)
+                {
+                    stop.ThrowIfCancellationRequested();
+                    return includeCity
+                        ? CreateCityPlans(layout, sandTile, stop)
+                        : CreateHomePlans(layout, stop);
+                }
+            });
             pendingCityPlans = pending;
         }
 
         internal static bool HasPendingCityPlans => pendingCityPlans != null;
 
-        /// <summary>
-        /// The pool side of <see cref="PrimeCityPlans"/>. Every stage is a
-        /// memo getter, so a stage the session already holds is a hit and
-        /// the ones it lacks are computed; the whole chain runs under the
-        /// gate as the layout's sole owner until the main thread joins.
-        /// </summary>
-        private static CityPrimedPlans CreateCityPlans(
-            CityBlueprint blueprint,
-            CityGenerationSettings settings,
-            int seed,
-            CityLayout existing,
-            float sandTile)
+        // The bar picker only reads the layout's immutable lots and spawn.
+        // It can use that data as soon as generation finishes.
+        internal static CityLayout GetLayoutForBarSelection(
+            CityBlueprint blueprint, CityGenerationSettings settings, int seed)
         {
-            lock (CityPlanGate)
+            PendingCityPlans pending = pendingCityPlans;
+            if (pending == null || !pending.Matches(blueprint, settings, seed))
+                return GetOrGenerate(blueprint, settings, seed);
+            try
             {
-                Stopwatch total = Stopwatch.StartNew();
-                Stopwatch stage = Stopwatch.StartNew();
-                CityLayout layout = existing ?? CityLayoutGenerator.Generate(
-                    blueprint,
-                    settings,
-                    seed);
-                long layoutMs = Restart(stage);
-                CityNightFixturePlan night = GetOrCreateNightPlan(layout);
-                long nightMs = Restart(stage);
-                CityWorldPlans plans = CityWorldPlans.GetOrCreate(layout);
-                CityDecorationPlan decoration = plans.GetDecoration(night);
-                long worldPlansMs = Restart(stage);
-                plans.GetLitter(night);
-                long litterMs = Restart(stage);
-                CityDistrictBusPlanner.Create(layout);
-                long busMs = Restart(stage);
-                CityStreetSurfacePlanner.Create(layout);
-                long streetMs = Restart(stage);
-                GetOrCreatePedestrianPlan(layout, seed);
-                long pedestrianMs = Restart(stage);
-                GetOrCreateCanneryRoute(
-                    layout,
-                    CityCanneryPlan.Create(layout),
-                    CityPortAccessPlan.ForLayout(layout));
-                long canneryMs = Restart(stage);
-                PrimedTerrainSources terrain =
-                    PrimedTerrainSources.Sample(layout, sandTile);
-                long terrainMs = Restart(stage);
-                GameLog.Debug(
-                    "city",
-                    PrimeEvent,
-                    GameLog.Field("stage", "finished"),
-                    GameLog.Field("seed", seed),
-                    GameLog.Field("duration_ms", total.ElapsedMilliseconds),
-                    GameLog.Field("layout_ms", layoutMs),
-                    GameLog.Field("night_ms", nightMs),
-                    GameLog.Field("world_plans_ms", worldPlansMs),
-                    GameLog.Field("litter_ms", litterMs),
-                    GameLog.Field("bus_ms", busMs),
-                    GameLog.Field("street_ms", streetMs),
-                    GameLog.Field("pedestrian_ms", pedestrianMs),
-                    GameLog.Field("cannery_route_ms", canneryMs),
-                    GameLog.Field("terrain_ms", terrainMs));
-                return new CityPrimedPlans(layout, terrain);
+                return pending.Layout.GetAwaiter().GetResult();
             }
+            catch
+            {
+                return GetOrGenerate(blueprint, settings, seed);
+            }
+        }
+
+        internal static Task WaitForPrimedPlans(
+            CityBlueprint blueprint, CityGenerationSettings settings, int seed)
+        {
+            PendingCityPlans pending = pendingCityPlans;
+            if (pending == null || !pending.Matches(blueprint, settings, seed) ||
+                pending.Task.IsCompleted)
+                return null;
+
+            // Wait for completion. The getter owns fault logging and fallback.
+            return Task.WhenAny(pending.Task);
+        }
+
+        internal static void DiscardPendingCityPlans() => AbandonCityPlans();
+
+        private static CityPrimedPlans CreateHomePlans(CityLayout layout, CancellationToken stop)
+        {
+            Stopwatch timer = Stopwatch.StartNew();
+            // Match Home's order: its exterior decorations are selected
+            // before the full entrance routes are installed in the memo.
+            GetOrCreateHomeExteriorContext(layout);
+            stop.ThrowIfCancellationRequested();
+            CityBuildingEntrancePlan.ForLayout(layout);
+            stop.ThrowIfCancellationRequested();
+            CityResidentialCourtyardPlan.ForLayout(layout);
+            stop.ThrowIfCancellationRequested();
+            CityBuildingPerimeterPlan.ForLayout(layout);
+            GameLog.Debug("city", PrimeEvent,
+                GameLog.Field("stage", "finished"),
+                GameLog.Field("scope", "home"),
+                GameLog.Field("seed", layout.Seed),
+                GameLog.Field("duration_ms", timer.ElapsedMilliseconds));
+            return new CityPrimedPlans(layout, null);
+        }
+
+        private static CityPrimedPlans CreateCityPlans(
+            CityLayout layout,
+            float sandTile,
+            CancellationToken stop)
+        {
+            Stopwatch total = Stopwatch.StartNew();
+            Stopwatch stage = Stopwatch.StartNew();
+            CityNightFixturePlan night = GetOrCreateNightPlan(layout);
+            long nightMs = Restart(stage);
+            CityWorldPlans plans = CityWorldPlans.GetOrCreate(layout);
+            plans.GetDecoration(night);
+            long worldPlansMs = Restart(stage);
+            stop.ThrowIfCancellationRequested();
+            plans.GetLitter(night);
+            long litterMs = Restart(stage);
+            CityDistrictBusPlanner.Create(layout);
+            long busMs = Restart(stage);
+            CityStreetSurfacePlanner.Create(layout);
+            long streetMs = Restart(stage);
+            GetOrCreatePedestrianPlan(layout, layout.Seed);
+            long pedestrianMs = Restart(stage);
+            GetOrCreateCanneryRoute(
+                layout,
+                CityCanneryPlan.Create(layout),
+                CityPortAccessPlan.ForLayout(layout));
+            long canneryMs = Restart(stage);
+            stop.ThrowIfCancellationRequested();
+            PrimedTerrainSources terrain = PrimedTerrainSources.Sample(layout, sandTile);
+            long terrainMs = Restart(stage);
+            GameLog.Debug(
+                "city",
+                PrimeEvent,
+                GameLog.Field("stage", "finished"),
+                GameLog.Field("scope", "city"),
+                GameLog.Field("seed", layout.Seed),
+                GameLog.Field("duration_ms", total.ElapsedMilliseconds),
+                GameLog.Field("night_ms", nightMs),
+                GameLog.Field("world_plans_ms", worldPlansMs),
+                GameLog.Field("litter_ms", litterMs),
+                GameLog.Field("bus_ms", busMs),
+                GameLog.Field("street_ms", streetMs),
+                GameLog.Field("pedestrian_ms", pedestrianMs),
+                GameLog.Field("cannery_route_ms", canneryMs),
+                GameLog.Field("terrain_ms", terrainMs));
+            return new CityPrimedPlans(layout, terrain);
         }
 
         private static long Restart(Stopwatch stage)
@@ -329,8 +401,12 @@ namespace BarPromenade
                     GameLog.Field("seed", seed),
                     GameLog.Field("wait_ms", wait.ElapsedMilliseconds),
                     GameLog.Field("exception", exception.GetType().Name),
-                    GameLog.Field("message", exception.Message ?? string.Empty));
+                    GameLog.Field("message", exception.GetBaseException().Message));
                 return;
+            }
+            finally
+            {
+                pending.Cancellation.Dispose();
             }
 
             string state;
@@ -339,6 +415,7 @@ namespace BarPromenade
             {
                 cachedLayout = primed.Layout;
                 cachedSettings = pending.Settings;
+                primedTerrain = null;
                 state = finished ? "finished" : "waited";
             }
             else if (ReferenceEquals(held, primed.Layout))
@@ -352,7 +429,7 @@ namespace BarPromenade
                 state = "superseded";
             }
 
-            if (state != "superseded")
+            if (state != "superseded" && primed.Terrain != null)
             {
                 primedTerrain = primed.Terrain;
             }
@@ -375,11 +452,25 @@ namespace BarPromenade
             }
 
             pendingCityPlans = null;
+            if (!pending.Task.IsCompleted && ReferenceEquals(cachedLayout, pending.Existing))
+            {
+                // An interrupted worker still owns this instance until it exits.
+                cachedLayout = null;
+                cachedSettings = null;
+                primedTerrain = null;
+            }
+
+            pending.Cancellation.Cancel();
             abandonedPlanWork = Task.WhenAll(
                 abandonedPlanWork,
                 pending.Task.ContinueWith(
-                    ObserveFault,
-                    TaskContinuationOptions.ExecuteSynchronously));
+                    task =>
+                    {
+                        ObserveFault(task);
+                        pending.Cancellation.Dispose();
+                    },
+                    TaskContinuationOptions.ExecuteSynchronously),
+                pending.Layout.ContinueWith(ObserveFault, TaskContinuationOptions.ExecuteSynchronously));
         }
 
         private sealed class PendingCityPlans
@@ -390,15 +481,21 @@ namespace BarPromenade
             public PendingCityPlans(
                 string blueprintId,
                 CityGenerationSettings settings,
-                int seed)
+                int seed,
+                CityLayout existing)
             {
                 this.blueprintId = blueprintId;
                 Settings = settings;
                 this.seed = seed;
+                Existing = existing;
             }
 
             public CityGenerationSettings Settings { get; }
+            public CityLayout Existing { get; }
+            public CancellationTokenSource Cancellation { get; } = new CancellationTokenSource();
+            public Task<CityLayout> Layout { get; set; }
             public Task<CityPrimedPlans> Task { get; set; }
+            public bool IncludesCity { get; set; }
 
             public bool Matches(
                 CityBlueprint blueprint,

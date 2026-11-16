@@ -89,26 +89,28 @@ namespace BarPromenade
                 pendingOperationId = SceneTransitionService.CurrentOperationId;
             }
 
-            // A start inside one of the City's interiors ends at a door
-            // into a City nobody has built: its pure plans are primed on a
-            // pool thread now, so the door joins finished work instead of
-            // planning under the black. The flat is left out - its root
-            // reads the City layout while booting and would only wait.
-            if (!isArea &&
-                location != NewGameLocation.Home &&
-                ResidentExteriorPolicy.GetExteriorOfInterior(scene) == SceneIds.City)
-            {
-                CityLayoutCache.PrimeCityPlans(
-                    CityBlueprintCatalog.Resolve(GameSessionState.CityBlueprintId),
-                    CityGenerationSettings.Default,
-                    GameSessionState.CitySeed,
-                    "new_game_" + location.ToString().ToLowerInvariant());
-            }
+            PrepareLaunch(scene, "new_game_" + location.ToString().ToLowerInvariant());
             GameLog.Info("session", "new_game_location_selected",
                 GameLog.Field("location", location.ToString()),
                 GameLog.Field("scene", scene),
                 GameLog.Field("operation_id", SceneTransitionService.CurrentOperationId));
             return true;
+        }
+
+        private static void PrepareLaunch(string sceneName, string trigger)
+        {
+            AreaAssetWarmup.KeepForDestination(sceneName);
+            if (sceneName == SceneIds.HomeInterior) return;
+            if (sceneName != SceneIds.City &&
+                ResidentExteriorPolicy.GetExteriorOfInterior(sceneName) != SceneIds.City)
+            {
+                CityLayoutCache.DiscardPendingCityPlans();
+                return;
+            }
+
+            CityBlueprint blueprint = CityBlueprintCatalog.Resolve(GameSessionState.CityBlueprintId);
+            CityGenerationSettings settings = CityGenerationSettings.Default;
+            CityLayoutCache.PrimeCityPlans(blueprint, settings, GameSessionState.CitySeed, trigger);
         }
 
         private static void PrepareInteriorContext(NewGameLocation location, BuildingLot bar)
@@ -142,7 +144,7 @@ namespace BarPromenade
         {
             // The same city the launch will compose, so the memo the City
             // root reads is already warm when the bar door opens onto it.
-            CityLayout layout = CityLayoutCache.GetOrGenerate(
+            CityLayout layout = CityLayoutCache.GetLayoutForBarSelection(
                 CityBlueprintCatalog.Resolve(GameSessionState.DefaultCityBlueprintId),
                 CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
             BuildingLot nearest = null;
