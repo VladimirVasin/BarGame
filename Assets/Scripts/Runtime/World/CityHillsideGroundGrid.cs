@@ -139,12 +139,14 @@ namespace BarPromenade
         internal Vector3 Vertex(int col, int row) =>
             new Vector3(x[col], heights[row * Columns + col], z[row]);
 
-        internal float FoundationDepth(CityHillsideBuilding house)
+        internal float FoundationDepth(CityHillsideBuilding house) =>
+            FoundationDepth(house.FoundationBounds, house.ThresholdWorld.y);
+
+        internal float FoundationDepth(Rect footprint, float top)
         {
-            Rect footprint = house.FoundationBounds;
             if (!footprint.Overlaps(Rect.MinMaxRect(x[0], z[0], x[Columns - 1], z[Rows - 1])))
                 return MinimumFoundationDepth;
-            float lowest = house.ThresholdWorld.y;
+            float lowest = top;
             // Enclosing grid vertices conservatively bound each terrain triangle
             // beneath the plinth, including the verge's lowered shoulder.
             int firstCol = Cell(x, footprint.xMin), lastCol = Cell(x, footprint.xMax) + 1;
@@ -152,17 +154,7 @@ namespace BarPromenade
             for (int row = firstRow; row <= lastRow; row++)
             for (int col = firstCol; col <= lastCol; col++)
                 lowest = Mathf.Min(lowest, heights[row * Columns + col]);
-            return Mathf.Max(MinimumFoundationDepth, house.ThresholdWorld.y - lowest + FoundationEmbedDepth);
-        }
-
-        internal IEnumerable<Vector3> WestStairCutEdge(Rect cut)
-        {
-            int column = System.Array.BinarySearch(x, cut.xMin);
-            int first = System.Array.BinarySearch(z, cut.yMin);
-            int last = System.Array.BinarySearch(z, cut.yMax);
-            if (column < 0 || first < 0 || last < 0)
-                throw new InvalidOperationException("The east stairs need their surveyed terrain cut edge.");
-            for (int row = first; row <= last; row++) yield return Vertex(column, row);
+            return Mathf.Max(MinimumFoundationDepth, top - lowest + FoundationEmbedDepth);
         }
 
         internal Surface CellSurface(int col, int row) => surfaces[row * (Columns - 1) + col];

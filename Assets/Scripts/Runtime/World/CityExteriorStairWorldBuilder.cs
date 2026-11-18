@@ -72,6 +72,64 @@ namespace BarPromenade
                 rampColliders);
         }
 
+        internal static void BuildGroundJoints(Transform parent, CityLayout layout,
+            CityElevationStairDescriptor stair, CityElevationStairPlacement placement)
+        {
+            CityExteriorStairFlightDescriptor flight = placement.ExteriorPlan.Flights[0];
+            Vector3 soilSide = placement.SideDirection * (stair.Width * .5f);
+            Vector3 first = placement.LowerApproachStart + soilSide;
+            Vector3 last = placement.UpperApproachEnd + soilSide;
+            float run = Vector3.Dot(last - first, flight.Direction);
+            int stations = Mathf.Max(1, Mathf.CeilToInt(run / flight.TreadDepth));
+            float bottom = flight.Start.y - .6f;
+            var cut = new CityHillsideStairCut();
+            bool forward = Vector3.Dot(Vector3.Cross(flight.Direction, Vector3.down), soilSide) < 0f;
+            bool previousHasSoil = false;
+            Vector3 previous = default;
+            Vector3 previousBacking = default;
+            for (int station = 0; station <= stations; station++)
+            {
+                Vector3 rim = Vector3.Lerp(first, last, station / (float)stations);
+                Vector3 probe = rim + placement.SideDirection * .002f;
+                bool hasSoil = CityTerrainSurfacePlan.TrySampleGroundTop(layout, new Vector2(probe.x, probe.z),
+                    out rim.y, out CitySurfaceDescriptor surface);
+                Vector3 backing = rim + placement.SideDirection * .14f;
+                if (hasSoil)
+                {
+                    bottom = Mathf.Min(bottom, rim.y - .25f);
+                    // Independently tessellated street and terrain need a
+                    // short buried lap across the cut, even at grazing views.
+                    backing.y = CityTerrainSurfacePlan.SampleTop(layout, surface, new Vector2(backing.x, backing.z)) - .035f;
+                    rim.y += .045f;
+                    if (previousHasSoil) cut.Add(forward ? previous : rim, forward ? rim : previous, bottom,
+                        forward ? previousBacking : backing, forward ? backing : previousBacking);
+                }
+                previous = rim;
+                previousBacking = backing;
+                previousHasSoil = hasSoil;
+            }
+            cut.Build(parent, false, CityExteriorAppearance.ResolveDistrictGroundTint(
+                CityDistrictPresentationPlanner.GetProfile(stair.District).Wear));
+
+            var support = Resources.Load<GameObject>(CityTerracePilotWorld.ResourceFolder + "TerraceSupport");
+            Footing(flight.Start, flight.End, flight.Start.y + .02f, "Flight footing");
+            foreach (var landing in placement.ExteriorPlan.Landings)
+                Footing(landing.StartEdgeCenter, landing.EndEdgeCenter, landing.Elevation - landing.Thickness + .02f, "Landing footing");
+            Footing(placement.LowerApproachStart, placement.LowerApproachEnd, placement.LowerApproachStart.y - .04f, "Lower approach footing");
+            Footing(placement.UpperApproachStart, placement.UpperApproachEnd, placement.UpperApproachEnd.y - .04f, "Upper approach footing");
+
+            void Footing(Vector3 start, Vector3 end, float top, string name)
+            {
+                float length = Vector3.Dot(end - start, flight.Direction);
+                if (length < .01f) return;
+                Vector3 center = (start + end) * .5f;
+                center.y = top;
+                Vector2 size = Mathf.Abs(flight.Direction.x) > .5f
+                    ? new Vector2(length, stair.Width) : new Vector2(stair.Width, length);
+                CityTerracePilotWorld.Support(support, parent, stair.Id + " " + name, center, size, bottom);
+            }
+        }
+
         private static void BuildFlights(
             Transform root,
             IReadOnlyList<CityExteriorStairFlightDescriptor> flights,

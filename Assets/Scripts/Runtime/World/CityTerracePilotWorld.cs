@@ -174,7 +174,10 @@ namespace BarPromenade
                 (flight.Start + flight.End) * .5f - slope * Vector3.up * .06f,
                 new Vector3(flight.Width, .12f, delta.magnitude), slope);
             StairWalkableSurface.Stamp(ramp);
-            Vector3 supportTop = flight.Start + flight.Direction * (flight.RunLength * .5f) - Vector3.up * .25f;
+            // The imported tread body scales with the rise. Seat the footing
+            // slightly inside that body so the two chamfers overlap.
+            float treadBaseDepth = .25f * riseScale - .02f;
+            Vector3 supportTop = flight.Start + flight.Direction * (flight.RunLength * .5f) - Vector3.up * treadBaseDepth;
             Vector2 supportSize = Mathf.Abs(flight.Direction.z) > .5f
                 ? new Vector2(2.1f, flight.RunLength) : new Vector2(flight.RunLength, 2.1f);
             Support(supportModel, root, flight.Id + " support", supportTop, supportSize, foundationBottom);
@@ -205,13 +208,22 @@ namespace BarPromenade
             GameObject support = Resources.Load<GameObject>(ResourceFolder + "TerraceSupport");
             GameObject flightModel = Resources.Load<GameObject>(ResourceFolder + "TerraceFlight");
             GameObject rail = Resources.Load<GameObject>(ResourceFolder + "TerraceRail");
+            var banks = CityHillsideGroundGrid.ForSurface(access.Layout);
+            var quarter = CityHillsideQuarterGroundGrid.ForLayout(access.Layout);
             foreach (CityHillsideShortcut stair in access.AllStairs)
             {
                 if (retained.HasValue && !retained.Value.Overlaps(stair.Bounds)) continue;
                 var root = new GameObject("Hillside stairs " + stair.Id);
                 root.transform.SetParent(parent, false);
                 FootstepGround.Stamp(root, FootstepGroundKind.Stone);
-                float baseY = stair.RouteWorld[0].y - 1f;
+                float baseY = stair.FoundationBottom;
+                float entryY = stair.RouteWorld[0].y;
+                if (stair == access.SharedCourt)
+                    baseY = Mathf.Min(baseY, entryY - quarter.FoundationDepth(stair.Bounds, entryY));
+                else
+                    foreach (var bank in banks)
+                        if (bank.Road.Bank == stair.Bank)
+                            baseY = Mathf.Min(baseY, entryY - bank.FoundationDepth(stair.Bounds, entryY));
                 foreach (var flight in stair.Flights)
                     BuildFlight(root.transform, flight, flightModel, support, baseY, flight.StepRise / CityTerracePilotPlan.StepRise);
                 foreach (var floor in stair.Floors)
@@ -224,7 +236,7 @@ namespace BarPromenade
                             new Vector3(size.x / CityTerracePilotPlan.CourtSize, 1f, size.y / CityTerracePilotPlan.CourtSize));
                     Box(root.transform, floor.Id + " paving", top - Vector3.up * .15f,
                         new Vector3(size.x, .30f, size.y), Quaternion.identity);
-                    Support(support, root.transform, floor.Id + " foundation", top - Vector3.up * .30f, size, baseY);
+                    Support(support, root.transform, floor.Id + " foundation", top - Vector3.up * .28f, size, baseY);
                     // The passage through the apartment building is flush with its courtyard.
                     if (throughHouse) continue;
                     BuildFloorRails(root.transform, rail, stair.Floors, stair.Flights, floor, null, stair);

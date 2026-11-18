@@ -1053,6 +1053,7 @@ namespace BarPromenade
                 CityExteriorStairWorldBuilder.Build(
                     root,
                     placement.ExteriorPlan);
+                CityExteriorStairWorldBuilder.BuildGroundJoints(root, layout, stair, placement);
                 CityExteriorStairWorldBuilder.BuildRails(
                     root,
                     new[]

@@ -19,6 +19,10 @@ namespace BarPromenade
             var faces = new List<int>();
             var rock = new List<int>();
             var scree = new List<int>();
+            var stair = CityHillsideAccessPlan.ForLayout(layout).SharedCourt;
+            var stairCuts = new CityHillsideStairCut();
+            System.Func<int, int, Vector3> sampleVertex = grid.Vertex;
+            System.Func<int, int, bool> isCut = (col, row) => grid.CellSurface(col, row) == CityHillsideQuarterGroundGrid.Surface.Cut;
             for (int row = 0; row < grid.Rows; row++)
             for (int col = 0; col < columns; col++)
             {
@@ -34,11 +38,15 @@ namespace BarPromenade
                     point.x + (u < .5f ? depth : 2f * section.w - depth)) / CityMountainSurfaceAppearance.MetersPerTile;
                 if (col + 1 == columns || row + 1 == grid.Rows) continue;
                 var kind = grid.CellSurface(col, row);
-                if (kind == CityHillsideQuarterGroundGrid.Surface.Cut) continue;
                 Vector3 far = grid.Vertex(col + 1, row + 1);
                 if (retained.HasValue && !retained.Value.Overlaps(Rect.MinMaxRect(
                     Mathf.Min(vertex.x, grid.Vertex(col, row + 1).x), point.y,
                     Mathf.Max(grid.Vertex(col + 1, row).x, far.x), far.z))) continue;
+                if (kind == CityHillsideQuarterGroundGrid.Surface.Cut)
+                {
+                    stairCuts.AddCell(col, row, columns, grid.Rows, sampleVertex, isCut, stair);
+                    continue;
+                }
                 bool stone = kind == CityHillsideQuarterGroundGrid.Surface.Rock || kind == CityHillsideQuarterGroundGrid.Surface.Scree;
                 var triangles = kind == CityHillsideQuarterGroundGrid.Surface.Scree ? scree : stone ? rock : faces;
                 if (stone) a += gridSize;
@@ -48,7 +56,7 @@ namespace BarPromenade
             }
             var mesh = CityHillsidePerimeterSurface.Build(layout, "Upper quarter saddle and dry rock cut",
                 vertices, uv, false, faces, rock, scree);
-            CityPawnshopBenchTerraceWorld.CutGroundMesh(layout,mesh);
+            CityPawnshopBenchTerraceWorld.CutGroundMesh(layout, mesh, stairCuts);
             CityMountainTalusAppearance.BakeGround(mesh, layout);
             var ground = new GameObject("Shared residential hillside");
             ground.transform.SetParent(parent, false);
@@ -72,6 +80,7 @@ namespace BarPromenade
             if (!retained.HasValue) CityHillsidePerimeterSurface.Stamp(ground, mesh, FootstepGroundKind.Soil,
                 FootstepGroundKind.Stone, FootstepGroundKind.Stone, FootstepGroundKind.Concrete,
                 FootstepGroundKind.Grass, FootstepGroundKind.Stone, FootstepGroundKind.Stone);
+            stairCuts.Build(parent, retained.HasValue);
             CityHillsideQuarterBridgeWorld.Build(parent, plan, retained);
         }
     }

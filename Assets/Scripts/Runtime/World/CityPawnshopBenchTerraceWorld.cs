@@ -10,6 +10,7 @@ namespace BarPromenade
     {
         internal const string RootName="Pawnshop bench terrace";
         internal const string ModelPath="City/BenchAccess/BenchAccessStair";
+        private const float FlightFoundationDepth = 1f;
 
         internal static void Build(Transform parent,CityLayout layout,Rect? retained)
         {
@@ -20,6 +21,10 @@ namespace BarPromenade
             if(template==null) throw new System.InvalidOperationException("Missing Blender bench access staircase.");
             CityTerracePilotWorld.Model(template,root,"Broad bench access stair",plan.Flight.Start,
                 Quaternion.LookRotation(plan.Flight.Direction),Vector3.one);
+            var support = Resources.Load<GameObject>(CityTerracePilotWorld.ResourceFolder + "TerraceSupport");
+            CityTerracePilotWorld.Support(support, root, "Broad bench stair foundation",
+                new Vector3(plan.StairFootprint.center.x, plan.Flight.Start.y - .23f, plan.StairFootprint.center.y),
+                plan.StairFootprint.size, plan.Flight.Start.y - FlightFoundationDepth);
             var statue=Resources.Load<GameObject>("City/BenchAccess/BenchPigeonStatue");
             if(statue==null) throw new System.InvalidOperationException("Missing imported concrete bench pigeon.");
             CityTerracePilotWorld.Model(statue,root,"Concrete pigeon between benches",plan.StatuePosition,
@@ -117,9 +122,8 @@ namespace BarPromenade
                 void Retaining(Vector3 a,Vector3 b)
                 {
                     ground.TrySampleTop(XZ(a),out float ay);ground.TrySampleTop(XZ(b),out float by);
-                    Vector3 highA=new(a.x,Mathf.Max(a.y,ay),a.z),highB=new(b.x,Mathf.Max(b.y,by),b.z);
                     Vector3 lowA=new(a.x,Mathf.Min(a.y,ay)-.08f,a.z),lowB=new(b.x,Mathf.Min(b.y,by)-.08f,b.z);
-                    retaining.Add(new[] {highA,lowA,lowB});retaining.Add(new[] {highA,lowB,highB});
+                    retaining.Add(new[] {a,lowA,lowB});retaining.Add(new[] {a,lowB,b});
                 }
             }
             BoxCollider Collider(string name,Vector3 center,Vector3 size,Quaternion rotation)
@@ -133,16 +137,20 @@ namespace BarPromenade
         }
 
         /// <summary>Remove both visual and physical native earth inside the replacement surfaces.</summary>
-        internal static void CutGroundMesh(CityLayout layout,Mesh mesh)
+        internal static void CutGroundMesh(CityLayout layout, Mesh mesh, CityHillsideStairCut stairCuts)
         {
             var plan=CityPawnshopBenchTerracePlan.ForLayout(layout);
-            if(plan.IsEnabled) CutGroundMesh(mesh,plan.Footprints,plan.Bounds);
+            if (plan.IsEnabled) CutGroundMesh(mesh, plan.Footprints, plan.Bounds, stairCuts,
+                plan.Flight.Start.y - FlightFoundationDepth);
             var descent=CityPawnshopDescentPlan.ForLayout(layout);
-            if(descent.IsEnabled) CutGroundMesh(mesh,descent.GroundCuts,descent.Bounds);
+            if (descent.IsEnabled) CutGroundMesh(mesh, descent.GroundCuts, descent.Bounds, stairCuts,
+                descent.LowerDock.y - 1.2f);
         }
 
-        private static void CutGroundMesh(Mesh mesh,IReadOnlyList<Vector2[]> footprints,Rect bounds)
+        private static void CutGroundMesh(Mesh mesh, IReadOnlyList<Vector2[]> footprints, Rect bounds,
+            CityHillsideStairCut stairCuts, float bottom)
         {
+            const float edgeTolerance = .0005f;
             Rect meshBounds=Rect.MinMaxRect(mesh.bounds.min.x,mesh.bounds.min.z,mesh.bounds.max.x,mesh.bounds.max.z);
             if(!meshBounds.Overlaps(bounds)) return;
             var positions=new List<Vector3>(mesh.vertices);var normals=new List<Vector3>(mesh.normals);
@@ -152,6 +160,7 @@ namespace BarPromenade
             while(road.Count<positions.Count) road.Add(Vector4.zero);
             var cuts=new List<GroundSurfacePartitioner.Footprint>();
             foreach(var polygon in footprints) cuts.Add(new GroundSurfacePartitioner.Footprint(polygon));
+            var rimIntervals = new List<Vector2>();
             var layers=new List<int>[mesh.subMeshCount];
             for(int slot=0;slot<layers.Length;slot++)
             {
@@ -164,20 +173,26 @@ namespace BarPromenade
                     Rect triangleBounds=Rect.MinMaxRect(lo.x,lo.z,hi.x,hi.z);
                     bool nearby=false;
                     foreach(var cut in cuts) if(triangleBounds.Overlaps(cut.Bounds)) {nearby=true;break;}
-                    if(!nearby) {indices.Add(a);indices.Add(b);indices.Add(c);continue;}
+                    if (!nearby)
+                    {
+                        indices.Add(a); indices.Add(b); indices.Add(c);
+                        if (lo.x <= bounds.xMax + edgeTolerance && hi.x >= bounds.xMin - edgeTolerance &&
+                            lo.z <= bounds.yMax + edgeTolerance && hi.z >= bounds.yMin - edgeTolerance)
+                            AddRims(positions[a], positions[b], positions[c]);
+                        continue;
+                    }
                     var remaining=new List<Triangle> {new(At(a),At(b),At(c),slot)};
-                    bool changed=false;
                     foreach(var cut in cuts)
                     {
                         if(!triangleBounds.Overlaps(cut.Bounds)) continue;
                         var next=new List<Triangle>();
                         foreach(var triangle in remaining) next.AddRange(GroundSurfacePartitioner.Subtract(triangle,cut));
-                        remaining=next;changed=true;
+                        remaining=next;
                     }
-                    if(!changed) {indices.Add(a);indices.Add(b);indices.Add(c);continue;}
                     foreach(var triangle in remaining)
                     {
                         Emit(triangle.A);Emit(triangle.B);Emit(triangle.C);
+                        AddRims(triangle.A.Position, triangle.B.Position, triangle.C.Position);
                     }
                 }
                 void Emit(Vertex vertex)
@@ -192,6 +207,61 @@ namespace BarPromenade
             for(int i=0;i<layers.Length;i++) mesh.SetTriangles(layers[i],i,false);
             mesh.RecalculateBounds();
             Vertex At(int index)=>new(positions[index],normals[index],uv[index],road[index],colors[index]);
+
+            // The two pawnshop stairs are clipped after the grid build. Their
+            // actual surviving soil edges also carry the height of the cut.
+            void AddRims(Vector3 a, Vector3 b, Vector3 c)
+            {
+                AddRim(a, b);
+                AddRim(b, c);
+                AddRim(c, a);
+            }
+
+            void AddRim(Vector3 first, Vector3 last)
+            {
+                Vector2 start = XZ(first), end = XZ(last), run = end - start;
+                if (run.sqrMagnitude <= edgeTolerance * edgeTolerance) return;
+                rimIntervals.Clear();
+                foreach (var cut in cuts)
+                {
+                    if (Mathf.Min(start.x, end.x) > cut.Bounds.xMax + edgeTolerance ||
+                        Mathf.Max(start.x, end.x) < cut.Bounds.xMin - edgeTolerance ||
+                        Mathf.Min(start.y, end.y) > cut.Bounds.yMax + edgeTolerance ||
+                        Mathf.Max(start.y, end.y) < cut.Bounds.yMin - edgeTolerance) continue;
+                    for (int i = 0; i < cut.Points.Length; i++)
+                    {
+                        Vector2 origin = cut.Points[i];
+                        Vector2 side = cut.Points[(i + 1) % cut.Points.Length] - origin;
+                        float length = side.magnitude;
+                        if (length <= edgeTolerance) continue;
+                        Vector2 axis = side / length;
+                        // A surviving terrain triangle keeps the cut on its
+                        // left, the same direction as the CCW cut edge.
+                        float direction = Vector2.Dot(run, axis);
+                        if (direction <= edgeTolerance ||
+                            Mathf.Abs(CityRoadPolygon.Cross(axis, start - origin)) > edgeTolerance ||
+                            Mathf.Abs(CityRoadPolygon.Cross(axis, end - origin)) > edgeTolerance) continue;
+                        float station = Vector2.Dot(start - origin, axis);
+                        float from = Mathf.Max(0f, -station / direction);
+                        float to = Mathf.Min(1f, (length - station) / direction);
+                        if ((to - from) * direction > edgeTolerance) rimIntervals.Add(new Vector2(from, to));
+                    }
+                }
+                if (rimIntervals.Count == 0) return;
+                rimIntervals.Sort((a, b) => a.x.CompareTo(b.x));
+                Vector2 merged = rimIntervals[0];
+                for (int i = 1; i < rimIntervals.Count; i++)
+                {
+                    Vector2 next = rimIntervals[i];
+                    if (next.x <= merged.y) merged.y = Mathf.Max(merged.y, next.y);
+                    else { AddSpan(merged); merged = next; }
+                }
+                AddSpan(merged);
+
+                void AddSpan(Vector2 interval) => stairCuts.Add(
+                    Vector3.LerpUnclamped(first, last, interval.y),
+                    Vector3.LerpUnclamped(first, last, interval.x), bottom);
+            }
         }
 
         private static Vector2 XZ(Vector3 p)=>new(p.x,p.z);

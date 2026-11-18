@@ -100,10 +100,12 @@ namespace BarPromenade
         internal Vector3 Vertex(int col, int row) => vertices[row * Columns + col];
         internal Surface CellSurface(int col, int row) => surfaces[row * (Columns - 1) + col];
 
-        internal float FoundationDepth(CityHillsideBuilding house)
+        internal float FoundationDepth(CityHillsideBuilding house) =>
+            FoundationDepth(house.FoundationBounds, house.ThresholdWorld.y);
+
+        internal float FoundationDepth(Rect footprint, float top)
         {
-            Rect footprint = house.FoundationBounds;
-            float lowest = house.ThresholdWorld.y;
+            float lowest = top;
             for (int row = 0; row < Rows - 1; row++)
             {
                 if (z[row + 1] <= footprint.yMin || z[row] >= footprint.yMax) continue;
@@ -119,7 +121,7 @@ namespace BarPromenade
                 }
             }
             return Mathf.Max(CityHillsideGroundGrid.MinimumFoundationDepth,
-                house.ThresholdWorld.y - lowest + CityHillsideGroundGrid.FoundationEmbedDepth);
+                top - lowest + CityHillsideGroundGrid.FoundationEmbedDepth);
         }
 
         internal bool TryHeight(Vector2 point, out float top)

@@ -425,7 +425,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
   Coast→Lower Court/upper homes;2seven-tier climbs/ravine.
-  Stairs→tiers/court/crest. Soil blends at curbs. Grass outside paths/loft.
+  Stairs→tiers/court/crest. Bevelled soil closes stair cuts. Soil blends at curbs.
+  Grass outside paths/loft.
   Benches/bins/booths on pockets;fixed entry light. Home bench→truss/ravine/roofs.
   West Lane6: (-24,-8)/4fl/X-99.2; (-25,-8)/3fl/X-84.
   `CityHillsideBenchPocketPlan`:pawnshop≤45mXZ;origins fixed;West11/13 face+Z/new docks.
@@ -440,7 +441,6 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Raised yard grass-free/map outside;spill.12/day≥⅔/Soft/opaque.
   Paved path from east footway; asphalt at window and staff exit follows grade.
   Ridge homes: plinths keyed into banks/court; side rails behind footway.
-  East (22,-7) retains the closed stair cut.
   Home verges:soil/wet asphalt/turf/gravel/stone. W:drains;E:kerbs/scrapers.
   Home soffit lamp/timber above deck. East `(21,-7)` clears walk.
   West `(-23,-7)`: «Хвост и Чешуя», two floods. Poles→stairs/bridge footways;
@@ -606,8 +606,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
 - four signature exterior stair streets, one in Old Town, Residential,
   Industrial and Nightlife. Each owns `6-12` visible collider-free steps at
   `0.15-0.17 m` rise and `0.30-0.34 m` tread, two `1.5 m` landings, physical
-  rails/retaining walls and exactly one hidden seam-free ramp collider per
-  flight. Road-to-ground and ground-to-ground transitions use sampled endpoint
+  rails, closed cut sides and one hidden ramp per flight. Road-to-ground and
+  ground-to-ground transitions use sampled endpoint
   heights for the same step-safe decision, and segmented guards follow every
   unsafe physical edge. `CityVerticalTraversalPlan` inventories those seams
   and authored road frontages and proves their authorized component from the

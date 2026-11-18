@@ -12,6 +12,164 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class AreaCaptureFixture
     {
+        [UnityTest, Explicit("Survey the City stair-to-ground joints and review both banks in the live scene.")]
+        public IEnumerator CityStairGroundJoints()
+        {
+            GameSessionState.BeginNewGame();
+            Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60), Is.True);
+            var issues = new List<string>();
+            CityGameRoot city = null;
+            yield return Capture(SceneIds.City, () =>
+            {
+                city = Object.FindAnyObjectByType<CityGameRoot>();
+                return city != null && city.IsInitialized ? city : null;
+            }, () =>
+            {
+                FreezeLightingPolish(city.Player.Motor);
+                Physics.SyncTransforms();
+                var world = city.World.Root.transform;
+                var earth = CityHillsideGroundPlan.ForLayout(city.Layout);
+                var cuts = world.GetComponentsInChildren<MeshCollider>()
+                    .Where(part => part.name == CityHillsideStairCut.ObjectName).ToArray();
+                var shots = new List<Shot>();
+                foreach (var stair in CityHillsideAccessPlan.ForLayout(city.Layout).AllStairs)
+                {
+                    Transform root = world.Find("Hillside stairs " + stair.Id);
+                    Assert.That(root, Is.Not.Null, stair.Id);
+                    int surveyed = 0;
+                    foreach (var flight in stair.Flights)
+                    {
+                        var treads = root.Find(flight.Id).GetComponentsInChildren<Renderer>()
+                            .Single(renderer => renderer.name.StartsWith("FlightSteps"));
+                        var support = root.Find(flight.Id + " support").GetComponentInChildren<Renderer>();
+                        surveyed += SurveyFlight(flight, CityHillsideShortcut.Width, support.bounds.min.y);
+                        if (support.bounds.max.y - treads.bounds.min.y < .01f)
+                            issues.Add(flight.Id + " tread body is above its footing.");
+                    }
+                    foreach (var floor in stair.Floors)
+                    {
+                        float bottom = root.Find(floor.Id + " foundation").GetComponentInChildren<Renderer>().bounds.min.y;
+                        foreach (Vector3 outward in new[] { Vector3.left, Vector3.right, Vector3.back, Vector3.forward })
+                        {
+                            bool alongZ = outward.z == 0f;
+                            Vector3 tangent = alongZ ? Vector3.forward : Vector3.right;
+                            float length = alongZ ? floor.Size.y : floor.Size.x;
+                            Vector3 middle = floor.Center + outward * ((alongZ ? floor.Size.x : floor.Size.y) * .5f);
+                            if (!alongZ && (Mathf.Abs(middle.z - stair.RouteWorld[0].z) < .001f ||
+                                            Mathf.Abs(middle.z - stair.RouteWorld.Last().z) < .001f)) continue;
+                            for (int i = 0; i < 5; i++)
+                            {
+                                Vector3 edge = middle + tangent * (length * ((i + .5f) / 5f - .5f));
+                                if (!stair.TrySampleTop(XZ(edge + outward * .002f), out _) &&
+                                    SurveyEdge(floor.Id, edge, outward, bottom)) surveyed++;
+                            }
+                        }
+                    }
+                    Assert.That(surveyed, Is.GreaterThan(0), stair.Id + " has surveyed soil contacts");
+                    AddShot(stair.Id, stair.Flights[0].Start, stair.Flights[0].End);
+                }
+
+                var bench = CityPawnshopBenchTerracePlan.ForLayout(city.Layout);
+                Assert.That(bench.IsEnabled, Is.True);
+                Assert.That(SurveyFlight(bench.Flight, bench.Width, bench.Flight.Start.y - 1f), Is.GreaterThan(0));
+                Rect benchTop = bench.UpperLanding.Bounds;
+                for (int i = 0; i < 8; i++)
+                    SurveyEdge("Broad bench rear", new Vector3(Mathf.Lerp(benchTop.xMin, benchTop.xMax, (i + .5f) / 8f),
+                        bench.UpperLanding.Center.y, benchTop.yMin), Vector3.back, float.NegativeInfinity);
+                AddShot("broad-bench-stair", bench.Flight.Start + Vector3.left * 3.8f, bench.Flight.End);
+
+                var descent = CityPawnshopDescentPlan.ForLayout(city.Layout);
+                Assert.That(descent.IsEnabled, Is.True);
+                foreach (var flight in descent.Flights)
+                {
+                    Assert.That(SurveyFlight(flight, CityHillsideShortcut.Width, descent.LowerDock.y - 1.2f,
+                        descent.ContainsFootprint), Is.GreaterThan(0), flight.Id);
+                    AddShot(flight.Id, flight.Start, flight.End);
+                }
+
+                foreach (var signature in city.Layout.ElevationPlan.SignatureStairs)
+                {
+                    var placement = CityElevationStairPlacementPlanner.Create(city.Layout, signature);
+                    var flight = placement.ExteriorPlan.Flights[0];
+                    for (int step = 0; step < flight.StepCount; step++)
+                    {
+                        Vector3 side = placement.SideDirection;
+                        Vector3 edge = flight.GetStepCenter(step) + side * (flight.Width * .5f);
+                        Vector2 probe = XZ(edge + side * .002f);
+                        if (CityTerrainSurfacePlan.TrySampleGroundTop(city.Layout, probe, out float soil, out _))
+                        {
+                            CheckCut(signature.Id, edge, side, soil);
+                            Vector3 overJoint = edge + side * .015f;
+                            overJoint.y = soil + .20f;
+                            if (!cuts.Any(cut => cut.Raycast(new Ray(overJoint, Vector3.down), out _, .30f)))
+                                issues.Add($"{signature.Id}: exposed top of soil joint at {overJoint:F2}.");
+                        }
+                    }
+                    AddShot(signature.Id, flight.Start, flight.End);
+                }
+                var terraces = CityTerraceDistrictPlan.ForLayout(city.Layout);
+                if (terraces.IsEnabled)
+                    foreach (var flight in terraces.Flights)
+                        AddShot("terraces-" + flight.Id, terraces.World(flight.Start), terraces.World(flight.End));
+                foreach (var quay in city.Layout.River.Landings)
+                {
+                    Vector2 center = quay.StairBounds.center;
+                    Vector3 run = quay.DescentDirection * (quay.StairBounds.height * .5f);
+                    AddShot(quay.Id, new Vector3(center.x, quay.UpperY, center.y) - run,
+                        new Vector3(center.x, quay.LowerY, center.y) + run);
+                }
+
+                Vector3 reportedLanding = new(-106.1f, 34.3f, -327.2f);
+                var grass = world.GetComponentInChildren<CityGrassField>();
+                Vector3 eye = reportedLanding + new Vector3(.38f, 2.2f, 1.6f);
+                Vector3 aim = reportedLanding + new Vector3(-.55f, .27f, -1.35f);
+                shots.Add(Shot.At("stair-ground-reported", eye, aim, 64f,
+                    readyWhen: () => WarmGrassShot(grass, city.Camera, eye, aim)));
+                return shots.ToArray();
+
+                int SurveyFlight(CityExteriorStairFlightDescriptor flight, float width, float bottom,
+                    System.Func<Vector2, bool> hasNeighbor = null)
+                {
+                    int surveyed = 0;
+                    for (int side = -1; side <= 1; side += 2)
+                    for (int step = 0; step < flight.StepCount; step++)
+                    {
+                        Vector3 outward = side * flight.Right;
+                        Vector3 edge = flight.GetStepCenter(step) + outward * (width * .5f);
+                        if (hasNeighbor?.Invoke(XZ(edge + outward * .002f)) != true &&
+                            SurveyEdge(flight.Id, edge, outward, bottom)) surveyed++;
+                    }
+                    return surveyed;
+                }
+
+                bool SurveyEdge(string name, Vector3 edge, Vector3 outward, float bottom)
+                {
+                    if (!earth.TrySampleTop(XZ(edge + outward * .002f), out float soil)) return false;
+                    if (soil + .01f < bottom) issues.Add($"{name}: footing above soil at {edge:F2}.");
+                    CheckCut(name, edge, outward, soil);
+                    return true;
+                }
+
+                void CheckCut(string name, Vector3 edge, Vector3 outward, float soil)
+                {
+                    edge.y = soil - .06f;
+                    var ray = new Ray(edge - outward * .09f, outward);
+                    if (!cuts.Any(cut => cut.Raycast(ray, out _, .14f)))
+                        issues.Add($"{name}: open soil edge at {edge:F2}.");
+                }
+
+                void AddShot(string id, Vector3 start, Vector3 end)
+                {
+                    Vector3 forward = Vector3.ProjectOnPlane(end - start, Vector3.up).normalized;
+                    shots.Add(Shot.At("stair-ground-" + id, start - forward * 1.35f + Vector3.up * 1.8f,
+                        (start + end) * .5f + Vector3.up * .10f, 69f));
+                }
+
+                static Vector2 XZ(Vector3 point) => new(point.x, point.z);
+            });
+            Assert.That(issues, Is.Empty, string.Join("\n", issues.Take(24)));
+        }
+
         [UnityTest, Explicit("Review the reported summit contacts, west gable sign and pigeon enclosure in the live City.")]
         public IEnumerator CitySummitStreetRepairs()
         {
@@ -82,8 +240,9 @@ namespace BarPromenade.Tests.PlayMode
 
                 var guardedHouse = housing.AllBuildings.Single(house => house.Lot.Cell == CityHillsideBuilding.GuardedEastHouseCell);
                 AssertRidgeEntrySupports(city);
-                Assert.That(city.World.Root.GetComponentsInChildren<MeshCollider>()
-                    .Count(collider => collider.name == "East stair soil cut"), Is.EqualTo(1));
+                Assert.That(city.World.Root.GetComponentsInChildren<MeshCollider>().Count(collider =>
+                    collider.name == CityHillsideStairCut.ObjectName && collider.transform.parent.name == "Balcony Courts"),
+                    Is.EqualTo(1));
                 float approachX = guardedHouse.ApproachBounds.center.x;
                 for (float z = guardedHouse.StreetContactWorld.z; z <= guardedHouse.ThresholdWorld.z; z += .25f)
                 {

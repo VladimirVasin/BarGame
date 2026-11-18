@@ -66,6 +66,10 @@ namespace BarPromenade
             var uv = new Vector2[vertices.Length];
             var earth = new List<int>();
             var concrete = new List<int>();
+            var access = CityHillsideAccessPlan.ForLayout(grid.Layout);
+            var stairCuts = new CityHillsideStairCut();
+            System.Func<int, int, Vector3> vertex = grid.Vertex;
+            System.Func<int, int, bool> isCut = (col, row) => grid.CellSurface(col, row) == CityHillsideGroundGrid.Surface.Cut;
             for (int row = 0; row < grid.Rows; row++)
             for (int col = 0; col < columns; col++)
             {
@@ -74,19 +78,27 @@ namespace BarPromenade
                 vertices[i] = p;
                 uv[i] = new Vector2(p.x, p.z) / CityExteriorAppearance.GroundTextureTileSize;
                 if (col + 1 == columns || row + 1 == grid.Rows) continue;
-                if (retained.HasValue)
-                {
-                    Vector3 far = grid.Vertex(col + 1, row + 1);
-                    if (!retained.Value.Overlaps(Rect.MinMaxRect(p.x, p.z, far.x, far.z))) continue;
-                }
                 var surface = grid.CellSurface(col, row);
-                if (surface != CityHillsideGroundGrid.Surface.Cut)
-                    grid.AppendCellTriangles(surface == CityHillsideGroundGrid.Surface.Concrete ? concrete : earth, col, row);
+                Vector3 far = retained.HasValue || surface == CityHillsideGroundGrid.Surface.Cut
+                    ? grid.Vertex(col + 1, row + 1) : default;
+                if (retained.HasValue && !retained.Value.Overlaps(Rect.MinMaxRect(p.x, p.z, far.x, far.z))) continue;
+                if (surface == CityHillsideGroundGrid.Surface.Cut)
+                {
+                    Vector2 center = new((p.x + far.x) * .5f, (p.z + far.z) * .5f);
+                    foreach (var stair in access.AllStairs)
+                    {
+                        if (stair == access.SharedCourt || stair.Bank != grid.Road.Bank || !stair.Bounds.Contains(center)) continue;
+                        stairCuts.AddCell(col, row, columns, grid.Rows, vertex, isCut, stair);
+                        break;
+                    }
+                    continue;
+                }
+                grid.AppendCellTriangles(surface == CityHillsideGroundGrid.Surface.Concrete ? concrete : earth, col, row);
             }
 
             var mesh = CityHillsidePerimeterSurface.Build(grid.Layout, "Hillside banks and door aprons",
                 vertices, uv, true, earth, concrete);
-            CityPawnshopBenchTerraceWorld.CutGroundMesh(grid.Layout,mesh);
+            CityPawnshopBenchTerraceWorld.CutGroundMesh(grid.Layout, mesh, stairCuts);
             CityMountainTalusAppearance.BakeGround(mesh, grid.Layout);
             var go = new GameObject("Terraced ground and courts");
             go.transform.SetParent(parent, false);
@@ -110,49 +122,7 @@ namespace BarPromenade
                 FootstepGroundKind.Concrete, FootstepGroundKind.Concrete, FootstepGroundKind.Grass,
                 FootstepGroundKind.Stone, FootstepGroundKind.Stone);
 
-            if (grid.Road.Bank == CityTerraceTransportBank.East)
-                CloseEastStairBank(parent, grid, retained);
-        }
-
-        private static void CloseEastStairBank(Transform parent, CityHillsideGroundGrid grid, Rect? retained)
-        {
-            foreach (var stair in CityHillsideAccessPlan.ForLayout(grid.Layout).Shortcuts)
-            {
-                if (stair.Bank != grid.Road.Bank || stair.LowerLane != CityHillsideStreetRoute.LaneCount - 2 ||
-                    retained.HasValue && !retained.Value.Overlaps(stair.Bounds)) continue;
-
-                // The cut removes the terrain's top faces. Continue the actual
-                // western rim down beside the stair so the bank has a solid side.
-                float bottom = stair.RouteWorld[0].y - 1f;
-                var points = new List<Vector3>();
-                var uv = new List<Vector2>();
-                var indices = new List<int>();
-                foreach (Vector3 top in grid.WestStairCutEdge(stair.Bounds))
-                {
-                    int index = points.Count;
-                    points.Add(top);
-                    points.Add(new Vector3(top.x, Mathf.Min(bottom, top.y - .1f), top.z));
-                    uv.Add(new Vector2(top.z, top.y) / CityExteriorAppearance.GroundTextureTileSize);
-                    uv.Add(new Vector2(top.z, points[index + 1].y) / CityExteriorAppearance.GroundTextureTileSize);
-                    if (index == 0) continue;
-                    indices.AddRange(new[] { index - 2, index, index - 1, index, index + 1, index - 1 });
-                }
-                var mesh = new Mesh { name = "East stair soil cut" };
-                mesh.SetVertices(points);
-                mesh.SetUVs(0, uv);
-                mesh.SetTriangles(indices, 0);
-                mesh.RecalculateNormals();
-                mesh.RecalculateTangents();
-                var bank = new GameObject(mesh.name);
-                bank.transform.SetParent(parent, false);
-                bank.AddComponent<MeshFilter>().sharedMesh = mesh;
-                var renderer = bank.AddComponent<MeshRenderer>();
-                renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-                CityExteriorAppearance.ApplyGroundSurface(renderer, CityHillsidePerimeterSurface.ResidentialSoil);
-                bank.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
-                if (!retained.HasValue) bank.AddComponent<MeshCollider>().sharedMesh = mesh;
-                return;
-            }
+            stairCuts.Build(parent, retained.HasValue);
         }
     }
 }

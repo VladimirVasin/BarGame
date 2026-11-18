@@ -5527,6 +5527,7 @@ namespace BarPromenade.Tests.PlayMode
 
                         RenderTexture previousActive = RenderTexture.active;
                         RenderTexture.active = target;
+                        Rect coordinatePanel = DrawCaptureCoordinates(target, sceneName, camera.transform.position);
                         frameBuffer.ReadPixels(
                             new Rect(0f, 0f, Width, Height), 0, 0);
                         frameBuffer.Apply();
@@ -5539,7 +5540,7 @@ namespace BarPromenade.Tests.PlayMode
                         Debug.Log($"Area capture wrote {path}");
 
                         Assert.That(
-                            IsBlank(frameBuffer),
+                            IsBlank(frameBuffer, coordinatePanel),
                             Is.False,
                             $"'{sceneName}/{shot.Name}' came out a single flat " +
                             "colour: the camera saw nothing. Wrong place, wrong " +
@@ -5603,7 +5604,7 @@ namespace BarPromenade.Tests.PlayMode
         /// wrote them - which is precisely the failure this whole fixture
         /// is meant to stop.
         /// </summary>
-        private static bool IsBlank(Texture2D frame)
+        private static bool IsBlank(Texture2D frame, Rect ignoredPanel = default)
         {
             const int Steps = 24;
             Color32 first = frame.GetPixel(0, 0);
@@ -5611,9 +5612,10 @@ namespace BarPromenade.Tests.PlayMode
             {
                 for (int x = 0; x < Steps; x++)
                 {
-                    Color32 sample = frame.GetPixel(
-                        x * (frame.width - 1) / (Steps - 1),
-                        y * (frame.height - 1) / (Steps - 1));
+                    int pixelX = x * (frame.width - 1) / (Steps - 1);
+                    int pixelY = y * (frame.height - 1) / (Steps - 1);
+                    if (ignoredPanel.Contains(new Vector2(pixelX, pixelY))) continue;
+                    Color32 sample = frame.GetPixel(pixelX, pixelY);
                     if (sample.r != first.r ||
                         sample.g != first.g ||
                         sample.b != first.b)

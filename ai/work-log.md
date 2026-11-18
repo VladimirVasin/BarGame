@@ -43,6 +43,12 @@ The wardrobe review refreshes skin matrices after stature changes and checks
 the posed head and neck from bind matrices. `DefaultNpcWardrobeDetail` frames
 reviewed. `OrdinaryWomen_KeepVisibleAssignmentsAndRideTheBus`.
 
+Continued the City stair cuts along the actual bank edges. Buried the
+transfer footings and lapped the short street stairs into their adjacent
+finishes. Diagnostic scene frames stamp the staged camera XYZ.
+`CityStairGroundJoints` passed and its frames were reviewed.
+`LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` passed.
+
 ## 2026-11-17
 
 Rebuilt the hero around a slate canvas jacket, a sculpted tired face and a weighted gait.

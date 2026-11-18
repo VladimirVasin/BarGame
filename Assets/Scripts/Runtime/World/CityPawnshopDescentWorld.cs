@@ -125,8 +125,9 @@ namespace BarPromenade
                     Vector2 from=Vector2.Lerp(a,b,(float)i/count),to=Vector2.Lerp(a,b,(float)(i+1)/count);
                     if(!plan.TrySampleTop(from,out float fy) || !plan.TrySampleTop(to,out float ty) ||
                         !ground.TrySampleTop(from,out float soilFrom) || !ground.TrySampleTop(to,out float soilTo)) continue;
-                    Vector3 highA=Local(new Vector3(from.x,Mathf.Max(fy,soilFrom),from.y));
-                    Vector3 highB=Local(new Vector3(to.x,Mathf.Max(ty,soilTo),to.y));
+                    if (soilFrom >= fy && soilTo >= ty) continue;
+                    Vector3 highA=Local(new Vector3(from.x,fy,from.y));
+                    Vector3 highB=Local(new Vector3(to.x,ty,to.y));
                     Vector3 lowA=Local(new Vector3(from.x,Mathf.Min(fy,soilFrom)-.10f,from.y));
                     Vector3 lowB=Local(new Vector3(to.x,Mathf.Min(ty,soilTo)-.10f,to.y));
                     faces.Add(new[] {highA,lowA,lowB});faces.Add(new[] {highA,lowB,highB});

@@ -19,6 +19,7 @@ namespace BarPromenade
         public IReadOnlyList<Vector3> RouteWorld => route;
         public IReadOnlyList<CityTerracePilotFloor> Floors => floors;
         public IReadOnlyList<CityExteriorStairFlightDescriptor> Flights => flights;
+        internal float FoundationBottom => route[0].y - 1f;
 
         private readonly List<Vector3> route = new();
         private readonly List<Rect> bounds = new();

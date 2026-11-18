@@ -414,11 +414,16 @@ namespace BarPromenade
                 float renderedWidth = hasSignatureStair
                     ? layout.RoadWidth - (SidewalkWidth * 2f)
                     : surfaceWidth;
+                // Keep the asphalt top fixed and carry its exposed stair-side
+                // edge down past the lower landing of the adjacent cut.
+                float renderedDepth = hasSignatureStair
+                    ? Mathf.Abs(segmentEnd.y - segmentStart.y) + RoadSurfaceHeight + .24f
+                    : RoadSurfaceHeight;
                 RuntimeOrientedBox geometry = CreateSurfaceBox(
                     segmentStart + Vector3.up * RoadTop,
                     segmentEnd + Vector3.up * RoadTop,
                     renderedWidth,
-                    RoadSurfaceHeight);
+                    renderedDepth);
                 Vector3 size = edge.IsHorizontal
                     ? new Vector3(
                         Mathf.Abs(delta.x) + surfaceWidth,
