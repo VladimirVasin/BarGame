@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Bake the hero's walking rhythm against both default NPC rigs and shoes."""
+"""Bake the street stride and each default NPC's gait against their rigs and shoes."""
 
 import argparse
 import hashlib
 import importlib.util
 import json
 from dataclasses import replace
-from math import degrees, floor
+from math import degrees, floor, sin, tau
 from pathlib import Path
 import sys
 
@@ -21,9 +21,10 @@ import player_motion_authoring as motion
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "Assets/Resources/City/Residents"
+WOMAN_WALK = "OrdinaryWomanWalk"
 MODELS = (
     ("OrdinaryWorkerWalk", "ArtSource/VillageLife/StationWorker.blend", .065),
-    ("OrdinaryWomanWalk", "ArtSource/City/Residents/OrdinaryWoman.blend", .090),
+    (WOMAN_WALK, "ArtSource/City/Residents/OrdinaryWoman.blend", .090),
 )
 CYCLE_METRES = .82
 FRAME_COUNT = 24
@@ -73,15 +74,33 @@ def bake_walk(base, source, name, sleeve_space):
     # The two stance passes cover one cycle at the normal street pace.
     travel_scale = CYCLE_METRES / (2. * (motion.WALK_FOOT[4][0] - motion.WALK_FOOT[0][0]))
     profile = tuple((travel * travel_scale, lift * .72, roll) for travel, lift, roll in motion.WALK_FOOT)
+    is_woman = name == WOMAN_WALK
+    upper_arm_swing = .85 if is_woman else .90
+    original_hip_lead = tuple(key.lead for key in base.CITIZEN_WALK_CYCLE)
 
     keys = []
     for frame in range(FRAME_COUNT + 1):
         phase = (frame % FRAME_COUNT) / FRAME_COUNT
         pose = motion._stride_pose({}, common.BonePose, phase, False, arm_rest)
+        if is_woman:
+            # Restore the lateral shift and roll from woman_walk_keys at
+            # the support beats before fitting the planted shoes.
+            transfer = sin(tau * phase)
+            lead = motion._cycle(original_hip_lead, phase)
+            pelvis = pose["pelvis"]
+            chest = pose["chest"]
+            pose["pelvis"] = replace(
+                pelvis,
+                rotation_degrees=(*pelvis.rotation_degrees[:2], -2.2 * lead + 1.6 * transfer),
+                armature_location_m=(.012 * transfer, *pelvis.armature_location_m[1:]),
+            )
+            pose["chest"] = replace(
+                chest, rotation_degrees=(*chest.rotation_degrees[:2], chest.rotation_degrees[2] - .65 * transfer)
+            )
         for side, sign in zip(SIDES, (1, -1)):
             upper = "upper_arm" + side
             x, y, z = pose[upper].target_direction
-            pose[upper] = replace(pose[upper], target_direction=(x + sign * sleeve_space, .9 * y, z))
+            pose[upper] = replace(pose[upper], target_direction=(x + sign * sleeve_space, upper_arm_swing * y, z))
         motion._fit_boots(builder, common.BonePose, pose, phase, profile, sole_envelope, name)
         builder._reset_pose()
         builder._apply_pose(pose)
@@ -142,6 +161,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=OUTPUT)
     parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--clip", choices=tuple(name for name, _, _ in MODELS), help="Export only the selected clip.")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
     base = read_authoring_base()
     reports = {}
@@ -151,7 +171,7 @@ def main():
         if args.validate_only:
             if not destination.is_file():
                 raise RuntimeError(f"Missing {destination}")
-        else:
+        elif args.clip is None or args.clip == name:
             common.export_animation_fbx(destination, result)
     report = {"generator": Path(__file__).name, "cycle_seconds": 1., "cycle_metres": CYCLE_METRES,
               "root_motion": False, "clips": reports}

@@ -289,9 +289,6 @@ namespace BarPromenade
                 RefreshInitialApproachRoutes();
             }
 
-            // The hero's head, once per frame: every walker near enough
-            // and facing him turns its head after him, the way his turns
-            // after them.
             Vector3 heroHead = ResolveHeroFocus();
             pedestrianIndex.Rebuild(actors);
             for (int index = 0; index < actors.Count; index++)
@@ -314,7 +311,8 @@ namespace BarPromenade
                         ? null
                         : initialApproachNodeDistances,
                     heroHead,
-                    vehicleTraffic);
+                    vehicleTraffic,
+                    attentionStreet: this);
                 pedestrianIndex.Update(index, actor);
                 RefreshInitialApproachState(index, actor.Position);
             }
@@ -1837,6 +1835,42 @@ namespace BarPromenade
             }
 
             return heroFocus.Resolve();
+        }
+
+        internal CityPedestrianPresentation ResolveAttentionPeer(CityPedestrianPresentation observer,
+            CityPedestrianPresentation held)
+        {
+            Vector3 feet = observer.transform.position;
+            float yaw = observer.transform.eulerAngles.y;
+            if (CanNotice(held, true)) return held;
+
+            CityPedestrianPresentation nearest = null;
+            float bestDistanceSquared = PlayerAttentionRules.NoticeRadius * PlayerAttentionRules.NoticeRadius;
+            int nearby = pedestrianIndex.Query(feet, PlayerAttentionRules.NoticeRadius);
+            for (int index = 0; index < nearby; index++)
+                Consider(actors[pedestrianIndex.GetActorIndex(index)].Presentation);
+            if (AmbientStreet != null && AmbientStreet.ActiveCount > 0)
+                for (int slot = 0; slot < CityAmbientPedestrians.MaximumActive; slot++)
+                    Consider(AmbientStreet.GetWalkerBody(slot));
+            return nearest;
+
+            bool CanNotice(CityPedestrianPresentation peer, bool isCurrent)
+            {
+                return peer != null && peer != observer && peer.isActiveAndEnabled && !peer.IsInBus &&
+                    peer.Registry != null && peer.Registry.HeadAnchor != null &&
+                    Mathf.Abs(peer.transform.position.y - feet.y) < 1.25f &&
+                    PlayerAttentionRules.IsNoticeable(feet, yaw, peer.Registry.HeadAnchor.position, isCurrent);
+            }
+
+            void Consider(CityPedestrianPresentation peer)
+            {
+                if (peer == null || peer == observer) return;
+                float distanceSquared = PlanarSquaredDistance(feet, peer.transform.position);
+                if (distanceSquared > bestDistanceSquared ||
+                    (nearest != null && distanceSquared == bestDistanceSquared) || !CanNotice(peer, false)) return;
+                nearest = peer;
+                bestDistanceSquared = distanceSquared;
+            }
         }
 
         private static bool VerticalCapsulesOverlap(

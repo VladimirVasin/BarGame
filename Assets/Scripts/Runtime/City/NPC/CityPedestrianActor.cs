@@ -117,12 +117,6 @@ namespace BarPromenade
         private Quaternion transferRotation = Quaternion.identity;
         private bool transferPassedWaypoint;
         private int benchNodeIndex = -1;
-        // Whether the hero currently holds this walker's head. The hero's
-        // own notice/release hysteresis decides it, seen from the walker:
-        // a hero on the edge of the cone is kept, not flickered.
-        private readonly NpcAttentionNotice attention =
-            new NpcAttentionNotice();
-
         public bool IsInitialized { get; private set; }
         public bool IsSpawned => presentation != null;
         public bool IsYielding { get; private set; }
@@ -130,9 +124,8 @@ namespace BarPromenade
             CityPedestrianMotionState.Dormant;
         public CityPedestrianPresentation Presentation => presentation;
 
-        /// <summary>Whether the last <see cref="Advance"/> turned this
-        /// walker's head toward the attention candidate it was given.</summary>
-        public bool IsAttending => attention.IsHeld;
+        /// <summary>Whether this walker is attending to the hero.</summary>
+        public bool IsAttending => presentation != null && presentation.IsAttendingToHero;
         public bool IsPersonalSpaceReacting { get; private set; }
         internal bool PersonalSpaceEncounterUsed { get; set; }
         public bool HasPresentation => presentation != null;
@@ -407,7 +400,6 @@ namespace BarPromenade
 
             CityPedestrianPresentation released = presentation;
             presentation = null;
-            attention.Reset();
             if (released != null)
             {
                 released.ClearAttention();
@@ -425,11 +417,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// One frame of this walker. <paramref name="attentionCandidate"/>
-        /// is the one thing on the street the walker may glance at - the
-        /// hero's head, from the director - and the hero's own notice rule,
-        /// run from the walker's feet and facing, decides whether it takes
-        /// the head this frame.
+        /// Moves this walker and resolves the glance from the resulting body
+        /// facing. <paramref name="attentionCandidate"/> is the hero's head.
         /// </summary>
         public void Advance(
             float deltaTime,
@@ -438,7 +427,8 @@ namespace BarPromenade
             IReadOnlyList<float> initialApproachNodeDistances = null,
             Vector3? attentionCandidate = null,
             CityPedestrianVehicleTraffic vehicleTraffic = null,
-            bool holdResidentDestination = false)
+            bool holdResidentDestination = false,
+            CityPedestrianDirector attentionStreet = null)
         {
             if (!IsSpawned)
             {
@@ -455,6 +445,7 @@ namespace BarPromenade
                 blockedTime = 0f;
                 approachTarget = null;
                 approachNodeDistances = null;
+                UpdateAttention();
                 if (safeDeltaTime > 0f) presentation.Advance(safeDeltaTime, false);
                 return;
             }
@@ -467,8 +458,7 @@ namespace BarPromenade
                 blockedTime = 0f;
                 approachTarget = null;
                 approachNodeDistances = null;
-                presentation.SetAttentionFocus(attention.Resolve(
-                    transform.position, transform.eulerAngles.y, attentionCandidate));
+                UpdateAttention();
                 if (safeDeltaTime > 0f) presentation.AdvanceTravelled(safeDeltaTime, vehicleMoving, LastDisplacement);
                 return;
             }
@@ -479,8 +469,7 @@ namespace BarPromenade
                 blockedTime = 0f;
                 approachTarget = null;
                 approachNodeDistances = null;
-                presentation.SetAttentionFocus(attention.Resolve(
-                    transform.position, transform.eulerAngles.y, attentionCandidate));
+                UpdateAttention();
                 presentation.Advance(safeDeltaTime, false, true);
                 return;
             }
@@ -550,15 +539,14 @@ namespace BarPromenade
 
             approachTarget = null;
             approachNodeDistances = null;
-            presentation.SetAttentionFocus(
-                attention.Resolve(
-                    transform.position,
-                    transform.eulerAngles.y,
-                    attentionCandidate));
+            UpdateAttention();
             presentation.AdvanceTravelled(
                 safeDeltaTime,
                 moving || ((roaming || transferring) && !IsYielding && safeDeltaTime <= 0f),
                 LastDisplacement);
+
+            void UpdateAttention() => presentation.UpdateStreetAttention(attentionCandidate,
+                IsAttachedToVehicle || holdResidentDestination ? null : attentionStreet);
         }
 
         /// <summary>
@@ -1642,7 +1630,6 @@ namespace BarPromenade
             PersonalSpaceEncounterUsed = false;
             MotionState = CityPedestrianMotionState.Dormant;
             IsYielding = false;
-            attention.Reset();
             LastDisplacement = Vector3.zero;
             CrosswalkDecisionCount = 0;
             CrosswalksTaken = 0;

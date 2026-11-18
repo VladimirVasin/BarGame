@@ -82,18 +82,17 @@ namespace BarPromenade
             new Player3DProceduralLocomotionLayer();
         private bool legLayerBound;
         private bool walkingThroughBusDoor;
-        // The Silent Hill head, mirrored: the same additive neck-and-head
-        // turn the hero makes toward a passer-by, made by the passer-by
-        // toward him. The layer is shared with every staged NPC that
-        // looks back at the hero (the cemetery watchman first).
         private readonly NpcAttentionHeadLayer attention =
             new NpcAttentionHeadLayer();
+        private readonly NpcAttentionNotice heroNotice = new NpcAttentionNotice();
+        private CityPedestrianPresentation attentionPeer;
 
         public bool IsInitialized { get; private set; }
         public bool IsMoving { get; private set; }
         public bool IsSeated => seatAnchor != null;
         internal float SeatedPelvisForward => seatedPose != null && seatedPose.IsBound ? seatedPose.PelvisForward : 0f;
         public bool IsStandingInBus => standing != null && standing.IsBound;
+        internal bool IsInBus => walkingThroughBusDoor || IsSeated || IsStandingInBus;
         public float WalkWeight { get; private set; }
         public float AnimationSpeed => animationSpeed;
         internal float WalkCycle => walkPlayable.IsValid() && activeWalkClip.length > 0f
@@ -117,6 +116,7 @@ namespace BarPromenade
 
         /// <summary>How far the glance is blended in, 0..1.</summary>
         public float AttentionWeight => attention.Weight;
+        internal bool IsAttendingToHero => heroNotice.IsHeld;
 
         /// <summary>Whether this rig has a head bone the glance can turn.</summary>
         public bool HasAttentionHead => attention.HasHead;
@@ -198,16 +198,19 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Where this walker's head should look, in world space, or
-        /// <c>null</c> for nothing. Set before each <see cref="Advance(float,
-        /// bool, bool)"/> by whoever decides what the walker notices - the
-        /// actor, for the hero - and applied after the graph has written the
-        /// bones. The presentation owns all smoothing and limits, exactly as
-        /// the hero's does.
+        /// Supplies a world-space focus for after the graph has written the bones.
         /// </summary>
         public void SetAttentionFocus(Vector3? focus)
         {
             attention.SetFocus(focus);
+        }
+
+        internal void UpdateStreetAttention(Vector3? heroFocus, CityPedestrianDirector street)
+        {
+            Vector3? focus = heroNotice.Resolve(transform.position, transform.eulerAngles.y, heroFocus);
+            attentionPeer = focus.HasValue ? null : street?.ResolveAttentionPeer(this, attentionPeer);
+            if (attentionPeer != null) focus = attentionPeer.Registry.HeadAnchor.position;
+            SetAttentionFocus(focus);
         }
 
         /// <summary>
@@ -218,6 +221,8 @@ namespace BarPromenade
         /// </summary>
         public void ClearAttention()
         {
+            heroNotice.Reset();
+            attentionPeer = null;
             attention.Restore();
             attention.Clear();
         }
@@ -561,6 +566,8 @@ namespace BarPromenade
             archetypeGroundTrimResolved = false;
             legLayer.Dispose();
             legLayerBound = false;
+            heroNotice.Reset();
+            attentionPeer = null;
             attention.Unbind();
             registry = null;
             Advanced = null;

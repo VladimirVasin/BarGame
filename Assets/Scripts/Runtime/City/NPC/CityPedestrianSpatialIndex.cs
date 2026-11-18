@@ -5,7 +5,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Reused planar broad phase for street personal space. Entries are updated
+    /// Reused planar broad phase for street personal space and attention. Entries are updated
     /// after each walker moves, so later walkers see the same positions as the
     /// old ordered peer scan, including on a long frame. Candidate order stays
     /// tied to the actor slot rather than dictionary or cell iteration order.
@@ -98,13 +98,13 @@ namespace BarPromenade
 
         /// <summary>Returns every present slot within the planar radius,
         /// ordered by stable actor index. Results remain valid until the next
-        /// query; the exact facing/avoidance test belongs to the director.</summary>
+        /// query. The exact facing and avoidance tests belong to the director.</summary>
         public int Query(Vector3 position, float radius)
         {
-            // Avoidance is local. This also bounds the lookup to at most nine
-            // cells even if a caller accidentally supplies a world radius.
+            // The notice radius is the largest local query. A held glance
+            // checks its target directly against the wider release cone.
             if (!IsFinite(position.x) || !IsFinite(position.z) ||
-                !IsFinite(radius) || radius < 0f || radius > CellSize)
+                !IsFinite(radius) || radius < 0f || radius > PlayerAttentionRules.NoticeRadius)
                 throw new ArgumentOutOfRangeException(nameof(radius));
 
             candidateCount = 0;

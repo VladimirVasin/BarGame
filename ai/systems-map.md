@@ -135,7 +135,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Central Park surfaces | The divided park uses shared gravel, paths and bridge geometry from its pure surface plan. | `CityParkSurfaceAppearance`, `CityWorldBuilder` | Current |
 | Pedestrian personal space | Above alcohol `60`: guarding palm; above `80`: close shove. | `CityPedestrianPersonalSpace{Rules,Controller}`, `PlayerMotor` | Current |
 | Pedestrian street insults | Insult responses need the authored proximity/facing gates; the twenty-line bag deals once a round, surviving reloads. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
-| City/Home pedestrians | 192 assigned shifts and commutes. City ≤36 residents + ≤12 ambient. Home 5/2. | `CityResidentJourneyDirector`, `CityPedestrianDirector`, `CityAmbientPedestrians` | Current |
+| City/Home pedestrians | 192 assigned commutes. City ≤36 residents + ≤12 ambient, with hero and peer glances. Home 5/2. | `CityResidentJourneyDirector`, `CityPedestrianDirector`, `CityAmbientPedestrians` | Current |
 | NPC Human V2 anatomy, appearance and visibility | Shared rigs; joint fields/volume and shaped hands/clothes retain UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `CharacterJointDeformation` | Current |
 | City district buses | Two/ring,shared transfers. Gap:no Home service/live map buses. | `City{District,Hillside}BusPlanner`, `CityBus{Director,Actor,Factory}` | Partial |
 | Midibus | Sedan lights, sliding leaves, fixed NPCs. | `CityBus{Presentation,DriverRig}` | Current |

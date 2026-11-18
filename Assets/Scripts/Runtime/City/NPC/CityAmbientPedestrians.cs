@@ -114,16 +114,24 @@ namespace BarPromenade
             return encounter != 0;
         }
 
+        internal CityPedestrianPresentation GetWalkerBody(int index)
+        {
+            Walker walker = walkers[index];
+            return walker.Encounter != 0 ? looks[walker.Look].Body : null;
+        }
+
         private int Target() => Mathf.Min(MaximumActive,
             CityResidentLifeRules.TargetAmbientPopulation(GameSessionState.GameTimeOfDayMinutes));
 
-        private void LateUpdate()
+        private void LateUpdate() => Advance(Time.deltaTime);
+
+        internal void Advance(float delta)
         {
-            float delta = Time.deltaTime;
             if (city == null || !city.IsInitialized || city.IsDormant || delta <= 0f) return;
             using var marker = TickMarker.Auto();
             int target = Target();
             int contactCount = CollectContacts();
+            Vector3 heroHead = city.Pedestrians.ResolveHeroFocus();
             crowdCheckCountdown -= delta;
             bool checkCrowd = crowdCheckCountdown <= 0f;
             if (checkCrowd) crowdCheckCountdown = .7f;
@@ -146,7 +154,7 @@ namespace BarPromenade
                     contacts[index] = default;
                     continue;
                 }
-                AdvanceWalker(index, ref walker, body, Mathf.Min(delta, .1f), distanceSquared, contactCount);
+                AdvanceWalker(index, ref walker, body, Mathf.Min(delta, .1f), distanceSquared, contactCount, heroHead);
             }
 
             spawnCountdown -= delta;
@@ -355,7 +363,7 @@ namespace BarPromenade
         }
 
         private void AdvanceWalker(int index, ref Walker walker, CityPedestrianPresentation body,
-            float delta, float distanceSquared, int contactCount)
+            float delta, float distanceSquared, int contactCount, Vector3 heroHead)
         {
             int link = walker.Walk.Link;
             Vector3 previous = body.transform.position;
@@ -371,6 +379,7 @@ namespace BarPromenade
                 Quaternion.LookRotation(facing), 210f * delta));
             body.MinimumEvaluationInterval = city.Visibility.CanChangeAmbientBodyAt(position) ? 1f / 8f :
                 distanceSquared < 15f * 15f ? 0f : 1f / 15f;
+            body.UpdateStreetAttention(heroHead, city.Pedestrians);
             body.AdvanceTravelled(delta, moving, position - previous);
 
             if (walker.Walk.Stopped < 1.5f || !GameLog.IsVerbose || walker.Age < walker.NextBlockedLog) return;

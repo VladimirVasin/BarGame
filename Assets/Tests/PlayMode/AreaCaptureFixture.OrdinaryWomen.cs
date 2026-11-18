@@ -26,7 +26,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator OrdinaryWomenLooseHair() => CaptureOrdinaryWomenStreet(OrdinaryWomenReview.LooseHair);
 
         [UnityTest]
-        [Explicit("Review the female gait and hip clearance on the live street animation graph.")]
+        [Explicit("Review the female gait, garment clearance and pedestrian attention on the live street.")]
         [PrebuildSetup(typeof(DefaultNpcWomanAssetsSetup))]
         [Timeout(240000)]
         public IEnumerator OrdinaryWomenWalk() => CaptureOrdinaryWomenStreet(OrdinaryWomenReview.Walk);
@@ -34,6 +34,7 @@ namespace BarPromenade.Tests.PlayMode
         private IEnumerator CaptureOrdinaryWomenStreet(OrdinaryWomenReview review)
         {
             GameSessionState.BeginNewGame();
+            if (review == OrdinaryWomenReview.Walk) GameSessionState.PrepareHomeReturn();
             Assert.That(GameSessionState.TryStartGameTimeAt((review == OrdinaryWomenReview.Walk ? 12 : 17) * 60), Is.True);
             var load = SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
             Assert.That(load, Is.Not.Null);
@@ -63,7 +64,8 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     if (review == OrdinaryWomenReview.Walk)
                     {
-                        CaptureOrdinaryWomenWalk(city, camera);
+                        yield return CaptureOrdinaryWomenWalk(city, camera);
+                        CheckStreetAttention(city);
                         yield break;
                     }
                     PlaceResidentLifeStreet(city);
@@ -128,7 +130,7 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static void CaptureOrdinaryWomenWalk(CityGameRoot city, Camera camera)
+        private static IEnumerator CaptureOrdinaryWomenWalk(CityGameRoot city, Camera camera)
         {
             CityPedestrianPlan plan = city.PedestrianPlan;
             Vector3 hero = city.Player.GameObject.transform.position;
@@ -149,10 +151,10 @@ namespace BarPromenade.Tests.PlayMode
             var registry = CityPedestrianDefaultNpcBody.Create(city.transform, resident, null);
             var streetBody = registry.gameObject.AddComponent<CityPedestrianPresentation>();
             streetBody.Initialize(registry);
-            Check(streetBody, 0f, "resident");
-            Check(CityPedestrianFactory.CreateAmbientPresentation(city.transform, ambient.CharacterId), 1f, "ambient");
+            yield return Check(streetBody, 0f, "resident");
+            yield return Check(CityPedestrianFactory.CreateAmbientPresentation(city.transform, ambient.CharacterId), 1f, "ambient");
 
-            void Check(CityPedestrianPresentation body, float build, string label)
+            IEnumerator Check(CityPedestrianPresentation body, float build, string label)
             {
                 try
                 {
@@ -165,6 +167,8 @@ namespace BarPromenade.Tests.PlayMode
                     var shape = model.GetComponent<CityPedestrianDefaultNpcBody>().Character.GetComponent<DefaultNpcBodyShape>();
                     shape.Apply(shape.HeightCm, build);
                     var trousers = model.Renderers.Single(renderer => renderer.name.StartsWith("CLO_Trousers_", StringComparison.Ordinal));
+                    Transform leftHip = NpcAttentionHeadLayer.FindBone(model.Animator.transform, "thigh.L");
+                    Transform rightHip = NpcAttentionHeadLayer.FindBone(model.Animator.transform, "thigh.R");
                     Renderer[] arms = model.Renderers.Where(renderer => renderer.name.StartsWith("GEO_Hand", StringComparison.Ordinal) ||
                         renderer.name.StartsWith("CLO_Glove", StringComparison.Ordinal) || renderer.name.Contains("Sleeve.") ||
                         renderer.name.Contains("Cuff.")).ToArray();
@@ -178,9 +182,15 @@ namespace BarPromenade.Tests.PlayMode
                         body.ConfigureCycle(1f, phase);
                         CheckClearance("walk " + phase);
                     }
-                    float first = Frame(.25f, "left");
-                    float second = Frame(.75f, "right");
-                    Assert.That(Mathf.Abs(first - second), Is.InRange(.016f, .034f), "Hips transfer weight with the two steps.");
+                    body.ConfigureCycle(1f, .25f);
+                    yield return null;
+                    var first = Frame("left");
+                    body.ConfigureCycle(1f, .75f);
+                    yield return null;
+                    var second = Frame("right");
+                    Assert.That(Mathf.Abs(first.Shift - second.Shift), Is.InRange(.016f, .034f), "Hips transfer weight with the two steps.");
+                    Assert.That(first.Roll * second.Roll, Is.LessThan(0f), "The hips tip toward alternating support.");
+                    Assert.That(Mathf.Abs(first.Roll - second.Roll), Is.InRange(3f, 6f));
 
                     body.SetMoving(false);
                     body.ConfigureCycle(1f, .28f);
@@ -199,18 +209,93 @@ namespace BarPromenade.Tests.PlayMode
                                 $"{label} {phase}, {arm.name} passes through {trousers.name}");
                     }
 
-                    float Frame(float phase, string side)
+                    (float Shift, float Roll) Frame(string side)
                     {
-                        body.ConfigureCycle(1f, phase);
                         Vector3 target = feet + Vector3.up * (shape.HeightCm * .005f);
                         Vector3 eye = feet + facing * new Vector3(.65f, 1.10f, 2.30f);
                         camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye));
                         camera.fieldOfView = 44f;
                         CaptureCurrentCamera(camera, "OrdinaryWomenWalk", label + "-" + side);
-                        return Vector3.Dot(model.PelvisAnchor.position - feet, body.transform.right);
+                        float shift = Vector3.Dot(model.PelvisAnchor.position - feet, body.transform.right);
+                        Vector3 acrossHips = rightHip.position - leftHip.position;
+                        float roll = Mathf.Atan2(acrossHips.y,
+                            Vector3.Dot(acrossHips, body.transform.right)) * Mathf.Rad2Deg;
+                        return (shift, roll);
                     }
                 }
                 finally { Object.DestroyImmediate(body.gameObject); }
+            }
+        }
+
+        private static void CheckStreetAttention(CityGameRoot city)
+        {
+            CityPedestrianDirector street = city.Pedestrians;
+            CityAmbientPedestrians ambient = city.AmbientPedestrians;
+            Transform hero = city.Player.GameObject.transform;
+            Vector3 heroStart = hero.position;
+            CityPedestrianPresentation observer = Enumerable.Range(0, CityAmbientPedestrians.MaximumActive)
+                .Select(ambient.GetWalkerBody).FirstOrDefault(body => body != null);
+            Assert.That(observer, Is.Not.Null, "Home arrival warms ambient walkers.");
+            CityPedestrianActor resident = street.Actors.First(actor => !actor.IsSpawned);
+            CityPedestrianPresentation peer = null;
+            Animator animator = observer.Registry.Animator;
+            AnimatorCullingMode culling = animator.cullingMode;
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            try
+            {
+                observer.ClearAttention();
+                for (int tick = 0; tick < 18; tick++)
+                {
+                    PlaceHero(1.65f, 2.1f);
+                    ambient.Advance(.025f);
+                }
+                Assert.That(observer.AttentionFocus, Is.EqualTo(street.ResolveHeroFocus()));
+                Assert.That(FaceYaw(), Is.GreaterThan(18f), "The ambient walker's face follows the hero on its right.");
+
+                PlaceHero(0f, -4f);
+                Vector3 peerFeet = observer.transform.TransformPoint(-1.05f, 0f, 1.3f);
+                CityPedestrianPlan plan = city.PedestrianPlan;
+                CityPedestrianLink lane = plan.Links.Where(link => link.Kind == CityPedestrianLinkKind.Sidewalk)
+                    .OrderBy(link => (plan.Nodes[link.FirstNodeIndex].Position - peerFeet).sqrMagnitude).First();
+                var anchor = new CityPedestrianSpawnAnchor("attention-capture", peerFeet, lane.FirstNodeIndex, lane.SecondNodeIndex);
+                var registry = CityPedestrianDefaultNpcBody.Create(city.transform, DefaultNpcPopulation.PedestrianId(0), null);
+                peer = registry.gameObject.AddComponent<CityPedestrianPresentation>();
+                peer.Initialize(registry);
+                resident.PrepareSpawn(plan, anchor, lane.SecondNodeIndex, CityResidentWorld.WalkingSpeed, 1f, 0f, 0, 1u);
+                resident.BindPresentation(peer);
+                Vector3 towardObserver = observer.transform.position - peerFeet;
+                resident.transform.rotation = Quaternion.AngleAxis(-30f, Vector3.up) * Quaternion.LookRotation(towardObserver);
+                Physics.SyncTransforms();
+                street.Advance(.001f);
+                Assert.That(peer.AttentionFocus, Is.EqualTo(observer.Registry.HeadAnchor.position),
+                    "A scheduled resident notices the ambient walker.");
+                Assert.That(resident.IsAttending, Is.False, "A peer glance does not trigger hero reactions.");
+
+                for (int tick = 0; tick < 22; tick++) ambient.Advance(.025f);
+                Assert.That(observer.AttentionFocus, Is.EqualTo(registry.HeadAnchor.position));
+                Assert.That(FaceYaw(), Is.LessThan(-12f), "The ambient walker turns left toward the resident.");
+            }
+            finally
+            {
+                animator.cullingMode = culling;
+                if (peer != null)
+                {
+                    if (resident.Presentation == peer) resident.ReleasePresentation(city.transform);
+                    Object.DestroyImmediate(peer.gameObject);
+                }
+                city.Player.Motor.Teleport(heroStart);
+                Physics.SyncTransforms();
+            }
+
+            void PlaceHero(float side, float forward) => city.Player.Motor.Teleport(
+                observer.transform.TransformPoint(side, PlayerFactory.GroundedRootOffset, forward));
+
+            float FaceYaw()
+            {
+                Transform leftEye = NpcAttentionHeadLayer.FindBone(animator.transform, "face.eye.L");
+                Transform rightEye = NpcAttentionHeadLayer.FindBone(animator.transform, "face.eye.R");
+                Vector3 face = (leftEye.position + rightEye.position) * .5f - observer.Registry.HeadAnchor.position;
+                return Vector3.SignedAngle(observer.transform.forward, Vector3.ProjectOnPlane(face, Vector3.up), Vector3.up);
             }
         }
 

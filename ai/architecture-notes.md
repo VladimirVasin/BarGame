@@ -69,7 +69,8 @@
   Cannery rest rig/body, distinct faces/clothes and long loose hair, ponytail, braid.
   Loose hair uses one skinned surface with continuous strand UVs from crown to ends.
   `155–178 cm`, shared shape/coverage/allocator, reserved male looks.
-  Own clips with hip clearance and weight transfer. Measured bench/bus/rail contacts.
+  Own walking clip with hip lead and shared sole roll. Measured bench/bus/rail contacts.
+  Street walkers hold gaze on the hero or a nearby resident or ambient walker.
   Stable voice IDs, fair/bar gates. Lit/Fog/SSAO, matte, scene post. Story §16.10/17, art §15/16.
 
 - **Accepted 2026-11-11,user — world joints:** art §4, City first.

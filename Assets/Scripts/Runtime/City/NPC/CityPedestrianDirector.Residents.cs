@@ -152,7 +152,7 @@ namespace BarPromenade
                 bool holdsKioskPosition = visitingKiosk && actor.IsAtResidentDestination;
                 if (!holdsKioskPosition) SetEncounterMovement(actor, i);
                 actor.Advance(deltaTime, attentionCandidate: heroHead, vehicleTraffic: vehicleTraffic,
-                    holdResidentDestination: holdsKioskPosition);
+                    holdResidentDestination: holdsKioskPosition, attentionStreet: this);
                 pedestrianIndex.Update(i, actor);
                 squaredDistance = PlanarSquaredDistance(actor.Position, player.position);
                 // Arrival never makes somebody vanish within view. Distant

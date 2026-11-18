@@ -786,8 +786,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Public circuits turn at the sidewalk. The hero's
   house is private; the pavement in front stays connected. Ordinary
   movement keeps its `.82 m/s` pace; distant idle/walk sampling is bounded while
-  time, collision and immediate interactions stay live. A spatial index limits
-  peer-avoidance queries. Oncoming walkers use separate shoulders on the hillside stairs. In single file
+  time, collision and input stay live. A spatial index bounds peer avoidance and glance
+  selection. Street walkers look at the hero or a nearby peer. Oncoming walkers use shoulders on hillside stairs. In single file
   a walker uses a landing then resumes. At corners guests skirt parked yielders; bounded curved-lane probes bypass props, retaining goals. Bus/rest keeps identity.
   `CityPedestrianVehicleTraffic` shares buses, Ferryman, truck and ambient sedans.
   Walkers yield to safe refuges, wait for tails/followers and resume their route;
@@ -1208,7 +1208,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Hero body,160–185cm;4faces/3hair colors/21skinned items.
   `ordinary-woman-v1`:48 street IDs,155–178cm,4faces/3styles/3colors.
   Separate clothing atlas, shared shapes/seat/hand contacts/coverage.
-  Walk has hip clearance and weight transfer.
+  Walk leads from the hips with shared sole roll and sleeve clearance.
   BodyNpc torso metadata retains triangle-corner multiplicity after FBX welding;
   imported frames keep the strict affine check.
   Hero/NPC hands:+20%,slim,fixed wrists;`NpcHandPose`:bare/gloved grip.

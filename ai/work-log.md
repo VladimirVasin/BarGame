@@ -26,10 +26,12 @@ The torso reacts first during pace changes while the arms finish their swing.
 `AuthoredRun_PreservesFlightWithoutFloorPenetration` checks both support knees.
 Stride and transition poses reviewed.
 
-Fitted the hero's stride to both default NPC rigs and shoe soles. Street cycles
-consume achieved travel at the assigned stature, including through evaluation
-throttling and stops. `build-default-npc-walks`,
-`DefaultWalkers_MatchTravelAndExtendOverEachSupportBoot`. Side poses reviewed.
+Fitted the hero's stride to both default NPC rigs and shoe soles, with the
+woman's original hip transfer and chest counter-roll. Cycles consume achieved
+travel at the assigned stature through evaluation throttling and stops. Both
+street populations turn to the hero and nearby walkers using the same glance.
+`build-default-npc-walks`, `DefaultWalkers_MatchTravelAndExtendOverEachSupportBoot`,
+`OrdinaryWomenWalk`. Side poses reviewed.
 
 Detailed both default bodies and complete wardrobes. Shared UV0 maps let
 leather, wool and skin respond to light on the existing palette. Restored the

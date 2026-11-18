@@ -12,9 +12,9 @@
       "source_sha256": "34509c40095fd89b7ae2dfa119766227454a9c1d720bb04beb179174cf7dfc87"
     },
     "OrdinaryWomanWalk": {
-      "minimum_sole_m": -0.00133,
-      "maximum_lower_sole_m": 0.00079,
-      "maximum_midstance_knee_flex_degrees": 25.03,
+      "minimum_sole_m": -0.0014,
+      "maximum_lower_sole_m": 0.00071,
+      "maximum_midstance_knee_flex_degrees": 22.18,
       "source": "ArtSource/City/Residents/OrdinaryWoman.blend",
       "source_sha256": "aab3a95178b5dc810ee8f02b8ba3e26124a41622f9cb79d5d8a0ea9c808dd3fc"
     }
