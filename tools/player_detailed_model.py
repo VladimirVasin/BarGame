@@ -10,6 +10,7 @@ import math
 import bpy
 import character_joint_surfaces
 from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 import player_hand_frames
 import player_hand_grip
 import player_boots
@@ -116,26 +117,95 @@ def _solid_outline(points, depth):
     return vertices, faces
 
 
-def _panel(builder, api, name, x, y, z, width, height, depth, material="Jacket", bone="chest", side="Center"):
-    cut = min(width, height) * .13
-    points = ((x-width/2+cut,y,z-height/2), (x+width/2-cut,y,z-height/2),
-              (x+width/2,y,z-height/2+cut), (x+width/2,y,z+height/2-cut),
-              (x+width/2-cut,y,z+height/2), (x-width/2+cut,y,z+height/2),
-              (x-width/2,y,z+height/2-cut), (x-width/2,y,z-height/2+cut))
-    # Each edge follows the actual curved shell, including the outer hip edge.
-    # Flat tangent boxes stood centimetres clear of those edges.
-    def attach(point):
-        px,_,pz=point
-        a,b=next((a,b) for a,b in zip(JACKET_PROFILES,JACKET_PROFILES[1:]) if a[0]<=pz<=b[0])
-        t=(pz-a[0])/(b[0]-a[0]); rx=a[1]+(b[1]-a[1])*t; ry=a[2]+(b[2]-a[2])*t; cy=a[3]+(b[3]-a[3])*t
-        surface=_jacket_y(px,pz,rx,ry,cy,False)
-        offset=.008 if "Pocket" in name else .013
-        return builder.v(px,surface-offset,pz)
-    obj = builder.add_part(name, _solid_outline([attach(p) for p in points], builder.d(depth)),
-                           material, "clothing", bone, "Body", "clothing", side)
+def _closed_sections(sections):
+    sides = len(sections[0])
+    vertices = [point for section in sections for point in section]
+    faces = [tuple(reversed(range(sides)))]
+    faces.extend((a+j, a+(j+1)%sides, a+sides+(j+1)%sides, a+sides+j)
+                 for a in range(0, len(vertices)-sides, sides) for j in range(sides))
+    faces.append(tuple(range(len(vertices)-sides, len(vertices))))
+    volume = sum(vertices[f[0]].dot(vertices[f[i]].cross(vertices[f[i+1]])) / 6
+                 for f in faces for i in range(1, len(f)-1))
+    return vertices, faces if volume > 0 else [tuple(reversed(f)) for f in faces]
+
+
+def _jacket_part(builder, name, geometry, material):
+    obj = builder.add_part(name, geometry, material, "clothing", "chest", "Body", "clothing")
     obj["bp_wardrobe_slot"] = "jacket"
-    builder.skin_torso(obj); obj["bp_torso_weights"]=True
+    builder.skin_torso(obj)
+    obj["bp_torso_weights"] = True
     return obj
+
+
+def _m65_details(builder, shell):
+    shell.data.calc_loop_triangles()
+    surface = BVHTree.FromPolygons([v.co + shell.location for v in shell.data.vertices],
+                                  [tuple(t.vertices) for t in shell.data.loop_triangles], all_triangles=True)
+
+    def project(start, direction):
+        point, _, _, _ = surface.ray_cast(builder.v(*start), Vector(direction))
+        if point is None:
+            raise ValueError(f"M-65 detail is outside the coat shell: {start}")
+        return point
+
+    for side, sign in (("L", 1), ("R", -1)):
+        # Bellows are deeper low on the coat. Caps taper in toward the face;
+        # backing rings are buried in the actual triangulated cloth shell.
+        for label, x, z, w, h, depth in (("Chest", .109, 1.255, .097, .100, .014),
+                                         ("Hip", .111, .955, .112, .129, .019)):
+            x *= sign
+            outline = [(-w/2+.009, -h/2), (w/2-.009, -h/2), (w/2, -h/2+.009)]
+            if label == "Chest":
+                outline += [(w/2, h/2-.006), (w/2-.006, h/2), (-w/2+.006, h/2), (-w/2, h/2-.006)]
+            else:
+                outline += [(w/2, h/2), (-w/2, h/2)]
+            outline.append((-w/2, -h/2+.009))
+            slope = sign * (.045 if label == "Chest" else -.030)
+
+            def front(dx, dz, lift):
+                point = project((x+dx, -.32, z+dz+dx*slope), (0, 1, 0))
+                point.y -= builder.d(lift)
+                return point
+
+            pocket = _closed_sections([
+                [front(dx*inset, dz*inset, lift + dz*.028) for dx, dz in outline]
+                for inset, lift in ((1., -.0025), (1., depth-.005), (.91, depth))
+            ])
+            _jacket_part(builder, f"CLO_JacketPocket{label}.{side}", pocket, "Jacket")
+
+            # The turned flap leaves the shell at its seam, overlaps the
+            # pocket lip and wraps the two lower corners rather than floating.
+            half = w/2+.005
+            lower, upper = h/2-.035, h/2+.010
+            flap = ((-half+.008, lower), (half-.008, lower), (half, lower+.008),
+                    (half-.003, upper), (-half+.003, upper), (-half, lower+.008))
+            flap_geometry = _closed_sections([
+                [front(dx, dz, (depth+.005)*(upper-dz)/(upper-lower) + lift) for dx, dz in flap]
+                for lift in (-.0035, .0015)
+            ])
+            _jacket_part(builder, f"CLO_JacketFlap{label}.{side}", flap_geometry, "JacketEdge")
+
+    # One open wrap with a turned top edge, thick enough to hold the folded
+    # hood. It is continuous across the back and stands clear of the throat.
+    collar_sections = []
+    for j in range(9):
+        angle = -math.pi/2+.44 + (math.tau-.88)*j/8
+        height = 1.527 + .007*math.sin(angle)
+        collar_sections.append([builder.v(rx*math.cos(angle), -.014+ry*math.sin(angle), z)
+            for rx, ry, z in ((.088, .073, 1.472), (.081, .066, height),
+                              (.070, .057, height-.002), (.079, .064, 1.470))])
+    vertices, faces = _closed_sections(collar_sections)
+    # Same pinned yoke field and facing material: no additional draw per tab.
+    for sign in (1, -1):
+        tab_points = ((.098, -.021), (.101, .004), (.169, .009), (.169, -.025))
+        tab = _closed_sections([[project((x*sign, y, 1.56), (0, 0, -1)) + builder.v(0, 0, lift)
+                                 for x, y in tab_points] for lift in (-.002, .004)])
+        faces += [tuple(i+len(vertices) for i in face) for face in tab[1]]
+        vertices += tab[0]
+    collar = _jacket_part(builder, "CLO_JacketCollar", (vertices, faces), "JacketEdge")
+    # Smooth the outer wrap between stations; retain the edge at the facing.
+    for index in range(1, 33, 4):
+        collar.data.polygons[index].use_smooth = True
 
 
 def _jacket_y(x,z,rx,ry,cy,back):
@@ -200,25 +270,16 @@ def _open_jacket(builder, api, obj):
     obj["bp_chest_half_width_m"] = JACKET_PROFILES[5][1]
     obj["bp_yoke_half_width_m"] = JACKET_PROFILES[6][1]
     obj["bp_yoke_rise_m"] = JACKET_PROFILES[7][0]-JACKET_PROFILES[6][0]
-    # Constructed pockets and flaps: restrained bellows, not armoured plates.
+    _m65_details(builder, obj)
     for side,sign in (("L",1),("R",-1)):
-        for label,z,w,h in (("Chest",1.275,.094,.103),("Hip",.956,.109,.139)):
-            x=sign*(.103 if label=="Chest" else .099)
-            y=-.120 if label=="Chest" else -.102
-            _panel(builder,api,f"CLO_JacketPocket{label}.{side}",x,y,z,w,h,.008)
-            _panel(builder,api,f"CLO_JacketFlap{label}.{side}",x,y-.005,z+h*.40,w+.006,.032,.009,"JacketEdge")
-        # A low folded standing collar, open toward the throat.
-        points=[(sign*x,y,z) for x,y,z in ((.040,-.091,1.467),(.095,-.076,1.456),
-                (.137,-.038,1.466),(.097,.006,1.477),(.063,-.017,1.491))]
-        collar=builder.add_part(f"CLO_JacketCollar.{side}", _solid_outline([builder.v(*p) for p in points],builder.d(.006)),
-                               "Jacket", "clothing", "chest", "Body", "clothing")
-        collar["bp_wardrobe_slot"]="jacket"
-        # Physical placket bound along the same torso field as the open body.
+        # Asymmetric open storm flap and zipper facing; both stay in the
+        # same deforming hem field as the shell and lower pockets.
         points=[]
         for z,rx,ry,cy in profiles:
             gap=.24+.20*max(0.,(z-1.36)/.117)
             x=rx*math.sin(gap)
-            for dx in (0,.008):
+            width = (.026 if side == "R" else .014) * (1.-.4*max(0., (z-1.360)/.117))
+            for dx in (-.002, width):
                 px=x+dx
                 points.append(builder.v(sign*px,_jacket_y(px,z,rx,ry,cy,False)-.003,z))
         count=len(points); points+= [p+builder.v(0,.004,0) for p in points]
@@ -230,9 +291,8 @@ def _open_jacket(builder, api, obj):
         faces.extend(((0,count,count+1,1),(count-2,count-1,2*count-1,2*count-2)))
         volume=sum(points[f[0]].dot(points[f[i]].cross(points[f[i+1]]))/6 for f in faces for i in range(1,len(f)-1))
         if volume<0: faces=[tuple(reversed(f)) for f in faces]
-        placket=builder.add_part(f"CLO_JacketPlacket.{side}",(points,faces),
-                                "JacketDark","clothing","chest","Body","clothing")
-        builder.skin_torso(placket); placket["bp_wardrobe_slot"]="jacket"; placket["bp_torso_weights"]=True
+        _jacket_part(builder, f"CLO_JacketPlacket.{side}", (points, faces),
+                     "JacketDark" if side == "L" else "JacketEdge")
 
 
 def _hands(builder, api, common):
@@ -290,8 +350,7 @@ def _hands(builder, api, common):
 
 
 def _hair(builder, api, common):
-    # Remove the four blunt top spikes and replace their separate silhouette
-    # with two swept curtains around an open, slightly uneven centre part.
+    # Reuse the original scalp rig with a short side part and tucked temples.
     retired=[p for p in builder.result.parts if p.obj.name.startswith("GEO_HairTuft")]
     for p in retired:
         builder.result.parts.remove(p); mesh=p.obj.data
@@ -310,15 +369,13 @@ def _hair(builder, api, common):
         vertex.co=p-cap.location
     cap.data.update()
     for side,sign in (("L",1.),("R",-1.)):
-        # Two full, swept bangs descend over the forehead. Their rounded inner
-        # edges cover the scalp cap's coarse zigzag while leaving the brows and
-        # eyes readable through the centre part and joining the temple hair.
-        path=((sign*.010,-.083,1.731),(sign*.020,-.111,1.707),
-              (sign*.032,-.127,1.685),(sign*.048,-.128,1.663),
-              (sign*.071,-.110,1.642),(sign*.095,-.062,1.606))
-        widths=(.014,.026,.031,.030,.022,.005)
-        depths=(.010,.013,.015,.015,.013,.004)
-        outer_overlap=(0.,.020,.026,.017,.006,0.)
+        path = ((-.035,-.064,1.735),(-.011,-.094,1.724),(.023,-.110,1.711),
+                (.052,-.109,1.695),(.074,-.092,1.678),(.088,-.052,1.654)) if side == "L" else (
+                (-.039,-.060,1.729),(-.053,-.083,1.717),(-.066,-.094,1.700),
+                (-.074,-.080,1.679),(-.085,-.062,1.658),(-.089,-.038,1.639))
+        widths=(.013,.025,.028,.025,.017,.004)
+        depths=(.009,.011,.012,.011,.009,.004)
+        outer_overlap=(0.,.012,.014,.012,.004,0.)
         vertices=[]; sides=12
         for row,p in enumerate(path):
             for j in range(sides):
@@ -332,15 +389,10 @@ def _hair(builder, api, common):
         faces.append(tuple(reversed(tuple((len(path)-1)*sides+j for j in range(sides)))))
         obj=builder.add_part(f"GEO_HairCurtain.{side}",(vertices,faces),"Hair","details","head","Body","hair")
         _smooth(obj)
-        for index,offset in enumerate((-.010,.012)):
-            points=[Vector((p[0]+sign*offset*min(.85,widths[row]/.026),p[1]-depths[row]-.0003,p[2]+.001))
-                    for row,p in enumerate(path)]
-            _hair_strand(builder,f"GEO_HairCrownStrand{index}.{side}",points,
-                         Vector((0,-1,0)),None,tuple(3*row/(len(path)-1) for row in range(len(path))))
     # A closed back/side scalp shell continues down to the natural nape.
     # Its width overlaps the three free masses; no skin windows or tied tail.
     rows=((1.713,.060,.062,-.018),(1.681,.087,.085,-.018),
-          (1.640,.095,.085,-.018),(1.598,.092,.079,-.018),(1.557,.083,.071,-.018))
+          (1.640,.092,.085,-.018),(1.610,.091,.079,-.018),(1.575,.081,.070,-.018))
     sides=25; vertices=[]
     for inner in (False,True):
         for z,rx,ry,cy in rows:
@@ -383,13 +435,6 @@ def _hair(builder, api, common):
         if volume<0: faces=[tuple(reversed(f)) for f in faces]
         obj=builder.add_part("GEO_"+prefix+"Length",(vertices,faces),"Hair","details",prefix+".00","Body","hair")
         _hair_weights(obj,prefix,[s[0] for s in stations],sides); _smooth(obj)
-        for index,column in enumerate((.10,.25,.40) if prefix=="HairBack" else (.09,.40,.72)):
-            positions=(.25,.95,1.85,2.85-.13*(index%2))
-            points=[]; normals=[]
-            for position in positions:
-                point,normal=_hair_surface(prefix,position,column+.018*math.sin(position+index))
-                points.append(point+normal*.0008); normals.append(normal)
-            _hair_strand(builder,f"GEO_{prefix}Strand{index}",points,normals,prefix,positions)
 
 
 def _hair_surface(prefix,position,column,inner=False):
@@ -425,29 +470,6 @@ def _hair_weights(obj,prefix,positions,sides):
         groups[index].add(ids,1-t,"REPLACE")
         if t>0: groups[index+1].add(ids,t,"REPLACE")
     obj["bp_secondary_hair"]=True; obj["bp_hair_chain"]=prefix
-
-
-def _hair_strand(builder,name,points,normals,prefix,positions):
-    """Sparse raised tonal strands: their material remains distinct in Unity."""
-    if isinstance(normals,Vector): normals=[normals]*len(points)
-    vertices=[]
-    for row,(point,normal) in enumerate(zip(points,normals)):
-        direction=(points[min(row+1,len(points)-1)]-points[max(0,row-1)]).normalized()
-        across=direction.cross(normal).normalized()
-        widths=(.0010,.0030,.0023,.00025)
-        phase=3*row/(len(points)-1); index=min(2,int(phase))
-        width=widths[index]+(widths[index+1]-widths[index])*(phase-index)
-        for lateral,depth in ((-1,0),(0,1),(1,0),(0,-1)):
-            vertices.append(builder.v(*(point+across*width*lateral+normal*.0007*depth)))
-    faces=[(3,2,1,0)]
-    faces += [(r*4+j,r*4+(j+1)%4,(r+1)*4+(j+1)%4,(r+1)*4+j)
-              for r in range(len(points)-1) for j in range(4)]
-    faces.append(tuple((len(points)-1)*4+j for j in range(4)))
-    volume=sum(vertices[f[0]].dot(vertices[f[i]].cross(vertices[f[i+1]]))/6 for f in faces for i in range(1,len(f)-1))
-    if volume<0: faces=[tuple(reversed(f)) for f in faces]
-    obj=builder.add_part(name,(vertices,faces),"HairHighlight","details",prefix+".00" if prefix else "head","Body","hair")
-    if prefix: _hair_weights(obj,prefix,positions,4)
-    _smooth(obj)
 
 
 def _boots(builder, api):
@@ -708,18 +730,23 @@ def repaint_clothing(canvas, api):
     """Cloth construction follows real geometry; pixel detail keeps the low-poly register."""
     rect=api.atlas_rect_bottom_left; line=api.atlas_line_bottom_left
     color={k:api.rgba_from_hex(v) for k,v in api.V2_PALETTE_HEX.items()}
+    softened=tuple(round(color["Jacket"][i]*.7+color["JacketDark"][i]*.3) for i in range(3))+(255,)
+    weave=tuple(round(color["Jacket"][i]*.7+color["JacketEdge"][i]*.3) for i in range(3))+(255,)
     x,y,w,h=api.clothing_region("JacketBody")
     rect(canvas,x,y,x+w,y+h,color["Jacket"])
     for xx in (x,x+64):
-        line(canvas,xx+3,y+10,xx+60,y+10,color["JacketEdge"])
-        line(canvas,xx+3,y+105,xx+60,y+105,color["JacketDark"],2)
-        line(canvas,xx+6,y+66,xx+59,y+66,color["JacketDark"])
-    # Back action pleats and drawcord seam; front stitching follows the separate pockets.
-    for xx in (x+78,x+112): line(canvas,xx,y+72,xx,y+106,color["JacketEdge"])
-    for xx in (8,39):
-        for bottom,top in ((69,90),(23,49)):
-            line(canvas,x+xx,y+bottom,x+xx+17,y+bottom,color["JacketDark"])
-            line(canvas,x+xx,y+bottom,x+xx,y+top,color["JacketEdge"])
+        line(canvas,xx+3,y+10,xx+60,y+10,softened)
+        line(canvas,xx+3,y+106,xx+60,y+104,softened)
+    # Twin back pleats, their wear lines and the pressed channel of the waist cord.
+    for xx, direction in ((x+80, -1), (x+111, 1)):
+        line(canvas,xx+direction*2,y+25,xx+direction*2,y+106,color["JacketEdge"])
+        line(canvas,xx+direction,y+55,xx+direction,y+106,softened)
+        line(canvas,xx+direction,y+55,xx,y+47,softened)
+    for xx in (x, x+64):
+        line(canvas,xx+4,y+55,xx+60,y+55,softened)
+        line(canvas,xx+4,y+56,xx+60,y+56,weave)
+        for stitch in range(5,60,4):
+            line(canvas,xx+stitch,y+12,xx+stitch+1,y+12,weave)
     for px in range(w):
         for py in range(h):
             if (px*17+py*29)%157==0:
@@ -727,8 +754,6 @@ def repaint_clothing(canvas, api):
                 rect(canvas,x+px,y+py,x+px+1,y+py+1,tuple(min(255,v+4) for v in base[:3])+(255,))
     # Continuous sleeves: construction follows a small seam, not a dark
     # armband. The right repair patch remains the only asymmetric marking.
-    softened=tuple(round(color["Jacket"][i]*.7+color["JacketDark"][i]*.3) for i in range(3))+(255,)
-    weave=tuple(round(color["Jacket"][i]*.7+color["JacketEdge"][i]*.3) for i in range(3))+(255,)
     for region in ("JacketSleeveLeft","JacketSleeveRight"):
         x,y,w,h=api.clothing_region(region)
         rect(canvas,x,y,x+w,y+h,color["Jacket"])
@@ -736,8 +761,15 @@ def repaint_clothing(canvas, api):
         line(canvas,x+3,y+14,x+w-4,y+14,softened)
         line(canvas,x+w//2,y+4,x+w//2,y+h-4,weave)
     x,y,w,h=api.clothing_region("JacketSleeveRight")
-    rect(canvas,x+20,y+11,x+44,y+30,color["Patch"])
-    line(canvas,x+20,y+11,x+44,y+11,color["JacketDark"])
+    # One uneven repair, sewn over a fabric tear rather than shaped as a badge.
+    for row in range(14,28):
+        shift = (row-14)//5
+        rect(canvas,x+19+shift,y+row,x+45+shift-(2 if row>24 else 0),y+row+1,color["Patch"])
+    for stitch in range(21,44,3):
+        line(canvas,x+stitch,y+14,x+stitch+1,y+16,color["JacketDark"])
+        line(canvas,x+stitch+1,y+25,x+stitch+2,y+27,weave)
+    line(canvas,x+22,y+17,x+24,y+25,color["JacketDark"])
+    line(canvas,x+43,y+17,x+45,y+24,weave)
     # Identical quiet diagonal folds, preserving clean lower-arm symmetry.
     for region in ("JacketForearmLeft","JacketForearmRight"):
         x,y,w,h=api.clothing_region(region)
@@ -771,8 +803,14 @@ def refine(builder, api, common):
                 end=builder.points[f"knee.{side}" if thigh else f"ankle.{side}"]
                 profile=((0,.083,.87),(.12,.087,.88),(.30,.086,.89),(.55,.078,.87),(.78,.065,.85),
                          (.90,.0606363636,.8445454545),(1,.057,.84)) if thigh else \
-                        ((0,.058,.84),(.06,.060,.85),(.12,.062,.86),(.30,.070,.88),(.48,.069,.88),(1,.044,.82))
-                _replace_mesh(garment,api.make_profiled_segment_geometry(start,end,tuple((t,builder.d(r),d) for t,r,d in profile),sides=12))
+                        ((0,.058,.84),(.06,.060,.85),(.12,.062,.86),(.37,.071,.88),(.78,.042,.78),(1,.041,.78))
+                geometry=api.make_profiled_segment_geometry(start,end,tuple((t,builder.d(r),d) for t,r,d in profile),sides=12)
+                if not thigh:
+                    # Cloth continues into the boot behind the eyestays. Keep
+                    # the original full coverage even with the footwear off.
+                    for point in geometry[0][-24:]:
+                        point.y+=builder.d(.012)
+                _replace_mesh(garment,geometry)
                 region=('JeansThigh' if thigh else 'JeansShin')+('Left' if side=='L' else 'Right')
                 api.assign_ring_strip_uv(garment,region,12,len(profile))
                 _retain_strip_uv(garment,api,region,12,(0,.2,.4,.6,.8,.9090909091,1) if thigh else (0,.1,.2,.4,.6,1))
@@ -845,10 +883,22 @@ def refine(builder, api, common):
     for side in ("L","R"):
         # Separate sleeve cuffs share the original shell's orientation.
         elbow=builder.points[f"elbow.{side}"]; wrist=builder.points[f"wrist.{side}"]
-        cuff_end=wrist+(wrist-elbow).normalized()*builder.d(.004)
-        cuff=builder.add_part(f"CLO_JacketCuff.{side}",api.make_profiled_segment_geometry(elbow.lerp(wrist,.86),cuff_end,
-             ((0,builder.d(.0385),.84),(.35,builder.d(.0380),.84),(.68,builder.d(.0368),.84),(1,builder.d(.0345),.84)),sides=12),
-             "Jacket","clothing",f"forearm.{side}",f"{'Left' if side=='L' else 'Right'}LowerArm","clothing","Left" if side=='L' else "Right")
+        direction=(wrist-elbow).normalized()
+        cuff_end=wrist+direction*builder.d(.004)
+        cuff_start=elbow.lerp(wrist,.86)
+        stations=(0.,.35,.68,1.)
+        vertices,faces=api.make_profiled_segment_geometry(cuff_start,cuff_end,
+             tuple((station,builder.d(radius),.84) for station,radius in zip(stations,(.0385,.038,.0368,.0345))),sides=12)
+        # Cut the stepped closure into the existing cuff rings. The tab follows
+        # the cuff's weights and has no separate renderer to lag at the wrist.
+        outer=max(range(12),key=lambda j: abs(vertices[j].x)-.4*vertices[j].y)
+        for row,station in enumerate(stations):
+            centre=cuff_start.lerp(cuff_end,station)
+            for offset,falloff in ((-1,.40),(0,1.),(1,.80)):
+                j=row*12+(outer+offset)%12
+                vertices[j]+=(vertices[j]-centre).normalized()*builder.d((.001,.006,.006,.002)[row]*falloff)
+        cuff=builder.add_part(f"CLO_JacketCuff.{side}",(vertices,faces),"JacketEdge","clothing",f"forearm.{side}",
+             f"{'Left' if side=='L' else 'Right'}LowerArm","clothing","Left" if side=='L' else "Right")
         cuff["bp_wardrobe_slot"]="jacket"; _smooth(cuff)
         boot=bpy.data.objects[f"CLO_Boot.{side}"]
         # Beveled welt/heel geometry extends only within the original boot footprint.
@@ -1062,7 +1112,7 @@ def manifest(result):
                 "jacket_cut_contract":"m65_flat_panels_set_in_sleeves_v1",
                 "jacket_armhole_ring_vertices":12,
                 "jacket_hem_nodes_blender":_jacket_hem_nodes(result),
-                "jacket":"flat hanging M65 panels, set-in curved armholes, shaped sleeves and long cuffs"},
+                "jacket":"olive M-65: four shaped bellows and wrap flaps, standing collar, shoulder tabs, overlapping placket and shaped cuffs"},
             "body_coverage":[{"renderer":name,"region":slot} for slot,names in BODY_COVERAGE.items() for name in names]}
 
 

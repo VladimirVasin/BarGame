@@ -26,14 +26,10 @@ namespace BarPromenade
         internal const float SeatedHipHeight =
             HomeInteriorWorldBuilder.BedMattressSurfaceHeight +
             PlayerCharacterDimensions.SeatedPelvisSupportOffset;
-        // The live jacket hangs another 18 mm below the imported supine
-        // support plane after the dressed rig has settled.
-        internal const float SleepingGarmentAllowance = 0.018f;
         internal const float SleepingHipHeight =
             HomeInteriorWorldBuilder.BedMattressSurfaceHeight +
             PlayerCharacterDimensions.SupinePelvisSupportOffset -
-            HomeInteriorWorldBuilder.BedSleeperSinkDepth +
-            SleepingGarmentAllowance;
+            HomeInteriorWorldBuilder.BedSleeperSinkDepth;
 
         // The window each clip actually spends sitting on the edge. The wake
         // reaches it after two supported pelvis steps, then lowers the legs

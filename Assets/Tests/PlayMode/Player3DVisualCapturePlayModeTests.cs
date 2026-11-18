@@ -130,9 +130,36 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             presentation.Initialize(playerRoot.transform, registry);
+            SkinnedMeshRenderer face = registry.FaceAtlas.Renderer as SkinnedMeshRenderer;
+            Assert.That(face, Is.Not.Null);
+            int jaw = face.sharedMesh.GetBlendShapeIndex("Face.Jaw");
+            Assert.That(jaw, Is.GreaterThanOrEqualTo(0));
+            var speechOwner = new object();
+            Assert.That(presentation.TrySetSpeechFace(speechOwner,
+                new SpeechFacePose(SpeechMouthPose.Open, SpeechFaceExpression.Emphasis)), Is.True);
+            Assert.That(face.GetBlendShapeWeight(jaw), Is.GreaterThan(0f));
+            HomeMirrorHeroTwin mirror = HomeMirrorHeroTwin.TryCreate(registry, playerRoot.transform,
+                playerRoot.transform, "Face Deformation Proof Mirror", 0);
+            Assert.That(mirror, Is.Not.Null);
+            var reflectedFace = (SkinnedMeshRenderer)mirror.Registry.FaceAtlas.Renderer;
+            Assert.That(reflectedFace.GetBlendShapeWeight(jaw), Is.EqualTo(face.GetBlendShapeWeight(jaw)));
+            presentation.ReleaseSpeechFace(speechOwner);
+            mirror.Sync();
+            Assert.That(face.GetBlendShapeWeight(jaw), Is.Zero);
+            Assert.That(reflectedFace.GetBlendShapeWeight(jaw), Is.Zero);
+            mirror.Destroy();
+
+            const int columns = 3;
+            (string Name, float Sample)[] clips =
+            {
+                ("Idle", .35f), ("Walk", .125f), ("Run", .375f),
+                ("WalkBack", .25f), ("TurnLeft", .25f), ("SnowWalk", .25f),
+                ("CounterSeatEnterRight", .55f), ("BarDrinkSipLoop", .5f), ("SmokeLoop", .5f),
+                ("CatFeedLoop", .5f), ("BedSleepLoop", .55f), ("RiseRight", .56f)
+            };
             contactSheet = new Texture2D(
-                TileSize * 2,
-                TileSize * 3,
+                TileSize * columns,
+                TileSize * ((clips.Length + columns - 1) / columns),
                 TextureFormat.RGBA32,
                 false,
                 true)
@@ -141,24 +168,15 @@ namespace BarPromenade.Tests.PlayMode
                 filterMode = FilterMode.Point
             };
 
-            string[] clips =
-            {
-                "Idle",
-                "BedSleepLoop",
-                "SmokeLoop",
-                "CatFeedLoop",
-                "WalkBack",
-                "TurnLeft"
-            };
-            float[] samples = { 0.35f, 0.55f, 0.50f, 0.50f, 0.25f, 0.25f };
             int[] foregroundCounts = new int[clips.Length];
             for (int index = 0; index < clips.Length; index++)
             {
+                (string clip, float sample) = clips[index];
                 Assert.That(
-                    presentation.TryBeginClip(clips[index]),
+                    presentation.TryBeginClip(clip),
                     Is.True,
-                    $"The production prefab must expose '{clips[index]}'.");
-                presentation.SampleActiveClip(samples[index]);
+                    $"The production prefab must expose '{clip}'.");
+                presentation.SampleActiveClip(sample);
                 yield return null;
 
                 Bounds bounds = GetEnabledBounds(presentation);
@@ -170,8 +188,8 @@ namespace BarPromenade.Tests.PlayMode
                     foregroundCounts[index] = CountForegroundPixels(
                         tile,
                         camera.backgroundColor);
-                    int x = (index % 2) * TileSize;
-                    int y = (index / 2) * TileSize;
+                    int x = (index % columns) * TileSize;
+                    int y = (index / columns) * TileSize;
                     contactSheet.SetPixels(x, y, TileSize, TileSize,
                         tile.GetPixels());
                 }
@@ -185,7 +203,7 @@ namespace BarPromenade.Tests.PlayMode
 
             contactSheet.Apply(false, false);
             string outputDirectory = Path.GetFullPath(
-                Path.Combine(Application.dataPath, "..", "TestResults"));
+                Path.Combine(Application.dataPath, "..", "Captures", "HeroRedesign"));
             Directory.CreateDirectory(outputDirectory);
             string outputPath = Path.Combine(
                 outputDirectory,
@@ -199,7 +217,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     foregroundCounts[index],
                     Is.GreaterThan(900),
-                    $"'{clips[index]}' produced no substantial " +
+                    $"'{clips[index].Name}' produced no substantial " +
                     "GPU-visible model.");
             }
         }

@@ -2,11 +2,11 @@
   "generator": "tools/build-player-body-hair-surfaces.py",
   "version": "1.0.0",
   "source_model": "Assets/Player3D/V2/Models/PlayerCharacter3DV2.json",
-  "surface_bindings_sha256": "50f846302e22959bc5bf02a1b5496c8be63e54c7cf91e8a2907d552d186216bb",
+  "surface_bindings_sha256": "167f81caf20784bd56fcd7197caf374743bcaee4a827a36aaee6b5feafe0a869",
   "source_albedos_sha256": {
-    "Assets/Player3D/V2/Textures/PlayerFaceAtlas.png": "308ae66a0a2f01bb8705ce3dcd66e25e393b4a4c041b27ecaaaa6f6484f15bc0",
-    "Assets/Player3D/V2/Textures/PlayerClothingAtlas.png": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
-    "Assets/Resources/Player/PlayerBareSkinAtlas.png": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c"
+    "Assets/Player3D/V2/Textures/PlayerFaceAtlas.png": "ff256ad900d61e5e275b4280b0d3121bf1159f3375bd450580957f209647a972",
+    "Assets/Player3D/V2/Textures/PlayerClothingAtlas.png": "25791052c222caa2a1c3962c31fd08a74365f89deaa7068ca4a983953cbc5ccf",
+    "Assets/Resources/Player/PlayerBareSkinAtlas.png": "b5d2f977d580a3a80296842a8b81917b9a39acdcc7373a7c1bf403f4b06ebb0d"
   },
   "uv_channel": 0,
   "uv_origin": "bottom_left",

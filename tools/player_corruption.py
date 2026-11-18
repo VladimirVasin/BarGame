@@ -219,9 +219,10 @@ def texture_pixels(kind: str, source, amount: float) -> PixelCanvas:
     return canvas
 
 
-def textures(output_dir: Path = TEXTURE_DIR, validate_only: bool = False) -> dict:
+def textures(output_dir: Path = TEXTURE_DIR, validate_only: bool = False,
+             sources=None, clothing_source=None) -> dict:
     rows = []
-    for kind, path in SOURCES.items():
+    for kind, path in (SOURCES if sources is None else sources).items():
         source = read_generated_png(path)
         source_hash = hashlib.sha256(path.read_bytes()).hexdigest()
         for stage, weight in enumerate(STAGE_WEIGHTS[1:], 2):
@@ -240,7 +241,7 @@ def textures(output_dir: Path = TEXTURE_DIR, validate_only: bool = False) -> dic
                              source_sha256=source_hash, sha256=hashlib.sha256(encoded).hexdigest(),
                              width=source[0], height=source[1]))
     import player_corruption_clothing
-    rows.extend(player_corruption_clothing.textures(output_dir, validate_only))
+    rows.extend(player_corruption_clothing.textures(output_dir, validate_only, clothing_source))
     return dict(source_derived=True, preserve_expression_soil_alpha=True, textures=rows)
 
 

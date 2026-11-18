@@ -218,13 +218,13 @@ namespace BarPromenade.Editor
                 value.body_shape.renderers.Distinct().Count() != value.body_shape.renderers.Length ||
                 value.body_shape.renderers.Any(name => !value.parts.Any(part => part.name == name)))
                 throw new InvalidOperationException("Regenerate the hero-derived default NPC body and its fitted wardrobe.");
-            if (value.body_shape.source_path != "ArtSource/PlayerV2/Blender/PlayerCharacter3DV2.blend" ||
+            if (value.body_shape.source_path != "ArtSource/VillageLife/DefaultMaleAnatomy.blend" ||
                 !File.Exists(value.body_shape.source_path) || string.IsNullOrEmpty(value.body_shape.source_sha256))
-                throw new InvalidOperationException("The default NPC must name its canonical generated hero body source.");
+                throw new InvalidOperationException("The default NPC must name its neutral anatomy donor.");
             using (SHA256 hash = SHA256.Create())
                 if (!string.Equals(BitConverter.ToString(hash.ComputeHash(File.ReadAllBytes(value.body_shape.source_path)))
                     .Replace("-", ""), value.body_shape.source_sha256, StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("The hero body source changed; regenerate the default NPC body and wardrobe.");
+                    throw new InvalidOperationException("The neutral anatomy donor changed; regenerate the default NPC body and wardrobe.");
             if (value.faces.items.Any(face => string.IsNullOrWhiteSpace(face.id)) ||
                 value.faces.items.SelectMany(FaceTextures).Any(texture =>
                     string.IsNullOrWhiteSpace(texture) || Path.GetFileName(texture) != texture) ||

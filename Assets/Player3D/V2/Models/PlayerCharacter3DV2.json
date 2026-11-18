@@ -1,7 +1,7 @@
 {
   "generator": "tools/build-player-3d-model-v2.py",
   "generator_version": "2.0.0",
-  "blender_version": "5.0.1",
+  "blender_version": "5.2.3 LTS",
   "design_source": "ai/player-art-spec.md + ai/city-story-bible.md + ai/city-zones-art-bible.md",
   "runtime_integrated": true,
   "height_m": 1.75,
@@ -9,9 +9,9 @@
   "seed": 17301,
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "object_count": 105,
-  "mesh_count": 85,
-  "triangle_count": 9744,
+  "object_count": 91,
+  "mesh_count": 71,
+  "triangle_count": 9784,
   "action_count": 55,
   "socket_count": 6,
   "bounds_min": [
@@ -89,7 +89,7 @@
     "SOCKET_Mouth"
   ],
   "bed_contract": {
-    "supine_pelvis_offset_m": 0.1303,
+    "supine_pelvis_offset_m": 0.1483,
     "supine_head_offset_m": -0.0132,
     "seated_pelvis_lift_m": 0.0644,
     "mattress_above_floor_m": 0.56,
@@ -203,7 +203,7 @@
         "progress": 0.96,
         "position": [
           -6.285,
-          0.5903,
+          0.6083,
           -0.04
         ]
       },
@@ -211,7 +211,7 @@
         "progress": 1.0,
         "position": [
           -6.285,
-          0.5903,
+          0.6083,
           -0.04
         ]
       }
@@ -221,7 +221,7 @@
         "progress": 0.0,
         "position": [
           -6.285,
-          0.5903,
+          0.6083,
           -0.04
         ]
       },
@@ -313,21 +313,7 @@
           -0.04
         ]
       }
-    ],
-    "supported_sofa": {
-      "minimum_arm_mattress_clearance_m": 0.003344,
-      "minimum_padded_margin_m": -0.000656,
-      "minimum_arm_back_clearance_m": 0.007507,
-      "recline_palm_drift_m": 0.0,
-      "sofa_depth_m": 1.15,
-      "surface": "bounded actual pressure skirts; all bed phases and body forms",
-      "local_import_sampling_margin_m": 0.004,
-      "recline_palm_hold": [
-        0.7,
-        0.84
-      ],
-      "exact_full_rig_seams": true
-    }
+    ]
   },
   "actions": [
     {
@@ -614,9 +600,7 @@
       "frame_start": 0.0,
       "frame_end": 72.0,
       "root_motion": false,
-      "event_count": 0,
-      "bone_only": true,
-      "in_place": true
+      "event_count": 0
     },
     {
       "name": "CounterSeatEnterRight",
@@ -628,9 +612,7 @@
       "frame_start": 0.0,
       "frame_end": 72.0,
       "root_motion": false,
-      "event_count": 0,
-      "bone_only": true,
-      "in_place": true
+      "event_count": 0
     },
     {
       "name": "CounterSeatExitLeft",
@@ -642,9 +624,7 @@
       "frame_start": 0.0,
       "frame_end": 72.0,
       "root_motion": false,
-      "event_count": 0,
-      "bone_only": true,
-      "in_place": true
+      "event_count": 0
     },
     {
       "name": "CounterSeatExitRight",
@@ -656,9 +636,7 @@
       "frame_start": 0.0,
       "frame_end": 72.0,
       "root_motion": false,
-      "event_count": 0,
-      "bone_only": true,
-      "in_place": true
+      "event_count": 0
     },
     {
       "name": "CounterSeatLoop",
@@ -670,9 +648,7 @@
       "frame_start": 0.0,
       "frame_end": 48.0,
       "root_motion": false,
-      "event_count": 0,
-      "bone_only": true,
-      "in_place": true
+      "event_count": 0
     },
     {
       "name": "DoorUseEnter",
@@ -1166,8 +1142,8 @@
       "sprite_part": "LeftLowerLeg",
       "side": "Left",
       "material": "MAT_JeansAtlas",
-      "vertices": 112,
-      "triangles": 220,
+      "vertices": 127,
+      "triangles": 246,
       "default_visible": true,
       "wardrobe_slot": "boots",
       "body_coverage_region": ""
@@ -1179,8 +1155,8 @@
       "sprite_part": "RightLowerLeg",
       "side": "Right",
       "material": "MAT_JeansAtlas",
-      "vertices": 112,
-      "triangles": 220,
+      "vertices": 127,
+      "triangles": 246,
       "default_visible": true,
       "wardrobe_slot": "boots",
       "body_coverage_region": ""
@@ -1225,27 +1201,14 @@
       "body_coverage_region": ""
     },
     {
-      "name": "CLO_JacketCollar.L",
+      "name": "CLO_JacketCollar",
       "role": "clothing",
       "bone": "chest",
       "sprite_part": "Body",
       "side": "Center",
-      "material": "MAT_Jacket",
-      "vertices": 10,
-      "triangles": 16,
-      "default_visible": true,
-      "wardrobe_slot": "jacket",
-      "body_coverage_region": ""
-    },
-    {
-      "name": "CLO_JacketCollar.R",
-      "role": "clothing",
-      "bone": "chest",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_Jacket",
-      "vertices": 10,
-      "triangles": 16,
+      "material": "MAT_JacketEdge",
+      "vertices": 52,
+      "triangles": 92,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1256,7 +1219,7 @@
       "bone": "forearm.L",
       "sprite_part": "LeftLowerArm",
       "side": "Left",
-      "material": "MAT_Jacket",
+      "material": "MAT_JacketEdge",
       "vertices": 48,
       "triangles": 92,
       "default_visible": true,
@@ -1269,7 +1232,7 @@
       "bone": "forearm.R",
       "sprite_part": "RightLowerArm",
       "side": "Right",
-      "material": "MAT_Jacket",
+      "material": "MAT_JacketEdge",
       "vertices": 48,
       "triangles": 92,
       "default_visible": true,
@@ -1283,8 +1246,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_JacketEdge",
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 12,
+      "triangles": 20,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1296,8 +1259,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_JacketEdge",
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 12,
+      "triangles": 20,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1309,8 +1272,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_JacketEdge",
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 12,
+      "triangles": 20,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1322,8 +1285,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_JacketEdge",
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 12,
+      "triangles": 20,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1373,7 +1336,7 @@
       "bone": "chest",
       "sprite_part": "Body",
       "side": "Center",
-      "material": "MAT_JacketDark",
+      "material": "MAT_JacketEdge",
       "vertices": 52,
       "triangles": 100,
       "default_visible": true,
@@ -1387,8 +1350,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_Jacket",
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 24,
+      "triangles": 44,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1400,8 +1363,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_Jacket",
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 24,
+      "triangles": 44,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1413,8 +1376,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_Jacket",
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 18,
+      "triangles": 32,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1426,8 +1389,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_Jacket",
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 18,
+      "triangles": 32,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1569,8 +1532,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_FaceAtlas",
-      "vertices": 49,
-      "triangles": 72,
+      "vertices": 240,
+      "triangles": 420,
       "default_visible": true,
       "wardrobe_slot": "",
       "body_coverage_region": ""
@@ -1758,45 +1721,6 @@
       "body_coverage_region": ""
     },
     {
-      "name": "GEO_HairBackStrand0",
-      "role": "hair",
-      "bone": "HairBack.00",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_HairHighlight",
-      "vertices": 16,
-      "triangles": 28,
-      "default_visible": true,
-      "wardrobe_slot": "",
-      "body_coverage_region": ""
-    },
-    {
-      "name": "GEO_HairBackStrand1",
-      "role": "hair",
-      "bone": "HairBack.00",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_HairHighlight",
-      "vertices": 16,
-      "triangles": 28,
-      "default_visible": true,
-      "wardrobe_slot": "",
-      "body_coverage_region": ""
-    },
-    {
-      "name": "GEO_HairBackStrand2",
-      "role": "hair",
-      "bone": "HairBack.00",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_HairHighlight",
-      "vertices": 16,
-      "triangles": 28,
-      "default_visible": true,
-      "wardrobe_slot": "",
-      "body_coverage_region": ""
-    },
-    {
       "name": "GEO_HairCap",
       "role": "hair",
       "bone": "head",
@@ -1805,58 +1729,6 @@
       "material": "MAT_Hair",
       "vertices": 62,
       "triangles": 120,
-      "default_visible": true,
-      "wardrobe_slot": "",
-      "body_coverage_region": ""
-    },
-    {
-      "name": "GEO_HairCrownStrand0.L",
-      "role": "hair",
-      "bone": "head",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_HairHighlight",
-      "vertices": 24,
-      "triangles": 44,
-      "default_visible": true,
-      "wardrobe_slot": "",
-      "body_coverage_region": ""
-    },
-    {
-      "name": "GEO_HairCrownStrand0.R",
-      "role": "hair",
-      "bone": "head",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_HairHighlight",
-      "vertices": 24,
-      "triangles": 44,
-      "default_visible": true,
-      "wardrobe_slot": "",
-      "body_coverage_region": ""
-    },
-    {
-      "name": "GEO_HairCrownStrand1.L",
-      "role": "hair",
-      "bone": "head",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_HairHighlight",
-      "vertices": 24,
-      "triangles": 44,
-      "default_visible": true,
-      "wardrobe_slot": "",
-      "body_coverage_region": ""
-    },
-    {
-      "name": "GEO_HairCrownStrand1.R",
-      "role": "hair",
-      "bone": "head",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_HairHighlight",
-      "vertices": 24,
-      "triangles": 44,
       "default_visible": true,
       "wardrobe_slot": "",
       "body_coverage_region": ""
@@ -1901,45 +1773,6 @@
       "body_coverage_region": ""
     },
     {
-      "name": "GEO_HairLeftStrand0",
-      "role": "hair",
-      "bone": "HairLeft.00",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_HairHighlight",
-      "vertices": 16,
-      "triangles": 28,
-      "default_visible": true,
-      "wardrobe_slot": "",
-      "body_coverage_region": ""
-    },
-    {
-      "name": "GEO_HairLeftStrand1",
-      "role": "hair",
-      "bone": "HairLeft.00",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_HairHighlight",
-      "vertices": 16,
-      "triangles": 28,
-      "default_visible": true,
-      "wardrobe_slot": "",
-      "body_coverage_region": ""
-    },
-    {
-      "name": "GEO_HairLeftStrand2",
-      "role": "hair",
-      "bone": "HairLeft.00",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_HairHighlight",
-      "vertices": 16,
-      "triangles": 28,
-      "default_visible": true,
-      "wardrobe_slot": "",
-      "body_coverage_region": ""
-    },
-    {
       "name": "GEO_HairNape",
       "role": "hair",
       "bone": "head",
@@ -1961,45 +1794,6 @@
       "material": "MAT_Hair",
       "vertices": 182,
       "triangles": 360,
-      "default_visible": true,
-      "wardrobe_slot": "",
-      "body_coverage_region": ""
-    },
-    {
-      "name": "GEO_HairRightStrand0",
-      "role": "hair",
-      "bone": "HairRight.00",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_HairHighlight",
-      "vertices": 16,
-      "triangles": 28,
-      "default_visible": true,
-      "wardrobe_slot": "",
-      "body_coverage_region": ""
-    },
-    {
-      "name": "GEO_HairRightStrand1",
-      "role": "hair",
-      "bone": "HairRight.00",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_HairHighlight",
-      "vertices": 16,
-      "triangles": 28,
-      "default_visible": true,
-      "wardrobe_slot": "",
-      "body_coverage_region": ""
-    },
-    {
-      "name": "GEO_HairRightStrand2",
-      "role": "hair",
-      "bone": "HairRight.00",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_HairHighlight",
-      "vertices": 16,
-      "triangles": 28,
       "default_visible": true,
       "wardrobe_slot": "",
       "body_coverage_region": ""
@@ -2311,7 +2105,7 @@
             ]
           }
         ],
-        "shape_signature": "fab75cd1706849d859858af2e6312a32ffe233d9b80e168decace919d0e2b92f"
+        "shape_signature": "e6c4850ec64be4c9c7c4459e4222c776e7ff5cda12d87314fc082167c1c97270"
       },
       {
         "shape_name": "SnifterBowlGrip",
@@ -2421,7 +2215,7 @@
         95.0,
         70.0
       ],
-      "shape_signature": "f67cce62ed1c2a55bbd03eaffb713ea2db96b198b5c3056aa923437ee8a83b88",
+      "shape_signature": "0962f5813d014dc3862873236c11ed782191003dede3d895397334117800240d",
       "authoring_sha256": "d54e79df56210e919437cfb49d6ab67800ec622760129145c357372bee38375b",
       "validation": {
         "contact_other_surface_clearance_m": 0.00465339,
@@ -2564,11 +2358,632 @@
       "wrist_unchanged": true
     }
   },
-  "hand_grip_authoring_sha256": "4bcb450dabfbd32ef93931854428d239335fe81f84844b2e46731d81d11ad6ae",
+  "hand_grip_authoring_sha256": "9fa5755d69c46d8041f5a159d2f1efa20fd14d4226dcbc70fade32fc554eed03",
+  "hero_corruption": {
+    "schema": "hero_corruption_v1",
+    "shape_name": "HeroCorruption",
+    "stage_weights": [
+      0.0,
+      10.0,
+      23.0,
+      40.0,
+      60.0,
+      80.0,
+      100.0
+    ],
+    "original_rig_weights_uvs_actions": true,
+    "shared_position_field": true,
+    "original_export_triangulation_preserved": true,
+    "mesh_names": [
+      "CLO_Belt",
+      "CLO_BeltBuckle",
+      "CLO_JacketBody",
+      "CLO_JacketCollar",
+      "CLO_JacketFlapChest.L",
+      "CLO_JacketFlapChest.R",
+      "CLO_JacketFlapHip.L",
+      "CLO_JacketFlapHip.R",
+      "CLO_JacketPlacket.L",
+      "CLO_JacketPlacket.R",
+      "CLO_JacketPocketChest.L",
+      "CLO_JacketPocketChest.R",
+      "CLO_JacketPocketHip.L",
+      "CLO_JacketPocketHip.R",
+      "CLO_JacketSleeve.L",
+      "CLO_JacketSleeve.R",
+      "CLO_ShirtBody",
+      "CLO_TrousersPelvis",
+      "CLO_TrousersThigh.L",
+      "CLO_TrousersThigh.R",
+      "GEO_Ear.L",
+      "GEO_Ear.R",
+      "GEO_FaceSurface",
+      "GEO_HairBack",
+      "GEO_HairBackLength",
+      "GEO_HairCap",
+      "GEO_HairCurtain.L",
+      "GEO_HairCurtain.R",
+      "GEO_HairLeftLength",
+      "GEO_HairNape",
+      "GEO_HairRightLength",
+      "GEO_HairTemple.L",
+      "GEO_HairTemple.R",
+      "GEO_Hand.L",
+      "GEO_Hand.R",
+      "GEO_Head",
+      "GEO_Neck",
+      "GEO_Pelvis",
+      "GEO_Shoulder.L",
+      "GEO_Shoulder.R",
+      "GEO_Thigh.L",
+      "GEO_Thigh.R",
+      "GEO_Torso",
+      "GEO_UpperArm.L",
+      "GEO_UpperArm.R"
+    ],
+    "surfaces": [
+      {
+        "renderer": "CLO_Belt",
+        "vertex_count": 64,
+        "maximum_displacement_m": 0.0374356
+      },
+      {
+        "renderer": "CLO_BeltBuckle",
+        "vertex_count": 8,
+        "maximum_displacement_m": 0.0231532
+      },
+      {
+        "renderer": "CLO_JacketBody",
+        "vertex_count": 634,
+        "maximum_displacement_m": 0.0532061
+      },
+      {
+        "renderer": "CLO_JacketCollar",
+        "vertex_count": 52,
+        "maximum_displacement_m": 0.0209785
+      },
+      {
+        "renderer": "CLO_JacketFlapChest.L",
+        "vertex_count": 12,
+        "maximum_displacement_m": 0.043028
+      },
+      {
+        "renderer": "CLO_JacketFlapChest.R",
+        "vertex_count": 12,
+        "maximum_displacement_m": 0.043036
+      },
+      {
+        "renderer": "CLO_JacketFlapHip.L",
+        "vertex_count": 12,
+        "maximum_displacement_m": 0.0488282
+      },
+      {
+        "renderer": "CLO_JacketFlapHip.R",
+        "vertex_count": 12,
+        "maximum_displacement_m": 0.0488086
+      },
+      {
+        "renderer": "CLO_JacketPlacket.L",
+        "vertex_count": 52,
+        "maximum_displacement_m": 0.0393677
+      },
+      {
+        "renderer": "CLO_JacketPlacket.R",
+        "vertex_count": 52,
+        "maximum_displacement_m": 0.0402695
+      },
+      {
+        "renderer": "CLO_JacketPocketChest.L",
+        "vertex_count": 24,
+        "maximum_displacement_m": 0.0456727
+      },
+      {
+        "renderer": "CLO_JacketPocketChest.R",
+        "vertex_count": 24,
+        "maximum_displacement_m": 0.0456667
+      },
+      {
+        "renderer": "CLO_JacketPocketHip.L",
+        "vertex_count": 18,
+        "maximum_displacement_m": 0.049632
+      },
+      {
+        "renderer": "CLO_JacketPocketHip.R",
+        "vertex_count": 18,
+        "maximum_displacement_m": 0.0496318
+      },
+      {
+        "renderer": "CLO_JacketSleeve.L",
+        "vertex_count": 84,
+        "maximum_displacement_m": 0.0416937
+      },
+      {
+        "renderer": "CLO_JacketSleeve.R",
+        "vertex_count": 84,
+        "maximum_displacement_m": 0.0416937
+      },
+      {
+        "renderer": "CLO_ShirtBody",
+        "vertex_count": 142,
+        "maximum_displacement_m": 0.0427342
+      },
+      {
+        "renderer": "CLO_TrousersPelvis",
+        "vertex_count": 120,
+        "maximum_displacement_m": 0.0356861
+      },
+      {
+        "renderer": "CLO_TrousersThigh.L",
+        "vertex_count": 84,
+        "maximum_displacement_m": 0.0256303
+      },
+      {
+        "renderer": "CLO_TrousersThigh.R",
+        "vertex_count": 84,
+        "maximum_displacement_m": 0.0258653
+      },
+      {
+        "renderer": "GEO_Ear.L",
+        "vertex_count": 14,
+        "maximum_displacement_m": 0.0238397
+      },
+      {
+        "renderer": "GEO_Ear.R",
+        "vertex_count": 14,
+        "maximum_displacement_m": 0.0238397
+      },
+      {
+        "renderer": "GEO_FaceSurface",
+        "vertex_count": 240,
+        "maximum_displacement_m": 0.022262
+      },
+      {
+        "renderer": "GEO_HairBack",
+        "vertex_count": 32,
+        "maximum_displacement_m": 0.0109328
+      },
+      {
+        "renderer": "GEO_HairBackLength",
+        "vertex_count": 140,
+        "maximum_displacement_m": 0.0220428
+      },
+      {
+        "renderer": "GEO_HairCap",
+        "vertex_count": 62,
+        "maximum_displacement_m": 0.0066632
+      },
+      {
+        "renderer": "GEO_HairCurtain.L",
+        "vertex_count": 72,
+        "maximum_displacement_m": 0.0017542
+      },
+      {
+        "renderer": "GEO_HairCurtain.R",
+        "vertex_count": 72,
+        "maximum_displacement_m": 0.0044913
+      },
+      {
+        "renderer": "GEO_HairLeftLength",
+        "vertex_count": 182,
+        "maximum_displacement_m": 0.0293905
+      },
+      {
+        "renderer": "GEO_HairNape",
+        "vertex_count": 250,
+        "maximum_displacement_m": 0.0240404
+      },
+      {
+        "renderer": "GEO_HairRightLength",
+        "vertex_count": 182,
+        "maximum_displacement_m": 0.0294147
+      },
+      {
+        "renderer": "GEO_HairTemple.L",
+        "vertex_count": 18,
+        "maximum_displacement_m": 0.0157373
+      },
+      {
+        "renderer": "GEO_HairTemple.R",
+        "vertex_count": 18,
+        "maximum_displacement_m": 0.0157373
+      },
+      {
+        "renderer": "GEO_Hand.L",
+        "vertex_count": 40,
+        "maximum_displacement_m": 0.006912
+      },
+      {
+        "renderer": "GEO_Hand.R",
+        "vertex_count": 40,
+        "maximum_displacement_m": 0.006912
+      },
+      {
+        "renderer": "GEO_Head",
+        "vertex_count": 98,
+        "maximum_displacement_m": 0.0252484
+      },
+      {
+        "renderer": "GEO_Neck",
+        "vertex_count": 48,
+        "maximum_displacement_m": 0.0140842
+      },
+      {
+        "renderer": "GEO_Pelvis",
+        "vertex_count": 144,
+        "maximum_displacement_m": 0.0311898
+      },
+      {
+        "renderer": "GEO_Shoulder.L",
+        "vertex_count": 30,
+        "maximum_displacement_m": 0.020984
+      },
+      {
+        "renderer": "GEO_Shoulder.R",
+        "vertex_count": 30,
+        "maximum_displacement_m": 0.0236637
+      },
+      {
+        "renderer": "GEO_Thigh.L",
+        "vertex_count": 40,
+        "maximum_displacement_m": 0.0231975
+      },
+      {
+        "renderer": "GEO_Thigh.R",
+        "vertex_count": 40,
+        "maximum_displacement_m": 0.0236317
+      },
+      {
+        "renderer": "GEO_Torso",
+        "vertex_count": 314,
+        "maximum_displacement_m": 0.0416524
+      },
+      {
+        "renderer": "GEO_UpperArm.L",
+        "vertex_count": 50,
+        "maximum_displacement_m": 0.0215237
+      },
+      {
+        "renderer": "GEO_UpperArm.R",
+        "vertex_count": 50,
+        "maximum_displacement_m": 0.0236637
+      }
+    ],
+    "geometry_sha256": "3cf8f28347e0a4141b15af3125d258787a9a5dcb2e41f71c8dc23b77c81fa4d3",
+    "hair_lengths": {
+      "contract": "hero_hair_length_v1",
+      "short_shape": "HeroHairShort",
+      "long_shape": "HeroHairLong",
+      "shortest_scale": 0.55,
+      "longest_scale": 1.8,
+      "short_stage_weights": [
+        100.0,
+        65.0,
+        25.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "long_stage_weights": [
+        0.0,
+        0.0,
+        0.0,
+        20.0,
+        45.0,
+        70.0,
+        100.0
+      ],
+      "rest_translation_compensated": true,
+      "root_pins_and_original_bones": true,
+      "surfaces": [
+        {
+          "renderer": "GEO_HairBack",
+          "vertex_count": 32
+        },
+        {
+          "renderer": "GEO_HairBackLength",
+          "vertex_count": 140
+        },
+        {
+          "renderer": "GEO_HairCap",
+          "vertex_count": 62
+        },
+        {
+          "renderer": "GEO_HairCurtain.L",
+          "vertex_count": 72
+        },
+        {
+          "renderer": "GEO_HairCurtain.R",
+          "vertex_count": 72
+        },
+        {
+          "renderer": "GEO_HairLeftLength",
+          "vertex_count": 182
+        },
+        {
+          "renderer": "GEO_HairNape",
+          "vertex_count": 250
+        },
+        {
+          "renderer": "GEO_HairRightLength",
+          "vertex_count": 182
+        },
+        {
+          "renderer": "GEO_HairTemple.L",
+          "vertex_count": 18
+        },
+        {
+          "renderer": "GEO_HairTemple.R",
+          "vertex_count": 18
+        }
+      ],
+      "geometry_sha256": "402810b82eb087080e5961b211f22260ad32e9d61a9cb104b46d339ae7cf43a4"
+    },
+    "source_derived": true,
+    "preserve_expression_soil_alpha": true,
+    "textures": [
+      {
+        "kind": "Face",
+        "stage": 2,
+        "resource": "Player/Corruption/Face2",
+        "source_sha256": "ff256ad900d61e5e275b4280b0d3121bf1159f3375bd450580957f209647a972",
+        "sha256": "a7293dc4096f40e9f9912d3b420684d9a2eee66dda6037767f84ad85721c02ee",
+        "width": 512,
+        "height": 256
+      },
+      {
+        "kind": "Face",
+        "stage": 3,
+        "resource": "Player/Corruption/Face3",
+        "source_sha256": "ff256ad900d61e5e275b4280b0d3121bf1159f3375bd450580957f209647a972",
+        "sha256": "3a6f8f6debe1ffeeaf6679351ee5dd9f0930db07259de1f8369f1ee17aa616eb",
+        "width": 512,
+        "height": 256
+      },
+      {
+        "kind": "Face",
+        "stage": 4,
+        "resource": "Player/Corruption/Face4",
+        "source_sha256": "ff256ad900d61e5e275b4280b0d3121bf1159f3375bd450580957f209647a972",
+        "sha256": "bb27a2e4dcef7c7defe05d892ec6b5e0643495e863704509a8ad60a5a8e2b54d",
+        "width": 512,
+        "height": 256
+      },
+      {
+        "kind": "Face",
+        "stage": 5,
+        "resource": "Player/Corruption/Face5",
+        "source_sha256": "ff256ad900d61e5e275b4280b0d3121bf1159f3375bd450580957f209647a972",
+        "sha256": "2130f3b2b63724031ed0cfbe597aad1bed00b5b30e6eac36ca9908a037846023",
+        "width": 512,
+        "height": 256
+      },
+      {
+        "kind": "Face",
+        "stage": 6,
+        "resource": "Player/Corruption/Face6",
+        "source_sha256": "ff256ad900d61e5e275b4280b0d3121bf1159f3375bd450580957f209647a972",
+        "sha256": "9ccca4bf6ad79c723b18438cad3cb81a244666316fc14a149febdc56cc1eaac9",
+        "width": 512,
+        "height": 256
+      },
+      {
+        "kind": "Face",
+        "stage": 7,
+        "resource": "Player/Corruption/Face7",
+        "source_sha256": "ff256ad900d61e5e275b4280b0d3121bf1159f3375bd450580957f209647a972",
+        "sha256": "c47d00db435850d54901f909c14d670583e3ad3422dc354b2bebbf332528d955",
+        "width": 512,
+        "height": 256
+      },
+      {
+        "kind": "BareSkin",
+        "stage": 2,
+        "resource": "Player/Corruption/BareSkin2",
+        "source_sha256": "b5d2f977d580a3a80296842a8b81917b9a39acdcc7373a7c1bf403f4b06ebb0d",
+        "sha256": "3f339f4e04b5dc9245e42b82b2d5c04ff33cd727991a91c101a275ddff36593c",
+        "width": 256,
+        "height": 256
+      },
+      {
+        "kind": "BareSkin",
+        "stage": 3,
+        "resource": "Player/Corruption/BareSkin3",
+        "source_sha256": "b5d2f977d580a3a80296842a8b81917b9a39acdcc7373a7c1bf403f4b06ebb0d",
+        "sha256": "210b59df3628a0a1f164d06dd0d587221d242cdbea6823256cb9fe9a500a6e42",
+        "width": 256,
+        "height": 256
+      },
+      {
+        "kind": "BareSkin",
+        "stage": 4,
+        "resource": "Player/Corruption/BareSkin4",
+        "source_sha256": "b5d2f977d580a3a80296842a8b81917b9a39acdcc7373a7c1bf403f4b06ebb0d",
+        "sha256": "901d9cef7f2941314238ceda5d5913f1b92be247fcd82b2af0f4fdc6b1525c70",
+        "width": 256,
+        "height": 256
+      },
+      {
+        "kind": "BareSkin",
+        "stage": 5,
+        "resource": "Player/Corruption/BareSkin5",
+        "source_sha256": "b5d2f977d580a3a80296842a8b81917b9a39acdcc7373a7c1bf403f4b06ebb0d",
+        "sha256": "98720fe3424a9742e2e8d906d1e394993db2ca716abd39e186af3f17c790fcd0",
+        "width": 256,
+        "height": 256
+      },
+      {
+        "kind": "BareSkin",
+        "stage": 6,
+        "resource": "Player/Corruption/BareSkin6",
+        "source_sha256": "b5d2f977d580a3a80296842a8b81917b9a39acdcc7373a7c1bf403f4b06ebb0d",
+        "sha256": "a3a0d369e8c8314321c329624cf083ea764ef287d11ee30c47dcba75898aa883",
+        "width": 256,
+        "height": 256
+      },
+      {
+        "kind": "BareSkin",
+        "stage": 7,
+        "resource": "Player/Corruption/BareSkin7",
+        "source_sha256": "b5d2f977d580a3a80296842a8b81917b9a39acdcc7373a7c1bf403f4b06ebb0d",
+        "sha256": "c88d99d91e1311c8d74e69907e1fd9a07b7f7138b3c17466a8879a2906b34f1d",
+        "width": 256,
+        "height": 256
+      },
+      {
+        "kind": "Dialogue",
+        "stage": 2,
+        "resource": "Player/Corruption/Dialogue2",
+        "source_sha256": "072f5230778accd69d7155692d4af09cefea73e179b97e558b0b423beee7dc5b",
+        "sha256": "87ac9ccf2834cd0d68a082da43f39a9fb9ab2e5c44702f4326b16c4948f028c6",
+        "width": 512,
+        "height": 512
+      },
+      {
+        "kind": "Dialogue",
+        "stage": 3,
+        "resource": "Player/Corruption/Dialogue3",
+        "source_sha256": "072f5230778accd69d7155692d4af09cefea73e179b97e558b0b423beee7dc5b",
+        "sha256": "f2ca04e9c22dfb21edb1b131bd0293a3c992ac85b952bea69b49321d4112d455",
+        "width": 512,
+        "height": 512
+      },
+      {
+        "kind": "Dialogue",
+        "stage": 4,
+        "resource": "Player/Corruption/Dialogue4",
+        "source_sha256": "072f5230778accd69d7155692d4af09cefea73e179b97e558b0b423beee7dc5b",
+        "sha256": "6b841c5d77849fef655efa5b2377aaa93153a342ea23d1ecc7eda82b3611979b",
+        "width": 512,
+        "height": 512
+      },
+      {
+        "kind": "Dialogue",
+        "stage": 5,
+        "resource": "Player/Corruption/Dialogue5",
+        "source_sha256": "072f5230778accd69d7155692d4af09cefea73e179b97e558b0b423beee7dc5b",
+        "sha256": "f6bbb028594bca14de64c82a1085c4a8c40ed969df86c1c4bd78d690d89f9ab9",
+        "width": 512,
+        "height": 512
+      },
+      {
+        "kind": "Dialogue",
+        "stage": 6,
+        "resource": "Player/Corruption/Dialogue6",
+        "source_sha256": "072f5230778accd69d7155692d4af09cefea73e179b97e558b0b423beee7dc5b",
+        "sha256": "94d8c115092217b9c4a233c8349e1bc90f577b3f3971a9609ddb93b89790d9d0",
+        "width": 512,
+        "height": 512
+      },
+      {
+        "kind": "Dialogue",
+        "stage": 7,
+        "resource": "Player/Corruption/Dialogue7",
+        "source_sha256": "072f5230778accd69d7155692d4af09cefea73e179b97e558b0b423beee7dc5b",
+        "sha256": "84ce5f51f1014f511bef8bf469b3d3e837c549e9c8eeb4f6b8a0707f0edc2961",
+        "width": 512,
+        "height": 512
+      },
+      {
+        "kind": "Clothing",
+        "stage": 2,
+        "resource": "Player/Corruption/Clothing2",
+        "source_sha256": "25791052c222caa2a1c3962c31fd08a74365f89deaa7068ca4a983953cbc5ccf",
+        "sha256": "420a7210ceee359bebe9c8176677c2b9f0bee29cb56a9e3e4bf4498f640e7411",
+        "width": 256,
+        "height": 256,
+        "authoring": "hero_corruption_clothing_v2",
+        "uv_layout": "original_clothing_regions",
+        "preserve_patch_forearm_alpha": true,
+        "unique_limb_macro_damage": true,
+        "paired_forearm_cuff_only": true
+      },
+      {
+        "kind": "Clothing",
+        "stage": 3,
+        "resource": "Player/Corruption/Clothing3",
+        "source_sha256": "25791052c222caa2a1c3962c31fd08a74365f89deaa7068ca4a983953cbc5ccf",
+        "sha256": "127220bcbc6bd0a04c60538da5867eacbfb343601c32b9bff5fbd6040f790803",
+        "width": 256,
+        "height": 256,
+        "authoring": "hero_corruption_clothing_v2",
+        "uv_layout": "original_clothing_regions",
+        "preserve_patch_forearm_alpha": true,
+        "unique_limb_macro_damage": true,
+        "paired_forearm_cuff_only": true
+      },
+      {
+        "kind": "Clothing",
+        "stage": 4,
+        "resource": "Player/Corruption/Clothing4",
+        "source_sha256": "25791052c222caa2a1c3962c31fd08a74365f89deaa7068ca4a983953cbc5ccf",
+        "sha256": "40202259d76ecb3e98ac63a6714aab5934a33c420cff45ec9577f182ec8bc2e4",
+        "width": 256,
+        "height": 256,
+        "authoring": "hero_corruption_clothing_v2",
+        "uv_layout": "original_clothing_regions",
+        "preserve_patch_forearm_alpha": true,
+        "unique_limb_macro_damage": true,
+        "paired_forearm_cuff_only": true
+      },
+      {
+        "kind": "Clothing",
+        "stage": 5,
+        "resource": "Player/Corruption/Clothing5",
+        "source_sha256": "25791052c222caa2a1c3962c31fd08a74365f89deaa7068ca4a983953cbc5ccf",
+        "sha256": "33ff32173d52d2701932530003cbe66daa3a7c28832ebb77b41fb5aaa119ba0f",
+        "width": 256,
+        "height": 256,
+        "authoring": "hero_corruption_clothing_v2",
+        "uv_layout": "original_clothing_regions",
+        "preserve_patch_forearm_alpha": true,
+        "unique_limb_macro_damage": true,
+        "paired_forearm_cuff_only": true
+      },
+      {
+        "kind": "Clothing",
+        "stage": 6,
+        "resource": "Player/Corruption/Clothing6",
+        "source_sha256": "25791052c222caa2a1c3962c31fd08a74365f89deaa7068ca4a983953cbc5ccf",
+        "sha256": "998d4c2fad7808ea94ce0d256fe8fb5bc8fc366a672b6405dddcfbd9f6e38973",
+        "width": 256,
+        "height": 256,
+        "authoring": "hero_corruption_clothing_v2",
+        "uv_layout": "original_clothing_regions",
+        "preserve_patch_forearm_alpha": true,
+        "unique_limb_macro_damage": true,
+        "paired_forearm_cuff_only": true
+      },
+      {
+        "kind": "Clothing",
+        "stage": 7,
+        "resource": "Player/Corruption/Clothing7",
+        "source_sha256": "25791052c222caa2a1c3962c31fd08a74365f89deaa7068ca4a983953cbc5ccf",
+        "sha256": "011601d54eaf3e0050305530f24634b8bea77050d5685b3390ce9dd5770978c9",
+        "width": 256,
+        "height": 256,
+        "authoring": "hero_corruption_clothing_v2",
+        "uv_layout": "original_clothing_regions",
+        "preserve_patch_forearm_alpha": true,
+        "unique_limb_macro_damage": true,
+        "paired_forearm_cuff_only": true
+      }
+    ],
+    "authoring_sha256": "7eaa0902c7dc3f010dbad519dd5e0a3ecbfe70a770f3c85fd57ada1082ec88c2"
+  },
+  "face_deformation": [
+    "Face.Jaw",
+    "Face.Lids",
+    "Face.WideEyes",
+    "Face.Brows",
+    "Face.Purse"
+  ],
+  "footwear_authoring_sha256": "e8e740072038094edd2363422bcaf5656a335e0bcc1dae960b207e35832b4a97",
+  "joint_surface_authoring_sha256": "2d43005ce21ccc7308459166c42cfb005a758bb0f2fc385c33164b49e317c59a",
   "design_version": "HeroV2",
-  "cold_authoring_sha256": "43e4d28adc2d45c8f1e679635306b733f134e011410f875a04649d19d57d3791",
-  "detail_authoring_sha256": "159b3c9aaf89039694ead7692c46925a1dd7e3238222a01ad3637d4932d3df49",
-  "face_paint_sha256": "3b74355582ac1095a8a6ed0a30840e53d4bd45d78e6087b7e67d4b5331189970",
+  "cold_authoring_sha256": "c2aaa10763548c7828bf6d2f6d7499818e6480e0d80320c62596aaf2119c8fb5",
+  "detail_authoring_sha256": "f48fe01d156b90057a1be959ed5c7a0731d8bb09a2f3d5a7ebd9c1f3a574f63a",
+  "face_paint_sha256": "5e16e82116b631fe871cc95c93c3cd1973a437e257da1e33c7de9b7127caab38",
   "hand_frames_sha256": "0a527fa0da29d22421d0af3d37b2825fc956f0a64f667e939eb9bb8d52b24e82",
   "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
   "torso_skin": {
@@ -2598,7 +3013,7 @@
     "action_count": 55,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "6ab05bb64ed531687deb2ef8ad3000e228f145ca53fba82c9e7e2e3277a2f965",
+  "content_signature_sha256": "da056d1193a0bb419fe76dd5c217425a6da5ae4eff749dc656aa480b0c423c38",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -2622,7 +3037,7 @@
     "cell_size_px": 64,
     "uv_origin": "bottom_left",
     "filter_mode": "Point",
-    "sha256": "1b1d55a54867c6eb02cbff42f9c6eed8b6719ff7dc89a4517224e513412d234b",
+    "sha256": "ff256ad900d61e5e275b4280b0d3121bf1159f3375bd450580957f209647a972",
     "cells": [
       {
         "expression": "Neutral",
@@ -2813,7 +3228,7 @@
       "uv_origin": "bottom_left",
       "uv_safe_inset_px": 1,
       "material_tint_hex": "FFFFFF",
-      "sha256": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
+      "sha256": "25791052c222caa2a1c3962c31fd08a74365f89deaa7068ca4a983953cbc5ccf",
       "regions": [
         {
           "name": "JacketBody",
@@ -2930,7 +3345,7 @@
     "uv_safe_inset_px": 1,
     "material_tint_hex": "FFFFFF",
     "reader": "Player3DBathingAppearance (the home shower); a property block on the hero's own skin material",
-    "sha256": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c",
+    "sha256": "b5d2f977d580a3a80296842a8b81917b9a39acdcc7373a7c1bf403f4b06ebb0d",
     "regions": [
       {
         "name": "BareTorso",
@@ -3012,8 +3427,8 @@
     "heads_tall": 7.4914,
     "silhouette": "lean weary adult",
     "shoulder_patch_side": "Right",
-    "jacket": "faded dark olive-drab field jacket; original ochre patch; no copied insignia",
-    "face_baseline": "weary flat neutral; no guilt, tears, or theatrical sadness"
+    "jacket": "faded slate canvas with turned collar, slanted hand warmers and right shoulder repair",
+    "face_baseline": "weary neutral; sculpted eye sockets, nose, cheeks and lips"
   },
   "geometry_simplification": {
     "painted_not_modeled": [
@@ -3028,7 +3443,7 @@
       "open jacket shell",
       "folded collar",
       "plackets",
-      "four pockets and flaps",
+      "chest pockets and hand-warmer welts",
       "sleeve cuffs",
       "boot bevels and soles"
     ],
@@ -3069,13 +3484,13 @@
     "relaxed_right_wrist_z_m": 0.837188,
     "relaxed_left_fingertip_z_m": 0.750185,
     "relaxed_right_fingertip_z_m": 0.741906,
-    "left_foot_length_m": 0.263,
+    "left_foot_length_m": 0.264991,
     "left_foot_width_m": 0.13,
     "left_upper_thigh_width_m": 0.12882,
     "left_knee_width_m": 0.095375,
     "left_calf_width_m": 0.118398,
     "left_ankle_width_m": 0.072353,
-    "right_foot_length_m": 0.267,
+    "right_foot_length_m": 0.268991,
     "right_foot_width_m": 0.13,
     "right_upper_thigh_width_m": 0.128808,
     "right_knee_width_m": 0.095368,
@@ -3085,7 +3500,7 @@
   "footwear": {
     "contract": "hero_footwear_v1",
     "source_space": "blender_z_up_minus_y_forward",
-    "reference_url": "https://www.drmartens.com/uk/en_gb/1460-burgundy-smooth-leather-lace-up-boots-burgundy/p/27277626",
+    "design": "oxblood 1460; raised eyestays, stitched welt, recessed sole and heel pulls",
     "feet": [
       {
         "side": "L",
@@ -3143,12 +3558,12 @@
         "ankle_section_blender": [
           {
             "x": 0.09600000083446503,
-            "y": -0.057999998331069946,
+            "y": -0.0559999980032444,
             "z": 0.1120000034570694
           },
           {
             "x": 0.11628222465515137,
-            "y": -0.05434621870517731,
+            "y": -0.05734621733427048,
             "z": 0.1120000034570694
           },
           {
@@ -3218,7 +3633,7 @@
           },
           {
             "x": 0.07571777701377869,
-            "y": -0.05434621870517731,
+            "y": -0.05734621733427048,
             "z": 0.1120000034570694
           }
         ]
@@ -3279,12 +3694,12 @@
         "ankle_section_blender": [
           {
             "x": -0.09600000083446503,
-            "y": -0.02199999801814556,
+            "y": -0.020000001415610313,
             "z": 0.1120000034570694
           },
           {
             "x": -0.07571777701377869,
-            "y": -0.018346218392252922,
+            "y": -0.021346217021346092,
             "z": 0.1120000034570694
           },
           {
@@ -3354,7 +3769,7 @@
           },
           {
             "x": -0.11628222465515137,
-            "y": -0.018346218392252922,
+            "y": -0.021346217021346092,
             "z": 0.1120000034570694
           }
         ]
@@ -5852,8 +6267,7 @@
         "band_m": 0.053,
         "endpoint": "end"
       }
-    ],
-    "preserved_action_bank": true
+    ]
   },
   "wardrobe": {
     "contract": "hero_outfit_v1",
@@ -5882,13 +6296,12 @@
           "CLO_JacketFlapChest.L",
           "CLO_JacketPocketHip.L",
           "CLO_JacketFlapHip.L",
-          "CLO_JacketCollar.L",
-          "CLO_JacketPlacket.L",
           "CLO_JacketPocketChest.R",
           "CLO_JacketFlapChest.R",
           "CLO_JacketPocketHip.R",
           "CLO_JacketFlapHip.R",
-          "CLO_JacketCollar.R",
+          "CLO_JacketCollar",
+          "CLO_JacketPlacket.L",
           "CLO_JacketPlacket.R",
           "CLO_JacketCuff.L",
           "CLO_JacketCuff.R"
@@ -5981,10 +6394,7 @@
           ]
         ],
         "renderers": [
-          "GEO_HairBackLength",
-          "GEO_HairBackStrand0",
-          "GEO_HairBackStrand1",
-          "GEO_HairBackStrand2"
+          "GEO_HairBackLength"
         ],
         "contact_radius_m": 0.012
       },
@@ -6019,10 +6429,7 @@
           ]
         ],
         "renderers": [
-          "GEO_HairLeftLength",
-          "GEO_HairLeftStrand0",
-          "GEO_HairLeftStrand1",
-          "GEO_HairLeftStrand2"
+          "GEO_HairLeftLength"
         ],
         "contact_radius_m": 0.012
       },
@@ -6057,10 +6464,7 @@
           ]
         ],
         "renderers": [
-          "GEO_HairRightLength",
-          "GEO_HairRightStrand0",
-          "GEO_HairRightStrand1",
-          "GEO_HairRightStrand2"
+          "GEO_HairRightLength"
         ],
         "contact_radius_m": 0.012
       }
@@ -6101,36 +6505,8 @@
           "vertex_count": 140
         },
         {
-          "renderer": "GEO_HairBackStrand0",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairBackStrand1",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairBackStrand2",
-          "vertex_count": 16
-        },
-        {
           "renderer": "GEO_HairCap",
           "vertex_count": 62
-        },
-        {
-          "renderer": "GEO_HairCrownStrand0.L",
-          "vertex_count": 24
-        },
-        {
-          "renderer": "GEO_HairCrownStrand0.R",
-          "vertex_count": 24
-        },
-        {
-          "renderer": "GEO_HairCrownStrand1.L",
-          "vertex_count": 24
-        },
-        {
-          "renderer": "GEO_HairCrownStrand1.R",
-          "vertex_count": 24
         },
         {
           "renderer": "GEO_HairCurtain.L",
@@ -6145,36 +6521,12 @@
           "vertex_count": 182
         },
         {
-          "renderer": "GEO_HairLeftStrand0",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairLeftStrand1",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairLeftStrand2",
-          "vertex_count": 16
-        },
-        {
           "renderer": "GEO_HairNape",
           "vertex_count": 250
         },
         {
           "renderer": "GEO_HairRightLength",
           "vertex_count": 182
-        },
-        {
-          "renderer": "GEO_HairRightStrand0",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairRightStrand1",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairRightStrand2",
-          "vertex_count": 16
         },
         {
           "renderer": "GEO_HairTemple.L",
@@ -6185,13 +6537,13 @@
           "vertex_count": 18
         }
       ],
-      "geometry_sha256": "f004c1d3db4f2b01191ee4052986409ef82c7fe5889f7f9782c141edd5b6909f"
+      "geometry_sha256": "402810b82eb087080e5961b211f22260ad32e9d61a9cb104b46d339ae7cf43a4"
     }
   },
   "quality": {
-    "worn_triangle_count": 7948,
+    "worn_triangle_count": 7988,
     "hidden_body_triangle_count": 1796,
-    "complete_triangle_count": 9744,
+    "complete_triangle_count": 9784,
     "worn_triangle_budget": [
       0,
       8000
@@ -6484,7 +6836,7 @@
         "z": 0.8050000071525574
       }
     ],
-    "jacket": "flat hanging M65 panels, set-in curved armholes, shaped sleeves and long cuffs"
+    "jacket": "olive M-65: four shaped bellows and wrap flaps, standing collar, shoulder tabs, overlapping placket and shaped cuffs"
   },
   "body_coverage": [
     {
@@ -6553,6 +6905,191 @@
     "snow_depth_m": 0.45,
     "runtime_distance_driven": true
   },
+  "smoking_grip": {
+    "shape_name": "SmokingGrip",
+    "side": "R",
+    "renderers": [
+      "GEO_Hand.R",
+      "GEO_Thumb.R",
+      "GEO_Finger0.R",
+      "GEO_Finger1.R",
+      "GEO_Finger2.R",
+      "GEO_Finger3.R"
+    ],
+    "radius_m": 0.00325,
+    "filter_to_grip_m": 0.0225,
+    "contacts": {
+      "GEO_Finger0.R": {
+        "joint_angles_degrees": [
+          45.0,
+          80.0,
+          40.0
+        ],
+        "surface_gap_m": 0.0005324264721957967,
+        "contact_palm_m": -0.002041271422058344,
+        "contact_radial_m": [
+          -0.0031843306496739388,
+          -0.002041271422058344
+        ]
+      },
+      "GEO_Finger1.R": {
+        "joint_angles_degrees": [
+          10.0,
+          40.0,
+          80.0
+        ],
+        "surface_gap_m": 0.0008993199589937893,
+        "contact_palm_m": 0.00223877327516675,
+        "contact_radial_m": [
+          0.003493530210107565,
+          0.00223877327516675
+        ]
+      }
+    },
+    "pad_opposition_dot": -0.9999999403953552,
+    "pad_opposition_degrees": 179.98021765897056,
+    "minimum_pad_opposition_degrees": 150.0,
+    "thumb_face_side_margin_m": 0.010340905224438757,
+    "full_shaft_clearances": {
+      "GEO_Hand.R": {
+        "paper": {
+          "minimum_axis_distance_m": 0.01052089328947003,
+          "surface_clearance_m": 0.00727089328947003
+        },
+        "ember": {
+          "minimum_axis_distance_m": 0.013754202343637379,
+          "surface_clearance_m": 0.01025420234363738
+        },
+        "conservative_full_shaft": {
+          "minimum_axis_distance_m": 0.01052088991467806,
+          "surface_clearance_m": 0.00727088991467806
+        }
+      },
+      "GEO_Thumb.R": {
+        "paper": {
+          "minimum_axis_distance_m": 0.028023312495866856,
+          "surface_clearance_m": 0.024773312495866857
+        },
+        "ember": {
+          "minimum_axis_distance_m": 0.06763446977824342,
+          "surface_clearance_m": 0.06413446977824341
+        },
+        "conservative_full_shaft": {
+          "minimum_axis_distance_m": 0.028751256359070578,
+          "surface_clearance_m": 0.02550125635907058
+        }
+      },
+      "GEO_Finger0.R": {
+        "paper": {
+          "minimum_axis_distance_m": 0.0037824084029766994,
+          "surface_clearance_m": 0.0005324084029766996
+        },
+        "ember": {
+          "minimum_axis_distance_m": 0.04576482922462591,
+          "surface_clearance_m": 0.042264829224625905
+        },
+        "conservative_full_shaft": {
+          "minimum_axis_distance_m": 0.0037824174542690917,
+          "surface_clearance_m": 0.0005324174542690918
+        }
+      },
+      "GEO_Finger1.R": {
+        "paper": {
+          "minimum_axis_distance_m": 0.004149324706708179,
+          "surface_clearance_m": 0.0008993247067081793
+        },
+        "ember": {
+          "minimum_axis_distance_m": 0.027942259788938127,
+          "surface_clearance_m": 0.024442259788938128
+        },
+        "conservative_full_shaft": {
+          "minimum_axis_distance_m": 0.004149321000366234,
+          "surface_clearance_m": 0.0008993210003662342
+        }
+      },
+      "GEO_Finger2.R": {
+        "paper": {
+          "minimum_axis_distance_m": 0.0077142138725058845,
+          "surface_clearance_m": 0.004464213872505885
+        },
+        "ember": {
+          "minimum_axis_distance_m": 0.013192843436415785,
+          "surface_clearance_m": 0.009692843436415785
+        },
+        "conservative_full_shaft": {
+          "minimum_axis_distance_m": 0.007714182591559864,
+          "surface_clearance_m": 0.004464182591559864
+        }
+      },
+      "GEO_Finger3.R": {
+        "paper": {
+          "minimum_axis_distance_m": 0.011240343038716785,
+          "surface_clearance_m": 0.007990343038716785
+        },
+        "ember": {
+          "minimum_axis_distance_m": 0.010999429666474518,
+          "surface_clearance_m": 0.007499429666474518
+        },
+        "conservative_full_shaft": {
+          "minimum_axis_distance_m": 0.010849519977845374,
+          "surface_clearance_m": 0.007599519977845375
+        }
+      }
+    },
+    "maximum_link_length_error_m": 8.001304655641528e-08,
+    "palm_wrist_unchanged": true,
+    "closed_positive_volumes": true,
+    "socket_rest_unchanged": true,
+    "socket_delta_in_smoking_clips": true,
+    "shape_signature": "d93e202ab708f3b96c510e372ed27436bf19d4a28cebf72e26c03ffd8a7c1002",
+    "authoring_sha256": "5d3ba57db00e55fd0e916f43b73acb17bdc29c80e98503938b9f748da4e59c47"
+  },
+  "counter_seat": {
+    "contract": "counter_seat_supported_edge_v2",
+    "source": "all evaluated body/clothing triangles",
+    "stool_seat_top_m": 0.8175,
+    "stool_diameter_m": 0.48,
+    "stool_pitch_m": 0.9,
+    "action_hip_clearance_m": 0.105,
+    "side_offset_m": 0.45,
+    "enter_key_times": [
+      0.0,
+      0.18,
+      0.4,
+      0.58,
+      0.68,
+      0.84,
+      1.0
+    ],
+    "first_hip_support_progress": 0.58,
+    "edge_offset_m": 0.285,
+    "edge_pelvis_height_m": 0.876,
+    "edge_roll_degrees": 30.0,
+    "left_hip_height_correction_m": 0.01,
+    "left_transfer_height_correction_m": 0.008,
+    "left_settle_height_correction_m": 0.01,
+    "far_boot_floor_release": [
+      0.66,
+      0.76
+    ],
+    "hip_support_tolerance_m": 0.012,
+    "near_leg_fold": [
+      0.4,
+      0.52
+    ],
+    "palm_support_progress": [
+      0.45,
+      0.85
+    ],
+    "floor_support_tolerance_m": 0.015,
+    "palm_support_tolerance_m": 0.025,
+    "bar_thigh_down_degrees": 6.0,
+    "bar_thigh_splay_degrees": 20.0,
+    "bar_shin_tuck_degrees": 5.0,
+    "loop": "CounterSeatLoop",
+    "unchanged_bus_cafe": true
+  },
+  "counter_seat_authoring_sha256": "f84d253aa6072cd034550e48419c19b3fb2c19047ad0f7b8e3da487f109275c5",
   "jacket_cloth": {
     "contract": "hero_jacket_cloth_v1",
     "source_space": "blender_z_up_minus_y_forward",
@@ -6656,8 +7193,7 @@
       }
     ],
     "pinned_renderers": [
-      "CLO_JacketCollar.L",
-      "CLO_JacketCollar.R",
+      "CLO_JacketCollar",
       "CLO_JacketFlapChest.L",
       "CLO_JacketFlapChest.R",
       "CLO_JacketPocketChest.L",
@@ -6774,8 +7310,8 @@
           "height_px": 64
         }
       ],
-      "normal_sha256": "6771dd93937bd7570aeb42814df9eb3713b2dea8e0e748ece2afae9bccc425d0",
-      "response_sha256": "6dcf1a4df02a030181863586177be5c8ccf46438de56135147c2f39ea0ccc87b"
+      "normal_sha256": "8ab0243b0a3eee0b0b0e370fe0596aaf7c98fd63193110d2e7f784657c5c4df6",
+      "response_sha256": "986f5fb3296edb49c36ab88a17f9611a10e362b3a3bd45b36bc6ecc2d25c7d67"
     },
     {
       "recipe": "Skin",
@@ -7060,64 +7596,8 @@
           "height_px": 128
         },
         {
-          "name": "HairLength",
-          "renderer": "GEO_HairBackStrand0",
-          "x_px": 0,
-          "y_px": 0,
-          "width_px": 128,
-          "height_px": 128
-        },
-        {
-          "name": "HairLength",
-          "renderer": "GEO_HairBackStrand1",
-          "x_px": 0,
-          "y_px": 0,
-          "width_px": 128,
-          "height_px": 128
-        },
-        {
-          "name": "HairLength",
-          "renderer": "GEO_HairBackStrand2",
-          "x_px": 0,
-          "y_px": 0,
-          "width_px": 128,
-          "height_px": 128
-        },
-        {
           "name": "HairCrown",
           "renderer": "GEO_HairCap",
-          "x_px": 0,
-          "y_px": 128,
-          "width_px": 128,
-          "height_px": 128
-        },
-        {
-          "name": "HairCrown",
-          "renderer": "GEO_HairCrownStrand0.L",
-          "x_px": 0,
-          "y_px": 128,
-          "width_px": 128,
-          "height_px": 128
-        },
-        {
-          "name": "HairCrown",
-          "renderer": "GEO_HairCrownStrand0.R",
-          "x_px": 0,
-          "y_px": 128,
-          "width_px": 128,
-          "height_px": 128
-        },
-        {
-          "name": "HairCrown",
-          "renderer": "GEO_HairCrownStrand1.L",
-          "x_px": 0,
-          "y_px": 128,
-          "width_px": 128,
-          "height_px": 128
-        },
-        {
-          "name": "HairCrown",
-          "renderer": "GEO_HairCrownStrand1.R",
           "x_px": 0,
           "y_px": 128,
           "width_px": 128,
@@ -7148,30 +7628,6 @@
           "height_px": 128
         },
         {
-          "name": "HairLength",
-          "renderer": "GEO_HairLeftStrand0",
-          "x_px": 0,
-          "y_px": 0,
-          "width_px": 128,
-          "height_px": 128
-        },
-        {
-          "name": "HairLength",
-          "renderer": "GEO_HairLeftStrand1",
-          "x_px": 0,
-          "y_px": 0,
-          "width_px": 128,
-          "height_px": 128
-        },
-        {
-          "name": "HairLength",
-          "renderer": "GEO_HairLeftStrand2",
-          "x_px": 0,
-          "y_px": 0,
-          "width_px": 128,
-          "height_px": 128
-        },
-        {
           "name": "HairNape",
           "renderer": "GEO_HairNape",
           "x_px": 128,
@@ -7182,30 +7638,6 @@
         {
           "name": "HairLength",
           "renderer": "GEO_HairRightLength",
-          "x_px": 0,
-          "y_px": 0,
-          "width_px": 128,
-          "height_px": 128
-        },
-        {
-          "name": "HairLength",
-          "renderer": "GEO_HairRightStrand0",
-          "x_px": 0,
-          "y_px": 0,
-          "width_px": 128,
-          "height_px": 128
-        },
-        {
-          "name": "HairLength",
-          "renderer": "GEO_HairRightStrand1",
-          "x_px": 0,
-          "y_px": 0,
-          "width_px": 128,
-          "height_px": 128
-        },
-        {
-          "name": "HairLength",
-          "renderer": "GEO_HairRightStrand2",
           "x_px": 0,
           "y_px": 0,
           "width_px": 128,
@@ -7236,1015 +7668,5 @@
     "generator": "tools/player_body_hair_surfaces.py",
     "version": "1.0.0",
     "sha256": "063a7ac2ab88338b14ecf4d6497bff79d8088dbec2b350dd920a98d3ce3b4431"
-  },
-  "joint_surface_authoring_sha256": "2d43005ce21ccc7308459166c42cfb005a758bb0f2fc385c33164b49e317c59a",
-  "footwear_authoring_sha256": "625bec75bc3be2412502806cd51c3048d50e18480ab6830c5b4abf9b5fc084a1",
-  "counter_seat": {
-    "contract": "counter_seat_supported_edge_v2",
-    "source": "all evaluated body/clothing triangles",
-    "stool_seat_top_m": 0.8175,
-    "stool_diameter_m": 0.48,
-    "stool_pitch_m": 0.9,
-    "action_hip_clearance_m": 0.105,
-    "side_offset_m": 0.45,
-    "enter_key_times": [
-      0.0,
-      0.18,
-      0.4,
-      0.58,
-      0.68,
-      0.84,
-      1.0
-    ],
-    "first_hip_support_progress": 0.58,
-    "edge_offset_m": 0.285,
-    "edge_pelvis_height_m": 0.876,
-    "edge_roll_degrees": 30.0,
-    "left_hip_height_correction_m": 0.01,
-    "left_transfer_height_correction_m": 0.008,
-    "left_settle_height_correction_m": 0.01,
-    "far_boot_floor_release": [
-      0.66,
-      0.76
-    ],
-    "hip_support_tolerance_m": 0.012,
-    "near_leg_fold": [
-      0.4,
-      0.52
-    ],
-    "palm_support_progress": [
-      0.45,
-      0.85
-    ],
-    "floor_support_tolerance_m": 0.015,
-    "palm_support_tolerance_m": 0.025,
-    "bar_thigh_down_degrees": 6.0,
-    "bar_thigh_splay_degrees": 20.0,
-    "bar_shin_tuck_degrees": 5.0,
-    "loop": "CounterSeatLoop",
-    "unchanged_bus_cafe": true
-  },
-  "counter_seat_authoring_sha256": "f84d253aa6072cd034550e48419c19b3fb2c19047ad0f7b8e3da487f109275c5",
-  "hero_corruption": {
-    "schema": "hero_corruption_v1",
-    "shape_name": "HeroCorruption",
-    "stage_weights": [
-      0.0,
-      10.0,
-      23.0,
-      40.0,
-      60.0,
-      80.0,
-      100.0
-    ],
-    "original_rig_weights_uvs_actions": true,
-    "shared_position_field": true,
-    "original_export_triangulation_preserved": true,
-    "mesh_names": [
-      "CLO_Belt",
-      "CLO_BeltBuckle",
-      "CLO_JacketBody",
-      "CLO_JacketCollar.L",
-      "CLO_JacketCollar.R",
-      "CLO_JacketFlapChest.L",
-      "CLO_JacketFlapChest.R",
-      "CLO_JacketFlapHip.L",
-      "CLO_JacketFlapHip.R",
-      "CLO_JacketPlacket.L",
-      "CLO_JacketPlacket.R",
-      "CLO_JacketPocketChest.L",
-      "CLO_JacketPocketChest.R",
-      "CLO_JacketPocketHip.L",
-      "CLO_JacketPocketHip.R",
-      "CLO_JacketSleeve.L",
-      "CLO_JacketSleeve.R",
-      "CLO_ShirtBody",
-      "CLO_TrousersPelvis",
-      "CLO_TrousersThigh.L",
-      "CLO_TrousersThigh.R",
-      "GEO_Ear.L",
-      "GEO_Ear.R",
-      "GEO_FaceSurface",
-      "GEO_HairBack",
-      "GEO_HairBackLength",
-      "GEO_HairBackStrand0",
-      "GEO_HairBackStrand1",
-      "GEO_HairBackStrand2",
-      "GEO_HairCap",
-      "GEO_HairCrownStrand0.L",
-      "GEO_HairCrownStrand0.R",
-      "GEO_HairCrownStrand1.L",
-      "GEO_HairCrownStrand1.R",
-      "GEO_HairCurtain.L",
-      "GEO_HairCurtain.R",
-      "GEO_HairLeftLength",
-      "GEO_HairLeftStrand0",
-      "GEO_HairLeftStrand1",
-      "GEO_HairLeftStrand2",
-      "GEO_HairNape",
-      "GEO_HairRightLength",
-      "GEO_HairRightStrand0",
-      "GEO_HairRightStrand1",
-      "GEO_HairRightStrand2",
-      "GEO_HairTemple.L",
-      "GEO_HairTemple.R",
-      "GEO_Hand.L",
-      "GEO_Hand.R",
-      "GEO_Head",
-      "GEO_Neck",
-      "GEO_Pelvis",
-      "GEO_Shoulder.L",
-      "GEO_Shoulder.R",
-      "GEO_Thigh.L",
-      "GEO_Thigh.R",
-      "GEO_Torso",
-      "GEO_UpperArm.L",
-      "GEO_UpperArm.R"
-    ],
-    "surfaces": [
-      {
-        "renderer": "CLO_Belt",
-        "vertex_count": 64,
-        "maximum_displacement_m": 0.0374356
-      },
-      {
-        "renderer": "CLO_BeltBuckle",
-        "vertex_count": 8,
-        "maximum_displacement_m": 0.0231532
-      },
-      {
-        "renderer": "CLO_JacketBody",
-        "vertex_count": 634,
-        "maximum_displacement_m": 0.0532061
-      },
-      {
-        "renderer": "CLO_JacketCollar.L",
-        "vertex_count": 10,
-        "maximum_displacement_m": 0.0120822
-      },
-      {
-        "renderer": "CLO_JacketCollar.R",
-        "vertex_count": 10,
-        "maximum_displacement_m": 0.0120822
-      },
-      {
-        "renderer": "CLO_JacketFlapChest.L",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0401542
-      },
-      {
-        "renderer": "CLO_JacketFlapChest.R",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0401542
-      },
-      {
-        "renderer": "CLO_JacketFlapHip.L",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0494006
-      },
-      {
-        "renderer": "CLO_JacketFlapHip.R",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0494006
-      },
-      {
-        "renderer": "CLO_JacketPlacket.L",
-        "vertex_count": 52,
-        "maximum_displacement_m": 0.0389711
-      },
-      {
-        "renderer": "CLO_JacketPlacket.R",
-        "vertex_count": 52,
-        "maximum_displacement_m": 0.0389711
-      },
-      {
-        "renderer": "CLO_JacketPocketChest.L",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0436195
-      },
-      {
-        "renderer": "CLO_JacketPocketChest.R",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0436195
-      },
-      {
-        "renderer": "CLO_JacketPocketHip.L",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0476124
-      },
-      {
-        "renderer": "CLO_JacketPocketHip.R",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0476124
-      },
-      {
-        "renderer": "CLO_JacketSleeve.L",
-        "vertex_count": 84,
-        "maximum_displacement_m": 0.0416937
-      },
-      {
-        "renderer": "CLO_JacketSleeve.R",
-        "vertex_count": 84,
-        "maximum_displacement_m": 0.0416937
-      },
-      {
-        "renderer": "CLO_ShirtBody",
-        "vertex_count": 142,
-        "maximum_displacement_m": 0.0427342
-      },
-      {
-        "renderer": "CLO_TrousersPelvis",
-        "vertex_count": 120,
-        "maximum_displacement_m": 0.0356861
-      },
-      {
-        "renderer": "CLO_TrousersThigh.L",
-        "vertex_count": 84,
-        "maximum_displacement_m": 0.0256303
-      },
-      {
-        "renderer": "CLO_TrousersThigh.R",
-        "vertex_count": 84,
-        "maximum_displacement_m": 0.0258653
-      },
-      {
-        "renderer": "GEO_Ear.L",
-        "vertex_count": 14,
-        "maximum_displacement_m": 0.0238397
-      },
-      {
-        "renderer": "GEO_Ear.R",
-        "vertex_count": 14,
-        "maximum_displacement_m": 0.0238397
-      },
-      {
-        "renderer": "GEO_FaceSurface",
-        "vertex_count": 49,
-        "maximum_displacement_m": 0.022268
-      },
-      {
-        "renderer": "GEO_HairBack",
-        "vertex_count": 32,
-        "maximum_displacement_m": 0.0109328
-      },
-      {
-        "renderer": "GEO_HairBackLength",
-        "vertex_count": 140,
-        "maximum_displacement_m": 0.0220428
-      },
-      {
-        "renderer": "GEO_HairBackStrand0",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0170738
-      },
-      {
-        "renderer": "GEO_HairBackStrand1",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0049212
-      },
-      {
-        "renderer": "GEO_HairBackStrand2",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0166363
-      },
-      {
-        "renderer": "GEO_HairCap",
-        "vertex_count": 62,
-        "maximum_displacement_m": 0.0066632
-      },
-      {
-        "renderer": "GEO_HairCrownStrand0.L",
-        "vertex_count": 24,
-        "maximum_displacement_m": 0.017134
-      },
-      {
-        "renderer": "GEO_HairCrownStrand0.R",
-        "vertex_count": 24,
-        "maximum_displacement_m": 0.017134
-      },
-      {
-        "renderer": "GEO_HairCrownStrand1.L",
-        "vertex_count": 24,
-        "maximum_displacement_m": 0.0177419
-      },
-      {
-        "renderer": "GEO_HairCrownStrand1.R",
-        "vertex_count": 24,
-        "maximum_displacement_m": 0.0177419
-      },
-      {
-        "renderer": "GEO_HairCurtain.L",
-        "vertex_count": 72,
-        "maximum_displacement_m": 0.01864
-      },
-      {
-        "renderer": "GEO_HairCurtain.R",
-        "vertex_count": 72,
-        "maximum_displacement_m": 0.01864
-      },
-      {
-        "renderer": "GEO_HairLeftLength",
-        "vertex_count": 182,
-        "maximum_displacement_m": 0.0293905
-      },
-      {
-        "renderer": "GEO_HairLeftStrand0",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.026425
-      },
-      {
-        "renderer": "GEO_HairLeftStrand1",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0297283
-      },
-      {
-        "renderer": "GEO_HairLeftStrand2",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0261007
-      },
-      {
-        "renderer": "GEO_HairNape",
-        "vertex_count": 250,
-        "maximum_displacement_m": 0.0241003
-      },
-      {
-        "renderer": "GEO_HairRightLength",
-        "vertex_count": 182,
-        "maximum_displacement_m": 0.0294147
-      },
-      {
-        "renderer": "GEO_HairRightStrand0",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0262822
-      },
-      {
-        "renderer": "GEO_HairRightStrand1",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0295926
-      },
-      {
-        "renderer": "GEO_HairRightStrand2",
-        "vertex_count": 16,
-        "maximum_displacement_m": 0.0259158
-      },
-      {
-        "renderer": "GEO_HairTemple.L",
-        "vertex_count": 18,
-        "maximum_displacement_m": 0.0157373
-      },
-      {
-        "renderer": "GEO_HairTemple.R",
-        "vertex_count": 18,
-        "maximum_displacement_m": 0.0157373
-      },
-      {
-        "renderer": "GEO_Hand.L",
-        "vertex_count": 40,
-        "maximum_displacement_m": 0.006912
-      },
-      {
-        "renderer": "GEO_Hand.R",
-        "vertex_count": 40,
-        "maximum_displacement_m": 0.006912
-      },
-      {
-        "renderer": "GEO_Head",
-        "vertex_count": 98,
-        "maximum_displacement_m": 0.0252484
-      },
-      {
-        "renderer": "GEO_Neck",
-        "vertex_count": 48,
-        "maximum_displacement_m": 0.0140842
-      },
-      {
-        "renderer": "GEO_Pelvis",
-        "vertex_count": 144,
-        "maximum_displacement_m": 0.0311898
-      },
-      {
-        "renderer": "GEO_Shoulder.L",
-        "vertex_count": 30,
-        "maximum_displacement_m": 0.020984
-      },
-      {
-        "renderer": "GEO_Shoulder.R",
-        "vertex_count": 30,
-        "maximum_displacement_m": 0.0236637
-      },
-      {
-        "renderer": "GEO_Thigh.L",
-        "vertex_count": 40,
-        "maximum_displacement_m": 0.0231975
-      },
-      {
-        "renderer": "GEO_Thigh.R",
-        "vertex_count": 40,
-        "maximum_displacement_m": 0.0236317
-      },
-      {
-        "renderer": "GEO_Torso",
-        "vertex_count": 314,
-        "maximum_displacement_m": 0.0416524
-      },
-      {
-        "renderer": "GEO_UpperArm.L",
-        "vertex_count": 50,
-        "maximum_displacement_m": 0.0215237
-      },
-      {
-        "renderer": "GEO_UpperArm.R",
-        "vertex_count": 50,
-        "maximum_displacement_m": 0.0236637
-      }
-    ],
-    "geometry_sha256": "9fd0f84de66683d9220dd5040fb48110095fe5f5bdcbe6b1c4eeb4128831aef1",
-    "hair_lengths": {
-      "contract": "hero_hair_length_v1",
-      "short_shape": "HeroHairShort",
-      "long_shape": "HeroHairLong",
-      "shortest_scale": 0.55,
-      "longest_scale": 1.8,
-      "short_stage_weights": [
-        100.0,
-        65.0,
-        25.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      "long_stage_weights": [
-        0.0,
-        0.0,
-        0.0,
-        20.0,
-        45.0,
-        70.0,
-        100.0
-      ],
-      "rest_translation_compensated": true,
-      "root_pins_and_original_bones": true,
-      "surfaces": [
-        {
-          "renderer": "GEO_HairBack",
-          "vertex_count": 32
-        },
-        {
-          "renderer": "GEO_HairBackLength",
-          "vertex_count": 140
-        },
-        {
-          "renderer": "GEO_HairBackStrand0",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairBackStrand1",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairBackStrand2",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairCap",
-          "vertex_count": 62
-        },
-        {
-          "renderer": "GEO_HairCrownStrand0.L",
-          "vertex_count": 24
-        },
-        {
-          "renderer": "GEO_HairCrownStrand0.R",
-          "vertex_count": 24
-        },
-        {
-          "renderer": "GEO_HairCrownStrand1.L",
-          "vertex_count": 24
-        },
-        {
-          "renderer": "GEO_HairCrownStrand1.R",
-          "vertex_count": 24
-        },
-        {
-          "renderer": "GEO_HairCurtain.L",
-          "vertex_count": 72
-        },
-        {
-          "renderer": "GEO_HairCurtain.R",
-          "vertex_count": 72
-        },
-        {
-          "renderer": "GEO_HairLeftLength",
-          "vertex_count": 182
-        },
-        {
-          "renderer": "GEO_HairLeftStrand0",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairLeftStrand1",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairLeftStrand2",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairNape",
-          "vertex_count": 250
-        },
-        {
-          "renderer": "GEO_HairRightLength",
-          "vertex_count": 182
-        },
-        {
-          "renderer": "GEO_HairRightStrand0",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairRightStrand1",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairRightStrand2",
-          "vertex_count": 16
-        },
-        {
-          "renderer": "GEO_HairTemple.L",
-          "vertex_count": 18
-        },
-        {
-          "renderer": "GEO_HairTemple.R",
-          "vertex_count": 18
-        }
-      ],
-      "geometry_sha256": "f004c1d3db4f2b01191ee4052986409ef82c7fe5889f7f9782c141edd5b6909f"
-    },
-    "source_derived": true,
-    "preserve_expression_soil_alpha": true,
-    "textures": [
-      {
-        "kind": "Face",
-        "stage": 2,
-        "resource": "Player/Corruption/Face2",
-        "source_sha256": "1b1d55a54867c6eb02cbff42f9c6eed8b6719ff7dc89a4517224e513412d234b",
-        "sha256": "86a15868d8329fa36543013b2d33217d7e431a6cbcee2e64c05eb7ba2301f758",
-        "width": 512,
-        "height": 256
-      },
-      {
-        "kind": "Face",
-        "stage": 3,
-        "resource": "Player/Corruption/Face3",
-        "source_sha256": "1b1d55a54867c6eb02cbff42f9c6eed8b6719ff7dc89a4517224e513412d234b",
-        "sha256": "cc83178c4e6f855d26cb9c286d5cc8d58ff900a9ed0852687748dedaaa697f5f",
-        "width": 512,
-        "height": 256
-      },
-      {
-        "kind": "Face",
-        "stage": 4,
-        "resource": "Player/Corruption/Face4",
-        "source_sha256": "1b1d55a54867c6eb02cbff42f9c6eed8b6719ff7dc89a4517224e513412d234b",
-        "sha256": "0baf129fd8b109f58e6cb84c6fb7f5a3cafdfd4f741c7f8ecd3a0558d0c652c2",
-        "width": 512,
-        "height": 256
-      },
-      {
-        "kind": "Face",
-        "stage": 5,
-        "resource": "Player/Corruption/Face5",
-        "source_sha256": "1b1d55a54867c6eb02cbff42f9c6eed8b6719ff7dc89a4517224e513412d234b",
-        "sha256": "73c58977ad3a20082b191b2eb833e06e00773505f0116ad029074b7d06b1451c",
-        "width": 512,
-        "height": 256
-      },
-      {
-        "kind": "Face",
-        "stage": 6,
-        "resource": "Player/Corruption/Face6",
-        "source_sha256": "1b1d55a54867c6eb02cbff42f9c6eed8b6719ff7dc89a4517224e513412d234b",
-        "sha256": "e315031d3a8d0a1a02f723f4c62164b34a3cb25ed8788df9f8a25b6d2005df66",
-        "width": 512,
-        "height": 256
-      },
-      {
-        "kind": "Face",
-        "stage": 7,
-        "resource": "Player/Corruption/Face7",
-        "source_sha256": "1b1d55a54867c6eb02cbff42f9c6eed8b6719ff7dc89a4517224e513412d234b",
-        "sha256": "9ce6c73160484c093b1b3a0128dc5fe99a13827b91bcc2834ca7b24b8569c05f",
-        "width": 512,
-        "height": 256
-      },
-      {
-        "kind": "BareSkin",
-        "stage": 2,
-        "resource": "Player/Corruption/BareSkin2",
-        "source_sha256": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c",
-        "sha256": "a97ab6a6096882a79621477c73c4cdeeb6439245c76539ebd1742e9e8863ec88",
-        "width": 256,
-        "height": 256
-      },
-      {
-        "kind": "BareSkin",
-        "stage": 3,
-        "resource": "Player/Corruption/BareSkin3",
-        "source_sha256": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c",
-        "sha256": "fbe28735262af59734001e60b4906c489287e4d8bb824978f6fe92f66c330ba7",
-        "width": 256,
-        "height": 256
-      },
-      {
-        "kind": "BareSkin",
-        "stage": 4,
-        "resource": "Player/Corruption/BareSkin4",
-        "source_sha256": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c",
-        "sha256": "95ddd4a72f608c4245b8ae730425b06abe76b869a06f04d04c76c13ae6d31e62",
-        "width": 256,
-        "height": 256
-      },
-      {
-        "kind": "BareSkin",
-        "stage": 5,
-        "resource": "Player/Corruption/BareSkin5",
-        "source_sha256": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c",
-        "sha256": "396cce14a0b6746aaf009cfea75b5e6dd4449c185585de999582c566a921a6b5",
-        "width": 256,
-        "height": 256
-      },
-      {
-        "kind": "BareSkin",
-        "stage": 6,
-        "resource": "Player/Corruption/BareSkin6",
-        "source_sha256": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c",
-        "sha256": "bcc7821f171447fac356061f3fe5fff4f0c8652e5741cd96f7a5de3a51f2a5b0",
-        "width": 256,
-        "height": 256
-      },
-      {
-        "kind": "BareSkin",
-        "stage": 7,
-        "resource": "Player/Corruption/BareSkin7",
-        "source_sha256": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c",
-        "sha256": "7ec1f5b413787d6d538e4a30438cbc7e7fec3d0afa6061c2855f22dfaa2e5047",
-        "width": 256,
-        "height": 256
-      },
-      {
-        "kind": "Dialogue",
-        "stage": 2,
-        "resource": "Player/Corruption/Dialogue2",
-        "source_sha256": "fd581db321627d9ec26943629963e18b56a7cd78b491fb8585adeb12e7789878",
-        "sha256": "a3a89f6417006faa0893dac883a94c95771110625437a8a2fc9431b92d975677",
-        "width": 512,
-        "height": 512
-      },
-      {
-        "kind": "Dialogue",
-        "stage": 3,
-        "resource": "Player/Corruption/Dialogue3",
-        "source_sha256": "fd581db321627d9ec26943629963e18b56a7cd78b491fb8585adeb12e7789878",
-        "sha256": "0c28a946d16f83698abac29bc5edafe872ed5b15f7cf9a6c0899cabcb018e3ac",
-        "width": 512,
-        "height": 512
-      },
-      {
-        "kind": "Dialogue",
-        "stage": 4,
-        "resource": "Player/Corruption/Dialogue4",
-        "source_sha256": "fd581db321627d9ec26943629963e18b56a7cd78b491fb8585adeb12e7789878",
-        "sha256": "ba314b4a6c458c940c10c4b116800bd4186a4299098b547028db3b15978a73e1",
-        "width": 512,
-        "height": 512
-      },
-      {
-        "kind": "Dialogue",
-        "stage": 5,
-        "resource": "Player/Corruption/Dialogue5",
-        "source_sha256": "fd581db321627d9ec26943629963e18b56a7cd78b491fb8585adeb12e7789878",
-        "sha256": "67501c3cfa583a5c26387647f3ef89b8a4517621ff2b4d9d1a07a30635337769",
-        "width": 512,
-        "height": 512
-      },
-      {
-        "kind": "Dialogue",
-        "stage": 6,
-        "resource": "Player/Corruption/Dialogue6",
-        "source_sha256": "fd581db321627d9ec26943629963e18b56a7cd78b491fb8585adeb12e7789878",
-        "sha256": "a88a564306a2af9889f236e4e55e77f2a8d26eec0209ca43bf24e41d61770da7",
-        "width": 512,
-        "height": 512
-      },
-      {
-        "kind": "Dialogue",
-        "stage": 7,
-        "resource": "Player/Corruption/Dialogue7",
-        "source_sha256": "fd581db321627d9ec26943629963e18b56a7cd78b491fb8585adeb12e7789878",
-        "sha256": "a17518e07d175425198ea40bf33a8338a1103e18844be766b2fa28d61ff70a06",
-        "width": 512,
-        "height": 512
-      },
-      {
-        "kind": "Clothing",
-        "stage": 2,
-        "resource": "Player/Corruption/Clothing2",
-        "source_sha256": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
-        "sha256": "5268c39ad632cc9ec2c2b2a197a19abe11560549586f68e549357735f7a01a01",
-        "width": 256,
-        "height": 256,
-        "authoring": "hero_corruption_clothing_v2",
-        "uv_layout": "original_clothing_regions",
-        "preserve_patch_forearm_alpha": true,
-        "unique_limb_macro_damage": true,
-        "paired_forearm_cuff_only": true
-      },
-      {
-        "kind": "Clothing",
-        "stage": 3,
-        "resource": "Player/Corruption/Clothing3",
-        "source_sha256": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
-        "sha256": "ebd4361b43c007a6ac64ca1cb6c650544f7f1a57150f2ba8885750bc2497e207",
-        "width": 256,
-        "height": 256,
-        "authoring": "hero_corruption_clothing_v2",
-        "uv_layout": "original_clothing_regions",
-        "preserve_patch_forearm_alpha": true,
-        "unique_limb_macro_damage": true,
-        "paired_forearm_cuff_only": true
-      },
-      {
-        "kind": "Clothing",
-        "stage": 4,
-        "resource": "Player/Corruption/Clothing4",
-        "source_sha256": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
-        "sha256": "006f047b2fc1bdfbf8a69485c722d066cb9cbf0a981a54952979d9436a823a4d",
-        "width": 256,
-        "height": 256,
-        "authoring": "hero_corruption_clothing_v2",
-        "uv_layout": "original_clothing_regions",
-        "preserve_patch_forearm_alpha": true,
-        "unique_limb_macro_damage": true,
-        "paired_forearm_cuff_only": true
-      },
-      {
-        "kind": "Clothing",
-        "stage": 5,
-        "resource": "Player/Corruption/Clothing5",
-        "source_sha256": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
-        "sha256": "5dd5eeb5d6844da9b83472dcb0fac6c25d019b217cafddcd06c7798f6761afc8",
-        "width": 256,
-        "height": 256,
-        "authoring": "hero_corruption_clothing_v2",
-        "uv_layout": "original_clothing_regions",
-        "preserve_patch_forearm_alpha": true,
-        "unique_limb_macro_damage": true,
-        "paired_forearm_cuff_only": true
-      },
-      {
-        "kind": "Clothing",
-        "stage": 6,
-        "resource": "Player/Corruption/Clothing6",
-        "source_sha256": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
-        "sha256": "8154ecdeba90ff07267869bbd1d24a2ae57a13fcd3ff10f1ae65251284ce68d1",
-        "width": 256,
-        "height": 256,
-        "authoring": "hero_corruption_clothing_v2",
-        "uv_layout": "original_clothing_regions",
-        "preserve_patch_forearm_alpha": true,
-        "unique_limb_macro_damage": true,
-        "paired_forearm_cuff_only": true
-      },
-      {
-        "kind": "Clothing",
-        "stage": 7,
-        "resource": "Player/Corruption/Clothing7",
-        "source_sha256": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
-        "sha256": "834b0cd29c1025f6aa4a4d30cccf031873c08798bbacafa3d13ac875ddf5e3c3",
-        "width": 256,
-        "height": 256,
-        "authoring": "hero_corruption_clothing_v2",
-        "uv_layout": "original_clothing_regions",
-        "preserve_patch_forearm_alpha": true,
-        "unique_limb_macro_damage": true,
-        "paired_forearm_cuff_only": true
-      }
-    ],
-    "preserved_source_sha256": "d9b360580c5263394eb70d5b6d6c19289b68a8aeeecfe23e1329dcdf09ec3f87",
-    "authoring_sha256": "b50e999914954beefa522cb3fd250c8c8968b907b3e72b7b0cf6341d1f92d530"
-  },
-  "content_signature_scope": "current_source_model_rig_actions; current_face_pixels_use_face_atlas.sha256",
-  "smoking": {
-    "contact_limit_m": 0.025,
-    "minimum_outward_dot": 0.85,
-    "maximum_wrist_bend_degrees": 35.0,
-    "maximum_wrist_twist_degrees": 35.0,
-    "contacts": [
-      {
-        "action": "SmokeEnter",
-        "progress": 0.68,
-        "wrist_bend_degrees": 18.4469,
-        "wrist_twist_degrees": 2.8979,
-        "forearm_twist_degrees": 53.3364,
-        "distance_m": 1e-07,
-        "vertical_error_m": 1e-07,
-        "outward_dot": 0.9999999
-      },
-      {
-        "action": "SmokeEnter",
-        "progress": 0.76,
-        "wrist_bend_degrees": 18.4468,
-        "wrist_twist_degrees": 2.8979,
-        "forearm_twist_degrees": 53.3364,
-        "distance_m": 2e-07,
-        "vertical_error_m": 1e-07,
-        "outward_dot": 0.9999999
-      },
-      {
-        "action": "SmokeEnter",
-        "progress": 0.84,
-        "wrist_bend_degrees": 18.5796,
-        "wrist_twist_degrees": 2.9388,
-        "forearm_twist_degrees": 52.9881,
-        "distance_m": 1e-07,
-        "vertical_error_m": 1e-07,
-        "outward_dot": 0.9999999
-      },
-      {
-        "action": "SmokeLoop",
-        "progress": 0.42,
-        "wrist_bend_degrees": 18.4469,
-        "wrist_twist_degrees": 2.8979,
-        "forearm_twist_degrees": 53.3364,
-        "distance_m": 2e-07,
-        "vertical_error_m": 1e-07,
-        "outward_dot": 0.9999999
-      },
-      {
-        "action": "SmokeLoop",
-        "progress": 0.5,
-        "wrist_bend_degrees": 18.5796,
-        "wrist_twist_degrees": 2.9388,
-        "forearm_twist_degrees": 52.9881,
-        "distance_m": 2e-07,
-        "vertical_error_m": 1e-07,
-        "outward_dot": 0.9999999
-      },
-      {
-        "action": "SmokeLoop",
-        "progress": 0.625,
-        "wrist_bend_degrees": 18.5503,
-        "wrist_twist_degrees": 2.8847,
-        "forearm_twist_degrees": 53.1197,
-        "distance_m": 1e-07,
-        "vertical_error_m": 0.0,
-        "outward_dot": 0.9999999
-      }
-    ],
-    "fixed_root": true,
-    "exact_loop_seam": true,
-    "preserved_other_content": true
-  },
-  "smoking_authoring_sha256": "a9c4dd02fe625ae182de676af6af41c8d457e406464b409211931e93524aaaee",
-  "smoking_grip": {
-    "shape_name": "SmokingGrip",
-    "side": "R",
-    "renderers": [
-      "GEO_Hand.R",
-      "GEO_Thumb.R",
-      "GEO_Finger0.R",
-      "GEO_Finger1.R",
-      "GEO_Finger2.R",
-      "GEO_Finger3.R"
-    ],
-    "radius_m": 0.00325,
-    "filter_to_grip_m": 0.0225,
-    "contacts": {
-      "GEO_Finger0.R": {
-        "joint_angles_degrees": [
-          45.0,
-          80.0,
-          40.0
-        ],
-        "surface_gap_m": 0.0005324264721957967,
-        "contact_palm_m": -0.002041271422058344,
-        "contact_radial_m": [
-          -0.0031843306496739388,
-          -0.002041271422058344
-        ]
-      },
-      "GEO_Finger1.R": {
-        "joint_angles_degrees": [
-          10.0,
-          40.0,
-          80.0
-        ],
-        "surface_gap_m": 0.0008993199589937893,
-        "contact_palm_m": 0.00223877327516675,
-        "contact_radial_m": [
-          0.003493530210107565,
-          0.00223877327516675
-        ]
-      }
-    },
-    "pad_opposition_dot": -0.9999999403953552,
-    "pad_opposition_degrees": 179.98021765897056,
-    "minimum_pad_opposition_degrees": 150.0,
-    "thumb_face_side_margin_m": 0.010340905224438757,
-    "full_shaft_clearances": {
-      "GEO_Hand.R": {
-        "paper": {
-          "minimum_axis_distance_m": 0.01052089328947003,
-          "surface_clearance_m": 0.00727089328947003
-        },
-        "ember": {
-          "minimum_axis_distance_m": 0.013754202343637379,
-          "surface_clearance_m": 0.01025420234363738
-        },
-        "conservative_full_shaft": {
-          "minimum_axis_distance_m": 0.01052088991467806,
-          "surface_clearance_m": 0.00727088991467806
-        }
-      },
-      "GEO_Thumb.R": {
-        "paper": {
-          "minimum_axis_distance_m": 0.028023312495866856,
-          "surface_clearance_m": 0.024773312495866857
-        },
-        "ember": {
-          "minimum_axis_distance_m": 0.06763446977824342,
-          "surface_clearance_m": 0.06413446977824341
-        },
-        "conservative_full_shaft": {
-          "minimum_axis_distance_m": 0.028751256359070578,
-          "surface_clearance_m": 0.02550125635907058
-        }
-      },
-      "GEO_Finger0.R": {
-        "paper": {
-          "minimum_axis_distance_m": 0.0037824084029766994,
-          "surface_clearance_m": 0.0005324084029766996
-        },
-        "ember": {
-          "minimum_axis_distance_m": 0.04576482922462591,
-          "surface_clearance_m": 0.042264829224625905
-        },
-        "conservative_full_shaft": {
-          "minimum_axis_distance_m": 0.0037824174542690917,
-          "surface_clearance_m": 0.0005324174542690918
-        }
-      },
-      "GEO_Finger1.R": {
-        "paper": {
-          "minimum_axis_distance_m": 0.004149324706708179,
-          "surface_clearance_m": 0.0008993247067081793
-        },
-        "ember": {
-          "minimum_axis_distance_m": 0.027942259788938127,
-          "surface_clearance_m": 0.024442259788938128
-        },
-        "conservative_full_shaft": {
-          "minimum_axis_distance_m": 0.004149321000366234,
-          "surface_clearance_m": 0.0008993210003662342
-        }
-      },
-      "GEO_Finger2.R": {
-        "paper": {
-          "minimum_axis_distance_m": 0.0077142138725058845,
-          "surface_clearance_m": 0.004464213872505885
-        },
-        "ember": {
-          "minimum_axis_distance_m": 0.013192843436415785,
-          "surface_clearance_m": 0.009692843436415785
-        },
-        "conservative_full_shaft": {
-          "minimum_axis_distance_m": 0.007714182591559864,
-          "surface_clearance_m": 0.004464182591559864
-        }
-      },
-      "GEO_Finger3.R": {
-        "paper": {
-          "minimum_axis_distance_m": 0.011240343038716785,
-          "surface_clearance_m": 0.007990343038716785
-        },
-        "ember": {
-          "minimum_axis_distance_m": 0.010999429666474518,
-          "surface_clearance_m": 0.007499429666474518
-        },
-        "conservative_full_shaft": {
-          "minimum_axis_distance_m": 0.010849519977845374,
-          "surface_clearance_m": 0.007599519977845375
-        }
-      }
-    },
-    "maximum_link_length_error_m": 8.001304655641528e-08,
-    "palm_wrist_unchanged": true,
-    "closed_positive_volumes": true,
-    "socket_rest_unchanged": true,
-    "socket_delta_in_smoking_clips": true,
-    "shape_signature": "d93e202ab708f3b96c510e372ed27436bf19d4a28cebf72e26c03ffd8a7c1002",
-    "authoring_sha256": "5d3ba57db00e55fd0e916f43b73acb17bdc29c80e98503938b9f748da4e59c47"
-  },
-  "bed_authoring_sha256": "9bca7aa050d1f634eb2c8688c1d2968ee60938651a0191b94839dfcf577e900a"
+  }
 }

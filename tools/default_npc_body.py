@@ -1,7 +1,6 @@
-"""Hero-derived default male anatomy and bounded, shared garment morphs.
+"""Neutral default male anatomy and bounded, shared garment morphs.
 
-The canonical hero Blender source is a read-only dependency. Its bare anatomy
-is copied through the two rigs' rest frames, never reconstructed approximately.
+The anatomy donor isolates the original rest geometry from the playable hero.
 Heads, hair, hands, contacts and the NPC action bank remain NPC-owned.
 """
 from __future__ import annotations
@@ -30,7 +29,7 @@ def _smooth(value):
 def copy_hero_anatomy(builder, source_path, root):
     """Append only source objects needed by the anatomy, then dispose of them."""
     if not source_path.is_file():
-        raise RuntimeError("Build Hero V2 before the default NPC: " + str(source_path))
+        raise RuntimeError("Missing default male anatomy donor: " + str(source_path))
     before = {obj.as_pointer() for obj in bpy.data.objects}
     disposable = (bpy.data.meshes, bpy.data.armatures, bpy.data.materials,
                   bpy.data.images, bpy.data.actions, bpy.data.collections)

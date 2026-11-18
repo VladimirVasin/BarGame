@@ -65,8 +65,8 @@ namespace BarPromenade
         {
             float ordinary = gaitWeights[WalkBackGait];
             float snow = gaitWeights[SnowWalkBackwardGait];
-            float cycles = Mathf.Lerp(0.70f, 0.90f, ordinary) /
-                Mathf.Max(0.0001f, walkBackBinding.Clip.length);
+            float cycles = .90f * Mathf.Clamp01(-forwardTravelSpeed /
+                (FullWalkBackSpeed * Mathf.Max(.45f, ordinary))) / walkBackBinding.Clip.length;
             cycles = Mathf.Lerp(cycles, planarSpeed / SnowCycleDistance,
                 snow / Mathf.Max(0.0001f, ordinary + snow));
             walkBackPlayable.SetSpeed(cycles * walkBackBinding.Clip.length);

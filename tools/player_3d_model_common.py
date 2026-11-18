@@ -136,7 +136,7 @@ REQUIRED_FACE_BONES = (
 # the pelvis bone that runtime pins to the mattress. Mirrored by
 # PlayerCharacterDimensions in the Unity runtime; validate_bed_support_contract
 # measures both against the real posed meshes and refuses a silent drift.
-BED_BODY_SUPPORT_OFFSET_M = 0.1303
+BED_BODY_SUPPORT_OFFSET_M = 0.1483
 BED_HEAD_SUPPORT_OFFSET_M = -0.0132
 BED_SEATED_SUPPORT_OFFSET_M = 0.0614
 BED_SEATED_PELVIS_LIFT_M = 0.0644
@@ -164,10 +164,10 @@ BED_PELVIS_PROFILES = {
         (0.44, 0.6244, -0.5825), (0.47, 0.6244, -0.5825),
         (0.51, 0.6944, -0.5825), (0.58, 0.6944, -0.375),
         (0.61, 0.6244, -0.375), (0.64, 0.6244, -0.375),
-        (0.96, 0.5903, -0.375), (1.0, 0.5903, -0.375),
+        (0.96, 0.6083, -0.375), (1.0, 0.6083, -0.375),
     ),
     "BedExit": (
-        (0.0, 0.5903, -0.375), (0.30, 0.6244, -0.375),
+        (0.0, 0.6083, -0.375), (0.30, 0.6244, -0.375),
         (0.32, 0.6244, -0.375), (0.35, 0.6944, -0.375),
         (0.40, 0.6944, -0.5825), (0.43, 0.6244, -0.5825),
         (0.46, 0.6244, -0.5825), (0.49, 0.6944, -0.5825),
@@ -2062,7 +2062,7 @@ class ProductionPlayerBuilderBase:
                 {
                     "pelvis": BonePose(
                         rotation_degrees=(66.0, 0.0, -sign * 3.0),
-                        armature_location_m=(-sign * 0.018, 0.025, -0.475),
+                        armature_location_m=(-sign * 0.018, 0.025, -0.468),
                     ),
                     "spine": BonePose(
                         rotation_degrees=(-8.0, 0.0, sign * 2.0)
@@ -2106,7 +2106,7 @@ class ProductionPlayerBuilderBase:
                     # the floor: a knee swung under hips this low would.
                     "pelvis": BonePose(
                         rotation_degrees=(48.0, 0.0, -sign * 4.0),
-                        armature_location_m=(-sign * 0.022, 0.02, -0.20),
+                        armature_location_m=(-sign * 0.022, 0.02, -0.155),
                     ),
                     "spine": BonePose(
                         rotation_degrees=(5.0, 0.0, sign * 2.0)
@@ -2429,9 +2429,9 @@ class ProductionPlayerBuilderBase:
                     })
                 return pose
 
-            supine = seated_pose(-88.0, 0.125, (-0.36, 0.06), (-0.35, -0.08),
+            supine = seated_pose(-88.0, 0.151, (-0.36, 0.06), (-0.35, -0.08),
                                  (-0.20, -0.04), (-0.24, 0.06))
-            supine_brace = seated_pose(-62.0, 0.12, (-0.35, 0.10), (-0.34, -0.11),
+            supine_brace = seated_pose(-62.0, 0.128, (-0.35, 0.10), (-0.34, -0.11),
                                        (-0.10, -0.25), (-0.24, 0.12))
             seated_elbows = seated_pose(-35.0, 0.10, (-0.35, 0.10), (-0.34, -0.11),
                                         (0.06, -0.30), (-0.20, -0.10))

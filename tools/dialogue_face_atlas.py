@@ -185,17 +185,14 @@ def validate(identity, canvas, source):
             assert region(tile, 17, 46, 49, 60) != region(twin, 17, 46, 49, 60), "Soil must survive every mouth"
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output-dir", type=Path, default=OUTPUT)
-    parser.add_argument("--validate-only", action="store_true")
-    args = parser.parse_args()
+def generate(output_dir, hero_face_source=None, validate_only=False):
     payloads = {}
     manifest = {"generator": Path(__file__).name, "version": "1.0.0", "cell_size": CELL,
                 "columns": COLUMNS, "index_origin": "top_left",
                 "index_formula": "upper_face * 6 + mouth + (hero_soiled ? 32 : 0)",
                 "mouths": list(MOUTHS), "upper_faces": list(UPPER_FACES), "faces": {}}
-    for identity, path in SOURCES.items():
+    for identity, published_path in SOURCES.items():
+        path = hero_face_source if identity == "Hero" and hero_face_source else published_path
         source = read_generated_png(path)
         canvas = build(identity, source)
         validate(identity, canvas, source)
@@ -204,12 +201,12 @@ def main():
         payloads[filename] = data
         manifest["faces"][identity] = {"texture": filename, "width": canvas.width, "height": canvas.height,
             "rows": canvas.height // CELL, "soiled_offset": 32 if identity == "Hero" else 0,
-            "source": path.relative_to(ROOT).as_posix(), "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "source": published_path.relative_to(ROOT).as_posix(), "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             "sha256": hashlib.sha256(data).hexdigest(), "base_tint": [1, 1, 1, 1] if identity == "Hero" else [.61, .47, .385, 1]}
     payloads["DialogueFaces.json"] = (json.dumps(manifest, indent=2) + "\n").encode("utf-8")
-    if args.validate_only:
+    if validate_only:
         for filename, data in payloads.items():
-            assert (args.output_dir / filename).read_bytes() == data, "Published dialogue atlas differs: " + filename
+            assert (output_dir / filename).read_bytes() == data, "Published dialogue atlas differs: " + filename
     else:
         from asset_pipeline import publish_files, workspace_temporary_directory
         with workspace_temporary_directory("dialogue-faces-") as staging:
@@ -217,9 +214,17 @@ def main():
             for filename, data in payloads.items():
                 temporary = Path(staging) / filename
                 temporary.write_bytes(data)
-                pairs.append((temporary, args.output_dir / filename))
+                pairs.append((temporary, output_dir / filename))
             publish_files(pairs)
     print("DIALOGUE FACE ATLAS CONTRACT OK: deterministic cells, independent mouth/brows/blinks, persistent hero soil")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, default=OUTPUT)
+    parser.add_argument("--validate-only", action="store_true")
+    args = parser.parse_args()
+    generate(args.output_dir, validate_only=args.validate_only)
 
 
 if __name__ == "__main__":

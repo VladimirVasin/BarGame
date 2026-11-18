@@ -2,17 +2,16 @@
 
 ## Current production lock
 
-- Silhouette: weary lean adult man; torso widens toward shoulders, male hips/glutes,
-  slim arms; near-black parted hair, cropped initially and long/unkempt at
-  maximum decay, without a ponytail;
-  articulated hands and heavy work boots. Hand reach/width is 20% larger,
-  with slimmer palm depth/finger girth (user decision, 2026-09-15).
-  Original wrist joins, rig and grip sockets remain.
-- Clothing: faded, unfastened dark olive-drab M-65 visibly large on the lean torso, with long sleeves
-  over a charcoal shirt, desaturated navy trousers, a separate olive military
-  webbing belt with a muted metal buckle, and burgundy Dr. Martens 1460
-  Smooth Leather Lace Up Boots: rounded toe, eight eyelets/black laces,
-  yellow welt stitching and grooved sole; ankle/forefoot flex on the same rig.
+- Silhouette: a weary lean adult man, hollow cheeks under a firm brow,
+  dry frame, low shoulders and heavy work boots. Short dark side part grows
+  out through the seven forms. Hand reach, wrist joints and grip sockets
+  retain their measured geometry.
+- Clothing: faded olive M-65 with four shaped bellows and overlapping flaps,
+  standing collar, shoulder and cuff tabs, open storm placket and a sewn right
+  sleeve repair. Brown knit and peat trousers tuck into oxblood 1460-style
+  boots. Raised eyestays, heel loops, yellow welt stitches and a recessed sole
+  profile. Separate webbing belt with a dull buckle.
+  Skin, canvas, knit, leather and metal keep separate finishes to their edges.
 - Accepted `2026-09-09`: optional separate yellow scarf:
   neck/nape wrap, lower face covered when raised, back knot and a hanging cloth
   tail. Decision `2026-09-19`: the shared left-hand pull lowers it outside Alpine
@@ -29,9 +28,9 @@
   shape and the original rig's left hand provide temporary mouth access;
   head/body hiding, bathing and the bathroom mirror include the accessory.
   Core counts exclude this pack.
-- Asymmetry: muted ochre **right** shoulder patch; sleeves match, no bandage.
+- Asymmetry: muted **right** shoulder repair; sleeves match, no bandage.
   Accepted `2026-10-14`, CombatTest only: worn, unbranded flashlight clipped
-  on left upper M-65 chest/below collar; Chest carries model/forward Spot.
+  on left upper chest/below collar; Chest carries model/forward Spot.
   No decorative strap/insignia/biography; belt/core rig stay.
 - Mood: restrained low-poly survival horror, with readable dark outlines
   and value separation against gray-green City fog and the warm Bar interior.
@@ -40,7 +39,7 @@
 
 ## Production Hero V2
 
-All ten gameplay roots, prefab-derived first-person subsets and inventory
+All eleven gameplay roots, prefab-derived first-person subsets and inventory
 portrait use the sole `Player3DV2` through `Player3DResources`/`PlayerFactory`.
 
 - Accepted `2026-10-29`: seven irreversible drink-dose appearances on this rig.
@@ -48,7 +47,7 @@ portrait use the sole `Player3DV2` through `Player3DResources`/`PlayerFactory`.
   source-derived face/skin/dialogue atlases retain expressions and soil.
   Clothing stains/abrasion/fraying/closed stitched tears differ per thigh/shin/
   boot; right patch/paired forearms/alpha/normal-response maps stay.
-  Maximum is an emaciated human; M-65/right patch/boots remain recognizable.
+  Maximum is an emaciated human; work jacket/repair/boots remain recognizable.
   Contact-aware hunch/tremor yield to owned actions. Mirror/first-person copies
   share the applied state; inventory portrait follows the stage.
   Calendar/sobriety never drive it; technical sleep raises to7 (§6).
@@ -58,15 +57,10 @@ portrait use the sole `Player3DV2` through `Player3DResources`/`PlayerFactory`.
   base/top `14.8/10.8 cm`, `32 mm` visible above collar. Male hips/two modest
   rounded buttocks with a cleft join thighs. Independent trousers retain
   clearance, pinned waist and `TrouserKneeFold.*` through `135°`.
-  M-65: broad flatter panels, gentle waist shaping, smooth rear fall;
-  defined armholes, shaped sleeves with elbow room/taper/bunched cuffs.
-  Restrained drape folds give cloth weight without padding. Identity,
-  `31` core bones/`55` actions stay; `12` hair bones extend the rig.
-- The open M-65 has four constructed pockets and flaps, a standing collar,
-  plackets, cuff thickness and a lined front opening. Its faded olive fabric
-  keeps the right-shoulder ochre repair patch, restrained seams and wear;
-  the two forearm atlas cells retain identical painting. Shirt, trousers and
-  boots are independent garments over actual bare anatomy. No satchel strap, bandage, insignia, text or film marking implies military biography.
+  The canvas jacket has a real front opening with lining and thickness.
+  Pocket welts sit against the shell and the collar turns out below the neck.
+  Shoulders, sleeves, cuffs and the rear drape share the posed skin fields.
+  Forearm atlas cells are paired. Shirt, trousers and boots remain independent.
 - `PlayerJacketCloth`/`hero_jacket_cloth_v1`: accepted `2026-10-22`,
   all gameplay uses rig-only jacket, as CombatTest; no live/baked secondary
   motion, cloth contacts or wind. Bones/elbow folds/hand-opening/mirror-arms stay.
@@ -84,7 +78,7 @@ portrait use the sole `Player3DV2` through `Player3DResources`/`PlayerFactory`.
   lock edits; restoration retains independent head/hand ownership. Catalogs
   admit alternatives; only the original outfit ships. New outfits/UI/acquisition/
   persistence are Deferred.
-- The source Basis is medium parted curtains. Accepted `2026-10-29`:
+- The source Basis has a swept part and a tucked nape. Accepted `2026-10-29`:
   `HeroHairShort/Long` progress from cropped to long/unkempt, without a ponytail;
   link rest lengths share the authored `.55–1.8` scale and compensated shapes.
   A fixed cap and three weighted regions
@@ -147,12 +141,10 @@ portrait use the sole `Player3DV2` through `Player3DResources`/`PlayerFactory`.
   The authoring preview's `UVNeutral` selects exactly one neutral cell:
   width `1/8`, height `1/4`, top row. Preview and runtime must not combine
   two expressions into a duplicated face.
-- The mouth patch of `GEO_FaceSurface` sits outside the underlying `GEO_Head`.
-  Its source rows at `z=1.512/1.542 m` move outward `5/7 mm`; the nose,
-  upper face, UVs and topology counts remain unchanged. Source validation
-  measures a minimum `3.63 mm` clearance across `12,230` rays at yaw
-  `−18/−9/0/9/18°`. The corrected model is exported and published; source
-  and Unity inspection frames show the mouth without skull overlap.
+- `player_face_geometry.py` sculpts brow, eye sockets, cheeks, nose and
+  lips inside the established face UV layout. Five exported shape channels
+  move jaw, lids, brows and lips using the same expression/speech pose as
+  the atlas. Mirrors copy the channels. The mouth socket stays fixed.
 
 During mirror brushing only, the reflected head and neck use a scoped
 base-colour multiplier up to `2.5`, following the eye-camera blend. The source
@@ -177,7 +169,7 @@ This opt-in applies only during the interaction handoff without an active clip.
   and the face/clothing atlases under `Assets/Player3D/V2/Textures`.
 - Runtime source of truth: one
   `Assets/Resources/Player/Player3DV2.prefab`, loaded through the default
-  `Player3DResources`/`PlayerFactory` route in all ten gameplay roots.
+  `Player3DResources`/`PlayerFactory` route in all eleven gameplay roots.
 - Canonical height is `1.75 m`. The production bind pose is an A-pose; Unity
   imports a Generic rig, preserves the hierarchy, disables root motion and
   keeps the Animator free of gameplay-owned transitions and events.
@@ -219,7 +211,7 @@ This opt-in applies only during the interaction handoff without an active clip.
 - Accepted `2026-09-21`, CombatTest action support:.42m wide/.28m stagger;
   soft knees/low pelvis/Windup plant;shoulders up/chin tucked/stiff grip/awkward;
   NPC calmer. Breath/tremor/flinch keep grips;face/blink/HP/input/costs stay;story0/§6.
-- Accepted `2026-10-10`, CombatTest:pistol Lchest/M65 holster.
+- Accepted `2026-10-10`, CombatTest:pistol under left jacket/holster.
   Coat hides stored pistol/holster;0cloth;held/dropped visible,holster sans coat.
   Shotgun softsling/back,0hardmount.6bone-only in-place `Draw/Stow`:
   same rig/model/transfers;torso over gait/Lcoat-open;root-motion/events0.
@@ -309,7 +301,7 @@ This opt-in applies only during the interaction handoff without an active clip.
   probed floor, one hand on the knee, the lead boot on its step and the head's
   lift on top of it. The physical player root is brought under the lying body
   and turned to match it before he stirs, and stays upright.
-- Bed uses a `3.75 s` `BedEnter` and a `6.0 s` `BedExit` around the persistent
+- Bed uses a `5.0 s` `BedEnter` and a `6.0 s` `BedExit` around the persistent
   `BedSleepLoop`. The hero sits on the long edge nearest the apartment door,
   swings both legs onto the mattress and lowers through a supported side pose
   with his head toward the pillow. Wake curls onto elbows into a half-crouch,
@@ -384,8 +376,15 @@ This opt-in applies only during the interaction handoff without an active clip.
   before it is sampled. During the short flight phase ordinary grounding
   progressively releases its downward correction with Run weight; at full Run
   it may lift penetrated soles but must not pull both raised boots to the floor.
-  Walk and Run cadence follow their visible weights, so releasing Shift cannot
+  Walk cadence follows executed travel through the visible stride, so releasing Shift cannot
   abruptly slow a still-visible gait.
+
+- `player_motion_authoring.py` phrases the eight ordinary and snow loops
+  through lower spine, ribs and head with shared heel/boot landmarks. The
+  runtime filters braking and turning into body tilt. During positioned
+  actions, the torso follows the reach while the sampled head and wrists
+  retain their targets. The adjustment yields at clip endpoints and when
+  an arm cannot reach its authored target.
 
 ## Derived player representations
 
@@ -434,7 +433,7 @@ This opt-in applies only during the interaction handoff without an active clip.
 
 - Rebuild in Blender: `tools/build-player-3d-model-v2.py` owns V2 silhouette,
   atlas, garment/compatibility validators; `tools/player_detailed_model.py`
-  supplies anatomy, M-65, outfit, curtain-hair geometry and manifest contracts.
+  supplies anatomy, civilian workwear, hair geometry and manifest contracts.
   Shared rig/action/export/bed checks come from `tools/player_3d_model_common.py`.
   Checks cover exact height, outward winding, unique mesh data, weights,
   triangle budget, required parts/bones/sockets/actions, fixed root, asymmetry,

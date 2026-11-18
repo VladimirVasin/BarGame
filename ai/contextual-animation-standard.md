@@ -25,9 +25,8 @@ decision recorded as an accepted exception in `ai/architecture-notes.md`.
    origin and near-plane-safe bounds.
 3. Author full-body actions against the production A-pose Generic skeleton.
    Clips are bone-only and in-place, use no gameplay root motion or Animation
-   Events, and preserve anatomical `.L/.R`, including the right shoulder
-   patch — the hero's only asymmetry since the left forearm's bandage was
-   removed on 2026-09-08.
+   Events, and preserve anatomical `.L/.R`, including the repair on the
+   physical right shoulder.
 4. The ordinary neutral pose and first entry sample, plus the terminal action
    sample and restored exit pose, must agree at their shared endpoints. Bed,
    smoking and cat feeding use the existing `Enter`, `Loop` and `Exit` actions

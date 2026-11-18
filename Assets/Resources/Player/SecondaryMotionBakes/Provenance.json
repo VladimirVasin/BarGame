@@ -188,12 +188,12 @@
     "sources": [
         {
             "path": "Assets/Player3D/V2/Animations/PlayerCharacter3DV2Animations.fbx",
-            "hash": "682cb04bc2ff9c57c8a53ef0de252d77",
+            "hash": "7bc5746ef5362ea327ee1b59edd2fcd3",
             "raw": false
         },
         {
             "path": "Assets/Resources/Combat/CombatActions.fbx",
-            "hash": "9503225ce1389929063097daa5304328",
+            "hash": "5d5845201a3904d04e2ba12cf6a887cc",
             "raw": false
         },
         {
@@ -253,7 +253,7 @@
         },
         {
             "path": "Assets/Resources/Player/Player3DV2.prefab",
-            "hash": "b76e1e999d0e95e939a64937dc05796d",
+            "hash": "f8bc3d72dec70199f4828ee03c39175c",
             "raw": false
         },
         {
@@ -347,6 +347,11 @@
             "raw": true
         },
         {
+            "path": "Assets/Scripts/Runtime/Player3D/Player3DCharacterPresentation.Performance.cs",
+            "hash": "9A8978232640546CC35445742CBFB75B59FA3B03191BDBA9E74257104E19FF51",
+            "raw": true
+        },
+        {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DCharacterPresentation.Recovery.cs",
             "hash": "D2613D5BEEDE7B7CC29FC71DB6B5A9A90DA577DA1B307AC44A4B2EC066E4B549",
             "raw": true
@@ -363,12 +368,12 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DCharacterPresentation.Snow.cs",
-            "hash": "B4C626185F65F90AF0C7DDD18145F189C75F731136C00BC34F58DA99FC7B0463",
+            "hash": "151B590858B1D4E668A0C80E7682B128475009A943F58D5BDE3E16A47370BF6B",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DCharacterPresentation.SpeechFace.cs",
-            "hash": "CEA96CC614A8CE11428733E4C026A85069035C701FCA76D58474F8944EA638ED",
+            "hash": "BB72F97480400E81CD9D21DE7A429F7BC6CF78EAB9DBECE824A93B66F3F632FF",
             "raw": true
         },
         {
@@ -383,12 +388,17 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DCharacterPresentation.cs",
-            "hash": "40DF75DEFE1E5F0C565ED52A4B946131DCB077CE1F7903CD61F9574EEE14CEB4",
+            "hash": "7C7C775732ECF02F929551485D845DA04CE12860FB81362BD9BE5347215E5836",
             "raw": true
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DFaceAtlasPresenter.cs",
             "hash": "BCB859D8EE212E75402D14FC1EA9D00EED94FD86EA6F8C388A963AD5A3B46ED6",
+            "raw": true
+        },
+        {
+            "path": "Assets/Scripts/Runtime/Player3D/Player3DFaceDeformation.cs",
+            "hash": "D36D32F0FBFEA0AC2B1043F9FD3196C3802BF01326DC7411374CA3C463E72EB4",
             "raw": true
         },
         {
@@ -423,7 +433,7 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DRagdollController.Restraint.cs",
-            "hash": "BB877FD864294575D819B863B65EDD81ACE8177AC42AB27470EE1FC04BD6CB77",
+            "hash": "464DD928A61C307B8B07496EA790D4FFFA2670D64ED0D385F514139FAE28C359",
             "raw": true
         },
         {

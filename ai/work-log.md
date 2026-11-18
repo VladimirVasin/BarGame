@@ -3,6 +3,36 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-18
+
+Restored the olive M-65 and oxblood 1460-style boots. Formed pocket bellows,
+stand collar, cuff closures and raised eyestays separate the hero's silhouette.
+The trouser cuffs tuck into real leather shafts. Kept the rig, support pivots
+and action bank; refreshed outfit portraits and fitted derivatives. The clothing
+map generator publishes its derived map hashes with the maps. Source views
+reviewed; `build-player-3d-model-v2`, `build-player-clothing-surfaces --check`.
+`HeroDerivedAssetSetup.RebuildBatch` passed the read-only gate.
+`ProductionRig_RendersOrdinaryAndContextualPoseSheet`,
+`FlatGround_WalkKeepsABootPlantedEveryFrame`. Unity poses reviewed.
+
+## 2026-11-17
+
+Rebuilt the hero around a slate canvas jacket, a sculpted tired face and a weighted gait.
+One rig drives the wardrobe, face deformations, reflection and visible decay. The locomotion
+tracks retain foot phase. The contextual torso follows the authored gesture while palms and
+mouth keep their contact frames. Sleep support, cold hand placement and the rise were refit.
+Regenerated portraits, scarf, chest lamp, seated clothing, bar actions and source-bound damage.
+The default male NPC generator uses a separate neutral donor with identical bind geometry.
+`build-player-3d-model-v2`, `build-home-toilet-seated-3d-model`,
+`build-player-scarf-3d-model`, `build-combat-flashlight-3d-model`,
+`build-player-bar-repeat-actions`, `build-player-vodka-actions`, `refresh-default-npc-damage --hero`,
+`build-default-npc-anatomy-source`. The worker generator still references missing
+`village_human_base.CITIZEN_HANGING_ARMS`.
+`HeroDerivedAssetSetup.RebuildBatch` refreshed the secondary-motion bank and passed the
+read-only asset gate. The sling uses live physics on `CounterSeatExitLeft` and `TurnRight`.
+`Walk` gains a safe sling recording. `FlatGround_WalkKeepsABootPlantedEveryFrame`,
+`ProductionRig_RendersOrdinaryAndContextualPoseSheet`. Pose sheet reviewed.
+
 ## 2026-11-16
 
 Pooled sedan enters and leaves off-camera. Release clears hull and lights.

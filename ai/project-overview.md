@@ -30,8 +30,8 @@
 | 13 | `PawnshopInterior` | Pawnshop prototype |
 
 All eleven gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
-one rig/wardrobe; seven drink-dose appearances share shape/hair/wear and
-mirror/FP/portrait state. Hair retained; jacket rig-only, CombatTest scarf/sling too.
+one rig, sculpted face and civilian workwear; seven drink-dose appearances
+share shape/hair/wear and mirror/FP/portrait state. Hair retained; jacket rig-only, CombatTest scarf/sling too.
 Near-empty scenes compose validated plans. Blender/canon: [../AI.md](../AI.md).
 
 ## Technical ownership

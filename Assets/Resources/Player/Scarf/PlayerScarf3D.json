@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-player-scarf-3d-model.py",
   "version": 1,
-  "generator_sha256": "51a83be3526c0929bfb5c73f7b4c6a1687ac6e92d35428697a0f8afcb7415b18",
-  "source_hero_sha256": "d44e21049589108f88734f8d29af5de0359b65a499a2fd7232d97c16d3f75e79",
+  "generator_sha256": "d88e7379ad7162081ff6cfd74229f38bf084616baeb2eb7871de2aff1cbd1397",
+  "source_hero_sha256": "0f59a7f89f73543ac2b1f8aa4ac6e1568aed5316011d951eb7502434620016f8",
   "source_hero": "ArtSource/PlayerV2/Blender/PlayerCharacter3DV2.blend",
   "coordinate_space": "Blender hero metres, forward -Y; Unity swaps Y/Z then hero yaw 180",
   "atlas_resource": "MothersHouse/Textures/MothersHousePositiveAtlas",
@@ -13,7 +13,7 @@
     0.045,
     1.0
   ],
-  "minimum_lower_face_clearance_m": 0.008528,
+  "minimum_lower_face_clearance_m": 0.0065263,
   "skin_bones": [
     "head",
     "neck"
@@ -40,7 +40,7 @@
       "triangles": 832,
       "bounds_min": [
         -0.1176162,
-        -0.148,
+        -0.1565514,
         1.429
       ],
       "bounds_max": [
@@ -48,7 +48,7 @@
         0.1234745,
         1.604
       ],
-      "geometry_sha256": "4b1b36bbb99caa0bbe0721b9b758c45cd505ea25107a2947b2de99a331e9ce99"
+      "geometry_sha256": "5723718fd5ca82d220474f384cfed969dfb544e6e26e28ad7df8e3e6b83f3080"
     },
     {
       "name": "ScarfKnot",
@@ -99,5 +99,5 @@
       "geometry_sha256": "b2b01e03378182c685bd7744001fa8cf7c53c96a3236a5db9a4bce4461692b78"
     }
   ],
-  "mouth_shape_sha256": "1c817258aa75aeb25ee52ddd5cb3bc60f5b20b880b991cbf7d89aec4ad30b814"
+  "mouth_shape_sha256": "d94bffa2bd97a1be7e339856bdd360bac0f7b85804b9192c53d93b7183e9edc2"
 }

@@ -155,6 +155,8 @@ def bake_contacts(builder,common):
     result=builder.result; rig=result.rig
     rim=MattressRimEnvelope(result,common)
     result.bed_rim_envelope=rim
+    shared_sleep_rim = np.maximum.reduce((rim.grid("BedEnter", 1.), rim.grid("BedSleepLoop", 0.),
+                                          rim.grid("BedSleepLoop", 1.), rim.grid("BedExit", 0.)))
     # Select one fixed wrist height from the palm's own posed shape and the
     # loaded interval. Forearm deficits belong to the elbow pole, never this
     # target. A neighbouring grid hump outside the hand cannot raise it.
@@ -169,7 +171,8 @@ def bake_contacts(builder,common):
     recline_height=max(RECLINE_WRIST_HEIGHT,max(rim.height(-.04+p.x,-.24+p.y,rim.grid("BedEnter",t))+.010-p.z
         for t in np.linspace(.70,.84,29) for p in hand_offsets))
     print(f"Bed fixed reclining wrist height: {recline_height:.6f} m",flush=True)
-    for name in NAMES:
+    resting_arms = {}
+    for name in ("BedSleepLoop", "BedEnter", "BedExit"):
         record=result.actions[name]; raw=record.action
         target=raw.copy(); target.name=name+"_supported"; target.use_fake_user=True
         for curve in list(common.iter_action_fcurves(target)):
@@ -184,6 +187,10 @@ def bake_contacts(builder,common):
         for index in range(steps+1):
             t=index/steps; sample(result,name,t)
             field=rim.grid(name,t)
+            seam_weight = (smooth((t - .92) / .08) if name == "BedEnter" else
+                           1. - smooth(t / .08) if name == "BedExit" else
+                           max(1. - smooth(t / .08), smooth((t - .92) / .08)))
+            field = np.maximum(field, field + (shared_sleep_rim - field) * seam_weight)
             # Wake follows a live, still-recovering spring and imports the
             # fast first third of the clip. Add 5 mm to its low-arm reserve;
             # ease from the exact sleeping seam, preserving both other takes.
@@ -223,6 +230,19 @@ def bake_contacts(builder,common):
                         lift=max(lift,elbow_lift)
                     wrist+=Vector((0,-inward*1.15,lift*1.15))
                     hint+=Vector((0,-inward*.5,lift+elbow_lift*3.))
+            if name == "BedSleepLoop" and index == 0:
+                resting_arms = {name: (rig.pose.bones[name].rotation_quaternion.copy(),
+                                       rig.pose.bones[name].location.copy(), rig.pose.bones[name].scale.copy())
+                                for name in ARMS}
+            elif seam_weight > 0.:
+                # The independently solved elbows can select different poles
+                # on the same pressure rim. Ease the actual joint tracks onto
+                # one solved sleeping pose at the three shared boundaries.
+                for bone_name, (rotation, position, scale) in resting_arms.items():
+                    bone = rig.pose.bones[bone_name]
+                    bone.rotation_quaternion = bone.rotation_quaternion.slerp(rotation, seam_weight)
+                    bone.location = bone.location.lerp(position, seam_weight)
+                    bone.scale = bone.scale.lerp(scale, seam_weight)
             rig.animation_data.action=target
             for bone_name in ARMS:
                 bone=rig.pose.bones[bone_name]

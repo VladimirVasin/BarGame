@@ -5,7 +5,7 @@
   "fps": 24,
   "root_motion": false,
   "animation_events": 0,
-  "source_sha256": "d44e21049589108f88734f8d29af5de0359b65a499a2fd7232d97c16d3f75e79",
+  "source_sha256": "0f59a7f89f73543ac2b1f8aa4ac6e1568aed5316011d951eb7502434620016f8",
   "pistol_action_source_sha256": "ef37587d82055c73b72a9bb27c17498fea77bdb76d9f136450a4a762b9e9fcd7",
   "maximum_lower_body_error": 0.0,
   "maximum_endpoint_error": 3.8743019104003906e-07,

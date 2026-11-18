@@ -2,6 +2,22 @@
 
 ## Current facts
 
+- **Accepted 2026-11-18, user — hero outfit.** Restored olive M-65 and oxblood
+  1460-style boots. Four formed pockets, overlapping flaps, standing collar,
+  yoke and cuff tabs. Raised eyestays and heel pulls, yellow welt, grooved sole.
+  Length/planting/animation bank held. Same materials, atlases and render
+  passes; pocket volumes and pigment separate him from the crowd. No insignia
+  or added lights/outlines. Existing 24FX assessment below applies. Art §2,
+  story §7.
+
+- **Accepted 2026-11-17, user — hero redesign.** Swept hair and sculpted face.
+  Same rig and anchors. Default male
+  anatomy has its own donor. Five facial shapes follow shared speech/status,
+  mirrors copy. Gait counter-rotation and travel weight; contextual torso
+  solves onto authored head/wrist targets. Seven forms rederive from new art.
+  24FX: existing scene and post owners, matte wear and softened joins.
+  No extra passes, glow, water or lights. Story §7/8/16, art §2/15/16.
+
 - **Accepted 2026-11-15, user — Ridge parking.** `RidgeParkingPlan`:
   four 2.9×5.8m bays west of home; radius4.8m entry/S/reverse/forward exit
   clears occupied neighbours. Blender paving/ramp/curbs share City/Home
@@ -896,7 +912,7 @@
   Beer repeat:R offer→tap/planted retract/guest;NPCoffer/pullback;others bottle→return.
   Effects/menu disposal;drink±12/±10;request seated±70/−25…55.
 - **Accepted 2026-10-22, default male figures — user:**
-  Read-only hero anatomy→NPC rig;own identity/actions.
+  Neutral anatomy donor→NPC rig;own identity/actions.
   `NpcWardrobe`:21civilian items/8slots/3presets;coverage/folds/ease.
   Population:independent stable160–185cm/build0–1 before contacts.
   Roles may fix height if contacts fail;none fixed.
@@ -1322,7 +1338,7 @@
   Orbit≠camera/neutral14°/gun/Spine40-Chest60/down35-up20-yaw20-roll6°;
   orbit≤35full→90zero/rootlegs/Llight/actionpriority/pausemodal;
   cleanup-hotalloc0/Advance-repeatApply0timebend.
-- **Accepted exception 2026-10-19, chest fixture:** LM65:1hardSpot≤60/16m/60–28°+1shortweak hero-onlyPoint/RLbit6/shadow0;dimcoat-hands-chin/openface mostlydark;wall-floorbounce/smooth/5rays10Hz/cam0;Spot:d²/4m/centre|2side/.045↓.22↑;Glow:warmlens-halo/depth/2sharedparticles/20→80°/exposure-free;fog-sky-amb-exposureΔ0/warehouse GIhero3D3→black12m/shared-Lit bakedGI-only;1hero/out-hide-disable-unload0/pause-resetkeep/RLrestore-clean;MPB-clone-pass-rays+0/input-battery0.
+- **Accepted exception 2026-10-19, chest fixture:** Lcoat:1hardSpot≤60/16m/60–28°+1shortweak hero-onlyPoint/RLbit6/shadow0;dimcoat-hands-chin/openface mostlydark;wall-floorbounce/smooth/5rays10Hz/cam0;Spot:d²/4m/centre|2side/.045↓.22↑;Glow:warmlens-halo/depth/2sharedparticles/20→80°/exposure-free;fog-sky-amb-exposureΔ0/warehouse GIhero3D3→black12m/shared-Lit bakedGI-only;1hero/out-hide-disable-unload0/pause-resetkeep/RLrestore-clean;MPB-clone-pass-rays+0/input-battery0.
 - **Accepted 2026-10-22, global jacket rig-only — user:**
   `PlayerJacketCloth`:all gameplay uses CombatTest rig-only;0live/baked cloth,
   contacts/wind. Rig/elbow folds/hand-opening/mirror-arms stay;Editor authoring stays.
@@ -1354,7 +1370,7 @@
   0world-story/FPSunmeasured.
 
 - **Accepted — 2026-10-10, carry mounts:**
-  CombatTest:pistol Lchest/M65/holster0cloth/storedhidden-else seen;
+  CombatTest:pistol Lchest/coat/holster0cloth/storedhidden-else seen;
   shotgun softsling-back;6stow-draw/rig-model-ammo/0hardmount.
 
 - **Accepted — 2026-10-12, ShotgunDraw:**
@@ -1376,11 +1392,10 @@
   Buckle allowed;0insignia/ammo/military bio.
 
 - **Accepted — 2026-10-10, hero footwear:**
-  Burgundy Dr. Martens1460 Smooth Leather Lace Up Boots/roundtoe/8eyelets/
-  blacklaces/yellowwelt/grooved sole;ankle-ball flex/rig-actions-footprint kept.
+  Round toe/8eyelets/grooved sole;ankle-ball flex/rig-actions-footprint.
 
 - **Accepted — 2026-10-10, hero body silhouette:**
-  Wide torso/continuous shoulders/shirt-M65/tapered neck-jaw;
+  Wide torso/continuous shoulders/shirt-jacket/tapered neck-jaw;
   male hips-thighs/round modest buttocks/cleft/low distinct cheeks/trousers.
   Lean identity/rig-actions-details/0story-§6 deviation.
 
@@ -1389,7 +1404,7 @@
   rings-weights-normals/4weights;`CharacterJointDeformation`/`JointVolume.*`:
   hip-elbow-knee-wrist≤`135°`/0twist. Trousers:clearance/pinned waist/
   `TrouserKneeFold.*`/seated×`1 - TrousersDown`.
-  M-65:flat seams/armholes/sleeve drape-ease/rear fall/0inflation;
+  Jacket:flat seams/armholes/sleeve drape-ease/rear fall/0inflation;
   `JacketElbowFold.*`→hem-cuff/mirror-arms shared motion/fold.
   Hem:trouser clearance/posed skin-correctives/bounds/freeverts;
   0live bake/newsolver;combat-seated/seam-volume-copy-render `0/45/90/135°`;
@@ -1685,17 +1700,15 @@
   guards separate. Clip48m/haze;remote collision/Light/shadow/map/navigation0.
   Imported/placed road/booth metres/axes;§16/21/art9.
 
-- **Accepted — 2026-09-13, refined hero, M-65 and modular clothing:**
-  Cannery-level Hero V2/Vietnam M-65/curtains/modular clothes;lean `1.75 m`/
-  identity-face-right patch/31 bones/six sockets/actions;0insignia-bio-speech-activity.
-  `player_detailed_model.py`:anatomy/open M65/pockets-collar-plackets-cuffs/
-  trousers-boots/atlas;silhouette per above/hidden anatomy manifest/≤`8,000` dressed triangles.
+- **Accepted — 2026-09-13, modular hero rig and clothing:**
+  Lean `1.75 m`/31 bones/six sockets/actions;0insignia-bio-speech-activity.
+  `player_detailed_model.py`:independent anatomy and clothes/≤`8,000` dressed triangles.
   `PlayerJacketCloth`/`hero_jacket_cloth_v1`:gameplay rig-only per 2026-10-22;
   owned buffers/immutable sources-materials;folds/copies follow joint contract.
   `PlayerWardrobe`:coverage/replacements/outfit/shared materials/bathing-toilet
   leases/edit lock/head ownership. Arms-mirror copy;shower bare anatomy;
   seated fabric-skin from sources/bathroom exceptions bounded.
-  Curtains cover temples/ears/nape to jaw/upper neck, no ponytail; 12 bones.
+  Hair follows twelve auxiliary bones.
   `PlayerHair` follows body/scarf with bounded motion and cached garment/scarf/
   strand contacts. Pause/transitions freeze, discontinuities reset, mirror copies;
   arms never simulate hair. Contact parameters remain in `player-art-spec.md`.

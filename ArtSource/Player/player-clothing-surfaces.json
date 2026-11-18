@@ -2,9 +2,9 @@
   "generator": "tools/build-player-clothing-surfaces.py",
   "version": "1.0.0",
   "source_model": "Assets/Player3D/V2/Models/PlayerCharacter3DV2.json",
-  "source_clothing_binding_sha256": "d3f2a93dc434533e0e413f97e1f2fb8f83856beb21c77c836d8a620dc11f3a75",
+  "source_clothing_binding_sha256": "6d25554abebd0933c1cc8fda4834504c2785547c2903459575c894f5531f1dd1",
   "source_albedo": "Assets/Player3D/V2/Textures/PlayerClothingAtlas.png",
-  "source_albedo_sha256": "57a15642260b1fcd34e639976a9a0303e7d5faff1b0c071b883c586e7cba2c6a",
+  "source_albedo_sha256": "25791052c222caa2a1c3962c31fd08a74365f89deaa7068ca4a983953cbc5ccf",
   "size_px": [
     256,
     256
@@ -39,9 +39,9 @@
       "y_px": 128,
       "width_px": 128,
       "height_px": 128,
-      "smoothness_u8_min": 14,
+      "smoothness_u8_min": 15,
       "smoothness_u8_max": 23,
-      "normal_xy_u8_max_deviation": 31
+      "normal_xy_u8_max_deviation": 30
     },
     {
       "name": "JacketSleeveLeft",
@@ -72,9 +72,9 @@
       "y_px": 128,
       "width_px": 64,
       "height_px": 64,
-      "smoothness_u8_min": 14,
+      "smoothness_u8_min": 13,
       "smoothness_u8_max": 23,
-      "normal_xy_u8_max_deviation": 30
+      "normal_xy_u8_max_deviation": 31
     },
     {
       "name": "JeansPelvis",
@@ -117,7 +117,7 @@
       "width_px": 64,
       "height_px": 64,
       "smoothness_u8_min": 15,
-      "smoothness_u8_max": 63,
+      "smoothness_u8_max": 23,
       "normal_xy_u8_max_deviation": 30
     },
     {
@@ -128,7 +128,7 @@
       "width_px": 64,
       "height_px": 64,
       "smoothness_u8_min": 15,
-      "smoothness_u8_max": 63,
+      "smoothness_u8_max": 23,
       "normal_xy_u8_max_deviation": 30
     },
     {
@@ -140,7 +140,7 @@
       "height_px": 64,
       "smoothness_u8_min": 8,
       "smoothness_u8_max": 63,
-      "normal_xy_u8_max_deviation": 18
+      "normal_xy_u8_max_deviation": 19
     },
     {
       "name": "BootRight",
@@ -151,7 +151,7 @@
       "height_px": 64,
       "smoothness_u8_min": 8,
       "smoothness_u8_max": 63,
-      "normal_xy_u8_max_deviation": 18
+      "normal_xy_u8_max_deviation": 19
     },
     {
       "name": "JacketForearmRight",
@@ -160,13 +160,13 @@
       "y_px": 0,
       "width_px": 64,
       "height_px": 64,
-      "smoothness_u8_min": 14,
+      "smoothness_u8_min": 13,
       "smoothness_u8_max": 23,
-      "normal_xy_u8_max_deviation": 30
+      "normal_xy_u8_max_deviation": 31
     }
   ],
   "outputs": {
-    "Assets/Player3D/V2/Textures/PlayerClothingNormal.png": "6771dd93937bd7570aeb42814df9eb3713b2dea8e0e748ece2afae9bccc425d0",
-    "Assets/Player3D/V2/Textures/PlayerClothingResponse.png": "6dcf1a4df02a030181863586177be5c8ccf46438de56135147c2f39ea0ccc87b"
+    "Assets/Player3D/V2/Textures/PlayerClothingNormal.png": "8ab0243b0a3eee0b0b0e370fe0596aaf7c98fd63193110d2e7f784657c5c4df6",
+    "Assets/Player3D/V2/Textures/PlayerClothingResponse.png": "986f5fb3296edb49c36ab88a17f9611a10e362b3a3bd45b36bc6ecc2d25c7d67"
   }
 }

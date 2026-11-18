@@ -75,14 +75,14 @@ namespace BarPromenade.Editor
                 { "MAT_Skin", "AE8D7B" },
                 { "MAT_SkinShadow", "67504B" },
                 { "MAT_SkinDark", "392D2E" },
-                { "MAT_Hair", "08080B" },
-                { "MAT_HairHighlight", "202129" },
-                { "MAT_Shirt", "2A2D30" },
-                { "MAT_Patch", "876C3C" },
-                { "MAT_Jacket", "4A4B37" },
-                { "MAT_JacketDark", "2F3025" },
-                { "MAT_JacketEdge", "62634A" },
-                { "MAT_BootSole", "09090A" },
+                { "MAT_Hair", "14100E" },
+                { "MAT_HairHighlight", "28201B" },
+                { "MAT_Shirt", "55463B" },
+                { "MAT_Patch", "8C7650" },
+                { "MAT_Jacket", "626448" },
+                { "MAT_JacketDark", "393D2C" },
+                { "MAT_JacketEdge", "717455" },
+                { "MAT_BootSole", "342C24" },
                 { "MAT_EyeWhite", "8F8780" },
                 { "MAT_Eye", "141317" },
                 { "MAT_Metal", "58514A" },
@@ -1251,6 +1251,10 @@ namespace BarPromenade.Editor
                 }
 
                 ValidateFaceUvRange(faceMesh);
+                if (!(faceRenderer is SkinnedMeshRenderer) || manifest.face_deformation == null ||
+                    manifest.face_deformation.Length != 5 ||
+                    manifest.face_deformation.Any(shape => faceMesh.GetBlendShapeIndex(shape) < 0))
+                    throw new InvalidOperationException("Hero V2 face must import all five sculpted deformation channels.");
 
                 Player3DFaceAtlasBinding faceAtlas =
                     BuildFaceAtlasBinding(
@@ -1816,6 +1820,7 @@ namespace BarPromenade.Editor
             public Player3DV2ManifestPart[] parts;
             public Player3DV2ManifestAction[] actions;
             public Player3DV2ManifestFaceAtlas face_atlas;
+            public string[] face_deformation;
             public Player3DV2ManifestTextureBinding[] texture_bindings;
             public Player3DV2ManifestBareSkinAtlas bare_skin_atlas;
             public CharacterSurfaceBinding[] surface_bindings;

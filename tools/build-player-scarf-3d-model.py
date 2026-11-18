@@ -85,7 +85,10 @@ def wrap(material, rig):
             front = max(0.0, -math.sin(angle))
             fold = math.sin(v * math.pi * 7 + math.cos(angle) * 0.48) * 0.0035
             radius_x = 0.095 + 0.021 * v + fold
-            radius_y = 0.084 + 0.039 * v + 0.013 * front + fold
+            # Give the lower face room for the sculpted nose and lips. Keep
+            # both wrap edges and the raised grip on their authored frames.
+            face_ease = .009 * front * max(0., min(1., v / .55, (1. - v) / .06))
+            radius_y = 0.084 + 0.039 * v + 0.013 * front + fold + face_ease
             z = BOTTOM + (TOP - BOTTOM) * v - 0.022 * (1 - front) * v
             y = math.sin(angle) * radius_y - .012 * front * v
             vertices.append((math.cos(angle) * radius_x, y, z))

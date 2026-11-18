@@ -5539,8 +5539,8 @@
       185
     ],
     "neutral_build": 0.5,
-    "source_path": "ArtSource/PlayerV2/Blender/PlayerCharacter3DV2.blend",
-    "source_sha256": "d44e21049589108f88734f8d29af5de0359b65a499a2fd7232d97c16d3f75e79",
+    "source_path": "ArtSource/VillageLife/DefaultMaleAnatomy.blend",
+    "source_sha256": "2b450c55afda6e44d6f88519803be0d10c47e970d1427133a9fd96f92f691467",
     "source_renderers": [
       {
         "renderer": "GEO_Torso",
@@ -8823,5 +8823,5 @@
     }
   ],
   "uv_signature": "4e0a3ee32e8fc122bf318d040f3635ec85bdc6efc94dec1a8a71100049eb3025",
-  "signature": "bc1ace6ba67b9e214eb2023442771667a7f7846ff38488a0babba9d8ef5ac5f9"
+  "signature": "cef5fda2390a0026cb9fc97b2e6bf0761759cb3bb1d8d743e45890ca2786e9ea"
 }

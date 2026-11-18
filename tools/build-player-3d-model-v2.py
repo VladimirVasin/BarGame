@@ -38,12 +38,15 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(REPO_ROOT / "tools"))
 
 import atlas_kit  # noqa: E402  (after the sys.path fix)
+import dialogue_face_atlas  # noqa: E402
 import player_cold_actions  # noqa: E402
 import player_detailed_model  # noqa: E402
 import player_body_hair_surfaces  # noqa: E402
+import player_face_geometry  # noqa: E402
 import player_face_paint  # noqa: E402
 import player_jacket_cloth  # noqa: E402
 import player_hand_grip  # noqa: E402
+import player_motion_authoring  # noqa: E402
 import player_snow_actions  # noqa: E402
 import player_counter_seat_actions  # noqa: E402
 import player_corruption  # noqa: E402
@@ -283,13 +286,17 @@ V2_REQUIRED_ACTIONS = (*common.REQUIRED_ACTIONS, RUN_ACTION_NAME,
 V2_PALETTE_HEX = dict(common.PALETTE_HEX)
 V2_PALETTE_HEX.update(
     {
-        # Faded dark olive-drab field jacket.  Film-specific insignia/text are
-        # deliberately absent; the ochre right-shoulder patch remains ours.
-        "Jacket": "4A4B37",
-        "JacketDark": "2F3025",
-        "JacketEdge": "62634A",
-        "JeansEdge": "202A3A",
-        "Patch": "876C3C",
+        # Faded olive M-65 over peat workwear; the repair has no insignia.
+        "Jacket": "626448",
+        "JacketDark": "393D2C",
+        "JacketEdge": "717455",
+        "Shirt": "55463B",
+        "Jeans": "464038",
+        "JeansEdge": "5A5043",
+        "Patch": "8C7650",
+        "BootSole": "342C24",
+        "Hair": "14100E",
+        "HairHighlight": "28201B",
     }
 )
 for obsolete_material in tuple(
@@ -304,7 +311,7 @@ def resolve_path(path: Path) -> Path:
     return path.resolve()
 
 
-def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, Path, bool, bool, bool, bool, bool, bool, bool, bool, bool]:
+def parse_args():
     user_args: list[str] = []
     if "--" in sys.argv:
         user_args = sys.argv[sys.argv.index("--") + 1 :]
@@ -377,6 +384,8 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
     parser.add_argument("--source-dir", type=Path)
     parser.add_argument("--texture-dir", type=Path)
     parser.add_argument("--resource-dir", type=Path)
+    parser.add_argument("--dialogue-dir", type=Path, default=dialogue_face_atlas.OUTPUT)
+    parser.add_argument("--preview-dir", type=Path)
     parser.add_argument("--no-previews", action="store_true",
                         help="Skip study renders, portrait and expression sheet; keep production assets.")
     parser.add_argument("--height", type=float, default=1.75)
@@ -400,7 +409,9 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
                              (args.animation_dir, ("animation_fbx",)),
                              (args.source_dir, ("output",)),
                              (args.texture_dir, ("face_atlas", "clothing_atlas")),
-                             (args.resource_dir, ("bare_skin_atlas",))):
+                             (args.resource_dir, ("bare_skin_atlas", "portrait")),
+                             (args.preview_dir, ("preview", "expression_sheet", "head_front",
+                                                 "head_three_quarter", "lower_body_closeup"))):
         if directory is not None:
             for name in names:
                 published = resolve_path(getattr(args, name))
@@ -447,6 +458,7 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         args.corruption_only,
         args.smoking_only,
         args.bed_only,
+        resolve_path(args.dialogue_dir),
     )
 
 
@@ -716,41 +728,10 @@ def build_clothing_atlas(path: Path) -> str:
     px, py, pw, ph = clothing_region("JeansPelvis")
     atlas_line_bottom_left(canvas, px + 6, py + 45, px + 26, py + 37, jeans_edge, 2)
     atlas_line_bottom_left(canvas, px + 58, py + 45, px + 38, py + 37, jeans_edge, 2)
-    boot = rgba_from_hex(V2_PALETTE_HEX["BootLeather"])
-    boot_edge = (62, 54, 45, 255)
     for region_name in ("JeansShinLeft", "JeansShinRight"):
         jx, jy, jw, jh = clothing_region(region_name)
-        # Ring-strip V grows knee -> ankle, so the top 13 pixels paint a
-        # short boot shaft over the lower 20% of each shin without adding a
-        # separate cuff/shaft mesh.
-        shaft_bottom = jy + jh - 13
-        atlas_rect_bottom_left(canvas, jx, shaft_bottom, jx + jw, jy + jh, boot)
-        atlas_line_bottom_left(canvas, jx, shaft_bottom, jx + jw - 1, shaft_bottom, jeans_edge, 2)
-        atlas_line_bottom_left(canvas, jx + 5, shaft_bottom + 4, jx + jw - 6, shaft_bottom + 4, boot_edge)
-
-    boot_sole = rgba_from_hex(V2_PALETTE_HEX["BootSole"])
-    eyelet = (108, 101, 87, 255)
-    for region_name in ("BootLeft", "BootRight"):
-        fx, fy, fw, fh = clothing_region(region_name)
-        atlas_rect_bottom_left(canvas, fx, fy, fx + fw, fy + fh, boot)
-        # Left half: outer side panels, toe cap and integrated sole edge.
-        atlas_rect_bottom_left(canvas, fx, fy, fx + fw // 2, fy + 7, boot_sole)
-        atlas_line_bottom_left(canvas, fx + 1, fy + 8, fx + fw // 2 - 2, fy + 8, boot_edge, 2)
-        atlas_line_bottom_left(canvas, fx + 8, fy + 10, fx + 13, fy + 44, boot_edge, 2)
-        atlas_line_bottom_left(canvas, fx + 13, fy + 44, fx + 29, fy + 51, boot_edge)
-        atlas_line_bottom_left(canvas, fx + 4, fy + 20, fx + 15, fy + 23, boot_edge)
-        # Right half: front/instep panel with readable laces and eyelets.
-        front = fx + fw // 2
-        atlas_rect_bottom_left(canvas, front, fy, fx + fw, fy + 7, boot_sole)
-        atlas_line_bottom_left(canvas, front + 3, fy + 48, front + 29, fy + 48, boot_edge, 2)
-        atlas_line_bottom_left(canvas, front + 7, fy + 10, front + 9, fy + 50, boot_edge)
-        atlas_line_bottom_left(canvas, front + 25, fy + 10, front + 23, fy + 50, boot_edge)
-        for lace_y in (17, 24, 31, 38, 45):
-            atlas_rect_bottom_left(canvas, front + 7, fy + lace_y - 1, front + 10, fy + lace_y + 2, eyelet)
-            atlas_rect_bottom_left(canvas, front + 22, fy + lace_y - 1, front + 25, fy + lace_y + 2, eyelet)
-            atlas_line_bottom_left(canvas, front + 9, fy + lace_y, front + 23, fy + lace_y + 4, boot_edge)
-            atlas_line_bottom_left(canvas, front + 23, fy + lace_y, front + 9, fy + lace_y + 4, boot_edge)
-        atlas_line_bottom_left(canvas, front + 3, fy + 13, front + 29, fy + 13, boot_edge, 2)
+        # The whole trouser chart stays fabric. The boot shaft has its own UVs.
+        atlas_line_bottom_left(canvas, jx+2, jy+jh-6, jx+jw-3, jy+jh-6, jeans_edge)
 
     player_detailed_model.repaint_clothing(canvas, sys.modules[__name__])
     canvas.write_png(path)
@@ -1342,6 +1323,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         validate_appearance_contracts(self.config, self.result, appearance_errors)
         if appearance_errors:
             raise RuntimeError("Hero appearance preflight failed:\n" + "\n".join(appearance_errors))
+        player_hand_grip.validate(self.result, self.scale)
         print("Hero geometry complete: " + json.dumps(player_detailed_model.manifest(self.result)["quality"]), flush=True)
         print("Hero actions: " + ("Relaxed source review only" if self.preview_only else "authoring complete production bank"), flush=True)
         self.build_actions()
@@ -1637,6 +1619,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         run_action["bp_short_flight"] = True
         player_cold_actions.build_cold_actions(self, common, V2_GENERATOR_VERSION)
         player_snow_actions.build_snow_actions(self, common, V2_GENERATOR_VERSION)
+        player_motion_authoring.author(self.result, common)
         for record in self.result.actions.values():
             record.action["bp_torso_skin"] = "pelvis_spine_chest_v1"
             record.action["bp_generator_version"] = V2_GENERATOR_VERSION
@@ -2028,54 +2011,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
             forearm["bp_sleeve_coverage"] = "elbow_to_wrist"
 
     def _build_face_surface(self) -> None:
-        # A curved UV patch follows the head's front planes; it is not a flat
-        # billboard. The lower two rows clear the separate skull mesh, including
-        # the wider inspection mouth. A nominal offset on independent profiles
-        # did not prevent the skull from crossing the upper teeth by 2-4 mm.
-        rows = (
-            (1.490, 0.030, 0.036),
-            (1.512, 0.049, 0.059),
-            (1.542, 0.068, 0.073),
-            (1.582, 0.081, 0.082),
-            (1.624, 0.086, 0.088),
-            (1.664, 0.080, 0.082),
-            (1.694, 0.055, 0.062),
-        )
-        columns = (-0.92, -0.61, -0.30, 0.0, 0.30, 0.61, 0.92)
-        vertices: list[Vector] = []
-        uv_by_vertex: list[tuple[float, float]] = []
-        for row_index, (z, radius_x, depth) in enumerate(rows):
-            for column_index, normalized_x in enumerate(columns):
-                x = normalized_x * radius_x
-                curve = 1.0 - 0.34 * normalized_x * normalized_x
-                # The central vertices form the bridge/tip as part of this
-                # same skinned surface. There is no separate stuck-on nose.
-                nose_projection = 0.0
-                if row_index == 3:
-                    nose_projection = 0.019 * max(0.0, 1.0 - abs(normalized_x) * 1.7)
-                elif row_index == 4:
-                    nose_projection = 0.010 * max(0.0, 1.0 - abs(normalized_x) * 1.8)
-                y = -0.032 - depth * curve - nose_projection - 0.0008
-                vertices.append(self.v(x, y, z))
-                uv_by_vertex.append(
-                    (
-                        column_index / (len(columns) - 1),
-                        row_index / (len(rows) - 1),
-                    )
-                )
-        faces: list[tuple[int, ...]] = []
-        width = len(columns)
-        for row_index in range(len(rows) - 1):
-            for column_index in range(width - 1):
-                lower = row_index * width + column_index
-                upper = (row_index + 1) * width + column_index
-                faces.append((lower, lower + 1, upper + 1, upper))
-        face = self.add_part(
-            "GEO_FaceSurface",
-            (vertices, faces),
-            "FaceAtlas", "details", "head", "Body", "facial_atlas",
-            origin=self.bone_heads["head"],
-        )
+        face, uv_by_vertex = player_face_geometry.author(self)
         uv_layer = face.data.uv_layers.new(name="UVMap")
         for loop in face.data.loops:
             uv_layer.data[loop.index].uv = uv_by_vertex[loop.vertex_index]
@@ -2095,6 +2031,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
                                uv.uv.y / ATLAS_ROWS + (ATLAS_ROWS - 1) / ATLAS_ROWS))
             if (preview.uv - expected).length > 1e-6:
                 raise RuntimeError("UVNeutral must address exactly one neutral face cell")
+        player_face_geometry.validate(face)
         validate_mouth_skull_clearance(face, bpy.data.objects["GEO_Head"], self.scale)
 
     def build_face_and_hair(self) -> None:
@@ -2888,11 +2825,10 @@ def validate_v2_result(
             patch_color = rgba_from_hex(V2_PALETTE_HEX["Patch"])
             shirt_color = rgba_from_hex(V2_PALETTE_HEX["Shirt"])
             jacket_dark = rgba_from_hex(V2_PALETTE_HEX["JacketDark"])
-            boot_color = rgba_from_hex(V2_PALETTE_HEX["BootLeather"])
             if count_region_color(pixels, width, height, "JacketSleeveRight", {patch_color}) < 100:
-                errors.append("Ochre patch pixels are missing from physical-right sleeve region")
+                errors.append("Canvas repair pixels are missing from physical-right sleeve region")
             if count_region_color(pixels, width, height, "JacketSleeveLeft", {patch_color}) != 0:
-                errors.append("Ochre patch pixels leaked onto physical-left sleeve region")
+                errors.append("Canvas repair pixels leaked onto physical-left sleeve region")
             for forearm_region in ("JacketForearmLeft", "JacketForearmRight"):
                 if count_region_color(pixels, width, height, forearm_region, {jacket_dark}) < 80:
                     errors.append(f"{forearm_region} needs painted cuff and fold pixels")
@@ -2903,10 +2839,10 @@ def validate_v2_result(
                     "sleeve is the right one, not a bandage"
                 )
             if not records["CLO_JacketBody"].obj.get("bp_real_front_opening") or "CLO_ShirtBody" not in records:
-                errors.append("The open jacket must reveal its independent charcoal shirt")
+                errors.append("The open jacket must reveal its independent knit shirt")
             for shin_region in ("JeansShinLeft", "JeansShinRight"):
-                if count_region_color(pixels, width, height, shin_region, {boot_color}) < 650:
-                    errors.append(f"{shin_region} needs a painted military boot shaft at the ankle")
+                if count_region_color(pixels, width, height, shin_region, {player_detailed_model.player_boots.LEATHER}) != 0:
+                    errors.append(f"{shin_region} must not paint boot leather over cloth")
     validate_bare_skin_atlas(result, bare_skin_atlas_path, errors)
 
     if errors:
@@ -3136,6 +3072,7 @@ def write_v2_manifest(
     bare_skin_atlas_path: Path,
     bare_skin_atlas_sha256: str,
     content_signature_sha256: str,
+    corruption_textures: dict | None = None,
 ) -> None:
     # Start with the established model manifest contract, then add only V2 data.
     common.write_manifest(path, config, result, report)
@@ -3144,8 +3081,13 @@ def write_v2_manifest(
                             "validation": player_hand_grip.validate(result, config.height / 1.75)}
     payload["hand_grip_authoring_sha256"] = hashlib.sha256(Path(player_hand_grip.__file__).read_bytes()).hexdigest()
     payload["hero_corruption"] = {**player_corruption.manifest(result),
-        **player_corruption.textures(),
+        **(player_corruption.textures() if corruption_textures is None else corruption_textures),
         "authoring_sha256": hashlib.sha256(Path(player_corruption.__file__).read_bytes()).hexdigest()}
+    payload["face_deformation"] = list(player_face_geometry.SHAPES)
+    payload["footwear_authoring_sha256"] = hashlib.sha256(
+        Path(player_detailed_model.player_boots.__file__).read_bytes()).hexdigest()
+    payload["joint_surface_authoring_sha256"] = hashlib.sha256(
+        Path(player_detailed_model.character_joint_surfaces.__file__).read_bytes()).hexdigest()
     records = {record.obj.name: record for record in result.parts}
     head_min, head_max = common.mesh_bounds_world(records["GEO_Head"].obj)
     head_height = head_max.z - head_min.z
@@ -3315,8 +3257,8 @@ def write_v2_manifest(
                 "heads_tall": round(config.height / head_height, 4),
                 "silhouette": "lean weary adult",
                 "shoulder_patch_side": "Right",
-                "jacket": "faded dark olive-drab field jacket; original ochre patch; no copied insignia",
-                "face_baseline": "weary flat neutral; no guilt, tears, or theatrical sadness",
+                "jacket": "faded slate canvas with turned collar, slanted hand warmers and right shoulder repair",
+                "face_baseline": "weary neutral; sculpted eye sockets, nose, cheeks and lips",
             },
             "geometry_simplification": {
                 "painted_not_modeled": [
@@ -3325,7 +3267,7 @@ def write_v2_manifest(
                     "laces", "eyelets", "toe cap seam",
                 ],
                 "modeled_construction": ["open jacket shell", "folded collar", "plackets",
-                    "four pockets and flaps", "sleeve cuffs", "boot bevels and soles"],
+                    "chest pockets and hand-warmer welts", "sleeve cuffs", "boot bevels and soles"],
                 "forbidden_detail_mesh_names": ["ACC_BandageWrap", "CLO_Bandage"],
                 "foot_meshes": ["CLO_Boot.L", "CLO_Boot.R"],
             },
@@ -3531,6 +3473,7 @@ def main() -> None:
         corruption_only,
         smoking_only,
         bed_only,
+        dialogue_dir,
     ) = parse_args()
     if bed_only:
         import player_bed_actions
@@ -3642,6 +3585,13 @@ def main() -> None:
         print("Hero export: animation FBX", flush=True)
         common.export_animation_fbx(config.animation_fbx, result)
     if config.manifest is not None:
+        dialogue_face_atlas.generate(dialogue_dir, face_atlas_path)
+        corruption_textures = player_corruption.textures(
+            bare_skin_atlas_path.parent / "Corruption",
+            sources={"Face": face_atlas_path, "BareSkin": bare_skin_atlas_path,
+                     "Dialogue": dialogue_dir / "HeroDialogueFace.png"},
+            clothing_source=clothing_atlas_path,
+        )
         write_v2_manifest(
             config.manifest,
             config,
@@ -3654,6 +3604,7 @@ def main() -> None:
             bare_skin_atlas_path,
             bare_skin_atlas_sha256,
             content_signature_sha256,
+            corruption_textures,
         )
     # A staged source file must remain self-contained after its temporary
     # texture paths disappear. Runtime textures stay separate Unity assets.

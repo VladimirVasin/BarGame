@@ -83,7 +83,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   3src→flickercrackle/mech-music-foes-corpses-spawn0;fan0:6cables snapvalvewell/windcreak.
   toprear/playfill<bulb1.8;pourcans0→flatphys/drag-turn/seams→spasmSFX/die-key1/receipt;keyUIend+stairs↓:heat2s/riseSFX→popglass8phys.
   socket/restL-lens-amb0;red24→door/valve/dip≥.45+chest/silent;Escpause/Reset-Newkeep/Newinv0.
-  D7fan/redshadows/deckblock/guards;M65Spot+weakbodyPoint/bounce/look/black12m/fog-sky0/warmhalo.
+  D7fan/redshadows/deckblock/guards;chestSpot+weakbodyPoint/bounce/look/black12m/fog-sky0/warmhalo.
   Hawthorn:3seed bays/session;Use→auto-close→rig gulp:+30HP/+40intox/dose.
   HPHUD<max/inventory bar+value;lipclear→.65s headshake/grimace→throw→hand.
   FullHP refuses/100intox allowed;crimson4active-real s,last2:frozen-world drift/smear/live.
@@ -1603,11 +1603,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   for the same stage. F9 developer selector permits exact reverse
   inspection. No gameplay decay meter or new fiction text.
 - sole `Resources/Player/Player3DV2` in eleven roots;arms/portrait.
-  Lean `1.75 m`:31 body bones/55 actions/tapered torso/male hips-two buttocks/
-  slim arms/refined hands. Loose M-65/right patch; separate trousers/knee folds,
-  burgundy1460 boots/ankle-ball flex.
+  `1.75 m`:31 body bones/55 actions/sculpted eyes and jaw.
+  Olive M-65/four pocket flaps/right repair; oxblood 1460s/welt/ankle flex.
   `PlayerWardrobe`:shirt-jacket-trousers-boots-belt/coverage/atomic slots/leases.
-  `hero_field_workwear` only; outfits/UI/save Deferred. Curtains12 bones;
+  `hero_field_workwear` only; outfits/UI/save Deferred. Swept hair/12 bones;
   Jacket:gameplay rig-only;elbow folds/hand-opening;0live/baked cloth.
   Editor authoring/scarf-sling policy stay;garment folds/joint volume.
   Hair:bounded motion/contacts/pause-reset/mirrors;arms copy jacket;hair→scarf.

@@ -23,7 +23,7 @@ namespace BarPromenade
         // them as `bed_contract` in the production manifest; the focused player
         // asset tests fail if these copies drift. Take a new number from the
         // production generator's report — never tune one here.
-        public const float SupinePelvisSupportOffset = 0.1303f;
+        public const float SupinePelvisSupportOffset = 0.1483f;
         // The pillow supports the back of the head above the pelvis plane.
         public const float SupineHeadSupportOffset = -0.0132f;
         public const float SeatedPelvisSupportOffset = 0.0644f;

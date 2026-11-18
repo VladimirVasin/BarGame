@@ -57,20 +57,16 @@
 
 ## 2. Текущее состояние проекта
 
-Герой худ/устал:торс шире к плечам,мужской таз/две ягодицы;
-свободная оливковая M-65 поверх угольной рубахи.
-Куртка следует ригу/складкам локтей;физика/ветер0,отведение борта рукой.
-4кармана/клапаны,объёмные воротник/борта;швы/износ нарисованы.
-Охристая заплатка справа на плече;знаков отличия нет.
-`2026-09-29`:одежда/тело/волосы:сдержанные UV-рельеф/шероховатость;
-рисунок/лицо/палитра/силуэт прежние.
-Тёмные «шторки» с пробором закрывают виски/уши/затылок;бока/зад равной длины
-до челюсти/верха шеи,без хвоста. Шаги/повороты/ветер двигают волосы;
-тело/одежда/шарф ограничивают,зеркало повторяет. Рубаха/куртка/брюки/обувь
-отдельны;оливковый военный ремень с простой пряжкой. Один комплект,смены нет.
-Бордовые Dr. Martens 1460 сгибаются у голеностопа/пальцев.
-На лестнице пьяный теряет равновесие→падает либо возвращается к походке;
-поза не зависает. Риг/свет/смысл прежние;`player-art-spec.md`.
+Герой худ/устал, с резкими скулами и коротким тёмным косым зачёсом.
+Силуэт выделяют оливковая M-65 со стойкой и четырьмя клапанами, бордовые
+мартенсы с жёлтым рантом. Бурый трикотаж, тёмные брюки; справа на рукаве штопка.
+Одежда держит объём на сгибах. Ботинки перекатываются с пятки на носок.
+Лицо объёмное: глазницы, нос, веки и губы.
+Семь стадий сохраняют узнаваемость; волосы отрастают и сбиваются.
+Шаги/повороты/ветер двигают волосы; зеркало повторяет позу и мимику.
+Пьяный на лестнице теряет равновесие, падает или возвращается к походке.
+Матовые отделки, раздельный риг куртки без физики, тени и туман читаются
+в прежних ракурсах. См. `player-art-spec.md`.
 
 ### 2.1a. Внешняя горная чаша
 
@@ -3988,13 +3984,13 @@ Approved photos/maps/untouched old images retain their styles.
 
 `2026-09-02`: уличных диковин сменили обычные жители.
 
-`2026-10-22`, пользователь: дефолтные мужчины — тело героя/риг NPC;
+`2026-10-22`, пользователь: дефолтные мужчины — нейтральная анатомия/риг NPC;
 свои головы/жесты/4 обычных лица/3 цвета волос. `160–185 см` без шапки,
 худые–пухлые с животом; стабильны/независимы. 23 вещи/8 слотов:
 жилеты/куртки/кардиганы/пальто/рубахи, разные брюки/обувь, свой крой/сгибы/
 прибавка полноты/скрытие тела. Приглушённая одежда по роли, облики без повторов.
 §16 действует.
-Герой: истощение/заношенная M-65/сутулость/дрожь;
+Герой: истощение/заношенная рабочая куртка/сутулость/дрожь;
 волосы короткие→длинные/неопрятные. `player-art-spec.md`, сюж.§8.
 
 Решение `2026-09-29`: рыбак, мать, кассир и водитель автобуса
@@ -4243,7 +4239,7 @@ Shared body/skull/finite wounds/chips;§6.
 `2026-10-14`:3levels/9rooms6x6/hall12²/4flights;wetconcrete/bentsteel/peelpaint/swollenwood-cardbd/wornrubber;workdisgust§6;9sets/clear/plates1-9;4K+2K/uniqueUV/joinwear/warmglow;9banks/27doors.D7fan/guards:lift-drum-pusher↔SFX/gate-backdoor/Homeentry;spokevalve/yellowchain/graylock/PusherL-clear/keyUI;.4dimred/fanSpot-blades/roof-deckblock red-chestbeam.
 `2026-10-15`:toprear prep/trough/cordbulb;3rustfridges/seedfloor/scraps/cream tail-belly-head/redTake→fade-humclick;3:Homeflicker-crackle/mechgrind0/fanlens-vent0/music-tapechew0/exitrestore;pourcans0→flatphys→spasmSFX/die-spitkey/receipt1;key:gchain/holdEgate↑+creak/gallery;key+stairs↓:heat2s/riseSFX/popglass8phys;bulb0/socketcord/restL-lens-amb0/gateRedflicker>0+chest/fog-sky-strobe0/§6.Docker:pale-darkeyes/fusedwarptorso/backhead-kinkneck/asymarms/limphands;skinneck-shldrs-legs/lowwidefeet/kneesfront/stomp-heave/headjerks/gazehero;slats→holes/corefused/fishspill-anyfall/asyncspasm→still/ram-ret.Mimic:user2026-11-01/2src→lastroom-entry→rigburst/planted/gaze/limblag;ram:compress→throw→kneel-rise;fell hero→loadedunevenspasms→rise;wood-wetinhale/stomp/exhale/fall→silence/synced/clearer;Frenzy2SFX/organic
 `2026-10-14`:remains:rig-contourstep/livefall≠corpsephys;coat-scarf-slingrigid/hairkept.
-`2026-10-10`:pistolLunderM65/bar Rbelt/shotgun softsling/Lshldr-frontdiag-back;6stow-draw/rig-model-ammo/Lcoatopen/hair/0hardmount.
+`2026-10-10`:pistolLundercoat/bar Rbelt/shotgun softsling/Lshldr-frontdiag-back;6stow-draw/rig-model-ammo/Lcoatopen/hair/0hardmount.
 `2026-10-13`:3guns/1held-2stowed;Gun:wornunbrandedmetal/Rpalmgait/2handaim/xflash;Aim:8gaits/facing/Step/uppercam/FOV-gripret.Hero:drift/recoil/overshoot/finger regrip/blink;muzzlereticle/shotguncentre/stablecam/intentlegs.
 `2026-10-08`:streak/impulse-SFX/terminal→ragdoll.Shotgun:worndarksteel-wood/2barrels/shldr-stock/Lforeend;heavyrecoil/flash-smoke/deepthud;2shots/break/spenteject/load/close.
 `2026-10-12`:Draw Rbarrels↓;Loutside/Lshldr→vertstock/palmdown

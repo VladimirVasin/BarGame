@@ -85,13 +85,13 @@ House:`build-mothers-house-interior-3d-model.py` via launcher;
 `build-mothers-house-shader.py --check`:URP parity;packs/prompts/hashes:
 `ArtSource/MothersHouse/Textures/Source/generation.json`.
 
-`python tools/build-player-{clothing,body-hair}-surfaces.py [--check]`: UV maps/regions/hash;
+`python tools/build-player-{clothing,body-hair}-surfaces.py [--check]`: maps/regions/hash; clothing refreshes model binding first.
 `ArtSource/Player/player-{clothing,body-hair}-surfaces.json`.
 
-Close Unity. Order:hero source→`build-default-npc-3d-model.py`→
-`refresh-default-npc-damage.py` (launcher)→`DefaultNpcAssetSetup`.
-Worker/scarf:`--model-dir`+`--source-dir` staging;damage publish rolls back.
-Then:`HeroDerivedAssetSetup.RebuildBatch`.
+Close Unity. Hero export → portraits, scarf, lamp and
+`refresh-default-npc-damage.py --hero` → `HeroDerivedAssetSetup.RebuildBatch`.
+Worker source: `DefaultMaleAnatomy.blend`. Worker refresh → NPC damage → editor.
+Worker/scarf staging: `--model-dir` + `--source-dir`.
 Residents:WoodWoman/actions;`--phase-two`:four;prebuild imports props/doors.
 
 ```powershell

@@ -474,6 +474,8 @@ namespace BarPromenade
         private readonly PlayerBootDeformation mirrorBoots;
         private readonly PlayerCorruptionAppearance sourceCorruption;
         private readonly PlayerCorruptionAppearance mirrorCorruption;
+        private readonly Player3DFaceDeformation sourceFace;
+        private readonly Player3DFaceDeformation mirrorFace;
 
         private HomeMirrorHeroTwin(Player3DAssetRegistry hero, Player3DAssetRegistry twin, Transform homeFrame)
         {
@@ -489,6 +491,8 @@ namespace BarPromenade
             mirrorBoots = twin.GetComponent<PlayerBootDeformation>();
             sourceCorruption = PlayerCorruptionAppearance.Ensure(hero);
             mirrorCorruption = PlayerCorruptionAppearance.Ensure(twin);
+            sourceFace = new Player3DFaceDeformation(hero.FaceAtlas);
+            mirrorFace = new Player3DFaceDeformation(twin.FaceAtlas);
             Pair(hero, twin);
             sourceScarf = hero.GetComponentInChildren<PlayerScarfPresentation>(true);
             if (sourceScarf != null)
@@ -733,6 +737,7 @@ namespace BarPromenade
 
             mirrorJoints?.ApplyPose();
             sourceCorruption.CopyAppearanceTo(mirrorCorruption);
+            sourceFace.CopyTo(mirrorFace);
             sourceBoots?.CopyPoseTo(mirrorBoots);
             if (sourceJacket != null && mirrorJacket != null) sourceJacket.CopyPoseTo(mirrorJacket);
             if (sourceHair != null && mirrorHair != null) sourceHair.CopyPoseTo(mirrorHair);

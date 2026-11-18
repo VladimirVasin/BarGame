@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Bake restrained Hero V2 response/normal data over the existing clothing UV0.
 
-The full-colour atlas, FBX and rig are inputs only. Normal RGB is tangent-space
-positive Y; response RGBA is metallic (zero), fabric mask, wear, smoothness.
-Run with --check to compare every output byte without writing. Plain Python;
-the shared atlas kit supplies the same deterministic PNG codec as the hero.
+The full-colour atlas, FBX and rig are inputs only. Publish both derived maps
+and their hashes in the model manifest. Normal RGB is tangent-space positive Y;
+response RGBA is metallic (zero), fabric mask, wear, smoothness. Run with
+--check to compare every output byte without writing.
 """
 
 from __future__ import annotations
@@ -44,12 +44,9 @@ def byte(value: float) -> int:
     return max(0, min(255, round(value * 255)))
 
 
-def kind_at(name: str, y: int, height: int) -> str:
-    # The top 13 pixels of a shin cell paint the existing leather boot shaft.
+def kind_at(name: str, y: int) -> str:
     if name.startswith("Boot"):
         return "sole" if y < 7 else "leather"
-    if name.startswith("JeansShin") and y >= height - 13:
-        return "leather"
     return "fabric"
 
 
@@ -69,18 +66,17 @@ def cell_pixels(pixels: bytes, size: int, region: dict) -> list[list[tuple]]:
 def make_cell(region: dict, colors: list[list[tuple]]) -> tuple[list, list]:
     name = region["name"]
     width, height = region["width_px"], region["height_px"]
-    # Separate cloth/leather/sole reference colours: a painted boot shaft is
-    # leather even though it occupies a trousers cell. No palette is changed.
+    # Each garment keeps its own response; the shin charts are all cloth.
     dominant = {}
     for kind in ("fabric", "leather", "sole"):
         samples = [colors[y][x] for y in range(height) for x in range(width)
-                   if kind_at(name, y, height) == kind]
+                   if kind_at(name, y) == kind]
         if samples:
             dominant[kind] = Counter(samples).most_common(1)[0][0]
     heights, responses = [], []
     for y in range(height):
         row, response = [], []
-        kind = kind_at(name, y, height)
+        kind = kind_at(name, y)
         for x in range(width):
             reference = dominant[kind]
             colour_delta = sum(colors[y][x][i] - reference[i] for i in range(3)) / 3
@@ -165,7 +161,7 @@ def build() -> dict[Path, bytes]:
                 occupied.add((x0 + x, y0 + y))
                 normal.put(x0 + x, size - 1 - y0 - y, cell_normal[y][x])
                 response.put(x0 + x, size - 1 - y0 - y, cell_response[y][x])
-                surface = kind_at(region["name"], y, height)
+                surface = kind_at(region["name"], y)
                 low, high = {"fabric": (.05, .10), "leather": (.16, .25), "sole": (.03, .03)}[surface]
                 if cell_response[y][x][0] != 0 or not byte(low) <= cell_response[y][x][3] <= byte(high):
                     raise ValueError("Metallic/smoothness response exceeds its material range")
@@ -198,10 +194,16 @@ def build() -> dict[Path, bytes]:
             "Assets/Player3D/V2/Textures/PlayerClothingResponse.png": sha(response_bytes),
         },
     }
-    # The source is never a target and its ownership/hash is proved before any write.
-    return {TEXTURES / "PlayerClothingNormal.png": normal_bytes,
-            TEXTURES / "PlayerClothingResponse.png": response_bytes,
-            REPORT: canonical(report)}
+    maps = {"normal": TEXTURES / "PlayerClothingNormal.png",
+            "response": TEXTURES / "PlayerClothingResponse.png"}
+    recipes = [entry for entry in model["surface_bindings"] if entry["recipe"] == "Clothing"]
+    if (len(recipes) != 1 or recipes[0]["regions"] != regions or
+            any(recipes[0][f"{kind}_asset"] != path.relative_to(ROOT).as_posix()
+                for kind, path in maps.items())):
+        raise ValueError("Clothing surface layout changed; re-export the hero before refreshing its maps")
+    outputs = {maps["normal"]: normal_bytes, maps["response"]: response_bytes}
+    recipes[0].update({f"{kind}_sha256": sha(outputs[path]) for kind, path in maps.items()})
+    return {**outputs, REPORT: canonical(report), MODEL: canonical(model)}
 
 
 def main() -> None:
@@ -213,11 +215,13 @@ def main() -> None:
         if args.check:
             if not path.is_file() or path.read_bytes() != expected:
                 raise SystemExit("STALE: " + path.relative_to(ROOT).as_posix())
-        else:
+        elif not path.is_file() or path.read_bytes() != expected:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(expected)
+            temporary = path.with_suffix(path.suffix + ".tmp")
+            temporary.write_bytes(expected)
+            temporary.replace(path)
     print("HERO CLOTHING SURFACES OK: " + ("deterministic data and source contract verified" if args.check else
-          "normal, response and measured manifest generated; base atlas unchanged"))
+          "normal, response and matching model binding published; base atlas unchanged"))
 
 
 if __name__ == "__main__":

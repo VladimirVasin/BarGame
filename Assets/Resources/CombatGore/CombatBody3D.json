@@ -13,7 +13,7 @@
   },
   "models": {
     "Hero": {
-      "source_sha256": "782483e6f15e3bbae3788c2ce2ea79595f8059f7ec72e20b9af9c59b62ad6aaf",
+      "source_sha256": "ac81a409d3d2e304ad2c4ae75231e99e875b78a5b9c6979b94989ca7f049bce5",
       "coverage": [
         {
           "source": "CLO_Belt",
@@ -29,26 +29,26 @@
         },
         {
           "source": "CLO_Boot.L",
-          "source_area_m2": 0.11233681,
-          "body_area_m2": 0.11233681,
+          "source_area_m2": 0.11714047,
+          "body_area_m2": 0.11714047,
           "head_excluded": false
         },
         {
           "source": "CLO_Boot.R",
-          "source_area_m2": 0.11375982,
-          "body_area_m2": 0.11375982,
+          "source_area_m2": 0.11856293,
+          "body_area_m2": 0.11856293,
           "head_excluded": false
         },
         {
           "source": "CLO_BootSole.L",
-          "source_area_m2": 0.07664019,
-          "body_area_m2": 0.0766402,
+          "source_area_m2": 0.07754535,
+          "body_area_m2": 0.07754535,
           "head_excluded": false
         },
         {
           "source": "CLO_BootSole.R",
-          "source_area_m2": 0.0778693,
-          "body_area_m2": 0.0778693,
+          "source_area_m2": 0.07879909,
+          "body_area_m2": 0.07879909,
           "head_excluded": false
         },
         {
@@ -58,51 +58,45 @@
           "head_excluded": false
         },
         {
-          "source": "CLO_JacketCollar.L",
-          "source_area_m2": 0.01222032,
-          "body_area_m2": 0.01222033,
-          "head_excluded": false
-        },
-        {
-          "source": "CLO_JacketCollar.R",
-          "source_area_m2": 0.01222032,
-          "body_area_m2": 0.01222033,
+          "source": "CLO_JacketCollar",
+          "source_area_m2": 0.06146621,
+          "body_area_m2": 0.06146621,
           "head_excluded": false
         },
         {
           "source": "CLO_JacketCuff.L",
-          "source_area_m2": 0.01611325,
-          "body_area_m2": 0.01611325,
+          "source_area_m2": 0.0165407,
+          "body_area_m2": 0.0165407,
           "head_excluded": false
         },
         {
           "source": "CLO_JacketCuff.R",
-          "source_area_m2": 0.01611326,
-          "body_area_m2": 0.01611327,
+          "source_area_m2": 0.01654034,
+          "body_area_m2": 0.01654034,
           "head_excluded": false
         },
         {
           "source": "CLO_JacketFlapChest.L",
-          "source_area_m2": 0.00881262,
-          "body_area_m2": 0.00881262,
+          "source_area_m2": 0.01180341,
+          "body_area_m2": 0.01180341,
           "head_excluded": false
         },
         {
           "source": "CLO_JacketFlapChest.R",
-          "source_area_m2": 0.00881262,
-          "body_area_m2": 0.00881262,
+          "source_area_m2": 0.01180283,
+          "body_area_m2": 0.01180282,
           "head_excluded": false
         },
         {
           "source": "CLO_JacketFlapHip.L",
-          "source_area_m2": 0.01049875,
-          "body_area_m2": 0.01049875,
+          "source_area_m2": 0.01537824,
+          "body_area_m2": 0.01537824,
           "head_excluded": false
         },
         {
           "source": "CLO_JacketFlapHip.R",
-          "source_area_m2": 0.01049875,
-          "body_area_m2": 0.01049875,
+          "source_area_m2": 0.01539397,
+          "body_area_m2": 0.01539397,
           "head_excluded": false
         },
         {
@@ -119,38 +113,38 @@
         },
         {
           "source": "CLO_JacketPlacket.L",
-          "source_area_m2": 0.01696577,
-          "body_area_m2": 0.01696577,
+          "source_area_m2": 0.02738165,
+          "body_area_m2": 0.02738165,
           "head_excluded": false
         },
         {
           "source": "CLO_JacketPlacket.R",
-          "source_area_m2": 0.01696577,
-          "body_area_m2": 0.01696577,
+          "source_area_m2": 0.04379422,
+          "body_area_m2": 0.04379422,
           "head_excluded": false
         },
         {
           "source": "CLO_JacketPocketChest.L",
-          "source_area_m2": 0.02234647,
-          "body_area_m2": 0.02234647,
+          "source_area_m2": 0.02542286,
+          "body_area_m2": 0.02542286,
           "head_excluded": false
         },
         {
           "source": "CLO_JacketPocketChest.R",
-          "source_area_m2": 0.02234647,
-          "body_area_m2": 0.02234647,
+          "source_area_m2": 0.02541796,
+          "body_area_m2": 0.02541795,
           "head_excluded": false
         },
         {
           "source": "CLO_JacketPocketHip.L",
-          "source_area_m2": 0.03564795,
-          "body_area_m2": 0.03564795,
+          "source_area_m2": 0.04203173,
+          "body_area_m2": 0.04203173,
           "head_excluded": false
         },
         {
           "source": "CLO_JacketPocketHip.R",
-          "source_area_m2": 0.03564796,
-          "body_area_m2": 0.03564795,
+          "source_area_m2": 0.04203345,
+          "body_area_m2": 0.04203345,
           "head_excluded": false
         },
         {
@@ -167,8 +161,8 @@
         },
         {
           "source": "CLO_ShirtBody",
-          "source_area_m2": 0.54415168,
-          "body_area_m2": 0.54415167,
+          "source_area_m2": 0.54415173,
+          "body_area_m2": 0.54415176,
           "head_excluded": false
         },
         {
@@ -179,14 +173,14 @@
         },
         {
           "source": "CLO_TrousersShin.L",
-          "source_area_m2": 0.15179668,
-          "body_area_m2": 0.15179668,
+          "source_area_m2": 0.13893907,
+          "body_area_m2": 0.13893908,
           "head_excluded": false
         },
         {
           "source": "CLO_TrousersShin.R",
-          "source_area_m2": 0.15177506,
-          "body_area_m2": 0.15177506,
+          "source_area_m2": 0.13903708,
+          "body_area_m2": 0.13903708,
           "head_excluded": false
         },
         {
@@ -380,25 +374,25 @@
         {
           "source": "CLO_Boot.L",
           "maximum_nonplanarity_m": 0.12132725,
-          "nonplanar_polygon_count": 79,
+          "nonplanar_polygon_count": 87,
           "maximum_cut_tessellation_deviation_m": 0.00421941
         },
         {
           "source": "CLO_Boot.R",
           "maximum_nonplanarity_m": 0.12168726,
-          "nonplanar_polygon_count": 79,
+          "nonplanar_polygon_count": 87,
           "maximum_cut_tessellation_deviation_m": 0.00437726
         },
         {
           "source": "CLO_BootSole.L",
           "maximum_nonplanarity_m": 0.13422371,
-          "nonplanar_polygon_count": 12,
+          "nonplanar_polygon_count": 14,
           "maximum_cut_tessellation_deviation_m": 0.00879506
         },
         {
           "source": "CLO_BootSole.R",
           "maximum_nonplanarity_m": 0.13480558,
-          "nonplanar_polygon_count": 12,
+          "nonplanar_polygon_count": 14,
           "maximum_cut_tessellation_deviation_m": 0.0090543
         },
         {
@@ -408,13 +402,7 @@
           "maximum_cut_tessellation_deviation_m": 0.00164758
         },
         {
-          "source": "CLO_JacketCollar.L",
-          "maximum_nonplanarity_m": 0.0,
-          "nonplanar_polygon_count": 0,
-          "maximum_cut_tessellation_deviation_m": 0.0
-        },
-        {
-          "source": "CLO_JacketCollar.R",
+          "source": "CLO_JacketCollar",
           "maximum_nonplanarity_m": 0.0,
           "nonplanar_polygon_count": 0,
           "maximum_cut_tessellation_deviation_m": 0.0
@@ -529,15 +517,15 @@
         },
         {
           "source": "CLO_TrousersShin.L",
-          "maximum_nonplanarity_m": 0.00115409,
+          "maximum_nonplanarity_m": 0.00203098,
           "nonplanar_polygon_count": 48,
-          "maximum_cut_tessellation_deviation_m": 7.238e-05
+          "maximum_cut_tessellation_deviation_m": 0.00026387
         },
         {
           "source": "CLO_TrousersShin.R",
-          "maximum_nonplanarity_m": 0.00115408,
+          "maximum_nonplanarity_m": 0.00203105,
           "nonplanar_polygon_count": 48,
-          "maximum_cut_tessellation_deviation_m": 7.249e-05
+          "maximum_cut_tessellation_deviation_m": 0.00026363
         },
         {
           "source": "CLO_TrousersThigh.L",
@@ -3579,27 +3567,27 @@
         },
         {
           "name": "Region10Patch0__CLO_JacketCuff.R",
-          "vertices": 19,
-          "triangles": 19,
+          "vertices": 18,
+          "triangles": 18,
           "bounds_unity_m": {
             "min": [
-              -0.6806709,
+              -0.6806745,
               1.0415225,
-              -0.0452655
+              -0.0452796
             ],
             "max": [
               -0.6577625,
-              1.0693314,
+              1.0693657,
               -0.0248693
             ],
             "size": [
-              0.0229084,
-              0.0278089,
-              0.0203962
+              0.022912,
+              0.0278432,
+              0.0204103
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "c115aa33a821c3b8ae7e83e8a797632cb4eebbbd27fba23ec03f5688d7a43b81"
+          "semantic_sha256": "9b6490bc2f0eea303ff721282905441438b98a9dbeb62d083f96a5b72e3a8a26"
         },
         {
           "name": "Region10Patch0__CLO_JacketForearm.R",
@@ -3747,27 +3735,27 @@
         },
         {
           "name": "Region10Patch1__CLO_JacketCuff.R",
-          "vertices": 21,
+          "vertices": 19,
           "triangles": 17,
           "bounds_unity_m": {
             "min": [
-              -0.7011485,
+              -0.7022727,
               1.0658685,
-              -0.0447813
+              -0.0452837
             ],
             "max": [
-              -0.6772343,
-              1.0955963,
-              -0.0224911
+              -0.6772433,
+              1.0979009,
+              -0.0223067
             ],
             "size": [
-              0.0239142,
-              0.0297278,
-              0.0222902
+              0.0250294,
+              0.0320324,
+              0.022977
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "a2388d489e4b5e95d14ab88f3378fb3fa644e966a288646f998f067b524354f5"
+          "semantic_sha256": "186917781355e7c37372610f5c2a4db870cbdc393385a5c516e55538cf5273c9"
         },
         {
           "name": "Region10Patch1__CLO_JacketForearm.R",
@@ -3915,11 +3903,11 @@
         },
         {
           "name": "Region10Patch2__CLO_JacketCuff.R",
-          "vertices": 22,
-          "triangles": 22,
+          "vertices": 20,
+          "triangles": 21,
           "bounds_unity_m": {
             "min": [
-              -0.6803187,
+              -0.6803186,
               1.03948,
               -0.026817
             ],
@@ -3929,13 +3917,13 @@
               0.0123215
             ],
             "size": [
-              0.0236319,
+              0.0236318,
               0.0263885,
               0.0391385
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "f27b4d441f65c02aa6bc2601af8b841d864d19674ac8b07176f58ad1166e3aec"
+          "semantic_sha256": "66aad0498c728e93a15ba7b87f08ebdc87d7c50621d3ab2710d9d277c7ef385f"
         },
         {
           "name": "Region10Patch2__CLO_JacketForearm.R",
@@ -4083,27 +4071,27 @@
         },
         {
           "name": "Region10Patch3__CLO_JacketCuff.R",
-          "vertices": 28,
+          "vertices": 24,
           "triangles": 24,
           "bounds_unity_m": {
             "min": [
-              -0.702072,
+              -0.7030445,
               1.0633427,
               -0.0248693
             ],
             "max": [
               -0.6761994,
-              1.0965782,
+              1.0985528,
               0.0132659
             ],
             "size": [
-              0.0258726,
-              0.0332355,
+              0.0268451,
+              0.0352101,
               0.0381352
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "4b20a12d2f74e56a8bf47df13b554656a52959121a35504de003be3a8dc1e94f"
+          "semantic_sha256": "b839206bfa4f4eb1958173f20845fcf99ae1398f9521f77afb686a1ec4ddcaa8"
         },
         {
           "name": "Region10Patch3__CLO_JacketForearm.R",
@@ -4641,7 +4629,7 @@
             "min": [
               0.0944616,
               0.0961344,
-              -0.1264503
+              -0.1255937
             ],
             "max": [
               0.1517132,
@@ -4651,35 +4639,35 @@
             "size": [
               0.0572516,
               0.0738656,
-              0.1059886
+              0.105132
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "8df6ed245c4d15ae6382799f57c25ac62758a0784bd80c2d0648ccaa9482a3cd"
+          "semantic_sha256": "77b63d81d03c7a452a7623798632d8976d63f3b30c35c1e55232b44015636391"
         },
         {
           "name": "Region12Patch0__CLO_TrousersShin.L",
-          "vertices": 61,
+          "vertices": 56,
           "triangles": 61,
           "bounds_unity_m": {
             "min": [
               0.088,
-              0.095,
-              -0.0780278
+              0.095246,
+              -0.0788924
             ],
             "max": [
-              0.1590541,
+              0.1601223,
               0.4865161,
               -0.0139762
             ],
             "size": [
-              0.0710541,
-              0.3915161,
-              0.0640516
+              0.0721223,
+              0.3912701,
+              0.0649162
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "bf26ecf2bb9c4af53c25cd2596a18988325ae9be0b6025702edd98bda0a9b833"
+          "semantic_sha256": "97f5b00482fc773bafd6bf025539c84fef785bf993761062c85f2ce2dd957d67"
         },
         {
           "name": "Region12Patch0__GEO_Shin.L",
@@ -4707,13 +4695,13 @@
         },
         {
           "name": "Region12Patch1__CLO_Boot.L",
-          "vertices": 55,
+          "vertices": 54,
           "triangles": 49,
           "bounds_unity_m": {
             "min": [
               0.0411447,
               0.0938783,
-              -0.1264503
+              -0.1255937
             ],
             "max": [
               0.096,
@@ -4723,35 +4711,35 @@
             "size": [
               0.0548553,
               0.0761217,
-              0.1059886
+              0.105132
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "69d866f5e5eab50c437c89efe1201851ec74b7495998e5c2ba2a4acc01ba623b"
+          "semantic_sha256": "8f3ba033ce4a34c900860f2871d3ed23915d4b535fbad13f9b253246e20b2a7b"
         },
         {
           "name": "Region12Patch1__CLO_TrousersShin.L",
-          "vertices": 59,
-          "triangles": 61,
+          "vertices": 57,
+          "triangles": 59,
           "bounds_unity_m": {
             "min": [
-              0.0210101,
-              0.0941212,
-              -0.0769875
+              0.0205788,
+              0.094498,
+              -0.0778219
             ],
             "max": [
-              0.096,
+              0.095995,
               0.4859732,
               -0.0140237
             ],
             "size": [
-              0.0749899,
-              0.391852,
-              0.0629638
+              0.0754162,
+              0.3914752,
+              0.0637982
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "ee94e42c760292220854939afd6b9981c63735c12df58fa784bf0ede2f9a1222"
+          "semantic_sha256": "aeb1c847beb9595cfc4249d40d1fa0913a0800764dba511fdca5fd46eb817de4"
         },
         {
           "name": "Region12Patch1__GEO_Shin.L",
@@ -4779,51 +4767,51 @@
         },
         {
           "name": "Region12Patch2__CLO_Boot.L",
-          "vertices": 67,
-          "triangles": 76,
+          "vertices": 95,
+          "triangles": 112,
           "bounds_unity_m": {
             "min": [
-              0.0944371,
+              0.0939034,
               0.0935403,
               -0.0219769
             ],
             "max": [
               0.1513267,
-              0.17,
-              0.049159
+              0.1964142,
+              0.052991
             ],
             "size": [
-              0.0568896,
-              0.0764597,
-              0.0711359
+              0.0574233,
+              0.1028739,
+              0.0749679
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "6edbdf301b18f484bcd7a2841b33c077a74d8efbd074cba916dbfb9418e0a1e3"
+          "semantic_sha256": "5188902423ad2a9562b243e64df5e3f413d41357cabb844639f1d33df1f8cd58"
         },
         {
           "name": "Region12Patch2__CLO_TrousersShin.L",
-          "vertices": 60,
+          "vertices": 58,
           "triangles": 61,
           "bounds_unity_m": {
             "min": [
               0.088,
-              0.0942791,
-              -0.0220002
+              0.0943609,
+              -0.0219951
             ],
             "max": [
-              0.1602387,
+              0.1613412,
               0.4861581,
-              0.0436048
+              0.043902
             ],
             "size": [
-              0.0722387,
-              0.391879,
-              0.065605
+              0.0733412,
+              0.3917972,
+              0.0658971
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "0de087a7cabeccbfef3ee97b883f6046e2c710e0d09b25b97a048d83a382622b"
+          "semantic_sha256": "24c867e6c3e8a6636eb7db872f669bac1f986cf1248d538eca727171ec21eaca"
         },
         {
           "name": "Region12Patch2__GEO_Foot.L",
@@ -4875,8 +4863,8 @@
         },
         {
           "name": "Region12Patch3__CLO_Boot.L",
-          "vertices": 58,
-          "triangles": 65,
+          "vertices": 83,
+          "triangles": 91,
           "bounds_unity_m": {
             "min": [
               0.0411273,
@@ -4885,41 +4873,41 @@
             ],
             "max": [
               0.096,
-              0.17,
-              0.049159
+              0.1959829,
+              0.0524467
             ],
             "size": [
               0.0548727,
-              0.0771712,
-              0.0711822
+              0.1031541,
+              0.0744699
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "16a15f58811d07aabeacb379b6e5412fdb30acb969b26b219bbe8129a54585de"
+          "semantic_sha256": "bed00cc2f91554d26e1c64ad86615f18d0c091d21210df333dc97fce2358ae25"
         },
         {
           "name": "Region12Patch3__CLO_TrousersShin.L",
-          "vertices": 64,
-          "triangles": 61,
+          "vertices": 71,
+          "triangles": 67,
           "bounds_unity_m": {
             "min": [
-              0.0222118,
-              0.0938639,
-              -0.0220182
+              0.0217976,
+              0.093968,
+              -0.0220105
             ],
             "max": [
-              0.096,
+              0.095995,
               0.4840261,
-              0.0446602
+              0.0449725
             ],
             "size": [
-              0.0737882,
-              0.3901622,
-              0.0666784
+              0.0741974,
+              0.3900581,
+              0.066983
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "0b9bcaf1fe937fa69e3d4dc557d328c5726f100b49a9d6542eeb7aca3d8a54e1"
+          "semantic_sha256": "9ce5da247580b88a90091ab9e32efc7639a16469b6c80ca3c6fcf6efbee6f3c2"
         },
         {
           "name": "Region12Patch3__GEO_Foot.L",
@@ -4971,7 +4959,7 @@
         },
         {
           "name": "Region13Patch0__CLO_Boot.L",
-          "vertices": 78,
+          "vertices": 79,
           "triangles": 75,
           "bounds_unity_m": {
             "min": [
@@ -4991,17 +4979,17 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "eefb9e98168623feb9ce532aedf5856e359d80fcc8c07494a0256219ae64e14c"
+          "semantic_sha256": "00f0000ef96bb69e0e1bf0c394aa7f47a0827fe0775e179ce65a120b38a4d562"
         },
         {
           "name": "Region13Patch0__CLO_BootSole.L",
-          "vertices": 24,
-          "triangles": 19,
+          "vertices": 25,
+          "triangles": 21,
           "bounds_unity_m": {
             "min": [
               0.096,
-              0.0129638,
-              -0.2093057
+              0.0143362,
+              -0.2087125
             ],
             "max": [
               0.154682,
@@ -5010,12 +4998,12 @@
             ],
             "size": [
               0.058682,
-              0.0160363,
-              0.0609368
+              0.0146639,
+              0.0603436
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "2940c69fff9efc7544be707a2c1f7ef82bf05c1aaff56d9bf4667e63c5cf207f"
+          "semantic_sha256": "a77a2b2abe48245254520ba69457dbe7115344a6ca881e66d0284fc8d01c3213"
         },
         {
           "name": "Region13Patch0__GEO_Foot.L",
@@ -5043,7 +5031,7 @@
         },
         {
           "name": "Region13Patch1__CLO_Boot.L",
-          "vertices": 73,
+          "vertices": 72,
           "triangles": 70,
           "bounds_unity_m": {
             "min": [
@@ -5053,27 +5041,27 @@
             ],
             "max": [
               0.096,
-              0.0971426,
+              0.097125,
               0.049159
             ],
             "size": [
               0.06175,
-              0.0681426,
+              0.068125,
               0.259318
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "cef0d875774277c1095309fe63134cad8601622dd90ef66882228578c39f42fc"
+          "semantic_sha256": "0c9f801a152eb5234771cbd862b32603dc3afabfdb5ef3ca8eea70932bb91142"
         },
         {
           "name": "Region13Patch1__CLO_BootSole.L",
-          "vertices": 23,
-          "triangles": 19,
+          "vertices": 24,
+          "triangles": 21,
           "bounds_unity_m": {
             "min": [
               0.0373181,
-              0.0129638,
-              -0.2093057
+              0.0143362,
+              -0.2087125
             ],
             "max": [
               0.096,
@@ -5082,12 +5070,12 @@
             ],
             "size": [
               0.0586819,
-              0.0160363,
-              0.0609368
+              0.0146639,
+              0.0603436
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "521a78e5123583b6343656fdd52062286ca2010182456299e008441f97901532"
+          "semantic_sha256": "521f4ba51b7c6165b32eb3d6cd4e6fa0097829ad0c70cc18901675f2f07b2e1c"
         },
         {
           "name": "Region13Patch1__GEO_Foot.L",
@@ -5135,12 +5123,12 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "299e5eefa465f6e9135b69478ce6e13abd8bc981949a5780763e932562f4e1d7"
+          "semantic_sha256": "ddc360680c0419a4cadbe21888e2637e4b31f5e0dfd10c4ea27d3cc723e57011"
         },
         {
           "name": "Region13Patch2__CLO_BootSole.L",
-          "vertices": 63,
-          "triangles": 63,
+          "vertices": 62,
+          "triangles": 61,
           "bounds_unity_m": {
             "min": [
               0.096,
@@ -5159,7 +5147,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "d5040c37e2cac81ec49f9a319c971e86312a9ac6dbb79432fed0b9ab0bc551da"
+          "semantic_sha256": "9c4d53c58226e70a1c159f3d4fad41eb3e38d743f460f1afe05a3503519ad462"
         },
         {
           "name": "Region13Patch2__GEO_Foot.L",
@@ -5207,12 +5195,12 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "5e2b9475ed23b474ac19c2d8fd2fc6a94f8aebd76c057447163485558c771add"
+          "semantic_sha256": "3933e8de00b44c5adfe3835c6dfd24dc58e52c33094723b7f787b2033e9c80a0"
         },
         {
           "name": "Region13Patch3__CLO_BootSole.L",
-          "vertices": 66,
-          "triangles": 65,
+          "vertices": 65,
+          "triangles": 63,
           "bounds_unity_m": {
             "min": [
               0.031,
@@ -5231,7 +5219,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "14dd4b1f012f39e7982b3924727446ab1dc5b502dcdaee53127da7b7bbd7d756"
+          "semantic_sha256": "71981010f592883d3964855015714836745249ee97840a3c02475a2b33f81aa4"
         },
         {
           "name": "Region13Patch3__GEO_Foot.L",
@@ -5643,13 +5631,13 @@
         },
         {
           "name": "Region15Patch0__CLO_Boot.R",
-          "vertices": 57,
+          "vertices": 58,
           "triangles": 53,
           "bounds_unity_m": {
             "min": [
               -0.096,
               0.0932379,
-              -0.10873
+              -0.1092063
             ],
             "max": [
               -0.0391062,
@@ -5659,35 +5647,35 @@
             "size": [
               0.0568938,
               0.0767621,
-              0.1227418
+              0.1232181
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "481307a5a0555692318d4894bd1a8d804d481dc23690b866cdee00b1f7e68ee1"
+          "semantic_sha256": "33540021126fa75cc0eac1470c29b566abb7ce37c519b07cfb33e5b11c91ab61"
         },
         {
           "name": "Region15Patch0__CLO_TrousersShin.R",
-          "vertices": 53,
-          "triangles": 58,
+          "vertices": 47,
+          "triangles": 53,
           "bounds_unity_m": {
             "min": [
               -0.096,
-              0.0940248,
-              -0.0498697
+              0.0942205,
+              -0.0504622
             ],
             "max": [
-              -0.0222139,
+              -0.0217998,
               0.4845132,
-              0.014009
+              0.014008
             ],
             "size": [
-              0.0737861,
-              0.3904884,
-              0.0638787
+              0.0742002,
+              0.3902927,
+              0.0644702
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "1adf59e97bba90f349455d9333510befca30f37597a58c3471de2ff051f3dceb"
+          "semantic_sha256": "c96ea6e7a0f428ba8aec1b102917132ed198e7f1013e46802a86186ad75fdfe7"
         },
         {
           "name": "Region15Patch0__GEO_Shin.R",
@@ -5715,51 +5703,51 @@
         },
         {
           "name": "Region15Patch1__CLO_Boot.R",
-          "vertices": 53,
+          "vertices": 52,
           "triangles": 53,
           "bounds_unity_m": {
             "min": [
               -0.150131,
-              0.0937411,
-              -0.10873
+              0.0937486,
+              -0.107998
             ],
             "max": [
-              -0.0944559,
+              -0.0944562,
               0.17,
               0.0139886
             ],
             "size": [
-              0.0556751,
-              0.0762589,
-              0.1227186
+              0.0556748,
+              0.0762514,
+              0.1219866
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "89acfcc271ec7050bb540e206c98f97da32d9159b540eeda30906cfd29070654"
+          "semantic_sha256": "ca9177c5ea466ff634307a93ec32cabf85d6611550c6e55ff46efb7d2b6a16a3"
         },
         {
           "name": "Region15Patch1__CLO_TrousersShin.R",
-          "vertices": 53,
-          "triangles": 58,
+          "vertices": 47,
+          "triangles": 51,
           "bounds_unity_m": {
             "min": [
-              -0.160237,
-              0.0946395,
-              -0.0488127
+              -0.1613395,
+              0.0948033,
+              -0.04939
             ],
             "max": [
               -0.088,
               0.4861588,
-              0.014
+              0.0139923
             ],
             "size": [
-              0.072237,
-              0.3915193,
-              0.0628127
+              0.0733395,
+              0.3913555,
+              0.0633823
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "8df0433cebc9ca6dd01b8f8a106fb484300a9ea549ce723bc09773a925315a6b"
+          "semantic_sha256": "ff591081025a729f8ee76c7c47295bde77e57075b887de68961309c6c3c40548"
         },
         {
           "name": "Region15Patch1__GEO_Shin.R",
@@ -5787,8 +5775,8 @@
         },
         {
           "name": "Region15Patch2__CLO_Boot.R",
-          "vertices": 63,
-          "triangles": 68,
+          "vertices": 92,
+          "triangles": 94,
           "bounds_unity_m": {
             "min": [
               -0.096,
@@ -5797,41 +5785,41 @@
             ],
             "max": [
               -0.0401195,
-              0.17,
-              0.085159
+              0.1959908,
+              0.0884601
             ],
             "size": [
               0.0558805,
-              0.0761463,
-              0.0719282
+              0.1021371,
+              0.0752293
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "c5c957178229604ba69a08fddbbad3d6c0ad53c63172fba426e899229858c525"
+          "semantic_sha256": "9fd93a2ff11b7f7155ae929bbfa63c63b067f262d3f6b4f1cd80e8bd7de09715"
         },
         {
           "name": "Region15Patch2__CLO_TrousersShin.R",
-          "vertices": 54,
-          "triangles": 58,
+          "vertices": 47,
+          "triangles": 53,
           "bounds_unity_m": {
             "min": [
               -0.096,
-              0.0941209,
+              0.0942222,
               0.010012
             ],
             "max": [
-              -0.0210118,
+              -0.0205805,
               0.4854867,
-              0.0712128
+              0.0723502
             ],
             "size": [
-              0.0749882,
-              0.3913658,
-              0.0612008
+              0.0754195,
+              0.3912645,
+              0.0623382
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "064ab93e39d1abe12789b182a7d6aae2fb6c91abb19e064c78f33a6e1d5d2885"
+          "semantic_sha256": "230c1a274cc994307dbc1dfea15af8e5c330b81a9745338c37117902a25c4401"
         },
         {
           "name": "Region15Patch2__GEO_Foot.R",
@@ -5883,8 +5871,8 @@
         },
         {
           "name": "Region15Patch3__CLO_Boot.R",
-          "vertices": 59,
-          "triangles": 69,
+          "vertices": 92,
+          "triangles": 105,
           "bounds_unity_m": {
             "min": [
               -0.1501943,
@@ -5892,42 +5880,42 @@
               0.0132308
             ],
             "max": [
-              -0.0944616,
-              0.17,
-              0.085159
+              -0.0939417,
+              0.1964142,
+              0.088991
             ],
             "size": [
-              0.0557327,
-              0.0742704,
-              0.0719282
+              0.0562526,
+              0.1006846,
+              0.0757602
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "4ca134b8124f494c2cb670d24843dbec85ace42fbd8744e1d378e71d54fe3a32"
+          "semantic_sha256": "fdbb9a7816d87639d0260a5f933c5bfaedd3c6accab1fe70e7a1a53b3734459c"
         },
         {
           "name": "Region15Patch3__CLO_TrousersShin.R",
-          "vertices": 60,
-          "triangles": 58,
+          "vertices": 59,
+          "triangles": 59,
           "bounds_unity_m": {
             "min": [
-              -0.159052,
-              0.095,
+              -0.1601201,
+              0.0954425,
               0.0099882
             ],
             "max": [
               -0.088,
               0.48629,
-              0.0722699
+              0.0734223
             ],
             "size": [
-              0.071052,
-              0.39129,
-              0.0622817
+              0.0721201,
+              0.3908475,
+              0.0634341
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "91f97c79fbf4e22fcc569536ed1bab3ab845dd4ee2a47fb50ecff3e062851be8"
+          "semantic_sha256": "b495263f0e0f035c31bedd70cd19420c637b0c1f119b276af2a98515014eda20"
         },
         {
           "name": "Region15Patch3__GEO_Foot.R",
@@ -5979,7 +5967,7 @@
         },
         {
           "name": "Region16Patch0__CLO_Boot.R",
-          "vertices": 70,
+          "vertices": 71,
           "triangles": 69,
           "bounds_unity_m": {
             "min": [
@@ -5999,17 +5987,17 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "6f70d0bde7dc3e5dc41b4086e0936958dadcc048752785002fea128473f8039f"
+          "semantic_sha256": "b0854d59fcc5605eba6ff550cadd7ee15efa023d0606fdf6f6f0abb076e06f5a"
         },
         {
           "name": "Region16Patch0__CLO_BootSole.R",
-          "vertices": 21,
-          "triangles": 16,
+          "vertices": 22,
+          "triangles": 17,
           "bounds_unity_m": {
             "min": [
               -0.096,
-              0.0136412,
-              -0.1770787
+              0.0151007,
+              -0.1766125
             ],
             "max": [
               -0.0377404,
@@ -6018,12 +6006,36 @@
             ],
             "size": [
               0.0582596,
-              0.0153588,
-              0.0595924
+              0.0138993,
+              0.0591262
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "f465c1a1542a335832a4112a1a254cb67cce8372d56f13c0f2441689d0318cd6"
+          "semantic_sha256": "e4d2ee9388a396a2f210d3b152ca3c6fac0f9b400255c32c4294b6cb43b69499"
+        },
+        {
+          "name": "Region16Patch0__CLO_TrousersShin.R",
+          "vertices": 35,
+          "triangles": 30,
+          "bounds_unity_m": {
+            "min": [
+              -0.096,
+              0.0940977,
+              -0.0057071
+            ],
+            "max": [
+              -0.0553545,
+              0.0954425,
+              0.057156
+            ],
+            "size": [
+              0.0406455,
+              0.0013448,
+              0.0628631
+            ]
+          },
+          "closed_volume_m3": null,
+          "semantic_sha256": "0d865c36feadb232e4322ad7b05f55e897c79e95594fcf2c6d90cd634705e384"
         },
         {
           "name": "Region16Patch0__GEO_Foot.R",
@@ -6051,7 +6063,7 @@
         },
         {
           "name": "Region16Patch1__CLO_Boot.R",
-          "vertices": 81,
+          "vertices": 79,
           "triangles": 77,
           "bounds_unity_m": {
             "min": [
@@ -6071,17 +6083,17 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "c73f1d56aa79ea9f1dc6b4d466b16fbdfbf75596c7f9a3f1438f4219c76cc5a1"
+          "semantic_sha256": "085e46dcc38b19b5ca525f4b92da56bed4777e90e4110d2a3af95bc769a8206b"
         },
         {
           "name": "Region16Patch1__CLO_BootSole.R",
-          "vertices": 26,
-          "triangles": 21,
+          "vertices": 27,
+          "triangles": 23,
           "bounds_unity_m": {
             "min": [
               -0.1542596,
-              0.0136412,
-              -0.1770787
+              0.0151008,
+              -0.1766125
             ],
             "max": [
               -0.096,
@@ -6090,12 +6102,36 @@
             ],
             "size": [
               0.0582596,
-              0.0153588,
-              0.0595924
+              0.0138992,
+              0.0591262
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "3eef2c76b84380ba7461eb72bfc4da05af09ffa25a5d4e8d9c46e02f3e235959"
+          "semantic_sha256": "f14a234eeeb775fef040aba0f00942a32a3758487c489e5c23ff81623ef4de00"
+        },
+        {
+          "name": "Region16Patch1__CLO_TrousersShin.R",
+          "vertices": 37,
+          "triangles": 30,
+          "bounds_unity_m": {
+            "min": [
+              -0.1366416,
+              0.0946805,
+              -0.005158
+            ],
+            "max": [
+              -0.096,
+              0.0960252,
+              0.0577047
+            ],
+            "size": [
+              0.0406416,
+              0.0013447,
+              0.0628627
+            ]
+          },
+          "closed_volume_m3": null,
+          "semantic_sha256": "72b722e235576d656503eed087f8e4653430581bc430e0812322a9ca260707fa"
         },
         {
           "name": "Region16Patch1__GEO_Foot.R",
@@ -6143,12 +6179,12 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "87acd41860a4f120f4b50f1d0efdc4d46c2efa9ec54d11ae126d8a6a51fa65ef"
+          "semantic_sha256": "3768847d55d1bef7865619568ccacb3e58d7ac40737dacaded40983d2275fe9d"
         },
         {
           "name": "Region16Patch2__CLO_BootSole.R",
-          "vertices": 58,
-          "triangles": 58,
+          "vertices": 57,
+          "triangles": 56,
           "bounds_unity_m": {
             "min": [
               -0.096,
@@ -6167,7 +6203,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "4869d96eb29610dec73f6c65b435e41f1be1535dcdc6105fd7894bd1776c8b8d"
+          "semantic_sha256": "f7b1833b98f785458d89bb233fab7dbc84d9e496397926085d2d43f67fb70de3"
         },
         {
           "name": "Region16Patch2__GEO_Foot.R",
@@ -6215,12 +6251,12 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "fc76515f8184dc8bb025850a5f0d8d5c46273645fa4075eda9a070e2471e8689"
+          "semantic_sha256": "a3874e22484947808b75a55103694a3f4ab1bfc2c4ae5527eb0cabf668111ac5"
         },
         {
           "name": "Region16Patch3__CLO_BootSole.R",
           "vertices": 68,
-          "triangles": 67,
+          "triangles": 65,
           "bounds_unity_m": {
             "min": [
               -0.161,
@@ -6239,7 +6275,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "f9037c0c1947ecf37f757299b0531e8a0881d15140ce81d07af5efddb3dbfeb5"
+          "semantic_sha256": "7a83d978bae708a683513f75e287ec84c0cfa742eec438b84485590f9acb8859"
         },
         {
           "name": "Region16Patch3__GEO_Foot.R",
@@ -6391,31 +6427,31 @@
           }
         },
         {
-          "name": "Region2Patch0__CLO_JacketCollar.L",
-          "vertices": 54,
-          "triangles": 18,
+          "name": "Region2Patch0__CLO_JacketCollar",
+          "vertices": 333,
+          "triangles": 111,
           "bounds_unity_m": {
             "min": [
-              0.0624773,
-              1.4709914,
-              -0.0126998
+              0.0,
+              1.4568048,
+              -0.0139001
             ],
             "max": [
-              0.1188482,
-              1.4909998,
-              0.0120002
+              0.169,
+              1.534,
+              0.0590002
             ],
             "size": [
-              0.0563709,
-              0.0200084,
-              0.0247
+              0.169,
+              0.0771952,
+              0.0729003
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "f8c528c2c62451548ca7edb44b3cfbba012d06c807ba1928becdf246ecd365d3",
+          "semantic_sha256": "8d4e5e98e418ffd14120b94daffe53436395f4f75a36fd69eb33960c9f902e7c",
           "torso_cells": {
-            "count": 18,
-            "maximum_outer_edge_m": 0.04337051,
+            "count": 111,
+            "maximum_outer_edge_m": 0.04329028,
             "minimum_closed_volume_m3": null
           }
         },
@@ -6460,17 +6496,17 @@
             ],
             "max": [
               0.197,
-              1.4849997,
+              1.4849998,
               0.0848265
             ],
             "size": [
               0.197,
-              0.3749997,
+              0.3749998,
               0.0973126
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "cb0d09d2aa89bcd9f9f9173bc12d9fb860e6f5196d27881537840c6c93dc6cfa",
+          "semantic_sha256": "78be73f6edb9891b63d78b02d4e2cf921b695728e43f03e58dc0c01eded2fc29",
           "torso_cells": {
             "count": 424,
             "maximum_outer_edge_m": 0.04495108,
@@ -6594,31 +6630,31 @@
           }
         },
         {
-          "name": "Region2Patch1__CLO_JacketCollar.R",
-          "vertices": 54,
-          "triangles": 18,
+          "name": "Region2Patch1__CLO_JacketCollar",
+          "vertices": 297,
+          "triangles": 99,
           "bounds_unity_m": {
             "min": [
-              -0.1188482,
-              1.4709914,
-              -0.0126998
+              -0.169,
+              1.4568042,
+              -0.0139001
             ],
             "max": [
-              -0.0624773,
-              1.4909998,
-              0.0120002
+              0.0,
+              1.534,
+              0.0590002
             ],
             "size": [
-              0.0563709,
-              0.0200084,
-              0.0247
+              0.169,
+              0.0771958,
+              0.0729003
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "ad42fcbbb787766973d086dd5184e1485cbbd6fda77f29a646f0768bb2c02388",
+          "semantic_sha256": "41fea2e26bdf21138d3668da63d0b72bd249d76255229c0ba3d731b5d85a6293",
           "torso_cells": {
-            "count": 18,
-            "maximum_outer_edge_m": 0.04337051,
+            "count": 99,
+            "maximum_outer_edge_m": 0.04329028,
             "minimum_closed_volume_m3": null
           }
         },
@@ -6663,17 +6699,17 @@
             ],
             "max": [
               -0.0,
-              1.4849997,
+              1.4849998,
               0.0848265
             ],
             "size": [
               0.197,
-              0.3749997,
+              0.3749998,
               0.0973126
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "a67469e0232115a6ebf9f8ce61db7168df56bbd30aaa1fda3e326e0d15b04433",
+          "semantic_sha256": "dfaa13a58cac732212b68c4a44ea54f695c1aea7487663e6d6b1499b60f64ec7",
           "torso_cells": {
             "count": 389,
             "maximum_outer_edge_m": 0.04486477,
@@ -6797,31 +6833,31 @@
           }
         },
         {
-          "name": "Region2Patch2__CLO_JacketCollar.L",
-          "vertices": 186,
-          "triangles": 62,
+          "name": "Region2Patch2__CLO_JacketCollar",
+          "vertices": 243,
+          "triangles": 81,
           "bounds_unity_m": {
             "min": [
-              0.04,
-              1.4559997,
-              -0.0909998
+              0.0298158,
+              1.4568777,
+              -0.0800466
             ],
             "max": [
-              0.137,
-              1.4909998,
-              -0.0120328
+              0.169,
+              1.5270106,
+              -0.0115624
             ],
             "size": [
-              0.097,
-              0.0350001,
-              0.078967
+              0.1391842,
+              0.0701329,
+              0.0684842
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "17b7a3406b45f88672e05068bb1fb48b8f3ce8d2454f1870329c13f774b7f62d",
+          "semantic_sha256": "380d6f5a42f41b99cbb4edc9c0ad30a0fcb0d40c8f29eabb73915a8f791ae083",
           "torso_cells": {
-            "count": 62,
-            "maximum_outer_edge_m": 0.04056171,
+            "count": 81,
+            "maximum_outer_edge_m": 0.0447922,
             "minimum_closed_volume_m3": null
           }
         },
@@ -6831,84 +6867,84 @@
           "triangles": 92,
           "bounds_unity_m": {
             "min": [
-              0.053,
-              1.3001997,
-              -0.1306131
+              0.0555,
+              1.2679523,
+              -0.1352948
             ],
             "max": [
-              0.153,
-              1.3321998,
-              -0.0965348
+              0.1625,
+              1.3172724,
+              -0.0834807
             ],
             "size": [
-              0.1,
-              0.0320001,
-              0.0340783
+              0.107,
+              0.0493201,
+              0.0518141
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "25da016d0208145d4384053bb9e4c5b20afaf001ac7abcbd63bec33c9a545da2",
+          "semantic_sha256": "b7222ce2ecb981fd539c2131da560ddb23c8b71474a430c7fe8ec1668b0d8b6c",
           "torso_cells": {
             "count": 92,
-            "maximum_outer_edge_m": 0.03358595,
+            "maximum_outer_edge_m": 0.04242982,
             "minimum_closed_volume_m3": null
           }
         },
         {
           "name": "Region2Patch2__CLO_JacketPlacket.L",
-          "vertices": 426,
-          "triangles": 142,
+          "vertices": 450,
+          "triangles": 150,
           "bounds_unity_m": {
             "min": [
-              0.0374827,
+              0.0354827,
               1.11,
-              -0.122364
+              -0.1226126
             ],
             "max": [
-              0.0869271,
-              1.4769998,
-              -0.0677031
+              0.0885237,
+              1.4769999,
+              -0.0675266
             ],
             "size": [
-              0.0494444,
-              0.3669998,
-              0.0546609
+              0.053041,
+              0.3669999,
+              0.055086
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "2527ffa20c1ab30afb31cc727494b9c09b2a980baa7acf46a83c120881c4aadb",
+          "semantic_sha256": "33737389e09089aaaf9f8d47c6bd00b93408d142dfb63f0ed10982f7eafb7317",
           "torso_cells": {
-            "count": 142,
-            "maximum_outer_edge_m": 0.04312114,
+            "count": 150,
+            "maximum_outer_edge_m": 0.04344247,
             "minimum_closed_volume_m3": null
           }
         },
         {
           "name": "Region2Patch2__CLO_JacketPocketChest.L",
-          "vertices": 336,
-          "triangles": 112,
+          "vertices": 462,
+          "triangles": 154,
           "bounds_unity_m": {
             "min": [
-              0.056,
-              1.2234998,
-              -0.1251371
+              0.0605,
+              1.2032224,
+              -0.1303508
             ],
             "max": [
-              0.15,
-              1.3264998,
-              -0.0897232
+              0.1575,
+              1.3069124,
+              -0.0790232
             ],
             "size": [
-              0.094,
-              0.103,
-              0.0354139
+              0.097,
+              0.10369,
+              0.0513276
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "c9f61150f53c18f9f0dc1c01ecbd9df262b11b92d11ba79e41c865e6282d3386",
+          "semantic_sha256": "cfbea80854ca735d222013e74fda10212fb854e9e5957be289ca9602c3ed3aec",
           "torso_cells": {
-            "count": 112,
-            "maximum_outer_edge_m": 0.04277106,
+            "count": 154,
+            "maximum_outer_edge_m": 0.04425606,
             "minimum_closed_volume_m3": null
           }
         },
@@ -6953,17 +6989,17 @@
             ],
             "max": [
               0.1962865,
-              1.4845911,
+              1.4845914,
               2e-07
             ],
             "size": [
               0.1962865,
-              0.3745911,
+              0.3745914,
               0.0983503
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "a0ad4dc4cedfb0269bc8a275efc141c3b6ac0f19fab4ee79212acdb69853a01b",
+          "semantic_sha256": "5ea619c57c3b1a564fc88fec99440201601d7d7d809d042fd59a5820b001499a",
           "torso_cells": {
             "count": 372,
             "maximum_outer_edge_m": 0.04485841,
@@ -7087,31 +7123,31 @@
           }
         },
         {
-          "name": "Region2Patch3__CLO_JacketCollar.R",
-          "vertices": 186,
-          "triangles": 62,
+          "name": "Region2Patch3__CLO_JacketCollar",
+          "vertices": 243,
+          "triangles": 81,
           "bounds_unity_m": {
             "min": [
-              -0.137,
-              1.4559997,
-              -0.0909998
+              -0.169,
+              1.4569412,
+              -0.0800466
             ],
             "max": [
-              -0.04,
-              1.4909998,
-              -0.0120328
+              -0.0298158,
+              1.5270106,
+              -0.0115645
             ],
             "size": [
-              0.097,
-              0.0350001,
-              0.078967
+              0.1391842,
+              0.0700694,
+              0.0684821
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "50880ff14c22bfbba314ef6183eef07ebc5cbd197544564b79fce511bb2aba1c",
+          "semantic_sha256": "884422ce48d757c83f138da9e5e8f3088cb0bbbf6a94eb170fed2994132899fe",
           "torso_cells": {
-            "count": 62,
-            "maximum_outer_edge_m": 0.04056171,
+            "count": 81,
+            "maximum_outer_edge_m": 0.04479219,
             "minimum_closed_volume_m3": null
           }
         },
@@ -7121,84 +7157,84 @@
           "triangles": 92,
           "bounds_unity_m": {
             "min": [
-              -0.153,
-              1.3001997,
-              -0.1306131
+              -0.1625,
+              1.2679523,
+              -0.1352173
             ],
             "max": [
-              -0.053,
-              1.3321998,
-              -0.0965348
+              -0.0555,
+              1.3172724,
+              -0.0834842
             ],
             "size": [
-              0.1,
-              0.0320001,
-              0.0340783
+              0.107,
+              0.0493201,
+              0.0517331
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "8918a25f76d9dcf3a561a8b019e6662db91671a526570e5d052ff46a75107e44",
+          "semantic_sha256": "5697525346df5f20a558b608f333a849e566aad6da3ebf5b2728f9b858e1d61e",
           "torso_cells": {
             "count": 92,
-            "maximum_outer_edge_m": 0.03358595,
+            "maximum_outer_edge_m": 0.04243144,
             "minimum_closed_volume_m3": null
           }
         },
         {
           "name": "Region2Patch3__CLO_JacketPlacket.R",
-          "vertices": 426,
-          "triangles": 142,
+          "vertices": 498,
+          "triangles": 166,
           "bounds_unity_m": {
             "min": [
-              -0.0869271,
+              -0.0967494,
               1.11,
-              -0.122364
+              -0.1226126
             ],
             "max": [
-              -0.0374827,
-              1.4769998,
-              -0.0677031
+              -0.0354827,
+              1.4769999,
+              -0.0639652
             ],
             "size": [
-              0.0494444,
-              0.3669998,
-              0.0546609
+              0.0612667,
+              0.3669999,
+              0.0586474
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "e15ec4741cd2c7e4d2d14f4212077baaa74049e8e29c7bf719a1a3ba6ffc8b72",
+          "semantic_sha256": "e527829d3a8f3a14171e26ab7a0276e36d4776e99df1c55cec5aaa7bc8fb302b",
           "torso_cells": {
-            "count": 142,
-            "maximum_outer_edge_m": 0.04312114,
+            "count": 166,
+            "maximum_outer_edge_m": 0.04451836,
             "minimum_closed_volume_m3": null
           }
         },
         {
           "name": "Region2Patch3__CLO_JacketPocketChest.R",
-          "vertices": 336,
-          "triangles": 112,
+          "vertices": 462,
+          "triangles": 154,
           "bounds_unity_m": {
             "min": [
-              -0.15,
-              1.2234998,
-              -0.1251371
+              -0.1575,
+              1.2032224,
+              -0.1303002
             ],
             "max": [
-              -0.056,
-              1.3264998,
-              -0.0897232
+              -0.0605,
+              1.3069124,
+              -0.078979
             ],
             "size": [
-              0.094,
-              0.103,
-              0.0354139
+              0.097,
+              0.10369,
+              0.0513212
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "4a972900915aa7304a152cb4accf75b07775c1c58963a4db74c30f8d3df539c5",
+          "semantic_sha256": "759c573b661da1809eff60b22c43f5c018724a356f330b73dd1faee498738080",
           "torso_cells": {
-            "count": 112,
-            "maximum_outer_edge_m": 0.04277106,
+            "count": 154,
+            "maximum_outer_edge_m": 0.04424241,
             "minimum_closed_volume_m3": null
           }
         },
@@ -7243,17 +7279,17 @@
             ],
             "max": [
               -0.0,
-              1.4845911,
+              1.4845914,
               2e-07
             ],
             "size": [
               0.1962865,
-              0.3745911,
+              0.3745914,
               0.0983503
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "9cfcc024fdb59893bc4a485b693d0c67c876b37927feb31bbe6e66704c7aa0da",
+          "semantic_sha256": "98345c9c2ec8b524587fd41a2b6238742423e5e5bc9fb3ad9f9eddb35d9856bf",
           "torso_cells": {
             "count": 373,
             "maximum_outer_edge_m": 0.04485841,
@@ -7354,22 +7390,22 @@
           "bounds_unity_m": {
             "min": [
               0.0,
-              0.9419999,
+              0.942,
               0.0040002
             ],
             "max": [
               0.1534681,
-              0.9719999,
+              0.9720001,
               0.1086572
             ],
             "size": [
               0.1534681,
-              0.03,
+              0.0300001,
               0.104657
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "1a929f92bf6d71c74973fff9ceb341c47039ae0aeb9f0cfebd9f36e4376cfc82",
+          "semantic_sha256": "c2c890585ee7d1fca9e113af1a23804514c6920ccab229a145735f66051d7b02",
           "torso_cells": {
             "count": 99,
             "maximum_outer_edge_m": 0.04312639,
@@ -7411,7 +7447,7 @@
           "triangles": 184,
           "bounds_unity_m": {
             "min": [
-              -0.0,
+              0.0,
               0.925,
               0.0040002
             ],
@@ -7427,7 +7463,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "8a03cbf8c0914e8b1fe004160f125e3d3cbd90c999855add264d4f50d6c51d08",
+          "semantic_sha256": "ba6d36dfcecb3f7732af2ab2f2efa69de0542f96838662b1505ca34b48cb59af",
           "torso_cells": {
             "count": 184,
             "maximum_outer_edge_m": 0.04480746,
@@ -7528,22 +7564,22 @@
           "bounds_unity_m": {
             "min": [
               -0.1534681,
-              0.9419999,
+              0.942,
               0.0040002
             ],
             "max": [
               0.0,
-              0.9719999,
+              0.9720001,
               0.1086572
             ],
             "size": [
               0.1534681,
-              0.03,
+              0.0300001,
               0.104657
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "6f49adef3e8573b8ed4de79e2bd2c5bf91f746b1655727425cd0c296452199db",
+          "semantic_sha256": "080ed7133175488695f984105670e484d2162fdafd69ced7e28ebf9ef51e6abc",
           "torso_cells": {
             "count": 91,
             "maximum_outer_edge_m": 0.04312639,
@@ -7590,7 +7626,7 @@
               0.0040002
             ],
             "max": [
-              -0.0,
+              0.0,
               1.11,
               0.08484
             ],
@@ -7601,7 +7637,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "ebbbe00148b8e656087ab78b48d2bd17561df68dbec32f6806562782e4e8a449",
+          "semantic_sha256": "3234fb52b2084f272418f76acd442911caac43541b51a79206bff0ab6e105b1d",
           "torso_cells": {
             "count": 165,
             "maximum_outer_edge_m": 0.04480746,
@@ -7707,17 +7743,17 @@
             ],
             "max": [
               0.1507543,
-              0.9719999,
+              0.9720001,
               0.0040002
             ],
             "size": [
               0.1507543,
-              0.0299999,
+              0.0300001,
               0.085
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "f6005c691b3680f9c6b6dd08e1e9a5be92bbf8c3296c7a21b5e9cd6395be697a",
+          "semantic_sha256": "b83bee5c6aae2467880d7043d0d2ae136ce9d8cbbded823ef27a9314c02c6132",
           "torso_cells": {
             "count": 83,
             "maximum_outer_edge_m": 0.04373472,
@@ -7746,7 +7782,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "9d9b5f2f70560d90a7b39ef21b3e1b4f12dd506b86efbb9aa25e93b9f726ca1a",
+          "semantic_sha256": "691ba1741ab85f3e746e3ce2c51daaaef0fc584488c880ac3a985a86a5d7a4a9",
           "torso_cells": {
             "count": 18,
             "maximum_outer_edge_m": 0.03622155,
@@ -7784,30 +7820,30 @@
         },
         {
           "name": "Region3Patch2__CLO_JacketFlapHip.L",
-          "vertices": 276,
-          "triangles": 92,
+          "vertices": 300,
+          "triangles": 100,
           "bounds_unity_m": {
             "min": [
-              0.0415,
-              0.9955999,
-              -0.1366329
+              0.05,
+              0.9829099,
+              -0.1446986
             ],
             "max": [
-              0.1565,
-              1.0275999,
-              -0.0783766
+              0.172,
+              1.0312399,
+              -0.0537746
             ],
             "size": [
-              0.115,
-              0.032,
-              0.0582563
+              0.122,
+              0.04833,
+              0.090924
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "b39ee3b3410b1fd14a1cfd913c44393a3c5cf01bfaa8e1825fb4a3426e8ee0de",
+          "semantic_sha256": "f41e3e3b96f77a3cc3df5c58920395e9415b405bc150473bd71451ff6da7d60c",
           "torso_cells": {
-            "count": 92,
-            "maximum_outer_edge_m": 0.03731456,
+            "count": 100,
+            "maximum_outer_edge_m": 0.04211273,
             "minimum_closed_volume_m3": null
           }
         },
@@ -7817,65 +7853,65 @@
           "triangles": 168,
           "bounds_unity_m": {
             "min": [
-              0.0430242,
+              0.0410242,
               0.925,
-              -0.1263511
+              -0.1266244
             ],
             "max": [
-              0.0526307,
+              0.0586307,
               1.11,
-              -0.1172461
+              -0.1162738
             ],
             "size": [
-              0.0096065,
+              0.0176065,
               0.185,
-              0.009105
+              0.0103506
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "616b72aecfd2c69735f062d9b4d28e3613dba04329707504d6043cedba3913ee",
+          "semantic_sha256": "b907ad2a7469466dc4a108c4a1a556b969dbc04f0b41d12847e64a3b29afca4f",
           "torso_cells": {
             "count": 168,
-            "maximum_outer_edge_m": 0.02454235,
+            "maximum_outer_edge_m": 0.02576436,
             "minimum_closed_volume_m3": null
           }
         },
         {
           "name": "Region3Patch2__CLO_JacketPocketHip.L",
-          "vertices": 354,
-          "triangles": 118,
+          "vertices": 678,
+          "triangles": 226,
           "bounds_unity_m": {
             "min": [
-              0.0445,
+              0.055,
               0.925,
-              -0.1311523
+              -0.1404687
             ],
             "max": [
-              0.1535,
-              1.0254999,
-              -0.077514
+              0.167,
+              1.0211799,
+              -0.0559022
             ],
             "size": [
-              0.109,
-              0.1004999,
-              0.0536383
+              0.112,
+              0.0961799,
+              0.0845665
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "36d0f92973a11f3ff4057193ce65a4aa4853c3c8c2e1c23b175d34490d6b98fa",
+          "semantic_sha256": "5fb80dea4d55b5aedf55f3a63b0d1f75cfe74ff766f4d13a1ec425b84781de1e",
           "torso_cells": {
-            "count": 118,
-            "maximum_outer_edge_m": 0.04492356,
+            "count": 226,
+            "maximum_outer_edge_m": 0.04402377,
             "minimum_closed_volume_m3": null
           }
         },
         {
           "name": "Region3Patch2__CLO_ShirtBody",
-          "vertices": 492,
-          "triangles": 164,
+          "vertices": 498,
+          "triangles": 166,
           "bounds_unity_m": {
             "min": [
-              -0.0,
+              0.0,
               0.925,
               -0.0773779
             ],
@@ -7891,9 +7927,9 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "5635c93bf8d2e24fce080f25dacf16e24777028bdf1ead0acef4091f0d467e9a",
+          "semantic_sha256": "1225d61e995d5f7a06175f2ad0b1bdfe599e2298d310347cbec6aba4596c8d0b",
           "torso_cells": {
-            "count": 164,
+            "count": 166,
             "maximum_outer_edge_m": 0.04480746,
             "minimum_closed_volume_m3": null
           }
@@ -7997,17 +8033,17 @@
             ],
             "max": [
               0.0,
-              0.9719999,
+              0.9720001,
               0.0040002
             ],
             "size": [
               0.1507543,
-              0.0299999,
+              0.0300001,
               0.085
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "0347a4210152a8af1b21d7ce8bf090839d854196d8d5c62a2cd1a0c6cc8ff16b",
+          "semantic_sha256": "811136b1052e0f34f0d34390f99e194f15f0e0d0b170a1389b39713771a97552",
           "torso_cells": {
             "count": 75,
             "maximum_outer_edge_m": 0.04373472,
@@ -8036,7 +8072,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "c177954e81cfa4237dc892eedc11dab061194b35bf5b7b3ec8dce3a12bf43960",
+          "semantic_sha256": "d880a91c6cfd84a23666e3e99217257689b54b1c16d925b5716016860a232e5e",
           "torso_cells": {
             "count": 14,
             "maximum_outer_edge_m": 0.03622155,
@@ -8074,30 +8110,30 @@
         },
         {
           "name": "Region3Patch3__CLO_JacketFlapHip.R",
-          "vertices": 276,
-          "triangles": 92,
+          "vertices": 300,
+          "triangles": 100,
           "bounds_unity_m": {
             "min": [
-              -0.1565,
-              0.9955999,
-              -0.1366329
+              -0.172,
+              0.9829099,
+              -0.1446298
             ],
             "max": [
-              -0.0415,
-              1.0275999,
-              -0.0783766
+              -0.05,
+              1.0312399,
+              -0.0535798
             ],
             "size": [
-              0.115,
-              0.032,
-              0.0582563
+              0.122,
+              0.04833,
+              0.09105
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "de3a6d54fc1034c510937c5facb56e7be65d5871a6df7ae7b40c2bda9c89e908",
+          "semantic_sha256": "a55fa507c328714832f278777532ccec64bf134096e19d98fdbc43412752fa11",
           "torso_cells": {
-            "count": 92,
-            "maximum_outer_edge_m": 0.03731457,
+            "count": 100,
+            "maximum_outer_edge_m": 0.04215339,
             "minimum_closed_volume_m3": null
           }
         },
@@ -8107,55 +8143,55 @@
           "triangles": 168,
           "bounds_unity_m": {
             "min": [
-              -0.0526307,
+              -0.0706307,
               0.925,
-              -0.1263511
+              -0.1266244
             ],
             "max": [
-              -0.0430242,
+              -0.0410242,
               1.11,
-              -0.1172461
+              -0.1139656
             ],
             "size": [
-              0.0096065,
+              0.0296065,
               0.185,
-              0.009105
+              0.0126588
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "7d145d2b262162876f8dcc17f35b7214f880b651691f04de24507ca5625eb296",
+          "semantic_sha256": "2b714cba9737d53a7683359c30eccfee17d875c116eb243f83633581464f6744",
           "torso_cells": {
             "count": 168,
-            "maximum_outer_edge_m": 0.02454235,
+            "maximum_outer_edge_m": 0.03103778,
             "minimum_closed_volume_m3": null
           }
         },
         {
           "name": "Region3Patch3__CLO_JacketPocketHip.R",
-          "vertices": 354,
-          "triangles": 118,
+          "vertices": 696,
+          "triangles": 232,
           "bounds_unity_m": {
             "min": [
-              -0.1535,
+              -0.167,
               0.925,
-              -0.1311523
+              -0.1404555
             ],
             "max": [
-              -0.0445,
-              1.0254999,
-              -0.077514
+              -0.055,
+              1.0211799,
+              -0.0558954
             ],
             "size": [
-              0.109,
-              0.1004999,
-              0.0536383
+              0.112,
+              0.0961799,
+              0.0845601
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "45c128ec4c3c9a9afcf7afeb9c5dcb37fcb2c315a2eaef079e8c9459e1fe0302",
+          "semantic_sha256": "bb955f26c2c8c8694aea5dbea1f985dc644b71d51bcbc130456794fc450319ea",
           "torso_cells": {
-            "count": 118,
-            "maximum_outer_edge_m": 0.04492356,
+            "count": 232,
+            "maximum_outer_edge_m": 0.04402508,
             "minimum_closed_volume_m3": null
           }
         },
@@ -8170,7 +8206,7 @@
               -0.0773779
             ],
             "max": [
-              -0.0,
+              0.0,
               1.11,
               0.0040002
             ],
@@ -8181,7 +8217,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "b1bcbc6b3fad04a4ffd907c2114a2cb59e672afe2ed251bc4272fc27e0d96b97",
+          "semantic_sha256": "7a2799ef59731292734c23de78d09fc5633782e94a9e444e9a9c0dd192983b71",
           "torso_cells": {
             "count": 166,
             "maximum_outer_edge_m": 0.04480746,
@@ -8311,22 +8347,22 @@
           "bounds_unity_m": {
             "min": [
               -0.0,
-              0.8779998,
+              0.8779999,
               0.0080001
             ],
             "max": [
               0.1365109,
-              0.9250001,
+              0.925,
               0.0833001
             ],
             "size": [
               0.1365109,
-              0.0470003,
+              0.0470001,
               0.0753
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "43b3cb70b9a186694b02323f0f4f038ab64cdfdaeffd3d86f29e39dbad81d0a4",
+          "semantic_sha256": "240260ebeac7a1944b5f15a28d2ba097cb350bb7897ca0b014ae0b1f982a0592",
           "torso_cells": {
             "count": 101,
             "maximum_outer_edge_m": 0.04423045,
@@ -8451,29 +8487,29 @@
         },
         {
           "name": "Region4Patch1__CLO_ShirtBody",
-          "vertices": 267,
-          "triangles": 89,
+          "vertices": 264,
+          "triangles": 88,
           "bounds_unity_m": {
             "min": [
               -0.1365109,
-              0.8779998,
+              0.8779999,
               0.0080001
             ],
             "max": [
               0.0,
-              0.9250001,
+              0.925,
               0.0833001
             ],
             "size": [
               0.1365109,
-              0.0470003,
+              0.0470001,
               0.0753
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "b361fae9174f3b5fc48568d553b215faec6543f2f97681ea1a4c690393ef20a0",
+          "semantic_sha256": "a30e94495e5812e9e3f02584c957d746748985ef97d1bba77ae125a041e3427f",
           "torso_cells": {
-            "count": 89,
+            "count": 88,
             "maximum_outer_edge_m": 0.04423045,
             "minimum_closed_volume_m3": null
           }
@@ -8600,55 +8636,55 @@
           "triangles": 86,
           "bounds_unity_m": {
             "min": [
-              0.0440225,
-              0.8049999,
-              -0.1231586
+              0.0420225,
+              0.805,
+              -0.1234332
             ],
             "max": [
-              0.0534012,
+              0.0594012,
               0.925,
-              -0.1166568
+              -0.1155933
             ],
             "size": [
-              0.0093787,
-              0.1200001,
-              0.0065018
+              0.0173787,
+              0.12,
+              0.0078399
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "eb65bb9c062e5da25fcbb9e0e03c92bff3499cc5dd6c9c6be3697faa2544adfa",
+          "semantic_sha256": "43880de64485417f30d70ef18144beef5c7fff29ad2b8a5891dc37be230c0dfc",
           "torso_cells": {
             "count": 86,
-            "maximum_outer_edge_m": 0.03088365,
+            "maximum_outer_edge_m": 0.03372012,
             "minimum_closed_volume_m3": null
           }
         },
         {
           "name": "Region4Patch2__CLO_JacketPocketHip.L",
-          "vertices": 222,
-          "triangles": 74,
+          "vertices": 306,
+          "triangles": 102,
           "bounds_unity_m": {
             "min": [
-              0.0445,
-              0.8864999,
-              -0.1280587
+              0.055,
+              0.8890899,
+              -0.1346476
             ],
             "max": [
-              0.1535,
-              0.925,
-              -0.0772463
+              0.167,
+              0.9250001,
+              -0.0551063
             ],
             "size": [
-              0.109,
-              0.0385001,
-              0.0508124
+              0.112,
+              0.0359102,
+              0.0795413
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "07a00b621c0878a3d4bb3162091aa44c94cf01e01615109a72c55b3e78a5ed07",
+          "semantic_sha256": "fcc5a570e047432e14a322ae3391bd8dc1cfdf3be4c7081f702408442eb9a8aa",
           "torso_cells": {
-            "count": 74,
-            "maximum_outer_edge_m": 0.04421035,
+            "count": 102,
+            "maximum_outer_edge_m": 0.04449625,
             "minimum_closed_volume_m3": null
           }
         },
@@ -8659,7 +8695,7 @@
           "bounds_unity_m": {
             "min": [
               -0.0,
-              0.8779998,
+              0.8779999,
               -0.0613432
             ],
             "max": [
@@ -8669,12 +8705,12 @@
             ],
             "size": [
               0.1347728,
-              0.0470002,
+              0.0470001,
               0.0693433
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "6d5cc026a57f0cfa29b3ed348ba1400c4708e80b751fd129d17cc9f6af302de4",
+          "semantic_sha256": "9c06ce16efb6f561425fcd37f32a09e1a3dbd1dcfaccd39477ad0c1605c24ba9",
           "torso_cells": {
             "count": 82,
             "maximum_outer_edge_m": 0.04382893,
@@ -8803,55 +8839,55 @@
           "triangles": 86,
           "bounds_unity_m": {
             "min": [
-              -0.0534012,
-              0.8049999,
-              -0.1231586
+              -0.0714012,
+              0.805,
+              -0.1234332
             ],
             "max": [
-              -0.0440225,
+              -0.0420225,
               0.925,
-              -0.1166568
+              -0.1130746
             ],
             "size": [
-              0.0093787,
-              0.1200001,
-              0.0065018
+              0.0293787,
+              0.12,
+              0.0103586
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "b14f433f27c08de8e73dad8cc055f558ae1d3fdbe9ae800ed1ed87175e34fad6",
+          "semantic_sha256": "c99efbc3d7f72589152bbc96417b8f1c142ea6e19a26f40187276dc39a7a5b11",
           "torso_cells": {
             "count": 86,
-            "maximum_outer_edge_m": 0.03088366,
+            "maximum_outer_edge_m": 0.04077629,
             "minimum_closed_volume_m3": null
           }
         },
         {
           "name": "Region4Patch3__CLO_JacketPocketHip.R",
-          "vertices": 222,
-          "triangles": 74,
+          "vertices": 306,
+          "triangles": 102,
           "bounds_unity_m": {
             "min": [
-              -0.1535,
-              0.8864999,
-              -0.1280587
+              -0.167,
+              0.8890899,
+              -0.1346786
             ],
             "max": [
-              -0.0445,
-              0.925,
-              -0.0772463
+              -0.055,
+              0.9250001,
+              -0.0550979
             ],
             "size": [
-              0.109,
-              0.0385001,
-              0.0508124
+              0.112,
+              0.0359102,
+              0.0795807
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "f2a5e12360e1cd93f9792c9630e495a195adb30568702a71d61edee4a1ca1208",
+          "semantic_sha256": "f08f869db1f8c62936f3199e15b4a724259ae2edfc33c264b39643013d43bc32",
           "torso_cells": {
-            "count": 74,
-            "maximum_outer_edge_m": 0.04421036,
+            "count": 102,
+            "maximum_outer_edge_m": 0.04449332,
             "minimum_closed_volume_m3": null
           }
         },
@@ -8862,7 +8898,7 @@
           "bounds_unity_m": {
             "min": [
               -0.1347728,
-              0.8779998,
+              0.8779999,
               -0.0613432
             ],
             "max": [
@@ -8872,12 +8908,12 @@
             ],
             "size": [
               0.1347728,
-              0.0470002,
+              0.0470001,
               0.0693433
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "6473334faf4bb7ee39b23844eafbfbd8dbb01b5d4ca397334703b32681394ff1",
+          "semantic_sha256": "9a85d0ea4a96f39baa23a1e4054275c3dd878518b5d854d44058151ead05768c",
           "torso_cells": {
             "count": 78,
             "maximum_outer_edge_m": 0.04382892,
@@ -9501,8 +9537,8 @@
         },
         {
           "name": "Region6Patch0__CLO_JacketCuff.L",
-          "vertices": 37,
-          "triangles": 41,
+          "vertices": 33,
+          "triangles": 39,
           "bounds_unity_m": {
             "min": [
               0.6485,
@@ -9510,18 +9546,18 @@
               -0.0509455
             ],
             "max": [
-              0.7011744,
-              1.1292526,
-              -0.0175197
+              0.7022775,
+              1.129644,
+              -0.0175018
             ],
             "size": [
-              0.0526744,
-              0.0529329,
-              0.0334258
+              0.0537775,
+              0.0533243,
+              0.0334437
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "3c06960d579f6ca6cb369f7a71a3a97a6f9bca00377eb03bd2a69562b692f5b6"
+          "semantic_sha256": "7f9abdc5775f9163cecce4a1462ecbafc6633dd80d187062b6fe948c2550c5ec"
         },
         {
           "name": "Region6Patch0__CLO_JacketForearm.L",
@@ -9597,8 +9633,8 @@
         },
         {
           "name": "Region6Patch1__CLO_JacketCuff.L",
-          "vertices": 39,
-          "triangles": 42,
+          "vertices": 36,
+          "triangles": 39,
           "bounds_unity_m": {
             "min": [
               0.624972,
@@ -9617,7 +9653,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "5426b2b6db153930733fa7681fd3378c13afde21dc81069b6b8cdc747469349c"
+          "semantic_sha256": "b1c5b7e9bb4e635addc8d71e1658f6193689e76d597d74d17369b5d39269c784"
         },
         {
           "name": "Region6Patch1__CLO_JacketForearm.L",
@@ -9693,27 +9729,27 @@
         },
         {
           "name": "Region6Patch2__CLO_JacketCuff.L",
-          "vertices": 36,
-          "triangles": 40,
+          "vertices": 39,
+          "triangles": 41,
           "bounds_unity_m": {
             "min": [
-              0.6485001,
+              0.6485,
               1.0736799,
               -0.0188798
             ],
             "max": [
-              0.7014836,
-              1.1295571,
+              0.7022657,
+              1.1298702,
               0.0127415
             ],
             "size": [
-              0.0529835,
-              0.0558772,
+              0.0537657,
+              0.0561903,
               0.0316213
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "6e4fbbcc4176de25dc3274a41e885810aae6e4315c57703e3918895107b3470f"
+          "semantic_sha256": "f3e00dc4089369e27841887777d4047bbb756830f35e0de3185e18c8ee02f282"
         },
         {
           "name": "Region6Patch2__CLO_JacketForearm.L",
@@ -9789,7 +9825,7 @@
         },
         {
           "name": "Region6Patch3__CLO_JacketCuff.L",
-          "vertices": 37,
+          "vertices": 40,
           "triangles": 41,
           "bounds_unity_m": {
             "min": [
@@ -9809,7 +9845,7 @@
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "30177bbdc938a8f9b87461f459e57cde73546641b194159f9a0ace083157f13d"
+          "semantic_sha256": "57274334125a33d978dc2b4cd70de96bdcbabcc62c8c6444d98aab7f437cee6e"
         },
         {
           "name": "Region6Patch3__CLO_JacketForearm.L",
@@ -9885,8 +9921,8 @@
         },
         {
           "name": "Region7Patch0__CLO_JacketCuff.L",
-          "vertices": 20,
-          "triangles": 19,
+          "vertices": 26,
+          "triangles": 21,
           "bounds_unity_m": {
             "min": [
               0.6793544,
@@ -9894,18 +9930,18 @@
               -0.0492654
             ],
             "max": [
-              0.7030044,
-              1.1013397,
-              -0.0265248
+              0.7039921,
+              1.1034595,
+              -0.0263553
             ],
             "size": [
-              0.02365,
-              0.0293165,
-              0.0227406
+              0.0246377,
+              0.0314363,
+              0.0229101
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "417fa78f69815ef6bfe477b8e48ec4bcd6afd380ef14fd3561101eb2340e6a4b"
+          "semantic_sha256": "224356b21d7325f68940f0dc5eb5b96f488ad473332d675c1735bd87bfb43006"
         },
         {
           "name": "Region7Patch0__GEO_Finger0.L",
@@ -10029,27 +10065,27 @@
         },
         {
           "name": "Region7Patch1__CLO_JacketCuff.L",
-          "vertices": 18,
-          "triangles": 15,
+          "vertices": 25,
+          "triangles": 19,
           "bounds_unity_m": {
             "min": [
-              0.6604129,
+              0.6604128,
               1.0484027,
               -0.0487566
             ],
             "max": [
               0.6827925,
-              1.075484,
+              1.0754842,
               -0.0288702
             ],
             "size": [
-              0.0223796,
-              0.0270813,
+              0.0223797,
+              0.0270815,
               0.0198864
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "c07bfd62a879cbbc0d63995799ceb744aaf3b5f416a8fe179949afe16dc59e5a"
+          "semantic_sha256": "26b99547a9b4b6e44bdb527b69209831af0640d1836cda1be212e5656dada3f0"
         },
         {
           "name": "Region7Patch1__GEO_Finger0.L",
@@ -10173,8 +10209,8 @@
         },
         {
           "name": "Region7Patch2__CLO_JacketCuff.L",
-          "vertices": 23,
-          "triangles": 22,
+          "vertices": 26,
+          "triangles": 21,
           "bounds_unity_m": {
             "min": [
               0.6783045,
@@ -10182,18 +10218,18 @@
               -0.0288702
             ],
             "max": [
-              0.7042397,
-              1.1024452,
+              0.7047297,
+              1.103695,
               0.0091804
             ],
             "size": [
-              0.0259352,
-              0.0329994,
+              0.0264252,
+              0.0342492,
               0.0380506
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "e97843013fe445174d513d949c9d9165b80bffbb8f5d52697692dc1c79075f29"
+          "semantic_sha256": "042f0b4edf52a751666b246c7e51856c5a4094eccdb28d36da89bc00fe09dd09"
         },
         {
           "name": "Region7Patch2__GEO_Finger1.L",
@@ -10317,8 +10353,8 @@
         },
         {
           "name": "Region7Patch3__CLO_JacketCuff.L",
-          "vertices": 26,
-          "triangles": 24,
+          "vertices": 27,
+          "triangles": 23,
           "bounds_unity_m": {
             "min": [
               0.6585166,
@@ -10326,18 +10362,18 @@
               -0.0307598
             ],
             "max": [
-              0.6824389,
+              0.682439,
               1.0720232,
               0.0092659
             ],
             "size": [
-              0.0239223,
+              0.0239224,
               0.0264127,
               0.0400257
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "76ed4a75e705b4cdc80a6a786b18f00a1897ae8f1602f15d91e0e2f919beb31b"
+          "semantic_sha256": "0c7887ddf03732dfecdadae3c1dc9d64bc876184e6bcbfe00623e6081881e4c0"
         },
         {
           "name": "Region7Patch3__GEO_Finger1.L",
@@ -10989,8 +11025,8 @@
         },
         {
           "name": "Region9Patch0__CLO_JacketCuff.R",
-          "vertices": 40,
-          "triangles": 41,
+          "vertices": 38,
+          "triangles": 39,
           "bounds_unity_m": {
             "min": [
               -0.6779999,
@@ -10999,17 +11035,17 @@
             ],
             "max": [
               -0.6235712,
-              1.094934,
+              1.0949392,
               -0.0148799
             ],
             "size": [
               0.0544287,
-              0.0527963,
+              0.0528015,
               0.0320656
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "6b939312690f254bfb25050d134015a609e03f4e23375b3b8d6f0b3075a4d905"
+          "semantic_sha256": "bc14ccd4c7d67f169fb3c2a0e2dc12c9be41f2164d7eca7d2ca4d34a60c63579"
         },
         {
           "name": "Region9Patch0__CLO_JacketForearm.R",
@@ -11085,27 +11121,27 @@
         },
         {
           "name": "Region9Patch1__CLO_JacketCuff.R",
-          "vertices": 40,
-          "triangles": 42,
+          "vertices": 39,
+          "triangles": 40,
           "bounds_unity_m": {
             "min": [
-              -0.6993126,
-              1.0703094,
-              -0.0462737
+              -0.7008386,
+              1.0703386,
+              -0.0469443
             ],
             "max": [
               -0.6464999,
-              1.1237025,
-              -0.013535
+              1.1243317,
+              -0.0135165
             ],
             "size": [
-              0.0528127,
-              0.0533931,
-              0.0327387
+              0.0543387,
+              0.0539931,
+              0.0334278
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "f0a49697c891fe2f5a0922cb0bbb335cbea507b1bc096385870b42c7efd4c98d"
+          "semantic_sha256": "ecc2bec4ec631de9f3c7d271388efd9867f8cdde78989d2ba1d1ed90c87b793e"
         },
         {
           "name": "Region9Patch1__CLO_JacketForearm.R",
@@ -11181,8 +11217,8 @@
         },
         {
           "name": "Region9Patch2__CLO_JacketCuff.R",
-          "vertices": 41,
-          "triangles": 44,
+          "vertices": 37,
+          "triangles": 42,
           "bounds_unity_m": {
             "min": [
               -0.6779998,
@@ -11191,17 +11227,17 @@
             ],
             "max": [
               -0.6231589,
-              1.0934998,
+              1.0934999,
               0.0164903
             ],
             "size": [
               0.0548409,
-              0.0520784,
+              0.0520785,
               0.0337182
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "bf4934851b9d9d6953de450bcfd479a06507e867922eb37034ded9fd50a47fef"
+          "semantic_sha256": "a5615060d074edec36f75c7fe07f251134d4ddc9ab2f69905d406425e0ef37f7"
         },
         {
           "name": "Region9Patch2__CLO_JacketForearm.R",
@@ -11253,27 +11289,27 @@
         },
         {
           "name": "Region9Patch3__CLO_JacketCuff.R",
-          "vertices": 39,
+          "vertices": 37,
           "triangles": 41,
           "bounds_unity_m": {
             "min": [
-              -0.698936,
+              -0.7000906,
               1.0676905,
               -0.0148799
             ],
             "max": [
-              -0.6465,
-              1.122918,
+              -0.6464999,
+              1.1233225,
               0.0171709
             ],
             "size": [
-              0.052436,
-              0.0552275,
+              0.0535907,
+              0.055632,
               0.0320508
             ]
           },
           "closed_volume_m3": null,
-          "semantic_sha256": "e7d7cfbd497451ad54ae20124922ac730a45b55c397e9e41cd7a4b5d1f6c19c7"
+          "semantic_sha256": "523b800c757c62a4efe0beb5c4973fc748cb274bca43b04a4c496a8f6bac5152"
         },
         {
           "name": "Region9Patch3__CLO_JacketForearm.R",
@@ -11348,7 +11384,7 @@
           "semantic_sha256": "242dc20d7abb365f3f95a454a97020e5fb390051f98bef3ec7f4d22ba3734bb9"
         }
       ],
-      "semantic_sha256": "7b0b6cf614eebe8ec0c29e8eecf762fb0b6f97b16f9cc429bc933eda28b4b4ee"
+      "semantic_sha256": "b32ba8a9b8d7c6d5a7426d68c28df83c207242c3b01388c096fd17ab11980004"
     },
     "Npc": {
       "source_sha256": "465234396ca2fe01c4966588b2be61b149d52c12671c003a40a323bcf1a73af8",
@@ -36951,28 +36987,28 @@
       "kind": "Hero",
       "source": "CLO_Boot.L",
       "maximum_nonplanarity_m": 0.12132725,
-      "nonplanar_polygon_count": 79,
+      "nonplanar_polygon_count": 87,
       "maximum_cut_tessellation_deviation_m": 0.00421941
     },
     {
       "kind": "Hero",
       "source": "CLO_Boot.R",
       "maximum_nonplanarity_m": 0.12168726,
-      "nonplanar_polygon_count": 79,
+      "nonplanar_polygon_count": 87,
       "maximum_cut_tessellation_deviation_m": 0.00437726
     },
     {
       "kind": "Hero",
       "source": "CLO_BootSole.L",
       "maximum_nonplanarity_m": 0.13422371,
-      "nonplanar_polygon_count": 12,
+      "nonplanar_polygon_count": 14,
       "maximum_cut_tessellation_deviation_m": 0.00879506
     },
     {
       "kind": "Hero",
       "source": "CLO_BootSole.R",
       "maximum_nonplanarity_m": 0.13480558,
-      "nonplanar_polygon_count": 12,
+      "nonplanar_polygon_count": 14,
       "maximum_cut_tessellation_deviation_m": 0.0090543
     },
     {
@@ -36984,14 +37020,7 @@
     },
     {
       "kind": "Hero",
-      "source": "CLO_JacketCollar.L",
-      "maximum_nonplanarity_m": 0.0,
-      "nonplanar_polygon_count": 0,
-      "maximum_cut_tessellation_deviation_m": 0.0
-    },
-    {
-      "kind": "Hero",
-      "source": "CLO_JacketCollar.R",
+      "source": "CLO_JacketCollar",
       "maximum_nonplanarity_m": 0.0,
       "nonplanar_polygon_count": 0,
       "maximum_cut_tessellation_deviation_m": 0.0
@@ -37125,16 +37154,16 @@
     {
       "kind": "Hero",
       "source": "CLO_TrousersShin.L",
-      "maximum_nonplanarity_m": 0.00115409,
+      "maximum_nonplanarity_m": 0.00203098,
       "nonplanar_polygon_count": 48,
-      "maximum_cut_tessellation_deviation_m": 7.238e-05
+      "maximum_cut_tessellation_deviation_m": 0.00026387
     },
     {
       "kind": "Hero",
       "source": "CLO_TrousersShin.R",
-      "maximum_nonplanarity_m": 0.00115408,
+      "maximum_nonplanarity_m": 0.00203105,
       "nonplanar_polygon_count": 48,
-      "maximum_cut_tessellation_deviation_m": 7.249e-05
+      "maximum_cut_tessellation_deviation_m": 0.00026363
     },
     {
       "kind": "Hero",
@@ -38594,7 +38623,7 @@
     }
   ],
   "files": {
-    "BodyHero.fbx": "ed5a2a218e75958e6b8f9d09705e54505d0e55ac8727aeccbc6c86ec50a1d915",
+    "BodyHero.fbx": "223236212125f18b81214121997ddf0fbf5bcc575511b5abdf72459f3f608998",
     "BodyNpc.fbx": "61b929209d2e95e6ff576d34f3bdeda1b5df2cc19d3750008df4f6aefafd82af",
     "BoneSurface.png": "a33402f40159965e305a944a0d801d1becdbc457ec170bc8159fd88ba41aadc2"
   }

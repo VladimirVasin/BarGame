@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generator_version": "1.4.0",
-  "source_hero_sha256": "db35a0d328d8dd4126bfba9e06f479e7e9166fb636e065fc7cd2d3bc6c8d9050",
+  "source_hero_sha256": "0f59a7f89f73543ac2b1f8aa4ac6e1568aed5316011d951eb7502434620016f8",
   "hero_corruption": {
     "schema": "hero_corruption_v1",
     "shape_name": "HeroCorruption",
@@ -1159,7 +1159,7 @@
       "garment_id": "hero_belt"
     }
   },
-  "geometry_sha256": "c0a038a973e6f4c5880330fd7a99548d1b7fe9b016da49b061ca8baaed96a4cd",
+  "geometry_sha256": "4539a2c75b468c882190be8a683ec3119c4104b84d84ac1c79feff607e773f51",
   "trousers_contract": "Exact production source position/UV at Basis; Lowered shape gathers at knee via actual-bone presentation proxies",
   "stools": [
     {
@@ -1173,5 +1173,5 @@
       "diameter": 0.034
     }
   ],
-  "signature": "f7a7197ea6c98858897014c3e466224b884f163005c592e50e1e47f33c836f74"
+  "signature": "ad6c97487cbf649033bbca86e2e2fe80d0719d97d429bd20d7779d08202b7e7c"
 }

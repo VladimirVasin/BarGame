@@ -40,7 +40,7 @@ HAND_GRIP_RADIUS = HAND_GRIP_WORLD_RADIUS / (1.78 / 1.75)
 MODEL = "StationWorker"
 ASSETS = ROOT / "Assets/Resources/VillageLife"
 SOURCE = ROOT / "ArtSource/VillageLife"
-HERO_BODY_SOURCE = ROOT / "ArtSource/PlayerV2/Blender/PlayerCharacter3DV2.blend"
+HERO_BODY_SOURCE = SOURCE / "DefaultMaleAnatomy.blend"
 HEIGHT_SCALE = 1.78 / 1.75
 COLORS = {
     "skin": "AD8C74", "skin_shadow": "9C7B64", "white": "FFFFFF",

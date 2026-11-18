@@ -171,7 +171,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Third-person chase camera | Orbit/RMB;.5m right/1.9m back/aim1.4;physical body follows;collision/dolly/fixed-modal. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
 | Home camera | Entry/sofa/kitchen zones + bathroom/balcony; pan/hold and contextual ownership. | `HomeFixedCameraController`, `FixedCameraFocus` | Current |
 | Home player visibility | Grouped occluder dither and fixed-shot rules keep the hero visible without changing collision. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController` | Current |
-| Modular 3D hero presentation | V2/joint volume; seven drink-dose body/hair/wear forms; mirror/FP/portrait copies. | `Player3D*`, `PlayerCorruptionAppearance`, `HeroCorruptionRules` | Current |
+| Modular 3D hero presentation | Sculpted face; joint volume; seven forms; mirror/FP/portrait. | `Player3D*`, `PlayerCorruptionAppearance`, `HeroCorruptionRules` | Current |
 | Hero wardrobe | Atomic slot replacement and body coverage; one authored outfit. Gap: extra outfits, UI and persistence. | `PlayerWardrobe`, `Player3DBathingAppearance` | Partial |
 | Hero hair | Recorded bones; pose/gear guards; live wind/falls/pause/mirror. | `PlayerHair`, `SecondaryMotionBakeRuntime` | Current |
 | Hero jacket cloth | Gameplay:rig/folds/hand-opening,0physics;Editor authoring kept. | `PlayerJacketCloth*`, `PlayerClothPhysicsPolicy` | Current |

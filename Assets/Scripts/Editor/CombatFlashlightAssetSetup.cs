@@ -32,7 +32,7 @@ namespace BarPromenade.Editor
             Manifest manifest = ReadManifest();
             ValidateMetricGeometry(manifest.models[0]);
             MeasureBodyBinding(manifest, true);
-            Debug.Log("CHEST FLASHLIGHT IMPORTED METRES / LEFT M65 CONTACT / CHEST BINDING / FORWARD LENS OK");
+            Debug.Log("CHEST FLASHLIGHT IMPORTED METRES / LEFT JACKET CONTACT / CHEST BINDING / FORWARD LENS OK");
         }
 
         /// <summary>Build gate proof without imports or writing any asset.</summary>
@@ -137,7 +137,7 @@ namespace BarPromenade.Editor
                 Renderer jacket = registry.MeshBindings.Single(binding => binding.MeshName == manifest.mount.jacket_renderer).Renderer;
                 float clipGap = SurfaceGap(jacket, measuredContact);
                 if (clipGap > manifest.mount.maximum_imported_clip_gap_m)
-                    throw new InvalidOperationException("Lamp clip floats away from actual imported M65: " + clipGap + "m.");
+                    throw new InvalidOperationException("Lamp clip floats away from actual imported jacket: " + clipGap + "m.");
                 CombatFlashlightBindings bindings = AssetDatabase.LoadAssetAtPath<CombatFlashlightBindings>(BindingsPath);
                 bool create = bindings == null;
                 if (!rebuild && create) throw new InvalidOperationException("Missing measured chest flashlight bindings.");
@@ -161,7 +161,7 @@ namespace BarPromenade.Editor
                 Near(lamp.transform.position, position, .0001f, "serialized chest mount");
                 if (Quaternion.Angle(lamp.transform.rotation, rotation) > .01f)
                     throw new InvalidOperationException("Serialized chest flashlight rotation differs from authored forward.");
-                Debug.Log("CHEST FLASHLIGHT M65 CLIP GAP " + clipGap.ToString("F6") + "m");
+                Debug.Log("CHEST FLASHLIGHT JACKET CLIP GAP " + clipGap.ToString("F6") + "m");
             }
             finally
             {
@@ -173,7 +173,7 @@ namespace BarPromenade.Editor
         private static float SurfaceGap(Renderer renderer, Vector3 worldPoint)
         {
             if (!(renderer is SkinnedMeshRenderer skin))
-                throw new InvalidOperationException("Lamp contact requires the actual skinned M65 shell.");
+                throw new InvalidOperationException("Lamp contact requires the actual skinned jacket shell.");
             var mesh = new Mesh();
             try
             {

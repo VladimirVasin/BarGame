@@ -1,4 +1,4 @@
-"""Production burgundy eight-eye footwear on the unchanged Hero foot rig.
+"""Production oxblood 1460-style boots on the unchanged Hero foot rig.
 
 The source upper/sole are closed solids. Angular toe endpoints are separate
 native FBX channels, not fictitious multi-frame channels. Only BootLeft and
@@ -23,15 +23,15 @@ except ImportError:
     bpy = None
 
 CONTRACT = "hero_footwear_v1"
-REFERENCE = "https://www.drmartens.com/uk/en_gb/1460-burgundy-smooth-leather-lace-up-boots-burgundy/p/27277626"
 TOE_ANGLES = (15, 30, 45)
-BURGUNDY = (57, 20, 28, 255)
-LEATHER_LIGHT = (69, 26, 35, 255)
-LEATHER_DARK = (41, 16, 22, 255)
+LEATHER = (95, 43, 46, 255)
+LEATHER_LIGHT = (128, 64, 60, 255)
+LEATHER_DARK = (57, 28, 32, 255)
 LACE = (15, 14, 15, 255)
-EYELET = (31, 30, 31, 255)
-WELT = (165, 135, 62, 255)
-SOLE = (30, 27, 23, 255)
+LACE_EDGE = (43, 38, 37, 255)
+EYELET = (61, 49, 47, 255)
+WELT = (173, 137, 64, 255)
+SOLE = (42, 34, 27, 255)
 
 
 def _smooth(value):
@@ -60,7 +60,7 @@ def _sole_under(point, ankle, scale):
     return _heel_height(point,ankle,scale)+.018*scale*arch
 
 
-def _closed_rings(rings):
+def _closed_rings(rings, split_ball=True):
     sides = len(rings[0]); vertices = [p for ring in rings for p in ring]
     faces = []
     for row in range(len(rings)-1):
@@ -69,10 +69,10 @@ def _closed_rings(rings):
             faces.append((a,b,b+sides,a+sides))
     # A real transverse ball edge is retained through the sole underside.
     # Splitting the cap adds no triangles over the former single ngon.
-    front=(13,14,15,0,1,2,3); rear=tuple(range(3,14))
-    faces.extend((tuple(reversed(front)),tuple(reversed(rear))))
+    caps = ((13,14,15,0,1,2,3), tuple(range(3,14))) if split_ball else (tuple(range(sides)),)
+    faces.extend(tuple(reversed(cap)) for cap in caps)
     top=(len(rings)-1)*sides
-    faces.extend((tuple(top+j for j in front),tuple(top+j for j in rear)))
+    faces.extend(tuple(top+j for j in cap) for cap in caps)
     volume=sum(vertices[f[0]].dot(vertices[f[i]].cross(vertices[f[i+1]]))/6
                for f in faces for i in range(1,len(f)-1))
     if volume<0: faces=[tuple(reversed(f)) for f in faces]
@@ -117,7 +117,7 @@ def _toe_keys(obj, side, pivot, scale):
         key.value=0
 
 
-def _upper_uv(obj,api,side,ankle,scale):
+def _upper_uv(obj,api,side,ankle,scale,upper_vertex_count):
     """Front UV follows the instep then rises up the eight-eye shaft."""
     region="BootLeft" if side=="L" else "BootRight"
     x,y,w,h=api.clothing_region(region); half=w//2; size=api.CLOTHING_ATLAS_SIZE
@@ -127,8 +127,13 @@ def _upper_uv(obj,api,side,ankle,scale):
     front=min(p.y for p in points);back=max(p.y for p in points)
     # Only the bottom rim samples the welt row. The leather toe and crown stay
     # above those pixels; eyelets begin where the crown meets the instep.
-    stations=(.050,.14,.20,.23,.62,.81,1.)
+    stations=(.065,.14,.20,.26,.61,.80,.985)
     for face in obj.data.polygons:
+        if face.vertices[0] >= upper_vertex_count:
+            for loop in face.loop_indices:
+                row, column = divmod(obj.data.loops[loop].vertex_index-upper_vertex_count, 3)
+                layer.data[loop].uv=((x+2+column)/size,(y+56+1.45*row)/size)
+            continue
         sidewall=len({index//16 for index in face.vertices})>1
         segment=face.vertices[0]%16
         is_front=sidewall and segment in (0,1,14,15)
@@ -136,15 +141,32 @@ def _upper_uv(obj,api,side,ankle,scale):
             index=obj.data.loops[loop].vertex_index;point=points[index]
             if not sidewall:
                 u=.5+(point.x-ankle.x)/(.14*scale)
-                v=.75+(point.y-ankle.y)/(.50*scale)
+                v=.065 if index<16 else .75+(point.y-ankle.y)/(.50*scale)
                 panel=x
             elif is_front:
                 u=max(0.,min(1.,.5+(point.x-ankle.x)/(.106*scale)))
                 v=stations[index//16];panel=x+half
             else:
-                u=(back-point.y)/(back-front);v=(point.z-low)/(high-low);panel=x
+                u=(back-point.y)/(back-front)
+                v=(point.z-low)/(high-low)
+                v=.065 if index<16 else max(.145,.10+.88*v)
+                panel=x
             layer.data[loop].uv=((panel+1+u*(half-2))/size,(y+1+v*(h-2))/size)
     layer.active_render=True
+
+
+def _heel_pull(ankle, scale):
+    # Folded webbing with two ends buried in the heel counter; the gap
+    # between the rounded loop and the rim remains actual space.
+    path = [ankle+Vector((0, y*scale, z*scale-ankle.z)) for y,z in
+            ((.054,.137),(.067,.153),(.073,.185),(.063,.195),(.052,.164))]
+    rings = []
+    for i, point in enumerate(path):
+        tangent=(path[min(i+1,len(path)-1)]-path[max(0,i-1)]).normalized()
+        thickness=Vector((0,tangent.z,-tangent.y))*.002*scale
+        rings.append([point+Vector((x*scale,0,0))+thickness*depth
+                      for x,depth in ((-.011,-.6),(.011,-.6),(0,1.))])
+    return _closed_rings(rings,split_ball=False)
 
 
 def author(builder, api):
@@ -177,22 +199,30 @@ def author(builder, api):
         for z,rx,ry,cy in ((.112,.053,.048,.012),(.142,.050,.043,.014),(.170,.052,.044,.016)):
             rings.append([Vector((ankle.x+rx*scale*math.sin(j*math.tau/16),
                                  ankle.y+cy*scale-ry*scale*math.cos(j*math.tau/16),z*scale)) for j in range(16)])
-        upper=rows["CLO_Boot."+side]; _replace(upper,_closed_rings(rings))
+        for station, relief in enumerate((.003,.0045,.004),4):
+            # The lacing beds into the tongue between raised leather edges.
+            rings[station][0].y+=.002*scale
+            for edge in (1,15): rings[station][edge].y-=relief*scale
+        vertices, faces = _closed_rings(rings)
+        pull_vertices, pull_faces = _heel_pull(ankle,scale)
+        upper_count=len(vertices)
+        faces.extend(tuple(i+upper_count for i in face) for face in pull_faces)
+        upper=rows["CLO_Boot."+side]; _replace(upper,(vertices+pull_vertices,faces))
         for vertex in upper.data.vertices:
             point=vertex.co+upper.location
             shin=_smooth((point.z/scale-.055)/.100)
             character_joint_surfaces._assign(upper,vertex.index,{"shin."+side:shin,"foot."+side:1-shin})
-        _upper_uv(upper,api,side,ankle,scale)
+        _upper_uv(upper,api,side,ankle,scale,upper_count)
         _ankle_keys(upper,side,ankle,scale)
         sole_rings=[]
-        for level,inset in ((0,1),(1,.978),(2,.975)):
+        for level,inset in ((0,1),(1,.927),(2,.975)):
             ring=[]
             for point in outline:
                 p=point.copy(); p.x=ankle.x+(p.x-ankle.x)*inset
                 p.y=centre.y+(p.y-centre.y)*inset
                 bottom=_sole_under(point,ankle,scale)
                 top=_heel_height(point,ankle,scale)+.029*scale
-                p.z=bottom if level==0 else (bottom+(top-bottom)*.48 if level==1 else top)
+                p.z=bottom if level==0 else (bottom+(top-bottom)*.60 if level==1 else top)
                 ring.append(p)
             sole_rings.append(ring)
         sole=rows["CLO_BootSole."+side]; _replace(sole,_closed_rings(sole_rings))
@@ -230,7 +260,8 @@ def manifest(result):
             "ankle_section_blender":[point(upper.data.vertices[i].co+upper.location)
                                       for i in upper["bp_ankle_section_indices"]]})
     return {"footwear":{"contract":CONTRACT,"source_space":"blender_z_up_minus_y_forward",
-                        "reference_url":REFERENCE,"feet":feet}}
+                        "design":"oxblood 1460; raised eyestays, stitched welt, recessed sole and heel pulls",
+                        "feet":feet}}
 
 
 def paint(canvas,api):
@@ -238,28 +269,46 @@ def paint(canvas,api):
     rect=api.atlas_rect_bottom_left; line=api.atlas_line_bottom_left
     for region in ("BootLeft","BootRight"):
         x,y,w,h=api.clothing_region(region); half=w//2
-        rect(canvas,x,y,x+w,y+h,BURGUNDY)
-        # Smooth leather stays dark; only narrow seams and restrained wear.
-        line(canvas,x+5,y+19,x+7,y+41,LEATHER_LIGHT)
-        line(canvas,x+9,y+13,x+14,y+47,LEATHER_DARK)
-        line(canvas,x+14,y+47,x+27,y+51,LEATHER_DARK)
-        line(canvas,x+3,y+18,x+12,y+19,LEATHER_LIGHT)
+        rect(canvas,x,y,x+w,y+h,LEATHER)
+        # The quarter overlays the vamp along a curved seam, fading at the flex.
+        seam = ((14,9),(14,15),(17,22),(19,26),(17,31),(13,35),(12,44),(13,60))
+        quarter = (78,35,42,255)
+        for (u0,v0),(u1,v1) in zip(seam,seam[1:]):
+            for row in range(v0,v1):
+                u=round(u0+(u1-u0)*(row-v0)/(v1-v0))
+                rect(canvas,x+1,y+row,x+u,y+row+1,quarter)
+                if row%3!=0: rect(canvas,x+u-2,y+row,x+u-1,y+row+1,LEATHER_LIGHT)
+            line(canvas,x+u0,y+v0,x+u1,y+v1,LEATHER_DARK)
+        # Double heel-counter seam and a lighter edge on the folded webbing.
+        line(canvas,x+2,y+16,x+6,y+30,LEATHER_DARK)
+        line(canvas,x+6,y+30,x+6,y+52,LEATHER_DARK)
+        line(canvas,x+3,y+17,x+7,y+29,LEATHER_LIGHT)
+        line(canvas,x+7,y+31,x+7,y+49,LEATHER_LIGHT)
+        rect(canvas,x+1,y+55,x+6,y+63,LACE_EDGE)
+        line(canvas,x+3,y+58,x+3,y+61,WELT)
         for panel in (x,x+half):
-            rect(canvas,panel,y,panel+half,y+3,SOLE)
-            line(canvas,panel+1,y+5,panel+half-2,y+5,LEATHER_DARK)
+            rect(canvas,panel,y,panel+half,y+7,SOLE)
+            line(canvas,panel+1,y+7,panel+half-2,y+7,LEATHER_DARK)
             for stitch in range(2,half-2,3):
-                rect(canvas,panel+stitch,y+4,panel+stitch+2,y+5,WELT)
+                rect(canvas,panel+stitch,y+4,panel+stitch+2,y+7,WELT)
         front=x+half
-        rect(canvas,front+11,y+31,front+21,y+63,LEATHER_DARK)
+        rect(canvas,front+11,y+29,front+21,y+63,LEATHER_DARK)
+        for edge in (front+5,front+26):
+            line(canvas,edge,y+30,edge,y+62,LEATHER_LIGHT)
+        # Wear breaks at the vamp fold instead of striping the toe cap.
+        for u,v,length in ((7,23,18),(13,27,11)):
+            line(canvas,front+u,y+v,front+u+length,y+v+2,quarter)
+            line(canvas,front+u+3,y+v-1,front+u+length-2,y+v+1,(106,51,53,255))
+        line(canvas,front+8,y+33,front+23,y+33,LACE)
         for index in range(8):
             yy=y+33+index*4
+            if index<7:
+                line(canvas,front+8,yy,front+23,yy+4,LACE,2)
+                line(canvas,front+23,yy,front+8,yy+4,LACE,2)
+                line(canvas,front+22,yy+1,front+9,yy+4,LACE_EDGE)
             for xx in (front+8,front+23):
                 rect(canvas,xx-1,yy-1,xx+2,yy+2,EYELET)
                 rect(canvas,xx,yy,xx+1,yy+1,LACE)
-            if index<7:
-                line(canvas,front+9,yy,front+22,yy+4,LACE)
-                line(canvas,front+22,yy,front+9,yy+4,LACE)
-        line(canvas,front+5,y+29,front+26,y+29,LEATHER_DARK)
 
 
 def patch_png(source,output,api):

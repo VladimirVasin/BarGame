@@ -243,10 +243,13 @@ def validate(result, scale=1.):
             keys = obj.data.shape_keys.key_blocks
             joint_keys={row["corrective_shape"] for row in getattr(result,"joint_surfaces",{}).get("seams",())
                         if name in row["renderers"] and row.get("corrective_shape")}
-            if set(keys.keys()) != {"Basis",SHAPE,*(row[0] for row in hand_bowl_grip.VARIANTS),*joint_keys,
-                                    *player_hand_gestures.shape_names(name),
-                                    *({player_smoking_grip.SHAPE} if side == "R" else set())} or any(key.value!=0 for key in keys if key.name!="Basis"):
-                raise RuntimeError("Missing neutral authored hand shape: " + name)
+            expected = {"Basis", SHAPE, *(row[0] for row in hand_bowl_grip.VARIANTS), *joint_keys,
+                        *player_hand_gestures.shape_names(name),
+                        *({player_smoking_grip.SHAPE} if side == "R" else set())}
+            if name.startswith("GEO_Hand.") and obj.get("bp_corruption_shape"):
+                expected.add("HeroCorruption")
+            if set(keys.keys()) != expected or any(key.value != 0 for key in keys if key.name != "Basis"):
+                raise RuntimeError(f"Unexpected hand shapes on {name}: {sorted(set(keys.keys()) ^ expected)}")
             if any((vertex.co-keys["Basis"].data[vertex.index].co).length>1e-8 for vertex in obj.data.vertices):
                 raise RuntimeError("Hand grip changed neutral geometry: " + name)
             _, matrix = _source_points(result, obj)

@@ -51,8 +51,8 @@
     ]
   ],
   "source_path": "ArtSource/PlayerV2/Blender/PlayerCharacter3DV2.blend",
-  "source_sha256": "d33560673956f15ee7806c9c04584e354b114ae829fe22fe9b63de4975562742",
-  "parent_pose_authoring_sha256": "20e47bf713071648826f6a5dc79c774c20ba234affc563fa2d39c1059c11ba9d",
+  "source_sha256": "0f59a7f89f73543ac2b1f8aa4ac6e1568aed5316011d951eb7502434620016f8",
+  "parent_pose_authoring_sha256": "f84d253aa6072cd034550e48419c19b3fb2c19047ad0f7b8e3da487f109275c5",
   "entry_parent_clip": "CounterSeatLoop",
   "entry_parent_progress": 0.0,
   "exit_parent_progress": 0.0,
@@ -88,11 +88,11 @@
       "loop": false
     }
   ],
-  "signature": "5ee41cdce19b491b018281cb63e8358f656903f08a25744018ca64a72743447c",
+  "signature": "a4def5ec2f9464f60f965c2cd44d547323d045da1c12081ef91cda740710236f",
   "maximum_lower_body_error": 5.960464477539063e-08,
   "maximum_endpoint_error": 3.5762786865234375e-07,
   "hand_lift_m": 0.14999985694885254,
-  "maximum_tapping_wrist_motion_m": 0.0,
-  "left_wave_lift_m": 0.5649248361587524,
-  "left_wave_width_m": 0.07672464847564697
+  "maximum_tapping_wrist_motion_m": 1.8189185285171422e-07,
+  "left_wave_lift_m": 0.5649247169494629,
+  "left_wave_width_m": 0.07672472298145294
 }

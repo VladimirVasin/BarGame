@@ -252,11 +252,12 @@ def validate(canvas, source, authored_regions, amount):
                 raise RuntimeError("Large garment wear must be individual, not paired copies: " + family)
 
 
-def textures(output_dir: Path = OUTPUT, validate_only: bool = False) -> list[dict]:
+def textures(output_dir: Path = OUTPUT, validate_only: bool = False, source_path=None) -> list[dict]:
     from player_corruption import STAGE_WEIGHTS
-    source = read_generated_png(SOURCE)
+    source_path = source_path or SOURCE
+    source = read_generated_png(source_path)
     authored_regions = regions()
-    source_hash = hashlib.sha256(SOURCE.read_bytes()).hexdigest()
+    source_hash = hashlib.sha256(source_path.read_bytes()).hexdigest()
     rows = []
     for stage, weight in enumerate(STAGE_WEIGHTS[1:], 2):
         amount = weight / 100.

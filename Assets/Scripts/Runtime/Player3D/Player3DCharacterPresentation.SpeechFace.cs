@@ -16,7 +16,15 @@ namespace BarPromenade
             if (!speechFacePresenter.IsConfigured && !speechFacePresenter.Configure(
                     registry.FaceAtlas.Renderer, SpeechFaceAtlasResources.HeroPath, true)) return false;
             speechFaceOwner = owner; speechFacePose = pose;
-            return speechFacePresenter.Apply(pose, IsMouthSoiledVisible, corruptionAppearance?.SpeechTexture);
+            return ApplySpeechFacePose();
+        }
+
+        private bool ApplySpeechFacePose()
+        {
+            if (!speechFacePresenter.Apply(speechFacePose, IsMouthSoiledVisible, corruptionAppearance?.SpeechTexture))
+                return false;
+            faceDeformation?.Apply(speechFacePose);
+            return true;
         }
 
         public void ReleaseSpeechFace(object owner)

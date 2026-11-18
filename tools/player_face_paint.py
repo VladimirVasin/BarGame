@@ -34,13 +34,14 @@ def draw_identity(canvas: PixelCanvas, ox=0, oy=0):
             light = 5 * _plane(x, y, 27, 16, 22, 22) + 3 * _plane(x, y, 33, 36, 3, 10)
             cheek = 3 * (_plane(x, y, 15, 36, 9, 7) + _plane(x, y, 49, 36, 9, 7))
             hollow = 7 * (_plane(x, y, 11, 45, 7, 9) + _plane(x, y, 53, 45, 7, 9))
-            tired = 13 * (_plane(x, y, 21, 31, 7, 3.5) + _plane(x, y, 43, 32, 7, 3.5))
+            tired = 18 * (_plane(x, y, 21, 31, 7, 3.5) + _plane(x, y, 43, 32, 7, 3.5))
             nose = 8 * _plane(x, y, 29, 34, 2.5, 7)
-            beard = 7 * _plane(x, y, 32, 58, 22, 7)
+            beard = 13 * _plane(x, y, 32, 58, 22, 7)
+            temple = 11 * (_plane(x, y, 9, 23, 6, 11) + _plane(x, y, 54, 22, 6, 10))
             grain = int((x * 11 + y * 7) % 17 == 0) - int((x * 7 + y * 13) % 23 == 0)
             # Match the bare cranial material at the UV boundary; the mesh owns its outline.
             edge = min(1., x / 5., (63 - x) / 5.)
-            change = (light - hollow - tired - nose - beard + grain) * edge
+            change = (light - hollow - tired - nose - beard - temple + grain) * edge
             color = tuple(round(v + change + (cheek * edge if channel == 0 else 0))
                           for channel, v in enumerate(SKIN[:3])) + (255,)
             canvas.put(ox + x, oy + y, color)
@@ -59,9 +60,9 @@ def draw_identity(canvas: PixelCanvas, ox=0, oy=0):
                 continue
             density = _plane(x, y, 32, 58, 22, 8)
             selector = (x * 31 + y * 17 + x * y) % 97
-            if selector < 9 * density:
+            if selector < 16 * density:
                 canvas.put(ox + x, oy + y, (119, 96, 88, 255))
-            elif selector < 16 * density:
+            elif selector < 24 * density:
                 canvas.put(ox + x, oy + y, (147, 119, 106, 255))
 
 

@@ -150,6 +150,7 @@ namespace BarPromenade
             new PlayerFacialAnimationState();
         private readonly Player3DFaceAtlasPresenter faceAtlasPresenter =
             new Player3DFaceAtlasPresenter();
+        private Player3DFaceDeformation faceDeformation;
 
         private Player3DAssetRegistry registry;
         private PlayerBootDeformation bootDeformation;
@@ -392,6 +393,7 @@ namespace BarPromenade
             corruptionAppearance = PlayerCorruptionAppearance.Ensure(registry);
             corruptionAppearance.ApplyLevel(GameSessionState.HeroCorruptionLevel);
             faceAtlasPresenter.Configure(registry.FaceAtlas);
+            faceDeformation = new Player3DFaceDeformation(registry.FaceAtlas);
             actorFacingTransform = facingTransform != null
                 ? facingTransform
                 : transform;
@@ -467,6 +469,8 @@ namespace BarPromenade
             Vector3 planarVelocity = motion.PlanarVelocity;
             planarVelocity.y = 0f;
             planarSpeed = planarVelocity.magnitude;
+            forwardTravelSpeed = motion.SignedForwardSpeed;
+            turnIntent = motion.TurnInput;
             sideStepSpeed = motion.TargetRelative ? Mathf.Abs(motion.SignedSideSpeed) : 0f;
 
             for (int index = 0; index < GaitCount; index++)
@@ -1573,10 +1577,8 @@ namespace BarPromenade
             float visibleRunRatio = forwardWeight > 0.0001f
                 ? Mathf.Clamp01(gaitWeights[RunGait] / forwardWeight)
                 : 0f;
-            float walkPlaybackSpeed = Mathf.Lerp(
-                0.78f,
-                1.12f,
-                forwardWeight);
+            float walkPlaybackSpeed = 1.12f * Mathf.Clamp01(
+                Mathf.Max(0f, forwardTravelSpeed) / (FullWalkSpeed * Mathf.Max(.45f, forwardWeight)));
             float walkCyclesPerSecond = walkPlaybackSpeed /
                                         Mathf.Max(
                                             0.0001f,
@@ -2030,6 +2032,7 @@ namespace BarPromenade
                 return;
             }
 
+            AdvanceTravelWeight(deltaTime);
             UpdateBalanceStep();
 
             // The ambient drunk idle: a slow pelvis/chest roll and spread
@@ -2219,7 +2222,7 @@ namespace BarPromenade
                     lean + sway + modelRoll + gait.PelvisRollDegrees * modelWeight,
                     (lean * -0.42f) + (sway * 0.55f) +
                     (modelRoll * BalanceChestCounterRoll) +
-                    torsoRoll + decayPose * 2f + decayTremor * .22f,
+                    torsoRoll + travelRoll + decayPose * 2f + decayTremor * .22f,
                     modelPitch,
                     leftArmOutward,
                     leftArmForward,
@@ -2236,7 +2239,7 @@ namespace BarPromenade
                     // pitch on top of the hip strategy's own. The bout
                     // folds it FORWARD: doubled over, and jerked further
                     // with every heave and every push of the pump.
-                    torsoPitch + decayPose * 24f -
+                    torsoPitch + travelPitch + decayPose * 24f -
                     nauseaPose.HiccupAmount *
                     PlayerNauseaRules.HiccupChestPitchDegrees +
                     vomitPose.TorsoPitchDegrees,
@@ -2793,6 +2796,7 @@ namespace BarPromenade
         /// </summary>
         private void ResetPoseFilters()
         {
+            ResetTravelWeight();
             leftArmOutwardFilter.Reset();
             leftArmForwardFilter.Reset();
             rightArmOutwardFilter.Reset();
@@ -3120,7 +3124,7 @@ namespace BarPromenade
                 expression = contextualFaceExpression;
             }
             else if (!IsClipActive && corruptionAppearance != null && corruptionAppearance.AppliedLevel >= 4 &&
-                (expression == PlayerFacialExpression.Neutral || expression == PlayerFacialExpression.HalfBlink))
+                expression == PlayerFacialExpression.Neutral)
             {
                 expression = corruptionAppearance.AppliedLevel >= 6
                     ? PlayerFacialExpression.Tense : PlayerFacialExpression.Watchful;
@@ -3131,8 +3135,8 @@ namespace BarPromenade
             // binding falls back to the clean cell where an atlas has no
             // twin, so an older atlas simply never shows the mess.
             // Clip expression keys cannot overwrite a dialogue's mouth/brow frame.
-            if (HasSpeechFace && speechFacePresenter.Apply(speechFacePose, IsMouthSoiledVisible,
-                    corruptionAppearance?.SpeechTexture)) return;
+            if (HasSpeechFace && ApplySpeechFacePose()) return;
+            faceDeformation?.Apply(expression);
             if (faceAtlasPresenter.Apply(expression, IsMouthSoiledVisible, corruptionAppearance?.FaceTexture))
             {
                 return;
@@ -3194,6 +3198,7 @@ namespace BarPromenade
         private void ResetFacialPresentation()
         {
             visibleFacialExpression = PlayerFacialExpression.Neutral;
+            faceDeformation?.Apply(visibleFacialExpression);
             if (!faceAtlasPresenter.Apply(visibleFacialExpression))
             {
                 RestoreFacialBones();
@@ -3269,18 +3274,21 @@ namespace BarPromenade
             RestoreCombatBodyMotion();
             layer.Restore();
             RestoreAttentionPoseBase();
+            RestoreActionWeight();
             if (graph.IsValid())
             {
                 SampleColdPose();
                 SampleCarryPose();
                 SampleEquipmentPose();
                 graph.Evaluate(Mathf.Max(0f, deltaTime));
+                ApplyActionWeight();
                 PublishSecondaryMotionClock();
             }
         }
 
         private void DestroyGraph()
         {
+            RestoreActionWeight();
             ResetTorsoLook();
             torsoLookPose = null;
             ResetCorpseStepPose();
