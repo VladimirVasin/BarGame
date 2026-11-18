@@ -188,7 +188,7 @@
     "sources": [
         {
             "path": "Assets/Player3D/V2/Animations/PlayerCharacter3DV2Animations.fbx",
-            "hash": "7bc5746ef5362ea327ee1b59edd2fcd3",
+            "hash": "4225ff9cacc30fd27f00f0ae9c89720c",
             "raw": false
         },
         {
@@ -253,7 +253,7 @@
         },
         {
             "path": "Assets/Resources/Player/Player3DV2.prefab",
-            "hash": "f8bc3d72dec70199f4828ee03c39175c",
+            "hash": "141d414e503503dda0797b18aea85d5d",
             "raw": false
         },
         {
@@ -348,7 +348,7 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DCharacterPresentation.Performance.cs",
-            "hash": "9A8978232640546CC35445742CBFB75B59FA3B03191BDBA9E74257104E19FF51",
+            "hash": "7F86F0A1AE0840A1D3649009C00715184C7FC4D5EB0B2B7686BE7C401E0BF990",
             "raw": true
         },
         {
@@ -388,7 +388,7 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DCharacterPresentation.cs",
-            "hash": "7C7C775732ECF02F929551485D845DA04CE12860FB81362BD9BE5347215E5836",
+            "hash": "B6D6FF6612A8BDE9F0057A4C0506015B284B66869FEAE90388674CF19EE939FF",
             "raw": true
         },
         {
@@ -418,7 +418,7 @@
         },
         {
             "path": "Assets/Scripts/Runtime/Player3D/Player3DProceduralLocomotionLayer.cs",
-            "hash": "6717EC41E4FB4F89E40895111E0ED20DBDC964D6F1881C4E63ED62A40AECE96C",
+            "hash": "0CA1C3B919D6A937F92C009E7E58F7A10EAD58315641F0704EAC9E09ACCB8ADD",
             "raw": true
         },
         {

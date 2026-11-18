@@ -222,6 +222,124 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator ForwardGaits_RenderAndClearTheJacketThroughWalkRunBlend()
+        {
+            Player3DAssetRegistry registry = CreateJointCaptureRig();
+            var presentation = registry.gameObject.AddComponent<Player3DCharacterPresentation>();
+            presentation.Initialize(playerRoot.transform, registry);
+            Camera camera = cameraObject.GetComponent<Camera>();
+            Vector3 forward = registry.transform.TransformDirection(registry.Metrics.LocalForward).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            Vector3 target = playerRoot.transform.position + Vector3.up * .88f;
+            camera.orthographicSize = 1.02f;
+            const int columns = 5;
+            const int rows = 4;
+            const float frameStep = 1f / 60f;
+            const float acceleration = 6.5f;
+            const float braking = 11f;
+            const float paceRange = Player3DCharacterPresentation.FullRunSpeed -
+                                    Player3DCharacterPresentation.FullWalkSpeed;
+            contactSheet = new Texture2D(TileSize * columns, TileSize * rows, TextureFormat.RGBA32, false, true);
+            float priorCaptureStep = Time.captureDeltaTime;
+            Time.captureDeltaTime = frameStep;
+            try
+            {
+                int[][] captureFrames = { new[] { 34, 45, 57, 69, 81 },
+                    new[] { 2, 7, 12, 19, 28 }, new[] { 42, 51, 60, 69, 78 }, new[] { 2, 7, 12, 19, 28 } };
+                bool sawAcceleration = false;
+                bool sawBraking = false;
+                bool sawInterruptedBraking = false;
+                float lastPhase = 0f;
+                float lastLean = 0f;
+                float runFraction = 0f;
+                for (int stage = 0; stage < 4; stage++)
+                {
+                    for (int frame = 0; frame < 86; frame++)
+                    {
+                        bool wantsRun = stage == 1 || stage == 3 && (frame < 10 || frame >= 20 && frame < 28);
+                        // The presentation receives the speed reached by the motor on that frame.
+                        runFraction = Mathf.MoveTowards(runFraction, wantsRun ? 1f : 0f,
+                            (wantsRun ? acceleration : braking) * frameStep / paceRange);
+                        SetPace(runFraction);
+                        yield return null;
+                        presentation.ReapplyLatePresentationPose();
+                        float phase = presentation.ForwardGaitCycle;
+                        float lean = presentation.GaitTransitionLean;
+                        if (stage > 0)
+                        {
+                            Assert.That(presentation.LocomotionBlend, Is.GreaterThan(.98f),
+                                "Changing pace must keep the forward gait visible.");
+                            Assert.That(Mathf.Repeat(phase - lastPhase, 1f), Is.InRange(.001f, .05f),
+                                "Changing pace must continue the current stride phase.");
+                            Assert.That(Mathf.Abs(lean - lastLean), Is.LessThan(.18f),
+                                $"A reversal must continue from the current transition pose (stage {stage}, frame {frame}).");
+                        }
+                        lastPhase = phase;
+                        lastLean = lean;
+                        sawAcceleration |= stage == 1 && lean > .15f;
+                        sawBraking |= stage == 2 && lean < -.15f;
+                        sawInterruptedBraking |= stage == 3 && frame < 20 && lean < -.10f;
+                        if (frame % 2 == 0 && (stage > 0 || frame >= 20))
+                        {
+                            Player3DJointSurfaceTests.AssertForearmsClearJacket(registry,
+                                $"stage {stage}, phase {phase:F3}, run weight {presentation.RunBlend:F3}");
+                        }
+
+                        Vector3 sideView = right + forward * .25f;
+                        if (stage == 0) CaptureStrideTile(0, frame, sideView);
+                        if (stage == 1)
+                        {
+                            CaptureStrideTile(1, frame, sideView);
+                            CaptureStrideTile(2, frame, sideView);
+                        }
+                        if (stage == 2) CaptureStrideTile(3, frame, sideView);
+                    }
+
+                    Assert.That(presentation.LocomotionBlend, Is.GreaterThan(.98f));
+                    Assert.That(presentation.RunBlend, Is.EqualTo(stage == 1 ? 1f : 0f).Within(.02f));
+                    Assert.That(presentation.GaitTransitionLean, Is.EqualTo(0f).Within(.01f));
+                }
+                Assert.That(sawAcceleration && sawBraking && sawInterruptedBraking, Is.True,
+                    "Gather the stride on acceleration and settle it on normal and interrupted braking.");
+
+                SetPace(1f);
+                for (int frame = 0; frame < 9; frame++) yield return null;
+                Assert.That(presentation.GaitTransitionLean, Is.GreaterThan(.15f));
+                presentation.SetInteractionHandoffLocked(true);
+                Assert.That(presentation.GaitTransitionLean, Is.Zero);
+
+                contactSheet.Apply(false, false);
+                string directory = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Captures", "HeroStrides"));
+                Directory.CreateDirectory(directory);
+                File.WriteAllBytes(Path.Combine(directory, "walk-run.png"), contactSheet.EncodeToPNG());
+
+                void SetPace(float runFraction)
+                {
+                    float speed = Mathf.Lerp(Player3DCharacterPresentation.FullWalkSpeed,
+                        Player3DCharacterPresentation.FullRunSpeed, runFraction);
+                    presentation.SetMotion(new PlayerMotionSample(forward * speed, speed, 0f, runFraction));
+                }
+
+                void CaptureStrideTile(int row, int frame, Vector3 view)
+                {
+                    int column = System.Array.IndexOf(captureFrames[row], frame);
+                    if (column < 0) return;
+                    camera.transform.position = target + (view + Vector3.up * .12f).normalized * 4f;
+                    camera.transform.rotation = Quaternion.LookRotation(target - camera.transform.position, Vector3.up);
+                    Texture2D tile = Capture(camera);
+                    try
+                    {
+                        Assert.That(CountForegroundPixels(tile, camera.backgroundColor), Is.GreaterThan(900));
+                        contactSheet.SetPixels(column * TileSize, (rows - 1 - row) * TileSize, TileSize, TileSize,
+                            System.Array.ConvertAll(tile.GetPixels(), color => color.gamma));
+                    }
+                    finally { Object.Destroy(tile); }
+                }
+            }
+            finally { Time.captureDeltaTime = priorCaptureStep; }
+        }
+
         private static Bounds GetEnabledBounds(
             IPlayerPresentation presentation)
         {

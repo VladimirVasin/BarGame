@@ -1493,7 +1493,11 @@ namespace BarPromenade
 
             locomotionBlend = 0f;
             runBlend = 0f;
+            forwardGaitWeightVelocity = 0f;
+            forwardRunShare = 0f;
+            forwardRunShareVelocity = 0f;
             forwardGaitCyclesPerSecond = 0f;
+            ResetGaitTransition();
         }
 
         private void ApplyLocomotionWeights(bool immediate)
@@ -1504,36 +1508,15 @@ namespace BarPromenade
                 return;
             }
 
-            float total = 0f;
+            float deltaTime = Mathf.Max(0f, PresentationDeltaTime);
+            if (immediate) ResetGaitTransition();
+            ApplyForwardGaitWeights(immediate, deltaTime);
+            float total = ForwardGaitWeight;
             for (int gait = 0; gait < GaitCount; gait++)
             {
-                if (immediate)
-                {
-                    gaitWeights[gait] = targetGaitWeights[gait];
-                    gaitWeightVelocities[gait] = 0f;
-                }
-                else
-                {
-                    float smoothTime =
-                        targetGaitWeights[gait] > gaitWeights[gait]
-                            ? LocomotionBlendInTime
-                            : LocomotionBlendOutTime;
-                    gaitWeights[gait] = Mathf.SmoothDamp(
-                        gaitWeights[gait],
-                        targetGaitWeights[gait],
-                        ref gaitWeightVelocities[gait],
-                        smoothTime,
-                        Mathf.Infinity,
-                        Mathf.Max(0f, PresentationDeltaTime));
-                    if (Mathf.Abs(
-                            gaitWeights[gait] -
-                            targetGaitWeights[gait]) < 0.0005f)
-                    {
-                        gaitWeights[gait] = targetGaitWeights[gait];
-                        gaitWeightVelocities[gait] = 0f;
-                    }
-                }
-
+                if (gait == WalkGait || gait == RunGait) continue;
+                gaitWeights[gait] = ApproachGaitWeight(gaitWeights[gait], targetGaitWeights[gait],
+                    ref gaitWeightVelocities[gait], immediate, deltaTime);
                 total += gaitWeights[gait];
             }
 
@@ -1572,10 +1555,9 @@ namespace BarPromenade
                 return;
             }
 
-            float forwardWeight = Mathf.Clamp01(
-                gaitWeights[WalkGait] + gaitWeights[RunGait]);
+            float forwardWeight = ForwardGaitWeight;
             float visibleRunRatio = forwardWeight > 0.0001f
-                ? Mathf.Clamp01(gaitWeights[RunGait] / forwardWeight)
+                ? forwardRunShare
                 : 0f;
             float walkPlaybackSpeed = 1.12f * Mathf.Clamp01(
                 Mathf.Max(0f, forwardTravelSpeed) / (FullWalkSpeed * Mathf.Max(.45f, forwardWeight)));
@@ -1634,8 +1616,7 @@ namespace BarPromenade
         private void UpdateOrdinaryFootPlant()
         {
             if (TryApplySideStepFootPlant()) return;
-            float forwardWeight =
-                gaitWeights[WalkGait] + gaitWeights[RunGait];
+            float forwardWeight = ForwardGaitWeight;
             float strongestOther = Mathf.Max(
                 gaitWeights[WalkBackGait],
                 Mathf.Max(
@@ -1644,8 +1625,7 @@ namespace BarPromenade
             if (forwardWeight > 0.0001f &&
                 forwardWeight >= strongestOther)
             {
-                float visibleRunRatio = Mathf.Clamp01(
-                    gaitWeights[RunGait] / forwardWeight);
+                float visibleRunRatio = forwardRunShare;
                 forwardGaitCycle =
                     walkPlayable.IsValid() &&
                     walkBinding != null &&
@@ -2033,6 +2013,7 @@ namespace BarPromenade
             }
 
             AdvanceTravelWeight(deltaTime);
+            AdvanceGaitTransition(deltaTime);
             UpdateBalanceStep();
 
             // The ambient drunk idle: a slow pelvis/chest roll and spread
@@ -2190,6 +2171,24 @@ namespace BarPromenade
             rightArmOutward = rightArmOutwardFilter.Advance(rightArmOutward, deltaTime);
             rightArmForward = rightArmForwardFilter.Advance(rightArmForward, deltaTime);
 
+            // The transition lives above the loaded gait. Upper-body owners
+            // keep their contacts while the shared boot phase keeps advancing.
+            float transitionFreedom = (1f - Mathf.Clamp01(modelWeight)) *
+                (1f - Mathf.Max(carryWeight, equipmentWeight)) *
+                (1f - Mathf.Max(handToMouth, vomitBrace)) * (1f - SnowBlend);
+            float transitionPitch = 5.5f * gaitTransitionTorso.Value * transitionFreedom * (1f - coldBodyWeight);
+            float transitionArms = gaitTransitionArms.Value * transitionFreedom * (1f - coldArmWeight);
+            if (Mathf.Abs(transitionArms) > SecondOrderFilter.SnapEpsilon)
+            {
+                float phase = NormalizedGaitCycle(walkPlayable, walkBinding);
+                float swing = 5f * Mathf.Cos((phase - .02f) * (2f * Mathf.PI)) * transitionArms;
+                float spread = 2f * Mathf.Abs(transitionArms);
+                leftArmForward -= swing;
+                rightArmForward += swing;
+                leftArmOutward += spread;
+                rightArmOutward += spread;
+            }
+
             // Heavy knees come from lowering the pelvis while both boots
             // are held by the leg solve, so they bend anatomically and
             // asymmetrically when the feet stand on different heights.
@@ -2239,7 +2238,7 @@ namespace BarPromenade
                     // pitch on top of the hip strategy's own. The bout
                     // folds it FORWARD: doubled over, and jerked further
                     // with every heave and every push of the pump.
-                    torsoPitch + travelPitch + decayPose * 24f -
+                    torsoPitch + travelPitch + transitionPitch + decayPose * 24f -
                     nauseaPose.HiccupAmount *
                     PlayerNauseaRules.HiccupChestPitchDegrees +
                     vomitPose.TorsoPitchDegrees,
@@ -2251,7 +2250,9 @@ namespace BarPromenade
                     gait.RightFootYawDegrees * modelWeight,
                     gait.LeftFootLift * modelWeight,
                     gait.RightFootLift * modelWeight,
-                    handToMouth),
+                    handToMouth,
+                    gaitElbowFlexDegrees: 13f * transitionArms,
+                    gaitHeadLiftDegrees: .6f * transitionPitch),
                 deltaTime);
         }
 
@@ -2797,6 +2798,7 @@ namespace BarPromenade
         private void ResetPoseFilters()
         {
             ResetTravelWeight();
+            ResetGaitTransition();
             leftArmOutwardFilter.Reset();
             leftArmForwardFilter.Reset();
             rightArmOutwardFilter.Reset();

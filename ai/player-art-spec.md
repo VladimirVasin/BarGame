@@ -264,16 +264,17 @@ This opt-in applies only during the interaction handoff without an active clip.
 - Pedestrians retain `37` actions, excluding hero Run/snow.
 - `Relaxed`, `Idle` (4 s), `Walk` (1 s), `Run` (.75 s/18 frames at 24 fps):
   in-place, neutral-root closed loops. Idle returns to Relaxed; two asymmetric
-  breath/weight phrases move pelvis/spine/chest/head/arms/soft knees. Walk:
-  bilateral contact/down/passing/up, independent elbows/knees/ankles, opposing
-  arms. Heavy weary Run loads forward, stronger arms/knees, short flight.
+  breath/weight phrases move pelvis/spine/chest/head/arms/soft knees. Walk and
+  Run share heel phases. The boots roll over their measured soles and the
+  arms swing along the jacket. Walk and Run rise over the support leg.
+  WalkBack reverses Walk. Run extends through toe-off into a brief flight.
   `SnowWalk`/`SnowWalkBackward` (2 s/48 frames at 24 fps): high bent-knee boot
   extraction, long support/weight transfer, short steps, no flight; `1.10 m`
   cycle. Shared phase/ground support; slow movement keeps full pose. Post-IK
   contacts drive snow sound/kickup. Sprint excluded by actual deep snow.
-  Idle/Walk/Run and three bed clips use auto-clamped Bezier; other contextual/
-  fall timing stays linear. Bed landmarks lead with pelvis/legs; chest/head/
-  arms/face follow a few frames later, whole rig keyed at both endpoints.
+  Walk, WalkBack and Run have cyclic Bezier tangents across the seam. Idle and
+  three bed clips use auto-clamped Bezier. Other contextual/fall timing stays
+  linear. Bed pelvis and legs lead the chest, head, arms and face by a few frames.
 - `Face_Neutral`, `Face_HalfBlink`, `Face_ClosedBlink`, `Face_Watchful` and
   `Face_Tense` preserve deterministic facial timing. Hero V2 resolves authored
   clip keys through its atlas. The fall's clips (`Fall`, `Down`, `Rise`) no longer own
@@ -370,7 +371,9 @@ This opt-in applies only during the interaction handoff without an active clip.
   boot left out of its leg's reach, the clip's own lift preserved relative to
   the other boot, run flight released with the Run weight).
 - Runtime blends Idle, Walk and Run from actual constrained planar speed with
-  damped `0.14 s` start and `0.20 s` stop envelopes. The Run blend begins above
+  damped `0.14 s` start and `0.20 s` stop envelopes. Forward weight and the Run
+  share blend independently. The torso reacts to pace changes first while the
+  arms finish their swing on the shared stride phase. The Run blend begins above
   the `2.6 m/s` walk ceiling and reaches full weight at `4.2 m/s`; collision,
   walkable-area clamping and intoxication therefore affect the visible gait
   before it is sampled. During the short flight phase ordinary grounding
@@ -379,8 +382,8 @@ This opt-in applies only during the interaction handoff without an active clip.
   Walk cadence follows executed travel through the visible stride, so releasing Shift cannot
   abruptly slow a still-visible gait.
 
-- `player_motion_authoring.py` phrases the eight ordinary and snow loops
-  through lower spine, ribs and head with shared heel/boot landmarks. The
+- `player_motion_authoring.py` fits ordinary boot paths and phases the lower
+  spine, ribs and head through locomotion. The
   runtime filters braking and turning into body tilt. During positioned
   actions, the torso follows the reach while the sampled head and wrists
   retain their targets. The adjustment yields at clip endpoints and when

@@ -319,6 +319,33 @@ namespace BarPromenade.Tests.PlayMode
             return world;
         }
 
+        internal static void AssertForearmsClearJacket(Player3DAssetRegistry registry, string pose)
+        {
+            var coat = registry.MeshBindings
+                .Where(binding => binding.Renderer.enabled &&
+                    (binding.MeshName == "CLO_JacketBody" ||
+                     binding.MeshName.StartsWith("CLO_JacketPocket", StringComparison.Ordinal) ||
+                     binding.MeshName.StartsWith("CLO_JacketFlap", StringComparison.Ordinal)))
+                .Select(binding => new PosedSurface((SkinnedMeshRenderer)binding.Renderer)).ToArray();
+            var arms = registry.MeshBindings
+                .Where(binding => binding.Renderer.enabled &&
+                    (binding.BoneName.StartsWith("forearm.", StringComparison.Ordinal) ||
+                     binding.BoneName.StartsWith("hand.", StringComparison.Ordinal)))
+                .Select(binding => new PosedSurface((SkinnedMeshRenderer)binding.Renderer)).ToArray();
+            Assert.That(coat, Is.Not.Empty);
+            Assert.That(arms, Is.Not.Empty);
+            foreach (PosedSurface arm in arms)
+            foreach (PosedSurface surface in coat)
+            foreach (Vector3 point in arm.Points)
+            {
+                float penetration = surface.Penetration(point);
+                if (penetration >= .002f)
+                {
+                    Assert.Fail($"{arm.Name} crosses {surface.Name} by {penetration:F4} m in {pose}.");
+                }
+            }
+        }
+
         private sealed class PosedSurface
         {
             internal readonly string Name;

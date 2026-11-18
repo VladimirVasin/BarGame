@@ -344,6 +344,9 @@ def parse_args():
                         help="Refresh only supported sofa entry/exit actions and their measured bed contract.")
     parser.add_argument("--counter-seat-only", action="store_true",
                         help="Refresh only the bar's measured side-entry/exit bone actions on the verified Hero V2 source.")
+    parser.add_argument("--strides-only", nargs="?", const="all",
+                        choices=("all", *player_motion_authoring.STRIDE_TIMINGS),
+                        help="Refresh one named stride take, or all three when no name is supplied.")
     parser.add_argument("--corruption-only", action="store_true",
                         help="Add the shared emaciation shape to the verified source without rebuilding rig or actions.")
     parser.add_argument("--surfaces-only", action="store_true",
@@ -398,6 +401,8 @@ def parse_args():
     args = parser.parse_args(user_args)
     if args.bed_only and args.skip_animation_export:
         parser.error("--bed-only must export the corrected animation bank")
+    if args.strides_only and args.skip_animation_export:
+        parser.error("--strides-only must export the corrected animation bank")
     if not 1.40 <= args.height <= 2.10:
         parser.error("--height must be between 1.40 and 2.10 metres")
     if args.preview_only and (args.no_previews or args.face_atlas_only):
@@ -455,6 +460,7 @@ def parse_args():
         args.surfaces_only,
         args.joint_surfaces_only,
         args.counter_seat_only,
+        args.strides_only,
         args.corruption_only,
         args.smoking_only,
         args.bed_only,
@@ -1357,266 +1363,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         ):
             self.result.actions[action_name].action[
                 "bp_generator_version"] = V2_GENERATOR_VERSION
-        relaxed = self.relaxed_pose()
-        bone_pose = common.BonePose
-
-        def run_pose(
-            vertical_m: float,
-            twist_degrees: float,
-            roll_degrees: float,
-            limbs: dict[str, common.BonePose],
-        ) -> dict[str, common.BonePose]:
-            # Forward source space is -Y, so positive local X through the
-            # pelvis/spine/chest creates the persistent tired forward pitch.
-            # Vertical motion belongs to the pelvis, never the root bone.
-            return self.merge_pose(
-                relaxed,
-                {
-                    "pelvis": bone_pose(
-                        rotation_degrees=(
-                            4.5,
-                            twist_degrees * 0.35,
-                            roll_degrees,
-                        ),
-                        location_m=(0.0, 0.0, vertical_m),
-                    ),
-                    "spine": bone_pose(
-                        rotation_degrees=(
-                            6.5,
-                            twist_degrees * 0.40,
-                            -roll_degrees * 0.55,
-                        )
-                    ),
-                    "chest": bone_pose(
-                        rotation_degrees=(
-                            5.5,
-                            twist_degrees,
-                            roll_degrees * 0.45,
-                        )
-                    ),
-                    "neck": bone_pose(
-                        rotation_degrees=(
-                            -7.0,
-                            -twist_degrees * 0.35,
-                            -roll_degrees * 0.20,
-                        )
-                    ),
-                    "head": bone_pose(
-                        rotation_degrees=(
-                            -5.0,
-                            -twist_degrees * 0.30,
-                            roll_degrees * 0.15,
-                        )
-                    ),
-                },
-                limbs,
-            )
-
-        left_contact = run_pose(
-            0.0,
-            -4.0,
-            -2.2,
-            {
-                "upper_arm.L": bone_pose(
-                    target_direction=(0.075, 0.185, -0.245)
-                ),
-                "upper_arm.R": bone_pose(
-                    target_direction=(-0.075, -0.195, -0.225)
-                ),
-                "forearm.L": bone_pose(rotation_degrees=(-58.0, 6.0, -5.0)),
-                "forearm.R": bone_pose(rotation_degrees=(-74.0, -7.0, 5.0)),
-                "hand.L": bone_pose(rotation_degrees=(8.0, -8.0, 4.0)),
-                "hand.R": bone_pose(rotation_degrees=(10.0, 9.0, -4.0)),
-                "thigh.L": bone_pose(rotation_degrees=(-38.0, 0.0, 1.5)),
-                "shin.L": bone_pose(rotation_degrees=(18.0, 0.0, 0.0)),
-                "foot.L": bone_pose(rotation_degrees=(18.0, 0.0, 0.0)),
-                "thigh.R": bone_pose(rotation_degrees=(30.0, 0.0, -1.5)),
-                "shin.R": bone_pose(rotation_degrees=(42.0, 0.0, 0.0)),
-                "foot.R": bone_pose(rotation_degrees=(-18.0, 0.0, 0.0)),
-            },
-        )
-        left_down = run_pose(
-            0.0,
-            -2.0,
-            -1.2,
-            {
-                "upper_arm.L": bone_pose(
-                    target_direction=(0.072, 0.125, -0.274)
-                ),
-                "upper_arm.R": bone_pose(
-                    target_direction=(-0.072, -0.135, -0.265)
-                ),
-                "forearm.L": bone_pose(rotation_degrees=(-62.0, 6.0, -5.0)),
-                "forearm.R": bone_pose(rotation_degrees=(-70.0, -7.0, 5.0)),
-                "thigh.L": bone_pose(rotation_degrees=(-30.0, 0.0, 1.0)),
-                "shin.L": bone_pose(rotation_degrees=(34.0, 0.0, 0.0)),
-                "foot.L": bone_pose(rotation_degrees=(8.0, 0.0, 0.0)),
-                "thigh.R": bone_pose(rotation_degrees=(22.0, 0.0, -1.0)),
-                "shin.R": bone_pose(rotation_degrees=(55.0, 0.0, 0.0)),
-                "foot.R": bone_pose(rotation_degrees=(-20.0, 0.0, 0.0)),
-            },
-        )
-        right_pass = run_pose(
-            0.028,
-            1.5,
-            0.8,
-            {
-                "upper_arm.L": bone_pose(
-                    target_direction=(0.074, -0.045, -0.294)
-                ),
-                "upper_arm.R": bone_pose(
-                    target_direction=(-0.074, 0.055, -0.291)
-                ),
-                "forearm.L": bone_pose(rotation_degrees=(-68.0, 6.0, -5.0)),
-                "forearm.R": bone_pose(rotation_degrees=(-64.0, -7.0, 5.0)),
-                "thigh.L": bone_pose(rotation_degrees=(8.0, 0.0, 1.0)),
-                "shin.L": bone_pose(rotation_degrees=(68.0, 0.0, 0.0)),
-                "foot.L": bone_pose(rotation_degrees=(-10.0, 0.0, 0.0)),
-                "thigh.R": bone_pose(rotation_degrees=(-24.0, 0.0, -1.0)),
-                "shin.R": bone_pose(rotation_degrees=(48.0, 0.0, 0.0)),
-                "foot.R": bone_pose(rotation_degrees=(15.0, 0.0, 0.0)),
-            },
-        )
-        right_flight = run_pose(
-            0.060,
-            4.0,
-            1.8,
-            {
-                "upper_arm.L": bone_pose(
-                    target_direction=(0.075, -0.195, -0.225)
-                ),
-                "upper_arm.R": bone_pose(
-                    target_direction=(-0.075, 0.185, -0.245)
-                ),
-                "forearm.L": bone_pose(rotation_degrees=(-78.0, 7.0, -5.0)),
-                "forearm.R": bone_pose(rotation_degrees=(-56.0, -6.0, 5.0)),
-                "hand.L": bone_pose(rotation_degrees=(10.0, -9.0, 4.0)),
-                "hand.R": bone_pose(rotation_degrees=(8.0, 8.0, -4.0)),
-                "thigh.L": bone_pose(rotation_degrees=(20.0, 0.0, 1.5)),
-                "shin.L": bone_pose(rotation_degrees=(72.0, 0.0, 0.0)),
-                "foot.L": bone_pose(rotation_degrees=(-18.0, 0.0, 0.0)),
-                "thigh.R": bone_pose(rotation_degrees=(-40.0, 0.0, -1.5)),
-                "shin.R": bone_pose(rotation_degrees=(30.0, 0.0, 0.0)),
-                "foot.R": bone_pose(rotation_degrees=(22.0, 0.0, 0.0)),
-            },
-        )
-        right_contact = run_pose(
-            0.0,
-            4.0,
-            2.2,
-            {
-                "upper_arm.L": bone_pose(
-                    target_direction=(0.075, -0.195, -0.225)
-                ),
-                "upper_arm.R": bone_pose(
-                    target_direction=(-0.075, 0.185, -0.245)
-                ),
-                "forearm.L": bone_pose(rotation_degrees=(-74.0, 7.0, -5.0)),
-                "forearm.R": bone_pose(rotation_degrees=(-58.0, -6.0, 5.0)),
-                "hand.L": bone_pose(rotation_degrees=(10.0, -9.0, 4.0)),
-                "hand.R": bone_pose(rotation_degrees=(8.0, 8.0, -4.0)),
-                "thigh.L": bone_pose(rotation_degrees=(30.0, 0.0, 1.5)),
-                "shin.L": bone_pose(rotation_degrees=(42.0, 0.0, 0.0)),
-                "foot.L": bone_pose(rotation_degrees=(-18.0, 0.0, 0.0)),
-                "thigh.R": bone_pose(rotation_degrees=(-38.0, 0.0, -1.5)),
-                "shin.R": bone_pose(rotation_degrees=(18.0, 0.0, 0.0)),
-                "foot.R": bone_pose(rotation_degrees=(18.0, 0.0, 0.0)),
-            },
-        )
-        right_down = run_pose(
-            0.0,
-            2.0,
-            1.2,
-            {
-                "upper_arm.L": bone_pose(
-                    target_direction=(0.072, -0.135, -0.265)
-                ),
-                "upper_arm.R": bone_pose(
-                    target_direction=(-0.072, 0.125, -0.274)
-                ),
-                "forearm.L": bone_pose(rotation_degrees=(-70.0, 7.0, -5.0)),
-                "forearm.R": bone_pose(rotation_degrees=(-62.0, -6.0, 5.0)),
-                "thigh.L": bone_pose(rotation_degrees=(22.0, 0.0, 1.0)),
-                "shin.L": bone_pose(rotation_degrees=(55.0, 0.0, 0.0)),
-                "foot.L": bone_pose(rotation_degrees=(-20.0, 0.0, 0.0)),
-                "thigh.R": bone_pose(rotation_degrees=(-30.0, 0.0, -1.0)),
-                "shin.R": bone_pose(rotation_degrees=(34.0, 0.0, 0.0)),
-                "foot.R": bone_pose(rotation_degrees=(8.0, 0.0, 0.0)),
-            },
-        )
-        left_pass = run_pose(
-            0.028,
-            -1.5,
-            -0.8,
-            {
-                "upper_arm.L": bone_pose(
-                    target_direction=(0.074, 0.055, -0.291)
-                ),
-                "upper_arm.R": bone_pose(
-                    target_direction=(-0.074, -0.045, -0.294)
-                ),
-                "forearm.L": bone_pose(rotation_degrees=(-64.0, 6.0, -5.0)),
-                "forearm.R": bone_pose(rotation_degrees=(-68.0, -7.0, 5.0)),
-                "thigh.L": bone_pose(rotation_degrees=(-24.0, 0.0, 1.0)),
-                "shin.L": bone_pose(rotation_degrees=(48.0, 0.0, 0.0)),
-                "foot.L": bone_pose(rotation_degrees=(15.0, 0.0, 0.0)),
-                "thigh.R": bone_pose(rotation_degrees=(8.0, 0.0, -1.0)),
-                "shin.R": bone_pose(rotation_degrees=(68.0, 0.0, 0.0)),
-                "foot.R": bone_pose(rotation_degrees=(-10.0, 0.0, 0.0)),
-            },
-        )
-        left_flight = run_pose(
-            0.060,
-            -4.0,
-            -1.8,
-            {
-                "upper_arm.L": bone_pose(
-                    target_direction=(0.075, 0.185, -0.245)
-                ),
-                "upper_arm.R": bone_pose(
-                    target_direction=(-0.075, -0.195, -0.225)
-                ),
-                "forearm.L": bone_pose(rotation_degrees=(-56.0, 6.0, -5.0)),
-                "forearm.R": bone_pose(rotation_degrees=(-78.0, -7.0, 5.0)),
-                "hand.L": bone_pose(rotation_degrees=(8.0, -8.0, 4.0)),
-                "hand.R": bone_pose(rotation_degrees=(10.0, 9.0, -4.0)),
-                "thigh.L": bone_pose(rotation_degrees=(-40.0, 0.0, 1.5)),
-                "shin.L": bone_pose(rotation_degrees=(30.0, 0.0, 0.0)),
-                "foot.L": bone_pose(rotation_degrees=(22.0, 0.0, 0.0)),
-                "thigh.R": bone_pose(rotation_degrees=(20.0, 0.0, -1.5)),
-                "shin.R": bone_pose(rotation_degrees=(72.0, 0.0, 0.0)),
-                "foot.R": bone_pose(rotation_degrees=(-18.0, 0.0, 0.0)),
-            },
-        )
-
-        self._create_action(
-            RUN_ACTION_NAME,
-            "locomotion",
-            RUN_DURATION_SECONDS,
-            True,
-            RUN_SOURCE_FRAME_COUNT,
-            RUN_SOURCE_FPS,
-            (
-                (0.0, left_contact),
-                (0.125, left_down),
-                (0.25, right_pass),
-                (0.375, right_flight),
-                (0.5, right_contact),
-                (0.625, right_down),
-                (0.75, left_pass),
-                (0.875, left_flight),
-                (1.0, left_contact),
-            ),
-            interpolation="BEZIER",
-        )
-        if self.result is None:
-            raise RuntimeError("BuildResult has not been initialized")
-        run_action = self.result.actions[RUN_ACTION_NAME].action
-        run_action["bp_generator_version"] = V2_GENERATOR_VERSION
-        run_action["bp_event_count"] = 0
-        run_action["bp_gait_style"] = "heavy_weary"
-        run_action["bp_landmark_count"] = 8
-        run_action["bp_short_flight"] = True
+        player_motion_authoring.build_strides(self, common, V2_GENERATOR_VERSION)
         player_cold_actions.build_cold_actions(self, common, V2_GENERATOR_VERSION)
         player_snow_actions.build_snow_actions(self, common, V2_GENERATOR_VERSION)
         player_motion_authoring.author(self.result, common)
@@ -2514,36 +2261,6 @@ def validate_v2_result(
             for keyframe in curve.keyframe_points
         ):
             errors.append("Run must keep the root bone fixed in place")
-        pelvis_height_curve = next(
-            (
-                curve
-                for curve in run_curves
-                if curve.data_path == 'pose.bones["pelvis"].location'
-                and curve.array_index == 2
-            ),
-            None,
-        )
-        expected_landmark_frames = {0, 2, 4, 7, 9, 11, 14, 16, 18}
-        if pelvis_height_curve is None:
-            errors.append("Run must author pelvis height through all gait phases")
-        else:
-            pelvis_height_keys = {
-                round(keyframe.co.x): keyframe.co.y
-                for keyframe in pelvis_height_curve.keyframe_points
-            }
-            if set(pelvis_height_keys) != expected_landmark_frames:
-                errors.append(
-                    "Run pelvis keys must retain the exact "
-                    "contact/down/pass/up landmark frames"
-                )
-            elif min(
-                pelvis_height_keys[frame]
-                for frame in (7, 16)
-            ) < 0.055:
-                errors.append(
-                    "Run flight landmarks must lift the pelvis by at least "
-                    "0.055 m"
-                )
         if int(run_action.get("bp_event_count", -1)) != 0:
             errors.append("Run must not declare Animation Events")
         if run_action.get("bp_gait_style") != "heavy_weary":
@@ -3327,6 +3044,7 @@ def write_v2_manifest(
         if keys:
             action["face_keys"] = keys
     player_snow_actions.attach_metadata(payload, result)
+    player_motion_authoring.attach_stride_metadata(payload, result, common, config.height / 1.75)
     payload["smoking_grip"] = player_smoking_grip.manifest(result, config.height / 1.75, player_hand_grip)
     payload["counter_seat"] = player_counter_seat_actions.contract()
     payload["counter_seat_authoring_sha256"] = hashlib.sha256(
@@ -3470,11 +3188,16 @@ def main() -> None:
         surfaces_only,
         joint_surfaces_only,
         counter_seat_only,
+        strides_only,
         corruption_only,
         smoking_only,
         bed_only,
         dialogue_dir,
     ) = parse_args()
+    if strides_only:
+        takes = player_motion_authoring.STRIDE_TIMINGS if strides_only == "all" else (strides_only,)
+        player_motion_authoring.refresh_strides(sys.modules[__name__], config, takes)
+        return
     if bed_only:
         import player_bed_actions
         player_bed_actions.refresh(sys.modules[__name__], config)

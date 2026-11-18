@@ -358,7 +358,8 @@ namespace BarPromenade
             float delta, float distanceSquared, int contactCount)
         {
             int link = walker.Walk.Link;
-            bool moving = movement.Advance(ref walker.Walk, walker.Encounter, body.transform.position, walker.Speed,
+            Vector3 previous = body.transform.position;
+            bool moving = movement.Advance(ref walker.Walk, walker.Encounter, previous, walker.Speed,
                 delta, contacts, contactCount, out Vector3 position, out Vector3 facing);
             if (walker.Walk.Link != link)
             {
@@ -370,7 +371,7 @@ namespace BarPromenade
                 Quaternion.LookRotation(facing), 210f * delta));
             body.MinimumEvaluationInterval = city.Visibility.CanChangeAmbientBodyAt(position) ? 1f / 8f :
                 distanceSquared < 15f * 15f ? 0f : 1f / 15f;
-            body.Advance(delta, moving);
+            body.AdvanceTravelled(delta, moving, position - previous);
 
             if (walker.Walk.Stopped < 1.5f || !GameLog.IsVerbose || walker.Age < walker.NextBlockedLog) return;
             walker.NextBlockedLog = walker.Age + 15f;

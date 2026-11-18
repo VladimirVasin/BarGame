@@ -469,7 +469,7 @@ namespace BarPromenade
                 approachNodeDistances = null;
                 presentation.SetAttentionFocus(attention.Resolve(
                     transform.position, transform.eulerAngles.y, attentionCandidate));
-                if (safeDeltaTime > 0f) presentation.Advance(safeDeltaTime, vehicleMoving);
+                if (safeDeltaTime > 0f) presentation.AdvanceTravelled(safeDeltaTime, vehicleMoving, LastDisplacement);
                 return;
             }
             if (IsPersonalSpaceReacting)
@@ -555,9 +555,10 @@ namespace BarPromenade
                     transform.position,
                     transform.eulerAngles.y,
                     attentionCandidate));
-            presentation.Advance(
+            presentation.AdvanceTravelled(
                 safeDeltaTime,
-                moving || ((roaming || transferring) && !IsYielding && safeDeltaTime <= 0f));
+                moving || ((roaming || transferring) && !IsYielding && safeDeltaTime <= 0f),
+                LastDisplacement);
         }
 
         /// <summary>

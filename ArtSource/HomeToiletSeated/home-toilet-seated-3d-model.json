@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generator_version": "1.4.0",
-  "source_hero_sha256": "0f59a7f89f73543ac2b1f8aa4ac6e1568aed5316011d951eb7502434620016f8",
+  "source_hero_sha256": "f50b56b46bf44b814f96597858ae4cb4ad6dca23b2a6d3872373415a6de986af",
   "hero_corruption": {
     "schema": "hero_corruption_v1",
     "shape_name": "HeroCorruption",
@@ -1173,5 +1173,5 @@
       "diameter": 0.034
     }
   ],
-  "signature": "ad6c97487cbf649033bbca86e2e2fe80d0719d97d429bd20d7779d08202b7e7c"
+  "signature": "9a04fe79bbbb79c11af0dd7ad4e322be35324ae8760a1004274ac5add66b9303"
 }

@@ -324,11 +324,10 @@ namespace BarPromenade
             BabushkaPrefabResourcePath;
 
         /// <summary>
-        /// The pooled walkers' pace. Every default NPC walks its own authored
-        /// village gait - `Walk` covers `0.82 m/s` at unit speed over a
-        /// `1.25 s` cycle - so the band is the same for every catalog model
-        /// and the animation band brackets `speed / 0.82`.
+        /// Ordinary Walk has a one-second cycle at the reference stature.
+        /// The street presentation advances it from achieved planar travel.
         /// </summary>
+        public const float DefaultNpcWalkCycleMetres = 0.82f;
         public const float DefaultNpcMinimumMovementSpeed = 0.78f;
         public const float DefaultNpcMaximumMovementSpeed = 0.90f;
         public const float DefaultNpcMinimumAnimationSpeed = 0.95f;

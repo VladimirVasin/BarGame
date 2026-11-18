@@ -34,7 +34,9 @@ namespace BarPromenade
             float rightFootYawDegrees = 0f,
             float leftFootLift = 0f,
             float rightFootLift = 0f,
-            float mouthReachWeight = 0f)
+            float mouthReachWeight = 0f,
+            float gaitElbowFlexDegrees = 0f,
+            float gaitHeadLiftDegrees = 0f)
         {
             Enabled = enabled;
             MouthReachWeight = Mathf.Clamp01(mouthReachWeight);
@@ -61,6 +63,8 @@ namespace BarPromenade
             HasRunClip = hasRunClip;
             ForwardGait = forwardGait;
             WallReach = wallReach;
+            GaitElbowFlexDegrees = gaitElbowFlexDegrees;
+            GaitHeadLiftDegrees = gaitHeadLiftDegrees;
         }
 
         /// <summary>A hand reaching for a wall, if any.</summary>
@@ -93,6 +97,8 @@ namespace BarPromenade
 
         /// <summary>Forward pitch of the chest on top of the pelvis, degrees.</summary>
         public float ChestPitchDegrees { get; }
+        public float GaitElbowFlexDegrees { get; }
+        public float GaitHeadLiftDegrees { get; }
 
         /// <summary>
         /// Each arm's swing in the ACTOR's frame, degrees: out to the
@@ -1213,6 +1219,27 @@ namespace BarPromenade
                 1f,
                 input.RightArmOutwardDegrees * ikBlend,
                 input.RightArmForwardDegrees * ikBlend);
+            if (Mathf.Abs(input.GaitElbowFlexDegrees) > .001f)
+            {
+                FlexGaitElbow(arms[0], input.GaitElbowFlexDegrees * ikBlend);
+                FlexGaitElbow(arms[1], input.GaitElbowFlexDegrees * ikBlend);
+            }
+            if (head != null && Mathf.Abs(input.GaitHeadLiftDegrees) > .001f)
+                head.rotation = Quaternion.AngleAxis(-input.GaitHeadLiftDegrees, right) * head.rotation;
+        }
+
+        private static void FlexGaitElbow(Arm arm, float degrees)
+        {
+            if (!arm.IsComplete) return;
+            Vector3 upper = arm.Forearm.position - arm.Upper.position;
+            Vector3 lower = arm.Hand.position - arm.Forearm.position;
+            // Follow the sampled bend plane so the wrist keeps its lateral
+            // clearance instead of twisting around a bind-pose axis.
+            Vector3 hinge = Vector3.Cross(upper, lower);
+            if (hinge.sqrMagnitude < 1e-8f) return;
+            float bend = Vector3.Angle(upper, lower);
+            float delta = Mathf.Clamp(bend + degrees, 0f, 110f) - bend;
+            arm.Forearm.rotation = Quaternion.AngleAxis(delta, hinge.normalized) * arm.Forearm.rotation;
         }
 
         /// <summary>

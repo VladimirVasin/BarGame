@@ -15,6 +15,22 @@ reviewed; `build-player-3d-model-v2`, `build-player-clothing-surfaces --check`.
 `ProductionRig_RendersOrdinaryAndContextualPoseSheet`,
 `FlatGround_WalkKeepsABootPlantedEveryFrame`. Unity poses reviewed.
 
+Reauthored Walk, WalkBack and Run with cyclic tangents, fitted boot roll and
+arm arcs clear of the M-65. The hips rise over the support leg in both walks
+and through toe-off in the run. The Run refresh retains the remaining takes.
+Forward weight and Run share blend independently through a shared stride phase.
+The torso reacts first during pace changes while the arms finish their swing.
+`build-player-3d-model-v2 --strides-only Run`,
+`ForwardGaits_RenderAndClearTheJacketThroughWalkRunBlend`,
+`RunMotion_UsesAuthoredClipAndCrossfadesWithWalk`,
+`AuthoredRun_PreservesFlightWithoutFloorPenetration` checks both support knees.
+Stride and transition poses reviewed.
+
+Fitted the hero's stride to both default NPC rigs and shoe soles. Street cycles
+consume achieved travel at the assigned stature, including through evaluation
+throttling and stops. `build-default-npc-walks`,
+`DefaultWalkers_MatchTravelAndExtendOverEachSupportBoot`. Side poses reviewed.
+
 ## 2026-11-17
 
 Rebuilt the hero around a slate canvas jacket, a sculpted tired face and a weighted gait.

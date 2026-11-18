@@ -4656,8 +4656,9 @@
   The director
   selects among free catalog presentations from the spawn seed and applies the
   selected archetype's movement/cadence range; when both day slots are active,
-  their silhouettes are therefore distinct. A `0.15 s` locomotion blend avoids
-  idle/walk pose pops while the first spawned frame starts directly in Walk.
+  their silhouettes are distinct. Default NPC walks fit each body's soles and
+  advance by distance at a `0.82 m` reference cycle. A `0.15 s` blend eases idle
+  and walk. The first spawned frame starts in Walk.
   Its `CharacterController`
   becomes physical only after a successful spawn and presentation bind, and
   is disabled before pooling. The dedicated `CityPedestrian` layer collides
@@ -5947,11 +5948,13 @@
 - **Accepted — Run is one production-only authored gait:** Hero V2 appends one
   bone-only, in-place `Run` Action (`0.75 s`, `18` frames at `24 fps`) to reach
   `38` production Actions at that decision; the later three-part seated drink
-  brings the current total to `41`. Run is a heavy, weary forward-loaded cycle with
-  stronger opposing arms, deeper knees and one short two-foot flight phase,
-  blended against Walk by actual constrained Run weight. That weight
-  progressively releases downward grounding; at full Run the correction may
-  lift sole penetration but cannot drag both airborne boots onto the floor.
+  brought the total to `41`. Walk, WalkBack and Run use periodic curves with
+  boot roll fitted to the soles. The arms swing alongside the jacket.
+  Run leans forward and rises over the supporting boot into toe-off. A short
+  flight separates heel contacts.
+  Walk and Run share phase and forward weight. Achieved pace drives their mix
+  and separate torso and elbow responses during acceleration and braking.
+  Grounding releases with Run weight and preserves flight at full Run.
   At this decision point the byte-frozen Hero V1 and the independent
   pedestrian locomotion bank remained at `37` Actions; neither received this
   production clip. This is an ordinary locomotion decision, not an exception

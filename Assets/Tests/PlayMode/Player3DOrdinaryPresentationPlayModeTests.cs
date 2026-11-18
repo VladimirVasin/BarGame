@@ -431,6 +431,9 @@ namespace BarPromenade.Tests.PlayMode
             float lowestVisibleSole = float.PositiveInfinity;
             float highestLowestSole = float.NegativeInfinity;
             float minimumFootPlant = 1f;
+            float greatestSupportFlex = 0f;
+            bool sawLeftSupport = false;
+            bool sawRightSupport = false;
             float sampleEnd = Time.realtimeSinceStartup + 0.9f;
             while (Time.realtimeSinceStartup < sampleEnd)
             {
@@ -452,8 +455,25 @@ namespace BarPromenade.Tests.PlayMode
                 minimumFootPlant = Mathf.Min(
                     minimumFootPlant,
                     presentation.Metrics.FootPlantAmount);
+
+                float cycle = presentation.ForwardGaitCycle;
+                float supportPhase = Mathf.Repeat(cycle, .5f);
+                if (supportPhase >= .15f && supportPhase <= .30f)
+                {
+                    bool left = cycle < .5f;
+                    Transform ankle = left ? registry.Anchors.LeftFoot : registry.Anchors.RightFoot;
+                    Transform knee = ankle.parent;
+                    Transform hip = knee.parent;
+                    float flex = Vector3.Angle(knee.position - hip.position, ankle.position - knee.position);
+                    greatestSupportFlex = Mathf.Max(greatestSupportFlex, flex);
+                    sawLeftSupport |= left;
+                    sawRightSupport |= !left;
+                }
             }
 
+            Assert.That(sawLeftSupport && sawRightSupport, Is.True, "Sample both run support phases.");
+            Assert.That(greatestSupportFlex, Is.LessThanOrEqualTo(35f),
+                "The runner should rise over the supporting boot into toe-off.");
             Assert.That(
                 lowestVisibleSole,
                 Is.GreaterThanOrEqualTo(groundY - 0.005f),
@@ -1713,8 +1733,10 @@ namespace BarPromenade.Tests.PlayMode
             Quaternion relaxedRightForearm = rightForearm.localRotation;
             Quaternion relaxedLeftShin = leftShin.localRotation;
             Quaternion relaxedRightShin = rightShin.localRotation;
-            Quaternion relaxedLeftFoot = leftFoot.localRotation;
-            Quaternion relaxedRightFoot = rightFoot.localRotation;
+            // The heel tilt is authored against the ground. The shin and
+            // ankle can share that visible rotation in different proportions.
+            Quaternion relaxedLeftFoot = leftFoot.rotation;
+            Quaternion relaxedRightFoot = rightFoot.rotation;
             presentation.EndClip();
 
             Assert.That(presentation.TryBeginClip("Idle"), Is.True);
@@ -1750,9 +1772,9 @@ namespace BarPromenade.Tests.PlayMode
                 Is.GreaterThan(18f),
                 "The forward-swing elbow must flex independently.");
             Assert.That(
-                Quaternion.Angle(relaxedLeftFoot, leftFoot.localRotation),
+                Quaternion.Angle(relaxedLeftFoot, leftFoot.rotation),
                 Is.GreaterThan(7f),
-                "The leading boot must articulate at the ankle.");
+                "The leading boot must show its ground-relative heel tilt.");
 
             presentation.SampleActiveClip(0.25f);
             Assert.That(
@@ -1762,9 +1784,9 @@ namespace BarPromenade.Tests.PlayMode
 
             presentation.SampleActiveClip(0.5f);
             Assert.That(
-                Quaternion.Angle(relaxedRightFoot, rightFoot.localRotation),
+                Quaternion.Angle(relaxedRightFoot, rightFoot.rotation),
                 Is.GreaterThan(7f),
-                "The opposite leading boot must articulate at the ankle.");
+                "The opposite leading boot must show its ground-relative heel tilt.");
 
             presentation.SampleActiveClip(0.75f);
             Assert.That(
@@ -1808,12 +1830,12 @@ namespace BarPromenade.Tests.PlayMode
                 Mathf.Max(
                     Quaternion.Angle(
                         relaxedLeftFoot,
-                        leftFoot.localRotation),
+                        leftFoot.rotation),
                     Quaternion.Angle(
                         relaxedRightFoot,
-                        rightFoot.localRotation)),
+                        rightFoot.rotation)),
                 Is.GreaterThan(10f),
-                "Run contacts must articulate a boot at the ankle.");
+                "Run contacts must show a ground-relative boot tilt.");
 
             presentation.SampleActiveClip(0.375f);
             Assert.That(

@@ -176,6 +176,9 @@ namespace BarPromenade.Tests.PlayMode
             float lowestLowerSole = float.PositiveInfinity;
             float highestLowerSole = float.NegativeInfinity;
             float greatestForefootRoll = 0f;
+            float greatestSupportFlex = 0f;
+            bool sawLeftSupport = false;
+            bool sawRightSupport = false;
             for (int frame = 0; frame < SampleFrames; frame++)
             {
                 yield return null;
@@ -196,6 +199,20 @@ namespace BarPromenade.Tests.PlayMode
 
                 lowestLowerSole = Mathf.Min(lowestLowerSole, lowerSole);
                 highestLowerSole = Mathf.Max(highestLowerSole, lowerSole);
+
+                float cycle = presentation.ForwardGaitCycle;
+                float legPhase = Mathf.Repeat(cycle, .5f);
+                if (legPhase >= .18f && legPhase <= .32f)
+                {
+                    bool left = cycle < .5f;
+                    Transform ankle = left ? registry.Anchors.LeftFoot : registry.Anchors.RightFoot;
+                    Transform knee = ankle.parent;
+                    Transform hip = knee.parent;
+                    float flex = Vector3.Angle(knee.position - hip.position, ankle.position - knee.position);
+                    greatestSupportFlex = Mathf.Max(greatestSupportFlex, flex);
+                    sawLeftSupport |= left;
+                    sawRightSupport |= !left;
+                }
             }
 
             Assert.That(float.IsNaN(firstLowerSole), Is.False);
@@ -215,6 +232,9 @@ namespace BarPromenade.Tests.PlayMode
                 "No sole may pass through the probed floor.");
             Assert.That(greatestForefootRoll, Is.GreaterThan(.5f),
                 "The actual walking presentation must bend the forefoot during a supported roll.");
+            Assert.That(sawLeftSupport && sawRightSupport, Is.True, "Sample the middle of both support phases.");
+            Assert.That(greatestSupportFlex, Is.LessThanOrEqualTo(32f),
+                "The support knee should extend as the hero passes over the boot.");
         }
 
         [UnityTest]

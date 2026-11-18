@@ -1,0 +1,22 @@
+{
+  "generator": "build-default-npc-walks.py",
+  "cycle_seconds": 1.0,
+  "cycle_metres": 0.82,
+  "root_motion": false,
+  "clips": {
+    "OrdinaryWorkerWalk": {
+      "minimum_sole_m": -0.00157,
+      "maximum_lower_sole_m": 0.00521,
+      "maximum_midstance_knee_flex_degrees": 24.27,
+      "source": "ArtSource/VillageLife/StationWorker.blend",
+      "source_sha256": "6536045109dda67eb1079ccb8f03409af45b832f19984444f886382951258a02"
+    },
+    "OrdinaryWomanWalk": {
+      "minimum_sole_m": -0.00133,
+      "maximum_lower_sole_m": 0.00079,
+      "maximum_midstance_knee_flex_degrees": 25.03,
+      "source": "ArtSource/City/Residents/OrdinaryWoman.blend",
+      "source_sha256": "c976293eef12995d1de4bad62d3f3b27ec89a02cb2eb68eec88e0532f2e23016"
+    }
+  }
+}

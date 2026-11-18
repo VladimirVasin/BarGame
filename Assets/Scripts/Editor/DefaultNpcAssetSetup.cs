@@ -21,6 +21,30 @@ namespace BarPromenade.Editor
         [MenuItem("Bar Promenade/Default NPC/Rebuild Ordinary Worker")]
         public static void RunBatch() => BuildOrThrow();
 
+        [MenuItem("Bar Promenade/Default NPC/Rebuild Ordinary Walks")]
+        public static void RebuildOrdinaryWalks()
+        {
+            BuildOrThrow();
+            DefaultNpcWomanAssetSetup.BuildOrThrow();
+        }
+
+        internal static AnimationClip ImportOrdinaryWalk(string name, Avatar avatar)
+        {
+            CanneryWomanAssetSetup.ConfigureModel(OrdinaryWalkPath(name), true, avatar);
+            return ReadOrdinaryWalk(name);
+        }
+
+        internal static AnimationClip ReadOrdinaryWalk(string name)
+        {
+            AnimationClip clip = AssetDatabase.LoadAllAssetsAtPath(OrdinaryWalkPath(name))
+                .OfType<AnimationClip>().Single(candidate => candidate.name == name);
+            if (!clip.isLooping || !Mathf.Approximately(clip.length, 1f))
+                throw new InvalidOperationException(name + " must be a one-second walk loop.");
+            return clip;
+        }
+
+        private static string OrdinaryWalkPath(string name) => "Assets/Resources/City/Residents/" + name + ".fbx";
+
         public static void EnsurePrefabResourcePath()
         {
             const string legacyPath = Folder + "StationWorker.prefab";
@@ -56,6 +80,7 @@ namespace BarPromenade.Editor
                     .Where(clip => !clip.name.StartsWith("__preview__", StringComparison.Ordinal)).ToArray();
                 AnimationClip[] bindings = Enum.GetNames(typeof(VillageResidentAction))
                     .Select(name => clips.Single(clip => clip.name == name)).ToArray();
+                bindings[(int)VillageResidentAction.Walk] = ImportOrdinaryWalk("OrdinaryWorkerWalk", avatar);
                 var root = new GameObject("StationWorker");
                 try
                 {
@@ -149,6 +174,8 @@ namespace BarPromenade.Editor
                 actor.Animator.avatar == null || !actor.Animator.avatar.isValid || actor.Animator.applyRootMotion ||
                 actor.Animator.runtimeAnimatorController != null)
                 throw new InvalidOperationException("Default NPC lost its modular wardrobe or shared animation bindings.");
+            if (actor.GetClip(VillageResidentAction.Walk) != ReadOrdinaryWalk("OrdinaryWorkerWalk"))
+                throw new InvalidOperationException("Ordinary worker lost its fitted walk clip.");
             wardrobe.ValidateBindings();
             DefaultNpcBodyShape bodyShape = prefab.GetComponent<DefaultNpcBodyShape>();
             if (bodyShape == null || Mathf.Abs(bodyShape.ReferenceHeightMetres - manifest.body_shape.base_height_m) > .0001f)

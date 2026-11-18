@@ -34,7 +34,7 @@ namespace BarPromenade.Editor
             AnimationClip[] actions = Enum.GetValues(typeof(VillageResidentAction)).Cast<VillageResidentAction>()
                 .Select(shared.GetClip).ToArray();
             actions[(int)VillageResidentAction.Idle] = Clip("Idle");
-            actions[(int)VillageResidentAction.Walk] = Clip("Walk");
+            actions[(int)VillageResidentAction.Walk] = DefaultNpcAssetSetup.ImportOrdinaryWalk("OrdinaryWomanWalk", avatar);
 
             var actor = new GameObject("Ordinary Woman");
             try
@@ -108,6 +108,9 @@ namespace BarPromenade.Editor
                 prefab.GetComponent<CanneryWomanHair>() != null)
                 throw new InvalidOperationException("Missing the independent ordinary woman prefab.");
             ValidateBody(prefab, data);
+            if (prefab.GetComponent<VillageResidentPresentation>().GetClip(VillageResidentAction.Walk) !=
+                DefaultNpcAssetSetup.ReadOrdinaryWalk("OrdinaryWomanWalk"))
+                throw new InvalidOperationException("Ordinary woman lost her fitted walk clip.");
             ReadClips(data);
             LoadAtlas(data.clothing_atlas, 256);
             foreach (Face face in data.faces) LoadAtlas(face.texture, 64);

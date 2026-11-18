@@ -41,6 +41,114 @@ namespace BarPromenade.Tests.PlayMode
         };
 
         [UnityTest]
+        public IEnumerator DefaultWalkers_MatchTravelAndExtendOverEachSupportBoot()
+        {
+            var stage = new GameObject("Ordinary pedestrian gait stage");
+            stage.transform.position = StageOrigin;
+            var cameraObject = new GameObject("Ordinary pedestrian gait camera");
+            var lightObject = new GameObject("Ordinary pedestrian gait light");
+            var target = new RenderTexture(Width, Height, 24);
+            var pixels = new Texture2D(Width, Height, TextureFormat.RGB24, false);
+            bool previousFog = RenderSettings.fog;
+            AmbientMode previousMode = RenderSettings.ambientMode;
+            Color previousAmbient = RenderSettings.ambientLight;
+            var walkers = new CityPedestrianPresentation[2];
+            try
+            {
+                RenderSettings.fog = false;
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = new Color(.53f, .54f, .58f);
+                Light light = lightObject.AddComponent<Light>();
+                light.type = LightType.Directional;
+                light.intensity = 1.4f;
+                light.transform.rotation = Quaternion.Euler(44f, -35f, 0f);
+                Camera camera = cameraObject.AddComponent<Camera>();
+                camera.enabled = false;
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = new Color(.13f, .15f, .17f);
+                camera.targetTexture = target;
+                camera.farClipPlane = 20f;
+
+                GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+                floor.transform.SetParent(stage.transform, false);
+                Physics.SyncTransforms();
+
+                for (int index = 0; index < walkers.Length; index++)
+                {
+                    int resident = index == 0 ? 0 : 14;
+                    CityPedestrianAssetRegistry registry = CityPedestrianDefaultNpcBody.Create(stage.transform,
+                        DefaultNpcPopulation.PedestrianId(resident), null);
+                    registry.transform.localPosition = Vector3.right * ((index - .5f) * Spacing);
+                    registry.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                    walkers[index] = registry.gameObject.AddComponent<CityPedestrianPresentation>();
+                    CityPedestrianPresentation walker = walkers[index];
+                    walker.Initialize(registry);
+                    registry.Animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                    Assert.That(registry.WalkClip.name, Is.EqualTo(index == 0 ? "OrdinaryWorkerWalk" : "OrdinaryWomanWalk"));
+                    Assert.That(registry.WalkClip.length, Is.EqualTo(1f).Within(.01f));
+                    AssertCadenceThroughEvaluationThrottle(walker);
+                }
+
+                float[] phases = { 0f, .125f, .25f, .375f, .5f, .75f };
+                Vector3 look = StageOrigin + Vector3.up * .9f;
+                Vector3 eye = look + new Vector3(0f, .19f, -3.55f);
+                string folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", "OrdinaryNpcWalk");
+                Directory.CreateDirectory(folder);
+                for (int index = 0; index < phases.Length; index++)
+                {
+                    float phase = phases[index];
+                    foreach (CityPedestrianPresentation walker in walkers)
+                    {
+                        walker.SetMoving(true);
+                        walker.ConfigureCycle(1f, phase);
+                        walker.Advance(0f, true, true);
+                        if (phase == .25f || phase == .75f)
+                            AssertSupportKnee(phase < .5f ? walker.Registry.LeftFoot : walker.Registry.RightFoot);
+                    }
+                    yield return null;
+                    Shoot(camera, pixels, target, Path.Combine(folder, $"phase-{index}.png"), eye, look, 39f);
+                }
+            }
+            finally
+            {
+                foreach (CityPedestrianPresentation walker in walkers) walker?.Shutdown();
+                RenderSettings.fog = previousFog;
+                RenderSettings.ambientMode = previousMode;
+                RenderSettings.ambientLight = previousAmbient;
+                Object.Destroy(stage);
+                Object.Destroy(lightObject);
+                Object.Destroy(cameraObject);
+                Object.Destroy(pixels);
+                target.Release();
+                Object.Destroy(target);
+            }
+        }
+
+        private static void AssertCadenceThroughEvaluationThrottle(CityPedestrianPresentation walker)
+        {
+            const float phase = .1f;
+            var character = walker.GetComponent<CityPedestrianDefaultNpcBody>().Character;
+            float cycleMetres = CityPedestrianResources.DefaultNpcWalkCycleMetres * character.transform.localScale.y;
+            walker.ConfigureCycle(1f, phase);
+            walker.SetMoving(true);
+            walker.MinimumEvaluationInterval = .1f;
+            walker.AdvanceTravelled(.04f, true, Vector3.right * (cycleMetres * .06f));
+            walker.AdvanceTravelled(.04f, true, Vector3.right * (cycleMetres * .02f));
+            Assert.That(walker.WalkCycle, Is.EqualTo(phase).Within(.0001f));
+            walker.AdvanceTravelled(.04f, false, Vector3.zero);
+            Assert.That(walker.WalkCycle, Is.EqualTo(phase + .08f).Within(.0001f));
+            walker.AdvanceTravelled(.2f, false, Vector3.zero);
+            Assert.That(walker.WalkCycle, Is.EqualTo(phase + .08f).Within(.0001f));
+        }
+
+        private static void AssertSupportKnee(Transform ankle)
+        {
+            Transform knee = ankle.parent;
+            float flex = Vector3.Angle(knee.position - knee.parent.position, ankle.position - knee.position);
+            Assert.That(flex, Is.LessThan(34f), "The passing pose must rise above the supporting boot.");
+        }
+
+        [UnityTest]
         [Explicit("Capture, not a test. Look at Captures/PedestrianGait/.")]
         public IEnumerator RoamingWalkers_WaitAndWalkOnCamera()
         {

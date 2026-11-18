@@ -3013,7 +3013,7 @@
     "action_count": 55,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "da056d1193a0bb419fe76dd5c217425a6da5ae4eff749dc656aa480b0c423c38",
+  "content_signature_sha256": "b6d7efb9b775be7c9e5a9f850fac6e5dcd19a567a9072c39f31450958a8a3d07",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -7668,5 +7668,26 @@
     "generator": "tools/player_body_hair_surfaces.py",
     "version": "1.0.0",
     "sha256": "063a7ac2ab88338b14ecf4d6497bff79d8088dbec2b350dd920a98d3ce3b4431"
+  },
+  "stride_authoring_sha256": "aff3991fec071867a8116b2616a3829f92055f860a36598509a62e878611fbb9",
+  "ordinary_strides": {
+    "Walk": {
+      "minimum_arm_to_jacket_side_gap_m": 0.0346,
+      "minimum_lower_sole_m": -0.00137,
+      "maximum_lower_sole_m": 0.00104,
+      "maximum_midstance_knee_flex_degrees": 21.52
+    },
+    "WalkBack": {
+      "minimum_arm_to_jacket_side_gap_m": 0.0346,
+      "minimum_lower_sole_m": -0.00137,
+      "maximum_lower_sole_m": 0.00104,
+      "maximum_midstance_knee_flex_degrees": 21.52
+    },
+    "Run": {
+      "minimum_arm_to_jacket_side_gap_m": 0.06132,
+      "minimum_lower_sole_m": -0.00349,
+      "maximum_lower_sole_m": 0.06368,
+      "maximum_midstance_knee_flex_degrees": 24.79
+    }
   }
 }

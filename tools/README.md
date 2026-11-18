@@ -146,7 +146,7 @@ VHS:Windows `tools/audio-vhs/build.ps1`;Mac `tools/audio-vhs/build-macos.py`.
 Both:ABI/DSP;compile-only keeps temporary output.
 [audio-vhs/README.md](audio-vhs/README.md).
 
-`build-player-3d-model-v2.py`: `--{surfaces,hand-grip,corruption,smoking,bed}-only`;
+`build-player-3d-model-v2.py`: `--{surfaces,hand-grip,corruption,smoking,bed,strides}-only`;
 `--skip-animation-export --no-previews`;`player_hand_gestures.validate`:FBX.
 `build-player-corruption-portraits.py`:views.
 `build-player-bar-repeat-actions.py`:wave/wrist;`validate`.

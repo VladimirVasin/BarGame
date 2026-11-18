@@ -122,8 +122,8 @@ Repair/publication: [../tools/README.md](../tools/README.md).
   27 silent RU/EN inspections: props side/bokeh, paper/photos close-up.
   Lodge minibar/chairs; group photo inspect/pickup, shared receipt/session state.
   31 homes have fixed families, four occupied. Hero/mother remain unnamed.
-- One shared animated hero, contextual interactions, intoxication/balance,
-  air inertia/steering,clock,needs,inventory,quests and grave work.
+- One shared hero with phase-aligned walk/run and contextual actions.
+  Intoxication/balance, air inertia/steering, clock, needs, inventory, quests and grave work.
 - A collectible scarf in the mother's upstairs bedroom has reversible inventory
   equipment and reduces alpine shivering and the rate of new frost exposure.
   After five seconds of free third-person play it lowers outside Alpine Village

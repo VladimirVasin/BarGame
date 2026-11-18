@@ -6,9 +6,13 @@ namespace BarPromenade
     public sealed partial class Player3DCharacterPresentation
     {
         private const float ContactTolerance = .001f;
+        private const float GaitBlendEpsilon = .0005f;
         private float forwardTravelSpeed, turnIntent, previousTravelSpeed;
+        private float forwardGaitWeightVelocity, forwardRunShare, forwardRunShareVelocity;
         private SecondOrderFilter travelPitchFilter = new SecondOrderFilter(17f, .9f);
         private SecondOrderFilter travelRollFilter = new SecondOrderFilter(14f, .9f);
+        private SecondOrderFilter gaitTransitionTorso = new SecondOrderFilter(24f, 1f);
+        private SecondOrderFilter gaitTransitionArms = new SecondOrderFilter(15f, 1f);
         private float travelPitch, travelRoll;
 
         private SavedRotation chestBeforeAction, leftShoulderBeforeAction, rightShoulderBeforeAction;
@@ -16,6 +20,65 @@ namespace BarPromenade
         private SavedRotation leftWristBeforeAction, rightWristBeforeAction, headBeforeAction;
         private Vector3 neckPositionBeforeAction;
         private bool actionWeightApplied;
+
+        internal float GaitTransitionLean => gaitTransitionTorso.Value;
+
+        private float ForwardGaitWeight => gaitWeights[WalkGait] + gaitWeights[RunGait];
+        private float TargetForwardGaitWeight => targetGaitWeights[WalkGait] + targetGaitWeights[RunGait];
+
+        private void ApplyForwardGaitWeights(bool immediate, float deltaTime)
+        {
+            float weight = ForwardGaitWeight;
+            float target = TargetForwardGaitWeight;
+            // The ratio and the amount of forward motion are independent.
+            // Braking between two moving gaits never brings Idle into the mix.
+            float targetShare = target > GaitBlendEpsilon ? targetGaitWeights[RunGait] / target : forwardRunShare;
+            forwardRunShare = ApproachGaitWeight(forwardRunShare, targetShare, ref forwardRunShareVelocity,
+                immediate || weight <= GaitBlendEpsilon, deltaTime);
+            weight = ApproachGaitWeight(weight, target, ref forwardGaitWeightVelocity, immediate, deltaTime);
+            gaitWeights[RunGait] = weight * forwardRunShare;
+            gaitWeights[WalkGait] = weight - gaitWeights[RunGait];
+        }
+
+        private static float ApproachGaitWeight(float weight, float target, ref float velocity, bool immediate, float deltaTime)
+        {
+            if (!immediate)
+            {
+                if (deltaTime <= 0f) return weight;
+                float time = target > weight ? LocomotionBlendInTime : LocomotionBlendOutTime;
+                float next = Mathf.SmoothDamp(weight, target, ref velocity, time, Mathf.Infinity, deltaTime);
+                float bounded = Mathf.Clamp01(next);
+                if (bounded != next) velocity = 0f;
+                if (Mathf.Abs(bounded - target) >= GaitBlendEpsilon) return bounded;
+            }
+
+            velocity = 0f;
+            return target;
+        }
+
+        private void AdvanceGaitTransition(float deltaTime)
+        {
+            float target = 0f;
+            float desiredWeight = TargetForwardGaitWeight;
+            if (forwardGaitDominant && desiredWeight > GaitBlendEpsilon && fallAmount <= .001f)
+            {
+                float visibleMotion = Mathf.Min(ForwardGaitWeight, desiredWeight);
+                float weight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.4f, .9f, visibleMotion));
+                float change = 4f * (targetGaitWeights[RunGait] / desiredWeight - forwardRunShare);
+                target = weight * change / (1f + Mathf.Abs(change));
+            }
+
+            // The torso gathers or checks the stride first. The arms finish
+            // their swing more slowly and carry their velocity through a reversal.
+            gaitTransitionTorso.Advance(target, deltaTime);
+            gaitTransitionArms.Advance(target, deltaTime);
+        }
+
+        private void ResetGaitTransition()
+        {
+            gaitTransitionTorso.Reset();
+            gaitTransitionArms.Reset();
+        }
 
         private void AdvanceTravelWeight(float deltaTime)
         {

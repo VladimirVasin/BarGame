@@ -68,6 +68,8 @@ namespace BarPromenade
         private float animationSpeed = 0.91f;
         private float targetWalkWeight;
         private float pendingEvaluationTime;
+        private float walkCycleMetres;
+        private float pendingWalkSeconds;
         private float groundedFootHeightOffset;
         private bool groundedFootHeightOffsetCaptured;
         private float archetypeGroundTrim;
@@ -94,6 +96,8 @@ namespace BarPromenade
         public bool IsStandingInBus => standing != null && standing.IsBound;
         public float WalkWeight { get; private set; }
         public float AnimationSpeed => animationSpeed;
+        internal float WalkCycle => walkPlayable.IsValid() && activeWalkClip.length > 0f
+            ? (float)(walkPlayable.GetTime() / activeWalkClip.length) : 0f;
         public CityPedestrianAssetRegistry Registry => registry;
         public AnimationClip AuthoredActionClip => authoredActionClip;
         public float AuthoredActionWeight => authoredActionWeight;
@@ -160,6 +164,8 @@ namespace BarPromenade
             var defaultBody = registry.GetComponent<CityPedestrianDefaultNpcBody>();
             defaultBodyShape = defaultBody != null && defaultBody.Character != null
                 ? defaultBody.Character.GetComponent<DefaultNpcBodyShape>() : null;
+            walkCycleMetres = defaultBody != null && defaultBody.Character != null
+                ? CityPedestrianResources.DefaultNpcWalkCycleMetres * defaultBody.Character.transform.localScale.y : 0f;
             if (registry.Animator == null ||
                 registry.IdleClip == null ||
                 registry.WalkClip == null)
@@ -236,9 +242,10 @@ namespace BarPromenade
                 ? Mathf.Repeat(phase01, 1f)
                 : 0f;
             pendingEvaluationTime = 0f;
+            pendingWalkSeconds = 0f;
             MinimumEvaluationInterval = 0f;
             idlePlayable.SetSpeed(1d);
-            walkPlayable.SetSpeed(animationSpeed);
+            walkPlayable.SetSpeed(walkCycleMetres > 0f ? 0f : animationSpeed);
             idlePlayable.SetTime(phase * activeIdleClip.length);
             walkPlayable.SetTime(phase * activeWalkClip.length);
             EvaluateGraph(0f);
@@ -454,6 +461,12 @@ namespace BarPromenade
             float deltaTime,
             bool moving,
             bool immediately)
+            => Advance(deltaTime, moving, immediately, null);
+
+        internal void AdvanceTravelled(float deltaTime, bool moving, Vector3 displacement)
+            => Advance(deltaTime, moving, false, displacement);
+
+        private void Advance(float deltaTime, bool moving, bool immediately, Vector3? displacement)
         {
             if (!IsInitialized)
             {
@@ -462,6 +475,20 @@ namespace BarPromenade
 
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
             SetMoving(IsSeated || IsStandingInBus ? false : moving, immediately);
+            if (walkCycleMetres > 0f && IsMoving && safeDeltaTime > 0f)
+            {
+                float clipSeconds = safeDeltaTime * animationSpeed;
+                if (displacement.HasValue)
+                {
+                    Vector3 planar = displacement.Value;
+                    planar.y = 0f;
+                    float distance = planar.magnitude;
+                    clipSeconds = IsFinite(distance) ? activeWalkClip.length * distance / walkCycleMetres : 0f;
+                }
+                // Accumulate before the render interval gate so distant walkers
+                // consume all of their travel when the pose is next evaluated.
+                pendingWalkSeconds += clipSeconds;
+            }
             if (!immediately &&
                 Mathf.Abs(WalkWeight - targetWalkWeight) > 0.0001f)
             {
@@ -528,6 +555,7 @@ namespace BarPromenade
             WalkWeight = 0f;
             targetWalkWeight = 0f;
             pendingEvaluationTime = 0f;
+            pendingWalkSeconds = 0f;
             MinimumEvaluationInterval = 0f;
             archetypeGroundTrim = 0f;
             archetypeGroundTrimResolved = false;
@@ -646,6 +674,11 @@ namespace BarPromenade
             seatedPose?.RestoreBones();
             legLayer.Restore();
             attention.Restore();
+            if (pendingWalkSeconds > 0f)
+            {
+                walkPlayable.SetTime(walkPlayable.GetTime() + pendingWalkSeconds);
+                pendingWalkSeconds = 0f;
+            }
             graph.Evaluate(deltaTime);
             if (IsStandingInBus)
             {
@@ -815,6 +848,7 @@ namespace BarPromenade
             WalkWeight = 0f;
             targetWalkWeight = 0f;
             pendingEvaluationTime = 0f;
+            pendingWalkSeconds = 0f;
             MinimumEvaluationInterval = 0f;
             authoredActionWeight = 0f;
             if (locomotionMixer.IsValid())
@@ -931,10 +965,8 @@ namespace BarPromenade
                 activeWalkClip != null &&
                 activeWalkClip.length > 0.0001f)
             {
-                float cycle = (float)(walkPlayable.GetTime() /
-                                      activeWalkClip.length);
                 PlayerFootPlacementRules.FootPlantAmounts(
-                    cycle,
+                    WalkCycle,
                     false,
                     0.68f,
                     out float left,
