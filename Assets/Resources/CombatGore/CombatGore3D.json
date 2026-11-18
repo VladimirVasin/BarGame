@@ -30,11 +30,14 @@
     },
     "Npc": {
       "path": "Assets/Resources/VillageLife/StationWorker.fbx",
-      "sha256": "465234396ca2fe01c4966588b2be61b149d52c12671c003a40a323bcf1a73af8",
+      "sha256": "adde7e742758910909373f41089156a29ec6c139d4d8d2c68f16cbfd58175773",
       "renderers": [
         "CLO_Hat_everydayBand",
         "CLO_Hat_everydayCrown",
         "CLO_Hat_everydayPeak",
+        "CLO_Hat_transitBand",
+        "CLO_Hat_transitCrown",
+        "CLO_Hat_transitPeak",
         "CLO_Hat_warmCrown",
         "CLO_Hat_warmEarFlap.L",
         "CLO_Hat_warmEarFlap.R",
@@ -3113,6 +3116,72 @@
           ]
         },
         {
+          "name": "CLO_Hat_transitBand",
+          "polygons": 18,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            2,
+            4,
+            2,
+            2,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "name": "CLO_Hat_transitCrown",
+          "polygons": 66,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            8,
+            8,
+            10,
+            8,
+            8,
+            8,
+            8,
+            8
+          ]
+        },
+        {
+          "name": "CLO_Hat_transitPeak",
+          "polygons": 64,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            6,
+            26,
+            26,
+            6
+          ]
+        },
+        {
           "name": "CLO_Hat_warmCrown",
           "polygons": 112,
           "sector_polygons": [
@@ -3720,7 +3789,7 @@
               0.10675
             ]
           },
-          "semantic_sha256": "fa3580f0d6f9c7217e57104b874918f457a4ea4478adba85b4909eb4fd4f8f57"
+          "semantic_sha256": "624d19b2641f2a96b5305958c1c3e8121604effa3775f35ce3a598421e077938"
         },
         {
           "name": "Sector00__GEO_Ear.L",
@@ -3744,7 +3813,7 @@
               0.041847
             ]
           },
-          "semantic_sha256": "ea91edc3c0d299a1048f9e9c9098dc1925c7e7d668682c82135eb122b5ed6bd8"
+          "semantic_sha256": "71545469048e082b714377471411026c8779532531f7013d3d4febfab4eee432"
         },
         {
           "name": "Sector00__GEO_EarFold.L",
@@ -3768,7 +3837,7 @@
               0.009957
             ]
           },
-          "semantic_sha256": "6b1913f69c4dba5db6858cefeb52279af5ee4447ac104227efd81445e93f2666"
+          "semantic_sha256": "5d2ade40b03c81acec2c14422f47b05a592cab37e71a9e6e92359ceee182a2be"
         },
         {
           "name": "Sector00__GEO_Head",
@@ -3792,7 +3861,7 @@
               0.085192
             ]
           },
-          "semantic_sha256": "d14652febf2e88636c183e1d65315ce71ce46f94644ce432910e1fe16c54c9b7"
+          "semantic_sha256": "97a523c65aedd3eea4033a3aa4f6b055dded0f73df48e6c185961779476953f2"
         },
         {
           "name": "Sector00__HAIR_Sides",
@@ -3801,22 +3870,22 @@
           "triangles": 8,
           "bounds_unity_m": {
             "min": [
-              0.082014,
+              0.080994,
               1.567621,
               -0.040886
             ],
             "max": [
-              0.108511,
+              0.10982,
               1.630684,
-              0.043885
+              0.043022
             ],
             "size": [
-              0.026497,
+              0.028826,
               0.063063,
-              0.084771
+              0.083908
             ]
           },
-          "semantic_sha256": "3b88ff8bedba7bd736bd028f78368b9dfab988df7664dcf2268e77e614efd6bf"
+          "semantic_sha256": "94f0c31c67a6eb61370b02e129d32538781a29758a0eeba84aa03b5dc32e6d4c"
         },
         {
           "name": "Sector00__Interior",
@@ -3864,7 +3933,7 @@
               0.07215
             ]
           },
-          "semantic_sha256": "e250174fa7997bcf61c0891dae6ceb5c5ea82b88d1c43dc585b3f6676bfb79ec"
+          "semantic_sha256": "d86c4aa9679b955ed2ce2667a41e6c3eaef16d2fe2a222bb47035c2fec6d0be9"
         },
         {
           "name": "Sector01__Interior",
@@ -3912,7 +3981,7 @@
               0.07215
             ]
           },
-          "semantic_sha256": "ea8f27e2841639e46cec28b3f26b92a50552ad81ef2c615dd887b3265efe174c"
+          "semantic_sha256": "3c1e43e74a5461fcdf91cc8dfb8c2bdeca1be47face0d741ffccea284c109715"
         },
         {
           "name": "Sector02__Interior",
@@ -3960,7 +4029,7 @@
               0.10675
             ]
           },
-          "semantic_sha256": "361157b3bd1d0a81505152caa4ca461667969b8674077faa109286de3df1f6b0"
+          "semantic_sha256": "4c8f68ddac57cedca3b7dde0e7f49eca13c4848494695392f5505060a756f4af"
         },
         {
           "name": "Sector03__GEO_Ear.R",
@@ -3984,7 +4053,7 @@
               0.041847
             ]
           },
-          "semantic_sha256": "91f367a98709b9bbed7d56b170e70c915e720f8fce31e08298a8797bc3ea764b"
+          "semantic_sha256": "89f86fb6fc74f0042a60b9c84fa0d922f883342c8181a857c81dd35af87c7a97"
         },
         {
           "name": "Sector03__GEO_EarFold.R",
@@ -4008,7 +4077,7 @@
               0.009957
             ]
           },
-          "semantic_sha256": "633be2b564c305799cdad722ead965906c325be2e71d2a451260bde60d752d84"
+          "semantic_sha256": "9006700906803bcee6c95b75a7049181c46f157d3698abefd37d6c2caf270905"
         },
         {
           "name": "Sector03__GEO_Head",
@@ -4032,7 +4101,7 @@
               0.085192
             ]
           },
-          "semantic_sha256": "dc7172e0d1687ea8484c9c5de3b45724e62c0c2490d46b87ba4fcfc459ff3a2b"
+          "semantic_sha256": "71f71e0c6c88c5ebddf59e028d7a208b89df04bc7bd4cf9353c996f244474656"
         },
         {
           "name": "Sector03__HAIR_Sides",
@@ -4041,22 +4110,22 @@
           "triangles": 8,
           "bounds_unity_m": {
             "min": [
-              -0.108511,
+              -0.107509,
               1.567621,
               -0.040886
             ],
             "max": [
-              -0.082014,
+              -0.082696,
               1.630684,
-              0.043885
+              0.044461
             ],
             "size": [
-              0.026497,
+              0.024813,
               0.063063,
-              0.084771
+              0.085347
             ]
           },
-          "semantic_sha256": "92e7f3084a31c163d226abdf6fd452087af338d33402602b7a2c134299103927"
+          "semantic_sha256": "cf6acf62ae1549e3027e8d0d81b924a556d5f25a11dd91e867803c99f48db42a"
         },
         {
           "name": "Sector03__Interior",
@@ -4104,7 +4173,7 @@
               0.034587
             ]
           },
-          "semantic_sha256": "c6cf5f7bac75feba1bfa763c596c6a1ea723a4c051f0c5569c886d5cd8304e6f"
+          "semantic_sha256": "ddb0971478b128bb37294d11a826a21f9b03598166a4d0c579e5cccb2a1e989b"
         },
         {
           "name": "Sector04__GEO_FaceSurface",
@@ -4152,7 +4221,7 @@
               0.027046
             ]
           },
-          "semantic_sha256": "b39f089cc70fcfbe91c021a448ad4947293b83b6b857ac65d62f8c1504d52202"
+          "semantic_sha256": "3fc7c5ba3449bf72d70a38be4ea8ccc141b7df323fe5d7c60d1fedd5369f11c0"
         },
         {
           "name": "Sector04__HAIR_Sides",
@@ -4161,22 +4230,22 @@
           "triangles": 2,
           "bounds_unity_m": {
             "min": [
-              -0.106977,
+              -0.105737,
               1.573632,
               -0.06069
             ],
             "max": [
               -0.09972,
               1.62011,
-              -0.037795
+              -0.037587
             ],
             "size": [
-              0.007257,
+              0.006017,
               0.046478,
-              0.022895
+              0.023103
             ]
           },
-          "semantic_sha256": "199aad63460b2fddc97c3cb99293f9f67e260f237471f16e23cdd8900621136a"
+          "semantic_sha256": "0e45533caa7ab3217ed9478149a60d5d2b5896bae528269e80774aec8d5f785b"
         },
         {
           "name": "Sector04__Interior",
@@ -4320,7 +4389,7 @@
               0.034587
             ]
           },
-          "semantic_sha256": "0c937e0fb6144d042038397c8004be4382cfa387b08f4c3ef4c0d25d98629b38"
+          "semantic_sha256": "0fc5e35d15d0ae1b2321c1e3f7d52551ce70ba78cce7d89e30a03c521cebaa8e"
         },
         {
           "name": "Sector07__GEO_FaceSurface",
@@ -4368,7 +4437,7 @@
               0.027046
             ]
           },
-          "semantic_sha256": "da283d0b78eaeafe9252a7d2014ab7450aa1ebbaa8ea6bd4a630c0d14a104856"
+          "semantic_sha256": "09ab8e7b8371ea330ea81dcc8e7c42bc174273a790285b7928f72eba62abc38e"
         },
         {
           "name": "Sector07__HAIR_Sides",
@@ -4377,22 +4446,22 @@
           "triangles": 2,
           "bounds_unity_m": {
             "min": [
-              0.09972,
+              0.09939,
               1.573632,
               -0.06069
             ],
             "max": [
-              0.106977,
+              0.10732,
               1.62011,
-              -0.037795
+              -0.037853
             ],
             "size": [
-              0.007257,
+              0.00793,
               0.046478,
-              0.022895
+              0.022837
             ]
           },
-          "semantic_sha256": "7631374cd9f306414bb92bb9aca49c34550871e10f26de6f0597f444503d55fe"
+          "semantic_sha256": "6ec96ac2b2ce29a2dfab72eb612f144cf221e7198939c4f2f117b91e86ef5164"
         },
         {
           "name": "Sector07__Interior",
@@ -4440,7 +4509,7 @@
               0.128595
             ]
           },
-          "semantic_sha256": "3e556c8aed43415c56e016f0f7b0390c44a021cf53f4b3e0b73b62276e586ffe"
+          "semantic_sha256": "5d80a8de49741db8f406c07d52214c769a6869fa952a5edee13cccfdd0770622"
         },
         {
           "name": "Sector08__CLO_Hat_everydayCrown",
@@ -4464,7 +4533,55 @@
               0.118595
             ]
           },
-          "semantic_sha256": "8e9c99abf3a16fa6381067f8d2c1caba4f2d2fa76feda54a7c0a9b710da75aa6"
+          "semantic_sha256": "8451af3bdf1ac9eb993ea55b4517a3b6156bd8377e2cad0a97d514075abe0721"
+        },
+        {
+          "name": "Sector08__CLO_Hat_transitBand",
+          "vertices": 6,
+          "polygons": 2,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              0.076368,
+              1.668,
+              -0.02
+            ],
+            "max": [
+              0.116,
+              1.691,
+              0.069803
+            ],
+            "size": [
+              0.039632,
+              0.023,
+              0.089803
+            ]
+          },
+          "semantic_sha256": "486a16d218391ab2910f13e030df31f48cda7f55e238ae49a8182eae2278d506"
+        },
+        {
+          "name": "Sector08__CLO_Hat_transitCrown",
+          "vertices": 15,
+          "polygons": 8,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              0.051619,
+              1.67,
+              -0.021
+            ],
+            "max": [
+              0.114,
+              1.749,
+              0.069267
+            ],
+            "size": [
+              0.062381,
+              0.079,
+              0.090267
+            ]
+          },
+          "semantic_sha256": "2b0959a763d57cff269a846a605a4a10c1c6109a497a715c9b4471e1779037f4"
         },
         {
           "name": "Sector08__CLO_Hat_warmCrown",
@@ -4488,7 +4605,7 @@
               0.096837
             ]
           },
-          "semantic_sha256": "5adf5cfda3aeb685652b449f15b04b1571b2c9d39abae8b072f9a953b65a23ae"
+          "semantic_sha256": "13e89d30ac1dc4b707523ac242ad9f8efde58553b89adb38262a5268c065da5b"
         },
         {
           "name": "Sector08__CLO_Hat_warmEarFlap.L",
@@ -4512,7 +4629,7 @@
               0.10675
             ]
           },
-          "semantic_sha256": "1603ee152cc36aca1ba8e114994baab51cf19ec7fa35674db69c63ffae05c36e"
+          "semantic_sha256": "3f2b4ef03a43e195d792386f4aeda461ed08b7e3f0d0e86c8cb5a243e7d2618a"
         },
         {
           "name": "Sector08__CLO_Hat_workCrown",
@@ -4536,7 +4653,7 @@
               0.103704
             ]
           },
-          "semantic_sha256": "2c60033e842fc9f0d18fedc5c46ddae9f199a61dcf199edcc0c72900a6acf910"
+          "semantic_sha256": "5a85425c76c94a8b01b1b23d196d7c2a22701c7b79e947af0b1baf67a4f4c826"
         },
         {
           "name": "Sector08__CLO_Hat_workFold",
@@ -4560,7 +4677,7 @@
               0.087487
             ]
           },
-          "semantic_sha256": "65b33e84fb397ffaf2ae48dcf2a68199ea37d5b38177b5772a611581a299e356"
+          "semantic_sha256": "40ee7ce73538f57a00305005440292597f126bad66a087074b289cb363d4181a"
         },
         {
           "name": "Sector08__GEO_Ear.L",
@@ -4584,7 +4701,7 @@
               0.03624
             ]
           },
-          "semantic_sha256": "f756a2b86c5540dd893d5a34b86f4ad29918449fbcbf5d94efaec3a3ab55427e"
+          "semantic_sha256": "eadf4ca12ad444aa30a79446a610b5cf34f8fa6719a8ef87140d0b8c1a612fd3"
         },
         {
           "name": "Sector08__GEO_EarFold.L",
@@ -4608,7 +4725,7 @@
               0.012765
             ]
           },
-          "semantic_sha256": "273a2842ec919848619a875feb34431fe331067460c0db13e032fe0986e18571"
+          "semantic_sha256": "c5b46140266dae4bf97fab0975bea80dfbcc1c5c8f8edb2c0a5ade4c4d935d53"
         },
         {
           "name": "Sector08__GEO_FaceSurface",
@@ -4656,7 +4773,7 @@
               0.097714
             ]
           },
-          "semantic_sha256": "19f50387a571094e385677cd2d49007e9710e3c92ecc0047e97265002d636d3a"
+          "semantic_sha256": "605827e925d72f970d4be4b85581d8b45dc3b0a457281e909d3a0165dead28af"
         },
         {
           "name": "Sector08__HAIR_Crown",
@@ -4680,7 +4797,7 @@
               0.098167
             ]
           },
-          "semantic_sha256": "20dd1d53314b9552a5d1623f27524562566fe697eb7ebbaa41181f898301c70b"
+          "semantic_sha256": "83e40ed25095f2e8b6b4707736bfaf6b090c3593ec45de7a0a966ce5b443d83c"
         },
         {
           "name": "Sector08__HAIR_Sides",
@@ -4691,20 +4808,20 @@
             "min": [
               0.042272,
               1.607466,
-              -0.049986
+              -0.0493
             ],
             "max": [
-              0.108511,
+              0.10982,
               1.727,
-              0.046695
+              0.045983
             ],
             "size": [
-              0.066239,
+              0.067548,
               0.119534,
-              0.096681
+              0.095283
             ]
           },
-          "semantic_sha256": "d138be9d64994e4f24e8f9746c6a2b3b506e0d6e45c058b4e4906bbc1236c355"
+          "semantic_sha256": "523c266f61c5f29faffaf07c40b43c9b3a29517e86d0520f1c948d982aa66805"
         },
         {
           "name": "Sector08__Interior",
@@ -4752,7 +4869,7 @@
               0.037925
             ]
           },
-          "semantic_sha256": "bfd0e8dd0234c95778402ec024195b8c474d7fd0fc91bef422683f292363ff9f"
+          "semantic_sha256": "c58f9ac413333e1424b004f8010a73d3f1db05a1c23ff7e9ea6ba89f55f35a07"
         },
         {
           "name": "Sector09__CLO_Hat_everydayCrown",
@@ -4776,7 +4893,55 @@
               0.132
             ]
           },
-          "semantic_sha256": "d1f8bbaa25861488e35d38286459f8f052b3f1fca21600cc34f98eab3e2dc044"
+          "semantic_sha256": "ae71d8baa6a5ba671b03b7e8b13309cf2f9e7ac2a0115e19d3693212cad6dbd6"
+        },
+        {
+          "name": "Sector09__CLO_Hat_transitBand",
+          "vertices": 6,
+          "polygons": 2,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.668,
+              0.06461
+            ],
+            "max": [
+              0.082024,
+              1.691,
+              0.107
+            ],
+            "size": [
+              0.082024,
+              0.023,
+              0.04239
+            ]
+          },
+          "semantic_sha256": "071accc0b8ca0e6008b18ca896bcebe0f5578fc22d09961eb5a43d5ee7458cc7"
+        },
+        {
+          "name": "Sector09__CLO_Hat_transitCrown",
+          "vertices": 15,
+          "polygons": 8,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.67,
+              0.041933
+            ],
+            "max": [
+              0.08061,
+              1.749,
+              0.105
+            ],
+            "size": [
+              0.08061,
+              0.079,
+              0.063067
+            ]
+          },
+          "semantic_sha256": "7207da870d04517d79169caa7d7ae49c820f7d8af8594a8ff404b4cd089c4de7"
         },
         {
           "name": "Sector09__CLO_Hat_warmCrown",
@@ -4800,7 +4965,7 @@
               0.116992
             ]
           },
-          "semantic_sha256": "05bba5443fd3b27313aeff4b1a7fffbd1fded5c2c63366b11257d4e1c417a480"
+          "semantic_sha256": "4ae7128bb2343ef77741ab814a02a06ea56dbd6204d3924b89f9f97b74bfa441"
         },
         {
           "name": "Sector09__CLO_Hat_workCrown",
@@ -4824,7 +4989,7 @@
               0.157787
             ]
           },
-          "semantic_sha256": "5a17e14acc06cb1bf713f2ad69696042becf3309a881f65913342d29dde70d72"
+          "semantic_sha256": "4251ddf6b0e8349e16ce4def64e3a527bfb061549e599a32738b87d6b1c9c903"
         },
         {
           "name": "Sector09__CLO_Hat_workFold",
@@ -4848,7 +5013,7 @@
               0.221
             ]
           },
-          "semantic_sha256": "120a93f8415d890659609401badf7a0db0d00e34b07c64d8a06189205a4a98ad"
+          "semantic_sha256": "84dcc542b4957e2679caa59e844670d08b0035693b9ac33c6c43ffc9abc29377"
         },
         {
           "name": "Sector09__GEO_FaceSurface",
@@ -4896,7 +5061,7 @@
               0.085051
             ]
           },
-          "semantic_sha256": "b7c99650d77065b9ab4b5880aadb26007a670b6ae4e3979942d26e4ca2f679a3"
+          "semantic_sha256": "beb4b338e804b3ec07690cab9e35e5e9bd113f635aec00e63ef333bdc34e89b2"
         },
         {
           "name": "Sector09__HAIR_Crown",
@@ -4920,7 +5085,7 @@
               0.121569
             ]
           },
-          "semantic_sha256": "aaef490a1814be4c36732cc6e5cdb19bae0933a3f2e6360f64aaa13a8641f106"
+          "semantic_sha256": "1a0515f5c5a7853b3f9b1c63c729f74f143badebf45996187519ee939134cef8"
         },
         {
           "name": "Sector09__HAIR_Sides",
@@ -4936,15 +5101,15 @@
             "max": [
               0.08321,
               1.727,
-              0.079345
+              0.080346
             ],
             "size": [
               0.08321,
               0.128421,
-              0.055802
+              0.056803
             ]
           },
-          "semantic_sha256": "996cd45206ccf984f81da036ce2b3847c278ba911b64e5743de875c71ca9a3b2"
+          "semantic_sha256": "a15f254c85a99097ef4556443116af9b5ccf0fef695cfec4198874507657ec63"
         },
         {
           "name": "Sector09__Interior",
@@ -4992,7 +5157,7 @@
               0.236
             ]
           },
-          "semantic_sha256": "babcfa7316c133e952005bf2ed1dfa2b22d2bfa8cf8aedbce974928c88942875"
+          "semantic_sha256": "4540000801de836c407e07af2543f793eed1c916884548bc16d8c6c9c627d94f"
         },
         {
           "name": "Sector10__CLO_Hat_everydayCrown",
@@ -5016,7 +5181,55 @@
               0.132
             ]
           },
-          "semantic_sha256": "a054a9d13ccc6ec87759c186078b3c605efe5c70f7c7b580962410991eb689b6"
+          "semantic_sha256": "efe615ed3443ad3bd9e12a5ec39bbdc05028618fef9a6a4593ee734bee87db1a"
+        },
+        {
+          "name": "Sector10__CLO_Hat_transitBand",
+          "vertices": 32,
+          "polygons": 4,
+          "triangles": 32,
+          "bounds_unity_m": {
+            "min": [
+              -0.116,
+              1.668,
+              -0.147
+            ],
+            "max": [
+              0.116,
+              1.691,
+              0.107
+            ],
+            "size": [
+              0.232,
+              0.023,
+              0.254
+            ]
+          },
+          "semantic_sha256": "38cf43bc8cd53c6d756d273957cd699eddf2144b63f8627fe71ec27895425191"
+        },
+        {
+          "name": "Sector10__CLO_Hat_transitCrown",
+          "vertices": 41,
+          "polygons": 10,
+          "triangles": 44,
+          "bounds_unity_m": {
+            "min": [
+              -0.107,
+              1.67,
+              -0.127
+            ],
+            "max": [
+              0.107,
+              1.749,
+              0.105
+            ],
+            "size": [
+              0.214,
+              0.079,
+              0.232
+            ]
+          },
+          "semantic_sha256": "71ce5c77bf107c6ec34deb10601492a4dcca409456e6a12323865e6b541caf75"
         },
         {
           "name": "Sector10__CLO_Hat_warmCrown",
@@ -5040,7 +5253,7 @@
               0.116992
             ]
           },
-          "semantic_sha256": "cfff58fcd3aeff9a4a8760127467f398f6238460cc095e8219a94e6b95b1983b"
+          "semantic_sha256": "eac35ce4aa6b0192a8b8b8d8d618dfaecd3af8057e3dde836466a5312604f4e0"
         },
         {
           "name": "Sector10__CLO_Hat_workCrown",
@@ -5064,7 +5277,7 @@
               0.157787
             ]
           },
-          "semantic_sha256": "144edf7864b6600bd083bebf781b315c56175102b67901a711279f001bcfa139"
+          "semantic_sha256": "b1539d37d34f3c98ace29ca0147e09af428be8276b65d6120a401895f7e117f3"
         },
         {
           "name": "Sector10__CLO_Hat_workFold",
@@ -5088,7 +5301,7 @@
               0.226
             ]
           },
-          "semantic_sha256": "7c1c73c0c734f39756afd0baab9ca997379c23c2d2850d67a8e845e1e668b8ef"
+          "semantic_sha256": "41c95b2d8b80e3b062adbe14a2144938048c5d9cef8853c4f30a558f32a2ebc6"
         },
         {
           "name": "Sector10__GEO_FaceSurface",
@@ -5136,7 +5349,7 @@
               0.085051
             ]
           },
-          "semantic_sha256": "3eb7e7a6bfa831fc774aa368bffa21670c2a3f5efacf162babbfa9f4d9629c61"
+          "semantic_sha256": "b5e62675a34702115d98a19e02caf0f27ac5770a98889a5f17d1cb8f92b2163d"
         },
         {
           "name": "Sector10__HAIR_Crown",
@@ -5160,7 +5373,7 @@
               0.121569
             ]
           },
-          "semantic_sha256": "d0723108bee7337c77da5fcb0899d188488e7b9decb3faa2f71e28227b658c2a"
+          "semantic_sha256": "a5251075c3e98d1e62b183c9fd8bf35b618edb11e9e4da53995fb53f668981c1"
         },
         {
           "name": "Sector10__HAIR_Sides",
@@ -5176,15 +5389,15 @@
             "max": [
               0.0,
               1.727,
-              0.079345
+              0.080346
             ],
             "size": [
               0.08321,
               0.128421,
-              0.055802
+              0.056803
             ]
           },
-          "semantic_sha256": "41a6acf8cbf320a83538f51d5dcbf2e6662fd9158ce3b14c2b2e360cec8c685e"
+          "semantic_sha256": "9532ca45a4329bd86b0129cccf46f6f94f80f3854717c04869fee106b09ec910"
         },
         {
           "name": "Sector10__Interior",
@@ -5232,7 +5445,7 @@
               0.128595
             ]
           },
-          "semantic_sha256": "4a4f31163387ed2e8418da9b84826e5f352c8fd2407e4ceee4d4d76581ce919e"
+          "semantic_sha256": "5aedda53e2b85b677df7fbb15d026e71c98a7fa173cc46f194e405bd295f3c22"
         },
         {
           "name": "Sector11__CLO_Hat_everydayCrown",
@@ -5256,7 +5469,55 @@
               0.118595
             ]
           },
-          "semantic_sha256": "6095958cbc9274bffb9534136f06645d670e2275b2cf68e53611dd0ca7fb9550"
+          "semantic_sha256": "764455dfe1a8065d389b354bf1f4b75dc2beb267b745c33ea08544abc8ea1c71"
+        },
+        {
+          "name": "Sector11__CLO_Hat_transitBand",
+          "vertices": 6,
+          "polygons": 2,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              -0.116,
+              1.668,
+              -0.02
+            ],
+            "max": [
+              -0.076368,
+              1.691,
+              0.069803
+            ],
+            "size": [
+              0.039632,
+              0.023,
+              0.089803
+            ]
+          },
+          "semantic_sha256": "d0cf7fe92bc6be692926e296afbd3db493bd7aa24703b7995cb9e983bf5dd520"
+        },
+        {
+          "name": "Sector11__CLO_Hat_transitCrown",
+          "vertices": 15,
+          "polygons": 8,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              -0.114,
+              1.67,
+              -0.021
+            ],
+            "max": [
+              -0.051619,
+              1.749,
+              0.069267
+            ],
+            "size": [
+              0.062381,
+              0.079,
+              0.090267
+            ]
+          },
+          "semantic_sha256": "cc1c1260bf7ddcaf903f7033ada63ae2756fba9f5b14f66bbefad21e84683b8a"
         },
         {
           "name": "Sector11__CLO_Hat_warmCrown",
@@ -5280,7 +5541,7 @@
               0.096837
             ]
           },
-          "semantic_sha256": "5f8424b838a3e28ad14000bf8001d903ea570210da902c7e96459af9a80106f3"
+          "semantic_sha256": "ea61ffac45262293b429aa2a5f797b23219f69c87cf4e4319bd7a32c9a2bd038"
         },
         {
           "name": "Sector11__CLO_Hat_warmEarFlap.R",
@@ -5304,7 +5565,7 @@
               0.10675
             ]
           },
-          "semantic_sha256": "43d082e25b4f070fc467169cf77bc770f1bf4c0abc1b10c715f65b191a60d6de"
+          "semantic_sha256": "08c2dbf6d497b78a686330ef6dbcb6fa0d8cbd9e69152a5a9d5c943ee4486f5b"
         },
         {
           "name": "Sector11__CLO_Hat_workCrown",
@@ -5328,7 +5589,7 @@
               0.103704
             ]
           },
-          "semantic_sha256": "acca3b40e0ad2648ab2aaee6fa38a614dfaf5c681bf23cb61b177f6883e09dd3"
+          "semantic_sha256": "5668887d70d343c955895babd6a9918c42938af8559d41440c8df2c52feee94b"
         },
         {
           "name": "Sector11__CLO_Hat_workFold",
@@ -5352,7 +5613,7 @@
               0.087487
             ]
           },
-          "semantic_sha256": "6b9631824458aab15da567a4085f555c9b26ed3d0f99c5a713d32e33b2ddac42"
+          "semantic_sha256": "8f1ea6c07884d6841e8702170c502e9fcb2dc4c2d4c3d8eec64da62dfdc9d099"
         },
         {
           "name": "Sector11__GEO_Ear.R",
@@ -5376,7 +5637,7 @@
               0.03624
             ]
           },
-          "semantic_sha256": "23babb07718ddcebfcf2cda9e5800cfdc0421766aa5638f7cb9d562acfc428da"
+          "semantic_sha256": "94dcf0a4918a0c3c08174e3898ee612f182153dcc4810b857b15e2593613c727"
         },
         {
           "name": "Sector11__GEO_EarFold.R",
@@ -5400,7 +5661,7 @@
               0.012765
             ]
           },
-          "semantic_sha256": "f58b36229ef6c3575b1a46af5b0ed9cc563724c2877fd7bae15193ff015dcabe"
+          "semantic_sha256": "ff8891f48011077e205197c7f81f80518da4941ee1a75ea6b1727441549947b8"
         },
         {
           "name": "Sector11__GEO_FaceSurface",
@@ -5448,7 +5709,7 @@
               0.097714
             ]
           },
-          "semantic_sha256": "65e3aa5599b223066156b86f01aafd8ffbe0a873b402e2d8c15c5382296c7c2e"
+          "semantic_sha256": "29ff9fd924122d5591accb36546b82914a24f4d0995f49749ef79faeb5d9d9b4"
         },
         {
           "name": "Sector11__HAIR_Crown",
@@ -5472,7 +5733,7 @@
               0.098167
             ]
           },
-          "semantic_sha256": "02966a4b093287232e61f85729484e979f271477b4b625f0e48bfaf53579c199"
+          "semantic_sha256": "ef5f17aaccf83071900c2fb12bab20b7f506d5c3d4a172d5ba542957ea2f9c46"
         },
         {
           "name": "Sector11__HAIR_Sides",
@@ -5481,22 +5742,22 @@
           "triangles": 26,
           "bounds_unity_m": {
             "min": [
-              -0.108511,
+              -0.107509,
               1.607466,
-              -0.049986
+              -0.049583
             ],
             "max": [
               -0.042272,
               1.727,
-              0.046695
+              0.047001
             ],
             "size": [
-              0.066239,
+              0.065237,
               0.119534,
-              0.096681
+              0.096584
             ]
           },
-          "semantic_sha256": "1a7be2c039fe65cbbd17107287af4c8aaf9a20fe866cd17ca093de6eb69ddbc3"
+          "semantic_sha256": "82ced78f60de7e8d94bc2f04b43593fdc024b76fbc10d6d55920ee815dd77f82"
         },
         {
           "name": "Sector11__Interior",
@@ -5544,7 +5805,7 @@
               0.044726
             ]
           },
-          "semantic_sha256": "af1b6021d3eb2af71bb7ecfd4023da315917d696401143bbeda96af976463930"
+          "semantic_sha256": "2d61ea189c16f9fb420a0f85b3c3e162b8dc3d60c8819cce0254cc04f66c46c1"
         },
         {
           "name": "Sector12__CLO_Hat_everydayCrown",
@@ -5568,7 +5829,7 @@
               0.093338
             ]
           },
-          "semantic_sha256": "99f1836ff97911dfc71019a1bc4dadea2f00d555a8a79a149c47fbd38e29b830"
+          "semantic_sha256": "e742d6b1e3d939281011f0083d34948dbb033be69b10301d8d19b4bf8fd7917b"
         },
         {
           "name": "Sector12__CLO_Hat_everydayPeak",
@@ -5592,7 +5853,79 @@
               0.087413
             ]
           },
-          "semantic_sha256": "0b3ca0bfdd2937807b6a57a041c9c83388cf13a5cb2320a06dc2ba7bd223a274"
+          "semantic_sha256": "e41fc2b7a4ab2080efbe92e0f6a2d87bd4eac373e9d5d1d88ee970f6bd4361a6"
+        },
+        {
+          "name": "Sector12__CLO_Hat_transitBand",
+          "vertices": 6,
+          "polygons": 2,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              -0.116,
+              1.668,
+              -0.109802
+            ],
+            "max": [
+              -0.076368,
+              1.691,
+              -0.016
+            ],
+            "size": [
+              0.039632,
+              0.023,
+              0.093802
+            ]
+          },
+          "semantic_sha256": "a3c182903b0791ce253854970f303543c162f1b090ba43b0daa780d2dd5ab4a8"
+        },
+        {
+          "name": "Sector12__CLO_Hat_transitCrown",
+          "vertices": 15,
+          "polygons": 8,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              -0.114,
+              1.67,
+              -0.107267
+            ],
+            "max": [
+              -0.051619,
+              1.749,
+              -0.015
+            ],
+            "size": [
+              0.062381,
+              0.079,
+              0.092267
+            ]
+          },
+          "semantic_sha256": "39ac344be0de8461fcd6d306940292494461d4898bc4cc49ff4ecf891f08e459"
+        },
+        {
+          "name": "Sector12__CLO_Hat_transitPeak",
+          "vertices": 12,
+          "polygons": 6,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              -0.092,
+              1.661636,
+              -0.121
+            ],
+            "max": [
+              -0.024895,
+              1.674364,
+              -0.044318
+            ],
+            "size": [
+              0.067105,
+              0.012728,
+              0.076682
+            ]
+          },
+          "semantic_sha256": "3e83304bb50cba61441603f37b012fcd7d07971b7acf27be521f02f9e76819df"
         },
         {
           "name": "Sector12__CLO_Hat_warmCrown",
@@ -5616,7 +5949,7 @@
               0.088162
             ]
           },
-          "semantic_sha256": "fedd1ca6d768998e004c8d9ff63bf9f0960fbfb410445ebb347d070aac88f03b"
+          "semantic_sha256": "a8f0894788d506b6efae62bc230b1a7a7a3219e6b512271edf30d069e724f5ce"
         },
         {
           "name": "Sector12__CLO_Hat_warmEarFlap.R",
@@ -5640,7 +5973,7 @@
               0.034587
             ]
           },
-          "semantic_sha256": "22fd3d0e5d14e1d8fd1df3fe64b4d2be4cbe62111c74b9b520ef652ca35c6fa0"
+          "semantic_sha256": "d8d633bf8b783706e3a736d667c00df71f70fac5ba549d6ff0683f373689cb96"
         },
         {
           "name": "Sector12__CLO_Hat_warmFrontFold",
@@ -5664,7 +5997,7 @@
               0.037
             ]
           },
-          "semantic_sha256": "423424fa365ff3f8745157952d0c3bc7c0badfebdd383ed8ce4a382e56368505"
+          "semantic_sha256": "506692c4a3f97acdd95d584d2b81fb7a8098ced80b72342449d8d45f4f3701b2"
         },
         {
           "name": "Sector12__CLO_Hat_workCrown",
@@ -5688,7 +6021,7 @@
               0.067371
             ]
           },
-          "semantic_sha256": "a0f821074e5a80dcc522fdc4804204b6522c71f622cf7b6723adeac015af72a6"
+          "semantic_sha256": "d55ef5f1471154091ec9c12839f3671cbd9d392085602aa87d2f2f98ff101b79"
         },
         {
           "name": "Sector12__CLO_Hat_workFold",
@@ -5712,7 +6045,7 @@
               0.062834
             ]
           },
-          "semantic_sha256": "ead3597b0d26c9addf1e712734e4292806ac10db533820db8a9ebf02246af353"
+          "semantic_sha256": "d534f164043ec842767c287d9a7056c6eb0ae980d6655d96d68c302c60d94b35"
         },
         {
           "name": "Sector12__GEO_FaceSurface",
@@ -5760,7 +6093,7 @@
               0.028139
             ]
           },
-          "semantic_sha256": "a23943fde2d91673f28786785fecfbfccdadaacdcd1250f0be9579c4b79aa0b3"
+          "semantic_sha256": "89ee150e6832193828a2c150cee538cbf0d886cb44f035201c2f44d640cc143b"
         },
         {
           "name": "Sector12__HAIR_Crown",
@@ -5784,7 +6117,7 @@
               0.032233
             ]
           },
-          "semantic_sha256": "efef6427811c9359c49ae47ba2aeec1415e47097ad86dc1b721b0c0c8d553e36"
+          "semantic_sha256": "db2d6b77bf683538d3f088cd83196ae39e613cfb1f2043bc1248a1279f0fb0f6"
         },
         {
           "name": "Sector12__HAIR_Sides",
@@ -5793,22 +6126,22 @@
           "triangles": 2,
           "bounds_unity_m": {
             "min": [
-              -0.106977,
+              -0.105737,
               1.611974,
-              -0.057322
+              -0.057259
             ],
             "max": [
-              -0.096924,
+              -0.095928,
               1.65574,
-              -0.031468
+              -0.031155
             ],
             "size": [
-              0.010053,
+              0.009809,
               0.043766,
-              0.025854
+              0.026104
             ]
           },
-          "semantic_sha256": "49066dfc0c7a3cfbfe5f1f963215351f01da2b32c108565719fd0bf4eb81a783"
+          "semantic_sha256": "e5ee69986e514ae5cb0fed5d3dda3a9054d2a05610c6107a1417cb749e84fd48"
         },
         {
           "name": "Sector12__Interior",
@@ -5856,7 +6189,7 @@
               0.043926
             ]
           },
-          "semantic_sha256": "68e3dab5e0ae1b5039553c134ffa12ca54ebdffe07932a0d3b334b59639944a4"
+          "semantic_sha256": "78eec81f3f9a37d114fe8f59ddfae2ad015a192a574bf8d36cdb16e98cb7b927"
         },
         {
           "name": "Sector13__CLO_Hat_everydayCrown",
@@ -5880,7 +6213,7 @@
               0.132
             ]
           },
-          "semantic_sha256": "fff4d10ee3a906abf5d8ed84e0cd1760803fef0c80e1b7e3aa0aa45d138bf98f"
+          "semantic_sha256": "2c63bb4258bed5e957aa37d27eca44e7e0cc20eea0710e45464a2d6c4e1d122b"
         },
         {
           "name": "Sector13__CLO_Hat_everydayPeak",
@@ -5904,7 +6237,79 @@
               0.12644
             ]
           },
-          "semantic_sha256": "98fed56d8329e046ed87c79db89fb7840b0ceebec6b0ab1c1be0a5b915777ebb"
+          "semantic_sha256": "7ec9bb50a896f0850c00b4ae4df120c31cb9c18e96a3783b38db765752f2d22f"
+        },
+        {
+          "name": "Sector13__CLO_Hat_transitBand",
+          "vertices": 6,
+          "polygons": 2,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              -0.082024,
+              1.668,
+              -0.147
+            ],
+            "max": [
+              0.0,
+              1.691,
+              -0.09661
+            ],
+            "size": [
+              0.082024,
+              0.023,
+              0.05039
+            ]
+          },
+          "semantic_sha256": "7fae501cd40e6d4e16edd5955d29762bf82fea611c91284ee74f5c96b52bb2b3"
+        },
+        {
+          "name": "Sector13__CLO_Hat_transitCrown",
+          "vertices": 15,
+          "polygons": 8,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              -0.08061,
+              1.67,
+              -0.143
+            ],
+            "max": [
+              0.0,
+              1.749,
+              -0.083932
+            ],
+            "size": [
+              0.08061,
+              0.079,
+              0.059068
+            ]
+          },
+          "semantic_sha256": "cd5e64884ff49765691b175e91b71c0485b69b4e8dbafbad7b0eb12647ee8d91"
+        },
+        {
+          "name": "Sector13__CLO_Hat_transitPeak",
+          "vertices": 27,
+          "polygons": 26,
+          "triangles": 36,
+          "bounds_unity_m": {
+            "min": [
+              -0.092,
+              1.659,
+              -0.204
+            ],
+            "max": [
+              0.0,
+              1.677,
+              -0.038
+            ],
+            "size": [
+              0.092,
+              0.018,
+              0.166
+            ]
+          },
+          "semantic_sha256": "ad731a519cdba9587d96af64292ba6f53a384bf171b33f2bb9e9bda321a14da2"
         },
         {
           "name": "Sector13__CLO_Hat_warmCrown",
@@ -5928,7 +6333,7 @@
               0.068889
             ]
           },
-          "semantic_sha256": "fbd337e4108384510748e7018aea009aac0ea33e2ef89ab7df4a9e4f5867ba47"
+          "semantic_sha256": "e81575eb5ee719bdb46ce3bc811f9b8003a2fc5dab854db77d616fc97c11acca"
         },
         {
           "name": "Sector13__CLO_Hat_workCrown",
@@ -5952,7 +6357,7 @@
               0.064296
             ]
           },
-          "semantic_sha256": "06748bf6817576116a0ef3899f1e05276a3ee4b6e267c22037c66e314bd13190"
+          "semantic_sha256": "1c38a1c982a1b98a4c4c6e5b02561cae8df14271f776b9302d2562c37d2dd6ca"
         },
         {
           "name": "Sector13__CLO_Hat_workFold",
@@ -5976,7 +6381,7 @@
               0.014069
             ]
           },
-          "semantic_sha256": "210aa1686ca90cdb1d091e462ab6cab3c4f7d43c136b7ba8c7344d87a7b1e19a"
+          "semantic_sha256": "8b190d9f46fdf59a2b721b01f67a72c15dad9e86a960cdc5745a2464775593a8"
         },
         {
           "name": "Sector13__GEO_FaceSurface",
@@ -6024,7 +6429,7 @@
               0.005719
             ]
           },
-          "semantic_sha256": "d37738e3c7811ec5a3386e7f6fb362d10f726483794d8a36c52ff5f6d3a56f22"
+          "semantic_sha256": "67a920b5af56a68b6df82ed354986b075b057d296b50b6665b2a1d8740a360ec"
         },
         {
           "name": "Sector13__Interior",
@@ -6072,7 +6477,7 @@
               0.043926
             ]
           },
-          "semantic_sha256": "167b2633c61c0c913e3aab085dc1f0fb7e32f5d4cd26b07e1b0433e69008d110"
+          "semantic_sha256": "dc0bbd03bdd74cf140178bd98ac3cc0fe4166304d440d8fe70b4a680d0536556"
         },
         {
           "name": "Sector14__CLO_Hat_everydayCrown",
@@ -6096,7 +6501,7 @@
               0.132
             ]
           },
-          "semantic_sha256": "c5cc82f64e841d40204c22f0fa75434e719193e959447a96623b96aa30a1a28c"
+          "semantic_sha256": "d735d505c9b2bff6a2e598aac3462bc5466c61fdb23927eafc32581bf6e65c93"
         },
         {
           "name": "Sector14__CLO_Hat_everydayPeak",
@@ -6120,7 +6525,79 @@
               0.12644
             ]
           },
-          "semantic_sha256": "d4e18432d6f84cb7fa8316cf4663f6d3e83947f1948e8479e88037fd07800579"
+          "semantic_sha256": "f6999b3b7d439ebf0b7a23f472686d604ab4111b085d7c2057dd37db0bd32237"
+        },
+        {
+          "name": "Sector14__CLO_Hat_transitBand",
+          "vertices": 6,
+          "polygons": 2,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.668,
+              -0.147
+            ],
+            "max": [
+              0.082024,
+              1.691,
+              -0.09661
+            ],
+            "size": [
+              0.082024,
+              0.023,
+              0.05039
+            ]
+          },
+          "semantic_sha256": "78c2f41af5c253494c212e2d8b3f52d8333a42e2c5f882209b3abe3764f8ee17"
+        },
+        {
+          "name": "Sector14__CLO_Hat_transitCrown",
+          "vertices": 15,
+          "polygons": 8,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.67,
+              -0.143
+            ],
+            "max": [
+              0.08061,
+              1.749,
+              -0.083932
+            ],
+            "size": [
+              0.08061,
+              0.079,
+              0.059068
+            ]
+          },
+          "semantic_sha256": "620b83e18107796b74b91526886cb71ef8f8ed18ca3922a74cadd787a39105ed"
+        },
+        {
+          "name": "Sector14__CLO_Hat_transitPeak",
+          "vertices": 27,
+          "polygons": 26,
+          "triangles": 36,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.659,
+              -0.204
+            ],
+            "max": [
+              0.092,
+              1.677,
+              -0.038
+            ],
+            "size": [
+              0.092,
+              0.018,
+              0.166
+            ]
+          },
+          "semantic_sha256": "cd1043410e16b4322bd9bc5aec579b3f34031ebb20f7a948138c2c62a42dd21c"
         },
         {
           "name": "Sector14__CLO_Hat_warmCrown",
@@ -6144,7 +6621,7 @@
               0.068889
             ]
           },
-          "semantic_sha256": "0c4628849757c8be500ceb2e10119f5d68ccc7b1119b6d56c4e77b524b8945e0"
+          "semantic_sha256": "3fbd18616fdeb3ed243047cbcf31f64719ab4d2d03f088ca5ef6d94b8ac67042"
         },
         {
           "name": "Sector14__CLO_Hat_warmFrontFold",
@@ -6168,7 +6645,7 @@
               0.037
             ]
           },
-          "semantic_sha256": "b1376df731887e9d7a722d716c60741d40db9ae9b12bf11ef262e07cdfd4fdf6"
+          "semantic_sha256": "8b2316a2cb31bd495170585cc0e969b8277d1a99d954f6af866405d163e6eaac"
         },
         {
           "name": "Sector14__CLO_Hat_workCrown",
@@ -6192,7 +6669,7 @@
               0.064296
             ]
           },
-          "semantic_sha256": "983966628a04cd0901e6d526a0626ff6ce8378c9de23bef96f274e2d9d8a42bb"
+          "semantic_sha256": "2bbc5a2ce970a8ae18eed4704cfe6a0cf2e53f8ee422ffd6577f10709110006a"
         },
         {
           "name": "Sector14__CLO_Hat_workFold",
@@ -6216,7 +6693,7 @@
               0.014069
             ]
           },
-          "semantic_sha256": "a9a56530adb5bd9d927f00367450aaf663f2088f11cc917fdea2bcc0714e6d36"
+          "semantic_sha256": "e131801df186c58c82c52977dbde7c7972a86b4271363afa249256467ec866f1"
         },
         {
           "name": "Sector14__GEO_FaceSurface",
@@ -6264,7 +6741,7 @@
               0.005719
             ]
           },
-          "semantic_sha256": "9abe1b8dcfe2dbd2eccfe98a876021c3a027e60ea4396e22d956942421b766c9"
+          "semantic_sha256": "448984e430919b8277541b2dec3ea4d83bbc54bf0d0e71a19b664fe6e11ebd56"
         },
         {
           "name": "Sector14__Interior",
@@ -6312,7 +6789,7 @@
               0.044726
             ]
           },
-          "semantic_sha256": "d0eace37c750b63c41bd4136a72b7ac62848fe211241b8f308c06006745775c4"
+          "semantic_sha256": "b292f16ff67713672e51cf917d66b74f9ebd6ccd280d3efc1f3bbe41bb41ad27"
         },
         {
           "name": "Sector15__CLO_Hat_everydayCrown",
@@ -6336,7 +6813,7 @@
               0.093338
             ]
           },
-          "semantic_sha256": "67ac4841e6bfb5c9ef3fbce298aaa6e428102d74cd4a27d78ae64c57ae27188d"
+          "semantic_sha256": "81e1d67d789aa19c58f47aed7b6d73dd7a0fe80d01480c2527a5b274225dea42"
         },
         {
           "name": "Sector15__CLO_Hat_everydayPeak",
@@ -6360,7 +6837,79 @@
               0.087413
             ]
           },
-          "semantic_sha256": "bd63d4b255c141924aebe09239736d4fc518cbf26fde91bbba2668db66378c29"
+          "semantic_sha256": "400fe486f422a7af71f6fc4aed9a69e70fa1148d22bf2d6ea0693359ec40ff95"
+        },
+        {
+          "name": "Sector15__CLO_Hat_transitBand",
+          "vertices": 6,
+          "polygons": 2,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              0.076368,
+              1.668,
+              -0.109802
+            ],
+            "max": [
+              0.116,
+              1.691,
+              -0.016
+            ],
+            "size": [
+              0.039632,
+              0.023,
+              0.093802
+            ]
+          },
+          "semantic_sha256": "1e472098207aade8495396c9a46a281afd3f5fd1a6ed82a615e710c6ed195c64"
+        },
+        {
+          "name": "Sector15__CLO_Hat_transitCrown",
+          "vertices": 15,
+          "polygons": 8,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              0.051619,
+              1.67,
+              -0.107267
+            ],
+            "max": [
+              0.114,
+              1.749,
+              -0.015
+            ],
+            "size": [
+              0.062381,
+              0.079,
+              0.092267
+            ]
+          },
+          "semantic_sha256": "d87269ac5399b48abb97dc2d0c997cb45a5bec669ae47aab878e0ceca6528b5e"
+        },
+        {
+          "name": "Sector15__CLO_Hat_transitPeak",
+          "vertices": 12,
+          "polygons": 6,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              0.024895,
+              1.661636,
+              -0.121
+            ],
+            "max": [
+              0.092,
+              1.674364,
+              -0.044318
+            ],
+            "size": [
+              0.067105,
+              0.012728,
+              0.076682
+            ]
+          },
+          "semantic_sha256": "3c7df8853dea0237f5e1ee38488d7b9f776614dc2e4daea684ca2ddce01e5d47"
         },
         {
           "name": "Sector15__CLO_Hat_warmCrown",
@@ -6384,7 +6933,7 @@
               0.088162
             ]
           },
-          "semantic_sha256": "5576104e967ba8c4ba6e26116ed0e505ba436e5567134733372c4010280c7f86"
+          "semantic_sha256": "b3b7ee202e23d89b8cf1f4d062a40c22cb7c2602ec1225c12aa5e4b1214d5e57"
         },
         {
           "name": "Sector15__CLO_Hat_warmEarFlap.L",
@@ -6408,7 +6957,7 @@
               0.034587
             ]
           },
-          "semantic_sha256": "f78b881b94e274548021692f03c6661a386c23f4ed18422a7178006e2a833122"
+          "semantic_sha256": "5bdcd59283b9df37c8083cc20f5f532e07bd6aa80d88537e3520c11042e3334f"
         },
         {
           "name": "Sector15__CLO_Hat_warmFrontFold",
@@ -6432,7 +6981,7 @@
               0.037
             ]
           },
-          "semantic_sha256": "af4de467c8e052d98537ab054f8393a699b69ff5bc0a050260b5077d9930e40d"
+          "semantic_sha256": "5cd18688e5cdc16f983511b8fcbcc7556369c2dda3f528dffee83b8bc9c387f8"
         },
         {
           "name": "Sector15__CLO_Hat_workCrown",
@@ -6456,7 +7005,7 @@
               0.067371
             ]
           },
-          "semantic_sha256": "a97a658034453486f411fe95bb7525e39d30bf0610893e9af632afdd3527c327"
+          "semantic_sha256": "2436bd942952c0b2f6343885213574c1983bac95cb629fd81407f5f666935960"
         },
         {
           "name": "Sector15__CLO_Hat_workFold",
@@ -6480,7 +7029,7 @@
               0.062834
             ]
           },
-          "semantic_sha256": "5bcc0af975547ecf4ba58796426612e81a342ed324c41a106a12c5e079d2cd45"
+          "semantic_sha256": "b76b4124ec73c0af23742cd2201eb410ecfaa7b45edae3936fa246607740178d"
         },
         {
           "name": "Sector15__GEO_FaceSurface",
@@ -6528,7 +7077,7 @@
               0.028139
             ]
           },
-          "semantic_sha256": "c25a78d6839a9966fec2d8e60da43c8e3079f574d937cc3a9f82ee401273ca4e"
+          "semantic_sha256": "5b336f824a76221bb3ab8d224160b3774441cd555ed3d2979852f5e355f4049d"
         },
         {
           "name": "Sector15__HAIR_Crown",
@@ -6552,7 +7101,7 @@
               0.032233
             ]
           },
-          "semantic_sha256": "82406781b04ff68821c3ed931a5db79a230b2c1e0b90b9cc53a1cf4cb94f3e61"
+          "semantic_sha256": "df2cd6aa0170ebccc29a1784312447a8ab96b3b98099b3496d83dbeeb3bf6f41"
         },
         {
           "name": "Sector15__HAIR_Sides",
@@ -6561,22 +7110,22 @@
           "triangles": 2,
           "bounds_unity_m": {
             "min": [
-              0.096924,
+              0.095227,
               1.611974,
-              -0.057322
+              -0.056953
             ],
             "max": [
-              0.106977,
+              0.10732,
               1.65574,
-              -0.031468
+              -0.031402
             ],
             "size": [
-              0.010053,
+              0.012093,
               0.043766,
-              0.025854
+              0.025551
             ]
           },
-          "semantic_sha256": "6bd9dab463091d8d56d230176d77390167710181a8f91c1c23c0fd5e515868ee"
+          "semantic_sha256": "9ce4e3524258b504e19e32da532e035c6fae155e17c8d047c983a49ac27ff2cd"
         },
         {
           "name": "Sector15__Interior",
@@ -6603,12 +7152,12 @@
           "semantic_sha256": "c2b06d00234cbc848566584f80665247c336f204c94ba0646955d3b4870bf8df"
         }
       ],
-      "semantic_sha256": "1d65635e538c08c6c85c0e8304e8d9c902d0ba43be748c64df52e8de66ecb246"
+      "semantic_sha256": "d5032b545de531d448acab6820515ccd8e689f829ae16829d5467399f3e56e6a"
     }
   },
   "files": {
     "HeadHero.fbx": "ac9aeff446d9dbf5f6337e374dc0b34eb3ab95d741d743309d388603441112f2",
-    "HeadNpc.fbx": "941a55af868a009735dafd51f1bec948c909f1fa70504a0b5acf4b9878c31fd9",
+    "HeadNpc.fbx": "10a048933c6b09665226863de864e598ecd50b922a223afcdcfac9c215cffd40",
     "FleshSurface.png": "11d604f03ee50cc95d82731ef81b95b9bba688b5b62d96418b133020736f1bd0",
     "BrainSurface.png": "2c2168ef409cde0259e4aa27c3f318ff778870b01f5b56ef376ba464849f61d7"
   }

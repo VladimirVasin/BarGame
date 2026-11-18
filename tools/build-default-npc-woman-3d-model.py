@@ -25,6 +25,7 @@ spec.loader.exec_module(cannery)
 base = cannery.base
 resident = cannery.resident
 import hand_bowl_grip
+import default_npc_surfaces as surfaces
 
 HEIGHT = 1.63
 HEAD_CROWN = 1.738
@@ -39,13 +40,15 @@ COLORS = {
 HAIR_COLORS = {"gray": "716D66", "brunette": "47392F", "blond": "897858"}
 STYLE_IDS = ("loose", "ponytail", "braid")
 SCALP_ROWS = (*cannery.HEAD_ROWS, (1.735, .019, .022, -.014), (HEAD_CROWN, .003, .004, -.014))
-CROWN_RINGS, CROWN_SEGMENTS = 13, 32
+CROWN_RINGS, CROWN_SEGMENTS = 12, 32
 LOOSE_HAIR = "HAIR_Loose"
-ATLAS_SIZE = 256
-# Each row has a separate chart for the front/back pair. Small parts sample
-# a neutral chart with their own color, keeping collars and soles independent.
-CHARTS = {"shirt": 0, "cardigan": 1, "jacket": 2, "slacks": 3, "twill": 4, "hair": 5}
-CHART_HEIGHT = 36
+ITEM_FINISHES = {
+    "shirt.everyday": "tee", "outerwear.cardigan": "cardigan", "outerwear.everyday": "shortJacket",
+    "trousers.everyday": "slacks", "trousers.work": "workTrousers",
+    "boots.everyday": "shoe", "boots.work": "workBoot", "headwear.everyday": "rib",
+    "scarf.warm": "scarf", "gloves.work": "glove",
+    "hair.loose": "looseHair", "hair.ponytail": "boundHair", "hair.braid": "boundHair",
+}
 BODY_SHAPES = ("BodyShape.Slim", "BodyShape.Chubby")
 GRIP_SHAPE = "CylindricalGrip"
 GRIP_RADIUS = .022
@@ -54,46 +57,9 @@ CLIPS = (("Idle", 4.0, True), ("Walk", 1.25, True), ("Sit", 4.0, True),
          ("Guard", 1.0, False), ("Shove", 1.0, False))
 
 
-def gray(level):
-    return (level, level, level, 255)
-
-
 def smoothstep(value):
     t = max(0., min(1., value))
     return t * t * (3. - 2. * t)
-
-
-def clothing_atlas():
-    canvas = cannery.PixelCanvas(ATLAS_SIZE, ATLAS_SIZE)
-    canvas.rect(0, 0, ATLAS_SIZE, ATLAS_SIZE, gray(255))
-    for cloth, chart in CHARTS.items():
-        top = chart * CHART_HEIGHT
-        for y in range(top, top + CHART_HEIGHT):
-            for x in range(ATLAS_SIZE):
-                if cloth == "hair":
-                    lock = math.cos((x + 2 * math.sin(y * .19)) * .37)
-                    level = 224 + round(11 * lock + 3 * math.sin(x * 2.1))
-                else:
-                    level = 242 - (x % 3 == 0) * 4 - (y % 3 == 1) * 3
-                    level -= (x * 17 + y * 31) % 7
-                canvas.put(x, y, gray(level))
-        if cloth == "cardigan":
-            canvas.rect(60, top + 1, 69, top + 35, gray(218))
-            canvas.line(61, top + 1, 61, top + 35, gray(228))
-            for y in range(top + 9, top + 34, 6):
-                canvas.ellipse(66, y, 2, 1, gray(124))
-        elif cloth == "jacket":
-            canvas.rect(63, top + 1, 66, top + 35, gray(204))
-            for x in (28, 91):
-                canvas.line(x - 8, top + 26, x + 7, top + 24, gray(184))
-                canvas.line(x - 8, top + 27, x + 7, top + 25, gray(246))
-        elif cloth in ("slacks", "twill"):
-            canvas.line(60, top + 3, 61, top + 10, gray(181))
-            canvas.line(17, top + 3, 29, top + 8, gray(188))
-            canvas.line(109, top + 3, 98, top + 8, gray(188))
-            for x in (30, 97):
-                canvas.line(x, top + 13, x, top + 34, gray(225))
-    return canvas
 
 
 def face_atlas(index):
@@ -109,10 +75,13 @@ def face_atlas(index):
     for y in range(64):
         for x in range(64):
             feather = math.sin(x / 63 * math.pi) * math.sin(y / 63 * math.pi)
-            planes = 4 * math.exp(-((x - 25) / 16)**2 - ((y - 31) / 24)**2)
-            planes -= 5 * math.exp(-((x - 34) / 13)**2 - ((y - 56) / 8)**2)
+            cheeks = math.exp(-((abs(x - 31) - 15) / 9)**2 - ((y - 37) / 9)**2)
+            hollow = math.exp(-((abs(x - 31) - 19) / 7)**2 - ((y - 46) / 8)**2)
+            planes = 5 * math.exp(-((x - 26) / 16)**2 - ((y - 17) / 22)**2)
+            planes -= (4 + age * .6) * hollow + 6 * math.exp(-((x - 34) / 13)**2 - ((y - 56) / 8)**2)
             tone = feather * (planes + ((x * 7 + y * 13) % 9 == 0))
-            canvas.put(x, y, (*[round(channel + tone) for channel in skin], 255))
+            canvas.put(x, y, (*[round(channel + tone + feather * cheeks * warmth)
+                                for channel, warmth in zip(skin, (8, 2, 1))], 255))
     brow = (96 + 9 * age, 72 + 8 * age, 61 + 7 * age, 255)
     lid = (93, 71, 62, 255)
     fold = (160, 129, 112, 255)
@@ -162,6 +131,19 @@ class OrdinaryWomanBuilder(cannery.WomanBuilder):
 
     def head(self):
         super().head(with_hair=False)
+        face = self.parts[surfaces.FACE].obj
+        # Sculpt the cheek and jaw planes inside the existing face boundary.
+        # The skin and its painted face still join along the same cranium.
+        for vertex in face.data.vertices:
+            column = vertex.index % 9
+            if column in (0, 8):
+                continue
+            x, _, z = vertex.co + face.location
+            edge = math.sin(math.pi * column / 8) ** 2
+            cheek = math.exp(-((abs(x) - .046) / .023)**2 - ((z - 1.573) / .034)**2)
+            jaw = math.exp(-(x / .037)**2 - ((z - 1.493) / .028)**2)
+            temple = math.exp(-((abs(x) - .066) / .023)**2 - ((z - 1.617) / .027)**2)
+            vertex.co.y += edge * (.0032 * temple - .0075 * cheek - .0035 * jaw)
         self.shell("GEO_Scalp", ((1.712, .054, .059, -.014), (1.719, .049, .055, -.014),
                                 (1.735, .019, .022, -.014), (HEAD_CROWN, .003, .004, -.014)),
                    "head", "skin", role="body")
@@ -216,8 +198,10 @@ class OrdinaryWomanBuilder(cannery.WomanBuilder):
                        ((0., .043, .098, -.049), (.039, .049, .102, -.045),
                         (.099, .035, .042, -.005), (.137, .032, .035, 0.)),
                        bone, "skin", x=x, role="body")
-        for item, label, color, ankle in (("everyday", "WalkingShoe", "shoe", .101),
-                                          ("work", "AnkleBoot", "boot", .137)):
+        for item, label, color, ankle, width, depth in (
+            ("everyday", "WalkingShoe", "shoe", .101, .95, 1.),
+            ("work", "AnkleBoot", "boot", .137, 1.02, .96),
+        ):
             names, covered = [], []
             for side in ("L", "R"):
                 bone = "foot." + side
@@ -227,22 +211,81 @@ class OrdinaryWomanBuilder(cannery.WomanBuilder):
                 self.shell(sole, ((0., .053, .118, -.059), (.006, .057, .122, -.060),
                                   (.023, .056, .123, -.061), (.028, .053, .117, -.060)),
                            bone, "sole", x=x, sides=14)
-                self.shell(upper, ((.024, .053, .118, -.060), (.043, .055, .118, -.060),
-                                   (.062, .049, .104, -.052), (.084, .042, .063, -.024),
-                                   (ankle, .042, .046, -.008)),
-                           bone, color, x=x, sides=14)
+                last = ((.024, .053, .118, -.060), (.043, .055, .118, -.060),
+                        (.062, .049 * width, .104, -.052), (.084, .042 * width, .063 * depth, -.024),
+                        (ankle, .042 * width, .046 * depth, -.008))
+                self.shell(upper, last, bone, color, x=x, sides=14)
+                # Stitched instep panel hugs the last and ends at the opening.
+                panel = []
+                for (z, _, ry, cy), half_width in zip(last[2:], (.015, .023, .023)):
+                    panel.extend(((x - half_width, cy - ry * .92 - .002, z + .002),
+                                  (x, cy - ry - .004, z + .003),
+                                  (x + half_width, cy - ry * .92 - .002, z + .002)))
+                eyestay = "CLO_" + label + "Eyestay." + side
+                self.add(eyestay, (panel, [(a, a + 1, a + 4, a + 3) for a in (0, 1, 3, 4)]), bone, color)
                 sock = "CLO_" + label + "Sock." + side
                 obj = self.shell(sock, ((.079, .038, .051, -.010), (.114, .035, .042, -.002),
                                         (.150, .037, .037, .004), (.165, .035, .035, .004)),
                                  bone, "sole", x=x, sides=10)
                 self.weight_height(obj, ((.084, bone), (.145, "shin." + side)))
-                names.extend((upper, sole, sock))
+                names.extend((upper, sole, eyestay, sock))
                 covered.append("GEO_BareFoot." + side)
             self.item("boots." + item, names, covered)
+
+    def outer_body(self, name, source_name, color, reshape):
+        # Resample the tailored shirt's profiles, preserving its shoulder
+        # and torso fit while spending fewer faces on the hidden round back.
+        source = self.parts[source_name].obj
+        source_sides, sides = 32, 20
+        stations = len(source.data.vertices) // source_sides
+        vertices = []
+        for row in range(stations):
+            ring = [v.co + source.location for v in source.data.vertices[row*source_sides:(row+1)*source_sides]]
+            for side in range(sides):
+                sample = side * source_sides / sides
+                index = int(sample)
+                vertices.append(Vector(reshape(ring[index].lerp(ring[(index+1) % source_sides], sample-index))))
+        faces = [tuple(reversed(range(sides)))]
+        faces.extend((row*sides+j, row*sides+(j+1)%sides,
+                      (row+1)*sides+(j+1)%sides, (row+1)*sides+j)
+                     for row in range(stations-1) for j in range(sides))
+        faces.append(tuple(range((stations-1)*sides, stations*sides)))
+        body = self.add(name, (vertices, faces), "chest", color)
+        for polygon in body.data.polygons:
+            polygon.use_smooth = len(polygon.vertices) == 4
+        weights = ((1.105, "pelvis"), (1.180, "spine"), (1.28, "chest"))
+        self.weight_height(body, weights)
+
+        # The facing comes off the same tailored surface and shares its
+        # weights. The knit opens wider at the neck than the short jacket.
+        front = sides * 3 // 4
+        points = []
+        for row in range(stations):
+            index = row*sides+front
+            middle = vertices[index]
+            open_neck = smoothstep((middle.z-1.27)/.125)
+            spread = .28 + (.66 if color == "cardigan" else .30) * open_neck
+            points.extend((middle.lerp(vertices[index-1], spread) + Vector((0,-.003,0)),
+                           middle + Vector((0,-.005,0)),
+                           middle.lerp(vertices[index+1], spread) + Vector((0,-.003,0))))
+        panels = [(r*3+j, r*3+j+1, (r+1)*3+j+1, (r+1)*3+j)
+                  for r in range(stations-1) for j in range(2)
+                  if color != "cardigan" or j == 0 or r < stations-5]
+        facing = name + "Placket"
+        self.weight_height(self.add(facing, (points, panels), "chest", color), weights)
+        return [name, facing]
 
     def clothes(self):
         shirt = ("CLO_LongSleeveTop", "CLO_CrewNeckRib", "CLO_Sleeve.L", "CLO_Sleeve.R",
                  "CLO_Cuff.L", "CLO_Cuff.R")
+        for name in shirt[2:4]:
+            # Lower the crown of the front and side sleeve by a few millimetres
+            # into the shoulder. Its pinned chest ring and wrist stay put.
+            sleeve = self.parts[name].obj
+            for vertex in sleeve.data.vertices:
+                row = vertex.index // 14
+                if 1 <= row <= 5:
+                    vertex.co.z -= .009 * math.sin(math.pi * row / 6)
         self.shaped.extend(shirt)
         underlayer = []
         for i, name in enumerate(shirt[:4]):
@@ -255,30 +298,31 @@ class OrdinaryWomanBuilder(cannery.WomanBuilder):
         self.shaped.extend(underlayer)
         self.item("shirt.everyday", shirt, underlayer)
         for item_id, label, color, width, depth, hem in (
-            ("cardigan", "Cardigan", "cardigan", 1.10, 1.13, .025),
-            ("everyday", "ShortJacket", "jacket", 1.16, 1.18, .045),
+            ("cardigan", "Cardigan", "cardigan", 1.09, 1.10, .025),
+            ("everyday", "ShortJacket", "jacket", 1.13, 1.13, .034),
         ):
             def torso(point):
                 # Drape the outer hem over the widest trouser waist, including
                 # the tucked tee. Keep the hip ease in the actual cloth shell.
-                hip = max(0., min(1., (1.20 - point.z) / .14))**2
-                y = point.y * (depth + .43 * hip)
+                hip = smoothstep((1.20 - point.z) / .15)
+                y = point.y * (depth + .30 * hip)
                 z = point.z - hem * max(0., min(1., (1.29 - point.z) / .22))
-                return point.x * (width + .44 * hip), y, z
+                return point.x * (width + .30 * hip), y, z
 
             def sleeve(point):
                 taper = max(0., min(1., (abs(point.x) - .22) / .25))
                 return point.x * (1 + (width - 1) * .26 * (1 - taper)), point.y * depth, point.z
 
-            names = [self.copy_part(shirt[0], "CLO_" + label, color, torso)]
+            names = self.outer_body("CLO_" + label, shirt[0], color, torso)
             names += [self.copy_part("CLO_Sleeve." + side, "CLO_" + label + "Sleeve." + side, color, sleeve)
                       for side in ("L", "R")]
             names += [self.copy_part("CLO_Cuff." + side, "CLO_" + label + "Cuff." + side, color, sleeve)
                       for side in ("L", "R")]
             # The raised rib at the neck follows the chest on either top.
             neck = "CLO_" + label + "Collar"
-            self.shell(neck, ((1.421, .069, .058, -.010), (1.437, .066, .056, -.010),
-                              (1.454 if color == "jacket" else 1.444, .059, .053, -.010)),
+            self.shell(neck, ((1.415, .071, .061, -.010), (1.427, .070, .061, -.010),
+                              (1.452 if color == "jacket" else 1.439, .064, .054, -.010),
+                              (1.454 if color == "jacket" else 1.441, .060, .052, -.010)),
                        "chest", color)
             names.append(neck)
             self.shaped.extend(names)
@@ -287,15 +331,18 @@ class OrdinaryWomanBuilder(cannery.WomanBuilder):
         def straight_leg(point):
             taper = max(0., min(1., (.70 - point.z) / .54))
             center = math.copysign(.085, point.x)
-            return center + (point.x - center) * (1 + taper * .22), point.y * (1 + taper * .18), point.z
+            fold = .003 * taper * math.sin(point.z * 41.) * math.exp(-((point.x-center)/.024)**2)
+            return (center + (point.x - center) * (1 + taper * .22),
+                    point.y * (1 + taper * .18) - fold, point.z)
 
         self.copy_part(TROUSER_NAMES[0], TROUSER_NAMES[1], "twill", straight_leg)
         self.copy_part(TROUSER_NAMES[0], "GEO_UnderTrousers", "skin", lambda p: (p.x * .87, p.y * .85, p.z), "body")
         self.shaped.extend((*TROUSER_NAMES, "GEO_UnderTrousers"))
         self.item("trousers.everyday", TROUSER_NAMES[:1], ("GEO_UnderTrousers",))
         self.item("trousers.work", TROUSER_NAMES[1:], ("GEO_UnderTrousers",))
-        self.shell("CLO_Scarf", ((1.409, .080, .067, -.009), (1.430, .079, .071, -.013),
-                                  (1.449, .070, .064, -.012), (1.469, .063, .056, -.009)),
+        self.shell("CLO_Scarf", ((1.409, .078, .067, -.009), (1.423, .083, .072, -.014),
+                                  (1.435, .075, .068, -.014), (1.447, .074, .068, -.014),
+                                  (1.460, .068, .062, -.010), (1.469, .063, .056, -.009)),
                    "neck", "scarf")
         self.item("scarf.warm", ("CLO_Scarf",))
 
@@ -458,7 +505,7 @@ class OrdinaryWomanBuilder(cannery.WomanBuilder):
         # Wrap at the front parting, away from the crown-to-length transition.
         layer = hair.data.uv_layers.new(name="UVMap")
         bottom, top = min(point[2] for point in vertices), max(point[2] for point in vertices)
-        chart = CHARTS["hair"] * CHART_HEIGHT
+        hair["bp_default_npc_finish"] = ITEM_FINISHES["hair.loose"]
         for polygon in hair.data.polygons:
             indices = [hair.data.loops[index].vertex_index for index in polygon.loop_indices]
             wrap = len(indices) == 4 and any(uv_columns[index] == CROWN_SEGMENTS - 1 for index in indices)
@@ -467,8 +514,8 @@ class OrdinaryWomanBuilder(cannery.WomanBuilder):
                 if wrap and column == 0:
                     column = CROWN_SEGMENTS
                 length = (top - vertices[index][2]) / (top - bottom)
-                layer.data[loop].uv = ((2 + 251 * column / CROWN_SEGMENTS) / ATLAS_SIZE,
-                                       1 - (chart + 1 + 33 * length) / ATLAS_SIZE)
+                layer.data[loop].uv = surfaces.tile_uv(ITEM_FINISHES["hair.loose"],
+                                                       column / CROWN_SEGMENTS, 1. - length)
         self.item("hair.loose", (LOOSE_HAIR,))
 
     def ponytail(self):
@@ -517,25 +564,9 @@ class OrdinaryWomanBuilder(cannery.WomanBuilder):
         self.item("headwear.everyday", ("CLO_KnitCap",))
 
     def uv(self, part):
-        obj = part.obj
-        layer = obj.data.uv_layers.active or obj.data.uv_layers.new(name="UVMap")
-        chart = CHARTS.get(part.palette_name)
-        if chart is None:
-            for loop in layer.data:
-                loop.uv = (.5, .06)
-            return
-        points = [vertex.co + obj.location for vertex in obj.data.vertices]
-        low = [min(point[axis] for point in points) for axis in (0, 2)]
-        high = [max(point[axis] for point in points) for axis in (0, 2)]
-        detail = obj.name.endswith((".L", ".R", "Collar", "Rib"))
-        for polygon in obj.data.polygons:
-            start = 2 if polygon.normal.y < 0 and not detail else 130
-            for index in polygon.loop_indices:
-                point = points[obj.data.loops[index].vertex_index]
-                u = (point.x - low[0]) / (high[0] - low[0])
-                v = (high[1] - point.z) / (high[1] - low[1])
-                layer.data[index].uv = ((start + u * 123) / ATLAS_SIZE,
-                                        1 - (chart * CHART_HEIGHT + 1 + v * 33) / ATLAS_SIZE)
+        # The cannery donor calls this before the modular items exist.
+        # The wardrobe's chart is assigned once its final topology is known.
+        pass
 
     def body_shapes(self):
         for name in self.shaped:
@@ -546,11 +577,11 @@ class OrdinaryWomanBuilder(cannery.WomanBuilder):
                 for vertex in obj.data.vertices:
                     x, y, z = vertex.co + obj.location
                     torso = math.exp(-((z - 1.16) / .24)**2)
-                    hip = math.exp(-((z - .94) / .25)**2)
+                    hip = math.exp(-((z - .96) / .27)**2)
                     cuff = max(0., min(1., (.45 - abs(x)) / .24))
                     shape.data[vertex.index].co = vertex.co + Vector((
-                        sign * x * (.091 * torso + .076 * hip) * cuff,
-                        sign * y * (.22 * torso + .15 * hip) * cuff,
+                        sign * x * (.100 * torso + .050 * hip) * cuff,
+                        sign * y * (.20 * torso + .11 * hip) * cuff,
                         0.,
                     ))
 
@@ -562,10 +593,13 @@ class OrdinaryWomanBuilder(cannery.WomanBuilder):
         self.shoes()
         self.hands()
         self.hairstyles()
+        wardrobe = {name: item["id"] for item in self.items for name in item["renderers"]}
         for part in result.parts:
             if part.obj.name not in (cannery.FACE_NAME, LOOSE_HAIR):
-                self.uv(part)
+                finish = surfaces.finish_for(part, ITEM_FINISHES, wardrobe.get(part.obj.name))
+                surfaces.assign_chart(part, finish)
         self.body_shapes()
+        base.npc_joint_surfaces.correct_continuous(result)
         bpy.context.view_layer.update()
         return result
 
@@ -801,7 +835,7 @@ def manifest(builder, assets, verify):
         faces.append({"id": f"face-{i + 1:02}", "texture": name,
                       "sha256": cannery.publish_bytes(assets / name, face_atlas(i).png_bytes(), verify)})
     atlas = MODEL + "Clothing.png"
-    atlas_hash = cannery.publish_bytes(assets / atlas, clothing_atlas().png_bytes(), verify)
+    atlas_hash = cannery.publish_bytes(assets / atlas, surfaces.albedo().png_bytes(), verify)
     return {
         "generator": Path(__file__).name, "catalog_model_id": "ordinary-woman-v1",
         "anatomy_source": "tools/build-cannery-woman-3d-model.py", "bone_count": 31,
@@ -822,6 +856,8 @@ def manifest(builder, assets, verify):
         "clips": [{"name": MODEL + name, "seconds": seconds, "loop": loop} for name, seconds, loop in CLIPS],
         "crown_clearance_m": validate_hair_coverage(builder),
         "geometry_signature": resident.geometry_signature(result),
+        "joint_surfaces": base.npc_joint_surfaces.joints.manifest(result),
+        "surfaces": surfaces.manifest(result, items, ITEM_FINISHES),
     }
 
 

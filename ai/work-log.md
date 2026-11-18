@@ -31,6 +31,16 @@ consume achieved travel at the assigned stature, including through evaluation
 throttling and stops. `build-default-npc-walks`,
 `DefaultWalkers_MatchTravelAndExtendOverEachSupportBoot`. Side poses reviewed.
 
+Detailed both default bodies and complete wardrobes. Shared UV0 maps let
+leather, wool and skin respond to light on the existing palette. Restored the
+authoring sleeve pose, refitted the walks and refreshed worker dependencies.
+`build-default-npc-3d-model`, `build-default-npc-woman-3d-model`,
+`build-default-npc-walks`, `refresh-default-npc-damage --npc-head`.
+Moderated the fuller silhouette and fitted the apron hem to the stride.
+The wardrobe review refreshes skin matrices after stature changes and checks
+the posed head and neck from bind matrices. `DefaultNpcWardrobeDetail` frames
+reviewed. `OrdinaryWomen_KeepVisibleAssignmentsAndRideTheBus`.
+
 ## 2026-11-17
 
 Rebuilt the hero around a slate canvas jacket, a sculpted tired face and a weighted gait.

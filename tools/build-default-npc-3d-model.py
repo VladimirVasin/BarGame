@@ -30,8 +30,9 @@ from player_3d_model_common import hex_to_linear_rgba
 from atlas_kit import PixelCanvas, read_generated_png
 import hand_bowl_grip
 import default_npc_body
+import default_npc_surfaces as surfaces
 
-VERSION = "3.1.0"
+VERSION = "3.2.0"
 HAND_SIZE_SCALE = 1.20
 HAND_GIRTH_SCALE = .85
 HAND_GRIP_SHAPE = "CylindricalGrip"
@@ -59,6 +60,16 @@ COLORS = {
 SLOTS = ("shirt", "outerwear", "trousers", "boots", "headwear", "scarf", "gloves", "apron")
 OUTFITS = ("everyday", "work", "warm")
 EXTRA_OUTERWEAR = ("cardigan", "coat", "overshirt")
+ITEM_FINISHES = {
+    "shirt.everyday": "shirt", "shirt.work": "workShirt", "shirt.warm": "flannel",
+    "outerwear.everyday": "vest", "outerwear.work": "workJacket", "outerwear.warm": "quilt",
+    "outerwear.cardigan": "cardigan", "outerwear.coat": "woolCoat", "outerwear.overshirt": "overshirt",
+    "outerwear.ferryman": "oilcloth", "outerwear.transit": "uniform",
+    "trousers.everyday": "slacks", "trousers.work": "workTrousers", "trousers.warm": "winterTrousers",
+    "boots.everyday": "shoe", "boots.work": "workBoot", "boots.warm": "winterBoot",
+    "headwear.everyday": "cap", "headwear.work": "rib", "headwear.warm": "woolCoat",
+    "headwear.transit": "uniform", "scarf.warm": "scarf", "gloves.work": "glove", "apron.work": "apron",
+}
 HAIR_COLORS = {"gray":"64625A", "brunette":"423023", "blond":"AE9668"}
 HAIR_MASKS = {}
 
@@ -121,40 +132,20 @@ def cloth_panel(geometry, thickness=.002):
 
 
 def atlas(path, verify, face_index=0, hair_id="gray"):
-    c = PixelCanvas(512, 512)
-    c.rect(0, 0, 512, 512, (255, 255, 255, 255))
-    # Three distinct textile regions: woven cotton, brushed wool, padded canvas.
-    # The subdued thread, seams and wear are deterministic, not random damage.
-    for kind in range(3):
-        ox = kind * 128
-        for y in range(256):
-            for x in range(128):
-                noise = (x*13+y*17+kind*19)%9-4
-                weave = -7 if ((x + (y%2)) % (3 if kind == 1 else 5) == 0) else 0
-                quilt = -18 * math.exp(-((y%51-25)/2.5)**2) if kind == 2 else 0
-                wear = 8*math.exp(-((x-40)/33)**2-((y-174)/35)**2)
-                n = max(185, min(255, round(241+noise+weave+quilt+wear)))
-                c.put(ox+x, y, (n,n,n,255))
-        c.line(ox+6, 8, ox+7, 247, (191,193,184,255))
-        c.line(ox+9, 8, ox+10, 247, (228,227,214,255))
-        c.line(ox+6, 246, ox+121, 246, (196,199,183,255))
-        for y in range(14,242,7): c.line(ox+11,y,ox+13,y,(217,216,204,255))
-    # Leather below: rubbed toes, lacing recesses and quiet grain.
-    for y in range(256,512):
-        for x in range(256):
-            n = 226+(x*3+y*11)%15
-            n += round(13*math.exp(-((x%128-63)/42)**2-((y-450)/40)**2))
-            c.put(x,y,(min(255,n),min(255,n),min(255,n),255))
+    c = surfaces.albedo()
     # A 128 px face: an ordinary older worker, quiet eyes, receding grey hair,
     # fuller cheek and blunt nose. No hero hair, scar, tattoo, slogan or symbol.
     f=PixelCanvas(128,128);hair=PixelCanvas(128,128)
     skin=(173,140,116)
     for y in range(128):
         for x in range(128):
-            light=6*math.exp(-((x-54)/42)**2-((y-45)/43)**2)
-            shade=12*(abs(x-63.5)/64)**2+4*max(0,(y-103)/25)
-            grain=((x*17+y*7)%23==0)-((x*3+y*13)%19==0)
-            f.put(x,y,tuple(round(v+light-shade+grain) for v in skin)+(255,))
+            edge = math.sin(x / 127 * math.pi) * math.sin(y / 127 * math.pi)
+            cheek = math.exp(-((abs(x - 64) - 29) / 18)**2 - ((y - 82) / 17)**2)
+            temple = math.exp(-((abs(x - 64) - 44) / 15)**2 - ((y - 54) / 23)**2)
+            light = 7 * math.exp(-((x - 54) / 37)**2 - ((y - 45) / 38)**2) + 4 * cheek
+            shade = 8 * temple + 8 * math.exp(-((y - 116) / 12)**2)
+            grain = ((x * 17 + y * 7) % 23 == 0) - ((x * 3 + y * 13) % 19 == 0)
+            f.put(x, y, tuple(round(v + edge * (light - shade + grain)) for v in skin) + (255,))
     for y in ((27,32) if face_index != 3 else (24,29,34)):
         f.line(43,y,84,y-1,(158,126,103,255))
     transit=face_index >= 4
@@ -254,8 +245,6 @@ def atlas(path, verify, face_index=0, hair_id="gray"):
         for y in range(128):
             offset=((384+y)*512+256)*4
             c.pixels[offset:offset+512]=f.pixels[y*512:(y+1)*512]
-    # Reserved white texels keep skin and trim free from textile noise.
-    c.rect(500,0,512,12,(255,255,255,255))
     return publish(path,c.png_bytes(),verify)
 
 
@@ -320,7 +309,12 @@ class WorkerBuilder(base.PedestrianBuilder):
         # A sewn shoulder is a rounded dome recessed into the torso. Starting
         # a full-radius cylinder at the shoulder produces pointed epaulettes
         # as soon as the A-pose arms hang down.
-        radii=(radii[0]*.15,radii[1]*.70)+tuple(radii[2:])
+        # The last two stations turn over the wrist into a rolled edge.
+        # Padded sleeves keep more ease above the fold than shirts.
+        padded = any(label in name for label in ("Outer_warm", "Ferryman", "Outer_coat"))
+        shoulder_fit = .93 if "Outer_work" in name else .98
+        radii = (radii[0] * .15, radii[1] * .64, radii[2] * shoulder_fit, *radii[3:6],
+                 radii[6] * (1.045 if padded else .99), radii[7] * .95, radii[8] * 1.025)
         obj=self.add(name,tube(points,radii,sides,.91),upper,color,role)
         assignments=[]
         for i in range(len(points)):
@@ -492,7 +486,9 @@ class WorkerBuilder(base.PedestrianBuilder):
                     normals.append(Vector((point.x/max(.005,rx),(point.y-cy)/max(.005,ry),(z-1.602)/.15)).normalized())
                 else:normals.append(vertex.normal.copy())
             obj.data.normals_split_custom_set_from_vertices(normals)
-        self.trunk("GEO_Neck",((1.387,.079,.068,-.002),(1.42,.074,.063,-.010),(1.46,.065,.058,-.018),(1.50,.055,.054,-.022)),"skin","body",16)
+        self.trunk("GEO_Neck", ((1.387,.079,.068,-.002), (1.417,.073,.063,-.010),
+                  (1.447,.064,.056,-.016), (1.471,.061,.054,-.020),
+                  (1.50,.055,.054,-.022)), "skin", "body", 16)
         neck=bpy.data.objects["GEO_Neck"]
         self.weights(neck,[{"neck":max(0,min(1,(v.co.z+neck.location.z-1.41)/.05)),"chest":1-max(0,min(1,(v.co.z+neck.location.z-1.41)/.05))} for v in neck.data.vertices])
         for side,sign in (("L",1),("R",-1)):
@@ -507,7 +503,8 @@ class WorkerBuilder(base.PedestrianBuilder):
                 lower=1.565+.052*abs(math.cos(angle));z=lower+(1.727-lower)*t
                 lo,hi=next((lo,hi) for lo,hi in zip(rows,rows[1:]) if lo[0]<=z<=hi[0])
                 s=(z-lo[0])/(hi[0]-lo[0]);rx=lo[1]+(hi[1]-lo[1])*s+.004;ry=lo[2]+(hi[2]-lo[2])*s+.004;cy=lo[3]+(hi[3]-lo[3])*s
-                vertices.append((rx*math.sin(angle),cy-ry*math.cos(angle),z))
+                lock = .0019 * math.sin(5 * angle - t * 1.9) * math.sin(math.pi * t)
+                vertices.append(((rx + lock) * math.sin(angle), cy - (ry + lock) * math.cos(angle), z))
         faces=[(r*19+j,r*19+j+1,(r+1)*19+j+1,(r+1)*19+j) for r in range(4) for j in range(18)]
         self.add("HAIR_Sides",(vertices,faces),"head","hair","hair")
         self.add("HAIR_Crown",base.make_ellipsoid((0,.015,1.704),(.082,.079,.034),16,5),"head","hair","hair")
@@ -517,15 +514,21 @@ class WorkerBuilder(base.PedestrianBuilder):
         skin=outfit is None;prefix="GEO_Legs" if skin else "CLO_Trousers_"+outfit
         color="skin" if skin else "pants_"+outfit
         factor=.82 if skin else 1. if outfit=="everyday" else 1.045 if outfit=="work" else 1.065
+        taper, crease = {None: (1., 0.), "everyday": (.92, .0045),
+                        "work": (1., .0035), "warm": (1.06, .002)}[outfit]
         sides=16;vertices=[];faces=[];assignments=[];tops={}
         stations=((.255,.096,.053,.061),(.35,.094,.060,.068),(.47,.091,.052,.060),(.55,.089,.059,.067),
                   (.65,.09,.075,.082),(.77,.093,.088,.097),(.865,.094,.090,.100))
         for side,sign in (("L",1),("R",-1)):
             start=len(vertices);cy=-.005 if side=="L" else .013
             for z,cx,rx,ry in stations:
+                leg_fit = 1. + (taper - 1.) * max(0., 1. - abs(z - .45) / .195)
                 for j in range(sides):
                     angle=j*math.tau/sides
-                    vertices.append((sign*cx+rx*factor*math.cos(angle),cy+ry*factor*math.sin(angle),z))
+                    front = max(0., -math.sin(angle))**7
+                    fold = crease * front * math.sin((z - .255) / .045)
+                    vertices.append((sign*cx+rx*factor*leg_fit*math.cos(angle),
+                                     cy+ry*factor*math.sin(angle)-fold,z))
                     knee=max(0,min(1,(z-.43)/.12));hip=max(0,min(1,(z-.77)/.17))
                     assignments.append({"shin."+side:1-knee,"thigh."+side:knee*(1-hip),"pelvis":knee*hip})
             for r in range(len(stations)-1):
@@ -662,17 +665,29 @@ class WorkerBuilder(base.PedestrianBuilder):
             if outfit=="work":
                 self.contact("ANCHOR_WorkSole."+side,"foot."+side,
                              (x,cy-.100,min(point[2] for point in sole[0])))
-            for i in range(3):
-                y=cy-.071-i*.023;z=.112-i*.015
-                self.add(prefix+"Lace"+str(i)+"."+side,tube(((x-.031,y,z),(x+.031,y-.007,z)),(.0025,.0025),5),"foot."+side,"trim")
+            # A single sewn eyestay follows the last. The shared eyelet chart
+            # holds the recessed lacing, freeing the floating lace geometry.
+            panel = []
+            for station, half_width in zip(rows[2:], (.020, .026, .028)):
+                z, _, front, _ = station
+                panel.extend(((x-half_width, front-.002, z+.003),
+                              (x, front-.004, z+.005),
+                              (x+half_width, front-.002, z+.003)))
+            faces = [(a, a+1, a+4, a+3) for a in (0, 1, 3, 4)]
+            self.add(prefix+"Eyestay."+side, cloth_panel((panel, faces), .0018),
+                     "foot."+side, color)
 
     def shirt(self,outfit):
         prefix="CLO_Shirt_"+outfit;color="shirt_"+outfit
         rows=((.976,.175,.113,.003),(1.035,.175,.113,.001),(1.12,.18,.115,-.001),(1.22,.191,.121,-.004),
               (1.32,.20,.119,-.008),(1.388,.19,.104,-.01),(1.422,.085,.075,-.015))
+        width, depth, hem = {"everyday": (.985, .98, .006), "work": (1.025, 1.025, -.013),
+                             "warm": (1.015, 1.045, -.022)}[outfit]
+        rows = tuple((z + hem * max(0., (1.15-z)/.174), rx*width, ry*depth, cy) for z,rx,ry,cy in rows)
         self.trunk(prefix+"Body",rows,color)
         for side in ("L","R"):
-            self.arm(prefix+"Sleeve."+side,side,(.052,.070,.069,.056,.05,.052,.045,.036,.031),color)
+            self.arm(prefix+"Sleeve."+side,side,
+                     tuple(r*width for r in (.052,.070,.069,.056,.05,.052,.045,.036,.031)),color)
         if outfit=="warm":
             self.add(prefix+"Collar",base.make_vertical_shell(((1.394,.087,.078,-.013),(1.454,.079,.072,-.018)),16),"neck",color)
         else:
@@ -698,25 +713,27 @@ class WorkerBuilder(base.PedestrianBuilder):
             obj=self.add(prefix+"Vest",cloth_panel((vertices,faces)),"chest",color)
             self.weights(obj,[self.trunk_weight(v.co.z+obj.location.z) for v in obj.data.vertices])
         else:
-            width=.213 if outfit=="work" else .225;depth=.142 if outfit=="work" else .151
+            width=.204 if outfit=="work" else .225;depth=.137 if outfit=="work" else .151
             rows=((.935,width*.90,depth*.92,.008),(1.01,width*.94,depth,.006),(1.12,width*.94,depth,-.001),
                   (1.23,width,depth,-.005),(1.335,width,depth*.94,-.009),(1.394,.194,depth*.78,-.012),(1.428,.096,.087,-.013))
             self.trunk(prefix+"Body",rows,color, sides=24)
             for side in ("L","R"):
-                r=(.058,.079,.078,.064,.060,.061,.053,.043,.036) if outfit=="work" else (.067,.09,.089,.076,.067,.07,.064,.05,.038)
+                r=(.054,.074,.072,.061,.054,.056,.050,.040,.035) if outfit=="work" else (.067,.09,.089,.076,.067,.07,.064,.05,.038)
                 self.arm(prefix+"Sleeve."+side,side,r,color, sides=14)
         # Pocket flaps and front fasteners are attached to the cloth surface.
-        depth=.133 if outfit=="everyday" else .148 if outfit=="work" else .158
-        width=.19 if outfit=="everyday" else .21 if outfit=="work" else .222
+        depth=.133 if outfit=="everyday" else .144 if outfit=="work" else .158
+        width=.19 if outfit=="everyday" else .202 if outfit=="work" else .222
         for side,sign in (("L",1),("R",-1)):
-            for label,z0,z1,extra,tint in (("Pocket",1.035,1.113,.002,color),("PocketFlap",1.095,1.12,.006,"seam")):
+            for label,z0,z1,extra,tint in (("Pocket",1.035,1.113,.002,color),("PocketFlap",1.095,1.12,.005,"seam")):
                 vertices=[]
                 for z in (z0,z1):
                     for i in range(5):
                         x=sign*(.073+i*.021);y=-depth*math.sqrt(max(.01,1-(x/width)**2))-.004-extra
                         vertices.append((x,y,z))
                 faces=[(i,i+1,i+6,i+5) for i in range(4)]
-                self.add(prefix+label+"."+side,(vertices,faces),"spine",tint)
+                panel = self.add(prefix+label+"."+side, cloth_panel((vertices,faces),
+                                 .0028 if label == "PocketFlap" else .0034), "spine", tint)
+                self.weights(panel, [self.trunk_weight(v.co.z + panel.location.z) for v in panel.data.vertices])
         for i in range(4):
             z=1.015+i*.088
             self.add(prefix+"Button"+str(i),base.make_ellipsoid((.010,-depth-.001,z),(.005,.003,.005),6,3),"spine" if z<1.2 else "chest","button")
@@ -727,7 +744,10 @@ class WorkerBuilder(base.PedestrianBuilder):
         hem={"cardigan":.925,"coat":.655,"overshirt":.92}[style]
         width={"cardigan":.209,"coat":.222,"overshirt":.216}[style]
         depth={"cardigan":.143,"coat":.155,"overshirt":.148}[style]
-        rows=((hem,width*.98,depth,.012),(.94,width*.95,depth,.008),
+        # Put the second station above the hem for each cut.
+        # A repeated lower station on the long overshirt creates a flat fold.
+        lower = max(hem + .03, .94)
+        rows=((hem,width*.98,depth,.012),(lower,width*.95,depth,.008),
               (1.04,width*.96,depth,.002),(1.17,width,depth,-.004),
               (1.32,width,depth*.94,-.008),(1.39,.198,depth*.79,-.010),
               (1.435,.095,.087,-.015))
@@ -902,42 +922,49 @@ class WorkerBuilder(base.PedestrianBuilder):
         self.trunk("CLO_ScarfTail",((1.075,.041,.014,-.181),(1.205,.046,.015,-.18),(1.34,.049,.014,-.162),(1.429,.038,.014,-.12)),"scarf",sides=8)
         hands=[p.obj.name for p in self.result.parts if p.obj.name.startswith("GEO_Hand")]
         self.item("gloves.work",hands);self.hands(gloves=True)
+        self.apron()
+
+    def apron(self):
         self.item("apron.work")
-        # The apron is cut over the largest padded jacket; its curved panel
-        # has the same torso weights and no skin recolour shortcut.
-        vertices=[]
-        rows=((.64,.164,-.164),(.82,.183,-.176),(1.0,.185,-.179),(1.15,.146,-.177),(1.31,.124,-.172))
-        for z,width,y in rows:
-            for j in range(9):
-                x=(j-4)/4*width;vertices.append((x,y+.055*(x/width)**2,z))
-        faces=[(r*9+j,r*9+j+1,(r+1)*9+j+1,(r+1)*9+j) for r in range(4) for j in range(8)]
-        obj=self.add("CLO_ApronPanel",cloth_panel((vertices,faces)),"chest","apron")
-        self.weights(obj,[self.trunk_weight(v.co.z+obj.location.z) for v in obj.data.vertices])
-        for side,sign in (("L",1),("R",-1)):
-            self.add("CLO_ApronStrap."+side,tube(((sign*.104,-.17,1.30),(sign*.073,-.113,1.397),(sign*.055,.07,1.422),(sign*.101,.152,1.27)),(.011,.011,.011,.011),6,.35),"chest","apron")
-        vertices=[]
-        for z in (.895,1.02):
-            for j in range(9):
-                x=(j-4)*.026;vertices.append((x,-.183+.055*(x/.185)**2,z))
-        self.add("CLO_ApronPocket",(vertices,[(j,j+1,j+10,j+9) for j in range(8)]),"pelvis","apron")
+        rows = ((.760,.132,-.211), (.890,.151,-.186), (1.019,.160,-.168),
+                (1.154,.138,-.168), (1.309,.113,-.163))
+
+        def panel_point(row, x, offset=0.):
+            z, width, front = row
+            return (x, front + .026 * (x / width)**2 - offset, z)
+
+        def apron_weights(vertex):
+            weights = self.trunk_weight(vertex.z)
+            # The short lower hem follows the upper thighs while the bib
+            # and the sewn pocket keep the same torso field.
+            movement = .30 * max(0., min(1., (.89 - vertex.z) / .13))
+            if movement > 0.:
+                left = max(0., min(1., .5 + vertex.x / .25))
+                weights["pelvis"] -= movement
+                weights.update({"thigh.L": left * movement, "thigh.R": (1. - left) * movement})
+            return weights
+
+        vertices = [panel_point(row, (column - 4) * row[1] / 4) for row in rows for column in range(9)]
+        faces = [(r*9+j, r*9+j+1, (r+1)*9+j+1, (r+1)*9+j) for r in range(4) for j in range(8)]
+        obj = self.add("CLO_ApronPanel", cloth_panel((vertices, faces), .002), "chest", "apron")
+        self.weights(obj, [apron_weights(v.co + obj.location) for v in obj.data.vertices])
+
+        for side, sign in (("L",1), ("R",-1)):
+            end = panel_point(rows[-1], sign*.092, .004)
+            points = (end, (sign*.073,-.113,1.397), (sign*.055,.07,1.422), (sign*.101,.152,1.27))
+            obj = self.add("CLO_ApronStrap."+side, tube(points, (.009,.009,.009,.009), 6, .35), "chest", "apron")
+            self.weights(obj, [self.trunk_weight(v.co.z + obj.location.z) for v in obj.data.vertices])
+
+        pocket = [panel_point(row, (column - 4) * .022, .005) for row in rows[1:3] for column in range(9)]
+        faces = [(j, j+1, j+10, j+9) for j in range(8)]
+        obj = self.add("CLO_ApronPocket", cloth_panel((pocket, faces), .0015), "pelvis", "apron")
+        self.weights(obj, [apron_weights(v.co + obj.location) for v in obj.data.vertices])
 
     def uv(self,part):
-        obj=part.obj
-        if obj.data.uv_layers:return
-        mesh=obj.data;layer=mesh.uv_layers.new(name="UVMap")
-        points=[v.co+obj.location for v in mesh.vertices]
-        low=[min(p[i] for p in points) for i in range(3)];high=[max(p[i] for p in points) for i in range(3)]
-        name=obj.name
-        region=1 if any(s in name for s in ("warm","Scarf","Hat_work","cardigan","coat")) else 0
-        if name.startswith("CLO_Outer_warm"):region=2
-        for loop in mesh.loops:
-            p=points[loop.vertex_index];u=(p.x-low[0])/max(.001,high[0]-low[0]);v=(p.z-low[2])/max(.001,high[2]-low[2])
-            if part.role in ("body","body_detail","hair"):
-                coord=(505/512,505/512)
-            elif "Boot" in name:
-                coord=((2+u*123)/512,(2+v*250)/512)
-            else:coord=((region*128+2+u*123)/512,(258+v*251)/512)
-            layer.data[loop.index].uv=coord
+        name = part.obj.name
+        if name != surfaces.FACE:
+            finish = surfaces.finish_for(part, ITEM_FINISHES, part.obj.get("bp_wardrobe_item"))
+            surfaces.assign_chart(part, finish)
 
     def build(self):
         self.reset_scene();collection=bpy.data.collections.new("EXPORT_DefaultNpc");bpy.context.scene.collection.children.link(collection)
@@ -1338,6 +1365,7 @@ def main():
         ASSETS.mkdir(parents=True, exist_ok=True)
         SOURCE.mkdir(parents=True, exist_ok=True)
     builder=WorkerBuilder();result=builder.build();data=wardrobe(builder);checks=validate(builder,data)
+    map_hashes=surfaces.publish_maps(ASSETS,args.validate_only,publish)
     texture=ASSETS/(MODEL+"Atlas.png");texture_hash=atlas(texture,args.validate_only)
     face_data={"default_face_id":"face-01","items":[]}
     face_hashes=[]
@@ -1393,6 +1421,7 @@ def main():
     payload["hand_grip"]=hand_grip_manifest(builder)
     payload["hair_atlas_sha256"]=hair_hashes
     payload["uv_signature"]=digest([(p.obj.name,[[round(float(v),7) for v in uv.uv] for uv in p.obj.data.uv_layers[0].data]) for p in result.parts])
+    payload["surfaces"]=surfaces.manifest(result,data["items"],ITEM_FINISHES,map_hashes)
     payload["signature"]=digest(payload)
     publish(ASSETS/(MODEL+".json"),(json.dumps(payload,indent=2)+"\n").encode(),args.validate_only)
     if not args.validate_only:

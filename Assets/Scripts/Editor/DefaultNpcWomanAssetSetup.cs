@@ -19,7 +19,7 @@ namespace BarPromenade.Editor
         {
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             Manifest data = ReadManifest();
-            CanneryWomanAssetSetup.ConfigureModel(ModelPath, false, null, blendShapes: true);
+            CanneryWomanAssetSetup.ConfigureModel(ModelPath, false, null, blendShapes: true, surfaceTangents: true);
             Avatar avatar = AssetDatabase.LoadAllAssetsAtPath(ModelPath).OfType<Avatar>().Single();
             if (!avatar.isValid || avatar.isHuman)
                 throw new InvalidOperationException("The woman needs the Generic Avatar of her own rest skeleton.");
@@ -49,11 +49,12 @@ namespace BarPromenade.Editor
                 var renderers = model.GetComponentsInChildren<SkinnedMeshRenderer>(true);
                 var byName = renderers.ToDictionary(renderer => renderer.name, StringComparer.Ordinal);
                 var parts = data.parts.ToDictionary(part => part.name, StringComparer.Ordinal);
-                Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Player3D/Materials/Player3DLit.mat");
-                if (material == null) throw new InvalidOperationException("Missing shared Lit NPC material.");
+                Material material = DefaultNpcSurfaceAssets.Build(data.surfaces,
+                    renderers.ToDictionary(skin => skin.name, skin => (Renderer)skin, StringComparer.Ordinal));
                 foreach (SkinnedMeshRenderer skin in renderers)
                 {
-                    skin.sharedMaterials = new[] { material };
+                    skin.sharedMaterial = skin.name == DefaultNpcSurfaceAssets.FaceRenderer
+                        ? DefaultNpcSurfaceAssets.FaceMaterial : material;
                     skin.updateWhenOffscreen = true;
                 }
                 Color Tint(string name) => ReadColor(parts[name].color);
@@ -62,7 +63,7 @@ namespace BarPromenade.Editor
                     item.covered_renderers.Select(name => (Renderer)byName[name]).ToArray())).ToArray();
                 var occupied = data.items.SelectMany(item => item.renderers).ToHashSet(StringComparer.Ordinal);
                 Renderer[] anatomy = renderers.Where(renderer => !occupied.Contains(renderer.name)).ToArray();
-                Texture2D clothing = LoadAtlas(data.clothing_atlas, 256);
+                Texture2D clothing = LoadAtlas(data.clothing_atlas, 512);
                 var wardrobe = actor.AddComponent<NpcWardrobe>();
                 wardrobe.ConfigureModular(DefaultNpcCatalog.OrdinaryWoman, clothing, material, anatomy, garments,
                     data.outfits.Select(outfit => new NpcWardrobe.OutfitPreset(outfit.id, outfit.items)).ToArray(), "everyday");
@@ -91,6 +92,7 @@ namespace BarPromenade.Editor
                 actor.AddComponent<DefaultNpcBodyShape>().Configure(data.shaped_renderers.Select(name => byName[name]).ToArray(),
                     data.height_m, data.min_height_cm, data.max_height_cm);
                 actor.AddComponent<DefaultNpcStreetClips>().Configure(Clip("Sit"), Clip("Guard"), Clip("Shove"));
+                CharacterJointDeformation.Configure(actor);
                 ValidateBody(actor, data);
                 if (PrefabUtility.SaveAsPrefabAsset(actor, PrefabPath) == null)
                     throw new InvalidOperationException("Could not save ordinary woman prefab.");
@@ -112,7 +114,7 @@ namespace BarPromenade.Editor
                 DefaultNpcAssetSetup.ReadOrdinaryWalk("OrdinaryWomanWalk"))
                 throw new InvalidOperationException("Ordinary woman lost her fitted walk clip.");
             ReadClips(data);
-            LoadAtlas(data.clothing_atlas, 256);
+            LoadAtlas(data.clothing_atlas, 512);
             foreach (Face face in data.faces) LoadAtlas(face.texture, 64);
         }
 
@@ -135,6 +137,10 @@ namespace BarPromenade.Editor
             wardrobe.ValidateBindings();
             stature.ValidateBindings();
             var skins = actor.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            if (actor.GetComponent<CharacterJointDeformation>()?.HasBindings != true)
+                throw new InvalidOperationException("Ordinary woman lost the authored sleeve and knee correctives.");
+            DefaultNpcSurfaceAssets.Validate(data.surfaces,
+                skins.ToDictionary(skin => skin.name, skin => (Renderer)skin, StringComparer.Ordinal));
             int triangles = skins.Sum(skin => (int)skin.sharedMesh.GetIndexCount(0) / 3);
             float crown = float.NegativeInfinity, sole = float.PositiveInfinity;
             foreach (SkinnedMeshRenderer skin in skins)
@@ -204,6 +210,7 @@ namespace BarPromenade.Editor
             public Outfit[] outfits;
             public ClipData[] clips;
             public Seat seat;
+            public DefaultNpcSurfaceManifest surfaces;
         }
 
         [Serializable] private sealed class Part { public string name; public float[] color; }

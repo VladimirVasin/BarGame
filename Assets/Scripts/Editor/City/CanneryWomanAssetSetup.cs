@@ -142,7 +142,7 @@ namespace BarPromenade.Editor
         }
 
         internal static void ConfigureModel(string path, bool animation, Avatar avatar, bool blendShapes = false,
-            Func<string, bool> loops = null)
+            Func<string, bool> loops = null, bool surfaceTangents = false)
         {
             var importer = AssetImporter.GetAtPath(path) as ModelImporter;
             if (importer == null) throw new InvalidOperationException("Missing generated cannery woman model " + path);
@@ -162,7 +162,8 @@ namespace BarPromenade.Editor
             importer.materialImportMode = ModelImporterMaterialImportMode.None;
             importer.animationCompression = ModelImporterAnimationCompression.Off;
             importer.meshCompression = ModelImporterMeshCompression.Off;
-            importer.importNormals = ModelImporterNormals.Import; importer.importTangents = ModelImporterTangents.None;
+            importer.importNormals = ModelImporterNormals.Import;
+            importer.importTangents = surfaceTangents ? ModelImporterTangents.CalculateMikk : ModelImporterTangents.None;
             importer.SaveAndReimport();
             if (!animation) return;
             ModelImporterClipAnimation[] clips = importer.defaultClipAnimations;

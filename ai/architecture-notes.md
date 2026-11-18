@@ -1438,13 +1438,13 @@
   No new lore/speech/wardrobe/physics; §16/art checks, no §6 exception.
 
 - **Accepted — 2026-09-29, character surfaces:**
-  User: reusable `CharacterSurfaceMaterialSetup` Clothing/Skin/Hair recipes
-  on shared shared lit shader; hero adapter `Player3DV2CharacterSurfaces`. Manifest UV0
-  regions/map hashes validate imports. Skin/hair gain UVs; palette/base atlases,
-  face/geometry/rig/actions stay. Direct specular only; no weather/SSS/anisotropy.
-  Invalid Mikk frames repaired; cloth/copies follow. UV-less anatomy stays flat.
-  `tools/build-player-{clothing,body-hair}-surfaces.py`; player art spec.
-  Hero first; NPC unchanged. §16/nine checks; no §6 exception.
+  `CharacterSurfaceMaterialSetup` Clothing/Skin/Hair on shared Lit; hero
+  `Player3DV2CharacterSurfaces`, UV0 regions/hashes, Mikk frames/cloth/copies.
+  Skin/hair gain UVs; atlas palettes, direct specular only. UV-less parts flat.
+  `build-player-{clothing,body-hair}-surfaces.py`; player art spec.
+  `2026-11-18`: both defaults share a padded 512px normal/response pair, one Lit
+  material, distinct garment charts and painted faces. Existing rig/IDs, 8k
+  worn cap, posed elbow/knee correctives. Story §16/art9.
 
 - **Accepted — 2026-09-29, exterior ground layers:**
   User approved City/MountainRoad/AlpineVillage ground and retaining surfaces.

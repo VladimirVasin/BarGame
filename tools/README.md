@@ -90,8 +90,8 @@ House:`build-mothers-house-interior-3d-model.py` via launcher;
 
 Close Unity. Hero export → portraits, scarf, lamp and
 `refresh-default-npc-damage.py --hero` → `HeroDerivedAssetSetup.RebuildBatch`.
-Worker source: `DefaultMaleAnatomy.blend`. Worker refresh → NPC damage → editor.
-Worker/scarf staging: `--model-dir` + `--source-dir`.
+Worker: `DefaultMaleAnatomy.blend` → `refresh-default-npc-damage --npc-head`.
+Both rebuild Walks. Staging: `--model-dir` / `--source-dir`.
 Residents:WoodWoman/actions;`--phase-two`:four;prebuild imports props/doors.
 
 ```powershell

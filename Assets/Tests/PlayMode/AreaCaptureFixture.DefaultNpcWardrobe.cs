@@ -28,6 +28,17 @@ namespace BarPromenade.Tests.PlayMode
         }
     }
 
+    public sealed class DefaultNpcDetailAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            Type.GetType("BarPromenade.Editor.DefaultNpcAssetSetup, BarPromenade.Editor", true)
+                .GetMethod("RebuildOrdinaryWalks", Type.EmptyTypes).Invoke(null, null);
+#endif
+        }
+    }
+
     public sealed partial class AreaCaptureFixture
     {
         [Serializable]
@@ -120,6 +131,219 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Time.captureDeltaTime = previousDelta;
                 WriteDefaultNpcReport(report);
+            }
+        }
+
+        [UnityTest]
+        [Explicit("Render both ordinary bodies and every visible garment beside the production hero.")]
+        [PrebuildSetup(typeof(DefaultNpcDetailAssetsSetup))]
+        public IEnumerator DefaultNpcWardrobeDetail()
+        {
+            const string folder = "DefaultNpcDetail";
+            GameSessionState.BeginNewGame("default-npc-detail");
+            GameSessionState.TryStartGameTimeFromWake();
+            yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
+            CityGameRoot city = null;
+            float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                city = Object.FindAnyObjectByType<CityGameRoot>();
+                if (city != null && city.IsInitialized && !CompositionDriver.IsComposing) break;
+                yield return null;
+            }
+            Assert.That(city != null && city.IsInitialized && !CompositionDriver.IsComposing, Is.True);
+
+            var stage = new GameObject("Default NPC wardrobe review");
+            stage.transform.position = new Vector3(0f, 1000f, 0f);
+            var fillObject = new GameObject("Wardrobe review fill");
+            fillObject.transform.SetParent(stage.transform, false);
+            var fill = fillObject.AddComponent<Light>();
+            fill.type = LightType.Directional;
+            fill.cullingMask = 1 << 31;
+            fill.intensity = .9f;
+            fill.transform.rotation = Quaternion.Euler(32f, 156f, 0f);
+            Camera camera = Camera.main;
+            var savedCamera = new DefaultNpcCameraState(camera);
+            var follow = camera.GetComponent<PlayerCameraFollow>();
+            var hero = (Player3DCharacterPresentation)city.Player.Visual;
+            Transform heroRoot = city.Player.GameObject.transform;
+            Vector3 street = heroRoot.position;
+            Quaternion streetFacing = heroRoot.rotation;
+            Transform[] heroParts = heroRoot.GetComponentsInChildren<Transform>(true);
+            int[] heroLayers = heroParts.Select(part => part.gameObject.layer).ToArray();
+            bool followEnabled = follow.enabled, motorEnabled = city.Player.Motor.enabled;
+            VillageResidentPresentation[] actors = new VillageResidentPresentation[2];
+            try
+            {
+                AdvanceResidentLifeClockTo(12 * 60);
+                city.DayNight.ApplyCurrentTime(true);
+                using var pause = GameTimeScaleRuntime.AcquirePause();
+                follow.enabled = false;
+                city.Player.Motor.enabled = false;
+                actors[0] = DefaultNpcFactory.Create(stage.transform);
+                actors[1] = DefaultNpcFactory.Create(stage.transform, DefaultNpcCatalog.OrdinaryWoman);
+                for (int i = 0; i < actors.Length; i++)
+                {
+                    var actor = actors[i];
+                    actor.transform.localPosition = Vector3.right * ((i - .5f) * .75f);
+                    float yaw = Vector3.SignedAngle(DefaultNpcFacing(actor), Vector3.forward, Vector3.up);
+                    actor.ModelRoot.rotation = Quaternion.AngleAxis(yaw, Vector3.up) * actor.ModelRoot.rotation;
+                    foreach (Transform part in actor.GetComponentsInChildren<Transform>(true)) part.gameObject.layer = 31;
+                    // The manual review changes stature and calls Camera.Render
+                    // even when Unity still holds an earlier frame's skin buffers.
+                    foreach (SkinnedMeshRenderer skin in actor.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                        skin.forceMatrixRecalculationPerRender = true;
+                    actor.GetComponent<NpcWardrobe>().ApplyOutfit("everyday");
+                    actor.Apply(VillageResidentAction.Idle, .3f);
+                }
+                foreach (Transform part in heroParts) part.gameObject.layer = 31;
+                heroRoot.SetPositionAndRotation(stage.transform.position + Vector3.right * 1.12f, Quaternion.identity);
+                hero.SetMotion(PlayerMotionSample.Stationary);
+                hero.ReapplyLatePresentationPose();
+                camera.cullingMask = 1 << 31;
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = new Color(.19f, .19f, .18f);
+
+                yield return AdvanceDefaultNpcSkinningFrame(actors);
+                Frame(stage.transform.position + new Vector3(.35f, .92f, 0f), new Vector3(0f, .18f, 2.9f), 43f, "01-day-hero");
+                Frame(stage.transform.position + Vector3.up * 1.57f, new Vector3(.16f, .10f, 1.5f), 36f, "02-faces");
+                for (int i = 0; i < actors.Length; i++)
+                {
+                    var actor = actors[i];
+                    var wardrobe = actor.GetComponent<NpcWardrobe>();
+                    string prefix = i == 0 ? "man" : "woman";
+                    var remaining = new HashSet<NpcWardrobe.ItemBinding>(wardrobe.Items);
+                    foreach (var preset in wardrobe.Presets)
+                        yield return Outfit(preset.ItemIds, preset.Id);
+                    var everyday = wardrobe.Presets.Single(preset => preset.Id == "everyday");
+                    var essentials = wardrobe.Items.Where(item => everyday.ItemIds.Contains(item.Id) &&
+                        (item.Slot == "shirt" || item.Slot == "trousers" || item.Slot == "boots" || item.Slot == "hair")).ToArray();
+                    while (remaining.Count != 0)
+                    {
+                        var item = wardrobe.Items.First(remaining.Contains);
+                        var selected = essentials.Where(other => other.Slot != item.Slot).Select(other => other.Id).Append(item.Id).ToArray();
+                        yield return Outfit(selected, item.Id);
+                        Assert.That(remaining.Contains(item), Is.False, $"Preview {item.Id} must be visible.");
+                    }
+                    wardrobe.ApplyOutfit("work");
+                    actor.gameObject.SetActive(false);
+                    actor.gameObject.SetActive(true);
+                    actor.Apply(VillageResidentAction.Reach, actor.ClipLength(VillageResidentAction.Reach) * .37f);
+                    DefaultNpcAssertVisibleGrips(actor);
+
+                    IEnumerator Outfit(IReadOnlyList<string> items, string name)
+                    {
+                        wardrobe.ApplyItems(items);
+                        var stature = actor.GetComponent<DefaultNpcBodyShape>();
+                        float build = name == "work" ? 1f : name == "warm" ? 0f : .5f;
+                        stature.Apply(build == 0f ? stature.MinHeightCm : build == 1f ? stature.MaxHeightCm : 169, build);
+                        actor.Apply(VillageResidentAction.Walk, .24f);
+                        yield return AdvanceDefaultNpcSkinningFrame(actor);
+                        if (name == "warm" || name == "work") AssertDefaultNpcHeadFit(actor);
+                        var visible = wardrobe.Items.Where(item => wardrobe.IsEquipped(item.Id))
+                            .SelectMany(item => item.Parts).Where(part => part.Renderer.enabled).Select(part => part.Renderer).ToArray();
+                        Assert.That(visible.All(renderer => renderer.sharedMaterial.IsKeywordEnabled("_NORMALMAP")), Is.True);
+                        Assert.That(DefaultNpcVisibleTriangles(actor.GetComponentsInChildren<Renderer>(true)), Is.InRange(1, 8000));
+                        remaining.RemoveWhere(item => item.Parts.Any(part => visible.Contains(part.Renderer)));
+                        Frame(actor.transform.position + Vector3.up * .88f, new Vector3(i == 0 ? -.8f : .8f, .2f, 2.5f),
+                            44f, prefix + "-" + name);
+                    }
+                }
+                foreach (var actor in actors)
+                {
+                    actor.GetComponent<DefaultNpcBodyShape>().Apply(172, 1f);
+                    actor.Apply(VillageResidentAction.Walk, .24f);
+                }
+                yield return AdvanceDefaultNpcSkinningFrame(actors);
+                Frame(stage.transform.position + new Vector3(.35f, .91f, 0f),
+                    new Vector3(0f, .14f, 3.25f), 40f, "05-work-lineup");
+
+                AdvanceResidentLifeClockTo(21 * 60);
+                city.DayNight.ApplyCurrentTime(true);
+                stage.transform.position = street + streetFacing * Vector3.forward * 1.4f;
+                fill.enabled = false;
+                savedCamera.Restore(camera);
+                foreach (var actor in actors)
+                {
+                    foreach (Transform part in actor.GetComponentsInChildren<Transform>(true)) part.gameObject.layer = 0;
+                    var stature = actor.GetComponent<DefaultNpcBodyShape>();
+                    stature.Apply(Mathf.RoundToInt(stature.ReferenceHeightMetres * 100f), .5f);
+                    actor.Apply(VillageResidentAction.Walk, .62f);
+                }
+                yield return AdvanceDefaultNpcSkinningFrame(actors);
+                Frame(stage.transform.position + Vector3.up * .95f, new Vector3(.12f, .28f, 2.85f), 47f, "03-city-evening");
+            }
+            finally
+            {
+                foreach (var actor in actors)
+                    if (actor != null) NpcFootstepSources.Unregister(actor.transform);
+                Object.DestroyImmediate(stage);
+                for (int i = 0; i < heroParts.Length; i++)
+                    if (heroParts[i] != null) heroParts[i].gameObject.layer = heroLayers[i];
+                heroRoot.SetPositionAndRotation(street, streetFacing);
+                hero.ReapplyLatePresentationPose();
+                city.Player.Motor.enabled = motorEnabled;
+                follow.enabled = followEnabled;
+                savedCamera.Restore(camera);
+            }
+            yield return CaptureBarNpcDetail();
+
+            void Frame(Vector3 target, Vector3 offset, float fov, string name)
+            {
+                camera.transform.SetPositionAndRotation(target + offset, Quaternion.LookRotation(-offset, Vector3.up));
+                camera.fieldOfView = fov;
+                CaptureCurrentCamera(camera, folder, name);
+            }
+        }
+
+        private static void AssertDefaultNpcHeadFit(VillageResidentPresentation actor)
+        {
+            var skins = actor.GetComponentsInChildren<SkinnedMeshRenderer>();
+            Bounds face = PosedBounds(skins.Single(skin => skin.name == "GEO_FaceSurface"));
+            Bounds skull = PosedBounds(skins.Single(skin => skin.name == "GEO_Head"));
+            Bounds neck = PosedBounds(skins.Single(skin => skin.name == "GEO_Neck"));
+            Assert.That(Vector3.Distance(face.center, skull.center), Is.LessThan(.15f), actor.name);
+            Assert.That(face.min.y - neck.max.y, Is.LessThan(.018f), "The jaw must meet the posed neck.");
+            foreach (SkinnedMeshRenderer skin in skins.Where(skin => skin.enabled &&
+                         (skin.name.StartsWith("CLO_Hat_", StringComparison.Ordinal) || skin.name == "CLO_KnitCap")))
+                Assert.That(PosedBounds(skin).min.y - skull.max.y, Is.LessThan(.025f), skin.name);
+
+            static Bounds PosedBounds(SkinnedMeshRenderer skin)
+            {
+                Vector3[] vertices = DefaultNpcFactoryPlayModeTests.SkinDefaultNpcWorldVertices(skin);
+                var bounds = new Bounds(vertices[0], Vector3.zero);
+                foreach (Vector3 vertex in vertices) bounds.Encapsulate(vertex);
+                return bounds;
+            }
+        }
+
+        private static IEnumerator CaptureBarNpcDetail()
+        {
+            const string barId = "default-npc-detail";
+            GameSessionState.BeginNewGame(barId);
+            BarTestTime.StartFullAttendance(barId);
+            GameSessionState.EnterBar(barId, BarActivityKind.SplitTheG, CityDistrictKind.Residential);
+            yield return SceneManager.LoadSceneAsync(SceneIds.BarInterior, LoadSceneMode.Single);
+            BarInteriorRoot bar = Object.FindAnyObjectByType<BarInteriorRoot>();
+            Assert.That(bar != null && bar.IsInitialized && bar.Bartender != null, Is.True);
+            Camera camera = Camera.main;
+            var saved = new DefaultNpcCameraState(camera);
+            var follow = camera.GetComponent<PlayerCameraFollow>();
+            bool following = follow.enabled;
+            try
+            {
+                follow.enabled = false;
+                Vector3 target = bar.Bartender.transform.position + Vector3.up * 1.12f;
+                Vector3 position = bar.Room.TransformPoint(new Vector3(0f, 1.54f, -.15f));
+                camera.transform.SetPositionAndRotation(position, Quaternion.LookRotation(target - position));
+                camera.fieldOfView = 46f;
+                yield return null;
+                CaptureCurrentCamera(camera, "DefaultNpcDetail", "04-bar");
+            }
+            finally
+            {
+                follow.enabled = following;
+                saved.Restore(camera);
             }
         }
 

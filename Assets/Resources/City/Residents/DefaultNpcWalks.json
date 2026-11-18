@@ -9,14 +9,14 @@
       "maximum_lower_sole_m": 0.00521,
       "maximum_midstance_knee_flex_degrees": 24.27,
       "source": "ArtSource/VillageLife/StationWorker.blend",
-      "source_sha256": "6536045109dda67eb1079ccb8f03409af45b832f19984444f886382951258a02"
+      "source_sha256": "34509c40095fd89b7ae2dfa119766227454a9c1d720bb04beb179174cf7dfc87"
     },
     "OrdinaryWomanWalk": {
       "minimum_sole_m": -0.00133,
       "maximum_lower_sole_m": 0.00079,
       "maximum_midstance_knee_flex_degrees": 25.03,
       "source": "ArtSource/City/Residents/OrdinaryWoman.blend",
-      "source_sha256": "c976293eef12995d1de4bad62d3f3b27ec89a02cb2eb68eec88e0532f2e23016"
+      "source_sha256": "aab3a95178b5dc810ee8f02b8ba3e26124a41622f9cb79d5d8a0ea9c808dd3fc"
     }
   }
 }

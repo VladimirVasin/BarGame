@@ -132,7 +132,9 @@ def shaped_point(point, kind, rig, weights):
         delta = Vector()
         for name, weight in limb.items():
             axis, fraction = _limb_axis(p, rig.data.bones[name])
-            amount = .23 if chubby else -.12
+            # Keep the sleeve and wrist tailored as the trunk and thighs fill out.
+            maximum = .065 if name.startswith(("upper_arm.", "forearm.")) else .10
+            amount = maximum if chubby else -.10
             if name.startswith("forearm."):
                 amount *= 1. - _smooth((fraction - .65) / .35)
             if name.startswith("shin."):
@@ -142,15 +144,15 @@ def shaped_point(point, kind, rig, weights):
     # The central field varies through the trunk and hips. All concentric
     # garment layers move together, retaining their authored clearance.
     trunk = _smooth((p.z - .76) / .15) * (1. - _smooth((p.z - 1.30) / .14))
-    lateral = 1. - _smooth((abs(p.x) - .19) / .10)
+    lateral = 1. - _smooth((abs(p.x) - .17) / .14)
     torso_weight = max(0., 1. - limb_weight) * trunk * lateral
     if torso_weight > 0:
         belly = math.exp(-((p.z - 1.055) / .145) ** 2)
         front = _smooth((.012 - p.y) / .045)
-        amount = .30 if chubby else -.12
+        amount = .12 if chubby else -.10
         p.x += p.x * amount * torso_weight
-        p.y += ((-.103 if chubby else .014) * front * belly
-                + (.022 if chubby else -.008) * (1. - front)) * torso_weight
+        p.y += ((-.052 if chubby else .014) * front * belly
+                + (.012 if chubby else -.008) * (1. - front)) * torso_weight
     return p
 
 
@@ -212,8 +214,10 @@ def validate(builder, data):
         extrema[shape] = {"minimum_front_y_m": round(min(p.y for p in belly), 7),
                           "waist_width_m": round(max(p.x for p in belly) - min(p.x for p in belly), 7),
                           "changed_vertices": moved}
-    if extrema[SHAPE_NAMES[1]]["minimum_front_y_m"] >= extrema[SHAPE_NAMES[0]]["minimum_front_y_m"] - .05:
-        raise RuntimeError("Chubby build requires a localized visible belly")
+    slim, fuller = (extrema[name] for name in SHAPE_NAMES)
+    belly_change = slim["minimum_front_y_m"] - fuller["minimum_front_y_m"]
+    if not .05 <= belly_change <= .068 or fuller["waist_width_m"] - slim["waist_width_m"] > .08:
+        raise RuntimeError(f"Fuller build must keep a moderate waist and belly: {extrema}")
     import json
     return {"extremes": extrema,
             "signature": hashlib.sha256(json.dumps(signatures, separators=(",", ":")).encode()).hexdigest(),

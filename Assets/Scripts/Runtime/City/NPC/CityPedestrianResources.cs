@@ -418,7 +418,7 @@ namespace BarPromenade
 
         // Measured at reference stature across both trouser cuts in the seated loop.
         public static readonly CityPedestrianSeatedRide OrdinaryWomanSeatedRide =
-            new CityPedestrianSeatedRide(0.067f, 0.21f, 0.876f);
+            new CityPedestrianSeatedRide(0.066f, 0.21f, 0.876f);
 
         // THREE ORDINARY RESIDENTS DELIBERATELY DO NOT RIDE. The band above
         // is measured from the design's own seated clip, and for these three

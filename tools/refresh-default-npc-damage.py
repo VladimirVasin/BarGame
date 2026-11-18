@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Refresh source-dependent damage meshes for one character at a time.
 
-Run through tools/run-blender.py. Head semantics must remain unchanged; its
-existing NPC FBX is retained when refreshing the worker. --hero rebuilds the
-hero's body, head, skull and wound meshes after an appearance change.
+Run through tools/run-blender.py. By default the current NPC head is retained.
+Use --npc-head for an authored change to its geometry or UVs. --hero refreshes
+the corresponding hero assets.
 """
 from __future__ import annotations
 
@@ -56,7 +56,9 @@ def read_manifest(folder, name):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--validate-only", action="store_true")
-    parser.add_argument("--hero", action="store_true")
+    character = parser.add_mutually_exclusive_group()
+    character.add_argument("--hero", action="store_true")
+    character.add_argument("--npc-head", action="store_true")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
     if args.hero:
         refresh_hero(args.validate_only)
@@ -72,11 +74,12 @@ def main():
     ):
         raise RuntimeError("The published NPC derivatives no longer use the ordinary-worker source.")
 
-    print("DEFAULT NPC DAMAGE: checking unchanged head semantics", flush=True)
+    print("DEFAULT NPC DAMAGE: checking head semantics", flush=True)
     head = gore.build(KIND, GORE, publish=False)
     if head != gore.build(KIND, GORE, publish=False):
         raise RuntimeError("NPC head semantics differ across independent rebuilds.")
-    if head != previous_gore["models"][KIND]:
+    head_changed = head != previous_gore["models"][KIND]
+    if head_changed and not args.npc_head:
         raise RuntimeError("NPC head geometry/UV/skin changed unexpectedly; the scoped refresh cannot replace HeadNpc.fbx.")
 
     # Generators reconstruct from a clean Blender scene each time. Stage exports
@@ -104,26 +107,47 @@ def main():
         next_blood["models"]["WoundsNpc"] = wounds
         next_blood["sources"][KIND]["sha256"] = source_hash
         next_gore["sources"][KIND]["sha256"] = source_hash
-        # The head model and all its file fingerprints deliberately stay unchanged.
+        publication = []
+        manifests = [(GORE, "CombatBody3D.json", next_body), (BLOOD, "CombatBlood3D.json", next_blood),
+                     (GORE, "CombatGore3D.json", next_gore)]
+        if head_changed and not args.validate_only:
+            if head != gore.build(KIND, stage, publish=True):
+                raise RuntimeError("NPC head export differs from the measured source.")
+            next_gore["models"][KIND] = head
+            next_gore["sources"][KIND]["renderers"] = [entry["name"] for entry in head["source_renderers"]]
+            next_gore["files"]["HeadNpc.fbx"] = digest(stage / "HeadNpc.fbx")
+            publication.append((stage / "HeadNpc.fbx", GORE / "HeadNpc.fbx"))
+        if args.npc_head:
+            skull = load_generator("skull")
+            previous_skull = read_manifest(GORE, "CombatSkull3D.json")
+            next_skull = copy.deepcopy(previous_skull)
+            skull_model = skull.build(KIND, stage, head_contract=next_gore)
+            if skull_model["meshes"] != previous_skull["models"][KIND]["meshes"] and not args.validate_only:
+                if skull_model != skull.build(KIND, stage, publish=True, head_contract=next_gore):
+                    raise RuntimeError("NPC head dependent export differs from the measured source.")
+                next_skull["files"]["SkullNpc.fbx"] = digest(stage / "SkullNpc.fbx")
+                publication.append((stage / "SkullNpc.fbx", GORE / "SkullNpc.fbx"))
+            manifest_bytes = (json.dumps(next_gore, indent=2) + "\n").encode("utf-8")
+            head_hash = hashlib.sha256(manifest_bytes).hexdigest()
+            next_skull["models"][KIND] = skull_model
+            for entry in next_skull["models"].values():
+                entry["head_contract_sha256"] = head_hash
+            manifests.append((GORE, "CombatSkull3D.json", next_skull))
         if args.validate_only:
-            if next_body != previous_body or next_blood != previous_blood or next_gore != previous_gore:
+            if (head_changed or next_body != previous_body or next_blood != previous_blood or next_gore != previous_gore
+                    or args.npc_head and next_skull != previous_skull):
                 raise RuntimeError("NPC damage source/semantic measurements changed; run this tool without --validate-only.")
         else:
             next_body["files"]["BodyNpc.fbx"] = digest(stage / "BodyNpc.fbx")
             next_blood["files"]["WoundsNpc.fbx"] = digest(stage / "WoundsNpc.fbx")
-            # Only these two exports and the three NPC manifest portions are published.
-            publication = [(stage / "BodyNpc.fbx", GORE / "BodyNpc.fbx"),
-                           (stage / "WoundsNpc.fbx", BLOOD / "WoundsNpc.fbx")]
-            for folder, filename, manifest in (
-                (GORE, "CombatBody3D.json", next_body),
-                (BLOOD, "CombatBlood3D.json", next_blood),
-                (GORE, "CombatGore3D.json", next_gore),
-            ):
+            publication.extend(((stage / "BodyNpc.fbx", GORE / "BodyNpc.fbx"),
+                                (stage / "WoundsNpc.fbx", BLOOD / "WoundsNpc.fbx")))
+            for folder, filename, manifest in manifests:
                 candidate = stage / filename
                 candidate.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
                 publication.append((candidate, folder / filename))
             publish_files(publication)
-    print("DEFAULT NPC DAMAGE BODY/WOUNDS, UNCHANGED HEAD AND INDEPENDENT SEMANTIC REBUILDS OK", flush=True)
+    print("DEFAULT NPC DAMAGE SOURCE AND INDEPENDENT SEMANTIC REBUILDS OK", flush=True)
 
 
 def refresh_hero(validate_only):

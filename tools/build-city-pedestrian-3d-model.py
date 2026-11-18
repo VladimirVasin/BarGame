@@ -11475,6 +11475,13 @@ def citizen_arms(
     }
 
 
+# Bind-space sleeve fitting and the ordinary residents' authored idle poses
+# still use this neutral even though the street Walk has its own arm poses.
+CITIZEN_HANGING_ARMS = citizen_arms(
+    (.059, -.014, -.334), (-.047, -.010, -.334),
+    (-4., 3., -2.), (-5., -3., 2.), (2., -5., 2.), (2., 5., -2.))
+
+
 def citizen_walk_torso(
     lead: float,
     lift: float,

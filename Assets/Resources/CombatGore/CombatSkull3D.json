@@ -10,7 +10,7 @@
     "Hero": {
       "source": "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx",
       "source_sha256": "ac81a409d3d2e304ad2c4ae75231e99e875b78a5b9c6979b94989ca7f049bce5",
-      "head_contract_sha256": "8d3035d568ccf8a4e2606358b64591b2ed1c1b8310c11b3ab40ec4d011dbf06f",
+      "head_contract_sha256": "65c8406b935a3090bbbd9022eafa0a3aa485f2d13c27cba57559fbbd5b80897d",
       "head_center_unity_m": [
         0.0,
         1.6048,
@@ -423,8 +423,8 @@
     },
     "Npc": {
       "source": "Assets/Resources/VillageLife/StationWorker.fbx",
-      "source_sha256": "1c13355b27052e4c53aad9cfd0fa3865a833b502b03611aa720c82a8f1963336",
-      "head_contract_sha256": "8d3035d568ccf8a4e2606358b64591b2ed1c1b8310c11b3ab40ec4d011dbf06f",
+      "source_sha256": "adde7e742758910909373f41089156a29ec6c139d4d8d2c68f16cbfd58175773",
+      "head_contract_sha256": "65c8406b935a3090bbbd9022eafa0a3aa485f2d13c27cba57559fbbd5b80897d",
       "head_center_unity_m": [
         0.0,
         1.6,

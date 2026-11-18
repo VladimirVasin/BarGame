@@ -96,12 +96,13 @@ namespace BarPromenade.Editor
                     Renderer[] renderers = model.GetComponentsInChildren<Renderer>(true);
                     var byName = renderers.ToDictionary(renderer => renderer.name, StringComparer.Ordinal);
                     var parts = manifest.parts.ToDictionary(part => part.name, StringComparer.Ordinal);
-                    Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Player3D/Materials/Player3DLit.mat");
+                    Material material = DefaultNpcSurfaceAssets.Build(manifest.surfaces, byName);
                     Texture2D atlas = AssetDatabase.LoadAssetAtPath<Texture2D>(TexturePath);
-                    if (material == null || atlas == null) throw new InvalidOperationException("Missing default NPC surfaces.");
+                    if (atlas == null) throw new InvalidOperationException("Missing default NPC atlas.");
                     foreach (Renderer renderer in renderers)
                     {
-                        renderer.sharedMaterials = new[] { material };
+                        renderer.sharedMaterial = renderer.name == DefaultNpcSurfaceAssets.FaceRenderer
+                            ? DefaultNpcSurfaceAssets.FaceMaterial : material;
                         if (renderer is SkinnedMeshRenderer skin) skin.updateWhenOffscreen = true;
                     }
                     Color Tint(string name)
@@ -221,6 +222,8 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException("Default NPC requires authored point-filtered 512px face atlases.");
             }
             ValidateGeometry(prefab, manifest);
+            DefaultNpcSurfaceAssets.Validate(manifest.surfaces, prefab.GetComponentsInChildren<Renderer>(true)
+                .ToDictionary(renderer => renderer.name, StringComparer.Ordinal));
         }
 
         private static Manifest ReadManifest()
@@ -298,7 +301,7 @@ namespace BarPromenade.Editor
             importer.addCollider = false;
             importer.materialImportMode = ModelImporterMaterialImportMode.None;
             importer.importNormals = ModelImporterNormals.Import;
-            importer.importTangents = ModelImporterTangents.None;
+            importer.importTangents = ModelImporterTangents.CalculateMikk;
             importer.SaveAndReimport();
         }
 
@@ -359,6 +362,7 @@ namespace BarPromenade.Editor
             public HairColor[] hair_colors;
             public HandGrip hand_grip;
             public BodyShape body_shape;
+            public DefaultNpcSurfaceManifest surfaces;
         }
         [Serializable] private sealed class BodyShape
         {
@@ -379,5 +383,73 @@ namespace BarPromenade.Editor
             public bool has_blink_tile;
         }
         [Serializable] private sealed class HairColor { public string id; public float[] color; }
+    }
+
+    [Serializable]
+    internal sealed class DefaultNpcSurfaceManifest
+    {
+        public string schema;
+        public CharacterSurfaceBinding binding;
+    }
+
+    internal static class DefaultNpcSurfaceAssets
+    {
+        private const string Prefix = DefaultNpcAssetSetup.Folder + "DefaultNpcDetail";
+        private const int AtlasSize = 512;
+        public const string FaceRenderer = "GEO_FaceSurface";
+        public static Material FaceMaterial =>
+            AssetDatabase.LoadAssetAtPath<Material>("Assets/Player3D/Materials/Player3DLit.mat");
+
+        public static Material Build(DefaultNpcSurfaceManifest manifest, IReadOnlyDictionary<string, Renderer> renderers)
+        {
+            CharacterSurfaceBinding binding = RequireBinding(manifest);
+            ConfigureTexture(binding.normal_asset, true);
+            ConfigureTexture(binding.response_asset, false);
+            ValidateRegions(binding, renderers);
+            return CharacterSurfaceMaterialSetup.EnsureSharedMaterial(Prefix + ".mat", FaceMaterial,
+                CharacterSurfaceRecipe.Clothing, Load(binding.normal_asset, true), Load(binding.response_asset, false));
+        }
+
+        public static void Validate(DefaultNpcSurfaceManifest manifest, IReadOnlyDictionary<string, Renderer> renderers)
+        {
+            CharacterSurfaceBinding binding = RequireBinding(manifest);
+            ValidateRegions(binding, renderers);
+            Material detail = AssetDatabase.LoadAssetAtPath<Material>(Prefix + ".mat");
+            if (!CharacterSurfaceMaterialSetup.IsCanonical(detail, CharacterSurfaceRecipe.Clothing,
+                    Load(binding.normal_asset, true), Load(binding.response_asset, false)) ||
+                renderers.Any(part => part.Value.sharedMaterial != (part.Key == FaceRenderer ? FaceMaterial : detail)))
+                throw new InvalidOperationException("Default NPC prefab lost its shared cloth, skin or hair finish.");
+        }
+
+        private static CharacterSurfaceBinding RequireBinding(DefaultNpcSurfaceManifest manifest)
+        {
+            CharacterSurfaceBinding binding = manifest?.binding;
+            if (manifest?.schema != "default_npc_surfaces_v1" || binding == null ||
+                binding.recipe != nameof(CharacterSurfaceRecipe.Clothing) || binding.width_px != AtlasSize ||
+                binding.height_px != AtlasSize || binding.normal_asset != Prefix + "Normal.png" ||
+                binding.response_asset != Prefix + "Response.png")
+                throw new InvalidOperationException("Regenerate the shared default NPC surface atlas with Blender.");
+            return binding;
+        }
+
+        private static void ValidateRegions(CharacterSurfaceBinding binding, IReadOnlyDictionary<string, Renderer> renderers)
+        {
+            CharacterSurfaceMaterialSetup.ValidateBinding(binding);
+            if (!renderers.ContainsKey(FaceRenderer) || binding.regions.Length != renderers.Count - 1 ||
+                binding.regions.Any(region => region.renderer == FaceRenderer))
+                throw new InvalidOperationException("Default NPC detail must cover the full body and wardrobe.");
+            CharacterSurfaceMaterialSetup.ValidateRendererUvs(binding, renderers);
+        }
+
+        private static void ConfigureTexture(string path, bool normal)
+        {
+            var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+            if (importer == null) throw new InvalidOperationException("Missing default NPC surface " + path);
+            CharacterSurfaceMaterialSetup.ConfigureImport(importer, normal, AtlasSize);
+            importer.SaveAndReimport();
+        }
+
+        private static Texture2D Load(string path, bool normal) =>
+            CharacterSurfaceMaterialSetup.LoadMap(path, normal, AtlasSize, AtlasSize);
     }
 }
